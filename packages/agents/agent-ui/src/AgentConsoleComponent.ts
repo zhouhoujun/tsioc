@@ -197,6 +197,8 @@ import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
 import { buildTurnDiagnosticsRecordOption, formatSummaryQualityTrend, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshUsageDigest } from './AgentConsoleDiagnosticsView';
 import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
 import { flattenProjectSessions, refreshProjects, refreshThreads, resolveProjectSessionsFor, resolveSessionProjectKey, resolveSessionThreadKey, resolveThreadKeyForSession, resolveThreadSessionsFor, selectProjectRepresentative } from './AgentConsoleProjectProjection';
+import { ensureMessageAtTail, findStreamingAssistantMessageIndex, replaceStreamingAssistantMessage } from './AgentConsoleMessageState';
+import { parseSlashCommandLine } from './AgentConsoleInputHelpers';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc, buildHarnessProjection, formatHarnessTreeLines, formatHarnessListLines, DelegationTreeNode } from '@tsdi/agent';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 import { CommandHandlerContext, COMMAND_HANDLERS } from './AgentConsoleCommandHandlers';
@@ -2216,19 +2218,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected parseSlashCommandLine(input: string): { raw: string; command: string; args: string } {
-        const raw = String(input || '').trim();
-        if (!raw.startsWith('/')) {
-            return { raw, command: raw, args: '' };
-        }
-        const firstSpace = raw.indexOf(' ');
-        if (firstSpace < 0) {
-            return { raw, command: raw, args: '' };
-        }
-        return {
-            raw,
-            command: raw.slice(0, firstSpace),
-            args: raw.slice(firstSpace + 1).trim()
-        };
+        return parseSlashCommandLine(input);
     }
 
     /**
@@ -3545,33 +3535,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected replaceStreamingAssistantMessage(message: AgentMessage): void {
-        if (this.destroyed) {
-            return;
-        }
-        const current = this.state.messages.slice();
-        const targetIndex = this.findStreamingAssistantMessageIndex(current, message);
-        if (targetIndex < 0) {
-            return;
-        }
-        const currentMessage = current[targetIndex];
-        const replacement = {
-            ...currentMessage,
-            ...message,
-            metadata: {
-                ...(currentMessage.metadata || {}),
-                ...(message.metadata || {})
-            }
-        };
-        if (String(currentMessage.content || '') === String(replacement.content || '')
-            && currentMessage.metadata?.streaming === replacement.metadata?.streaming) {
-            return;
-        }
-        current[targetIndex] = replacement;
-        if (replacement.metadata?.streaming !== true && targetIndex !== current.length - 1) {
-            current.splice(targetIndex, 1);
-            current.push(replacement);
-        }
-        this.state.setMessages(current);
+        replaceStreamingAssistantMessage(this.state, this.destroyed, message);
     }
 
     protected clearStreamingMessageState(): void {
@@ -3588,21 +3552,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected ensureMessageAtTail(messageId: string): void {
-        const resolvedId = String(messageId || '').trim();
-        if (!resolvedId) {
-            return;
-        }
-        const current = this.state.messages.slice();
-        const index = current.findIndex(item => item.id === resolvedId);
-        if (index < 0 || index === current.length - 1) {
-            return;
-        }
-        const [message] = current.splice(index, 1);
-        if (!message) {
-            return;
-        }
-        current.push(message);
-        this.state.setMessages(current);
+        ensureMessageAtTail(this.state, messageId);
     }
 
     protected async loadSessionMessages(sessionId = this.state.sessionId): Promise<AgentMessage[]> {
@@ -3881,20 +3831,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected findStreamingAssistantMessageIndex(messages: AgentMessage[], message?: AgentMessage): number {
-        const messageId = String(message?.id || '').trim();
-        if (messageId) {
-            const explicitIndex = messages.findIndex(item => item.id === messageId);
-            if (explicitIndex >= 0) {
-                return explicitIndex;
-            }
-        }
-        for (let index = messages.length - 1; index >= 0; index--) {
-            const current = messages[index];
-            if (current?.role === 'assistant' && current?.metadata?.streaming) {
-                return index;
-            }
-        }
-        return -1;
+        return findStreamingAssistantMessageIndex(messages, message);
     }
 
     protected dispatchTerminalMouseAt(mouse: SelectMenuMouseEvent): void {
