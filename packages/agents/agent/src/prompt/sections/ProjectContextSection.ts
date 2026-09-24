@@ -75,8 +75,8 @@ export class ProjectContextSection extends PromptSection {
     }
 
     async render(context: PromptSectionContext): Promise<string> {
-        void context;
-        const startDir = this.resolveStartDir();
+        const workspace = String(context?.extra?.workspace || '').trim();
+        const startDir = workspace || this.resolveStartDir();
         const options = this.agentOptions ?? {};
         const maxBytes = options.projectDocMaxBytes ?? DEFAULT_AGENTS_DOC_MAX_BYTES;
         const fallbackFilenames = options.projectDocFallbackFilenames ?? DEFAULT_AGENTS_DOC_FALLBACK_FILENAMES;
