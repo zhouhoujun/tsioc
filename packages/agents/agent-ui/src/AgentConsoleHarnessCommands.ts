@@ -1,6 +1,6 @@
 import type { BackgroundTaskRecord } from '@tsdi/agent-tools';
 import { buildHarnessProjection, formatHarnessListLines, formatHarnessTreeLines, DelegationTreeNode, HarnessProjection } from '@tsdi/agent';
-import { formatDelegationTree } from './AgentConsoleDelegationView';
+import { formatDelegationEdge, formatDelegationTree } from './AgentConsoleDelegationView';
 
 /**
  * Host surface required by the harness / delegation tree commands.
@@ -10,6 +10,8 @@ export interface HarnessCommandHost {
     sessionService: {
         getDelegationTree(sessionId: string, options?: { status?: string | string[]; depth?: number }, context?: any): Promise<Record<string, any> | null>;
         listAllBackgroundTasks(options: { sessionId?: string; delegationRoot?: string }, context?: any): Promise<Array<Record<string, any>>>;
+        getDelegationLineage(sessionId: string, context?: any): Promise<Array<Record<string, any>>>;
+        listDelegationEdges(filter: { sessionId?: string; limit?: number }, context?: any): Promise<Array<Record<string, any>>>;
     } | null;
     state: {
         sessionId: string;
@@ -110,5 +112,54 @@ export async function openDelegationTreeView(host: HarnessCommandHost, sessionId
         return true;
     }
     host.pushCommandOutput('/delegation tree', lines.join(' | '));
+    return true;
+}
+
+/**
+ * Opens `/delegation lineage [sessionId]`: renders the persisted chain of
+ * parent sessions above the current (or given) session, closest first.
+ */
+export async function openDelegationLineageView(host: HarnessCommandHost, sessionId?: string): Promise<boolean> {
+    if (!host.sessionService) {
+        host.notify('Delegation graph is unavailable without app RPC.');
+        return true;
+    }
+    const resolvedSessionId = (sessionId || '').trim() || host.state.sessionId;
+    if (!resolvedSessionId) {
+        host.notify('No session selected. Run /delegation lineage <sessionId>.');
+        return true;
+    }
+    const lineage = await host.sessionService.getDelegationLineage(resolvedSessionId);
+    if (!lineage.length) {
+        host.notify(`No parent delegation edges recorded for session '${resolvedSessionId}'.`);
+        return true;
+    }
+    host.pushCommandOutput('/delegation lineage', lineage.map(edge => formatDelegationEdge(edge)).join(' → '));
+    return true;
+}
+
+/**
+ * Opens `/delegation [list] [sessionId]`: lists flat delegation edges
+ * touching the current (or given) session, newest edges first, as one
+ * digest line per edge.
+ */
+export async function openDelegationListView(host: HarnessCommandHost, sessionId?: string): Promise<boolean> {
+    if (!host.sessionService) {
+        host.notify('Delegation graph is unavailable without app RPC.');
+        return true;
+    }
+    const resolvedSessionId = (sessionId || '').trim() || host.state.sessionId || undefined;
+    const edges = await host.sessionService.listDelegationEdges(
+        resolvedSessionId ? { sessionId: resolvedSessionId } : { limit: 200 }
+    );
+    if (!edges.length) {
+        host.notify(
+            resolvedSessionId
+                ? `No delegation edges recorded for session '${resolvedSessionId}'.`
+                : 'No delegation edges recorded yet.'
+        );
+        return true;
+    }
+    host.pushCommandOutput('/delegation list', edges.map(edge => formatDelegationEdge(edge)).join(' | '));
     return true;
 }

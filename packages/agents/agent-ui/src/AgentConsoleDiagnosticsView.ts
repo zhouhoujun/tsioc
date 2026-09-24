@@ -1,6 +1,6 @@
 import { formatCompactNumber } from '@tsdi/core';
 import { AgentConsoleSelectOption } from './AgentConsoleSessionState';
-import { formatCompactionHistoryAggregate, formatSummaryQualityAggregate, formatTurnDiagnosticsAggregate, formatUsageSummary, buildSummaryQualityRecordOption } from './AgentConsoleFormatters';
+import { formatCompactionHistoryAggregate, formatSummaryQualityAggregate, formatTurnDiagnosticsAggregate, formatTurnDiagnosticsTrend, formatUsageSummary, buildSummaryQualityRecordOption } from './AgentConsoleFormatters';
 
 export interface AgentConsoleDigestState {
     setUsageDigest(value: string): void;
@@ -262,5 +262,101 @@ export async function openSummaryQualityRecords(
         0,
         `${records.length} record${records.length === 1 ? '' : 's'}`
     );
+    return true;
+}
+
+/**
+ * Opens `/diagnostics list [sessionId]`: browses recorded turn diagnostics
+ * records for the given session (falling back to the current session) as a
+ * selectable list.
+ */
+export async function openTurnDiagnosticsListView(
+    sessionService: any,
+    notify: (message: string) => void,
+    select: (title: string, options: any[], index: number, hint?: string) => Promise<string | undefined>,
+    sessionId?: string,
+    currentSessionId?: string
+): Promise<boolean> {
+    if (!sessionService) {
+        notify('Turn diagnostics are unavailable without app RPC.');
+        return true;
+    }
+    const resolvedSessionId = (sessionId || '').trim() || currentSessionId || '';
+    if (!resolvedSessionId) {
+        notify('No session selected. Run /diagnostics list <sessionId>.');
+        return true;
+    }
+    const records = await sessionService.listTurnDiagnostics(resolvedSessionId);
+    if (!records.length) {
+        notify(`No turn diagnostics recorded for session '${resolvedSessionId}'.`);
+        return true;
+    }
+    const options = records.map((record: Record<string, any>) => buildTurnDiagnosticsRecordOption(record));
+    await select(
+        `Turn diagnostics records (${resolvedSessionId})`,
+        options,
+        0,
+        `${records.length} record${records.length === 1 ? '' : 's'}`
+    );
+    return true;
+}
+
+/**
+ * Opens `/diagnostics trend [sessionId] [bucketSize] [maxBuckets]`: renders
+ * one sparkline line per session showing how token savings and compaction
+ * activity evolve over time buckets.
+ */
+export async function openTurnDiagnosticsTrendView(
+    sessionService: any,
+    notify: (message: string) => void,
+    pushCommandOutput: (command: string, text: string) => void,
+    sessionId?: string,
+    bucketSize?: number,
+    maxBuckets?: number
+): Promise<boolean> {
+    if (!sessionService) {
+        notify('Turn diagnostics are unavailable without app RPC.');
+        return true;
+    }
+    const trend = await sessionService.getTurnDiagnosticsTrend(sessionId, { bucketSize, maxBuckets });
+    if (!trend.length) {
+        notify(
+            sessionId
+                ? `No turn diagnostics trend recorded for session '${sessionId}'.`
+                : 'No turn diagnostics trend recorded yet.'
+        );
+        return true;
+    }
+    pushCommandOutput('/diagnostics trend', formatTurnDiagnosticsTrend(trend).join(' | '));
+    return true;
+}
+
+/**
+ * Opens `/quality trend [provider] [bucketSize] [maxBuckets]`: renders one
+ * sparkline line per provider showing how summary quality aggregates evolve
+ * over time buckets.
+ */
+export async function openSummaryQualityTrendView(
+    sessionService: any,
+    notify: (message: string) => void,
+    pushCommandOutput: (command: string, text: string) => void,
+    provider?: string,
+    bucketSize?: number,
+    maxBuckets?: number
+): Promise<boolean> {
+    if (!sessionService) {
+        notify('Summary quality is unavailable without app RPC.');
+        return true;
+    }
+    const trend = await sessionService.getSummaryQualityTrend({ provider, bucketSize, maxBuckets });
+    if (!trend.length) {
+        notify(
+            provider
+                ? `No summary quality trend recorded for provider '${provider}'.`
+                : 'No summary quality trend recorded yet.'
+        );
+        return true;
+    }
+    pushCommandOutput('/quality trend', formatSummaryQualityTrend(trend).join(' | '));
     return true;
 }

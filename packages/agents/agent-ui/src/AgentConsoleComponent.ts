@@ -18,26 +18,14 @@ import {
     buildTurnMessageInput,
     runAttachCommand as runAttachCommandFn
 } from './AgentConsoleExportHandlers';
-import {
-    formatSummaryQualityAggregate as fmtSummaryQualityAggregate,
-    formatUsageSummary as fmtUsageSummary,
-    formatCompactionHistoryAggregate as fmtCompactionHistoryAggregate,
-    formatCompactionHistoryRecord as fmtCompactionHistoryRecord,
-    formatCompactionHistoryTrend as fmtCompactionHistoryTrend,
-    formatTurnDiagnosticsAggregate as fmtTurnDiagnosticsAggregate,
-    formatTurnDiagnosticsTrend as fmtTurnDiagnosticsTrend,
-    buildSummaryQualityRecordOption,
-    parseTrendArgs
-} from './AgentConsoleFormatters';
-import { formatUsageWindow, formatCompactionHistoryRecord, formatCompactionHistoryTrend, formatTurnDiagnosticsAggregate, formatTurnDiagnosticsTrend } from './AgentConsoleFormatters';
+import { formatSummaryQualityAggregate as fmtSummaryQualityAggregate } from './AgentConsoleFormatters';
 import {
     openCompactionHistory,
     openCompactionHistoryTrend,
     openTurnDiagnostics as openTurnDiagnosticsFn,
     openUsage,
     openHarnessAudit,
-    openHarnessProfile,
-    openSummaryQualityRecords as openSummaryQualityRecordsFn
+    openHarnessProfile
 } from './AgentConsoleDiagnosticsHandlers';
 import {
     ReviewHandlerContext,
@@ -175,7 +163,7 @@ import { AgentConsoleGlobalKeyInputHost, executeGlobalKeyActionView, handleBrows
 import { AgentConsoleTurnInputHost, submitMultilineDraftView, submitView } from './AgentConsoleTurnInputController';
 import { AgentConsoleTerminalInputHost, closingSessionMessageView, handleTerminalInputView, openCommandPaletteView, requestTerminalExitView } from './AgentConsoleTerminalInputController';
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
-import { buildTurnDiagnosticsRecordOption, formatSummaryQualityTrend, openSummaryQualityRecords, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshTurnDiagnosticsDigest, refreshUsageDigest, runHarnessStopCommand } from './AgentConsoleDiagnosticsView';
+import { openSummaryQualityRecords, openTurnDiagnosticsListView, openTurnDiagnosticsTrendView, openSummaryQualityTrendView, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshTurnDiagnosticsDigest, refreshUsageDigest, runHarnessStopCommand } from './AgentConsoleDiagnosticsView';
 import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
 import { flattenProjectSessions, navigateThreadCycle, refreshCurrentSections, refreshProjects, refreshThreads, resolveCurrentProjectSessions, resolveProjectSessionsFor, resolveSessionProjectKey, resolveSessionThreadKey, resolveThreadKeyForSession, resolveThreadSessionsFor, selectProjectRepresentative } from './AgentConsoleProjectProjection';
 import { refreshProjectContext as refreshProjectContextView } from './AgentConsoleProjectProjection';
@@ -221,8 +209,7 @@ import { ensureMessageAtTail } from './AgentConsoleMessageState';
 import { parseSlashCommandLine, handleMenuSelection, loadInputHistory } from './AgentConsoleInputHelpers';
 import { listSshHosts, connectSshHost, forwardSshTunnel } from './AgentConsoleSshCommands';
 import { selectApprovalRequest, refreshPendingApprovals } from './AgentConsoleApprovalView';
-import { formatDelegationEdge } from './AgentConsoleDelegationView';
-import { HarnessCommandHost, openDelegationTreeView, openHarnessListView, openHarnessTreeView } from './AgentConsoleHarnessCommands';
+import { HarnessCommandHost, openDelegationLineageView, openDelegationListView, openDelegationTreeView, openHarnessListView, openHarnessTreeView } from './AgentConsoleHarnessCommands';
 import { TodoPlanCommandHost, mergeTodoPlanForSessionsView } from './AgentConsoleTodoPlanCommands';
 import { KeymapCommandHost, resolveKeymapContext as resolveKeymapContextView, runKeymapCommand as runKeymapCommandView } from './AgentConsoleKeymapCommands';
 import { PromptMentionHost, enrichPromptWithMentions as enrichPromptWithMentionsView } from './AgentConsolePromptMentions';
@@ -531,18 +518,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return fmtSummaryQualityAggregate(aggregate);
     }
 
-    protected formatUsageWindow(label: string, usage: Record<string, any>): string {
-        return formatUsageWindow(label, usage);
-    }
-
-    protected formatUsageSummary(usage: Record<string, any>): string {
-        return fmtUsageSummary(usage);
-    }
-
-    protected formatCompactionHistoryAggregate(aggregate: Record<string, any>): string {
-        return fmtCompactionHistoryAggregate(aggregate);
-    }
-
     protected async openSummaryQualityRecords(provider?: string): Promise<boolean> {
         return openSummaryQualityRecords(
             this.sessionService,
@@ -552,30 +527,19 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         );
     }
 
-    protected buildSummaryQualityRecordOption(record: Record<string, any>): AgentConsoleSelectOption {
-        return buildSummaryQualityRecordOption(record);
-    }
-
     protected async openSummaryQualityTrend(
         provider?: string,
         bucketSize?: number,
         maxBuckets?: number
     ): Promise<boolean> {
-        if (!this.sessionService) {
-            this.notify('Summary quality is unavailable without app RPC.');
-            return true;
-        }
-        const trend = await this.sessionService.getSummaryQualityTrend({ provider, bucketSize, maxBuckets });
-        if (!trend.length) {
-            this.notify(
-                provider
-                    ? `No summary quality trend recorded for provider '${provider}'.`
-                    : 'No summary quality trend recorded yet.'
-            );
-            return true;
-        }
-        this.pushCommandOutput('/quality trend', this.formatSummaryQualityTrend(trend).join(' | '));
-        return true;
+        return openSummaryQualityTrendView(
+            this.sessionService,
+            (message: string) => this.notify(message),
+            (command: string, text: string) => this.pushCommandOutput(command, text),
+            provider,
+            bucketSize,
+            maxBuckets
+        );
     }
 
     protected async runExportCommand(args: string): Promise<boolean> {
@@ -709,32 +673,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
      * selectable list.
      */
     protected async openTurnDiagnosticsList(sessionId?: string): Promise<boolean> {
-        if (!this.sessionService) {
-            this.notify('Turn diagnostics are unavailable without app RPC.');
-            return true;
-        }
-        const resolvedSessionId = (sessionId || '').trim() || this.state.sessionId;
-        if (!resolvedSessionId) {
-            this.notify('No session selected. Run /diagnostics list <sessionId>.');
-            return true;
-        }
-        const records = await this.sessionService.listTurnDiagnostics(resolvedSessionId);
-        if (!records.length) {
-            this.notify(`No turn diagnostics recorded for session '${resolvedSessionId}'.`);
-            return true;
-        }
-        const options = records.map(record => this.buildTurnDiagnosticsRecordOption(record));
-        await this.select(
-            `Turn diagnostics records (${resolvedSessionId})`,
-            options,
-            0,
-            `${records.length} record${records.length === 1 ? '' : 's'}`
+        return openTurnDiagnosticsListView(
+            this.sessionService,
+            (message: string) => this.notify(message),
+            (title: string, options: any[], index: number, hint?: string) => this.select(title, options, index, hint),
+            sessionId,
+            this.state.sessionId
         );
-        return true;
-    }
-
-    protected buildTurnDiagnosticsRecordOption(record: Record<string, any>): AgentConsoleSelectOption {
-        return buildTurnDiagnosticsRecordOption(record);
     }
 
     /**
@@ -747,21 +692,14 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         bucketSize?: number,
         maxBuckets?: number
     ): Promise<boolean> {
-        if (!this.sessionService) {
-            this.notify('Turn diagnostics are unavailable without app RPC.');
-            return true;
-        }
-        const trend = await this.sessionService.getTurnDiagnosticsTrend(sessionId, { bucketSize, maxBuckets });
-        if (!trend.length) {
-            this.notify(
-                sessionId
-                    ? `No turn diagnostics trend recorded for session '${sessionId}'.`
-                    : 'No turn diagnostics trend recorded yet.'
-            );
-            return true;
-        }
-        this.pushCommandOutput('/diagnostics trend', this.formatTurnDiagnosticsTrend(trend).join(' | '));
-        return true;
+        return openTurnDiagnosticsTrendView(
+            this.sessionService,
+            (message: string) => this.notify(message),
+            (command: string, text: string) => this.pushCommandOutput(command, text),
+            sessionId,
+            bucketSize,
+            maxBuckets
+        );
     }
 
     /**
@@ -778,30 +716,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
      * parent sessions above the current (or given) session, closest first.
      */
     protected async openDelegationLineage(sessionId?: string): Promise<boolean> {
-        if (!this.sessionService) {
-            this.notify('Delegation graph is unavailable without app RPC.');
-            return true;
-        }
-        const resolvedSessionId = (sessionId || '').trim() || this.state.sessionId;
-        if (!resolvedSessionId) {
-            this.notify('No session selected. Run /delegation lineage <sessionId>.');
-            return true;
-        }
-        const lineage = await this.sessionService.getDelegationLineage(resolvedSessionId);
-        if (!lineage.length) {
-            this.notify(`No parent delegation edges recorded for session '${resolvedSessionId}'.`);
-            return true;
-        }
-        this.pushCommandOutput('/delegation lineage', lineage.map(edge => this.formatDelegationEdge(edge)).join(' → '));
-        return true;
-    }
-
-    /**
-     * Renders one delegation edge as a compact digest line, for example:
-     * `parent-1 ⇢ child-1 · nested · completed · 12/1 10:00 → 12/1 10:05`.
-     */
-    protected formatDelegationEdge(edge: Record<string, any>): string {
-        return formatDelegationEdge(edge);
+        return openDelegationLineageView(this.harnessCommandHost(), sessionId);
     }
 
     /**
@@ -810,43 +725,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
      * digest line per edge.
      */
     protected async openDelegationList(sessionId?: string): Promise<boolean> {
-        if (!this.sessionService) {
-            this.notify('Delegation graph is unavailable without app RPC.');
-            return true;
-        }
-        const resolvedSessionId = (sessionId || '').trim() || this.state.sessionId || undefined;
-        const edges = await this.sessionService.listDelegationEdges(
-            resolvedSessionId ? { sessionId: resolvedSessionId } : { limit: 200 }
-        );
-        if (!edges.length) {
-            this.notify(
-                resolvedSessionId
-                    ? `No delegation edges recorded for session '${resolvedSessionId}'.`
-                    : 'No delegation edges recorded yet.'
-            );
-            return true;
-        }
-        this.pushCommandOutput('/delegation list', edges.map(edge => this.formatDelegationEdge(edge)).join(' | '));
-        return true;
-    }
-
-    /**
-     * Renders one compact aggregate line for turn diagnostics, for example:
-     * `session-1 · 12 turns · empty 8.3% · repeated 16.7% · clarif 0% · 3 compact(s) · saved 25K tokens · 12/1–12/2`
-     */
-    protected formatTurnDiagnosticsAggregate(aggregate: Record<string, any>, sessionId?: string): string {
-        return formatTurnDiagnosticsAggregate(aggregate, sessionId);
-    }
-
-    /**
-     * Renders one compact line per session with an 8-level sparkline over time
-     * buckets (`totalTokenSavings` normalized to the session maximum mapped to
-     * ▁▂▃▄▅▆▇█), the bucket date range, the total turns, and the total tokens
-     * saved, for example:
-     * `session-1 ▃▅▇ (3d · 12/1–12/3 · 42 turns · saved 25k tokens)`
-     */
-    protected formatTurnDiagnosticsTrend(trend: Array<Record<string, any>>): string[] {
-        return formatTurnDiagnosticsTrend(trend);
+        return openDelegationListView(this.harnessCommandHost(), sessionId);
     }
 
     /**
@@ -858,35 +737,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         args: string
     ): { sessionId?: string; bucketSize?: number; maxBuckets?: number } {
         return this.parseCompactionHistoryTrendArgs(args);
-    }
-
-    /**
-     * Renders one compact line per session with an 8-level sparkline over time
-     * buckets (`avgCompressionRatio` mapped to ▁▂▃▄▅▆▇█), the bucket date
-     * range, the total tokens saved, and the averaged compression ratio, for
-     * example:
-     * `session-1 ▃▅▇ (2d · 12/1–12/2 · saved 25k tokens · avg 62.5%)`
-     */
-    protected formatCompactionHistoryTrend(trend: Array<Record<string, any>>): string[] {
-        return formatCompactionHistoryTrend(trend);
-    }
-
-    /**
-     * Renders one compact line per compaction record, for example:
-     * `compacted L3 312→224 msgs (88) · 84k→41k tokens (-51%) · saved 43k total`
-     */
-    protected formatCompactionHistoryRecord(record: Record<string, any>): string {
-        return formatCompactionHistoryRecord(record);
-    }
-
-    /**
-     * Renders one compact line per provider with an 8-level sparkline over time
-     * buckets (`avgTotal` mapped to ▁▂▃▄▅▆▇█), the bucket date range, the
-     * averaged total, and the fallback rate, for example:
-     * `deepseek ▃▅▇ (2d · 12/1–12/2 · avg 75.0 · fb 33.3%)`
-     */
-    protected formatSummaryQualityTrend(trend: Array<Record<string, any>>): string[] {
-        return formatSummaryQualityTrend(trend);
     }
 
     private reviewCtx(): ReviewHandlerContext {
