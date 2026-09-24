@@ -1,4 +1,4 @@
-import { Abstract, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, INJECTOR, Inject, Injectable, Injector, Optional } from '@tsdi/ioc';
 import { UuidGenerator } from '@tsdi/core';
 import { SpawnAgentAdapter, SpawnAgentInput, SpawnAgentResult } from '../agent/spawn-agent.tool';
 import { LlmTaskAdapter, LlmTaskRequest, LlmTaskResult } from '../llm/llm-task.tool';
@@ -209,7 +209,8 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
     constructor(
         private uuid: UuidGenerator,
         @Optional() private runner?: NestedAgentRunner | null,
-        @Optional() private background?: BackgroundTaskManager | null
+        @Optional() private background?: BackgroundTaskManager | null,
+        @Optional() @Inject(INJECTOR) private injector?: Injector | null
     ) {
         super();
     }
@@ -234,6 +235,9 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
     }
 
     private spawnInBackground(input: SpawnAgentInput): SpawnAgentResult {
+        if (!this.background && this.injector) {
+            this.background = this.injector.get(BackgroundTaskManager) ?? null;
+        }
         if (!this.background) {
             throw new Error('Background task manager is not configured for spawn_agent background mode.');
         }
@@ -304,6 +308,9 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
     }
 
     protected requireRunner(): NestedAgentRunner {
+        if (!this.runner && this.injector) {
+            this.runner = this.injector.get(NestedAgentRunner) ?? null;
+        }
         if (!this.runner) {
             throw new Error('Nested agent runner is not configured for spawn_agent.');
         }
@@ -315,7 +322,8 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
 export class DelegatingLlmTaskAdapter extends LlmTaskAdapter {
     constructor(
         private uuid: UuidGenerator,
-        @Optional() private runner?: NestedAgentRunner | null
+        @Optional() private runner?: NestedAgentRunner | null,
+        @Optional() @Inject(INJECTOR) private injector?: Injector | null
     ) {
         super();
     }
@@ -342,6 +350,9 @@ export class DelegatingLlmTaskAdapter extends LlmTaskAdapter {
     }
 
     protected requireRunner(): NestedAgentRunner {
+        if (!this.runner && this.injector) {
+            this.runner = this.injector.get(NestedAgentRunner) ?? null;
+        }
         if (!this.runner) {
             throw new Error('Nested agent runner is not configured for llm_task.');
         }

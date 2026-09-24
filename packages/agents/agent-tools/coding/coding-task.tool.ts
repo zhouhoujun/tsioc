@@ -1,7 +1,7 @@
 import * as path from 'path';
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { UuidGenerator } from '@tsdi/core';
-import { Inject, Injectable, Injector, Optional } from '@tsdi/ioc';
+import { INJECTOR, Inject, Injectable, Injector, Optional } from '@tsdi/ioc';
 import { LlmTaskTool } from '../llm/llm-task.tool';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { AgentToolsOptions, defaultAgentToolsOptions } from '../src/options';
@@ -141,7 +141,7 @@ export class CodingTaskTool implements AgentTool {
         @Optional() runner?: WorkspaceActionRunner | null,
         @Optional() llmTool?: LlmTaskTool | null,
         @Optional() @Inject(AGENT_TOOLS_OPTIONS, { defaultValue: null }) toolsOptions?: AgentToolsOptions | null,
-        @Optional() @Inject() injector?: Injector | null
+        @Optional() @Inject(INJECTOR) injector?: Injector | null
     ) {
         this.store = store ?? new CodingTaskStore();
         this.runner = runner;

@@ -1,4 +1,4 @@
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { INJECTOR, Inject, Injectable, Injector, Optional } from '@tsdi/ioc';
 import { AgentRuntime, SessionStore } from '@tsdi/agent';
 import { UuidGenerator } from '@tsdi/core';
 import { AGENT_TOOLS_OPTIONS } from './tokens';
@@ -27,20 +27,36 @@ export class LightweightAgentRunner extends NestedAgentRunner {
         private uuid: UuidGenerator,
         @Optional() private runtime?: AgentRuntime | null,
         @Optional() private sessions?: SessionStore | null,
-        @Optional() @Inject(AGENT_TOOLS_OPTIONS) private options?: AgentToolsOptions | null
+        @Optional() @Inject(AGENT_TOOLS_OPTIONS) private options?: AgentToolsOptions | null,
+        @Optional() @Inject(INJECTOR) private injector?: Injector | null
     ) {
         super();
     }
 
-    async runParallel(requests: NestedAgentRunRequest[]): Promise<NestedAgentRunResult[]> {
+    private ensureRuntime(): AgentRuntime {
+        if (!this.runtime && this.injector) {
+            this.runtime = this.injector.get(AgentRuntime) ?? null;
+        }
         if (!this.runtime) {
             throw new Error('LightweightAgentRunner requires AgentRuntime. Ensure AgentModule is loaded and AgentRuntime is registered.');
         }
+        return this.runtime;
+    }
+
+    private ensureSessions(): SessionStore | null {
+        if (!this.sessions && this.injector) {
+            this.sessions = this.injector.get(SessionStore) ?? null;
+        }
+        return this.sessions ?? null;
+    }
+
+    async runParallel(requests: NestedAgentRunRequest[]): Promise<NestedAgentRunResult[]> {
+        const runtime = this.ensureRuntime();
         if (requests.length === 0) {
             return [];
         }
         if (!this.started) {
-            await this.runtime.start();
+            await runtime.start();
             this.started = true;
         }
         const limit = requests[0]?.concurrency ?? this.options?.delegation?.concurrency;
@@ -71,6 +87,8 @@ export class LightweightAgentRunner extends NestedAgentRunner {
     }
 
     private async runSingle(request: NestedAgentRunRequest): Promise<NestedAgentRunResult> {
+        const runtime = this.ensureRuntime();
+        const sessions = this.ensureSessions();
         const sessionId = request.sessionId || `sub-${this.uuid.generate()}`;
         const parentSessionId = request.parentSessionId;
         const workerProfile = this.resolveWorkerModelProfile(request);
@@ -84,7 +102,7 @@ export class LightweightAgentRunner extends NestedAgentRunner {
         const prompt = appendSecrets(basePrompt, request.secrets);
 
         if (parentSessionId) {
-            this.runtime!.registerChildSession(parentSessionId, sessionId, {
+            runtime.registerChildSession(parentSessionId, sessionId, {
                 kind: 'nested',
                 goal: cipher ? cipher.encrypt(prompt) : basePrompt,
                 toolsets: request.toolsets,
@@ -101,10 +119,10 @@ export class LightweightAgentRunner extends NestedAgentRunner {
             });
         }
         if (request.toolsets?.length) {
-            this.runtime!.setSessionToolFilter(sessionId, request.toolsets);
+            runtime.setSessionToolFilter(sessionId, request.toolsets);
         }
         if (!explicitProfile && workerProfile) {
-            this.runtime!.setSessionModelProfile(sessionId, workerProfile);
+            runtime.setSessionModelProfile(sessionId, workerProfile);
         }
 
         let succeeded = false;
@@ -112,23 +130,23 @@ export class LightweightAgentRunner extends NestedAgentRunner {
             const maxTurns = typeof request.maxTurns === 'number' && request.maxTurns > 0
                 ? Math.floor(request.maxTurns)
                 : LightweightAgentRunner.DEFAULT_MAX_TURNS;
-            let result = await this.runtime!.runTurn(sessionId, prompt, undefined, undefined, explicitProfile, agentConfig);
+            let result = await runtime.runTurn(sessionId, prompt, undefined, undefined, explicitProfile, agentConfig);
             let report = parseDelegatedAgentReport(result.message.content);
 
             for (let turn = 1; turn < maxTurns && !report; turn++) {
-                result = await this.runtime!.runTurn(sessionId, LightweightAgentRunner.CONTINUE_PROMPT, undefined, undefined, explicitProfile, agentConfig);
+                result = await runtime.runTurn(sessionId, LightweightAgentRunner.CONTINUE_PROMPT, undefined, undefined, explicitProfile, agentConfig);
                 report = parseDelegatedAgentReport(result.message.content);
             }
 
-            const messages = await this.runtime!.getMessages(sessionId);
+            const messages = await runtime.getMessages(sessionId);
             const userCount = messages.filter(m => m.role === 'user').length;
             const toolCount = messages.filter(m => m.role === 'tool').length;
 
-            if (parentSessionId && this.sessions) {
+            if (parentSessionId && sessions) {
                 try {
-                    const subMessages = await this.runtime!.getMessages(sessionId);
+                    const subMessages = await runtime.getMessages(sessionId);
                     for (const msg of subMessages) {
-                        await this.sessions.append(parentSessionId, msg);
+                        await sessions.append(parentSessionId, msg);
                     }
                 } catch (err) {
                     // session merge must not break the sub-agent result
@@ -148,23 +166,21 @@ export class LightweightAgentRunner extends NestedAgentRunner {
             };
         } finally {
             if (parentSessionId) {
-                this.runtime!.unregisterChildSession(parentSessionId, sessionId, succeeded ? 'completed' : 'failed');
+                runtime.unregisterChildSession(parentSessionId, sessionId, succeeded ? 'completed' : 'failed');
             }
             if (request.toolsets?.length) {
-                this.runtime!.clearSessionToolFilter(sessionId);
+                runtime.clearSessionToolFilter(sessionId);
             }
             if (!explicitProfile && workerProfile) {
-                this.runtime!.clearSessionModelProfile(sessionId);
+                runtime.clearSessionModelProfile(sessionId);
             }
         }
     }
 
     async run(request: NestedAgentRunRequest): Promise<NestedAgentRunResult> {
-        if (!this.runtime) {
-            throw new Error('LightweightAgentRunner requires AgentRuntime. Ensure AgentModule is loaded and AgentRuntime is registered.');
-        }
+        const runtime = this.ensureRuntime();
         if (!this.started) {
-            await this.runtime.start();
+            await runtime.start();
             this.started = true;
         }
         const req = {
