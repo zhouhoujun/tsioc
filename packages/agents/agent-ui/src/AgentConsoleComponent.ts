@@ -196,7 +196,7 @@ import { decodeGlobalKey, describePendingToolCall, describeStreamEventContent, f
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
 import { buildTurnDiagnosticsRecordOption, formatSummaryQualityTrend, openSummaryQualityRecords, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshTurnDiagnosticsDigest, refreshUsageDigest, runHarnessStopCommand } from './AgentConsoleDiagnosticsView';
 import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
-import { flattenProjectSessions, refreshProjects, refreshThreads, resolveCurrentProjectSessions, resolveProjectSessionsFor, resolveSessionProjectKey, resolveSessionThreadKey, resolveThreadKeyForSession, resolveThreadSessionsFor, selectProjectRepresentative } from './AgentConsoleProjectProjection';
+import { flattenProjectSessions, navigateThreadCycle, refreshProjects, refreshThreads, resolveCurrentProjectSessions, resolveProjectSessionsFor, resolveSessionProjectKey, resolveSessionThreadKey, resolveThreadKeyForSession, resolveThreadSessionsFor, selectProjectRepresentative } from './AgentConsoleProjectProjection';
 import { ensureMessageAtTail, findStreamingAssistantMessageIndex, replaceStreamingAssistantMessage } from './AgentConsoleMessageState';
 import { parseSlashCommandLine, handleMenuSelection, loadInputHistory } from './AgentConsoleInputHelpers';
 import { listSshHosts, connectSshHost, forwardSshTunnel } from './AgentConsoleSshCommands';
@@ -205,6 +205,9 @@ import { formatDelegationEdge, formatDelegationTree, pickDelegationGoal, shorten
 import { runDisplayCommand, runExperimentalCommand, runTimelineModeCommand, runVimCommand, openSettingsKeybindsTab } from './AgentConsoleSettingsCommands';
 import { AgentConsoleRuntimeHost, runFastCommand, runRawModeCommand, runStatusCommand, runStatuslineCommand, runThemeCommand, runTitleCommand } from './AgentConsoleRuntimeCommands';
 import { runIdeCommand } from './AgentConsoleIdeCommands';
+import { collectHealthItems } from './AgentConsoleHealthView';
+import { searchSessionContent } from './AgentConsoleSessionSearch';
+import { loadLocalTodoPlan } from './AgentConsoleTodoView';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc, buildHarnessProjection, formatHarnessTreeLines, formatHarnessListLines, DelegationTreeNode } from '@tsdi/agent';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 import { CommandHandlerContext, COMMAND_HANDLERS } from './AgentConsoleCommandHandlers';
@@ -3457,28 +3460,14 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         query: string,
         sessions: AgentConsoleSessionItem[]
     ): Promise<Map<string, { count: number; snippet: string }>> {
-        const hits = new Map<string, { count: number; snippet: string }>();
-        const candidates = sessions.slice(0, this.state.consoleOptions.searchSessionLimit);
-        const results = await this.mapWithConcurrency(
-            candidates,
-            AgentConsoleComponent.SEARCH_CONCURRENCY,
-            async (session) => {
-                const messages = await this.loadSessionMessages(session.id);
-                const matched = messages.filter(message => String(message.content || '').toLowerCase().includes(query));
-                return { sessionId: session.id, matched };
-            }
+        return searchSessionContent(
+            query,
+            sessions,
+            this.state,
+            (sessionId: string) => this.loadSessionMessages(sessionId),
+            (items: any[], limit: number, fn: (item: any) => Promise<any>) => this.mapWithConcurrency(items, limit, fn) as any,
+            AgentConsoleComponent.SEARCH_CONCURRENCY
         );
-        for (const entry of results) {
-            if (!entry.result || !entry.result.matched.length) {
-                continue;
-            }
-            const first = entry.result.matched[0];
-            hits.set(entry.result.sessionId, {
-                count: entry.result.matched.length,
-                snippet: `[${first.role}] ${this.state.summarize(String(first.content || ''))}`
-            });
-        }
-        return hits;
     }
 
     protected async mapWithConcurrency<T, R>(
@@ -3604,22 +3593,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async loadLocalTodoPlan(sessionId: string): Promise<AgentConsolePlanTodoItem[]> {
-        if (!sessionId || !this.toolRegistry || typeof this.toolRegistry.invoke !== 'function') {
-            return [];
-        }
-        try {
-            const output = await this.toolRegistry.invoke('todo', undefined, sessionId, undefined, this.state.workspace);
-            return Array.isArray(output?.todos)
-                ? output.todos.map((item: any) => ({
-                    id: String(item?.id || '').trim(),
-                    content: String(item?.content || '').trim(),
-                    status: this.normalizeTodoStatus(item?.status)
-                })).filter((item: any) => !!item.id && !!item.content)
-                : [];
-        } catch (error: any) {
-            void error;
-            return [];
-        }
+        return loadLocalTodoPlan(sessionId, this.toolRegistry, this.state, (status: unknown) => this.normalizeTodoStatus(status)) as any;
     }
 
     protected async refreshTodoPlan(
@@ -5340,47 +5314,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async collectHealthItems(): Promise<AgentConsoleHealthItem[]> {
-        const items: AgentConsoleHealthItem[] = [];
-        if (this.appRpc) {
-            try {
-                await this.appRpc.request('app.state', undefined, this.rpcRequestContext());
-                items.push({ id: 'gateway', label: 'Gateway', status: 'ok', detail: 'connected' });
-            } catch {
-                items.push({ id: 'gateway', label: 'Gateway', status: 'error', detail: 'unreachable' });
-            }
-        } else {
-            items.push({ id: 'gateway', label: 'Gateway', status: 'unknown', detail: 'local runtime (no gateway)' });
-        }
-        const mcpServers = new Map<string, { total: number; active: number }>();
-        const lspTools: string[] = [];
-        for (const tool of this.state.tools) {
-            if (tool.name.startsWith('mcp.')) {
-                const parts = tool.name.split('.');
-                const serverId = parts[1] || 'unknown';
-                const entry = mcpServers.get(serverId) || { total: 0, active: 0 };
-                entry.total += 1;
-                if (tool.active) entry.active += 1;
-                mcpServers.set(serverId, entry);
-            } else if (tool.name.startsWith('lsp_')) {
-                lspTools.push(tool.name);
-            }
-        }
-        if (mcpServers.size) {
-            mcpServers.forEach((stats, serverId) => {
-                items.push({
-                    id: `mcp:${serverId}`,
-                    label: `MCP ${serverId}`,
-                    status: stats.active === 0 ? 'error' : (stats.active === stats.total ? 'ok' : 'warn'),
-                    detail: `${stats.active}/${stats.total} tools active`
-                });
-            });
-        } else {
-            items.push({ id: 'mcp', label: 'MCP', status: 'unknown', detail: 'no MCP servers configured' });
-        }
-        items.push(lspTools.length
-            ? { id: 'lsp', label: 'LSP', status: 'ok', detail: `${lspTools.length} tools available` }
-            : { id: 'lsp', label: 'LSP', status: 'unknown', detail: 'no LSP tools available' });
-        return items;
+        return collectHealthItems(this.appRpc, () => this.rpcRequestContext(), this.state) as any;
     }
 
     protected canThreadNavigate(): boolean {
@@ -5411,29 +5345,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async navigateThreadCycle(delta: 1 | -1): Promise<boolean> {
-        const sessionId = this.state.sessionId;
-        if (!sessionId || !this.sessionService) {
-            return false;
-        }
-        const lineage = await this.sessionService.getDelegationLineage(sessionId, { limit: 1 }, this.state);
-        const parentEdge = lineage?.[0];
-        if (!parentEdge?.parentSessionId) {
-            return false;
-        }
-        const siblings = await this.sessionService.getDelegationChildren(String(parentEdge.parentSessionId), {}, this.state);
-        if (siblings.length < 2) {
-            return false;
-        }
-        const currentIndex = siblings.findIndex(edge => String(edge.childSessionId) === sessionId);
-        if (currentIndex < 0) {
-            return false;
-        }
-        const next = siblings[(currentIndex + delta + siblings.length) % siblings.length];
-        if (!next?.childSessionId || String(next.childSessionId) === sessionId) {
-            return false;
-        }
-        await this.openSession(String(next.childSessionId));
-        return true;
+        return navigateThreadCycle(delta, this.sessionService, this.state, (sessionId: string) => this.openSession(sessionId));
     }
 
     protected async navigateThreadParent(): Promise<boolean> {

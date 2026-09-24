@@ -285,3 +285,34 @@ export function refreshThreads(state: AgentConsoleProjectionState): void {
 export function resolveCurrentProjectSessions(state: AgentConsoleProjectionState): any[] {
     return resolveProjectSessionsFor(state, state.sessionId || '');
 }
+
+export async function navigateThreadCycle(
+    delta: 1 | -1,
+    sessionService: any,
+    state: any,
+    openSession: (sessionId: string) => Promise<any>
+): Promise<boolean> {
+    const sessionId = state.sessionId;
+    if (!sessionId || !sessionService) {
+        return false;
+    }
+    const lineage = await sessionService.getDelegationLineage(sessionId, { limit: 1 }, state);
+    const parentEdge = lineage?.[0];
+    if (!parentEdge?.parentSessionId) {
+        return false;
+    }
+    const siblings = await sessionService.getDelegationChildren(String(parentEdge.parentSessionId), {}, state);
+    if (siblings.length < 2) {
+        return false;
+    }
+    const currentIndex = siblings.findIndex((edge: any) => String(edge.childSessionId) === sessionId);
+    if (currentIndex < 0) {
+        return false;
+    }
+    const next = siblings[(currentIndex + delta + siblings.length) % siblings.length];
+    if (!next?.childSessionId || String(next.childSessionId) === sessionId) {
+        return false;
+    }
+    await openSession(String(next.childSessionId));
+    return true;
+}
