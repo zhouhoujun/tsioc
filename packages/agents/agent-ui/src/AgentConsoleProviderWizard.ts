@@ -1,3 +1,5 @@
+import { AgentConsoleSelectOption } from './AgentConsoleSessionState';
+
 export type AgentWizardStepId = 'provider' | 'base-url' | 'auth' | 'credential' | 'tiers' | 'model-fast' | 'model-balanced' | 'model-strong' | 'confirm';
 
 export interface AgentWizardStepDef {
@@ -120,4 +122,75 @@ export function buildProviderWizardSummary(values: AgentWizardValues = {}): stri
         resolveWizardTierLabel(values.tiers),
         models ? `Models: ${models}` : ''
     ].filter(Boolean);
+}
+
+export function resolveWizardProviderName(values: AgentWizardValues = {}): string {
+    const def = resolveWizardProviderDef(values.providerId);
+    const base = values.providerId || 'custom';
+    if (!def) {
+        return base;
+    }
+    if (def.baseUrl) {
+        return def.id;
+    }
+    const host = String(values.baseUrl || '').replace(/^https?:\/\//i, '').split(/[/:]/)[0].trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
+    return host || 'custom';
+}
+
+export function buildProviderWizardConfirmOptions(values: AgentWizardValues = {}, canTest = false): AgentConsoleSelectOption[] {
+    const summary = buildProviderWizardSummary(values).join('\n');
+    const options: AgentConsoleSelectOption[] = [
+        { label: 'Save & activate', value: 'save-active', description: `Use ${resolveWizardProviderName(values)} immediately`, detail: summary },
+        { label: 'Save only', value: 'save', description: 'Configure now, switch later with /model', detail: summary }
+    ];
+    if (canTest && (values.credential || resolveWizardProviderDef(values.providerId)?.apiKeyEnv)) {
+        options.push({ label: 'Test connection', value: 'test', description: 'Verify the key and base URL reach the provider', detail: summary });
+    }
+    options.push({ label: 'Edit…', value: 'edit', description: 'Change a field before saving' });
+    options.push({ label: 'Cancel', value: 'cancel', description: 'Discard this provider' });
+    return options;
+}
+
+export function buildProviderWizardChoiceOptions(
+    step: AgentWizardStepDef,
+    values: AgentWizardValues = {}
+): { title: string; options: AgentConsoleSelectOption[]; selected: number } | undefined {
+    const def = resolveWizardProviderDef(values.providerId);
+    let title = 'Add provider';
+    let options: AgentConsoleSelectOption[] = [];
+    let selected = 0;
+    switch (step.id) {
+        case 'provider':
+            title = 'Add provider · choose provider';
+            options = AGENT_WIZARD_PROVIDERS.map((item, index) => ({
+                label: item.label,
+                value: item.id,
+                description: `${item.adapter} · ${item.baseUrl || 'custom base URL'}`,
+                detail: item.models.length ? `Suggested models: ${item.models.join(', ')}` : 'Bring your own base URL and model names',
+                shortcut: String(index + 1)
+            }));
+            options.push({ label: 'Cancel', value: '__cancel__', description: 'Abort adding a provider' });
+            break;
+        case 'auth':
+            title = `${def?.label || 'Provider'} · authentication`;
+            options = [
+                { label: 'Enter API key', value: 'key', description: 'Store the key in this configuration' },
+                { label: 'Use environment variable', value: 'env', description: `Reference ${def?.apiKeyEnv || 'PROVIDER_API_KEY'} from the environment` }
+            ];
+            selected = values.authMode === 'env' ? 1 : 0;
+            break;
+        case 'tiers':
+            title = `${def?.label || 'Provider'} · model routing`;
+            options = AGENT_WIZARD_TIERS.map((item, index) => ({
+                label: item.label,
+                value: item.id,
+                description: item.description,
+                shortcut: String(index + 1)
+            }));
+            selected = Math.max(0, AGENT_WIZARD_TIERS.findIndex(item => item.id === (values.tiers || 'auto')));
+            break;
+        default:
+            return undefined;
+    }
+    return { title, options, selected };
 }

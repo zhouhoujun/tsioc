@@ -194,7 +194,7 @@ import type { BackgroundTaskCancelOutcome, BackgroundTaskManager, BackgroundTask
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc, buildHarnessProjection, formatHarnessTreeLines, formatHarnessListLines, DelegationTreeNode } from '@tsdi/agent';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 import { CommandHandlerContext, COMMAND_HANDLERS } from './AgentConsoleCommandHandlers';
-import { AGENT_WIZARD_PROVIDERS, AGENT_WIZARD_TIERS, AgentWizardProviderDef, AgentWizardStepDef, buildProviderWizardSteps, buildProviderWizardSummary, buildWizardStepHelp, resolveWizardPrefill, resolveWizardProviderDef, resolveWizardTierLabel } from './AgentConsoleProviderWizard';
+import { AGENT_WIZARD_PROVIDERS, AGENT_WIZARD_TIERS, AgentWizardProviderDef, AgentWizardStepDef, buildProviderWizardChoiceOptions, buildProviderWizardConfirmOptions, buildProviderWizardSteps, buildProviderWizardSummary, buildWizardStepHelp, resolveWizardPrefill, resolveWizardProviderDef, resolveWizardProviderName, resolveWizardTierLabel } from './AgentConsoleProviderWizard';
 import {
     getAgentConsoleCommandDefinition,
     getAgentConsoleCommandName,
@@ -6887,48 +6887,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected openProviderWizardChoice(step: AgentWizardStepDef): void {
-        const wizard = this.providerWizard;
-        const values = wizard?.values || {};
-        const def = this.wizardProviderDef(values.providerId);
-        let title = 'Add provider';
-        let options: AgentConsoleSelectOption[] = [];
-        let selected = 0;
-        switch (step.id) {
-            case 'provider':
-                title = 'Add provider · choose provider';
-                options = AGENT_WIZARD_PROVIDERS.map((item, index) => ({
-                    label: item.label,
-                    value: item.id,
-                    description: `${item.adapter} · ${item.baseUrl || 'custom base URL'}`,
-                    detail: item.models.length ? `Suggested models: ${item.models.join(', ')}` : 'Bring your own base URL and model names',
-                    shortcut: String(index + 1)
-                }));
-                options.push({ label: 'Cancel', value: '__cancel__', description: 'Abort adding a provider' });
-                break;
-            case 'auth':
-                title = `${def?.label || 'Provider'} · authentication`;
-                options = [
-                    { label: 'Enter API key', value: 'key', description: 'Store the key in this configuration' },
-                    { label: 'Use environment variable', value: 'env', description: `Reference ${def?.apiKeyEnv || 'PROVIDER_API_KEY'} from the environment` }
-                ];
-                selected = values.authMode === 'env' ? 1 : 0;
-                break;
-            case 'tiers':
-                title = `${def?.label || 'Provider'} · model routing`;
-                options = AGENT_WIZARD_TIERS.map((item, index) => ({
-                    label: item.label,
-                    value: item.id,
-                    description: item.description,
-                    shortcut: String(index + 1)
-                }));
-                selected = Math.max(0, AGENT_WIZARD_TIERS.findIndex(item => item.id === (values.tiers || 'auto')));
-                break;
-            default:
-                return;
-        }
+        const built = buildProviderWizardChoiceOptions(step, this.providerWizard?.values || {});
+        if (!built) return;
         this.state.selectMenuAction = (value: string | undefined) => this.handleProviderWizardChoice(value);
         this.state.closeSelectMenu();
-        this.state.openSelectMenu(title, options, selected, 'enter confirm   esc back');
+        this.state.openSelectMenu(built.title, built.options, built.selected, 'enter confirm   esc back');
     }
 
     protected async handleProviderWizardChoice(value?: string): Promise<void> {
@@ -6968,27 +6931,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected wizardProviderName(values: NonNullable<typeof this.providerWizard>['values']): string {
-        const def = this.wizardProviderDef(values.providerId);
-        const base = values.providerId || 'custom';
-        if (!def) return base;
-        if (def.baseUrl) return def.id;
-        const host = String(values.baseUrl || '').replace(/^https?:\/\//i, '').split(/[/:]/)[0].trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
-        return host || 'custom';
+        return resolveWizardProviderName(values);
     }
 
     protected providerWizardConfirmOptions(): AgentConsoleSelectOption[] {
-        const values = this.providerWizard?.values || {};
-        const summary = this.providerWizardSummary().join('\n');
-        const options: AgentConsoleSelectOption[] = [
-            { label: 'Save & activate', value: 'save-active', description: `Use ${this.wizardProviderName(values)} immediately`, detail: summary },
-            { label: 'Save only', value: 'save', description: 'Configure now, switch later with /model', detail: summary }
-        ];
-        if (this.appRpc && (values.credential || this.wizardProviderDef(values.providerId)?.apiKeyEnv)) {
-            options.push({ label: 'Test connection', value: 'test', description: 'Verify the key and base URL reach the provider', detail: summary });
-        }
-        options.push({ label: 'Edit…', value: 'edit', description: 'Change a field before saving' });
-        options.push({ label: 'Cancel', value: 'cancel', description: 'Discard this provider' });
-        return options;
+        return buildProviderWizardConfirmOptions(this.providerWizard?.values || {}, !!this.appRpc);
     }
 
     protected openProviderWizardConfirm(): void {
