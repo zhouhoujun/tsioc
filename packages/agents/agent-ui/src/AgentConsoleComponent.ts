@@ -193,6 +193,7 @@ import { BackgroundTaskCommandHost, runBackgroundTasksCommandView } from './Agen
 import { decodeGlobalKey, describePendingToolCall, describeStreamEventContent } from './AgentConsoleStreamHelpers';
 import { AgentConsoleTurnStreamHost, AgentConsoleTurnStreamState, clearStreamingMessageState, consumeStreamChunkView, consumeStreamEventChunkView, runTurnStreamView } from './AgentConsoleTurnStreamController';
 import { AgentConsoleGlobalKeyInputHost, executeGlobalKeyActionView, handleBrowserGlobalKeyInputView } from './AgentConsoleGlobalKeyInputController';
+import { AgentConsoleTurnInputHost, submitMultilineDraftView, submitView } from './AgentConsoleTurnInputController';
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
 import { buildTurnDiagnosticsRecordOption, formatSummaryQualityTrend, openSummaryQualityRecords, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshTurnDiagnosticsDigest, refreshUsageDigest, runHarnessStopCommand } from './AgentConsoleDiagnosticsView';
 import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
@@ -2533,217 +2534,10 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async submitMultilineDraft(): Promise<void> {
-        if (!this.draftLines.length) { return; }
-        if (this.isTurnInProgress()) {
-            this.notifyBusyState();
-            return;
-        }
-        const draft = this.draftLines.join('\n');
-        const prompt = await this.enrichPromptWithMentions(draft);
-        const attachments = this.state.pendingAttachments.slice();
-        const turnMessage = this.buildTurnMessageInput(prompt, attachments);
-        const profile = this.consumePendingTurnModelProfile();
-        this.draftLines = [];
-        this.multilineMode = false;
-        this.state.pushInputHistory(draft);
-        await this.persistInputHistory();
-        this.clearStreamingMessageState();
-        const turnScope = this.state.beginTurnEventScope();
-        const userMsg: AgentMessage = {
-            id: `user-${Date.now()}`,
-            role: 'user',
-            content: prompt,
-            parts: turnMessage?.parts,
-            createdAt: Date.now()
-        };
-        const asstMsg: AgentMessage = {
-            id: `assistant-${Date.now()}`,
-            role: 'assistant',
-            content: '',
-            createdAt: Date.now(),
-            metadata: { streaming: true }
-        };
-            const baseMessages = this.state.messages.slice();
-            this.state.setInput('');
-            this.state.setStatus('running');
-            this.state.setLastError('');
-            this.state.clearPendingAttachments();
-            this.state.clearActivities();
-            this.state.pushActivity('turn', this.state.summarize(draft));
-            this.state.setMessages([...baseMessages, userMsg, asstMsg]);
-            this.updateTerminalTitle();
-        try {
-            await this.runTurnStream(prompt, asstMsg, turnMessage, profile);
-            this.clearStreamingMessageState();
-            this.ensureMessageAtTail(asstMsg.id);
-                if (this.state.status === 'running' || this.state.status === 'reasoning') {
-                    this.state.setStatus('idle');
-                    this.updateTerminalTitle();
-                }
-        } catch (error: any) {
-            this.clearStreamingMessageState();
-                this.state.setStatus('error');
-                this.state.setLastError(error.message || 'Unknown');
-                this.state.pushActivity('error', error.message || 'Unknown');
-                this.state.appendAssistantErrorMessage(error.message || 'Unknown');
-                this.updateTerminalTitle();
-        } finally {
-            this.state.clearTurnEventScope(turnScope);
-        }
+        await submitMultilineDraftView(this.turnInputHost());
     }
     async submit(): Promise<void> {
-        const value = this.state.input.trim();
-        if (!value) { return; }
-        if (this.state.providerWizard?.open && this.state.providerWizard?.phase === 'enter') {
-            await this.advanceProviderWizard(value);
-            return;
-        }
-        const editTargetId = this.editTargetMessageId;
-        const editConsumed = !!editTargetId;
-        if (editTargetId) {
-            this.editTargetMessageId = '';
-            this.lastEditSessionMessageId = '';
-            this.editDismissedAt = 0;
-        }
-        if (this.shellMultilineMode && !editConsumed && !value.startsWith('!') && !value.startsWith('/')) {
-            this.state.pushInputHistory(value);
-            const persistHistory = this.persistInputHistory();
-            this.state.setInput('');
-            this.shellDraftLines.push(value);
-            await persistHistory;
-            this.notify(`Shell draft +${this.shellDraftLines.length} line(s). Submit with '!' alone, exit with '!!'.`);
-            return;
-        }
-        if (value.startsWith('!')) {
-            this.state.pushInputHistory(value);
-            const persistHistory = this.persistInputHistory();
-            this.state.setInput('');
-            if (await this.handleShellBang(value)) {
-                await persistHistory;
-                return;
-            }
-            await persistHistory;
-            this.state.setInput(value, value.length);
-            return;
-        }
-        if (value.startsWith('/')) {
-            this.state.pushInputHistory(value);
-            const persistHistory = this.persistInputHistory();
-            this.state.setInput('');
-            if (await this.handleCommand(value)) {
-                await persistHistory;
-                return;
-            }
-            await persistHistory;
-            this.state.setInput(value, value.length);
-        }
-        let steer = false;
-        if (this.isTurnInProgress()) {
-            if (this.isSteerModeEnabled() && !this.multilineMode) {
-                // P128 steer: awaiting the in-flight stream settles microtask
-                // order so the old submit's finally (status reset) runs first.
-                steer = true;
-                await this.interruptTurn();
-                if (this.activeTurnRun) await this.activeTurnRun.catch(() => undefined);
-        } else if (this.isQueueModeEnabled()) {
-            this.enqueuePrompt(value);
-            return;
-        } else {
-            this.notifyBusyState();
-            return;
-        }
-    }
-        if (editConsumed && !value.startsWith('/') && !value.startsWith('!') && this.state.sessionId) {
-            const messages = this.state.messages.slice();
-            const editedIndex = messages.findIndex(message => message.id === editTargetId);
-            const hasLaterTurns = editedIndex >= 0 && editedIndex < messages.length - 1;
-            if (hasLaterTurns) {
-                const source = this.state.sessionId;
-                let branchId = '';
-                if (editedIndex > 0) {
-                    branchId = await this.sessionService?.forkSession(source, messages[editedIndex - 1].id) || '';
-                } else {
-                    const fresh = await this.sessionService?.ensureSession();
-                    branchId = fresh?.id || '';
-                }
-                if (branchId && branchId !== source) {
-                    await this.openSession(branchId);
-                    this.notify(`Branched into ${branchId} with your edited prompt (original preserved).`);
-                }
-            }
-        }
-        const turnSessionId = this.state.sessionId;
-        if (!steer) {
-            this.state.pushInputHistory(value);
-            await this.persistInputHistory();
-        }
-        if (this.multilineMode) {
-            this.draftLines.push(value);
-            return;
-        }
-        const prompt = await this.enrichPromptWithMentions(value);
-        const attachments = this.state.pendingAttachments.slice();
-        const turnMessage = this.buildTurnMessageInput(prompt, attachments);
-        const profile = this.consumePendingTurnModelProfile();
-        this.clearStreamingMessageState();
-        const turnScope = this.state.beginTurnEventScope();
-        const mentionFiles = this.resolveMentionDisplayFiles(value);
-        const userMetadata: Record<string, any> = {};
-        if (steer) {
-            userMetadata.kind = 'steer';
-        }
-        if (mentionFiles.length) {
-            userMetadata.mentionFiles = mentionFiles;
-        }
-        const userMessage: AgentMessage = {
-            id: `user-${Date.now()}`,
-            role: 'user',
-            content: prompt,
-            parts: turnMessage?.parts,
-            createdAt: Date.now(),
-            ...(Object.keys(userMetadata).length ? { metadata: userMetadata } : {})
-        };
-        const assistantMessage: AgentMessage = {
-            id: `assistant-${Date.now()}`,
-            role: 'assistant',
-            content: '',
-            createdAt: Date.now(),
-            metadata: { streaming: true }
-        };
-            const baseMessages = this.state.messages.slice();
-            this.state.setInput('');
-            this.state.setStatus('running');
-            this.state.setLastError('');
-            this.state.clearPendingAttachments();
-            this.state.clearActivities();
-            this.state.pushActivity('turn', this.state.summarize(value));
-            this.state.setMessages([...baseMessages, userMessage, assistantMessage]);
-            this.state.resetTurnTokenUsage();
-            this.updateTerminalTitle();
-
-        try {
-            const turnRun = this.runTurnStream(prompt, assistantMessage, turnMessage, profile);
-            this.activeTurnRun = turnRun;
-            await turnRun;
-        } catch (error: any) {
-            const message = error?.message || String(error || 'Unknown error');
-                this.state.setStatus('error');
-                this.state.setLastError(message);
-                this.state.pushActivity('error', message);
-                this.state.appendAssistantErrorMessage(message);
-                this.updateTerminalTitle();
-        } finally {
-            this.activeTurnRun = null;
-            this.ensureMessageAtTail(assistantMessage.id);
-                if (this.state.status === 'running' || this.state.status === 'reasoning') {
-                    this.state.setStatus('idle');
-                    this.updateTerminalTitle();
-                }
-                this.state.setTasksCount(this.scheduler.getTasks().length);
-            void this.refreshTurnArtifacts();
-            this.state.clearTurnEventScope(turnScope);
-            void this.drainQueuedPrompts(turnSessionId);
-        }
+        await submitView(this.turnInputHost());
     }
 
     /**
@@ -3397,6 +3191,52 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             cycleRecentModel: (delta: 1 | -1) => this.cycleRecentModel(delta),
             cycleModelVariant: () => this.cycleModelVariant(),
             queueDraft: () => this.queueDraft()
+        };
+    }
+    protected turnInputHost(): AgentConsoleTurnInputHost {
+        const self = this;
+        return {
+            state: this.state,
+            sessionService: this.sessionService,
+            scheduler: this.scheduler,
+            get draftLines() { return self.draftLines; },
+            set draftLines(value) { self.draftLines = value; },
+            get multilineMode() { return self.multilineMode; },
+            set multilineMode(value) { self.multilineMode = value; },
+            get shellMultilineMode() { return self.shellMultilineMode; },
+            set shellMultilineMode(value) { self.shellMultilineMode = value; },
+            get shellDraftLines() { return self.shellDraftLines; },
+            set shellDraftLines(value) { self.shellDraftLines = value; },
+            get editTargetMessageId() { return self.editTargetMessageId; },
+            set editTargetMessageId(value) { self.editTargetMessageId = value; },
+            get lastEditSessionMessageId() { return self.lastEditSessionMessageId; },
+            set lastEditSessionMessageId(value) { self.lastEditSessionMessageId = value; },
+            get editDismissedAt() { return self.editDismissedAt; },
+            set editDismissedAt(value) { self.editDismissedAt = value; },
+            get activeTurnRun() { return self.activeTurnRun; },
+            set activeTurnRun(value) { self.activeTurnRun = value; },
+            isTurnInProgress: () => this.isTurnInProgress(),
+            notifyBusyState: (message?: string) => this.notifyBusyState(message),
+            enrichPromptWithMentions: (input: string) => this.enrichPromptWithMentions(input),
+            buildTurnMessageInput: (prompt: string, attachments: AgentConsolePendingAttachment[]) => this.buildTurnMessageInput(prompt, attachments),
+            consumePendingTurnModelProfile: () => this.consumePendingTurnModelProfile(),
+            persistInputHistory: () => this.persistInputHistory(),
+            clearStreamingMessageState: () => this.clearStreamingMessageState(),
+            updateTerminalTitle: () => this.updateTerminalTitle(),
+            runTurnStream: (prompt: string, assistantMessage: AgentMessage, message?: AgentTurnMessageInput, profile?: string) => this.runTurnStream(prompt, assistantMessage, message, profile),
+            ensureMessageAtTail: (messageId: string) => this.ensureMessageAtTail(messageId),
+            advanceProviderWizard: (value: string) => this.advanceProviderWizard(value),
+            notify: (message: string, duration?: number) => this.notify(message, duration),
+            handleShellBang: (value: string) => this.handleShellBang(value),
+            handleCommand: (value: string) => this.handleCommand(value),
+            interruptTurn: () => this.interruptTurn(),
+            isSteerModeEnabled: () => this.isSteerModeEnabled(),
+            isQueueModeEnabled: () => this.isQueueModeEnabled(),
+            enqueuePrompt: (input: string) => this.enqueuePrompt(input),
+            openSession: (sessionId?: string, options?: { persistCurrentHistory?: boolean; fresh?: boolean }) => this.openSession(sessionId, options),
+            resolveMentionDisplayFiles: (input: string) => this.resolveMentionDisplayFiles(input),
+            refreshTurnArtifacts: () => this.refreshTurnArtifacts(),
+            drainQueuedPrompts: (sessionId: string) => this.drainQueuedPrompts(sessionId)
         };
     }
 
