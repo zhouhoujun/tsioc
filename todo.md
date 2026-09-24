@@ -55,3 +55,11 @@
 - import 清理：Formatters 别名块只留 `fmtSummaryQualityAggregate`（第 32 行整行删）、`openSummaryQualityRecordsFn` 死别名删、DiagnosticsView 行移除 2 个已删包装、DelegationView 行整行删、HarnessCommands 行加 2 个 view 函数。保留全部 registry 绑定方法（2322-2372 区 thunk 不变）。
 - 验收（已通过）：tsc 0 错误 → 10 定向 spec EXIT=0 → 全量 1404 exit 0 → 同 commit 更新基线（4298 → 4148，组件 4298 → 4147 行）→ git diff --check 干净 → lsp_diagnostics 三文件无告警。
 - 剩簇：P2 语音异步状态机（startVoiceCapture/stopVoiceCapture/playVoiceReply/decodeVoiceAudioChunk 调用点 1795 等）、`runEditorCommand`/`openExternalEditor`（外部编辑器桥）；下一步按 roadmap 转 P2 语音/编辑器控制器。
+## 2026-09-25 差距批次（gap2/gap3/gap1 已通过，7.tui）
+- 目标：修复真实 TUI 实测发现的三处差距 —— apply_patch 尺寸未受控（gap2）、settings.json 配置容器键泄漏（gap3）、未受信工作区写工具无人值守放行/失守（gap1）。
+- gap2（agent-tools）：`AgentToolsFileOptions` 新增 `maxPatchBytes?`；`apply-patch.tool.ts` 应用前检查 patch 字节数，超限（默认 96KB）返回可操作错误（含 bytes/limit/按块拆分指引）。apply-patch.spec.ts 更新，485 passing。
+- gap3（agent-cli）：`config.ts` profiles reduce 时剥离 `[container]` 前缀容器键，self-heal 写回净化结果；cli.spec.ts 新增 heal 回归（旧实现稳定失败 → 修复后通过）。79 passing。
+- gap1（agent）：新建 `project/workspace-trust.ts`（52 行）—— `WORKSPACE_MUTATING_TOOLSETS`（filesystem_write/terminal/git/process/code_execution/ai_cli）+ `WORKSPACE_MUTATING_TOOLS`（11 个写工具）+ `isWorkspaceMutatingTool` + `resolveWorkspaceTrustApproval`；`tokens.ts` `AgentWorkspaceTrustResolver` 增 `trust?(workspace)`；`run-command.ts` `provideWorkspaceTrust()` 返回含 trust；`DefaultAgentRuntime.ts` 工具调用门禁重写 —— 未受信工作区 + mutating 工具先走 `checkApproval('workspace_trust', ..., force=true)`，批准后 `trust()` 记录并 `trustApprovedForCall` 短路同调用后续审批门禁，拒绝/超时/无审批器回退原 `not trusted` + `tsdi-agent trust` 指引。
+- 新增 `test/workspace-trust.spec.ts` 6 用例（未受信阻止 / 已受信放行 / 批准执行+记录 / 拒绝阻止不记录 / 非 mutating 绕过 / 同轮二次调用跳过门禁），全量 agent 903 passing。
+- 验收（已通过）：3 包 tsc --noEmit 0 错误 → agent-cli 79 + agent-tools 485 + agent 903 全量 exit 0 → 同 commit 更新基线（DefaultAgentRuntime 3579 → 3576）→ source-size OK → git diff --check 干净 → lsp_diagnostics 全部变更文件无告警。
+- 待办：DeepSeek 余额 402 阻断真实 sleep-mlt 实测；充值后跑真实 turn 验证受信/未受信写工具行为并继续记录差距。
