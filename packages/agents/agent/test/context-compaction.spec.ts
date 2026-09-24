@@ -971,6 +971,46 @@ export class ContextCompactionTest {
         expect(result.length).toBeGreaterThan(0);
     }
 
+    @Test('pruneHistory keeps multi-call tool rounds paired when the window splits them')
+    async pruneHistoryKeepsMultiCallToolRoundsPaired() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 100, maxToolResults: 40, recentMessageWindow: 2, compactionMinTokens: 50 });
+        const filler = 'x'.repeat(200);
+        const messages: AgentMessage[] = [
+            { id: 'sys', role: 'system', content: filler, createdAt: 0 },
+            { id: 'u', role: 'user', content: filler, createdAt: 1 },
+            { id: 'a0', role: 'assistant', content: filler, metadata: { toolCalls: [{ id: 't0', name: 'x' }] } as any, createdAt: 2 },
+            { id: 'r0', role: 'tool', content: filler, toolCallId: 't0', createdAt: 3 } as any,
+            { id: 'a0b', role: 'assistant', content: filler, metadata: { toolCalls: [{ id: 't0b', name: 'x' }] } as any, createdAt: 4 },
+            { id: 'r0b', role: 'tool', content: filler, toolCallId: 't0b', createdAt: 5 } as any,
+            { id: 'a1', role: 'assistant', content: filler, metadata: { toolCalls: [{ id: 't1', name: 'x' }, { id: 't2', name: 'x' }] } as any, createdAt: 6 },
+            { id: 'r1', role: 'tool', content: filler, toolCallId: 't1', createdAt: 7 } as any,
+            { id: 'r2', role: 'tool', content: filler, toolCallId: 't2', createdAt: 8 } as any,
+            { id: 'a2', role: 'assistant', content: filler, metadata: { toolCalls: [{ id: 't3', name: 'x' }, { id: 't4', name: 'x' }] } as any, createdAt: 9 },
+            { id: 'r3', role: 'tool', content: filler, toolCallId: 't3', createdAt: 10 } as any,
+            { id: 'r4', role: 'tool', content: filler, toolCallId: 't4', createdAt: 11 } as any
+        ];
+
+        const result = ctx.pruneHistory(messages);
+        const issued = new Set<string>();
+        const answered = new Set<string>();
+        for (const message of result) {
+            const toolCalls = (message.metadata as any)?.toolCalls as Array<{ id?: string }> | undefined;
+            if (message.role === 'assistant' && Array.isArray(toolCalls)) {
+                for (const call of toolCalls) {
+                    if (call.id) {
+                        issued.add(call.id);
+                    }
+                }
+            }
+            if (message.role === 'tool' && message.toolCallId) {
+                answered.add(message.toolCallId);
+            }
+        }
+        expect([...issued].every(id => answered.has(id))).toEqual(true);
+        expect([...answered].every(id => issued.has(id))).toEqual(true);
+    }
+
     /* --- progressive compression levels --- */
 
     @Test('selectCompactionLevel returns light when tokens are well within budget')

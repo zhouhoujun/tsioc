@@ -282,6 +282,21 @@ export class AgentContextManager {
     }
 
     /**
+     * True when there is prior-turn history beyond the recent window that
+     * compaction could actually summarize. The in-flight turn is never
+     * compacted, so a session whose messages are all in the current turn has
+     * nothing to compact and must not report a compaction.
+     */
+    hasCompactableHistory(messages: AgentMessage[], currentUserMessageId?: string): boolean {
+        const turnIndex = currentUserMessageId
+            ? messages.findIndex(message => message.id === currentUserMessageId)
+            : -1;
+        const prefix = turnIndex >= 0 ? messages.slice(0, turnIndex) : messages;
+        const conversation = prefix.filter(message => message.role !== 'system');
+        return conversation.length > this.effectiveRecentWindow;
+    }
+
+    /**
      * Stash a snapshot of original messages before compaction so detail recovery
      * can retrieve them later when a user query references compacted content.
      */
@@ -594,10 +609,10 @@ export class AgentContextManager {
         return this.adaptiveEnabled ? this.dynamicRecentWindow : this.budget.recentMessageWindow;
     }
 
-    async prepareHistory(messages: AgentMessage[], sessionId?: string): Promise<{ messages: AgentMessage[]; report: ContextPreparationReport }> {
+    async prepareHistory(messages: AgentMessage[], sessionId?: string, currentUserMessageId?: string): Promise<{ messages: AgentMessage[]; report: ContextPreparationReport }> {
         const beforeMessageCount = messages.length;
         const beforeTokens = this.estimateMessages(messages);
-        const compactionTriggered = this.shouldCompact(messages);
+        const compactionTriggered = this.shouldCompact(messages) && this.hasCompactableHistory(messages, currentUserMessageId);
         const signals = compactionTriggered ? this.analyzeCompactionSignals(messages) : undefined;
         const level: CompactionLevel = compactionTriggered
             ? this.selectCompactionLevel(beforeTokens, signals)
@@ -609,7 +624,8 @@ export class AgentContextManager {
             });
         }
 
-        const prepared = await this.prepareHistoryCore(messages, sessionId, beforeMessageCount, beforeTokens, compactionTriggered, level);
+        const prepared = await this.prepareHistoryCore(messages, sessionId, beforeMessageCount, beforeTokens, compactionTriggered, level, currentUserMessageId);
+        prepared.messages = this.repairToolPairing(prepared.messages);
         if (compactionTriggered && this.compactionHookRunner) {
             const summary = this.extractCompactionSummary(prepared.messages);
             await this.compactionHookRunner('afterCompaction', {
@@ -648,6 +664,7 @@ export class AgentContextManager {
         }
 
         const prepared = await this.prepareHistoryCore(messages, sessionId, beforeMessageCount, beforeTokens, compactionTriggered, level);
+        prepared.messages = this.repairToolPairing(prepared.messages);
 
         if (this.compactionHookRunner) {
             const summary = this.extractCompactionSummary(prepared.messages);
@@ -667,10 +684,10 @@ export class AgentContextManager {
         return prepared;
     }
 
-    private async prepareHistoryCore(messages: AgentMessage[], sessionId: string | undefined, beforeMessageCount: number, beforeTokens: number, compactionTriggered: boolean, level: CompactionLevel): Promise<{ messages: AgentMessage[]; report: ContextPreparationReport }> {
+    private async prepareHistoryCore(messages: AgentMessage[], sessionId: string | undefined, beforeMessageCount: number, beforeTokens: number, compactionTriggered: boolean, level: CompactionLevel, currentUserMessageId?: string): Promise<{ messages: AgentMessage[]; report: ContextPreparationReport }> {
 
         // compact tool message outputs across all levels (pre-level check)
-        const toolPrepared = this.compactToolMessagesForContext(messages);
+        const toolPrepared = this.compactToolMessagesForContext(messages, currentUserMessageId);
         const workingMessages = toolPrepared.messages;
 
         // Record token growth for adaptive budget (affects next call)
@@ -684,7 +701,7 @@ export class AgentContextManager {
             // This preserves the pre-existing behavior where any compaction trigger with a
             // summarizer would go through compactHistoryWithReport.
             if (this.summarizer && compactionTriggered) {
-                const prepared = await this.compactHistoryWithReport(workingMessages, beforeMessageCount, beforeTokens, toolPrepared.compactedCount, toolPrepared.recentMessageCount, level);
+                const prepared = await this.compactHistoryWithReport(workingMessages, beforeMessageCount, beforeTokens, toolPrepared.compactedCount, toolPrepared.recentMessageCount, level, currentUserMessageId);
                 if (sessionId) {
                     this.stashOriginalMessages(sessionId, messages, level);
                 }
@@ -729,7 +746,7 @@ export class AgentContextManager {
             this.stashOriginalMessages(sessionId, messages, level);
         }
 
-        return this.applyCompactionReplay(messages, await this.compactHistoryWithReport(workingMessages, beforeMessageCount, beforeTokens, toolPrepared.compactedCount, toolPrepared.recentMessageCount, level), beforeTokens);
+        return this.applyCompactionReplay(messages, await this.compactHistoryWithReport(workingMessages, beforeMessageCount, beforeTokens, toolPrepared.compactedCount, toolPrepared.recentMessageCount, level, currentUserMessageId), beforeTokens);
     }
 
     private extractCompactionSummary(messages: AgentMessage[]): string | undefined {
@@ -820,7 +837,7 @@ export class AgentContextManager {
         return prepared.messages;
     }
 
-    private splitMessagesForCompaction(messages: AgentMessage[]): {
+    private splitMessagesForCompaction(messages: AgentMessage[], currentUserMessageId?: string): {
         systemMessages: AgentMessage[];
         oldMessages: AgentMessage[];
         recentMessages: AgentMessage[];
@@ -842,6 +859,14 @@ export class AgentContextManager {
 
         const recentCount = Math.max(1, this.effectiveRecentWindow);
         let startIndex = Math.max(conversation.length - recentCount, 0);
+        if (currentUserMessageId) {
+            const turnIndex = conversation.findIndex(message => message.id === currentUserMessageId);
+            // Never compact the in-flight turn: its tool calls and results are the
+            // model's working set. Only prior turns are eligible for summarization.
+            if (turnIndex >= 0 && turnIndex < startIndex) {
+                startIndex = turnIndex;
+            }
+        }
         for (let cursor = conversation.length - 1; cursor >= startIndex; cursor--) {
             const message = conversation[cursor];
             if (message.role !== 'tool' || !message.toolCallId) {
@@ -861,7 +886,7 @@ export class AgentContextManager {
         };
     }
 
-    private async compactHistoryWithReport(messages: AgentMessage[], beforeMessageCount: number, beforeTokens: number, toolMessagesCompacted: number, preparedRecentMessageCount: number, level: CompactionLevel): Promise<{ messages: AgentMessage[]; report: ContextPreparationReport }> {
+    private async compactHistoryWithReport(messages: AgentMessage[], beforeMessageCount: number, beforeTokens: number, toolMessagesCompacted: number, preparedRecentMessageCount: number, level: CompactionLevel, currentUserMessageId?: string): Promise<{ messages: AgentMessage[]; report: ContextPreparationReport }> {
         const buildReport = (overrides: Partial<ContextPreparationReport> & { afterTokens: number; strategy: ContextPreparationReport['strategy']; compactedMessageCount: number; preservedAnchorCount: number; afterMessageCount: number }): ContextPreparationReport => {
             const afterTokens = overrides.afterTokens;
             const savings = beforeTokens - afterTokens;
@@ -901,7 +926,7 @@ export class AgentContextManager {
             };
         }
 
-        const { systemMessages, oldMessages, recentMessages } = this.splitMessagesForCompaction(messages);
+        const { systemMessages, oldMessages, recentMessages } = this.splitMessagesForCompaction(messages, currentUserMessageId);
         if (oldMessages.length === 0) {
             return {
                 messages,
@@ -1018,70 +1043,167 @@ export class AgentContextManager {
         // compute a budget-aware recent window instead of a fixed 20-message tail
         const recentTargetMessages = Math.max(4, Math.floor(this.budget.maxHistoryTokens / 200));
         const recentThreshold = Math.max(pruned.length - recentTargetMessages, 0);
-        const assistantToolCallIds = new Set<string>();
-        for (let i = 0; i < recentThreshold; i++) {
-            const msgMeta = pruned[i].metadata;
-            if (pruned[i].role === 'assistant' && msgMeta?.toolCalls) {
-                const toolCalls: Array<{ id: string }> = msgMeta.toolCalls as any;
-                for (const tc of toolCalls) {
-                    assistantToolCallIds.add(tc.id);
-                }
-            }
-        }
-        const droppedToolIds = new Set<string>();
-        for (let i = 0; i < recentThreshold; i++) {
-            const toolCallId = pruned[i].toolCallId;
-            if (pruned[i].role === 'tool' && toolCallId && assistantToolCallIds.has(toolCallId)) {
-                droppedToolIds.add(toolCallId);
-            }
-        }
-        const retainedToolCallIds = new Set<string>();
+
+        const resultIndexByToolCallId = new Map<string, number>();
         for (let i = 0; i < pruned.length; i++) {
-            const toolCallId = pruned[i].toolCallId;
-            if (pruned[i].role !== 'tool' || !toolCallId) {
+            const message = pruned[i];
+            if (message.role === 'tool' && message.toolCallId) {
+                resultIndexByToolCallId.set(message.toolCallId, i);
+            }
+        }
+
+        // Drop or keep a whole tool round at once. Dropping only part of a round
+        // (some tool calls without their results) produces an orphaned function
+        // call that providers reject with 400.
+        const droppedIndices = new Set<number>();
+        const keptToolCallIds = new Set<string>();
+        for (let i = 0; i < pruned.length; i++) {
+            const message = pruned[i];
+            if (message.role !== 'assistant') {
                 continue;
             }
-            if (i >= recentThreshold || !droppedToolIds.has(toolCallId)) {
-                retainedToolCallIds.add(toolCallId);
+            const toolCalls = message.metadata?.toolCalls as Array<{ id?: string }> | undefined;
+            if (!Array.isArray(toolCalls) || toolCalls.length === 0) {
+                continue;
+            }
+            if (i >= recentThreshold) {
+                for (const call of toolCalls) {
+                    if (call.id) {
+                        keptToolCallIds.add(call.id);
+                    }
+                }
+                continue;
+            }
+            const resultIndices = toolCalls
+                .map(call => (call.id ? resultIndexByToolCallId.get(call.id) : undefined))
+                .filter((index): index is number => index !== undefined);
+            const roundFullyInPrefix = resultIndices.every(index => index < recentThreshold);
+            if (roundFullyInPrefix) {
+                droppedIndices.add(i);
+                for (const index of resultIndices) {
+                    droppedIndices.add(index);
+                }
+            } else {
+                for (const call of toolCalls) {
+                    if (call.id) {
+                        keptToolCallIds.add(call.id);
+                    }
+                }
             }
         }
 
         const kept: AgentMessage[] = [];
         for (let i = 0; i < pruned.length; i++) {
+            const message = pruned[i];
             if (i >= recentThreshold) {
-                kept.push(pruned[i]);
+                kept.push(message);
                 continue;
             }
-            if (pruned[i].role === 'system' || pruned[i].role === 'user') {
-                kept.push(pruned[i]);
-                continue;
-            }
-            const tcId = pruned[i].toolCallId;
-            if (pruned[i].role === 'tool' && tcId && droppedToolIds.has(tcId)) {
-                continue;
-            }
-            if (pruned[i].role === 'assistant' && pruned[i].metadata?.toolCalls) {
-                const toolCalls = (pruned[i].metadata?.toolCalls ?? []) as Array<{ id: string }>;
-                if (toolCalls.some(toolCall => retainedToolCallIds.has(toolCall.id))) {
-                    kept.push(pruned[i]);
+            if (droppedIndices.has(i) || message.role === 'system' || message.role === 'user') {
+                if (!droppedIndices.has(i)) {
+                    kept.push(message);
                 }
                 continue;
             }
-            if (pruned[i].role === 'assistant') {
-                kept.push(pruned[i]);
+            if (message.role === 'tool') {
+                if (message.toolCallId && keptToolCallIds.has(message.toolCallId)) {
+                    kept.push(message);
+                }
                 continue;
+            }
+            if (message.role === 'assistant') {
+                kept.push(message);
             }
         }
 
         if (kept.length < 4) {
-            return messages.slice(-Math.min(10, messages.length));
+            return this.sliceRetainingToolRounds(messages, messages.length - Math.min(10, messages.length));
         }
 
         if (this.estimateMessages(kept) <= this.budget.maxHistoryTokens) {
             return kept;
         }
 
-        return kept.slice(-Math.max(8, Math.floor(this.budget.maxHistoryTokens / 100)));
+        return this.sliceRetainingToolRounds(kept, kept.length - Math.max(8, Math.floor(this.budget.maxHistoryTokens / 100)));
+    }
+
+    private repairToolPairing(messages: AgentMessage[]): AgentMessage[] {
+        const hasAssistantToolCallMetadata = messages.some(message => {
+            if (message.role !== 'assistant') {
+                return false;
+            }
+            const toolCalls = message.metadata?.toolCalls as Array<{ id?: string }> | undefined;
+            return Array.isArray(toolCalls) && toolCalls.length > 0;
+        });
+        if (!hasAssistantToolCallMetadata) {
+            return messages;
+        }
+        const answeredIds = new Set<string>();
+        for (const message of messages) {
+            if (message.role === 'tool' && message.toolCallId) {
+                answeredIds.add(message.toolCallId);
+            }
+        }
+        const dropIds = new Set<string>();
+        for (const message of messages) {
+            const toolCalls = message.metadata?.toolCalls as Array<{ id?: string }> | undefined;
+            if (message.role === 'assistant' && Array.isArray(toolCalls) && toolCalls.length > 0) {
+                if (toolCalls.some(call => call?.id && !answeredIds.has(call.id))) {
+                    dropIds.add(message.id);
+                }
+            }
+        }
+        if (!dropIds.size) {
+            return messages;
+        }
+        const keptCallIds = new Set<string>();
+        for (const message of messages) {
+            if (dropIds.has(message.id)) {
+                continue;
+            }
+            const toolCalls = message.metadata?.toolCalls as Array<{ id?: string }> | undefined;
+            if (message.role === 'assistant' && Array.isArray(toolCalls)) {
+                for (const call of toolCalls) {
+                    if (call?.id) {
+                        keptCallIds.add(call.id);
+                    }
+                }
+            }
+        }
+        for (const message of messages) {
+            if (message.role === 'tool' && message.toolCallId && !keptCallIds.has(message.toolCallId)) {
+                dropIds.add(message.id);
+            }
+        }
+        return messages.filter(message => !dropIds.has(message.id));
+    }
+
+    // Align a tail window start to tool-round boundaries so pairing is preserved.
+    private sliceRetainingToolRounds(messages: AgentMessage[], start: number): AgentMessage[] {
+        if (start <= 0) {
+            return messages.slice();
+        }
+        if (messages[start]?.role === 'tool') {
+            const leadingToolCallIds = new Set<string>();
+            let probe = start;
+            while (probe > 0 && messages[probe].role === 'tool') {
+                if (messages[probe].toolCallId) {
+                    leadingToolCallIds.add(messages[probe].toolCallId!);
+                }
+                probe--;
+            }
+            const owner = messages[probe];
+            const toolCalls = owner?.metadata?.toolCalls as Array<{ id?: string }> | undefined;
+            if (owner?.role === 'assistant' && Array.isArray(toolCalls)
+                && toolCalls.some(call => call.id && leadingToolCallIds.has(call.id))) {
+                start = probe;
+            } else {
+                while (start < messages.length && messages[start].role === 'tool') {
+                    start++;
+                }
+            }
+        }
+        return messages.slice(start);
     }
 
     /**
@@ -1139,6 +1261,50 @@ export class AgentContextManager {
             if (latestToolState && !recentIds.has(latestToolState.id) && !pinnedIds.has(latestToolState.id)) {
                 pinnedIds.add(latestToolState.id);
                 anchors.push(latestToolState);
+            }
+        }
+
+        // An anchored tool result is only valid together with the assistant call that
+        // issued it and all sibling results; otherwise the transcript has a tool call
+        // without its output (providers reject it).
+        const anchoredToolCallIds = new Set<string>();
+        for (const anchor of anchors) {
+            if (anchor.role === 'tool' && anchor.toolCallId) {
+                anchoredToolCallIds.add(anchor.toolCallId);
+            }
+        }
+        const pinnedAssistantCallIds = new Set<string>();
+        for (const message of oldMessages) {
+            const toolCalls = message.metadata?.toolCalls as Array<{ id?: string }> | undefined;
+            if (message.role !== 'assistant' || !Array.isArray(toolCalls)) {
+                continue;
+            }
+            if (toolCalls.some(call => call.id && anchoredToolCallIds.has(call.id))) {
+                pinnedIds.add(message.id);
+                for (const call of toolCalls) {
+                    if (call.id) {
+                        pinnedAssistantCallIds.add(call.id);
+                    }
+                }
+            }
+        }
+        for (const message of oldMessages) {
+            if (message.role === 'tool' && message.toolCallId && pinnedAssistantCallIds.has(message.toolCallId)) {
+                pinnedIds.add(message.id);
+            }
+        }
+        const hasAssistantToolCallMetadata = oldMessages.some(message => {
+            if (message.role !== 'assistant') {
+                return false;
+            }
+            const toolCalls = message.metadata?.toolCalls as Array<{ id?: string }> | undefined;
+            return Array.isArray(toolCalls) && toolCalls.length > 0;
+        });
+        if (hasAssistantToolCallMetadata) {
+            for (const anchor of anchors) {
+                if (anchor.role === 'tool' && anchor.toolCallId && !pinnedAssistantCallIds.has(anchor.toolCallId)) {
+                    pinnedIds.delete(anchor.id);
+                }
             }
         }
 
@@ -1306,12 +1472,12 @@ export class AgentContextManager {
         return message.content.slice(0, this.budget.maxToolResults) + '...[truncated]';
     }
 
-    private compactToolMessagesForContext(messages: AgentMessage[]): {
+    private compactToolMessagesForContext(messages: AgentMessage[], currentUserMessageId?: string): {
         messages: AgentMessage[];
         compactedCount: number;
         recentMessageCount: number;
     } {
-        const { systemMessages, oldMessages, recentMessages } = this.splitMessagesForCompaction(messages);
+        const { systemMessages, oldMessages, recentMessages } = this.splitMessagesForCompaction(messages, currentUserMessageId);
         // Protect stateful/error tool messages in the old section from content compaction,
         // so resolveCompactionAnchors can still detect them as anchors during summarization.
         // Only protect messages where statefulness is content-derived (no receipt/error metadata),
