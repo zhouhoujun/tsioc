@@ -75,3 +75,23 @@ export function resolveToolCallArgument(input: any): string {
     const collapsed = value.replace(/\s+/g, ' ').trim();
     return collapsed.length > 48 ? `${collapsed.slice(0, 47)}…` : collapsed;
 }
+
+export function resolveStreamEventLabel(eventType: string): string {
+    switch (eventType) {
+        case 'reasoning':
+            return 'think';
+        case 'tool_invoked':
+        case 'tool_completed':
+        case 'tool_failed':
+        case 'tool_skipped':
+            return 'tool';
+        case 'approval_requested':
+        case 'approval_completed':
+        case 'approval_failed':
+            return 'approval';
+        case 'error':
+            return 'error';
+        default:
+            return 'state';
+    }
+}

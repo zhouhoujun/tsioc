@@ -192,7 +192,8 @@ import {
 import { VIM_ACTION_NAMES, isConsoleVimAction } from './AgentConsoleVim';
 import type { BackgroundTaskCancelOutcome, BackgroundTaskManager, BackgroundTaskRecord, BackgroundTaskRestoreOutcome } from '@tsdi/agent-tools';
 import { formatBackgroundTaskDetail } from './AgentConsoleBackgroundTaskFormat';
-import { decodeGlobalKey, resolveToolCallArgument } from './AgentConsoleStreamHelpers';
+import { decodeGlobalKey, resolveStreamEventLabel, resolveToolCallArgument } from './AgentConsoleStreamHelpers';
+import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
 import { buildTurnDiagnosticsRecordOption, formatSummaryQualityTrend, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs } from './AgentConsoleDiagnosticsView';
 import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
 import { flattenProjectSessions, refreshProjects, refreshThreads, resolveProjectSessionsFor, resolveSessionProjectKey, resolveSessionThreadKey, resolveThreadKeyForSession, resolveThreadSessionsFor, selectProjectRepresentative } from './AgentConsoleProjectProjection';
@@ -4001,23 +4002,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected resolveStreamEventLabel(eventType: string): string {
-        switch (eventType) {
-            case 'reasoning':
-                return 'think';
-            case 'tool_invoked':
-            case 'tool_completed':
-            case 'tool_failed':
-            case 'tool_skipped':
-                return 'tool';
-            case 'approval_requested':
-            case 'approval_completed':
-            case 'approval_failed':
-                return 'approval';
-            case 'error':
-                return 'error';
-            default:
-                return 'state';
-        }
+        return resolveStreamEventLabel(eventType);
     }
 
     protected findStreamingAssistantMessageIndex(messages: AgentMessage[], message?: AgentMessage): number {
@@ -7092,26 +7077,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected buildGitSnapshotDiffLines(diff: Record<string, any>): string[] {
-        const lines: string[] = [];
-        const rawPatch = String(diff.rawPatch ?? diff.patch ?? '');
-        if (rawPatch) {
-            const parts = rawPatch.replace(/\r\n/g, '\n').split('\n');
-            while (parts.length && parts[parts.length - 1] === '') {
-                parts.pop();
-            }
-            lines.push(...parts);
-            return lines;
-        }
-        const files = Array.isArray(diff.files) ? diff.files : [];
-        for (const file of files) {
-            const filePath = String(file?.filePath ?? file?.path ?? '?');
-            lines.push(`diff --git a/${filePath} b/${filePath}`);
-            const status = String(file?.status ?? '');
-            if (status) {
-                lines.push(`status: ${status}`);
-            }
-        }
-        return lines;
+        return buildGitSnapshotDiffLines(diff);
     }
 
     protected async activateModelProfile(profileName: string): Promise<void> {
