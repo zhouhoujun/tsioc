@@ -203,6 +203,7 @@ import { listSshHosts, connectSshHost, forwardSshTunnel } from './AgentConsoleSs
 import { selectApprovalRequest } from './AgentConsoleApprovalView';
 import { formatDelegationEdge, formatDelegationTree, pickDelegationGoal, shortenSessionId } from './AgentConsoleDelegationView';
 import { runDisplayCommand, runExperimentalCommand, runTimelineModeCommand, runVimCommand, openSettingsKeybindsTab } from './AgentConsoleSettingsCommands';
+import { AgentConsoleRuntimeHost, runFastCommand, runRawModeCommand, runStatusCommand, runStatuslineCommand, runThemeCommand, runTitleCommand } from './AgentConsoleRuntimeCommands';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc, buildHarnessProjection, formatHarnessTreeLines, formatHarnessListLines, DelegationTreeNode } from '@tsdi/agent';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 import { CommandHandlerContext, COMMAND_HANDLERS } from './AgentConsoleCommandHandlers';
@@ -3772,23 +3773,30 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         }
     }
 
+    protected runtimeHost(): AgentConsoleRuntimeHost {
+        return {
+            state: this.state,
+            options: this.options,
+            runtime: this.runtime,
+            appRpc: this.appRpc,
+            rawModeStore: this.rawModeStore,
+            activeThemeName: this.activeThemeName,
+            notify: (message: string) => this.notify(message),
+            select: (title: string, options: any[], index: number, hint?: string) => this.select(title, options, index, hint),
+            pushCommandOutput: (command: string, text: string, kind?: any) => this.pushCommandOutput(command, text, kind),
+            applyTheme: (name: string) => this.applyTheme(name),
+            applyStatusline: (fields: any[]) => this.applyStatusline(fields as any),
+            applyTitleFields: (fields: any[]) => this.applyTitleFields(fields as any),
+            activateModelProfile: (profile: string) => this.activateModelProfile(profile),
+            resolveHistoryWorkspace: () => this.resolveHistoryWorkspace(),
+            getSessionSandboxMode: (sessionId: string) => this.getSessionSandboxMode(sessionId),
+            getSessionDelegationMode: (sessionId: string) => this.getSessionDelegationMode(sessionId),
+            rpcRequestContext: () => this.rpcRequestContext()
+        };
+    }
+
     protected async runThemeCommand(args?: string): Promise<boolean> {
-        const requested = String(args || '').trim().toLowerCase();
-        if (!requested) {
-            const selected = await this.select(
-                'Theme',
-                agentConsoleThemeNames.map(name => ({
-                    label: `${name === this.activeThemeName ? '● ' : '  '}${name}`,
-                    value: name,
-                    description: name === this.activeThemeName ? 'active theme' : 'apply and save'
-                })),
-                Math.max(0, agentConsoleThemeNames.indexOf(this.activeThemeName)),
-                'enter apply   esc cancel'
-            );
-            if (!selected) return true;
-            return this.applyTheme(selected);
-        }
-        return this.applyTheme(requested);
+        return runThemeCommand(this.runtimeHost(), args);
     }
 
     protected async runThinkingCommand(args?: string): Promise<boolean> {
@@ -3805,22 +3813,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runRawModeCommand(args?: string): Promise<boolean> {
-        const requested = String(args || '').trim().toLowerCase();
-        if (requested === 'on' || requested === 'show') {
-            this.state.setRawMode(true);
-        } else if (requested === 'off' || requested === 'hide') {
-            this.state.setRawMode(false);
-        } else {
-            this.state.setRawMode(!this.state.rawMode);
-        }
-        try {
-            await this.rawModeStore?.save(this.resolveHistoryWorkspace(), this.state.rawMode);
-        } catch (error: any) {
-            this.notify(error?.message || 'Failed to save raw mode.');
-            return true;
-        }
-        this.notify(this.state.rawMode ? 'Raw mode enabled (plain text scrollback).' : 'Raw mode disabled (markdown rendering).');
-        return true;
+        return runRawModeCommand(this.runtimeHost(), args);
     }
 
     protected async runStashCommand(args?: string): Promise<boolean> {
@@ -4013,36 +4006,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runTitleCommand(args?: string): Promise<boolean> {
-        const parsed = String(args || '').trim();
-        if (!parsed || parsed.toLowerCase() === 'list') {
-            const current = this.state.titleFields;
-            this.pushCommandOutput('/title list', `Window title: ${current.join(', ')}. Use /title set field1,field2 or unset field.`);
-            return true;
-        }
-        const [verb, ...rest] = parsed.split(/\s+/);
-        const requested = rest.join(' ').split(',').map(part => part.trim()).filter(Boolean);
-        if (verb.toLowerCase() === 'set') {
-            if (!requested.length) {
-                this.notify('Usage: /title set project,status,thread,branch,model,context,task');
-                return true;
-            }
-            const invalid = requested.filter(field => !isAgentConsoleTitleField(field));
-            if (invalid.length) {
-                this.notify(`Unknown window title field "${invalid[0]}". Available: ${defaultAgentConsoleTitle.join(', ')}.`);
-                return true;
-            }
-            return this.applyTitleFields(normalizeAgentConsoleTitle(requested));
-        }
-        if (verb.toLowerCase() === 'unset') {
-            const remaining = this.state.titleFields.filter(field => !requested.includes(field));
-            if (remaining.length === this.state.titleFields.length) {
-                this.notify(`Field "${requested[0]}" is not in the window title. Current: ${this.state.titleFields.join(', ')}.`);
-                return true;
-            }
-            return this.applyTitleFields(normalizeAgentConsoleTitle(remaining));
-        }
-        this.notify('Usage: /title [list|set field1,field2|unset field]');
-        return true;
+        return runTitleCommand(this.runtimeHost(), args);
     }
 
     protected async applyTitleFields(fields: AgentConsoleTitleField[]): Promise<boolean> {
@@ -4075,36 +4039,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runStatuslineCommand(args?: string): Promise<boolean> {
-        const parsed = String(args || '').trim();
-        if (!parsed || parsed.toLowerCase() === 'list') {
-            const current = this.state.statusline;
-            this.pushCommandOutput('/statusline list', `Statusline: ${current.join(', ')}. Use /statusline set field1,field2 or unset field.`);
-            return true;
-        }
-        const [verb, ...rest] = parsed.split(/\s+/);
-        const requested = rest.join(' ').split(',').map(part => part.trim()).filter(Boolean);
-        if (verb.toLowerCase() === 'set') {
-            if (!requested.length) {
-                this.notify('Usage: /statusline set model,context,git-branch,tokens,session,workspace,agent');
-                return true;
-            }
-            const invalid = requested.filter(field => !isAgentConsoleStatuslineField(field));
-            if (invalid.length) {
-                this.notify(`Unknown statusline field "${invalid[0]}". Available: ${defaultAgentConsoleStatusline.join(', ')}.`);
-                return true;
-            }
-            return this.applyStatusline(normalizeAgentConsoleStatusline(requested));
-        }
-        if (verb.toLowerCase() === 'unset') {
-            const remaining = this.state.statusline.filter(field => !requested.includes(field));
-            if (remaining.length === this.state.statusline.length) {
-                this.notify(`Field "${requested[0]}" is not in the statusline. Current: ${this.state.statusline.join(', ')}.`);
-                return true;
-            }
-            return this.applyStatusline(normalizeAgentConsoleStatusline(remaining));
-        }
-        this.notify('Usage: /statusline [list|set field1,field2|unset field]');
-        return true;
+        return runStatuslineCommand(this.runtimeHost(), args);
     }
 
     protected async applyStatusline(fields: AgentConsoleStatuslineField[]): Promise<boolean> {
@@ -4231,19 +4166,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runFastCommand(args?: string): Promise<boolean> {
-        const requested = String(args || '').trim().toLowerCase();
-        const profiles = (this.options.model?.profiles || {}) as Record<string, unknown>;
-        if (requested && !profiles[requested]) {
-            this.notify(`Unknown model profile "${requested}". Available: ${Object.keys(profiles).join(', ') || 'none'}.`);
-            return true;
-        }
-        const target = requested || (this.state.modelProfile === 'fast' ? 'strong' : 'fast');
-        if (!profiles[target]) {
-            this.notify(`No "${target}" model profile configured. Configure model.profiles.fast / model.profiles.strong.`);
-            return true;
-        }
-        await this.activateModelProfile(target);
-        return true;
+        return runFastCommand(this.runtimeHost(), args);
     }
 
     protected async runPersonalityCommand(args?: string): Promise<boolean> {
@@ -6354,38 +6277,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runStatusCommand(): Promise<void> {
-        const sessionId = this.state.sessionId;
-        let planMode = this.state.planMode;
-        let sandboxMode = await this.getSessionSandboxMode(sessionId).catch(() => 'default');
-        let delegationMode = await this.getSessionDelegationMode(sessionId).catch(() => 'explicit');
-        let archetype = (this.runtime as any).getSessionArchetype?.(sessionId) ?? 'build';
-        let exchangeText = '';
-        let exchangeCounts: ExchangeMetricsSnapshot | null = null;
-        if (this.appRpc) {
-            const result = await this.appRpc.request('session.plan_mode.get', { sessionId }, this.rpcRequestContext()).catch(() => null);
-            planMode = result?.enabled === true;
-            const archetypeResult = await this.appRpc.request('session.archetype.get', { sessionId }, this.rpcRequestContext()).catch(() => null);
-            if (archetypeResult?.archetype) {
-                archetype = String(archetypeResult.archetype);
-            }
-            const metrics = await this.appRpc.request('command_exchange.metrics', {}, this.rpcRequestContext()).catch(() => null);
-            if (metrics?.dropped != null) {
-                exchangeCounts = { dropped: metrics.dropped, stale: metrics.stale, duplicate: metrics.duplicate, unauthorized: metrics.unauthorized };
-                exchangeText = ` · exchange d${metrics.dropped} s${metrics.stale} dup${metrics.duplicate} u${metrics.unauthorized}`;
-            }
-        }
-        const model = this.state.modelProfile || this.state.model || 'default';
-        const planModeText = planMode ? 'ON (read-only)' : 'off';
-        this.pushCommandOutput('/status', `session ${sessionId} · model ${model} · archetype ${archetype} · plan mode ${planModeText} · sandbox ${sandboxMode} · delegation ${delegationMode}${exchangeText}`);
-        this.state.openTextOverlay('status', [
-            `session: ${sessionId}`,
-            `model: ${model}`,
-            `archetype: ${archetype}`,
-            `plan mode: ${planModeText}`,
-            `sandbox: ${sandboxMode}`,
-            `delegation: ${delegationMode}`,
-            ...(exchangeCounts ? [`exchange: dropped ${exchangeCounts.dropped} · stale ${exchangeCounts.stale} · duplicate ${exchangeCounts.duplicate} · unauthorized ${exchangeCounts.unauthorized}`] : []),
-        ]);
+        return runStatusCommand(this.runtimeHost());
     }
 
     protected async runGoalCommand(args: string): Promise<void> {
