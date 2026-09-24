@@ -103,9 +103,11 @@ export function decodeSseFrame(frame: SseFrame): RemoteAgentConsoleEvent | undef
 
 export function applyRemoteEvent(state: AgentConsoleSessionState, event: RemoteAgentConsoleEvent): void {
     const data = event.data && typeof event.data === 'object' ? event.data : {};
-    // Providers expose usage at different event depths. Fold any factual
-    // snapshot into the shared state before projecting the event itself.
-    state.setTokenUsage(data);
+    if (data.cumulativeUsage) {
+        state.setTokenUsageAbsolute(data.cumulativeUsage);
+    } else {
+        state.setTokenUsage(data);
+    }
     switch (event.type) {
         case 'turn_started':
             state.setStatus('running');
@@ -129,9 +131,6 @@ export function applyRemoteEvent(state: AgentConsoleSessionState, event: RemoteA
             break;
         case 'context_prepared':
             state.setContextPreparation(data.report ?? null);
-            if (Number.isFinite(Number(data.report?.afterTokens))) {
-                state.setTokenUsage({ promptTokens: Number(data.report.afterTokens) });
-            }
             state.pushActivity('model', `Context ${data.report?.strategy || 'prepared'}: ${data.report?.beforeTokens ?? '?'}→${data.report?.afterTokens ?? '?'}`);
             break;
         case 'tool_invoked':

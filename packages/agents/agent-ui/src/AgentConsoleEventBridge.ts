@@ -132,9 +132,6 @@ export class AgentConsoleEventBridge {
         bind(AgentContextPreparedEvent, (event: AgentContextPreparedEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
                 this.state.setContextPreparation(event.report);
-                if (Number.isFinite(Number(event.report.afterTokens))) {
-                    this.state.setTokenUsage({ promptTokens: Number(event.report.afterTokens) });
-                }
                 this.state.pushActivity('model', `Context ${event.report.strategy}: ${event.report.beforeTokens}→${event.report.afterTokens}`);
         });
 
@@ -301,7 +298,11 @@ export class AgentConsoleEventBridge {
                 if (event.response.metadata?.model && !this.state.model) {
                     this.state.setModel(String(event.response.metadata.model));
                 }
-                this.state.setTokenUsage(event.response.metadata?.usage);
+                if (event.cumulativeUsage) {
+                    this.state.setTokenUsageAbsolute(event.cumulativeUsage);
+                } else {
+                    this.state.setTokenUsage(event.response.metadata?.usage);
+                }
                 this.state.pushActivity('model', `Model: ${this.state.provider || 'unknown'} / ${this.state.model || 'unknown'}`);
         });
 

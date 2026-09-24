@@ -1009,6 +1009,35 @@ export class VmDiagnosticsTest {
         expect(state.tokenUsage.totalTokens).toEqual(50);
     }
 
+    @Test('model completion applies the runtime session cumulative usage as an absolute total')
+    async modelCompletionAppliesCumulativeUsage() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const app = new ApplicationContextStub();
+        const { state, component } = createConsoleParts(runtime, scheduler, new ToolRegistryStub(), app);
+        component.configure({ sessionId: 'chat-cumulative' });
+        await component.onInit();
+
+        await app.eventMulticaster.emit(new AgentStreamChunkEvent(this, 'chat-cumulative', 'done', undefined, undefined, {
+            promptTokens: 11,
+            completionTokens: 13,
+            totalTokens: 24
+        }));
+        expect(state.tokenUsage.totalTokens).toEqual(24);
+
+        await app.eventMulticaster.emit(new AgentModelCompletedEvent(this, 'chat-cumulative', {
+            metadata: {
+                provider: 'deepseek',
+                model: 'deepseek-v4-flash',
+                usage: { prompt_tokens: 11, completion_tokens: 13, total_tokens: 24 }
+            }
+        } as any, { promptTokens: 500, completionTokens: 250, totalTokens: 750 }));
+
+        expect(state.tokenUsage.totalTokens).toEqual(750);
+        expect(state.tokenUsage.promptTokens).toEqual(500);
+        expect(state.tokenUsage.completionTokens).toEqual(250);
+    }
+
     @Test('working usage updates during app rpc streaming chunks')
     async workingUsageUpdatesDuringAppRpcStreamingChunks() {
         const runtime = new RuntimeStub();

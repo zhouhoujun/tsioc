@@ -70,14 +70,15 @@ export class RemoteEventBridgeMappingTest {
         expect(state.activities.some(activity => activity.kind === 'turn')).toBe(true);
     }
 
-    @Test('context preparation exposes known prompt usage before model completion')
-    contextPreparationUpdatesPromptUsage() {
+    @Test('context preparation records the report without polluting token usage')
+    contextPreparationDoesNotPolluteTokenUsage() {
         const state = makeState();
         applyRemoteEvent(state, {
             type: 'context_prepared', sessionId: 's1',
             data: { sessionId: 's1', report: { strategy: 'full', beforeTokens: 13000, afterTokens: 12500 } }
         });
-        expect(state.tokenUsage).toEqual({ promptTokens: 12500, completionTokens: 0, totalTokens: 12500 });
+        expect(state.contextPreparation?.afterTokens).toEqual(12500);
+        expect(state.tokenUsage).toEqual({ promptTokens: 0, completionTokens: 0, totalTokens: 0 });
     }
 
     @Test('stream_chunk updates token usage')

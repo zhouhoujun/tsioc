@@ -2439,6 +2439,16 @@ export class AgentConsoleSessionState {
         };
     }
 
+    setTokenUsageAbsolute(usage?: Partial<AgentConsoleTokenUsage> | Record<string, any> | null): void {
+        const source = this.resolveUsagePayload(usage);
+        if (!source) return;
+
+        const promptTokens = this.resolveUsageNumber(source, ['promptTokens', 'prompt_tokens', 'input_tokens']) ?? 0;
+        const completionTokens = this.resolveUsageNumber(source, ['completionTokens', 'completion_tokens', 'output_tokens']) ?? 0;
+        const totalTokens = this.resolveUsageNumber(source, ['totalTokens', 'total_tokens']) ?? (promptTokens + completionTokens);
+        this.tokenUsage = { promptTokens, completionTokens, totalTokens };
+    }
+
     resetTurnTokenUsage(): void {
         this.turnTokenUsageBase = { ...this.tokenUsage };
         this.turnTokenUsage = {
