@@ -46,7 +46,6 @@ import {
     formatTurnDiagnosticsAggregate as fmtTurnDiagnosticsAggregate,
     formatTurnDiagnosticsTrend as fmtTurnDiagnosticsTrend,
     buildSummaryQualityRecordOption,
-    buildTurnDiagnosticsRecordOption,
     parseTrendArgs
 } from './AgentConsoleFormatters';
 import { formatUsageWindow, formatCompactionHistoryRecord, formatCompactionHistoryTrend, formatTurnDiagnosticsAggregate, formatTurnDiagnosticsTrend } from './AgentConsoleFormatters';
@@ -194,7 +193,7 @@ import { VIM_ACTION_NAMES, isConsoleVimAction } from './AgentConsoleVim';
 import type { BackgroundTaskCancelOutcome, BackgroundTaskManager, BackgroundTaskRecord, BackgroundTaskRestoreOutcome } from '@tsdi/agent-tools';
 import { formatBackgroundTaskDetail } from './AgentConsoleBackgroundTaskFormat';
 import { decodeGlobalKey, resolveToolCallArgument } from './AgentConsoleStreamHelpers';
-import { formatSummaryQualityTrend } from './AgentConsoleDiagnosticsView';
+import { buildTurnDiagnosticsRecordOption, formatSummaryQualityTrend, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs } from './AgentConsoleDiagnosticsView';
 import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
 import { flattenProjectSessions, resolveSessionProjectKey, selectProjectRepresentative } from './AgentConsoleProjectProjection';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc, buildHarnessProjection, formatHarnessTreeLines, formatHarnessListLines, DelegationTreeNode } from '@tsdi/agent';
@@ -847,38 +846,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected buildTurnDiagnosticsRecordOption(record: Record<string, any>): AgentConsoleSelectOption {
-        const id = String(record.id ?? '');
-        const sessionId = String(record.sessionId ?? 'unknown');
-        const createdAt = Number(record.createdAt ?? 0);
-        const compacted = Number(record.compactionCount ?? 0);
-        const saved = Number(record.totalTokenSavings ?? 0);
-        const description = [
-            createdAt ? new Date(createdAt).toLocaleDateString() : '',
-            `${compacted} compact${compacted === 1 ? '' : 's'}`,
-            saved > 0 ? `saved ${formatCompactNumber(saved)} tokens` : '',
-            record.repeatedClarificationDetected ? 'repeated' : '',
-            record.finalAssistantWasClarification ? 'clarif' : ''
-        ].filter(Boolean).join(' · ') || 'turn diagnostics record';
-        return {
-            label: `${sessionId} · ${createdAt ? new Date(createdAt).toLocaleString() : 'unknown time'}`,
-            value: id || `${sessionId}:${createdAt}`,
-            description,
-            detail: [
-                `Record: ${id || '-'}`,
-                `Session: ${sessionId}`,
-                `Created: ${createdAt ? new Date(createdAt).toLocaleString() : '-'}`,
-                `Empty response retries: ${Number(record.emptyResponseRetryCount ?? 0)}`,
-                `Repeated clarification: ${record.repeatedClarificationDetected ? 'yes' : 'no'}`,
-                `Final clarification: ${record.finalAssistantWasClarification ? 'yes' : 'no'}`,
-                `Context rewritten: ${record.followUpContextRewritten ? 'yes' : 'no'}`,
-                `Follow-up recoveries: ${Number(record.followUpRecoveryCount ?? 0)}`,
-                `Compactions: ${compacted}`,
-                `Token savings: ${formatCompactNumber(saved)}`,
-                record.compressionRatio != null ? `Compression ratio: ${record.compressionRatio}%` : '',
-                record.compactionLevel ? `Compaction level: ${record.compactionLevel}` : '',
-                record.promptCache ? `Prompt cache: ${String(record.promptCache.provider ?? '')} ${String(record.promptCache.appliedStrategy ?? '')}` : ''
-            ].filter(Boolean).join('\n')
-        };
+        return buildTurnDiagnosticsRecordOption(record);
     }
 
     /**
@@ -2415,29 +2383,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     protected parseSummaryQualityTrendArgs(
         args: string
     ): { provider?: string; bucketSize?: number; maxBuckets?: number } {
-        const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
-        const provider = tokens[0] || undefined;
-        let bucketSize: number | undefined;
-        let maxBuckets: number | undefined;
-        const dayToken = tokens[1]?.match(/^(\d+)d$/i);
-        if (dayToken) {
-            const days = Number(dayToken[1]);
-            if (Number.isFinite(days) && days > 0) {
-                bucketSize = days * 24 * 60 * 60 * 1000;
-            }
-        } else if (tokens[1] && /^\d+$/.test(tokens[1])) {
-            const value = Number(tokens[1]);
-            if (Number.isFinite(value) && value > 0) {
-                bucketSize = value;
-            }
-        }
-        if (tokens[2] && /^\d+$/.test(tokens[2])) {
-            const value = Number(tokens[2]);
-            if (Number.isFinite(value) && value > 0) {
-                maxBuckets = value;
-            }
-        }
-        return { provider, bucketSize, maxBuckets };
+        return parseSummaryQualityTrendArgs(args);
     }
 
     /**
@@ -2448,29 +2394,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     protected parseCompactionHistoryTrendArgs(
         args: string
     ): { sessionId?: string; bucketSize?: number; maxBuckets?: number } {
-        const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
-        const sessionId = tokens[0] || undefined;
-        let bucketSize: number | undefined;
-        let maxBuckets: number | undefined;
-        const dayToken = tokens[1]?.match(/^(\d+)d$/i);
-        if (dayToken) {
-            const days = Number(dayToken[1]);
-            if (Number.isFinite(days) && days > 0) {
-                bucketSize = days * 24 * 60 * 60 * 1000;
-            }
-        } else if (tokens[1] && /^\d+$/.test(tokens[1])) {
-            const value = Number(tokens[1]);
-            if (Number.isFinite(value) && value > 0) {
-                bucketSize = value;
-            }
-        }
-        if (tokens[2] && /^\d+$/.test(tokens[2])) {
-            const value = Number(tokens[2]);
-            if (Number.isFinite(value) && value > 0) {
-                maxBuckets = value;
-            }
-        }
-        return { sessionId, bucketSize, maxBuckets };
+        return parseCompactionHistoryTrendArgs(args);
     }
 
     protected resolveUniqueCommandPrefix(input: string): { command: string; matches: string[] } {
