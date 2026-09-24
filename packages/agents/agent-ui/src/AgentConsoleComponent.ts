@@ -15,25 +15,8 @@ import type { SshClient, SshConnectionManager, SshHostConfig, SshShellSession } 
 import type { SandboxMode } from '@tsdi/agent/src/harness/sandbox-exec';
 import {
     runExportCommand as runExportCommandFn,
-    parseExportArgs as parseExportArgsFn,
-    looksLikeExportPath,
-    tryWriteSessionExport as tryWriteSessionExportFn,
-    previewSessionExport as previewSessionExportFn,
-    resolveFileAdapter as resolveFileAdapterFn,
-    resolveExportTargetPath,
-    resolvePathDirectory,
-    resolveAttachmentTargetPath,
-    describePendingAttachments,
     buildTurnMessageInput,
-    runAttachCommand as runAttachCommandFn,
-    loadPendingAttachment,
-    resolveImageMediaType,
-    resolveDocumentMediaType,
-    resolveAnyMediaType,
-    readFileBytes,
-    normalizeBinaryChunk,
-    concatUint8Arrays,
-    encodeBase64
+    runAttachCommand as runAttachCommandFn
 } from './AgentConsoleExportHandlers';
 import {
     formatSummaryQualityAggregate as fmtSummaryQualityAggregate,
@@ -263,7 +246,7 @@ import { searchSessionContent } from './AgentConsoleSessionSearch';
 import { loadLocalTodoPlan } from './AgentConsoleTodoView';
 import { refreshMentionCatalog } from './AgentConsoleMentions';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc, buildHarnessProjection, formatHarnessTreeLines, formatHarnessListLines, DelegationTreeNode } from '@tsdi/agent';
-import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
+import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService } from './AgentConsoleSessionService';
 import { CommandHandlerContext, COMMAND_HANDLERS } from './AgentConsoleCommandHandlers';
 import { AGENT_WIZARD_PROVIDERS, AGENT_WIZARD_TIERS, AgentWizardProviderDef, AgentWizardStepDef, buildProviderWizardChoiceOptions, buildProviderWizardConfirmOptions, buildProviderWizardSteps, buildProviderWizardSummary, buildWizardStepHelp, resolveWizardPrefill, resolveWizardProviderDef, resolveWizardProviderName, resolveWizardTierLabel } from './AgentConsoleProviderWizard';
 import { startProviderWizard, handleWizardEscape, cancelProviderWizard, resetProviderWizardComposer, showProviderWizardStep, openProviderWizardChoice, handleProviderWizardChoice, openProviderWizardConfirm, handleProviderWizardConfirm, openProviderWizardEditor, testProviderConnection, commitProviderWizard, advanceProviderWizard } from './AgentConsoleProviderWizardFlow';
@@ -599,47 +582,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return runExportCommandFn(this.getExportHandlerContext(), args);
     }
 
-    protected parseExportArgs(args: string): { format: AgentSessionExportFormat; sessionId?: string; path?: string } {
-        return parseExportArgsFn(args);
-    }
-
-    protected looksLikeExportPath(value: string): boolean {
-        return looksLikeExportPath(value);
-    }
-
-    protected async tryWriteSessionExport(
-        result: AgentSessionExportResult,
-        requestedPath?: string
-    ): Promise<string | undefined> {
-        return tryWriteSessionExportFn(this.getExportHandlerContext(), result, requestedPath);
-    }
-
-    protected previewSessionExport(result: AgentSessionExportResult): void {
-        previewSessionExportFn(this.getExportHandlerContext(), result);
-    }
-
     protected resolveFileAdapter(): FileAdapter | null {
         return this.app?.get(FileAdapter, null) as FileAdapter | null;
-    }
-
-    protected resolveExportTargetPath(
-        fileAdapter: FileAdapter,
-        result: AgentSessionExportResult,
-        requestedPath?: string
-    ): string {
-        return resolveExportTargetPath(fileAdapter, this.workspace, result, requestedPath);
-    }
-
-    protected resolvePathDirectory(targetPath: string, fileAdapter: FileAdapter): string {
-        return resolvePathDirectory(targetPath, fileAdapter);
-    }
-
-    protected resolveAttachmentTargetPath(targetPath: string, fileAdapter: FileAdapter): string {
-        return resolveAttachmentTargetPath(targetPath, this.workspace, fileAdapter);
-    }
-
-    protected describePendingAttachments(attachments: AgentConsolePendingAttachment[] = this.state.pendingAttachments): string {
-        return describePendingAttachments(attachments);
     }
 
     protected buildTurnMessageInput(prompt: string, attachments: AgentConsolePendingAttachment[]): AgentTurnMessageInput | undefined {
@@ -658,43 +602,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             workspace: this.workspace,
             notify: (msg: string) => this.notify(msg),
         };
-    }
-
-    protected async loadPendingAttachment(targetPath: string, fileAdapter: FileAdapter): Promise<AgentConsolePendingAttachment> {
-        return loadPendingAttachment(targetPath, this.workspace, fileAdapter);
-    }
-
-    /** @deprecated Use {@link loadPendingAttachment} instead. */
-    protected async loadPendingImageAttachment(targetPath: string, fileAdapter: FileAdapter): Promise<AgentConsolePendingAttachment> {
-        return this.loadPendingAttachment(targetPath, fileAdapter);
-    }
-
-    protected resolveImageMediaType(filePath: string): string | undefined {
-        return resolveImageMediaType(filePath);
-    }
-
-    protected resolveDocumentMediaType(filePath: string): string | undefined {
-        return resolveDocumentMediaType(filePath);
-    }
-
-    protected resolveAnyMediaType(filePath: string): string | undefined {
-        return resolveAnyMediaType(filePath);
-    }
-
-    protected async readFileBytes(targetPath: string, fileAdapter: FileAdapter): Promise<Uint8Array> {
-        return readFileBytes(targetPath, fileAdapter);
-    }
-
-    protected async normalizeBinaryChunk(chunk: any): Promise<Uint8Array> {
-        return normalizeBinaryChunk(chunk);
-    }
-
-    protected concatUint8Arrays(chunks: Uint8Array[], total: number): Uint8Array {
-        return concatUint8Arrays(chunks, total);
-    }
-
-    protected encodeBase64(bytes: Uint8Array): string {
-        return encodeBase64(bytes);
     }
 
     protected async openCompactionHistory(args: string): Promise<boolean> {
