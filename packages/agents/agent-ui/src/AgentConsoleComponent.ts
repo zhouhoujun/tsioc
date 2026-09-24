@@ -195,7 +195,7 @@ import { formatBackgroundTaskDetail } from './AgentConsoleBackgroundTaskFormat';
 import { decodeGlobalKey, resolveToolCallArgument } from './AgentConsoleStreamHelpers';
 import { buildTurnDiagnosticsRecordOption, formatSummaryQualityTrend, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs } from './AgentConsoleDiagnosticsView';
 import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
-import { flattenProjectSessions, resolveSessionProjectKey, selectProjectRepresentative } from './AgentConsoleProjectProjection';
+import { flattenProjectSessions, refreshProjects, refreshThreads, resolveProjectSessionsFor, resolveSessionProjectKey, resolveSessionThreadKey, resolveThreadKeyForSession, resolveThreadSessionsFor, selectProjectRepresentative } from './AgentConsoleProjectProjection';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AGENT_PERSONALITY_PRESETS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, describeSandboxCapabilities, detectSandboxExecTool, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc, buildHarnessProjection, formatHarnessTreeLines, formatHarnessListLines, DelegationTreeNode } from '@tsdi/agent';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService, AgentSessionExportFormat, AgentSessionExportResult } from './AgentConsoleSessionService';
 import { CommandHandlerContext, COMMAND_HANDLERS } from './AgentConsoleCommandHandlers';
@@ -1178,55 +1178,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected refreshThreads(): void {
-        const seen = new Map<string, {
-            key: string;
-            label: string;
-            lastActive: number;
-            count: number;
-            representativeLastActive: number;
-            representativeId: string;
-            sections?: AgentSessionSectionInfo[];
-        }>();
-        for (const s of this.state.sessions) {
-            const key = this.resolveSessionThreadKey(s);
-            if (!key) continue;
-            const sessionLastActive = s.updatedAt || 0;
-            const sessionId = String(s.id || '');
-            const sessionLabel = s.projectLabel || s.focusSummary || s.rootRequest || s.workspace || s.primaryThreadId || key;
-            const sections = Array.isArray(s.sections) && s.sections.length > 0 ? s.sections : undefined;
-            const existing = seen.get(key);
-            if (existing) {
-                existing.count += 1;
-                if (sessionLastActive > existing.lastActive) {
-                    existing.lastActive = sessionLastActive;
-                }
-                if (sessionLastActive > existing.representativeLastActive
-                    || (sessionLastActive === existing.representativeLastActive
-                        && (!existing.representativeId || sessionId.localeCompare(existing.representativeId) < 0))) {
-                    existing.label = sessionLabel;
-                    existing.representativeLastActive = sessionLastActive;
-                    existing.representativeId = sessionId;
-                    existing.sections = sections;
-                }
-            } else {
-                seen.set(key, {
-                    key,
-                    label: sessionLabel,
-                    lastActive: sessionLastActive,
-                    count: 1,
-                    representativeLastActive: sessionLastActive,
-                    representativeId: sessionId,
-                    sections
-                });
-            }
-        }
-        this.state.setThreads(Array.from(seen.values()).map(p => ({
-            key: p.key,
-            label: p.label,
-            sessionCount: p.count,
-            lastActive: p.lastActive || undefined,
-            sections: p.sections
-        })));
+        refreshThreads(this.state);
     }
 
     protected async refreshCurrentSections(): Promise<void> {
@@ -1240,50 +1192,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected refreshProjects(): void {
-        const seen = new Map<string, {
-            key: string;
-            label: string;
-            lastActive: number;
-            count: number;
-            representativeLastActive: number;
-            representativeId: string;
-        }>();
-        for (const s of this.state.sessions) {
-            const key = this.resolveSessionProjectKey(s);
-            if (!key) continue;
-            const sessionLastActive = s.updatedAt || 0;
-            const sessionId = String(s.id || '');
-            const sessionLabel = s.projectLabel || s.projectId || s.focusSummary || s.workspace || s.primaryThreadId || s.rootRequest || key;
-            const existing = seen.get(key);
-            if (existing) {
-                existing.count += 1;
-                if (sessionLastActive > existing.lastActive) {
-                    existing.lastActive = sessionLastActive;
-                }
-                if (sessionLastActive > existing.representativeLastActive
-                    || (sessionLastActive === existing.representativeLastActive
-                        && (!existing.representativeId || sessionId.localeCompare(existing.representativeId) < 0))) {
-                    existing.label = sessionLabel;
-                    existing.representativeLastActive = sessionLastActive;
-                    existing.representativeId = sessionId;
-                }
-            } else {
-                seen.set(key, {
-                    key,
-                    label: sessionLabel,
-                    lastActive: sessionLastActive,
-                    count: 1,
-                    representativeLastActive: sessionLastActive,
-                    representativeId: sessionId
-                });
-            }
-        }
-        this.state.setProjects(Array.from(seen.values()).map(p => ({
-            key: p.key,
-            label: p.label,
-            sessionCount: p.count,
-            lastActive: p.lastActive || undefined
-        })));
+        refreshProjects(this.state);
     }
 
     protected flattenProjectSessions(groups: AgentConsoleSessionProjectGroup[]): Array<{
@@ -1350,26 +1259,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         projectLabel?: string;
         projectSessionCount?: number;
     }> {
-        const anchor = this.state.sessions.find(item => item.id === sessionId)
-            || this.state.sessions.find(item => item.current)
-            || this.state.sessions[0];
-        if (!anchor) {
-            return [];
-        }
-        const projectKey = this.resolveSessionProjectKey(anchor);
-        if (projectKey) {
-            return this.state.sessions.filter(item => this.resolveSessionProjectKey(item) === projectKey);
-        }
-        const workspace = String(anchor.workspace || '').trim();
-        if (workspace) {
-            const workspaceKey = normalizeAgentWorkspaceIdentity(workspace);
-            return this.state.sessions.filter(item => normalizeAgentWorkspaceIdentity(item.workspace) === workspaceKey);
-        }
-        const primaryThreadId = String(anchor.primaryThreadId || '').trim();
-        if (primaryThreadId) {
-            return this.state.sessions.filter(item => String(item.primaryThreadId || '').trim() === primaryThreadId);
-        }
-        return [anchor];
+        return resolveProjectSessionsFor(this.state, sessionId) as any;
     }
 
     protected resolveCurrentProjectSessions(): Array<{
@@ -1410,12 +1300,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         primaryThreadId?: string;
         id?: string;
     } | null): string {
-        const primaryThreadId = String(session?.primaryThreadId || '').trim();
-        if (primaryThreadId) {
-            return primaryThreadId;
-        }
-        const sessionId = String(session?.id || '').trim();
-        return sessionId ? `session:${sessionId}` : '';
+        return resolveSessionThreadKey(session);
     }
 
     protected resolveThreadKeyForSession(
@@ -1431,27 +1316,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }> = this.state.sessions,
         visited = new Set<string>()
     ): string {
-        const primaryThreadId = String(session?.primaryThreadId || '').trim();
-        if (primaryThreadId) {
-            return `thread:${primaryThreadId}`;
-        }
-        const sessionId = String(session?.id || '').trim();
-        if (visited.has(sessionId)) {
-            return sessionId ? `session:${sessionId}` : '';
-        }
-        visited.add(sessionId);
-        const originThreadId = String(session?.originThreadId || '').trim();
-        if (originThreadId) {
-            const originSession = sessions.find(item => String(item.id || '').trim() === originThreadId);
-            if (originSession) {
-                const originKey = this.resolveThreadKeyForSession(originSession, sessions, visited);
-                if (originKey) {
-                    return originKey;
-                }
-            }
-            return `thread:${originThreadId}`;
-        }
-        return sessionId ? `session:${sessionId}` : '';
+        return resolveThreadKeyForSession(session, sessions, visited);
     }
 
     protected resolveProjectSessionIdsFor(sessionId = this.state.sessionId): string[] {
@@ -1476,17 +1341,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         projectLabel?: string;
         projectSessionCount?: number;
     }> {
-        const anchor = this.state.sessions.find(item => item.id === sessionId)
-            || this.state.sessions.find(item => item.current)
-            || this.state.sessions[0];
-        if (!anchor) {
-            return [];
-        }
-        const threadKey = this.resolveThreadKeyForSession(anchor);
-        if (threadKey) {
-            return this.state.sessions.filter(item => this.resolveThreadKeyForSession(item) === threadKey);
-        }
-        return [anchor];
+        return resolveThreadSessionsFor(this.state, sessionId) as any;
     }
 
     protected resolveThreadSessionIdsFor(sessionId = this.state.sessionId): string[] {
