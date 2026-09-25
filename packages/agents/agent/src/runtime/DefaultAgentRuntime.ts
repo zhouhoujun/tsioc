@@ -8,6 +8,7 @@ import { TurnHandler } from './TurnHandler';
 import { AgentMessage, AgentMessagePart, AgentTurnMessageInput, normalizeAgentMessageParts } from './AgentMessage';
 import { AgentCompensationEvent, AgentContextPreparedEvent, AgentErrorEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentMemoryUpdatedEvent, AgentModelCompletedEvent, AgentStreamChunkEvent, AgentTokenBudgetExceededEvent, AgentTokenBudgetReminderEvent, AgentToolCompletedEvent, AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnDiagnostics, AgentTurnDiagnosticsEvent, AgentTurnStartedEvent } from './AgentEvents';
 import { AgentTurnCancelledError } from './AgentTurnCancelledError';
+import { PlanContinuationTracker } from './PlanContinuation';
 import { findProjectRoot } from '../project/agents-doc';
 import { isWorkspaceMutatingTool, resolveWorkspaceTrustApproval } from '../project/workspace-trust';
 import { ModelAdapter } from '../model/ModelAdapter';
@@ -156,7 +157,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionChildSessions = new Map<string, Set<string>>();
     protected sessionCompensationStacks = new Map<string, ToolCompensationEntry[]>();
     protected pendingGitStepSnapshots = new Map<string, string>();
-    protected sessionPlanState = new Map<string, { pending: number; inProgress: number }>();
+    protected planContinuation = new PlanContinuationTracker();
     protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>();
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
@@ -1071,7 +1072,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         let emptyResponseRetryCount = 0;
         const maxEmptyResponseRetries = 2;
 
-        while (round <= maxRounds) {
+        turnLoop: while (true) {
             this.throwIfTurnCancelled(sessionId);
             if (await this.enforceTokenBudget(sessionId)) {
                 return {
@@ -1124,23 +1125,29 @@ export class DefaultAgentRuntime extends AgentRuntime {
             await this.runVerificationGate(sessionId, turnContext, roundStartEvidence, maxRepairRounds);
 
             round++;
+            if (round <= maxRounds) {
+                continue turnLoop;
+            }
+            this.throwIfTurnCancelled(sessionId);
+            await this.sessions.append(sessionId, this.createMessage('user', 'You have reached the maximum number of tool call rounds. Please provide your best answer now based on the results you have so far.'));
+            const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
+            const finalResponse = await this.modelAdapter.complete(
+                this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, this.computeTurnFalsifyRate(turnContext), turnContext.agent?.reasoning)
+            );
+            await this.recordTokenUsage(sessionId, finalResponse);
+            await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, finalResponse));
+            const finalMessage = await this.createAssistantMessageFromResponse(sessionId, finalResponse);
+            const resume = this.buildPlanContinuation(sessionId, turnContext, finalMessage);
+            if (resume) {
+                await this.sessions.append(sessionId, finalMessage);
+                await this.sessions.append(sessionId, this.createMessage('user', resume));
+                round = 0;
+                continue turnLoop;
+            }
+            this.capturePromptCacheDiagnostics(turnContext, finalResponse);
+            await this.captureAssistantDiagnostics(sessionId, currentUserMessageId, finalMessage, turnContext);
+            return { sessionId, message: finalMessage };
         }
-
-        this.throwIfTurnCancelled(sessionId);
-        const limitMessage = this.createMessage('user', 'You have reached the maximum number of tool call rounds. Please provide your best answer now based on the results you have so far.');
-        await this.sessions.append(sessionId, limitMessage);
-
-        const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
-        const finalResponse = await this.modelAdapter.complete(
-            this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, this.computeTurnFalsifyRate(turnContext), turnContext.agent?.reasoning)
-        );
-        await this.recordTokenUsage(sessionId, finalResponse);
-        await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, finalResponse));
-
-        const finalMessage = await this.createAssistantMessageFromResponse(sessionId, finalResponse);
-        this.capturePromptCacheDiagnostics(turnContext, finalResponse);
-        await this.captureAssistantDiagnostics(sessionId, currentUserMessageId, finalMessage, turnContext);
-        return { sessionId, message: finalMessage };
     }
 
     private async *completeStreamingTurn(sessionId: string, query: string, currentUserMessageId: string, turnContext: TurnExecutionContext): AsyncGenerator<StreamChunk, AgentTurnResult, void> {
@@ -1153,7 +1160,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         let emptyResponseRetryCount = 0;
         const maxEmptyResponseRetries = 2;
 
-        while (round <= maxRounds) {
+        turnLoop: while (true) {
             this.throwIfTurnCancelled(sessionId);
             if (await this.enforceTokenBudget(sessionId)) {
                 yield { type: 'text', content: '\n\n[Token budget exhausted. Stopping turn.]\n\n' };
@@ -1220,24 +1227,30 @@ export class DefaultAgentRuntime extends AgentRuntime {
             await this.runVerificationGate(sessionId, turnContext, roundStartEvidence, maxRepairRounds);
 
             round++;
+            if (round <= maxRounds) {
+                continue turnLoop;
+            }
+            this.throwIfTurnCancelled(sessionId);
+            yield { type: 'text', content: '\n\n[Reached tool round limit. Requesting final answer...]\n\n' };
+            await this.sessions.append(sessionId, this.createMessage('user', 'You have reached the maximum number of tool call rounds. Please provide your best answer now based on the results you have so far.'));
+            const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
+            const finalResponse = yield* this.collectStreamingResponse(
+                sessionId,
+                this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, this.computeTurnFalsifyRate(turnContext), turnContext.agent?.reasoning)
+            );
+            await this.recordTokenUsage(sessionId, finalResponse);
+            const finalMessage = await this.createAssistantMessageFromResponse(sessionId, finalResponse);
+            const resume = this.buildPlanContinuation(sessionId, turnContext, finalMessage);
+            if (resume) {
+                await this.sessions.append(sessionId, finalMessage);
+                await this.sessions.append(sessionId, this.createMessage('user', resume));
+                round = 0;
+                continue turnLoop;
+            }
+            this.capturePromptCacheDiagnostics(turnContext, finalResponse);
+            await this.captureAssistantDiagnostics(sessionId, currentUserMessageId, finalMessage, turnContext);
+            return { sessionId, message: finalMessage };
         }
-
-        this.throwIfTurnCancelled(sessionId);
-        yield { type: 'text', content: '\n\n[Reached tool round limit. Requesting final answer...]\n\n' };
-        const limitMessage = this.createMessage('user', 'You have reached the maximum number of tool call rounds. Please provide your best answer now based on the results you have so far.');
-        await this.sessions.append(sessionId, limitMessage);
-
-        const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
-        const finalResponse = yield* this.collectStreamingResponse(
-            sessionId,
-            this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, this.computeTurnFalsifyRate(turnContext), turnContext.agent?.reasoning)
-        );
-        await this.recordTokenUsage(sessionId, finalResponse);
-
-        const finalMessage = await this.createAssistantMessageFromResponse(sessionId, finalResponse);
-        this.capturePromptCacheDiagnostics(turnContext, finalResponse);
-        await this.captureAssistantDiagnostics(sessionId, currentUserMessageId, finalMessage, turnContext);
-        return { sessionId, message: finalMessage };
     }
 
     private async buildModelRequest(sessionId: string, query: string, currentUserMessageId: string, turnContext?: TurnExecutionContext): Promise<ModelRequest> {
@@ -2496,63 +2509,15 @@ export class DefaultAgentRuntime extends AgentRuntime {
     }
 
     private trackPlanProgress(sessionId: string, turnContext: TurnExecutionContext, toolName: string, output: unknown): void {
-        if (toolName !== 'todo' || !output || typeof output !== 'object') {
-            return;
-        }
-        const todos = (output as { todos?: unknown }).todos;
-        if (!Array.isArray(todos)) {
-            return;
-        }
-        let pending = 0;
-        let inProgress = 0;
-        for (const item of todos) {
-            const status = String((item as { status?: unknown })?.status || 'pending');
-            if (status === 'in_progress') {
-                inProgress++;
-            } else if (status !== 'completed' && status !== 'cancelled') {
-                pending++;
-            }
-        }
-        this.sessionPlanState.set(sessionId, { pending, inProgress });
-        turnContext.planTouched = true;
+        this.planContinuation.track(sessionId, turnContext, toolName, output);
     }
 
     private hasUnfinishedPlan(sessionId: string, turnContext: TurnExecutionContext): boolean {
-        if (!turnContext.planTouched) {
-            return false;
-        }
-        const state = this.sessionPlanState.get(sessionId);
-        return !!state && state.pending + state.inProgress > 0;
+        return this.planContinuation.hasUnfinished(sessionId, turnContext);
     }
 
     private buildPlanContinuation(sessionId: string, turnContext: TurnExecutionContext, message: AgentMessage): string | undefined {
-        if (!turnContext.planTouched) {
-            return undefined;
-        }
-        const state = this.sessionPlanState.get(sessionId);
-        if (!state || state.pending + state.inProgress === 0) {
-            return undefined;
-        }
-        if (this.isClarificationAssistantMessage(message.content)) {
-            return undefined;
-        }
-        const used = turnContext.planContinuations ?? 0;
-        const cap = this.options.maxPlanContinuations ?? defaultAgentOptions.maxPlanContinuations ?? 3;
-        if (used >= cap) {
-            return undefined;
-        }
-        turnContext.planContinuations = used + 1;
-        if (turnContext.diagnostics) {
-            turnContext.diagnostics.planContinuationsCount = used + 1;
-        }
-        const parts: string[] = [];
-        if (state.inProgress) {
-            parts.push(`${state.inProgress} in progress`);
-        }
-        if (state.pending) {
-            parts.push(`${state.pending} pending`);
-        }
-        return `Your plan still has unfinished items (${parts.join(', ')}). Continue executing the remaining steps now using tools; do not stop or summarize until every item is completed or cancelled.`;
+        return this.planContinuation.build(sessionId, turnContext, message, this.options.maxPlanContinuations ?? defaultAgentOptions.maxPlanContinuations ?? 3, content => this.isClarificationAssistantMessage(content));
     }
 
     private async executeTools(

@@ -10,6 +10,7 @@ import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
 import { ModelAdapter } from '../src/model/ModelAdapter';
 import { SystemPromptBuilder } from '../src/prompt/SystemPromptBuilder';
 import { defaultAgentOptions } from '../src/options';
+import { AGENT_OPTIONS } from '../src/tokens';
 import { AgentModule } from '../src/agent.module';
 import { provideAgentOrm } from '../src/orm.module';
 
@@ -64,6 +65,45 @@ class CountingTool {
     }
 }
 
+class TodoTool {
+    name = 'todo';
+    invoked = 0;
+
+    getDefinition() {
+        return {
+            name: 'todo',
+            description: 'track plan progress',
+            activation: { kind: 'always', scope: 'session', activated: true },
+            execution: { sideEffect: false }
+        };
+    }
+
+    async invoke(): Promise<any> {
+        this.invoked++;
+        return { ok: true, todos: [{ content: 'remaining step', status: 'pending' }] };
+    }
+}
+
+class RoundCapPlanModelAdapter extends EchoModelAdapter {
+    requests: any[] = [];
+
+    constructor(private toolRounds: number) {
+        super();
+    }
+
+    async complete(request: any): Promise<any> {
+        this.requests.push(request);
+        if (this.requests.length <= this.toolRounds) {
+            return {
+                message: '',
+                stopReason: 'tool_use',
+                toolCalls: [{ id: `tc-${this.requests.length}`, name: 'todo', input: { todos: [{ content: 'remaining step', status: 'pending' }] } }]
+            };
+        }
+        return { message: 'partial summary', stopReason: 'end' };
+    }
+}
+
 class SingleToolRegistry extends ToolRegistry {
     constructor(private tool: any) {
         super();
@@ -112,13 +152,16 @@ class MinimalRuntime extends AgentRuntime {
     }
 }
 
-async function createRuntime(adapter: any, tool: any, promptBuilder?: any): Promise<{ runtime: AgentRuntime; ctx: ApplicationContext }> {
+async function createRuntime(adapter: any, tool: any, promptBuilder?: any, options?: any): Promise<{ runtime: AgentRuntime; ctx: ApplicationContext }> {
     const providers: any[] = [
         { provide: ModelAdapter, useValue: adapter },
         { provide: ToolRegistry, useValue: new SingleToolRegistry(tool) }
     ];
     if (promptBuilder) {
         providers.push({ provide: SystemPromptBuilder, useValue: promptBuilder });
+    }
+    if (options) {
+        providers.push({ provide: AGENT_OPTIONS, useValue: { ...defaultAgentOptions, ...options } });
     }
     const ctx = await Application.run(AgentModule, { providers: [...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...providers] });
     const runtime = ctx.get(AgentRuntime);
@@ -218,6 +261,22 @@ export class PlanModeTest {
             const systemMessage = String(adapter.requests[0].messages[0].content || '');
             expect(systemMessage).toContain('PLAN MODE');
             expect(systemMessage).toContain('read-only');
+        } finally { await ctx.close(); }
+    }
+
+    @Test('tool round cap keeps an unfinished plan alive instead of ending the turn')
+    async roundCapContinuesUnfinishedPlan() {
+        const tool = new TodoTool();
+        const adapter = new RoundCapPlanModelAdapter(2);
+        const { runtime, ctx } = await createRuntime(adapter, tool, undefined, { maxToolRounds: 1, maxPlanContinuations: 3 });
+        try {
+            await runtime.runTurn('s1', 'finish the remaining steps');
+
+            const messages = await runtime.getMessages('s1');
+            const continuations = messages.filter((message: any) =>
+                message.role === 'user' && String(message.content || '').includes('Your plan still has unfinished items'));
+            expect(tool.invoked).toEqual(2);
+            expect(continuations.length).toEqual(3);
         } finally { await ctx.close(); }
     }
 }
