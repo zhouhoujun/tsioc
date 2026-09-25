@@ -104,21 +104,75 @@ class RoundCapPlanModelAdapter extends EchoModelAdapter {
     }
 }
 
+class ClarifyingPlanModelAdapter extends EchoModelAdapter {
+    requests: any[] = [];
+
+    async complete(request: any): Promise<any> {
+        this.requests.push(request);
+        if (this.requests.length === 1) {
+            return {
+                message: '',
+                stopReason: 'tool_use',
+                toolCalls: [{ id: 'tc-1', name: 'todo', input: { todos: [{ content: 'remaining step', status: 'pending' }] } }]
+            };
+        }
+        return { message: 'Should I use nights or totalNights?', stopReason: 'end' };
+    }
+}
+
+class CompletedTodoTool {
+    name = 'todo';
+    invoked = 0;
+
+    getDefinition() {
+        return {
+            name: 'todo',
+            description: 'track plan progress',
+            activation: { kind: 'always', scope: 'session', activated: true },
+            execution: { sideEffect: false }
+        };
+    }
+
+    async invoke(): Promise<any> {
+        this.invoked++;
+        return { ok: true, todos: [{ content: 'remaining step', status: 'completed' }] };
+    }
+}
+
+class PlanThenWriteModelAdapter extends EchoModelAdapter {
+    requests: any[] = [];
+
+    async complete(request: any): Promise<any> {
+        this.requests.push(request);
+        if (this.requests.length === 1) {
+            return { message: '', stopReason: 'tool_use', toolCalls: [{ id: 'tc-1', name: 'todo', input: {} }] };
+        }
+        if (this.requests.length === 2) {
+            return { message: '', stopReason: 'tool_use', toolCalls: [{ id: 'tc-2', name: 'edit_file', input: {} }] };
+        }
+        return { message: 'done', stopReason: 'end' };
+    }
+}
+
 class SingleToolRegistry extends ToolRegistry {
-    constructor(private tool: any) {
+    private readonly tools: any[];
+
+    constructor(tool: any | any[]) {
         super();
+        this.tools = Array.isArray(tool) ? tool : [tool];
     }
 
     getTools() {
-        return [this.tool];
+        return this.tools;
     }
 
     getTool(name: string) {
-        return this.tool.name === name ? this.tool : undefined;
+        return this.tools.find(tool => tool.name === name);
     }
 
     async invoke(name: string): Promise<any> {
-        return this.tool.name === name ? this.tool.invoke({}) : null;
+        const tool = this.getTool(name);
+        return tool ? tool.invoke({}) : null;
     }
 }
 
@@ -277,6 +331,36 @@ export class PlanModeTest {
                 message.role === 'user' && String(message.content || '').includes('Your plan still has unfinished items'));
             expect(tool.invoked).toEqual(2);
             expect(continuations.length).toEqual(3);
+        } finally { await ctx.close(); }
+    }
+
+    @Test('unfinished plan forces continuation even when the model asks a clarifying question')
+    async unfinishedPlanOverridesClarifyingQuestion() {
+        const tool = new TodoTool();
+        const adapter = new ClarifyingPlanModelAdapter();
+        const { runtime, ctx } = await createRuntime(adapter, tool, undefined, { maxPlanContinuations: 3 });
+        try {
+            await runtime.runTurn('s1', 'finish the remaining steps');
+
+            const messages = await runtime.getMessages('s1');
+            const continuations = messages.filter((message: any) =>
+                message.role === 'user' && String(message.content || '').includes('Your plan still has unfinished items'));
+            expect(continuations.length).toEqual(3);
+        } finally { await ctx.close(); }
+    }
+
+    @Test('a turn that changed code must verify before it is allowed to end')
+    async codeChangeWithoutVerificationForcesContinuation() {
+        const tools = [new CompletedTodoTool(), new CountingTool('edit_file')];
+        const adapter = new PlanThenWriteModelAdapter();
+        const { runtime, ctx } = await createRuntime(adapter, tools, undefined, { maxPlanContinuations: 3 });
+        try {
+            await runtime.runTurn('s1', 'update the parser');
+
+            const messages = await runtime.getMessages('s1');
+            const verificationPrompts = messages.filter((message: any) =>
+                message.role === 'user' && String(message.content || '').includes('You changed code but have not verified'));
+            expect(verificationPrompts.length).toEqual(3);
         } finally { await ctx.close(); }
     }
 }

@@ -1137,7 +1137,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             await this.recordTokenUsage(sessionId, finalResponse);
             await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, finalResponse));
             const finalMessage = await this.createAssistantMessageFromResponse(sessionId, finalResponse);
-            const resume = this.buildPlanContinuation(sessionId, turnContext, finalMessage);
+            const resume = this.buildPlanContinuation(sessionId, turnContext);
             if (resume) {
                 await this.sessions.append(sessionId, finalMessage);
                 await this.sessions.append(sessionId, this.createMessage('user', resume));
@@ -1240,7 +1240,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             );
             await this.recordTokenUsage(sessionId, finalResponse);
             const finalMessage = await this.createAssistantMessageFromResponse(sessionId, finalResponse);
-            const resume = this.buildPlanContinuation(sessionId, turnContext, finalMessage);
+            const resume = this.buildPlanContinuation(sessionId, turnContext);
             if (resume) {
                 await this.sessions.append(sessionId, finalMessage);
                 await this.sessions.append(sessionId, this.createMessage('user', resume));
@@ -2495,7 +2495,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         const message = await this.createAssistantMessageFromResponse(sessionId, response);
         this.capturePromptCacheDiagnostics(turnContext, response);
 
-        const planContinuation = this.buildPlanContinuation(sessionId, turnContext, message);
+        const planContinuation = this.buildPlanContinuation(sessionId, turnContext);
         if (planContinuation) {
             await this.sessions.append(sessionId, message);
             await this.sessions.append(sessionId, this.createMessage('user', planContinuation));
@@ -2516,8 +2516,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return this.planContinuation.hasUnfinished(sessionId, turnContext);
     }
 
-    private buildPlanContinuation(sessionId: string, turnContext: TurnExecutionContext, message: AgentMessage): string | undefined {
-        return this.planContinuation.build(sessionId, turnContext, message, this.options.maxPlanContinuations ?? defaultAgentOptions.maxPlanContinuations ?? 3, content => this.isClarificationAssistantMessage(content));
+    private buildPlanContinuation(sessionId: string, turnContext: TurnExecutionContext): string | undefined {
+        return this.planContinuation.build(sessionId, turnContext, this.options.maxPlanContinuations ?? defaultAgentOptions.maxPlanContinuations ?? 3);
     }
 
     private async executeTools(

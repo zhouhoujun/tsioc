@@ -1,5 +1,16 @@
-import { AgentMessage } from './AgentMessage';
 import { AgentTurnDiagnostics } from './AgentEvents';
+import { DEFAULT_VERIFICATION_WRITE_TOOLS } from '../harness/VerificationGate';
+
+const WRITE_TOOLS = new Set(DEFAULT_VERIFICATION_WRITE_TOOLS);
+
+/** The auto-runner only discovers `typecheck`/`lint`, so model-driven `npm test`/`build` calls are matched by name here. */
+const VERIFICATION_PATTERN = /\b(tests?|build|typecheck|type-check|lint|tsc|jest|vitest|mocha|pytest|compile)\b/i;
+
+export interface TurnEvidenceEntry {
+    toolName?: string;
+    inputSummary?: string;
+    verification?: string;
+}
 
 /**
  * The turn-context fields required for plan-continuation tracking.
@@ -13,6 +24,8 @@ export interface PlanContinuationContext {
     /** Number of plan-continuation prompts already injected this turn. */
     planContinuations?: number;
     diagnostics?: AgentTurnDiagnostics;
+    /** Tool evidence for this turn, used to detect whether verification already ran. */
+    evidenceLedger?: { entriesFrom(index: number): TurnEvidenceEntry[] };
 }
 
 /**
@@ -21,9 +34,13 @@ export interface PlanContinuationContext {
  */
 export class PlanContinuationTracker {
     private readonly states = new Map<string, { pending: number; inProgress: number }>();
+    private readonly writes = new Set<string>();
 
     /** Records the pending/in-progress todo counts reported by a `todo` tool result. */
     track(sessionId: string, turnContext: PlanContinuationContext, toolName: string, output: unknown): void {
+        if (WRITE_TOOLS.has(toolName)) {
+            this.writes.add(sessionId);
+        }
         if (toolName !== 'todo' || !output || typeof output !== 'object') {
             return;
         }
@@ -56,16 +73,25 @@ export class PlanContinuationTracker {
 
     /**
      * Builds the continuation prompt, consuming one continuation budget slot.
-     * Returns `undefined` when the plan needs no follow-up, the assistant asked a
-     * clarification question, or the per-turn continuation cap is already reached.
+     *
+     * An unfinished plan forces continuation even when the assistant asks the user a
+     * clarifying question: asking does not satisfy a pending plan item, so the turn
+     * continues and the model is told to resolve the ambiguity with a stated default
+     * instead of waiting for an answer.
+     *
+     * Returns `undefined` when nothing is outstanding or the per-turn continuation cap
+     * is already reached.
      */
     build(
         sessionId: string,
         turnContext: PlanContinuationContext,
-        message: AgentMessage,
-        cap: number,
-        isClarification: (content: string) => boolean
+        cap: number
     ): string | undefined {
+        return this.buildPlanPrompt(sessionId, turnContext, cap)
+            ?? this.buildVerificationPrompt(sessionId, turnContext, cap);
+    }
+
+    private buildPlanPrompt(sessionId: string, turnContext: PlanContinuationContext, cap: number): string | undefined {
         if (!turnContext.planTouched) {
             return undefined;
         }
@@ -73,16 +99,8 @@ export class PlanContinuationTracker {
         if (!state || state.pending + state.inProgress === 0) {
             return undefined;
         }
-        if (isClarification(message.content)) {
+        if (!this.consumeBudget(turnContext, cap)) {
             return undefined;
-        }
-        const used = turnContext.planContinuations ?? 0;
-        if (used >= cap) {
-            return undefined;
-        }
-        turnContext.planContinuations = used + 1;
-        if (turnContext.diagnostics) {
-            turnContext.diagnostics.planContinuationsCount = used + 1;
         }
         const parts: string[] = [];
         if (state.inProgress) {
@@ -91,6 +109,41 @@ export class PlanContinuationTracker {
         if (state.pending) {
             parts.push(`${state.pending} pending`);
         }
-        return `Your plan still has unfinished items (${parts.join(', ')}). Continue executing the remaining steps now using tools; do not stop or summarize until every item is completed or cancelled.`;
+        return `Your plan still has unfinished items (${parts.join(', ')}). Do not ask the user for clarification and do not wait for an answer: if something is ambiguous, pick a reasonable default, state it briefly, and keep going. Complete the remaining steps with tools now, including verifying the result (build, tests, or type checks when the task changed code), and do not stop or summarize until every item is completed or cancelled.`;
+    }
+
+    private buildVerificationPrompt(sessionId: string, turnContext: PlanContinuationContext, cap: number): string | undefined {
+        if (!turnContext.planTouched) {
+            return undefined;
+        }
+        if (!this.writes.has(sessionId) || this.hasVerificationEvidence(turnContext)) {
+            return undefined;
+        }
+        if (!this.consumeBudget(turnContext, cap)) {
+            return undefined;
+        }
+        return 'You changed code but have not verified the result yet. Do not end this turn: run the project verification now (for example the build, the tests, or a type check) with a tool, report the actual output, and fix anything that fails before you finish.';
+    }
+
+    private hasVerificationEvidence(turnContext: PlanContinuationContext): boolean {
+        const entries = turnContext.evidenceLedger?.entriesFrom(0) ?? [];
+        return entries.some(entry => {
+            if (!entry || WRITE_TOOLS.has(entry.toolName ?? '')) {
+                return false;
+            }
+            return !!entry.verification || VERIFICATION_PATTERN.test(entry.inputSummary ?? '');
+        });
+    }
+
+    private consumeBudget(turnContext: PlanContinuationContext, cap: number): boolean {
+        const used = turnContext.planContinuations ?? 0;
+        if (used >= cap) {
+            return false;
+        }
+        turnContext.planContinuations = used + 1;
+        if (turnContext.diagnostics) {
+            turnContext.diagnostics.planContinuationsCount = used + 1;
+        }
+        return true;
     }
 }
