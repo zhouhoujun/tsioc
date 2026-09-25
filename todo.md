@@ -107,4 +107,19 @@
 - 结论：选 **A（保持 `['typecheck','lint']`）**，不把 `build`/`test` 加入默认。
 - 依据：守卫已按 gap4 修复做到与 `autoScripts` **解耦** —— `falsifiesTestEditAfterAgentTestRunFailed` 证明 sleep-mlt（无 typecheck/lint、零 verify-command 条目）下守卫依然触发。故此前「A 会让守卫在多数项目失效」的判断**已被实现推翻**。
 - 代价：`options.ts:640` 注释「long-running suites like test / build are opt-in to avoid slowing every edit round」。改默认值会让每个项目每个编辑轮次都跑 build+test，与该设计意图直接冲突，且属 AGENTS.md 明令须先征询的性能/行为取舍。
-- 待办（需用户拍板）：新增 `TestGuidanceSection`；废弃模型名 `deepseek-v4-flash`（4 处文件）是否清理；守卫缺 live firing 实证（仅有单测 + runtime 接线证明，两次真实 probe 守卫均正确未触发）。
+- 待办（需用户拍板，已按 v6 证据修正）：
+  - `TestGuidanceSection` —— **不再是「修根因」**，已降级为可选增强（提升无指令文件项目的默认下限）。此前把它列为待办是建立在已被推翻的因果上。
+  - 废弃模型名 `deepseek-v4-flash`（`options.ts:623`，4 处文件）是否清理。
+  - 守卫缺 live firing 实证 —— 仅有单测 + runtime 接线证明；v4/v5/v6 **三次**真实 probe 守卫均正确未触发（agent 行为本就正确，属否定证据），仍需一次真实触发样本。
+  - **轮次预算收敛**（v6 新增，尚未立项）：72 次调用撞 20 轮上限导致提交未完成；14 次重复 `Inspect directory` 吃掉 19% 预算；`IdentitySection.ts:73` 的 `coding_task` 引导已存在但未被采纳 —— 差距在采纳而非缺失。三个候选方向：(1) 对重复只读调用去重、(2) 接近上限时提示改走 `coding_task`、(3) 不动。倾向 (2)，因证据直接指向引导采纳。
+
+## 2026-09-25 收尾全量门禁：FAIL（26/27，agent-tools 既有 flaky 测试）
+- `RUN_PTY=1 bash scripts/agents-gate.sh` → **26 passed / 1 failed / 0 skipped / 27 total，GATE_EXIT=1**。唯一失败项 `agent-tools: @tsdi/agent-tools unit tests`。
+- 失败用例 `step-reconciler.spec.ts:168` `StepReconcilerTest.replayConsistency`，断言 `JSON.stringify(first) === JSON.stringify(second)`，实测差异仅 `updatedAt` 1ms（`...142` vs `...141`）。
+- **根因**：测试缺陷，非源码缺陷。`reconcileStepStatus` 在 `planning/step-reconciler.ts:176/223/249` 三处用 `Date.now()` 写 `updatedAt`，本身是合理的挂钟时间戳；但测试要求两次调用**逐字节相同**，而墙钟值按设计即非确定 —— 两次调用跨越毫秒边界即失败。该断言**永远无法稳定通过**。
+- **与本批次改动无因果关系（已双重取证）**：
+  1. 本批次 3 个 commit（04bb0f018 / 973c3d134 / e34fa3da9）改动文件全部位于 `packages/agents/agent/**` + `scripts/source-size-baseline.json`，`agent-tools` **零命中**。
+  2. `step-reconciler.ts` 与其 spec 最后一次改动来自 `5526e41fa`（P227 计划执行 reconciler），早于本批次。
+  3. 复跑 5 次：`run1 exit=1`，`run2..5 exit=0` → 确证为 flaky（观测失败率 1/5）。
+- 修复方向（**属既有缺陷，未擅自修改，待用户拍板**）：应修测试而非源码 —— 或注入可控时钟，或断言时剔除 `updatedAt` 后再比对。改 `reconcileStepStatus` 去掉时间戳会破坏 `updatedAt` 的既有语义（属禁止的功能降级）。
+- 门禁其余 26 项全绿，含真实 PTY acceptance（`pty-acceptance`）、`dom-gate` 80/100 列矩阵、`tui-gate`、`gate-regression`、`source-size`、`production-db-integrity`、`git diff --check`。
