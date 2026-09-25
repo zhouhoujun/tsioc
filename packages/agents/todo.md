@@ -300,3 +300,10 @@
 - **规则**：写入根 `AGENTS.md` 第 4 条——禁止 god-object、命令走注册表、抽取保持行为/测试不变、下调体量同提交下调 baseline、约定拆解顺序 P4→P3→P2→P1、目标 `AgentConsoleComponent.ts < 1500`。
 - **验证**：`bash scripts/agents-gate.sh source-size` → PASS。
 - **当前状态**：拆解执行未开始（P4 命令注册表为首个批次）。
+
+## v76 — 选择性细节恢复不再引入孤立工具轮（Gap 3 修复）✅
+
+- **问题**：sleep-mlt 真实构建任务第二轮复现 provider `400 ... insufficient tool messages following toolcalls message`。根因：`buildModelRequest` 的 `repairToolPairing` 之后执行 `recoverDetail` 将 stash 中按关键词命中的原始消息插回实时窗口，但恢复逻辑只按关键词匹配、不保证工具轮配对——命中 assistant toolCalls 消息而未命中其 tool 结果时，会在 'Context Summary' 前插入孤立 assistant，触发 400。
+- **修复**：新增 `src/context/recover-detail.ts`（`selectRecoveredDetail`）：恢复子集按工具轮配对完整（assistant 携带 toolCalls 时必须在 stash 内找到每个 call id 的结果才随结果一起恢复，任一缺失则整体跳过）；新增 `existingIds` 参数让调用方把实时窗口已有 id 传入，恢复绝不重复/孤立已存在的消息轮。`AgentContextManager.recoverDetail` 改为薄委托（文件 2022→2008 行），`DefaultAgentRuntime` 以 `new Set(messages.map(m => m.id))` 传入窗口 id（3576→3574 行）。
+- **TDD**：先在旧实现上确认 `recoverDetail returns tool-pairing-complete subsets` 与 `recoverDetail drops assistant tool calls whose results are missing from the stash` 稳定失败（105 passing 2 failed），修复后连同 dedupe/全窗口已存在两个用例共 5 个 recoverDetail 用例通过；agent 全套 907 passing EXIT=0；`source-size` gate PASS（基线文件均下降）。
+- **当前状态**：Gap 2（tool round 上限 20 后不 plan-continue）仍开放；sleep-mlt task 2 待续跑复验。
