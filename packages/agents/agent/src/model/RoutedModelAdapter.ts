@@ -140,6 +140,8 @@ export class RoutedModelAdapter extends ModelAdapter {
             score += 1;
         }
 
+        score += this.estimateStructuralComplexity(input, normalized);
+
         const simpleMax = this.options.complexityThresholds?.simpleMaxScore ?? DEFAULT_SIMPLE_MAX;
         const moderateMax = this.options.complexityThresholds?.moderateMaxScore ?? DEFAULT_MODERATE_MAX;
 
@@ -150,6 +152,58 @@ export class RoutedModelAdapter extends ModelAdapter {
             return 'moderate';
         }
         return 'complex';
+    }
+
+    // Structural signals score how much work a prompt describes rather than its
+    // topic: a pasted single-line build request is complex with zero keyword hits.
+    private estimateStructuralComplexity(input: string, normalized: string): number {
+        let structural = 0;
+
+        const enumerated = this.countEnumeratedItems(input);
+        if (enumerated >= 3) {
+            structural += 2;
+        } else if (enumerated >= 2) {
+            structural += 1;
+        }
+
+        const referencedFiles = this.countReferencedFiles(input);
+        if (referencedFiles >= 4) {
+            structural += 2;
+        } else if (referencedFiles >= 2) {
+            structural += 1;
+        }
+
+        if (this.countBuildVerbs(normalized) >= 2) {
+            structural += 1;
+        }
+
+        return structural;
+    }
+
+    private countEnumeratedItems(input: string): number {
+        const indices = new Set<number>();
+        const numbered = /(?:^|[\s;；。])([1-9]\d?)[)）.、．]\s*\S/g;
+        let match = numbered.exec(input);
+        while (match) {
+            indices.add(Number(match[1]));
+            match = numbered.exec(input);
+        }
+        const bullets = input.match(/(?:^|\n)\s*[-*•]\s+\S/g);
+        return Math.max(indices.size, bullets ? bullets.length : 0);
+    }
+
+    private countReferencedFiles(input: string): number {
+        const matches = input.match(/[\w./-]+\.[A-Za-z]{1,5}\b/g);
+        return matches ? new Set(matches.map(name => name.toLowerCase())).size : 0;
+    }
+
+    private countBuildVerbs(normalized: string): number {
+        const buildVerbs = [
+            'add', 'implement', 'update', 'refactor', 'migrate', 'create', 'write', 'extend', 'introduce',
+            'wire', 'remove', 'delete', 'rename', 'convert', 'port',
+            '新增', '添加', '实现', '补齐', '补充', '重构', '迁移', '创建', '编写', '扩展', '引入', '修复', '改造', '完善', '提交'
+        ];
+        return buildVerbs.filter(verb => normalized.includes(verb)).length;
     }
 
     private matchRoute(input: string, complexity: AgentModelComplexity, falsifyRate?: number): AgentModelRoute | null {

@@ -338,6 +338,125 @@ export class ModelProviderTest {
         expect(result.metadata?.routing?.profile).toEqual('claude');
     }
 
+    // Regression: a real 6-deliverable/5-file build task was routed to "flash" and
+    // abandoned after ~20 lines, because scoring used only length/lines/keywords.
+    @Test('routes a long single-line multi-deliverable build task to the strong profile')
+    async routesStructuredBuildTaskToStrongProfile() {
+        const calls: Array<{ url: string; body: any }> = [];
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (url: string, init: any) => {
+            calls.push({ url, body: JSON.parse(init.body) });
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        id: 'chatcmpl_1',
+                        choices: [{ message: { content: 'done' }, finish_reason: 'stop' }],
+                        usage: { prompt_tokens: 10, completion_tokens: 20 }
+                    };
+                }
+            };
+        };
+
+        // Mirrors the real ~/.tsdi-agent/settings.json profile layout.
+        const adapter = new RoutedModelAdapter({
+            provider: 'deepseek',
+            model: 'deepseek-flash',
+            baseUrl: 'https://deepseek.example',
+            apiKey: 'deepseek-key',
+            profiles: {
+                flash: {
+                    provider: 'deepseek',
+                    model: 'deepseek-flash',
+                    baseUrl: 'https://deepseek.example',
+                    apiKey: 'deepseek-key'
+                },
+                strong: {
+                    provider: 'deepseek',
+                    model: 'deepseek-v4-pro',
+                    baseUrl: 'https://deepseek.example',
+                    apiKey: 'deepseek-key'
+                }
+            },
+            complexityRouting: {
+                simple: 'flash',
+                moderate: 'flash',
+                complex: 'strong'
+            }
+        });
+
+        const result = await adapter.complete({
+            sessionId: 's1',
+            summary: 'stable project context',
+            memory: [],
+            tools: [],
+            messages: [{
+                id: 'u1',
+                role: 'user',
+                // Verbatim prompt from the real run. No topical complexity keywords.
+                content: '为 sleep-mlt 增加月度聚合与 CSV 导入导出能力，要求：1) src/analysis.ts 新增 summarizeMonth(records, monthKey: YYYY-MM) 返回月度聚合(nights、avg duration、avg deep %、avg quality、consistency)，空月份返回全零；2) src/store.ts 新增 parseCsv(text): SleepRecord[]，解析 date,bedtime,wakeTime,quality,deep,rem,light,awake,notes 表头，损坏行跳过不中断；3) src/cli.ts 新增两个命令 monthly --month YYYY-MM(支持 --json) 与 import-csv <file>(读文件批量入库并报告成功/跳过条数，支持 --json)；4) test/analysis.test.ts、test/store.test.ts、test/cli.test.ts 补齐对应测试；5) README.md 补 monthly 与 import-csv 用法小节；6) 最后 npm run build 与 npm test 必须全绿，并 git commit 提交 feat: add monthly summary and CSV import/export。请自主完成全部 6 项，不要中途停下来问我。',
+                createdAt: 1
+            }]
+        });
+
+        expect(result.metadata?.routing?.complexity).toEqual('complex');
+        expect(result.metadata?.routing?.profile).toEqual('strong');
+        expect(calls[0].body.model).toEqual('deepseek-v4-pro');
+    }
+
+    // A short, focused edit is a single-file change: it must stay on the cheap
+    // profile. Guards the fix from over-correcting into always-strong routing.
+    @Test('keeps a short single-file edit request on the fast profile')
+    async keepsShortSingleFileEditOnFastProfile() {
+        const calls: Array<{ url: string; body: any }> = [];
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (url: string, init: any) => {
+            calls.push({ url, body: JSON.parse(init.body) });
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        id: 'chatcmpl_1',
+                        choices: [{ message: { content: 'done' }, finish_reason: 'stop' }],
+                        usage: { prompt_tokens: 10, completion_tokens: 20 }
+                    };
+                }
+            };
+        };
+
+        const adapter = new RoutedModelAdapter({
+            provider: 'deepseek',
+            model: 'deepseek-flash',
+            baseUrl: 'https://deepseek.example',
+            apiKey: 'deepseek-key',
+            profiles: {
+                flash: { provider: 'deepseek', model: 'deepseek-flash', baseUrl: 'https://deepseek.example', apiKey: 'deepseek-key' },
+                strong: { provider: 'deepseek', model: 'deepseek-v4-pro', baseUrl: 'https://deepseek.example', apiKey: 'deepseek-key' }
+            },
+            complexityRouting: {
+                simple: 'flash',
+                moderate: 'flash',
+                complex: 'strong'
+            }
+        });
+
+        const result = await adapter.complete({
+            sessionId: 's1',
+            summary: 'stable project context',
+            memory: [],
+            tools: [],
+            messages: [{
+                id: 'u1',
+                role: 'user',
+                content: '把 src/cli.ts 里的 usage() 补上 import-csv 命令说明。',
+                createdAt: 1
+            }]
+        });
+
+        expect(result.metadata?.routing?.profile).toEqual('flash');
+        expect(calls[0].body.model).toEqual('deepseek-flash');
+    }
+
     @Test('supports structured prompt cache policy on anthropic routes')
     async supportsStructuredPromptCachePolicyOnAnthropicRoutes() {
         const calls: Array<{ url: string; body: any }> = [];
