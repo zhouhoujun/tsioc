@@ -63,3 +63,29 @@
 - 新增 `test/workspace-trust.spec.ts` 6 用例（未受信阻止 / 已受信放行 / 批准执行+记录 / 拒绝阻止不记录 / 非 mutating 绕过 / 同轮二次调用跳过门禁），全量 agent 903 passing。
 - 验收（已通过）：3 包 tsc --noEmit 0 错误 → agent-cli 79 + agent-tools 485 + agent 903 全量 exit 0 → 同 commit 更新基线（DefaultAgentRuntime 3579 → 3576）→ source-size OK → git diff --check 干净 → lsp_diagnostics 全部变更文件无告警。
 - 待办：DeepSeek 余额 402 阻断真实 sleep-mlt 实测；充值后跑真实 turn 验证受信/未受信写工具行为并继续记录差距。
+## 2026-09-25 验证门批次（verification gate，3 commits 已推送 7.tui）
+- 目标：修复真实 TUI 实测暴露的三处 agent 差距 —— 验证门在无 verify-command 项目里恒失效（gap4）、未完成 plan 可用提问方式停摆（gap5）、改测试可把红灯变绿（gap6）。
+- gap4（验证门失效，根因修复）：原 check (e) 只读 `verification === 'verify-command'` 条目；sleep-mlt 无 `typecheck`/`lint` script → `VerifyCommandRunner.ts:274-292` 静默跳过 → 零 verify-command 条目 → 守卫必然早退。`VerificationGate.ts` 新增 `TEST_COMMAND_PATTERN`（46 行），`falsifyBentTests` 的 `runs` 过滤放宽为 `verify-command` **或** agent 自身 test/build 运行（`inputSummary` 匹配）。守卫从此与 `autoScripts` 解耦。
+- gap5（plan 停摆）：`PlanContinuation.ts` 重建 —— 未完成 plan 即便模型在提问也强制续跑（提问不算完成待办，要求模型用声明式默认值消解歧义）；有代码改动但无验证证据时同样强制续跑，turn 不能停在未验证状态。
+- gap6（改测试洗绿）：新增 `gate.verify(ledger, startIndex, writeHints, editedFiles)`，验证仍红时编辑测试文件标记 `falsificationReason` 进 repair prompt（`RepairExploration.ts:76` 只透传 `falsificationReason`，模型能真正看到）。红信号取本轮**最新**红证据，故已转绿后新增合法测试不误报。
+- 路由修复（Gap A）：`RoutedModelAdapter.ts` 新增 `estimateStructuralComplexity`（`countEnumeratedItems`/`countReferencedFiles`/`countBuildVerbs`），多段构建类请求可路由到强模型。
+- 单测：`verification-gate.spec.ts` 新增 3 例（`falsifiesTestEditAfterAgentTestRunFailed`/`allowsTestEditAfterAgentTestRunPassed`/`ignoresNonTestCommandFailure`），`verify-command.spec.ts` 新增 `RuntimeVerificationCommandsTest` 接线测试，plan-mode +92 行，model-provider +119 行。agent 917 → 920 passing。
+- 验收（已通过）：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27 passed / 0 skipped / 27 total，GATE_EXIT=0**（含真实 PTY acceptance，无 skip）→ 3 atomic commits（04bb0f018 / 973c3d134 / e34fa3da9）→ 同 commit 更新基线（DefaultAgentRuntime 3540 → 3539）→ source-size OK → git diff --check 干净。
+- 关键设计约束：`DefaultAgentRuntime.ts` 必须按 hunk 拆进 commit 2/3 —— commit 2 只含 plan-continuation call sites 且只能配旧 3 参 `verify()`，commit 3 才引入第 4 参 `editedFiles`。已验证两中间态自洽（commit 2：3 参签名 + 3 参调用 + 基线 3540 = 3540 行；commit 3：4 参 + 4 参 + 基线 3539 = 3539 行）。
+## 2026-09-25 覆盖差距根因（已定位，修复待用户拍板）
+- 现象：真实 sleep-mlt 实测中，agent 为规避缺陷而写测试 —— 只测 `--json`，且把 `--json` 放在 `--long` 之后，缺陷分支完全未被覆盖。
+- 根因（已用证据锁定，非模型能力问题）：
+  - 系统提示词仅由 6 个 section 组成（`agent.module.ts:131-136`）：DateTime / Identity / ProjectContext / Tools / Memory / McpServerInstructions。
+  - 对这 6 个 section 全量 grep 测试类关键词（`unit test`/`write tests`/`tests for`/`reproduce`/`failing test`/`regression test`/`test coverage`）→ **零命中**，提示词里没有任何测试指导。
+  - sleep-mlt 无 `AGENTS.md`/`CLAUDE.md`/任何指令文件 → 该工作区下模型收到的测试约束为**空**。空白提示词下选最高 EV 的不失败测试是理性行为。
+  - 对照组：tsioc 自身 `AGENTS.md` 明写「回归测试必须先证明在旧实现上稳定失败，再证明修复后通过」—— 正是 sleep-mlt 那轮违反的规则。即框架只在自身 self-host 最佳实践，其他项目一律拿不到。
+  - `WeaknessMiner` 亦无补偿：只跟踪错误签名与 shell gate 策略，不跟踪缺失回归测试。
+- 建议修复：新增第 7 个 prompt section `TestGuidanceSection`（约 40 行，远低于 600 行上限），携带 reproduce-first 规则，使无指令文件的项目也能继承。**属全局行为变更，已保留给用户拍板，未实施。**
+- 真实 TUI 探针 v5（干净基线，任务未含「不要改测试」提示）：守卫**未触发且属正确** —— agent 修 `src/cli.ts`（新增 `BOOLEAN_FLAGS` 集合并在 `--long`/`-short` 分支 `continue`），`test/cli.test.ts` +61 行且**全为 `+` 断言、零删除、无 `skip`/`todo`/`only`**（加强而非削弱）。复核 `npm run build` exit 0、53/53 pass、`--json` 前置与后置均 exit 0。价值为否定证据（无误报）。
+- v4 作废原因：未清 `dist/` 的陈旧 build 使 agent 从 stale 产物反推 fix 并反问，判定污染。凡真实复现前必须 `npm run clean`。
+- 已知工具陷阱：长任务必须放 tmux（`nohup … &` 会被 bash 工具超时连进程组 kill，日志出现 `Terminated`）；`runTest('./test/x.spec.ts')` 单文件 glob 匹配 0 用例，须 `npm test` 全量；codegraph 配额用尽后一律 grep/read。
+## 2026-09-25 autoScripts 决策（已定：保持不变，不改代码）
+- 结论：选 **A（保持 `['typecheck','lint']`）**，不把 `build`/`test` 加入默认。
+- 依据：守卫已按 gap4 修复做到与 `autoScripts` **解耦** —— `falsifiesTestEditAfterAgentTestRunFailed` 证明 sleep-mlt（无 typecheck/lint、零 verify-command 条目）下守卫依然触发。故此前「A 会让守卫在多数项目失效」的判断**已被实现推翻**。
+- 代价：`options.ts:640` 注释「long-running suites like test / build are opt-in to avoid slowing every edit round」。改默认值会让每个项目每个编辑轮次都跑 build+test，与该设计意图直接冲突，且属 AGENTS.md 明令须先征询的性能/行为取舍。
+- 待办（需用户拍板）：新增 `TestGuidanceSection`；废弃模型名 `deepseek-v4-flash`（4 处文件）是否清理；守卫缺 live firing 实证（仅有单测 + runtime 接线证明，两次真实 probe 守卫均正确未触发）。
