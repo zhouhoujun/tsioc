@@ -1283,10 +1283,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
             this.contextManager.autoSynthesizeExperiences(this.memory);
         }
 
-        // Selective detail recovery: if the user query refers to previously compacted
-        // content, inject the relevant original messages into the history.
         if (this.contextManager.hasCompactedContent(sessionId)) {
-            const recovered = this.contextManager.recoverDetail(sessionId, query);
+            const liveWindowIds = new Set(messages.map(m => m.id));
+            const recovered = this.contextManager.recoverDetail(sessionId, query, liveWindowIds);
             if (recovered && recovered.length > 0) {
                 // Insert recovered messages before the recent window, after any summary
                 let insertAt = -1;

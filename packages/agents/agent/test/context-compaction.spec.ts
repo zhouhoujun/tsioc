@@ -1194,6 +1194,73 @@ export class ContextCompactionTest {
         expect(result).toBeUndefined();
     }
 
+    @Test('recoverDetail returns tool-pairing-complete subsets')
+    async recoverDetailPairingComplete() {
+        const ctx = new AgentContextManager();
+        const store = asTestCtx(ctx).originalMessageStore;
+        store.set('s1', {
+            messages: [
+                { id: 'u1', role: 'user', content: 'Add remove and update commands to the toolkit', createdAt: 1 },
+                { id: 'a1', role: 'assistant', content: 'Step 2 — add remove/update to the store.', createdAt: 2, metadata: { toolCalls: [{ id: 'call_edit', name: 'edit_file' }] } },
+                { id: 't1', role: 'tool', toolCallId: 'call_edit', name: 'edit_file', content: '{"path":"src/store.ts","replacements":1,"bytesWritten":4048}', createdAt: 3 },
+            ],
+            timestamp: Date.now(),
+            level: 'light',
+        });
+        const recovered = ctx.recoverDetail('s1', 'remove update');
+        expect(recovered).toBeDefined();
+        expect(recovered!.map(m => m.id)).toEqual(['u1', 'a1', 't1']);
+    }
+
+    @Test('recoverDetail drops assistant tool calls whose results are missing from the stash')
+    async recoverDetailDropsUnansweredToolCall() {
+        const ctx = new AgentContextManager();
+        const store = asTestCtx(ctx).originalMessageStore;
+        store.set('s1', {
+            messages: [
+                { id: 'a1', role: 'assistant', content: 'Step 2 — add remove/update to the store.', createdAt: 2, metadata: { toolCalls: [{ id: 'call_missing', name: 'edit_file' }] } },
+            ],
+            timestamp: Date.now(),
+            level: 'light',
+        });
+        const recovered = ctx.recoverDetail('s1', 'remove update');
+        expect(recovered).toBeUndefined();
+    }
+
+    @Test('recoverDetail excludes messages already present in the live request window')
+    async recoverDetailDeduplicatesExistingMessages() {
+        const ctx = new AgentContextManager();
+        const store = asTestCtx(ctx).originalMessageStore;
+        store.set('s1', {
+            messages: [
+                { id: 'u1', role: 'user', content: 'Add remove and update commands to the toolkit', createdAt: 1 },
+                { id: 'a1', role: 'assistant', content: 'Step 2 — add remove/update to the store.', createdAt: 2, metadata: { toolCalls: [{ id: 'call_edit', name: 'edit_file' }] } },
+                { id: 't1', role: 'tool', toolCallId: 'call_edit', name: 'edit_file', content: '{"path":"src/store.ts","replacements":1,"bytesWritten":4048}', createdAt: 3 },
+            ],
+            timestamp: Date.now(),
+            level: 'light',
+        });
+        const recovered = ctx.recoverDetail('s1', 'remove update', new Set(['a1', 't1']));
+        expect(recovered).toBeDefined();
+        expect(recovered!.map(m => m.id)).toEqual(['u1']);
+    }
+
+    @Test('recoverDetail returns nothing when the whole tool round is already in the window')
+    async recoverDetailAllExisting() {
+        const ctx = new AgentContextManager();
+        const store = asTestCtx(ctx).originalMessageStore;
+        store.set('s1', {
+            messages: [
+                { id: 'a1', role: 'assistant', content: 'Step 2 — add remove/update to the store.', createdAt: 2, metadata: { toolCalls: [{ id: 'call_edit', name: 'edit_file' }] } },
+                { id: 't1', role: 'tool', toolCallId: 'call_edit', name: 'edit_file', content: '{"path":"src/store.ts","replacements":1,"bytesWritten":4048}', createdAt: 3 },
+            ],
+            timestamp: Date.now(),
+            level: 'light',
+        });
+        const recovered = ctx.recoverDetail('s1', 'remove update', new Set(['a1', 't1']));
+        expect(recovered).toBeUndefined();
+    }
+
     @Test('clearCompactedContent removes stashed content')
     async clearStashedContent() {
         const ctx = new AgentContextManager();

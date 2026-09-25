@@ -5,6 +5,7 @@ import { summarizeToolDisplayText } from '../tools/ToolSummary';
 import { MemoryStore } from '../memory/MemoryStore';
 import { scoreSummaryQuality } from '../harness/SummaryQualityScorer';
 import { RedactionFilter } from '../harness/RedactionFilter';
+import { selectRecoveredDetail } from './recover-detail';
 
 export interface ContextBudget {
     maxHistoryTokens: number;
@@ -343,31 +344,17 @@ export class AgentContextManager {
 
     /**
      * Recover original messages from the stashed context that are relevant to
-     * the user's current query. Uses keyword overlap between query terms and
-     * original message content.
+     * the user's current query. The recovered subset is tool-round complete
+     * (assistant tool calls only return together with their results) and
+     * excludes messages already present in the live request window.
      */
-    recoverDetail(sessionId: string, userQuery: string): AgentMessage[] | undefined {
+    recoverDetail(sessionId: string, userQuery: string, existingIds?: Set<string>): AgentMessage[] | undefined {
         this.purgeExpiredStash();
         const record = this.originalMessageStore.get(sessionId);
         if (!record) {
             return undefined;
         }
-
-        const queryTerms = userQuery.toLowerCase().split(/\s+/).filter(t => t.length > 2);
-        if (queryTerms.length === 0) {
-            return undefined;
-        }
-
-        const relevant: AgentMessage[] = [];
-        const seenIds = new Set<string>();
-        for (const msg of record.messages) {
-            const content = (msg.content || '').toLowerCase();
-            if (queryTerms.some(term => content.includes(term)) && !seenIds.has(msg.id)) {
-                seenIds.add(msg.id);
-                relevant.push(msg);
-            }
-        }
-
+        const relevant = selectRecoveredDetail(record.messages, userQuery, existingIds);
         return relevant.length > 0 ? relevant : undefined;
     }
 
