@@ -34,6 +34,14 @@ function reconcile(input: Partial<ReconcileStepInput> & { plan: TodoPlanSnapshot
     return reconcileStepStatus({ ...input } as ReconcileStepInput);
 }
 
+// `updatedAt` is wall-clock, so comparing it raw races the millisecond boundary.
+function replayShape(result: ReturnType<typeof reconcileStepStatus>): string {
+    return JSON.stringify({
+        outcomes: result.outcomes,
+        updatedTodos: result.updatedTodos.map(todo => ({ ...todo, updatedAt: undefined }))
+    });
+}
+
 @Suite('plan execution reconciler (P227)')
 export class StepReconcilerTest {
 
@@ -151,7 +159,7 @@ export class StepReconcilerTest {
         expect(r.updatedTodos[0].status).toBe('in_progress');
     }
 
-    @Test('reconcile is replay-consistent: same inputs yield identical outputs')
+    @Test('reconcile is replay-consistent: same inputs yield identical decisions')
     replayConsistency() {
         const input = {
             plan: plan(
@@ -165,7 +173,7 @@ export class StepReconcilerTest {
         } as ReconcileStepInput;
         const first = reconcileStepStatus(input);
         const second = reconcileStepStatus(input);
-        expect(JSON.stringify(first)).toBe(JSON.stringify(second));
+        expect(replayShape(first)).toBe(replayShape(second));
         expect(first.updatedTodos[0].status).toBe('completed');
         expect(first.updatedTodos[1].status).toBe('failed');
     }
