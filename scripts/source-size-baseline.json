@@ -25,7 +25,7 @@
   "packages/agents/agent/src/model/AnthropicModelAdapter.ts": 658,
   "packages/agents/agent/src/model/OpenAICompatibleModelAdapter.ts": 1164,
   "packages/agents/agent/src/options.ts": 707,
-  "packages/agents/agent/src/runtime/DefaultAgentRuntime.ts": 3540,
+  "packages/agents/agent/src/runtime/DefaultAgentRuntime.ts": 3539,
   "packages/agents/agent/src/scheduler/IntervalAgentScheduler.ts": 628,
   "packages/agents/agent/src/tools/ToolApprovalManager.ts": 626
 }

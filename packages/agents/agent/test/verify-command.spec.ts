@@ -553,6 +553,39 @@ export class RuntimeVerificationCommandsTest {
         }
     }
 
+    @Test('editing a test file while a verification command is failing injects a test-integrity repair prompt')
+    async testEditWhileVerifyRedInjectsIntegrityPrompt() {
+        const root = makeTempWorkspace();
+        try {
+            const pkgDir = writePackage(root, 'app', { typecheck: 'node -e "process.exit(3)"' });
+            const testFile = join(pkgDir, 'test', 'x.test.ts');
+            const fileAdapter = new MemoryFileAdapter();
+            fileAdapter.seed(testFile, '// x');
+            const tool = new WriteTool(testFile, fileAdapter, '// weakened');
+            const model = new WriteOnceModelAdapter();
+            const { runtime, ctx } = await buildRuntime(
+                model,
+                new WriteToolRegistry(tool),
+                { maxToolRounds: 8, verification: { enabled: true, autoScripts: ['typecheck'], timeoutMs: 30000 } },
+                fileAdapter,
+                new FileSnapshotStore()
+            );
+            try {
+                await ctx.get(SessionStore).setWorkspace('s1', root);
+                const result = await runtime.runTurn('s1', 'write it');
+
+                expect(result.message.content).toEqual('done');
+                const prompts = injectedRepairPrompts(model);
+                expect(prompts.length).toEqual(1);
+                expect(prompts[0]).toContain('Test file edited while verification was failing');
+                expect(prompts[0]).toContain('x.test.ts');
+                expect(prompts[0]).toContain('Fix the source so the real defect is resolved');
+            } finally { await ctx.close(); }
+        } finally {
+            rmSync(root, { recursive: true, force: true });
+        }
+    }
+
     @Test('verification can be disabled without breaking the turn')
     async disabledVerificationRunsCleanTurn() {
         const root = makeTempWorkspace();

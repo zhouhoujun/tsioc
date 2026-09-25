@@ -34,6 +34,17 @@ export const DEFAULT_VERIFICATION_WRITE_TOOLS = ['write_file', 'edit_file', 'app
 
 export const DEFAULT_VERIFICATION_MAX_EVIDENCE_SUMMARY = 8;
 
+/** Test-source paths; the `[._-]` boundary keeps `src/latest.ts` and `src/contest.ts` out. */
+const TEST_PATH_PATTERN = /(?:^|[\\/])(?:__tests__|tests?|spec)[\\/]|(?:[._-])(?:test|spec)\.[cm]?[jt]sx?$/i;
+
+/**
+ * Test/build commands the agent runs itself. Gate-run `verify-command` entries
+ * cannot be the only red signal: `autoScripts` defaults to typecheck/lint, so a
+ * project with neither produces no verify-command entry and the guard would
+ * never evaluate. `\btsc\b` still excludes `tsconfig.json`.
+ */
+const TEST_COMMAND_PATTERN = /\b(?:npm|pnpm|yarn|bun)(?:\s+run)?\s+(?:test|build)\b|\b(?:vitest|jest|mocha)\b|\bnode\s+--test\b|\btsc\b/;
+
 /**
  * B2: verification gate.
  *
@@ -59,7 +70,8 @@ export class VerificationGate {
     verify(
         ledger: EvidenceLedger | undefined,
         startIndex: number,
-        writeHints: WriteFalsificationHint[] = []
+        writeHints: WriteFalsificationHint[] = [],
+        editedFiles: readonly string[] = []
     ): FalsificationResult {
         const result: FalsificationResult = { falsified: false, reasons: [], falsifiedEvidence: [] };
         if (!ledger) {
@@ -143,6 +155,47 @@ export class VerificationGate {
             });
         }
 
+        this.falsifyBentTests(ledger, editedFiles, result);
+
         return result;
+    }
+
+    /**
+     * (e) a test file edited while this turn's latest verification is still red.
+     * Relaxing an assertion to reach green hides the real defect, so it is
+     * surfaced for repair instead of letting the round pass. Verification that
+     * has since gone green means later test edits are legitimate.
+     */
+    private falsifyBentTests(ledger: EvidenceLedger | undefined, editedFiles: readonly string[], result: FalsificationResult): void {
+        if (!ledger || !editedFiles.length) {
+            return;
+        }
+        const tests = editedFiles.filter(file => TEST_PATH_PATTERN.test(file));
+        if (!tests.length) {
+            return;
+        }
+        const runs = ledger.entriesFrom(0).filter(entry =>
+            entry.verification === 'verify-command'
+            || (!!entry.inputSummary && TEST_COMMAND_PATTERN.test(entry.inputSummary))
+        );
+        const latest = runs[runs.length - 1];
+        if (!latest) {
+            return;
+        }
+        const green = latest.status === 'success' && (latest.exitCode === undefined || latest.exitCode === 0);
+        if (green) {
+            return;
+        }
+        result.falsified = true;
+        const listed = tests.join(', ');
+        result.reasons.push(
+            `Verification is still failing and test file(s) ${listed} were modified in the same turn. `
+            + 'Fix the source so the real defect is resolved; only change a test when the test itself is wrong, and say why it was wrong.'
+        );
+        result.falsifiedEvidence.push({
+            ...latest,
+            falsificationReason: `Test file edited while verification was failing: ${listed}. `
+                + 'Fix the source so the real defect is resolved; change a test only if the test itself is wrong.'
+        });
     }
 }

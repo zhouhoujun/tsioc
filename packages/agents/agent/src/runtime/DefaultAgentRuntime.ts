@@ -1545,13 +1545,12 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     private async runVerificationGate(sessionId: string, turnContext: TurnExecutionContext, startIndex: number, maxRepairRounds: number): Promise<void> {
         const recovery = turnContext.recovery;
-        if (!recovery) {
-            return;
-        }
+        if (!recovery) return;
+        const editedFiles = recovery.editedFiles;
         await this.runVerificationCommands(sessionId, turnContext);
         const writeTools = this.resolveVerificationWriteTools().value;
         const gate = new VerificationGate({ writeTools });
-        const result = gate.verify(turnContext.evidenceLedger, startIndex, recovery.writeHints);
+        const result = gate.verify(turnContext.evidenceLedger, startIndex, recovery.writeHints, editedFiles);
         recovery.writeHints = [];
         const roundEntries = turnContext.evidenceLedger?.entriesFrom(startIndex) ?? [];
         const falsifiedIds = new Set(result.falsifiedEvidence.map(entry => entry.id).filter(Boolean));

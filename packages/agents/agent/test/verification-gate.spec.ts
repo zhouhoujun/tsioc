@@ -637,6 +637,101 @@ export class VerificationGateTest {
         expect(matched?.falsificationReason).toContain('did not change');
     }
 
+    @Test('falsifies a test-file edit made while verification is still failing')
+    async falsifiesTestEditWhileVerificationRed() {
+        const ledger = new EvidenceLedger('s1', new RandomUuidGenerator()
+        );
+        ledger.record({ toolName: 'terminal', status: 'success', verification: 'verify-command', exitCode: 1, inputSummary: 'verify test (npm test)' });
+        ledger.record({ toolName: 'edit_file', status: 'success', inputSummary: '/w/test/cli.test.ts' });
+
+        const gate = new VerificationGate();
+        const result = gate.verify(ledger, 1, [], ['/w/test/cli.test.ts']);
+
+        expect(result.falsified).toEqual(true);
+        expect(result.reasons.some(reason => reason.includes('cli.test.ts'))).toEqual(true);
+        expect(result.falsifiedEvidence.length).toEqual(1);
+    }
+
+    @Test('allows a test-file edit once verification has passed')
+    async allowsTestEditAfterVerificationGreen() {
+        const ledger = new EvidenceLedger('s1', new RandomUuidGenerator()
+        );
+        ledger.record({ toolName: 'terminal', status: 'success', verification: 'verify-command', exitCode: 1, inputSummary: 'verify test (npm test)' });
+        ledger.record({ toolName: 'terminal', status: 'success', verification: 'verify-command', exitCode: 0, inputSummary: 'verify test (npm test)' });
+        ledger.record({ toolName: 'edit_file', status: 'success', inputSummary: '/w/test/csv.test.ts' });
+
+        const gate = new VerificationGate();
+        const result = gate.verify(ledger, 2, [], ['/w/test/csv.test.ts']);
+
+        expect(result.falsified).toEqual(false);
+    }
+
+    @Test('allows a source edit while verification is failing')
+    async allowsSourceEditWhileVerificationRed() {
+        const ledger = new EvidenceLedger('s1', new RandomUuidGenerator()
+        );
+        ledger.record({ toolName: 'terminal', status: 'success', verification: 'verify-command', exitCode: 1, inputSummary: 'verify build (npm run build)' });
+        ledger.record({ toolName: 'edit_file', status: 'success', inputSummary: '/w/src/cli.ts' });
+
+        const gate = new VerificationGate();
+        const result = gate.verify(ledger, 1, [], ['/w/src/cli.ts']);
+
+        expect(result.falsified).toEqual(false);
+    }
+
+    @Test('does not mistake source filenames containing "test" for test files')
+    async ignoresSourceFilesMerelyContainingTest() {
+        const ledger = new EvidenceLedger('s1', new RandomUuidGenerator()
+        );
+        ledger.record({ toolName: 'terminal', status: 'success', verification: 'verify-command', exitCode: 1, inputSummary: 'verify build' });
+        ledger.record({ toolName: 'edit_file', status: 'success', inputSummary: '/w/src/latest.ts' });
+
+        const gate = new VerificationGate();
+        const result = gate.verify(ledger, 1, [], ['/w/src/latest.ts']);
+
+        expect(result.falsified).toEqual(false);
+    }
+
+    @Test('falsifies a test edit after the agent own test command failed')
+    async falsifiesTestEditAfterAgentTestRunFailed() {
+        const ledger = new EvidenceLedger('s1', new RandomUuidGenerator()
+        );
+        ledger.record({ toolName: 'terminal', status: 'error', exitCode: 1, error: 'exit 1', inputSummary: 'command=npm test · cwd=/w' });
+        ledger.record({ toolName: 'edit_file', status: 'success', inputSummary: '/w/test/cli.test.ts' });
+
+        const gate = new VerificationGate();
+        const result = gate.verify(ledger, 1, [], ['/w/test/cli.test.ts']);
+
+        expect(result.falsified).toEqual(true);
+        expect(result.reasons.some(reason => reason.includes('cli.test.ts'))).toEqual(true);
+    }
+
+    @Test('allows a test edit after the agent own test command passed')
+    async allowsTestEditAfterAgentTestRunPassed() {
+        const ledger = new EvidenceLedger('s1', new RandomUuidGenerator()
+        );
+        ledger.record({ toolName: 'terminal', status: 'success', exitCode: 0, inputSummary: 'command=npm test · cwd=/w' });
+        ledger.record({ toolName: 'edit_file', status: 'success', inputSummary: '/w/test/csv.test.ts' });
+
+        const gate = new VerificationGate();
+        const result = gate.verify(ledger, 1, [], ['/w/test/csv.test.ts']);
+
+        expect(result.falsified).toEqual(false);
+    }
+
+    @Test('ignores a failed command that is not a test or build run')
+    async ignoresNonTestCommandFailure() {
+        const ledger = new EvidenceLedger('s1', new RandomUuidGenerator()
+        );
+        ledger.record({ toolName: 'terminal', status: 'error', exitCode: 1, error: 'not found', inputSummary: 'command=git show HEAD · cwd=/w' });
+        ledger.record({ toolName: 'edit_file', status: 'success', inputSummary: '/w/test/cli.test.ts' });
+
+        const gate = new VerificationGate();
+        const result = gate.verify(ledger, 1, [], ['/w/test/cli.test.ts']);
+
+        expect(result.falsified).toEqual(false);
+    }
+
     @Test('marks ledger entries as falsified')
     async marksLedgerEntriesAsFalsified() {
         const ledger = new EvidenceLedger('s1', new RandomUuidGenerator()
