@@ -74,16 +74,35 @@
 - 关键设计约束：`DefaultAgentRuntime.ts` 必须按 hunk 拆进 commit 2/3 —— commit 2 只含 plan-continuation call sites 且只能配旧 3 参 `verify()`，commit 3 才引入第 4 参 `editedFiles`。已验证两中间态自洽（commit 2：3 参签名 + 3 参调用 + 基线 3540 = 3540 行；commit 3：4 参 + 4 参 + 基线 3539 = 3539 行）。
 ## 2026-09-25 覆盖差距根因（已定位，修复待用户拍板）
 - 现象：真实 sleep-mlt 实测中，agent 为规避缺陷而写测试 —— 只测 `--json`，且把 `--json` 放在 `--long` 之后，缺陷分支完全未被覆盖。
-- 根因（已用证据锁定，非模型能力问题）：
-  - 系统提示词仅由 6 个 section 组成（`agent.module.ts:131-136`）：DateTime / Identity / ProjectContext / Tools / Memory / McpServerInstructions。
-  - 对这 6 个 section 全量 grep 测试类关键词（`unit test`/`write tests`/`tests for`/`reproduce`/`failing test`/`regression test`/`test coverage`）→ **零命中**，提示词里没有任何测试指导。
-  - sleep-mlt 无 `AGENTS.md`/`CLAUDE.md`/任何指令文件 → 该工作区下模型收到的测试约束为**空**。空白提示词下选最高 EV 的不失败测试是理性行为。
-  - 对照组：tsioc 自身 `AGENTS.md` 明写「回归测试必须先证明在旧实现上稳定失败，再证明修复后通过」—— 正是 sleep-mlt 那轮违反的规则。即框架只在自身 self-host 最佳实践，其他项目一律拿不到。
+- ~~根因（已用证据锁定，非模型能力问题）~~ **【2026-09-25 受控实验推翻，见下】**
+  - ~~系统提示词仅由 6 个 section 组成（`agent.module.ts:131-136`）：DateTime / Identity / ProjectContext / Tools / Memory / McpServerInstructions。~~
+  - ~~对这 6 个 section 全量 grep 测试类关键词（`unit test`/`write tests`/`tests for`/`reproduce`/`failing test`/`regression test`/`test coverage`）→ **零命中**，提示词里没有任何测试指导。~~（此**事实陈述仍成立**，但**因果推断错误**）
+  - ~~sleep-mlt 无 `AGENTS.md`/`CLAUDE.md`/任何指令文件 → 该工作区下模型收到的测试约束为**空**。~~
+  - ~~对照组：tsioc 自身 `AGENTS.md` 明写「回归测试必须先证明在旧实现上稳定失败，再证明修复后通过」→ 即框架只在自身 self-host 最佳实践。~~（事实成立，但**不能解释 v4/v5 为何失败**）
   - `WeaknessMiner` 亦无补偿：只跟踪错误签名与 shell gate 策略，不跟踪缺失回归测试。
+- **受控实验（2026-09-25，第三轮真实 TUI，否证上述因果）**：同一 sleep-mlt（仍无 `AGENTS.md`）、同一 `deepseek-flash`、同一「提示词零测试指导」条件下，agent **确实写出了复现缺陷的测试**。
+  - 任务：`list --limit 0` / `--limit -3` 静默打印全量数据，要求改为 usage error（精准复现命令，未给任何测试指令）。
+  - 验证方式（非采信 agent 自述）：保留 agent 新测试 + `git checkout` 还原旧 `src/cli.ts` → `npm test` **54 项中 3 项 FAIL**；恢复修复后 → **54/54 pass**，`npm run build` exit 0。
+  - 失败的 3 项恰为缺陷靶心：`list rejects a zero limit...` / `list rejects a negative limit...` / `list rejects non-numeric and missing limit values...`。
+  - 结论：**「提示词缺测试指导」不是覆盖差距的成因**。v4/v5 的失败另有原因（最大嫌疑：任务形态/规模不同，以及 v4 本身被陈旧 `dist/` 污染 —— 两轮都需重新采样才能定性）。因此 `TestGuidanceSection` 不再按「修根因」立项，其价值降级为「提升无指令文件项目的默认下限」，属可选增强而非缺陷修复。
 - 建议修复：新增第 7 个 prompt section `TestGuidanceSection`（约 40 行，远低于 600 行上限），携带 reproduce-first 规则，使无指令文件的项目也能继承。**属全局行为变更，已保留给用户拍板，未实施。**
 - 真实 TUI 探针 v5（干净基线，任务未含「不要改测试」提示）：守卫**未触发且属正确** —— agent 修 `src/cli.ts`（新增 `BOOLEAN_FLAGS` 集合并在 `--long`/`-short` 分支 `continue`），`test/cli.test.ts` +61 行且**全为 `+` 断言、零删除、无 `skip`/`todo`/`only`**（加强而非削弱）。复核 `npm run build` exit 0、53/53 pass、`--json` 前置与后置均 exit 0。价值为否定证据（无误报）。
 - v4 作废原因：未清 `dist/` 的陈旧 build 使 agent 从 stale 产物反推 fix 并反问，判定污染。凡真实复现前必须 `npm run clean`。
 - 已知工具陷阱：长任务必须放 tmux（`nohup … &` 会被 bash 工具超时连进程组 kill，日志出现 `Terminated`）；`runTest('./test/x.spec.ts')` 单文件 glob 匹配 0 用例，须 `npm test` 全量；codegraph 配额用尽后一律 grep/read。
+## 2026-09-25 第三轮真实 TUI 实测（v6，sleep-mlt `--limit` 缺陷，7.tui 干净基线）
+- 缺陷：`cli.ts` `cmdList` 的 `limitRaw > 0 ? ... : undefined` 静默兜底 —— `list --limit 0` 与 `--limit -3` 均打印**全量**数据而非报错（无意义输入静默返回错答案）。
+- 任务下发方式：精准复现命令 +「应改为清晰 usage error」，**不含任何测试/流程指令**（避免引导，只观察自然行为）。
+- agent 产出：`parseLimit` helper + `cmdList` 接线 + usage 文案（src +26/-4），`test/cli.test.ts` +54（新增 5 例 + `seedLimitDir` helper）。自述 build clean、54/54（was 49）。
+- 独立复核（不采信自述）：旧 `src/cli.ts` + 新测试 → 54 中 **3 FAIL**（恰为缺陷靶心三项）；恢复修复 → **54/54 pass**，build exit 0。**复现先于修复成立**。
+- 本轮真实暴露的差距（与覆盖无关）：
+  - **工具轮次耗尽导致任务未收尾**：本轮共 **72 次工具调用**（Run command 20 / Search code 14 / Read file 14 / Inspect directory 14 / Edit file 8 / Check version control 2），撞上 `maxToolRounds` 默认 **20**（`options.ts:584`，`DefaultAgentRuntime.ts:1069`）。最终以「I'm out of tool rounds」收尾，**提交未完成，工作区留下未提交改动**。
+  - **轮次预算被低价值调用吃掉**：14 次 `Inspect directory` 反复列举同一目录，占 19% 调用量却无信息增量；真正编辑只有 8 次。
+  - **已有引导未被采纳**：`IdentitySection.ts:73` 已明写「For non-trivial coding, refactoring, testing, or multi-file edit requests, prefer coding_task ... instead of spending many small tool rounds」—— 本轮 72 次碎片调用完全未走 `coding_task`。差距在**引导采纳**，不在引导缺失。
+  - **git 用法错误**：`Check version control` 仅 2 次，其中 `git commit -A` 未先 `add` 而失败，agent 未能自行补救。
+- runtime 侧恢复路径确认可用（非 runtime 缺陷）：`DefaultAgentRuntime.ts:1131-1149` 在轮次耗尽时注入「provide your best answer now」→ 给一次最终调用 → 再查 `buildPlanContinuation`，可续跑。agent 那句「out of tool rounds」是对注入文案的自述解读，非 runtime 硬失败。
+- 验证门本轮**未触发且属正确**：agent 是加强测试（新增 5 例、复现缺陷）而非削弱，日志中 falsified/integrity/repair 命中数为 0。
+- 待办（需用户拍板）：`TestGuidanceSection` 已降级为可选增强（非缺陷修复，理由见上）；废弃模型名 `deepseek-v4-flash`；**轮次预算/低价值调用收敛**（是否对重复 `Inspect directory` 去重、或在接近上限时提示改走 `coding_task`）为本轮新增候选差距，尚未立项。
+
 ## 2026-09-25 autoScripts 决策（已定：保持不变，不改代码）
 - 结论：选 **A（保持 `['typecheck','lint']`）**，不把 `build`/`test` 加入默认。
 - 依据：守卫已按 gap4 修复做到与 `autoScripts` **解耦** —— `falsifiesTestEditAfterAgentTestRunFailed` 证明 sleep-mlt（无 typecheck/lint、零 verify-command 条目）下守卫依然触发。故此前「A 会让守卫在多数项目失效」的判断**已被实现推翻**。
