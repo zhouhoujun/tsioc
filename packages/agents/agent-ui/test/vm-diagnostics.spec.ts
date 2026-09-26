@@ -1038,6 +1038,37 @@ export class VmDiagnosticsTest {
         expect(state.tokenUsage.completionTokens).toEqual(250);
     }
 
+    @Test('session cumulative usage is not clobbered by the next model call stream chunk')
+    async sessionCumulativeUsageSurvivesNextStreamChunk() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const app = new ApplicationContextStub();
+        const { state, component } = createConsoleParts(runtime, scheduler, new ToolRegistryStub(), app);
+        component.configure({ sessionId: 'chat-cumulative-guard' });
+        await component.onInit();
+
+        await app.eventMulticaster.emit(new AgentModelCompletedEvent(this, 'chat-cumulative-guard', {
+            metadata: {
+                provider: 'deepseek',
+                model: 'deepseek-v4-flash',
+                usage: { prompt_tokens: 400, completion_tokens: 200, total_tokens: 600 }
+            }
+        } as any, { promptTokens: 400, completionTokens: 200, totalTokens: 600 }));
+        expect(state.tokenUsage.totalTokens).toEqual(600);
+
+        // A later LLM call streams its own smaller per-call usage; the session
+        // total must grow from the authoritative cumulative, not drop to it.
+        await app.eventMulticaster.emit(new AgentStreamChunkEvent(this, 'chat-cumulative-guard', 'done', undefined, undefined, {
+            promptTokens: 20,
+            completionTokens: 10,
+            totalTokens: 30
+        }));
+
+        expect(state.tokenUsage.totalTokens).toEqual(630);
+        expect(state.tokenUsage.promptTokens).toEqual(420);
+        expect(state.tokenUsage.completionTokens).toEqual(210);
+    }
+
     @Test('working usage updates during app rpc streaming chunks')
     async workingUsageUpdatesDuringAppRpcStreamingChunks() {
         const runtime = new RuntimeStub();

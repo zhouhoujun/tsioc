@@ -2446,16 +2446,14 @@ export class AgentConsoleSessionState {
         const promptTokens = this.resolveUsageNumber(source, ['promptTokens', 'prompt_tokens', 'input_tokens']) ?? 0;
         const completionTokens = this.resolveUsageNumber(source, ['completionTokens', 'completion_tokens', 'output_tokens']) ?? 0;
         const totalTokens = this.resolveUsageNumber(source, ['totalTokens', 'total_tokens']) ?? (promptTokens + completionTokens);
+        this.turnTokenUsageBase = { promptTokens, completionTokens, totalTokens };
+        this.turnTokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
         this.tokenUsage = { promptTokens, completionTokens, totalTokens };
     }
 
     resetTurnTokenUsage(): void {
         this.turnTokenUsageBase = { ...this.tokenUsage };
-        this.turnTokenUsage = {
-            promptTokens: 0,
-            completionTokens: 0,
-            totalTokens: 0
-        };
+        this.turnTokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
     }
 
     setInput(value: string, cursor = value.length): void {
