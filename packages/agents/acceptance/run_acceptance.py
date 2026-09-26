@@ -82,6 +82,21 @@ class Screen:
                  .replace('\r\n', '\n').replace('\r', '\n').split('\n')]
         return '\n'.join(lines[-VIEWPORT_LINES:])
 
+    def since(self, mark: int) -> str:
+        """ANSI-stripped output emitted after ``mark`` bytes.
+
+        STREAM LAYOUT CONTRACT: in the default stream layout the TUI uses
+        native terminal scrollback, so nothing is pinned to a window. Later
+        frames (Working timer, statusline, composer) keep landing after a
+        reply, so a fixed-size tail races the assertion. A viewport-sized
+        window is only a valid frame of reference in explicit dynamic mode;
+        for stream layout callers must scope to the region they care about.
+        """
+        chunk = bytes(self.raw[mark:])
+        cleaned = ANSI_RE.sub('', chunk.decode('utf-8', errors='replace'))
+        cleaned = cleaned.replace('\r\n', '\n').replace('\r', '\n')
+        return '\n'.join(ln.rstrip() for ln in cleaned.split('\n'))
+
 
 _FAKE_PORT = 0
 
@@ -548,10 +563,10 @@ def scenario_theme_width_matrix(pid: int, fd: int, screen: Screen) -> bool:
                             on_sight=True, tail_from=turn_mark):
                 print(f'[FAIL] scenario 8: {theme}/{columns} composer did not recover')
                 return False
-            view = screen.viewport()
-            if '恢复索引写入失败：权限不足' not in view:
+            if '恢复索引写入失败：权限不足' not in screen.since(turn_mark):
                 print(f'[FAIL] scenario 8: {theme}/{columns} CJK root cause missing')
                 return False
+            view = screen.viewport()
             overflow = [line for line in view.splitlines() if display_width(line) > columns]
             if overflow:
                 print(f'[FAIL] scenario 8: {theme}/{columns} line exceeds terminal width: {overflow[0]!r}')

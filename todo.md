@@ -151,6 +151,14 @@
   | `agent-gateway` | 报错为 `Error: child append failed (exit null)`（子进程崩溃，非断言失败）；单独连跑 **3/3 exit=0** | 并发负载下的子进程偶发崩溃 |
   | `gate-regression` | `dom.cjk-long-history.elapsedMs +9128ms REGRESS`；但 10 项指标全部 `measured=false`（0 项 `measured=true`）；单独跑该 stage 直接 **skipped**（需 dom/tui stage 先产出指标） | 负载下采样到的**计时阈值**失真，非功能回归 |
   | `pty-acceptance` | 10 个场景中 9 个 PASS，仅 scenario 8 挂；单独连跑 3 次 = **2 PASS / 1 FAIL**，且失败单元格会**漂移**（先 `light/80`，后 `light/120`） | 既有 flaky（视口/时序敏感）|
-- `pty-acceptance` 根因（`packages/agents/acceptance/run_acceptance.py:551-554`）：断言用 `screen.viewport()` 检查固定文案 `恢复索引写入失败：权限不足` 是否在**当前视口**内。该文案在 artifact 中**确实已渲染**，但断言只看视口快照，滚动/时序变化即误判；属**既有测试脆弱性**，非产品缺陷。**未擅自修改**（与 agent-tools flake 同类，但需用户拍板）。
+- `pty-acceptance` scenario 8 根因：**布局契约用错**（详见下节）。此前记为「未擅自修改、待拍板」，用户已明确方向：**视窗固定只适用于非流水布局，stream/dynamic 两种布局都要支持**。
 - **干净环境重跑（无并发负载）**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，`GATE_EXIT=0`**（`/tmp/opencode/gate/clean.log`）。`gate-regression` 本轮计入 27 项且非 skipped，指标表仅在失败时打印，故无输出即通过。
 - 结论：3 项失败均为**环境/负载/既有 flaky**，本批次（`04bb0f018`/`973c3d134`/`e34fa3da9`/`de16043a0`）无回归；`agent-tools` 修复在全量门禁中确认生效。
+
+## 2026-09-26 scenario 8 修复：stream 与视窗两种布局
+- **产品两种布局都支持**（既有能力，非新增）：`messageLayout?: 'stream' | 'dynamic'`（`AgentConsoleSessionState.ts:403`），默认 `'stream'`（`:468`；`console-platform.spec.ts:32,41` 断言两端默认均为 stream）。`dynamic` 经 `ui.console.messageLayout` 配置可达（`AgentConsoleComponent.ts:400` → `setConsoleOptions`），且**已有单测覆盖**：`p286-c2-error-approval-stable-keys.spec.ts:97`、`console-renderer.spec.ts:716`。
+- **契约**（`AgentConsoleComponent.ts:2416-2420`）：stream 全程用 native scrollback，历史不按视口裁剪；**只有显式 dynamic 才窗口化**。因此「固定视窗」这一参照系仅在 dynamic 成立。
+- **缺陷**：PTY acceptance 不传布局参数，恒跑默认 `stream`；但 scenario 8 的文案存在性断言用 `screen.viewport()`（末尾 40 行固定窗口）——**把 dynamic 的契约用在了 stream 上**。stream 下回答之后的 Working 计时帧/状态栏/composer 持续落地，固定尾窗与断言赛跑，故随机误判（失败单元格在 `light/80`、`light/120` 间漂移，正因 `light` 格重绘帧更多）。
+- **修复**（`run_acceptance.py`）：新增 `Screen.since(mark)` 返回自字节偏移起的去 ANSI 文本；文案存在性改判 `screen.since(turn_mark)`，即**本轮自身输出区域**，与既有 `wait_for(..., tail_from=turn_mark)` 同一惯用法。**行宽断言仍留在稳定视口**（其从未误报，且需要稳定帧计算 `display_width`），未削弱。
+- **验证**：修复前 3 连跑 2 PASS/1 FAIL（失败格漂移）；修复后 **4 连跑 4 PASS / 0 FAIL**；全量门禁 **27/27 PASS，`GATE_EXIT=0`**（`/tmp/opencode/gate/final3.log`）。
+- **仍存覆盖缺口（如实记录）**：PTY acceptance **没有 dynamic 布局这条轴** —— dynamic 目前只有单测覆盖，未走真实 PTY 端到端。若要补，需给 harness 增加注入 `ui.console.messageLayout` 的通道并让主题/宽度矩阵在两种布局下各跑一轮（慢约一倍）。**未擅自扩大范围**。
