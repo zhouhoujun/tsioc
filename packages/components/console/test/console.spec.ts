@@ -814,6 +814,28 @@ export class ConsoleRendererTest {
         }
     }
 
+    @Test('paints a left rail for a border-left row without closing it into a full box')
+    async paintsLeftRailForBorderLeftRow() {
+        const ctx = await Application.run(ConsoleRailedRowTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(ConsoleRailedRowTestComponent) as ComponentRef<ConsoleRailedRowTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            const lines = renderer
+                .renderToTuiLines(root, { width: 16 })
+                .map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
+            const rows = lines.filter(line => line.trim().length > 0);
+            rows.forEach(line => expect(line.startsWith('\u2502')).toBeTruthy());
+            expect(lines.some(line => /[\u250c\u2510\u2514\u2518]/.test(line))).toBeFalsy();
+            expect(rows.map(line => line.replace(/[\u2502]/g, '').trim()).join(''))
+                .toBe('abcdefghijklmnopqrstuvwxyz');
+        } finally {
+            await ctx.close();
+        }
+    }
+
     @Test('renders panel body at natural height before footer when height is unset')
     rendersPanelBodyAtNaturalHeightBeforeFooterWhenHeightIsUnset() {
         const lines = renderPanel('Tasks', ['one', 'two', 'three'], 24, undefined, {

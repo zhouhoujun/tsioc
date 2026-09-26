@@ -541,17 +541,24 @@ export class TuiRenderer extends ConsoleRenderer {
         return (element.tagName || '').toLowerCase();
     }
 
+    protected resolveBorderEdges(styleMap: Record<string, string>): { box: boolean; left: boolean } {
+        const box = !!styleMap.border;
+        return { box, left: box || !!(styleMap['border-left'] || styleMap.borderLeft) };
+    }
+
     protected resolveBlockContentWidth(styleMap: Record<string, string>, width?: number): number | undefined {
         if (!width || !this.hasBlockFrame(styleMap, width)) {
             return width;
         }
         const padding = this.resolveBoxPadding(styleMap.padding);
-        const hasBorder = !!styleMap.border;
+        const border = this.resolveBorderEdges(styleMap);
         const hasBackground = !!(styleMap.background || styleMap['background-color']);
         // Do not paint the terminal's final column for unbordered background bands.
         // Some terminals auto-wrap or retain that cell as a vertical shadow.
-        const renderWidth = !hasBorder && hasBackground ? Math.max(1, width - 1) : width;
-        return Math.max(4, renderWidth - (hasBorder ? 2 : 0) - padding.left - padding.right);
+        const renderWidth = !border.box && hasBackground ? Math.max(1, width - 1) : width;
+        // Reserved edge columns must mirror the painted border edges, or total width drifts from `width`.
+        const edgeColumns = border.box ? 2 : border.left ? 1 : 0;
+        return Math.max(4, renderWidth - edgeColumns - padding.left - padding.right);
     }
 
     protected renderBlockLines(lines: string[], styleMap: Record<string, string>, width?: number): string[] {
@@ -560,23 +567,22 @@ export class TuiRenderer extends ConsoleRenderer {
             return lines;
         }
         const padding = this.resolveBoxPadding(styleMap.padding);
-        const hasBorder = !!styleMap.border;
+        const border = this.resolveBorderEdges(styleMap);
         const innerWidth = this.resolveBlockContentWidth(styleMap, width) as number;
         const contentLines = lines.length ? lines : [''];
         const framed: string[] = [];
-        const horizontal = hasBorder ? this.applyAnsi('─'.repeat(Math.max(1, width - 2)), styleMap, undefined, true) : '';
+        const horizontal = border.box ? this.applyAnsi('─'.repeat(Math.max(1, width - 2)), styleMap, undefined, true) : '';
         const topPad = ' '.repeat(Math.max(0, padding.top));
         const bottomPad = ' '.repeat(Math.max(0, padding.bottom));
         const renderRow = (raw: string) => {
             const leftPad = this.applyAnsi(' '.repeat(Math.max(0, padding.left)), styleMap, undefined, true);
             const rightPad = this.applyAnsi(' '.repeat(Math.max(0, padding.right)), styleMap, undefined, true);
             const body = this.applyAnsi(this.padVisible(raw, innerWidth), styleMap, undefined, true);
-            if (!hasBorder) {
-                return `${leftPad}${body}${rightPad}`;
-            }
-            return `${this.applyAnsi('│', styleMap, undefined, true)}${leftPad}${body}${rightPad}${this.applyAnsi('│', styleMap, undefined, true)}`;
+            const leading = border.left ? this.applyAnsi('│', styleMap, undefined, true) : '';
+            const trailing = border.box ? this.applyAnsi('│', styleMap, undefined, true) : '';
+            return `${leading}${leftPad}${body}${rightPad}${trailing}`;
         };
-        if (hasBorder) {
+        if (border.box) {
             framed.push(`${this.applyAnsi('┌', styleMap, undefined, true)}${horizontal}${this.applyAnsi('┐', styleMap, undefined, true)}`);
         }
         for (let index = 0; index < padding.top; index++) {
@@ -586,7 +592,7 @@ export class TuiRenderer extends ConsoleRenderer {
         for (let index = 0; index < padding.bottom; index++) {
             framed.push(renderRow(bottomPad));
         }
-        if (hasBorder) {
+        if (border.box) {
             framed.push(`${this.applyAnsi('└', styleMap, undefined, true)}${horizontal}${this.applyAnsi('┘', styleMap, undefined, true)}`);
         }
         return framed;
@@ -599,18 +605,18 @@ export class TuiRenderer extends ConsoleRenderer {
     protected resolveBlockContentOffset(styleMap: Record<string, string>): { row: number; column: number } {
         const padding = this.resolveBoxPadding(styleMap.padding);
         const hasFrame = this.hasBlockFrame(styleMap);
-        const hasBorder = !!styleMap.border;
+        const border = this.resolveBorderEdges(styleMap);
         if (!hasFrame) {
             return { row: 0, column: 0 };
         }
         return {
-            row: (hasBorder ? 1 : 0) + padding.top,
-            column: (hasBorder ? 1 : 0) + padding.left
+            row: (border.box ? 1 : 0) + padding.top,
+            column: (border.left ? 1 : 0) + padding.left
         };
     }
 
     protected hasBlockFrame(styleMap: Record<string, string>, width?: number): boolean {
-        const hasBoxStyle = !!(styleMap.background || styleMap['background-color'] || styleMap.border || styleMap.padding);
+        const hasBoxStyle = !!(styleMap.background || styleMap['background-color'] || styleMap.border || styleMap['border-left'] || styleMap.borderLeft || styleMap.padding);
         if (typeof width === 'number') {
             return width > 0 && hasBoxStyle;
         }

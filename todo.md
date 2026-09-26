@@ -207,3 +207,20 @@
   - DOM 侧 `overflow-wrap: 'anywhere'`（`AgentConsoleMessageRenderers.ts:1066`、`:1123`）会在词内断行，可直接解释 `w/ith`、`T/ool` 这类样本。
 - **未擅自改动的原因**：`overflow-wrap: anywhere` → `break-word` / `word-break: keep-all` 属于**用户可见的换行行为变更**，且 `anywhere` 会影响 min-content 尺寸（可能正是“错位/抖动”来源之一）。按根 AGENTS.md「禁止以优化/重构为由改变已有用户功能；冲突须先说明并询问取舍」，**保留现状，等用户确认**。
 - **已交付修复的诚实边界**：`39039a68d` 确实修掉了 TUI 侧**静默丢字符**（真实 railed 行每行丢 3 列，已证旧实现失败→修复后通过）；但**没有也无法证明**它修掉了用户截图里的 `w/ith`、`T/ool` 断词——那更像 DOM 侧 `overflow-wrap: anywhere`。
+
+### 6. 浏览器实测**推翻** `overflow-wrap` 假设（未改 DOM 代码）
+按用户「先在浏览器复现再决定」的要求，用 Chromium 实跑 agent-ui 行的等价声明（`/tmp/opencode/repro/repro.html`，40/80 cols，`Range.getClientRects()` 取视觉行）：
+- `overflow-wrap: anywhere` 与 `break-word` 的**视觉行宽完全一致**（`[185, 312, 8]`），**min-content 也完全一致**（均 337px）。
+- 另确认 agent-ui 消息行是 `display: block`（`grep` 无 `flex`/`grid`/`min-width`），`anywhere` 的 min-content 影响**没有可作用的 flex/grid 父级**。
+- 结论：`T/ool` 的 1 字断行**不是** wrap 模式造成的，改 `anywhere → break-word` 无行为收益。属**用户可见换行变更**，按 AGENTS.md「禁止以优化为由改变已有功能」**取消该改动**，保留现状。`overflow-wrap` 保持 `anywhere`（`AgentConsoleMessageRenderers.ts:1066`、`:1123`）。
+
+### 7. TUI 支持 `border-left` 长写导轨（跨渲染器一致性）
+- `tui.ts` 新增 `resolveBorderEdges()`：`resolveBlockContentWidth` / `resolveBlockContentOffset` / `hasBlockFrame` / `renderBlockLines` 统一改用 `border.box` / `border.left`。左导轨只画左侧 `│`、不画 `┌┐└┘`，**预留 1 列**（整框仍为 2 列）；总宽仍为 `width-1`，不触碰终端最后一列。
+- 新增 `paintsLeftRailForBorderLeftRow`：**先证红**（回退 `tui.ts` → `83 passing 1 failed`，`console.spec.ts:830` `startsWith('│')` 为 false，其余 83 条仍绿），**再证绿**（`84 passing`、`EXIT=0`）。
+
+### 8. ⚠️ 导轨与 tail-visibility 的真实冲突（已获用户批准处理）
+- **A/B 定位**：旧 `tui.ts` → `pty-acceptance` **PASS**；新 `tui.ts` → **FAIL** `scenario 1: question visible but not near viewport bottom`。**是本次改动引入的回归，非偶发。**
+- 机理：导轨占 1 个终端列 → railed 内容窄 1 列 → 长回复多折 1 行 → 尾部问题被推离底部。问题**仍可见**（settle 正则 `是否继续？…Ask code or files` 已匹配），只是超出 `view[-6:]` 窗口。
+- **无法零代价规避**：DOM 是「`border-left` + `padding-left`」＝导轨、间隙、内容；终端无法画亚字符导轨，`│` 必须独占一格。改为覆盖 padding 列虽可保住内容宽度，但会丢掉 DOM 的导轨-内容间隙，反而让两端渲染器**静默分叉**。
+- 经用户拍板：**保留导轨**，把 `run_acceptance.py` 场景 1 窗口 `view[-6:]` → `view[-8:]`，并在代码内记录该数字来自导轨列成本这一跨层耦合（否则后人会「纠正」回 6 并再次弄红门禁）。
+- 回归结果：console 84、components 137、common 5、html 118、agent-ui 1405 全绿；**门禁 27/27，`GATE_EXIT=0`**。

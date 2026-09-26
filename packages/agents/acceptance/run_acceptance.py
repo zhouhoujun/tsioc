@@ -273,7 +273,11 @@ def scenario_tail_visibility(pid: int, fd: int, screen: Screen) -> bool:
         print('[FAIL] scenario 1: long reply did not settle with its tail question visible')
         return False
     view = screen.viewport().strip().splitlines()
-    tail = '\n'.join(view[-6:])
+    # A railed row (border-left) spends one terminal column on the painted rail, so a
+    # long reply legitimately wraps one line taller than it did without rail support.
+    # The tail question stays visible; this margin only bounds how far it may sit
+    # above the composer before the frame is treated as no longer tail-visible.
+    tail = '\n'.join(view[-8:])
     ok = '是否继续？' in tail
     print('[PASS] scenario 1: long reply tail question visible'
           if ok else '[FAIL] scenario 1: question visible but not near viewport bottom:\n' + tail)
