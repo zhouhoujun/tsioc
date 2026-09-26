@@ -216,6 +216,17 @@ class ConsoleBorderedWrapTestComponent {
 }
 
 @Component({
+    selector: 'console-railed-row-test',
+    template: `
+    <div style="border-left: 3px solid #58a6ff; background: rgba(88, 166, 255, 0.05); padding: 0.6em 1ch; display: block; box-sizing: border-box;">
+        <label>abcdefghijklmnopqrstuvwxyz</label>
+    </div>
+    `
+})
+class ConsoleRailedRowTestComponent {
+}
+
+@Component({
     selector: 'console-fold-panel-test',
     imports: [PanelComponent],
     template: `
@@ -776,6 +787,25 @@ export class ConsoleRendererTest {
             const lines = renderer.renderToTuiLines(root, { width: 16 });
             const content = lines
                 .filter(line => !/[\u250c\u2510\u2514\u2518]/.test(line))
+                .map(line => line.replace(/\x1b\[[0-9;]*m/g, '').replace(/[\u2502]/g, '').trim())
+                .join('');
+            expect(content).toBe('abcdefghijklmnopqrstuvwxyz');
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('keeps full content for a railed row that uses border-left plus background and padding')
+    async keepsFullContentForRailedRow() {
+        const ctx = await Application.run(ConsoleRailedRowTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(ConsoleRailedRowTestComponent) as ComponentRef<ConsoleRailedRowTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            const lines = renderer.renderToTuiLines(root, { width: 16 });
+            const content = lines
                 .map(line => line.replace(/\x1b\[[0-9;]*m/g, '').replace(/[\u2502]/g, '').trim())
                 .join('');
             expect(content).toBe('abcdefghijklmnopqrstuvwxyz');
