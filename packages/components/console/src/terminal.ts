@@ -1632,6 +1632,16 @@ export function shouldUseAlternateScreen(env: Record<string, string | undefined>
     return configured !== '0' && configured !== 'false' && configured !== 'no';
 }
 
+/** Last space a line may break after, or -1 when only char-level breaking is safe (CJK, long tokens, ANSI). */
+function lastWrappableSpace(value: string): number {
+    for (let index = value.length - 1; index > 0; index--) {
+        if (value[index] === ' ') {
+            return index;
+        }
+    }
+    return -1;
+}
+
 export function wrapTerminalText(value: string, width: number): string[] {
     const chunkWidth = Math.max(1, width);
     const normalized = String(value || '').replace(/\r/g, '').split('\n');
@@ -1644,8 +1654,17 @@ export function wrapTerminalText(value: string, width: number): string[] {
         let rest = line;
         while (rest) {
             const chunk = sliceByDisplayWidth(rest, chunkWidth) || rest.slice(0, chunkWidth);
-            lines.push(chunk);
-            rest = rest.slice(chunk.length);
+            // Cutting before an ANSI reset would leak style, so styled chunks stay char-level.
+            const breakAt = chunk.length < rest.length && !chunk.includes('\x1b')
+                ? lastWrappableSpace(chunk)
+                : -1;
+            if (breakAt > 0) {
+                lines.push(chunk.slice(0, breakAt).replace(/ +$/, ''));
+                rest = rest.slice(breakAt).replace(/^ +/, '');
+            } else {
+                lines.push(chunk);
+                rest = rest.slice(chunk.length);
+            }
         }
     });
     return lines.length ? lines : [''];

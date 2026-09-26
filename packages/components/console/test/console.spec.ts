@@ -1794,11 +1794,32 @@ export class ConsoleRendererTest {
         expect(collapsed.state.terminalRow).toBe(2);
     }
 
-    @Test('wraps terminal prefixed text locally')
+    @Test('wraps terminal prefixed text at word boundaries')
     wrapsTerminalPrefixedTextLocally() {
         expect(wrapPrefixedText('hello world wide', 10, '> ', '  ')).toEqual([
-            '> hello wo',
-            '  rld wide'
+            '> hello',
+            '  world',
+            '  wide'
+        ]);
+    }
+
+    @Test('keeps character-level wrapping when no word boundary exists')
+    keepsCharacterLevelWrappingWithoutWordBoundaries() {
+        expect(wrapPrefixedText('你好世界你好', 4, '', '')).toEqual(['你好', '世界', '你好']);
+        expect(wrapPrefixedText('supercalifragilistic', 8, '', '')).toEqual([
+            'supercal',
+            'ifragili',
+            'stic'
+        ]);
+    }
+
+    @Test('does not split a latin word across a wrapped line')
+    doesNotSplitLatinWordAcrossWrappedLine() {
+        expect(wrapPrefixedText('the workspace currently holds', 12, '', '')).toEqual([
+            'the',
+            'workspace',
+            'currently',
+            'holds'
         ]);
     }
 
