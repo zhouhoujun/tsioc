@@ -196,3 +196,14 @@
 - 延后调查：实际 routed model profile、Codex/OpenCode tool-round/continuation primary-source 对照（librarian 因 `ProviderModelNotFoundError: opencode/gpt-5-nano` 全部失败，改用内置搜索后仍无可靠 primary source）。
 - `deepseek-v4-flash` 废弃名在 `packages/agents/agent/src/options.ts:623` 附近仍有 4 处，**清理需用户明确批准**。
 - `sleep-mlt` 旧 `streak` 子命令仍有独立 staleness 缺陷（`buildReport` 已防护），v8 范围内未改。
+
+### 5. 覆盖真实行形状 + 发现跨渲染器分歧（`24b08fdbc`）
+- **补测试的必要性**：`39039a68d` 的测试用的是 `border` **简写**；而 agent-ui 消息行实际用 `border-left` **长写** + `background` + `padding`，两者走的宽度分支不同。已补真实形状用例（`ConsoleRailedRowTestComponent`）。
+- **按 AGENTS.md 先证旧实现失败**：`git show 39039a68d~1:...tui.ts` 回退后两个用例**都红**，且丢字数与预测完全一致 —— 简写块丢 `op`（2 列），真实 railed 行丢 `nop`（3 列，因 `innerWidth = (width-1) - 0 - 1 - 1`）。恢复修复后 83 passing、`GATE_EXIT=0`、门禁 27/27。
+
+- **⚠️ 新发现的分歧（未修，需用户拍板）**：`tui.ts` 的 `hasBorder` / `hasBlockFrame` **只读 `styleMap.border` 简写**；`grep` 确认 `components/console/src` **没有任何代码读 `border-left` / `borderLeft`**。而 `AgentConsoleMessageRenderers.ts:252/478/503/519/535/551/1068` 全部用长写。
+  - 后果：TUI 里这些行 `hasBorder === false` → **不画 `│` 导轨、不预留 2 列**；DOM 则按真实 CSS 画边框。**跨渲染器行为不一致。**
+  - 因此用户截图里的 `│` **不可能来自 TUI 消息行的导轨** → 其截图大概率是**浏览器 DOM** 侧。
+  - DOM 侧 `overflow-wrap: 'anywhere'`（`AgentConsoleMessageRenderers.ts:1066`、`:1123`）会在词内断行，可直接解释 `w/ith`、`T/ool` 这类样本。
+- **未擅自改动的原因**：`overflow-wrap: anywhere` → `break-word` / `word-break: keep-all` 属于**用户可见的换行行为变更**，且 `anywhere` 会影响 min-content 尺寸（可能正是“错位/抖动”来源之一）。按根 AGENTS.md「禁止以优化/重构为由改变已有用户功能；冲突须先说明并询问取舍」，**保留现状，等用户确认**。
+- **已交付修复的诚实边界**：`39039a68d` 确实修掉了 TUI 侧**静默丢字符**（真实 railed 行每行丢 3 列，已证旧实现失败→修复后通过）；但**没有也无法证明**它修掉了用户截图里的 `w/ith`、`T/ool` 断词——那更像 DOM 侧 `overflow-wrap: anywhere`。
