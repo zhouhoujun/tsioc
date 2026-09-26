@@ -205,6 +205,17 @@ class ConsolePanelTestComponent {
 }
 
 @Component({
+    selector: 'console-bordered-wrap-test',
+    template: `
+    <section style="border: 1px solid #29543d;">
+        <p style="color: #7dd9a8;">abcdefghijklmnopqrstuvwxyz</p>
+    </section>
+    `
+})
+class ConsoleBorderedWrapTestComponent {
+}
+
+@Component({
     selector: 'console-fold-panel-test',
     imports: [PanelComponent],
     template: `
@@ -748,6 +759,26 @@ export class ConsoleRendererTest {
             expect(lines.some(line => line.includes('Panel'))).toBe(true);
             expect(lines.some(line => line.includes('Body'))).toBe(true);
             expect(lines.some(line => line.includes('\x1b['))).toBe(true);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('wraps bordered block content to the inner width without dropping characters')
+    async wrapsBorderedBlockContentToInnerWidth() {
+        const ctx = await Application.run(ConsoleBorderedWrapTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(ConsoleBorderedWrapTestComponent) as ComponentRef<ConsoleBorderedWrapTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            const lines = renderer.renderToTuiLines(root, { width: 16 });
+            const content = lines
+                .filter(line => !/[\u250c\u2510\u2514\u2518]/.test(line))
+                .map(line => line.replace(/\x1b\[[0-9;]*m/g, '').replace(/[\u2502]/g, '').trim())
+                .join('');
+            expect(content).toBe('abcdefghijklmnopqrstuvwxyz');
         } finally {
             await ctx.close();
         }

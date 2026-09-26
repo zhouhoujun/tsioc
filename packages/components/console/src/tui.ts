@@ -403,11 +403,12 @@ export class TuiRenderer extends ConsoleRenderer {
                 const childClickTargets: TerminalClickTarget[] = [];
                 const childInherited = this.getInheritedStyleMap(styleMap);
                 const hasOwnFrame = this.hasBlockFrame(styleMap, width);
+                const childWidth = this.resolveBlockContentWidth(styleMap, width);
                 element.childNodes.forEach(child => this.walkTuiNode(
                     child as ConsoleNode,
                     childLines,
                     childInherited,
-                    width,
+                    childWidth,
                     childTargets,
                     childRegions,
                     childClickTargets,
@@ -540,10 +541,9 @@ export class TuiRenderer extends ConsoleRenderer {
         return (element.tagName || '').toLowerCase();
     }
 
-    protected renderBlockLines(lines: string[], styleMap: Record<string, string>, width?: number): string[] {
-        const hasFrame = this.hasBlockFrame(styleMap, width);
-        if (!hasFrame || !width) {
-            return lines;
+    protected resolveBlockContentWidth(styleMap: Record<string, string>, width?: number): number | undefined {
+        if (!width || !this.hasBlockFrame(styleMap, width)) {
+            return width;
         }
         const padding = this.resolveBoxPadding(styleMap.padding);
         const hasBorder = !!styleMap.border;
@@ -551,10 +551,20 @@ export class TuiRenderer extends ConsoleRenderer {
         // Do not paint the terminal's final column for unbordered background bands.
         // Some terminals auto-wrap or retain that cell as a vertical shadow.
         const renderWidth = !hasBorder && hasBackground ? Math.max(1, width - 1) : width;
-        const innerWidth = Math.max(4, renderWidth - (hasBorder ? 2 : 0) - padding.left - padding.right);
+        return Math.max(4, renderWidth - (hasBorder ? 2 : 0) - padding.left - padding.right);
+    }
+
+    protected renderBlockLines(lines: string[], styleMap: Record<string, string>, width?: number): string[] {
+        const hasFrame = this.hasBlockFrame(styleMap, width);
+        if (!hasFrame || !width) {
+            return lines;
+        }
+        const padding = this.resolveBoxPadding(styleMap.padding);
+        const hasBorder = !!styleMap.border;
+        const innerWidth = this.resolveBlockContentWidth(styleMap, width) as number;
         const contentLines = lines.length ? lines : [''];
         const framed: string[] = [];
-        const horizontal = hasBorder ? this.applyAnsi('─'.repeat(Math.max(1, renderWidth - 2)), styleMap, undefined, true) : '';
+        const horizontal = hasBorder ? this.applyAnsi('─'.repeat(Math.max(1, width - 2)), styleMap, undefined, true) : '';
         const topPad = ' '.repeat(Math.max(0, padding.top));
         const bottomPad = ' '.repeat(Math.max(0, padding.bottom));
         const renderRow = (raw: string) => {
