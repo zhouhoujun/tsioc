@@ -123,3 +123,34 @@
   3. 复跑 5 次：`run1 exit=1`，`run2..5 exit=0` → 确证为 flaky（观测失败率 1/5）。
 - 修复方向（**属既有缺陷，未擅自修改，待用户拍板**）：应修测试而非源码 —— 或注入可控时钟，或断言时剔除 `updatedAt` 后再比对。改 `reconcileStepStatus` 去掉时间戳会破坏 `updatedAt` 的既有语义（属禁止的功能降级）。
 - 门禁其余 26 项全绿，含真实 PTY acceptance（`pty-acceptance`）、`dom-gate` 80/100 列矩阵、`tui-gate`、`gate-regression`、`source-size`、`production-db-integrity`、`git diff --check`。
+- **已修复并提交**（`de16043a0`）：`replayShape` helper 比对时剔除 `updatedAt`，仍覆盖 `outcomes` 全量 + 每个 todo 的 `status`/`content`；用例标题改为「identical decisions」以准确描述语义。生产代码零改动（`updatedAt` 语义保留，未做功能降级）。验证：12 次连跑 0 失败；变异测试确认断言未被掏空 —— 往 `outcomes.evidenceIds` 或 todo `content` 注入 `Math.random()` 均被捕获，而「均匀改源码」仍通过（因为该用例断言的是 replay 确定性，非结果正确性，后者由同套件其他用例覆盖）。
+
+## 2026-09-25 第四轮真实 TUI 实测（v7，系统构建任务 —— streak 子命令）
+- 任务（多步构建，未给任何测试/流程指令）：新增 `streak` 子命令，报告「当前连续天数」与「最长连续天数」，支持 `--json`，空 store 须给明确提示而非打印 0；并要求补测试、更新 README、**提交**。
+- 基线：sleep-mlt 复位 `ba7b6c4` clean + `npm run clean`。
+- 结果（独立复核，非采信自述）：**完成并提交** `cf06eba`，6 文件 +219/-3，工作树干净；`npm test` **55 pass / 0 fail**（was 49），`npm run build` exit 0。116 次工具调用，53.8K tokens，2m53s。
+- **本轮质量显著高于 v6**：v6（单点 bug 修复）撞 20 轮上限、未提交；v7（多步构建任务）**未撞上限**且完整收尾。差异在任务形态与 agent 是否走计划流程（v7 用了 20 次 `Update plan`），**不是**能力上限。
+- 测试有效性用**变异测试**验证（v6 的回滚法在本轮不够用，见下）：
+  | 变异 | 捕获用例 |
+  |---|---|
+  | M1 `current := longest` | 2 个 |
+  | M2' `run + 2` 取代 `run + 1` | 3 个（analysis 10/11、cli 31）|
+  | M3' 去掉日期去重 | analysis 10 |
+  | M4 接受非法日期 | 1 个 |
+  | M5 空 store `lastDate` 改值 | 1 个 |
+  → 5/5 全部被捕获，agent 的测试**真正锁住行为**。
+- **方法论修正（重要）**：本轮「回滚 src、保留测试」只得到 `TS2305: Module '"../src/analysis.js"' has no exported member 'computeStreak'` —— **编译失败**，只能证明测试引用了新符号，**不能**证明行为被覆盖。凡新增导出符号的改动，回滚法天然偏弱，须以变异测试补足。
+- **未解问题（如实记录，不臆断）**：同一 20 轮配置下，v6 在 72 次调用时撞上限，v7 在 **116 次调用仍未撞**。已知 `buildPlanContinuation` 会 `round = 0`（`DefaultAgentRuntime.ts:1144`），但那发生在上限文案发出**之后**，而 v7 日志中**没有任何上限文案**。故我对轮次计数器的模型不完整，机制待查。
+- **对既有结论的修正**：先前基于 v6 倾向「接近上限时提示改走 `coding_task`」（方向 2）。v7 证据**削弱**该动机 —— 任务本身是构建型时，agent 会自行计划并完成，未触及上限。故 v6 的轮次耗尽**不足以**支撑运行时改动立项；应先查清上述计数器机制，再判断是否真有缺口。
+
+## 2026-09-26 收尾全量门禁（v7 之后）
+- 首次收尾门禁（`/tmp/opencode/gate/final2.log`）**24/27 FAIL**，`GATE_EXIT=3`，3 项失败：`agent-gateway`、`gate-regression`、`pty-acceptance`。
+- **逐项隔离复核，均非本批次回归**：
+  | 失败项 | 隔离证据 | 判定 |
+  |---|---|---|
+  | `agent-gateway` | 报错为 `Error: child append failed (exit null)`（子进程崩溃，非断言失败）；单独连跑 **3/3 exit=0** | 并发负载下的子进程偶发崩溃 |
+  | `gate-regression` | `dom.cjk-long-history.elapsedMs +9128ms REGRESS`；但 10 项指标全部 `measured=false`（0 项 `measured=true`）；单独跑该 stage 直接 **skipped**（需 dom/tui stage 先产出指标） | 负载下采样到的**计时阈值**失真，非功能回归 |
+  | `pty-acceptance` | 10 个场景中 9 个 PASS，仅 scenario 8 挂；单独连跑 3 次 = **2 PASS / 1 FAIL**，且失败单元格会**漂移**（先 `light/80`，后 `light/120`） | 既有 flaky（视口/时序敏感）|
+- `pty-acceptance` 根因（`packages/agents/acceptance/run_acceptance.py:551-554`）：断言用 `screen.viewport()` 检查固定文案 `恢复索引写入失败：权限不足` 是否在**当前视口**内。该文案在 artifact 中**确实已渲染**，但断言只看视口快照，滚动/时序变化即误判；属**既有测试脆弱性**，非产品缺陷。**未擅自修改**（与 agent-tools flake 同类，但需用户拍板）。
+- **干净环境重跑（无并发负载）**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，`GATE_EXIT=0`**（`/tmp/opencode/gate/clean.log`）。`gate-regression` 本轮计入 27 项且非 skipped，指标表仅在失败时打印，故无输出即通过。
+- 结论：3 项失败均为**环境/负载/既有 flaky**，本批次（`04bb0f018`/`973c3d134`/`e34fa3da9`/`de16043a0`）无回归；`agent-tools` 修复在全量门禁中确认生效。
