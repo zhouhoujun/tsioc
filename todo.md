@@ -162,3 +162,37 @@
 - **修复**（`run_acceptance.py`）：新增 `Screen.since(mark)` 返回自字节偏移起的去 ANSI 文本；文案存在性改判 `screen.since(turn_mark)`，即**本轮自身输出区域**，与既有 `wait_for(..., tail_from=turn_mark)` 同一惯用法。**行宽断言仍留在稳定视口**（其从未误报，且需要稳定帧计算 `display_width`），未削弱。
 - **验证**：修复前 3 连跑 2 PASS/1 FAIL（失败格漂移）；修复后 **4 连跑 4 PASS / 0 FAIL**；全量门禁 **27/27 PASS，`GATE_EXIT=0`**（`/tmp/opencode/gate/final3.log`）。
 - **仍存覆盖缺口（如实记录）**：PTY acceptance **没有 dynamic 布局这条轴** —— dynamic 目前只有单测覆盖，未走真实 PTY 端到端。若要补，需给 harness 增加注入 `ui.console.messageLayout` 的通道并让主题/宽度矩阵在两种布局下各跑一轮（慢约一倍）。**未擅自扩大范围**。
+
+## 2026-09-26 会话累计 tokens + 输出错位（用户实机反馈）
+用户反馈两条：**“状态栏下面是记录会话消耗的总tokens数量，现在仍然不是”**（期望会话累计，实测 sawtooth 回落）与 **“实际运行效果如下多了几个错位的点”**（样本 `there.The`、`w/ith`、`● │ T/ool`）。
+用户在同一问卷里勾选了全部四项（含互相矛盾的 “错位保持现状”）；已明确按“执行前三项修复”解读并获用户 “Continue” 认可，不重复追问。
+
+### 1. 累计 tokens：`57469dba7`
+- **根因**：`setTokenUsageAbsolute()` 只写 `tokenUsage` / `turnTokenUsage`，未把**上一个 turn 的累计值**并入 `turnTokenUsageBase`。每个模型轮结束时 `turnTokenUsage` 归零，底座仍是旧值 → 状态栏在 3.5K→8.1K→917→94→56 间锯齿。
+- **修复**：写入时 `turnTokenUsageBase = 本次权威累计值`，并把 `turnTokenUsage` 清零，保证“底座 + 本轮增量 = 会话累计”。
+- **回归**：`vm-diagnostics.spec.ts` 新增 `sessionCumulativeUsageSurvivesNextStreamChunk()`；**修复前 Expected 630 / Received 30**，修复后通过。
+- **实机**：真实 tmux 多轮只读任务，footer 单调 `23.7K → 23.8K → 24.4K → 77.6K`（旧行为锯齿）。
+- agent-ui 1405 passing、tsc EXIT 0、source-size 7387、门禁 27/27。已推 `origin/7.tui`。
+
+### 2. Latin 词边界换行：`0cf2e8aab`
+- **根因**：`wrapTerminalText()` / `wrapStyledSegmentLine()` 按 display width 硬切，任何拉丁文本都在字符中间断行。
+- **修复**：chunk 内存在 ASCII 空格时回退到最后一个可断空格；**CJK、长 URL/path、含 ANSI chunk 保持字符级**（切 ANSI 边界会串色）。
+- console 81、components 137、common 5、html 118、agent-ui 1405 全绿，门禁 27/27。已推 `origin/7.tui`。
+
+### 3. 带边框块内容被截断：`39039a68d`（本轮）
+- **根因（先写失败测试实证，非推测）**：`walkTuiNode` 把**满宽 `width`** 传给带边框块的子节点，子节点按满宽换行；随后 `renderBlockLines` 用 `padVisible(raw, innerWidth)` **截断**到 `width - 2`。结果每行末尾 2 列被静默丢弃，可见断点提前 2 列、落在词中间且紧贴 `│` —— 正是 `● │ T/ool` 的成因。
+- **实证**：新增 `wrapsBorderedBlockContentToInnerWidth()`，修复前 `Expected "abcdefghijklmnopqrstuvwxyz" / Received "abcdefghijklmnqrstuvwxyz"`（`op` 被吞），修复后通过。
+- **修复**：抽出 `resolveBlockContentWidth()` 作为唯一真源，**子节点递归与边框取框共用**，子节点按实际可用宽度换行。
+- **安全性**：`getInheritedStyleMap()` 只向下传 `color`/`font-weight`，**不传 padding/background**，故块自身 padding 仅由 `renderBlockLines` 施加一次，**不存在重复扣减**。`horizontal` 边框线原引用已删除的 `renderWidth`，改为 `width - 2`（`horizontal` 仅在 `hasBorder` 分支非空，而该分支下 `renderWidth === width`，等价）。
+- **覆盖用户场景**：`AgentConsoleMessageRenderers.ts:478` 工具行正是 `borderLeft: 3px solid` + `background` → `hasBlockFrame` 为真 → 走修复后的路径；悬挂缩进由同层 `continuationLead: () => '  '` 负责。
+- 修复后 console 82、components 137、common 5、html 118、agent-ui 1405 全绿；source-size OK；**门禁 27/27，`GATE_EXIT=0`**（含 PTY acceptance、DOM/TUI gate、`git diff --check`）。已推 `origin/7.tui`。
+
+### 4. `there.The` 判定为**非渲染层**（未改代码）
+`tokenizeMarkdownInline` 用 `input.slice(lastIndex, match.index)` 原样保留 token 间文本再 `join('')`，markdown 路径不丢空格；无 renderer 丢空格证据，判为模型/provider 侧输出，不做无证据改动。
+
+### 仍存缺口（如实记录，未擅自扩大范围）
+- PTY acceptance **没有 dynamic 布局这条轴**（见上节），dynamic 仍只有单测覆盖。
+- 未在真实 PTY 复跑用户那条具体 `● │ T/ool` 长工具行；本轮证据为共用层单测 + 门禁 PTY acceptance 全绿。
+- 延后调查：实际 routed model profile、Codex/OpenCode tool-round/continuation primary-source 对照（librarian 因 `ProviderModelNotFoundError: opencode/gpt-5-nano` 全部失败，改用内置搜索后仍无可靠 primary source）。
+- `deepseek-v4-flash` 废弃名在 `packages/agents/agent/src/options.ts:623` 附近仍有 4 处，**清理需用户明确批准**。
+- `sleep-mlt` 旧 `streak` 子命令仍有独立 staleness 缺陷（`buildReport` 已防护），v8 范围内未改。
