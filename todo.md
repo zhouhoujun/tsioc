@@ -224,3 +224,15 @@
 - **无法零代价规避**：DOM 是「`border-left` + `padding-left`」＝导轨、间隙、内容；终端无法画亚字符导轨，`│` 必须独占一格。改为覆盖 padding 列虽可保住内容宽度，但会丢掉 DOM 的导轨-内容间隙，反而让两端渲染器**静默分叉**。
 - 经用户拍板：**保留导轨**，把 `run_acceptance.py` 场景 1 窗口 `view[-6:]` → `view[-8:]`，并在代码内记录该数字来自导轨列成本这一跨层耦合（否则后人会「纠正」回 6 并再次弄红门禁）。
 - 回归结果：console 84、components 137、common 5、html 118、agent-ui 1405 全绿；**门禁 27/27，`GATE_EXIT=0`**。
+
+### 9. 收尾验收（本轮）
+- **工作树干净**：`7.tui` 与 `origin/7.tui` 同步于 `6a878eecd`，`packages/`、`scripts/` 无未提交漂移；已清理本次浏览器复现产生的 `.playwright-mcp/` 临时快照（console log + 2 份 page yml），`git status --porcelain` 无残留。
+- **全量门禁复跑**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **`GATE_EXIT=0`，`PASS (27 passed, 0 skipped, 27 total)`**。逐阶段：10 个 agent 包单测、4 个 components 包单测、4 个 `tsc --noEmit`、`build-agent-ui-web`、`dom-gate` + `dom-gate-matrix`(JSDOM 5 场景 + 80/100 列时间线矩阵)、`tui-gate`(5 场景)、`gate-regression`(指标基线)、`pty-acceptance`(真实终端)、`diff-check`、`source-size`、`production-db-integrity` —— 全部 `GATE-PASS`，日志无 `FAIL`。
+- **本轮修复不改动既有功能**：`border-left` 长写此前在 TUI 完全被忽略（不画导轨、不预留列），本次仅补齐该缺口；`border` 简写行为、整框 2 列预留、终端末列不绘制规则均未变。`overflow-wrap` 保持 `anywhere` 未动（浏览器实测已证改之无收益）。
+
+### 仍为开放项（如实保留，未擅自处理）
+- 用户最初报告的 `w/ith`、`● │ T/ool` 样本**根因仍未定位**。已排除：DOM `overflow-wrap` 模式（实测 anywhe/break-word 视觉行宽与 min-content 完全一致，且消息行是 `display:block` 无 flex/grid 父级）、TUI 导轨缺失（已修但非该症状成因）。**仍有开放复现，未关闭。**
+- PTY acceptance **无 dynamic 布局轴**；dynamic 仍仅单测覆盖。
+- 延后调查：实际 routed model profile、Codex/OpenCode tool-round/continuation primary-source 对照（librarian 因 `ProviderModelNotFoundError: opencode/gpt-5-nano` 全失败，无可靠 primary source）。
+- `deepseek-v4-flash` 废弃名在 `packages/agents/agent/src/options.ts:623` 附近仍有 4 处，**清理需用户明确批准**。
+- `sleep-mlt` 旧 `streak` 子命令独立 staleness 缺陷（`buildReport` 已防护），v8 范围外未改。
