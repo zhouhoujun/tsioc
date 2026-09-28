@@ -308,137 +308,6 @@
 - **TDD**：先在旧实现上确认 `recoverDetail returns tool-pairing-complete subsets` 与 `recoverDetail drops assistant tool calls whose results are missing from the stash` 稳定失败（105 passing 2 failed），修复后连同 dedupe/全窗口已存在两个用例共 5 个 recoverDetail 用例通过；agent 全套 907 passing EXIT=0；`source-size` gate PASS（基线文件均下降）。
 - **当前状态**：Gap 2（tool round 上限 20 后不 plan-continue）仍开放；sleep-mlt task 2 待续跑复验。
 
-## v77 — 模型失败可操作性：错误分类 + 本地化 + CLI 不再吐堆栈 ✅
-
-- **真实证据**：`/tmp/sim1-transcript.log` 显示 DeepSeek 返回 `402 Insufficient Balance`（request_id 内嵌在 `error.message`），TUI 只显示裸英文 `Error · Error: Model request failed with 402: Insufficient Balance`，既不可操作也无本地化。
-- **根因 1（分类）**：`classifyModelError` 把 `insufficient_quota` 归入可重试 `capacity`，导致余额耗尽时空转重试；`ModelErrorKind` 缺 `quota`/`auth`。
-- **根因 2（呈现）**：`AgentErrorEvent` 只用裸 `error.message`；`bin/tsdi-agent.js` 用 `error?.stack || error?.message || error`，`?.stack` 优先，导致 402 这类用户可处理的失败直接打印内部堆栈。
-  - 更正：先前判断「`run-command.ts:118` 打印 `error.stack`」有误——`agent-cli/src` 内并不存在任何 `.stack` 使用，真实位置是 `bin/tsdi-agent.js`。
-- **修复**：
-  - `agent`：新增 `src/model/ModelRequestError.ts`（`ModelFailure`/`ModelRequestError`/`createModelRequestError`/`asModelFailure`/`describeModelFailure`）；`RetryPolicy` 新增 `quota`、`auth`（402→quota，401/403→auth，余额/账单/认证终止不重试）；`OpenAICompatibleModelAdapter` 与 `AnthropicModelAdapter` 的 complete/stream HTTP 失败统一抛结构化错误，stream 外层 catch 保留结构，终止错误不再浪费一次非流式 fallback。
-  - `agent-ui`：新增 `AgentConsoleModelFailurePresenter.ts`（纯函数）、`agent.modelError.*` 中英文案，`AgentConsoleEventBridge` 的 `AgentErrorEvent` 改走 presenter；缺翻译时回落到 `describeModelFailure`，绝不把 i18n key 本身当文案显示（`TranslatorService.translate` 缺 key 会回显 key，已显式守卫）。
-  - `agent-cli`：新增 `src/cli-error-format.ts`（`formatCliError`/`isCliDebugEnabled`），结构化模型失败只输出一行可操作文案且默认不带堆栈，非模型错误保持原 stack-first 行为不变（无功能降级）；`TSDI_AGENT_DEBUG=1` 时才附加堆栈。
-- **TDD**：`agent-cli` 新增 `test/cli-error-format.spec.ts`，先在旧实现上稳定失败（`error TS2307: Cannot find module '../src/cli-error-format'`，EXIT=1），修复后 5 用例通过并覆盖 8 种 kind、duck-typed 失败与非模型错误不回退；`agent-ui` 新增 `test/p402-model-failure-presenter.spec.ts`（8 用例，含 key 回显守卫与 request_id）。
-- **验证**：agent 927 passing、agent-ui 1413 passing、agent-cli 84 passing，均 EXIT=0；`node scripts/check-source-size.mjs` → OK，并按 ratchet 下调两个已缩减文件的 baseline（`OpenAICompatibleModelAdapter` 1164→1161、`AnthropicModelAdapter` 658→657）。实机复验：`node ./bin/tsdi-agent.js run "..."` 对真实 402 输出 `Model request refused: insufficient balance for deepseek/deepseek-flash (status 402). Top up the account or switch model, then retry. (request_id: e85a5725-…)`，堆栈帧数 0、EXIT=1；`TSDI_AGENT_DEBUG=1` 时同文案 + 10 帧堆栈。
-- **仍开放（受模型余额阻塞）**：真实 transcript 中工具完成摘要与本事件错配（读源码却显示 `README.md`）、interim 文本与最终回答无分隔拼接（如 `terminal.I have`、`exists.domain.ts`）、`Inspect directory: exam-system` 首次失败 162ms 后重试；`exam-system` 尚未 `npm install && npm run build && npm test` 复验。
-
-## v78 — interim 旁白与最终回答分离（Gap 2 修复）✅
-
-- **问题**：`/tmp/sim1-transcript.log` 中同一 turn 内多个工具轮的旁白与最终回答被无分隔拼成一条消息，出现 `exists.domain.ts`、`terminal.I have`、`planning.Now` 这类跨句粘连，最终回答不可读。
-- **根因（渲染无关，在流投影层）**：
-  - `AgentConsoleTurnInputController` 每个 turn 只创建一个 `assistantMessage`（`content: ''`、`streaming: true`），整个 turn 的 chunk 都复用它；
-  - `AgentConsoleTurnStreamController.consumeStreamChunkView` 对每个 text chunk 执行 `assistantMessage.content += chunk.content`，而 `tool_call` 分支不建立任何边界，于是 N 个工具轮的旁白全部累积进同一行；
-  - 消息顺序上 `appendUiEventMessage`/`upsertUiEventMessage` 是尾部 push，流式行固定在 user 之后，直到 `done` 才被 `replaceStreamingAssistantMessage` 移到尾部——所以最终呈现为「全部工具行 + 一坨融合文本」，与真实 transcript 完全一致。
-  - 已排除误报：`AgentConsoleMessageRenderers.ts:1153` 与 `AgentConsoleMarkdown.ts:99` 的 `.join('')` 仅为 inline token 拼接。
-- **修复（`AgentConsoleTurnStreamController.ts`）**：
-  - 新增 `sealStreamedNarration`：把工具调用边界前已累积的旁白封成独立完成行追加到尾部，再释放流式行——旁白落在其工具行之前，保持真实 stream 顺序；
-  - 流式行改为「移动占位行」语义（`flushStreamingAssistantMessage`）：有文本时按尾部重新投影（原先不存在则追加，并保证位于已产出的工具行之后），空文本且已封存过旁白时整行移除；
-  - 新增 `finalizeStreamingAssistantRow`：`done` 时有文本照旧收尾置 `streaming: false` 并移到尾部，文本已被旁白行完全吸收时移除占位行，避免留下空 assistant 气泡；
-  - `AgentConsoleTurnStreamState` 增加 `sealedNarrationCount`，`clearStreamingMessageState` 一并复位（否则跨 turn 泄漏）；
-  - 修正 `runTurnStreamView` 的次序：原先 `clearStreamingMessageState` 在 `finally` 先于收尾执行，复位后会吃掉占位行判断，改为先收尾再清理，并用 `completed` 标志保持「流异常时不改写该行」的原有语义。
-- **TDD**：新增 `agent-ui/test/turn-stream-naration.spec.ts`（3 用例：单轮行为不变 / 工具轮旁白与最终回答分离 / turn 以工具调用结束时不留空行）。先在旧实现上确认稳定失败，失败输出直接复现真实粘连串 `"Checking the exam system.Also reading seed.ts."`（EXIT=1）；修复后全绿。
-- **验证**：agent-ui 1416 passing（较 1413 增 3）、agent 927 passing、agent-cli 84 passing，均 EXIT=0；`node scripts/check-source-size.mjs` → OK（控制器 469 行 <600，无需入基线；`AgentConsoleComponent.ts` 仅改同一行内容未增行）；`lsp_diagnostics` 无告警；`git diff --check` 干净。
-- **真实 TUI（PTY）验收已补齐，且有 RED 证据**（不依赖真实模型）：`fake_model_server.py` 新增 `旁白分段` 轮次（`_v78_turn`），一个 turn 内走「旁白+工具」×2 再给最终回答；`run_acceptance.py` 新增场景 10 `scenario_narration_separation_v78`。
-  - **RED（先证伪）**：把 `sealStreamedNarration` 改成空操作（即还原 pre-v78 的融合行为）后跑场景 10 → `[FAIL] narration segments fused into one line`。转储的 artifact 逐帧复现了生产 transcript 的同一症状：
-    ```
-    │ • 正在检查项目文件。
-    │ • 正在检查项目文件。同时读取种子数据。
-    │ • 正在检查项目文件。同时读取种子数据。旁白分段测试完成。
-    ```
-    与真实 `/tmp/sim1-transcript.log` 的 `Checking the exam system.Also reading seed.ts.` 同形。随后把文件按字节还原（`diff` 一致、`RED-ONLY` 标记已清）。
-  - **GREEN**：还原后 `GREEN_EXIT=0`、`[PASS] scenario 10: tool-round narration sealed into separate lines`；全量 `ACC_EXIT=0`、9/9 PASS；`RUN_PTY=1 bash scripts/agents-gate.sh pty-acceptance` → `[GATE-PASS]`。
-  - **断言设计**：不数行、不取「最后一行」，而是断言两段旁白**之间夹着工具行**（`_fused()` 先去掉所有空白再查相邻粘连）。这样对驱动端整屏重绘/局部覆写都不敏感，且只在真正融合时才命中。
-  - **修掉的一个假模型缺陷**：原 `pieces` 构造是 `if content: … elif tool_calls: …`，一条**同时**带旁白文本和工具调用的 assistant 消息只会发 `arguments: ''` 的空参数工具调用（**静默**失败，无报错）。已改为 `('text', …)`/`('args', …)` 带标签的列表，`content` 与 `tool_calls` 可同时流出。v78 的剧本正是这个混合形状，故此缺陷此前从未被触发。
-- **仍开放**：工具完成摘要与本事件错配（读源码却显示 `README.md`，与 pending 行 key 是两个独立问题）；`Inspect directory: exam-system` 首次失败 162ms 后重试；`exam-system` 尚未 `npm install && npm run build && npm test` 复验（受模型余额阻塞）。
-
-## v79 — 网关 SSE 中继补回 `toolCallId`（工具行 per-invocation key）✅
-
-- **问题**：网关/浏览器等远端消费者的 `run.turn_stream.chunk` 通知中，工具生命周期事件丢失 `toolCallId`。
-- **根因**：`mapRunTurnStreamChunk`（`agent-gateway/src/agent-app-server.module.ts`）只中继 `type/content/toolCalls/usage/eventType/label/status/toolName`，把 `toolCallId` 丢在边界上。而 `resolveToolEventKey`（`agent-ui/src/AgentConsoleStreamHelpers.ts:114`）正是靠 `chunk.toolCallId` 构造 per-invocation 事件 key；`toolCallId` 缺失时退化为 `tool:${toolName}`，同一 turn 内同一工具的多次调用共用一行，与 transcript 中「5 个 `Read file` 并成一行、只出现一个 completion」一致。
-- **修复**：中继补回 `toolCallId: params?.toolCallId`（+1 行，`agent-app-server.module.ts` 约 108 行，未触及任何 baseline 文件）。
-- **TDD**：`agent-gateway/test/app-server-bridge.spec.ts` 新增 `forwardsToolCallIdentity`。先在旧实现上确认稳定失败（`Expected: "call-1" / Received: undefined`，298 passing 1 failed，EXIT=1），修复后 299 passing EXIT=0。临时 targeted runner 对该 glob 静默不匹配并返回 EXIT=0，已按 AGENTS.md 弃用其输出、只采信完整 `npm run test`。
-- **已回退的越界改动（自查）**：曾一并让 `AppRpcServer.toStreamEventChunk` 转发 `receiptId`/`attempt`，自查后回退，原因有三：
-  1. `attempt` 在 agent-ui 无任何消费者，属死代码；
-  2. `receiptId` 仅是 `toolCallId` 缺失时的兜底（`AgentConsoleStreamHelpers.ts:122`、`AgentConsoleTurnStreamController.ts:120,244`），而 `toolCallId` 本就已被转发，行为零变化；
-  3. 该改动给 baseline 文件 `AppRpcServer.ts` 增 2 行，`check-source-size.mjs` 报 `[REGRESSION] 3780 > allowed 3778`，违反 ratchet「已入基线的文件只允许下降」。
-- **更正此前两处误判**：
-  - 「`AppRpcServer.ts:1571` 丢掉 `toolCallId` 导致本地 TUI 也丢身份」有误——工具生命周期事件走 `toStreamEventChunk`，其 `toolCallId` 取自 `data.receipt.toolCallId` 并已转发；`:1571` 的流式 chunk 中转只影响 `text`/`tool_call`，与工具完成行无关。
-  - 「`describeStreamEvent` 读嵌套 `data.receipt.toolCallId` 而 `EventHandler` 发扁平字段，形状不匹配」有误——`EventHandler.publish('tool_completed', { ..., receipt: event.receipt })` 携带完整 receipt 对象，嵌套读取可正常解析；TDD 失败点落在 `receiptId` 而非 `toolCallId`，正是该判断错误的直接证据。
-- **验证**：agent-gateway 299 passing EXIT=0；`node scripts/check-source-size.mjs` → `source-size: OK`、EXIT=0；`lsp_diagnostics` 对 `agent-app-server.module.ts` 与 `app-server-bridge.spec.ts` 均无告警；`git diff --check` EXIT=0。
-- **TUI 侧结构性发现（已读码确认，未实机验证）**：`consumeStreamChunkView` 的 `tool_call` 分支（`agent-ui/src/AgentConsoleTurnStreamController.ts:109-136`）用 `resolveToolEventKey('tool_call', chunk)` 取 key，而 `StreamChunk` 类型（`agent/src/model/StreamChunk.ts:5-16`）根本没有 `toolCallId`/`receiptId` 字段——逐调用身份只存在于 `chunk.toolCalls[i].id`，该分支从未用于 key。故 key 只能退化为 `tool:${toolName}`（`chunk.content` 非空时）或 `undefined`（`content` 为空时走 `appendUiEventMessage`）。而完成行经 `AgentConsoleEventBridge` 携带 `receipt.toolCallId`，key 为 `tool:${toolCallId}`。**结论：pending `●` 行与完成 `✓` 行的 key 永不相等，二者在结构上无法原地归并**，与 AGENTS.md §5「tool 生命周期按稳定 key 原地归并」相悖；同工具多次调用还会因共用 `tool:${toolName}` 而互相覆盖。
-  - **未自行修复的原因（需决策）**：正确的 key 应取 `toolCalls[i].id`，但一个 `tool_call` chunk 可携带多个 `toolCalls`（v73 刻意设计了批行 + `+N more` 折叠）。改为一调用一行会改变 v73 既有呈现（可能违反「不得删除/降级已有功能」），而以首个 id 作 key 则只有首个调用能归并、语义更含混。两种取舍都影响 DOM/TUI 共用渲染层且无法在无模型密钥时做视觉复验，故不擅自动手。
-- **仍开放**：上述 `tool_call` 行 key 的修复方案**已由 v82 裁定为逐调用成行**（key = `toolCalls[i].id`，见 v82 节）；`/tmp/sim1-transcript.log` 的「读源码却显示 `README.md`」完成摘要错配仍未定位（与 pending 行 key 是两个独立问题）；`Inspect directory: exam-system` 首次失败 162ms 后重试；v78 的真实 TUI 复验已由场景 10 补齐（见 v78 节，含 RED 证据）；`exam-system` 尚未 `npm install && npm run build && npm test` 复验（均受模型余额阻塞）。
-
-## v80 — `list_dir` 不再因目录内单个软链接而整体失败（真实阻塞解除）✅
-
-- **问题**：TUI 中 `Inspect directory`（真实工具名 `list_dir`，i18n 映射见 `agent-ui/src/agent-ui.i18n.ts:86`）对 `exam-system` **每次**都失败（transcript 第 19/71/122 行 `failed · retry (162ms)`），不是首次调用偶发。
-- **根因**：`ListDirTool.invoke`（`agent-tools/files/list-dir.tool.ts`）对**每一个待列出的条目**调用 `assertNoSymlinkInWorkspacePath(entryPath, ...)`，且位于 `Promise.all` 内。任一条目抛错即 reject，**整个列目录失败**。`exam-system/node_modules -> ../node_modules` 是 pnpm/npm workspace 的标准布局，因此该问题在真实项目中普遍存在，且完全确定性复现。
-- **修复**：逐条目改用 `lstat`（已是原实现所用）并让 `resolveKind` 返回 `symlink`；**不遍历、不跟随**软链接。对「被列目录自身」的 `assertNoSymlinkInWorkspacePath`（第 37 行）**保留不变**，即仍不能「穿过软链接列目录」，`read_file`/`stat`/`glob_search`/`content_search` 指向软链接路径的拒绝行为也全部保留（见下方测试与 v79 更正）。
-- **决策（已获用户确认）**：此行为是 `test/tools.spec.ts` 中 `filesystem tools reject symlink paths in workspace` 显式断言的既有安全行为，属于真实冲突，已按 AGENTS.md「先保留功能并向用户说明冲突、询问取舍」上报，用户选择「列出、标记、不跟随」。据此把该既有断言**升级**为更强断言（软链接条目仍在结果中且被标记为 `symlink`、兄弟条目照常返回），而非删弱。
-- **TDD**：
-  - 新增 `list_dir lists entries when a symlinked child exists`（完全复刻 `exam-system/node_modules -> ../node_modules` 布局，并断言经该链接 `read_file` 仍抛 `symbolic link`）。
-  - **红灯（先在旧实现上证明失败）**：仅 stash 源码改动后跑完整 `npm run test` → `484 passing 2 failed`，EXIT=1。两条失败均定位到 `list-dir.tool.ts:52:13` 的 `Promise.all` 内，报错为真实信息 `Path 'exam-system/node_modules' resolves through a symbolic link, which is not allowed.`
-  - **绿灯**：恢复修复后同一完整命令 → `486 passing`，EXIT=0（484 + 2 = 486 计数自洽）。
-  - 注意：本轮 targeted runner 对 `tools.spec.ts` **静默不匹配并返回 EXIT=0**（输出为空），已按 AGENTS.md 弃用其输出，全程只采信完整 `npm run test` 的 EXIT code 与日志。
-- **真实世界复验（非仅单测）**：以 `/home/zhouyou/workspace/sleep-mlt` 为 root 实调 `ListDirTool` → `path=exam-system truncated=false`，列出 8 个条目，`node_modules` 为 `symlink`、`src`/`bin`/`data`/`public`/`test` 为 `directory`、`package.json`/`tsconfig.json` 为 `file`，EXIT=0。真实阻塞解除。
-- **更正此前两处误判（均为本次调查中先立后破）**：
-  - 「`rootDir` 回落到 `process.cwd()`，相对路径解析错」**有误**——`agent-cli/src/config.ts:642-644` 在 `options.workspace` 存在时用 `path.resolve(options.workspace)`，本次以 `--workspace /home/zhouyou/workspace/sleep-mlt` 启动，故 rootDir 正确；`options.ts:417` 的默认值并未生效。
-  - 「`exam-system` 自身路径含软链接段，被 `assertNoSymlinkInWorkspacePath` 拒绝」**有误**——`namei -l` 显示 `exam-system` 及其各段均为实体目录；软链接是它的**子条目**，与「路径段」无关。
-- **验证**：`npm run test` 486 passing EXIT=0；`node scripts/check-source-size.mjs` → `source-size: OK` EXIT=0；`lsp_diagnostics` 对 `files/list-dir.tool.ts` 与 `test/tools.spec.ts` 均无告警；`git diff --check` EXIT=0。
-- **仍开放**：v79 中的 `tool_call` 行 key 取舍（`tool_call` chunk 无顶层 `toolCallId`，pending 与完成行 key 结构性无法归并）**已由 v82 裁定并落地**（见 v82 节）；「读源码却显示 `README.md`」完成摘要错配仍未定位；v78 的真实 TUI 复验已由场景 10 补齐（见 v78 节）；`exam-system` 尚未 `npm install && npm run build && npm test`（以上均受模型余额阻塞）。
-
-## v81 — 「读源码却显示 README.md」定位：与 v79 同一 bug，且已找到使能事实（待决策）🔍
-
-- **问题**：TUI 中「读了源码，完成行却显示 `README.md`」。此前被当作与 v79 行 key 问题**相互独立**的第二个缺陷。
-- **结论：两者是同一个 bug。** `summarizeToolDisplayText` / `ToolSummary` **被排除**：`read_file` 分支（`agent/src/tools/ToolSummary.ts:24-29`）忠实返回 `payload.path`，不做任何猜测或替换，不是错配来源。
-- **实测证据**（在 agent-ui 包内直接调用真实函数，非仅读码）：
-
-  | `chunk.content` | pending 行 key | 走的路径 | 后果 |
-  | --- | --- | --- | --- |
-  | 空 | `undefined` | `appendUiEventMessage` | 各自成行，但同样**永不**与 completion 归并 |
-  | 非空 | `tool:read_file` | `upsert` | 同一 turn 内所有 `read_file` **撞同一 key，后写覆盖** |
-
-  completion 行 key 为 `tool:call-a`；两种模式下实测 `MERGES_WITH_PENDING = false`。与 AGENTS.md §5「tool 生命周期按稳定 key 原地归并」「同一事实默认只出现一次」相悖。
-- **症状解释**：幸存 pending 行的文案由 `describePendingToolCall` → `formatToolCallLabel` → `resolveToolCallArgument(call.input)` 生成（优先取 `path`），因此显示的是**最后一次**调用的参数（如 `README.md`）；其余调用的 completion 行按各自 `toolCallId` 另行成行。用户遂看到「读了 seed.ts，那行却写着 README.md」。
-- **关键使能事实（本次新查明）**：`chunk.toolCalls[i].id` 与 `receipt.toolCallId` **属同一标识空间**，均源自 provider 的 `toolCall.id`：
-  - `DefaultAgentRuntime.createBaseReceipt`（`:3233-3246`）→ `toolCallId: toolCall.id`
-  - `ToolExecutionCoordinator.ts:53/89/129` → `toolCallId: request.toolCall.id`
-  - `OpenAICompatibleModelAdapter.ts:322` → `id: val.id ?? \`tc-${Date.now()}-${toolCalls.length}\``；`AnthropicModelAdapter.ts:284` → `toolCalls.push({ id, name, input })`
-  - **推论**：UI 侧按 `toolCalls[i].id` 逐调用成行，即可让 pending 与 completion 原地归并，**无需改动 agent 侧、模型适配器或 `StreamChunk` 类型**。v79 补回的 `toolCallId` 正是同一标识。
-- **更正此前两处判断（先立后破）**：
-  1. 「pending 行 key 恒为 `tool:${toolName}`」**有误**——`content` 为空时 `resolveToolEventName` 返回空串，key 实为 `undefined`。
-  2. 「同工具多次调用互相覆盖」**仅在 `content` 非空（upsert 路径）成立**；`content` 为空时是各自 append，不覆盖。
-- **仍开放（需用户取舍，不擅自动手）**：逐调用成行 vs 保留 v73 的批行 + 「+N more」折叠。AGENTS.md §5 要求按稳定 key 原地归并、同一事实只出现一次；而 v73 批行属**既有用户可见呈现**，改一行即构成「变更既有功能」，按 AGENTS.md 须先上报取舍。
-- **置信度**：pending/completion key 行为为**实跑验证**（ts-node 调用真实函数）；`toolCall.id` → `receipt.toolCallId` 的传递为**代码链确认**（`createBaseReceipt` 形参 `{ id, name }` 取自流式 tool call），未做逐帧抓包。
-
-## v82 — 工具行按调用成行（`toolCalls[i].id` 为 key），pending 与 completion 原地归并 ✅
-
-- **决策落地**：v81 上报的二选一由用户裁定为**逐调用成行**（key = `toolCalls[i].id`），v73 的批行 + 「+N more」折叠随之让步。依据 AGENTS.md §5「tool 生命周期按稳定 key 原地归并」「同一事实默认只出现一次」。
-- **改动面**（仅 agent-ui 共享渲染层，未动 agent 侧、模型适配器或 `StreamChunk` 类型）：
-  - `AgentConsoleStreamHelpers.ts`：新增 `PendingToolCallRow` + `resolvePendingToolCallRows(chunk, translator)`，逐 `toolCalls[i]` 生成 `{ key: 'tool:<id>', content: formatToolCallLabel(call), toolCallId }`；`toolCalls` 缺失/无名时回落到既有单行语义（`resolveToolEventKey('tool_call', …)` + `describePendingToolCall`），保证只有顶层 `toolCallId` 的旧适配器行为不变。
-  - `AgentConsoleTurnStreamController.ts`：`tool_call` 分支改为遍历上述行；每行仍经 `qualifyTurnUiEventKey` 做 turn 作用域隔离，`receiptId`/`attempt`/`sequence` 等原有元数据逐行透传。completion 侧本就按 `tool:${toolCallId}` upsert，**无需改动**。
-- **TDD 证据**（`test/turn-stream-tool-row-identity.spec.ts`，3 例）：
-  - **RED（旧实现）**：`1417 passing 2 failed`，失败点精确为 `distinctRowsPerInvocation` / `completionMergesInPlace` 期望 2 行实得 1 行——即 v81 预测的「同工具多次调用塌成一行」。
-  - **GREEN**：`1419 passing`，`RUNNER_EXIT=0`；3 例分别覆盖逐调用成行、completion 原地归并（行数不增、call-a 转 `tool_completed`/`success`、call-b 仍 `running`）、顶层 `toolCallId` 单行不退化。
-  - **补强：归并后仍须指明「读的是哪个文件」**。原地归并会用 completion 文案**替换** pending 文案，故须确认不会由「显示错文件」退化为「不显示文件」。已核对真实链路：completion 的 `content` 由 `AppRpcServer.describeToolCompletedEvent`（`:1852`）产出为 `` `${toolName} · ${outputSummary}` ``，而 `describeStreamEventContent` 仅在含 `' · '` 时截取 `detail`；`read_file` 的 `outputSummary` 即 `ToolSummary` 的 `payload.path`（文件路径）。因此归并后行文案为 `read file completed · <path>`，**路径保留**。测试已按此真实形态（而非裸路径）构造输入并断言归并后行仍含 `exam-system/src/seed.ts`。
-- **门禁**：`bash scripts/agents-gate.sh` → `GATE_EXIT=0`；27 个阶段中 **26 个 `[GATE-PASS]`**（10 个 agent 包 + components/common/console/html + 4 个 tsc + browser bundle + dom-gate + dom-gate-matrix + tui-gate + gate-regression + source-size + production-db-integrity + diff），唯一 `[GATE-SKIP]` 为需 `RUN_PTY=1` opt-in 的 `pty-acceptance`，**无 `[GATE-FAIL]`**。`git diff --check` 干净。
-- **过程中修正的两处自身问题（如实记录）**：
-  1. 首版 `resolvePendingToolCallRows` 触发 `tsc --noEmit` `TS7006`（`.filter(row => …)` 在 `Array.isArray` 收窄出的 `any[]` 上丢失上下文类型）→ 显式标注 `PendingToolCallRow`；该错误曾级联导致 `tsc-agent-ui`、`build-agent-ui-web`、`dom-gate`、`dom-gate-matrix`、`tui-gate`、`agent-cli` 六个阶段 FAIL，修正后全绿。
-  2. `session-lifecycle.spec.ts:252`（`sleep(5)` 后断言 `durationMs >= 5`）在同一次运行中偶发失败（`Received: 4`）。经三次运行判定为**既有 flaky 计时用例**：其代码路径（`AgentConsoleSessionState.upsertUiEventMessage` 的 duration 推导）不在本次 diff 内，第三次全量运行即通过。**未**为消除该偶发而放宽断言。
-- **真实 TUI（PTY）验收已补齐**（不依赖真实模型）：`acceptance/fake_model_server.py` 扩成可发 N 个 tool call（保留每例 `index`/`id`），新增 `并行读文件` 轮次（`_v82_turn` → `read_file` × `README.md`/`package.json`）；`run_acceptance.py` 新增 `scenario_tool_row_identity_v82` 并默认执行。真实终端实测渲染为**两行独立 pending 行、两条带各自路径的 completed**：
-  ```
-  ● │ Tool · Running Read file · README.md
-  ● │ Tool · Running Read file · package.json
-  ✓ │ Tool · Read file completed · README.md (truncated) (343ms)
-  ✓ │ Tool · Read file completed · package.json (360ms)
-  ```
-  无折叠、无「+N more」、路径各自保留。`RUN_PTY=1 bash scripts/agents-gate.sh pty-acceptance` → `[GATE-PASS]`，8/8 场景 PASS（`ACC_EXIT=0`），连续两次全量一致。
-- **该 PTY 场景的边界（如实记录，勿当回归门禁用）**：把 v82 的 per-invocation keying 还原成 v81 的 name-keyed 后，**此场景仍 PASS**。原因是 TUI 按 `toolCalls[i]` 逐个渲染，行的 `key` 只决定 `tool_completed` 如何找到 pending 行归并；name-keyed 时两行照旧渲染，真实回归症状是「完成后残留孤儿 pending 行」，而 driver 只剥 ANSI、不模拟屏幕，无法判定该状态。故 **v82 的回归保障是上述单元测试**，PTY 场景定位为真实渲染冒烟（能抓 fake server 路由、折叠、路径丢失等渲染级问题）。
-- **driver 侧两处如实修正**：
-  1. `start_fake_server` 之前从不设 `FAKE_LOG`，导致工具行静默不渲染时**没有任何请求侧记录**，只能从裸 ANSI 反推。已默认写入 `$TMPDIR/tsdi-acceptance-fake-model.log`；本次即靠它定位到下条根因。
-  2. `_v82_turn` 原用 `_tool_result_count(messages)`（**全会话** tool 消息数）判断是否发工具调用。全量跑时场景 3 已留下 2 条 tool 结果，导致 `req=6 text='并行读文件' tool_results=2` 直接跳到最终回答、**从未发出工具调用**；单跑场景 9 时历史干净故 `==0` 成立，掩盖了该缺陷。已新增 `_tool_results_this_turn()` 只统计最后一个 user 消息之后的 tool 结果。
-- **断言形态的教训**：先前两版失败（`saw []`、`did not merge in place`）皆因试图**数行/取最后一行**。TUI 原地覆写整屏，剥 ANSI 后的字节流横跨多帧，`completed` 之后仍残留先前的 `Running` 帧；且 `viewport()`/`since()` 都只是字节尾部，不是逻辑屏幕。已改为**存在性断言**（每条应有行都渲染过、各自完成、无折叠、无 `+N more`），与其余 7 个场景一致；「是否原地归并」交由单元测试判定。另 `_match` 全 driver 用 `re.IGNORECASE`，而 helper 曾用大小写敏感的 `'read file' in line`，导致 `wait_for` 通过、helper 却返回 `[]`。
-- **仍未闭环**：v78 的旁白/最终回答分离未做真实终端验收——fake server 尚不支持 reasoning 通道，需先确认适配层是否消费 `reasoning_content` 再补场景。真实模型端到端仍受 provider 配额阻塞（`402 insufficient balance`），且 `/home/zhouyou/workspace/tsioc` 为 `workspace_untrusted`，须先 `tsdi-agent trust` 才能真实执行工作区工具。
 ## v77 — 真实构建任务暴露的轮次上限假停与 decompose 计划跟踪（Gap 2 收口）✅
 
 - **真实复现 1（轮次上限假停）**：`node ./bin/tsdi-agent.js run --session sysbuild1 --workspace /home/zhouyou/workspace/sleep-mlt --json` 驱动 `library-system/` 构建任务并命中 20 轮工具上限。旧实现先请求并流式输出一份「因达到轮次上限而停止」的最终答复（正文明确列出未重跑的测试与未完成的 diff），把该消息写入会话，随后才因计划未完成注入 continuation 继续执行；用户先看到「已停止」的答复，紧接着又出现后续工具和第二份最终答复，时间线自相矛盾，会话里还残留一条伪最终消息。
@@ -492,3 +361,135 @@
 - **布局策略**：`AgentConsoleTranscriptLayout` 的 `scroll` 委托 `scrollTranscript`；`ownsHistoryScroll` 作为平台能力位，供 surface 生命周期读取。
 - **平台适配（各自处理）**：`components/console` 新增通用 `scrollViewport?: boolean | (() => boolean)` 选项与 `shouldScrollViewport?()` 生命周期钩子（默认 true，既有 surface 滚动测试不变）；TUI 经组件 `shouldScrollViewport()`（由策略推导）在 viewport 下关闭 surface 滚动区；DOM 由 `web-console` 的滚轮/滚动条适配。
 - **验证**：agent-ui 1418 passing、components/console 85 passing；`tsc --noEmit` agent-ui 通过；gate `components-console agent-ui tsc-agent-ui dom-gate tui-gate source-size diff-check` → PASS（9/9）。状态体量下降已在同一提交下调 baseline（SessionState 7429→7365、Component 4164→4163）。
+
+## v83 — 模型失败可操作性：错误分类 + 本地化 + CLI 不再吐堆栈 ✅
+
+- **真实证据**：`/tmp/sim1-transcript.log` 显示 DeepSeek 返回 `402 Insufficient Balance`（request_id 内嵌在 `error.message`），TUI 只显示裸英文 `Error · Error: Model request failed with 402: Insufficient Balance`，既不可操作也无本地化。
+- **根因 1（分类）**：`classifyModelError` 把 `insufficient_quota` 归入可重试 `capacity`，导致余额耗尽时空转重试；`ModelErrorKind` 缺 `quota`/`auth`。
+- **根因 2（呈现）**：`AgentErrorEvent` 只用裸 `error.message`；`bin/tsdi-agent.js` 用 `error?.stack || error?.message || error`，`?.stack` 优先，导致 402 这类用户可处理的失败直接打印内部堆栈。
+  - 更正：先前判断「`run-command.ts:118` 打印 `error.stack`」有误——`agent-cli/src` 内并不存在任何 `.stack` 使用，真实位置是 `bin/tsdi-agent.js`。
+- **修复**：
+  - `agent`：新增 `src/model/ModelRequestError.ts`（`ModelFailure`/`ModelRequestError`/`createModelRequestError`/`asModelFailure`/`describeModelFailure`）；`RetryPolicy` 新增 `quota`、`auth`（402→quota，401/403→auth，余额/账单/认证终止不重试）；`OpenAICompatibleModelAdapter` 与 `AnthropicModelAdapter` 的 complete/stream HTTP 失败统一抛结构化错误，stream 外层 catch 保留结构，终止错误不再浪费一次非流式 fallback。
+  - `agent-ui`：新增 `AgentConsoleModelFailurePresenter.ts`（纯函数）、`agent.modelError.*` 中英文案，`AgentConsoleEventBridge` 的 `AgentErrorEvent` 改走 presenter；缺翻译时回落到 `describeModelFailure`，绝不把 i18n key 本身当文案显示（`TranslatorService.translate` 缺 key 会回显 key，已显式守卫）。
+  - `agent-cli`：新增 `src/cli-error-format.ts`（`formatCliError`/`isCliDebugEnabled`），结构化模型失败只输出一行可操作文案且默认不带堆栈，非模型错误保持原 stack-first 行为不变（无功能降级）；`TSDI_AGENT_DEBUG=1` 时才附加堆栈。
+- **TDD**：`agent-cli` 新增 `test/cli-error-format.spec.ts`，先在旧实现上稳定失败（`error TS2307: Cannot find module '../src/cli-error-format'`，EXIT=1），修复后 5 用例通过并覆盖 8 种 kind、duck-typed 失败与非模型错误不回退；`agent-ui` 新增 `test/p402-model-failure-presenter.spec.ts`（8 用例，含 key 回显守卫与 request_id）。
+- **验证**：agent 927 passing、agent-ui 1413 passing、agent-cli 84 passing，均 EXIT=0；`node scripts/check-source-size.mjs` → OK，并按 ratchet 下调两个已缩减文件的 baseline（`OpenAICompatibleModelAdapter` 1164→1161、`AnthropicModelAdapter` 658→657）。实机复验：`node ./bin/tsdi-agent.js run "..."` 对真实 402 输出 `Model request refused: insufficient balance for deepseek/deepseek-flash (status 402). Top up the account or switch model, then retry. (request_id: e85a5725-…)`，堆栈帧数 0、EXIT=1；`TSDI_AGENT_DEBUG=1` 时同文案 + 10 帧堆栈。
+- **仍开放（受模型余额阻塞）**：真实 transcript 中工具完成摘要与本事件错配（读源码却显示 `README.md`）、interim 文本与最终回答无分隔拼接（如 `terminal.I have`、`exists.domain.ts`）、`Inspect directory: exam-system` 首次失败 162ms 后重试；`exam-system` 尚未 `npm install && npm run build && npm test` 复验。
+
+## v84 — interim 旁白与最终回答分离（Gap 2 修复）✅
+
+- **问题**：`/tmp/sim1-transcript.log` 中同一 turn 内多个工具轮的旁白与最终回答被无分隔拼成一条消息，出现 `exists.domain.ts`、`terminal.I have`、`planning.Now` 这类跨句粘连，最终回答不可读。
+- **根因（渲染无关，在流投影层）**：
+  - `AgentConsoleTurnInputController` 每个 turn 只创建一个 `assistantMessage`（`content: ''`、`streaming: true`），整个 turn 的 chunk 都复用它；
+  - `AgentConsoleTurnStreamController.consumeStreamChunkView` 对每个 text chunk 执行 `assistantMessage.content += chunk.content`，而 `tool_call` 分支不建立任何边界，于是 N 个工具轮的旁白全部累积进同一行；
+  - 消息顺序上 `appendUiEventMessage`/`upsertUiEventMessage` 是尾部 push，流式行固定在 user 之后，直到 `done` 才被 `replaceStreamingAssistantMessage` 移到尾部——所以最终呈现为「全部工具行 + 一坨融合文本」，与真实 transcript 完全一致。
+  - 已排除误报：`AgentConsoleMessageRenderers.ts:1153` 与 `AgentConsoleMarkdown.ts:99` 的 `.join('')` 仅为 inline token 拼接。
+- **修复（`AgentConsoleTurnStreamController.ts`）**：
+  - 新增 `sealStreamedNarration`：把工具调用边界前已累积的旁白封成独立完成行追加到尾部，再释放流式行——旁白落在其工具行之前，保持真实 stream 顺序；
+  - 流式行改为「移动占位行」语义（`flushStreamingAssistantMessage`）：有文本时按尾部重新投影（原先不存在则追加，并保证位于已产出的工具行之后），空文本且已封存过旁白时整行移除；
+  - 新增 `finalizeStreamingAssistantRow`：`done` 时有文本照旧收尾置 `streaming: false` 并移到尾部，文本已被旁白行完全吸收时移除占位行，避免留下空 assistant 气泡；
+  - `AgentConsoleTurnStreamState` 增加 `sealedNarrationCount`，`clearStreamingMessageState` 一并复位（否则跨 turn 泄漏）；
+  - 修正 `runTurnStreamView` 的次序：原先 `clearStreamingMessageState` 在 `finally` 先于收尾执行，复位后会吃掉占位行判断，改为先收尾再清理，并用 `completed` 标志保持「流异常时不改写该行」的原有语义。
+- **TDD**：新增 `agent-ui/test/turn-stream-naration.spec.ts`（3 用例：单轮行为不变 / 工具轮旁白与最终回答分离 / turn 以工具调用结束时不留空行）。先在旧实现上确认稳定失败，失败输出直接复现真实粘连串 `"Checking the exam system.Also reading seed.ts."`（EXIT=1）；修复后全绿。
+- **验证**：agent-ui 1416 passing（较 1413 增 3）、agent 927 passing、agent-cli 84 passing，均 EXIT=0；`node scripts/check-source-size.mjs` → OK（控制器 469 行 <600，无需入基线；`AgentConsoleComponent.ts` 仅改同一行内容未增行）；`lsp_diagnostics` 无告警；`git diff --check` 干净。
+- **真实 TUI（PTY）验收已补齐，且有 RED 证据**（不依赖真实模型）：`fake_model_server.py` 新增 `旁白分段` 轮次（`_v78_turn`），一个 turn 内走「旁白+工具」×2 再给最终回答；`run_acceptance.py` 新增场景 10 `scenario_narration_separation_v78`。
+  - **RED（先证伪）**：把 `sealStreamedNarration` 改成空操作（即还原 pre-v84 的融合行为）后跑场景 10 → `[FAIL] narration segments fused into one line`。转储的 artifact 逐帧复现了生产 transcript 的同一症状：
+    ```
+    │ • 正在检查项目文件。
+    │ • 正在检查项目文件。同时读取种子数据。
+    │ • 正在检查项目文件。同时读取种子数据。旁白分段测试完成。
+    ```
+    与真实 `/tmp/sim1-transcript.log` 的 `Checking the exam system.Also reading seed.ts.` 同形。随后把文件按字节还原（`diff` 一致、`RED-ONLY` 标记已清）。
+  - **GREEN**：还原后 `GREEN_EXIT=0`、`[PASS] scenario 10: tool-round narration sealed into separate lines`；全量 `ACC_EXIT=0`、9/9 PASS；`RUN_PTY=1 bash scripts/agents-gate.sh pty-acceptance` → `[GATE-PASS]`。
+  - **断言设计**：不数行、不取「最后一行」，而是断言两段旁白**之间夹着工具行**（`_fused()` 先去掉所有空白再查相邻粘连）。这样对驱动端整屏重绘/局部覆写都不敏感，且只在真正融合时才命中。
+  - **修掉的一个假模型缺陷**：原 `pieces` 构造是 `if content: … elif tool_calls: …`，一条**同时**带旁白文本和工具调用的 assistant 消息只会发 `arguments: ''` 的空参数工具调用（**静默**失败，无报错）。已改为 `('text', …)`/`('args', …)` 带标签的列表，`content` 与 `tool_calls` 可同时流出。v84 的剧本正是这个混合形状，故此缺陷此前从未被触发。
+- **仍开放**：工具完成摘要与本事件错配（读源码却显示 `README.md`，与 pending 行 key 是两个独立问题）；`Inspect directory: exam-system` 首次失败 162ms 后重试；`exam-system` 尚未 `npm install && npm run build && npm test` 复验（受模型余额阻塞）。
+
+## v85 — 网关 SSE 中继补回 `toolCallId`（工具行 per-invocation key）✅
+
+- **问题**：网关/浏览器等远端消费者的 `run.turn_stream.chunk` 通知中，工具生命周期事件丢失 `toolCallId`。
+- **根因**：`mapRunTurnStreamChunk`（`agent-gateway/src/agent-app-server.module.ts`）只中继 `type/content/toolCalls/usage/eventType/label/status/toolName`，把 `toolCallId` 丢在边界上。而 `resolveToolEventKey`（`agent-ui/src/AgentConsoleStreamHelpers.ts:114`）正是靠 `chunk.toolCallId` 构造 per-invocation 事件 key；`toolCallId` 缺失时退化为 `tool:${toolName}`，同一 turn 内同一工具的多次调用共用一行，与 transcript 中「5 个 `Read file` 并成一行、只出现一个 completion」一致。
+- **修复**：中继补回 `toolCallId: params?.toolCallId`（+1 行，`agent-app-server.module.ts` 约 108 行，未触及任何 baseline 文件）。
+- **TDD**：`agent-gateway/test/app-server-bridge.spec.ts` 新增 `forwardsToolCallIdentity`。先在旧实现上确认稳定失败（`Expected: "call-1" / Received: undefined`，298 passing 1 failed，EXIT=1），修复后 299 passing EXIT=0。临时 targeted runner 对该 glob 静默不匹配并返回 EXIT=0，已按 AGENTS.md 弃用其输出、只采信完整 `npm run test`。
+- **已回退的越界改动（自查）**：曾一并让 `AppRpcServer.toStreamEventChunk` 转发 `receiptId`/`attempt`，自查后回退，原因有三：
+  1. `attempt` 在 agent-ui 无任何消费者，属死代码；
+  2. `receiptId` 仅是 `toolCallId` 缺失时的兜底（`AgentConsoleStreamHelpers.ts:122`、`AgentConsoleTurnStreamController.ts:120,244`），而 `toolCallId` 本就已被转发，行为零变化；
+  3. 该改动给 baseline 文件 `AppRpcServer.ts` 增 2 行，`check-source-size.mjs` 报 `[REGRESSION] 3780 > allowed 3778`，违反 ratchet「已入基线的文件只允许下降」。
+- **更正此前两处误判**：
+  - 「`AppRpcServer.ts:1571` 丢掉 `toolCallId` 导致本地 TUI 也丢身份」有误——工具生命周期事件走 `toStreamEventChunk`，其 `toolCallId` 取自 `data.receipt.toolCallId` 并已转发；`:1571` 的流式 chunk 中转只影响 `text`/`tool_call`，与工具完成行无关。
+  - 「`describeStreamEvent` 读嵌套 `data.receipt.toolCallId` 而 `EventHandler` 发扁平字段，形状不匹配」有误——`EventHandler.publish('tool_completed', { ..., receipt: event.receipt })` 携带完整 receipt 对象，嵌套读取可正常解析；TDD 失败点落在 `receiptId` 而非 `toolCallId`，正是该判断错误的直接证据。
+- **验证**：agent-gateway 299 passing EXIT=0；`node scripts/check-source-size.mjs` → `source-size: OK`、EXIT=0；`lsp_diagnostics` 对 `agent-app-server.module.ts` 与 `app-server-bridge.spec.ts` 均无告警；`git diff --check` EXIT=0。
+- **TUI 侧结构性发现（已读码确认，未实机验证）**：`consumeStreamChunkView` 的 `tool_call` 分支（`agent-ui/src/AgentConsoleTurnStreamController.ts:109-136`）用 `resolveToolEventKey('tool_call', chunk)` 取 key，而 `StreamChunk` 类型（`agent/src/model/StreamChunk.ts:5-16`）根本没有 `toolCallId`/`receiptId` 字段——逐调用身份只存在于 `chunk.toolCalls[i].id`，该分支从未用于 key。故 key 只能退化为 `tool:${toolName}`（`chunk.content` 非空时）或 `undefined`（`content` 为空时走 `appendUiEventMessage`）。而完成行经 `AgentConsoleEventBridge` 携带 `receipt.toolCallId`，key 为 `tool:${toolCallId}`。**结论：pending `●` 行与完成 `✓` 行的 key 永不相等，二者在结构上无法原地归并**，与 AGENTS.md §5「tool 生命周期按稳定 key 原地归并」相悖；同工具多次调用还会因共用 `tool:${toolName}` 而互相覆盖。
+  - **未自行修复的原因（需决策）**：正确的 key 应取 `toolCalls[i].id`，但一个 `tool_call` chunk 可携带多个 `toolCalls`（v73 刻意设计了批行 + `+N more` 折叠）。改为一调用一行会改变 v73 既有呈现（可能违反「不得删除/降级已有功能」），而以首个 id 作 key 则只有首个调用能归并、语义更含混。两种取舍都影响 DOM/TUI 共用渲染层且无法在无模型密钥时做视觉复验，故不擅自动手。
+- **仍开放**：上述 `tool_call` 行 key 的修复方案**已由 v88 裁定为逐调用成行**（key = `toolCalls[i].id`，见 v88 节）；`/tmp/sim1-transcript.log` 的「读源码却显示 `README.md`」完成摘要错配仍未定位（与 pending 行 key 是两个独立问题）；`Inspect directory: exam-system` 首次失败 162ms 后重试；v84 的真实 TUI 复验已由场景 10 补齐（见 v84 节，含 RED 证据）；`exam-system` 尚未 `npm install && npm run build && npm test` 复验（均受模型余额阻塞）。
+
+## v86 — `list_dir` 不再因目录内单个软链接而整体失败（真实阻塞解除）✅
+
+- **问题**：TUI 中 `Inspect directory`（真实工具名 `list_dir`，i18n 映射见 `agent-ui/src/agent-ui.i18n.ts:86`）对 `exam-system` **每次**都失败（transcript 第 19/71/122 行 `failed · retry (162ms)`），不是首次调用偶发。
+- **根因**：`ListDirTool.invoke`（`agent-tools/files/list-dir.tool.ts`）对**每一个待列出的条目**调用 `assertNoSymlinkInWorkspacePath(entryPath, ...)`，且位于 `Promise.all` 内。任一条目抛错即 reject，**整个列目录失败**。`exam-system/node_modules -> ../node_modules` 是 pnpm/npm workspace 的标准布局，因此该问题在真实项目中普遍存在，且完全确定性复现。
+- **修复**：逐条目改用 `lstat`（已是原实现所用）并让 `resolveKind` 返回 `symlink`；**不遍历、不跟随**软链接。对「被列目录自身」的 `assertNoSymlinkInWorkspacePath`（第 37 行）**保留不变**，即仍不能「穿过软链接列目录」，`read_file`/`stat`/`glob_search`/`content_search` 指向软链接路径的拒绝行为也全部保留（见下方测试与 v85 更正）。
+- **决策（已获用户确认）**：此行为是 `test/tools.spec.ts` 中 `filesystem tools reject symlink paths in workspace` 显式断言的既有安全行为，属于真实冲突，已按 AGENTS.md「先保留功能并向用户说明冲突、询问取舍」上报，用户选择「列出、标记、不跟随」。据此把该既有断言**升级**为更强断言（软链接条目仍在结果中且被标记为 `symlink`、兄弟条目照常返回），而非删弱。
+- **TDD**：
+  - 新增 `list_dir lists entries when a symlinked child exists`（完全复刻 `exam-system/node_modules -> ../node_modules` 布局，并断言经该链接 `read_file` 仍抛 `symbolic link`）。
+  - **红灯（先在旧实现上证明失败）**：仅 stash 源码改动后跑完整 `npm run test` → `484 passing 2 failed`，EXIT=1。两条失败均定位到 `list-dir.tool.ts:52:13` 的 `Promise.all` 内，报错为真实信息 `Path 'exam-system/node_modules' resolves through a symbolic link, which is not allowed.`
+  - **绿灯**：恢复修复后同一完整命令 → `486 passing`，EXIT=0（484 + 2 = 486 计数自洽）。
+  - 注意：本轮 targeted runner 对 `tools.spec.ts` **静默不匹配并返回 EXIT=0**（输出为空），已按 AGENTS.md 弃用其输出，全程只采信完整 `npm run test` 的 EXIT code 与日志。
+- **真实世界复验（非仅单测）**：以 `/home/zhouyou/workspace/sleep-mlt` 为 root 实调 `ListDirTool` → `path=exam-system truncated=false`，列出 8 个条目，`node_modules` 为 `symlink`、`src`/`bin`/`data`/`public`/`test` 为 `directory`、`package.json`/`tsconfig.json` 为 `file`，EXIT=0。真实阻塞解除。
+- **更正此前两处误判（均为本次调查中先立后破）**：
+  - 「`rootDir` 回落到 `process.cwd()`，相对路径解析错」**有误**——`agent-cli/src/config.ts:642-644` 在 `options.workspace` 存在时用 `path.resolve(options.workspace)`，本次以 `--workspace /home/zhouyou/workspace/sleep-mlt` 启动，故 rootDir 正确；`options.ts:417` 的默认值并未生效。
+  - 「`exam-system` 自身路径含软链接段，被 `assertNoSymlinkInWorkspacePath` 拒绝」**有误**——`namei -l` 显示 `exam-system` 及其各段均为实体目录；软链接是它的**子条目**，与「路径段」无关。
+- **验证**：`npm run test` 486 passing EXIT=0；`node scripts/check-source-size.mjs` → `source-size: OK` EXIT=0；`lsp_diagnostics` 对 `files/list-dir.tool.ts` 与 `test/tools.spec.ts` 均无告警；`git diff --check` EXIT=0。
+- **仍开放**：v85 中的 `tool_call` 行 key 取舍（`tool_call` chunk 无顶层 `toolCallId`，pending 与完成行 key 结构性无法归并）**已由 v88 裁定并落地**（见 v88 节）；「读源码却显示 `README.md`」完成摘要错配仍未定位；v84 的真实 TUI 复验已由场景 10 补齐（见 v84 节）；`exam-system` 尚未 `npm install && npm run build && npm test`（以上均受模型余额阻塞）。
+
+## v87 — 「读源码却显示 README.md」定位：与 v85 同一 bug，且已找到使能事实（待决策）🔍
+
+- **问题**：TUI 中「读了源码，完成行却显示 `README.md`」。此前被当作与 v85 行 key 问题**相互独立**的第二个缺陷。
+- **结论：两者是同一个 bug。** `summarizeToolDisplayText` / `ToolSummary` **被排除**：`read_file` 分支（`agent/src/tools/ToolSummary.ts:24-29`）忠实返回 `payload.path`，不做任何猜测或替换，不是错配来源。
+- **实测证据**（在 agent-ui 包内直接调用真实函数，非仅读码）：
+
+  | `chunk.content` | pending 行 key | 走的路径 | 后果 |
+  | --- | --- | --- | --- |
+  | 空 | `undefined` | `appendUiEventMessage` | 各自成行，但同样**永不**与 completion 归并 |
+  | 非空 | `tool:read_file` | `upsert` | 同一 turn 内所有 `read_file` **撞同一 key，后写覆盖** |
+
+  completion 行 key 为 `tool:call-a`；两种模式下实测 `MERGES_WITH_PENDING = false`。与 AGENTS.md §5「tool 生命周期按稳定 key 原地归并」「同一事实默认只出现一次」相悖。
+- **症状解释**：幸存 pending 行的文案由 `describePendingToolCall` → `formatToolCallLabel` → `resolveToolCallArgument(call.input)` 生成（优先取 `path`），因此显示的是**最后一次**调用的参数（如 `README.md`）；其余调用的 completion 行按各自 `toolCallId` 另行成行。用户遂看到「读了 seed.ts，那行却写着 README.md」。
+- **关键使能事实（本次新查明）**：`chunk.toolCalls[i].id` 与 `receipt.toolCallId` **属同一标识空间**，均源自 provider 的 `toolCall.id`：
+  - `DefaultAgentRuntime.createBaseReceipt`（`:3233-3246`）→ `toolCallId: toolCall.id`
+  - `ToolExecutionCoordinator.ts:53/89/129` → `toolCallId: request.toolCall.id`
+  - `OpenAICompatibleModelAdapter.ts:322` → `id: val.id ?? \`tc-${Date.now()}-${toolCalls.length}\``；`AnthropicModelAdapter.ts:284` → `toolCalls.push({ id, name, input })`
+  - **推论**：UI 侧按 `toolCalls[i].id` 逐调用成行，即可让 pending 与 completion 原地归并，**无需改动 agent 侧、模型适配器或 `StreamChunk` 类型**。v85 补回的 `toolCallId` 正是同一标识。
+- **更正此前两处判断（先立后破）**：
+  1. 「pending 行 key 恒为 `tool:${toolName}`」**有误**——`content` 为空时 `resolveToolEventName` 返回空串，key 实为 `undefined`。
+  2. 「同工具多次调用互相覆盖」**仅在 `content` 非空（upsert 路径）成立**；`content` 为空时是各自 append，不覆盖。
+- **仍开放（需用户取舍，不擅自动手）**：逐调用成行 vs 保留 v73 的批行 + 「+N more」折叠。AGENTS.md §5 要求按稳定 key 原地归并、同一事实只出现一次；而 v73 批行属**既有用户可见呈现**，改一行即构成「变更既有功能」，按 AGENTS.md 须先上报取舍。
+- **置信度**：pending/completion key 行为为**实跑验证**（ts-node 调用真实函数）；`toolCall.id` → `receipt.toolCallId` 的传递为**代码链确认**（`createBaseReceipt` 形参 `{ id, name }` 取自流式 tool call），未做逐帧抓包。
+
+## v88 — 工具行按调用成行（`toolCalls[i].id` 为 key），pending 与 completion 原地归并 ✅
+
+- **决策落地**：v87 上报的二选一由用户裁定为**逐调用成行**（key = `toolCalls[i].id`），v73 的批行 + 「+N more」折叠随之让步。依据 AGENTS.md §5「tool 生命周期按稳定 key 原地归并」「同一事实默认只出现一次」。
+- **改动面**（仅 agent-ui 共享渲染层，未动 agent 侧、模型适配器或 `StreamChunk` 类型）：
+  - `AgentConsoleStreamHelpers.ts`：新增 `PendingToolCallRow` + `resolvePendingToolCallRows(chunk, translator)`，逐 `toolCalls[i]` 生成 `{ key: 'tool:<id>', content: formatToolCallLabel(call), toolCallId }`；`toolCalls` 缺失/无名时回落到既有单行语义（`resolveToolEventKey('tool_call', …)` + `describePendingToolCall`），保证只有顶层 `toolCallId` 的旧适配器行为不变。
+  - `AgentConsoleTurnStreamController.ts`：`tool_call` 分支改为遍历上述行；每行仍经 `qualifyTurnUiEventKey` 做 turn 作用域隔离，`receiptId`/`attempt`/`sequence` 等原有元数据逐行透传。completion 侧本就按 `tool:${toolCallId}` upsert，**无需改动**。
+- **TDD 证据**（`test/turn-stream-tool-row-identity.spec.ts`，3 例）：
+  - **RED（旧实现）**：`1417 passing 2 failed`，失败点精确为 `distinctRowsPerInvocation` / `completionMergesInPlace` 期望 2 行实得 1 行——即 v87 预测的「同工具多次调用塌成一行」。
+  - **GREEN**：`1419 passing`，`RUNNER_EXIT=0`；3 例分别覆盖逐调用成行、completion 原地归并（行数不增、call-a 转 `tool_completed`/`success`、call-b 仍 `running`）、顶层 `toolCallId` 单行不退化。
+  - **补强：归并后仍须指明「读的是哪个文件」**。原地归并会用 completion 文案**替换** pending 文案，故须确认不会由「显示错文件」退化为「不显示文件」。已核对真实链路：completion 的 `content` 由 `AppRpcServer.describeToolCompletedEvent`（`:1852`）产出为 `` `${toolName} · ${outputSummary}` ``，而 `describeStreamEventContent` 仅在含 `' · '` 时截取 `detail`；`read_file` 的 `outputSummary` 即 `ToolSummary` 的 `payload.path`（文件路径）。因此归并后行文案为 `read file completed · <path>`，**路径保留**。测试已按此真实形态（而非裸路径）构造输入并断言归并后行仍含 `exam-system/src/seed.ts`。
+- **门禁**：`bash scripts/agents-gate.sh` → `GATE_EXIT=0`；27 个阶段中 **26 个 `[GATE-PASS]`**（10 个 agent 包 + components/common/console/html + 4 个 tsc + browser bundle + dom-gate + dom-gate-matrix + tui-gate + gate-regression + source-size + production-db-integrity + diff），唯一 `[GATE-SKIP]` 为需 `RUN_PTY=1` opt-in 的 `pty-acceptance`，**无 `[GATE-FAIL]`**。`git diff --check` 干净。
+- **过程中修正的两处自身问题（如实记录）**：
+  1. 首版 `resolvePendingToolCallRows` 触发 `tsc --noEmit` `TS7006`（`.filter(row => …)` 在 `Array.isArray` 收窄出的 `any[]` 上丢失上下文类型）→ 显式标注 `PendingToolCallRow`；该错误曾级联导致 `tsc-agent-ui`、`build-agent-ui-web`、`dom-gate`、`dom-gate-matrix`、`tui-gate`、`agent-cli` 六个阶段 FAIL，修正后全绿。
+  2. `session-lifecycle.spec.ts:252`（`sleep(5)` 后断言 `durationMs >= 5`）在同一次运行中偶发失败（`Received: 4`）。经三次运行判定为**既有 flaky 计时用例**：其代码路径（`AgentConsoleSessionState.upsertUiEventMessage` 的 duration 推导）不在本次 diff 内，第三次全量运行即通过。**未**为消除该偶发而放宽断言。
+- **真实 TUI（PTY）验收已补齐**（不依赖真实模型）：`acceptance/fake_model_server.py` 扩成可发 N 个 tool call（保留每例 `index`/`id`），新增 `并行读文件` 轮次（`_v82_turn` → `read_file` × `README.md`/`package.json`）；`run_acceptance.py` 新增 `scenario_tool_row_identity_v82` 并默认执行。真实终端实测渲染为**两行独立 pending 行、两条带各自路径的 completed**：
+  ```
+  ● │ Tool · Running Read file · README.md
+  ● │ Tool · Running Read file · package.json
+  ✓ │ Tool · Read file completed · README.md (truncated) (343ms)
+  ✓ │ Tool · Read file completed · package.json (360ms)
+  ```
+  无折叠、无「+N more」、路径各自保留。`RUN_PTY=1 bash scripts/agents-gate.sh pty-acceptance` → `[GATE-PASS]`，8/8 场景 PASS（`ACC_EXIT=0`），连续两次全量一致。
+- **该 PTY 场景的边界（如实记录，勿当回归门禁用）**：把 v88 的 per-invocation keying 还原成 v87 的 name-keyed 后，**此场景仍 PASS**。原因是 TUI 按 `toolCalls[i]` 逐个渲染，行的 `key` 只决定 `tool_completed` 如何找到 pending 行归并；name-keyed 时两行照旧渲染，真实回归症状是「完成后残留孤儿 pending 行」，而 driver 只剥 ANSI、不模拟屏幕，无法判定该状态。故 **v88 的回归保障是上述单元测试**，PTY 场景定位为真实渲染冒烟（能抓 fake server 路由、折叠、路径丢失等渲染级问题）。
+- **driver 侧两处如实修正**：
+  1. `start_fake_server` 之前从不设 `FAKE_LOG`，导致工具行静默不渲染时**没有任何请求侧记录**，只能从裸 ANSI 反推。已默认写入 `$TMPDIR/tsdi-acceptance-fake-model.log`；本次即靠它定位到下条根因。
+  2. `_v82_turn` 原用 `_tool_result_count(messages)`（**全会话** tool 消息数）判断是否发工具调用。全量跑时场景 3 已留下 2 条 tool 结果，导致 `req=6 text='并行读文件' tool_results=2` 直接跳到最终回答、**从未发出工具调用**；单跑场景 9 时历史干净故 `==0` 成立，掩盖了该缺陷。已新增 `_tool_results_this_turn()` 只统计最后一个 user 消息之后的 tool 结果。
+- **断言形态的教训**：先前两版失败（`saw []`、`did not merge in place`）皆因试图**数行/取最后一行**。TUI 原地覆写整屏，剥 ANSI 后的字节流横跨多帧，`completed` 之后仍残留先前的 `Running` 帧；且 `viewport()`/`since()` 都只是字节尾部，不是逻辑屏幕。已改为**存在性断言**（每条应有行都渲染过、各自完成、无折叠、无 `+N more`），与其余 7 个场景一致；「是否原地归并」交由单元测试判定。另 `_match` 全 driver 用 `re.IGNORECASE`，而 helper 曾用大小写敏感的 `'read file' in line`，导致 `wait_for` 通过、helper 却返回 `[]`。
+- **仍未闭环**：v84 的旁白/最终回答分离未做真实终端验收——fake server 尚不支持 reasoning 通道，需先确认适配层是否消费 `reasoning_content` 再补场景。真实模型端到端仍受 provider 配额阻塞（`402 insufficient balance`），且 `/home/zhouyou/workspace/tsioc` 为 `workspace_untrusted`，须先 `tsdi-agent trust` 才能真实执行工作区工具。

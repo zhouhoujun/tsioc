@@ -15,8 +15,8 @@
 | 6 | slash 命令修正（P282） | 无效 `/statusline` verb → 修正后重试 | 诊断保留 draft；修正后成功并清空 composer |
 | 7 | 运行中断与秒跳 | 慢速流式回复；观察 Working 后发送 `Ctrl+C`，再启动一轮发送 `Esc` | Working 依次出现 0s/1s/2s；两个按键均取消 turn 并恢复 composer |
 | 8 | 主题与宽度矩阵 | 真实 PTY 切换 dark/light 主题与 80/120 列 | 主题 ANSI 色生效；CJK 根因、最终答复可见；所有视口行不破列 |
-| 9 | 工具行按调用成行（v82） | 一条 assistant 消息内两个 `read_file` 调用（`README.md`/`package.json`） | 两条 pending 行各自独立、两条完成行各自带路径；无折叠、无 `+N more` |
-| 10 | 旁白与最终回答分离（v78） | 一个 turn 内「旁白+工具」交错三轮后再给最终回答 | 三段旁白分别成行；`正在检查项目文件。同时读取种子数据。` 不出现为相邻粘连 |
+| 9 | 工具行按调用成行（v88） | 一条 assistant 消息内两个 `read_file` 调用（`README.md`/`package.json`） | 两条 pending 行各自独立、两条完成行各自带路径；无折叠、无 `+N more` |
+| 10 | 旁白与最终回答分离（v84） | 一个 turn 内「旁白+工具」交错三轮后再给最终回答 | 三段旁白分别成行；`正在检查项目文件。同时读取种子数据。` 不出现为相邻粘连 |
 
 ## 运行
 
@@ -45,7 +45,7 @@ FAKE_SCENARIO=plan-lifecycle python3 packages/agents/acceptance/run_acceptance.p
 | `EXPECT_WHICHKEY` | `which-key,Which-Key,…` | 场景 2 overlay 文案候选（逗号分隔） |
 | `EXPECT_TODO_LABEL` | `计划项 A` | 场景 3 计划项文案（需与 `FAKE_TODO_CONTENT` 一致） |
 | `FAKE_TODO_CONTENT` | `计划项 A` | 假模型侧计划项文案 |
-| `FAKE_SCENARIO` | `default` | `plan-lifecycle` 走 P232 全生命周期脚本（只跑场景 4）；`tool-row-identity-v82` 只跑场景 9；`narration-separation-v78` 只跑场景 10 |
+| `FAKE_SCENARIO` | `default` | `plan-lifecycle` 走 P232 全生命周期脚本（只跑场景 4）；`tool-row-identity-v88` 只跑场景 9；`narration-separation-v84` 只跑场景 10 |
 | `FAKE_LOG` | `$TMPDIR/tsdi-acceptance-fake-model.log` | 假模型请求侧记录。工具行静默不渲染时，这是唯一能区分「模型没发工具调用」与「TUI 没渲染」的证据 |
 
 依赖：Python 3（`run_acceptance.py` 需 3.8+，`|` 联合类型写法已改为 `Optional`），
@@ -94,8 +94,8 @@ FAKE_SCENARIO=plan-lifecycle python3 packages/agents/acceptance/run_acceptance.p
   tool 消息会污染后续路由），新增场景请扩展 `_default_turn`。
 - 场景 9 只断言「每条调用各有其行、各自完成、无折叠」，**不**断言行数或「原地归并」：driver 只剥
   ANSI、不模拟屏幕，剥后的字节流横跨多帧，历史行仍在其中。数行会采样到历史而非屏幕；「是否原地
-  归并」由 `agent-ui/test/turn-stream-tool-row-identity.spec.ts` 判定。已实测把 v82 的 per-invocation
-  keying 还原成 v81 的 name-keyed 后本场景仍 PASS，故它是渲染冒烟，不是 v82 的回归门禁。
+  归并」由 `agent-ui/test/turn-stream-tool-row-identity.spec.ts` 判定。已实测把 v88 的 per-invocation
+  keying 还原成 v87 的 name-keyed 后本场景仍 PASS，故它是渲染冒烟，不是 v88 的回归门禁。
 - 场景 10 断言用「两段旁白之间必须夹着工具行」这一间接证据（`_fused()` 去掉所有空白后查相邻粘连），
   对驱动端的重绘策略不敏感，且已在把 `sealStreamedNarration` 改成空操作后确认 FAIL。
 - 场景 4（plan-lifecycle）使用 `TodoStatus`（`pending|in_progress|completed|cancelled|failed`）

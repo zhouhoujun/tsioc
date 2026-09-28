@@ -733,7 +733,7 @@ def scenario_plan_lifecycle(pid: int, fd: int, screen: Screen) -> bool:
     return ok
 
 
-V82_PATHS = ('README.md', 'package.json')
+V88_PATHS = ('README.md', 'package.json')
 
 
 def _norm_line(s: str) -> str:
@@ -753,11 +753,11 @@ def _read_file_rows(text: str) -> list:
     return out
 
 
-def scenario_tool_row_identity_v82(pid: int, fd: int, screen: Screen) -> bool:
+def scenario_tool_row_identity_v88(pid: int, fd: int, screen: Screen) -> bool:
     """P200/G123: one assistant message carrying two `read_file` invocations has
     to render two rows, and each `tool_completed` merges into its own row.
 
-    v82 regression: keying pending rows on the tool name collapsed both
+    v88 regression: keying pending rows on the tool name collapsed both
     invocations onto one line, so only the last argument survived and the
     pending row could never merge with its own completion.
     """
@@ -775,9 +775,9 @@ def scenario_tool_row_identity_v82(pid: int, fd: int, screen: Screen) -> bool:
         return False
 
     rows = _read_file_rows(screen.since(mark))
-    readme_rows = [r for r in rows if V82_PATHS[0] in r]
-    json_rows = [r for r in rows if V82_PATHS[1] in r]
-    collapsed = [r for r in rows if V82_PATHS[0] in r and V82_PATHS[1] in r]
+    readme_rows = [r for r in rows if V88_PATHS[0] in r]
+    json_rows = [r for r in rows if V88_PATHS[1] in r]
+    collapsed = [r for r in rows if V88_PATHS[0] in r and V88_PATHS[1] in r]
     if not readme_rows or not json_rows:
         print(f'[FAIL] scenario 9: expected one row per invocation, saw {rows!r}')
         return False
@@ -810,9 +810,9 @@ def scenario_tool_row_identity_v82(pid: int, fd: int, screen: Screen) -> bool:
     # What the stream can prove is that each invocation got its own row and its
     # own completion.
     rows = _read_file_rows(screen.since(mark))
-    readme_rows = [r for r in rows if V82_PATHS[0] in r]
-    json_rows = [r for r in rows if V82_PATHS[1] in r]
-    collapsed = [r for r in rows if V82_PATHS[0] in r and V82_PATHS[1] in r]
+    readme_rows = [r for r in rows if V88_PATHS[0] in r]
+    json_rows = [r for r in rows if V88_PATHS[1] in r]
+    collapsed = [r for r in rows if V88_PATHS[0] in r and V88_PATHS[1] in r]
     if not readme_rows or not json_rows:
         print(f'[FAIL] scenario 9: expected a row per invocation, saw {rows!r}')
         return False
@@ -822,11 +822,11 @@ def scenario_tool_row_identity_v82(pid: int, fd: int, screen: Screen) -> bool:
     if any('+1 more' in r for r in rows):
         print(f'[FAIL] scenario 9: batch "+N more" collapse regressed: {rows!r}')
         return False
-    if not any('completed' in r and V82_PATHS[0] in r for r in readme_rows):
-        print(f'[FAIL] scenario 9: {V82_PATHS[0]} never completed: {readme_rows!r}')
+    if not any('completed' in r and V88_PATHS[0] in r for r in readme_rows):
+        print(f'[FAIL] scenario 9: {V88_PATHS[0]} never completed: {readme_rows!r}')
         return False
-    if not any('completed' in r and V82_PATHS[1] in r for r in json_rows):
-        print(f'[FAIL] scenario 9: {V82_PATHS[1]} never completed: {json_rows!r}')
+    if not any('completed' in r and V88_PATHS[1] in r for r in json_rows):
+        print(f'[FAIL] scenario 9: {V88_PATHS[1]} never completed: {json_rows!r}')
         return False
 
     print('[PASS] scenario 9: two same-tool invocations rendered as two rows and each completed')
@@ -848,8 +848,8 @@ def _fused(text: str, *parts: str) -> bool:
     return re.sub(r'\s+', '', ''.join(parts)) in flat
 
 
-def scenario_narration_separation_v78(pid: int, fd: int, screen: Screen) -> bool:
-    """v78: narration around tool calls seals into its own line.
+def scenario_narration_separation_v84(pid: int, fd: int, screen: Screen) -> bool:
+    """v84: narration around tool calls seals into its own line.
 
     Regression: each tool round appended to the one streaming assistant row, so a
     turn rendered as `Checking the exam system.Also reading seed.ts.` with the
@@ -884,7 +884,7 @@ def scenario_narration_separation_v78(pid: int, fd: int, screen: Screen) -> bool
         return False
 
     rows = _read_file_rows(body)
-    for path in V82_PATHS:
+    for path in V88_PATHS:
         if not any(path in r for r in rows):
             print(f'[FAIL] scenario 10: no {path} row: {rows!r}')
             return False
@@ -908,16 +908,16 @@ def main() -> int:
         print(f'[acceptance] TUI ready (matched "{ready}")')
         if SCENARIO == 'plan-lifecycle':
             results.append(('4-plan-lifecycle', scenario_plan_lifecycle(pid, fd, screen)))
-        elif SCENARIO == 'tool-row-identity-v82':
-            results.append(('9-tool-row-identity-v82', scenario_tool_row_identity_v82(pid, fd, screen)))
-        elif SCENARIO == 'narration-separation-v78':
-            results.append(('10-narration-separation-v78', scenario_narration_separation_v78(pid, fd, screen)))
+        elif SCENARIO == 'tool-row-identity-v88':
+            results.append(('9-tool-row-identity-v88', scenario_tool_row_identity_v88(pid, fd, screen)))
+        elif SCENARIO == 'narration-separation-v84':
+            results.append(('10-narration-separation-v84', scenario_narration_separation_v84(pid, fd, screen)))
         else:
             results.append(('1-tail-visibility', scenario_tail_visibility(pid, fd, screen)))
             results.append(('2-keymap-overlay', scenario_keymap_overlay(pid, fd, screen)))
             results.append(('3-plan-checkbox', scenario_plan_checkbox(pid, fd, screen)))
-            results.append(('9-tool-row-identity-v82', scenario_tool_row_identity_v82(pid, fd, screen)))
-            results.append(('10-narration-separation-v78', scenario_narration_separation_v78(pid, fd, screen)))
+            results.append(('9-tool-row-identity-v88', scenario_tool_row_identity_v88(pid, fd, screen)))
+            results.append(('10-narration-separation-v84', scenario_narration_separation_v84(pid, fd, screen)))
             results.append(('5-command-outputs', scenario_command_outputs(pid, fd, screen)))
             results.append(('6-slash-command', scenario_slash_command_p282(pid, fd, screen)))
             results.append(('7-interrupt-reactive', scenario_interrupt_and_reactive_render(pid, fd, screen)))
