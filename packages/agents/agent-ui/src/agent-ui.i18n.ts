@@ -62,6 +62,16 @@ export const agentUiEnglish: TranslationBundle = {
                 yoloUsage: 'Usage: /yolo [on|off]',
                 noMcpServers: 'No MCP servers configured. Add them via the agent settings (tsdi-agent mcp add).'
             },
+            modelError: {
+                quota: 'Model request refused: the {provider} account has insufficient balance (model {model}, status {status}). Top up the account or switch model with /model, then retry.',
+                auth: 'Model request refused: the API key for {provider} is missing or invalid (model {model}, status {status}). Update the key in settings, then retry.',
+                rateLimit: '{provider} is rate limiting this model (status {status}). Retrying shortly; use /model to switch if it keeps happening.',
+                capacity: '{provider} reports this model as overloaded (status {status}). Retrying shortly; use /model to switch if it keeps happening.',
+                server: '{provider} returned a server error for {model} (status {status}). Usually temporary — retry, or switch model with /model.',
+                network: 'Cannot reach {provider} for model {model}. Check the network and baseUrl, then retry.',
+                timeout: 'The request to {provider} for model {model} timed out. Retry, or raise timeoutMs in settings.',
+                unknown: 'The request to {provider} for model {model} failed (status {status}). Retry, or switch model with /model.'
+            },
             message: {
                 expand: '… {count} more lines. Click to expand',
                 collapse: 'Click to collapse',
@@ -128,6 +138,16 @@ export const agentUiChinese: TranslationBundle = {
                 personalityUsage: '用法：/personality [list|set <name>|unset]',
                 yoloUsage: '用法：/yolo [on|off]',
                 noMcpServers: '未配置 MCP 服务器。可通过 agent 设置（tsdi-agent mcp add）添加。'
+            },
+            modelError: {
+                quota: '模型请求被拒绝：{provider} 账户余额不足（模型 {model}，状态 {status}）。请充值，或用 /model 切换模型后重试。',
+                auth: '模型请求被拒绝：{provider} 的 API key 缺失或无效（模型 {model}，状态 {status}）。请在设置中更新 key 后重试。',
+                rateLimit: '{provider} 对该模型触发限流（状态 {status}）。即将自动重试；若持续出现请用 /model 切换模型。',
+                capacity: '{provider} 报告该模型过载（状态 {status}）。即将自动重试；若持续出现请用 /model 切换模型。',
+                server: '{provider} 为 {model} 返回服务端错误（状态 {status}）。通常是临时故障，可重试或用 /model 切换模型。',
+                network: '无法连接 {provider} 的 {model}。请检查网络与 baseUrl 后重试。',
+                timeout: '请求 {provider} 的 {model} 超时。可重试，或在设置中调大 timeoutMs。',
+                unknown: '请求 {provider} 的 {model} 失败（状态 {status}）。可重试，或用 /model 切换模型。'
             },
             message: {
                 expand: '… 还有 {count} 行，点击展开',
