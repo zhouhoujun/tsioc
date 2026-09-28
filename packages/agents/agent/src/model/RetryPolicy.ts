@@ -1,14 +1,31 @@
-export type ModelErrorKind = 'rate-limit' | 'capacity' | 'server' | 'network' | 'timeout' | 'unknown';
+export type ModelErrorKind = 'rate-limit' | 'quota' | 'auth' | 'capacity' | 'server' | 'network' | 'timeout' | 'unknown';
+
+/**
+ * Body signals that mean "the account cannot pay / the key is rejected".
+ * These are terminal: retrying the identical request can never succeed, so they
+ * must not be folded into the retryable `capacity`/`rate-limit` buckets (that
+ * would burn the whole retry budget on a billing wall and still fail).
+ */
+const QUOTA_BODY_SIGNALS = ['insufficient_quota', 'insufficient quota', 'insufficient balance', 'payment required', 'billing'];
+const AUTH_BODY_SIGNALS = ['invalid api key', 'invalid_api_key', 'incorrect api key', 'authentication', 'unauthorized', 'permission_denied', 'forbidden'];
 
 export function classifyModelError(status?: number, error?: unknown): ModelErrorKind {
     if (status === 429) return 'rate-limit';
+    // 402 = billing exhausted; 401/403 = credential rejected. Both are terminal.
+    if (status === 402) return 'quota';
+    if (status === 401 || status === 403) return 'auth';
     // 529 = Anthropic/OpenAI overloaded; also detect capacity-related body errors.
     if (status === 529) return 'capacity';
     if (typeof status === 'number' && status >= 500) return 'server';
     const message = String((error as any)?.message ?? error ?? '').toLowerCase();
-    if (message.includes('overloaded') || message.includes('capacity')
-        || message.includes('insufficient_quota') || message.includes('insufficient quota')) {
+    if (message.includes('overloaded') || message.includes('capacity')) {
         return 'capacity';
+    }
+    if (QUOTA_BODY_SIGNALS.some((signal) => message.includes(signal))) {
+        return 'quota';
+    }
+    if (AUTH_BODY_SIGNALS.some((signal) => message.includes(signal))) {
+        return 'auth';
     }
     // A received non-retryable HTTP response is not a transport failure merely
     // because its response body contains an error message.

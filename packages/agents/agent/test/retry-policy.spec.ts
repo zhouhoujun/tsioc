@@ -18,9 +18,19 @@ export class RetryPolicySpec {
         expect(classifyModelError(529)).toBe('capacity');
         expect(classifyModelError(undefined, new Error('model is overloaded'))).toBe('capacity');
         expect(classifyModelError(undefined, new Error('overloaded'))).toBe('capacity');
-        expect(classifyModelError(undefined, new Error('insufficient_quota'))).toBe('capacity');
-        expect(classifyModelError(undefined, new Error('insufficient quota'))).toBe('capacity');
         expect(classifyModelError(200, new Error('capacity'))).toBe('capacity');
+    }
+
+    @Test('treats insufficient-balance/quota bodies as terminal, not retryable capacity')
+    classifyQuotaNotCapacity() {
+        // Billing exhaustion is terminal: an identical retry can never succeed, so
+        // folding it into the retryable `capacity` bucket would burn the whole
+        // retry budget on a 402 wall and still surface the same failure.
+        expect(classifyModelError(undefined, new Error('insufficient_quota'))).toBe('quota');
+        expect(classifyModelError(undefined, new Error('insufficient quota'))).toBe('quota');
+        expect(classifyModelError(402, new Error('Insufficient Balance'))).toBe('quota');
+        expect(isRetryableError('quota')).toBe(false);
+        expect(isRetryableError('auth')).toBe(false);
     }
 
     @Test('classifies network error variants including snake_case and kebab-case')
