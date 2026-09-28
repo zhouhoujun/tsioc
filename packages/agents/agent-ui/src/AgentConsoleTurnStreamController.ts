@@ -1,12 +1,12 @@
 import type { AgentConsoleAppRpc, AgentMessage, AgentRuntime, AgentTurnMessageInput } from '@tsdi/agent';
 import type { AgentConsoleActivity, AgentConsoleApprovalRequest, AgentConsoleUiEventOptions } from './AgentConsoleSessionState';
 import {
-    describePendingToolCall,
     describeStreamEventContent,
+    resolvePendingToolCallRows,
     resolveStreamEventLabel,
     resolveToolEventKey
 } from './AgentConsoleStreamHelpers';
-import { findStreamingAssistantMessageIndex, replaceStreamingAssistantMessage } from './AgentConsoleMessageState';
+import { AgentConsoleMessageState, findStreamingAssistantMessageIndex, replaceStreamingAssistantMessage } from './AgentConsoleMessageState';
 
 /**
  * Host surface required by the turn stream controller.
@@ -45,6 +45,12 @@ export interface AgentConsoleTurnStreamHost {
  */
 export interface AgentConsoleTurnStreamState {
     streamMessageText: string;
+    /**
+     * Interim narrations already sealed into their own rows. Once this is > 0 the
+     * streaming row is a moving placeholder: re-appended while it has text, dropped
+     * when empty, so a turn ending on a tool call leaves no empty assistant bubble.
+     */
+    sealedNarrationCount: number;
 }
 
 /**
@@ -101,26 +107,28 @@ export function consumeStreamChunkView(
         return;
     }
     if (chunk?.type === 'tool_call') {
-        const content = describePendingToolCall(chunk, host.translator);
-        const eventKey = qualifyTurnUiEventKey(host.state, resolveToolEventKey('tool_call', chunk));
-        host.state.pushActivity('tool', `Tool call: ${host.state.summarize(String(content || chunk.content || ''))}`);
-        if (eventKey) {
-            host.state.upsertUiEventMessage(eventKey, content, {
-                eventType: 'tool_call',
-                label: 'tool',
-                status: 'running',
-                toolCallId: String(chunk?.toolCallId || '').trim() || undefined,
-                receiptId: String(chunk?.receiptId || chunk?.receipt?.receiptId || '').trim() || undefined,
-                attempt: Number(chunk?.attemptCount || chunk?.receipt?.attemptCount) || undefined,
-                source: 'stream',
-                sequence: Number(chunk?.sequence) || undefined
-            });
-        } else {
-            host.state.appendUiEventMessage(content, {
-                eventType: 'tool_call',
-                label: 'tool',
-                status: 'running'
-            });
+        sealStreamedNarration(host, state, assistantMessage);
+        for (const row of resolvePendingToolCallRows(chunk, host.translator)) {
+            const eventKey = qualifyTurnUiEventKey(host.state, row.key);
+            host.state.pushActivity('tool', `Tool call: ${host.state.summarize(String(row.content || chunk.content || ''))}`);
+            if (eventKey) {
+                host.state.upsertUiEventMessage(eventKey, row.content, {
+                    eventType: 'tool_call',
+                    label: 'tool',
+                    status: 'running',
+                    toolCallId: row.toolCallId,
+                    receiptId: String(chunk?.receiptId || chunk?.receipt?.receiptId || '').trim() || undefined,
+                    attempt: Number(chunk?.attemptCount || chunk?.receipt?.attemptCount) || undefined,
+                    source: 'stream',
+                    sequence: Number(chunk?.sequence) || undefined
+                });
+            } else {
+                host.state.appendUiEventMessage(row.content, {
+                    eventType: 'tool_call',
+                    label: 'tool',
+                    status: 'running'
+                });
+            }
         }
         if (String(chunk.content || '').includes('todo')) {
             void host.refreshTodoPlan();
@@ -133,7 +141,7 @@ export function consumeStreamChunkView(
             ...(chunk.message.metadata || {}),
             streaming: false
         };
-        replaceStreamingAssistantMessage(host.state, host.destroyed === true, assistantMessage);
+        finalizeStreamingAssistantRow(host, state, assistantMessage);
         host.state.setTokenUsage(chunk.message.metadata?.usage);
     }
 }
@@ -279,24 +287,117 @@ export function flushStreamingAssistantMessage(
         state.streamMessageText = '';
         return;
     }
+    const text = state.streamMessageText;
     const current = host.state.messages.slice();
     const targetIndex = findStreamingAssistantMessageIndex(current, message);
+    if (!text.trim() && state.sealedNarrationCount > 0) {
+        if (targetIndex >= 0) {
+            current.splice(targetIndex, 1);
+            host.state.setMessages(current);
+        }
+        return;
+    }
     if (targetIndex >= 0) {
         const currentMessage = current[targetIndex];
-        if (String(currentMessage.content || '') === state.streamMessageText
+        if (String(currentMessage.content || '') === text
             && currentMessage.metadata?.streaming === true) {
             return;
         }
-        current[targetIndex] = {
+        const updated: AgentMessage = {
             ...(message || currentMessage),
-            content: state.streamMessageText,
+            content: text,
             metadata: {
                 ...(message?.metadata || currentMessage.metadata || {}),
                 streaming: true
             }
         };
-        host.state.setMessages(current);
+        if (targetIndex === current.length - 1) {
+            current[targetIndex] = updated;
+        } else {
+            current.splice(targetIndex, 1);
+            current.push(updated);
+        }
+    } else if (message && text.trim()) {
+        current.push({
+            ...message,
+            content: text,
+            metadata: {
+                ...(message.metadata || {}),
+                streaming: true
+            }
+        });
+    } else {
+        return;
     }
+    host.state.setMessages(current);
+}
+
+function removeStreamingAssistantRow(state: AgentConsoleMessageState, message: AgentMessage): void {
+    const current = state.messages.slice();
+    const targetIndex = findStreamingAssistantMessageIndex(current, message);
+    if (targetIndex < 0) {
+        return;
+    }
+    current.splice(targetIndex, 1);
+    state.setMessages(current);
+}
+
+/**
+ * Seals the interim narration accumulated so far into its own completed row at
+ * the tail, then releases the streaming row. A tool call is a narration boundary:
+ * without this the text either fuses into the final answer or is reordered after
+ * the tool rows it was streamed before.
+ */
+function sealStreamedNarration(
+    host: AgentConsoleTurnStreamHost,
+    state: AgentConsoleTurnStreamState,
+    message: AgentMessage
+): void {
+    const text = String(state.streamMessageText || message.content || '');
+    if (!text.trim()) {
+        return;
+    }
+    const current = host.state.messages.slice();
+    const targetIndex = findStreamingAssistantMessageIndex(current, message);
+    if (targetIndex >= 0) {
+        current.splice(targetIndex, 1);
+    }
+    state.sealedNarrationCount += 1;
+    current.push({
+        id: `${message.id}-narration-${state.sealedNarrationCount}`,
+        role: 'assistant',
+        content: text,
+        createdAt: Date.now(),
+        metadata: {
+            ...(message.metadata || {}),
+            streaming: false
+        }
+    });
+    host.state.setMessages(current);
+    state.streamMessageText = '';
+    message.content = '';
+}
+
+/**
+ * Settles the streaming row when a turn ends: keep and close it when it still
+ * carries the final answer, otherwise drop the placeholder whose text was
+ * already sealed into narration rows.
+ */
+function finalizeStreamingAssistantRow(
+    host: AgentConsoleTurnStreamHost,
+    state: AgentConsoleTurnStreamState,
+    message: AgentMessage
+): void {
+    if (host.destroyed === true) {
+        return;
+    }
+    const text = String(message.content || '');
+    state.streamMessageText = text;
+    if (!text.trim() && state.sealedNarrationCount > 0) {
+        removeStreamingAssistantRow(host.state, message);
+        return;
+    }
+    replaceStreamingAssistantMessage(host.state, false, message);
 }
 
 /**
@@ -304,6 +405,7 @@ export function flushStreamingAssistantMessage(
  */
 export function clearStreamingMessageState(state: AgentConsoleTurnStreamState): void {
     state.streamMessageText = '';
+    state.sealedNarrationCount = 0;
 }
 
 /**
@@ -326,18 +428,22 @@ export async function runTurnStreamView(
         ...(message ? { message } : {})
     });
     if (stream) {
+        let completed = false;
         try {
             for await (const chunk of stream) {
                 consumeStreamChunkView(host, state, chunk, assistantMessage);
             }
+            completed = true;
         } finally {
+            if (completed) {
+                assistantMessage.metadata = {
+                    ...(assistantMessage.metadata || {}),
+                    streaming: false
+                };
+                finalizeStreamingAssistantRow(host, state, assistantMessage);
+            }
             clearStreamingMessageState(state);
         }
-        assistantMessage.metadata = {
-            ...(assistantMessage.metadata || {}),
-            streaming: false
-        };
-        replaceStreamingAssistantMessage(host.state, host.destroyed === true, assistantMessage);
         return;
     }
 
@@ -350,7 +456,7 @@ export async function runTurnStreamView(
             ...(assistantMessage.metadata || {}),
             streaming: false
         };
-        replaceStreamingAssistantMessage(host.state, host.destroyed === true, assistantMessage);
+        finalizeStreamingAssistantRow(host, state, assistantMessage);
         return;
     }
 

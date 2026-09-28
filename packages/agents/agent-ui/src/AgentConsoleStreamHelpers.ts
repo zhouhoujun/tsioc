@@ -161,6 +161,44 @@ export function describePendingToolCall(chunk: any, translator?: any): string {
     return toolName || text;
 }
 
+/**
+ * One pending row per streamed tool invocation.
+ *
+ * `toolCalls[i].id` is the same provider-assigned identity the runtime copies
+ * into `receipt.toolCallId`, so keying on it lets the pending row merge in place
+ * with its own `tool_completed` event. Keying on the tool name instead collapses
+ * every invocation of the same tool onto one row, which both hides the other
+ * invocations and orphans the pending row from its completion.
+ */
+export interface PendingToolCallRow {
+    key?: string;
+    content: string;
+    toolCallId?: string;
+}
+
+export function resolvePendingToolCallRows(chunk: any, translator?: any): PendingToolCallRow[] {
+    const toolCalls = Array.isArray(chunk?.toolCalls) ? chunk.toolCalls : [];
+    const rows: PendingToolCallRow[] = toolCalls
+        .map((call: any): PendingToolCallRow => {
+            const toolCallId = String(call?.id || '').trim();
+            return {
+                key: toolCallId ? `tool:${toolCallId}` : undefined,
+                content: formatToolCallLabel(call, translator),
+                toolCallId: toolCallId || undefined
+            };
+        })
+        .filter((row: PendingToolCallRow) => !!row.content);
+    if (rows.length) {
+        return rows;
+    }
+    // Adapters that only set a top-level `toolCallId` keep the single-row shape.
+    return [{
+        key: resolveToolEventKey('tool_call', chunk),
+        content: describePendingToolCall(chunk, translator),
+        toolCallId: String(chunk?.toolCallId || '').trim() || undefined
+    }];
+}
+
 export function describeStreamEventContent(eventType: string, chunk: any, translator?: any): string {
     const content = String(chunk?.content || '').trim();
     const toolName = String(chunk?.toolName || '').trim();
