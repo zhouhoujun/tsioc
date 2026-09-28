@@ -46,6 +46,9 @@ import {
     AgentConsoleWorkspaceMentionResolver
 } from './AgentConsoleWorkspaceMentions';
 import { AgentConsoleMessageStatusLabels } from './AgentConsoleMessageRenderers';
+import { normalizeMessageLayout, resolveFinalAssistantMessageId } from './AgentConsoleViewport';
+import { trackMessagesNewCount } from './AgentConsoleTranscriptLayout';
+import { moveMessageSelection, moveMessageSelectionPage, selectFirstMessage, selectLastMessage } from './AgentConsoleTranscriptNavigation';
 import {
     AgentConsoleTimelineLabels,
     DEFAULT_TIMELINE_LABELS,
@@ -399,8 +402,8 @@ export interface AgentConsoleOptions {
     statusVisibleLines?: number;
     sessionsVisibleItems?: number;
     messagesVisibleItems?: number;
-    /** Transcript layout: stream keeps conversation rows flowing; dynamic windows them. */
-    messageLayout?: 'stream' | 'dynamic';
+    /** Transcript layout: stream keeps conversation rows flowing; viewport windows them (legacy value 'dynamic' is normalized to 'viewport'). */
+    messageLayout?: 'stream' | 'viewport' | 'dynamic';
     messageDetailVisibleLines?: number;
     /** v19-A8: auxiliary tool/event/file-change/system/error content preview lines (policy render, default 8). */
     auxiliaryPreviewLines?: number;
@@ -465,7 +468,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     statusVisibleLines: 8,
     sessionsVisibleItems: 6,
     messagesVisibleItems: 7,
-    messageLayout: 'stream',
+    messageLayout: 'viewport',
     messageDetailVisibleLines: 6,
     auxiliaryPreviewLines: DEFAULT_RENDER_POLICY.auxiliaryPreviewLines,
     reasoningPreviewLines: DEFAULT_RENDER_POLICY.reasoningPreviewLines,
@@ -577,6 +580,8 @@ export class AgentConsoleSessionState {
     constructor(@Inject(COMMAND_EXECUTION_CONTROL) protected commandExecutionControl?: CommandExecutionControlPort) {}
     consoleOptions: Required<AgentConsoleOptions> = defaultAgentConsoleOptions;
     messageDetailVisibleLines = defaultAgentConsoleOptions.messageDetailVisibleLines;
+    /** Terminal-height-derived window size for viewport layout (0 = fall back to configured items). */
+    messagesViewportItems = 0;
     sessionId = 'console';
     input = '';
     inputSecret = false;
@@ -590,6 +595,8 @@ export class AgentConsoleSessionState {
     messages: AgentMessage[] = [];
     sections: AgentSessionSection[] = [];
     messagesFocused = false;
+    /** Messages that arrived while the viewport transcript is scrolled up (0 = following latest). */
+    messagesNewCount = 0;
     selectedMessageId = '';
     messageDetailOpen = false;
     messageDetailTakesFocus = true;
@@ -1290,6 +1297,11 @@ export class AgentConsoleSessionState {
         this.activities = [];
     }
 
+    /** Last assistant answer row; kept fully expanded in viewport mode while other long bodies collapse. */
+    get finalAssistantMessageId(): string {
+        return resolveFinalAssistantMessageId(this.messages);
+    }
+
     get displayMessages(): AgentMessage[] {
         const filtered = projectAgentConsoleConversationMainline(
             projectAgentConsoleTimelineDurations(this.messages.filter(message => this.isDisplayMessage(message)))
@@ -1417,6 +1429,7 @@ export class AgentConsoleSessionState {
     }
 
     setMessages(messages: AgentMessage[], preserveCommandExecutionMessages = false): void {
+        const previousCount = this.messages.length;
         this.messages = messages.filter(message => {
             if (!message || typeof message.content !== 'string') return false;
             const content = message.content;
@@ -1449,6 +1462,11 @@ export class AgentConsoleSessionState {
                 this.messageDetailScroll = 0;
                 this.messageDetailColumnScroll = 0;
             }
+        }
+        if (this.messagesFocused) {
+            this.messagesNewCount = trackMessagesNewCount(previousCount, this.messages.length, true, this.messagesNewCount);
+        } else {
+            this.messagesNewCount = 0;
         }
     }
 
@@ -1950,6 +1968,7 @@ export class AgentConsoleSessionState {
             this.selectedMessageId = displayMessages[displayMessages.length - 1].id;
         }
         if (!focused) {
+            this.messagesNewCount = 0;
             this.timelineEventInspectorOpen = false;
             this.selectedTimelineEventId = '';
             this.timelineEventDetailScroll = 0;
@@ -1972,51 +1991,6 @@ export class AgentConsoleSessionState {
 
     isPlanTodoMessageSelected(): boolean {
         return this.selectedMessageId === '__plan_todo_inline__' && this.planTodos.length > 7;
-    }
-
-    moveMessageSelection(delta: number): void {
-        const displayMessages = this.displayMessages;
-        if (!displayMessages.length) {
-            return;
-        }
-        const currentIndex = Math.max(0, displayMessages.findIndex(item => item.id === this.selectedMessageId));
-        const nextIndex = (currentIndex + delta + displayMessages.length) % displayMessages.length;
-        this.selectedMessageId = displayMessages[nextIndex].id;
-        this.messageDetailScroll = 0;
-        this.messageDetailColumnScroll = 0;
-    }
-
-    moveMessageSelectionPage(delta: number, pageSize?: number): void {
-        const displayMessages = this.displayMessages;
-        if (!displayMessages.length) {
-            return;
-        }
-        const currentIndex = Math.max(0, displayMessages.findIndex(item => item.id === this.selectedMessageId));
-        const resolvedPageSize = pageSize ?? this.consoleOptions.messageSelectionPageSize;
-        const nextIndex = Math.max(0, Math.min(displayMessages.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
-        this.selectedMessageId = displayMessages[nextIndex].id;
-        this.messageDetailScroll = 0;
-        this.messageDetailColumnScroll = 0;
-    }
-
-    selectFirstMessage(): void {
-        const displayMessages = this.displayMessages;
-        if (!displayMessages.length) {
-            return;
-        }
-        this.selectedMessageId = displayMessages[0].id;
-        this.messageDetailScroll = 0;
-        this.messageDetailColumnScroll = 0;
-    }
-
-    selectLastMessage(): void {
-        const displayMessages = this.displayMessages;
-        if (!displayMessages.length) {
-            return;
-        }
-        this.selectedMessageId = displayMessages[displayMessages.length - 1].id;
-        this.messageDetailScroll = 0;
-        this.messageDetailColumnScroll = 0;
     }
 
     focusLatestLongMessage(): boolean {
@@ -2043,21 +2017,6 @@ export class AgentConsoleSessionState {
         this.messagesFocused = true;
         this.syncDerivedInputFocus();
         return true;
-    }
-
-    selectLastUserMessage(): void {
-        const displayMessages = this.displayMessages;
-        for (let index = displayMessages.length - 1; index >= 0; index -= 1) {
-            const message = displayMessages[index];
-            if (String(message.role || '').toLowerCase() === 'user'
-                && message.metadata?.kind !== 'steer'
-                && !!String(message.content || '').trim()) {
-                this.selectedMessageId = message.id;
-                this.messageDetailScroll = 0;
-                this.messageDetailColumnScroll = 0;
-                return;
-            }
-        }
     }
 
     get selectedMessage(): AgentMessage | undefined {
@@ -5062,6 +5021,17 @@ export class AgentConsoleSessionState {
         }
     }
 
+    get messageLayout(): 'stream' | 'viewport' {
+        return normalizeMessageLayout(this.consoleOptions.messageLayout);
+    }
+
+    setMessageLayout(value: 'stream' | 'viewport'): void {
+        this.consoleOptions = {
+            ...this.consoleOptions,
+            messageLayout: normalizeMessageLayout(value)
+        };
+    }
+
     setWhichKeyVisible(value: boolean): void {
         this.whichKeyVisible = !!value;
         if (!this.whichKeyVisible) {
@@ -5120,6 +5090,13 @@ export class AgentConsoleSessionState {
         if (!this.vimMode) {
             this.inputMode = 'insert';
             this.vimPendingKey = '';
+        }
+    }
+
+    setMessagesViewportItems(value: number): void {
+        const items = Math.max(0, Math.floor(Number(value) || 0));
+        if (this.messagesViewportItems !== items) {
+            this.messagesViewportItems = items;
         }
     }
 
@@ -6632,26 +6609,26 @@ export class AgentConsoleSessionState {
                         this.moveReviewFileSelection(1);
                         return true;
                     }
-                    this.moveMessageSelection(1);
+                    moveMessageSelection(this, 1);
                     return true;
                 case 'up':
                     if (this.selectedMessage?.metadata?.uiKind === 'file-change') {
                         this.moveReviewFileSelection(-1);
                         return true;
                     }
-                    this.moveMessageSelection(-1);
+                    moveMessageSelection(this, -1);
                     return true;
                 case 'pageup':
-                    this.moveMessageSelectionPage(-1);
+                    moveMessageSelectionPage(this, -1);
                     return true;
                 case 'pagedown':
-                    this.moveMessageSelectionPage(1);
+                    moveMessageSelectionPage(this, 1);
                     return true;
                 case 'home':
-                    this.selectFirstMessage();
+                    selectFirstMessage(this);
                     return true;
                 case 'end':
-                    this.selectLastMessage();
+                    selectLastMessage(this);
                     return true;
                 case 'r': {
                     const selected = this.selectedMessage;

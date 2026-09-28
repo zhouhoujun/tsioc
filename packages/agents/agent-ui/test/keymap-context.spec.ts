@@ -1,3 +1,4 @@
+import { selectFirstMessage } from '../src/AgentConsoleTranscriptNavigation';
 import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
@@ -520,7 +521,7 @@ export class AgentConsoleThreadNavigationTest {
             { id: 'm8', role: 'assistant', content: '8', createdAt: 8 } as any
         ]);
         state.setMessagesFocused(true);
-        state.selectFirstMessage();
+        selectFirstMessage(state);
         const consumed = await (component as any).handleGlobalKeyInput('\u001b[6~');
         expect(consumed).toEqual(true);
         expect(state.selectedMessage?.id).toEqual('m7');

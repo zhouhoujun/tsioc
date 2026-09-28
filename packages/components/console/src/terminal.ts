@@ -242,6 +242,8 @@ export interface TuiTerminalSurfaceOptions {
     placeCursor?: boolean | (() => boolean);
     cursorMode?: 'prompt' | 'bottom' | (() => 'prompt' | 'bottom');
     nativeScrollback?: boolean | (() => boolean);
+    /** Whether the surface may keep its own transcript scroll region. Defaults to true; set false when the app owns history scrolling. */
+    scrollViewport?: boolean | (() => boolean);
     stablePrefixRows?: number | ((lines: string[]) => number);
     stableRegionId?: string | string[];
     scheduler?: (task: () => void) => void;
@@ -314,6 +316,7 @@ export abstract class ConsoleTerminalSurfaceLifecycle {
     resolveTerminalCursorStyle?(): 'block' | 'underline' | 'bar';
     shouldBlinkTerminalCursor?(): boolean;
     shouldUseNativeScrollback?(): boolean;
+    shouldScrollViewport?(): boolean;
 }
 
 @Abstract()
@@ -623,6 +626,7 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
             placeCursor: () => lifecycle?.shouldPlaceTerminalCursor?.() ?? false,
             cursorMode: () => lifecycle?.resolveTerminalCursorMode?.() ?? 'prompt',
             nativeScrollback: () => lifecycle?.shouldUseNativeScrollback?.() === true,
+            scrollViewport: () => lifecycle?.shouldScrollViewport?.() !== false,
             mouseTrackingEnabled: this.mouseTrackingEnabled
         });
         this.surface.render();
@@ -839,6 +843,9 @@ export class TuiTerminalSurface {
     }
 
     scrollViewport(deltaRows: number): boolean {
+        if (!this.isScrollViewportEnabled()) {
+            return false;
+        }
         const delta = Number.isFinite(deltaRows) ? Math.trunc(deltaRows) : 0;
         if (!delta || !this.maxScrollOffsetRows) {
             return false;
@@ -853,6 +860,9 @@ export class TuiTerminalSurface {
     }
 
     scrollViewportToEdge(edge: 'start' | 'end'): boolean {
+        if (!this.isScrollViewportEnabled()) {
+            return false;
+        }
         const next = edge === 'start' ? this.maxScrollOffsetRows : 0;
         if (next === this.scrollOffsetRows) {
             return false;
@@ -989,7 +999,7 @@ export class TuiTerminalSurface {
             }
             const start = allLines.length - height;
             const mapRow = (row: number): number | undefined => row >= start ? row - start : undefined;
-            this.maxScrollOffsetRows = start;
+            this.maxScrollOffsetRows = this.isScrollViewportEnabled() ? start : 0;
             this.scrollOffsetRows = 0;
             return {
                 lines: allLines.slice(start),
@@ -1013,7 +1023,7 @@ export class TuiTerminalSurface {
         const transcript = allLines.slice(scrollRegion.startRow, footerRegion.startRow);
         const footer = allLines.slice(footerRegion.startRow);
         const availableRows = Math.max(0, height - prefix.length - footer.length);
-        this.maxScrollOffsetRows = Math.max(0, transcript.length - availableRows);
+        this.maxScrollOffsetRows = this.isScrollViewportEnabled() ? Math.max(0, transcript.length - availableRows) : 0;
         this.scrollOffsetRows = Math.max(0, Math.min(this.scrollOffsetRows, this.maxScrollOffsetRows));
         const end = Math.max(0, transcript.length - this.scrollOffsetRows);
         const start = Math.max(0, end - availableRows);
@@ -1062,6 +1072,11 @@ export class TuiTerminalSurface {
         return typeof configured === 'number' && Number.isFinite(configured)
             ? Math.max(1, Math.floor(configured))
             : undefined;
+    }
+
+    protected isScrollViewportEnabled(): boolean {
+        const configured = this.options.scrollViewport;
+        return typeof configured === 'function' ? configured() !== false : configured !== false;
     }
 
     protected reclaimMouseTracking(): void {

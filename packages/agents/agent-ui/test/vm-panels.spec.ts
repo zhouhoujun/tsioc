@@ -1,3 +1,4 @@
+import { moveMessageSelection, moveMessageSelectionPage, selectFirstMessage, selectLastMessage } from '../src/AgentConsoleTranscriptNavigation';
 import expect = require('expect');
 import { Buffer } from 'buffer';
 import * as fs from 'fs';
@@ -463,7 +464,7 @@ export class VmPanelsTest {
         expect(state.messagesFocused).toEqual(true);
         expect(state.selectedMessage?.id).toEqual('m2');
 
-        state.moveMessageSelection(-1);
+        moveMessageSelection(state, -1);
         expect(state.selectedMessage?.id).toEqual('m1');
 
         state.setSelectedMessageId('m2');
@@ -518,7 +519,7 @@ export class VmPanelsTest {
         expect(state.selectedMessage?.id).toEqual('a2');
 
         state.setMessagesFocused(true);
-        state.moveMessageSelection(-1);
+        moveMessageSelection(state, -1);
         expect(state.selectedMessage?.id).toEqual('u1');
 
         state.setTimelineMode('steps');
@@ -674,13 +675,13 @@ export class VmPanelsTest {
             { id: 'm8', role: 'assistant', content: 'line1\nline2\nline3\nline4\nline5\nline6\nline7\nline8', createdAt: 8 } as any
         ]);
 
-        state.selectFirstMessage();
+        selectFirstMessage(state);
         expect(state.selectedMessage?.id).toEqual('m1');
 
-        state.moveMessageSelectionPage(1);
+        moveMessageSelectionPage(state, 1);
         expect(state.selectedMessage?.id).toEqual('m7');
 
-        state.selectLastMessage();
+        selectLastMessage(state);
         expect(state.selectedMessage?.id).toEqual('m8');
 
         state.openMessageDetail();

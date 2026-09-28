@@ -3,6 +3,7 @@ import type { AgentConsoleSelectOption } from './AgentConsoleSessionState';
 import { AGENT_CONSOLE_OVERLAY_HINTS, AGENT_CONSOLE_OVERLAY_TITLES } from './AgentConsoleOverlayPresenter';
 import { formatAgentUiSessionClosingMessage } from './agent-ui.i18n';
 import { fuzzyMatchAgentConsoleCommand } from './AgentConsoleKeymap';
+import { resolveTranscriptLayout } from './AgentConsoleTranscriptLayout';
 import {
     formatAgentConsoleCommandArgumentForm,
     formatAgentConsoleCommandArgumentTemplate,
@@ -25,7 +26,9 @@ export interface AgentConsoleTerminalInputHost {
         commandHints: string[];
         selectMenu?: { title?: string } | null;
         messageDetailVisibleLines: number;
-        consoleOptions: { messageToggleInteraction?: string };
+        messagesViewportItems?: number;
+        setMessagesViewportItems?(value: number): void;
+        consoleOptions: { messageToggleInteraction?: string; messageLayout?: string };
         isSshShellActive: boolean;
         isAnyFocusActive(): boolean;
         handleVimKey(key: string): boolean;
@@ -65,6 +68,7 @@ export interface AgentConsoleTerminalInputHost {
     sessionService?: { cancelTurn(sessionId: string): Promise<boolean> } | null;
     isTurnInProgress(): boolean;
     notify(message: string, duration?: number): void;
+    scrollMessages?(delta: number): void;
     getTerminalRenderedLines(): string[];
     handleGlobalKeyInput(raw: string): Promise<boolean>;
     detachSshShell(reason: 'detached' | 'closed'): Promise<void>;
@@ -123,7 +127,12 @@ export async function handleTerminalInputView(
         return;
     }
     syncConsoleMessageDetailViewportView(host);
+    syncConsoleMessageViewportView(host);
     if (decoded.mouse) {
+        if (resolveTranscriptLayout(host.state.consoleOptions.messageLayout).wheelScrollsHistory && (decoded.mouse.button & 64) !== 0) {
+            host.scrollMessages?.((decoded.mouse.button & 1) === 0 ? -1 : 1);
+            return;
+        }
         host.surfaceAccessor?.dispatchMouse?.(decoded.mouse);
         return;
     }
@@ -283,4 +292,17 @@ export function syncConsoleMessageDetailViewportView(host: AgentConsoleTerminalI
     if (host.state.messageDetailVisibleLines !== visibleLines) {
         host.state.setMessageDetailVisibleLines(visibleLines);
     }
+}
+
+/** Size the viewport transcript window to the terminal so it occupies the full screen. */
+export function syncConsoleMessageViewportView(host: AgentConsoleTerminalInputHost): void {
+    if (host.state.consoleOptions.messageLayout === 'stream') {
+        return;
+    }
+    const rows = host.surfaceAccessor?.getTerminalSize?.().rows;
+    if (!Number.isFinite(rows)) {
+        return;
+    }
+    const items = Math.max(4, Math.min(400, Math.floor(Number(rows)) - 6));
+    host.state.setMessagesViewportItems?.(items);
 }

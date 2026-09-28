@@ -620,6 +620,20 @@ export class VerificationGateTest {
         expect(fromSecond.falsified).toEqual(false);
     }
 
+    @Test('does not falsify read-only probe failures')
+    async doesNotFalsifyReadOnlyProbeFailures() {
+        const ledger = new EvidenceLedger('s1', new RandomUuidGenerator()
+        );
+        ledger.record({ toolName: 'stat', status: 'error', error: 'ENOENT: no such file or directory', readOnly: true });
+        ledger.record({ toolName: 'read_file', status: 'error', error: 'ENOENT', readOnly: true });
+        ledger.record({ toolName: 'terminal', status: 'error', error: 'exit 1' });
+
+        const gate = new VerificationGate();
+        const result = gate.verify(ledger, 0);
+        expect(result.falsified).toEqual(true);
+        expect(result.falsifiedEvidence.map(entry => entry.toolName)).toEqual(['terminal']);
+    }
+
     @Test('flags declared writes whose content did not change')
     async flagsDeclaredWritesWithoutDiff() {
         const ledger = new EvidenceLedger('s1', new RandomUuidGenerator()

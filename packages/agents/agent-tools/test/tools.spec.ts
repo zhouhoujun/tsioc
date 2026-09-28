@@ -3316,6 +3316,7 @@ export class AgentToolsPackageTest {
         expect(result.output).toContain('analyze project');
         expect(result.output).toContain('focus on risks');
         expect(result.output).toContain('Use at most 4 turns.');
+        expect(result.output).toContain('You can call tools from these categories directly: filesystem');
         expect(result.sessionId).toContain('spawn-');
         expect(seenSessionId).toEqual(result.sessionId);
         expect(seenMaxTurns).toEqual(4);

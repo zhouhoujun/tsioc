@@ -130,7 +130,7 @@ export function buildConsoleAgentOptions(
                 showStatusline: false,
                 showMessageTimestamps: false,
                 messageToggleInteraction: 'enter',
-                messageLayout: 'stream'
+                messageLayout: 'viewport'
             }
         }
     });

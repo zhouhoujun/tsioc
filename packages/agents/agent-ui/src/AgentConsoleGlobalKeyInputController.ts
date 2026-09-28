@@ -1,6 +1,8 @@
+import type { AgentMessage } from '@tsdi/agent';
 import type { AgentConsoleGlobalAction, AgentConsoleKeymap, AgentConsoleKeymapContext } from './AgentConsoleKeymap';
 import { decodeGlobalKey } from './AgentConsoleStreamHelpers';
 import { isAgentConsoleMessageNavigationAction, isAgentConsoleThreadNavigationAction } from './AgentConsoleKeymap';
+import { moveMessageSelectionPage, selectFirstMessage, selectLastMessage, selectLastUserMessage } from './AgentConsoleTranscriptNavigation';
 
 /**
  * Host surface required by the global key input controller.
@@ -20,11 +22,13 @@ export interface AgentConsoleGlobalKeyInputHost {
         isAnyFocusActive(): boolean;
         hasMessageFocus(): boolean;
         focusLatestLongMessage(): boolean;
-        moveMessageSelectionPage(delta: number, pageSize?: number): void;
+        displayMessages: AgentMessage[];
+        selectedMessageId: string;
+        messagesFocused: boolean;
+        messageDetailScroll: number;
+        messageDetailColumnScroll: number;
+        setMessagesFocused(focused: boolean): void;
         consoleOptions: { messageSelectionPageSize: number };
-        selectFirstMessage(): void;
-        selectLastMessage(): void;
-        selectLastUserMessage(): void;
         showThinking: boolean;
         setShowThinking(visible: boolean): void;
         toggleWhichKeyLayout(): void;
@@ -374,39 +378,39 @@ export async function executeGlobalKeyActionView(
         if (!host.state.hasMessageFocus()) {
             return host.state.focusLatestLongMessage();
         }
-        host.state.moveMessageSelectionPage(-1);
+        moveMessageSelectionPage(host.state, -1);
         return true;
     }
     if (action === 'message-page-down') {
-        host.state.moveMessageSelectionPage(1);
+        moveMessageSelectionPage(host.state, 1);
         return true;
     }
     if (action === 'message-half-page-up') {
-        host.state.moveMessageSelectionPage(-1, Math.max(1, Math.floor(host.state.consoleOptions.messageSelectionPageSize / 2)));
+        moveMessageSelectionPage(host.state, -1, Math.max(1, Math.floor(host.state.consoleOptions.messageSelectionPageSize / 2)));
         return true;
     }
     if (action === 'message-half-page-down') {
-        host.state.moveMessageSelectionPage(1, Math.max(1, Math.floor(host.state.consoleOptions.messageSelectionPageSize / 2)));
+        moveMessageSelectionPage(host.state, 1, Math.max(1, Math.floor(host.state.consoleOptions.messageSelectionPageSize / 2)));
         return true;
     }
     if (action === 'message-line-up') {
-        host.state.moveMessageSelectionPage(-1, 1);
+        moveMessageSelectionPage(host.state, -1, 1);
         return true;
     }
     if (action === 'message-line-down') {
-        host.state.moveMessageSelectionPage(1, 1);
+        moveMessageSelectionPage(host.state, 1, 1);
         return true;
     }
     if (action === 'message-first') {
-        host.state.selectFirstMessage();
+        selectFirstMessage(host.state);
         return true;
     }
     if (action === 'message-last') {
-        host.state.selectLastMessage();
+        selectLastMessage(host.state);
         return true;
     }
     if (action === 'message-last-user') {
-        host.state.selectLastUserMessage();
+        selectLastUserMessage(host.state);
         return true;
     }
     if (action === 'model-favorite-toggle') {

@@ -154,6 +154,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/thinking', description: 'toggle reasoning/thinking message visibility (Ctrl+X T)', group: 'display', args: [{ name: 'mode', type: 'enum', values: ['on', 'off', 'show', 'hide'] }] },
     { name: '/timeline', description: 'toggle compact chronological timeline view (Ctrl+X G)', group: 'display', args: [{ name: 'mode', type: 'enum', values: ['off', 'compact', 'steps', 'verbose'] }] },
     { name: '/display', description: 'toggle message timestamp visibility: /display [on|off|critical]', group: 'display', args: [{ name: 'mode', type: 'enum', values: ['on', 'off', 'show', 'hide', 'critical'] }] },
+    { name: '/layout', description: 'switch transcript layout: /layout [stream|viewport]', group: 'display', args: [{ name: 'mode', type: 'enum', values: ['stream', 'viewport'] }] },
     { name: '/outputs', description: 'command results history: browse /outputs; up/down/j/k move, / filter, enter copy', group: 'display' },
     { name: '/raw', description: 'toggle raw plain-text scrollback (no markdown reflow): /raw [on|off]', group: 'display', args: [{ name: 'mode', type: 'enum', values: ['on', 'off', 'show', 'hide'] }] },
     { name: '/statusline', description: 'status bar fields: list / set field1,field2 / unset field', group: 'display', args: [{ name: 'verb', type: 'enum', values: ['list', 'set', 'unset'] }, { name: 'fields', variadic: true }] },

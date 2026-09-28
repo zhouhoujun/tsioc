@@ -127,6 +127,7 @@ export interface CommandHandlerContext {
     runThemeCommand(args: string): Promise<boolean>;
     runThinkingCommand(args: string): Promise<boolean>;
     runDisplayCommand(args: string): Promise<boolean>;
+    runLayoutCommand(args: string): Promise<boolean>;
     runTimelineModeCommand(args?: string): Promise<boolean>;
     runRawModeCommand(args: string): Promise<boolean>;
     runStashCommand(args: string): Promise<boolean>;
@@ -1349,6 +1350,7 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/theme': (ctx, args, meta) => ctx.runThemeCommand(canonicalArgsOf(meta, args)),
     '/thinking': (ctx, args, meta) => ctx.runThinkingCommand(canonicalArgsOf(meta, args)),
     '/display': (ctx, args, meta) => ctx.runDisplayCommand(canonicalArgsOf(meta, args)),
+    '/layout': (ctx, args, meta) => ctx.runLayoutCommand(canonicalArgsOf(meta, args)),
     '/outputs': handleOutputs,
     '/timeline': (ctx, args, meta) => ctx.runTimelineModeCommand(canonicalArgsOf(meta, args)),
     '/raw': (ctx, args, meta) => ctx.runRawModeCommand(canonicalArgsOf(meta, args)),

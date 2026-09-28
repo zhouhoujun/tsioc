@@ -2018,6 +2018,40 @@ export class ConsoleRendererTest {
         surface.destroy();
     }
 
+    @Test('viewport layout exposes no surface scroll region so the app owns history')
+    viewportLayoutHasNoSurfaceScrollRegion() {
+        const lines = Array.from({ length: 200 }, (_value, index) => `line ${index + 1}`);
+        const root = { addEventListener() {}, removeEventListener() {} } as any;
+        const surface = new TuiTerminalSurface({
+            renderer: {
+                renderToTuiLayout: () => ({
+                    lines,
+                    regions: [
+                        { id: 'transcript', startRow: 0, endRow: lines.length },
+                        { id: 'footer', startRow: lines.length, endRow: lines.length }
+                    ]
+                })
+            },
+            root,
+            width: 80,
+            height: 32,
+            nativeScrollback: false,
+            scrollViewport: false,
+            scrollRegionId: 'transcript',
+            footerRegionId: 'footer',
+            output: { write() {} }
+        });
+        surface.render();
+
+        expect(surface.lastRenderedLines).toHaveLength(32);
+        expect(surface.lastRenderedLines[31]).toEqual('line 200');
+        expect(surface.viewportMaxScrollOffset).toEqual(0);
+        expect(surface.viewportScrollOffset).toEqual(0);
+        expect(surface.scrollViewport(-3)).toBe(false);
+        expect(surface.scrollViewportToEdge('start')).toBe(false);
+        surface.destroy();
+    }
+
     @Test('windows terminal rendered blocks locally')
     windowsTerminalRenderedBlocksLocally() {
         expect(compactRenderedLines(['', 'old', 'new', ''], 2)).toEqual(['old', 'new']);

@@ -534,9 +534,10 @@ export class AgentConsoleMessagesRendererTest {
         expect(toolLine.trimEnd().endsWith('retry (24s)')).toBe(true);
     }
 
-    @Test('mounts semantic route components and only folds Thought by default')
+    @Test('mounts semantic route components and only folds Thought in stream layout')
     async mountsSemanticRouteComponents() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setConsoleOptions({ messageLayout: 'stream' });
         const content = Array.from({ length: 12 }, (_, index) => `semantic line ${index + 1}`).join('\n');
         ref.instance.sessionState.setMessages([
             { id: 'thought', role: 'assistant', content, metadata: { uiEventType: 'reasoning' } },
@@ -649,9 +650,10 @@ export class AgentConsoleMessagesRendererTest {
         expect(messageLines.some(line => line.includes('Click to expand'))).toBe(false);
     }
 
-    @Test('shows very long assistant replies in full in default mode (opencode-style)')
+    @Test('stream layout shows very long assistant replies in full (opencode-style)')
     async showsVeryLongAssistantRepliesInFullWhenUnfocused() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setConsoleOptions({ messageLayout: 'stream' });
         ref.instance.sessionState.setMessages([{
             id: 'a1',
             role: 'assistant',
@@ -695,7 +697,7 @@ export class AgentConsoleMessagesRendererTest {
         expect(messageLines.some(line => line.includes('需要我继续完成这些收尾吗？'))).toBe(true);
     }
 
-    @Test('opens truncated message detail from terminal mouse click')
+    @Test('defaults to viewport layout and switches back to native scrollback on demand')
     async opensTruncatedMessageDetailFromTerminalMouseClick() {
         const tuiCtx = await Application.run(AgentModule, {
             deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
@@ -706,15 +708,16 @@ export class AgentConsoleMessagesRendererTest {
             const consoleRef = componentFactory.create(AgentConsoleComponent, { injector: tuiCtx });
             await consoleRef.render();
             expect(consoleRef.instance.resolveTerminalCursorStyle()).toEqual('bar');
-            expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(true);
-            consoleRef.instance.sessionState.setStatus('running');
-            expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(true);
-            consoleRef.instance.sessionState.setStatus('reasoning');
-            expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(true);
-            consoleRef.instance.sessionState.setStatus('idle');
-            expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(true);
-            consoleRef.instance.sessionState.setConsoleOptions({ messageLayout: 'dynamic' });
             expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(false);
+            expect(consoleRef.instance.shouldScrollViewport()).toBe(false);
+            consoleRef.instance.sessionState.setStatus('running');
+            expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(false);
+            consoleRef.instance.sessionState.setConsoleOptions({ messageLayout: 'stream' });
+            expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(true);
+            expect(consoleRef.instance.shouldScrollViewport()).toBe(true);
+            consoleRef.instance.sessionState.setConsoleOptions({ messageLayout: 'viewport' });
+            expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(false);
+            expect(consoleRef.instance.shouldScrollViewport()).toBe(false);
             consoleRef.instance.sessionState.setConsoleOptions({ messageLayout: 'stream' });
             const renderer = tuiCtx.get(TuiRenderer);
 
@@ -829,7 +832,8 @@ export class AgentConsoleMessagesRendererTest {
     @Test('keeps the latest substantive user request visible while showing latest messages when unfocused')
     async keepsLatestSubstantiveUserRequestVisibleWhileUnfocused() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
-        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4, messageLayout: 'dynamic' });
+        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4, messageLayout: 'viewport' });
+        ref.instance.sessionState.setMessagesViewportItems(0);
         ref.instance.sessionState.setMessagesFocused(false);
         ref.instance.sessionState.setMessages([
             { id: 'u1', role: 'user', content: '设计一个在线考试系统', createdAt: 1 } as any,
@@ -848,10 +852,50 @@ export class AgentConsoleMessagesRendererTest {
         expect(visibleIds).toEqual(['u1', 'a2', 'u3', 'a3']);
     }
 
+    @Test('viewport layout sizes the transcript window from terminal-derived items')
+    async viewportUsesTerminalWindowItems() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setConsoleOptions({ messageLayout: 'viewport', messagesVisibleItems: 2 });
+        ref.instance.sessionState.setMessagesViewportItems(0);
+        ref.instance.sessionState.setMessages(Array.from({ length: 12 }, (_, index) => ({
+            id: `msg-${index + 1}`,
+            role: index % 2 === 0 ? 'user' : 'assistant',
+            content: `message ${index + 1}`,
+            createdAt: index + 1
+        })) as any);
+        await settleDynamicMessages(ref);
+
+        const panel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        expect(panel.instance.visibleMessages.length).toBeLessThanOrEqual(2);
+
+        ref.instance.sessionState.setMessagesViewportItems(8);
+        await settleDynamicMessages(ref);
+        expect(panel.instance.visibleMessages.length).toBeGreaterThan(2);
+    }
+
+
+}
+
+@Suite('Agent Console Operational Panels Renderer')
+export class AgentConsoleOperationalPanelsRendererTest {
+    ctx!: ApplicationContext;
+
+    @Before()
+    async init() {
+        this.ctx = await Application.run(AgentConsoleComponent, {
+            deps: [AgentModule, AgentUiModule, ConsoleTemplateModule, ComponentsModule]
+        });
+    }
+
+    @After()
+    async clean() { await this.ctx?.close(); }
+
+
     @Test('replaces the pinned root request when a newer substantive user request appears')
     async replacesPinnedRootRequestWhenNewerSubstantiveUserRequestAppears() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
-        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4, messageLayout: 'dynamic' });
+        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4, messageLayout: 'viewport' });
+        ref.instance.sessionState.setMessagesViewportItems(0);
         ref.instance.sessionState.setMessagesFocused(false);
         ref.instance.sessionState.setMessages([
             { id: 'u1', role: 'user', content: '设计一个在线考试系统', createdAt: 1 } as any,
@@ -874,21 +918,26 @@ export class AgentConsoleMessagesRendererTest {
         expect(visibleIds).toEqual(['u3', 'a4', 'u5', 'a5']);
     }
 
-}
+    @Test('viewport layout collapses long non-final bodies but keeps the final answer expanded')
+    async viewportCollapsesNonFinalBodies() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setConsoleOptions({ messageLayout: 'viewport', auxiliaryPreviewLines: 3, messagesVisibleItems: 20 });
+        ref.instance.sessionState.setMessages([
+            { id: 'a-old', role: 'assistant', content: Array.from({ length: 12 }, (_, index) => `old line ${index + 1}`).join('\n'), createdAt: 1 },
+            { id: 'a-final', role: 'assistant', content: Array.from({ length: 12 }, (_, index) => `final line ${index + 1}`).join('\n'), createdAt: 2 }
+        ] as any);
+        await settleDynamicMessages(ref);
 
-@Suite('Agent Console Operational Panels Renderer')
-export class AgentConsoleOperationalPanelsRendererTest {
-    ctx!: ApplicationContext;
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
 
-    @Before()
-    async init() {
-        this.ctx = await Application.run(AgentConsoleComponent, {
-            deps: [AgentModule, AgentUiModule, ConsoleTemplateModule, ComponentsModule]
-        });
+        expect(messageLines.some(line => line.includes('old line 1'))).toBe(true);
+        expect(messageLines.some(line => line.includes('old line 6'))).toBe(false);
+        expect(messageLines.some(line => line.includes('more lines'))).toBe(true);
+        expect(messageLines.some(line => line.includes('final line 12'))).toBe(true);
     }
 
-    @After()
-    async clean() { await this.ctx?.close(); }
 
     @Test('renders working line with token usage while running')
     async renderWorkingLine() {
@@ -2186,7 +2235,7 @@ export class AgentConsoleTuiRendererTest {
     @Test('explicit dynamic timeline mode keeps a bounded scan window and summarizes hidden history')
     timelineModeBoundsHistory() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
-        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 3, messageLayout: 'dynamic' });
+        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 3, messageLayout: 'viewport' });
         ref.instance.sessionState.setMessages(Array.from({ length: 8 }, (_, index) => ({
             id: `event-${index + 1}`,
             role: 'assistant',
@@ -2205,11 +2254,11 @@ export class AgentConsoleTuiRendererTest {
             .toEqual(['event-6', 'event-7', 'event-8']);
     }
 
-    @Test('default message stream remains unbounded')
+    @Test('explicit stream layout remains unbounded')
     async largeStreamRendersWindowedSlice() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setTimelineMode('off');
-        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4 });
+        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4, messageLayout: 'stream' });
         ref.instance.sessionState.setMessages(Array.from({ length: 300 }, (_, index) => ({
             id: `msg-${index + 1}`,
             role: index % 2 === 0 ? 'user' : 'assistant',

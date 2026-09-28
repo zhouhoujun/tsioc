@@ -22,14 +22,14 @@ export class AgentConsolePlatformPolicyTest {
         expect(options.ui.console.messageToggleInteraction).toEqual('enter');
     }
 
-    @Test('plain chat has no resume session and defaults to stream layout')
-    plainChatStartsFreshStream() {
+    @Test('plain chat has no resume session and defaults to viewport layout')
+    plainChatStartsFreshViewport() {
         const resolved = { workspace: '/work', hooks: {}, model: { provider: 'echo', model: 'echo' }, tui: {} } as AgentUiResolvedConfig;
         const options = buildConsoleAgentOptions(resolved, {}, {});
         expect(resolveExplicitSessionId({}, {})).toEqual(undefined);
         expect(options.bootstrapTurn.enabled).toEqual(false);
         expect(options.bootstrapTurn.sessionId).toEqual('');
-        expect(options.ui.console.messageLayout).toEqual('stream');
+        expect(options.ui.console.messageLayout).toEqual('viewport');
     }
 
     @Test('explicit session is preserved for transcript resume')
@@ -38,6 +38,6 @@ export class AgentConsolePlatformPolicyTest {
         const options = buildConsoleAgentOptions(resolved, { session: 'chat0123456789abcdef0123456789abcdef' }, {});
         expect(resolveExplicitSessionId({ session: 'chat0123456789abcdef0123456789abcdef' }, {})).toEqual('chat0123456789abcdef0123456789abcdef');
         expect(options.bootstrapTurn.sessionId).toEqual('chat0123456789abcdef0123456789abcdef');
-        expect(options.ui.console.messageLayout).toEqual('stream');
+        expect(options.ui.console.messageLayout).toEqual('viewport');
     }
 }

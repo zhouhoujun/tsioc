@@ -104,6 +104,72 @@ class RoundCapPlanModelAdapter extends EchoModelAdapter {
     }
 }
 
+class StreamingRoundCapPlanModelAdapter extends EchoModelAdapter {
+    requests: any[] = [];
+
+    constructor(private toolRounds: number) {
+        super();
+    }
+
+    async *stream(request: any): AsyncGenerator<any> {
+        this.requests.push(request);
+        if (this.requests.length <= this.toolRounds) {
+            yield { type: 'tool_call', toolCalls: [{ id: `tc-${this.requests.length}`, name: 'todo', input: { todos: [{ content: 'remaining step', status: 'pending' }] } }] };
+            yield { type: 'done' };
+            return;
+        }
+        yield { type: 'text', content: 'partial summary' };
+        yield { type: 'done' };
+    }
+}
+
+class DecomposePlanModelAdapter extends EchoModelAdapter {
+    requests: any[] = [];
+
+    async complete(request: any): Promise<any> {
+        this.requests.push(request);
+        if (this.requests.length === 1) {
+            return {
+                message: '',
+                stopReason: 'tool_use',
+                toolCalls: [{ id: 'tc-decompose', name: 'todo', input: { action: 'decompose', acceptAll: true, todos: [{ id: 'm', content: 'write the handler and add a test', status: 'pending' }] } }]
+            };
+        }
+        return { message: 'stopped', stopReason: 'end' };
+    }
+}
+
+class DecomposeTodoTool {
+    name = 'todo';
+
+    getDefinition() {
+        return {
+            name: 'todo',
+            description: 'track plan progress',
+            activation: { kind: 'always', scope: 'session', activated: true },
+            execution: { sideEffect: false }
+        };
+    }
+
+    async invoke(): Promise<any> {
+        return {
+            steps: [
+                { id: 'm#1', content: 'write the handler', status: 'pending', proposed: true },
+                { id: 'm#2', content: 'add a test', status: 'pending', proposed: true }
+            ],
+            proposals: [
+                { id: 'm#1', content: 'write the handler', status: 'pending', proposed: true },
+                { id: 'm#2', content: 'add a test', status: 'pending', proposed: true }
+            ],
+            accepted: [
+                { id: 'm#1', content: 'write the handler', status: 'pending' },
+                { id: 'm#2', content: 'add a test', status: 'pending' }
+            ],
+            rejected: []
+        };
+    }
+}
+
 class ClarifyingPlanModelAdapter extends EchoModelAdapter {
     requests: any[] = [];
 
@@ -331,6 +397,68 @@ export class PlanModeTest {
                 message.role === 'user' && String(message.content || '').includes('Your plan still has unfinished items'));
             expect(tool.invoked).toEqual(2);
             expect(continuations.length).toEqual(3);
+        } finally { await ctx.close(); }
+    }
+
+    @Test('tool round cap does not announce a premature stop while the plan can still continue')
+    async roundCapDoesNotEmitPrematureFinalAnswer() {
+        const tool = new TodoTool();
+        const adapter = new RoundCapPlanModelAdapter(2);
+        const { runtime, ctx } = await createRuntime(adapter, tool, undefined, { maxToolRounds: 1, maxPlanContinuations: 3 });
+        try {
+            await runtime.runTurn('s1', 'finish the remaining steps');
+
+            const capPrompts = adapter.requests.filter(request =>
+                (request.messages || []).some((message: any) =>
+                    message.role === 'user'
+                    && String(message.content || '').includes('maximum number of tool call rounds')));
+            // The limit is honoured only after every continuation budget is spent.
+            expect(capPrompts.length).toEqual(1);
+
+            const messages = await runtime.getMessages('s1');
+            const continuations = messages.filter((message: any) =>
+                message.role === 'user' && String(message.content || '').includes('Your plan still has unfinished items'));
+            expect(continuations.length).toEqual(3);
+        } finally { await ctx.close(); }
+    }
+
+    @Test('streaming tool round cap does not emit a raw limit banner while the plan can continue')
+    async streamingRoundCapDoesNotEmitLimitBanner() {
+        const tool = new TodoTool();
+        const adapter = new StreamingRoundCapPlanModelAdapter(2);
+        const { runtime, ctx } = await createRuntime(adapter, tool, undefined, { maxToolRounds: 1, maxPlanContinuations: 3 });
+        try {
+            const stream = runtime.runStreamingTurn('s1', 'finish the remaining steps');
+            let text = '';
+            let step = await stream.next();
+            while (!step.done) {
+                const chunk: any = step.value;
+                if (chunk?.type === 'text' && chunk.content) {
+                    text += chunk.content;
+                }
+                step = await stream.next();
+            }
+
+            expect(text.includes('Reached tool round limit')).toEqual(false);
+            const messages = await runtime.getMessages('s1');
+            const continuations = messages.filter((message: any) =>
+                message.role === 'user' && String(message.content || '').includes('Your plan still has unfinished items'));
+            expect(continuations.length).toEqual(3);
+        } finally { await ctx.close(); }
+    }
+
+    @Test('decompose accepted steps count as an unfinished plan and keep the turn alive')
+    async decomposeResultsKeepPlanAlive() {
+        const tool = new DecomposeTodoTool();
+        const adapter = new DecomposePlanModelAdapter();
+        const { runtime, ctx } = await createRuntime(adapter, tool, undefined, { maxPlanContinuations: 1 });
+        try {
+            await runtime.runTurn('s1', 'build the handler');
+
+            const messages = await runtime.getMessages('s1');
+            const continuations = messages.filter((message: any) =>
+                message.role === 'user' && String(message.content || '').includes('Your plan still has unfinished items'));
+            expect(continuations.length).toEqual(1);
         } finally { await ctx.close(); }
     }
 
