@@ -114,13 +114,18 @@ async function parseJsonResponse(response: Response): Promise<any> {
     }
 }
 
-function toRpcError(payload: RpcEnvelope | undefined): Error | undefined {
-    if (!payload?.error) {
-        return undefined;
+function buildRpcError(error: { code: number; message?: string; data?: any }): Error {
+    const rpcError = new Error(error.message ?? `RPC error ${error.code}`);
+    Object.assign(rpcError, { code: error.code, data: error.data });
+    // `asModelFailure` reads top-level `modelFailure`, so lift it out of `data`.
+    if (error.data?.modelFailure) {
+        Object.assign(rpcError, { modelFailure: error.data.modelFailure });
     }
-    const error = new Error(payload.error.message ?? `RPC error ${payload.error.code}`);
-    Object.assign(error, { code: payload.error.code, data: payload.error.data });
-    return error;
+    return rpcError;
+}
+
+function toRpcError(payload: RpcEnvelope | undefined): Error | undefined {
+    return payload?.error ? buildRpcError(payload.error) : undefined;
 }
 
 /**
@@ -230,9 +235,7 @@ export class HttpAgentConsoleAppRpc implements AgentConsoleAppRpc {
                         continue;
                     }
                     if (message.error) {
-                        const error = new Error(message.error.message ?? `RPC error ${message.error.code}`);
-                        Object.assign(error, { code: message.error.code });
-                        throw error;
+                        throw buildRpcError(message.error);
                     }
                     if (message.method === 'run.turn_stream.chunk') {
                         const p = message.params ?? {};
@@ -264,9 +267,7 @@ export class HttpAgentConsoleAppRpc implements AgentConsoleAppRpc {
             if (remainder) {
                 const message = this.parseLine(remainder);
                 if (message?.error) {
-                    const error = new Error(message.error.message ?? `RPC error ${message.error.code}`);
-                    Object.assign(error, { code: message.error.code });
-                    throw error;
+                    throw buildRpcError(message.error);
                 }
                 if (message && 'result' in message) {
                     yield {

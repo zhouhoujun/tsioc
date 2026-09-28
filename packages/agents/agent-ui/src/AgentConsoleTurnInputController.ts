@@ -1,5 +1,6 @@
 import type { AgentMessage, AgentTurnMessageInput } from '@tsdi/agent';
 import type { AgentConsoleActivity, AgentConsolePendingAttachment } from './AgentConsoleSessionState';
+import { presentModelFailure } from './AgentConsoleModelFailurePresenter';
 
 /**
  * Host surface required by the turn input controller.
@@ -63,6 +64,7 @@ export interface AgentConsoleTurnInputHost {
     resolveMentionDisplayFiles(input: string): string[];
     refreshTurnArtifacts(): Promise<void>;
     drainQueuedPrompts(sessionId: string): Promise<void>;
+    translate?: (key: string, params?: Record<string, any>) => string | undefined;
 }
 
 /**
@@ -118,11 +120,14 @@ export async function submitMultilineDraftView(host: AgentConsoleTurnInputHost):
                     host.updateTerminalTitle();
                 }
         } catch (error: any) {
+            // `error.message` alone drops the ModelFailure remedy hint and leaks the
+            // raw provider string, so route model failures through the presenter.
+            const message = presentModelFailure(error, host.translate) ?? (error.message || 'Unknown');
             host.clearStreamingMessageState();
                 host.state.setStatus('error');
-                host.state.setLastError(error.message || 'Unknown');
-                host.state.pushActivity('error', error.message || 'Unknown');
-                host.state.appendAssistantErrorMessage(error.message || 'Unknown');
+                host.state.setLastError(message);
+                host.state.pushActivity('error', message);
+                host.state.appendAssistantErrorMessage(message);
                 host.updateTerminalTitle();
         } finally {
             host.state.clearTurnEventScope(turnScope);
@@ -269,7 +274,7 @@ export async function submitView(host: AgentConsoleTurnInputHost): Promise<void>
             host.activeTurnRun = turnRun;
             await turnRun;
         } catch (error: any) {
-            const message = error?.message || String(error || 'Unknown error');
+            const message = presentModelFailure(error, host.translate) ?? (error?.message || String(error || 'Unknown error'));
                 host.state.setStatus('error');
                 host.state.setLastError(message);
                 host.state.pushActivity('error', message);

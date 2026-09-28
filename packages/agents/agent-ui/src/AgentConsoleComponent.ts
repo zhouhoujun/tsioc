@@ -2045,8 +2045,6 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return cancelCodingTaskFn(this.codingTaskCtx(), taskId);
     }
 
-
-
     protected buildCommandContext(abortSignal?: AbortSignal): CommandHandlerContext {
         const self = this;
         return {
@@ -3009,7 +3007,8 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             openSession: (sessionId?: string, options?: { persistCurrentHistory?: boolean; fresh?: boolean }) => this.openSession(sessionId, options),
             resolveMentionDisplayFiles: (input: string) => this.resolveMentionDisplayFiles(input),
             refreshTurnArtifacts: () => this.refreshTurnArtifacts(),
-            drainQueuedPrompts: (sessionId: string) => this.drainQueuedPrompts(sessionId)
+            drainQueuedPrompts: (sessionId: string) => this.drainQueuedPrompts(sessionId),
+            translate: this.translator ? (key: string, params?: Record<string, any>) => this.translator!.translate(key, params) : undefined
         };
     }
 

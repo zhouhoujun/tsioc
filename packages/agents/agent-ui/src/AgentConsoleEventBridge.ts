@@ -33,6 +33,7 @@ import { TranslatorService } from '@tsdi/i18n';
 import { AgentConsolePendingQuestion, AgentConsolePlanTodoItem, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import type { BackgroundTaskManager } from '@tsdi/agent-tools';
 import { presentTimelineToolEvent, formatTimelineEventLine, resolveTimelineToolCategory } from './AgentConsoleTimelineEventPresenter';
+import { presentModelFailure } from './AgentConsoleModelFailurePresenter';
 
 @Injectable()
 export class AgentConsoleEventBridge {
@@ -365,17 +366,22 @@ export class AgentConsoleEventBridge {
 
         bind(AgentErrorEvent, (event: AgentErrorEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
+                const translator = this.translator;
+                const translate = translator
+                    ? (key: string, params?: Record<string, any>) => translator.translate(key, params)
+                    : undefined;
+                const message = presentModelFailure(event.error, translate) ?? event.error.message;
                 this.state.setStatus('error');
-                this.state.setLastError(event.error.message);
-                this.state.pushActivity('error', event.error.message);
+                this.state.setLastError(message);
+                this.state.pushActivity('error', message);
                 if (!this.appRpc) {
-                    this.state.appendUiEventMessage(event.error.message, {
+                    this.state.appendUiEventMessage(message, {
                         eventType: 'error',
                         label: 'error',
                         status: 'error'
                     });
                 }
-                this.state.appendAssistantErrorMessage(event.error.message);
+                this.state.appendAssistantErrorMessage(message);
         });
 
         this.subscribed = true;
