@@ -3,6 +3,7 @@ import { AgentFileMessagePart, AgentImageMessagePart, AgentMessage, AgentMessage
 import { AgentToolDefinition } from '../tools/AgentTool';
 import { ModelAdapter } from './ModelAdapter';
 import { classifyModelError, DEFAULT_RETRY_POLICY, isRetryableError, retryDelayMs } from './RetryPolicy';
+import { asModelFailure, createModelRequestError } from './ModelRequestError';
 import { ModelRequest } from './ModelRequest';
 import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
 import { StreamChunk } from './StreamChunk';
@@ -174,7 +175,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                     cleanup();
                     return this.retry(request, attempt, response.status, response.headers.get('retry-after'));
                 }
-                throw new Error(`Model request failed with ${response.status}${detail ? `: ${detail}` : ''}`);
+                throw createModelRequestError({ status: response.status, detail, provider: this.provider, model: this.resolveModel(), headers: response.headers });
             }
 
             const body = await response.json() as OpenAIChatCompletionResponse;
@@ -243,7 +244,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                     }
                     return;
                 }
-                throw new Error(`Model streaming request failed with ${response.status}${detail ? `: ${detail}` : ''}`);
+                throw createModelRequestError({ status: response.status, detail, provider: this.provider, model: this.resolveModel(), headers: response.headers });
             }
 
             const reader = response.body?.getReader();
@@ -389,13 +390,13 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                 }
             }
         } catch (error: any) {
-            if (!emittedAnyChunk && this.shouldFallbackToNonStreaming(error, getAbortReason())) {
+            if (asModelFailure(error)?.retryable !== false && !emittedAnyChunk && this.shouldFallbackToNonStreaming(error, getAbortReason())) {
                 for await (const chunk of this.fallbackToNonStreamingCompletion(request)) {
                     yield chunk;
                 }
                 return;
             }
-            throw new Error(this.resolveStreamingFailureMessage(url, error, getAbortReason()));
+            throw asModelFailure(error) ? error : new Error(this.resolveStreamingFailureMessage(url, error, getAbortReason()));
         } finally {
             cleanup();
         }
@@ -422,12 +423,8 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
     }
 
     protected resolveApiKey(): string | undefined {
-        if (this.options.apiKey) {
-            return this.options.apiKey;
-        }
         const envKey = this.options.apiKeyEnv ?? 'DEEPSEEK_API_KEY';
-        return this.appArgs?.get<string>(envKey)
-            || this.appArgs?.get<string>('API_KEY');
+        return this.options.apiKey || this.appArgs?.get<string>(envKey) || this.appArgs?.get<string>('API_KEY');
     }
 
     protected resolveUrl(path: string): string {

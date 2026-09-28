@@ -1,6 +1,7 @@
 import { AgentFileMessagePart, AgentImageMessagePart, AgentMessage, AgentMessagePart, getAgentMessageText, resolveAgentMessageParts } from '../runtime/AgentMessage';
 import { ModelAdapter } from './ModelAdapter';
 import { classifyModelError, DEFAULT_RETRY_POLICY, isRetryableError, retryDelayMs } from './RetryPolicy';
+import { createModelRequestError } from './ModelRequestError';
 import { ModelRequest } from './ModelRequest';
 import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
 import { StreamChunk } from './StreamChunk';
@@ -150,7 +151,7 @@ export class AnthropicModelAdapter extends ModelAdapter {
                 if (this.isRetryable(response.status, errorBody) && attempt <= (this.options.retry?.maxRetries ?? DEFAULT_RETRY_POLICY.maxRetries)) {
                     return this.retry(request, attempt, response.status, response.headers.get('retry-after'));
                 }
-                throw new Error(`Anthropic request failed: ${response.status} ${errorBody}`);
+                throw createModelRequestError({ status: response.status, bodyText: errorBody, provider: this.provider, model: this.resolveModel(), headers: response.headers });
             }
 
             const data = await response.json() as AnthropicResponse;
@@ -187,7 +188,7 @@ export class AnthropicModelAdapter extends ModelAdapter {
                     }
                     return;
                 }
-                throw new Error(`Anthropic streaming request failed: ${response.status}${errorBody ? ` ${errorBody}` : ''}`);
+                throw createModelRequestError({ status: response.status, bodyText: errorBody, provider: this.provider, model: this.resolveModel(), headers: response.headers });
             }
 
             const reader = response.body?.getReader();
@@ -603,10 +604,8 @@ export class AnthropicModelAdapter extends ModelAdapter {
     }
 
     protected resolveApiKey(): string | undefined {
-        if (this.options.apiKey) return this.options.apiKey;
         const envKey = this.options.apiKeyEnv ?? 'ANTHROPIC_API_KEY';
-        return this.appArgs?.get<string>(envKey)
-            || this.appArgs?.get<string>('ANTHROPIC_API_KEY');
+        return this.options.apiKey || this.appArgs?.get<string>(envKey) || this.appArgs?.get<string>('ANTHROPIC_API_KEY');
     }
 
     protected resolveUrl(path: string): string {

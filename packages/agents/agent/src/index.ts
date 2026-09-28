@@ -12,6 +12,7 @@ export * from './project/trusted-projects';
 
 export * from './model/ModelAdapter';
 export * from './model/RetryPolicy';
+export * from './model/ModelRequestError';
 export * from './model/ModelRequest';
 export * from './model/ModelResponse';
 export * from './model/StreamChunk';
