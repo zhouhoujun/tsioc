@@ -9,4 +9,5 @@ export * from './run-console';
 export * from './desktop-command';
 export * from './cloud-command';
 export * from './run-command';
+export * from './cli-error-format';
 export * from './cli';
