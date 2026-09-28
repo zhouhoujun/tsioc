@@ -1,5 +1,6 @@
 import type { AgentConsoleMessageLayout } from './AgentConsoleViewport';
 import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
+import { scrollTranscript } from './AgentConsoleTranscriptNavigation';
 
 /**
  * Platform-neutral transcript layout contract.
@@ -15,6 +16,8 @@ export interface AgentConsoleTranscriptLayout {
     readonly usesNativeScrollback: boolean;
     /** Platform wheel input should be routed to transcript history scrolling. */
     readonly wheelScrollsHistory: boolean;
+    /** The app owns history scrolling, so the platform must not render its own scrollbar/scroll region. */
+    readonly ownsHistoryScroll: boolean;
     /** Apply a scroll delta to the transcript; returns whether it was consumed. */
     scroll(delta: number, state: AgentConsoleSessionState): boolean;
 }
@@ -23,6 +26,7 @@ class StreamTranscriptLayout implements AgentConsoleTranscriptLayout {
     readonly mode = 'stream' as const;
     readonly usesNativeScrollback = true;
     readonly wheelScrollsHistory = false;
+    readonly ownsHistoryScroll = false;
 
     scroll(): boolean {
         return false;
@@ -33,28 +37,10 @@ class ViewportTranscriptLayout implements AgentConsoleTranscriptLayout {
     readonly mode = 'viewport' as const;
     readonly usesNativeScrollback = false;
     readonly wheelScrollsHistory = true;
+    readonly ownsHistoryScroll = true;
 
     scroll(delta: number, state: AgentConsoleSessionState): boolean {
-        const messages = state.displayMessages;
-        if (!messages.length) {
-            return false;
-        }
-        if (delta < 0) {
-            if (!state.messagesFocused) {
-                state.setMessagesFocused(true);
-            }
-            state.moveMessageSelectionPage(-1, 1);
-            return true;
-        }
-        if (!state.messagesFocused) {
-            return false;
-        }
-        state.moveMessageSelectionPage(1, 1);
-        const last = messages[messages.length - 1];
-        if (last && state.selectedMessageId === last.id) {
-            state.setMessagesFocused(false);
-        }
-        return true;
+        return scrollTranscript(state, delta);
     }
 }
 

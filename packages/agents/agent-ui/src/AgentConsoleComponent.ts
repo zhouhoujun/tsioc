@@ -2423,6 +2423,10 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return resolveTranscriptLayout(this.state.consoleOptions.messageLayout).usesNativeScrollback;
     }
 
+    shouldScrollViewport(): boolean {
+        return !resolveTranscriptLayout(this.state.consoleOptions.messageLayout).ownsHistoryScroll;
+    }
+
     getTerminalRenderedLines(): string[] {
         return this.surfaceAccessor?.getLastRenderedLines() || [];
     }
@@ -2963,7 +2967,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             sessionService: this.sessionService,
             isTurnInProgress: () => this.isTurnInProgress(),
             notify: (message: string, duration?: number) => this.notify(message, duration),
-            scrollMessages: (delta: number) => this.state.scrollMessages(delta),
+            scrollMessages: (delta: number) => resolveTranscriptLayout(this.state.consoleOptions.messageLayout).scroll(delta, this.state),
             getTerminalRenderedLines: () => this.getTerminalRenderedLines(),
             handleGlobalKeyInput: (raw: string) => this.handleGlobalKeyInput(raw),
             detachSshShell: (reason: 'detached' | 'closed') => this.detachSshShell(reason),

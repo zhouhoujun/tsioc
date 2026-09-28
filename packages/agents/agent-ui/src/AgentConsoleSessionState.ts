@@ -47,7 +47,8 @@ import {
 } from './AgentConsoleWorkspaceMentions';
 import { AgentConsoleMessageStatusLabels } from './AgentConsoleMessageRenderers';
 import { normalizeMessageLayout, resolveFinalAssistantMessageId } from './AgentConsoleViewport';
-import { resolveTranscriptLayout, trackMessagesNewCount } from './AgentConsoleTranscriptLayout';
+import { trackMessagesNewCount } from './AgentConsoleTranscriptLayout';
+import { moveMessageSelection, moveMessageSelectionPage, selectFirstMessage, selectLastMessage } from './AgentConsoleTranscriptNavigation';
 import {
     AgentConsoleTimelineLabels,
     DEFAULT_TIMELINE_LABELS,
@@ -1992,56 +1993,6 @@ export class AgentConsoleSessionState {
         return this.selectedMessageId === '__plan_todo_inline__' && this.planTodos.length > 7;
     }
 
-    moveMessageSelection(delta: number): void {
-        const displayMessages = this.displayMessages;
-        if (!displayMessages.length) {
-            return;
-        }
-        const currentIndex = Math.max(0, displayMessages.findIndex(item => item.id === this.selectedMessageId));
-        const nextIndex = (currentIndex + delta + displayMessages.length) % displayMessages.length;
-        this.selectedMessageId = displayMessages[nextIndex].id;
-        this.messageDetailScroll = 0;
-        this.messageDetailColumnScroll = 0;
-    }
-
-    moveMessageSelectionPage(delta: number, pageSize?: number): void {
-        const displayMessages = this.displayMessages;
-        if (!displayMessages.length) {
-            return;
-        }
-        const currentIndex = Math.max(0, displayMessages.findIndex(item => item.id === this.selectedMessageId));
-        const resolvedPageSize = pageSize ?? this.consoleOptions.messageSelectionPageSize;
-        const nextIndex = Math.max(0, Math.min(displayMessages.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
-        this.selectedMessageId = displayMessages[nextIndex].id;
-        this.messageDetailScroll = 0;
-        this.messageDetailColumnScroll = 0;
-    }
-
-    /** Scroll the transcript history by a delta (layout strategy decides; stream is a no-op). */
-    scrollMessages(delta: number): void {
-        resolveTranscriptLayout(this.consoleOptions.messageLayout).scroll(delta, this);
-    }
-
-    selectFirstMessage(): void {
-        const displayMessages = this.displayMessages;
-        if (!displayMessages.length) {
-            return;
-        }
-        this.selectedMessageId = displayMessages[0].id;
-        this.messageDetailScroll = 0;
-        this.messageDetailColumnScroll = 0;
-    }
-
-    selectLastMessage(): void {
-        const displayMessages = this.displayMessages;
-        if (!displayMessages.length) {
-            return;
-        }
-        this.selectedMessageId = displayMessages[displayMessages.length - 1].id;
-        this.messageDetailScroll = 0;
-        this.messageDetailColumnScroll = 0;
-    }
-
     focusLatestLongMessage(): boolean {
         if (this.input || this.inputLocked || this.modalPromptActive || this.hasBlockingSelectMenu()) {
             return false;
@@ -2066,21 +2017,6 @@ export class AgentConsoleSessionState {
         this.messagesFocused = true;
         this.syncDerivedInputFocus();
         return true;
-    }
-
-    selectLastUserMessage(): void {
-        const displayMessages = this.displayMessages;
-        for (let index = displayMessages.length - 1; index >= 0; index -= 1) {
-            const message = displayMessages[index];
-            if (String(message.role || '').toLowerCase() === 'user'
-                && message.metadata?.kind !== 'steer'
-                && !!String(message.content || '').trim()) {
-                this.selectedMessageId = message.id;
-                this.messageDetailScroll = 0;
-                this.messageDetailColumnScroll = 0;
-                return;
-            }
-        }
     }
 
     get selectedMessage(): AgentMessage | undefined {
@@ -6673,26 +6609,26 @@ export class AgentConsoleSessionState {
                         this.moveReviewFileSelection(1);
                         return true;
                     }
-                    this.moveMessageSelection(1);
+                    moveMessageSelection(this, 1);
                     return true;
                 case 'up':
                     if (this.selectedMessage?.metadata?.uiKind === 'file-change') {
                         this.moveReviewFileSelection(-1);
                         return true;
                     }
-                    this.moveMessageSelection(-1);
+                    moveMessageSelection(this, -1);
                     return true;
                 case 'pageup':
-                    this.moveMessageSelectionPage(-1);
+                    moveMessageSelectionPage(this, -1);
                     return true;
                 case 'pagedown':
-                    this.moveMessageSelectionPage(1);
+                    moveMessageSelectionPage(this, 1);
                     return true;
                 case 'home':
-                    this.selectFirstMessage();
+                    selectFirstMessage(this);
                     return true;
                 case 'end':
-                    this.selectLastMessage();
+                    selectLastMessage(this);
                     return true;
                 case 'r': {
                     const selected = this.selectedMessage;

@@ -353,3 +353,11 @@
 - **滚动语义**：`state.scrollMessages(delta)` 负值向历史、正值向尾部；滚到尾部自动 `setMessagesFocused(false)` 恢复跟随。向上滚动暂停跟随（复用既有 message focus + 选择窗口，历史不被顶掉），并用 `messagesNewCount` 统计滚动期间新增消息，`messagesHintLabel` 展示「N 条新消息」。
 - **兼容**：`stream` 下 `scroll` 为 no-op、`wheelScrollsHistory=false`，仍由 native scrollback 处理历史；滚轮事件照旧走 `dispatchMouse`。
 - **验证**：agent-ui 1418 passing（新增 5 用例：策略选择、viewport 滚动/恢复跟随、stream no-op、新消息计数、终端滚轮路由）；`tsc --noEmit` agent-ui 通过；gate `agent-ui tsc-agent-ui dom-gate tui-gate source-size diff-check` → PASS（8/8）。facade 增量再次据实上调 baseline（Component +2、Panels +6、SessionState +15），纯逻辑已入新模块。
+
+## v82 — 职责分层：状态只承载数据，行为归抽象策略与平台适配 ✅
+
+- **原则**：`AgentConsoleSessionState` 不承载布局/平台行为，只保留数据字段与平凡 setter/getter；行为抽象到独立模块，平台差异各自适配。
+- **抽出纯导航**：新增 `AgentConsoleTranscriptNavigation.ts`（`moveMessageSelection`/`moveMessageSelectionPage`/`selectFirstMessage`/`selectLastMessage`/`selectLastUserMessage`/`scrollTranscript`），以数据视图接口操作响应式代理，赋值仍走 set trap。状态类删除这些方法（`AgentConsoleSessionState` 7429→7365 行），内部键处理与 `AgentConsoleGlobalKeyInputController` 改调用函数。
+- **布局策略**：`AgentConsoleTranscriptLayout` 的 `scroll` 委托 `scrollTranscript`；`ownsHistoryScroll` 作为平台能力位，供 surface 生命周期读取。
+- **平台适配（各自处理）**：`components/console` 新增通用 `scrollViewport?: boolean | (() => boolean)` 选项与 `shouldScrollViewport?()` 生命周期钩子（默认 true，既有 surface 滚动测试不变）；TUI 经组件 `shouldScrollViewport()`（由策略推导）在 viewport 下关闭 surface 滚动区；DOM 由 `web-console` 的滚轮/滚动条适配。
+- **验证**：agent-ui 1418 passing、components/console 85 passing；`tsc --noEmit` agent-ui 通过；gate `components-console agent-ui tsc-agent-ui dom-gate tui-gate source-size diff-check` → PASS（9/9）。状态体量下降已在同一提交下调 baseline（SessionState 7429→7365、Component 4164→4163）。

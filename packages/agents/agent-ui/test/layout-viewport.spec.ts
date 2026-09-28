@@ -6,6 +6,7 @@ import { Suite, Test } from '@tsdi/unit';
 import { runLayoutCommand } from '../src/AgentConsoleSettingsCommands';
 import { syncConsoleMessageViewportView, handleTerminalInputView } from '../src/AgentConsoleTerminalInputController';
 import { resolveTranscriptLayout } from '../src/AgentConsoleTranscriptLayout';
+import { scrollTranscript } from '../src/AgentConsoleTranscriptNavigation';
 import { AgentConsoleSettingsStore } from '../src/AgentConsoleSettingsStore';
 import { defaultAgentConsoleOptions } from '../src/AgentConsoleSessionState';
 import { AgentConsoleSessionState } from '../src/AgentConsoleSessionState';
@@ -124,13 +125,13 @@ export class AgentConsoleViewportLayoutTest {
         state.setMessages(fiveMessages());
 
         expect(state.messagesFocused).toEqual(false);
-        state.scrollMessages(-1);
+        scrollTranscript(state, -1);
         expect(state.messagesFocused).toEqual(true);
         expect(state.selectedMessageId).toEqual('m4');
-        state.scrollMessages(-1);
+        scrollTranscript(state, -1);
         expect(state.selectedMessageId).toEqual('m3');
-        state.scrollMessages(1);
-        state.scrollMessages(1);
+        scrollTranscript(state, 1);
+        scrollTranscript(state, 1);
         expect(state.messagesFocused).toEqual(false);
     }
 
@@ -139,7 +140,7 @@ export class AgentConsoleViewportLayoutTest {
         const state = new AgentConsoleSessionState();
         state.setConsoleOptions({ messageLayout: 'stream' });
         state.setMessages(fiveMessages());
-        state.scrollMessages(-1);
+        expect(resolveTranscriptLayout('stream').scroll(-1, state)).toEqual(false);
         expect(state.messagesFocused).toEqual(false);
         expect(state.selectedMessageId).not.toEqual('m4');
     }
@@ -149,7 +150,7 @@ export class AgentConsoleViewportLayoutTest {
         const state = new AgentConsoleSessionState();
         state.setConsoleOptions({ messageLayout: 'viewport' });
         state.setMessages(fiveMessages());
-        state.scrollMessages(-1);
+        scrollTranscript(state, -1);
         expect(state.messagesNewCount).toEqual(0);
         state.appendMessage({ id: 'm6', role: 'assistant', content: 'six', createdAt: 6 } as any);
         state.appendMessage({ id: 'm7', role: 'assistant', content: 'seven', createdAt: 7 } as any);
