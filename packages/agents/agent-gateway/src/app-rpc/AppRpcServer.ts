@@ -11,6 +11,7 @@ import { AudioSessionHandler, AudioSessionState } from '../audio';
 import { SessionShareStore } from '../share/SessionShareStore';
 import { CloudTaskQueue } from '../cloud/CloudTaskQueue';
 import { QuestionStore } from './QuestionStore';
+import { toAppRpcError } from './rpcError';
 
 @Injectable()
 export class AppRpcServer {
@@ -96,9 +97,7 @@ export class AppRpcServer {
                 ...(requestContext.requestMeta ? { meta: requestContext.requestMeta } : {})
             };
         } catch (error: any) {
-            const rpcError = error instanceof AppRpcError
-                ? error
-                : new AppRpcError(-32603, error?.message ?? 'Internal error');
+            const rpcError = error instanceof AppRpcError ? error : toAppRpcError(error);
             if (request.id === undefined) {
                 return null;
             }
@@ -138,9 +137,7 @@ export class AppRpcServer {
             if (request.id === undefined) {
                 return;
             }
-            const response = this.createErrorResponse(request.id, error instanceof AppRpcError
-                ? error
-                : new AppRpcError(-32603, error?.message ?? 'Internal error'));
+            const response = this.createErrorResponse(request.id, error instanceof AppRpcError ? error : toAppRpcError(error));
             yield requestMeta ? { ...response, meta: requestMeta } : response;
         }
     }

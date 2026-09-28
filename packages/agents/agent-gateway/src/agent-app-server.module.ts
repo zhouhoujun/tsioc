@@ -22,8 +22,17 @@ export function mapRunTurnStreamChunk(params: any): Record<string, any> {
         eventType: params?.eventType,
         label: params?.label,
         status: params?.status,
-        toolName: params?.toolName
+        toolName: params?.toolName,
+        toolCallId: params?.toolCallId
     };
+}
+
+export function toLocalAppRpcError(rpcError: any, fallbackMessage = 'App RPC request failed'): Error {
+    const error = new Error(rpcError?.message || fallbackMessage);
+    if (rpcError?.data?.modelFailure) {
+        (error as any).modelFailure = rpcError.data.modelFailure;
+    }
+    return error;
 }
 
 @Module({    imports: [AgentModule],
@@ -54,7 +63,7 @@ export function mapRunTurnStreamChunk(params: any): Record<string, any> {
                         return undefined;
                     }
                     if ('error' in response) {
-                        throw new Error(response.error.message);
+                        throw toLocalAppRpcError(response.error);
                     }
                     return response.result;
                 },
@@ -70,7 +79,7 @@ export function mapRunTurnStreamChunk(params: any): Record<string, any> {
                         params
                     }, requestContext)) {
                         if ('error' in message) {
-                            throw new Error(message.error?.message || 'App RPC stream failed');
+                            throw toLocalAppRpcError(message.error, 'App RPC stream failed');
                         }
                         if ('method' in message && message.method === 'run.turn_stream.chunk') {
                             yield mapRunTurnStreamChunk(message.params);
