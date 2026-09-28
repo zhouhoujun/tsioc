@@ -103,8 +103,13 @@ _FAKE_PORT = 0
 
 def start_fake_server() -> subprocess.Popen:
     global _FAKE_PORT  # noqa: PLW0603
+    # Only record of what the runtime sent back; without it a silent tool-row
+    # failure can only be reconstructed from raw ANSI escapes.
+    fake_log = os.environ.get('FAKE_LOG') or os.path.join(
+        tempfile.gettempdir(), 'tsdi-acceptance-fake-model.log')
     server_env = dict(os.environ,
-                      FAKE_SCENARIO=os.environ.get('FAKE_SCENARIO', 'default'))
+                      FAKE_SCENARIO=os.environ.get('FAKE_SCENARIO', 'default'),
+                      FAKE_LOG=fake_log)
     proc = subprocess.Popen([sys.executable, os.path.join(ACCEPTANCE_DIR, 'fake_model_server.py')],
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
                             env=server_env)
@@ -728,6 +733,166 @@ def scenario_plan_lifecycle(pid: int, fd: int, screen: Screen) -> bool:
     return ok
 
 
+V82_PATHS = ('README.md', 'package.json')
+
+
+def _norm_line(s: str) -> str:
+    # Strip optional leading border glyphs that vary by theme/repaint frames.
+    return re.sub(r'^\s*[│┃|]\s*', '', s)
+
+
+def _read_file_rows(text: str) -> list:
+    # `Tool ·` excludes the `Working ... Tool call: Read file: x` status line,
+    # which names the tool but is not a row.
+    out = []
+    for line in text.splitlines():
+        s = _norm_line(line)
+        sl = s.lower()
+        if 'tool ·' in sl and 'read file' in sl:
+            out.append(s)
+    return out
+
+
+def scenario_tool_row_identity_v82(pid: int, fd: int, screen: Screen) -> bool:
+    """P200/G123: one assistant message carrying two `read_file` invocations has
+    to render two rows, and each `tool_completed` merges into its own row.
+
+    v82 regression: keying pending rows on the tool name collapsed both
+    invocations onto one line, so only the last argument survived and the
+    pending row could never merge with its own completion.
+    """
+    mark = len(bytes(screen.raw))
+    send(fd, '并行读文件'.encode())
+    send(fd, b'\r')
+
+    pending = wait_for(
+        fd, screen,
+        [r'Tool · [^\n]*read file[^\n]*README\.md',
+         r'Tool · [^\n]*read file[^\n]*package\.json'],
+        timeout=TIMEOUT, settle=2.0, quiet_window=2.0, tail_from=mark)
+    if not pending:
+        print('[FAIL] scenario 9: no per-invocation read_file rows rendered')
+        return False
+
+    rows = _read_file_rows(screen.since(mark))
+    readme_rows = [r for r in rows if V82_PATHS[0] in r]
+    json_rows = [r for r in rows if V82_PATHS[1] in r]
+    collapsed = [r for r in rows if V82_PATHS[0] in r and V82_PATHS[1] in r]
+    if not readme_rows or not json_rows:
+        print(f'[FAIL] scenario 9: expected one row per invocation, saw {rows!r}')
+        return False
+    if collapsed:
+        print(f'[FAIL] scenario 9: invocations collapsed onto one row: {collapsed!r}')
+        return False
+    if any('+1 more' in r for r in rows):
+        print(f'[FAIL] scenario 9: batch "+N more" collapse regressed: {rows!r}')
+        return False
+
+    done = wait_for(
+        fd, screen,
+        [r'Tool · read file completed[^\n]*README\.md',
+         r'Tool · read file completed[^\n]*package\.json'],
+        timeout=TIMEOUT, settle=2.0, quiet_window=2.0, tail_from=mark)
+    if not done:
+        print('[FAIL] scenario 9: completions never rendered')
+        return False
+
+    settled = wait_for(fd, screen, [re.escape('两个文件都已读取完毕。')],
+                       timeout=TIMEOUT, settle=1.0, quiet_window=1.0, tail_from=mark)
+    if not settled:
+        print('[FAIL] scenario 9: final reply never settled')
+        return False
+
+    # Existence-only assertions, matching the rest of this driver. The TUI
+    # overwrites rows in place, so the stripped byte stream still carries stale
+    # `Running` frames emitted before the `completed` overwrite; counting rows
+    # or reading their "last" occurrence would sample history, not the screen.
+    # What the stream can prove is that each invocation got its own row and its
+    # own completion.
+    rows = _read_file_rows(screen.since(mark))
+    readme_rows = [r for r in rows if V82_PATHS[0] in r]
+    json_rows = [r for r in rows if V82_PATHS[1] in r]
+    collapsed = [r for r in rows if V82_PATHS[0] in r and V82_PATHS[1] in r]
+    if not readme_rows or not json_rows:
+        print(f'[FAIL] scenario 9: expected a row per invocation, saw {rows!r}')
+        return False
+    if collapsed:
+        print(f'[FAIL] scenario 9: invocations collapsed onto one row: {collapsed!r}')
+        return False
+    if any('+1 more' in r for r in rows):
+        print(f'[FAIL] scenario 9: batch "+N more" collapse regressed: {rows!r}')
+        return False
+    if not any('completed' in r and V82_PATHS[0] in r for r in readme_rows):
+        print(f'[FAIL] scenario 9: {V82_PATHS[0]} never completed: {readme_rows!r}')
+        return False
+    if not any('completed' in r and V82_PATHS[1] in r for r in json_rows):
+        print(f'[FAIL] scenario 9: {V82_PATHS[1]} never completed: {json_rows!r}')
+        return False
+
+    print('[PASS] scenario 9: two same-tool invocations rendered as two rows and each completed')
+    return True
+
+
+V78_NARRATIONS = ('正在检查项目文件。', '同时读取种子数据。')
+V78_FINAL = '旁白分段测试完成。'
+
+
+def _fused(text: str, *parts: str) -> bool:
+    """True when ``parts`` appear back to back with nothing rendered between.
+
+    Whitespace is dropped first: the TUI overwrites rows in place, so fused
+    narration survives as a single stripped line, whereas separated narration
+    always has its tool row between the two segments.
+    """
+    flat = re.sub(r'\s+', '', text)
+    return re.sub(r'\s+', '', ''.join(parts)) in flat
+
+
+def scenario_narration_separation_v78(pid: int, fd: int, screen: Screen) -> bool:
+    """v78: narration around tool calls seals into its own line.
+
+    Regression: each tool round appended to the one streaming assistant row, so a
+    turn rendered as `Checking the exam system.Also reading seed.ts.` with the
+    final answer unreadable.
+    """
+    mark = len(bytes(screen.raw))
+    send(fd, '旁白分段'.encode())
+    send(fd, b'\r')
+
+    rows_ready = wait_for(
+        fd, screen,
+        [r'Tool · [^\n]*read file[^\n]*README\.md',
+         r'Tool · [^\n]*read file[^\n]*package\.json'],
+        timeout=TIMEOUT, settle=2.0, quiet_window=2.0, tail_from=mark)
+    if not rows_ready:
+        print('[FAIL] scenario 10: no per-step read_file rows rendered')
+        return False
+
+    done = wait_for(fd, screen, [re.escape(V78_FINAL)],
+                    timeout=TIMEOUT, settle=1.5, quiet_window=1.5, tail_from=mark)
+    if not done:
+        print('[FAIL] scenario 10: final reply never settled')
+        return False
+
+    body = screen.since(mark)
+    missing = [n for n in V78_NARRATIONS if n not in body]
+    if missing:
+        print(f'[FAIL] scenario 10: narration never rendered: {missing!r}')
+        return False
+    if _fused(body, *V78_NARRATIONS):
+        print('[FAIL] scenario 10: narration segments fused into one line')
+        return False
+
+    rows = _read_file_rows(body)
+    for path in V82_PATHS:
+        if not any(path in r for r in rows):
+            print(f'[FAIL] scenario 10: no {path} row: {rows!r}')
+            return False
+
+    print('[PASS] scenario 10: tool-round narration sealed into separate lines')
+    return True
+
+
 def main() -> int:
     ts = time.strftime('%Y%m%d-%H%M%S')
     server = start_fake_server()
@@ -743,10 +908,16 @@ def main() -> int:
         print(f'[acceptance] TUI ready (matched "{ready}")')
         if SCENARIO == 'plan-lifecycle':
             results.append(('4-plan-lifecycle', scenario_plan_lifecycle(pid, fd, screen)))
+        elif SCENARIO == 'tool-row-identity-v82':
+            results.append(('9-tool-row-identity-v82', scenario_tool_row_identity_v82(pid, fd, screen)))
+        elif SCENARIO == 'narration-separation-v78':
+            results.append(('10-narration-separation-v78', scenario_narration_separation_v78(pid, fd, screen)))
         else:
             results.append(('1-tail-visibility', scenario_tail_visibility(pid, fd, screen)))
             results.append(('2-keymap-overlay', scenario_keymap_overlay(pid, fd, screen)))
             results.append(('3-plan-checkbox', scenario_plan_checkbox(pid, fd, screen)))
+            results.append(('9-tool-row-identity-v82', scenario_tool_row_identity_v82(pid, fd, screen)))
+            results.append(('10-narration-separation-v78', scenario_narration_separation_v78(pid, fd, screen)))
             results.append(('5-command-outputs', scenario_command_outputs(pid, fd, screen)))
             results.append(('6-slash-command', scenario_slash_command_p282(pid, fd, screen)))
             results.append(('7-interrupt-reactive', scenario_interrupt_and_reactive_render(pid, fd, screen)))

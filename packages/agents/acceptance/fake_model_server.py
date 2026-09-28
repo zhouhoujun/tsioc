@@ -146,12 +146,69 @@ def _todo_turn(status):
                       [{'id': 'acc-1', 'content': TODO_CONTENT, 'status': status}])
 
 
+V82_READ_PATHS = ['README.md', 'package.json']
+
+
+def _tool_results_this_turn(messages):
+    """Tool results belonging to the current turn only.
+
+    Counting the whole history breaks once an earlier scenario left tool
+    messages behind: the v82 turn would then see a nonzero count and skip its
+    tool calls entirely.
+    """
+    last_user = -1
+    for i, m in enumerate(messages or []):
+        if isinstance(m, dict) and m.get('role') == 'user':
+            last_user = i
+    return sum(1 for m in (messages or [])[last_user + 1:]
+               if isinstance(m, dict) and m.get('role') == 'tool')
+
+
+def _v82_turn(messages):
+    def read_call(call_id, path):
+        return {'id': call_id, 'type': 'function',
+                'function': {'name': 'read_file',
+                             'arguments': json.dumps({'path': path}, ensure_ascii=False)}}
+
+    if _tool_results_this_turn(messages) == 0:
+        return {'role': 'assistant', 'content': None,
+                'tool_calls': [read_call('call_v82_a', V82_READ_PATHS[0]),
+                               read_call('call_v82_b', V82_READ_PATHS[1])]}
+    return {'role': 'assistant', 'content': '两个文件都已读取完毕。'}
+
+
+V78_STEPS = [('正在检查项目文件。', 'README.md'),
+             ('同时读取种子数据。', 'package.json')]
+V78_FINAL = '旁白分段测试完成。'
+
+
+def _v78_turn(messages):
+    """One user turn that interleaves narration text with tool calls.
+
+    Each step replies with text *and* a tool call in the same assistant message,
+    which is the shape that used to fuse every tool round's narration into one
+    unreadable line.
+    """
+    step = _tool_results_this_turn(messages)
+    if step < len(V78_STEPS):
+        narration, path = V78_STEPS[step]
+        return {'role': 'assistant', 'content': narration,
+                'tool_calls': [{'id': f'call_v78_{step}', 'type': 'function',
+                                'function': {'name': 'read_file',
+                                             'arguments': json.dumps({'path': path}, ensure_ascii=False)}}]}
+    return {'role': 'assistant', 'content': V78_FINAL}
+
+
 def _default_turn(messages):
     """Content-keyed default scenario: route on the last user message text plus
     the tool-result roundtrip count instead of the global request index."""
     global total_tokens
     text = _last_user_text(messages)
     n_tool = _tool_result_count(messages)
+    if '并行读文件' in text:
+        return _v82_turn(messages)
+    if '旁白分段' in text:
+        return _v78_turn(messages)
     if '中断测试' in text:
         content = '\n'.join(f'慢速输出 {n}：等待用户中断。' for n in range(1, 301))
         total_tokens += len(content) // 4
@@ -241,29 +298,36 @@ class Handler(BaseHTTPRequestHandler):
                 'choices': [{'index': 0, 'finish_reason': None, 'delta': {}}]}
         pieces = []
         content = message.get('content')
+        tool_calls = message.get('tool_calls') or []
+        # Tagged, not a plain string list: one message can carry both narration and
+        # tool calls, and an untagged `elif` silently drops the call arguments.
         if content:
             for word in re.split(r'(?<=\n)', content):
                 if word:
-                    pieces.append(word)
-        elif message.get('tool_calls'):
-            args = message['tool_calls'][0]['function']['arguments']
-            pieces = [args]
+                    pieces.append(('text', word))
+        for index, tc in enumerate(tool_calls):
+            # Keep every invocation's own `index`; collapsing back to
+            # `tool_calls[0]` would silently re-break the v82 row-identity case.
+            pieces.append(('args', index, tc['function']['arguments']))
         try:
             if content:
                 chunk = json.dumps(dict(base, choices=[dict(base['choices'][0], delta={'role': 'assistant'})]),
                                    ensure_ascii=False)
                 self.wfile.write(f'data: {chunk}\n\n'.encode())
-            if message.get('tool_calls') and pieces:
-                tc0 = message['tool_calls'][0]
+            for index, tc in enumerate(tool_calls):
                 init_chunk = json.dumps(dict(base, choices=[dict(base['choices'][0], delta={
-                    'tool_calls': [{'index': 0, 'id': tc0['id'], 'type': 'function',
-                                    'function': {'name': tc0['function']['name'], 'arguments': ''}}]
+                    'tool_calls': [{'index': index, 'id': tc['id'], 'type': 'function',
+                                    'function': {'name': tc['function']['name'],
+                                                 'arguments': ''}}]
                 })]), ensure_ascii=False)
                 self.wfile.write(f'data: {init_chunk}\n\n'.encode())
             for piece in pieces:
-                delta = {'content': piece} if content else {
-                    'tool_calls': [{'index': 0,
-                                    'function': {'arguments': piece}}]}
+                if piece[0] == 'text':
+                    delta = {'content': piece[1]}
+                else:
+                    _, index, arguments = piece
+                    delta = {'tool_calls': [{'index': index,
+                                            'function': {'arguments': arguments}}]}
                 chunk = json.dumps(dict(base, choices=[dict(base['choices'][0], delta=delta)]),
                                    ensure_ascii=False)
                 self.wfile.write(f'data: {chunk}\n\n'.encode())
