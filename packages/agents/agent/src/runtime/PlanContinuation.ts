@@ -44,8 +44,8 @@ export class PlanContinuationTracker {
         if (toolName !== 'todo' || !output || typeof output !== 'object') {
             return;
         }
-        const todos = (output as { todos?: unknown }).todos;
-        if (!Array.isArray(todos)) {
+        const todos = this.extractPlanItems(output);
+        if (!todos) {
             return;
         }
         let pending = 0;
@@ -60,6 +60,18 @@ export class PlanContinuationTracker {
         }
         this.states.set(sessionId, { pending, inProgress });
         turnContext.planTouched = true;
+    }
+
+    /** `action: decompose` reports the active plan as `accepted`, not `todos`. */
+    private extractPlanItems(output: unknown): unknown[] | undefined {
+        const record = output as { todos?: unknown; accepted?: unknown };
+        if (Array.isArray(record.todos)) {
+            return record.todos;
+        }
+        if (Array.isArray(record.accepted) && record.accepted.length > 0) {
+            return record.accepted;
+        }
+        return undefined;
     }
 
     /** True when this turn touched a plan that still has pending or in-progress items. */

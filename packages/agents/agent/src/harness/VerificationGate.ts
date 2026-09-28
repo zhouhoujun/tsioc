@@ -80,8 +80,9 @@ export class VerificationGate {
         const roundEntries = ledger.entriesFrom(startIndex);
 
         // (a) tool error / non-zero exit within this round (verify-command handled by (d)).
+        // Read-only probe failures (e.g. `stat`/`read_file` ENOENT) are discovery results, not false claims.
         for (const entry of roundEntries) {
-            if (entry.verification === 'verify-command') {
+            if (entry.verification === 'verify-command' || entry.readOnly) {
                 continue;
             }
             if (entry.status === 'error' || (entry.exitCode !== undefined && entry.exitCode !== 0)) {

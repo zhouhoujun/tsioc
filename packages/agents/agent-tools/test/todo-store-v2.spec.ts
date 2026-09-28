@@ -102,6 +102,7 @@ export class TodoStoreV2Test {
             error = err as Error;
         }
         expect(error?.message).toContain('content is required');
+        expect(error?.message).toContain('decompose');
     }
 
     @Test('TodoTool allows a status-only update for an existing item')
@@ -113,6 +114,13 @@ export class TodoStoreV2Test {
         const result: any = await tool.invoke({}, ctx);
         expect(result.todos[0].content).toBe('do a');
         expect(result.todos[0].status).toBe('completed');
+    }
+
+    @Test('TodoTool documents that a non-merge write replaces the whole plan')
+    async todoToolDocumentsMergeSemantics() {
+        const tool = new TodoTool();
+        const description = String((tool.inputSchema as any).properties.merge.description || '');
+        expect(description).toContain('REPLACES');
     }
 
     @Test('normalizeItem rejects invalid kind')

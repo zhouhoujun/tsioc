@@ -28,7 +28,10 @@ export class TodoTool implements AgentTool {
                     required: ['id']
                 }
             },
-            merge: { type: 'boolean' },
+            merge: {
+                type: 'boolean',
+                description: 'Partial update. Set true to update only the provided items and keep the remaining plan items unchanged. When false or omitted, the provided list REPLACES the entire plan, so send every item you want to keep.'
+            },
             action: {
                 type: 'string',
                 enum: ['validate', 'decompose', 'schedule'],
@@ -98,7 +101,7 @@ export class TodoTool implements AgentTool {
             const id = String(raw?.id ?? '').trim();
             const hasContent = typeof raw?.content === 'string' && raw.content.trim().length > 0;
             if (!hasContent && !existingIds.has(id)) {
-                throw new Error(`Invalid todo input: content is required for new item '${id || '(missing id)'}'.`);
+                throw new Error(`Invalid todo input: content is required for new item '${id || '(missing id)'}'. If it came from a decompose result, persist the accepted steps with content in a normal todo write first; action 'decompose' does not store the plan.`);
             }
         }
     }

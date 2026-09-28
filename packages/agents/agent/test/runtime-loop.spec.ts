@@ -100,6 +100,34 @@ class EmptyToolRegistry extends ToolRegistry {
     async invoke(): Promise<any> { return null; }
 }
 
+class ReadOnlyProbeToolRegistry extends ToolRegistry {
+    getTools() {
+        return [{ name: 'stat', description: 'probe a path', execution: { readOnly: true } } as any];
+    }
+    getTool() {
+        return this.getTools()[0] as any;
+    }
+    async invoke(): Promise<any> {
+        throw new Error('ENOENT: no such file or directory');
+    }
+}
+
+class ProbeThenFinishModelAdapter extends EchoModelAdapter {
+    requests: any[] = [];
+
+    async complete(request: any): Promise<any> {
+        this.requests.push(request);
+        if (this.requests.length <= 2) {
+            return {
+                message: '',
+                stopReason: 'tool_use',
+                toolCalls: [{ id: `tc-${this.requests.length}`, name: 'stat', input: { path: 'missing' } }]
+            };
+        }
+        return { message: 'finished anyway', stopReason: 'end' };
+    }
+}
+
 class EchoToolRegistry extends ToolRegistry {
     getTools() {
         return [{ name: 'echo', description: 'echo input' } as any];
@@ -1806,6 +1834,26 @@ export class RuntimeLoopTest {
         const messages = await runtime.getMessages('s1');
         // 2 tool rounds executed before the limit + the final non-tool answer
         expect(messages.filter(msg => msg.role === 'tool').length).toEqual(2);
+    }
+
+    @Test('read-only probe failures do not terminate a planless turn')
+    async readOnlyProbeFailuresDoNotTerminate() {
+        const model = new ProbeThenFinishModelAdapter();
+        const { runtime, events } = await createRuntime(
+            model,
+            new ReadOnlyProbeToolRegistry(),
+            undefined,
+            undefined,
+            new SimpleSessionSummarizer(),
+            { ...defaultAgentOptions, maxRepairRounds: 2, maxToolRounds: 20 }
+        );
+
+        const result = await runtime.runTurn('s1', 'inspect the workspace');
+        const diagnostics = events.find(event => event instanceof AgentTurnDiagnosticsEvent) as AgentTurnDiagnosticsEvent | undefined;
+
+        expect(result.message.content).toEqual('finished anyway');
+        expect(model.requests.length).toEqual(3);
+        expect(diagnostics?.diagnostics.falsificationCount ?? 0).toEqual(0);
     }
 
     @Test('stores assistant tool call history before tool results')

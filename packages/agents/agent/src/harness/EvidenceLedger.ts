@@ -14,6 +14,8 @@ export interface ToolEvidenceEntry {
     sessionId: string;
     toolName: string;
     status: 'success' | 'error' | 'skipped';
+    /** True when the tool only reads state, so its failure is a probe result, not a false claim. */
+    readOnly?: boolean;
     inputSummary?: string;
     outputSummary?: string;
     exitCode?: number;
@@ -93,6 +95,7 @@ export class EvidenceLedger {
             sessionId: this.sessionId,
             toolName: entry.toolName,
             status: entry.status,
+            readOnly: entry.readOnly,
             inputSummary: entry.inputSummary,
             outputSummary: entry.outputSummary,
             exitCode: entry.exitCode,

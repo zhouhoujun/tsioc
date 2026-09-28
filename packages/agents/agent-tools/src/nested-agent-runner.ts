@@ -132,6 +132,9 @@ function buildSubAgentPrompt(request: SpawnAgentInput): string {
     if (request.context?.trim()) {
         parts.push(`Context:\n${request.context.trim()}`);
     }
+    if (request.toolsets?.length) {
+        parts.push(`Available tool categories:\nYou can call tools from these categories directly: ${request.toolsets.join(', ')}. Use them to complete the task instead of reporting that no tools are available.`);
+    }
     return parts.join('\n\n');
 }
 

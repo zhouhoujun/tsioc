@@ -124,6 +124,7 @@ const EMPTY_RESPONSE_RETRY_SYSTEM_PROMPT = 'Your previous reply was empty. Use t
 const FOLLOW_UP_EMPTY_RESPONSE_RECOVERY_SYSTEM_PROMPT = 'The latest user message already contains follow-up context answering a prior clarification. Continue the original task directly using that follow-up context. Provide a non-empty response, and call tools if needed. Do not repeat the same clarification question.';
 const TOOL_ERROR_RECOVERY_SYSTEM_PROMPT = 'A tool call in your previous step failed. Read the tool error below, correct the arguments and continue the task. Stay inside the workspace root: prefer workspace-relative paths and never invent absolute paths outside it. Do not end the turn after a single recoverable tool error; only stop when the failure is genuinely unrecoverable, and then explain why briefly.';
 const EMPTY_RESPONSE_RETRY_BACKOFF_MS = 150;
+const MAX_TOOL_ROUNDS_PROMPT = 'You have reached the maximum number of tool call rounds. Please provide your best answer now based on the results you have so far.';
 const LOOP_RECOVERY_SYSTEM_PROMPT = 'You are repeating the same tool calls without making progress. Change strategy: try a different tool, different arguments, or break the work into smaller steps. If you cannot make progress, state clearly that you are blocked and explain why instead of repeating the same calls.';
 
 function sameStringList(left: string[], right: string[]): boolean {
@@ -1129,7 +1130,13 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 continue turnLoop;
             }
             this.throwIfTurnCancelled(sessionId);
-            await this.sessions.append(sessionId, this.createMessage('user', 'You have reached the maximum number of tool call rounds. Please provide your best answer now based on the results you have so far.'));
+            const resume = this.buildPlanContinuation(sessionId, turnContext);
+            if (resume) {
+                await this.sessions.append(sessionId, this.createMessage('user', resume));
+                round = 0;
+                continue turnLoop;
+            }
+            await this.sessions.append(sessionId, this.createMessage('user', MAX_TOOL_ROUNDS_PROMPT));
             const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
             const finalResponse = await this.modelAdapter.complete(
                 this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, this.computeTurnFalsifyRate(turnContext), turnContext.agent?.reasoning)
@@ -1137,13 +1144,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
             await this.recordTokenUsage(sessionId, finalResponse);
             await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, finalResponse));
             const finalMessage = await this.createAssistantMessageFromResponse(sessionId, finalResponse);
-            const resume = this.buildPlanContinuation(sessionId, turnContext);
-            if (resume) {
-                await this.sessions.append(sessionId, finalMessage);
-                await this.sessions.append(sessionId, this.createMessage('user', resume));
-                round = 0;
-                continue turnLoop;
-            }
             this.capturePromptCacheDiagnostics(turnContext, finalResponse);
             await this.captureAssistantDiagnostics(sessionId, currentUserMessageId, finalMessage, turnContext);
             return { sessionId, message: finalMessage };
@@ -1231,8 +1231,13 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 continue turnLoop;
             }
             this.throwIfTurnCancelled(sessionId);
-            yield { type: 'text', content: '\n\n[Reached tool round limit. Requesting final answer...]\n\n' };
-            await this.sessions.append(sessionId, this.createMessage('user', 'You have reached the maximum number of tool call rounds. Please provide your best answer now based on the results you have so far.'));
+            const resume = this.buildPlanContinuation(sessionId, turnContext);
+            if (resume) {
+                await this.sessions.append(sessionId, this.createMessage('user', resume));
+                round = 0;
+                continue turnLoop;
+            }
+            await this.sessions.append(sessionId, this.createMessage('user', MAX_TOOL_ROUNDS_PROMPT));
             const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
             const finalResponse = yield* this.collectStreamingResponse(
                 sessionId,
@@ -1240,13 +1245,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
             );
             await this.recordTokenUsage(sessionId, finalResponse);
             const finalMessage = await this.createAssistantMessageFromResponse(sessionId, finalResponse);
-            const resume = this.buildPlanContinuation(sessionId, turnContext);
-            if (resume) {
-                await this.sessions.append(sessionId, finalMessage);
-                await this.sessions.append(sessionId, this.createMessage('user', resume));
-                round = 0;
-                continue turnLoop;
-            }
             this.capturePromptCacheDiagnostics(turnContext, finalResponse);
             await this.captureAssistantDiagnostics(sessionId, currentUserMessageId, finalMessage, turnContext);
             return { sessionId, message: finalMessage };
@@ -2652,9 +2650,11 @@ export class DefaultAgentRuntime extends AgentRuntime {
     }
 
     private recordToolEvidence(turnContext: TurnExecutionContext, receipt: AgentToolExecutionReceipt, error?: Error): void {
+        const definition = this.toolRegistry?.getTool?.(receipt.toolName);
         turnContext.evidenceLedger?.record({
             toolName: receipt.toolName,
             status: receipt.status === 'running' ? 'success' : receipt.status,
+            readOnly: definition?.execution?.readOnly === true,
             inputSummary: receipt.inputSummary,
             outputSummary: receipt.outputSummary,
             durationMs: receipt.durationMs,
