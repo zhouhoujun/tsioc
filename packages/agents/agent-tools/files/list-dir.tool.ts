@@ -49,7 +49,8 @@ export class ListDirTool implements AgentTool {
 
         const items = await Promise.all(visibleEntries.map(async entry => {
             const entryPath = path.join(absolutePath, entry.name);
-            await assertNoSymlinkInWorkspacePath(entryPath, policy.rootDir);
+            // lstat (never stat) so a symlinked child is reported, not traversed. Do not re-add
+            // assertNoSymlinkInWorkspacePath here: it aborts the whole listing on any symlinked entry.
             const entryStat = await fs.lstat(entryPath);
             return {
                 name: entry.name,

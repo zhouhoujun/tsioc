@@ -792,13 +792,10 @@ export class AgentToolsPackageTest {
         }
         expect(readError?.message).toContain('symbolic link');
 
-        let listError: Error | undefined;
-        try {
-            await lister.invoke({ path: 'src' }, createSessionContext());
-        } catch (err) {
-            listError = err as Error;
-        }
-        expect(listError?.message).toContain('symbolic link');
+        const listed = await lister.invoke({ path: 'src' }, createSessionContext());
+        const listedNames = (listed.entries as { name: string; }[]).map(entry => entry.name);
+        expect(listedNames).toContain('alpha.txt');
+        expect((listed.entries as { name: string; kind: string; }[]).find(entry => entry.name === 'linked.txt')?.kind).toEqual('symlink');
 
         let statError: Error | undefined;
         try {
@@ -823,6 +820,33 @@ export class AgentToolsPackageTest {
             searchError = err as Error;
         }
         expect(searchError?.message).toContain('symbolic link');
+    }
+
+    @Test('list_dir lists entries when a symlinked child exists')
+    async listDirListsEntriesAlongsideSymlinkedChild() {
+        const parent = await this.createWorkspace();
+        const project = path.join(parent, 'exam-system');
+        await fs.mkdir(path.join(project, 'src'), { recursive: true });
+        await fs.writeFile(path.join(project, 'package.json'), '{}\n', 'utf8');
+        symlinkSync(path.join(parent, 'node_modules'), path.join(project, 'node_modules'));
+
+        const lister = new ListDirTool({ file: { rootDir: parent } } as any);
+        const result = await lister.invoke({ path: 'exam-system' }, createSessionContext());
+        const entries = result.entries as { name: string; kind: string; }[];
+
+        expect(result.path).toEqual('exam-system');
+        expect(entries.find(entry => entry.name === 'package.json')?.kind).toEqual('file');
+        expect(entries.find(entry => entry.name === 'src')?.kind).toEqual('directory');
+        expect(entries.find(entry => entry.name === 'node_modules')?.kind).toEqual('symlink');
+
+        const reader = new ReadFileTool({ file: { rootDir: parent } });
+        let readError: Error | undefined;
+        try {
+            await reader.invoke({ path: 'exam-system/node_modules/pkg/ignored.txt' }, createSessionContext());
+        } catch (err) {
+            readError = err as Error;
+        }
+        expect(readError?.message).toContain('symbolic link');
     }
 
     @Test('content search returns line matches')
