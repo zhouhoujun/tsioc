@@ -11,6 +11,7 @@ export interface AgentConsoleSettingsData {
     showUsername?: boolean;
     timelineMode?: boolean;
     timelineViewMode?: 'off' | 'compact' | 'steps' | 'verbose';
+    messageLayout?: 'stream' | 'viewport' | 'dynamic';
     thinkingLevel?: 'low' | 'medium' | 'high';
     yoloMode?: boolean;
     taskFilter?: 'all' | 'failed' | 'rollback' | 'lineage';
@@ -36,6 +37,11 @@ export class AgentConsoleSettingsStore {
                 showToolOutput: typeof parsed?.showToolOutput === 'boolean' ? parsed.showToolOutput : undefined,
                 showUsername: typeof parsed?.showUsername === 'boolean' ? parsed.showUsername : undefined,
                 timelineViewMode,
+                messageLayout: parsed?.messageLayout === 'stream'
+                    ? 'stream'
+                    : parsed?.messageLayout === 'viewport' || parsed?.messageLayout === 'dynamic'
+                        ? 'viewport'
+                        : undefined,
                 thinkingLevel: parsed?.thinkingLevel === 'low' || parsed?.thinkingLevel === 'medium' || parsed?.thinkingLevel === 'high'
                     ? parsed.thinkingLevel
                     : undefined,
@@ -63,6 +69,7 @@ export class AgentConsoleSettingsStore {
             ...(typeof data.showToolOutput === 'boolean' ? { showToolOutput: data.showToolOutput } : {}),
             ...(typeof data.showUsername === 'boolean' ? { showUsername: data.showUsername } : {}),
             ...(mode ? { timelineViewMode: mode } : {}),
+            ...(data.messageLayout ? { messageLayout: data.messageLayout } : {}),
             ...(data.thinkingLevel ? { thinkingLevel: data.thinkingLevel } : {}),
             ...(typeof data.yoloMode === 'boolean' ? { yoloMode: data.yoloMode } : {}),
             ...(data.taskFilter ? { taskFilter: data.taskFilter } : {}),

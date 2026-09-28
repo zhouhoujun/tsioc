@@ -25,7 +25,9 @@ export interface AgentConsoleTerminalInputHost {
         commandHints: string[];
         selectMenu?: { title?: string } | null;
         messageDetailVisibleLines: number;
-        consoleOptions: { messageToggleInteraction?: string };
+        messagesViewportItems?: number;
+        setMessagesViewportItems?(value: number): void;
+        consoleOptions: { messageToggleInteraction?: string; messageLayout?: string };
         isSshShellActive: boolean;
         isAnyFocusActive(): boolean;
         handleVimKey(key: string): boolean;
@@ -123,6 +125,7 @@ export async function handleTerminalInputView(
         return;
     }
     syncConsoleMessageDetailViewportView(host);
+    syncConsoleMessageViewportView(host);
     if (decoded.mouse) {
         host.surfaceAccessor?.dispatchMouse?.(decoded.mouse);
         return;
@@ -283,4 +286,17 @@ export function syncConsoleMessageDetailViewportView(host: AgentConsoleTerminalI
     if (host.state.messageDetailVisibleLines !== visibleLines) {
         host.state.setMessageDetailVisibleLines(visibleLines);
     }
+}
+
+/** Size the viewport transcript window to the terminal so it occupies the full screen. */
+export function syncConsoleMessageViewportView(host: AgentConsoleTerminalInputHost): void {
+    if (host.state.consoleOptions.messageLayout === 'stream') {
+        return;
+    }
+    const rows = host.surfaceAccessor?.getTerminalSize?.().rows;
+    if (!Number.isFinite(rows)) {
+        return;
+    }
+    const items = Math.max(4, Math.min(400, Math.floor(Number(rows)) - 6));
+    host.state.setMessagesViewportItems?.(items);
 }

@@ -161,7 +161,7 @@ import { decodeGlobalKey, describePendingToolCall, describeStreamEventContent } 
 import { AgentConsoleTurnStreamHost, AgentConsoleTurnStreamState, clearStreamingMessageState, consumeStreamChunkView, consumeStreamEventChunkView, runTurnStreamView } from './AgentConsoleTurnStreamController';
 import { AgentConsoleGlobalKeyInputHost, executeGlobalKeyActionView, handleBrowserGlobalKeyInputView, handleGlobalKeyInputView, handleGlobalKeySequenceView } from './AgentConsoleGlobalKeyInputController';
 import { AgentConsoleTurnInputHost, submitMultilineDraftView, submitView } from './AgentConsoleTurnInputController';
-import { AgentConsoleTerminalInputHost, closingSessionMessageView, handleTerminalInputView, openCommandPaletteView, requestTerminalExitView } from './AgentConsoleTerminalInputController';
+import { AgentConsoleTerminalInputHost, closingSessionMessageView, handleTerminalInputView, openCommandPaletteView, requestTerminalExitView, syncConsoleMessageViewportView } from './AgentConsoleTerminalInputController';
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
 import { openSummaryQualityRecords, openTurnDiagnosticsListView, openTurnDiagnosticsTrendView, openSummaryQualityTrendView, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshTurnDiagnosticsDigest, refreshUsageDigest, runHarnessStopCommand } from './AgentConsoleDiagnosticsView';
 import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
@@ -221,6 +221,7 @@ import {
     openSettingsProvidersTab as openSettingsProvidersTabView,
     openSettingsKeybindsTab,
     runDisplayCommand,
+    runLayoutCommand,
     runExperimentalCommand,
     runSettingsCommand as runSettingsCommandView,
     runTimelineModeCommand,
@@ -1593,6 +1594,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         await this.restoreRawMode();
         await this.restoreModelStore();
         await this.restoreSettings();
+        syncConsoleMessageViewportView(this.terminalInputHost());
         this.updateTerminalTitle();
         await this.resolveGitBranch();
         // Do not ask app.state for an implicit session: that RPC creates and
@@ -2140,6 +2142,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             runThemeCommand: (a) => self.runThemeCommand(a),
             runThinkingCommand: (a) => self.runThinkingCommand(a),
             runDisplayCommand: (a) => self.runDisplayCommand(a),
+            runLayoutCommand: (a) => self.runLayoutCommand(a),
             runTimelineModeCommand: (a) => self.runTimelineModeCommand(a),
             runRawModeCommand: (a) => self.runRawModeCommand(a),
             runStashCommand: (a) => self.runStashCommand(a),
@@ -2413,11 +2416,10 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return true;
     }
 
-    // STREAM LAYOUT CONTRACT: stream uses native terminal scrollback for the
-    // whole session, including while a turn is streaming, so multi-turn history
-    // is never clipped to the viewport. Only explicit dynamic mode windows.
+    // LAYOUT CONTRACT: viewport (default) windows the transcript; stream uses
+    // native terminal scrollback for the whole session and is opt-in via /layout.
     shouldUseNativeScrollback(): boolean {
-        return this.state.consoleOptions.messageLayout !== 'dynamic';
+        return this.state.consoleOptions.messageLayout === 'stream';
     }
 
     getTerminalRenderedLines(): string[] {
@@ -2772,6 +2774,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         } else if (typeof persisted.timelineMode === 'boolean') {
             this.state.setTimelineMode(persisted.timelineMode ? 'compact' : 'off');
         }
+        if (persisted.messageLayout) {
+            this.state.setMessageLayout(persisted.messageLayout === 'stream' ? 'stream' : 'viewport');
+        }
         if (persisted.thinkingLevel) {
             this.modelReasoningEffort = persisted.thinkingLevel;
             this.options.model = this.options.model || {};
@@ -3048,6 +3053,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             runThemeCommand: () => this.runThemeCommand(),
             runVimCommand: (args?: string) => this.runVimCommand(args || ''),
             runDisplayCommand: (args?: string) => this.runDisplayCommand(args),
+            runLayoutCommand: (args?: string) => this.runLayoutCommand(args),
             runRawModeCommand: () => this.runRawModeCommand(),
             runFastCommand: (args?: string) => this.runFastCommand(args),
             runStatusCommand: () => this.runStatusCommand(),
@@ -3194,6 +3200,10 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
 
     protected async runDisplayCommand(args?: string): Promise<boolean> {
         return runDisplayCommand(args, this.state, (message: string) => this.notify(message), (patch: Record<string, any>) => this.persistSettings(patch));
+    }
+
+    protected async runLayoutCommand(args?: string): Promise<boolean> {
+        return runLayoutCommand(args, this.state, (message: string) => this.notify(message), (patch: Record<string, any>) => this.persistSettings(patch));
     }
 
     protected async runTimelineModeCommand(args?: string): Promise<boolean> {

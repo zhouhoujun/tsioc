@@ -46,6 +46,7 @@ import {
     AgentConsoleWorkspaceMentionResolver
 } from './AgentConsoleWorkspaceMentions';
 import { AgentConsoleMessageStatusLabels } from './AgentConsoleMessageRenderers';
+import { normalizeMessageLayout, resolveFinalAssistantMessageId } from './AgentConsoleViewport';
 import {
     AgentConsoleTimelineLabels,
     DEFAULT_TIMELINE_LABELS,
@@ -399,8 +400,8 @@ export interface AgentConsoleOptions {
     statusVisibleLines?: number;
     sessionsVisibleItems?: number;
     messagesVisibleItems?: number;
-    /** Transcript layout: stream keeps conversation rows flowing; dynamic windows them. */
-    messageLayout?: 'stream' | 'dynamic';
+    /** Transcript layout: stream keeps conversation rows flowing; viewport windows them (legacy value 'dynamic' is normalized to 'viewport'). */
+    messageLayout?: 'stream' | 'viewport' | 'dynamic';
     messageDetailVisibleLines?: number;
     /** v19-A8: auxiliary tool/event/file-change/system/error content preview lines (policy render, default 8). */
     auxiliaryPreviewLines?: number;
@@ -465,7 +466,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     statusVisibleLines: 8,
     sessionsVisibleItems: 6,
     messagesVisibleItems: 7,
-    messageLayout: 'stream',
+    messageLayout: 'viewport',
     messageDetailVisibleLines: 6,
     auxiliaryPreviewLines: DEFAULT_RENDER_POLICY.auxiliaryPreviewLines,
     reasoningPreviewLines: DEFAULT_RENDER_POLICY.reasoningPreviewLines,
@@ -577,6 +578,8 @@ export class AgentConsoleSessionState {
     constructor(@Inject(COMMAND_EXECUTION_CONTROL) protected commandExecutionControl?: CommandExecutionControlPort) {}
     consoleOptions: Required<AgentConsoleOptions> = defaultAgentConsoleOptions;
     messageDetailVisibleLines = defaultAgentConsoleOptions.messageDetailVisibleLines;
+    /** Terminal-height-derived window size for viewport layout (0 = fall back to configured items). */
+    messagesViewportItems = 0;
     sessionId = 'console';
     input = '';
     inputSecret = false;
@@ -1288,6 +1291,11 @@ export class AgentConsoleSessionState {
             return;
         }
         this.activities = [];
+    }
+
+    /** Last assistant answer row; kept fully expanded in viewport mode while other long bodies collapse. */
+    get finalAssistantMessageId(): string {
+        return resolveFinalAssistantMessageId(this.messages);
     }
 
     get displayMessages(): AgentMessage[] {
@@ -5062,6 +5070,17 @@ export class AgentConsoleSessionState {
         }
     }
 
+    get messageLayout(): 'stream' | 'viewport' {
+        return normalizeMessageLayout(this.consoleOptions.messageLayout);
+    }
+
+    setMessageLayout(value: 'stream' | 'viewport'): void {
+        this.consoleOptions = {
+            ...this.consoleOptions,
+            messageLayout: normalizeMessageLayout(value)
+        };
+    }
+
     setWhichKeyVisible(value: boolean): void {
         this.whichKeyVisible = !!value;
         if (!this.whichKeyVisible) {
@@ -5120,6 +5139,13 @@ export class AgentConsoleSessionState {
         if (!this.vimMode) {
             this.inputMode = 'insert';
             this.vimPendingKey = '';
+        }
+    }
+
+    setMessagesViewportItems(value: number): void {
+        const items = Math.max(0, Math.floor(Number(value) || 0));
+        if (this.messagesViewportItems !== items) {
+            this.messagesViewportItems = items;
         }
     }
 

@@ -94,7 +94,7 @@ export class C2FixedExpandStableKeysTest {
     @Test('C2-1 focused: conversation, approval, error and system content stay expanded')
     async focusedApprovalErrorFixedExpand() {
         const ref = await this.bootRef();
-        ref.instance.sessionState.setConsoleOptions({ messageLayout: 'dynamic' });
+        ref.instance.sessionState.setConsoleOptions({ messageLayout: 'viewport' });
         ref.instance.sessionState.setMessages([
             // 普通对话正文不因 dynamic/focused 布局而折叠。
             { id: 'plain1', role: 'assistant', content: longContent(12), createdAt: 1 } as any,

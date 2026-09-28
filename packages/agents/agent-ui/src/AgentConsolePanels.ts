@@ -2725,10 +2725,12 @@ export class AgentConsoleMessagesPanelComponent {
         if (this.state.timelineMode) {
             return this.resolveTimelineVisibleMessages(messages);
         }
-        const visibleCount = this.state.consoleOptions.messagesVisibleItems;
-        // MESSAGE LAYOUT CONTRACT (todo.md 2026-09-10): stream is the default
-        // and must remain an unbounded transcript; dynamic is opt-in.
-        if (this.state.consoleOptions.messageLayout !== 'dynamic') {
+        const visibleCount = this.state.messagesViewportItems > 0
+            ? this.state.messagesViewportItems
+            : this.state.consoleOptions.messagesVisibleItems;
+        // MESSAGE LAYOUT CONTRACT: viewport is the default and windows the
+        // transcript to the visible items; stream remains available via /layout.
+        if (this.state.consoleOptions.messageLayout === 'stream') {
             return messages;
         }
         if (this.state.messageDetailOpen) {
@@ -2753,7 +2755,9 @@ export class AgentConsoleMessagesPanelComponent {
     ): Array<{ id?: string; role?: string; content: string; metadata?: Record<string, any> }> {
         const result = resolveTimelineWindowLedger({
             messages,
-            limit: Math.max(1, this.state.consoleOptions.messagesVisibleItems),
+            limit: Math.max(1, this.state.messagesViewportItems > 0
+                ? this.state.messagesViewportItems
+                : this.state.consoleOptions.messagesVisibleItems),
             mode: this.state.timelineViewMode as TimelineWindowMode,
             activeScope: String(this.state.activeTurnEventScope || '').trim(),
             summaryLabels: this.state.consoleOptions.timelineLabels,
@@ -2769,7 +2773,9 @@ export class AgentConsoleMessagesPanelComponent {
         const theme = this.activeTheme;
         const selectedMessageId = this.state.selectedMessageId;
         const messagesFocused = this.state.messagesFocused;
-        const visibleItems = this.state.consoleOptions.messagesVisibleItems;
+        const visibleItems = this.state.messagesViewportItems > 0
+            ? this.state.messagesViewportItems
+            : this.state.consoleOptions.messagesVisibleItems;
         const consoleOptions = this.state.consoleOptions;
         const rawMode = this.state.rawMode;
         const showTimestamps = this.state.consoleOptions.showMessageTimestamps && this.state.showTimestamps;

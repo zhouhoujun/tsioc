@@ -5,10 +5,12 @@ export interface AgentConsoleSettingsState {
     showCriticalMarks: boolean;
     showTimestamps: boolean;
     vimMode: boolean;
+    messageLayout: 'stream' | 'viewport';
     setTimelineMode(mode: 'off' | 'compact' | 'steps' | 'verbose'): void;
     setShowCriticalMarks(value: boolean): void;
     setShowTimestamps(value: boolean): void;
     setVimMode(value: boolean): void;
+    setMessageLayout(value: 'stream' | 'viewport'): void;
 }
 
 export async function runTimelineModeCommand(
@@ -42,6 +44,36 @@ export async function runTimelineModeCommand(
         await persistSettings({ timelineViewMode: next });
     } catch (error: any) {
         notify(error?.message || 'Failed to save timeline mode.');
+    }
+    return true;
+}
+
+export async function runLayoutCommand(
+    args: string | undefined,
+    state: AgentConsoleSettingsState,
+    notify: (message: string) => void,
+    persistSettings: (patch: Record<string, any>) => Promise<any>
+): Promise<boolean> {
+    const requested = String(args || '').trim().toLowerCase();
+    let next: 'stream' | 'viewport';
+    if (!requested) {
+        next = state.messageLayout === 'viewport' ? 'stream' : 'viewport';
+    } else if (requested === 'stream' || requested === 'native' || requested === 'scrollback') {
+        next = 'stream';
+    } else if (requested === 'viewport' || requested === 'dynamic' || requested === 'window' || requested === 'windowed') {
+        next = 'viewport';
+    } else {
+        notify('Usage: /layout [stream|viewport]');
+        return true;
+    }
+    state.setMessageLayout(next);
+    notify(next === 'viewport'
+        ? 'Layout: windowed (viewport only; long content collapsed).'
+        : 'Layout: stream (native scrollback; full history).');
+    try {
+        await persistSettings({ messageLayout: next });
+    } catch (error: any) {
+        notify(error?.message || 'Failed to save layout mode.');
     }
     return true;
 }
@@ -169,6 +201,7 @@ export interface SettingsPanelHost {
     runThemeCommand(): Promise<any>;
     runVimCommand(args?: string): Promise<any>;
     runDisplayCommand(args?: string): Promise<any>;
+    runLayoutCommand(args?: string): Promise<any>;
     runRawModeCommand(): Promise<any>;
     runFastCommand(args?: string): Promise<any>;
     runStatusCommand(): Promise<any>;

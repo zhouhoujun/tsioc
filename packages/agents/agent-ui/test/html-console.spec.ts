@@ -390,7 +390,7 @@ export class HtmlConsoleTest {
     @Test('default message types stay expanded in a dynamic visible window')
     async defaultMessageTypesStayExpandedInDynamicWindow() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
-        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4, messageLayout: 'dynamic' });
+        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4, messageLayout: 'viewport' });
         ref.instance.sessionState.setMessages([
             { id: 'u1', role: 'user', content: '设计一个在线考试系统', createdAt: 1 },
             { id: 'a1', role: 'assistant', content: 'middle marker', createdAt: 2 },

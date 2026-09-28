@@ -96,7 +96,7 @@ mountAgentWebConsole(document.getElementById('app')!, {
 
 Core: `/help` `/status` `/model` `/tools` `/keymap` `/theme` `/settings` `/compact`
 Session: `/resume` `/archive` `/fork` `/side` `/share` `/unshare` `/sections` `/threads`
-Display: `/raw` `/thinking` `/timeline` `/display` `/statusline` `/title` `/export`
+Display: `/raw` `/thinking` `/timeline` `/display` `/layout` `/statusline` `/title` `/export`
 Input: `/editor` `/stash` `/apps` `/skills` `/mcp` `/plugins` `/voice`
 Review: `/review` `/diff` `/approve`
 Hooks: `/hooks` `/memories` `/fast` `/personality` `/debug-config` `/experimental`

@@ -43,6 +43,18 @@ const thoughtLinesCache = new WeakMap<object, {
     lines: AgentConsoleRenderedLine[];
 }>();
 
+const bodyLinesCache = new WeakMap<object, {
+    source: AgentConsoleRenderedLine[];
+    selected: boolean;
+    detailOpen: boolean;
+    rawMode: boolean;
+    showCriticalMarks: boolean;
+    messageLayout: string;
+    finalAssistantMessageId: string;
+    previewLines: number;
+    lines: AgentConsoleRenderedLine[];
+}>();
+
 @Component({
     selector: 'agent-console-routed-tokens',
     template: `
@@ -109,6 +121,40 @@ export abstract class AgentConsoleMessageTemplateBase {
 
     get lines(): AgentConsoleRenderedLine[] {
         return this.item?.lines || [];
+    }
+
+    /**
+     * Viewport mode collapses long assistant/tool rows to a preview with an
+     * expand toggle; the last assistant answer and explicit `stream` layout stay full.
+     */
+    protected bodyPreviewLines(source: AgentConsoleRenderedLine[], previewLines: number): AgentConsoleRenderedLine[] {
+        const selected = !!this.item?.selected;
+        const detailOpen = this.state.messageDetailOpen;
+        const rawMode = this.state.rawMode;
+        const showCriticalMarks = this.state.showCriticalMarks;
+        const messageLayout = this.state.messageLayout;
+        const finalAssistantMessageId = this.state.finalAssistantMessageId;
+        const messageId = String(source[0]?.messageId || '');
+        const cached = bodyLinesCache.get(this);
+        if (cached
+            && cached.source === source
+            && cached.selected === selected
+            && cached.detailOpen === detailOpen
+            && cached.rawMode === rawMode
+            && cached.showCriticalMarks === showCriticalMarks
+            && cached.messageLayout === messageLayout
+            && cached.finalAssistantMessageId === finalAssistantMessageId
+            && cached.previewLines === previewLines) {
+            return cached.lines;
+        }
+        const expanded = rawMode || showCriticalMarks || messageLayout === 'stream'
+            || (messageId && messageId === finalAssistantMessageId)
+            || (detailOpen && selected);
+        const lines = expanded ? source : this.previewLines(source, previewLines, true);
+        bodyLinesCache.set(this, {
+            source, selected, detailOpen, rawMode, showCriticalMarks, messageLayout, finalAssistantMessageId, previewLines, lines
+        });
+        return lines;
     }
     get spacerBefore(): boolean { return !!this.item?.spacerBefore; }
     get templateClass(): string { return 'message-template-system'; }
@@ -187,7 +233,11 @@ export class AgentConsoleUserTemplate extends AgentConsoleMessageTemplateBase {}
 
 /** Cross-platform Markdown document. Parsed tokens are shared by DOM and TUI renderers. */
 @Component({ selector: 'agent-console-markdown', template: MARKDOWN_TEMPLATE, imports: [AgentConsoleRoutedTokensComponent] })
-export class AgentConsoleMarkdownComponent extends AgentConsoleMessageTemplateBase {}
+export class AgentConsoleMarkdownComponent extends AgentConsoleMessageTemplateBase {
+    override get lines(): AgentConsoleRenderedLine[] {
+        return this.bodyPreviewLines(this.item?.lines || [], Math.max(1, this.state.consoleOptions.auxiliaryPreviewLines));
+    }
+}
 
 @Component({ selector: 'agent-console-thought-template', template: ITEM_TEMPLATE, imports: [AgentConsoleRoutedTokensComponent] })
 export class AgentConsoleThoughtTemplate extends AgentConsoleMessageTemplateBase {
@@ -222,11 +272,17 @@ export class AgentConsoleThoughtTemplate extends AgentConsoleMessageTemplateBase
 @Component({ selector: 'agent-console-tool-template', template: ITEM_TEMPLATE, imports: [AgentConsoleRoutedTokensComponent] })
 export class AgentConsoleToolTemplate extends AgentConsoleMessageTemplateBase {
     override get templateClass(): string { return 'message-template-tool'; }
+    override get lines(): AgentConsoleRenderedLine[] {
+        return this.bodyPreviewLines(this.item?.lines || [], Math.max(1, this.state.consoleOptions.auxiliaryPreviewLines));
+    }
 }
 
 @Component({ selector: 'agent-console-command-template', template: ITEM_TEMPLATE, imports: [AgentConsoleRoutedTokensComponent] })
 export class AgentConsoleCommandTemplate extends AgentConsoleMessageTemplateBase {
     override get templateClass(): string { return 'message-template-command'; }
+    override get lines(): AgentConsoleRenderedLine[] {
+        return this.bodyPreviewLines(this.item?.lines || [], Math.max(1, this.state.consoleOptions.auxiliaryPreviewLines));
+    }
 }
 
 @Component({ selector: 'agent-console-plan-template', template: ITEM_TEMPLATE, imports: [AgentConsoleRoutedTokensComponent] })
