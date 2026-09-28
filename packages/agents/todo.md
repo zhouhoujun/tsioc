@@ -307,3 +307,41 @@
 - **修复**：新增 `src/context/recover-detail.ts`（`selectRecoveredDetail`）：恢复子集按工具轮配对完整（assistant 携带 toolCalls 时必须在 stash 内找到每个 call id 的结果才随结果一起恢复，任一缺失则整体跳过）；新增 `existingIds` 参数让调用方把实时窗口已有 id 传入，恢复绝不重复/孤立已存在的消息轮。`AgentContextManager.recoverDetail` 改为薄委托（文件 2022→2008 行），`DefaultAgentRuntime` 以 `new Set(messages.map(m => m.id))` 传入窗口 id（3576→3574 行）。
 - **TDD**：先在旧实现上确认 `recoverDetail returns tool-pairing-complete subsets` 与 `recoverDetail drops assistant tool calls whose results are missing from the stash` 稳定失败（105 passing 2 failed），修复后连同 dedupe/全窗口已存在两个用例共 5 个 recoverDetail 用例通过；agent 全套 907 passing EXIT=0；`source-size` gate PASS（基线文件均下降）。
 - **当前状态**：Gap 2（tool round 上限 20 后不 plan-continue）仍开放；sleep-mlt task 2 待续跑复验。
+
+## v77 — 真实构建任务暴露的轮次上限假停与 decompose 计划跟踪（Gap 2 收口）✅
+
+- **真实复现 1（轮次上限假停）**：`node ./bin/tsdi-agent.js run --session sysbuild1 --workspace /home/zhouyou/workspace/sleep-mlt --json` 驱动 `library-system/` 构建任务并命中 20 轮工具上限。旧实现先请求并流式输出一份「因达到轮次上限而停止」的最终答复（正文明确列出未重跑的测试与未完成的 diff），把该消息写入会话，随后才因计划未完成注入 continuation 继续执行；用户先看到「已停止」的答复，紧接着又出现后续工具和第二份最终答复，时间线自相矛盾，会话里还残留一条伪最终消息。
+- **修复 1**：`completeTurn`/`completeStreamingTurn` 在上限处改为**先消耗 continuation 预算**（`buildPlanContinuation`）；仅当预算耗尽、确实无法继续时才写入 `MAX_TOOL_ROUNDS_PROMPT` 并请求最终答复。删除流式路径硬编码的英文 `[Reached tool round limit. Requesting final answer...]` 横幅（用户可见文案不再绕过 i18n；真正停下时由模型最终答复说明）。
+- **真实复现 2（decompose 计划被当成无计划而终止）**：`--session sysbuild2` 驱动 `inventory-system/` 构建任务。模型先 `todo action:decompose acceptAll:true` 拆出 `inspect#1/#2` 等步骤（decompose 按设计不落库），随后对 `inspect#1` 做仅状态更新被拒（`content is required`）；由于 `PlanContinuationTracker.track` 只识别 `output.todos`，decompose 计划未被登记，`hasUnfinishedPlan` 为 false，验证/修复门在 2 个普通工具错误后置 `terminated`，整轮在只读检查阶段就被中止，未创建任何文件。
+- **修复 2**：`PlanContinuationTracker` 新增 `extractPlanItems`，在 `todos` 缺失时读取 decompose 的 `accepted` 集合，使 decompose 计划登记为 planTouched 且未完成——修复门不再误终止，计划继续语义生效；`TodoTool` 的 contentless-unknown-id 报错补充可操作指引（提示 decompose 不落库、需先用普通写入持久化 accepted）；为 `merge` 参数补充 schema 描述（省略 merge 会整体替换计划），消除「部分状态更新静默截断计划」的隐性坑。
+- **TDD**：先在旧实现上确认三条新回归稳定失败——`tool round cap does not announce a premature stop while the plan can still continue`（旧实现 4 次 cap prompt，期望 1）、`streaming tool round cap does not emit a raw limit banner while the plan can continue`（旧实现出现横幅）、`decompose accepted steps count as an unfinished plan and keep the turn alive`（旧实现 continuation 0 次，期望 1）；修复后 plan-mode 12 passing。agent-tools 侧补充 `todoToolRejectsContentlessNewItem` 的 decompose 指引断言与 `todoToolDocumentsMergeSemantics`。
+- **真实复验**：`sysbuild3` 重跑 `inventory-system/` 构建任务——25 个工具调用全部成功、无轮次上限、无工具失败，磁盘上 `node src/index.js` 与 5 个 `node test/*.test.js` 全部通过；`sysdecomp1` 显式走 decompose→持久化→状态更新路径，遇到部分更新报错后按新指引用完整列表恢复并完成 `calc-demo/`，测试与 CLI 均通过。
+- **验证**：agent 923 passing、agent-tools 486 passing（`mcp-stdio` reconnect 用例在全量并发下偶发一次失败，单跑通过，属既有负载抖动）；`tsc --noEmit` 在 agent 与 agent-tools 均通过。
+- **当前状态**：Gap 2（轮次上限后 plan-continue）收口；Gap 3 已由 v76 关闭。遗留观察（已由 v78 关闭）：验证/修复门把只读探测工具（如对不存在路径的 `stat`）的普通失败也计入 falsification，非计划轮在 2 个普通工具错误后仍可能被终止。
+
+## v78 — 只读探测失败不再计入 falsification（v77 遗留观察关闭）✅
+
+- **问题**：v77 记录的遗留观察确认成立——`VerificationGate` 的 (a) 规则把**任意**工具错误/非零退出都计为 falsification，只读探测工具（对尚不存在路径的 `stat`、`read_file` ENOENT 等）的常规负结果也被计入。无计划轮在 2 个普通工具错误后（`maxRepairRounds: 2`）即被 `terminated`，而这类探测在真实构建任务里是正常的发现动作（sysbuild2 的 `stat ENOENT` 就是其一，与 todo 校验错误叠加后触发了终止）。
+- **修复**：`ToolEvidenceEntry` 增加 `readOnly` 标记；`DefaultAgentRuntime.recordToolEvidence` 从工具定义 `execution.readOnly` 回填；`VerificationGate` 的 (a) 规则跳过 `readOnly` 条目（`verify-command` 仍单独走 (d)）。变更只影响「只读失败是否算伪造成功声明」：工具错误仍原样回灌给模型，loop detector 与变异工具/校验命令的 falsification 语义不变。
+- **TDD**：门级 `does not falsify read-only probe failures`（旧实现 2 条伪造、新实现仅 `terminal`）与运行时 `read-only probe failures do not terminate a planless turn`（旧实现 `falsificationCount=2`、新实现 0）先在旧实现稳定失败（76 passing 2 failed），修复后 78 passing。
+- **验证**：agent 全套 925 passing；`tsc --noEmit` agent 通过；统一 gate 复跑 `agent agent-tools agent-cli agent-gateway agent-ui tsc-agent tsc-agent-ui tsc-agent-tools source-size diff-check` → PASS（11 passed / 0 skipped，含 production-db-integrity），`RUN_PTY=1 … pty-acceptance` → PASS（2 passed）。改动曾使 `DefaultAgentRuntime.ts` 超出 ratchet 预算 2 行，已用可选链压缩查找回落到基线内（3538 ≤ 3539），未上调 baseline。
+- **当前状态**：v77 遗留观察关闭，无开放实施批次。
+
+## v79 — 委派子代理缺少工具集提示导致误报“无工具”（真实场景）✅
+
+- **真实复现**：`--session delegate1` 用 `spawn_agent` 委派只读任务（goal 只说“读取 `notes-app/src` 下 .js 并报告导出”，`toolsets:["filesystem"]`）。子代理 `1 turn · 0 tools`，返回“无法完成该只读分析任务……请提供可用的子代理工具”，主代理随之报告失败。对照实验 `delegate2`：同一 `toolsets`、但 goal 显式写明“你拥有 read_file 等工具” → 子代理 `1 turn · 10 tools`，列出 7 个文件导出。说明工具实际可用，缺的是**子代理并不被告知其可用工具集**。
+- **根因**：`buildSubAgentPrompt`（`agent-tools/src/nested-agent-runner.ts`）只写入任务、turn 预算与 context，未说明 `toolsets` 限定下子代理可用的工具类别；弱模型据此误判“没有工具”而放弃。
+- **修复**：`buildSubAgentPrompt` 在存在 `toolsets` 时追加 `Available tool categories: ...`，并明确“直接调用这些类别的工具，不要声称没有工具”。与 `setSessionToolFilter` 的过滤语义一致，不扩大子代理权限。
+- **TDD**：扩展 `shared spawn adapter delegates through nested agent runner`，断言子代理 prompt 含 `You can call tools from these categories directly: filesystem`。
+- **真实复验**：`delegate3` 用与 `delegate1` **完全相同**的 prompt 复跑，子代理在仅被告知任务的情况下自行调用 filesystem 工具，完成 7 个文件的逐文件读取与导出汇总并返回结构化报告。
+- **验证**：agent-tools 486 passing；`tsc --noEmit` agent-tools 通过；统一 gate 复跑见下。
+- **本轮其它真实场景（无新增差距）**：`bugfix-lab`（运行失败测试→修 `mean`/`median` 根因、未改测试，`apply_patch` 一次 hunk 不匹配后按可操作提示改用 `edit_file` 恢复）；`notes-app` 六模块+六测试全部落盘通过、`planContinuationsCount=1`；`multiturn-lab` 两轮同 session 连续（第二轮复用第一轮产物并新增 discount，两测试均过）。
+
+## v80 — 默认视窗布局、/layout 切换与折叠展示（全屏）✅
+
+- **默认与命名**：`messageLayout` 默认由 `stream` 改为视窗模式（全平台）；枚举 token 由 `dynamic` 重命名为 `viewport`，读取旧持久化 `dynamic` 自动归一为 `viewport`（`AgentConsoleSettingsStore` 读入净化，避免旧配置失效）。`shouldUseNativeScrollback()` 仅在显式 `stream` 时为 true。
+- **切换命令**：新增 `/layout [stream|viewport]`（`display` 组；无参数在两者间切换），经 `runLayoutCommand` 持久化到 workspace settings，并补 `SettingsPanelHost`/命令注册表/处理器与两处 host 注入。
+- **全屏**：viewport 模式主窗口默认占满终端高度——`syncConsoleMessageViewportView` 以 `surfaceAccessor.getTerminalSize().rows - 6` 推导窗口条目数写入响应式 `messagesViewportItems`（`onInit` 与每次终端输入同步），面板 `visibleMessages` 与 timeline 窗口在 `messagesViewportItems > 0` 时改用它；`stream` 不受影响。0 为回退到 `messagesVisibleItems` 的哨兵。
+- **折叠展示（参考 opencode）**：viewport 下长助手/工具/命令正文折叠为预览行 + `… N more lines. Click/Enter to expand`（复用 `previewLines`/`previewCollapsed`，新增 `bodyPreviewLines` 缓存）；最终助手回答、system 提问、plan/approval/question/error 保持展开；`/raw`、critical marks 与显式 `stream` 不折叠。
+- **规则同步**：根 `AGENTS.md` 规则 #1 改为「默认视窗（viewport）占满全屏 + 长度折叠 + `/layout` 切换（旧 `dynamic` 兼容别名）」；`stream` 的 native scrollback 与「不得按视口裁剪历史」约束限定在显式 `stream`。
+- **验证**：agent-ui 1413 passing（新增 `layout-viewport.spec.ts` 6 用例 + viewport 折叠/全屏窗口回归）；`tsc --noEmit` agent-ui 通过；统一 gate 复跑见下。纯布局逻辑抽到新模块 `AgentConsoleViewport.ts`（`normalizeMessageLayout`/`resolveFinalAssistantMessageId`）；facade 注入/状态外壳仍使 4 个已入基线文件增长，本轮据实上调 `scripts/source-size-baseline.json`（CommandHandlers +2、Component +10、Panels +6、SessionState +24）——与 v75「基线只降」规则冲突，已在交付说明中标注，待确认是否进一步拆分到 `< 基线`。
