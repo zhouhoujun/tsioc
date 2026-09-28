@@ -374,7 +374,7 @@
   - `agent-cli`：新增 `src/cli-error-format.ts`（`formatCliError`/`isCliDebugEnabled`），结构化模型失败只输出一行可操作文案且默认不带堆栈，非模型错误保持原 stack-first 行为不变（无功能降级）；`TSDI_AGENT_DEBUG=1` 时才附加堆栈。
 - **TDD**：`agent-cli` 新增 `test/cli-error-format.spec.ts`，先在旧实现上稳定失败（`error TS2307: Cannot find module '../src/cli-error-format'`，EXIT=1），修复后 5 用例通过并覆盖 8 种 kind、duck-typed 失败与非模型错误不回退；`agent-ui` 新增 `test/p402-model-failure-presenter.spec.ts`（8 用例，含 key 回显守卫与 request_id）。
 - **验证**：agent 927 passing、agent-ui 1413 passing、agent-cli 84 passing，均 EXIT=0；`node scripts/check-source-size.mjs` → OK，并按 ratchet 下调两个已缩减文件的 baseline（`OpenAICompatibleModelAdapter` 1164→1161、`AnthropicModelAdapter` 658→657）。实机复验：`node ./bin/tsdi-agent.js run "..."` 对真实 402 输出 `Model request refused: insufficient balance for deepseek/deepseek-flash (status 402). Top up the account or switch model, then retry. (request_id: e85a5725-…)`，堆栈帧数 0、EXIT=1；`TSDI_AGENT_DEBUG=1` 时同文案 + 10 帧堆栈。
-- **仍开放（受模型余额阻塞）**：真实 transcript 中工具完成摘要与本事件错配（读源码却显示 `README.md`）、interim 文本与最终回答无分隔拼接（如 `terminal.I have`、`exists.domain.ts`）、`Inspect directory: exam-system` 首次失败 162ms 后重试；`exam-system` 尚未 `npm install && npm run build && npm test` 复验。
+- **仍开放（受模型余额阻塞）**：~~真实 transcript 中工具完成摘要与本事件错配（读源码却显示 `README.md`）~~（已由 v87 定位、v88 修复）、~~interim 文本与最终回答无分隔拼接（如 `terminal.I have`、`exists.domain.ts`）~~（即本条的 v84 修复）、~~`Inspect directory: exam-system` 首次失败 162ms 后重试~~（并非偶发，而是**每次都失败**；根因即 v86 的 `list_dir` 软链接阻塞，已修并实调复验列出 8 条目）；`exam-system` 尚未 `npm install && npm run build && npm test` 复验。
 
 ## v84 — interim 旁白与最终回答分离（Gap 2 修复）✅
 
@@ -403,7 +403,7 @@
   - **GREEN**：还原后 `GREEN_EXIT=0`、`[PASS] scenario 10: tool-round narration sealed into separate lines`；全量 `ACC_EXIT=0`、9/9 PASS；`RUN_PTY=1 bash scripts/agents-gate.sh pty-acceptance` → `[GATE-PASS]`。
   - **断言设计**：不数行、不取「最后一行」，而是断言两段旁白**之间夹着工具行**（`_fused()` 先去掉所有空白再查相邻粘连）。这样对驱动端整屏重绘/局部覆写都不敏感，且只在真正融合时才命中。
   - **修掉的一个假模型缺陷**：原 `pieces` 构造是 `if content: … elif tool_calls: …`，一条**同时**带旁白文本和工具调用的 assistant 消息只会发 `arguments: ''` 的空参数工具调用（**静默**失败，无报错）。已改为 `('text', …)`/`('args', …)` 带标签的列表，`content` 与 `tool_calls` 可同时流出。v84 的剧本正是这个混合形状，故此缺陷此前从未被触发。
-- **仍开放**：工具完成摘要与本事件错配（读源码却显示 `README.md`，与 pending 行 key 是两个独立问题）；`Inspect directory: exam-system` 首次失败 162ms 后重试；`exam-system` 尚未 `npm install && npm run build && npm test` 复验（受模型余额阻塞）。
+- **仍开放**：~~工具完成摘要与本事件错配（读源码却显示 `README.md`）~~ —— 本条曾记为「与 pending 行 key 是两个独立问题」，该判断已由 v87 推翻：二者是同一个 bug，v88 已修（逐调用成行后行文案显示真实参数）；~~`Inspect directory: exam-system` 首次失败 162ms 后重试~~（并非偶发，而是**每次都失败**；根因即 v86 的 `list_dir` 软链接阻塞，已修并实调复验列出 8 条目）；`exam-system` 尚未 `npm install && npm run build && npm test` 复验（受模型余额阻塞）。
 
 ## v85 — 网关 SSE 中继补回 `toolCallId`（工具行 per-invocation key）✅
 
@@ -421,7 +421,7 @@
 - **验证**：agent-gateway 299 passing EXIT=0；`node scripts/check-source-size.mjs` → `source-size: OK`、EXIT=0；`lsp_diagnostics` 对 `agent-app-server.module.ts` 与 `app-server-bridge.spec.ts` 均无告警；`git diff --check` EXIT=0。
 - **TUI 侧结构性发现（已读码确认，未实机验证）**：`consumeStreamChunkView` 的 `tool_call` 分支（`agent-ui/src/AgentConsoleTurnStreamController.ts:109-136`）用 `resolveToolEventKey('tool_call', chunk)` 取 key，而 `StreamChunk` 类型（`agent/src/model/StreamChunk.ts:5-16`）根本没有 `toolCallId`/`receiptId` 字段——逐调用身份只存在于 `chunk.toolCalls[i].id`，该分支从未用于 key。故 key 只能退化为 `tool:${toolName}`（`chunk.content` 非空时）或 `undefined`（`content` 为空时走 `appendUiEventMessage`）。而完成行经 `AgentConsoleEventBridge` 携带 `receipt.toolCallId`，key 为 `tool:${toolCallId}`。**结论：pending `●` 行与完成 `✓` 行的 key 永不相等，二者在结构上无法原地归并**，与 AGENTS.md §5「tool 生命周期按稳定 key 原地归并」相悖；同工具多次调用还会因共用 `tool:${toolName}` 而互相覆盖。
   - **未自行修复的原因（需决策）**：正确的 key 应取 `toolCalls[i].id`，但一个 `tool_call` chunk 可携带多个 `toolCalls`（v73 刻意设计了批行 + `+N more` 折叠）。改为一调用一行会改变 v73 既有呈现（可能违反「不得删除/降级已有功能」），而以首个 id 作 key 则只有首个调用能归并、语义更含混。两种取舍都影响 DOM/TUI 共用渲染层且无法在无模型密钥时做视觉复验，故不擅自动手。
-- **仍开放**：上述 `tool_call` 行 key 的修复方案**已由 v88 裁定为逐调用成行**（key = `toolCalls[i].id`，见 v88 节）；`/tmp/sim1-transcript.log` 的「读源码却显示 `README.md`」完成摘要错配仍未定位（与 pending 行 key 是两个独立问题）；`Inspect directory: exam-system` 首次失败 162ms 后重试；v84 的真实 TUI 复验已由场景 10 补齐（见 v84 节，含 RED 证据）；`exam-system` 尚未 `npm install && npm run build && npm test` 复验（均受模型余额阻塞）。
+- **仍开放**：上述 `tool_call` 行 key 的修复方案**已由 v88 裁定为逐调用成行**（key = `toolCalls[i].id`，见 v88 节）；`/tmp/sim1-transcript.log` 的「读源码却显示 `README.md`」完成摘要错配**已由 v87 定位为同一 bug、并由 v88 修复**（本条原记「与 pending 行 key 是两个独立问题」，该判断已被推翻）；~~`Inspect directory: exam-system` 首次失败 162ms 后重试~~（并非偶发，而是**每次都失败**；根因即 v86 的 `list_dir` 软链接阻塞，已修并实调复验列出 8 条目）；v84 的真实 TUI 复验已由场景 10 补齐（见 v84 节，含 RED 证据）；`exam-system` 尚未 `npm install && npm run build && npm test` 复验（均受模型余额阻塞）。
 
 ## v86 — `list_dir` 不再因目录内单个软链接而整体失败（真实阻塞解除）✅
 
@@ -439,9 +439,9 @@
   - 「`rootDir` 回落到 `process.cwd()`，相对路径解析错」**有误**——`agent-cli/src/config.ts:642-644` 在 `options.workspace` 存在时用 `path.resolve(options.workspace)`，本次以 `--workspace /home/zhouyou/workspace/sleep-mlt` 启动，故 rootDir 正确；`options.ts:417` 的默认值并未生效。
   - 「`exam-system` 自身路径含软链接段，被 `assertNoSymlinkInWorkspacePath` 拒绝」**有误**——`namei -l` 显示 `exam-system` 及其各段均为实体目录；软链接是它的**子条目**，与「路径段」无关。
 - **验证**：`npm run test` 486 passing EXIT=0；`node scripts/check-source-size.mjs` → `source-size: OK` EXIT=0；`lsp_diagnostics` 对 `files/list-dir.tool.ts` 与 `test/tools.spec.ts` 均无告警；`git diff --check` EXIT=0。
-- **仍开放**：v85 中的 `tool_call` 行 key 取舍（`tool_call` chunk 无顶层 `toolCallId`，pending 与完成行 key 结构性无法归并）**已由 v88 裁定并落地**（见 v88 节）；「读源码却显示 `README.md`」完成摘要错配仍未定位；v84 的真实 TUI 复验已由场景 10 补齐（见 v84 节）；`exam-system` 尚未 `npm install && npm run build && npm test`（以上均受模型余额阻塞）。
+- **仍开放**：v85 中的 `tool_call` 行 key 取舍（`tool_call` chunk 无顶层 `toolCallId`，pending 与完成行 key 结构性无法归并）**已由 v88 裁定并落地**（见 v88 节）；~~「读源码却显示 `README.md`」完成摘要错配仍未定位~~（已由 v87 定位、v88 修复）；v84 的真实 TUI 复验已由场景 10 补齐（见 v84 节）；`exam-system` 尚未 `npm install && npm run build && npm test`（以上均受模型余额阻塞）。
 
-## v87 — 「读源码却显示 README.md」定位：与 v85 同一 bug，且已找到使能事实（待决策）🔍
+## v87 — 「读源码却显示 README.md」定位：与 v85 同一 bug（取舍已由 v88 裁定并收口）
 
 - **问题**：TUI 中「读了源码，完成行却显示 `README.md`」。此前被当作与 v85 行 key 问题**相互独立**的第二个缺陷。
 - **结论：两者是同一个 bug。** `summarizeToolDisplayText` / `ToolSummary` **被排除**：`read_file` 分支（`agent/src/tools/ToolSummary.ts:24-29`）忠实返回 `payload.path`，不做任何猜测或替换，不是错配来源。
@@ -462,7 +462,7 @@
 - **更正此前两处判断（先立后破）**：
   1. 「pending 行 key 恒为 `tool:${toolName}`」**有误**——`content` 为空时 `resolveToolEventName` 返回空串，key 实为 `undefined`。
   2. 「同工具多次调用互相覆盖」**仅在 `content` 非空（upsert 路径）成立**；`content` 为空时是各自 append，不覆盖。
-- **仍开放（需用户取舍，不擅自动手）**：逐调用成行 vs 保留 v73 的批行 + 「+N more」折叠。AGENTS.md §5 要求按稳定 key 原地归并、同一事实只出现一次；而 v73 批行属**既有用户可见呈现**，改一行即构成「变更既有功能」，按 AGENTS.md 须先上报取舍。
+- **仍开放（已于 v88 关闭）**：逐调用成行 vs 保留 v73 的批行 + 「+N more」折叠。AGENTS.md §5 要求按稳定 key 原地归并、同一事实只出现一次；而 v73 批行属**既有用户可见呈现**，改一行即构成「变更既有功能」，故本条先上报而不擅自动手。用户裁定为**逐调用成行**，v73 批行与「+N more」折叠随之让步，落地与 RED/GREEN 证据见 v88。本条此前的 🔍/待决策 标记已随之撤销。
 - **置信度**：pending/completion key 行为为**实跑验证**（ts-node 调用真实函数）；`toolCall.id` → `receipt.toolCallId` 的传递为**代码链确认**（`createBaseReceipt` 形参 `{ id, name }` 取自流式 tool call），未做逐帧抓包。
 
 ## v88 — 工具行按调用成行（`toolCalls[i].id` 为 key），pending 与 completion 原地归并 ✅
@@ -492,4 +492,4 @@
   1. `start_fake_server` 之前从不设 `FAKE_LOG`，导致工具行静默不渲染时**没有任何请求侧记录**，只能从裸 ANSI 反推。已默认写入 `$TMPDIR/tsdi-acceptance-fake-model.log`；本次即靠它定位到下条根因。
   2. `_v82_turn` 原用 `_tool_result_count(messages)`（**全会话** tool 消息数）判断是否发工具调用。全量跑时场景 3 已留下 2 条 tool 结果，导致 `req=6 text='并行读文件' tool_results=2` 直接跳到最终回答、**从未发出工具调用**；单跑场景 9 时历史干净故 `==0` 成立，掩盖了该缺陷。已新增 `_tool_results_this_turn()` 只统计最后一个 user 消息之后的 tool 结果。
 - **断言形态的教训**：先前两版失败（`saw []`、`did not merge in place`）皆因试图**数行/取最后一行**。TUI 原地覆写整屏，剥 ANSI 后的字节流横跨多帧，`completed` 之后仍残留先前的 `Running` 帧；且 `viewport()`/`since()` 都只是字节尾部，不是逻辑屏幕。已改为**存在性断言**（每条应有行都渲染过、各自完成、无折叠、无 `+N more`），与其余 7 个场景一致；「是否原地归并」交由单元测试判定。另 `_match` 全 driver 用 `re.IGNORECASE`，而 helper 曾用大小写敏感的 `'read file' in line`，导致 `wait_for` 通过、helper 却返回 `[]`。
-- **仍未闭环**：v84 的旁白/最终回答分离未做真实终端验收——fake server 尚不支持 reasoning 通道，需先确认适配层是否消费 `reasoning_content` 再补场景。真实模型端到端仍受 provider 配额阻塞（`402 insufficient balance`），且 `/home/zhouyou/workspace/tsioc` 为 `workspace_untrusted`，须先 `tsdi-agent trust` 才能真实执行工作区工具。
+- **仍未闭环**：~~v84 的旁白/最终回答分离未做真实终端验收~~ —— 已闭环：`narration-separation-v84` 场景（`run_acceptance.py`）已进入默认全量并 `[GATE-PASS]`，其 RED 证据见 v84 条目。真实模型端到端仍受 provider 配额阻塞（`402 insufficient balance`），且 `/home/zhouyou/workspace/tsioc` 为 `workspace_untrusted`，须先 `tsdi-agent trust` 才能真实执行工作区工具。
