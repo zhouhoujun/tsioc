@@ -3,6 +3,7 @@ import type { AgentConsoleSelectOption } from './AgentConsoleSessionState';
 import { AGENT_CONSOLE_OVERLAY_HINTS, AGENT_CONSOLE_OVERLAY_TITLES } from './AgentConsoleOverlayPresenter';
 import { formatAgentUiSessionClosingMessage } from './agent-ui.i18n';
 import { fuzzyMatchAgentConsoleCommand } from './AgentConsoleKeymap';
+import { resolveTranscriptLayout } from './AgentConsoleTranscriptLayout';
 import {
     formatAgentConsoleCommandArgumentForm,
     formatAgentConsoleCommandArgumentTemplate,
@@ -67,6 +68,7 @@ export interface AgentConsoleTerminalInputHost {
     sessionService?: { cancelTurn(sessionId: string): Promise<boolean> } | null;
     isTurnInProgress(): boolean;
     notify(message: string, duration?: number): void;
+    scrollMessages?(delta: number): void;
     getTerminalRenderedLines(): string[];
     handleGlobalKeyInput(raw: string): Promise<boolean>;
     detachSshShell(reason: 'detached' | 'closed'): Promise<void>;
@@ -127,6 +129,10 @@ export async function handleTerminalInputView(
     syncConsoleMessageDetailViewportView(host);
     syncConsoleMessageViewportView(host);
     if (decoded.mouse) {
+        if (resolveTranscriptLayout(host.state.consoleOptions.messageLayout).wheelScrollsHistory && (decoded.mouse.button & 64) !== 0) {
+            host.scrollMessages?.((decoded.mouse.button & 1) === 0 ? -1 : 1);
+            return;
+        }
         host.surfaceAccessor?.dispatchMouse?.(decoded.mouse);
         return;
     }

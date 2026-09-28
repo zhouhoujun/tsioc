@@ -3,6 +3,7 @@ import { formatCompactNumber } from '@tsdi/core';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import { AgentMessage, basenameAgentPath, ScheduledAgentTask } from '@tsdi/agent';
+import { resolveTranscriptLayout } from './AgentConsoleTranscriptLayout';
 import {
     AgentConsoleActivity,
     AgentConsoleHealthItem,
@@ -2728,9 +2729,9 @@ export class AgentConsoleMessagesPanelComponent {
         const visibleCount = this.state.messagesViewportItems > 0
             ? this.state.messagesViewportItems
             : this.state.consoleOptions.messagesVisibleItems;
-        // MESSAGE LAYOUT CONTRACT: viewport is the default and windows the
-        // transcript to the visible items; stream remains available via /layout.
-        if (this.state.consoleOptions.messageLayout === 'stream') {
+        // MESSAGE LAYOUT CONTRACT: the layout strategy decides whether the
+        // transcript is native-scrollback (unbounded) or windowed.
+        if (resolveTranscriptLayout(this.state.consoleOptions.messageLayout).usesNativeScrollback) {
             return messages;
         }
         if (this.state.messageDetailOpen) {
@@ -2849,12 +2850,17 @@ export class AgentConsoleMessagesPanelComponent {
     }
 
     get messagesHintLabel(): string {
-        if (!this.messages.length) {
+        if (!this.messages.length || !this.state.messagesFocused) {
             return '';
         }
-        return this.state.messagesFocused
-            ? this.state.consoleOptions.messagesHint
-            : '';
+        const hint = this.state.consoleOptions.messagesHint;
+        const newCount = this.state.messagesNewCount;
+        if (newCount <= 0) {
+            return hint;
+        }
+        const indicator = this.translator?.translate('agent.message.newBelow', { count: newCount })
+            || `↓ ${newCount} new`;
+        return hint ? `${hint} · ${indicator}` : indicator;
     }
 
     get messageLabels(): string[] {

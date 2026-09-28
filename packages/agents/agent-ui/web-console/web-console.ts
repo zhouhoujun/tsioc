@@ -162,10 +162,21 @@ export async function mountAgentWebConsole(
     const disposeBridge = await bridge.subscribe(state.sessionId);
     await registerAgentWebConsolePwa(config).catch(() => null);
 
+    // Platform adaptation: browser wheel drives viewport history; stream stays on native page scroll.
+    const onWheel = (event: WheelEvent): void => {
+        if (state.messageLayout !== 'viewport' || event.deltaY === 0) {
+            return;
+        }
+        state.scrollMessages(event.deltaY < 0 ? -1 : 1);
+        event.preventDefault();
+    };
+    mount.addEventListener('wheel', onWheel, { passive: false });
+
     return {
         ctx,
         state,
         dispose: async () => {
+            mount.removeEventListener('wheel', onWheel);
             disposeBridge();
             await ctx.close();
         }

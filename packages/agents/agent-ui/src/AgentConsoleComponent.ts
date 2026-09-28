@@ -162,6 +162,7 @@ import { AgentConsoleTurnStreamHost, AgentConsoleTurnStreamState, clearStreaming
 import { AgentConsoleGlobalKeyInputHost, executeGlobalKeyActionView, handleBrowserGlobalKeyInputView, handleGlobalKeyInputView, handleGlobalKeySequenceView } from './AgentConsoleGlobalKeyInputController';
 import { AgentConsoleTurnInputHost, submitMultilineDraftView, submitView } from './AgentConsoleTurnInputController';
 import { AgentConsoleTerminalInputHost, closingSessionMessageView, handleTerminalInputView, openCommandPaletteView, requestTerminalExitView, syncConsoleMessageViewportView } from './AgentConsoleTerminalInputController';
+import { resolveTranscriptLayout } from './AgentConsoleTranscriptLayout';
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
 import { openSummaryQualityRecords, openTurnDiagnosticsListView, openTurnDiagnosticsTrendView, openSummaryQualityTrendView, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshTurnDiagnosticsDigest, refreshUsageDigest, runHarnessStopCommand } from './AgentConsoleDiagnosticsView';
 import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
@@ -2416,10 +2417,10 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return true;
     }
 
-    // LAYOUT CONTRACT: viewport (default) windows the transcript; stream uses
-    // native terminal scrollback for the whole session and is opt-in via /layout.
+    // LAYOUT CONTRACT: the transcript layout strategy decides native scrollback
+    // vs windowed history; stream is opt-in via /layout.
     shouldUseNativeScrollback(): boolean {
-        return this.state.consoleOptions.messageLayout === 'stream';
+        return resolveTranscriptLayout(this.state.consoleOptions.messageLayout).usesNativeScrollback;
     }
 
     getTerminalRenderedLines(): string[] {
@@ -2962,6 +2963,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             sessionService: this.sessionService,
             isTurnInProgress: () => this.isTurnInProgress(),
             notify: (message: string, duration?: number) => this.notify(message, duration),
+            scrollMessages: (delta: number) => this.state.scrollMessages(delta),
             getTerminalRenderedLines: () => this.getTerminalRenderedLines(),
             handleGlobalKeyInput: (raw: string) => this.handleGlobalKeyInput(raw),
             detachSshShell: (reason: 'detached' | 'closed') => this.detachSshShell(reason),

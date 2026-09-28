@@ -47,6 +47,7 @@ import {
 } from './AgentConsoleWorkspaceMentions';
 import { AgentConsoleMessageStatusLabels } from './AgentConsoleMessageRenderers';
 import { normalizeMessageLayout, resolveFinalAssistantMessageId } from './AgentConsoleViewport';
+import { resolveTranscriptLayout, trackMessagesNewCount } from './AgentConsoleTranscriptLayout';
 import {
     AgentConsoleTimelineLabels,
     DEFAULT_TIMELINE_LABELS,
@@ -593,6 +594,8 @@ export class AgentConsoleSessionState {
     messages: AgentMessage[] = [];
     sections: AgentSessionSection[] = [];
     messagesFocused = false;
+    /** Messages that arrived while the viewport transcript is scrolled up (0 = following latest). */
+    messagesNewCount = 0;
     selectedMessageId = '';
     messageDetailOpen = false;
     messageDetailTakesFocus = true;
@@ -1425,6 +1428,7 @@ export class AgentConsoleSessionState {
     }
 
     setMessages(messages: AgentMessage[], preserveCommandExecutionMessages = false): void {
+        const previousCount = this.messages.length;
         this.messages = messages.filter(message => {
             if (!message || typeof message.content !== 'string') return false;
             const content = message.content;
@@ -1457,6 +1461,11 @@ export class AgentConsoleSessionState {
                 this.messageDetailScroll = 0;
                 this.messageDetailColumnScroll = 0;
             }
+        }
+        if (this.messagesFocused) {
+            this.messagesNewCount = trackMessagesNewCount(previousCount, this.messages.length, true, this.messagesNewCount);
+        } else {
+            this.messagesNewCount = 0;
         }
     }
 
@@ -1958,6 +1967,7 @@ export class AgentConsoleSessionState {
             this.selectedMessageId = displayMessages[displayMessages.length - 1].id;
         }
         if (!focused) {
+            this.messagesNewCount = 0;
             this.timelineEventInspectorOpen = false;
             this.selectedTimelineEventId = '';
             this.timelineEventDetailScroll = 0;
@@ -2005,6 +2015,11 @@ export class AgentConsoleSessionState {
         this.selectedMessageId = displayMessages[nextIndex].id;
         this.messageDetailScroll = 0;
         this.messageDetailColumnScroll = 0;
+    }
+
+    /** Scroll the transcript history by a delta (layout strategy decides; stream is a no-op). */
+    scrollMessages(delta: number): void {
+        resolveTranscriptLayout(this.consoleOptions.messageLayout).scroll(delta, this);
     }
 
     selectFirstMessage(): void {

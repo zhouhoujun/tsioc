@@ -345,3 +345,11 @@
 - **折叠展示（参考 opencode）**：viewport 下长助手/工具/命令正文折叠为预览行 + `… N more lines. Click/Enter to expand`（复用 `previewLines`/`previewCollapsed`，新增 `bodyPreviewLines` 缓存）；最终助手回答、system 提问、plan/approval/question/error 保持展开；`/raw`、critical marks 与显式 `stream` 不折叠。
 - **规则同步**：根 `AGENTS.md` 规则 #1 改为「默认视窗（viewport）占满全屏 + 长度折叠 + `/layout` 切换（旧 `dynamic` 兼容别名）」；`stream` 的 native scrollback 与「不得按视口裁剪历史」约束限定在显式 `stream`。
 - **验证**：agent-ui 1413 passing（新增 `layout-viewport.spec.ts` 6 用例 + viewport 折叠/全屏窗口回归）；`tsc --noEmit` agent-ui 通过；统一 gate 复跑见下。纯布局逻辑抽到新模块 `AgentConsoleViewport.ts`（`normalizeMessageLayout`/`resolveFinalAssistantMessageId`）；facade 注入/状态外壳仍使 4 个已入基线文件增长，本轮据实上调 `scripts/source-size-baseline.json`（CommandHandlers +2、Component +10、Panels +6、SessionState +24）——与 v75「基线只降」规则冲突，已在交付说明中标注，待确认是否进一步拆分到 `< 基线`。
+
+## v81 — 视窗内自定义历史滚动与布局策略抽象 ✅
+
+- **需求**：视窗模式下历史消息不能被新消息顶掉，需要鼠标滚轮/键盘在当前全屏视窗内滚动查看历史；同时兼容 `stream` 布局（native scrollback）。
+- **布局策略抽象**：新增 `AgentConsoleTranscriptLayout.ts`，把布局差异收敛为策略（`stream`/`viewport`）：`usesNativeScrollback`、`wheelScrollsHistory`、`scroll(delta, state)`。`visibleMessages`、`shouldUseNativeScrollback()`、终端滚轮路由与 `scrollMessages` 统一委托 `resolveTranscriptLayout(...)`，共享层不再散落 `messageLayout === 'viewport'` 判断；平台适配层各自适配滚轮（TUI 走 `TerminalInputController`，DOM 走 `web-console.ts` 的 `wheel` 监听）。
+- **滚动语义**：`state.scrollMessages(delta)` 负值向历史、正值向尾部；滚到尾部自动 `setMessagesFocused(false)` 恢复跟随。向上滚动暂停跟随（复用既有 message focus + 选择窗口，历史不被顶掉），并用 `messagesNewCount` 统计滚动期间新增消息，`messagesHintLabel` 展示「N 条新消息」。
+- **兼容**：`stream` 下 `scroll` 为 no-op、`wheelScrollsHistory=false`，仍由 native scrollback 处理历史；滚轮事件照旧走 `dispatchMouse`。
+- **验证**：agent-ui 1418 passing（新增 5 用例：策略选择、viewport 滚动/恢复跟随、stream no-op、新消息计数、终端滚轮路由）；`tsc --noEmit` agent-ui 通过；gate `agent-ui tsc-agent-ui dom-gate tui-gate source-size diff-check` → PASS（8/8）。facade 增量再次据实上调 baseline（Component +2、Panels +6、SessionState +15），纯逻辑已入新模块。

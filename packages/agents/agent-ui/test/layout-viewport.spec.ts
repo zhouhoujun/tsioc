@@ -4,9 +4,11 @@ import * as path from 'path';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { runLayoutCommand } from '../src/AgentConsoleSettingsCommands';
-import { syncConsoleMessageViewportView } from '../src/AgentConsoleTerminalInputController';
+import { syncConsoleMessageViewportView, handleTerminalInputView } from '../src/AgentConsoleTerminalInputController';
+import { resolveTranscriptLayout } from '../src/AgentConsoleTranscriptLayout';
 import { AgentConsoleSettingsStore } from '../src/AgentConsoleSettingsStore';
 import { defaultAgentConsoleOptions } from '../src/AgentConsoleSessionState';
+import { AgentConsoleSessionState } from '../src/AgentConsoleSessionState';
 import { TestFileAdapter } from './_helpers';
 
 function layoutState(initial: 'stream' | 'viewport' = 'viewport') {
@@ -105,4 +107,93 @@ export class AgentConsoleViewportLayoutTest {
             fs.rmSync(workspace, { recursive: true, force: true });
         }
     }
+
+    @Test('transcript layout strategy selects native scrollback and wheel handling')
+    layoutStrategy() {
+        expect(resolveTranscriptLayout('stream').usesNativeScrollback).toEqual(true);
+        expect(resolveTranscriptLayout('stream').wheelScrollsHistory).toEqual(false);
+        expect(resolveTranscriptLayout('viewport').usesNativeScrollback).toEqual(false);
+        expect(resolveTranscriptLayout('viewport').wheelScrollsHistory).toEqual(true);
+        expect(resolveTranscriptLayout('dynamic').usesNativeScrollback).toEqual(false);
+    }
+
+    @Test('viewport scroll walks history and resumes follow at the tail')
+    viewportScrollsHistoryAndResumesFollow() {
+        const state = new AgentConsoleSessionState();
+        state.setConsoleOptions({ messageLayout: 'viewport', messagesVisibleItems: 5 });
+        state.setMessages(fiveMessages());
+
+        expect(state.messagesFocused).toEqual(false);
+        state.scrollMessages(-1);
+        expect(state.messagesFocused).toEqual(true);
+        expect(state.selectedMessageId).toEqual('m4');
+        state.scrollMessages(-1);
+        expect(state.selectedMessageId).toEqual('m3');
+        state.scrollMessages(1);
+        state.scrollMessages(1);
+        expect(state.messagesFocused).toEqual(false);
+    }
+
+    @Test('stream layout ignores transcript scroll')
+    streamScrollIsNoop() {
+        const state = new AgentConsoleSessionState();
+        state.setConsoleOptions({ messageLayout: 'stream' });
+        state.setMessages(fiveMessages());
+        state.scrollMessages(-1);
+        expect(state.messagesFocused).toEqual(false);
+        expect(state.selectedMessageId).not.toEqual('m4');
+    }
+
+    @Test('new messages while scrolled increment the new count and reset on follow')
+    newCountTracksWhileScrolled() {
+        const state = new AgentConsoleSessionState();
+        state.setConsoleOptions({ messageLayout: 'viewport' });
+        state.setMessages(fiveMessages());
+        state.scrollMessages(-1);
+        expect(state.messagesNewCount).toEqual(0);
+        state.appendMessage({ id: 'm6', role: 'assistant', content: 'six', createdAt: 6 } as any);
+        state.appendMessage({ id: 'm7', role: 'assistant', content: 'seven', createdAt: 7 } as any);
+        expect(state.messagesNewCount).toEqual(2);
+        state.setMessagesFocused(false);
+        expect(state.messagesNewCount).toEqual(0);
+    }
+
+    @Test('viewport routes terminal wheel to transcript history')
+    async viewportRoutesWheelToHistory() {
+        const scrolled: number[] = [];
+        const dispatched: unknown[] = [];
+        const state: any = {
+            consoleOptions: { messageLayout: 'viewport', messageToggleInteraction: 'enter' },
+            messageDetailVisibleLines: 6,
+            messagesViewportItems: 0,
+            setMessagesViewportItems() {},
+            setMessageDetailVisibleLines() {}
+        };
+        const host: any = {
+            state,
+            closing: false,
+            destroyed: false,
+            commandPaletteQuery: '',
+            sshShell: null,
+            surfaceAccessor: {
+                getTerminalSize: () => ({ rows: 30 }),
+                dispatchMouse: (mouse: unknown) => { dispatched.push(mouse); }
+            },
+            scrollMessages: (delta: number) => { scrolled.push(delta); },
+            translator: null
+        };
+        await handleTerminalInputView(host, { text: '', mouse: { button: 64 } } as any, '' as any);
+        await handleTerminalInputView(host, { text: '', mouse: { button: 65 } } as any, '' as any);
+        expect(scrolled).toEqual([-1, 1]);
+        expect(dispatched.length).toEqual(0);
+    }
+}
+
+function fiveMessages() {
+    return Array.from({ length: 5 }, (_, index) => ({
+        id: `m${index + 1}`,
+        role: index % 2 === 0 ? 'user' : 'assistant',
+        content: `message ${index + 1}`,
+        createdAt: index + 1
+    })) as any;
 }
