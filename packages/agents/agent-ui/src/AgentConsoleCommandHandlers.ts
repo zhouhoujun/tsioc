@@ -25,6 +25,7 @@ import { AGENT_CONSOLE_OVERLAY_HINTS, AGENT_CONSOLE_OVERLAY_TITLES } from './Age
 export interface CommandHandlerContext {
     /** Request-scoped cancellation signal. Handlers may forward it to async ports. */
     readonly abortSignal?: AbortSignal;
+    readonly transcriptNavigationController: { setFocused(focused: boolean): void };
     // ── state access ──
     readonly state: {
         readonly sessionId: string;
@@ -53,7 +54,6 @@ export interface CommandHandlerContext {
         setNotice(message: string): void;
         setTitle(title: string): void;
         setSessionsFocused(focused: boolean): void;
-        setMessagesFocused(focused: boolean): void;
         setToolsFocused(focused: boolean): void;
         setApprovalsFocused(focused: boolean): void;
         setJobsFocused(focused: boolean): void;
@@ -327,7 +327,7 @@ async function handleTools(ctx: CommandHandlerContext, args: string, _resolved: 
         return true;
     }
     ctx.state.setSessionsFocused(false);
-    ctx.state.setMessagesFocused(false);
+    ctx.transcriptNavigationController.setFocused(false);
     ctx.state.closeMessageDetail();
     ctx.state.closeReview();
     ctx.state.closeGitSnapshotDetail();
@@ -484,7 +484,7 @@ async function handleSession(ctx: CommandHandlerContext, args: string, _resolved
     }
     ctx.state.closeReview();
     ctx.state.closeGitSnapshotDetail();
-    ctx.state.setMessagesFocused(false);
+    ctx.transcriptNavigationController.setFocused(false);
     ctx.state.setSessionsFocused(true);
     return true;
 }
@@ -506,7 +506,7 @@ async function handleSessions(ctx: CommandHandlerContext, _args: string, _resolv
     }
     ctx.state.closeReview();
     ctx.state.closeGitSnapshotDetail();
-    ctx.state.setMessagesFocused(false);
+    ctx.transcriptNavigationController.setFocused(false);
     ctx.state.setSessionsFocused(true);
     return true;
 }
@@ -660,7 +660,7 @@ async function handleToolruns(ctx: CommandHandlerContext, _args: string, _resolv
         return true;
     }
     ctx.state.setSessionsFocused(false);
-    ctx.state.setMessagesFocused(false);
+    ctx.transcriptNavigationController.setFocused(false);
     ctx.state.setProjectsFocused(false);
     ctx.state.setToolsFocused(false);
     ctx.state.setApprovalsFocused(false);
@@ -679,7 +679,7 @@ async function handleMessages(ctx: CommandHandlerContext, _args: string, _resolv
     ctx.state.closeReview();
     ctx.state.closeGitSnapshotDetail();
     ctx.state.setSessionsFocused(false);
-    ctx.state.setMessagesFocused(true);
+    ctx.transcriptNavigationController.setFocused(true);
     return true;
 }
 
@@ -1017,7 +1017,7 @@ async function handleThreadplan(ctx: CommandHandlerContext, _args: string, _reso
     ctx.state.setToolsFocused(false);
     ctx.state.setApprovalsFocused(false);
     ctx.state.setJobsFocused(false);
-    ctx.state.setMessagesFocused(false);
+    ctx.transcriptNavigationController.setFocused(false);
     ctx.state.setTasksFocused(true);
     return true;
 }
@@ -1033,7 +1033,7 @@ async function handleApprovals(ctx: CommandHandlerContext, _args: string, _resol
     ctx.state.setPendingApprovals(pending);
     ctx.state.setSessionsFocused(false);
     ctx.state.setToolsFocused(false);
-    ctx.state.setMessagesFocused(false);
+    ctx.transcriptNavigationController.setFocused(false);
     ctx.state.closeMessageDetail();
     ctx.state.closeReview();
     ctx.state.closeGitSnapshotDetail();

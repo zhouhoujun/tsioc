@@ -1,3 +1,4 @@
+import { navigationFor } from './test-transcript-navigation';
 import expect = require('expect');
 import { Buffer } from 'buffer';
 import * as fs from 'fs';
@@ -130,11 +131,11 @@ export class VmSubmitTest {
             { id: 'u1', role: 'user', content: 'hi', createdAt: 1 },
             { id: 'e1', role: 'assistant', content: 'boom', createdAt: 2, metadata: { uiKind: 'event', uiEventType: 'tool_failed', status: 'error' } }
         ] as any);
-        state.setMessagesFocused(true);
+        navigationFor(state).setFocused(true);
         state.setSelectedMessageId('e1');
 
         expect(state.isFailedEventMessage(state.selectedMessage)).toEqual(true);
-        expect(await state.handleFocusKey('r')).toEqual(true);
+        expect(await state.handleFocusKey('r', navigationFor(state))).toEqual(true);
         expect(retried).toEqual(1);
     }
 
@@ -632,7 +633,8 @@ export class VmSubmitTest {
         const outcome = await (state as any).processDecodedInput(
             { text: '', controlKey: 'tab', partial: false },
             '\t' as any,
-            { isClosed: false, onExit: () => undefined, hasActiveTextPrompt: false }
+            { isClosed: false, onExit: () => undefined, hasActiveTextPrompt: false,
+                transcriptNavigationController: navigationFor(state) }
         );
 
         expect(outcome).toEqual({ handled: true, action: 'queueDraft' });

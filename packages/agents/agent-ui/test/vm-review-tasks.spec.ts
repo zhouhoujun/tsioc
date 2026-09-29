@@ -1,3 +1,4 @@
+import { navigationFor } from './test-transcript-navigation';
 import expect = require('expect');
 import { Buffer } from 'buffer';
 import * as fs from 'fs';
@@ -628,23 +629,23 @@ export class VmReviewTasksTest {
 
         expect(component.sessionState.filteredReviewTaskChoices.map(item => item.id)).toEqual(['task-1', 'task-2', 'task-3']);
 
-        await component.sessionState.handleFocusKey('l');
+        await component.sessionState.handleFocusKey('l', navigationFor(component.sessionState));
         expect(component.sessionState.selectedTaskFilter).toEqual('lineage');
         expect(component.sessionState.selectedTaskLineageRootId).toEqual('task-1');
         expect(component.sessionState.filteredReviewTaskChoices.map(item => item.id)).toEqual(['task-1', 'task-2']);
         expect(component.sessionState.selectedTask?.id).toEqual('task-1');
 
-        await component.sessionState.handleFocusKey('f');
+        await component.sessionState.handleFocusKey('f', navigationFor(component.sessionState));
         expect(component.sessionState.selectedTaskFilter).toEqual('failed');
         expect(component.sessionState.filteredReviewTaskChoices.map(item => item.id)).toEqual(['task-2']);
         expect(component.sessionState.selectedTask?.id).toEqual('task-2');
 
-        await component.sessionState.handleFocusKey('v');
+        await component.sessionState.handleFocusKey('v', navigationFor(component.sessionState));
         expect(component.sessionState.selectedTaskFilter).toEqual('rollback');
         expect(component.sessionState.filteredReviewTaskChoices.map(item => item.id)).toEqual(['task-1']);
         expect(component.sessionState.selectedTask?.id).toEqual('task-1');
 
-        await component.sessionState.handleFocusKey('u');
+        await component.sessionState.handleFocusKey('u', navigationFor(component.sessionState));
         expect(component.sessionState.selectedTaskFilter).toEqual('all');
         expect(component.sessionState.filteredReviewTaskChoices.map(item => item.id)).toEqual(['task-1', 'task-2', 'task-3']);
         expect(component.sessionState.selectedTask?.id).toEqual('task-1');
@@ -662,7 +663,7 @@ export class VmReviewTasksTest {
 
         component.input = '/tasks';
         await component.submit();
-        await component.sessionState.handleFocusKey('x');
+        await component.sessionState.handleFocusKey('x', navigationFor(component.sessionState));
 
         expect(appRpc.calls.some(call => call.method === 'coding_task.cancel' && call.params?.taskId === 'task-1')).toEqual(true);
         expect(component.notice).toEqual('Cancelled task-1.');
@@ -681,7 +682,7 @@ export class VmReviewTasksTest {
 
         component.input = '/tasks';
         await component.submit();
-        await component.sessionState.handleFocusKey('r');
+        await component.sessionState.handleFocusKey('r', navigationFor(component.sessionState));
 
         expect(appRpc.calls.some(call => call.method === 'coding_task.retry_failed' && call.params?.taskId === 'task-1')).toEqual(true);
         expect(component.sessionState.reviewTask?.id).toEqual('task-1-retry');
@@ -700,7 +701,7 @@ export class VmReviewTasksTest {
 
         component.input = '/tasks';
         await component.submit();
-        await component.sessionState.handleFocusKey('escape');
+        await component.sessionState.handleFocusKey('escape', navigationFor(component.sessionState));
 
         expect(appRpc.calls.some(call => call.method === 'coding_task.cancel' && call.params?.taskId === 'task-1')).toEqual(true);
         expect(component.notice).toEqual('Cancelled task-1.');
@@ -718,7 +719,7 @@ export class VmReviewTasksTest {
 
         component.input = '/tasks';
         await component.submit();
-        await component.sessionState.handleFocusKey('x');
+        await component.sessionState.handleFocusKey('x', navigationFor(component.sessionState));
 
         expect(appRpc.calls.some(call => call.method === 'coding_task.cancel')).toEqual(false);
         expect(component.notice).toEqual('Cancel is unavailable for task-1.');
@@ -741,7 +742,7 @@ export class VmReviewTasksTest {
 
         component.input = '/review task-1';
         await component.submit();
-        await component.sessionState.handleFocusKey('Esc');
+        await component.sessionState.handleFocusKey('Esc', navigationFor(component.sessionState));
 
         expect(appRpc.calls.some(call => call.method === 'coding_task.cancel' && call.params?.taskId === 'task-1')).toEqual(true);
         expect(component.notice).toEqual('Cancelled task-1.');
@@ -812,7 +813,7 @@ export class VmReviewTasksTest {
 
         component.input = '/review task-1';
         await component.submit();
-        await component.sessionState.handleFocusKey('r');
+        await component.sessionState.handleFocusKey('r', navigationFor(component.sessionState));
 
         expect(appRpc.calls.some(call => call.method === 'coding_task.retry_failed' && call.params?.taskId === 'task-1')).toEqual(true);
         expect(component.sessionState.reviewTask?.id).toEqual('task-1-retry');
@@ -929,11 +930,11 @@ export class VmReviewTasksTest {
 
         expect(component.sessionState.reviewDetailLines.join('\n')).toContain('Review: needs attention · lineage 2/2');
 
-        await component.sessionState.handleFocusKey('p');
+        await component.sessionState.handleFocusKey('p', navigationFor(component.sessionState));
         expect(component.sessionState.reviewTask?.id).toEqual('task-0');
         expect(component.sessionState.reviewDetailLines.join('\n')).toContain('Review: ready · rollback available · lineage 1/2');
 
-        await component.sessionState.handleFocusKey('n');
+        await component.sessionState.handleFocusKey('n', navigationFor(component.sessionState));
         expect(component.sessionState.reviewTask?.id).toEqual('task-1');
         expect(component.sessionState.reviewDetailLines.join('\n')).toContain('Review: needs attention · lineage 2/2');
     }
@@ -1580,7 +1581,8 @@ export class VmReviewTasksTest {
             {
                 isClosed: false,
                 onExit() {},
-                hasActiveTextPrompt: false
+                hasActiveTextPrompt: false,
+                transcriptNavigationController: navigationFor(state),
             }
         );
 
@@ -1775,7 +1777,7 @@ export class VmReviewTasksTest {
         });
 
         expect(state.reviewOpen).toEqual(true);
-        expect(state.hasReviewFocus()).toEqual(true);
+        expect(state.focusController.hasReviewFocus()).toEqual(true);
         expect(state.reviewExecutionMode).toEqual('parallel');
         expect(state.selectedReviewGroup?.key).toEqual('aggregate');
         expect(state.selectedReviewFileIndex).toEqual(0);
@@ -1802,7 +1804,7 @@ export class VmReviewTasksTest {
         state.scrollReviewDetail(1);
         expect(state.reviewDetailScroll).toEqual(1);
 
-        await state.handleFocusKey(']');
+        await state.handleFocusKey(']', navigationFor(state));
         expect(state.selectedReviewFileIndex).toEqual(1);
         expect(state.selectedReviewFileSection?.path).toEqual('src/b.ts');
         expect(state.reviewDetailScroll).toEqual(0);
@@ -1810,17 +1812,17 @@ export class VmReviewTasksTest {
         expect(state.reviewDetailLines.join('\n')).toContain('diff --git a/src/b.ts b/src/b.ts');
         expect(state.reviewDetailLines.join('\n')).not.toContain('diff --git a/src/a.ts b/src/a.ts');
 
-        await state.handleFocusKey('a');
+        await state.handleFocusKey('a', navigationFor(state));
         expect(state.selectedReviewPatchFilter).toEqual('additions');
         expect(state.reviewDetailLines.join('\n')).toContain('Patch Filter: additions');
         expect(state.reviewDetailLines.join('\n')).toContain('+updated line');
         expect(state.reviewDetailLines.join('\n')).not.toContain('-old line');
 
-        await state.handleFocusKey('u');
+        await state.handleFocusKey('u', navigationFor(state));
         expect(state.selectedReviewPatchFilter).toEqual('all');
         expect(state.reviewDetailLines.join('\n')).toContain('-old line');
 
-        await state.handleFocusKey('.');
+        await state.handleFocusKey('.', navigationFor(state));
         expect(state.selectedReviewGroup?.workerId).toEqual('worker-1');
         expect(state.selectedReviewFileIndex).toEqual(0);
         expect(state.selectedReviewFileSection?.path).toEqual('src/a.ts');
@@ -1926,9 +1928,9 @@ export class VmReviewTasksTest {
         expect(unfolded).toContain('-old second');
 
         // jump to the second hunk and fold it
-        await state.handleFocusKey('}');
+        await state.handleFocusKey('}', navigationFor(state));
         expect(state.selectedReviewHunkIndex).toEqual(1);
-        await state.handleFocusKey('f');
+        await state.handleFocusKey('f', navigationFor(state));
         const folded = state.reviewDetailLines.join('\n');
         expect(folded).toContain('@@ -10,2 +11,2 @@');
         expect(folded).not.toContain('-old second');
@@ -1938,14 +1940,14 @@ export class VmReviewTasksTest {
         expect(folded).toContain('-old first');
 
         // the folded summary survives the additions patch filter
-        await state.handleFocusKey('a');
+        await state.handleFocusKey('a', navigationFor(state));
         const filtered = state.reviewDetailLines.join('\n');
         expect(filtered).toContain('folded hunk +1 -1');
         expect(filtered).not.toContain('-old second');
-        await state.handleFocusKey('u');
+        await state.handleFocusKey('u', navigationFor(state));
 
         // expanding restores the hunk body
-        await state.handleFocusKey('f');
+        await state.handleFocusKey('f', navigationFor(state));
         const expanded = state.reviewDetailLines.join('\n');
         expect(expanded).toContain('-old second');
         expect(expanded).toContain('+new second');
@@ -1953,7 +1955,7 @@ export class VmReviewTasksTest {
 
         // switching file resets the hunk index
         expect(state.selectedReviewHunkIndex).toEqual(1);
-        await state.handleFocusKey(']');
+        await state.handleFocusKey(']', navigationFor(state));
         expect(state.selectedReviewFileIndex).toEqual(1);
         expect(state.selectedReviewHunkIndex).toEqual(0);
     }
@@ -1986,7 +1988,7 @@ export class VmReviewTasksTest {
         expect(unified).toContain('+new first');
         expect(unified).not.toContain('│');
 
-        await state.handleFocusKey('s');
+        await state.handleFocusKey('s', navigationFor(state));
         expect(state.reviewSideBySide).toEqual(true);
         const sxs = state.reviewDetailLines;
         const joined = sxs.join('\n');
@@ -2001,20 +2003,20 @@ export class VmReviewTasksTest {
         expect(joined).toContain('@@ -1,3 +1,3 @@');
 
         // additions filter keeps pair rows with an empty old column
-        await state.handleFocusKey('a');
+        await state.handleFocusKey('a', navigationFor(state));
         const filtered = state.reviewDetailLines.join('\n');
         expect(filtered).toContain('│');
         expect(filtered).not.toContain('old first');
         expect(filtered).toContain('new first');
 
         // fold summary still renders in side-by-side mode
-        await state.handleFocusKey('u');
-        await state.handleFocusKey('}');
-        await state.handleFocusKey('f');
+        await state.handleFocusKey('u', navigationFor(state));
+        await state.handleFocusKey('}', navigationFor(state));
+        await state.handleFocusKey('f', navigationFor(state));
         const folded = state.reviewDetailLines.join('\n');
         expect(folded).toContain('folded hunk');
 
-        await state.handleFocusKey('s');
+        await state.handleFocusKey('s', navigationFor(state));
         expect(state.reviewSideBySide).toEqual(false);
     }
 
@@ -2436,23 +2438,23 @@ export class VmReviewTasksTest {
         state.setApprovalsFocused(true);
         expect(state.selectedApprovalId).toEqual('a1');
 
-        await state.handleFocusKey('down');
+        await state.handleFocusKey('down', navigationFor(state));
         expect(state.selectedApprovalId).toEqual('a2');
-        await state.handleFocusKey('end');
+        await state.handleFocusKey('end', navigationFor(state));
         expect(state.selectedApprovalId).toEqual('a3');
-        await state.handleFocusKey('home');
+        await state.handleFocusKey('home', navigationFor(state));
         expect(state.selectedApprovalId).toEqual('a1');
-        await state.handleFocusKey('pagedown');
+        await state.handleFocusKey('pagedown', navigationFor(state));
         expect(state.selectedApprovalId).toEqual('a3');
-        await state.handleFocusKey('pageup');
+        await state.handleFocusKey('pageup', navigationFor(state));
         expect(state.selectedApprovalId).toEqual('a1');
 
         // approve/deny still fire through their own actions
         const resolved: Array<{ action: string; id: string }> = [];
         state.resolveApprovalAction = async (action, id) => { resolved.push({ action, id }); };
-        await state.handleFocusKey('approve');
+        await state.handleFocusKey('approve', navigationFor(state));
         expect(resolved).toEqual([{ action: 'approve', id: 'a1' }]);
-        await state.handleFocusKey('deny');
+        await state.handleFocusKey('deny', navigationFor(state));
         expect(resolved).toEqual([
             { action: 'approve', id: 'a1' },
             { action: 'deny', id: 'a1' }

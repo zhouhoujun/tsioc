@@ -1,3 +1,4 @@
+import { navigationFor } from './test-transcript-navigation';
 import expect = require('expect');
 import { Buffer } from 'buffer';
 import * as fs from 'fs';
@@ -126,8 +127,8 @@ export class VmVimKeymapTest {
         const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setVimMode(true);
         state.setInputMode('normal');
-        state.pushInputHistory('first');
-        state.pushInputHistory('second');
+        state.inputHistoryController.push('first');
+        state.inputHistoryController.push('second');
 
         expect(state.handleVimKey('k')).toEqual(true);
         expect(state.input).toEqual('second');
@@ -197,7 +198,8 @@ export class VmVimKeymapTest {
             {
                 isClosed: false,
                 onExit() {},
-                hasActiveTextPrompt: false
+                hasActiveTextPrompt: false,
+                transcriptNavigationController: navigationFor(state),
             }
         );
 
@@ -217,7 +219,8 @@ export class VmVimKeymapTest {
             {
                 isClosed: false,
                 onExit() {},
-                hasActiveTextPrompt: false
+                hasActiveTextPrompt: false,
+                transcriptNavigationController: navigationFor(state),
             }
         );
 

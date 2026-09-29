@@ -493,3 +493,11 @@
   2. `_v82_turn` 原用 `_tool_result_count(messages)`（**全会话** tool 消息数）判断是否发工具调用。全量跑时场景 3 已留下 2 条 tool 结果，导致 `req=6 text='并行读文件' tool_results=2` 直接跳到最终回答、**从未发出工具调用**；单跑场景 9 时历史干净故 `==0` 成立，掩盖了该缺陷。已新增 `_tool_results_this_turn()` 只统计最后一个 user 消息之后的 tool 结果。
 - **断言形态的教训**：先前两版失败（`saw []`、`did not merge in place`）皆因试图**数行/取最后一行**。TUI 原地覆写整屏，剥 ANSI 后的字节流横跨多帧，`completed` 之后仍残留先前的 `Running` 帧；且 `viewport()`/`since()` 都只是字节尾部，不是逻辑屏幕。已改为**存在性断言**（每条应有行都渲染过、各自完成、无折叠、无 `+N more`），与其余 7 个场景一致；「是否原地归并」交由单元测试判定。另 `_match` 全 driver 用 `re.IGNORECASE`，而 helper 曾用大小写敏感的 `'read file' in line`，导致 `wait_for` 通过、helper 却返回 `[]`。
 - **仍未闭环**：~~v84 的旁白/最终回答分离未做真实终端验收~~ —— 已闭环：`narration-separation-v84` 场景（`run_acceptance.py`）已进入默认全量并 `[GATE-PASS]`，其 RED 证据见 v84 条目。真实模型端到端仍受 provider 配额阻塞（`402 insufficient balance`），且 `/home/zhouyou/workspace/tsioc` 为 `workspace_untrusted`，须先 `tsdi-agent trust` 才能真实执行工作区工具。
+
+## SessionState 行为拆分收尾（2026-09-29）
+
+- `AgentConsoleSessionState` 继续收敛为状态数据与平凡 setter/getter；命令执行、输入历史、焦点与转录导航等行为分别由职责明确的控制器承载。
+- 未引入 `SessionState.reset()`、行为 `update(state)` 接口或 `AgentConsoleBehaviors` 聚合层；`/clear` 继续创建新的持久化 session，同时复用 UI `SessionState` 对象并原地更新数据。
+- `packages/agents/agent-ui`：1441 passing；TypeScript、source-size、`git diff --check` 通过。`AgentConsoleFocusController.ts` 480 行，`AgentConsoleComponent.ts` 4162 行，均符合体量约束。
+- `packages/agents/agent-cli`：84 passing，包含真实 ORM 的跨 TUI 重启输入历史回归。
+- 统一 agents gate 其余阶段通过；当前 sandbox 中 `agent-gateway`、`agent-ssh`、`agent-tools` 的监听测试受 `EPERM listen` 限制，`build-agent-ui-web` 受 `spawnSync /bin/sh EPERM` 限制，不能据此判定代码回归。

@@ -505,7 +505,7 @@ export class AgentConsoleInputPanelComponent {
             ? target.selectionStart
             : value.length;
         this.state?.setInput(value, cursor);
-        this.state?.resetInputHistoryNavigation();
+        this.state?.inputHistoryController.resetNavigation();
     }
 
     onCursorChange(event: Event): void {
@@ -542,7 +542,7 @@ export class AgentConsoleInputPanelComponent {
         const key = String(event?.key || event?.code || '');
         if ((key === 'ArrowUp' || key === 'ArrowDown')
             && !(this.state?.selectMenu && isAgentConsoleSuggestionMenu(this.state.selectMenu))) {
-            const handled = this.state?.navigateInputHistory(key === 'ArrowUp' ? -1 : 1);
+            const handled = this.state?.inputHistoryController.navigate(key === 'ArrowUp' ? -1 : 1);
             if (handled) {
                 this.syncTextareaState(event.target as HTMLTextAreaElement | null);
                 event.preventDefault?.();
@@ -575,7 +575,7 @@ export class AgentConsoleInputPanelComponent {
                 });
                 return;
             }
-            if (this.state.handleSelectKey(event.key)) {
+            if (this.state.focusController.handleSelectKey(event.key)) {
                 event.preventDefault?.();
                 return;
             }
@@ -3973,7 +3973,7 @@ export class AgentConsoleSelectPanelComponent {
         if (!this.menu) {
             return;
         }
-        if (this.state.handleSelectKey(event.key)) {
+        if (this.state.focusController.handleSelectKey(event.key)) {
             event.preventDefault?.();
         }
     }

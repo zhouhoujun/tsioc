@@ -1,4 +1,4 @@
-import { moveMessageSelection, moveMessageSelectionPage, selectFirstMessage, selectLastMessage } from '../src/AgentConsoleTranscriptNavigation';
+import { navigationFor } from './test-transcript-navigation';
 import expect = require('expect');
 import { Buffer } from 'buffer';
 import * as fs from 'fs';
@@ -176,9 +176,9 @@ export class VmPanelsTest {
         const component = createConsole(runtime, scheduler, new ToolRegistryStub());
 
         await component.onInit();
-        component.sessionState.pushInputHistory('first');
-        component.sessionState.pushInputHistory('/sessions');
-        component.sessionState.pushInputHistory('second');
+        component.sessionState.inputHistoryController.push('first');
+        component.sessionState.inputHistoryController.push('/sessions');
+        component.sessionState.inputHistoryController.push('second');
 
         await (component as any).handleTerminalInput(
             { text: '\u001b[A', controlKey: 'up', partial: false },
@@ -211,8 +211,8 @@ export class VmPanelsTest {
         const component = createConsole(runtime, scheduler, new ToolRegistryStub());
 
         await component.onInit();
-        component.sessionState.pushInputHistory('first');
-        component.sessionState.pushInputHistory('second');
+        component.sessionState.inputHistoryController.push('first');
+        component.sessionState.inputHistoryController.push('second');
 
         await (component as any).handleTerminalInput(
             { text: '\u001b[A', controlKey: 'up', partial: false },
@@ -335,17 +335,17 @@ export class VmPanelsTest {
         ]);
         state.setSessionsFocused(true);
 
-        expect(await state.handleFocusKey('Q')).toEqual(true);
+        expect(await state.handleFocusKey('Q', navigationFor(state))).toEqual(true);
         expect(state.sessionsFocused).toEqual(false);
         expect(state.inputFocused).toEqual(true);
 
         state.setMessages([
             { id: 'm1', role: 'assistant', content: 'hello', createdAt: 1 } as any
         ]);
-        state.setMessagesFocused(true);
+        navigationFor(state).setFocused(true);
         state.openMessageDetail();
 
-        expect(await state.handleFocusKey('Esc')).toEqual(true);
+        expect(await state.handleFocusKey('Esc', navigationFor(state))).toEqual(true);
         expect(state.messageDetailOpen).toEqual(false);
         expect(state.messagesFocused).toEqual(false);
         expect(state.inputFocused).toEqual(true);
@@ -369,7 +369,8 @@ export class VmPanelsTest {
             {
                 isClosed: false,
                 onExit() {},
-                hasActiveTextPrompt: false
+                hasActiveTextPrompt: false,
+                transcriptNavigationController: navigationFor(state),
             }
         );
 
@@ -460,17 +461,17 @@ export class VmPanelsTest {
 
         expect(state.selectedMessageId).toEqual('m2');
 
-        state.setMessagesFocused(true);
+        navigationFor(state).setFocused(true);
         expect(state.messagesFocused).toEqual(true);
         expect(state.selectedMessage?.id).toEqual('m2');
 
-        moveMessageSelection(state, -1);
+        navigationFor(state).move(-1);
         expect(state.selectedMessage?.id).toEqual('m1');
 
         state.setSelectedMessageId('m2');
         expect(state.selectedMessage?.id).toEqual('m2');
 
-        state.setMessagesFocused(false);
+        navigationFor(state).setFocused(false);
         expect(state.messagesFocused).toEqual(false);
     }
 
@@ -492,7 +493,7 @@ export class VmPanelsTest {
         ]);
         expect(state.selectedMessageId).toEqual('m3');
 
-        state.setMessagesFocused(true);
+        navigationFor(state).setFocused(true);
         state.setSelectedMessageId('m1');
         state.setMessages([
             { id: 'm1', role: 'user', content: 'hello', createdAt: 1 } as any,
@@ -518,8 +519,8 @@ export class VmPanelsTest {
         expect(state.displayMessages.map(message => message.id)).toEqual(['u1', 'a2']);
         expect(state.selectedMessage?.id).toEqual('a2');
 
-        state.setMessagesFocused(true);
-        moveMessageSelection(state, -1);
+        navigationFor(state).setFocused(true);
+        navigationFor(state).move(-1);
         expect(state.selectedMessage?.id).toEqual('u1');
 
         state.setTimelineMode('steps');
@@ -616,7 +617,7 @@ export class VmPanelsTest {
             } as any
         ]);
 
-        state.setMessagesFocused(true);
+        navigationFor(state).setFocused(true);
         state.openMessageDetail();
         expect(state.messageDetailOpen).toEqual(true);
         expect(state.messageDetailScroll).toEqual(0);
@@ -641,10 +642,10 @@ export class VmPanelsTest {
             } as any
         ]);
 
-        state.setMessagesFocused(true);
-        expect(await state.handleFocusKey('enter')).toEqual(true);
+        navigationFor(state).setFocused(true);
+        expect(await state.handleFocusKey('enter', navigationFor(state))).toEqual(true);
         expect(state.messageDetailOpen).toEqual(true);
-        expect(await state.handleFocusKey('enter')).toEqual(true);
+        expect(await state.handleFocusKey('enter', navigationFor(state))).toEqual(true);
         expect(state.messageDetailOpen).toEqual(false);
     }
 
@@ -675,13 +676,13 @@ export class VmPanelsTest {
             { id: 'm8', role: 'assistant', content: 'line1\nline2\nline3\nline4\nline5\nline6\nline7\nline8', createdAt: 8 } as any
         ]);
 
-        selectFirstMessage(state);
+        navigationFor(state).selectFirst();
         expect(state.selectedMessage?.id).toEqual('m1');
 
-        moveMessageSelectionPage(state, 1);
+        navigationFor(state).movePage(1);
         expect(state.selectedMessage?.id).toEqual('m7');
 
-        selectLastMessage(state);
+        navigationFor(state).selectLast();
         expect(state.selectedMessage?.id).toEqual('m8');
 
         state.openMessageDetail();
@@ -704,7 +705,7 @@ export class VmPanelsTest {
             } as any
         ]);
 
-        state.setMessagesFocused(true);
+        navigationFor(state).setFocused(true);
         state.openMessageDetail();
 
         expect(state.messageDetailLines[0]).toEqual('    const value = 42;');
@@ -732,19 +733,19 @@ export class VmPanelsTest {
         expect(state.selectMenu?.selectedIndex).toEqual(0);
         
         // Up wraps to last
-        state.handleSelectKey('up');
+        state.focusController.handleSelectKey('up');
         expect(state.selectMenu?.selectedIndex).toEqual(2);
         
         // Down wraps to first
-        state.handleSelectKey('down');
+        state.focusController.handleSelectKey('down');
         expect(state.selectMenu?.selectedIndex).toEqual(0);
         
         // Down moves to next
-        state.handleSelectKey('down');
+        state.focusController.handleSelectKey('down');
         expect(state.selectMenu?.selectedIndex).toEqual(1);
         
         // Escape cancels
-        state.handleSelectKey('escape');
+        state.focusController.handleSelectKey('escape');
         expect(state.selectMenu).toBeUndefined();
     }
 
@@ -756,7 +757,7 @@ export class VmPanelsTest {
             { label: 'B', value: 'b' }
         ]);
 
-        state.handleSelectKey('q');
+        state.focusController.handleSelectKey('q');
 
         expect(state.selectMenu).toBeUndefined();
     }
@@ -773,11 +774,11 @@ export class VmPanelsTest {
             { label: 'D', value: 'd' }
         ], 0);
 
-        expect(state.handleSelectKey('q')).toBe(true);
+        expect(state.focusController.handleSelectKey('q')).toBe(true);
         expect(state.selectMenu?.title).toEqual('Parent');
         expect(state.selectMenu?.selectedIndex).toEqual(1);
 
-        expect(state.handleSelectKey('escape')).toBe(true);
+        expect(state.focusController.handleSelectKey('escape')).toBe(true);
         expect(state.selectMenu).toBeUndefined();
     }
 
@@ -793,10 +794,10 @@ export class VmPanelsTest {
             { label: 'D', value: 'd' }
         ], 1);
 
-        expect(state.handleMenuInput('', 'q')).toBe(true);
+        expect(state.focusController.handleMenuInput('', 'q')).toBe(true);
         expect(state.selectMenu?.title).toEqual('Parent');
 
-        expect(state.handleMenuInput('escape', '')).toBe(true);
+        expect(state.focusController.handleMenuInput('escape', '')).toBe(true);
         expect(state.selectMenu).toBeUndefined();
     }
 
@@ -808,20 +809,20 @@ export class VmPanelsTest {
             { label: 'B', value: 'b' }
         ]);
         
-        expect(state.handleSelectKey('up')).toBe(true);
-        expect(state.handleSelectKey('down')).toBe(true);
-        expect(state.handleSelectKey('return')).toBe(true);
+        expect(state.focusController.handleSelectKey('up')).toBe(true);
+        expect(state.focusController.handleSelectKey('down')).toBe(true);
+        expect(state.focusController.handleSelectKey('return')).toBe(true);
         expect(state.selectMenu).toBeUndefined();  // confirmed
 
         state.openSelectMenu('Test2', [
             { label: 'A', value: 'a' },
             { label: 'B', value: 'b' }
         ]);
-        expect(state.handleSelectKey('1')).toBe(true);
+        expect(state.focusController.handleSelectKey('1')).toBe(true);
         expect(state.selectMenu).toBeUndefined();  // chosen index 0
         
         // Unhandled key returns false
-        expect(state.handleSelectKey('x')).toBe(false);
+        expect(state.focusController.handleSelectKey('x')).toBe(false);
     }
 
     @Test('handleSelectKey moves to edge and by page (P266)')
@@ -836,21 +837,21 @@ export class VmPanelsTest {
         state.setSelectMenuIndex(2);
 
         // Page down clamps to last
-        expect(state.handleSelectKey('pagedown')).toBe(true);
+        expect(state.focusController.handleSelectKey('pagedown')).toBe(true);
         expect(state.selectMenu?.selectedIndex).toEqual(3);
         // Home jumps to first
-        expect(state.handleSelectKey('home')).toBe(true);
+        expect(state.focusController.handleSelectKey('home')).toBe(true);
         expect(state.selectMenu?.selectedIndex).toEqual(0);
         // Page up clamps to first
-        expect(state.handleSelectKey('pageup')).toBe(true);
+        expect(state.focusController.handleSelectKey('pageup')).toBe(true);
         expect(state.selectMenu?.selectedIndex).toEqual(0);
         // End jumps to last
         state.setSelectMenuIndex(0);
-        expect(state.handleSelectKey('end')).toBe(true);
+        expect(state.focusController.handleSelectKey('end')).toBe(true);
         expect(state.selectMenu?.selectedIndex).toEqual(3);
         // No menu -> keys unhandled
-        state.handleSelectKey('escape');
-        expect(state.handleSelectKey('home')).toBe(false);
+        state.focusController.handleSelectKey('escape');
+        expect(state.focusController.handleSelectKey('home')).toBe(false);
     }
 
     @Test('handleMenuInput moves to edge and by page (P266)')
@@ -864,13 +865,13 @@ export class VmPanelsTest {
         ]);
         state.setSelectMenuIndex(1);
 
-        expect(state.handleMenuInput('end', '')).toBe(true);
+        expect(state.focusController.handleMenuInput('end', '')).toBe(true);
         expect(state.selectMenu?.selectedIndex).toEqual(3);
-        expect(state.handleMenuInput('home', '')).toBe(true);
+        expect(state.focusController.handleMenuInput('home', '')).toBe(true);
         expect(state.selectMenu?.selectedIndex).toEqual(0);
-        expect(state.handleMenuInput('pagedown', '')).toBe(true);
+        expect(state.focusController.handleMenuInput('pagedown', '')).toBe(true);
         expect(state.selectMenu?.selectedIndex).toEqual(3);
-        expect(state.handleMenuInput('pageup', '')).toBe(true);
+        expect(state.focusController.handleMenuInput('pageup', '')).toBe(true);
         expect(state.selectMenu?.selectedIndex).toEqual(0);
     }
 
@@ -888,19 +889,19 @@ export class VmPanelsTest {
         state.pendingQuestionQueue = [state.pendingQuestion];
         state.pendingQuestionSelectedIndex = 2;
 
-        expect(await state.handleFocusKey('pagedown')).toEqual(true);
+        expect(await state.handleFocusKey('pagedown', navigationFor(state))).toEqual(true);
         expect(state.pendingQuestionSelectedIndex).toEqual(3);
-        expect(await state.handleFocusKey('home')).toEqual(true);
+        expect(await state.handleFocusKey('home', navigationFor(state))).toEqual(true);
         expect(state.pendingQuestionSelectedIndex).toEqual(0);
-        expect(await state.handleFocusKey('pageup')).toEqual(true);
+        expect(await state.handleFocusKey('pageup', navigationFor(state))).toEqual(true);
         expect(state.pendingQuestionSelectedIndex).toEqual(0);
-        expect(await state.handleFocusKey('end')).toEqual(true);
+        expect(await state.handleFocusKey('end', navigationFor(state))).toEqual(true);
         expect(state.pendingQuestionSelectedIndex).toEqual(3);
-        expect(await state.handleFocusKey('up')).toEqual(true);
+        expect(await state.handleFocusKey('up', navigationFor(state))).toEqual(true);
         expect(state.pendingQuestionSelectedIndex).toEqual(2);
 
         // out-of-range digit returns false (previously hard false)
-        expect(await state.handleFocusKey('9')).toEqual(false);
+        expect(await state.handleFocusKey('9', navigationFor(state))).toEqual(false);
     }
 
     @Test('input panel prompt shows a plan-mode badge when enabled')

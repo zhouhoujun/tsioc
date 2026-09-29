@@ -1,3 +1,4 @@
+import { navigationFor } from './test-transcript-navigation';
 import expect = require('expect');
 import { Buffer } from 'buffer';
 import * as fs from 'fs';
@@ -82,11 +83,11 @@ export class VmCommandsTest {
         expect(component.sessionState.jobsFocused).toEqual(true);
         expect(component.sessionState.selectedScheduledTaskId).toEqual('job-1');
 
-        await component.sessionState.handleFocusKey('enter');
+        await component.sessionState.handleFocusKey('enter', navigationFor(component.sessionState));
         expect(scheduler.paused).toEqual(['job-1']);
         expect(component.sessionState.selectedScheduledTask?.paused).toEqual(true);
 
-        await component.sessionState.handleFocusKey('enter');
+        await component.sessionState.handleFocusKey('enter', navigationFor(component.sessionState));
         expect(scheduler.resumed).toEqual(['job-1']);
         expect(component.sessionState.selectedScheduledTask?.paused).toEqual(false);
     }
@@ -105,7 +106,7 @@ export class VmCommandsTest {
         expect(component.sessionState.messagesFocused).toEqual(true);
         expect(component.sessionState.messageDetailOpen).toEqual(false);
 
-        await component.sessionState.handleFocusKey('enter');
+        await component.sessionState.handleFocusKey('enter', navigationFor(component.sessionState));
         expect(component.sessionState.messageDetailOpen).toEqual(true);
     }
 
@@ -272,7 +273,7 @@ export class VmCommandsTest {
 
         await component.onInit();
 
-        expect(state.getInputHistoryEntries()).toEqual(['second', 'first']);
+        expect(state.inputHistoryController.entries()).toEqual(['second', 'first']);
         expect(historyStore.workspaces[0]).toEqual('/tmp/workspace-b');
         expect(historyStore.sessionIds[0]).toEqual('');
         state.setInput('draft', 5);
@@ -301,7 +302,7 @@ export class VmCommandsTest {
         expect(inputField.value).toEqual('second');
         expect(inputField.selectionStart).toEqual('second'.length);
         expect(inputField.selectionEnd).toEqual('second'.length);
-        expect(state.navigateInputHistory(-1)).toEqual(true);
+        expect(state.inputHistoryController.navigate(-1)).toEqual(true);
         expect(state.input).toEqual('first');
     }
 
@@ -342,8 +343,8 @@ export class VmCommandsTest {
         expect(state.input).toEqual('newer prompt');
         await press('down');
         expect(state.input).toEqual('draft text');
-        expect(state.getInputHistoryEntries()).not.toContain('/help');
-        expect(state.getInputHistoryEntries()).not.toContain('other workspace prompt');
+        expect(state.inputHistoryController.entries()).not.toContain('/help');
+        expect(state.inputHistoryController.entries()).not.toContain('other workspace prompt');
         expect(historyStore.workspaces[0]).toEqual(currentDirectory);
     }
 
@@ -652,12 +653,12 @@ export class VmCommandsTest {
         state.setMessages([
             { id: 'm1', role: 'assistant', content: 'hello', createdAt: 1 } as any
         ]);
-        state.setMessagesFocused(true);
+        navigationFor(state).setFocused(true);
         state.openMessageDetail();
 
         expect(state.inputFocused).toEqual(false);
 
-        await state.dismissFocusLayer();
+        await state.focusController.dismiss(navigationFor(state));
         expect(state.messageDetailOpen).toEqual(false);
         expect(state.messagesFocused).toEqual(false);
         expect(state.inputFocused).toEqual(true);
@@ -665,7 +666,7 @@ export class VmCommandsTest {
         state.openSelectMenu('Help', [{ label: '/help', value: '/help' }], 0);
         expect(state.inputFocused).toEqual(false);
 
-        await state.dismissFocusLayer();
+        await state.focusController.dismiss(navigationFor(state));
         expect(state.selectMenu).toEqual(undefined);
         expect(state.inputFocused).toEqual(true);
 
@@ -682,7 +683,7 @@ export class VmCommandsTest {
         state.setApprovalsFocused(true);
         expect(state.inputFocused).toEqual(false);
 
-        await state.dismissFocusLayer();
+        await state.focusController.dismiss(navigationFor(state));
         expect(state.approvalsFocused).toEqual(false);
         expect(state.inputFocused).toEqual(true);
     }
@@ -778,8 +779,8 @@ export class VmCommandsTest {
             } as any
         ]);
 
-        state.setMessagesFocused(true);
-        expect(await state.handleFocusKey('copy')).toEqual(true);
+        navigationFor(state).setFocused(true);
+        expect(await state.handleFocusKey('copy', navigationFor(state))).toEqual(true);
         expect(copied).toEqual([{ text: 'line1\nline2', label: 'selected message' }]);
     }
 
@@ -799,9 +800,9 @@ export class VmCommandsTest {
             } as any
         ]);
 
-        state.setMessagesFocused(true);
+        navigationFor(state).setFocused(true);
         state.openMessageDetail();
-        expect(await state.handleFocusKey('copy')).toEqual(true);
+        expect(await state.handleFocusKey('copy', navigationFor(state))).toEqual(true);
         expect(copied).toEqual([{ text: 'line1\nline2\nline3', label: 'selected message' }]);
     }
 

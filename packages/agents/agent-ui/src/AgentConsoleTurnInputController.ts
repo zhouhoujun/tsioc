@@ -15,7 +15,7 @@ export interface AgentConsoleTurnInputHost {
         pendingAttachments: AgentConsolePendingAttachment[];
         providerWizard?: { open?: boolean; phase?: string } | null;
         setInput(value: string, cursor?: number): void;
-        pushInputHistory(value: string): void;
+        inputHistoryController: { push(value: string): void };
         setStatus(status: string): void;
         setLastError(message: string): void;
         clearPendingAttachments(): void;
@@ -84,7 +84,7 @@ export async function submitMultilineDraftView(host: AgentConsoleTurnInputHost):
         const profile = host.consumePendingTurnModelProfile();
         host.draftLines = [];
         host.multilineMode = false;
-        host.state.pushInputHistory(draft);
+        host.state.inputHistoryController.push(draft);
         await host.persistInputHistory();
         host.clearStreamingMessageState();
         const turnScope = host.state.beginTurnEventScope();
@@ -154,7 +154,7 @@ export async function submitView(host: AgentConsoleTurnInputHost): Promise<void>
             host.editDismissedAt = 0;
         }
         if (host.shellMultilineMode && !editConsumed && !value.startsWith('!') && !value.startsWith('/')) {
-            host.state.pushInputHistory(value);
+            host.state.inputHistoryController.push(value);
             const persistHistory = host.persistInputHistory();
             host.state.setInput('');
             host.shellDraftLines.push(value);
@@ -163,7 +163,7 @@ export async function submitView(host: AgentConsoleTurnInputHost): Promise<void>
             return;
         }
         if (value.startsWith('!')) {
-            host.state.pushInputHistory(value);
+            host.state.inputHistoryController.push(value);
             const persistHistory = host.persistInputHistory();
             host.state.setInput('');
             if (await host.handleShellBang(value)) {
@@ -175,7 +175,7 @@ export async function submitView(host: AgentConsoleTurnInputHost): Promise<void>
             return;
         }
         if (value.startsWith('/')) {
-            host.state.pushInputHistory(value);
+            host.state.inputHistoryController.push(value);
             const persistHistory = host.persistInputHistory();
             host.state.setInput('');
             if (await host.handleCommand(value)) {
@@ -222,7 +222,7 @@ export async function submitView(host: AgentConsoleTurnInputHost): Promise<void>
         }
         const turnSessionId = host.state.sessionId;
         if (!steer) {
-            host.state.pushInputHistory(value);
+            host.state.inputHistoryController.push(value);
             await host.persistInputHistory();
         }
         if (host.multilineMode) {

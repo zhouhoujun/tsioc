@@ -1,3 +1,4 @@
+import { navigationFor } from './test-transcript-navigation';
 import expect = require('expect');
 import { Before, Suite, Test, After } from '@tsdi/unit';
 import { Application, ApplicationContext } from '@tsdi/core';
@@ -636,7 +637,7 @@ export class AgentConsoleMessagesRendererTest {
             content: Array.from({ length: 42 }, (_, index) => `focused line ${index + 1}`).join('\n'),
             createdAt: 1
         } as any]);
-        ref.instance.sessionState.setMessagesFocused(true);
+        navigationFor(ref.instance.sessionState).setFocused(true);
         ref.instance.sessionState.setSelectedMessageId('a-stream');
         await settleDynamicMessages(ref);
 
@@ -818,7 +819,7 @@ export class AgentConsoleMessagesRendererTest {
             await Promise.resolve();
             await Promise.resolve();
 
-            expect(await consoleRef.instance.sessionState.handleFocusKey('copy')).toBe(true);
+            expect(await consoleRef.instance.sessionState.handleFocusKey('copy', navigationFor(consoleRef.instance.sessionState))).toBe(true);
             expect(copied).toEqual([{
                 text: Array.from({ length: 12 }, (_value, index) => `line ${index + 1}`).join('\n'),
                 label: 'selected message'
@@ -834,7 +835,7 @@ export class AgentConsoleMessagesRendererTest {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4, messageLayout: 'viewport' });
         ref.instance.sessionState.setMessagesViewportItems(0);
-        ref.instance.sessionState.setMessagesFocused(false);
+        navigationFor(ref.instance.sessionState).setFocused(false);
         ref.instance.sessionState.setMessages([
             { id: 'u1', role: 'user', content: '设计一个在线考试系统', createdAt: 1 } as any,
             { id: 'a1', role: 'assistant', content: '第一段方案', createdAt: 2 } as any,
@@ -896,7 +897,7 @@ export class AgentConsoleOperationalPanelsRendererTest {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4, messageLayout: 'viewport' });
         ref.instance.sessionState.setMessagesViewportItems(0);
-        ref.instance.sessionState.setMessagesFocused(false);
+        navigationFor(ref.instance.sessionState).setFocused(false);
         ref.instance.sessionState.setMessages([
             { id: 'u1', role: 'user', content: '设计一个在线考试系统', createdAt: 1 } as any,
             { id: 'a1', role: 'assistant', content: '第一段方案', createdAt: 2 } as any,
@@ -1967,7 +1968,7 @@ export class AgentConsoleTuiRendererTest {
         ] as any);
         state.setTasksFocused(true);
         state.selectedPlanTodoIndex = 0;
-        expect(await state.handleFocusKey('r')).toEqual(true);
+        expect(await state.handleFocusKey('r', navigationFor(state))).toEqual(true);
         expect(state.planTodos[0].status).toEqual('pending');
         expect(state.planTodos[0].error).toBeUndefined();
         expect(state.planTodos[0].blockedBy).toBeUndefined();
@@ -1986,8 +1987,8 @@ export class AgentConsoleTuiRendererTest {
         expect(collapsed.metadata?.planCollapsed).toEqual(true);
 
         ref.instance.sessionState.setSelectedMessageId('__plan_todo_inline__');
-        ref.instance.sessionState.setMessagesFocused(true);
-        expect(await ref.instance.sessionState.handleFocusKey('enter')).toEqual(true);
+        navigationFor(ref.instance.sessionState).setFocused(true);
+        expect(await ref.instance.sessionState.handleFocusKey('enter', navigationFor(ref.instance.sessionState))).toEqual(true);
         const expanded = ref.instance.sessionState.displayMessages.find(m => m.id === '__plan_todo_inline__')!;
         expect(expanded.content).toContain('计划 2/8 ▓▓░░░░░░');
         expect(expanded.content).toContain('1. ✓ Step 1');
@@ -2021,9 +2022,9 @@ export class AgentConsoleTuiRendererTest {
             id: `p${index + 1}`, content: `Step ${index + 1}`, status: index < 2 ? 'completed' : 'pending'
         })) as any);
         ref.instance.sessionState.setSelectedMessageId('__plan_todo_inline__');
-        ref.instance.sessionState.setMessagesFocused(true);
-        expect(await ref.instance.sessionState.handleFocusKey('enter')).toEqual(true);
-        ref.instance.sessionState.setMessagesFocused(false);
+        navigationFor(ref.instance.sessionState).setFocused(true);
+        expect(await ref.instance.sessionState.handleFocusKey('enter', navigationFor(ref.instance.sessionState))).toEqual(true);
+        navigationFor(ref.instance.sessionState).setFocused(false);
 
         const panel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         const rendered = (panel.instance as any).renderedMessageItems as Array<{ lines: Array<{ messageId?: string; content: string }> }>;
@@ -2051,7 +2052,7 @@ export class AgentConsoleTuiRendererTest {
         const maxScroll = Math.max(0, 60 - ref.instance.sessionState.consoleOptions.reviewDetailVisibleLines);
         expect(ref.instance.sessionState.textOverlay!.scroll).toEqual(maxScroll);
 
-        await ref.instance.sessionState.handleEscapeKey();
+        await ref.instance.sessionState.focusController.handleEscape(navigationFor(ref.instance.sessionState));
         expect(ref.instance.sessionState.hasTextOverlayFocus()).toBe(false);
     }
 
@@ -2088,7 +2089,7 @@ export class AgentConsoleTuiRendererTest {
         expect(panel.pendingQuestionContext).toEqual('affects schema migrations');
         expect(panel.pendingQuestionOptionItems.map(item => item.label)).toEqual(['1. postgres', '2. sqlite']);
         expect(panel.pendingQuestionSelectionHint).toContain('selected 1/2');
-        await ref.instance.sessionState.handleFocusKey('down');
+        await ref.instance.sessionState.handleFocusKey('down', navigationFor(ref.instance.sessionState));
         expect(panel.pendingQuestionSelectionHint).toContain('selected 2/2');
 
         panel.onPendingQuestionOptionClick('sqlite');
@@ -2104,14 +2105,14 @@ export class AgentConsoleTuiRendererTest {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         const state = ref.instance.sessionState;
         state.setPendingQuestion({ questionId: 'keyboard-question', sessionId: state.sessionId, question: 'Pick one', options: ['alpha', 'beta', 'gamma'], severity: 'medium', createdAt: Date.now(), updatedAt: Date.now(), status: 'pending' });
-        await state.handleFocusKey('down');
+        await state.handleFocusKey('down', navigationFor(state));
         expect(state.pendingQuestionSelectedIndex).toEqual(1);
-        await state.handleFocusKey('1');
+        await state.handleFocusKey('1', navigationFor(state));
         expect(state.input).toEqual('alpha');
-        await state.handleFocusKey('down');
-        await state.handleFocusKey('return');
+        await state.handleFocusKey('down', navigationFor(state));
+        await state.handleFocusKey('return', navigationFor(state));
         expect(state.input).toEqual('beta');
-        await state.handleEscapeKey();
+        await state.focusController.handleEscape(navigationFor(state));
         expect(state.pendingQuestion).toEqual(null);
         expect(state.inputFocused).toEqual(true);
     }
@@ -2196,11 +2197,11 @@ export class AgentConsoleTuiRendererTest {
         });
         ref.instance.sessionState.closeReview();
         ref.instance.sessionState.setSelectedMessageId('__file_change_inline__');
-        ref.instance.sessionState.setMessagesFocused(true);
+        navigationFor(ref.instance.sessionState).setFocused(true);
 
-        expect(await ref.instance.sessionState.handleFocusKey('down')).toEqual(true);
+        expect(await ref.instance.sessionState.handleFocusKey('down', navigationFor(ref.instance.sessionState))).toEqual(true);
         expect(ref.instance.sessionState.selectedReviewFileSection?.path).toEqual('src/b.ts');
-        expect(await ref.instance.sessionState.handleFocusKey('enter')).toEqual(true);
+        expect(await ref.instance.sessionState.handleFocusKey('enter', navigationFor(ref.instance.sessionState))).toEqual(true);
         expect(ref.instance.sessionState.reviewOpen).toEqual(true);
     }
 

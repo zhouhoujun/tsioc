@@ -1,3 +1,4 @@
+import { navigationFor } from './test-transcript-navigation';
 import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
@@ -177,9 +178,9 @@ export class TimelineEventInspectorTest {
         const evt = toolEvent('evt-1');
         state.setMessages([userMsg('u1'), evt]);
 
-        expect(state.isAnyFocusActive()).toEqual(false);
+        expect(state.focusController.isAnyFocusActive()).toEqual(false);
         state.openTimelineEventInspector();
-        expect(state.isAnyFocusActive()).toEqual(true);
+        expect(state.focusController.isAnyFocusActive()).toEqual(true);
     }
 
     @Test('scrollTimelineEventDetail clamps within bounds')
@@ -339,7 +340,7 @@ export class TimelineEventInspectorTest {
         state.openTimelineEventInspector();
         expect(state.timelineEventInspectorOpen).toEqual(true);
 
-        state.setMessagesFocused(false);
+        navigationFor(state).setFocused(false);
         expect(state.timelineEventInspectorOpen).toEqual(false);
     }
 
@@ -392,7 +393,7 @@ export class TimelineEventInspectorTest {
         state.setMessages([userMsg('u1'), evt]);
         state.openTimelineEventInspector();
 
-        state.handleFocusKey('Escape');
+        state.handleFocusKey('Escape', navigationFor(state));
         expect(state.timelineEventInspectorOpen).toEqual(false);
     }
 
@@ -404,7 +405,7 @@ export class TimelineEventInspectorTest {
         state.setMessages([userMsg('u1'), evt]);
         state.openTimelineEventInspector();
 
-        state.handleEscapeKey();
+        state.focusController.handleEscape(navigationFor(state));
         expect(state.timelineEventInspectorOpen).toEqual(false);
     }
 }

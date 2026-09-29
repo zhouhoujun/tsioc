@@ -1,6 +1,5 @@
 import type { AgentConsoleMessageLayout } from './AgentConsoleViewport';
-import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
-import { scrollTranscript } from './AgentConsoleTranscriptNavigation';
+import type { AgentConsoleTranscriptNavigationController } from './AgentConsoleTranscriptNavigation';
 
 /**
  * Platform-neutral transcript layout contract.
@@ -19,7 +18,7 @@ export interface AgentConsoleTranscriptLayout {
     /** The app owns history scrolling, so the platform must not render its own scrollbar/scroll region. */
     readonly ownsHistoryScroll: boolean;
     /** Apply a scroll delta to the transcript; returns whether it was consumed. */
-    scroll(delta: number, state: AgentConsoleSessionState): boolean;
+    scroll(delta: number, navigation: AgentConsoleTranscriptNavigationController): boolean;
 }
 
 class StreamTranscriptLayout implements AgentConsoleTranscriptLayout {
@@ -39,8 +38,8 @@ class ViewportTranscriptLayout implements AgentConsoleTranscriptLayout {
     readonly wheelScrollsHistory = true;
     readonly ownsHistoryScroll = true;
 
-    scroll(delta: number, state: AgentConsoleSessionState): boolean {
-        return scrollTranscript(state, delta);
+    scroll(delta: number, navigation: AgentConsoleTranscriptNavigationController): boolean {
+        return navigation.scroll(delta);
     }
 }
 

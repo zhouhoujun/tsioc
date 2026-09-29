@@ -1,3 +1,4 @@
+import { navigationFor } from './test-transcript-navigation';
 import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
@@ -96,7 +97,8 @@ export class P313ApprovalQuestionUxTest {
             questionId: 'q1', sessionId: state.sessionId, question: 'Pick',
             options: ['alpha', 'beta'], severity: 'medium', createdAt: 1, updatedAt: 1, status: 'pending'
         });
-        const options = { isClosed: false, onExit: () => {}, hasActiveTextPrompt: false };
+        const options = { isClosed: false, onExit: () => {}, hasActiveTextPrompt: false,
+                transcriptNavigationController: navigationFor(state) };
         await state.processDecodedInput({ text: 'x' }, {} as any, options);
         await state.processDecodedInput({ text: 'y' }, {} as any, options);
         expect(state.input).toEqual('xy');
@@ -121,7 +123,8 @@ export class P313ApprovalQuestionUxTest {
             questionId: 'q1', sessionId: state.sessionId, question: 'Pick',
             options: ['alpha', 'beta'], severity: 'medium', createdAt: 1, updatedAt: 1, status: 'pending'
         });
-        const options = { isClosed: false, onExit: () => {}, hasActiveTextPrompt: false };
+        const options = { isClosed: false, onExit: () => {}, hasActiveTextPrompt: false,
+                transcriptNavigationController: navigationFor(state) };
         await state.processDecodedInput({ text: '2' }, {} as any, options);
         expect(state.pendingQuestionSelectedIndex).toEqual(1);
     }

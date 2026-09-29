@@ -1,3 +1,4 @@
+import { navigationFor } from './test-transcript-navigation';
 import expect = require('expect');
 import { Before, Suite, Test, After } from '@tsdi/unit';
 import { Application, ApplicationContext, ApplicationRunners } from '@tsdi/core';
@@ -216,7 +217,7 @@ export class RuntimeMousePipelineReproTest {
             { id: 'long', role: 'assistant', content: Array.from({ length: 217 }, (_value, index) => `detail line ${index + 1}`).join('\n'), createdAt: 1 } as any
         ]);
         expect(ref.instance.sessionState.focusLatestLongMessage()).toEqual(true);
-        expect(await ref.instance.sessionState.handleFocusKey('enter')).toEqual(true);
+        expect(await ref.instance.sessionState.handleFocusKey('enter', navigationFor(ref.instance.sessionState))).toEqual(true);
         ref.instance.sessionState.scrollMessageDetailToEdge('start');
         await this.settle();
 
@@ -226,7 +227,7 @@ export class RuntimeMousePipelineReproTest {
         expect(firstScreen).toContain('detail line 6');
         expect(firstScreen).not.toContain('detail line 12');
 
-        expect(await ref.instance.sessionState.handleFocusKey('pagedown')).toEqual(true);
+        expect(await ref.instance.sessionState.handleFocusKey('pagedown', navigationFor(ref.instance.sessionState))).toEqual(true);
         await this.settle();
         const nextScreen = surface.getLastRenderedLines().join('\n');
         expect(nextScreen).toContain('detail line 11');

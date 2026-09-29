@@ -139,31 +139,31 @@ export class VmCommandExecutionsRingTest {
     @Test('state begin/complete/fail/link methods route through the reducer and expose latest')
     async stateMethodsRouteThroughReducer() {
         const state = this.createState();
-        const requestId = state.beginCommandExecution('/usage', '');
+        const requestId = state.commandExecutionController.begin('/usage', '');
         expect(state.commandExecutions.length).toEqual(1);
         expect(state.latestCommandExecution?.status).toEqual('running');
         expect(state.displayMessages.find(item => item.metadata?.uiKind === 'command-execution')?.content).toEqual('/usage running');
-        state.completeCommandExecution(requestId, 'succeeded');
+        state.commandExecutionController.complete(requestId, 'succeeded');
         expect(state.latestCommandExecution?.status).toEqual('succeeded');
         expect(state.latestCommandExecution?.requestId).toEqual(requestId);
         expect(state.displayMessages.filter(item => item.metadata?.uiKind === 'command-execution').length).toEqual(1);
         expect(state.displayMessages.find(item => item.metadata?.uiKind === 'command-execution')?.content).toEqual('/usage completed');
 
-        const requestId2 = state.beginCommandExecution('/status', '');
+        const requestId2 = state.commandExecutionController.begin('/status', '');
         expect(state.latestCommandExecution?.requestId).toEqual(requestId2);
         const outputId = state.pushCommandOutput('/usage', 'tokens 100');
-        state.linkCommandOutputToExecution(requestId2, outputId);
+        state.commandExecutionController.linkOutput(requestId2, outputId);
         expect(state.latestCommandExecution?.outputIds).toContain(outputId);
     }
 
     @Test('state configure with a new sessionId clears executions without reusing request ids')
     async stateConfigureClearsOnSessionSwitch() {
         const state = this.createState();
-        state.beginCommandExecution('/usage', '');
+        state.commandExecutionController.begin('/usage', '');
         expect(state.commandExecutions.length).toEqual(1);
         state.configure({ sessionId: 'session-B' } as any);
         expect(state.commandExecutions.length).toEqual(0);
-        const after = state.beginCommandExecution('/status', '');
+        const after = state.commandExecutionController.begin('/status', '');
         expect(state.commandExecutions.length).toEqual(1);
         expect(state.latestCommandExecution?.command).toEqual('/status');
         expect(after).toEqual('cmd-2');
@@ -173,17 +173,17 @@ export class VmCommandExecutionsRingTest {
     async sessionSwitchRejectsStaleCommandResult() {
         const state = this.createState();
         state.configure({ sessionId: 'session-A' } as any);
-        const staleRequest = state.beginCommandExecution('/search', 'old');
-        expect(state.isCommandExecutionCurrent(staleRequest)).toEqual(true);
-        const staleSignal = state.getCommandExecutionSignal(staleRequest);
+        const staleRequest = state.commandExecutionController.begin('/search', 'old');
+        expect(state.commandExecutionController.isCurrent(staleRequest)).toEqual(true);
+        const staleSignal = state.commandExecutionController.signal(staleRequest);
         state.configure({ sessionId: 'session-B' } as any);
         expect(staleSignal?.aborted).toEqual(true);
-        expect(state.isCommandExecutionCurrent(staleRequest)).toEqual(false);
-        state.completeCommandExecution(staleRequest, 'succeeded');
+        expect(state.commandExecutionController.isCurrent(staleRequest)).toEqual(false);
+        state.commandExecutionController.complete(staleRequest, 'succeeded');
         expect(state.commandExecutions.length).toEqual(0);
 
-        const currentRequest = state.beginCommandExecution('/search', 'new');
-        state.completeCommandExecution(currentRequest, 'succeeded');
+        const currentRequest = state.commandExecutionController.begin('/search', 'new');
+        state.commandExecutionController.complete(currentRequest, 'succeeded');
         expect(state.latestCommandExecution?.status).toEqual('succeeded');
     }
 
@@ -200,9 +200,9 @@ export class VmCommandExecutionsRingTest {
             cancel: (requestId) => calls.push(`cancel:${requestId}`),
             cancelSession: (sessionId) => calls.push(`session:${sessionId}`)
         });
-        const requestId = state.beginCommandExecution('/status', '');
-        expect(state.getCommandExecutionSignal(requestId)).toBe(signal);
-        state.completeCommandExecution(requestId, 'succeeded');
+        const requestId = state.commandExecutionController.begin('/status', '');
+        expect(state.commandExecutionController.signal(requestId)).toBe(signal);
+        state.commandExecutionController.complete(requestId, 'succeeded');
         expect(calls).toContain(`begin:${requestId}`);
         expect(calls).toContain(`signal:${requestId}`);
         expect(calls).toContain(`current:${requestId}`);

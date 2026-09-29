@@ -1,4 +1,5 @@
 import { ApplicationContext, formatCompactNumber } from '@tsdi/core';
+import { DefaultAgentConsoleTranscriptNavigationController } from './AgentConsoleTranscriptNavigation';
 import { Component, ComponentRef, OnDestroy, RNode } from '@tsdi/components';
 import { AudioCaptureAdapter, AudioPlaybackAdapter, AudioPlaybackFormat, FileAdapter } from '@tsdi/common';
 import {
@@ -357,7 +358,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         };
     }
     protected yoloMode = false;
-
+    readonly transcriptNavigationController: DefaultAgentConsoleTranscriptNavigationController;
     constructor(
         private state: AgentConsoleSessionState,
         private runtime: AgentRuntime,
@@ -392,6 +393,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         @Optional() private uiConfig?: AgentUiConfigService | null,
         @Optional() @Inject(ProjectMemoryService) private projectMemory?: ProjectMemoryService | null
     ) {
+        this.transcriptNavigationController = new DefaultAgentConsoleTranscriptNavigationController(this.state);
         this.globalKeymap = this.globalKeymap || new AgentConsoleKeymap();
         this.globalKeymap.configure(this.options.ui?.keymap);
         this.state.setTitle(this.options.ui?.title ?? defaultAgentOptions.ui!.title!);
@@ -410,7 +412,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setWorkspace(this.startupWorkspace);
         }
     }
-
     protected resolveInitialStatusline(): AgentConsoleStatuslineField[] {
         if (Array.isArray(this.options.ui?.statusline)) {
             return normalizeAgentConsoleStatusline(this.options.ui.statusline);
@@ -507,7 +508,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected pushCommandOutput(command: string, text: string, kind?: AgentConsoleCommandOutputEntry['kind']): void {
         const outputId = this.state.pushCommandOutput(command, text, kind);
         if (outputId && this.pendingCommandRequestId) {
-            this.state.linkCommandOutputToExecution(this.pendingCommandRequestId, outputId);
+            this.state.commandExecutionController.linkOutput(this.pendingCommandRequestId, outputId);
         }
         this.notify(text);
     }
@@ -740,20 +741,20 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     ): { sessionId?: string; bucketSize?: number; maxBuckets?: number } {
         return this.parseCompactionHistoryTrendArgs(args);
     }
-
     private reviewCtx(): ReviewHandlerContext {
         return {
             state: this.state,
+            transcriptNavigationController: this.transcriptNavigationController,
             appRpc: this.appRpc,
             notify: (message, duration) => this.notify(message, duration),
             activateToolForSession: (toolName, sessionId) => this.activateToolForSession(toolName, sessionId),
             getOpenReviewRequestId: () => this.openReviewRequestId
         };
     }
-
     private codingTaskCtx(): CodingTaskHandlerContext {
         return {
             state: this.state,
+            transcriptNavigationController: this.transcriptNavigationController,
             appRpc: this.appRpc,
             scheduler: this.scheduler,
             notify: (message, duration) => this.notify(message, duration),
@@ -1061,7 +1062,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setWorkspace(nextWorkspace);
         }
         this.state.setQueuedPromptCount((this.queuedPrompts.get(target.id) || []).length);
-        this.state.setMessagesFocused(false);
+        this.transcriptNavigationController.setFocused(false);
         this.state.setSessionsFocused(false);
         this.state.setProjectsFocused(false);
         this.state.setToolsFocused(false);
@@ -1556,7 +1557,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return {
             requestId: resolvedId,
             sessionEpoch: this.sessionEpoch,
-            signal: resolvedId ? this.state.getCommandExecutionSignal(resolvedId) : undefined
+            signal: resolvedId ? this.state.commandExecutionController.signal(resolvedId) : undefined
         };
     }
 
@@ -1860,7 +1861,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             return;
         }
         try {
-            await this.inputHistoryStore.save(this.state.getInputHistoryEntries(), this.resolveHistoryWorkspace(), this.state.sessionId);
+            await this.inputHistoryStore.save(this.state.inputHistoryController.entries(), this.resolveHistoryWorkspace(), this.state.sessionId);
         } catch (error) {
             this.state.setLastError(`Failed to save input history: ${error instanceof Error ? error.message : String(error)}`);
         }
@@ -2052,6 +2053,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         const self = this;
         return {
             abortSignal,
+            transcriptNavigationController: this.transcriptNavigationController,
             state: {
                 get sessionId() { return self.state.sessionId; },
                 get sessions() { return self.state.sessions; },
@@ -2077,7 +2079,6 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                 setNotice: (m) => self.state.setNotice(m),
                 setTitle: (t) => self.state.setTitle(t),
                 setSessionsFocused: (f) => self.state.setSessionsFocused(f),
-                setMessagesFocused: (f) => self.state.setMessagesFocused(f),
                 setToolsFocused: (f) => self.state.setToolsFocused(f),
                 setApprovalsFocused: (f) => self.state.setApprovalsFocused(f),
                 setJobsFocused: (f) => self.state.setJobsFocused(f),
@@ -2231,13 +2232,13 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         const canonical = getAgentConsoleCommandName(resolved.command);
         const args = String(parsed.args || '').trim();
         const previousRequestId = this.pendingCommandRequestId;
-        const requestId = this.state.beginCommandExecution(canonical, args);
+        const requestId = this.state.commandExecutionController.begin(canonical, args);
         this.pendingCommandRequestId = requestId;
         if (!this.state.commandHints.includes(canonical)) {
             const reason = resolved.matches.length
                 ? `Ambiguous command: ${parsed.command}  (${resolved.matches.join(', ')})`
                 : `Unknown command: ${parsed.command}`;
-            this.state.failCommandExecution(requestId, reason, false);
+            this.state.commandExecutionController.fail(requestId, reason, false);
             this.notify(reason);
             this.pendingCommandRequestId = previousRequestId;
             return true;
@@ -2245,7 +2246,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         const parsedArgs = parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition(canonical), args);
         if (parsedArgs.diagnostics.length) {
             const reason = formatAgentConsoleCommandDiagnostics(parsedArgs.diagnostics);
-            this.state.failCommandExecution(requestId, reason, false);
+            this.state.commandExecutionController.fail(requestId, reason, false);
             // Preserve the exact command so the user can correct it and retry.
             this.state.setInput(parsed.raw, parsed.raw.length);
             this.notify(formatAgentConsoleCommandDiagnosticEcho(parsedArgs.diagnostics).join('\n'));
@@ -2255,27 +2256,27 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         const handler = COMMAND_HANDLERS[canonical];
         if (handler) {
             try {
-                const handled = await handler(this.buildCommandContext(this.state.getCommandExecutionSignal(requestId)), args, { command: canonical, matches: resolved.matches, parsedArgs });
-                if (!this.state.isCommandExecutionCurrent(requestId)) {
+                const handled = await handler(this.buildCommandContext(this.state.commandExecutionController.signal(requestId)), args, { command: canonical, matches: resolved.matches, parsedArgs });
+                if (!this.state.commandExecutionController.isCurrent(requestId)) {
                     this.pendingCommandRequestId = previousRequestId;
                     return true;
                 }
-                this.state.completeCommandExecution(requestId, 'succeeded');
+                this.state.commandExecutionController.complete(requestId, 'succeeded');
                 this.pendingCommandRequestId = previousRequestId;
                 return handled;
             } catch (error) {
-                if (!this.state.isCommandExecutionCurrent(requestId)) {
+                if (!this.state.commandExecutionController.isCurrent(requestId)) {
                     this.pendingCommandRequestId = previousRequestId;
                     return true;
                 }
                 const reason = error instanceof Error ? error.message : String(error);
-                this.state.failCommandExecution(requestId, reason, true);
+                this.state.commandExecutionController.fail(requestId, reason, true);
                 this.notify(reason);
                 this.pendingCommandRequestId = previousRequestId;
                 return true;
             }
         }
-        this.state.failCommandExecution(requestId, `Unknown command: ${parsed.command}`, false);
+        this.state.commandExecutionController.fail(requestId, `Unknown command: ${parsed.command}`, false);
         this.pendingCommandRequestId = previousRequestId;
         return false;
     }
@@ -2398,13 +2399,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         }
         return undefined;
     }
-
     shouldPlaceTerminalCursor(): boolean {
-        return this.state.shouldRenderTerminalCursor();
+        return this.state.focusController.shouldRenderTerminalCursor();
     }
-
     resolveTerminalCursorMode(): 'prompt' | 'bottom' {
-        return this.state.resolveTerminalCursorMode();
+        return this.state.focusController.resolveTerminalCursorMode();
     }
 
     resolveTerminalCursorStyle(): 'bar' {
@@ -2910,11 +2909,13 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             notify: (message: string) => this.notify(message)
         };
     }
-
     protected globalKeyInputHost(): AgentConsoleGlobalKeyInputHost {
         const self = this;
         return {
             state: this.state,
+            transcriptNavigationController: this.transcriptNavigationController,
+            dismissFocusLayer: () => this.state.focusController.dismiss(this.transcriptNavigationController),
+            handleFocusKey: (key: string) => this.state.handleFocusKey(key, this.transcriptNavigationController),
             globalKeymap: this.globalKeymap,
             get globalKeyPending() { return self.globalKeyPending; },
             set globalKeyPending(value) { self.globalKeyPending = value; },
@@ -2948,11 +2949,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             queueDraft: () => this.queueDraft()
         };
     }
-
     protected terminalInputHost(): AgentConsoleTerminalInputHost {
         const self = this;
         return {
             state: this.state,
+            transcriptNavigationController: this.transcriptNavigationController,
             get closing() { return self.closing; },
             set closing(value) { self.closing = value; },
             destroyed: this.destroyed,
@@ -2965,7 +2966,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             sessionService: this.sessionService,
             isTurnInProgress: () => this.isTurnInProgress(),
             notify: (message: string, duration?: number) => this.notify(message, duration),
-            scrollMessages: (delta: number) => resolveTranscriptLayout(this.state.consoleOptions.messageLayout).scroll(delta, this.state),
+            scrollMessages: (delta: number) => resolveTranscriptLayout(this.state.consoleOptions.messageLayout).scroll(delta, this.transcriptNavigationController),
             getTerminalRenderedLines: () => this.getTerminalRenderedLines(),
             handleGlobalKeyInput: (raw: string) => this.handleGlobalKeyInput(raw),
             detachSshShell: (reason: 'detached' | 'closed') => this.detachSshShell(reason),
@@ -2974,7 +2975,6 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             handleCommand: (value: string) => this.handleCommand(value)
         };
     }
-
     protected turnInputHost(): AgentConsoleTurnInputHost {
         const self = this;
         return {
@@ -3569,13 +3569,13 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
 
     protected canThreadNavigate(): boolean {
         return !!this.appRpc
-            && this.state.hasMessageFocus()
+            && this.state.focusController.hasMessageFocus()
             && !this.state.messageDetailOpen
             && !this.state.selectMenu;
     }
 
     protected canMessageNavigate(): boolean {
-        return this.state.hasMessageFocus()
+        return this.state.focusController.hasMessageFocus()
             && !this.state.messageDetailOpen
             && !this.state.selectMenu;
     }

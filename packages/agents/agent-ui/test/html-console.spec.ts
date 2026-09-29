@@ -178,8 +178,8 @@ export class HtmlConsoleTest {
         const inputRoot = inputPanel.hostView.rootNodes[0] as any;
         const inputField = inputRoot.querySelector('.agent-input') as HTMLTextAreaElement | null;
 
-        ref.instance.sessionState.pushInputHistory('first command');
-        ref.instance.sessionState.pushInputHistory('second command');
+        ref.instance.sessionState.inputHistoryController.push('first command');
+        ref.instance.sessionState.inputHistoryController.push('second command');
         ref.instance.sessionState.setInput('draft', 0);
         await settleDynamicMessages();
 
@@ -204,7 +204,7 @@ export class HtmlConsoleTest {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         const inputPanel = ref.hostView.query(AgentConsoleInputPanelComponent) as ComponentRef<AgentConsoleInputPanelComponent>;
         const inputField = inputPanel.hostView.rootNodes[0].querySelector('.agent-input') as HTMLTextAreaElement | null;
-        ref.instance.sessionState.pushInputHistory('previous command');
+        ref.instance.sessionState.inputHistoryController.push('previous command');
         ref.instance.sessionState.setInput('draft', 0);
         ref.instance.sessionState.selectMenu = { title: 'Sessions', options: [] } as any;
         let prevented = false;
@@ -218,7 +218,7 @@ export class HtmlConsoleTest {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         const inputPanel = ref.hostView.query(AgentConsoleInputPanelComponent) as ComponentRef<AgentConsoleInputPanelComponent>;
         const inputField = inputPanel.hostView.rootNodes[0].querySelector('.agent-input') as HTMLTextAreaElement | null;
-        ref.instance.sessionState.setInputHistoryEntries(['recent prompt', 'older prompt']);
+        ref.instance.sessionState.inputHistoryController.replace(['recent prompt', 'older prompt']);
         ref.instance.sessionState.setInput('draft', 5);
 
         await inputPanel.instance.onKeydown({ key: 'ArrowUp', target: inputField, preventDefault() {} } as any);

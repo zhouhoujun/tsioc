@@ -16,11 +16,11 @@ export interface KeymapCommandHost {
 }
 
 export function resolveKeymapContext(host: KeymapCommandHost): AgentConsoleKeymapContext {
-    if (host.state.hasApprovalFocus()) return 'approval';
-    if (host.state.hasMessageFocus() || host.state.hasMessageDetailFocus() || host.state.hasTextOverlayFocus()) return 'pager';
-    if (host.state.hasSessionFocus() || host.state.hasTaskFocus() || host.state.hasScheduledJobFocus()
-        || host.state.hasToolFocus() || host.state.hasBlockingSelectMenu()) return 'list';
-    if (host.state.inputFocused && !host.state.isAnyFocusActive()) return 'composer';
+    if (host.state.focusController.hasApprovalFocus()) return 'approval';
+    if (host.state.focusController.hasMessageFocus() || host.state.focusController.hasMessageDetailFocus() || host.state.hasTextOverlayFocus()) return 'pager';
+    if (host.state.focusController.hasSessionFocus() || host.state.focusController.hasTaskFocus() || host.state.focusController.hasScheduledJobFocus()
+        || host.state.focusController.hasToolFocus() || host.state.focusController.hasBlockingSelectMenu()) return 'list';
+    if (host.state.inputFocused && !host.state.focusController.isAnyFocusActive()) return 'composer';
     return 'global';
 }
 

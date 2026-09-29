@@ -1,3 +1,4 @@
+import { navigationFor } from './test-transcript-navigation';
 import expect = require('expect');
 import { Buffer } from 'buffer';
 import * as fs from 'fs';
@@ -217,21 +218,21 @@ export class VmMentionsTest {
     @Test('session state tracks input history and skips slash commands')
     async sessionStateTracksInputHistory() {
         const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
-        state.pushInputHistory('first');
-        state.pushInputHistory('/help');
-        state.pushInputHistory('second');
+        state.inputHistoryController.push('first');
+        state.inputHistoryController.push('/help');
+        state.inputHistoryController.push('second');
         state.setInput('draft');
 
-        expect(state.getInputHistoryEntries()).toEqual(['second', 'first']);
-        expect(state.navigateInputHistory(-1)).toEqual(true);
+        expect(state.inputHistoryController.entries()).toEqual(['second', 'first']);
+        expect(state.inputHistoryController.navigate(-1)).toEqual(true);
         expect(state.input).toEqual('second');
-        expect(state.navigateInputHistory(-1)).toEqual(true);
+        expect(state.inputHistoryController.navigate(-1)).toEqual(true);
         expect(state.input).toEqual('first');
-        expect(state.navigateInputHistory(1)).toEqual(true);
+        expect(state.inputHistoryController.navigate(1)).toEqual(true);
         expect(state.input).toEqual('second');
-        expect(state.navigateInputHistory(1)).toEqual(true);
+        expect(state.inputHistoryController.navigate(1)).toEqual(true);
         expect(state.input).toEqual('draft');
-        expect(state.navigateInputHistory(1)).toEqual(false);
+        expect(state.inputHistoryController.navigate(1)).toEqual(false);
     }
 
     @Test('component exposes notice and select helpers through shared ui state')
@@ -531,12 +532,12 @@ export class VmMentionsTest {
         );
 
         component.configure({ sessionId: 'chat-a', workspace: '/tmp/workspace-history' });
-        component.sessionState.setInputHistoryEntries(['history-a']);
+        component.sessionState.inputHistoryController.replace(['history-a']);
 
         await (component as any).openSession('chat-b');
 
         expect(component.sessionId).toEqual('chat-b');
-        expect(component.sessionState.getInputHistoryEntries()).toEqual(['history-a', 'history-b']);
+        expect(component.sessionState.inputHistoryController.entries()).toEqual(['history-a', 'history-b']);
         expect(historyStore.saveCalls[0]).toEqual(['history-a']);
         expect(historyStore.sessionIds[0]).toEqual('chat-a');
         expect(historyStore.workspaces[1]).toEqual('/tmp/workspace-history');
@@ -545,7 +546,7 @@ export class VmMentionsTest {
         await (component as any).openSession('chat-c');
 
         expect(component.sessionId).toEqual('chat-c');
-        expect(component.sessionState.getInputHistoryEntries()).toEqual(['history-a', 'history-b']);
+        expect(component.sessionState.inputHistoryController.entries()).toEqual(['history-a', 'history-b']);
         expect(historyStore.saveCalls[1]).toEqual(['history-a', 'history-b']);
         expect(historyStore.sessionIds[2]).toEqual('chat-b');
         expect(historyStore.sessionIds[3]).toEqual('');
@@ -584,7 +585,7 @@ export class VmMentionsTest {
 
         expect(component.workspace).toEqual('/tmp/workspace-b');
         expect(component.sessionState.workspace).toEqual('/tmp/workspace-b');
-        expect(component.sessionState.getInputHistoryEntries()).toEqual(['beta history']);
+        expect(component.sessionState.inputHistoryController.entries()).toEqual(['beta history']);
         expect(historyStore.workspaces).toContain('/tmp/workspace-b');
     }
 
@@ -621,7 +622,7 @@ export class VmMentionsTest {
 
         expect(component.workspace).toEqual('/tmp/workspace-a');
         expect(component.sessionState.workspace).toEqual('/tmp/workspace-a');
-        expect(component.sessionState.getInputHistoryEntries()).toEqual(['alpha history']);
+        expect(component.sessionState.inputHistoryController.entries()).toEqual(['alpha history']);
     }
 
     @Test('cd command persists current workspace history and reloads the next workspace history')
@@ -646,11 +647,11 @@ export class VmMentionsTest {
 
         component.configure({ sessionId: 'chat-a', workspace: '/tmp/workspace-a' });
         await component.onInit();
-        component.sessionState.setInputHistoryEntries(['alpha history', 'draft alpha']);
+        component.sessionState.inputHistoryController.replace(['alpha history', 'draft alpha']);
 
         await (component as any).runCdCommand('/tmp/workspace-b');
 
-        expect(component.sessionState.getInputHistoryEntries()).toEqual(['beta history']);
+        expect(component.sessionState.inputHistoryController.entries()).toEqual(['beta history']);
         expect(historyStore.saveCalls.some(call => call.includes('draft alpha'))).toBe(true);
         expect(historyStore.workspaces).toContain('/tmp/workspace-a');
         expect(historyStore.workspaces).toContain('/tmp/workspace-b');
@@ -684,7 +685,7 @@ export class VmMentionsTest {
         );
 
         component.configure({ sessionId: 'chat-a', workspace: '/tmp/workspace-history' });
-        component.sessionState.setInputHistoryEntries(['history-a']);
+        component.sessionState.inputHistoryController.replace(['history-a']);
 
         const firstSwitch = (component as any).openSession('chat-b');
         await Promise.resolve();
@@ -810,7 +811,8 @@ export class VmMentionsTest {
                 const outcome = await s.processDecodedInput(
                     { text: '\u001b[D', controlKey: 'left', partial: false },
                     '\u001b[D',
-                    { isClosed: false, onExit: () => {}, hasActiveTextPrompt: false }
+                    { isClosed: false, onExit: () => {}, hasActiveTextPrompt: false,
+                transcriptNavigationController: navigationFor(state) }
                 );
                 if (outcome.handled && outcome.action === 'draftNavigation' && outcome.value === 'left') {
                     s.moveInputCursor(-1);
@@ -865,7 +867,8 @@ export class VmMentionsTest {
                 const outcome = await s.processDecodedInput(
                     { text: '\u001b[C', controlKey: 'right', partial: false },
                     '\u001b[C',
-                    { isClosed: false, onExit: () => {}, hasActiveTextPrompt: false }
+                    { isClosed: false, onExit: () => {}, hasActiveTextPrompt: false,
+                transcriptNavigationController: navigationFor(state) }
                 );
                 if (outcome.handled && outcome.action === 'draftNavigation' && outcome.value === 'right') {
                     s.moveInputCursor(1);

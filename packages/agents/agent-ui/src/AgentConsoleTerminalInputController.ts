@@ -19,6 +19,7 @@ const SSH_SHELL_DETACH_SEQUENCE = '\x1d';
  * The component satisfies this interface structurally when delegating.
  */
 export interface AgentConsoleTerminalInputHost {
+    transcriptNavigationController: import('./AgentConsoleTranscriptNavigation').AgentConsoleTranscriptNavigationController;
     state: {
         sessionId: string;
         vimMode: boolean;
@@ -30,7 +31,7 @@ export interface AgentConsoleTerminalInputHost {
         setMessagesViewportItems?(value: number): void;
         consoleOptions: { messageToggleInteraction?: string; messageLayout?: string };
         isSshShellActive: boolean;
-        isAnyFocusActive(): boolean;
+        focusController: { isAnyFocusActive(): boolean };
         handleVimKey(key: string): boolean;
         processDecodedInput(
             decoded: { text: string; controlKey?: string; partial?: boolean },
@@ -40,6 +41,7 @@ export interface AgentConsoleTerminalInputHost {
                 onExit: (force?: boolean) => void;
                 hasActiveTextPrompt: boolean;
                 lastRenderedLines?: string[];
+                transcriptNavigationController: import('./AgentConsoleTranscriptNavigation').AgentConsoleTranscriptNavigationController;
             }
         ): Promise<{ handled: boolean; action?: string; value?: string }>;
         processRawChunk(
@@ -156,7 +158,7 @@ export async function handleTerminalInputView(
     if (await host.handleGlobalKeyInput(rawChunk)) {
         return;
     }
-    if (host.state.vimMode && !host.state.isAnyFocusActive() && host.state.inputMode === 'normal') {
+    if (host.state.vimMode && !host.state.focusController.isAnyFocusActive() && host.state.inputMode === 'normal') {
         const raw = typeof chunk === 'string' ? chunk : chunk.toString();
         if (decoded.controlKey === 'return') {
             return;
@@ -173,7 +175,8 @@ export async function handleTerminalInputView(
             void requestTerminalExitView(host, closingSessionMessageView(host));
         },
         hasActiveTextPrompt: false,
-        lastRenderedLines: host.getTerminalRenderedLines()
+        lastRenderedLines: host.getTerminalRenderedLines(),
+        transcriptNavigationController: host.transcriptNavigationController
     });
     if (!outcome.handled && decoded.text) {
         await host.state.processRawChunk(decoded.text, {

@@ -15,10 +15,6 @@ export class ConsoleAgentConsoleSessionState extends AgentConsoleSessionState {
         return this.consoleUtils.clampConsoleTextCursor(value, cursor);
     }
 
-    override shouldSkipHistoryEntry(entry: string): boolean {
-        return this.consoleUtils.shouldSkipConsoleHistoryEntry(entry);
-    }
-
     override formatStatusFooter(model: string, profile: string, workspace: string): string {
         return this.consoleUtils.formatTerminalStatusFooter(model, profile, workspace);
     }

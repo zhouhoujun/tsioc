@@ -194,8 +194,8 @@ export class P283SessionStateEnvelopeWiringTest {
     @Test('beginCommandExecution assigns monotonically increasing sequence')
     beginAssignsMonotonicSequence() {
         const state = createState();
-        const r1 = state.beginCommandExecution('/usage', '');
-        const r2 = state.beginCommandExecution('/status', '');
+        const r1 = state.commandExecutionController.begin('/usage', '');
+        const r2 = state.commandExecutionController.begin('/status', '');
         const e1 = state.commandExecutions.find(e => e.requestId === r1);
         const e2 = state.commandExecutions.find(e => e.requestId === r2);
         expect(e2!.sequence).toBeGreaterThan(e1!.sequence);
@@ -207,14 +207,14 @@ export class P283SessionStateEnvelopeWiringTest {
     sessionSwitchIncrementsEpoch() {
         const state = createState();
         state.configure({ sessionId: 'A' } as any);
-        state.beginCommandExecution('/ping', '');
+        state.commandExecutionController.begin('/ping', '');
         const e1 = state.commandExecutions[0];
         expect(e1.sessionEpoch).toEqual(1);
 
         state.configure({ sessionId: 'B' } as any);
         expect(state.commandExecutions.length).toEqual(0);
 
-        state.beginCommandExecution('/ping', '');
+        state.commandExecutionController.begin('/ping', '');
         const e2 = state.commandExecutions[0];
         expect(e2.sessionEpoch).toEqual(2);
         expect(e2.attempt).toEqual(1);
@@ -224,7 +224,7 @@ export class P283SessionStateEnvelopeWiringTest {
     transcriptProjectsSequenceAndAttempt() {
         const state = createState();
         state.configure({ sessionId: 'A' } as any);
-        state.beginCommandExecution('/usage', '');
+        state.commandExecutionController.begin('/usage', '');
         const msg = state.displayMessages.find(m => m.metadata?.uiKind === 'command-execution');
         expect(msg).toBeDefined();
         expect(msg?.metadata?.sequence).toEqual(1);
@@ -235,11 +235,11 @@ export class P283SessionStateEnvelopeWiringTest {
     separateBeginsProduceDistinctEntries() {
         const state = createState();
         state.configure({ sessionId: 'A' } as any);
-        const r1 = state.beginCommandExecution('/search', 'q');
-        state.failCommandExecution(r1, 'timeout', true);
+        const r1 = state.commandExecutionController.begin('/search', 'q');
+        state.commandExecutionController.fail(r1, 'timeout', true);
         expect(state.latestCommandExecution?.status).toEqual('failed');
 
-        const r2 = state.beginCommandExecution('/search', 'q');
+        const r2 = state.commandExecutionController.begin('/search', 'q');
         expect(state.commandExecutions.length).toEqual(2);
         expect(state.latestCommandExecution?.attempt).toEqual(1);
         expect(state.latestCommandExecution?.status).toEqual('running');

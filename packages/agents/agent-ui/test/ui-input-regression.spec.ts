@@ -286,7 +286,7 @@ export class UiInputInteractionRegressionTest {
     async upDownRecallsHistory() {
         const instance = this.console();
         const state = instance.sessionState;
-        state.setInputHistoryEntries(['fix the tests', 'add logging']);
+        state.inputHistoryController.replace(['fix the tests', 'add logging']);
         state.setInput('', 0);
 
         // ArrowUp -> most recent entry
@@ -311,7 +311,7 @@ export class UiInputInteractionRegressionTest {
     async tuiSuggestionMenuWinsAfterHistoryRecall() {
         const instance = this.console();
         const state = instance.sessionState;
-        state.setInputHistoryEntries(['recent prompt', 'older prompt']);
+        state.inputHistoryController.replace(['recent prompt', 'older prompt']);
         state.setInput('draft', 5);
 
         await this.press('\u001b[A');
@@ -338,7 +338,7 @@ export class UiInputInteractionRegressionTest {
     @Test('TUI suggestion menu handles arrows before input history')
     async tuiSuggestionMenuWinsOnFirstArrow() {
         const state = this.console().sessionState;
-        state.setInputHistoryEntries(['recent prompt', 'older prompt']);
+        state.inputHistoryController.replace(['recent prompt', 'older prompt']);
         state.setInput('draft', 5);
         state.selectMenu = {
             title: 'Suggestions',
@@ -358,12 +358,12 @@ export class UiInputInteractionRegressionTest {
     async historySkipsSlashCommands() {
         const instance = this.console();
         const state = instance.sessionState;
-        state.setInputHistoryEntries(['/help', 'real prompt', '/status']);
+        state.inputHistoryController.replace(['/help', 'real prompt', '/status']);
         state.setInput('', 0);
 
-        expect(state.navigateInputHistory(-1)).toBe(true);
+        expect(state.inputHistoryController.navigate(-1)).toBe(true);
         expect(state.input).toBe('real prompt');
-        expect(state.navigateInputHistory(-1)).toBe(false); // nothing older (commands skipped)
+        expect(state.inputHistoryController.navigate(-1)).toBe(false); // nothing older (commands skipped)
     }
 
     @Test('ArrowUp/ArrowDown recall only non-command entries through the real input pipeline')
@@ -371,7 +371,7 @@ export class UiInputInteractionRegressionTest {
         const instance = this.console();
         const state = instance.sessionState;
         // Entries are stored newest-first (index 0), matching pushInputHistory.
-        state.setInputHistoryEntries(['add logging', 'fix the tests', '/status', '/help']);
+        state.inputHistoryController.replace(['add logging', 'fix the tests', '/status', '/help']);
         state.setInput('', 0);
 
         // ArrowUp -> newest real entry ('/help' newest of them all is skipped)
@@ -399,7 +399,7 @@ export class UiInputInteractionRegressionTest {
         (instance as any).submit = async () => {
             const value = state.input.trim();
             if (!value) return;
-            state.pushInputHistory(value);
+            state.inputHistoryController.push(value);
             state.setInput('', 0);
             submitted.push(value);
         };

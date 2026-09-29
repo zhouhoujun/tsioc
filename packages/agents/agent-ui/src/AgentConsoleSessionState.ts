@@ -23,12 +23,7 @@ import {
     AgentConsoleCommandExecution,
     COMMAND_EXECUTION_CONTROL,
     CommandExecutionControlPort,
-    AGENT_CONSOLE_COMMAND_EXECUTION_RING_CAP,
-    createBeginCommandExecutionAction,
-    createCompleteCommandExecutionAction,
-    createFailCommandExecutionAction,
-    createLinkCommandOutputAction,
-    reduceAgentConsoleCommandExecution
+    AGENT_CONSOLE_COMMAND_EXECUTION_RING_CAP
 } from '@tsdi/agent';
 import {
     AgentConsoleCommandOutputHistoryEntry,
@@ -48,7 +43,7 @@ import {
 import { AgentConsoleMessageStatusLabels } from './AgentConsoleMessageRenderers';
 import { normalizeMessageLayout, resolveFinalAssistantMessageId } from './AgentConsoleViewport';
 import { trackMessagesNewCount } from './AgentConsoleTranscriptLayout';
-import { moveMessageSelection, moveMessageSelectionPage, selectFirstMessage, selectLastMessage } from './AgentConsoleTranscriptNavigation';
+import { AgentConsoleTranscriptNavigationController } from './AgentConsoleTranscriptNavigation';
 import {
     AgentConsoleTimelineLabels,
     DEFAULT_TIMELINE_LABELS,
@@ -83,13 +78,15 @@ import {
 } from './AgentConsoleVim';
 import {
     clampCommonTextCursor,
-    processCommonTextInputChunk,
-    shouldSkipCommonHistoryEntry
+    processCommonTextInputChunk
 } from '@tsdi/components/common';
 import {
     agentConsoleCommandHints,
     getAgentConsoleCommandDefinition
 } from './AgentConsoleCommandRegistry';
+import { AgentConsoleInputHistoryController, DefaultAgentConsoleInputHistoryController } from './AgentConsoleInputHistory';
+import { AgentConsoleFocusController, DefaultAgentConsoleFocusController } from './AgentConsoleFocusController';
+import { AgentConsoleCommandExecutionController, DefaultAgentConsoleCommandExecutionController } from './AgentConsoleCommandExecutionState';
 
 export interface AgentConsoleToolItem {
     name: string;
@@ -578,6 +575,23 @@ export const AGENT_CONSOLE_COMMAND_OUTPUT_RING_CAP = 20;
 @Injectable()
 export class AgentConsoleSessionState {
     constructor(@Inject(COMMAND_EXECUTION_CONTROL) protected commandExecutionControl?: CommandExecutionControlPort) {}
+    readonly inputHistoryController: AgentConsoleInputHistoryController = new DefaultAgentConsoleInputHistoryController(this);
+    readonly focusController: AgentConsoleFocusController = new DefaultAgentConsoleFocusController(this);
+    private _commandExecutionController?: AgentConsoleCommandExecutionController;
+    get commandExecutionController(): AgentConsoleCommandExecutionController {
+        if (!this._commandExecutionController) {
+            this._commandExecutionController = new DefaultAgentConsoleCommandExecutionController(this, {
+                begin: (id, session) => this.requireCommandExecutionControl().begin(id, session),
+                finish: id => this.requireCommandExecutionControl().finish(id),
+                cancel: id => this.requireCommandExecutionControl().cancel(id),
+                isCurrent: (id, session) => this.requireCommandExecutionControl().isCurrent(id, session),
+                signal: (id, session) => this.requireCommandExecutionControl().signal(id, session)
+            });
+        }
+        return this._commandExecutionController;
+    }
+
+    projectCommandExecution(requestId: string): void { this.syncCommandExecutionTranscript(requestId); }
     consoleOptions: Required<AgentConsoleOptions> = defaultAgentConsoleOptions;
     messageDetailVisibleLines = defaultAgentConsoleOptions.messageDetailVisibleLines;
     /** Terminal-height-derived window size for viewport layout (0 = fall back to configured items). */
@@ -675,8 +689,8 @@ export class AgentConsoleSessionState {
     selectedPlanTodoIndex = -1;
     protected planEventSequence = 0;
     protected commandOutputSequence = 0;
-    protected commandExecutionSequence = 0;
-    protected commandExchangeSessionEpoch = 0;
+    commandExecutionSequence = 0;
+    commandExchangeSessionEpoch = 0;
     planId = '';
     planRevision = 0;
     goalSummary: AgentConsoleGoalSummary | null = null;
@@ -822,12 +836,13 @@ export class AgentConsoleSessionState {
     protected mentionCatalog: AgentConsoleMentionCatalogItem[] = [];
     protected workspaceSuggestionRequestId = 0;
     protected suppressSuggestionMenu = false;
+    setSuppressSuggestionMenu(suppressed: boolean): void { this.suppressSuggestionMenu = suppressed; }
     protected overlayController = new AgentConsoleOverlayController();
 
     configure(meta: AgentConsoleSessionMeta): this {
         const nextSessionId = String(meta.sessionId || '').trim();
         if (nextSessionId && nextSessionId !== this.sessionId) {
-            this.cancelRunningCommandExecutions();
+            this.commandExecutionController.cancelRunning();
             this.sessionId = nextSessionId;
             this.projectKey = '';
             this.projectLabel = '';
@@ -838,9 +853,7 @@ export class AgentConsoleSessionState {
             this.commandExecutionMessages = [];
             this.commandExchangeSessionEpoch++;
             this.commandOutputs = [];
-            // P269/P271: per-session monotonic seq — a stale tail from the
-            // previous session would skip the new session's low-seq events on
-            // reconnect replay, so reset the timeline cursor with the switch.
+            // A new session starts its durable replay cursors from the beginning.
             this.timelineTailSeq = -1;
             this.timelineSeedCount = 0;
             this.commandExchangeTailSeq = -1;
@@ -1060,9 +1073,9 @@ export class AgentConsoleSessionState {
                 this.setInputMode('insert');
                 break;
             case 'history-prev':
-                return this.navigateInputHistory(-1);
+                return this.inputHistoryController.navigate(-1);
             case 'history-next':
-                return this.navigateInputHistory(1);
+                return this.inputHistoryController.navigate(1);
             case 'cursor-left':
                 this.moveInputCursor(-1);
                 break;
@@ -1096,159 +1109,7 @@ export class AgentConsoleSessionState {
     }
 
     protected syncDerivedInputFocus(): void {
-        this.rebuildFocusStack();
-        this.inputFocused = !this.sessionsFocused
-            && !this.toolRunsFocused
-            && !this.projectsFocused
-            && !this.threadsFocused
-            && !this.tasksFocused
-            && !this.jobsFocused
-            && !this.toolsFocused
-            && !this.approvalsFocused
-            && !this.reviewOpen
-            && !this.messagesFocused
-            && !this.pendingQuestion
-            && !this.timelineEventInspectorOpen
-            && !this.hasMessageDetailFocus()
-            && !this.commandOutputsOpen
-            && !(this.selectMenu && !isAgentConsoleSuggestionMenu(this.selectMenu));
-    }
-
-    protected rebuildFocusStack(): void {
-        const layers: AgentConsoleFocusLayer[] = [];
-        if (this.messagesFocused) layers.push('messages');
-        if (this.threadsFocused) layers.push('threads');
-        if (this.projectsFocused) layers.push('projects');
-        if (this.sessionsFocused) layers.push('sessions');
-        if (this.toolRunsFocused) layers.push('tool-runs');
-        if (this.toolsFocused) layers.push('tool');
-        if (this.jobsFocused) layers.push('jobs');
-        if (this.tasksFocused) layers.push('plan');
-        if (this.approvalsFocused) layers.push('approval');
-        if (this.pendingQuestion) layers.push('question');
-        if (this.selectMenu && !isAgentConsoleSuggestionMenu(this.selectMenu)) layers.push('select');
-        if (this.textOverlay) layers.push('overlay');
-        if (this.messageDetailOpen && this.messageDetailTakesFocus) layers.push('message-detail');
-        if (this.timelineEventInspectorOpen) layers.push('timeline-inspector');
-        if (this.reviewOpen) layers.push('review');
-        if (this.gitSnapshotOpen) layers.push('git-snapshot');
-        if (this.commandOutputsOpen) layers.push('command-outputs');
-        this.focusStack = layers;
-    }
-
-    get activeFocusLayer(): AgentConsoleFocusLayer | undefined {
-        return this.focusStack[this.focusStack.length - 1];
-    }
-
-    get focusLayers(): readonly AgentConsoleFocusLayer[] {
-        return this.focusStack.slice();
-    }
-
-    pushFocusLayer(layer: AgentConsoleFocusLayer): readonly AgentConsoleFocusLayer[] {
-        const next = this.focusStack.filter(item => item !== layer);
-        next.push(layer);
-        this.focusStack = next;
-        return this.focusLayers;
-    }
-
-    popFocusLayer(): AgentConsoleFocusLayer | undefined {
-        const layer = this.focusStack.pop();
-        this.focusStack = this.focusStack.slice();
-        return layer;
-    }
-
-    replaceFocusLayer(layer: AgentConsoleFocusLayer): readonly AgentConsoleFocusLayer[] {
-        this.focusStack = this.focusStack.length
-            ? [...this.focusStack.slice(0, -1), layer]
-            : [layer];
-        return this.focusLayers;
-    }
-
-    consumeFocusLayer(layer: AgentConsoleFocusLayer): boolean {
-        if (this.activeFocusLayer !== layer) return false;
-        this.popFocusLayer();
-        return true;
-    }
-
-    hasBlockingSelectMenu(): boolean {
-        return !!this.selectMenu && !isAgentConsoleSuggestionMenu(this.selectMenu);
-    }
-
-    hasSessionFocus(): boolean {
-        return !!this.sessionsFocused;
-    }
-
-    hasTaskFocus(): boolean {
-        return !!this.tasksFocused;
-    }
-
-    hasScheduledJobFocus(): boolean {
-        return !!this.jobsFocused;
-    }
-
-    hasToolFocus(): boolean {
-        return !!this.toolsFocused;
-    }
-
-    hasApprovalFocus(): boolean {
-        return !!this.approvalsFocused;
-    }
-
-    hasReviewFocus(): boolean {
-        return !!this.reviewOpen;
-    }
-
-    hasMessageFocus(): boolean {
-        return !!this.messagesFocused;
-    }
-
-    hasMessageDetailFocus(): boolean {
-        return !!this.messageDetailOpen && !!this.messageDetailTakesFocus;
-    }
-
-    isAnyFocusActive(): boolean {
-        return !!this.pendingQuestion
-            || this.hasBlockingSelectMenu()
-            || this.hasSessionFocus()
-            || this.hasTaskFocus()
-            || this.hasScheduledJobFocus()
-            || this.hasToolFocus()
-            || this.hasApprovalFocus()
-            || this.hasReviewFocus()
-            || this.hasMessageFocus()
-            || this.hasTimelineEventInspectorFocus
-            || this.hasMessageDetailFocus()
-            || this.hasTextOverlayFocus()
-            || this.hasCommandOutputsFocus();
-    }
-
-    shouldRenderTerminalCursor(): boolean {
-        return this.inputFocused
-            || this.isAnyFocusActive()
-            || this.inputLocked
-            || this.modalPromptActive;
-    }
-
-    resolveTerminalCursorMode(): 'prompt' | 'bottom' {
-        return this.isAnyFocusActive()
-            || this.inputLocked
-            || this.modalPromptActive
-            ? 'bottom'
-            : 'prompt';
-    }
-
-    shouldRouteDraftNavigation(hasActiveTextPrompt: boolean): boolean {
-        return !this.hasToolFocus()
-            && !this.hasApprovalFocus()
-            && !this.hasReviewFocus()
-            && !this.hasBlockingSelectMenu()
-            && !this.hasSessionFocus()
-            && !this.hasMessageFocus()
-            && !this.hasMessageDetailFocus()
-            && !this.pendingQuestion
-            && !this.inputLocked
-            && !this.modalPromptActive
-            && !hasActiveTextPrompt;
+        this.focusController.sync();
     }
 
     beginSelectInteraction(): () => void {
@@ -1961,25 +1822,6 @@ export class AgentConsoleSessionState {
             && leftMetadata.timeline?.attempt === rightMetadata.timeline?.attempt;
     }
 
-    setMessagesFocused(focused: boolean): void {
-        this.messagesFocused = focused;
-        const displayMessages = this.displayMessages;
-        if (focused && !this.selectedMessageId && displayMessages.length) {
-            this.selectedMessageId = displayMessages[displayMessages.length - 1].id;
-        }
-        if (!focused) {
-            this.messagesNewCount = 0;
-            this.timelineEventInspectorOpen = false;
-            this.selectedTimelineEventId = '';
-            this.timelineEventDetailScroll = 0;
-            this.timelineEventDetailColumnScroll = 0;
-            this.messageDetailOpen = false;
-            this.messageDetailScroll = 0;
-            this.messageDetailColumnScroll = 0;
-        }
-        this.syncDerivedInputFocus();
-    }
-
     setSelectedMessageId(messageId: string): void {
         if (!messageId || !this.displayMessages.some(item => item.id === messageId)) {
             return;
@@ -1994,7 +1836,7 @@ export class AgentConsoleSessionState {
     }
 
     focusLatestLongMessage(): boolean {
-        if (this.input || this.inputLocked || this.modalPromptActive || this.hasBlockingSelectMenu()) {
+        if (this.input || this.inputLocked || this.modalPromptActive || this.focusController.hasBlockingSelectMenu()) {
             return false;
         }
         const messages = this.displayMessages;
@@ -2030,7 +1872,7 @@ export class AgentConsoleSessionState {
         return this.displayMessages.find(item => item.id === this.selectedTimelineEventId);
     }
 
-    protected     isTimelineEventMessage(message?: AgentMessage | null): boolean {
+    isTimelineEventMessage(message?: AgentMessage | null): boolean {
         if (!message) {
             return false;
         }
@@ -2205,7 +2047,7 @@ export class AgentConsoleSessionState {
             : Math.max(0, this.timelineEventDetailMaxColumn - 1);
     }
 
-    protected canRetryTimelineEvent(): boolean {
+    canRetryTimelineEvent(): boolean {
         if (!this.timelineEventInspectorOpen) {
             return false;
         }
@@ -2218,7 +2060,7 @@ export class AgentConsoleSessionState {
             || event.metadata?.status === 'failed';
     }
 
-    protected buildTimelineEventRetryPayload(): { toolCallId?: string; receiptId?: string; attempt?: number; uiEventKey?: string } | null {
+    buildTimelineEventRetryPayload(): { toolCallId?: string; receiptId?: string; attempt?: number; uiEventKey?: string } | null {
         const event = this.selectedTimelineEvent;
         if (!event) {
             return null;
@@ -2436,76 +2278,6 @@ export class AgentConsoleSessionState {
         }
         const explicitPlanIntent = /(?:\bplan(?:ning)?\b|\bdesign\b|\barchitecture\b|方案|规划|设计|先不要改|不要(?:先)?修改|先别改)/i;
         return explicitPlanIntent.test(draft) ? 'Planning intent detected · use /plan' : '';
-    }
-
-    pushInputHistory(value: string): void {
-        const trimmed = String(value || '').trim();
-        if (!trimmed || this.shouldSkipHistoryEntry(trimmed)) {
-            return;
-        }
-        this.inputHistoryEntries = [trimmed, ...this.inputHistoryEntries.filter(item => item !== trimmed)].slice(0, 200);
-        this.inputHistoryIndex = -1;
-        this.inputHistoryDraft = '';
-    }
-
-    navigateInputHistory(delta: number): boolean {
-        if (!this.inputHistoryEntries.length) {
-            return false;
-        }
-        if (this.inputHistoryIndex === -1 && this.input.includes('\n')) {
-            return false;
-        }
-        if (delta < 0) {
-            if (this.inputHistoryIndex === -1) {
-                this.inputHistoryDraft = this.input;
-            }
-            const nextIndex = this.findInputHistoryIndex(this.inputHistoryIndex + 1, 1);
-            if (nextIndex < 0) {
-                return false;
-            }
-            this.inputHistoryIndex = nextIndex;
-        } else {
-            if (this.inputHistoryIndex === -1) {
-                return false;
-            }
-            const nextIndex = this.findInputHistoryIndex(this.inputHistoryIndex - 1, -1);
-            if (nextIndex < 0) {
-                this.inputHistoryIndex = -1;
-                this.setInput(this.inputHistoryDraft, this.inputHistoryDraft.length);
-                return true;
-            }
-            this.inputHistoryIndex = nextIndex;
-        }
-        const next = this.inputHistoryEntries[this.inputHistoryIndex] || '';
-        this.setInput(next, next.length);
-        return true;
-    }
-
-    resetInputHistoryNavigation(): void {
-        this.inputHistoryIndex = -1;
-        this.inputHistoryDraft = '';
-    }
-
-    getInputHistoryEntries(): string[] {
-        return this.inputHistoryEntries.slice();
-    }
-
-    setInputHistoryEntries(entries: string[]): void {
-        this.inputHistoryEntries = Array.from(new Set((entries || [])
-            .map(entry => String(entry || '').trim())
-            .filter(entry => !!entry && !this.shouldSkipHistoryEntry(entry))))
-            .slice(0, 200);
-        this.inputHistoryIndex = -1;
-        this.inputHistoryDraft = '';
-    }
-
-    protected findInputHistoryIndex(startIndex: number, step: number): number {
-        for (let index = startIndex; index >= 0 && index < this.inputHistoryEntries.length; index += step) {
-            if (!this.shouldSkipHistoryEntry(this.inputHistoryEntries[index])) {
-                return index;
-            }
-        }
-        return -1;
     }
 
     setInputCursor(cursor: number): void {
@@ -3849,7 +3621,7 @@ export class AgentConsoleSessionState {
             return;
         }
         if (this.pendingQuestion
-            || this.hasBlockingSelectMenu()
+            || this.focusController.hasBlockingSelectMenu()
             || this.textOverlay
             || this.reviewOpen
             || this.timelineEventInspectorOpen
@@ -4740,67 +4512,13 @@ export class AgentConsoleSessionState {
         }
     }
 
-    beginCommandExecution(command: string, args: string): string {
-        const control = this.requireCommandExecutionControl();
-        const sequence = ++this.commandExecutionSequence;
-        const requestId = `cmd-${sequence}`;
-        control.begin(requestId, this.sessionId);
-        this.commandExecutions = reduceAgentConsoleCommandExecution(
-            this.commandExecutions,
-            createBeginCommandExecutionAction(requestId, String(command || '').trim(), String(args || '').trim(), this.sessionId, Date.now(), sequence, this.commandExchangeSessionEpoch)
-        );
-        this.syncCommandExecutionTranscript(requestId);
-        return requestId;
-    }
-
-    completeCommandExecution(requestId: string, status: 'succeeded' | 'cancelled'): void {
-        if (!this.isCommandExecutionCurrent(requestId)) {
-            return;
-        }
-        this.commandExecutions = reduceAgentConsoleCommandExecution(
-            this.commandExecutions,
-            createCompleteCommandExecutionAction(requestId, status)
-        );
-        this.syncCommandExecutionTranscript(requestId);
-        this.requireCommandExecutionControl().finish(requestId);
-    }
-
-    failCommandExecution(requestId: string, error: string, retryable: boolean): void {
-        if (!this.isCommandExecutionCurrent(requestId)) {
-            return;
-        }
-        this.commandExecutions = reduceAgentConsoleCommandExecution(
-            this.commandExecutions,
-            createFailCommandExecutionAction(requestId, String(error || ''), !!retryable)
-        );
-        this.syncCommandExecutionTranscript(requestId);
-        this.requireCommandExecutionControl().finish(requestId);
-    }
-
-    linkCommandOutputToExecution(requestId: string, outputId: string): void {
-        this.commandExecutions = reduceAgentConsoleCommandExecution(
-            this.commandExecutions,
-            createLinkCommandOutputAction(requestId, outputId)
-        );
-        this.syncCommandExecutionTranscript(requestId);
-    }
-
     get latestCommandExecution(): AgentConsoleCommandExecution | undefined {
         return this.commandExecutions[0];
     }
 
-    /** True only while a request still belongs to this session generation. */
-    isCommandExecutionCurrent(requestId: string): boolean {
-        return this.requireCommandExecutionControl().isCurrent(requestId, this.sessionId)
-            && this.commandExecutions.some(item => item.requestId === requestId);
-    }
-
-    getCommandExecutionSignal(requestId: string): AbortSignal | undefined {
-        return this.requireCommandExecutionControl().signal(requestId, this.sessionId);
-    }
-
     setCommandExecutionControl(control: CommandExecutionControlPort): void {
         this.commandExecutionControl = control;
+        this._commandExecutionController = undefined;
     }
 
     protected requireCommandExecutionControl(): CommandExecutionControlPort {
@@ -4808,20 +4526,6 @@ export class AgentConsoleSessionState {
             throw new Error('AgentConsoleSessionState requires COMMAND_EXECUTION_CONTROL from its host injector.');
         }
         return this.commandExecutionControl;
-    }
-
-    /** Cancels all currently running command records; late completions are ignored. */
-    cancelRunningCommandExecutions(): void {
-        this.commandExecutions
-            .filter(item => item.status === 'running')
-            .forEach(item => {
-                this.requireCommandExecutionControl().cancel(item.requestId);
-                this.commandExecutions = reduceAgentConsoleCommandExecution(
-                    this.commandExecutions,
-                    createCompleteCommandExecutionAction(item.requestId, 'cancelled')
-                );
-                this.syncCommandExecutionTranscript(item.requestId);
-            });
     }
 
     /** Projects one command lifecycle into the shared, stable-key transcript. */
@@ -5190,144 +4894,24 @@ export class AgentConsoleSessionState {
         this.syncDerivedInputFocus();
     }
 
-    handleSelectKey(key: string): boolean {
-        const normalized = String(key || '').trim().toLowerCase();
-        if (!this.selectMenu || !this.selectMenu.options.length) { return false; }
-        const decision = this.overlayController.resolveKey(normalized, this.selectMenu.options.length);
-        switch (decision.action) {
-            case 'move':
-                this.moveSelectMenu(decision.delta);
-                return true;
-            case 'home':
-                this.moveSelectMenuToEdge('start');
-                return true;
-            case 'end':
-                this.moveSelectMenuToEdge('end');
-                return true;
-            case 'page':
-                this.moveSelectMenuPage(decision.direction);
-                return true;
-            case 'confirm':
-                void this.confirmSelectMenu();
-                return true;
-            case 'escape':
-                void this.handleEscapeKey();
-                return true;
-            case 'choose':
-                void this.chooseSelectMenuIndex(decision.index);
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    protected isDismissKey(key: string): boolean {
-        return this.overlayController.isDismissKey(key);
-    }
-
-    protected resolveFocusShortcutKey(rawText: string, controlKey?: string): string {
-        if (controlKey === 'return') {
-            return 'enter';
-        }
-        if (controlKey) {
-            return controlKey;
-        }
-        const normalized = String(rawText || '').trim().toLowerCase();
-        switch (normalized) {
-            case 'y':
-                return 'copy';
-            case 'a':
-                return 'approve';
-            case 'd':
-                return 'deny';
-            case 'q':
-                return 'q';
-            default:
-                return normalized;
-        }
-    }
-
     closeSelectMenu(): void {
         this.selectMenu = undefined;
         this.syncDerivedInputFocus();
     }
 
-    async dismissFocusLayer(): Promise<boolean> {
-        if (this.commandOutputsOpen) {
-            this.closeCommandOutputs();
-            return true;
+    async dismissSelectMenuLayer(): Promise<void> {
+        const currentMenu = this.selectMenu;
+        const parentMenu = currentMenu?.parentMenu;
+        if (!currentMenu) return;
+        if (parentMenu) {
+            this.selectMenuAction = undefined;
+            this.closeSelectMenu();
+            this.selectMenu = parentMenu;
+            this.selectMenuAction = currentMenu.parentMenuAction;
+            this.syncDerivedInputFocus();
+            return;
         }
-        if (this.textOverlay) {
-            this.closeTextOverlay();
-            return true;
-        }
-        if (this.selectMenu) {
-            await this.cancelSelectMenu();
-            return true;
-        }
-        if (this.gitSnapshotOpen) {
-            this.closeGitSnapshotDetail();
-            return true;
-        }
-        if (this.reviewOpen) {
-            this.closeReview();
-            return true;
-        }
-        if (this.timelineEventInspectorOpen) {
-            this.closeTimelineEventInspector();
-            if (this.messagesFocused) {
-                this.setMessagesFocused(false);
-            }
-            return true;
-        }
-        if (this.messageDetailOpen) {
-            this.closeMessageDetail();
-            if (this.messagesFocused) {
-                this.setMessagesFocused(false);
-            }
-            return true;
-        }
-        if (this.messagesFocused) {
-            this.setMessagesFocused(false);
-            return true;
-        }
-        if (this.approvalsFocused) {
-            this.setApprovalsFocused(false);
-            return true;
-        }
-        if (this.tasksFocused) {
-            this.setTasksFocused(false);
-            return true;
-        }
-        if (this.jobsFocused) {
-            this.setJobsFocused(false);
-            return true;
-        }
-        if (this.toolsFocused) {
-            this.setToolsFocused(false);
-            return true;
-        }
-        if (this.sessionsFocused) {
-            this.setSessionsFocused(false);
-            return true;
-        }
-        if (this.toolRunsFocused) {
-            this.setToolRunsFocused(false);
-            return true;
-        }
-        if (this.projectsFocused) {
-            this.setProjectsFocused(false);
-            return true;
-        }
-        if (this.threadsFocused) {
-            this.setThreadsFocused(false);
-            return true;
-        }
-        if (!this.inputFocused) {
-            this.setInputFocused(true);
-            return true;
-        }
-        return false;
+        await this.cancelSelectMenu();
     }
 
     setSelectMenuIndex(index: number): void {
@@ -5772,7 +5356,7 @@ export class AgentConsoleSessionState {
         return path && path !== '/dev/null' ? path : fallback;
     }
 
-    protected buildSelectedApprovalCopyText(): string {
+    buildSelectedApprovalCopyText(): string {
         const selected = this.selectedApproval;
         if (!selected) {
             return '';
@@ -5784,7 +5368,7 @@ export class AgentConsoleSessionState {
         ].filter(Boolean).join('\n');
     }
 
-    protected buildSelectedReviewCopyText(): string {
+    buildSelectedReviewCopyText(): string {
         const header = [
             this.reviewTask?.title || this.selectedReviewTaskId || 'review',
             this.reviewTask?.id ? `(${this.reviewTask.id})` : '',
@@ -6195,515 +5779,36 @@ export class AgentConsoleSessionState {
         ].filter(Boolean).join(' · ');
     }
 
-    async handleEscapeKey(): Promise<boolean> {
-        if (this.pendingQuestion) {
-            this.setPendingQuestion(null);
-            this.setInputFocused(true);
-            return true;
-        }
-        if (this.selectMenu) {
-            const currentMenu = this.selectMenu;
-            const parentMenu = currentMenu.parentMenu;
-            if (parentMenu) {
-                this.selectMenuAction = undefined;
-                this.closeSelectMenu();
-                this.selectMenu = parentMenu;
-                this.selectMenuAction = currentMenu.parentMenuAction;
-                this.syncDerivedInputFocus();
-                return true;
-            }
-            await this.cancelSelectMenu();
-            return true;
-        }
-        if (!!this.textOverlay || this.gitSnapshotOpen || this.reviewOpen || this.timelineEventInspectorOpen || this.messageDetailOpen || this.messagesFocused || this.approvalsFocused || this.tasksFocused || this.jobsFocused || this.toolsFocused || this.sessionsFocused || this.toolRunsFocused || this.projectsFocused || this.threadsFocused) {
-            await this.dismissFocusLayer();
-            return true;
-        }
-        if (this.status === 'running' || this.status === 'reasoning') {
-            return true;
-        }
-        if (await this.escapeAction?.()) {
-            return true;
-        }
-        return false;
-    }
-
-    handleMenuInput(key: string, text: string): boolean {
-        if (!this.selectMenu) {
-            return false;
-        }
-        const decision = this.overlayController.resolveMenuKey(key, text, this.selectMenu.options.length);
-        switch (decision.action) {
-            case 'move':
-                this.moveSelectMenu(decision.delta);
-                return true;
-            case 'home':
-                this.moveSelectMenuToEdge('start');
-                return true;
-            case 'end':
-                this.moveSelectMenuToEdge('end');
-                return true;
-            case 'page':
-                this.moveSelectMenuPage(decision.direction);
-                return true;
-            case 'accept':
-                void this.acceptSelectMenu();
-                return true;
-            case 'choose':
-                this.setSelectMenuIndex(decision.index);
-                void this.acceptSelectMenu();
-                return true;
-            case 'digit-consume':
-                return true;
-            case 'cancel':
-                this.suppressSuggestionMenu = true;
-                void this.cancelSelectMenu();
-                return false;
-            case 'escape':
-                void this.handleEscapeKey();
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    async handleFocusKey(key: string): Promise<boolean> {
+    async handleFocusKey(key: string, transcriptNavigationController: AgentConsoleTranscriptNavigationController): Promise<boolean> {
         const normalized = String(key || '').trim().toLowerCase();
         if (!normalized) {
             return false;
         }
-        if (this.pendingQuestion) {
-            const decision = this.overlayController.resolveKey(normalized, this.pendingQuestion.options.length);
-            switch (decision.action) {
-                case 'move':
-                    this.movePendingQuestionSelection(decision.delta);
-                    return true;
-                case 'home':
-                    this.movePendingQuestionSelectionToEdge('start');
-                    return true;
-                case 'end':
-                    this.movePendingQuestionSelectionToEdge('end');
-                    return true;
-                case 'page':
-                    this.movePendingQuestionSelectionPage(decision.direction);
-                    return true;
-                case 'confirm': {
-                    const typed = String(this.input || '').trim();
-                    const selected = this.pendingQuestion?.options[this.pendingQuestionSelectedIndex];
-                    if (this.questionAction && typed && typed !== selected) {
-                        return this.submitPendingQuestionInput();
-                    }
-                    return this.choosePendingQuestion();
-                }
-                case 'choose':
-                    return this.choosePendingQuestion(decision.index);
-                case 'escape':
-                    this.setPendingQuestion(null);
-                    this.syncDerivedInputFocus();
-                    return true;
-                default:
-                    if (this.overlayController.isDigitKey(normalized)) {
-                        return false;
-                    }
-                    break;
-            }
-        }
-        if (this.commandOutputsOpen) {
-            if (this.isDismissKey(normalized)) {
-                await this.dismissFocusLayer();
-                return true;
-            }
-            switch (normalized) {
-                case 'up':
-                case 'k':
-                    this.moveCommandOutputSelection(-1);
-                    return true;
-                case 'down':
-                case 'j':
-                    this.moveCommandOutputSelection(1);
-                    return true;
-                case 'pageup':
-                    this.scrollCommandOutputsPage(-1);
-                    return true;
-                case 'pagedown':
-                    this.scrollCommandOutputsPage(1);
-                    return true;
-                case 'home':
-                    this.scrollCommandOutputsToEdge('start');
-                    return true;
-                case 'end':
-                    this.scrollCommandOutputsToEdge('end');
-                    return true;
-                case '/':
-                    this.commandOutputsFilterMode = true;
-                    this.setCommandOutputsFilter('');
-                    return true;
-                case 'return':
-                case 'enter':
-                    return this.copySelectedCommandOutput();
-                case 'backspace':
-                    if (this.commandOutputsFilterMode) {
-                        this.setCommandOutputsFilter(this.commandOutputsFilter.slice(0, -1));
-                        return true;
-                    }
-                    return false;
-                default:
-                    if (this.commandOutputsFilterMode && normalized && normalized.length === 1) {
-                        this.setCommandOutputsFilter(`${this.commandOutputsFilter}${normalized}`);
-                        return true;
-                    }
-                    return false;
-            }
-        }
-        if (this.textOverlay) {
-            if (this.isDismissKey(normalized)) {
-                await this.dismissFocusLayer();
-                return true;
-            }
-            switch (normalized) {
-                case 'down':
-                    this.scrollTextOverlay(1);
-                    return true;
-                case 'up':
-                    this.scrollTextOverlay(-1);
-                    return true;
-                case 'pageup':
-                    this.scrollTextOverlayPage(-1);
-                    return true;
-                case 'pagedown':
-                    this.scrollTextOverlayPage(1);
-                    return true;
-                case 'home':
-                    this.scrollTextOverlayToEdge('start');
-                    return true;
-                case 'end':
-                    this.scrollTextOverlayToEdge('end');
-                    return true;
-                default:
-                    return false;
-            }
-        }
-        if (this.gitSnapshotOpen) {
-            if (this.isDismissKey(normalized)) {
-                await this.dismissFocusLayer();
-                return true;
-            }
-            switch (normalized) {
-                case 'copy':
-                    await this.copyFocusedTextAction?.(this.gitSnapshotDetailLines.slice(this.gitSnapshotDetailScroll).join('\n'), 'git snapshot diff');
-                    return true;
-                case 'down':
-                    this.scrollGitSnapshotDetail(1);
-                    return true;
-                case 'up':
-                    this.scrollGitSnapshotDetail(-1);
-                    return true;
-                case 'left':
-                    this.scrollGitSnapshotDetailColumns(-4);
-                    return true;
-                case 'right':
-                    this.scrollGitSnapshotDetailColumns(4);
-                    return true;
-                case 'pageup':
-                    this.scrollGitSnapshotDetailPage(-1);
-                    return true;
-                case 'pagedown':
-                    this.scrollGitSnapshotDetailPage(1);
-                    return true;
-                case 'home':
-                    this.scrollGitSnapshotDetailToEdge('start');
-                    return true;
-                case 'end':
-                    this.scrollGitSnapshotDetailToEdge('end');
-                    return true;
-                case 'revert':
-                    this.revertGitSnapshotFromDetailAction?.();
-                    return true;
-                default:
-                    return false;
-            }
-        }
-        if (this.reviewOpen) {
-            if ((normalized === 'esc' || normalized === 'escape') && this.canCancelFocusedCodingTask()) {
-                await this.cancelFocusedCodingTask();
-                return true;
-            }
-            if (this.isDismissKey(normalized)) {
-                await this.dismissFocusLayer();
-                return true;
-            }
-            switch (normalized) {
-                case 'copy':
-                    await this.copyFocusedTextAction?.(this.buildSelectedReviewCopyText(), 'review');
-                    return true;
-                case ',':
-                    this.moveReviewGroupSelection(-1);
-                    return true;
-                case '.':
-                    this.moveReviewGroupSelection(1);
-                    return true;
-                case 'a':
-                    this.setReviewPatchFilter('additions');
-                    return true;
-                case 'u':
-                    this.setReviewPatchFilter('all');
-                    return true;
-                case '[':
-                    this.moveReviewFileSelection(-1);
-                    return true;
-                case ']':
-                    this.moveReviewFileSelection(1);
-                    return true;
-                case 'p':
-                    return this.navigateReviewLineage(-1);
-                case 'n':
-                    return this.navigateReviewLineage(1);
-                case 'down':
-                    this.scrollReviewDetail(1);
-                    return true;
-                case 'up':
-                    this.scrollReviewDetail(-1);
-                    return true;
-                case 'left':
-                    this.scrollReviewDetailColumns(-4);
-                    return true;
-                case 'right':
-                    this.scrollReviewDetailColumns(4);
-                    return true;
-                case 'pageup':
-                    this.scrollReviewDetailPage(-1);
-                    return true;
-                case 'pagedown':
-                    this.scrollReviewDetailPage(1);
-                    return true;
-                case 'home':
-                    this.scrollReviewDetailToEdge('start');
-                    return true;
-                case 'end':
-                    this.scrollReviewDetailToEdge('end');
-                    return true;
-                case '{':
-                    this.jumpReviewHunk(-1);
-                    return true;
-                case '}':
-                    this.jumpReviewHunk(1);
-                    return true;
-                case 'f':
-                    this.toggleReviewHunkFold();
-                    return true;
-                case 's':
-                    this.toggleReviewSideBySide();
-                    return true;
-                case 'r':
-                    if (this.canRetryFocusedCodingTask()) {
-                        await this.retryFocusedCodingTask();
-                        return true;
-                    }
-                    return false;
-                default:
-                    return false;
-            }
-        }
-        if (this.timelineEventInspectorOpen) {
-            if (this.isDismissKey(normalized)) {
-                await this.dismissFocusLayer();
-                return true;
-            }
-            switch (normalized) {
-                case 'enter':
-                case 'esc':
-                    this.closeTimelineEventInspector();
-                    return true;
-                case 'copy':
-                    await this.copyFocusedTextAction?.(this.timelineEventDetailLines.join('\n'), 'timeline event');
-                    return true;
-                case 'down':
-                    this.scrollTimelineEventDetail(1);
-                    return true;
-                case 'up':
-                    this.scrollTimelineEventDetail(-1);
-                    return true;
-                case 'left':
-                    this.scrollTimelineEventDetailColumns(-4);
-                    return true;
-                case 'right':
-                    this.scrollTimelineEventDetailColumns(4);
-                    return true;
-                case 'pageup':
-                    this.scrollTimelineEventDetailPage(-1);
-                    return true;
-                case 'pagedown':
-                    this.scrollTimelineEventDetailPage(1);
-                    return true;
-                case 'home':
-                    this.scrollTimelineEventDetailToEdge('start');
-                    return true;
-                case 'end':
-                    this.scrollTimelineEventDetailToEdge('end');
-                    return true;
-                case 'r':
-                    if (this.canRetryTimelineEvent()) {
-                        const payload = this.buildTimelineEventRetryPayload();
-                        if (payload?.toolCallId) {
-                            await this.retrySelectedTaskAction?.(payload.toolCallId);
-                        }
-                        this.closeTimelineEventInspector();
-                        return true;
-                    }
-                    return false;
-                default:
-                    return false;
-            }
-        }
-        if (this.messageDetailOpen) {
-            if (this.isDismissKey(normalized)) {
-                await this.dismissFocusLayer();
-                return true;
-            }
-            switch (normalized) {
-                case 'enter':
-                    this.closeMessageDetail();
-                    return true;
-                case 'copy':
-                    await this.copyFocusedTextAction?.(this.selectedMessage?.content || '', 'selected message');
-                    return true;
-                case 'down':
-                    this.scrollMessageDetail(1);
-                    return true;
-                case 'up':
-                    this.scrollMessageDetail(-1);
-                    return true;
-                case 'left':
-                    this.scrollMessageDetailColumns(-4);
-                    return true;
-                case 'right':
-                    this.scrollMessageDetailColumns(4);
-                    return true;
-                case 'pageup':
-                    this.scrollMessageDetailPage(-1);
-                    return true;
-                case 'pagedown':
-                    this.scrollMessageDetailPage(1);
-                    return true;
-                case 'home':
-                    this.scrollMessageDetailToEdge('start');
-                    return true;
-                case 'end':
-                    this.scrollMessageDetailToEdge('end');
-                    return true;
-                default:
-                    return false;
-            }
-        }
-        if (this.messagesFocused) {
-            if (this.isDismissKey(normalized)) {
-                await this.dismissFocusLayer();
-                return true;
-            }
-            switch (normalized) {
-                case 'copy':
-                    await this.copyFocusedTextAction?.(this.selectedMessage?.content || '', 'selected message');
-                    return true;
-                case 'down':
-                    if (this.selectedMessage?.metadata?.uiKind === 'file-change') {
-                        this.moveReviewFileSelection(1);
-                        return true;
-                    }
-                    moveMessageSelection(this, 1);
-                    return true;
-                case 'up':
-                    if (this.selectedMessage?.metadata?.uiKind === 'file-change') {
-                        this.moveReviewFileSelection(-1);
-                        return true;
-                    }
-                    moveMessageSelection(this, -1);
-                    return true;
-                case 'pageup':
-                    moveMessageSelectionPage(this, -1);
-                    return true;
-                case 'pagedown':
-                    moveMessageSelectionPage(this, 1);
-                    return true;
-                case 'home':
-                    selectFirstMessage(this);
-                    return true;
-                case 'end':
-                    selectLastMessage(this);
-                    return true;
-                case 'r': {
-                    const selected = this.selectedMessage;
-                    if (this.isFailedEventMessage(selected) && this.retryFailedEventAction && selected) {
-                        const handled = await this.retryFailedEventAction(selected);
-                        return handled !== false;
-                    }
-                    return false;
-                }
-                case 'enter':
-                    if (this.selectedMessage?.metadata?.uiKind === 'plan-todo') {
-                        return this.togglePlanTodoExpanded();
-                    }
-                    if (this.selectedMessage?.metadata?.uiKind === 'file-change') {
-                        this.openReview();
-                        return true;
-                    }
-                    if (this.isTimelineEventMessage(this.selectedMessage)) {
-                        this.openTimelineEventInspector();
-                        return true;
-                    }
-                    this.openMessageDetail();
-                    return true;
-                default:
-                    return false;
-            }
-        }
-        if (this.approvalsFocused) {
-            const decision = this.overlayController.resolveListKey(normalized);
-            switch (decision.action) {
-                case 'move':
-                    this.moveApprovalSelection(decision.delta);
-                    return true;
-                case 'home':
-                    this.selectFirstApproval();
-                    return true;
-                case 'end':
-                    this.selectLastApproval();
-                    return true;
-                case 'page':
-                    this.moveApprovalSelectionPage(decision.direction);
-                    return true;
-                case 'escape':
-                    await this.dismissFocusLayer();
-                    return true;
-                default:
-                    break;
-            }
-            switch (normalized) {
-                case 'copy':
-                    await this.copyFocusedTextAction?.(this.buildSelectedApprovalCopyText(), 'selected approval');
-                    return true;
-                case 'approve':
-                    if (this.selectedApproval?.id) {
-                        await this.resolveApprovalAction?.('approve', this.selectedApproval.id);
-                        return true;
-                    }
-                    return false;
-                case 'deny':
-                    if (this.selectedApproval?.id) {
-                        await this.resolveApprovalAction?.('deny', this.selectedApproval.id);
-                        return true;
-                    }
-                    return false;
-                default:
-                    return false;
-            }
-        }
+        const questionResult = this.focusController.handlePendingQuestionKey(normalized);
+        if (questionResult !== undefined) return questionResult;
+        const commandOutputsResult = this.focusController.handleCommandOutputsKey(normalized, transcriptNavigationController);
+        if (commandOutputsResult !== undefined) return commandOutputsResult;
+        const textOverlayResult = this.focusController.handleTextOverlayKey(normalized, transcriptNavigationController);
+        if (textOverlayResult !== undefined) return textOverlayResult;
+        const gitSnapshotResult = this.focusController.handleGitSnapshotKey(normalized, transcriptNavigationController);
+        if (gitSnapshotResult !== undefined) return gitSnapshotResult;
+        const reviewResult = this.focusController.handleReviewKey(normalized, transcriptNavigationController);
+        if (reviewResult !== undefined) return reviewResult;
+        const timelineInspectorResult = this.focusController.handleTimelineInspectorKey(normalized, transcriptNavigationController);
+        if (timelineInspectorResult !== undefined) return timelineInspectorResult;
+        const messageDetailResult = this.focusController.handleMessageDetailKey(normalized, transcriptNavigationController);
+        if (messageDetailResult !== undefined) return messageDetailResult;
+        const messageListResult = this.focusController.handleMessageListKey(normalized, transcriptNavigationController);
+        if (messageListResult !== undefined) return messageListResult;
+        const approvalResult = this.focusController.handleApprovalKey(normalized, transcriptNavigationController);
+        if (approvalResult !== undefined) return approvalResult;
         if (this.tasksFocused) {
             if ((normalized === 'esc' || normalized === 'escape') && this.canCancelFocusedCodingTask()) {
                 await this.cancelFocusedCodingTask();
                 return true;
             }
-            if (this.isDismissKey(normalized)) {
-                await this.dismissFocusLayer();
+            if (this.focusController.isDismissKey(normalized)) {
+                await this.focusController.dismiss(transcriptNavigationController);
                 return true;
             }
             if (this.hasActivePlanTodos()) {
@@ -6816,8 +5921,8 @@ export class AgentConsoleSessionState {
             }
         }
         if (this.jobsFocused) {
-            if (this.isDismissKey(normalized)) {
-                await this.dismissFocusLayer();
+            if (this.focusController.isDismissKey(normalized)) {
+                await this.focusController.dismiss(transcriptNavigationController);
                 return true;
             }
             switch (normalized) {
@@ -6866,8 +5971,8 @@ export class AgentConsoleSessionState {
             }
         }
         if (this.toolsFocused) {
-            if (this.isDismissKey(normalized)) {
-                await this.dismissFocusLayer();
+            if (this.focusController.isDismissKey(normalized)) {
+                await this.focusController.dismiss(transcriptNavigationController);
                 return true;
             }
             switch (normalized) {
@@ -6904,8 +6009,8 @@ export class AgentConsoleSessionState {
             }
         }
         if (this.toolRunsFocused) {
-            if (this.isDismissKey(normalized)) {
-                await this.dismissFocusLayer();
+            if (this.focusController.isDismissKey(normalized)) {
+                await this.focusController.dismiss(transcriptNavigationController);
                 return true;
             }
             switch (normalized) {
@@ -6935,8 +6040,8 @@ export class AgentConsoleSessionState {
             }
         }
         if (this.sessionsFocused) {
-            if (this.isDismissKey(normalized)) {
-                await this.dismissFocusLayer();
+            if (this.focusController.isDismissKey(normalized)) {
+                await this.focusController.dismiss(transcriptNavigationController);
                 return true;
             }
             switch (normalized) {
@@ -6974,13 +6079,13 @@ export class AgentConsoleSessionState {
         return false;
     }
 
-    protected canCancelFocusedCodingTask(): boolean {
+    canCancelFocusedCodingTask(): boolean {
         const task = this.reviewOpen ? (this.reviewTask || this.selectedTask) : this.selectedTask;
         const status = String(task?.status || '').trim();
         return !!task?.id && (status === 'planned' || status === 'running');
     }
 
-    protected canRetryFocusedCodingTask(): boolean {
+    canRetryFocusedCodingTask(): boolean {
         const task = this.reviewOpen ? (this.reviewTask || this.selectedTask) : this.selectedTask;
         if (!task?.id) {
             return false;
@@ -6992,14 +6097,14 @@ export class AgentConsoleSessionState {
         return Number(task?.result?.aggregate?.failedWorkers || 0) > 0;
     }
 
-    protected async cancelFocusedCodingTask(): Promise<void> {
+    async cancelFocusedCodingTask(): Promise<void> {
         const task = this.reviewOpen ? (this.reviewTask || this.selectedTask) : this.selectedTask;
         if (task?.id) {
             await this.cancelSelectedTaskAction?.(task.id);
         }
     }
 
-    protected async retryFocusedCodingTask(): Promise<void> {
+    async retryFocusedCodingTask(): Promise<void> {
         const task = this.reviewOpen ? (this.reviewTask || this.selectedTask) : this.selectedTask;
         if (task?.id) {
             await this.retrySelectedTaskAction?.(task.id);
@@ -7015,7 +6120,7 @@ export class AgentConsoleSessionState {
         return this.reviewTaskChoices.filter(item => this.resolveTaskLineageRootId(item) === lineageRootId);
     }
 
-    protected async navigateReviewLineage(delta: number): Promise<boolean> {
+    async navigateReviewLineage(delta: number): Promise<boolean> {
         const lineageTasks = this.currentReviewLineageTasks;
         if (lineageTasks.length < 2) {
             return false;
@@ -7057,7 +6162,7 @@ export class AgentConsoleSessionState {
         const next = this.processInputChunk(this.input, this.inputCursor, chunk, options);
         this.input = this.expandTabs(next.value);
         this.inputCursor = this.clampCursor(this.input, next.cursor);
-        this.resetInputHistoryNavigation();
+        this.inputHistoryController.resetNavigation();
         let submitted = next.shouldSubmit;
 
         if (next.shouldConfirmSelection && this.selectMenu) {
@@ -7084,6 +6189,7 @@ export class AgentConsoleSessionState {
             onExit: (force?: boolean) => void;
             hasActiveTextPrompt: boolean;
             lastRenderedLines?: string[];
+            transcriptNavigationController: AgentConsoleTranscriptNavigationController;
         }
     ): Promise<{ handled: boolean; action?: string; value?: string }> {
         if (options.isClosed) {
@@ -7117,15 +6223,15 @@ export class AgentConsoleSessionState {
             && !this.inputLocked
             && !this.modalPromptActive
             && !options.hasActiveTextPrompt) {
-            const navigated = this.navigateInputHistory(controlKey === 'up' ? -1 : 1);
+            const navigated = this.inputHistoryController.navigate(controlKey === 'up' ? -1 : 1);
             return { handled: true, action: 'historyNavigation', value: navigated ? 'navigated' : 'failed' };
         }
 
-        if (this.handleMenuInput(controlKey || '', rawText)) {
+        if (this.focusController.handleMenuInput(controlKey || '', rawText)) {
             return { handled: true, action: 'menuInput' };
         }
 
-        if (this.hasBlockingSelectMenu()) {
+        if (this.focusController.hasBlockingSelectMenu()) {
             return { handled: true, action: 'menuBlocked' };
         }
 
@@ -7165,10 +6271,10 @@ export class AgentConsoleSessionState {
             }
         }
 
-        if (this.pendingQuestion || this.hasReviewFocus() || this.hasMessageDetailFocus() || this.hasMessageFocus() || this.hasApprovalFocus() || this.hasScheduledJobFocus() || this.hasToolFocus() || this.hasSessionFocus() || this.hasTextOverlayFocus() || this.hasCommandOutputsFocus()) {
-            const focusKey = this.resolveFocusShortcutKey(rawText, controlKey);
+        if (this.pendingQuestion || this.focusController.hasReviewFocus() || this.focusController.hasMessageDetailFocus() || this.focusController.hasMessageFocus() || this.focusController.hasApprovalFocus() || this.focusController.hasScheduledJobFocus() || this.focusController.hasToolFocus() || this.focusController.hasSessionFocus() || this.hasTextOverlayFocus() || this.hasCommandOutputsFocus()) {
+            const focusKey = this.focusController.resolveShortcutKey(rawText, controlKey);
             if (focusKey) {
-                const consumed = await this.handleFocusKey(focusKey);
+                const consumed = await this.handleFocusKey(focusKey, options.transcriptNavigationController);
                 if (consumed) {
                     return { handled: true, action: 'focusKey' };
                 }
@@ -7188,7 +6294,7 @@ export class AgentConsoleSessionState {
             if (this.status === 'running' || this.status === 'reasoning') {
                 return { handled: true, action: 'cancelTurn' };
             }
-            await this.handleEscapeKey();
+            await this.focusController.handleEscape(options.transcriptNavigationController);
             return { handled: true };
         }
         if (rawText === '\u001b\r' || rawText === '\u001b\n') {
@@ -7210,7 +6316,7 @@ export class AgentConsoleSessionState {
         }
 
         if (controlKey === 'left' || controlKey === 'right' || controlKey === 'home' || controlKey === 'end') {
-            if (this.shouldRouteDraftNavigation(options.hasActiveTextPrompt)) {
+            if (this.focusController.shouldRouteDraftNavigation(options.hasActiveTextPrompt)) {
                 return { handled: true, action: 'draftNavigation', value: controlKey };
             }
             return { handled: true };
@@ -7219,11 +6325,11 @@ export class AgentConsoleSessionState {
         if (controlKey === 'up' || controlKey === 'down') {
             // Shell-like: up/down recalls history at the prompt unless a
             // blocking interaction (menu/lock/modal/text prompt) is active.
-            if (!this.hasBlockingSelectMenu()
+            if (!this.focusController.hasBlockingSelectMenu()
                 && !this.inputLocked
                 && !this.modalPromptActive
                 && !options.hasActiveTextPrompt) {
-                const navigated = this.navigateInputHistory(controlKey === 'up' ? -1 : 1);
+                const navigated = this.inputHistoryController.navigate(controlKey === 'up' ? -1 : 1);
                 return { handled: true, action: 'historyNavigation', value: navigated ? 'navigated' : 'failed' };
             }
             return { handled: true };
@@ -7240,7 +6346,7 @@ export class AgentConsoleSessionState {
             return { handled: true };
         }
 
-        if (this.shouldRouteDraftNavigation(options.hasActiveTextPrompt)) {
+        if (this.focusController.shouldRouteDraftNavigation(options.hasActiveTextPrompt)) {
             return { handled: true, action: 'textInput', value: rawText };
         }
 
@@ -7249,10 +6355,6 @@ export class AgentConsoleSessionState {
 
     clampCursor(value: string, cursor: number): number {
         return clampCommonTextCursor(value, cursor);
-    }
-
-    shouldSkipHistoryEntry(entry: string): boolean {
-        return shouldSkipCommonHistoryEntry(entry);
     }
 
     formatStatusFooter(model: string, profile: string, workspace: string): string {

@@ -190,7 +190,7 @@ export class InputHistoryRestartRepro {
                 first.component.sessionState.setInput('persist-me', 10);
                 await first.component.submit();
                 await this.waitFor(() =>
-                    first.component.sessionState.getInputHistoryEntries().includes('persist-me')
+                    first.component.sessionState.inputHistoryController.entries().includes('persist-me')
                 );
             } finally {
                 await first.close();
@@ -200,7 +200,7 @@ export class InputHistoryRestartRepro {
             const second = await this.bootSimulatedChat({ workspace, root });
             try {
                 await this.waitFor(() =>
-                    second.component.sessionState.getInputHistoryEntries().includes('persist-me')
+                    second.component.sessionState.inputHistoryController.entries().includes('persist-me')
                 );
                 // Press ArrowUp through stdin so decoding, surface wiring and
                 // component dispatch are covered as they are in the real TUI.
@@ -245,7 +245,7 @@ export class InputHistoryRestartRepro {
             const second = await this.bootSimulatedChat({ workspace, root });
             try {
                 await this.waitFor(() => second.component.sessionState
-                    .getInputHistoryEntries().includes('recover-from-session'));
+                    .inputHistoryController.entries().includes('recover-from-session'));
                 second.input.write('\u001b[A');
                 await this.waitFor(() => second.component.sessionState.input === 'recover-from-session');
                 second.input.write('\u001b[B');
@@ -268,14 +268,14 @@ export class InputHistoryRestartRepro {
                 first.component.sessionState.setInput('workspace-a-only', 16);
                 await first.component.submit();
                 await this.waitFor(() => first.component.sessionState
-                    .getInputHistoryEntries().includes('workspace-a-only'));
+                    .inputHistoryController.entries().includes('workspace-a-only'));
             } finally {
                 await first.close();
             }
 
             const second = await this.bootSimulatedChat({ workspace: workspaceB, root });
             try {
-                expect(second.component.sessionState.getInputHistoryEntries()).not.toContain('workspace-a-only');
+                expect(second.component.sessionState.inputHistoryController.entries()).not.toContain('workspace-a-only');
                 second.input.write('\u001b[A');
                 await new Promise(resolve => setTimeout(resolve, 50));
                 expect(second.component.sessionState.input).toBe('');

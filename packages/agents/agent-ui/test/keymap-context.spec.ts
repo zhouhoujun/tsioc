@@ -1,4 +1,4 @@
-import { selectFirstMessage } from '../src/AgentConsoleTranscriptNavigation';
+import { navigationFor } from './test-transcript-navigation';
 import { InMemoryCommandExecutionControl } from "@tsdi/agent";
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
@@ -287,9 +287,9 @@ export class AgentConsoleKeymapContextTest {
         state.setApprovalsFocused(true);
         expect((component as any).resolveKeymapContext()).toEqual('approval');
         state.setApprovalsFocused(false);
-        state.setMessagesFocused(true);
+        navigationFor(state).setFocused(true);
         expect((component as any).resolveKeymapContext()).toEqual('pager');
-        state.setMessagesFocused(false);
+        navigationFor(state).setFocused(false);
         state.setMessages([{ id: 'm1', role: 'assistant', content: 'hello', createdAt: 1 } as any]);
         state.openMessageDetail();
         expect((component as any).resolveKeymapContext()).toEqual('pager');
@@ -349,7 +349,7 @@ export class AgentConsoleThreadNavigationTest {
         const rpc = new DelegationFakeRpc();
         rpc.children = [{ id: 'e1', parentSessionId: 'active-1', childSessionId: 'child-1', kind: 'delegate', status: 'completed', createdAt: 1 }];
         const { state, component } = createKeymapConsoleParts(undefined, undefined, undefined, rpc);
-        state.setMessagesFocused(true);
+        navigationFor(state).setFocused(true);
         const opened: string[] = [];
         (component as any).openSession = async (sessionId?: string) => { opened.push(String(sessionId)); };
         const consumed = await (component as any).handleGlobalKeyInput('\u001b[B');
@@ -362,7 +362,7 @@ export class AgentConsoleThreadNavigationTest {
         const rpc = new DelegationFakeRpc();
         rpc.lineage = [{ id: 'e0', parentSessionId: 'parent-1', childSessionId: 'active-1', kind: 'delegate', status: 'completed', createdAt: 1 }];
         const { state, component } = createKeymapConsoleParts(undefined, undefined, undefined, rpc);
-        state.setMessagesFocused(true);
+        navigationFor(state).setFocused(true);
         const opened: string[] = [];
         (component as any).openSession = async (sessionId?: string) => { opened.push(String(sessionId)); };
         const consumed = await (component as any).handleGlobalKeyInput('\u001b[A');
@@ -380,7 +380,7 @@ export class AgentConsoleThreadNavigationTest {
             { id: 'e3', parentSessionId: 'parent-1', childSessionId: 'sib-3', kind: 'delegate', status: 'completed', createdAt: 3 }
         ];
         const { state, component } = createKeymapConsoleParts(undefined, undefined, undefined, rpc);
-        state.setMessagesFocused(true);
+        navigationFor(state).setFocused(true);
         const opened: string[] = [];
         (component as any).openSession = async (sessionId?: string) => {
             opened.push(String(sessionId));
@@ -400,7 +400,7 @@ export class AgentConsoleThreadNavigationTest {
         rpc.lineage = [{ id: 'e0', parentSessionId: 'parent-1', childSessionId: 'active-1', kind: 'delegate', status: 'completed', createdAt: 1 }];
         rpc.children = [{ id: 'e1', parentSessionId: 'parent-1', childSessionId: 'active-1', kind: 'delegate', status: 'completed', createdAt: 1 }];
         const { state, component } = createKeymapConsoleParts(undefined, undefined, undefined, rpc);
-        state.setMessagesFocused(true);
+        navigationFor(state).setFocused(true);
         const opened: string[] = [];
         (component as any).openSession = async (sessionId?: string) => { opened.push(String(sessionId)); };
         expect(await (component as any).handleGlobalKeyInput('\u001b[C')).toEqual(false);
@@ -410,7 +410,7 @@ export class AgentConsoleThreadNavigationTest {
     @Test('arrows fall through to message selection when no delegation data exists')
     async arrowsFallThroughWithoutDelegation() {
         const { state, component } = createKeymapConsoleParts();
-        state.setMessagesFocused(true);
+        navigationFor(state).setFocused(true);
         const opened: string[] = [];
         (component as any).openSession = async (sessionId?: string) => { opened.push(String(sessionId)); };
         expect(await (component as any).handleGlobalKeyInput('\u001b[B')).toEqual(false);
@@ -435,7 +435,7 @@ export class AgentConsoleThreadNavigationTest {
         rpc.children = [{ id: 'e1', parentSessionId: 'active-1', childSessionId: 'child-1', kind: 'delegate', status: 'completed', createdAt: 1 }];
         const { state, component } = createKeymapConsoleParts(undefined, undefined, undefined, rpc);
         state.setMessages([{ id: 'm1', role: 'assistant', content: 'hello', createdAt: 1 } as any]);
-        state.setMessagesFocused(true);
+        navigationFor(state).setFocused(true);
         state.setSelectedMessageId('m1');
         state.openMessageDetail();
         const opened: string[] = [];
@@ -449,7 +449,7 @@ export class AgentConsoleThreadNavigationTest {
         const rpc = new DelegationFakeRpc();
         rpc.children = [{ id: 'e1', parentSessionId: 'active-1', childSessionId: 'child-1', kind: 'delegate', status: 'completed', createdAt: 1 }];
         const { state, component } = createKeymapConsoleParts(undefined, undefined, undefined, rpc);
-        state.setMessagesFocused(true);
+        navigationFor(state).setFocused(true);
         const opened: string[] = [];
         (component as any).openSession = async (sessionId?: string) => { opened.push(String(sessionId)); };
         const consumed = await (component as any).handleBrowserGlobalKeyInput('ArrowDown', {});
@@ -501,7 +501,7 @@ export class AgentConsoleThreadNavigationTest {
             { id: 'm7', role: 'user', content: '7', createdAt: 7 } as any,
             { id: 'm8', role: 'assistant', content: '8', createdAt: 8 } as any
         ]);
-        state.setMessagesFocused(true);
+        navigationFor(state).setFocused(true);
         const consumed = await (component as any).handleGlobalKeyInput('\u001b[5~');
         expect(consumed).toEqual(true);
         expect(state.selectedMessage?.id).toEqual('m2');
@@ -520,8 +520,8 @@ export class AgentConsoleThreadNavigationTest {
             { id: 'm7', role: 'user', content: '7', createdAt: 7 } as any,
             { id: 'm8', role: 'assistant', content: '8', createdAt: 8 } as any
         ]);
-        state.setMessagesFocused(true);
-        selectFirstMessage(state);
+        navigationFor(state).setFocused(true);
+        navigationFor(state).selectFirst();
         const consumed = await (component as any).handleGlobalKeyInput('\u001b[6~');
         expect(consumed).toEqual(true);
         expect(state.selectedMessage?.id).toEqual('m7');
@@ -535,7 +535,7 @@ export class AgentConsoleThreadNavigationTest {
             { id: 'm2', role: 'assistant', content: '2', createdAt: 2 } as any,
             { id: 'm3', role: 'user', content: '3', createdAt: 3 } as any
         ]);
-        state.setMessagesFocused(true);
+        navigationFor(state).setFocused(true);
         expect(await (component as any).handleGlobalKeyInput('\u001b[H')).toEqual(true);
         expect(state.selectedMessage?.id).toEqual('m1');
         expect(await (component as any).handleGlobalKeyInput('\u001b[F')).toEqual(true);
@@ -553,7 +553,7 @@ export class AgentConsoleThreadNavigationTest {
             { id: 'm5', role: 'user', content: '5', createdAt: 5 } as any,
             { id: 'm6', role: 'assistant', content: '6', createdAt: 6 } as any
         ]);
-        state.setMessagesFocused(true);
+        navigationFor(state).setFocused(true);
         expect(await (component as any).handleGlobalKeyInput('G')).toEqual(true);
         expect(state.selectedMessage?.id).toEqual('m5');
     }
@@ -567,7 +567,7 @@ export class AgentConsoleThreadNavigationTest {
             { id: 'm3', role: 'user', content: 'steer payload', createdAt: 3, metadata: { kind: 'steer' } } as any,
             { id: 'm4', role: 'assistant', content: '4', createdAt: 4 } as any
         ]);
-        state.setMessagesFocused(true);
+        navigationFor(state).setFocused(true);
         expect(await (component as any).handleGlobalKeyInput('G')).toEqual(true);
         expect(state.selectedMessage?.id).toEqual('m1');
     }
@@ -594,7 +594,7 @@ export class AgentConsoleThreadNavigationTest {
             { id: 'm1', role: 'user', content: '1', createdAt: 1 } as any,
             { id: 'm2', role: 'assistant', content: '2', createdAt: 2 } as any
         ]);
-        state.setMessagesFocused(true);
+        navigationFor(state).setFocused(true);
         state.setSelectedMessageId('m1');
         state.openMessageDetail();
         expect(await (component as any).handleGlobalKeyInput('\u001b[5~')).toEqual(false);
@@ -613,7 +613,7 @@ export class AgentConsoleThreadNavigationTest {
             { id: 'm7', role: 'user', content: '7', createdAt: 7 } as any,
             { id: 'm8', role: 'assistant', content: '8', createdAt: 8 } as any
         ]);
-        state.setMessagesFocused(true);
+        navigationFor(state).setFocused(true);
         const consumed = await (component as any).handleBrowserGlobalKeyInput('PageUp', {});
         expect(consumed).toEqual(true);
         expect(state.selectedMessage?.id).toEqual('m2');
@@ -627,7 +627,7 @@ export class AgentConsoleThreadNavigationTest {
             { id: 'm2', role: 'assistant', content: '2', createdAt: 2 } as any,
             { id: 'm3', role: 'user', content: '3', createdAt: 3 } as any
         ]);
-        state.setMessagesFocused(true);
+        navigationFor(state).setFocused(true);
         const consumed = await (component as any).handleBrowserGlobalKeyInput('Home', {});
         expect(consumed).toEqual(true);
         expect(state.selectedMessage?.id).toEqual('m1');

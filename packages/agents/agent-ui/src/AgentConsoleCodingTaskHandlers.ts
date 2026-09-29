@@ -33,7 +33,6 @@ export interface CodingTaskHandlerState {
     setJobsFocused(focused: boolean): void;
     setToolsFocused(focused: boolean): void;
     setApprovalsFocused(focused: boolean): void;
-    setMessagesFocused(focused: boolean): void;
     closeMessageDetail(): void;
     openReview(task: Record<string, any>, payload: Record<string, any>): void;
     closeReview(): void;
@@ -50,6 +49,7 @@ export interface CodingTaskHandlerState {
 
 export interface CodingTaskHandlerContext {
     state: CodingTaskHandlerState;
+    transcriptNavigationController: { setFocused(focused: boolean): void };
     appRpc: { request(method: string, payload?: Record<string, any>, context?: any): Promise<any> } | null | undefined;
     scheduler: AgentScheduler | null;
     notify(message: string, duration?: number): void;
@@ -469,7 +469,7 @@ export async function openCodingTaskReview(
         ctx.state.setJobsFocused(false);
         ctx.state.setToolsFocused(false);
         ctx.state.setApprovalsFocused(false);
-        ctx.state.setMessagesFocused(false);
+        ctx.transcriptNavigationController.setFocused(false);
         ctx.state.closeMessageDetail();
         ctx.state.openReview(reviewTask, {
             diff: diffResult?.diff ?? null,
@@ -541,7 +541,7 @@ export async function openCodingTaskInspector(ctx: CodingTaskHandlerContext, tas
         ctx.state.setToolsFocused(false);
         ctx.state.setApprovalsFocused(false);
         ctx.state.setJobsFocused(false);
-        ctx.state.setMessagesFocused(false);
+        ctx.transcriptNavigationController.setFocused(false);
         ctx.state.closeMessageDetail();
         ctx.state.closeReview();
         ctx.state.closeGitSnapshotDetail();
@@ -708,7 +708,7 @@ export async function openScheduledJobsDashboard(ctx: CodingTaskHandlerContext, 
         ctx.state.setTasksFocused(false);
         ctx.state.setToolsFocused(false);
         ctx.state.setApprovalsFocused(false);
-        ctx.state.setMessagesFocused(false);
+        ctx.transcriptNavigationController.setFocused(false);
         ctx.state.closeMessageDetail();
         ctx.state.closeReview();
         ctx.state.closeGitSnapshotDetail();

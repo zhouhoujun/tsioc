@@ -48,9 +48,9 @@ export async function loadInputHistory(
     try {
         const workspace = resolveHistoryWorkspace();
         const entries = (await store.load(workspace))
-            .filter((entry: any) => !state.shouldSkipHistoryEntry(entry));
+            .filter((entry: any) => !state.inputHistoryController.shouldSkip(entry));
         if (workspace === resolveHistoryWorkspace()) {
-            state.setInputHistoryEntries(entries);
+            state.inputHistoryController.replace(entries);
         }
     } catch (error) {
         state.setLastError(`Failed to load input history: ${error instanceof Error ? error.message : String(error)}`);

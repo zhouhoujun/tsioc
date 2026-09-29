@@ -2,32 +2,35 @@ import type { AgentMessage } from '@tsdi/agent';
 import type { AgentConsoleGlobalAction, AgentConsoleKeymap, AgentConsoleKeymapContext } from './AgentConsoleKeymap';
 import { decodeGlobalKey } from './AgentConsoleStreamHelpers';
 import { isAgentConsoleMessageNavigationAction, isAgentConsoleThreadNavigationAction } from './AgentConsoleKeymap';
-import { moveMessageSelectionPage, selectFirstMessage, selectLastMessage, selectLastUserMessage } from './AgentConsoleTranscriptNavigation';
 
 /**
  * Host surface required by the global key input controller.
  * The component satisfies this interface structurally when delegating.
  */
 export interface AgentConsoleGlobalKeyInputHost {
+    transcriptNavigationController: {
+        movePage(delta: number, pageSize?: number): void;
+        selectFirst(): void;
+        selectLast(): void;
+        selectLastUser(): void;
+    };
+    dismissFocusLayer(): Promise<boolean>;
+    handleFocusKey(key: string): Promise<boolean>;
     state: {
         hasCommandOutputsFocus(): boolean;
         commandOutputsFilterMode: boolean;
         commandOutputsFilter: string;
         setCommandOutputsFilter(filter: string): void;
-        dismissFocusLayer(): Promise<boolean>;
-        handleFocusKey(key: string): Promise<boolean>;
         selectMenu?: { title?: string } | null;
         whichKeyVisible: boolean;
         setWhichKeyVisible(visible: boolean): void;
-        isAnyFocusActive(): boolean;
-        hasMessageFocus(): boolean;
+        focusController: { isAnyFocusActive(): boolean; hasMessageFocus(): boolean };
         focusLatestLongMessage(): boolean;
         displayMessages: AgentMessage[];
         selectedMessageId: string;
         messagesFocused: boolean;
         messageDetailScroll: number;
         messageDetailColumnScroll: number;
-        setMessagesFocused(focused: boolean): void;
         consoleOptions: { messageSelectionPageSize: number };
         showThinking: boolean;
         setShowThinking(visible: boolean): void;
@@ -151,11 +154,11 @@ export async function handleBrowserGlobalKeyInputView(
         }
         if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey)) {
             host.state.commandOutputsFilterMode = false;
-            await host.state.dismissFocusLayer();
+            await host.dismissFocusLayer();
             return true;
         }
         if (!ctrlKey && mappedKey) {
-            if (await host.state.handleFocusKey(mappedKey)) return true;
+            if (await host.handleFocusKey(mappedKey)) return true;
             if (key.length === 1) return true;
             return false;
         }
@@ -199,7 +202,7 @@ export async function handleBrowserGlobalKeyInputView(
         await host.interruptTurn();
         return true;
     }
-    if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey) && (host.state.selectMenu || host.state.isAnyFocusActive())) {
+    if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey) && (host.state.selectMenu || host.state.focusController.isAnyFocusActive())) {
         host.globalKeyPending = '';
         return false;
     }
@@ -262,7 +265,7 @@ export async function handleGlobalKeyInputView(host: AgentConsoleGlobalKeyInputH
             await host.interruptTurn();
             return true;
         }
-        if (raw === '\u001b' && (host.state.selectMenu || host.state.isAnyFocusActive())) return false;
+        if (raw === '\u001b' && (host.state.selectMenu || host.state.focusController.isAnyFocusActive())) return false;
         if (raw === '\u001b') {
             const action = host.globalKeymap!.resolve('escape', host.resolveKeymapContext());
             if (action === 'interrupt-turn') {
@@ -326,7 +329,7 @@ export async function handleGlobalKeySequenceView(host: AgentConsoleGlobalKeyInp
         if (isAgentConsoleThreadNavigationAction(action) && !host.canThreadNavigate()) return false;
         if (isAgentConsoleMessageNavigationAction(action) && !host.canMessageNavigate()) {
             const canEnterTranscript = action === 'message-page-up'
-                && !host.state.hasMessageFocus()
+                && !host.state.focusController.hasMessageFocus()
                 && !host.state.messageDetailOpen
                 && !host.state.selectMenu;
             if (!canEnterTranscript) return false;
@@ -375,42 +378,42 @@ export async function executeGlobalKeyActionView(
         return host.navigateThreadParent();
     }
     if (action === 'message-page-up') {
-        if (!host.state.hasMessageFocus()) {
+        if (!host.state.focusController.hasMessageFocus()) {
             return host.state.focusLatestLongMessage();
         }
-        moveMessageSelectionPage(host.state, -1);
+        host.transcriptNavigationController.movePage(-1);
         return true;
     }
     if (action === 'message-page-down') {
-        moveMessageSelectionPage(host.state, 1);
+        host.transcriptNavigationController.movePage(1);
         return true;
     }
     if (action === 'message-half-page-up') {
-        moveMessageSelectionPage(host.state, -1, Math.max(1, Math.floor(host.state.consoleOptions.messageSelectionPageSize / 2)));
+        host.transcriptNavigationController.movePage(-1, Math.max(1, Math.floor(host.state.consoleOptions.messageSelectionPageSize / 2)));
         return true;
     }
     if (action === 'message-half-page-down') {
-        moveMessageSelectionPage(host.state, 1, Math.max(1, Math.floor(host.state.consoleOptions.messageSelectionPageSize / 2)));
+        host.transcriptNavigationController.movePage(1, Math.max(1, Math.floor(host.state.consoleOptions.messageSelectionPageSize / 2)));
         return true;
     }
     if (action === 'message-line-up') {
-        moveMessageSelectionPage(host.state, -1, 1);
+        host.transcriptNavigationController.movePage(-1, 1);
         return true;
     }
     if (action === 'message-line-down') {
-        moveMessageSelectionPage(host.state, 1, 1);
+        host.transcriptNavigationController.movePage(1, 1);
         return true;
     }
     if (action === 'message-first') {
-        selectFirstMessage(host.state);
+        host.transcriptNavigationController.selectFirst();
         return true;
     }
     if (action === 'message-last') {
-        selectLastMessage(host.state);
+        host.transcriptNavigationController.selectLast();
         return true;
     }
     if (action === 'message-last-user') {
-        selectLastUserMessage(host.state);
+        host.transcriptNavigationController.selectLastUser();
         return true;
     }
     if (action === 'model-favorite-toggle') {

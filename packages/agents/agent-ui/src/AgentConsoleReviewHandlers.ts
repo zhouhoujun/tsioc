@@ -18,7 +18,6 @@ export interface ReviewHandlerState {
     setJobsFocused(focused: boolean): void;
     setToolsFocused(focused: boolean): void;
     setApprovalsFocused(focused: boolean): void;
-    setMessagesFocused(focused: boolean): void;
     closeMessageDetail(): void;
     openReview(task: Record<string, any>, payload: Record<string, any>): void;
     setNotice(message: string): void;
@@ -30,6 +29,7 @@ export interface ReviewHandlerState {
 
 export interface ReviewHandlerContext {
     state: ReviewHandlerState;
+    transcriptNavigationController: { setFocused(focused: boolean): void };
     appRpc: { request(method: string, payload?: Record<string, any>, context?: any): Promise<any> } | null | undefined;
     notify(message: string, duration?: number): void;
     activateToolForSession(toolName: string, sessionId: string): Promise<unknown>;
@@ -333,7 +333,7 @@ export function openGitDiffReviewPanel(ctx: ReviewHandlerContext, review: Record
     ctx.state.setJobsFocused(false);
     ctx.state.setToolsFocused(false);
     ctx.state.setApprovalsFocused(false);
-    ctx.state.setMessagesFocused(false);
+    ctx.transcriptNavigationController.setFocused(false);
     ctx.state.closeMessageDetail();
     ctx.state.openReview(reviewTask, { diff: String(review.diff || '') || null });
     ctx.state.setNotice('');
@@ -540,7 +540,7 @@ export async function openWorktreeDiff(ctx: ReviewHandlerContext, args?: string)
     ctx.state.setJobsFocused(false);
     ctx.state.setToolsFocused(false);
     ctx.state.setApprovalsFocused(false);
-    ctx.state.setMessagesFocused(false);
+    ctx.transcriptNavigationController.setFocused(false);
     ctx.state.closeMessageDetail();
     ctx.state.openReview(reviewTask, { diff: String(review?.diff || '') || null });
     ctx.state.setNotice('');

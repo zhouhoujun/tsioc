@@ -1,3 +1,4 @@
+import { navigationFor } from './test-transcript-navigation';
 import expect = require('expect');
 import { BeforeEach, Suite, Test, AfterEach } from '@tsdi/unit';
 import { Application, ApplicationContext } from '@tsdi/core';
@@ -102,7 +103,7 @@ export class C2FixedExpandStableKeysTest {
             { id: 'err1', role: 'assistant', content: longContent(12), createdAt: 3, metadata: { error: 'boom' } } as any,
             { id: 'sys1', role: 'system', content: longContent(12), createdAt: 4 } as any
         ]);
-        ref.instance.sessionState.setMessagesFocused(true);
+        navigationFor(ref.instance.sessionState).setFocused(true);
         ref.instance.sessionState.setSelectedMessageId('plain1');
         await ref.render();
         await Promise.resolve();
