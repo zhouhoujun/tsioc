@@ -76,6 +76,7 @@ import {
     resolveConsoleVimKey,
     ConsoleInputMode
 } from './AgentConsoleVim';
+import { AgentConsoleVimController, createAgentConsoleVimController } from './AgentConsoleVimController';
 import {
     clampCommonTextCursor,
     processCommonTextInputChunk
@@ -577,6 +578,7 @@ export class AgentConsoleSessionState {
     constructor(@Inject(COMMAND_EXECUTION_CONTROL) protected commandExecutionControl?: CommandExecutionControlPort) {}
     readonly inputHistoryController: AgentConsoleInputHistoryController = new DefaultAgentConsoleInputHistoryController(this);
     readonly focusController: AgentConsoleFocusController = new DefaultAgentConsoleFocusController(this);
+    readonly vimController: AgentConsoleVimController = createAgentConsoleVimController(this);
     private _commandExecutionController?: AgentConsoleCommandExecutionController;
     get commandExecutionController(): AgentConsoleCommandExecutionController {
         if (!this._commandExecutionController) {
@@ -1007,48 +1009,24 @@ export class AgentConsoleSessionState {
     }
 
     setVimBinding(key: string, action: string): boolean {
-        const normalizedKey = String(key || '').trim();
-        if (!normalizedKey || !isConsoleVimAction(action)) {
-            return false;
-        }
-        this.vimBindings = { ...this.vimBindings, [normalizedKey]: action };
-        return true;
+        return this.vimController.setBinding(key, action);
     }
 
     unsetVimBinding(key: string): boolean {
-        const normalizedKey = String(key || '').trim();
-        if (!normalizedKey || !this.vimBindings[normalizedKey]) {
-            return false;
-        }
-        const next = { ...this.vimBindings };
-        delete next[normalizedKey];
-        this.vimBindings = next;
-        return true;
+        return this.vimController.unsetBinding(key);
     }
 
     resetVimBindings(): void {
-        this.vimBindings = {};
-        this.vimPendingKey = '';
+        this.vimController.resetBindings();
     }
 
     handleVimKey(key: string): boolean {
-        if (!this.vimMode || this.inputMode !== 'normal') {
-            return false;
-        }
-        const resolution = resolveConsoleVimKey(key, this.effectiveVimBindings, this.vimPendingKey || undefined);
-        if (resolution.pending !== undefined) {
-            this.vimPendingKey = resolution.pending;
-            return true;
-        }
-        this.vimPendingKey = '';
-        if (resolution.action) {
-            return this.applyVimAction(resolution.action);
-        }
-        return false;
+        return this.vimController.handleKey(key);
     }
 
     applyVimAction(action: string): boolean {
-        switch (action) {
+        return this.vimController.applyAction(action);
+        /* switch (action) {
             case 'insert-mode':
                 this.setInputMode('insert');
                 break;
@@ -1105,7 +1083,7 @@ export class AgentConsoleSessionState {
             default:
                 return false;
         }
-        return true;
+        return true; */
     }
 
     protected syncDerivedInputFocus(): void {
