@@ -501,3 +501,4 @@
 - `packages/agents/agent-ui`：1441 passing；TypeScript、source-size、`git diff --check` 通过。`AgentConsoleFocusController.ts` 480 行，`AgentConsoleComponent.ts` 4162 行，均符合体量约束。
 - `packages/agents/agent-cli`：84 passing，包含真实 ORM 的跨 TUI 重启输入历史回归。
 - 统一 agents gate 其余阶段通过；当前 sandbox 中 `agent-gateway`、`agent-ssh`、`agent-tools` 的监听测试受 `EPERM listen` 限制，`build-agent-ui-web` 受 `spawnSync /bin/sh EPERM` 限制，不能据此判定代码回归。
+- 增量收尾：Vim 输入行为已迁移至 `AgentConsoleVimController`，`SessionState` 仅保留兼容委托；Vim 回归与 agent-ui TypeScript/source-size/diff-check 通过。真实 `npm run chat -- --workspace /home/zhouyou/workspace/sleep-mlt` 仍被 sandbox 的 credential store `EROFS` 阻塞，未进入系统构建任务。
