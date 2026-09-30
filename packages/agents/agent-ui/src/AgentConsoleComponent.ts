@@ -164,6 +164,7 @@ import { AgentConsoleGlobalKeyInputHost, executeGlobalKeyActionView, handleBrows
 import { AgentConsoleTurnInputHost, submitMultilineDraftView, submitView } from './AgentConsoleTurnInputController';
 import { AgentConsoleTerminalInputHost, closingSessionMessageView, handleTerminalInputView, openCommandPaletteView, requestTerminalExitView, syncConsoleMessageViewportView } from './AgentConsoleTerminalInputController';
 import { AgentConsoleTranscriptLayoutResolver, resolveTranscriptLayout } from './AgentConsoleTranscriptLayout';
+import { AgentConsoleRegionFocusController } from './AgentConsoleRegionFocus';
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
 import { openSummaryQualityRecords, openTurnDiagnosticsListView, openTurnDiagnosticsTrendView, openSummaryQualityTrendView, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshTurnDiagnosticsDigest, refreshUsageDigest, runHarnessStopCommand } from './AgentConsoleDiagnosticsView';
 import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
@@ -392,9 +393,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         @Optional() @Inject(AgentConsoleSettingsStore) private settingsStore?: AgentConsoleSettingsStore | null,
         @Optional() private uiConfig?: AgentUiConfigService | null,
         @Optional() @Inject(ProjectMemoryService) private projectMemory?: ProjectMemoryService | null,
-        @Optional() private transcriptLayoutResolver?: AgentConsoleTranscriptLayoutResolver | null
+        @Optional() private transcriptLayoutResolver?: AgentConsoleTranscriptLayoutResolver | null,
+        @Optional() private regionFocus?: AgentConsoleRegionFocusController | null
     ) {
         this.transcriptNavigationController = new DefaultAgentConsoleTranscriptNavigationController(this.state);
+        this.regionFocus?.attachTranscriptNavigation(this.transcriptNavigationController);
         this.globalKeymap = this.globalKeymap || new AgentConsoleKeymap();
         this.globalKeymap.configure(this.options.ui?.keymap);
         this.state.setTitle(this.options.ui?.title ?? defaultAgentOptions.ui!.title!);

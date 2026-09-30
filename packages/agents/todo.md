@@ -513,3 +513,4 @@
 - 视窗退出语义：alternate-screen viewport 退出时不把动态时间线 retained lines 追加回主屏；stream 仍按 native scrollback 保留历史输出。
 - `/close` 退出语义：viewport 先恢复主终端，再将会话结束/续接提示写入命令窗口；动态时间线不会泄漏到退出后的主屏。
 - 视窗消息交互：点击消息行会进入时间线焦点，后续滚轮、方向键与 PageUp/PageDown 由消息导航消费；stream 的折叠交互保持独立。
+- 焦点基础设施迁移（阶段 1）：参考 OpenTUI/OpenCode 及 Angular CDK 的职责边界，在 `packages/components` 核心新增 renderer-neutral `FocusRegionManager`，统一单一焦点所有者、成对 focus/blur 与按焦点事件路由；agent-ui 通过 `AgentConsoleRegionFocusController` 映射 composer/transcript，业务组件不再直接写入消息焦点。后续阶段由 console/html renderer 接入真实 hit-test，并移除 `messagesFocused`/`inputFocused` 的路由职责与文本输入补偿逻辑。

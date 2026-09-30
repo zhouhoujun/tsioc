@@ -2,6 +2,7 @@
 export * from './EventEmitter';
 export * from './effect';
 export * from './reactive';
+export * from './focus';
 
 export * from './lifecycle';
 

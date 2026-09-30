@@ -4,6 +4,7 @@ import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import { AgentMessage, basenameAgentPath, ScheduledAgentTask } from '@tsdi/agent';
 import { resolveTranscriptLayout } from './AgentConsoleTranscriptLayout';
+import { AgentConsoleRegionFocusController } from './AgentConsoleRegionFocus';
 import {
     AgentConsoleActivity,
     AgentConsoleHealthItem,
@@ -329,10 +330,7 @@ export class AgentConsoleStatusPanelComponent {
     `
 })
 export class AgentConsoleInputPanelComponent {
-    constructor(
-        private state?: AgentConsoleSessionState
-    ) {
-    }
+    constructor(private state?: AgentConsoleSessionState, @Optional() private regionFocus?: AgentConsoleRegionFocusController) {}
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
     @Attribute() submitAction?: () => Promise<void>;
@@ -515,12 +513,11 @@ export class AgentConsoleInputPanelComponent {
         }
     }
 
-    onFocus(): void {
-        this.state?.setInputFocused(true);
-    }
+    onFocus(): void { this.regionFocus ? this.regionFocus.focusComposer() : this.state?.setInputFocused(true); }
 
     onBlur(): void {
-        this.state?.setInputFocused(false);
+        if (this.regionFocus) this.regionFocus.blurComposer();
+        else this.state?.setInputFocused(false);
     }
 
     protected isEnterKey(event: KeyboardEvent): boolean {
@@ -2502,7 +2499,7 @@ export class AgentConsoleMessageTokensComponent {
 export class AgentConsoleMessageLineComponent {
     @Attribute() line?: AgentConsoleRenderedLine;
 
-    constructor(private state: AgentConsoleSessionState) {}
+    constructor(private state: AgentConsoleSessionState, @Optional() private regionFocus?: AgentConsoleRegionFocusController) {}
 
     get itemStyle(): Record<string, string> {
         return this.line?.itemStyle || {};
@@ -2546,7 +2543,7 @@ export class AgentConsoleMessageLineComponent {
 
     get toggleContent(): string { return this.line?.previewCollapsed ? this.line.content : ''; }
     toggleMessageDetail(): void {
-        this.state.messagesFocused = true;
+        this.regionFocus?.focusTranscript();
         if (this.state.messageLayout !== 'viewport' || !this.toggleContent) return;
         const messageId = String(this.line?.messageId || '').trim();
         if (!messageId) return;
