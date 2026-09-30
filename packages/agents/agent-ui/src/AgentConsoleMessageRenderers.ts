@@ -606,9 +606,9 @@ export function renderAgentConsoleMessageItem(
     const timelineEventType = String(message?.metadata?.uiEventType || '').trim();
     const criticalMark = context.showCriticalMarks ? '★ ' : '';
     const effectiveRoleLabel = timelineEvent
-        // Status remains a single glyph column; the semantic renderer supplies
-        // the human-readable content type (Thought/Tool/Background/etc.).
-        ? `│ ${criticalMark}${context.rendererRegistry ? roleLabel : ''}`
+        // Timeline rows already carry their status glyph; avoid adding a
+        // second vertical rule beside the content.
+        ? `${criticalMark}${context.rendererRegistry ? roleLabel : ''}`
         : `${criticalMark}${roleLabel}`;
     const statusKind = resolveAgentConsoleMessageStatus(message, templateKind);
     const actionLabel = timelineEvent ? resolveTimelineEventActionLabel(message, statusKind) : '';

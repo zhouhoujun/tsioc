@@ -62,7 +62,7 @@ export class P237B2WidthGlyphAriaTest {
             metadata: { uiKind: 'event', uiEventType: 'tool_invoked', status: 'running' }
         }] as any);
         expect(running[0].lines[0].status?.trim()).toEqual('●');
-        expect(running[0].lines[0].role?.trim()).toEqual('│');
+        expect(running[0].lines[0].role?.trim()).toEqual('');
 
         const completed = renderAgentConsoleMessageItems([{
             id: 'e2', role: 'assistant', content: 'Read files', createdAt: 1,

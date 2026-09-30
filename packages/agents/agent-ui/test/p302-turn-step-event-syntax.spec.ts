@@ -221,7 +221,7 @@ export class P302TurnStepEventSyntaxTest {
         ], { timelineMode: true });
         for (const item of items) {
             const role = item.lines[0]?.role || '';
-            expect(role).toMatch(/^│ /);
+            expect(role).not.toContain('│');
             expect(getDisplayWidth(role)).toBeLessThanOrEqual(4);
         }
     }
@@ -263,6 +263,6 @@ export class P302TurnStepEventSyntaxTest {
         });
         expect(headerItems[0].lines[0].role).toContain('┌');
         expect(boundaryItems[0].lines[0].role).toContain('├');
-        expect(eventItems[0].lines[0].role).toMatch(/^│ /);
+        expect(eventItems[0].lines[0].role).not.toContain('│');
     }
 }

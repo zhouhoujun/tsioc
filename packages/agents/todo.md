@@ -504,3 +504,6 @@
 - 增量收尾：Vim 输入行为已迁移至 `AgentConsoleVimController`，`SessionState` 仅保留兼容委托；Vim 回归与 agent-ui TypeScript/source-size/diff-check 通过。真实 `npm run chat -- --workspace /home/zhouyou/workspace/sleep-mlt` 仍被 sandbox 的 credential store `EROFS` 阻塞，未进入系统构建任务。
 - 真实模拟复验（2026-09-30）：在允许本机凭据访问后，`npm run chat -- --workspace /home/zhouyou/workspace/sleep-mlt` 成功进入 TUI 并执行系统构建任务，持续产生计划与工具调用；会话完成后报告目标 workspace 不是 Git 仓库，无法提供标准 diff。该次运行未修改 core 仓库。
 - 第二次真实模拟复验（2026-09-30）：再次进入 TUI 后完成 workspace 扫描、安装计划和目录检查；输出确认除目标 workspace 的 `package-lock.json` 外没有新增源码改动。`SessionState` 6444 行、`AgentConsoleComponent` 4162 行，source-size 通过。
+- 第三次真实模拟复验（2026-09-30）：TUI 持续执行依赖确认、build、test 与结果汇总计划，工具调用和状态更新正常；core 仓库保持无源码改动。长类体量仍为 `SessionState` 6444 行、`AgentConsoleComponent` 4162 行。
+- UI 修复：移除时间线事件行硬编码的白色 `│` 角色前缀，保留状态 glyph 与语义标签；同步更新 P302 时间线层级契约，避免右侧视觉竖线干扰视窗阅读。
+- 视窗模式契约确认：默认 `viewport` 使用整个 TUI 终端宽高作为固定窗口，关闭 native scrollback，由 `AgentConsoleTranscriptNavigation` 接管滚轮、PageUp/PageDown 与方向键历史滚动；`stream` 仅在显式切换时使用 native scrollback。
