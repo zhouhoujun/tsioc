@@ -923,6 +923,43 @@ export class ConsoleRendererTest {
         }
     }
 
+    @Test('owns focus in the console document and focuses the mouse hit target')
+    async focusesMouseHitTarget() {
+        const renderer = new TuiRenderer();
+        const root = renderer.createElement('div');
+        const first = renderer.createElement('textarea');
+        const second = renderer.createElement('textarea');
+        first.setAttribute('value', 'first');
+        second.setAttribute('value', 'second');
+        renderer.appendChild(root, first);
+        renderer.appendChild(root, second);
+        const events: string[] = [];
+        first.addEventListener('focus', () => events.push('first:focus'));
+        first.addEventListener('blur', () => events.push('first:blur'));
+        second.addEventListener('focus', () => events.push('second:focus'));
+        second.addEventListener('keydown', (event: any) => events.push(`second:key:${event.key}`));
+        const surface = new TuiTerminalSurface({ renderer, root, width: 40, output: { write() {} } });
+        try {
+            await Promise.resolve();
+            expect(surface.clickTargets.length).toBe(2);
+            surface.dispatchMouse({ button: 0, x: 1, y: 1, release: false });
+            expect(surface.dispatchMouse({ button: 0, x: 1, y: 1, release: true })).toBe(true);
+            expect(renderer.document.activeElement).toBe(first);
+            expect(first.focused).toBe(true);
+
+            surface.dispatchMouse({ button: 0, x: 1, y: 2, release: false });
+            expect(surface.dispatchMouse({ button: 0, x: 1, y: 2, release: true })).toBe(true);
+            expect(renderer.document.activeElement).toBe(second);
+            expect(first.focused).toBe(false);
+            expect(surface.dispatchKey({ key: 'PageUp' })).toBe(true);
+            expect(events).toEqual(['first:focus', 'first:blur', 'second:focus', 'second:key:PageUp']);
+            renderer.removeChild(root, second);
+            expect(renderer.document.activeElement).toBe(null);
+        } finally {
+            surface.destroy();
+        }
+    }
+
     @Test('updates projected panel summary and body from dynamic v-for and v-if content')
     async updatesProjectedPanelContent() {
         const ctx = await Application.run(ConsoleFoldPanelTestComponent, {

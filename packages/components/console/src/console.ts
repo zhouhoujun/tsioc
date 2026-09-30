@@ -99,6 +99,7 @@ export class ConsoleNode implements RNode {
 
     protected readonly eventListeners = new Map<string, EventListener[]>();
     readonly attributes = new Map<string, RAttr>();
+    ownerDocument: ConsoleDocument | null = null;
 
     constructor(
         public nodeType: number,
@@ -118,12 +119,25 @@ export class ConsoleNode implements RNode {
         }
     }
 
+    protected adopt(node: ConsoleNode): void {
+        node.ownerDocument = this.ownerDocument;
+        node.childNodes.forEach(child => node.adopt(child));
+    }
+
+    // Detached nodes must not keep ownerDocument, or stale [focused] bindings can steal focus from the live tree.
+    protected clearDocument(node: ConsoleNode = this): void {
+        node.ownerDocument = null;
+        node.childNodes.forEach(child => node.clearDocument(child));
+    }
+
     removeChild(child: ConsoleNode): ConsoleNode {
         const index = this.childNodes.indexOf(child);
         if (index >= 0) {
+            this.ownerDocument?.releaseSubtree(child);
             this.childNodes.splice(index, 1);
             child.parentNode = null;
             child.nextSibling = null;
+            child.clearDocument();
             this.syncSiblings();
             this.notifyChanged();
         }
@@ -133,11 +147,14 @@ export class ConsoleNode implements RNode {
     replaceChild(node: ConsoleNode, child: ConsoleNode): ConsoleNode {
         const index = this.childNodes.indexOf(child);
         if (index >= 0) {
+            this.ownerDocument?.releaseSubtree(child);
             this.detachFromParent(node);
             node.parentNode = this;
+            this.adopt(node);
             this.childNodes[index] = node;
             child.parentNode = null;
             child.nextSibling = null;
+            child.clearDocument();
             this.syncSiblings();
             this.notifyChanged();
         }
@@ -147,6 +164,7 @@ export class ConsoleNode implements RNode {
     insertBefore(newChild: ConsoleNode, refChild: ConsoleNode | null): void {
         this.detachFromParent(newChild);
         newChild.parentNode = this;
+        this.adopt(newChild);
         if (!refChild) {
             this.childNodes.push(newChild);
         } else {
@@ -164,6 +182,7 @@ export class ConsoleNode implements RNode {
     appendChild(newChild: ConsoleNode): ConsoleNode {
         this.detachFromParent(newChild);
         newChild.parentNode = this;
+        this.adopt(newChild);
         this.childNodes.push(newChild);
         this.syncSiblings();
         this.notifyChanged();
@@ -247,6 +266,43 @@ export class ConsoleNode implements RNode {
     protected notifyChanged(): void {
         this.dispatchEvent({ type: ConsoleNode.CHANGE_EVENT, target: this } as unknown as Event);
         this.parentNode?.notifyChanged();
+    }
+}
+
+
+export class ConsoleDocument {
+    protected active?: ConsoleElement;
+
+    get activeElement(): ConsoleElement | null {
+        return this.active || null;
+    }
+
+    focus(element: ConsoleElement): void {
+        if (this.active === element) return;
+        const previous = this.active;
+        this.active = element;
+        previous?.dispatchEvent({ type: 'blur', target: previous } as unknown as Event);
+        previous?.notifyFocusChanged();
+        element.dispatchEvent({ type: 'focus', target: element } as unknown as Event);
+        element.notifyFocusChanged();
+    }
+
+    blur(element: ConsoleElement): void {
+        if (this.active !== element) return;
+        this.active = undefined;
+        element.dispatchEvent({ type: 'blur', target: element } as unknown as Event);
+        element.notifyFocusChanged();
+    }
+
+    releaseSubtree(root: ConsoleNode): void {
+        let current: ConsoleNode | null = this.active || null;
+        while (current) {
+            if (current === root) {
+                this.active?.blur();
+                return;
+            }
+            current = current.parentNode;
+        }
     }
 }
 
@@ -388,6 +444,30 @@ export class ConsoleElement extends ConsoleNode implements RElement {
         return text || null;
     }
 
+    get focused(): boolean {
+        return this.ownerDocument?.activeElement === this;
+    }
+
+    get focusable(): boolean {
+        const explicit = this.getAttribute('focusable');
+        if (explicit != null) return explicit.toLowerCase() !== 'false';
+        return ['input', 'textarea', 'select', 'button'].includes(this.tagName.toLowerCase());
+    }
+
+    focus(): void {
+        if (this.focusable) this.ownerDocument?.focus(this);
+    }
+
+    blur(): void {
+        this.ownerDocument?.blur(this);
+    }
+
+    notifyFocusChanged(): void {
+        // Focus is an interaction target, not a template attribute mutation.
+        // Emitting a tree change here would re-run [focused] bindings, which
+        // can synchronously request focus again and create a render loop.
+    }
+
     hasAttribute(name: string): boolean {
         return this.resolveAttribute(name) != null;
     }
@@ -482,6 +562,7 @@ export class ConsoleElement extends ConsoleNode implements RElement {
 @Injectable()
 export class ConsoleRenderer implements Renderer {
     [noReact] = true;
+    readonly document = new ConsoleDocument();
 
     destroyNode?: ((node: RNode) => void) | null;
 
@@ -490,7 +571,9 @@ export class ConsoleRenderer implements Renderer {
     }
 
     createElement(name: string, namespace?: string | null): ConsoleElement {
-        return namespace ? new ConsoleElement(`${namespace}:${name}`) : new ConsoleElement(name);
+        const element = namespace ? new ConsoleElement(`${namespace}:${name}`) : new ConsoleElement(name);
+        element.ownerDocument = this.document;
+        return element;
     }
 
     createText(value: string): ConsoleText {

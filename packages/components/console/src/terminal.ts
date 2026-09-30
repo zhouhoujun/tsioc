@@ -12,7 +12,7 @@ import { Runner, Shutdown } from '@tsdi/core';
 import { Abstract, Inject, Injectable, Injector, Optional, Provider, token } from '@tsdi/ioc';
 import { getDisplayWidth, sliceByDisplayWidth } from './display-width';
 import { noReact, RNode, Renderer } from '@tsdi/components';
-import { ConsoleNode } from './console';
+import { ConsoleElement, ConsoleNode } from './console';
 
 const CHAT_COMMANDS = ['/help', '/tools', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/copy', '/quit', '/exit'];
 
@@ -330,6 +330,7 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     abstract getTerminalRootStartRow(): number;
     abstract dispatchClickAt(node?: ConsoleNode): boolean;
     abstract dispatchMouse?(mouse: SelectMenuMouseEvent): boolean;
+    dispatchKey?(_event: { key: string; [name: string]: unknown }): boolean { return false; }
     scrollViewport?(_deltaRows: number): boolean { return false; }
     scrollViewportToEdge?(_edge: 'start' | 'end'): boolean { return false; }
     abstract notifyNonMouseInput?(): boolean;
@@ -540,6 +541,10 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
 
     dispatchMouse?(mouse: SelectMenuMouseEvent): boolean {
         return this.surface?.dispatchMouse(mouse) ?? false;
+    }
+
+    dispatchKey?(event: { key: string; [name: string]: unknown }): boolean {
+        return this.surface?.dispatchKey(event) ?? false;
     }
 
     scrollViewport?(deltaRows: number): boolean {
@@ -890,6 +895,12 @@ export class TuiTerminalSurface {
             return false;
         }
         if ((mouse.button & 64) !== 0) {
+            const target = this.hitTest(mouse.x, mouse.y);
+            if (target?.node.dispatchEvent({
+                type: 'wheel',
+                target: target.node,
+                deltaY: (mouse.button & 1) === 0 ? -3 : 3
+            } as unknown as Event)) return true;
             return this.scrollViewport((mouse.button & 1) === 0 ? 3 : -3);
         }
         if (this.mouseHandedOff) {
@@ -909,15 +920,11 @@ export class TuiTerminalSurface {
             if (pressed && this.isTuiMouseDrag(pressed, mouse)) {
                 return false;
             }
-            const rootStartRow = this.getTerminalRootStartRow();
-            const targetRow = Math.max(0, Math.floor((mouse.y || 1) - 1) - rootStartRow);
-            const targetColumn = Math.max(0, Math.floor((mouse.x || 1) - 1));
-            const target = this.clickTargetsCache
-                .find(item => targetColumn >= item.x && targetColumn < item.x + item.width
-                    && targetRow >= item.y && targetRow < item.y + item.height);
+            const target = this.hitTest(mouse.x, mouse.y);
+            const element = target?.node as ConsoleElement | undefined;
             const dispatched = this.dispatchClickAt(target?.node);
             this.clearTerminalSelection();
-            return dispatched;
+            return !!element?.focusable || dispatched;
         }
         if ((button & 0b1100000) !== 0) {
             if ((button & 32) !== 0
@@ -933,7 +940,32 @@ export class TuiTerminalSurface {
             return false;
         }
         this.mousePress = { x: mouse.x, y: mouse.y };
+        const target = this.hitTest(mouse.x, mouse.y);
+        const element = target?.node as ConsoleElement | undefined;
+        target?.node.dispatchEvent({ type: 'mousedown', target: target.node } as unknown as Event);
+        if (element?.focusable) element.focus();
         return false;
+    }
+
+    dispatchKey(event: { key: string; [name: string]: unknown }): boolean {
+        const document = this.resolveConsoleDocument();
+        const active = document?.activeElement;
+        if (!active) return false;
+        return active.dispatchEvent({ ...event, type: 'keydown', target: active } as unknown as Event);
+    }
+
+    protected resolveConsoleDocument() {
+        const roots = Array.isArray(this.root) ? this.root : (this.root ? [this.root] : []);
+        return (roots[0] as ConsoleNode | undefined)?.ownerDocument || null;
+    }
+
+    protected hitTest(x: number, y: number): TerminalClickTarget | undefined {
+        const targetRow = Math.max(0, Math.floor((y || 1) - 1) - this.getTerminalRootStartRow());
+        const targetColumn = Math.max(0, Math.floor((x || 1) - 1));
+        return this.clickTargetsCache.slice().reverse().find(item =>
+            targetColumn >= item.x && targetColumn < item.x + item.width
+            && targetRow >= item.y && targetRow < item.y + item.height
+        );
     }
 
     notifyNonMouseInput(): boolean {

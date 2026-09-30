@@ -437,7 +437,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected isTurnInProgress(): boolean {
-        return this.state.status === 'running' || this.state.status === 'reasoning';
+        return this.activeTurnRun != null || this.state.status === 'running' || this.state.status === 'reasoning';
     }
 
     protected isQueueModeEnabled(): boolean {

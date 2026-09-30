@@ -135,7 +135,8 @@ export class TuiRenderer extends ConsoleRenderer {
         const text = this.collectText(element);
         const regionId = this.resolveRenderRegionId(element);
         const regionStart = regionId ? lines.length : -1;
-        const clickStart = this.hasClickHandler(element) ? lines.length : -1;
+        const interactive = this.hasPointerHandler(element) || element.focusable;
+        const clickStart = interactive ? lines.length : -1;
         const elementStartRow = lines.length;
         const contentStartRow = elementStartRow + this.resolveBoxPadding(styleMap.padding).top;
         const finishRegion = () => {
@@ -287,7 +288,7 @@ export class TuiRenderer extends ConsoleRenderer {
                 const cursor = element.getAttribute('cursor') || ' ';
                 const placeholder = element.getAttribute('placeholder') || '';
                 const cursorPos = parseInt(element.getAttribute('cursorPos') || '0', 10);
-                const focused = (element.getAttribute('focused') || '').toLowerCase() === 'true';
+                const focused = element.focused;
                 const shellStyle = element.getAttribute('shellStyle') || '';
                 const promptStyle = this.parseInlineStyle(element.getAttribute('promptStyle') || '');
                 const valueStyle = this.parseInlineStyle(element.getAttribute('valueStyle') || '');
@@ -352,7 +353,7 @@ export class TuiRenderer extends ConsoleRenderer {
                 const continuationPrompt = element.getAttribute('continuationPrompt') || '  ';
                 const cursor = element.getAttribute('cursor') || ' ';
                 const cursorPos = parseInt(element.getAttribute('cursorPos') || '0', 10);
-                const focused = (element.getAttribute('focused') || '').toLowerCase() === 'true';
+                const focused = element.focused;
                 const shellStyle = element.getAttribute('shellStyle') || '';
                 const promptStyle = this.parseInlineStyle(element.getAttribute('promptStyle') || '');
                 const valueStyle = this.parseInlineStyle(element.getAttribute('valueStyle') || '');
@@ -463,8 +464,8 @@ export class TuiRenderer extends ConsoleRenderer {
         }
     }
 
-    protected hasClickHandler(element?: ConsoleElement): boolean {
-        return !!element?.hasEventListener('click');
+    protected hasPointerHandler(element?: ConsoleElement): boolean {
+        return !!element && ['click', 'mousedown', 'wheel'].some(type => element.hasEventListener(type));
     }
 
     protected collectNestedClickTargets(
@@ -486,7 +487,7 @@ export class TuiRenderer extends ConsoleRenderer {
             if (String(styleMap.display || '').trim().toLowerCase() === 'none') {
                 return;
             }
-            if (this.hasClickHandler(childElement)) {
+            if (this.hasPointerHandler(childElement) || childElement.focusable) {
                 clickTargets.push({
                     node: childElement,
                     x: 0,

@@ -511,6 +511,14 @@
 - 视窗整窗修复：布局策略通过 DI resolver 注入，viewport 默认进入 alternate screen；components/console 在 viewport 下补齐 transcript 与 footer 之间的空行，使输入框固定在 TUI 底部。stream 仍独立使用 native scrollback。
 - Logo 定位修正：brand panel 改为加入 `transcript` region，viewport 与 stream 两种模式都让 logo 位于时间线会话顶部并随历史滚动，不再作为固定 header。
 - 视窗退出语义：alternate-screen viewport 退出时不把动态时间线 retained lines 追加回主屏；stream 仍按 native scrollback 保留历史输出。
+
+## OpenTUI 风格 console 基础交互（2026-09-30）
+
+- 未引入 OpenTUI 依赖；在 `components/console` 自实现 `ConsoleDocument` 单一 activeElement、focus/blur 生命周期、鼠标命中区域、mousedown 聚焦、wheel/click 分发与 active element 键盘路由。
+- TUI renderer 记录可聚焦节点及 pointer handler 的几何区域；节点移除或替换时自动释放焦点并清除 `ownerDocument`（`ConsoleNode.clearDocument`），避免被替换的旧节点残留 `[focused]` 绑定反向抢焦点。
+- 全量 agent-ui 测试暴露：组件重渲染后旧 textarea 已离树却仍持有 `ownerDocument`，其 `[focused]` 绑定与 live textarea 互相 focus，触发 `Maximum call stack size exceeded`（两节点同一 `ConsoleDocument` 上无限 ping-pong）。根因修复落在 `components/console/src/console.ts`，未改动 components 核心 `reactive.ts`/`effect.ts`。
+- agent-ui 的活动 turn 判定同时检查 `activeTurnRun` 与 session status，修复后端提前发布 idle/final 状态时 Esc 无法取消的问题。
+- 验证：agent-ui 1441 passing、components 142、components/html 118、components/console 86 passing；`tsc --noEmit` agent-ui、source-size（`AgentConsoleComponent.ts` 4162 ≤ 基线 4163）、`git diff --check` 通过；真实 CLI 已进入 viewport TUI。Esc 修复后真实 PTY 复测本轮未完成，仍需下一轮确认。
 - `/close` 退出语义：viewport 先恢复主终端，再将会话结束/续接提示写入命令窗口；动态时间线不会泄漏到退出后的主屏。
 - 视窗消息交互：点击消息行会进入时间线焦点，后续滚轮、方向键与 PageUp/PageDown 由消息导航消费；stream 的折叠交互保持独立。
 - 焦点基础设施迁移（阶段 1）：参考 OpenTUI/OpenCode 及 Angular CDK 的职责边界，在 `packages/components` 核心新增 renderer-neutral `FocusRegionManager`，统一单一焦点所有者、成对 focus/blur 与按焦点事件路由；agent-ui 通过 `AgentConsoleRegionFocusController` 映射 composer/transcript，业务组件不再直接写入消息焦点。后续阶段由 console/html renderer 接入真实 hit-test，并移除 `messagesFocused`/`inputFocused` 的路由职责与文本输入补偿逻辑。

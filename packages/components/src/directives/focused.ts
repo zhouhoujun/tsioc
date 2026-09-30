@@ -25,12 +25,19 @@ export class FocusedDirective {
 
     private apply(): void {
         const element = this.elementRef.nativeElement;
-        if (this.value) this.focusMonitor.focusVia(element, 'program');
-        else element.blur?.();
+        if (this.value) {
+            if (!element.ownerDocument || element.ownerDocument.activeElement !== element) {
+                this.focusMonitor.focusVia(element, 'program');
+            }
+        } else if (!element.ownerDocument || element.ownerDocument.activeElement === element) {
+            element.blur?.();
+        }
     }
 
     private update(value: unknown): void {
-        this.value = value === true || value === '' || value === 'true';
+        const next = value === true || value === '' || value === 'true';
+        if (this.initialized && this.value === next) return;
+        this.value = next;
         if (this.initialized) this.apply();
     }
 }
