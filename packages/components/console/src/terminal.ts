@@ -223,7 +223,7 @@ export interface TerminalPrimaryRenderResult {
 }
 
 export interface TuiTerminalSurfaceRenderer {
-    renderToTuiLayout(node: RNode | RNode[], options?: { width?: number }): {
+    renderToTuiLayout(node: RNode | RNode[], options?: { width?: number; dirty?: ConsoleNode }): {
         lines: string[];
         cursorTargets?: TerminalCursorTarget[];
         regions?: TerminalRenderRegion[];
@@ -781,7 +781,7 @@ export class TuiTerminalSurface {
             if (!consoleNode?.addEventListener) {
                 return;
             }
-            const listener = (() => this.requestRender()) as EventListener;
+            const listener = ((event: Event) => this.requestRender((event as unknown as { target?: ConsoleNode }).target)) as EventListener;
             consoleNode.addEventListener(ConsoleNode.CHANGE_EVENT, listener);
             this.listeners.push({ node: consoleNode, listener });
         });
@@ -800,13 +800,25 @@ export class TuiTerminalSurface {
         this.scrollOffsetRows = 0;
         this.maxScrollOffsetRows = 0;
         this.scheduled = false;
+        this.pendingRenderOrigin = undefined;
     }
 
-    requestRender(): void {
-        if (this.destroyed || this.scheduled) {
+    protected pendingRenderOrigin?: ConsoleNode;
+
+    requestRender(origin?: ConsoleNode): void {
+        if (this.destroyed) {
+            return;
+        }
+        if (this.scheduled) {
+            // A second, different origin before the frame flushes makes the
+            // single dirty-subtree hint unreliable; fall back to a full pass.
+            if (origin !== this.pendingRenderOrigin) {
+                this.pendingRenderOrigin = undefined;
+            }
             return;
         }
         this.scheduled = true;
+        this.pendingRenderOrigin = origin;
         const run = () => {
             this.scheduled = false;
             this.render();
@@ -818,12 +830,26 @@ export class TuiTerminalSurface {
         Promise.resolve().then(run);
     }
 
+    protected resolveDirtyTopLevel(origin?: ConsoleNode): ConsoleNode | undefined {
+        if (!origin) {
+            return undefined;
+        }
+        const nodes = Array.isArray(this.root) ? this.root : (this.root ? [this.root] : []);
+        let node: ConsoleNode | null | undefined = origin;
+        while (node && !nodes.includes(node as any)) {
+            node = node.parentNode;
+        }
+        return (node as ConsoleNode | undefined) ?? undefined;
+    }
+
     render(): TerminalPrimaryRenderResult | undefined {
         if (this.destroyed || !this.root) {
             return undefined;
         }
         const width = this.resolveWidth();
-        const layout = this.options.renderer.renderToTuiLayout(this.root, { width });
+        const dirty = this.resolveDirtyTopLevel(this.pendingRenderOrigin);
+        this.pendingRenderOrigin = undefined;
+        const layout = this.options.renderer.renderToTuiLayout(this.root, { width, dirty });
         const viewport = this.resolveViewportLayout(layout);
         const lines = viewport.lines;
         this.clickTargetsCache = viewport.clickTargets;

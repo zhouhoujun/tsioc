@@ -51,7 +51,7 @@ export interface AgentModelConfig {
     thinkingBudget?: number;
     reasoning?: boolean;
     /** G32: default reasoning effort for reasoning-capable models ('low' | 'medium' | 'high'). */
-    reasoningEffort?: 'low' | 'medium' | 'high';
+    reasoningEffort?: 'low' | 'medium' | 'high' | 'max';
     promptCache?: AgentPromptCacheConfig;
 }
 

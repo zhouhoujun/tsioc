@@ -166,7 +166,7 @@ describe('Reactive', () => {
             class State {
                 value = 1;
 
-                @NoReactive
+                @NoReactive()
                 readValue() {
                     return this.value;
                 }
@@ -175,7 +175,7 @@ describe('Reactive', () => {
                     return this.value;
                 }
 
-                @NoReactive
+                @NoReactive()
                 propertyMethod = () => this.value;
             }
             const state = reactive(new State(), effect);
@@ -185,6 +185,38 @@ describe('Reactive', () => {
             expect(effect.getTracks().some(track => track.key === 'plainMethod')).toBeTruthy();
             state.propertyMethod();
             expect(effect.getTracks().some(track => track.key === 'propertyMethod')).toBeFalsy();
+        });
+
+        it('should skip tracking for @NoReactive() property, accessor, setter and method', () => {
+            class Marked {
+                plain = 1;
+                @NoReactive() hidden = 2;
+                @NoReactive() get accessor() { return 3; }
+                private _writeOnly = 5;
+                @NoReactive() set writeOnly(v: number) { this._writeOnly = v; }
+                get writeOnly() { return this._writeOnly; }
+                @NoReactive() method() { return 4; }
+            }
+            const state = reactive(new Marked(), effect);
+            void state.hidden;
+            expect(effect.getTracks().some(track => track.key === 'hidden')).toBeFalsy();
+            void state.accessor;
+            expect(effect.getTracks().some(track => track.key === 'accessor')).toBeFalsy();
+            void state.writeOnly;
+            expect(effect.getTracks().some(track => track.key === 'writeOnly')).toBeFalsy();
+            state.method();
+            expect(effect.getTracks().some(track => track.key === 'method')).toBeFalsy();
+            void state.plain;
+            expect(effect.getTracks().some(track => track.key === 'plain')).toBeTruthy();
+        });
+
+        it('should not proxy a class decorated with @NoReactive()', () => {
+            @NoReactive()
+            class Off {
+                value = 1;
+            }
+            const raw = new Off();
+            expect(reactive(raw, effect)).toBe(raw);
         });
 
         it('should trigger on property set', () => {

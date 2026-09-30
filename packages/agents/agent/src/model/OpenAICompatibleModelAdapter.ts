@@ -58,7 +58,7 @@ interface OpenAIChatCompletionRequest {
     temperature?: number;
     max_tokens?: number;
     /** P42: OpenAI reasoning effort. Reasoning models reject `temperature`. */
-    reasoning_effort?: 'low' | 'medium' | 'high';
+    reasoning_effort?: 'low' | 'medium' | 'high' | 'max';
 }
 
 interface OpenAIChatCompletionResponse {
@@ -482,7 +482,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
             tool_choice: request.tools.length ? 'auto' : undefined,
             temperature: reasoning ? undefined : (request.temperature ?? this.options.temperature),
             max_tokens: this.options.maxTokens,
-            ...(reasoningEffort ? { reasoning_effort: reasoningEffort as 'low' | 'medium' | 'high' } : {})
+            ...(reasoningEffort ? { reasoning_effort: reasoningEffort as 'low' | 'medium' | 'high' | 'max' } : {})
         };
     }
 

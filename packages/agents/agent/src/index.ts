@@ -17,6 +17,7 @@ export * from './model/ModelRequest';
 export * from './model/ModelResponse';
 export * from './model/StreamChunk';
 export * from './model/ModelProviderOptions';
+export * from './model/ModelCatalog';
 export * from './model/provider-registry';
 export * from './model/PromptCachePolicy';
 export * from './model/OpenAICompatibleModelAdapter';

@@ -1,7 +1,7 @@
-import { hasOwn, isFunction, isObject } from '@tsdi/ioc';
+import { getClassRef, hasOwn, isFunction, isObject } from '@tsdi/ioc';
 import { noReact, ReactiveEffect } from './effect';
 import { ComputedMetadata } from './decorators/computed';
-import { isNoReactiveProperty } from './decorators/reactive-operation';
+import { NoReactive } from './decorators/reactive-operation';
 // import { RNode } from './renderer/Node';
 
 const REACT_FlAG = Symbol('__REACT');
@@ -94,7 +94,23 @@ export function reactive(target: any, effect: ReactiveEffect, computeds?: Comput
         return target;
     }
 
+    const noReactiveDefines = getClassRef(target?.constructor)?.getDefines(NoReactive) ?? [];
+    let noReactiveSet: Set<string | symbol> | undefined;
+    if (noReactiveDefines.length) {
+        const memberKeys = noReactiveDefines
+            .map(define => define.propertyKey)
+            .filter(Boolean) as Array<string | symbol>;
+        if (!memberKeys.length) {
+            return target;
+        }
+        noReactiveSet = new Set<string | symbol>(memberKeys);
+    }
+
+
     // 创建代理
+    const computedByKey = computeds?.length
+        ? new Map<string | symbol, ComputedMetadata>(computeds.map(computed => [computed.propertyKey, computed]))
+        : undefined;
     const proxy = new Proxy(target, {
         get(target, key, receiver) {
             // Resolve methods before dependency tracking. Reading an operation
@@ -102,7 +118,7 @@ export function reactive(target: any, effect: ReactiveEffect, computeds?: Comput
             // method property; state reads performed by the method through its
             // proxy `this` remain tracked normally.
             let res = Reflect.get(target, key, receiver);
-            const isNoReactive = key !== REACT_FlAG && isNoReactiveProperty(target, key, res);
+            const isNoReactive = key !== REACT_FlAG && noReactiveSet !== undefined && noReactiveSet.has(key);
             if (!isNoReactive && key !== REACT_FlAG && isSubscribable(target)) {
                 bindSubscribableEffect(target, effect);
                 effect.track(target, SUBSCRIBABLE_NOTIFY);
@@ -111,7 +127,7 @@ export function reactive(target: any, effect: ReactiveEffect, computeds?: Comput
                 // If the property is a computed getter, its value is tracked
                 // below by the computed handler rather than as a function key.
                 if (isComputing && currentComputedKey) {
-                    const computedDep = computeds?.find(c => c.propertyKey === currentComputedKey);
+                    const computedDep = computedByKey?.get(currentComputedKey);
                     if (computedDep?.dependencies?.includes(key as string)) {
                         effect.track(target, key);
                     }
@@ -119,7 +135,7 @@ export function reactive(target: any, effect: ReactiveEffect, computeds?: Comput
                     effect.track(target, key);
                 }
             }
-            const computedDep = computeds?.find(c => c.propertyKey === key);
+            const computedDep = computedByKey?.get(key);
             // 处理计算属性
             if (computedDep) {
                 return handleComputedProperty(target, computedDep, effect);

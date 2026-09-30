@@ -42,7 +42,7 @@ export interface ModelRequest {
      * `reasoning_effort`; Anthropic adapters derive the thinking budget tier.
      * When undefined the adapter falls back to 'high' (previous behavior).
      */
-    reasoningEffort?: 'low' | 'medium' | 'high';
+    reasoningEffort?: 'low' | 'medium' | 'high' | 'max';
     /**
      * P74: per-request temperature override. When set, adapters use this value
      * instead of their option-level temperature (which is ignored entirely

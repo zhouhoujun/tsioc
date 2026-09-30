@@ -399,6 +399,33 @@ export class ConsoleRendererTest {
         expect(renderer.renderToLines(root)).toEqual(['Agent Console']);
     }
 
+    @Test('reuses cached layout for non-dirty top-level subtrees')
+    reusesNonDirtyTopLevelLayout() {
+        const renderer = new TuiRenderer();
+        const clean = (lines: string[]) => lines.map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
+        const first = renderer.createElement('div') as ConsoleElement;
+        renderer.appendChild(first, renderer.createText('A'));
+        const second = renderer.createElement('div') as ConsoleElement;
+        renderer.appendChild(second, renderer.createText('B'));
+
+        expect(clean(renderer.renderToTuiLayout([first, second], { width: 10 }).lines)).toEqual(['A', 'B']);
+
+        const walked: any[] = [];
+        const original = (renderer as any).walkTuiNode.bind(renderer);
+        (renderer as any).walkTuiNode = (node: any, ...rest: any[]) => {
+            walked.push(node);
+            return original(node, ...rest);
+        };
+        try {
+            expect(clean(renderer.renderToTuiLayout([first, second], { width: 10, dirty: second }).lines)).toEqual(['A', 'B']);
+        } finally {
+            (renderer as any).walkTuiNode = original;
+        }
+
+        expect(walked).toContain(second);
+        expect(walked).not.toContain(first);
+    }
+
     @Test('supports basic query and click semantics')
     supportsBasicQueryAndClickSemantics() {
         const renderer = new ConsoleRenderer();

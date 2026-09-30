@@ -1,9 +1,20 @@
 import { ReactiveEffect, noReact } from '../effect';
 
+/**
+ * Upper bound on deferred re-entrancy passes. A healthy synchronous cascade
+ * settles in a single pass (triggered effects are not themselves running);
+ * only a self-feeding write cycle needs extra passes, and those must be bounded
+ * so a single `set` can never recurse without limit.
+ */
+const MAX_REENTRANCY_PASSES = 20;
+
 export class DefaultReactiveEffect implements ReactiveEffect {
     
     private depsMap = new WeakMap<any, Map<string | symbol, Set<Function>>>();
     private activeEffects = new Set<Function>();
+    private pendingEffects = new Set<Function>();
+    private runningDepth = 0;
+    private flushing = false;
     private scheduler?: (fn: Function) => void;
     private isActive = true;
 
@@ -14,6 +25,11 @@ export class DefaultReactiveEffect implements ReactiveEffect {
     }
 
     track(target: any, key: string | symbol): void {
+        // Reads outside any running effect cannot be dependents; skip so plain
+        // state traversal never allocates dependency maps.
+        if (this.activeEffects.size === 0) {
+            return;
+        }
         if (!this.depsMap.has(target)) {
             this.depsMap.set(target, new Map());
         }
@@ -42,7 +58,13 @@ export class DefaultReactiveEffect implements ReactiveEffect {
             // 如果是生命周期钩子变化，立即执行
             // 必须经由 run() 执行，以便重跑期间 activeEffects 生效，
             // 使重跑过程中首次读取的依赖也能被 track 收集。
-            const run = () => Array.from(deps).forEach(effectFn => this.run(effectFn));
+            const run = () => Array.from(deps).forEach(effectFn => {
+                if (this.activeEffects.has(effectFn)) {
+                    this.pendingEffects.add(effectFn);
+                } else {
+                    this.run(effectFn);
+                }
+            });
             isLifecycleHook ? run() : (this.scheduler ? this.scheduler(run) : run());
         }
     }
@@ -50,11 +72,37 @@ export class DefaultReactiveEffect implements ReactiveEffect {
 
     // 添加effect函数
     run(fn: Function) {
+        this.runningDepth += 1;
+        this.activeEffects.add(fn);
         try {
-            this.activeEffects.add(fn);
             return fn();
         } finally {
             this.activeEffects.delete(fn);
+            this.runningDepth -= 1;
+            if (this.runningDepth === 0 && !this.flushing && this.pendingEffects.size > 0) {
+                this.flushPendingEffects();
+            }
+        }
+    }
+
+    private flushPendingEffects(): void {
+        if (this.flushing) {
+            return;
+        }
+        this.flushing = true;
+        try {
+            for (let pass = 0; pass < MAX_REENTRANCY_PASSES && this.pendingEffects.size > 0; pass++) {
+                const jobs = Array.from(this.pendingEffects);
+                this.pendingEffects.clear();
+                jobs.forEach(fn => {
+                    if (!this.activeEffects.has(fn)) {
+                        this.run(fn);
+                    }
+                });
+            }
+            this.pendingEffects.clear();
+        } finally {
+            this.flushing = false;
         }
     }
 

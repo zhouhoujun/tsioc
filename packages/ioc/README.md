@@ -936,6 +936,76 @@ builder.build({
 see AOP extends (https://github.com/zhouhoujun/tsioc/blob/master/packages/aop/src/AopModule.ts)
 You can extend yourself decorator via:
 
+### 自定义修饰器（`createDecorator`）
+
+`createDecorator` 是 `@tsdi/ioc` 提供的修饰器工厂，框架内置的 `@Injectable` / `@Autowired` / `@Computed` / `@Subscribe` / `@ViewChild` 等都用它创建。
+惯例：定义一个继承 `PropertyMetadata` 的 `XxxMetadata`、一个可调用接口（声明重载），再用 `createDecorator` 生成。
+
+```ts
+import {
+    ActionType, ClassMethodDecorator, MethodPropDecorator,
+    PropertyMetadata, createDecorator, createParamDecorator, getClassRef
+} from '@tsdi/ioc';
+
+// 1) 无参标记修饰器（可作用于 类 / 属性 / get / set / 方法）
+export interface NoReactiveMetadata<T = any> extends PropertyMetadata<T> {}
+export interface NoReactive { (): ClassMethodDecorator; }
+export const NoReactive: NoReactive = createDecorator<NoReactiveMetadata>('NoReactive', {
+    props: () => ({})
+});
+
+// 2) 带参数的修饰器：props(...args) 把调用参数转成元数据（可带重载）
+export interface RangeMetadata extends PropertyMetadata { min: number; max: number; }
+export interface Range { (min: number, max: number): MethodPropDecorator; }
+export const Range: Range = createDecorator<RangeMetadata>('Range', {
+    actionType: ActionType.annoation,                 // 注册动作类型（可选）
+    props: (min: number, max: number) => ({ min, max }),
+    appendProps: (meta) => {                          // 追加/补全元数据（可选）
+        meta.nullable = meta.nullable ?? true;
+    }
+});
+
+// 3) 参数修饰器
+export const ParamRange = createParamDecorator<RangeMetadata>('ParamRange', {
+    props: (min: number, max: number) => ({ min, max })
+});
+
+// 4) 在 design/def/runtime 处理器里读取自己收集的 defines
+export const Handle = createDecorator<PropertyMetadata>('Handle', {
+    design: {
+        method: (typeRef) => {
+            const defines = typeRef.getDefines<PropertyMetadata>(Handle);
+            // ...基于 defines 建立调用/注入
+        }
+    }
+});
+```
+
+`MetadataFactory`（`createDecorator` 的第二个参数）可选项：
+
+| 选项 | 作用 |
+| ---- | ---- |
+| `props(...args)` | 把修饰器调用参数转成元数据 |
+| `isMatadata(arg)` | 判断单个参数是否已是元数据对象 |
+| `appendProps(meta)` | 追加/补全元数据 |
+| `actionType` | 注册动作类型（`ActionType.annoation \| inject \| providers \| runnable` 等） |
+| `design` / `def` / `runtime` | 针对 `类/属性/方法/参数` 的设计期、定义期、运行期处理器 |
+| `init` / `afterInit` | 初始化前后钩子 |
+| `factory` | 自定义调用工厂 |
+
+- `createDecorator` 生成的修饰器可作用于**类、属性、`get`/`set`、方法**（`ClassMethodDecorator`）；参数用 `createParamDecorator`，属性专用可用 `createPropDecorator`。
+- 读取标记：类装饰器上下文用 `ctx.classRef`（或 `typeRef.getDefines(ctx.currDecor)`），运行时用 `getClassRef(type)`：
+
+```ts
+import { getClassRef } from '@tsdi/ioc';
+
+const defines = getClassRef(MyClass).getDefines(NoReactive);
+const memberKeys = defines.map(d => d.propertyKey);      // 成员标记（属性/get/set/方法）
+const hasClassMark = defines.some(d => !d.propertyKey);  // 类级标记
+```
+
+- 指令/组件里可把元数据收集进 def（如 `def.computeds`、`def.viewChilds`、`def.attributes`）。
+
 
 
 ## Documentation

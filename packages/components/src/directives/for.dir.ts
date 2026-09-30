@@ -3,7 +3,7 @@ import { TemplateRef } from '../refs/template';
 import { ViewContainerRef } from '../refs/container';
 import { Attribute } from '../decorators/atteribute';
 import { DirectiveType } from '../refs/directive';
-import { ReactiveEffect } from '../effect';
+import { ReactiveEffect, noReact } from '../effect';
 import { ViewRef } from '../refs/view';
 
 /**
@@ -19,6 +19,8 @@ import { ViewRef } from '../refs/view';
     priority: 20
 })
 export class VForDirective {
+    [noReact] = true;
+
     private _viewRefs: ViewRef<any>[] = [];
     private _collection: any = null;
     private _prevCollection: any = null;

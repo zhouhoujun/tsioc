@@ -475,12 +475,14 @@ function tailSummary(value: unknown, maxLength: number): string {
 
 function projectConversationTurn(messages: AgentMessage[]): AgentMessage[] {
     if (!messages.some(message => message.role === 'user')) return messages.slice();
+    const kinds: Array<string | undefined> = messages.map(message =>
+        message.role === 'assistant' && !isNonConversationAssistant(message)
+            ? presentAgentConsoleSessionContent(message).kind
+            : undefined);
     const conversationIndexes: number[] = [];
     const finalIndexes: number[] = [];
     const partialIndexes: number[] = [];
-    messages.forEach((message, index) => {
-        if (message.role !== 'assistant' || isNonConversationAssistant(message)) return;
-        const kind = presentAgentConsoleSessionContent(message).kind;
+    kinds.forEach((kind, index) => {
         if (kind !== 'assistant-final' && kind !== 'assistant-partial' && kind !== 'assistant-preamble') return;
         conversationIndexes.push(index);
         if (kind === 'assistant-final') finalIndexes.push(index);
@@ -491,6 +493,7 @@ function projectConversationTurn(messages: AgentMessage[]): AgentMessage[] {
     const conversationIndexSet = new Set(conversationIndexes);
     const finalIndex = finalIndexes.length ? finalIndexes[finalIndexes.length - 1] : -1;
     const partialIndex = finalIndex < 0 && partialIndexes.length ? partialIndexes[partialIndexes.length - 1] : -1;
+    const finalContent = finalIndex >= 0 ? normalizedConversationContent(messages[finalIndex]) : '';
     const seenFinalContent = new Set<string>();
     const result: AgentMessage[] = [];
     messages.forEach((message, index) => {
@@ -498,7 +501,7 @@ function projectConversationTurn(messages: AgentMessage[]): AgentMessage[] {
             result.push(message);
             return;
         }
-        const kind = presentAgentConsoleSessionContent(message).kind;
+        const kind = kinds[index];
         if (kind === 'assistant-partial') {
             if (index === partialIndex) result.push(message);
             return;
@@ -510,11 +513,11 @@ function projectConversationTurn(messages: AgentMessage[]): AgentMessage[] {
         const contentKey = normalizedConversationContent(message);
         if (index === finalIndex) {
             result.push(message);
-            seenFinalContent.add(contentKey);
+            if (contentKey) seenFinalContent.add(contentKey);
             return;
         }
-        if (contentKey && normalizedConversationContent(messages[finalIndex]) === contentKey) return;
-        if (contentKey && isSupersededConversationSnapshot(message, messages[finalIndex])) return;
+        if (contentKey && finalContent === contentKey) return;
+        if (contentKey && isSupersededConversationSnapshot(message, finalContent)) return;
         if (contentKey && seenFinalContent.has(contentKey)) return;
         result.push({
             ...message,
@@ -525,12 +528,10 @@ function projectConversationTurn(messages: AgentMessage[]): AgentMessage[] {
     return result;
 }
 
-function isSupersededConversationSnapshot(message: AgentMessage, finalMessage?: AgentMessage): boolean {
-    if (!finalMessage) return false;
+function isSupersededConversationSnapshot(message: AgentMessage, finalContent: string): boolean {
     const earlier = normalizedConversationContent(message);
-    const final = normalizedConversationContent(finalMessage);
-    if (!earlier || !final) return false;
-    if (final.startsWith(earlier)) return true;
+    if (!earlier || !finalContent) return false;
+    if (finalContent.startsWith(earlier)) return true;
 
     // Persisted stream snapshots can contain list markers whose text only
     // arrives in the completed message. Match their substantial prose instead
@@ -540,7 +541,7 @@ function isSupersededConversationSnapshot(message: AgentMessage, finalMessage?: 
         .split('\n')
         .map(line => line.replace(/^\s*(?:[-*+]\s*|\d+\.\s*)/, '').replace(/\s+/g, ' ').trim())
         .filter(line => line.length >= 32);
-    return substantialLines.some(line => final.includes(line));
+    return substantialLines.some(line => finalContent.includes(line));
 }
 
 function isNonConversationAssistant(message: AgentMessage): boolean {

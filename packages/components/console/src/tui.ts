@@ -41,6 +41,8 @@ const tuiDefaultOptions = {
 
 export interface TuiRenderOptions {
     width?: number;
+    /** Top-level subtree that changed; other subtrees may reuse cached layout. */
+    dirty?: ConsoleNode;
 }
 
 export interface TuiCursorTarget {
@@ -75,15 +77,48 @@ export class TuiRenderer extends ConsoleRenderer {
         return this.renderToTuiLayout(node, options).lines;
     }
 
+    protected subtreeLayoutCache = new Map<object, {
+        lines: string[];
+        cursorTargets: TuiCursorTarget[];
+        regions: TuiRenderRegionDraft[];
+        clickTargets: TerminalClickTarget[];
+    }>();
+    protected subtreeLayoutWidth?: number;
+
     renderToTuiLayout(node: RNode | RNode[], options: TuiRenderOptions = {}): TuiRenderLayout {
         const nodes = Array.isArray(node) ? node : [node];
+        const width = options.width;
+        const dirty = options.dirty;
+        if (this.subtreeLayoutWidth !== width) {
+            this.subtreeLayoutCache.clear();
+            this.subtreeLayoutWidth = width;
+        }
+        const recomputeAll = !dirty || !nodes.includes(dirty as any);
         const lines: string[] = [];
         const cursorTargets: TuiCursorTarget[] = [];
         const regions: TuiRenderRegionDraft[] = [];
         const clickTargets: TerminalClickTarget[] = [];
-        const width = options.width;
-        const visited = new WeakSet<object>();
-        nodes.forEach(current => this.walkTuiNode(current as ConsoleNode, lines, {}, width, cursorTargets, regions, clickTargets, visited));
+        nodes.forEach(current => {
+            const key = current as object;
+            let entry = this.subtreeLayoutCache.get(key);
+            if (recomputeAll || dirty === current || !entry) {
+                entry = this.renderSubtreeLayout(current as ConsoleNode, width);
+                this.subtreeLayoutCache.set(key, entry);
+            }
+            const baseRow = lines.length;
+            for (const line of entry.lines) {
+                lines.push(line);
+            }
+            for (const target of entry.cursorTargets) {
+                cursorTargets.push({ id: target.id, row: target.row + baseRow, column: target.column });
+            }
+            for (const target of entry.clickTargets) {
+                clickTargets.push({ ...target, y: target.y + baseRow });
+            }
+            for (const region of entry.regions) {
+                regions.push({ ...region, startRow: region.startRow + baseRow, endRow: region.endRow + baseRow });
+            }
+        });
         while (lines.length && !this.stripAnsi(lines[lines.length - 1]).trim()) {
             lines.pop();
         }
@@ -97,6 +132,59 @@ export class TuiRenderer extends ConsoleRenderer {
                 endRow: region.endRow
             }))
         };
+    }
+
+    protected renderSubtreeLayout(node: ConsoleNode, width?: number): {
+        lines: string[];
+        cursorTargets: TuiCursorTarget[];
+        regions: TuiRenderRegionDraft[];
+        clickTargets: TerminalClickTarget[];
+    } {
+        const lines: string[] = [];
+        const cursorTargets: TuiCursorTarget[] = [];
+        const regions: TuiRenderRegionDraft[] = [];
+        const clickTargets: TerminalClickTarget[] = [];
+        const visited = new WeakSet<object>();
+        this.tuiTextCache = this.buildTuiTextMap([node]);
+        try {
+            this.walkTuiNode(node, lines, {}, width, cursorTargets, regions, clickTargets, visited);
+        } finally {
+            this.tuiTextCache = undefined;
+        }
+        return { lines, cursorTargets, regions, clickTargets };
+    }
+
+    protected tuiTextCache?: Map<object, string>;
+
+    protected buildTuiTextMap(nodes: ConsoleNode[]): Map<object, string> {
+        const map = new Map<object, string>();
+        const computing = new WeakSet<object>();
+        const compute = (node: ConsoleNode): string => {
+            if (!node || typeof node !== 'object') {
+                return '';
+            }
+            const cached = map.get(node);
+            if (cached !== undefined) {
+                return cached;
+            }
+            if (computing.has(node)) {
+                return '';
+            }
+            computing.add(node);
+            let text: string;
+            if (node instanceof ConsoleText || node instanceof ConsoleComment) {
+                text = node.textContent || '';
+            } else if (node instanceof ConsoleElement) {
+                text = node.childNodes.map(child => compute(child as ConsoleNode)).join('');
+            } else {
+                text = '';
+            }
+            computing.delete(node);
+            map.set(node, text);
+            return text;
+        };
+        nodes.forEach(node => compute(node));
+        return map;
     }
 
     protected walkTuiNode(
@@ -132,7 +220,7 @@ export class TuiRenderer extends ConsoleRenderer {
             return;
         }
         const tag = (element.tagName || '').toLowerCase();
-        const text = this.collectText(element);
+        const text = this.tuiTextCache?.get(element) ?? this.collectText(element);
         const regionId = this.resolveRenderRegionId(element);
         const regionStart = regionId ? lines.length : -1;
         const interactive = this.hasPointerHandler(element) || element.focusable;

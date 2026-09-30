@@ -54,6 +54,28 @@
 - 绑定不更新排查：先确认读取经 proxy（get trap 有 track）且 `runningDepth > 0`（绑定在 effect.run 内）；再确认写入触发的 effect 是否命中该绑定注册的 effect 实例；跨组件场景依赖 SUBSCRIBABLE_NOTIFY 广播，而不是同一 effect 实例。
 - `[TRIGGER-DEBUG]` 等调试 log 不得留在 `effect.ts` 等核心文件。
 
+**核心热路径性能纪律（2026-09 用户确认，必守）**
+
+`reactive.ts` 的 get/set trap 与 `impl/effect.ts` 的 `track`/`trigger`/`run` 是全框架复用度最高的热路径。**禁止**在其中新增任何"每次读/写都执行"的开销：
+
+- 禁止 per-read / per-write 的 WeakMap/Map **缓存与查表**（曾加过的 `isNoReactiveProperty` 结果缓存、集合索引等，实测无收益，已移除）。
+- 禁止 per-read 的**原型链遍历**与 symbol 查找。
+- 禁止 per-get 的 `Array.find` **线性扫描**；若确有 `computeds` 等元数据，必须在 `reactive()` 建立时预建 `Map<string|symbol, ...>` 索引，get 内 O(1) 取用。
+- `track` 在 `activeEffects.size === 0` 时必须**直接返回**，不得分配 `depsMap` 的 Map/Set 条目（无运行中 effect 时读取不可能成为依赖）。
+- `run`/`trigger` 保持最小：用数值计数器 `runningDepth` 判断是否最外层，**不得**每次 run 维护额外 `Set`；`pendingEffects` 为空时不得进入 flush 分支；`trigger` 内联判定，避免额外 `schedule()` 调用。
+
+**禁止死机制 / 逃生口**
+- 不得引入**只有测试在用、生产零调用**的逃生口装饰器或分支。任何机制必须有真实生产调用点，否则连同其测试一起删除。
+- 判据：`grep` 生产代码（排除 `test`/`dist`）无调用即为死代码。
+- `@NoReactive` 是**受支持的机制**（不让成员/类的读取建立依赖）：用 IoC 的 `createDecorator` 创建（同 `@Computed`/`@Attribute`，ClassRef 元数据），支持属性/`get`/`set`/方法/类的标记；`reactive()` 建立 proxy 时用 `getClassRef(ctor).getDefines(NoReactive)` **读一次**：成员标记闭包成一个 key `Set`（get trap 只做一次 `Set.has`），类级标记直接不代理。**禁止**给 `reactive()` 增加 noReactive 参数，**禁止** per-read 的原型链/类查找。
+
+**性能改动的验证纪律**
+- 必须对**真实路径**（真实 TUI、真实流式 turn）实测 CPU / 帧更新 / socket 积压后才算有效；**禁止**仅凭单测耗时或代码推测宣布"优化"。
+- 未经实测提升的改动不得保留（本项目已多次因"先加缓存/加判断"，实测无收益后被回退）。
+
+**收尾纪律**
+- 临时诊断 instrumentation（trigger 计数、`[TURN-TRACE]` 等）**不得**进入提交，也不得留在 `reactive.ts`/`effect.ts`/`DefaultAgentRuntime.ts` 等核心文件。
+
 ### 4. 代码体量与单一职责（ratchet 必守，2026-09 用户确认）
 
 针对"逻辑已抽出、类却持续膨胀"的巨型文件（如 `agent-ui/src/AgentConsoleComponent.ts` 8000+ 行），以下为强制规则：

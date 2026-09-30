@@ -206,7 +206,8 @@ export async function restoreModelStore(ctx: ModelHandlerContext): Promise<void>
     const data = await ctx.modelStore?.load(ctx.resolveHistoryWorkspace());
     ctx.setFavorites(data?.favorites || []);
     ctx.setRecents(data?.recents || []);
-    ctx.setReasoningEffort(ctx.options().model?.reasoningEffort || 'medium');
+    const configuredEffort = ctx.options().model?.reasoningEffort;
+    ctx.setReasoningEffort(configuredEffort === 'max' ? 'high' : (configuredEffort || 'medium'));
 }
 
 export async function persistModelStore(ctx: ModelHandlerContext): Promise<void> {

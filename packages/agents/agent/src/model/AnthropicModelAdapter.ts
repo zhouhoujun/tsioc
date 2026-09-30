@@ -359,7 +359,7 @@ export class AnthropicModelAdapter extends ModelAdapter {
             body.temperature = temperature;
         }
 
-        const EFFORT_BUDGETS: Record<string, number> = { low: 1024, medium: 2048, high: 4096 };
+        const EFFORT_BUDGETS: Record<string, number> = { low: 1024, medium: 2048, high: 4096, max: 8192 };
         if (request.reasoning === true || ((this.options as any).thinkingBudget && (this.options as any).thinkingBudget > 0)) {
             const explicitBudget = (this.options as any).thinkingBudget && (this.options as any).thinkingBudget > 0
                 ? (this.options as any).thinkingBudget

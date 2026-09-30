@@ -263,9 +263,10 @@ export class ConsoleNode implements RNode {
         });
     }
 
-    protected notifyChanged(): void {
-        this.dispatchEvent({ type: ConsoleNode.CHANGE_EVENT, target: this } as unknown as Event);
-        this.parentNode?.notifyChanged();
+    protected notifyChanged(origin?: ConsoleNode): void {
+        const source = origin ?? this;
+        this.dispatchEvent({ type: ConsoleNode.CHANGE_EVENT, target: source } as unknown as Event);
+        this.parentNode?.notifyChanged(source);
     }
 }
 

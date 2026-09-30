@@ -524,3 +524,15 @@
 - 焦点基础设施迁移（阶段 1）：参考 OpenTUI/OpenCode 及 Angular CDK 的职责边界，在 `packages/components` 核心新增 renderer-neutral `FocusRegionManager`，统一单一焦点所有者、成对 focus/blur 与按焦点事件路由；agent-ui 通过 `AgentConsoleRegionFocusController` 映射 composer/transcript，业务组件不再直接写入消息焦点。后续阶段由 console/html renderer 接入真实 hit-test，并移除 `messagesFocused`/`inputFocused` 的路由职责与文本输入补偿逻辑。
 - 焦点基础设施迁移（阶段 2）：新增核心 `FocusRegionDirective`，模板以静态 `focus-region="composer|transcript"` 声明真实组件区域；区域名由宿主 `RElement` 属性读取，不按组件表达式求值。`ComponentsModule` 提供唯一 manager，directive 生命周期注册/注销节点，agent-ui 仅订阅 active region 并临时投影旧焦点字段。
 - 焦点基础设施迁移（最终方案，替代阶段 1/2）：对照 Angular CDK、React/Vue ref 与 OpenCode 实现后，移除职责过宽的 `FocusRegionManager`/`FocusRegionDirective`。`packages/components` 提供 renderer-neutral `FocusMonitor`、`FocusTrap`、`FocusTrapFactory` 与受控 `[focused]` 指令；应用根控制器直接编排 composer/transcript，转录键盘导航仍归 `AgentConsoleTranscriptNavigation`，`SessionState` 不持有焦点服务或行为对象。编译器同时修复普通指令属性保持字面量、`[name]`/`:name` 显式表达式参与同一 selector 匹配；DOM 多 class 属性按 token 更新。验证：components 142、common 5、html 118、console 85、agent-ui 1441 passing，相关 TypeScript、source-size 与 diff-check 通过。
+
+## 2026-09-30 真实模拟第二轮：reactive 核心 / 渲染器修复 + IoC 装饰器
+- 真实 TUI（sleep-mlt）复现：turn 运行中 CPU 打满、状态栏 Working 计时器冻结、socket 积压。profile 定位为**每次更新全树 TUI 渲染**（`walkTuiNode` + 递归 `collectText`，O(n²)）与流式每 chunk 全量重投影，非纯响应式自激。
+- `VForDirective` 标 `[noReact]`：消除指令内部字段（`_collection`/`_prevCollection`/`_viewRefs`）自依赖环（trigger 实测 5400→0）。
+- `impl/effect.ts`：新增重入保护（同 effect 自激延后、上限 20 轮）+ 回归 `test/effect-reentrancy.spec.ts`；热路径瘦身（`track` 无 running effect 时直接返回、`runningDepth` 计数、`computeds` 预建 Map 索引、`trigger` 内联）。
+- `@NoReactive`：由 IoC `createDecorator` 创建（同 `@Computed`/`@Attribute`），支持 属性/get/set/方法/类；`reactive()` 建立 proxy 时 `getClassRef(ctor).getDefines(NoReactive)` 读一次，成员 key 闭包成 `Set`、类级标记不代理；未给 `reactive()` 加参数、无 per-read 查类/原型。回归覆盖四种成员形态 + 类。
+- `components/console`：`tui.ts` 新增按 top-level 子树的布局缓存 + O(n) 文本 map；`terminal.ts` 用 `notifyChanged(origin)` 传播脏 origin，仅重算脏子树；新增回归用例。
+- `agent-ui` presenter：`projectConversationTurn` 去掉 O(messages×answer) 重复归一化。
+- `ModelCatalog`（`@tsdi/agent`）：`/models` 远程发现 + bundled fallback、`parseAgentModelCatalog`/`fetchAgentModelCatalog`/`resolveModelEffort`/`isSupportedModel`；`reasoningEffort` 类型扩到 `low|medium|high|max`。
+- 规则：`AGENTS.md` 新增热路径/死机制/验证纪律与 `@NoReactive` 约定；`packages/ioc/README.md` 新增 `createDecorator` 用法章节。
+- 门禁：components 146、components/common 5、components/html 118、components/console 87、ioc 239、agent 936、agent-cli 84、agent-ui 1441 全绿；`source-size: OK`；`git diff --check` clean。
+- 开放项：渲染器 region 局部失效未跑真实 TUI 复测；model 发现尚未接入配置校验与 `/model` 展示。
