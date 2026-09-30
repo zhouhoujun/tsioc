@@ -79,6 +79,10 @@ export interface AgentConsoleTerminalInputHost {
     handleCommand(value: string): Promise<boolean>;
 }
 
+function releaseTranscriptFocusForTextInput(host: AgentConsoleTerminalInputHost, text: string): void {
+    if (text) host.transcriptNavigationController.setFocused(false);
+}
+
 /** Open the command palette with an optional pre-filter query. */
 export function openCommandPaletteView(host: AgentConsoleTerminalInputHost, query = ''): void {
     host.commandPaletteQuery = query;
@@ -179,6 +183,7 @@ export async function handleTerminalInputView(
         transcriptNavigationController: host.transcriptNavigationController
     });
     if (!outcome.handled && decoded.text) {
+        releaseTranscriptFocusForTextInput(host, decoded.text);
         await host.state.processRawChunk(decoded.text, {
             submitOnEnter,
             hasSelectMenu: !!host.state.selectMenu
@@ -203,6 +208,7 @@ export async function handleTerminalInputView(
             host.queueDraft();
             return;
         case 'textInput':
+            releaseTranscriptFocusForTextInput(host, rawChunk);
             await host.state.processRawChunk(rawChunk, {
                 submitOnEnter,
                 hasSelectMenu: !!host.state.selectMenu
@@ -226,6 +232,7 @@ export async function handleTerminalInputView(
                     return;
             }
         case 'altNewline':
+            releaseTranscriptFocusForTextInput(host, '\n');
             await host.state.processRawChunk('\n', {
                 submitOnEnter: false,
                 altKey: true,
