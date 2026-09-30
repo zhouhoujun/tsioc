@@ -507,3 +507,4 @@
 - 第三次真实模拟复验（2026-09-30）：TUI 持续执行依赖确认、build、test 与结果汇总计划，工具调用和状态更新正常；core 仓库保持无源码改动。长类体量仍为 `SessionState` 6444 行、`AgentConsoleComponent` 4162 行。
 - UI 修复：移除时间线事件行硬编码的白色 `│` 角色前缀，保留状态 glyph 与语义标签；同步更新 P302 时间线层级契约，避免右侧视觉竖线干扰视窗阅读。
 - 视窗模式契约确认：默认 `viewport` 使用整个 TUI 终端宽高作为固定窗口，关闭 native scrollback，由 `AgentConsoleTranscriptNavigation` 接管滚轮、PageUp/PageDown 与方向键历史滚动；`stream` 仅在显式切换时使用 native scrollback。
+- 真实复验补充：workspace 持久化布局当前为 `stream`，因此启动时显示 native scrollback；执行 `/layout viewport` 后 TUI 明确显示 `Layout: windowed (viewport only; long content collapsed.)`，并进入整窗视窗模式。布局持久化行为符合“显式切换后保留”的约定。
