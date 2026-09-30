@@ -511,3 +511,5 @@
 - 视窗整窗修复：布局策略通过 DI resolver 注入，viewport 默认进入 alternate screen；components/console 在 viewport 下补齐 transcript 与 footer 之间的空行，使输入框固定在 TUI 底部。stream 仍独立使用 native scrollback。
 - Logo 定位修正：brand panel 改为加入 `transcript` region，viewport 与 stream 两种模式都让 logo 位于时间线会话顶部并随历史滚动，不再作为固定 header。
 - 视窗退出语义：alternate-screen viewport 退出时不把动态时间线 retained lines 追加回主屏；stream 仍按 native scrollback 保留历史输出。
+- `/close` 退出语义：viewport 先恢复主终端，再将会话结束/续接提示写入命令窗口；动态时间线不会泄漏到退出后的主屏。
+- 视窗消息交互：点击消息行会进入时间线焦点，后续滚轮、方向键与 PageUp/PageDown 由消息导航消费；stream 的折叠交互保持独立。
