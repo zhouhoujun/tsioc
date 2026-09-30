@@ -509,3 +509,5 @@
 - 视窗模式契约确认：默认 `viewport` 使用整个 TUI 终端宽高作为固定窗口，关闭 native scrollback，由 `AgentConsoleTranscriptNavigation` 接管滚轮、PageUp/PageDown 与方向键历史滚动；`stream` 仅在显式切换时使用 native scrollback。
 - 真实复验补充：workspace 持久化布局当前为 `stream`，因此启动时显示 native scrollback；执行 `/layout viewport` 后 TUI 明确显示 `Layout: windowed (viewport only; long content collapsed.)`，并进入整窗视窗模式。布局持久化行为符合“显式切换后保留”的约定。
 - 视窗整窗修复：布局策略通过 DI resolver 注入，viewport 默认进入 alternate screen；components/console 在 viewport 下补齐 transcript 与 footer 之间的空行，使输入框固定在 TUI 底部。stream 仍独立使用 native scrollback。
+- Logo 定位修正：brand panel 改为加入 `transcript` region，viewport 与 stream 两种模式都让 logo 位于时间线会话顶部并随历史滚动，不再作为固定 header。
+- 视窗退出语义：alternate-screen viewport 退出时不把动态时间线 retained lines 追加回主屏；stream 仍按 native scrollback 保留历史输出。

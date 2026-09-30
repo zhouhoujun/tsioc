@@ -258,7 +258,7 @@ interface AgentConsoleQueuedPrompt {
     selector: 'agent-console',
     template: `
     <div class="agent-console">
-        <agent-console-brand-panel renderRegion="header" v-show="!showMessageDetailPanel"></agent-console-brand-panel>
+        <agent-console-brand-panel renderRegion="transcript" v-show="!showMessageDetailPanel"></agent-console-brand-panel>
         <agent-console-status-panel v-show="showStatusPanel && !showMessageDetailPanel"></agent-console-status-panel>
         <agent-console-sessions-panel v-show="showSessionsPanel && !showMessageDetailPanel"></agent-console-sessions-panel>
         <agent-console-approvals-panel v-show="showApprovalsPanel && !showMessageDetailPanel"></agent-console-approvals-panel>

@@ -514,7 +514,7 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
     stopRendering(): void {
         this.cleanup({
             preserveScreen: true,
-            retainedLines: this.surface?.lastRenderedLines || []
+            retainedLines: this.useAlternateScreen ? [] : (this.surface?.lastRenderedLines || [])
         });
     }
 
