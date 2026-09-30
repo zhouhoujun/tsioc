@@ -7,21 +7,10 @@ export type AgentConsoleRegion = 'composer' | 'transcript';
 
 @Injectable()
 export class AgentConsoleRegionFocusController {
-    private readonly regions = new FocusRegionManager();
     private transcriptNavigation?: AgentConsoleTranscriptNavigationController;
 
-    constructor(private readonly state: AgentConsoleSessionState) {
-        this.regions.register({
-            id: 'composer',
-            focus: () => this.state.setInputFocused(true),
-            blur: () => this.state.setInputFocused(false)
-        });
-        this.regions.register({
-            id: 'transcript',
-            focus: () => this.transcriptNavigation?.setFocused(true),
-            blur: () => this.transcriptNavigation?.setFocused(false)
-        });
-        this.regions.focus('composer');
+    constructor(private readonly state: AgentConsoleSessionState, private readonly regions: FocusRegionManager) {
+        this.regions.subscribe(current => this.syncProjection(current));
     }
 
     get activeRegion(): AgentConsoleRegion {
@@ -38,5 +27,11 @@ export class AgentConsoleRegionFocusController {
     focusTranscript(): boolean {
         if (this.state.messageLayout !== 'viewport') return false;
         return this.regions.focus('transcript');
+    }
+
+    private syncProjection(current?: string): void {
+        const transcript = current === 'transcript';
+        this.state.setInputFocused(!transcript);
+        this.transcriptNavigation?.setFocused(transcript);
     }
 }

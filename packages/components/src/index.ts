@@ -46,5 +46,6 @@ export * from './animation-clock';
 export * from './directives/animation';
 export * from './directives/animated-text';
 export * from './directives/elapsed-time';
+export * from './directives/focus-region';
 
 export * from './impl/html';

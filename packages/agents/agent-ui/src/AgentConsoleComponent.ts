@@ -2971,7 +2971,8 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             detachSshShell: (reason: 'detached' | 'closed') => this.detachSshShell(reason),
             submit: () => this.submit(),
             queueDraft: () => this.queueDraft(),
-            handleCommand: (value: string) => this.handleCommand(value)
+            handleCommand: (value: string) => this.handleCommand(value),
+            focusComposer: () => this.regionFocus?.focusComposer()
         };
     }
     protected turnInputHost(): AgentConsoleTurnInputHost {

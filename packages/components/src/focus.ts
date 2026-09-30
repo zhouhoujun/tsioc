@@ -1,3 +1,5 @@
+import { Injectable } from '@tsdi/ioc';
+
 export type FocusRegionId = string;
 
 export interface FocusRegion {
@@ -11,8 +13,10 @@ export interface FocusRegion {
 }
 
 /** Renderer-neutral focus ownership and event routing primitive. */
+@Injectable()
 export class FocusRegionManager {
     private readonly regions = new Map<FocusRegionId, FocusRegion>();
+    private readonly listeners = new Set<(current?: FocusRegionId, previous?: FocusRegionId) => void>();
     private active?: FocusRegionId;
 
     get activeRegion(): FocusRegionId | undefined { return this.active; }
@@ -21,24 +25,33 @@ export class FocusRegionManager {
         this.regions.set(region.id, region);
         return () => {
             if (this.active === region.id) this.blur(region.id);
-            this.regions.delete(region.id);
+            if (this.regions.get(region.id) === region) this.regions.delete(region.id);
         };
+    }
+
+    subscribe(listener: (current?: FocusRegionId, previous?: FocusRegionId) => void): () => void {
+        this.listeners.add(listener);
+        return () => this.listeners.delete(listener);
     }
 
     focus(id: FocusRegionId): boolean {
         const next = this.regions.get(id);
         if (!next) return false;
         if (this.active === id) return true;
-        this.regions.get(this.active || '')?.blur?.();
+        const previous = this.active;
+        this.regions.get(previous || '')?.blur?.();
         this.active = id;
         next.focus?.();
+        this.emit(previous);
         return true;
     }
 
     blur(id?: FocusRegionId): boolean {
         if (!this.active || (id && id !== this.active)) return false;
-        this.regions.get(this.active)?.blur?.();
+        const previous = this.active;
+        this.regions.get(previous)?.blur?.();
         this.active = undefined;
+        this.emit(previous);
         return true;
     }
 
@@ -55,5 +68,9 @@ export class FocusRegionManager {
         if (!region) return false;
         this.focus(region.id);
         return region.handleMouse ? !!(await region.handleMouse(event)) : true;
+    }
+
+    private emit(previous?: FocusRegionId): void {
+        for (const listener of this.listeners) listener(this.active, previous);
     }
 }

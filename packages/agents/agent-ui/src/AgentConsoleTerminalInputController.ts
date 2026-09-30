@@ -77,10 +77,13 @@ export interface AgentConsoleTerminalInputHost {
     submit(): Promise<void>;
     queueDraft(): boolean;
     handleCommand(value: string): Promise<boolean>;
+    focusComposer?(): void;
 }
 
 function releaseTranscriptFocusForTextInput(host: AgentConsoleTerminalInputHost, text: string): void {
-    if (text) host.transcriptNavigationController.setFocused(false);
+    if (!text) return;
+    if (host.focusComposer) host.focusComposer();
+    else host.transcriptNavigationController.setFocused(false);
 }
 
 /** Open the command palette with an optional pre-filter query. */

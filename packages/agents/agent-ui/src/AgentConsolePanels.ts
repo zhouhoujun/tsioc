@@ -298,6 +298,7 @@ export class AgentConsoleStatusPanelComponent {
             <div class="input-entry" v-style="entryShellStyle">
                 <textarea
                     class="agent-input"
+                    focus-region="composer"
                     v-style="fieldStyle"
                     value="{{input}}"
                     prompt="{{inputPrompt}}"
@@ -2493,7 +2494,7 @@ export class AgentConsoleMessageTokensComponent {
     selector: 'agent-console-message-line',
     imports: [AgentConsoleMessageTokensComponent],
     template: `
-    <label class="message-line" v-style="itemStyle" aria-label="{{ariaLabel}}" @click="toggleMessageDetail"><span v-style="statusStyle">{{status}}</span><span v-style="roleStyle" v-show="role">{{role}}</span><span v-style="prefixStyle" v-show="prefix">{{prefix}}</span><span v-style="lineStyle"><agent-console-message-tokens :tokens="contentTokens"></agent-console-message-tokens></span><span class="message-detail-toggle" v-style="lineStyle" v-if="toggleContent">{{toggleContent}}</span><span v-style="metaStyle" v-show="meta">{{meta}}</span></label>
+    <label class="message-line" focus-region="transcript" v-style="itemStyle" aria-label="{{ariaLabel}}" @click="toggleMessageDetail"><span v-style="statusStyle">{{status}}</span><span v-style="roleStyle" v-show="role">{{role}}</span><span v-style="prefixStyle" v-show="prefix">{{prefix}}</span><span v-style="lineStyle"><agent-console-message-tokens :tokens="contentTokens"></agent-console-message-tokens></span><span class="message-detail-toggle" v-style="lineStyle" v-if="toggleContent">{{toggleContent}}</span><span v-style="metaStyle" v-show="meta">{{meta}}</span></label>
     `
 })
 export class AgentConsoleMessageLineComponent {
@@ -2543,7 +2544,6 @@ export class AgentConsoleMessageLineComponent {
 
     get toggleContent(): string { return this.line?.previewCollapsed ? this.line.content : ''; }
     toggleMessageDetail(): void {
-        this.regionFocus?.focusTranscript();
         if (this.state.messageLayout !== 'viewport' || !this.toggleContent) return;
         const messageId = String(this.line?.messageId || '').trim();
         if (!messageId) return;
