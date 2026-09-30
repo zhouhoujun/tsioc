@@ -17,8 +17,8 @@ import { VBindDirective, VOnDirective } from './directives/bind.dir';
 import { AnimatedFrameDirective } from './directives/animation';
 import { AnimatedTextDirective } from './directives/animated-text';
 import { ElapsedTimeDirective } from './directives/elapsed-time';
-import { FocusRegionDirective } from './directives/focus-region';
-import { FocusRegionManager } from './focus';
+import { FocusedDirective } from './directives/focused';
+import { FocusMonitor, FocusTrapFactory } from './focus';
 import { componentResolvers } from './impl/resolvers';
 
 
@@ -36,7 +36,8 @@ import { componentResolvers } from './impl/resolvers';
         { provide: DirectiveFactory, useClass: DirectiveFactoryImpl, deps: [Runtime] },
         componentResolvers,
         { provide: ReactiveEffect, useFactory: () => new DefaultReactiveEffect() },
-        FocusRegionManager
+        FocusMonitor,
+        FocusTrapFactory
     ],
     exports: [
         VForDirective,
@@ -54,7 +55,7 @@ import { componentResolvers } from './impl/resolvers';
         AnimatedFrameDirective,
         AnimatedTextDirective,
         ElapsedTimeDirective,
-        FocusRegionDirective
+        FocusedDirective
     ]
 })
 export class ComponentsModule {

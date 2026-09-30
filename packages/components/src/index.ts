@@ -11,6 +11,7 @@ export * from './util/stringify';
 
 
 export * from './refs/component';
+export { DirectiveType } from './refs/directive';
 export * from './refs/container';
 export * from './refs/element';
 export * from './refs/template';
@@ -46,6 +47,6 @@ export * from './animation-clock';
 export * from './directives/animation';
 export * from './directives/animated-text';
 export * from './directives/elapsed-time';
-export * from './directives/focus-region';
+export * from './directives/focused';
 
 export * from './impl/html';

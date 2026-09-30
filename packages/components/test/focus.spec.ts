@@ -1,38 +1,75 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { FocusRegionManager } from '../src';
+import { DirectiveType, ElementRef, FocusedDirective, FocusMonitor, FocusTrapFactory, shouldEvaluateDirectiveAttribute } from '../src';
 
-@Suite('focus region manager')
-export class FocusRegionManagerSpec {
-    @Test('switches ownership with paired blur and focus callbacks')
-    switchesOwnership() {
-        const manager = new FocusRegionManager();
-        const calls: string[] = [];
-        manager.register({ id: 'composer', focus: () => calls.push('composer:focus'), blur: () => calls.push('composer:blur') });
-        manager.register({ id: 'transcript', focus: () => calls.push('transcript:focus') });
-        manager.focus('composer');
-        manager.focus('transcript');
-        expect(manager.activeRegion).toEqual('transcript');
-        expect(calls).toEqual(['composer:focus', 'composer:blur', 'transcript:focus']);
+@Suite('focus infrastructure')
+export class FocusInfrastructureSpec {
+    @Test('reports programmatic focus and cleans up monitoring')
+    reportsFocusOrigin() {
+        const listeners = new Map<string, (event: any) => void>();
+        const element = {
+            addEventListener: (name: string, listener: (event: any) => void) => listeners.set(name, listener),
+            removeEventListener: (name: string) => listeners.delete(name),
+            focus: () => listeners.get('focus')?.({ type: 'focus' })
+        };
+        const changes: any[] = [];
+        const monitor = new FocusMonitor();
+        const stop = monitor.monitor(element, change => changes.push(change));
+        monitor.focusVia(element, 'program');
+        expect(changes).toEqual([{ focused: true, origin: 'program' }]);
+        stop();
+        expect(listeners.size).toEqual(0);
     }
 
-    @Test('routes keys only to the active region')
-    async routesKeys() {
-        const manager = new FocusRegionManager();
+    @Test('wraps tab focus inside a trap')
+    wrapsTabFocus() {
         const calls: string[] = [];
-        manager.register({ id: 'composer', handleKey: () => { calls.push('composer'); return true; } });
-        manager.register({ id: 'transcript', handleKey: () => { calls.push('transcript'); return true; } });
-        manager.focus('transcript');
-        expect(await manager.routeKey('pageup')).toEqual(true);
-        expect(calls).toEqual(['transcript']);
+        let keydown: ((event: any) => void) | undefined;
+        const first = { focus: () => calls.push('first'), hasAttribute: () => false, getAttribute: () => null };
+        const last = { focus: () => calls.push('last'), hasAttribute: () => false, getAttribute: () => null };
+        const host = {
+            ownerDocument: { activeElement: last },
+            querySelectorAll: () => [first, last],
+            addEventListener: (_name: string, listener: (event: any) => void) => { keydown = listener; },
+            removeEventListener: () => undefined
+        };
+        const trap = new FocusTrapFactory(new FocusMonitor()).create(host);
+        keydown?.({ key: 'Tab', preventDefault: () => calls.push('prevent') });
+        expect(calls).toEqual(['prevent', 'first']);
+        trap.destroy();
+    }
+}
+
+@Suite('directive attribute expression boundary')
+export class DirectiveAttributeExpressionBoundarySpec {
+    @Test('keeps ordinary directive attributes literal')
+    keepsOrdinaryAttributesLiteral() {
+        expect(shouldEvaluateDirectiveAttribute('focus-region')).toEqual(false);
+        expect(shouldEvaluateDirectiveAttribute('agentConsoleMessageOutlet')).toEqual(false);
     }
 
-    @Test('mouse hit testing focuses the highest priority matching region')
-    async routesMouseByPriority() {
-        const manager = new FocusRegionManager();
-        manager.register({ id: 'transcript', priority: 1, contains: () => true });
-        manager.register({ id: 'overlay', priority: 10, contains: () => true });
-        expect(await manager.routeMouse({}, {})).toEqual(true);
-        expect(manager.activeRegion).toEqual('overlay');
+    @Test('evaluates only explicit framework and structural directive syntax')
+    evaluatesFrameworkSyntax() {
+        expect(shouldEvaluateDirectiveAttribute('v-show')).toEqual(true);
+        expect(shouldEvaluateDirectiveAttribute('*if')).toEqual(true);
+        expect(shouldEvaluateDirectiveAttribute('condition', DirectiveType.Conditional)).toEqual(true);
+        expect(shouldEvaluateDirectiveAttribute('items', DirectiveType.Iterable)).toEqual(true);
+    }
+}
+
+@Suite('focused directive')
+export class FocusedDirectiveSpec {
+    @Test('focuses and blurs its host from the controlled value')
+    controlsHostFocus() {
+        const calls: string[] = [];
+        const directive = new FocusedDirective(new ElementRef({
+            focus: () => calls.push('focus'),
+            blur: () => calls.push('blur')
+        }), new FocusMonitor());
+        directive.focused = true;
+        directive.onInit();
+        directive.focused = false;
+        directive.focused = true;
+        expect(calls).toEqual(['focus', 'blur', 'focus']);
     }
 }

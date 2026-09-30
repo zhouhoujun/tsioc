@@ -66,9 +66,13 @@ export class ClassDirective {
 
 
         if (this.prvCss !== css) {
-            this.prvCss && this.renderer.removeClass(el, this.prvCss);
-            css && this.renderer.addClass(el, css);
+            this.classTokens(this.prvCss).forEach(name => this.renderer.removeClass(el, name));
+            this.classTokens(css).forEach(name => this.renderer.addClass(el, name));
             this.prvCss = css;
         }
+    }
+
+    private classTokens(value?: string): string[] {
+        return String(value || '').split(/\s+/).filter(Boolean);
     }
 }

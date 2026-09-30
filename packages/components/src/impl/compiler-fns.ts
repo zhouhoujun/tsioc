@@ -620,7 +620,7 @@ export function generateNodeBindings<C>(
     });
 
     directives.forEach(r => {
-        const nodes = renderer.querySelectorAll(rootNodes, r.selector);
+        const nodes = findDirectiveNodes(rootNodes, r, renderer);
         nodes?.forEach(n => {
             if (n[COMPONENTDEF]?.type === r.type) {
                 return;
@@ -652,6 +652,26 @@ export function generateNodeBindings<C>(
 
     // 为每个节点创建绑定工厂
     nodesForBindings(nodes, renderer, delimiter);
+}
+
+function findDirectiveNodes(rootNodes: RNode[], directive: DirectiveDef, renderer: Renderer): RNode[] | null {
+    const found = new Set(renderer.querySelectorAll(rootNodes, directive.selector) || []);
+    const selectorNames = directive.selector
+        .split(',')
+        .map(selector => selector.trim())
+        .filter(selector => selector.startsWith('[') && selector.endsWith(']'))
+        .map(selector => selector.slice(1, -1));
+    if (!selectorNames.length) return found.size ? [...found] : null;
+
+    const visit = (node: RNode): void => {
+        if (node.nodeType === NodeType.Element || node.nodeType === NodeType.Template) {
+            const attrs = renderer.getAttributes(node);
+            if (attrs.some(attr => matchesSelectorName(attr.name, selectorNames))) found.add(node);
+        }
+        node.childNodes?.forEach(visit);
+    };
+    rootNodes.forEach(visit);
+    return found.size ? [...found] : null;
 }
 
 
@@ -827,7 +847,7 @@ export function bindingAtrrbutes(element: RNode, attrs: RAttr[], renderer: Rende
         if (name.startsWith('@')) {
             // 事件绑定工厂
             bindingEvent(element, name, value, renderer, delimiter);
-        } else if (name.startsWith(':')) {
+        } else if (name.startsWith(':') || (name.startsWith('[') && name.endsWith(']'))) {
             // 属性绑定工厂
             bindingProperty(element, name, value, renderer, delimiter);
         } else if (name === 'v-model') {
@@ -870,7 +890,7 @@ export function bindingEvent(element: RNode, attrName: string, expr: string, ren
  * @param delimiter 分隔符正则表达式
  */
 export function bindingProperty(element: RNode, attrName: string, expr: string, renderer: Renderer, delimiter: RegExp): void {
-    const propName = attrName.substring(1);
+    const propName = attrName.startsWith('[') ? attrName.slice(1, -1) : attrName.substring(1);
     binding(element, (target: RNode, context: any, effect: ReactiveEffect<any>, injector: NodeInjector) => {
         const el = target as RElement;
         if (!el.setProperty) return;
@@ -1268,7 +1288,7 @@ export function processDirectiveAttributes(directiveRef: any, directiveDef: Dire
                     directiveInstance[propertyKey] = handler;
                 }
             });
-        } else if (attr.name.startsWith(':')) {
+        } else if (attr.name.startsWith(':') || (attr.name.startsWith('[') && attr.name.endsWith(']'))) {
             if (isString(attr.value)) {
                 effect.run(() => {
                     const attValue = evaluateExpression(attr.value, context, injector, delimiter);
@@ -1285,7 +1305,7 @@ export function processDirectiveAttributes(directiveRef: any, directiveDef: Dire
                 }
                 if (directiveDef.dirType === DirectiveType.Iterable) {
                     evaluateIterableExpression(directiveInstance, propertyKey, attr.value, context, effect, injector, delimiter);
-                } else {
+                } else if (shouldEvaluateDirectiveAttribute(attr.name, directiveDef.dirType)) {
                     const attrValue = attr.value;
                     const applyValue = () => {
                         effect.run(() => {
@@ -1298,12 +1318,23 @@ export function processDirectiveAttributes(directiveRef: any, directiveDef: Dire
                     } else {
                         applyValue();
                     }
+                } else {
+                    directiveInstance[propertyKey] = attr.value;
                 }
             } else {
                 directiveInstance[propertyKey] = attr.value;
             }
         }
     });
+}
+
+/** Plain custom-directive attributes are literals; only explicit framework syntax is executable. */
+export function shouldEvaluateDirectiveAttribute(name: string, dirType?: DirectiveType): boolean {
+    return name.startsWith('v-')
+        || name.startsWith('*')
+        || (name.startsWith('[') && name.endsWith(']'))
+        || dirType === DirectiveType.Conditional
+        || dirType === DirectiveType.Iterable;
 }
 
 /**
@@ -1753,7 +1784,7 @@ function splitTopLevel(input: string, separator: '|' | ':'): string[] {
 }
 
 // 保留文件末尾的辅助函数
-const attrPrefixes = [':', '@', '*', 'v-'];
+const attrPrefixes = [':', '@', '*', 'v-', '['];
 const unresolvedExpressionBinding = Symbol('__UNRESOLVED_EXPRESSION_BINDING');
 
 function getCompiledExpression(expr: string): CompiledExpression {
@@ -1941,6 +1972,9 @@ function hasExpressionPath(scope: any, expr: string): boolean {
 }
 
 function normalizeAttributeMatchName(attrName: string): string {
+    if (attrName.startsWith('[') && attrName.endsWith(']')) {
+        attrName = attrName.slice(1, -1);
+    }
     const prefix = attrPrefixes.find(item => attrName.startsWith(item)) || '';
     const name = prefix ? attrName.slice(prefix.length) : attrName;
     return `${prefix}${name.replace(/-/g, '').toLowerCase()}`;
@@ -1956,7 +1990,12 @@ function findMatchingAttribute(attrs: RAttr[], matchNames: string[]): RAttr | un
 }
 
 function matchesSelectorName(attrName: string, selectors: string[]): boolean {
-    const normalizedAttrName = normalizeAttributeMatchName(attrName);
+    const bindingName = attrName.startsWith(':')
+        ? attrName.slice(1)
+        : attrName.startsWith('[') && attrName.endsWith(']')
+            ? attrName.slice(1, -1)
+            : attrName;
+    const normalizedAttrName = normalizeAttributeMatchName(bindingName);
     return selectors.some(selector => normalizeAttributeMatchName(selector) === normalizedAttrName);
 }
 
@@ -1972,8 +2011,9 @@ export function toMatchNames(attrName: string): string[] {
         names.push(kebabName);
     }
     for (const prefix of attrPrefixes) {
-        names.push(prefix + attrName);
-        names.push(prefix + kebabName);
+        const suffix = prefix === '[' ? ']' : '';
+        names.push(prefix + attrName + suffix);
+        names.push(prefix + kebabName + suffix);
     }
     return names;
 }
