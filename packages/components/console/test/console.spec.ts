@@ -25,6 +25,7 @@ import {
     sliceByDisplayWidth,
     parseTerminalInputControlKey,
     parseTerminalTextPromptChunk,
+    shouldUseAlternateScreen,
     shouldPlaceConsoleCursor,
     shouldSuppressConsoleDuplicatedKeypress,
     resolveConsoleEnterAction,
@@ -2084,6 +2085,11 @@ export class ConsoleRendererTest {
 
     @Test('parses terminal prompt and cursor helpers locally')
     parsesTerminalPromptAndCursorHelpersLocally() {
+        expect(shouldUseAlternateScreen({})).toBe(true);
+        expect(shouldUseAlternateScreen({}, false)).toBe(false);
+        expect(shouldUseAlternateScreen({ TSDI_AGENT_ALT_SCREEN: '0' })).toBe(false);
+        expect(shouldUseAlternateScreen({ TSDI_AGENT_ALT_SCREEN: 'false' })).toBe(false);
+        expect(shouldUseAlternateScreen({ TSDI_AGENT_ALT_SCREEN: '1' })).toBe(true);
         expect(parseTerminalInputControlKey('\u001b[A')).toBe('up');
         expect(parseTerminalInputControlKey('\r')).toBe('return');
         expect(parseTerminalInputControlKey('x')).toBe(undefined);

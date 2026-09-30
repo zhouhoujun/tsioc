@@ -316,6 +316,7 @@ export abstract class ConsoleTerminalSurfaceLifecycle {
     resolveTerminalCursorStyle?(): 'block' | 'underline' | 'bar';
     shouldBlinkTerminalCursor?(): boolean;
     shouldUseNativeScrollback?(): boolean;
+    shouldUseAlternateScreen?(): boolean;
     shouldScrollViewport?(): boolean;
 }
 
@@ -481,7 +482,7 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
     protected root?: RNode | RNode[];
     protected mouseTrackingEnabled = true;
     protected readonly output = resolveConsoleHostProcess()?.stdout;
-    protected readonly useAlternateScreen = shouldUseAlternateScreen();
+    protected useAlternateScreen = false;
     protected attachTimer?: ReturnType<typeof setTimeout>;
 
     constructor(
@@ -502,6 +503,10 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
             return;
         }
         this.mouseTrackingEnabled = lifecycle.shouldEnableTerminalMouseTracking?.() !== false;
+        this.useAlternateScreen = shouldUseAlternateScreen(
+            resolveConsoleHostEnv(),
+            lifecycle.shouldUseAlternateScreen?.() === true
+        );
         this.prepare();
         this.attach();
     }
@@ -1028,12 +1033,13 @@ export class TuiTerminalSurface {
         const end = Math.max(0, transcript.length - this.scrollOffsetRows);
         const start = Math.max(0, end - availableRows);
         const visibleTranscript = transcript.slice(start, end);
+        const fillerRows = Math.max(0, availableRows - visibleTranscript.length);
         const transcriptAbsoluteStart = scrollRegion.startRow + start;
         const transcriptAbsoluteEnd = scrollRegion.startRow + end;
-        const footerOutputStart = prefix.length + visibleTranscript.length;
+        const footerOutputStart = prefix.length + fillerRows + visibleTranscript.length;
         const mapRow = (row: number): number | undefined => {
             if (row >= transcriptAbsoluteStart && row < transcriptAbsoluteEnd) {
-                return prefix.length + row - transcriptAbsoluteStart;
+                return prefix.length + fillerRows + row - transcriptAbsoluteStart;
             }
             if (row >= footerRegion.startRow) {
                 return footerOutputStart + row - footerRegion.startRow;
@@ -1060,7 +1066,7 @@ export class TuiTerminalSurface {
             return [{ id: region.id, startRow, endRow: endRow + 1 }];
         });
         return {
-            lines: [...prefix, ...visibleTranscript, ...footer],
+            lines: [...prefix, ...Array.from({ length: fillerRows }, () => ''), ...visibleTranscript, ...footer],
             regions,
             cursorTargets,
             clickTargets
@@ -1639,10 +1645,13 @@ function paintTerminalText(value: string, ...codes: string[]): string {
     return prefix ? `${prefix}${value}${TERMINAL_RENDER_ANSI.reset}` : value;
 }
 
-export function shouldUseAlternateScreen(env: Record<string, string | undefined> = resolveConsoleHostEnv()): boolean {
+export function shouldUseAlternateScreen(
+    env: Record<string, string | undefined> = resolveConsoleHostEnv(),
+    fallback = true
+): boolean {
     const configured = String(env.TSDI_AGENT_ALT_SCREEN || '').trim().toLowerCase();
     if (!configured) {
-        return false;
+        return fallback;
     }
     return configured !== '0' && configured !== 'false' && configured !== 'no';
 }

@@ -163,7 +163,7 @@ import { AgentConsoleTurnStreamHost, AgentConsoleTurnStreamState, clearStreaming
 import { AgentConsoleGlobalKeyInputHost, executeGlobalKeyActionView, handleBrowserGlobalKeyInputView, handleGlobalKeyInputView, handleGlobalKeySequenceView } from './AgentConsoleGlobalKeyInputController';
 import { AgentConsoleTurnInputHost, submitMultilineDraftView, submitView } from './AgentConsoleTurnInputController';
 import { AgentConsoleTerminalInputHost, closingSessionMessageView, handleTerminalInputView, openCommandPaletteView, requestTerminalExitView, syncConsoleMessageViewportView } from './AgentConsoleTerminalInputController';
-import { resolveTranscriptLayout } from './AgentConsoleTranscriptLayout';
+import { AgentConsoleTranscriptLayoutResolver, resolveTranscriptLayout } from './AgentConsoleTranscriptLayout';
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
 import { openSummaryQualityRecords, openTurnDiagnosticsListView, openTurnDiagnosticsTrendView, openSummaryQualityTrendView, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshTurnDiagnosticsDigest, refreshUsageDigest, runHarnessStopCommand } from './AgentConsoleDiagnosticsView';
 import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
@@ -391,7 +391,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         @Optional() private modelStore?: AgentConsoleModelStore | null,
         @Optional() @Inject(AgentConsoleSettingsStore) private settingsStore?: AgentConsoleSettingsStore | null,
         @Optional() private uiConfig?: AgentUiConfigService | null,
-        @Optional() @Inject(ProjectMemoryService) private projectMemory?: ProjectMemoryService | null
+        @Optional() @Inject(ProjectMemoryService) private projectMemory?: ProjectMemoryService | null,
+        @Optional() private transcriptLayoutResolver?: AgentConsoleTranscriptLayoutResolver | null
     ) {
         this.transcriptNavigationController = new DefaultAgentConsoleTranscriptNavigationController(this.state);
         this.globalKeymap = this.globalKeymap || new AgentConsoleKeymap();
@@ -2414,15 +2415,10 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return true;
     }
 
-    // LAYOUT CONTRACT: the transcript layout strategy decides native scrollback
-    // vs windowed history; stream is opt-in via /layout.
-    shouldUseNativeScrollback(): boolean {
-        return resolveTranscriptLayout(this.state.consoleOptions.messageLayout).usesNativeScrollback;
-    }
-
-    shouldScrollViewport(): boolean {
-        return !resolveTranscriptLayout(this.state.consoleOptions.messageLayout).ownsHistoryScroll;
-    }
+    protected get transcriptLayout() { return this.transcriptLayoutResolver?.resolve(this.state.consoleOptions.messageLayout) || resolveTranscriptLayout(this.state.consoleOptions.messageLayout); }
+    shouldUseNativeScrollback(): boolean { return this.transcriptLayout.usesNativeScrollback; }
+    shouldUseAlternateScreen(): boolean { return this.transcriptLayout.usesAlternateScreen; }
+    shouldScrollViewport(): boolean { return !this.transcriptLayout.ownsHistoryScroll; }
 
     getTerminalRenderedLines(): string[] {
         return this.surfaceAccessor?.getLastRenderedLines() || [];
@@ -2966,7 +2962,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             sessionService: this.sessionService,
             isTurnInProgress: () => this.isTurnInProgress(),
             notify: (message: string, duration?: number) => this.notify(message, duration),
-            scrollMessages: (delta: number) => resolveTranscriptLayout(this.state.consoleOptions.messageLayout).scroll(delta, this.transcriptNavigationController),
+            scrollMessages: (delta: number) => this.transcriptLayout.scroll(delta, this.transcriptNavigationController),
             getTerminalRenderedLines: () => this.getTerminalRenderedLines(),
             handleGlobalKeyInput: (raw: string) => this.handleGlobalKeyInput(raw),
             detachSshShell: (reason: 'detached' | 'closed') => this.detachSshShell(reason),

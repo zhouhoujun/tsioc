@@ -22,6 +22,7 @@ import { AgentConsoleStashStore } from './AgentConsoleStash';
 import { AgentConsoleThemeStore } from './AgentConsoleTheme';
 import { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { AgentConsoleSessionService } from './AgentConsoleSessionService';
+import { AgentConsoleTranscriptLayoutResolver, DefaultAgentConsoleTranscriptLayoutResolver } from './AgentConsoleTranscriptLayout';
 import {
     AGENT_CONSOLE_MESSAGE_RENDERER_ROUTES,
     AgentConsoleAnswerRenderer,
@@ -144,6 +145,7 @@ import {
         ...I18N_PROVIDERS,
         AgentConsoleSessionState,
         AgentConsoleSessionService,
+        { provide: AgentConsoleTranscriptLayoutResolver, useClass: DefaultAgentConsoleTranscriptLayoutResolver },
         AgentConsoleMessageRendererRegistry,
         AgentConsoleUserRenderer,
         AgentConsoleAnswerRenderer,
