@@ -502,3 +502,4 @@
 - `packages/agents/agent-cli`：84 passing，包含真实 ORM 的跨 TUI 重启输入历史回归。
 - 统一 agents gate 其余阶段通过；当前 sandbox 中 `agent-gateway`、`agent-ssh`、`agent-tools` 的监听测试受 `EPERM listen` 限制，`build-agent-ui-web` 受 `spawnSync /bin/sh EPERM` 限制，不能据此判定代码回归。
 - 增量收尾：Vim 输入行为已迁移至 `AgentConsoleVimController`，`SessionState` 仅保留兼容委托；Vim 回归与 agent-ui TypeScript/source-size/diff-check 通过。真实 `npm run chat -- --workspace /home/zhouyou/workspace/sleep-mlt` 仍被 sandbox 的 credential store `EROFS` 阻塞，未进入系统构建任务。
+- 真实模拟复验（2026-09-30）：在允许本机凭据访问后，`npm run chat -- --workspace /home/zhouyou/workspace/sleep-mlt` 成功进入 TUI 并执行系统构建任务，持续产生计划与工具调用；会话完成后报告目标 workspace 不是 Git 仓库，无法提供标准 diff。该次运行未修改 core 仓库。
