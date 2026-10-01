@@ -259,7 +259,7 @@
   - `bindingInterpolationFactory`(923，处理 `{{...}}`) → `evaluateDelimiterExpression(..., injector, ...)`
   - `createModelBindingFactory`：回调只用 `el`/`context`、**不碰注入器**，确认无需守卫。
 - **性质**：同节点上 `bindingDirective`（有守卫）会跳过已销毁注入器，而 `bindingProperty`（无守卫）不跳 → 在已销毁 `NodeInjector` 上绑定 `[focused]` 即 `evaluateExpression` → 编译表达式 `evaluate(context, injector)` → `injector.get/has` → `assertNotDestroyed` 抛 `NodeInjector has already been destroyed`。缺守卫的不一致正是该异常类别。
-- **修复**：给 `bindingProperty`、`bindingInterpolationFactory` 补上与另外 3 个一致的 `if (injector.destroyed) return;`（行为保持：仅在已销毁注入器上跳过绑定，属原意）。
+- **修复（两轮，共补 4 个）**：第一轮补 `bindingProperty`、`bindingInterpolationFactory`；第二轮复查发现 `bindingText`（`{{...}}` 文本插值）与 `bindingEvent`（`@click` 等事件绑定）**同样缺守卫且同样把 injector 传进表达式解析**，一并补齐。至此 6 个访问注入器的 `binding()` 工厂全部有守卫（`bindingText`/`bindingTemplate`/`bindingEvent`/`bindingProperty`/`bindingInterpolationFactory`/`bindingComponentFactory`/`bindingDirective`），`createModelBindingFactory` 回调不用注入器故无需守卫。行为保持：仅在已销毁注入器上跳过绑定，属原意。
 - **验证**：components 146 / common 5 / html 118 / console 87 / agent-ui 1441，全 `EXIT=0`；全量门禁逐阶段复核全 `GATE-PASS`（agent-ui、9 个 agent 包、4 个 components 包、4× `tsc --noEmit`、`build-agent-ui-web`、`dom-gate` + matrix、`tui-gate`、`gate-regression`、`diff-check`、`source-size`、`production-db-integrity`），仅 `pty-acceptance` 按默认跳过（opt-in）。
 - **回归测试（红→绿）**：新增 `packages/components/test/binding-destroyed-injector.spec.ts`，断言 `injector.destroyed` 时 `bindingProperty` 的工厂**不得**执行其 effect。证红：临时移除该守卫 → `0 passing 1 failed`（effect 仍执行并因解析已销毁注入器抛错）；证绿：恢复守卫 → components `147 passing`、`EXIT=0`。
 - **诚实边界**：这是**静态锁定的真实缺失守卫缺口**，但**尚不能证明就是用户实机那条崩溃**（无堆栈，无法复现第二 turn）。需完整调用栈确认；若不匹配，则该守卫修复本身独立成立、可保留。

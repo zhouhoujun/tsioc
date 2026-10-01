@@ -728,6 +728,7 @@ export function bindingText(node: RText, expr: string | null, renderer: Renderer
     if (!matches?.length) return;
 
     binding(node, (target: RNode, context: any, effect, injector: NodeInjector) => {
+        if (injector.destroyed) return;
         const textNode = target as RText;
         evaluateDelimiterExpression(expr, context, effect, matches, (updatedText) => {
             textNode.textContent = updatedText;
@@ -871,6 +872,7 @@ export function bindingEvent(element: RNode, attrName: string, expr: string, ren
     const eventName = attrName.substring(1);
 
     binding(element, (target, context, effect, injector) => {
+        if (injector.destroyed) return;
         const el = target as RElement;
         const handler = parseEventExpression(expr, context, effect, injector, delimiter);
         el.addEventListener(eventName, handler);

@@ -16,13 +16,11 @@ export class BindingDestroyedInjectorSpec {
 
         let effectRan = false;
         const effect = { run: (fn: () => void) => { effectRan = true; fn(); } };
-        const injector: any = { destroyed: true };
-
         try {
-            factory(node, {}, effect, injector);
+            factory(node, {}, effect, { destroyed: true });
         } catch {
-            // An unguarded factory evaluates the expression, which resolves through
-            // the destroyed node injector and throws. The guard must prevent that.
+            // An unguarded factory proceeds into the destroyed node injector and
+            // throws; the guard must stop it before that happens.
         }
 
         expect(effectRan).toEqual(false);
