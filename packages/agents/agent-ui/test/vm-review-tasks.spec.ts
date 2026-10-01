@@ -1777,7 +1777,7 @@ export class VmReviewTasksTest {
         });
 
         expect(state.reviewOpen).toEqual(true);
-        expect(state.focusController.hasReviewFocus()).toEqual(true);
+        expect(state.focusLayers.hasReviewFocus()).toEqual(true);
         expect(state.reviewExecutionMode).toEqual('parallel');
         expect(state.selectedReviewGroup?.key).toEqual('aggregate');
         expect(state.selectedReviewFileIndex).toEqual(0);

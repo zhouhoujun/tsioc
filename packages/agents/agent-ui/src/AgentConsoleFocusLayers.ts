@@ -4,9 +4,18 @@ import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import type { AgentConsoleTranscriptNavigationController } from './AgentConsoleTranscriptNavigation';
 import { AgentConsoleOverlayController } from './AgentConsoleOverlay';
 
-export interface AgentConsoleFocusStatePort {
+/**
+ * Layers that take keyboard input away from the composer. `question` is
+ * deliberately absent: the pending-question card accepts a typed custom answer,
+ * so it must not claim the composer's input.
+ */
+const COMPOSER_BLOCKING_LAYERS: ReadonlySet<AgentConsoleFocusLayer> = new Set<AgentConsoleFocusLayer>([
+    'messages', 'sessions', 'projects', 'threads', 'plan', 'jobs', 'tool', 'tool-runs',
+    'approval', 'select', 'overlay', 'message-detail', 'timeline-inspector', 'review', 'command-outputs'
+]);
+
+export interface AgentConsoleFocusLayersPort {
     focusStack: AgentConsoleFocusLayer[];
-    inputFocused: boolean;
     inputLocked: boolean;
     modalPromptActive: boolean;
     sessionsFocused: boolean;
@@ -29,7 +38,7 @@ export interface AgentConsoleFocusStatePort {
     selectMenu?: unknown;
 }
 
-export abstract class AgentConsoleFocusController {
+export abstract class AgentConsoleFocusLayers {
     private readonly overlay = new AgentConsoleOverlayController();
     constructor(protected readonly state: AgentConsoleSessionState) {}
 
@@ -59,7 +68,6 @@ export abstract class AgentConsoleFocusController {
         if (state.toolRunsFocused) { state.setToolRunsFocused(false); return true; }
         if (state.projectsFocused) { state.setProjectsFocused(false); return true; }
         if (state.threadsFocused) { state.setThreadsFocused(false); return true; }
-        if (!state.inputFocused) { state.setInputFocused(true); return true; }
         return false;
     }
 
@@ -67,7 +75,6 @@ export abstract class AgentConsoleFocusController {
         const state = this.state;
         if (state.pendingQuestion) {
             state.setPendingQuestion(null);
-            state.setInputFocused(true);
             return true;
         }
         if (state.selectMenu) {
@@ -436,7 +443,14 @@ export abstract class AgentConsoleFocusController {
         if (state.gitSnapshotOpen) layers.push('git-snapshot');
         if (state.commandOutputsOpen) layers.push('command-outputs');
         state.focusStack = layers;
-        state.inputFocused = !state.projectsFocused && !state.threadsFocused && !state.toolRunsFocused && !this.isAnyFocusActive();
+    }
+
+    /**
+     * Whether an active focus layer takes keyboard input away from the composer.
+     * Derived from `focusStack` so there is a single source of truth.
+     */
+    blocksComposerInput(): boolean {
+        return this.state.focusStack.some(layer => COMPOSER_BLOCKING_LAYERS.has(layer));
     }
 
     get activeLayer(): AgentConsoleFocusLayer | undefined { return this.state.focusStack[this.state.focusStack.length - 1]; }
@@ -477,4 +491,4 @@ export abstract class AgentConsoleFocusController {
     }
 }
 
-export class DefaultAgentConsoleFocusController extends AgentConsoleFocusController {}
+export class DefaultAgentConsoleFocusLayers extends AgentConsoleFocusLayers {}

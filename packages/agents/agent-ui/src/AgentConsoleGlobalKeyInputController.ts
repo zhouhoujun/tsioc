@@ -24,7 +24,7 @@ export interface AgentConsoleGlobalKeyInputHost {
         selectMenu?: { title?: string } | null;
         whichKeyVisible: boolean;
         setWhichKeyVisible(visible: boolean): void;
-        focusController: { isAnyFocusActive(): boolean; hasMessageFocus(): boolean };
+        focusLayers: { isAnyFocusActive(): boolean; hasMessageFocus(): boolean };
         focusLatestLongMessage(): boolean;
         displayMessages: AgentMessage[];
         selectedMessageId: string;
@@ -202,7 +202,7 @@ export async function handleBrowserGlobalKeyInputView(
         await host.interruptTurn();
         return true;
     }
-    if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey) && (host.state.selectMenu || host.state.focusController.isAnyFocusActive())) {
+    if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey) && (host.state.selectMenu || host.state.focusLayers.isAnyFocusActive())) {
         host.globalKeyPending = '';
         return false;
     }
@@ -265,7 +265,7 @@ export async function handleGlobalKeyInputView(host: AgentConsoleGlobalKeyInputH
             await host.interruptTurn();
             return true;
         }
-        if (raw === '\u001b' && (host.state.selectMenu || host.state.focusController.isAnyFocusActive())) return false;
+        if (raw === '\u001b' && (host.state.selectMenu || host.state.focusLayers.isAnyFocusActive())) return false;
         if (raw === '\u001b') {
             const action = host.globalKeymap!.resolve('escape', host.resolveKeymapContext());
             if (action === 'interrupt-turn') {
@@ -329,7 +329,7 @@ export async function handleGlobalKeySequenceView(host: AgentConsoleGlobalKeyInp
         if (isAgentConsoleThreadNavigationAction(action) && !host.canThreadNavigate()) return false;
         if (isAgentConsoleMessageNavigationAction(action) && !host.canMessageNavigate()) {
             const canEnterTranscript = action === 'message-page-up'
-                && !host.state.focusController.hasMessageFocus()
+                && !host.state.focusLayers.hasMessageFocus()
                 && !host.state.messageDetailOpen
                 && !host.state.selectMenu;
             if (!canEnterTranscript) return false;
@@ -378,7 +378,7 @@ export async function executeGlobalKeyActionView(
         return host.navigateThreadParent();
     }
     if (action === 'message-page-up') {
-        if (!host.state.focusController.hasMessageFocus()) {
+        if (!host.state.focusLayers.hasMessageFocus()) {
             return host.state.focusLatestLongMessage();
         }
         host.transcriptNavigationController.movePage(-1);

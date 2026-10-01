@@ -1927,6 +1927,7 @@ export class AgentConsoleTuiRendererTest {
         expect(sessionLines.some(line => line.includes('[project-a] chat-10'))).toBe(true);
         expect(sessionLines.some(line => line.includes('[project-a] chat-8'))).toBe(true);
         expect(sessionLines.some(line => line.includes('chat-2'))).toBe(false);
+        ref.instance.sessionState.setSessionsFocused(false);
     }
 
     @Test('setPlanTodos appends inline plan message to messages panel')
@@ -2054,7 +2055,7 @@ export class AgentConsoleTuiRendererTest {
         const maxScroll = Math.max(0, 60 - ref.instance.sessionState.consoleOptions.reviewDetailVisibleLines);
         expect(ref.instance.sessionState.textOverlay!.scroll).toEqual(maxScroll);
 
-        await ref.instance.sessionState.focusController.handleEscape(navigationFor(ref.instance.sessionState));
+        await ref.instance.sessionState.focusLayers.handleEscape(navigationFor(ref.instance.sessionState));
         expect(ref.instance.sessionState.hasTextOverlayFocus()).toBe(false);
     }
 
@@ -2114,7 +2115,7 @@ export class AgentConsoleTuiRendererTest {
         await state.handleFocusKey('down', navigationFor(state));
         await state.handleFocusKey('return', navigationFor(state));
         expect(state.input).toEqual('beta');
-        await state.focusController.handleEscape(navigationFor(state));
+        await state.focusLayers.handleEscape(navigationFor(state));
         expect(state.pendingQuestion).toEqual(null);
         expect(state.inputFocused).toEqual(true);
     }

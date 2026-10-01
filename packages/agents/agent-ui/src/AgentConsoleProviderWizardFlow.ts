@@ -140,9 +140,9 @@ export function showProviderWizardStep(ctx: ProviderWizardContext, holder: Agent
             help: buildWizardStepHelp(step, wizard.values),
             hint: 'enter confirm   esc back', secret, summary
         });
-        ctx.state.setInputFocused(true);
         ctx.notify(`${progress}: ${buildWizardStepHelp(step, wizard.values)}`);
     }
+
 
 export function openProviderWizardChoice(ctx: ProviderWizardContext, holder: AgentWizardHolder, step: AgentWizardStepDef): void {
         const built = buildProviderWizardChoiceOptions(step, holder.wizard?.values || {});

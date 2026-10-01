@@ -33,7 +33,6 @@ export async function handleMenuSelection(state: any, handleCommand: (value: str
             ? `${base} ${selected} `
             : `${selected} `;
         state.setInput(nextInput, state.clampCursor(nextInput, nextInput.length));
-        state.setInputFocused(true);
     }
 }
 

@@ -77,6 +77,12 @@ export interface TerminalClickTarget {
     y: number;
     width: number;
     height: number;
+    /**
+     * Why the node is hit-testable. A `pointer` target owns an explicit click
+     * handler and must win over a `focus` target, so a focusable container cannot
+     * shadow the clickable children rendered inside it.
+     */
+    interactive?: 'pointer' | 'focus';
 }
 
 export interface TerminalToolRunItem {
@@ -988,10 +994,17 @@ export class TuiTerminalSurface {
     protected hitTest(x: number, y: number): TerminalClickTarget | undefined {
         const targetRow = Math.max(0, Math.floor((y || 1) - 1) - this.getTerminalRootStartRow());
         const targetColumn = Math.max(0, Math.floor((x || 1) - 1));
-        return this.clickTargetsCache.slice().reverse().find(item =>
+        const contains = (item: TerminalClickTarget) =>
             targetColumn >= item.x && targetColumn < item.x + item.width
-            && targetRow >= item.y && targetRow < item.y + item.height
-        );
+            && targetRow >= item.y && targetRow < item.y + item.height;
+        let outermost: TerminalClickTarget | undefined;
+        for (let index = this.clickTargetsCache.length - 1; index >= 0; index -= 1) {
+            const item = this.clickTargetsCache[index];
+            if (!contains(item)) continue;
+            if (item.interactive === 'pointer') return item;
+            if (!outermost) outermost = item;
+        }
+        return outermost;
     }
 
     notifyNonMouseInput(): boolean {

@@ -733,19 +733,19 @@ export class VmPanelsTest {
         expect(state.selectMenu?.selectedIndex).toEqual(0);
         
         // Up wraps to last
-        state.focusController.handleSelectKey('up');
+        state.focusLayers.handleSelectKey('up');
         expect(state.selectMenu?.selectedIndex).toEqual(2);
         
         // Down wraps to first
-        state.focusController.handleSelectKey('down');
+        state.focusLayers.handleSelectKey('down');
         expect(state.selectMenu?.selectedIndex).toEqual(0);
         
         // Down moves to next
-        state.focusController.handleSelectKey('down');
+        state.focusLayers.handleSelectKey('down');
         expect(state.selectMenu?.selectedIndex).toEqual(1);
         
         // Escape cancels
-        state.focusController.handleSelectKey('escape');
+        state.focusLayers.handleSelectKey('escape');
         expect(state.selectMenu).toBeUndefined();
     }
 
@@ -757,7 +757,7 @@ export class VmPanelsTest {
             { label: 'B', value: 'b' }
         ]);
 
-        state.focusController.handleSelectKey('q');
+        state.focusLayers.handleSelectKey('q');
 
         expect(state.selectMenu).toBeUndefined();
     }
@@ -774,11 +774,11 @@ export class VmPanelsTest {
             { label: 'D', value: 'd' }
         ], 0);
 
-        expect(state.focusController.handleSelectKey('q')).toBe(true);
+        expect(state.focusLayers.handleSelectKey('q')).toBe(true);
         expect(state.selectMenu?.title).toEqual('Parent');
         expect(state.selectMenu?.selectedIndex).toEqual(1);
 
-        expect(state.focusController.handleSelectKey('escape')).toBe(true);
+        expect(state.focusLayers.handleSelectKey('escape')).toBe(true);
         expect(state.selectMenu).toBeUndefined();
     }
 
@@ -794,10 +794,10 @@ export class VmPanelsTest {
             { label: 'D', value: 'd' }
         ], 1);
 
-        expect(state.focusController.handleMenuInput('', 'q')).toBe(true);
+        expect(state.focusLayers.handleMenuInput('', 'q')).toBe(true);
         expect(state.selectMenu?.title).toEqual('Parent');
 
-        expect(state.focusController.handleMenuInput('escape', '')).toBe(true);
+        expect(state.focusLayers.handleMenuInput('escape', '')).toBe(true);
         expect(state.selectMenu).toBeUndefined();
     }
 
@@ -809,20 +809,20 @@ export class VmPanelsTest {
             { label: 'B', value: 'b' }
         ]);
         
-        expect(state.focusController.handleSelectKey('up')).toBe(true);
-        expect(state.focusController.handleSelectKey('down')).toBe(true);
-        expect(state.focusController.handleSelectKey('return')).toBe(true);
+        expect(state.focusLayers.handleSelectKey('up')).toBe(true);
+        expect(state.focusLayers.handleSelectKey('down')).toBe(true);
+        expect(state.focusLayers.handleSelectKey('return')).toBe(true);
         expect(state.selectMenu).toBeUndefined();  // confirmed
 
         state.openSelectMenu('Test2', [
             { label: 'A', value: 'a' },
             { label: 'B', value: 'b' }
         ]);
-        expect(state.focusController.handleSelectKey('1')).toBe(true);
+        expect(state.focusLayers.handleSelectKey('1')).toBe(true);
         expect(state.selectMenu).toBeUndefined();  // chosen index 0
         
         // Unhandled key returns false
-        expect(state.focusController.handleSelectKey('x')).toBe(false);
+        expect(state.focusLayers.handleSelectKey('x')).toBe(false);
     }
 
     @Test('handleSelectKey moves to edge and by page (P266)')
@@ -837,21 +837,21 @@ export class VmPanelsTest {
         state.setSelectMenuIndex(2);
 
         // Page down clamps to last
-        expect(state.focusController.handleSelectKey('pagedown')).toBe(true);
+        expect(state.focusLayers.handleSelectKey('pagedown')).toBe(true);
         expect(state.selectMenu?.selectedIndex).toEqual(3);
         // Home jumps to first
-        expect(state.focusController.handleSelectKey('home')).toBe(true);
+        expect(state.focusLayers.handleSelectKey('home')).toBe(true);
         expect(state.selectMenu?.selectedIndex).toEqual(0);
         // Page up clamps to first
-        expect(state.focusController.handleSelectKey('pageup')).toBe(true);
+        expect(state.focusLayers.handleSelectKey('pageup')).toBe(true);
         expect(state.selectMenu?.selectedIndex).toEqual(0);
         // End jumps to last
         state.setSelectMenuIndex(0);
-        expect(state.focusController.handleSelectKey('end')).toBe(true);
+        expect(state.focusLayers.handleSelectKey('end')).toBe(true);
         expect(state.selectMenu?.selectedIndex).toEqual(3);
         // No menu -> keys unhandled
-        state.focusController.handleSelectKey('escape');
-        expect(state.focusController.handleSelectKey('home')).toBe(false);
+        state.focusLayers.handleSelectKey('escape');
+        expect(state.focusLayers.handleSelectKey('home')).toBe(false);
     }
 
     @Test('handleMenuInput moves to edge and by page (P266)')
@@ -865,13 +865,13 @@ export class VmPanelsTest {
         ]);
         state.setSelectMenuIndex(1);
 
-        expect(state.focusController.handleMenuInput('end', '')).toBe(true);
+        expect(state.focusLayers.handleMenuInput('end', '')).toBe(true);
         expect(state.selectMenu?.selectedIndex).toEqual(3);
-        expect(state.focusController.handleMenuInput('home', '')).toBe(true);
+        expect(state.focusLayers.handleMenuInput('home', '')).toBe(true);
         expect(state.selectMenu?.selectedIndex).toEqual(0);
-        expect(state.focusController.handleMenuInput('pagedown', '')).toBe(true);
+        expect(state.focusLayers.handleMenuInput('pagedown', '')).toBe(true);
         expect(state.selectMenu?.selectedIndex).toEqual(3);
-        expect(state.focusController.handleMenuInput('pageup', '')).toBe(true);
+        expect(state.focusLayers.handleMenuInput('pageup', '')).toBe(true);
         expect(state.selectMenu?.selectedIndex).toEqual(0);
     }
 

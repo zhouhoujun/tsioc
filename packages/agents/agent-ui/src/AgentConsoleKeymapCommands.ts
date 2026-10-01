@@ -16,11 +16,11 @@ export interface KeymapCommandHost {
 }
 
 export function resolveKeymapContext(host: KeymapCommandHost): AgentConsoleKeymapContext {
-    if (host.state.focusController.hasApprovalFocus()) return 'approval';
-    if (host.state.focusController.hasMessageFocus() || host.state.focusController.hasMessageDetailFocus() || host.state.hasTextOverlayFocus()) return 'pager';
-    if (host.state.focusController.hasSessionFocus() || host.state.focusController.hasTaskFocus() || host.state.focusController.hasScheduledJobFocus()
-        || host.state.focusController.hasToolFocus() || host.state.focusController.hasBlockingSelectMenu()) return 'list';
-    if (host.state.inputFocused && !host.state.focusController.isAnyFocusActive()) return 'composer';
+    if (host.state.focusLayers.hasApprovalFocus()) return 'approval';
+    if (host.state.focusLayers.hasMessageFocus() || host.state.focusLayers.hasMessageDetailFocus() || host.state.hasTextOverlayFocus()) return 'pager';
+    if (host.state.focusLayers.hasSessionFocus() || host.state.focusLayers.hasTaskFocus() || host.state.focusLayers.hasScheduledJobFocus()
+        || host.state.focusLayers.hasToolFocus() || host.state.focusLayers.hasBlockingSelectMenu()) return 'list';
+    if (host.state.inputFocused && !host.state.focusLayers.isAnyFocusActive()) return 'composer';
     return 'global';
 }
 

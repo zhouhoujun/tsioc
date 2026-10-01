@@ -31,7 +31,7 @@ export interface AgentConsoleTerminalInputHost {
         setMessagesViewportItems?(value: number): void;
         consoleOptions: { messageToggleInteraction?: string; messageLayout?: string };
         isSshShellActive: boolean;
-        focusController: { isAnyFocusActive(): boolean };
+        focusLayers: { isAnyFocusActive(): boolean };
         handleVimKey(key: string): boolean;
         processDecodedInput(
             decoded: { text: string; controlKey?: string; partial?: boolean },
@@ -165,7 +165,7 @@ export async function handleTerminalInputView(
     if (await host.handleGlobalKeyInput(rawChunk)) {
         return;
     }
-    if (host.state.vimMode && !host.state.focusController.isAnyFocusActive() && host.state.inputMode === 'normal') {
+    if (host.state.vimMode && !host.state.focusLayers.isAnyFocusActive() && host.state.inputMode === 'normal') {
         const raw = typeof chunk === 'string' ? chunk : chunk.toString();
         if (decoded.controlKey === 'return') {
             return;

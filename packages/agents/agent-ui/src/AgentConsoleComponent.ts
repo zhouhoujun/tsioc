@@ -164,7 +164,6 @@ import { AgentConsoleGlobalKeyInputHost, executeGlobalKeyActionView, handleBrows
 import { AgentConsoleTurnInputHost, submitMultilineDraftView, submitView } from './AgentConsoleTurnInputController';
 import { AgentConsoleTerminalInputHost, closingSessionMessageView, handleTerminalInputView, openCommandPaletteView, requestTerminalExitView, syncConsoleMessageViewportView } from './AgentConsoleTerminalInputController';
 import { AgentConsoleTranscriptLayoutResolver, resolveTranscriptLayout } from './AgentConsoleTranscriptLayout';
-import { AgentConsoleRegionFocusController } from './AgentConsoleRegionFocus';
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
 import { openSummaryQualityRecords, openTurnDiagnosticsListView, openTurnDiagnosticsTrendView, openSummaryQualityTrendView, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshTurnDiagnosticsDigest, refreshUsageDigest, runHarnessStopCommand } from './AgentConsoleDiagnosticsView';
 import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
@@ -394,10 +393,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         @Optional() private uiConfig?: AgentUiConfigService | null,
         @Optional() @Inject(ProjectMemoryService) private projectMemory?: ProjectMemoryService | null,
         @Optional() private transcriptLayoutResolver?: AgentConsoleTranscriptLayoutResolver | null,
-        @Optional() private regionFocus?: AgentConsoleRegionFocusController | null
     ) {
         this.transcriptNavigationController = new DefaultAgentConsoleTranscriptNavigationController(this.state);
-        this.regionFocus?.attachTranscriptNavigation(this.transcriptNavigationController);
         this.globalKeymap = this.globalKeymap || new AgentConsoleKeymap();
         this.globalKeymap.configure(this.options.ui?.keymap);
         this.state.setTitle(this.options.ui?.title ?? defaultAgentOptions.ui!.title!);
@@ -1441,7 +1438,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             const rev = this.state.planRevision > 0 ? ` at revision ${this.state.planRevision}` : '';
             const instruction = `Retry plan step${rev}: ${todo.content}`;
             this.state.setInput(instruction, instruction.length);
-            this.state.setInputFocused(true);
             this.notify('Plan step reopened. Press Enter to continue it.');
         };
     }
@@ -2404,10 +2400,10 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return undefined;
     }
     shouldPlaceTerminalCursor(): boolean {
-        return this.state.focusController.shouldRenderTerminalCursor();
+        return this.state.focusLayers.shouldRenderTerminalCursor();
     }
     resolveTerminalCursorMode(): 'prompt' | 'bottom' {
-        return this.state.focusController.resolveTerminalCursorMode();
+        return this.state.focusLayers.resolveTerminalCursorMode();
     }
 
     resolveTerminalCursorStyle(): 'bar' {
@@ -2913,7 +2909,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return {
             state: this.state,
             transcriptNavigationController: this.transcriptNavigationController,
-            dismissFocusLayer: () => this.state.focusController.dismiss(this.transcriptNavigationController),
+            dismissFocusLayer: () => this.state.focusLayers.dismiss(this.transcriptNavigationController),
             handleFocusKey: (key: string) => this.state.handleFocusKey(key, this.transcriptNavigationController),
             globalKeymap: this.globalKeymap,
             get globalKeyPending() { return self.globalKeyPending; },
@@ -2972,7 +2968,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             submit: () => this.submit(),
             queueDraft: () => this.queueDraft(),
             handleCommand: (value: string) => this.handleCommand(value),
-            focusComposer: () => this.regionFocus?.focusComposer()
+            focusComposer: () => this.state.setMessagesFocused(false)
         };
     }
     protected turnInputHost(): AgentConsoleTurnInputHost {
@@ -3569,13 +3565,13 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
 
     protected canThreadNavigate(): boolean {
         return !!this.appRpc
-            && this.state.focusController.hasMessageFocus()
+            && this.state.focusLayers.hasMessageFocus()
             && !this.state.messageDetailOpen
             && !this.state.selectMenu;
     }
 
     protected canMessageNavigate(): boolean {
-        return this.state.focusController.hasMessageFocus()
+        return this.state.focusLayers.hasMessageFocus()
             && !this.state.messageDetailOpen
             && !this.state.selectMenu;
     }

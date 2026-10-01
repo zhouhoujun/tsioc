@@ -23,7 +23,6 @@ import { AgentConsoleThemeStore } from './AgentConsoleTheme';
 import { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { AgentConsoleSessionService } from './AgentConsoleSessionService';
 import { AgentConsoleTranscriptLayoutResolver, DefaultAgentConsoleTranscriptLayoutResolver } from './AgentConsoleTranscriptLayout';
-import { AgentConsoleRegionFocusController } from './AgentConsoleRegionFocus';
 import {
     AGENT_CONSOLE_MESSAGE_RENDERER_ROUTES,
     AgentConsoleAnswerRenderer,
@@ -146,7 +145,6 @@ import {
         ...I18N_PROVIDERS,
         AgentConsoleSessionState,
         AgentConsoleSessionService,
-        AgentConsoleRegionFocusController,
         { provide: AgentConsoleTranscriptLayoutResolver, useClass: DefaultAgentConsoleTranscriptLayoutResolver },
         AgentConsoleMessageRendererRegistry,
         AgentConsoleUserRenderer,

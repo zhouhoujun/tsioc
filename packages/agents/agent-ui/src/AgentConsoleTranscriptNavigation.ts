@@ -12,7 +12,7 @@ export interface AgentConsoleTranscriptNavigationState {
     timelineEventDetailScroll: number;
     timelineEventDetailColumnScroll: number;
     messageDetailOpen: boolean;
-    focusController: { sync(): void };
+    focusLayers: { sync(): void };
     readonly consoleOptions: { messageSelectionPageSize?: number };
 }
 
@@ -34,7 +34,7 @@ export abstract class AgentConsoleTranscriptNavigationController {
             state.messageDetailScroll = 0;
             state.messageDetailColumnScroll = 0;
         }
-        state.focusController.sync();
+        state.focusLayers.sync();
     }
 
     move(delta: number): void {

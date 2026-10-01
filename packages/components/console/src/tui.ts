@@ -243,7 +243,8 @@ export class TuiRenderer extends ConsoleRenderer {
                 x: 0,
                 y: clickStart,
                 width: width ?? this.resolveMaxLineWidth(lines.slice(clickStart)),
-                height: lines.length - clickStart
+                height: lines.length - clickStart,
+                interactive: this.hasPointerHandler(element) ? 'pointer' : 'focus'
             });
         };
 
@@ -525,7 +526,8 @@ export class TuiRenderer extends ConsoleRenderer {
                         x: offset.column + target.x,
                         y: start + offset.row + target.y,
                         width: target.width,
-                        height: target.height
+                        height: target.height,
+                        interactive: target.interactive
                     });
                 });
                 if (hasOwnFrame && lines.length > start && this.stripAnsi(lines[lines.length - 1]).trim()) {
@@ -581,7 +583,8 @@ export class TuiRenderer extends ConsoleRenderer {
                     x: 0,
                     y: startRow,
                     width: width ?? this.resolveMaxLineWidth(lines.slice(startRow, endRow)),
-                    height: endRow - startRow
+                    height: endRow - startRow,
+                    interactive: this.hasPointerHandler(childElement) ? 'pointer' : 'focus'
                 });
             }
             this.collectNestedClickTargets(childElement, startRow, endRow, lines, width, clickTargets, visited);

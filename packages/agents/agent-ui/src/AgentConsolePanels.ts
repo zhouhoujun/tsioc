@@ -4,7 +4,6 @@ import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import { AgentMessage, basenameAgentPath, ScheduledAgentTask } from '@tsdi/agent';
 import { resolveTranscriptLayout } from './AgentConsoleTranscriptLayout';
-import { AgentConsoleRegionFocusController } from './AgentConsoleRegionFocus';
 import {
     AgentConsoleActivity,
     AgentConsoleHealthItem,
@@ -313,8 +312,6 @@ export class AgentConsoleStatusPanelComponent {
                     @input="onInput($event)"
                     @click="onCursorChange($event)"
                     @keyup="onCursorChange($event)"
-                    @focus="onFocus()"
-                    @blur="onBlur()"
                     @keydown="onKeydown($event)"></textarea>
             </div>
             <div class="wizard-banner" v-show="wizardOpen">
@@ -330,7 +327,7 @@ export class AgentConsoleStatusPanelComponent {
     `
 })
 export class AgentConsoleInputPanelComponent {
-    constructor(private state?: AgentConsoleSessionState, @Optional() private regionFocus?: AgentConsoleRegionFocusController) {}
+    constructor(private state?: AgentConsoleSessionState) {}
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
     @Attribute() submitAction?: () => Promise<void>;
@@ -513,13 +510,6 @@ export class AgentConsoleInputPanelComponent {
         }
     }
 
-    onFocus(): void { this.regionFocus ? this.regionFocus.focusComposer() : this.state?.setInputFocused(true); }
-
-    onBlur(): void {
-        if (this.regionFocus) this.regionFocus.blurComposer();
-        else this.state?.setInputFocused(false);
-    }
-
     protected isEnterKey(event: KeyboardEvent): boolean {
         const key = String(event?.key || '').trim().toLowerCase();
         const code = String(event?.code || '').trim().toLowerCase();
@@ -572,7 +562,7 @@ export class AgentConsoleInputPanelComponent {
                 });
                 return;
             }
-            if (this.state.focusController.handleSelectKey(event.key)) {
+            if (this.state.focusLayers.handleSelectKey(event.key)) {
                 event.preventDefault?.();
                 return;
             }
@@ -2499,7 +2489,7 @@ export class AgentConsoleMessageTokensComponent {
 export class AgentConsoleMessageLineComponent {
     @Attribute() line?: AgentConsoleRenderedLine;
 
-    constructor(private state: AgentConsoleSessionState, @Optional() private regionFocus?: AgentConsoleRegionFocusController) {}
+    constructor(private state: AgentConsoleSessionState) {}
 
     get itemStyle(): Record<string, string> {
         return this.line?.itemStyle || {};
@@ -2543,7 +2533,7 @@ export class AgentConsoleMessageLineComponent {
 
     get toggleContent(): string { return this.line?.previewCollapsed ? this.line.content : ''; }
     toggleMessageDetail(): void {
-        this.regionFocus?.focusTranscript();
+        this.state.setMessagesFocused(true);
         if (this.state.messageLayout !== 'viewport' || !this.toggleContent) return;
         const messageId = String(this.line?.messageId || '').trim();
         if (!messageId) return;
@@ -2665,7 +2655,7 @@ export class AgentConsoleSystemMessageItemComponent extends AgentConsoleMessageI
         AgentConsoleMessageOutletDirective
     ],
     template: `
-    <div class="console-panel console-messages-panel" v-style="shellStyle" renderRegion="messages">
+    <div class="console-panel console-messages-panel" v-style="shellStyle" renderRegion="messages" focusable [focused]="transcriptFocused">
         <label class="message-empty" v-style="emptyStyle" v-show="emptyLabel">{{emptyLabel}}</label>
         <label class="message-hint" v-style="titleStyle" v-show="messagesHintLabel">{{messagesHintLabel}}</label>
         <div class="message-row" v-for="item in renderedMessageItems">
@@ -2710,6 +2700,10 @@ export class AgentConsoleMessagesPanelComponent {
 
     get emptyStyle() {
         return styleTextToObject(this.activeTheme.statusLabel);
+    }
+
+    get transcriptFocused(): boolean {
+        return this.state.messagesFocused && !this.state.messageDetailOpen;
     }
 
     get emptyLabel(): string {
@@ -3968,7 +3962,7 @@ export class AgentConsoleSelectPanelComponent {
         if (!this.menu) {
             return;
         }
-        if (this.state.focusController.handleSelectKey(event.key)) {
+        if (this.state.focusLayers.handleSelectKey(event.key)) {
             event.preventDefault?.();
         }
     }

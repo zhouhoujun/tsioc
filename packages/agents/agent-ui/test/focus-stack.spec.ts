@@ -12,23 +12,23 @@ export class FocusStackTest {
         navigationFor(state).setFocused(true);
         state.setTasksFocused(true);
         state.setPendingQuestion({ questionId: 'q1', sessionId: state.sessionId, question: 'choose', options: ['a'], severity: 'low', createdAt: 1, updatedAt: 1, status: 'pending' });
-        expect(state.focusController.layers).toEqual(['messages', 'plan', 'question']);
-        expect(state.focusController.activeLayer).toEqual('question');
+        expect(state.focusLayers.layers).toEqual(['messages', 'plan', 'question']);
+        expect(state.focusLayers.activeLayer).toEqual('question');
         expect(state.inputFocused).toEqual(false);
     }
 
     @Test('push/pop/replace/consume are deterministic and serializable')
     focusStackOperations() {
         const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
-        expect(state.focusController.push('overlay')).toEqual(['overlay']);
-        expect(state.focusController.push('review')).toEqual(['overlay', 'review']);
-        expect(state.focusController.push('overlay')).toEqual(['review', 'overlay']);
-        expect(state.focusController.replace('select')).toEqual(['review', 'select']);
-        expect(state.focusController.consume('review')).toEqual(false);
-        expect(state.focusController.consume('select')).toEqual(true);
-        expect(state.focusController.layers).toEqual(['review']);
-        expect(state.focusController.pop()).toEqual('review');
-        expect(state.focusController.activeLayer).toEqual(undefined);
+        expect(state.focusLayers.push('overlay')).toEqual(['overlay']);
+        expect(state.focusLayers.push('review')).toEqual(['overlay', 'review']);
+        expect(state.focusLayers.push('overlay')).toEqual(['review', 'overlay']);
+        expect(state.focusLayers.replace('select')).toEqual(['review', 'select']);
+        expect(state.focusLayers.consume('review')).toEqual(false);
+        expect(state.focusLayers.consume('select')).toEqual(true);
+        expect(state.focusLayers.layers).toEqual(['review']);
+        expect(state.focusLayers.pop()).toEqual('review');
+        expect(state.focusLayers.activeLayer).toEqual(undefined);
     }
 
     @Test('clearing the top modal restores the underlying layer')
@@ -39,10 +39,10 @@ export class FocusStackTest {
         expect(await state.handleFocusKey('escape', navigationFor(state))).toEqual(true);
         expect(state.pendingQuestion).toEqual(null);
         expect(state.tasksFocused).toEqual(true);
-        expect(state.focusController.activeLayer).toEqual('plan');
+        expect(state.focusLayers.activeLayer).toEqual('plan');
         expect(state.inputFocused).toEqual(false);
         expect(await state.handleFocusKey('escape', navigationFor(state))).toEqual(true);
-        expect(state.focusController.activeLayer).toEqual(undefined);
+        expect(state.focusLayers.activeLayer).toEqual(undefined);
         expect(state.inputFocused).toEqual(true);
     }
 }

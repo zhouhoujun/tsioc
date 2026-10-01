@@ -307,7 +307,7 @@ export class AgentConsoleKeymapContextTest {
         expect((component as any).resolveKeymapContext()).toEqual('list');
         state.setToolsFocused(false);
         expect((component as any).resolveKeymapContext()).toEqual('composer');
-        state.setInputFocused(false);
+        state.reviewOpen = true;
         expect((component as any).resolveKeymapContext()).toEqual('global');
     }
 }
@@ -671,7 +671,7 @@ export class AgentConsoleModelKeymapTest {
     @Test('TUI F2 cycles the recent model forward; shift+F2 cycles back')
     async tuiF2CyclesRecent() {
         const { state, component } = createKeymapConsoleParts();
-        state.setInputFocused(false);
+        state.reviewOpen = true;
         (component as any).modelRecents = ['flash', 'strong', 'fast'];
         state.setModelProfile('strong');
         expect(await (component as any).handleGlobalKeyInput('\u001b[12~')).toEqual(true);

@@ -658,7 +658,7 @@ export class VmCommandsTest {
 
         expect(state.inputFocused).toEqual(false);
 
-        await state.focusController.dismiss(navigationFor(state));
+        await state.focusLayers.dismiss(navigationFor(state));
         expect(state.messageDetailOpen).toEqual(false);
         expect(state.messagesFocused).toEqual(false);
         expect(state.inputFocused).toEqual(true);
@@ -666,7 +666,7 @@ export class VmCommandsTest {
         state.openSelectMenu('Help', [{ label: '/help', value: '/help' }], 0);
         expect(state.inputFocused).toEqual(false);
 
-        await state.focusController.dismiss(navigationFor(state));
+        await state.focusLayers.dismiss(navigationFor(state));
         expect(state.selectMenu).toEqual(undefined);
         expect(state.inputFocused).toEqual(true);
 
@@ -683,7 +683,7 @@ export class VmCommandsTest {
         state.setApprovalsFocused(true);
         expect(state.inputFocused).toEqual(false);
 
-        await state.focusController.dismiss(navigationFor(state));
+        await state.focusLayers.dismiss(navigationFor(state));
         expect(state.approvalsFocused).toEqual(false);
         expect(state.inputFocused).toEqual(true);
     }

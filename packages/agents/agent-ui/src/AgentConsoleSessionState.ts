@@ -86,7 +86,7 @@ import {
     getAgentConsoleCommandDefinition
 } from './AgentConsoleCommandRegistry';
 import { AgentConsoleInputHistoryController, DefaultAgentConsoleInputHistoryController } from './AgentConsoleInputHistory';
-import { AgentConsoleFocusController, DefaultAgentConsoleFocusController } from './AgentConsoleFocusController';
+import { AgentConsoleFocusLayers, DefaultAgentConsoleFocusLayers } from './AgentConsoleFocusLayers';
 import { AgentConsoleCommandExecutionController, DefaultAgentConsoleCommandExecutionController } from './AgentConsoleCommandExecutionState';
 
 export interface AgentConsoleToolItem {
@@ -577,7 +577,12 @@ export const AGENT_CONSOLE_COMMAND_OUTPUT_RING_CAP = 20;
 export class AgentConsoleSessionState {
     constructor(@Inject(COMMAND_EXECUTION_CONTROL) protected commandExecutionControl?: CommandExecutionControlPort) {}
     readonly inputHistoryController: AgentConsoleInputHistoryController = new DefaultAgentConsoleInputHistoryController(this);
-    readonly focusController: AgentConsoleFocusController = new DefaultAgentConsoleFocusController(this);
+    readonly focusLayers: AgentConsoleFocusLayers = new DefaultAgentConsoleFocusLayers(this);
+
+    /** Derived from the focus layer stack: the composer owns the keyboard unless a layer claims it. */
+    get inputFocused(): boolean {
+        return !this.focusLayers.blocksComposerInput();
+    }
     readonly vimController: AgentConsoleVimController = createAgentConsoleVimController(this);
     private _commandExecutionController?: AgentConsoleCommandExecutionController;
     get commandExecutionController(): AgentConsoleCommandExecutionController {
@@ -604,7 +609,6 @@ export class AgentConsoleSessionState {
     providerWizardLabel = '';
     providerWizard?: AgentConsoleProviderWizardState;
     inputCursor = 0;
-    inputFocused = true;
     /** Serializable focus projection shared by TUI and browser adapters. */
     focusStack: AgentConsoleFocusLayer[] = [];
     title = '';
@@ -1087,7 +1091,7 @@ export class AgentConsoleSessionState {
     }
 
     protected syncDerivedInputFocus(): void {
-        this.focusController.sync();
+        this.focusLayers.sync();
     }
 
     beginSelectInteraction(): () => void {
@@ -1814,7 +1818,7 @@ export class AgentConsoleSessionState {
     }
 
     focusLatestLongMessage(): boolean {
-        if (this.input || this.inputLocked || this.modalPromptActive || this.focusController.hasBlockingSelectMenu()) {
+        if (this.input || this.inputLocked || this.modalPromptActive || this.focusLayers.hasBlockingSelectMenu()) {
             return false;
         }
         const messages = this.displayMessages;
@@ -2274,8 +2278,9 @@ export class AgentConsoleSessionState {
         this.setInputCursor(position === 'start' ? 0 : this.input.length);
     }
 
-    setInputFocused(focused: boolean): void {
-        this.inputFocused = !!focused;
+    setMessagesFocused(focused: boolean): void {
+        this.messagesFocused = !!focused;
+        this.syncDerivedInputFocus();
     }
 
     setInputPlaceholder(value: string): void {
@@ -3116,14 +3121,12 @@ export class AgentConsoleSessionState {
         if (!question) return false;
         // Standalone/legacy hosts retain the previous compose-only behavior.
         if (!this.questionAction) {
-            this.setInputFocused(true);
             return true;
         }
         if (question.expiresAt && Date.now() > question.expiresAt) {
             question.status = 'expired';
             question.error = undefined;
             this.finishPendingQuestion();
-            this.setInputFocused(true);
             return true;
         }
         question.status = 'submitting';
@@ -3138,7 +3141,6 @@ export class AgentConsoleSessionState {
             question.status = 'answered';
             question.answer = option;
             this.finishPendingQuestion();
-            this.setInputFocused(true);
         } catch (error: any) {
             const message = error?.message || String(error || 'Question response failed');
             if (/expired/i.test(message)) {
@@ -3167,7 +3169,6 @@ export class AgentConsoleSessionState {
             question.status = 'expired';
             question.error = undefined;
             this.finishPendingQuestion();
-            this.setInputFocused(true);
             return true;
         }
         question.status = 'submitting';
@@ -3182,7 +3183,6 @@ export class AgentConsoleSessionState {
             question.status = 'answered';
             question.answer = answer;
             this.finishPendingQuestion();
-            this.setInputFocused(true);
         } catch (error: any) {
             const message = error?.message || String(error || 'Question response failed');
             if (/expired/i.test(message)) {
@@ -3599,7 +3599,7 @@ export class AgentConsoleSessionState {
             return;
         }
         if (this.pendingQuestion
-            || this.focusController.hasBlockingSelectMenu()
+            || this.focusLayers.hasBlockingSelectMenu()
             || this.textOverlay
             || this.reviewOpen
             || this.timelineEventInspectorOpen
@@ -5762,31 +5762,31 @@ export class AgentConsoleSessionState {
         if (!normalized) {
             return false;
         }
-        const questionResult = this.focusController.handlePendingQuestionKey(normalized);
+        const questionResult = this.focusLayers.handlePendingQuestionKey(normalized);
         if (questionResult !== undefined) return questionResult;
-        const commandOutputsResult = this.focusController.handleCommandOutputsKey(normalized, transcriptNavigationController);
+        const commandOutputsResult = this.focusLayers.handleCommandOutputsKey(normalized, transcriptNavigationController);
         if (commandOutputsResult !== undefined) return commandOutputsResult;
-        const textOverlayResult = this.focusController.handleTextOverlayKey(normalized, transcriptNavigationController);
+        const textOverlayResult = this.focusLayers.handleTextOverlayKey(normalized, transcriptNavigationController);
         if (textOverlayResult !== undefined) return textOverlayResult;
-        const gitSnapshotResult = this.focusController.handleGitSnapshotKey(normalized, transcriptNavigationController);
+        const gitSnapshotResult = this.focusLayers.handleGitSnapshotKey(normalized, transcriptNavigationController);
         if (gitSnapshotResult !== undefined) return gitSnapshotResult;
-        const reviewResult = this.focusController.handleReviewKey(normalized, transcriptNavigationController);
+        const reviewResult = this.focusLayers.handleReviewKey(normalized, transcriptNavigationController);
         if (reviewResult !== undefined) return reviewResult;
-        const timelineInspectorResult = this.focusController.handleTimelineInspectorKey(normalized, transcriptNavigationController);
+        const timelineInspectorResult = this.focusLayers.handleTimelineInspectorKey(normalized, transcriptNavigationController);
         if (timelineInspectorResult !== undefined) return timelineInspectorResult;
-        const messageDetailResult = this.focusController.handleMessageDetailKey(normalized, transcriptNavigationController);
+        const messageDetailResult = this.focusLayers.handleMessageDetailKey(normalized, transcriptNavigationController);
         if (messageDetailResult !== undefined) return messageDetailResult;
-        const messageListResult = this.focusController.handleMessageListKey(normalized, transcriptNavigationController);
+        const messageListResult = this.focusLayers.handleMessageListKey(normalized, transcriptNavigationController);
         if (messageListResult !== undefined) return messageListResult;
-        const approvalResult = this.focusController.handleApprovalKey(normalized, transcriptNavigationController);
+        const approvalResult = this.focusLayers.handleApprovalKey(normalized, transcriptNavigationController);
         if (approvalResult !== undefined) return approvalResult;
         if (this.tasksFocused) {
             if ((normalized === 'esc' || normalized === 'escape') && this.canCancelFocusedCodingTask()) {
                 await this.cancelFocusedCodingTask();
                 return true;
             }
-            if (this.focusController.isDismissKey(normalized)) {
-                await this.focusController.dismiss(transcriptNavigationController);
+            if (this.focusLayers.isDismissKey(normalized)) {
+                await this.focusLayers.dismiss(transcriptNavigationController);
                 return true;
             }
             if (this.hasActivePlanTodos()) {
@@ -5899,8 +5899,8 @@ export class AgentConsoleSessionState {
             }
         }
         if (this.jobsFocused) {
-            if (this.focusController.isDismissKey(normalized)) {
-                await this.focusController.dismiss(transcriptNavigationController);
+            if (this.focusLayers.isDismissKey(normalized)) {
+                await this.focusLayers.dismiss(transcriptNavigationController);
                 return true;
             }
             switch (normalized) {
@@ -5949,8 +5949,8 @@ export class AgentConsoleSessionState {
             }
         }
         if (this.toolsFocused) {
-            if (this.focusController.isDismissKey(normalized)) {
-                await this.focusController.dismiss(transcriptNavigationController);
+            if (this.focusLayers.isDismissKey(normalized)) {
+                await this.focusLayers.dismiss(transcriptNavigationController);
                 return true;
             }
             switch (normalized) {
@@ -5987,8 +5987,8 @@ export class AgentConsoleSessionState {
             }
         }
         if (this.toolRunsFocused) {
-            if (this.focusController.isDismissKey(normalized)) {
-                await this.focusController.dismiss(transcriptNavigationController);
+            if (this.focusLayers.isDismissKey(normalized)) {
+                await this.focusLayers.dismiss(transcriptNavigationController);
                 return true;
             }
             switch (normalized) {
@@ -6018,8 +6018,8 @@ export class AgentConsoleSessionState {
             }
         }
         if (this.sessionsFocused) {
-            if (this.focusController.isDismissKey(normalized)) {
-                await this.focusController.dismiss(transcriptNavigationController);
+            if (this.focusLayers.isDismissKey(normalized)) {
+                await this.focusLayers.dismiss(transcriptNavigationController);
                 return true;
             }
             switch (normalized) {
@@ -6205,11 +6205,11 @@ export class AgentConsoleSessionState {
             return { handled: true, action: 'historyNavigation', value: navigated ? 'navigated' : 'failed' };
         }
 
-        if (this.focusController.handleMenuInput(controlKey || '', rawText)) {
+        if (this.focusLayers.handleMenuInput(controlKey || '', rawText)) {
             return { handled: true, action: 'menuInput' };
         }
 
-        if (this.focusController.hasBlockingSelectMenu()) {
+        if (this.focusLayers.hasBlockingSelectMenu()) {
             return { handled: true, action: 'menuBlocked' };
         }
 
@@ -6249,8 +6249,8 @@ export class AgentConsoleSessionState {
             }
         }
 
-        if (this.pendingQuestion || this.focusController.hasReviewFocus() || this.focusController.hasMessageDetailFocus() || this.focusController.hasMessageFocus() || this.focusController.hasApprovalFocus() || this.focusController.hasScheduledJobFocus() || this.focusController.hasToolFocus() || this.focusController.hasSessionFocus() || this.hasTextOverlayFocus() || this.hasCommandOutputsFocus()) {
-            const focusKey = this.focusController.resolveShortcutKey(rawText, controlKey);
+        if (this.pendingQuestion || this.focusLayers.hasReviewFocus() || this.focusLayers.hasMessageDetailFocus() || this.focusLayers.hasMessageFocus() || this.focusLayers.hasApprovalFocus() || this.focusLayers.hasScheduledJobFocus() || this.focusLayers.hasToolFocus() || this.focusLayers.hasSessionFocus() || this.hasTextOverlayFocus() || this.hasCommandOutputsFocus()) {
+            const focusKey = this.focusLayers.resolveShortcutKey(rawText, controlKey);
             if (focusKey) {
                 const consumed = await this.handleFocusKey(focusKey, options.transcriptNavigationController);
                 if (consumed) {
@@ -6272,7 +6272,7 @@ export class AgentConsoleSessionState {
             if (this.status === 'running' || this.status === 'reasoning') {
                 return { handled: true, action: 'cancelTurn' };
             }
-            await this.focusController.handleEscape(options.transcriptNavigationController);
+            await this.focusLayers.handleEscape(options.transcriptNavigationController);
             return { handled: true };
         }
         if (rawText === '\u001b\r' || rawText === '\u001b\n') {
@@ -6294,7 +6294,7 @@ export class AgentConsoleSessionState {
         }
 
         if (controlKey === 'left' || controlKey === 'right' || controlKey === 'home' || controlKey === 'end') {
-            if (this.focusController.shouldRouteDraftNavigation(options.hasActiveTextPrompt)) {
+            if (this.focusLayers.shouldRouteDraftNavigation(options.hasActiveTextPrompt)) {
                 return { handled: true, action: 'draftNavigation', value: controlKey };
             }
             return { handled: true };
@@ -6303,7 +6303,7 @@ export class AgentConsoleSessionState {
         if (controlKey === 'up' || controlKey === 'down') {
             // Shell-like: up/down recalls history at the prompt unless a
             // blocking interaction (menu/lock/modal/text prompt) is active.
-            if (!this.focusController.hasBlockingSelectMenu()
+            if (!this.focusLayers.hasBlockingSelectMenu()
                 && !this.inputLocked
                 && !this.modalPromptActive
                 && !options.hasActiveTextPrompt) {
@@ -6324,7 +6324,7 @@ export class AgentConsoleSessionState {
             return { handled: true };
         }
 
-        if (this.focusController.shouldRouteDraftNavigation(options.hasActiveTextPrompt)) {
+        if (this.focusLayers.shouldRouteDraftNavigation(options.hasActiveTextPrompt)) {
             return { handled: true, action: 'textInput', value: rawText };
         }
 

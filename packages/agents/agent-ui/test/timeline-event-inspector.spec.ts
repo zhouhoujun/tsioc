@@ -178,9 +178,9 @@ export class TimelineEventInspectorTest {
         const evt = toolEvent('evt-1');
         state.setMessages([userMsg('u1'), evt]);
 
-        expect(state.focusController.isAnyFocusActive()).toEqual(false);
+        expect(state.focusLayers.isAnyFocusActive()).toEqual(false);
         state.openTimelineEventInspector();
-        expect(state.focusController.isAnyFocusActive()).toEqual(true);
+        expect(state.focusLayers.isAnyFocusActive()).toEqual(true);
     }
 
     @Test('scrollTimelineEventDetail clamps within bounds')
@@ -405,7 +405,7 @@ export class TimelineEventInspectorTest {
         state.setMessages([userMsg('u1'), evt]);
         state.openTimelineEventInspector();
 
-        state.focusController.handleEscape(navigationFor(state));
+        state.focusLayers.handleEscape(navigationFor(state));
         expect(state.timelineEventInspectorOpen).toEqual(false);
     }
 }
