@@ -236,3 +236,18 @@
 - 延后调查：实际 routed model profile、Codex/OpenCode tool-round/continuation primary-source 对照（librarian 因 `ProviderModelNotFoundError: opencode/gpt-5-nano` 全失败，无可靠 primary source）。
 - `deepseek-v4-flash` 废弃名在 `packages/agents/agent/src/options.ts:623` 附近仍有 4 处，**清理需用户明确批准**。
 - `sleep-mlt` 旧 `streak` 子命令独立 staleness 缺陷（`buildReport` 已防护），v8 范围外未改。
+
+## 2026-10-01 Console focus 数据驱动重构（A/B/C，提交 `b98590c2e`，已推送 `github 7.tui`）
+- 背景：focus 有两个 owner —— 可变字段 `inputFocused` 与命令式 `AgentConsoleRegionFocusController`（直接驱动 DOM/TUI focus）。用户要求：focus 属组件基层库职责、agent-ui 不处理基层 focus、移除 `inputFocused`、真正数据驱动。
+- **A（单一数据源）**：`AgentConsoleSessionState.inputFocused` 改为派生 getter `!this.focusLayers.blocksComposerInput()`；删除可变字段、`setInputFocused()` 及 9 处已冗余调用点（5×`finishPendingQuestion`、`handleEscape`、plan-retry、wizard、@mention）；`sync()` 不再写 `inputFocused`。按用户选定方案 A：不加 `focusDetached`，`onBlur` 一并移除。
+- **B（去控制器）**：`AgentConsoleFocusController.ts` → `AgentConsoleFocusLayers.ts`（`git mv` 保留历史）。**未整体删除 494 行**：其中含 focus 层栈（`push/pop/replace/consume`）、10 个 overlay 的按键路由、光标判定，属应用域逻辑，直接删会丢功能（AGENTS.md 禁止）。以重命名 + 去掉 controller 抽象与 module provider 满足「不再有 focus controller」。
+- **C（基层执行）**：删除 `AgentConsoleRegionFocus.ts`（39 行）+ module provider + `@Inject` 参数 + `attachTranscriptNavigation` + composer `@focus/@blur`；transcript 根改 `focusable [focused]="transcriptFocused"`，由 components 的 `FocusedDirective` 执行；agent-ui 只持数据。
+- **C 的基层阻塞（一并修复）**：`hitTest` 原用 `slice().reverse().find()`、无优先级；transcript 根一旦 `focusable` 即注册整面板 click target，遮蔽子级 `message-detail-toggle`（3 个 `repro-mouse-click` 测试红）。修法：新增 `TerminalClickTarget.interactive?: 'pointer'|'focus'`，`tui.ts:226` 按 `hasPointerHandler ? 'pointer' : 'focus'` 打标，`hitTest` 反向扫描优先返回 `pointer`、否则回退最外层匹配（保持旧行为）。
+  - 踩坑：`tui.ts:524` 逐字段重建 child click target，会静默丢掉新字段（首次修复无效，靠 instrumentation 输出 `interactive: undefined` 才定位）。**今后给 `TerminalClickTarget` 加字段，必须同步该重建处。**
+- **测试泄漏（修根因，非放宽断言）**：`renderScrolledSessionWindow` 调 `setSessionsFocused(true)` 后未复位，经 suite 级 `@Before`（`Before = BeforeAll`，`packages/unit/src/metadata.ts:144`）泄漏给后续 pending-question 测试；旧实现因 `regionFocus` 反射注入为 `undefined`、该路径本就是死的才「绿」。改为在泄漏测试内复位。
+- **验证**：components 146 / common 5 / html 118 / console 87 / agent-ui 1441，全 `EXIT=0`；`scripts/check-source-size.mjs` OK；`git diff --check` 干净。
+- 早前全量门禁 25/25 代码阶段全 `GATE-PASS`；仅 `production-db-integrity` FAIL —— 时间线核对为用户在 `sleep-mlt` 的实时 agent 每轮写 `~/.tsdi-agent/agent.db`（DB mtime `08:32:26` 落在门禁窗口内），非测试隔离缺陷、非本次改动（已验 `node` 尊重 `HOME` 覆盖）。
+
+### 仍为开放项（如实保留，未擅自处理）
+- **第二轮对话崩溃（用户实机，未修）**：第二个 turn 抛 `Exception: NodeInjector has already been destroyed.`（`packages/ioc/src/impl/injector.ts:308`）。已定位为**已知类别**：惰性注入 getter（如 `container.ts:55 get renderer()`）在被销毁的 `NodeInjector` 上被读取；仓库已在 `container.ts:328`、`compiler-fns.ts:757/980/1106`、`component.ts:79/108/126`、`if.dir.ts:97` 有同类 `injector.destroyed` 守卫，说明存在**缺守卫路径**。用户粘贴仅含 throw 点、无调用栈；委派的 `deep` 子 agent 30 分钟无产出超时、未产生改动。**需完整调用栈或可复现步骤才能定位，勿凭 grep 猜测。** 已排除：`FocusMonitor.focusVia` 仅调 `element.focus?.()`、不触注入器，故本次新增 `[focused]` 非直接抛点；但 destroy 时序仍未排除，待栈验证。
+- `Before = BeforeAll`（`packages/unit/src/metadata.ts:144`）使 `@Before` 为 suite 级、agent-ui 各 suite 共享一个 Application；曾试 `@BeforeEach` 修好 3 条焦点测试却弄红 2 条依赖跨测试残留状态的 dashboard 测试（`console-renderer.spec.ts` 断言上一测试残留的 `'design exam system'` 等），已回退。**该组测试存在顺序依赖，仍为潜在缺陷。**
