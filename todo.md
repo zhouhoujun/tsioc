@@ -251,3 +251,14 @@
 ### 仍为开放项（如实保留，未擅自处理）
 - **第二轮对话崩溃（用户实机，未修）**：第二个 turn 抛 `Exception: NodeInjector has already been destroyed.`（`packages/ioc/src/impl/injector.ts:308`）。已定位为**已知类别**：惰性注入 getter（如 `container.ts:55 get renderer()`）在被销毁的 `NodeInjector` 上被读取；仓库已在 `container.ts:328`、`compiler-fns.ts:757/980/1106`、`component.ts:79/108/126`、`if.dir.ts:97` 有同类 `injector.destroyed` 守卫，说明存在**缺守卫路径**。用户粘贴仅含 throw 点、无调用栈；委派的 `deep` 子 agent 30 分钟无产出超时、未产生改动。**需完整调用栈或可复现步骤才能定位，勿凭 grep 猜测。** 已排除：`FocusMonitor.focusVia` 仅调 `element.focus?.()`、不触注入器，故本次新增 `[focused]` 非直接抛点；但 destroy 时序仍未排除，待栈验证。
 - `Before = BeforeAll`（`packages/unit/src/metadata.ts:144`）使 `@Before` 为 suite 级、agent-ui 各 suite 共享一个 Application；曾试 `@BeforeEach` 修好 3 条焦点测试却弄红 2 条依赖跨测试残留状态的 dashboard 测试（`console-renderer.spec.ts` 断言上一测试残留的 `'design exam system'` 等），已回退。**该组测试存在顺序依赖，仍为潜在缺陷。**
+
+### 追加：第二轮崩溃的静态定位与候选修复（`compiler-fns.ts` 缺失守卫）
+- 继续静态排查（Oracle 委派不可用：本环境 `opencode/gpt-5-nano`、`gemini-3.1-pro`、`claude-opus-5` 三个 fallback 模型全部 `ProviderModelNotFoundError`，与 todo 早前记录的 librarian 失败同因）。
+- **关键发现**：`binding()` 工厂共 6 个，但只有 3 个有 `if (injector.destroyed) return;` —— `bindingTemplate`(757)、`bindingComponentFactory`(982)、`bindingDirective`(1106)。另 3 个同样在回调里访问注入器却**缺守卫**：
+  - `bindingProperty`(895，处理 `[prop]`，**本次新增的 `[focused]` 正走此路径**) → `effect.run(() => evaluateExpression(expr, context, injector, delimiter))`
+  - `bindingInterpolationFactory`(923，处理 `{{...}}`) → `evaluateDelimiterExpression(..., injector, ...)`
+  - `createModelBindingFactory`：回调只用 `el`/`context`、**不碰注入器**，确认无需守卫。
+- **性质**：同节点上 `bindingDirective`（有守卫）会跳过已销毁注入器，而 `bindingProperty`（无守卫）不跳 → 在已销毁 `NodeInjector` 上绑定 `[focused]` 即 `evaluateExpression` → 编译表达式 `evaluate(context, injector)` → `injector.get/has` → `assertNotDestroyed` 抛 `NodeInjector has already been destroyed`。缺守卫的不一致正是该异常类别。
+- **修复**：给 `bindingProperty`、`bindingInterpolationFactory` 补上与另外 3 个一致的 `if (injector.destroyed) return;`（行为保持：仅在已销毁注入器上跳过绑定，属原意）。
+- **验证**：components 146 / common 5 / html 118 / console 87 / agent-ui 1441，全 `EXIT=0`。
+- **诚实边界**：这是**静态锁定的真实缺失守卫缺口**，但**尚不能证明就是用户实机那条崩溃**（无堆栈，无法复现第二 turn）。需完整调用栈确认；若不匹配，则该守卫修复本身独立成立、可保留。

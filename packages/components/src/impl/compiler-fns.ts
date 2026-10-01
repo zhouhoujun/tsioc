@@ -892,6 +892,7 @@ export function bindingEvent(element: RNode, attrName: string, expr: string, ren
 export function bindingProperty(element: RNode, attrName: string, expr: string, renderer: Renderer, delimiter: RegExp): void {
     const propName = attrName.startsWith('[') ? attrName.slice(1, -1) : attrName.substring(1);
     binding(element, (target: RNode, context: any, effect: ReactiveEffect<any>, injector: NodeInjector) => {
+        if (injector.destroyed) return;
         const el = target as RElement;
         if (!el.setProperty) return;
         effect.run(() => {
@@ -919,6 +920,7 @@ export function bindingInterpolationFactory(element: RNode, attrName: string, ex
     if (!matches?.length) return;
 
     binding(element, (target: RNode, context: any, effect: ReactiveEffect<any>, injector: NodeInjector) => {
+        if (injector.destroyed) return;
         const el = target as RElement;
         const writeValue = (name: string, value: string) => {
             // `value` 插值绑定（如 `value="{{input}}"`）须写入控件的实时属性：
