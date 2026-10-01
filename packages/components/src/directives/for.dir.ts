@@ -236,6 +236,9 @@ export class VForDirective {
 
     // 通用的视图更新逻辑（支持trackBy）
     private updateViewsWithTrackBy(contexts: any[]) {
+        if (this.viewContainer.injector.destroyed) {
+            return;
+        }
         const newViewRefs: any[] = [];
         const oldViewRefs = new Map(this._viewRefs.map((ref, index) => [this._trackByFn(ref.context, index), ref]));
 

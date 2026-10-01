@@ -323,7 +323,7 @@ export class CaseDirective {
     }
 
     private createView() {
-        if (!this._template) {
+        if (!this._template || this.viewContainer.injector.destroyed) {
             return;
         }
         this.viewContainer.createEmbeddedView(this._template, this._context);
@@ -410,7 +410,7 @@ export class DefaultDirective {
     }
 
     private createView() {
-        if (!this._template) {
+        if (!this._template || this.viewContainer.injector.destroyed) {
             return;
         }
         this.viewContainer.createEmbeddedView(this._template, this._context);
