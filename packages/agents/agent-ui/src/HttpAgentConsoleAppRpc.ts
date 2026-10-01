@@ -121,6 +121,15 @@ function buildRpcError(error: { code: number; message?: string; data?: any }): E
     if (error.data?.modelFailure) {
         Object.assign(rpcError, { modelFailure: error.data.modelFailure });
     }
+    // Overrides the built-in stack: local frames would point into this client
+    // instead of the server throw site.
+    if (typeof error.data?.stack === 'string' && error.data.stack) {
+        Object.defineProperty(rpcError, 'stack', {
+            value: error.data.stack,
+            writable: true,
+            configurable: true
+        });
+    }
     return rpcError;
 }
 
