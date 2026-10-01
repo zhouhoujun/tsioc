@@ -1,6 +1,7 @@
 import type { AgentMessage, AgentTurnMessageInput } from '@tsdi/agent';
 import type { AgentConsoleActivity, AgentConsolePendingAttachment } from './AgentConsoleSessionState';
 import { presentModelFailure } from './AgentConsoleModelFailurePresenter';
+import { withErrorStack } from './AgentConsoleErrorStackPresenter';
 
 /**
  * Host surface required by the turn input controller.
@@ -274,12 +275,15 @@ export async function submitView(host: AgentConsoleTurnInputHost): Promise<void>
             host.activeTurnRun = turnRun;
             await turnRun;
         } catch (error: any) {
-            const message = presentModelFailure(error, host.translate) ?? (error?.message || String(error || 'Unknown error'));
-                host.state.setStatus('error');
-                host.state.setLastError(message);
-                host.state.pushActivity('error', message);
-                host.state.appendAssistantErrorMessage(message);
-                host.updateTerminalTitle();
+            const message = withErrorStack(
+                presentModelFailure(error, host.translate) ?? (error?.message || String(error || 'Unknown error')),
+                error
+            );
+            host.state.setStatus('error');
+            host.state.setLastError(message);
+            host.state.pushActivity('error', message);
+            host.state.appendAssistantErrorMessage(message);
+            host.updateTerminalTitle();
         } finally {
             host.activeTurnRun = null;
             host.ensureMessageAtTail(assistantMessage.id);
