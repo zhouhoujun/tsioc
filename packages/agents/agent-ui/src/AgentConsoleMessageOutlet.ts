@@ -27,6 +27,19 @@ export class AgentConsoleMessageOutletDirective {
         return this.componentRef;
     }
 
+    /**
+     * The cached component ref, only while its own injector is alive.
+     *
+     * `NodeInjector.detachNodes` destroys a component's host view without
+     * notifying this directive, and `ComponentRef.instance` lazily resolves
+     * through its (now destroyed) injector, throwing
+     * `NodeInjector has already been destroyed.` A dead ref must be rebuilt.
+     */
+    private get liveComponentRef(): ComponentRef<AgentConsoleMessageTemplateInstance> | undefined {
+        const ref = this.componentRef;
+        return ref && !ref.injector.destroyed ? ref : undefined;
+    }
+
     @Attribute()
     set agentConsoleMessageOutlet(item: AgentConsoleRenderedMessageItem | undefined) {
         if (this.viewContainer.injector.destroyed) {
@@ -41,7 +54,7 @@ export class AgentConsoleMessageOutletDirective {
             return;
         }
         const componentType = item.component as Type<AgentConsoleMessageTemplateInstance>;
-        if (!this.componentRef || this.componentType !== componentType) {
+        if (!this.liveComponentRef || this.componentType !== componentType) {
             if (this.creating) {
                 return;
             }
@@ -67,8 +80,9 @@ export class AgentConsoleMessageOutletDirective {
             }
         }
         const latestItem = this.pendingItem;
-        if (this.componentRef && latestItem?.component === this.componentType && this.componentRef.instance.item !== latestItem) {
-            this.componentRef.instance.item = latestItem;
+        const live = this.liveComponentRef;
+        if (live && latestItem?.component === this.componentType && live.instance.item !== latestItem) {
+            live.instance.item = latestItem;
         }
     }
 

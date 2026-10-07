@@ -161,18 +161,19 @@ npm run test                  # 等价于: ts-node -r tsconfig-paths/register un
 - 共享 components 或 agent-ui 改动必须按影响范围覆盖 components、components/common、components/html、components/console 与 agent-ui；统一 agents gate 必须单独包含这四个 components 包。
 
 ### 跑单个 spec（targeted 验证）
-`@tsdi/unit` 的模块解析依赖包内路径，**临时 runner 文件必须建在包内**（`/tmp` 下会报 Cannot find module '@tsdi/unit'）：
+`@tsdi/unit` 的模块解析依赖包内路径，**临时 runner 文件必须建在包根目录，不能放 `test/` 下**（实测：放在 `test/` 下 globby 解析基准错位，会**匹配到 0 个 suite 且 EXIT=0、零输出**，即假绿）（`/tmp` 下会报 Cannot find module '@tsdi/unit'）：
 
 ```bash
 cd packages/components/html
-cat > test/run-one.tmp.ts << 'EOF'
+cat > run-one.tmp.ts << 'EOF'
 import { runTest } from '@tsdi/unit';
 runTest('./test/<spec>.spec.ts', { baseURL: __dirname, platform: 'browser' })
-    .then(() => process.exit(0))
     .catch((err: Error) => { console.error('RUNNER-FAIL', err); process.exit(1); });
 EOF
-npx ts-node -r tsconfig-paths/register test/run-one.tmp.ts && rm test/run-one.tmp.ts
+npx ts-node -r tsconfig-paths/register run-one.tmp.ts; rm -f run-one.tmp.ts
 ```
+- 不要加 `.then(() => process.exit(0))`：reporter 输出可能尚未 flush 就被强制退出截断。
+- **必须看到 `N passing` 才算跑成功**；零输出 + EXIT=0 是假绿，不是通过。
 - html 包必须带 `platform: 'browser'`（unit.ts 里就这么配的）；components/console、agent-ui 不需要。
 - 改完核心响应式代码（`reactive.ts`/`impl/effect.ts`）后，至少回归：agent-ui 全套 + components + components/common + components/html + components/console。
 
