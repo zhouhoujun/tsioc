@@ -428,6 +428,13 @@ export class ConsoleTerminalInputController {
     }
 
     protected async dispatchNow(decoded: TerminalInputSequenceResult, chunk: ConsoleTextChunk): Promise<void> {
+        if (decoded.controlKey === 'pageup' || decoded.controlKey === 'pagedown') {
+            const delta = decoded.controlKey === 'pageup' ? -1 : 1;
+            const surface = (this as any).surface;
+            if (surface?.scrollViewport?.(delta)) {
+                return;
+            }
+        }
         const result = this.options.onChunk(decoded, chunk);
         if (result && typeof (result as Promise<void>).catch === 'function') {
             await Promise.resolve(result).catch(() => undefined);

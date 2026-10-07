@@ -72,12 +72,40 @@ export abstract class AgentConsoleTranscriptNavigationController {
         if (!messages.length) return false;
         if (delta < 0) {
             if (!this.state.messagesFocused) this.setFocused(true);
-            this.movePage(-1, 1); return true;
+            this.movePage(-1, 1);
+            return true;
         }
         if (!this.state.messagesFocused) return false;
         this.movePage(1, 1);
-        if (this.state.selectedMessageId === messages[messages.length - 1].id) this.setFocused(false);
+        if (this.state.selectedMessageId === messages[messages.length - 1].id) {
+            this.setFocused(false);
+        }
         return true;
+    }
+
+    scrollPage(delta: number): boolean {
+        const messages = this.state.displayMessages;
+        if (!messages.length) return false;
+        const pageSize = this.resolveScrollPageSize();
+        if (delta < 0) {
+            if (!this.state.messagesFocused) this.setFocused(true);
+            this.movePage(-1, pageSize);
+            return true;
+        }
+        if (!this.state.messagesFocused) return false;
+        this.movePage(1, pageSize);
+        if (this.state.selectedMessageId === messages[messages.length - 1].id) {
+            this.setFocused(false);
+        }
+        return true;
+    }
+
+    protected resolveScrollPageSize(): number {
+        const stateAny = this.state as any;
+        const vp = stateAny.messagesViewportItems ?? stateAny.messagesVisibleItems;
+        if (typeof vp === 'number' && vp > 0) return vp;
+        const opt = stateAny.consoleOptions?.messageSelectionPageSize ?? stateAny.consoleOptions?.messagesVisibleItems;
+        return Math.max(1, typeof opt === 'number' ? opt : 1);
     }
 
     protected select(messageId: string): void {

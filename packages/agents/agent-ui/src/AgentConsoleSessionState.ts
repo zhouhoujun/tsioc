@@ -42,7 +42,7 @@ import {
 } from './AgentConsoleWorkspaceMentions';
 import { AgentConsoleMessageStatusLabels } from './AgentConsoleMessageRenderers';
 import { normalizeMessageLayout, resolveFinalAssistantMessageId } from './AgentConsoleViewport';
-import { trackMessagesNewCount } from './AgentConsoleTranscriptLayout';
+import { resolveTranscriptLayout, trackMessagesNewCount } from './AgentConsoleTranscriptLayout';
 import { AgentConsoleTranscriptNavigationController } from './AgentConsoleTranscriptNavigation';
 import {
     AgentConsoleTimelineLabels,
@@ -6184,6 +6184,21 @@ export class AgentConsoleSessionState {
         if (rawText === '\u0003') {
             options.onExit(true);
             return { handled: true, action: 'exit' };
+        }
+
+        if (controlKey === 'pageup' || controlKey === 'pagedown') {
+            const layout = resolveTranscriptLayout(this.consoleOptions.messageLayout);
+            if (layout.ownsHistoryScroll || layout.wheelScrollsHistory || layout.mode === 'viewport') {
+                const delta = controlKey === 'pageup' ? -1 : 1;
+                const nav = options.transcriptNavigationController as any;
+                if (nav && typeof nav.scrollPage === 'function') {
+                    nav.scrollPage(delta);
+                } else {
+                    nav.scroll(delta);
+                }
+                return { handled: true, action: 'transcriptScroll', value: controlKey };
+            }
+            return { handled: false };
         }
 
         if (controlKey === 'tab'
