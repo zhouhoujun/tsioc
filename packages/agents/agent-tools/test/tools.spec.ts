@@ -928,6 +928,29 @@ export class AgentToolsPackageTest {
         expect(outsideError?.message).toContain('workspace root');
     }
 
+    @Test('content search supports regex and case-insensitive queries')
+    async contentSearchSupportsRegexAndCaseInsensitive() {
+        const workspace = await this.createWorkspace();
+        const tool = new ContentSearchTool({ file: { rootDir: workspace, maxSearchResults: 20 } });
+
+        const regex = await tool.invoke({ query: 'v.+e = \\d+', regex: true, glob: 'src/**/*' }, createSessionContext());
+        expect(regex.matches.length).toBeGreaterThan(0);
+
+        const insensitive = await tool.invoke({ query: 'BETA', caseSensitive: false, glob: 'src/**/*' }, createSessionContext());
+        expect(insensitive.matches.length).toBeGreaterThan(0);
+
+        const sensitive = await tool.invoke({ query: 'BETA', glob: 'src/**/*' }, createSessionContext());
+        expect(sensitive.matches.length).toEqual(0);
+
+        let invalid: Error | undefined;
+        try {
+            await tool.invoke({ query: '(', regex: true, glob: 'src/**/*' }, createSessionContext());
+        } catch (err) {
+            invalid = err as Error;
+        }
+        expect(invalid?.message).toContain('regular expression');
+    }
+
     @Test('web search delegates to configured adapter')
     async webSearchDelegatesToAdapter() {
         const tool = new WebSearchTool({

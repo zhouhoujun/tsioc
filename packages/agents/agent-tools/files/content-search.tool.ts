@@ -10,12 +10,14 @@ import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, toRelativeWorkspaceP
 @Injectable()
 export class ContentSearchTool implements AgentTool {
     name = 'content_search';
-    description = 'Search file contents within the configured workspace.';
+    description = 'Search file contents within the configured workspace. Supports plain substring or regular-expression queries.';
     inputSchema = {
         type: 'object',
         properties: {
             query: { type: 'string' },
-            glob: { type: 'string' }
+            glob: { type: 'string' },
+            regex: { type: 'boolean', description: 'Treat query as a regular expression (default false).' },
+            caseSensitive: { type: 'boolean', description: 'Case-sensitive matching (default true).' }
         },
         required: ['query']
     };
@@ -43,6 +45,9 @@ export class ContentSearchTool implements AgentTool {
             ignore: policy.excludedGlobs
         });
         const query = input.query;
+        const caseSensitive = input.caseSensitive !== false;
+        const matcher = this.compileMatcher(input, caseSensitive);
+        const needle = caseSensitive ? query : query.toLowerCase();
         const matches: Array<{ path: string; line: number; column: number; preview: string }> = [];
         for (const file of files) {
             if (matches.length >= policy.maxSearchResults) {
@@ -52,7 +57,9 @@ export class ContentSearchTool implements AgentTool {
             const content = await fs.readFile(file, 'utf8');
             const lines = content.split(/\r?\n/);
             for (let index = 0; index < lines.length; index++) {
-                const column = lines[index].indexOf(query);
+                const column = matcher
+                    ? (matcher.exec(lines[index])?.index ?? -1)
+                    : (caseSensitive ? lines[index] : lines[index].toLowerCase()).indexOf(needle);
                 if (column >= 0) {
                     matches.push({
                         path: toRelativeWorkspacePath(file, policy.rootDir),
@@ -67,6 +74,17 @@ export class ContentSearchTool implements AgentTool {
             }
         }
         return { matches };
+    }
+
+    private compileMatcher(input: any, caseSensitive: boolean): RegExp | null {
+        if (input?.regex !== true) {
+            return null;
+        }
+        try {
+            return new RegExp(input.query, caseSensitive ? '' : 'i');
+        } catch (error: any) {
+            throw new Error(`Invalid content_search input: query is not a valid regular expression (${error?.message || error}).`);
+        }
     }
 
     private assertWorkspacePattern(pattern: string): void {
