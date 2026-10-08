@@ -24,6 +24,7 @@
 - 多 provider/model/profile、复杂度路由（显式 `routes` → complexity → `defaultProfile` → 顶层）、模型切换与持久设置。
 - 配置自愈：settings 读入与 `/model` 写回净化 sentinel（`cancel`/`q`）及嵌套重复 `profiles`/`complexityRouting`，`/doctor` 报告；路由遇未知 complexity/default/route profile 回退可用配置并累积 `getWarnings()`，不终止 turn（显式 `--profile` 保留抛错契约）。
 - `tsdi-agent doctor --check-models` 只读拉取 provider `/v1/models` 校验顶层/各 profile/complexity 解析出的模型，缺失报 `model_not_available`，端点不可达降级 warn。
+- 默认模型/端点集中单一来源：`DEFAULT_AGENT_PROVIDER_ID`/`DEFAULT_AGENT_MODEL_ID`/`DEFAULT_OPENAI_COMPATIBLE_*`/`DEFAULT_ANTHROPIC_*` 定义于 `model/ModelProviderOptions.ts`，`options.ts`、两个 adapter、`ModelCatalog`、`RoutedModelAdapter` 统一消费；adapter 不再内联 vendor 默认字面量，端点/密钥环境变量仍以可经 `provider.json` 覆盖的 registry 为准，显式配置优先。
 - 工具集：filesystem、shell/terminal、git、search、MCP、background、todo/plan、coding_task、spawn_agent、apply_patch、web_search 等。
 - 工具治理：approval、question、policy、sandbox、workspace trust（`AGENT_WORKSPACE_TRUST`，未 trust 拒绝变更类工具并提示 `tsdi-agent trust <dir>`）、敏感信息脱敏、rate limit、principal 授权、timeout/retry、audit、compensation/rollback。
 - command exchange、command output history、失败重试、取消与恢复。
@@ -56,7 +57,7 @@
 
 > 来源：真实 CLI/TUI 会话、跨平台（DOM/TUI）验收与源码审计暴露的差距；对照 Codex CLI（最新，ratatui）、opencode（bubbletea / OpenTUI）与 openTUI 的基础组件模型。批次可独立验收；每批次必须补真实边界回归（AppRpc 流 / DOM / PTY）后才能关闭。
 >
-> **当前状态（2026-10）**：P1–P6 已全部关闭并合并进上文功能点；P7（`AgentConsoleComponent` 持续拆解）进行中；新增 A1–A3（运行时写死重构）与 U1–U5（agent-ui 视窗/展示/交互，基础组件参考 openTUI）。
+> **当前状态（2026-10）**：P1–P6 已全部关闭并合并进上文功能点；P7（`AgentConsoleComponent` 持续拆解）进行中；A1（运行时默认值集中化）已完成并合并进上文功能点；A2–A3（运行时写死重构）与 U1–U5（agent-ui 视窗/展示/交互，基础组件参考 openTUI）待执行。
 
 ### 统一收尾流程（每个 plan 缺一不可）
 
@@ -86,13 +87,8 @@
 ### A 系列 — 运行时写死重构（规则 9：配置 / 路由 / 本地化）
 
 > 审计结论：`@tsdi/agent` 运行时的「写死」集中在三类——(a) vendor 默认值与默认端点散落在 adapter/options/registry；(b) 行为阈值/魔法数内联在运行时与上下文管理器；(c) 用户可见失败为裸英文 `Error`，UI 仅对模型错误做了本地化。
-
-#### A1 — Provider / Model / baseUrl 默认值集中化与配置驱动
-
-- **问题（file:line）**：`agent/src/options.ts:621-626` 硬编码默认 `model: 'deepseek-v4-flash'` 与 DeepSeek `baseUrl`/`timeoutMs`；`agent/src/model/OpenAICompatibleModelAdapter.ts:406` `?? 'deepseek-v4-flash'`、`:410` `?? 'https://api.deepseek.com'`；`agent/src/model/AnthropicModelAdapter.ts:599` `?? 'claude-sonnet-4-20250514'`、`:603` `?? 'https://api.anthropic.com'`；`agent/src/model/provider-registry.ts:12-18` 内建 provider/model 表；`agent/src/model/ModelCatalog.ts:41/50` bundled 模型（`deepseek-flash`/`deepseek-v4-pro`）。
-- **目标**：默认模型名/默认端点只保留**单一权威来源**（registry + options 默认 + ModelCatalog bundled），adapter 不再各自内联 vendor 字面量；未解析到 model/baseUrl 时给出可操作错误而不是静默用 vendor 默认；`AgentProviderRegistry` 支持经 provider 配置文件覆盖内建表并文档化；ModelCatalog 远程发现为权威、bundled 仅离线兜底。
-- **涉及**：`agent/src/model/provider-registry.ts`、`ModelCatalog.ts`、`OpenAICompatibleModelAdapter.ts`、`AnthropicModelAdapter.ts`、`agent/src/options.ts`；`agent-cli` 的 `/model`、`/doctor --check-models` 展示；`agent/README.md` 路由配置章节。
-- **验收**：生产代码中 vendor model/baseUrl 字面量仅出现在默认源；失败路径返回可操作错误；ModelCatalog 发现接入配置校验与 `/model` 展示；新增 RED→GREEN 回归。
+>
+> **进度**：A1 已完成并合并进「Agent 与工具」功能点；A2–A3 待执行。
 
 #### A2 — 行为阈值 / 魔法数收敛为 typed options / policy
 

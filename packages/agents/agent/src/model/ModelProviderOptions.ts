@@ -1,4 +1,18 @@
 import type { AgentRetryPolicy } from './RetryPolicy';
+import { BUILTIN_AGENT_PROVIDERS } from './provider-registry';
+
+function findBuiltinProvider(providerId: string) {
+    return BUILTIN_AGENT_PROVIDERS.find(provider => provider.id === providerId);
+}
+
+/** Single source of truth for the runtime default provider/model/endpoint; adapters must consume these, not inline vendor literals. */
+export const DEFAULT_AGENT_PROVIDER_ID = 'deepseek';
+export const DEFAULT_AGENT_MODEL_ID = 'deepseek-v4-flash';
+export const DEFAULT_OPENAI_COMPATIBLE_BASE_URL = findBuiltinProvider('deepseek')?.baseUrl ?? 'https://api.deepseek.com';
+export const DEFAULT_OPENAI_COMPATIBLE_API_KEY_ENV = findBuiltinProvider('deepseek')?.apiKeyEnv ?? 'DEEPSEEK_API_KEY';
+export const DEFAULT_ANTHROPIC_MODEL_ID = 'claude-sonnet-4-20250514';
+export const DEFAULT_ANTHROPIC_BASE_URL = findBuiltinProvider('anthropic')?.baseUrl ?? 'https://api.anthropic.com';
+export const DEFAULT_ANTHROPIC_API_KEY_ENV = findBuiltinProvider('anthropic')?.apiKeyEnv ?? 'ANTHROPIC_API_KEY';
 
 export type AgentModelComplexity = 'simple' | 'moderate' | 'complex';
 

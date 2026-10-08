@@ -16,7 +16,7 @@ async function settle(times = 64): Promise<void> {
 @Suite('Agent Console turn lifecycle renderer stability')
 export class AgentConsoleTurnLifecycleTest {
     ctx!: ApplicationContext;
-    private turnChunks: any[][] = [];
+    private turnChunks: any[] = [];
 
     @Before()
     async init() {

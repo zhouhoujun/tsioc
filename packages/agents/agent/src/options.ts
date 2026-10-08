@@ -1,5 +1,4 @@
-import { AgentModelOptions } from './model/ModelProviderOptions';
-import { BUILTIN_AGENT_PROVIDERS } from './model/provider-registry';
+import { AgentModelOptions, DEFAULT_AGENT_MODEL_ID, DEFAULT_AGENT_PROVIDER_ID, DEFAULT_OPENAI_COMPATIBLE_API_KEY_ENV, DEFAULT_OPENAI_COMPATIBLE_BASE_URL } from './model/ModelProviderOptions';
 import { AgentRetryPolicy, DEFAULT_RETRY_POLICY } from './model/RetryPolicy';
 import { AgentHooksOptions } from './hooks/AgentHooks';
 import { ApprovalRule } from './tools/ToolApprovalManager';
@@ -573,9 +572,6 @@ export const DEFAULT_APPROVAL_REQUIRED_RULES: ApprovalRule[] = [
     'playwright_browser'
 ];
 
-/** A4: default deepseek connection settings reference the provider registry (single source of truth). */
-const DEFAULT_DEEPSEEK_PROVIDER = BUILTIN_AGENT_PROVIDERS.find(provider => provider.id === 'deepseek');
-
 export const defaultAgentOptions: AgentOptions = {
     policy: { source: 'default', limits: { commandOutputHistoryCap: 500, commandOutputPageSize: 20, timelinePageSize: 100, backgroundTaskPageSize: 50, approvalTimeoutMs: 30000, approvalMaxPending: 100, rpcTimeoutMs: 300000 } },
     name: 'HermesAgent',
@@ -619,10 +615,10 @@ export const defaultAgentOptions: AgentOptions = {
         title: 'tsdi-agent'
     },
     model: {
-        provider: 'deepseek',
-        model: 'deepseek-v4-flash',
-        baseUrl: DEFAULT_DEEPSEEK_PROVIDER?.baseUrl,
-        apiKeyEnv: DEFAULT_DEEPSEEK_PROVIDER?.apiKeyEnv,
+        provider: DEFAULT_AGENT_PROVIDER_ID,
+        model: DEFAULT_AGENT_MODEL_ID,
+        baseUrl: DEFAULT_OPENAI_COMPATIBLE_BASE_URL,
+        apiKeyEnv: DEFAULT_OPENAI_COMPATIBLE_API_KEY_ENV,
         timeoutMs: 120000
     },
     bootstrapTurn: {

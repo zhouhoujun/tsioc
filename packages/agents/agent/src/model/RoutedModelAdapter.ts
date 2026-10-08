@@ -3,7 +3,7 @@ import { ModelAdapter } from './ModelAdapter';
 import { ModelRequest } from './ModelRequest';
 import { ModelResponse } from './ModelResponse';
 import { StreamChunk } from './StreamChunk';
-import { AgentModelComplexity, AgentModelConfig, AgentModelOptions, AgentModelRoute } from './ModelProviderOptions';
+import { AgentModelComplexity, AgentModelConfig, AgentModelOptions, AgentModelRoute, DEFAULT_AGENT_PROVIDER_ID } from './ModelProviderOptions';
 import { OpenAICompatibleModelAdapter } from './OpenAICompatibleModelAdapter';
 import { AnthropicModelAdapter } from './AnthropicModelAdapter';
 import { EchoModelAdapter } from './EchoModelAdapter';
@@ -388,7 +388,7 @@ export class RoutedModelAdapter extends ModelAdapter {
     private normalizeProvider(provider?: string, baseUrl?: string): string {
         const normalized = provider?.trim().toLowerCase();
         if (!normalized) {
-            return baseUrl ? 'openai-compatible' : 'deepseek';
+            return baseUrl ? 'openai-compatible' : DEFAULT_AGENT_PROVIDER_ID;
         }
 
         if (normalized === 'claude') {

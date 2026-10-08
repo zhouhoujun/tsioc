@@ -1,3 +1,5 @@
+import { DEFAULT_AGENT_PROVIDER_ID } from './ModelProviderOptions';
+
 export type AgentModelEffortLevel = 'low' | 'medium' | 'high' | 'max';
 
 export interface AgentModelEffortInfo {
@@ -34,7 +36,7 @@ function normalizeEffortLevel(value: unknown): AgentModelEffortLevel | undefined
  * `/models` payload (`deepseek-flash` / `deepseek-v4-pro`, effort low/high/max).
  */
 export const DEFAULT_AGENT_MODEL_CATALOG: AgentModelCatalog = {
-    provider: 'deepseek',
+    provider: DEFAULT_AGENT_PROVIDER_ID,
     source: 'bundled',
     models: [
         {

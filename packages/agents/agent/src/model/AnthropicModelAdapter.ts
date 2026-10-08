@@ -5,7 +5,7 @@ import { createModelRequestError } from './ModelRequestError';
 import { ModelRequest } from './ModelRequest';
 import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
 import { StreamChunk } from './StreamChunk';
-import { AgentModelOptions, buildPromptCacheRuntimeMetadata, resolvePromptCachePolicy } from './ModelProviderOptions';
+import { AgentModelOptions, DEFAULT_ANTHROPIC_API_KEY_ENV, DEFAULT_ANTHROPIC_BASE_URL, DEFAULT_ANTHROPIC_MODEL_ID, buildPromptCacheRuntimeMetadata, resolvePromptCachePolicy } from './ModelProviderOptions';
 import type { ApplicationArguments } from '@tsdi/core';
 import { AgentClock } from '../runtime/Clock';
 
@@ -132,7 +132,7 @@ export class AnthropicModelAdapter extends ModelAdapter {
     async complete(request: ModelRequest, attempt = 1): Promise<ModelResponse> {
         const apiKey = this.resolveApiKey();
         if (!apiKey) {
-            throw new Error(`Missing Anthropic API key. Set ${this.options.apiKeyEnv ?? 'ANTHROPIC_API_KEY'}.`);
+            throw new Error(`Missing Anthropic API key. Set ${this.options.apiKeyEnv ?? DEFAULT_ANTHROPIC_API_KEY_ENV}.`);
         }
 
         const { signal, cleanup } = this.createTimeoutContext(request.signal);
@@ -166,7 +166,7 @@ export class AnthropicModelAdapter extends ModelAdapter {
     async *stream(request: ModelRequest, attempt = 1): AsyncGenerator<StreamChunk> {
         const apiKey = this.resolveApiKey();
         if (!apiKey) {
-            throw new Error(`Missing Anthropic API key. Set ${this.options.apiKeyEnv ?? 'ANTHROPIC_API_KEY'}.`);
+            throw new Error(`Missing Anthropic API key. Set ${this.options.apiKeyEnv ?? DEFAULT_ANTHROPIC_API_KEY_ENV}.`);
         }
 
         const { signal, cleanup } = this.createTimeoutContext(request.signal);
@@ -596,16 +596,16 @@ export class AnthropicModelAdapter extends ModelAdapter {
     }
 
     protected resolveModel(): string {
-        return this.options.model ?? 'claude-sonnet-4-20250514';
+        return this.options.model ?? DEFAULT_ANTHROPIC_MODEL_ID;
     }
 
     protected resolveBaseUrl(): string {
-        return (this.options.baseUrl ?? 'https://api.anthropic.com').replace(/\/+$/, '');
+        return (this.options.baseUrl ?? DEFAULT_ANTHROPIC_BASE_URL).replace(/\/+$/, '');
     }
 
     protected resolveApiKey(): string | undefined {
-        const envKey = this.options.apiKeyEnv ?? 'ANTHROPIC_API_KEY';
-        return this.options.apiKey || this.appArgs?.get<string>(envKey) || this.appArgs?.get<string>('ANTHROPIC_API_KEY');
+        const envKey = this.options.apiKeyEnv ?? DEFAULT_ANTHROPIC_API_KEY_ENV;
+        return this.options.apiKey || this.appArgs?.get<string>(envKey);
     }
 
     protected resolveUrl(path: string): string {

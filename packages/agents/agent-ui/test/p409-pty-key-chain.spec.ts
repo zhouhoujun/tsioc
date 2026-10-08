@@ -28,7 +28,7 @@ import { ConsoleTerminalSurfaceAccessor as AgentConsoleTerminalSurfaceAccessor }
 @Suite('Agent Console PTY key chain across turns')
 export class AgentConsolePtyKeyChainTest {
     ctx!: ApplicationContext;
-    private turnChunks: any[][] = [];
+    private turnChunks: any[] = [];
     private unhandled: unknown[] = [];
     private onUnhandled = (reason: unknown): void => {
         this.unhandled.push(reason);

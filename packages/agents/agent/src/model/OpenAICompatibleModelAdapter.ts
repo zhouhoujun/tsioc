@@ -7,7 +7,7 @@ import { asModelFailure, createModelRequestError } from './ModelRequestError';
 import { ModelRequest } from './ModelRequest';
 import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
 import { StreamChunk } from './StreamChunk';
-import { AgentModelOptions, PromptCacheRuntimeMetadata, ResolvedAgentPromptCachePolicy, buildPromptCacheRuntimeMetadata, resolvePromptCachePolicy } from './ModelProviderOptions';
+import { AgentModelOptions, DEFAULT_AGENT_MODEL_ID, DEFAULT_OPENAI_COMPATIBLE_API_KEY_ENV, DEFAULT_OPENAI_COMPATIBLE_BASE_URL, PromptCacheRuntimeMetadata, ResolvedAgentPromptCachePolicy, buildPromptCacheRuntimeMetadata, resolvePromptCachePolicy } from './ModelProviderOptions';
 import type { ApplicationArguments } from '@tsdi/core';
 import { AgentClock } from '../runtime/Clock';
 
@@ -403,11 +403,11 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
     }
 
     protected resolveModel(): string {
-        return this.options.model ?? 'deepseek-v4-flash';
+        return this.options.model ?? DEFAULT_AGENT_MODEL_ID;
     }
 
     protected resolveBaseUrl(): string {
-        return (this.options.baseUrl ?? 'https://api.deepseek.com').replace(/\/+$/, '');
+        return (this.options.baseUrl ?? DEFAULT_OPENAI_COMPATIBLE_BASE_URL).replace(/\/+$/, '');
     }
 
     protected resolveApiBaseUrl(): string {
@@ -423,7 +423,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
     }
 
     protected resolveApiKey(): string | undefined {
-        const envKey = this.options.apiKeyEnv ?? 'DEEPSEEK_API_KEY';
+        const envKey = this.options.apiKeyEnv ?? DEFAULT_OPENAI_COMPATIBLE_API_KEY_ENV;
         return this.options.apiKey || this.appArgs?.get<string>(envKey) || this.appArgs?.get<string>('API_KEY');
     }
 
