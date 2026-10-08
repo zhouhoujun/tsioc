@@ -212,7 +212,7 @@ export class InputHistoryRestartRepro {
         });
 
         // ensure the sqljs db was actually touched
-        const dbPath = path.join(root, '.tsdi-agent', 'agent.db');
+        const dbPath = path.join(root, 'agent.db');
         expect(fs.existsSync(dbPath)).toBe(true);
     }
 
