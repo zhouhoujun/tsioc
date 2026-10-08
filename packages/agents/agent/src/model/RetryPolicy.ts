@@ -1,4 +1,4 @@
-export type ModelErrorKind = 'rate-limit' | 'quota' | 'auth' | 'capacity' | 'server' | 'network' | 'timeout' | 'unknown';
+export type ModelErrorKind = 'rate-limit' | 'quota' | 'auth' | 'config' | 'capacity' | 'server' | 'network' | 'timeout' | 'unknown';
 
 /**
  * Body signals that mean "the account cannot pay / the key is rejected".

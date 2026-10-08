@@ -26,6 +26,7 @@
 - `tsdi-agent doctor --check-models` 只读拉取 provider `/v1/models` 校验顶层/各 profile/complexity 解析出的模型，缺失报 `model_not_available`，端点不可达降级 warn。
 - 默认模型/端点集中单一来源：`DEFAULT_AGENT_PROVIDER_ID`/`DEFAULT_AGENT_MODEL_ID`/`DEFAULT_OPENAI_COMPATIBLE_*`/`DEFAULT_ANTHROPIC_*` 定义于 `model/ModelProviderOptions.ts`，`options.ts`、两个 adapter、`ModelCatalog`、`RoutedModelAdapter` 统一消费；adapter 不再内联 vendor 默认字面量，端点/密钥环境变量仍以可经 `provider.json` 覆盖的 registry 为准，显式配置优先。
 - 行为阈值具名化：空响应重试、falsification 升级、turn diagnostics 上限与取用条数、loop 检测（repeat/ping-pong/no-progress）、上下文 store/window/growth 阈值统一由 `AgentLimits.ts` 具名常量提供，schema `scheduler.shutdownTimeoutMs` 同源；默认值保持不变。
+- 用户可见失败结构化：缺失 API key（`auth`）、不支持的 provider（`config`，新增 `ModelErrorKind`）等模型相邻失败以 `ModelRequestError` 抛出并跨 RPC 保留 `modelFailure`；UI `presentModelFailure` 按 kind 本地化（zh/EN），缺翻译回落英文描述与 `request_id`，绝不裸显 i18n key。运行时自撰的动作性收尾文案（空响应/工具失败）本地化随 U4 处理。
 - 工具集：filesystem、shell/terminal、git、search、MCP、background、todo/plan、coding_task、spawn_agent、apply_patch、web_search 等。
 - 工具治理：approval、question、policy、sandbox、workspace trust（`AGENT_WORKSPACE_TRUST`，未 trust 拒绝变更类工具并提示 `tsdi-agent trust <dir>`）、敏感信息脱敏、rate limit、principal 授权、timeout/retry、audit、compensation/rollback。
 - command exchange、command output history、失败重试、取消与恢复。
@@ -58,7 +59,7 @@
 
 > 来源：真实 CLI/TUI 会话、跨平台（DOM/TUI）验收与源码审计暴露的差距；对照 Codex CLI（最新，ratatui）、opencode（bubbletea / OpenTUI）与 openTUI 的基础组件模型。批次可独立验收；每批次必须补真实边界回归（AppRpc 流 / DOM / PTY）后才能关闭。
 >
-> **当前状态（2026-10）**：P1–P6 已全部关闭并合并进上文功能点；P7（`AgentConsoleComponent` 持续拆解）进行中；A1（运行时默认值集中化）、A2（行为阈值具名化）已完成并合并进上文功能点；A3（运行时失败结构化/本地化）与 U1–U5（agent-ui 视窗/展示/交互，基础组件参考 openTUI）待执行。
+> **当前状态（2026-10）**：P1–P6 已全部关闭并合并进上文功能点；P7（`AgentConsoleComponent` 持续拆解）进行中；A1–A3（运行时写死重构）已完成并合并进上文功能点；U1–U5（agent-ui 视窗/展示/交互，基础组件参考 openTUI）待执行。
 
 ### 统一收尾流程（每个 plan 缺一不可）
 
@@ -82,21 +83,6 @@
   1. 继续切出大块核心：`buildCommandContext`、`submit`、`handleBrowserGlobalKeyInput`、`executeGlobalKeyAction`、`handleTerminalInput`——需先切分状态对象或引入子控制器。
   2. 每完成一个模块，同提交下调 `AgentConsoleComponent.ts` 的 baseline。
   3. 目标 `AgentConsoleComponent.ts < 1500` 行；新增 console 能力一律落到既有模块或新建 `AgentConsole*Controller`，禁止再往组合根加业务逻辑、禁止往单体 `switch` 加 `case`。
-
----
-
-### A 系列 — 运行时写死重构（规则 9：配置 / 路由 / 本地化）
-
-> 审计结论：`@tsdi/agent` 运行时的「写死」集中在三类——(a) vendor 默认值与默认端点散落在 adapter/options/registry；(b) 行为阈值/魔法数内联在运行时与上下文管理器；(c) 用户可见失败为裸英文 `Error`，UI 仅对模型错误做了本地化。
->
-> **进度**：A1、A2 已完成并合并进「Agent 与工具」功能点；A3 待执行。
-
-#### A3 — 运行时用户可见失败结构化 + 本地化
-
-- **问题**：`agent/src` 有 59 处 `throw new Error('English…')`（如 `Missing API key for …`、`Tool "…" rate limit exceeded.`、`Invalid cron field…`、`Goal field is required.`）；UI 侧仅 `AgentErrorEvent` 的模型错误走 `AgentConsoleModelFailurePresenter` 本地化，其余运行时失败仍裸露英文。
-- **目标**：为用户可见的运行时失败定义稳定 error code + 参数（tool failure / empty response / quota / auth / config / sandbox / path），UI 经 i18n key 呈现（zh/EN）；内部 `message` 仅用于 debug 与 `TSDI_AGENT_DEBUG`，不直接当作用户文案。
-- **涉及**：`agent/src/model/ModelRequestError.ts`（扩展为通用失败分类）、`runtime/AgentEvents.ts`、`DefaultAgentRuntime.ts`；`agent-ui/src/AgentConsoleEventBridge.ts` 与新增 presenter / `agent-ui.i18n.ts`。
-- **验收**：至少覆盖「工具失败 / 空响应 / 配额 / 认证 / 配置非法 / 路径越界」六类；zh-CN 下无英文残留、缺翻译不回显 i18n key；新增快照/回归。
 
 ---
 
@@ -146,4 +132,5 @@
 - 视窗模式 layout 持久化与 alternate-screen 退出语义需持续由真实 PTY 覆盖（归入 U5）；`/close` 退出后命令窗口提示与历史保留需一并复验。
 - 早前 OpenTUI 焦点迁移轮次中「Esc 取消修复后的真实 PTY 复测」未完成，需在 U1/U5 批次内补跑。
 - renderer region 局部失效（脏子树）未在真实 TUI 复测；若 U2 引入 resize/地区高度反馈，必须实测无全树重渲染回退。
-- ModelCatalog 远程发现尚未接入配置校验与 `/model` 展示（归入 A1）。
+- 运行时自撰的用户可见失败收尾文案（`resolveAssistantResponseText` 的空响应/工具失败指引）仍为英文，其本地化并入 U4 统一 i18n（运行时不知道 locale，需由 UI 文案层承担）。
+- ModelCatalog 远程发现尚未接入 `/model` 展示（`/doctor --check-models` 已做校验）；归入后续批次。

@@ -128,6 +128,7 @@ export function asModelFailure(error: unknown): ModelFailure | undefined {
 const REMEDY_HINTS: Record<ModelErrorKind, string> = {
     quota: 'Top up the account or switch model, then retry.',
     auth: 'Update the API key in settings, then retry.',
+    config: 'Fix the model provider configuration, then retry.',
     'rate-limit': 'Wait a moment and retry; switch model if it keeps happening.',
     capacity: 'The model is overloaded; retry or switch model.',
     server: 'Usually temporary; retry, or switch model.',

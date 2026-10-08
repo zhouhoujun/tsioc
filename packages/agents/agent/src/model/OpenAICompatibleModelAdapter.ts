@@ -3,7 +3,7 @@ import { AgentFileMessagePart, AgentImageMessagePart, AgentMessage, AgentMessage
 import { AgentToolDefinition } from '../tools/AgentTool';
 import { ModelAdapter } from './ModelAdapter';
 import { classifyModelError, DEFAULT_RETRY_POLICY, isRetryableError, retryDelayMs } from './RetryPolicy';
-import { asModelFailure, createModelRequestError } from './ModelRequestError';
+import { asModelFailure, createModelRequestError, ModelRequestError } from './ModelRequestError';
 import { ModelRequest } from './ModelRequest';
 import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
 import { StreamChunk } from './StreamChunk';
@@ -145,7 +145,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
     async complete(request: ModelRequest, attempt = 1): Promise<ModelResponse> {
         const apiKey = this.resolveApiKey();
         if (!apiKey) {
-            throw new Error(`Missing API key for ${this.options.provider ?? 'model provider'}.`);
+            throw new ModelRequestError({ kind: 'auth', provider: String(this.options.provider || 'openai-compatible'), model: this.resolveModel(), detail: `Missing API key; set ${this.options.apiKeyEnv ?? DEFAULT_OPENAI_COMPATIBLE_API_KEY_ENV}.`, retryable: false });
         }
         const toolNames = this.createToolNameMaps(request.tools);
         const requestBody = this.createRequest(request, toolNames.forward);
@@ -208,7 +208,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
     async *stream(request: ModelRequest, attempt = 1): AsyncGenerator<StreamChunk> {
         const apiKey = this.resolveApiKey();
         if (!apiKey) {
-            throw new Error(`Missing API key for ${this.options.provider ?? 'model provider'}.`);
+            throw new ModelRequestError({ kind: 'auth', provider: String(this.options.provider || 'openai-compatible'), model: this.resolveModel(), detail: `Missing API key; set ${this.options.apiKeyEnv ?? DEFAULT_OPENAI_COMPATIBLE_API_KEY_ENV}.`, retryable: false });
         }
         const toolNames = this.createToolNameMaps(request.tools);
 

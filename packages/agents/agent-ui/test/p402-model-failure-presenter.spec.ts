@@ -70,6 +70,14 @@ export class PresentModelFailureTest {
         expect(server).toContain('503');
     }
 
+    @Test('localizes an unsupported-provider config failure')
+    configKind() {
+        const text = presentModelFailure(new ModelRequestError(failure({ kind: 'config', status: undefined, provider: 'mystery', model: 'm', detail: undefined })), zh)!;
+        expect(text).toContain('未正确配置');
+        expect(text).toContain('mystery');
+        expect(text).not.toContain('agent.modelError');
+    }
+
     @Test('falls back to English copy when the locale has no translation')
     englishFallback() {
         const text = presentModelFailure(new ModelRequestError(failure()), en)!;

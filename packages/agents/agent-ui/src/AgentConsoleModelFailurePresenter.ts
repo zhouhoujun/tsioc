@@ -5,6 +5,7 @@ export type ModelFailureTranslate = (key: string, params?: Record<string, any>) 
 const KIND_KEYS: Record<ModelErrorKind, string> = {
     quota: 'agent.modelError.quota',
     auth: 'agent.modelError.auth',
+    config: 'agent.modelError.config',
     'rate-limit': 'agent.modelError.rateLimit',
     capacity: 'agent.modelError.capacity',
     server: 'agent.modelError.server',

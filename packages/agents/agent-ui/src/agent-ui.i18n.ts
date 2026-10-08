@@ -65,6 +65,7 @@ export const agentUiEnglish: TranslationBundle = {
             modelError: {
                 quota: 'Model request refused: the {provider} account has insufficient balance (model {model}, status {status}). Top up the account or switch model with /model, then retry.',
                 auth: 'Model request refused: the API key for {provider} is missing or invalid (model {model}, status {status}). Update the key in settings, then retry.',
+                config: 'The model provider "{provider}" is not configured for model {model}. Fix provider/model/baseUrl in settings, then retry.',
                 rateLimit: '{provider} is rate limiting this model (status {status}). Retrying shortly; use /model to switch if it keeps happening.',
                 capacity: '{provider} reports this model as overloaded (status {status}). Retrying shortly; use /model to switch if it keeps happening.',
                 server: '{provider} returned a server error for {model} (status {status}). Usually temporary — retry, or switch model with /model.',
@@ -142,6 +143,7 @@ export const agentUiChinese: TranslationBundle = {
             modelError: {
                 quota: '模型请求被拒绝：{provider} 账户余额不足（模型 {model}，状态 {status}）。请充值，或用 /model 切换模型后重试。',
                 auth: '模型请求被拒绝：{provider} 的 API key 缺失或无效（模型 {model}，状态 {status}）。请在设置中更新 key 后重试。',
+                config: '模型 provider “{provider}” 未正确配置（模型 {model}）。请在设置中修正 provider/model/baseUrl 后重试。',
                 rateLimit: '{provider} 对该模型触发限流（状态 {status}）。即将自动重试；若持续出现请用 /model 切换模型。',
                 capacity: '{provider} 报告该模型过载（状态 {status}）。即将自动重试；若持续出现请用 /model 切换模型。',
                 server: '{provider} 为 {model} 返回服务端错误（状态 {status}）。通常是临时故障，可重试或用 /model 切换模型。',

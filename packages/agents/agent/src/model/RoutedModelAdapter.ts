@@ -7,6 +7,7 @@ import { AgentModelComplexity, AgentModelConfig, AgentModelOptions, AgentModelRo
 import { OpenAICompatibleModelAdapter } from './OpenAICompatibleModelAdapter';
 import { AnthropicModelAdapter } from './AnthropicModelAdapter';
 import { EchoModelAdapter } from './EchoModelAdapter';
+import { ModelRequestError } from './ModelRequestError';
 import { getAgentMessageText } from '../runtime/AgentMessage';
 import { AgentClock } from '../runtime/Clock';
 
@@ -424,7 +425,7 @@ export class RoutedModelAdapter extends ModelAdapter {
                 if (config.baseUrl) {
                     return new OpenAICompatibleModelAdapter(config, this.appArgs);
                 }
-                throw new Error(`Unsupported model provider '${config.provider ?? 'unknown'}'.`);
+                throw new ModelRequestError({ kind: 'config', provider: String(config.provider ?? ''), model: String(config.model ?? ''), detail: `Unsupported model provider '${config.provider ?? 'unknown'}'`, retryable: false });
         }
     }
 

@@ -1,7 +1,7 @@
 import { AgentFileMessagePart, AgentImageMessagePart, AgentMessage, AgentMessagePart, getAgentMessageText, resolveAgentMessageParts } from '../runtime/AgentMessage';
 import { ModelAdapter } from './ModelAdapter';
 import { classifyModelError, DEFAULT_RETRY_POLICY, isRetryableError, retryDelayMs } from './RetryPolicy';
-import { createModelRequestError } from './ModelRequestError';
+import { createModelRequestError, ModelRequestError } from './ModelRequestError';
 import { ModelRequest } from './ModelRequest';
 import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
 import { StreamChunk } from './StreamChunk';
@@ -132,7 +132,7 @@ export class AnthropicModelAdapter extends ModelAdapter {
     async complete(request: ModelRequest, attempt = 1): Promise<ModelResponse> {
         const apiKey = this.resolveApiKey();
         if (!apiKey) {
-            throw new Error(`Missing Anthropic API key. Set ${this.options.apiKeyEnv ?? DEFAULT_ANTHROPIC_API_KEY_ENV}.`);
+            throw new ModelRequestError({ kind: 'auth', provider: 'anthropic', model: this.resolveModel(), detail: `Missing Anthropic API key; set ${this.options.apiKeyEnv ?? DEFAULT_ANTHROPIC_API_KEY_ENV}.`, retryable: false });
         }
 
         const { signal, cleanup } = this.createTimeoutContext(request.signal);
@@ -166,7 +166,7 @@ export class AnthropicModelAdapter extends ModelAdapter {
     async *stream(request: ModelRequest, attempt = 1): AsyncGenerator<StreamChunk> {
         const apiKey = this.resolveApiKey();
         if (!apiKey) {
-            throw new Error(`Missing Anthropic API key. Set ${this.options.apiKeyEnv ?? DEFAULT_ANTHROPIC_API_KEY_ENV}.`);
+            throw new ModelRequestError({ kind: 'auth', provider: 'anthropic', model: this.resolveModel(), detail: `Missing Anthropic API key; set ${this.options.apiKeyEnv ?? DEFAULT_ANTHROPIC_API_KEY_ENV}.`, retryable: false });
         }
 
         const { signal, cleanup } = this.createTimeoutContext(request.signal);
