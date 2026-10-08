@@ -1,7 +1,6 @@
-import { Inject, Injectable, isArray, Module, ModuleWithProviders, token } from '@tsdi/ioc';
+import { Injectable, isArray, token } from '@tsdi/ioc';
 import { XMLParser } from 'fast-xml-parser';
 import {
-    AbstractTemplateCompiler,
     AnimationClock,
     noReact,
     NodeType,
@@ -14,7 +13,6 @@ import {
     RendererStyleFlags2,
     RNode,
     RText,
-    TemplateCompiler,
     TemplateCompilerOptions,
     TemplateParser
 } from '@tsdi/components';
@@ -867,41 +865,14 @@ export class ConsoleTemplateParser implements TemplateParser {
 
 export const CONSOLE_TEMPLATE = token<TemplateCompilerOptions>('CONSOLE_TEMPLATE');
 
-const consoleDefaultOptions = {
+export const DEFAULT_CONSOLE_TEMPLATE_OPTIONS = {
     delimiters: ['{{', '}}']
 } as TemplateCompilerOptions;
 
-@Injectable()
-export class ConsoleTemplateCompiler extends AbstractTemplateCompiler {
-    constructor(
-        readonly parser: ConsoleTemplateParser,
-        readonly renderer: ConsoleRenderer,
-        @Inject(CONSOLE_TEMPLATE, { defaultValue: consoleDefaultOptions }) protected options: TemplateCompilerOptions
-    ) {
-        super();
-    }
-}
-
-
-@Module({
-    providers: [
-        ConsoleRenderer,
-        ConsoleTemplateCompiler,
-        ConsoleTemplateParser,
+export function provideConsoleTemplateDefaults(options: TemplateCompilerOptions) {
+    return [
         ConsoleAnimationClock,
         { provide: AnimationClock, useExisting: ConsoleAnimationClock },
-        { provide: CONSOLE_TEMPLATE, useValue: consoleDefaultOptions },
-        { provide: Renderer, useClass: ConsoleRenderer, asDefault: true },
-        { provide: TemplateParser, useClass: ConsoleTemplateParser, asDefault: true },
-        { provide: TemplateCompiler, useClass: ConsoleTemplateCompiler, deps: [ConsoleTemplateParser, ConsoleRenderer, CONSOLE_TEMPLATE], asDefault: true }
-    ],
-    exports: [ConsoleRenderer, ConsoleTemplateCompiler, ConsoleTemplateParser]
-})
-export class ConsoleTemplateModule {
-    static withOptions(options: TemplateCompilerOptions): ModuleWithProviders<ConsoleTemplateModule> {
-        return {
-            module: ConsoleTemplateModule,
-            providers: [{ provide: CONSOLE_TEMPLATE, useValue: options }]
-        };
-    }
+        { provide: CONSOLE_TEMPLATE, useValue: options }
+    ];
 }

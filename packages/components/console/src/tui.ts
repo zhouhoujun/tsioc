@@ -1,14 +1,12 @@
 import { Inject, Injectable, Module, ModuleWithProviders } from '@tsdi/ioc';
 import {
     AbstractTemplateCompiler,
-    AnimationClock,
     Renderer,
     RNode,
     TemplateCompiler,
     TemplateCompilerOptions,
     TemplateParser
 } from '@tsdi/components';
-import { ConsoleAnimationClock } from './animation-clock';
 import {
     CONSOLE_TEMPLATE,
     ConsoleComment,
@@ -17,7 +15,9 @@ import {
     ConsoleNode,
     ConsoleRenderer,
     ConsoleTemplateParser,
-    ConsoleText
+    ConsoleText,
+    DEFAULT_CONSOLE_TEMPLATE_OPTIONS,
+    provideConsoleTemplateDefaults
 } from './console';
 import { fitByDisplayWidth, getDisplayWidth, sliceByDisplayWidth } from './display-width';
 import {
@@ -34,10 +34,6 @@ import { CommonComponentsModule } from '@tsdi/components/common';
 
 const ANSI_RESET = '\x1b[0m';
 const ANSI_BOLD = '\x1b[1m';
-
-const tuiDefaultOptions = {
-    delimiters: ['{{', '}}']
-} as TemplateCompilerOptions;
 
 export interface TuiRenderOptions {
     width?: number;
@@ -1152,7 +1148,7 @@ export class TuiTemplateCompiler extends AbstractTemplateCompiler {
     constructor(
         readonly parser: ConsoleTemplateParser,
         readonly renderer: ConsoleRenderer,
-        @Inject(CONSOLE_TEMPLATE, { defaultValue: tuiDefaultOptions }) protected options: TemplateCompilerOptions
+        @Inject(CONSOLE_TEMPLATE, { defaultValue: DEFAULT_CONSOLE_TEMPLATE_OPTIONS }) protected options: TemplateCompilerOptions
     ) {
         super();
     }
@@ -1165,9 +1161,7 @@ export class TuiTemplateCompiler extends AbstractTemplateCompiler {
         TuiRenderer,
         ConsoleTemplateParser,
         TuiTemplateCompiler,
-        ConsoleAnimationClock,
-        { provide: AnimationClock, useExisting: ConsoleAnimationClock },
-        { provide: CONSOLE_TEMPLATE, useValue: tuiDefaultOptions },
+        ...provideConsoleTemplateDefaults(DEFAULT_CONSOLE_TEMPLATE_OPTIONS),
         { provide: ConsoleRenderer, useExisting: TuiRenderer },
         { provide: Renderer, useExisting: TuiRenderer, asDefault: true },
         { provide: TemplateParser, useExisting: ConsoleTemplateParser, asDefault: true },
@@ -1214,3 +1208,6 @@ export class TuiConsoleModule {
         } as any;
     }
 }
+
+export const ConsoleTemplateCompiler = TuiTemplateCompiler;
+export const ConsoleTemplateModule = TuiTemplateModule;
