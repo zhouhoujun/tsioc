@@ -51,6 +51,17 @@ export class ModelFailureSpec {
         expect(isRetryableError('auth')).toBe(false);
     }
 
+    @Test('classifies transient provider messages as retryable')
+    transientMessagesRetryable() {
+        expect(classifyModelError(undefined, 'Service Unavailable')).toBe('server');
+        expect(classifyModelError(undefined, 'Internal Server Error')).toBe('server');
+        expect(classifyModelError(undefined, 'provider_returned_error')).toBe('server');
+        expect(classifyModelError(undefined, 'Too Many Requests')).toBe('rate-limit');
+        expect(classifyModelError(undefined, 'resource_exhausted')).toBe('rate-limit');
+        expect(isRetryableError(classifyModelError(undefined, 'service unavailable'))).toBe(true);
+        expect(isRetryableError(classifyModelError(undefined, 'too many requests'))).toBe(true);
+    }
+
     @Test('keeps a 402 provider failure structured instead of a bare string')
     async structuredQuotaFailure() {
         this.originalFetch = (globalThis as any).fetch;

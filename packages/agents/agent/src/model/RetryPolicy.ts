@@ -8,6 +8,8 @@ export type ModelErrorKind = 'rate-limit' | 'quota' | 'auth' | 'config' | 'capac
  */
 const QUOTA_BODY_SIGNALS = ['insufficient_quota', 'insufficient quota', 'insufficient balance', 'payment required', 'billing'];
 const AUTH_BODY_SIGNALS = ['invalid api key', 'invalid_api_key', 'incorrect api key', 'authentication', 'unauthorized', 'permission_denied', 'forbidden'];
+const RATE_LIMIT_MESSAGE_SIGNALS = ['rate increased too quickly', 'too many requests', 'too_many_requests', 'rate limit', 'rate-limit', 'rate_limit', 'resource exhausted', 'resource_exhausted'];
+const TRANSIENT_MESSAGE_SIGNALS = ['service unavailable', 'service_unavailable', 'service-unavailable', 'internal error', 'internal_error', 'internal server error', 'provider returned error', 'provider_returned_error', 'try again later', 'try your request again'];
 
 export function classifyModelError(status?: number, error?: unknown): ModelErrorKind {
     if (status === 429) return 'rate-limit';
@@ -26,6 +28,15 @@ export function classifyModelError(status?: number, error?: unknown): ModelError
     }
     if (AUTH_BODY_SIGNALS.some((signal) => message.includes(signal))) {
         return 'auth';
+    }
+    // Provider-neutral transient signals (often surfaced without a status code
+    // by proxies/gateways): treat as retryable so a flaky endpoint does not fail
+    // the turn outright.
+    if (RATE_LIMIT_MESSAGE_SIGNALS.some((signal) => message.includes(signal))) {
+        return 'rate-limit';
+    }
+    if (TRANSIENT_MESSAGE_SIGNALS.some((signal) => message.includes(signal))) {
+        return 'server';
     }
     // A received non-retryable HTTP response is not a transport failure merely
     // because its response body contains an error message.
