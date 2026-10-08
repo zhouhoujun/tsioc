@@ -124,4 +124,42 @@ export class PromptCacheTest {
         const tools = new ToolsSection();
         expect(tools.cacheable !== false).toEqual(true);
     }
+
+    @Test('omits the redundant tool listing when native tool schemas are supplied')
+    async omitsRedundantToolListingWithNativeSchemas() {
+        const tools = [
+            { name: 'read_file', description: 'Read a file' },
+            { name: 'todo', description: 'Maintain the plan' }
+        ];
+        const withNative = new ToolsSection().render({
+            sessionId: 's1', memory: '', dateTime: '', tools, extra: { nativeToolSchemas: true }
+        } as any);
+        expect(withNative).not.toContain('## Available Tools');
+        expect(withNative).not.toContain('- read_file: Read a file');
+        expect(withNative).toContain('Use `todo`');
+
+        const withoutNative = new ToolsSection().render({
+            sessionId: 's1', memory: '', dateTime: '', tools, extra: {}
+        } as any);
+        expect(withoutNative).toContain('## Available Tools');
+        expect(withoutNative).toContain('- read_file: Read a file');
+    }
+
+    @Test('selects a model-specific identity override by provider and model')
+    async selectsModelSpecificIdentity() {
+        const section = new IdentitySection({
+            modelPrompts: {
+                anthropic: { rules: ['Prefer provider-specific behavior.'] }
+            }
+        } as any);
+        const matched = section.render({
+            sessionId: 's1', tools: [], memory: '', dateTime: '', extra: { provider: 'anthropic' }
+        } as any);
+        expect(matched).toContain('Prefer provider-specific behavior.');
+
+        const unmatched = section.render({
+            sessionId: 's1', tools: [], memory: '', dateTime: '', extra: { provider: 'openai' }
+        } as any);
+        expect(unmatched).not.toContain('Prefer provider-specific behavior.');
+    }
 }

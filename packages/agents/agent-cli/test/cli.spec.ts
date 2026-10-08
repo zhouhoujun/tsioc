@@ -28,6 +28,7 @@ import {
     formatProjectSessionsHeader,
     resolveCliConfig,
     resolveCliHooks,
+    resolveCliInstructionDocs,
     resolveCliModelConfig,
     resolveCompletionShell,
     resolveAgentUpdateManager,
@@ -1801,6 +1802,19 @@ export class AgentCliTest {
         expect(modelConfig.model).toBe('gpt-5.4');
         expect(modelConfig.baseUrl).toBe('https://rehdasu.cn');
         expect(modelConfig.apiKey).toBe('real-key');
+    }
+
+    @Test('resolves global instruction docs from the agent root')
+    async resolvesGlobalInstructionDocs(): Promise<void> {
+        const root = await this.createRoot();
+        fs.writeFileSync(path.join(root, 'AGENTS.md'), '# Global\n');
+        expect(resolveCliInstructionDocs(root)).toEqual([path.join(root, 'AGENTS.md')]);
+
+        const resolved = new CliAgentUiConfigReader().resolve({ root });
+        expect(resolved.instructionDocs).toEqual([path.join(root, 'AGENTS.md')]);
+
+        const emptyRoot = await this.createRoot();
+        expect(resolveCliInstructionDocs(emptyRoot)).toEqual([]);
     }
 
 }

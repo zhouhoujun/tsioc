@@ -1,5 +1,7 @@
 import { PromptSection, PromptSectionContext } from '../PromptSection';
-import { Injectable } from '@tsdi/ioc';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { AgentOptions } from '../../options';
+import { AGENT_OPTIONS } from '../../tokens';
 
 export interface IdentityConfig {
     name?: string;
@@ -23,13 +25,37 @@ export class IdentitySection extends PromptSection {
 
     private config: IdentityConfig = {};
 
+    constructor(
+        @Optional() @Inject(AGENT_OPTIONS) private agentOptions?: AgentOptions | null
+    ) {
+        super();
+    }
+
     /** Set identity configuration at runtime */
     setIdentity(config: IdentityConfig): void {
         this.config = config;
     }
 
+    private resolveConfig(context: PromptSectionContext): IdentityConfig {
+        const base = this.config ?? {};
+        const prompts = this.agentOptions?.modelPrompts;
+        if (!prompts) {
+            return base;
+        }
+        const provider = String(context.extra?.provider || '').trim();
+        const model = String(context.model || this.agentOptions?.model?.model || '').trim();
+        const candidates = [provider && model ? `${provider}/${model}` : '', provider, model].filter(Boolean);
+        for (const key of candidates) {
+            const match = prompts[key];
+            if (match) {
+                return { ...base, ...match };
+            }
+        }
+        return base;
+    }
+
     render(context: PromptSectionContext): string {
-        const cfg = this.config ?? {};
+        const cfg = this.resolveConfig(context);
         const lines: string[] = [];
         const toolNames = new Set((context.tools || []).map(tool => tool.name));
 

@@ -43,6 +43,7 @@ export interface AgentUiResolvedConfig {
     channels: Record<string, any>;
     hooks?: Record<string, any>;
     ssh?: Record<string, any>;
+    instructionDocs?: string[];
     providerProfile?: AgentUiResolvedModelProfile;
     settingsModel?: Partial<AgentUiResolvedModelProfile>;
     model: AgentUiResolvedModelProfile;

@@ -177,6 +177,82 @@ export function readAgentsDoc(file: string, readText?: (path: string) => string)
     }
 }
 
+export interface NearbyAgentsDoc {
+    file: string;
+    dir: string;
+    source: string;
+}
+
+export interface ResolveNearbyAgentsDocsOptions extends FindAgentsDocOptions {
+    stopDir?: string;
+    exclude?: Set<string>;
+    maxFiles?: number;
+}
+
+/**
+ * Resolve instruction docs near files that were just read: for each read file,
+ * walk upward (stopping at the workspace root) and take the nearest
+ * AGENTS.md/override doc that is not already part of the base chain. This is
+ * the "progressive disclosure" counterpart to the up-front ancestor chain, so
+ * rules in a subdirectory become visible only once the agent actually works in
+ * that subtree.
+ *
+ * Paths in `filePaths` may be absolute or relative to `stopDir`.
+ */
+export function resolveNearbyAgentsDocs(filePaths: string[], options: ResolveNearbyAgentsDocsOptions): NearbyAgentsDoc[] {
+    const fileName = options.fileName ?? DEFAULT_AGENTS_DOC_NAME;
+    const overrideFileName = options.overrideFileName ?? DEFAULT_AGENTS_DOC_OVERRIDE_NAME;
+    const fallbacks = options.fallbackFilenames ?? [];
+    const candidates = Array.from(new Set([overrideFileName, fileName, ...fallbacks].filter(Boolean)));
+    const exists = options.exists ?? (() => false);
+    const stopDir = normalizeDocPath(options.stopDir || '');
+    const exclude = options.exclude ?? new Set<string>();
+    const maxFiles = options.maxFiles ?? 8;
+    const results: NearbyAgentsDoc[] = [];
+    const seen = new Set<string>();
+
+    for (const raw of filePaths) {
+        const trimmed = String(raw || '').trim();
+        if (!trimmed) {
+            continue;
+        }
+        const normalized = normalizeDocPath(trimmed);
+        const target = /^([a-zA-Z]:\/|\/)/.test(normalized) || !stopDir
+            ? normalized
+            : joinDocPath(stopDir, normalized);
+        let current = normalizeDocPath(dirnameAgentPath(target));
+        for (;;) {
+            let matched: string | undefined;
+            for (const candidate of candidates) {
+                const probe = joinDocPath(current, candidate);
+                if (exists(probe) && !exclude.has(probe) && !seen.has(probe)) {
+                    matched = probe;
+                    break;
+                }
+            }
+            if (matched) {
+                seen.add(matched);
+                results.push({ file: matched, dir: current, source: trimmed });
+                if (results.length >= maxFiles) {
+                    return results;
+                }
+                break;
+            }
+            if (stopDir && current === stopDir) {
+                break;
+            }
+            const parent = normalizeDocPath(dirnameAgentPath(current));
+            if (parent === current) {
+                break;
+            }
+            if (stopDir && !parent.startsWith(stopDir)) {
+                break;
+            }
+            current = parent;
+        }
+    }
+    return results;
+}
 /** Cap a string to `maxBytes` UTF-8 bytes without splitting multi-byte characters. */
 export function truncateDocContent(content: string, maxBytes: number): { content: string; truncated: boolean; bytes: number } {
     const input = String(content ?? '');

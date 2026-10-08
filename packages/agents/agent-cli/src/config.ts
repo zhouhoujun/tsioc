@@ -614,7 +614,6 @@ export function resolveCliHooks(root?: string): AgentHooksOptions | undefined {
     const parsed = readJsonObject(hooksPath);
     return isAgentHooksObject(parsed) ? parsed : undefined;
 }
-
 /**
  * Resolve CLI config, loading .env files from workspace and root directories.
  */

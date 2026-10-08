@@ -6,6 +6,7 @@ import { ApprovalRule } from './tools/ToolApprovalManager';
 import { HarnessProfile, applyHarnessProfile, resolveHarnessProfile } from './harness/HarnessProfile';
 import { AgentArchetype, DEFAULT_ARCHETYPE } from './archetype/AgentArchetype';
 import { AgentDelegationMode, DEFAULT_DELEGATION_MODE } from './runtime/DelegationMode';
+import { AgentPromptOptions } from './agent-prompt-options';
 
 export interface AgentSessionOptions {
     summaryThreshold?: number;
@@ -249,7 +250,7 @@ export interface AgentTokenBudgetOptions {
     trackInMemory?: boolean;
 }
 
-export interface AgentOptions {
+export interface AgentOptions extends AgentPromptOptions {
     /** v19 policy limits; optional overlays preserve existing defaults. */
     policy?: AgentPolicyConfig;
     name?: string;
@@ -288,8 +289,6 @@ export interface AgentOptions {
     workspace?: string;
     /** P72: per-file byte cap for project docs (default 32KiB). */
     projectDocMaxBytes?: number;
-    /** P106: extra project docs contributed by installed agent plugins (e.g. plugin-scoped AGENTS.md). */
-    pluginAgentsDocs?: Array<{ path: string; label?: string }>;
     /** G31: directory holding `trusted-projects.json` (default `~/.tsdi-agent`). */
     trustedProjectsRoot?: string;
     hooks?: AgentHooksOptions;

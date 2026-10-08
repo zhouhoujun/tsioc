@@ -40,4 +40,20 @@ export class AgentConsolePlatformPolicyTest {
         expect(options.bootstrapTurn.sessionId).toEqual('chat0123456789abcdef0123456789abcdef');
         expect(options.ui.console.messageLayout).toEqual('viewport');
     }
+
+    @Test('propagates resolved global instruction docs into agent options')
+    instructionDocsFlowIntoAgentOptions() {
+        const resolved = {
+            workspace: '/work',
+            hooks: {},
+            instructionDocs: ['/root/AGENTS.md'],
+            model: { provider: 'echo', model: 'echo' },
+            tui: {}
+        } as AgentUiResolvedConfig;
+        const options = buildConsoleAgentOptions(resolved, {}, {});
+        expect(options.instructionDocs).toEqual(['/root/AGENTS.md']);
+
+        const callOverride = buildConsoleAgentOptions(resolved, {}, { instructionDocs: ['/custom.md'] });
+        expect(callOverride.instructionDocs).toEqual(['/custom.md']);
+    }
 }

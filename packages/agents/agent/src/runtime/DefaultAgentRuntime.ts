@@ -6,7 +6,7 @@ import { EMPTY_RESPONSE_MAX_RETRIES, FALSIFICATION_ESCALATION_THRESHOLD, SCHEDUL
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
 import { TurnHandler } from './TurnHandler';
-import { AgentMessage, AgentMessagePart, AgentTurnMessageInput, normalizeAgentMessageParts } from './AgentMessage';
+import { AgentMessage, AgentMessagePart, AgentTurnMessageInput, collectToolReadPaths, normalizeAgentMessageParts } from './AgentMessage';
 import { AgentCompensationEvent, AgentContextPreparedEvent, AgentErrorEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentMemoryUpdatedEvent, AgentModelCompletedEvent, AgentStreamChunkEvent, AgentTokenBudgetExceededEvent, AgentTokenBudgetReminderEvent, AgentToolCompletedEvent, AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnDiagnostics, AgentTurnDiagnosticsEvent, AgentTurnStartedEvent } from './AgentEvents';
 import { AgentTurnCancelledError } from './AgentTurnCancelledError';
 import { PlanContinuationTracker } from './PlanContinuation';
@@ -1331,7 +1331,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 })),
                 memory: memory.map(m => `- ${m.key}: ${m.value}`).join('\n'),
                 dateTime: new Date().toISOString(),
-                extra: { contextPreparation: preparedHistory.report, skillTokenBudget: this.options.skillTokenBudget, workspace: workspaceRoot }
+                extra: { contextPreparation: preparedHistory.report, skillTokenBudget: this.options.skillTokenBudget, workspace: workspaceRoot, readFiles: collectToolReadPaths(messages), nativeToolSchemas: this.modelAdapter?.supportsNativeToolSchemas !== false, provider: this.modelAdapter?.provider }
             });
             if (systemPrompt) {
                 const modeHint = buildArchetypeModeHint(this.resolveArchetypeConfig(sessionId));

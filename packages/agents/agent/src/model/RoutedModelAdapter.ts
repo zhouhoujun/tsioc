@@ -7,7 +7,8 @@ import { AgentModelComplexity, AgentModelConfig, AgentModelOptions, AgentModelRo
 import { OpenAICompatibleModelAdapter } from './OpenAICompatibleModelAdapter';
 import { AnthropicModelAdapter } from './AnthropicModelAdapter';
 import { EchoModelAdapter } from './EchoModelAdapter';
-import { ModelRequestError } from './ModelRequestError';
+import { ModelRequestError, asModelFailure } from './ModelRequestError';
+import { classifyModelError, isRetryableError } from './RetryPolicy';
 import { getAgentMessageText } from '../runtime/AgentMessage';
 import { AgentClock } from '../runtime/Clock';
 
@@ -18,6 +19,7 @@ interface ResolvedRouteSelection {
     profileName?: string;
     complexity: AgentModelComplexity;
     falsifyRate?: number;
+    fallbackFrom?: string;
 }
 
 const DEFAULT_SIMPLE_MAX = 1;
@@ -44,22 +46,89 @@ export class RoutedModelAdapter extends ModelAdapter {
 
     async complete(request: ModelRequest): Promise<ModelResponse> {
         const selection = this.selectAdapter(request);
-        const response = await selection.adapter.complete(request);
-        return this.decorateResponse(response, selection);
+        try {
+            const response = await selection.adapter.complete(request);
+            return this.decorateResponse(response, selection);
+        } catch (error) {
+            const fallback = this.resolveFallbackSelection(error, selection);
+            if (!fallback) {
+                throw error;
+            }
+            const response = await fallback.adapter.complete(request);
+            return this.decorateResponse(response, fallback);
+        }
     }
 
     async *stream(request: ModelRequest): AsyncGenerator<StreamChunk> {
         const selection = this.selectAdapter(request);
-        for await (const chunk of selection.adapter.stream(request)) {
-            if (chunk.type === 'done') {
-                yield {
-                    ...chunk,
-                    metadata: this.decorateMetadata(chunk.metadata as Record<string, any> | undefined, selection)
-                };
-                continue;
+        let emitted = false;
+        try {
+            for await (const chunk of selection.adapter.stream(request)) {
+                if (chunk.type === 'done') {
+                    yield {
+                        ...chunk,
+                        metadata: this.decorateMetadata(chunk.metadata as Record<string, any> | undefined, selection)
+                    };
+                    continue;
+                }
+                emitted = true;
+                yield chunk;
             }
-            yield chunk;
+        } catch (error) {
+            if (emitted) {
+                throw error;
+            }
+            const fallback = this.resolveFallbackSelection(error, selection);
+            if (!fallback) {
+                throw error;
+            }
+            for await (const chunk of fallback.adapter.stream(request)) {
+                if (chunk.type === 'done') {
+                    yield {
+                        ...chunk,
+                        metadata: this.decorateMetadata(chunk.metadata as Record<string, any> | undefined, fallback)
+                    };
+                    continue;
+                }
+                yield chunk;
+            }
         }
+    }
+
+    /**
+     * After a routed profile exhausts its retries on a transient failure, retry
+     * the same request once against the default (top-level) model so an
+     * unavailable strong model does not fail the whole turn. Terminal errors
+     * (auth/quota/config) are not retried elsewhere and must not be masked.
+     */
+    private resolveFallbackSelection(error: unknown, current: ResolvedRouteSelection): ResolvedRouteSelection | null {
+        const failure = asModelFailure(error);
+        const kind = failure?.kind ?? classifyModelError((error as any)?.status, error);
+        if (!isRetryableError(kind)) {
+            return null;
+        }
+        const fallback = this.resolveFallbackConfig();
+        if (this.sameModelTarget(fallback.config, current.config)) {
+            return null;
+        }
+        this.warnings.push(
+            `Model '${current.config.model ?? current.config.provider ?? 'unknown'}' failed (${kind}); `
+            + `retrying on '${fallback.config.model ?? fallback.config.provider ?? 'default'}'.`
+        );
+        return {
+            adapter: this.getOrCreateAdapter(fallback.config),
+            config: fallback.config,
+            profileName: fallback.profileName,
+            complexity: current.complexity,
+            falsifyRate: current.falsifyRate,
+            fallbackFrom: current.profileName ?? current.route?.name ?? current.config.model
+        };
+    }
+
+    private sameModelTarget(a: AgentModelConfig, b: AgentModelConfig): boolean {
+        return (a.provider ?? '') === (b.provider ?? '')
+            && (a.model ?? '') === (b.model ?? '')
+            && (a.baseUrl ?? '') === (b.baseUrl ?? '');
     }
 
     private selectAdapter(request: ModelRequest): ResolvedRouteSelection {
@@ -445,7 +514,8 @@ export class RoutedModelAdapter extends ModelAdapter {
                 complexity: selection.complexity,
                 route: selection.route?.name,
                 profile: selection.profileName,
-                ...(selection.falsifyRate != null ? { falsifyRate: selection.falsifyRate } : {})
+                ...(selection.falsifyRate != null ? { falsifyRate: selection.falsifyRate } : {}),
+                ...(selection.fallbackFrom ? { fallbackFrom: selection.fallbackFrom } : {})
             }
         };
     }

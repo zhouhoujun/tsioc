@@ -6,6 +6,7 @@ import { AgentAppServerModule, AppRpcServer, StdioAppRpcServer } from '@tsdi/age
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { FileAdapter } from '@tsdi/common';
 import { AgentCliOptions } from './config';
+import { resolveCliInstructionDocs } from './instruction-docs';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { NodeAgentHookCommandExecutor } from './NodeAgentHookCommandExecutor';
 import { Readable, Writable } from 'stream';
@@ -233,7 +234,7 @@ export async function runAgentRpcStdio(
     streams?: { input?: Readable; output?: Writable; principalId?: string; }
 ): Promise<void> {
     const resolved = createConfigService(options).resolve(options);
-    const ctx = await runAgentRpcApplication(options, mergeAgentOptions({ hooks: resolved.hooks, format: resolved.tools.format, workspace: resolved.workspace }));
+    const ctx = await runAgentRpcApplication(options, mergeAgentOptions({ hooks: resolved.hooks, format: resolved.tools.format, workspace: resolved.workspace, instructionDocs: resolveCliInstructionDocs(resolved.root) }));
     const input = streams?.input ?? process.stdin;
     const output = streams?.output ?? process.stdout;
     const principalId = streams?.principalId ?? 'local-system';
@@ -263,6 +264,7 @@ export async function runAgentPrompt(prompt: string, options: AgentCliOptions = 
         hooks: resolved.hooks,
         format: resolved.tools.format,
         workspace: resolved.workspace,
+        instructionDocs: resolveCliInstructionDocs(resolved.root),
         model: {
             provider: modelConfig.provider,
             model: modelConfig.model,
@@ -299,6 +301,7 @@ export async function runAgentStreaming(prompt: string, options: AgentCliOptions
         hooks: resolved.hooks,
         format: resolved.tools.format,
         workspace: resolved.workspace,
+        instructionDocs: resolveCliInstructionDocs(resolved.root),
         model: {
             provider: modelConfig.provider,
             model: modelConfig.model,
@@ -344,7 +347,7 @@ export async function runAgentJsonStream(
     const message = await buildTurnMessage(prompt, options);
     const output = streams?.output ?? process.stdout;
     const principalId = streams?.principalId ?? 'local-system';
-    const ctx = await runAgentRpcApplication(options, mergeAgentOptions({ hooks: resolved.hooks, format: resolved.tools.format, workspace: resolved.workspace }));
+    const ctx = await runAgentRpcApplication(options, mergeAgentOptions({ hooks: resolved.hooks, format: resolved.tools.format, workspace: resolved.workspace, instructionDocs: resolveCliInstructionDocs(resolved.root) }));
     const rpc = ctx.get(AppRpcServer);
     const sessionId = resolved.sessionId;
     let lastMessage: any = null;

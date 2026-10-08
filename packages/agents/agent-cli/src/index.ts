@@ -1,4 +1,5 @@
 export * from './config';
+export * from './instruction-docs';
 export * from './completion';
 export * from './doctor';
 export * from './import-command';

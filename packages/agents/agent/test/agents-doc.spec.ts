@@ -6,7 +6,8 @@ import { tmpdir } from 'os';
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { FileAdapter, FileDirectoryEntry, IReadable, IStats } from '@tsdi/common';
-import { findAgentsDoc, findFileUpward, findProjectRoot, readAgentsDoc, readAgentsDocChain, truncateDocContent } from '../src/project/agents-doc';
+import { findAgentsDoc, findFileUpward, findProjectRoot, readAgentsDoc, readAgentsDocChain, resolveNearbyAgentsDocs, truncateDocContent } from '../src/project/agents-doc';
+import { collectToolReadPaths } from '../src/runtime/AgentMessage';
 import { ProjectContextSection } from '../src/prompt/sections/ProjectContextSection';
 import { PromptSectionContext } from '../src/prompt/PromptSection';
 import { analyzeProjectStructure, buildAgentsMdDraft, initAgentsDoc } from '../src/project/init-agents-doc';
@@ -256,6 +257,25 @@ export class AgentsDocSpec {
         expect(new ProjectContextSection().name()).toBe('project-context');
     }
 
+    @Test('ProjectContextSection resolves the file adapter lazily from the injector')
+    async testProjectContextSectionLazyFileAdapter(): Promise<void> {
+        const project = join(this.tempRoot, 'lazy-proj');
+        mkdirSync(project, { recursive: true });
+        writeFileSync(join(project, 'AGENTS.md'), '# Lazy rules\n\nESM only.\n');
+
+        const injector = {
+            get: (token: any, fallback?: any) => token === FileAdapter ? this.fileAdapter : fallback
+        } as any;
+        const section = new ProjectContextSection(null, null, null, injector);
+        const rendered = await section.render({
+            ...this.makeContext(),
+            extra: { workspace: project }
+        });
+        expect(rendered).toContain('## Project Context');
+        expect(rendered).toContain('# Lazy rules');
+        expect(rendered).toContain('ESM only');
+    }
+
     @Test('ProjectContextSection renders the ordered chain root-to-cwd')
     async testProjectContextSectionChain(): Promise<void> {
         const root = join(this.tempRoot, 'section-chain', 'proj');
@@ -306,6 +326,52 @@ export class AgentsDocSpec {
         expect(rendered).toContain('# Plugin rules');
         expect(rendered.indexOf('# Root rules')).toBeGreaterThanOrEqual(0);
         expect(rendered.indexOf('# Plugin rules')).toBeGreaterThan(rendered.indexOf('# Root rules'));
+    }
+
+    @Test('resolveNearbyAgentsDocs finds the nearest doc for a read file, excluding the base chain')
+    async testResolveNearbyAgentsDocs(): Promise<void> {
+        const proj = join(this.tempRoot, 'near-proj');
+        mkdirSync(join(proj, 'feature', 'deep'), { recursive: true });
+        writeFileSync(join(proj, 'AGENTS.md'), '# Root\n');
+        writeFileSync(join(proj, 'feature', 'AGENTS.md'), '# Feature\n');
+        const exists = (target: string) => this.fileAdapter.existsSync(target);
+        const nearby = resolveNearbyAgentsDocs(['feature/deep/impl.js'], {
+            stopDir: proj,
+            exists,
+            exclude: new Set([join(proj, 'AGENTS.md')])
+        });
+        expect(nearby.map(item => item.file)).toEqual([join(proj, 'feature', 'AGENTS.md')]);
+    }
+
+    @Test('collectToolReadPaths reads workspace-relative paths from read_file tool messages')
+    async testCollectToolReadPaths(): Promise<void> {
+        const paths = collectToolReadPaths([
+            { id: '1', role: 'tool', name: 'read_file', content: JSON.stringify({ path: 'a/b.js', content: 'x' }), createdAt: 1 },
+            { id: '2', role: 'tool', name: 'read_file', content: 'not json', createdAt: 2 },
+            { id: '3', role: 'tool', name: 'list_dir', content: JSON.stringify({ path: 'c' }), createdAt: 3 },
+            { id: '4', role: 'assistant', content: 'hi', createdAt: 4 }
+        ]);
+        expect(paths).toEqual(['a/b.js']);
+    }
+
+    @Test('ProjectContextSection renders nearby docs from read files and extra instruction docs')
+    async testProjectContextSectionNearbyAndInstructions(): Promise<void> {
+        const ws = join(this.tempRoot, 'near-section');
+        mkdirSync(join(ws, 'feature'), { recursive: true });
+        writeFileSync(join(ws, 'AGENTS.md'), '# Root rules\n');
+        writeFileSync(join(ws, 'feature', 'AGENTS.md'), '# Feature rules\n');
+        const globalDoc = join(this.tempRoot, 'global-AGENTS.md');
+        writeFileSync(globalDoc, '# Global rules\n');
+
+        const section = new ProjectContextSection(this.fileAdapter, null, { instructionDocs: [globalDoc] } as any);
+        const rendered = await section.render({
+            ...this.makeContext(),
+            extra: { workspace: ws, readFiles: ['feature/impl.js'] }
+        });
+        expect(rendered).toContain('## Instructions (global-AGENTS.md)');
+        expect(rendered).toContain('# Global rules');
+        expect(rendered).toContain('## Project Context (near: feature)');
+        expect(rendered).toContain('# Feature rules');
     }
 
     @Test('analyzeProjectStructure reads package.json metadata and source languages')

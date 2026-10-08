@@ -15,19 +15,23 @@ export class ToolsSection extends PromptSection {
         const { tools } = context;
         if (!tools.length) return '';
 
-        const lines: string[] = ['## Available Tools'];
+        const lines: string[] = [];
         const toolNames = new Set(tools.map(tool => tool.name));
-        for (const tool of tools) {
-            lines.push(`- ${tool.name}: ${tool.description}`);
-        }
-        const hasDeferredSessionTools = tools.some(tool => tool.activation?.kind === 'deferred' && tool.activation?.scope === 'session');
-        lines.push('');
-        lines.push('To use a tool, respond with a JSON tool call in the format:');
-        lines.push('{"tool": "<name>", "args": {...}}');
-        if (hasDeferredSessionTools) {
+        const nativeToolSchemas = context.extra?.nativeToolSchemas === true;
+        if (!nativeToolSchemas) {
+            lines.push('## Available Tools');
+            for (const tool of tools) {
+                lines.push(`- ${tool.name}: ${tool.description}`);
+            }
+            const hasDeferredSessionTools = tools.some(tool => tool.activation?.kind === 'deferred' && tool.activation?.scope === 'session');
             lines.push('');
-            lines.push('Session-scoped deferred tools are available for this turn.');
-            lines.push('Invoke them directly when needed; the host will activate them for the current session.');
+            lines.push('To use a tool, respond with a JSON tool call in the format:');
+            lines.push('{"tool": "<name>", "args": {...}}');
+            if (hasDeferredSessionTools) {
+                lines.push('');
+                lines.push('Session-scoped deferred tools are available for this turn.');
+                lines.push('Invoke them directly when needed; the host will activate them for the current session.');
+            }
         }
         if (toolNames.has('coding_task')) {
             lines.push('');
@@ -62,6 +66,6 @@ export class ToolsSection extends PromptSection {
         lines.push('Prefer small sequential tool steps over one opaque action.');
         lines.push('After a useful tool result, do not stop at a bare summary; either continue with the next step or ask one concise follow-up question and state the next action.');
 
-        return lines.join('\n');
+        return lines.join('\n').trim();
     }
 }

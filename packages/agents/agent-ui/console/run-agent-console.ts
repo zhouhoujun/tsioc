@@ -92,6 +92,7 @@ export function buildConsoleAgentOptions(
         ...agentOptions,
         workspace: agentOptions?.workspace || resolved.workspace,
         hooks: resolved.hooks,
+        instructionDocs: agentOptions?.instructionDocs ?? resolved.instructionDocs,
         model: {
             provider: modelConfig.provider,
             model: modelConfig.model,

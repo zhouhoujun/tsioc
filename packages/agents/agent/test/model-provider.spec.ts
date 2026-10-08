@@ -2030,4 +2030,113 @@ export class ModelProviderTest {
             expect(String(error.message)).toContain('must be passed back to the API');
         }
     }
+
+    @Test('falls back to the default model when a routed profile exhausts retries')
+    async fallsBackAfterRoutedProfileFailure() {
+        this.originalFetch = (globalThis as any).fetch;
+        const seenModels: string[] = [];
+        (globalThis as any).fetch = async (_url: string, init: any) => {
+            const body = JSON.parse(init.body);
+            seenModels.push(body.model);
+            if (body.model === 'strong-model') {
+                return {
+                    ok: false,
+                    status: 503,
+                    headers: new Map(),
+                    async text() {
+                        return JSON.stringify({ error: { message: 'upstream overloaded' } });
+                    }
+                };
+            }
+            return {
+                ok: true,
+                status: 200,
+                headers: new Map(),
+                async json() {
+                    return { choices: [{ message: { content: 'fallback-ok' }, finish_reason: 'stop' }], usage: {} };
+                }
+            };
+        };
+
+        const adapter = new RoutedModelAdapter({
+            provider: 'openai-compatible',
+            model: 'default-model',
+            baseUrl: 'https://example.com',
+            apiKey: 'test-key',
+            timeoutMs: 1000,
+            retry: { maxRetries: 0 },
+            profiles: {
+                strong: {
+                    provider: 'openai-compatible',
+                    model: 'strong-model',
+                    baseUrl: 'https://example.com',
+                    apiKey: 'test-key',
+                    retry: { maxRetries: 0 }
+                }
+            },
+            complexityRouting: { complex: 'strong' }
+        });
+
+        const response = await adapter.complete({
+            sessionId: 's-fallback',
+            summary: '',
+            memory: [],
+            messages: [{ id: '1', role: 'user', content: 'x'.repeat(120) + ' architecture refactor optimize', createdAt: 1 }],
+            tools: []
+        });
+        expect(response.message).toBe('fallback-ok');
+        expect(seenModels).toEqual(['strong-model', 'default-model']);
+        expect(adapter.getWarnings().some(warning => warning.includes('strong-model'))).toBe(true);
+    }
+
+    @Test('does not fall back on a terminal auth failure')
+    async doesNotFallBackOnAuthFailure() {
+        this.originalFetch = (globalThis as any).fetch;
+        const seenModels: string[] = [];
+        (globalThis as any).fetch = async (_url: string, init: any) => {
+            const body = JSON.parse(init.body);
+            seenModels.push(body.model);
+            return {
+                ok: false,
+                status: 403,
+                headers: new Map(),
+                async text() {
+                    return JSON.stringify({ error: { message: 'invalid api key' } });
+                }
+            };
+        };
+
+        const adapter = new RoutedModelAdapter({
+            provider: 'openai-compatible',
+            model: 'default-model',
+            baseUrl: 'https://example.com',
+            apiKey: 'test-key',
+            timeoutMs: 1000,
+            retry: { maxRetries: 0 },
+            profiles: {
+                strong: {
+                    provider: 'openai-compatible',
+                    model: 'strong-model',
+                    baseUrl: 'https://example.com',
+                    apiKey: 'test-key',
+                    retry: { maxRetries: 0 }
+                }
+            },
+            complexityRouting: { complex: 'strong' }
+        });
+
+        try {
+            await adapter.complete({
+                sessionId: 's-no-fallback',
+                summary: '',
+                memory: [],
+                messages: [{ id: '1', role: 'user', content: 'x'.repeat(120) + ' architecture refactor optimize', createdAt: 1 }],
+                tools: []
+            });
+            throw new Error('expected the request to fail');
+        } catch (error: any) {
+            expect(String(error.message)).toContain('403');
+        }
+        expect(seenModels).toEqual(['strong-model']);
+    }
 }

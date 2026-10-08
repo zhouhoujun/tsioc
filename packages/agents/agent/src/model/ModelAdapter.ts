@@ -12,6 +12,13 @@ export abstract class ModelAdapter {
      */
     readonly provider?: string;
 
+    /**
+     * Whether the adapter sends tool definitions through the provider's native
+     * tool-calling channel. When true the system prompt can skip the redundant
+     * text listing of every tool (native schemas already carry name/description).
+     */
+    readonly supportsNativeToolSchemas: boolean = true;
+
     abstract complete(request: ModelRequest): Promise<ModelResponse>;
 
     /**

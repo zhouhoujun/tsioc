@@ -10,6 +10,7 @@ import {
     resolveProviderBaseUrl,
     writeSettingsModelProfile
 } from './config';
+import { resolveCliInstructionDocs } from './instruction-docs';
 
 @Injectable()
 export class CliAgentUiConfigReader extends AgentUiConfigReader {
@@ -22,6 +23,7 @@ export class CliAgentUiConfigReader extends AgentUiConfigReader {
             providerProfile: resolved.providerProfile,
             settingsModel: resolved.settingsModel,
             model,
+            instructionDocs: resolveCliInstructionDocs(resolved.root),
             tui: this.resolveTuiConfig(cliOptions)
         };
     }

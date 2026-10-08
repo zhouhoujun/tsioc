@@ -7,6 +7,7 @@ import { ModelResponse } from './ModelResponse';
 export class EchoModelAdapter extends ModelAdapter {
     readonly provider = 'echo';
     readonly model = 'echo';
+    override readonly supportsNativeToolSchemas = false;
 
     async complete(request: ModelRequest): Promise<ModelResponse> {
         const lastUser = [...request.messages].reverse().find(msg => msg.role === 'user');

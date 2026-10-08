@@ -113,3 +113,27 @@ export function getAgentMessageImageParts(message?: Pick<AgentMessage, 'content'
     return resolveAgentMessageParts(message)
         .filter((part): part is AgentImageMessagePart => part.type === 'image');
 }
+
+/**
+ * Workspace-relative paths of every file read through the `read_file` tool.
+ * Used to progressively attach nearby AGENTS.md instructions once the agent
+ * works inside a subtree.
+ */
+export function collectToolReadPaths(messages: AgentMessage[]): string[] {
+    const paths = new Set<string>();
+    for (const message of messages) {
+        if (message.role !== 'tool' || message.name !== 'read_file') {
+            continue;
+        }
+        let parsed: any;
+        try {
+            parsed = JSON.parse(message.content);
+        } catch {
+            continue;
+        }
+        if (parsed && typeof parsed.path === 'string' && parsed.path.trim()) {
+            paths.add(parsed.path.trim());
+        }
+    }
+    return [...paths];
+}
