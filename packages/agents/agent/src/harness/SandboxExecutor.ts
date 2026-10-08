@@ -190,8 +190,7 @@ export class NodeChildProcessSandboxExecutor extends SandboxExecutor {
                     const child = spawn(command, args, {
                         cwd: resolvedCwd,
                         env: resolvedEnv,
-                        stdio: ['pipe', 'pipe', 'pipe'],
-                        timeout: wallTimeMs
+                        stdio: ['pipe', 'pipe', 'pipe']
                     });
 
                     this.activeProcesses.add(child);
