@@ -378,12 +378,12 @@ export class AgentToolsPackageTest {
         const tool = new ReadFileTool({ file: { rootDir: workspace } });
 
         const slice = await tool.invoke({ path: 'src/alpha.txt', offset: 2, limit: 1 }, createSessionContext());
-        expect(slice.content).toEqual('beta');
+        expect(slice.content).toEqual('2: beta');
         expect(slice.offset).toEqual(2);
         expect(slice.truncated).toEqual(true);
 
         const tail = await tool.invoke({ path: 'src/alpha.txt', offset: 3 }, createSessionContext());
-        expect(tail.content).toEqual('gamma');
+        expect(tail.content).toEqual('3: gamma');
         expect(tail.truncated).toEqual(false);
         expect(tail.totalLines).toEqual(3);
 
@@ -677,6 +677,22 @@ export class AgentToolsPackageTest {
         expect(written).toContain('function a() {');
         expect(written).toContain('return 2');
         expect(written).not.toContain('return 1');
+    }
+
+    @Test('edit file ignores read_file line-number prefixes')
+    async editFileIgnoresLineNumberPrefixes() {
+        const workspace = await this.createWorkspace();
+        const tool = new EditFileTool({ file: { rootDir: workspace } });
+        const target = path.join(workspace, 'src', 'numbered.txt');
+        await fs.writeFile(target, 'alpha\nbeta\ngamma\n', 'utf8');
+
+        const result = await tool.invoke({
+            path: 'src/numbered.txt',
+            oldString: '2: beta',
+            newString: '2: BETA'
+        }, createSessionContext());
+        expect(result.replacements).toEqual(1);
+        expect(await fs.readFile(target, 'utf8')).toEqual('alpha\nBETA\ngamma\n');
     }
 
     @Test('list dir returns visible entries honors limits and validates paths')

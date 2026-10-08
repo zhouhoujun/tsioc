@@ -4,7 +4,7 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath, toRelativeWorkspacePath } from './path-policy';
-import { resolveEditMatch } from './edit-match';
+import { resolveEditMatch, stripLineNumberPrefixes } from './edit-match';
 import { readFileSnapshot } from './snapshot';
 import { runFormatter } from './formatter';
 import { collectLspDiagnostics } from '../lsp/lsp-feedback';
@@ -51,8 +51,8 @@ export class EditFileTool implements AgentTool {
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
         const requestedPath = this.requirePath(input?.path);
-        const oldString = this.requireOldString(input?.oldString);
-        const newString = this.requireString(input?.newString, 'newString');
+        const oldString = stripLineNumberPrefixes(this.requireOldString(input?.oldString));
+        const newString = stripLineNumberPrefixes(this.requireString(input?.newString, 'newString'));
         const replaceAll = input?.replaceAll === true;
         const policy = resolveFilePolicy(this.options);
         const absolutePath = resolveWorkspacePath(requestedPath, policy.rootDir);

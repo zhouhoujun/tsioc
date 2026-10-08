@@ -8,7 +8,7 @@ import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath
 @Injectable()
 export class ReadFileTool implements AgentTool {
     name = 'read_file';
-    description = 'Read a text file from the configured workspace. Supports offset/limit for reading a line range of large files.';
+    description = 'Read a text file from the configured workspace. Each returned line is prefixed with its 1-indexed file line number as `<line>: <content>`. Supports offset/limit for reading a line range of large files.';
     inputSchema = {
         type: 'object',
         properties: {
@@ -43,9 +43,12 @@ export class ReadFileTool implements AgentTool {
         await assertNoSymlinkInWorkspacePath(absolutePath, policy.rootDir);
         const effectiveLimit = limit > 0 ? Math.min(limit, policy.maxReadLines) : policy.maxReadLines;
         const range = await this.readLineRange(absolutePath, offset, effectiveLimit, policy.maxReadBytes);
+        const content = range.content
+            ? range.content.split('\n').map((line, index) => `${offset + index}: ${line}`).join('\n')
+            : '';
         return {
             path: toRelativeWorkspacePath(absolutePath, policy.rootDir),
-            content: range.content,
+            content,
             truncated: range.truncated,
             offset,
             ...(range.totalLines != null ? { totalLines: range.totalLines } : {})
