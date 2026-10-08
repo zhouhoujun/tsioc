@@ -12,6 +12,8 @@ import { AgentConsoleSelectOption } from './AgentConsoleSessionState';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
 import { AgentOptions } from '@tsdi/agent';
 
+export type EffortLevel = 'low' | 'medium' | 'high' | 'max';
+
 // ── Model handler context ────────────────────────────────────────────────────
 
 export interface ModelHandlerContext {
@@ -33,15 +35,15 @@ export interface ModelHandlerContext {
     notify(message: string, duration?: number): void;
     select(title: string, options: AgentConsoleSelectOption[], selectedIndex?: number, hint?: string): Promise<string | undefined>;
     updateTerminalTitle(): void;
-    persistSettings(patch: { thinkingLevel?: 'low' | 'medium' | 'high' }): unknown;
+    persistSettings(patch: { thinkingLevel?: EffortLevel }): unknown;
     addModelProvider?(): void | Promise<void>;
     resolveHistoryWorkspace(): string;
     getFavorites(): string[];
     setFavorites(value: string[]): void;
     getRecents(): string[];
     setRecents(value: string[]): void;
-    getReasoningEffort(): 'low' | 'medium' | 'high';
-    setReasoningEffort(value: 'low' | 'medium' | 'high'): void;
+    getReasoningEffort(): EffortLevel;
+    setReasoningEffort(value: EffortLevel): void;
     nextActivateRequestId(): number;
     peekActivateRequestId(): number;
 }
@@ -188,23 +190,34 @@ export async function openModelSwitcher(ctx: ModelHandlerContext): Promise<void>
     if (!selected?.startsWith('__provider__:')) return;
     const provider = selected.slice('__provider__:'.length);
     const entries = groups.get(provider) || [];
-    const tiers = new Map(entries.map(entry => {
-        const match = entry.value.match(/(?:^|-)(fast|balanced|strong)$/);
-        return [match?.[1] || entry.value, entry] as const;
-    }));
-    const modes: AgentConsoleSelectOption[] = ['auto', 'fast', 'balanced', 'strong'].map(mode => ({
-        label: mode,
-        value: mode,
-        description: mode === 'auto'
-            ? 'Agent selects a model from request complexity'
-            : tiers.get(mode)?.description || 'Not configured'
-    }));
-    const mode = await ctx.select(`${provider} · model mode`, modes, 0);
+    const tierOf = (value: string): string | undefined => value.match(/(?:^|-)(fast|balanced|strong)$/)?.[1];
+    const hasTiers = entries.some(entry => !!tierOf(entry.value));
+    const modes: AgentConsoleSelectOption[] = [];
+    if (hasTiers) {
+        for (const mode of ['auto', 'fast', 'balanced', 'strong'] as const) {
+            modes.push({
+                label: mode,
+                value: mode,
+                description: mode === 'auto'
+                    ? 'Agent selects a model from request complexity'
+                    : entries.find(entry => tierOf(entry.value) === mode)?.description || 'Not configured'
+            });
+        }
+    }
+    for (const entry of entries) {
+        if (tierOf(entry.value)) continue;
+        modes.push({ label: entry.label, value: entry.value, description: entry.description, detail: entry.detail });
+    }
+    if (!modes.length) {
+        ctx.notify(`${provider} has no models configured.`);
+        return;
+    }
+    const mode = await ctx.select(`${provider} · model`, modes, 0);
     if (!mode) return;
     if (mode === 'auto') {
-        const fast = tiers.get('fast')?.value;
-        const balanced = tiers.get('balanced')?.value;
-        const strong = tiers.get('strong')?.value;
+        const fast = entries.find(entry => tierOf(entry.value) === 'fast')?.value;
+        const balanced = entries.find(entry => tierOf(entry.value) === 'balanced')?.value;
+        const strong = entries.find(entry => tierOf(entry.value) === 'strong')?.value;
         if (!fast || !balanced || !strong) {
             ctx.notify(`${provider} needs fast, balanced, and strong models before auto can be used.`);
             return;
@@ -216,12 +229,37 @@ export async function openModelSwitcher(ctx: ModelHandlerContext): Promise<void>
         ctx.notify(`Switched ${provider} to auto model routing.`);
         return;
     }
-    const target = tiers.get(mode);
-    if (!target) {
-        ctx.notify(`${provider} has no ${mode} model configured.`);
-        return;
+    const effort = await pickModelEffort(ctx, mode);
+    await activateModelProfile(ctx, mode, effort);
+}
+
+async function pickModelEffort(ctx: ModelHandlerContext, name: string): Promise<EffortLevel | undefined> {
+    if (!ctx.appRpc) {
+        return undefined;
     }
-    await activateModelProfile(ctx, target.value);
+    const catalog = await ctx.appRpc.request('model.catalog', {}).catch(() => undefined);
+    const id = name.includes('/') ? name.slice(name.indexOf('/') + 1) : name;
+    const entry = Array.isArray(catalog?.models) ? catalog.models.find((model: any) => model?.id === id) : undefined;
+    const levels: EffortLevel[] = Array.isArray(entry?.effort?.supportedLevels)
+        ? entry.effort.supportedLevels.filter((level: string) => level === 'low' || level === 'medium' || level === 'high' || level === 'max')
+        : [];
+    const defaultLevel = entry?.effort?.defaultLevel as EffortLevel | undefined;
+    if (levels.length <= 1) {
+        return defaultLevel;
+    }
+    const options: AgentConsoleSelectOption[] = [
+        { label: 'default', value: 'default', description: defaultLevel ? `provider default: ${defaultLevel}` : 'provider default' },
+        ...levels.map(level => ({
+            label: level,
+            value: level,
+            description: level === defaultLevel ? 'default level' : 'reasoning effort'
+        }))
+    ];
+    const selected = await ctx.select(`Reasoning effort · ${id}`, options, 0);
+    if (!selected || selected === 'default') {
+        return undefined;
+    }
+    return selected as EffortLevel;
 }
 
 // ── Store persistence ────────────────────────────────────────────────────────
@@ -231,7 +269,7 @@ export async function restoreModelStore(ctx: ModelHandlerContext): Promise<void>
     ctx.setFavorites(data?.favorites || []);
     ctx.setRecents(data?.recents || []);
     const configuredEffort = ctx.options().model?.reasoningEffort;
-    ctx.setReasoningEffort(configuredEffort === 'max' ? 'high' : (configuredEffort || 'medium'));
+    ctx.setReasoningEffort(configuredEffort && ['low', 'medium', 'high', 'max'].includes(configuredEffort) ? configuredEffort as EffortLevel : 'medium');
 }
 
 export async function persistModelStore(ctx: ModelHandlerContext): Promise<void> {
@@ -252,7 +290,7 @@ export async function recordRecentModel(ctx: ModelHandlerContext, name: string):
 
 // ── Activation ───────────────────────────────────────────────────────────────
 
-export async function activateModelProfile(ctx: ModelHandlerContext, profileName: string): Promise<void> {
+export async function activateModelProfile(ctx: ModelHandlerContext, profileName: string, reasoningEffort?: EffortLevel): Promise<void> {
     const name = String(profileName || '').trim();
     if (!name) {
         return;
@@ -260,7 +298,7 @@ export async function activateModelProfile(ctx: ModelHandlerContext, profileName
     if (ctx.appRpc) {
         const requestId = ctx.nextActivateRequestId();
         const sessionId = ctx.state.sessionId;
-        const result = await ctx.appRpc.request('model.activate', { sessionId, name });
+        const result = await ctx.appRpc.request('model.activate', { sessionId, name, ...(reasoningEffort ? { reasoningEffort } : {}) });
         if (requestId !== ctx.peekActivateRequestId() || sessionId !== ctx.state.sessionId) {
             return;
         }
@@ -284,6 +322,9 @@ export async function activateModelProfile(ctx: ModelHandlerContext, profileName
     }
     opts.model = opts.model || {};
     opts.model.defaultProfile = name;
+    if (reasoningEffort) {
+        opts.model.reasoningEffort = reasoningEffort;
+    }
     const resolved = resolveModelProfileConfig(ctx, name);
     ctx.state.setModelProfile(name);
     if (resolved.provider) {
@@ -360,13 +401,13 @@ export async function cycleRecentModel(ctx: ModelHandlerContext, delta: 1 | -1):
 }
 
 export async function cycleModelVariant(ctx: ModelHandlerContext): Promise<void> {
-    const tiers: Array<'low' | 'medium' | 'high'> = ['low', 'medium', 'high'];
+    const tiers: EffortLevel[] = ['low', 'medium', 'high', 'max'];
     const current = ctx.getReasoningEffort();
     const next = tiers[(tiers.indexOf(current) + 1) % tiers.length];
     await setModelReasoningEffort(ctx, next);
 }
 
-export async function setModelReasoningEffort(ctx: ModelHandlerContext, next: 'low' | 'medium' | 'high'): Promise<void> {
+export async function setModelReasoningEffort(ctx: ModelHandlerContext, next: EffortLevel): Promise<void> {
     if (ctx.appRpc) {
         const sessionId = ctx.state.sessionId;
         const name = String(ctx.state.modelProfile || ctx.options().model?.defaultProfile || '').trim();
@@ -380,7 +421,7 @@ export async function setModelReasoningEffort(ctx: ModelHandlerContext, next: 'l
             return;
         }
         const returned = String(result?.reasoningEffort || '');
-        if (returned === 'low' || returned === 'medium' || returned === 'high') {
+        if (returned === 'low' || returned === 'medium' || returned === 'high' || returned === 'max') {
             next = returned;
         }
     }

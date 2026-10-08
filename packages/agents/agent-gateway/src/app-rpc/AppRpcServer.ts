@@ -1,7 +1,8 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { UuidGenerator } from '@tsdi/core';
-import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeAgentWorkspaceIdentity, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, CommandExchangeStore, CommandExchangeRecord, CommandExchangeStaleError, parseCommandExchangeRecord, redactCommandExchangeRecord, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, redactCommandOutputEntry, normalizeAgentRpcRequestMeta, COMMAND_EXCHANGE_STORE, BACKGROUND_TASK_HISTORY_STORE, BackgroundTaskHistoryStore, BackgroundTaskPageOptions, collectDelegationSessionIds, ExchangeMetrics, ExchangeMetricsSnapshot, fetchAgentModelCatalog } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeAgentWorkspaceIdentity, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, CommandExchangeStore, CommandExchangeRecord, CommandExchangeStaleError, parseCommandExchangeRecord, redactCommandExchangeRecord, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, redactCommandOutputEntry, normalizeAgentRpcRequestMeta, COMMAND_EXCHANGE_STORE, BACKGROUND_TASK_HISTORY_STORE, BackgroundTaskHistoryStore, BackgroundTaskPageOptions, collectDelegationSessionIds, ExchangeMetrics, ExchangeMetricsSnapshot } from '@tsdi/agent';
+import { resolveModelCatalog } from './modelCatalog';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -429,16 +430,11 @@ export class AppRpcServer {
                 return this.activateTool(params, context);
             case 'tools.invoke':
                 return this.invokeTool(params, context);
-            case 'model.list':
-                return this.listModelProfiles();
-            case 'model.catalog':
-                return this.listModelCatalog(params);
-            case 'model.add':
-                return this.addModelProvider(params);
-            case 'provider.test':
-                return this.testProvider(params, context);
-            case 'model.activate':
-                return this.activateModelProfile(params, context);
+            case 'model.list': return this.listModelProfiles();
+            case 'model.catalog': return resolveModelCatalog(this.options, params?.provider);
+            case 'model.add': return this.addModelProvider(params);
+            case 'model.activate': return this.activateModelProfile(params, context);
+            case 'provider.test': return this.testProvider(params, context);
             case 'memory.list':
                 return this.listMemory(params, context);
             case 'memory.put':
@@ -1977,26 +1973,6 @@ export class AppRpcServer {
             .sort((left, right) => left.name.localeCompare(right.name));
     }
 
-    private async listModelCatalog(params: any): Promise<any> {
-        const model = this.options.model || {};
-        const provider = String(params?.provider || model.provider || '').trim();
-        const catalog = await fetchAgentModelCatalog({
-            baseUrl: String(model.baseUrl || ''),
-            apiKey: model.apiKey,
-            apiKeyEnv: model.apiKeyEnv,
-            timeoutMs: model.timeoutMs
-        });
-        return {
-            provider: catalog.provider || provider,
-            source: catalog.source,
-            models: catalog.models.map(entry => ({
-                id: entry.id,
-                name: entry.name,
-                effort: entry.effort
-            }))
-        };
-    }
-
     private async activateModelProfile(params: any, context: AppRpcRequestContext): Promise<any> {
         const sessionId = this.optionalSessionId(params);
         if (sessionId) {
@@ -2005,8 +1981,8 @@ export class AppRpcServer {
         }
         const name = this.requireString(params?.name, 'model.activate name');
         const reasoningEffort = typeof params?.reasoningEffort === 'string' ? params.reasoningEffort : undefined;
-        if (reasoningEffort !== undefined && reasoningEffort !== 'low' && reasoningEffort !== 'medium' && reasoningEffort !== 'high') {
-            throw new AppRpcError(-32602, `Invalid params: reasoningEffort must be 'low', 'medium' or 'high'`);
+        if (reasoningEffort !== undefined && reasoningEffort !== 'low' && reasoningEffort !== 'medium' && reasoningEffort !== 'high' && reasoningEffort !== 'max') {
+            throw new AppRpcError(-32602, `Invalid params: reasoningEffort must be 'low', 'medium', 'high' or 'max'`);
         }
         const profiles = this.options.model?.profiles || {};
         const profile = profiles[name];

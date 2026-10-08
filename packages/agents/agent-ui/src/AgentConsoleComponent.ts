@@ -56,7 +56,7 @@ import {
 } from './AgentConsoleReviewHandlers';
 import { getGlobalProcess } from './global-process';
 import { decodeVoiceAudioChunk, handleVoiceCommand, playVoiceReply, startVoiceCapture, stopVoiceCapture, VoiceHandlerContext } from './AgentConsoleVoiceHandlers';
-import { activateModelProfile, consumePendingTurnModelProfile, cycleModelVariant, cycleRecentModel, getModelProfileOptions, loadModelProfileOptions, openModelSwitcher, persistModelStore, queueNextTurnModelProfile, recordRecentModel, resolveInitialModelProfile, resolveModelProfileConfig, restoreModelStore, setModelReasoningEffort, toggleModelFavorite, ModelHandlerContext } from './AgentConsoleModelHandlers';
+import { activateModelProfile, consumePendingTurnModelProfile, cycleModelVariant, cycleRecentModel, EffortLevel, getModelProfileOptions, loadModelProfileOptions, openModelSwitcher, persistModelStore, queueNextTurnModelProfile, recordRecentModel, resolveInitialModelProfile, resolveModelProfileConfig, restoreModelStore, setModelReasoningEffort, toggleModelFavorite, ModelHandlerContext } from './AgentConsoleModelHandlers';
 import { dismissEditMode, enterEditMode, EditModeHandlerContext, extractEditableMessageText, getEditableImageParts, getEditableUserMessages, handleIdleEscape, startEditTarget } from './AgentConsoleEditModeHandlers';
 import {
     CodingTaskHandlerContext,
@@ -336,7 +336,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected lastEscapeAt = 0;
     protected modelFavorites: string[] = [];
     protected modelRecents: string[] = [];
-    protected modelReasoningEffort: 'low' | 'medium' | 'high' = 'medium';
+    protected modelReasoningEffort: EffortLevel = 'medium';
     protected wizHolder: import('./AgentConsoleProviderWizardFlow').AgentWizardHolder = {};
     protected get providerWizard(): import('./AgentConsoleProviderWizardFlow').AgentWizardState | undefined {
         return this.wizHolder.wizard;
@@ -3189,12 +3189,12 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async openSettingsThinkingLevel(): Promise<boolean> {
-        const tiers: Array<'low' | 'medium' | 'high'> = ['low', 'medium', 'high'];
+        const tiers: EffortLevel[] = ['low', 'medium', 'high', 'max'];
         const selected = await this.select('Settings · Thinking Level', tiers.map(tier => ({
             label: `${tier === this.modelReasoningEffort ? '● ' : '  '}${tier}`,
             value: tier,
             description: tier === this.modelReasoningEffort ? 'current level' : 'set reasoning effort'
-        })), Math.max(0, tiers.indexOf(this.modelReasoningEffort)), 'enter apply   esc close') as 'low' | 'medium' | 'high' | undefined;
+        })), Math.max(0, tiers.indexOf(this.modelReasoningEffort)), 'enter apply   esc close') as EffortLevel | undefined;
         if (!selected) return true;
         await this.setModelReasoningEffort(selected);
         return true;
@@ -4116,7 +4116,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return cycleModelVariant(this.modelCtx());
     }
 
-    protected async setModelReasoningEffort(next: 'low' | 'medium' | 'high'): Promise<void> {
+    protected async setModelReasoningEffort(next: EffortLevel): Promise<void> {
         return setModelReasoningEffort(this.modelCtx(), next);
     }
 

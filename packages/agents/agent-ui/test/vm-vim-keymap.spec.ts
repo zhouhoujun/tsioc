@@ -578,7 +578,7 @@ export class VmVimKeymapTest {
             await waitForCondition(() => component.selectMenu?.title === 'Settings · Providers');
             await component.sessionState.confirmSelectMenu('thinking-level');
             await waitForCondition(() => component.selectMenu?.title === 'Settings · Thinking Level');
-            expect(component.selectMenu?.options.map(option => option.value)).toEqual(['low', 'medium', 'high']);
+            expect(component.selectMenu?.options.map(option => option.value)).toEqual(['low', 'medium', 'high', 'max']);
 
             await component.sessionState.confirmSelectMenu('high');
             await pending;

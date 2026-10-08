@@ -3121,6 +3121,29 @@ export class AppRpcServerTest {
         expect(list.result).toHaveLength(1);
     }
 
+    @Test('model.activate accepts the max reasoning effort')
+    async modelActivateMaxEffort() {
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const runtime = { async getMessages() { return []; } } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, {} as any, owners, sessions, events, {
+            model: {
+                provider: 'deepseek', model: 'deepseek-v4-flash', defaultProfile: 'flash',
+                profiles: { flash: { provider: 'deepseek', model: 'deepseek-v4-flash' } }
+            }
+        } as any);
+        await owners.create('max-effort-s1', 'user-1');
+        const response = await rpc.handle({
+            jsonrpc: '2.0', id: 31, method: 'model.activate',
+            params: { sessionId: 'max-effort-s1', name: 'flash', reasoningEffort: 'max' }
+        }, { principalId: 'user-1' }) as any;
+        expect(response.error).toBeUndefined();
+        expect(response.result.reasoningEffort).toBe('max');
+    }
+
     @Test('model.catalog returns the provider catalog with effort levels')
     async modelCatalogReturnsEffort() {
         const { store } = await createOrmSessionStore();
@@ -3128,17 +3151,11 @@ export class AppRpcServerTest {
         const owners = new SessionOwnerStore(store);
         const runtime = { async getMessages() { return []; } } as any;
         const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, {} as any, owners, new SessionHandler(runtime, store, owners), new EventHandler(owners));
-        const originalFetch = (globalThis as any).fetch;
-        (globalThis as any).fetch = undefined;
-        try {
-            const response = await rpc.handle({ jsonrpc: '2.0', id: 21, method: 'model.catalog', params: {} }, { principalId: 'user-1' }) as any;
-            expect(response.result.source).toBe('bundled');
-            const models = response.result.models;
-            expect(Array.isArray(models)).toBe(true);
-            expect(models.some((model: any) => model.id === 'deepseek-v4-pro' && model.effort?.supportedLevels?.includes('low'))).toBe(true);
-        } finally {
-            (globalThis as any).fetch = originalFetch;
-        }
+        const response = await rpc.handle({ jsonrpc: '2.0', id: 21, method: 'model.catalog', params: {} }, { principalId: 'user-1' }) as any;
+        expect(response.result.source).toBe('bundled');
+        const models = response.result.models;
+        expect(Array.isArray(models)).toBe(true);
+        expect(models.some((model: any) => model.id === 'deepseek-v4-pro' && model.effort?.supportedLevels?.includes('low'))).toBe(true);
     }
 
     @Test('timeline.query projects aggregated entries and timeline.replay pages raw events idempotently')

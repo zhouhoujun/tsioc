@@ -12,7 +12,7 @@ export interface AgentConsoleSettingsData {
     timelineMode?: boolean;
     timelineViewMode?: 'off' | 'compact' | 'steps' | 'verbose';
     messageLayout?: 'stream' | 'viewport' | 'dynamic';
-    thinkingLevel?: 'low' | 'medium' | 'high';
+    thinkingLevel?: 'low' | 'medium' | 'high' | 'max';
     yoloMode?: boolean;
     taskFilter?: 'all' | 'failed' | 'rollback' | 'lineage';
     taskLineageRootId?: string;
@@ -42,7 +42,7 @@ export class AgentConsoleSettingsStore {
                     : parsed?.messageLayout === 'viewport' || parsed?.messageLayout === 'dynamic'
                         ? 'viewport'
                         : undefined,
-                thinkingLevel: parsed?.thinkingLevel === 'low' || parsed?.thinkingLevel === 'medium' || parsed?.thinkingLevel === 'high'
+                thinkingLevel: parsed?.thinkingLevel === 'low' || parsed?.thinkingLevel === 'medium' || parsed?.thinkingLevel === 'high' || parsed?.thinkingLevel === 'max'
                     ? parsed.thinkingLevel
                     : undefined,
                 yoloMode: typeof parsed?.yoloMode === 'boolean' ? parsed.yoloMode : undefined,

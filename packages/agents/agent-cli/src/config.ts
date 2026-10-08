@@ -384,10 +384,7 @@ export function writeSettingsModelProfile(root: string, profile: Partial<AgentCl
     const currentModel = current.model && typeof current.model === 'object' && !Array.isArray(current.model)
         ? { ...(current.model as Record<string, any>) }
         : undefined;
-    let nextModel: Record<string, any> = {
-        ...(currentModel || {}),
-        ...(profile as Record<string, any>)
-    };
+    let nextModel: Record<string, any> = { ...(currentModel || {}), ...(profile as Record<string, any>) };
 
     if (currentModel?.profiles || currentModel?.defaultProfile || currentModel?.complexityRouting) {
         nextModel = {
@@ -480,16 +477,12 @@ function removedConfigKeys(raw?: Record<string, any>, sanitized?: Record<string,
     return before.filter(key => !after.has(key));
 }
 
-export function writeInteractiveModelProfile(root: string, profile: AgentCliProviderProfile): string {    const resolvedRoot = path.resolve(root);
+export function writeInteractiveModelProfile(root: string, profile: AgentCliProviderProfile): string {
+    const resolvedRoot = path.resolve(root);
     const settingsPath = path.join(resolvedRoot, 'settings.json');
     const current = readJsonObject(settingsPath);
-    const currentModel = current.model && typeof current.model === 'object' && !Array.isArray(current.model)
-        ? current.model as Record<string, any>
-        : {};
-    return writeJsonObject(settingsPath, {
-        ...current,
-        model: sanitizeModelProfile({ ...currentModel, ...(profile as Record<string, any>) })
-    });
+    const currentModel = current.model && typeof current.model === 'object' && !Array.isArray(current.model) ? current.model as Record<string, any> : {};
+    return writeJsonObject(settingsPath, { ...current, model: sanitizeModelProfile({ ...currentModel, ...(profile as Record<string, any>) }) });
 }
 
 export function writeProviderProfile(root: string, profile: AgentCliProviderProfile): string {

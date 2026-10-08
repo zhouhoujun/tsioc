@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { loadModelProfileOptions } from '../src/AgentConsoleModelHandlers';
+import { activateModelProfile, loadModelProfileOptions } from '../src/AgentConsoleModelHandlers';
 
 function context() {
     return {
@@ -48,5 +48,37 @@ export class ModelCatalogOptionsTest {
         expect(pro.description).toBe('deepseek / deepseek-v4-pro');
         expect(pro.detail).toContain('low, high');
         expect(pro.detail).toContain('default high');
+    }
+
+    @Test('active model selection forwards the chosen reasoning effort')
+    async forwardsEffort() {
+        const calls: Array<{ method: string; params: any }> = [];
+        const ctx: any = {
+            appRpc: {
+                request: async (method: string, params: any) => {
+                    calls.push({ method, params });
+                    return { modelProfile: params.name, provider: 'deepseek', model: 'deepseek-v4-pro', reasoningEffort: params.reasoningEffort };
+                }
+            },
+            state: {
+                sessionId: 's1', modelProfile: '', oneShotModelProfile: '',
+                setModelProfile() {}, setProvider() {}, setModel() {}
+            },
+            options: () => ({}),
+            notify() {},
+            updateTerminalTitle() {},
+            nextActivateRequestId: () => 1,
+            peekActivateRequestId: () => 1,
+            getRecents: () => [], setRecents() {},
+            getFavorites: () => [], setFavorites() {},
+            getReasoningEffort: () => 'medium' as const,
+            setReasoningEffort() {},
+            resolveHistoryWorkspace: () => ''
+        };
+
+        await activateModelProfile(ctx, 'deepseek/deepseek-v4-pro', 'max');
+        expect(calls[0].method).toBe('model.activate');
+        expect(calls[0].params.reasoningEffort).toBe('max');
+        expect(calls[0].params.name).toBe('deepseek/deepseek-v4-pro');
     }
 }
