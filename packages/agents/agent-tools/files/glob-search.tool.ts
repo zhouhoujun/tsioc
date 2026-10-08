@@ -4,7 +4,7 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import globby = require('globby');
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
-import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, toRelativeWorkspacePath } from './path-policy';
+import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspaceSubdir, toRelativeWorkspacePath } from './path-policy';
 
 @Injectable()
 export class GlobSearchTool implements AgentTool {
@@ -13,7 +13,8 @@ export class GlobSearchTool implements AgentTool {
     inputSchema = {
         type: 'object',
         properties: {
-            pattern: { type: 'string' }
+            pattern: { type: 'string' },
+            path: { type: 'string', description: 'Workspace-relative directory to search in (default: workspace root).' }
         },
         required: ['pattern']
     };
@@ -33,7 +34,9 @@ export class GlobSearchTool implements AgentTool {
         }
         this.assertWorkspacePattern(input.pattern);
         const policy = resolveFilePolicy(this.options);
-        const matches = await globby(input.pattern, {
+        const subdir = resolveWorkspaceSubdir(input.path, policy.rootDir);
+        const pattern = subdir ? `${subdir}/${input.pattern}` : input.pattern;
+        const matches = await globby(pattern, {
             cwd: policy.rootDir,
             absolute: true,
             onlyFiles: true,

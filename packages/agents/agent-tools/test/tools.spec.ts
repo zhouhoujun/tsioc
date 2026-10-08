@@ -804,6 +804,26 @@ export class AgentToolsPackageTest {
         expect(outsideError?.message).toContain('workspace root');
     }
 
+    @Test('glob search scopes matches to the path directory')
+    async globSearchScopesToPath() {
+        const workspace = await this.createWorkspace();
+        await fs.mkdir(path.join(workspace, 'other'), { recursive: true });
+        await fs.writeFile(path.join(workspace, 'other', 'note.txt'), 'note', 'utf8');
+        const tool = new GlobSearchTool({ file: { rootDir: workspace } });
+
+        const scoped = await tool.invoke({ pattern: '**/*.txt', path: 'src' }, createSessionContext());
+        expect(scoped.matches).toContain('src/alpha.txt');
+        expect(scoped.matches.every((entry: string) => entry.startsWith('src/'))).toBe(true);
+
+        let outsideError: Error | undefined;
+        try {
+            await tool.invoke({ pattern: '**/*.txt', path: '../' }, createSessionContext());
+        } catch (err) {
+            outsideError = err as Error;
+        }
+        expect(outsideError?.message).toContain('workspace root');
+    }
+
     @Test('watch files records changes for workspace paths')
     async watchFilesRecordsChangesForWorkspacePaths() {
         const workspace = await this.createWorkspace();
@@ -949,6 +969,20 @@ export class AgentToolsPackageTest {
             invalid = err as Error;
         }
         expect(invalid?.message).toContain('regular expression');
+    }
+
+    @Test('content search scopes matches to the path directory')
+    async contentSearchScopesToPath() {
+        const workspace = await this.createWorkspace();
+        await fs.writeFile(path.join(workspace, 'root-note.txt'), 'beta outside', 'utf8');
+        const tool = new ContentSearchTool({ file: { rootDir: workspace, maxSearchResults: 20 } });
+
+        const all = await tool.invoke({ query: 'beta', glob: '**/*.txt' }, createSessionContext());
+        expect(all.matches.some((match: any) => match.path === 'root-note.txt')).toBe(true);
+
+        const scoped = await tool.invoke({ query: 'beta', glob: '**/*.txt', path: 'src' }, createSessionContext());
+        expect(scoped.matches.some((match: any) => match.path === 'root-note.txt')).toBe(false);
+        expect(scoped.matches.every((match: any) => match.path.startsWith('src/'))).toBe(true);
     }
 
     @Test('web search delegates to configured adapter')

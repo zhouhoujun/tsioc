@@ -5,7 +5,7 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import globby = require('globby');
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
-import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, toRelativeWorkspacePath } from './path-policy';
+import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspaceSubdir, toRelativeWorkspacePath } from './path-policy';
 
 @Injectable()
 export class ContentSearchTool implements AgentTool {
@@ -16,6 +16,7 @@ export class ContentSearchTool implements AgentTool {
         properties: {
             query: { type: 'string' },
             glob: { type: 'string' },
+            path: { type: 'string', description: 'Workspace-relative directory to search in (default: workspace root).' },
             regex: { type: 'boolean', description: 'Treat query as a regular expression (default false).' },
             caseSensitive: { type: 'boolean', description: 'Case-sensitive matching (default true).' }
         },
@@ -36,7 +37,9 @@ export class ContentSearchTool implements AgentTool {
             throw new Error('Invalid content_search input: query must be a non-empty string.');
         }
         const policy = resolveFilePolicy(this.options);
-        const patterns = typeof input.glob === 'string' && input.glob.trim() ? [input.glob] : policy.defaultGlob;
+        const subdir = resolveWorkspaceSubdir(input.path, policy.rootDir);
+        const basePatterns = typeof input.glob === 'string' && input.glob.trim() ? [input.glob] : policy.defaultGlob;
+        const patterns = basePatterns.map(pattern => subdir ? `${subdir}/${pattern}` : pattern);
         patterns.forEach(pattern => this.assertWorkspacePattern(pattern));
         const files = await globby(patterns, {
             cwd: policy.rootDir,

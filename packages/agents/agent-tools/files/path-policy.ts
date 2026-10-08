@@ -40,6 +40,16 @@ export function toRelativeWorkspacePath(filePath: string, rootDir: string): stri
     return path.relative(rootDir, filePath).split(path.sep).join('/');
 }
 
+export function resolveWorkspaceSubdir(targetPath: unknown, rootDir: string): string {
+    const value = String(targetPath ?? '').trim();
+    if (!value || value === '.' || value === './') {
+        return '';
+    }
+    const absolute = resolveWorkspacePath(value, rootDir);
+    const relative = path.relative(rootDir, absolute).split(path.sep).join('/');
+    return relative === '.' ? '' : relative;
+}
+
 export async function assertNoSymlinkInWorkspacePath(targetPath: string, rootDir: string, options?: { allowMissingPath?: boolean; }): Promise<void> {
     const absoluteRoot = path.resolve(rootDir);
     const relative = path.relative(absoluteRoot, targetPath);
