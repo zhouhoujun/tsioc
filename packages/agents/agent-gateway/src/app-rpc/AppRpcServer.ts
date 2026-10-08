@@ -1,7 +1,7 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { UuidGenerator } from '@tsdi/core';
-import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeAgentWorkspaceIdentity, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, CommandExchangeStore, CommandExchangeRecord, CommandExchangeStaleError, parseCommandExchangeRecord, redactCommandExchangeRecord, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, redactCommandOutputEntry, normalizeAgentRpcRequestMeta, COMMAND_EXCHANGE_STORE, BACKGROUND_TASK_HISTORY_STORE, BackgroundTaskHistoryStore, BackgroundTaskPageOptions, collectDelegationSessionIds, ExchangeMetrics, ExchangeMetricsSnapshot } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeAgentWorkspaceIdentity, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, CommandExchangeStore, CommandExchangeRecord, CommandExchangeStaleError, parseCommandExchangeRecord, redactCommandExchangeRecord, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, redactCommandOutputEntry, normalizeAgentRpcRequestMeta, COMMAND_EXCHANGE_STORE, BACKGROUND_TASK_HISTORY_STORE, BackgroundTaskHistoryStore, BackgroundTaskPageOptions, collectDelegationSessionIds, ExchangeMetrics, ExchangeMetricsSnapshot, fetchAgentModelCatalog } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -221,6 +221,7 @@ export class AppRpcServer {
                         'tools.activate',
                         'tools.invoke',
                         'model.list',
+                        'model.catalog',
                         'model.add',
                         'model.activate',
                         'provider.test',
@@ -430,6 +431,8 @@ export class AppRpcServer {
                 return this.invokeTool(params, context);
             case 'model.list':
                 return this.listModelProfiles();
+            case 'model.catalog':
+                return this.listModelCatalog(params);
             case 'model.add':
                 return this.addModelProvider(params);
             case 'provider.test':
@@ -1972,6 +1975,26 @@ export class AppRpcServer {
                 thinkingBudget: profile?.thinkingBudget
             }))
             .sort((left, right) => left.name.localeCompare(right.name));
+    }
+
+    private async listModelCatalog(params: any): Promise<any> {
+        const model = this.options.model || {};
+        const provider = String(params?.provider || model.provider || '').trim();
+        const catalog = await fetchAgentModelCatalog({
+            baseUrl: String(model.baseUrl || ''),
+            apiKey: model.apiKey,
+            apiKeyEnv: model.apiKeyEnv,
+            timeoutMs: model.timeoutMs
+        });
+        return {
+            provider: catalog.provider || provider,
+            source: catalog.source,
+            models: catalog.models.map(entry => ({
+                id: entry.id,
+                name: entry.name,
+                effort: entry.effort
+            }))
+        };
     }
 
     private async activateModelProfile(params: any, context: AppRpcRequestContext): Promise<any> {

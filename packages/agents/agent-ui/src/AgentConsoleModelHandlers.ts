@@ -108,7 +108,7 @@ export function getModelProfileOptions(ctx: ModelHandlerContext): AgentConsoleSe
 export async function loadModelProfileOptions(ctx: ModelHandlerContext): Promise<AgentConsoleSelectOption[]> {
     if (ctx.appRpc) {
         const profiles = await ctx.appRpc.request('model.list');
-        return Array.isArray(profiles)
+        const options: AgentConsoleSelectOption[] = Array.isArray(profiles)
             ? profiles.map((profile: any) => ({
                 label: profile?.selected ? `${profile.name} [current]` : String(profile?.name || ''),
                 value: String(profile?.name || ''),
@@ -124,6 +124,30 @@ export async function loadModelProfileOptions(ctx: ModelHandlerContext): Promise
                 ].filter(Boolean).join('\n')
             })).filter((item: AgentConsoleSelectOption) => !!item.value)
             : [];
+        const catalog = await ctx.appRpc.request('model.catalog', {}).catch(() => undefined);
+        const seen = new Set(options.map(option => option.value));
+        if (catalog && Array.isArray(catalog.models)) {
+            for (const entry of catalog.models) {
+                const id = String(entry?.id || '').trim();
+                if (!id) continue;
+                const provider = String(catalog.provider || '').trim();
+                const value = provider ? `${provider}/${id}` : id;
+                if (seen.has(value)) continue;
+                seen.add(value);
+                const levels: string[] = Array.isArray(entry?.effort?.supportedLevels) ? entry.effort.supportedLevels : [];
+                options.push({
+                    label: String(entry?.name || id),
+                    value,
+                    description: [provider, id].filter(Boolean).join(' / '),
+                    detail: [
+                        `Provider: ${provider || '-'}`,
+                        `Model: ${id}`,
+                        levels.length ? `Effort: ${levels.join(', ')}${entry?.effort?.defaultLevel ? ` (default ${entry.effort.defaultLevel})` : ''}` : ''
+                    ].filter(Boolean).join('\n')
+                });
+            }
+        }
+        return options;
     }
     return getModelProfileOptions(ctx);
 }

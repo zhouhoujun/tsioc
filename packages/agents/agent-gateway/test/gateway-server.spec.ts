@@ -3121,6 +3121,26 @@ export class AppRpcServerTest {
         expect(list.result).toHaveLength(1);
     }
 
+    @Test('model.catalog returns the provider catalog with effort levels')
+    async modelCatalogReturnsEffort() {
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
+        const owners = new SessionOwnerStore(store);
+        const runtime = { async getMessages() { return []; } } as any;
+        const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, {} as any, owners, new SessionHandler(runtime, store, owners), new EventHandler(owners));
+        const originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = undefined;
+        try {
+            const response = await rpc.handle({ jsonrpc: '2.0', id: 21, method: 'model.catalog', params: {} }, { principalId: 'user-1' }) as any;
+            expect(response.result.source).toBe('bundled');
+            const models = response.result.models;
+            expect(Array.isArray(models)).toBe(true);
+            expect(models.some((model: any) => model.id === 'deepseek-v4-pro' && model.effort?.supportedLevels?.includes('low'))).toBe(true);
+        } finally {
+            (globalThis as any).fetch = originalFetch;
+        }
+    }
+
     @Test('timeline.query projects aggregated entries and timeline.replay pages raw events idempotently')
     async queriesAndReplaysTimeline() {
         const { store, memory, timeline } = await createOrmSessionStore();

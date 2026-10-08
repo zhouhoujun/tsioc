@@ -139,6 +139,8 @@
 - **M3 — `/connect` provider 连接 + 校验**：新命令 `/connect`：列 provider（registry + `provider.json`，已连接 ✓）→ 选认证方式（API key）→ 输入 key → **先校验**（`${baseUrl}/v1/models` / `doctor --check-models` 同路径）→ 成功才存储凭据（`cliCredentialStore`）并**合并**写入 settings（不得整体替换、不得丢字段）→ 进入 `/model`。校验失败给出可操作错误且不写盘。
 - **M4 — 交互与安全**：key 输入掩码；已连接 provider 标记；缺失/无效 key 在 `/model`、`/doctor` 可见；不允许未校验配置持久化（延续 A1/P1 净化）。
 - **M5 — Router 兼容（必须）**：目录驱动选择必须与 `RoutedModelAdapter` 的路由配置共存——直接选模型只更新 top-level 且**保留** `profiles`/`defaultProfile`/`complexityRouting`/`routes`；`auto` 模式继续用 complexityRouting；选中的 provider/model/effort 必须能被 router 解析（未知 profile 走既有降级 + `getWarnings()`）；`model.list`/`model.activate` 展示的是 router 解析后的真实生效模型；`/connect` 新增的 provider 可被 `complexityRouting`/`routes` 引用。不得因新流程丢弃或改写成单一模型而破坏复杂度路由。
+- **M6 — 服务路由探测 + 本地 router 回退**：`/connect` 与 `/model` 先探测服务端是否提供 auto/路由能力（目录元数据）；不支持时以本地 `RoutedModelAdapter` 承载，配置向导让用户设置「难度 → 模型」映射（`simple`/`moderate`/`complex` → profile，即 `complexityRouting`），不写死具体模型；`auto` 模式走本地复杂度路由，`model.activate` 的目录式 `provider/model` 名称继续可用。
+- **进度**：M1 首批已落地——gateway 新增 `model.catalog`（`fetchAgentModelCatalog` 拉 `/v1/models`，离线回落 bundled，返回 `id/name/effort`；已测试）＋ agent-ui `loadModelProfileOptions` 合并服务目录模型（含 effort detail；已测试）。
 - **验收**：真实 provider 下 `/connect` 校验失败不写 settings、成功后可 `/model` 选到服务返回的模型与 effort；settings.json 不再被整体覆盖；无写死模型 id；zh/EN 文案；DOM/TUI 双端 + 回归。
 - **参考**：`~/workspace/opencode/packages/opencode/src/cli/cmd/tui/component/dialog-model.tsx`、`dialog-provider.tsx`、`dialog-variant.tsx`、`packages/opencode/src/provider/provider.ts`（`variants`）、`packages/opencode/src/cli/cmd/providers.ts`。
 
