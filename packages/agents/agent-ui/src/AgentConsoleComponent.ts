@@ -2418,6 +2418,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     shouldUseNativeScrollback(): boolean { return this.transcriptLayout.usesNativeScrollback; }
     shouldUseAlternateScreen(): boolean { return this.transcriptLayout.usesAlternateScreen; }
     shouldScrollViewport(): boolean { return !this.transcriptLayout.ownsHistoryScroll; }
+    resolveConsoleLayout(): 'stream' | 'viewport' { return this.transcriptLayout.mode; }
 
     getTerminalRenderedLines(): string[] {
         return this.surfaceAccessor?.getLastRenderedLines() || [];

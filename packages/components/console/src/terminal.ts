@@ -327,6 +327,30 @@ export abstract class ConsoleTerminalSurfaceLifecycle {
     shouldUseNativeScrollback?(): boolean;
     shouldUseAlternateScreen?(): boolean;
     shouldScrollViewport?(): boolean;
+    resolveConsoleLayout?(): ConsoleTranscriptLayoutMode | undefined;
+}
+
+export type ConsoleTranscriptLayoutMode = 'stream' | 'viewport';
+
+export interface ConsoleTranscriptLayoutFlags {
+    nativeScrollback: boolean;
+    scrollViewport: boolean;
+    alternateScreen: boolean;
+}
+
+export function resolveConsoleTranscriptLayoutFlags(
+    mode: ConsoleTranscriptLayoutMode | undefined,
+    lifecycle: ConsoleTerminalSurfaceLifecycle
+): ConsoleTranscriptLayoutFlags {
+    if (!mode) {
+        return {
+            nativeScrollback: lifecycle.shouldUseNativeScrollback?.() === true,
+            scrollViewport: lifecycle.shouldScrollViewport?.() !== false,
+            alternateScreen: lifecycle.shouldUseAlternateScreen?.() === true
+        };
+    }
+    const viewport = mode === 'viewport';
+    return { nativeScrollback: !viewport, scrollViewport: viewport, alternateScreen: viewport };
 }
 
 @Abstract()
@@ -501,6 +525,7 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
     protected mouseTrackingEnabled = true;
     protected readonly output = resolveConsoleHostProcess()?.stdout;
     protected useAlternateScreen = false;
+    protected surfaceLayout?: ConsoleTranscriptLayoutFlags;
     protected attachTimer?: ReturnType<typeof setTimeout>;
 
     constructor(
@@ -521,9 +546,11 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
             return;
         }
         this.mouseTrackingEnabled = lifecycle.shouldEnableTerminalMouseTracking?.() !== false;
+        const layout = resolveConsoleTranscriptLayoutFlags(lifecycle.resolveConsoleLayout?.(), lifecycle);
+        this.surfaceLayout = layout;
         this.useAlternateScreen = shouldUseAlternateScreen(
             resolveConsoleHostEnv(),
-            lifecycle.shouldUseAlternateScreen?.() === true
+            layout.alternateScreen
         );
         this.prepare();
         this.attach();
@@ -656,8 +683,8 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
             output: this.output,
             placeCursor: () => lifecycle?.shouldPlaceTerminalCursor?.() ?? false,
             cursorMode: () => lifecycle?.resolveTerminalCursorMode?.() ?? 'prompt',
-            nativeScrollback: () => lifecycle?.shouldUseNativeScrollback?.() === true,
-            scrollViewport: () => lifecycle?.shouldScrollViewport?.() !== false,
+            nativeScrollback: () => this.surfaceLayout ? this.surfaceLayout.nativeScrollback : lifecycle?.shouldUseNativeScrollback?.() === true,
+            scrollViewport: () => this.surfaceLayout ? this.surfaceLayout.scrollViewport : lifecycle?.shouldScrollViewport?.() !== false,
             mouseTrackingEnabled: this.mouseTrackingEnabled
         });
         this.surface.render();
