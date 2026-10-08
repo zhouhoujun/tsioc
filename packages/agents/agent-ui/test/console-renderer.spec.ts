@@ -711,7 +711,7 @@ export class AgentConsoleMessagesRendererTest {
             expect(consoleRef.instance.resolveTerminalCursorStyle()).toEqual('bar');
             expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(false);
             expect(consoleRef.instance.shouldUseAlternateScreen()).toBe(true);
-            expect(consoleRef.instance.shouldScrollViewport()).toBe(false);
+            expect(consoleRef.instance.shouldScrollViewport()).toBe(true);
             consoleRef.instance.sessionState.setStatus('running');
             expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(false);
             consoleRef.instance.sessionState.setConsoleOptions({ messageLayout: 'stream' });
@@ -720,7 +720,7 @@ export class AgentConsoleMessagesRendererTest {
             expect(consoleRef.instance.shouldScrollViewport()).toBe(true);
             consoleRef.instance.sessionState.setConsoleOptions({ messageLayout: 'viewport' });
             expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(false);
-            expect(consoleRef.instance.shouldScrollViewport()).toBe(false);
+            expect(consoleRef.instance.shouldScrollViewport()).toBe(true);
             consoleRef.instance.sessionState.setConsoleOptions({ messageLayout: 'stream' });
             const renderer = tuiCtx.get(TuiRenderer);
 
@@ -832,11 +832,10 @@ export class AgentConsoleMessagesRendererTest {
         }
     }
 
-    @Test('keeps the latest substantive user request visible while showing latest messages when unfocused')
-    async keepsLatestSubstantiveUserRequestVisibleWhileUnfocused() {
+    @Test('viewport renders the full transcript and lets the platform clip it')
+    async viewportRendersFullTranscript() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4, messageLayout: 'viewport' });
-        ref.instance.sessionState.setMessagesViewportItems(0);
         navigationFor(ref.instance.sessionState).setFocused(false);
         ref.instance.sessionState.setMessages([
             { id: 'u1', role: 'user', content: '设计一个在线考试系统', createdAt: 1 } as any,
@@ -852,14 +851,13 @@ export class AgentConsoleMessagesRendererTest {
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         const visibleIds = messagesPanel.instance.visibleMessages.map(message => message.id);
 
-        expect(visibleIds).toEqual(['u1', 'a2', 'u3', 'a3']);
+        expect(visibleIds).toEqual(['u1', 'a1', 'u2', 'a2', 'u3', 'a3']);
     }
 
-    @Test('viewport layout sizes the transcript window from terminal-derived items')
+    @Test('viewport renders the full transcript regardless of terminal window items')
     async viewportUsesTerminalWindowItems() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setConsoleOptions({ messageLayout: 'viewport', messagesVisibleItems: 2 });
-        ref.instance.sessionState.setMessagesViewportItems(0);
         ref.instance.sessionState.setMessages(Array.from({ length: 12 }, (_, index) => ({
             id: `msg-${index + 1}`,
             role: index % 2 === 0 ? 'user' : 'assistant',
@@ -869,11 +867,9 @@ export class AgentConsoleMessagesRendererTest {
         await settleDynamicMessages(ref);
 
         const panel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
-        expect(panel.instance.visibleMessages.length).toBeLessThanOrEqual(2);
+        expect(panel.instance.visibleMessages.length).toBe(12);
 
-        ref.instance.sessionState.setMessagesViewportItems(8);
-        await settleDynamicMessages(ref);
-        expect(panel.instance.visibleMessages.length).toBeGreaterThan(2);
+        expect(panel.instance.visibleMessages.length).toBe(12);
     }
 
 
@@ -894,11 +890,10 @@ export class AgentConsoleOperationalPanelsRendererTest {
     async clean() { await this.ctx?.close(); }
 
 
-    @Test('replaces the pinned root request when a newer substantive user request appears')
+    @Test('viewport renders every message including the latest substantive user request')
     async replacesPinnedRootRequestWhenNewerSubstantiveUserRequestAppears() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4, messageLayout: 'viewport' });
-        ref.instance.sessionState.setMessagesViewportItems(0);
         navigationFor(ref.instance.sessionState).setFocused(false);
         ref.instance.sessionState.setMessages([
             { id: 'u1', role: 'user', content: '设计一个在线考试系统', createdAt: 1 } as any,
@@ -918,7 +913,7 @@ export class AgentConsoleOperationalPanelsRendererTest {
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         const visibleIds = messagesPanel.instance.visibleMessages.map(message => message.id);
 
-        expect(visibleIds).toEqual(['u3', 'a4', 'u5', 'a5']);
+        expect(visibleIds).toEqual(['u1', 'a1', 'u2', 'a2', 'u3', 'a3', 'u4', 'a4', 'u5', 'a5']);
     }
 
     @Test('viewport layout collapses long non-final bodies but keeps the final answer expanded')

@@ -41,7 +41,7 @@ class ViewportTranscriptLayout implements AgentConsoleTranscriptLayout {
     readonly usesNativeScrollback = false;
     readonly usesAlternateScreen = true;
     readonly wheelScrollsHistory = true;
-    readonly ownsHistoryScroll = true;
+    readonly ownsHistoryScroll = false;
 
     scroll(delta: number, navigation: AgentConsoleTranscriptNavigationController): boolean {
         return navigation.scroll(delta);
@@ -76,4 +76,21 @@ export function trackMessagesNewCount(previousCount: number, nextCount: number, 
         return 0;
     }
     return nextCount > previousCount ? current + (nextCount - previousCount) : current;
+}
+
+export function scrollAgentConsoleTranscript(
+    surface: { scrollViewport?(rows: number): boolean } | null | undefined,
+    navigation: AgentConsoleTranscriptNavigationController,
+    syncFollowing: () => void,
+    delta: number
+): void {
+    if (surface?.scrollViewport) {
+        const rows = delta < 0 ? 3 : -3;
+        if (surface.scrollViewport(rows)) {
+            syncFollowing();
+            return;
+        }
+    }
+    navigation.scroll(delta);
+    syncFollowing();
 }

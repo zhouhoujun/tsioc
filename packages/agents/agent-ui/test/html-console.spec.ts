@@ -387,7 +387,7 @@ export class HtmlConsoleTest {
         expect(ref.instance.sessionState.inputFocused).toEqual(true);
     }
 
-    @Test('default message types stay expanded in a dynamic visible window')
+    @Test('default message types stay expanded in the full viewport transcript')
     async defaultMessageTypesStayExpandedInDynamicWindow() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4, messageLayout: 'viewport' });
@@ -405,7 +405,7 @@ export class HtmlConsoleTest {
         await ref.render();
         await settleDynamicMessages();
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
-        expect(messagesPanel.instance.visibleMessages.some(line => line.content === 'middle marker')).toEqual(false);
+        expect(messagesPanel.instance.visibleMessages.some(line => line.content === 'middle marker')).toEqual(true);
         expect(messagesPanel.instance.renderedLines.some(line => line.messageId === 's1' && line.content === 'line 90')).toEqual(true);
         expect(messagesPanel.instance.renderedLines.some(line => line.messageId === 's1' && line.previewCollapsed)).toEqual(false);
     }

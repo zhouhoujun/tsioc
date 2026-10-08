@@ -23,6 +23,7 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     dispatchMouse?(event: SelectMenuMouseEvent): void;
     scrollViewport?(deltaRows: number): boolean;
     scrollViewportToEdge?(edge: 'start' | 'end'): boolean;
+    isViewportFollowing?(): boolean | undefined;
     writeRawTerminalData?(data: string): void;
     notifyNonMouseInput?(): void;
     stopTerminal?(): void;

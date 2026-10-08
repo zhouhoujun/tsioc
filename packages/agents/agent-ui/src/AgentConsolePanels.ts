@@ -3,7 +3,6 @@ import { formatCompactNumber } from '@tsdi/core';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import { AgentMessage, basenameAgentPath, ScheduledAgentTask } from '@tsdi/agent';
-import { resolveTranscriptLayout } from './AgentConsoleTranscriptLayout';
 import {
     AgentConsoleActivity,
     AgentConsoleHealthItem,
@@ -45,7 +44,6 @@ import {
 } from './AgentConsoleTheme';
 import { AgentConsoleStatuslineField } from './AgentConsoleStatusline';
 import { DEFAULT_TIMELINE_LABELS, resolveTimelineWindowLedger, TimelineWindowMode } from './AgentConsoleTimelineWindow';
-import { agentUiDefaultFollowUpOnlyTermLists } from './agent-ui.i18n';
 import {
     buildCommonBrandBlock as buildTerminalBrandBlock,
     formatCommonIndexedOptionLabel as formatConsoleIndexedOptionLabel,
@@ -53,25 +51,6 @@ import {
     resolveCommonListWindow as resolveConsoleListWindow,
     resolveCommonSelectWindow as resolveConsoleSelectWindow
 } from '@tsdi/components/common';
-
-function escapeFollowUpTerm(value: string): string {
-    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function resolveFollowUpOnlyMessageRegex(translator?: TranslatorService): RegExp | undefined {
-    const translatedTerms = String(translator?.translate('agent.message.followUpOnlyTerms') || '');
-    const sources = translatedTerms.includes('|')
-        ? [translatedTerms, ...agentUiDefaultFollowUpOnlyTermLists]
-        : agentUiDefaultFollowUpOnlyTermLists;
-    const terms = sources
-        .flatMap(source => source.split('|'))
-        .map(term => term.trim())
-        .filter(Boolean)
-        .map(escapeFollowUpTerm);
-    return terms.length
-        ? new RegExp(`^(?:${terms.join('|')})(?:[\\s.!?~。！？、]*)$`, 'i')
-        : undefined;
-}
 
 function resolvePanelThemeStyles(state?: AgentConsoleSessionState, theme?: AgentConsoleTheme): AgentConsoleThemeStyles {
     return state?.themeStyles || resolveAgentConsoleThemeStyles(theme || defaultAgentConsoleTheme);
@@ -2572,7 +2551,6 @@ const messageItemsCache = new WeakMap<object, {
     statusLabels: AgentConsoleSessionState['consoleOptions']['messageStatusLabels'];
     statusSymbol: AgentConsoleSessionState['consoleOptions']['messageStatusSymbol'];
     username: AgentConsoleSessionState['consoleOptions']['username'];
-    visibleItems: number;
     rawMode: boolean;
     showTimestamps: boolean;
     showCriticalMarks: boolean;
@@ -2715,29 +2693,10 @@ export class AgentConsoleMessagesPanelComponent {
         if (this.state.timelineMode) {
             return this.resolveTimelineVisibleMessages(messages);
         }
-        const visibleCount = this.state.messagesViewportItems > 0
-            ? this.state.messagesViewportItems
-            : this.state.consoleOptions.messagesVisibleItems;
-        // MESSAGE LAYOUT CONTRACT: the layout strategy decides whether the
-        // transcript is native-scrollback (unbounded) or windowed.
-        if (resolveTranscriptLayout(this.state.consoleOptions.messageLayout).usesNativeScrollback) {
-            return messages;
-        }
-        if (this.state.messageDetailOpen) {
-            return messages;
-        }
-        if (!this.state.messagesFocused && messages.length > visibleCount) {
-            const pinnedIndex = this.resolvePinnedRootMessageIndex(messages);
-            if (pinnedIndex >= 0 && pinnedIndex < messages.length - visibleCount) {
-                return [
-                    messages[pinnedIndex],
-                    ...messages.slice(messages.length - Math.max(visibleCount - 1, 0))
-                ];
-            }
-        }
-        const selectedIndex = Math.max(0, messages.findIndex(message => message.id === this.state.selectedMessageId));
-        const window = resolveConsoleListWindow(messages.length, selectedIndex, visibleCount);
-        return messages.slice(window.start, window.start + window.count);
+        // MESSAGE LAYOUT CONTRACT: stream relies on native scrollback and
+        // viewport relies on the platform surface row scroll; both render the
+        // full transcript and let the platform viewport clip it.
+        return messages;
     }
 
     protected resolveTimelineVisibleMessages(
@@ -2745,9 +2704,7 @@ export class AgentConsoleMessagesPanelComponent {
     ): Array<{ id?: string; role?: string; content: string; metadata?: Record<string, any> }> {
         const result = resolveTimelineWindowLedger({
             messages,
-            limit: Math.max(1, this.state.messagesViewportItems > 0
-                ? this.state.messagesViewportItems
-                : this.state.consoleOptions.messagesVisibleItems),
+            limit: Math.max(1, this.state.consoleOptions.messagesVisibleItems),
             mode: this.state.timelineViewMode as TimelineWindowMode,
             activeScope: String(this.state.activeTurnEventScope || '').trim(),
             summaryLabels: this.state.consoleOptions.timelineLabels,
@@ -2763,9 +2720,6 @@ export class AgentConsoleMessagesPanelComponent {
         const theme = this.activeTheme;
         const selectedMessageId = this.state.selectedMessageId;
         const messagesFocused = this.state.messagesFocused;
-        const visibleItems = this.state.messagesViewportItems > 0
-            ? this.state.messagesViewportItems
-            : this.state.consoleOptions.messagesVisibleItems;
         const consoleOptions = this.state.consoleOptions;
         const rawMode = this.state.rawMode;
         const showTimestamps = this.state.consoleOptions.showMessageTimestamps && this.state.showTimestamps;
@@ -2785,7 +2739,6 @@ export class AgentConsoleMessagesPanelComponent {
             && cached.statusLabels === consoleOptions.messageStatusLabels
             && cached.statusSymbol === consoleOptions.messageStatusSymbol
             && cached.username === consoleOptions.username
-            && cached.visibleItems === visibleItems
             && cached.rawMode === rawMode
             && cached.showTimestamps === showTimestamps
             && cached.showCriticalMarks === showCriticalMarks
@@ -2824,7 +2777,6 @@ export class AgentConsoleMessagesPanelComponent {
             statusLabels: consoleOptions.messageStatusLabels,
             statusSymbol: consoleOptions.messageStatusSymbol,
             username: consoleOptions.username,
-            visibleItems,
             rawMode,
             showTimestamps,
             showCriticalMarks,
@@ -2839,7 +2791,7 @@ export class AgentConsoleMessagesPanelComponent {
     }
 
     get messagesHintLabel(): string {
-        if (!this.messages.length || !this.state.messagesFocused) {
+        if (!this.messages.length || !(this.state.messagesFocused || !this.state.transcriptFollowing)) {
             return '';
         }
         const hint = this.state.consoleOptions.messagesHint;
@@ -2948,32 +2900,6 @@ export class AgentConsoleMessagesPanelComponent {
         }
         return this.translator?.translate('agent.message.collapse')
             || 'Click to collapse';
-    }
-
-    protected resolvePinnedRootMessageIndex(
-        messages: Array<{ id?: string; role?: string; content: string; metadata?: Record<string, any> }>
-    ): number {
-        for (let index = messages.length - 1; index >= 0; index--) {
-            const message = messages[index];
-            if (String(message?.role || '').toLowerCase() !== 'user') {
-                continue;
-            }
-            if (this.isRootRequestCandidate(message?.content)) {
-                return index;
-            }
-        }
-        return messages.findIndex(message => String(message?.role || '').toLowerCase() === 'user');
-    }
-
-    protected isRootRequestCandidate(content: string | undefined): boolean {
-        const text = String(content || '').trim();
-        if (!text) {
-            return false;
-        }
-        if (text.startsWith('/')) {
-            return false;
-        }
-        return !resolveFollowUpOnlyMessageRegex(this.translator)?.test(text);
     }
 
     protected resolveMarkdownToneStyle(tone: AgentConsoleMarkdownTone): Record<string, string> {

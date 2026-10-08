@@ -162,8 +162,8 @@ import { decodeGlobalKey, describePendingToolCall, describeStreamEventContent } 
 import { AgentConsoleTurnStreamHost, AgentConsoleTurnStreamState, clearStreamingMessageState, consumeStreamChunkView, consumeStreamEventChunkView, runTurnStreamView } from './AgentConsoleTurnStreamController';
 import { AgentConsoleGlobalKeyInputHost, executeGlobalKeyActionView, handleBrowserGlobalKeyInputView, handleGlobalKeyInputView, handleGlobalKeySequenceView } from './AgentConsoleGlobalKeyInputController';
 import { AgentConsoleTurnInputHost, submitMultilineDraftView, submitView } from './AgentConsoleTurnInputController';
-import { AgentConsoleTerminalInputHost, closingSessionMessageView, handleTerminalInputView, openCommandPaletteView, requestTerminalExitView, syncConsoleMessageViewportView } from './AgentConsoleTerminalInputController';
-import { AgentConsoleTranscriptLayoutResolver, resolveTranscriptLayout } from './AgentConsoleTranscriptLayout';
+import { AgentConsoleTerminalInputHost, closingSessionMessageView, handleTerminalInputView, openCommandPaletteView, requestTerminalExitView } from './AgentConsoleTerminalInputController';
+import { AgentConsoleTranscriptLayoutResolver, resolveTranscriptLayout, scrollAgentConsoleTranscript } from './AgentConsoleTranscriptLayout';
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
 import { openSummaryQualityRecords, openTurnDiagnosticsListView, openTurnDiagnosticsTrendView, openSummaryQualityTrendView, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshTurnDiagnosticsDigest, refreshUsageDigest, runHarnessStopCommand } from './AgentConsoleDiagnosticsView';
 import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
@@ -1596,7 +1596,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         await this.restoreRawMode();
         await this.restoreModelStore();
         await this.restoreSettings();
-        syncConsoleMessageViewportView(this.terminalInputHost());
+        this.state.setTranscriptFollowProvider(() => this.surfaceAccessor?.isViewportFollowing?.() ?? true);
         this.updateTerminalTitle();
         await this.resolveGitBranch();
         // Do not ask app.state for an implicit session: that RPC creates and
@@ -2961,7 +2961,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             sessionService: this.sessionService,
             isTurnInProgress: () => this.isTurnInProgress(),
             notify: (message: string, duration?: number) => this.notify(message, duration),
-            scrollMessages: (delta: number) => this.transcriptLayout.scroll(delta, this.transcriptNavigationController),
+            scrollMessages: (delta: number) => scrollAgentConsoleTranscript(this.surfaceAccessor, this.transcriptNavigationController, () => this.state.syncTranscriptFollowing(), delta),
             getTerminalRenderedLines: () => this.getTerminalRenderedLines(),
             handleGlobalKeyInput: (raw: string) => this.handleGlobalKeyInput(raw),
             detachSshShell: (reason: 'detached' | 'closed') => this.detachSshShell(reason),

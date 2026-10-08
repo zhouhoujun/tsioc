@@ -101,10 +101,7 @@ export abstract class AgentConsoleTranscriptNavigationController {
     }
 
     protected resolveScrollPageSize(): number {
-        const stateAny = this.state as any;
-        const vp = stateAny.messagesViewportItems ?? stateAny.messagesVisibleItems;
-        if (typeof vp === 'number' && vp > 0) return vp;
-        const opt = stateAny.consoleOptions?.messageSelectionPageSize ?? stateAny.consoleOptions?.messagesVisibleItems;
+        const opt = this.state.consoleOptions?.messageSelectionPageSize;
         return Math.max(1, typeof opt === 'number' ? opt : 1);
     }
 

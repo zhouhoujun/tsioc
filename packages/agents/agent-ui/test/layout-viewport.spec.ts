@@ -5,7 +5,7 @@ import * as path from 'path';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { runLayoutCommand } from '../src/AgentConsoleSettingsCommands';
-import { syncConsoleMessageViewportView, handleTerminalInputView } from '../src/AgentConsoleTerminalInputController';
+import { handleTerminalInputView } from '../src/AgentConsoleTerminalInputController';
 import { resolveTranscriptLayout } from '../src/AgentConsoleTranscriptLayout';
 import { AgentConsoleSettingsStore } from '../src/AgentConsoleSettingsStore';
 import { defaultAgentConsoleOptions } from '../src/AgentConsoleSessionState';
@@ -68,25 +68,6 @@ export class AgentConsoleViewportLayoutTest {
         await runLayoutCommand('bogus', harness.state as any, message => notices.push(message), async () => {});
         expect(harness.current).toEqual('viewport');
         expect(notices[notices.length - 1]).toContain('Usage: /layout');
-    }
-
-    @Test('viewport mode sizes the transcript window from terminal rows')
-    syncsViewportFromTerminalRows() {
-        const host: any = {
-            state: {
-                consoleOptions: { messageLayout: 'viewport' },
-                messagesViewportItems: 0,
-                setMessagesViewportItems(value: number) { this.messagesViewportItems = value; }
-            },
-            surfaceAccessor: { getTerminalSize: () => ({ rows: 30 }) }
-        };
-        syncConsoleMessageViewportView(host);
-        expect(host.state.messagesViewportItems).toEqual(24);
-
-        host.state.consoleOptions.messageLayout = 'stream';
-        host.state.messagesViewportItems = 0;
-        syncConsoleMessageViewportView(host);
-        expect(host.state.messagesViewportItems).toEqual(0);
     }
 
     @Test('settings store round-trips viewport and normalizes legacy dynamic')
@@ -166,8 +147,6 @@ export class AgentConsoleViewportLayoutTest {
         const state: any = {
             consoleOptions: { messageLayout: 'viewport', messageToggleInteraction: 'enter' },
             messageDetailVisibleLines: 6,
-            messagesViewportItems: 0,
-            setMessagesViewportItems() {},
             setMessageDetailVisibleLines() {}
         };
         const host: any = {

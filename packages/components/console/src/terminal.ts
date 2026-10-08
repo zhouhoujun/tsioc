@@ -13,7 +13,7 @@ import { Abstract, Inject, Injectable, Injector, Optional, Provider, token } fro
 import { getDisplayWidth, sliceByDisplayWidth } from './display-width';
 import { noReact, RNode, Renderer } from '@tsdi/components';
 import { ConsoleElement, ConsoleNode } from './console';
-import { ScrollBox } from './scroll-box';
+import { ScrollBox } from '@tsdi/components/common';
 
 const CHAT_COMMANDS = ['/help', '/tools', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/copy', '/quit', '/exit'];
 
@@ -342,6 +342,7 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     dispatchKey?(_event: { key: string; [name: string]: unknown }): boolean { return false; }
     scrollViewport?(_deltaRows: number): boolean { return false; }
     scrollViewportToEdge?(_edge: 'start' | 'end'): boolean { return false; }
+    isViewportFollowing?(): boolean | undefined { return undefined; }
     abstract notifyNonMouseInput?(): boolean;
     abstract writeTerminalClipboardText(text: string): boolean;
     abstract writeRawTerminalData?(text: string): boolean;
@@ -569,6 +570,10 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
 
     scrollViewportToEdge?(edge: 'start' | 'end'): boolean {
         return this.surface?.scrollViewportToEdge(edge) ?? false;
+    }
+
+    isViewportFollowing?(): boolean | undefined {
+        return this.surface?.viewportFollowing;
     }
 
     notifyNonMouseInput?(): boolean {

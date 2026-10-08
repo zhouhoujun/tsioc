@@ -601,8 +601,6 @@ export class AgentConsoleSessionState {
     projectCommandExecution(requestId: string): void { this.syncCommandExecutionTranscript(requestId); }
     consoleOptions: Required<AgentConsoleOptions> = defaultAgentConsoleOptions;
     messageDetailVisibleLines = defaultAgentConsoleOptions.messageDetailVisibleLines;
-    /** Terminal-height-derived window size for viewport layout (0 = fall back to configured items). */
-    messagesViewportItems = 0;
     sessionId = 'console';
     input = '';
     inputSecret = false;
@@ -617,6 +615,9 @@ export class AgentConsoleSessionState {
     messagesFocused = false;
     /** Messages that arrived while the viewport transcript is scrolled up (0 = following latest). */
     messagesNewCount = 0;
+    /** True when the platform transcript viewport is following the latest content. */
+    transcriptFollowing = true;
+    private transcriptFollowProvider?: () => boolean;
     selectedMessageId = '';
     messageDetailOpen = false;
     messageDetailTakesFocus = true;
@@ -1306,7 +1307,9 @@ export class AgentConsoleSessionState {
                 this.messageDetailColumnScroll = 0;
             }
         }
-        if (this.messagesFocused) {
+        const following = this.transcriptFollowProvider ? this.transcriptFollowProvider() : true;
+        this.transcriptFollowing = following;
+        if (this.messagesFocused || !following) {
             this.messagesNewCount = trackMessagesNewCount(previousCount, this.messages.length, true, this.messagesNewCount);
         } else {
             this.messagesNewCount = 0;
@@ -2281,6 +2284,18 @@ export class AgentConsoleSessionState {
     setMessagesFocused(focused: boolean): void {
         this.messagesFocused = !!focused;
         this.syncDerivedInputFocus();
+    }
+
+    setTranscriptFollowProvider(provider?: () => boolean): void {
+        this.transcriptFollowProvider = provider;
+    }
+
+    syncTranscriptFollowing(): void {
+        const following = this.transcriptFollowProvider ? this.transcriptFollowProvider() : true;
+        this.transcriptFollowing = following;
+        if (following) {
+            this.messagesNewCount = 0;
+        }
     }
 
     setInputPlaceholder(value: string): void {
@@ -4772,13 +4787,6 @@ export class AgentConsoleSessionState {
         if (!this.vimMode) {
             this.inputMode = 'insert';
             this.vimPendingKey = '';
-        }
-    }
-
-    setMessagesViewportItems(value: number): void {
-        const items = Math.max(0, Math.floor(Number(value) || 0));
-        if (this.messagesViewportItems !== items) {
-            this.messagesViewportItems = items;
         }
     }
 
