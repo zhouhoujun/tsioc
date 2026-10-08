@@ -178,6 +178,14 @@ export class ScrollBox {
         return moved || wasManual;
     }
 
+    reset(): void {
+        this.topRow = 0;
+        this.contentRows = 0;
+        this.viewportRows = 0;
+        this.manual = false;
+        this.newItems = 0;
+    }
+
     resolveVisibleRange(): ScrollBoxVisibleRange {
         if (this.viewportRows <= 0 || this.topRow >= this.contentRows) {
             return { start: this.topRow, count: 0 };

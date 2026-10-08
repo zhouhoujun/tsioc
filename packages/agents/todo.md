@@ -97,7 +97,7 @@
 - **目标（对齐 openTUI ScrollBox 契约）**：在 **`components/console`** 引入可复用的滚动视口模型（`scrollTop`/`scrollHeight`/`viewportHeight` + `stickyScroll`/`stickyStart:'bottom'` + 手动滚动暂停与回到底部自动恢复跟随 + `scrollChildIntoView` + 视口裁剪 + 键位），agent-ui 转录只把渲染后的内容交给它；**滚动不改变选中**，选中只用于打开 inspector/detail；滚轮/方向键（1/5 视口）/PageUp·PageDown（1/2 视口）/Home·End 映射行；向上滚动暂停跟随并显示「N 条新消息 / 跳到底部」，回到底部自动恢复。
 - **分层（2026-10 用户确认）**：基础滚动能力归 **`components/console`**（TUI 由 `TuiTerminalSurface` 接入；DOM 侧由 `components/html` 或宿主适配）；**agent-ui 只负责业务**——把渲染后的消息内容喂给 ScrollBox、决定折叠语义、把 `/layout` 偏好经生命周期标志（`shouldUseNativeScrollback`/`shouldScrollViewport`/`shouldUseAlternateScreen`）交给平台；**不得在 `SessionState`/`AgentConsoleComponent` 里自行计算滚动 offset/粘底/新消息计数**。
 - **涉及**：`components/console/src/scroll-box.ts`（模型）+ `terminal.ts`（surface 接入）+ `components/html`（DOM 适配）；`agent-ui/src/AgentConsoleTranscriptLayout.ts`、`AgentConsolePanels.ts`（去掉按消息条数开窗）、`AgentConsoleTerminalInputController.ts`、`web-console/web-console.ts`；消除 components/console 与 agent-ui 的 PageUp/Down 双重处理。
-- **进度**：`components/console/src/scroll-box.ts` renderer-neutral `ScrollBox` 模型已落地（7 用例，`components/console` 94 passing）；surface 接入、DOM 对齐、agent-ui 去除开窗与滚动状态待续。
+- **进度**：`ScrollBox` 模型已落地（7 用例）；`TuiTerminalSurface` 已接入（row scroll + `stickyStart:'bottom'` 粘底跟随 + 手动滚动期间阅读位置稳定 + `viewportFollowing`/`acknowledgeViewportFollow`，新增 surface 用例）；`components/console` 95 passing；DOM 对齐与 agent-ui 收敛（去掉按消息条数开窗与滚动状态，经生命周期暴露）待续。
 - **验收**：滚动不改 `selectedMessageId`；到底判定精确（无 1 行容差）；向上滚动显示新消息计数、回到底部恢复粘底；TUI/DOM 行为矩阵一致；新增 DOM/TUI/PTY 边界回归。
 
 #### U2 — 视窗高度按真实 chrome 测量 + resize 响应

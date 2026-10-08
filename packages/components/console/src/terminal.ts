@@ -13,6 +13,7 @@ import { Abstract, Inject, Injectable, Injector, Optional, Provider, token } fro
 import { getDisplayWidth, sliceByDisplayWidth } from './display-width';
 import { noReact, RNode, Renderer } from '@tsdi/components';
 import { ConsoleElement, ConsoleNode } from './console';
+import { ScrollBox } from './scroll-box';
 
 const CHAT_COMMANDS = ['/help', '/tools', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/copy', '/quit', '/exit'];
 
@@ -250,6 +251,8 @@ export interface TuiTerminalSurfaceOptions {
     nativeScrollback?: boolean | (() => boolean);
     /** Whether the surface may keep its own transcript scroll region. Defaults to true; set false when the app owns history scrolling. */
     scrollViewport?: boolean | (() => boolean);
+    stickyScroll?: boolean;
+    stickyStart?: 'top' | 'bottom';
     stablePrefixRows?: number | ((lines: string[]) => number);
     stableRegionId?: string | string[];
     scheduler?: (task: () => void) => void;
@@ -742,9 +745,11 @@ export class TuiTerminalSurface {
     protected reclaimTimer?: ReturnType<typeof setTimeout>;
     protected scrollOffsetRows = 0;
     protected maxScrollOffsetRows = 0;
+    protected readonly scrollBox = new ScrollBox();
 
     constructor(protected options: TuiTerminalSurfaceOptions) {
         this.bindOutputResize();
+        this.scrollBox.setSticky(options.stickyScroll !== false, options.stickyStart ?? 'bottom');
         if (options.root) {
             this.attach(options.root);
         }
@@ -785,6 +790,19 @@ export class TuiTerminalSurface {
         return this.maxScrollOffsetRows;
     }
 
+    get viewportFollowing(): boolean {
+        return this.scrollBox.following;
+    }
+
+    acknowledgeViewportFollow(): boolean {
+        const moved = this.scrollBox.resumeFollow();
+        if (moved) {
+            this.scrollOffsetRows = this.scrollBox.maxTop - this.scrollBox.top;
+            this.requestRender();
+        }
+        return moved;
+    }
+
     attach(root: RNode | RNode[]): this {
         this.detach();
         this.root = root;
@@ -812,6 +830,7 @@ export class TuiTerminalSurface {
         this.clickTargetsCache = [];
         this.scrollOffsetRows = 0;
         this.maxScrollOffsetRows = 0;
+        this.scrollBox.reset();
         this.scheduled = false;
         this.pendingRenderOrigin = undefined;
     }
@@ -899,11 +918,10 @@ export class TuiTerminalSurface {
         if (!delta || !this.maxScrollOffsetRows) {
             return false;
         }
-        const next = Math.max(0, Math.min(this.maxScrollOffsetRows, this.scrollOffsetRows + delta));
-        if (next === this.scrollOffsetRows) {
+        if (!this.scrollBox.scrollBy(-delta)) {
             return false;
         }
-        this.scrollOffsetRows = next;
+        this.scrollOffsetRows = this.scrollBox.maxTop - this.scrollBox.top;
         this.requestRender();
         return true;
     }
@@ -912,11 +930,10 @@ export class TuiTerminalSurface {
         if (!this.isScrollViewportEnabled()) {
             return false;
         }
-        const next = edge === 'start' ? this.maxScrollOffsetRows : 0;
-        if (next === this.scrollOffsetRows) {
+        if (!this.scrollBox.scrollToEdge(edge)) {
             return false;
         }
-        this.scrollOffsetRows = next;
+        this.scrollOffsetRows = this.scrollBox.maxTop - this.scrollBox.top;
         this.requestRender();
         return true;
     }
@@ -1106,8 +1123,9 @@ export class TuiTerminalSurface {
         const transcript = allLines.slice(scrollRegion.startRow, footerRegion.startRow);
         const footer = allLines.slice(footerRegion.startRow);
         const availableRows = Math.max(0, height - prefix.length - footer.length);
-        this.maxScrollOffsetRows = this.isScrollViewportEnabled() ? Math.max(0, transcript.length - availableRows) : 0;
-        this.scrollOffsetRows = Math.max(0, Math.min(this.scrollOffsetRows, this.maxScrollOffsetRows));
+        this.scrollBox.setMetrics(transcript.length, this.isScrollViewportEnabled() ? availableRows : transcript.length);
+        this.maxScrollOffsetRows = this.scrollBox.maxTop;
+        this.scrollOffsetRows = this.scrollBox.maxTop - this.scrollBox.top;
         const end = Math.max(0, transcript.length - this.scrollOffsetRows);
         const start = Math.max(0, end - availableRows);
         const visibleTranscript = transcript.slice(start, end);

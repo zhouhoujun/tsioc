@@ -2117,6 +2117,55 @@ export class ConsoleRendererTest {
         surface.destroy();
     }
 
+    @Test('viewport keeps the transcript pinned to the bottom and stable while reading history')
+    viewportStickyFollowAndStableReadingPosition() {
+        let lines = Array.from({ length: 200 }, (_value, index) => `line ${index + 1}`);
+        const root = { addEventListener() {}, removeEventListener() {} } as any;
+        const surface = new TuiTerminalSurface({
+            renderer: {
+                renderToTuiLayout: () => ({
+                    lines,
+                    regions: [
+                        { id: 'transcript', startRow: 0, endRow: lines.length },
+                        { id: 'footer', startRow: lines.length, endRow: lines.length }
+                    ]
+                })
+            },
+            root,
+            width: 80,
+            height: 32,
+            nativeScrollback: false,
+            scrollViewport: true,
+            scrollRegionId: 'transcript',
+            footerRegionId: 'footer',
+            output: { write() {} }
+        });
+        surface.render();
+
+        expect(surface.viewportMaxScrollOffset).toEqual(168);
+        expect(surface.viewportScrollOffset).toEqual(0);
+        expect(surface.viewportFollowing).toEqual(true);
+        expect(surface.lastRenderedLines[31]).toEqual('line 200');
+
+        expect(surface.scrollViewport(5)).toEqual(true);
+        surface.render();
+        expect(surface.viewportScrollOffset).toEqual(5);
+        expect(surface.viewportFollowing).toEqual(false);
+        const anchor = surface.lastRenderedLines[0];
+
+        lines = [...lines, ...Array.from({ length: 10 }, (_value, index) => `line ${201 + index}`)];
+        surface.render();
+        expect(surface.viewportScrollOffset).toEqual(15);
+        expect(surface.lastRenderedLines[0]).toEqual(anchor);
+
+        expect(surface.scrollViewportToEdge('end')).toEqual(true);
+        surface.render();
+        expect(surface.viewportScrollOffset).toEqual(0);
+        expect(surface.viewportFollowing).toEqual(true);
+        expect(surface.lastRenderedLines[31]).toEqual('line 210');
+        surface.destroy();
+    }
+
     @Test('windows terminal rendered blocks locally')
     windowsTerminalRenderedBlocksLocally() {
         expect(compactRenderedLines(['', 'old', 'new', ''], 2)).toEqual(['old', 'new']);
