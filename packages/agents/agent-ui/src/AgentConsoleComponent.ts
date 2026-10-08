@@ -295,7 +295,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     };
 
     shouldEnableTerminalMouseTracking(): boolean {
-        return false;
+        return !this.transcriptLayout.usesNativeScrollback;
     }
     protected static readonly DOCUMENT_MIME_TYPES: Record<string, string> = {
         '.pdf': 'application/pdf'

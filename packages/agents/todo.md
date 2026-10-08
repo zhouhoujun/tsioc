@@ -41,7 +41,7 @@
 - 语义路由：user/final、thought、tool、command、event、question、approval、plan、file、attachment、diagnostic。
 - 时间线：turn/step/event 三层；tool lifecycle 按 `toolCallId` 逐调用成行、pending 与 completion 原地归并（同一事实只出现一次）；总耗时优先后端 `durationMs`，缺失按保留的开始时间推导；折叠摘要 + detail inspector；事件仅显动作/对象/状态/摘要，raw payload/stdout/stack/diff 进 inspector。
 - 审批/问答：新审批到达自动聚焦 approval 面板（让位 pending question / select / inspector 等更高优先级层），显示 `Allow <tool>?` + 命令预览 + 原因/到期与固定操作键；pending question 支持输入框自定义答案、空草稿数字选择编号、队列计数。
-- 布局：默认 `viewport` 全屏窗口 + 长度折叠 + `/layout [stream|viewport]` 持久化（旧 `dynamic` 兼容为 `viewport`）；`stream` 全程 native scrollback、不按视口裁剪历史；视窗内历史滚动（滚轮/PageUp/PageDown、向上暂停跟随并提示 N 条新消息、滚到底/Esc 恢复跟随）由 `AgentConsoleTranscriptLayout` 策略收敛，平台适配层各自路由（TUI `TerminalInputController`、DOM `web-console`）。
+- 布局：默认 `viewport` 全屏窗口 + 长度折叠 + `/layout [stream|viewport]` 持久化（旧 `dynamic` 兼容为 `viewport`）；`stream` 全程 native scrollback、不按视口裁剪历史；视窗内历史滚动（滚轮/PageUp/PageDown、向上暂停跟随并提示 N 条新消息、滚到底/Esc 恢复跟随）由 `AgentConsoleTranscriptLayout` 策略收敛，平台适配层各自路由（TUI `TerminalInputController`、DOM `web-console`）。`viewport` 下启用终端鼠标跟踪（wheel/click 送达应用并由 surface 行滚动），`stream` 保持 native（原生选择/滚动）。
 - 焦点基础设施：components core `FocusMonitor`/`FocusTrap`/受控 `[focused]` 指令；转录导航归 `AgentConsoleTranscriptNavigation`；`AgentConsoleSessionState` 只承载数据与平凡 setter/getter（无 `subscribe`/`listeners`/`notify`/`batch`，无布局/平台行为）。
 - 输入：multiline draft、stash、external editor、Vim、keymap、suggestions、workspace mentions、slash palette；turn 运行中 Enter 默认排队（FIFO），steer 需显式 `ui.steerMode`；输入行 `N queued` 徽标常驻。
 - 呈现：Markdown、CJK 宽度、80/100/120 列、主题、ARIA、键盘与鼠标；工具行本地化动作 + 主参数（`Read file: <path>`）；工具批行 >3 折叠 `· +N more`（已被逐调用成行取代）；失败/阻塞行 `r` 就地重试；@mention 以紧凑 `Files · <paths>` 展示且运行时仍携带完整上下文。

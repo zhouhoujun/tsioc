@@ -712,12 +712,14 @@ export class AgentConsoleMessagesRendererTest {
             expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(false);
             expect(consoleRef.instance.shouldUseAlternateScreen()).toBe(true);
             expect(consoleRef.instance.shouldScrollViewport()).toBe(true);
+            expect(consoleRef.instance.shouldEnableTerminalMouseTracking()).toBe(true);
             consoleRef.instance.sessionState.setStatus('running');
             expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(false);
             consoleRef.instance.sessionState.setConsoleOptions({ messageLayout: 'stream' });
             expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(true);
             expect(consoleRef.instance.shouldUseAlternateScreen()).toBe(false);
             expect(consoleRef.instance.shouldScrollViewport()).toBe(true);
+            expect(consoleRef.instance.shouldEnableTerminalMouseTracking()).toBe(false);
             consoleRef.instance.sessionState.setConsoleOptions({ messageLayout: 'viewport' });
             expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(false);
             expect(consoleRef.instance.shouldScrollViewport()).toBe(true);
