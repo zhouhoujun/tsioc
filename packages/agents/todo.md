@@ -130,6 +130,17 @@
 
 ---
 
+### M 系列 — `/model` 与 `/connect`（参考 opencode `dialog-model.tsx` / `dialog-provider.tsx`）
+
+> 现状问题：`/model` 只认已配置 profile，模型 id（如 `deepseek-v4-pro`）写死；添加/切换 provider 时未经校验即写 settings，且整体替换 model 丢失 `baseUrl`/凭据；没有从服务拉取模型与 effort（`default`/`low`…）让用户选择。opencode 的做法：`/model` 从 server 的 provider/model catalog 拉全量模型，支持 favorite/recent/模糊搜索，选中后再选 variant（effort）；`/connect` 先选 provider → 选认证方式 → 输入 API key → 校验 → 存储凭据 → 再进入 `/model` 选择。
+
+- **M1 — 服务端模型目录驱动 `/model`（去写死）**：`model.list` 返回当前 provider 的**实际**模型（`ModelCatalog.fetchAgentModelCatalog` 拉 `/v1/models`，离线回落 bundled），含 `effort.supportedLevels/defaultLevel`；`/model` 面板展示「Favorites / Recent / 全部模型（按 provider 分组）」并支持模糊搜索；移除 `deepseek-v4-pro` 等写死默认，默认取目录首个或用户选择。涉及 `agent-gateway` `model.list`、`agent-ui` `AgentConsoleModelHandlers` / 新 dialog、`agent/src/model/ModelCatalog.ts`。
+- **M2 — effort/variant 选择**：选中模型后，若目录给出 `supportedLevels`（如 `low/medium/high/max`）则弹出 variant 选择（`default` + 各 level），持久化 `reasoningEffort`；opencode `DialogVariant` 对应。
+- **M3 — `/connect` provider 连接 + 校验**：新命令 `/connect`：列 provider（registry + `provider.json`，已连接 ✓）→ 选认证方式（API key）→ 输入 key → **先校验**（`${baseUrl}/v1/models` / `doctor --check-models` 同路径）→ 成功才存储凭据（`cliCredentialStore`）并**合并**写入 settings（不得整体替换、不得丢字段）→ 进入 `/model`。校验失败给出可操作错误且不写盘。
+- **M4 — 交互与安全**：key 输入掩码；已连接 provider 标记；缺失/无效 key 在 `/model`、`/doctor` 可见；不允许未校验配置持久化（延续 A1/P1 净化）。
+- **验收**：真实 provider 下 `/connect` 校验失败不写 settings、成功后可 `/model` 选到服务返回的模型与 effort；settings.json 不再被整体覆盖；无写死模型 id；zh/EN 文案；DOM/TUI 双端 + 回归。
+- **参考**：`~/workspace/opencode/packages/opencode/src/cli/cmd/tui/component/dialog-model.tsx`、`dialog-provider.tsx`、`dialog-variant.tsx`、`packages/opencode/src/provider/provider.ts`（`variants`）、`packages/opencode/src/cli/cmd/providers.ts`。
+
 ### 遗留观察（收尾时必须确认）
 
 - 视窗模式 layout 持久化与 alternate-screen 退出语义需持续由真实 PTY 覆盖（归入 U5）；`/close` 退出后命令窗口提示与历史保留需一并复验。
