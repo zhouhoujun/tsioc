@@ -3144,6 +3144,41 @@ export class AppRpcServerTest {
         expect(response.result.reasoningEffort).toBe('max');
     }
 
+    @Test('catalog model activation preserves router profiles and complexity routing')
+    async catalogActivationPreservesRouter() {
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const runtime = { async getMessages() { return []; } } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, {} as any, owners, sessions, events, {
+            model: {
+                provider: 'deepseek', model: 'deepseek-v4-flash', defaultProfile: 'flash',
+                profiles: {
+                    flash: { provider: 'deepseek', model: 'deepseek-v4-flash' },
+                    strong: { provider: 'deepseek', model: 'deepseek-v4-pro' }
+                },
+                complexityRouting: { simple: 'flash', moderate: 'flash', complex: 'strong' }
+            }
+        } as any);
+        await owners.create('router-s1', 'user-1');
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0', id: 41, method: 'model.activate',
+            params: { sessionId: 'router-s1', name: 'openai/gpt-4.1' }
+        }, { principalId: 'user-1' }) as any;
+        expect(response.error).toBeUndefined();
+        expect(response.result).toMatchObject({ provider: 'openai', model: 'gpt-4.1', catalog: true });
+
+        const model = (rpc as any).options.model;
+        expect(model.provider).toBe('openai');
+        expect(model.model).toBe('gpt-4.1');
+        expect(model.profiles.flash).toBeTruthy();
+        expect(model.profiles.strong.model).toBe('deepseek-v4-pro');
+        expect(model.complexityRouting.complex).toBe('strong');
+    }
+
     @Test('model.catalog returns the provider catalog with effort levels')
     async modelCatalogReturnsEffort() {
         const { store } = await createOrmSessionStore();
@@ -3153,6 +3188,7 @@ export class AppRpcServerTest {
         const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, {} as any, owners, new SessionHandler(runtime, store, owners), new EventHandler(owners));
         const response = await rpc.handle({ jsonrpc: '2.0', id: 21, method: 'model.catalog', params: {} }, { principalId: 'user-1' }) as any;
         expect(response.result.source).toBe('bundled');
+        expect(response.result.routingSupported).toBe(false);
         const models = response.result.models;
         expect(Array.isArray(models)).toBe(true);
         expect(models.some((model: any) => model.id === 'deepseek-v4-pro' && model.effort?.supportedLevels?.includes('low'))).toBe(true);

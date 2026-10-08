@@ -3,6 +3,7 @@ import { AgentOptions, fetchAgentModelCatalog } from '@tsdi/agent';
 export async function resolveModelCatalog(options: AgentOptions | undefined, provider?: string): Promise<{
     provider: string;
     source: string;
+    routingSupported: boolean;
     models: Array<{ id: string; name?: string; effort?: unknown }>;
 }> {
     const model = options?.model || {};
@@ -15,6 +16,7 @@ export async function resolveModelCatalog(options: AgentOptions | undefined, pro
     return {
         provider: catalog.provider || String(provider || model.provider || '').trim(),
         source: catalog.source,
+        routingSupported: false,
         models: catalog.models.map(entry => ({ id: entry.id, name: entry.name, effort: entry.effort }))
     };
 }
