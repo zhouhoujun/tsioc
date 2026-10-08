@@ -241,7 +241,7 @@ export class RuntimeMousePipelineReproTest {
             .toEqual('Closing session. Resume with: tsdi-agent chat --session chat-123');
     }
 
-    @Test('terminal exit preserves the final screen before appending the resume message')
+    @Test('terminal exit appends the resume message after teardown so cleanup cannot erase it')
     async terminalExitPreservesFinalScreen() {
         const instance = this.ctx.get(ApplicationRunners).getRef(AgentConsoleComponent)!.instance as any;
         const originalApp = instance.app;
@@ -260,8 +260,8 @@ export class RuntimeMousePipelineReproTest {
             await instance.requestTerminalExit('Closing session. Resume later.');
             expect(calls).toEqual([
                 'stop',
-                'write:Closing session. Resume later.\n',
-                'close'
+                'close',
+                'write:Closing session. Resume later.\n'
             ]);
         } finally {
             instance.app = originalApp;

@@ -260,10 +260,6 @@ export async function requestTerminalExitView(host: AgentConsoleTerminalInputHos
     }
     host.surfaceAccessor?.stopTerminal?.();
     const rawWriter = host.surfaceAccessor?.writeRawTerminalData;
-    const wroteExitMessage = !!exitMessage && typeof rawWriter === 'function';
-    if (wroteExitMessage) {
-        rawWriter.call(host.surfaceAccessor, `${exitMessage}\n`);
-    }
     try {
         await host.app.close();
     } catch {
@@ -273,8 +269,12 @@ export async function requestTerminalExitView(host: AgentConsoleTerminalInputHos
         // terminal restore + history persist) still runs even when a
         // @Shutdown handler throws during runners.stop().
     }
-    if (exitMessage && !wroteExitMessage && typeof globalThis.console?.log === 'function') {
-        globalThis.console.log(exitMessage);
+    if (exitMessage) {
+        if (typeof rawWriter === 'function') {
+            rawWriter.call(host.surfaceAccessor, `${exitMessage}\n`);
+        } else if (typeof globalThis.console?.log === 'function') {
+            globalThis.console.log(exitMessage);
+        }
     }
 }
 

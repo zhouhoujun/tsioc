@@ -3621,7 +3621,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async requestTerminalExit(message?: string): Promise<void> {
-        await requestTerminalExitView(this.terminalInputHost(), message);
+        await requestTerminalExitView(this.terminalInputHost(), message ?? this.closingSessionMessage());
     }
 
     protected closingSessionMessage(): string {
