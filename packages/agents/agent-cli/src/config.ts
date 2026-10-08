@@ -384,7 +384,10 @@ export function writeSettingsModelProfile(root: string, profile: Partial<AgentCl
     const currentModel = current.model && typeof current.model === 'object' && !Array.isArray(current.model)
         ? { ...(current.model as Record<string, any>) }
         : undefined;
-    let nextModel: Record<string, any> = profile as Record<string, any>;
+    let nextModel: Record<string, any> = {
+        ...(currentModel || {}),
+        ...(profile as Record<string, any>)
+    };
 
     if (currentModel?.profiles || currentModel?.defaultProfile || currentModel?.complexityRouting) {
         nextModel = {
@@ -480,9 +483,12 @@ function removedConfigKeys(raw?: Record<string, any>, sanitized?: Record<string,
 export function writeInteractiveModelProfile(root: string, profile: AgentCliProviderProfile): string {    const resolvedRoot = path.resolve(root);
     const settingsPath = path.join(resolvedRoot, 'settings.json');
     const current = readJsonObject(settingsPath);
+    const currentModel = current.model && typeof current.model === 'object' && !Array.isArray(current.model)
+        ? current.model as Record<string, any>
+        : {};
     return writeJsonObject(settingsPath, {
         ...current,
-        model: profile as Record<string, any>
+        model: sanitizeModelProfile({ ...currentModel, ...(profile as Record<string, any>) })
     });
 }
 

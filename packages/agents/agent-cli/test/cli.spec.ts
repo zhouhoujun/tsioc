@@ -1570,6 +1570,30 @@ export class AgentCliTest {
         expect(profile.model.model).toBe('deepseek-v4-flash');
     }
 
+    @Test('switching a model preserves the existing api key and base url')
+    async switchingModelPreservesApiKeyAndBaseUrl() {
+        const root = await this.createRoot();
+        writeSettingsModelProfile(root, {
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash',
+            apiKey: 'keep-me',
+            baseUrl: 'https://custom.example',
+            timeoutMs: 120000
+        });
+        writeSettingsModelProfile(root, {
+            provider: 'deepseek',
+            model: 'deepseek-v4-pro'
+        });
+
+        const settings = JSON.parse(fs.readFileSync(path.join(root, 'settings.json'), 'utf8'));
+        expect(settings.model.model).toBe('deepseek-v4-pro');
+        expect(settings.model.baseUrl).toBe('https://custom.example');
+        expect(settings.model.timeoutMs).toBe(120000);
+        const modelConfig = resolveCliModelConfig({}, root);
+        expect(modelConfig.apiKey).toBe('keep-me');
+        expect(modelConfig.baseUrl).toBe('https://custom.example');
+    }
+
     @Test('strips legacy apiKeyEnv fields when writing settings profiles')
     async stripsLegacyApiKeyEnvFieldsWhenWritingSettingsProfiles() {
         const root = await this.createRoot();
