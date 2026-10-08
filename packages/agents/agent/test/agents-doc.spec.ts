@@ -6,7 +6,7 @@ import { tmpdir } from 'os';
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { FileAdapter, FileDirectoryEntry, IReadable, IStats } from '@tsdi/common';
-import { findAgentsDoc, findFileUpward, findProjectRoot, readAgentsDoc, readAgentsDocChain, resolveNearbyAgentsDocs, truncateDocContent } from '../src/project/agents-doc';
+import { findAgentsDoc, findFileUpward, findProjectRoot, readAgentsDoc, readAgentsDocChain, resolveNearbyAgentsDocs, truncateDocContent, DEFAULT_AGENTS_DOC_FALLBACK_FILENAMES } from '../src/project/agents-doc';
 import { collectToolReadPaths } from '../src/runtime/AgentMessage';
 import { ProjectContextSection } from '../src/prompt/sections/ProjectContextSection';
 import { PromptSectionContext } from '../src/prompt/PromptSection';
@@ -174,14 +174,14 @@ export class AgentsDocSpec {
         expect(chain.entries[0].override).toBe(true);
     }
 
-    @Test('findAgentsDoc falls back to extra filenames when the primary is missing')
+    @Test('findAgentsDoc finds AGENTS.md through the fallback list')
     async testFindAgentsDocFallback(): Promise<void> {
         const dir = join(this.tempRoot, 'fallback-proj');
         mkdirSync(dir, { recursive: true });
-        writeFileSync(join(dir, 'CLAUDE.md'), '# Claude\n');
-        const chain = findAgentsDoc(dir, { exists: target => this.fileAdapter.existsSync(target), fallbackFilenames: ['CLAUDE.md'], stopAt: this.tempRoot });
+        writeFileSync(join(dir, 'AGENTS.md'), '# Agents\n');
+        const chain = findAgentsDoc(dir, { exists: target => this.fileAdapter.existsSync(target), fallbackFilenames: ['AGENTS.md'], stopAt: this.tempRoot });
         expect(chain.entries.length).toBe(1);
-        expect(chain.entries[0].file).toBe(join(dir, 'CLAUDE.md'));
+        expect(chain.entries[0].file).toBe(join(dir, 'AGENTS.md'));
         expect(chain.entries[0].override).toBe(false);
     }
 
@@ -352,6 +352,19 @@ export class AgentsDocSpec {
             { id: '4', role: 'assistant', content: 'hi', createdAt: 4 }
         ]);
         expect(paths).toEqual(['a/b.js']);
+    }
+
+    @Test('default workspace doc fallback filename is AGENTS.md')
+    async testDefaultWorkspaceDocFallback(): Promise<void> {
+        const dir = join(this.tempRoot, 'fallback-default');
+        mkdirSync(dir, { recursive: true });
+        writeFileSync(join(dir, 'AGENTS.md'), '# Project rules\n');
+        const exists = (target: string) => this.fileAdapter.existsSync(target);
+
+        expect(DEFAULT_AGENTS_DOC_FALLBACK_FILENAMES).toEqual(['AGENTS.md']);
+        const chain = findAgentsDoc(dir, { exists, fallbackFilenames: DEFAULT_AGENTS_DOC_FALLBACK_FILENAMES, stopAt: this.tempRoot });
+        expect(chain.entries.length).toBe(1);
+        expect(chain.entries[0].file).toBe(join(dir, 'AGENTS.md'));
     }
 
     @Test('ProjectContextSection renders nearby docs from read files and extra instruction docs')

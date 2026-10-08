@@ -40,7 +40,7 @@ const CLI_COMMANDS: Record<AiCliName, { cmd: string; args: string[]; jsonFlag: s
     }
 };
 
-const CONTEXT_FILE_NAMES = ['CLAUDE.md', 'AGENTS.md', '.cursorrules', '.clinerules', '.windsurfrules'];
+const CONTEXT_FILE_NAMES = ['AGENTS.md', '.cursorrules', '.clinerules', '.windsurfrules'];
 const DEFAULT_TIMEOUT_MS = 300_000;
 const MAX_OUTPUT_CHARS = 512 * 1024;
 
@@ -76,7 +76,7 @@ export class AiCliTool implements AgentTool {
             max_turns: { type: 'number', description: 'Maximum tool-calling turns (supported by Claude Code, OpenCode).' },
             skip_permissions: { type: 'boolean', description: 'Skip permission prompts (supported by Claude Code, OpenCode).' },
             output_format: { type: 'string', enum: ['text', 'json'], description: 'Output format (default: json for structured results).' },
-            context_files: { type: 'boolean', description: 'Auto-discover and pass CLAUDE.md / AGENTS.md content to the CLI (default: true).' }
+            context_files: { type: 'boolean', description: 'Auto-discover and pass AGENTS.md content to the CLI (default: true).' }
         },
         required: ['prompt', 'cli']
     };

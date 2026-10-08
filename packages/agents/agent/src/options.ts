@@ -38,6 +38,7 @@ export interface AgentContextOptions {
     maxMemoryRecords?: number;
     /** Max chars per tool result before truncation */
     maxToolResultChars?: number;
+    spillToolOutput?: boolean;
     /** Number of recent non-system messages kept verbatim when older history is compacted */
     compactionRecentMessages?: number;
     /** Minimum estimated history tokens required before context compaction runs */
@@ -283,7 +284,7 @@ export interface AgentOptions extends AgentPromptOptions {
     defaultArchetype?: string;
     /** P71: git-backed step snapshots with message-level revert/unrevert. */
     gitStepSnapshots?: AgentGitStepSnapshotOptions;
-    /** P72: filenames tried per directory when the primary project doc is missing (e.g. ['CLAUDE.md']). */
+    /** P72: filenames tried per directory when the primary project doc is missing (defaults to AGENTS.md). */
     projectDocFallbackFilenames?: string[];
     /** Explicit session workspace root; when omitted the runtime falls back to `ui.console.workspace` then the process cwd. */
     workspace?: string;

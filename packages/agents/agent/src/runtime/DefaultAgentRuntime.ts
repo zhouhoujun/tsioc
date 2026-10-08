@@ -43,8 +43,8 @@ import { OutputGuard } from '../harness/OutputGuard';
 import { resolveToolSandboxState, ToolSandboxState } from '../harness/ToolSandboxPolicy';
 import { CompactionHistoryRecord, CompactionHistoryStore } from '../harness/CompactionHistoryStore';
 import { TurnDiagnosticsRecord, TurnDiagnosticsStore } from '../harness/TurnDiagnosticsStore';
-import { EvidenceLedger } from '../harness/EvidenceLedger';
-import { ToolEvidenceEntry } from '../harness/EvidenceLedger';
+import { EvidenceLedger, ToolEvidenceEntry } from '../harness/EvidenceLedger';
+import { spillToolOutput } from '../harness/ToolOutputSpill';
 import { VerificationGate, DEFAULT_VERIFICATION_WRITE_TOOLS } from '../harness/VerificationGate';
 import { VerifyCommandRunner, DEFAULT_VERIFY_TIMEOUT_MS } from '../harness/VerifyCommandRunner';
 import { FalsificationAttempt, ResolvedRepairHint, buildAttemptSignature, buildExplorationGuidancePrompt, buildRepairPrompt, collectResolvedRepairHints } from '../harness/RepairExploration';
@@ -2897,7 +2897,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
             const outputStr = outcome.redactedOutput === undefined
                 ? JSON.stringify({ error: outcome.error?.message ?? outcome.receipt.error ?? 'tool failed' })
                 : (typeof outcome.redactedOutput === 'string' ? outcome.redactedOutput : JSON.stringify(outcome.redactedOutput));
-            const truncated = outputStr.length > maxChars ? outputStr.slice(0, maxChars) + '...[truncated]' : outputStr;
+            const truncated = await spillToolOutput(this.fileAdapter, outputStr, maxChars, { workspace: turnContext.workspace, toolCallId: toolCall.id, toolName: toolCall.name, enabled: this.options.context?.spillToolOutput !== false });
             if (outcome.error) {
                 return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, outcome.receipt, outcome.error.message);
             }
@@ -2927,7 +2927,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
             this.trackPlanProgress(sessionId, turnContext, toolCall.name, output);
             const maxChars = this.options.context?.maxToolResultChars ?? defaultAgentOptions.context!.maxToolResultChars!;
             const outputStr = typeof output === 'string' ? output : JSON.stringify(output);
-            const truncated = outputStr.length > maxChars ? outputStr.slice(0, maxChars) + '...[truncated]' : outputStr;
+            const truncated = await spillToolOutput(this.fileAdapter, outputStr, maxChars, { workspace: turnContext.workspace, toolCallId: toolCall.id, toolName: toolCall.name, enabled: this.options.context?.spillToolOutput !== false });
             const completedReceipt: AgentToolExecutionReceipt = {
                 ...sandboxReceipt,
                 status: 'success',

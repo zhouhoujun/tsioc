@@ -372,6 +372,30 @@ export class AgentToolsPackageTest {
         expect(error?.message).toContain('outside');
     }
 
+    @Test('read file supports offset and limit line ranges')
+    async readFileSupportsOffsetAndLimit() {
+        const workspace = await this.createWorkspace();
+        const tool = new ReadFileTool({ file: { rootDir: workspace } });
+
+        const slice = await tool.invoke({ path: 'src/alpha.txt', offset: 2, limit: 1 }, createSessionContext());
+        expect(slice.content).toEqual('beta');
+        expect(slice.offset).toEqual(2);
+        expect(slice.truncated).toEqual(true);
+
+        const tail = await tool.invoke({ path: 'src/alpha.txt', offset: 3 }, createSessionContext());
+        expect(tail.content).toEqual('gamma');
+        expect(tail.truncated).toEqual(false);
+        expect(tail.totalLines).toEqual(3);
+
+        let error: Error | undefined;
+        try {
+            await tool.invoke({ path: 'src/alpha.txt', offset: 0 }, createSessionContext());
+        } catch (err) {
+            error = err as Error;
+        }
+        expect(error?.message).toContain('offset');
+    }
+
     @Test('write file writes content within workspace and blocks traversal')
     async writeFileWritesContentWithinWorkspaceAndBlocksTraversal() {
         const workspace = await this.createWorkspace();

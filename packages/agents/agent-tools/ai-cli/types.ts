@@ -36,7 +36,7 @@ export interface AgentAiCliOptions {
     defaultModel?: string;
     /** Environment variables to forward to subprocesses */
     forwardEnv?: string[];
-    /** Whether to auto-discover CLAUDE.md / AGENTS.md in the working directory */
+    /** Whether to auto-discover AGENTS.md in the working directory */
     autoContextFiles?: boolean;
     /** Default timeout in ms */
     defaultTimeoutMs?: number;
