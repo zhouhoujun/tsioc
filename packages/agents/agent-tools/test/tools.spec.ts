@@ -659,6 +659,26 @@ export class AgentToolsPackageTest {
         expect(await fs.readFile(path.join(workspace, 'src', 'special.txt'), 'utf8')).toEqual('$1? $1?');
     }
 
+    @Test('edit file tolerates indentation and trailing whitespace differences')
+    async editFileToleratesIndentationAndTrailingWhitespace() {
+        const workspace = await this.createWorkspace();
+        const tool = new EditFileTool({ file: { rootDir: workspace } });
+        const target = path.join(workspace, 'src', 'indent.txt');
+        await fs.writeFile(target, 'function a() {\n    return 1;\n}\n', 'utf8');
+
+        const result = await tool.invoke({
+            path: 'src/indent.txt',
+            oldString: 'function a() {\n  return 1;  \n}',
+            newString: 'function a() {\n  return 2;\n}'
+        }, createSessionContext());
+        expect(result.replacements).toEqual(1);
+
+        const written = await fs.readFile(target, 'utf8');
+        expect(written).toContain('function a() {');
+        expect(written).toContain('return 2');
+        expect(written).not.toContain('return 1');
+    }
+
     @Test('list dir returns visible entries honors limits and validates paths')
     async listDirReturnsVisibleEntriesHonorsLimitsAndValidatesPaths() {
         const workspace = await this.createWorkspace();

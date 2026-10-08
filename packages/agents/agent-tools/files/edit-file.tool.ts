@@ -4,6 +4,7 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath, toRelativeWorkspacePath } from './path-policy';
+import { resolveEditMatch } from './edit-match';
 import { readFileSnapshot } from './snapshot';
 import { runFormatter } from './formatter';
 import { collectLspDiagnostics } from '../lsp/lsp-feedback';
@@ -58,17 +59,17 @@ export class EditFileTool implements AgentTool {
         await assertNoSymlinkInWorkspacePath(absolutePath, policy.rootDir);
 
         const content = await fs.readFile(absolutePath, 'utf8');
-        const matches = this.countMatches(content, oldString);
-        if (matches === 0) {
+        const match = resolveEditMatch(content, oldString);
+        if (!match) {
             throw new Error(`Invalid edit_file input: oldString was not found in '${requestedPath}'.`);
         }
-        if (matches > 1 && !replaceAll) {
-            throw new Error(`Invalid edit_file input: oldString matched ${matches} times in '${requestedPath}'. Set replaceAll to true to replace every match.`);
+        if (match.occurrences > 1 && !replaceAll) {
+            throw new Error(`Invalid edit_file input: oldString matched ${match.occurrences} times in '${requestedPath}'. Set replaceAll to true to replace every match.`);
         }
 
         const updated = replaceAll
-            ? this.replaceAllCompat(content, oldString, newString)
-            : content.replace(oldString, newString);
+            ? this.replaceAllCompat(content, match.search, newString)
+            : content.replace(match.search, newString);
         await fs.writeFile(absolutePath, updated, 'utf8');
 
         const format = await runFormatter(absolutePath, this.options?.format);
@@ -76,7 +77,7 @@ export class EditFileTool implements AgentTool {
 
         return {
             path: toRelativeWorkspacePath(absolutePath, policy.rootDir),
-            replacements: replaceAll ? matches : 1,
+            replacements: replaceAll ? match.occurrences : 1,
             bytesWritten: Buffer.byteLength(updated, 'utf8'),
             formatted: format.attempted ? format.formatted ?? null : undefined,
             formatFailure: format.attempted && format.failure ? format.failure : undefined,
@@ -103,16 +104,6 @@ export class EditFileTool implements AgentTool {
             throw new Error(`Invalid edit_file input: ${field} must be a string.`);
         }
         return value;
-    }
-
-    private countMatches(content: string, search: string): number {
-        let count = 0;
-        let index = 0;
-        while ((index = content.indexOf(search, index)) !== -1) {
-            count += 1;
-            index += search.length;
-        }
-        return count;
     }
 
     private replaceAllCompat(content: string, search: string, replacement: string): string {
