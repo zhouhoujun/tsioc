@@ -529,6 +529,7 @@ export class SchedulerTest {
             const scheduler = new IntervalAgentScheduler(runtime as any, ctx as any, null as any, null as any);
             (scheduler as any).adapter = adapter;
 
+            const now = Date.now();
             const task = await scheduler.schedule({
                 id: 'persisted-cron',
                 sessionId: 's3',
@@ -536,7 +537,7 @@ export class SchedulerTest {
                 cronExpr: '*/5 * * * * *'
             } as any);
 
-            expect(task.nextRunAt).toBeGreaterThan(Date.now());
+            expect(task.nextRunAt).toBeGreaterThan(now);
             const stored = await adapter.getRepository(AgentScheduledTaskEntity).findOne({ where: { id: 'persisted-cron' } as any });
             expect(stored?.cronExpr).toEqual('*/5 * * * * *');
             expect(stored?.scheduleType).toEqual('cron');
