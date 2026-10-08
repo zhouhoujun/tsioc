@@ -6,6 +6,7 @@ import { MemoryStore } from '../memory/MemoryStore';
 import { scoreSummaryQuality } from '../harness/SummaryQualityScorer';
 import { RedactionFilter } from '../harness/RedactionFilter';
 import { selectRecoveredDetail } from './recover-detail';
+import { CONTEXT_ADAPTIVE_MIN_HISTORY, CONTEXT_ADAPTIVE_WINDOW, CONTEXT_HIGH_GROWTH_TOKENS, CONTEXT_LOW_GROWTH_TOKENS, CONTEXT_SESSION_STORE_MAX, CONTEXT_TOKEN_HISTORY_MAX } from '../AgentLimits';
 
 export interface ContextBudget {
     maxHistoryTokens: number;
@@ -307,8 +308,7 @@ export class AgentContextManager {
             timestamp: Date.now(),
             level
         });
-        // Bound the store to the last 20 sessions to prevent memory leak
-        if (this.originalMessageStore.size > 20) {
+        if (this.originalMessageStore.size > CONTEXT_SESSION_STORE_MAX) {
             const oldest = [...this.originalMessageStore.entries()]
                 .sort((a, b) => a[1].timestamp - b[1].timestamp)[0];
             if (oldest) {
@@ -490,8 +490,8 @@ export class AgentContextManager {
     private recordTokenGrowth(beforeTokens: number, messageCount: number): void {
         this.tokenGrowthHistory.push({ timestamp: Date.now(), beforeTokens, messageCount });
         // Keep only the last 20 entries to bound memory
-        if (this.tokenGrowthHistory.length > 20) {
-            this.tokenGrowthHistory = this.tokenGrowthHistory.slice(-20);
+        if (this.tokenGrowthHistory.length > CONTEXT_TOKEN_HISTORY_MAX) {
+            this.tokenGrowthHistory = this.tokenGrowthHistory.slice(-CONTEXT_TOKEN_HISTORY_MAX);
         }
     }
 
@@ -511,11 +511,11 @@ export class AgentContextManager {
      */
     private adjustBudget(): void {
         const history = this.tokenGrowthHistory;
-        if (history.length < 4) {
+        if (history.length < CONTEXT_ADAPTIVE_MIN_HISTORY) {
             return;
         }
 
-        const window = history.slice(-6);
+        const window = history.slice(-CONTEXT_ADAPTIVE_WINDOW);
         const n = window.length;
 
         // ── Per-turn growth deltas ──
@@ -537,8 +537,8 @@ export class AgentContextManager {
         const cv = Math.sqrt(variance) / mean;
 
         // ── Update consecutive window counters (hysteresis) ──
-        const isHighGrowth = avgGrowth > 5000;
-        const isLowGrowth = avgGrowth < 1000;
+        const isHighGrowth = avgGrowth > CONTEXT_HIGH_GROWTH_TOKENS;
+        const isLowGrowth = avgGrowth < CONTEXT_LOW_GROWTH_TOKENS;
         this.consecutiveHighGrowthWindows = isHighGrowth
             ? this.consecutiveHighGrowthWindows + 1
             : Math.max(0, this.consecutiveHighGrowthWindows - 1);

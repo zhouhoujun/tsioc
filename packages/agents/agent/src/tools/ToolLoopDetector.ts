@@ -1,4 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
+import { LOOP_NO_PROGRESS_REPEATS, LOOP_PINGPONG_CYCLES, LOOP_REPEAT_BREAK, LOOP_REPEAT_WARNING } from '../AgentLimits';
 
 export interface LoopDetectionResult {
     detected: boolean;
@@ -44,13 +45,13 @@ export class ToolLoopDetector {
 
     private detect(): LoopDetectionResult {
         const h = this.history;
-        if (h.length < 3) return { detected: false, severity: 'warning' };
+        if (h.length < LOOP_REPEAT_WARNING) return { detected: false, severity: 'warning' };
 
         // 1. Exact repeat: same tool + same args 3+ times
-        const last3 = h.slice(-3);
+        const last3 = h.slice(-LOOP_REPEAT_WARNING);
         if (last3.every(s => s.name === last3[0].name && s.argsHash === last3[0].argsHash)) {
-            if (h.length >= 5) {
-                const last5 = h.slice(-5);
+            if (h.length >= LOOP_REPEAT_BREAK) {
+                const last5 = h.slice(-LOOP_REPEAT_BREAK);
                 if (last5.every(s => s.name === last5[0].name && s.argsHash === last5[0].argsHash)) {
                     return { detected: true, severity: 'break', reason: `Tool "${last3[0].name}" repeated 5 times with identical arguments.` };
                 }
@@ -60,16 +61,16 @@ export class ToolLoopDetector {
         }
 
         // 2. Ping-pong: A→B→A→B for 4+ cycles
-        if (h.length >= 4) {
-            const last4 = h.slice(-4);
+        if (h.length >= LOOP_PINGPONG_CYCLES) {
+            const last4 = h.slice(-LOOP_PINGPONG_CYCLES);
             if (last4[0].name === last4[2].name && last4[1].name === last4[3].name && last4[0].name !== last4[1].name) {
                 return { detected: true, severity: 'block', reason: `Ping-pong detected: "${last4[0].name}" ↔ "${last4[1].name}".` };
             }
         }
 
         // 3. No progress: same tool + same result hash 4+ times
-        if (h.length >= 4) {
-            const last4 = h.slice(-4);
+        if (h.length >= LOOP_NO_PROGRESS_REPEATS) {
+            const last4 = h.slice(-LOOP_NO_PROGRESS_REPEATS);
             if (last4.every(s => s.name === last4[0].name && s.resultHash && s.resultHash === last4[0].resultHash)) {
                 return { detected: true, severity: 'break', reason: `No progress: "${last4[0].name}" returned identical result ${h.length} times.` };
             }

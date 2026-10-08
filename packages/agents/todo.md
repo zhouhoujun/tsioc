@@ -25,6 +25,7 @@
 - 配置自愈：settings 读入与 `/model` 写回净化 sentinel（`cancel`/`q`）及嵌套重复 `profiles`/`complexityRouting`，`/doctor` 报告；路由遇未知 complexity/default/route profile 回退可用配置并累积 `getWarnings()`，不终止 turn（显式 `--profile` 保留抛错契约）。
 - `tsdi-agent doctor --check-models` 只读拉取 provider `/v1/models` 校验顶层/各 profile/complexity 解析出的模型，缺失报 `model_not_available`，端点不可达降级 warn。
 - 默认模型/端点集中单一来源：`DEFAULT_AGENT_PROVIDER_ID`/`DEFAULT_AGENT_MODEL_ID`/`DEFAULT_OPENAI_COMPATIBLE_*`/`DEFAULT_ANTHROPIC_*` 定义于 `model/ModelProviderOptions.ts`，`options.ts`、两个 adapter、`ModelCatalog`、`RoutedModelAdapter` 统一消费；adapter 不再内联 vendor 默认字面量，端点/密钥环境变量仍以可经 `provider.json` 覆盖的 registry 为准，显式配置优先。
+- 行为阈值具名化：空响应重试、falsification 升级、turn diagnostics 上限与取用条数、loop 检测（repeat/ping-pong/no-progress）、上下文 store/window/growth 阈值统一由 `AgentLimits.ts` 具名常量提供，schema `scheduler.shutdownTimeoutMs` 同源；默认值保持不变。
 - 工具集：filesystem、shell/terminal、git、search、MCP、background、todo/plan、coding_task、spawn_agent、apply_patch、web_search 等。
 - 工具治理：approval、question、policy、sandbox、workspace trust（`AGENT_WORKSPACE_TRUST`，未 trust 拒绝变更类工具并提示 `tsdi-agent trust <dir>`）、敏感信息脱敏、rate limit、principal 授权、timeout/retry、audit、compensation/rollback。
 - command exchange、command output history、失败重试、取消与恢复。
@@ -57,7 +58,7 @@
 
 > 来源：真实 CLI/TUI 会话、跨平台（DOM/TUI）验收与源码审计暴露的差距；对照 Codex CLI（最新，ratatui）、opencode（bubbletea / OpenTUI）与 openTUI 的基础组件模型。批次可独立验收；每批次必须补真实边界回归（AppRpc 流 / DOM / PTY）后才能关闭。
 >
-> **当前状态（2026-10）**：P1–P6 已全部关闭并合并进上文功能点；P7（`AgentConsoleComponent` 持续拆解）进行中；A1（运行时默认值集中化）已完成并合并进上文功能点；A2–A3（运行时写死重构）与 U1–U5（agent-ui 视窗/展示/交互，基础组件参考 openTUI）待执行。
+> **当前状态（2026-10）**：P1–P6 已全部关闭并合并进上文功能点；P7（`AgentConsoleComponent` 持续拆解）进行中；A1（运行时默认值集中化）、A2（行为阈值具名化）已完成并合并进上文功能点；A3（运行时失败结构化/本地化）与 U1–U5（agent-ui 视窗/展示/交互，基础组件参考 openTUI）待执行。
 
 ### 统一收尾流程（每个 plan 缺一不可）
 
@@ -88,14 +89,7 @@
 
 > 审计结论：`@tsdi/agent` 运行时的「写死」集中在三类——(a) vendor 默认值与默认端点散落在 adapter/options/registry；(b) 行为阈值/魔法数内联在运行时与上下文管理器；(c) 用户可见失败为裸英文 `Error`，UI 仅对模型错误做了本地化。
 >
-> **进度**：A1 已完成并合并进「Agent 与工具」功能点；A2–A3 待执行。
-
-#### A2 — 行为阈值 / 魔法数收敛为 typed options / policy
-
-- **问题（file:line）**：`DefaultAgentRuntime.ts` 内联 `10000`（shutdownTimeout）、`2`（空响应重试）、`>= 2`（falsification 升级）、`limit: 50`/`slice(-8)`（diagnostics）；`context/AgentContextManager.ts:172-177`（`maxToolResults: 8000`、`recentMessageWindow: 6`、`adaptiveRecentWindowMax: 20`）、`:311`/`:493` 的 `> 20` 边界、`:540-541` 增长阈值 `5000/1000`；`tools/ToolLoopDetector.ts`、`harness/RateLimitManager.ts`、`model/RetryPolicy.ts` 的默认阈值。
-- **目标**：把影响行为的阈值收敛到 typed options/policy 或模块内**具名常量表**（`DEFAULT_RETRY_POLICY` 已作范式），默认值保持不变；便于按 workspace/session 覆盖与测试。
-- **涉及**：`DefaultAgentRuntime.ts`、`context/AgentContextManager.ts`、`tools/ToolLoopDetector.ts`、`harness/RateLimitManager.ts`、`model/RetryPolicy.ts`、`options.ts`。
-- **验收**：`grep` 显示阈值来源于 options/policy/具名常量而非散落字面量；默认行为零变化；相关包全量回归通过。
+> **进度**：A1、A2 已完成并合并进「Agent 与工具」功能点；A3 待执行。
 
 #### A3 — 运行时用户可见失败结构化 + 本地化
 

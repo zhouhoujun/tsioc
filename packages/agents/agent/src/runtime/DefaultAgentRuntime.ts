@@ -2,6 +2,7 @@ import { FileAdapter } from '@tsdi/common';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { ApplicationArguments, ApplicationContext, RunContext, Runner, UuidGenerator, createRunContext } from '@tsdi/core';
 import { AgentRuntime, CancelTurnResult, CompactNowResult, FileUndoRedoResult } from './AgentRuntime';
+import { EMPTY_RESPONSE_MAX_RETRIES, FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
 import { TurnHandler } from './TurnHandler';
@@ -284,7 +285,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             return;
         }
         this._stopped = true;
-        const timeout = this.options.scheduler?.shutdownTimeoutMs ?? 10000;
+        const timeout = this.options.scheduler?.shutdownTimeoutMs ?? SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS;
         const timer = setTimeout(() => {
             this.app.publishEvent(new AgentErrorEvent(this, 'system', new Error(`Forced shutdown after ${timeout}ms`)))
                 .catch(() => {});
@@ -1071,7 +1072,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
         const maxLoopRecoveries = this.options.maxLoopRecoveries ?? defaultAgentOptions.maxLoopRecoveries!;
         const maxRepairRounds = this.options.maxRepairRounds ?? defaultAgentOptions.maxRepairRounds!;
         let emptyResponseRetryCount = 0;
-        const maxEmptyResponseRetries = 2;
 
         turnLoop: while (true) {
             this.throwIfTurnCancelled(sessionId);
@@ -1094,7 +1094,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             let response = await this.modelAdapter.complete(this.prepareModelRequest(sessionId, request, turnContext.profile, falsifyRate, turnContext.agent?.reasoning));
             await this.recordTokenUsage(sessionId, response);
             await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, response));
-            if (emptyResponseRetryCount < maxEmptyResponseRetries && this.shouldRetryEmptyResponse(response)) {
+            if (emptyResponseRetryCount < EMPTY_RESPONSE_MAX_RETRIES && this.shouldRetryEmptyResponse(response)) {
                 emptyResponseRetryCount++;
                 if (turnContext.diagnostics) {
                     turnContext.diagnostics.emptyResponseRetryCount++;
@@ -1158,7 +1158,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
         const maxLoopRecoveries = this.options.maxLoopRecoveries ?? defaultAgentOptions.maxLoopRecoveries!;
         const maxRepairRounds = this.options.maxRepairRounds ?? defaultAgentOptions.maxRepairRounds!;
         let emptyResponseRetryCount = 0;
-        const maxEmptyResponseRetries = 2;
 
         turnLoop: while (true) {
             this.throwIfTurnCancelled(sessionId);
@@ -1185,7 +1184,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 this.prepareModelRequest(sessionId, request, turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
             );
             await this.recordTokenUsage(sessionId, response);
-            if (emptyResponseRetryCount < maxEmptyResponseRetries && this.shouldRetryEmptyResponse(response)) {
+            if (emptyResponseRetryCount < EMPTY_RESPONSE_MAX_RETRIES && this.shouldRetryEmptyResponse(response)) {
                 emptyResponseRetryCount++;
                 if (turnContext.diagnostics) {
                     turnContext.diagnostics.emptyResponseRetryCount++;
@@ -1522,7 +1521,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 turnContext.diagnostics.repairRoundsUsed = recovery.attemptHistory.length;
                 turnContext.diagnostics.repeatedAttemptCount = recovery.repeatAttempts;
             }
-            const escalate = recovery.consecutiveFalsifications >= 2;
+            const escalate = recovery.consecutiveFalsifications >= FALSIFICATION_ESCALATION_THRESHOLD;
             const prompt = escalate
                 ? buildExplorationGuidancePrompt(recovery.attemptHistory, recovery.repairHints)
                 : buildRepairPrompt(recovery.attemptHistory, recovery.repeatAttempts, { resolvedHints: recovery.repairHints });
@@ -1685,8 +1684,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
         try {
             const records = workspace
-                ? await this.turnDiagnosticsStore.list(undefined, { workspaceId: workspace, limit: 50, order: 'DESC' })
-                : await this.turnDiagnosticsStore.list(sessionId, { limit: 50, order: 'DESC' });
+                ? await this.turnDiagnosticsStore.list(undefined, { workspaceId: workspace, limit: TURN_DIAGNOSTICS_LIMIT, order: 'DESC' })
+                : await this.turnDiagnosticsStore.list(sessionId, { limit: TURN_DIAGNOSTICS_LIMIT, order: 'DESC' });
             return collectResolvedRepairHints(records, signatures);
         } catch {
             return [];
@@ -1727,7 +1726,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         if (attempts.length === 0) {
             return `The verification gate falsified ${recovery.consecutiveFalsifications} consecutive round(s).\nEnding the turn with a failure summary.`;
         }
-        const lines = attempts.slice(-8).map(attempt => {
+        const lines = attempts.slice(-TURN_DIAGNOSTICS_RECENT_ATTEMPTS).map(attempt => {
             const entries = attempt.entries.slice(0, 4).map(entry => {
                 const reason = entry.falsificationReason ?? entry.error ?? 'failed';
                 return `- Tool "${entry.toolName}": ${reason}`;

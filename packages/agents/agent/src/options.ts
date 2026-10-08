@@ -1,5 +1,6 @@
 import { AgentModelOptions, DEFAULT_AGENT_MODEL_ID, DEFAULT_AGENT_PROVIDER_ID, DEFAULT_OPENAI_COMPATIBLE_API_KEY_ENV, DEFAULT_OPENAI_COMPATIBLE_BASE_URL } from './model/ModelProviderOptions';
 import { AgentRetryPolicy, DEFAULT_RETRY_POLICY } from './model/RetryPolicy';
+import { SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS } from './AgentLimits';
 import { AgentHooksOptions } from './hooks/AgentHooks';
 import { ApprovalRule } from './tools/ToolApprovalManager';
 import { HarnessProfile, applyHarnessProfile, resolveHarnessProfile } from './harness/HarnessProfile';
@@ -606,7 +607,7 @@ export const defaultAgentOptions: AgentOptions = {
     },
     scheduler: {
         enabled: true,
-        shutdownTimeoutMs: 10000,
+        shutdownTimeoutMs: SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS,
         defaultMaxAttempts: 3,
         defaultRetryBackoffMs: 1000,
         defaultRetryBackoffMultiplier: 2
