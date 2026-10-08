@@ -291,20 +291,32 @@ export async function commitProviderWizard(ctx: ProviderWizardContext, holder: A
             return;
         }
         const tiers = values.tiers || 'auto';
+        const authFields = {
+            ...(values.authMode === 'key' && values.credential ? { apiKey: values.credential } : {}),
+            ...(values.authMode === 'env' && values.credential ? { apiKeyEnv: values.credential } : {})
+        };
+        if (ctx.appRpc) {
+            const validation = await ctx.appRpc.request('provider.test', {
+                provider: def.adapter, baseUrl, ...authFields
+            }, ctx.rpcRequestContext()).catch(() => undefined);
+            if (validation && validation.ok === false) {
+                ctx.notify(`Provider was not saved: ${validation.error || 'connection test failed'}.`);
+                showProviderWizardStep(ctx, holder);
+                return;
+            }
+        }
         const makeProfile = (model: string): { provider: string; model: string; baseUrl: string; apiKey?: string; apiKeyEnv?: string } => ({
             provider: def.adapter,
             model,
             baseUrl,
-            ...(values.authMode === 'key' && values.credential ? { apiKey: values.credential } : {}),
-            ...(values.authMode === 'env' && values.credential ? { apiKeyEnv: values.credential } : {})
+            ...authFields
         });
         if (ctx.appRpc) {
             await ctx.appRpc.request('model.add', {
                 name,
                 provider: def.adapter,
                 baseUrl,
-                ...(values.authMode === 'key' && values.credential ? { apiKey: values.credential } : {}),
-                ...(values.authMode === 'env' && values.credential ? { apiKeyEnv: values.credential } : {}),
+                ...authFields,
                 ...(tiers === 'single'
                     ? { model: values.modelFast }
                     : {
