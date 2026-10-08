@@ -5,6 +5,14 @@ import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath, toRelativeWorkspacePath } from './path-policy';
 
+const MAX_LINE_LENGTH = 2000;
+
+function truncateLine(line: string): string {
+    return line.length > MAX_LINE_LENGTH
+        ? `${line.slice(0, MAX_LINE_LENGTH)}... (line truncated to ${MAX_LINE_LENGTH} chars)`
+        : line;
+}
+
 @Injectable()
 export class ReadFileTool implements AgentTool {
     name = 'read_file';
@@ -112,7 +120,7 @@ export class ReadFileTool implements AgentTool {
                             stopped = true;
                             break;
                         }
-                        collected.push(line);
+                        collected.push(truncateLine(line));
                         bytes += size;
                     }
                     index = buffer.indexOf('\n');
@@ -124,7 +132,8 @@ export class ReadFileTool implements AgentTool {
             if (!stopped && buffer.length) {
                 lineNumber += 1;
                 if (lineNumber >= offset && collected.length < limit) {
-                    collected.push(buffer.endsWith('\r') ? buffer.slice(0, -1) : buffer);
+                    const line = buffer.endsWith('\r') ? buffer.slice(0, -1) : buffer;
+                    collected.push(truncateLine(line));
                 }
             }
         } finally {

@@ -42,6 +42,7 @@ export class GlobSearchTool implements AgentTool {
             onlyFiles: true,
             ignore: policy.excludedGlobs
         });
+        matches.sort((left, right) => left.localeCompare(right));
         const safeMatches: string[] = [];
         for (const file of matches) {
             await assertNoSymlinkInWorkspacePath(file, policy.rootDir);

@@ -804,6 +804,17 @@ export class AgentToolsPackageTest {
         expect(outsideError?.message).toContain('workspace root');
     }
 
+    @Test('glob search returns deterministically sorted matches')
+    async globSearchReturnsSortedMatches() {
+        const workspace = await this.createWorkspace();
+        await fs.writeFile(path.join(workspace, 'src', 'zeta.txt'), 'z', 'utf8');
+        await fs.writeFile(path.join(workspace, 'src', 'alpha2.txt'), 'a', 'utf8');
+        const tool = new GlobSearchTool({ file: { rootDir: workspace } });
+
+        const result = await tool.invoke({ pattern: 'src/*.txt' }, createSessionContext());
+        expect(result.matches).toEqual(['src/alpha.txt', 'src/alpha2.txt', 'src/zeta.txt']);
+    }
+
     @Test('glob search scopes matches to the path directory')
     async globSearchScopesToPath() {
         const workspace = await this.createWorkspace();
@@ -969,6 +980,18 @@ export class AgentToolsPackageTest {
             invalid = err as Error;
         }
         expect(invalid?.message).toContain('regular expression');
+    }
+
+    @Test('read file truncates overly long lines')
+    async readFileTruncatesLongLines() {
+        const workspace = await this.createWorkspace();
+        const tool = new ReadFileTool({ file: { rootDir: workspace } });
+        await fs.writeFile(path.join(workspace, 'src', 'long.txt'), `${'x'.repeat(5000)}\nshort\n`, 'utf8');
+
+        const result = await tool.invoke({ path: 'src/long.txt' }, createSessionContext());
+        expect(result.content).toContain('... (line truncated to 2000 chars)');
+        expect(result.content).toContain('2: short');
+        expect(result.content.split('\n')[0].length).toBeLessThan(2100);
     }
 
     @Test('content search scopes matches to the path directory')
