@@ -31,7 +31,7 @@
 - 工具治理：approval、question、policy、sandbox、workspace trust（`AGENT_WORKSPACE_TRUST`，未 trust 拒绝变更类工具并提示 `tsdi-agent trust <dir>`）、敏感信息脱敏、rate limit、principal 授权、timeout/retry、audit、compensation/rollback。
 - command exchange、command output history、失败重试、取消与恢复。
 - attachments、图片、文件变更、diff/review inspector 与媒体等价文本。
-- 运行时健壮性：turn-aware 上下文窗口（当前轮整段保留、仅对历史轮开窗）、turn-aware 压缩、`repairToolPairing`/孤儿配对修复、`recoverDetail` 工具轮配对完整（缺结果整体跳过）、plan-aware continuation（decompose `accepted` 也登记为未完成计划）、falsification 排除只读探测失败、有界空响应重试（2 次）+ 递增退避、模型错误结构化分类（402→quota、401/403→auth，终止不重试）、workspace 上下文注入、越界路径可操作错误（附 root 与相对路径示例）、`list_dir` 软链接标记不跟随、`apply_patch` 语义与空白容错、`git_operations` 非 git 回退会话文件快照、`todo` 字段级部分更新与 `merge` schema 描述。
+- 运行时健壮性：turn-aware 上下文窗口（当前轮整段保留、仅对历史轮开窗）、turn-aware 压缩、`repairToolPairing`/孤儿配对修复、`recoverDetail` 工具轮配对完整（缺结果整体跳过）、plan-aware continuation（decompose `accepted` 也登记为未完成计划）、falsification 排除只读探测失败、有界空响应重试（2 次）+ 递增退避、模型错误结构化分类（402→quota、401/403→auth，终止不重试）、workspace 上下文注入、越界路径可操作错误（附 root 与相对路径示例）、`list_dir` 软链接标记不跟随、`apply_patch` 语义与空白容错、`git_operations` 非 git 回退会话文件快照、`todo` 字段级部分更新与 `merge` schema 描述；child process wall-time 超时由单一权威（manual wallTimer）在 kill 前置位 `killedByLimits`，不依赖内建 `spawn({ timeout })`，超时判定确定性。
 - 委派：`spawn_agent`/`coding_task`/`LightweightAgentRunner` 经 `@Inject(INJECTOR)` 惰性解析；子代理 prompt 声明 `Available tool categories`，避免弱模型误报「无工具」。
 - 模型可操作失败：`ModelRequestError`/`ModelFailure` 结构化，`RetryPolicy` 区分 quota/auth；CLI 默认只输出一行可操作文案，`TSDI_AGENT_DEBUG=1` 才附堆栈。
 
@@ -39,12 +39,12 @@
 
 - browser `ConsoleRenderer` 与 CLI `TuiRenderer` 共用 presenter/renderer/交互状态；TUI、browser、VS Code webview、desktop 四端。
 - 语义路由：user/final、thought、tool、command、event、question、approval、plan、file、attachment、diagnostic。
-- 时间线：turn/step/event 三层；tool lifecycle 按 `toolCallId` 逐调用成行、pending 与 completion 原地归并（同一事实只出现一次）；总耗时优先后端 `durationMs`，缺失按保留的开始时间推导；折叠摘要 + detail inspector；事件仅显动作/对象/状态/摘要，raw payload/stdout/stack/diff 进 inspector。
+- 时间线：turn/step/event 三层；tool lifecycle 按 `toolCallId` 逐调用成行、pending 与 completion 原地归并（同一事实只出现一次）；流式 chunk 缺 `toolCallId` 时回退 `receipt.toolCallId`，保证跨 gateway 归并键稳定；总耗时优先后端 `durationMs`，缺失按保留的开始时间推导；折叠摘要 + detail inspector；事件仅显动作/对象/状态/摘要，raw payload/stdout/stack/diff 进 inspector。
 - 审批/问答：新审批到达自动聚焦 approval 面板（让位 pending question / select / inspector 等更高优先级层），显示 `Allow <tool>?` + 命令预览 + 原因/到期与固定操作键；pending question 支持输入框自定义答案、空草稿数字选择编号、队列计数。
 - 布局：默认 `viewport` 全屏窗口 + 长度折叠 + `/layout [stream|viewport]` 持久化（旧 `dynamic` 兼容为 `viewport`）；`stream` 全程 native scrollback、不按视口裁剪历史；视窗内历史滚动（滚轮/PageUp/PageDown、向上暂停跟随并提示 N 条新消息、滚到底/Esc 恢复跟随）由 `AgentConsoleTranscriptLayout` 策略收敛，平台适配层各自路由（TUI `TerminalInputController`、DOM `web-console`）。`viewport` 下启用终端鼠标跟踪（wheel/click 送达应用并由 surface 行滚动），`stream` 保持 native（原生选择/滚动）。
 - 焦点基础设施：components core `FocusMonitor`/`FocusTrap`/受控 `[focused]` 指令；转录导航归 `AgentConsoleTranscriptNavigation`；`AgentConsoleSessionState` 只承载数据与平凡 setter/getter（无 `subscribe`/`listeners`/`notify`/`batch`，无布局/平台行为）。
 - 输入：multiline draft、stash、external editor、Vim、keymap、suggestions、workspace mentions、slash palette；turn 运行中 Enter 默认排队（FIFO），steer 需显式 `ui.steerMode`；输入行 `N queued` 徽标常驻。
-- 呈现：Markdown、CJK 宽度、80/100/120 列、主题、ARIA、键盘与鼠标；工具行本地化动作 + 主参数（`Read file: <path>`）；工具批行 >3 折叠 `· +N more`（已被逐调用成行取代）；失败/阻塞行 `r` 就地重试；@mention 以紧凑 `Files · <paths>` 展示且运行时仍携带完整上下文。
+- 呈现：Markdown、CJK 宽度、80/100/120 列、主题、ARIA、键盘与鼠标；强调语法 `**`/`__`/`*`/`_` 遵守 CommonMark 词内不解析语义（如 `DEEPSEEK_API_KEY` 保持字面）；工具行本地化动作 + 主参数（`Read file: <path>`）；工具批行 >3 折叠 `· +N more`（已被逐调用成行取代）；失败/阻塞行 `r` 就地重试；@mention 以紧凑 `Files · <paths>` 展示且运行时仍携带完整上下文。
 - 流式：interim 旁白与工具轮边界封行为独立行、最终回答分离；流式光标 `▍` 只属于正在输出的 assistant；状态栏 token 计量随流式 chunk 实时推进（真实 usage 优先，预估带 `estimated` 标记且不写审计）；Working elapsed 由真实时钟在数据驱动渲染中推进，不使用业务 `setInterval`。
 - components/console 渲染收敛为 TUI 单一实现：保留 `ConsoleRenderer` 作为可复用基类/节点模型，移除重复的 `ConsoleTemplateCompiler`/`ConsoleTemplateModule`（tui 侧以同名兼容别名导出），`TuiTemplateModule`/`TuiConsoleModule` 为唯一模板模块；同一 surface 同时支持 `stream`（native scrollback）与 `viewport`（alternate screen + surface 行滚动），由宿主生命周期 `shouldUseNativeScrollback`/`shouldScrollViewport`/`shouldUseAlternateScreen` 选择。
 
