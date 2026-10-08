@@ -91,6 +91,8 @@ export interface AgentToolsFileOptions {
     maxPatchBytes?: number;
     defaultGlob?: string[];
     excludedGlobs?: string[];
+    /** Require a prior read of an existing file before write_file/edit_file may change it (default false). */
+    requireReadBeforeWrite?: boolean;
 }
 
 export interface AgentToolsWebOptions {
@@ -419,7 +421,8 @@ export const defaultAgentToolsOptions: AgentToolsOptions = {
         maxReadLines: 400,
         maxSearchResults: 50,
         defaultGlob: ['**/*'],
-        excludedGlobs: ['**/node_modules/**', '**/.git/**', '**/dist/**', '**/coverage/**']
+        excludedGlobs: ['**/node_modules/**', '**/.git/**', '**/dist/**', '**/coverage/**'],
+        requireReadBeforeWrite: false
     },
     web: {
         timeoutMs: 15000,

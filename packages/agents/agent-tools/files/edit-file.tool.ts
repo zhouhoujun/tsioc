@@ -5,6 +5,7 @@ import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath, toRelativeWorkspacePath } from './path-policy';
 import { resolveEditMatch, stripLineNumberPrefixes } from './edit-match';
+import { hasFileBeenRead, hasFileBeenWritten, recordFileWrite } from './file-access-registry';
 import { readFileSnapshot } from './snapshot';
 import { runFormatter } from './formatter';
 import { collectLspDiagnostics } from '../lsp/lsp-feedback';
@@ -49,7 +50,7 @@ export class EditFileTool implements AgentTool {
         }
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
         const requestedPath = this.requirePath(input?.path);
         const oldString = stripLineNumberPrefixes(this.requireOldString(input?.oldString));
         const newString = stripLineNumberPrefixes(this.requireString(input?.newString, 'newString'));
@@ -58,6 +59,12 @@ export class EditFileTool implements AgentTool {
         const absolutePath = resolveWorkspacePath(requestedPath, policy.rootDir);
         await assertNoSymlinkInWorkspacePath(absolutePath, policy.rootDir);
 
+        const relativePath = toRelativeWorkspacePath(absolutePath, policy.rootDir);
+        if (policy.requireReadBeforeWrite
+            && !hasFileBeenRead(context?.sessionId ?? '', relativePath)
+            && !hasFileBeenWritten(context?.sessionId ?? '', relativePath)) {
+            throw new Error(`Refusing to edit '${relativePath}' before reading it. Call read_file on '${relativePath}' first, then retry the edit.`);
+        }
         const content = await fs.readFile(absolutePath, 'utf8');
         const match = resolveEditMatch(content, oldString);
         if (!match) {
@@ -71,6 +78,9 @@ export class EditFileTool implements AgentTool {
             ? this.replaceAllCompat(content, match.search, newString)
             : content.replace(match.search, newString);
         await fs.writeFile(absolutePath, updated, 'utf8');
+        if (policy.requireReadBeforeWrite) {
+            recordFileWrite(context?.sessionId ?? '', relativePath);
+        }
 
         const format = await runFormatter(absolutePath, this.options?.format);
         const lspDiagnostics = await collectLspDiagnostics(this.options, absolutePath);

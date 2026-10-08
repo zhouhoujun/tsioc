@@ -5,6 +5,7 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath, toRelativeWorkspacePath } from './path-policy';
+import { hasFileBeenRead, hasFileBeenWritten, recordFileWrite } from './file-access-registry';
 import { readFileSnapshot } from './snapshot';
 import { runFormatter } from './formatter';
 import { collectLspDiagnostics } from '../lsp/lsp-feedback';
@@ -52,22 +53,31 @@ export class WriteFileTool implements AgentTool {
         }
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
         const requestedPath = this.requirePath(input?.path);
         const content = this.requireContent(input?.content);
         const policy = resolveFilePolicy(this.options);
         const absolutePath = resolveWorkspacePath(requestedPath, policy.rootDir);
         await assertNoSymlinkInWorkspacePath(absolutePath, policy.rootDir, { allowMissingPath: true });
 
+        const relativePath = toRelativeWorkspacePath(absolutePath, policy.rootDir);
         const existed = await this.existsAsFile(absolutePath);
+        if (policy.requireReadBeforeWrite && existed
+            && !hasFileBeenRead(context?.sessionId ?? '', relativePath)
+            && !hasFileBeenWritten(context?.sessionId ?? '', relativePath)) {
+            throw new Error(`Refusing to overwrite '${relativePath}' before reading it. Call read_file on '${relativePath}' first, then retry the write.`);
+        }
         await fs.mkdir(path.dirname(absolutePath), { recursive: true });
         await fs.writeFile(absolutePath, content, 'utf8');
+        if (policy.requireReadBeforeWrite) {
+            recordFileWrite(context?.sessionId ?? '', relativePath);
+        }
 
         const format = await runFormatter(absolutePath, this.options?.format);
         const lspDiagnostics = await collectLspDiagnostics(this.options, absolutePath);
 
         return {
-            path: toRelativeWorkspacePath(absolutePath, policy.rootDir),
+            path: relativePath,
             bytesWritten: Buffer.byteLength(content, 'utf8'),
             created: !existed,
             overwritten: existed,

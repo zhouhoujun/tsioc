@@ -642,7 +642,7 @@ export function resolveCliConfig(options: AgentCliOptions): AgentCliResolvedConf
         : (usesDefaultWorkspacePlaceholder ? workspace : (toolSettings.file?.rootDir ?? workspace));
     const tools: AgentToolsOptions = {
         ...toolSettings,
-        file: { ...(toolSettings.file ?? {}), rootDir: fileRootDir },
+        file: { ...(toolSettings.file ?? {}), rootDir: fileRootDir, requireReadBeforeWrite: toolSettings.file?.requireReadBeforeWrite ?? true },
         roots: (toolSettings.roots ?? []).slice(),
         registration: {
             ...(toolSettings.registration ?? {}),

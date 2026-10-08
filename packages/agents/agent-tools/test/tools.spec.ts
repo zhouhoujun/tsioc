@@ -55,6 +55,7 @@ import { CalculatorTool } from '../utility/calculator.tool';
 import { ReadFileTool } from '../files/read-file.tool';
 import { WriteFileTool } from '../files/write-file.tool';
 import { EditFileTool } from '../files/edit-file.tool';
+import { clearFileAccessRegistry } from '../files/file-access-registry';
 import { MkdirTool } from '../files/mkdir.tool';
 import { CopyFileTool } from '../files/copy-file.tool';
 import { MoveFileTool } from '../files/move-file.tool';
@@ -693,6 +694,41 @@ export class AgentToolsPackageTest {
         }, createSessionContext());
         expect(result.replacements).toEqual(1);
         expect(await fs.readFile(target, 'utf8')).toEqual('alpha\nBETA\ngamma\n');
+    }
+
+    @Test('write and edit require a prior read when read-before-write is enabled')
+    async readBeforeWriteGuard() {
+        clearFileAccessRegistry();
+        const workspace = await this.createWorkspace();
+        const opts = { file: { rootDir: workspace, requireReadBeforeWrite: true } };
+        const read = new ReadFileTool(opts);
+        const write = new WriteFileTool(opts);
+        const edit = new EditFileTool(opts);
+
+        let overwriteBlocked: Error | undefined;
+        try {
+            await write.invoke({ path: 'src/alpha.txt', content: 'x' }, createSessionContext());
+        } catch (err) {
+            overwriteBlocked = err as Error;
+        }
+        expect(overwriteBlocked?.message).toContain('before reading');
+
+        const created = await write.invoke({ path: 'src/new.txt', content: 'n' }, createSessionContext());
+        expect(created.created).toEqual(true);
+
+        let editBlocked: Error | undefined;
+        try {
+            await edit.invoke({ path: 'src/alpha.txt', oldString: 'alpha', newString: 'ALPHA' }, createSessionContext());
+        } catch (err) {
+            editBlocked = err as Error;
+        }
+        expect(editBlocked?.message).toContain('before reading');
+
+        await read.invoke({ path: 'src/alpha.txt' }, createSessionContext());
+        const overwritten = await write.invoke({ path: 'src/alpha.txt', content: 'alpha\nbeta\ngamma\n' }, createSessionContext());
+        expect(overwritten.overwritten).toEqual(true);
+        const edited = await edit.invoke({ path: 'src/alpha.txt', oldString: 'alpha', newString: 'ALPHA' }, createSessionContext());
+        expect(edited.replacements).toEqual(1);
     }
 
     @Test('list dir returns visible entries honors limits and validates paths')

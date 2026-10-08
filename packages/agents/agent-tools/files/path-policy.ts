@@ -8,6 +8,7 @@ export interface ResolvedFilePolicy {
     maxSearchResults: number;
     defaultGlob: string[];
     excludedGlobs: string[];
+    requireReadBeforeWrite: boolean;
 }
 
 export function resolveFilePolicy(options?: AgentToolsOptions): ResolvedFilePolicy {
@@ -19,7 +20,8 @@ export function resolveFilePolicy(options?: AgentToolsOptions): ResolvedFilePoli
         maxReadLines: file.maxReadLines ?? 400,
         maxSearchResults: file.maxSearchResults ?? 50,
         defaultGlob: (file.defaultGlob ?? ['**/*']).slice(),
-        excludedGlobs: (file.excludedGlobs ?? []).slice()
+        excludedGlobs: (file.excludedGlobs ?? []).slice(),
+        requireReadBeforeWrite: file.requireReadBeforeWrite === true
     };
 }
 

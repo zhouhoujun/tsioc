@@ -4,6 +4,7 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath, toRelativeWorkspacePath } from './path-policy';
+import { recordFileRead } from './file-access-registry';
 
 const MAX_LINE_LENGTH = 2000;
 
@@ -42,7 +43,7 @@ export class ReadFileTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
         const requestedPath = this.getRequestedPath(input);
         const offset = this.parsePositiveInt(input?.offset, 1, 'offset');
         const limit = this.parsePositiveInt(input?.limit, 0, 'limit');
@@ -54,8 +55,12 @@ export class ReadFileTool implements AgentTool {
         const content = range.content
             ? range.content.split('\n').map((line, index) => `${offset + index}: ${line}`).join('\n')
             : '';
+        const relativePath = toRelativeWorkspacePath(absolutePath, policy.rootDir);
+        if (policy.requireReadBeforeWrite) {
+            recordFileRead(context?.sessionId ?? '', relativePath);
+        }
         return {
-            path: toRelativeWorkspacePath(absolutePath, policy.rootDir),
+            path: relativePath,
             content,
             truncated: range.truncated,
             offset,
