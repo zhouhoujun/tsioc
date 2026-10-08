@@ -24,7 +24,20 @@ async function buildStreamHarness() {
             return { output: `done:${input}` };
         },
         async *runStreamingTurn(sessionId: string, input: string) {
-            events.onToolInvoked({ sessionId, toolName: 'read_file', hasInput: true, inputSummary: '/tmp/a.ts' } as any);
+            events.onToolInvoked({
+                sessionId,
+                toolName: 'read_file',
+                hasInput: true,
+                inputSummary: '{"path":"/tmp/a.ts"}',
+                receipt: {
+                    receiptId: 'rcpt-1',
+                    toolCallId: 'tc-1',
+                    toolName: 'read_file',
+                    executionMode: 'sequential',
+                    status: 'running',
+                    inputSummary: '/tmp/a.ts'
+                }
+            } as any);
             events.onToolCompleted({ sessionId, toolName: 'read_file', output: 'content' } as any);
             yield { type: 'content', content: `chunk-${input}` };
             events.onTurnCompleted({ sessionId, message: { content: 'done' } } as any);
@@ -178,5 +191,38 @@ export class AppRpcStreamTest {
         expect(toolEvents).toContain('tool_invoked');
         expect(toolEvents).toContain('tool_completed');
         expect(toolEvents).toContain('turn_completed');
+    }
+
+    @Test('tool_invoked chunk carries receipt-derived toolCallId and clean input summary')
+    async streamedToolInvokedCarriesToolCallId() {
+        const { handler } = await buildStreamHarness();
+        const route = handler.getRoutes().find(route => route.method === 'POST' && route.path === '/rpc/stream')!;
+        const chunks: string[] = [];
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: (_code: number, _headers: any) => res,
+            write: (chunk: string) => {
+                chunks.push(chunk);
+                return true;
+            },
+            end: () => res
+        } as any;
+
+        await route.handler(req, res, {} as any, {
+            jsonrpc: '2.0',
+            id: 4,
+            method: 'run.turn_stream',
+            params: { sessionId: 'stream-tool-id-s1', input: 'x' }
+        });
+
+        const messages = chunks.map(chunk => JSON.parse(chunk));
+        const invoked = messages.find(message =>
+            message.method === 'run.turn_stream.chunk' && message.params.eventType === 'tool_invoked');
+        expect(invoked).toBeTruthy();
+        expect(invoked.params.toolCallId).toEqual('tc-1');
+        expect(invoked.params.toolName).toEqual('read_file');
+        expect(String(invoked.params.content)).toContain('/tmp/a.ts');
+        expect(String(invoked.params.content)).not.toContain('{"path"');
     }
 }

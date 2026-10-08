@@ -215,4 +215,71 @@ export class TurnStreamToolRowIdentityTest {
         expect(rows.length).toBe(1);
         expect(String(rows[0].metadata?.uiEventKey || '')).toContain('tc-1');
     }
+
+    @Test('merges an invoked event carrying receipt toolCallId into the pending row')
+    invokedWithReceiptToolCallIdMergesInPlace() {
+        const host = createFakeHost();
+        const state = newStreamState();
+        const assistantMessage = startTurn(host);
+
+        consumeStreamChunkView(host, state, {
+            type: 'tool_call',
+            content: '',
+            toolCalls: [
+                readFileCall('call-a', 'exam-system/src/seed.ts'),
+                readFileCall('call-b', 'exam-system/README.md')
+            ]
+        }, assistantMessage);
+        expect(toolRows(host).length).toBe(2);
+
+        consumeStreamChunkView(host, state, {
+            type: 'event',
+            eventType: 'tool_invoked',
+            toolName: 'read_file',
+            receipt: { toolCallId: 'call-a', receiptId: 'rcpt-a' },
+            // Shape produced by AppRpcServer.describeToolInvocationEvent: `<toolName> · <inputSummary>`.
+            content: 'read_file · exam-system/src/seed.ts',
+            status: 'running'
+        }, assistantMessage);
+
+        // In-place merge into the pending row keyed by the same toolCallId.
+        const rows = toolRows(host);
+        expect(rows.length).toBe(2);
+
+        const callA = rows.find(row => String(row.metadata?.uiEventKey || '').includes('call-a'));
+        expect(callA?.metadata?.uiEventType).toBe('tool_invoked');
+        expect(callA?.metadata?.status).toBe('running');
+        expect(String(callA?.content || '')).toContain('exam-system/src/seed.ts');
+
+        const callB = rows.find(row => String(row.metadata?.uiEventKey || '').includes('call-b'));
+        expect(callB?.metadata?.uiEventType).toBe('tool_call');
+    }
+
+    @Test('merges an invoked event carrying top-level toolCallId into the pending row')
+    invokedWithTopLevelToolCallIdMergesInPlace() {
+        const host = createFakeHost();
+        const state = newStreamState();
+        const assistantMessage = startTurn(host);
+
+        consumeStreamChunkView(host, state, {
+            type: 'tool_call',
+            content: '',
+            toolCalls: [readFileCall('call-a', 'exam-system/src/seed.ts')]
+        }, assistantMessage);
+        expect(toolRows(host).length).toBe(1);
+
+        consumeStreamChunkView(host, state, {
+            type: 'event',
+            eventType: 'tool_invoked',
+            toolName: 'read_file',
+            toolCallId: 'call-a',
+            content: 'read_file · exam-system/src/seed.ts',
+            status: 'running'
+        }, assistantMessage);
+
+        const rows = toolRows(host);
+        expect(rows.length).toBe(1);
+        expect(String(rows[0].metadata?.uiEventKey || '')).toContain('call-a');
+        expect(rows[0].metadata?.uiEventType).toBe('tool_invoked');
+    }
 }

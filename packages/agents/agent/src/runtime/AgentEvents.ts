@@ -120,7 +120,7 @@ export class AgentToolInvokedEvent extends ApplicationEvent {
     constructor(source: Object, readonly sessionId: string, readonly toolName: string, input: any, readonly receipt?: AgentToolExecutionReceipt) {
         super(source);
         this.hasInput = input !== undefined;
-        this.inputSummary = summarizeEventInput(input);
+        this.inputSummary = receipt?.inputSummary ?? summarizeEventInput(input);
     }
 }
 

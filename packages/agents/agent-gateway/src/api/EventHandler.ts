@@ -98,7 +98,8 @@ export class EventHandler {
             sessionId: event.sessionId,
             toolName: event.toolName,
             hasInput: event.hasInput,
-            inputSummary: event.inputSummary
+            inputSummary: event.receipt?.inputSummary ?? event.inputSummary,
+            receipt: event.receipt
         });
         this.capture('tool_invoked', {
             id: `tool_invoked:${event.receipt?.receiptId ?? event.receipt?.toolCallId ?? `tool-${event.sessionId}-${Date.now()}`}`,

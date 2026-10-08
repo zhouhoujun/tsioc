@@ -118,7 +118,7 @@ export function resolveToolEventKey(eventType: string, chunk: any): string | und
         case 'tool_completed':
         case 'tool_failed':
         case 'tool_skipped': {
-            const toolCallId = String(chunk?.toolCallId || '').trim();
+            const toolCallId = String(chunk?.toolCallId || chunk?.receipt?.toolCallId || '').trim();
             const receiptId = String(chunk?.receiptId || chunk?.receipt?.receiptId || '').trim();
             if (toolCallId || receiptId) {
                 return `tool:${toolCallId || receiptId}`;

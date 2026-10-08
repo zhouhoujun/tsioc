@@ -241,7 +241,7 @@ export function consumeStreamEventChunkView(host: AgentConsoleTurnStreamHost, ch
             eventType,
             label,
             status,
-            toolCallId: String(chunk?.toolCallId || '').trim() || undefined,
+            toolCallId: String(chunk?.toolCallId || chunk?.receipt?.toolCallId || '').trim() || undefined,
             receiptId: String(chunk?.receiptId || chunk?.receipt?.receiptId || '').trim() || undefined,
             attempt: Number(chunk?.attemptCount || chunk?.receipt?.attemptCount) || undefined,
             source: 'stream',
