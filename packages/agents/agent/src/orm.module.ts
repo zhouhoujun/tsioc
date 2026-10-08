@@ -114,13 +114,18 @@ export function provideAgentOrmStorage(root: string, fileName = 'agent.db'): Pro
 
 function resolveAgentOrmStorageLocation(root: string, fileName: string): string {
     const runtime = loadNodeOrmRuntime();
+    const explicitRoot = normalizeOrmPath(root);
+    if (explicitRoot) {
+        runtime?.ensureDirectory(explicitRoot);
+        return runtime?.join ? runtime.join(explicitRoot, fileName) : joinOrmPath(explicitRoot, fileName);
+    }
     const home = runtime?.homedir();
     if (!runtime || !home) {
-        return joinOrmPath('~/.tsdi-agent', 'agent.db');
+        return joinOrmPath('~/.tsdi-agent', fileName);
     }
     const storageRoot = runtime.join(home, '.tsdi-agent');
     runtime.ensureDirectory(storageRoot);
-    return runtime.join(storageRoot, 'agent.db');
+    return runtime.join(storageRoot, fileName);
 }
 
 
