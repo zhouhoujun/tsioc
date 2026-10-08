@@ -28,7 +28,7 @@ export interface AgentConsoleMarkdownRenderOptions {
     treatUnclosedFenceAsText?: boolean;
 }
 
-const INLINE_MARKDOWN_RE = /!\[([^\]]*)\]\(([^)]+)\)|\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|__([^_]+)__|~~([^~]+)~~|`([^`]+)`|\*([^*]+)\*|_([^_]+)_/g;
+const INLINE_MARKDOWN_RE = /!\[([^\]]*)\]\(([^)]+)\)|\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|(?<![A-Za-z0-9\u4e00-\u9fff])__([^_]+)__(?![A-Za-z0-9\u4e00-\u9fff])|~~([^~]+)~~|`([^`]+)`|\*([^*]+)\*|(?<![A-Za-z0-9\u4e00-\u9fff])_([^_]+)_(?![A-Za-z0-9\u4e00-\u9fff])/g;
 const STANDALONE_STRONG_HEADING_RE = /^\s*(?:\*\*|__)([^*_`][^`]*?)(?:\*\*|__)\s*$/;
 const SHORT_HEADING_RE = /^(\s*)([^:：\n]{1,36})([:：])\s*$/;
 

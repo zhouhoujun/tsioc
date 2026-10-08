@@ -70,4 +70,25 @@ export class MarkdownWorkerBridgeTest {
         expect(withOption.length).toBeGreaterThan(0);
         expect(withoutOption.length).toBeGreaterThan(0);
     }
+
+    @Test('intraword underscores stay literal like DEEPSEEK_API_KEY')
+    intrawordUnderscoreStaysLiteral() {
+        const bridge = new SyncMarkdownWorkerBridge();
+        const content = 'export DEEPSEEK_API_KEY=sk-123';
+        const result = bridge.render(content, { compactBlankLines: true });
+        const joined = result.map(line => line.tokens.map(token => token.text).join('')).join('\n');
+        expect(joined).toContain('DEEPSEEK_API_KEY');
+        expect(joined).not.toContain('DEEPSEEKAPIKEY');
+        const apiToken = result.flatMap(line => line.tokens).find(token => token.text.trim() === 'API');
+        expect(apiToken?.tone).not.toEqual('accent');
+    }
+
+    @Test('standalone underscores still produce emphasis tokens')
+    standaloneUnderscoreStillEmphasizes() {
+        const bridge = new SyncMarkdownWorkerBridge();
+        const content = 'the value is _critical_ here';
+        const result = bridge.render(content, { compactBlankLines: true });
+        const critical = result.flatMap(line => line.tokens).find(token => token.text === 'critical');
+        expect(critical?.tone).toEqual('accent');
+    }
 }
