@@ -230,6 +230,8 @@ export function consumeStreamEventChunkView(host: AgentConsoleTurnStreamHost, ch
     }
     const label = String(chunk?.label || resolveStreamEventLabel(eventType)).trim() || 'state';
     const status = normalizeUiEventStatus(chunk?.status);
+    const streamedDurationMs = chunk?.durationMs ?? chunk?.receipt?.durationMs;
+    const durationOption = streamedDurationMs != null ? { durationMs: Number(streamedDurationMs) } : {};
     const eventKey = qualifyTurnUiEventKey(host.state, resolveToolEventKey(eventType, chunk))
         || (eventType === 'turn_started'
             ? host.state.qualifyUiEventKey('turn-start')
@@ -241,6 +243,7 @@ export function consumeStreamEventChunkView(host: AgentConsoleTurnStreamHost, ch
             eventType,
             label,
             status,
+            ...durationOption,
             toolCallId: String(chunk?.toolCallId || chunk?.receipt?.toolCallId || '').trim() || undefined,
             receiptId: String(chunk?.receiptId || chunk?.receipt?.receiptId || '').trim() || undefined,
             attempt: Number(chunk?.attemptCount || chunk?.receipt?.attemptCount) || undefined,
@@ -253,6 +256,7 @@ export function consumeStreamEventChunkView(host: AgentConsoleTurnStreamHost, ch
         eventType,
         label,
         status,
+        ...durationOption,
         source: 'stream',
         sequence: Number(chunk?.sequence) || undefined
     });

@@ -632,6 +632,37 @@ export class TurnCancellationTest {
         expect(compensationEvent?.toolCallIds).toEqual(['tc-1']);
     }
 
+    @Test('a failing turn persists a closing assistant error message')
+    async failingTurnPersistsAssistantError() {
+        const { sessionStore, memoryStore } = await this.boot();
+        const adapter = new ToolThenBlockModelAdapter('reversible_put', 'error');
+        const app = new FakeApp();
+        const runtime = new DefaultAgentRuntime(
+            adapter,
+            new SingleToolRegistry(new ReversiblePutTool()),
+            sessionStore,
+            memoryStore,
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            app as any,
+            new RandomUuidGenerator()
+        );
+
+        let error: any;
+        try {
+            await runtime.runTurn('s1', 'store it');
+        } catch (err) {
+            error = err;
+        }
+        expect(error?.message).toEqual('model exploded');
+
+        const state = await sessionStore.get('s1');
+        const last = state.messages[state.messages.length - 1];
+        expect(last?.role).toEqual('assistant');
+        expect(last?.metadata?.error).toEqual(true);
+        expect(String(last?.content || '')).toContain('model exploded');
+    }
+
     @Test('rollback compensates successful tool calls in reverse order')
     async rollbackRunsInReverseOrder() {
         const { sessionStore, memoryStore } = await this.boot();

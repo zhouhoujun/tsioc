@@ -1647,6 +1647,7 @@ export class AppRpcServer {
                 ...(event.toolName ? { toolName: event.toolName } : {}),
                 ...(event.toolCallId ? { toolCallId: event.toolCallId } : {}),
                 ...(event.approvalId ? { approvalId: event.approvalId } : {}),
+                ...(Number.isFinite(Number(data?.receipt?.durationMs)) ? { durationMs: Number(data.receipt.durationMs) } : {}),
                 ...(data.report ? { report: data.report } : {}),
                 ...(data.diagnostics ? { diagnostics: data.diagnostics } : {}),
                 ...(data.compensated ? { compensated: data.compensated } : {})

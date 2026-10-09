@@ -63,6 +63,22 @@ export function isRetryableError(kind: ModelErrorKind): boolean {
         || kind === 'server' || kind === 'network' || kind === 'timeout';
 }
 
+export function shouldRetryTransport(
+    error: unknown,
+    attempt: number,
+    retry: AgentRetryPolicy | undefined,
+    externallyAborted: boolean
+): boolean {
+    if (externallyAborted || attempt > (retry?.maxRetries ?? DEFAULT_RETRY_POLICY.maxRetries)) {
+        return false;
+    }
+    const failure = (error as { modelFailure?: { kind?: ModelErrorKind; retryable?: boolean } } | undefined)?.modelFailure;
+    if (failure?.retryable === false) {
+        return false;
+    }
+    return isRetryableError(failure?.kind ?? classifyModelError(undefined, error));
+}
+
 export function retryAfterMs(value: string | null | undefined, now: number = Date.now()): number | undefined {
     if (!value) return undefined;
     const seconds = Number(value);

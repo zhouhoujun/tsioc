@@ -2,7 +2,7 @@ import { AgentMemoryRecord } from '../memory/MemoryStore';
 import { AgentFileMessagePart, AgentImageMessagePart, AgentMessage, AgentMessagePart, getAgentMessageText, resolveAgentMessageParts } from '../runtime/AgentMessage';
 import { AgentToolDefinition } from '../tools/AgentTool';
 import { ModelAdapter } from './ModelAdapter';
-import { classifyModelError, DEFAULT_RETRY_POLICY, isRetryableError, retryDelayMs } from './RetryPolicy';
+import { classifyModelError, DEFAULT_RETRY_POLICY, isRetryableError, retryDelayMs, shouldRetryTransport } from './RetryPolicy';
 import { asModelFailure, createModelRequestError, ModelRequestError } from './ModelRequestError';
 import { ModelRequest } from './ModelRequest';
 import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
@@ -166,7 +166,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                     signal
                 });
             } catch (error: any) {
-                throw new Error(`Model request failed: ${error?.message || String(error)} (${requestUrl})`);
+                if (shouldRetryTransport(error, attempt, this.options.retry, request.signal?.aborted === true)) { cleanup(); return this.retry(request, attempt, 0, null); } throw new Error(`Model request failed: ${error?.message || String(error)} (${requestUrl})`);
             }
 
             if (!response.ok) {

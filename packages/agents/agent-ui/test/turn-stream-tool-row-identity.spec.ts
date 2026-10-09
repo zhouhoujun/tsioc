@@ -34,7 +34,8 @@ function createFakeHost(): AgentConsoleTurnStreamHost {
             uiEventType: options.eventType || 'state',
             uiEventLabel: options.label || 'state',
             uiEventKey: options.eventKey,
-            status: options.status || 'running'
+            status: options.status || 'running',
+            durationMs: options.durationMs
         }
     });
 
@@ -281,5 +282,57 @@ export class TurnStreamToolRowIdentityTest {
         expect(rows.length).toBe(1);
         expect(String(rows[0].metadata?.uiEventKey || '')).toContain('call-a');
         expect(rows[0].metadata?.uiEventType).toBe('tool_invoked');
+    }
+
+    @Test('carries a top-level backend durationMs onto the merged completion row')
+    completionCarriesTopLevelDuration() {
+        const host = createFakeHost();
+        const state = newStreamState();
+        const assistantMessage = startTurn(host);
+
+        consumeStreamChunkView(host, state, {
+            type: 'tool_call',
+            content: '',
+            toolCalls: [readFileCall('call-a', 'exam-system/src/seed.ts')]
+        }, assistantMessage);
+
+        consumeStreamChunkView(host, state, {
+            type: 'event',
+            eventType: 'tool_completed',
+            toolName: 'read_file',
+            toolCallId: 'call-a',
+            content: 'read_file · exam-system/src/seed.ts',
+            status: 'success',
+            durationMs: 137
+        }, assistantMessage);
+
+        const row = toolRows(host).find(item => String(item.metadata?.uiEventKey || '').includes('call-a'));
+        expect(row?.metadata?.durationMs).toEqual(137);
+    }
+
+    @Test('falls back to receipt.durationMs when the event chunk omits a top-level duration')
+    completionCarriesReceiptDuration() {
+        const host = createFakeHost();
+        const state = newStreamState();
+        const assistantMessage = startTurn(host);
+
+        consumeStreamChunkView(host, state, {
+            type: 'tool_call',
+            content: '',
+            toolCalls: [readFileCall('call-b', 'exam-system/README.md')]
+        }, assistantMessage);
+
+        consumeStreamChunkView(host, state, {
+            type: 'event',
+            eventType: 'tool_completed',
+            toolName: 'read_file',
+            toolCallId: 'call-b',
+            receipt: { toolCallId: 'call-b', durationMs: 42 },
+            content: 'read_file · exam-system/README.md',
+            status: 'success'
+        }, assistantMessage);
+
+        const row = toolRows(host).find(item => String(item.metadata?.uiEventKey || '').includes('call-b'));
+        expect(row?.metadata?.durationMs).toEqual(42);
     }
 }

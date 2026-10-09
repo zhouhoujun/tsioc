@@ -181,4 +181,73 @@ export class ModelFailureSpec {
         expect(caught.modelFailure.kind).toBe('auth');
         expect(caught.modelFailure.status).toBe(401);
     }
+
+    @Test('retries a transient transport abort on the non-streaming request')
+    async retriesTransportAbort() {
+        this.originalFetch = (globalThis as any).fetch;
+        let calls = 0;
+        (globalThis as any).fetch = async () => {
+            calls += 1;
+            if (calls === 1) {
+                const aborted: any = new Error('This operation was aborted');
+                aborted.name = 'AbortError';
+                throw aborted;
+            }
+            return {
+                ok: true,
+                status: 200,
+                headers: { get: () => null },
+                async json() {
+                    return {
+                        choices: [{ message: { role: 'assistant', content: 'recovered' }, finish_reason: 'stop' }],
+                        usage: {}
+                    };
+                }
+            };
+        };
+
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'openai-compatible',
+            model: 'gpt-5.5',
+            baseUrl: 'https://example.test',
+            apiKey: 'test-key',
+            retry: { maxRetries: 1, baseDelayMs: 0, maxDelayMs: 0, jitterMs: 0 }
+        } as any, undefined, { sleep: async () => undefined } as any);
+
+        const response = await adapter.complete(createRequest());
+        expect(response.message).toEqual('recovered');
+        expect(calls).toEqual(2);
+    }
+
+    @Test('does not retry a transport failure once the runtime signal is aborted')
+    async doesNotRetryExternalAbort() {
+        this.originalFetch = (globalThis as any).fetch;
+        let calls = 0;
+        (globalThis as any).fetch = async () => {
+            calls += 1;
+            const aborted: any = new Error('This operation was aborted');
+            aborted.name = 'AbortError';
+            throw aborted;
+        };
+
+        const controller = new AbortController();
+        controller.abort();
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'openai-compatible',
+            model: 'gpt-5.5',
+            baseUrl: 'https://example.test',
+            apiKey: 'test-key',
+            retry: { maxRetries: 3, baseDelayMs: 0, maxDelayMs: 0, jitterMs: 0 }
+        } as any, undefined, { sleep: async () => undefined } as any);
+
+        let caught: any;
+        try {
+            await adapter.complete({ ...createRequest(), signal: controller.signal });
+        } catch (error) {
+            caught = error;
+        }
+
+        expect(calls).toEqual(1);
+        expect(caught).toBeTruthy();
+    }
 }

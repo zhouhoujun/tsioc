@@ -382,7 +382,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 throw error instanceof AgentTurnCancelledError ? error : new AgentTurnCancelledError(input.sessionId);
             }
             const err = error instanceof Error ? error : new Error(String(error));
-            await this.rollbackTurnCompensations(input.sessionId, 'error');
+            await this.rollbackTurnCompensations(input.sessionId, 'error'); await this.sessions.append(input.sessionId, this.createMessage('assistant', `Error: ${err.message}`, undefined, undefined, { error: true })).catch(() => undefined);
             await this.runTurnHooks('afterTurn', input.sessionId, {
                 sessionId: input.sessionId,
                 principalId: input.principalId,
@@ -508,7 +508,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                     throw error instanceof AgentTurnCancelledError ? error : new AgentTurnCancelledError(sessionId);
                 }
                 const err = error instanceof Error ? error : new Error(String(error));
-                await this.rollbackTurnCompensations(sessionId, 'error');
+                await this.rollbackTurnCompensations(sessionId, 'error'); await this.sessions.append(sessionId, this.createMessage('assistant', `Error: ${err.message}`, undefined, undefined, { error: true })).catch(() => undefined);
                 await this.runTurnHooks('afterTurn', sessionId, {
                     sessionId,
                     principalId,

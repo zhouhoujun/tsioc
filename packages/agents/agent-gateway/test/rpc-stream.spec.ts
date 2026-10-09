@@ -38,7 +38,20 @@ async function buildStreamHarness() {
                     inputSummary: '/tmp/a.ts'
                 }
             } as any);
-            events.onToolCompleted({ sessionId, toolName: 'read_file', output: 'content' } as any);
+            events.onToolCompleted({
+                sessionId,
+                toolName: 'read_file',
+                output: 'content',
+                receipt: {
+                    receiptId: 'rcpt-1',
+                    toolCallId: 'tc-1',
+                    toolName: 'read_file',
+                    executionMode: 'sequential',
+                    status: 'success',
+                    outputSummary: 'content',
+                    durationMs: 137
+                }
+            } as any);
             yield { type: 'content', content: `chunk-${input}` };
             events.onTurnCompleted({ sessionId, message: { content: 'done' } } as any);
             yield { type: 'done', content: '' };
@@ -132,6 +145,37 @@ export class AppRpcStreamTest {
         expect(doneMessage).toBeTruthy();
         expect(doneMessage.result.sessionId).toEqual('stream-s1');
         expect(doneMessage.meta).toEqual({ requestId: 'stream-request-7', sessionEpoch: 4 });
+    }
+
+    @Test('tool_completed stream chunk carries the backend receipt durationMs')
+    async toolCompletedChunkCarriesReceiptDuration() {
+        const { handler } = await buildStreamHarness();
+        const route = handler.getRoutes().find(route => route.method === 'POST' && route.path === '/rpc/stream')!;
+        const chunks: string[] = [];
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: (_code: number, _headers: any) => res,
+            write: (chunk: string) => {
+                chunks.push(chunk);
+                return true;
+            },
+            end: () => res
+        } as any;
+
+        await route.handler(req, res, {} as any, {
+            jsonrpc: '2.0',
+            id: 8,
+            method: 'run.turn_stream',
+            params: { sessionId: 'stream-duration-1', input: 'hello' }
+        });
+
+        const messages = chunks.map(chunk => JSON.parse(chunk));
+        const completed = messages.find(message =>
+            message.method === 'run.turn_stream.chunk' && message.params.eventType === 'tool_completed');
+        expect(completed).toBeTruthy();
+        expect(completed.params.toolCallId).toEqual('tc-1');
+        expect(completed.params.durationMs).toEqual(137);
     }
 
     @Test('unknown method yields NDJSON error line')
