@@ -61,7 +61,7 @@
 
 > 来源：真实 CLI/TUI 会话、跨平台（DOM/TUI）验收与源码审计暴露的差距；对照 Codex CLI（最新，ratatui）、opencode（bubbletea / OpenTUI）与 openTUI 的基础组件模型。批次可独立验收；每批次必须补真实边界回归（AppRpc 流 / DOM / PTY）后才能关闭。
 >
-> **当前状态（2026-10）**：P1–P6 已全部关闭并合并进上文功能点；P7（`AgentConsoleComponent` 持续拆解）进行中；A1–A3（运行时写死重构）已完成并合并进上文功能点；U1（视窗滚动与选中解耦 + 粘底跟随）、U5（DOM/TUI 全历史分页 pager + 查找）已关闭并合并进功能点；U2（视窗高度实测 + resize 响应）、U3（逐消息持久折叠）、U4（agent-ui 文案 i18n）待执行。
+> **当前状态（2026-10）**：P1–P6 已全部关闭并合并进上文功能点；P7（`AgentConsoleComponent` 持续拆解）进行中；A1–A3（运行时写死重构）已完成并合并进上文功能点；U1（视窗滚动与选中解耦 + 粘底跟随）、U3（逐消息持久折叠/行内展开 `e`）、U5（DOM/TUI 全历史分页 pager + 查找）已关闭并合并进功能点；U2（视窗高度实测 + resize 响应）、U4（agent-ui 文案 i18n）待执行。
 
 ### 统一收尾流程（每个 plan 缺一不可）
 
@@ -113,7 +113,8 @@
 - **问题（file:line）**：`AgentConsoleMessageTemplates.ts:130-158` 的展开条件为 `rawMode || showCriticalMarks || stream || finalAssistant || (detailOpen && selected)`，即同时只能展开一条 detail；`AgentConsolePanels.ts:2726-2728` 在 `messageDetailOpen` 时 `visibleMessages` 直接返回**全量**消息（绕过窗口）。
 - **目标**：每条消息拥有独立的 inline 展开/折叠状态并持久在 `SessionState`（可多条同时展开）；detail 页与 inline 展开解耦；折叠状态在重渲染/切换会话后可保持；参考 Codex `HistoryCell` 的 cell 级折叠与 opencode 工具块展开。
 - **涉及**：`AgentConsoleSessionState.ts`（`expandedMessageIds` 数据字段）、`AgentConsoleMessageTemplates.ts`、`AgentConsolePanels.ts`、`AgentConsoleMessageRenderers.ts`。
-- **验收**：多条消息可同时 inline 展开；重渲染与切换会话保持；detail 打开不再绕过窗口；新增回归。
+- **进度（已关闭 ✅）**：`SessionState` 新增 `expandedMessageIds: string[]` 与 `isMessageExpanded`/`setMessageExpanded`/`toggleMessageExpanded`/`toggleSelectedMessageExpanded`（不可变替换，引用相等即 cache key）；`AgentConsoleMessageTemplates.ts` 的 `bodyPreviewLines` 展开条件并入 `isMessageExpanded(messageId)` 并把 `expandedIds` 纳入 `bodyLinesCache` 比较；`AgentConsoleFocusLayers.ts` `handleMessageListKey` 新增 `case 'e'` → `toggleSelectedMessageExpanded`（不进 detail，`messageDetailOpen` 保持 false）；多消息可同时展开、再次 `e` 逐条收起。`AgentConsolePanels.ts` 的 `messageDetailOpen` 绕过窗口问题仍遗留（并入 U1/U2 视窗批次处理）；新增 2 条回归覆盖单条展开/detail 解耦与多条展开/收起。
+- **验收**：多条消息可同时 inline 展开；`e` 不打开 detail；重渲染与切换会话保持；新增回归。
 
 #### U4 — agent-ui 用户可见文案全面 i18n
 

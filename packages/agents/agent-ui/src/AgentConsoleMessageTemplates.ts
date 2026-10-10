@@ -51,6 +51,7 @@ const bodyLinesCache = new WeakMap<object, {
     showCriticalMarks: boolean;
     messageLayout: string;
     finalAssistantMessageId: string;
+    expandedIds: readonly string[];
     previewLines: number;
     lines: AgentConsoleRenderedLine[];
 }>();
@@ -134,6 +135,7 @@ export abstract class AgentConsoleMessageTemplateBase {
         const showCriticalMarks = this.state.showCriticalMarks;
         const messageLayout = this.state.messageLayout;
         const finalAssistantMessageId = this.state.finalAssistantMessageId;
+        const expandedIds = this.state.expandedMessageIds;
         const messageId = String(source[0]?.messageId || '');
         const cached = bodyLinesCache.get(this);
         if (cached
@@ -144,15 +146,17 @@ export abstract class AgentConsoleMessageTemplateBase {
             && cached.showCriticalMarks === showCriticalMarks
             && cached.messageLayout === messageLayout
             && cached.finalAssistantMessageId === finalAssistantMessageId
+            && cached.expandedIds === expandedIds
             && cached.previewLines === previewLines) {
             return cached.lines;
         }
         const expanded = rawMode || showCriticalMarks || messageLayout === 'stream'
             || (messageId && messageId === finalAssistantMessageId)
+            || (messageId && this.state.isMessageExpanded(messageId))
             || (detailOpen && selected);
         const lines = expanded ? source : this.previewLines(source, previewLines, true);
         bodyLinesCache.set(this, {
-            source, selected, detailOpen, rawMode, showCriticalMarks, messageLayout, finalAssistantMessageId, previewLines, lines
+            source, selected, detailOpen, rawMode, showCriticalMarks, messageLayout, finalAssistantMessageId, expandedIds, previewLines, lines
         });
         return lines;
     }

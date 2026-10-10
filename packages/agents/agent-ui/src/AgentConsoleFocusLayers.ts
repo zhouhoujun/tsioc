@@ -330,6 +330,7 @@ export abstract class AgentConsoleFocusLayers {
             case 'home': transcriptNavigation.selectFirst(); return true;
             case 'end': transcriptNavigation.selectLast(); return true;
             case 'r': return this.retryFailedMessage();
+            case 'e': return state.toggleSelectedMessageExpanded();
             case 'enter': return this.openSelectedMessage();
             default: return false;
         }

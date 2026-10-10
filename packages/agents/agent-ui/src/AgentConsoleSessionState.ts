@@ -620,6 +620,7 @@ export class AgentConsoleSessionState {
     private transcriptFollowProvider?: () => boolean;
     selectedMessageId = '';
     messageDetailOpen = false;
+    expandedMessageIds: string[] = [];
     messageDetailTakesFocus = true;
     messageDetailScroll = 0;
     messageDetailColumnScroll = 0;
@@ -2057,6 +2058,33 @@ export class AgentConsoleSessionState {
             attempt: m.timeline?.attempt,
             uiEventKey: m.uiEventKey
         };
+    }
+
+    isMessageExpanded(messageId: string): boolean {
+        return this.expandedMessageIds.includes(String(messageId || '').trim());
+    }
+
+    setMessageExpanded(messageId: string, expanded: boolean): void {
+        const id = String(messageId || '').trim();
+        if (!id || expanded === this.isMessageExpanded(id)) {
+            return;
+        }
+        this.expandedMessageIds = expanded
+            ? [...this.expandedMessageIds, id]
+            : this.expandedMessageIds.filter(item => item !== id);
+    }
+
+    toggleMessageExpanded(messageId: string): void {
+        this.setMessageExpanded(messageId, !this.isMessageExpanded(messageId));
+    }
+
+    toggleSelectedMessageExpanded(): boolean {
+        const id = String(this.selectedMessageId || '').trim();
+        if (!id) {
+            return false;
+        }
+        this.toggleMessageExpanded(id);
+        return true;
     }
 
     openMessageDetail(takeFocus = true): void {

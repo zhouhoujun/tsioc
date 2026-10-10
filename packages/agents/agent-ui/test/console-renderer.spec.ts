@@ -1034,6 +1034,69 @@ export class AgentConsoleOperationalPanelsRendererTest {
         expect(taskFeedLines.some(line => line.includes('bg-2'))).toBe(true);
     }
 
+    @Test('pressing e inline-expands the selected collapsed message without opening detail')
+    async inlineExpandKeyExpandsSelectedMessage() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        const state = ref.instance.sessionState;
+        state.setConsoleOptions({ messageLayout: 'viewport', auxiliaryPreviewLines: 3, messagesVisibleItems: 20 });
+        state.setMessages([
+            { id: 'a1', role: 'assistant', content: Array.from({ length: 12 }, (_, index) => `alpha line ${index + 1}`).join('\n'), createdAt: 1 } as any,
+            { id: 'a2', role: 'assistant', content: 'final answer', createdAt: 2 } as any
+        ]);
+        navigationFor(state).setFocused(true);
+        state.setSelectedMessageId('a1');
+        await settleDynamicMessages(ref);
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const panel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const collapsedLines = renderer.renderToLines(panel.hostView.rootNodes[0]);
+        expect(collapsedLines.some(line => line.includes('alpha line 6'))).toBe(false);
+        expect(collapsedLines.some(line => line.includes('more lines'))).toBe(true);
+
+        expect(await state.handleFocusKey('e', navigationFor(state))).toEqual(true);
+        expect(state.messageDetailOpen).toBe(false);
+
+        await settleDynamicMessages(ref);
+        const expandedLines = renderer.renderToLines(panel.hostView.rootNodes[0]);
+        expect(expandedLines.some(line => line.includes('alpha line 1'))).toBe(true);
+        expect(expandedLines.some(line => line.includes('alpha line 6'))).toBe(true);
+        expect(expandedLines.some(line => line.includes('alpha line 12'))).toBe(true);
+        expect(expandedLines.some(line => line.includes('final answer'))).toBe(true);
+    }
+
+    @Test('e keeps multiple messages inline-expanded at once and toggles back off')
+    async inlineExpandHandlesMultipleSelections() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        const state = ref.instance.sessionState;
+        state.setConsoleOptions({ messageLayout: 'viewport', auxiliaryPreviewLines: 3, messagesVisibleItems: 20 });
+        state.setMessages([
+            { id: 'ma1', role: 'assistant', content: Array.from({ length: 12 }, (_, index) => `alpha line ${index + 1}`).join('\n'), createdAt: 1 } as any,
+            { id: 'ma2', role: 'assistant', content: Array.from({ length: 12 }, (_, index) => `beta line ${index + 1}`).join('\n'), createdAt: 2 } as any,
+            { id: 'ma3', role: 'assistant', content: 'final answer', createdAt: 3 } as any
+        ]);
+        navigationFor(state).setFocused(true);
+        state.setSelectedMessageId('ma1');
+        await settleDynamicMessages(ref);
+
+        expect(await state.handleFocusKey('e', navigationFor(state))).toEqual(true);
+        state.setSelectedMessageId('ma2');
+        expect(await state.handleFocusKey('e', navigationFor(state))).toEqual(true);
+
+        await settleDynamicMessages(ref);
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const panel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const lines = renderer.renderToLines(panel.hostView.rootNodes[0]);
+        expect(lines.some(line => line.includes('alpha line 6'))).toBe(true);
+        expect(lines.some(line => line.includes('beta line 6'))).toBe(true);
+
+        state.setSelectedMessageId('ma1');
+        expect(await state.handleFocusKey('e', navigationFor(state))).toEqual(true);
+        await settleDynamicMessages(ref);
+        const linesAfterToggle = renderer.renderToLines(panel.hostView.rootNodes[0]);
+        expect(linesAfterToggle.some(line => line.includes('alpha line 6'))).toBe(false);
+        expect(linesAfterToggle.some(line => line.includes('beta line 6'))).toBe(true);
+    }
+
     @Test('renders focused tool runs panel with selected run details')
     async renderFocusedToolRunsPanel() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
