@@ -1619,6 +1619,27 @@ export class AgentCliTest {
         expect(resolveCliModelConfig({ root }, root).apiKey).toBe('test-key');
     }
 
+    @Test('prefers a plaintext config apiKey over a stale encrypted credential')
+    async prefersPlaintextApiKeyOverStaleCredential() {
+        const root = await this.createRoot();
+        writeSettingsModelProfile(root, {
+            provider: 'openai-compatible',
+            model: 'gpt-5.5',
+            apiKey: 'stale-key',
+            baseUrl: 'https://provider.test'
+        });
+        const settingsPath = path.join(root, 'settings.json');
+        const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+        settings.model.apiKey = 'fresh-key';
+        fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), 'utf8');
+
+        expect(resolveCliModelConfig({ root }, root).apiKey).toBe('fresh-key');
+
+        delete settings.model.apiKey;
+        fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), 'utf8');
+        expect(resolveCliModelConfig({ root }, root).apiKey).toBe('fresh-key');
+    }
+
     @Test('ignores recoverable workspace settings write errors')
     async ignoresRecoverableWorkspaceSettingsWriteErrors() {
         const root = await this.createRoot();
