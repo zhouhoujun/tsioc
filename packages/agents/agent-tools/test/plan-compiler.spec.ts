@@ -139,15 +139,19 @@ export class PlanCompilerTest {
         expect(persisted.length).toBe(0);
     }
 
-    @Test('TodoTool decompose with acceptAll compacts proposals into accepted')
+    @Test('TodoTool decompose with acceptAll compacts proposals and persists the plan')
     async toolDecomposeAcceptAll() {
-        const tool = new TodoTool(new TodoStore());
+        const store = new TodoStore();
+        const tool = new TodoTool(store);
         const result = await tool.invoke({
             action: 'decompose',
             acceptAll: true,
             todos: [{ id: 'm2', content: 'write the handler and then add a test', status: 'pending' }]
-        }, { sessionId: 'decomp-s2' } as any) as PlanCompileResult;
+        }, { sessionId: 'decomp-s2' } as any) as PlanCompileResult & { persisted: boolean };
         expect(result.accepted.length).toBe(2);
+        expect(result.persisted).toBe(true);
+        const persisted = await store.read('decomp-s2');
+        expect(persisted.length).toBe(2);
     }
 
     @Test('TodoTool validate action still returns quality + validation only')

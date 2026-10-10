@@ -35,11 +35,11 @@ export class TodoTool implements AgentTool {
             action: {
                 type: 'string',
                 enum: ['validate', 'decompose', 'schedule'],
-                description: 'validate: check quality without persisting. decompose: compile the plan into evidence-aware atomic steps and return split proposals for confirmation (without persisting). schedule: resolve DAG and return execution schedule without persisting.'
+                description: 'validate: check quality without persisting. decompose: compile the plan into evidence-aware atomic steps; without acceptAll it returns split proposals for confirmation and persists nothing, with acceptAll the accepted steps are stored as the current plan. schedule: resolve DAG and return execution schedule without persisting.'
             },
             acceptAll: {
                 type: 'boolean',
-                description: 'When action is decompose, auto-accept every split proposal (compact them into the accepted set) instead of returning them for per-step confirmation.'
+                description: 'When action is decompose, auto-accept every split proposal and persist the accepted steps as the current plan, instead of returning them for per-step confirmation.'
             },
             conjunctions: {
                 type: 'array',
@@ -70,7 +70,7 @@ export class TodoTool implements AgentTool {
         }
 
         if (input.action === 'decompose') {
-            return this.decomposeOnly(input.todos, Boolean(input.acceptAll), input.conjunctions);
+            return this.decomposeOnly(sessionId, input.todos, Boolean(input.acceptAll), input.conjunctions);
         }
 
         if (input.action === 'schedule') {
@@ -101,7 +101,7 @@ export class TodoTool implements AgentTool {
             const id = String(raw?.id ?? '').trim();
             const hasContent = typeof raw?.content === 'string' && raw.content.trim().length > 0;
             if (!hasContent && !existingIds.has(id)) {
-                throw new Error(`Invalid todo input: content is required for new item '${id || '(missing id)'}'. If it came from a decompose result, persist the accepted steps with content in a normal todo write first; action 'decompose' does not store the plan.`);
+                throw new Error(`Invalid todo input: content is required for new item '${id || '(missing id)'}'. To create a plan, send every new item with its content, or call action 'decompose' with acceptAll first to persist compiled steps.`);
             }
         }
     }
@@ -154,7 +154,7 @@ export class TodoTool implements AgentTool {
         return resolveSchedule(normalized);
     }
 
-    private decomposeOnly(todos: any[], acceptAll: boolean, conjunctions?: string[]): PlanCompileResult {
+    private async decomposeOnly(sessionId: string, todos: any[], acceptAll: boolean, conjunctions?: string[]): Promise<PlanCompileResult & { persisted: boolean }> {
         const normalized = todos.map((t: any) => ({
             id: String(t?.id ?? ''),
             content: String(t?.content ?? ''),
@@ -166,6 +166,11 @@ export class TodoTool implements AgentTool {
             estimate: t?.estimate,
             owner: t?.owner
         }));
-        return compilePlan(normalized, { acceptAll, conjunctions });
+        const result = compilePlan(normalized, { acceptAll, conjunctions });
+        if (!acceptAll || !result.accepted.length) {
+            return { ...result, persisted: false };
+        }
+        await this.store.replace(sessionId, result.accepted);
+        return { ...result, persisted: true };
     }
 }
