@@ -8,36 +8,49 @@ export interface ScrollableElementLike {
 }
 
 /**
- * DOM counterpart of the console transcript scroll model: binds the
- * renderer-neutral {@link ScrollBox} (the same one the TUI surface uses) to a
- * scrollable DOM element so wheel/sticky-follow/new-item semantics are identical
- * across platforms. Units are element-local (pixels); ScrollBox is unit-agnostic.
+ * DOM counterpart of the console transcript scroll model. The browser owns the
+ * native scroll position (scrollbar drag, native scroll), so this adapter keeps
+ * the renderer-neutral {@link ScrollBox} as the source of truth for bottom/follow
+ * decisions and new-item bookkeeping, and mirrors positions to and from the
+ * element. Units are element-local (pixels); ScrollBox is unit-agnostic.
  */
 export class DomScrollBox {
     private readonly box: ScrollBox;
 
     constructor(private readonly element: ScrollableElementLike, options: ScrollBoxOptions = {}) {
-        this.box = new ScrollBox({ stickyScroll: true, stickyStart: 'bottom', ...options });
+        this.box = new ScrollBox({ ...options, stickyScroll: false });
+        this.sync();
     }
 
-    /** Re-read the element metrics and re-apply the model's scroll position. */
+    /** Reflect content metrics + the element's current scroll position into the model, then apply. */
     sync(): void {
-        this.box.setMetrics(this.element.scrollHeight, this.element.clientHeight);
+        this.syncToElement();
         this.apply();
     }
 
     wheel(delta: number): boolean {
-        this.sync();
+        this.syncToElement();
         const moved = this.box.scrollBy(delta);
         this.apply();
         return moved;
     }
 
     scrollToEdge(edge: 'start' | 'end'): boolean {
-        this.sync();
+        this.syncToElement();
         const moved = this.box.scrollToEdge(edge);
         this.apply();
         return moved;
+    }
+
+    scrollToBottom(): void {
+        this.syncToElement();
+        this.box.scrollToEdge('end');
+        this.apply();
+    }
+
+    /** Pinned to the latest content (i.e. at the bottom). */
+    get following(): boolean {
+        return this.box.atBottom;
     }
 
     get top(): number {
@@ -48,10 +61,6 @@ export class DomScrollBox {
         return this.box.atBottom;
     }
 
-    get following(): boolean {
-        return this.box.following;
-    }
-
     get newItemCount(): number {
         return this.box.newItemCount;
     }
@@ -60,10 +69,16 @@ export class DomScrollBox {
         return this.box.noteNewItems(count);
     }
 
+    /** Alias for scrollToBottom, kept for callers that think in follow terms. */
     resumeFollow(): boolean {
-        const moved = this.box.resumeFollow();
-        this.apply();
-        return moved;
+        const wasAtBottom = this.box.atBottom;
+        this.scrollToBottom();
+        return wasAtBottom;
+    }
+
+    private syncToElement(): void {
+        this.box.setMetrics(this.element.scrollHeight, this.element.clientHeight);
+        this.box.scrollTo(this.element.scrollTop);
     }
 
     private apply(): void {

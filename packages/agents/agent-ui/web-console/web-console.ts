@@ -2,7 +2,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { DOCUMENT } from '@tsdi/common';
 import { ComponentRef, ComponentsModule, ReactiveEffect, reactive } from '@tsdi/components';
 import { HtmlTemplateModule } from '@tsdi/components/html';
-import { DomScrollBox } from '@tsdi/components/html';
+import { DomTranscriptFollower } from '@tsdi/components/html';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, COMMAND_EXECUTION_CONTROL, CommandExecutionControlPort, defaultAgentOptions } from '@tsdi/agent';
 import { AGENT_IDE_BRIDGE } from '@tsdi/agent-ui';
 import { AgentModule } from '@tsdi/agent';
@@ -163,40 +163,58 @@ export async function mountAgentWebConsole(
     const disposeBridge = await bridge.subscribe(state.sessionId);
     await registerAgentWebConsolePwa(config).catch(() => null);
 
-    // Platform adaptation: the base-layer DomScrollBox (backed by the shared
-    // ScrollBox) owns viewport history scrolling; stream stays on native page scroll.
-    // Business state is never mutated to scroll.
-    let transcriptScroller: DomScrollBox | null = null;
-    let transcriptElement: HTMLElement | null = null;
-    const resolveTranscriptScroller = (): DomScrollBox | null => {
+    // Platform adaptation: the base-layer DomTranscriptFollower (backed by the
+    // shared ScrollBox) owns viewport history scrolling, sticky-follow, and the
+    // "N new messages / jump to bottom" indicator. Business state is never mutated.
+    const indicator = doc.createElement('button');
+    indicator.className = 'console-new-messages';
+    indicator.type = 'button';
+    indicator.style.display = 'none';
+    indicator.setAttribute('aria-live', 'polite');
+    mount.appendChild(indicator);
+
+    let follower: DomTranscriptFollower | null = null;
+    let followerElement: HTMLElement | null = null;
+    const resolveFollower = (): DomTranscriptFollower | null => {
         const element = (root?.querySelector?.('.console-messages-panel') as HTMLElement | null) ?? null;
         if (!element) {
             return null;
         }
-        if (element !== transcriptElement) {
-            transcriptElement = element;
-            transcriptScroller = new DomScrollBox(element);
+        if (element !== followerElement) {
+            follower?.detach();
+            followerElement = element;
+            follower = new DomTranscriptFollower(element, indicator);
+            follower.attach();
         }
-        return transcriptScroller;
+        return follower;
     };
     const onWheel = (event: WheelEvent): void => {
         if (state.messageLayout !== 'viewport' || event.deltaY === 0) {
             return;
         }
-        const scroller = resolveTranscriptScroller();
-        if (!scroller) {
+        const activeFollower = resolveFollower();
+        if (!activeFollower) {
             return;
         }
-        scroller.wheel(event.deltaY);
+        activeFollower.wheel(event.deltaY);
         event.preventDefault();
     };
+    const onIndicatorClick = (): void => {
+        follower?.resumeFollow();
+    };
     mount.addEventListener('wheel', onWheel, { passive: false });
+    indicator.addEventListener('click', onIndicatorClick);
+    // Observe content growth from the initial render, not only after the first wheel.
+    resolveFollower();
 
     return {
         ctx,
         state,
         dispose: async () => {
             mount.removeEventListener('wheel', onWheel);
+            indicator.removeEventListener('click', onIndicatorClick);
+            follower?.detach();
+            indicator.remove();
             disposeBridge();
             await ctx.close();
         }

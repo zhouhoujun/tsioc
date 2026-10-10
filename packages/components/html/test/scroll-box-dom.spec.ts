@@ -9,38 +9,24 @@ class FakeElement {
 
 @Suite('dom scroll box')
 export class DomScrollBoxTest {
-    @Test('sticks to the bottom, detaches on manual scroll, and re-follows at the end')
-    followsAndDetaches() {
-        const element = new FakeElement(1000, 100);
+    @Test('mirrors the native scroll position and reflects atBottom')
+    mirrorsNativePosition() {
+        const element = new FakeElement(500, 100);
         const box = new DomScrollBox(element);
+        expect(box.atBottom).toEqual(false); // scrollTop 0, maxTop 400
 
+        element.scrollTop = 400; // native scroll to the bottom
         box.sync();
-        expect(element.scrollTop).toEqual(900);
+        expect(box.atBottom).toEqual(true);
         expect(box.following).toEqual(true);
-
-        box.wheel(-50);
-        expect(element.scrollTop).toEqual(850);
-        expect(box.following).toEqual(false);
-
-        // Content grows while scrolled away: the reading position holds and new items are counted.
-        element.scrollHeight = 1200;
-        box.sync();
-        expect(element.scrollTop).toEqual(850);
-        expect(box.noteNewItems(2)).toEqual(2);
-        expect(box.newItemCount).toEqual(2);
-
-        box.scrollToEdge('end');
-        expect(element.scrollTop).toEqual(1100);
-        expect(box.following).toEqual(true);
-        expect(box.newItemCount).toEqual(0);
     }
 
-    @Test('wheel scrolls by the given delta within bounds')
+    @Test('wheel scrolls by the given delta and clamps to bounds')
     wheelWithinBounds() {
         const element = new FakeElement(500, 100);
         const box = new DomScrollBox(element);
+        element.scrollTop = 400;
         box.sync();
-        expect(element.scrollTop).toEqual(400); // initial sticky bottom
 
         expect(box.wheel(-150)).toEqual(true);
         expect(element.scrollTop).toEqual(250);
@@ -48,5 +34,19 @@ export class DomScrollBoxTest {
         expect(element.scrollTop).toEqual(0); // clamped at the top
         expect(box.wheel(60)).toEqual(true);
         expect(element.scrollTop).toEqual(60);
+    }
+
+    @Test('scrollToBottom pins to the latest content and clears new items')
+    scrollToBottomPins() {
+        const element = new FakeElement(500, 100);
+        const box = new DomScrollBox(element);
+        element.scrollTop = 100;
+        box.sync();
+        expect(box.noteNewItems(2)).toEqual(2);
+
+        box.scrollToBottom();
+        expect(element.scrollTop).toEqual(400);
+        expect(box.atBottom).toEqual(true);
+        expect(box.newItemCount).toEqual(0);
     }
 }
