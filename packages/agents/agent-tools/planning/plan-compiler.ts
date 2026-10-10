@@ -182,7 +182,6 @@ export function autoNormalizeStep(item: TodoItem): DecomposedStep {
 /** Derive a default acceptance criterion from a step's content + evidence kind. */
 export function defaultAcceptanceFor(content: string, evidence: PlanEvidenceType): string {
     const text = String(content ?? '').trim();
-    const verb = text.split(/\s+/).slice(0, 4).join(' ') || 'the change';
     switch (evidence) {
         case 'test':
             return `Add/update tests that verify "${truncatePhrase(text)}" and they pass.`;
@@ -196,9 +195,16 @@ export function defaultAcceptanceFor(content: string, evidence: PlanEvidenceType
     }
 }
 
-function truncatePhrase(text: string): string {
-    const trimmed = String(text ?? '').trim();
-    return trimmed.length > 48 ? `${trimmed.slice(0, 48)}…` : trimmed;
+/** Shorten a step phrase to a word boundary so acceptance text never ends mid-word. */
+function truncatePhrase(text: string, maxLength = 48): string {
+    const trimmed = String(text ?? '').trim().replace(/\s+/g, ' ');
+    if (trimmed.length <= maxLength) {
+        return trimmed;
+    }
+    const slice = trimmed.slice(0, maxLength);
+    const lastSpace = slice.lastIndexOf(' ');
+    const cut = lastSpace > 0 ? slice.slice(0, lastSpace) : slice;
+    return `${cut}…`;
 }
 
 /**

@@ -112,6 +112,19 @@ export class PlanCompilerTest {
         expect(defaultAcceptanceFor('implement x', 'diff').toLowerCase()).toContain('diff');
     }
 
+    @Test('default acceptance truncates long content on a word boundary')
+    acceptanceTruncation() {
+        const long = 'Inspect repository rules and current structure before creating sleep-system';
+        const acceptance = defaultAcceptanceFor(long, 'diff');
+        const quoted = acceptance.match(/"(.+)"/)![1];
+        expect(quoted.endsWith('…')).toEqual(true);
+        const body = quoted.slice(0, -1);
+        expect(long.startsWith(body)).toEqual(true);
+        // The cut lands on a space, so the phrase never ends mid-word.
+        expect(long[body.length]).toEqual(' ');
+        expect(defaultAcceptanceFor('run lint', 'diff')).toContain('"run lint"');
+    }
+
     @Test('TodoTool decompose action returns compiled plan without persisting')
     async toolDecompose() {
         const store = new TodoStore();
