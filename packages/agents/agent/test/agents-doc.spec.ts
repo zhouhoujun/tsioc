@@ -292,6 +292,21 @@ export class AgentsDocSpec {
         expect(rendered.indexOf('# Nested rules')).toBeGreaterThan(rootIndex);
     }
 
+    @Test('ProjectContextSection bounds the chain at the workspace and ignores ancestors above it')
+    async testProjectContextSectionBoundary(): Promise<void> {
+        const outer = join(this.tempRoot, 'boundary', 'outer');
+        const proj = join(outer, 'proj');
+        mkdirSync(proj, { recursive: true });
+        writeFileSync(join(outer, 'AGENTS.md'), '# Outer rules\n\nOuter content.\n');
+        writeFileSync(join(proj, 'AGENTS.md'), '# Project rules\n\nProject content.\n');
+
+        const section = new ProjectContextSection(this.fileAdapter);
+        const rendered = await section.render({ ...this.makeContext(), extra: { workspace: proj } });
+
+        expect(rendered).toContain('# Project rules');
+        expect(rendered).not.toContain('# Outer rules');
+    }
+
     @Test('ProjectContextSection honors override files and the byte cap')
     async testProjectContextSectionOverrideAndCap(): Promise<void> {
         const dir = join(this.tempRoot, 'section-override');

@@ -27,11 +27,16 @@ function normalizeAgentPathForContainment(input: string): string {
     return value || '/';
 }
 
+function isAbsoluteAgentPath(input: string): boolean {
+    return /^([a-zA-Z]:\/|\/)/.test(String(input || '').trim().replace(/\\/g, '/'));
+}
+
 /**
  * Injects project context from AGENTS.md files into the system prompt.
  *
- * The discovery walks upward from the current working directory (or the pinned
- * project root) and renders every doc on the path as an ordered instruction
+ * The discovery walks upward from the current working directory, bounded by the
+ * pinned project root (or the session workspace) so it never scans above the
+ * project, and renders every doc on the path as an ordered instruction
  * chain: project root first, working directory last, so nearer instructions
  * take precedence. Within a directory `AGENTS.override.md` replaces
  * `AGENTS.md`. Each file is byte-capped (default 32KiB) and cached per-file
@@ -99,11 +104,16 @@ export class ProjectContextSection extends PromptSection {
         const maxBytes = options.projectDocMaxBytes ?? DEFAULT_AGENTS_DOC_MAX_BYTES;
         const fallbackFilenames = options.projectDocFallbackFilenames ?? DEFAULT_AGENTS_DOC_FALLBACK_FILENAMES;
         const exists = fileAdapter ? (target: string) => fileAdapter.existsSync(target) : undefined;
+        // Bound the upward walk at the project root (the pinned projectRoot, else
+        // the session workspace). opencode scopes rule files to the project
+        // worktree; without a boundary the chain would leak to the filesystem
+        // root and pick up unrelated `~/AGENTS.md` / `/AGENTS.md` files.
+        const stopAt = this.projectRoot || (isAbsoluteAgentPath(startDir) ? startDir : undefined);
         const chain = findAgentsDoc(startDir, {
             fileName: this.fileName,
             fallbackFilenames,
             exists,
-            stopAt: this.projectRoot
+            stopAt
         });
         const pluginDocs = (options.pluginAgentsDocs ?? []).filter(item => item && item.path);
         const instructionDocs = (options.instructionDocs ?? [])

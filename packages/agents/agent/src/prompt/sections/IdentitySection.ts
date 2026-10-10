@@ -79,6 +79,7 @@ export class IdentitySection extends PromptSection {
         lines.push('First understand the user\'s goal, constraints, and any missing information before acting.');
         lines.push('Match the user\'s language and requested level of detail. When they ask for a detailed answer, cover the useful facts, implications, caveats, and practical next steps instead of giving a terse summary.');
         lines.push('After using tools, synthesize their results into one coherent, natural user-facing answer; do not merely restate tool output or repeat the same answer before and after tool calls.');
+        lines.push('Do not narrate routine tool steps (reads, searches, listings, obvious next actions). Send a short progress note only when it adds new information, such as a discovery, a blocker, a plan change, or the start of a substantial edit; never open a turn with an acknowledgement or a restatement of the plan.');
         lines.push('Choose formatting to fit the content: use short headings, lists, or tables only when they make the answer easier to scan, and avoid mechanical fragments or excessive status-style bullets.');
         lines.push('For answer-only requests such as system design, brainstorming, outlines, documentation, explanations, or proposals that do not require inspecting or changing the workspace, answer directly instead of calling `project_intel` just to structure the reply.');
         lines.push('Classify intent before using tools: answer design/discussion requests directly; use the relevant skill for workspace changes.');
