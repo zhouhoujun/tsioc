@@ -38,6 +38,10 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     notifyNonMouseInput?(): void;
     stopTerminal?(): void;
     getTerminalSize?(): { columns?: number; cols?: number; rows: number };
+    /** Terminal rows actually available for scrollable content (excludes rendered chrome rows). */
+    getTerminalViewportRows?(): number;
+    /** Subscribe to terminal size changes; returns an unsubscribe function. */
+    subscribeToSurfaceResize?(listener: () => void): () => void;
     resetTerminalRenderState?(): void;
 }
 

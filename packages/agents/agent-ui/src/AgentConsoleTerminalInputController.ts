@@ -61,6 +61,8 @@ export interface AgentConsoleTerminalInputHost {
         stopTerminal?(): void;
         writeRawTerminalData?(data: string): void;
         getTerminalSize?(): { rows?: number };
+        getTerminalViewportRows?(): number;
+        subscribeToSurfaceResize?(listener: () => void): () => void;
         dispatchMouse?(mouse: SelectMenuMouseEvent): void;
         isPagerOpen?(): boolean;
         closePager?(): boolean;
@@ -352,17 +354,48 @@ export function closingSessionMessageView(host: AgentConsoleTerminalInputHost): 
     return formatAgentUiSessionClosingMessage(host.translator?.currentLocale, host.state.sessionId);
 }
 
+const detailViewportResizeSyncHosts = new WeakSet<AgentConsoleTerminalInputHost>();
+
 /** Keep the console detail page proportional to the active terminal. */
 export function syncConsoleMessageDetailViewportView(host: AgentConsoleTerminalInputHost): void {
     if (host.state.consoleOptions.messageToggleInteraction !== 'enter') {
         return;
     }
-    const rows = host.surfaceAccessor?.getTerminalSize?.().rows;
-    if (!Number.isFinite(rows)) {
+    ensureDetailViewportResizeSync(host);
+    const measured = host.surfaceAccessor?.getTerminalViewportRows?.();
+    if (typeof measured === 'number' && Number.isFinite(measured) && measured > 0) {
+        syncMessageDetailViewportRows(host, Math.floor(measured));
         return;
     }
-    const visibleLines = Math.max(8, Math.min(40, Math.floor(Number(rows)) - 6));
+    const sizeRows = host.surfaceAccessor?.getTerminalSize?.().rows;
+    if (typeof sizeRows === 'number' && Number.isFinite(sizeRows)) {
+        syncMessageDetailViewportRows(host, Math.floor(sizeRows) - 6);
+    }
+}
+
+function syncMessageDetailViewportRows(host: AgentConsoleTerminalInputHost, rows: number): void {
+    const visibleLines = Math.max(8, Math.min(40, rows));
     if (host.state.messageDetailVisibleLines !== visibleLines) {
         host.state.setMessageDetailVisibleLines(visibleLines);
     }
+}
+
+/** Subscribe once per host so terminal resizes recompute the detail viewport without a keypress. */
+function ensureDetailViewportResizeSync(host: AgentConsoleTerminalInputHost): void {
+    if (detailViewportResizeSyncHosts.has(host)) {
+        return;
+    }
+    const accessor = host.surfaceAccessor;
+    if (!accessor?.subscribeToSurfaceResize) {
+        return;
+    }
+    detailViewportResizeSyncHosts.add(host);
+    let unsubscribe: (() => void) | undefined;
+    unsubscribe = accessor.subscribeToSurfaceResize(() => {
+        if (host.destroyed) {
+            unsubscribe?.();
+            return;
+        }
+        syncConsoleMessageDetailViewportView(host);
+    });
 }

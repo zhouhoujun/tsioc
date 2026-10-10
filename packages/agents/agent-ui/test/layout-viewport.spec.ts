@@ -5,7 +5,7 @@ import * as path from 'path';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { runLayoutCommand } from '../src/AgentConsoleSettingsCommands';
-import { handleTerminalInputView } from '../src/AgentConsoleTerminalInputController';
+import { handleTerminalInputView, syncConsoleMessageDetailViewportView } from '../src/AgentConsoleTerminalInputController';
 import { resolveTranscriptLayout } from '../src/AgentConsoleTranscriptLayout';
 import { AgentConsoleSettingsStore } from '../src/AgentConsoleSettingsStore';
 import { defaultAgentConsoleOptions } from '../src/AgentConsoleSessionState';
@@ -166,6 +166,64 @@ export class AgentConsoleViewportLayoutTest {
         await handleTerminalInputView(host, { text: '', mouse: { button: 65 } } as any, '' as any);
         expect(scrolled).toEqual([-1, 1]);
         expect(dispatched.length).toEqual(0);
+    }
+
+    @Test('detail viewport prefers measured surface rows over the chrome estimate')
+    detailViewportPrefersMeasuredRows() {
+        let measuredRows = 25;
+        const state: any = { consoleOptions: { messageToggleInteraction: 'enter' }, messageDetailVisibleLines: 6, setMessageDetailVisibleLines(value: number) { this.messageDetailVisibleLines = value; } };
+        const host: any = {
+            state,
+            destroyed: false,
+            surfaceAccessor: {
+                getTerminalSize: () => ({ rows: 30 }),
+                getTerminalViewportRows: () => measuredRows
+            }
+        };
+        syncConsoleMessageDetailViewportView(host);
+        expect(state.messageDetailVisibleLines).toEqual(25);
+        measuredRows = 60;
+        syncConsoleMessageDetailViewportView(host);
+        expect(state.messageDetailVisibleLines).toEqual(40);
+        measuredRows = 3;
+        syncConsoleMessageDetailViewportView(host);
+        expect(state.messageDetailVisibleLines).toEqual(8);
+    }
+
+    @Test('detail viewport falls back to the size-based chrome estimate')
+    detailViewportFallsBackToEstimate() {
+        const state: any = { consoleOptions: { messageToggleInteraction: 'enter' }, messageDetailVisibleLines: 6, setMessageDetailVisibleLines(value: number) { this.messageDetailVisibleLines = value; } };
+        const host: any = {
+            state,
+            destroyed: false,
+            surfaceAccessor: { getTerminalSize: () => ({ rows: 30 }) }
+        };
+        syncConsoleMessageDetailViewportView(host);
+        expect(state.messageDetailVisibleLines).toEqual(24);
+    }
+
+    @Test('terminal resize recomputes the detail viewport without a keypress')
+    detailViewportRecomputesOnResize() {
+        let viewportRows = 20;
+        let resizeListener: (() => void) | undefined;
+        const state: any = { consoleOptions: { messageToggleInteraction: 'enter' }, messageDetailVisibleLines: 6, setMessageDetailVisibleLines(value: number) { this.messageDetailVisibleLines = value; } };
+        const host: any = {
+            state,
+            destroyed: false,
+            surfaceAccessor: {
+                getTerminalSize: () => ({ rows: 30 }),
+                getTerminalViewportRows: () => viewportRows,
+                subscribeToSurfaceResize: (listener: () => void) => {
+                    resizeListener = listener;
+                    return () => { resizeListener = undefined; };
+                }
+            }
+        };
+        syncConsoleMessageDetailViewportView(host);
+        expect(state.messageDetailVisibleLines).toEqual(20);
+        viewportRows = 14;
+        resizeListener!();
+        expect(state.messageDetailVisibleLines).toEqual(14);
     }
 }
 

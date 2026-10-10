@@ -61,7 +61,7 @@
 
 > 来源：真实 CLI/TUI 会话、跨平台（DOM/TUI）验收与源码审计暴露的差距；对照 Codex CLI（最新，ratatui）、opencode（bubbletea / OpenTUI）与 openTUI 的基础组件模型。批次可独立验收；每批次必须补真实边界回归（AppRpc 流 / DOM / PTY）后才能关闭。
 >
-> **当前状态（2026-10）**：P1–P6 已全部关闭并合并进上文功能点；P7（`AgentConsoleComponent` 持续拆解）进行中；A1–A3（运行时写死重构）已完成并合并进上文功能点；U1（视窗滚动与选中解耦 + 粘底跟随）、U3（逐消息持久折叠/行内展开 `e`）、U5（DOM/TUI 全历史分页 pager + 查找）已关闭并合并进功能点；U2（视窗高度实测 + resize 响应）、U4（agent-ui 文案 i18n）待执行。
+> **当前状态（2026-10）**：P1–P6 已全部关闭并合并进上文功能点；P7（`AgentConsoleComponent` 持续拆解）进行中；A1–A3（运行时写死重构）已完成并合并进上文功能点；U1（视窗滚动与选中解耦 + 粘底跟随）、U2（视窗高度实测 + resize 响应）、U3（逐消息持久折叠/行内展开 `e`）、U5（DOM/TUI 全历史分页 pager + 查找）已关闭并合并进功能点；U4（agent-ui 文案 i18n）待执行。
 
 ### 统一收尾流程（每个 plan 缺一不可）
 
@@ -101,12 +101,14 @@
 - **进度（已关闭 ✅）**：`ScrollBox` 模型已迁至 **`components/common`**（renderer-neutral，`components/console` 的 `TuiTerminalSurface` 接入：row scroll + `stickyStart:'bottom'` 粘底跟随 + 阅读位置稳定 + `viewportFollowing`/`acknowledgeViewportFollow`）；agent-ui 收敛为业务：视窗渲染整段转录、滚轮转交 surface、按 base 的 `isViewportFollowing` 计数新消息，并移除 `messagesViewportItems`/`syncConsoleMessageViewportView` 的视窗尺寸计算。布局映射已下沉 `components/console`（`resolveConsoleTranscriptLayoutFlags`：`stream`→native scrollback、`viewport`→alternate screen + surface row scroll；lifecycle `resolveConsoleLayout`），**应用只需设置 `messageLayout`**。DOM 适配已落地（基础组件 `DomScrollBox`，移除 `state.scrollMessages`）。
 - **验收**：滚动不改 `selectedMessageId`；到底判定精确（无 1 行容差）；向上滚动显示新消息计数、回到底部恢复粘底；TUI/DOM 行为矩阵一致；新增 DOM/TUI/PTY 边界回归。
 
-#### U2 — 视窗高度按真实 chrome 测量 + resize 响应
+#### U2 — 视窗高度按真实 chrome 测量 + resize 响应（已关闭 ✅）
 
-- **问题（file:line）**：`AgentConsoleTerminalInputController.ts:311-320` 用 `floor(rows) - 6` 估算窗口，6 为魔法 chrome（composer 多行、statusline、hints、overlay、slash palette 未计入）；`syncConsoleMessageViewportView` 只在 `onInit`（`AgentConsoleComponent.ts:1599`）与每次输入 chunk 调用，终端 resize 不重算；`console-ports.ts` 的 `ConsoleTerminalSurfaceAccessor` 无 resize 事件。
-- **目标**：视口高 = 终端行 − **实测保留区**（composer/status/hints/overlay 的实际行数，由 renderer 的 regions 反馈，参考 openTUI 的 Yoga flex `flexGrow`/`flexShrink` 与 Codex 显式 chrome 高度）；平台适配层暴露 resize 事件，resize 后无需按键即重算并保持滚动锚点（对齐 opencode `compensatePruneScrollTop` 的「阅读位置稳定」语义）。
-- **涉及**：`console-ports.ts`（surface resize 能力）、`components/console/src/terminal.ts`（chrome/region 高度反馈）、`components/html` DOM 尺寸、`AgentConsoleTerminalInputController.ts`、`AgentConsoleComponent.ts`。
-- **验收**：resize 不依赖按键即更新窗口；mutiline composer / overlay 出现时转录窗口相应收缩；不溢出、不留大片空白；回归含宽度矩阵与 resize 场景。
+- **问题（file:line）**：`AgentConsoleTerminalInputController.ts:360-367` 的 `syncConsoleMessageDetailViewportView` 用 `floor(rows) - 6` 估算 detail 窗口，6 为魔法 chrome（composer 多行、statusline、hints、overlay 未计入）；只在 `handleTerminalInputView`（`AgentConsoleTerminalInputController.ts:196`）每次输入 chunk 调用，终端 resize 不重算；`console-ports.ts` 的 `ConsoleTerminalSurfaceAccessor` 无 resize 事件。
+- **进度（已关闭 ✅）**：
+  - `TuiTerminalSurface`（`components/console/src/terminal.ts`）在 `resolveViewportLayout` 顶部按**全部分支**实测 `lastAvailableRows`（region 存在时 `height − scrollRegion.startRow − (allLines.length − footerRegion.startRow)`，缺失时回退 `height`，`!height` 时为 0），新增公开 getter `viewportAvailableRows`；与主分支 `availableRows`、假 region 测试公式一致。
+  - `ConsoleTerminalSurfaceLifecycleService` 实现 `subscribeToSurfaceResize`（首个订阅者绑定 `output.on('resize')`，Set 空时自动解绑；resize 时先 `surface.requestRender()` 再用微任务通知订阅者，保证读到新测量值）与 `getTerminalViewportRows`（`surface.viewportAvailableRows ?? 0`）；`cleanup()` 解绑并清空订阅。平台 `ConsoleTerminalSurfaceAccessor` 与 agent-ui `console-ports.ts` 端口各新增可选 `getTerminalViewportRows?` / `subscribeToSurfaceResize?`。
+  - `syncConsoleMessageDetailViewportView` 实测优先（`getTerminalViewportRows`，无 `-6`），尺寸估算回退（`floor(rows) - 6`），保留 `[8,40]` 钳制与 `enter` 交互门；模块级 `WeakSet` 每 host 只订阅一次，resize 回调检查 `host.destroyed` 后自解绑（`AgentConsoleComponent.ts` 零改动，符合 ratchet）。
+  - 回归：`layout-viewport.spec.ts` +3（实测优先、尺寸估算回退、无按键 resize 重算）；`console.spec.ts` +1（假 output `on/off` 捕获 resize 监听，触发后 `viewportAvailableRows` 按增量重测且 footer 保持钉底，无任何按键/交互）。console 96、agent-ui 1485（+3）、components 147、common 18、html 124 通过；tsc、source-size、`git diff --check` 全绿。
 
 #### U3 — 内联折叠/展开按消息持久化（多条可同时展开）
 
@@ -150,6 +152,6 @@
 
 - 视窗模式 layout 持久化与 alternate-screen 退出语义需持续由真实 PTY 覆盖（归入 U5）；`/close` 退出后命令窗口提示与历史保留需一并复验。
 - 早前 OpenTUI 焦点迁移轮次中「Esc 取消修复后的真实 PTY 复测」未完成，需在 U1/U5 批次内补跑。
-- renderer region 局部失效（脏子树）未在真实 TUI 复测；若 U2 引入 resize/地区高度反馈，必须实测无全树重渲染回退。
+- renderer region 局部失效（脏子树）未在真实 TUI 复测；U2 已新增 surface 级 resize/region 反馈（`outputResizeRemeasuresViewport` 回归无整屏重绘回退），真实 PTY 复测仍待补跑。
 - 运行时自撰的用户可见失败收尾文案（`resolveAssistantResponseText` 的空响应/工具失败指引）仍为英文，其本地化并入 U4 统一 i18n（运行时不知道 locale，需由 UI 文案层承担）。
 - ModelCatalog 远程发现尚未接入 `/model` 展示（`/doctor --check-models` 已做校验）；归入后续批次。

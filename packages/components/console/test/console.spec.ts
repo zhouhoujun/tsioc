@@ -2288,6 +2288,50 @@ export class ConsoleRendererTest {
         surface.destroy();
     }
 
+    @Test('output resize re-measures the available viewport rows without interaction')
+    async outputResizeRemeasuresViewport() {
+        const lines = [...Array.from({ length: 30 }, (_value, index) => `line ${index + 1}`), 'footer line'];
+        const root = { addEventListener() {}, removeEventListener() {} } as any;
+        let rows = 8;
+        let resizeListener: (() => void) | undefined;
+        const output = {
+            write() {},
+            on(event: string, listener: () => void) { if (event === 'resize') { resizeListener = listener; } },
+            off(event: string, listener: () => void) { if (event === 'resize' && resizeListener === listener) { resizeListener = undefined; } }
+        };
+        const surface = new TuiTerminalSurface({
+            renderer: {
+                renderToTuiLayout: () => ({
+                    lines,
+                    regions: [
+                        { id: 'transcript', startRow: 0, endRow: 30 },
+                        { id: 'footer', startRow: 30, endRow: 31 }
+                    ]
+                })
+            },
+            root,
+            width: 80,
+            height: () => rows,
+            nativeScrollback: false,
+            scrollViewport: true,
+            scrollRegionId: 'transcript',
+            footerRegionId: 'footer',
+            output
+        });
+        surface.render();
+        expect(surface.viewportAvailableRows).toEqual(7);
+        expect(surface.lastRenderedLines[7]).toEqual('footer line');
+
+        rows = 14;
+        resizeListener!();
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(surface.viewportAvailableRows).toEqual(13);
+        expect(surface.lastRenderedLines).toHaveLength(14);
+        expect(surface.lastRenderedLines[13]).toEqual('footer line');
+        surface.destroy();
+    }
+
     @Test('windows terminal rendered blocks locally')
     windowsTerminalRenderedBlocksLocally() {
         expect(compactRenderedLines(['', 'old', 'new', ''], 2)).toEqual(['old', 'new']);

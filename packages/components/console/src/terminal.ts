@@ -372,6 +372,8 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     abstract writeRawTerminalData?(text: string): boolean;
     abstract resetTerminalRenderState?(): boolean;
     abstract getTerminalSize?(): { cols: number; rows: number };
+    getTerminalViewportRows?(): number { return 0; }
+    subscribeToSurfaceResize?(_listener: () => void): () => void { return () => undefined; }
 }
 
 export class ConsoleTerminalInputController {
@@ -527,6 +529,17 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
     protected useAlternateScreen = false;
     protected surfaceLayout?: ConsoleTranscriptLayoutFlags;
     protected attachTimer?: ReturnType<typeof setTimeout>;
+    protected readonly surfaceResizeListeners = new Set<() => void>();
+    protected surfaceResizeBound = false;
+    protected readonly handleSurfaceResize = (): void => {
+        this.surface?.requestRender();
+        Promise.resolve().then(() => {
+            if (this.surfaceResizeListeners.size === 0) {
+                return;
+            }
+            Array.from(this.surfaceResizeListeners).forEach(listener => listener());
+        });
+    };
 
     constructor(
         private injector: Injector,
@@ -678,6 +691,25 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
         return { cols: size.columns, rows: size.rows };
     }
 
+    getTerminalViewportRows?(): number {
+        return this.surface?.viewportAvailableRows ?? 0;
+    }
+
+    subscribeToSurfaceResize?(listener: () => void): () => void {
+        this.surfaceResizeListeners.add(listener);
+        if (!this.surfaceResizeBound && this.output?.on) {
+            this.output.on('resize', this.handleSurfaceResize);
+            this.surfaceResizeBound = true;
+        }
+        return () => {
+            this.surfaceResizeListeners.delete(listener);
+            if (this.surfaceResizeBound && this.surfaceResizeListeners.size === 0 && this.output?.off) {
+                this.output.off('resize', this.handleSurfaceResize);
+                this.surfaceResizeBound = false;
+            }
+        };
+    }
+
     protected prepare(): void {
         if (!this.output?.isTTY) {
             return;
@@ -735,6 +767,11 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
             clearTimeout(this.attachTimer);
             this.attachTimer = undefined;
         }
+        if (this.surfaceResizeBound && this.output?.off) {
+            this.output.off('resize', this.handleSurfaceResize);
+        }
+        this.surfaceResizeBound = false;
+        this.surfaceResizeListeners.clear();
         if (this.output?.isTTY) {
             this.output.write('\x1b[0 q');
             this.output.write(TERMINAL_DISABLE_MOUSE_TRACKING_SEQUENCE);
@@ -823,6 +860,7 @@ export class TuiTerminalSurface {
     protected reclaimTimer?: ReturnType<typeof setTimeout>;
     protected scrollOffsetRows = 0;
     protected maxScrollOffsetRows = 0;
+    protected lastAvailableRows = 0;
     protected readonly scrollBox = new ScrollBox();
     protected pagerBox?: PagerBox;
     protected lastFullLines: string[] = [];
@@ -873,6 +911,11 @@ export class TuiTerminalSurface {
 
     get viewportFollowing(): boolean {
         return this.scrollBox.following;
+    }
+
+    /** Terminal rows available for scrollable content after rendered chrome rows are subtracted. */
+    get viewportAvailableRows(): number {
+        return this.lastAvailableRows;
     }
 
     acknowledgeViewportFollow(): boolean {
@@ -1317,6 +1360,9 @@ export class TuiTerminalSurface {
         const footerRegionId = this.options.footerRegionId || 'footer';
         const scrollRegion = allRegions.find(region => region.id === scrollRegionId);
         const footerRegion = allRegions.find(region => region.id === footerRegionId);
+        this.lastAvailableRows = height && scrollRegion && footerRegion && footerRegion.startRow > scrollRegion.startRow
+            ? Math.max(0, height - scrollRegion.startRow - (allLines.length - footerRegion.startRow))
+            : (height || 0);
         if (nativeScrollback) {
             this.maxScrollOffsetRows = 0;
             this.scrollOffsetRows = 0;
