@@ -47,7 +47,7 @@
 - 呈现：Markdown、CJK 宽度、80/100/120 列、主题、ARIA、键盘与鼠标；强调语法 `**`/`__`/`*`/`_` 遵守 CommonMark 词内不解析语义（如 `DEEPSEEK_API_KEY` 保持字面）；工具行本地化动作 + 主参数（`Read file: <path>`）；工具批行 >3 折叠 `· +N more`（已被逐调用成行取代）；失败/阻塞行 `r` 就地重试；@mention 以紧凑 `Files · <paths>` 展示且运行时仍携带完整上下文。
 - 流式：interim 旁白与工具轮边界封行为独立行、最终回答分离；流式光标 `▍` 只属于正在输出的 assistant；状态栏 token 计量随流式 chunk 实时推进（真实 usage 优先，预估带 `estimated` 标记且不写审计）；Working elapsed 由真实时钟在数据驱动渲染中推进，不使用业务 `setInterval`。
 - components/console 渲染收敛为 TUI 单一实现：保留 `ConsoleRenderer` 作为可复用基类/节点模型，移除重复的 `ConsoleTemplateCompiler`/`ConsoleTemplateModule`（tui 侧以同名兼容别名导出），`TuiTemplateModule`/`TuiConsoleModule` 为唯一模板模块；同一 surface 同时支持 `stream`（native scrollback）与 `viewport`（alternate screen + surface 行滚动），由宿主生命周期 `shouldUseNativeScrollback`/`shouldScrollViewport`/`shouldUseAlternateScreen` 选择。
-- 面板列表逐条成行：`AgentConsolePanels` 的 tasks/jobs/approvals/tools/toolRuns 列表与详情改由 `v-for` 逐条/逐行渲染（`toolItems`/`toolRunItems` 复用 `item.style` 承载选中高亮），不再用 `join('\n')` 拼成单个 `<label>`；避免 `\n` 在 TUI（`normalizeInlineWhitespace`）与 DOM（`textContent`）两端被折叠成一行。`/tools` 每项独占一行、选中项显示 `›`；保留各 `*Label` 文本 getter，新增对应 `*Lines` 逐行 getter 供模板消费。
+- 面板列表逐条成行：`AgentConsolePanels` 的 tasks/jobs/approvals/tools/toolRuns 列表与详情改由 `v-for` 逐条/逐行渲染（`toolItems`/`toolRunItems` 复用 `item.style` 承载选中高亮），不再用 `join('\n')` 拼成单个 `<label>`；避免 `\n` 在 TUI（`normalizeInlineWhitespace`）与 DOM（`textContent`）两端被折叠成一行。`/tools` 每项独占一行、选中项显示 `›`；保留各 `*Label` 文本 getter，新增对应 `*Lines` 逐行 getter 供模板消费。后台任务 feed（`backgroundTaskFeedLabel`：`background N · running M` 摘要 + 最多 8 条任务行）同样改为 `v-for="line in backgroundTaskFeedLines"` 逐行渲染（新增 `backgroundTaskFeedLines` 逐行 getter），修复其在两端被折叠为一行的问题。
 
 ### 宿主与门禁
 

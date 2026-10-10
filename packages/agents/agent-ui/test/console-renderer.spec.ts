@@ -1014,6 +1014,26 @@ export class AgentConsoleOperationalPanelsRendererTest {
         expect(toolItemLines.some(line => line.includes('› write_file'))).toBe(true);
     }
 
+    @Test('tasks panel renders each background task feed line on its own line')
+    async renderBackgroundTaskFeedLinesPerTask() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setTasksFocused(true);
+        ref.instance.sessionState.setBackgroundTaskFeed([
+            { id: 'bg-1', sessionId: 's-1', status: 'running', goal: 'first task', startedAt: 2 } as any,
+            { id: 'bg-2', sessionId: 's-2', status: 'completed', goal: 'second task', startedAt: 1 } as any
+        ]);
+        await ref.render();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const tasksPanel = ref.hostView.query(AgentConsoleTasksPanelComponent) as ComponentRef<AgentConsoleTasksPanelComponent>;
+        const feedLines = renderer.renderToLines(tasksPanel.hostView.rootNodes[0]);
+        const taskFeedLines = feedLines.filter(line => /bg-1|bg-2/.test(line));
+
+        expect(taskFeedLines.length).toEqual(2);
+        expect(taskFeedLines.some(line => line.includes('bg-1'))).toBe(true);
+        expect(taskFeedLines.some(line => line.includes('bg-2'))).toBe(true);
+    }
+
     @Test('renders focused tool runs panel with selected run details')
     async renderFocusedToolRunsPanel() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;

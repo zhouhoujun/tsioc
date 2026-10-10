@@ -1146,7 +1146,7 @@ export class AgentConsoleSessionsPanelComponent {
     template: `
     <div class="console-panel console-tasks-panel" v-style="shellStyle" role="region" aria-label="{{accessibilityLabel}}">
         <label v-style="accentStyle">{{tasksSummaryLabel}}</label>
-        <label v-style="metaStyle" v-show="backgroundTaskFeedLabel">{{backgroundTaskFeedLabel}}</label>
+        <label v-style="metaStyle" v-for="line in backgroundTaskFeedLines">{{line}}</label>
         <label v-style="metaStyle" v-show="tasksHintLabel">{{tasksHintLabel}}</label>
         <label v-style="listStyle" v-for="line in taskListLines">{{line}}</label>
         <label v-style="detailStyle" v-for="line in selectedTaskDetailLines">{{line}}</label>
@@ -1202,6 +1202,11 @@ export class AgentConsoleTasksPanelComponent {
         });
         const summary = `background ${tasks.length} · running ${running}${failed ? ` · failed ${failed}` : ''}`;
         return [summary, ...lines].join('\n');
+    }
+
+    get backgroundTaskFeedLines(): string[] {
+        const label = this.backgroundTaskFeedLabel;
+        return label ? label.split('\n') : [];
     }
 
     get listStyle() {
