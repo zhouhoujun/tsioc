@@ -87,6 +87,8 @@ export interface AgentToolsFileOptions {
     rootDir?: string;
     maxReadBytes?: number;
     maxReadLines?: number;
+    /** Upper bound for an explicit `read_file` limit (default 2000); the default read stays `maxReadLines`. */
+    maxReadLinesLimit?: number;
     maxSearchResults?: number;
     maxPatchBytes?: number;
     defaultGlob?: string[];
@@ -419,6 +421,7 @@ export const defaultAgentToolsOptions: AgentToolsOptions = {
         rootDir: process.cwd(),
         maxReadBytes: 32 * 1024,
         maxReadLines: 400,
+        maxReadLinesLimit: 2000,
         maxSearchResults: 50,
         defaultGlob: ['**/*'],
         excludedGlobs: ['**/node_modules/**', '**/.git/**', '**/dist/**', '**/coverage/**'],

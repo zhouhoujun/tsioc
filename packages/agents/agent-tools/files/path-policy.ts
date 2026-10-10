@@ -5,6 +5,7 @@ export interface ResolvedFilePolicy {
     rootDir: string;
     maxReadBytes: number;
     maxReadLines: number;
+    maxReadLinesLimit: number;
     maxSearchResults: number;
     defaultGlob: string[];
     excludedGlobs: string[];
@@ -18,6 +19,7 @@ export function resolveFilePolicy(options?: AgentToolsOptions): ResolvedFilePoli
         rootDir: path.resolve(file.rootDir ?? process.cwd()),
         maxReadBytes: file.maxReadBytes ?? 32 * 1024,
         maxReadLines: file.maxReadLines ?? 400,
+        maxReadLinesLimit: file.maxReadLinesLimit ?? 2000,
         maxSearchResults: file.maxSearchResults ?? 50,
         defaultGlob: (file.defaultGlob ?? ['**/*']).slice(),
         excludedGlobs: (file.excludedGlobs ?? []).slice(),

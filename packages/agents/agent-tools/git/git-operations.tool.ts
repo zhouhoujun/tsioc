@@ -1,10 +1,11 @@
-import { AgentTool, AgentToolContext, FileSnapshot, FileSnapshotStore } from '@tsdi/agent';
+import { AgentTool, AgentToolContext, FileSnapshotStore } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { promises as fs } from 'fs';
 import { spawnSync } from 'child_process';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath } from '../files/path-policy';
+import { simpleLineDiff } from '../files/simple-diff';
 import { assertSandboxCommand, buildSandboxEnv, resolveSandboxPolicy } from '../src/sandbox-policy';
 
 const DEFAULT_TIMEOUT_MS = 30000;
@@ -165,12 +166,47 @@ export class GitOperationsTool implements AgentTool {
         if (!snapshots.length) {
             return null;
         }
-        const latestByPath = new Map<string, FileSnapshot>();
+        // A single tool call (e.g. apply_patch) can touch several files; expand
+        // the per-file parts so the review reports every changed file, not just
+        // the snapshot's primary path.
+        const byPath = new Map<string, SnapshotChange>();
         for (const snapshot of snapshots) {
-            latestByPath.set(snapshot.filePath, snapshot);
+            // Always include the primary file, then any per-file parts from a
+            // multi-file tool call (e.g. apply_patch), deduplicated by path.
+            const changes: SnapshotChange[] = [{
+                filePath: snapshot.filePath,
+                tool: snapshot.toolName,
+                before: snapshot.before,
+                after: snapshot.after
+            }];
+            if (snapshot.files?.length) {
+                for (const part of snapshot.files) {
+                    changes.push({
+                        filePath: part.filePath,
+                        tool: snapshot.toolName,
+                        before: part.before,
+                        after: part.after ?? null
+                    });
+                }
+            }
+            for (const change of changes) {
+                const existing = byPath.get(change.filePath);
+                if (!existing) {
+                    byPath.set(change.filePath, change);
+                    continue;
+                }
+                // Keep the earliest pre-change content and the latest post-change
+                // content so repeated edits to one file render a cumulative diff.
+                byPath.set(change.filePath, {
+                    filePath: change.filePath,
+                    tool: change.tool ?? existing.tool,
+                    before: existing.before,
+                    after: change.after
+                });
+            }
         }
         const target = typeof targetPath === 'string' && targetPath.trim() ? targetPath.trim() : undefined;
-        const entries = [...latestByPath.values()].filter(entry =>
+        const entries = [...byPath.values()].filter(entry =>
             !target || entry.filePath === target || entry.filePath.endsWith(`/${target}`) || entry.filePath.endsWith(target));
         if (!entries.length) {
             return null;
@@ -178,7 +214,7 @@ export class GitOperationsTool implements AgentTool {
         return {
             changedFiles: entries.map(entry => ({
                 path: entry.filePath,
-                tool: entry.toolName,
+                tool: entry.tool,
                 existedBefore: entry.before != null,
                 exists: entry.after != null
             })),
@@ -393,37 +429,19 @@ export class GitOperationsTool implements AgentTool {
     }
 }
 
-function countLines(lines: string[]): Map<string, number> {
-    const counts = new Map<string, number>();
-    for (const line of lines) {
-        counts.set(line, (counts.get(line) || 0) + 1);
-    }
-    return counts;
+interface SnapshotChange {
+    filePath: string;
+    tool?: string;
+    before: string | null;
+    after: string | null;
 }
 
-function simpleLineDiff(before: string, after: string): string {
-    const beforeCounts = countLines(before.length ? before.split('\n') : []);
-    const afterCounts = countLines(after.length ? after.split('\n') : []);
-    const removed: string[] = [];
-    const added: string[] = [];
-    for (const [line, count] of beforeCounts) {
-        const remaining = count - (afterCounts.get(line) || 0);
-        for (let index = 0; index < remaining; index++) {
-            removed.push(`-${line}`);
-        }
+function renderSnapshotDiff(change: SnapshotChange): string {
+    const header = `--- a/${change.filePath}\n+++ b/${change.filePath}`;
+    const body = simpleLineDiff(change.before ?? '', change.after ?? '');
+    if (!body) {
+        return `${header}\n(no content change)`;
     }
-    for (const [line, count] of afterCounts) {
-        const extra = count - (beforeCounts.get(line) || 0);
-        for (let index = 0; index < extra; index++) {
-            added.push(`+${line}`);
-        }
-    }
-    const output = [...removed, ...added].join('\n');
-    return output.length > MAX_OUTPUT_CHARS ? `${output.slice(0, MAX_OUTPUT_CHARS)}...[truncated]` : output;
-}
-
-function renderSnapshotDiff(snapshot: FileSnapshot): string {
-    const header = `--- a/${snapshot.filePath}\n+++ b/${snapshot.filePath}`;
-    const body = simpleLineDiff(snapshot.before ?? '', snapshot.after ?? '');
-    return body ? `${header}\n${body}` : `${header}\n(no content change)`;
+    const capped = body.length > MAX_OUTPUT_CHARS ? `${body.slice(0, MAX_OUTPUT_CHARS)}...[truncated]` : body;
+    return `${header}\n${capped}`;
 }

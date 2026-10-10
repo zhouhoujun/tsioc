@@ -7,6 +7,7 @@ import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath, toRelativeWorkspacePath } from './path-policy';
 import { hasFileBeenRead, hasFileBeenWritten, recordFileWrite } from './file-access-registry';
 import { readFileSnapshot } from './snapshot';
+import { renderUnifiedDiff } from './simple-diff';
 import { runFormatter } from './formatter';
 import { collectLspDiagnostics } from '../lsp/lsp-feedback';
 
@@ -68,6 +69,7 @@ export class WriteFileTool implements AgentTool {
             throw new Error(`Refusing to overwrite '${relativePath}' before reading it. Call read_file on '${relativePath}' first, then retry the write.`);
         }
         await fs.mkdir(path.dirname(absolutePath), { recursive: true });
+        const previous = existed ? await fs.readFile(absolutePath, 'utf8') : null;
         await fs.writeFile(absolutePath, content, 'utf8');
         if (policy.requireReadBeforeWrite) {
             recordFileWrite(context?.sessionId ?? '', relativePath);
@@ -75,12 +77,14 @@ export class WriteFileTool implements AgentTool {
 
         const format = await runFormatter(absolutePath, this.options?.format);
         const lspDiagnostics = await collectLspDiagnostics(this.options, absolutePath);
+        const diff = existed ? renderUnifiedDiff(relativePath, previous, content) : undefined;
 
         return {
             path: relativePath,
             bytesWritten: Buffer.byteLength(content, 'utf8'),
             created: !existed,
             overwritten: existed,
+            ...(diff ? { diff } : {}),
             formatted: format.attempted ? format.formatted ?? null : undefined,
             formatFailure: format.attempted && format.failure ? format.failure : undefined,
             lspDiagnostics

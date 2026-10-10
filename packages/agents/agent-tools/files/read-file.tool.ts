@@ -23,7 +23,7 @@ export class ReadFileTool implements AgentTool {
         properties: {
             path: { type: 'string' },
             offset: { type: 'integer', minimum: 1, description: '1-indexed line to start reading from (default 1).' },
-            limit: { type: 'integer', minimum: 1, description: 'Maximum number of lines to read (defaults to the read limit).' }
+            limit: { type: 'integer', minimum: 1, description: 'Maximum number of lines to read. Defaults to the configured read limit (400); may be raised up to the configured ceiling (2000) to read a large file in fewer calls.' }
         },
         required: ['path']
     };
@@ -50,7 +50,11 @@ export class ReadFileTool implements AgentTool {
         const policy = resolveFilePolicy(this.options);
         const absolutePath = resolveWorkspacePath(requestedPath, policy.rootDir);
         await assertNoSymlinkInWorkspacePath(absolutePath, policy.rootDir);
-        const effectiveLimit = limit > 0 ? Math.min(limit, policy.maxReadLines) : policy.maxReadLines;
+        // No explicit limit -> default window; an explicit limit may be raised
+        // up to the ceiling but never below the default. The byte budget inside
+        // readLineRange still bounds the returned size (opencode-style).
+        const ceiling = Math.max(policy.maxReadLines, policy.maxReadLinesLimit);
+        const effectiveLimit = limit > 0 ? Math.min(limit, ceiling) : policy.maxReadLines;
         const range = await this.readLineRange(absolutePath, offset, effectiveLimit, policy.maxReadBytes);
         const content = range.content
             ? range.content.split('\n').map((line, index) => `${offset + index}: ${line}`).join('\n')

@@ -7,10 +7,15 @@ import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspaceSubdir, toRelativeWorkspacePath } from './path-policy';
 
+/** Skip files larger than this so a single huge/binary file cannot stall or OOM a search. */
+const MAX_CONTENT_SEARCH_FILE_BYTES = 10 * 1024 * 1024;
+/** Bytes inspected for NUL markers when deciding whether a file is binary. */
+const BINARY_SNIFF_BYTES = 8192;
+
 @Injectable()
 export class ContentSearchTool implements AgentTool {
     name = 'content_search';
-    description = 'Search file contents within the configured workspace. Supports plain substring or regular-expression queries.';
+    description = 'Search file contents within the configured workspace. Supports plain substring or regular-expression queries. Binary files (NUL bytes) and files larger than 10MB are skipped. When the result cap is reached, the response sets `truncated: true`.';
     inputSchema = {
         type: 'object',
         properties: {
@@ -51,32 +56,57 @@ export class ContentSearchTool implements AgentTool {
         const caseSensitive = input.caseSensitive !== false;
         const matcher = this.compileMatcher(input, caseSensitive);
         const needle = caseSensitive ? query : query.toLowerCase();
+        const cap = policy.maxSearchResults;
         const matches: Array<{ path: string; line: number; column: number; preview: string }> = [];
-        for (const file of files) {
-            if (matches.length >= policy.maxSearchResults) {
-                break;
-            }
+        let truncated = false;
+        search: for (const file of files) {
             await assertNoSymlinkInWorkspacePath(file, policy.rootDir);
-            const content = await fs.readFile(file, 'utf8');
-            const lines = content.split(/\r?\n/);
+            const stat = await fs.stat(file).catch(() => null);
+            if (!stat || !stat.isFile() || stat.size > MAX_CONTENT_SEARCH_FILE_BYTES) {
+                continue;
+            }
+            const buffer = await fs.readFile(file);
+            if (this.looksBinary(buffer)) {
+                continue;
+            }
+            const lines = buffer.toString('utf8').split(/\r?\n/);
             for (let index = 0; index < lines.length; index++) {
                 const column = matcher
-                    ? (matcher.exec(lines[index])?.index ?? -1)
+                    ? this.matchColumn(matcher, lines[index])
                     : (caseSensitive ? lines[index] : lines[index].toLowerCase()).indexOf(needle);
-                if (column >= 0) {
-                    matches.push({
-                        path: toRelativeWorkspacePath(file, policy.rootDir),
-                        line: index + 1,
-                        column: column + 1,
-                        preview: lines[index].slice(0, 200)
-                    });
+                if (column < 0) {
+                    continue;
                 }
-                if (matches.length >= policy.maxSearchResults) {
-                    break;
+                if (matches.length >= cap) {
+                    // One more hit past the cap proves the result set was cut off.
+                    truncated = true;
+                    break search;
                 }
+                matches.push({
+                    path: toRelativeWorkspacePath(file, policy.rootDir),
+                    line: index + 1,
+                    column: column + 1,
+                    preview: lines[index].slice(0, 200)
+                });
             }
         }
-        return { matches };
+        return { matches, ...(truncated ? { truncated: true } : {}) };
+    }
+
+    /** First match column for a stateful regex, resetting lastIndex so anchors behave per-line. */
+    private matchColumn(matcher: RegExp, line: string): number {
+        matcher.lastIndex = 0;
+        return matcher.exec(line)?.index ?? -1;
+    }
+
+    private looksBinary(buffer: Buffer): boolean {
+        const limit = Math.min(buffer.length, BINARY_SNIFF_BYTES);
+        for (let index = 0; index < limit; index++) {
+            if (buffer[index] === 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private compileMatcher(input: any, caseSensitive: boolean): RegExp | null {

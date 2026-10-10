@@ -7,6 +7,7 @@ import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath
 import { resolveEditMatch, stripLineNumberPrefixes } from './edit-match';
 import { hasFileBeenRead, hasFileBeenWritten, recordFileWrite } from './file-access-registry';
 import { readFileSnapshot } from './snapshot';
+import { renderUnifiedDiff } from './simple-diff';
 import { runFormatter } from './formatter';
 import { collectLspDiagnostics } from '../lsp/lsp-feedback';
 
@@ -84,11 +85,13 @@ export class EditFileTool implements AgentTool {
 
         const format = await runFormatter(absolutePath, this.options?.format);
         const lspDiagnostics = await collectLspDiagnostics(this.options, absolutePath);
+        const diff = renderUnifiedDiff(relativePath, content, updated);
 
         return {
             path: toRelativeWorkspacePath(absolutePath, policy.rootDir),
             replacements: replaceAll ? match.occurrences : 1,
             bytesWritten: Buffer.byteLength(updated, 'utf8'),
+            ...(diff ? { diff } : {}),
             formatted: format.attempted ? format.formatted ?? null : undefined,
             formatFailure: format.attempted && format.failure ? format.failure : undefined,
             lspDiagnostics

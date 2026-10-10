@@ -6,7 +6,7 @@ import { execFileSync } from 'child_process';
 import { promises as fs } from 'fs';
 import { symlinkSync } from 'fs';
 import { Suite, Test } from '@tsdi/unit';
-import { AgentScheduler, ScheduledAgentTask, provideAgentOrm } from '@tsdi/agent';
+import { AgentScheduler, ScheduledAgentTask, provideAgentOrm, FileSnapshotStore } from '@tsdi/agent';
 import { TestMemoryStore, TestSessionStore } from './test-stores';
 import { SpawnAgentTool, ParallelSpawnTool, SpawnAgentAdapter } from '../agent';
 import { OrchestrateTool } from '../agent/orchestrate.tool';
@@ -395,6 +395,31 @@ export class AgentToolsPackageTest {
             error = err as Error;
         }
         expect(error?.message).toContain('offset');
+    }
+
+    @Test('read file honors an explicit limit above the default window up to the ceiling')
+    async readFileHonorsExplicitLimitUpToCeiling() {
+        const workspace = await this.createWorkspace();
+        const lines = Array.from({ length: 600 }, (_, index) => `line ${index + 1}`).join('\n') + '\n';
+        await fs.writeFile(path.join(workspace, 'src', 'big.txt'), lines, 'utf8');
+
+        const tool = new ReadFileTool({ file: { rootDir: workspace } });
+
+        const defaulted = await tool.invoke({ path: 'src/big.txt' }, createSessionContext());
+        expect(defaulted.content.split('\n').length).toEqual(400);
+        expect(defaulted.truncated).toEqual(true);
+
+        // An explicit limit may exceed the 400-line default window, up to the 2000-line ceiling.
+        const expanded = await tool.invoke({ path: 'src/big.txt', limit: 600 }, createSessionContext());
+        expect(expanded.content.split('\n').length).toEqual(600);
+        expect(expanded.truncated).toEqual(false);
+        expect(expanded.totalLines).toEqual(600);
+
+        // Requests above the ceiling clamp to the configured ceiling.
+        const clampedTool = new ReadFileTool({ file: { rootDir: workspace, maxReadLines: 400, maxReadLinesLimit: 500 } });
+        const limited = await clampedTool.invoke({ path: 'src/big.txt', limit: 5000 }, createSessionContext());
+        expect(limited.content.split('\n').length).toEqual(500);
+        expect(limited.truncated).toEqual(true);
     }
 
     @Test('write file writes content within workspace and blocks traversal')
@@ -1018,6 +1043,34 @@ export class AgentToolsPackageTest {
         expect(invalid?.message).toContain('regular expression');
     }
 
+    @Test('edit file returns a unified diff of the change')
+    async editFileReturnsUnifiedDiff() {
+        const workspace = await this.createWorkspace();
+        const tool = new EditFileTool({ file: { rootDir: workspace } });
+
+        const result = await tool.invoke({ path: 'src/alpha.txt', oldString: 'beta', newString: 'BETA' }, createSessionContext());
+        expect(result.diff).toContain('--- a/src/alpha.txt');
+        expect(result.diff).toContain('+++ b/src/alpha.txt');
+        expect(result.diff).toContain('-beta');
+        expect(result.diff).toContain('+BETA');
+    }
+
+    @Test('write file returns a diff only when overwriting an existing file')
+    async writeFileReturnsDiffOnlyOnOverwrite() {
+        const workspace = await this.createWorkspace();
+        const tool = new WriteFileTool({ file: { rootDir: workspace } });
+
+        const created = await tool.invoke({ path: 'src/diffed.txt', content: 'hello' }, createSessionContext());
+        expect(created.created).toEqual(true);
+        expect(created.diff).toBeUndefined();
+
+        const overwritten = await tool.invoke({ path: 'src/diffed.txt', content: 'hello world' }, createSessionContext());
+        expect(overwritten.overwritten).toEqual(true);
+        expect(overwritten.diff).toContain('--- a/src/diffed.txt');
+        expect(overwritten.diff).toContain('-hello');
+        expect(overwritten.diff).toContain('+hello world');
+    }
+
     @Test('read file truncates overly long lines')
     async readFileTruncatesLongLines() {
         const workspace = await this.createWorkspace();
@@ -1042,6 +1095,35 @@ export class AgentToolsPackageTest {
         const scoped = await tool.invoke({ query: 'beta', glob: '**/*.txt', path: 'src' }, createSessionContext());
         expect(scoped.matches.some((match: any) => match.path === 'root-note.txt')).toBe(false);
         expect(scoped.matches.every((match: any) => match.path.startsWith('src/'))).toBe(true);
+    }
+
+    @Test('content search skips binary files')
+    async contentSearchSkipsBinaryFiles() {
+        const workspace = await this.createWorkspace();
+        // "beta\0beta" — a NUL byte marks this as binary and it must not be searched.
+        await fs.writeFile(path.join(workspace, 'src', 'blob.bin'), Buffer.from([0x62, 0x65, 0x74, 0x61, 0x00, 0x62, 0x65, 0x74, 0x61]));
+        const tool = new ContentSearchTool({ file: { rootDir: workspace, maxSearchResults: 20 } });
+
+        const result = await tool.invoke({ query: 'beta', glob: 'src/**/*' }, createSessionContext());
+        expect(result.matches.some((match: any) => match.path.includes('blob.bin'))).toBe(false);
+        expect(result.matches.some((match: any) => match.path.includes('alpha.txt'))).toBe(true);
+    }
+
+    @Test('content search signals truncation when the result cap is reached')
+    async contentSearchSignalsTruncation() {
+        const workspace = await this.createWorkspace();
+        const lines = Array.from({ length: 10 }, (_, index) => `needle ${index}`).join('\n') + '\n';
+        await fs.writeFile(path.join(workspace, 'src', 'many.txt'), lines, 'utf8');
+
+        const capped = new ContentSearchTool({ file: { rootDir: workspace, maxSearchResults: 3 } });
+        const cappedResult = await capped.invoke({ query: 'needle', glob: 'src/many.txt' }, createSessionContext());
+        expect(cappedResult.matches.length).toEqual(3);
+        expect(cappedResult.truncated).toEqual(true);
+
+        const roomy = new ContentSearchTool({ file: { rootDir: workspace, maxSearchResults: 50 } });
+        const roomyResult = await roomy.invoke({ query: 'needle', glob: 'src/many.txt' }, createSessionContext());
+        expect(roomyResult.matches.length).toEqual(10);
+        expect(roomyResult.truncated).toBeUndefined();
     }
 
     @Test('web search delegates to configured adapter')
@@ -4438,6 +4520,75 @@ export class AgentToolsPackageTest {
             outside = err as Error;
         }
         expect(outside?.message).toContain('outside');
+    }
+
+    @Test('git operations diff fallback reports every file in a multi-file snapshot')
+    async gitOperationsDiffFallbackExpandsMultiFileSnapshots() {
+        const workspace = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-git-snapshot-'));
+        try {
+            const store = new FileSnapshotStore();
+            store.push('s1', {
+                filePath: path.join(workspace, 'src/a.js'),
+                before: null,
+                after: 'export const a = 1;\n',
+                timestamp: 0,
+                toolName: 'apply_patch',
+                toolCallId: 'call-1',
+                files: [
+                    { filePath: path.join(workspace, 'src/a.js'), before: null, after: 'export const a = 1;\n' },
+                    { filePath: path.join(workspace, 'test/a.test.js'), before: null, after: 'assert.ok(true);\n' }
+                ]
+            });
+            const tool = new GitOperationsTool({ file: { rootDir: workspace } } as any, store);
+
+            const result = await tool.invoke({ action: 'diff' }, createSessionContext());
+
+            expect(result.notAGitRepo).toEqual(true);
+            expect(result.fallback).toEqual('file_snapshots');
+            expect(result.changedFiles.map((entry: any) => entry.path)).toEqual([
+                path.join(workspace, 'src/a.js'),
+                path.join(workspace, 'test/a.test.js')
+            ]);
+            expect(result.diff).toContain('src/a.js');
+            expect(result.diff).toContain('test/a.test.js');
+        } finally {
+            await fs.rm(workspace, { recursive: true, force: true });
+        }
+    }
+
+    @Test('git operations diff fallback merges repeated edits to one file cumulatively')
+    async gitOperationsDiffFallbackMergesRepeatedEdits() {
+        const workspace = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-git-snapshot-'));
+        try {
+            const target = path.join(workspace, 'src/a.js');
+            const store = new FileSnapshotStore();
+            store.push('s1', {
+                filePath: target,
+                before: 'one\n',
+                after: 'one\ntwo\n',
+                timestamp: 0,
+                toolName: 'edit_file',
+                toolCallId: 'call-1'
+            });
+            store.push('s1', {
+                filePath: target,
+                before: 'one\ntwo\n',
+                after: 'one\ntwo\nthree\n',
+                timestamp: 0,
+                toolName: 'edit_file',
+                toolCallId: 'call-2'
+            });
+            const tool = new GitOperationsTool({ file: { rootDir: workspace } } as any, store);
+
+            const result = await tool.invoke({ action: 'diff' }, createSessionContext());
+
+            expect(result.changedFiles.map((entry: any) => entry.path)).toEqual([target]);
+            // earliest before + latest after => cumulative diff
+            expect(result.diff).toContain('+two');
+            expect(result.diff).toContain('+three');
+        } finally {
+            await fs.rm(workspace, { recursive: true, force: true });
+        }
     }
 
     @Test('review diff gathers a read-only diff with files and stats')
