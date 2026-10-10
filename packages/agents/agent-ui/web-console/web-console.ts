@@ -2,6 +2,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { DOCUMENT } from '@tsdi/common';
 import { ComponentRef, ComponentsModule, ReactiveEffect, reactive } from '@tsdi/components';
 import { HtmlTemplateModule } from '@tsdi/components/html';
+import { DomScrollBox } from '@tsdi/components/html';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, COMMAND_EXECUTION_CONTROL, CommandExecutionControlPort, defaultAgentOptions } from '@tsdi/agent';
 import { AGENT_IDE_BRIDGE } from '@tsdi/agent-ui';
 import { AgentModule } from '@tsdi/agent';
@@ -162,12 +163,31 @@ export async function mountAgentWebConsole(
     const disposeBridge = await bridge.subscribe(state.sessionId);
     await registerAgentWebConsolePwa(config).catch(() => null);
 
-    // Platform adaptation: browser wheel drives viewport history; stream stays on native page scroll.
+    // Platform adaptation: the base-layer DomScrollBox (backed by the shared
+    // ScrollBox) owns viewport history scrolling; stream stays on native page scroll.
+    // Business state is never mutated to scroll.
+    let transcriptScroller: DomScrollBox | null = null;
+    let transcriptElement: HTMLElement | null = null;
+    const resolveTranscriptScroller = (): DomScrollBox | null => {
+        const element = (root?.querySelector?.('.console-messages-panel') as HTMLElement | null) ?? null;
+        if (!element) {
+            return null;
+        }
+        if (element !== transcriptElement) {
+            transcriptElement = element;
+            transcriptScroller = new DomScrollBox(element);
+        }
+        return transcriptScroller;
+    };
     const onWheel = (event: WheelEvent): void => {
         if (state.messageLayout !== 'viewport' || event.deltaY === 0) {
             return;
         }
-        state.scrollMessages(event.deltaY < 0 ? -1 : 1);
+        const scroller = resolveTranscriptScroller();
+        if (!scroller) {
+            return;
+        }
+        scroller.wheel(event.deltaY);
         event.preventDefault();
     };
     mount.addEventListener('wheel', onWheel, { passive: false });
