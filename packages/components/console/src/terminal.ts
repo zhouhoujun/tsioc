@@ -839,6 +839,7 @@ export class TuiTerminalSurface {
     protected clickTargetsCache: TerminalClickTarget[] = [];
     protected mousePress?: { x: number; y: number };
     protected mouseHandedOff = false;
+    protected pendingRenderDuringHandoff = false;
     protected reclaimTimer?: ReturnType<typeof setTimeout>;
     protected scrollOffsetRows = 0;
     protected maxScrollOffsetRows = 0;
@@ -933,6 +934,7 @@ export class TuiTerminalSurface {
         this.scrollBox.reset();
         this.pagerBox?.close();
         this.scheduled = false;
+        this.pendingRenderDuringHandoff = false;
         this.pendingRenderOrigin = undefined;
     }
 
@@ -977,6 +979,12 @@ export class TuiTerminalSurface {
 
     render(): TerminalPrimaryRenderResult | undefined {
         if (this.destroyed) {
+            return undefined;
+        }
+        if (this.mouseHandedOff) {
+            // A redraw rewrites the screen and would clear an in-progress native
+            // terminal selection; defer until tracking is reclaimed.
+            this.pendingRenderDuringHandoff = true;
             return undefined;
         }
         const width = this.resolveWidth();
@@ -1302,6 +1310,7 @@ export class TuiTerminalSurface {
         this.clearMouseReclaim();
         this.mouseHandedOff = false;
         this.resolveOutput()?.write(TERMINAL_ENABLE_MOUSE_TRACKING_SEQUENCE);
+        this.flushDeferredHandoffRender();
         return true;
     }
 
@@ -1452,6 +1461,15 @@ export class TuiTerminalSurface {
         }
         this.mouseHandedOff = false;
         this.resolveOutput()?.write(TERMINAL_ENABLE_MOUSE_TRACKING_SEQUENCE);
+        this.flushDeferredHandoffRender();
+    }
+
+    /** Flush a render that was deferred while a native selection was in progress. */
+    protected flushDeferredHandoffRender(): void {
+        if (this.pendingRenderDuringHandoff) {
+            this.pendingRenderDuringHandoff = false;
+            this.requestRender();
+        }
     }
 
     protected clearMouseReclaim(): void {

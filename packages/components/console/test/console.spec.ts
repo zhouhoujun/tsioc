@@ -1554,6 +1554,48 @@ export class ConsoleRendererTest {
         }
     }
 
+    @Test('defers redraws while a native terminal selection is handed off, flushing on reclaim')
+    async defersRedrawDuringSelectionHandoff() {
+        const ctx = await Application.run(ConsoleLoopTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        const writes: string[] = [];
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const ref = ctx.runners.getRef(ConsoleLoopTestComponent) as ComponentRef<ConsoleLoopTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            surface = new TuiTerminalSurface({
+                renderer,
+                root,
+                width: 40,
+                output: { write: (value: string) => writes.push(value) }
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+
+            const targetRow = surface.lastRenderedLines.findIndex(line => line.includes('Two'));
+            surface.dispatchMouse({ button: 0, x: 2, y: targetRow + 1, release: false });
+            surface.dispatchMouse({ button: 32, x: 12, y: targetRow + 1, release: false });
+            expect((surface as any).mouseHandedOff).toBe(true);
+
+            const writesAtHandoff = writes.length;
+            surface.requestRender();
+            await Promise.resolve();
+            // Redraw suppressed so the in-progress selection survives.
+            expect(writes.length).toEqual(writesAtHandoff);
+            expect((surface as any).pendingRenderDuringHandoff).toBe(true);
+
+            surface.notifyNonMouseInput();
+            await Promise.resolve();
+            // The deferred redraw flushes once tracking is reclaimed.
+            expect(writes.length).toBeGreaterThan(writesAtHandoff);
+        } finally {
+            surface?.destroy();
+            await ctx.close();
+        }
+    }
+
     @Test('hands terminal selection off on tui drag and keeps tracking off for the clear window')
     async handsTerminalSelectionOffOnTuiDrag() {
         const ctx = await Application.run(ConsoleLoopTestComponent, {
