@@ -579,6 +579,25 @@ export class ConsoleRendererTest {
         surface.destroy();
     }
 
+    @Test('pager surface highlights matches with the current one emphasized')
+    async pagerSurfaceHighlightsMatches() {
+        const output: string[] = [];
+        const surface = new TuiTerminalSurface({
+            renderer: { renderToTuiLayout: () => ({ lines: [] }) } as any,
+            width: 40,
+            height: 6,
+            output: { write: value => output.push(value) },
+            scheduler: task => task()
+        });
+
+        surface.openPager({ lines: ['alpha', 'beta needle and needle', 'gamma'] });
+        surface.pagerSearch('needle');
+        const raw = surface.lastRenderedLines.join('\n');
+        expect(raw).toContain('\u001b[1;7mneedle\u001b[0m'); // current match emphasized
+        expect(raw).toContain('\u001b[7mneedle\u001b[0m'); // other matches highlighted
+        surface.destroy();
+    }
+
     @Test('updates terminal surface when component host v-show changes')
     async updatesTerminalSurfaceFromHostShowDirective() {
         const ctx = await Application.run(ConsoleShowHostTestComponent, {

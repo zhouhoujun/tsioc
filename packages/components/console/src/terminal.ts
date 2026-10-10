@@ -13,7 +13,7 @@ import { Abstract, Inject, Injectable, Injector, Optional, Provider, token } fro
 import { getDisplayWidth, sliceByDisplayWidth } from './display-width';
 import { noReact, RNode, Renderer } from '@tsdi/components';
 import { ConsoleElement, ConsoleNode } from './console';
-import { PagerBox, ScrollBox } from '@tsdi/components/common';
+import { PagerBox, PagerMatch, ScrollBox } from '@tsdi/components/common';
 
 const CHAT_COMMANDS = ['/help', '/tools', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/copy', '/quit', '/exit'];
 
@@ -802,6 +802,31 @@ export function provideConsoleTerminalLifecycle(): Provider[] {
     ];
 }
 
+/** Strip ANSI escape sequences so pager find/highlight operate on visible text. */
+function stripTerminalAnsi(value: string): string {
+    return String(value ?? '').replace(/\u001b\[[0-9;?]*[A-Za-z]/g, '');
+}
+
+/** Wrap find matches in reverse video (current match bold+reverse) within one line. */
+function highlightPagerMatches(line: string, matches: PagerMatch[], current?: PagerMatch): string {
+    if (!matches.length) {
+        return line;
+    }
+    let out = '';
+    let cursor = 0;
+    for (const match of matches) {
+        if (match.column < cursor) {
+            continue;
+        }
+        out += line.slice(cursor, match.column);
+        const text = line.slice(match.column, match.column + match.length);
+        const isCurrent = !!current && current.row === match.row && current.column === match.column;
+        out += isCurrent ? `\u001b[1;7m${text}\u001b[0m` : `\u001b[7m${text}\u001b[0m`;
+        cursor = match.column + match.length;
+    }
+    return out + line.slice(cursor);
+}
+
 export class TuiTerminalSurface {
     protected root?: RNode | RNode[];
     protected renderState?: TerminalPrimaryRenderState;
@@ -1027,7 +1052,7 @@ export class TuiTerminalSurface {
             this.pagerBox = new PagerBox();
         }
         this.pagerQueryBuffer = '';
-        this.pagerBox.setContent(options?.lines ?? []);
+        this.pagerBox.setContent((options?.lines ?? []).map(line => stripTerminalAnsi(String(line))));
         this.pagerBox.clearQuery();
         this.pagerBox.open();
         this.requestRender();
@@ -1170,7 +1195,11 @@ export class TuiTerminalSurface {
         const hud = pager.matchCount
             ? `Pager ${pager.currentMatchIndex + 1}/${pager.matchCount} · Esc close · ↑↓ scroll`
             : 'Pager · Esc close · ↑↓ scroll';
-        return [hud, ...pager.visibleLines()];
+        const range = pager.visibleRange();
+        const current = pager.currentMatch;
+        const body = pager.visibleLines().map((line, index) =>
+            highlightPagerMatches(line, pager.matchesAtRow(range.start + index), current));
+        return [hud, ...body];
     }
 
     dispatchClickAt(node?: ConsoleNode): boolean {
