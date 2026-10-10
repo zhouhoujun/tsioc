@@ -558,6 +558,27 @@ export class ConsoleRendererTest {
         surface.destroy();
     }
 
+    @Test('pager surface types an incremental find')
+    async pagerSurfaceIncrementalFind() {
+        const output: string[] = [];
+        const surface = new TuiTerminalSurface({
+            renderer: { renderToTuiLayout: () => ({ lines: [] }) } as any,
+            width: 24,
+            height: 6,
+            output: { write: value => output.push(value) },
+            scheduler: task => task()
+        });
+        const strip = (line: string) => line.replace(/\x1b\[[0-9;]*m/g, '');
+
+        surface.openPager({ lines: ['alpha', 'beta', 'gamma'] });
+        expect(surface.pagerTypeChar('b')).toEqual(1);
+        expect(surface.lastRenderedLines.map(strip)[0]).toContain('1/1');
+        expect(surface.pagerTypeChar('e')).toEqual(1);
+        expect(surface.pagerBackspace()).toEqual(1);
+        expect(surface.pagerBackspace()).toEqual(0);
+        surface.destroy();
+    }
+
     @Test('updates terminal surface when component host v-show changes')
     async updatesTerminalSurfaceFromHostShowDirective() {
         const ctx = await Application.run(ConsoleShowHostTestComponent, {

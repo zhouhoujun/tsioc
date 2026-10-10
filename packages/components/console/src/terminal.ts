@@ -603,6 +603,46 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
         return this.surface?.viewportFollowing;
     }
 
+    openPagerFromLastRender?(query?: string): boolean {
+        return this.surface?.openPagerFromLastRender(query) ?? false;
+    }
+
+    closePager?(): boolean {
+        if (!this.surface?.pagerOpen) {
+            return false;
+        }
+        this.surface.closePager();
+        return true;
+    }
+
+    isPagerOpen?(): boolean {
+        return this.surface?.pagerOpen === true;
+    }
+
+    pagerHandleKey?(key: 'up' | 'down' | 'pageup' | 'pagedown' | 'home' | 'end'): boolean {
+        return this.surface?.pagerHandleKey(key) ?? false;
+    }
+
+    pagerSearch?(query: string, options?: { caseSensitive?: boolean }): number {
+        return this.surface?.pagerSearch(query, options) ?? 0;
+    }
+
+    pagerScroll?(deltaRows: number): boolean {
+        return this.surface?.pagerScroll(deltaRows) ?? false;
+    }
+
+    pagerWheel?(direction: 'up' | 'down'): boolean {
+        return this.surface?.pagerWheel(direction) ?? false;
+    }
+
+    pagerTypeChar?(char: string): number {
+        return this.surface?.pagerTypeChar(char) ?? 0;
+    }
+
+    pagerBackspace?(): number {
+        return this.surface?.pagerBackspace() ?? 0;
+    }
+
     notifyNonMouseInput?(): boolean {
         return this.surface?.notifyNonMouseInput() ?? false;
     }
@@ -779,6 +819,8 @@ export class TuiTerminalSurface {
     protected maxScrollOffsetRows = 0;
     protected readonly scrollBox = new ScrollBox();
     protected pagerBox?: PagerBox;
+    protected lastFullLines: string[] = [];
+    protected pagerQueryBuffer = '';
 
     constructor(protected options: TuiTerminalSurfaceOptions) {
         this.bindOutputResize();
@@ -922,6 +964,7 @@ export class TuiTerminalSurface {
         const dirty = this.resolveDirtyTopLevel(this.pendingRenderOrigin);
         this.pendingRenderOrigin = undefined;
         const layout = this.options.renderer.renderToTuiLayout(this.root, { width, dirty });
+        this.lastFullLines = (layout.lines || []).slice();
         const viewport = this.resolveViewportLayout(layout);
         const lines = viewport.lines;
         this.clickTargetsCache = viewport.clickTargets;
@@ -983,6 +1026,7 @@ export class TuiTerminalSurface {
         if (!this.pagerBox) {
             this.pagerBox = new PagerBox();
         }
+        this.pagerQueryBuffer = '';
         this.pagerBox.setContent(options?.lines ?? []);
         this.pagerBox.clearQuery();
         this.pagerBox.open();
@@ -995,6 +1039,19 @@ export class TuiTerminalSurface {
         }
         this.pagerBox.close();
         this.requestRender();
+    }
+
+    /** Open the pager over the last full (unwindowed) render; an optional query is applied as a find. */
+    openPagerFromLastRender(query?: string): boolean {
+        if (!this.lastFullLines.length) {
+            return false;
+        }
+        this.openPager({ lines: this.lastFullLines });
+        const trimmed = String(query || '').trim();
+        if (trimmed) {
+            this.pagerSearch(trimmed);
+        }
+        return true;
     }
 
     get pagerOpen(): boolean {
@@ -1039,6 +1096,28 @@ export class TuiTerminalSurface {
 
     pagerSearch(query: string, options?: { caseSensitive?: boolean }): number {
         const count = this.pagerBox?.search(query, options) ?? 0;
+        this.requestRender();
+        return count;
+    }
+
+    /** Append one character to the pager's find input and re-run the search. */
+    pagerTypeChar(char: string): number {
+        if (!this.pagerBox?.isOpen || !char) {
+            return this.pagerBox?.matchCount ?? 0;
+        }
+        this.pagerQueryBuffer += char;
+        const count = this.pagerBox.search(this.pagerQueryBuffer);
+        this.requestRender();
+        return count;
+    }
+
+    /** Remove the last character from the pager's find input and re-run the search. */
+    pagerBackspace(): number {
+        if (!this.pagerBox?.isOpen) {
+            return 0;
+        }
+        this.pagerQueryBuffer = this.pagerQueryBuffer.slice(0, -1);
+        const count = this.pagerBox.search(this.pagerQueryBuffer);
         this.requestRender();
         return count;
     }
