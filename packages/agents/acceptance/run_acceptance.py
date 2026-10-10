@@ -30,6 +30,7 @@ Stdlib only; Linux/macOS (pty). Exit code 0 = all scenarios passed.
 """
 import json
 import atexit
+import codecs
 import os
 import re
 import signal
@@ -65,11 +66,27 @@ VIEWPORT_LINES = 40
 class Screen:
     """Rolling terminal buffer with ANSI-stripped viewport access."""
 
-    def __init__(self) -> None:
+    def __init__(self, width: int = 100, height: int = 32) -> None:
         self.raw = bytearray()
+        self._decoder = codecs.getincrementaldecoder('utf-8')('replace')
+        self._width = max(1, width)
+        self._height = max(1, height)
+        self._grid: list[list[str]] = [[' '] * self._width for _ in range(self._height)]
+        self._row = 0
+        self._col = 0
+        self._pending = ''
 
     def feed(self, data: bytes) -> None:
         self.raw += data
+        self._apply(self._decoder.decode(data, final=False))
+
+    def resize(self, columns: int, lines: int) -> None:
+        self._width = max(1, columns)
+        self._height = max(1, lines)
+        self._grid = [[' '] * self._width for _ in range(self._height)]
+        self._row = 0
+        self._col = 0
+        self._pending = ''
 
     def text(self) -> str:
         cleaned = ANSI_RE.sub('', self.raw.decode('utf-8', errors='replace'))
@@ -81,6 +98,132 @@ class Screen:
         lines = [ln for ln in ANSI_RE.sub('', self.raw.decode('utf-8', errors='replace'))
                  .replace('\r\n', '\n').replace('\r', '\n').split('\n')]
         return '\n'.join(lines[-VIEWPORT_LINES:])
+
+    def screen_view(self) -> str:
+        return '\n'.join(''.join(row).rstrip() for row in self._grid)
+
+    def _apply(self, text: str) -> None:
+        text = self._pending + text
+        self._pending = ''
+        index = 0
+        length = len(text)
+        while index < length:
+            char = text[index]
+            if char == '\x1b':
+                consumed = self._escape(text, index)
+                if consumed is None:
+                    self._pending = text[index:]
+                    return
+                index = consumed
+            elif char == '\r':
+                self._col = 0
+                index += 1
+            elif char == '\n':
+                self._line_feed()
+                index += 1
+            elif char == '\b':
+                self._col = max(0, self._col - 1)
+                index += 1
+            elif char == '\t':
+                self._col = min(self._width - 1, (self._col // 8 + 1) * 8)
+                index += 1
+            elif char == '\x07':
+                index += 1
+            else:
+                width = 2 if unicodedata.east_asian_width(char) in ('W', 'F') else 1
+                self._put(char, width)
+                index += 1
+
+    def _escape(self, text: str, index: int) -> Optional[int]:
+        if index + 1 >= len(text):
+            return None
+        nxt = text[index + 1]
+        if nxt == '[':
+            end = index + 2
+            while end < len(text) and not ('@' <= text[end] <= '~'):
+                end += 1
+            if end >= len(text):
+                return None
+            self._csi(text[index + 2:end], text[end])
+            return end + 1
+        if nxt == ']':
+            end = index + 2
+            while end < len(text):
+                if text[end] == '\x07':
+                    return end + 1
+                if text[end] == '\x1b' and end + 1 < len(text) and text[end + 1] == '\\':
+                    return end + 2
+                end += 1
+            return None
+        if nxt in '()':
+            return index + 3 if index + 2 < len(text) else None
+        return index + 2
+
+    def _csi(self, params: str, final: str) -> None:
+        private = params.startswith('?')
+        body = params[1:] if private else params
+        numbers = [int(part) for part in re.split(r'[;:]', body) if part.isdigit()]
+        first = numbers[0] if numbers else None
+        if private:
+            return
+        if final == 'A':
+            self._row = max(0, self._row - max(1, first or 1))
+        elif final == 'B':
+            self._row = min(self._height - 1, self._row + max(1, first or 1))
+        elif final == 'C':
+            self._col = min(self._width - 1, self._col + max(1, first or 1))
+        elif final == 'D':
+            self._col = max(0, self._col - max(1, first or 1))
+        elif final in ('H', 'f'):
+            row = (numbers[0] if len(numbers) > 0 else 1) - 1
+            col = (numbers[1] if len(numbers) > 1 else 1) - 1
+            self._row = max(0, min(self._height - 1, row))
+            self._col = max(0, min(self._width - 1, col))
+        elif final == 'J':
+            if first in (2, 3):
+                self._clear_all()
+            elif first in (None, 0):
+                self._clear_from_cursor()
+        elif final == 'K':
+            self._erase_line(first)
+
+    def _clear_all(self) -> None:
+        self._grid = [[' '] * self._width for _ in range(self._height)]
+        self._row = 0
+        self._col = 0
+
+    def _clear_from_cursor(self) -> None:
+        for col in range(self._col, self._width):
+            self._grid[self._row][col] = ' '
+        for row in range(self._row + 1, self._height):
+            self._grid[row] = [' '] * self._width
+
+    def _erase_line(self, mode: Optional[int]) -> None:
+        if mode == 1:
+            for col in range(0, min(self._col + 1, self._width)):
+                self._grid[self._row][col] = ' '
+        elif mode == 2:
+            self._grid[self._row] = [' '] * self._width
+        else:
+            for col in range(self._col, self._width):
+                self._grid[self._row][col] = ' '
+
+    def _line_feed(self) -> None:
+        if self._row + 1 >= self._height:
+            self._grid.pop(0)
+            self._grid.append([' '] * self._width)
+        else:
+            self._row += 1
+
+    def _put(self, char: str, width: int) -> None:
+        if self._col >= self._width:
+            self._col = 0
+            self._line_feed()
+        row = self._grid[self._row]
+        row[self._col] = char
+        if width == 2 and self._col + 1 < self._width:
+            row[self._col + 1] = ''
+        self._col += width
 
     def since(self, mark: int) -> str:
         """ANSI-stripped output emitted after ``mark`` bytes.
@@ -99,6 +242,7 @@ class Screen:
 
 
 _FAKE_PORT = 0
+_ACTIVE_SCREEN: Optional['Screen'] = None
 
 
 def start_fake_server() -> subprocess.Popen:
@@ -151,6 +295,8 @@ def drain(fd: int, screen: Screen, seconds: float = 0.4) -> None:
 def resize_terminal(fd: int, columns: int, lines: int = 32) -> None:
     import fcntl, termios, struct
     fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack('HHHH', lines, columns, 0, 0))
+    if _ACTIVE_SCREEN is not None:
+        _ACTIVE_SCREEN.resize(columns, lines)
 
 
 def display_width(value: str) -> int:
@@ -187,7 +333,8 @@ def spawn_agent(port: int):
 
 def wait_for(fd: int, screen: Screen, patterns, timeout: float = TIMEOUT,
              settle: float = 0.6, quiet_window: float = 1.5,
-             on_sight: bool = False, tail_from: Optional[int] = None) -> Optional[str]:
+             on_sight: bool = False, tail_from: Optional[int] = None,
+             view_fn=None) -> Optional[str]:
     """Poll the viewport for any regex pattern; returns the matched pattern or None.
 
     Before each check the output is allowed to go quiet for `quiet_window`
@@ -204,7 +351,7 @@ def wait_for(fd: int, screen: Screen, patterns, timeout: float = TIMEOUT,
 
     def view() -> str:
         if tail_from is None and not on_sight:
-            return screen.viewport()
+            return (view_fn or screen.viewport)()
         start = tail_from if tail_from is not None else start_mark
         tail = bytes(screen.raw)[start:].decode('utf-8', errors='replace')
         return '\n'.join(ln.rstrip() for ln in
@@ -273,11 +420,11 @@ def scenario_tail_visibility(pid: int, fd: int, screen: Screen) -> bool:
     # ready composer in the current viewport after output has gone quiet.
     settled = wait_for(
         fd, screen, [r'是否继续？[\s\S]*>\s+Ask code or files'],
-        settle=2.5, quiet_window=2.5)
+        settle=2.5, quiet_window=2.5, view_fn=screen.screen_view)
     if not settled:
         print('[FAIL] scenario 1: long reply did not settle with its tail question visible')
         return False
-    view = screen.viewport().strip().splitlines()
+    view = screen.screen_view().strip().splitlines()
     # A railed row (border-left) spends one terminal column on the painted rail, so a
     # long reply legitimately wraps one line taller than it did without rail support.
     # The tail question stays visible; this margin only bounds how far it may sit
@@ -894,12 +1041,14 @@ def scenario_narration_separation_v84(pid: int, fd: int, screen: Screen) -> bool
 
 
 def main() -> int:
+    global _ACTIVE_SCREEN
     ts = time.strftime('%Y%m%d-%H%M%S')
     server = start_fake_server()
     port = _FAKE_PORT
     pid = None
     results = []
     screen = Screen()
+    _ACTIVE_SCREEN = screen
     try:
         pid, fd = spawn_agent(port)
         ready = wait_for(fd, screen, ['>', 'tsdi', 'agent'], timeout=60, quiet_window=3)
