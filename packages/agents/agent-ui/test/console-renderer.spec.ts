@@ -993,6 +993,27 @@ export class AgentConsoleOperationalPanelsRendererTest {
         expect(toolLines.some(line => line.includes('Permission denied'))).toBe(true);
     }
 
+    @Test('focused tool list renders each tool on its own line')
+    async renderFocusedToolListLinesPerItem() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setTools([
+            { name: 'read_file', toolset: 'filesystem', active: true, activationKind: 'always' } as any,
+            { name: 'write_file', toolset: 'filesystem', active: false, activationKind: 'approval' } as any,
+            { name: 'list_dir', toolset: 'filesystem', active: true, activationKind: 'always' } as any
+        ]);
+        ref.instance.sessionState.setToolsFocused(true);
+        ref.instance.sessionState.setSelectedToolName('write_file');
+        await ref.render();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const toolsPanel = ref.hostView.query(AgentConsoleToolsPanelComponent) as ComponentRef<AgentConsoleToolsPanelComponent>;
+        const toolLines = renderer.renderToLines(toolsPanel.hostView.rootNodes[0]);
+        const toolItemLines = toolLines.filter(line => /read_file|write_file|list_dir/.test(line));
+
+        expect(toolItemLines.length).toEqual(3);
+        expect(toolItemLines.some(line => line.includes('› write_file'))).toBe(true);
+    }
+
     @Test('renders focused tool runs panel with selected run details')
     async renderFocusedToolRunsPanel() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;

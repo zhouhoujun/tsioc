@@ -1148,8 +1148,8 @@ export class AgentConsoleSessionsPanelComponent {
         <label v-style="accentStyle">{{tasksSummaryLabel}}</label>
         <label v-style="metaStyle" v-show="backgroundTaskFeedLabel">{{backgroundTaskFeedLabel}}</label>
         <label v-style="metaStyle" v-show="tasksHintLabel">{{tasksHintLabel}}</label>
-        <label v-style="listStyle" v-show="taskListLabel">{{taskListLabel}}</label>
-        <label v-style="detailStyle" v-show="selectedTaskDetailLabel">{{selectedTaskDetailLabel}}</label>
+        <label v-style="listStyle" v-for="line in taskListLines">{{line}}</label>
+        <label v-style="detailStyle" v-for="line in selectedTaskDetailLines">{{line}}</label>
     </div>
     `
 })
@@ -1297,6 +1297,16 @@ export class AgentConsoleTasksPanelComponent {
             this.taskItems.length ? this.taskItems.map(item => item.label).join('\n') : ''
         ].filter(Boolean);
         return sections.join('\n');
+    }
+
+    get taskListLines(): string[] {
+        const label = this.taskListLabel;
+        return label ? label.split('\n') : [];
+    }
+
+    get selectedTaskDetailLines(): string[] {
+        const label = this.selectedTaskDetailLabel;
+        return label ? label.split('\n') : [];
     }
 
     get visibleTaskStart(): number {
@@ -1558,8 +1568,8 @@ export class AgentConsoleTasksPanelComponent {
     <div class="console-panel console-jobs-panel" v-style="shellStyle">
         <label v-style="accentStyle">{{jobsSummaryLabel}}</label>
         <label v-style="metaStyle" v-show="jobsHintLabel">{{jobsHintLabel}}</label>
-        <label v-style="listStyle" v-show="jobListLabel">{{jobListLabel}}</label>
-        <label v-style="detailStyle" v-show="selectedJobDetailLabel">{{selectedJobDetailLabel}}</label>
+        <label v-style="listStyle" v-for="line in jobListLines">{{line}}</label>
+        <label v-style="detailStyle" v-for="line in selectedJobDetailLines">{{line}}</label>
     </div>
     `
 })
@@ -1630,6 +1640,16 @@ export class AgentConsoleJobsPanelComponent {
         return this.jobItems.map(item => item.label).join('\n');
     }
 
+    get jobListLines(): string[] {
+        const label = this.jobListLabel;
+        return label ? label.split('\n') : [];
+    }
+
+    get selectedJobDetailLines(): string[] {
+        const label = this.selectedJobDetailLabel;
+        return label ? label.split('\n') : [];
+    }
+
     get visibleJobStart(): number {
         const selectedIndex = Math.max(0, this.jobs.findIndex(item => item.id === this.state.selectedScheduledTaskId));
         return resolveConsoleListWindow(
@@ -1692,9 +1712,9 @@ export class AgentConsoleJobsPanelComponent {
     <div class="console-panel console-approvals-panel" v-style="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}">
         <label v-style="accentStyle">{{approvalsTitleLabel}}</label>
         <label v-style="metaStyle" v-show="approvalsSummaryLabel">{{approvalsSummaryLabel}}</label>
-        <label v-style="listStyle" v-show="approvalListLabel">{{approvalListLabel}}</label>
-        <label v-style="detailStyle" v-show="selectedApprovalRequestLabel">{{selectedApprovalRequestLabel}}</label>
-        <label v-style="detailStyle" v-show="selectedApprovalDetailLabel">{{selectedApprovalDetailLabel}}</label>
+        <label v-style="listStyle" v-for="line in approvalListLines">{{line}}</label>
+        <label v-style="detailStyle" v-for="line in selectedApprovalRequestLines">{{line}}</label>
+        <label v-style="detailStyle" v-for="line in selectedApprovalDetailLines">{{line}}</label>
         <label v-style="metaStyle" v-show="approvalActionsLabel">{{approvalActionsLabel}}</label>
     </div>
     `
@@ -1755,6 +1775,21 @@ export class AgentConsoleApprovalsPanelComponent {
             return '';
         }
         return this.approvalItems.map(item => item.label).join('\n');
+    }
+
+    get approvalListLines(): string[] {
+        const label = this.approvalListLabel;
+        return label ? label.split('\n') : [];
+    }
+
+    get selectedApprovalRequestLines(): string[] {
+        const label = this.selectedApprovalRequestLabel;
+        return label ? label.split('\n') : [];
+    }
+
+    get selectedApprovalDetailLines(): string[] {
+        const label = this.selectedApprovalDetailLabel;
+        return label ? label.split('\n') : [];
     }
 
     get visibleApprovalStart(): number {
@@ -1856,8 +1891,8 @@ export class AgentConsoleApprovalsPanelComponent {
     <div class="console-panel console-tools-panel" v-style="shellStyle">
         <label v-style="accentStyle">{{toolsSummaryLabel}}</label>
         <label v-style="metaStyle" v-show="toolsHintLabel">{{toolsHintLabel}}</label>
-        <label v-style="listStyle" v-show="toolListLabel">{{toolListLabel}}</label>
-        <label v-style="detailStyle" v-show="selectedToolDetailLabel">{{selectedToolDetailLabel}}</label>
+        <label v-style="item.style" v-for="item in toolItems">{{item.label}}</label>
+        <label v-style="detailStyle" v-for="line in selectedToolDetailLines">{{line}}</label>
     </div>
     `
 })
@@ -1980,6 +2015,11 @@ export class AgentConsoleToolsPanelComponent {
             lines.push(`last run ${latestRun.status}${duration}: ${this.summarize(summary || latestRun.name)}`);
         }
         return lines.join('\n');
+    }
+
+    get selectedToolDetailLines(): string[] {
+        const label = this.selectedToolDetailLabel;
+        return label ? label.split('\n') : [];
     }
 
     get shouldShow(): boolean {
@@ -2293,8 +2333,8 @@ export class AgentConsolePendingQuestionPanelComponent {
     <div class="console-panel console-tool-runs-panel" v-style="shellStyle">
         <label v-style="accentStyle">{{toolRunsSummaryLabel}}</label>
         <label v-style="metaStyle" v-show="toolRunsHintLabel">{{toolRunsHintLabel}}</label>
-        <label v-style="listStyle" v-show="toolRunListLabel">{{toolRunListLabel}}</label>
-        <label v-style="detailStyle" v-show="selectedToolRunDetailLabel">{{selectedToolRunDetailLabel}}</label>
+        <label v-style="item.style" v-for="item in toolRunItems">{{item.label}}</label>
+        <label v-style="detailStyle" v-for="line in selectedToolRunDetailLines">{{line}}</label>
     </div>
     `
 })
@@ -2437,6 +2477,11 @@ export class AgentConsoleToolRunsPanelComponent {
             lines.push(`error ${this.summarize(selected.error)}`);
         }
         return lines.join('\n');
+    }
+
+    get selectedToolRunDetailLines(): string[] {
+        const label = this.selectedToolRunDetailLabel;
+        return label ? label.split('\n') : [];
     }
 
     protected summarize(value: string, maxLength?: number): string {

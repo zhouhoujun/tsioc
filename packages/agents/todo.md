@@ -47,6 +47,7 @@
 - 呈现：Markdown、CJK 宽度、80/100/120 列、主题、ARIA、键盘与鼠标；强调语法 `**`/`__`/`*`/`_` 遵守 CommonMark 词内不解析语义（如 `DEEPSEEK_API_KEY` 保持字面）；工具行本地化动作 + 主参数（`Read file: <path>`）；工具批行 >3 折叠 `· +N more`（已被逐调用成行取代）；失败/阻塞行 `r` 就地重试；@mention 以紧凑 `Files · <paths>` 展示且运行时仍携带完整上下文。
 - 流式：interim 旁白与工具轮边界封行为独立行、最终回答分离；流式光标 `▍` 只属于正在输出的 assistant；状态栏 token 计量随流式 chunk 实时推进（真实 usage 优先，预估带 `estimated` 标记且不写审计）；Working elapsed 由真实时钟在数据驱动渲染中推进，不使用业务 `setInterval`。
 - components/console 渲染收敛为 TUI 单一实现：保留 `ConsoleRenderer` 作为可复用基类/节点模型，移除重复的 `ConsoleTemplateCompiler`/`ConsoleTemplateModule`（tui 侧以同名兼容别名导出），`TuiTemplateModule`/`TuiConsoleModule` 为唯一模板模块；同一 surface 同时支持 `stream`（native scrollback）与 `viewport`（alternate screen + surface 行滚动），由宿主生命周期 `shouldUseNativeScrollback`/`shouldScrollViewport`/`shouldUseAlternateScreen` 选择。
+- 面板列表逐条成行：`AgentConsolePanels` 的 tasks/jobs/approvals/tools/toolRuns 列表与详情改由 `v-for` 逐条/逐行渲染（`toolItems`/`toolRunItems` 复用 `item.style` 承载选中高亮），不再用 `join('\n')` 拼成单个 `<label>`；避免 `\n` 在 TUI（`normalizeInlineWhitespace`）与 DOM（`textContent`）两端被折叠成一行。`/tools` 每项独占一行、选中项显示 `›`；保留各 `*Label` 文本 getter，新增对应 `*Lines` 逐行 getter 供模板消费。
 
 ### 宿主与门禁
 
@@ -60,7 +61,7 @@
 
 > 来源：真实 CLI/TUI 会话、跨平台（DOM/TUI）验收与源码审计暴露的差距；对照 Codex CLI（最新，ratatui）、opencode（bubbletea / OpenTUI）与 openTUI 的基础组件模型。批次可独立验收；每批次必须补真实边界回归（AppRpc 流 / DOM / PTY）后才能关闭。
 >
-> **当前状态（2026-10）**：P1–P6 已全部关闭并合并进上文功能点；P7（`AgentConsoleComponent` 持续拆解）进行中；A1–A3（运行时写死重构）已完成并合并进上文功能点；U1–U5（agent-ui 视窗/展示/交互，基础组件参考 openTUI）待执行。
+> **当前状态（2026-10）**：P1–P6 已全部关闭并合并进上文功能点；P7（`AgentConsoleComponent` 持续拆解）进行中；A1–A3（运行时写死重构）已完成并合并进上文功能点；U1（视窗滚动与选中解耦 + 粘底跟随）、U5（DOM/TUI 全历史分页 pager + 查找）已关闭并合并进功能点；U2（视窗高度实测 + resize 响应）、U3（逐消息持久折叠）、U4（agent-ui 文案 i18n）待执行。
 
 ### 统一收尾流程（每个 plan 缺一不可）
 
@@ -91,13 +92,13 @@
 
 > 审计结论（视窗模式为默认布局）：当前把「转录滚动」实现成「移动消息选中」——`visibleMessages` 按**消息条数**开窗、滚轮每格只移 1 条消息、滚动即改 `selectedMessageId` 高亮；窗口高度用 `终端行 − 6` 魔法值且仅在按键时刷新；折叠受「同时只开一条 detail」限制，detail 打开时又绕过窗口返回全量。对照 Codex CLI（每个 `HistoryCell` 按终端宽度上报**视口行数**、`scroll_offset` 以**行**计、`Ctrl+T` 打开 alternate-screen 全屏转录 pager、显式预留 chrome 高度）与 opencode（bubbletea `viewport` 行滚动 + sticky-bottom + 新消息指示 + prune 补偿）、openTUI（Yoga 保留树 + `ScrollBoxRenderable`：`stickyScroll`/`stickyStart:"bottom"`、`scrollChildIntoView`、viewport culling、内置 scrollbar、方向键 1/5 视口 / PageUp/Down 1/2 视口 / Home-End、`_hasManualScroll` 回到底部自动恢复跟随），我们缺的是**独立于选中的行级滚动模型与粘底跟随**、**精确的视口高度测量**、**逐消息持久折叠**、**全量文案 i18n** 与**两端语义一致**。
 
-#### U1 — 视窗滚动与选中解耦：行级 scroll offset + 粘底跟随（参考 openTUI `ScrollBoxRenderable` / opencode `viewport`）
+#### U1 — 视窗滚动与选中解耦：行级 scroll offset + 粘底跟随（参考 openTUI `ScrollBoxRenderable` / opencode `viewport`）（已关闭 ✅）
 
 - **问题（file:line）**：`AgentConsoleTranscriptNavigation.ts:70-101` 的 `scroll/scrollPage` 走 `movePage` 改 `selectedMessageId`，滚动即改选中；`AgentConsolePanels.ts:2713-2740` 的 `visibleMessages` 以消息条数 `resolveConsoleListWindow` 开窗；`AgentConsoleTerminalInputController.ts:141-143` 与 `web-console/web-console.ts:165-171` 滚轮均为 `±1` 条消息；`components/console/src/terminal.ts` 已有的 `scrollOffsetRows`/`maxScrollOffsetRows` 在 viewport 下被 `shouldScrollViewport()===false` 禁用。
 - **目标（对齐 openTUI ScrollBox 契约）**：在 **`components/console`** 引入可复用的滚动视口模型（`scrollTop`/`scrollHeight`/`viewportHeight` + `stickyScroll`/`stickyStart:'bottom'` + 手动滚动暂停与回到底部自动恢复跟随 + `scrollChildIntoView` + 视口裁剪 + 键位），agent-ui 转录只把渲染后的内容交给它；**滚动不改变选中**，选中只用于打开 inspector/detail；滚轮/方向键（1/5 视口）/PageUp·PageDown（1/2 视口）/Home·End 映射行；向上滚动暂停跟随并显示「N 条新消息 / 跳到底部」，回到底部自动恢复。
 - **分层（2026-10 用户确认）**：基础滚动能力归 **`components/console`**（TUI 由 `TuiTerminalSurface` 接入；DOM 侧由 `components/html` 或宿主适配）；**agent-ui 只负责业务**——把渲染后的消息内容喂给 ScrollBox、决定折叠语义、把 `/layout` 偏好经生命周期标志（`shouldUseNativeScrollback`/`shouldScrollViewport`/`shouldUseAlternateScreen`）交给平台；**不得在 `SessionState`/`AgentConsoleComponent` 里自行计算滚动 offset/粘底/新消息计数**。
 - **涉及**：`components/console/src/scroll-box.ts`（模型）+ `terminal.ts`（surface 接入）+ `components/html`（DOM 适配）；`agent-ui/src/AgentConsoleTranscriptLayout.ts`、`AgentConsolePanels.ts`（去掉按消息条数开窗）、`AgentConsoleTerminalInputController.ts`、`web-console/web-console.ts`；消除 components/console 与 agent-ui 的 PageUp/Down 双重处理。
-- **进度**：`ScrollBox` 模型已迁至 **`components/common`**（renderer-neutral，`components/console` 的 `TuiTerminalSurface` 接入：row scroll + `stickyStart:'bottom'` 粘底跟随 + 阅读位置稳定 + `viewportFollowing`/`acknowledgeViewportFollow`）；agent-ui 收敛为业务：视窗渲染整段转录、滚轮转交 surface、按 base 的 `isViewportFollowing` 计数新消息，并移除 `messagesViewportItems`/`syncConsoleMessageViewportView` 的视窗尺寸计算。布局映射已下沉 `components/console`（`resolveConsoleTranscriptLayoutFlags`：`stream`→native scrollback、`viewport`→alternate screen + surface row scroll；lifecycle `resolveConsoleLayout`），**应用只需设置 `messageLayout`**。DOM 适配待续。
+- **进度（已关闭 ✅）**：`ScrollBox` 模型已迁至 **`components/common`**（renderer-neutral，`components/console` 的 `TuiTerminalSurface` 接入：row scroll + `stickyStart:'bottom'` 粘底跟随 + 阅读位置稳定 + `viewportFollowing`/`acknowledgeViewportFollow`）；agent-ui 收敛为业务：视窗渲染整段转录、滚轮转交 surface、按 base 的 `isViewportFollowing` 计数新消息，并移除 `messagesViewportItems`/`syncConsoleMessageViewportView` 的视窗尺寸计算。布局映射已下沉 `components/console`（`resolveConsoleTranscriptLayoutFlags`：`stream`→native scrollback、`viewport`→alternate screen + surface row scroll；lifecycle `resolveConsoleLayout`），**应用只需设置 `messageLayout`**。DOM 适配已落地（基础组件 `DomScrollBox`，移除 `state.scrollMessages`）。
 - **验收**：滚动不改 `selectedMessageId`；到底判定精确（无 1 行容差）；向上滚动显示新消息计数、回到底部恢复粘底；TUI/DOM 行为矩阵一致；新增 DOM/TUI/PTY 边界回归。
 
 #### U2 — 视窗高度按真实 chrome 测量 + resize 响应
@@ -121,7 +122,7 @@
 - **涉及**：上述 handler 模块、`agent-ui/src/agent-ui.i18n.ts`、`AgentConsoleTerminalInputController.ts`、`AgentConsoleOverlayPresenter.ts`（overlay 标题/提示 token 化）。
 - **验收**：生产代码 `grep` 无硬编码英文 `notify`/`throw`；zh-CN 下命令/提示/错误无英文残留；新增 locale 快照回归。
 
-#### U5 — DOM/TUI 视窗交互一致 + 全历史 pager（参考 Codex `Ctrl+T` 转录 overlay）
+#### U5 — DOM/TUI 视窗交互一致 + 全历史 pager（参考 Codex `Ctrl+T` 转录 overlay）（已关闭 ✅）
 
 - **问题**：DOM 无 alternate screen，`web-console/web-console.ts:165-171` 仅把滚轮接到 `scrollMessages(±1)`；`viewport` 退出即丢失可回看历史；无全屏转录 pager 与转录内搜索（Codex 用 alternate-screen `pager_overlay`，opencode 有 scroll-lock 与 `Jump to latest`）；鼠标拖拽选择/复制在整屏重绘下易被打断。
 - **目标**：DOM 与 TUI 的滚动/折叠/跟随/新消息语义完全一致（同一 renderer-neutral 模型 + 各自适配）；提供只读**全屏转录 pager**（可搜索、跳转、退出后历史仍在），viewport 退出可回看；鼠标选择复制在重绘期间稳定（对齐 openTUI 的 selection 与 render 解耦）。
