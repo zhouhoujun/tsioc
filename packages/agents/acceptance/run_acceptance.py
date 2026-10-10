@@ -1051,7 +1051,7 @@ def main() -> int:
     _ACTIVE_SCREEN = screen
     try:
         pid, fd = spawn_agent(port)
-        ready = wait_for(fd, screen, ['>', 'tsdi', 'agent'], timeout=60, quiet_window=3)
+        ready = wait_for(fd, screen, ['>', 'tsdi', 'agent'], timeout=TIMEOUT, quiet_window=3)
         if not ready:
             raise RuntimeError('TUI did not become ready (no prompt/banner detected)')
         print(f'[acceptance] TUI ready (matched "{ready}")')
