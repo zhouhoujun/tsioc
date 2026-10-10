@@ -9,7 +9,7 @@ import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspaceSubd
 @Injectable()
 export class GlobSearchTool implements AgentTool {
     name = 'glob_search';
-    description = 'Search for files within the configured workspace using glob patterns.';
+    description = 'Search for files within the configured workspace using glob patterns. Results are sorted and capped; when more matches exist than the cap, the response sets `truncated: true`.';
     inputSchema = {
         type: 'object',
         properties: {
@@ -43,6 +43,7 @@ export class GlobSearchTool implements AgentTool {
             ignore: policy.excludedGlobs
         });
         matches.sort((left, right) => left.localeCompare(right));
+        const truncated = matches.length > policy.maxSearchResults;
         const safeMatches: string[] = [];
         for (const file of matches) {
             await assertNoSymlinkInWorkspacePath(file, policy.rootDir);
@@ -52,7 +53,8 @@ export class GlobSearchTool implements AgentTool {
             }
         }
         return {
-            matches: safeMatches
+            matches: safeMatches,
+            ...(truncated ? { truncated: true } : {})
         };
     }
 

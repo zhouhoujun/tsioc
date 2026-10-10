@@ -896,6 +896,24 @@ export class AgentToolsPackageTest {
         expect(outsideError?.message).toContain('workspace root');
     }
 
+    @Test('glob search signals truncation when the cap is reached')
+    async globSearchSignalsTruncation() {
+        const workspace = await this.createWorkspace();
+        for (let index = 0; index < 5; index++) {
+            await fs.writeFile(path.join(workspace, 'src', `item-${index}.txt`), 'x', 'utf8');
+        }
+
+        const capped = new GlobSearchTool({ file: { rootDir: workspace, maxSearchResults: 2 } });
+        const cappedResult = await capped.invoke({ pattern: 'src/*.txt' }, createSessionContext());
+        expect(cappedResult.matches.length).toEqual(2);
+        expect(cappedResult.truncated).toEqual(true);
+
+        const roomy = new GlobSearchTool({ file: { rootDir: workspace, maxSearchResults: 50 } });
+        const roomyResult = await roomy.invoke({ pattern: 'src/*.txt' }, createSessionContext());
+        expect(roomyResult.matches.length).toEqual(6);
+        expect(roomyResult.truncated).toBeUndefined();
+    }
+
     @Test('watch files records changes for workspace paths')
     async watchFilesRecordsChangesForWorkspacePaths() {
         const workspace = await this.createWorkspace();
