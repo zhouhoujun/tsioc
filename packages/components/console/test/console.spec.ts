@@ -518,6 +518,46 @@ export class ConsoleRendererTest {
         }
     }
 
+    @Test('pager surface opens, searches, navigates and closes without a component root')
+    async pagerSurfaceOpensSearchesNavigatesCloses() {
+        const output: string[] = [];
+        const surface = new TuiTerminalSurface({
+            renderer: { renderToTuiLayout: () => ({ lines: [] }) } as any,
+            width: 24,
+            height: 6,
+            output: { write: value => output.push(value) },
+            scheduler: task => task()
+        });
+        const strip = (line: string) => line.replace(/\x1b\[[0-9;]*m/g, '');
+
+        surface.openPager({ lines: ['alpha', 'beta needle', 'gamma', 'delta', 'epsilon', 'needle two', 'zeta', 'needle three'] });
+        expect(surface.pagerOpen).toEqual(true);
+        expect(surface.lastRenderedLines.map(strip)[0]).toContain('Pager');
+        expect(surface.lastRenderedLines.map(strip).join('\n')).toContain('alpha');
+
+        expect(surface.pagerSearch('needle')).toEqual(3);
+        let lines = surface.lastRenderedLines.map(strip);
+        expect(lines[0]).toContain('1/3');
+        expect(lines.join('\n')).toContain('beta needle');
+
+        expect(surface.pagerNextMatch()).toEqual(true);
+        lines = surface.lastRenderedLines.map(strip);
+        expect(lines[0]).toContain('2/3');
+        expect(lines.join('\n')).toContain('needle two');
+
+        expect(surface.pagerNextMatch()).toEqual(true);
+        lines = surface.lastRenderedLines.map(strip);
+        expect(lines[0]).toContain('3/3');
+        expect(lines.join('\n')).toContain('needle three');
+
+        expect(surface.pagerHandleKey('home')).toEqual(true);
+        expect(surface.lastRenderedLines.map(strip).join('\n')).toContain('alpha');
+
+        surface.closePager();
+        expect(surface.pagerOpen).toEqual(false);
+        surface.destroy();
+    }
+
     @Test('updates terminal surface when component host v-show changes')
     async updatesTerminalSurfaceFromHostShowDirective() {
         const ctx = await Application.run(ConsoleShowHostTestComponent, {

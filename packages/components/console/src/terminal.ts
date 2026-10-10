@@ -13,7 +13,7 @@ import { Abstract, Inject, Injectable, Injector, Optional, Provider, token } fro
 import { getDisplayWidth, sliceByDisplayWidth } from './display-width';
 import { noReact, RNode, Renderer } from '@tsdi/components';
 import { ConsoleElement, ConsoleNode } from './console';
-import { ScrollBox } from '@tsdi/components/common';
+import { PagerBox, ScrollBox } from '@tsdi/components/common';
 
 const CHAT_COMMANDS = ['/help', '/tools', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/copy', '/quit', '/exit'];
 
@@ -778,6 +778,7 @@ export class TuiTerminalSurface {
     protected scrollOffsetRows = 0;
     protected maxScrollOffsetRows = 0;
     protected readonly scrollBox = new ScrollBox();
+    protected pagerBox?: PagerBox;
 
     constructor(protected options: TuiTerminalSurfaceOptions) {
         this.bindOutputResize();
@@ -863,6 +864,7 @@ export class TuiTerminalSurface {
         this.scrollOffsetRows = 0;
         this.maxScrollOffsetRows = 0;
         this.scrollBox.reset();
+        this.pagerBox?.close();
         this.scheduled = false;
         this.pendingRenderOrigin = undefined;
     }
@@ -907,10 +909,16 @@ export class TuiTerminalSurface {
     }
 
     render(): TerminalPrimaryRenderResult | undefined {
-        if (this.destroyed || !this.root) {
+        if (this.destroyed) {
             return undefined;
         }
         const width = this.resolveWidth();
+        if (this.pagerBox?.isOpen) {
+            return this.renderPagerScreen(width);
+        }
+        if (!this.root) {
+            return undefined;
+        }
         const dirty = this.resolveDirtyTopLevel(this.pendingRenderOrigin);
         this.pendingRenderOrigin = undefined;
         const layout = this.options.renderer.renderToTuiLayout(this.root, { width, dirty });
@@ -968,6 +976,122 @@ export class TuiTerminalSurface {
         this.scrollOffsetRows = this.scrollBox.maxTop - this.scrollBox.top;
         this.requestRender();
         return true;
+    }
+
+    /** Open a read-only full-history pager over already-rendered lines. The surface owns the pager state. */
+    openPager(options: { lines: readonly string[] }): void {
+        if (!this.pagerBox) {
+            this.pagerBox = new PagerBox();
+        }
+        this.pagerBox.setContent(options?.lines ?? []);
+        this.pagerBox.clearQuery();
+        this.pagerBox.open();
+        this.requestRender();
+    }
+
+    closePager(): void {
+        if (!this.pagerBox?.isOpen) {
+            return;
+        }
+        this.pagerBox.close();
+        this.requestRender();
+    }
+
+    get pagerOpen(): boolean {
+        return this.pagerBox?.isOpen === true;
+    }
+
+    get pagerState(): PagerBox | undefined {
+        return this.pagerBox;
+    }
+
+    pagerScroll(deltaRows: number): boolean {
+        const moved = this.pagerBox?.scrollBy(deltaRows) === true;
+        if (moved) {
+            this.requestRender();
+        }
+        return moved;
+    }
+
+    pagerScrollToEdge(edge: 'start' | 'end'): boolean {
+        const moved = this.pagerBox?.scrollToEdge(edge) === true;
+        if (moved) {
+            this.requestRender();
+        }
+        return moved;
+    }
+
+    pagerHandleKey(key: 'up' | 'down' | 'pageup' | 'pagedown' | 'home' | 'end'): boolean {
+        const moved = this.pagerBox?.handleKey(key) === true;
+        if (moved) {
+            this.requestRender();
+        }
+        return moved;
+    }
+
+    pagerWheel(direction: 'up' | 'down'): boolean {
+        const moved = this.pagerBox?.wheel(direction) === true;
+        if (moved) {
+            this.requestRender();
+        }
+        return moved;
+    }
+
+    pagerSearch(query: string, options?: { caseSensitive?: boolean }): number {
+        const count = this.pagerBox?.search(query, options) ?? 0;
+        this.requestRender();
+        return count;
+    }
+
+    pagerNextMatch(): boolean {
+        const moved = this.pagerBox?.nextMatch() === true;
+        if (moved) {
+            this.requestRender();
+        }
+        return moved;
+    }
+
+    pagerPrevMatch(): boolean {
+        const moved = this.pagerBox?.prevMatch() === true;
+        if (moved) {
+            this.requestRender();
+        }
+        return moved;
+    }
+
+    protected renderPagerScreen(width: number): TerminalPrimaryRenderResult | undefined {
+        const pager = this.pagerBox;
+        if (!pager) {
+            return undefined;
+        }
+        const lines = this.composePagerScreenLines(pager);
+        const result = renderPrimaryTerminalScreen({
+            state: this.renderState,
+            lines,
+            regions: [],
+            width,
+            cursorRow: Math.max(0, lines.length - 1),
+            cursorMode: 'bottom',
+            placeCursor: false
+        });
+        this.renderState = result.state;
+        this.renderedLines = result.fittedLines.slice();
+        this.terminalRow = result.terminalRow;
+        this.clickTargetsCache = [];
+        if (result.output) {
+            this.resolveOutput()?.write(result.output);
+        }
+        return result;
+    }
+
+    protected composePagerScreenLines(pager: PagerBox): string[] {
+        const height = this.resolveHeight() ?? 0;
+        const viewport = height > 1 ? height - 1 : Math.max(1, height || 1);
+        pager.setViewportHeight(viewport);
+        const hud = pager.matchCount
+            ? `Pager ${pager.currentMatchIndex + 1}/${pager.matchCount} · Esc close · ↑↓ scroll`
+            : 'Pager · Esc close · ↑↓ scroll';
+        return [hud, ...pager.visibleLines()];
     }
 
     dispatchClickAt(node?: ConsoleNode): boolean {
