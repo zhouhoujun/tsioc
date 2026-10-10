@@ -19,9 +19,6 @@ import type { AgentConsoleParsedCommandArguments } from './AgentConsoleCommandRe
 import type { AgentConsoleSessionService } from './AgentConsoleSessionService';
 import type { NavFilter, NavSelection, SessionSearchMatch } from '@tsdi/agent';
 import { AGENT_CONSOLE_OVERLAY_HINTS, AGENT_CONSOLE_OVERLAY_TITLES } from './AgentConsoleOverlayPresenter';
-
-// ── Command handler context ──────────────────────────────────────────────────
-
 import type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
 export type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
 
@@ -1154,6 +1151,7 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/display': (ctx, args, meta) => ctx.runDisplayCommand(canonicalArgsOf(meta, args)),
     '/layout': (ctx, args, meta) => ctx.runLayoutCommand(canonicalArgsOf(meta, args)),
     '/outputs': handleOutputs,
+    '/pager': (ctx, args) => Promise.resolve(ctx.openPager(args)),
     '/timeline': (ctx, args, meta) => ctx.runTimelineModeCommand(canonicalArgsOf(meta, args)),
     '/raw': (ctx, args, meta) => ctx.runRawModeCommand(canonicalArgsOf(meta, args)),
     '/stash': (ctx, args, meta) => ctx.runStashCommand(canonicalArgsOf(meta, args)),

@@ -2220,6 +2220,8 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             queueNextTurnModelProfile: (n) => self.queueNextTurnModelProfile(n),
             startProviderWizard: () => self.startProviderWizard(),
             openUsage: (i) => self.openUsage(i),
+            openPager: (query?: string) => self.surfaceAccessor?.openPagerFromLastRender?.(query) ?? false,
+            closePager: () => self.surfaceAccessor?.closePager?.() ?? false,
         } as CommandHandlerContext;
     }
 

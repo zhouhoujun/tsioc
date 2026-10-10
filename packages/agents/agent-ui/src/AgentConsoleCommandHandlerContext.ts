@@ -74,6 +74,10 @@ export interface CommandHandlerContext {
     pushCommandOutput(command: string, text: string, kind?: AgentConsoleCommandOutputEntry['kind']): void;
     select(title: string, options: AgentConsoleSelectOption[], selectedIndex?: number, hint?: string): Promise<string | undefined>;
 
+    // ── transcript pager (base-layer surface owns the mechanics) ──
+    openPager(query?: string): boolean;
+    closePager(): boolean;
+
     // ── turn state ──
     isTurnInProgress(): boolean;
     notifyBusyState(): void;

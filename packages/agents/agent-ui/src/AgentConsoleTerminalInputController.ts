@@ -62,6 +62,12 @@ export interface AgentConsoleTerminalInputHost {
         writeRawTerminalData?(data: string): void;
         getTerminalSize?(): { rows?: number };
         dispatchMouse?(mouse: SelectMenuMouseEvent): void;
+        isPagerOpen?(): boolean;
+        closePager?(): boolean;
+        pagerHandleKey?(key: 'up' | 'down' | 'pageup' | 'pagedown' | 'home' | 'end'): boolean;
+        pagerSearch?(query: string, options?: { caseSensitive?: boolean }): number;
+        pagerTypeChar?(char: string): number;
+        pagerBackspace?(): number;
     } | null;
     app?: { close(): Promise<unknown> } | null;
     translator?: { translate(key: string, params?: Record<string, unknown>): string | undefined; currentLocale?: string } | null;
@@ -124,6 +130,60 @@ export async function handleCommandPaletteInputView(host: AgentConsoleTerminalIn
     return false;
 }
 
+/**
+ * Route raw terminal input into the base-layer transcript pager while it is open.
+ * Navigation + find are owned by the base surface; agent-ui only maps keys to it.
+ */
+export function handleTranscriptPagerInputView(host: AgentConsoleTerminalInputHost, raw: string): boolean {
+    const surface = host.surfaceAccessor;
+    if (!surface?.isPagerOpen?.()) {
+        return false;
+    }
+    const key = String(raw || '');
+    if (key === '\u001b' || key === '\u001b\u001b') {
+        surface.closePager?.();
+        return true;
+    }
+    if (key === '\u001b[A' || key === '\u001bOA') {
+        surface.pagerHandleKey?.('up');
+        return true;
+    }
+    if (key === '\u001b[B' || key === '\u001bOB') {
+        surface.pagerHandleKey?.('down');
+        return true;
+    }
+    if (key === '\u001b[5~') {
+        surface.pagerHandleKey?.('pageup');
+        return true;
+    }
+    if (key === '\u001b[6~') {
+        surface.pagerHandleKey?.('pagedown');
+        return true;
+    }
+    if (key === '\u001b[H' || key === '\u001b[1~' || key === '\u001bOH') {
+        surface.pagerHandleKey?.('home');
+        return true;
+    }
+    if (key === '\u001b[F' || key === '\u001b[4~' || key === '\u001bOF') {
+        surface.pagerHandleKey?.('end');
+        return true;
+    }
+    if (key === '\u007f' || key === '\b') {
+        surface.pagerBackspace?.();
+        return true;
+    }
+    if (key.length === 1 && key >= ' ' && key !== '\u007f') {
+        surface.pagerTypeChar?.(key);
+        return true;
+    }
+    if (key.length === 1 && key < ' ') {
+        // Control keys (e.g. Ctrl+C) fall through to global handling.
+        return false;
+    }
+    // Swallow other read-only navigation sequences so they never reach the composer.
+    return true;
+}
+
 /** Route decoded terminal input through the palette, global key, vim, and prompt pipelines. */
 export async function handleTerminalInputView(
     host: AgentConsoleTerminalInputHost,
@@ -157,6 +217,9 @@ export async function handleTerminalInputView(
     }
     const rawChunk = typeof chunk === 'string' ? chunk : chunk.toString();
     if (await handleCommandPaletteInputView(host, decoded, rawChunk)) {
+        return;
+    }
+    if (handleTranscriptPagerInputView(host, rawChunk)) {
         return;
     }
     if (await host.handleGlobalKeyInput(rawChunk)) {

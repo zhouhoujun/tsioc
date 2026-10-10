@@ -24,6 +24,16 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     scrollViewport?(deltaRows: number): boolean;
     scrollViewportToEdge?(edge: 'start' | 'end'): boolean;
     isViewportFollowing?(): boolean | undefined;
+    /** Open the base-layer transcript pager over the last full render; optional query is a find. */
+    openPagerFromLastRender?(query?: string): boolean;
+    closePager?(): boolean;
+    isPagerOpen?(): boolean;
+    pagerHandleKey?(key: 'up' | 'down' | 'pageup' | 'pagedown' | 'home' | 'end'): boolean;
+    pagerSearch?(query: string, options?: { caseSensitive?: boolean }): number;
+    pagerScroll?(deltaRows: number): boolean;
+    pagerWheel?(direction: 'up' | 'down'): boolean;
+    pagerTypeChar?(char: string): number;
+    pagerBackspace?(): number;
     writeRawTerminalData?(data: string): void;
     notifyNonMouseInput?(): void;
     stopTerminal?(): void;
