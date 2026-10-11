@@ -174,6 +174,14 @@ import {
     mapWithConcurrency as runWithConcurrency
 } from './AgentConsoleSessionContentLoader';
 import { openSession as delegateOpenSession, AgentConsoleSessionOpenHost } from './AgentConsoleSessionOpen';
+import {
+    AgentConsoleRpcCommandHost,
+    runApproveRetryCommand as runApproveRetryCommandView,
+    runQueueCommand as runQueueCommandView,
+    runMcpCommand as runMcpCommandView,
+    runPlanCommand as runPlanCommandView,
+    runUnshareCommand as runUnshareCommandView
+} from './AgentConsoleRpcCommands';
 import { flattenProjectSessions, navigateThreadCycle, refreshCurrentSections, refreshProjects, refreshThreads, resolveCurrentProjectSessions, resolveProjectSessionsFor, resolveSessionProjectKey, resolveSessionThreadKey, resolveThreadKeyForSession, resolveThreadSessionsFor, selectProjectRepresentative } from './AgentConsoleProjectProjection';
 import { refreshProjectContext as refreshProjectContextView } from './AgentConsoleProjectProjection';
 import { refreshTools as refreshToolsView } from './AgentConsoleToolsView';
@@ -2499,31 +2507,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runQueueCommand(args?: string): Promise<boolean> {
-        const parsed = String(args || '').trim();
-        const queue = this.queuedPrompts.get(this.state.sessionId) || [];
-        if (!parsed || parsed.toLowerCase() === 'list') {
-            if (!queue.length) {
-                this.notify(formatAgentUiNotice(this.translator, 'noQueuedPrompts'));
-                return true;
-            }
-            const lines = queue.map((entry, index) =>
-                `${index + 1}. ${entry.command ? '[command] ' : ''}${entry.input}${entry.attachments.length ? ` (+${entry.attachments.length} attachment${entry.attachments.length === 1 ? '' : 's'})` : ''}`
-            );
-            this.pushCommandOutput('/queue list', `Queued prompts (${queue.length}):\n${lines.join('\n')}`);
-            return true;
-        }
-        if (parsed.toLowerCase() === 'clear') {
-            if (!queue.length) {
-                this.notify(formatAgentUiNotice(this.translator, 'noQueuedPromptsClear'));
-                return true;
-            }
-            this.queuedPrompts.delete(this.state.sessionId);
-            this.state.setQueuedPromptCount(0);
-            this.notify(formatAgentUiNotice(this.translator, 'clearedQueuedPrompts', { queueLength: queue.length, plural: queue.length === 1 ? '' : 's' }));
-            return true;
-        }
-        this.notify(formatAgentUiNotice(this.translator, 'queueUsage'));
-        return true;
+        return runQueueCommandView(this.rpcCommandHost(), args);
     }
 
     protected async applyTheme(value: string): Promise<boolean> {
@@ -3049,30 +3033,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runMcpCommand(args?: string): Promise<boolean> {
-        const verbose = String(args || '').trim().toLowerCase() === 'verbose'
-            || String(args || '').trim().toLowerCase() === '-v';
-        const servers = new Map<string, { tools: string[]; active: number }>();
-        for (const tool of this.state.tools) {
-            if (!tool.name.startsWith('mcp.')) continue;
-            const parts = tool.name.split('.');
-            const serverId = parts[1] || 'unknown';
-            const entry = servers.get(serverId) || { tools: [], active: 0 };
-            entry.tools.push(tool.name);
-            if (tool.active) entry.active += 1;
-            servers.set(serverId, entry);
-        }
-        if (!servers.size) {
-            this.notify(formatAgentUiNotice(this.translator, 'noMcpServers'));
-            return true;
-        }
-        const lines = Array.from(servers.entries()).map(([serverId, entry]) => {
-            const summary = `${serverId} · ${entry.active}/${entry.tools.length} tools active`;
-            return verbose
-                ? `${summary}\n${entry.tools.map(name => `  ${name}`).join('\n')}`
-                : summary;
-        });
-        this.pushCommandOutput('/mcp', lines.join('\n'));
-        return true;
+        return runMcpCommandView(this.rpcCommandHost(), args);
     }
 
     protected async runPluginsCommand(args?: string): Promise<boolean> {
@@ -3126,26 +3087,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runUnshareCommand(args?: string): Promise<boolean> {
-        const token = String(args || '').trim();
-        if (!this.appRpc) {
-            this.notify(formatAgentUiNotice(this.translator, 'sharingRequiresGateway'));
-            return true;
-        }
-        if (!token) {
-            const shares = await this.appRpc.request('session.share.list', { sessionId: this.state.sessionId }, this.rpcRequestContext()).catch(() => []);
-            if (!Array.isArray(shares) || !shares.length) {
-                this.notify(formatAgentUiNotice(this.translator, 'activeSharesSession'));
-                return true;
-            }
-            const selected = await this.select('Active shares', shares.map((share: any) => ({
-                label: `${String(share.token || '').slice(0, 12)}…  ${String(share.url || '')}`,
-                value: String(share.token || ''),
-                description: new Date(Number(share.createdAt) || Date.now()).toLocaleString()
-            })), 0, 'enter revoke   esc close');
-            if (!selected) return true;
-            return this.revokeShare(selected);
-        }
-        return this.revokeShare(token);
+        return runUnshareCommandView(this.rpcCommandHost(), args);
     }
 
     protected async revokeShare(token: string): Promise<boolean> {
@@ -3181,36 +3123,23 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         }
     }
 
+    private rpcCommandHost(): AgentConsoleRpcCommandHost {
+        return {
+            appRpc: this.appRpc,
+            state: this.state,
+            runtime: this.runtime,
+            translator: this.translator,
+            queuedPrompts: this.queuedPrompts,
+            notify: (message: string) => this.notify(message),
+            select: (title: string, options: any[], selectedIndex?: number, hint?: string) => this.select(title, options, selectedIndex, hint),
+            pushCommandOutput: (command: string, text: string) => this.pushCommandOutput(command, text),
+            rpcRequestContext: (requestId?: string) => this.rpcRequestContext(requestId),
+            revokeShare: (token: string) => this.revokeShare(token)
+        };
+    }
+
     protected async runApproveRetryCommand(): Promise<boolean> {
-        if (!this.appRpc) {
-            this.notify(formatAgentUiNotice(this.translator, 'autoReviewRetry'));
-            return true;
-        }
-        const result = await this.appRpc.request('harness.rejected_actions', { sessionId: this.state.sessionId }, this.rpcRequestContext())
-            .catch(() => null);
-        const actions = Array.isArray(result?.actions) ? result.actions : [];
-        if (!actions.length) {
-            this.notify(formatAgentUiNotice(this.translator, 'autoReviewRejected'));
-            return true;
-        }
-        const action = actions[0];
-        const selected = await this.select('Approve retry', actions.map((item: any) => ({
-            label: `${item.toolName}${String(item.inputSummary || '').trim() ? ` · ${item.inputSummary}` : ''}`,
-            value: String(item.evidenceId || `${item.toolName}:${item.createdAt}`),
-            description: String(item.falsificationReason || '')
-        })), 0, 'enter retry once   esc close');
-        if (!selected) return true;
-        try {
-            await this.appRpc.request('harness.retry_rejected_action', {
-                sessionId: this.state.sessionId,
-                evidenceId: selected,
-                toolName: action.toolName
-            }, this.rpcRequestContext());
-            this.notify(formatAgentUiNotice(this.translator, 'retriedOnceAfter', { toolName: action.toolName }));
-        } catch (error: any) {
-            this.notify(formatAgentUiNotice(this.translator, 'retryFailedError', { error: error?.message || String(error) }));
-        }
-        return true;
+        return runApproveRetryCommandView(this.rpcCommandHost());
     }
 
     protected async runExperimentalCommand(args?: string): Promise<boolean> {
@@ -3609,27 +3538,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runPlanCommand(args: string): Promise<void> {
-        const sessionId = this.state.sessionId;
-        const raw = String(args || '').trim().toLowerCase();
-        let enabled: boolean;
-        if (raw === 'on' || raw === '1' || raw === 'true') {
-            enabled = true;
-        } else if (raw === 'off' || raw === '0' || raw === 'false') {
-            enabled = false;
-        } else {
-            enabled = !this.state.planMode;
-        }
-        try {
-            if (this.appRpc) {
-                await this.appRpc.request('session.plan_mode.set', { sessionId, enabled }, this.rpcRequestContext());
-            } else {
-                this.runtime.setPlanMode(sessionId, enabled);
-            }
-            this.state.setPlanMode(enabled);
-            this.notify(enabled ? formatAgentUiNotice(this.translator, 'planModeEnabled') : formatAgentUiNotice(this.translator, 'planModeDisabled'));
-        } catch (error) {
-            this.notify(formatAgentUiNotice(this.translator, 'failedSetPlan', { error: error instanceof Error ? error.message : String(error) }));
-        }
+        return runPlanCommandView(this.rpcCommandHost(), args);
     }
 
     protected async runArchetypeCommand(args: string): Promise<void> {
