@@ -1,6 +1,8 @@
 import { AgentConsoleAppAuthorizer, AgentConsoleAppStatus, resolveAgentConsoleApps } from './AgentConsoleApps';
+import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 export interface ExtensionCommandHost {
+    translator?: AgentUiTranslator | null;
     state: any;
     options: any;
     notify(message: string): void;
@@ -33,7 +35,7 @@ export async function runSkillsCommand(host: ExtensionCommandHost, args?: string
     const result = await host.invokeTool('skill_list', query ? { query } : {}).catch(() => undefined);
     const skills = Array.isArray(result?.skills) ? result.skills : [];
     if (!skills.length) {
-        host.notify(query ? `No skills match "${query}".` : 'No skills available.');
+        host.notify(query ? formatAgentUiNotice(host.translator, 'noSkillsMatch', { query: query }) : formatAgentUiNotice(host.translator, 'noSkillsAvailable'));
         return true;
     }
     if (query) {
@@ -86,7 +88,7 @@ export async function runPluginsCommand(host: ExtensionCommandHost, args?: strin
         : { action: 'list' }).catch(() => undefined);
     const plugins = Array.isArray(result?.plugins) ? result.plugins : [];
     if (!plugins.length) {
-        host.notify(requested ? `No plugin "${requested}" installed.` : 'No plugins installed.');
+        host.notify(requested ? formatAgentUiNotice(host.translator, 'noPluginInstalledName', { name: requested }) : formatAgentUiNotice(host.translator, 'noPluginsInstalled'));
         return true;
     }
     if (requested) {
@@ -113,7 +115,7 @@ export function insertAppMention(host: ExtensionCommandHost, app: AgentConsoleAp
     const spacer = current && !/\s$/.test(current) ? ' ' : '';
     const next = `${current}${spacer}$${app.id} `;
     host.state.updateDraft(next, next.length);
-    host.notify(`${app.name} connector inserted · ${app.statusLabel}.`);
+    host.notify(formatAgentUiNotice(host.translator, 'appNameConnectorInserted', { appName: app.name, statusLabel: app.statusLabel }));
 }
 
 export async function runAppsCommand(host: ExtensionCommandHost, args?: string): Promise<boolean> {
@@ -122,7 +124,7 @@ export async function runAppsCommand(host: ExtensionCommandHost, args?: string):
     if (requested) {
         let app = apps.find(item => item.id === requested);
         if (!app) {
-            host.notify(`Unknown connector "${requested}". Use /apps to browse available connectors.`);
+            host.notify(formatAgentUiNotice(host.translator, 'unknownConnectorRequested', { requested: requested }));
             return true;
         }
         if (!app.authorized) {
@@ -135,11 +137,11 @@ export async function runAppsCommand(host: ExtensionCommandHost, args?: string):
             try {
                 authorized = await authorize(app);
             } catch (error) {
-                host.notify(`${app.name} authorization failed: ${error instanceof Error ? error.message : String(error)}`);
+                host.notify(formatAgentUiNotice(host.translator, 'appNameAuthorizationFailed', { appName: app.name, error: error instanceof Error ? error.message : String(error) }));
                 return true;
             }
             if (!authorized) {
-                host.notify(`${app.name} authorization was cancelled.`);
+                host.notify(formatAgentUiNotice(host.translator, 'appNameAuthorizationCancelled', { appName: app.name }));
                 return true;
             }
             app = { ...app, authorized: true, statusLabel: 'connected' };

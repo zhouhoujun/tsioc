@@ -1,4 +1,5 @@
 import { AGENT_PERSONALITY_PRESETS } from '@tsdi/agent';
+import { formatAgentUiNotice } from './agent-ui.i18n';
 
 export interface PreferenceCommandHost {
     state: any;
@@ -35,7 +36,7 @@ export async function runHooksCommand(host: PreferenceCommandHost): Promise<bool
     }
     const stages = summary.filter(entry => entry.commands.length > 0 || entry.functions.length > 0);
     if (!stages.length) {
-        host.notify('No hooks registered. Configure hooks in agent options (hooks.beforeTurn, hooks.afterTool, ...).');
+        host.notify(formatAgentUiNotice(host.translator, 'hooksRegisteredConfigure'));
         return true;
     }
     const lines = stages.map(entry => {
@@ -52,7 +53,7 @@ export async function runMemoriesCommand(host: PreferenceCommandHost, args?: str
     const parsed = raw.toLowerCase();
     const current = host.options.ui?.memoryInjection !== false;
     if (!parsed) {
-        host.notify(`Memory injection ${current ? 'ON' : 'OFF'}. Use /memories list|add|remove or on|off.`);
+        host.notify(formatAgentUiNotice(host.translator, 'memoryInjectionState', { current: current ? 'ON' : 'OFF' }));
         return true;
     }
     if (parsed === 'list' || parsed === 'injected') {
@@ -61,7 +62,7 @@ export async function runMemoriesCommand(host: PreferenceCommandHost, args?: str
             ? await host.appRpc.request('project_memory.list', { sessionId: host.state.sessionId }, host.rpcRequestContext()).catch(() => [])
             : (projectId && host.projectMemory ? await host.projectMemory.list(projectId) : []);
         if (!records.length) {
-            host.notify(projectId ? 'No project memories.' : 'Project memory requires a project or workspace.');
+            host.notify(projectId ? formatAgentUiNotice(host.translator, 'noProjectMemories') : formatAgentUiNotice(host.translator, 'projectMemoryRequiresWorkspace'));
             return true;
         }
         host.pushCommandOutput('/memories list', `Project memories (${records.length}):\n${records.map(record => `- ${record.key}: ${record.value}`).join('\n')}`);
@@ -72,14 +73,14 @@ export async function runMemoriesCommand(host: PreferenceCommandHost, args?: str
         const body = raw.slice(4).trim();
         const separator = body.indexOf('=') >= 0 ? body.indexOf('=') : body.indexOf(' ');
         if (!projectId || (!host.appRpc && !host.projectMemory) || separator <= 0 || !body.slice(separator + 1).trim()) {
-            host.notify('Usage: /memories add <key>=<value>');
+            host.notify(formatAgentUiNotice(host.translator, 'memoriesAddUsage'));
             return true;
         }
         const input = { sessionId: host.state.sessionId, projectId, key: body.slice(0, separator).trim(), value: body.slice(separator + 1).trim(), conflict: 'replace' as const };
         const record = host.appRpc
             ? await host.appRpc.request('project_memory.add', input, host.rpcRequestContext())
             : await host.projectMemory!.add(input);
-        host.notify(`Project memory saved: ${record.key}`);
+        host.notify(formatAgentUiNotice(host.translator, 'projectMemorySaved', { key: record.key }));
         return true;
     }
     if (parsed.startsWith('remove ') || parsed.startsWith('rm ')) {
@@ -89,16 +90,16 @@ export async function runMemoriesCommand(host: PreferenceCommandHost, args?: str
             ? await host.appRpc.request('project_memory.remove', { sessionId: host.state.sessionId, target }, host.rpcRequestContext()).catch(() => ({ removed: 0 }))
             : { removed: projectId && host.projectMemory ? await host.projectMemory.remove(projectId, target) : 0 };
         const removed = Number(result?.removed || 0);
-        host.notify(removed ? `Removed ${removed} project memory record${removed === 1 ? '' : 's'}.` : `Project memory not found: ${target || '-'}`);
+        host.notify(removed ? formatAgentUiNotice(host.translator, 'removedProjectMemories', { count: removed, plural: removed === 1 ? '' : 's' }) : formatAgentUiNotice(host.translator, 'projectMemoryNotFound', { name: target || '-' }));
         return true;
     }
     const enabled = parsed === 'on';
     if (parsed !== 'on' && parsed !== 'off') {
-        host.notify('Usage: /memories [on|off|list|injected|add <key>=<value>|remove <id-or-key>]');
+        host.notify(formatAgentUiNotice(host.translator, 'memoriesUsage'));
         return true;
     }
     host.options.ui = { ...(host.options.ui || {}), memoryInjection: enabled };
-    host.notify(enabled ? 'Memory injection enabled.' : 'Memory injection disabled.');
+    host.notify(enabled ? formatAgentUiNotice(host.translator, 'memoryInjectionEnabled') : formatAgentUiNotice(host.translator, 'memoryInjectionDisabled'));
     return true;
 }
 
@@ -109,7 +110,7 @@ export async function runPersonalityCommand(host: PreferenceCommandHost, args?: 
     const names = Object.keys(AGENT_PERSONALITY_PRESETS);
     if (!verb) {
         const active = host.options.ui?.personality;
-        host.notify(`Personality: ${active || 'none'}. Available: ${names.join(', ')}. Use /personality set <name> or unset.`);
+        host.notify(formatAgentUiNotice(host.translator, 'personalityActiveAvailable', { active: active || 'none', names: names.join(', ') }));
         return true;
     }
     if (verb === 'list') {
@@ -120,19 +121,19 @@ export async function runPersonalityCommand(host: PreferenceCommandHost, args?: 
     if (verb === 'set') {
         const name = parts[1] ?? '';
         if (!name || !AGENT_PERSONALITY_PRESETS[name]) {
-            host.notify(`Unknown personality preset "${name}". Available: ${names.join(', ')}.`);
+            host.notify(formatAgentUiNotice(host.translator, 'unknownPersonalityPreset', { name: name, names: names.join(', ') }));
             return true;
         }
         host.options.ui = { ...(host.options.ui || {}), personality: name };
-        host.notify(`Personality set to ${name}.`);
+        host.notify(formatAgentUiNotice(host.translator, 'personalitySet', { name: name }));
         return true;
     }
     if (verb === 'unset') {
         host.options.ui = { ...(host.options.ui || {}), personality: undefined };
-        host.notify(host.translator?.translate('agent.notice.personalityCleared') || 'Personality cleared.');
+        host.notify(formatAgentUiNotice(host.translator, 'personalityCleared'));
         return true;
     }
-    host.notify(host.translator?.translate('agent.notice.personalityUsage') || 'Usage: /personality [list|set <name>|unset]');
+    host.notify(formatAgentUiNotice(host.translator, 'personalityUsage'));
     return true;
 }
 

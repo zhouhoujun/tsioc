@@ -1,3 +1,4 @@
+import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 /**
  * Review / git-diff command handlers for AgentConsoleComponent.
  *
@@ -28,6 +29,7 @@ export interface ReviewHandlerState {
 }
 
 export interface ReviewHandlerContext {
+    translator?: AgentUiTranslator | null;
     state: ReviewHandlerState;
     transcriptNavigationController: { setFocused(focused: boolean): void };
     appRpc: { request(method: string, payload?: Record<string, any>, context?: any): Promise<any> } | null | undefined;
@@ -297,7 +299,7 @@ export async function fetchGitDiffReview(
     base: string
 ): Promise<Record<string, any> | null> {
     if (!ctx.appRpc) {
-        ctx.notify('Review is unavailable without app RPC.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewUnavailableApp'));
         return null;
     }
     try {
@@ -309,12 +311,12 @@ export async function fetchGitDiffReview(
     try {
         const result = await ctx.appRpc.request('review.diff', { sessionId, base });
         if (!result || typeof result !== 'object' || !result.review) {
-            ctx.notify(`Failed to gather the git diff against ${base}.`);
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'failedGatherGit', { base: base }));
             return null;
         }
         return result.review as Record<string, any>;
     } catch (error: any) {
-        ctx.notify(error?.message || `Failed to gather the git diff against ${base}.`);
+        ctx.notify(error?.message || formatAgentUiNotice(ctx.translator, 'failedGatherGit', { base: base }));
         return null;
     }
 }
@@ -346,21 +348,21 @@ export async function saveReviewFindings(
     run: Record<string, any>
 ): Promise<Record<string, any> | null> {
     if (!ctx.appRpc) {
-        ctx.notify('Review is unavailable without app RPC.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewUnavailableApp'));
         return null;
     }
     try {
         const result = await ctx.appRpc.request('review.save', { sessionId, run });
         return result?.run ?? result ?? null;
     } catch (error: any) {
-        ctx.notify(error?.message || 'Failed to save the review run.');
+        ctx.notify(error?.message || formatAgentUiNotice(ctx.translator, 'reviewRunSaveFailed'));
         return null;
     }
 }
 
 export async function openGitDiffReview(ctx: ReviewHandlerContext, base?: string): Promise<boolean> {
     if (!ctx.appRpc) {
-        ctx.notify('Review is unavailable without app RPC.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewUnavailableApp'));
         return true;
     }
     const sessionId = ctx.state.sessionId;
@@ -371,17 +373,17 @@ export async function openGitDiffReview(ctx: ReviewHandlerContext, base?: string
     }
     const files = Array.isArray(review.files) ? review.files : [];
     if (!files.length) {
-        ctx.notify(`No changes to review against ${resolvedBase}.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'changesReviewAgainst', { resolvedBase: resolvedBase }));
         return true;
     }
     openGitDiffReviewPanel(ctx, review, resolvedBase);
-    ctx.notify(`git diff ${resolvedBase}: ${files.length} file${files.length === 1 ? '' : 's'} changed.`);
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'gitDiffResolvedBase', { resolvedBase: resolvedBase, count: files.length, plural: files.length === 1 ? '' : 's' }));
     return true;
 }
 
 export async function runGitDiffReviewAnalysis(ctx: ReviewHandlerContext, base?: string): Promise<boolean> {
     if (!ctx.appRpc) {
-        ctx.notify('Review is unavailable without app RPC.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewUnavailableApp'));
         return true;
     }
     const sessionId = ctx.state.sessionId;
@@ -393,10 +395,10 @@ export async function runGitDiffReviewAnalysis(ctx: ReviewHandlerContext, base?:
     const files = Array.isArray(review.files) ? review.files : [];
     const diff = String(review.diff || '');
     if (!files.length || !diff.trim()) {
-        ctx.notify(`No changes to review against ${resolvedBase}.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'changesReviewAgainst', { resolvedBase: resolvedBase }));
         return true;
     }
-    ctx.notify(`Running review analysis against ${resolvedBase}...`);
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'runningReviewAnalysis', { resolvedBase: resolvedBase }));
     let content = '';
     try {
         const turn = await ctx.appRpc.request('run.turn', {
@@ -405,12 +407,12 @@ export async function runGitDiffReviewAnalysis(ctx: ReviewHandlerContext, base?:
         });
         content = String(turn?.message?.content || '');
     } catch (error: any) {
-        ctx.notify(error?.message || 'The review analysis turn failed.');
+        ctx.notify(error?.message || formatAgentUiNotice(ctx.translator, 'reviewAnalysisTurnFailed'));
         return true;
     }
     const findings = parseReviewFindingsFromText(content);
     if (!findings.length) {
-        ctx.notify('Review produced no parseable findings.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewProducedParseable'));
         openGitDiffReviewPanel(ctx, review, resolvedBase);
         return true;
     }
@@ -422,7 +424,11 @@ export async function runGitDiffReviewAnalysis(ctx: ReviewHandlerContext, base?:
         findings
     });
     if (saved) {
-        ctx.notify(`${findings.length} finding${findings.length === 1 ? '' : 's'} saved${saved.id ? ` (${saved.id})` : ''}.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewFindingsSaved', {
+            findingCount: findings.length,
+            plural: findings.length === 1 ? '' : 's',
+            savedId: saved.id ? ` (${saved.id})` : ''
+        }));
     }
     openGitDiffReviewPanel(ctx, review, resolvedBase);
     return true;
@@ -430,7 +436,7 @@ export async function runGitDiffReviewAnalysis(ctx: ReviewHandlerContext, base?:
 
 export async function listReviewFindings(ctx: ReviewHandlerContext, commit?: string): Promise<boolean> {
     if (!ctx.appRpc) {
-        ctx.notify('Review is unavailable without app RPC.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewUnavailableApp'));
         return true;
     }
     const sessionId = ctx.state.sessionId;
@@ -441,18 +447,26 @@ export async function listReviewFindings(ctx: ReviewHandlerContext, commit?: str
         });
         const runs = Array.isArray(result?.runs) ? result.runs : [];
         if (!runs.length) {
-            ctx.notify(commit ? `No review runs found for commit ${commit}.` : 'No review runs saved.');
+            ctx.notify(commit ? formatAgentUiNotice(ctx.translator, 'noReviewRunsForCommit', { commit: commit }) : formatAgentUiNotice(ctx.translator, 'noReviewRunsSaved'));
             return true;
         }
         for (const run of runs) {
             const fileCount = Array.isArray(run.files) ? run.files.length : 0;
             const findingCount = Array.isArray(run.findings) ? run.findings.length : 0;
             const sha = String(run.commitSha || '').slice(0, 12);
-            ctx.notify(`[${run.id}] ${run.base} · ${fileCount} file${fileCount === 1 ? '' : 's'} · ${findingCount} finding${findingCount === 1 ? '' : 's'}${sha ? ` · ${sha}` : ''}`);
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewRunSummary', {
+                runId: run.id,
+                base: run.base,
+                fileCount,
+                filePlural: fileCount === 1 ? '' : 's',
+                findingCount,
+                findingPlural: findingCount === 1 ? '' : 's',
+                sha: sha ? ` · ${sha}` : ''
+            }));
         }
         return true;
     } catch (error: any) {
-        ctx.notify(error?.message || 'Failed to list review runs.');
+        ctx.notify(error?.message || formatAgentUiNotice(ctx.translator, 'reviewRunsListFailed'));
         return true;
     }
 }
@@ -460,11 +474,11 @@ export async function listReviewFindings(ctx: ReviewHandlerContext, commit?: str
 export async function showReviewRun(ctx: ReviewHandlerContext, id: string | undefined): Promise<boolean> {
     const resolvedId = String(id || '').trim();
     if (!resolvedId) {
-        ctx.notify('Review run id is required. Usage: /review show <id>');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewIdRequired'));
         return true;
     }
     if (!ctx.appRpc) {
-        ctx.notify('Review is unavailable without app RPC.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewUnavailableApp'));
         return true;
     }
     const sessionId = ctx.state.sessionId;
@@ -472,35 +486,35 @@ export async function showReviewRun(ctx: ReviewHandlerContext, id: string | unde
         const result = await ctx.appRpc.request('review.get', { sessionId, id: resolvedId });
         const run = result?.run;
         if (!run) {
-            ctx.notify(`Review run "${resolvedId}" was not found.`);
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewRunNotFound', { resolvedId: resolvedId }));
             return true;
         }
         const findings = Array.isArray(run.findings) ? run.findings : [];
         if (!findings.length) {
-            ctx.notify(`Review run "${resolvedId}" (${run.base}) has no findings.`);
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewRunNoFindings', { resolvedId: resolvedId, base: run.base }));
             return true;
         }
-        ctx.notify(`Review run "${resolvedId}" (${run.base}) · ${findings.length} finding${findings.length === 1 ? '' : 's'}:`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewRunFindingList', { resolvedId: resolvedId, base: run.base, findingCount: findings.length, plural: findings.length === 1 ? '' : 's' }));
         for (const finding of findings) {
             const category = String(finding?.category || 'suggestion');
             const severity = String(finding?.severity || 'info');
             const file = String(finding?.anchor?.file || '?');
             const line = typeof finding?.anchor?.line === 'number' ? `:${finding.anchor.line}` : '';
-            ctx.notify(`[${category}/${severity}] ${file}${line} ${String(finding?.summary || '')}`);
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewFindingItem', { category: category, severity: severity, file: file, line: line, summary: String(finding?.summary || '') }));
             if (String(finding?.suggestion || '').trim()) {
-                ctx.notify(`  fix: ${String(finding.suggestion).trim()}`);
+                ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewFixSuggestion', { suggestion: String(finding.suggestion).trim() }));
             }
         }
         return true;
     } catch (error: any) {
-        ctx.notify(error?.message || `Failed to load review run "${resolvedId}".`);
+        ctx.notify(error?.message || formatAgentUiNotice(ctx.translator, 'reviewRunLoadFailed', { id: resolvedId }));
         return true;
     }
 }
 
 export async function openWorktreeDiff(ctx: ReviewHandlerContext, args?: string): Promise<boolean> {
     if (!ctx.appRpc) {
-        ctx.notify('Worktree diff is unavailable without app RPC.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'worktreeDiffUnavailable'));
         return true;
     }
     const parsed = parseWorktreeDiffArgs(args);
@@ -519,12 +533,12 @@ export async function openWorktreeDiff(ctx: ReviewHandlerContext, args?: string)
         });
         review = result?.review && typeof result.review === 'object' ? result.review : null;
     } catch (error: any) {
-        ctx.notify(error?.message || 'Failed to gather the worktree diff.');
+        ctx.notify(error?.message || formatAgentUiNotice(ctx.translator, 'worktreeDiffFailed'));
         return true;
     }
     const files = Array.isArray(review?.files) ? review.files : [];
     if (!files.length) {
-        ctx.notify(`No ${describeWorktreeDiffScope(parsed.scope)} changes.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'noChangesForScope', { scope: describeWorktreeDiffScope(parsed.scope) }));
         return true;
     }
     const label = describeWorktreeDiffScope(parsed.scope);
@@ -545,6 +559,6 @@ export async function openWorktreeDiff(ctx: ReviewHandlerContext, args?: string)
     ctx.state.openReview(reviewTask, { diff: String(review?.diff || '') || null });
     ctx.state.setNotice('');
     ctx.state.setLastError('');
-    ctx.notify(`${label} diff: ${files.length} file${files.length === 1 ? '' : 's'} changed.`);
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'labelDiffCount', { label: label, count: files.length, plural: files.length === 1 ? '' : 's' }));
     return true;
 }

@@ -8,6 +8,7 @@
  */
 import { AudioCaptureAdapter, AudioPlaybackAdapter, AudioPlaybackFormat } from '@tsdi/common';
 import type { AgentConsoleCommandOutputEntry } from './AgentConsoleSessionState';
+import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 // ── Voice handler context ────────────────────────────────────────────────────
 
@@ -24,6 +25,7 @@ export interface VoiceSessionServiceLike {
 }
 
 export interface VoiceHandlerContext {
+    translator?: AgentUiTranslator | null;
     state: { readonly sessionId: string };
     sessionService: VoiceSessionServiceLike | null | undefined;
     audioCapture: AudioCaptureAdapter | null | undefined;
@@ -45,7 +47,7 @@ export function decodeVoiceAudioChunk(value: string): Uint8Array {
         const binary = globalThis.atob(value);
         return Uint8Array.from(binary, char => char.charCodeAt(0));
     }
-    throw new Error('Base64 decoding is unavailable in this environment.');
+    throw new Error(formatAgentUiNotice(undefined, 'base64DecodingUnavailable'));
 }
 
 // ── Playback ─────────────────────────────────────────────────────────────────
@@ -94,12 +96,12 @@ export async function startVoiceCapture(ctx: VoiceHandlerContext, sessionId: str
                     }
                     const result = await ctx.sessionService.feedVoiceAudio(sessionId, chunk);
                     if (result?.ok === false) {
-                        throw new Error(result.error || 'audio upload failed');
+                        throw new Error(result.error || formatAgentUiNotice(ctx.translator, 'audioUploadFailed'));
                     }
                 }).catch(error => {
                     if (ctx.getCaptureSessionId() === sessionId) {
                         ctx.setCaptureSessionId('');
-                        ctx.notify(`Voice capture error: ${error?.message ?? String(error)}`);
+                        ctx.notify(formatAgentUiNotice(ctx.translator, 'voiceCaptureError', { error: error?.message ?? String(error) }));
                         void Promise.resolve(ctx.audioCapture?.cancel()).catch(() => undefined);
                         void ctx.sessionService?.cancelVoiceSession(sessionId).catch(() => undefined);
                     }
@@ -110,7 +112,7 @@ export async function startVoiceCapture(ctx: VoiceHandlerContext, sessionId: str
             onError: error => {
                 if (ctx.getCaptureSessionId() === sessionId) {
                     ctx.setCaptureSessionId('');
-                    ctx.notify(`Voice capture error: ${error.message}`);
+                    ctx.notify(formatAgentUiNotice(ctx.translator, 'voiceCaptureError', { error: error.message }));
                     void ctx.sessionService?.cancelVoiceSession(sessionId).catch(() => undefined);
                 }
             }
@@ -140,12 +142,12 @@ export async function stopVoiceCapture(ctx: VoiceHandlerContext, cancel: boolean
 
 export async function handleVoiceCommand(ctx: VoiceHandlerContext, arg: string): Promise<boolean> {
     if (!ctx.sessionService) {
-        ctx.notify('Voice control is unavailable without app RPC.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'voiceControlUnavailable'));
         return true;
     }
     const sessionId = ctx.state.sessionId;
     if (!sessionId) {
-        ctx.notify('No session selected. Start a session before using /voice.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'sessionSelectedStart'));
         return true;
     }
     const sub = (arg || '').trim().split(/\s+/)[0];
@@ -159,12 +161,12 @@ export async function handleVoiceCommand(ctx: VoiceHandlerContext, arg: string):
                 const captureError = await startVoiceCapture(ctx, sessionId);
                 if (captureError) {
                     await ctx.sessionService.cancelVoiceSession(sessionId).catch(() => undefined);
-                    ctx.notify(`Voice capture could not be started: ${captureError}`);
+                    ctx.notify(formatAgentUiNotice(ctx.translator, 'voiceCaptureCould', { captureError: captureError }));
                     return true;
                 }
-                ctx.notify(`Voice session started (${sessionId}). Speak into the capture device; run /voice stop to transcribe.`);
+                ctx.notify(formatAgentUiNotice(ctx.translator, 'voiceSessionStarted', { sessionId: sessionId }));
             } else {
-                ctx.notify(result?.error || 'Voice session could not be started.');
+                ctx.notify(result?.error || formatAgentUiNotice(ctx.translator, 'voiceSessionStartFailed'));
             }
             return true;
         }
@@ -175,7 +177,7 @@ export async function handleVoiceCommand(ctx: VoiceHandlerContext, arg: string):
                 const playbackError = await playVoiceReply(ctx, result);
                 ctx.pushCommandOutput('/voice stop', `Transcribed: ${result.transcribed}\nReply: ${result.reply ?? ''}${playbackError ? `\nAudio playback unavailable: ${playbackError}` : ''}`);
             } else {
-                ctx.notify(result?.error || (result?.transcribed ? `Transcribed: ${result.transcribed}` : 'Voice session produced no transcription.'));
+                ctx.notify(result?.error || (result?.transcribed ? formatAgentUiNotice(ctx.translator, 'voiceTranscribed', { text: result.transcribed }) : formatAgentUiNotice(ctx.translator, 'voiceNoTranscription')));
             }
             return true;
         }
@@ -183,9 +185,9 @@ export async function handleVoiceCommand(ctx: VoiceHandlerContext, arg: string):
             await stopVoiceCapture(ctx, true);
             const result = await ctx.sessionService.cancelVoiceSession(sessionId);
             if (result?.ok) {
-                ctx.notify(result.cancelled ? 'Voice session cancelled.' : 'No voice session was active.');
+                ctx.notify(result.cancelled ? formatAgentUiNotice(ctx.translator, 'voiceSessionCancelled') : formatAgentUiNotice(ctx.translator, 'voiceNoActiveSession'));
             } else {
-                ctx.notify(result?.error || 'Voice session could not be cancelled.');
+                ctx.notify(result?.error || formatAgentUiNotice(ctx.translator, 'voiceSessionCancelFailed'));
             }
             return true;
         }

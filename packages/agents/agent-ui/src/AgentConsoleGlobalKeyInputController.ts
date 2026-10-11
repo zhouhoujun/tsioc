@@ -2,12 +2,14 @@ import type { AgentMessage } from '@tsdi/agent';
 import type { AgentConsoleGlobalAction, AgentConsoleKeymap, AgentConsoleKeymapContext } from './AgentConsoleKeymap';
 import { decodeGlobalKey } from './AgentConsoleStreamHelpers';
 import { isAgentConsoleMessageNavigationAction, isAgentConsoleThreadNavigationAction } from './AgentConsoleKeymap';
+import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 /**
  * Host surface required by the global key input controller.
  * The component satisfies this interface structurally when delegating.
  */
 export interface AgentConsoleGlobalKeyInputHost {
+    translator?: AgentUiTranslator | null;
     transcriptNavigationController: {
         movePage(delta: number, pageSize?: number): void;
         selectFirst(): void;
@@ -21,7 +23,7 @@ export interface AgentConsoleGlobalKeyInputHost {
         commandOutputsFilterMode: boolean;
         commandOutputsFilter: string;
         setCommandOutputsFilter(filter: string): void;
-        selectMenu?: { title?: string } | null;
+        selectMenu?: { title?: string; kind?: string } | null;
         whichKeyVisible: boolean;
         setWhichKeyVisible(visible: boolean): void;
         focusLayers: { isAnyFocusActive(): boolean; hasMessageFocus(): boolean };
@@ -121,7 +123,7 @@ export async function handleBrowserGlobalKeyInputView(
     if (host.keymapRecording) {
         if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey)) {
             host.keymapRecording = undefined;
-            host.notify('Keymap recording cancelled.');
+            host.notify(formatAgentUiNotice(host.translator, 'keymapRecordingCancelled'));
             return true;
         }
         if (mappedKey) {
@@ -129,9 +131,9 @@ export async function handleBrowserGlobalKeyInputView(
             host.keymapRecording = undefined;
             if (host.globalKeymap!.set(mappedKey, action, context)) {
                 await host.persistGlobalKeymap();
-                host.notify(`Keymap set: ${mappedKey} -> ${action} (${context}).`);
+                host.notify(formatAgentUiNotice(host.translator, 'keymapSetMappedBinding', { mappedKey: mappedKey, action: action, context: context }));
             } else {
-                host.notify(`Cannot bind ${mappedKey}: unknown action ${action}.`);
+                host.notify(formatAgentUiNotice(host.translator, 'cannotBindMappedKey', { mappedKey: mappedKey, action: action }));
             }
         }
         return true;
@@ -163,7 +165,7 @@ export async function handleBrowserGlobalKeyInputView(
             return false;
         }
     }
-    if (host.state.selectMenu?.title?.startsWith('Command palette')) {
+    if (host.state.selectMenu?.kind === 'palette') {
         if (normalizedKey === 'ctrl+p') return handleGlobalKeySequenceView(host, normalizedKey);
         if (!ctrlKey && normalizedKey === 'backspace') {
             host.openCommandPalette(host.commandPaletteQuery.slice(0, -1));
@@ -239,7 +241,7 @@ export async function handleGlobalKeyInputView(host: AgentConsoleGlobalKeyInputH
         if (host.keymapRecording) {
             if (raw === '\u001b') {
                 host.keymapRecording = undefined;
-                host.notify('Keymap recording cancelled.');
+                host.notify(formatAgentUiNotice(host.translator, 'keymapRecordingCancelled'));
                 return true;
             }
             const key = decodeGlobalKey(raw);
@@ -248,9 +250,9 @@ export async function handleGlobalKeyInputView(host: AgentConsoleGlobalKeyInputH
                 host.keymapRecording = undefined;
                 if (host.globalKeymap!.set(key, action, context)) {
                     await host.persistGlobalKeymap();
-                    host.notify(`Keymap set: ${key} -> ${action} (${context}).`);
+                    host.notify(formatAgentUiNotice(host.translator, 'keymapSetMappedBinding', { mappedKey: key, action: action, context: context }));
                 } else {
-                    host.notify(`Cannot bind ${key}: unknown action ${action}.`);
+                    host.notify(formatAgentUiNotice(host.translator, 'cannotBindMappedKey', { mappedKey: key, action: action }));
                 }
             }
             return true;
@@ -358,7 +360,7 @@ export async function executeGlobalKeyActionView(
     }
     if (action === 'toggle-thinking') {
         host.state.setShowThinking(!host.state.showThinking);
-        host.notify(host.state.showThinking ? 'Showing reasoning messages.' : 'Hiding reasoning messages.');
+        host.notify(host.state.showThinking ? formatAgentUiNotice(host.translator, 'showingReasoningMessages') : formatAgentUiNotice(host.translator, 'hidingReasoningMessages'));
         return true;
     }
     if (action === 'open-editor') {

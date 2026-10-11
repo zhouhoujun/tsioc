@@ -1,6 +1,8 @@
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
+import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 export interface GitSnapshotCommandHost {
+    translator?: AgentUiTranslator | null;
     state: any;
     sessionService?: any;
     notify(message: string): void;
@@ -10,7 +12,7 @@ export interface GitSnapshotCommandHost {
 export async function runGitSnapshotsCommand(host: GitSnapshotCommandHost, args: string): Promise<void> {
     const sessionId = host.state.sessionId;
     if (!sessionId || !host.sessionService) {
-        host.notify('No current session for git snapshots.');
+        host.notify(formatAgentUiNotice(host.translator, 'noCurrentSessionGitSnapshots'));
         return;
     }
     const parts = args.split(/\s+/).filter(Boolean);
@@ -18,7 +20,7 @@ export async function runGitSnapshotsCommand(host: GitSnapshotCommandHost, args:
     const ref = parts[1] || '';
     if (operation === 'revert' || operation === 'restore') {
         if (!ref) {
-            host.notify('Usage: /git-snapshots revert <messageId>');
+            host.notify(formatAgentUiNotice(host.translator, 'gitSnapshotsRevertUsage'));
             return;
         }
         const confirmed = await host.select(
@@ -35,9 +37,9 @@ export async function runGitSnapshotsCommand(host: GitSnapshotCommandHost, args:
         }
         const result = await host.sessionService.revertGitStepSnapshot(sessionId, ref);
         if (result?.reverted === true) {
-            host.notify(`Working tree reverted to snapshot of message ${ref}. Use /git-snapshots unrevert to restore.`);
+            host.notify(formatAgentUiNotice(host.translator, 'workingTreeRevertedMessage', { ref: ref }));
         } else {
-            host.notify(`Revert failed: ${String(result?.error || 'unknown error')}`);
+            host.notify(formatAgentUiNotice(host.translator, 'revertFailed', { error: String(result?.error || 'unknown error') }));
         }
         return;
     }
@@ -56,22 +58,22 @@ export async function runGitSnapshotsCommand(host: GitSnapshotCommandHost, args:
         }
         const result = await host.sessionService.unrevertGitStepSnapshot(sessionId);
         if (result?.reverted === true) {
-            host.notify('Working tree restored after last git revert.');
+            host.notify(formatAgentUiNotice(host.translator, 'workingTreeRestored'));
         } else {
-            host.notify(`Unrevert failed: ${String(result?.error || 'unknown error')}`);
+            host.notify(formatAgentUiNotice(host.translator, 'unrevertFailed', { error: String(result?.error || 'unknown error') }));
         }
         return;
     }
     if (operation === 'diff') {
         if (!ref) {
-            host.notify('Usage: /git-snapshots diff <messageId|snapshotId>');
+            host.notify(formatAgentUiNotice(host.translator, 'gitSnapshotsDiffUsage'));
             return;
         }
         await openGitSnapshotDiff(host, ref);
         return;
     }
     if (operation !== 'list') {
-        host.notify('Usage: /git-snapshots [list|diff <ref>|revert <messageId>|unrevert]');
+        host.notify(formatAgentUiNotice(host.translator, 'gitSnapshotsUsage'));
         return;
     }
     await openGitSnapshotList(host);
@@ -80,12 +82,12 @@ export async function runGitSnapshotsCommand(host: GitSnapshotCommandHost, args:
 export async function openGitSnapshotList(host: GitSnapshotCommandHost): Promise<void> {
     const sessionId = host.state.sessionId;
     if (!sessionId || !host.sessionService) {
-        host.notify('No current session for git snapshots.');
+        host.notify(formatAgentUiNotice(host.translator, 'noCurrentSessionGitSnapshots'));
         return;
     }
     const snapshots = await host.sessionService.listGitStepSnapshots(sessionId);
     if (!snapshots.length) {
-        host.notify('No git step snapshots for the current session. Run an agent turn in a git workspace first.');
+        host.notify(formatAgentUiNotice(host.translator, 'gitStepSnapshots'));
         return;
     }
     const choice = await host.select(
@@ -113,17 +115,17 @@ export async function openGitSnapshotList(host: GitSnapshotCommandHost): Promise
 export async function openGitSnapshotDiff(host: GitSnapshotCommandHost, ref: string): Promise<void> {
     const sessionId = host.state.sessionId;
     if (!sessionId || !host.sessionService) {
-        host.notify('No current session for git snapshot diff.');
+        host.notify(formatAgentUiNotice(host.translator, 'noCurrentSessionGitDiff'));
         return;
     }
     const diff = await host.sessionService.diffGitStepSnapshot(sessionId, ref);
     if (!diff) {
-        host.notify(`No git step snapshot found for ${ref}.`);
+        host.notify(formatAgentUiNotice(host.translator, 'gitStepSnapshot', { ref: ref }));
         return;
     }
     const lines = buildGitSnapshotDiffLines(diff);
     if (!lines.length) {
-        host.notify(`Snapshot ${ref} has no working tree changes to show.`);
+        host.notify(formatAgentUiNotice(host.translator, 'snapshotHasWorking', { ref: ref }));
         return;
     }
     const fileCount = Array.isArray(diff.files) ? diff.files.length : 0;
@@ -140,7 +142,7 @@ export async function revertGitSnapshotFromDetail(host: GitSnapshotCommandHost):
     const ref = host.state.gitSnapshotCurrentRef;
     const sessionId = host.state.sessionId;
     if (!ref || !sessionId || !host.sessionService) {
-        host.notify('No git snapshot selected for revert.');
+        host.notify(formatAgentUiNotice(host.translator, 'gitSnapshotSelected'));
         return;
     }
     const confirmed = await host.select(
@@ -157,9 +159,9 @@ export async function revertGitSnapshotFromDetail(host: GitSnapshotCommandHost):
     }
     const result = await host.sessionService.revertGitStepSnapshot(sessionId, ref);
     if (result?.reverted === true) {
-        host.notify(`Working tree reverted to snapshot ${ref}. Use /git-snapshots unrevert to restore.`);
+        host.notify(formatAgentUiNotice(host.translator, 'workingTreeRevertedSnapshot', { ref: ref }));
         host.state.closeGitSnapshotDetail();
     } else {
-        host.notify(`Revert failed: ${String(result?.error || 'unknown error')}`);
+        host.notify(formatAgentUiNotice(host.translator, 'revertFailed', { error: String(result?.error || 'unknown error') }));
     }
 }

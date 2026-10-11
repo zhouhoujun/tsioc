@@ -2,12 +2,14 @@ import type { AgentMessage, AgentTurnMessageInput } from '@tsdi/agent';
 import type { AgentConsoleActivity, AgentConsolePendingAttachment } from './AgentConsoleSessionState';
 import { presentModelFailure } from './AgentConsoleModelFailurePresenter';
 import { withErrorStack } from './AgentConsoleErrorStackPresenter';
+import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 /**
  * Host surface required by the turn input controller.
  * The component satisfies this interface structurally when delegating.
  */
 export interface AgentConsoleTurnInputHost {
+    translator?: AgentUiTranslator | null;
     state: {
         input: string;
         sessionId: string;
@@ -160,7 +162,7 @@ export async function submitView(host: AgentConsoleTurnInputHost): Promise<void>
             host.state.setInput('');
             host.shellDraftLines.push(value);
             await persistHistory;
-            host.notify(`Shell draft +${host.shellDraftLines.length} line(s). Submit with '!' alone, exit with '!!'.`);
+            host.notify(formatAgentUiNotice(host.translator, 'shellDraftLineCount', { lineCount: host.shellDraftLines.length }));
             return;
         }
         if (value.startsWith('!')) {
@@ -217,7 +219,7 @@ export async function submitView(host: AgentConsoleTurnInputHost): Promise<void>
                 }
                 if (branchId && branchId !== source) {
                     await host.openSession(branchId);
-                    host.notify(`Branched into ${branchId} with your edited prompt (original preserved).`);
+                    host.notify(formatAgentUiNotice(host.translator, 'branchedEditedPrompt', { branchId: branchId }));
                 }
             }
         }

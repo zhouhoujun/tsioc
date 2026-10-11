@@ -61,7 +61,7 @@
 
 > 来源：真实 CLI/TUI 会话、跨平台（DOM/TUI）验收与源码审计暴露的差距；对照 Codex CLI（最新，ratatui）、opencode（bubbletea / OpenTUI）与 openTUI 的基础组件模型。批次可独立验收；每批次必须补真实边界回归（AppRpc 流 / DOM / PTY）后才能关闭。
 >
-> **当前状态（2026-10）**：P1–P6 已全部关闭并合并进上文功能点；P7（`AgentConsoleComponent` 持续拆解）进行中；A1–A3（运行时写死重构）已完成并合并进上文功能点；U1（视窗滚动与选中解耦 + 粘底跟随）、U2（视窗高度实测 + resize 响应）、U3（逐消息持久折叠/行内展开 `e`）、U5（DOM/TUI 全历史分页 pager + 查找）已关闭并合并进功能点；U4（agent-ui 文案 i18n）待执行。
+> **当前状态（2026-10）**：P1–P6 已全部关闭并合并进上文功能点；P7（`AgentConsoleComponent` 持续拆解）进行中；A1–A3（运行时写死重构）已完成并合并进上文功能点；U1（视窗滚动与选中解耦 + 粘底跟随）、U2（视窗高度实测 + resize 响应）、U3（逐消息持久折叠/行内展开 `e`）、U5（DOM/TUI 全历史分页 pager + 查找）已关闭并合并进功能点；U4（agent-ui 文案 i18n，zh/EN + locale 快照回归）已关闭并合并进功能点。
 
 ### 统一收尾流程（每个 plan 缺一不可）
 
@@ -118,12 +118,13 @@
 - **进度（已关闭 ✅）**：`SessionState` 新增 `expandedMessageIds: string[]` 与 `isMessageExpanded`/`setMessageExpanded`/`toggleMessageExpanded`/`toggleSelectedMessageExpanded`（不可变替换，引用相等即 cache key）；`AgentConsoleMessageTemplates.ts` 的 `bodyPreviewLines` 展开条件并入 `isMessageExpanded(messageId)` 并把 `expandedIds` 纳入 `bodyLinesCache` 比较；`AgentConsoleFocusLayers.ts` `handleMessageListKey` 新增 `case 'e'` → `toggleSelectedMessageExpanded`（不进 detail，`messageDetailOpen` 保持 false）；多消息可同时展开、再次 `e` 逐条收起。`AgentConsolePanels.ts` 的 `messageDetailOpen` 绕过窗口问题仍遗留（并入 U1/U2 视窗批次处理）；新增 2 条回归覆盖单条展开/detail 解耦与多条展开/收起。
 - **验收**：多条消息可同时 inline 展开；`e` 不打开 detail；重渲染与切换会话保持；新增回归。
 
-#### U4 — agent-ui 用户可见文案全面 i18n
+#### U4 — agent-ui 用户可见文案全面 i18n（已关闭 ✅）
 
 - **问题**：`agent-ui/src` 仍有 **153 处** `(ctx|host).notify('English…')` 与 **9 处** `throw new Error('English…')` 硬编码英文（`AgentConsoleVoiceHandlers`、`AgentConsoleEditModeHandlers`、`AgentConsolePreferenceCommands`、`AgentConsoleHarnessCommands`、`AgentConsoleReviewHandlers`、`AgentConsoleExportHandlers`、`AgentConsoleCommandHandlers`、`AgentConsoleBackgroundTaskCommands`、`AgentConsoleDiagnosticsHandlers`、`AgentConsoleGitSnapshotCommands`、`AgentConsolePolicyCommands`、`AgentConsoleModelHandlers`、`AgentConsoleRuntimeCommands`、`AgentConsoleShellCommands`、`AgentConsoleGlobalKeyInputController`、`AgentConsoleSessionService`、`AgentConsoleSessionState` 等）；`AgentConsoleTerminalInputController.ts:206-207` 的取消提示仍为裸英文，`:116` 用英文标题 `'Command palette'` 做控制流。
 - **目标**：全部用户可见文案走 `agent-ui.i18n.ts`（zh/EN），缺 key 不显示 key 本身；控制流用稳定 token/枚举而非展示文案（消除 `title.startsWith('Command palette')` 之类的文案耦合）；补齐命令用法/错误/诊断提示键。
 - **涉及**：上述 handler 模块、`agent-ui/src/agent-ui.i18n.ts`、`AgentConsoleTerminalInputController.ts`、`AgentConsoleOverlayPresenter.ts`（overlay 标题/提示 token 化）。
 - **验收**：生产代码 `grep` 无硬编码英文 `notify`/`throw`；zh-CN 下命令/提示/错误无英文残留；新增 locale 快照回归。
+- **进度（已关闭 ✅）**：新增 `agent-ui.i18n.notice.{en,zh}.ts`（460 键逐一对齐）与 `agent-ui.i18n.error.ts`（14 键对齐）；统一 `formatAgentUiNotice(translator, key, params)` 渲染，缺 key 回落英文模板、绝不裸显 key，`translator` 缺失时安全回落；各 handler 的用户可见文案全部走键；palette/overlay 控制流改用稳定 `kind` token，消除 `title.startsWith('Command palette')` 文案耦合；新增 `test/i18n-locale-regression.spec.ts` 快照回归（键对齐、zh 无英文残留、formatter 回落且不裸显 key、本地化取样）。
 
 #### U5 — DOM/TUI 视窗交互一致 + 全历史 pager（参考 Codex `Ctrl+T` 转录 overlay）（已关闭 ✅）
 

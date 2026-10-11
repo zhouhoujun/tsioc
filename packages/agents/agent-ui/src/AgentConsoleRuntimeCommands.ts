@@ -2,8 +2,10 @@ import { ExchangeMetricsSnapshot } from '@tsdi/agent';
 import { agentConsoleThemeNames } from './AgentConsoleTheme';
 import { defaultAgentConsoleStatusline, isAgentConsoleStatuslineField, normalizeAgentConsoleStatusline } from './AgentConsoleStatusline';
 import { defaultAgentConsoleTitle, isAgentConsoleTitleField, normalizeAgentConsoleTitle } from './AgentConsoleTitle';
+import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 export interface AgentConsoleRuntimeHost {
+    translator?: AgentUiTranslator | null;
     state: any;
     options: any;
     runtime: any;
@@ -82,12 +84,12 @@ export async function runFastCommand(host: AgentConsoleRuntimeHost, args?: strin
     const requested = String(args || '').trim().toLowerCase();
     const profiles = (host.options.model?.profiles || {}) as Record<string, unknown>;
     if (requested && !profiles[requested]) {
-        host.notify(`Unknown model profile "${requested}". Available: ${Object.keys(profiles).join(', ') || 'none'}.`);
+        host.notify(formatAgentUiNotice(host.translator, 'unknownModelProfileAvailable', { requested: requested, names: Object.keys(profiles).join(', ') || 'none' }));
         return true;
     }
     const target = requested || (host.state.modelProfile === 'fast' ? 'strong' : 'fast');
     if (!profiles[target]) {
-        host.notify(`No "${target}" model profile configured. Configure model.profiles.fast / model.profiles.strong.`);
+        host.notify(formatAgentUiNotice(host.translator, 'targetModelProfileNotConfigured', { target: target }));
         return true;
     }
     await host.activateModelProfile(target);
@@ -106,10 +108,10 @@ export async function runRawModeCommand(host: AgentConsoleRuntimeHost, args?: st
     try {
         await host.rawModeStore?.save(host.resolveHistoryWorkspace(), host.state.rawMode);
     } catch (error: any) {
-        host.notify(error?.message || 'Failed to save raw mode.');
+        host.notify(error?.message || formatAgentUiNotice(host.translator, 'rawModeSaveFailed'));
         return true;
     }
-    host.notify(host.state.rawMode ? 'Raw mode enabled (plain text scrollback).' : 'Raw mode disabled (markdown rendering).');
+    host.notify(host.state.rawMode ? formatAgentUiNotice(host.translator, 'rawModeEnabled') : formatAgentUiNotice(host.translator, 'rawModeDisabled'));
     return true;
 }
 
@@ -124,12 +126,12 @@ export async function runStatuslineCommand(host: AgentConsoleRuntimeHost, args?:
     const requested = rest.join(' ').split(',').map(part => part.trim()).filter(Boolean);
     if (verb.toLowerCase() === 'set') {
         if (!requested.length) {
-            host.notify('Usage: /statusline set model,context,git-branch,tokens,session,workspace,agent');
+            host.notify(formatAgentUiNotice(host.translator, 'statuslineSetUsage'));
             return true;
         }
         const invalid = requested.filter(field => !isAgentConsoleStatuslineField(field));
         if (invalid.length) {
-            host.notify(`Unknown statusline field "${invalid[0]}". Available: ${defaultAgentConsoleStatusline.join(', ')}.`);
+            host.notify(formatAgentUiNotice(host.translator, 'unknownStatuslineField', { field: invalid[0], names: defaultAgentConsoleStatusline.join(', ') }));
             return true;
         }
         return host.applyStatusline(normalizeAgentConsoleStatusline(requested));
@@ -137,12 +139,12 @@ export async function runStatuslineCommand(host: AgentConsoleRuntimeHost, args?:
     if (verb.toLowerCase() === 'unset') {
         const remaining = host.state.statusline.filter((field: string) => !requested.includes(field));
         if (remaining.length === host.state.statusline.length) {
-            host.notify(`Field "${requested[0]}" is not in the statusline. Current: ${host.state.statusline.join(', ')}.`);
+            host.notify(formatAgentUiNotice(host.translator, 'statuslineFieldNotIncluded', { field: requested[0], fields: host.state.statusline.join(', ') }));
             return true;
         }
         return host.applyStatusline(normalizeAgentConsoleStatusline(remaining));
     }
-    host.notify('Usage: /statusline [list|set field1,field2|unset field]');
+    host.notify(formatAgentUiNotice(host.translator, 'statuslineUsage'));
     return true;
 }
 
@@ -157,12 +159,12 @@ export async function runTitleCommand(host: AgentConsoleRuntimeHost, args?: stri
     const requested = rest.join(' ').split(',').map(part => part.trim()).filter(Boolean);
     if (verb.toLowerCase() === 'set') {
         if (!requested.length) {
-            host.notify('Usage: /title set project,status,thread,branch,model,context,task');
+            host.notify(formatAgentUiNotice(host.translator, 'titleSetUsage'));
             return true;
         }
         const invalid = requested.filter(field => !isAgentConsoleTitleField(field));
         if (invalid.length) {
-            host.notify(`Unknown window title field "${invalid[0]}". Available: ${defaultAgentConsoleTitle.join(', ')}.`);
+            host.notify(formatAgentUiNotice(host.translator, 'unknownWindowTitleField', { field: invalid[0], names: defaultAgentConsoleTitle.join(', ') }));
             return true;
         }
         return host.applyTitleFields(normalizeAgentConsoleTitle(requested));
@@ -170,11 +172,11 @@ export async function runTitleCommand(host: AgentConsoleRuntimeHost, args?: stri
     if (verb.toLowerCase() === 'unset') {
         const remaining = host.state.titleFields.filter((field: string) => !requested.includes(field));
         if (remaining.length === host.state.titleFields.length) {
-            host.notify(`Field "${requested[0]}" is not in the window title. Current: ${host.state.titleFields.join(', ')}.`);
+            host.notify(formatAgentUiNotice(host.translator, 'windowTitleFieldNotIncluded', { field: requested[0], fields: host.state.titleFields.join(', ') }));
             return true;
         }
         return host.applyTitleFields(normalizeAgentConsoleTitle(remaining));
     }
-    host.notify('Usage: /title [list|set field1,field2|unset field]');
+    host.notify(formatAgentUiNotice(host.translator, 'titleUsage'));
     return true;
 }

@@ -6,8 +6,10 @@ import {
     isAgentConsoleKeymapContext
 } from './AgentConsoleKeymap';
 import { VIM_ACTION_NAMES, isConsoleVimAction } from './AgentConsoleVim';
+import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 export interface KeymapCommandHost {
+    translator?: AgentUiTranslator | null;
     state: any;
     globalKeymap: any;
     keymapRecording?: { context: AgentConsoleKeymapContext; action: AgentConsoleGlobalAction };
@@ -39,7 +41,7 @@ export async function runKeymapCommand(host: KeymapCommandHost, args: string): P
         const vimEntries = Object.entries(host.state.effectiveVimBindings).map(([key, value]) => `vim:${key} -> ${value}`);
         const entries = [...(scope === 'vim' ? [] : globalEntries), ...(scope === '' || scope === 'vim' ? vimEntries : [])];
         if (!entries.length) {
-            host.notify('No key bindings.');
+            host.notify(formatAgentUiNotice(host.translator, 'keyBindings'));
             return;
         }
         host.state.openTextOverlay(scope ? `keymap ${scope}` : 'keymap', entries);
@@ -49,7 +51,7 @@ export async function runKeymapCommand(host: KeymapCommandHost, args: string): P
         const key = tokens[1];
         const target = tokens[2];
         if (!key || !target) {
-            host.notify('Usage: /keymap [global|composer|list|approval|pager|vim] set <key> <action>');
+            host.notify(formatAgentUiNotice(host.translator, 'keymapUsageSet'));
             return;
         }
         if (scope !== 'vim' && isAgentConsoleGlobalAction(target) && host.globalKeymap!.set(key, target, context)) {
@@ -58,32 +60,32 @@ export async function runKeymapCommand(host: KeymapCommandHost, args: string): P
             const conflictText = conflicts.length
                 ? `  conflicts with ${conflicts.map(({ context: c, action: a }: any) => `${c}:${a}`).join(', ')}`
                 : '';
-            host.notify(`Keymap set: ${key} -> ${target}${conflictText}`);
+            host.notify(formatAgentUiNotice(host.translator, 'keymapSetWithConflict', { key: key, target: target, conflictText: conflictText }));
             return;
         }
         if ((scope === 'vim' || scope === '') && isConsoleVimAction(target) && host.state.setVimBinding(key, target)) {
-            host.notify(`Vim keymap set: ${key} -> ${target}`);
+            host.notify(formatAgentUiNotice(host.translator, 'vimKeymapSet', { key: key, target: target }));
             return;
         }
-        host.notify(`Unknown keymap action: ${target}  (global: ${AGENT_CONSOLE_GLOBAL_ACTIONS.join(', ')}; vim: ${VIM_ACTION_NAMES.join(', ')})`);
+        host.notify(formatAgentUiNotice(host.translator, 'unknownKeymapActionInfo', { target: target, globalActions: AGENT_CONSOLE_GLOBAL_ACTIONS.join(', '), vimActions: VIM_ACTION_NAMES.join(', ') }));
         return;
     }
     if (action === 'unset') {
         const key = tokens[1];
         if (!key) {
-            host.notify('Usage: /keymap [global|composer|list|approval|pager|vim] unset <key>');
+            host.notify(formatAgentUiNotice(host.translator, 'keymapUsageUnset'));
             return;
         }
         if (scope !== 'vim' && host.globalKeymap!.unset(key, context)) {
             await host.persistGlobalKeymap();
-            host.notify(`${context === 'global' ? 'Global' : context} keymap unset: ${key}`);
+            host.notify(formatAgentUiNotice(host.translator, 'contextKeymapUnset', { context: context === 'global' ? 'Global' : context, key: key }));
             return;
         }
         if ((scope === 'vim' || scope === '') && host.state.unsetVimBinding(key)) {
-            host.notify(`Vim keymap unset: ${key} (default restored if any)`);
+            host.notify(formatAgentUiNotice(host.translator, 'vimKeymapUnset', { key: key }));
             return;
         }
-        host.notify(`No binding for key: ${key}`);
+        host.notify(formatAgentUiNotice(host.translator, 'bindingKey', { key: key }));
         return;
     }
     if (action === 'reset') {
@@ -92,22 +94,22 @@ export async function runKeymapCommand(host: KeymapCommandHost, args: string): P
             host.globalKeymap!.reset(scope === '' ? undefined : context);
             await host.persistGlobalKeymap();
         }
-        host.notify('Keymap reset to defaults.');
+        host.notify(formatAgentUiNotice(host.translator, 'keymapResetDefaults'));
         return;
     }
     if (action === 'record') {
         const target = tokens[1];
         if (!target) {
-            host.notify('Usage: /keymap [global|composer|list|approval|pager|vim] record <action>');
+            host.notify(formatAgentUiNotice(host.translator, 'keymapUsageRecord'));
             return;
         }
         if (scope === 'vim' || !isAgentConsoleGlobalAction(target)) {
-            host.notify(`Unknown keymap action: ${target}  (global: ${AGENT_CONSOLE_GLOBAL_ACTIONS.join(', ')})`);
+            host.notify(formatAgentUiNotice(host.translator, 'unknownKeymapAction', { target: target, globalActions: AGENT_CONSOLE_GLOBAL_ACTIONS.join(', ') }));
             return;
         }
         host.keymapRecording = { context, action: target };
-        host.notify(`Recording key for ${target} (${context}) — press a key now, Esc to cancel.`);
+        host.notify(formatAgentUiNotice(host.translator, 'recordingKeyPress', { target: target, context: context }));
         return;
     }
-    host.notify('Usage: /keymap [global|composer|list|approval|pager|vim] [list|set <key> <action>|unset <key>|reset|record <action>]');
+    host.notify(formatAgentUiNotice(host.translator, 'keymapUsage'));
 }

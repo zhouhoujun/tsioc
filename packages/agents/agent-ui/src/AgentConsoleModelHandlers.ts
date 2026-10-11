@@ -11,12 +11,14 @@
 import { AgentConsoleSelectOption } from './AgentConsoleSessionState';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
 import { AgentOptions } from '@tsdi/agent';
+import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 export type EffortLevel = 'low' | 'medium' | 'high' | 'max';
 
 // ── Model handler context ────────────────────────────────────────────────────
 
 export interface ModelHandlerContext {
+    translator?: AgentUiTranslator | null;
     state: {
         readonly sessionId: string;
         readonly modelProfile?: string;
@@ -176,7 +178,7 @@ export async function openModelSwitcher(ctx: ModelHandlerContext): Promise<void>
         detail: 'Opens the guided add-provider wizard.'
     });
     if (!options.length) {
-        ctx.notify('No model profiles configured. Add a provider in settings.json.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'modelProfilesConfigured'));
     }
     const selected = await ctx.select(
         'Model providers',
@@ -209,7 +211,7 @@ export async function openModelSwitcher(ctx: ModelHandlerContext): Promise<void>
         modes.push({ label: entry.label, value: entry.value, description: entry.description, detail: entry.detail });
     }
     if (!modes.length) {
-        ctx.notify(`${provider} has no models configured.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'providerHasNoModels', { provider: provider }));
         return;
     }
     const mode = await ctx.select(`${provider} · model`, modes, 0);
@@ -219,14 +221,14 @@ export async function openModelSwitcher(ctx: ModelHandlerContext): Promise<void>
         const balanced = entries.find(entry => tierOf(entry.value) === 'balanced')?.value;
         const strong = entries.find(entry => tierOf(entry.value) === 'strong')?.value;
         if (!fast || !balanced || !strong) {
-            ctx.notify(`${provider} needs fast, balanced, and strong models before auto can be used.`);
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'providerNeedsFastBalancedStrong', { provider: provider }));
             return;
         }
         const model = ctx.options().model || {};
         model.defaultProfile = undefined;
         model.complexityRouting = { ...(model.complexityRouting || {}), simple: fast, moderate: balanced, complex: strong };
         ctx.state.setModelProfile('auto');
-        ctx.notify(`Switched ${provider} to auto model routing.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'switchedAutoModel', { provider: provider }));
         return;
     }
     const effort = await pickModelEffort(ctx, mode);
@@ -310,14 +312,14 @@ export async function activateModelProfile(ctx: ModelHandlerContext, profileName
             ctx.state.setModel(String(result.model));
         }
         ctx.updateTerminalTitle();
-        ctx.notify(`Switched model profile to ${name}.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'switchedModelProfile', { name: name }));
         await recordRecentModel(ctx, String(result?.modelProfile || name));
         return;
     }
     const opts = ctx.options();
     const profiles = opts.model?.profiles || {};
     if (!profiles[name]) {
-        ctx.notify(`Unknown model profile: ${name}`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'unknownModelProfile', { name: name }));
         return;
     }
     opts.model = opts.model || {};
@@ -334,25 +336,25 @@ export async function activateModelProfile(ctx: ModelHandlerContext, profileName
         ctx.state.setModel(resolved.model);
     }
     ctx.updateTerminalTitle();
-    ctx.notify(`Switched model profile to ${name}.`);
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'switchedModelProfile', { name: name }));
     await recordRecentModel(ctx, name);
 }
 
 export async function queueNextTurnModelProfile(ctx: ModelHandlerContext, profileName: string): Promise<void> {
     const name = String(profileName || '').trim();
     if (!name) {
-        ctx.notify('Usage: /model once <profile>.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'modelOnceUsage'));
         return;
     }
     if (!ctx.appRpc) {
         const profiles = ctx.options().model?.profiles || {};
         if (!profiles[name]) {
-            ctx.notify(`Unknown model profile: ${name}`);
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'unknownModelProfile', { name: name }));
             return;
         }
     }
     ctx.state.setOneShotModelProfile(name);
-    ctx.notify(`Queued model profile ${name} for the next prompt.`);
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'queuedModelProfile', { name: name }));
 }
 
 export function consumePendingTurnModelProfile(ctx: ModelHandlerContext): string | undefined {
@@ -369,7 +371,7 @@ export function consumePendingTurnModelProfile(ctx: ModelHandlerContext): string
 export async function toggleModelFavorite(ctx: ModelHandlerContext): Promise<void> {
     const name = String(ctx.state.modelProfile || ctx.options().model?.defaultProfile || '').trim();
     if (!name) {
-        ctx.notify('No active model profile to favorite.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'noActiveProfileFavorite'));
         return;
     }
     const favorites = ctx.getFavorites();
@@ -377,17 +379,17 @@ export async function toggleModelFavorite(ctx: ModelHandlerContext): Promise<voi
     if (index >= 0) {
         favorites.splice(index, 1);
         await persistModelStore(ctx);
-        ctx.notify(`Removed ${name} from favorites.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'removedFavorites', { name: name }));
     } else {
         favorites.push(name);
         await persistModelStore(ctx);
-        ctx.notify(`Added ${name} to favorites.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'addedFavorites', { name: name }));
     }
 }
 
 export async function cycleRecentModel(ctx: ModelHandlerContext, delta: 1 | -1): Promise<void> {
     if (!ctx.getRecents().length) {
-        ctx.notify('No recent models yet.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'recentModelsYet'));
         return;
     }
     const current = String(ctx.state.modelProfile || ctx.options().model?.defaultProfile || '').trim();
@@ -412,7 +414,7 @@ export async function setModelReasoningEffort(ctx: ModelHandlerContext, next: Ef
         const sessionId = ctx.state.sessionId;
         const name = String(ctx.state.modelProfile || ctx.options().model?.defaultProfile || '').trim();
         if (!name) {
-            ctx.notify('No active model profile to cycle variant for.');
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'noActiveProfileCycle'));
             return;
         }
         const requestId = ctx.nextActivateRequestId();
@@ -430,5 +432,5 @@ export async function setModelReasoningEffort(ctx: ModelHandlerContext, next: Ef
     opts.model = opts.model || {};
     opts.model.reasoningEffort = next;
     await ctx.persistSettings({ thinkingLevel: next });
-    ctx.notify(`Reasoning effort: ${ctx.getReasoningEffort()}.`);
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'reasoningEffort', { effort: ctx.getReasoningEffort() }));
 }

@@ -58,6 +58,7 @@ import { getGlobalProcess } from './global-process';
 import { decodeVoiceAudioChunk, handleVoiceCommand, playVoiceReply, startVoiceCapture, stopVoiceCapture, VoiceHandlerContext } from './AgentConsoleVoiceHandlers';
 import { activateModelProfile, consumePendingTurnModelProfile, cycleModelVariant, cycleRecentModel, EffortLevel, getModelProfileOptions, loadModelProfileOptions, openModelSwitcher, persistModelStore, queueNextTurnModelProfile, recordRecentModel, resolveInitialModelProfile, resolveModelProfileConfig, restoreModelStore, setModelReasoningEffort, toggleModelFavorite, ModelHandlerContext } from './AgentConsoleModelHandlers';
 import { dismissEditMode, enterEditMode, EditModeHandlerContext, extractEditableMessageText, getEditableImageParts, getEditableUserMessages, handleIdleEscape, startEditTarget } from './AgentConsoleEditModeHandlers';
+import { formatAgentUiNotice } from './agent-ui.i18n';
 import {
     CodingTaskHandlerContext,
     resolveCodingTaskSessionId as resolveCodingTaskSessionIdFn,
@@ -350,7 +351,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             appRpc: this.appRpc,
             uiConfig: this.uiConfig,
             options: this.options,
-            notify: (message: string) => this.notify(message),
+            notify: (message: string) => this.notify(message), translator: this.translator,
             notifyBusyState: () => this.notifyBusyState(),
             isTurnInProgress: () => this.isTurnInProgress(),
             rpcRequestContext: () => this.rpcRequestContext(),
@@ -458,9 +459,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.setInput('');
         this.state.clearPendingAttachments();
         this.state.setQueuedPromptCount(queue.length);
-        const noticeKey = command ? 'agent.notice.queuedCommand' : 'agent.notice.queuedPrompt';
-        const noticeFallback = command ? `Queued command (${queue.length}).` : `Queued prompt (${queue.length}).`;
-        this.notify(this.translator?.translate(noticeKey, { count: queue.length }) || noticeFallback);
+        const noticeKey = command ? 'queuedCommand' : 'queuedPrompt';
+        this.notify(formatAgentUiNotice(this.translator, noticeKey, { count: queue.length }));
     }
 
     protected queueDraft(): boolean {
@@ -493,8 +493,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (!this.isTurnInProgress()) return;
         const cancelled = await this.sessionService?.cancelTurn(this.state.sessionId) ?? false;
         this.notify(cancelled
-            ? (this.translator?.translate('agent.notice.cancelling') || 'Cancelling current turn…')
-            : (this.translator?.translate('agent.notice.nothingToCancel') || 'No running turn to cancel.'));
+            ? (formatAgentUiNotice(this.translator, 'cancelling'))
+            : (formatAgentUiNotice(this.translator, 'nothingToCancel')));
     }
 
     protected notify(message: string, duration?: number): void {
@@ -515,7 +515,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected notifyBusyState(message?: string): void {
-        this.notify(message || this.translator?.translate('agent.notice.busy') || 'Wait for the current turn to finish.');
+        this.notify(message || formatAgentUiNotice(this.translator, 'busy'));
     }
 
     protected formatSummaryQualityAggregate(aggregate: Record<string, any>): string {
@@ -527,7 +527,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.sessionService,
             (message: string) => this.notify(message),
             (title: string, options: any[], index: number, hint?: string) => this.select(title, options, index, hint),
-            provider
+            provider, this.translator
         );
     }
 
@@ -542,7 +542,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             (command: string, text: string) => this.pushCommandOutput(command, text),
             provider,
             bucketSize,
-            maxBuckets
+            maxBuckets, this.translator
         );
     }
 
@@ -568,7 +568,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             sessionService: this.sessionService!,
             app: this.app!,
             workspace: this.workspace,
-            notify: (msg: string) => this.notify(msg),
+            notify: (msg: string) => this.notify(msg), translator: this.translator,
         };
     }
 
@@ -601,7 +601,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return {
             state: this.state,
             sessionService: this.sessionService!,
-            notify: (msg: string) => this.notify(msg),
+            notify: (msg: string) => this.notify(msg), translator: this.translator,
             pushCommandOutput: (command: string, text: string, kind?: AgentConsoleCommandOutputEntry['kind']) => this.pushCommandOutput(command, text, kind),
             select: (title: string, options: any[], footer?: string) => this.select(title, options, 0, footer),
         };
@@ -619,7 +619,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return {
             sessionService: this.sessionService ?? null,
             state: this.state,
-            notify: message => this.notify(message),
+            notify: message => this.notify(message), translator: this.translator,
             pushCommandOutput: (command, text) => this.pushCommandOutput(command, text)
         };
     }
@@ -633,7 +633,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
      * over RPC and reports the outcome inline.
      */
     protected async runHarnessStopCommand(taskId: string): Promise<boolean> {
-        return runHarnessStopCommand(this.sessionService, (message: string) => this.notify(message), taskId);
+        return runHarnessStopCommand(this.sessionService, (message: string) => this.notify(message), taskId, this.translator);
     }
 
     private voiceCtx(): VoiceHandlerContext {
@@ -642,7 +642,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             sessionService: this.sessionService,
             audioCapture: this.audioCapture,
             audioPlayback: this.audioPlayback,
-            notify: (message, duration) => this.notify(message, duration),
+            notify: (message, duration) => this.notify(message, duration), translator: this.translator,
             pushCommandOutput: (command, text, kind) => this.pushCommandOutput(command, text, kind),
             getCaptureSessionId: () => this.voiceCaptureSessionId,
             setCaptureSessionId: value => { this.voiceCaptureSessionId = value; },
@@ -682,7 +682,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             (message: string) => this.notify(message),
             (title: string, options: any[], index: number, hint?: string) => this.select(title, options, index, hint),
             sessionId,
-            this.state.sessionId
+            this.state.sessionId, this.translator
         );
     }
 
@@ -702,7 +702,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             (command: string, text: string) => this.pushCommandOutput(command, text),
             sessionId,
             bucketSize,
-            maxBuckets
+            maxBuckets, this.translator
         );
     }
 
@@ -747,7 +747,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             state: this.state,
             transcriptNavigationController: this.transcriptNavigationController,
             appRpc: this.appRpc,
-            notify: (message, duration) => this.notify(message, duration),
+            notify: (message, duration) => this.notify(message, duration), translator: this.translator,
             activateToolForSession: (toolName, sessionId) => this.activateToolForSession(toolName, sessionId),
             getOpenReviewRequestId: () => this.openReviewRequestId
         };
@@ -758,7 +758,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             transcriptNavigationController: this.transcriptNavigationController,
             appRpc: this.appRpc,
             scheduler: this.scheduler,
-            notify: (message, duration) => this.notify(message, duration),
+            notify: (message, duration) => this.notify(message, duration), translator: this.translator,
             select: (title, options, selectedIndex, hint) => this.select(title, options, selectedIndex, hint),
             getTaskViewContextVersion: () => this.taskViewContextVersion,
             bumpTaskViewContextVersion: () => ++this.taskViewContextVersion,
@@ -1368,11 +1368,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     get copyFocusedTextActionHandler(): (text: string, label: string) => Promise<void> {
         return async (text: string, label: string) => {
             if (!text) {
-                this.notify(`Nothing to copy for ${label}.`);
+                this.notify(formatAgentUiNotice(this.translator, 'nothingCopyLabel', { label: label }));
                 return;
             }
             if (this.surfaceAccessor?.writeTerminalClipboardText?.(text)) {
-                this.notify(`Copied ${label}.`);
+                this.notify(formatAgentUiNotice(this.translator, 'copiedLabel', { label: label }));
                 return;
             }
             this.notify(text);
@@ -1382,13 +1382,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected async retryFailedEventHandler(message: AgentMessage): Promise<boolean> {
         void message;
         if (this.isTurnInProgress()) {
-            this.notify(this.translator?.translate('agent.notice.busy') || 'Wait for the current turn to finish.');
+            this.notify(formatAgentUiNotice(this.translator, 'busy'));
             return false;
         }
         const lastUser = [...this.state.messages].reverse().find(item =>
             item.role === 'user' && !!String(item.content || '').trim());
         if (!lastUser) {
-            this.notify(this.translator?.translate('agent.notice.nothingToRetry') || 'Nothing to retry.');
+            this.notify(formatAgentUiNotice(this.translator, 'nothingToRetry'));
             return false;
         }
         this.state.setInput(String(lastUser.content || ''), String(lastUser.content || '').length);
@@ -1438,7 +1438,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             const rev = this.state.planRevision > 0 ? ` at revision ${this.state.planRevision}` : '';
             const instruction = `Retry plan step${rev}: ${todo.content}`;
             this.state.setInput(instruction, instruction.length);
-            this.notify('Plan step reopened. Press Enter to continue it.');
+            this.notify(formatAgentUiNotice(this.translator, 'planStepReopened'));
         };
     }
 
@@ -1487,7 +1487,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             const sessionId = this.state.sessionId;
             const selected = this.state.tools.find(item => item.name === name);
             if (selected?.active) {
-                this.notify(`Tool ${name} is already active.`);
+                this.notify(formatAgentUiNotice(this.translator, 'toolAlreadyActive', { name: name }));
                 return;
             }
             try {
@@ -1499,10 +1499,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.state.setSelectedToolName(name);
                 const current = this.state.tools.find(item => item.name === name);
                 this.notify(activated || current?.active
-                    ? `Activated ${name}.`
-                    : `Tool ${name} could not be activated.`);
+                    ? formatAgentUiNotice(this.translator, 'toolActivated', { name: name })
+                    : formatAgentUiNotice(this.translator, 'toolActivateFailed', { name: name }));
             } catch (error: any) {
-                this.notify(error?.message || `Failed to activate ${name}.`);
+                this.notify(error?.message || formatAgentUiNotice(this.translator, 'toolActivationError', { name: name }));
             }
         };
     }
@@ -1519,8 +1519,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             const applied = await this.applyApprovalDecision(decision, requestId);
             await this.refreshPendingApprovals();
             this.notify(applied
-                ? `${decision === 'approve' ? 'Approved' : 'Denied'} ${request.toolName} (${requestId.slice(0, 8)}).`
-                : `Approval request ${requestId.slice(0, 8)} is no longer pending.`);
+                ? formatAgentUiNotice(this.translator, 'approvalApplied', { decision: formatAgentUiNotice(this.translator, decision === 'approve' ? 'approvalDecisionApprove' : 'approvalDecisionDeny'), tool: request.toolName, id: requestId.slice(0, 8) })
+                : formatAgentUiNotice(this.translator, 'approvalNoLongerPending', { id: requestId.slice(0, 8) }));
         };
     }
 
@@ -2107,6 +2107,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                 setNavViewScroll: (viewId, scroll) => self.state.setNavViewScroll(viewId, scroll),
             },
             notify: (m, d) => self.notify(m, d),
+            translator: self.translator,
             pushCommandOutput: (c, t, k) => self.pushCommandOutput(c, t, k),
             select: (t, o, i, h) => self.select(t, o, i, h),
             isTurnInProgress: () => self.isTurnInProgress(),
@@ -2325,14 +2326,14 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             return result?.output;
         }
         if (!this.toolRegistry || typeof this.toolRegistry.invoke !== 'function') {
-            throw new Error('Terminal tool is not available in this environment.');
+            throw new Error(formatAgentUiNotice(this.translator, 'terminalToolUnavailable'));
         }
         if (typeof this.toolRegistry.isToolActive === 'function') {
             const active = await this.toolRegistry.isToolActive(sessionId, 'terminal');
             if (!active) {
                 const activated = await this.activateToolForSession('terminal', sessionId);
                 if (!activated) {
-                    throw new Error('Terminal tool is not activated for this session. Approve activation or use /tools.');
+                    throw new Error(formatAgentUiNotice(this.translator, 'terminalToolNotActivated'));
                 }
             }
         }
@@ -2367,8 +2368,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     private turnStreamHost(): AgentConsoleTurnStreamHost {
         return {
             state: this.state,
-            destroyed: this.destroyed,
-            translator: this.translator,
+            destroyed: this.destroyed, translator: this.translator,
             appRpc: this.appRpc,
             runtime: this.runtime,
             updateTerminalTitle: () => this.updateTerminalTitle(),
@@ -2641,7 +2641,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             appRpc: this.appRpc,
             rawModeStore: this.rawModeStore,
             activeThemeName: this.activeThemeName,
-            notify: (message: string) => this.notify(message),
+            notify: (message: string) => this.notify(message), translator: this.translator,
             select: (title: string, options: any[], index: number, hint?: string) => this.select(title, options, index, hint),
             pushCommandOutput: (command: string, text: string, kind?: any) => this.pushCommandOutput(command, text, kind),
             applyTheme: (name: string) => this.applyTheme(name),
@@ -2668,7 +2668,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         } else {
             this.state.setShowThinking(!this.state.showThinking);
         }
-        this.notify(this.state.showThinking ? 'Showing reasoning messages.' : 'Hiding reasoning messages.');
+        this.notify(this.state.showThinking ? formatAgentUiNotice(this.translator, 'showingReasoningMessages') : formatAgentUiNotice(this.translator, 'hidingReasoningMessages'));
         return true;
     }
 
@@ -2685,7 +2685,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         const queue = this.queuedPrompts.get(this.state.sessionId) || [];
         if (!parsed || parsed.toLowerCase() === 'list') {
             if (!queue.length) {
-                this.notify(this.translator?.translate('agent.notice.noQueuedPrompts') || 'No queued prompts. Press Tab while a turn is running to queue a follow-up prompt.');
+                this.notify(formatAgentUiNotice(this.translator, 'noQueuedPrompts'));
                 return true;
             }
             const lines = queue.map((entry, index) =>
@@ -2696,21 +2696,21 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         }
         if (parsed.toLowerCase() === 'clear') {
             if (!queue.length) {
-                this.notify(this.translator?.translate('agent.notice.noQueuedPromptsClear') || 'No queued prompts to clear.');
+                this.notify(formatAgentUiNotice(this.translator, 'noQueuedPromptsClear'));
                 return true;
             }
             this.queuedPrompts.delete(this.state.sessionId);
             this.state.setQueuedPromptCount(0);
-            this.notify(`Cleared ${queue.length} queued prompt${queue.length === 1 ? '' : 's'}.`);
+            this.notify(formatAgentUiNotice(this.translator, 'clearedQueuedPrompts', { queueLength: queue.length, plural: queue.length === 1 ? '' : 's' }));
             return true;
         }
-        this.notify(this.translator?.translate('agent.notice.queueUsage') || 'Usage: /queue [list|clear]');
+        this.notify(formatAgentUiNotice(this.translator, 'queueUsage'));
         return true;
     }
 
     protected async applyTheme(value: string): Promise<boolean> {
         if (!isAgentConsoleThemeName(value)) {
-            this.notify(`Unknown theme "${value}". Available: ${agentConsoleThemeNames.join(', ')}.`);
+            this.notify(formatAgentUiNotice(this.translator, 'unknownThemeValue', { value: value, names: agentConsoleThemeNames.join(', ') }));
             return true;
         }
         this.activeThemeName = value;
@@ -2718,10 +2718,10 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         try {
             await this.themeStore?.save(this.resolveHistoryWorkspace(), value);
         } catch (error: any) {
-            this.notify(error?.message || `Applied ${value}, but failed to save the theme.`);
+            this.notify(error?.message || formatAgentUiNotice(this.translator, 'themeApplySaveFailed', { theme: value }));
             return true;
         }
-        this.notify(`Theme set to ${value}.`);
+        this.notify(formatAgentUiNotice(this.translator, 'themeSet', { value: value }));
         return true;
     }
 
@@ -2811,10 +2811,10 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         try {
             await this.titleStore?.save(this.resolveHistoryWorkspace(), fields);
         } catch (error: any) {
-            this.notify(error?.message || 'Updated the window title fields, but failed to save them.');
+            this.notify(error?.message || formatAgentUiNotice(this.translator, 'windowTitleSaveFailed'));
             return true;
         }
-        this.notify(fields.length ? `Window title set to ${fields.join(', ')}.` : 'Window title cleared.');
+        this.notify(fields.length ? formatAgentUiNotice(this.translator, 'windowTitleSet', { fields: fields.join(', ') }) : formatAgentUiNotice(this.translator, 'windowTitleCleared'));
         return true;
     }
 
@@ -2843,10 +2843,10 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         try {
             await this.statuslineStore?.save(this.resolveHistoryWorkspace(), fields);
         } catch (error: any) {
-            this.notify(error?.message || 'Updated the statusline, but failed to save it.');
+            this.notify(error?.message || formatAgentUiNotice(this.translator, 'statuslineSaveFailed'));
             return true;
         }
-        this.notify(fields.length ? `Statusline set to ${fields.join(', ')}.` : 'Statusline cleared.');
+        this.notify(fields.length ? formatAgentUiNotice(this.translator, 'statuslineSet', { fields: fields.join(', ') }) : formatAgentUiNotice(this.translator, 'statuslineCleared'));
         return true;
     }
 
@@ -2904,7 +2904,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             get keymapRecording() { return self.keymapRecording; },
             set keymapRecording(value) { self.keymapRecording = value; },
             persistGlobalKeymap: () => this.persistGlobalKeymap(),
-            notify: (message: string) => this.notify(message)
+            notify: (message: string) => this.notify(message), translator: this.translator,
         };
     }
     protected globalKeyInputHost(): AgentConsoleGlobalKeyInputHost {
@@ -2923,7 +2923,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             set commandPaletteQuery(value) { self.commandPaletteQuery = value; },
             isTurnInProgress: () => this.isTurnInProgress(),
             interruptTurn: () => this.interruptTurn(),
-            notify: (message: string, duration?: number) => this.notify(message, duration),
+            notify: (message: string, duration?: number) => this.notify(message, duration), translator: this.translator,
             handleCommand: (value: string) => this.handleCommand(value),
             persistGlobalKeymap: () => this.persistGlobalKeymap(),
             runTimelineModeCommand: (args?: string) => this.runTimelineModeCommand(args),
@@ -2959,8 +2959,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             set commandPaletteQuery(value) { self.commandPaletteQuery = value; },
             sshShell: this.sshShell,
             surfaceAccessor: this.surfaceAccessor,
-            app: this.app,
-            translator: this.translator,
+            app: this.app, translator: this.translator,
             sessionService: this.sessionService,
             isTurnInProgress: () => this.isTurnInProgress(),
             notify: (message: string, duration?: number) => this.notify(message, duration),
@@ -3007,7 +3006,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             runTurnStream: (prompt: string, assistantMessage: AgentMessage, message?: AgentTurnMessageInput, profile?: string) => this.runTurnStream(prompt, assistantMessage, message, profile),
             ensureMessageAtTail: (messageId: string) => this.ensureMessageAtTail(messageId),
             advanceProviderWizard: (value: string) => this.advanceProviderWizard(value),
-            notify: (message: string, duration?: number) => this.notify(message, duration),
+            notify: (message: string, duration?: number) => this.notify(message, duration), translator: this.translator,
             handleShellBang: (value: string) => this.handleShellBang(value),
             handleCommand: (value: string) => this.handleCommand(value),
             interruptTurn: () => this.interruptTurn(),
@@ -3033,8 +3032,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
 
     protected approvalInspectorHost(): ApprovalInspectorHost {
         return {
-            state: this.state,
-            translator: this.translator,
+            state: this.state, translator: this.translator,
             notify: (message: string) => this.notify(message),
             select: (title: string, opts: any[], index: number, hint?: string) => this.select(title, opts, index, hint),
             selectApprovalRequest: (requests: AgentConsoleApprovalRequest[], index: number) => this.selectApprovalRequest(requests, index),
@@ -3047,8 +3045,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     protected settingsPanelHost(): SettingsPanelHost {
         return {
             state: this.state,
-            options: this.options,
-            translator: this.translator,
+            options: this.options, translator: this.translator,
             activeThemeName: this.activeThemeName,
             yoloMode: this.yoloMode,
             modelReasoningEffort: this.modelReasoningEffort,
@@ -3089,8 +3086,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     protected stashCommandHost(): StashCommandHost {
         return {
             state: this.state,
-            stashStore: this.stashStore,
-            translator: this.translator,
+            stashStore: this.stashStore, translator: this.translator,
             resolveHistoryWorkspace: () => this.resolveHistoryWorkspace(),
             notify: (message: string) => this.notify(message),
             pushCommandOutput: (command: string, text: string, kind?: AgentConsoleCommandOutputEntry['kind']) => this.pushCommandOutput(command, text, kind)
@@ -3110,7 +3106,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return {
             state: this.state,
             options: this.options,
-            notify: (message: string) => this.notify(message),
+            notify: (message: string) => this.notify(message), translator: this.translator,
             select: (title: string, opts: any[], index: number, hint?: string) => this.select(title, opts, index, hint),
             pushCommandOutput: (command: string, out: string, kind?: AgentConsoleCommandOutputEntry['kind']) => this.pushCommandOutput(command, out, kind),
             invokeTool: (name: string, input?: any) => this.invokeTool(name, input)
@@ -3123,7 +3119,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             options: this.options,
             runtime: this.runtime,
             appRpc: this.appRpc,
-            notify: (message: string) => this.notify(message),
+            notify: (message: string) => this.notify(message), translator: this.translator,
             rpcRequestContext: () => this.rpcRequestContext(),
             getSessionDelegationMode: (sessionId: string) => this.getSessionDelegationMode(sessionId),
             getSessionSandboxMode: (sessionId: string) => this.getSessionSandboxMode(sessionId),
@@ -3139,8 +3135,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             workspace: this.workspace,
             runtime: this.runtime,
             appRpc: this.appRpc,
-            projectMemory: this.projectMemory,
-            translator: this.translator,
+            projectMemory: this.projectMemory, translator: this.translator,
             rpcRequestContext: () => this.rpcRequestContext(),
             notify: (message: string) => this.notify(message),
             pushCommandOutput: (command: string, text: string, kind?: AgentConsoleCommandOutputEntry['kind']) => this.pushCommandOutput(command, text, kind)
@@ -3162,13 +3157,13 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         }
         this.options.tools = { ...(this.options.tools || {}), autoApprove: enabled } as any;
         await this.persistSettings({ yoloMode: enabled });
-        if (notify) this.notify(enabled ? 'Yolo mode enabled: gated tools auto-approve.' : 'Yolo mode disabled.');
+        if (notify) this.notify(enabled ? formatAgentUiNotice(this.translator, 'yoloModeEnabled') : formatAgentUiNotice(this.translator, 'yoloModeDisabled'));
     }
 
     protected async runYoloCommand(args?: string): Promise<boolean> {
         const value = String(args || '').trim().toLowerCase();
         if (value && value !== 'on' && value !== 'off') {
-            this.notify(this.translator?.translate('agent.notice.yoloUsage') || 'Usage: /yolo [on|off]');
+            this.notify(formatAgentUiNotice(this.translator, 'yoloUsage'));
             return true;
         }
         await this.setYoloMode(value ? value === 'on' : !this.yoloMode);
@@ -3203,15 +3198,15 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runDisplayCommand(args?: string): Promise<boolean> {
-        return runDisplayCommand(args, this.state, (message: string) => this.notify(message), (patch: Record<string, any>) => this.persistSettings(patch));
+        return runDisplayCommand(args, this.state, (message: string) => this.notify(message), (patch: Record<string, any>) => this.persistSettings(patch), this.translator);
     }
 
     protected async runLayoutCommand(args?: string): Promise<boolean> {
-        return runLayoutCommand(args, this.state, (message: string) => this.notify(message), (patch: Record<string, any>) => this.persistSettings(patch));
+        return runLayoutCommand(args, this.state, (message: string) => this.notify(message), (patch: Record<string, any>) => this.persistSettings(patch), this.translator);
     }
 
     protected async runTimelineModeCommand(args?: string): Promise<boolean> {
-        return runTimelineModeCommand(args, this.state, (message: string) => this.notify(message), (patch: Record<string, any>) => this.persistSettings(patch));
+        return runTimelineModeCommand(args, this.state, (message: string) => this.notify(message), (patch: Record<string, any>) => this.persistSettings(patch), this.translator);
     }
 
     protected async invokeTool(name: string, input: any): Promise<any> {
@@ -3249,7 +3244,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             servers.set(serverId, entry);
         }
         if (!servers.size) {
-            this.notify(this.translator?.translate('agent.notice.noMcpServers') || 'No MCP servers configured. Add them via the agent settings (tsdi-agent mcp add).');
+            this.notify(formatAgentUiNotice(this.translator, 'noMcpServers'));
             return true;
         }
         const lines = Array.from(servers.entries()).map(([serverId, entry]) => {
@@ -3297,31 +3292,31 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                 const share = await this.appRpc.request('session.share.create', { sessionId }, this.rpcRequestContext());
                 const token = String(share?.token || '').trim();
                 if (!token) {
-                    this.notify('Sharing is not available in this gateway.');
+                    this.notify(formatAgentUiNotice(this.translator, 'sharingNotAvailable'));
                     return true;
                 }
                 const url = String(share?.url || `/api/share/${token}`).trim();
                 await this.openSharePanel(token, url);
                 return true;
             } catch (error: any) {
-                this.notify(`Failed to create a share: ${error?.message || String(error)}`);
+                this.notify(formatAgentUiNotice(this.translator, 'failedCreateShare', { error: error?.message || String(error) }));
                 return true;
             }
         }
-        this.notify('Sharing requires a gateway (app RPC). Start the agent through the gateway or web console.');
+        this.notify(formatAgentUiNotice(this.translator, 'sharingRequiresGateway2'));
         return true;
     }
 
     protected async runUnshareCommand(args?: string): Promise<boolean> {
         const token = String(args || '').trim();
         if (!this.appRpc) {
-            this.notify('Sharing requires a gateway (app RPC).');
+            this.notify(formatAgentUiNotice(this.translator, 'sharingRequiresGateway'));
             return true;
         }
         if (!token) {
             const shares = await this.appRpc.request('session.share.list', { sessionId: this.state.sessionId }, this.rpcRequestContext()).catch(() => []);
             if (!Array.isArray(shares) || !shares.length) {
-                this.notify('No active shares for this session. Usage: /unshare <token>');
+                this.notify(formatAgentUiNotice(this.translator, 'activeSharesSession'));
                 return true;
             }
             const selected = await this.select('Active shares', shares.map((share: any) => ({
@@ -3339,12 +3334,12 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         try {
             const result = await this.appRpc?.request('session.share.revoke', { token });
             if (result?.revoked === false) {
-                this.notify(`Share ${String(token).slice(0, 12)}… is no longer active.`);
+                this.notify(formatAgentUiNotice(this.translator, 'shareTokenNoLongerActive', { token: String(token).slice(0, 12) }));
                 return true;
             }
-            this.notify(`Share ${String(token).slice(0, 12)}… revoked.`);
+            this.notify(formatAgentUiNotice(this.translator, 'shareTokenRevoked', { token: String(token).slice(0, 12) }));
         } catch (error: any) {
-            this.notify(`Failed to revoke the share: ${error?.message || String(error)}`);
+            this.notify(formatAgentUiNotice(this.translator, 'failedRevokeShare', { error: error?.message || String(error) }));
         }
         return true;
     }
@@ -3370,14 +3365,14 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
 
     protected async runApproveRetryCommand(): Promise<boolean> {
         if (!this.appRpc) {
-            this.notify('Auto-review retry requires a gateway (app RPC).');
+            this.notify(formatAgentUiNotice(this.translator, 'autoReviewRetry'));
             return true;
         }
         const result = await this.appRpc.request('harness.rejected_actions', { sessionId: this.state.sessionId }, this.rpcRequestContext())
             .catch(() => null);
         const actions = Array.isArray(result?.actions) ? result.actions : [];
         if (!actions.length) {
-            this.notify('No auto-review-rejected actions to retry.');
+            this.notify(formatAgentUiNotice(this.translator, 'autoReviewRejected'));
             return true;
         }
         const action = actions[0];
@@ -3393,24 +3388,24 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                 evidenceId: selected,
                 toolName: action.toolName
             }, this.rpcRequestContext());
-            this.notify(`Retried ${action.toolName} once after auto-review rejection.`);
+            this.notify(formatAgentUiNotice(this.translator, 'retriedOnceAfter', { toolName: action.toolName }));
         } catch (error: any) {
-            this.notify(`Retry failed: ${error?.message || String(error)}`);
+            this.notify(formatAgentUiNotice(this.translator, 'retryFailedError', { error: error?.message || String(error) }));
         }
         return true;
     }
 
     protected async runExperimentalCommand(args?: string): Promise<boolean> {
-        return runExperimentalCommand(args, this.options, (message: string) => this.notify(message));
+        return runExperimentalCommand(args, this.options, (message: string) => this.notify(message), this.translator);
     }
 
     protected async runFeedbackCommand(): Promise<boolean> {
         this.notify([
-            'Packaging diagnostics for feedback:',
-            '1. Run /debug-config and include the output.',
-            '2. Include the session transcript (messages panel or /export).',
-            '3. Note the agent version and host (CLI/Web/IDE/Desktop).',
-            '4. If it reproduces, include the exact command or prompt.'
+            formatAgentUiNotice(this.translator, 'feedbackPackagingDiagnostics'),
+            formatAgentUiNotice(this.translator, 'feedbackStep1'),
+            formatAgentUiNotice(this.translator, 'feedbackStep2'),
+            formatAgentUiNotice(this.translator, 'feedbackStep3'),
+            formatAgentUiNotice(this.translator, 'feedbackStep4')
         ].join('\n'));
         return true;
     }
@@ -3423,13 +3418,13 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return {
             backgroundTasks: this.backgroundTasks ?? null,
             state: this.state,
-            notify: message => this.notify(message),
+            notify: message => this.notify(message), translator: this.translator,
             pushCommandOutput: (command, text) => this.pushCommandOutput(command, text)
         };
     }
 
     protected async runIdeCommand(args?: string): Promise<boolean> {
-        return runIdeCommand(this.ideBridge, (message: string) => this.notify(message), (command: string, text: string) => this.pushCommandOutput(command, text), args);
+        return runIdeCommand(this.ideBridge, (message: string) => this.notify(message), (command: string, text: string) => this.pushCommandOutput(command, text), args, this.translator);
     }
 
     protected async runEditorCommand(args?: string): Promise<boolean> {
@@ -3443,23 +3438,23 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             return true;
         }
         if (result.cancelled || result.content === undefined) {
-            this.notify('Editor closed without changes.');
+            this.notify(formatAgentUiNotice(this.translator, 'editorClosedChanges'));
             return true;
         }
         this.state.setInput(result.content, result.content.length);
-        this.notify(`Draft updated from editor (${result.content.length} chars).`);
+        this.notify(formatAgentUiNotice(this.translator, 'draftUpdatedEditor', { length: result.content.length }));
         return true;
     }
 
     protected async openExternalEditor(initial: string): Promise<{ content?: string; cancelled?: boolean } | undefined> {
         if (!this.editorBridge?.available) {
-            this.notify('No external editor available. Set $EDITOR or $VISUAL (agent-cli host) to enable Ctrl+G / /editor.');
+            this.notify(formatAgentUiNotice(this.translator, 'externalEditorAvailable'));
             return undefined;
         }
         try {
             return await this.editorBridge.open(initial);
         } catch (error: any) {
-            this.notify(error?.message || 'External editor failed to start.');
+            this.notify(error?.message || formatAgentUiNotice(this.translator, 'externalEditorStartFailed'));
             return undefined;
         }
     }
@@ -3489,7 +3484,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     private editCtx(): EditModeHandlerContext {
         return {
             state: this.state,
-            notify: (message, duration) => this.notify(message, duration),
+            notify: (message, duration) => this.notify(message, duration), translator: this.translator,
             editEscapeWindowMs: this.state.consoleOptions.editEscapeWindowMs,
             getEditableUserMessages: () => getEditableUserMessages(this.state.messages),
             extractEditableMessageText: target => extractEditableMessageText(target),
@@ -3664,7 +3659,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             appRpc: this.appRpc,
             options: () => this.options,
             modelStore: this.modelStore,
-            notify: (message, duration) => this.notify(message, duration),
+            notify: (message, duration) => this.notify(message, duration), translator: this.translator,
             select: (title, options, selectedIndex, hint) => this.select(title, options, selectedIndex, hint),
             updateTerminalTitle: () => this.updateTerminalTitle(),
             persistSettings: patch => this.persistSettings(patch),
@@ -3791,7 +3786,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                 this.pushCommandOutput('/init', `AGENTS.md ${result.reason}`);
             }
         } catch (error) {
-            this.notify(`Failed to create AGENTS.md: ${error instanceof Error ? error.message : String(error)}`);
+            this.notify(formatAgentUiNotice(this.translator, 'failedCreateAgents', { error: error instanceof Error ? error.message : String(error) }));
         }
     }
 
@@ -3813,9 +3808,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                 this.runtime.setPlanMode(sessionId, enabled);
             }
             this.state.setPlanMode(enabled);
-            this.notify(enabled ? 'Plan mode enabled — write tools will be denied.' : 'Plan mode disabled.');
+            this.notify(enabled ? formatAgentUiNotice(this.translator, 'planModeEnabled') : formatAgentUiNotice(this.translator, 'planModeDisabled'));
         } catch (error) {
-            this.notify(`Failed to set plan mode: ${error instanceof Error ? error.message : String(error)}`);
+            this.notify(formatAgentUiNotice(this.translator, 'failedSetPlan', { error: error instanceof Error ? error.message : String(error) }));
         }
     }
 
@@ -3826,7 +3821,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             if (!name) {
                 const current = this.runtime.getSessionArchetype(sessionId);
                 const available = this.runtime.listArchetypes().join(', ');
-                this.notify(`Session archetype: ${current}. Available: ${available}.`);
+                this.notify(formatAgentUiNotice(this.translator, 'sessionArchetypeAvailable', { current: current, available: available }));
                 return;
             }
             if (this.appRpc) {
@@ -3834,9 +3829,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             } else {
                 this.runtime.setSessionArchetype(sessionId, name);
             }
-            this.notify(`Session ${sessionId} switched to the "${name}" archetype.`);
+            this.notify(formatAgentUiNotice(this.translator, 'sessionSwitchedArchetype', { sessionId: sessionId, name: name }));
         } catch (error) {
-            this.notify(`Failed to set archetype: ${error instanceof Error ? error.message : String(error)}`);
+            this.notify(formatAgentUiNotice(this.translator, 'failedSetArchetype', { error: error instanceof Error ? error.message : String(error) }));
         }
     }
 
@@ -3845,7 +3840,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runVimCommand(args: string): Promise<void> {
-        return runVimCommand(args, this.state, (message: string) => this.notify(message));
+        return runVimCommand(args, this.state, (message: string) => this.notify(message), this.translator);
     }
 
     protected resolveKeymapContext(): AgentConsoleKeymapContext {
@@ -3860,7 +3855,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
         const action = (tokens[0] || 'list').toLowerCase();
         if (action === 'help' || action === '?') {
-            this.notify('Usage: /ssh [list] | connect <host> | disconnect <host> | shell <host> | forward <host> <destAddr> <destPort> [srcAddr] [srcPort]');
+            this.notify(formatAgentUiNotice(this.translator, 'sshUsage'));
             return;
         }
         if (action === 'list' || action === 'ls') {
@@ -3883,58 +3878,58 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             await this.forwardSshTunnel(tokens.slice(1));
             return;
         }
-        this.notify('Unknown /ssh command. Usage: /ssh [list] | connect <host> | disconnect <host> | shell <host> | forward <host> <destAddr> <destPort> [srcAddr] [srcPort]');
+        this.notify(formatAgentUiNotice(this.translator, 'unknownSshCommand'));
     }
 
     protected listSshHosts(): void {
-        listSshHosts(this.sshManager, (message: string) => this.notify(message));
+        listSshHosts(this.sshManager, (message: string) => this.notify(message), this.translator);
     }
 
     protected async connectSshHost(id: string | undefined): Promise<void> {
-        return connectSshHost(this.sshManager, (message: string) => this.notify(message), id);
+        return connectSshHost(this.sshManager, (message: string) => this.notify(message), id, this.translator);
     }
 
     protected async disconnectSshHost(id: string | undefined): Promise<void> {
         if (!id) {
-            this.notify('Usage: /ssh disconnect <host>');
+            this.notify(formatAgentUiNotice(this.translator, 'sshDisconnectUsage'));
             return;
         }
         if (!this.sshManager) {
-            this.notify('SSH is not configured. Configure hosts via provideSsh({ hosts }) and import AgentSshModule.');
+            this.notify(formatAgentUiNotice(this.translator, 'sshNotConfigured'));
             return;
         }
         const disconnected = await this.sshManager.disconnect(id);
         this.notify(disconnected
-            ? `Disconnected from ${id}.`
-            : `SSH host '${id}' is not connected.`);
+            ? formatAgentUiNotice(this.translator, 'sshDisconnected', { id: id })
+            : formatAgentUiNotice(this.translator, 'sshHostNotConnected', { id: id }));
     }
 
     protected async forwardSshTunnel(tokens: string[]): Promise<void> {
-        return forwardSshTunnel(this.sshManager, (message: string) => this.notify(message), tokens);
+        return forwardSshTunnel(this.sshManager, (message: string) => this.notify(message), tokens, this.translator);
     }
 
     protected async startSshShell(id: string | undefined): Promise<void> {
         if (!id) {
-            this.notify('Usage: /ssh shell <host>');
+            this.notify(formatAgentUiNotice(this.translator, 'sshShellUsage'));
             return;
         }
         if (!this.sshManager) {
-            this.notify('SSH is not configured. Configure hosts via provideSsh({ hosts }) and import AgentSshModule.');
+            this.notify(formatAgentUiNotice(this.translator, 'sshNotConfigured'));
             return;
         }
         if (!this.sshManager.hasHost(id)) {
-            this.notify(`SSH host '${id}' is not configured. Use /ssh list to see available hosts.`);
+            this.notify(formatAgentUiNotice(this.translator, 'sshHostNotConfigured', { id: id }));
             return;
         }
         if (this.state.isSshShellActive) {
-            this.notify(`Already in SSH shell on ${this.state.sshShell?.hostId}. Press Ctrl+] to detach.`);
+            this.notify(formatAgentUiNotice(this.translator, 'alreadySshShell', { hostId: this.state.sshShell?.hostId }));
             return;
         }
         let client: SshClient;
         try {
             client = await this.sshManager.connect(id);
         } catch (error) {
-            this.notify(`SSH connect failed: ${error instanceof Error ? error.message : String(error)}`);
+            this.notify(formatAgentUiNotice(this.translator, 'sshConnectFailed', { error: error instanceof Error ? error.message : String(error) }));
             return;
         }
         const size = this.surfaceAccessor?.getTerminalSize?.() ?? { cols: 80, rows: 24 };
@@ -3942,7 +3937,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         try {
             shell = await client.shell({ term: 'xterm-256color', cols: size.cols, rows: size.rows });
         } catch (error) {
-            this.notify(`SSH shell failed: ${error instanceof Error ? error.message : String(error)}`);
+            this.notify(formatAgentUiNotice(this.translator, 'sshShellFailed', { error: error instanceof Error ? error.message : String(error) }));
             return;
         }
         this.sshShell = shell;
@@ -3960,7 +3955,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         };
         shell.stream.on('close', onEnd);
         shell.stream.on('error', onEnd);
-        this.notify(`SSH shell started on ${id}. Terminal bytes stream live; press Ctrl+] to detach.`);
+        this.notify(formatAgentUiNotice(this.translator, 'sshShellStarted', { id: id }));
     }
 
     protected async detachSshShell(reason: 'detached' | 'closed'): Promise<void> {
@@ -3978,8 +3973,8 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         this.surfaceAccessor?.resetTerminalRenderState?.();
         if (hostId) {
             this.notify(reason === 'detached'
-                ? `SSH shell detached from ${hostId}.`
-                : `SSH shell on ${hostId} closed.`);
+                ? formatAgentUiNotice(this.translator, 'sshShellDetached', { hostId: hostId })
+                : formatAgentUiNotice(this.translator, 'sshShellClosed', { hostId: hostId }));
         }
     }
 
@@ -4010,7 +4005,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         await this.persistInputHistory();
         this.state.setWorkspace(resolved);
         await this.restoreInputHistory();
-        this.notify(`workspace → ${resolved}`);
+        this.notify(formatAgentUiNotice(this.translator, 'workspaceArrow', { resolved: resolved }));
     }
 
     protected async runStatusCommand(): Promise<void> {
@@ -4065,12 +4060,16 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
                     ? await this.runtime.undoFileChange(sessionId)
                     : await this.runtime.redoFileChange(sessionId);
             if (!result || result.restored === 'none') {
-                this.notify(direction === 'undo' ? 'Nothing to undo.' : 'Nothing to redo.');
+                this.notify(direction === 'undo' ? formatAgentUiNotice(this.translator, 'nothingToUndo') : formatAgentUiNotice(this.translator, 'nothingToRedo'));
                 return;
             }
-            this.notify(`${direction === 'undo' ? 'Undid' : 'Redid'} ${result.filePath} (${result.restored}).`);
+            this.notify(direction === 'undo'
+                ? formatAgentUiNotice(this.translator, 'undidFile', { filePath: result.filePath, restored: result.restored })
+                : formatAgentUiNotice(this.translator, 'redidFile', { filePath: result.filePath, restored: result.restored }));
         } catch (error) {
-            this.notify(`Failed to ${direction}: ${error instanceof Error ? error.message : String(error)}`);
+            this.notify(direction === 'undo'
+                ? formatAgentUiNotice(this.translator, 'failedUndo', { error: error instanceof Error ? error.message : String(error) })
+                : formatAgentUiNotice(this.translator, 'failedRedo', { error: error instanceof Error ? error.message : String(error) }));
         }
     }
 

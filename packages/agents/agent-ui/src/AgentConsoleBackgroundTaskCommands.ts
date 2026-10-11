@@ -1,11 +1,13 @@
 import type { BackgroundTaskManager, BackgroundTaskRecord, BackgroundTaskCancelOutcome, BackgroundTaskRestoreOutcome } from '@tsdi/agent-tools';
 import { formatBackgroundTaskDetail } from './AgentConsoleBackgroundTaskFormat';
+import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 /**
  * Host surface required by the `/ps` background task command.
  * The component satisfies this interface structurally when delegating.
  */
 export interface BackgroundTaskCommandHost {
+    translator?: AgentUiTranslator | null;
     backgroundTasks: BackgroundTaskManager | null;
     state: {
         sessionId: string;
@@ -43,19 +45,19 @@ export async function runBackgroundTasksCommandView(host: BackgroundTaskCommandH
     const parsed = String(args || '').trim();
     const parts = parsed.split(/\s+/).filter(Boolean);
     if (!host.backgroundTasks) {
-        host.notify('Background task manager not available in this environment.');
+        host.notify(formatAgentUiNotice(host.translator, 'backgroundTaskManager'));
         return true;
     }
     const sub = (parts[0] || '').toLowerCase();
     if (sub === 'show') {
         const taskId = parts[1];
         if (!taskId) {
-            host.notify('Usage: /ps show <taskId>');
+            host.notify(formatAgentUiNotice(host.translator, 'psShowUsage'));
             return true;
         }
         const task = findBackgroundTask(host, taskId);
         if (!task) {
-            host.notify(`No background task ${taskId}.`);
+            host.notify(formatAgentUiNotice(host.translator, 'backgroundTask', { taskId: taskId }));
             return true;
         }
         host.pushCommandOutput(`/ps show ${taskId}`, formatBackgroundTaskDetail(task));
@@ -64,7 +66,7 @@ export async function runBackgroundTasksCommandView(host: BackgroundTaskCommandH
     if (sub === 'stop') {
         const taskIds = parts.slice(1);
         if (!taskIds.length) {
-            host.notify('Usage: /ps stop <taskId> [<taskId> ...]');
+            host.notify(formatAgentUiNotice(host.translator, 'psStopUsage'));
             return true;
         }
         const manager = host.backgroundTasks as BackgroundTaskManager & { cancelBatch?: (ids: string[]) => BackgroundTaskCancelOutcome[] };
@@ -93,7 +95,7 @@ export async function runBackgroundTasksCommandView(host: BackgroundTaskCommandH
         const taskIds = parts.slice(1);
         const manager = host.backgroundTasks as BackgroundTaskManager & { restoreBatch?: (ids: string[]) => BackgroundTaskRestoreOutcome[] };
         if (typeof manager.restoreBatch !== 'function') {
-            host.notify('Undo is not supported by this background task manager.');
+            host.notify(formatAgentUiNotice(host.translator, 'undoNotSupported'));
             return true;
         }
         const outcomes = manager.restoreBatch(taskIds);
@@ -112,7 +114,7 @@ export async function runBackgroundTasksCommandView(host: BackgroundTaskCommandH
     const filter = (parts[0] || 'current').toLowerCase();
     const allowed = new Set(['current', 'all', 'running', 'completed', 'failed', 'cancelled']);
     if (!allowed.has(filter)) {
-        host.notify('Usage: /ps [all|running|completed|failed|cancelled] | /ps show <taskId> | /ps stop <taskId> [...] | /ps undo [...]');
+        host.notify(formatAgentUiNotice(host.translator, 'psUsage'));
         return true;
     }
     const manager = host.backgroundTasks as BackgroundTaskManager & { listAll?: () => BackgroundTaskRecord[] };
@@ -126,7 +128,7 @@ export async function runBackgroundTasksCommandView(host: BackgroundTaskCommandH
         && (['running', 'completed', 'failed', 'cancelled'].includes(filter) ? task.status === filter : true)
     );
     if (!tasks.length) {
-        host.notify(`No ${filter === 'all' ? '' : filter + ' '}background tasks.`);
+        host.notify(formatAgentUiNotice(host.translator, 'noBackgroundTasksFiltered', { filter: filter === 'all' ? '' : filter + ' ' }));
         return true;
     }
     const lines = tasks.map(task => {

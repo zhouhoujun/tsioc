@@ -14,6 +14,7 @@ import {
     resolveWizardProviderName,
     resolveWizardTierLabel
 } from './AgentConsoleProviderWizard';
+import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 export interface AgentWizardValues {
     providerId?: string;
@@ -36,6 +37,7 @@ export interface AgentWizardHolder {
 }
 
 export interface ProviderWizardContext {
+    translator?: AgentUiTranslator | null;
     state: any;
     appRpc?: any;
     uiConfig?: any;
@@ -61,7 +63,7 @@ export function providerWizardConfirmOptions(holder: AgentWizardHolder, ctx: Pro
 
 export function startProviderWizard(ctx: ProviderWizardContext, holder: AgentWizardHolder, ): void {
         if (!ctx.appRpc && !ctx.uiConfig) {
-            ctx.notify('Model configuration storage is unavailable.');
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'modelConfigurationStorage'));
             return;
         }
         if (ctx.isTurnInProgress()) {
@@ -89,7 +91,7 @@ export function cancelProviderWizard(ctx: ProviderWizardContext, holder: AgentWi
         ctx.state.closeProviderWizard();
         ctx.state.setInputPlaceholder(ctx.state.consoleOptions.inputPlaceholder);
         ctx.state.setInput('', 0);
-        ctx.notify('Add provider cancelled.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'addProviderCancelled'));
         return true;
     }
 
@@ -140,7 +142,7 @@ export function showProviderWizardStep(ctx: ProviderWizardContext, holder: Agent
             help: buildWizardStepHelp(step, wizard.values),
             hint: 'enter confirm   esc back', secret, summary
         });
-        ctx.notify(`${progress}: ${buildWizardStepHelp(step, wizard.values)}`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'wizardProgressStep', { progress: progress, help: buildWizardStepHelp(step, wizard.values) }));
     }
 
 
@@ -230,10 +232,10 @@ export async function testProviderConnection(ctx: ProviderWizardContext, holder:
         const def = resolveWizardProviderDef(values.providerId);
         const baseUrl = values.baseUrl || def?.baseUrl || '';
         if (!/^https?:\/\//i.test(baseUrl)) {
-            ctx.notify('Enter a valid base URL before testing.');
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'enterValidBase'));
             return;
         }
-        ctx.notify('Testing connection…');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'testingConnection'));
         let result: { ok: boolean; models?: string[]; error?: string };
         try {
             result = await ctx.appRpc.request('provider.test', {
@@ -278,14 +280,14 @@ export async function commitProviderWizard(ctx: ProviderWizardContext, holder: A
         const values = wizard.values;
         const def = resolveWizardProviderDef(values.providerId);
         if (!def || !values.providerId || !values.modelFast) {
-            ctx.notify('Provider was not saved: a provider and model are required.');
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'providerWasNot'));
             showProviderWizardStep(ctx, holder);
             return;
         }
         const name = resolveWizardProviderName(values);
         const baseUrl = (values.baseUrl || def.baseUrl || '').replace(/\/+$/, '');
         if (!/^https?:\/\//i.test(baseUrl)) {
-            ctx.notify('Provider was not saved: enter a valid http(s) API base URL.');
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'providerWasNot2'));
             wizard.stepIndex = Math.max(0, providerWizardSteps(holder).findIndex(step => step.id === 'base-url'));
             showProviderWizardStep(ctx, holder);
             return;
@@ -300,7 +302,7 @@ export async function commitProviderWizard(ctx: ProviderWizardContext, holder: A
                 provider: def.adapter, baseUrl, ...authFields
             }, ctx.rpcRequestContext()).catch(() => undefined);
             if (validation && validation.ok === false) {
-                ctx.notify(`Provider was not saved: ${validation.error || 'connection test failed'}.`);
+                ctx.notify(formatAgentUiNotice(ctx.translator, 'providerNotSaved', { validation: validation.error || 'connection test failed' }));
                 showProviderWizardStep(ctx, holder);
                 return;
             }
@@ -361,7 +363,7 @@ export async function commitProviderWizard(ctx: ProviderWizardContext, holder: A
         }
         const label = def.label;
         resetProviderWizardComposer(ctx, holder);
-        ctx.notify(`Added ${label} provider (${name}). Type /model to use it.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'addedProviderType', { label: label, name: name }));
     }
 
 export async function advanceProviderWizard(ctx: ProviderWizardContext, holder: AgentWizardHolder, value: string): Promise<void> {
@@ -372,11 +374,11 @@ export async function advanceProviderWizard(ctx: ProviderWizardContext, holder: 
         const trimmed = String(value || '').trim();
         const values = wizard.values;
         if (!trimmed) {
-            ctx.notify(`${step.label} is required. Press Esc to go back.`);
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'stepRequiredPressEsc', { label: step.label }));
             return;
         }
         if (step.id === 'base-url' && !/^https?:\/\//i.test(trimmed)) {
-            ctx.notify('Base URL must start with http(s)://.');
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'baseUrlMust'));
             return;
         }
         applyWizardStepEnter(values, step.id, trimmed);

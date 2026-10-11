@@ -1,5 +1,6 @@
 import { formatCompactNumber } from '@tsdi/core';
 import { AgentConsoleSelectOption } from './AgentConsoleSessionState';
+import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 import { formatCompactionHistoryAggregate, formatSummaryQualityAggregate, formatTurnDiagnosticsAggregate, formatTurnDiagnosticsTrend, formatUsageSummary, buildSummaryQualityRecordOption } from './AgentConsoleFormatters';
 
 export interface AgentConsoleDigestState {
@@ -197,22 +198,22 @@ export function parseCompactionHistoryTrendArgs(
     return { sessionId, bucketSize, maxBuckets };
 }
 
-export async function runHarnessStopCommand(sessionService: any, notify: (message: string) => void, taskId: string): Promise<boolean> {
+export async function runHarnessStopCommand(sessionService: any, notify: (message: string) => void, taskId: string, translator?: AgentUiTranslator | null): Promise<boolean> {
     if (!sessionService) {
-        notify('Background task cancellation is unavailable without app RPC.');
+        notify(formatAgentUiNotice(translator, 'harnessStopUnavailable'));
         return true;
     }
     const id = (taskId || '').trim();
     if (!id) {
-        notify('Usage: /harness stop <taskId>');
+        notify(formatAgentUiNotice(translator, 'harnessStopUsage'));
         return true;
     }
     const result = await sessionService.cancelBackgroundTasks([id]);
     const cancelled = result?.cancelled ?? [];
     if (cancelled.includes(id)) {
-        notify(`Cancelled background task '${id}'.`);
+        notify(formatAgentUiNotice(translator, 'harnessTaskCancelled', { id }));
     } else {
-        notify(`Background task '${id}' was not found or is already finished.`);
+        notify(formatAgentUiNotice(translator, 'harnessTaskNotFound', { id }));
     }
     return true;
 }
@@ -238,18 +239,19 @@ export async function openSummaryQualityRecords(
     sessionService: any,
     notify: (message: string) => void,
     select: (title: string, options: any[], index: number, hint?: string) => Promise<string | undefined>,
-    provider?: string
+    provider?: string,
+    translator?: AgentUiTranslator | null
 ): Promise<boolean> {
     if (!sessionService) {
-        notify('Summary quality is unavailable without app RPC.');
+        notify(formatAgentUiNotice(translator, 'summaryQualityUnavailable'));
         return true;
     }
     const records = await sessionService.listSummaryQuality({ provider, limit: 200 });
     if (!records.length) {
         notify(
             provider
-                ? `No summary quality records for provider '${provider}'.`
-                : 'No summary quality records yet.'
+                ? formatAgentUiNotice(translator, 'summaryQualityNoRecordsProvider', { provider })
+                : formatAgentUiNotice(translator, 'summaryQualityNoRecords')
         );
         return true;
     }
@@ -275,20 +277,21 @@ export async function openTurnDiagnosticsListView(
     notify: (message: string) => void,
     select: (title: string, options: any[], index: number, hint?: string) => Promise<string | undefined>,
     sessionId?: string,
-    currentSessionId?: string
+    currentSessionId?: string,
+    translator?: AgentUiTranslator | null
 ): Promise<boolean> {
     if (!sessionService) {
-        notify('Turn diagnostics are unavailable without app RPC.');
+        notify(formatAgentUiNotice(translator, 'turnDiagnosticsUnavailable'));
         return true;
     }
     const resolvedSessionId = (sessionId || '').trim() || currentSessionId || '';
     if (!resolvedSessionId) {
-        notify('No session selected. Run /diagnostics list <sessionId>.');
+        notify(formatAgentUiNotice(translator, 'diagnosticsNoSession'));
         return true;
     }
     const records = await sessionService.listTurnDiagnostics(resolvedSessionId);
     if (!records.length) {
-        notify(`No turn diagnostics recorded for session '${resolvedSessionId}'.`);
+        notify(formatAgentUiNotice(translator, 'turnDiagnosticsNoRecords', { sessionId: resolvedSessionId }));
         return true;
     }
     const options = records.map((record: Record<string, any>) => buildTurnDiagnosticsRecordOption(record));
@@ -312,18 +315,19 @@ export async function openTurnDiagnosticsTrendView(
     pushCommandOutput: (command: string, text: string) => void,
     sessionId?: string,
     bucketSize?: number,
-    maxBuckets?: number
+    maxBuckets?: number,
+    translator?: AgentUiTranslator | null
 ): Promise<boolean> {
     if (!sessionService) {
-        notify('Turn diagnostics are unavailable without app RPC.');
+        notify(formatAgentUiNotice(translator, 'turnDiagnosticsUnavailable'));
         return true;
     }
     const trend = await sessionService.getTurnDiagnosticsTrend(sessionId, { bucketSize, maxBuckets });
     if (!trend.length) {
         notify(
             sessionId
-                ? `No turn diagnostics trend recorded for session '${sessionId}'.`
-                : 'No turn diagnostics trend recorded yet.'
+                ? formatAgentUiNotice(translator, 'turnDiagnosticsTrendNoRecords', { sessionId })
+                : formatAgentUiNotice(translator, 'turnDiagnosticsTrendNoRecordsYet')
         );
         return true;
     }
@@ -342,18 +346,19 @@ export async function openSummaryQualityTrendView(
     pushCommandOutput: (command: string, text: string) => void,
     provider?: string,
     bucketSize?: number,
-    maxBuckets?: number
+    maxBuckets?: number,
+    translator?: AgentUiTranslator | null
 ): Promise<boolean> {
     if (!sessionService) {
-        notify('Summary quality is unavailable without app RPC.');
+        notify(formatAgentUiNotice(translator, 'summaryQualityUnavailable'));
         return true;
     }
     const trend = await sessionService.getSummaryQualityTrend({ provider, bucketSize, maxBuckets });
     if (!trend.length) {
         notify(
             provider
-                ? `No summary quality trend recorded for provider '${provider}'.`
-                : 'No summary quality trend recorded yet.'
+                ? formatAgentUiNotice(translator, 'summaryQualityTrendNoRecordsProvider', { provider })
+                : formatAgentUiNotice(translator, 'summaryQualityTrendNoRecords')
         );
         return true;
     }

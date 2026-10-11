@@ -1,4 +1,43 @@
-import { TranslationBundle } from '@tsdi/i18n';
+import { MessageFormatter, TranslationBundle } from '@tsdi/i18n';
+import { AGENT_UI_NOTICE_EN } from './agent-ui.i18n.notice.en';
+import { AGENT_UI_NOTICE_ZH } from './agent-ui.i18n.notice.zh';
+import { AGENT_UI_ERROR_EN, AGENT_UI_ERROR_ZH } from './agent-ui.i18n.error';
+
+export interface AgentUiTranslator {
+    translate(key: string, params?: any): string | undefined;
+}
+
+const AGENT_UI_EN_TEMPLATES: Record<string, string> = {
+    ...(AGENT_UI_NOTICE_EN as Record<string, string>),
+    ...(AGENT_UI_ERROR_EN as Record<string, string>)
+};
+
+const AGENT_UI_ERROR_KEYS = new Set(Object.keys(AGENT_UI_ERROR_EN));
+
+const agentUiFormatter = new MessageFormatter();
+
+/**
+ * Format an agent-ui notice/error without ever rendering a raw key: resolve
+ * through the wired translator (`agent.notice.*` / `agent.error.*`), else fall
+ * back to the English catalog template, else return ''.
+ */
+export function formatAgentUiNotice(
+    translator: AgentUiTranslator | null | undefined,
+    key: string,
+    params?: Record<string, any>
+): string {
+    const namespace = AGENT_UI_ERROR_KEYS.has(key) ? 'error' : 'notice';
+    const fullKey = `agent.${namespace}.${key}`;
+    const translated = typeof translator?.translate === 'function' ? translator.translate(fullKey, params) : undefined;
+    if (translated && translated !== fullKey) {
+        return translated;
+    }
+    const template = AGENT_UI_EN_TEMPLATES[key];
+    if (template === undefined) {
+        return '';
+    }
+    return agentUiFormatter.format(template, params || {}, 'en');
+}
 
 const AGENT_UI_EN_FOLLOW_UP_ONLY_TERMS = 'more|continue|go on|keep going|carry on|next|proceed';
 const AGENT_UI_ZH_CN_FOLLOW_UP_ONLY_TERMS = '继续|继续吧|继续下去|接着|接着说|接着来|然后呢|再来|下一步|下一部分|后面呢|展开|详细点|详细一点|再详细点|补充一下|继续输出|继续生成';
@@ -44,23 +83,10 @@ export const agentUiEnglish: TranslationBundle = {
                 tokens: '{count} tokens'
             },
             notice: {
-                cancelling: 'Cancelling current turn…',
-                nothingToCancel: 'No running turn to cancel.',
-                queuedPrompt: 'Queued prompt ({count}).',
-                queuedCommand: 'Queued command ({count}).',
-                busy: 'Wait for the current turn to finish.',
-                nothingToRetry: 'Nothing to retry.',
-                noPendingApprovals: 'No pending approvals.',
-                noQueuedPrompts: 'No queued prompts. Press Tab while a turn is running to queue a follow-up prompt.',
-                noQueuedPromptsClear: 'No queued prompts to clear.',
-                queueUsage: 'Usage: /queue [list|clear]',
-                noStashedDrafts: 'No stashed drafts. Use /stash push <name> to save the current draft.',
-                emptyStash: 'Nothing to stash: the draft is empty.',
-                stashUsage: 'Usage: /stash [list|push <name>|pop <name>|rm <name>]',
-                personalityCleared: 'Personality cleared.',
-                personalityUsage: 'Usage: /personality [list|set <name>|unset]',
-                yoloUsage: 'Usage: /yolo [on|off]',
-                noMcpServers: 'No MCP servers configured. Add them via the agent settings (tsdi-agent mcp add).'
+                ...AGENT_UI_NOTICE_EN
+            },
+            error: {
+                ...AGENT_UI_ERROR_EN
             },
             modelError: {
                 quota: 'Model request refused: the {provider} account has insufficient balance (model {model}, status {status}). Top up the account or switch model with /model, then retry.',
@@ -122,23 +148,10 @@ export const agentUiChinese: TranslationBundle = {
                 tokens: '{count} tokens'
             },
             notice: {
-                cancelling: '正在取消当前轮次…',
-                nothingToCancel: '没有正在运行的轮次可取消。',
-                queuedPrompt: '已排队提示（{count}）。',
-                queuedCommand: '已排队命令（{count}）。',
-                busy: '请等待当前轮次结束。',
-                nothingToRetry: '没有可重试的内容。',
-                noPendingApprovals: '没有待处理的审批。',
-                noQueuedPrompts: '没有排队提示。turn 运行中按 Tab 可排队后续提示。',
-                noQueuedPromptsClear: '没有可清空的排队提示。',
-                queueUsage: '用法：/queue [list|clear]',
-                noStashedDrafts: '没有暂存草稿。用 /stash push <name> 保存当前草稿。',
-                emptyStash: '无内容可暂存：草稿为空。',
-                stashUsage: '用法：/stash [list|push <name>|pop <name>|rm <name>]',
-                personalityCleared: '人格已清除。',
-                personalityUsage: '用法：/personality [list|set <name>|unset]',
-                yoloUsage: '用法：/yolo [on|off]',
-                noMcpServers: '未配置 MCP 服务器。可通过 agent 设置（tsdi-agent mcp add）添加。'
+                ...AGENT_UI_NOTICE_ZH
+            },
+            error: {
+                ...AGENT_UI_ERROR_ZH
             },
             modelError: {
                 quota: '模型请求被拒绝：{provider} 账户余额不足（模型 {model}，状态 {status}）。请充值，或用 /model 切换模型后重试。',

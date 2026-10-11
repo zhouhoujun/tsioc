@@ -1,8 +1,9 @@
 import { AgentConsoleApprovalRequest } from './AgentConsoleSessionState';
+import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 export interface ApprovalInspectorHost {
     state: any;
-    translator?: { translate(key: string): string };
+    translator?: AgentUiTranslator;
     notify(message: string): void;
     select(title: string, options: any[], index: number, hint?: string): Promise<string | undefined>;
     selectApprovalRequest(requests: AgentConsoleApprovalRequest[], index: number): Promise<AgentConsoleApprovalRequest | undefined>;
@@ -13,7 +14,7 @@ export interface ApprovalInspectorHost {
 
 export async function openApprovalInspector(host: ApprovalInspectorHost, requests: AgentConsoleApprovalRequest[]): Promise<void> {
     if (!requests.length) {
-        host.notify(host.translator?.translate('agent.notice.noPendingApprovals') || 'No pending approvals.');
+        host.notify(formatAgentUiNotice(host.translator, 'noPendingApprovals'));
         return;
     }
     let selectedRequestIndex = 0;
@@ -58,17 +59,17 @@ export async function openApprovalInspector(host: ApprovalInspectorHost, request
         }
         if (action === 'approve') {
             const approved = await host.applyApprovalDecision('approve', request.id);
-            host.notify(approved
-                ? `Approved ${request.toolName} (${request.id.slice(0, 8)}).`
-                : `Approval request ${request.id.slice(0, 8)} is no longer pending.`);
+            host.notify(formatAgentUiNotice(host.translator,
+                approved ? 'approvedTool' : 'approvalNoLongerPending',
+                approved ? { toolName: request.toolName, id: request.id.slice(0, 8) } : { id: request.id.slice(0, 8) }));
             await host.refreshPendingApprovals();
             return;
         }
         if (action === 'deny') {
             const denied = await host.applyApprovalDecision('deny', request.id);
-            host.notify(denied
-                ? `Denied ${request.toolName} (${request.id.slice(0, 8)}).`
-                : `Approval request ${request.id.slice(0, 8)} is no longer pending.`);
+            host.notify(formatAgentUiNotice(host.translator,
+                denied ? 'deniedTool' : 'approvalNoLongerPending',
+                denied ? { toolName: request.toolName, id: request.id.slice(0, 8) } : { id: request.id.slice(0, 8) }));
             await host.refreshPendingApprovals();
             return;
         }

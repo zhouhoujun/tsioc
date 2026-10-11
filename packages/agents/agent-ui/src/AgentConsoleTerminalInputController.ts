@@ -1,7 +1,7 @@
 import type { ConsoleTextChunk, SelectMenuMouseEvent, TerminalInputSequenceResult } from './console-ports';
 import type { AgentConsoleSelectOption } from './AgentConsoleSessionState';
 import { AGENT_CONSOLE_OVERLAY_HINTS, AGENT_CONSOLE_OVERLAY_TITLES } from './AgentConsoleOverlayPresenter';
-import { formatAgentUiSessionClosingMessage } from './agent-ui.i18n';
+import { formatAgentUiSessionClosingMessage, formatAgentUiNotice } from './agent-ui.i18n';
 import { fuzzyMatchAgentConsoleCommand } from './AgentConsoleKeymap';
 import { resolveTranscriptLayout } from './AgentConsoleTranscriptLayout';
 import {
@@ -25,7 +25,7 @@ export interface AgentConsoleTerminalInputHost {
         vimMode: boolean;
         inputMode: string;
         commandHints: string[];
-        selectMenu?: { title?: string } | null;
+        selectMenu?: { title?: string; kind?: string } | null;
         messageDetailVisibleLines: number;
         consoleOptions: { messageToggleInteraction?: string; messageLayout?: string };
         isSshShellActive: boolean;
@@ -48,7 +48,7 @@ export interface AgentConsoleTerminalInputHost {
         ): Promise<{ submitted: boolean; confirmedSelection: boolean }>;
         moveInputCursor(delta: number): void;
         moveInputCursorToEdge(position: 'start' | 'end'): void;
-        openSelectMenu(title: string, options: AgentConsoleSelectOption[], selectedIndex?: number, hint?: string): void;
+        openSelectMenu(title: string, options: AgentConsoleSelectOption[], selectedIndex?: number, hint?: string, kind?: string): void;
         setMessageDetailVisibleLines(value: number): void;
         selectMenuAction?: ((value: string | undefined) => void | Promise<void>) | undefined;
     };
@@ -110,7 +110,7 @@ export function openCommandPaletteView(host: AgentConsoleTerminalInputHost, quer
                 detail: form.length ? form.join('\n') : undefined
             };
         });
-    host.state.openSelectMenu(query ? `${AGENT_CONSOLE_OVERLAY_TITLES.palette}: ${query}` : AGENT_CONSOLE_OVERLAY_TITLES.palette, commands, 0, AGENT_CONSOLE_OVERLAY_HINTS.palette);
+    host.state.openSelectMenu(query ? `${AGENT_CONSOLE_OVERLAY_TITLES.palette}: ${query}` : AGENT_CONSOLE_OVERLAY_TITLES.palette, commands, 0, AGENT_CONSOLE_OVERLAY_HINTS.palette, 'palette');
     host.state.selectMenuAction = async value => {
         host.commandPaletteQuery = '';
         if (value) await host.handleCommand(value);
@@ -119,7 +119,7 @@ export function openCommandPaletteView(host: AgentConsoleTerminalInputHost, quer
 
 /** Route raw terminal input typed while the command palette overlay is open. */
 export async function handleCommandPaletteInputView(host: AgentConsoleTerminalInputHost, decoded: TerminalInputSequenceResult, raw: string): Promise<boolean> {
-    if (!host.state.selectMenu?.title?.startsWith('Command palette')) return false;
+    if (host.state.selectMenu?.kind !== 'palette') return false;
     if ((decoded.controlKey as string | undefined) === 'backspace' || raw === '\u007f' || raw === '\b') {
         openCommandPaletteView(host, host.commandPaletteQuery.slice(0, -1));
         return true;
@@ -264,9 +264,9 @@ export async function handleTerminalInputView(
         case 'cancelTurn':
             if (host.isTurnInProgress()) {
                 const cancelled = await host.sessionService?.cancelTurn(host.state.sessionId) ?? false;
-                host.notify(cancelled
-                    ? 'Cancelling current turn...'
-                    : 'No running turn to cancel.');
+                host.notify(formatAgentUiNotice(host.translator, cancelled
+                    ? 'cancellingTurn'
+                    : 'noRunningTurn'));
             }
             return;
         case 'queueDraft':

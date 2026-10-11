@@ -9,7 +9,9 @@ import type {
 } from './AgentConsoleSessionState';
 import type { AgentConsoleSessionService } from './AgentConsoleSessionService';
 import type { NavFilter, NavSelection } from '@tsdi/agent';
+import type { AgentUiTranslator } from './agent-ui.i18n';
 export interface CommandHandlerContext {
+    translator?: AgentUiTranslator | null;
     /** Request-scoped cancellation signal. Handlers may forward it to async ports. */
     readonly abortSignal?: AbortSignal;
     readonly transcriptNavigationController: { setFocused(focused: boolean): void };

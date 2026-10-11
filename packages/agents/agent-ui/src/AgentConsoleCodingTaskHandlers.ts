@@ -15,6 +15,7 @@ import {
     resolveAgentConsoleCommandDescription
 } from './AgentConsoleCommandRegistry';
 import { AGENT_CONSOLE_OVERLAY_HINTS, AGENT_CONSOLE_OVERLAY_TITLES } from './AgentConsoleOverlayPresenter';
+import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 // ── Coding task handler context ─────────────────────────────────────────────
 
@@ -48,6 +49,7 @@ export interface CodingTaskHandlerState {
 }
 
 export interface CodingTaskHandlerContext {
+    translator?: AgentUiTranslator | null;
     state: CodingTaskHandlerState;
     transcriptNavigationController: { setFocused(focused: boolean): void };
     appRpc: { request(method: string, payload?: Record<string, any>, context?: any): Promise<any> } | null | undefined;
@@ -428,12 +430,9 @@ export async function openCodingTaskReview(
     options?: { returnFalseOnStale?: boolean }
 ): Promise<boolean> {
     const resolvedTaskId = String(taskId || '').trim();
-    if (!resolvedTaskId) {
-        ctx.notify('Review task id is required.');
-        return false;
-    }
+    if (!resolvedTaskId) { ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewTaskId')); return false; }
     if (!ctx.appRpc) {
-        ctx.notify('Review is unavailable without app RPC.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewUnavailableApp'));
         return false;
     }
     const taskViewContextVersion = ctx.bumpTaskViewContextVersion();
@@ -450,7 +449,7 @@ export async function openCodingTaskReview(
     }
 
     if (!loadedTask && !diffResult?.diff && !Array.isArray(diffResult?.workers)) {
-        ctx.notify(`Coding task "${resolvedTaskId}" was not found.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'codingTaskNotFound', { taskId: resolvedTaskId }));
         return false;
     }
 
@@ -518,7 +517,7 @@ export async function openThreadCodingTaskReviewSelector(ctx: CodingTaskHandlerC
 
 export async function openCodingTaskInspector(ctx: CodingTaskHandlerContext, taskId?: string, options?: { returnFalseOnStale?: boolean }): Promise<boolean> {
     if (!ctx.appRpc) {
-        ctx.notify('Task inspector is unavailable without app RPC.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'taskInspectorUnavailable'));
         return true;
     }
     const taskViewContextVersion = ctx.bumpTaskViewContextVersion();
@@ -527,7 +526,7 @@ export async function openCodingTaskInspector(ctx: CodingTaskHandlerContext, tas
         return options?.returnFalseOnStale ? false : true;
     }
     if (!tasks.length) {
-        ctx.notify('No coding tasks available.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'codingTasksAvailable'));
         return true;
     }
     const resolvedTaskId = String(taskId || '').trim();
@@ -571,15 +570,15 @@ export async function rollbackCodingTask(ctx: CodingTaskHandlerContext, taskId?:
         resolvedTaskId = String(selectedTask.id || '').trim();
     }
     if (!resolvedTaskId) {
-        ctx.notify('Rollback task id is required.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'rollbackTaskId'));
         return true;
     }
     if (!ctx.appRpc) {
-        ctx.notify('Rollback is unavailable without app RPC.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'rollbackUnavailableApp'));
         return true;
     }
     if (selectedTask && selectedTask.id === resolvedTaskId && !canRollbackCodingTask(selectedTask)) {
-        ctx.notify(`Rollback is unavailable for ${resolvedTaskId}.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'rollbackUnavailable', { resolvedTaskId: resolvedTaskId }));
         return true;
     }
 
@@ -587,7 +586,7 @@ export async function rollbackCodingTask(ctx: CodingTaskHandlerContext, taskId?:
     const taskViewContext = captureTaskViewContext(ctx);
     const result = await ctx.appRpc.request('coding_task.rollback', { sessionId, taskId: resolvedTaskId });
     if (result?.rolledBack !== true) {
-        ctx.notify(`Rollback failed for ${resolvedTaskId}.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'rollbackFailed', { resolvedTaskId: resolvedTaskId }));
         return true;
     }
     if (!isTaskViewContextCurrent(ctx, taskViewContext)) {
@@ -598,7 +597,7 @@ export async function rollbackCodingTask(ctx: CodingTaskHandlerContext, taskId?:
     if (!opened || sessionId !== ctx.state.sessionId) {
         return true;
     }
-    ctx.notify(`Rolled back ${resolvedTaskId}.`);
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'rolledBack', { resolvedTaskId: resolvedTaskId }));
     return true;
 }
 
@@ -621,15 +620,15 @@ export async function retryFailedCodingTask(ctx: CodingTaskHandlerContext, taskI
         resolvedTaskId = String(selectedTask.id || '').trim();
     }
     if (!resolvedTaskId) {
-        ctx.notify('Retry task id is required.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'retryTaskId'));
         return true;
     }
     if (!ctx.appRpc) {
-        ctx.notify('Retry is unavailable without app RPC.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'retryUnavailableApp'));
         return true;
     }
     if (selectedTask && selectedTask.id === resolvedTaskId && !canRetryCodingTask(selectedTask)) {
-        ctx.notify(`Retry is unavailable for ${resolvedTaskId}.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'retryUnavailable', { resolvedTaskId: resolvedTaskId }));
         return true;
     }
 
@@ -637,7 +636,7 @@ export async function retryFailedCodingTask(ctx: CodingTaskHandlerContext, taskI
     const taskViewContext = captureTaskViewContext(ctx);
     const result = await ctx.appRpc.request('coding_task.retry_failed', { sessionId, taskId: resolvedTaskId });
     if (result?.retried !== true || !result?.task?.id) {
-        ctx.notify(`Retry failed for ${resolvedTaskId}.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'retryFailedForTask', { resolvedTaskId: resolvedTaskId }));
         return true;
     }
     if (!isTaskViewContextCurrent(ctx, taskViewContext)) {
@@ -648,23 +647,23 @@ export async function retryFailedCodingTask(ctx: CodingTaskHandlerContext, taskI
     if (!opened || sessionId !== ctx.state.sessionId) {
         return true;
     }
-    ctx.notify(`Retried failed workers from ${resolvedTaskId} as ${result.task.id}.`);
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'retriedFailedWorkers', { resolvedTaskId: resolvedTaskId, id: result.task.id }));
     return true;
 }
 
 export async function cancelCodingTask(ctx: CodingTaskHandlerContext, taskId?: string): Promise<boolean> {
     const resolvedTaskId = String(taskId || ctx.state.selectedTask?.id || '').trim();
     if (!resolvedTaskId) {
-        ctx.notify('Cancel task id is required.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'cancelTaskId'));
         return true;
     }
     if (!ctx.appRpc) {
-        ctx.notify('Cancel is unavailable without app RPC.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'cancelUnavailableApp'));
         return true;
     }
     const targetTask = ctx.state.selectedTask;
     if (targetTask && targetTask.id === resolvedTaskId && !canCancelCodingTask(targetTask)) {
-        ctx.notify(`Cancel is unavailable for ${resolvedTaskId}.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'cancelUnavailable', { resolvedTaskId: resolvedTaskId }));
         return true;
     }
 
@@ -672,7 +671,7 @@ export async function cancelCodingTask(ctx: CodingTaskHandlerContext, taskId?: s
     const taskViewContext = captureTaskViewContext(ctx);
     const result = await ctx.appRpc.request('coding_task.cancel', { sessionId, taskId: resolvedTaskId });
     if (result?.cancelled !== true) {
-        ctx.notify(`Cancel failed for ${resolvedTaskId}.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'cancelFailed', { resolvedTaskId: resolvedTaskId }));
         return true;
     }
     if (!isTaskViewContextCurrent(ctx, taskViewContext)) {
@@ -683,7 +682,7 @@ export async function cancelCodingTask(ctx: CodingTaskHandlerContext, taskId?: s
     if (!opened || sessionId !== ctx.state.sessionId) {
         return true;
     }
-    ctx.notify(`Cancelled ${resolvedTaskId}.`);
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'cancelledTask', { resolvedTaskId: resolvedTaskId }));
     return true;
 }
 
@@ -699,7 +698,7 @@ export async function refreshScheduledTasks(ctx: CodingTaskHandlerContext): Prom
 
 export async function openScheduledJobsDashboard(ctx: CodingTaskHandlerContext, taskId?: string): Promise<boolean> {
     if (!ctx.scheduler) {
-        ctx.notify('Scheduler is unavailable.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'schedulerUnavailable'));
         return true;
     }
     const tasks = ctx.scheduler.getTasks();
@@ -724,12 +723,12 @@ export async function openScheduledJobsDashboard(ctx: CodingTaskHandlerContext, 
 export async function toggleScheduledTask(ctx: CodingTaskHandlerContext, taskId?: string): Promise<boolean> {
     const resolvedTaskId = String(taskId || ctx.state.selectedScheduledTask?.id || '').trim();
     if (!resolvedTaskId) {
-        ctx.notify('Scheduled task id is required.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'scheduledTaskId'));
         return true;
     }
     const selected = ctx.state.selectedScheduledTask;
     if (!selected || selected.id !== resolvedTaskId) {
-        ctx.notify(`Scheduled task "${resolvedTaskId}" was not found.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'scheduledTaskNotFound', { taskId: resolvedTaskId }));
         return true;
     }
     if (selected.paused) {
@@ -741,74 +740,74 @@ export async function toggleScheduledTask(ctx: CodingTaskHandlerContext, taskId?
 export async function pauseScheduledTask(ctx: CodingTaskHandlerContext, taskId?: string): Promise<boolean> {
     const resolvedTaskId = String(taskId || ctx.state.selectedScheduledTask?.id || '').trim();
     if (!resolvedTaskId) {
-        ctx.notify('Scheduled task id is required.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'scheduledTaskId'));
         return true;
     }
     if (!ctx.scheduler?.pause) {
-        ctx.notify('Pause is unavailable on the configured scheduler.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'pauseUnavailableConfigured'));
         return true;
     }
     const task = await ctx.scheduler.pause(resolvedTaskId);
     if (!task) {
-        ctx.notify(`Pause failed for ${resolvedTaskId}.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'pauseFailed', { resolvedTaskId: resolvedTaskId }));
         return true;
     }
     await refreshScheduledTasks(ctx);
     ctx.state.setSelectedScheduledTaskId(resolvedTaskId);
-    ctx.notify(`Paused ${resolvedTaskId}.`);
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'pausedTask', { resolvedTaskId: resolvedTaskId }));
     return true;
 }
 
 export async function resumeScheduledTask(ctx: CodingTaskHandlerContext, taskId?: string): Promise<boolean> {
     const resolvedTaskId = String(taskId || ctx.state.selectedScheduledTask?.id || '').trim();
     if (!resolvedTaskId) {
-        ctx.notify('Scheduled task id is required.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'scheduledTaskId'));
         return true;
     }
     if (!ctx.scheduler?.resume) {
-        ctx.notify('Resume is unavailable on the configured scheduler.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'resumeUnavailableConfigured'));
         return true;
     }
     const task = await ctx.scheduler.resume(resolvedTaskId);
     if (!task) {
-        ctx.notify(`Resume failed for ${resolvedTaskId}.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'resumeFailed', { resolvedTaskId: resolvedTaskId }));
         return true;
     }
     await refreshScheduledTasks(ctx);
     ctx.state.setSelectedScheduledTaskId(resolvedTaskId);
-    ctx.notify(`Resumed ${resolvedTaskId}.`);
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'resumedTask', { resolvedTaskId: resolvedTaskId }));
     return true;
 }
 
 export async function cancelScheduledTask(ctx: CodingTaskHandlerContext, taskId?: string): Promise<boolean> {
     const resolvedTaskId = String(taskId || ctx.state.selectedScheduledTask?.id || '').trim();
     if (!resolvedTaskId) {
-        ctx.notify('Scheduled task id is required.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'scheduledTaskId'));
         return true;
     }
     await ctx.scheduler!.cancel(resolvedTaskId);
     await refreshScheduledTasks(ctx);
-    ctx.notify(`Cancelled ${resolvedTaskId}.`);
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'cancelledTask', { resolvedTaskId: resolvedTaskId }));
     return true;
 }
 
 export async function recoverScheduledTask(ctx: CodingTaskHandlerContext, taskId?: string): Promise<boolean> {
     const resolvedTaskId = String(taskId || ctx.state.selectedScheduledTask?.id || '').trim();
     if (!resolvedTaskId) {
-        ctx.notify('Scheduled task id is required.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'scheduledTaskId'));
         return true;
     }
     if (!ctx.scheduler?.recover) {
-        ctx.notify('Recover is unavailable on the configured scheduler.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'recoverUnavailableConfigured'));
         return true;
     }
     const task = await ctx.scheduler.recover(resolvedTaskId);
     if (!task) {
-        ctx.notify(`Recover failed for ${resolvedTaskId}.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'recoverFailed', { resolvedTaskId: resolvedTaskId }));
         return true;
     }
     await refreshScheduledTasks(ctx);
     ctx.state.setSelectedScheduledTaskId(resolvedTaskId);
-    ctx.notify(`Recovered ${resolvedTaskId}.`);
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'recoveredTask', { resolvedTaskId: resolvedTaskId }));
     return true;
 }

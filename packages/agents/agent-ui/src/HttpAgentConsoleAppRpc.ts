@@ -1,4 +1,5 @@
 import { AgentConsoleAppRpc, AgentRpcRequestMeta, AgentPolicyConfig, defaultAgentOptions } from '@tsdi/agent';
+import { formatAgentUiNotice } from './agent-ui.i18n';
 
 export interface HttpAgentConsoleAppRpcOptions {
     baseUrl: string;
@@ -32,7 +33,7 @@ function resolveFetch(options: HttpAgentConsoleAppRpcOptions): typeof fetch {
         return globalFetch.bind(globalThis) as typeof fetch;
     }
     return (() => {
-        throw new Error('fetch is not available; provide fetchImpl in HttpAgentConsoleAppRpcOptions');
+        throw new Error(formatAgentUiNotice(undefined, 'fetchUnavailableHttpAppRpc'));
     }) as unknown as typeof fetch;
 }
 

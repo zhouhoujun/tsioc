@@ -1,12 +1,14 @@
 import type { BackgroundTaskRecord } from '@tsdi/agent-tools';
 import { buildHarnessProjection, formatHarnessListLines, formatHarnessTreeLines, DelegationTreeNode, HarnessProjection } from '@tsdi/agent';
 import { formatDelegationEdge, formatDelegationTree } from './AgentConsoleDelegationView';
+import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 /**
  * Host surface required by the harness / delegation tree commands.
  * The component satisfies this interface structurally when delegating.
  */
 export interface HarnessCommandHost {
+    translator?: AgentUiTranslator | null;
     sessionService: {
         getDelegationTree(sessionId: string, options?: { status?: string | string[]; depth?: number }, context?: any): Promise<Record<string, any> | null>;
         listAllBackgroundTasks(options: { sessionId?: string; delegationRoot?: string }, context?: any): Promise<Array<Record<string, any>>>;
@@ -29,17 +31,17 @@ export interface HarnessCommandHost {
  */
 export async function openHarnessTreeView(host: HarnessCommandHost, sessionId?: string): Promise<boolean> {
     if (!host.sessionService) {
-        host.notify('Harness projection is unavailable without app RPC.');
+        host.notify(formatAgentUiNotice(host.translator, 'harnessProjectionUnavailable'));
         return true;
     }
     const resolvedSessionId = (sessionId || '').trim() || host.state.sessionId;
     if (!resolvedSessionId) {
-        host.notify('No session selected. Run /harness tree <sessionId>.');
+        host.notify(formatAgentUiNotice(host.translator, 'sessionSelectedHarnessTree'));
         return true;
     }
     const tree = await host.sessionService.getDelegationTree(resolvedSessionId);
     if (!tree) {
-        host.notify(`No delegation edges recorded for session '${resolvedSessionId}'.`);
+        host.notify(formatAgentUiNotice(host.translator, 'delegationEdgesRecorded', { sessionId: resolvedSessionId }));
         return true;
     }
     const tasks = await host.sessionService.listAllBackgroundTasks({ delegationRoot: resolvedSessionId });
@@ -47,7 +49,7 @@ export async function openHarnessTreeView(host: HarnessCommandHost, sessionId?: 
     host.state.setHarnessState(projection);
     const lines = formatHarnessTreeLines(tree as DelegationTreeNode, projection);
     if (!lines.length) {
-        host.notify(`No delegation edges recorded for session '${resolvedSessionId}'.`);
+        host.notify(formatAgentUiNotice(host.translator, 'delegationEdgesRecorded', { sessionId: resolvedSessionId }));
         return true;
     }
     host.pushCommandOutput('/harness tree', lines.join(' | '));
@@ -61,17 +63,17 @@ export async function openHarnessTreeView(host: HarnessCommandHost, sessionId?: 
  */
 export async function openHarnessListView(host: HarnessCommandHost, sessionId?: string): Promise<boolean> {
     if (!host.sessionService) {
-        host.notify('Harness projection is unavailable without app RPC.');
+        host.notify(formatAgentUiNotice(host.translator, 'harnessProjectionUnavailable'));
         return true;
     }
     const resolvedSessionId = (sessionId || '').trim() || host.state.sessionId;
     if (!resolvedSessionId) {
-        host.notify('No session selected. Run /harness list <sessionId>.');
+        host.notify(formatAgentUiNotice(host.translator, 'sessionSelectedHarnessList'));
         return true;
     }
     const tree = await host.sessionService.getDelegationTree(resolvedSessionId);
     if (!tree) {
-        host.notify(`No delegation edges recorded for session '${resolvedSessionId}'.`);
+        host.notify(formatAgentUiNotice(host.translator, 'delegationEdgesRecorded', { sessionId: resolvedSessionId }));
         return true;
     }
     const tasks = await host.sessionService.listAllBackgroundTasks({ delegationRoot: resolvedSessionId });
@@ -79,7 +81,7 @@ export async function openHarnessListView(host: HarnessCommandHost, sessionId?: 
     host.state.setHarnessState(projection);
     const lines = formatHarnessListLines(projection);
     if (!lines.length) {
-        host.notify(`No delegation edges recorded for session '${resolvedSessionId}'.`);
+        host.notify(formatAgentUiNotice(host.translator, 'delegationEdgesRecorded', { sessionId: resolvedSessionId }));
         return true;
     }
     host.pushCommandOutput('/harness list', lines.join(' | '));
@@ -93,22 +95,22 @@ export async function openHarnessListView(host: HarnessCommandHost, sessionId?: 
  */
 export async function openDelegationTreeView(host: HarnessCommandHost, sessionId?: string, status?: string, depth?: number): Promise<boolean> {
     if (!host.sessionService) {
-        host.notify('Delegation graph is unavailable without app RPC.');
+        host.notify(formatAgentUiNotice(host.translator, 'delegationGraphUnavailable'));
         return true;
     }
     const resolvedSessionId = (sessionId || '').trim() || host.state.sessionId;
     if (!resolvedSessionId) {
-        host.notify('No session selected. Run /delegation tree <sessionId>.');
+        host.notify(formatAgentUiNotice(host.translator, 'sessionSelectedDelegationTree'));
         return true;
     }
     const tree = await host.sessionService.getDelegationTree(resolvedSessionId, { status, depth });
     if (!tree) {
-        host.notify(`No delegation edges recorded for session '${resolvedSessionId}'.`);
+        host.notify(formatAgentUiNotice(host.translator, 'delegationEdgesRecorded', { sessionId: resolvedSessionId }));
         return true;
     }
     const lines = formatDelegationTree(tree);
     if (!lines.length) {
-        host.notify(`No delegation edges recorded for session '${resolvedSessionId}'.`);
+        host.notify(formatAgentUiNotice(host.translator, 'delegationEdgesRecorded', { sessionId: resolvedSessionId }));
         return true;
     }
     host.pushCommandOutput('/delegation tree', lines.join(' | '));
@@ -121,17 +123,17 @@ export async function openDelegationTreeView(host: HarnessCommandHost, sessionId
  */
 export async function openDelegationLineageView(host: HarnessCommandHost, sessionId?: string): Promise<boolean> {
     if (!host.sessionService) {
-        host.notify('Delegation graph is unavailable without app RPC.');
+        host.notify(formatAgentUiNotice(host.translator, 'delegationGraphUnavailable'));
         return true;
     }
     const resolvedSessionId = (sessionId || '').trim() || host.state.sessionId;
     if (!resolvedSessionId) {
-        host.notify('No session selected. Run /delegation lineage <sessionId>.');
+        host.notify(formatAgentUiNotice(host.translator, 'sessionSelectedDelegationLineage'));
         return true;
     }
     const lineage = await host.sessionService.getDelegationLineage(resolvedSessionId);
     if (!lineage.length) {
-        host.notify(`No parent delegation edges recorded for session '${resolvedSessionId}'.`);
+        host.notify(formatAgentUiNotice(host.translator, 'parentDelegationEdges', { sessionId: resolvedSessionId }));
         return true;
     }
     host.pushCommandOutput('/delegation lineage', lineage.map(edge => formatDelegationEdge(edge)).join(' → '));
@@ -145,7 +147,7 @@ export async function openDelegationLineageView(host: HarnessCommandHost, sessio
  */
 export async function openDelegationListView(host: HarnessCommandHost, sessionId?: string): Promise<boolean> {
     if (!host.sessionService) {
-        host.notify('Delegation graph is unavailable without app RPC.');
+        host.notify(formatAgentUiNotice(host.translator, 'delegationGraphUnavailable'));
         return true;
     }
     const resolvedSessionId = (sessionId || '').trim() || host.state.sessionId || undefined;
@@ -155,8 +157,8 @@ export async function openDelegationListView(host: HarnessCommandHost, sessionId
     if (!edges.length) {
         host.notify(
             resolvedSessionId
-                ? `No delegation edges recorded for session '${resolvedSessionId}'.`
-                : 'No delegation edges recorded yet.'
+                ? formatAgentUiNotice(host.translator, 'delegationEdgesRecorded', { sessionId: resolvedSessionId })
+                : formatAgentUiNotice(host.translator, 'noDelegationEdges')
         );
         return true;
     }

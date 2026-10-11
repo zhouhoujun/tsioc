@@ -21,6 +21,7 @@ import type { NavFilter, NavSelection, SessionSearchMatch } from '@tsdi/agent';
 import { AGENT_CONSOLE_OVERLAY_HINTS, AGENT_CONSOLE_OVERLAY_TITLES } from './AgentConsoleOverlayPresenter';
 import type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
 export type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
+import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 // ── Command handler type ─────────────────────────────────────────────────────
 
@@ -73,7 +74,7 @@ async function handleModel(ctx: CommandHandlerContext, args: string, _resolved: 
         if (modelArgs.toLowerCase().startsWith('once')) {
             const profileName = modelArgs.slice(4).trim();
             if (!profileName) {
-                ctx.notify('Usage: /model once <profile>.');
+                ctx.notify(formatAgentUiNotice(ctx.translator, 'modelOnceUsage'));
                 return true;
             }
             await ctx.queueNextTurnModelProfile(profileName);
@@ -122,7 +123,7 @@ async function handleTools(ctx: CommandHandlerContext, args: string, _resolved: 
         return true;
     }
     if (!ctx.state.tools.length) {
-        ctx.notify('No tools available.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'toolsAvailable'));
         return true;
     }
     ctx.state.setSessionsFocused(false);
@@ -138,7 +139,7 @@ async function handleTools(ctx: CommandHandlerContext, args: string, _resolved: 
 
 async function handleClear(ctx: CommandHandlerContext, _args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
     await ctx.openSession(undefined);
-    ctx.notify('Started a new session.');
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'startedNewSession'));
     return true;
 }
 
@@ -150,19 +151,19 @@ async function handleApproveDeny(ctx: CommandHandlerContext, args: string, resol
         return ctx.runApproveRetryCommand();
     }
     const pend = await ctx.getPendingApprovals(ctx.state.sessionId);
-    if (!pend.length) { ctx.notify('No pending approvals.'); return true; }
+    if (!pend.length) { ctx.notify(formatAgentUiNotice(ctx.translator, 'pendingApprovals')); return true; }
     if (args) {
         const exact = pend.find((item: any) => item.id === args);
         const matches = exact ? [exact] : pend.filter((item: any) => item.id.startsWith(args));
         if (matches.length === 1) {
             const applied = await ctx.applyApprovalDecision(isApprove ? 'approve' : 'deny', matches[0].id);
             ctx.notify(applied
-                ? `${isApprove ? 'Approved' : 'Denied'} ${matches[0].toolName} (${matches[0].id.slice(0, 8)}).`
-                : `Approval request ${matches[0].id.slice(0, 8)} is no longer pending.`);
+                ? formatAgentUiNotice(ctx.translator, 'approvalApplied', { decision: formatAgentUiNotice(ctx.translator, isApprove ? 'approvalDecisionApprove' : 'approvalDecisionDeny'), tool: matches[0].toolName, id: matches[0].id.slice(0, 8) })
+                : formatAgentUiNotice(ctx.translator, 'approvalNoLongerPending', { id: matches[0].id.slice(0, 8) }));
         } else {
             ctx.notify(matches.length > 1
-                ? `Approval id "${args}" is ambiguous.`
-                : `Approval id "${args}" not found.`);
+                ? formatAgentUiNotice(ctx.translator, 'approvalIdAmbiguous', { id: args })
+                : formatAgentUiNotice(ctx.translator, 'approvalIdNotFound', { id: args }));
         }
         return true;
     }
@@ -175,16 +176,16 @@ async function handleApproveDeny(ctx: CommandHandlerContext, args: string, resol
         if (found) {
             const applied = await ctx.applyApprovalDecision(isApprove ? 'approve' : 'deny', found.id);
             ctx.notify(applied
-                ? `${isApprove ? 'Approved' : 'Denied'} ${found.toolName} (${found.id.slice(0, 8)}).`
-                : `Approval request ${found.id.slice(0, 8)} is no longer pending.`);
+                ? formatAgentUiNotice(ctx.translator, 'approvalApplied', { decision: formatAgentUiNotice(ctx.translator, isApprove ? 'approvalDecisionApprove' : 'approvalDecisionDeny'), tool: found.toolName, id: found.id.slice(0, 8) })
+                : formatAgentUiNotice(ctx.translator, 'approvalNoLongerPending', { id: found.id.slice(0, 8) }));
         }
         return true;
     }
     if (req) {
         const applied = await ctx.applyApprovalDecision(isApprove ? 'approve' : 'deny', req.id);
         ctx.notify(applied
-            ? `${isApprove ? 'Approved' : 'Denied'} ${req.toolName} (${req.id.slice(0, 8)}).`
-            : `Approval request ${req.id.slice(0, 8)} is no longer pending.`);
+            ? formatAgentUiNotice(ctx.translator, 'approvalApplied', { decision: formatAgentUiNotice(ctx.translator, isApprove ? 'approvalDecisionApprove' : 'approvalDecisionDeny'), tool: req.toolName, id: req.id.slice(0, 8) })
+            : formatAgentUiNotice(ctx.translator, 'approvalNoLongerPending', { id: req.id.slice(0, 8) }));
     }
     return true;
 }
@@ -210,8 +211,8 @@ async function handleCancel(ctx: CommandHandlerContext, _args: string, _resolved
     if (ctx.isTurnInProgress()) {
         const cancelled = await ctx.sessionService?.cancelTurn(ctx.state.sessionId) ?? false;
         ctx.notify(cancelled
-            ? 'Cancelling current turn...'
-            : 'No running turn to cancel.');
+            ? formatAgentUiNotice(ctx.translator, 'cancellingCurrentTurn')
+            : formatAgentUiNotice(ctx.translator, 'nothingToCancel'));
         return true;
     }
     ctx.draftLines = [];
@@ -250,7 +251,7 @@ async function handleCopy(ctx: CommandHandlerContext, args: string, _resolved: {
                 );
                 return true;
             default:
-                ctx.notify('Nothing to copy.');
+                ctx.notify(formatAgentUiNotice(ctx.translator, 'nothingCopy'));
                 return true;
         }
     }
@@ -261,7 +262,7 @@ async function handleCopy(ctx: CommandHandlerContext, args: string, _resolved: {
             return true;
         }
     }
-    ctx.notify('Nothing to copy.');
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'nothingCopy'));
     return true;
 }
 
@@ -278,7 +279,7 @@ async function handleSession(ctx: CommandHandlerContext, args: string, _resolved
         return true;
     }
     if (!ctx.state.sessions.length) {
-        ctx.notify('No sessions available.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'sessionsAvailable'));
         return true;
     }
     ctx.state.closeReview();
@@ -300,7 +301,7 @@ async function handleNew(ctx: CommandHandlerContext, args: string, _resolved: { 
 async function handleSessions(ctx: CommandHandlerContext, _args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
     await ctx.refreshSessions();
     if (!ctx.state.sessions.length) {
-        ctx.notify('No sessions available.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'sessionsAvailable'));
         return true;
     }
     ctx.state.closeReview();
@@ -315,7 +316,7 @@ async function handleSessions(ctx: CommandHandlerContext, _args: string, _resolv
 async function handleResume(ctx: CommandHandlerContext, _args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
     if (ctx.isTurnInProgress()) { ctx.notifyBusyState(); return true; }
     const all = await ctx.sessionService?.listSessions(ctx.state.sessionId, undefined, { includeArchived: true }) || [];
-    if (!all.length) { ctx.notify('No sessions available.'); return true; }
+    if (!all.length) { ctx.notify(formatAgentUiNotice(ctx.translator, 'sessionsAvailable')); return true; }
     const selected = await ctx.select('Resume session', all.map(item => ({
         label: `${item.id}${item.archived ? ' (archived)' : ''}`,
         value: item.id,
@@ -329,10 +330,10 @@ async function handleResume(ctx: CommandHandlerContext, _args: string, _resolved
 
 async function handleArchive(ctx: CommandHandlerContext, _args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
     const archivedSessionId = ctx.state.sessionId;
-    if (!archivedSessionId || !ctx.sessionService) { ctx.notify('No current session to archive.'); return true; }
+    if (!archivedSessionId || !ctx.sessionService) { ctx.notify(formatAgentUiNotice(ctx.translator, 'currentSessionArchive')); return true; }
     await ctx.sessionService.setSessionArchived(archivedSessionId, true);
     await ctx.refreshSessions();
-    ctx.notify(`Archived session ${archivedSessionId}.`);
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'archivedSession', { archivedSessionId: archivedSessionId }));
     return true;
 }
 
@@ -341,12 +342,12 @@ async function handleArchive(ctx: CommandHandlerContext, _args: string, _resolve
 async function handleForkSide(ctx: CommandHandlerContext, args: string, resolved: { command: string; matches: string[] }): Promise<boolean> {
     if (ctx.isTurnInProgress()) { ctx.notifyBusyState(); return true; }
     const source = ctx.state.sessionId;
-    if (!source || !ctx.sessionService) { ctx.notify('No current session to fork.'); return true; }
+    if (!source || !ctx.sessionService) { ctx.notify(formatAgentUiNotice(ctx.translator, 'currentSessionFork')); return true; }
     const messageId = String(args || '').trim() || undefined;
     const forked = await ctx.sessionService.forkSession(source, messageId);
-    if (!forked) { ctx.notify('Failed to fork the current session.'); return true; }
+    if (!forked) { ctx.notify(formatAgentUiNotice(ctx.translator, 'failedForkCurrent')); return true; }
     await ctx.openSession(forked);
-    ctx.notify(`${resolved.command === '/side' ? 'Opened side session' : 'Forked session'} ${forked}.`);
+    ctx.notify(formatAgentUiNotice(ctx.translator, resolved.command === '/side' ? 'openedSideSession' : 'forkedSession', { forked }));
     return true;
 }
 
@@ -355,13 +356,13 @@ async function handleForkSide(ctx: CommandHandlerContext, args: string, resolved
 async function handlePinUnpin(ctx: CommandHandlerContext, _args: string, resolved: { command: string; matches: string[] }): Promise<boolean> {
     const pinSessionId = ctx.state.sessionId;
     if (!pinSessionId || !ctx.sessionService) {
-        ctx.notify('No current session to pin.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'currentSessionPin'));
         return true;
     }
     const pin = resolved.command === '/pin';
     await ctx.sessionService.setSessionPinned(pinSessionId, pin);
     await ctx.refreshSessions();
-    ctx.notify(pin ? `Pinned session ${pinSessionId}.` : `Unpinned session ${pinSessionId}.`);
+    ctx.notify(pin ? formatAgentUiNotice(ctx.translator, 'pinnedSession', { sessionId: pinSessionId }) : formatAgentUiNotice(ctx.translator, 'unpinnedSession', { sessionId: pinSessionId }));
     return true;
 }
 
@@ -375,7 +376,7 @@ async function handleTitle(ctx: CommandHandlerContext, args: string, _resolved: 
     }
     const titleSessionId = ctx.state.sessionId;
     if (!titleSessionId || !ctx.sessionService) {
-        ctx.notify('No current session to title.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'currentSessionTitle'));
         return true;
     }
     const title = titleText;
@@ -392,7 +393,7 @@ async function handleTitle(ctx: CommandHandlerContext, args: string, _resolved: 
 async function handleSnapshot(ctx: CommandHandlerContext, args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
     const snapshotSessionId = ctx.state.sessionId;
     if (!snapshotSessionId || !ctx.sessionService) {
-        ctx.notify('No current session to snapshot.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'currentSessionSnapshot'));
         return true;
     }
     const label = String(args || '').trim() || undefined;
@@ -400,7 +401,7 @@ async function handleSnapshot(ctx: CommandHandlerContext, args: string, _resolve
     if (snapshotId) {
         ctx.pushCommandOutput('/snapshot', `Snapshot created: ${snapshotId}`);
     } else {
-        ctx.notify('Snapshot creation failed.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'snapshotCreationFailed'));
     }
     return true;
 }
@@ -410,12 +411,12 @@ async function handleSnapshot(ctx: CommandHandlerContext, args: string, _resolve
 async function handleSnapshots(ctx: CommandHandlerContext, _args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
     const snapshotSessionId = ctx.state.sessionId;
     if (!snapshotSessionId || !ctx.sessionService) {
-        ctx.notify('No current session for snapshots.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'currentSessionSnapshots'));
         return true;
     }
     const snapshots = await ctx.sessionService.listSessionSnapshots(snapshotSessionId);
     if (!snapshots.length) {
-        ctx.notify('No snapshots for the current session. Use /snapshot [label] to create one.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'snapshotsCurrentSession'));
         return true;
     }
     const choice = await ctx.select(
@@ -443,10 +444,10 @@ async function handleSnapshots(ctx: CommandHandlerContext, _args: string, _resol
         await ctx.sessionService.restoreSessionSnapshot(snapshotSessionId, choice);
         await ctx.refreshSessions();
         await ctx.openSession(snapshotSessionId);
-        ctx.notify('Snapshot restored.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'snapshotRestored'));
     } else {
         await ctx.sessionService.deleteSessionSnapshot(snapshotSessionId, choice);
-        ctx.notify('Snapshot deleted.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'snapshotDeleted'));
     }
     return true;
 }
@@ -455,7 +456,7 @@ async function handleSnapshots(ctx: CommandHandlerContext, _args: string, _resol
 
 async function handleToolruns(ctx: CommandHandlerContext, _args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
     if (!ctx.state.toolRuns.length) {
-        ctx.notify('No tool runs available.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'toolRunsAvailable'));
         return true;
     }
     ctx.state.setSessionsFocused(false);
@@ -486,7 +487,7 @@ async function handleMessages(ctx: CommandHandlerContext, _args: string, _resolv
 
 async function handleSearch(ctx: CommandHandlerContext, args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
     if (!args || !args.trim()) {
-        ctx.notify('Usage: /search <query>');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'searchUsage'));
         return true;
     }
     {
@@ -537,7 +538,7 @@ async function handleSearch(ctx: CommandHandlerContext, args: string, _resolved:
             }));
         }
         if (!sessions.length) {
-            ctx.notify('No sessions to search.');
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'sessionsSearch'));
             return true;
         }
         const metadataMatches = sessions.filter(s => {
@@ -547,7 +548,7 @@ async function handleSearch(ctx: CommandHandlerContext, args: string, _resolved:
             const proj = (s.projectLabel || s.projectKey || s.projectId || '').toLowerCase();
             return id.includes(query) || summary.includes(query) || ws.includes(query) || proj.includes(query);
         });
-        ctx.notify(`Searching ${sessions.length} session${sessions.length === 1 ? '' : 's'} for "${rawQuery}"…`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'searchingSessionsForQuery', { sessionCount: sessions.length, plural: sessions.length === 1 ? '' : 's', rawQuery: rawQuery }));
         const contentHits = await ctx.searchSessionContent(query, sessions);
         const seen = new Set<string>();
         const merged: AgentConsoleSessionItem[] = [];
@@ -564,7 +565,7 @@ async function handleSearch(ctx: CommandHandlerContext, args: string, _resolved:
             }
         }
         if (!merged.length) {
-            ctx.notify(`No sessions matching "${rawQuery}".`);
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'noSessionsMatching', { rawQuery: rawQuery }));
             return true;
         }
         const sessionId = await ctx.select(
@@ -596,7 +597,7 @@ async function handleProjects(ctx: CommandHandlerContext, _args: string, _resolv
         await ctx.refreshSessions();
     }
     if (!ctx.state.projects.length) {
-        ctx.notify('No projects available.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'projectsAvailable'));
         return true;
     }
     ctx.state.closeReview();
@@ -617,7 +618,7 @@ async function handleProjects(ctx: CommandHandlerContext, _args: string, _resolv
             s => ctx.resolveSessionProjectKey(s) === project
         );
         if (!projectSessions.length) {
-            ctx.notify('No sessions in this project.');
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'sessionsProject'));
             return true;
         }
         const sessionId = await ctx.select(
@@ -652,7 +653,7 @@ async function handleThreads(ctx: CommandHandlerContext, _args: string, _resolve
     ctx.state.closeGitSnapshotDetail();
     {
         if (!ctx.state.threads.length) {
-            ctx.notify('No threads available.');
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'threadsAvailable'));
             return true;
         }
         const thread = await ctx.select(
@@ -670,7 +671,7 @@ async function handleThreads(ctx: CommandHandlerContext, _args: string, _resolve
             s => ctx.resolveSessionThreadKey(s) === thread
         );
         if (!threadSessions.length) {
-            ctx.notify('No sessions in this thread.');
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'sessionsThread'));
             return true;
         }
         const sessionId = await ctx.select(
@@ -694,7 +695,7 @@ async function handleThreads(ctx: CommandHandlerContext, _args: string, _resolve
 async function handleSections(ctx: CommandHandlerContext, args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
     const sectionSessionId = ctx.state.sessionId;
     if (!ctx.sessionService || !sectionSessionId) {
-        ctx.notify('No session service or current session.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'sessionServiceOr'));
         return true;
     }
     ctx.state.closeReview();
@@ -703,12 +704,12 @@ async function handleSections(ctx: CommandHandlerContext, args: string, _resolve
     if (labelArg) {
         await ctx.sessionService.createSection(sectionSessionId, labelArg);
         await ctx.refreshCurrentSections();
-        ctx.notify(`Section "${labelArg}" created.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'sectionLabelCreated', { label: labelArg }));
         return true;
     }
     await ctx.refreshCurrentSections();
     if (!ctx.state.sections.length) {
-        ctx.notify('No sections. Create one with /sections <label>.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'sectionsCreateOne'));
         return true;
     }
     const section = await ctx.select(
@@ -746,15 +747,15 @@ async function handleSections(ctx: CommandHandlerContext, args: string, _resolve
     if (action === 'delete') {
         await ctx.sessionService.deleteSection(sectionSessionId, section);
         await ctx.refreshCurrentSections();
-        ctx.notify('Section deleted.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'sectionDeleted'));
     } else if (action === 'start' || action === 'end') {
         const index = ctx.state.sections.findIndex(item => item.id === section);
         if (action === 'start' && index <= 0) {
-            ctx.notify(index < 0 ? 'Section not found.' : 'Section already at start.');
+            ctx.notify(index < 0 ? formatAgentUiNotice(ctx.translator, 'sectionNotFound') : formatAgentUiNotice(ctx.translator, 'sectionAlreadyAtStart'));
             return true;
         }
         if (action === 'end' && (index < 0 || index === ctx.state.sections.length - 1)) {
-            ctx.notify(index < 0 ? 'Section not found.' : 'Section already at end.');
+            ctx.notify(index < 0 ? formatAgentUiNotice(ctx.translator, 'sectionNotFound') : formatAgentUiNotice(ctx.translator, 'sectionAlreadyAtEnd'));
             return true;
         }
         await ctx.sessionService.moveSection(
@@ -764,7 +765,7 @@ async function handleSections(ctx: CommandHandlerContext, args: string, _resolve
             { beforeId: action === 'start' ? ctx.state.sections[0].id : undefined }
         );
         await ctx.refreshCurrentSections();
-        ctx.notify(action === 'start' ? 'Section moved to start.' : 'Section moved to end.');
+        ctx.notify(action === 'start' ? formatAgentUiNotice(ctx.translator, 'sectionMovedToStart') : formatAgentUiNotice(ctx.translator, 'sectionMovedToEnd'));
     } else if (action === 'before' || action === 'after') {
         const targetIndex = ctx.state.sections.findIndex(item => item.id === section);
         const beforeId = action === 'before'
@@ -781,7 +782,7 @@ async function handleSections(ctx: CommandHandlerContext, args: string, _resolve
         }
         const created = await ctx.sessionService.createSection(sectionSessionId, label || 'Section', undefined, { beforeId });
         await ctx.refreshCurrentSections();
-        ctx.notify(`Section "${created.label}" created.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'sectionLabelCreated', { label: created.label }));
     } else if (action === 'rename') {
         const label = await ctx.select('Rename section to', [
             { label: 'Next step', value: 'Next step' },
@@ -795,7 +796,7 @@ async function handleSections(ctx: CommandHandlerContext, args: string, _resolve
         }
         await ctx.sessionService.renameSection(sectionSessionId, section, label);
         await ctx.refreshCurrentSections();
-        ctx.notify(`Section renamed to "${label}".`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'sectionRenamed', { label: label }));
     }
     return true;
 }
@@ -810,7 +811,7 @@ async function handleThreadplan(ctx: CommandHandlerContext, _args: string, _reso
     await ctx.refreshThreadTodoPlan();
     await ctx.loadThreadCodingTasks();
     if (!ctx.state.planTodos.length) {
-        ctx.notify('No plan todos in this thread.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'planTodosThread'));
     }
     ctx.state.setSessionsFocused(false);
     ctx.state.setToolsFocused(false);
@@ -826,7 +827,7 @@ async function handleThreadplan(ctx: CommandHandlerContext, _args: string, _reso
 async function handleApprovals(ctx: CommandHandlerContext, _args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
     const pending = await ctx.getPendingApprovals(ctx.state.sessionId);
     if (!pending.length) {
-        ctx.notify('No pending approvals.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'pendingApprovals'));
         return true;
     }
     ctx.state.setPendingApprovals(pending);
@@ -859,23 +860,23 @@ async function handleReview(ctx: CommandHandlerContext, args: string, _resolved:
         }
         if (arg === 'approve-all') {
             ctx.state.approveAllReviewFiles();
-            ctx.notify('All files approved.');
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'allFilesApproved'));
             return true;
         }
         if (arg === 'clear-all') {
             ctx.state.clearAllReviewAnnotations();
-            ctx.notify('All annotations cleared.');
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'allAnnotationsCleared'));
             return true;
         }
         if (arg === 'clear') {
             ctx.state.clearReviewFileAnnotation();
-            ctx.notify('Annotation cleared.');
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'annotationCleared'));
             return true;
         }
         if (arg === 'export') {
             const report = ctx.state.getReviewExportReport();
             if (!report.length) {
-                ctx.notify('No review data to export.');
+                ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewDataExport'));
                 return true;
             }
             for (const line of report) {
@@ -886,27 +887,27 @@ async function handleReview(ctx: CommandHandlerContext, args: string, _resolved:
         if (arg === 'risk') {
             const sections = ctx.state.reviewFileSections;
             if (!sections.length) {
-                ctx.notify('No review files to analyze.');
+                ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewFilesAnalyze'));
                 return true;
             }
             for (const section of sections) {
                 const risk = ctx.state.computeFileRiskScore(section);
                 const annot = ctx.state.reviewFileAnnotations[section.path];
                 const marker = annot ? (annot.status === 'approved' ? ' ✓' : ' ✗') : '';
-                ctx.notify(`${String(risk.score).padStart(2, ' ')} ${risk.level.padEnd(8, ' ')} ${section.path} (+${section.additions}/-${section.deletions})${marker}${annot?.comment ? ` - ${annot.comment}` : ''}`);
+                ctx.notify(formatAgentUiNotice(ctx.translator, 'riskTableRow', { score: String(risk.score).padStart(2, ' '), riskLevel: risk.level.padEnd(8, ' '), path: section.path, additions: section.additions, deletions: section.deletions, marker, comment: annot?.comment ? ` - ${annot.comment}` : '' }));
             }
             return true;
         }
         if (arg.startsWith('approve')) {
             const comment = arg.slice(7).trim() || undefined;
             ctx.state.setReviewFileAnnotation('approved', comment);
-            ctx.notify(comment ? `File approved: ${comment}` : 'File approved.');
+            ctx.notify(comment ? formatAgentUiNotice(ctx.translator, 'fileApprovedWithComment', { comment: comment }) : formatAgentUiNotice(ctx.translator, 'fileApproved'));
             return true;
         }
         if (arg.startsWith('reject')) {
             const comment = arg.slice(6).trim() || undefined;
             ctx.state.setReviewFileAnnotation('rejected', comment);
-            ctx.notify(comment ? `File rejected: ${comment}` : 'File rejected.');
+            ctx.notify(comment ? formatAgentUiNotice(ctx.translator, 'fileRejectedWithComment', { comment: comment }) : formatAgentUiNotice(ctx.translator, 'fileRejected'));
             return true;
         }
         if (arg === 'diff' || arg.startsWith('diff ')) {
@@ -954,8 +955,8 @@ async function handleQuality(ctx: CommandHandlerContext, args: string, _resolved
     if (!aggregates.length) {
         ctx.notify(
             provider
-                ? `No summary quality stats recorded for provider '${provider}'.`
-                : 'No summary quality stats recorded yet.'
+                ? formatAgentUiNotice(ctx.translator, 'noSummaryQualityStatsForProvider', { provider: provider })
+                : formatAgentUiNotice(ctx.translator, 'noSummaryQualityStats')
         );
         return true;
     }
@@ -994,11 +995,11 @@ async function handleCompact(ctx: CommandHandlerContext, args: string, _resolved
     const reason = args?.trim() || undefined;
     const result = await ctx.sessionService?.compactSession(ctx.state.sessionId, reason) ?? { compacted: false };
     if (result.error) {
-        ctx.notify(`Compaction failed: ${result.error}`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'compactionFailed', { error: result.error }));
         return true;
     }
     if (!result.compacted) {
-        ctx.notify('Nothing to compact: history already within budget.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'nothingCompactHistory'));
         return true;
     }
     const summary = typeof result.summary === 'string' && result.summary.trim()
@@ -1007,7 +1008,7 @@ async function handleCompact(ctx: CommandHandlerContext, args: string, _resolved
     const before = typeof result.beforeMessageCount === 'number' ? result.beforeMessageCount : 0;
     const after = typeof result.afterMessageCount === 'number' ? result.afterMessageCount : 0;
     const ratio = typeof result.compressionRatio === 'number' ? `${result.compressionRatio}%` : 'n/a';
-    ctx.notify(`Compacted ${before} -> ${after} messages (${ratio} tokens saved).${summary}`);
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'compactedMessagesTokens', { before: before, after: after, ratio: ratio, summary: summary }));
     return true;
 }
 
@@ -1086,12 +1087,12 @@ async function handleHarness(ctx: CommandHandlerContext, args: string, _resolved
         if (arg === 'stop' || arg.startsWith('stop ')) {
             const taskId = arg.slice(4).trim();
             if (!taskId) {
-                ctx.notify('Usage: /harness stop <taskId>');
+                ctx.notify(formatAgentUiNotice(ctx.translator, 'harnessStopUsage'));
                 return true;
             }
             return ctx.runHarnessStopCommand(taskId);
         }
-        ctx.notify('Usage: /harness [audit [sessionId]] | [profile [list|current|diff <from> <to>]] | [tree [sessionId]] | [list [sessionId]] | stop <taskId>');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'harnessUsage'));
         return true;
     }
 }

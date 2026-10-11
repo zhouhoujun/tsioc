@@ -1,5 +1,6 @@
 import { Injectable, Inject, Optional } from '@tsdi/ioc';
 import { AGENT_CONSOLE_APP_RPC, AgentConsoleAppRpc, AgentMessage, AgentRuntime, AgentSessionSection, AgentSessionSectionInfo, TurnDiagnosticsStore, buildUsageSummary, collectMessageUsageRecords, collectTurnUsageRecords, deriveSectionInfos, normalizeAgentWorkspaceIdentity, SessionSearchMatch, SessionStore } from '@tsdi/agent';
+import { formatAgentUiNotice } from './agent-ui.i18n';
 
 export type AgentSessionExportFormat = 'json' | 'jsonl';
 
@@ -545,9 +546,7 @@ export class AgentConsoleSessionService {
         context?: any
     ): Promise<AgentSessionExportResult> {
         const resolvedSessionId = String(sessionId || '').trim();
-        if (!resolvedSessionId) {
-            throw new Error('sessionId is required');
-        }
+        if (!resolvedSessionId) { throw new Error(formatAgentUiNotice(undefined, 'sessionIdRequired')); }
         const format = this.normalizeExportFormat(options?.format);
         if (this.appRpc) {
             const result = await this.appRpc.request('session.export', { sessionId: resolvedSessionId, format }, context);
@@ -1466,6 +1465,6 @@ export class AgentConsoleSessionService {
             }
             return globalThis.btoa(binary);
         }
-        throw new Error('Base64 encoding is unavailable in this environment.');
+        throw new Error(formatAgentUiNotice(undefined, 'base64EncodingUnavailable'));
     }
 }

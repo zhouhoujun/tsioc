@@ -1,6 +1,8 @@
 import { AgentMessage } from '@tsdi/agent';
+import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 export interface ShellCommandHost {
+    translator?: AgentUiTranslator | null;
     state: any;
     shellMultilineMode: boolean;
     shellDraftLines: string[];
@@ -16,11 +18,11 @@ export async function handleShellBang(host: ShellCommandHost, value: string): Pr
         host.shellMultilineMode = !host.shellMultilineMode;
         if (host.shellMultilineMode) {
             host.shellDraftLines = [];
-            host.notify('Shell multiline draft mode: type lines, then submit with `!` to run. `!!` exits.');
+            host.notify(formatAgentUiNotice(host.translator, 'shellMultilineDraftMode'));
         } else {
             host.notify(host.shellDraftLines.length
-                ? 'Shell multiline draft discarded.'
-                : 'Shell multiline draft mode exited.');
+                ? formatAgentUiNotice(host.translator, 'shellMultilineDraftDiscarded')
+                : formatAgentUiNotice(host.translator, 'shellMultilineModeExited'));
             host.shellDraftLines = [];
         }
         return true;
@@ -28,7 +30,7 @@ export async function handleShellBang(host: ShellCommandHost, value: string): Pr
     const command = value.slice(1).trim();
     if (!host.shellMultilineMode) {
         if (!command) {
-            host.notify('Usage: `!<command>` runs a local shell command. `!!` enters multiline draft mode.');
+            host.notify(formatAgentUiNotice(host.translator, 'shellCommandUsageHint'));
             return true;
         }
         await runShellCommand(host, command);
@@ -37,7 +39,7 @@ export async function handleShellBang(host: ShellCommandHost, value: string): Pr
     if (!command) {
         const draft = host.shellDraftLines.join('\n');
         if (!draft) {
-            host.notify('Shell draft is empty. Type lines first, then submit with `!` to run.');
+            host.notify(formatAgentUiNotice(host.translator, 'shellDraftIsEmpty'));
             return true;
         }
         host.shellDraftLines = [];
@@ -46,7 +48,7 @@ export async function handleShellBang(host: ShellCommandHost, value: string): Pr
         return true;
     }
     host.shellDraftLines.push(command);
-    host.notify(`Shell draft +${host.shellDraftLines.length} line(s). Submit with '!' alone, exit with '!!'.`);
+    host.notify(formatAgentUiNotice(host.translator, 'shellDraftLineCount', { lineCount: host.shellDraftLines.length }));
     return true;
 }
 

@@ -55,6 +55,7 @@ import {
     truncateTimelineRowText
 } from './AgentConsoleTimelineWindow';
 import { resolveHumanStatusWord } from './AgentConsoleTimelineEventPresenter';
+import { formatAgentUiNotice } from './agent-ui.i18n';
 import {
     AGENT_CONSOLE_SUGGESTIONS_HINT,
     AGENT_CONSOLE_SUGGESTIONS_TITLE,
@@ -365,6 +366,7 @@ export interface AgentConsoleSelectOption {
 
 export interface AgentConsoleSelectMenu {
     title: string;
+    kind?: string;
     hint?: string;
     options: AgentConsoleSelectOption[];
     selectedIndex: number;
@@ -4544,7 +4546,7 @@ export class AgentConsoleSessionState {
 
     protected requireCommandExecutionControl(): CommandExecutionControlPort {
         if (!this.commandExecutionControl) {
-            throw new Error('AgentConsoleSessionState requires COMMAND_EXECUTION_CONTROL from its host injector.');
+            throw new Error(formatAgentUiNotice(undefined, 'sessionStateRequiresCommandExecution'));
         }
         return this.commandExecutionControl;
     }
@@ -4867,9 +4869,9 @@ export class AgentConsoleSessionState {
         this.syncDerivedInputFocus();
     }
 
-    selectAsync(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string): Promise<string | undefined> {
+    selectAsync(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string, kind?: string): Promise<string | undefined> {
         return new Promise(resolve => {
-            this.openSelectMenu(title, options, selectedIndex, hint);
+            this.openSelectMenu(title, options, selectedIndex, hint, kind);
             this.selectMenuAction = async (value: string | undefined) => {
                 this.closeSelectMenu();
                 resolve(value);
@@ -4893,12 +4895,13 @@ export class AgentConsoleSessionState {
         this.inputPrompt = this.consoleOptions.inputPrompt;
     }
 
-    openSelectMenu(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string): void {
+    openSelectMenu(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string, kind?: string): void {
         const currentMenu = this.selectMenu;
         const currentAction = this.selectMenuAction;
-        
+
         this.selectMenu = {
             title,
+            kind,
             hint: hint || this.consoleOptions.selectHint,
             options: options.slice(),
             selectedIndex: Math.max(0, Math.min(Math.max(options.length - 1, 0), selectedIndex)),
@@ -5060,7 +5063,7 @@ export class AgentConsoleSessionState {
     async openSubSelectMenu(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string): Promise<void> {
         const currentMenu = this.selectMenu;
         const currentAction = this.selectMenuAction;
-        
+
         this.selectMenu = {
             title,
             hint: hint || this.consoleOptions.selectHint,

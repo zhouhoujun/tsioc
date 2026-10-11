@@ -10,10 +10,12 @@ import {
     buildTurnDiagnosticsRecordOption,
     parseTrendArgs,
 } from './AgentConsoleFormatters';
+import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 // ── Diagnostics handler context ──────────────────────────────────────────────
 
 export interface DiagnosticsHandlerContext {
+    translator?: AgentUiTranslator | null;
     state: {
         sessionId: string;
     };
@@ -48,17 +50,17 @@ export async function openCompactionHistory(
     args: string
 ): Promise<boolean> {
     if (!ctx.sessionService) {
-        ctx.notify('Compaction history is unavailable without app RPC.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'compactionHistoryUnavailable'));
         return true;
     }
     const sessionId = args.trim() || ctx.state.sessionId;
     if (!sessionId) {
-        ctx.notify('No session selected. Run /compactions <sessionId>.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'sessionSelectedCompactions'));
         return true;
     }
     const records = await ctx.sessionService.listCompactionHistory(sessionId);
     if (!records.length) {
-        ctx.notify(`No compaction history recorded for session '${sessionId}'.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'noCompactionHistoryForSession', { sessionId: sessionId }));
         return true;
     }
     ctx.pushCommandOutput(
@@ -75,7 +77,7 @@ export async function openCompactionHistoryTrend(
     args: string
 ): Promise<boolean> {
     if (!ctx.sessionService) {
-        ctx.notify('Compaction history is unavailable without app RPC.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'compactionHistoryUnavailable'));
         return true;
     }
     const { sessionId, bucketSize, maxBuckets } = parseTrendArgs(args);
@@ -83,8 +85,8 @@ export async function openCompactionHistoryTrend(
     if (!trend.length) {
         ctx.notify(
             sessionId
-                ? `No compaction history trend recorded for session '${sessionId}'.`
-                : 'No compaction history trend recorded yet.'
+                ? formatAgentUiNotice(ctx.translator, 'noCompactionHistoryTrendForSession', { sessionId: sessionId })
+                : formatAgentUiNotice(ctx.translator, 'noCompactionHistory')
         );
         return true;
     }
@@ -100,15 +102,15 @@ export async function openTurnDiagnostics(
     sessionId?: string
 ): Promise<boolean> {
     if (!ctx.sessionService) {
-        ctx.notify('Turn diagnostics are unavailable without app RPC.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'turnDiagnosticsUnavailable'));
         return true;
     }
     const aggregate = await ctx.sessionService.getTurnDiagnosticsStats(sessionId);
     if (!aggregate || !Number(aggregate.totalTurns)) {
         ctx.notify(
             sessionId
-                ? `No turn diagnostics recorded for session '${sessionId}'.`
-                : 'No turn diagnostics recorded yet.'
+                ? formatAgentUiNotice(ctx.translator, 'noTurnDiagnosticsForSession', { sessionId: sessionId })
+                : formatAgentUiNotice(ctx.translator, 'noTurnDiagnostics')
         );
         return true;
     }
@@ -121,17 +123,17 @@ export async function openTurnDiagnosticsList(
     args: string
 ): Promise<boolean> {
     if (!ctx.sessionService) {
-        ctx.notify('Turn diagnostics are unavailable without app RPC.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'turnDiagnosticsUnavailable'));
         return true;
     }
     const sessionId = args.trim() || ctx.state.sessionId;
     if (!sessionId) {
-        ctx.notify('No session selected. Run /diagnostics list <sessionId>.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'sessionSelectedDiagnostics'));
         return true;
     }
     const records = await ctx.sessionService.listTurnDiagnosticsRecords(sessionId);
     if (!records.length) {
-        ctx.notify(`No turn diagnostics recorded for session '${sessionId}'.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'noTurnDiagnosticsForSession', { sessionId: sessionId }));
         return true;
     }
     const options = records.map(record => buildTurnDiagnosticsRecordOption(record));
@@ -162,13 +164,13 @@ export async function openTurnDiagnosticsTrend(
     args: string
 ): Promise<boolean> {
     if (!ctx.sessionService) {
-        ctx.notify('Turn diagnostics are unavailable without app RPC.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'turnDiagnosticsUnavailable'));
         return true;
     }
     const { sessionId, bucketSize, maxBuckets } = parseTrendArgs(args);
     const trend = await ctx.sessionService.listTurnDiagnosticsTrend({ sessionId, bucketSize, maxBuckets });
     if (!trend.length) {
-        ctx.notify('No turn diagnostics trend data recorded yet.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'turnDiagnosticsTrend'));
         return true;
     }
     const lines = formatTurnDiagnosticsTrend(trend);
@@ -183,7 +185,7 @@ export async function openUsage(
     input?: string
 ): Promise<boolean> {
     if (!ctx.sessionService) {
-        ctx.notify('Usage is unavailable without session access.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'unavailableSessionAccess'));
         return true;
     }
     const args = String(input || '').trim().split(/\s+/).filter(Boolean);
@@ -197,8 +199,8 @@ export async function openUsage(
     if (!totalTurns && !totalTokens) {
         ctx.notify(
             sessionId
-                ? `No usage recorded for session '${sessionId}'.`
-                : 'No usage recorded yet.'
+                ? formatAgentUiNotice(ctx.translator, 'noUsageForSession', { sessionId: sessionId })
+                : formatAgentUiNotice(ctx.translator, 'noUsage')
         );
         return true;
     }
@@ -213,15 +215,15 @@ export async function openHarnessAudit(
     sessionId?: string
 ): Promise<boolean> {
     if (!ctx.sessionService) {
-        ctx.notify('Harness audit is unavailable without app RPC.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'harnessAuditUnavailable'));
         return true;
     }
     const report = await ctx.sessionService.runHarnessAudit(sessionId);
     if (!report || report.empty === true) {
         ctx.notify(
             sessionId
-                ? `No harness failure data recorded for session '${sessionId}'.`
-                : 'No harness failure data recorded yet.'
+                ? formatAgentUiNotice(ctx.translator, 'noHarnessFailuresForSession', { sessionId: sessionId })
+                : formatAgentUiNotice(ctx.translator, 'noHarnessFailures')
         );
         return true;
     }
@@ -251,7 +253,7 @@ export async function openHarnessProfile(
     sub?: string
 ): Promise<boolean> {
     if (!ctx.sessionService) {
-        ctx.notify('Harness profile is unavailable without app RPC.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'harnessProfileUnavailable'));
         return true;
     }
     const arg = (sub ?? '').trim();
@@ -272,7 +274,7 @@ export async function openHarnessProfile(
     if (arg === 'current') {
         const profile = await ctx.sessionService.currentHarnessProfile();
         if (!profile) {
-            ctx.notify('No harness profile resolved.');
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'harnessProfileResolved'));
             return true;
         }
         const lines: string[] = [];
@@ -299,7 +301,7 @@ export async function openHarnessProfile(
         const to = parts[1] || 'current';
         const result = await ctx.sessionService.diffHarnessProfiles(from, to);
         if (!result) {
-            ctx.notify('Harness profile diff is unavailable.');
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'harnessProfileDiff'));
             return true;
         }
         if (result.error) {
@@ -312,7 +314,7 @@ export async function openHarnessProfile(
         ctx.pushCommandOutput('/harness profile diff', `harness profile diff ${result.from} → ${result.to}\n${diffLines.join('\n')}`);
         return true;
     }
-    ctx.notify('Usage: /harness profile [list|current|diff <from> <to>]');
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'harnessProfileUsage'));
     return true;
 }
 
@@ -323,17 +325,17 @@ export async function openSummaryQualityRecords(
     args: string
 ): Promise<boolean> {
     if (!ctx.sessionService) {
-        ctx.notify('Summary quality is unavailable without app RPC.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'summaryQualityUnavailable'));
         return true;
     }
     const sessionId = args.trim() || ctx.state.sessionId;
     if (!sessionId) {
-        ctx.notify('No session selected. Run /quality list <sessionId>.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'sessionSelectedQuality'));
         return true;
     }
     const records = await ctx.sessionService.listSummaryQualityRecords(sessionId);
     if (!records.length) {
-        ctx.notify(`No summary quality records for session '${sessionId}'.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'noSummaryQualityForSession', { sessionId: sessionId }));
         return true;
     }
     const options = records.map(record => buildSummaryQualityRecordOption(record));
@@ -369,7 +371,7 @@ export async function openSummaryQualityTrend(
     args: string
 ): Promise<boolean> {
     if (!ctx.sessionService) {
-        ctx.notify('Summary quality is unavailable without app RPC.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'summaryQualityUnavailable'));
         return true;
     }
     const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
@@ -396,7 +398,7 @@ export async function openSummaryQualityTrend(
     }
     const aggregate = await ctx.sessionService.getSummaryQualityAggregate(provider);
     if (!aggregate || !Number(aggregate.recordCount)) {
-        ctx.notify('No summary quality records found.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'summaryQualityRecords'));
         return true;
     }
     ctx.pushCommandOutput('/quality trend', formatSummaryQualityAggregate(aggregate));

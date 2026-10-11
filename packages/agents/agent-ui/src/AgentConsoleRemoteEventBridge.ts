@@ -6,6 +6,7 @@ import {
     AgentConsoleToolRun
 } from './AgentConsoleSessionState';
 import { formatTimelineEventLine, presentTimelineToolEvent, resolveTimelineToolCategory } from './AgentConsoleTimelineEventPresenter';
+import { formatAgentUiNotice } from './agent-ui.i18n';
 
 export interface RemoteAgentConsoleEvent {
     type: string;
@@ -38,9 +39,7 @@ function resolveFetch(options: AgentConsoleRemoteEventBridgeOptions): typeof fet
         // with a detached receiver; bind it to the global object.
         return globalFetch.bind(globalThis) as typeof fetch;
     }
-    return (() => {
-        throw new Error('fetch is not available; provide fetchImpl in AgentConsoleRemoteEventBridgeOptions');
-    }) as unknown as typeof fetch;
+    return (() => { throw new Error(formatAgentUiNotice(undefined, 'fetchUnavailableRemoteEventBridge')); }) as unknown as typeof fetch;
 }
 
 export function parseSseFrames(input: string): { frames: SseFrame[]; rest: string } {
@@ -472,11 +471,11 @@ export class AgentConsoleRemoteEventBridge {
             { headers }
         );
         if (!response.ok) {
-            throw new Error(`SSE connection failed: HTTP ${response.status}`);
+            throw new Error(formatAgentUiNotice(undefined, 'sseConnectionFailed', { status: response.status }));
         }
         const body = response.body as ReadableStream<Uint8Array> | null;
         if (!body) {
-            throw new Error('SSE response has no body');
+            throw new Error(formatAgentUiNotice(undefined, 'sseResponseNoBody'));
         }
         const reader = body.getReader();
         const decoder = new TextDecoder();

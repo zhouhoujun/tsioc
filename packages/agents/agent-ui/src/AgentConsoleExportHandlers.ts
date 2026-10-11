@@ -8,10 +8,12 @@ import type {
     AgentConsolePendingAttachment,
 } from './AgentConsoleSessionState';
 import { AgentConsolePathProvider, resolveAgentConsoleDirectory } from './AgentConsolePathProvider';
+import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 // ── Export / attachment context ──────────────────────────────────────────────
 
 export interface ExportHandlerContext {
+    translator?: AgentUiTranslator | null;
     state: {
         sessionId: string;
         pendingAttachments: AgentConsolePendingAttachment[];
@@ -36,23 +38,23 @@ export async function runExportCommand(
     args: string
 ): Promise<boolean> {
     if (!ctx.sessionService) {
-        ctx.notify('Session export is unavailable without session service.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'sessionExportUnavailable'));
         return true;
     }
     const parsed = parseExportArgs(args);
     const sessionId = parsed.sessionId || ctx.state.sessionId;
     if (!sessionId) {
-        ctx.notify('No session selected. Run /export [json|jsonl] [sessionId] [path].');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'sessionSelectedExport'));
         return true;
     }
     const result = await ctx.sessionService.exportSession(sessionId, { format: parsed.format });
     const targetPath = await tryWriteSessionExport(ctx, result, parsed.path);
     if (targetPath) {
-        ctx.notify(`Exported session '${sessionId}' to ${targetPath}.`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'exportedSessionToPath', { sessionId: sessionId, targetPath: targetPath }));
         return true;
     }
     previewSessionExport(ctx, result);
-    ctx.notify(`Export preview ready for session '${sessionId}' (${result.format.toUpperCase()}).`);
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'exportPreviewReady', { sessionId: sessionId, format: result.format.toUpperCase() }));
     return true;
 }
 
@@ -182,7 +184,7 @@ export function resolveAttachmentTargetPath(
 ): string {
     const trimmed = String(targetPath || '').trim();
     if (!trimmed) {
-        throw new Error('Usage: /attach <path>');
+        throw new Error(formatAgentUiNotice(undefined, 'attachUsage'));
     }
     if (fileAdapter.isAbsolute(trimmed)) {
         return fileAdapter.normalize(trimmed);
@@ -242,12 +244,12 @@ export async function runAttachCommand(
     }
     if (/^(clear|reset)$/i.test(trimmed)) {
         ctx.state.clearPendingAttachments();
-        ctx.notify('Cleared pending attachments.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'clearedPendingAttachments'));
         return true;
     }
     const fileAdapter = resolveFileAdapter(ctx);
     if (!fileAdapter) {
-        ctx.notify('Attach is unavailable without a file adapter.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'attachUnavailableFile'));
         return true;
     }
     try {
@@ -256,10 +258,10 @@ export async function runAttachCommand(
             ...ctx.state.pendingAttachments.filter(item => item.path !== attachment.path),
             attachment
         ]);
-        ctx.notify(`Attached: ${attachment.name}`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'attachedName', { name: attachment.name }));
         return true;
     } catch (error) {
-        ctx.notify(`Attach failed: ${error instanceof Error ? error.message : String(error)}`);
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'attachFailed', { error: error instanceof Error ? error.message : String(error) }));
         return true;
     }
 }
@@ -294,7 +296,7 @@ export async function loadPendingAttachment(
             dataUrl: `data:${docMediaType};base64,${encodeBase64(bytes)}`
         };
     }
-    throw new Error(`Unsupported attachment format for '${targetPath}'.`);
+    throw new Error(formatAgentUiNotice(undefined, 'unsupportedAttachmentFormat', { targetPath }));
 }
 
 export function resolveImageMediaType(filePath: string): string | undefined {
@@ -423,7 +425,7 @@ export function encodeBase64(bytes: Uint8Array): string {
         }
         return globalThis.btoa(binary);
     }
-    throw new Error('Base64 encoding is unavailable in this environment.');
+    throw new Error(formatAgentUiNotice(undefined, 'base64EncodingUnavailable'));
 }
 
 // ── MIME type maps ───────────────────────────────────────────────────────────

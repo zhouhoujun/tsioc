@@ -10,10 +10,12 @@
  */
 import { AgentMessage } from '@tsdi/agent';
 import { AgentConsolePendingAttachment } from './AgentConsoleSessionState';
+import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 // ── Edit-mode handler context ────────────────────────────────────────────────
 
 export interface EditModeHandlerContext {
+    translator?: AgentUiTranslator | null;
     state: {
         readonly input: string;
         readonly pendingAttachments: readonly AgentConsolePendingAttachment[];
@@ -45,7 +47,7 @@ export interface EditModeHandlerContext {
 export async function enterEditMode(ctx: EditModeHandlerContext): Promise<boolean> {
     const editable = ctx.getEditableUserMessages();
     if (!editable.length) {
-        ctx.notify('No user message to edit.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'userMessageEdit'));
         return true;
     }
     const recentDismiss = ctx.getDismissedAt() > 0
@@ -56,7 +58,7 @@ export async function enterEditMode(ctx: EditModeHandlerContext): Promise<boolea
             startEditTarget(ctx, editable[index - 1]);
             return true;
         }
-        ctx.notify('Already at the first user message.');
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'alreadyFirstUser'));
         return true;
     }
     startEditTarget(ctx, editable[editable.length - 1]);
@@ -82,7 +84,7 @@ export function startEditTarget(ctx: EditModeHandlerContext, target: AgentMessag
     } else {
         ctx.state.clearPendingAttachments();
     }
-    ctx.notify(`Editing message ${target.id.slice(0, 8)}… Enter to submit, Esc cancels, Esc,Esc for previous.`);
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'editingMessageEnter', { targetId: target.id.slice(0, 8) }));
 }
 
 export function dismissEditMode(ctx: EditModeHandlerContext): boolean {
@@ -93,7 +95,7 @@ export function dismissEditMode(ctx: EditModeHandlerContext): boolean {
     const draft = ctx.getDraftBefore();
     ctx.state.setInput(draft, draft.length);
     ctx.state.setPendingAttachments(ctx.getAttachmentsBefore());
-    ctx.notify('Edit cancelled — draft restored.');
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'editCancelledDraft'));
     return true;
 }
 
