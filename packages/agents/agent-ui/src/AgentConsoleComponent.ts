@@ -12,7 +12,7 @@ import {
 } from './console-ports';
 import { Inject, Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
-import type { SshClient, SshConnectionManager, SshHostConfig, SshShellSession } from '@tsdi/agent-ssh';
+import type { SshConnectionManager, SshShellSession } from '@tsdi/agent-ssh';
 import type { SandboxMode } from '@tsdi/agent/src/harness/sandbox-exec';
 import {
     runExportCommand as runExportCommandFn,
@@ -210,7 +210,7 @@ import {
 } from './AgentConsolePolicyCommands';
 import { ensureMessageAtTail } from './AgentConsoleMessageState';
 import { parseSlashCommandLine, handleMenuSelection, loadInputHistory } from './AgentConsoleInputHelpers';
-import { listSshHosts, connectSshHost, forwardSshTunnel } from './AgentConsoleSshCommands';
+import { AgentConsoleSshHost, detachSshShell, runSshCommand } from './AgentConsoleSshCommands';
 import { selectApprovalRequest, refreshPendingApprovals } from './AgentConsoleApprovalView';
 import { HarnessCommandHost, openDelegationLineageView, openDelegationListView, openDelegationTreeView, openHarnessListView, openHarnessTreeView } from './AgentConsoleHarnessCommands';
 import { TodoPlanCommandHost, mergeTodoPlanForSessionsView } from './AgentConsoleTodoPlanCommands';
@@ -3754,130 +3754,24 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runSshCommand(args: string): Promise<void> {
-        const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
-        const action = (tokens[0] || 'list').toLowerCase();
-        if (action === 'help' || action === '?') {
-            this.notify(formatAgentUiNotice(this.translator, 'sshUsage'));
-            return;
-        }
-        if (action === 'list' || action === 'ls') {
-            this.listSshHosts();
-            return;
-        }
-        if (action === 'connect') {
-            await this.connectSshHost(tokens[1]);
-            return;
-        }
-        if (action === 'disconnect') {
-            await this.disconnectSshHost(tokens[1]);
-            return;
-        }
-        if (action === 'shell') {
-            await this.startSshShell(tokens[1]);
-            return;
-        }
-        if (action === 'forward') {
-            await this.forwardSshTunnel(tokens.slice(1));
-            return;
-        }
-        this.notify(formatAgentUiNotice(this.translator, 'unknownSshCommand'));
-    }
-
-    protected listSshHosts(): void {
-        listSshHosts(this.sshManager, (message: string) => this.notify(message), this.translator);
-    }
-
-    protected async connectSshHost(id: string | undefined): Promise<void> {
-        return connectSshHost(this.sshManager, (message: string) => this.notify(message), id, this.translator);
-    }
-
-    protected async disconnectSshHost(id: string | undefined): Promise<void> {
-        if (!id) {
-            this.notify(formatAgentUiNotice(this.translator, 'sshDisconnectUsage'));
-            return;
-        }
-        if (!this.sshManager) {
-            this.notify(formatAgentUiNotice(this.translator, 'sshNotConfigured'));
-            return;
-        }
-        const disconnected = await this.sshManager.disconnect(id);
-        this.notify(disconnected
-            ? formatAgentUiNotice(this.translator, 'sshDisconnected', { id: id })
-            : formatAgentUiNotice(this.translator, 'sshHostNotConnected', { id: id }));
-    }
-
-    protected async forwardSshTunnel(tokens: string[]): Promise<void> {
-        return forwardSshTunnel(this.sshManager, (message: string) => this.notify(message), tokens, this.translator);
-    }
-
-    protected async startSshShell(id: string | undefined): Promise<void> {
-        if (!id) {
-            this.notify(formatAgentUiNotice(this.translator, 'sshShellUsage'));
-            return;
-        }
-        if (!this.sshManager) {
-            this.notify(formatAgentUiNotice(this.translator, 'sshNotConfigured'));
-            return;
-        }
-        if (!this.sshManager.hasHost(id)) {
-            this.notify(formatAgentUiNotice(this.translator, 'sshHostNotConfigured', { id: id }));
-            return;
-        }
-        if (this.state.isSshShellActive) {
-            this.notify(formatAgentUiNotice(this.translator, 'alreadySshShell', { hostId: this.state.sshShell?.hostId }));
-            return;
-        }
-        let client: SshClient;
-        try {
-            client = await this.sshManager.connect(id);
-        } catch (error) {
-            this.notify(formatAgentUiNotice(this.translator, 'sshConnectFailed', { error: error instanceof Error ? error.message : String(error) }));
-            return;
-        }
-        const size = this.surfaceAccessor?.getTerminalSize?.() ?? { cols: 80, rows: 24 };
-        let shell: SshShellSession;
-        try {
-            shell = await client.shell({ term: 'xterm-256color', cols: size.cols, rows: size.rows });
-        } catch (error) {
-            this.notify(formatAgentUiNotice(this.translator, 'sshShellFailed', { error: error instanceof Error ? error.message : String(error) }));
-            return;
-        }
-        this.sshShell = shell;
-        this.state.sshShell = { hostId: id };
-        shell.stream.on('data', (chunk: Uint8Array | string) => {
-            this.surfaceAccessor?.writeRawTerminalData?.(String(chunk));
-        });
-        shell.stream.stderr?.on('data', (chunk: Uint8Array | string) => {
-            this.surfaceAccessor?.writeRawTerminalData?.(String(chunk));
-        });
-        const onEnd = () => {
-            if (this.state.isSshShellActive && this.sshShell === shell) {
-                void this.detachSshShell('closed');
-            }
-        };
-        shell.stream.on('close', onEnd);
-        shell.stream.on('error', onEnd);
-        this.notify(formatAgentUiNotice(this.translator, 'sshShellStarted', { id: id }));
+        return runSshCommand(this.sshHost(), args);
     }
 
     protected async detachSshShell(reason: 'detached' | 'closed'): Promise<void> {
-        const hostId = this.state.sshShell?.hostId || '';
-        const shell = this.sshShell;
-        this.sshShell = null;
-        this.state.sshShell = null;
-        if (shell) {
-            try {
-                await shell.close();
-            } catch {
-                void 0;
-            }
-        }
-        this.surfaceAccessor?.resetTerminalRenderState?.();
-        if (hostId) {
-            this.notify(reason === 'detached'
-                ? formatAgentUiNotice(this.translator, 'sshShellDetached', { hostId: hostId })
-                : formatAgentUiNotice(this.translator, 'sshShellClosed', { hostId: hostId }));
-        }
+        return detachSshShell(this.sshHost(), reason);
+    }
+
+    protected sshHost(): AgentConsoleSshHost {
+        const self = this;
+        return {
+            translator: self.translator,
+            state: self.state,
+            get sshManager() { return self.sshManager; },
+            get sshShell() { return self.sshShell; },
+            set sshShell(value) { self.sshShell = value; },
+            surface: self.surfaceAccessor,
+            notify: (message, duration) => self.notify(message, duration)
+        };
     }
 
     protected async runPermissionsCommand(args: string): Promise<void> {
