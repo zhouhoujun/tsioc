@@ -167,7 +167,12 @@ import { AgentConsoleTerminalInputHost, closingSessionMessageView, handleTermina
 import { AgentConsoleTranscriptLayoutResolver, resolveTranscriptLayout, scrollAgentConsoleTranscript } from './AgentConsoleTranscriptLayout';
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
 import { openSummaryQualityRecords, openTurnDiagnosticsListView, openTurnDiagnosticsTrendView, openSummaryQualityTrendView, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshTurnDiagnosticsDigest, refreshUsageDigest, runHarnessStopCommand } from './AgentConsoleDiagnosticsView';
-import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
+import {
+    AgentConsoleSessionContentLoaderHost,
+    loadSessionMessages as loadSessionContentMessages,
+    loadSessionPage as loadSessionContentPage,
+    mapWithConcurrency as runWithConcurrency
+} from './AgentConsoleSessionContentLoader';
 import { flattenProjectSessions, navigateThreadCycle, refreshCurrentSections, refreshProjects, refreshThreads, resolveCurrentProjectSessions, resolveProjectSessionsFor, resolveSessionProjectKey, resolveSessionThreadKey, resolveThreadKeyForSession, resolveThreadSessionsFor, selectProjectRepresentative } from './AgentConsoleProjectProjection';
 import { refreshProjectContext as refreshProjectContextView } from './AgentConsoleProjectProjection';
 import { refreshTools as refreshToolsView } from './AgentConsoleToolsView';
@@ -2340,37 +2345,19 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         ensureMessageAtTail(this.state, messageId);
     }
 
+    private sessionContentLoaderHost(): AgentConsoleSessionContentLoaderHost {
+        return {
+            sessionService: this.sessionService,
+            runtime: this.runtime
+        };
+    }
+
     protected async loadSessionMessages(sessionId = this.state.sessionId): Promise<AgentMessage[]> {
-        const messages = await (this.sessionService?.loadMessages(sessionId) || this.runtime.getMessages(sessionId));
-        return this.normalizeLoadedMessages(messages);
+        return loadSessionContentMessages(this.sessionContentLoaderHost(), sessionId);
     }
 
     protected async loadSessionPage(sessionId = this.state.sessionId): Promise<{ messages: AgentMessage[]; sections: AgentSessionSection[]; goalSummary?: any }> {
-        if (this.sessionService) {
-            const page = await this.sessionService.loadMessagesPage(sessionId);
-            const messages = page.messages.slice();
-            const seenCursors = new Set<string>();
-            let cursor = page.messages[0]?.id;
-            let hasMore = page.hasMore === true;
-            while (hasMore && cursor && !seenCursors.has(cursor)) {
-                seenCursors.add(cursor);
-                const previous = await this.sessionService.loadMessagesPage(
-                    sessionId,
-                    undefined,
-                    { cursor, before: true }
-                );
-                messages.unshift(...previous.messages);
-                cursor = previous.messages[0]?.id;
-                hasMore = previous.hasMore === true;
-            }
-            return {
-                messages: this.normalizeLoadedMessages(messages),
-                sections: Array.isArray(page.sections) ? page.sections : [],
-                goalSummary: page.goalSummary
-            };
-        }
-        const messages = await this.runtime.getMessages(sessionId);
-        return { messages: this.normalizeLoadedMessages(messages), sections: [], goalSummary: undefined };
+        return loadSessionContentPage(this.sessionContentLoaderHost(), sessionId);
     }
 
     protected async searchSessionContent(
@@ -2382,36 +2369,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             sessions,
             this.state,
             (sessionId: string) => this.loadSessionMessages(sessionId),
-            (items: any[], limit: number, fn: (item: any) => Promise<any>) => this.mapWithConcurrency(items, limit, fn) as any,
+            (items: any[], limit: number, fn: (item: any) => Promise<any>) => runWithConcurrency(items, limit, fn) as any,
             AgentConsoleComponent.SEARCH_CONCURRENCY
         );
-    }
-
-    protected async mapWithConcurrency<T, R>(
-        items: T[],
-        limit: number,
-        worker: (item: T, index: number) => Promise<R>
-    ): Promise<Array<{ item: T; result?: R; error?: unknown }>> {
-        const outputs: Array<{ item: T; result?: R; error?: unknown }> = [];
-        let next = 0;
-        const run = async () => {
-            while (next < items.length) {
-                const index = next++;
-                const item = items[index];
-                try {
-                    const result = await worker(item, index);
-                    outputs.push({ item, result });
-                } catch (error) {
-                    outputs.push({ item, error });
-                }
-            }
-        };
-        await Promise.all(Array.from({ length: Math.min(limit, items.length) }, run));
-        return outputs;
-    }
-
-    protected normalizeLoadedMessages(messages: AgentMessage[] = []): AgentMessage[] {
-        return normalizeLoadedMessages(messages);
     }
 
     protected async refreshTurnArtifacts(): Promise<void> {
