@@ -5,7 +5,8 @@ import type {
     AgentConsoleCommandOutputEntry,
     AgentConsolePendingAttachment,
     AgentConsoleSelectOption,
-    AgentConsoleSessionItem
+    AgentConsoleSessionItem,
+    AgentConsoleSessionState
 } from './AgentConsoleSessionState';
 import type { AgentConsoleSessionService } from './AgentConsoleSessionService';
 import type { NavFilter, NavSelection } from '@tsdi/agent';
@@ -214,4 +215,60 @@ export interface CommandHandlerContext {
     queueNextTurnModelProfile(profileName: string): Promise<void>;
     startProviderWizard(): void | Promise<void>;
     openUsage(input?: string): Promise<boolean>;
+}
+
+/** Maps live session state onto the command handler context state surface. */
+export function buildCommandHandlerState(state: AgentConsoleSessionState): CommandHandlerContext['state'] {
+    return {
+        get sessionId() { return state.sessionId; },
+        get sessions() { return state.sessions; },
+        get projects() { return state.projects; },
+        get threads() { return state.threads; },
+        get sections() { return state.sections; },
+        get messages() { return state.messages; },
+        get tools() { return state.tools; },
+        get toolRuns() { return state.toolRuns; },
+        get pendingAttachments() { return state.pendingAttachments; },
+        get notice() { return state.notice; },
+        get input() { return state.input; },
+        get workspace() { return state.workspace; },
+        get status() { return state.status; },
+        get provider() { return state.provider; },
+        get model() { return state.model; },
+        get planTodos() { return state.planTodos; },
+        get reviewFileSections() { return state.reviewFileSections; },
+        get reviewFileAnnotations() { return state.reviewFileAnnotations; },
+        get consoleOptions() { return state.consoleOptions; },
+        get commandHints() { return state.commandHints; },
+        setInput: (v, c) => state.setInput(v, c),
+        setNotice: (m) => state.setNotice(m),
+        setTitle: (t) => state.setTitle(t),
+        setSessionsFocused: (f) => state.setSessionsFocused(f),
+        setToolsFocused: (f) => state.setToolsFocused(f),
+        setApprovalsFocused: (f) => state.setApprovalsFocused(f),
+        setJobsFocused: (f) => state.setJobsFocused(f),
+        setTasksFocused: (f) => state.setTasksFocused(f),
+        setToolRunsFocused: (f) => state.setToolRunsFocused(f),
+        setProjectsFocused: (f) => state.setProjectsFocused(f),
+        closeMessageDetail: () => state.closeMessageDetail(),
+        closeReview: () => state.closeReview(),
+        closeGitSnapshotDetail: () => state.closeGitSnapshotDetail(),
+        openTextOverlay: (k, l) => state.openTextOverlay(k, l),
+        toggleCommandOutputs: () => state.toggleCommandOutputs(),
+        setPendingApprovals: (p) => state.setPendingApprovals(p),
+        getReviewAnnotationSummary: () => state.getReviewAnnotationSummary(),
+        approveAllReviewFiles: () => state.approveAllReviewFiles(),
+        clearAllReviewAnnotations: () => state.clearAllReviewAnnotations(),
+        clearReviewFileAnnotation: () => state.clearReviewFileAnnotation(),
+        getReviewExportReport: () => state.getReviewExportReport(),
+        computeFileRiskScore: (s) => state.computeFileRiskScore(s),
+        setReviewFileAnnotation: (status, comment) => state.setReviewFileAnnotation(status, comment),
+        setSessions: (s) => state.setSessions(s),
+        setProjects: (p) => state.setProjects(p),
+        setThreads: (t) => state.setThreads(t),
+        setProjectContext: () => state.setProjectContext(),
+        setNavFilter: (f) => state.setNavFilter(f),
+        setNavSelection: (s) => state.setNavSelection(s),
+        setNavViewScroll: (viewId, scroll) => state.setNavViewScroll(viewId, scroll),
+    };
 }
