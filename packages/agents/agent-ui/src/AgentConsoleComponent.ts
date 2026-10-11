@@ -173,6 +173,7 @@ import {
     loadSessionPage as loadSessionContentPage,
     mapWithConcurrency as runWithConcurrency
 } from './AgentConsoleSessionContentLoader';
+import { openSession as delegateOpenSession, AgentConsoleSessionOpenHost } from './AgentConsoleSessionOpen';
 import { flattenProjectSessions, navigateThreadCycle, refreshCurrentSections, refreshProjects, refreshThreads, resolveCurrentProjectSessions, resolveProjectSessionsFor, resolveSessionProjectKey, resolveSessionThreadKey, resolveThreadKeyForSession, resolveThreadSessionsFor, selectProjectRepresentative } from './AgentConsoleProjectProjection';
 import { refreshProjectContext as refreshProjectContextView } from './AgentConsoleProjectProjection';
 import { refreshTools as refreshToolsView } from './AgentConsoleToolsView';
@@ -1025,99 +1026,54 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return [];
     }
 
+    private sessionOpenHost(): AgentConsoleSessionOpenHost {
+        const self = this;
+        return {
+            sessionService: self.sessionService,
+            startupWorkspace: self.startupWorkspace,
+            options: self.options,
+            state: self.state,
+            transcriptNavigationController: self.transcriptNavigationController,
+            queuedPrompts: self.queuedPrompts,
+            get openSessionRequestId() { return self.openSessionRequestId; },
+            set openSessionRequestId(value: number) { self.openSessionRequestId = value; },
+            get freshSessionScoped() { return self.freshSessionScoped; },
+            set freshSessionScoped(value: boolean) { self.freshSessionScoped = value; },
+            get openReviewRequestId() { return self.openReviewRequestId; },
+            set openReviewRequestId(value: number) { self.openReviewRequestId = value; },
+            get taskViewContextVersion() { return self.taskViewContextVersion; },
+            set taskViewContextVersion(value: number) { self.taskViewContextVersion = value; },
+            get editTargetMessageId() { return self.editTargetMessageId; },
+            set editTargetMessageId(value: string) { self.editTargetMessageId = value; },
+            get editDraftBefore() { return self.editDraftBefore; },
+            set editDraftBefore(value: string) { self.editDraftBefore = value; },
+            get editAttachmentsBefore() { return self.editAttachmentsBefore; },
+            set editAttachmentsBefore(value: any[]) { self.editAttachmentsBefore = value; },
+            get lastEditSessionMessageId() { return self.lastEditSessionMessageId; },
+            set lastEditSessionMessageId(value: string) { self.lastEditSessionMessageId = value; },
+            get editDismissedAt() { return self.editDismissedAt; },
+            set editDismissedAt(value: number) { self.editDismissedAt = value; },
+            get lastEscapeAt() { return self.lastEscapeAt; },
+            set lastEscapeAt(value: number) { self.lastEscapeAt = value; },
+            isTurnInProgress: () => self.isTurnInProgress(),
+            persistInputHistory: () => self.persistInputHistory(),
+            notifyBusyState: (message: string) => self.notifyBusyState(message),
+            updateTerminalTitle: () => self.updateTerminalTitle(),
+            refreshSessions: (currentId?: string) => self.refreshSessions(currentId),
+            resolveProjectSessionsFor: (sessionId: string) => self.resolveProjectSessionsFor(sessionId),
+            resolveProjectSessionIdsFor: (sessionId: string) => self.resolveProjectSessionIdsFor(sessionId),
+            loadSessionPage: (sessionId: string) => self.loadSessionPage(sessionId),
+            refreshTools: (sessionId?: string) => self.refreshTools(sessionId),
+            refreshPendingApprovals: (sessionId?: string) => self.refreshPendingApprovals(sessionId),
+            refreshTodoPlan: (sessionId?: string, projectSessions?: any[]) => self.refreshTodoPlan(sessionId, projectSessions),
+            loadCodingTasks: (sessionId?: string, projectSessionIds?: string[]) => self.loadCodingTasks(sessionId, projectSessionIds),
+            restoreInputHistory: () => self.restoreInputHistory(),
+            restoreSessionModes: (sessionId: string) => self.restoreSessionModes(sessionId)
+        };
+    }
+
     protected async openSession(sessionId?: string, options?: { persistCurrentHistory?: boolean; fresh?: boolean }): Promise<void> {
-        if (this.isTurnInProgress()) {
-            this.notifyBusyState('Wait for the current turn to finish before switching sessions.');
-            return;
-        }
-        if (!this.sessionService) {
-            return;
-        }
-        const requestId = ++this.openSessionRequestId;
-        if (options?.persistCurrentHistory !== false) {
-            await this.persistInputHistory();
-            if (requestId !== this.openSessionRequestId) {
-                return;
-            }
-        }
-        const target = await this.sessionService.ensureSession(sessionId);
-        if (requestId !== this.openSessionRequestId) {
-            return;
-        }
-        if (target.archived) {
-            await this.sessionService.setSessionArchived(target.id, false);
-            target.archived = false;
-        }
-        this.freshSessionScoped = options?.fresh === true;
-        const configuredWorkspace = String(this.startupWorkspace || this.state.workspace || (this.options.ui?.console as any)?.workspace || '').trim();
-        const nextWorkspace = requestId === 1 && configuredWorkspace
-            ? configuredWorkspace
-            : String(target.workspace || '').trim() || configuredWorkspace;
-        this.openReviewRequestId++;
-        this.taskViewContextVersion++;
-        this.state.configure({
-            sessionId: target.id,
-            workspace: nextWorkspace
-        });
-        if (nextWorkspace) {
-            this.state.setWorkspace(nextWorkspace);
-        }
-        this.state.setQueuedPromptCount((this.queuedPrompts.get(target.id) || []).length);
-        this.transcriptNavigationController.setFocused(false);
-        this.state.setSessionsFocused(false);
-        this.state.setProjectsFocused(false);
-        this.state.setToolsFocused(false);
-        this.state.setToolRunsFocused(false);
-        this.state.setApprovalsFocused(false);
-        this.state.setTasksFocused(false);
-        this.state.setJobsFocused(false);
-        this.state.setPendingApprovals([]);
-        this.state.clearReview();
-        this.state.clearPlanTodos();
-        this.state.setPendingQuestion(null);
-        this.state.clearToolActivity();
-        this.state.setContextPreparation(null);
-        this.state.closeMessageDetail();
-        this.state.clearActivities();
-        this.state.setLastError('');
-        this.updateTerminalTitle();
-        this.state.setNotice('');
-        this.state.setInput('', 0);
-        this.editTargetMessageId = '';
-        this.editDraftBefore = '';
-        this.editAttachmentsBefore = [];
-        this.lastEditSessionMessageId = '';
-        this.editDismissedAt = 0;
-        this.lastEscapeAt = 0;
-        await this.refreshSessions(target.id);
-        if (requestId !== this.openSessionRequestId || this.state.sessionId !== target.id) {
-            return;
-        }
-        // A plain startup owns a new session. Project aggregation is useful
-        // after an explicit resume/switch, but on a fresh launch it would pull
-        // old plans and task summaries from sibling sessions into the empty UI.
-        const projectSessions = options?.fresh
-            ? [{ ...target, current: true, updatedAt: target.lastActiveAt }]
-            : this.resolveProjectSessionsFor(target.id);
-        const projectSessionIds = options?.fresh ? [target.id] : this.resolveProjectSessionIdsFor(target.id);
-        const [page] = await Promise.all([
-            this.loadSessionPage(target.id),
-            this.refreshTools(target.id),
-            this.refreshPendingApprovals(target.id),
-            this.refreshTodoPlan(target.id, projectSessions),
-            this.loadCodingTasks(target.id, projectSessionIds),
-            this.restoreInputHistory()
-        ]);
-        if (requestId !== this.openSessionRequestId || this.state.sessionId !== target.id) {
-            return;
-        }
-        // A fresh startup must never render a transcript returned by stale
-        // host/app state. Explicit resume and interactive session switching
-        // continue to load their persisted page normally.
-        this.state.setMessages(options?.fresh ? [] : page.messages);
-        this.state.setSections(options?.fresh ? [] : page.sections);
-        this.state.setGoalSummary(options?.fresh ? null : (page.goalSummary || null));
-        await this.restoreSessionModes(target.id);
+        return delegateOpenSession(this.sessionOpenHost(), sessionId, options);
     }
 
     protected async restoreSessionModes(sessionId: string): Promise<void> {
