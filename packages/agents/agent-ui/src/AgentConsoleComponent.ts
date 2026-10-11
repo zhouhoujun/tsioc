@@ -238,17 +238,11 @@ import { loadLocalTodoPlan } from './AgentConsoleTodoView';
 import { refreshMentionCatalog } from './AgentConsoleMentions';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc, buildHarnessProjection, formatHarnessTreeLines, formatHarnessListLines, DelegationTreeNode } from '@tsdi/agent';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService } from './AgentConsoleSessionService';
-import { CommandHandlerContext, COMMAND_HANDLERS } from './AgentConsoleCommandHandlers';
+import { CommandHandlerContext } from './AgentConsoleCommandHandlers';
 import { buildCommandHandlerState } from './AgentConsoleCommandHandlerContext';
+import { AgentConsoleCommandDispatchHost, dispatchAgentConsoleCommand } from './AgentConsoleCommandDispatch';
 import { AGENT_WIZARD_PROVIDERS, AGENT_WIZARD_TIERS, AgentWizardProviderDef, AgentWizardStepDef, buildProviderWizardChoiceOptions, buildProviderWizardConfirmOptions, buildProviderWizardSteps, buildProviderWizardSummary, buildWizardStepHelp, resolveWizardPrefill, resolveWizardProviderDef, resolveWizardProviderName, resolveWizardTierLabel } from './AgentConsoleProviderWizard';
 import { startProviderWizard, handleWizardEscape, cancelProviderWizard, resetProviderWizardComposer, showProviderWizardStep, openProviderWizardChoice, handleProviderWizardChoice, openProviderWizardConfirm, handleProviderWizardConfirm, openProviderWizardEditor, testProviderConnection, commitProviderWizard, advanceProviderWizard } from './AgentConsoleProviderWizardFlow';
-import {
-    getAgentConsoleCommandDefinition,
-    getAgentConsoleCommandName,
-    formatAgentConsoleCommandDiagnosticEcho,
-    formatAgentConsoleCommandDiagnostics,
-    parseAgentConsoleCommandArguments
-} from './AgentConsoleCommandRegistry';
 
 interface AgentConsoleQueuedPrompt {
     input: string;
@@ -2177,61 +2171,19 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async handleCommand(value: string): Promise<boolean> {
-        const parsed = this.parseSlashCommandLine(value);
-        if (!parsed.command.startsWith('/')) {
-            return false;
-        }
-        const resolved = this.resolveUniqueCommandPrefix(parsed.command);
-        const canonical = getAgentConsoleCommandName(resolved.command);
-        const args = String(parsed.args || '').trim();
-        const previousRequestId = this.pendingCommandRequestId;
-        const requestId = this.state.commandExecutionController.begin(canonical, args);
-        this.pendingCommandRequestId = requestId;
-        if (!this.state.commandHints.includes(canonical)) {
-            const reason = resolved.matches.length
-                ? `Ambiguous command: ${parsed.command}  (${resolved.matches.join(', ')})`
-                : `Unknown command: ${parsed.command}`;
-            this.state.commandExecutionController.fail(requestId, reason, false);
-            this.notify(reason);
-            this.pendingCommandRequestId = previousRequestId;
-            return true;
-        }
-        const parsedArgs = parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition(canonical), args);
-        if (parsedArgs.diagnostics.length) {
-            const reason = formatAgentConsoleCommandDiagnostics(parsedArgs.diagnostics);
-            this.state.commandExecutionController.fail(requestId, reason, false);
-            // Preserve the exact command so the user can correct it and retry.
-            this.state.setInput(parsed.raw, parsed.raw.length);
-            this.notify(formatAgentConsoleCommandDiagnosticEcho(parsedArgs.diagnostics).join('\n'));
-            this.pendingCommandRequestId = previousRequestId;
-            return true;
-        }
-        const handler = COMMAND_HANDLERS[canonical];
-        if (handler) {
-            try {
-                const handled = await handler(this.buildCommandContext(this.state.commandExecutionController.signal(requestId)), args, { command: canonical, matches: resolved.matches, parsedArgs });
-                if (!this.state.commandExecutionController.isCurrent(requestId)) {
-                    this.pendingCommandRequestId = previousRequestId;
-                    return true;
-                }
-                this.state.commandExecutionController.complete(requestId, 'succeeded');
-                this.pendingCommandRequestId = previousRequestId;
-                return handled;
-            } catch (error) {
-                if (!this.state.commandExecutionController.isCurrent(requestId)) {
-                    this.pendingCommandRequestId = previousRequestId;
-                    return true;
-                }
-                const reason = error instanceof Error ? error.message : String(error);
-                this.state.commandExecutionController.fail(requestId, reason, true);
-                this.notify(reason);
-                this.pendingCommandRequestId = previousRequestId;
-                return true;
-            }
-        }
-        this.state.commandExecutionController.fail(requestId, `Unknown command: ${parsed.command}`, false);
-        this.pendingCommandRequestId = previousRequestId;
-        return false;
+        return dispatchAgentConsoleCommand(this.commandDispatchHost(), value);
+    }
+
+    protected commandDispatchHost(): AgentConsoleCommandDispatchHost {
+        const self = this;
+        return {
+            state: this.state,
+            get pendingCommandRequestId() { return self.pendingCommandRequestId; },
+            set pendingCommandRequestId(value) { self.pendingCommandRequestId = value; },
+            resolveUniqueCommandPrefix: (input) => self.resolveUniqueCommandPrefix(input),
+            notify: (message, duration) => self.notify(message, duration),
+            buildCommandContext: (abortSignal) => self.buildCommandContext(abortSignal)
+        };
     }
 
 
