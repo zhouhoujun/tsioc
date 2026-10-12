@@ -121,7 +121,11 @@ export class EventHandler {
         this.publish('tool_completed', {
             sessionId: event.sessionId,
             toolName: event.toolName,
-            output: this.summarizeValue(event.output),
+            // `ask_user` questions must reach the UI with their structured
+            // payload (`kind`/`question`/`options`) so the console can render a
+            // real question panel. `summarizeValue` would collapse the object to
+            // `{ type: 'object', keys: [...] }`, which the client cannot use.
+            output: event.toolName === 'ask_user' ? event.output : this.summarizeValue(event.output),
             receipt: event.receipt
         });
         if (event.toolName === 'ask_user') {
