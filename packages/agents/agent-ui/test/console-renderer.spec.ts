@@ -965,6 +965,20 @@ export class AgentConsoleOperationalPanelsRendererTest {
         expect(workingLines.some(line => line.includes('activity turn'))).toBe(false);
     }
 
+    @Test('working detail names the reasoning phase instead of preparing the response')
+    async workingDetailNamesReasoningPhase() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setStatus('reasoning');
+        ref.instance.sessionState.turnStartedAt = Date.now() - 3000;
+        await ref.render();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
+        const workingLines = renderer.renderToLines(workingPanel.hostView.rootNodes[0]);
+        expect(workingLines.some(line => line.includes('Reasoning'))).toBe(true);
+        expect(workingLines.some(line => line.includes('Preparing the response'))).toBe(false);
+    }
+
     @Test('renders focused tool list with selected tool details')
     async renderFocusedToolList() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;

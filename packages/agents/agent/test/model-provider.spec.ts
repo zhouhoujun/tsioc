@@ -1560,6 +1560,72 @@ export class ModelProviderTest {
         expect(received[1]?.metadata?.fallback).toEqual('non_stream');
     }
 
+    @Test('recovers a mid-stream transport drop when only reasoning was emitted')
+    async recoversMidStreamTransportDropAfterReasoning() {
+        this.originalFetch = (globalThis as any).fetch;
+        let callCount = 0;
+        const sse = (payload: any) => new TextEncoder().encode(`data: ${JSON.stringify(payload)}\n\n`);
+        (globalThis as any).fetch = async (_url: string, options?: any) => {
+            callCount += 1;
+            const body = JSON.parse(String(options?.body || '{}'));
+            if (body.stream === true) {
+                let step = 0;
+                return {
+                    ok: true,
+                    body: {
+                        getReader() {
+                            return {
+                                async read() {
+                                    if (step === 0) {
+                                        step = 1;
+                                        return { done: false, value: sse({ choices: [{ delta: { reasoning_content: 'planning...' } }] }) };
+                                    }
+                                    throw new TypeError('terminated');
+                                },
+                                releaseLock() { return undefined; },
+                                cancel() { return undefined; }
+                            };
+                        }
+                    }
+                };
+            }
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        choices: [{ message: { role: 'assistant', content: 'recovered answer' }, finish_reason: 'stop' }],
+                        usage: { prompt_tokens: 4, completion_tokens: 3, total_tokens: 7 }
+                    };
+                }
+            };
+        };
+
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'openai-compatible',
+            model: 'gpt-5.4',
+            baseUrl: 'https://example.com',
+            apiKey: 'test-key',
+            timeoutMs: 1000
+        });
+
+        const received: Array<{ type: string; content?: string; metadata?: any }> = [];
+        for await (const chunk of adapter.stream({
+            sessionId: 's1',
+            summary: '',
+            memory: [],
+            messages: [{ id: '1', role: 'user', content: 'hi', createdAt: 1 }],
+            tools: []
+        })) {
+            received.push(chunk);
+        }
+
+        expect(callCount).toEqual(2);
+        expect(received.some(chunk => chunk.type === 'reasoning' && chunk.content === 'planning...')).toEqual(true);
+        const text = received.find(chunk => chunk.type === 'text');
+        expect(text?.content).toEqual('recovered answer');
+        expect(text?.metadata?.fallback).toEqual('non_stream');
+    }
+
     @Test('honours the configured timeout for stream inactivity')
     async honoursConfiguredStreamingInactivityTimeout() {
         const originalSetTimeout = globalThis.setTimeout;

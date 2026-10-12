@@ -741,7 +741,9 @@ export class AgentConsoleWorkingPanelComponent {
                 activity.kind !== 'model' && activity.kind !== 'turn'
             );
             if (!activePlan) {
-                parts.push(latest?.message || this.translator?.translate('agent.turn.preparing') || 'Preparing the response');
+                parts.push(this.state.status === 'reasoning'
+                    ? (this.translator?.translate('agent.turn.reasoning') || 'Reasoning')
+                    : (latest?.message || this.translator?.translate('agent.turn.preparing') || 'Preparing the response'));
             }
         }
         if (this.state.consoleOptions.workingPresentation === 'dashboard') {

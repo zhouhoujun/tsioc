@@ -215,7 +215,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         const { signal, cleanup, markActivity, getAbortReason } = this.createStreamingTimeoutContext(request.signal);
         const url = this.resolveUrl('/chat/completions');
         const reqBody = this.createStreamRequest(request, toolNames.forward);
-        let emittedAnyChunk = false;
+        let emittedAnswerChunk = false;
 
         try {
             let response: Response;
@@ -237,7 +237,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
 
             if (!response.ok) {
                 const detail = await this.readResponseError(response);
-                if (!emittedAnyChunk && this.isRetryable(response.status, detail) && attempt <= (this.options.retry?.maxRetries ?? DEFAULT_RETRY_POLICY.maxRetries)) {
+                if (!emittedAnswerChunk && this.isRetryable(response.status, detail) && attempt <= (this.options.retry?.maxRetries ?? DEFAULT_RETRY_POLICY.maxRetries)) {
                     cleanup();
                     for await (const chunk of this.stream(request, attempt + 1)) {
                         yield chunk;
@@ -373,7 +373,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                         markActivity();
                     }
                     for (const chunk of chunks) {
-                        emittedAnyChunk = true;
+                        emittedAnswerChunk = emittedAnswerChunk || chunk.type === 'text' || (chunk.toolCalls?.length ?? 0) > 0;
                         yield chunk;
                     }
                 }
@@ -385,12 +385,12 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                     markActivity();
                 }
                 for (const chunk of bufferedChunks) {
-                    emittedAnyChunk = true;
+                    emittedAnswerChunk = emittedAnswerChunk || chunk.type === 'text' || (chunk.toolCalls?.length ?? 0) > 0;
                     yield chunk;
                 }
             }
         } catch (error: any) {
-            if (asModelFailure(error)?.retryable !== false && !emittedAnyChunk && this.shouldFallbackToNonStreaming(error, getAbortReason())) {
+            if (asModelFailure(error)?.retryable !== false && !emittedAnswerChunk && this.shouldFallbackToNonStreaming(error, getAbortReason())) {
                 for await (const chunk of this.fallbackToNonStreamingCompletion(request)) {
                     yield chunk;
                 }
@@ -1094,7 +1094,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
             || message.includes('network')
             || message.includes('streaming request failed')
             || message.includes('aborted')
-            || message.includes('timeout');
+            || message.includes('timeout') || /terminated|other side closed|socket hang up|premature close|connection (reset|closed)/.test(message);
     }
 
     protected async *fallbackToNonStreamingCompletion(request: ModelRequest): AsyncGenerator<StreamChunk> {

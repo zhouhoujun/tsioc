@@ -66,6 +66,7 @@ export const agentUiEnglish: TranslationBundle = {
             turn: {
                 understanding: 'Understanding the request',
                 preparing: 'Preparing the response',
+                reasoning: 'Reasoning',
                 working: 'Working',
                 running: 'Running',
                 toolsRunning: 'Running {count} operations',
@@ -131,6 +132,7 @@ export const agentUiChinese: TranslationBundle = {
             turn: {
                 understanding: '正在理解需求',
                 preparing: '正在整理结果',
+                reasoning: '正在推理',
                 working: '处理中',
                 running: '执行中',
                 toolsRunning: '正在执行 {count} 项操作',
