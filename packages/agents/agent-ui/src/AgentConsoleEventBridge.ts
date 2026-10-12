@@ -46,7 +46,7 @@ export class AgentConsoleEventBridge {
         private runtime: AgentRuntime,
         @Optional() private toolRegistry?: ToolRegistry | null,
         @Optional() @Inject(AGENT_CONSOLE_APP_RPC) private appRpc?: AgentConsoleAppRpc | null,
-        @Optional() private app?: ApplicationContext | null,
+        @Optional() @Inject(ApplicationContext) private app?: ApplicationContext | null,
         @Optional() private translator?: TranslatorService,
         @Optional() private backgroundTasks?: BackgroundTaskManager | null
     ) {

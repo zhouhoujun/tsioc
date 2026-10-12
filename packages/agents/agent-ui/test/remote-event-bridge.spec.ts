@@ -143,6 +143,19 @@ export class RemoteEventBridgeMappingTest {
         expect(state.toolRuns[0].toolCallId).toEqual('tc-1');
     }
 
+    @Test('tool_completed with ask_user output opens the pending question panel')
+    toolCompletedAskUserOpensPendingQuestion() {
+        const state = makeState();
+        state.sessionId = 's1';
+        applyRemoteEvent(state, { type: 'tool_completed', sessionId: 's1', data: {
+            sessionId: 's1',
+            toolName: 'ask_user',
+            output: { kind: 'ask_user', sessionId: 's1', questionId: 'q1', question: 'Pick?', options: ['a', 'b'], severity: 'medium' }
+        } });
+        expect(state.pendingQuestion?.question).toEqual('Pick?');
+        expect(state.pendingQuestion?.options).toEqual(['a', 'b']);
+    }
+
     @Test('tool_completed with todo output sets plan todos')
     toolCompletedTodo() {
         const state = makeState();
