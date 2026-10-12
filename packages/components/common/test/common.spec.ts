@@ -4,7 +4,8 @@ import {
     formatCommonIndexedOptionLabel,
     processCommonTextInputChunk,
     resolveCommonSelectWindow,
-    shouldSkipCommonHistoryEntry
+    shouldSkipCommonHistoryEntry,
+    shouldSubmitCommonTextInputChunk
 } from '../src';
 
 @Suite('common component utilities')
@@ -38,5 +39,34 @@ export class CommonComponentUtilitiesTest {
     history() {
         expect(shouldSkipCommonHistoryEntry(' /help')).toBeTruthy();
         expect(shouldSkipCommonHistoryEntry('hello')).toBeFalsy();
+    }
+
+    @Test('only bare trailing-newline chunks submit on enter')
+    submitDetection() {
+        // Embedded newlines must not submit (multi-line paste).
+        expect(shouldSubmitCommonTextInputChunk('first\nsecond')).toBeFalsy();
+        expect(shouldSubmitCommonTextInputChunk('first\r\nsecond')).toBeFalsy();
+        expect(shouldSubmitCommonTextInputChunk('first\nsecond\n')).toBeFalsy();
+        // A bare Enter (or a line followed by Enter) submits.
+        expect(shouldSubmitCommonTextInputChunk('\r')).toBeTruthy();
+        expect(shouldSubmitCommonTextInputChunk('\n')).toBeTruthy();
+        expect(shouldSubmitCommonTextInputChunk('text\n')).toBeTruthy();
+        expect(shouldSubmitCommonTextInputChunk('text\r')).toBeTruthy();
+        // Empty / no-newline / alt-enter chunks never submit on enter.
+        expect(shouldSubmitCommonTextInputChunk('')).toBeFalsy();
+        expect(shouldSubmitCommonTextInputChunk('\u001b\r')).toBeFalsy();
+        expect(shouldSubmitCommonTextInputChunk('\u001b\n')).toBeFalsy();
+    }
+
+    @Test('preserves multi-line paste newlines instead of joining them')
+    multilinePaste() {
+        const pasted = processCommonTextInputChunk('', 0, 'line1\nline2', { submitOnEnter: false });
+        expect(pasted.value).toEqual('line1\nline2');
+        expect(pasted.shouldSubmit).toBeFalsy();
+
+        // A plain Enter still submits and is not inserted into the value.
+        const entered = processCommonTextInputChunk('go', 2, '\r', { submitOnEnter: true });
+        expect(entered.value).toEqual('go');
+        expect(entered.shouldSubmit).toBeTruthy();
     }
 }

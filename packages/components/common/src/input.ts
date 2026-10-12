@@ -53,6 +53,37 @@ export function shouldSkipCommonHistoryEntry(value: string): boolean {
     return !!text && text.startsWith('/');
 }
 
+/**
+ * Decide whether a raw input chunk should trigger submit on Enter.
+ *
+ * A plain Enter (`\r` / `\n`) submits. Any chunk that carries embedded
+ * newlines (for example a multi-line paste) must NOT submit, otherwise the
+ * newlines would be dropped and the lines concatenated. The console renderer
+ * has an equivalent helper for its own input pipeline.
+ */
+export function shouldSubmitCommonTextInputChunk(chunk: Uint8Array | string): boolean {
+    const text = typeof chunk === 'string' ? chunk : new TextDecoder().decode(chunk);
+    if (!text || text === '\u001b\r' || text === '\u001b\n') {
+        return false;
+    }
+    const normalized = text.replace(/\r\n/g, '\n');
+    if (!normalized.includes('\n') && !normalized.includes('\r')) {
+        return false;
+    }
+    if (/^[\r\n]+$/.test(normalized)) {
+        return normalized.length <= 2;
+    }
+    const trimmed = normalized.replace(/[\r\n]+$/, '');
+    const trailing = normalized.slice(trimmed.length);
+    if (!trimmed || !trailing) {
+        return false;
+    }
+    if (/[\r\n]/.test(trimmed)) {
+        return false;
+    }
+    return /^[\r\n]+$/.test(trailing);
+}
+
 export function processCommonTextInputChunk(
     value: string,
     cursor: number,
