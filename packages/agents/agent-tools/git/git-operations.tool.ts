@@ -115,7 +115,25 @@ export class GitOperationsTool implements AgentTool {
                     };
                 }
             }
-            throw new Error(`'${workdir}' is not a Git repository. Ask the user (ask_user) whether to initialize one; if they agree, call git_operations with action "init".`);
+            if (isReadOnly) {
+                // A missing repository is expected in many workspaces and must
+                // not block the agent. Report it as an informational, non-error
+                // result for read-only inspection actions so the agent keeps
+                // working instead of stopping to ask the user.
+                return {
+                    action,
+                    workdir,
+                    readOnly: true,
+                    notAGitRepo: true,
+                    canInit: true,
+                    stdout: '',
+                    stderr: `'${workdir}' is not a Git repository.`,
+                    exitCode: 0,
+                    changedFiles: [],
+                    diff: ''
+                };
+            }
+            throw new Error(`'${workdir}' is not a Git repository.`);
         }
         assertSandboxCommand('git', resolveSandboxPolicy(this.options), this.name);
 

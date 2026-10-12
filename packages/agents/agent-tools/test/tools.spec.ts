@@ -4496,20 +4496,33 @@ export class AgentToolsPackageTest {
         expect((await fs.stat(path.join(workspace, '.git'))).isDirectory()).toEqual(true);
     }
 
-    @Test('git operations guides the user to initialize a non-git workspace')
-    async gitOperationsGuidesInitForNonGitWorkspace() {
+    @Test('git operations report a non-git workspace without blocking read-only actions')
+    async gitOperationsDegradeForNonGitWorkspace() {
         const workspace = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-git-nongit-'));
         try {
             const tool = new GitOperationsTool({ file: { rootDir: workspace } } as any);
+
+            // Read-only inspection must degrade to an informational result
+            // instead of throwing / asking the user to initialize git.
+            const log = await tool.invoke({ action: 'log' }, createSessionContext());
+            expect(log.notAGitRepo).toEqual(true);
+            expect(log.exitCode).toEqual(0);
+            expect(log.stderr).toContain('not a Git repository');
+
+            const status = await tool.invoke({ action: 'status' }, createSessionContext());
+            expect(status.notAGitRepo).toEqual(true);
+            expect(status.exitCode).toEqual(0);
+            expect(status.stderr).toContain('not a Git repository');
+
+            // Mutating actions still fail, but never instruct the model to ask the user.
             let error: Error | undefined;
             try {
-                await tool.invoke({ action: 'log' }, createSessionContext());
+                await tool.invoke({ action: 'add' }, createSessionContext());
             } catch (err) {
                 error = err as Error;
             }
             expect(error?.message).toContain('not a Git repository');
-            expect(error?.message).toContain('ask_user');
-            expect(error?.message).toContain('init');
+            expect(error?.message).not.toContain('ask_user');
         } finally {
             await fs.rm(workspace, { recursive: true, force: true });
         }
