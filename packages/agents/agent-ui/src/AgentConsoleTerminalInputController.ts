@@ -1,4 +1,5 @@
 import type { ConsoleTextChunk, SelectMenuMouseEvent, TerminalInputSequenceResult } from './console-ports';
+import { shouldSubmitCommonTextInputChunk } from '@tsdi/components/common';
 import type { AgentConsoleSelectOption } from './AgentConsoleSessionState';
 import { AGENT_CONSOLE_OVERLAY_HINTS, AGENT_CONSOLE_OVERLAY_TITLES } from './AgentConsoleOverlayPresenter';
 import { formatAgentUiSessionClosingMessage, formatAgentUiNotice } from './agent-ui.i18n';
@@ -237,7 +238,10 @@ export async function handleTerminalInputView(
             return;
         }
     }
-    const submitOnEnter = /[\r\n]/.test(rawChunk);
+    // A plain Enter submits, but a chunk carrying embedded newlines (a
+    // multi-line paste) must be inserted verbatim instead of being joined and
+    // submitted. `shouldSubmitCommonTextInputChunk` distinguishes the two.
+    const submitOnEnter = shouldSubmitCommonTextInputChunk(rawChunk);
     const outcome = await host.state.processDecodedInput(decoded, chunk, {
         isClosed: host.destroyed,
         onExit: () => {

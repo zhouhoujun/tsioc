@@ -422,6 +422,31 @@ export class UiInputInteractionRegressionTest {
     }
 
     // ------------------------------------------------------------------
+    // Multi-line paste
+    // ------------------------------------------------------------------
+
+    @Test('multi-line paste preserves newlines and does not submit through the real input pipeline')
+    async multiLinePastePreservesNewlines() {
+        const instance = this.console();
+        const state = instance.sessionState;
+        state.setInput('', 0);
+        const submitted: string[] = [];
+        (instance as any).submit = async () => { submitted.push(state.input); };
+
+        // A single raw stdin chunk carrying embedded newlines must be inserted
+        // verbatim (as if the user typed line breaks), NOT joined and submitted.
+        await this.press('line1\nline2');
+
+        expect(state.input).toBe('line1\nline2');
+        expect(state.inputCursor).toBe('line1\nline2'.length);
+        expect(submitted).toEqual([]);
+
+        // A bare Enter still submits the multi-line draft.
+        await this.press('\r');
+        expect(submitted).toEqual(['line1\nline2']);
+    }
+
+    // ------------------------------------------------------------------
     // Workspace-scoped history store contract
     // ------------------------------------------------------------------
 
