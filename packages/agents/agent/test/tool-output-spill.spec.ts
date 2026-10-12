@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { FileAdapter, FileDirectoryEntry } from '@tsdi/common';
-import { cleanupToolOutputSpill, spillToolOutput } from '../src/harness/ToolOutputSpill';
+import { SELF_BOUNDED_TOOL_OUTPUT_MAX_CHARS, cleanupToolOutputSpill, resolveToolOutputMaxChars, spillToolOutput } from '../src/harness/ToolOutputSpill';
 
 class FakeFileAdapter extends FileAdapter {
     readonly files = new Map<string, string>();
@@ -64,6 +64,14 @@ export class ToolOutputSpillTest {
 
         const noAdapter = await spillToolOutput(null, 'z'.repeat(20), 5, { workspace: '/ws' });
         expect(noAdapter).toEqual('zzzzz...[truncated]');
+    }
+
+    @Test('keeps self-bounded tool output above the generic spill budget')
+    async keepsSelfBoundedOutput(): Promise<void> {
+        expect(resolveToolOutputMaxChars('read_file', 8000)).toEqual(SELF_BOUNDED_TOOL_OUTPUT_MAX_CHARS);
+        expect(resolveToolOutputMaxChars('read_file', 200000)).toEqual(200000);
+        expect(resolveToolOutputMaxChars('terminal', 8000)).toEqual(8000);
+        expect(resolveToolOutputMaxChars(undefined, 8000)).toEqual(8000);
     }
 
     @Test('cleanup removes spilled files past the retention window')

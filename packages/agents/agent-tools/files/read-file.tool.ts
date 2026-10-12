@@ -17,7 +17,7 @@ function truncateLine(line: string): string {
 @Injectable()
 export class ReadFileTool implements AgentTool {
     name = 'read_file';
-    description = 'Read a text file from the configured workspace. Each returned line is prefixed with its 1-indexed file line number as `<line>: <content>`. Supports offset/limit for reading a line range of large files.';
+    description = 'Read a text file from the configured workspace. Each returned line is prefixed with its 1-indexed file line number as `<line>: <content>`. Supports offset/limit for reading a line range of large files; when `truncated` is true, `nextOffset` is the line to pass as `offset` for the next call.';
     inputSchema = {
         type: 'object',
         properties: {
@@ -68,6 +68,7 @@ export class ReadFileTool implements AgentTool {
             content,
             truncated: range.truncated,
             offset,
+            ...(range.truncated ? { nextOffset: offset + range.lineCount } : {}),
             ...(range.totalLines != null ? { totalLines: range.totalLines } : {})
         };
     }
@@ -100,7 +101,7 @@ export class ReadFileTool implements AgentTool {
         offset: number,
         limit: number,
         maxBytes: number
-    ): Promise<{ content: string; truncated: boolean; totalLines?: number }> {
+    ): Promise<{ content: string; truncated: boolean; totalLines?: number; lineCount: number }> {
         const stream = createReadStream(filePath, { highWaterMark: 64 * 1024 });
         const collected: string[] = [];
         let buffer = '';
@@ -151,6 +152,7 @@ export class ReadFileTool implements AgentTool {
         return {
             content: collected.join('\n'),
             truncated,
+            lineCount: collected.length,
             ...(stopped ? {} : { totalLines: lineNumber })
         };
     }

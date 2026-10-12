@@ -1,5 +1,19 @@
 import { FileAdapter } from '@tsdi/common';
 
+// Tools that already bound their own output (e.g. `read_file` enforces its
+// byte/line budget) must not be re-truncated below that budget by the generic
+// spill; otherwise the "read the spilled file" escape hatch re-truncates on
+// every read and the model can never obtain the full content.
+const SELF_BOUNDED_TOOL_OUTPUT = new Set(['read_file']);
+export const SELF_BOUNDED_TOOL_OUTPUT_MAX_CHARS = 64 * 1024;
+
+export function resolveToolOutputMaxChars(toolName: string | undefined, configuredMax: number): number {
+    if (toolName && SELF_BOUNDED_TOOL_OUTPUT.has(toolName)) {
+        return Math.max(configuredMax, SELF_BOUNDED_TOOL_OUTPUT_MAX_CHARS);
+    }
+    return configuredMax;
+}
+
 export interface ToolOutputSpillContext {
     workspace?: string;
     toolCallId?: string;
@@ -68,10 +82,11 @@ export async function spillToolOutput(
     maxChars: number,
     context: ToolOutputSpillContext = {}
 ): Promise<string> {
-    if (!Number.isFinite(maxChars) || maxChars <= 0 || content.length <= maxChars) {
+    const budget = resolveToolOutputMaxChars(context.toolName, maxChars);
+    if (!Number.isFinite(budget) || budget <= 0 || content.length <= budget) {
         return content;
     }
-    const preview = content.slice(0, maxChars);
+    const preview = content.slice(0, budget);
     if (context.enabled === false || !fileAdapter?.writeText || !fileAdapter?.mkdir || !context.workspace) {
         return `${preview}...[truncated]`;
     }
@@ -85,7 +100,7 @@ export async function spillToolOutput(
             lastCleanupAt = now;
             await cleanupToolOutputSpill(fileAdapter, context.workspace, { dir: dirName, now }).catch(() => 0);
         }
-        const removed = content.length - maxChars;
+        const removed = content.length - budget;
         return `${preview}\n\n[Output truncated: ${removed} more characters. Full output saved to "${relPath}". Use read_file with path="${relPath}" to read it in full.]`;
     } catch {
         return `${preview}...[truncated]`;

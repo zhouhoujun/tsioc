@@ -363,6 +363,7 @@ export class AgentToolsPackageTest {
         expect(result.path).toEqual('src/alpha.txt');
         expect(result.truncated).toEqual(true);
         expect(result.content).toContain('alpha');
+        expect(result.nextOffset).toEqual(2);
 
         let error: Error | undefined;
         try {
@@ -382,6 +383,12 @@ export class AgentToolsPackageTest {
         expect(slice.content).toEqual('2: beta');
         expect(slice.offset).toEqual(2);
         expect(slice.truncated).toEqual(true);
+        expect(slice.nextOffset).toEqual(3);
+
+        const continuation = await tool.invoke({ path: 'src/alpha.txt', offset: slice.nextOffset }, createSessionContext());
+        expect(continuation.content).toEqual('3: gamma');
+        expect(continuation.truncated).toEqual(false);
+        expect(continuation.nextOffset).toBeUndefined();
 
         const tail = await tool.invoke({ path: 'src/alpha.txt', offset: 3 }, createSessionContext());
         expect(tail.content).toEqual('3: gamma');
@@ -408,6 +415,7 @@ export class AgentToolsPackageTest {
         const defaulted = await tool.invoke({ path: 'src/big.txt' }, createSessionContext());
         expect(defaulted.content.split('\n').length).toEqual(400);
         expect(defaulted.truncated).toEqual(true);
+        expect(defaulted.nextOffset).toEqual(401);
 
         // An explicit limit may exceed the 400-line default window, up to the 2000-line ceiling.
         const expanded = await tool.invoke({ path: 'src/big.txt', limit: 600 }, createSessionContext());
