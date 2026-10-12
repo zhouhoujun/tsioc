@@ -401,6 +401,62 @@ function isConsoleAltEnterChunk(text: string): boolean {
     return text === '\u001b\r' || text === '\u001b\n';
 }
 
+interface ConsoleEscapeConsumption {
+    value: string;
+    cursor: number;
+    nextIndex: number;
+}
+
+// Sequences must be stepped over atomically: applying escape bytes one
+// character at a time drops the leading ESC and leaks the remaining bytes
+// (`[A`) into the editor as literal text.
+function consumeConsoleEscapeSequence(
+    value: string,
+    cursor: number,
+    text: string,
+    index: number
+): ConsoleEscapeConsumption | undefined {
+    if (text[index] !== '\u001b') {
+        return undefined;
+    }
+    const marker = text[index + 1];
+    if (marker === '[') {
+        const final = text[index + 2];
+        if (final === 'D') {
+            return { value, cursor: Math.max(0, cursor - 1), nextIndex: index + 3 };
+        }
+        if (final === 'C') {
+            return { value, cursor: Math.min(value.length, cursor + 1), nextIndex: index + 3 };
+        }
+        if (final === 'H') {
+            return { value, cursor: 0, nextIndex: index + 3 };
+        }
+        if (final === 'F') {
+            return { value, cursor: value.length, nextIndex: index + 3 };
+        }
+        if (final === '3' && text[index + 3] === '~') {
+            const nextValue = cursor < value.length
+                ? `${value.slice(0, cursor)}${value.slice(cursor + 1)}`
+                : value;
+            return { value: nextValue, cursor, nextIndex: index + 4 };
+        }
+        let seqEnd = index + 2;
+        while (seqEnd < text.length) {
+            const code = text.charCodeAt(seqEnd);
+            if (code >= 0x40 && code <= 0x7e) {
+                break;
+            }
+            seqEnd += 1;
+        }
+        const nextIndex = seqEnd < text.length ? seqEnd + 1 : text.length;
+        return { value, cursor, nextIndex };
+    }
+    if (marker === 'O') {
+        return { value, cursor, nextIndex: Math.min(text.length, index + 3) };
+    }
+    return { value, cursor, nextIndex: index + 1 };
+}
+
 export function processConsoleTextInputChunk(
     value: string,
     cursor: number,
@@ -431,24 +487,35 @@ export function processConsoleTextInputChunk(
     let nextCursor = baseState.cursor;
     let shouldSubmit = false;
     let shouldConfirmSelection = false;
-    for (let index = 0; index < text.length; index++) {
+    for (let index = 0; index < text.length;) {
+        const escape = consumeConsoleEscapeSequence(nextValue, nextCursor, text, index);
+        if (escape) {
+            nextValue = escape.value;
+            nextCursor = escape.cursor;
+            index = escape.nextIndex;
+            continue;
+        }
         const char = text[index];
         if (char === '\r' || char === '\n') {
             if (submitOnEnter && enterAction === 'submit') {
                 shouldSubmit = true;
+                index += 1;
                 continue;
             }
             if (submitOnEnter && enterAction === 'confirm-selection') {
                 shouldConfirmSelection = true;
+                index += 1;
                 continue;
             }
             nextValue = `${nextValue.slice(0, nextCursor)}\n${nextValue.slice(nextCursor)}`;
             nextCursor += 1;
+            index += 1;
             continue;
         }
         const next = applyConsoleTextInputChunk(nextValue, nextCursor, char);
         nextValue = next.value;
         nextCursor = next.cursor;
+        index += 1;
     }
     return {
         value: nextValue,
@@ -465,9 +532,17 @@ export function applyConsoleTextInputChunk(value: string, cursor: number, chunk:
     }
     let nextValue = String(value || '');
     let nextCursor = clampConsoleTextCursor(nextValue, cursor);
-    for (let index = 0; index < text.length; index++) {
+    for (let index = 0; index < text.length;) {
+        const escape = consumeConsoleEscapeSequence(nextValue, nextCursor, text, index);
+        if (escape) {
+            nextValue = escape.value;
+            nextCursor = escape.cursor;
+            index = escape.nextIndex;
+            continue;
+        }
         const char = text[index];
         if (char === '\t') {
+            index += 1;
             continue;
         }
         if (char === '\u007f' || char === '\b') {
@@ -475,61 +550,16 @@ export function applyConsoleTextInputChunk(value: string, cursor: number, chunk:
                 nextValue = `${nextValue.slice(0, nextCursor - 1)}${nextValue.slice(nextCursor)}`;
                 nextCursor -= 1;
             }
-            continue;
-        }
-        if (char === '\u001b') {
-            const seq3 = text.slice(index, index + 3);
-            const seq4 = text.slice(index, index + 4);
-            if (seq3 === '\u001b[D') {
-                nextCursor = Math.max(0, nextCursor - 1);
-                index += 2;
-                continue;
-            }
-            if (seq3 === '\u001b[C') {
-                nextCursor = Math.min(nextValue.length, nextCursor + 1);
-                index += 2;
-                continue;
-            }
-            if (seq3 === '\u001b[H') {
-                nextCursor = 0;
-                index += 2;
-                continue;
-            }
-            if (seq3 === '\u001b[F') {
-                nextCursor = nextValue.length;
-                index += 2;
-                continue;
-            }
-            if (seq4 === '\u001b[3~') {
-                if (nextCursor < nextValue.length) {
-                    nextValue = `${nextValue.slice(0, nextCursor)}${nextValue.slice(nextCursor + 1)}`;
-                }
-                index += 3;
-                continue;
-            }
-            if (text[index + 1] === '[') {
-                let seqEnd = index + 2;
-                while (seqEnd < text.length) {
-                    const code = text.charCodeAt(seqEnd);
-                    if (code >= 0x40 && code <= 0x7e) {
-                        break;
-                    }
-                    seqEnd += 1;
-                }
-                index = seqEnd < text.length ? seqEnd : text.length;
-                continue;
-            }
-            if (text[index + 1] === 'O') {
-                index = Math.min(text.length - 1, index + 2);
-                continue;
-            }
+            index += 1;
             continue;
         }
         if (char < ' ') {
+            index += 1;
             continue;
         }
         nextValue = `${nextValue.slice(0, nextCursor)}${char}${nextValue.slice(nextCursor)}`;
         nextCursor += char.length;
+        index += 1;
     }
     return {
         value: nextValue,

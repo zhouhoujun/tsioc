@@ -407,7 +407,9 @@ export class ConsoleTerminalInputController {
             if (this.decoder.hasPendingEscape() && !/^[\[O]/.test(text)) {
                 this.dispatch(this.decoder.flushPendingEscape(), '\u001b');
             }
-            this.dispatch(this.decoder.decode(chunk), chunk);
+            for (const decoded of this.decoder.decodeAll(chunk)) {
+                this.dispatch(decoded, chunk);
+            }
             if (this.decoder.hasPendingEscape()) {
                 this.escapeTimer = setTimeout(() => {
                     this.escapeTimer = undefined;
@@ -1859,6 +1861,63 @@ function isPartialTerminalInputSequence(text: string): boolean {
         || /^\u001b\[<[\d;]*$/.test(text);
 }
 
+// A single read can carry several keys (key auto-repeat, fast typing, paste).
+// Each must be tokenized into its own result: `decode` only classifies a whole
+// buffer that is exactly one token, so a batch would otherwise degrade into
+// literal text (dropping the ESC and leaking `[A`) or silently lose navigation.
+function matchTerminalMouseAt(text: string, index: number): { sequence: string; event: SelectMenuMouseEvent } | undefined {
+    if (text[index] !== '\u001b') {
+        return undefined;
+    }
+    const match = text.slice(index).match(/^\u001b\[<(\d+);(\d+);(\d+)([mM])/);
+    if (!match) {
+        return undefined;
+    }
+    return {
+        sequence: match[0],
+        event: {
+            button: parseInt(match[1], 10),
+            x: parseInt(match[2], 10),
+            y: parseInt(match[3], 10),
+            release: match[4] === 'm'
+        }
+    };
+}
+
+function readTerminalSequenceAt(text: string, index: number): { text: string; controlKey?: TerminalInputControlKey } | undefined {
+    if (text[index] !== '\u001b') {
+        return undefined;
+    }
+    const marker = text[index + 1];
+    if (marker === '[') {
+        let seqEnd = index + 2;
+        while (seqEnd < text.length) {
+            const code = text.charCodeAt(seqEnd);
+            if (code >= 0x40 && code <= 0x7e) {
+                break;
+            }
+            seqEnd += 1;
+        }
+        if (seqEnd >= text.length) {
+            return undefined;
+        }
+        const sequence = text.slice(index, seqEnd + 1);
+        return { text: sequence, controlKey: parseTerminalInputControlKey(sequence) };
+    }
+    if (marker === 'O') {
+        if (index + 2 >= text.length) {
+            return undefined;
+        }
+        const sequence = text.slice(index, index + 3);
+        return { text: sequence, controlKey: parseTerminalInputControlKey(sequence) };
+    }
+    if (marker === undefined) {
+        return undefined;
+    }
+    // ESC + a following unit is kept whole (alt-<char>) so alt-enter survives.
+    return { text: text.slice(index, index + 2) };
+}
+
 export class TerminalInputSequenceDecoder {
     protected pending = '';
 
@@ -1881,6 +1940,50 @@ export class TerminalInputSequenceDecoder {
         }
         this.pending = '';
         return { text, partial: false };
+    }
+
+    decodeAll(input: ConsoleTextChunk): TerminalInputSequenceResult[] {
+        const text = `${this.pending}${decodeConsoleTextChunk(input)}`;
+        this.pending = '';
+        const results: TerminalInputSequenceResult[] = [];
+        let index = 0;
+        let runStart = -1;
+        const flushRun = (end: number) => {
+            if (runStart >= 0 && end > runStart) {
+                results.push({ text: text.slice(runStart, end), partial: false });
+            }
+            runStart = -1;
+        };
+        while (index < text.length) {
+            if (text[index] === '\u001b') {
+                const mouse = matchTerminalMouseAt(text, index);
+                if (mouse) {
+                    flushRun(index);
+                    results.push({ text: mouse.sequence, mouse: mouse.event, partial: false });
+                    index += mouse.sequence.length;
+                    continue;
+                }
+                const sequence = readTerminalSequenceAt(text, index);
+                if (!sequence) {
+                    flushRun(index);
+                    this.pending = text.slice(index);
+                    results.push({ text: '', partial: true });
+                    break;
+                }
+                flushRun(index);
+                results.push(sequence.controlKey
+                    ? { text: sequence.text, controlKey: sequence.controlKey, partial: false }
+                    : { text: sequence.text, partial: false });
+                index += sequence.text.length;
+                continue;
+            }
+            if (runStart < 0) {
+                runStart = index;
+            }
+            index += 1;
+        }
+        flushRun(text.length);
+        return results;
     }
 
     reset(): void {

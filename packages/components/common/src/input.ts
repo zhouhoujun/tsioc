@@ -100,7 +100,14 @@ export function processCommonTextInputChunk(
         altKey: options.altKey || text === '\u001b\r' || text === '\u001b\n',
         hasSelectMenu: options.hasSelectMenu
     });
-    for (let index = 0; index < text.length; index += 1) {
+    for (let index = 0; index < text.length;) {
+        const escape = consumeCommonEscapeSequence(nextValue, nextCursor, text, index);
+        if (escape) {
+            nextValue = escape.value;
+            nextCursor = escape.cursor;
+            index = escape.nextIndex;
+            continue;
+        }
         const char = text[index];
         if (char === '\r' || char === '\n') {
             if (options.submitOnEnter !== false && enterAction === 'submit') {
@@ -111,40 +118,72 @@ export function processCommonTextInputChunk(
                 nextValue = `${nextValue.slice(0, nextCursor)}\n${nextValue.slice(nextCursor)}`;
                 nextCursor += 1;
             }
+            index += 1;
             continue;
         }
-        if (char === '\t') continue;
+        if (char === '\t') {
+            index += 1;
+            continue;
+        }
         if (char === '\u007f' || char === '\b') {
             if (nextCursor > 0) {
                 nextValue = `${nextValue.slice(0, nextCursor - 1)}${nextValue.slice(nextCursor)}`;
                 nextCursor -= 1;
             }
+            index += 1;
             continue;
         }
-        if (char === '\u001b') {
-            const sequence3 = text.slice(index, index + 3);
-            const sequence4 = text.slice(index, index + 4);
-            if (sequence3 === '\u001b[D') nextCursor = Math.max(0, nextCursor - 1);
-            else if (sequence3 === '\u001b[C') nextCursor = Math.min(nextValue.length, nextCursor + 1);
-            else if (sequence3 === '\u001b[H') nextCursor = 0;
-            else if (sequence3 === '\u001b[F') nextCursor = nextValue.length;
-            else if (sequence4 === '\u001b[3~') {
-                if (nextCursor < nextValue.length) {
-                    nextValue = `${nextValue.slice(0, nextCursor)}${nextValue.slice(nextCursor + 1)}`;
-                }
-                index += 3;
-                continue;
-            } else {
-                continue;
-            }
-            index += 2;
+        if (char < ' ') {
+            index += 1;
             continue;
         }
-        if (char < ' ') continue;
         nextValue = `${nextValue.slice(0, nextCursor)}${char}${nextValue.slice(nextCursor)}`;
         nextCursor += char.length;
+        index += 1;
     }
     return { value: nextValue, cursor: nextCursor, shouldSubmit, shouldConfirmSelection };
+}
+
+interface CommonEscapeConsumption {
+    value: string;
+    cursor: number;
+    nextIndex: number;
+}
+
+function consumeCommonEscapeSequence(
+    value: string,
+    cursor: number,
+    text: string,
+    index: number
+): CommonEscapeConsumption | undefined {
+    if (text[index] !== '\u001b') {
+        return undefined;
+    }
+    const marker = text[index + 1];
+    if (marker === '[') {
+        const final = text[index + 2];
+        if (final === 'D') return { value, cursor: Math.max(0, cursor - 1), nextIndex: index + 3 };
+        if (final === 'C') return { value, cursor: Math.min(value.length, cursor + 1), nextIndex: index + 3 };
+        if (final === 'H') return { value, cursor: 0, nextIndex: index + 3 };
+        if (final === 'F') return { value, cursor: value.length, nextIndex: index + 3 };
+        if (final === '3' && text[index + 3] === '~') {
+            const nextValue = cursor < value.length
+                ? `${value.slice(0, cursor)}${value.slice(cursor + 1)}`
+                : value;
+            return { value: nextValue, cursor, nextIndex: index + 4 };
+        }
+        let seqEnd = index + 2;
+        while (seqEnd < text.length) {
+            const code = text.charCodeAt(seqEnd);
+            if (code >= 0x40 && code <= 0x7e) break;
+            seqEnd += 1;
+        }
+        return { value, cursor, nextIndex: seqEnd < text.length ? seqEnd + 1 : text.length };
+    }
+    if (marker === 'O') {
+        return { value, cursor, nextIndex: Math.min(text.length, index + 3) };
+    }
+    return { value, cursor, nextIndex: index + 1 };
 }
 
 export function resolveCommonEnterAction(options: { ctrlKey?: boolean; altKey?: boolean; hasSelectMenu?: boolean } = {}): CommonEnterAction {

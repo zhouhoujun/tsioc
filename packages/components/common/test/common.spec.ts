@@ -35,6 +35,29 @@ export class CommonComponentUtilitiesTest {
         expect(moved.value).toEqual('abcd');
     }
 
+    @Test('consumes batched escape sequences without leaking literal bytes')
+    batchedEscapeSequences() {
+        expect(processCommonTextInputChunk('', 0, '\u001b[A\u001b[A\u001b[A')).toEqual({
+            value: '',
+            cursor: 0,
+            shouldSubmit: false,
+            shouldConfirmSelection: false
+        });
+        expect(processCommonTextInputChunk('', 0, '\u001b[5~\u001b[5~')).toEqual({
+            value: '',
+            cursor: 0,
+            shouldSubmit: false,
+            shouldConfirmSelection: false
+        });
+        expect(processCommonTextInputChunk('abc', 3, '\u001b[D\u001b[D')).toEqual({
+            value: 'abc',
+            cursor: 1,
+            shouldSubmit: false,
+            shouldConfirmSelection: false
+        });
+        expect(processCommonTextInputChunk('', 0, 'ab\u001b[Ac\u001b[A').value).toEqual('abc');
+    }
+
     @Test('filters command history entries')
     history() {
         expect(shouldSkipCommonHistoryEntry(' /help')).toBeTruthy();

@@ -1353,6 +1353,28 @@ export class ConsoleRendererTest {
         expect(decoder.decode('x')).toEqual({ text: 'x', partial: false });
     }
 
+    @Test('tokenizes batched terminal input sequences into separate keys')
+    tokenizesBatchedTerminalInputSequences() {
+        const decoder = new TerminalInputSequenceDecoder();
+        expect(decoder.decodeAll('\u001b[A\u001b[A\u001b[B')).toEqual([
+            { text: '\u001b[A', controlKey: 'up', partial: false },
+            { text: '\u001b[A', controlKey: 'up', partial: false },
+            { text: '\u001b[B', controlKey: 'down', partial: false }
+        ]);
+        expect(decoder.decodeAll('\u001b[5~\u001b[6~')).toEqual([
+            { text: '\u001b[5~', controlKey: 'pageup', partial: false },
+            { text: '\u001b[6~', controlKey: 'pagedown', partial: false }
+        ]);
+        expect(decoder.decodeAll('a\u001b[Ab')).toEqual([
+            { text: 'a', partial: false },
+            { text: '\u001b[A', controlKey: 'up', partial: false },
+            { text: 'b', partial: false }
+        ]);
+        expect(decoder.decodeAll('\u001b\r')).toEqual([{ text: '\u001b\r', partial: false }]);
+        expect(decoder.decodeAll('\u001b[')).toEqual([{ text: '', partial: true }]);
+        expect(decoder.decodeAll('A')).toEqual([{ text: '\u001b[A', controlKey: 'up', partial: false }]);
+    }
+
     @Test('decodes split terminal mouse sequences in the base console layer')
     decodesSplitTerminalMouseSequences() {
         const decoder = new TerminalInputSequenceDecoder();

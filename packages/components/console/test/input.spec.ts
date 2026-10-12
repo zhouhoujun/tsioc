@@ -75,6 +75,33 @@ export class ConsoleInputTest {
         expect(applyConsoleTextInputChunk('ab', 1, '\u001b[<0;10;5M')).toEqual({ value: 'ab', cursor: 1 });
     }
 
+    @Test('consumes batched escape sequences without leaking literal bytes')
+    consumesBatchedEscapeSequences() {
+        expect(applyConsoleTextInputChunk('', 0, '\u001b[A\u001b[A')).toEqual({ value: '', cursor: 0 });
+        expect(applyConsoleTextInputChunk('', 0, '\u001b[5~\u001b[5~')).toEqual({ value: '', cursor: 0 });
+        expect(applyConsoleTextInputChunk('abc', 3, '\u001b[D\u001b[D')).toEqual({ value: 'abc', cursor: 1 });
+        expect(applyConsoleTextInputChunk('', 0, 'ab\u001b[Ac\u001b[A')).toEqual({ value: 'abc', cursor: 3 });
+
+        expect(processConsoleTextInputChunk('', 0, '\u001b[A\u001b[A')).toEqual({
+            value: '',
+            cursor: 0,
+            shouldSubmit: false,
+            shouldConfirmSelection: false
+        });
+        expect(processConsoleTextInputChunk('abc', 3, '\u001b[D\u001b[D')).toEqual({
+            value: 'abc',
+            cursor: 1,
+            shouldSubmit: false,
+            shouldConfirmSelection: false
+        });
+        expect(processConsoleTextInputChunk('', 0, '\u001b[5~x\u001b[A')).toEqual({
+            value: 'x',
+            cursor: 1,
+            shouldSubmit: false,
+            shouldConfirmSelection: false
+        });
+    }
+
     @Test('resolves clipboard selection and paste edits for input and textarea')
     resolvesClipboardSelectionAndPasteEdits() {
         expect(resolveConsoleClipboardSelection('abcdef', 4, 2)).toEqual({
