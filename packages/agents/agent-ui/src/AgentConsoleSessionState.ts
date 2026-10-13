@@ -3220,6 +3220,31 @@ export class AgentConsoleSessionState {
         await this.submitAction();
     }
 
+    /**
+     * Dismiss the active pending question. The dismissal is reported to the
+     * server (so it does not reappear on a later reseed/reconnect) and the
+     * queue advances to the next question. Local dismissal is kept even if the
+     * server is unreachable; the store expires the question on its own timeout.
+     */
+    async dismissPendingQuestion(): Promise<boolean> {
+        const question = this.pendingQuestion;
+        if (!question) {
+            return false;
+        }
+        const questionId = question.questionId || this.buildLegacyQuestionId(question);
+        const sessionId = question.sessionId || this.sessionId;
+        if (this.questionAction) {
+            try {
+                await this.questionAction({ questionId, sessionId, action: 'dismiss' });
+            } catch {
+                // Preserve the local dismissal when the server is unreachable.
+            }
+        }
+        question.status = 'dismissed';
+        this.finishPendingQuestion();
+        return true;
+    }
+
     async submitPendingQuestionInput(): Promise<boolean> {
         const question = this.pendingQuestion;
         const answer = String(this.input || '').trim();

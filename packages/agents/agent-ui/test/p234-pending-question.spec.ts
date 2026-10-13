@@ -143,6 +143,30 @@ export class PendingQuestionLifecycleTest {
         expect(state.pendingQuestion?.questionId).toEqual('q2');
     }
 
+    @Test('dismisses the active question through the server and advances the queue')
+    async dismissPersistsAndAdvances() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        const rpcCalls: any[] = [];
+        state.questionAction = async (input: any) => { rpcCalls.push(input); };
+        state.setPendingQuestion({ questionId: 'q1', sessionId: state.sessionId, question: 'First', options: ['a'], severity: 'medium', createdAt: 1, updatedAt: 1, status: 'pending' });
+        state.setPendingQuestion({ questionId: 'q2', sessionId: state.sessionId, question: 'Second', options: ['b'], severity: 'medium', createdAt: 2, updatedAt: 2, status: 'pending' });
+
+        expect(await state.dismissPendingQuestion()).toEqual(true);
+
+        expect(rpcCalls).toEqual([{ questionId: 'q1', sessionId: state.sessionId, action: 'dismiss' }]);
+        expect(state.pendingQuestion?.questionId).toEqual('q2');
+    }
+
+    @Test('keeps a local dismissal when the server rejects the dismiss call')
+    async dismissKeepsLocalOnServerFailure() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        state.questionAction = async () => { throw new Error('offline'); };
+        state.setPendingQuestion({ questionId: 'q1', sessionId: state.sessionId, question: 'Only', options: ['a'], severity: 'medium', createdAt: 1, updatedAt: 1, status: 'pending' });
+
+        expect(await state.dismissPendingQuestion()).toEqual(true);
+        expect(state.pendingQuestion).toEqual(null);
+    }
+
     @Test('seedFromQuestions drops expired items during initial seed')
     async seedFromQuestionsDropsExpired() {
         const state = makeState();

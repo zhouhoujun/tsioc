@@ -74,7 +74,7 @@ export abstract class AgentConsoleFocusLayers {
     async handleEscape(transcriptNavigation: AgentConsoleTranscriptNavigationController): Promise<boolean> {
         const state = this.state;
         if (state.pendingQuestion) {
-            state.setPendingQuestion(null);
+            await state.dismissPendingQuestion();
             return true;
         }
         if (state.selectMenu) {
@@ -162,7 +162,7 @@ export abstract class AgentConsoleFocusLayers {
                 return state.choosePendingQuestion();
             }
             case 'choose': return state.choosePendingQuestion(decision.index);
-            case 'escape': state.setPendingQuestion(null); return true;
+            case 'escape': return state.dismissPendingQuestion();
             default: return this.overlay.isDigitKey(normalized) ? false : undefined;
         }
     }
