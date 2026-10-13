@@ -2,7 +2,7 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { TodoStore, TodoItem, validateTodos, TodoValidationResult, validatePlanQuality, PlanQualityResult, resolveSchedule, TodoScheduleResult } from '../planning/todo-store';
 import { TodoTool } from '../planning/todo.tool';
-import { AgentModule, MemoryStore, provideAgentOrm } from '@tsdi/agent';
+import { AgentModule, MemoryStore, provideAgentOrm, ToolSchemaValidator } from '@tsdi/agent';
 import { Application } from '@tsdi/core';
 
 function createSessionContext(opts: { sessionId?: string } = {}): any {
@@ -121,6 +121,28 @@ export class TodoStoreV2Test {
         const tool = new TodoTool();
         const description = String((tool.inputSchema as any).properties.merge.description || '');
         expect(description).toContain('REPLACES');
+    }
+
+    @Test('TodoTool treats an unrecognized action as a plan update instead of hard-failing validation')
+    async todoToolToleratesUnknownAction() {
+        const tool = new TodoTool();
+        // The action field must not be a strict enum: models routinely send
+        // `action: "update"`, and the tool already routes unknown actions to
+        // the default update path. A strict enum rejected the whole call.
+        expect((tool.inputSchema as any).properties.action.enum).toBeUndefined();
+
+        const validator = new ToolSchemaValidator();
+        expect(() => validator.validateOrThrow(
+            tool.inputSchema as any,
+            { action: 'update', merge: true, todos: [{ id: 'a', content: 'do a', status: 'pending' }] },
+            'todo'
+        )).not.toThrow();
+
+        const result: any = await tool.invoke(
+            { action: 'update', todos: [{ id: 'a', content: 'do a', status: 'pending' }] },
+            createSessionContext({ sessionId: 'unknown-action' })
+        );
+        expect(result.todos[0].content).toBe('do a');
     }
 
     @Test('normalizeItem rejects invalid kind')

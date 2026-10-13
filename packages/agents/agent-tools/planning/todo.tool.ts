@@ -34,8 +34,7 @@ export class TodoTool implements AgentTool {
             },
             action: {
                 type: 'string',
-                enum: ['validate', 'decompose', 'schedule'],
-                description: 'validate: check quality without persisting. decompose: compile the plan into evidence-aware atomic steps; without acceptAll it returns split proposals for confirmation and persists nothing, with acceptAll the accepted steps are stored as the current plan. schedule: resolve DAG and return execution schedule without persisting.'
+                description: 'Optional. "validate": check the plan quality without persisting. "decompose": compile the plan into evidence-aware atomic steps; without acceptAll it returns split proposals for confirmation and persists nothing, with acceptAll the accepted steps are stored as the current plan. "schedule": resolve the DAG and return an execution schedule without persisting. Any other value, or omitting `action`, UPDATES the current plan with `todos` (respecting `merge`).'
             },
             acceptAll: {
                 type: 'boolean',
