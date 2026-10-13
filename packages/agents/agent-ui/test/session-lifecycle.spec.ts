@@ -95,6 +95,21 @@ function createLifecycleConsole(): {
 @Suite('session lifecycle commands (P124)')
 export class SessionLifecycleCommandTest {
 
+    @Test('a cancelled turn clears the turn clock so the next turn restarts at zero')
+    cancelledTurnResetsTurnClock() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        state.setStatus('running');
+        expect(state.turnStartedAt).toBeGreaterThan(0);
+
+        // Cancelling ends the turn: the clock must clear, otherwise the next
+        // turn's "Working (Ns)" resumes the cancelled turn's elapsed time.
+        state.setStatus('cancelled');
+        expect(state.turnStartedAt).toEqual(0);
+
+        state.setStatus('running');
+        expect(state.turnStartedAt).toBeGreaterThan(0);
+    }
+
     @Test('restoring a paged session keeps messages from the beginning')
     async restoringPagedSessionKeepsBeginning() {
         const { component, rpc } = createLifecycleConsole();
