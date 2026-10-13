@@ -219,6 +219,17 @@ export async function handleTerminalInputView(
         return;
     }
     const rawChunk = typeof chunk === 'string' ? chunk : chunk.toString();
+    if (decoded.paste) {
+        // Insert the bracketed-paste payload verbatim: embedded newlines must
+        // not be treated as Enter/submit, and paste bytes must never be routed
+        // through global key handling (digits/menus) or the vim pipeline.
+        releaseTranscriptFocusForTextInput(host, decoded.text);
+        await host.state.processRawChunk(decoded.text, {
+            submitOnEnter: false,
+            hasSelectMenu: !!host.state.selectMenu
+        });
+        return;
+    }
     if (await handleCommandPaletteInputView(host, decoded, rawChunk)) {
         return;
     }

@@ -446,6 +446,22 @@ export class UiInputInteractionRegressionTest {
         expect(submitted).toEqual(['line1\nline2']);
     }
 
+    @Test('bracketed paste inserts the payload verbatim without submitting through the real input pipeline')
+    async bracketedPasteInsertsVerbatim() {
+        const instance = this.console();
+        const state = instance.sessionState;
+        state.setInput('', 0);
+        const submitted: string[] = [];
+        (instance as any).submit = async () => { submitted.push(state.input); };
+
+        // Terminal wraps the paste in ESC[200~ .. ESC[201~; the payload must be
+        // inserted verbatim (newlines preserved) and never auto-submitted.
+        await this.press('\u001b[200~line1\nline2\u001b[201~');
+
+        expect(state.input).toBe('line1\nline2');
+        expect(submitted).toEqual([]);
+    }
+
     // ------------------------------------------------------------------
     // Workspace-scoped history store contract
     // ------------------------------------------------------------------

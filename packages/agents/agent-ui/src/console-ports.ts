@@ -87,6 +87,8 @@ export interface TerminalInputSequenceResult {
     controlKey?: string;
     mouse?: SelectMenuMouseEvent;
     partial: boolean;
+    /** True when `text` is the verbatim payload of a bracketed paste. */
+    paste?: boolean;
 }
 
 // ── ConsoleUtils — pure-function abstraction ────────────────────────────────
