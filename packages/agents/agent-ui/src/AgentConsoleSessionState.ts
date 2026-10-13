@@ -3186,6 +3186,7 @@ export class AgentConsoleSessionState {
             question.status = 'answered';
             question.answer = option;
             this.finishPendingQuestion();
+            await this.resumeAfterQuestionAnswer();
         } catch (error: any) {
             const message = error?.message || String(error || 'Question response failed');
             if (/expired/i.test(message)) {
@@ -3202,6 +3203,21 @@ export class AgentConsoleSessionState {
 
     protected buildLegacyQuestionId(question: AgentConsolePendingQuestion): string {
         return `legacy-question-${question.question}`;
+    }
+
+    /**
+     * Feed an answered question back to the agent as the next user turn.
+     *
+     * `ask_user` is non-blocking: the model's turn already ended when it asked,
+     * so without this the stored answer never reaches the model. Resume only
+     * when no further question is queued for this session, so a batch of
+     * questions collects every answer before the agent continues.
+     */
+    protected async resumeAfterQuestionAnswer(): Promise<void> {
+        if (!this.submitAction || this.pendingQuestion) {
+            return;
+        }
+        await this.submitAction();
     }
 
     async submitPendingQuestionInput(): Promise<boolean> {
@@ -3228,6 +3244,7 @@ export class AgentConsoleSessionState {
             question.status = 'answered';
             question.answer = answer;
             this.finishPendingQuestion();
+            await this.resumeAfterQuestionAnswer();
         } catch (error: any) {
             const message = error?.message || String(error || 'Question response failed');
             if (/expired/i.test(message)) {

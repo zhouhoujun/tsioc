@@ -112,6 +112,37 @@ export class PendingQuestionLifecycleTest {
         expect(state.pendingQuestionTotal).toEqual(1);
     }
 
+    @Test('resumes the agent with the answer once no question remains queued')
+    async resumesAgentAfterAnswer() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        const rpcCalls: any[] = [];
+        let submits = 0;
+        state.questionAction = async (input: any) => { rpcCalls.push(input); };
+        state.submitAction = async () => { submits++; };
+        state.setPendingQuestion({ questionId: 'q1', sessionId: state.sessionId, question: 'Pick', options: ['one'], severity: 'medium', createdAt: 1, updatedAt: 1, status: 'pending' });
+
+        await state.choosePendingQuestion();
+
+        expect(rpcCalls).toEqual([{ questionId: 'q1', sessionId: state.sessionId, action: 'answer', answer: 'one' }]);
+        expect(state.input).toEqual('one');
+        expect(submits).toEqual(1);
+    }
+
+    @Test('does not resume while another question is still queued')
+    async doesNotResumeWithQueuedQuestion() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        let submits = 0;
+        state.questionAction = async () => {};
+        state.submitAction = async () => { submits++; };
+        state.setPendingQuestion({ questionId: 'q1', sessionId: state.sessionId, question: 'First', options: ['a'], severity: 'medium', createdAt: 1, updatedAt: 1, status: 'pending' });
+        state.setPendingQuestion({ questionId: 'q2', sessionId: state.sessionId, question: 'Second', options: ['b'], severity: 'medium', createdAt: 2, updatedAt: 2, status: 'pending' });
+
+        await state.choosePendingQuestion(0);
+
+        expect(submits).toEqual(0);
+        expect(state.pendingQuestion?.questionId).toEqual('q2');
+    }
+
     @Test('seedFromQuestions drops expired items during initial seed')
     async seedFromQuestionsDropsExpired() {
         const state = makeState();
