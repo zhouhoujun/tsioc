@@ -1088,6 +1088,32 @@ export class AgentToolsPackageTest {
         expect(result.diff).toContain('+BETA');
     }
 
+    @Test('edit file diff is an ordered unified diff with context and a hunk header')
+    async editFileDiffIsOrderedUnified() {
+        const workspace = await this.createWorkspace();
+        const tool = new EditFileTool({ file: { rootDir: workspace } });
+        await fs.writeFile(
+            path.join(workspace, 'src', 'ordered.txt'),
+            'const store = createStore();\nreturn { put, get };\nexport default store;\n',
+            'utf8'
+        );
+
+        const result = await tool.invoke({
+            path: 'src/ordered.txt',
+            oldString: 'return { put, get };',
+            newString: 'function size() {\n  return 1;\n}\n\nfunction clear() {\n  // reset\n}\n\nreturn { put, get, size, clear };'
+        }, createSessionContext());
+
+        // A real unified diff: hunk header, context lines, then ordered -/+ lines.
+        expect(result.diff).toContain('@@ -');
+        expect(result.diff).toContain(' const store = createStore();');
+        expect(result.diff).toContain('-return { put, get };');
+        expect(result.diff).toContain('+function size() {');
+        expect(result.diff).toContain('+return { put, get, size, clear };');
+        // Added lines keep source order (size before clear).
+        expect(result.diff.indexOf('+function size() {')).toBeLessThan(result.diff.indexOf('+function clear() {'));
+    }
+
     @Test('write file returns a diff only when overwriting an existing file')
     async writeFileReturnsDiffOnlyOnOverwrite() {
         const workspace = await this.createWorkspace();
