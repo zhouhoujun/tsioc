@@ -116,9 +116,31 @@ export class AgentConsoleViewportLayoutTest {
         expect(state.messagesFocused).toEqual(false);
     }
 
-    @Test('stream layout ignores transcript scroll')
-    streamScrollIsNoop() {
+    @Test('PageUp reaches the transcript scroll through the decoded-input path')
+    async pageUpScrollsViewportThroughDecodedInput() {
         const state = new AgentConsoleSessionState();
+        state.setConsoleOptions({ messageLayout: 'viewport' });
+        state.setMessages(fiveMessages());
+        const nav = navigationFor(state);
+
+        const result = await state.processDecodedInput(
+            { text: '', controlKey: 'pageup', partial: false },
+            '',
+            {
+                isClosed: false,
+                onExit: () => undefined,
+                hasActiveTextPrompt: false,
+                transcriptNavigationController: nav
+            }
+        );
+
+        expect(result.handled).toEqual(true);
+        expect(result.action).toEqual('transcriptScroll');
+        expect(state.messagesFocused).toEqual(true);
+    }
+
+    @Test('stream layout ignores transcript scroll')
+    streamScrollIsNoop() {        const state = new AgentConsoleSessionState();
         state.setConsoleOptions({ messageLayout: 'stream' });
         state.setMessages(fiveMessages());
         expect(resolveTranscriptLayout('stream').scroll(-1, navigationFor(state))).toEqual(false);
