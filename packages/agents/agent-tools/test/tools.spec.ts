@@ -838,6 +838,13 @@ export class AgentToolsPackageTest {
         const dirResult = await tool.invoke({ path: 'src' }, createSessionContext());
         expect(dirResult.path).toEqual('src');
         expect(dirResult.type).toEqual('directory');
+        expect(dirResult.exists).toEqual(true);
+
+        // A missing path is reported as exists:false instead of a raw ENOENT.
+        const missingResult = await tool.invoke({ path: 'src/missing.txt' }, createSessionContext());
+        expect(missingResult.path).toEqual('src/missing.txt');
+        expect(missingResult.exists).toEqual(false);
+        expect(missingResult.type).toBeUndefined();
 
         let pathError: Error | undefined;
         try {

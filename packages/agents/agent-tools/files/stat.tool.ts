@@ -30,11 +30,26 @@ export class StatTool implements AgentTool {
         const requestedPath = this.requirePath(input?.path);
         const policy = resolveFilePolicy(this.options);
         const absolutePath = resolveWorkspacePath(requestedPath, policy.rootDir);
-        await assertNoSymlinkInWorkspacePath(absolutePath, policy.rootDir);
-        const stat = await fs.lstat(absolutePath);
+        // A missing path is a normal inspection outcome, not an error: report
+        // it as `exists: false` instead of leaking a raw ENOENT so the agent
+        // can continue without a failed tool round.
+        await assertNoSymlinkInWorkspacePath(absolutePath, policy.rootDir, { allowMissingPath: true });
+        let stat: Awaited<ReturnType<typeof fs.lstat>>;
+        try {
+            stat = await fs.lstat(absolutePath);
+        } catch (error: any) {
+            if (error?.code === 'ENOENT') {
+                return {
+                    path: toRelativeWorkspacePath(absolutePath, policy.rootDir),
+                    exists: false
+                };
+            }
+            throw error;
+        }
 
         return {
             path: toRelativeWorkspacePath(absolutePath, policy.rootDir),
+            exists: true,
             type: this.resolveType(stat),
             size: stat.size,
             ctime: stat.ctimeMs,
