@@ -1375,6 +1375,24 @@ export class ConsoleRendererTest {
         expect(decoder.decodeAll('A')).toEqual([{ text: '\u001b[A', controlKey: 'up', partial: false }]);
     }
 
+    @Test('extracts bracketed paste payloads and preserves embedded newlines')
+    decodesBracketedPaste() {
+        const decoder = new TerminalInputSequenceDecoder();
+        expect(decoder.decodeAll('\u001b[200~line1\nline2\u001b[201~')).toEqual([
+            { text: 'line1\nline2', paste: true, partial: false }
+        ]);
+        // A plain key after the paste terminator is still tokenized separately.
+        expect(decoder.decodeAll('\u001b[200~abc\u001b[201~\r')).toEqual([
+            { text: 'abc', paste: true, partial: false },
+            { text: '\r', partial: false }
+        ]);
+
+        // The paste terminator may arrive in a later read.
+        const split = new TerminalInputSequenceDecoder();
+        expect(split.decode('\u001b[200~hello\nworld')).toEqual({ text: '', partial: true });
+        expect(split.decode('\u001b[201~')).toEqual({ text: 'hello\nworld', paste: true, partial: false });
+    }
+
     @Test('decodes split terminal mouse sequences in the base console layer')
     decodesSplitTerminalMouseSequences() {
         const decoder = new TerminalInputSequenceDecoder();
@@ -1846,7 +1864,7 @@ export class ConsoleRendererTest {
 
         (service as any).prepare();
 
-        expect(writes).toEqual(['\x1b[2J\x1b[H']);
+        expect(writes).toEqual(['\x1b[2J\x1b[H', '\x1b[?2004h']);
         expect(writes.join('')).not.toContain('\x1b[3J');
     }
 

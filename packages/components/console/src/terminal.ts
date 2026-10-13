@@ -725,6 +725,9 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
         // Clear the viewport for the TUI without deleting the user's terminal
         // scrollback. ESC[3J would erase shell output from before startup.
         this.output.write(buildClearScreenSequence(false));
+        // Enable bracketed paste so multi-line pastes arrive wrapped and are
+        // inserted verbatim rather than treated as submit key presses.
+        this.output.write(TERMINAL_ENABLE_BRACKETED_PASTE_SEQUENCE);
     }
 
     protected attach(): void {
@@ -777,6 +780,7 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
         if (this.output?.isTTY) {
             this.output.write('\x1b[0 q');
             this.output.write(TERMINAL_DISABLE_MOUSE_TRACKING_SEQUENCE);
+            this.output.write(TERMINAL_DISABLE_BRACKETED_PASTE_SEQUENCE);
             this.output.write(buildTerminalCleanupSequence({
                 reset: '\x1b[0m',
                 alternateScreen: this.useAlternateScreen,
@@ -1722,6 +1726,8 @@ export interface TerminalInputSequenceResult {
     controlKey?: TerminalInputControlKey;
     mouse?: SelectMenuMouseEvent;
     partial: boolean;
+    /** True when `text` is the verbatim payload of a bracketed paste. */
+    paste?: boolean;
 }
 
 export interface TerminalMenuController {
@@ -1924,6 +1930,15 @@ export class TerminalInputSequenceDecoder {
     decode(input: ConsoleTextChunk): TerminalInputSequenceResult {
         const next = decodeConsoleTextChunk(input);
         const text = `${this.pending}${next}`;
+        if (text.startsWith(BRACKETED_PASTE_START)) {
+            const end = text.indexOf(BRACKETED_PASTE_END, BRACKETED_PASTE_START.length);
+            if (end === -1) {
+                this.pending = text;
+                return { text: '', partial: true };
+            }
+            this.pending = text.slice(end + BRACKETED_PASTE_END.length);
+            return { text: text.slice(BRACKETED_PASTE_START.length, end), paste: true, partial: false };
+        }
         const mouse = parseTerminalMouseEvent(text);
         if (mouse) {
             this.pending = '';
@@ -1955,6 +1970,23 @@ export class TerminalInputSequenceDecoder {
             runStart = -1;
         };
         while (index < text.length) {
+            if (text.startsWith(BRACKETED_PASTE_START, index)) {
+                const end = text.indexOf(BRACKETED_PASTE_END, index + BRACKETED_PASTE_START.length);
+                if (end === -1) {
+                    flushRun(index);
+                    this.pending = text.slice(index);
+                    results.push({ text: '', partial: true });
+                    break;
+                }
+                flushRun(index);
+                results.push({
+                    text: text.slice(index + BRACKETED_PASTE_START.length, end),
+                    paste: true,
+                    partial: false
+                });
+                index = end + BRACKETED_PASTE_END.length;
+                continue;
+            }
             if (text[index] === '\u001b') {
                 const mouse = matchTerminalMouseAt(text, index);
                 if (mouse) {
@@ -2013,6 +2045,14 @@ export function getChatCommands(): string[] {
 
 export const TERMINAL_ENABLE_MOUSE_TRACKING_SEQUENCE = '\x1b[?1000h\x1b[?1002h\x1b[?1006h';
 export const TERMINAL_DISABLE_MOUSE_TRACKING_SEQUENCE = '\x1b[?1000l\x1b[?1002l\x1b[?1006l';
+
+// Bracketed paste: the terminal wraps a paste in ESC[200~ .. ESC[201~ so the
+// application can insert the payload verbatim (newlines preserved) instead of
+// treating embedded newlines as Enter/submit.
+export const TERMINAL_ENABLE_BRACKETED_PASTE_SEQUENCE = '\x1b[?2004h';
+export const TERMINAL_DISABLE_BRACKETED_PASTE_SEQUENCE = '\x1b[?2004l';
+const BRACKETED_PASTE_START = '\u001b[200~';
+const BRACKETED_PASTE_END = '\u001b[201~';
 
 export const TUI_MOUSE_DRAG_THRESHOLD = 3;
 // How long the surface keeps mouse tracking disabled after a selection handoff
