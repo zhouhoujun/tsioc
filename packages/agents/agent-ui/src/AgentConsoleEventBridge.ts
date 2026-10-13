@@ -34,6 +34,7 @@ import { AgentConsolePendingQuestion, AgentConsolePlanTodoItem, AgentConsoleSess
 import type { BackgroundTaskManager } from '@tsdi/agent-tools';
 import { presentTimelineToolEvent, formatTimelineEventLine, resolveTimelineToolCategory } from './AgentConsoleTimelineEventPresenter';
 import { presentModelFailure } from './AgentConsoleModelFailurePresenter';
+import { resolveAgentToolLabel } from './AgentConsoleStreamHelpers';
 
 @Injectable()
 export class AgentConsoleEventBridge {
@@ -474,7 +475,7 @@ export class AgentConsoleEventBridge {
     }
 
     protected describeToolName(toolName: string): string {
-        return this.translator?.translate(`agent.tool.${toolName}`) || toolName.replace(/[._-]+/g, ' ');
+        return resolveAgentToolLabel(this.translator, toolName);
     }
 
     protected describeToolActivity(toolName: string, status: 'running' | 'completed'): string {

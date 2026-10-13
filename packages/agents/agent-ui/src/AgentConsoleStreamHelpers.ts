@@ -136,9 +136,33 @@ export function formatToolCallLabel(call: any, translator?: any): string {
     if (!name) {
         return '';
     }
-    const label = translator?.translate(`agent.tool.${name}`) || name.replace(/[._-]+/g, ' ');
+    const label = resolveAgentToolLabel(translator, name);
     const argument = resolveToolCallArgument(call?.input);
     return argument ? `${label}: ${argument}` : label;
+}
+
+/**
+ * Resolve a human-readable label for a tool name.
+ *
+ * When the translator has no entry for `agent.tool.<name>` it returns the key
+ * unchanged; in that case (and when there is no translator) fall back to a
+ * humanized name so a raw `agent.tool.*` key never leaks into the UI.
+ */
+export function resolveAgentToolLabel(translator: any, toolName: string): string {
+    const name = String(toolName || '').trim();
+    if (!name) {
+        return '';
+    }
+    const key = `agent.tool.${name}`;
+    const translated = translator?.translate?.(key);
+    if (typeof translated === 'string' && translated && translated !== key) {
+        return translated;
+    }
+    return humanizeAgentToolName(name);
+}
+
+function humanizeAgentToolName(name: string): string {
+    return name.replace(/[._-]+/g, ' ').trim();
 }
 
 export function describePendingToolCall(chunk: any, translator?: any): string {
@@ -205,8 +229,7 @@ export function describeStreamEventContent(eventType: string, chunk: any, transl
     if (!toolName || !eventType.startsWith('tool_')) {
         return content;
     }
-    const label = translator?.translate(`agent.tool.${toolName}`)
-        || toolName.replace(/[._-]+/g, ' ');
+    const label = resolveAgentToolLabel(translator, toolName);
     const detail = content.includes(' · ') ? content.slice(content.indexOf(' · ') + 3).trim() : '';
     if (eventType === 'tool_invoked') {
         return (translator?.translate('agent.tool.invoked', { label }) || `Running ${label}`)
