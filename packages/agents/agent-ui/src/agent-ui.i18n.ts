@@ -119,6 +119,11 @@ export const agentUiEnglish: TranslationBundle = {
                 delete_file: 'Delete file', web_search: 'Web search', web_extract: 'Fetch web page',
                 weather: 'Check weather', location: 'Resolve location', terminal: 'Run command',
                 background_task: 'Run background task', schedule: 'Schedule prompt',
+                spawn_agent: 'Spawn sub-agent', parallel_spawn: 'Run parallel tasks', orchestrate: 'Orchestrate tasks',
+                fan_out: 'Fan out tasks', map_reduce: 'Map-reduce tasks', race: 'Race tasks',
+                wait_all: 'Wait for all tasks', wait_any: 'Wait for any task', escalate: 'Escalate to the user',
+                tool_search: 'Search tools', tool_inspect: 'Inspect tool', review_diff: 'Review diff',
+                'process.start': 'Start process', 'process.poll': 'Poll process', 'process.kill': 'Stop process',
                 invoked: 'Running {label}', completed: '{label} completed', failed: '{label} failed', failedWithError: '{label} failed: {error}', gitMissing: 'Git repository not detected. If you want version control, ask the agent to initialize one (git init).', searchUnavailable: 'Web search is not configured; add a search adapter in settings.'
             }
         }
@@ -185,6 +190,11 @@ export const agentUiChinese: TranslationBundle = {
                 delete_file: '删除文件', web_search: '联网搜索', web_extract: '抓取网页',
                 weather: '查询天气', location: '解析位置', terminal: '执行命令',
                 background_task: '运行后台任务', schedule: '定时提示',
+                spawn_agent: '派生子 agent', parallel_spawn: '并行执行任务', orchestrate: '编排任务',
+                fan_out: '并发分发', map_reduce: '映射归约', race: '竞速任务',
+                wait_all: '等待全部任务', wait_any: '等待任一任务', escalate: '升级处理',
+                tool_search: '搜索工具', tool_inspect: '查看工具', review_diff: '审查差异',
+                'process.start': '启动进程', 'process.poll': '查询进程', 'process.kill': '结束进程',
                 invoked: '正在执行 {label}', completed: '{label}已完成', failed: '{label}未完成', failedWithError: '{label}未完成：{error}', gitMissing: '未检测到 Git 仓库。如需版本控制，可让 agent 初始化仓库（git init）。', searchUnavailable: '未配置联网搜索适配器；请在设置中配置搜索适配器。'
             }
         }
