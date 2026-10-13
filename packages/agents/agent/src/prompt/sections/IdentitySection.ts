@@ -103,7 +103,7 @@ export class IdentitySection extends PromptSection {
         lines.push('When you ask a clarification question, keep it to one question and explain the next action you will take after the answer.');
         lines.push('When the user answers a clarification question, continue the task directly with the new information instead of stopping early.');
         if (toolNames.has('git_operations')) {
-            lines.push('After modifying code or tests, inspect the resulting git diff before the final answer and summarize the changed files and verification status.');
+            lines.push('After modifying code or tests, when the project is under Git, inspect the resulting git diff before the final answer and summarize the changed files and verification status. When the project is not under Git, skip Git inspection and summarize the changed files and verification status from the filesystem instead.');
             lines.push('If a Git action reports that the workspace is not a Git repository, mention it briefly and continue without Git instead of stopping to ask; only initialize one with `git_operations` action `init` if the user asks for it.');
         }
         lines.push('If a tool or external service is unavailable, say so clearly and provide the next best fallback.');
