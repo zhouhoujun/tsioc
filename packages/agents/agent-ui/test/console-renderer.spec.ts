@@ -780,6 +780,47 @@ export class AgentConsoleMessagesRendererTest {
         }
     }
 
+    @Test('a collapsed long tool row keeps its summary next to the expand toggle')
+    async collapsedLongToolRowKeepsSummary() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const componentFactory = tuiCtx.get(ComponentFactory);
+            const consoleRef = componentFactory.create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const renderer = tuiCtx.get(TuiRenderer);
+            const stdout = Array.from({ length: 60 }, (_value, index) => String(index + 1)).join('\n');
+            consoleRef.instance.sessionState.setMessages([{
+                id: 'tool-1',
+                role: 'assistant',
+                content: `terminal · stdout=${stdout} · exitCode=0`,
+                createdAt: 1,
+                metadata: { uiKind: 'event', uiEventType: 'tool_completed', uiEventLabel: 'tool', status: 'success' }
+            } as any]);
+            await settleDynamicMessages(consoleRef);
+
+            surface = new TuiTerminalSurface({
+                renderer,
+                root: consoleRef.elementRef.nativeElement,
+                width: 120,
+                output: { write() {} }
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+
+            const lines = surface.lastRenderedLines;
+            // Regression: the collapsed row used to render ONLY the toggle, dropping
+            // the tool summary. Both the summary and the toggle must be present.
+            expect(lines.some(line => line.includes('stdout=1'))).toBe(true);
+            expect(lines.some(line => line.includes('Click to expand'))).toBe(true);
+        } finally {
+            surface?.destroy();
+            await tuiCtx.close();
+        }
+    }
+
     @Test('copies truncated message detail text from terminal copy action')
     async copiesTruncatedMessageDetailTextFromTerminalCopyAction() {
         const tuiCtx = await Application.run(AgentModule, {

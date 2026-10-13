@@ -13,8 +13,8 @@ const ITEM_TEMPLATE = `
             <span v-style="line.roleStyle" v-show="line.role">{{line.role}}</span>
             <span v-style="line.metaStyle" v-show="line.meta">{{line.meta}}</span>
             <span v-style="line.prefixStyle" v-show="line.prefix">{{line.prefix}}</span>
+            <span v-style="line.lineStyle" v-if="!line.toggleContent || line.content !== line.toggleContent"><agent-console-routed-tokens :tokens="line.tokens"></agent-console-routed-tokens></span>
             <span class="message-detail-toggle" v-style="line.lineStyle" v-if="line.toggleContent" @click="toggleMessageDetail(line)">{{line.toggleContent}}</span>
-            <span v-style="line.lineStyle" v-else><agent-console-routed-tokens :tokens="line.tokens"></agent-console-routed-tokens></span>
         </label>
     </div>
 `;
@@ -27,8 +27,8 @@ const MARKDOWN_TEMPLATE = `
             <span v-style="line.roleStyle" v-show="line.role">{{line.role}}</span>
             <span v-style="line.metaStyle" v-show="line.meta">{{line.meta}}</span>
             <span v-style="line.prefixStyle" v-show="line.prefix">{{line.prefix}}</span>
+            <span v-style="line.lineStyle" v-if="!line.toggleContent || line.content !== line.toggleContent"><agent-console-routed-tokens :tokens="line.tokens"></agent-console-routed-tokens></span>
             <span class="message-detail-toggle" v-style="line.lineStyle" v-if="line.toggleContent" @click="toggleMessageDetail(line)">{{line.toggleContent}}</span>
-            <span v-style="line.lineStyle" v-else><agent-console-routed-tokens :tokens="line.tokens"></agent-console-routed-tokens></span>
         </label>
     </div>
 `;
@@ -77,10 +77,10 @@ export class AgentConsoleRoutedTokensComponent {
             <span v-style="roleStyle" v-show="role">{{role}}</span>
             <span v-style="metaStyle" v-show="meta">{{meta}}</span>
             <span v-style="prefixStyle" v-show="prefix">{{prefix}}</span>
-            <span class="message-detail-toggle" v-style="contentStyle" v-if="toggleContent" @click="toggleMessageDetail()">{{toggleContent}}</span>
-            <span v-style="contentStyle" v-if="!toggleContent">
+            <span v-style="contentStyle" v-if="!toggleContent || content !== toggleContent">
                 <agent-console-routed-tokens :tokens="tokens"></agent-console-routed-tokens>
             </span>
+            <span class="message-detail-toggle" v-style="contentStyle" v-if="toggleContent" @click="toggleMessageDetail()">{{toggleContent}}</span>
         </label>
     `
 })
@@ -99,8 +99,9 @@ export class AgentConsoleRoutedLineComponent {
     get prefix() { return this.line?.prefix || ''; }
     get prefixStyle() { return this.line?.prefixStyle || {}; }
     get contentStyle() { return this.line?.lineStyle || {}; }
+    get content() { return this.line?.content || ''; }
     get toggleContent() { return this.line?.toggleContent || ''; }
-    get tokens() { return this.toggleContent ? [] : this.line?.tokens || []; }
+    get tokens() { return this.line?.tokens || []; }
 
     toggleMessageDetail(): void {
         const messageId = String(this.line?.messageId || '').trim();
