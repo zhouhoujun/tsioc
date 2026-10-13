@@ -67,11 +67,19 @@ export async function assertNoSymlinkInWorkspacePath(targetPath: string, rootDir
                 throw new Error(`Path '${toRelativeWorkspacePath(current, absoluteRoot)}' resolves through a symbolic link, which is not allowed.`);
             }
         } catch (error: any) {
-            if (error?.code === 'ENOENT' && options?.allowMissingPath) {
-                return;
-            }
             if (error?.code === 'ENOENT') {
-                throw error;
+                if (options?.allowMissingPath) {
+                    return;
+                }
+                // Report a missing path in actionable, tool-facing language
+                // instead of leaking a raw `ENOENT: ... lstat ...` from the
+                // filesystem. `code` is preserved so callers that branch on
+                // ENOENT keep working.
+                const missing: NodeJS.ErrnoException = new Error(
+                    `Path '${toRelativeWorkspacePath(current, absoluteRoot)}' does not exist.`
+                );
+                missing.code = 'ENOENT';
+                throw missing;
             }
             throw error;
         }

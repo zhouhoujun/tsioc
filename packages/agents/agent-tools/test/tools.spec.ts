@@ -1130,6 +1130,22 @@ export class AgentToolsPackageTest {
         expect(overwritten.diff).toContain('+hello world');
     }
 
+    @Test('read_file reports a missing path with a friendly, actionable error')
+    async readFileReportsMissingPathFriendly() {
+        const workspace = await this.createWorkspace();
+        const tool = new ReadFileTool({ file: { rootDir: workspace } });
+        let error: any;
+        try {
+            await tool.invoke({ path: 'src/does-not-exist.txt' }, createSessionContext());
+        } catch (err) {
+            error = err as any;
+        }
+        expect(error?.code).toEqual('ENOENT');
+        expect(error?.message).toContain('does not exist');
+        expect(error?.message).toContain('src/does-not-exist.txt');
+        expect(error?.message).not.toContain('lstat');
+    }
+
     @Test('read file truncates overly long lines')
     async readFileTruncatesLongLines() {
         const workspace = await this.createWorkspace();
