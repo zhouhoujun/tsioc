@@ -345,6 +345,12 @@ export class StreamableHttpMcpClient implements McpClient {
         if (this.sessionId) {
             headers['Mcp-Session-Id'] = this.sessionId;
         }
+        // Spec (Streamable HTTP): the client MUST send the negotiated version on
+        // every request after initialization. `initialize` itself omits it (the
+        // offered version travels in the request body instead).
+        if (this.negotiatedVersionValue) {
+            headers['MCP-Protocol-Version'] = this.negotiatedVersionValue;
+        }
         if (this.oauthToken?.accessToken) {
             headers['Authorization'] = `Bearer ${this.oauthToken.accessToken}`;
         } else if (this.server.auth?.type === 'bearer' && this.server.auth.bearerToken) {

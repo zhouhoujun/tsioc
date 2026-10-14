@@ -199,6 +199,46 @@ export class AgentMcpStreamableHttpTest {
         }
     }
 
+    @Test('StreamableHttpMcpClient sends the negotiated MCP-Protocol-Version header on subsequent requests')
+    async streamableHttpClientSendsProtocolVersionHeader() {
+        const tmp = createTmpDir();
+        const harness = await startMcpServer((req, res) => {
+            if (req.method === 'initialize') {
+                respondJson(res, {
+                    jsonrpc: '2.0',
+                    id: req.id,
+                    result: {
+                        protocolVersion: '2026-07-28',
+                        capabilities: { tools: {} },
+                        serverInfo: { name: 'mock', version: '1.0.0' }
+                    }
+                }, 200, { 'mcp-session-id': 'sess-1' });
+                return;
+            }
+            // Strict server: reject any post-initialization request that omits the
+            // negotiated protocol-version header (spec MUST).
+            if (req.headers['mcp-protocol-version'] !== '2026-07-28') {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ jsonrpc: '2.0', id: req.id, error: { code: -32000, message: 'missing MCP-Protocol-Version' } }));
+                return;
+            }
+            defaultMcpHandler(req, res);
+        });
+        try {
+            const client = new StreamableHttpMcpClient(
+                { id: 'versioned', url: `http://127.0.0.1:${harness.port}/mcp` },
+                mergeAgentMcpOptions({ credentialsPath: `${tmp}/creds.json` })
+            );
+            const tools = await client.listTools();
+            expect(tools.map(tool => tool.name)).toEqual(['echo']);
+            const toolsList = harness.requests.find(req => req.method === 'tools/list');
+            expect(toolsList?.headers['mcp-protocol-version']).toEqual('2026-07-28');
+        } finally {
+            harness.server.close();
+            fs.rmSync(tmp, { recursive: true, force: true });
+        }
+    }
+
     @Test('StreamableHttpMcpClient negotiates 2026-07-28 and lists resources/prompts with pagination')
     async streamableHttpClientNegotiatesAndListsResources() {
         const tmp = createTmpDir();
