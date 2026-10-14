@@ -46,25 +46,30 @@ export class HttpRequestTool implements AgentTool {
         const timeoutMs = this.options?.http?.timeoutMs ?? defaultAgentToolsOptions.http?.timeoutMs ?? 15000;
         const controller = typeof AbortController === 'function' ? new AbortController() : undefined;
         const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : undefined;
-        const response = await fetcher(url, {
-            method,
-            headers,
-            body,
-            signal: controller?.signal
-        });
-        if (timer) {
-            clearTimeout(timer);
+        try {
+            // Keep the abort timer armed through the body read: a server can send
+            // headers and then stall the body, which would otherwise hang forever.
+            const response = await fetcher(url, {
+                method,
+                headers,
+                body,
+                signal: controller?.signal
+            });
+            const maxChars = this.options?.http?.maxResponseChars ?? defaultAgentToolsOptions.http?.maxResponseChars ?? 12000;
+            const text = await response.text();
+            return {
+                url,
+                ok: !!response.ok,
+                status: Number(response.status ?? 0),
+                headers: this.readHeaders(response.headers),
+                body: text.slice(0, maxChars),
+                truncated: text.length > maxChars
+            };
+        } finally {
+            if (timer) {
+                clearTimeout(timer);
+            }
         }
-        const maxChars = this.options?.http?.maxResponseChars ?? defaultAgentToolsOptions.http?.maxResponseChars ?? 12000;
-        const text = await response.text();
-        return {
-            url,
-            ok: !!response.ok,
-            status: Number(response.status ?? 0),
-            headers: this.readHeaders(response.headers),
-            body: text.slice(0, maxChars),
-            truncated: text.length > maxChars
-        };
     }
 
     private requireUrl(value: unknown): string {

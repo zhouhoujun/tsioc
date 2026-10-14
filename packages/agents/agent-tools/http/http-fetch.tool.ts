@@ -26,8 +26,13 @@ export class HttpFetchTool implements AgentTool {
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
         const url = this.requireUrl(input?.url);
-        const response = await this.fetch(url, { method: 'GET' });
-        return this.toResult(url, response);
+        // The timeout must cover the whole exchange, body included: a server can
+        // send headers and then stall the body, so clearing the abort timer as
+        // soon as `fetch` resolves would let the tool hang forever.
+        return this.withTimeout(async signal => {
+            const response = await this.fetch(url, { method: 'GET', signal });
+            return this.toResult(url, response);
+        });
     }
 
     protected async fetch(url: string, init?: any): Promise<any> {
@@ -35,14 +40,16 @@ export class HttpFetchTool implements AgentTool {
         if (!fetcher) {
             throw new Error('http_fetch requires a fetch implementation.');
         }
+        return fetcher(url, init ?? { method: 'GET' });
+    }
+
+    /** Run a request under the configured timeout, aborting if it overruns. */
+    protected async withTimeout<T>(run: (signal: AbortSignal | undefined) => Promise<T>): Promise<T> {
         const timeoutMs = this.options?.http?.timeoutMs ?? defaultAgentToolsOptions.http?.timeoutMs ?? 15000;
         const controller = typeof AbortController === 'function' ? new AbortController() : undefined;
         const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : undefined;
         try {
-            return await fetcher(url, {
-                ...(init ?? {}),
-                signal: controller?.signal
-            });
+            return await run(controller?.signal);
         } finally {
             if (timer) {
                 clearTimeout(timer);
