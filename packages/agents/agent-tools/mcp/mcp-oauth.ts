@@ -411,17 +411,22 @@ export class ConsoleMcpOAuthInteraction implements McpOAuthInteraction {
 
     private async tryOpen(url: string): Promise<void> {
         const platform = process.platform;
+        const fallback = () => process.stdout.write('(Could not open a browser automatically; please open the URL manually.)\n');
         try {
             const { spawn } = await import('child_process');
-            if (platform === 'darwin') {
-                spawn('open', [url], { stdio: 'ignore', detached: true }).unref();
-            } else if (platform === 'win32') {
-                spawn('cmd', ['/c', 'start', '', url], { stdio: 'ignore', detached: true }).unref();
-            } else {
-                spawn('xdg-open', [url], { stdio: 'ignore', detached: true }).unref();
-            }
+            const child = platform === 'darwin'
+                ? spawn('open', [url], { stdio: 'ignore', detached: true })
+                : platform === 'win32'
+                    ? spawn('cmd', ['/c', 'start', '', url], { stdio: 'ignore', detached: true })
+                    : spawn('xdg-open', [url], { stdio: 'ignore', detached: true });
+            // `spawn` reports a missing launcher (e.g. no `xdg-open` on a headless
+            // host) asynchronously through the 'error' event; without a handler it
+            // is an unhandled exception that aborts the whole `mcp auth` flow.
+            child.on('error', fallback);
+            child.unref();
         } catch (err) {
-            process.stdout.write(`(Could not open a browser automatically; please open the URL manually.)\n`);
+            void err;
+            fallback();
         }
     }
 }
