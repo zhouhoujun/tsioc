@@ -191,14 +191,14 @@ export class P302TurnStepEventSyntaxTest {
 
     // ── Boundary visual contract ───────────────────────────────────────────
 
-    @Test('boundary row uses one themed rail without card separators (P302)')
+    @Test('boundary row has no rail or card separators (P302)')
     boundaryNotCard() {
         const items = renderAgentConsoleMessageItems([boundaryMsg('b1', '第 1/1 步 · 分析')], {
             timelineMode: true
         });
         expect(items[0].itemStyle['border-top']).toBeUndefined();
         expect(items[0].itemStyle['border-bottom']).toBeUndefined();
-        expect(items[0].itemStyle['border-left']).toBeDefined();
+        expect(items[0].itemStyle['border-left']).toBeUndefined();
         expect(items[0].itemStyle.margin).toBe('0');
     }
 
@@ -226,7 +226,7 @@ export class P302TurnStepEventSyntaxTest {
         }
     }
 
-    @Test('event itemStyle has no border-top/bottom separators (P302)')
+    @Test('event itemStyle has no separators or leading rail (P302)')
     eventNoPerRowSeparators() {
         const items = renderAgentConsoleMessageItems([
             eventMsg('e1'),
@@ -235,7 +235,7 @@ export class P302TurnStepEventSyntaxTest {
         for (const item of items) {
             expect(item.itemStyle['border-top']).toBeUndefined();
             expect(item.itemStyle['border-bottom']).toBeUndefined();
-            expect(item.itemStyle['border-left']).toBeDefined();
+            expect(item.itemStyle['border-left']).toBeUndefined();
         }
     }
 

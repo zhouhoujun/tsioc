@@ -68,7 +68,7 @@ export class SemanticRendererSuite {
         ].map(input => renderAgentConsoleMessageItem(input, { rendererRegistry: this.registry }));
         rendered.forEach(item => {
             expect(item.itemStyle['box-sizing']).toEqual('border-box');
-            expect(item.itemStyle['border-left']).toBeTruthy();
+            expect(item.itemStyle['border-left']).toBeUndefined();
             expect(item.lines[0].itemStyle?.padding).toBeTruthy();
         });
     }
@@ -85,7 +85,7 @@ export class SemanticRendererSuite {
         const [answer, thought, plan, question, error] = inputs.map(input =>
             renderAgentConsoleMessageItem(input, { rendererRegistry: this.registry }));
         expect(answer.lines[0].role).toEqual('');
-        expect(answer.itemStyle['border-left']).toEqual('2px solid transparent');
+        expect(answer.itemStyle['border-left']).toBeUndefined();
         expect(answer.spacerBefore).toEqual(true);
         expect(answer.blockPadding).toEqual(true);
         expect(answer.lines[0].itemStyle?.margin).toEqual('0');
@@ -94,8 +94,6 @@ export class SemanticRendererSuite {
         expect(plan.lines[0].role).toEqual('Plan · ');
         expect(question.lines[0].role).toEqual('Question · ');
         expect(error.lines[0].role).toEqual('Error · ');
-        expect(new Set([thought.itemStyle['border-left'], plan.itemStyle['border-left'],
-            question.itemStyle['border-left'], error.itemStyle['border-left']]).size).toBeGreaterThan(2);
     }
 
     @Test('user turn and first response are separated while execution remains compact')

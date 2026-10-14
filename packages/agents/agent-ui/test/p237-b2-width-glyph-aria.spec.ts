@@ -77,7 +77,7 @@ export class P237B2WidthGlyphAriaTest {
         expect(failed[0].lines[0].status?.trim()).toEqual('✕');
     }
 
-    @Test('timeline events form a compact rail while failures keep emphasis')
+    @Test('timeline events stay compact without a leading rail while failures keep emphasis')
     timelineEventCompactRail() {
         const completed = renderAgentConsoleMessageItems([{
             id: 'e1', role: 'assistant', content: 'Read files', createdAt: 1,
@@ -85,7 +85,7 @@ export class P237B2WidthGlyphAriaTest {
         }] as any)[0].lines[0];
         expect(completed.itemStyle?.padding).toEqual('0 1ch');
         expect(completed.itemStyle?.margin).toEqual('0');
-        expect(completed.itemStyle?.['border-left']).toEqual('1px solid #6e7681');
+        expect(completed.itemStyle?.['border-left']).toBeUndefined();
 
         const failed = renderAgentConsoleMessageItems([{
             id: 'e2', role: 'assistant', content: 'Tests failed', createdAt: 1,
@@ -93,7 +93,7 @@ export class P237B2WidthGlyphAriaTest {
         }] as any)[0].lines[0];
         expect(failed.itemStyle?.padding).toEqual('0 1ch');
         expect(failed.itemStyle?.margin).toEqual('0');
-        expect(failed.itemStyle?.['border-left']).toEqual('2px solid #ffa198');
+        expect(failed.itemStyle?.['border-left']).toBeUndefined();
 
         const answer = renderAgentConsoleMessageItems([{
             id: 'a1', role: 'assistant', content: 'Done', createdAt: 1

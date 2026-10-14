@@ -192,7 +192,6 @@ export class AgentConsoleAnswerRenderer extends AgentConsoleFamilyMessageRendere
             roleLabel: '',
             itemStyle: (theme, selected) => ({
                 ...presentation.itemStyle(theme, selected),
-                'border-left': '2px solid transparent',
                 margin: '0'
             })
         } };
@@ -232,7 +231,6 @@ type AgentConsoleKindRendererTone = 'muted' | 'accent' | 'attention' | 'error';
 export abstract class AgentConsoleKindRenderer extends AgentConsoleMessageRenderer {
     abstract readonly kind: AgentConsoleContentKind;
     abstract readonly label: string;
-    abstract readonly rail: string;
     abstract readonly component: Type<any>;
     readonly tone: AgentConsoleKindRendererTone = 'muted';
 
@@ -249,7 +247,6 @@ export abstract class AgentConsoleKindRenderer extends AgentConsoleMessageRender
             }),
             itemStyle: (theme, selected) => ({
                 ...builtin.itemStyle(theme, selected),
-                'border-left': selected ? `${this.rail.split(' ')[0]} solid transparent` : this.rail,
                 margin: '0'
             })
         } };
@@ -260,7 +257,6 @@ export abstract class AgentConsoleKindRenderer extends AgentConsoleMessageRender
 export class AgentConsoleThoughtMessageRenderer extends AgentConsoleKindRenderer {
     readonly kind = 'thought' as const;
     readonly label = 'Thought · ';
-    readonly rail = '2px solid #6e7681';
     readonly component = AgentConsoleThoughtTemplate;
 }
 
@@ -268,7 +264,6 @@ export class AgentConsoleThoughtMessageRenderer extends AgentConsoleKindRenderer
 export class AgentConsoleToolMessageRenderer extends AgentConsoleKindRenderer {
     readonly kind = 'tool' as const;
     readonly label = 'Tool · ';
-    readonly rail = '2px solid #6e7681';
     readonly component = AgentConsoleToolTemplate;
 }
 
@@ -276,7 +271,6 @@ export class AgentConsoleToolMessageRenderer extends AgentConsoleKindRenderer {
 export class AgentConsoleCommandMessageRenderer extends AgentConsoleKindRenderer {
     readonly kind = 'command' as const;
     readonly label = '$ ';
-    readonly rail = '2px solid #6e7681';
     readonly component = AgentConsoleCommandTemplate;
 }
 
@@ -284,7 +278,6 @@ export class AgentConsoleCommandMessageRenderer extends AgentConsoleKindRenderer
 export class AgentConsolePlanMessageRenderer extends AgentConsoleKindRenderer {
     readonly kind = 'plan' as const;
     readonly label = 'Plan · ';
-    readonly rail = '2px solid #79c0ff';
     readonly component = AgentConsolePlanTemplate;
     override readonly tone = 'accent' as const;
 }
@@ -293,7 +286,6 @@ export class AgentConsolePlanMessageRenderer extends AgentConsoleKindRenderer {
 export class AgentConsoleFilesMessageRenderer extends AgentConsoleKindRenderer {
     readonly kind = 'file-change' as const;
     readonly label = 'Files · ';
-    readonly rail = '2px solid #79c0ff';
     readonly component = AgentConsoleFilesTemplate;
     override readonly tone = 'accent' as const;
 }
@@ -302,7 +294,6 @@ export class AgentConsoleFilesMessageRenderer extends AgentConsoleKindRenderer {
 export class AgentConsoleQuestionMessageRenderer extends AgentConsoleKindRenderer {
     readonly kind = 'question' as const;
     readonly label = 'Question · ';
-    readonly rail = '3px solid #d29922';
     readonly component = AgentConsoleQuestionTemplate;
     override readonly tone = 'attention' as const;
 }
@@ -311,7 +302,6 @@ export class AgentConsoleQuestionMessageRenderer extends AgentConsoleKindRendere
 export class AgentConsoleApprovalMessageRenderer extends AgentConsoleKindRenderer {
     readonly kind = 'approval' as const;
     readonly label = 'Approval · ';
-    readonly rail = '3px solid #d29922';
     readonly component = AgentConsoleApprovalTemplate;
     override readonly tone = 'attention' as const;
 }
@@ -320,7 +310,6 @@ export class AgentConsoleApprovalMessageRenderer extends AgentConsoleKindRendere
 export class AgentConsoleErrorMessageRenderer extends AgentConsoleKindRenderer {
     readonly kind = 'error' as const;
     readonly label = 'Error · ';
-    readonly rail = '3px solid #f85149';
     readonly component = AgentConsoleErrorTemplate;
     override readonly tone = 'error' as const;
 }
@@ -343,9 +332,6 @@ export class AgentConsoleDiagnosticMessageRenderer extends AgentConsoleFamilyMes
             ),
             itemStyle: (theme, selected) => ({
                 ...builtin.itemStyle(theme, selected),
-                'border-left': selected ? '3px solid transparent'
-                    : kind === 'error' ? '3px solid #f85149'
-                        : kind === 'warning' ? '3px solid #d29922' : '2px solid #6e7681',
                 margin: '0.35em 0'
             })
         } };
@@ -499,8 +485,7 @@ const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
         itemStyle: (theme, rowSelected) => ({
             ...resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'system'),
             'font-weight': 'bold',
-            margin: '0',
-            'border-left': resolveTimelineRail(theme, rowSelected, 'accent')
+            margin: '0'
         }),
         lead: () => '',
         continuationLead: () => ''
@@ -515,8 +500,7 @@ const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
         itemStyle: (theme, rowSelected) => ({
             ...resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'system'),
             'font-weight': 'bold',
-            margin: '0',
-            'border-left': resolveTimelineRail(theme, rowSelected, 'muted')
+            margin: '0'
         }),
         lead: () => '',
         continuationLead: () => ''
@@ -531,8 +515,7 @@ const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
         itemStyle: (theme, rowSelected) => ({
             ...resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'system'),
             'font-weight': 'bold',
-            margin: '0',
-            'border-left': resolveTimelineRail(theme, rowSelected, 'muted')
+            margin: '0'
         }),
         lead: () => '',
         continuationLead: () => ''
@@ -547,8 +530,7 @@ const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
         itemStyle: (theme, rowSelected) => ({
             ...resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'system'),
             'font-weight': 'bold',
-            margin: '0',
-            'border-left': resolveTimelineRail(theme, rowSelected, 'muted')
+            margin: '0'
         }),
         lead: () => '',
         continuationLead: () => ''
@@ -1065,7 +1047,6 @@ function resolveMessageRowStyle(
         'white-space': 'normal',
         'overflow-wrap': 'anywhere',
         margin: '0 0 0.25em 0',
-        'border-left': resolveMessageRailColor(templateKind),
         ...(rowStyleText ? styleTextToObject(rowStyleText) : {})
     };
 }
@@ -1397,21 +1378,6 @@ function resolveRenderedLineTone(line: AgentConsoleRenderedLine): AgentConsoleMa
     return tokenTone || 'default';
 }
 
-function resolveMessageRailColor(templateKind: AgentConsoleMessageTemplateKind): string {
-    switch (templateKind) {
-        case 'assistant':
-            return '2px solid #2f81f7';
-        case 'tool':
-            return '2px solid #79c0ff';
-        case 'error':
-            return '2px solid #f85149';
-        case 'user':
-            return '2px solid #6e7681';
-        default:
-            return '2px solid #30363d';
-    }
-}
-
 function resolveInlineRowStyle(style: Record<string, string>): AgentConsoleInlineRowStyle {
     const inlineStyle: AgentConsoleInlineRowStyle = {};
     if (style.color) {
@@ -1429,29 +1395,13 @@ function resolveTimelineEventItemStyle(
     status: AgentConsoleMessageStatus | undefined,
     rowSelected: boolean
 ): Record<string, string> {
-    const failed = status === 'failed' || status === 'error';
-    const railStyle = styleTextToObject(failed ? theme.statusErrorValue : theme.statusLabel);
+    void theme;
+    void status;
+    void rowSelected;
     return {
         ...style,
-        margin: '0',
-        'border-left': rowSelected
-            ? style['border-left']
-            : failed
-                ? `2px solid ${railStyle.color || 'currentColor'}`
-                : `1px solid ${railStyle.color || 'currentColor'}`
+        margin: '0'
     };
-}
-
-function resolveTimelineRail(
-    theme: AgentConsoleTheme,
-    rowSelected: boolean,
-    tone: 'muted' | 'accent'
-): string {
-    if (rowSelected) {
-        return '2px solid transparent';
-    }
-    const style = styleTextToObject(tone === 'accent' ? theme.toolsAccent : theme.statusLabel);
-    return `2px solid ${style.color || 'currentColor'}`;
 }
 
 function resolveAgentConsoleMessageStatusStyle(
