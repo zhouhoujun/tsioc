@@ -31,6 +31,7 @@ import {
     AgentConsoleApprovalRequest,
     AgentConsoleSessionService,
     AgentConsoleSessionState,
+    agentConsoleCommandHints,
     AgentConsoleSessionChoice,
     AgentConsoleSessionProjectGroup,
     AgentConsoleWorkspaceMentionsProvider,
@@ -100,6 +101,26 @@ export class VmMentionsTest {
         // Enter confirms the highlighted (first) option: the exact command must
         // come first so typing `/compact` runs `/compact`, not `/compactions`.
         expect(values[0]).toEqual('/compact');
+    }
+
+    @Test('every exact command is suggested before any longer command it prefixes')
+    async exactCommandWinsForAllPrefixPairs() {
+        const hints = agentConsoleCommandHints().filter(name => name.startsWith('/'));
+        const offenders: string[] = [];
+        for (const name of hints) {
+            const hasLonger = hints.some(other => other !== name && other.startsWith(name));
+            if (!hasLonger) {
+                continue;
+            }
+            const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+            state.setCommandHints(hints);
+            state.setInput(name);
+            const first = state.selectMenu?.options[0]?.value;
+            if (first !== name) {
+                offenders.push(`${name} -> ${first}`);
+            }
+        }
+        expect(offenders).toEqual([]);
     }
 
     @Test('session state resolves workspace file and folder suggestions from mention input')
