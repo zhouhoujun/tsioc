@@ -1,6 +1,9 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import { AgentMcpServerOptions, McpClient, McpConnectionStatus, McpJsonRpcRequest, McpJsonRpcResponse, McpPromptDescriptor, McpResourceDescriptor, McpToolCallResult, McpToolDescriptor, ResolvedAgentMcpOptions, resolveNegotiatedProtocolVersion } from './types';
 
+/** Upper bound for an unterminated stdio frame, mirroring the reference MCP SDK. */
+const STDIO_MAX_BUFFER_BYTES = 10 * 1024 * 1024;
+
 export class StdioMcpClient implements McpClient {
     private process?: ChildProcessWithoutNullStreams;
     private started = false;
@@ -166,20 +169,34 @@ export class StdioMcpClient implements McpClient {
     private onData(chunk: Buffer): void {
         try {
             this.buffer = Buffer.concat([this.buffer, chunk] as Uint8Array[]);
+            if (this.buffer.length > STDIO_MAX_BUFFER_BYTES) {
+                throw new Error(`MCP server '${this.server.id}' exceeded the maximum message buffer (${STDIO_MAX_BUFFER_BYTES} bytes).`);
+            }
+            // MCP stdio messages are newline-delimited JSON (spec: "Messages are
+            // delimited by newlines, and MUST NOT contain embedded newlines.") —
+            // not LSP-style Content-Length frames.
             while (true) {
-                const headerEnd = this.buffer.indexOf('\r\n\r\n');
-                if (headerEnd < 0) {
+                const newline = this.buffer.indexOf('\n');
+                if (newline < 0) {
                     return;
                 }
-                const headerText = this.buffer.subarray(0, headerEnd).toString('utf8');
-                const contentLength = this.readContentLength(headerText);
-                const frameEnd = headerEnd + 4 + contentLength;
-                if (this.buffer.length < frameEnd) {
-                    return;
+                const line = this.buffer.subarray(0, newline).toString('utf8').replace(/\r$/, '');
+                this.buffer = this.buffer.subarray(newline + 1);
+                if (line.trim().length === 0) {
+                    continue;
                 }
-                const body = this.buffer.subarray(headerEnd + 4, frameEnd).toString('utf8');
-                this.buffer = this.buffer.subarray(frameEnd);
-                const message = JSON.parse(body) as McpJsonRpcResponse;
+                let message: McpJsonRpcResponse;
+                try {
+                    message = JSON.parse(line) as McpJsonRpcResponse;
+                } catch (err) {
+                    if (err instanceof SyntaxError) {
+                        // Spec-compliant servers only write MCP messages to stdout, but
+                        // stray debug output is tolerated (matching the reference SDK)
+                        // instead of tearing down the whole connection.
+                        continue;
+                    }
+                    throw err;
+                }
                 this.onMessage(message);
             }
         } catch (err) {
@@ -205,14 +222,6 @@ export class StdioMcpClient implements McpClient {
             return;
         }
         pending.resolve(message.result);
-    }
-
-    private readContentLength(headers: string): number {
-        const match = /Content-Length:\s*(\d+)/i.exec(headers);
-        if (!match) {
-            throw new Error(`Invalid MCP response from server '${this.server.id}': missing Content-Length header.`);
-        }
-        return Number(match[1]);
     }
 
     private notify(method: string, params?: Record<string, any>): void {
@@ -347,9 +356,8 @@ export class StdioMcpClient implements McpClient {
         if (!this.process?.stdin) {
             throw new Error(`MCP server '${this.server.id}' is not running.`);
         }
-        const body = Buffer.from(JSON.stringify(message), 'utf8');
-        const header = Buffer.from(`Content-Length: ${body.length}\r\n\r\n`, 'utf8');
-        this.process.stdin.write(Buffer.concat([header, body] as Uint8Array[]));
+        // MCP stdio messages are newline-delimited JSON, not Content-Length frames.
+        this.process.stdin.write(`${JSON.stringify(message)}\n`);
     }
 
     private failAll(error: Error): void {
