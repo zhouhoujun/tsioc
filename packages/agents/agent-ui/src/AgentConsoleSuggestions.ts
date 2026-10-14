@@ -56,7 +56,13 @@ export function resolveAgentConsoleInputSuggestions(
     }
     if (active.token.startsWith('/')) {
         const matches = commands.filter(item => fuzzyMatchAgentConsoleCommand(item, active.token));
-        const options = (matches.length ? matches : commands).filter(Boolean);
+        // An exact command name must win over a longer name that it is a prefix
+        // of (e.g. typing `/compact` must not surface `/compactions` first):
+        // Enter confirms the highlighted option, so the exact match goes first.
+        const ordered = matches.includes(active.token)
+            ? [active.token, ...matches.filter(item => item !== active.token)]
+            : matches;
+        const options = (ordered.length ? ordered : commands).filter(Boolean);
         return options.map(item => ({
             label: item,
             value: item,

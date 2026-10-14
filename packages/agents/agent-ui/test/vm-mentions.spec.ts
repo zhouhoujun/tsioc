@@ -88,6 +88,20 @@ export class VmMentionsTest {
         expect(state.selectMenu).toEqual(undefined);
     }
 
+    @Test('an exact slash command is suggested before a longer command it prefixes')
+    async exactSlashCommandWinsSuggestionOrder() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        state.setCommandHints(['/compactions', '/compact']);
+        state.setInput('/compact');
+
+        const values = state.selectMenu?.options.map(option => option.value) ?? [];
+        expect(values).toContain('/compact');
+        expect(values).toContain('/compactions');
+        // Enter confirms the highlighted (first) option: the exact command must
+        // come first so typing `/compact` runs `/compact`, not `/compactions`.
+        expect(values[0]).toEqual('/compact');
+    }
+
     @Test('session state resolves workspace file and folder suggestions from mention input')
     async sessionStateResolvesWorkspaceMentionSuggestions() {
         const workspace = createWorkspaceFixture();
