@@ -15,10 +15,14 @@ export interface ManagedProcessRecord {
     stderr: string;
 }
 
+/** Grace period between SIGTERM and the SIGKILL escalation when killing. */
+const KILL_ESCALATION_MS = 3000;
+
 @Injectable()
 export class ProcessRegistry {
     private readonly records = new Map<string, ManagedProcessRecord>();
     private readonly children = new Map<string, ChildProcess>();
+    private readonly killTimers = new Map<string, NodeJS.Timeout>();
 
     assertSessionCapacity(sessionId: string, maxProcesses: number): void {
         if (this.countRunning(sessionId) >= maxProcesses) {
@@ -58,6 +62,7 @@ export class ProcessRegistry {
             record.signal = signal;
             record.finishedAt = Date.now();
             this.children.delete(id);
+            this.clearKillTimer(id);
         });
         child.on('error', error => {
             record.running = false;
@@ -65,6 +70,7 @@ export class ProcessRegistry {
             record.finishedAt = Date.now();
             record.stderr = this.appendOutput(record.stderr, `${error.message}\n`, maxOutputChars);
             this.children.delete(id);
+            this.clearKillTimer(id);
         });
 
         return { ...record };
@@ -85,17 +91,51 @@ export class ProcessRegistry {
         }
         const child = this.children.get(id);
         if (child && record.running) {
-            if (process.platform !== 'win32' && typeof child.pid === 'number') {
-                try {
-                    process.kill(-child.pid, 'SIGTERM');
-                } catch {
-                    child.kill('SIGTERM');
-                }
-            } else {
-                child.kill('SIGTERM');
+            this.signal(child, 'SIGTERM');
+            // SIGTERM is ignorable and a shell may hold the stdio pipe open; if
+            // the process is still alive after the grace period, force-kill it so
+            // the record stops running and the session's process slots are freed.
+            const existing = this.killTimers.get(id);
+            if (existing) {
+                clearTimeout(existing);
             }
+            const escalate = setTimeout(() => {
+                this.killTimers.delete(id);
+                const live = this.children.get(id);
+                if (live && record.running) {
+                    this.signal(live, 'SIGKILL');
+                }
+            }, KILL_ESCALATION_MS);
+            if (typeof escalate.unref === 'function') {
+                escalate.unref();
+            }
+            this.killTimers.set(id, escalate);
         }
         return { ...record };
+    }
+
+    private signal(child: ChildProcess, signal: NodeJS.Signals): void {
+        if (process.platform !== 'win32' && typeof child.pid === 'number') {
+            try {
+                process.kill(-child.pid, signal);
+                return;
+            } catch {
+                // fall through to a direct kill
+            }
+        }
+        try {
+            child.kill(signal);
+        } catch {
+            // process already gone
+        }
+    }
+
+    private clearKillTimer(id: string): void {
+        const timer = this.killTimers.get(id);
+        if (timer) {
+            clearTimeout(timer);
+            this.killTimers.delete(id);
+        }
     }
 
     private countRunning(sessionId: string): number {
