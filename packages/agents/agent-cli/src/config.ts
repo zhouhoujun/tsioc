@@ -125,7 +125,7 @@ function hasInvalidConfigSentinel(model?: Partial<AgentCliProviderProfile>): boo
         || isCancelledConfigValue(model.apiKey);
 }
 
-function sanitizeModelProfile(model: Record<string, any>): Partial<AgentCliProviderProfile> {
+function sanitizeModelProfile(model: Record<string, any>, isTopLevel = true): Partial<AgentCliProviderProfile> {
     const next: Record<string, any> = { ...model };
     if (next.profiles && typeof next.profiles === 'object' && !Array.isArray(next.profiles)) {
         const sanitizedProfiles = Object.entries(next.profiles as Record<string, any>)
@@ -133,8 +133,8 @@ function sanitizeModelProfile(model: Record<string, any>): Partial<AgentCliProvi
                 if (!profile || typeof profile !== 'object' || Array.isArray(profile)) {
                     return profiles;
                 }
-                const sanitized = sanitizeModelProfile(profile as Record<string, any>);
-                if (hasInvalidConfigSentinel(sanitized)) {
+                const sanitized = sanitizeModelProfile(profile as Record<string, any>, false);
+                if (hasInvalidConfigSentinel(sanitized) || !Object.keys(sanitized).length) {
                     return profiles;
                 }
                 const { profiles: _p, defaultProfile: _d, complexityRouting: _c, savedProfiles: _s, activeSavedProfile: _a, ...leaf } = sanitized; profiles[name] = leaf;
@@ -159,8 +159,8 @@ function sanitizeModelProfile(model: Record<string, any>): Partial<AgentCliProvi
                     return routes;
                 }
                 if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
-                    const sanitized = sanitizeModelProfile(entry as Record<string, any>);
-                    if (!hasInvalidConfigSentinel(sanitized)) {
+                    const sanitized = sanitizeModelProfile(entry as Record<string, any>, false);
+                    if (!hasInvalidConfigSentinel(sanitized) && Object.keys(sanitized).length) {
                         routes[key] = sanitized;
                     }
                 }
@@ -202,6 +202,17 @@ function sanitizeModelProfile(model: Record<string, any>): Partial<AgentCliProvi
     }
     if (next.activeSavedProfile && (!next.savedProfiles || !next.savedProfiles[next.activeSavedProfile])) {
         delete next.activeSavedProfile;
+    }
+    // A top-level cancel/q sentinel (written by an aborted interactive prompt)
+    // must never persist either: drop it so runtime defaults apply and the
+    // self-heal write-back cleans the stored file. Only the outermost call
+    // strips it, so nested profiles keep their sentinels and stay detectable.
+    if (isTopLevel) {
+        for (const key of ['provider', 'model', 'baseUrl', 'apiKey'] as const) {
+            if (isCancelledConfigValue((next as Record<string, any>)[key])) {
+                delete (next as Record<string, any>)[key];
+            }
+        }
     }
     return next as Partial<AgentCliProviderProfile>;
 }

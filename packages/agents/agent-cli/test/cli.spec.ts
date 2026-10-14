@@ -329,6 +329,36 @@ export class AgentCliTest {
         expect(getLastSettingsHealReport()?.changed).toEqual(false);
     }
 
+    @Test('drops top-level cancel/q sentinel fields from settings.json on heal')
+    async healsTopLevelSentinels() {
+        const root = await this.createRoot();
+        const settingsPath = path.join(root, 'settings.json');
+        fs.writeFileSync(settingsPath, JSON.stringify({
+            workspace: 'workspace',
+            model: {
+                provider: 'cancel',
+                model: 'q',
+                baseUrl: '/cancel',
+                apiKey: 'cancel',
+                profiles: {
+                    empty: {},
+                    good: { provider: 'openai-compatible', model: 'gpt-5.4', baseUrl: 'https://rehdasu.cn' }
+                },
+                defaultProfile: 'good'
+            }
+        }), 'utf8');
+
+        const report = healSettingsModelConfig(root);
+        expect(report.changed).toEqual(true);
+        const healed = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+        expect(healed.model.provider).toBeUndefined();
+        expect(healed.model.model).toBeUndefined();
+        expect(healed.model.baseUrl).toBeUndefined();
+        expect(healed.model.apiKey).toBeUndefined();
+        expect(healed.model.profiles.empty).toBeUndefined();
+        expect(healed.model.profiles.good).toBeDefined();
+    }
+
     @Test('strips nested container keys from leaf model profiles when healing settings.json')
     async healsNestedContainerKeysFromLeafProfiles() {
         const root = await this.createRoot();
