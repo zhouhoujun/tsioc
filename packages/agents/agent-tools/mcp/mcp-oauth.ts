@@ -336,23 +336,30 @@ interface LoopbackListener {
 async function startLoopbackListener(port = 0): Promise<LoopbackListener> {
     const http = await import('http');
     const server = http.createServer();
-    const pending: Array<{ state: string; resolve: (code?: string) => void; }> = [];
+    const pending = new Map<string, (code?: string) => void>();
+    const received = new Map<string, string | undefined>();
     server.on('request', (request, response) => {
         const address = server.address();
         const boundPort = typeof address === 'object' && address ? address.port : 0;
         const url = new URL(request.url ?? '/', `http://127.0.0.1:${boundPort}`);
         const code = url.searchParams.get('code') ?? undefined;
         const state = url.searchParams.get('state') ?? '';
-        const callback = pending.shift();
-        if (callback && state === callback.state) {
+        const resolver = pending.get(state);
+        if (resolver) {
+            pending.delete(state);
             response.writeHead(200, { 'Content-Type': 'text/plain' });
             response.end('Authorization complete. You can close this tab and return to the CLI.');
-            callback.resolve(code);
-        } else {
-            response.writeHead(400, { 'Content-Type': 'text/plain' });
-            response.end('Invalid OAuth callback.');
-            callback?.resolve(undefined);
+            resolver(code);
+            return;
         }
+        // Match by state and buffer an early callback: an instant/automated
+        // authorization can reach the listener before `waitForCode` registers,
+        // and dropping it there used to make the flow time out.
+        if (!received.has(state)) {
+            received.set(state, code);
+        }
+        response.writeHead(200, { 'Content-Type': 'text/plain' });
+        response.end('Authorization complete. You can close this tab and return to the CLI.');
     });
     await new Promise<void>(resolve => server.listen(port, '127.0.0.1', resolve));
     const address = server.address();
@@ -360,20 +367,19 @@ async function startLoopbackListener(port = 0): Promise<LoopbackListener> {
     return {
         port: boundPort,
         waitForCode(state: string, timeoutMs: number): Promise<string | undefined> {
+            if (received.has(state)) {
+                const code = received.get(state);
+                received.delete(state);
+                return Promise.resolve(code);
+            }
             return new Promise(resolve => {
                 const timer = setTimeout(() => {
-                    const index = pending.findIndex(entry => entry.state === state);
-                    if (index >= 0) {
-                        pending.splice(index, 1);
-                    }
+                    pending.delete(state);
                     resolve(undefined);
                 }, timeoutMs);
-                pending.push({
-                    state,
-                    resolve: (code) => {
-                        clearTimeout(timer);
-                        resolve(code);
-                    }
+                pending.set(state, (code) => {
+                    clearTimeout(timer);
+                    resolve(code);
                 });
             });
         },

@@ -49,10 +49,10 @@ class FakeInteraction implements McpOAuthInteraction {
     async onDeviceAuthorization(): Promise<void> { /* not exercised */ }
     async openAuthorizationUrl(url: string): Promise<void> {
         this.opened.push(url);
-        // Simulate the browser opening asynchronously: the client registers its
-        // loopback callback only after openAuthorizationUrl returns, so the
-        // redirect must be followed later (fire-and-forget), never awaited here.
-        setTimeout(() => { void fetch(url, { redirect: 'follow' }).catch(() => undefined); }, 200);
+        // Arrive immediately — before the client registers its waitForCode — to
+        // prove the loopback listener buffers an early authorization callback
+        // instead of dropping it (which used to make the flow time out).
+        await fetch(url, { redirect: 'follow' });
     }
 }
 
