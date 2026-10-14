@@ -94,6 +94,43 @@ export class TimelineEventInspectorTest {
         expect(state.selectedTimelineEventId).toEqual('');
     }
 
+    @Test('Enter on a selected tool event row opens the inspector through the message-list layer')
+    async enterOnToolRowOpensInspector() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        state.configure({ sessionId: 's1' } as any);
+        const evt = toolEvent('evt-tool');
+        state.setMessages([userMsg('u1'), evt]);
+        state.setSelectedMessageId('evt-tool');
+        state.messagesFocused = true;
+
+        const handled = await (state.focusLayers as any).handleMessageListKey('enter', navigationFor(state));
+
+        expect(handled).toEqual(true);
+        expect(state.timelineEventInspectorOpen).toEqual(true);
+        expect(state.selectedTimelineEventId).toEqual('evt-tool');
+    }
+
+    @Test('e toggles the selected message expansion and survives an unrelated reactive change')
+    async expandToggleKeyedById() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        state.configure({ sessionId: 's1' } as any);
+        const longBody = { id: 'a1', role: 'assistant', content: new Array(20).fill('line').join('\n'), createdAt: 2 };
+        state.setMessages([userMsg('u1'), longBody]);
+        state.setSelectedMessageId('a1');
+        state.messagesFocused = true;
+
+        expect(state.isMessageExpanded('a1')).toEqual(false);
+        await (state.focusLayers as any).handleMessageListKey('e', navigationFor(state));
+        expect(state.isMessageExpanded('a1')).toEqual(true);
+
+        // A later reactive update (another message arrives) must not drop the expansion.
+        state.setMessages([userMsg('u1'), longBody, { id: 'u2', role: 'user', content: 'next', createdAt: 3 }]);
+        expect(state.isMessageExpanded('a1')).toEqual(true);
+
+        await (state.focusLayers as any).handleMessageListKey('e', navigationFor(state));
+        expect(state.isMessageExpanded('a1')).toEqual(false);
+    }
+
     @Test('closeTimelineEventInspector resets state')
     async closeResetsState() {
         const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
