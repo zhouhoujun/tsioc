@@ -1,6 +1,6 @@
 {
   "packages/agents/agent-cli/src/cli.ts": 602,
-  "packages/agents/agent-cli/src/config.ts": 662,
+  "packages/agents/agent-cli/src/config.ts": 564,
   "packages/agents/agent-gateway/src/api/SessionHandler.ts": 716,
   "packages/agents/agent-gateway/src/app-rpc/AppRpcServer.ts": 3775,
   "packages/agents/agent-tools/agent/orchestrate-primitives.tool.ts": 1290,
@@ -13,7 +13,7 @@
   "packages/agents/agent-ui/src/AgentConsoleCodingTaskHandlers.ts": 814,
   "packages/agents/agent-ui/src/AgentConsoleCommandHandlers.ts": 1214,
   "packages/agents/agent-ui/src/AgentConsoleComponent.ts": 3782,
-  "packages/agents/agent-ui/src/AgentConsoleMessageRenderers.ts": 1484,
+  "packages/agents/agent-ui/src/AgentConsoleMessageRenderers.ts": 1434,
   "packages/agents/agent-ui/src/AgentConsolePanels.ts": 4177,
   "packages/agents/agent-ui/src/AgentConsoleRemoteEventBridge.ts": 731,
   "packages/agents/agent-ui/src/AgentConsoleSessionService.ts": 1471,
