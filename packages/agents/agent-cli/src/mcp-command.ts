@@ -175,7 +175,13 @@ export async function runMcpAuth(options: AgentMcpCliOptions): Promise<void> {
     if (!config.auth?.clientId) {
         throw new Error(`MCP server '${id}' requires a clientId for OAuth. Configure it with 'tsdi-agent mcp add ${id} --url <url> --client-id <id>' or pass --client-id.`);
     }
-    const resolved = mergeAgentMcpOptions({ servers: [config] });
+    const resolved = mergeAgentMcpOptions({
+        servers: [config],
+        // Keep the OAuth credential store under the same root `mcp list` reads
+        // from, so `mcp auth --root <dir>` is reflected by `mcp list --root <dir>`
+        // (without this the token was written to the default root's store).
+        credentialsPath: `${resolveAgentRoot(options.root)}/mcp-credentials.json`
+    });
     const oauth = new McpOAuthClient(resolved, { interaction: undefined });
     const ok = await oauth.authorizeAndStore(config);
     process.stdout.write(ok
