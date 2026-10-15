@@ -224,7 +224,10 @@ export class RemoteSkillManager {
         }
         for (const entry of skills) {
             const id = skillId(entry.name || '');
-            if (!id || !entry.prompt?.trim()) {
+            // A registry manifest is remote/untrusted: a skill name must never be
+            // able to traverse out of the destination directory.
+            if (!id || !entry.prompt?.trim() || id.includes('/') || id.includes('\\')
+                || id.includes('..') || path.isAbsolute(id)) {
                 continue;
             }
             const skillDir = path.join(destDir, id);
