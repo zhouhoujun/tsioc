@@ -109,4 +109,29 @@ export class IndexedWebSearchTest {
             'https://docs.example.com/deep'
         ]);
     }
+
+    @Test('flags an extraction that yields no readable text instead of a silent empty success')
+    async flagsEmptyExtraction() {
+        // Regression (real web run): a 2xx fetch of a JS-rendered page extracted to
+        // `content: ''` with no signal, so the model retried the same/other URLs
+        // blindly. Empty extraction must be marked actionable.
+        const tool = new WebExtractTool({ web: {
+            fetch: async () => ({ ok: true, status: 200, text: async () => '<html><head></head><body><div id="root"></div><!-- hydrate --></body></html>' })
+        } } as any);
+        const result = await tool.invoke({ url: 'https://app.example.com/x' }, {} as any);
+        expect(result.content).toEqual('');
+        expect(result.empty).toEqual(true);
+        expect(String(result.warning)).toMatch(/readable text/i);
+    }
+
+    @Test('does not flag an extraction that produced readable text')
+    async doesNotFlagNonEmptyExtraction() {
+        const tool = new WebExtractTool({ web: {
+            fetch: async () => ({ ok: true, status: 200, text: async () => '<html><body><p>hello world</p></body></html>' })
+        } } as any);
+        const result = await tool.invoke({ url: 'https://example.com/x' }, {} as any);
+        expect(result.content).toContain('hello world');
+        expect(result.empty).toBeUndefined();
+        expect(result.warning).toBeUndefined();
+    }
 }

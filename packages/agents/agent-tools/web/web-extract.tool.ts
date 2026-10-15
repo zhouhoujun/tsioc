@@ -46,10 +46,19 @@ export class WebExtractTool implements AgentTool {
         const title = extractTitle(html);
         const maxChars = this.options?.web?.maxContentChars ?? defaultAgentToolsOptions.web?.maxContentChars ?? 12000;
         const content = extractText(html).slice(0, maxChars);
+        // A 2xx response with no extractable text is a soft failure: the page may be
+        // rendered by JavaScript or block static extraction. Returning a bare
+        // `content: ''` looks like a successful empty page, so the model retries the
+        // same/other URLs blindly (observed in a real run). Flag it instead.
+        if (content) {
+            return { url: input.url, title, content };
+        }
         return {
             url: input.url,
             title,
-            content
+            content,
+            empty: true,
+            warning: 'No readable text was extracted from this page; it may be rendered by JavaScript or block static extraction. Try a different URL, a raw/text endpoint, or a browser tool instead of retrying the same URL.'
         };
     }
 }
