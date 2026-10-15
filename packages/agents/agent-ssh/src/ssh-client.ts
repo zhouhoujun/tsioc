@@ -226,12 +226,13 @@ export class SshClient {
         const hostKey = resolveSshHostKey(this.config.host, this.config.port ?? 22);
         if (knownHosts === 'strict') {
             const entries = loadKnownHosts();
-            return (key, verify) => {
-                const fingerprint = hashFingerprint(key);
-                const entry = entries.get(hostKey);
-                const matches = !!entry && entry.some(expected => expected === fingerprint);
-                verify(matches);
-            };
+        return (key, verify) => {
+            // `known_hosts` stores the raw public key (base64), so compare the
+            // presented key directly instead of a derived fingerprint.
+            const presented = key.toString('base64');
+            const entry = entries.get(hostKey);
+            verify(!!entry && entry.some(expected => expected === presented));
+        };
         }
         return (_key, verify) => {
             verify(true);
@@ -267,23 +268,20 @@ function loadKnownHosts(): Map<string, string[]> {
     }
     for (const line of content.split('\n')) {
         const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith('#')) {
+        // Skip comments, markers, and hashed host entries; hashed hosts cannot
+        // be matched without the hash salt.
+        if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('@') || trimmed.startsWith('|')) {
             continue;
         }
-        const [host, algorithm, fingerprint] = trimmed.split(/\s+/);
-        if (!host || !fingerprint) {
+        const [hostField, , publicKey] = trimmed.split(/\s+/);
+        if (!hostField || !publicKey) {
             continue;
         }
-        if (algorithm === 'sha256') {
+        for (const host of hostField.split(',')) {
             const list = result.get(host) ?? [];
-            list.push(fingerprint);
+            list.push(publicKey);
             result.set(host, list);
         }
     }
     return result;
-}
-
-function hashFingerprint(key: Buffer): string {
-    const crypto = require('crypto') as typeof import('crypto');
-    return `SHA256:${crypto.createHash('sha256').update(key).digest('base64').replace(/=+$/, '')}`;
 }
