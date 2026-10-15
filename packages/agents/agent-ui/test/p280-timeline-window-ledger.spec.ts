@@ -491,6 +491,40 @@ export class TimelineWindowLedgerTest {
         expect(folded.message.content).toContain('1.0s'); // 250+250+500 = 1000ms
     }
 
+    @Test('collapsed row reports the turn duration without double-counting per-tool time (P290)')
+    testCollapsedRowDurationNotDoubleCounted() {
+        const messages: TimelineWindowMessage[] = [
+            eventMsg('d-1', 'turn-1', {
+                uiEventKey: 'turn-1:tool:d-1',
+                timeline: { source: 'local', sequence: 1, toolCallId: 'tcA', receiptId: 'r1', attempt: 1 },
+                durationMs: 527
+            }),
+            eventMsg('d-2', 'turn-1', {
+                uiEventKey: 'turn-1:tool:d-2',
+                timeline: { source: 'local', sequence: 2, toolCallId: 'tcB', receiptId: 'r2', attempt: 1 },
+                durationMs: 545
+            }),
+            // The turn-level event already reports the whole-turn duration.
+            eventMsg('d-3', 'turn-1', {
+                uiEventType: 'turn_completed',
+                uiEventKey: 'turn-1:turn:d-3',
+                durationMs: 1200
+            })
+        ];
+        const result = resolveTimelineWindowLedger({
+            messages,
+            limit: 10,
+            mode: 'steps',
+            activeScope: 'turn-2',
+            collapsedTurns: { 'turn-1': true }
+        });
+        const folded = result.items.find(i => i.message.id === '__timeline_collapsed_turn-1__')!;
+        expect(folded.message.content).toContain('2 个工具');
+        // 1200ms (turn), not 527+545+1200 = 2272ms (double-counted).
+        expect(folded.message.content).toContain('1.2s');
+        expect(folded.message.content).not.toContain('2.3s');
+    }
+
     @Test('a turn containing an error event stays expanded (P290)')
     testErrorGroupNeverFolded() {
         const messages: TimelineWindowMessage[] = [
