@@ -50,4 +50,17 @@ export interface ModelRequest {
      * deterministic output (temperature 0) regardless of the adapter default.
      */
     temperature?: number;
+    /**
+     * Per-request output-token cap. When set, adapters use it instead of their
+     * option-level `maxTokens`. Used by delegated workers (`llm_task`) so a
+     * per-task cap is honored instead of being silently dropped.
+     */
+    maxTokens?: number;
+    /**
+     * Per-request model id override. When set, adapters send this model instead
+     * of their configured model. Routing still uses `profile`; this only changes
+     * the model string on the selected adapter (e.g. an `llm_task` picking a
+     * specific model id).
+     */
+    model?: string;
 }

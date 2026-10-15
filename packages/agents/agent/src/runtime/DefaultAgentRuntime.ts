@@ -1352,13 +1352,13 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }
         }
 
-        return {
-            sessionId,
-            messages,
-            tools: this.getToolDefinitions(sessionId),
-            memory,
-            summary: state.summary
-        };
+        const request: ModelRequest = { sessionId, messages, tools: this.getToolDefinitions(sessionId), memory, summary: state.summary };
+        // Per-turn model overrides (used by delegated `llm_task` workers); undefined keeps the adapter default.
+        const modelOverride = turnContext?.agent;
+        if (modelOverride?.temperature !== undefined) request.temperature = modelOverride.temperature;
+        if (modelOverride?.maxTokens !== undefined) request.maxTokens = modelOverride.maxTokens;
+        if (modelOverride?.model !== undefined) request.model = modelOverride.model;
+        return request;
     }
 
     private async publishContextPreparedEvent(sessionId: string, report: ContextPreparationReport): Promise<void> {

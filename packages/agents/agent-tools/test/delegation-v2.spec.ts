@@ -311,4 +311,23 @@ export class DelegationV2Suite {
         expect(report?.completed).toEqual(['wrote tests', 'updated docs']);
         expect(report?.nextSteps).toEqual(['review diff', 'merge branch']);
     }
+
+    @Test('lightweight runner forwards llm_task model overrides to the worker turn')
+    async forwardsWorkerModelOverrides() {
+        // Regression: NestedAgentRunRequest carries model/temperature/maxTokens
+        // (llm_task documents and forwards all three), but runSingle only passed
+        // `reasoning`, so the other three were silently dropped.
+        let capturedAgent: any;
+        const mockRuntime = createMockRuntime({
+            runTurn: async (_sessionId: string, _input: string, _principalId?: string, _message?: any, _profile?: string, agent?: any) => {
+                capturedAgent = agent;
+                return { message: { content: 'Summary: ok', metadata: {} } };
+            }
+        });
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(), mockRuntime as any);
+        await runner.run({ prompt: 'x', temperature: 0, maxTokens: 123, model: 'gpt-x' } as any);
+        expect(capturedAgent?.temperature).toEqual(0);
+        expect(capturedAgent?.maxTokens).toEqual(123);
+        expect(capturedAgent?.model).toEqual('gpt-x');
+    }
 }

@@ -334,8 +334,8 @@ export class AnthropicModelAdapter extends ModelAdapter {
         const messages = this.mapMessages(request.messages);
 
         const body: AnthropicRequestBody = {
-            model: this.resolveModel(),
-            max_tokens: this.options.maxTokens ?? 8192,
+            model: request.model ?? this.resolveModel(),
+            max_tokens: request.maxTokens ?? this.options.maxTokens ?? 8192,
             messages
         };
 

@@ -31,6 +31,15 @@ export interface AgentTurnAgentConfig {
      * keeps the session/option-level default.
      */
     delegationMode?: import('./DelegationMode').AgentDelegationMode;
+    /**
+     * Per-turn model overrides. Undefined keeps the adapter's option-level
+     * default. Used by delegated workers (e.g. `llm_task`) so a requested
+     * temperature / output cap / model id is honored instead of silently
+     * dropped.
+     */
+    temperature?: number;
+    maxTokens?: number;
+    model?: string;
 }
 
 export interface AgentTurnInput {

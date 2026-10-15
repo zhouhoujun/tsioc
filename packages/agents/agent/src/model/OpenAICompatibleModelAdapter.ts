@@ -192,7 +192,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                 stopReason: finishReason === 'tool_calls' ? 'tool' : 'end',
                 metadata: {
                     provider: this.options.provider,
-                    model: this.resolveModel(),
+                    model: requestBody.model,
                     finishReason,
                     reasoningContent,
                     usage: this.normalizeUsage(body.usage),
@@ -332,7 +332,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                         metadata: {
                             finishReason: choice.finish_reason,
                             provider: this.options.provider,
-                            model: this.resolveModel(),
+                            model: reqBody.model,
                             providerUsage: event.usage,
                             promptCache: this.buildPromptCacheMetadata(event.usage, reqBody)
                         }
@@ -476,12 +476,12 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         }
         this.trackStaticPrefix(messages, tools ?? []);
         return {
-            model: this.resolveModel(),
+            model: request.model ?? this.resolveModel(),
             messages,
             tools,
             tool_choice: request.tools.length ? 'auto' : undefined,
             temperature: reasoning ? undefined : (request.temperature ?? this.options.temperature),
-            max_tokens: this.options.maxTokens,
+            max_tokens: request.maxTokens ?? this.options.maxTokens,
             ...(reasoningEffort ? { reasoning_effort: reasoningEffort as 'low' | 'medium' | 'high' | 'max' } : {})
         };
     }

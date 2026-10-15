@@ -95,7 +95,16 @@ export class LightweightAgentRunner extends NestedAgentRunner {
         const explicitProfile = request.profile;
         const cipherKey = resolveDelegationCipherKey(this.options?.delegation?.encryption);
         const cipher = cipherKey ? createDelegationCipher(cipherKey) : undefined;
-        const agentConfig = request.reasoning == null ? undefined : { reasoning: request.reasoning };
+        const hasModelOverrides = request.reasoning !== undefined || request.temperature !== undefined
+            || request.maxTokens !== undefined || request.model !== undefined;
+        const agentConfig = hasModelOverrides
+            ? {
+                ...(request.reasoning !== undefined ? { reasoning: request.reasoning } : {}),
+                ...(request.temperature !== undefined ? { temperature: request.temperature } : {}),
+                ...(request.maxTokens !== undefined ? { maxTokens: request.maxTokens } : {}),
+                ...(request.model !== undefined ? { model: request.model } : {})
+            }
+            : undefined;
         const basePrompt = request.systemPrompt
             ? `## Instructions\n${request.systemPrompt}\n\n## Task\n${request.prompt}`
             : request.prompt;
