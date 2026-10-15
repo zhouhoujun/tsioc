@@ -150,15 +150,20 @@ export function appendSecrets(prompt: string, secrets?: Record<string, string>):
 export function parseDelegatedAgentReport(content: string): DelegatedAgentReport | undefined {
     const report: DelegatedAgentReport = {};
     const lines = String(content || '').replace(/\r/g, '').split('\n');
-    const multiValueLabels = new Set(['Completed', 'Next steps', 'Risks', 'Artifacts']);
+    const multiValueLabels = new Set<keyof DelegatedAgentReport>(['completed', 'nextSteps', 'risks', 'artifacts']);
 
     for (const line of lines) {
-        const match = /^\s*(Summary|Diff|Completed|Next steps|Risks|Artifacts)\s*:\s*(.*)\s*$/i.exec(line);
+        // Models routinely format the report as markdown ("## Summary: …",
+        // "- Completed: …", "**Next steps:** …"). Strip heading/bullet/bold
+        // decoration before matching so a decorated report still parses; otherwise
+        // the runner never sees a report and loops the delegated worker to maxTurns.
+        const normalized = line.replace(/^\s*(?:[#>\-+*]+\s*)+/, '').replace(/^\*+\s*/, '');
+        const match = /^(Summary|Diff|Completed|Next steps|Risks|Artifacts)\s*\**\s*[:：]\s*\**\s*(.*)$/i.exec(normalized);
         if (!match) {
             continue;
         }
         const label = normalizeLabel(match[1]);
-        const value = match[2].trim();
+        const value = match[2].replace(/^\*+\s*/, '').replace(/\s*\*+$/, '').trim();
         if (!label || !value) {
             continue;
         }
@@ -178,7 +183,7 @@ export function parseDelegatedAgentReport(content: string): DelegatedAgentReport
             continue;
         }
         report[label] = Array.from(new Set([...(report[label] ?? []), ...items]));
-        if (!multiValueLabels.has(match[1])) {
+        if (!multiValueLabels.has(label)) {
             break;
         }
     }

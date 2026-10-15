@@ -3,7 +3,7 @@ import { IMPORTED_MESSAGE_METADATA_KEY } from '@tsdi/agent';
 import expect = require('expect');
 import { Buffer } from 'buffer';
 import { Suite, Test } from '@tsdi/unit';
-import { LightweightAgentRunner, runWithConcurrency } from '../src';
+import { LightweightAgentRunner, parseDelegatedAgentReport, runWithConcurrency } from '../src';
 import { createDelegationCipher, resolveDelegationCipherKey } from '../src/delegation/crypto';
 
 interface MockAgentRuntime {
@@ -293,5 +293,22 @@ export class DelegationV2Suite {
         // …but every one is tagged so it can be excluded from the model transcript.
         expect(imported.every(entry => typeof entry.metadata?.[IMPORTED_MESSAGE_METADATA_KEY] === 'string')).toBe(true);
         expect(new Set(imported.map(entry => entry.metadata?.[IMPORTED_MESSAGE_METADATA_KEY])).size).toEqual(1);
+    }
+
+    @Test('parseDelegatedAgentReport tolerates markdown-decorated labels')
+    parsesMarkdownDecoratedReport() {
+        // Regression (real DeepSeek run): the delegated sub-agent kept receiving
+        // "Continue the delegated task…" because its report used markdown headings
+        // and bold labels ("## Summary:", "**Next steps:**"), which the strict
+        // `^\s*Summary:` parser never matched — so the runner looped the worker up
+        // to maxTurns even after it had finished.
+        const report = parseDelegatedAgentReport([
+            '## Summary: finished the delegated pass',
+            '- Completed: wrote tests, updated docs',
+            '**Next steps:** review diff, merge branch'
+        ].join('\n'));
+        expect(report?.summary).toEqual('finished the delegated pass');
+        expect(report?.completed).toEqual(['wrote tests', 'updated docs']);
+        expect(report?.nextSteps).toEqual(['review diff', 'merge branch']);
     }
 }
