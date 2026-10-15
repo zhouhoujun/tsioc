@@ -303,9 +303,16 @@ export class GitOperationsTool implements AgentTool {
                 args.push(path);
                 break;
             case 'stash':
+                break;
             case 'stash_pop':
+                // git is spawned with an argv array (no shell): the subcommand
+                // must be its own argument, not 'stash pop' as one token.
+                args[0] = 'stash';
+                args.push('pop');
+                break;
             case 'stash_list':
-                args[0] = action.replace('_', ' ');
+                args[0] = 'stash';
+                args.push('list');
                 break;
             case 'add':
                 if (path) {
