@@ -338,3 +338,27 @@ agent 967 passing、agent-tools 526 passing、`tsc`（agent/agent-tools/agent-ui
 
 ### 门禁
 agent-tools 527 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff --check` 干净、**门禁 5/5 GATE-PASS**（含 production-db-integrity）。
+
+## 2026-10-15 第四轮优化：llm_task 的 model/temperature/maxTokens 静默丢弃（`8613e12a7`）
+
+### 真实探针结果（全部 0 失败，如实记录）
+并行真实探针覆盖更多未触及面：**超大输出**（50000 行，模型改用 `seq>…; wc; tail`）、**后台进程**（`process.*` 未注册，模型改用 shell `&`+`ps` 自愈）、**memory.put/list**、**`llm_task`**、**`apply_patch`**、**`process.start/poll/kill`**（未注册，模型自愈）、**compaction**（4 轮内含 1204 行文件读取，触发 10+ 次 pruning，transcript 完整性核对 **0 处 tool_calls 孤立**，turn4 跨压缩回顾准确）、**`parallel_spawn`**（2 并行任务成功且后续继续）。以上均无工具/运行时缺陷。
+
+### 缺口（代码审计 + 真实复现）
+`llm_task` 工具 `inputSchema` 文档化并读取 `model` / `temperature` / `maxTokens`，`DelegatingLlmTaskAdapter` 也把它们放入 `NestedAgentRunRequest`；但 `LightweightAgentRunner.runSingle` 只透传 `reasoning`，**其余三个被静默丢弃**（`NestedAgentRunRequest` 里字段存在却从未使用）。调用方以为生效，实际用默认模型/温度/上限。
+
+### 修复（全部可选字段 + `??` 回退，未设置时行为逐字节不变）
+- `AgentTurnAgentConfig` 新增 `temperature`/`maxTokens`/`model`；runner 透传（含 `profile`/`reasoning`）。
+- `DefaultAgentRuntime.buildModelRequest` 将 `turnContext.agent` 的三个覆盖写入 `ModelRequest`（压缩为 net 0 行，守住 source-size）。
+- `ModelRequest` 新增 `maxTokens`/`model`；OpenAI 兼容与 Anthropic 适配器改用 `request.X ?? 原默认`。
+- 顺带修正响应 `metadata.model`：原先恒为 `resolveModel()`（配置模型），改为**请求实际使用的模型**，便于验证与诊断。
+
+### 回归（先证红再证绿）
+- `agent-tools delegation-v2.spec.ts`：runner 必须把覆盖传入 `runTurn` 的 agent 配置（回退 → `Received undefined` 红，恢复 → 绿，17 passing）。
+- `agent turn-model-overrides.spec.ts`（新增）：`buildModelRequest` 必须应用 `turnContext.agent` 覆盖（去掉三行 `if` → 红，恢复 → 绿）。
+
+### 真实验证
+`llm_task` 传 `model='deepseek-v4-pro'`、`maxTokens=200`：子会话响应 metadata `model` = `deepseek-v4-pro`（与 API 回显一致，此前恒为配置的 `deepseek-flash`），`maxTokens` 生效（`finishReason: length` 及 token 计数）。
+
+### 门禁
+agent 968 passing、agent-tools 528 passing、`tsc`（agent/agent-tools/agent-ui/agent-gateway）全 EXIT 0、`source-size` OK、`git diff --check` 干净、**门禁 9/9 GATE-PASS**（含 production-db-integrity）。
