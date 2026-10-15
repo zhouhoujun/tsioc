@@ -61,6 +61,7 @@ implementation and passes on the new one**.
 | Commit | File | Root cause |
 | --- | --- | --- |
 | `fe4f64ce3` | gateway `api/EventHandler.ts` | `tool_completed` collapsed the `ask_user` structured output via `summarizeValue`, so the client could not render the question panel. |
+| `e92b67ea7` | agent `runtime/DefaultAgentRuntime.ts` + agent-tools `src/lightweight-agent-runner.ts` | The nested runner imported the sub-agent transcript into the parent session **verbatim**, so the child's user/assistant/tool turns landed between the parent's assistant `tool_calls` and the `spawn_agent` tool result. The next model request was rejected with 400 ("An assistant message with 'tool_calls' must be followed by tool messages responding to each 'tool_call_id'") and the run crashed. The import is kept for display but every message is tagged (`IMPORTED_MESSAGE_METADATA_KEY`) and `buildModelRequest` excludes tagged messages. Reproduced on a real DeepSeek run. |
 | `23b2ea8d4` | agent `model/OpenAICompatibleModelAdapter.ts` | A stream interruption was not degraded/retried based on un-emitted body, and the reasoning phase showed no status. |
 | `7a1961a57` / `d7ad4bbb7` | agent `prompt/sections/IdentitySection.ts` | The prompt forced `ask_user` / a `git diff` check in non-git workspaces. |
 | `acd3ad623` | components `common/src/input.ts`, `console/src/input.ts`, `console/src/terminal.ts` | Terminal escape sequences were consumed non-atomically and batched keys were not tokenized. |

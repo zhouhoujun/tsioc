@@ -288,3 +288,32 @@
 - 第 1 次运行用的是用户指定的默认 root，向生产库 `~/.tsdi-agent/agent.db` **追加**了一条失败会话（未清空/覆盖/重建）；自第 2 次起全部改用独立 root 与独立 DB。
 - **仍未复现/未改**：todo.md 记录的第二轮 `NodeInjector has already been destroyed` 崩溃（本轮真实两轮未复现，需完整调用栈）；`deepseek-v4-flash` 废弃名清理（需用户批准）。
 - 已顺带核对为**契约正常、非缺陷**：非 Git 工作区的 `git_operations diff/status` 降级为 `notAGitRepo`+session 快照（模型正确理解）；`todo` 对“新增项缺 content”的拒绝（有意的计划质量守卫，模型正常改发）。
+
+## 2026-10-15 继续优化：委派子会话消息污染父会话导致 400 崩溃（`e92b67ea7`）
+
+### 复现（真实 DeepSeek 驱动真实 CLI）
+- 三个并行真实探针（web / content_search / git）中，web 探针在 `web_search` 不可用后，模型调用 `spawn_agent` 委派研究，紧接着下一次模型请求报 400 并**崩溃整个 run（EXIT=1）**：
+  `Model request failed with 400 (deepseek/deepseek-flash): An assistant message with 'tool_calls' must be followed by tool messages responding to each 'tool_call_id'. (insufficient tool messages following tool_calls message)`。
+- 从该会话 DB 取证：父会话消息序列为 `assistant(tool_calls:[web_extract, spawn_agent]) → tool(web_extract) → [子会话整段 47 条 user/assistant/tool] → tool(spawn_agent) → 400`。子会话 47 条与其独立 spawn 会话**一字不差地重复**出现在父会话。
+
+### 根因
+`LightweightAgentRunner.runSingle` 把子会话整段 transcript 原样 `sessions.append(parentSessionId, msg)`。`spawn_agent` 的 `invoke()` 期间，父会话的 assistant `tool_calls` 消息**尚未等到**其 tool 结果，插入的子会话非 tool 消息打断了 OpenAI 契约要求的 `tool_calls → 逐条 tool 结果` 相邻关系 → 下一请求 400。
+
+### 修复（保留功能，不删除）
+- 该「导入父会话」是 `fa52da418` 引入、并被 `tools.spec.ts::lightweightAgentRunnerImportsMessagesToParent` 锁定的**既有功能**；按 AGENTS.md 不删功能，改为**展示保留 + 模型上下文排除**：
+  - `@tsdi/agent` 新增 `IMPORTED_MESSAGE_METADATA_KEY` / `isImportedChildMessage`（`AgentMessage.ts`）。
+  - `LightweightAgentRunner` 导入每条子消息时打标 `metadata.importedFromSessionId`。
+  - `DefaultAgentRuntime.buildModelRequest` 组装模型请求时过滤带标记的消息（`DefaultAgentRuntime.ts`，net 0 行，守住 source-size）。
+
+### 回归（先证红再证绿）
+- `agent-tools/test/delegation-v2.spec.ts` 新增 `subAgentImportIsTaggedDisplayOnly`：导入消息必须带标记且角色序列保留；回退 runner → **红**（`Expected true / Received false`），修复后 **绿**（15 passing）。
+- `agent/test/imported-messages.spec.ts`（新增）：`isImportedChildMessage` 判据 + 经真实 `DefaultAgentRuntime.buildModelRequest` 断言模型请求**排除**导入消息并保留正常/工具消息；临时去掉过滤 → **红**（泄露 `IMPORTED CHILD PROMPT`），恢复 → **绿**（2 passing）。
+
+### 真实验证
+- 同 prompt/同模型复跑并**显式要求** `spawn_agent`：`spawn_agent` 1 次 → 随后 `read_file` 1 次（即 400 发生的那一次后续请求）→ **0 错误、EXIT=0** 正常给出最终回答；父会话 DB 仍保留 2 条带 `importedFromSessionId` 标记的导入消息（功能未丢）。
+
+### 门禁
+agent 967 passing、agent-tools 526 passing、`tsc`（agent/agent-tools/agent-ui/agent-gateway）全 EXIT 0、`source-size` OK、`git diff --check` 干净、**门禁 9/9 GATE-PASS**（含 production-db-integrity）。
+
+### 附带（未改，如实记录）
+- `web_search` 在未配置搜索适配器时恒失败（历史 30 次调用）——模型会改走 `web_extract`，本轮探针证其可自愈；属配置缺失而非工具缺陷，未擅自改默认注册。
