@@ -32,6 +32,14 @@ function jsonForInlineScript(value: unknown): string {
         .replace(/\u2029/g, '\\u2029');
 }
 
+function escapeHtmlText(value: string): string {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
 export function normalizeGatewayUrl(value: string): string {
     const normalized = value.trim().replace(/\/+$/, '');
     if (!/^https?:\/\//i.test(normalized)) {
@@ -117,7 +125,7 @@ export function buildDesktopHtml(options: DesktopHtmlOptions): string {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: https: http:; style-src 'unsafe-inline'; script-src 'nonce-${options.nonce}'; connect-src http: https:; font-src data:;">
-    <title>${title}</title>
+    <title>${escapeHtmlText(title)}</title>
     <style>
         html, body { margin: 0; height: 100%; background: #0d1117; color: #c9d1d9; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
         body { display: grid; grid-template-rows: 36px minmax(0, 1fr); }

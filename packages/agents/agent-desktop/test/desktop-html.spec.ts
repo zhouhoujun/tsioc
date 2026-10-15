@@ -26,6 +26,18 @@ export class AgentDesktopHtmlTest {
         expect(html).toContain('<title>TSDI Agent</title>');
     }
 
+    @Test('escapes the window title so it cannot break out of the title element')
+    escapedTitle() {
+        const html = buildDesktopHtml({
+            scriptUri: 'bundle.js',
+            baseUrl: 'https://gateway.example',
+            nonce: 'nonce-3',
+            title: '</title><style>body{display:none}</style><title>x'
+        });
+        expect(html).not.toContain('</title><style>');
+        expect(html).toContain('<title>&lt;/title&gt;&lt;style&gt;body{display:none}&lt;/style&gt;&lt;title&gt;x</title>');
+    }
+
     @Test('escapes injected configuration before embedding it in script')
     escapedConfig() {
         const html = buildDesktopHtml({
