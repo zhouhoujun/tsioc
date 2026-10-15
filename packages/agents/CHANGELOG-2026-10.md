@@ -32,6 +32,7 @@ implementation and passes on the new one**.
 | `7aeef2965` | `files/stat.tool.ts` | Missing path threw a raw ENOENT instead of returning `exists:false`. |
 | `65ed5a70a` | `git/git-operations.tool.ts` | Read-only actions in a non-git workspace errored instead of degrading to an informational result. |
 | `3c59646dd` | `files/read-file.tool.ts`, `harness/ToolOutputSpill.ts` | Truncated reads returned no `nextOffset` and could be re-compressed by the generic output truncation. |
+| `e976c7a26` | `web/web-extract.tool.ts` | A 2xx fetch of a JS-rendered page extracted to `content: ''` but reported **success with no signal**, so the model retried URLs blindly (observed in a real web run). Empty extraction now returns `empty: true` plus an actionable `warning`; `content`/`title`/`url` and the success verdict are unchanged. |
 
 ## agent-ui
 

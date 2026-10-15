@@ -362,3 +362,24 @@ agent-tools 527 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff -
 
 ### 门禁
 agent 968 passing、agent-tools 528 passing、`tsc`（agent/agent-tools/agent-ui/agent-gateway）全 EXIT 0、`source-size` OK、`git diff --check` 干净、**门禁 9/9 GATE-PASS**（含 production-db-integrity）。
+
+## 2026-10-15 第五轮：rehdasu 线上复核 + web_extract 空提取修复（`e976c7a26`）
+
+### rehdasu.cn 复核（用户指出其可用 → 已核实）
+- **配置确实被读取**：`tsdi-agent doctor` 输出 `Model: openai-compatible / gpt-5.5`、`Base URL: https://rehdasu.cn`、`API key: configured`；chat 头部也显示 `gpt-5.5 · <workspace>`。故非配置读取问题。
+- **端点可用**：`/v1/models` 200（列出 16 个模型）；`/v1/chat/completions` 对 `gpt-6-astra`/`gpt-6.1-sol`/`gpt-6-luna`/`gpt-5.6-luna` 均返回正常。
+- **唯一不可用的是当前配置的模型**：`gpt-5.5`（base）与 `gpt-5.6`（strong）持续 502/503 `Service temporarily unavailable`（其它模型可用）。故首轮"provider 不可用"实为**该模型上游不可用**，端点本身正常。
+- **真实端到端已在 rehdasu 跑通**：以 `gpt-6.1-sol` 构建 `prime-system/`（测试 `primes tests passed`、更新 AGENTS.md，`turn.completed`）与强制 `spawn_agent` 委派（子会话 1 轮完成、0 次 continue）均成功。延迟偏高（trivial 调用 13–35s），属代理负载。
+- **诚实提示**：`gpt-5.5`/`gpt-5.6` 不可用时 `run` 会按 `RetryPolicy` 重试后报可诊断错误（实测 ~194s，含长 Retry-After 退避），非悬挂。
+
+### 全量门禁（含 PTY）
+`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 GATE-PASS，`FULLGATE_EXIT=0`**（10 agent 包 + 4 components 包单测、4× tsc、agent-ui Web 构建、DOM/TUI gate + matrix、gate-regression、真实 PTY acceptance、diff-check、source-size、production-db-integrity）。上一轮对 `ModelRequest`/适配器/运行时的改动**无回归**。
+
+### 缺口：`web_extract` 空提取伪装成功（真实 web 探针观察到）
+2xx 抓取 JS 渲染页时 `extractText` 得空串，工具仍返回 `content: ''` 的"成功"，模型无法区分"页面确实为空"与"未能静态提取"，反复换 URL 重试浪费多轮。
+
+**修复**：空提取时附 `empty: true` + 可操作 `warning`（JS 渲染/阻碍静态提取，建议换 URL、raw/text 端点或浏览器工具）；content/title/url 与成功判定不变（纯附加字段）。
+**回归（红→绿）**：`indexed-web-search.spec.ts` 新增 `flagsEmptyExtraction`（旧实现 `result.empty === undefined` 红）与 `doesNotFlagNonEmptyExtraction`。
+
+### 门禁
+agent-tools 530 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff --check` 干净、**门禁 5/5 GATE-PASS**（含 production-db-integrity）。
