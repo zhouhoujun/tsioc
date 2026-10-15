@@ -36,6 +36,12 @@ export function getAgentConsoleInputTokenRange(input: string, cursor = input.len
     }
     const token = match[1] || '';
     const start = safeCursor - token.length;
+    // Slash commands are line-start commands. A `/`-word elsewhere (e.g. a path
+    // in `check /tmp/foo`) must not open the command palette — otherwise the
+    // menu hijacks Enter (it confirms a command instead of sending the message).
+    if (token.startsWith('/') && start !== 0) {
+        return undefined;
+    }
     return {
         start,
         end: safeCursor,
