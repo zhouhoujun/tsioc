@@ -17,9 +17,9 @@ export class TodoTool implements AgentTool {
                     properties: {
                         id: { type: 'string' },
                         content: { type: 'string', description: 'Required for new items; omit to preserve an existing item\u2019s content.' },
-                        status: { type: 'string', enum: ['pending', 'in_progress', 'completed', 'cancelled'] },
+                        status: { type: 'string', description: 'Item status. Allowed: pending, in_progress, completed, cancelled, failed. Unknown values are treated as pending (not a hard error).' },
                         parentId: { type: 'string' },
-                        kind: { type: 'string', enum: ['task', 'milestone', 'bug', 'feature', 'chore'] },
+                        kind: { type: 'string', description: 'Item classification. Allowed: task, milestone, bug, feature, chore. Unknown values are dropped (not a hard error).' },
                         acceptance: { type: 'string' },
                         dependsOn: { type: 'array', items: { type: 'string' } },
                         estimate: { type: 'string' },

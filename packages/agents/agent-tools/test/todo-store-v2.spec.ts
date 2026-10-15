@@ -145,6 +145,51 @@ export class TodoStoreV2Test {
         expect(result.todos[0].content).toBe('do a');
     }
 
+    @Test('TodoTool tolerates an unrecognized kind instead of hard-failing validation')
+    async todoToolToleratesUnknownKind() {
+        const tool = new TodoTool();
+        // Models routinely classify plan items with kinds the enum never offered
+        // (e.g. "test"); the store already drops unknown kinds. A strict enum on
+        // the schema rejected the ENTIRE plan update before it reached the store,
+        // so one bad kind cost a full round-trip.
+        expect((tool.inputSchema as any).properties.todos.items.properties.kind.enum).toBeUndefined();
+
+        const validator = new ToolSchemaValidator();
+        expect(() => validator.validateOrThrow(
+            tool.inputSchema as any,
+            { todos: [{ id: 'a', content: 'run the tests', status: 'pending', kind: 'test' }] },
+            'todo'
+        )).not.toThrow();
+
+        const result: any = await tool.invoke(
+            { todos: [{ id: 'a', content: 'run the tests', status: 'pending', kind: 'test' }] },
+            createSessionContext({ sessionId: 'unknown-kind' })
+        );
+        expect(result.todos[0].content).toBe('run the tests');
+        expect(result.todos[0].kind).toBeUndefined();
+    }
+
+    @Test('TodoTool accepts the failed status the store supports')
+    async todoToolToleratesFailedStatus() {
+        const tool = new TodoTool();
+        // TodoStatus includes 'failed' and normalizeStatus accepts it, but the
+        // schema enum omitted it, so marking a step failed rejected the call.
+        expect((tool.inputSchema as any).properties.todos.items.properties.status.enum).toBeUndefined();
+
+        const validator = new ToolSchemaValidator();
+        expect(() => validator.validateOrThrow(
+            tool.inputSchema as any,
+            { todos: [{ id: 'a', content: 'attempt step', status: 'failed' }] },
+            'todo'
+        )).not.toThrow();
+
+        const result: any = await tool.invoke(
+            { todos: [{ id: 'a', content: 'attempt step', status: 'failed' }] },
+            createSessionContext({ sessionId: 'failed-status' })
+        );
+        expect(result.todos[0].status).toBe('failed');
+    }
+
     @Test('normalizeItem rejects invalid kind')
     async normalizeRejectsInvalidKind() {
         const store = new TodoStore();
