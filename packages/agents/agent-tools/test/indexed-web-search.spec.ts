@@ -81,4 +81,32 @@ export class IndexedWebSearchTest {
         expect(fetched).toBe('https://anything.com/x');
         expect(result.content).toContain('plain');
     }
+
+    @Test('does not let an allowlisted domain be spoofed via path, query, or look-alike host')
+    async rejectsSpoofedAllowedDomain() {
+        const tool = new WebExtractTool({ web: { indexed: true, allowedDomains: ['example.com'] } } as any);
+        for (const url of [
+            'https://evil.com/?ref=example.com',
+            'https://example.com.evil.com/x',
+            'https://notexample.com/x'
+        ]) {
+            await expect(tool.invoke({ url }, {} as any))
+                .rejects.toThrow(/outside the server-approved domain allowlist/);
+        }
+    }
+
+    @Test('filters search results whose URL only mentions an allowed domain')
+    async filtersSpoofedDomainsInSearch() {
+        const tool = new WebSearchTool({ web: { indexed: true, allowedDomains: ['example.com'], search: adapter([
+            { title: 'legit', url: 'https://example.com/page' },
+            { title: 'sub', url: 'https://docs.example.com/deep' },
+            { title: 'query-bypass', url: 'https://evil.com/?u=example.com' },
+            { title: 'lookalike', url: 'https://example.com.evil.com/x' }
+        ]) } } as any);
+        const result = await tool.invoke({ query: 'test' }, {} as any);
+        expect(result.results.map((r: any) => r.url)).toEqual([
+            'https://example.com/page',
+            'https://docs.example.com/deep'
+        ]);
+    }
 }

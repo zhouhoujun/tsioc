@@ -2,13 +2,21 @@ export function domainAllowed(url: string, allowedDomains?: string[]): boolean {
     if (!allowedDomains || !allowedDomains.length) {
         return true;
     }
-    const normalized = String(url || '').trim().toLowerCase();
-    if (!normalized) {
+    // Match on the HOSTNAME, not a raw substring: `includes()` would let any URL
+    // that merely mentions an allowed domain (path/query, or a look-alike host
+    // like `example.com.evil.com`) slip past the allowlist.
+    let host: string;
+    try {
+        host = new URL(String(url || '').trim()).hostname.toLowerCase();
+    } catch {
+        return false;
+    }
+    if (!host) {
         return false;
     }
     return allowedDomains.some(entry => {
-        const candidate = String(entry || '').trim().toLowerCase();
-        return candidate.length > 0 && normalized.includes(candidate);
+        const candidate = String(entry || '').trim().toLowerCase().replace(/^\.+/, '');
+        return !!candidate && (host === candidate || host.endsWith(`.${candidate}`));
     });
 }
 
