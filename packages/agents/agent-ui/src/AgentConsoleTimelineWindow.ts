@@ -424,14 +424,6 @@ interface TurnGroupStats {
     changeCallIds: Set<string>;
     errorCount: number;
     durationMs: number;
-    /** Terminal turn duration reported by a turn_completed/cancelled event. */
-    turnDurationMs?: number;
-}
-
-/** Turn-level events whose `durationMs` already covers the whole turn. */
-function isTurnAggregateEvent(uiEventType: string): boolean {
-    return uiEventType === 'turn_completed' || uiEventType === 'turn_cancelled'
-        || uiEventType === 'turn_cancel' || uiEventType === 'turn_failed';
 }
 
 function makeCollapsedTurnItem(
@@ -457,12 +449,9 @@ function makeCollapsedTurnItem(
     if (stats.errorCount > 0) {
         parts.push(fillTimelineLabel(labels?.collapsedErrors || DEFAULT_TIMELINE_LABELS.collapsedErrors, { errors: stats.errorCount }));
     }
-    // Prefer the turn's own duration when the backend reported one; the summed
-    // per-event durations would double-count the whole-turn duration.
-    const totalDurationMs = stats.turnDurationMs && stats.turnDurationMs > 0
-        ? stats.turnDurationMs
-        : stats.durationMs;
-    parts.push(formatTimelineSessionDuration(totalDurationMs));
+    // Prefer the turn-level duration; the per-event sum double-counts tool time.
+    const turnEventMs = Number(stats.members.find(m => ['turn_completed', 'turn_cancelled', 'turn_cancel', 'turn_failed'].includes(String(m.message?.metadata?.uiEventType || '')))?.message?.metadata?.durationMs);
+    parts.push(formatTimelineSessionDuration(Number.isFinite(turnEventMs) && turnEventMs > 0 ? turnEventMs : stats.durationMs));
     const content = parts.join(' · ');
     return {
         message: {
@@ -506,7 +495,7 @@ function withTurnCollapse(
         }
         let stats = groups.get(key);
         if (!stats) {
-            stats = { members: [], hasError: false, hasCancelled: false, toolCallIds: new Set(), changeCallIds: new Set(), errorCount: 0, durationMs: 0, turnDurationMs: 0 };
+            stats = { members: [], hasError: false, hasCancelled: false, toolCallIds: new Set(), changeCallIds: new Set(), errorCount: 0, durationMs: 0 };
             groups.set(key, stats);
             groupOrder.push(key);
         }
@@ -530,15 +519,7 @@ function withTurnCollapse(
             stats.changeCallIds.add(`${metadata.uiEventKey || ''}:${item.message?.id || ''}`);
         }
         const duration = Number(metadata.durationMs || 0);
-        if (Number.isFinite(duration) && duration >= 0) {
-            // A turn-level event already carries the whole-turn duration; keep it
-            // apart from the per-event sum so the summary cannot double-count.
-            if (isTurnAggregateEvent(String(metadata.uiEventType || ''))) {
-                stats.turnDurationMs = Math.max(stats.turnDurationMs ?? 0, duration);
-            } else {
-                stats.durationMs += duration;
-            }
-        }
+        if (Number.isFinite(duration) && duration >= 0) stats.durationMs += duration;
     });
 
     // A turn with an error event stays expanded so the failure stays visible
