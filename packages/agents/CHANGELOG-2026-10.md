@@ -1,7 +1,8 @@
 # Agent console + tools fix log — 2026-10
 
 Real end-to-end simulation testing of the `@tsdi/agent*` stack (real TUI over PTY, real
-ORM/DB, real MCP/OAuth transports, fake model + acceptance harness). Each entry records
+ORM/DB, real MCP/OAuth transports, fake model + acceptance harness; on 2026-10-15, a real
+DeepSeek model driving the real CLI/TUI over an isolated `--root`). Each entry records
 the root cause and the commit; every fix ships a regression test that **fails on the old
 implementation and passes on the new one**.
 
@@ -25,6 +26,7 @@ implementation and passes on the new one**.
 | `e87fd7741` | `files/path-policy.ts` | Missing paths leaked a raw `ENOENT: … lstat …`; now an actionable message with `code` preserved. |
 | `f4dd4c626` | `files/simple-diff.ts` | `edit_file`/`write_file` returned an unordered diff; now a real ordered unified diff. |
 | `5da6bbd54` | `planning/todo.tool.ts` | `action` used a strict enum, rejecting unknown values; now unknown values are treated as an update. |
+| `37308fb01` | `planning/todo.tool.ts` | `kind`/`status` still used strict enums, so a model's unknown kind (e.g. `kind:"test"`) **hard-rejected the whole plan update** before the store's lenient `normalizeKind`/`normalizeStatus` could run; the `status` enum also omitted `failed`, which `TodoStatus` supports. Both are now free strings with allowed values moved into the description, matching `action`. Reproduced on a real DeepSeek-driven build run. |
 | `7aeef2965` | `files/stat.tool.ts` | Missing path threw a raw ENOENT instead of returning `exists:false`. |
 | `65ed5a70a` | `git/git-operations.tool.ts` | Read-only actions in a non-git workspace errored instead of degrading to an informational result. |
 | `3c59646dd` | `files/read-file.tool.ts`, `harness/ToolOutputSpill.ts` | Truncated reads returned no `nextOffset` and could be re-compressed by the generic output truncation. |

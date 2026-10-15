@@ -263,3 +263,28 @@
 - **验证**：components 146 / common 5 / html 118 / console 87 / agent-ui 1441，全 `EXIT=0`；全量门禁逐阶段复核全 `GATE-PASS`（agent-ui、9 个 agent 包、4 个 components 包、4× `tsc --noEmit`、`build-agent-ui-web`、`dom-gate` + matrix、`tui-gate`、`gate-regression`、`diff-check`、`source-size`、`production-db-integrity`），仅 `pty-acceptance` 按默认跳过（opt-in）。
 - **回归测试（红→绿）**：新增 `packages/components/test/binding-destroyed-injector.spec.ts`，断言 `injector.destroyed` 时 `bindingProperty` 的工厂**不得**执行其 effect。证红：临时移除该守卫 → `0 passing 1 failed`（effect 仍执行并因解析已销毁注入器抛错）；证绿：恢复守卫 → components `147 passing`、`EXIT=0`。
 - **诚实边界**：这是**静态锁定的真实缺失守卫缺口**，但**尚不能证明就是用户实机那条崩溃**（无堆栈，无法复现第二 turn）。需完整调用栈确认；若不匹配，则该守卫修复本身独立成立、可保留。
+
+## 2026-10-15 真实模拟测试：sleep-mlt 系统构建 → 修复 `todo` 计划输入容忍度（`37308fb01`）
+
+### 运行方式与 provider 现实
+- 按用户要求先跑 `packages/agents/agent-cli` 的 `npm run chat -- --workspace /home/zhouyou/workspace/sleep-mlt`（默认 root）。**配置的代理 `https://rehdasu.cn` 当天持续 502/503**（`Service temporarily unavailable`），真实模型不可达。
+- **Agent 对 503 的处置正确、无缺口**：`RetryPolicy.classifyModelError(503)` → `server` → 可重试，按 `maxRetries=3` + 指数退避重试后给出可操作错误 `openai-compatible returned a server error for gpt-5.5 (status 503). Usually temporary — retry, or switch model with /model. (request_id: …)`，composer 正常恢复、可继续操作。
+- 为完成**真实**端到端，改用真实 DeepSeek：`--root /tmp/opencode/agent-root`（`provider=deepseek` / `model=deepseek-flash` / `https://api.deepseek.com`，**独立 DB**，遵守 AGENTS.md §8），驱动真正的 TUI + 真实工具 + 真实文件系统跑系统构建任务。
+
+### 三个真实任务
+1. headless `run --json` 新建 `workout-system/`（3 模块 + 3 测试）：功能全部成功、测试 `exit=0`；**唯一失败**是 `todo` 工具硬校验（见下）。
+2. 真实 **TUI 两轮**：第 1 轮建 `habit-log/`（并更新 sleep-mlt `AGENTS.md`）、第 2 轮续写 `countFor()` → **两轮都成功；未复现 todo.md 记录的第二轮 `NodeInjector has already been destroyed` 崩溃**（DeepSeek 两轮连续对话正常，token 20.8K→43.6K）。
+3. headless `run --json` 在既有 `workout-system/` 上加 `exportCsv()` + 改测试 + 跑测试：**0 失败**，模型还主动标注了一处需求歧义。
+
+### 真实缺口（复现 → 修复 → 红绿回归）
+- **现象**：模型在计划里发 `kind:"test"`，`ToolSchemaValidator` 在 `invoke` 前**整体拒绝**整批计划更新：`Tool "todo" input validation failed: $.todos[4].kind must be one of task, milestone, bug, feature, chore`，模型只能重发，白白多一轮。
+- **根因**：schema 比 store 更严。`todo-store.ts` 的 `normalizeKind`/`normalizeStatus` 本就把未知值降级（kind 丢弃、status→pending），且 `TodoStatus` 本就含 `failed`，**但 schema 的 `status` enum 漏了 `failed`**（模型/计划发 `failed` 同样被硬拒）。与既有 `action` 去严格 enum（`5da6bbd54`）同类。
+- **修复**：`planning/todo.tool.ts` 去掉 `kind`/`status` 的 `enum`，allowed 值移入 `description`（与 `action` 同风格）。**仅把“硬拒绝”改为“降级”，合法输入行为不变**（未删除任何功能）。
+- **回归（先证红再证绿）**：`test/todo-store-v2.spec.ts` 经真实 `ToolSchemaValidator` + `TodoTool.invoke` 边界断言。修复前 **61 passing 2 failed**（`Received: ["task",…]` / `["pending",…]`）；修复后 **63 passing `EXIT=0`**。
+- **门禁**：agent-tools 全量 **525 passing `EXIT=0`**、`tsc --noEmit` `EXIT=0`、`check-source-size.mjs` OK、`git diff --check` 干净。
+
+### 诚实边界与未决项
+- provider 代理当天不可用，故“真实差距”来自**真实 DeepSeek 模型驱动的真实 CLI 端到端**（不是代理；也不是 fake model）。
+- 第 1 次运行用的是用户指定的默认 root，向生产库 `~/.tsdi-agent/agent.db` **追加**了一条失败会话（未清空/覆盖/重建）；自第 2 次起全部改用独立 root 与独立 DB。
+- **仍未复现/未改**：todo.md 记录的第二轮 `NodeInjector has already been destroyed` 崩溃（本轮真实两轮未复现，需完整调用栈）；`deepseek-v4-flash` 废弃名清理（需用户批准）。
+- 已顺带核对为**契约正常、非缺陷**：非 Git 工作区的 `git_operations diff/status` 降级为 `notAGitRepo`+session 快照（模型正确理解）；`todo` 对“新增项缺 content”的拒绝（有意的计划质量守卫，模型正常改发）。
