@@ -317,3 +317,24 @@ agent 967 passing、agent-tools 526 passing、`tsc`（agent/agent-tools/agent-ui
 
 ### 附带（未改，如实记录）
 - `web_search` 在未配置搜索适配器时恒失败（历史 30 次调用）——模型会改走 `web_extract`，本轮探针证其可自愈；属配置缺失而非工具缺陷，未擅自改默认注册。
+
+## 2026-10-15 第三轮优化：委派子代理报告解析容忍 markdown（`12ca547bd`）
+
+### 复现（真实 DeepSeek 驱动真实 CLI/TUI）
+- 并行真实探针覆盖未触及面：**错误修复**（预置失败测试）、**真实 git 仓库**（init/add/commit/diff）、**content_search + offset 读大文件**、**后台进程**、以及 **TUI 的 ask_user 与 Ctrl+C 中断**——这些**全部正确、0 失败**（含 ask_user 数字选项正确解析、Ctrl+C 中断回合并恢复 composer、1204 行文件 offset 读区间准确）。
+- 但复盘中注意到：上一轮 web 探针的**委派子会话**在已宣称"任务完成"后仍被反复要求 `Continue the delegated task…`。取子会话 DB 取证，其报告写作 `## Summary: …` / `- **Summary:** …`。
+
+### 根因
+`parseDelegatedAgentReport` 用严格 `^\s*(Summary|…)\s*:` 匹配行首。模型的 markdown 报告（`## Summary:`、`- **Summary:**`、`**Next steps:**`）**一律匹配不到** → `report` 解析为 `undefined` → `LightweightAgentRunner` 认为未完成，反复发 `CONTINUE_PROMPT` 直到 `maxTurns`，**白耗 token/时间**（用户看到重复的 continue 噪声）。附带发现 multi-value 早停判定用原始大小写 `match[1]`，`"next steps"` 小写会被误判为单值而 `break`。
+
+### 修复（`nested-agent-runner.ts`）
+解析前剥离行首标题/列表/加粗装饰（`^\s*(?:[#>\-+*]+\s*)+`、`^\*+\s*`）；regex 允许标签后 `**` 与全角冒号 `：`；value 去掉首尾 `**`；multi-value 判定改用 `normalizeLabel` 后的 key（顺带修掉大小写敏感早停）。
+
+### 回归（先证红再证绿）
+`agent-tools/test/delegation-v2.spec.ts` 新增 `parsesMarkdownDecoratedReport`（`## Summary:` / `- Completed:` / `**Next steps:**`）：**旧实现返回 `undefined`（红）**，修复后正确解析（绿，16 passing）。
+
+### 真实验证
+强制 `spawn_agent` 复跑：子会话报告为 `- **Summary:** …`（正是旧实现会漏的形态），修复后子会话 **1 轮完成**（2 条消息、**0 次 continue-prompt**）；旧实现此处会循环到 maxTurns。
+
+### 门禁
+agent-tools 527 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff --check` 干净、**门禁 5/5 GATE-PASS**（含 production-db-integrity）。
