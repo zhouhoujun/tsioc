@@ -1,4 +1,5 @@
 import { RandomUuidGenerator } from '@tsdi/core';
+import { IMPORTED_MESSAGE_METADATA_KEY } from '@tsdi/agent';
 import expect = require('expect');
 import { Buffer } from 'buffer';
 import { Suite, Test } from '@tsdi/unit';
@@ -253,5 +254,44 @@ export class DelegationV2Suite {
         expect(peak).toBeLessThanOrEqual(2);
         expect(results.length).toBe(4);
         expect(results.every(r => r.content.includes('Summary: done'))).toBe(true);
+    }
+
+    @Test('lightweight runner tags imported sub-agent messages so the model transcript can exclude them')
+    async subAgentImportIsTaggedDisplayOnly() {
+        // Regression (real DeepSeek run): the runner imported the sub-agent
+        // transcript into the parent session verbatim, so the child's
+        // user/assistant/tool turns landed between the parent's assistant
+        // `tool_calls` and the spawn_agent tool result. The provider then rejected
+        // the next request (400: "An assistant message with 'tool_calls' must be
+        // followed by tool messages responding to each 'tool_call_id'"). The import
+        // is kept for display, but every imported message is tagged and the runtime
+        // drops tagged messages from the model request (buildModelRequest).
+        const appends: Array<{ sessionId: string; role?: string; metadata?: Record<string, any> }> = [];
+        const childMessages = [
+            { role: 'user', content: 'Complete the delegated task independently…' },
+            { role: 'assistant', content: 'working' },
+            { role: 'tool', content: '{}' },
+            { role: 'assistant', content: 'Summary: done' }
+        ];
+        const mockRuntime = createMockRuntime({
+            runTurn: async () => ({ message: { content: 'Summary: done', metadata: {} } }),
+            getMessages: async () => childMessages,
+            registerChildSession: () => { }
+        });
+        const mockSessions: any = {
+            append: async (sessionId: string, message: any) => {
+                appends.push({ sessionId, role: message?.role, metadata: message?.metadata });
+            }
+        };
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(), mockRuntime as any, mockSessions);
+        await runner.run({ prompt: 'research secrets', parentSessionId: 'parent-1' });
+
+        const imported = appends.filter(entry => entry.sessionId === 'parent-1');
+        // The import feature is preserved (all child messages still land in the parent)…
+        expect(imported.length).toEqual(childMessages.length);
+        expect(imported.map(entry => entry.role)).toEqual(['user', 'assistant', 'tool', 'assistant']);
+        // …but every one is tagged so it can be excluded from the model transcript.
+        expect(imported.every(entry => typeof entry.metadata?.[IMPORTED_MESSAGE_METADATA_KEY] === 'string')).toBe(true);
+        expect(new Set(imported.map(entry => entry.metadata?.[IMPORTED_MESSAGE_METADATA_KEY])).size).toEqual(1);
     }
 }

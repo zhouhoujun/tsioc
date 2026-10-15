@@ -6,7 +6,7 @@ import { EMPTY_RESPONSE_MAX_RETRIES, FALSIFICATION_ESCALATION_THRESHOLD, SCHEDUL
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
 import { TurnHandler } from './TurnHandler';
-import { AgentMessage, AgentMessagePart, AgentTurnMessageInput, collectToolReadPaths, normalizeAgentMessageParts } from './AgentMessage';
+import { AgentMessage, AgentMessagePart, AgentTurnMessageInput, collectToolReadPaths, isImportedChildMessage, normalizeAgentMessageParts } from './AgentMessage';
 import { AgentCompensationEvent, AgentContextPreparedEvent, AgentErrorEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentMemoryUpdatedEvent, AgentModelCompletedEvent, AgentStreamChunkEvent, AgentTokenBudgetExceededEvent, AgentTokenBudgetReminderEvent, AgentToolCompletedEvent, AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnDiagnostics, AgentTurnDiagnosticsEvent, AgentTurnStartedEvent } from './AgentEvents';
 import { AgentTurnCancelledError } from './AgentTurnCancelledError';
 import { PlanContinuationTracker } from './PlanContinuation';
@@ -1252,7 +1252,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     private async buildModelRequest(sessionId: string, query: string, currentUserMessageId: string, turnContext?: TurnExecutionContext): Promise<ModelRequest> {
         const state = await this.sessions.get(sessionId);
-        let messages = this.getRecentMessages(state.messages, currentUserMessageId);
+        let messages = this.getRecentMessages(state.messages.filter(message => !isImportedChildMessage(message)), currentUserMessageId);
         const rewrittenMessages = this.rewriteClarificationFollowUp(messages, currentUserMessageId);
         if (turnContext?.diagnostics && rewrittenMessages !== messages) {
             turnContext.diagnostics.followUpContextRewritten = true;

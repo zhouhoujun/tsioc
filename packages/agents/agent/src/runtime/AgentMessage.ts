@@ -34,6 +34,23 @@ export interface AgentMessage {
     metadata?: Record<string, any>;
 }
 
+/**
+ * Metadata key marking a message that was imported into a session from a child
+ * (delegated) session for display only. The message stays in the session store so
+ * the console can render the sub-agent's work inline, but it MUST be excluded from
+ * the model-facing transcript: the sub-agent's user/assistant/tool turns copied
+ * into the parent conversation sit between the parent's assistant `tool_calls`
+ * message and the `spawn_agent` tool result, and providers reject the next request
+ * with "An assistant message with 'tool_calls' must be followed by tool messages
+ * responding to each 'tool_call_id'" (400).
+ */
+export const IMPORTED_MESSAGE_METADATA_KEY = 'importedFromSessionId';
+
+/** True when `message` was imported from a child session (display-only). */
+export function isImportedChildMessage(message: { metadata?: Record<string, any> } | undefined | null): boolean {
+    return Boolean(message?.metadata?.[IMPORTED_MESSAGE_METADATA_KEY]);
+}
+
 export interface AgentTurnMessageInput {
     content?: string;
     parts?: AgentMessagePart[];

@@ -1,5 +1,5 @@
 import { INJECTOR, Inject, Injectable, Injector, Optional } from '@tsdi/ioc';
-import { AgentRuntime, SessionStore } from '@tsdi/agent';
+import { AgentRuntime, IMPORTED_MESSAGE_METADATA_KEY, SessionStore } from '@tsdi/agent';
 import { UuidGenerator } from '@tsdi/core';
 import { AGENT_TOOLS_OPTIONS } from './tokens';
 import { AgentToolsOptions } from './options';
@@ -146,7 +146,22 @@ export class LightweightAgentRunner extends NestedAgentRunner {
                 try {
                     const subMessages = await runtime.getMessages(sessionId);
                     for (const msg of subMessages) {
-                        await sessions.append(parentSessionId, msg);
+                        // Import the sub-agent transcript into the parent session for
+                        // display, but tag every imported message so the model-facing
+                        // transcript can exclude it. Copying the child's
+                        // user/assistant/tool turns verbatim into the parent's MODEL
+                        // context inserts non-tool messages between the parent's
+                        // assistant `tool_calls` and the `spawn_agent` tool result, and
+                        // the provider rejects the next request with "An assistant
+                        // message with 'tool_calls' must be followed by tool messages
+                        // responding to each 'tool_call_id'" (400), crashing the run.
+                        await sessions.append(parentSessionId, {
+                            ...msg,
+                            metadata: {
+                                ...(msg?.metadata ?? {}),
+                                [IMPORTED_MESSAGE_METADATA_KEY]: sessionId
+                            }
+                        });
                     }
                 } catch (err) {
                     // session merge must not break the sub-agent result
