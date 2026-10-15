@@ -149,6 +149,17 @@ export class P237B2WidthGlyphAriaTest {
         expect(items[0].lines[0].status?.trim()).toEqual('✓');
     }
 
+    @Test('command-execution rows reflect running/failed/success instead of always ✓')
+    commandExecutionGlyphs() {
+        const render = (status: string) => renderAgentConsoleMessageItems([{
+            id: `cmd-${status}`, role: 'assistant', content: `$ /help ${status}`, createdAt: 1,
+            metadata: { uiKind: 'command-execution', status }
+        }] as any, { timelineMode: true })[0].lines[0];
+        expect(render('running').status?.trim()).toEqual('●');
+        expect(render('failed').status?.trim()).toEqual('✕');
+        expect(render('succeeded').status?.trim()).toEqual('✓');
+    }
+
     @Test('event rows expose a text aria label (status + content + meta, never color-only)')
     eventRowAriaLabel() {
         const items = renderAgentConsoleMessageItems([{

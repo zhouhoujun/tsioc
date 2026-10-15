@@ -867,22 +867,21 @@ export function resolveAgentConsoleMessageStatus(
         const hasActive = items.some(item => item.status === 'pending' || item.status === 'in_progress');
         return hasActive ? 'running' : 'success';
     }
+    if (message?.metadata?.uiKind === 'command-execution') {
+        // A running/failed slash command must show ● / ✕, not the default ✓.
+        const status = String(message.metadata.status || '').trim();
+        return status === 'running' ? 'running' : status === 'failed' || status === 'error' ? 'failed' : 'success';
+    }
     if (message?.metadata?.uiKind === 'event') {
         const eventType = String(message.metadata.uiEventType || '').trim();
         // P292: the remote bridge reports plan_step_blocked with status
         // 'running' (the step id is in the content); the event type is the
         // authoritative state so the row shows ⊘ 阻塞 instead of a running ●.
         // Same for a failed step that arrives without an explicit error status.
-        if (eventType === 'plan_step_blocked') {
-            return 'blocked';
-        }
-        if (eventType === 'plan_step_failed') {
-            return 'failed';
-        }
+        if (eventType === 'plan_step_blocked') return 'blocked';
+        if (eventType === 'plan_step_failed') return 'failed';
         const status = String(message.metadata.status || '').trim();
-        if (status === 'running' || status === 'success' || status === 'failed' || status === 'error' || status === 'blocked') {
-            return status as AgentConsoleMessageStatus;
-        }
+        if (status === 'running' || status === 'success' || status === 'failed' || status === 'error' || status === 'blocked') return status as AgentConsoleMessageStatus;
     }
     if (message?.metadata?.streaming) {
         return 'running';
