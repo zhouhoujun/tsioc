@@ -6,6 +6,7 @@ import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentModule } from '../src/agent.module';
 import { AgentOrmModule } from '../src/orm.module';
 import { IntervalAgentScheduler } from '../src/scheduler/IntervalAgentScheduler';
+import { NextRunCalculator } from '../src/scheduler/NextRunCalculator';
 import { AgentScheduledTaskEntity } from '../src/memory/entities';
 
 class RuntimeStub {
@@ -135,6 +136,17 @@ export class SchedulerTest {
         expect(runtime.calls.length).toBeGreaterThanOrEqual(2);
         expect(runtime.calls[0]).toEqual('s2:tick');
         await scheduler.stop();
+    }
+
+    @Test('accepts a standard 5-field cron expression (seconds default to 0)')
+    acceptsFiveFieldCron() {
+        // cron_manage's own description example is "0 9 * * *" (5 fields), while
+        // the parser required 6 (sec min hour day month weekday). Standard
+        // 5-field crontab must be accepted; seconds default to 0.
+        expect(() => NextRunCalculator.validateCronExpr('0 9 * * *')).not.toThrow();
+        const next = NextRunCalculator.nextCronRun('0 9 * * *', Date.UTC(2026, 0, 1, 0, 0, 0));
+        expect(typeof next).toBe('number');
+        expect(next).toBeGreaterThan(Date.UTC(2026, 0, 1, 0, 0, 0));
     }
 
     @Test('cancels scheduled task before execution')

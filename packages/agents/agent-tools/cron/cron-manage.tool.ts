@@ -26,7 +26,7 @@ export class CronManageTool implements AgentTool {
             },
             cron_expr: {
                 type: 'string',
-                description: 'Cron expression (e.g., "0 9 * * *" for daily 9am). Required for create.'
+                description: 'Cron expression. Standard 5-field form (min hour day month weekday, e.g. "0 9 * * *" for daily 9am) or 6-field form with seconds (sec min hour day month weekday, e.g. "0 0 9 * * *"). Required for create.'
             },
             name: {
                 type: 'string',

@@ -59,9 +59,13 @@ export class NextRunCalculator {
 
     private static parseCronExpr(expr: string): Array<Set<number>> {
         const normalized = expr.trim();
-        const segments = normalized.split(/\s+/);
+        const raw = normalized.split(/\s+/);
+        // Canonical form is 6 fields (sec min hour day month weekday). Also accept
+        // the standard 5-field crontab form (min hour day month weekday) by
+        // defaulting seconds to 0 — the model-facing `cron_manage` example uses it.
+        const segments = raw.length === 5 ? ['0', ...raw] : raw;
         if (segments.length !== CRON_SEGMENT_COUNT) {
-            throw new Error('Invalid cron expression: expected 6 fields (sec min hour day month weekday).');
+            throw new Error('Invalid cron expression: expected 5 fields (min hour day month weekday) or 6 fields (sec min hour day month weekday).');
         }
         return [
             this.parseField(segments[0], 0, 59),
