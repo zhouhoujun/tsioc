@@ -2365,6 +2365,10 @@ export class AgentToolsPackageTest {
     @Test('project intel summarizes task context deterministically')
     async projectIntelSummarizesTaskContextDeterministically() {
         const tool = new ProjectIntelTool();
+        // The tool formats caller-provided context; it must say so, otherwise the
+        // model calls it expecting workspace analysis and gets an echo (observed in
+        // a real run: the model called it 3x, then did the analysis manually).
+        expect(tool.description).toContain('does NOT inspect the workspace');
 
         const summary = await tool.invoke({
             action: 'summary',

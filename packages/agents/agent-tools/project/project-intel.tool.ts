@@ -12,7 +12,7 @@ interface ProjectTodoItem {
 @Injectable()
 export class ProjectIntelTool implements AgentTool {
     name = 'project_intel';
-    description = 'Summarize task context, risks, and handoff notes for the current project.';
+    description = 'Format a structured summary, risk focus, or handoff from the task, todos, and notes you pass in. It does NOT inspect the workspace or read files; gather context with the file/search tools first and pass the todos and notes you want reflected.';
     inputSchema = {
         type: 'object',
         properties: {
