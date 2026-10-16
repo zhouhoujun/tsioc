@@ -499,3 +499,19 @@ agent 969 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff --check
 
 ### 门禁
 本轮无源码改动；上一轮修复后全量门禁 **27/27 GATE-PASS**（含真实 PTY）仍有效。
+
+### ✅ 机制进一步精确（第十一轮插桩，已回退）
+`[RPC-DIAG]` 插桩（**已全部回退、未提交**）确认真正触发点是**收尾逻辑**，而非 ORM 本身：
+```
+[RPC-DIAG] after-stdio-start t=…068 dataL=1 endL=1 flowing=true ended=false
+[RPC-DIAG] stdin event=end readableEnded=true t=…075      ← boot 后仅 ~7ms process.stdin 就 'end'
+[RPC-DIAG] readableEnd t=…076
+[RPC-DIAG] closing t=…076                                  ← 立即进入 finally { await ctx.close() }
+```
+- `runAgentRpcStdio` 在 `stdio.start()` 后 `await waitForReadableEnd(input)`；**`process.stdin` 在 boot 后约 7–60ms 就触发 `end`** → `ctx.close()` 立刻执行 → 整个 context（含单例 `TypeormAdapter`）被 `@Dispose` 销毁；但 `StdioAppRpcServer` 仍继续从 stdin 读并发响应 → 之后任何 DB 访问报 `DataSource "undefined"`。这正是「单例适配器已被 dispose」的**上游原因**。
+- **已排除**：多实例适配器（ctor 仅 1 次、`@Startup` 成功连 `default`）、多 stdin 消费者（`listenerCount('data')===1`）、`ConsoleAgentChannel` readline（未激活；临时禁用它与 `channels:{preset:'none'}` 均无效）、显式 `process.stdin.resume()`（应用内无效）。
+- **待确认**：过早 `end` 是否与环境/管道有关（隔离探针在「仅 data 监听」时也提前 end，但带显式 `resume()` 的探针正常到 EOF，结果不稳定）。**真实 UI 客户端会持续保持 stdin 直到断开**，需用**持久 stdin 的客户端**复现确认是否为产品缺陷——若是，修法为「确保 stdin 被正确持有 / 不在过早 `end` 时销毁 context」。
+- **纪律**：插桩与新方案尝试**全部回退**，未提交任何未验证改动；工作树干净。
+
+### 门禁（本轮结束）
+本轮无源码改动；全量门禁 **27/27 GATE-PASS**（含真实 PTY）仍有效。
