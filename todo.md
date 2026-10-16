@@ -513,5 +513,19 @@ agent 969 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff --check
 - **待确认**：过早 `end` 是否与环境/管道有关（隔离探针在「仅 data 监听」时也提前 end，但带显式 `resume()` 的探针正常到 EOF，结果不稳定）。**真实 UI 客户端会持续保持 stdin 直到断开**，需用**持久 stdin 的客户端**复现确认是否为产品缺陷——若是，修法为「确保 stdin 被正确持有 / 不在过早 `end` 时销毁 context」。
 - **纪律**：插桩与新方案尝试**全部回退**，未提交任何未验证改动；工作树干净。
 
+### ✅ 结论：非产品缺陷（管道假象）—— 用持久 stdin 客户端确认（第十二轮）
+用一个**持久 stdin 客户端**（Node `spawn` 出 `tsdi-agent rpc-stdio`，**始终不 end 子进程 stdin**，用管道保持打开）复现：
+```
+child spawned pid=659
+RESP id=1  err=null result={"ok":true,...}
+RESP id=11 err=null result={"ok":true,...}
+RESP id=2  err=null result={"sessionId":"persist-1","createdAt":…,"updatedAt":…}   ← session.create 成功
+RESP id=3  err=null result={"sessionId":"persist-1","messages":[],"sections":[],"hasMore":false}
+--- killing (stdin was never ended) ---
+```
+- **`session.create` 在持久 stdin 下正常工作**。此前 `DataSource "undefined"` 只出现在「shell 管道 + `sleep`」形态：该形态下 `process.stdin` 会提前 `end` → `waitForReadableEnd` 立即 resolve → `ctx.close()` 销毁 context。
+- **判定**：`session.create` 的失败是**测试驱动/管道假象**（writer 端过早 EOF），**不是产品缺陷**；真实 UI 客户端会持续持有 stdin 直到断开，不会触发。
+- **因此 `todo.md` 此前登记的「开放缺陷」撤销**（`20daf023e`/`73ed0a896`/`eb146d6ea` 三处记录以本条为准）。仍保留的**次要健壮性观察**（非缺陷，未改）：`runAgentRpcStdio` 若在 stdin 过早 `end` 时立即 `ctx.close()`，会让仍在途的请求打到已销毁的 context；真实客户端不触发，故不改。
+
 ### 门禁（本轮结束）
 本轮无源码改动；全量门禁 **27/27 GATE-PASS**（含真实 PTY）仍有效。
