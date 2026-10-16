@@ -455,3 +455,29 @@ agent-tools 530 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff -
 
 ### 门禁
 agent 969 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff --check` 干净、**门禁 5/5 GATE-PASS**（含 production-db-integrity）。
+
+## 2026-10-15 第十轮：MCP HTTP + 剩余工具族验证，发现 `rpc-stdio` session.create 缺陷（**未修，开放项**）
+
+### 本轮验证（均通过）
+- **MCP Streamable HTTP 端到端**（此前唯一未覆盖的 MCP 传输）：自建最小 HTTP MCP server，经 `mcp add --url ... --allow echo` 配置 → Agent 调用 `mcp.call_tool` 返回 `http-echo: hello-http-mcp`。
+- **schedule/cron、escalate、200000 行超大输出、import_config**：模型均正确处理（`schedule` 的 "not found" 是 `cancel` 后又 `get` 已移除任务，属预期）。
+- **安全护栏**：未读先写、越界写 `../`、读符号链接——均被拒绝且信息可操作。
+- **代码审计**：`alignSliceStartToToolRound`、`edit-match.ts`/`edit_file`、`simple-diff.ts`（`unifiedLineDiff`：LCS 有序、hunk 不重叠、行号正确）——均正确。
+
+### ⚠️ 开放缺陷（已复现，**未修**，需完整调用栈/更多时间）
+**`tsdi-agent rpc-stdio` 的 `session.create` 恒失败**，而 `session.messages`（读已存在会话）正常。
+
+- **复现**：
+  ```bash
+  printf '{"jsonrpc":"2.0","id":1,"method":"session.create","params":{"sessionId":"x"}}\n' \
+    | node packages/agents/agent-cli/bin/tsdi-agent.js rpc-stdio --provider echo --model echo [--root <任意>]
+  ```
+  返回 `{"error":{"code":-32603,"message":"DataSource \"undefined\" not found. Available: none", ...}}`。
+- **栈**：`TypeormAdapter.getConnection` ← `getRepository` ← `TypeOrmSessionStore.get` ← `AppRpcServer.setSessionWorkspace (app-rpc/AppRpcServer.ts:3357)` ← `AppRpcServer.createSession (573)`。
+- **确定性**：默认 root（`~/.tsdi-agent`，含真实 agent.db）与全新 root 均失败；`app.ping` 后再等 4s 再 create 仍失败（非启动竞态）。同一 root 下 `session.messages` 对**已存在**会话正常返回 → 非「ORM 完全未 bootstrap」，而是 create 路径特有的 store/adapter 不匹配。
+- **为何未被现有测试覆盖**：gateway 的 stdio `session.create` 测试（`agent-gateway/test/gateway-server.spec.ts`「streams json-rpc responses over jsonl stdio transport」）**手工构造 `AppRpcServer` 并注入 ORM store**，未走 CLI 的 `runAgentRpcApplication`（`AgentAppServerModule` 为根 + `provideAgentOrmStorage` 作为根 provider）这条 DI 路径。cli.spec 的 rpc-stdio 测试只覆盖 `app.ping`。
+- **已尝试且无效**（未提交）：把 `runAgentRpcApplication` 改为 `Application.run(AgentModule, { deps: [ServerCommonModule, AgentAppServerModule] })`（镜像 chat）——`session.create` 仍报同样错误。
+- **诚实边界**：根因在 `AgentAppServerModule` 根模块 + 根 provider 的 ORM/`TypeormAdapter` 与 `AgentModule`（子 injector）内 `TypeOrmSessionStore` 的解析关系，需进一步追踪（多实例 `TypeormAdapter`？`Application.run` 的 `providers` 落在哪层 injector？）。**未在未定位根因前提交任何投机改动**（符合本项目「先证根因再改」纪律）。
+
+### 门禁
+本轮无源码改动；上一轮修复后全量门禁 **27/27 GATE-PASS**（含真实 PTY）仍有效。
