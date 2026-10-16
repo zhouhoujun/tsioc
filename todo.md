@@ -561,3 +561,25 @@ agent 970 passing、agent-tools 530 passing、2× `tsc --noEmit` EXIT 0、`sourc
 
 ### 门禁
 agent-tools 531 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff --check` 干净、**门禁 5/5 GATE-PASS**（含 production-db-integrity）。
+
+## 2026-10-15 第十六轮：HTTP 网关缺失 `/rpc` 路由（真实端到端，`83740cf79`）
+
+### 复现（自建 AgentGatewayModule 启真实 HTTP 网关）
+写临时引导脚本 `Application.run(AgentGatewayModule, { providers: [provideAgentGateway({port}), provideAgentOrmStorage(root), provideTools, AGENT_OPTIONS] })` 起服务，curl 其路由：
+- 修复前：`[GW-DIAG] routes total=25 rpcPresent=false`，OpenAPI **25 条、无 `/rpc`**；`POST /rpc` 与 `/rpc/stream` 均 `{"error":"not found"}`。
+- 插桩（已回退）确认：`[GW-DIAG2] lazyRpc=true ctorRpc=false` —— `AppRpcHandler` **构造注入为 null**，但 bootstrap 之后 `ctx.get(AppRpcHandler)` **能解析** → 是**注入时机**问题。
+
+### 根因
+`GatewayBootstrap` 用 `@Optional()` 构造注入 approvals/stats/**rpc**/events/reviews/evals/shares/chatWs；**启动时这些注入全为 null**（DI 顺序性缺失，`@Optional` 静默吞掉，无任何告警）→ 网关注册的路由从应有的 33 条掉到 25 条。**`/rpc` 与 `/rpc/stream` 从未注册** → 浏览器/桌面 UI 经 HTTP 无法创建会话或跑 turn（`agent-ui/web-console` 的 `HttpAgentConsoleAppRpc` 依赖该路由）。
+
+### 修复
+`GatewayBootstrap.start()` 改为**经注入器惰性解析**这些可选 handler（`optionalHandler(ctor, injected)`：`injector.get(ctor, null)` 失败/缺失回退到构造注入值），使路由注册不依赖构造注入时序。
+
+### 验证
+- 修复后：`lazyRpc=true`，OpenAPI **33 条**，含 `POST /rpc`、`POST /rpc/stream` 及 `/api/events`、`/api/reviews`、`/api/stats`、`/api/approvals`、`/api/shares` 等。
+- **真实 HTTP E2E**：`POST /rpc/stream {"session.create","sessionId":"http-e2e-1"}` → 成功返回会话；`app.ping`/`session.messages`/`GET /api/sessions` 均正常。
+- 回归：`gateway-server.spec.ts` 新增 `GatewayBootstrap route registration`（惰性解析的可选 handler 路由被注册）。
+- 门禁：agent-gateway 315 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff --check` 干净、**门禁 5/5 GATE-PASS**（含 production-db-integrity）。
+
+### 诚实边界
+临时引导脚本 `tmp-gw.ts` 与所有插桩**已删除/回退**；未提交任何诊断代码。此缺陷**一直存在且被现有测试漏掉**——既有 gateway 测试都**手工构造 handler**，未走 `AgentGatewayModule` 的 DI 启动路径。
