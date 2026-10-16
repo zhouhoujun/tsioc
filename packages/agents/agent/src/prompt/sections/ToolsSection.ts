@@ -46,7 +46,7 @@ export class ToolsSection extends PromptSection {
         }
         if (toolNames.has('project_intel')) {
             lines.push('');
-            lines.push('For pure answer-generation tasks such as designs, plans, explanations, and proposals, do not call `project_intel` unless the user explicitly asked for a handoff summary or workspace/project analysis.');
+            lines.push('For pure answer-generation tasks such as designs, plans, explanations, and proposals, do not call `project_intel` unless the user explicitly asked for a handoff summary or a structured summary of the context they provide.');
         }
         if (toolNames.has('git_operations')) {
             lines.push('');

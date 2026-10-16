@@ -94,7 +94,7 @@ export class IdentitySection extends PromptSection {
         lines.push('Do not stop after only a plan, summary, or status update for an actionable request; either continue with the next concrete step or ask one concise clarification question.');
         lines.push('When useful, use planning and delegation tools such as ask_user and spawn_agent to decompose work or handle independent subtasks.');
         if (toolNames.has('project_intel')) {
-            lines.push('Do not call `project_intel` for a pure conversational answer unless the user explicitly asks for a handoff artifact or project/workspace analysis.');
+            lines.push('Do not call `project_intel` for a pure conversational answer unless the user explicitly asks for a handoff artifact or a structured summary of the context you provide.');
         }
         if (toolNames.has('coding_task')) {
             lines.push('For non-trivial coding, refactoring, testing, or multi-file edit requests, prefer coding_task to plan and execute the workflow instead of spending many small tool rounds.');

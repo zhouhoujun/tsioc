@@ -145,6 +145,19 @@ export class PromptCacheTest {
         expect(withoutNative).toContain('- read_file: Read a file');
     }
 
+    @Test('project_intel guidance describes a formatter, not workspace analysis')
+    async projectIntelGuidanceMatchesFormatter() {
+        // project_intel only formats caller-provided task/todos/notes; the guidance
+        // must not promise workspace analysis (a real run called it 3x and reported
+        // it "misconfigured").
+        const tools = [{ name: 'project_intel', description: 'Format caller-provided context' }];
+        const identity = new IdentitySection().render({ sessionId: 's1', tools, memory: '', dateTime: '', extra: {} } as any);
+        const toolSection = new ToolsSection().render({ sessionId: 's1', tools, memory: '', dateTime: '', extra: {} } as any);
+        expect(identity).not.toContain('project/workspace analysis');
+        expect(toolSection).not.toContain('workspace/project analysis');
+        expect(toolSection).toContain('structured summary of the context');
+    }
+
     @Test('selects a model-specific identity override by provider and model')
     async selectsModelSpecificIdentity() {
         const section = new IdentitySection({
