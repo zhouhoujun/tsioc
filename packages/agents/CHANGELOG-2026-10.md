@@ -34,6 +34,7 @@ implementation and passes on the new one**.
 | `3c59646dd` | `files/read-file.tool.ts`, `harness/ToolOutputSpill.ts` | Truncated reads returned no `nextOffset` and could be re-compressed by the generic output truncation. |
 | `e976c7a26` | `web/web-extract.tool.ts` | A 2xx fetch of a JS-rendered page extracted to `content: ''` but reported **success with no signal**, so the model retried URLs blindly (observed in a real web run). Empty extraction now returns `empty: true` plus an actionable `warning`; `content`/`title`/`url` and the success verdict are unchanged. |
 | `ebabdd9ed` | `mcp/LocalMcpClientRegistry.ts` | `mcp.call_tool` rejected an un-declared/un-allowlisted tool with `not declared or allowlisted` but never said how to enable it — a real MCP run (local stdio server configured the way `mcp add` writes it) dead-ended until the turn timed out. The message now names the exact fix (`tools` declaration or `allowedTools` entry in `settings.json`). The discovery-hint and allowlist-gate behaviors are intended (test-locked) and unchanged. |
+| `0242f31a4` | `project/project-intel.tool.ts` | `project_intel` is a pure formatter of caller-supplied `task`/`todos`/`notes`, but its description read like workspace analysis, so a real run called it 3× expecting analysis, got an echo of its own task, and reported it "misconfigured". The description now states it does not inspect the workspace or read files. |
 
 ## agent-ui
 

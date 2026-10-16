@@ -424,3 +424,21 @@ agent-tools 530 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff -
 
 ### 门禁
 agent-cli 90 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff --check` 干净、**门禁 5/5 GATE-PASS**（含 production-db-integrity）。
+
+## 2026-10-15 第八轮：project_intel 描述对齐真实行为（`0242f31a4`）
+
+### 真实验证
+并行真实探针覆盖其余工具族：`project_intel`、`import_config`、`checkpoint`、`race` —— `import_config`/`checkpoint`/`race` 均正常（`import_config` detected=0 因工作区无 Cursor/Claude 配置，模型正确说明并提供 `homeDir` 用法），无工具失败。
+
+### 缺口（真实运行观察到）
+`project_intel`：模型按系统提示把它当作「项目/工作区分析」工具调用了 **3 次**，每次只拿到把自身 `task` 原样回显的 `highlights`（`notes` 空、无任何文件分析），随后判定其 "misconfigured" 并改为手工分析，浪费多轮。工具实为**纯格式化器**（把调用方传入的 `task`/`todos`/`notes` 组织成 summary/risks/handoff），但描述 `Summarize task context, risks, and handoff notes for the current project.` 读起来像会分析。
+
+### 修复
+描述改为如实说明：只格式化传入的 `task`/`todos`/`notes`，**不检查工作区、不读文件**；需先用文件/搜索工具收集上下文再传入。
+**回归（红→绿）**：`tools.spec.ts` 既有 project intel 测试新增描述断言（旧描述 → 红，修复后绿，250 passing）。
+
+### 附带（未改，如实记录）
+系统提示 `IdentitySection`/`ToolsSection` 仍把 `project_intel` 描述为可用于「project/workspace analysis」；与工具实际（格式化器）存在措辞张力。本轮只改了模型直接可见的工具描述（更贴近调用点、零全局行为风险），**未改系统提示**——若要让提示也一致，属可跟进项。
+
+### 门禁
+agent-tools 530 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff --check` 干净、**门禁 5/5 GATE-PASS**（含 production-db-integrity）。
