@@ -199,6 +199,35 @@ export class ApplyPatchToolTest {
         }
     }
 
+    @Test('apply_patch suggests the nearest anchor line when a hunk does not match')
+    async suggestsNearestAnchor() {
+        const workspace = await this.createWorkspace();
+        try {
+            const tool = new ApplyPatchTool({ file: { rootDir: workspace } });
+            let error: Error | undefined;
+            try {
+                await tool.invoke({
+                    patch: [
+                        '*** Begin Patch',
+                        '*** Update File: src/alpha.txt',
+                        '@@',
+                        '-beta',
+                        '-missing-line',
+                        '+replacement',
+                        '*** End Patch'
+                    ].join('\n')
+                }, {} as any);
+            } catch (err) {
+                error = err as Error;
+            }
+            expect(error?.message).toContain('does not match the file content');
+            expect(error?.message).toContain('Nearest anchor');
+            expect(error?.message).toContain('line 2 is "beta"');
+        } finally {
+            await fs.rm(workspace, { recursive: true, force: true });
+        }
+    }
+
     @Test('apply_patch tolerates trailing-whitespace drift in context')
     async toleratesTrailingWhitespaceDrift() {
         const workspace = await this.createWorkspace();

@@ -174,7 +174,31 @@ function resolveUniqueContextMatch(content: string, removalText: string, relativ
     if (tolerant.length > 1) {
         throw new Error(`Invalid apply_patch input: hunk for '${relativePath}' matches ${tolerant.length} locations after whitespace normalization; add more context lines to make it unique.`);
     }
-    throw new Error(`Invalid apply_patch input: hunk for '${relativePath}' does not match the file content (whitespace-normalized matching was also attempted). Re-read the file and regenerate the hunk from its current content.`);
+    throw new Error(`Invalid apply_patch input: hunk for '${relativePath}' does not match the file content (whitespace-normalized matching was also attempted). Re-read the file and regenerate the hunk from its current content.${nearestAnchorHint(content, removalText)}`);
+}
+
+/**
+ * When a hunk fails to match, point at the closest anchor line (opencode-style):
+ * a hunk line that DOES exist in the file, with a short excerpt around it, so the
+ * model can correct the patch in one retry instead of blindly re-reading.
+ */
+function nearestAnchorHint(content: string, removalText: string): string {
+    const contentLines = content.split('\n');
+    const candidates = removalText.split('\n').map(line => line.trim()).filter(line => line.length >= 3);
+    let best: { index: number; line: string } | undefined;
+    for (const needle of candidates) {
+        const index = contentLines.findIndex(line => line.trim() === needle);
+        if (index >= 0 && (!best || needle.length > best.line.length)) {
+            best = { index, line: needle };
+        }
+    }
+    if (!best) {
+        return '';
+    }
+    const from = Math.max(0, best.index - 2);
+    const to = Math.min(contentLines.length, best.index + 3);
+    const excerpt = contentLines.slice(from, to).map((line, offset) => `${from + offset + 1}: ${line}`).join('\n');
+    return ` Nearest anchor: line ${best.index + 1} is "${best.line}". The file currently reads there:\n${excerpt}`;
 }
 
 function applyUpdateHunk(content: string, hunk: PatchHunk): string {
