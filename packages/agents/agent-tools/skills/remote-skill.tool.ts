@@ -39,6 +39,7 @@ export class RemoteSkillTool implements AgentTool {
     toolset = 'skills';
     source = 'local';
     execution = { readOnly: false, sideEffect: true };
+    activation = { kind: 'always' as const, scope: 'global' as const };
 
     constructor(
         private manager: RemoteSkillManager,

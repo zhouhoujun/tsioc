@@ -1,7 +1,7 @@
 import { Application } from '@tsdi/core';
 import { AgentRuntime, AGENT_OPTIONS, AGENT_SANDBOX_RUNTIME, AGENT_WORKSPACE_TRUST, AgentHookCommandExecutor, AgentTurnMessageInput, ModelAdapter, RoutedModelAdapter, mergeAgentOptions, AgentModule, provideAgentOrmStorage, TrustedProjectStore } from '@tsdi/agent';
 import { AgentUiConfigService, AgentUiResolvedConfig } from '@tsdi/agent-ui';
-import { provideTools } from '@tsdi/agent-tools';
+import { provideSkills, provideTools } from '@tsdi/agent-tools';
 import { AgentAppServerModule, AppRpcServer, StdioAppRpcServer } from '@tsdi/agent-gateway';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { FileAdapter } from '@tsdi/common';
@@ -196,6 +196,7 @@ export async function runAgentApplication(options: AgentCliOptions, agentOptions
         providers: [
             ...provideAgentOrmStorage(resolved.root),
             ...provideTools(resolved.tools),
+            ...provideSkills({ root: resolved.root, roots: resolved.skillRoots, remoteCacheDir: resolved.tools?.skillsRemoteCacheDir }),
             createAgentSandboxRuntimeProvider(),
             provideWorkspaceTrust(resolved.root),
             resolveModelAdapter(config, options),
@@ -217,6 +218,7 @@ export async function runAgentRpcApplication(options: AgentCliOptions, agentOpti
         providers: [
             ...provideAgentOrmStorage(resolved.root),
             ...provideTools(resolved.tools),
+            ...provideSkills({ root: resolved.root, roots: resolved.skillRoots, remoteCacheDir: resolved.tools?.skillsRemoteCacheDir }),
             createAgentSandboxRuntimeProvider(),
             provideWorkspaceTrust(resolved.root),
             resolveModelAdapter(config, options),

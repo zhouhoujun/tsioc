@@ -10,6 +10,7 @@ export class AgentPluginTool implements AgentTool {
     toolset = 'skills';
     source = 'local';
     execution = { readOnly: false, sideEffect: true };
+    activation = { kind: 'always' as const, scope: 'global' as const };
     inputSchema = {
         type: 'object', required: ['action'],
         properties: {

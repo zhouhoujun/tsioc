@@ -6,7 +6,7 @@
  * @tsdi/agent-ui/console.
  */
 import { AgentHookCommandExecutor } from '@tsdi/agent';
-import { provideTools } from '@tsdi/agent-tools';
+import { provideSkills, provideTools } from '@tsdi/agent-tools';
 import { AGENT_SSH_OPTIONS } from '@tsdi/agent-ssh';
 import { AgentUiConfigService } from '@tsdi/agent-ui';
 import {
@@ -87,6 +87,7 @@ export async function runAgentConsole(
     await runConsoleTui(resolved, options, agentOptions, [
         ...provideAgentOrmStorage(resolved.root),
         ...provideTools(resolved.tools),
+        ...provideSkills({ root: resolved.root, roots: resolved.skillRoots, remoteCacheDir: resolved.tools?.skillsRemoteCacheDir }),
         createAgentSandboxRuntimeProvider(),
         provideWorkspaceTrust(resolved.root),
         resolveModelAdapter(config, options),
