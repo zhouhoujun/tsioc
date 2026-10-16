@@ -583,3 +583,27 @@ agent-tools 531 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff -
 
 ### 诚实边界
 临时引导脚本 `tmp-gw.ts` 与所有插桩**已删除/回退**；未提交任何诊断代码。此缺陷**一直存在且被现有测试漏掉**——既有 gateway 测试都**手工构造 handler**，未走 `AgentGatewayModule` 的 DI 启动路径。
+
+## 2026-10-15 第十七轮：`skills` 功能在 CLI 完全未接线（真实 TUI/网关端到端，`356b601c7`）
+
+### 发现（#3：skills 远程注册表方向）
+- 真实探针里 `tool_inspect('skill_list'|'read_skill'|'skills_remote')` **全部 `not found`**。
+- `provideSkills(...)`（注册 `skill_list`/`read_skill`/`skills_remote`/`plugins` + skills 目录 prompt 段 + turn 拦截器 + 内置 skills）**生产零调用**——`grep` 全仓仅有定义与 `test/tools.spec.ts` 调用，命中 AGENTS.md「死机制 / 生产零调用」判据。
+- CLI 读取了 `settings.skills.roots`（`resolveCliConfig` 返回 `skillRoots`，`doctor` 也检查）却**从不使用**；agent-ui 在 `AgentConsoleMentions`/`AgentConsoleExtensionCommands` 里 `invoke('skill_list')` 并 `.catch(() => undefined)` → **未注册即静默失败**。
+- 且 `RemoteSkillTool`/`AgentPluginTool` 缺省无 `activation`，而 toolset `'skills'` 既不在 `LOCAL_ALWAYS_ACTIVE_TOOLSETS` 也不在 `LOCAL_DEFERRED_TOOLSETS` → `inferActivation` 返回 undefined → `tool_inspect` 报 `activated=false`、模型工具列表不列出 → **不可达**（其兄弟 `skill_list`/`read_skill` 显式 `activation = always`）。
+
+### 修复
+- CLI 三处启动路径（`runAgentApplication`/`runAgentRpcApplication`/`runAgentConsole`）加入
+  `provideSkills({ root, roots: resolved.skillRoots, remoteCacheDir: resolved.tools?.skillsRemoteCacheDir })`。
+- `RemoteSkillTool`、`AgentPluginTool` 补齐 `activation = { kind: 'always', scope: 'global' }`（与兄弟一致）。
+
+### 真实验证
+- 修复前：三个 skill 工具 `not found`。
+- 修复后：`tool_inspect('skills_remote'|'plugins')` → **`activated=true`**。
+- **真实 TUI 端到端**（DeepSeek 驱动、本地 mock registry）：模型调用 `skills_remote install`（source registry）→ `✓ Tool · skills remote completed · Installed remote skill 'demo' (registry) with 1 skill`；落盘 `skillcache/demo/hello-skill/SKILL.md` 与 `.remote-skill.json`；manifest 里的 `../evil-skill`、`nested/deep` 被**安全跳过**（无目录逃逸）。
+
+### 门禁
+agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-size` OK、`git diff --check` 干净、**门禁 6/6 GATE-PASS**（含 production-db-integrity）。
+
+### 诚实边界
+`skills_remote` 是 mutating 工具（`sideEffect`），仍受审批策略约束；本轮只接通注册与可见性，未改动审批策略。临时 mock registry / 引导脚本 / tmux 会话**已清理**。
