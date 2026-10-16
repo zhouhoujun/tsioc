@@ -529,3 +529,21 @@ RESP id=3  err=null result={"sessionId":"persist-1","messages":[],"sections":[],
 
 ### 门禁（本轮结束）
 本轮无源码改动；全量门禁 **27/27 GATE-PASS**（含真实 PTY）仍有效。
+
+## 2026-10-15 第十四轮：`cron_manage` 接受标准 5 字段 cron（`31654ae86`）
+
+### 真实验证
+并行真实探针覆盖未触及工具：`wait_all`、`cron_manage`、`orchestrate` —— `wait_all`/`orchestrate` 均正常（`orchestrate` 正确执行多步并汇总）。
+
+### 缺口（真实运行观察到）
+`cron_manage`：模型按**工具自身描述示例** `cron_expr: "0 9 * * *"`（5 字段）创建，却被
+`NextRunCalculator.parseCronExpr` 以 `Invalid cron expression: expected 6 fields (sec min hour day month weekday)` 拒绝，模型只能改用 6 字段 `0 0 3 * * *` 重试——**工具的描述示例与其校验自相矛盾**（标准 crontab 是 5 字段）。
+
+### 修复
+- `NextRunCalculator.parseCronExpr`：5 字段输入前置 `'0'`（秒默认 0）；错误信息同时说明 5/6 两种形态；6 字段仍为规范内部形态（next-run 用归一化结果）。
+- `cron_manage.cron_expr` 描述如实说明 5 字段与 6 字段两种写法。
+**回归（红→绿）**：`scheduler.spec.ts` 新增 `acceptsFiveFieldCron`——旧实现 `validateCronExpr('0 9 * * *')` 抛错（红），修复后通过且 `nextCronRun` 返回有效时间（绿，22 passing）。
+**真实验证**：`cron_manage` create `cron_expr='0 9 * * *'` → `created=true`（修复前被拒）。
+
+### 门禁
+agent 970 passing、agent-tools 530 passing、2× `tsc --noEmit` EXIT 0、`source-size` OK、`git diff --check` 干净、**门禁 7/7 GATE-PASS**（含 production-db-integrity）。
