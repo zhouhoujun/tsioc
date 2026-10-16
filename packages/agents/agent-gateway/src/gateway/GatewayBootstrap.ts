@@ -1,4 +1,4 @@
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Inject, Injectable, Optional, Injector, INJECTOR } from '@tsdi/ioc';
 import { Runner } from '@tsdi/core';
 import { GatewayServer } from './GatewayServer';
 import { HealthHandler } from '../api/HealthHandler';
@@ -39,26 +39,51 @@ export class GatewayBootstrap {
         @Optional() private evals?: EvalHandler | null,
         @Optional() private shares?: ShareHandler | null,
         @Optional() private chatWs?: ChatWebSocket | null,
+        @Optional() @Inject(INJECTOR) private injector?: Injector | null,
         @Inject(GATEWAY_CONFIG, { nullable: true }) private config: GatewayConfig = defaultGatewayConfig
     ) {
     }
 
+    /**
+     * Resolve an optional collaborator lazily. A constructor `@Optional`
+     * injection can be nulled by a DI-order miss even though the provider IS
+     * registered later — which silently dropped its routes. Re-resolve from the
+     * injector at start() time, falling back to the injected value.
+     */
+    private optionalHandler<T>(ctor: any, injected?: T | null): T | null {
+        try {
+            const resolved = this.injector?.get(ctor, null as any);
+            return (resolved as T | null) ?? injected ?? null;
+        } catch {
+            return injected ?? null;
+        }
+    }
+
     @Runner()
     async start(): Promise<void> {
+        const approvals = this.optionalHandler(ApprovalHandler, this.approvals);
+        const stats = this.optionalHandler(StatsHandler, this.stats);
+        const rpc = this.optionalHandler(AppRpcHandler, this.rpc);
+        const events = this.optionalHandler(EventHandler, this.events);
+        const reviews = this.optionalHandler(ReviewHandler, this.reviews);
+        const evals = this.optionalHandler(EvalHandler, this.evals);
+        const shares = this.optionalHandler(ShareHandler, this.shares);
+        const chatWs = this.optionalHandler(ChatWebSocket, this.chatWs);
+
         // Collect routes from all handlers
         const allRoutes = [
             ...this.health.getRoutes(),
             ...this.sessions.getRoutes(),
             ...this.memory.getRoutes(),
             ...this.tools.getRoutes(),
-            ...(this.approvals?.getRoutes() ?? []),
-            ...(this.stats?.getRoutes() ?? []),
-            ...(this.rpc?.getRoutes() ?? []),
-            ...(this.events?.getRoutes() ?? []),
-            ...(this.reviews?.getRoutes() ?? []),
-            ...(this.evals?.getRoutes() ?? []),
-            ...(this.shares?.getRoutes() ?? []),
-            ...(this.chatWs?.getRoutes() ?? [])
+            ...(approvals?.getRoutes() ?? []),
+            ...(stats?.getRoutes() ?? []),
+            ...(rpc?.getRoutes() ?? []),
+            ...(events?.getRoutes() ?? []),
+            ...(reviews?.getRoutes() ?? []),
+            ...(evals?.getRoutes() ?? []),
+            ...(shares?.getRoutes() ?? []),
+            ...(chatWs?.getRoutes() ?? [])
         ];
 
         this.gateway.addRoutes(allRoutes);

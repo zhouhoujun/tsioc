@@ -5,6 +5,7 @@ import { PassThrough } from 'stream';
 import { Suite, Test } from '@tsdi/unit';
 import { HttpAuthService, JWTService } from '@tsdi/security';
 import { GatewayServer } from '../src/gateway/GatewayServer';
+import { GatewayBootstrap } from '../src/gateway/GatewayBootstrap';
 import { RouteMatcher } from '../src/gateway/RouteMatcher';
 import { ChatWebSocket } from '../src/ws/ChatWebSocket';
 import { AppRpcServer } from '../src/app-rpc/AppRpcServer';
@@ -7328,5 +7329,32 @@ export class AppRpcServerAudioTest {
 
         const end = await this.handle(rpc, 'audio.end', {});
         expect(end.error.code).toBe(-32602);
+    }
+}
+
+@Suite('GatewayBootstrap route registration')
+export class GatewayBootstrapTest {
+    @Test('registers optional handlers resolved lazily, not only ctor-injected ones')
+    async registersLazyOptionalHandlerRoutes() {
+        // Regression: a constructor @Optional injection can be nulled by a DI-order
+        // miss even though the provider is registered, which silently dropped the
+        // handler's routes (e.g. /rpc, /rpc/stream) from the HTTP gateway.
+        const registered: any[] = [];
+        const gateway = {
+            addRoutes: (routes: any[]) => registered.push(...routes),
+            addRoute: (route: any) => registered.push(route),
+            start: async () => { }
+        } as any;
+        const health = { getRoutes: () => [{ method: 'GET', path: '/health' }] } as any;
+        const rpcRoutes = { getRoutes: () => [{ method: 'POST', path: '/rpc' }, { method: 'POST', path: '/rpc/stream' }] };
+        const injector = { get: (token: any) => (token === AppRpcHandler ? rpcRoutes : null) } as any;
+        const bootstrap = new GatewayBootstrap(
+            gateway, health, { getRoutes: () => [] } as any, { getRoutes: () => [] } as any, { getRoutes: () => [] } as any,
+            undefined, undefined, null, undefined, undefined, undefined, undefined, undefined,
+            injector, {} as any
+        );
+        await bootstrap.start();
+        expect(registered.some((route: any) => route.path === '/rpc')).toBe(true);
+        expect(registered.some((route: any) => route.path === '/rpc/stream')).toBe(true);
     }
 }
