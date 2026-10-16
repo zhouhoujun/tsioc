@@ -476,7 +476,11 @@ agent 969 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff --check
 - **栈**：`TypeormAdapter.getConnection` ← `getRepository` ← `TypeOrmSessionStore.get` ← `AppRpcServer.setSessionWorkspace (app-rpc/AppRpcServer.ts:3357)` ← `AppRpcServer.createSession (573)`。
 - **确定性**：默认 root（`~/.tsdi-agent`，含真实 agent.db）与全新 root 均失败；`app.ping` 后再等 4s 再 create 仍失败（非启动竞态）。同一 root 下 `session.messages` 对**已存在**会话正常返回 → 非「ORM 完全未 bootstrap」，而是 create 路径特有的 store/adapter 不匹配。
 - **为何未被现有测试覆盖**：gateway 的 stdio `session.create` 测试（`agent-gateway/test/gateway-server.spec.ts`「streams json-rpc responses over jsonl stdio transport」）**手工构造 `AppRpcServer` 并注入 ORM store**，未走 CLI 的 `runAgentRpcApplication`（`AgentAppServerModule` 为根 + `provideAgentOrmStorage` 作为根 provider）这条 DI 路径。cli.spec 的 rpc-stdio 测试只覆盖 `app.ping`。
-- **已尝试且无效**（未提交）：把 `runAgentRpcApplication` 改为 `Application.run(AgentModule, { deps: [ServerCommonModule, AgentAppServerModule] })`（镜像 chat）——`session.create` 仍报同样错误。
+- **已尝试且无效（均已回退、未提交）**：
+  1. `Application.run(AgentModule, { deps: [ServerCommonModule, AgentAppServerModule] })`（镜像 chat）——仍报同错。
+  2. `Application.run({ module: { imports: [AgentAppServerModule, ServerCommonModule], providers: [...provideAgentOrmStorage, ...] } })`（镜像 `runAgentTUI` 的模块字面量写法）——仍报同错。
+  3. 改用 `imports: [..., AgentOrmModule.withStorageRoot(root)]` 导入 ORM 模块而非 provide——仍报同错。
+- **新增线索（供下次定位）**：`session.messages`/`getSessionMessages` 与 `createSession`/`setSessionWorkspace` **用的是同一个 `this.sessions.get(...)`**，但对**已存在**会话前者正常、`session.create` 恒失败——说明并非「store 未连接」那么简单，需在 `AppRpcServer` 以最小复现逐步二分（可能是 `ensureSessionAccess`/`SessionOwnerStore` 路径或首次写库触发）。既有 gateway stdio 测试手工注入 store，未覆盖 CLI DI 路径；修复后应新增「走 `runAgentRpcApplication` 的 session.create」回归测试。
 - **诚实边界**：根因在 `AgentAppServerModule` 根模块 + 根 provider 的 ORM/`TypeormAdapter` 与 `AgentModule`（子 injector）内 `TypeOrmSessionStore` 的解析关系，需进一步追踪（多实例 `TypeormAdapter`？`Application.run` 的 `providers` 落在哪层 injector？）。**未在未定位根因前提交任何投机改动**（符合本项目「先证根因再改」纪律）。
 
 ### 门禁
