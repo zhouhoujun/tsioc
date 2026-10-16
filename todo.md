@@ -442,3 +442,16 @@ agent-cli 90 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff --ch
 
 ### 门禁
 agent-tools 530 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff --check` 干净、**门禁 5/5 GATE-PASS**（含 production-db-integrity）。
+
+## 2026-10-15 第九轮：系统提示的项目智能指引对齐（`3bd47784d`）
+
+承接第八轮遗留：第八轮只改了工具描述，系统提示仍把 `project_intel` 描述为可用于「project/workspace analysis」。
+
+### 修复
+`IdentitySection` 与 `ToolsSection` 中两处指引的「project/workspace analysis」改为「a structured summary of the context you/they provide」，保留「不要为纯问答调用 `project_intel`」的原意，使指引与工具真实行为（纯格式化器，不检查工作区）一致。
+
+### 回归（红→绿）
+`prompt-cache.spec.ts` 新增 `projectIntelGuidanceMatchesFormatter`：渲染含 `project_intel` 的提示后，断言**不再含** `project/workspace analysis` / `workspace/project analysis`，且**含** `structured summary of the context`（旧提示 → 红，修复后绿，7 passing）。
+
+### 门禁
+agent 969 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff --check` 干净、**门禁 5/5 GATE-PASS**（含 production-db-integrity）。
