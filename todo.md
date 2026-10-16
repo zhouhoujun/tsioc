@@ -547,3 +547,17 @@ RESP id=3  err=null result={"sessionId":"persist-1","messages":[],"sections":[],
 
 ### 门禁
 agent 970 passing、agent-tools 530 passing、2× `tsc --noEmit` EXIT 0、`source-size` OK、`git diff --check` 干净、**门禁 7/7 GATE-PASS**（含 production-db-integrity）。
+
+## 2026-10-15 第十五轮：系统性排查工具描述/校验一致性 + apply_patch 最近锚点提示（`a4515c1da`）
+
+### 系统性排查（承接「工具描述/示例与实际校验不一致」这一反复出现的类别）
+- 枚举全部 tool `inputSchema` 的严格 `enum` 字段（todo/cron 同类）；扫描含 `e.g.` 示例的 `description`；并**从生产库 `agent.db` 聚合所有历史 tool `{"error":...}`** 做摩擦清点。
+- 历史错误 Top：`web_search` 未配置适配器 **30**、`read_file` ENOENT **25**、`git_operations` 非 Git **13**、**`apply_patch` 不匹配 16**、`stat` ENOENT 8、`todo` content 8、`list_dir` 7。
+- **逐项核对当前代码**：`read_file`/`stat` 缺失路径 → `Path 'x' does not exist.`（可操作，已修）；`git_operations` 非 Git → `notAGitRepo`+session 快照（已修）；`list_dir` → **已默认 `.`**（描述写「default: workspace root」且代码一致）；`todo` content/枚举 → 已修；`web_search` 描述已含「via a configured adapter」。**未发现新的当前缺陷**（DB 错误多为修复前历史）。
+
+### 修复：`apply_patch` 不匹配时给出最近锚点提示（最高的一类剩余摩擦，16 次）
+- 原错误可操作但需重读整份文件定位。新增 `nearestAnchorHint`：hunk 不匹配时，从上下文/删除行中找出**确实存在于文件**的最近一行，给出**行号 + 上下 2 行摘录**（对齐 opencode 的 closest-match）。
+- **回归（红→绿）**：`apply-patch.spec.ts` 新增 `suggestsNearestAnchor`——旧实现错误信息不含 `Nearest anchor`（红），修复后含 `line 2 is "beta"` 及摘录（绿，18 passing）。
+
+### 门禁
+agent-tools 531 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff --check` 干净、**门禁 5/5 GATE-PASS**（含 production-db-integrity）。
