@@ -383,3 +383,23 @@ agent 968 passing、agent-tools 528 passing、`tsc`（agent/agent-tools/agent-ui
 
 ### 门禁
 agent-tools 530 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff --check` 干净、**门禁 5/5 GATE-PASS**（含 production-db-integrity）。
+
+## 2026-10-15 第六轮：MCP 端到端 + mcp.call_tool 可操作拒绝信息（`ebabdd9ed`）
+
+### 真实验证（本地 stdio MCP server）
+- 先跑通 S1–S4 真实探针：`execute_code`/`http_fetch` 在默认 preset 下未注册（模型改用 `terminal`/`calculator` 并正确指出 `calculator` 浮点对大整数不精确）；`knowledge_store`/`knowledge_search` 正常；`sessions_*` 未注册（模型 `tool_inspect` 猜名失败属正常）。
+- **MCP 端到端**：写了一个最小 stdio MCP server（换行分隔 JSON-RPC 2.0，实现 `initialize`/`tools/list`/`tools/call`），经 `settings.json` 的 `mcp.servers` 注入。握手与 `tools/list`/`tools/call` 均正常。
+
+### 观察
+配置一个**未声明 `tools`/`allowedTools`** 的 MCP server（这正是 `mcp add` 写出的形态）：模型经 `tool_search`/`tool_inspect` 看到 `mcp.demo.echo` 提示（`activated=false`、`discovery.via=mcp.call_tool`），调用 `mcp.call_tool` 被拒 `MCP tool 'demo.echo' is not declared or allowlisted.`，但**未说明如何启用**，模型反复尝试直至回合超时。
+
+### 判定（如实记录）
+- 动态 MCP 的**发现/提示**与 `mcp.call_tool` 的 **allowlist 门禁**均为**既定设计**，分别由 `tool search and inspect expose dynamic MCP discovery hints` 与 `mcp.call_tool rejects dynamic server tools unless explicitly allowlisted` 锁定；**未擅自改动**。
+- 真实缺陷是**拒绝信息不可操作**（对齐 AGENTS.md §9）。
+
+### 修复
+`mcp.call_tool` 拒绝信息改为可操作：明确指出在 `settings.json` 的 `mcp.servers` 中把工具声明到该 server 的 `tools`，或把工具名加入 `allowedTools`，即可启用。
+**回归（红→绿）**：`mcp.spec.ts` 既有拒绝测试新增断言（旧信息不含 `allowedTools` → 红，修复后绿，12 passing）。
+
+### 门禁
+agent-tools 530 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff --check` 干净、**门禁 5/5 GATE-PASS**（含 production-db-integrity）。
