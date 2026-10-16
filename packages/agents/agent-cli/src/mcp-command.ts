@@ -12,6 +12,7 @@ export interface AgentMcpCliOptions extends AgentCliOptions {
     clientId?: string;
     scope?: string;
     title?: string;
+    allow?: string | string[];
     json?: boolean;
 }
 
@@ -73,15 +74,71 @@ function parseHeaders(values?: string | string[]): Record<string, string> | unde
     return Object.keys(headers).length ? headers : undefined;
 }
 
+function normalizeToolNames(values?: string | string[]): string[] {
+    const entries = Array.isArray(values) ? values : (values ? [values] : []);
+    const seen = new Set<string>();
+    const names: string[] = [];
+    entries.forEach(entry => {
+        const name = String(entry ?? '').trim();
+        if (name && !seen.has(name)) {
+            seen.add(name);
+            names.push(name);
+        }
+    });
+    return names;
+}
+
+/**
+ * Split a shell-style command line into an executable + args, honoring single/double
+ * quotes. `AgentMcpServerOptions` stores the executable in `command` and the rest in
+ * `args`, and `StdioMcpClient` runs `spawn(command, args)` (no shell), so a raw
+ * string like "node server.js" must be tokenized — otherwise spawn treats it as one
+ * executable name and fails with a bare ENOENT.
+ */
+function splitCommandLine(value: string): string[] {
+    const tokens: string[] = [];
+    let current = '';
+    let quote: string | null = null;
+    let hasToken = false;
+    for (const ch of value) {
+        if (quote) {
+            if (ch === quote) {
+                quote = null;
+            } else {
+                current += ch;
+            }
+            continue;
+        }
+        if (ch === '"' || ch === "'") {
+            quote = ch;
+            hasToken = true;
+        } else if (/\s/.test(ch)) {
+            if (hasToken) {
+                tokens.push(current);
+                current = '';
+                hasToken = false;
+            }
+        } else {
+            current += ch;
+            hasToken = true;
+        }
+    }
+    if (hasToken) {
+        tokens.push(current);
+    }
+    return tokens;
+}
+
 function normalizeMcpServerOptions(options: AgentMcpCliOptions): AgentMcpServerOptions {
     const id = options.args?.trim();
     if (!id || !/^[A-Za-z0-9_-]+$/.test(id)) {
         throw new Error('MCP server id must be a non-empty string using letters, numbers, underscore, or dash.');
     }
-    if (!options.url && !options.command) {
+    const commandTokens = options.command ? splitCommandLine(options.command.trim()) : [];
+    if (!options.url && !commandTokens.length) {
         throw new Error('MCP server requires either --url (remote) or --command (stdio).');
     }
-    if (options.url && options.command) {
+    if (options.url && commandTokens.length) {
         throw new Error('MCP server cannot have both --url and --command.');
     }
     if (options.url && !/^https?:\/\/.+/.test(options.url.trim())) {
@@ -92,13 +149,18 @@ function normalizeMcpServerOptions(options: AgentMcpCliOptions): AgentMcpServerO
         : (options.clientId
             ? { type: 'oauth', clientId: options.clientId, scope: options.scope }
             : undefined);
+    const allowedTools = normalizeToolNames(options.allow);
+    const command = commandTokens[0];
+    const commandArgs = commandTokens.slice(1);
     return {
         id,
         ...(options.title ? { title: options.title } : {}),
         ...(options.url ? { url: options.url.trim() } : {}),
-        ...(options.command ? { command: options.command.trim() } : {}),
+        ...(command ? { command } : {}),
+        ...(commandArgs.length ? { args: commandArgs } : {}),
         ...(options.header ? { headers: parseHeaders(options.header) } : {}),
-        ...(auth ? { auth } : {})
+        ...(auth ? { auth } : {}),
+        ...(allowedTools.length ? { allowedTools } : {})
     };
 }
 
@@ -112,6 +174,10 @@ export async function runMcpAdd(options: AgentMcpCliOptions): Promise<void> {
     const servers = readMcpServers(readSettings(options));
     const existing = servers.findIndex(item => item.id === server.id);
     if (existing >= 0) {
+        // Re-adding a server without --allow keeps the previously configured allowlist.
+        if (!server.allowedTools?.length && servers[existing].allowedTools?.length) {
+            server.allowedTools = [...servers[existing].allowedTools];
+        }
         servers[existing] = server;
     } else {
         servers.push(server);
@@ -120,7 +186,10 @@ export async function runMcpAdd(options: AgentMcpCliOptions): Promise<void> {
     process.stdout.write(`MCP server '${server.id}' saved to ${settingsPath}\n`);
     process.stdout.write(server.url
         ? `Transport: streamable HTTP (${server.url})\n`
-        : `Transport: stdio (${server.command})\n`);
+        : `Transport: stdio (${[server.command, ...(server.args ?? [])].join(' ')})\n`);
+    if (server.allowedTools?.length) {
+        process.stdout.write(`Allowed tools: ${server.allowedTools.join(', ')}\n`);
+    }
 }
 
 export async function runMcpList(options: AgentMcpCliOptions): Promise<void> {
@@ -134,7 +203,8 @@ export async function runMcpList(options: AgentMcpCliOptions): Promise<void> {
                 url: server.url,
                 command: server.command,
                 auth: server.auth?.type ?? 'none',
-                authenticated: store.has(server.id)
+                authenticated: store.has(server.id),
+                allowedTools: server.allowedTools ?? []
             }))
         }, null, 2) + '\n');
         return;
@@ -145,10 +215,11 @@ export async function runMcpList(options: AgentMcpCliOptions): Promise<void> {
     }
     process.stdout.write(`MCP servers (${servers.length}):\n`);
     servers.forEach(server => {
-        const transport = server.url ?? (server.command ? `stdio: ${server.command}` : 'custom client');
+        const transport = server.url ?? (server.command ? `stdio: ${[server.command, ...(server.args ?? [])].join(' ')}` : 'custom client');
         const auth = server.auth?.type ?? 'none';
         const status = store.has(server.id) ? 'authenticated' : (auth === 'oauth' ? 'needs auth' : '-');
-        process.stdout.write(`  ${server.id}  |  ${transport}  |  auth: ${auth} (${status})\n`);
+        const allow = server.allowedTools?.length ? `  |  allow: ${server.allowedTools.join(',')}` : '';
+        process.stdout.write(`  ${server.id}  |  ${transport}  |  auth: ${auth} (${status})${allow}\n`);
     });
 }
 

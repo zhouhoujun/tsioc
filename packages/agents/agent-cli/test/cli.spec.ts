@@ -60,6 +60,7 @@ import {
     healSettingsModelConfig,
     getLastSettingsHealReport
 } from '../src';
+import { runMcpAdd } from '../src/mcp-command';
 @Suite('Agent CLI')
 export class AgentCliTest {
     private createFakeTerminalInput(): PassThrough & { isTTY: boolean; readable: boolean; setRawMode(enabled: boolean): void; rawMode: boolean; } {
@@ -1866,6 +1867,48 @@ export class AgentCliTest {
 
         const emptyRoot = await this.createRoot();
         expect(resolveCliInstructionDocs(emptyRoot)).toEqual([]);
+    }
+
+    @Test('mcp add --allow records allowedTools and preserves them on update')
+    async mcpAddAllowRecordsAllowedTools() {
+        const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-cli-mcp-'));
+        const read = () => JSON.parse(fs.readFileSync(path.join(root, 'settings.json'), 'utf8')).mcp.servers
+            .find((server: any) => server.id === 'demo');
+        try {
+            await runMcpAdd({ root, args: 'demo', command: 'node server.js', allow: ['echo', 'sum'] } as any);
+            expect(read().allowedTools).toEqual(['echo', 'sum']);
+
+            // Re-adding without --allow keeps the previously configured allowlist.
+            await runMcpAdd({ root, args: 'demo', command: 'node server.js' } as any);
+            expect(read().allowedTools).toEqual(['echo', 'sum']);
+
+            // An explicit --allow replaces it (deduplicated).
+            await runMcpAdd({ root, args: 'demo', command: 'node server.js', allow: ['sum', 'sum'] } as any);
+            expect(read().allowedTools).toEqual(['sum']);
+        } finally {
+            fs.rmSync(root, { recursive: true, force: true });
+        }
+    }
+
+    @Test('mcp add --command tokenizes the executable and its args')
+    async mcpAddCommandTokenizesArgs() {
+        const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-cli-mcp-cmd-'));
+        const read = () => JSON.parse(fs.readFileSync(path.join(root, 'settings.json'), 'utf8')).mcp.servers
+            .find((server: any) => server.id === 'demo');
+        try {
+            // StdioMcpClient runs spawn(command, args) with no shell, so a raw command
+            // line with arguments must be split; otherwise spawn treats the whole
+            // string as one executable name and fails with ENOENT.
+            await runMcpAdd({ root, args: 'demo', command: 'node server.js --flag' } as any);
+            expect(read().command).toEqual('node');
+            expect(read().args).toEqual(['server.js', '--flag']);
+
+            await runMcpAdd({ root, args: 'demo', command: 'node "a b.js"' } as any);
+            expect(read().command).toEqual('node');
+            expect(read().args).toEqual(['a b.js']);
+        } finally {
+            fs.rmSync(root, { recursive: true, force: true });
+        }
     }
 
 }

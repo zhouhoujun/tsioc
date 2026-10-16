@@ -456,7 +456,7 @@ function createAgentCli(): Command {
         .option('--bearer-token <token>', 'Static bearer token auth.')
         .option('--client-id <id>', 'OAuth client id (triggers OAuth auth config).')
         .option('--scope <scope>', 'OAuth scope.')
-        .option('--title <title>', 'Display title for the server.')
+        .option('--title <title>', 'Display title for the server.').option('--allow <tool>', 'Allowlist a dynamic MCP tool name so it is callable via mcp.call_tool (repeatable).', collectValues, [])
         .action(async (id: string, options: any) => {
             await runMcpAdd({ ...options, args: id });
         });
