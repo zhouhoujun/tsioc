@@ -403,3 +403,24 @@ agent-tools 530 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff -
 
 ### 门禁
 agent-tools 530 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff --check` 干净、**门禁 5/5 GATE-PASS**（含 production-db-integrity）。
+
+## 2026-10-15 第七轮：`mcp add` 修复（--command 拆分 + --allow）（`550848ad8`）
+
+### 真实端到端复现的两个 MCP 配置缺陷
+1. **`--command` 参数被并进可执行名**：`mcp add demo --command "node /tmp/demo-mcp.js"` 把整串存进 `command`，而 `StdioMcpClient` 用 `spawn(command, args)`（无 shell）→ `spawn("node /tmp/demo-mcp.js", [])` → **ENOENT**，server 完全不可用；CLI 还打印 `Transport: stdio (node /tmp/demo-mcp.js)` 像正常。真实探针报 `mcp.call_tool failed: spawn node /tmp/opencode/demo-mcp.js ENOENT`。
+2. **CLI 无法设置 `allowedTools`**：承接上一轮发现——CLI 加进来的动态 MCP 工具经 `mcp.call_tool` 恒被拒（`not declared or allowlisted`），默认不可用。
+
+### 修复（`packages/agents/agent-cli`）
+- 新增 `splitCommandLine()`（支持单/双引号），把 `--command` 拆成 `command` + `args` 写入 `settings.json`；`--url`/`--command` 互斥与缺省校验改用拆分结果。
+- 新增 `mcp add --allow <tool>`（可重复）→ 写 `allowedTools`；重复 add 未给 `--allow` 时**保留**旧 allowlist；`mcp list`（文本与 `--json`）展示 allowed。
+- `src/cli.ts` 合并两行 option 以守住 source-size ratchet（净 0 行）。
+
+### 回归（先证红再证绿）`test/cli.spec.ts`
+- `mcp add --command tokenizes the executable and its args`：旧实现 `command="node server.js --flag"`（红）→ 修复后 `command="node"`、`args=["server.js","--flag"]`，引号内空格保留。
+- `mcp add --allow records allowedTools and preserves them on update`：旧实现 `allowedTools === undefined`（红）→ 修复后写入、更新时保留、显式 `--allow` 覆盖并去重。
+
+### 真实端到端验证
+`mcp add demo --command "node /tmp/opencode/demo-mcp.js" --allow echo`（本地 stdio MCP server）后，Agent 调用 `mcp.call_tool`（serverId=demo, name=echo）**成功返回 `echo: hello-from-mcp`**（修复前分别为 ENOENT 与 not declared or allowlisted）。
+
+### 门禁
+agent-cli 90 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff --check` 干净、**门禁 5/5 GATE-PASS**（含 production-db-integrity）。

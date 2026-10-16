@@ -58,6 +58,7 @@ implementation and passes on the new one**.
 | Commit | File | Root cause |
 | --- | --- | --- |
 | `d794dff27` | `src/mcp-command.ts` | `mcp auth --root X` ignored `--root`, storing the token under the default root while `mcp list --root X` read `X`. |
+| `550848ad8` | `src/mcp-command.ts`, `src/cli.ts` | `mcp add --command "node server.js"` stored the whole string in `command`, but `StdioMcpClient` runs `spawn(command, args)` (no shell) → ENOENT (server unusable) while the CLI printed it as valid; and the CLI had no way to set `allowedTools`, so CLI-added dynamic MCP tools were never callable. `--command` is now tokenized (quote-aware) into `command` + `args`, and `mcp add --allow <tool>` (repeatable) writes `allowedTools`. A local stdio MCP server added this way is now callable end-to-end (`echo: hello-from-mcp`). |
 | `86fe48b4e` | `src/config.ts` | `settings.json` top-level `cancel`/`q` sentinels and empty profiles were not sanitized (not self-healed). |
 
 ## agent / agent-gateway / components / agent-ssh / agent-desktop
