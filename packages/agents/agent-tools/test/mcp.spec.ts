@@ -231,6 +231,8 @@ export class AgentMcpToolsTest {
                 error = err as Error;
             }
             expect(error?.message).toContain('not declared or allowlisted');
+            // The rejection must be actionable: name exactly how to enable the tool.
+            expect(error?.message).toContain('allowedTools');
             expect(client.calls).toEqual([]);
         } finally {
             await ctx.close();

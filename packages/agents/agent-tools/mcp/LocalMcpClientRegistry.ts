@@ -84,7 +84,7 @@ export class LocalMcpClientRegistry implements OnDestroy {
     async callTool(serverId: string, toolName: string, args?: Record<string, any>): Promise<McpToolCallResult> {
         const server = this.getServer(serverId);
         if (!this.isToolAllowed(server, toolName)) {
-            throw new Error(`MCP tool '${serverId}.${toolName}' is not declared or allowlisted.`);
+            throw new Error(`MCP tool '${serverId}.${toolName}' is not declared or allowlisted. To enable it, declare the tool under the server's 'tools' array, or add '${toolName}' to the server's 'allowedTools' array, in settings.json (mcp.servers).`);
         }
         return this.getClient(serverId).callTool(toolName, args);
     }
