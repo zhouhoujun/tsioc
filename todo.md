@@ -481,7 +481,21 @@ agent 969 passing、`tsc --noEmit` EXIT 0、`source-size` OK、`git diff --check
   2. `Application.run({ module: { imports: [AgentAppServerModule, ServerCommonModule], providers: [...provideAgentOrmStorage, ...] } })`（镜像 `runAgentTUI` 的模块字面量写法）——仍报同错。
   3. 改用 `imports: [..., AgentOrmModule.withStorageRoot(root)]` 导入 ORM 模块而非 provide——仍报同错。
 - **新增线索（供下次定位）**：`session.messages`/`getSessionMessages` 与 `createSession`/`setSessionWorkspace` **用的是同一个 `this.sessions.get(...)`**，但对**已存在**会话前者正常、`session.create` 恒失败——说明并非「store 未连接」那么简单，需在 `AppRpcServer` 以最小复现逐步二分（可能是 `ensureSessionAccess`/`SessionOwnerStore` 路径或首次写库触发）。既有 gateway stdio 测试手工注入 store，未覆盖 CLI DI 路径；修复后应新增「走 `runAgentRpcApplication` 的 session.create」回归测试。
-- **诚实边界**：根因在 `AgentAppServerModule` 根模块 + 根 provider 的 ORM/`TypeormAdapter` 与 `AgentModule`（子 injector）内 `TypeOrmSessionStore` 的解析关系，需进一步追踪（多实例 `TypeormAdapter`？`Application.run` 的 `providers` 落在哪层 injector？）。**未在未定位根因前提交任何投机改动**（符合本项目「先证根因再改」纪律）。
+
+### ✅ 根因已定位（`TypeormAdapter` 在 boot 后被 `@Dispose` 清空，应用仍继续用同一死实例）
+在 `TypeormAdapter` 临时插桩（已回退、未提交），`tsdi-agent rpc-stdio` 一次运行的时间线：
+```
+[TA-DIAG] ctor id=wcvnb
+[TA-DIAG] startup id=wcvnb connections=1
+[TA-DIAG] sources.set t=…498 id=wcvnb name=default size=1     ← @Startup 正确连上 default
+[TA-DIAG] onDispose t=…998 id=wcvnb sources=1                ← boot 后 ~500ms 适配器被 @Dispose
+[TA-DIAG] getConnection FAIL t=…016 id=wcvnb req=undefined optName=undefined sources=[]
+```
+- `@Dispose() onDispose()` 会 `sources.clear() + injector=null + options=null`；**其所属 injector 在 boot 后约 0.5s 被销毁**，但 `AppRpcServer` 仍持有该适配器。
+- 因此 **boot 后 ~0.5s 起的任何 DB 访问都会 `DataSource "undefined" not found. Available: none`**；`session.create` 是首个写库调用故必然踩中；而 `session.messages` 对已存在会话在 0.5s 窗口内跑（同进程毫秒级管道）时**偶发成功**——解释了此前「读正常、create 恒挂」的假象。
+- **性质**：injector 生命周期 / 领域归属问题——ORM 适配器与其消费者（`AgentModule` 内的 `TypeOrmSessionStore`）不在同一生命周期 injector 中，属于**架构层**（正是「按微服务形式各自管理自己的领域模型」应解决的点）。
+- **修复方向（下一轮）**：让拥有领域模型的模块（`AgentModule`）**自己拥有 ORM 连接**（把 `provideAgentOrmStorage` 落到 `AgentModule` 的 provider/injector，而非 app 根），使连接随 `AgentModule` 存活、随 app 关闭；或定位「为什么该 injector 在 boot 后 0.5s 被 dispose」并从根上避免。修复后补「走 CLI `runAgentRpcApplication` 的 `session.create`」回归测试（旧实现稳定红）。
+- **诚实边界**：已确认**只有一个** `TypeormAdapter` 实例（ctor 仅一次），且 `@Startup` 成功连上 `default`；问题是它随后被 `@Dispose`（sources 清空）。**尚未定位「哪个 injector 在 boot 后 ~0.5s 被销毁、为何 AppRpcServer 仍持有它」**——这才是修复的真正入口，需继续追 `Application.run(AgentAppServerModule, {deps, providers})` 的 injector 层级与生命周期。诊断插桩已全部回退，**未提交任何投机改动**。
 
 ### 门禁
 本轮无源码改动；上一轮修复后全量门禁 **27/27 GATE-PASS**（含真实 PTY）仍有效。
