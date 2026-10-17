@@ -326,7 +326,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected pendingCommandRequestId = '';
     protected sessionEpoch = 0;
     protected taskViewContextVersion = 0;
-    protected turnStreamState: AgentConsoleTurnStreamState = { streamMessageText: '', sealedNarrationCount: 0 };
+    protected turnStreamState: AgentConsoleTurnStreamState = { streamMessageText: '', sealedNarrationCount: 0, reasoningText: '', reasoningPhase: '' };
     protected mentionCatalog: AgentConsoleMentionCatalogItem[] = [];
     protected globalKeyPending = '';
     protected keymapRecording?: { context: AgentConsoleKeymapContext; action: AgentConsoleGlobalAction };
