@@ -12,6 +12,7 @@ import { AudioSessionHandler, AudioSessionState } from '../audio';
 import { SessionShareStore } from '../share/SessionShareStore';
 import { CloudTaskQueue } from '../cloud/CloudTaskQueue';
 import { QuestionStore } from './QuestionStore';
+import { describeToolCompletedEvent, describeToolInvocationEvent } from './tool-event-content';
 import { toAppRpcError } from './rpcError';
 
 @Injectable()
@@ -1680,7 +1681,7 @@ export class AppRpcServer {
                     status: 'running',
                     toolName: String(data.toolName || ''),
                     toolCallId: String(data?.receipt?.toolCallId || ''),
-                    content: this.describeToolInvocationEvent(data)
+                    content: describeToolInvocationEvent(data)
                 };
             case 'tool_completed':
                 return {
@@ -1689,7 +1690,7 @@ export class AppRpcServer {
                     status: 'success',
                     toolName: String(data.toolName || ''),
                     toolCallId: String(data?.receipt?.toolCallId || ''),
-                    content: this.describeToolCompletedEvent(data)
+                    content: describeToolCompletedEvent(data)
                 };
             case 'tool_failed':
                 return {
@@ -1838,98 +1839,6 @@ export class AppRpcServer {
             return 'Turn diagnostics: no compaction or prompt cache activity';
         }
         return `Turn diagnostics: ${parts.join('; ')}`;
-    }
-
-    private describeToolInvocationEvent(data: any): string {
-        const toolName = String(data?.toolName || 'tool');
-        const summary = this.summarizeToolEventDetail(toolName, data?.receipt?.inputSummary ?? data?.inputSummary, 'input');
-        return summary ? `${toolName} · ${summary}` : toolName;
-    }
-
-    private describeToolCompletedEvent(data: any): string {
-        const toolName = String(data?.toolName || 'tool');
-        const outputSummary = this.summarizeToolEventDetail(toolName, data?.receipt?.outputSummary, 'output');
-        return outputSummary ? `${toolName} · ${outputSummary}` : `${toolName} completed`;
-    }
-
-    private summarizeToolEventDetail(toolName: string, summary: unknown, phase: 'input' | 'output'): string {
-        const text = String(summary || '').trim();
-        if (!text || text === '{}' || text === '[]') {
-            return '';
-        }
-        const payload = this.parseToolSummary(text);
-        if (!payload) {
-            return text;
-        }
-
-        const pathSummary = this.pickPathSummary(payload);
-        if (pathSummary) {
-            if (toolName === 'read_file' && phase === 'output' && payload.truncated === true) {
-                return `${pathSummary} (truncated)`;
-            }
-            return pathSummary;
-        }
-
-        if (toolName === 'location') {
-            const label = this.pickString(payload.label)
-                || [this.pickString(payload.city), this.pickString(payload.region), this.pickString(payload.countryCode) || this.pickString(payload.country)]
-                    .filter(Boolean)
-                    .join(', ');
-            return label || '';
-        }
-
-        if (toolName === 'weather') {
-            const location = this.pickString(payload.location) || this.pickString(payload.label);
-            const temperature = typeof payload.temperature === 'number' ? payload.temperature : undefined;
-            const description = this.pickString(payload.description);
-            const unit = payload.units === 'imperial' ? 'F' : 'C';
-            return [location, temperature !== undefined ? `${temperature}°${unit}` : '', description].filter(Boolean).join(' ');
-        }
-
-        const url = this.pickString(payload.url) || this.pickString(payload.href);
-        if (url) {
-            return url;
-        }
-
-        const location = this.pickString(payload.location) || this.pickString(payload.label) || this.pickString(payload.name);
-        if (location) {
-            return location;
-        }
-
-        return text;
-    }
-
-    private parseToolSummary(text: string): Record<string, any> | undefined {
-        try {
-            const payload = JSON.parse(text);
-            return payload && typeof payload === 'object' && !Array.isArray(payload) ? payload : undefined;
-        } catch {
-            return undefined;
-        }
-    }
-
-    private pickPathSummary(payload: Record<string, any>): string {
-        const single = this.pickString(payload.path)
-            || this.pickString(payload.file)
-            || this.pickString(payload.filePath)
-            || this.pickString(payload.dir)
-            || this.pickString(payload.directory)
-            || this.pickString(payload.from)
-            || this.pickString(payload.to);
-        if (single) {
-            return single;
-        }
-        if (Array.isArray(payload.paths)) {
-            const values = payload.paths.map((value: unknown) => this.pickString(value)).filter(Boolean);
-            if (values.length) {
-                return values.join(', ');
-            }
-        }
-        return '';
-    }
-
-    private pickString(value: unknown): string {
-        return typeof value === 'string' && value.trim() ? value.trim() : '';
     }
 
     private async activateTool(params: any, context: AppRpcRequestContext): Promise<any> {

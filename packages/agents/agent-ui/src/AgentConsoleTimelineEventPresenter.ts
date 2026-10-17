@@ -67,7 +67,9 @@ const TOOL_CATEGORY_MAP: Record<string, TimelineToolCategory> = {
     get_file_contents: 'read',
     list_dir: 'read',
     list_directory: 'read',
+    stat: 'read',
     glob: 'read',
+    glob_search: 'read',
     // edit
     edit_file: 'edit',
     edit: 'edit',
@@ -86,6 +88,7 @@ const TOOL_CATEGORY_MAP: Record<string, TimelineToolCategory> = {
     // search
     search: 'search',
     search_files: 'search',
+    content_search: 'search',
     grep: 'search',
     find: 'search',
     web_search: 'search',

@@ -245,7 +245,37 @@ export function describeStreamEventContent(eventType: string, chunk: any, transl
     if (eventType === 'tool_failed' && toolName === 'web_search' && /search adapter/i.test(content)) {
         return translator?.translate('agent.tool.searchUnavailable') || 'Web search is not configured; add a search adapter in settings.';
     }
-    return eventType === 'tool_failed'
-        ? (translator?.translate('agent.tool.failed', { label }) || `${label} failed`)
-        : content;
+    if (eventType === 'tool_failed' || eventType === 'tool_skipped') {
+        // The cause is the actionable part of a failure/skip. A bare
+        // "{label} failed" hides it and forces a trip to the inspector, so keep
+        // the producer's reason (bounded by the row renderer) on the mainline.
+        const reason = resolveToolEventReason(content, detail);
+        const fallbackVerb = eventType === 'tool_failed' ? 'failed' : 'skipped';
+        const fallback = reason ? `${label} ${fallbackVerb}: ${reason}` : `${label} ${fallbackVerb}`;
+        const key = eventType === 'tool_failed'
+            ? (reason ? 'agent.tool.failedWithError' : 'agent.tool.failed')
+            : (reason ? 'agent.tool.skippedWithReason' : 'agent.tool.skipped');
+        return translator?.translate(key, reason ? { label, error: reason, reason } : { label }) || fallback;
+    }
+    return content;
+}
+
+/**
+ * Reduce a tool failure/skip message to its actionable cause.
+ *
+ * Producers prefix the content with the raw tool name (e.g.
+ * `content_search failed: ENOTDIR …`). The row already carries the translated
+ * action label, so that prefix is noise and the cause is what the user needs.
+ */
+function resolveToolEventReason(content: string, detail: string): string {
+    const direct = String(detail || '').trim();
+    if (direct) {
+        return direct;
+    }
+    const line = String(content || '')
+        .split('\n')
+        .map(entry => entry.trim())
+        .find(entry => entry && !/^\S+\s+(?:failed|skipped)$/i.test(entry))
+        || '';
+    return line.replace(/^.*?\b(?:failed|skipped)\s*:?\s*/i, '').trim();
 }

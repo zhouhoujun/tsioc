@@ -66,4 +66,56 @@ export class AgentUiToolLabelI18nTest {
         expect(unknownCall).not.toContain('agent.tool.');
         expect(unknownCall).toEqual('some dynamic tool');
     }
+
+    /**
+     * Regression: `tool_failed` rows used to render only `"{label} failed"`,
+     * dropping the producer's cause (`content_search failed: ENOTDIR …`), so the
+     * actionable reason was invisible until the inspector was opened.
+     */
+    @Test('failed tool rows keep the actionable cause instead of a bare label')
+    failedRowsKeepCause() {
+        const failed = describeStreamEventContent('tool_failed', {
+            toolName: 'content_search',
+            content: "content_search failed: ENOTDIR: not a directory, stat '/w/test/cli.test.ts/**/*'"
+        }, en);
+        expect(failed).toContain('Search code failed');
+        expect(failed).toContain('ENOTDIR');
+        expect(failed).not.toContain('content_search failed');
+
+        const zhFailed = describeStreamEventContent('tool_failed', {
+            toolName: 'content_search',
+            content: 'content_search failed: ENOTDIR'
+        }, zh);
+        expect(zhFailed).toContain('搜索代码未完成');
+        expect(zhFailed).toContain('ENOTDIR');
+
+        // No cause on the wire: keep the plain label, don't invent a colon.
+        const bare = describeStreamEventContent('tool_failed', {
+            toolName: 'git_operations',
+            content: 'git_operations failed'
+        }, en);
+        expect(bare).toEqual('Check version control failed');
+    }
+
+    /**
+     * Regression: `tool_skipped` used to pass the raw producer string through,
+     * leaking the raw tool name and an unbounded multi-line reason.
+     */
+    @Test('skipped tool rows use the translated label and keep the bounded reason')
+    skippedRowsKeepReason() {
+        const skipped = describeStreamEventContent('tool_skipped', {
+            toolName: 'terminal',
+            content: 'terminal skipped: workspace is not trusted\nTrust it with: tsdi-agent trust <dir>'
+        }, en);
+        expect(skipped).toContain('Run command skipped');
+        expect(skipped).toContain('workspace is not trusted');
+        expect(skipped).not.toContain('terminal skipped');
+        expect(skipped).not.toContain('\n');
+
+        const bare = describeStreamEventContent('tool_skipped', {
+            toolName: 'terminal',
+            content: 'terminal skipped'
+        }, en);
+        expect(bare).toEqual('Run command skipped');
+    }
 }

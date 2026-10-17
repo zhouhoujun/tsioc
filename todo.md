@@ -263,3 +263,24 @@
 - **验证**：components 146 / common 5 / html 118 / console 87 / agent-ui 1441，全 `EXIT=0`；全量门禁逐阶段复核全 `GATE-PASS`（agent-ui、9 个 agent 包、4 个 components 包、4× `tsc --noEmit`、`build-agent-ui-web`、`dom-gate` + matrix、`tui-gate`、`gate-regression`、`diff-check`、`source-size`、`production-db-integrity`），仅 `pty-acceptance` 按默认跳过（opt-in）。
 - **回归测试（红→绿）**：新增 `packages/components/test/binding-destroyed-injector.spec.ts`，断言 `injector.destroyed` 时 `bindingProperty` 的工厂**不得**执行其 effect。证红：临时移除该守卫 → `0 passing 1 failed`（effect 仍执行并因解析已销毁注入器抛错）；证绿：恢复守卫 → components `147 passing`、`EXIT=0`。
 - **诚实边界**：这是**静态锁定的真实缺失守卫缺口**，但**尚不能证明就是用户实机那条崩溃**（无堆栈，无法复现第二 turn）。需完整调用栈确认；若不匹配，则该守卫修复本身独立成立、可保留。
+
+## 2026-10-17 真实 TUI 时间线展示打磨（工具对象/结果摘要）
+- 背景：用真实 CLI TUI（`cd packages/agents/agent-cli && DEEPSEEK_API_KEY=… npm run chat -- --root /tmp/opencode/agent-root5 --workspace /home/zhouyou/workspace/sleep-mlt`）对照 Codex/opencode 的信息架构，逐行核对时间线展示。**本机无 opencode 源码**（只有 `opencode.exe`），对照为定性，锚定 AGENTS.md 第 5 条「动作 + 对象 + 状态 + 必要摘要」。
+- **根因（真实运行 DB 证据，非推测）**：`/tmp/opencode/agent-root5/agent.db` 显示 receipt 摘要把进程管道当业务字段：
+  - `terminal.inputSummary` = `command=sed -n '…' … · timeoutMs=30000`（raw `key=value` 信封）；`terminal.outputSummary` = `stdout=…\n… · exitCode=0 · timedOut=false`（多行原始负载，落进 200 列摘要后被折断成两行）。
+  - `content_search` 输入显示 `test`（搜的目录）而非 query、输出显示 `content_search · 1 field(s)`；`glob_search` 输入显示 `0 matches`；`list_dir` 输入显示 `test · 0 entries`。
+  - `tool_failed` 行只显示 `Search code failed · retry`，把 producer 的 `ENOTDIR: …` 原因吞掉（`describeStreamEventContent` 的 `tool_failed` 分支只回 `{label} failed`）。
+- **修复（展示层，无功能降级）**：
+  1. `agent/src/tools/ToolSummary.ts`：新增 `SHELL_TOOL_NAMES` / `PAYLOAD_ENVELOPE_KEYS`；`list_dir`/`glob_search`/`content_search`（新分支）**按 phase** 分别取对象（路径/pattern/query）与结果（entry/match 计数）；`terminal` 走 `summarizeShellPayload`：input = 单行命令，output = `timed out` / `exit N · <首行 stderr 或 stdout>`（**保留 exit 状态**，`LLMSessionSummarizer`/`AgentContextManager` 仍能消费）；通用 fallback 过滤信封键；`collapseSingleLine` 统一折叠换行。完整负载仍在 tool message / inspector。
+  2. `agent-gateway/src/app-rpc/tool-event-content.ts`（**新模块**）：把 `describeToolInvocationEvent` / `describeToolCompletedEvent` / `summarizeToolEventDetail` 及其解析辅助从 `AppRpcServer.ts` **原样迁出**（单一职责：transport 层不再承载内容成形）。`describeToolCompletedEvent` 现在**保留对象**——完成行按 toolCallId 原地替换调用行，若不保留，命令/文件会从时间线消失；仅当输出已包含该对象（如 `read_file` 的 pathSummary）才不重复。**同提交下调 `AppRpcServer.ts` 基线 3775 → 3684**（-91 行），符合 ratchet「只降不升」。
+  3. `agent-ui/src/AgentConsoleStreamHelpers.ts`：`tool_failed` / `tool_skipped` 保留 producer 原因（`resolveToolEventReason` 去掉 `<tool> failed:` 前缀、取首个非空行，行渲染器再按 200 列截断）；`tool_skipped` 从「原样透传 raw 串」改为走翻译标签。
+  4. `agent-ui/src/agent-ui.i18n.ts`：新增 `agent.tool.skipped` / `skippedWithReason`（en/zh）。
+  5. `agent-ui/src/AgentConsoleTimelineEventPresenter.ts`：类别表补 `stat`/`glob_search`（→read）、`content_search`（→search），避免落 `generic` 用人类化名当动词。
+- **回归（先证旧实现失败，再证修复通过）**：`agent/test/tool-summary.spec.ts` 12 条（旧实现 **1 passing / 11 failed**，失败串与 DB 证据逐条对应）；`agent-ui/test/tool-label-i18n.spec.ts` 失败/跳过原因 2 条 + `p300-timeline-event-presenter.spec.ts` 类别/动词 2 条（旧实现 **4 failed**，`Received "Search code failed"`）；`agent-gateway/test/rpc-stream.spec.ts` 完成内容保留对象（旧实现 **`terminal · exit 0 · …`**，无命令）+ 新增 `tool-event-content.spec.ts` 5 条直测迁出的纯函数。
+- **真实 TUI 实测（tmux 120×40，read-only 三步）**：
+  - `✓ Tool · Read file completed · src/cli.ts (truncated)`
+  - `✓ Tool · Search code completed · scorePaper · 0 matches`（对象从「目录/字段数」变为 query）
+  - `✓ Tool · Run command completed · node -e "console.log(1+1)" · exit 0 · 2`（对象=命令，结果=有界 `exit 0 · 首行`，不再 dump 信封）
+  - 失败路径：`✕ Tool · Read file failed: Path 'src/does-not-exist-xyz.ts' does not exist. · retry`（原因回到主线，旧行为只剩 `Read file failed · retry`）。
+- **验证**：agent 976 / agent-ui 1518 / agent-gateway 320 / agent-tools 523，全 `EXIT=0`；`node scripts/check-source-size.mjs` OK；`git diff --check` 干净；`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，`GATE_EXIT=0`**（`/tmp/opencode/gate/batch-timeline-final3.log`，含真实 PTY acceptance）。
+- **仍为开放项（如实保留）**：① 真实运行中 `Esc` 未能中断一个卡住的 reasoning 流（观察 1m32s→4m26s 仍 `Working`），独立缺陷、本轮未改；② 该真实运行（20 轮后 `maxToolRounds`）出现 14× 重复 `Inspect directory`、7× 相同 `Read file … (truncated)`，属 **agent 行为**（重复工具调用）而非渲染层，已记入观察、未擅自改行为；③ `sleep-mlt` 工作区仍有历次 agent 运行留下的未提交改动（`M README.md` 等）与本批次无关；④ 本机无 opencode 源码，展示对照为定性。
