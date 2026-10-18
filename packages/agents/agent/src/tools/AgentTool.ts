@@ -7,6 +7,11 @@ export interface AgentToolContext {
     memory: MemoryStore;
     principalId?: string;
     workspace?: string;
+    /**
+     * Aborted when the owning turn is cancelled (user interrupt). Long-running
+     * tools observe it to stop promptly instead of blocking the turn.
+     */
+    signal?: AbortSignal;
 }
 
 export interface AgentToolRetryPolicy {

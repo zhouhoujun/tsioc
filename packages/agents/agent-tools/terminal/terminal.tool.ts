@@ -42,12 +42,12 @@ export class TerminalTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
         const command = this.requireCommand(input?.command);
         assertSandboxCommand(command, resolveSandboxPolicy(this.options), this.name);
         const timeoutMs = this.resolveTimeout(input?.timeoutMs);
         const cwd = await this.resolveCwd(input?.workdir);
-        const result = await this.exec(command, cwd, timeoutMs);
+        const result = await this.exec(command, cwd, timeoutMs, context?.signal);
         return {
             ...result,
             cwd
@@ -86,7 +86,12 @@ export class TerminalTool implements AgentTool {
         return cwd;
     }
 
-    private async exec(command: string, cwd: string, timeoutMs: number): Promise<{ stdout: string; stderr: string; exitCode: number; timedOut: boolean; }> {
+    private async exec(command: string, cwd: string, timeoutMs: number, signal?: AbortSignal): Promise<{ stdout: string; stderr: string; exitCode: number; timedOut: boolean; }> {
+        const cancelledError = () => new Error('Command cancelled by the user.');
+        // A turn cancelled before the command even started must not spawn it.
+        if (signal?.aborted) {
+            throw cancelledError();
+        }
         const sandbox = resolveSandboxPolicy(this.options);
         return new Promise((resolve, reject) => {
             // A dedicated process group lets the timeout kill the whole command
@@ -103,6 +108,7 @@ export class TerminalTool implements AgentTool {
             let stdout = '';
             let stderr = '';
             let timedOut = false;
+            let cancelled = false;
             let settled = false;
             let killTimer: NodeJS.Timeout | undefined;
             let forceTimer: NodeJS.Timeout | undefined;
@@ -114,6 +120,7 @@ export class TerminalTool implements AgentTool {
                 if (forceTimer) {
                     clearTimeout(forceTimer);
                 }
+                signal?.removeEventListener('abort', onAbort);
             };
             const finish = (result: { stdout: string; stderr: string; exitCode: number; timedOut: boolean; }) => {
                 if (settled) {
@@ -146,6 +153,22 @@ export class TerminalTool implements AgentTool {
                     }
                 }
             };
+            /**
+             * User interrupt (Esc): stop the command tree with the same
+             * SIGTERM -> SIGKILL escalation the timeout uses, then settle with a
+             * cancellation error instead of a normal result.
+             */
+            const onAbort = () => {
+                if (settled || cancelled || timedOut) {
+                    return;
+                }
+                cancelled = true;
+                signalTree('SIGTERM');
+                killTimer = setTimeout(() => {
+                    signalTree('SIGKILL');
+                    forceTimer = setTimeout(() => fail(cancelledError()), SIGKILL_SETTLE_GRACE_MS);
+                }, SIGTERM_GRACE_MS);
+            };
             const timer = setTimeout(() => {
                 timedOut = true;
                 signalTree('SIGTERM');
@@ -158,6 +181,12 @@ export class TerminalTool implements AgentTool {
                     }, SIGKILL_SETTLE_GRACE_MS);
                 }, SIGTERM_GRACE_MS);
             }, timeoutMs);
+            signal?.addEventListener('abort', onAbort, { once: true });
+            // The signal can fire between the pre-spawn check and the listener
+            // registration above; without this the interrupt would be lost.
+            if (signal?.aborted) {
+                onAbort();
+            }
             child.stdout?.on('data', chunk => {
                 stdout += String(chunk);
             });
@@ -168,6 +197,10 @@ export class TerminalTool implements AgentTool {
                 fail(error);
             });
             child.on('close', code => {
+                if (cancelled) {
+                    fail(cancelledError());
+                    return;
+                }
                 finish({
                     stdout: stdout.trim(),
                     stderr: stderr.trim(),

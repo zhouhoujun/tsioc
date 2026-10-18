@@ -16,6 +16,8 @@ export interface ToolExecutionRequest {
     sessionId: string;
     principalId?: string;
     workspace?: string;
+    /** Aborted when the owning turn is cancelled; forwarded to the tool. */
+    signal?: AbortSignal;
     toolCall: { id: string; name: string; input?: any };
     definition: AgentToolDefinition;
     executionMode: 'sequential' | 'parallel';
@@ -109,7 +111,9 @@ export class ToolExecutionCoordinator {
                 };
             } catch (error) {
                 lastError = error instanceof Error ? error : new Error(String(error));
-                const shouldRetry = attempt <= maxRetries && this.isRetryable(lastError);
+                // A cancelled turn must never re-run a tool the user just
+                // interrupted, so an aborted signal makes the error terminal.
+                const shouldRetry = attempt <= maxRetries && !request.signal?.aborted && this.isRetryable(lastError);
                 if (shouldRetry) {
                     await this.sleep(delayMs * Math.max(1, Math.pow(backoffMultiplier, attempt - 1)));
                     continue;
@@ -183,7 +187,8 @@ export class ToolExecutionCoordinator {
             request.toolCall.input,
             request.sessionId,
             request.principalId,
-            request.workspace
+            request.workspace,
+            request.signal
         );
         if (!timeoutMs || timeoutMs <= 0) {
             return invokePromise;
@@ -222,7 +227,8 @@ export class ToolExecutionCoordinator {
             request.toolCall.input,
             request.sessionId,
             request.principalId,
-            request.workspace
+            request.workspace,
+            request.signal
         );
         if (!timeoutMs || timeoutMs <= 0) {
             return invokePromise;

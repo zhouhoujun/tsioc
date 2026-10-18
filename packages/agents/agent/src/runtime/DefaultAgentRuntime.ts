@@ -9,6 +9,7 @@ import { TurnHandler } from './TurnHandler';
 import { AgentMessage, AgentMessagePart, AgentTurnMessageInput, collectToolReadPaths, normalizeAgentMessageParts } from './AgentMessage';
 import { AgentCompensationEvent, AgentContextPreparedEvent, AgentErrorEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentMemoryUpdatedEvent, AgentModelCompletedEvent, AgentStreamChunkEvent, AgentTokenBudgetExceededEvent, AgentTokenBudgetReminderEvent, AgentToolCompletedEvent, AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnDiagnostics, AgentTurnDiagnosticsEvent, AgentTurnStartedEvent } from './AgentEvents';
 import { AgentTurnCancelledError } from './AgentTurnCancelledError';
+import { TurnAbortScopes } from './TurnAbortScopes';
 import { PlanContinuationTracker } from './PlanContinuation';
 import { findProjectRoot } from '../project/agents-doc';
 import { isWorkspaceMutatingTool, resolveWorkspaceTrustApproval } from '../project/workspace-trust';
@@ -155,7 +156,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionTurnQueues = new Map<string, Array<() => void>>();
     protected sessionTurnDepths = new Map<string, number>();
     protected sessionTurnsRunning = new Set<string>();
-    protected sessionTurnAborts = new Map<string, AbortController>();
+    protected turnAbortScopes = new TurnAbortScopes();
     protected sessionChildSessions = new Map<string, Set<string>>();
     protected sessionCompensationStacks = new Map<string, ToolCompensationEntry[]>();
     protected pendingGitStepSnapshots = new Map<string, string>();
@@ -250,7 +251,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         agent?: AgentTurnAgentConfig
     ): Promise<AgentTurnResult> {
         const release = await this.acquireSessionTurnLock(sessionId);
-        this.beginTurnAbortScope(sessionId);
+        this.turnAbortScopes.begin(sessionId);
         try {
             await this.ensureSessionWorkspace(sessionId);
             const handler = typeof (this.app as any)?.get === 'function'
@@ -264,7 +265,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }
             return await handler.handle({ sessionId, input, principalId, message, profile, agent }, createRunContext(handler.injector ?? this.app));
         } finally {
-            this.endTurnAbortScope(sessionId);
+            this.turnAbortScopes.end(sessionId);
             release();
         }
     }
@@ -368,7 +369,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             return result;
         } catch (error) {
             this.pendingGitStepSnapshots.delete(input.sessionId);
-            if (error instanceof AgentTurnCancelledError || this.isTurnAborted(input.sessionId)) {
+            if (error instanceof AgentTurnCancelledError || this.turnAbortScopes.isAborted(input.sessionId)) {
                 await this.rollbackTurnCompensations(input.sessionId, 'cancelled');
                 await this.runTurnHooks('afterTurn', input.sessionId, {
                     sessionId: input.sessionId,
@@ -435,7 +436,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         agent?: AgentTurnAgentConfig
     ): AsyncGenerator<StreamChunk> {
         const release = await this.acquireSessionTurnLock(sessionId);
-        this.beginTurnAbortScope(sessionId);
+        this.turnAbortScopes.begin(sessionId);
         try {
             await this.waitForPendingArchetypeSwitch(sessionId);
             await this.ensureSessionWorkspace(sessionId);
@@ -494,7 +495,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 yield { type: 'done' };
             } catch (error) {
                 this.pendingGitStepSnapshots.delete(sessionId);
-                if (error instanceof AgentTurnCancelledError || this.isTurnAborted(sessionId)) {
+                if (error instanceof AgentTurnCancelledError || this.turnAbortScopes.isAborted(sessionId)) {
                     await this.rollbackTurnCompensations(sessionId, 'cancelled');
                     await this.runTurnHooks('afterTurn', sessionId, {
                         sessionId,
@@ -521,7 +522,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 throw err;
             }
         } finally {
-            this.endTurnAbortScope(sessionId);
+            this.turnAbortScopes.end(sessionId);
             release();
         }
     }
@@ -602,14 +603,13 @@ export class DefaultAgentRuntime extends AgentRuntime {
     }
 
     async cancelTurn(sessionId: string): Promise<CancelTurnResult> {
-        const controller = this.sessionTurnAborts.get(sessionId);
-        if (!controller || controller.signal.aborted) {
+        if (!this.turnAbortScopes.isActive(sessionId)) {
             return { cancelled: false, compensated: 0, toolCallIds: [] };
         }
         // Drop any pending approval requests for the session so the UI never
         // keeps stale entries after the turn is cancelled.
         this.toolApprovalManager?.cancelBySession(sessionId);
-        controller.abort();
+        this.turnAbortScopes.cancel(sessionId);
         // Cascade cancellation to any running child (sub-agent) sessions so
         // spawned workers do not keep running after their parent is cancelled.
         await this.cancelChildTurns(sessionId);
@@ -704,12 +704,11 @@ export class DefaultAgentRuntime extends AgentRuntime {
             return;
         }
         for (const childSessionId of Array.from(children)) {
-            const controller = this.sessionTurnAborts.get(childSessionId);
-            if (!controller || controller.signal.aborted) {
+            if (!this.turnAbortScopes.isActive(childSessionId)) {
                 continue;
             }
             this.toolApprovalManager?.cancelBySession(childSessionId);
-            controller.abort();
+            this.turnAbortScopes.cancel(childSessionId);
             this.closeDelegationEdge(sessionId, childSessionId, 'cancelled');
             this.annotateChildThreadStatus(childSessionId, 'cancelled');
             await this.rollbackTurnCompensations(childSessionId, 'cancelled');
@@ -812,10 +811,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
             focusSummary: existing.focusSummary ?? patch.focusSummary,
             threadStatus: existing.threadStatus ?? patch.threadStatus
         });
-    }
-
-    protected beginTurnAbortScope(sessionId: string): void {
-        this.sessionTurnAborts.set(sessionId, new AbortController());
     }
 
     protected getCompensationStack(sessionId: string): ToolCompensationEntry[] {
@@ -1018,27 +1013,13 @@ export class DefaultAgentRuntime extends AgentRuntime {
         await this.fileAdapter!.writeText(part.filePath, content);
     }
 
-    protected endTurnAbortScope(sessionId: string): void {
-        this.sessionTurnAborts.delete(sessionId);
-    }
-
-    protected getTurnAbortSignal(sessionId: string): AbortSignal | undefined {
-        return this.sessionTurnAborts.get(sessionId)?.signal;
-    }
-
-    protected isTurnAborted(sessionId: string): boolean {
-        return this.sessionTurnAborts.get(sessionId)?.signal.aborted === true;
-    }
-
     protected throwIfTurnCancelled(sessionId: string): void {
-        if (this.isTurnAborted(sessionId)) {
-            throw new AgentTurnCancelledError(sessionId);
-        }
+        this.turnAbortScopes.throwIfCancelled(sessionId);
     }
 
     protected prepareModelRequest(sessionId: string, request: ModelRequest, profile?: string, falsifyRate?: number, reasoning?: boolean): ModelRequest {
         this.throwIfTurnCancelled(sessionId);
-        request.signal = this.getTurnAbortSignal(sessionId);
+        request.signal = this.turnAbortScopes.signal(sessionId);
         const resolvedProfile = profile || this.sessionModelProfiles.get(sessionId);
         if (resolvedProfile) {
             request.profile = resolvedProfile;
@@ -2809,7 +2790,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
                     error: reason
                 }, reason, { sessionId, reason });
             }
-            if (approval.decision === ApprovalDecision.CANCELLED || this.isTurnAborted(sessionId)) {
+            if (approval.decision === ApprovalDecision.CANCELLED || this.turnAbortScopes.isAborted(sessionId)) {
                 this.throwIfTurnCancelled(sessionId);
                 const reason = `Tool "${toolCall.name}" approval was cancelled.`;
                 return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
@@ -2884,6 +2865,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
                 sessionId,
                 principalId: turnContext.principalId,
                 workspace: turnContext.workspace,
+                signal: this.turnAbortScopes.signal(sessionId),
                 toolCall: { id: toolCall.id, name: toolCall.name, input: toolCallInput },
                 definition,
                 executionMode,
