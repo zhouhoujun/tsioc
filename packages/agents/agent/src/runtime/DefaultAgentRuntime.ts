@@ -47,7 +47,7 @@ import { TurnDiagnosticsRecord, TurnDiagnosticsStore } from '../harness/TurnDiag
 import { EvidenceLedger, ToolEvidenceEntry } from '../harness/EvidenceLedger';
 import { spillToolOutput } from '../harness/ToolOutputSpill';
 import { VerificationGate, DEFAULT_VERIFICATION_WRITE_TOOLS } from '../harness/VerificationGate';
-import { VerifyCommandRunner, DEFAULT_VERIFY_TIMEOUT_MS } from '../harness/VerifyCommandRunner';
+import { VerifyCommandRunner, DEFAULT_VERIFY_TIMEOUT_MS, recordVerifyCommandEvidence } from '../harness/VerifyCommandRunner';
 import { FalsificationAttempt, ResolvedRepairHint, buildAttemptSignature, buildExplorationGuidancePrompt, buildRepairPrompt, collectResolvedRepairHints } from '../harness/RepairExploration';
 import { DelegationEdgeStatus, DelegationGraphStore } from '../harness/DelegationGraphStore';
 import { TokenBudgetScopeState, TokenBudgetTracker } from '../harness/TokenBudgetTracker';
@@ -1615,26 +1615,16 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 autoScripts: verification?.autoScripts,
                 timeoutMs: verification?.timeoutMs,
                 maxOutputChars: verification?.maxOutputChars,
-                workspace: turnContext.workspace
+                workspace: turnContext.workspace,
+                // Esc must stop a running `npm run typecheck`/test command.
+                signal: this.turnAbortScopes.signal(sessionId)
             });
             const runs = await runner.run(editedFiles);
-            for (const run of runs) {
-                const timeoutMs = verification?.timeoutMs ?? DEFAULT_VERIFY_TIMEOUT_MS;
-                turnContext.evidenceLedger?.record({
-                    toolName: 'verify-command',
-                    status: run.failed ? 'error' : 'success',
-                    inputSummary: `verify ${run.kind}${run.script ? ` (${run.script})` : ''} in ${run.cwd}`,
-                    outputSummary: run.output,
-                    exitCode: run.exitCode,
-                    durationMs: run.durationMs,
-                    error: run.timedOut
-                        ? `Verification command timed out after ${timeoutMs}ms: ${run.command}`
-                        : run.exitCode !== undefined && run.exitCode !== 0
-                            ? `Verification command exited with code ${run.exitCode}: ${run.command}`
-                            : undefined,
-                    verification: 'verify-command'
-                });
-            }
+            recordVerifyCommandEvidence(
+                turnContext.evidenceLedger,
+                runs,
+                verification?.timeoutMs ?? DEFAULT_VERIFY_TIMEOUT_MS
+            );
         } catch {
             // verification commands must never break the turn loop
         }

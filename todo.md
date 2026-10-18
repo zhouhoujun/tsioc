@@ -510,3 +510,18 @@
   - 全量：`agent` **1004 passing**（+4）；`tsc --noEmit` 0 错误；`source-size` OK（`DefaultAgentRuntime.ts` 3517 未增长）；`git diff --check` 干净。
 - **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/post-turn1.log`）。
 - **遗留（如实记录）**：`knowledge_search`（默认 in-memory adapter，本地快速）与 `browser/*`（adapter 已拿到完整 context，是否中止由宿主决定）仍靠协调器兜底；真实长会话里「重复工具调用是否下降」仍是观测项。
+
+## 2026-10-18 Esc 覆盖补漏：验证命令（typecheck/lint/test）可被中断，并迁移到共享 runner
+- 背景：回合内最后一个长时间阻塞点是验证门执行的 `verify-command`（`npm run typecheck/lint/test`，默认 120s 超时）。它自己 `spawn` 子进程且不接收 turn 信号 —— Esc 之后命令继续跑、turn 继续等；同时这是仓库内最后一处手写 spawn（未复用共享 runner、只 SIGTERM 不升级）。
+- 变更：
+  1. `VerifyCommandRunner` 的 `DEFAULT_RUNNER` 改用共享 `runChildProcess`（进程组 kill / SIGTERM→SIGKILL 升级 / 输出捕获统一），新增 `VerifyCommandRunnerOptions.signal`，并在 `runProcess` 末尾追加可选 `signal` 参数（向后兼容，注入的测试 runner 不受影响）。
+  2. 中止语义：`VerifyCommandRun` 新增 `cancelled?`；被中断的命令**不算失败**（`failed` 为 false），且中止后不再启动后续命令（包循环与显式/自动脚本循环都检查）。
+  3. `recordVerifyCommandEvidence(ledger, runs, timeoutMs)` 从运行时抽到 runner 模块：跳过 `cancelled` 的 run，避免把「被 Esc 打断」记成验证失败（进而触发 repair 提示）。
+  4. `DefaultAgentRuntime.runVerificationCommands` 传入 `this.turnAbortScopes.signal(sessionId)`；同时 ratchet：`DefaultAgentRuntime.ts` 3517 → **3507**，baseline 同步下调 3517 → 3507。
+- 回归（先红后绿）：新增 `agent/test/verify-command-signal.spec.ts`（3 条，**真实 spawn**）：
+  - 「运行中的验证命令被取消」：`node -e "setTimeout(()=>{},5000)"` + 300ms 后 abort → 新实现 326ms 结算、`cancelled: true`、`failed: false`；旧实现看门狗 2.83s 仍未结算。
+  - 「取消后不再启动下一条命令」：两个显式命令，旧实现 2.81s 超时；新实现 314ms 且只有 1 条 run。
+  - 「注入的 runProcess 收到 turn 信号」：旧实现收到 `undefined`；新实现收到同一个 `AbortSignal`。
+  - 全量：`agent` **1007 passing**（+3）；`tsc --noEmit` 0 错误；`source-size` OK；`git diff --check` 干净。
+- **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/verify-signal1.log`）。
+- **遗留（如实记录）**：`knowledge_search`（默认 in-memory）与 `browser/*`（宿主 adapter 决定）仍靠协调器兜底；`runVerificationCommands` 的 runtime→runner 传参属单行接线，由 runner 单测 + 类型检查覆盖（未做 turn 级 E2E）。
