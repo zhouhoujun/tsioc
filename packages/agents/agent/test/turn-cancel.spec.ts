@@ -8,7 +8,7 @@ import { ToolRegistry } from '../src/tools/ToolRegistry';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
 import { defaultAgentOptions } from '../src/options';
 import { AgentTurnCancelledError } from '../src/runtime/AgentTurnCancelledError';
-import { AgentApprovalFailedEvent, AgentCompensationEvent, AgentErrorEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent } from '../src/runtime/AgentEvents';
+import { AgentApprovalFailedEvent, AgentCompensationEvent, AgentErrorEvent, AgentToolFailedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent } from '../src/runtime/AgentEvents';
 import { ToolApprovalManager } from '../src/tools/ToolApprovalManager';
 import { AgentModule } from '../src/agent.module';
 import { MemoryStore } from '../src/memory/MemoryStore';
@@ -286,6 +286,46 @@ export class TurnCancellationTest {
         await waitFor(() => settled, 5000);
 
         expect(registry.invokes).toEqual(1);
+    }
+
+    @Test('cancelTurn ends the turn promptly even when a tool ignores the signal')
+    async cancelTurnEndsTurnWhenToolIgnoresSignal() {
+        const { sessionStore, memoryStore } = await this.boot();
+        // A tool with no cancellation hook (network clients, browser sessions,
+        // third-party SDKs): it would only finish on its own after 2s.
+        const registry = new IgnoringSignalToolRegistry('stubborn_tool', 2000);
+        const adapter = new ToolThenBlockModelAdapter('stubborn_tool', 'block');
+        const app = new FakeApp();
+        const runtime = new DefaultAgentRuntime(
+            adapter,
+            registry,
+            sessionStore,
+            memoryStore,
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            app as any,
+            new RandomUuidGenerator()
+        );
+
+        const startedAt = Date.now();
+        let settled = false;
+        let error: any;
+        const turn = runtime.runTurn('s1', 'run it').catch(err => { error = err; settled = true; });
+        await registry.started;
+
+        const cancelled = await runtime.cancelTurn('s1');
+        expect(cancelled).toEqual({ cancelled: true, compensated: 0, toolCallIds: [] });
+
+        await waitFor(() => settled, 5000);
+        expect(error).toBeInstanceOf(AgentTurnCancelledError);
+        // Esc ends the turn at once; it must not wait for the tool to finish.
+        expect(Date.now() - startedAt).toBeLessThan(1000);
+        expect(registry.completed).toEqual(0);
+
+        const failedEvent = app.events.find(
+            event => event instanceof AgentToolFailedEvent && event.toolName === 'stubborn_tool'
+        ) as AgentToolFailedEvent | undefined;
+        expect(failedEvent?.error.message).toEqual('Command cancelled by the user.');
     }
 
     @Test('cancelTurn cascades cancellation to registered child sessions')
@@ -861,6 +901,46 @@ class SignalObservingToolRegistry extends ToolRegistry {
             }
             signal.addEventListener('abort', () => reject(new Error('Command cancelled by the user.')), { once: true });
         });
+        this.completed += 1;
+        return { ok: true };
+    }
+}
+
+/**
+ * A tool with no cancellation hook: it ignores the turn signal entirely and
+ * only settles when its own work is done (like a network or browser client).
+ */
+class IgnoringSignalToolRegistry extends ToolRegistry {
+    invokes = 0;
+    completed = 0;
+    readonly started: Promise<void>;
+    private startResolve!: () => void;
+
+    constructor(private toolName: string, private delayMs: number) {
+        super();
+        this.started = new Promise<void>(resolve => { this.startResolve = resolve; });
+    }
+
+    getTools(): any[] {
+        return [{
+            name: this.toolName,
+            description: 'stubborn tool',
+            getDefinition: () => ({
+                name: this.toolName,
+                description: 'stubborn tool',
+                activation: { kind: 'always', scope: 'session', activated: true }
+            })
+        }];
+    }
+
+    getTool(name: string): any {
+        return this.getTools().find(tool => tool.name === name);
+    }
+
+    async invoke(): Promise<any> {
+        this.invokes += 1;
+        this.startResolve();
+        await new Promise(resolve => setTimeout(resolve, this.delayMs));
         this.completed += 1;
         return { ok: true };
     }

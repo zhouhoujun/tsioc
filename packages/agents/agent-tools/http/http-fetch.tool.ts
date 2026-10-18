@@ -1,4 +1,4 @@
-import { AgentTool, AgentToolContext } from '@tsdi/agent';
+import { AgentTool, AgentToolContext, CANCELLED_MESSAGE } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { AgentToolsOptions, defaultAgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
@@ -24,15 +24,22 @@ export class HttpFetchTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
         const url = this.requireUrl(input?.url);
         // The timeout must cover the whole exchange, body included: a server can
         // send headers and then stall the body, so clearing the abort timer as
         // soon as `fetch` resolves would let the tool hang forever.
-        return this.withTimeout(async signal => {
-            const response = await this.fetch(url, { method: 'GET', signal });
-            return this.toResult(url, response);
-        });
+        try {
+            return await this.withTimeout(async signal => {
+                const response = await this.fetch(url, { method: 'GET', signal });
+                return this.toResult(url, response);
+            }, context?.signal);
+        } catch (error) {
+            if (context?.signal?.aborted) {
+                throw new Error(CANCELLED_MESSAGE);
+            }
+            throw error;
+        }
     }
 
     protected async fetch(url: string, init?: any): Promise<any> {
@@ -43,10 +50,19 @@ export class HttpFetchTool implements AgentTool {
         return fetcher(url, init ?? { method: 'GET' });
     }
 
-    /** Run a request under the configured timeout, aborting if it overruns. */
-    protected async withTimeout<T>(run: (signal: AbortSignal | undefined) => Promise<T>): Promise<T> {
+    /**
+     * Run a request under the configured timeout, aborting if it overruns or if
+     * the user interrupts the turn (Esc).
+     */
+    protected async withTimeout<T>(run: (signal: AbortSignal | undefined) => Promise<T>, turnSignal?: AbortSignal): Promise<T> {
         const timeoutMs = this.options?.http?.timeoutMs ?? defaultAgentToolsOptions.http?.timeoutMs ?? 15000;
         const controller = typeof AbortController === 'function' ? new AbortController() : undefined;
+        const onAbort = () => controller?.abort();
+        if (turnSignal?.aborted) {
+            onAbort();
+        } else {
+            turnSignal?.addEventListener('abort', onAbort, { once: true });
+        }
         const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : undefined;
         try {
             return await run(controller?.signal);
@@ -54,6 +70,7 @@ export class HttpFetchTool implements AgentTool {
             if (timer) {
                 clearTimeout(timer);
             }
+            turnSignal?.removeEventListener('abort', onAbort);
         }
     }
 

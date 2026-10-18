@@ -424,3 +424,19 @@
 - **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/git-store-async1.log`）。
 - **说明**：快照 API 未新增 `AbortSignal`（签名未变，仍是 10s 超时 + 非 0 退出码降级）；它现在不再阻塞事件循环，Esc/渲染/定时器不受影响。若要「取消 turn 时同时中止快照 git 命令」，属 additive 后续项。
 - **遗留（如实记录）**：`packages/cli` 的框架自身构建/初始化命令（`npm init`、tsc 声明生成）仍有 `execSync`，属 CLI 构建流程、不在 agent turn/工具子进程范围内；agent 侧生产代码已无 `spawnSync`/`execSync`。
+
+## 2026-10-18 Esc 覆盖面补齐：协调器中止兜底 + http 网络请求取消
+- 背景：上一批清掉「生产代码零 spawnSync」后，仍有一类工具完全不观察 turn 信号（第三方 SDK / 网络客户端 / 浏览器会话没有取消钩子），Esc 之后 turn 只能等它们自己结束。两处缺口：
+  1. `ToolExecutionCoordinator` 的 `invokeWithTimeout`/`invokeInSandbox` 只有**超时**竞速，没有**中止**竞速。
+  2. `http_fetch`/`http_request` 只用自己的超时 controller，不理会 `context.signal`（Esc 时最多要等默认 15s 超时）。
+- 变更：
+  1. 新增 `agent/src/harness/cancellation.ts` 承载共享文案 `CANCELLED_MESSAGE`；`child-process-runner.ts` 改为 re-export（agent-tools 侧 `from '@tsdi/agent'` 的引入不变）。
+  2. `ToolExecutionCoordinator.raceInvocation`：一次竞速覆盖「工具完成 / 超时 / 用户中断」，中止以 `Command cancelled by the user.` 终止；结算后清理定时器与 abort 监听；信号已中止时立即终止；osSandbox 分支只加中止守卫（超时仍由 executor 负责）；重试逻辑此前已把「信号已中止」视为终止，不会重跑。
+     语义：能响应信号的工具（child process / sandbox / execute_code）仍自行停止工作；**没有取消钩子的工具被放弃**（用户按 Esc 的意图），turn 立即结束。
+  3. `http_fetch`/`http_request`：把 `context.signal` 接到请求 controller 上（与自身超时并存），Esc 真正中断网络请求，并把错误统一成 `Command cancelled by the user.`；超时/body 停滞（body timeout）行为不变。
+- 回归（先红后绿）：
+  - `agent/test/turn-cancel.spec.ts` 新增「工具忽略信号时 cancelTurn 仍立即结束 turn」：旧实现 **1 failed**（等工具自然完成，`Expected: < 1000 / Received: 2031`）；新实现 45ms 结束，且发布 `AgentToolFailedEvent`（`Command cancelled by the user.`）、`completed === 0`；该 spec 21 passing。
+  - `agent-tools/test/http-body-timeout.spec.ts` 新增两条（真实 stalling HTTP server，`timeoutMs: 3000`，150ms 后 abort）：旧实现 **2 failed**（各 3.0s，`Received: "This operation was aborted"`）；新实现各 ~156ms 且文案统一；原有两条 body-timeout 守卫仍通过（4 passing）。
+  - 全量：`agent` **996 passing**（+1）、`agent-tools` **548 passing**（+2）、`agent-gateway` **320**、`agent-ui` **1522**，均 EXIT=0；agent/agent-tools `tsc --noEmit` 0 错误；`node scripts/check-source-size.mjs` OK；`git diff --check` 干净。
+- **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/tool-abort1.log`）。
+- **遗留（如实记录）**：以下工具**自身**仍无取消钩子，靠协调器兜底（turn 立即结束，但底层请求会在后台自行结束）：`ssh_exec`（agent-ssh `client.exec(command, timeoutMs)`）、`web_search`/`web_extract`（providers 客户端）、`browser/*`（playwright 会话）、`media/*`、`audio/*`、`llm_task`（模型适配器）、`knowledge_search`、`security_scan`、`pipeline`/`spawn_agent`（子会话）。要真正停掉底层工作需在各库透传 `AbortSignal`，属后续 additive 工作。

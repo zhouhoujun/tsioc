@@ -1,7 +1,6 @@
 import { spawn } from 'child_process';
 
-/** Cancellation wording shared by every tool that runs a child process. */
-export const CANCELLED_MESSAGE = 'Command cancelled by the user.';
+export { CANCELLED_MESSAGE } from './cancellation';
 
 /** Grace period between SIGTERM and the SIGKILL escalation. */
 const SIGTERM_GRACE_MS = 3000;

@@ -9,6 +9,7 @@ import { AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolCompletedEven
 import { summarizeToolDisplayText } from '../tools/ToolSummary';
 import { AuditSink, AgentAuditRecord } from './AuditSink';
 import { SandboxExecutor, SandboxPolicy } from './SandboxExecutor';
+import { CANCELLED_MESSAGE } from './cancellation';
 import { resolveToolSandboxState } from './ToolSandboxPolicy';
 import { AgentClock, AGENT_CLOCK } from '../runtime/Clock';
 
@@ -171,12 +172,18 @@ export class ToolExecutionCoordinator {
         if (sandboxPolicy?.osSandbox && sandboxPolicy.enabled && this.sandboxExecutor?.isSupported()) {
             const command = typeof request.toolCall.input?.command === 'string' ? request.toolCall.input.command : '';
             if (command.trim()) {
-                const result = await this.sandboxExecutor.execute(command, [], {
-                    policy: sandboxPolicy,
-                    timeoutMs,
-                    // Esc must stop a sandboxed command too.
-                    signal: request.signal
-                });
+                const result = await this.raceInvocation(
+                    request,
+                    this.sandboxExecutor.execute(command, [], {
+                        policy: sandboxPolicy,
+                        timeoutMs,
+                        // Esc must stop a sandboxed command too.
+                        signal: request.signal
+                    }),
+                    // The executor enforces `timeoutMs` itself; only the abort
+                    // needs a second guard here.
+                    undefined
+                );
                 return result;
             }
         }
@@ -192,15 +199,7 @@ export class ToolExecutionCoordinator {
             request.workspace,
             request.signal
         );
-        if (!timeoutMs || timeoutMs <= 0) {
-            return invokePromise;
-        }
-        return Promise.race([
-            invokePromise,
-            new Promise((_, reject) => {
-                setTimeout(() => reject(new Error(`Tool "${request.toolCall.name}" timed out after ${timeoutMs}ms.`)), timeoutMs);
-            })
-        ]);
+        return this.raceInvocation(request, invokePromise, timeoutMs);
     }
 
     private resolveSandboxPolicy(request: ToolExecutionRequest): SandboxPolicy | null {
@@ -232,15 +231,55 @@ export class ToolExecutionCoordinator {
             request.workspace,
             request.signal
         );
-        if (!timeoutMs || timeoutMs <= 0) {
-            return invokePromise;
+        return this.raceInvocation(request, invokePromise, timeoutMs);
+    }
+
+    /**
+     * Settle a tool call on the earliest of: the tool finishing, its timeout, or
+     * the user interrupting the turn.
+     *
+     * Esc must end the turn even when a tool ignores the abort signal: network
+     * clients, browser sessions and third-party SDKs have no cancellation hook,
+     * so without this guard the turn would keep waiting for them. Tools that do
+     * honour the signal (child processes, sandboxes, execute_code) still stop
+     * their own work; the rest are abandoned, which is what pressing Esc asks
+     * for.
+     */
+    private raceInvocation<T>(request: ToolExecutionRequest, invocation: Promise<T>, timeoutMs?: number): Promise<T> {
+        const signal = request.signal;
+        const hasTimeout = !!timeoutMs && timeoutMs > 0;
+        if (!hasTimeout && !signal) {
+            return invocation;
         }
-        return Promise.race([
-            invokePromise,
-            new Promise((_, reject) => {
-                setTimeout(() => reject(new Error(`Tool "${request.toolCall.name}" timed out after ${timeoutMs}ms.`)), timeoutMs);
-            })
-        ]);
+        const guards: Promise<never>[] = [];
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        let onAbort: (() => void) | undefined;
+        if (hasTimeout) {
+            guards.push(new Promise<never>((_, reject) => {
+                timer = setTimeout(
+                    () => reject(new Error(`Tool "${request.toolCall.name}" timed out after ${timeoutMs}ms.`)),
+                    timeoutMs
+                );
+            }));
+        }
+        if (signal) {
+            guards.push(new Promise<never>((_, reject) => {
+                if (signal.aborted) {
+                    reject(new Error(CANCELLED_MESSAGE));
+                    return;
+                }
+                onAbort = () => reject(new Error(CANCELLED_MESSAGE));
+                signal.addEventListener('abort', onAbort, { once: true });
+            }));
+        }
+        return Promise.race([invocation, ...guards]).finally(() => {
+            if (timer) {
+                clearTimeout(timer);
+            }
+            if (onAbort) {
+                signal?.removeEventListener('abort', onAbort);
+            }
+        });
     }
 
     private isRetryable(error: Error): boolean {
