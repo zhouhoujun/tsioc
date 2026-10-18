@@ -381,3 +381,14 @@
   - 修复后该 spec 6 passing；`agent-tools` 全量 **537 passing**（原 531 + 6）——terminal/ai-cli 改用共享 runner 后，既有 terminal/ai-cli/git 用例全部保持通过。
 - **验证**：`git-operations-cancel.spec.ts` 6 passing；`agent-tools` 全量 **537 passing**（EXIT=0）；`tsc --noEmit @tsdi/agent-tools` 0 错误；`node scripts/check-source-size.mjs` OK（`git-operations.tool.ts` 507、`ai-cli.tool.ts` 344、`terminal.tool.ts` 114、`child-process-runner.ts` 200，均未入基线且 < 600）；`git diff --check` 干净；`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/git-async1.log`，含 `pty-acceptance` 真实终端、`dom-gate`、`tui-gate`、`production-db-integrity`）。
 - **遗留（如实记录）**：`review_diff`（`agent-tools/review/review-diff.tool.ts`，多个同步 helper：`runGit`/`listUntrackedFiles`/`resolveCommitSha`/`assertGitRepo`）与 `agent/src/harness/GitStepSnapshotStore.ts` 仍在用 `spawnSync`，属同类阻塞、本轮未覆盖；`execute_code`（`CodeExecutionRequest` 无 signal，local + MCP code-mode 两个实现）、`ToolExecutionCoordinator` 的 `osSandbox` 两个分支（未传 `request.signal`）仍未覆盖。
+
+## 2026-10-18 review_diff 不再阻塞事件循环并支持 Esc（同类 spawnSync 收尾）
+- 背景：`review_diff` 同样用 `spawnSync('git', …, { timeout: 30000, maxBuffer: 64000 })`，且对每个未跟踪文件各跑一次 git；慢仓库/大 diff 期间事件循环同样被完全阻塞（界面不刷新、Esc 无效）。与 git_operations 属同一缺陷类，该 sync→async 行为改动用户已确认。
+- **修复**：`runGit`/`assertGitRepo`/`listUntrackedFiles`/`resolveCommitSha` 改为 async 并走共享 runner；`invoke` await 它们，未跟踪文件的多次 git 调用由逐个同步串行改为 `Promise.all` 并发；`invoke` 入口同样做「已取消则不启动」；`resolveCommitSha` 原本 `catch { return null }`，改为 signal 已 abort 时重新抛出，避免把用户中断吞成「无 commit 可解析」。错误语义保持：非 0 退出码照常返回、`EPERM`/`ENOBUFS`（含新的输出上限 overflow）仍容忍为 exitCode 1 + 部分输出、超时抛 `ETIMEDOUT`。
+- **回归（真实调用边界：PATH 注入假 `git`，`rev-parse` 立即成功、其余动作 sleep）**：新增 `agent-tools/test/review-diff-cancel.spec.ts` 3 条，`git stash` 掉实现后 **1 passing / 2 failed**：
+  - `review_diff no longer blocks the event loop`：旧实现 `Expected: > 3 / Received: 1`（300ms 的等待实际耗时 1.05s，循环被阻塞）→ 修复后定时器正常触发、300ms 内返回；
+  - `an aborted turn cancels review_diff`：旧实现 5.03s 后返回结果、`Received: undefined`（signal 无效）→ 修复后 307ms 内以 `Command cancelled by the user.` 拒绝；
+  - `a finished review still reports files, diff and commit sha`：保真守卫（新旧一致，真实仓库仍返回文件列表、diff 内容与 commitSha）。
+  - 修复后该 spec 3 passing；`agent-tools` 全量 **540 passing**（原 537 + 3）。
+- **验证**：`review-diff-cancel.spec.ts` 3 passing；`agent-tools` 全量 **540 passing**（EXIT=0）；`tsc --noEmit @tsdi/agent-tools` 0 错误；`node scripts/check-source-size.mjs` OK（`review-diff.tool.ts` 284 行，未入基线且 < 600）；`git diff --check` 干净；`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/review-async1.log`，含 `pty-acceptance`、`dom-gate`、`tui-gate`、`production-db-integrity`）。
+- **遗留（如实记录）**：`agent/src/harness/GitStepSnapshotStore.ts` 仍用 `spawnSync`（10s 超时、32MB buffer，每个 turn step 捕获一次快照），但它的公开 API 是**同步**的（`isAvailable`/`capture`/`diff`/`revert`…）并透出到 `AgentRuntime` 接口（`captureStepSnapshot` 同步返回），改成 async 属核心 API 变更、影响 agent-ui/gateway 等调用方，需单独确认后再动。
