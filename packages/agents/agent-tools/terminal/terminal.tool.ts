@@ -1,18 +1,14 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { promises as fs } from 'fs';
-import { spawn } from 'child_process';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
+import { CANCELLED_MESSAGE, runChildProcess } from '../src/child-process-runner';
 import { resolveFilePolicy, resolveWorkspacePath } from '../files/path-policy';
 import { assertSandboxCommand, buildSandboxEnv, resolveSandboxPolicy } from '../src/sandbox-policy';
 
 const DEFAULT_TIMEOUT_MS = 180000;
 const DEFAULT_MAX_TIMEOUT_MS = 600000;
-/** Grace period between SIGTERM and the SIGKILL escalation on timeout. */
-const SIGTERM_GRACE_MS = 3000;
-/** Final grace after SIGKILL before the tool settles regardless of the child. */
-const SIGKILL_SETTLE_GRACE_MS = 1000;
 
 @Injectable()
 export class TerminalTool implements AgentTool {
@@ -87,127 +83,32 @@ export class TerminalTool implements AgentTool {
     }
 
     private async exec(command: string, cwd: string, timeoutMs: number, signal?: AbortSignal): Promise<{ stdout: string; stderr: string; exitCode: number; timedOut: boolean; }> {
-        const cancelledError = () => new Error('Command cancelled by the user.');
         // A turn cancelled before the command even started must not spawn it.
         if (signal?.aborted) {
-            throw cancelledError();
+            throw new Error(CANCELLED_MESSAGE);
         }
-        const sandbox = resolveSandboxPolicy(this.options);
-        return new Promise((resolve, reject) => {
-            // A dedicated process group lets the timeout kill the whole command
-            // tree. A shell command can fork children (or ignore SIGTERM) that
-            // keep the stdio pipe open, so `close` would otherwise never fire and
-            // the tool would outlive its timeout indefinitely.
-            const detached = process.platform !== 'win32';
-            const child = spawn(command, {
-                cwd,
-                shell: true,
-                env: buildSandboxEnv(process.env, sandbox),
-                detached
-            });
-            let stdout = '';
-            let stderr = '';
-            let timedOut = false;
-            let cancelled = false;
-            let settled = false;
-            let killTimer: NodeJS.Timeout | undefined;
-            let forceTimer: NodeJS.Timeout | undefined;
-            const clearTimers = () => {
-                clearTimeout(timer);
-                if (killTimer) {
-                    clearTimeout(killTimer);
-                }
-                if (forceTimer) {
-                    clearTimeout(forceTimer);
-                }
-                signal?.removeEventListener('abort', onAbort);
-            };
-            const finish = (result: { stdout: string; stderr: string; exitCode: number; timedOut: boolean; }) => {
-                if (settled) {
-                    return;
-                }
-                settled = true;
-                clearTimers();
-                resolve(result);
-            };
-            const fail = (error: Error) => {
-                if (settled) {
-                    return;
-                }
-                settled = true;
-                clearTimers();
-                reject(error);
-            };
-            const signalTree = (signal: NodeJS.Signals) => {
-                try {
-                    if (detached && child.pid) {
-                        process.kill(-child.pid, signal);
-                    } else {
-                        child.kill(signal);
-                    }
-                } catch {
-                    try {
-                        child.kill(signal);
-                    } catch {
-                        // process already gone
-                    }
-                }
-            };
-            /**
-             * User interrupt (Esc): stop the command tree with the same
-             * SIGTERM -> SIGKILL escalation the timeout uses, then settle with a
-             * cancellation error instead of a normal result.
-             */
-            const onAbort = () => {
-                if (settled || cancelled || timedOut) {
-                    return;
-                }
-                cancelled = true;
-                signalTree('SIGTERM');
-                killTimer = setTimeout(() => {
-                    signalTree('SIGKILL');
-                    forceTimer = setTimeout(() => fail(cancelledError()), SIGKILL_SETTLE_GRACE_MS);
-                }, SIGTERM_GRACE_MS);
-            };
-            const timer = setTimeout(() => {
-                timedOut = true;
-                signalTree('SIGTERM');
-                // SIGTERM is ignorable; escalate to SIGKILL, then settle no matter
-                // what so the tool can never hang past its timeout.
-                killTimer = setTimeout(() => {
-                    signalTree('SIGKILL');
-                    forceTimer = setTimeout(() => {
-                        finish({ stdout: stdout.trim(), stderr: stderr.trim(), exitCode: 124, timedOut: true });
-                    }, SIGKILL_SETTLE_GRACE_MS);
-                }, SIGTERM_GRACE_MS);
-            }, timeoutMs);
-            signal?.addEventListener('abort', onAbort, { once: true });
-            // The signal can fire between the pre-spawn check and the listener
-            // registration above; without this the interrupt would be lost.
-            if (signal?.aborted) {
-                onAbort();
-            }
-            child.stdout?.on('data', chunk => {
-                stdout += String(chunk);
-            });
-            child.stderr?.on('data', chunk => {
-                stderr += String(chunk);
-            });
-            child.on('error', error => {
-                fail(error);
-            });
-            child.on('close', code => {
-                if (cancelled) {
-                    fail(cancelledError());
-                    return;
-                }
-                finish({
-                    stdout: stdout.trim(),
-                    stderr: stderr.trim(),
-                    exitCode: timedOut ? 124 : (code ?? 0),
-                    timedOut
-                });
-            });
+        const outcome = await runChildProcess({
+            command,
+            cwd,
+            shell: true,
+            env: buildSandboxEnv(process.env, resolveSandboxPolicy(this.options)),
+            timeoutMs,
+            signal
         });
+        switch (outcome.kind) {
+            case 'cancelled':
+                throw new Error(CANCELLED_MESSAGE);
+            case 'timeout':
+                return { stdout: outcome.stdout.trim(), stderr: outcome.stderr.trim(), exitCode: 124, timedOut: true };
+            case 'error':
+                throw outcome.error;
+            default:
+                return {
+                    stdout: outcome.stdout.trim(),
+                    stderr: outcome.stderr.trim(),
+                    exitCode: outcome.exitCode ?? 0,
+                    timedOut: false
+                };
+        }
     }
 }

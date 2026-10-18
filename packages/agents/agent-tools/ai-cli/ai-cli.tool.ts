@@ -2,9 +2,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { spawn } from 'child_process';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
+import { CANCELLED_MESSAGE, runChildProcess } from '../src/child-process-runner';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath } from '../files/path-policy';
 import { assertSandboxCommand, buildSandboxEnv, resolveSandboxPolicy } from '../src/sandbox-policy';
 import { AiCliAdapter, AiCliName, AiCliRequest, AiCliResult, AgentAiCliOptions } from './types';
@@ -43,12 +43,6 @@ const CLI_COMMANDS: Record<AiCliName, { cmd: string; args: string[]; jsonFlag: s
 const CONTEXT_FILE_NAMES = ['AGENTS.md', '.cursorrules', '.clinerules', '.windsurfrules'];
 const DEFAULT_TIMEOUT_MS = 300_000;
 const MAX_OUTPUT_CHARS = 512 * 1024;
-/** Grace period between SIGTERM and the SIGKILL escalation on user interrupt. */
-const SIGTERM_GRACE_MS = 3000;
-/** Final grace after SIGKILL before the tool settles regardless of the child. */
-const SIGKILL_SETTLE_GRACE_MS = 1000;
-/** Same wording as the terminal tool so hosts render one cancellation message. */
-const CANCELLED_MESSAGE = 'Command cancelled by the user.';
 
 const API_KEY_ENV_MAP: Record<string, string[]> = {
     claude_code: ['ANTHROPIC_API_KEY'],
@@ -168,143 +162,57 @@ export class AiCliTool implements AgentTool {
     private async executeSubprocess(request: AiCliRequest, cli: AiCliName): Promise<AiCliResult> {
         const config = CLI_COMMANDS[cli];
         const timeout = request.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-        const signal = request.signal;
         const args = this.buildArgs(request, config);
         const env = buildSandboxEnv({ ...process.env, ...(request.env ?? {}) }, resolveSandboxPolicy(this.toolsOptions ?? undefined));
 
-        return new Promise((resolve, reject) => {
-            // A dedicated process group lets an interrupt stop the whole CLI tree.
-            // A spawned AI CLI starts its own children, and killing only the
-            // wrapper would leave them (and their model work) running.
-            const detached = process.platform !== 'win32';
-            const child = spawn(config.cmd, args, {
-                cwd: request.workingDirectory || undefined,
-                stdio: ['pipe', 'pipe', 'pipe'],
-                env,
-                shell: false,
-                detached
-            });
+        // Context files are prepended as an instruction block, and some CLIs
+        // read the prompt from stdin instead of argv.
+        let stdinPayload = '';
+        if (request.contextFiles?.length) {
+            stdinPayload += `<system-reminder>\n${request.contextFiles.join('\n\n')}\n</system-reminder>\n`;
+        }
+        if (cli === 'opencode') {
+            stdinPayload += `${request.prompt}\n`;
+        }
 
-            let stdout = '';
-            let stderr = '';
-            let cancelled = false;
-            let settled = false;
-            let killTimer: NodeJS.Timeout | undefined;
-            let forceTimer: NodeJS.Timeout | undefined;
-            const signalTree = (sig: NodeJS.Signals) => {
-                try {
-                    if (detached && child.pid) {
-                        process.kill(-child.pid, sig);
-                    } else {
-                        child.kill(sig);
-                    }
-                } catch {
-                    try {
-                        child.kill(sig);
-                    } catch {
-                        // process already gone
-                    }
-                }
-            };
-            const clearTimers = () => {
-                clearTimeout(timer);
-                if (killTimer) {
-                    clearTimeout(killTimer);
-                }
-                if (forceTimer) {
-                    clearTimeout(forceTimer);
-                }
-                signal?.removeEventListener('abort', onAbort);
-            };
-            const settle = (result: AiCliResult) => {
-                if (settled) {
-                    return;
-                }
-                settled = true;
-                clearTimers();
-                resolve(result);
-            };
-            const failCancelled = () => {
-                if (settled) {
-                    return;
-                }
-                settled = true;
-                clearTimers();
-                reject(new Error(CANCELLED_MESSAGE));
-            };
-            /**
-             * User interrupt (Esc): stop the CLI tree with SIGTERM, escalate to
-             * SIGKILL, then settle with a cancellation error instead of a result.
-             */
-            const onAbort = () => {
-                if (settled || cancelled) {
-                    return;
-                }
-                cancelled = true;
-                signalTree('SIGTERM');
-                killTimer = setTimeout(() => {
-                    signalTree('SIGKILL');
-                    // Do not wait on `close`: a CLI (or a child of it) may keep
-                    // the stdio pipe open long after SIGKILL.
-                    forceTimer = setTimeout(failCancelled, SIGKILL_SETTLE_GRACE_MS);
-                }, SIGTERM_GRACE_MS);
-            };
-            const timer = setTimeout(() => {
-                signalTree('SIGTERM');
-                settle({
-                    stdout: stdout.slice(-MAX_OUTPUT_CHARS),
-                    stderr: stderr.slice(-MAX_OUTPUT_CHARS),
+        const outcome = await runChildProcess({
+            command: config.cmd,
+            args,
+            cwd: request.workingDirectory || undefined,
+            env,
+            shell: false,
+            stdin: stdinPayload,
+            timeoutMs: timeout,
+            signal: request.signal
+        });
+        switch (outcome.kind) {
+            case 'cancelled':
+                throw new Error(CANCELLED_MESSAGE);
+            case 'timeout':
+                return {
+                    stdout: outcome.stdout.slice(-MAX_OUTPUT_CHARS),
+                    stderr: outcome.stderr.slice(-MAX_OUTPUT_CHARS),
                     exitCode: 124,
                     timedOut: true
-                });
-            }, timeout);
-            signal?.addEventListener('abort', onAbort, { once: true });
-            // The signal can fire between the pre-spawn check and the listener
-            // registration above; without this the interrupt would be lost.
-            if (signal?.aborted) {
-                onAbort();
-            }
-
-            // Inject context files via stdin as a prepended instruction
-            if (request.contextFiles?.length) {
-                const contextBlock = `<system-reminder>\n${request.contextFiles.join('\n\n')}\n</system-reminder>\n`;
-                child.stdin?.write(contextBlock);
-            }
-
-            // Write prompt to stdin for tools that prefer stdin input
-            if (cli === 'opencode') {
-                child.stdin?.write(request.prompt + '\n');
-                child.stdin?.end();
-            } else {
-                child.stdin?.end();
-            }
-
-            child.stdout?.on('data', (chunk: Buffer) => {
-                stdout += chunk.toString();
-            });
-            child.stderr?.on('data', (chunk: Buffer) => {
-                stderr += chunk.toString();
-            });
-            child.on('close', (code) => {
-                if (cancelled) {
-                    failCancelled();
-                    return;
-                }
-                const parsed = this.parseCliOutput(stdout, request.outputFormat ?? 'json');
-                settle({
+                };
+            case 'error':
+                return {
+                    stdout: '',
+                    stderr: outcome.error.code === 'ENOENT'
+                        ? `'${config.cmd}' not found in PATH. Install it (e.g., 'npm i -g @anthropic-ai/claude-code' for Claude Code, or 'npm i -g opencode' for OpenCode) and ensure it is available in the PATH.`
+                        : outcome.error.message,
+                    exitCode: 1
+                };
+            default: {
+                const parsed = this.parseCliOutput(outcome.stdout, request.outputFormat ?? 'json');
+                return {
                     stdout: parsed.stdout.slice(-MAX_OUTPUT_CHARS),
-                    stderr: parsed.stderr || stderr.slice(-MAX_OUTPUT_CHARS),
-                    exitCode: code ?? parsed.exitCode,
+                    stderr: parsed.stderr || outcome.stderr.slice(-MAX_OUTPUT_CHARS),
+                    exitCode: outcome.exitCode ?? parsed.exitCode,
                     sessionId: parsed.sessionId
-                });
-            });
-            child.on('error', (err) => {
-                const message = (err as any).code === 'ENOENT'
-                    ? `'${config.cmd}' not found in PATH. Install it (e.g., 'npm i -g @anthropic-ai/claude-code' for Claude Code, or 'npm i -g opencode' for OpenCode) and ensure it is available in the PATH.`
-                    : err.message;
-                settle({ stdout: '', stderr: message, exitCode: 1 });
-            });
-        });
+                };
+            }
+        }
     }
 
     private buildArgs(request: AiCliRequest, config: typeof CLI_COMMANDS[AiCliName]): string[] {
