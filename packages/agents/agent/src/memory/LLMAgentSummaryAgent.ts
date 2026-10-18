@@ -39,7 +39,7 @@ export class LLMAgentSummaryAgent extends AgentSummaryAgent {
         );
     }
 
-    async generate(messages: AgentMessage[]): Promise<AgentSessionSummary> {
+    async generate(messages: AgentMessage[], signal?: AbortSignal): Promise<AgentSessionSummary> {
         const substantive = messages.some(message => message.role !== 'system' && String(message.content || '').trim());
         if (!this.modelAdapter || !substantive || this.modelAdapter.provider === 'echo') {
             return this.fallback.generate(messages);
@@ -67,7 +67,8 @@ export class LLMAgentSummaryAgent extends AgentSummaryAgent {
                 memory: [],
                 summary: undefined,
                 temperature: 0,
-                profile: this.options?.profile
+                profile: this.options?.profile,
+                signal
             };
             const response = await this.modelAdapter.complete(request);
             const parsed = this.parseSummaryResponse(response.message ?? '');

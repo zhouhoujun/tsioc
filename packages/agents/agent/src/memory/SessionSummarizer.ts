@@ -9,5 +9,5 @@ export abstract class SessionSummarizer {
      * current turn's tool outcome ledger so summaries can reflect what
      * succeeded, failed, or was falsified (B5 evidence-based compaction).
      */
-    abstract summarize(messages: AgentMessage[], evidence?: ToolEvidenceEntry[]): Promise<string>;
+    abstract summarize(messages: AgentMessage[], evidence?: ToolEvidenceEntry[], signal?: AbortSignal): Promise<string>;
 }

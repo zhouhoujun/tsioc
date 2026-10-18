@@ -27,5 +27,5 @@ export abstract class AgentSummaryAgent {
      * derive anything useful). Implementations must never throw for malformed
      * input; callers fire-and-forget the result and treat failures as no-op.
      */
-    abstract generate(messages: AgentMessage[]): Promise<AgentSessionSummary>;
+    abstract generate(messages: AgentMessage[], signal?: AbortSignal): Promise<AgentSessionSummary>;
 }

@@ -497,3 +497,16 @@
   - 全量：`agent-tools` **559 passing**（551+8）、`agent-ssh` **9 passing**，均 EXIT=0；`agent`/`agent-tools`/`agent-gateway`/`agent-ui` `tsc --noEmit` 全 0 错误；`source-size` OK；`git diff --check` 干净。
 - **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/turn-signal1.log`）。
 - **结论 / 遗留**：Esc 覆盖到此收口 —— 本仓库内有真实 I/O 的工具全部接入信号；adapter 类工具已把「能取消就取消」的契约交给宿主实现（`AbortSignal` 在 options/参数上）。仍未接入的只有 `knowledge_search`（默认 in-memory adapter，本地快速，靠协调器兜底）与 `browser/*`（adapter 已拿到 context，是否中止由宿主实现决定）。真实长会话里「重复工具调用是否下降」仍属观测项。
+
+## 2026-10-18 Esc 覆盖补漏：回合收尾的模型调用（压缩摘要 / 标题·摘要）也遵守信号
+- 背景：工具与 adapter 都接完后，`runTurn` 内**回合收尾阶段**还有两处真实模型调用不接收信号，Esc 之后 `Working` 仍会等到它们返回：① 上下文压缩摘要 `SessionSummarizer.summarize`（`LLMSessionSummarizer` 会发真实 `complete`）；② 会话标题/摘要 `AgentSummaryAgent.generate`（`LLMAgentSummaryAgent` 同样发真实 `complete`，在 turn 起点前与收尾后各调用一次）。
+- 变更（全部为可选参数，向后兼容）：
+  1. `SessionSummarizer.summarize(messages, evidence?, signal?)`；`LLMSessionSummarizer` 把 `signal` 放进 `ModelRequest.signal`（`SimpleSessionSummarizer` 无需改动）。
+  2. `AgentSummaryAgent.generate(messages, signal?)`；`LLMAgentSummaryAgent` 同样透传到 `ModelRequest.signal`（`DeterministicAgentSummaryAgent` 无需改动）。
+  3. `DefaultAgentRuntime` 三处调用点改为传 `this.turnAbortScopes.signal(sessionId)`：`maybeSummarize`、`ensureSessionTitle`、`refreshSessionSummary`。实现自身的 `catch` 回退（naive/fallback 摘要）保持原样，所以 Esc 只是让等待立即结束、产出降级摘要，不会让 turn 报错。
+- 回归（先红后绿）：新增 `agent/test/post-turn-signal.spec.ts`（4 条）：
+  - 两条单元：`LLMSessionSummarizer` / `LLMAgentSummaryAgent` 用「只在 abort 时结算」的假模型适配器，abort 后 67ms/63ms 内结算且 `request.signal === controller.signal`；旧实现 4 条全失败（`signal: undefined`，两条单元靠看门狗 1.57s 超时）。
+  - 两条装配：真实 `AgentModule` 装配下（假 summarizer / 假 summary agent 记录入参 + `session.summaryThreshold: 2`），turn 必须把 `AbortSignal` 传给它们；旧实现 `Expected: true / Received: false`。
+  - 全量：`agent` **1004 passing**（+4）；`tsc --noEmit` 0 错误；`source-size` OK（`DefaultAgentRuntime.ts` 3517 未增长）；`git diff --check` 干净。
+- **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/post-turn1.log`）。
+- **遗留（如实记录）**：`knowledge_search`（默认 in-memory adapter，本地快速）与 `browser/*`（adapter 已拿到完整 context，是否中止由宿主决定）仍靠协调器兜底；真实长会话里「重复工具调用是否下降」仍是观测项。

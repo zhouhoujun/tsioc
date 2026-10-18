@@ -3287,7 +3287,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
             return state.title;
         }
         try {
-            const result = await this.summaryAgent.generate(state.messages);
+            const result = await this.summaryAgent.generate(state.messages, this.turnAbortScopes.signal(sessionId));
             if (result.title) {
                 await this.sessions.setTitle(sessionId, result.title);
             }
@@ -3307,7 +3307,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
             return state.focusSummary ?? undefined;
         }
         try {
-            const result = await this.summaryAgent.generate(state.messages);
+            const result = await this.summaryAgent.generate(state.messages, this.turnAbortScopes.signal(sessionId));
             if (result.summary) {
                 await this.sessions.setProjectMetadata(sessionId, { focusSummary: result.summary });
             }
@@ -3362,7 +3362,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
         const state = await this.sessions.get(sessionId);
         const threshold = this.options.session?.summaryThreshold ?? defaultAgentOptions.session!.summaryThreshold!;
         if (state.messages.length >= threshold) {
-            const summary = await this.summarizer.summarize(state.messages, evidence);
+            const summary = await this.summarizer.summarize(state.messages, evidence, this.turnAbortScopes.signal(sessionId));
             await this.sessions.setSummary(sessionId, summary);
         }
     }

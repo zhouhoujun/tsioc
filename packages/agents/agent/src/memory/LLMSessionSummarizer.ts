@@ -29,7 +29,7 @@ export class LLMSessionSummarizer extends SessionSummarizer {
         super();
     }
 
-    async summarize(messages: AgentMessage[], evidence?: ToolEvidenceEntry[]): Promise<string> {
+    async summarize(messages: AgentMessage[], evidence?: ToolEvidenceEntry[], signal?: AbortSignal): Promise<string> {
         let fallbackUsed = false;
         let summary: string;
         if (!this.modelAdapter || messages.length === 0) {
@@ -57,7 +57,8 @@ export class LLMSessionSummarizer extends SessionSummarizer {
                 ],
                 tools: [],
                 memory: [],
-                summary: undefined
+                summary: undefined,
+                signal
             };
 
             try {
