@@ -81,38 +81,70 @@ export class SshClient {
         });
     }
 
-    exec(command: string, timeoutMs = 60000): Promise<SshExecResult> {
+    exec(command: string, timeoutMs = 60000, signal?: AbortSignal): Promise<SshExecResult> {
         return new Promise((resolve, reject) => {
-            this.client.exec(command, (error, stream) => {
-                if (error) {
-                    reject(error);
+            let settled = false;
+            let timer: NodeJS.Timeout | undefined;
+            let stream: ClientChannel | undefined;
+            const finish = (settle: () => void) => {
+                if (settled) {
                     return;
                 }
+                settled = true;
+                if (timer) {
+                    clearTimeout(timer);
+                }
+                signal?.removeEventListener('abort', onAbort);
+                settle();
+            };
+            /** User interrupt (Esc): stop waiting and drop the channel. */
+            const onAbort = () => {
+                if (stream) {
+                    this.safeEndStream(stream);
+                }
+                finish(() => reject(new Error('SSH command cancelled.')));
+            };
+            if (signal) {
+                if (signal.aborted) {
+                    onAbort();
+                    return;
+                }
+                signal.addEventListener('abort', onAbort, { once: true });
+            }
+            this.client.exec(command, (error, channel) => {
+                if (settled) {
+                    // The turn was cancelled before the server answered.
+                    this.safeEndStream(channel);
+                    return;
+                }
+                if (error) {
+                    finish(() => reject(error));
+                    return;
+                }
+                stream = channel;
                 let stdout = '';
                 let stderr = '';
                 let timedOut = false;
-                const timer = setTimeout(() => {
+                timer = setTimeout(() => {
                     timedOut = true;
-                    this.safeEndStream(stream);
+                    this.safeEndStream(channel);
                 }, timeoutMs);
-                stream.on('data', (chunk: Buffer) => {
+                channel.on('data', (chunk: Buffer) => {
                     stdout += String(chunk);
                 });
-                stream.stderr.on('data', (chunk: Buffer) => {
+                channel.stderr.on('data', (chunk: Buffer) => {
                     stderr += String(chunk);
                 });
-                stream.on('close', (code: number | null) => {
-                    clearTimeout(timer);
-                    resolve({
+                channel.on('close', (code: number | null) => {
+                    finish(() => resolve({
                         stdout: stdout.trim(),
                         stderr: stderr.trim(),
                         exitCode: timedOut ? 124 : (code ?? 0),
                         timedOut
-                    });
+                    }));
                 });
-                stream.on('error', (error: Error) => {
-                    clearTimeout(timer);
-                    reject(error);
+                channel.on('error', (channelError: Error) => {
+                    finish(() => reject(channelError));
                 });
             });
         });

@@ -1,4 +1,4 @@
-import { AgentTool, AgentToolContext } from '@tsdi/agent';
+import { AgentTool, AgentToolContext, CANCELLED_MESSAGE } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { SshConnectionManager } from '@tsdi/agent-ssh';
 import { AgentToolsOptions } from '../src/options';
@@ -59,18 +59,26 @@ export class SshExecTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
         const host = requireText(input?.host, 'host');
         const command = requireText(input?.command, 'command');
         const manager = requireSshManager(this.manager);
         const timeoutMs = this.resolveTimeout(input?.timeoutMs);
         const client = await manager.connect(host);
-        const result = await client.exec(command, timeoutMs);
-        return {
-            host,
-            command,
-            ...result
-        };
+        try {
+            const result = await client.exec(command, timeoutMs, context?.signal);
+            return {
+                host,
+                command,
+                ...result
+            };
+        } catch (error) {
+            // Esc: the channel is already closed; report the shared wording.
+            if (context?.signal?.aborted) {
+                throw new Error(CANCELLED_MESSAGE);
+            }
+            throw error;
+        }
     }
 
     private resolveTimeout(inputTimeout: unknown): number {

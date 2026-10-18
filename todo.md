@@ -440,3 +440,14 @@
   - 全量：`agent` **996 passing**（+1）、`agent-tools` **548 passing**（+2）、`agent-gateway` **320**、`agent-ui` **1522**，均 EXIT=0；agent/agent-tools `tsc --noEmit` 0 错误；`node scripts/check-source-size.mjs` OK；`git diff --check` 干净。
 - **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/tool-abort1.log`）。
 - **遗留（如实记录）**：以下工具**自身**仍无取消钩子，靠协调器兜底（turn 立即结束，但底层请求会在后台自行结束）：`ssh_exec`（agent-ssh `client.exec(command, timeoutMs)`）、`web_search`/`web_extract`（providers 客户端）、`browser/*`（playwright 会话）、`media/*`、`audio/*`、`llm_task`（模型适配器）、`knowledge_search`、`security_scan`、`pipeline`/`spawn_agent`（子会话）。要真正停掉底层工作需在各库透传 `AbortSignal`，属后续 additive 工作。
+
+## 2026-10-18 Esc 覆盖：ssh_exec 真正中断（agent-ssh 透传 AbortSignal）
+- 背景：上一批的协调器兜底能让 turn 立即结束，但 `ssh_exec` 自身没有取消钩子——底层 SSH 通道会继续等到自己的超时（默认 60s、上限可配），属于「turn 结束但工作还在跑」。本次给它真正的取消。
+- 变更：
+  1. `agent-ssh/src/ssh-client.ts`：`exec(command, timeoutMs, signal?)` 增加可选信号。信号已中止 → 不发起；运行中 abort → `safeEndStream(stream)` 关闭通道并立即 reject；结算后清理超时定时器与 abort 监听；若 abort 早于服务端响应，迟到的通道也会被关闭。原有超时语义（`timedOut: true` + `exitCode: 124`）与返回值保持不变。
+  2. `agent-tools/ssh/ssh.tool.ts`：`SshExecTool.invoke` 透传 `context.signal`，并把中止统一翻译成 `Command cancelled by the user.`（与其它工具同一文案）。
+- 回归（先红后绿）：
+  - `agent-tools/test/ssh-tools.spec.ts` 新增一条（**真实 in-process ssh2 server**，远端命令 1.2s 后自行 exit，200ms 后 abort）：旧实现 **1 failed**（等命令跑完，1.263s，`Received: undefined`）；新实现 6 passing，该用例 214ms 结束并报 `Command cancelled by the user.`。测试同时加固了清理（先关闭服务端通道再 `server.close()`），避免回归时挂死。
+  - 全量：`agent-tools` **549 passing**（+1）、`agent-ssh` **9 passing**，均 EXIT=0；`agent-ssh` 与 `agent-tools` `tsc --noEmit` 0 错误；`node scripts/check-source-size.mjs` OK；`git diff --check` 干净。
+- **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/ssh-abort1.log`）。
+- **遗留（如实记录）**：`ssh_put`/`ssh_get`（SFTP 传输）与 `ssh_tunnel` 仍未接信号，仍靠协调器兜底；`web_search`/`web_extract`（适配器接口无 signal 参数，宿主实现的网络请求无法中止）、`browser/*`、`media/*`、`audio/*`、`llm_task`、`knowledge_search`、`security_scan`、`pipeline`/`spawn_agent` 同样待各库透传。

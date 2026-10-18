@@ -92,6 +92,60 @@ export class SshToolsTest {
         }
     }
 
+    @Test('ssh_exec stops on the turn signal instead of waiting for the command')
+    async execToolHonoursTurnSignal() {
+        let serverStream: any;
+        const mock = await startMockServer(session => {
+            session.on('exec', accept => {
+                const stream = accept();
+                serverStream = stream;
+                stream.write('started\n');
+                // A slow remote command: it finishes on its own after 1.2s.
+                setTimeout(() => {
+                    try {
+                        stream.exit(0);
+                        stream.end();
+                    } catch (ignored) {
+                        void ignored;
+                    }
+                }, 1200);
+            });
+        });
+        const manager = new SshConnectionManager();
+        try {
+            manager.register(mockConfig(mock.port));
+            const tool = new SshExecTool(manager, { ssh: { defaultTimeoutMs: 10000 } });
+            const controller = new AbortController();
+            const startedAt = Date.now();
+            const pending = tool.invoke(
+                { host: 'mock', command: 'sleep 60', timeoutMs: 5000 },
+                { sessionId: 's1', signal: controller.signal } as any
+            );
+            await new Promise(resolve => setTimeout(resolve, 200));
+            controller.abort();
+
+            let error: any;
+            try {
+                await pending;
+            } catch (err) {
+                error = err;
+            }
+            expect(error?.message).toEqual('Command cancelled by the user.');
+            // Esc must end the wait; it must not wait for the command to finish.
+            expect(Date.now() - startedAt).toBeLessThan(1000);
+        } finally {
+            // Close the server-side channel first: an interrupted command leaves
+            // it open, and `server.close()` would wait for it forever.
+            try {
+                serverStream?.end();
+            } catch (ignored) {
+                void ignored;
+            }
+            await manager.disposeAll();
+            mock.server.close();
+        }
+    }
+
     @Test('ssh_exec rejects when no connection manager is configured')
     async execToolWithoutManager() {
         const tool = new SshExecTool(null, undefined);
