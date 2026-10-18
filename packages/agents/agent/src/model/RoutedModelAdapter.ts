@@ -8,7 +8,7 @@ import { OpenAICompatibleModelAdapter } from './OpenAICompatibleModelAdapter';
 import { AnthropicModelAdapter } from './AnthropicModelAdapter';
 import { EchoModelAdapter } from './EchoModelAdapter';
 import { ModelRequestError, asModelFailure } from './ModelRequestError';
-import { classifyModelError, isRetryableError } from './RetryPolicy';
+import { classifyModelError, isModelRequestCancelled, isRetryableError } from './RetryPolicy';
 import { getAgentMessageText } from '../runtime/AgentMessage';
 import { AgentClock } from '../runtime/Clock';
 
@@ -50,7 +50,7 @@ export class RoutedModelAdapter extends ModelAdapter {
             const response = await selection.adapter.complete(request);
             return this.decorateResponse(response, selection);
         } catch (error) {
-            const fallback = this.resolveFallbackSelection(error, selection);
+            const fallback = isModelRequestCancelled(request) ? null : this.resolveFallbackSelection(error, selection);
             if (!fallback) {
                 throw error;
             }
@@ -78,7 +78,7 @@ export class RoutedModelAdapter extends ModelAdapter {
             if (emitted) {
                 throw error;
             }
-            const fallback = this.resolveFallbackSelection(error, selection);
+            const fallback = isModelRequestCancelled(request) ? null : this.resolveFallbackSelection(error, selection);
             if (!fallback) {
                 throw error;
             }

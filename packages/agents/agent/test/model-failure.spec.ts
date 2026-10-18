@@ -250,4 +250,131 @@ export class ModelFailureSpec {
         expect(calls).toEqual(1);
         expect(caught).toBeTruthy();
     }
+
+    @Test('does not retry a retryable streaming status once the runtime signal is aborted')
+    async doesNotRetryStreamingStatusAfterAbort() {
+        this.originalFetch = (globalThis as any).fetch;
+        let calls = 0;
+        (globalThis as any).fetch = async () => {
+            calls += 1;
+            return jsonResponse(429, { error: { message: 'Too Many Requests' } });
+        };
+
+        const controller = new AbortController();
+        controller.abort();
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'openai-compatible',
+            model: 'gpt-5.5',
+            baseUrl: 'https://example.test',
+            apiKey: 'test-key',
+            retry: { maxRetries: 2, baseDelayMs: 0, maxDelayMs: 0, jitterMs: 0 }
+        } as any, undefined, { sleep: async () => undefined } as any);
+
+        let caught: any;
+        try {
+            for await (const _chunk of adapter.stream({ ...createRequest(), signal: controller.signal })) {
+                // drain: the aborted turn must not produce chunks
+            }
+        } catch (error) {
+            caught = error;
+        }
+
+        expect(calls).toEqual(1);
+        expect(caught).toBeTruthy();
+    }
+
+    @Test('does not fall back to a non-streaming request once the runtime signal is aborted')
+    async doesNotFallbackToNonStreamingAfterAbort() {
+        this.originalFetch = (globalThis as any).fetch;
+        let calls = 0;
+        (globalThis as any).fetch = async () => {
+            calls += 1;
+            const aborted: any = new Error('This operation was aborted');
+            aborted.name = 'AbortError';
+            throw aborted;
+        };
+
+        const controller = new AbortController();
+        controller.abort();
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'openai-compatible',
+            model: 'gpt-5.5',
+            baseUrl: 'https://example.test',
+            apiKey: 'test-key',
+            retry: { maxRetries: 3, baseDelayMs: 0, maxDelayMs: 0, jitterMs: 0 }
+        } as any, undefined, { sleep: async () => undefined } as any);
+
+        let caught: any;
+        try {
+            for await (const _chunk of adapter.stream({ ...createRequest(), signal: controller.signal })) {
+                // drain
+            }
+        } catch (error) {
+            caught = error;
+        }
+
+        // One aborted streaming request; no duplicate non-streaming completion after it.
+        expect(calls).toEqual(1);
+        expect(caught).toBeTruthy();
+    }
+
+    @Test('openai-compatible does not retry a retryable non-streaming status once the runtime signal is aborted')
+    async openaiDoesNotRetryStatusAfterAbort() {
+        this.originalFetch = (globalThis as any).fetch;
+        let calls = 0;
+        (globalThis as any).fetch = async () => {
+            calls += 1;
+            return jsonResponse(429, { error: { message: 'Too Many Requests' } });
+        };
+
+        const controller = new AbortController();
+        controller.abort();
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'openai-compatible',
+            model: 'gpt-5.5',
+            baseUrl: 'https://example.test',
+            apiKey: 'test-key',
+            retry: { maxRetries: 2, baseDelayMs: 0, maxDelayMs: 0, jitterMs: 0 }
+        } as any, undefined, { sleep: async () => undefined } as any);
+
+        let caught: any;
+        try {
+            await adapter.complete({ ...createRequest(), signal: controller.signal });
+        } catch (error) {
+            caught = error;
+        }
+
+        expect(calls).toEqual(1);
+        expect(caught).toBeTruthy();
+    }
+
+    @Test('anthropic does not retry a retryable status once the runtime signal is aborted')
+    async anthropicDoesNotRetryAfterAbort() {
+        this.originalFetch = (globalThis as any).fetch;
+        let calls = 0;
+        (globalThis as any).fetch = async () => {
+            calls += 1;
+            return jsonResponse(429, { error: { message: 'Too Many Requests' } });
+        };
+
+        const controller = new AbortController();
+        controller.abort();
+        const adapter = new AnthropicModelAdapter({
+            provider: 'anthropic',
+            model: 'claude-sonnet-4',
+            baseUrl: 'https://api.anthropic.com',
+            apiKey: 'test-key',
+            retry: { maxRetries: 2, baseDelayMs: 0, maxDelayMs: 0, jitterMs: 0 }
+        } as any, undefined, { sleep: async () => undefined } as any);
+
+        let caught: any;
+        try {
+            await adapter.complete({ ...createRequest(), signal: controller.signal });
+        } catch (error) {
+            caught = error;
+        }
+
+        expect(calls).toEqual(1);
+        expect(caught).toBeTruthy();
+    }
 }

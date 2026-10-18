@@ -2,7 +2,7 @@ import { AgentMemoryRecord } from '../memory/MemoryStore';
 import { AgentFileMessagePart, AgentImageMessagePart, AgentMessage, AgentMessagePart, getAgentMessageText, resolveAgentMessageParts } from '../runtime/AgentMessage';
 import { AgentToolDefinition } from '../tools/AgentTool';
 import { ModelAdapter } from './ModelAdapter';
-import { classifyModelError, DEFAULT_RETRY_POLICY, isRetryableError, retryDelayMs, shouldRetryTransport } from './RetryPolicy';
+import { classifyModelError, DEFAULT_RETRY_POLICY, isModelRequestCancelled, isRetryableError, retryDelayMs, shouldRetryTransport } from './RetryPolicy';
 import { asModelFailure, createModelRequestError, ModelRequestError } from './ModelRequestError';
 import { ModelRequest } from './ModelRequest';
 import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
@@ -171,7 +171,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
 
             if (!response.ok) {
                 const detail = await this.readResponseError(response);
-                if (this.isRetryable(response.status, detail) && attempt <= (this.options.retry?.maxRetries ?? DEFAULT_RETRY_POLICY.maxRetries)) {
+                if (!isModelRequestCancelled(request) && this.isRetryable(response.status, detail) && attempt <= (this.options.retry?.maxRetries ?? DEFAULT_RETRY_POLICY.maxRetries)) {
                     cleanup();
                     return this.retry(request, attempt, response.status, response.headers.get('retry-after'));
                 }
@@ -237,7 +237,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
 
             if (!response.ok) {
                 const detail = await this.readResponseError(response);
-                if (!emittedAnswerChunk && this.isRetryable(response.status, detail) && attempt <= (this.options.retry?.maxRetries ?? DEFAULT_RETRY_POLICY.maxRetries)) {
+                if (!isModelRequestCancelled(request) && !emittedAnswerChunk && this.isRetryable(response.status, detail) && attempt <= (this.options.retry?.maxRetries ?? DEFAULT_RETRY_POLICY.maxRetries)) {
                     cleanup();
                     for await (const chunk of this.stream(request, attempt + 1)) {
                         yield chunk;
@@ -390,7 +390,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                 }
             }
         } catch (error: any) {
-            if (asModelFailure(error)?.retryable !== false && !emittedAnswerChunk && this.shouldFallbackToNonStreaming(error, getAbortReason())) {
+            if (!isModelRequestCancelled(request) && asModelFailure(error)?.retryable !== false && !emittedAnswerChunk && this.shouldFallbackToNonStreaming(error, getAbortReason())) {
                 for await (const chunk of this.fallbackToNonStreamingCompletion(request)) {
                     yield chunk;
                 }
