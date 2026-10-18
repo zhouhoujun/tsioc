@@ -4,6 +4,7 @@ import { promises as fs } from 'fs';
 import { resolveFilePolicy, resolveWorkspacePath } from '../files/path-policy';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
+import { withTurnSignal } from '../src/turn-signal';
 
 @Abstract()
 export abstract class SecurityScannerAdapter {
@@ -15,6 +16,8 @@ export interface ScanOptions {
     scanSecrets?: boolean;
     scanDeps?: boolean;
     scanCode?: boolean;
+    /** Aborted when the user interrupts the turn (Esc). */
+    signal?: AbortSignal;
 }
 
 export interface ScanResult {
@@ -78,7 +81,7 @@ export class SecurityScanTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
         const path = this.requireString(input?.path, 'security_scan path');
         const policy = resolveFilePolicy(this.options);
         const absolutePath = resolveWorkspacePath(path, policy.rootDir);
@@ -89,13 +92,15 @@ export class SecurityScanTool implements AgentTool {
             throw new Error(`Security scan path '${path}' does not exist.`);
         }
 
-        if (this.adapter) {
-            const result = await this.adapter.scan(absolutePath, {
+        const adapter = this.adapter;
+        if (adapter) {
+            const result = await withTurnSignal(context, () => adapter.scan(absolutePath, {
                 severityThreshold: typeof input?.severity === 'string' ? input.severity as any : 'medium',
                 scanSecrets: input?.scan_secrets !== false,
                 scanDeps: input?.scan_deps !== false,
-                scanCode: input?.scan_code !== false
-            });
+                scanCode: input?.scan_code !== false,
+                signal: context?.signal
+            }));
             return {
                 path,
                 vulnerabilities: result.vulnerabilities,

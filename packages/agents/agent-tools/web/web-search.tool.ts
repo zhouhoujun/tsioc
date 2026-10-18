@@ -2,6 +2,7 @@ import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
+import { withTurnSignal } from '../src/turn-signal';
 import { domainAllowed, resolveIndexedEnabled } from './domain-policy';
 
 @Injectable()
@@ -26,7 +27,7 @@ export class WebSearchTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
         if (!input || typeof input.query !== 'string' || !input.query.trim()) {
             throw new Error('Invalid web_search input: query must be a non-empty string.');
         }
@@ -34,7 +35,8 @@ export class WebSearchTool implements AgentTool {
         if (!search) {
             throw new Error('web_search requires a configured search adapter.');
         }
-        const results = await search.search(input.query, typeof input.limit === 'number' ? input.limit : undefined);
+        const limit = typeof input.limit === 'number' ? input.limit : undefined;
+        const results = await withTurnSignal(context, () => search.search(input.query, limit, context?.signal));
         const allowedDomains = this.options?.web?.allowedDomains;
         if (resolveIndexedEnabled(this.options?.web?.indexed, allowedDomains)) {
             return {

@@ -3,6 +3,7 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import * as parse5 from 'parse5';
 import { AgentToolsOptions, defaultAgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
+import { withTurnSignal } from '../src/turn-signal';
 import { domainAllowed, resolveIndexedEnabled } from './domain-policy';
 
 @Injectable()
@@ -26,7 +27,7 @@ export class WebExtractTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
         if (!input || typeof input.url !== 'string' || !input.url.trim()) {
             throw new Error('Invalid web_extract input: url must be a non-empty string.');
         }
@@ -38,11 +39,12 @@ export class WebExtractTool implements AgentTool {
         if (!fetcher) {
             throw new Error('web_extract requires a fetch implementation.');
         }
-        const response = await fetcher(input.url);
+        const signal = context?.signal;
+        const response = await withTurnSignal(context, () => fetcher(input.url, signal ? { signal } : undefined));
         if (!response.ok) {
             throw new Error(`web_extract failed with status ${response.status}.`);
         }
-        const html = await response.text();
+        const html = await withTurnSignal(context, () => response.text());
         const title = extractTitle(html);
         const maxChars = this.options?.web?.maxContentChars ?? defaultAgentToolsOptions.web?.maxContentChars ?? 12000;
         const content = extractText(html).slice(0, maxChars);

@@ -479,3 +479,21 @@
   - 全量：`agent-tools` **551 passing**（+2）、`agent-ssh` **9 passing**，均 EXIT=0；`agent-ssh`/`agent-tools` `tsc --noEmit` 0 错误；`source-size` OK；`git diff --check` 干净。
 - **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/ssh-sftp1.log`）。
 - **遗留（如实记录）**：SSH 家族已全部接入信号；剩余无取消钩子的仍是宿主侧 adapter（`web_search`/`web_extract`/`browser/*`/`media/*`/`audio/*`/`llm_task`/`knowledge_search`/`security_scan`/`pipeline`·`spawn_agent`），本仓库 0 实现，需宿主实现方接 `AbortSignal`；`spawn_agent` 的子会话已由 `cancelTurn` 级联覆盖。
+
+## 2026-10-18 Esc 覆盖收口：剩余 adapter 工具统一透传 turn 信号
+- 背景：SSH 家族接完后，剩下「自身无取消钩子」的工具都是宿主 adapter（`web_search`/`web_extract`/`image_generate`/`vision_analyze`/`audio_transcribe`/`text_to_speech`/`security_scan`/`browser/*`）。本仓库对这 6 个 adapter **0 实现**，但工具侧此前**根本不传** `context.signal`，宿主即便想取消也拿不到信号。本批把契约补齐（不改任何既有返回结构）。
+- 变更：
+  1. 新增 `agent-tools/src/turn-signal.ts`：`withTurnSignal(context, run)` —— Esc 时统一翻译为 `Command cancelled by the user.`；`ssh.tool.ts` 改用该共享实现（删除本地副本）。
+  2. adapter 契约（全部为可选、向后兼容）：
+     - `WebSearchAdapter.search(query, limit?, signal?)`（`src/options.ts`）
+     - `ImageGenerationOptions.signal?`、`TranscriptionOptions.signal?`、`TtsOptions.signal?`、`ScanOptions.signal?`
+     - `VisionAdapter.analyze(imageUrl, question?, signal?)`
+     - `PlaywrightBrowserAdapter.execute(request, context)` 本来就收到完整 `AgentToolContext`（含 signal），无需改动
+  3. 七个工具改为 `invoke(input, context)` 并透传信号：`web_search`、`image_generate`、`vision_analyze`、`audio_transcribe`、`text_to_speech`、`security_scan`；**`web_extract` 是真实实现**（`globalThis.fetch`），把 `signal` 真正传进 `fetch(url, { signal })`，请求体读取也在同一信号下。
+- 回归（先红后绿）：新增 `agent-tools/test/tool-turn-signal.spec.ts`（8 条）：
+  - 6 条「adapter 收到的是同一个 turn 信号」+ abort 后统一报 `Command cancelled by the user.`：旧实现 **6 failed**（adapter 收到 `undefined`，看门狗 1.58s 超时）；新实现各 ~72ms 通过。
+  - 1 条 `web_extract` 真实网络取消（本地 stalling HTTP server，150ms 后 abort）：旧实现 2.19s 超时未结算；新实现 213ms 结束并报同一文案。
+  - 1 条守卫：正常 search adapter 结果不受影响。
+  - 全量：`agent-tools` **559 passing**（551+8）、`agent-ssh` **9 passing**，均 EXIT=0；`agent`/`agent-tools`/`agent-gateway`/`agent-ui` `tsc --noEmit` 全 0 错误；`source-size` OK；`git diff --check` 干净。
+- **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/turn-signal1.log`）。
+- **结论 / 遗留**：Esc 覆盖到此收口 —— 本仓库内有真实 I/O 的工具全部接入信号；adapter 类工具已把「能取消就取消」的契约交给宿主实现（`AbortSignal` 在 options/参数上）。仍未接入的只有 `knowledge_search`（默认 in-memory adapter，本地快速，靠协调器兜底）与 `browser/*`（adapter 已拿到 context，是否中止由宿主实现决定）。真实长会话里「重复工具调用是否下降」仍属观测项。

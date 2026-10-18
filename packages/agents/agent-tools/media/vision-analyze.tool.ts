@@ -1,5 +1,6 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { Abstract, Injectable } from '@tsdi/ioc';
+import { withTurnSignal } from '../src/turn-signal';
 
 export interface VisionAnalysisResult {
     description: string;
@@ -10,7 +11,7 @@ export interface VisionAnalysisResult {
 
 @Abstract()
 export abstract class VisionAdapter {
-    abstract analyze(imageUrl: string, question?: string): Promise<VisionAnalysisResult>;
+    abstract analyze(imageUrl: string, question?: string, signal?: AbortSignal): Promise<VisionAnalysisResult>;
 }
 
 
@@ -41,12 +42,10 @@ export class VisionAnalyzeTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
         const imageUrl = this.requireString(input?.image_url, 'vision_analyze image_url');
-        const result = await this.adapter.analyze(
-            imageUrl,
-            typeof input?.question === 'string' && input.question.trim() ? input.question.trim() : undefined
-        );
+        const question = typeof input?.question === 'string' && input.question.trim() ? input.question.trim() : undefined;
+        const result = await withTurnSignal(context, () => this.adapter.analyze(imageUrl, question, context?.signal));
         return {
             description: result.description,
             labels: result.labels,

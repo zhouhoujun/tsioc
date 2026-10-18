@@ -1,5 +1,6 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { Abstract, Injectable } from '@tsdi/ioc';
+import { withTurnSignal } from '../src/turn-signal';
 
 export interface TranscriptionResult {
     text: string;
@@ -16,6 +17,8 @@ export abstract class TranscriptionAdapter {
 export interface TranscriptionOptions {
     language?: string;
     segments?: boolean;
+    /** Aborted when the user interrupts the turn (Esc). */
+    signal?: AbortSignal;
 }
 
 
@@ -51,12 +54,13 @@ export class AudioTranscribeTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
         const audioUrl = this.requireString(input?.audio_url, 'audio_transcribe audio_url');
-        const result = await this.adapter.transcribe(audioUrl, {
+        const result = await withTurnSignal(context, () => this.adapter.transcribe(audioUrl, {
             language: typeof input?.language === 'string' ? input.language : undefined,
-            segments: input?.segments === true
-        });
+            segments: input?.segments === true,
+            signal: context?.signal
+        }));
         return {
             text: result.text,
             segments: result.segments,

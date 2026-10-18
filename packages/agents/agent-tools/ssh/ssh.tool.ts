@@ -2,6 +2,7 @@ import { AgentTool, AgentToolContext, CANCELLED_MESSAGE } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { SshConnectionManager } from '@tsdi/agent-ssh';
 import { AgentToolsOptions } from '../src/options';
+import { withTurnSignal } from '../src/turn-signal';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 
 const DEFAULT_TIMEOUT_MS = 60000;
@@ -29,17 +30,6 @@ function requirePort(value: unknown, field: string): number {
     return port;
 }
 
-/** Report a user interrupt (Esc) with the wording every tool shares. */
-async function withTurnSignal<T>(context: AgentToolContext, run: () => Promise<T>): Promise<T> {
-    try {
-        return await run();
-    } catch (error) {
-        if (context?.signal?.aborted) {
-            throw new Error(CANCELLED_MESSAGE);
-        }
-        throw error;
-    }
-}
 
 @Injectable()
 export class SshExecTool implements AgentTool {
