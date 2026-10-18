@@ -11,6 +11,12 @@ export interface CodeExecutionRequest {
     timeoutMs?: number;
     workspace?: string;
     workdir?: string;
+    /**
+     * Aborted when the owning turn is cancelled (user interrupt) so the run
+     * stops promptly instead of waiting out its timeout. Adapters should stop
+     * the execution and reject with the cancellation error.
+     */
+    signal?: AbortSignal;
 }
 
 export interface CodeExecutionResult {

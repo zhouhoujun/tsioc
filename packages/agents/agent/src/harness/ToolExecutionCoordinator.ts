@@ -173,7 +173,9 @@ export class ToolExecutionCoordinator {
             if (command.trim()) {
                 const result = await this.sandboxExecutor.execute(command, [], {
                     policy: sandboxPolicy,
-                    timeoutMs
+                    timeoutMs,
+                    // Esc must stop a sandboxed command too.
+                    signal: request.signal
                 });
                 return result;
             }

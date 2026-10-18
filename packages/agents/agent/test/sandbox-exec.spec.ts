@@ -1,6 +1,9 @@
 import { RandomUuidGenerator } from '@tsdi/core';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import {
     buildSandboxExecCommand,
     describeSandboxCapabilities,
@@ -386,5 +389,102 @@ export class CoordinatorSandboxWiringTest {
 
         expect(calls).toEqual(['registry:terminal']);
         expect(outcome.output).toEqual({ ok: true });
+    }
+
+    @Test('forwards the turn signal to the sandbox executor')
+    async forwardsTurnSignalToSandboxExecutor() {
+        let receivedSignal: AbortSignal | undefined;
+        const executor = {
+            isSupported: () => true,
+            async execute(command: string, args: string[], opts: any) {
+                receivedSignal = opts.signal;
+                return { exitCode: 0, stdout: '', stderr: '', wallTimeMs: 1 };
+            }
+        } as any;
+        const registry = {
+            async invoke() {
+                return { ok: true };
+            }
+        } as any;
+        const coordinator = new ToolExecutionCoordinator(
+            registry,
+            new ToolSchemaValidator(),
+            new RateLimitManager(),
+            new OutputGuard(),
+            { async publishEvent() {} } as any,
+            new RandomUuidGenerator(),
+            undefined,
+            executor
+        );
+        const controller = new AbortController();
+
+        await coordinator.execute({
+            sessionId: 's1',
+            principalId: 'u1',
+            workspace: '/ws',
+            toolCall: { id: 'tc1', name: 'terminal', input: { command: 'ls -la' } },
+            definition: {
+                name: 'terminal',
+                description: 'terminal',
+                toolset: 'terminal',
+                execution: {
+                    sandbox: { enabled: true, isolationLevel: 'process', osSandbox: 'workspace' }
+                }
+            },
+            executionMode: 'sequential',
+            inputSummary: 'ls -la',
+            signal: controller.signal
+        } as any);
+
+        // Without this the sandboxed command could not be interrupted by Esc.
+        expect(receivedSignal).toBe(controller.signal);
+    }
+}
+
+@Suite('SandboxExecutor cancellation')
+export class SandboxExecutorCancellationTest {
+    @Test('stops a running command when the turn is cancelled')
+    async stopsRunningCommandOnAbort() {
+        const executor = new NodeChildProcessSandboxExecutor();
+        const controller = new AbortController();
+        const policy = createSandboxPolicy({ enabled: true, workingDirectory: os.tmpdir() });
+        const startedAt = Date.now();
+        const pending = executor.execute('sleep', ['30'], {
+            policy,
+            timeoutMs: 600,
+            signal: controller.signal
+        } as any);
+        // Let the command actually start before the user interrupts it.
+        await new Promise(resolve => setTimeout(resolve, 200));
+        controller.abort();
+
+        const result = await pending;
+
+        expect((result as any).cancelled).toEqual(true);
+        expect(result.error).toEqual('Command cancelled by the user.');
+        // Settled by the interrupt, well before the wall-time limit would fire.
+        expect(Date.now() - startedAt).toBeLessThan(5000);
+    }
+
+    @Test('does not spawn a command when the turn is already cancelled')
+    async doesNotSpawnWhenAlreadyCancelled() {
+        const executor = new NodeChildProcessSandboxExecutor();
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'tsioc-sandbox-cancel-'));
+        const marker = path.join(workspace, 'spawned.txt');
+        try {
+            const controller = new AbortController();
+            controller.abort();
+
+            const result = await executor.execute('touch', [marker], {
+                policy: createSandboxPolicy({ enabled: true, workingDirectory: workspace }),
+                timeoutMs: 5000,
+                signal: controller.signal
+            } as any);
+
+            expect((result as any).cancelled).toEqual(true);
+            expect(fs.existsSync(marker)).toEqual(false);
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
     }
 }

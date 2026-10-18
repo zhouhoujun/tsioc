@@ -392,3 +392,20 @@
   - 修复后该 spec 3 passing；`agent-tools` 全量 **540 passing**（原 537 + 3）。
 - **验证**：`review-diff-cancel.spec.ts` 3 passing；`agent-tools` 全量 **540 passing**（EXIT=0）；`tsc --noEmit @tsdi/agent-tools` 0 错误；`node scripts/check-source-size.mjs` OK（`review-diff.tool.ts` 284 行，未入基线且 < 600）；`git diff --check` 干净；`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/review-async1.log`，含 `pty-acceptance`、`dom-gate`、`tui-gate`、`production-db-integrity`）。
 - **遗留（如实记录）**：`agent/src/harness/GitStepSnapshotStore.ts` 仍用 `spawnSync`（10s 超时、32MB buffer，每个 turn step 捕获一次快照），但它的公开 API 是**同步**的（`isAvailable`/`capture`/`diff`/`revert`…）并透出到 `AgentRuntime` 接口（`captureStepSnapshot` 同步返回），改成 async 属核心 API 变更、影响 agent-ui/gateway 等调用方，需单独确认后再动。
+
+## 2026-10-18 剩余信号缺口：execute_code 与 osSandbox 分支
+- 背景（Esc 批次收尾）：`AgentToolContext.signal` 已透传到 `toolRegistry`，但仍有两处完全不观察它：
+  1. `execute_code`：`CodeExecutionRequest` 没有 signal，工具也不传 `context.signal`；命令路径（bash/python…）与 JS/TS worker 路径都不响应 Esc，只能等到自己的 timeout（默认 30s）。
+  2. osSandbox 分支：`ToolExecutionCoordinator.invokeWithTimeout` 里 `sandboxExecutor.execute(command, [], { policy, timeoutMs })` 未传 `request.signal`（同一函数的另一分支 `invokeInSandbox` 本来就传了）；启用 OS 级沙箱时 Esc 对沙箱命令无效。
+- **修复**：
+  1. `code-execution/types.ts` 增加 `CodeExecutionRequest.signal`；`execute-code.tool.ts` 入口做「已取消则不启动」检查并透传 signal；`local-code-execution.adapter.ts` 的命令路径改用共享 `runChildProcess`（超时/取消/进程组 kill 与 terminal/ai-cli/git 一致），worker 路径订阅 signal → `worker.terminate()`；取消统一 reject `Command cancelled by the user.`。超时（124 + 提示）、ENOENT（`<cmd> is not available in PATH for <line>`）、非 0 退出码（`error` 为 stderr 或 `execute_code exited with code N`）等语义逐条保留。
+     注意：worker 取消必须**先结算再终止**——`worker.terminate()` 要等 worker 的 `exit` 事件才 resolve，先 terminate 会让 `exit` 处理器把结果当正常完成。
+  2. `SandboxExecutor.execute` 的 options 增加 `signal`：启动前已取消则不 spawn（直接返回 `cancelled` 结果，`wallTimeMs: 0`），运行中 abort 则 `killProcess`（沿用既有 SIGKILL 升级），结果新增 `cancelled?: boolean` 与 `error: 'Command cancelled by the user.'`；`ToolExecutionCoordinator` 把 `request.signal` 传进去。
+  3. 拆分（ratchet）：把 `SandboxExecutor.ts` 的类型声明（`SandboxPolicy`/`SandboxExecutionResult`/`SandboxIsolationLevel`/`SandboxResourceLimits`）抽到新文件 `agent/src/harness/sandbox-types.ts`，原文件 re-export（所有 import 方无需改动）。这样该文件 605 → 582 行，**baseline 同步下调 605→582**。
+- **回归**：
+  - 新增 `agent-tools/test/code-execution-cancel.spec.ts`（6 条，真实执行 bash 与 node worker），`git stash` 掉实现后 **3 passing / 3 failed**：运行中取消（旧：1.52s 后返回超时结果、`Received: undefined`；新：311ms 内 reject）、已取消则不执行（旧：照常 `touch` 出 marker；新：不 spawn 且 reject）、worker 运行中取消（旧：1.52s 后超时结果；新：304ms 内 reject）；三条守卫（bash 输出、node worker 输出、超时仍返回 124 + `Timed out after 600 ms`）新旧一致。
+    期间发现并规避一个测试陷阱：只写 `await new Promise(() => {})` 不会让 worker 保持存活（事件循环无 handle 时 worker 直接 exit 0），必须另留一个 handle（测试用 `setInterval`）。
+  - `agent/test/sandbox-exec.spec.ts` 新增 3 条（真实 spawn `sleep`/`touch` + 真实 coordinator）：旧实现 **31 passing / 3 failed**——coordinator 未透传 signal（`Received: undefined`）、运行中取消无效（旧：611ms 由 wall-time 限制杀掉、`cancelled` 为 undefined）、已取消仍 spawn（marker 被创建）；新实现 34 passing。
+  - 全量：`agent-tools` **546 passing**（原 540 + 6）、`agent` **992 passing**（+3），均 EXIT=0；两个包 `tsc --noEmit` 0 错误；`node scripts/check-source-size.mjs` OK；`git diff --check` 干净。
+- **验证**：`code-execution-cancel.spec.ts` 6 passing、`agent` 的 `sandbox-exec.spec.ts` 34 passing；`agent-tools` 全量 **546 passing**、`agent` 全量 **992 passing**（均 EXIT=0）；两包 `tsc --noEmit` 0 错误；`node scripts/check-source-size.mjs` OK（`SandboxExecutor.ts` 605→582 且 baseline 同步下调）；`git diff --check` 干净；`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/signal-gaps1.log`，含 `pty-acceptance`、`dom-gate`、`tui-gate`、`production-db-integrity`）。
+- **遗留（如实记录）**：`agent/src/harness/GitStepSnapshotStore.ts` 仍是同步 `spawnSync`（10s 超时/32MB buffer，每个 turn step 捕获一次快照），但它的公开 API 是同步的并透出到 `AgentRuntime` 接口（`captureStepSnapshot` 同步返回），改 async 属核心 API 变更、影响 agent-ui 与 gateway 等调用方，需单独确认后再动。

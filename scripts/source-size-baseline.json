@@ -20,7 +20,7 @@
   "packages/agents/agent-ui/src/AgentConsoleSessionState.ts": 7365,
   "packages/agents/agent-ui/src/AgentConsoleTimelineWindow.ts": 934,
   "packages/agents/agent/src/context/AgentContextManager.ts": 1996,
-  "packages/agents/agent/src/harness/SandboxExecutor.ts": 605,
+  "packages/agents/agent/src/harness/SandboxExecutor.ts": 582,
   "packages/agents/agent/src/memory/entities.ts": 667,
   "packages/agents/agent/src/model/AnthropicModelAdapter.ts": 657,
   "packages/agents/agent/src/model/OpenAICompatibleModelAdapter.ts": 1161,

@@ -1,5 +1,6 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { Injectable } from '@tsdi/ioc';
+import { CANCELLED_MESSAGE } from '../src/child-process-runner';
 import { CodeExecutionAdapter } from './types';
 
 @Injectable()
@@ -40,12 +41,17 @@ export class ExecuteCodeTool implements AgentTool {
     async invoke(input: any, context: AgentToolContext): Promise<any> {
         const language = this.requireString(input?.language, 'execute_code language');
         const code = this.requireString(input?.code, 'execute_code code');
+        // Esc before the run starts must not launch a multi-second execution.
+        if (context?.signal?.aborted) {
+            throw new Error(CANCELLED_MESSAGE);
+        }
         const result = await this.adapter.execute({
             language: language.toLowerCase(),
             code,
             timeoutMs: typeof input?.timeoutMs === 'number' && input.timeoutMs > 0 ? input.timeoutMs : 30000,
             workspace: context.workspace,
-            workdir: typeof input?.workdir === 'string' ? input.workdir : undefined
+            workdir: typeof input?.workdir === 'string' ? input.workdir : undefined,
+            signal: context?.signal
         });
         return {
             language,
