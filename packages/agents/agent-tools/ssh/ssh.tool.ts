@@ -29,6 +29,18 @@ function requirePort(value: unknown, field: string): number {
     return port;
 }
 
+/** Report a user interrupt (Esc) with the wording every tool shares. */
+async function withTurnSignal<T>(context: AgentToolContext, run: () => Promise<T>): Promise<T> {
+    try {
+        return await run();
+    } catch (error) {
+        if (context?.signal?.aborted) {
+            throw new Error(CANCELLED_MESSAGE);
+        }
+        throw error;
+    }
+}
+
 @Injectable()
 export class SshExecTool implements AgentTool {
     name = 'ssh_exec';
@@ -65,20 +77,12 @@ export class SshExecTool implements AgentTool {
         const manager = requireSshManager(this.manager);
         const timeoutMs = this.resolveTimeout(input?.timeoutMs);
         const client = await manager.connect(host);
-        try {
-            const result = await client.exec(command, timeoutMs, context?.signal);
-            return {
-                host,
-                command,
-                ...result
-            };
-        } catch (error) {
-            // Esc: the channel is already closed; report the shared wording.
-            if (context?.signal?.aborted) {
-                throw new Error(CANCELLED_MESSAGE);
-            }
-            throw error;
-        }
+        const result = await withTurnSignal(context, () => client.exec(command, timeoutMs, context?.signal));
+        return {
+            host,
+            command,
+            ...result
+        };
     }
 
     private resolveTimeout(inputTimeout: unknown): number {
@@ -122,13 +126,13 @@ export class SshPutTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
         const host = requireText(input?.host, 'host');
         const localPath = requireText(input?.localPath, 'localPath');
         const remotePath = requireText(input?.remotePath, 'remotePath');
         const manager = requireSshManager(this.manager);
         const client = await manager.connect(host);
-        const result = await client.sftpPut(localPath, remotePath);
+        const result = await withTurnSignal(context, () => client.sftpPut(localPath, remotePath, context?.signal));
         return {
             host,
             localPath,
@@ -166,13 +170,13 @@ export class SshGetTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
         const host = requireText(input?.host, 'host');
         const remotePath = requireText(input?.remotePath, 'remotePath');
         const localPath = requireText(input?.localPath, 'localPath');
         const manager = requireSshManager(this.manager);
         const client = await manager.connect(host);
-        const result = await client.sftpGet(remotePath, localPath);
+        const result = await withTurnSignal(context, () => client.sftpGet(remotePath, localPath, context?.signal));
         return {
             host,
             remotePath,
@@ -212,7 +216,7 @@ export class SshTunnelTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
         const host = requireText(input?.host, 'host');
         const destAddr = requireText(input?.destAddr, 'destAddr');
         const destPort = requirePort(input?.destPort, 'destPort');
@@ -220,7 +224,7 @@ export class SshTunnelTool implements AgentTool {
         const srcPort = input?.srcPort == null ? 0 : requirePort(input.srcPort, 'srcPort');
         const manager = requireSshManager(this.manager);
         const client = await manager.connect(host);
-        const channel = await client.forwardOut(srcAddr, srcPort, destAddr, destPort);
+        const channel = await withTurnSignal(context, () => client.forwardOut(srcAddr, srcPort, destAddr, destPort, context?.signal));
         channel.close();
         return {
             host,

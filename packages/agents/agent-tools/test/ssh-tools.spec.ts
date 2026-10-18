@@ -2,6 +2,9 @@ import { RandomUuidGenerator } from '@tsdi/core';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { Server, Connection, Session, utils } from 'ssh2';
+import { mkdtempSync, rmSync, writeFileSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import { SshConnectionManager, SshHostConfig } from '@tsdi/agent-ssh';
 import { SshExecTool, SshGetTool, SshPutTool, SshTunnelTool } from '../ssh/ssh.tool';
 
@@ -64,6 +67,44 @@ function mockConfig(port: number): SshHostConfig {
         auth: { type: 'password', password: 'secret' },
         knownHosts: 'off'
     };
+}
+
+/** Accepts the SFTP subsystem but never answers a request, so a transfer hangs. */
+function startStallingSftpServer(): Promise<{ server: Server; port: number }> {
+    return startMockServer(session => {
+        session.on('sftp', accept => {
+            const sftp = accept();
+            // No reply to OPEN: the transfer stays in flight instead of failing,
+            // and ssh2 does not auto-reject the remaining requests.
+            sftp.on('OPEN', () => {
+                // deliberately unanswered
+            });
+        });
+    });
+}
+
+/**
+ * Watch a promise for `ms`, so a missing cancellation fails the assertion
+ * instead of hanging the suite.
+ */
+async function captureSettlement(promise: Promise<unknown>, ms: number): Promise<{ error?: Error; timedOut: boolean }> {
+    let guard: NodeJS.Timeout | undefined;
+    try {
+        const outcome = await Promise.race([
+            promise.then(() => 'resolved' as const).catch((error: unknown) => error),
+            new Promise<'hung'>(resolve => {
+                guard = setTimeout(() => resolve('hung'), ms);
+            })
+        ]);
+        if (outcome === 'hung') {
+            return { timedOut: true };
+        }
+        return outcome === 'resolved' ? { timedOut: false } : { error: outcome as Error, timedOut: false };
+    } finally {
+        if (guard) {
+            clearTimeout(guard);
+        }
+    }
 }
 
 @Suite('agent-tools: ssh tools')
@@ -157,6 +198,64 @@ export class SshToolsTest {
             expect(String(error)).toContain('require');
         }
         expect(rejected).toBe(true);
+    }
+
+    @Test('ssh_put stops on the turn signal instead of waiting for the transfer')
+    async putToolHonoursTurnSignal() {
+        const mock = await startStallingSftpServer();
+        const manager = new SshConnectionManager();
+        const workspace = mkdtempSync(join(tmpdir(), 'ssh-put-'));
+        const localPath = join(workspace, 'payload.bin');
+        writeFileSync(localPath, 'x'.repeat(4096));
+        try {
+            manager.register(mockConfig(mock.port));
+            const tool = new SshPutTool(manager);
+            const controller = new AbortController();
+            const startedAt = Date.now();
+            const pending = tool.invoke(
+                { host: 'mock', localPath, remotePath: '/tmp/payload.bin' },
+                { sessionId: 's1', signal: controller.signal } as any
+            );
+            await new Promise(resolve => setTimeout(resolve, 300));
+            controller.abort();
+
+            const settled = await captureSettlement(pending, 2000);
+            expect(settled.timedOut).toEqual(false);
+            expect(settled.error?.message).toEqual('Command cancelled by the user.');
+            expect(Date.now() - startedAt).toBeLessThan(1500);
+        } finally {
+            await manager.disposeAll();
+            mock.server.close();
+            rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
+    @Test('ssh_get stops on the turn signal instead of waiting for the transfer')
+    async getToolHonoursTurnSignal() {
+        const mock = await startStallingSftpServer();
+        const manager = new SshConnectionManager();
+        const workspace = mkdtempSync(join(tmpdir(), 'ssh-get-'));
+        try {
+            manager.register(mockConfig(mock.port));
+            const tool = new SshGetTool(manager);
+            const controller = new AbortController();
+            const startedAt = Date.now();
+            const pending = tool.invoke(
+                { host: 'mock', remotePath: '/tmp/payload.bin', localPath: join(workspace, 'payload.bin') },
+                { sessionId: 's1', signal: controller.signal } as any
+            );
+            await new Promise(resolve => setTimeout(resolve, 300));
+            controller.abort();
+
+            const settled = await captureSettlement(pending, 2000);
+            expect(settled.timedOut).toEqual(false);
+            expect(settled.error?.message).toEqual('Command cancelled by the user.');
+            expect(Date.now() - startedAt).toBeLessThan(1500);
+        } finally {
+            await manager.disposeAll();
+            mock.server.close();
+            rmSync(workspace, { recursive: true, force: true });
+        }
     }
 
     @Test('ssh_put uploads a file through the tool')

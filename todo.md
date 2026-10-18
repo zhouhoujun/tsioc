@@ -468,3 +468,14 @@
   - 全量：`agent` **1000 passing**（+4）、`agent-tools` **549**、`agent-gateway` **320**、`agent-ui` **1522**，均 EXIT=0；`tsc --noEmit` 0 错误；`source-size` OK；`git diff --check` 干净。
 - **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/round-budget1.log`）。
 - **说明 / 遗留**：去重只在协调器链路生效（`toolExecutionCoordinator` 未配置的旧回退路径不去重，生产由 `AgentModule` 装配协调器）；去重按 turn 生效，跨 turn 不共享（下一 turn 重新读是合理的）。真实运行时「重复 Inspect directory 是否从 14 次降到个位数、是否因此不再撞上限」仍需实机复测（本轮未跑真实模型）。
+
+## 2026-10-18 Esc 覆盖：ssh_put / ssh_get / ssh_tunnel 接信号（SSH 家族收尾）
+- 背景：上一批让 `ssh_exec` 真正可中断，但 `ssh_put`/`ssh_get`（SFTP 全量读写）与 `ssh_tunnel`（转发通道协商）仍无取消钩子，Esc 后只能靠协调器兜底、底层传输继续跑。
+- 变更：
+  1. `agent-ssh/src/ssh-client.ts`：新增 `withSftp<T>(signal, run)` 统一封装「只结算一次」的 SFTP 请求——abort 时 `safeEndSftp(sftp)` 关闭子系统并立即 reject（关闭子系统后挂起的请求回调**永远不会回来**，否则 Promise 会永久悬挂）；同时补上 `sftp.on('error')` → reject（实测发现：子系统返回 unsupported 时 ssh2 的 sftp 对象会发 `error`，没有监听器会直接**崩进程**，属顺手修掉的健壮性缺陷）。`sftpPut`/`sftpGet` 增加可选 `signal`，`forwardOut` 同样支持（abort 于协商期间；若 abort 早于回调，迟到的 channel 会被关闭）。原有返回结构不变。
+  2. `agent-tools/ssh/ssh.tool.ts`：抽出 `withTurnSignal(context, run)`（Esc → 统一 `Command cancelled by the user.`），`ssh_exec`/`ssh_put`/`ssh_get`/`ssh_tunnel` 四处统一用它并透传 `context.signal`。
+- 回归（先红后绿）：
+  - `agent-tools/test/ssh-tools.spec.ts` 新增两条（**真实 in-process ssh2 server**，SFTP 子系统接受但 **OPEN 请求不应答**，让传输真实处于 in-flight；300ms 后 abort）：旧实现 **2 failed**（看门狗 2.31s 仍未结算，`Expected: false / Received: true`）；新实现 **8 passing**，两条用例各 ~310ms 结束并报 `Command cancelled by the user.`。看门狗保证回归时是「断言失败」而不是挂死套件。
+  - 全量：`agent-tools` **551 passing**（+2）、`agent-ssh` **9 passing**，均 EXIT=0；`agent-ssh`/`agent-tools` `tsc --noEmit` 0 错误；`source-size` OK；`git diff --check` 干净。
+- **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/ssh-sftp1.log`）。
+- **遗留（如实记录）**：SSH 家族已全部接入信号；剩余无取消钩子的仍是宿主侧 adapter（`web_search`/`web_extract`/`browser/*`/`media/*`/`audio/*`/`llm_task`/`knowledge_search`/`security_scan`/`pipeline`·`spawn_agent`），本仓库 0 实现，需宿主实现方接 `AbortSignal`；`spawn_agent` 的子会话已由 `cancelTurn` 级联覆盖。
