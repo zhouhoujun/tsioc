@@ -89,9 +89,20 @@ Tool messages are treated differently by age and usefulness.
 Older tool outputs are summary-preferred:
 
 - compact when content is clearly reducible
-- prefer `receipt.outputSummary`
+- prefer `receipt.outputSummary` as the compaction label
+- keep a bounded head of the real payload behind the label when the payload is
+  materially larger than the excerpt budget
+  (`COMPACTED_TOOL_EXCERPT_CHARS`, capped by `maxToolResults`), emitted as
+  `[summary] <label>` + `[excerpt]` + the head + an omitted-character count
+- never emit a compacted form longer than the original payload, so this step can
+  only shrink history
 - otherwise use `summarizeToolDisplayText(...)`
 - preserve protected anchors unchanged
+
+The excerpt exists because display summaries name the object without carrying it
+(`src/cli.ts (truncated)`), which made the model re-read payloads the turn had
+already paid for. Payloads that already fit the excerpt budget keep the
+label-only form, so medium-sized old tool outputs are compacted exactly as before.
 
 ### Recent tool messages
 

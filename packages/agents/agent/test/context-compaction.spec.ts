@@ -101,6 +101,23 @@ export class ContextCompactionTest {
         return messages;
     }
 
+    private makeLargeReadPayload(prefix: string, lines = 120): string {
+        const body = Array.from({ length: lines }, (_, index) =>
+            `export function ${prefix}${index}(input: string): string { return input.slice(0, ${index}); }`);
+        return body.join('\n');
+    }
+
+    private makeReadToolMessage(id: string, payload: string, summary: string): AgentMessage {
+        return {
+            id,
+            role: 'tool',
+            name: 'read_file',
+            content: payload,
+            createdAt: 3,
+            metadata: { receipt: { outputSummary: summary } }
+        };
+    }
+
     @Test('shouldCompact returns false when threshold is 0')
     async shouldCompactDisabled() {
         const ctx = new AgentContextManager();
@@ -564,6 +581,95 @@ export class ContextCompactionTest {
         expect(toolMessage?.content).toContain('[summary]');
         expect(toolMessage?.content).toContain('12 entries');
         expect(toolMessage?.content.length).toBeLessThan(messages[2].content.length);
+    }
+
+    @Test('pruneHistory keeps a bounded head of the real tool payload behind the compaction label')
+    async pruneHistoryKeepsRealToolPayloadHead() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 200, maxToolResults: 8000 });
+        const payload = this.makeLargeReadPayload('alpha');
+        const messages: AgentMessage[] = [
+            { id: 'sys', role: 'system', content: 'You are a coding agent.', createdAt: 1 },
+            { id: 'u1', role: 'user', content: 'Read src/cli.ts and summarize it.', createdAt: 2 },
+            this.makeReadToolMessage('t1', payload, 'src/cli.ts (truncated)'),
+            { id: 'a1', role: 'assistant', content: 'Here is the summary of src/cli.ts.', createdAt: 4 }
+        ];
+
+        const result = ctx.pruneHistory(messages);
+        const compacted = String(result.find(message => message.id === 't1')?.content || '');
+
+        expect(compacted).toContain('[summary] src/cli.ts (truncated)');
+        // The label alone made the model re-read the file; the real payload head must survive.
+        expect(compacted).toContain('[excerpt]');
+        expect(compacted).toContain('export function alpha0(');
+        expect(compacted).toContain(`...[truncated ${payload.length - 2000} chars]`);
+        expect(compacted.length).toBeLessThan(payload.length);
+    }
+
+    @Test('prepareHistory keeps the real tool payload head when compacting older tool output')
+    async prepareHistoryKeepsRealToolPayloadHead() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000, maxToolResults: 8000, recentMessageWindow: 2, compactionMinTokens: 1000 });
+        ctx.setSummarizer(new SimpleSessionSummarizer(), 50);
+        const payload = this.makeLargeReadPayload('beta');
+        const messages: AgentMessage[] = [
+            { id: 'sys', role: 'system', content: 'You are a coding agent.', createdAt: 1 },
+            { id: 'u1', role: 'user', content: 'Read src/cli.ts and continue the migration plan.', createdAt: 2 },
+            this.makeReadToolMessage('t1', payload, 'src/cli.ts (truncated)'),
+            { id: 'a1', role: 'assistant', content: 'I read the file and will keep refining the migration.', createdAt: 4 },
+            { id: 'u2', role: 'user', content: '继续', createdAt: 5 }
+        ];
+
+        const prepared = await ctx.prepareHistory(messages);
+        const toolMessage = prepared.messages.find(message => message.id === 't1');
+        const compacted = String(toolMessage?.content || '');
+
+        expect(prepared.report.toolMessagesCompacted).toEqual(1);
+        expect(compacted).toContain('[summary] src/cli.ts (truncated)');
+        expect(compacted).toContain('export function beta0(');
+        expect(compacted.length).toBeLessThan(payload.length);
+    }
+
+    @Test('tool output compaction never emits a form longer than the original payload')
+    async compactionNeverGrowsToolOutput() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 200, maxToolResults: 400 });
+        const payload = `head-marker-${'x'.repeat(400)}-tail-marker`;
+        const messages: AgentMessage[] = [
+            { id: 'sys', role: 'system', content: 'You are a coding agent.', createdAt: 1 },
+            { id: 'u1', role: 'user', content: 'Read src/cli.ts.', createdAt: 2 },
+            this.makeReadToolMessage('t1', payload, 'src/cli.ts (truncated)'),
+            { id: 'a1', role: 'assistant', content: 'Read it.', createdAt: 4 }
+        ];
+
+        const result = ctx.pruneHistory(messages);
+        const compacted = String(result.find(message => message.id === 't1')?.content || '');
+
+        // The excerpt cannot pay for itself at this size, so the payload stays verbatim.
+        expect(compacted).toEqual(payload);
+        expect(compacted.length).toBeLessThanOrEqual(payload.length);
+    }
+
+    @Test('tool payloads that fit the excerpt budget keep the label-only compacted form')
+    async smallToolPayloadKeepsLabelOnlyCompaction() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000, maxToolResults: 8000, recentMessageWindow: 2, compactionMinTokens: 1000 });
+        ctx.setSummarizer(new SimpleSessionSummarizer(), 50);
+        const payload = this.makeLargeReadPayload('gamma', 12);
+        const messages: AgentMessage[] = [
+            { id: 'sys', role: 'system', content: 'You are a coding agent.', createdAt: 1 },
+            { id: 'u1', role: 'user', content: 'Read src/cli.ts and continue the migration plan.', createdAt: 2 },
+            this.makeReadToolMessage('t1', payload, 'src/cli.ts (truncated)'),
+            { id: 'a1', role: 'assistant', content: 'I read the file and will keep refining the migration.', createdAt: 4 },
+            { id: 'u2', role: 'user', content: '继续', createdAt: 5 }
+        ];
+
+        const prepared = await ctx.prepareHistory(messages);
+        const toolMessage = prepared.messages.find(message => message.id === 't1');
+
+        expect(prepared.report.toolMessagesCompacted).toEqual(1);
+        expect(toolMessage?.content).toEqual('[summary] src/cli.ts (truncated)');
+        expect(toolMessage?.content).not.toContain('[excerpt]');
     }
 
     @Test('compactHistory produces smaller result than pruneHistory')
