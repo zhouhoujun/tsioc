@@ -351,3 +351,18 @@
   - `agent/test/model-provider.spec.ts` 2 条：`git stash` 掉实现后 **45 passing / 2 failed**（`seenModels` 多出 default-model 请求）→ 修复后 **47 passing**：`does not fall back to the default model once the runtime signal is aborted`、`does not fall back to the default model on a cancelled stream`。
 - **验证**：`model-failure.spec.ts` 13 passing、`model-provider.spec.ts` 47 passing；`tsc --noEmit @tsdi/agent` 0 错误；`node scripts/check-source-size.mjs` OK（两个已入基线 adapter 不增长）；`git diff --check` 干净；`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/abort-terminal1.log`，含 `pty-acceptance` 真实终端、`dom-gate`、`tui-gate`、`production-db-integrity`）。
 - **验证边界（如实记录）**：本轮证据是适配器真实公开 API（`stream`/`complete`）的行为断言，网络边界用 `fetch` stub，与既有 model-failure specs 同手法；真实环境无法稳定复现「provider 返回可重试状态 + 用户同时按 Esc」，故未做该组合的实机 A/B。
+
+## 2026-10-18 `ai_cli` 也遵守 turn abort signal（Esc 可中断外部 AI CLI）
+- 背景（Esc 批次遗留项「不观察 signal 的工具」）：`AiCliTool.invoke` 的 context 参数被命名为 `_context`、完全不使用，`executeSubprocess` 只在 `timeoutMs`（默认 **300_000ms**）到期时 `child.kill('SIGTERM')`。即 Esc 对 `ai_cli` 完全无效，用户最长要等 5 分钟。
+- **修复（只影响「被取消」这一条路径，未取消时的行为不变）**：
+  1. `agent-tools/ai-cli/types.ts`：`AiCliRequest` 增可选 `signal?: AbortSignal`（并在注释里写明注入式 adapter 也应遵守）；
+  2. `agent-tools/ai-cli/ai-cli.tool.ts`：`invoke` 读取 `context.signal` 放进 request，并在入口做「已取消则不启动」检查（必须放在这一层：adapter 路径不经过 `executeSubprocess`，否则被取消的轮次仍会启动一个最长 5 分钟的外部 CLI）；
+  3. `executeSubprocess`：改为独立进程组（`detached`）+ `signalTree()` 组信号；abort → SIGTERM →（3s）SIGKILL →（1s）兜底 settle，**不依赖 `close`**（AI CLI 会自己起子进程并持有 stdio 管道，`close` 可能永不到来）；取消以 `Command cancelled by the user.`（与 terminal 工具同文案）reject；监听器在 settle 时移除；超时路径同样改用组信号（否则 CLI 的子进程会存活）。
+- **回归（真实调用边界：PATH 注入假 `claude`，脚本记录自身 pid、`trap '' TERM` 后 `sleep 90`——故意对 SIGTERM 不合作以验证升级）**：新增 `agent-tools/test/ai-cli-cancel.spec.ts` 4 条，`git stash` 掉实现（保留新可选字段，保证测试可编译）后 **1 passing / 3 failed**：
+  - `an aborted turn signal kills the spawned CLI tree instead of waiting out its timeout`：旧实现 `Received: "ai_cli ignored the abort signal and kept running"`（15.5s 守卫超时，工具仍在跑）→ 修复后 3.5s 内 settle，且假 CLI 的 pid 已退出（`process.kill(pid, 0)` 探测）；
+  - `an already-cancelled turn never spawns the CLI`：旧实现照常 spawn（marker 文件被创建）→ 修复后立即 reject 且无 spawn；
+  - `the runtime signal reaches an injected AI CLI adapter`：旧实现 `received.signal` 为 undefined → 修复后与 `controller.signal` 同一实例；
+  - `a CLI run without an abort signal still returns its parsed output`：无回归守卫（无信号时仍解析 JSON 输出、exitCode/sessionId 正常），新旧一致。
+  - 修复后该 spec 4 passing；`agent-tools` 全量 **531 passing**（原 527 + 4）。
+- **验证**：`ai-cli-cancel.spec.ts` 4 passing；`agent-tools` 全量 **531 passing**（EXIT=0）；`tsc --noEmit @tsdi/agent-tools` 0 错误；`node scripts/check-source-size.mjs` OK（`ai-cli.tool.ts` 436 行，未入基线、未超 600）；`git diff --check` 干净；`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/ai-cli-cancel1.log`，含 `pty-acceptance`、`dom-gate`、`tui-gate`、`production-db-integrity`）。
+- **遗留（如实记录）**：`execute_code`（`CodeExecutionRequest` 无 signal，且有 local + MCP code-mode 两个 adapter 实现）、`ToolExecutionCoordinator` 的 `osSandbox` 两个分支（`sandboxExecutor.execute` / `invokeInSandbox` 均未传 `request.signal`）、`git` 工具（`spawnSync` 阻塞事件循环，期间连 Esc 按键都无法被处理）仍未覆盖；`git` 的 sync→async 属行为改动，需先与用户确认再动。

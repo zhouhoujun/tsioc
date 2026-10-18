@@ -43,6 +43,12 @@ const CLI_COMMANDS: Record<AiCliName, { cmd: string; args: string[]; jsonFlag: s
 const CONTEXT_FILE_NAMES = ['AGENTS.md', '.cursorrules', '.clinerules', '.windsurfrules'];
 const DEFAULT_TIMEOUT_MS = 300_000;
 const MAX_OUTPUT_CHARS = 512 * 1024;
+/** Grace period between SIGTERM and the SIGKILL escalation on user interrupt. */
+const SIGTERM_GRACE_MS = 3000;
+/** Final grace after SIGKILL before the tool settles regardless of the child. */
+const SIGKILL_SETTLE_GRACE_MS = 1000;
+/** Same wording as the terminal tool so hosts render one cancellation message. */
+const CANCELLED_MESSAGE = 'Command cancelled by the user.';
 
 const API_KEY_ENV_MAP: Record<string, string[]> = {
     claude_code: ['ANTHROPIC_API_KEY'],
@@ -97,7 +103,13 @@ export class AiCliTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
+        // Esc before the CLI starts must not launch a multi-minute task (the
+        // default timeout is 5 minutes); this covers the injected-adapter path
+        // as well, which does not go through executeSubprocess.
+        if (context?.signal?.aborted) {
+            throw new Error(CANCELLED_MESSAGE);
+        }
         const prompt = this.requireString(input?.prompt, 'ai_cli prompt');
         const cli = this.requireCli(input?.cli);
         const sandbox = resolveSandboxPolicy(this.toolsOptions ?? undefined);
@@ -108,6 +120,9 @@ export class AiCliTool implements AgentTool {
         const request: AiCliRequest = {
             prompt,
             cli,
+            // The spawned CLI runs unattended for minutes; the owning turn's
+            // signal lets Esc stop it instead of waiting out its timeout.
+            signal: context?.signal,
             workingDirectory: await this.resolveWorkingDirectory(input?.working_directory),
             timeoutMs: typeof input?.timeout_ms === 'number'
                 ? input.timeout_ms
@@ -153,16 +168,102 @@ export class AiCliTool implements AgentTool {
     private async executeSubprocess(request: AiCliRequest, cli: AiCliName): Promise<AiCliResult> {
         const config = CLI_COMMANDS[cli];
         const timeout = request.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+        const signal = request.signal;
         const args = this.buildArgs(request, config);
         const env = buildSandboxEnv({ ...process.env, ...(request.env ?? {}) }, resolveSandboxPolicy(this.toolsOptions ?? undefined));
 
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
+            // A dedicated process group lets an interrupt stop the whole CLI tree.
+            // A spawned AI CLI starts its own children, and killing only the
+            // wrapper would leave them (and their model work) running.
+            const detached = process.platform !== 'win32';
             const child = spawn(config.cmd, args, {
                 cwd: request.workingDirectory || undefined,
                 stdio: ['pipe', 'pipe', 'pipe'],
                 env,
-                shell: false
+                shell: false,
+                detached
             });
+
+            let stdout = '';
+            let stderr = '';
+            let cancelled = false;
+            let settled = false;
+            let killTimer: NodeJS.Timeout | undefined;
+            let forceTimer: NodeJS.Timeout | undefined;
+            const signalTree = (sig: NodeJS.Signals) => {
+                try {
+                    if (detached && child.pid) {
+                        process.kill(-child.pid, sig);
+                    } else {
+                        child.kill(sig);
+                    }
+                } catch {
+                    try {
+                        child.kill(sig);
+                    } catch {
+                        // process already gone
+                    }
+                }
+            };
+            const clearTimers = () => {
+                clearTimeout(timer);
+                if (killTimer) {
+                    clearTimeout(killTimer);
+                }
+                if (forceTimer) {
+                    clearTimeout(forceTimer);
+                }
+                signal?.removeEventListener('abort', onAbort);
+            };
+            const settle = (result: AiCliResult) => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                clearTimers();
+                resolve(result);
+            };
+            const failCancelled = () => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                clearTimers();
+                reject(new Error(CANCELLED_MESSAGE));
+            };
+            /**
+             * User interrupt (Esc): stop the CLI tree with SIGTERM, escalate to
+             * SIGKILL, then settle with a cancellation error instead of a result.
+             */
+            const onAbort = () => {
+                if (settled || cancelled) {
+                    return;
+                }
+                cancelled = true;
+                signalTree('SIGTERM');
+                killTimer = setTimeout(() => {
+                    signalTree('SIGKILL');
+                    // Do not wait on `close`: a CLI (or a child of it) may keep
+                    // the stdio pipe open long after SIGKILL.
+                    forceTimer = setTimeout(failCancelled, SIGKILL_SETTLE_GRACE_MS);
+                }, SIGTERM_GRACE_MS);
+            };
+            const timer = setTimeout(() => {
+                signalTree('SIGTERM');
+                settle({
+                    stdout: stdout.slice(-MAX_OUTPUT_CHARS),
+                    stderr: stderr.slice(-MAX_OUTPUT_CHARS),
+                    exitCode: 124,
+                    timedOut: true
+                });
+            }, timeout);
+            signal?.addEventListener('abort', onAbort, { once: true });
+            // The signal can fire between the pre-spawn check and the listener
+            // registration above; without this the interrupt would be lost.
+            if (signal?.aborted) {
+                onAbort();
+            }
 
             // Inject context files via stdin as a prepended instruction
             if (request.contextFiles?.length) {
@@ -178,18 +279,6 @@ export class AiCliTool implements AgentTool {
                 child.stdin?.end();
             }
 
-            let stdout = '';
-            let stderr = '';
-            const timer = setTimeout(() => {
-                child.kill('SIGTERM');
-                resolve({
-                    stdout: stdout.slice(-MAX_OUTPUT_CHARS),
-                    stderr: stderr.slice(-MAX_OUTPUT_CHARS),
-                    exitCode: 124,
-                    timedOut: true
-                });
-            }, timeout);
-
             child.stdout?.on('data', (chunk: Buffer) => {
                 stdout += chunk.toString();
             });
@@ -197,9 +286,12 @@ export class AiCliTool implements AgentTool {
                 stderr += chunk.toString();
             });
             child.on('close', (code) => {
-                clearTimeout(timer);
+                if (cancelled) {
+                    failCancelled();
+                    return;
+                }
                 const parsed = this.parseCliOutput(stdout, request.outputFormat ?? 'json');
-                resolve({
+                settle({
                     stdout: parsed.stdout.slice(-MAX_OUTPUT_CHARS),
                     stderr: parsed.stderr || stderr.slice(-MAX_OUTPUT_CHARS),
                     exitCode: code ?? parsed.exitCode,
@@ -207,11 +299,10 @@ export class AiCliTool implements AgentTool {
                 });
             });
             child.on('error', (err) => {
-                clearTimeout(timer);
                 const message = (err as any).code === 'ENOENT'
                     ? `'${config.cmd}' not found in PATH. Install it (e.g., 'npm i -g @anthropic-ai/claude-code' for Claude Code, or 'npm i -g opencode' for OpenCode) and ensure it is available in the PATH.`
                     : err.message;
-                resolve({ stdout: '', stderr: message, exitCode: 1 });
+                settle({ stdout: '', stderr: message, exitCode: 1 });
             });
         });
     }
