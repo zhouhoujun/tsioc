@@ -53,6 +53,9 @@ import { DelegationEdgeStatus, DelegationGraphStore } from '../harness/Delegatio
 import { TokenBudgetScopeState, TokenBudgetTracker } from '../harness/TokenBudgetTracker';
 import { AgentDelegationMode, DEFAULT_DELEGATION_MODE, buildDelegationModeHint, buildDelegationQualityNote, normalizeDelegationMode } from './DelegationMode';
 import { dirnameAgentPath } from '../AgentWorkspacePath';
+import { RepeatReadOnlyCallCache } from './tool-repeat-cache';
+import { MAX_TOOL_ROUNDS_PROMPT, nearToolRoundLimitPrompt } from './tool-round-budget';
+import { canParallelizeToolBatch, describeToolCallNames } from './tool-dispatch-policy';
 import { AgentFunctionHookDefinition, AgentHookCommandExecutor, AgentHookContext, AgentHookExecutionResult, AgentHookManager, AgentHookTranscriptEntry, AgentLifecycleHookStage } from '../hooks/AgentHooks';
 import { buildPersonalityHint } from '../prompt/personality-presets';
 import { buildGoalContext, CreateGoalInput, evaluateGoalCompletion, Goal, GoalStatus, GoalStore } from '../goal/GoalStore';
@@ -90,6 +93,7 @@ interface TurnExecutionContext {
     planContinuations?: number;
     /** G29: transient delegation quality note injected into the next model request (proactive mode). */
     delegationQualityNote?: string;
+    readOnlyResults?: RepeatReadOnlyCallCache;
 }
 
 interface TurnRecoveryState {
@@ -126,7 +130,6 @@ const EMPTY_RESPONSE_RETRY_SYSTEM_PROMPT = 'Your previous reply was empty. Use t
 const FOLLOW_UP_EMPTY_RESPONSE_RECOVERY_SYSTEM_PROMPT = 'The latest user message already contains follow-up context answering a prior clarification. Continue the original task directly using that follow-up context. Provide a non-empty response, and call tools if needed. Do not repeat the same clarification question.';
 const TOOL_ERROR_RECOVERY_SYSTEM_PROMPT = 'A tool call in your previous step failed. Read the tool error below, correct the arguments and continue the task. Stay inside the workspace root: prefer workspace-relative paths and never invent absolute paths outside it. Do not end the turn after a single recoverable tool error; only stop when the failure is genuinely unrecoverable, and then explain why briefly.';
 const EMPTY_RESPONSE_RETRY_BACKOFF_MS = 150;
-const MAX_TOOL_ROUNDS_PROMPT = 'You have reached the maximum number of tool call rounds. Please provide your best answer now based on the results you have so far.';
 const LOOP_RECOVERY_SYSTEM_PROMPT = 'You are repeating the same tool calls without making progress. Change strategy: try a different tool, different arguments, or break the work into smaller steps. If you cannot make progress, state clearly that you are blocked and explain why instead of repeating the same calls.';
 
 function sameStringList(left: string[], right: string[]): boolean {
@@ -1108,6 +1111,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
             round++;
             if (round <= maxRounds) {
+                await this.warnNearToolRoundLimit(sessionId, round, maxRounds);
                 continue turnLoop;
             }
             this.throwIfTurnCancelled(sessionId);
@@ -1208,6 +1212,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
             round++;
             if (round <= maxRounds) {
+                await this.warnNearToolRoundLimit(sessionId, round, maxRounds);
                 continue turnLoop;
             }
             this.throwIfTurnCancelled(sessionId);
@@ -2374,7 +2379,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                     sessionId,
                     chunk.type === 'done' && freshToolCalls.length ? 'tool_call' : chunk.type,
                     chunk.type === 'tool_call' || (chunk.type === 'done' && freshToolCalls.length)
-                        ? this.describeStreamingToolCalls(freshToolCalls)
+                        ? describeToolCallNames(freshToolCalls)
                         : chunk.content,
                     freshToolCalls.length ? freshToolCalls : chunk.toolCalls,
                     chunkUsage
@@ -2391,7 +2396,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             if (chunk.type === 'done' && freshToolCalls.length) {
                 yield {
                     type: 'tool_call',
-                    content: this.describeStreamingToolCalls(freshToolCalls),
+                    content: describeToolCallNames(freshToolCalls),
                     toolCalls: freshToolCalls
                 };
             }
@@ -2400,7 +2405,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 yield {
                     type: chunk.type,
                     content: chunk.type === 'tool_call'
-                        ? this.describeStreamingToolCalls(freshToolCalls)
+                        ? describeToolCallNames(freshToolCalls)
                         : chunk.content,
                     toolCalls: chunk.type === 'tool_call' ? freshToolCalls : undefined,
                     usage: chunkUsage
@@ -2442,8 +2447,12 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return fresh;
     }
 
-    private describeStreamingToolCalls(toolCalls: AgentToolCall[]): string {
-        return toolCalls.map(toolCall => toolCall.name).filter(Boolean).join(', ');
+    /** Tell the model how many tool rounds are left, once, before the cap hits. */
+    private async warnNearToolRoundLimit(sessionId: string, round: number, maxRounds: number): Promise<void> {
+        const prompt = nearToolRoundLimitPrompt(round, maxRounds);
+        if (prompt) {
+            await this.sessions.append(sessionId, this.createMessage('user', prompt));
+        }
     }
 
     private async handleModelResponse(
@@ -2515,25 +2524,12 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     private canParallelize(toolCalls: Array<{ name: string; input?: any }>, safeTools: string[]): boolean {
         const approvalManager = this.toolApprovalManager;
-        if (approvalManager && toolCalls.some(tc => approvalManager.requiresApproval(tc.name, tc.input))) {
-            return false;
-        }
-
-        return toolCalls.every(tc => {
-            const definition = this.toolRegistry.getToolDefinition(tc.name);
-            const fallbackSafe = safeTools.includes(tc.name);
-            return definition ? this.isParallelSafeTool(definition, fallbackSafe) : fallbackSafe;
+        return canParallelizeToolBatch(toolCalls, safeTools, {
+            requiresApproval: approvalManager
+                ? (name, input) => approvalManager.requiresApproval(name, input)
+                : undefined,
+            getDefinition: name => this.toolRegistry.getToolDefinition(name)
         });
-    }
-
-    private isParallelSafeTool(definition: AgentToolDefinition, fallbackSafe: boolean): boolean {
-        if (definition.execution?.requiresSequential) {
-            return false;
-        }
-        if (definition.execution?.readOnly === true) {
-            return true;
-        }
-        return fallbackSafe;
     }
 
     private async executeToolsSequential(
@@ -2870,7 +2866,8 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
                 definition,
                 executionMode,
                 inputSummary,
-                baseReceipt: sandboxReceipt
+                baseReceipt: sandboxReceipt,
+                repeatCache: turnContext.readOnlyResults ??= new RepeatReadOnlyCallCache()
             });
             if (outcome.redactedOutput !== undefined) {
                 loopDetector.record(toolCall.name, toolCallInput, outcome.redactedOutput);

@@ -451,3 +451,20 @@
   - 全量：`agent-tools` **549 passing**（+1）、`agent-ssh` **9 passing**，均 EXIT=0；`agent-ssh` 与 `agent-tools` `tsc --noEmit` 0 错误；`node scripts/check-source-size.mjs` OK；`git diff --check` 干净。
 - **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/ssh-abort1.log`）。
 - **遗留（如实记录）**：`ssh_put`/`ssh_get`（SFTP 传输）与 `ssh_tunnel` 仍未接信号，仍靠协调器兜底；`web_search`/`web_extract`（适配器接口无 signal 参数，宿主实现的网络请求无法中止）、`browser/*`、`media/*`、`audio/*`、`llm_task`、`knowledge_search`、`security_scan`、`pipeline`/`spawn_agent` 同样待各库透传。
+
+## 2026-10-18 轮次预算收敛：重复只读调用去重 + 接近上限的引导（经用户确认「两个都做」）
+- 背景（实机证据）：一次真实运行 72 次工具调用撞上 `maxToolRounds: 20`（`options.ts:581`），最终以「I'm out of tool rounds」收尾、提交未完成；其中 14 次是反复列举同一目录（19% 预算、零信息增量），真正编辑只有 8 次。已按用户选择同时做「去重」与「接近上限引导」。
+- 变更：
+  1. **重复只读调用去重**（`agent/src/runtime/tool-repeat-cache.ts` 新模块 + `ToolExecutionCoordinator` 落地）：turn 级缓存以 `工具名 + 规范化输入（键序无关 JSON）` 为键；命中且工具 `readOnly: true` 时直接复用上次**已脱敏**的输出（返回 `redactedOutput/output/receipt(status=skipped)/attempts`），并发布 `AgentToolSkippedEvent`（理由：`Repeated identical read-only call; reused the earlier result.`），时间线可见。模型仍会收到一条 tool 结果（内容与首次完全一致），transcript 不会缺结果。
+     - 失效规则：**会修改工作区的工具**（`isWorkspaceMutatingTool`：写文件/terminal/git/process/execute_code…）在调用前清空缓存，所以「改完再读」一定真正执行；`todo`/memory 之类不影响文件内容的工具不会误清缓存。
+     - 缓存对象挂在 `TurnExecutionContext.readOnlyResults`，由协调器调用处惰性创建（turn 结束即丢弃）。
+  2. **接近上限引导**（`agent/src/runtime/tool-round-budget.ts` 新模块）：剩余 2 轮时注入**一次**模型可见提示（`nearToolRoundLimitPrompt`），明确剩余轮数、要求停止探索/重复读取，并提示可把剩余工作交给单个 `coding_task` 后直接收尾；`MAX_TOOL_ROUNDS_PROMPT` 一并迁到该模块。两个循环（`completeTurn` + `completeStreamingTurn`）共用同一注入点。
+  3. ratchet：为容纳改动，把 `canParallelize`/`isParallelSafeTool`/`describeStreamingToolCalls` 抽到 `agent/src/runtime/tool-dispatch-policy.ts`、`MAX_TOOL_ROUNDS_PROMPT` 迁出；`DefaultAgentRuntime.ts` **3520 → 3517 行**，baseline 同步下调 **3520 → 3517**。
+- 回归（先红后绿）：新增 `agent/test/tool-repeat-cache.spec.ts`（4 条，真实 AgentModule 装配 + 真实协调器 + 脚本化模型）：
+  - 「同一只读调用复用上次结果」：旧实现工具执行 **2 次**（`Expected: 1 / Received: 2`）；新实现 1 次，且两次调用各自都有 tool 结果（内容一致）、turn 正常收尾。
+  - 「两次读之间发生写 → 缓存失效」：新旧都执行 2 次（守卫：绝不复用过期内容）。
+  - 「协调器层面标记 skipped」：旧实现执行 2 次；新实现第二次 `receipt.status === 'skipped'`、输出与首次一致、发布 `AgentToolSkippedEvent`。
+  - 「接近上限提示」：旧实现提示 0 条（`Expected: 1 / Received: 0`）；新实现恰好 1 条（含剩余轮数与 `coding_task` 提示），且 turn 以最终回答结束。
+  - 全量：`agent` **1000 passing**（+4）、`agent-tools` **549**、`agent-gateway` **320**、`agent-ui` **1522**，均 EXIT=0；`tsc --noEmit` 0 错误；`source-size` OK；`git diff --check` 干净。
+- **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/round-budget1.log`）。
+- **说明 / 遗留**：去重只在协调器链路生效（`toolExecutionCoordinator` 未配置的旧回退路径不去重，生产由 `AgentModule` 装配协调器）；去重按 turn 生效，跨 turn 不共享（下一 turn 重新读是合理的）。真实运行时「重复 Inspect directory 是否从 14 次降到个位数、是否因此不再撞上限」仍需实机复测（本轮未跑真实模型）。

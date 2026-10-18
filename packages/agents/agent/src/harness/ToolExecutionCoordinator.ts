@@ -5,11 +5,13 @@ import { AgentToolDefinition } from '../tools/AgentTool';
 import { ToolSchemaValidator } from './ToolSchemaValidator';
 import { RateLimitManager } from './RateLimitManager';
 import { OutputGuard } from './OutputGuard';
-import { AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolCompletedEvent, AgentToolLspDiagnostic } from '../runtime/AgentEvents';
+import { AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolCompletedEvent, AgentToolLspDiagnostic, AgentToolSkippedEvent } from '../runtime/AgentEvents';
 import { summarizeToolDisplayText } from '../tools/ToolSummary';
 import { AuditSink, AgentAuditRecord } from './AuditSink';
 import { SandboxExecutor, SandboxPolicy } from './SandboxExecutor';
 import { CANCELLED_MESSAGE } from './cancellation';
+import { RepeatReadOnlyCallCache } from '../runtime/tool-repeat-cache';
+import { isWorkspaceMutatingTool } from '../project/workspace-trust';
 import { resolveToolSandboxState } from './ToolSandboxPolicy';
 import { AgentClock, AGENT_CLOCK } from '../runtime/Clock';
 
@@ -24,6 +26,8 @@ export interface ToolExecutionRequest {
     executionMode: 'sequential' | 'parallel';
     inputSummary?: string;
     baseReceipt?: AgentToolExecutionReceipt;
+    /** Turn-scoped cache for identical read-only calls (see RepeatReadOnlyCallCache). */
+    repeatCache?: RepeatReadOnlyCallCache;
 }
 
 export interface ToolExecutionOutcome {
@@ -66,6 +70,11 @@ export class ToolExecutionCoordinator {
         const delayMs = Math.max(retryPolicy?.delayMs ?? 0, 0);
         const backoffMultiplier = retryPolicy?.backoffMultiplier ?? 1;
 
+        const repeated = await this.reuseRepeatReadOnlyCall(request, baseReceipt);
+        if (repeated) {
+            return repeated;
+        }
+
         let lastError: Error | undefined;
         for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
             const startedAt = this.clock?.now() ?? Date.now();
@@ -84,6 +93,7 @@ export class ToolExecutionCoordinator {
                     attemptCount: attempt,
                     lspDiagnostics: extractLspDiagnostics(rawOutput)
                 };
+                this.rememberReadOnlyResult(request, rawOutput, redactedOutput, completedReceipt);
                 await this.publishAudit({
                     id: completedReceipt.receiptId,
                     sessionId: request.sessionId,
@@ -165,6 +175,71 @@ export class ToolExecutionCoordinator {
             error: fallbackError,
             attempts: maxRetries + 1
         };
+    }
+
+    /**
+     * Answer an identical read-only call from this turn's cache.
+     *
+     * Repeated directory listings and re-reads are pure budget burn: the model
+     * already has the result. Calls that can change the workspace clear the cache
+     * first, so a read after an edit or a command still reaches the tool.
+     */
+    private async reuseRepeatReadOnlyCall(
+        request: ToolExecutionRequest,
+        baseReceipt: AgentToolExecutionReceipt
+    ): Promise<ToolExecutionOutcome | undefined> {
+        const cache = request.repeatCache;
+        if (!cache) {
+            return undefined;
+        }
+        if (!RepeatReadOnlyCallCache.isCacheable(request.definition)) {
+            if (isWorkspaceMutatingTool(request.definition)) {
+                cache.clear();
+            }
+            return undefined;
+        }
+        const cached = cache.lookup(request.toolCall.name, request.toolCall.input);
+        if (!cached) {
+            return undefined;
+        }
+        const receipt: AgentToolExecutionReceipt = {
+            ...baseReceipt,
+            status: 'skipped',
+            durationMs: 0,
+            outputSummary: cached.outputSummary,
+            attemptCount: cached.attempts
+        };
+        await this.app.publishEvent(new AgentToolSkippedEvent(
+            this,
+            request.sessionId,
+            request.toolCall.name,
+            'Repeated identical read-only call; reused the earlier result.',
+            receipt
+        ));
+        return {
+            output: cached.output,
+            redactedOutput: cached.redactedOutput,
+            receipt,
+            attempts: cached.attempts
+        };
+    }
+
+    /** Keep a successful read-only result so an identical repeat can reuse it. */
+    private rememberReadOnlyResult(
+        request: ToolExecutionRequest,
+        rawOutput: unknown,
+        redactedOutput: unknown,
+        receipt: AgentToolExecutionReceipt
+    ): void {
+        if (!request.repeatCache || !RepeatReadOnlyCallCache.isCacheable(request.definition)) {
+            return;
+        }
+        request.repeatCache.remember(request.toolCall.name, request.toolCall.input, {
+            output: rawOutput,
+            redactedOutput,
+            outputSummary: receipt.outputSummary,
+            attempts: receipt.attemptCount ?? 1
+        });
     }
 
     private async invokeWithTimeout(request: ToolExecutionRequest, timeoutMs?: number): Promise<unknown> {
