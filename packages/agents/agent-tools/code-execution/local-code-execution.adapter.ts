@@ -3,7 +3,7 @@ import * as path from 'path';
 import { Worker } from 'worker_threads';
 import { Injectable } from '@tsdi/ioc';
 import { AgentToolsOptions } from '../src/options';
-import { CANCELLED_MESSAGE, runChildProcess } from '../src/child-process-runner';
+import { CANCELLED_MESSAGE, runChildProcess } from '@tsdi/agent';
 import { assertSandboxCommand, buildSandboxEnv, resolveSandboxPolicy } from '../src/sandbox-policy';
 import { resolveWorkspacePath } from '../files/path-policy';
 import { CodeExecutionAdapter, CodeExecutionRequest, CodeExecutionResult } from './types';

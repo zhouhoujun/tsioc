@@ -1,10 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { AgentTool, AgentToolContext } from '@tsdi/agent';
+import { AgentTool, AgentToolContext, CANCELLED_MESSAGE, runChildProcess } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
-import { CANCELLED_MESSAGE, runChildProcess } from '../src/child-process-runner';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath } from '../files/path-policy';
 import { assertSandboxCommand, buildSandboxEnv, resolveSandboxPolicy } from '../src/sandbox-policy';
 import { AiCliAdapter, AiCliName, AiCliRequest, AiCliResult, AgentAiCliOptions } from './types';

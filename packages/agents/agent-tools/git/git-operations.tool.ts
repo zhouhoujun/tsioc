@@ -1,9 +1,8 @@
-import { AgentTool, AgentToolContext, FileSnapshotStore } from '@tsdi/agent';
+import { AgentTool, AgentToolContext, FileSnapshotStore, CANCELLED_MESSAGE, runChildProcess } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { promises as fs } from 'fs';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
-import { CANCELLED_MESSAGE, runChildProcess } from '../src/child-process-runner';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath } from '../files/path-policy';
 import { simpleLineDiff } from '../files/simple-diff';
 import { assertSandboxCommand, buildSandboxEnv, resolveSandboxPolicy } from '../src/sandbox-policy';

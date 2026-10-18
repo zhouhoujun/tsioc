@@ -1,6 +1,5 @@
-import { AgentTool, AgentToolContext } from '@tsdi/agent';
+import { AgentTool, AgentToolContext, CANCELLED_MESSAGE } from '@tsdi/agent';
 import { Injectable } from '@tsdi/ioc';
-import { CANCELLED_MESSAGE } from '../src/child-process-runner';
 import { CodeExecutionAdapter } from './types';
 
 @Injectable()

@@ -281,7 +281,7 @@ export class SessionHandler {
             if (!await this.ensureAccess(req, res, sessionId)) {
                 return;
             }
-            const snapshots = this.runtime.listGitStepSnapshots(sessionId);
+            const snapshots = await this.runtime.listGitStepSnapshots(sessionId);
             res.writeHead(200, { 'Content-Type': 'application/json' })
                 .end(JSON.stringify(snapshots));
         };
@@ -303,7 +303,7 @@ export class SessionHandler {
                     return;
                 }
                 const messageId = typeof body?.messageId === 'string' ? body.messageId.trim() : '';
-                const snapshot = this.runtime.captureGitStepSnapshot(sessionId, workspace, messageId);
+                const snapshot = await this.runtime.captureGitStepSnapshot(sessionId, workspace, messageId);
                 if (!snapshot) {
                     res.writeHead(200, { 'Content-Type': 'application/json' })
                         .end(JSON.stringify({ captured: false, reason: 'workspace is not a git repo or has no tracked changes' }));
@@ -330,7 +330,7 @@ export class SessionHandler {
                 res.writeHead(400).end(JSON.stringify({ error: 'ref (messageId or snapshotId) required' }));
                 return;
             }
-            const diff = this.runtime.diffGitStepSnapshot(sessionId, ref);
+            const diff = await this.runtime.diffGitStepSnapshot(sessionId, ref);
             if (!diff) {
                 res.writeHead(404).end(JSON.stringify({ error: `no git step snapshot found for ${ref}` }));
                 return;

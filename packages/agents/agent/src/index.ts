@@ -80,6 +80,7 @@ export * from './harness/harness-projection';
 
 export * from './harness/TypeOrmDelegationGraphStore';
 export * from './harness/ToolExecutionCoordinator';
+export * from './harness/child-process-runner';
 export * from './harness/SandboxExecutor';
 export * from './harness/sandbox-exec';
 export * from './harness/FileSnapshotStore';

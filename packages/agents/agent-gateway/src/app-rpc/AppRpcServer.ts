@@ -1086,7 +1086,7 @@ export class AppRpcServer {
             throw new Error('session has no workspace configured');
         }
         const messageId = typeof params?.messageId === 'string' ? params.messageId.trim() : '';
-        const snapshot = this.runtime.captureGitStepSnapshot(sessionId, workspace, messageId);
+        const snapshot = await this.runtime.captureGitStepSnapshot(sessionId, workspace, messageId);
         if (!snapshot) {
             return { captured: false, sessionId, reason: 'workspace is not a git repo or has no tracked changes' };
         }
@@ -1096,7 +1096,7 @@ export class AppRpcServer {
     private async listGitStepSnapshots(params: any, context: AppRpcRequestContext): Promise<any> {
         const sessionId = this.requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
-        return this.runtime.listGitStepSnapshots(sessionId);
+        return await this.runtime.listGitStepSnapshots(sessionId);
     }
 
     private async diffGitStepSnapshot(params: any, context: AppRpcRequestContext): Promise<any> {
@@ -1106,7 +1106,7 @@ export class AppRpcServer {
         if (!ref) {
             throw new Error('ref (messageId or snapshotId) required');
         }
-        const diff = this.runtime.diffGitStepSnapshot(sessionId, ref);
+        const diff = await this.runtime.diffGitStepSnapshot(sessionId, ref);
         if (!diff) {
             throw new Error(`no git step snapshot found for ${ref}`);
         }

@@ -345,7 +345,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             turn: { status: 'started', message: input.input }
         });
 
-        this.beginGitStepSnapshot(input.sessionId, turnContext.workspace);
+        await this.beginGitStepSnapshot(input.sessionId, turnContext.workspace);
 
         try {
             const result = await this.completeTurn(input.sessionId, input.input, userMessage.id, turnContext);
@@ -471,7 +471,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 turn: { status: 'started', message: input }
             });
 
-            this.beginGitStepSnapshot(sessionId, turnContext.workspace);
+            await this.beginGitStepSnapshot(sessionId, turnContext.workspace);
 
             try {
                 const result = yield* this.completeStreamingTurn(sessionId, input, userMessage.id, turnContext);
@@ -894,11 +894,11 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return this.fileSnapshotStore?.list(sessionId) ?? [];
     }
 
-    override captureGitStepSnapshot(sessionId: string, workspace: string, messageId: string): GitStepSnapshot | null {
+    override async captureGitStepSnapshot(sessionId: string, workspace: string, messageId: string): Promise<GitStepSnapshot | null> {
         if (!this.gitStepSnapshotStore) {
             return null;
         }
-        const snapshot = this.gitStepSnapshotStore.capture(workspace, { sessionId, messageId, label: `step-${sessionId}` });
+        const snapshot = await this.gitStepSnapshotStore.capture(workspace, { sessionId, messageId, label: `step-${sessionId}` });
         if (snapshot) {
             this.bindGitStepSnapshot(sessionId, messageId);
         }
@@ -906,20 +906,20 @@ export class DefaultAgentRuntime extends AgentRuntime {
     }
 
     override async revertGitStepSnapshot(sessionId: string, messageId: string): Promise<GitRevertResult> {
-        return this.gitStepSnapshotStore?.revert(messageId, sessionId)
+        return await this.gitStepSnapshotStore?.revert(messageId, sessionId)
             ?? { reverted: false, error: 'git step snapshots not supported by this runtime' };
     }
 
     override async unrevertGitStepSnapshot(sessionId: string): Promise<GitRevertResult> {
-        return this.gitStepSnapshotStore?.unrevert(sessionId)
+        return await this.gitStepSnapshotStore?.unrevert(sessionId)
             ?? { reverted: false, error: 'git step snapshots not supported by this runtime' };
     }
 
-    override listGitStepSnapshots(sessionId: string): GitStepSnapshot[] {
+    override async listGitStepSnapshots(sessionId: string): Promise<GitStepSnapshot[]> {
         return this.gitStepSnapshotStore?.list(sessionId) ?? [];
     }
 
-    override diffGitStepSnapshot(sessionId: string, ref: string): GitStepDiff | null {
+    override async diffGitStepSnapshot(sessionId: string, ref: string): Promise<GitStepDiff | null> {
         const store = this.gitStepSnapshotStore;
         if (!store) {
             return null;
@@ -928,12 +928,12 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return snapshot ? store.diff(snapshot) : null;
     }
 
-    protected beginGitStepSnapshot(sessionId: string, workspace?: string): void {
+    protected async beginGitStepSnapshot(sessionId: string, workspace?: string): Promise<void> {
         if (!this.gitStepSnapshotStore || !workspace) {
             return;
         }
         try {
-            const snapshot = this.gitStepSnapshotStore.capture(workspace, { sessionId, label: `turn-${sessionId}` });
+            const snapshot = await this.gitStepSnapshotStore.capture(workspace, { sessionId, label: `turn-${sessionId}` });
             if (snapshot) {
                 this.pendingGitStepSnapshots.set(sessionId, snapshot.id);
             }

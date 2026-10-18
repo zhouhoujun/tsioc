@@ -1,9 +1,8 @@
-import { AgentTool, AgentToolContext } from '@tsdi/agent';
+import { AgentTool, AgentToolContext, CANCELLED_MESSAGE, runChildProcess } from '@tsdi/agent';
 import { promises as fs } from 'fs';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
-import { CANCELLED_MESSAGE, runChildProcess } from '../src/child-process-runner';
 import { resolveFilePolicy, resolveWorkspacePath } from '../files/path-policy';
 import { assertSandboxCommand, buildSandboxEnv, resolveSandboxPolicy } from '../src/sandbox-policy';
 
