@@ -525,3 +525,16 @@
   - 全量：`agent` **1007 passing**（+3）；`tsc --noEmit` 0 错误；`source-size` OK；`git diff --check` 干净。
 - **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/verify-signal1.log`）。
 - **遗留（如实记录）**：`knowledge_search`（默认 in-memory）与 `browser/*`（宿主 adapter 决定）仍靠协调器兜底；`runVerificationCommands` 的 runtime→runner 传参属单行接线，由 runner 单测 + 类型检查覆盖（未做 turn 级 E2E）。
+
+## 2026-10-18 Esc 覆盖收口：hook 命令（beforeTurn/afterTool/…）可被中断
+- 背景：生命周期 hook 命令由 `agent-cli` 的 `NodeAgentHookCommandExecutor` 自行 spawn（有自身 `timeoutMs`，但**不接收 turn 信号**），是回合内最后一处「Esc 之后仍会跑」的子进程。用户配置的 hook 可能是 `npm test` 级长命令。
+- 变更：
+  1. `AgentHookExecutionRequest.signal?`、`AgentHookExecutionResult.cancelled?`（可选、向后兼容）；`AgentHookManager.run(stage, context, signal?)` 把信号透传到 `runHook` → `executor.execute({ ..., signal })`。
+  2. `DefaultAgentRuntime.runTurnHooks` 传 `this.turnAbortScopes.signal(sessionId)`（单行接线）。
+  3. `NodeAgentHookCommandExecutor`：**已中止则完全不 spawn**（直接返回 `cancelled: true`）；运行中 abort → `child.kill()` 并立即以 `cancelled: true` + `Command cancelled by the user.` 结算；结算时移除 abort 监听。
+- 回归（先红后绿）：
+  - `agent/test/function-hooks.spec.ts` 新增「shell hooks receive the turn signal」：旧实现 `Expected: true / Received: false`（hook executor 收到 `undefined`）；新实现 8 passing。
+  - `agent-cli/test/hook-executor-signal.spec.ts` 新增两条（**真实 spawn**）：运行中打断（300ms 后 abort）新实现 307ms 结算 `cancelled: true`，旧实现看门狗 2.8s 未结算；已中止时不再启动（marker 文件不被创建），旧实现 `cancelled` 为 undefined。
+  - 全量：`agent` **1008 passing**（+1）、`agent-cli` **90 passing**（+2），均 EXIT=0；`agent`/`agent-cli` `tsc --noEmit` 0 错误；`source-size` OK（runtime 仍 3507）；`git diff --check` 干净。
+- **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/hook-signal1.log`）。
+- **遗留（最终）**：`sandbox-exec` 的能力探测（bwrap/sandbox-exec 一次性短探测）、`knowledge_search`（in-memory）、`browser/*`（宿主 adapter 决定）三项为已知且低风险；「真实长会话里重复工具调用是否下降」仍属观测项。

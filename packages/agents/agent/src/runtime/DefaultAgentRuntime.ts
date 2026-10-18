@@ -3156,7 +3156,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
         if (!this.hookManager?.hasHooks(stage)) {
             return [];
         }
-        const output = await this.hookManager.run(stage, context);
+        const output = await this.hookManager.run(stage, context, this.turnAbortScopes.signal(sessionId));
         await this.appendHookOutputs(sessionId, output.entries);
         return output.results;
     }

@@ -82,6 +82,8 @@ export interface AgentHookExecutionRequest {
     cwd?: string;
     env?: Record<string, string>;
     timeoutMs?: number;
+    /** Aborted when the user interrupts the turn (Esc). */
+    signal?: AbortSignal;
 }
 
 export interface AgentHookExecutionResult {
@@ -90,6 +92,8 @@ export interface AgentHookExecutionResult {
     stderr: string;
     durationMs: number;
     error?: string;
+    /** True when the user interrupted the turn (Esc) while the hook ran. */
+    cancelled?: boolean;
     /** beforeTool only: replacement tool input applied before execution. */
     input?: any;
 }
@@ -156,7 +160,7 @@ export class AgentHookManager {
         }));
     }
 
-    async run(stage: AgentLifecycleHookStage, context: AgentHookContext): Promise<AgentHookRunOutput> {
+    async run(stage: AgentLifecycleHookStage, context: AgentHookContext, signal?: AbortSignal): Promise<AgentHookRunOutput> {
         const entries: AgentHookTranscriptEntry[] = [];
         const results: AgentHookExecutionResult[] = [];
         const functionHooks = this.normalizeFunctionStageHooks(stage);
@@ -172,7 +176,7 @@ export class AgentHookManager {
             return { entries, results };
         }
         for (const hook of this.normalizeStageHooks(stage)) {
-            const entry = await this.runHook(stage, hook, context);
+            const entry = await this.runHook(stage, hook, context, signal);
             if (entry) {
                 entries.push(entry);
             }
@@ -324,7 +328,8 @@ export class AgentHookManager {
     private async runHook(
         stage: AgentLifecycleHookStage,
         hook: AgentHookDefinition,
-        context: AgentHookContext
+        context: AgentHookContext,
+        signal?: AbortSignal
     ): Promise<AgentHookTranscriptEntry | null> {
         if (!this.executor?.isSupported()) {
             return null;
@@ -347,7 +352,8 @@ export class AgentHookManager {
                 context,
                 cwd: hook.cwd ?? context.workspace,
                 env: this.buildEnvironment(stage, hook, context),
-                timeoutMs: hook.timeoutMs
+                timeoutMs: hook.timeoutMs,
+                signal
             });
             const stdout = String(result.stdout || '').trim();
             if (!stdout) {
