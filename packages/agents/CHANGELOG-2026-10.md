@@ -9,6 +9,18 @@ implementation and passes on the new one**.
 - Branch: `7.tui` · Pushed to `gitree` (gitee); `origin` intentionally not pushed.
 - Scope: `packages/agents/*` and the `packages/components/*` touched by agent input.
 
+## 2026-10-19 — real TUI build run (sleep-mlt)
+
+Real `npm run chat -- --workspace ~/workspace/sleep-mlt` run with `gpt-5.6`, asked to build
+a new `insight-system` (module + `node:assert/strict` test + `AGENTS.md` structure entry).
+The build completed (82/82 workspace tests green after the change); the run exposed:
+
+| Commit | File | Root cause |
+| --- | --- | --- |
+| `e083adceb` | `agent-tools/git/git-operations.tool.ts` | Non-git `git_operations diff` fallback still used the order-independent `simpleLineDiff`. A new file's repeated lines (blank lines, `}`, ...) were all emitted at the first occurrence's position and later copies vanished, so the reported diff did not match the file. Headers also used absolute paths (`a//home/...`). Now uses ordered `unifiedLineDiff`, relativizes against the workdir, and prints `/dev/null` for added/deleted files. |
+| `e083adceb` | `agent/src/tools/ToolSummary.ts` | A failing Node test row showed `exit 1 · node:internal/modules/run_main:107` (or `throw new AssertionError(...)`) instead of the assertion. The summary now prefers `AssertionError`/`Error`/`ERR_*`/`TS####` lines and keeps the following comparison detail (`1 !== 2`). |
+| `e083adceb` | `agent/src/model/{OpenAICompatible,Anthropic}ModelAdapter.ts`, `RetryPolicy.ts` | Streaming 5xx/529 retries had no delay and ignored `Retry-After`, spending the whole retry budget in a tight loop (observed: 502/503 failed the turn immediately). Both adapters now share `sleepRetryDelay` and back off exactly like the non-streaming path, including abort handling. |
+
 ## agent-tools
 
 | Commit | File | Root cause |
