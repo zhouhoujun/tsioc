@@ -8,7 +8,7 @@ import { ToolRegistry } from '../src/tools/ToolRegistry';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
 import { defaultAgentOptions } from '../src/options';
 import { AgentTurnCancelledError } from '../src/runtime/AgentTurnCancelledError';
-import { AgentApprovalFailedEvent, AgentCompensationEvent, AgentErrorEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent } from '../src/runtime/AgentEvents';
+import { AgentApprovalFailedEvent, AgentCompensationEvent, AgentErrorEvent, AgentToolFailedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent } from '../src/runtime/AgentEvents';
 import { ToolApprovalManager } from '../src/tools/ToolApprovalManager';
 import { AgentModule } from '../src/agent.module';
 import { MemoryStore } from '../src/memory/MemoryStore';
@@ -216,6 +216,116 @@ export class TurnCancellationTest {
         expect(cancelledEvent?.sessionId).toEqual('s1');
         expect(app.events.some(event => event instanceof AgentErrorEvent)).toEqual(false);
         expect(app.events.some(event => event instanceof AgentTurnCompletedEvent)).toEqual(false);
+    }
+
+    @Test('cancelTurn aborts the tool that is currently running and ends the turn promptly')
+    async cancelTurnInterruptsRunningTool() {
+        const { sessionStore, memoryStore } = await this.boot();
+        const registry = new SignalObservingToolRegistry('slow_tool');
+        const adapter = new ToolThenBlockModelAdapter('slow_tool', 'block');
+        const app = new FakeApp();
+        const runtime = new DefaultAgentRuntime(
+            adapter,
+            registry,
+            sessionStore,
+            memoryStore,
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            app as any,
+            new RandomUuidGenerator()
+        );
+
+        const startedAt = Date.now();
+        let settled = false;
+        let error: any;
+        const turn = runtime.runTurn('s1', 'run it').catch(err => { error = err; settled = true; });
+        // The tool is in flight and has already received its context signal.
+        await registry.started;
+        expect(registry.receivedSignals.length).toEqual(1);
+        expect(registry.receivedSignals[0]).toBeDefined();
+
+        const cancelled = await runtime.cancelTurn('s1');
+        expect(cancelled).toEqual({ cancelled: true, compensated: 0, toolCallIds: [] });
+
+        // Esc must reach the running tool: the turn settles because the tool was
+        // aborted, not because it eventually finished on its own.
+        await waitFor(() => settled, 5000);
+        expect(error).toBeInstanceOf(AgentTurnCancelledError);
+        expect((error as AgentTurnCancelledError).sessionId).toEqual('s1');
+        expect(registry.receivedSignals[0]!.aborted).toEqual(true);
+        expect(Date.now() - startedAt).toBeLessThan(5000);
+        expect(registry.completed).toEqual(0);
+
+        const cancelledEvent = app.events.find(event => event instanceof AgentTurnCancelledEvent) as AgentTurnCancelledEvent | undefined;
+        expect(cancelledEvent?.sessionId).toEqual('s1');
+        expect(app.events.some(event => event instanceof AgentTurnCompletedEvent)).toEqual(false);
+        expect(app.events.some(event => event instanceof AgentErrorEvent)).toEqual(false);
+    }
+
+    @Test('cancelTurn does not retry a tool that the user just interrupted')
+    async cancelTurnDoesNotRetryAbortedTool() {
+        const { sessionStore, memoryStore } = await this.boot();
+        // The tool throws a message that the retry policy would normally retry.
+        const registry = new SignalObservingToolRegistry('flaky_tool', { retryPolicy: { maxRetries: 2, delayMs: 1 } });
+        const adapter = new ToolThenBlockModelAdapter('flaky_tool', 'block');
+        const runtime = new DefaultAgentRuntime(
+            adapter,
+            registry,
+            sessionStore,
+            memoryStore,
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any,
+            new RandomUuidGenerator()
+        );
+
+        let settled = false;
+        const turn = runtime.runTurn('s1', 'run it').catch(() => { settled = true; });
+        await registry.started;
+        await runtime.cancelTurn('s1');
+        await waitFor(() => settled, 5000);
+
+        expect(registry.invokes).toEqual(1);
+    }
+
+    @Test('cancelTurn ends the turn promptly even when a tool ignores the signal')
+    async cancelTurnEndsTurnWhenToolIgnoresSignal() {
+        const { sessionStore, memoryStore } = await this.boot();
+        // A tool with no cancellation hook (network clients, browser sessions,
+        // third-party SDKs): it would only finish on its own after 2s.
+        const registry = new IgnoringSignalToolRegistry('stubborn_tool', 2000);
+        const adapter = new ToolThenBlockModelAdapter('stubborn_tool', 'block');
+        const app = new FakeApp();
+        const runtime = new DefaultAgentRuntime(
+            adapter,
+            registry,
+            sessionStore,
+            memoryStore,
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            app as any,
+            new RandomUuidGenerator()
+        );
+
+        const startedAt = Date.now();
+        let settled = false;
+        let error: any;
+        const turn = runtime.runTurn('s1', 'run it').catch(err => { error = err; settled = true; });
+        await registry.started;
+
+        const cancelled = await runtime.cancelTurn('s1');
+        expect(cancelled).toEqual({ cancelled: true, compensated: 0, toolCallIds: [] });
+
+        await waitFor(() => settled, 5000);
+        expect(error).toBeInstanceOf(AgentTurnCancelledError);
+        // Esc ends the turn at once; it must not wait for the tool to finish.
+        expect(Date.now() - startedAt).toBeLessThan(1000);
+        expect(registry.completed).toEqual(0);
+
+        const failedEvent = app.events.find(
+            event => event instanceof AgentToolFailedEvent && event.toolName === 'stubborn_tool'
+        ) as AgentToolFailedEvent | undefined;
+        expect(failedEvent?.error.message).toEqual('Command cancelled by the user.');
     }
 
     @Test('cancelTurn cascades cancellation to registered child sessions')
@@ -739,6 +849,100 @@ class SelectiveBlockingModelAdapter extends EchoModelAdapter {
             });
         });
         return { message: 'done', stopReason: 'end' };
+    }
+}
+
+/**
+ * A tool that only settles once the turn's abort signal fires. Mirrors
+ * long-running tools (terminal commands) that must stop promptly on Esc.
+ */
+class SignalObservingToolRegistry extends ToolRegistry {
+    readonly receivedSignals: Array<AbortSignal | undefined> = [];
+    invokes = 0;
+    completed = 0;
+    readonly started: Promise<void>;
+    private startResolve!: () => void;
+
+    constructor(private toolName: string, private execution: any = {}) {
+        super();
+        this.started = new Promise<void>(resolve => { this.startResolve = resolve; });
+    }
+
+    getTools(): any[] {
+        return [{
+            name: this.toolName,
+            description: 'slow tool',
+            getDefinition: () => ({
+                name: this.toolName,
+                description: 'slow tool',
+                activation: { kind: 'always', scope: 'session', activated: true },
+                execution: this.execution
+            })
+        }];
+    }
+
+    getTool(name: string): any {
+        return this.getTools().find(tool => tool.name === name);
+    }
+
+    async invoke(name: string, input: any, sessionId: string, principalId?: string, workspace?: string, signal?: AbortSignal): Promise<any> {
+        this.invokes += 1;
+        this.receivedSignals.push(signal);
+        this.startResolve();
+        await new Promise<void>((resolve, reject) => {
+            if (!signal) {
+                // No cancellation channel reached the tool, so it just keeps
+                // running — the behaviour before the signal was threaded through.
+                return;
+            }
+            if (signal.aborted) {
+                reject(new Error('Command cancelled by the user.'));
+                return;
+            }
+            signal.addEventListener('abort', () => reject(new Error('Command cancelled by the user.')), { once: true });
+        });
+        this.completed += 1;
+        return { ok: true };
+    }
+}
+
+/**
+ * A tool with no cancellation hook: it ignores the turn signal entirely and
+ * only settles when its own work is done (like a network or browser client).
+ */
+class IgnoringSignalToolRegistry extends ToolRegistry {
+    invokes = 0;
+    completed = 0;
+    readonly started: Promise<void>;
+    private startResolve!: () => void;
+
+    constructor(private toolName: string, private delayMs: number) {
+        super();
+        this.started = new Promise<void>(resolve => { this.startResolve = resolve; });
+    }
+
+    getTools(): any[] {
+        return [{
+            name: this.toolName,
+            description: 'stubborn tool',
+            getDefinition: () => ({
+                name: this.toolName,
+                description: 'stubborn tool',
+                activation: { kind: 'always', scope: 'session', activated: true }
+            })
+        }];
+    }
+
+    getTool(name: string): any {
+        return this.getTools().find(tool => tool.name === name);
+    }
+
+    async invoke(): Promise<any> {
+        this.invokes += 1;
+        this.startResolve();
+        await new Promise(resolve => setTimeout(resolve, this.delayMs));
+        this.completed += 1;
+        return { ok: true };
     }
 }
 

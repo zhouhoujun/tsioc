@@ -79,4 +79,59 @@ export class HttpBodyTimeoutTest {
             closeServer(harness);
         }
     }
+
+    @Test('http_fetch stops on the turn signal instead of waiting for its timeout')
+    async httpFetchHonoursTurnSignal() {
+        const harness = await startStallingServer();
+        try {
+            // A long timeout: only Esc can end the request early.
+            const tool = new HttpFetchTool({ http: { timeoutMs: 3000 } } as any);
+            const controller = new AbortController();
+            const startedAt = Date.now();
+            const pending = tool.invoke(
+                { url: `http://127.0.0.1:${harness.port}/` },
+                { signal: controller.signal } as any
+            );
+            await new Promise(resolve => setTimeout(resolve, 150));
+            controller.abort();
+
+            let error: any;
+            try {
+                await pending;
+            } catch (err) {
+                error = err;
+            }
+            expect(error?.message).toEqual('Command cancelled by the user.');
+            expect(Date.now() - startedAt).toBeLessThan(2000);
+        } finally {
+            closeServer(harness);
+        }
+    }
+
+    @Test('http_request stops on the turn signal instead of waiting for its timeout')
+    async httpRequestHonoursTurnSignal() {
+        const harness = await startStallingServer();
+        try {
+            const tool = new HttpRequestTool({ http: { timeoutMs: 3000 } } as any);
+            const controller = new AbortController();
+            const startedAt = Date.now();
+            const pending = tool.invoke(
+                { url: `http://127.0.0.1:${harness.port}/` },
+                { signal: controller.signal } as any
+            );
+            await new Promise(resolve => setTimeout(resolve, 150));
+            controller.abort();
+
+            let error: any;
+            try {
+                await pending;
+            } catch (err) {
+                error = err;
+            }
+            expect(error?.message).toEqual('Command cancelled by the user.');
+            expect(Date.now() - startedAt).toBeLessThan(2000);
+        } finally {
+            closeServer(harness);
+        }
+    }
 }

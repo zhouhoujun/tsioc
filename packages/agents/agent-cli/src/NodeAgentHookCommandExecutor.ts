@@ -3,6 +3,7 @@ import {
     AgentHookCommandExecutor,
     AgentHookExecutionRequest,
     AgentHookExecutionResult,
+    CANCELLED_MESSAGE,
     loadSandboxSpawnModule,
     resolvePlatformShellCommand
 } from '@tsdi/agent';
@@ -24,6 +25,17 @@ export class NodeAgentHookCommandExecutor extends AgentHookCommandExecutor {
             }
         );
         try {
+            // Esc before the hook starts: do not spawn it at all.
+            if (request.signal?.aborted) {
+                return {
+                    exitCode: 1,
+                    stdout: '',
+                    stderr: '',
+                    durationMs: Date.now() - startTime,
+                    error: CANCELLED_MESSAGE,
+                    cancelled: true
+                };
+            }
             const { spawn } = await loadSandboxSpawnModule();
             return await new Promise<AgentHookExecutionResult>((resolve) => {
                 const child = spawn(resolved.command, resolved.args, {
@@ -42,6 +54,22 @@ export class NodeAgentHookCommandExecutor extends AgentHookCommandExecutor {
                         // ignore
                     }
                 }, timeoutMs) : undefined;
+                /** Esc: stop the hook command instead of waiting for it. */
+                const onAbort = () => {
+                    try {
+                        child.kill();
+                    } catch {
+                        // ignore
+                    }
+                    finish({
+                        exitCode: 1,
+                        stdout,
+                        stderr,
+                        durationMs: Date.now() - startTime,
+                        error: CANCELLED_MESSAGE,
+                        cancelled: true
+                    });
+                };
                 const finish = (result: AgentHookExecutionResult) => {
                     if (settled) {
                         return;
@@ -50,8 +78,16 @@ export class NodeAgentHookCommandExecutor extends AgentHookCommandExecutor {
                     if (timer) {
                         clearTimeout(timer);
                     }
+                    request.signal?.removeEventListener('abort', onAbort);
                     resolve(result);
                 };
+                if (request.signal) {
+                    if (request.signal.aborted) {
+                        onAbort();
+                        return;
+                    }
+                    request.signal.addEventListener('abort', onAbort, { once: true });
+                }
                 child.stdout?.on('data', (chunk: Uint8Array) => {
                     stdout += chunk.toString();
                 });

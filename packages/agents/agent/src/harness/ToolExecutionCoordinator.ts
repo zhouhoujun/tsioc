@@ -5,10 +5,13 @@ import { AgentToolDefinition } from '../tools/AgentTool';
 import { ToolSchemaValidator } from './ToolSchemaValidator';
 import { RateLimitManager } from './RateLimitManager';
 import { OutputGuard } from './OutputGuard';
-import { AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolCompletedEvent, AgentToolLspDiagnostic } from '../runtime/AgentEvents';
+import { AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolCompletedEvent, AgentToolLspDiagnostic, AgentToolSkippedEvent } from '../runtime/AgentEvents';
 import { summarizeToolDisplayText } from '../tools/ToolSummary';
 import { AuditSink, AgentAuditRecord } from './AuditSink';
 import { SandboxExecutor, SandboxPolicy } from './SandboxExecutor';
+import { CANCELLED_MESSAGE } from './cancellation';
+import { RepeatReadOnlyCallCache } from '../runtime/tool-repeat-cache';
+import { isWorkspaceMutatingTool } from '../project/workspace-trust';
 import { resolveToolSandboxState } from './ToolSandboxPolicy';
 import { AgentClock, AGENT_CLOCK } from '../runtime/Clock';
 
@@ -16,11 +19,15 @@ export interface ToolExecutionRequest {
     sessionId: string;
     principalId?: string;
     workspace?: string;
+    /** Aborted when the owning turn is cancelled; forwarded to the tool. */
+    signal?: AbortSignal;
     toolCall: { id: string; name: string; input?: any };
     definition: AgentToolDefinition;
     executionMode: 'sequential' | 'parallel';
     inputSummary?: string;
     baseReceipt?: AgentToolExecutionReceipt;
+    /** Turn-scoped cache for identical read-only calls (see RepeatReadOnlyCallCache). */
+    repeatCache?: RepeatReadOnlyCallCache;
 }
 
 export interface ToolExecutionOutcome {
@@ -63,6 +70,11 @@ export class ToolExecutionCoordinator {
         const delayMs = Math.max(retryPolicy?.delayMs ?? 0, 0);
         const backoffMultiplier = retryPolicy?.backoffMultiplier ?? 1;
 
+        const repeated = await this.reuseRepeatReadOnlyCall(request, baseReceipt);
+        if (repeated) {
+            return repeated;
+        }
+
         let lastError: Error | undefined;
         for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
             const startedAt = this.clock?.now() ?? Date.now();
@@ -81,6 +93,7 @@ export class ToolExecutionCoordinator {
                     attemptCount: attempt,
                     lspDiagnostics: extractLspDiagnostics(rawOutput)
                 };
+                this.rememberReadOnlyResult(request, rawOutput, redactedOutput, completedReceipt);
                 await this.publishAudit({
                     id: completedReceipt.receiptId,
                     sessionId: request.sessionId,
@@ -109,7 +122,9 @@ export class ToolExecutionCoordinator {
                 };
             } catch (error) {
                 lastError = error instanceof Error ? error : new Error(String(error));
-                const shouldRetry = attempt <= maxRetries && this.isRetryable(lastError);
+                // A cancelled turn must never re-run a tool the user just
+                // interrupted, so an aborted signal makes the error terminal.
+                const shouldRetry = attempt <= maxRetries && !request.signal?.aborted && this.isRetryable(lastError);
                 if (shouldRetry) {
                     await this.sleep(delayMs * Math.max(1, Math.pow(backoffMultiplier, attempt - 1)));
                     continue;
@@ -162,15 +177,88 @@ export class ToolExecutionCoordinator {
         };
     }
 
+    /**
+     * Answer an identical read-only call from this turn's cache.
+     *
+     * Repeated directory listings and re-reads are pure budget burn: the model
+     * already has the result. Calls that can change the workspace clear the cache
+     * first, so a read after an edit or a command still reaches the tool.
+     */
+    private async reuseRepeatReadOnlyCall(
+        request: ToolExecutionRequest,
+        baseReceipt: AgentToolExecutionReceipt
+    ): Promise<ToolExecutionOutcome | undefined> {
+        const cache = request.repeatCache;
+        if (!cache) {
+            return undefined;
+        }
+        if (!RepeatReadOnlyCallCache.isCacheable(request.definition)) {
+            if (isWorkspaceMutatingTool(request.definition)) {
+                cache.clear();
+            }
+            return undefined;
+        }
+        const cached = cache.lookup(request.toolCall.name, request.toolCall.input);
+        if (!cached) {
+            return undefined;
+        }
+        const receipt: AgentToolExecutionReceipt = {
+            ...baseReceipt,
+            status: 'skipped',
+            durationMs: 0,
+            outputSummary: cached.outputSummary,
+            attemptCount: cached.attempts
+        };
+        await this.app.publishEvent(new AgentToolSkippedEvent(
+            this,
+            request.sessionId,
+            request.toolCall.name,
+            'Repeated identical read-only call; reused the earlier result.',
+            receipt
+        ));
+        return {
+            output: cached.output,
+            redactedOutput: cached.redactedOutput,
+            receipt,
+            attempts: cached.attempts
+        };
+    }
+
+    /** Keep a successful read-only result so an identical repeat can reuse it. */
+    private rememberReadOnlyResult(
+        request: ToolExecutionRequest,
+        rawOutput: unknown,
+        redactedOutput: unknown,
+        receipt: AgentToolExecutionReceipt
+    ): void {
+        if (!request.repeatCache || !RepeatReadOnlyCallCache.isCacheable(request.definition)) {
+            return;
+        }
+        request.repeatCache.remember(request.toolCall.name, request.toolCall.input, {
+            output: rawOutput,
+            redactedOutput,
+            outputSummary: receipt.outputSummary,
+            attempts: receipt.attemptCount ?? 1
+        });
+    }
+
     private async invokeWithTimeout(request: ToolExecutionRequest, timeoutMs?: number): Promise<unknown> {
         const sandboxPolicy = this.resolveSandboxState(request).policy;
         if (sandboxPolicy?.osSandbox && sandboxPolicy.enabled && this.sandboxExecutor?.isSupported()) {
             const command = typeof request.toolCall.input?.command === 'string' ? request.toolCall.input.command : '';
             if (command.trim()) {
-                const result = await this.sandboxExecutor.execute(command, [], {
-                    policy: sandboxPolicy,
-                    timeoutMs
-                });
+                const result = await this.raceInvocation(
+                    request,
+                    this.sandboxExecutor.execute(command, [], {
+                        policy: sandboxPolicy,
+                        timeoutMs,
+                        // Esc must stop a sandboxed command too.
+                        signal: request.signal
+                    }),
+                    // The executor enforces `timeoutMs` itself; only the abort
+                    // needs a second guard here.
+                    undefined
+                );
                 return result;
             }
         }
@@ -183,17 +271,10 @@ export class ToolExecutionCoordinator {
             request.toolCall.input,
             request.sessionId,
             request.principalId,
-            request.workspace
+            request.workspace,
+            request.signal
         );
-        if (!timeoutMs || timeoutMs <= 0) {
-            return invokePromise;
-        }
-        return Promise.race([
-            invokePromise,
-            new Promise((_, reject) => {
-                setTimeout(() => reject(new Error(`Tool "${request.toolCall.name}" timed out after ${timeoutMs}ms.`)), timeoutMs);
-            })
-        ]);
+        return this.raceInvocation(request, invokePromise, timeoutMs);
     }
 
     private resolveSandboxPolicy(request: ToolExecutionRequest): SandboxPolicy | null {
@@ -222,17 +303,58 @@ export class ToolExecutionCoordinator {
             request.toolCall.input,
             request.sessionId,
             request.principalId,
-            request.workspace
+            request.workspace,
+            request.signal
         );
-        if (!timeoutMs || timeoutMs <= 0) {
-            return invokePromise;
+        return this.raceInvocation(request, invokePromise, timeoutMs);
+    }
+
+    /**
+     * Settle a tool call on the earliest of: the tool finishing, its timeout, or
+     * the user interrupting the turn.
+     *
+     * Esc must end the turn even when a tool ignores the abort signal: network
+     * clients, browser sessions and third-party SDKs have no cancellation hook,
+     * so without this guard the turn would keep waiting for them. Tools that do
+     * honour the signal (child processes, sandboxes, execute_code) still stop
+     * their own work; the rest are abandoned, which is what pressing Esc asks
+     * for.
+     */
+    private raceInvocation<T>(request: ToolExecutionRequest, invocation: Promise<T>, timeoutMs?: number): Promise<T> {
+        const signal = request.signal;
+        const hasTimeout = !!timeoutMs && timeoutMs > 0;
+        if (!hasTimeout && !signal) {
+            return invocation;
         }
-        return Promise.race([
-            invokePromise,
-            new Promise((_, reject) => {
-                setTimeout(() => reject(new Error(`Tool "${request.toolCall.name}" timed out after ${timeoutMs}ms.`)), timeoutMs);
-            })
-        ]);
+        const guards: Promise<never>[] = [];
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        let onAbort: (() => void) | undefined;
+        if (hasTimeout) {
+            guards.push(new Promise<never>((_, reject) => {
+                timer = setTimeout(
+                    () => reject(new Error(`Tool "${request.toolCall.name}" timed out after ${timeoutMs}ms.`)),
+                    timeoutMs
+                );
+            }));
+        }
+        if (signal) {
+            guards.push(new Promise<never>((_, reject) => {
+                if (signal.aborted) {
+                    reject(new Error(CANCELLED_MESSAGE));
+                    return;
+                }
+                onAbort = () => reject(new Error(CANCELLED_MESSAGE));
+                signal.addEventListener('abort', onAbort, { once: true });
+            }));
+        }
+        return Promise.race([invocation, ...guards]).finally(() => {
+            if (timer) {
+                clearTimeout(timer);
+            }
+            if (onAbort) {
+                signal?.removeEventListener('abort', onAbort);
+            }
+        });
     }
 
     private isRetryable(error: Error): boolean {

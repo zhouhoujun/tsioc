@@ -1,9 +1,9 @@
-import { spawn } from 'child_process';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { Worker } from 'worker_threads';
 import { Injectable } from '@tsdi/ioc';
 import { AgentToolsOptions } from '../src/options';
+import { CANCELLED_MESSAGE, runChildProcess } from '@tsdi/agent';
 import { assertSandboxCommand, buildSandboxEnv, resolveSandboxPolicy } from '../src/sandbox-policy';
 import { resolveWorkspacePath } from '../files/path-policy';
 import { CodeExecutionAdapter, CodeExecutionRequest, CodeExecutionResult } from './types';
@@ -31,7 +31,7 @@ export class LocalCodeExecutionAdapter extends CodeExecutionAdapter {
             assertSandboxCommand('node', policy, 'execute_code');
             const code = this.isTypeScriptLanguage(normalized) ? this.transpileTypeScript(request.code) : request.code;
             const env = buildSandboxEnv(process.env, policy);
-            return this.runScriptInWorker(code, cwd, workspace, env, timeoutMs);
+            return this.runScriptInWorker(code, cwd, workspace, env, timeoutMs, request.signal);
         }
 
         const runtime = await this.resolveRuntime(normalized);
@@ -39,7 +39,7 @@ export class LocalCodeExecutionAdapter extends CodeExecutionAdapter {
         assertSandboxCommand(commandLine, policy, 'execute_code');
         const env = buildSandboxEnv(process.env, policy);
         const spawnArgs = [...runtime.baseArgs, request.code];
-        return this.run(commandLine, runtime.command, spawnArgs, cwd, workspace, env, timeoutMs);
+        return this.run(commandLine, runtime.command, spawnArgs, cwd, workspace, env, timeoutMs, request.signal);
     }
 
     private async resolveRuntime(language: string): Promise<RuntimeSpec> {
@@ -115,83 +115,66 @@ export class LocalCodeExecutionAdapter extends CodeExecutionAdapter {
         cwd: string,
         workspace: string,
         env: NodeJS.ProcessEnv,
-        timeoutMs: number
+        timeoutMs: number,
+        signal?: AbortSignal
     ): Promise<CodeExecutionResult> {
-        return new Promise((resolve) => {
-            const child = spawn(command, args, {
-                cwd,
-                env,
-                shell: false,
-                stdio: ['pipe', 'pipe', 'pipe']
-            });
-
-            let stdout = '';
-            let stderr = '';
-            let settled = false;
-            const finish = (result: CodeExecutionResult) => {
-                if (settled) {
-                    return;
-                }
-                settled = true;
-                resolve({
-                    stdout: result.stdout.slice(-MAX_OUTPUT_CHARS),
-                    stderr: result.stderr.slice(-MAX_OUTPUT_CHARS),
-                    exitCode: result.exitCode,
-                    error: result.error,
-                    cwd,
-                    workspace
-                });
-            };
-
-            const timer = setTimeout(() => {
-                child.kill('SIGTERM');
-                stderr += stderr ? `\nexecute_code command timed out after ${timeoutMs} ms.` : `execute_code command timed out after ${timeoutMs} ms.`;
-                finish({
-                    stdout: '',
-                    stderr,
-                    exitCode: 124,
-                    error: `Timed out after ${timeoutMs} ms.`,
-                    cwd,
-                    workspace
-                });
-            }, timeoutMs);
-
-            child.stdout?.on('data', (chunk: Buffer) => {
-                stdout += chunk.toString();
-            });
-            child.stderr?.on('data', (chunk: Buffer) => {
-                stderr += chunk.toString();
-            });
-            child.on('error', (err) => {
-                clearTimeout(timer);
-                const message = (err as any).code === 'ENOENT'
-                    ? `${command} is not available in PATH for ${commandLine}.`
-                    : err.message;
-                stderr += stderr ? `\n${message}` : message;
-                finish({
-                    stdout: '',
-                    stderr,
-                    exitCode: 1,
-                    error: message,
-                    cwd,
-                    workspace
-                });
-            });
-            child.on('close', (code) => {
-                clearTimeout(timer);
-                const trimmedStdout = stdout.trimEnd();
-                const trimmedStderr = stderr.trimEnd();
-                const exitCode = code ?? 0;
-                finish({
-                    stdout: trimmedStdout.slice(-MAX_OUTPUT_CHARS),
-                    stderr: trimmedStderr.slice(-MAX_OUTPUT_CHARS),
-                    exitCode,
-                    error: exitCode === 0 ? undefined : (trimmedStderr || `execute_code exited with code ${exitCode}.`),
-                    cwd,
-                    workspace
-                });
-            });
+        const outcome = await runChildProcess({
+            command,
+            args,
+            cwd,
+            env,
+            shell: false,
+            stdin: '',
+            timeoutMs,
+            signal
         });
+        switch (outcome.kind) {
+            case 'cancelled':
+                throw new Error(CANCELLED_MESSAGE);
+            case 'timeout': {
+                const note = `execute_code command timed out after ${timeoutMs} ms.`;
+                return this.result(cwd, workspace, {
+                    stdout: '',
+                    stderr: outcome.stderr ? `${outcome.stderr}\n${note}` : note,
+                    exitCode: 124,
+                    error: `Timed out after ${timeoutMs} ms.`
+                });
+            }
+            case 'error': {
+                const message = outcome.error.code === 'ENOENT'
+                    ? `${command} is not available in PATH for ${commandLine}.`
+                    : outcome.error.message;
+                return this.result(cwd, workspace, {
+                    stdout: '',
+                    stderr: outcome.stderr ? `${outcome.stderr}\n${message}` : message,
+                    exitCode: 1,
+                    error: message
+                });
+            }
+            default: {
+                const trimmedStdout = outcome.stdout.trimEnd();
+                const trimmedStderr = outcome.stderr.trimEnd();
+                const exitCode = outcome.exitCode ?? 0;
+                return this.result(cwd, workspace, {
+                    stdout: trimmedStdout,
+                    stderr: trimmedStderr,
+                    exitCode,
+                    error: exitCode === 0 ? undefined : (trimmedStderr || `execute_code exited with code ${exitCode}.`)
+                });
+            }
+        }
+    }
+
+    /** Mirrors the result shaping (tail-capped output) of every run path. */
+    private result(cwd: string, workspace: string, result: Partial<CodeExecutionResult> & { exitCode: number }): CodeExecutionResult {
+        return {
+            stdout: (result.stdout ?? '').slice(-MAX_OUTPUT_CHARS),
+            stderr: (result.stderr ?? '').slice(-MAX_OUTPUT_CHARS),
+            exitCode: result.exitCode,
+            error: result.error,
+            cwd,
+            workspace
+        };
     }
 
     private async runScriptInWorker(
@@ -199,9 +182,14 @@ export class LocalCodeExecutionAdapter extends CodeExecutionAdapter {
         cwd: string,
         workspace: string,
         env: NodeJS.ProcessEnv,
-        timeoutMs: number
+        timeoutMs: number,
+        signal?: AbortSignal
     ): Promise<CodeExecutionResult> {
-        return new Promise((resolve) => {
+        // A turn cancelled before the run started must not start the worker.
+        if (signal?.aborted) {
+            throw new Error(CANCELLED_MESSAGE);
+        }
+        return new Promise((resolve, reject) => {
             const workerSource = this.createWorkerSource();
             const worker = new Worker(workerSource, {
                 eval: true,
@@ -213,19 +201,35 @@ export class LocalCodeExecutionAdapter extends CodeExecutionAdapter {
                 }
             });
             let settled = false;
+            const cleanup = () => {
+                clearTimeout(timer);
+                signal?.removeEventListener('abort', onAbort);
+            };
             const finish = (result: CodeExecutionResult) => {
                 if (settled) {
                     return;
                 }
                 settled = true;
-                resolve({
-                    stdout: result.stdout.slice(-MAX_OUTPUT_CHARS),
-                    stderr: result.stderr.slice(-MAX_OUTPUT_CHARS),
-                    exitCode: result.exitCode,
-                    error: result.error,
-                    cwd: result.cwd,
-                    workspace: result.workspace
-                });
+                cleanup();
+                resolve(this.result(cwd, workspace, result));
+            };
+            const fail = (error: Error) => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                cleanup();
+                reject(error);
+            };
+            /**
+             * User interrupt (Esc): settle with a cancellation error first, then
+             * stop the worker. Settling first matters because
+             * `worker.terminate()` only resolves after the worker's 'exit'
+             * event, which must not be reported as a normal result.
+             */
+            const onAbort = () => {
+                fail(new Error(CANCELLED_MESSAGE));
+                void worker.terminate();
             };
             const timer = setTimeout(async () => {
                 const stderr = `execute_code command timed out after ${timeoutMs} ms.`;
@@ -239,8 +243,13 @@ export class LocalCodeExecutionAdapter extends CodeExecutionAdapter {
                     workspace
                 });
             }, timeoutMs);
+            signal?.addEventListener('abort', onAbort, { once: true });
+            // The signal can fire between the pre-check and this registration;
+            // without this the interrupt would be lost.
+            if (signal?.aborted) {
+                onAbort();
+            }
             worker.on('message', (message: any) => {
-                clearTimeout(timer);
                 finish({
                     stdout: String(message?.stdout ?? ''),
                     stderr: String(message?.stderr ?? ''),
@@ -251,7 +260,6 @@ export class LocalCodeExecutionAdapter extends CodeExecutionAdapter {
                 });
             });
             worker.on('error', async (error) => {
-                clearTimeout(timer);
                 await worker.terminate();
                 finish({
                     stdout: '',
@@ -266,7 +274,6 @@ export class LocalCodeExecutionAdapter extends CodeExecutionAdapter {
                 if (settled) {
                     return;
                 }
-                clearTimeout(timer);
                 finish({
                     stdout: '',
                     stderr: code === 0 ? '' : `execute_code worker exited with code ${code}.`,

@@ -607,3 +607,277 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 
 ### 诚实边界
 `skills_remote` 是 mutating 工具（`sideEffect`），仍受审批策略约束；本轮只接通注册与可见性，未改动审批策略。临时 mock registry / 引导脚本 / tmux 会话**已清理**。
+## 2026-10-17 真实 TUI 时间线展示打磨（工具对象/结果摘要）
+- 背景：用真实 CLI TUI（`cd packages/agents/agent-cli && DEEPSEEK_API_KEY=… npm run chat -- --root /tmp/opencode/agent-root5 --workspace /home/zhouyou/workspace/sleep-mlt`）对照 Codex/opencode 的信息架构，逐行核对时间线展示。**本机无 opencode 源码**（只有 `opencode.exe`），对照为定性，锚定 AGENTS.md 第 5 条「动作 + 对象 + 状态 + 必要摘要」。
+- **根因（真实运行 DB 证据，非推测）**：`/tmp/opencode/agent-root5/agent.db` 显示 receipt 摘要把进程管道当业务字段：
+  - `terminal.inputSummary` = `command=sed -n '…' … · timeoutMs=30000`（raw `key=value` 信封）；`terminal.outputSummary` = `stdout=…\n… · exitCode=0 · timedOut=false`（多行原始负载，落进 200 列摘要后被折断成两行）。
+  - `content_search` 输入显示 `test`（搜的目录）而非 query、输出显示 `content_search · 1 field(s)`；`glob_search` 输入显示 `0 matches`；`list_dir` 输入显示 `test · 0 entries`。
+  - `tool_failed` 行只显示 `Search code failed · retry`，把 producer 的 `ENOTDIR: …` 原因吞掉（`describeStreamEventContent` 的 `tool_failed` 分支只回 `{label} failed`）。
+- **修复（展示层，无功能降级）**：
+  1. `agent/src/tools/ToolSummary.ts`：新增 `SHELL_TOOL_NAMES` / `PAYLOAD_ENVELOPE_KEYS`；`list_dir`/`glob_search`/`content_search`（新分支）**按 phase** 分别取对象（路径/pattern/query）与结果（entry/match 计数）；`terminal` 走 `summarizeShellPayload`：input = 单行命令，output = `timed out` / `exit N · <首行 stderr 或 stdout>`（**保留 exit 状态**，`LLMSessionSummarizer`/`AgentContextManager` 仍能消费）；通用 fallback 过滤信封键；`collapseSingleLine` 统一折叠换行。完整负载仍在 tool message / inspector。
+  2. `agent-gateway/src/app-rpc/tool-event-content.ts`（**新模块**）：把 `describeToolInvocationEvent` / `describeToolCompletedEvent` / `summarizeToolEventDetail` 及其解析辅助从 `AppRpcServer.ts` **原样迁出**（单一职责：transport 层不再承载内容成形）。`describeToolCompletedEvent` 现在**保留对象**——完成行按 toolCallId 原地替换调用行，若不保留，命令/文件会从时间线消失；仅当输出已包含该对象（如 `read_file` 的 pathSummary）才不重复。**同提交下调 `AppRpcServer.ts` 基线 3775 → 3684**（-91 行），符合 ratchet「只降不升」。
+  3. `agent-ui/src/AgentConsoleStreamHelpers.ts`：`tool_failed` / `tool_skipped` 保留 producer 原因（`resolveToolEventReason` 去掉 `<tool> failed:` 前缀、取首个非空行，行渲染器再按 200 列截断）；`tool_skipped` 从「原样透传 raw 串」改为走翻译标签。
+  4. `agent-ui/src/agent-ui.i18n.ts`：新增 `agent.tool.skipped` / `skippedWithReason`（en/zh）。
+  5. `agent-ui/src/AgentConsoleTimelineEventPresenter.ts`：类别表补 `stat`/`glob_search`（→read）、`content_search`（→search），避免落 `generic` 用人类化名当动词。
+- **回归（先证旧实现失败，再证修复通过）**：`agent/test/tool-summary.spec.ts` 12 条（旧实现 **1 passing / 11 failed**，失败串与 DB 证据逐条对应）；`agent-ui/test/tool-label-i18n.spec.ts` 失败/跳过原因 2 条 + `p300-timeline-event-presenter.spec.ts` 类别/动词 2 条（旧实现 **4 failed**，`Received "Search code failed"`）；`agent-gateway/test/rpc-stream.spec.ts` 完成内容保留对象（旧实现 **`terminal · exit 0 · …`**，无命令）+ 新增 `tool-event-content.spec.ts` 5 条直测迁出的纯函数。
+- **真实 TUI 实测（tmux 120×40，read-only 三步）**：
+  - `✓ Tool · Read file completed · src/cli.ts (truncated)`
+  - `✓ Tool · Search code completed · scorePaper · 0 matches`（对象从「目录/字段数」变为 query）
+  - `✓ Tool · Run command completed · node -e "console.log(1+1)" · exit 0 · 2`（对象=命令，结果=有界 `exit 0 · 首行`，不再 dump 信封）
+  - 失败路径：`✕ Tool · Read file failed: Path 'src/does-not-exist-xyz.ts' does not exist. · retry`（原因回到主线，旧行为只剩 `Read file failed · retry`）。
+- **验证**：agent 976 / agent-ui 1518 / agent-gateway 320 / agent-tools 523，全 `EXIT=0`；`node scripts/check-source-size.mjs` OK；`git diff --check` 干净；`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，`GATE_EXIT=0`**（`/tmp/opencode/gate/batch-timeline-final3.log`，含真实 PTY acceptance）。
+- **仍为开放项（如实保留）**：① 真实运行中 `Esc` 未能中断一个卡住的 reasoning 流（观察 1m32s→4m26s 仍 `Working`），独立缺陷、本轮未改。**→ 2026-10-18 追加**：排查到模型请求层「abort 后仍重试/降级」的缺陷并已修复（见文末批次，确定性证据：abort 后仍会发 3 次请求），分钟级卡顿的主因按已证证据应为工具阻塞（已修）；该次观察本身未再复现，故不宣称已被完整解释；② 该真实运行（20 轮后 `maxToolRounds`）出现 14× 重复 `Inspect directory`、7× 相同 `Read file … (truncated)`，属 **agent 行为**（重复工具调用）而非渲染层。**→ 2026-10-18 追加**：其中「读到 `[summary] …` 后重读」一类已由压缩保留载荷头部的修复针对（含实机 A/B 证据），但「重复 Inspect directory」未单独复现验证；③ `sleep-mlt` 工作区仍有历次 agent 运行留下的未提交改动（`M README.md` 等）与本批次无关。**→ 2026-10-18 处理完毕**：经用户授权先出**只读**差异报告（`/tmp/opencode/sleep-mlt-report.md`），确认为一次 agent 运行产出的完整 `import` 特性（README +38 / `src/cli.ts` +88 / `test/cli.test.ts` +148，含 13 条测试、原子写入与 id 冲突语义），与 09-25 的 run3 patch 不同源；随后（用户授权）跑 `npm test` **82/82 通过**、把 `.tsdi-agent/` 加入 `.gitignore`、以 `c1d6add feat(cli): add import command for batch-loading records from JSON` 落库（该仓库无 remote，故仅本地提交），工作区已干净；④ 本机无 opencode 源码，展示对照为定性。
+
+## 2026-10-17 时间线「思考行」（Thought）展示修复
+- 背景（同一轮真实 TUI 对照中发现）：思考行显示 `● Thought · Reasoning about implementation` —— 这是**硬编码英文常量**（修复前 `agent-ui/src/AgentConsoleTurnStreamController.ts:102`），既违反 AGENTS.md 第 9 条（用户可见文案必须经 i18n、不得硬编码英文），也让第 5 条「只展示动作/对象/状态/必要摘要」落空：行内容与 inspector detail 都是同一句套话，模型真实推理只进了 activity log；而且该行 `status` 永远停在 `running`，turn 结束后仍渲染成「正在思考」。
+- **修复（展示层，无功能降级）**：
+  1. `AgentConsoleTurnStreamController.ts`：`AgentConsoleTurnStreamState` 新增 `reasoningText`（整轮思考，供 settle / inspector）与 `reasoningPhase`（当前推理阶段，供运行行）；`chunk.type==='reasoning'` 由常量改为**累积真实思考增量**（`appendReasoningText`，上限 4000 字符），行内容 = 当前阶段文本（为空时回退本地化 `agent.turn.reasoning`）；`tool_call` 边界重置 `reasoningPhase` —— 下一阶段是新思考，运行行不得冻结在上一阶段首行。
+  2. 新增 `settleReasoningRow`：turn 流正常结束时把该轮思考行 upsert 为 `status:'success'`（内容 = 整轮思考），复用既有 `resolveUiEventDurationFallback` 得到耗时；`runTurnStreamView` 的 **appRpc 流完成分支**与 **runtime 流分支**各调用一次。注意 TUI 走 in-process runtime，其结尾 `{type:'done'}` **不带 message**，只在 `done` 分支 settle 会漏（第一版实现即如此，被新增的真实路径用例暴露后修正）。
+  3. `AgentConsoleComponent.ts` 的 `turnStreamState` 初始化补两个字段；`clearStreamingMessageState` 一并清空。
+- **回归（先证旧实现失败，再证修复通过）**：`agent-ui/test/turn-stream-narration.spec.ts` 新增 4 条。`git stash` 掉两个 src 文件后在**旧实现上 3 passing / 4 failed**（`Expected "I should inspect the project layout first." / Received "Reasoning about implementation"`、`Expected "Now I will read seed.ts." / Received "Reasoning about implementation"`、`Expected substring "detail detail" / Received "Reasoning about implementation"`、`Expected "success" / Received "running"`）；修复后 **7 passing**。其中 `reasoning row shows the real thought and settles when the turn ends` 驱动**真实 TUI 路径**（无 appRpc → `runtime.runStreamingTurn`，末尾 `{type:'done'}` 无 message），专门覆盖上面第 2 点的坑。
+- **真实 TUI 实测（tmux 120×40，`--root /tmp/opencode/agent-root5 --workspace /home/zhouyou/workspace/sleep-mlt`）**：
+  - 修复前：`● Thought · Reasoning about implementation`（常量套话，永不结束）。
+  - 修复后（运行中）：`● Thought · Terminal output for domain got summarized too (maybe output long). Use sed smaller chunks, e.g. 1-120, 121…`（当轮真实推理，随阶段刷新）。
+  - 修复后（turn 结束）：`✓ Thought · The user wants me to inspect files under src/ and count TypeScript files. Constraint: use only list_dir or… (…)`（真实思考 + `✓` 已结束 + 耗时；主行是 ≤120 摘要，完整思考仍在 detail）。
+- **验证**：`agent-ui` 1522 passing / `EXIT=0`；agent-ui `tsc --noEmit` 0 错误；`node scripts/check-source-size.mjs` OK；`git diff --check` 干净；`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/reasoning-row3.log`；第 1、2 次 gate 的失败都来自上面两个与改动无关的既有 flaky 断言/基建）。
+- **顺手修掉一个既有 flaky 断言（与本次改动无关，第一次 gate 被它卡住）**：`agent-ui/test/session-lifecycle.spec.ts` 的 `terminal upsert derives duration from the running row start time` 用 `await sleep(5)` 后断言 `durationMs >= 5`，而 Node 计时器可提前约 1ms 触发（实测收到 4），gate 负载下即失败；隔离单跑 5/5 通过。修复方式是把等待窗口放到计时器分辨率之上（`sleep(20)` + 断言 `>= 10`），契约不变（时长仍由真实经过时间推导），不是放宽语义。
+- **又修掉一个既有 flaky 测试基建（同样与本次改动无关，第二次 gate 被它卡住；两次 gate 失败的 stage 都不在本批次改动范围）**：`agent-tools/test/ssh-tools.spec.ts` 的 mock SSH server 用 `ssh2.utils.generateKeyPair('ed25519')` 现生成 host key，而 **ssh2 1.17.0 自身的 ed25519 keygen 会以约 0.2% 概率产出 malformed OpenSSH 容器**（实测 7/3000；抓到的坏 key 比应有容器长度少 2 字节），随后被 ssh2 自己的 parser 拒绝：`Error: Cannot parse privateKey: Malformed OpenSSH private key`（`at new Server (node_modules/ssh2/lib/server.js:249)`）。隔离顺序跑 600 次 0 失败、单 spec 串行跑 8 次全过，只有并发/负载下命中（6 并发 ×3 轮命中 1 次）。修复：`generateMockHostKey()` 用 `utils.parseKey` 校验生成的 key，被拒就重生成（最多 5 次），mock server 只需要「某把合法 host key」，不再因上游缺陷整包假失败；重试循环 3000 次 0 失败。`agent-tools` 全量 523 passing / `EXIT=0`。
+- **仍为开放项（本轮新证据，未擅自改行为）**：
+  1. **`Esc` 无法中断正在执行的工具**（把上一批开放项 ① 复现到确切根因）：真实 TUI 中发 `Run exactly this shell command and nothing else: sleep 90` → 工具行 `● Tool · Run command: sleep 90`，按 `Esc` 后状态栏仍 `Working (… esc to interrupt)`，直到 90s 工具自己跑完才出现 `✓ Tool · Run command completed · sleep 90 · exit 0 (90s)` 与 `✓ Cancelled · Turn cancelled`（即取消只在工具返回后才生效）。根因：`DefaultAgentRuntime.cancelTurn`（`agent/src/runtime/DefaultAgentRuntime.ts:604`）只 abort 模型信号 + 级联子会话 + 回滚补偿，**不通知正在执行的工具**；而 `ToolExecutionCoordinator.invokeWithTimeout`（`agent/src/harness/ToolExecutionCoordinator.ts:165`）与 `ToolRegistry.invoke` 都没有 signal 参数，`TerminalTool.exec`（`agent-tools/terminal/terminal.tool.ts`）只在 timeout 时杀进程组。修它需跨包把 turn abort signal 透传进 `AgentToolContext`（`agent/src/tools/AgentTool.ts`）并让 TerminalTool 观察 signal，且不得让已入基线的 `DefaultAgentRuntime.ts`（baseline 3538）增长——属独立批次，需用户确认后再动。**→ 已于 2026-10-18 修复（见文末批次，baseline 3538 → 3520）**。
+  2. **上下文压缩把工具结果替换成展示摘要，诱发模型重复读取**（对应上一批开放项 ②，本轮拿到直接证据）：`AgentContextManager.buildCompactedToolContent`（`agent/src/context/AgentContextManager.ts:1454`）用 `receipt.outputSummary` 拼 `[summary] …`，而 `read_file` 的 outputSummary 是 `src/cli.ts (truncated)`（`ToolSummary.ts:41-46`），于是模型读到 `[summary] src/cli.ts (truncated)` 并自述「weird, no content」，改成分块 offset 重读，产生连续 `Read file … (truncated)` / `Inspect file …` 行。属压缩策略 / agent 行为，本轮只记录未改。**→ 2026-10-18 核查确认这是 `context-compaction-architecture.md` 明确规定（"prefer `receipt.outputSummary`"），经用户确认后以「A 有界片段」修复（见文末批次）。**
+  3. `sleep-mlt` 工作区仍有历次 agent 运行留下的未提交改动（与本批次无关）；本机无 opencode 源码，展示对照仍为定性。
+
+## 2026-10-18 `Esc` 中断正在执行的工具（turn abort signal 透传到工具）
+- 背景（上一批开放项 ①，已复现到确切根因）：真实 TUI 发 `Run exactly this shell command and nothing else: sleep 90` → 工具行 `● Tool · Run command: sleep 90`，按 `Esc` 后状态栏仍 `Working (… esc to interrupt)`，直到 90s 工具跑完才出现 `✓ Tool · Run command completed · exit 0 (90s)` + `✓ Cancelled · Turn cancelled`。根因：`DefaultAgentRuntime.cancelTurn` 只 abort 模型信号、级联子会话、回滚补偿，**取消不会到达正在执行的工具**；`ToolExecutionCoordinator.invokeWithTimeout` / `ToolRegistry.invoke` 都没有 signal 参数；`TerminalTool.exec` 只在 timeout 时杀进程组。
+- **修复（新增取消通道，复用既有 SIGTERM→SIGKILL 升级，不改变任何既有工具语义）**：
+  1. 新增 `agent/src/runtime/TurnAbortScopes.ts`：把原先散在 runtime 内的 `sessionTurnAborts` Map + 4 个访问器（`begin/end/getSignal/isAborted`）抽成单一职责类（`begin/end/signal/isAborted/isActive/cancel`），runtime 只保留 `throwIfTurnCancelled` 作为薄委托（对外 protected 契约不变）。**baseline 3538 → 3520（净 −18 行）**，同 commit 下调 `scripts/source-size-baseline.json`。
+  2. 取消通道：`AgentToolContext.signal?: AbortSignal`（可选；不观察 signal 的工具行为完全不变）→ `ToolRegistry.invoke(name, input, sessionId, principalId?, workspace?, signal?)` → `LocalToolRegistry.invoke` 把 signal 放进工具上下文 → `ToolExecutionCoordinator` 的新字段 `ToolExecutionRequest.signal`（两条 `toolRegistry.invoke` 调用点都传）→ `DefaultAgentRuntime.performToolInvocation` 传 `this.turnAbortScopes.signal(sessionId)`（与模型请求**同一个** AbortController，Esc 一次 abort 两个消费者）。
+  3. 不重试被中断的工具：coordinator catch 改为 `shouldRetry = attempt <= maxRetries && !request.signal?.aborted && this.isRetryable(lastError)`。否则按 `retryPolicy` 会把用户刚按 Esc 打断的命令**再跑一遍**。
+  4. `TerminalTool`：`invoke` 读 `context.signal` 传入 `exec(..., signal?)`；已 abort 时直接抛（不 spawn）；运行中 abort 时走与 timeout 完全相同的进程组 `SIGTERM` →（3s）`SIGKILL` →（1s）强制收敛，并 reject `Command cancelled by the user.`；`clearTimers` 同时 `removeEventListener` 摘掉 abort 监听，且 abort 与 timeout 互相抑制（`settled || cancelled || timedOut` 守卫）。
+- **回归（先证旧实现失败，再证修复通过）**：
+  - `agent-tools/test/terminal-cancel.spec.ts`（新建，4 条，真实 spawn `sleep 60` / `trap '' TERM` 长命令）：`git stash` 掉 `terminal.tool.ts` 后**旧实现 1 passing / 3 failed**（两条 15s 超时 `Expected: "Command cancelled by the user." / Received: "terminal tool ignored the abort signal and kept running"`，一条 `Received: undefined`）；修复后 **4 passing**（263ms / 3.26s / 8ms / 12ms）。
+  - `agent/test/turn-cancel.spec.ts` 新增 2 条（真实 `runTurn` → coordinator → registry → 工具）：`cancelTurn aborts the tool that is currently running and ends the turn promptly`（断言工具收到**非空** signal、按 Esc 后 `signal.aborted === true`、turn 立即 `AgentTurnCancelledError`、无 `AgentTurnCompletedEvent`/`AgentErrorEvent`、`registry.completed === 0`）与 `cancelTurn does not retry a tool that the user just interrupted`（`invokes === 1`）。`git stash` 掉 runtime 后**旧实现 18 passing / 2 failed**（`Received: undefined`——signal 根本没到工具；`waitFor timed out`——turn 永不收敛）；修复后 **20 passing**。
+  - `agent/test/tools.spec.ts` 新增 1 条：`LocalToolRegistry.invoke(..., signal)` 把**同一个** signal 放进工具上下文（`toBe(controller.signal)`）。
+- **真实 TUI 实测（tmux 120×40，`--root /tmp/opencode/agent-root5 --workspace /home/zhouyou/workspace/sleep-mlt`，该工作区已 trust）**：
+  - 运行中：`● Tool · Run command: sleep 90` + `• Working (… esc to interrupt) … 1 background terminal(s) running · /ps to view · /ps stop to close`。
+  - 按 `Esc` 后 **~0.5s** 内：`✓ Cancelled · Turn cancelled`；工具行 `✕ Tool · Run command failed: Command cancelled by the user. · retry`（旧行为是等满 90s 才 `✓ Tool · Run command completed · sleep 90 · exit 0 (90s)`）。
+  - 进程核验：`ps -eo pid,etimes,args` 无残留 `sleep 90` / `sh -c sleep`（整棵进程组被杀）。
+  - 对照观察：首次用全新 `--root agent-root6` 时工作区未 trust，`Esc` 取消的是**工作区信任审批**，工具行显示 `✕ Tool · Run command skipped: Workspace … is not trusted…`——审批取消路径同样即时生效（非本轮改动，仅记录）。
+- **设计取舍（记录，未擅自扩大改动）**：被中断的工具仍按 `status:'error'` + 原因 `Command cancelled by the user.` 上报（复用既有 failed 路径），未新增 `cancelled` 工具状态——新增状态要连动 gateway 事件映射 + UI 渲染 + i18n key，属独立批次；此处 `✕ Tool · Run command failed: Command cancelled by the user.` 紧跟下方 `✓ Cancelled · Turn cancelled`，语义不含糊。另：即时中断只对**主动观察 signal 的工具**（本轮为 terminal）生效；不观察 signal 的长命令（git / code_execution 等）仍会跑到自然结束——与改动前完全一致，不是回归，列为后续跟进项。
+- **已知未覆盖路径（同前一条性质，非回归）**：会话显式开启 OS sandbox（`/sandbox` → `osSandbox`）时，terminal 命令走 `ToolExecutionCoordinator.invokeWithTimeout` 的 `sandboxExecutor.execute(command, [], …)` 分支（`agent/src/harness/ToolExecutionCoordinator.ts:171`），该分支不经 `ToolRegistry.invoke`，因此没有 signal（仍受自身 timeout 约束）。默认配置下 `osSandbox` 为空、命令走 registry 分支，Esc 生效（本轮实测即默认配置）。闭合它需要给 `SandboxExecutor.execute` / `sandbox-exec` 加 signal 与进程组杀灭，属独立批次。同理，`AppRpcServer` 有几处**不经 turn** 的直接 `tools.invoke(...)`（`coding_task`/`todo`/`review_diff` 等，本身不在 turn 的 abort scope 内，`cancelTurn` 对它们返回 `cancelled:false`），以及工具内部嵌套调用（`workspace-action-runner`）都没透传 signal——均与改动前一致。
+- **验证**：`agent` 979 passing / `EXIT=0`；`agent-tools` 527 passing / `EXIT=0`；两包 `tsc --noEmit` 0 错误；`node scripts/check-source-size.mjs` OK（baseline 已下调）；`git diff --check` 干净；`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/esc-cancel1.log`，含 `pty-acceptance` 真实终端与 `agent-ui`/四端 components 全量）。
+
+## 2026-10-18 上下文压缩保留真实工具载荷头部（`[summary] … (truncated)` 不再替换掉内容）
+- 背景（上一批开放项 ②）：真实 TUI 里读取大文件后，老窗口/超大工具结果会被压缩成**展示标签**（`[summary] README.md` / `[summary] src/cli.ts (truncated)`），模型据此认为「内容没了」并重读文件。**核查后确认这不是缺陷，而是 `packages/agents/context-compaction-architecture.md` 明确规定的策略**（"prefer `receipt.outputSummary`"、"Older tool messages: compact when content is clearly reducible"），故按纪律先向用户说明冲突并询问取舍，用户选择「A：标签 + 有界真实内容片段」。另外实测到文档未覆盖的内部不一致：`maxToolResults` 默认 8000，**无 receipt 的 fallback 分支本就保留 8000 字符真实内容**，而有 receipt 的分支把内容全丢掉。
+- **修复（A，改动只影响「发给模型的历史准备」，不动任何用户可见展示、不动压缩触发条件）**：
+  1. 新增 `agent/src/context/tool-compaction.ts`（纯函数模块，58 行）：`buildCompactedToolContent(message, budget)` + `compactedToolContent(label, content, budget)` + `COMPACTED_TOOL_EXCERPT_CHARS = 2000`。错误结果仍走 `{ "error": … }`；有 receipt 摘要时以摘要为标签；载荷 **> 片段预算**时在标签后追加 `[excerpt]` + 真实内容头部（≤ min(2000, `maxToolResults`) 字符）+ `...[truncated N chars]`；载荷 ≤ 预算则保持原「仅标签」形态（中等载荷压缩力度与触发条件完全不变，无 token 回归）；并且**永不输出比原文更长的压缩结果**（否则原样保留），保证该步只会缩小历史。
+  2. `AgentContextManager.ts` 改为调用该模块、移除原私有实现（§4 抽取纪律 + ratchet）：文件 **2009 → 1996**，同 commit 下调 `scripts/source-size-baseline.json`。
+  3. `context-compaction-architecture.md` 同 commit 更新（Tool Output Retention Rules / Older tool messages 增补片段策略、「只会更小」不变量与动机），使文档与实现重新一致。
+- **回归（先证旧实现失败，再证修复通过）**：`agent/test/context-compaction.spec.ts` 新增 4 条，`git stash` 掉实现后：
+  - `pruneHistory keeps a bounded head of the real tool payload behind the compaction label`（旧实现 `Expected substring: "[excerpt]"`，failed）、`prepareHistory keeps the real tool payload head when compacting older tool output`（failed）——**旧实现 111 passing / 2 failed**；修复后 **113 passing**。
+  - `tool output compaction never emits a form longer than the original payload`（尺寸不变量）、`tool payloads that fit the excerpt budget keep the label-only compacted form`（无回归守卫）——新旧行为一致，作为守卫保留。
+- **真实 TUI 实测（A/B 对照，tmux 120×40，`--root /tmp/opencode/agent-root5 --workspace …/sleep-mlt`，同一 prompt 序列：先「读 README.md 但不要引用任何内容，只回 `READ_OK`」，再「不许调用工具，逐字引用 `## Goal` 下一句，没有就回 `NOT_AVAILABLE`」）**：
+  - **旧实现**：工具行 `✓ Tool · Read file completed · README.md`，思考行自述 `The tool returned a summary placeholder rather than content. Hmm: "[summary] README.md"` → 探针回答 `NOT_AVAILABLE`（内容被展示标签吞掉）。
+  - **新实现**：思考行自述 `I have it from the tool result in context: "Build a small but production-shaped sleep monitoring analysis toolkit."` → 逐字答出该句。
+  - 成本：同场景 footer token 25.6K → 29K（含额外推理），单条被压缩的大载荷多保留 ≤2000 字符（约 500 token），且仅在载荷 > 2000 字符时生效。
+- **验证**：`context-compaction.spec.ts` 113 passing；`agent` 全量包测试通过；`tsc --noEmit @tsdi/agent` 0 错误；`node scripts/check-source-size.mjs` OK（`AgentContextManager.ts` baseline 2009 → 1996）；`git diff --check` 干净；`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/compaction1.log`，含 `pty-acceptance` 真实终端、`agent-ui` 与四端 components 全量）。
+- **遗留（如实记录）**：片段只保留**头部**，不保留尾部；若某类载荷的关键信息在尾部（如长 diff 的结尾），仍需分块重读。不变量测试已覆盖「不会变长」，但未做超长会话下的整体 token 曲线实测（本机以真实 TUI 短会话 A/B 为准）。
+
+## 2026-10-18 取消后不得再发模型请求（abort 是终态：重试与降级都必须停止）
+- 背景（上一批开放项 ①「`Esc` 未能中断卡住的 reasoning 流」的根因排查）：`ToolExecutionCoordinator` 已有「abort 后不重试工具」的守卫，但**模型请求层没有对应守卫**。以下为确定性证据（直接驱动适配器公开 API，`fetch` 作网络边界，`AbortSignal` 预先 abort）：`OpenAICompatibleModelAdapter.complete` 可重试状态码仍重试 **3 次请求**；`.stream` 可重试状态码仍递归重试 **3 次**；`.stream` 失败后仍**降级为非流式补全**（**2 次请求**）；`AnthropicModelAdapter.complete` 仍重试 **3 次**；`RoutedModelAdapter`（TUI 实际使用的路由适配器）在取消后仍会**切到 default profile 重发一次**（`seenModels` 由 `['strong-model']` 变成 `['strong-model','default-model']`）。即用户按 Esc 后，适配器会继续按 `retryPolicy`（默认 `maxRetries 3`、`baseDelayMs 1000` 起指数退避）发起注定失败的新请求，把取消推迟到重试链结束之后。
+- **修复（abort 终态：一处文档 + 7 个调用点；完全不影响未 abort 时的重试/降级行为）**：
+  1. `agent/src/model/RetryPolicy.ts` 新增 `isModelRequestCancelled(request)` 并写明契约（caller-side abort 是终态：重试与 streaming→non-streaming 降级都不得再发请求）——取消语义落在本就在管「能否重试」的模块，避免在已入基线的 adapter 里堆注释；
+  2. 7 个调用点改用该判断：`OpenAICompatibleModelAdapter` 非流式状态重试 / 流式状态重试 / 流式失败降级；`AnthropicModelAdapter` `complete` / `stream` 状态重试；`RoutedModelAdapter.complete` / `stream` 的 **profile 回退**（`classifyModelError(undefined, AbortError)` 会把「用户取消」判成可重试的 `timeout`，于是取消后还会换到 default profile 重跑一遍）；
+  3. 两个 adapter 均为**已入基线文件**，改动为同行内联，因此**均不增长**（`OpenAICompatibleModelAdapter.ts` 1161、`AnthropicModelAdapter.ts` 657 不变；`RetryPolicy.ts` 与 `RoutedModelAdapter.ts` 未入基线，分别 113 → 123、522 行不变）。
+- **回归（先证旧实现失败，再证修复通过）**：共 6 条新测试，实现 `git stash` 掉后全部为红，修复后全绿：
+  - `agent/test/model-failure.spec.ts` 4 条：`git stash` 掉实现后 **9 passing / 4 failed**（`Expected: 1` vs `Received: 3` / `Received: 2`）→ 修复后 **13 passing**：`does not retry a retryable streaming status once the runtime signal is aborted`、`does not fall back to a non-streaming request once the runtime signal is aborted`、`openai-compatible does not retry a retryable non-streaming status once the runtime signal is aborted`、`anthropic does not retry a retryable status once the runtime signal is aborted`（沿用既有 `does not retry a transport failure once the runtime signal is aborted` 的 harness）。
+  - `agent/test/model-provider.spec.ts` 2 条：`git stash` 掉实现后 **45 passing / 2 failed**（`seenModels` 多出 default-model 请求）→ 修复后 **47 passing**：`does not fall back to the default model once the runtime signal is aborted`、`does not fall back to the default model on a cancelled stream`。
+- **验证**：`model-failure.spec.ts` 13 passing、`model-provider.spec.ts` 47 passing；`tsc --noEmit @tsdi/agent` 0 错误；`node scripts/check-source-size.mjs` OK（两个已入基线 adapter 不增长）；`git diff --check` 干净；`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/abort-terminal1.log`，含 `pty-acceptance` 真实终端、`dom-gate`、`tui-gate`、`production-db-integrity`）。
+- **验证边界（如实记录）**：本轮证据是适配器真实公开 API（`stream`/`complete`）的行为断言，网络边界用 `fetch` stub，与既有 model-failure specs 同手法；真实环境无法稳定复现「provider 返回可重试状态 + 用户同时按 Esc」，故未做该组合的实机 A/B。
+
+## 2026-10-18 `ai_cli` 也遵守 turn abort signal（Esc 可中断外部 AI CLI）
+- 背景（Esc 批次遗留项「不观察 signal 的工具」）：`AiCliTool.invoke` 的 context 参数被命名为 `_context`、完全不使用，`executeSubprocess` 只在 `timeoutMs`（默认 **300_000ms**）到期时 `child.kill('SIGTERM')`。即 Esc 对 `ai_cli` 完全无效，用户最长要等 5 分钟。
+- **修复（只影响「被取消」这一条路径，未取消时的行为不变）**：
+  1. `agent-tools/ai-cli/types.ts`：`AiCliRequest` 增可选 `signal?: AbortSignal`（并在注释里写明注入式 adapter 也应遵守）；
+  2. `agent-tools/ai-cli/ai-cli.tool.ts`：`invoke` 读取 `context.signal` 放进 request，并在入口做「已取消则不启动」检查（必须放在这一层：adapter 路径不经过 `executeSubprocess`，否则被取消的轮次仍会启动一个最长 5 分钟的外部 CLI）；
+  3. `executeSubprocess`：改为独立进程组（`detached`）+ `signalTree()` 组信号；abort → SIGTERM →（3s）SIGKILL →（1s）兜底 settle，**不依赖 `close`**（AI CLI 会自己起子进程并持有 stdio 管道，`close` 可能永不到来）；取消以 `Command cancelled by the user.`（与 terminal 工具同文案）reject；监听器在 settle 时移除；超时路径同样改用组信号（否则 CLI 的子进程会存活）。
+- **回归（真实调用边界：PATH 注入假 `claude`，脚本记录自身 pid、`trap '' TERM` 后 `sleep 90`——故意对 SIGTERM 不合作以验证升级）**：新增 `agent-tools/test/ai-cli-cancel.spec.ts` 4 条，`git stash` 掉实现（保留新可选字段，保证测试可编译）后 **1 passing / 3 failed**：
+  - `an aborted turn signal kills the spawned CLI tree instead of waiting out its timeout`：旧实现 `Received: "ai_cli ignored the abort signal and kept running"`（15.5s 守卫超时，工具仍在跑）→ 修复后 3.5s 内 settle，且假 CLI 的 pid 已退出（`process.kill(pid, 0)` 探测）；
+  - `an already-cancelled turn never spawns the CLI`：旧实现照常 spawn（marker 文件被创建）→ 修复后立即 reject 且无 spawn；
+  - `the runtime signal reaches an injected AI CLI adapter`：旧实现 `received.signal` 为 undefined → 修复后与 `controller.signal` 同一实例；
+  - `a CLI run without an abort signal still returns its parsed output`：无回归守卫（无信号时仍解析 JSON 输出、exitCode/sessionId 正常），新旧一致。
+  - 修复后该 spec 4 passing；`agent-tools` 全量 **531 passing**（原 527 + 4）。
+- **验证**：`ai-cli-cancel.spec.ts` 4 passing；`agent-tools` 全量 **531 passing**（EXIT=0）；`tsc --noEmit @tsdi/agent-tools` 0 错误；`node scripts/check-source-size.mjs` OK（`ai-cli.tool.ts` 436 行，未入基线、未超 600）；`git diff --check` 干净；`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/ai-cli-cancel1.log`，含 `pty-acceptance`、`dom-gate`、`tui-gate`、`production-db-integrity`）。
+- **遗留（如实记录）**：`execute_code`（`CodeExecutionRequest` 无 signal，且有 local + MCP code-mode 两个 adapter 实现）、`ToolExecutionCoordinator` 的 `osSandbox` 两个分支（`sandboxExecutor.execute` / `invokeInSandbox` 均未传 `request.signal`）、`git` 工具（`spawnSync` 阻塞事件循环，期间连 Esc 按键都无法被处理）仍未覆盖；`git` 的 sync→async 属行为改动，需先与用户确认再动——**用户已确认，见 2026-10-18「git_operations 不再阻塞事件循环并支持 Esc」**。
+
+## 2026-10-18 git_operations 不再阻塞事件循环并支持 Esc（统一三处子进程处理）
+- 背景（Esc 批次遗留项中最严重的一条）：`git_operations` 用 `spawnSync('git', …, { timeout: 30000, maxBuffer: 16000 })`，而它支持 `fetch/pull/push` 等网络动作——命令执行期间**整个 Node 事件循环被阻塞**：界面不渲染、不处理按键、定时器不触发，Esc 在这段时间里完全无效。`review_diff`、`agent/src/harness/GitStepSnapshotStore` 有同类 `spawnSync`（本轮未改，见遗留）。
+- **修复**（用户已确认该 sync→async 行为改动）：
+  1. 新增 `agent-tools/src/child-process-runner.ts`：`runChildProcess()` 异步 spawn + 独立进程组 + SIGTERM→(3s)SIGKILL→(1s) 兜底 settle + 可选输出上限 + abort 监听（含「注册监听后复查 aborted」竞态）；返回 outcome（`exit/timeout/cancelled/overflow/error`）而不抛错，由各工具映射各自的语义；导出共享 `CANCELLED_MESSAGE`。
+  2. `git/git-operations.tool.ts`：`runGit` 改为 async 并走 runner；`isGitRepo`/`execGit` 随之 async、`invoke` await；`invoke` 入口对 `context.signal.aborted` 直接抛取消（避免已取消的轮次还去跑网络动作）。错误语义保持不变：非 0 退出码照常返回、`EPERM` 容忍、其余 spawn 错误（ENOENT/ETIMEDOUT/ENOBUFS）照常抛出；超时错误 message 由 `spawnSync git ETIMEDOUT` 变为 `spawn git ETIMEDOUT`（`code` 仍为 `ETIMEDOUT`）。附带效果：超时不再只发 SIGTERM 后立即返回，而是先把进程树停掉（≤3s+1s）再抛错，不会留下仍在跑的 git。645 行 → 507 行。
+  3. 消除三处重复实现：`terminal/terminal.tool.ts`（213→114 行）与 `ai-cli/ai-cli.tool.ts`（436→344 行）改用同一个 runner，映射逐条保留（terminal：timeout→124+trimmed、cancel→抛错、error→原样抛出；ai-cli：timeout→124+尾部截断、cancel→抛错、error→原 ENOENT 提示、exit→解析输出）。副作用（记为改进）：stdout/stderr 统一用 `setEncoding('utf8')`，不再在跨 chunk 的多字节字符处产生替换字符；terminal 超时改为同样升级 SIGKILL，不再可能无限期挂住。
+- **回归（真实调用边界：PATH 注入假 `git`，脚本对 `rev-parse` 立即成功、对其余动作长时间 sleep，另用 `trap '' TERM` 验证升级）**：新增 `agent-tools/test/git-operations-cancel.spec.ts` 6 条；`git stash` 掉 git 工具实现后 **3 passing / 3 failed**：
+  - `a git command no longer blocks the event loop`：旧实现 `Expected: > 5 / Received: 1`（循环被阻塞 3s，定时器只补跑 1 次，await 1s 实际耗时 3s）→ 修复后 ~20 tick、1s 内返回；
+  - `an aborted turn stops the git command tree (SIGTERM then SIGKILL)`：旧实现命令跑满 **20.03s**、`Received: undefined`（signal 完全无效）→ 修复后 3.31s 内以 `Command cancelled by the user.` 拒绝，且假 git 的 pid 已退出（`process.kill(pid, 0)` 探测）；
+  - `an already-cancelled turn never runs git`：旧实现照常执行 git（marker 文件被创建）→ 修复后立即拒绝、未 spawn；
+  - 三条保真/回归守卫（新旧一致，均通过）：真实仓库 `status` 仍返回 `exitCode 0` 且 stdout 含文件名、失败的 `checkout` 仍抛 `Git checkout failed`、超过 16000 字节的输出仍以 `ENOBUFS` 失败而非静默截断。
+  - 修复后该 spec 6 passing；`agent-tools` 全量 **537 passing**（原 531 + 6）——terminal/ai-cli 改用共享 runner 后，既有 terminal/ai-cli/git 用例全部保持通过。
+- **验证**：`git-operations-cancel.spec.ts` 6 passing；`agent-tools` 全量 **537 passing**（EXIT=0）；`tsc --noEmit @tsdi/agent-tools` 0 错误；`node scripts/check-source-size.mjs` OK（`git-operations.tool.ts` 507、`ai-cli.tool.ts` 344、`terminal.tool.ts` 114、`child-process-runner.ts` 200，均未入基线且 < 600）；`git diff --check` 干净；`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/git-async1.log`，含 `pty-acceptance` 真实终端、`dom-gate`、`tui-gate`、`production-db-integrity`）。
+- **遗留（如实记录）**：`review_diff`（`agent-tools/review/review-diff.tool.ts`，多个同步 helper：`runGit`/`listUntrackedFiles`/`resolveCommitSha`/`assertGitRepo`）与 `agent/src/harness/GitStepSnapshotStore.ts` 仍在用 `spawnSync`，属同类阻塞、本轮未覆盖；`execute_code`（`CodeExecutionRequest` 无 signal，local + MCP code-mode 两个实现）、`ToolExecutionCoordinator` 的 `osSandbox` 两个分支（未传 `request.signal`）仍未覆盖。
+
+## 2026-10-18 review_diff 不再阻塞事件循环并支持 Esc（同类 spawnSync 收尾）
+- 背景：`review_diff` 同样用 `spawnSync('git', …, { timeout: 30000, maxBuffer: 64000 })`，且对每个未跟踪文件各跑一次 git；慢仓库/大 diff 期间事件循环同样被完全阻塞（界面不刷新、Esc 无效）。与 git_operations 属同一缺陷类，该 sync→async 行为改动用户已确认。
+- **修复**：`runGit`/`assertGitRepo`/`listUntrackedFiles`/`resolveCommitSha` 改为 async 并走共享 runner；`invoke` await 它们，未跟踪文件的多次 git 调用由逐个同步串行改为 `Promise.all` 并发；`invoke` 入口同样做「已取消则不启动」；`resolveCommitSha` 原本 `catch { return null }`，改为 signal 已 abort 时重新抛出，避免把用户中断吞成「无 commit 可解析」。错误语义保持：非 0 退出码照常返回、`EPERM`/`ENOBUFS`（含新的输出上限 overflow）仍容忍为 exitCode 1 + 部分输出、超时抛 `ETIMEDOUT`。
+- **回归（真实调用边界：PATH 注入假 `git`，`rev-parse` 立即成功、其余动作 sleep）**：新增 `agent-tools/test/review-diff-cancel.spec.ts` 3 条，`git stash` 掉实现后 **1 passing / 2 failed**：
+  - `review_diff no longer blocks the event loop`：旧实现 `Expected: > 3 / Received: 1`（300ms 的等待实际耗时 1.05s，循环被阻塞）→ 修复后定时器正常触发、300ms 内返回；
+  - `an aborted turn cancels review_diff`：旧实现 5.03s 后返回结果、`Received: undefined`（signal 无效）→ 修复后 307ms 内以 `Command cancelled by the user.` 拒绝；
+  - `a finished review still reports files, diff and commit sha`：保真守卫（新旧一致，真实仓库仍返回文件列表、diff 内容与 commitSha）。
+  - 修复后该 spec 3 passing；`agent-tools` 全量 **540 passing**（原 537 + 3）。
+- **验证**：`review-diff-cancel.spec.ts` 3 passing；`agent-tools` 全量 **540 passing**（EXIT=0）；`tsc --noEmit @tsdi/agent-tools` 0 错误；`node scripts/check-source-size.mjs` OK（`review-diff.tool.ts` 284 行，未入基线且 < 600）；`git diff --check` 干净；`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/review-async1.log`，含 `pty-acceptance`、`dom-gate`、`tui-gate`、`production-db-integrity`）。
+- **遗留（如实记录）**：`agent/src/harness/GitStepSnapshotStore.ts` 仍用 `spawnSync`（10s 超时、32MB buffer，每个 turn step 捕获一次快照），但它的公开 API 是**同步**的（`isAvailable`/`capture`/`diff`/`revert`…）并透出到 `AgentRuntime` 接口（`captureStepSnapshot` 同步返回），改成 async 属核心 API 变更、影响 agent-ui/gateway 等调用方，需单独确认后再动。
+
+## 2026-10-18 剩余信号缺口：execute_code 与 osSandbox 分支
+- 背景（Esc 批次收尾）：`AgentToolContext.signal` 已透传到 `toolRegistry`，但仍有两处完全不观察它：
+  1. `execute_code`：`CodeExecutionRequest` 没有 signal，工具也不传 `context.signal`；命令路径（bash/python…）与 JS/TS worker 路径都不响应 Esc，只能等到自己的 timeout（默认 30s）。
+  2. osSandbox 分支：`ToolExecutionCoordinator.invokeWithTimeout` 里 `sandboxExecutor.execute(command, [], { policy, timeoutMs })` 未传 `request.signal`（同一函数的另一分支 `invokeInSandbox` 本来就传了）；启用 OS 级沙箱时 Esc 对沙箱命令无效。
+- **修复**：
+  1. `code-execution/types.ts` 增加 `CodeExecutionRequest.signal`；`execute-code.tool.ts` 入口做「已取消则不启动」检查并透传 signal；`local-code-execution.adapter.ts` 的命令路径改用共享 `runChildProcess`（超时/取消/进程组 kill 与 terminal/ai-cli/git 一致），worker 路径订阅 signal → `worker.terminate()`；取消统一 reject `Command cancelled by the user.`。超时（124 + 提示）、ENOENT（`<cmd> is not available in PATH for <line>`）、非 0 退出码（`error` 为 stderr 或 `execute_code exited with code N`）等语义逐条保留。
+     注意：worker 取消必须**先结算再终止**——`worker.terminate()` 要等 worker 的 `exit` 事件才 resolve，先 terminate 会让 `exit` 处理器把结果当正常完成。
+  2. `SandboxExecutor.execute` 的 options 增加 `signal`：启动前已取消则不 spawn（直接返回 `cancelled` 结果，`wallTimeMs: 0`），运行中 abort 则 `killProcess`（沿用既有 SIGKILL 升级），结果新增 `cancelled?: boolean` 与 `error: 'Command cancelled by the user.'`；`ToolExecutionCoordinator` 把 `request.signal` 传进去。
+  3. 拆分（ratchet）：把 `SandboxExecutor.ts` 的类型声明（`SandboxPolicy`/`SandboxExecutionResult`/`SandboxIsolationLevel`/`SandboxResourceLimits`）抽到新文件 `agent/src/harness/sandbox-types.ts`，原文件 re-export（所有 import 方无需改动）。这样该文件 605 → 582 行，**baseline 同步下调 605→582**。
+- **回归**：
+  - 新增 `agent-tools/test/code-execution-cancel.spec.ts`（6 条，真实执行 bash 与 node worker），`git stash` 掉实现后 **3 passing / 3 failed**：运行中取消（旧：1.52s 后返回超时结果、`Received: undefined`；新：311ms 内 reject）、已取消则不执行（旧：照常 `touch` 出 marker；新：不 spawn 且 reject）、worker 运行中取消（旧：1.52s 后超时结果；新：304ms 内 reject）；三条守卫（bash 输出、node worker 输出、超时仍返回 124 + `Timed out after 600 ms`）新旧一致。
+    期间发现并规避一个测试陷阱：只写 `await new Promise(() => {})` 不会让 worker 保持存活（事件循环无 handle 时 worker 直接 exit 0），必须另留一个 handle（测试用 `setInterval`）。
+  - `agent/test/sandbox-exec.spec.ts` 新增 3 条（真实 spawn `sleep`/`touch` + 真实 coordinator）：旧实现 **31 passing / 3 failed**——coordinator 未透传 signal（`Received: undefined`）、运行中取消无效（旧：611ms 由 wall-time 限制杀掉、`cancelled` 为 undefined）、已取消仍 spawn（marker 被创建）；新实现 34 passing。
+  - 全量：`agent-tools` **546 passing**（原 540 + 6）、`agent` **992 passing**（+3），均 EXIT=0；两个包 `tsc --noEmit` 0 错误；`node scripts/check-source-size.mjs` OK；`git diff --check` 干净。
+- **验证**：`code-execution-cancel.spec.ts` 6 passing、`agent` 的 `sandbox-exec.spec.ts` 34 passing；`agent-tools` 全量 **546 passing**、`agent` 全量 **992 passing**（均 EXIT=0）；两包 `tsc --noEmit` 0 错误；`node scripts/check-source-size.mjs` OK（`SandboxExecutor.ts` 605→582 且 baseline 同步下调）；`git diff --check` 干净；`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/signal-gaps1.log`，含 `pty-acceptance`、`dom-gate`、`tui-gate`、`production-db-integrity`）。
+- **遗留（如实记录）**：`agent/src/harness/GitStepSnapshotStore.ts` 仍是同步 `spawnSync`（10s 超时/32MB buffer，每个 turn step 捕获一次快照），但它的公开 API 是同步的并透出到 `AgentRuntime` 接口（`captureStepSnapshot` 同步返回），改 async 属核心 API 变更、影响 agent-ui 与 gateway 等调用方，需单独确认后再动。**（已于 2026-10-18「GitStepSnapshotStore 同步→异步」批次经用户确认后完成）**
+
+## 2026-10-18 GitStepSnapshotStore 同步→异步（清除最后的生产 spawnSync）
+- 背景：`GitStepSnapshotStore` 用 `spawnSync` 跑 git——每个 turn step 一次 `capture`（rev-parse + stash create + diff --numstat + update-ref，每条默认 10s 超时/32MB buffer）——而且它的公开 API 是同步的、并透出到 `AgentRuntime` 接口（`captureGitStepSnapshot`/`listGitStepSnapshots`/`diffGitStepSnapshot` 同步返回）。JS 里同步 API 无法不阻塞事件循环，所以每步捕获都会冻结控制台（无渲染、无 Esc、无定时器）。上批次末尾已作为「改契约」决策项报给用户，**经确认后执行**。
+- 变更：
+  1. **共享 runner 下移**：`agent-tools/src/child-process-runner.ts` → `agent/src/harness/child-process-runner.ts`，并在 `agent/src/index.ts` 导出；agent-tools 6 个调用方（git/terminal/ai-cli/review_diff/execute_code 工具 + local code adapter）改为从 `@tsdi/agent` 引入（同模块 import 合并），删除原文件。store 与各工具共用同一实现，无重复代码；层级不变（agent-tools 本来就依赖 agent）。
+  2. **`GitStepSnapshotStore` 全异步**：`isAvailable`/`capture`/`diff`/`diffByMessage`/`revert`/`unrevert`/`clear` 及私有 helper（`runGit`/`captureDiffStats`/`filePatch`/`headCommit`/`pinRef`/`deleteRef`/`revertToSnapshot`）改 async，`runGit` 走共享 runner。语义逐条保留：超时/管道溢出/启动失败统一映射为「非 0 退出码 + 已捕获输出」（等价旧 `spawnSync` 的 `status:null → exitCode 1`），**不抛异常**；输出上限沿用 32MB（`maxOutputChars`）。
+  3. **`AgentRuntime` 契约**：`captureGitStepSnapshot`/`listGitStepSnapshots`/`diffGitStepSnapshot` 返回 Promise；`DefaultAgentRuntime` 对应 override 与 `beginGitStepSnapshot`（turn 起点 pre-turn 捕获）改 async，两处调用点 `await`（确保 tree 在 turn 真正开始前被捕获）。
+  4. **调用方补 await**：agent-gateway `SessionHandler` 3 处、`AppRpcServer` 3 处——此前不 await 会把 Promise 序列化成 `{}`、并让 `if (!snapshot)` 恒假（tsc 不报错，是纯语义破坏）；agent-ui `AgentConsoleSessionService` 的 list/diff 包装补 `await`，让 `?? []`/`?? null` 回退重新生效。
+- 回归（先红后绿）：
+  - 新增 `agent/test/git-step-snapshot-async.spec.ts`（真实 store + PATH 注入假 git，非 rev-parse 命令各 sleep 0.7s，用自身定时器的最大间隔度量阻塞）：旧同步实现下「capture keeps the event loop free」**1 failed / 2 passing**——测量窗口内 `ticks` 为 **0**（等价 2.1s 全冻结，`Received: 0`）；新实现 3 passing（`maxGap < 500ms`、`ticks > 10`），并断言 `commit`/`diffStats` 结果不变。两条守卫（git 失败→null 不抛；命令超时→null 不抛且 <3s）新旧一致。
+  - `agent/test/git-step-snapshot.spec.ts` 全量改为 await（真实 git round-trip：capture/diff/revert/unrevert/list/clear/diffStats，以及 runtime 级 turn 捕获/revert/diff），作为「行为不变」证据。
+  - 全量：`agent` **995 passing**（+3）、`agent-tools` **546 passing**、`agent-gateway` **320 passing**、`agent-ui` **1522 passing**，均 EXIT=0；四个包 `tsc --noEmit` 0 错误；`node scripts/check-source-size.mjs` OK（新文件 204 行；基线文件均未增长）；`git diff --check` 干净。
+- **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/git-store-async1.log`）。
+- **说明**：快照 API 未新增 `AbortSignal`（签名未变，仍是 10s 超时 + 非 0 退出码降级）；它现在不再阻塞事件循环，Esc/渲染/定时器不受影响。若要「取消 turn 时同时中止快照 git 命令」，属 additive 后续项。
+- **遗留（如实记录）**：`packages/cli` 的框架自身构建/初始化命令（`npm init`、tsc 声明生成）仍有 `execSync`，属 CLI 构建流程、不在 agent turn/工具子进程范围内；agent 侧生产代码已无 `spawnSync`/`execSync`。
+
+## 2026-10-18 Esc 覆盖面补齐：协调器中止兜底 + http 网络请求取消
+- 背景：上一批清掉「生产代码零 spawnSync」后，仍有一类工具完全不观察 turn 信号（第三方 SDK / 网络客户端 / 浏览器会话没有取消钩子），Esc 之后 turn 只能等它们自己结束。两处缺口：
+  1. `ToolExecutionCoordinator` 的 `invokeWithTimeout`/`invokeInSandbox` 只有**超时**竞速，没有**中止**竞速。
+  2. `http_fetch`/`http_request` 只用自己的超时 controller，不理会 `context.signal`（Esc 时最多要等默认 15s 超时）。
+- 变更：
+  1. 新增 `agent/src/harness/cancellation.ts` 承载共享文案 `CANCELLED_MESSAGE`；`child-process-runner.ts` 改为 re-export（agent-tools 侧 `from '@tsdi/agent'` 的引入不变）。
+  2. `ToolExecutionCoordinator.raceInvocation`：一次竞速覆盖「工具完成 / 超时 / 用户中断」，中止以 `Command cancelled by the user.` 终止；结算后清理定时器与 abort 监听；信号已中止时立即终止；osSandbox 分支只加中止守卫（超时仍由 executor 负责）；重试逻辑此前已把「信号已中止」视为终止，不会重跑。
+     语义：能响应信号的工具（child process / sandbox / execute_code）仍自行停止工作；**没有取消钩子的工具被放弃**（用户按 Esc 的意图），turn 立即结束。
+  3. `http_fetch`/`http_request`：把 `context.signal` 接到请求 controller 上（与自身超时并存），Esc 真正中断网络请求，并把错误统一成 `Command cancelled by the user.`；超时/body 停滞（body timeout）行为不变。
+- 回归（先红后绿）：
+  - `agent/test/turn-cancel.spec.ts` 新增「工具忽略信号时 cancelTurn 仍立即结束 turn」：旧实现 **1 failed**（等工具自然完成，`Expected: < 1000 / Received: 2031`）；新实现 45ms 结束，且发布 `AgentToolFailedEvent`（`Command cancelled by the user.`）、`completed === 0`；该 spec 21 passing。
+  - `agent-tools/test/http-body-timeout.spec.ts` 新增两条（真实 stalling HTTP server，`timeoutMs: 3000`，150ms 后 abort）：旧实现 **2 failed**（各 3.0s，`Received: "This operation was aborted"`）；新实现各 ~156ms 且文案统一；原有两条 body-timeout 守卫仍通过（4 passing）。
+  - 全量：`agent` **996 passing**（+1）、`agent-tools` **548 passing**（+2）、`agent-gateway` **320**、`agent-ui` **1522**，均 EXIT=0；agent/agent-tools `tsc --noEmit` 0 错误；`node scripts/check-source-size.mjs` OK；`git diff --check` 干净。
+- **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/tool-abort1.log`）。
+- **遗留（如实记录）**：以下工具**自身**仍无取消钩子，靠协调器兜底（turn 立即结束，但底层请求会在后台自行结束）：`ssh_exec`（agent-ssh `client.exec(command, timeoutMs)`）、`web_search`/`web_extract`（providers 客户端）、`browser/*`（playwright 会话）、`media/*`、`audio/*`、`llm_task`（模型适配器）、`knowledge_search`、`security_scan`、`pipeline`/`spawn_agent`（子会话）。要真正停掉底层工作需在各库透传 `AbortSignal`，属后续 additive 工作。
+
+## 2026-10-18 Esc 覆盖：ssh_exec 真正中断（agent-ssh 透传 AbortSignal）
+- 背景：上一批的协调器兜底能让 turn 立即结束，但 `ssh_exec` 自身没有取消钩子——底层 SSH 通道会继续等到自己的超时（默认 60s、上限可配），属于「turn 结束但工作还在跑」。本次给它真正的取消。
+- 变更：
+  1. `agent-ssh/src/ssh-client.ts`：`exec(command, timeoutMs, signal?)` 增加可选信号。信号已中止 → 不发起；运行中 abort → `safeEndStream(stream)` 关闭通道并立即 reject；结算后清理超时定时器与 abort 监听；若 abort 早于服务端响应，迟到的通道也会被关闭。原有超时语义（`timedOut: true` + `exitCode: 124`）与返回值保持不变。
+  2. `agent-tools/ssh/ssh.tool.ts`：`SshExecTool.invoke` 透传 `context.signal`，并把中止统一翻译成 `Command cancelled by the user.`（与其它工具同一文案）。
+- 回归（先红后绿）：
+  - `agent-tools/test/ssh-tools.spec.ts` 新增一条（**真实 in-process ssh2 server**，远端命令 1.2s 后自行 exit，200ms 后 abort）：旧实现 **1 failed**（等命令跑完，1.263s，`Received: undefined`）；新实现 6 passing，该用例 214ms 结束并报 `Command cancelled by the user.`。测试同时加固了清理（先关闭服务端通道再 `server.close()`），避免回归时挂死。
+  - 全量：`agent-tools` **549 passing**（+1）、`agent-ssh` **9 passing**，均 EXIT=0；`agent-ssh` 与 `agent-tools` `tsc --noEmit` 0 错误；`node scripts/check-source-size.mjs` OK；`git diff --check` 干净。
+- **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/ssh-abort1.log`）。
+- **遗留（如实记录）**：`ssh_put`/`ssh_get`（SFTP 传输）与 `ssh_tunnel` 仍未接信号，仍靠协调器兜底；`web_search`/`web_extract`（适配器接口无 signal 参数，宿主实现的网络请求无法中止）、`browser/*`、`media/*`、`audio/*`、`llm_task`、`knowledge_search`、`security_scan`、`pipeline`/`spawn_agent` 同样待各库透传。
+
+## 2026-10-18 轮次预算收敛：重复只读调用去重 + 接近上限的引导（经用户确认「两个都做」）
+- 背景（实机证据）：一次真实运行 72 次工具调用撞上 `maxToolRounds: 20`（`options.ts:581`），最终以「I'm out of tool rounds」收尾、提交未完成；其中 14 次是反复列举同一目录（19% 预算、零信息增量），真正编辑只有 8 次。已按用户选择同时做「去重」与「接近上限引导」。
+- 变更：
+  1. **重复只读调用去重**（`agent/src/runtime/tool-repeat-cache.ts` 新模块 + `ToolExecutionCoordinator` 落地）：turn 级缓存以 `工具名 + 规范化输入（键序无关 JSON）` 为键；命中且工具 `readOnly: true` 时直接复用上次**已脱敏**的输出（返回 `redactedOutput/output/receipt(status=skipped)/attempts`），并发布 `AgentToolSkippedEvent`（理由：`Repeated identical read-only call; reused the earlier result.`），时间线可见。模型仍会收到一条 tool 结果（内容与首次完全一致），transcript 不会缺结果。
+     - 失效规则：**会修改工作区的工具**（`isWorkspaceMutatingTool`：写文件/terminal/git/process/execute_code…）在调用前清空缓存，所以「改完再读」一定真正执行；`todo`/memory 之类不影响文件内容的工具不会误清缓存。
+     - 缓存对象挂在 `TurnExecutionContext.readOnlyResults`，由协调器调用处惰性创建（turn 结束即丢弃）。
+  2. **接近上限引导**（`agent/src/runtime/tool-round-budget.ts` 新模块）：剩余 2 轮时注入**一次**模型可见提示（`nearToolRoundLimitPrompt`），明确剩余轮数、要求停止探索/重复读取，并提示可把剩余工作交给单个 `coding_task` 后直接收尾；`MAX_TOOL_ROUNDS_PROMPT` 一并迁到该模块。两个循环（`completeTurn` + `completeStreamingTurn`）共用同一注入点。
+  3. ratchet：为容纳改动，把 `canParallelize`/`isParallelSafeTool`/`describeStreamingToolCalls` 抽到 `agent/src/runtime/tool-dispatch-policy.ts`、`MAX_TOOL_ROUNDS_PROMPT` 迁出；`DefaultAgentRuntime.ts` **3520 → 3517 行**，baseline 同步下调 **3520 → 3517**。
+- 回归（先红后绿）：新增 `agent/test/tool-repeat-cache.spec.ts`（4 条，真实 AgentModule 装配 + 真实协调器 + 脚本化模型）：
+  - 「同一只读调用复用上次结果」：旧实现工具执行 **2 次**（`Expected: 1 / Received: 2`）；新实现 1 次，且两次调用各自都有 tool 结果（内容一致）、turn 正常收尾。
+  - 「两次读之间发生写 → 缓存失效」：新旧都执行 2 次（守卫：绝不复用过期内容）。
+  - 「协调器层面标记 skipped」：旧实现执行 2 次；新实现第二次 `receipt.status === 'skipped'`、输出与首次一致、发布 `AgentToolSkippedEvent`。
+  - 「接近上限提示」：旧实现提示 0 条（`Expected: 1 / Received: 0`）；新实现恰好 1 条（含剩余轮数与 `coding_task` 提示），且 turn 以最终回答结束。
+  - 全量：`agent` **1000 passing**（+4）、`agent-tools` **549**、`agent-gateway` **320**、`agent-ui` **1522**，均 EXIT=0；`tsc --noEmit` 0 错误；`source-size` OK；`git diff --check` 干净。
+- **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/round-budget1.log`）。
+- **说明 / 遗留**：去重只在协调器链路生效（`toolExecutionCoordinator` 未配置的旧回退路径不去重，生产由 `AgentModule` 装配协调器）；去重按 turn 生效，跨 turn 不共享（下一 turn 重新读是合理的）。真实运行时「重复 Inspect directory 是否从 14 次降到个位数、是否因此不再撞上限」仍需实机复测（本轮未跑真实模型）。
+
+## 2026-10-18 Esc 覆盖：ssh_put / ssh_get / ssh_tunnel 接信号（SSH 家族收尾）
+- 背景：上一批让 `ssh_exec` 真正可中断，但 `ssh_put`/`ssh_get`（SFTP 全量读写）与 `ssh_tunnel`（转发通道协商）仍无取消钩子，Esc 后只能靠协调器兜底、底层传输继续跑。
+- 变更：
+  1. `agent-ssh/src/ssh-client.ts`：新增 `withSftp<T>(signal, run)` 统一封装「只结算一次」的 SFTP 请求——abort 时 `safeEndSftp(sftp)` 关闭子系统并立即 reject（关闭子系统后挂起的请求回调**永远不会回来**，否则 Promise 会永久悬挂）；同时补上 `sftp.on('error')` → reject（实测发现：子系统返回 unsupported 时 ssh2 的 sftp 对象会发 `error`，没有监听器会直接**崩进程**，属顺手修掉的健壮性缺陷）。`sftpPut`/`sftpGet` 增加可选 `signal`，`forwardOut` 同样支持（abort 于协商期间；若 abort 早于回调，迟到的 channel 会被关闭）。原有返回结构不变。
+  2. `agent-tools/ssh/ssh.tool.ts`：抽出 `withTurnSignal(context, run)`（Esc → 统一 `Command cancelled by the user.`），`ssh_exec`/`ssh_put`/`ssh_get`/`ssh_tunnel` 四处统一用它并透传 `context.signal`。
+- 回归（先红后绿）：
+  - `agent-tools/test/ssh-tools.spec.ts` 新增两条（**真实 in-process ssh2 server**，SFTP 子系统接受但 **OPEN 请求不应答**，让传输真实处于 in-flight；300ms 后 abort）：旧实现 **2 failed**（看门狗 2.31s 仍未结算，`Expected: false / Received: true`）；新实现 **8 passing**，两条用例各 ~310ms 结束并报 `Command cancelled by the user.`。看门狗保证回归时是「断言失败」而不是挂死套件。
+  - 全量：`agent-tools` **551 passing**（+2）、`agent-ssh` **9 passing**，均 EXIT=0；`agent-ssh`/`agent-tools` `tsc --noEmit` 0 错误；`source-size` OK；`git diff --check` 干净。
+- **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/ssh-sftp1.log`）。
+- **遗留（如实记录）**：SSH 家族已全部接入信号；剩余无取消钩子的仍是宿主侧 adapter（`web_search`/`web_extract`/`browser/*`/`media/*`/`audio/*`/`llm_task`/`knowledge_search`/`security_scan`/`pipeline`·`spawn_agent`），本仓库 0 实现，需宿主实现方接 `AbortSignal`；`spawn_agent` 的子会话已由 `cancelTurn` 级联覆盖。
+
+## 2026-10-18 Esc 覆盖收口：剩余 adapter 工具统一透传 turn 信号
+- 背景：SSH 家族接完后，剩下「自身无取消钩子」的工具都是宿主 adapter（`web_search`/`web_extract`/`image_generate`/`vision_analyze`/`audio_transcribe`/`text_to_speech`/`security_scan`/`browser/*`）。本仓库对这 6 个 adapter **0 实现**，但工具侧此前**根本不传** `context.signal`，宿主即便想取消也拿不到信号。本批把契约补齐（不改任何既有返回结构）。
+- 变更：
+  1. 新增 `agent-tools/src/turn-signal.ts`：`withTurnSignal(context, run)` —— Esc 时统一翻译为 `Command cancelled by the user.`；`ssh.tool.ts` 改用该共享实现（删除本地副本）。
+  2. adapter 契约（全部为可选、向后兼容）：
+     - `WebSearchAdapter.search(query, limit?, signal?)`（`src/options.ts`）
+     - `ImageGenerationOptions.signal?`、`TranscriptionOptions.signal?`、`TtsOptions.signal?`、`ScanOptions.signal?`
+     - `VisionAdapter.analyze(imageUrl, question?, signal?)`
+     - `PlaywrightBrowserAdapter.execute(request, context)` 本来就收到完整 `AgentToolContext`（含 signal），无需改动
+  3. 七个工具改为 `invoke(input, context)` 并透传信号：`web_search`、`image_generate`、`vision_analyze`、`audio_transcribe`、`text_to_speech`、`security_scan`；**`web_extract` 是真实实现**（`globalThis.fetch`），把 `signal` 真正传进 `fetch(url, { signal })`，请求体读取也在同一信号下。
+- 回归（先红后绿）：新增 `agent-tools/test/tool-turn-signal.spec.ts`（8 条）：
+  - 6 条「adapter 收到的是同一个 turn 信号」+ abort 后统一报 `Command cancelled by the user.`：旧实现 **6 failed**（adapter 收到 `undefined`，看门狗 1.58s 超时）；新实现各 ~72ms 通过。
+  - 1 条 `web_extract` 真实网络取消（本地 stalling HTTP server，150ms 后 abort）：旧实现 2.19s 超时未结算；新实现 213ms 结束并报同一文案。
+  - 1 条守卫：正常 search adapter 结果不受影响。
+  - 全量：`agent-tools` **559 passing**（551+8）、`agent-ssh` **9 passing**，均 EXIT=0；`agent`/`agent-tools`/`agent-gateway`/`agent-ui` `tsc --noEmit` 全 0 错误；`source-size` OK；`git diff --check` 干净。
+- **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/turn-signal1.log`）。
+- **结论 / 遗留**：Esc 覆盖到此收口 —— 本仓库内有真实 I/O 的工具全部接入信号；adapter 类工具已把「能取消就取消」的契约交给宿主实现（`AbortSignal` 在 options/参数上）。仍未接入的只有 `knowledge_search`（默认 in-memory adapter，本地快速，靠协调器兜底）与 `browser/*`（adapter 已拿到 context，是否中止由宿主实现决定）。真实长会话里「重复工具调用是否下降」仍属观测项。
+
+## 2026-10-18 Esc 覆盖补漏：回合收尾的模型调用（压缩摘要 / 标题·摘要）也遵守信号
+- 背景：工具与 adapter 都接完后，`runTurn` 内**回合收尾阶段**还有两处真实模型调用不接收信号，Esc 之后 `Working` 仍会等到它们返回：① 上下文压缩摘要 `SessionSummarizer.summarize`（`LLMSessionSummarizer` 会发真实 `complete`）；② 会话标题/摘要 `AgentSummaryAgent.generate`（`LLMAgentSummaryAgent` 同样发真实 `complete`，在 turn 起点前与收尾后各调用一次）。
+- 变更（全部为可选参数，向后兼容）：
+  1. `SessionSummarizer.summarize(messages, evidence?, signal?)`；`LLMSessionSummarizer` 把 `signal` 放进 `ModelRequest.signal`（`SimpleSessionSummarizer` 无需改动）。
+  2. `AgentSummaryAgent.generate(messages, signal?)`；`LLMAgentSummaryAgent` 同样透传到 `ModelRequest.signal`（`DeterministicAgentSummaryAgent` 无需改动）。
+  3. `DefaultAgentRuntime` 三处调用点改为传 `this.turnAbortScopes.signal(sessionId)`：`maybeSummarize`、`ensureSessionTitle`、`refreshSessionSummary`。实现自身的 `catch` 回退（naive/fallback 摘要）保持原样，所以 Esc 只是让等待立即结束、产出降级摘要，不会让 turn 报错。
+- 回归（先红后绿）：新增 `agent/test/post-turn-signal.spec.ts`（4 条）：
+  - 两条单元：`LLMSessionSummarizer` / `LLMAgentSummaryAgent` 用「只在 abort 时结算」的假模型适配器，abort 后 67ms/63ms 内结算且 `request.signal === controller.signal`；旧实现 4 条全失败（`signal: undefined`，两条单元靠看门狗 1.57s 超时）。
+  - 两条装配：真实 `AgentModule` 装配下（假 summarizer / 假 summary agent 记录入参 + `session.summaryThreshold: 2`），turn 必须把 `AbortSignal` 传给它们；旧实现 `Expected: true / Received: false`。
+  - 全量：`agent` **1004 passing**（+4）；`tsc --noEmit` 0 错误；`source-size` OK（`DefaultAgentRuntime.ts` 3517 未增长）；`git diff --check` 干净。
+- **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/post-turn1.log`）。
+- **遗留（如实记录）**：`knowledge_search`（默认 in-memory adapter，本地快速）与 `browser/*`（adapter 已拿到完整 context，是否中止由宿主决定）仍靠协调器兜底；真实长会话里「重复工具调用是否下降」仍是观测项。
+
+## 2026-10-18 Esc 覆盖补漏：验证命令（typecheck/lint/test）可被中断，并迁移到共享 runner
+- 背景：回合内最后一个长时间阻塞点是验证门执行的 `verify-command`（`npm run typecheck/lint/test`，默认 120s 超时）。它自己 `spawn` 子进程且不接收 turn 信号 —— Esc 之后命令继续跑、turn 继续等；同时这是仓库内最后一处手写 spawn（未复用共享 runner、只 SIGTERM 不升级）。
+- 变更：
+  1. `VerifyCommandRunner` 的 `DEFAULT_RUNNER` 改用共享 `runChildProcess`（进程组 kill / SIGTERM→SIGKILL 升级 / 输出捕获统一），新增 `VerifyCommandRunnerOptions.signal`，并在 `runProcess` 末尾追加可选 `signal` 参数（向后兼容，注入的测试 runner 不受影响）。
+  2. 中止语义：`VerifyCommandRun` 新增 `cancelled?`；被中断的命令**不算失败**（`failed` 为 false），且中止后不再启动后续命令（包循环与显式/自动脚本循环都检查）。
+  3. `recordVerifyCommandEvidence(ledger, runs, timeoutMs)` 从运行时抽到 runner 模块：跳过 `cancelled` 的 run，避免把「被 Esc 打断」记成验证失败（进而触发 repair 提示）。
+  4. `DefaultAgentRuntime.runVerificationCommands` 传入 `this.turnAbortScopes.signal(sessionId)`；同时 ratchet：`DefaultAgentRuntime.ts` 3517 → **3507**，baseline 同步下调 3517 → 3507。
+- 回归（先红后绿）：新增 `agent/test/verify-command-signal.spec.ts`（3 条，**真实 spawn**）：
+  - 「运行中的验证命令被取消」：`node -e "setTimeout(()=>{},5000)"` + 300ms 后 abort → 新实现 326ms 结算、`cancelled: true`、`failed: false`；旧实现看门狗 2.83s 仍未结算。
+  - 「取消后不再启动下一条命令」：两个显式命令，旧实现 2.81s 超时；新实现 314ms 且只有 1 条 run。
+  - 「注入的 runProcess 收到 turn 信号」：旧实现收到 `undefined`；新实现收到同一个 `AbortSignal`。
+  - 全量：`agent` **1007 passing**（+3）；`tsc --noEmit` 0 错误；`source-size` OK；`git diff --check` 干净。
+- **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/verify-signal1.log`）。
+- **遗留（如实记录）**：`knowledge_search`（默认 in-memory）与 `browser/*`（宿主 adapter 决定）仍靠协调器兜底；`runVerificationCommands` 的 runtime→runner 传参属单行接线，由 runner 单测 + 类型检查覆盖（未做 turn 级 E2E）。
+
+## 2026-10-18 Esc 覆盖收口：hook 命令（beforeTurn/afterTool/…）可被中断
+- 背景：生命周期 hook 命令由 `agent-cli` 的 `NodeAgentHookCommandExecutor` 自行 spawn（有自身 `timeoutMs`，但**不接收 turn 信号**），是回合内最后一处「Esc 之后仍会跑」的子进程。用户配置的 hook 可能是 `npm test` 级长命令。
+- 变更：
+  1. `AgentHookExecutionRequest.signal?`、`AgentHookExecutionResult.cancelled?`（可选、向后兼容）；`AgentHookManager.run(stage, context, signal?)` 把信号透传到 `runHook` → `executor.execute({ ..., signal })`。
+  2. `DefaultAgentRuntime.runTurnHooks` 传 `this.turnAbortScopes.signal(sessionId)`（单行接线）。
+  3. `NodeAgentHookCommandExecutor`：**已中止则完全不 spawn**（直接返回 `cancelled: true`）；运行中 abort → `child.kill()` 并立即以 `cancelled: true` + `Command cancelled by the user.` 结算；结算时移除 abort 监听。
+- 回归（先红后绿）：
+  - `agent/test/function-hooks.spec.ts` 新增「shell hooks receive the turn signal」：旧实现 `Expected: true / Received: false`（hook executor 收到 `undefined`）；新实现 8 passing。
+  - `agent-cli/test/hook-executor-signal.spec.ts` 新增两条（**真实 spawn**）：运行中打断（300ms 后 abort）新实现 307ms 结算 `cancelled: true`，旧实现看门狗 2.8s 未结算；已中止时不再启动（marker 文件不被创建），旧实现 `cancelled` 为 undefined。
+  - 全量：`agent` **1008 passing**（+1）、`agent-cli` **90 passing**（+2），均 EXIT=0；`agent`/`agent-cli` `tsc --noEmit` 0 错误；`source-size` OK（runtime 仍 3507）；`git diff --check` 干净。
+- **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/hook-signal1.log`）。
+- **遗留（最终）**：`sandbox-exec` 的能力探测（bwrap/sandbox-exec 一次性短探测）、`knowledge_search`（in-memory）、`browser/*`（宿主 adapter 决定）三项为已知且低风险；「真实长会话里重复工具调用是否下降」仍属观测项。

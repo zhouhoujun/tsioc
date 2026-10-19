@@ -2097,6 +2097,111 @@ export class ModelProviderTest {
         }
     }
 
+    @Test('does not fall back to the default model once the runtime signal is aborted')
+    async doesNotFallBackAfterAbort() {
+        this.originalFetch = (globalThis as any).fetch;
+        const seenModels: string[] = [];
+        (globalThis as any).fetch = async (_url: string, init: any) => {
+            seenModels.push(JSON.parse(init.body).model);
+            const aborted: any = new Error('This operation was aborted');
+            aborted.name = 'AbortError';
+            throw aborted;
+        };
+
+        const controller = new AbortController();
+        controller.abort();
+        const adapter = new RoutedModelAdapter({
+            provider: 'openai-compatible',
+            model: 'default-model',
+            baseUrl: 'https://example.com',
+            apiKey: 'test-key',
+            timeoutMs: 1000,
+            retry: { maxRetries: 0 },
+            profiles: {
+                strong: {
+                    provider: 'openai-compatible',
+                    model: 'strong-model',
+                    baseUrl: 'https://example.com',
+                    apiKey: 'test-key',
+                    retry: { maxRetries: 0 }
+                }
+            },
+            complexityRouting: { complex: 'strong' }
+        });
+
+        let caught: any;
+        try {
+            await adapter.complete({
+                sessionId: 's-abort-fallback',
+                summary: '',
+                memory: [],
+                messages: [{ id: '1', role: 'user', content: 'x'.repeat(120) + ' architecture refactor optimize', createdAt: 1 }],
+                tools: [],
+                signal: controller.signal
+            });
+        } catch (error) {
+            caught = error;
+        }
+
+        // The cancelled turn settles on the aborted profile; it must not start over on the default model.
+        expect(seenModels).toEqual(['strong-model']);
+        expect(caught).toBeTruthy();
+    }
+
+    @Test('does not fall back to the default model on a cancelled stream')
+    async doesNotFallBackStreamingAfterAbort() {
+        this.originalFetch = (globalThis as any).fetch;
+        const seenModels: string[] = [];
+        (globalThis as any).fetch = async (_url: string, init: any) => {
+            seenModels.push(JSON.parse(init.body).model);
+            const aborted: any = new Error('This operation was aborted');
+            aborted.name = 'AbortError';
+            throw aborted;
+        };
+
+        const controller = new AbortController();
+        controller.abort();
+        const adapter = new RoutedModelAdapter({
+            provider: 'openai-compatible',
+            model: 'default-model',
+            baseUrl: 'https://example.com',
+            apiKey: 'test-key',
+            timeoutMs: 1000,
+            retry: { maxRetries: 0 },
+            profiles: {
+                strong: {
+                    provider: 'openai-compatible',
+                    model: 'strong-model',
+                    baseUrl: 'https://example.com',
+                    apiKey: 'test-key',
+                    retry: { maxRetries: 0 }
+                }
+            },
+            complexityRouting: { complex: 'strong' }
+        });
+
+        const received: any[] = [];
+        let caught: any;
+        try {
+            for await (const chunk of adapter.stream({
+                sessionId: 's-abort-stream',
+                summary: '',
+                memory: [],
+                messages: [{ id: '1', role: 'user', content: 'x'.repeat(120) + ' architecture refactor optimize', createdAt: 1 }],
+                tools: [],
+                signal: controller.signal
+            })) {
+                received.push(chunk);
+            }
+        } catch (error) {
+            caught = error;
+        }
+
+        expect(seenModels).toEqual(['strong-model']);
+        expect(received).toEqual([]);
+        expect(caught).toBeTruthy();
+    }
+
     @Test('falls back to the default model when a routed profile exhausts retries')
     async fallsBackAfterRoutedProfileFailure() {
         this.originalFetch = (globalThis as any).fetch;

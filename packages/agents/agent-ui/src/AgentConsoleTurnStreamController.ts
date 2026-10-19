@@ -51,6 +51,55 @@ export interface AgentConsoleTurnStreamState {
      * when empty, so a turn ending on a tool call leaves no empty assistant bubble.
      */
     sealedNarrationCount: number;
+    /**
+     * Whole-turn thought text. It settles the row when the turn ends and is what
+     * the inspector shows, so no part of the model's reasoning is lost.
+     */
+    reasoningText: string;
+    /**
+     * Thought text of the current reasoning phase (what the running row shows).
+     * A phase starts at the turn start and again after every tool-call boundary,
+     * so the row tracks the reasoning in progress instead of a stale opening line.
+     */
+    reasoningPhase: string;
+}
+
+/** Upper bound on the thought text kept on a timeline row; the main line only
+ * renders its first line, the remainder stays available to the inspector. */
+const REASONING_ROW_MAX_LENGTH = 4000;
+
+function appendReasoningText(current: unknown, delta: string): string {
+    const base = typeof current === 'string' ? current : '';
+    if (base.length >= REASONING_ROW_MAX_LENGTH) {
+        return base;
+    }
+    const next = base + delta;
+    return next.length > REASONING_ROW_MAX_LENGTH ? `${next.slice(0, REASONING_ROW_MAX_LENGTH)}\u2026` : next;
+}
+
+/** Localized placeholder for a reasoning phase that streamed no text. */
+function resolveReasoningFallbackLabel(host: AgentConsoleTurnStreamHost): string {
+    const translator = host.translator as { translate?: (key: string) => unknown } | undefined;
+    const translated = translator?.translate?.('agent.turn.reasoning');
+    return typeof translated === 'string' && translated.trim() ? translated : 'Reasoning';
+}
+
+/**
+ * Settle the turn's thought row once the answer is in. A row left `running`
+ * renders as an active step forever, so the accumulated thought is re-upserted
+ * as a completed supporting summary (the main line then bounds it and the full
+ * text stays reachable through the row detail).
+ */
+function settleReasoningRow(host: AgentConsoleTurnStreamHost, state: AgentConsoleTurnStreamState): void {
+    const thought = typeof state.reasoningText === 'string' ? state.reasoningText.trim() : '';
+    if (!thought) {
+        return;
+    }
+    host.state.upsertUiEventMessage(host.state.qualifyUiEventKey('reasoning'), thought, {
+        eventType: 'reasoning',
+        label: 'think',
+        status: 'success'
+    });
 }
 
 /**
@@ -98,16 +147,26 @@ export function consumeStreamChunkView(
     if (chunk?.type === 'reasoning' && chunk.content) {
         host.state.setStatus('reasoning');
         host.updateTerminalTitle();
+        const delta = String(chunk.content);
+        state.reasoningText = appendReasoningText(state.reasoningText, delta);
+        state.reasoningPhase = appendReasoningText(state.reasoningPhase, delta);
         host.state.pushActivity('model', `Reasoning: ${host.state.summarize(chunk.content)}`);
-        host.state.upsertUiEventMessage(host.state.qualifyUiEventKey('reasoning'), 'Reasoning about implementation', {
-            eventType: 'reasoning',
-            label: 'think',
-            status: 'running'
-        });
+        host.state.upsertUiEventMessage(
+            host.state.qualifyUiEventKey('reasoning'),
+            state.reasoningPhase.trim() || resolveReasoningFallbackLabel(host),
+            {
+                eventType: 'reasoning',
+                label: 'think',
+                status: 'running'
+            }
+        );
         return;
     }
     if (chunk?.type === 'tool_call') {
         sealStreamedNarration(host, state, assistantMessage);
+        // The next reasoning phase is a new thought: never let the row freeze on
+        // the previous phase's opening line.
+        state.reasoningPhase = '';
         for (const row of resolvePendingToolCallRows(chunk, host.translator)) {
             const eventKey = qualifyTurnUiEventKey(host.state, row.key);
             host.state.pushActivity('tool', `Tool call: ${host.state.summarize(String(row.content || chunk.content || ''))}`);
@@ -410,6 +469,8 @@ function finalizeStreamingAssistantRow(
 export function clearStreamingMessageState(state: AgentConsoleTurnStreamState): void {
     state.streamMessageText = '';
     state.sealedNarrationCount = 0;
+    state.reasoningText = '';
+    state.reasoningPhase = '';
 }
 
 /**
@@ -445,6 +506,7 @@ export async function runTurnStreamView(
                     streaming: false
                 };
                 finalizeStreamingAssistantRow(host, state, assistantMessage);
+                settleReasoningRow(host, state);
             }
             clearStreamingMessageState(state);
         }
@@ -456,6 +518,7 @@ export async function runTurnStreamView(
         for await (const chunk of runtime.runStreamingTurn(host.state.sessionId, prompt, undefined, message, profile)) {
             consumeStreamChunkView(host, state, chunk, assistantMessage);
         }
+        settleReasoningRow(host, state);
         assistantMessage.metadata = {
             ...(assistantMessage.metadata || {}),
             streaming: false

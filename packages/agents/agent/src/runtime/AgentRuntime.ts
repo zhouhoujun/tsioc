@@ -276,11 +276,11 @@ export abstract class AgentRuntime {
      * not a git repo or has no tracked changes. Override in runtimes backed by
      * a GitStepSnapshotStore.
      */
-    captureGitStepSnapshot(
+    async captureGitStepSnapshot(
         _sessionId: string,
         _workspace: string,
         _messageId: string
-    ): import('../harness/GitStepSnapshotStore').GitStepSnapshot | null {
+    ): Promise<import('../harness/GitStepSnapshotStore').GitStepSnapshot | null> {
         return null;
     }
 
@@ -310,9 +310,9 @@ export abstract class AgentRuntime {
      * List the git step snapshots captured for a session (oldest first).
      * Override in runtimes backed by a GitStepSnapshotStore.
      */
-    listGitStepSnapshots(
+    async listGitStepSnapshots(
         _sessionId: string
-    ): import('../harness/GitStepSnapshotStore').GitStepSnapshot[] {
+    ): Promise<import('../harness/GitStepSnapshotStore').GitStepSnapshot[]> {
         return [];
     }
 
@@ -321,10 +321,10 @@ export abstract class AgentRuntime {
      * the current working tree. Override in runtimes backed by a
      * GitStepSnapshotStore.
      */
-    diffGitStepSnapshot(
+    async diffGitStepSnapshot(
         _sessionId: string,
         _ref: string
-    ): import('../harness/GitStepSnapshotStore').GitStepDiff | null {
+    ): Promise<import('../harness/GitStepSnapshotStore').GitStepDiff | null> {
         return null;
     }
 

@@ -1,8 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { AgentTool, AgentToolContext } from '@tsdi/agent';
+import { AgentTool, AgentToolContext, CANCELLED_MESSAGE, runChildProcess } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { spawn } from 'child_process';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath } from '../files/path-policy';
@@ -97,7 +96,13 @@ export class AiCliTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
+        // Esc before the CLI starts must not launch a multi-minute task (the
+        // default timeout is 5 minutes); this covers the injected-adapter path
+        // as well, which does not go through executeSubprocess.
+        if (context?.signal?.aborted) {
+            throw new Error(CANCELLED_MESSAGE);
+        }
         const prompt = this.requireString(input?.prompt, 'ai_cli prompt');
         const cli = this.requireCli(input?.cli);
         const sandbox = resolveSandboxPolicy(this.toolsOptions ?? undefined);
@@ -108,6 +113,9 @@ export class AiCliTool implements AgentTool {
         const request: AiCliRequest = {
             prompt,
             cli,
+            // The spawned CLI runs unattended for minutes; the owning turn's
+            // signal lets Esc stop it instead of waiting out its timeout.
+            signal: context?.signal,
             workingDirectory: await this.resolveWorkingDirectory(input?.working_directory),
             timeoutMs: typeof input?.timeout_ms === 'number'
                 ? input.timeout_ms
@@ -156,64 +164,54 @@ export class AiCliTool implements AgentTool {
         const args = this.buildArgs(request, config);
         const env = buildSandboxEnv({ ...process.env, ...(request.env ?? {}) }, resolveSandboxPolicy(this.toolsOptions ?? undefined));
 
-        return new Promise((resolve) => {
-            const child = spawn(config.cmd, args, {
-                cwd: request.workingDirectory || undefined,
-                stdio: ['pipe', 'pipe', 'pipe'],
-                env,
-                shell: false
-            });
+        // Context files are prepended as an instruction block, and some CLIs
+        // read the prompt from stdin instead of argv.
+        let stdinPayload = '';
+        if (request.contextFiles?.length) {
+            stdinPayload += `<system-reminder>\n${request.contextFiles.join('\n\n')}\n</system-reminder>\n`;
+        }
+        if (cli === 'opencode') {
+            stdinPayload += `${request.prompt}\n`;
+        }
 
-            // Inject context files via stdin as a prepended instruction
-            if (request.contextFiles?.length) {
-                const contextBlock = `<system-reminder>\n${request.contextFiles.join('\n\n')}\n</system-reminder>\n`;
-                child.stdin?.write(contextBlock);
-            }
-
-            // Write prompt to stdin for tools that prefer stdin input
-            if (cli === 'opencode') {
-                child.stdin?.write(request.prompt + '\n');
-                child.stdin?.end();
-            } else {
-                child.stdin?.end();
-            }
-
-            let stdout = '';
-            let stderr = '';
-            const timer = setTimeout(() => {
-                child.kill('SIGTERM');
-                resolve({
-                    stdout: stdout.slice(-MAX_OUTPUT_CHARS),
-                    stderr: stderr.slice(-MAX_OUTPUT_CHARS),
+        const outcome = await runChildProcess({
+            command: config.cmd,
+            args,
+            cwd: request.workingDirectory || undefined,
+            env,
+            shell: false,
+            stdin: stdinPayload,
+            timeoutMs: timeout,
+            signal: request.signal
+        });
+        switch (outcome.kind) {
+            case 'cancelled':
+                throw new Error(CANCELLED_MESSAGE);
+            case 'timeout':
+                return {
+                    stdout: outcome.stdout.slice(-MAX_OUTPUT_CHARS),
+                    stderr: outcome.stderr.slice(-MAX_OUTPUT_CHARS),
                     exitCode: 124,
                     timedOut: true
-                });
-            }, timeout);
-
-            child.stdout?.on('data', (chunk: Buffer) => {
-                stdout += chunk.toString();
-            });
-            child.stderr?.on('data', (chunk: Buffer) => {
-                stderr += chunk.toString();
-            });
-            child.on('close', (code) => {
-                clearTimeout(timer);
-                const parsed = this.parseCliOutput(stdout, request.outputFormat ?? 'json');
-                resolve({
+                };
+            case 'error':
+                return {
+                    stdout: '',
+                    stderr: outcome.error.code === 'ENOENT'
+                        ? `'${config.cmd}' not found in PATH. Install it (e.g., 'npm i -g @anthropic-ai/claude-code' for Claude Code, or 'npm i -g opencode' for OpenCode) and ensure it is available in the PATH.`
+                        : outcome.error.message,
+                    exitCode: 1
+                };
+            default: {
+                const parsed = this.parseCliOutput(outcome.stdout, request.outputFormat ?? 'json');
+                return {
                     stdout: parsed.stdout.slice(-MAX_OUTPUT_CHARS),
-                    stderr: parsed.stderr || stderr.slice(-MAX_OUTPUT_CHARS),
-                    exitCode: code ?? parsed.exitCode,
+                    stderr: parsed.stderr || outcome.stderr.slice(-MAX_OUTPUT_CHARS),
+                    exitCode: outcome.exitCode ?? parsed.exitCode,
                     sessionId: parsed.sessionId
-                });
-            });
-            child.on('error', (err) => {
-                clearTimeout(timer);
-                const message = (err as any).code === 'ENOENT'
-                    ? `'${config.cmd}' not found in PATH. Install it (e.g., 'npm i -g @anthropic-ai/claude-code' for Claude Code, or 'npm i -g opencode' for OpenCode) and ensure it is available in the PATH.`
-                    : err.message;
-                resolve({ stdout: '', stderr: message, exitCode: 1 });
-            });
-        });
+                };
+            }
+        }
     }
 
     private buildArgs(request: AiCliRequest, config: typeof CLI_COMMANDS[AiCliName]): string[] {

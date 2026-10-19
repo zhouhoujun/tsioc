@@ -1,5 +1,6 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { Abstract, Injectable } from '@tsdi/ioc';
+import { withTurnSignal } from '../src/turn-signal';
 
 export interface TtsResult {
     audioUrl: string;
@@ -17,6 +18,8 @@ export interface TtsOptions {
     speed?: number;
     format?: 'mp3' | 'wav' | 'ogg' | 'flac';
     language?: string;
+    /** Aborted when the user interrupts the turn (Esc). */
+    signal?: AbortSignal;
 }
 
 @Injectable()
@@ -59,16 +62,16 @@ export class TextToSpeechTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
         const text = this.requireString(input?.text, 'text_to_speech text');
-        const options: TtsOptions = {};
+        const options: TtsOptions = { signal: context?.signal };
         if (typeof input?.voice === 'string') { options.voice = input.voice; }
         if (typeof input?.speed === 'number' && input.speed >= 0.5 && input.speed <= 2) { options.speed = input.speed; }
         if (typeof input?.format === 'string' && ['mp3', 'wav', 'ogg', 'flac'].includes(input.format)) {
             options.format = input.format;
         }
         if (typeof input?.language === 'string') { options.language = input.language; }
-        const result = await this.adapter.synthesize(text, options);
+        const result = await withTurnSignal(context, () => this.adapter.synthesize(text, options));
         return {
             audioUrl: result.audioUrl,
             format: result.format,

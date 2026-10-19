@@ -53,6 +53,19 @@ class RecordingToolRegistry extends ToolRegistry {
     }
 }
 
+class SignalRecordingHookExecutor extends AgentHookCommandExecutor {
+    readonly requests: any[] = [];
+
+    isSupported(): boolean {
+        return true;
+    }
+
+    async execute(request: any): Promise<any> {
+        this.requests.push(request);
+        return { exitCode: 0, stdout: 'hooked', stderr: '', durationMs: 1 };
+    }
+}
+
 class StaticHookExecutor extends AgentHookCommandExecutor {
     isSupported(): boolean {
         return true;
@@ -143,6 +156,22 @@ export class AgentFunctionHooksTest {
             const messages = await runtime.getMessages('s1');
             const hookMessages = messages.filter(message => message.metadata?.kind === 'hook');
             expect(hookMessages.map(message => message.metadata?.hookName)).toEqual(['fn-before-tool', 'shell-before-tool']);
+        } finally { await ctx.close(); }
+    }
+
+    @Test('shell hooks receive the turn signal so Esc can stop them')
+    async shellHooksReceiveTurnSignal() {
+        const model = new RewriteModelAdapter();
+        const registry = new RecordingToolRegistry();
+        const executor = new SignalRecordingHookExecutor();
+        const { runtime, ctx } = await createRuntime(model, registry, {
+            hooks: { beforeTool: { command: 'echo', args: ['hooked'] } }
+        }, executor);
+        try {
+            await runtime.runTurn('s1', 'hello');
+            expect(executor.requests.length).toBeGreaterThan(0);
+            // Without this the hook command would outlive an interrupted turn.
+            expect(executor.requests[0].signal instanceof AbortSignal).toEqual(true);
         } finally { await ctx.close(); }
     }
 

@@ -9,6 +9,7 @@ import { TurnHandler } from './TurnHandler';
 import { AgentMessage, AgentMessagePart, AgentTurnMessageInput, collectToolReadPaths, isImportedChildMessage, normalizeAgentMessageParts } from './AgentMessage';
 import { AgentCompensationEvent, AgentContextPreparedEvent, AgentErrorEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentMemoryUpdatedEvent, AgentModelCompletedEvent, AgentStreamChunkEvent, AgentTokenBudgetExceededEvent, AgentTokenBudgetReminderEvent, AgentToolCompletedEvent, AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnDiagnostics, AgentTurnDiagnosticsEvent, AgentTurnStartedEvent } from './AgentEvents';
 import { AgentTurnCancelledError } from './AgentTurnCancelledError';
+import { TurnAbortScopes } from './TurnAbortScopes';
 import { PlanContinuationTracker } from './PlanContinuation';
 import { findProjectRoot } from '../project/agents-doc';
 import { isWorkspaceMutatingTool, resolveWorkspaceTrustApproval } from '../project/workspace-trust';
@@ -46,12 +47,15 @@ import { TurnDiagnosticsRecord, TurnDiagnosticsStore } from '../harness/TurnDiag
 import { EvidenceLedger, ToolEvidenceEntry } from '../harness/EvidenceLedger';
 import { spillToolOutput } from '../harness/ToolOutputSpill';
 import { VerificationGate, DEFAULT_VERIFICATION_WRITE_TOOLS } from '../harness/VerificationGate';
-import { VerifyCommandRunner, DEFAULT_VERIFY_TIMEOUT_MS } from '../harness/VerifyCommandRunner';
+import { VerifyCommandRunner, DEFAULT_VERIFY_TIMEOUT_MS, recordVerifyCommandEvidence } from '../harness/VerifyCommandRunner';
 import { FalsificationAttempt, ResolvedRepairHint, buildAttemptSignature, buildExplorationGuidancePrompt, buildRepairPrompt, collectResolvedRepairHints } from '../harness/RepairExploration';
 import { DelegationEdgeStatus, DelegationGraphStore } from '../harness/DelegationGraphStore';
 import { TokenBudgetScopeState, TokenBudgetTracker } from '../harness/TokenBudgetTracker';
 import { AgentDelegationMode, DEFAULT_DELEGATION_MODE, buildDelegationModeHint, buildDelegationQualityNote, normalizeDelegationMode } from './DelegationMode';
 import { dirnameAgentPath } from '../AgentWorkspacePath';
+import { RepeatReadOnlyCallCache } from './tool-repeat-cache';
+import { MAX_TOOL_ROUNDS_PROMPT, nearToolRoundLimitPrompt } from './tool-round-budget';
+import { canParallelizeToolBatch, describeToolCallNames } from './tool-dispatch-policy';
 import { AgentFunctionHookDefinition, AgentHookCommandExecutor, AgentHookContext, AgentHookExecutionResult, AgentHookManager, AgentHookTranscriptEntry, AgentLifecycleHookStage } from '../hooks/AgentHooks';
 import { buildPersonalityHint } from '../prompt/personality-presets';
 import { buildGoalContext, CreateGoalInput, evaluateGoalCompletion, Goal, GoalStatus, GoalStore } from '../goal/GoalStore';
@@ -89,6 +93,7 @@ interface TurnExecutionContext {
     planContinuations?: number;
     /** G29: transient delegation quality note injected into the next model request (proactive mode). */
     delegationQualityNote?: string;
+    readOnlyResults?: RepeatReadOnlyCallCache;
 }
 
 interface TurnRecoveryState {
@@ -125,7 +130,6 @@ const EMPTY_RESPONSE_RETRY_SYSTEM_PROMPT = 'Your previous reply was empty. Use t
 const FOLLOW_UP_EMPTY_RESPONSE_RECOVERY_SYSTEM_PROMPT = 'The latest user message already contains follow-up context answering a prior clarification. Continue the original task directly using that follow-up context. Provide a non-empty response, and call tools if needed. Do not repeat the same clarification question.';
 const TOOL_ERROR_RECOVERY_SYSTEM_PROMPT = 'A tool call in your previous step failed. Read the tool error below, correct the arguments and continue the task. Stay inside the workspace root: prefer workspace-relative paths and never invent absolute paths outside it. Do not end the turn after a single recoverable tool error; only stop when the failure is genuinely unrecoverable, and then explain why briefly.';
 const EMPTY_RESPONSE_RETRY_BACKOFF_MS = 150;
-const MAX_TOOL_ROUNDS_PROMPT = 'You have reached the maximum number of tool call rounds. Please provide your best answer now based on the results you have so far.';
 const LOOP_RECOVERY_SYSTEM_PROMPT = 'You are repeating the same tool calls without making progress. Change strategy: try a different tool, different arguments, or break the work into smaller steps. If you cannot make progress, state clearly that you are blocked and explain why instead of repeating the same calls.';
 
 function sameStringList(left: string[], right: string[]): boolean {
@@ -155,7 +159,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionTurnQueues = new Map<string, Array<() => void>>();
     protected sessionTurnDepths = new Map<string, number>();
     protected sessionTurnsRunning = new Set<string>();
-    protected sessionTurnAborts = new Map<string, AbortController>();
+    protected turnAbortScopes = new TurnAbortScopes();
     protected sessionChildSessions = new Map<string, Set<string>>();
     protected sessionCompensationStacks = new Map<string, ToolCompensationEntry[]>();
     protected pendingGitStepSnapshots = new Map<string, string>();
@@ -250,7 +254,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         agent?: AgentTurnAgentConfig
     ): Promise<AgentTurnResult> {
         const release = await this.acquireSessionTurnLock(sessionId);
-        this.beginTurnAbortScope(sessionId);
+        this.turnAbortScopes.begin(sessionId);
         try {
             await this.ensureSessionWorkspace(sessionId);
             const handler = typeof (this.app as any)?.get === 'function'
@@ -264,7 +268,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }
             return await handler.handle({ sessionId, input, principalId, message, profile, agent }, createRunContext(handler.injector ?? this.app));
         } finally {
-            this.endTurnAbortScope(sessionId);
+            this.turnAbortScopes.end(sessionId);
             release();
         }
     }
@@ -344,7 +348,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             turn: { status: 'started', message: input.input }
         });
 
-        this.beginGitStepSnapshot(input.sessionId, turnContext.workspace);
+        await this.beginGitStepSnapshot(input.sessionId, turnContext.workspace);
 
         try {
             const result = await this.completeTurn(input.sessionId, input.input, userMessage.id, turnContext);
@@ -368,7 +372,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             return result;
         } catch (error) {
             this.pendingGitStepSnapshots.delete(input.sessionId);
-            if (error instanceof AgentTurnCancelledError || this.isTurnAborted(input.sessionId)) {
+            if (error instanceof AgentTurnCancelledError || this.turnAbortScopes.isAborted(input.sessionId)) {
                 await this.rollbackTurnCompensations(input.sessionId, 'cancelled');
                 await this.runTurnHooks('afterTurn', input.sessionId, {
                     sessionId: input.sessionId,
@@ -435,7 +439,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         agent?: AgentTurnAgentConfig
     ): AsyncGenerator<StreamChunk> {
         const release = await this.acquireSessionTurnLock(sessionId);
-        this.beginTurnAbortScope(sessionId);
+        this.turnAbortScopes.begin(sessionId);
         try {
             await this.waitForPendingArchetypeSwitch(sessionId);
             await this.ensureSessionWorkspace(sessionId);
@@ -470,7 +474,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 turn: { status: 'started', message: input }
             });
 
-            this.beginGitStepSnapshot(sessionId, turnContext.workspace);
+            await this.beginGitStepSnapshot(sessionId, turnContext.workspace);
 
             try {
                 const result = yield* this.completeStreamingTurn(sessionId, input, userMessage.id, turnContext);
@@ -494,7 +498,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 yield { type: 'done' };
             } catch (error) {
                 this.pendingGitStepSnapshots.delete(sessionId);
-                if (error instanceof AgentTurnCancelledError || this.isTurnAborted(sessionId)) {
+                if (error instanceof AgentTurnCancelledError || this.turnAbortScopes.isAborted(sessionId)) {
                     await this.rollbackTurnCompensations(sessionId, 'cancelled');
                     await this.runTurnHooks('afterTurn', sessionId, {
                         sessionId,
@@ -521,7 +525,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 throw err;
             }
         } finally {
-            this.endTurnAbortScope(sessionId);
+            this.turnAbortScopes.end(sessionId);
             release();
         }
     }
@@ -602,14 +606,13 @@ export class DefaultAgentRuntime extends AgentRuntime {
     }
 
     async cancelTurn(sessionId: string): Promise<CancelTurnResult> {
-        const controller = this.sessionTurnAborts.get(sessionId);
-        if (!controller || controller.signal.aborted) {
+        if (!this.turnAbortScopes.isActive(sessionId)) {
             return { cancelled: false, compensated: 0, toolCallIds: [] };
         }
         // Drop any pending approval requests for the session so the UI never
         // keeps stale entries after the turn is cancelled.
         this.toolApprovalManager?.cancelBySession(sessionId);
-        controller.abort();
+        this.turnAbortScopes.cancel(sessionId);
         // Cascade cancellation to any running child (sub-agent) sessions so
         // spawned workers do not keep running after their parent is cancelled.
         await this.cancelChildTurns(sessionId);
@@ -704,12 +707,11 @@ export class DefaultAgentRuntime extends AgentRuntime {
             return;
         }
         for (const childSessionId of Array.from(children)) {
-            const controller = this.sessionTurnAborts.get(childSessionId);
-            if (!controller || controller.signal.aborted) {
+            if (!this.turnAbortScopes.isActive(childSessionId)) {
                 continue;
             }
             this.toolApprovalManager?.cancelBySession(childSessionId);
-            controller.abort();
+            this.turnAbortScopes.cancel(childSessionId);
             this.closeDelegationEdge(sessionId, childSessionId, 'cancelled');
             this.annotateChildThreadStatus(childSessionId, 'cancelled');
             await this.rollbackTurnCompensations(childSessionId, 'cancelled');
@@ -814,10 +816,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
         });
     }
 
-    protected beginTurnAbortScope(sessionId: string): void {
-        this.sessionTurnAborts.set(sessionId, new AbortController());
-    }
-
     protected getCompensationStack(sessionId: string): ToolCompensationEntry[] {
         let stack = this.sessionCompensationStacks.get(sessionId);
         if (!stack) {
@@ -899,11 +897,11 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return this.fileSnapshotStore?.list(sessionId) ?? [];
     }
 
-    override captureGitStepSnapshot(sessionId: string, workspace: string, messageId: string): GitStepSnapshot | null {
+    override async captureGitStepSnapshot(sessionId: string, workspace: string, messageId: string): Promise<GitStepSnapshot | null> {
         if (!this.gitStepSnapshotStore) {
             return null;
         }
-        const snapshot = this.gitStepSnapshotStore.capture(workspace, { sessionId, messageId, label: `step-${sessionId}` });
+        const snapshot = await this.gitStepSnapshotStore.capture(workspace, { sessionId, messageId, label: `step-${sessionId}` });
         if (snapshot) {
             this.bindGitStepSnapshot(sessionId, messageId);
         }
@@ -911,20 +909,20 @@ export class DefaultAgentRuntime extends AgentRuntime {
     }
 
     override async revertGitStepSnapshot(sessionId: string, messageId: string): Promise<GitRevertResult> {
-        return this.gitStepSnapshotStore?.revert(messageId, sessionId)
+        return await this.gitStepSnapshotStore?.revert(messageId, sessionId)
             ?? { reverted: false, error: 'git step snapshots not supported by this runtime' };
     }
 
     override async unrevertGitStepSnapshot(sessionId: string): Promise<GitRevertResult> {
-        return this.gitStepSnapshotStore?.unrevert(sessionId)
+        return await this.gitStepSnapshotStore?.unrevert(sessionId)
             ?? { reverted: false, error: 'git step snapshots not supported by this runtime' };
     }
 
-    override listGitStepSnapshots(sessionId: string): GitStepSnapshot[] {
+    override async listGitStepSnapshots(sessionId: string): Promise<GitStepSnapshot[]> {
         return this.gitStepSnapshotStore?.list(sessionId) ?? [];
     }
 
-    override diffGitStepSnapshot(sessionId: string, ref: string): GitStepDiff | null {
+    override async diffGitStepSnapshot(sessionId: string, ref: string): Promise<GitStepDiff | null> {
         const store = this.gitStepSnapshotStore;
         if (!store) {
             return null;
@@ -933,12 +931,12 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return snapshot ? store.diff(snapshot) : null;
     }
 
-    protected beginGitStepSnapshot(sessionId: string, workspace?: string): void {
+    protected async beginGitStepSnapshot(sessionId: string, workspace?: string): Promise<void> {
         if (!this.gitStepSnapshotStore || !workspace) {
             return;
         }
         try {
-            const snapshot = this.gitStepSnapshotStore.capture(workspace, { sessionId, label: `turn-${sessionId}` });
+            const snapshot = await this.gitStepSnapshotStore.capture(workspace, { sessionId, label: `turn-${sessionId}` });
             if (snapshot) {
                 this.pendingGitStepSnapshots.set(sessionId, snapshot.id);
             }
@@ -1018,27 +1016,13 @@ export class DefaultAgentRuntime extends AgentRuntime {
         await this.fileAdapter!.writeText(part.filePath, content);
     }
 
-    protected endTurnAbortScope(sessionId: string): void {
-        this.sessionTurnAborts.delete(sessionId);
-    }
-
-    protected getTurnAbortSignal(sessionId: string): AbortSignal | undefined {
-        return this.sessionTurnAborts.get(sessionId)?.signal;
-    }
-
-    protected isTurnAborted(sessionId: string): boolean {
-        return this.sessionTurnAborts.get(sessionId)?.signal.aborted === true;
-    }
-
     protected throwIfTurnCancelled(sessionId: string): void {
-        if (this.isTurnAborted(sessionId)) {
-            throw new AgentTurnCancelledError(sessionId);
-        }
+        this.turnAbortScopes.throwIfCancelled(sessionId);
     }
 
     protected prepareModelRequest(sessionId: string, request: ModelRequest, profile?: string, falsifyRate?: number, reasoning?: boolean): ModelRequest {
         this.throwIfTurnCancelled(sessionId);
-        request.signal = this.getTurnAbortSignal(sessionId);
+        request.signal = this.turnAbortScopes.signal(sessionId);
         const resolvedProfile = profile || this.sessionModelProfiles.get(sessionId);
         if (resolvedProfile) {
             request.profile = resolvedProfile;
@@ -1127,6 +1111,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
             round++;
             if (round <= maxRounds) {
+                await this.warnNearToolRoundLimit(sessionId, round, maxRounds);
                 continue turnLoop;
             }
             this.throwIfTurnCancelled(sessionId);
@@ -1227,6 +1212,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
             round++;
             if (round <= maxRounds) {
+                await this.warnNearToolRoundLimit(sessionId, round, maxRounds);
                 continue turnLoop;
             }
             this.throwIfTurnCancelled(sessionId);
@@ -1629,26 +1615,16 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 autoScripts: verification?.autoScripts,
                 timeoutMs: verification?.timeoutMs,
                 maxOutputChars: verification?.maxOutputChars,
-                workspace: turnContext.workspace
+                workspace: turnContext.workspace,
+                // Esc must stop a running `npm run typecheck`/test command.
+                signal: this.turnAbortScopes.signal(sessionId)
             });
             const runs = await runner.run(editedFiles);
-            for (const run of runs) {
-                const timeoutMs = verification?.timeoutMs ?? DEFAULT_VERIFY_TIMEOUT_MS;
-                turnContext.evidenceLedger?.record({
-                    toolName: 'verify-command',
-                    status: run.failed ? 'error' : 'success',
-                    inputSummary: `verify ${run.kind}${run.script ? ` (${run.script})` : ''} in ${run.cwd}`,
-                    outputSummary: run.output,
-                    exitCode: run.exitCode,
-                    durationMs: run.durationMs,
-                    error: run.timedOut
-                        ? `Verification command timed out after ${timeoutMs}ms: ${run.command}`
-                        : run.exitCode !== undefined && run.exitCode !== 0
-                            ? `Verification command exited with code ${run.exitCode}: ${run.command}`
-                            : undefined,
-                    verification: 'verify-command'
-                });
-            }
+            recordVerifyCommandEvidence(
+                turnContext.evidenceLedger,
+                runs,
+                verification?.timeoutMs ?? DEFAULT_VERIFY_TIMEOUT_MS
+            );
         } catch {
             // verification commands must never break the turn loop
         }
@@ -2393,7 +2369,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                     sessionId,
                     chunk.type === 'done' && freshToolCalls.length ? 'tool_call' : chunk.type,
                     chunk.type === 'tool_call' || (chunk.type === 'done' && freshToolCalls.length)
-                        ? this.describeStreamingToolCalls(freshToolCalls)
+                        ? describeToolCallNames(freshToolCalls)
                         : chunk.content,
                     freshToolCalls.length ? freshToolCalls : chunk.toolCalls,
                     chunkUsage
@@ -2410,7 +2386,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             if (chunk.type === 'done' && freshToolCalls.length) {
                 yield {
                     type: 'tool_call',
-                    content: this.describeStreamingToolCalls(freshToolCalls),
+                    content: describeToolCallNames(freshToolCalls),
                     toolCalls: freshToolCalls
                 };
             }
@@ -2419,7 +2395,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 yield {
                     type: chunk.type,
                     content: chunk.type === 'tool_call'
-                        ? this.describeStreamingToolCalls(freshToolCalls)
+                        ? describeToolCallNames(freshToolCalls)
                         : chunk.content,
                     toolCalls: chunk.type === 'tool_call' ? freshToolCalls : undefined,
                     usage: chunkUsage
@@ -2461,8 +2437,12 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return fresh;
     }
 
-    private describeStreamingToolCalls(toolCalls: AgentToolCall[]): string {
-        return toolCalls.map(toolCall => toolCall.name).filter(Boolean).join(', ');
+    /** Tell the model how many tool rounds are left, once, before the cap hits. */
+    private async warnNearToolRoundLimit(sessionId: string, round: number, maxRounds: number): Promise<void> {
+        const prompt = nearToolRoundLimitPrompt(round, maxRounds);
+        if (prompt) {
+            await this.sessions.append(sessionId, this.createMessage('user', prompt));
+        }
     }
 
     private async handleModelResponse(
@@ -2534,25 +2514,12 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     private canParallelize(toolCalls: Array<{ name: string; input?: any }>, safeTools: string[]): boolean {
         const approvalManager = this.toolApprovalManager;
-        if (approvalManager && toolCalls.some(tc => approvalManager.requiresApproval(tc.name, tc.input))) {
-            return false;
-        }
-
-        return toolCalls.every(tc => {
-            const definition = this.toolRegistry.getToolDefinition(tc.name);
-            const fallbackSafe = safeTools.includes(tc.name);
-            return definition ? this.isParallelSafeTool(definition, fallbackSafe) : fallbackSafe;
+        return canParallelizeToolBatch(toolCalls, safeTools, {
+            requiresApproval: approvalManager
+                ? (name, input) => approvalManager.requiresApproval(name, input)
+                : undefined,
+            getDefinition: name => this.toolRegistry.getToolDefinition(name)
         });
-    }
-
-    private isParallelSafeTool(definition: AgentToolDefinition, fallbackSafe: boolean): boolean {
-        if (definition.execution?.requiresSequential) {
-            return false;
-        }
-        if (definition.execution?.readOnly === true) {
-            return true;
-        }
-        return fallbackSafe;
     }
 
     private async executeToolsSequential(
@@ -2809,7 +2776,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
                     error: reason
                 }, reason, { sessionId, reason });
             }
-            if (approval.decision === ApprovalDecision.CANCELLED || this.isTurnAborted(sessionId)) {
+            if (approval.decision === ApprovalDecision.CANCELLED || this.turnAbortScopes.isAborted(sessionId)) {
                 this.throwIfTurnCancelled(sessionId);
                 const reason = `Tool "${toolCall.name}" approval was cancelled.`;
                 return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
@@ -2884,11 +2851,13 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
                 sessionId,
                 principalId: turnContext.principalId,
                 workspace: turnContext.workspace,
+                signal: this.turnAbortScopes.signal(sessionId),
                 toolCall: { id: toolCall.id, name: toolCall.name, input: toolCallInput },
                 definition,
                 executionMode,
                 inputSummary,
-                baseReceipt: sandboxReceipt
+                baseReceipt: sandboxReceipt,
+                repeatCache: turnContext.readOnlyResults ??= new RepeatReadOnlyCallCache()
             });
             if (outcome.redactedOutput !== undefined) {
                 loopDetector.record(toolCall.name, toolCallInput, outcome.redactedOutput);
@@ -3187,7 +3156,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
         if (!this.hookManager?.hasHooks(stage)) {
             return [];
         }
-        const output = await this.hookManager.run(stage, context);
+        const output = await this.hookManager.run(stage, context, this.turnAbortScopes.signal(sessionId));
         await this.appendHookOutputs(sessionId, output.entries);
         return output.results;
     }
@@ -3308,7 +3277,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
             return state.title;
         }
         try {
-            const result = await this.summaryAgent.generate(state.messages);
+            const result = await this.summaryAgent.generate(state.messages, this.turnAbortScopes.signal(sessionId));
             if (result.title) {
                 await this.sessions.setTitle(sessionId, result.title);
             }
@@ -3328,7 +3297,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
             return state.focusSummary ?? undefined;
         }
         try {
-            const result = await this.summaryAgent.generate(state.messages);
+            const result = await this.summaryAgent.generate(state.messages, this.turnAbortScopes.signal(sessionId));
             if (result.summary) {
                 await this.sessions.setProjectMetadata(sessionId, { focusSummary: result.summary });
             }
@@ -3383,7 +3352,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
         const state = await this.sessions.get(sessionId);
         const threshold = this.options.session?.summaryThreshold ?? defaultAgentOptions.session!.summaryThreshold!;
         if (state.messages.length >= threshold) {
-            const summary = await this.summarizer.summarize(state.messages, evidence);
+            const summary = await this.summarizer.summarize(state.messages, evidence, this.turnAbortScopes.signal(sessionId));
             await this.sessions.setSummary(sessionId, summary);
         }
     }

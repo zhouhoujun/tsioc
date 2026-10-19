@@ -80,7 +80,8 @@ export interface WebSearchResult {
 }
 
 export interface WebSearchAdapter {
-    search(query: string, limit?: number): Promise<WebSearchResult[]>;
+    /** `signal` is aborted when the user interrupts the turn (Esc). */
+    search(query: string, limit?: number, signal?: AbortSignal): Promise<WebSearchResult[]>;
 }
 
 export interface AgentToolsFileOptions {

@@ -1,7 +1,6 @@
-import { AgentTool, AgentToolContext } from '@tsdi/agent';
+import { AgentTool, AgentToolContext, CANCELLED_MESSAGE, runChildProcess } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { promises as fs } from 'fs';
-import { spawnSync } from 'child_process';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath } from '../files/path-policy';
@@ -89,9 +88,13 @@ export class ReviewDiffTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<ReviewDiffResult> {
+    async invoke(input: any, context: AgentToolContext): Promise<ReviewDiffResult> {
+        // Esc before the command starts must not launch git work.
+        if (context?.signal?.aborted) {
+            throw new Error(CANCELLED_MESSAGE);
+        }
         const workdir = await this.resolveWorkdir(input?.workdir);
-        this.assertGitRepo(workdir);
+        await this.assertGitRepo(workdir, context?.signal);
         assertSandboxCommand('git', resolveSandboxPolicy(this.options), this.name);
 
         const base = this.resolveBase(input?.base, input?.range);
@@ -103,32 +106,36 @@ export class ReviewDiffTool implements AgentTool {
         const diffArgs = this.buildDiffArgs(scope, base, paths);
         const trackedFiles = scope === 'untracked'
             ? []
-            : this.parseLines(this.runGit([...diffArgs.slice(0, 2), '--name-only', ...diffArgs.slice(2)], workdir).stdout);
+            : this.parseLines((await this.runGit([...diffArgs.slice(0, 2), '--name-only', ...diffArgs.slice(2)], workdir, context?.signal)).stdout);
         const untrackedFiles = scope === 'working-tree' || scope === 'untracked'
-            ? this.listUntrackedFiles(workdir, paths)
+            ? await this.listUntrackedFiles(workdir, paths, context?.signal)
             : [];
         const files = Array.from(new Set([...trackedFiles, ...untrackedFiles]));
 
         const trackedDiffResult = scope === 'untracked'
             ? { stdout: '', stderr: '', exitCode: 0 }
-            : this.runGit(diffArgs, workdir);
-        const untrackedDiffResults = untrackedFiles.map(path => this.runGit(['diff', '--no-color', '--no-index', '--', '/dev/null', path], workdir));
+            : await this.runGit(diffArgs, workdir, context?.signal);
+        const untrackedDiffResults = await Promise.all(
+            untrackedFiles.map(path => this.runGit(['diff', '--no-color', '--no-index', '--', '/dev/null', path], workdir, context?.signal))
+        );
         const rawDiff = [trackedDiffResult.stdout, ...untrackedDiffResults.map(result => result.stdout)].filter(Boolean).join('');
         const diffLimit = Math.min(maxDiffChars, MAX_OUTPUT_CHARS);
         const diff = rawDiff.slice(0, diffLimit);
         const diffTruncated = rawDiff.length > diff.length;
 
         const trackedStatsResult = includeStats && scope !== 'untracked'
-            ? this.runGit([...diffArgs.slice(0, 2), '--stat', ...diffArgs.slice(2)], workdir)
+            ? await this.runGit([...diffArgs.slice(0, 2), '--stat', ...diffArgs.slice(2)], workdir, context?.signal)
             : null;
         const untrackedStatsResults = includeStats
-            ? untrackedFiles.map(path => this.runGit(['diff', '--no-color', '--no-index', '--stat', '--', '/dev/null', path], workdir))
+            ? await Promise.all(
+                untrackedFiles.map(path => this.runGit(['diff', '--no-color', '--no-index', '--stat', '--', '/dev/null', path], workdir, context?.signal))
+            )
             : [];
         const rawStats = [trackedStatsResult?.stdout, ...untrackedStatsResults.map(result => result.stdout)].filter(Boolean).join('');
         const stats = rawStats.slice(0, MAX_OUTPUT_CHARS);
         const statsTruncated = rawStats.length > stats.length;
 
-        const commitSha = this.resolveCommitSha(base, workdir);
+        const commitSha = await this.resolveCommitSha(base, workdir, context?.signal);
 
         return {
             readOnly: true,
@@ -160,8 +167,9 @@ export class ReviewDiffTool implements AgentTool {
         return ['diff', '--no-color', base, '--', ...paths];
     }
 
-    private listUntrackedFiles(workdir: string, paths: string[]): string[] {
-        return this.parseLines(this.runGit(['ls-files', '--others', '--exclude-standard', '--', ...paths], workdir).stdout);
+    private async listUntrackedFiles(workdir: string, paths: string[], signal?: AbortSignal): Promise<string[]> {
+        const result = await this.runGit(['ls-files', '--others', '--exclude-standard', '--', ...paths], workdir, signal);
+        return this.parseLines(result.stdout);
     }
 
     private parseLines(value: string): string[] {
@@ -192,11 +200,15 @@ export class ReviewDiffTool implements AgentTool {
             : DEFAULT_MAX_DIFF_CHARS;
     }
 
-    private resolveCommitSha(base: string, workdir: string): string | null {
+    private async resolveCommitSha(base: string, workdir: string, signal?: AbortSignal): Promise<string | null> {
         try {
-            const result = this.runGit(['rev-parse', '--verify', `${base}^{commit}`], workdir);
+            const result = await this.runGit(['rev-parse', '--verify', `${base}^{commit}`], workdir, signal);
             return result.exitCode === 0 ? result.stdout.trim() || null : null;
-        } catch {
+        } catch (error) {
+            // A user interrupt must not be reported as "no commit to resolve".
+            if (signal?.aborted) {
+                throw error;
+            }
             return null;
         }
     }
@@ -216,35 +228,58 @@ export class ReviewDiffTool implements AgentTool {
         return policy.rootDir;
     }
 
-    private assertGitRepo(workdir: string): void {
-        const result = this.runGit(['rev-parse', '--git-dir'], workdir);
+    private async assertGitRepo(workdir: string, signal?: AbortSignal): Promise<void> {
+        const result = await this.runGit(['rev-parse', '--git-dir'], workdir, signal);
         if (result.exitCode !== 0) {
             throw new Error(`'${workdir}' is not a Git repository.`);
         }
     }
 
-    private runGit(args: string[], cwd: string): { stdout: string; stderr: string; exitCode: number } {
-        const result = spawnSync('git', args, {
+    /**
+     * Runs `git` without blocking the event loop. The previous `spawnSync`
+     * froze the console (no render, no Esc, no timers) for the duration of the
+     * command; the shared runner spawns asynchronously and stops the command
+     * tree when the owning turn is cancelled.
+     *
+     * `EPERM` and `ENOBUFS` stay tolerated (the captured output is reported
+     * with exit code 1) as the sync version did; everything else is thrown.
+     */
+    private async runGit(args: string[], cwd: string, signal?: AbortSignal): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+        const outcome = await runChildProcess({
+            command: 'git',
+            args,
             cwd,
-            timeout: DEFAULT_TIMEOUT_MS,
-            maxBuffer: MAX_OUTPUT_CHARS,
-            encoding: 'utf8',
-            stdio: 'pipe',
-            env: buildSandboxEnv(process.env, resolveSandboxPolicy(this.options))
+            env: buildSandboxEnv(process.env, resolveSandboxPolicy(this.options)),
+            // The sync version closed stdin after writing (no) input.
+            stdin: '',
+            timeoutMs: DEFAULT_TIMEOUT_MS,
+            maxOutputChars: MAX_OUTPUT_CHARS,
+            signal
         });
-        const stdout = (result.stdout ?? '').slice(0, MAX_OUTPUT_CHARS);
-        const stderr = (result.stderr ?? '').slice(0, MAX_OUTPUT_CHARS);
-        const errorCode = (result.error as NodeJS.ErrnoException | undefined)?.code;
-        const exitCode = typeof result.status === 'number' ? result.status : 1;
-
-        if (errorCode && errorCode !== 'EPERM' && errorCode !== 'ENOBUFS') {
-            throw result.error;
+        switch (outcome.kind) {
+            case 'cancelled':
+                throw new Error(CANCELLED_MESSAGE);
+            case 'overflow':
+                // Output past the capture cap is reported as a failed run with
+                // the partial output, mirroring the sync version's ENOBUFS
+                // tolerance.
+                return { stdout: outcome.stdout, stderr: outcome.stderr, exitCode: 1 };
+            case 'error':
+                if (outcome.error.code && outcome.error.code !== 'EPERM' && outcome.error.code !== 'ENOBUFS') {
+                    throw outcome.error;
+                }
+                return { stdout: outcome.stdout, stderr: outcome.stderr, exitCode: 1 };
+            case 'timeout': {
+                const error: NodeJS.ErrnoException = new Error('spawn git ETIMEDOUT');
+                error.code = 'ETIMEDOUT';
+                throw error;
+            }
+            default:
+                return {
+                    stdout: outcome.stdout.slice(0, MAX_OUTPUT_CHARS),
+                    stderr: outcome.stderr.slice(0, MAX_OUTPUT_CHARS),
+                    exitCode: outcome.exitCode ?? 1
+                };
         }
-
-        return {
-            stdout,
-            stderr,
-            exitCode
-        };
     }
 }

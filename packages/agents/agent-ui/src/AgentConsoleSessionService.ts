@@ -458,7 +458,7 @@ export class AgentConsoleSessionService {
             return Array.isArray(result) ? result : [];
         }
         if (this.runtime && typeof this.runtime.listGitStepSnapshots === 'function') {
-            return this.runtime.listGitStepSnapshots(sessionId) ?? [];
+            return await this.runtime.listGitStepSnapshots(sessionId) ?? [];
         }
         return [];
     }
@@ -472,7 +472,7 @@ export class AgentConsoleSessionService {
             return result && typeof result === 'object' ? result : null;
         }
         if (this.runtime && typeof this.runtime.diffGitStepSnapshot === 'function') {
-            return this.runtime.diffGitStepSnapshot(sessionId, ref) ?? null;
+            return await this.runtime.diffGitStepSnapshot(sessionId, ref) ?? null;
         }
         return null;
     }

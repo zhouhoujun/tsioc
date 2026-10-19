@@ -1,5 +1,6 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { Abstract, Injectable } from '@tsdi/ioc';
+import { withTurnSignal } from '../src/turn-signal';
 
 export interface ImageGenerationResult {
     url: string;
@@ -17,6 +18,8 @@ export interface ImageGenerationOptions {
     style?: string;
     negativePrompt?: string;
     seed?: number;
+    /** Aborted when the user interrupts the turn (Esc). */
+    signal?: AbortSignal;
 }
 
 
@@ -56,9 +59,9 @@ export class ImageGenerateTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
         const prompt = this.requireString(input?.prompt, 'image_generate prompt');
-        const options: ImageGenerationOptions = {};
+        const options: ImageGenerationOptions = { signal: context?.signal };
         if (typeof input?.aspect_ratio === 'string' && ['1:1', '16:9', '9:16', '4:3', '3:4'].includes(input.aspect_ratio)) {
             options.aspectRatio = input.aspect_ratio;
         }
@@ -68,7 +71,7 @@ export class ImageGenerateTool implements AgentTool {
         if (typeof input?.negative_prompt === 'string' && input.negative_prompt.trim()) {
             options.negativePrompt = input.negative_prompt.trim();
         }
-        const result = await this.adapter.generate(prompt, options);
+        const result = await withTurnSignal(context, () => this.adapter.generate(prompt, options));
         return {
             url: result.url,
             revisedPrompt: result.revisedPrompt,

@@ -4,8 +4,10 @@ import type { AgentMessage } from '@tsdi/agent';
 import {
     AgentConsoleTurnStreamHost,
     AgentConsoleTurnStreamState,
-    consumeStreamChunkView
+    consumeStreamChunkView,
+    runTurnStreamView
 } from '../src/AgentConsoleTurnStreamController';
+import { projectAgentConsoleExecutionMainline } from '../src/AgentConsoleSessionContentPresenter';
 
 /**
  * Regression coverage for the narration/final-answer fusion defect.
@@ -183,5 +185,88 @@ export class TurnStreamNarrationTest {
         expect(toolRows(host).length).toBe(2);
         // No empty bubble may survive the placeholder being fully sealed away.
         expect(host.state.messages.every(item => String(item.content || '').trim().length > 0)).toBe(true);
+    }
+
+    @Test('reasoning row carries the model thought, not a canned phrase')
+    reasoningRowCarriesThought() {
+        const host = createFakeHost();
+        const state = newStreamState();
+        const assistantMessage = startTurn(host);
+
+        consumeStreamChunkView(host, state, { type: 'reasoning', content: 'I should inspect ' }, assistantMessage);
+        consumeStreamChunkView(host, state, { type: 'reasoning', content: 'the project layout first.' }, assistantMessage);
+
+        const thoughts = toolRows(host).filter(row => row.metadata?.uiEventType === 'reasoning');
+        expect(thoughts.length).toBe(1);
+        expect(thoughts[0].content).toEqual('I should inspect the project layout first.');
+        expect(String(thoughts[0].content)).not.toContain('Reasoning about implementation');
+
+        // The main execution line shows the same real thought, not the constant.
+        const mainline = projectAgentConsoleExecutionMainline(host.state.messages);
+        const thought = mainline.find(item => item.metadata?.uiEventType === 'reasoning');
+        expect(String(thought?.content)).toEqual('I should inspect the project layout first.');
+    }
+
+    @Test('each reasoning phase refreshes the thought row (no stale first line)')
+    reasoningPhasesRefresh() {
+        const host = createFakeHost();
+        const state = newStreamState();
+        const assistantMessage = startTurn(host);
+
+        consumeStreamChunkView(host, state, { type: 'reasoning', content: 'First I check the schema.' }, assistantMessage);
+        consumeStreamChunkView(host, state, toolCall('tc-1', 'Inspect directory'), assistantMessage);
+        consumeStreamChunkView(host, state, { type: 'reasoning', content: 'Now I will read seed.ts.' }, assistantMessage);
+
+        const thoughts = toolRows(host).filter(row => row.metadata?.uiEventType === 'reasoning');
+        expect(thoughts.length).toBe(1);
+        // A reasoning row that froze on the first phase would show the stale text.
+        expect(thoughts[0].content).toEqual('Now I will read seed.ts.');
+    }
+
+    @Test('long reasoning keeps the full thought in the row and a bounded main line')
+    reasoningKeepsDetail() {
+        const host = createFakeHost();
+        const state = newStreamState();
+        const assistantMessage = startTurn(host);
+
+        const long = `Inspecting the parser. ${'detail '.repeat(200)}`;
+        consumeStreamChunkView(host, state, { type: 'reasoning', content: long }, assistantMessage);
+
+        const row = host.state.messages.find(item => item.metadata?.uiEventType === 'reasoning');
+        // The inspector can reach the whole thought, not a canned sentence.
+        expect(String(row?.content)).toContain('detail detail');
+    }
+
+    @Test('reasoning row shows the real thought and settles when the turn ends')
+    async reasoningSettlesOnTurnEnd() {
+        const host = createFakeHost();
+        const state = newStreamState();
+        const assistantMessage = startTurn(host);
+        // In-process TUI path: chunks come from the runtime and the final `done`
+        // chunk carries no message.
+        (host as any).runtime = {
+            runStreamingTurn: async function* () {
+                yield { type: 'reasoning', content: 'Inspecting the parser. ' };
+                yield { type: 'reasoning', content: 'detail '.repeat(200) };
+                yield toolCall('tc-1', 'Inspect directory');
+                yield { type: 'reasoning', content: 'Now summarising what I found.' };
+                yield { type: 'text', content: 'Here is the answer.' };
+                yield { type: 'done' };
+            }
+        };
+
+        await runTurnStreamView(host, state, 'Explain the parser.', assistantMessage);
+
+        const row = host.state.messages.find(item => item.metadata?.uiEventType === 'reasoning');
+        // A finished turn must not leave the thought row looking active.
+        expect(row?.metadata?.status).toEqual('success');
+        // Settling keeps the whole turn's reasoning for the inspector.
+        expect(String(row?.content)).toContain('detail detail');
+
+        // The main line carries one bounded supporting summary.
+        const projected = projectAgentConsoleExecutionMainline(host.state.messages);
+        const summary = String(projected.find(item => item.metadata?.uiEventType === 'reasoning')?.content || '');
+        expect(summary.length).toBeLessThanOrEqual(120);
+        expect(summary).toContain('Inspecting the parser.');
     }
 }

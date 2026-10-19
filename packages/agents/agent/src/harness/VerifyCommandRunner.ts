@@ -1,7 +1,8 @@
-import { spawn } from 'child_process';
+import { runChildProcess } from './child-process-runner';
 import { existsSync, readFileSync } from 'fs';
 import { dirname, join, sep } from 'path';
 import { resolveProcessEnv } from '../env';
+import { EvidenceLedger } from './EvidenceLedger';
 
 /**
  * P79: verify-command evidence source.
@@ -50,6 +51,8 @@ export interface VerifyCommandRun {
     durationMs: number;
     /** True when the command was killed by the timeout. */
     timedOut: boolean;
+    /** True when the user interrupted the turn (Esc) while the command ran. */
+    cancelled?: boolean;
     /** Non-zero exit (or timeout / spawn failure) — convenience flag for the gate. */
     failed: boolean;
 }
@@ -67,12 +70,22 @@ export interface VerifyCommandRunnerOptions {
     workspace?: string;
     /** Explicit env for spawned commands (defaults to the host process env via the global guard). */
     env?: Record<string, string | undefined>;
+    /** The owning turn's signal: aborting kills the running command and stops the round. */
+    signal?: AbortSignal;
     /** Injectable process runner for tests (defaults to the real spawn-based runner). */
-    runProcess?: (command: string, args: string[], cwd: string, timeoutMs: number, env?: Record<string, string | undefined>) => Promise<{
+    runProcess?: (
+        command: string,
+        args: string[],
+        cwd: string,
+        timeoutMs: number,
+        env?: Record<string, string | undefined>,
+        signal?: AbortSignal
+    ) => Promise<{
         exitCode?: number;
         output: string;
         durationMs: number;
         timedOut: boolean;
+        cancelled?: boolean;
     }>;
 }
 
@@ -80,71 +93,34 @@ export const DEFAULT_VERIFY_AUTO_SCRIPTS = ['typecheck', 'lint'];
 export const DEFAULT_VERIFY_TIMEOUT_MS = 120000;
 export const DEFAULT_VERIFY_MAX_OUTPUT_CHARS = 8000;
 
-const DEFAULT_RUNNER = (
+const DEFAULT_RUNNER = async (
     command: string,
     args: string[],
     cwd: string,
     timeoutMs: number,
-    env?: Record<string, string | undefined>
-): Promise<{ exitCode?: number; output: string; durationMs: number; timedOut: boolean }> =>
-    new Promise(resolve => {
-        const startedAt = Date.now();
-        const child = spawn(command, args, {
-            cwd,
-            env: env ?? resolveProcessEnv(),
-            stdio: ['ignore', 'pipe', 'pipe'],
-            shell: false
-        });
-        let stdout = '';
-        let stderr = '';
-        let settled = false;
-        const timer = setTimeout(() => {
-            if (settled) {
-                return;
-            }
-            settled = true;
-            child.kill('SIGTERM');
-            const combined = `${stdout}\n${stderr}`.trim();
-            resolve({
-                exitCode: undefined,
-                output: combined,
-                durationMs: Date.now() - startedAt,
-                timedOut: true
-            });
-        }, timeoutMs);
-        child.stdout?.on('data', (chunk: { toString(): string }) => {
-            stdout += chunk.toString();
-        });
-        child.stderr?.on('data', (chunk: { toString(): string }) => {
-            stderr += chunk.toString();
-        });
-        child.on('error', () => {
-            if (settled) {
-                return;
-            }
-            settled = true;
-            clearTimeout(timer);
-            resolve({
-                exitCode: undefined,
-                output: `${stdout}\n${stderr}`.trim(),
-                durationMs: Date.now() - startedAt,
-                timedOut: false
-            });
-        });
-        child.on('close', code => {
-            if (settled) {
-                return;
-            }
-            settled = true;
-            clearTimeout(timer);
-            resolve({
-                exitCode: typeof code === 'number' ? code : undefined,
-                output: `${stdout}\n${stderr}`.trim(),
-                durationMs: Date.now() - startedAt,
-                timedOut: false
-            });
-        });
+    env?: Record<string, string | undefined>,
+    signal?: AbortSignal
+): Promise<{ exitCode?: number; output: string; durationMs: number; timedOut: boolean; cancelled?: boolean }> => {
+    const startedAt = Date.now();
+    // Shared runner: kills the whole process group on timeout or Esc instead of
+    // leaving a slow `npm run test` behind.
+    const outcome = await runChildProcess({
+        command,
+        args,
+        cwd,
+        env: env ?? resolveProcessEnv(),
+        timeoutMs,
+        stdin: '',
+        signal
     });
+    return {
+        exitCode: outcome.exitCode ?? undefined,
+        output: `${outcome.stdout}\n${outcome.stderr}`.trim(),
+        durationMs: Date.now() - startedAt,
+        timedOut: outcome.kind === 'timeout',
+        cancelled: outcome.kind === 'cancelled'
+    };
+};
 
 /**
  * Resolve the nearest package.json directory for a file path, bounded by the
@@ -244,13 +220,20 @@ export class VerifyCommandRunner {
         }
 
         const runs: VerifyCommandRun[] = [];
+        const signal = this.options?.signal;
         for (const pkgDir of pkgDirs) {
+            if (signal?.aborted) {
+                break;
+            }
             const scripts = readPackageScripts(pkgDir);
             const manager = resolvePackageManager(pkgDir);
             const packageRuns: VerifyCommandRun[] = [];
 
             // explicit templates run verbatim whenever set
             for (const [kind, template] of Object.entries(explicit)) {
+                if (signal?.aborted) {
+                    break;
+                }
                 if (typeof template !== 'string' || !template.trim()) {
                     continue;
                 }
@@ -266,12 +249,16 @@ export class VerifyCommandRunner {
                     timeoutMs,
                     maxOutputChars,
                     env,
+                    signal,
                     runProcess
                 }));
             }
 
             // auto-discovered scripts present in package.json and allowed
             for (const scriptName of autoScripts) {
+                if (signal?.aborted) {
+                    break;
+                }
                 if (explicit[scriptName] !== undefined) {
                     continue; // explicit template already covers this kind
                 }
@@ -287,6 +274,7 @@ export class VerifyCommandRunner {
                     timeoutMs,
                     maxOutputChars,
                     env,
+                    signal,
                     runProcess
                 }));
             }
@@ -305,12 +293,14 @@ export class VerifyCommandRunner {
         timeoutMs: number;
         maxOutputChars: number;
         env?: Record<string, string | undefined>;
+        signal?: AbortSignal;
         runProcess: NonNullable<VerifyCommandRunnerOptions['runProcess']>;
     }): Promise<VerifyCommandRun> {
         const display = `${params.command} ${params.args.join(' ')}`.trim();
-        const result = await params.runProcess(params.command, params.args, params.cwd, params.timeoutMs, params.env);
+        const result = await params.runProcess(params.command, params.args, params.cwd, params.timeoutMs, params.env, params.signal);
         const output = truncateTail(result.output, params.maxOutputChars);
-        const failed = result.timedOut || (result.exitCode !== undefined && result.exitCode !== 0);
+        // An interrupted run is not a failed verification.
+        const failed = !result.cancelled && (result.timedOut || (result.exitCode !== undefined && result.exitCode !== 0));
         return {
             kind: params.kind,
             script: params.script,
@@ -320,7 +310,40 @@ export class VerifyCommandRunner {
             output,
             durationMs: result.durationMs,
             timedOut: result.timedOut,
+            cancelled: result.cancelled,
             failed
         };
+    }
+}
+
+/**
+ * Record completed verification runs in the turn's evidence ledger.
+ *
+ * Interrupted runs (Esc) are skipped: the turn is already aborting and an
+ * incomplete command must not be read as a failed verification.
+ */
+export function recordVerifyCommandEvidence(
+    ledger: EvidenceLedger | undefined,
+    runs: VerifyCommandRun[],
+    timeoutMs: number
+): void {
+    for (const run of runs) {
+        if (run.cancelled) {
+            continue;
+        }
+        ledger?.record({
+            toolName: 'verify-command',
+            status: run.failed ? 'error' : 'success',
+            inputSummary: `verify ${run.kind}${run.script ? ` (${run.script})` : ''} in ${run.cwd}`,
+            outputSummary: run.output,
+            exitCode: run.exitCode,
+            durationMs: run.durationMs,
+            error: run.timedOut
+                ? `Verification command timed out after ${timeoutMs}ms: ${run.command}`
+                : run.exitCode !== undefined && run.exitCode !== 0
+                    ? `Verification command exited with code ${run.exitCode}: ${run.command}`
+                    : undefined,
+            verification: 'verify-command'
+        });
     }
 }

@@ -1,4 +1,4 @@
-import { Client, ClientChannel, ConnectConfig } from 'ssh2';
+import { Client, ClientChannel, ConnectConfig, SFTPWrapper } from 'ssh2';
 import { Buffer } from 'buffer';
 import { SshHostConfig, defaultSshHostConfig, resolveSshAuth, resolveSshHostKey } from './ssh-config';
 
@@ -81,38 +81,70 @@ export class SshClient {
         });
     }
 
-    exec(command: string, timeoutMs = 60000): Promise<SshExecResult> {
+    exec(command: string, timeoutMs = 60000, signal?: AbortSignal): Promise<SshExecResult> {
         return new Promise((resolve, reject) => {
-            this.client.exec(command, (error, stream) => {
-                if (error) {
-                    reject(error);
+            let settled = false;
+            let timer: NodeJS.Timeout | undefined;
+            let stream: ClientChannel | undefined;
+            const finish = (settle: () => void) => {
+                if (settled) {
                     return;
                 }
+                settled = true;
+                if (timer) {
+                    clearTimeout(timer);
+                }
+                signal?.removeEventListener('abort', onAbort);
+                settle();
+            };
+            /** User interrupt (Esc): stop waiting and drop the channel. */
+            const onAbort = () => {
+                if (stream) {
+                    this.safeEndStream(stream);
+                }
+                finish(() => reject(new Error('SSH command cancelled.')));
+            };
+            if (signal) {
+                if (signal.aborted) {
+                    onAbort();
+                    return;
+                }
+                signal.addEventListener('abort', onAbort, { once: true });
+            }
+            this.client.exec(command, (error, channel) => {
+                if (settled) {
+                    // The turn was cancelled before the server answered.
+                    this.safeEndStream(channel);
+                    return;
+                }
+                if (error) {
+                    finish(() => reject(error));
+                    return;
+                }
+                stream = channel;
                 let stdout = '';
                 let stderr = '';
                 let timedOut = false;
-                const timer = setTimeout(() => {
+                timer = setTimeout(() => {
                     timedOut = true;
-                    this.safeEndStream(stream);
+                    this.safeEndStream(channel);
                 }, timeoutMs);
-                stream.on('data', (chunk: Buffer) => {
+                channel.on('data', (chunk: Buffer) => {
                     stdout += String(chunk);
                 });
-                stream.stderr.on('data', (chunk: Buffer) => {
+                channel.stderr.on('data', (chunk: Buffer) => {
                     stderr += String(chunk);
                 });
-                stream.on('close', (code: number | null) => {
-                    clearTimeout(timer);
-                    resolve({
+                channel.on('close', (code: number | null) => {
+                    finish(() => resolve({
                         stdout: stdout.trim(),
                         stderr: stderr.trim(),
                         exitCode: timedOut ? 124 : (code ?? 0),
                         timedOut
-                    });
+                    }));
                 });
-                stream.on('error', (error: Error) => {
-                    clearTimeout(timer);
-                    reject(error);
+                channel.on('error', (channelError: Error) => {
+                    finish(() => reject(channelError));
                 });
             });
         });
@@ -146,58 +178,121 @@ export class SshClient {
         });
     }
 
-    sftpPut(localPath: string, remotePath: string): Promise<SshSftpResult> {
-        return new Promise((resolve, reject) => {
-            this.client.sftp((error, sftp) => {
-                if (error) {
-                    reject(error);
+    sftpPut(localPath: string, remotePath: string, signal?: AbortSignal): Promise<SshSftpResult> {
+        return this.withSftp<SshSftpResult>(signal, (sftp, resolve, reject) => {
+            const { promises: fs } = require('fs') as typeof import('fs');
+            fs.readFile(localPath)
+                .then(data => {
+                    sftp.writeFile(remotePath, data, writeError => {
+                        if (writeError) {
+                            reject(writeError);
+                            return;
+                        }
+                        resolve({ bytes: data.length, path: remotePath });
+                    });
+                })
+                .catch(reject);
+        });
+    }
+
+    sftpGet(remotePath: string, localPath: string, signal?: AbortSignal): Promise<SshSftpResult> {
+        return this.withSftp<SshSftpResult>(signal, (sftp, resolve, reject) => {
+            sftp.readFile(remotePath, (readError, data) => {
+                if (readError) {
+                    reject(readError);
                     return;
                 }
                 const { promises: fs } = require('fs') as typeof import('fs');
-                fs.readFile(localPath)
-                    .then(data => {
-                        sftp.writeFile(remotePath, data, writeError => {
-                            if (writeError) {
-                                reject(writeError);
-                                return;
-                            }
-                            resolve({ bytes: data.length, path: remotePath });
-                        });
-                    })
+                fs.writeFile(localPath, data)
+                    .then(() => resolve({ bytes: data.length, path: localPath }))
                     .catch(reject);
             });
         });
     }
 
-    sftpGet(remotePath: string, localPath: string): Promise<SshSftpResult> {
+    forwardOut(srcAddr: string, srcPort: number, destAddr: string, destPort: number, signal?: AbortSignal): Promise<ClientChannel> {
         return new Promise((resolve, reject) => {
-            this.client.sftp((error, sftp) => {
-                if (error) {
-                    reject(error);
+            let settled = false;
+            const finish = (settle: () => void) => {
+                if (settled) {
                     return;
                 }
-                sftp.readFile(remotePath, (readError, data) => {
-                    if (readError) {
-                        reject(readError);
-                        return;
-                    }
-                    const { promises: fs } = require('fs') as typeof import('fs');
-                    fs.writeFile(localPath, data)
-                        .then(() => resolve({ bytes: data.length, path: localPath }))
-                        .catch(reject);
-                });
+                settled = true;
+                signal?.removeEventListener('abort', onAbort);
+                settle();
+            };
+            /** User interrupt (Esc) while the forwarding channel is negotiated. */
+            const onAbort = () => finish(() => reject(new Error('SSH tunnel cancelled.')));
+            if (signal) {
+                if (signal.aborted) {
+                    onAbort();
+                    return;
+                }
+                signal.addEventListener('abort', onAbort, { once: true });
+            }
+            this.client.forwardOut(srcAddr, srcPort, destAddr, destPort, (error, channel) => {
+                if (settled) {
+                    // The turn was cancelled before the channel was established.
+                    this.safeEndStream(channel);
+                    return;
+                }
+                if (error) {
+                    finish(() => reject(error));
+                    return;
+                }
+                finish(() => resolve(channel));
             });
         });
     }
 
-    forwardOut(srcAddr: string, srcPort: number, destAddr: string, destPort: number): Promise<ClientChannel> {
-        return new Promise((resolve, reject) => {
-            this.client.forwardOut(srcAddr, srcPort, destAddr, destPort, (error, channel) => {
-                if (error) {
-                    reject(error);
+    /**
+     * Run one SFTP transfer that settles at most once.
+     *
+     * Esc ends the wait immediately: closing the subsystem leaves the pending
+     * request callback unanswered, so the abort path rejects instead of hanging.
+     */
+    private withSftp<T>(
+        signal: AbortSignal | undefined,
+        run: (sftp: SFTPWrapper, resolve: (value: T) => void, reject: (error: Error) => void) => void
+    ): Promise<T> {
+        return new Promise<T>((resolve, reject) => {
+            let settled = false;
+            let sftp: SFTPWrapper | undefined;
+            const finish = (settle: () => void) => {
+                if (settled) {
                     return;
                 }
-                resolve(channel);
+                settled = true;
+                signal?.removeEventListener('abort', onAbort);
+                settle();
+            };
+            const onAbort = () => {
+                this.safeEndSftp(sftp);
+                finish(() => reject(new Error('SSH transfer cancelled.')));
+            };
+            if (signal) {
+                if (signal.aborted) {
+                    onAbort();
+                    return;
+                }
+                signal.addEventListener('abort', onAbort, { once: true });
+            }
+            this.client.sftp((error, channel) => {
+                if (settled) {
+                    this.safeEndSftp(channel);
+                    return;
+                }
+                if (error) {
+                    finish(() => reject(error));
+                    return;
+                }
+                sftp = channel;
+                channel.on('error', (channelError: Error) => finish(() => reject(channelError)));
+                run(
+                    channel,
+                    value => finish(() => resolve(value)),
+                    transferError => finish(() => reject(transferError))
+                );
             });
         });
     }
@@ -250,6 +345,14 @@ export class SshClient {
     protected safeEndStream(stream: ClientChannel): void {
         try {
             stream.end();
+        } catch (ignored) {
+            void ignored;
+        }
+    }
+
+    protected safeEndSftp(sftp?: SFTPWrapper): void {
+        try {
+            sftp?.end();
         } catch (ignored) {
             void ignored;
         }

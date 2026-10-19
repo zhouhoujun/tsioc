@@ -39,12 +39,12 @@ async function createGitRepo(): Promise<string> {
 @Suite('GitStepSnapshotStore')
 export class GitStepSnapshotStoreTest {
     @Test('capture returns null outside a git work tree')
-    captureReturnsNullOutsideGitRepo() {
+    async captureReturnsNullOutsideGitRepo() {
         const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'git-step-no-'));
         try {
             const store = new GitStepSnapshotStore();
-            expect(store.capture(dir)).toEqual(null);
-            expect(store.isAvailable(dir)).toEqual(false);
+            expect(await store.capture(dir)).toEqual(null);
+            expect(await store.isAvailable(dir)).toEqual(false);
         } finally {
             fs.rmSync(dir, { recursive: true, force: true });
         }
@@ -55,7 +55,7 @@ export class GitStepSnapshotStoreTest {
         const dir = await createGitRepo();
         try {
             const store = new GitStepSnapshotStore();
-            expect(store.capture(dir)).toEqual(null);
+            expect(await store.capture(dir)).toEqual(null);
         } finally {
             await fs.promises.rm(dir, { recursive: true, force: true });
         }
@@ -67,7 +67,7 @@ export class GitStepSnapshotStoreTest {
         try {
             await fs.promises.writeFile(path.join(dir, 'new.txt'), 'untracked', 'utf8');
             const store = new GitStepSnapshotStore();
-            expect(store.capture(dir)).toEqual(null);
+            expect(await store.capture(dir)).toEqual(null);
         } finally {
             await fs.promises.rm(dir, { recursive: true, force: true });
         }
@@ -79,24 +79,24 @@ export class GitStepSnapshotStoreTest {
         try {
             await fs.promises.writeFile(path.join(dir, 'a.txt'), 'edited', 'utf8');
             const store = new GitStepSnapshotStore();
-            const snapshot = store.capture(dir, { sessionId: 's1', messageId: 'msg-1', label: 'step' });
+            const snapshot = await store.capture(dir, { sessionId: 's1', messageId: 'msg-1', label: 'step' });
             expect(snapshot).not.toEqual(null);
             expect(snapshot!.messageId).toEqual('msg-1');
             expect(store.resolveByMessage('msg-1')?.id).toEqual(snapshot!.id);
 
             await fs.promises.writeFile(path.join(dir, 'a.txt'), 'changed-after', 'utf8');
-            const diff = store.diff(snapshot!);
+            const diff = await store.diff(snapshot!);
             expect(diff.files.length).toEqual(1);
             expect(diff.files[0].filePath).toEqual('a.txt');
             expect(diff.files[0].status).toEqual('modified');
             expect(diff.rawPatch).toContain('a.txt');
 
-            const reverted = store.revert('msg-1', 's1');
+            const reverted = await store.revert('msg-1', 's1');
             expect(reverted.reverted).toEqual(true);
             expect(await fs.promises.readFile(path.join(dir, 'a.txt'), 'utf8')).toEqual('edited');
             expect(store.listReverts('s1').length).toEqual(1);
 
-            const unreverted = store.unrevert('s1');
+            const unreverted = await store.unrevert('s1');
             expect(unreverted.reverted).toEqual(true);
             expect(await fs.promises.readFile(path.join(dir, 'a.txt'), 'utf8')).toEqual('changed-after');
         } finally {
@@ -109,10 +109,10 @@ export class GitStepSnapshotStoreTest {
         const dir = await createGitRepo();
         try {
             const store = new GitStepSnapshotStore();
-            const reverted = store.revert('no-such-message', 's1');
+            const reverted = await store.revert('no-such-message', 's1');
             expect(reverted.reverted).toEqual(false);
             expect(reverted.error).toBeTruthy();
-            const unreverted = store.unrevert('s1');
+            const unreverted = await store.unrevert('s1');
             expect(unreverted.reverted).toEqual(false);
         } finally {
             await fs.promises.rm(dir, { recursive: true, force: true });
@@ -125,14 +125,14 @@ export class GitStepSnapshotStoreTest {
         try {
             await fs.promises.writeFile(path.join(dir, 'a.txt'), 'edited', 'utf8');
             const store = new GitStepSnapshotStore();
-            const s1 = store.capture(dir, { sessionId: 's1' });
-            const s2 = store.capture(dir, { sessionId: 's2' });
+            const s1 = await store.capture(dir, { sessionId: 's1' });
+            const s2 = await store.capture(dir, { sessionId: 's2' });
             expect(s1).not.toEqual(null);
             expect(s2).not.toEqual(null);
             expect(store.list('s1').length).toEqual(1);
             expect(store.list('s1')[0].id).toEqual(s1!.id);
             expect(store.list('s2').length).toEqual(1);
-            store.clear('s1');
+            await store.clear('s1');
             expect(store.list('s1').length).toEqual(0);
             expect(store.list('s2').length).toEqual(1);
         } finally {
@@ -147,7 +147,7 @@ export class GitStepSnapshotStoreTest {
             await fs.promises.writeFile(path.join(dir, 'b.txt'), 'new file\n', 'utf8');
             git(dir, ['add', 'b.txt']);
             const store = new GitStepSnapshotStore();
-            const snapshot = store.capture(dir);
+            const snapshot = await store.capture(dir);
             expect(snapshot).not.toEqual(null);
             expect(snapshot!.diffStats).toBeTruthy();
             expect(snapshot!.diffStats!.filesChanged).toEqual(2);
@@ -172,7 +172,7 @@ export class RuntimeGitStepSnapshotTest {
                 const runtime = ctx.get(AgentRuntime);
 
                 const result = await runtime.runTurn('s1', 'hello');
-                const snapshots = runtime.listGitStepSnapshots('s1');
+                const snapshots = await runtime.listGitStepSnapshots('s1');
                 expect(snapshots.length).toEqual(1);
                 expect(snapshots[0].messageId).toEqual(result.message.id);
 
@@ -185,7 +185,7 @@ export class RuntimeGitStepSnapshotTest {
                 expect(unreverted.reverted).toEqual(true);
                 expect(await fs.promises.readFile(path.join(dir, 'a.txt'), 'utf8')).toEqual('changed-after');
 
-                const diff = runtime.diffGitStepSnapshot('s1', result.message.id);
+                const diff = await runtime.diffGitStepSnapshot('s1', result.message.id);
                 expect(diff).not.toEqual(null);
                 expect(diff!.files.some(file => file.filePath === 'a.txt')).toEqual(true);
             } finally { await ctx.close(); }
@@ -202,7 +202,7 @@ export class RuntimeGitStepSnapshotTest {
             const reverted = await runtime.revertGitStepSnapshot('s1', 'missing');
             expect(reverted.reverted).toEqual(false);
             expect(reverted.error).toBeTruthy();
-            expect(runtime.listGitStepSnapshots('s1')).toEqual([]);
+            expect(await runtime.listGitStepSnapshots('s1')).toEqual([]);
         } finally { await ctx.close(); }
     }
 

@@ -6,6 +6,7 @@ import { MemoryStore } from '../memory/MemoryStore';
 import { scoreSummaryQuality } from '../harness/SummaryQualityScorer';
 import { RedactionFilter } from '../harness/RedactionFilter';
 import { selectRecoveredDetail } from './recover-detail';
+import { buildCompactedToolContent } from './tool-compaction';
 import { CONTEXT_ADAPTIVE_MIN_HISTORY, CONTEXT_ADAPTIVE_WINDOW, CONTEXT_HIGH_GROWTH_TOKENS, CONTEXT_LOW_GROWTH_TOKENS, CONTEXT_SESSION_STORE_MAX, CONTEXT_TOKEN_HISTORY_MAX } from '../AgentLimits';
 
 export interface ContextBudget {
@@ -1442,21 +1443,7 @@ export class AgentContextManager {
     }
 
     private buildCompactedToolContent(message: AgentMessage): string {
-        const toolName = String(message.name || 'tool').trim() || 'tool';
-        const receiptSummary = String(message.metadata?.receipt?.outputSummary || '').trim();
-        const metadataError = String(message.metadata?.error || message.metadata?.receipt?.error || '').trim();
-        const summarized = summarizeToolDisplayText(toolName, message.content, 'output');
-
-        if (metadataError) {
-            return JSON.stringify({ error: metadataError });
-        }
-        if (receiptSummary) {
-            return `[summary] ${receiptSummary}`;
-        }
-        if (summarized && summarized !== message.content) {
-            return `[summary] ${summarized}`;
-        }
-        return message.content.slice(0, this.budget.maxToolResults) + '...[truncated]';
+        return buildCompactedToolContent(message, this.budget);
     }
 
     private compactToolMessagesForContext(messages: AgentMessage[], currentUserMessageId?: string): {

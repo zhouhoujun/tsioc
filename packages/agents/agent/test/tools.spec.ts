@@ -123,6 +123,21 @@ class MetadataDefinitionTool implements AgentTool {
     }
 }
 
+class ContextRecordingTool implements AgentTool {
+    name = 'context_recording';
+    description = 'records the invocation context';
+    inputSchema = { type: 'object', properties: {} };
+    toolset = 'custom';
+    source = 'test';
+    execution = { readOnly: true };
+    lastContext: any;
+
+    async invoke(_input: any, context: any): Promise<any> {
+        this.lastContext = context;
+        return { ok: true };
+    }
+}
+
 class RegistryDiscoveryTool implements AgentTool {
     name = 'tool_search';
     description = 'search tools';
@@ -601,6 +616,19 @@ export class BuiltinToolsTest {
         const result = await registry.invoke('memory.put', { key: 'topic', value: 'router' }, 's1');
         expect(result.stored).toEqual(true);
         expect((await store.getAll('s1')).length).toEqual(1);
+    }
+
+    @Test('local tool registry forwards the turn abort signal into the tool context')
+    async localToolRegistryForwardsAbortSignal() {
+        const { memoryStore, sessionStore, activationStore } = await bootStores();
+        const tool = new ContextRecordingTool();
+        const registry = new LocalToolRegistry([tool], memoryStore, sessionStore, activationStore);
+        const controller = new AbortController();
+
+        await registry.activateTool('s1', 'context_recording');
+        await registry.invoke('context_recording', {}, 's1', 'local-system', undefined, controller.signal);
+
+        expect(tool.lastContext?.signal).toBe(controller.signal);
     }
 
     @Test('local tool registry returns lightweight stubs by default except registry tools')

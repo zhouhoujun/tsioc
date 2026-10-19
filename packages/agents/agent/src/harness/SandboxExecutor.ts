@@ -14,79 +14,21 @@ import {
     SandboxExecToolProbe,
     SandboxMode
 } from './sandbox-exec';
+import {
+    SandboxExecutionResult,
+    SandboxIsolationLevel,
+    SandboxPolicy,
+    SandboxResourceLimits
+} from './sandbox-types';
 
-/**
- * Isolation level for sandbox execution.
- */
-export type SandboxIsolationLevel = 'none' | 'process' | 'container';
-
-/**
- * Resource limits for sandbox execution.
- */
-export interface SandboxResourceLimits {
-    /** Maximum CPU time in milliseconds */
-    cpuTimeMs?: number;
-    /** Maximum memory in bytes */
-    memoryBytes?: number;
-    /** Maximum execution wall time in milliseconds */
-    wallTimeMs?: number;
-    /** Maximum number of subprocesses */
-    maxProcesses?: number;
-    /** Maximum file system writes in bytes */
-    maxFsWrites?: number;
-}
-
-/**
- * Sandbox configuration for tool execution.
- */
-export interface SandboxPolicy {
-    /** Whether sandboxing is enabled */
-    enabled: boolean;
-    /** Isolation level */
-    isolationLevel: SandboxIsolationLevel;
-    /** Resource limits */
-    resourceLimits?: SandboxResourceLimits;
-    /** Working directory for execution */
-    workingDirectory?: string;
-    /** Allowed environment variables (empty = inherit all) */
-    allowedEnvVars?: string[];
-    /** Denied environment variables */
-    deniedEnvVars?: string[];
-    /** Allowed network access */
-    networkAccess?: 'none' | 'outbound' | 'full';
-    /** Allowed filesystem paths (empty = deny all writes) */
-    allowedWritePaths?: string[];
-    /** Denied filesystem paths */
-    deniedWritePaths?: string[];
-    /**
-     * OS-level sandbox mode. When set to 'workspace' or 'network-block' and an
-     * OS sandbox tool (bwrap/unshare/sandbox-exec) is available, commands are
-     * wrapped with that tool before execution.
-     */
-    osSandbox?: import('./sandbox-exec').SandboxMode;
-}
-
-/**
- * Result of sandbox execution.
- */
-export interface SandboxExecutionResult {
-    /** Exit code (0 = success) */
-    exitCode: number;
-    /** Standard output */
-    stdout: string;
-    /** Standard error */
-    stderr: string;
-    /** Wall time in milliseconds */
-    wallTimeMs: number;
-    /** CPU time in milliseconds (if available) */
-    cpuTimeMs?: number;
-    /** Peak memory usage in bytes (if available) */
-    peakMemoryBytes?: number;
-    /** Whether the execution was killed due to resource limits */
-    killedByLimits?: boolean;
-    /** Error message if execution failed */
-    error?: string;
-}
+// The sandbox type declarations live in `./sandbox-types`; they are re-exported
+// here so existing importers keep working.
+export type {
+    SandboxExecutionResult,
+    SandboxIsolationLevel,
+    SandboxPolicy,
+    SandboxResourceLimits
+} from './sandbox-types';
 
 /**
  * Abstract sandbox executor interface.
@@ -112,6 +54,8 @@ export abstract class SandboxExecutor {
             policy: SandboxPolicy;
             env?: Record<string, string>;
             timeoutMs?: number;
+            /** The owning turn's signal: aborting stops the running command. */
+            signal?: AbortSignal;
         }
     ): Promise<SandboxExecutionResult>;
 
@@ -174,10 +118,24 @@ export class NodeChildProcessSandboxExecutor extends SandboxExecutor {
             policy: SandboxPolicy;
             env?: Record<string, string>;
             timeoutMs?: number;
+            /** The owning turn's signal: aborting stops the running command. */
+            signal?: AbortSignal;
         }
     ): Promise<SandboxExecutionResult> {
-        const { policy, env, timeoutMs } = options;
+        const { policy, env, timeoutMs, signal } = options;
         const startTime = Date.now();
+
+        // A turn cancelled before the command started must not spawn it.
+        if (signal?.aborted) {
+            return {
+                exitCode: 1,
+                stdout: '',
+                stderr: '',
+                wallTimeMs: 0,
+                cancelled: true,
+                error: 'Command cancelled by the user.'
+            };
+        }
 
         return new Promise((resolve) => {
             try {
@@ -198,6 +156,21 @@ export class NodeChildProcessSandboxExecutor extends SandboxExecutor {
                     let stdout = '';
                     let stderr = '';
                     let killedByLimits = false;
+                    let cancelled = false;
+                    const onAbort = () => {
+                        if (cancelled) {
+                            return;
+                        }
+                        // Esc: stop the command instead of waiting out its limits.
+                        cancelled = true;
+                        this.killProcess(child);
+                    };
+                    signal?.addEventListener('abort', onAbort, { once: true });
+                    // The signal can fire between the pre-check and this
+                    // registration; without this the interrupt would be lost.
+                    if (signal?.aborted) {
+                        onAbort();
+                    }
 
                     child.stdout?.on('data', (data: Uint8Array) => {
                         stdout += data.toString();
@@ -242,6 +215,7 @@ export class NodeChildProcessSandboxExecutor extends SandboxExecutor {
                         if (memoryCheckInterval) {
                             clearInterval(memoryCheckInterval);
                         }
+                        signal?.removeEventListener('abort', onAbort);
                         this.activeProcesses.delete(child);
 
                         const wallTime = Date.now() - startTime;
@@ -251,7 +225,9 @@ export class NodeChildProcessSandboxExecutor extends SandboxExecutor {
                             stderr,
                             wallTimeMs: wallTime,
                             peakMemoryBytes: peakMemoryBytes || undefined,
-                            killedByLimits
+                            killedByLimits,
+                            cancelled: cancelled || undefined,
+                            error: cancelled ? 'Command cancelled by the user.' : undefined
                         });
                     });
 
@@ -260,6 +236,7 @@ export class NodeChildProcessSandboxExecutor extends SandboxExecutor {
                         if (memoryCheckInterval) {
                             clearInterval(memoryCheckInterval);
                         }
+                        signal?.removeEventListener('abort', onAbort);
                         this.activeProcesses.delete(child);
 
                         const wallTime = Date.now() - startTime;
@@ -268,6 +245,7 @@ export class NodeChildProcessSandboxExecutor extends SandboxExecutor {
                             stdout,
                             stderr: stderr + '\n' + err.message,
                             wallTimeMs: wallTime,
+                            cancelled: cancelled || undefined,
                             error: err.message
                         });
                     });

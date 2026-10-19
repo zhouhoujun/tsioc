@@ -1,7 +1,6 @@
-import { AgentTool, AgentToolContext, FileSnapshotStore } from '@tsdi/agent';
+import { AgentTool, AgentToolContext, FileSnapshotStore, CANCELLED_MESSAGE, runChildProcess } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { promises as fs } from 'fs';
-import { spawnSync } from 'child_process';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath } from '../files/path-policy';
@@ -90,15 +89,20 @@ export class GitOperationsTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
         const action = this.requireAction(input?.action);
+        // Esc before the command starts must not launch a (possibly network)
+        // git operation: the turn is already cancelled.
+        if (context?.signal?.aborted) {
+            throw new Error(CANCELLED_MESSAGE);
+        }
         const readOnlyActions = ['status', 'log', 'diff', 'show', 'branch', 'stash_list', 'log_graph', 'remote', 'worktree_list'];
         const isReadOnly = readOnlyActions.includes(action);
 
         const workdir = await this.resolveWorkdir(input?.workdir);
-        if (action !== 'init' && !this.isGitRepo(workdir)) {
+        if (action !== 'init' && !(await this.isGitRepo(workdir))) {
             if (action === 'status' || action === 'diff') {
-                const review = this.buildSnapshotReview(_context.sessionId, action, input?.path);
+                const review = this.buildSnapshotReview(context.sessionId, action, input?.path);
                 if (review) {
                     return {
                         action,
@@ -138,7 +142,7 @@ export class GitOperationsTool implements AgentTool {
         assertSandboxCommand('git', resolveSandboxPolicy(this.options), this.name);
 
         const command = this.buildArgs(action, input);
-        const output = this.execGit(command.args, workdir, action, command.stdin);
+        const output = await this.execGit(command.args, workdir, action, command.stdin, context?.signal);
 
         return {
             action,
@@ -172,8 +176,8 @@ export class GitOperationsTool implements AgentTool {
         return policy.rootDir;
     }
 
-    private isGitRepo(workdir: string): boolean {
-        return this.runGit(['rev-parse', '--git-dir'], workdir).exitCode === 0;
+    private async isGitRepo(workdir: string): Promise<boolean> {
+        return (await this.runGit(['rev-parse', '--git-dir'], workdir)).exitCode === 0;
     }
 
     private buildSnapshotReview(sessionId: string, _action: string, targetPath?: unknown): {
@@ -410,10 +414,10 @@ export class GitOperationsTool implements AgentTool {
         return { args, stdin };
     }
 
-    private execGit(args: string[], cwd: string, action: string, stdin?: string): { stdout: string; stderr: string; exitCode: number } {
+    private async execGit(args: string[], cwd: string, action: string, stdin?: string, signal?: AbortSignal): Promise<{ stdout: string; stderr: string; exitCode: number }> {
         const readOnlyActions = ['status', 'log', 'diff', 'show', 'branch', 'stash_list', 'log_graph', 'remote', 'worktree_list'];
         const isReadOnly = readOnlyActions.includes(action);
-        const result = this.runGit(args, cwd, stdin);
+        const result = await this.runGit(args, cwd, stdin, signal);
         if (result.exitCode === 0) {
             return {
                 stdout: result.stdout,
@@ -427,30 +431,60 @@ export class GitOperationsTool implements AgentTool {
         throw new Error(`Git ${args[0]} failed: ${result.stderr || 'Unknown error'}`);
     }
 
-    private runGit(args: string[], cwd: string, stdin?: string): { stdout: string; stderr: string; exitCode: number } {
-        const result = spawnSync('git', args, {
-            cwd,
-            timeout: DEFAULT_TIMEOUT_MS,
-            maxBuffer: MAX_OUTPUT_CHARS,
-            encoding: 'utf8',
-            stdio: 'pipe',
-            input: stdin,
-            env: buildSandboxEnv(process.env, resolveSandboxPolicy(this.options))
-        });
-        const stdout = (result.stdout ?? '').slice(0, MAX_OUTPUT_CHARS);
-        const stderr = (result.stderr ?? '').slice(0, MAX_OUTPUT_CHARS);
-        const errorCode = (result.error as NodeJS.ErrnoException | undefined)?.code;
-        const exitCode = typeof result.status === 'number' ? result.status : 1;
-
-        if (errorCode && errorCode !== 'EPERM') {
-            throw result.error;
-        }
-
-        return {
-            stdout,
-            stderr,
-            exitCode
+    /**
+     * Runs `git` without blocking the event loop.
+     *
+     * The previous `spawnSync` blocked the Node event loop for up to
+     * DEFAULT_TIMEOUT_MS: during a network action (fetch/pull/push) the console
+     * could not render and neither Esc nor timers ran. The shared runner spawns
+     * asynchronously and stops the command tree on user interrupt.
+     *
+     * Failure semantics of the sync version are preserved: a non-zero exit code
+     * is returned, `EPERM` is tolerated, and any other spawn error
+     * (ENOENT/ETIMEDOUT/ENOBUFS) is thrown.
+     */
+    private async runGit(
+        args: string[],
+        cwd: string,
+        stdin?: string,
+        signal?: AbortSignal
+    ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+        const timeoutError = () => {
+            const error: NodeJS.ErrnoException = new Error('spawn git ETIMEDOUT');
+            error.code = 'ETIMEDOUT';
+            return error;
         };
+        const overflowError = () => {
+            const error: NodeJS.ErrnoException = new Error('spawn git ENOBUFS');
+            error.code = 'ENOBUFS';
+            return error;
+        };
+        const outcome = await runChildProcess({
+            command: 'git',
+            args,
+            cwd,
+            env: buildSandboxEnv(process.env, resolveSandboxPolicy(this.options)),
+            // The sync version closed stdin after writing its input.
+            stdin: stdin ?? '',
+            timeoutMs: DEFAULT_TIMEOUT_MS,
+            maxOutputChars: MAX_OUTPUT_CHARS,
+            signal
+        });
+        switch (outcome.kind) {
+            case 'cancelled':
+                throw new Error(CANCELLED_MESSAGE);
+            case 'timeout':
+                throw timeoutError();
+            case 'overflow':
+                throw overflowError();
+            case 'error':
+                if (outcome.error.code && outcome.error.code !== 'EPERM') {
+                    throw outcome.error;
+                }
+                return { stdout: outcome.stdout, stderr: outcome.stderr, exitCode: 1 };
+            default:
+                return { stdout: outcome.stdout, stderr: outcome.stderr, exitCode: outcome.exitCode ?? 1 };
+        }
     }
 }
 

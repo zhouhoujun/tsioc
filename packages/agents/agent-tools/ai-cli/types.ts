@@ -7,6 +7,12 @@ export interface AiCliRequest {
     cli: AiCliName;
     workingDirectory?: string;
     timeoutMs?: number;
+    /**
+     * Aborted when the owning turn is cancelled (user interrupt). The built-in
+     * subprocess runner kills the CLI process tree; injected adapters should
+     * honour it the same way.
+     */
+    signal?: AbortSignal;
     systemPrompt?: string;
     model?: string;
     allowedTools?: string[];

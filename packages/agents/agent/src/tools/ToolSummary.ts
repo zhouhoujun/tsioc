@@ -20,6 +20,23 @@ export function summarizeToolDisplayText(
     return text.length > 400 ? `${text.slice(0, 400)}...[truncated]` : text;
 }
 
+/** Tools whose primary input object is the shell command itself. */
+const SHELL_TOOL_NAMES = new Set([
+    'terminal', 'shell', 'run_command', 'exec', 'bash', 'command', 'run_shell', 'execute_command'
+]);
+
+/**
+ * Envelope keys describe *how* a tool ran (process plumbing) rather than what
+ * the caller asked for. They are raw payload and must never leak into the
+ * one-line summary shown on the timeline; the full payload stays in the
+ * tool message / inspector.
+ */
+const PAYLOAD_ENVELOPE_KEYS = new Set([
+    'stdout', 'stderr', 'exitCode', 'exit_code', 'timedOut', 'timed_out',
+    'killedByLimits', 'durationMs', 'duration_ms', 'timeoutMs', 'timeout_ms',
+    'truncated', 'cwd', 'pid', 'signal'
+]);
+
 function summarizeToolPayload(toolName: string, payload: Record<string, any>, phase: 'input' | 'output'): string | undefined {
     if (toolName === 'read_file') {
         const path = pickString(payload.path);
@@ -29,6 +46,11 @@ function summarizeToolPayload(toolName: string, payload: Record<string, any>, ph
     }
 
     if (toolName === 'list_dir') {
+        // The input phase names the directory; the entry count only exists after
+        // the listing ran, so "0 entries" must never be shown as the object.
+        if (phase === 'input') {
+            return pickString(payload.path) || undefined;
+        }
         return summarizePathCollection(
             payload.path,
             Array.isArray(payload.entries) ? payload.entries : [],
@@ -38,11 +60,33 @@ function summarizeToolPayload(toolName: string, payload: Record<string, any>, ph
     }
 
     if (toolName === 'glob_search') {
+        if (phase === 'input') {
+            return pickString(payload.pattern) || pickString(payload.glob) || pickString(payload.query) || undefined;
+        }
         return summarizeStringCollection(
             'match',
             Array.isArray(payload.matches) ? payload.matches : [],
             payload.truncated === true
         );
+    }
+
+    if (toolName === 'content_search') {
+        if (phase === 'input') {
+            return pickString(payload.query) || pickString(payload.pattern) || undefined;
+        }
+        return summarizeStringCollection(
+            'match',
+            Array.isArray(payload.matches) ? payload.matches : [],
+            payload.truncated === true,
+            resolveSearchMatch
+        );
+    }
+
+    if (SHELL_TOOL_NAMES.has(toolName)) {
+        const shellSummary = summarizeShellPayload(payload, phase);
+        if (shellSummary) {
+            return shellSummary;
+        }
     }
 
     if (toolName === 'todo') {
@@ -111,6 +155,55 @@ function summarizeToolPayload(toolName: string, payload: Record<string, any>, ph
     return phase === 'input' ? undefined : Object.keys(payload).length ? `${toolName} · ${Object.keys(payload).length} field(s)` : toolName;
 }
 
+/**
+ * Shell tools carry process plumbing (`stdout`/`stderr`/`exitCode`/`timedOut`).
+ * The timeline must show the object (the command) and a bounded outcome, never
+ * the raw multi-line payload; the full output stays in the inspector.
+ */
+function summarizeShellPayload(payload: Record<string, any>, phase: 'input' | 'output'): string | undefined {
+    if (phase === 'input') {
+        const command = pickString(payload.command) || pickString(payload.cmd) || pickString(payload.script);
+        return command ? collapseSingleLine(command, 160) : undefined;
+    }
+    if (payload.timedOut === true || payload.timed_out === true) {
+        return 'timed out';
+    }
+    const exitCode = numberOrUndefined(payload.exitCode) ?? numberOrUndefined(payload.exit_code);
+    const detail = firstMeaningfulLine(payload.stderr) || firstMeaningfulLine(payload.stdout);
+    const parts = [exitCode != null ? `exit ${exitCode}` : '', detail].filter(Boolean);
+    return parts.length ? parts.join(' · ') : undefined;
+}
+
+/** `content_search` matches are `{ path, line, column, preview }`; show `path:line`. */
+function resolveSearchMatch(item: any): string | undefined {
+    const path = pickString(item?.path) || pickString(item?.file);
+    if (!path) {
+        return pickString(item) || undefined;
+    }
+    const line = numberOrUndefined(item?.line) ?? numberOrUndefined(item?.lineNumber);
+    return line != null ? `${path}:${line}` : path;
+}
+
+/** Collapse whitespace and truncate so a raw payload can never wrap the timeline. */
+function collapseSingleLine(value: string, maxLength = 120, ellipsis = '...'): string {
+    const collapsed = value.replace(/\s+/g, ' ').trim();
+    return collapsed.length > maxLength ? `${collapsed.slice(0, maxLength)}${ellipsis}` : collapsed;
+}
+
+/** First non-empty line of a text blob, collapsed to one bounded line. */
+function firstMeaningfulLine(value: unknown): string | undefined {
+    if (typeof value !== 'string') {
+        return undefined;
+    }
+    for (const line of value.split(/\r?\n/)) {
+        const collapsed = collapseSingleLine(line, 160);
+        if (collapsed) {
+            return collapsed;
+        }
+    }
+    return undefined;
+}
+
 function summarizeGenericPayload(payload: Record<string, any>): string | undefined {
     const preferredKeys = ['path', 'file', 'filePath', 'dir', 'directory', 'from', 'to', 'value', 'text', 'content', 'query', 'input', 'message', 'title', 'label', 'location', 'url', 'href', 'name'];
     for (const key of preferredKeys) {
@@ -121,6 +214,7 @@ function summarizeGenericPayload(payload: Record<string, any>): string | undefin
     }
 
     const entries = Object.entries(payload)
+        .filter(([key]) => !PAYLOAD_ENVELOPE_KEYS.has(key))
         .map(([key, value]) => ({ key, value: summarizeValue(value, 1) }))
         .filter((entry): entry is { key: string; value: string } => !!entry.value);
     if (!entries.length) {
@@ -137,11 +231,7 @@ function summarizeValue(value: unknown, depth: number): string | undefined {
         return undefined;
     }
     if (typeof value === 'string') {
-        const text = value.trim();
-        if (!text) {
-            return undefined;
-        }
-        return text.length > 120 ? `${text.slice(0, 120)}...[truncated]` : text;
+        return collapseSingleLine(value, 120, '...[truncated]') || undefined;
     }
     if (typeof value === 'number' || typeof value === 'boolean') {
         return String(value);
@@ -326,9 +416,10 @@ function summarizePathCollection(
 function summarizeStringCollection(
     label: string,
     items: any[],
-    truncated: boolean
+    truncated: boolean,
+    resolveItem: (item: any) => string | undefined = pickString
 ): string | undefined {
-    const values = items.map(item => pickString(item)).filter((item): item is string => !!item);
+    const values = items.map(item => resolveItem(item)).filter((item): item is string => !!item);
     const preview = values.slice(0, 3).join(', ');
     const remaining = values.length > 3 ? ` +${values.length - 3} more` : '';
     const suffix = values.length === 1 ? '' : (/ch$/i.test(label) ? 'es' : 's');

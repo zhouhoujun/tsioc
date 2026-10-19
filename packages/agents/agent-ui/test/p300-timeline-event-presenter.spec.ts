@@ -100,6 +100,15 @@ export class ResolveCategoryTest {
         expect(resolveTimelineToolCategory('')).toBe('generic');
         expect(resolveTimelineToolCategory('foo_bar_baz')).toBe('generic');
     }
+
+    @Test('filesystem inspect/search tools keep a stable category')
+    testFilesystemExtras() {
+        // `stat` / `content_search` had no explicit entry, so they fell through to
+        // `generic` and rendered their humanized name instead of a stable verb.
+        expect(resolveTimelineToolCategory('stat')).toBe('read');
+        expect(resolveTimelineToolCategory('content_search')).toBe('search');
+        expect(resolveTimelineToolCategory('glob_search')).toBe('read');
+    }
 }
 
 // ── Table-driven: resolveToolEventTarget ────────────────────────────────────
@@ -378,6 +387,19 @@ export class PresentTest {
         });
         expect(p.category).toBe('background');
         expect(p.title).toBe('Background task');
+    }
+
+    @Test('content_search renders the Search verb with the query as the object')
+    testContentSearchVerb() {
+        const p = presentTimelineToolEvent({
+            eventType: 'tool_completed',
+            toolName: 'content_search',
+            inputSummary: 'scorePaper',
+            outputSummary: '2 matches · src/cli.ts:12',
+            status: 'success',
+        });
+        expect(p.category).toBe('search');
+        expect(formatTimelineEventLine(p)).toBe('Search scorePaper · 2 matches · src/cli.ts:12');
     }
 }
 

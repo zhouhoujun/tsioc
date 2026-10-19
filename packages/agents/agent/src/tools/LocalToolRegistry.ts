@@ -59,7 +59,7 @@ export class LocalToolRegistry extends ToolRegistry {
             || this.hasActivation(sessionId, name);
     }
 
-    async invoke(name: string, input: any, sessionId: string, principalId?: string, workspace?: string): Promise<any> {
+    async invoke(name: string, input: any, sessionId: string, principalId?: string, workspace?: string, signal?: AbortSignal): Promise<any> {
         const tool = this.getTool(name);
         if (!tool) {
             throw new Error(`Tool '${name}' not found`);
@@ -72,7 +72,8 @@ export class LocalToolRegistry extends ToolRegistry {
             sessionId,
             memory: this.memory,
             principalId,
-            workspace: resolvedWorkspace
+            workspace: resolvedWorkspace,
+            signal
         });
     }
 

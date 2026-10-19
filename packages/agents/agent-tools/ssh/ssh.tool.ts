@@ -1,7 +1,8 @@
-import { AgentTool, AgentToolContext } from '@tsdi/agent';
+import { AgentTool, AgentToolContext, CANCELLED_MESSAGE } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { SshConnectionManager } from '@tsdi/agent-ssh';
 import { AgentToolsOptions } from '../src/options';
+import { withTurnSignal } from '../src/turn-signal';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 
 const DEFAULT_TIMEOUT_MS = 60000;
@@ -28,6 +29,7 @@ function requirePort(value: unknown, field: string): number {
     }
     return port;
 }
+
 
 @Injectable()
 export class SshExecTool implements AgentTool {
@@ -59,13 +61,13 @@ export class SshExecTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
         const host = requireText(input?.host, 'host');
         const command = requireText(input?.command, 'command');
         const manager = requireSshManager(this.manager);
         const timeoutMs = this.resolveTimeout(input?.timeoutMs);
         const client = await manager.connect(host);
-        const result = await client.exec(command, timeoutMs);
+        const result = await withTurnSignal(context, () => client.exec(command, timeoutMs, context?.signal));
         return {
             host,
             command,
@@ -114,13 +116,13 @@ export class SshPutTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
         const host = requireText(input?.host, 'host');
         const localPath = requireText(input?.localPath, 'localPath');
         const remotePath = requireText(input?.remotePath, 'remotePath');
         const manager = requireSshManager(this.manager);
         const client = await manager.connect(host);
-        const result = await client.sftpPut(localPath, remotePath);
+        const result = await withTurnSignal(context, () => client.sftpPut(localPath, remotePath, context?.signal));
         return {
             host,
             localPath,
@@ -158,13 +160,13 @@ export class SshGetTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
         const host = requireText(input?.host, 'host');
         const remotePath = requireText(input?.remotePath, 'remotePath');
         const localPath = requireText(input?.localPath, 'localPath');
         const manager = requireSshManager(this.manager);
         const client = await manager.connect(host);
-        const result = await client.sftpGet(remotePath, localPath);
+        const result = await withTurnSignal(context, () => client.sftpGet(remotePath, localPath, context?.signal));
         return {
             host,
             remotePath,
@@ -204,7 +206,7 @@ export class SshTunnelTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
         const host = requireText(input?.host, 'host');
         const destAddr = requireText(input?.destAddr, 'destAddr');
         const destPort = requirePort(input?.destPort, 'destPort');
@@ -212,7 +214,7 @@ export class SshTunnelTool implements AgentTool {
         const srcPort = input?.srcPort == null ? 0 : requirePort(input.srcPort, 'srcPort');
         const manager = requireSshManager(this.manager);
         const client = await manager.connect(host);
-        const channel = await client.forwardOut(srcAddr, srcPort, destAddr, destPort);
+        const channel = await withTurnSignal(context, () => client.forwardOut(srcAddr, srcPort, destAddr, destPort, context?.signal));
         channel.close();
         return {
             host,

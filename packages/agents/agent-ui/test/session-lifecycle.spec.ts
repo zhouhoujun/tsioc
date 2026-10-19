@@ -251,7 +251,10 @@ export class TimelineEventDurationTest {
             toolCallId: 'tc-1',
             source: 'local'
         });
-        await sleep(5);
+        // Wait well past the 1ms timer resolution: a 5ms wait can elapse in 4ms
+        // under load (timers may fire marginally early), which made this a flaky
+        // assertion rather than a real duration regression.
+        await sleep(20);
         state.upsertUiEventMessage(key, 'Completed', {
             eventType: 'tool_completed',
             label: 'tool',
@@ -264,7 +267,7 @@ export class TimelineEventDurationTest {
         expect(rows.length).toEqual(1);
         expect(rows[0].metadata?.status).toEqual('success');
         expect(typeof rows[0].metadata?.durationMs).toEqual('number');
-        expect(rows[0].metadata?.durationMs).toBeGreaterThanOrEqual(5);
+        expect(rows[0].metadata?.durationMs).toBeGreaterThanOrEqual(10);
     }
 
     @Test('repeated terminal upserts keep the first derived duration')

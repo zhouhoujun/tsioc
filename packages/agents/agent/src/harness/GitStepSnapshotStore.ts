@@ -1,4 +1,7 @@
-import { spawnSync } from 'child_process';
+import { runChildProcess } from './child-process-runner';
+
+/** Mirrors the sync version's maxBuffer, so a runaway diff still fails loudly. */
+const MAX_OUTPUT_BYTES = 32 * 1024 * 1024;
 
 /**
  * A working-tree snapshot taken at agent step start via `git stash create`.
@@ -93,11 +96,11 @@ export class GitStepSnapshotStore {
     }
 
     /** True when the workspace is inside a git work tree. */
-    isAvailable(workspace: string): boolean {
+    async isAvailable(workspace: string): Promise<boolean> {
         if (!workspace) {
             return false;
         }
-        const result = this.runGit(workspace, ['rev-parse', '--is-inside-work-tree']);
+        const result = await this.runGit(workspace, ['rev-parse', '--is-inside-work-tree']);
         return result.exitCode === 0 && result.stdout.trim() === 'true';
     }
 
@@ -107,12 +110,12 @@ export class GitStepSnapshotStore {
      * files alone are not captured). Never modifies the working tree or the
      * branch history.
      */
-    capture(workspace: string, opts?: { sessionId?: string; messageId?: string; label?: string }): GitStepSnapshot | null {
-        if (!this.isAvailable(workspace)) {
+    async capture(workspace: string, opts?: { sessionId?: string; messageId?: string; label?: string }): Promise<GitStepSnapshot | null> {
+        if (!(await this.isAvailable(workspace))) {
             return null;
         }
         const label = opts?.label;
-        const result = this.runGit(workspace, label ? ['stash', 'create', `agent: ${label}`] : ['stash', 'create']);
+        const result = await this.runGit(workspace, label ? ['stash', 'create', `agent: ${label}`] : ['stash', 'create']);
         const commit = result.stdout.trim();
         if (!commit) {
             return null;
@@ -125,13 +128,13 @@ export class GitStepSnapshotStore {
             commit,
             label,
             timestamp: Date.now(),
-            diffStats: this.captureDiffStats(workspace, commit)
+            diffStats: await this.captureDiffStats(workspace, commit)
         };
         if (opts?.messageId) {
             this.byMessage.set(opts.messageId, snapshot.id);
         }
         this.snapshots.set(snapshot.id, snapshot);
-        this.pinRef(snapshot);
+        await this.pinRef(snapshot);
         return snapshot;
     }
 
@@ -167,23 +170,23 @@ export class GitStepSnapshotStore {
         return [...(this.revertStacks.get(sessionId) ?? [])];
     }
 
-    clear(sessionId: string): void {
+    async clear(sessionId: string): Promise<void> {
         for (const [id, snapshot] of this.snapshots) {
             if (snapshot.sessionId === sessionId) {
                 this.snapshots.delete(id);
                 if (snapshot.messageId) {
                     this.byMessage.delete(snapshot.messageId);
                 }
-                this.deleteRef(snapshot);
+                await this.deleteRef(snapshot);
             }
         }
         this.revertStacks.delete(sessionId);
     }
 
     /** Diff a step snapshot against the current working tree. */
-    diff(snapshot: GitStepSnapshot): GitStepDiff {
-        const numstat = this.runGit(snapshot.workspace, ['diff', '--numstat', snapshot.commit]);
-        const rawPatch = this.runGit(snapshot.workspace, ['diff', '--unified=3', snapshot.commit]).stdout;
+    async diff(snapshot: GitStepSnapshot): Promise<GitStepDiff> {
+        const numstat = await this.runGit(snapshot.workspace, ['diff', '--numstat', snapshot.commit]);
+        const rawPatch = (await this.runGit(snapshot.workspace, ['diff', '--unified=3', snapshot.commit])).stdout;
         const files: GitStepDiffFile[] = [];
         let totalAdditions = 0;
         let totalDeletions = 0;
@@ -205,7 +208,7 @@ export class GitStepSnapshotStore {
                 status,
                 additions,
                 deletions,
-                patch: this.filePatch(snapshot.workspace, snapshot.commit, filePath)
+                patch: await this.filePatch(snapshot.workspace, snapshot.commit, filePath)
             });
         }
         return {
@@ -220,13 +223,13 @@ export class GitStepSnapshotStore {
         };
     }
 
-    diffByMessage(messageId: string): GitStepDiff | null {
+    async diffByMessage(messageId: string): Promise<GitStepDiff | null> {
         const snapshot = this.resolveByMessage(messageId);
         return snapshot ? this.diff(snapshot) : null;
     }
 
     /** Revert the working tree to the snapshot bound to a message id. */
-    revert(messageId: string, sessionId: string): GitRevertResult {
+    async revert(messageId: string, sessionId: string): Promise<GitRevertResult> {
         const snapshot = this.resolveByMessage(messageId);
         if (!snapshot) {
             return { reverted: false, error: `no git step snapshot bound to message ${messageId}` };
@@ -235,7 +238,7 @@ export class GitStepSnapshotStore {
     }
 
     /** Restore the working tree captured just before the last revert. */
-    unrevert(sessionId: string): GitRevertResult {
+    async unrevert(sessionId: string): Promise<GitRevertResult> {
         const stack = this.revertStacks.get(sessionId);
         const record = stack?.pop();
         if (!record) {
@@ -250,12 +253,12 @@ export class GitStepSnapshotStore {
         if (!snapshot) {
             return { reverted: false, error: 'step snapshot no longer available' };
         }
-        const reset = this.runGit(snapshot.workspace, ['reset', '--hard', record.fromCommit]);
+        const reset = await this.runGit(snapshot.workspace, ['reset', '--hard', record.fromCommit]);
         if (reset.exitCode !== 0) {
             return { reverted: false, error: reset.stderr.trim() || 'git reset failed' };
         }
         if (this.options.cleanUntracked !== false) {
-            this.runGit(snapshot.workspace, ['clean', '-fd']);
+            await this.runGit(snapshot.workspace, ['clean', '-fd']);
         }
         return {
             reverted: true,
@@ -265,20 +268,20 @@ export class GitStepSnapshotStore {
         };
     }
 
-    private revertToSnapshot(snapshot: GitStepSnapshot, sessionId: string): GitRevertResult {
-        const current = this.runGit(snapshot.workspace, ['stash', 'create', 'agent: pre-revert']);
-        const fromCommit = current.stdout.trim() || this.headCommit(snapshot.workspace);
+    private async revertToSnapshot(snapshot: GitStepSnapshot, sessionId: string): Promise<GitRevertResult> {
+        const current = await this.runGit(snapshot.workspace, ['stash', 'create', 'agent: pre-revert']);
+        const fromCommit = current.stdout.trim() || await this.headCommit(snapshot.workspace);
         if (!fromCommit) {
             return { reverted: false, error: 'no HEAD commit to restore from' };
         }
-        const changedFiles = this.runGit(snapshot.workspace, ['diff', '--name-only', snapshot.commit])
+        const changedFiles = (await this.runGit(snapshot.workspace, ['diff', '--name-only', snapshot.commit]))
             .stdout.split('\n').filter(Boolean).length;
-        const reset = this.runGit(snapshot.workspace, ['reset', '--hard', snapshot.commit]);
+        const reset = await this.runGit(snapshot.workspace, ['reset', '--hard', snapshot.commit]);
         if (reset.exitCode !== 0) {
             return { reverted: false, error: reset.stderr.trim() || 'git reset failed' };
         }
         if (this.options.cleanUntracked !== false) {
-            this.runGit(snapshot.workspace, ['clean', '-fd']);
+            await this.runGit(snapshot.workspace, ['clean', '-fd']);
         }
         const record: GitRevertRecord = {
             sessionId,
@@ -299,8 +302,8 @@ export class GitStepSnapshotStore {
         };
     }
 
-    private captureDiffStats(workspace: string, commit: string): GitStepSnapshotDiffStats | undefined {
-        const numstat = this.runGit(workspace, ['diff', '--numstat', `${commit}^`, commit]);
+    private async captureDiffStats(workspace: string, commit: string): Promise<GitStepSnapshotDiffStats | undefined> {
+        const numstat = await this.runGit(workspace, ['diff', '--numstat', `${commit}^`, commit]);
         if (numstat.exitCode !== 0 || !numstat.stdout.trim()) {
             return undefined;
         }
@@ -319,35 +322,56 @@ export class GitStepSnapshotStore {
         return { filesChanged, totalAdditions, totalDeletions };
     }
 
-    private filePatch(workspace: string, commit: string, filePath: string): string | undefined {
-        const result = this.runGit(workspace, ['diff', '--unified=3', commit, '--', filePath]);
+    private async filePatch(workspace: string, commit: string, filePath: string): Promise<string | undefined> {
+        const result = await this.runGit(workspace, ['diff', '--unified=3', commit, '--', filePath]);
         return result.exitCode === 0 ? result.stdout : undefined;
     }
 
-    private headCommit(workspace: string): string {
-        return this.runGit(workspace, ['rev-parse', 'HEAD']).stdout.trim();
+    private async headCommit(workspace: string): Promise<string> {
+        return (await this.runGit(workspace, ['rev-parse', 'HEAD'])).stdout.trim();
     }
 
-    private pinRef(snapshot: GitStepSnapshot): void {
-        this.runGit(snapshot.workspace, ['update-ref', `${GIT_SNAPSHOT_REF_PREFIX}${snapshot.id}`, snapshot.commit]);
+    private async pinRef(snapshot: GitStepSnapshot): Promise<void> {
+        await this.runGit(snapshot.workspace, ['update-ref', `${GIT_SNAPSHOT_REF_PREFIX}${snapshot.id}`, snapshot.commit]);
     }
 
-    private deleteRef(snapshot: GitStepSnapshot): void {
-        this.runGit(snapshot.workspace, ['update-ref', '-d', `${GIT_SNAPSHOT_REF_PREFIX}${snapshot.id}`]);
+    private async deleteRef(snapshot: GitStepSnapshot): Promise<void> {
+        await this.runGit(snapshot.workspace, ['update-ref', '-d', `${GIT_SNAPSHOT_REF_PREFIX}${snapshot.id}`]);
     }
 
-    private runGit(workspace: string, args: string[]): { stdout: string; stderr: string; exitCode: number } {
-        const result = spawnSync('git', args, {
+    /**
+     * Runs `git` without blocking the event loop.
+     *
+     * The previous `spawnSync` froze the console (no render, no Esc, no timers)
+     * for every git command: the store captures a snapshot per turn step, so a
+     * slow `git stash create`/`git diff` stalled the whole console. The shared
+     * runner spawns asynchronously.
+     *
+     * Like the sync version, a timeout or a spawn failure is reported as a
+     * non-zero exit code with whatever was captured (callers treat a non-zero
+     * code as "no snapshot"/"no diff") instead of throwing.
+     */
+    private async runGit(workspace: string, args: string[]): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+        const outcome = await runChildProcess({
+            command: 'git',
+            args,
             cwd: workspace,
-            timeout: this.options.timeoutMs ?? 10000,
-            maxBuffer: 32 * 1024 * 1024,
-            encoding: 'utf8',
-            stdio: 'pipe'
+            timeoutMs: this.options.timeoutMs ?? 10000,
+            maxOutputChars: MAX_OUTPUT_BYTES,
+            // The sync version closed stdin after writing (no) input.
+            stdin: ''
         });
+        if (outcome.kind === 'exit') {
+            return {
+                stdout: outcome.stdout,
+                stderr: outcome.stderr,
+                exitCode: outcome.exitCode ?? 1
+            };
+        }
         return {
-            stdout: String(result.stdout ?? ''),
-            stderr: String(result.stderr ?? ''),
-            exitCode: typeof result.status === 'number' ? result.status : 1
+            stdout: outcome.stdout,
+            stderr: outcome.stderr,
+            exitCode: 1
         };
     }
 }

@@ -1,6 +1,6 @@
 import { AgentFileMessagePart, AgentImageMessagePart, AgentMessage, AgentMessagePart, getAgentMessageText, resolveAgentMessageParts } from '../runtime/AgentMessage';
 import { ModelAdapter } from './ModelAdapter';
-import { classifyModelError, DEFAULT_RETRY_POLICY, isRetryableError, retryDelayMs } from './RetryPolicy';
+import { classifyModelError, DEFAULT_RETRY_POLICY, isModelRequestCancelled, isRetryableError, retryDelayMs } from './RetryPolicy';
 import { createModelRequestError, ModelRequestError } from './ModelRequestError';
 import { ModelRequest } from './ModelRequest';
 import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
@@ -148,7 +148,7 @@ export class AnthropicModelAdapter extends ModelAdapter {
             if (!response.ok) {
                 cleanup();
                 const errorBody = await response.text().catch(() => '');
-                if (this.isRetryable(response.status, errorBody) && attempt <= (this.options.retry?.maxRetries ?? DEFAULT_RETRY_POLICY.maxRetries)) {
+                if (!isModelRequestCancelled(request) && this.isRetryable(response.status, errorBody) && attempt <= (this.options.retry?.maxRetries ?? DEFAULT_RETRY_POLICY.maxRetries)) {
                     return this.retry(request, attempt, response.status, response.headers.get('retry-after'));
                 }
                 throw createModelRequestError({ status: response.status, bodyText: errorBody, provider: this.provider, model: this.resolveModel(), headers: response.headers });
@@ -181,7 +181,7 @@ export class AnthropicModelAdapter extends ModelAdapter {
 
             if (!response.ok) {
                 const errorBody = await response.text().catch(() => '');
-                if (this.isRetryable(response.status, errorBody) && attempt <= (this.options.retry?.maxRetries ?? DEFAULT_RETRY_POLICY.maxRetries)) {
+                if (!isModelRequestCancelled(request) && this.isRetryable(response.status, errorBody) && attempt <= (this.options.retry?.maxRetries ?? DEFAULT_RETRY_POLICY.maxRetries)) {
                     cleanup();
                     for await (const chunk of this.stream(request, attempt + 1)) {
                         yield chunk;

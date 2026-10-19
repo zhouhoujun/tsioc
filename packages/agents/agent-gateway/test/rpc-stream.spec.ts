@@ -11,7 +11,16 @@ import { SessionHandler } from '../src/api/SessionHandler';
 import { setRequestAuth } from '../src/auth/AuthMiddleware';
 import { AgentTurnStartedEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentTurnCompletedEvent } from '@tsdi/agent';
 
-async function buildStreamHarness() {
+async function buildStreamHarness(toolEvent: {
+    toolName?: string;
+    inputSummary?: string;
+    rawInputSummary?: string;
+    outputSummary?: string;
+} = {}) {
+    const toolName = toolEvent.toolName || 'read_file';
+    const inputSummary = toolEvent.inputSummary ?? '/tmp/a.ts';
+    const rawInputSummary = toolEvent.rawInputSummary ?? '{"path":"/tmp/a.ts"}';
+    const outputSummary = toolEvent.outputSummary ?? 'content';
     const context = await Application.run({ module: AgentModule, providers: provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any) });
     const store = context.get(SessionStore);
     const memory = context.get(MemoryStore);
@@ -26,29 +35,30 @@ async function buildStreamHarness() {
         async *runStreamingTurn(sessionId: string, input: string) {
             events.onToolInvoked({
                 sessionId,
-                toolName: 'read_file',
+                toolName,
                 hasInput: true,
-                inputSummary: '{"path":"/tmp/a.ts"}',
+                inputSummary: rawInputSummary,
                 receipt: {
                     receiptId: 'rcpt-1',
                     toolCallId: 'tc-1',
-                    toolName: 'read_file',
+                    toolName,
                     executionMode: 'sequential',
                     status: 'running',
-                    inputSummary: '/tmp/a.ts'
+                    inputSummary
                 }
             } as any);
             events.onToolCompleted({
                 sessionId,
-                toolName: 'read_file',
-                output: 'content',
+                toolName,
+                output: outputSummary,
                 receipt: {
                     receiptId: 'rcpt-1',
                     toolCallId: 'tc-1',
-                    toolName: 'read_file',
+                    toolName,
                     executionMode: 'sequential',
                     status: 'success',
-                    outputSummary: 'content',
+                    inputSummary,
+                    outputSummary,
                     durationMs: 137
                 }
             } as any);
@@ -268,5 +278,42 @@ export class AppRpcStreamTest {
         expect(invoked.params.toolName).toEqual('read_file');
         expect(String(invoked.params.content)).toContain('/tmp/a.ts');
         expect(String(invoked.params.content)).not.toContain('{"path"');
+    }
+
+    @Test('tool_completed chunk keeps the object when the output does not repeat it')
+    async streamedToolCompletedKeepsObject() {
+        const { handler } = await buildStreamHarness({
+            toolName: 'terminal',
+            inputSummary: "sed -n '1,120p' dist/src/cli.js",
+            outputSummary: 'exit 0 · const token = argv[index];'
+        });
+        const route = handler.getRoutes().find(route => route.method === 'POST' && route.path === '/rpc/stream')!;
+        const chunks: string[] = [];
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: (_code: number, _headers: any) => res,
+            write: (chunk: string) => {
+                chunks.push(chunk);
+                return true;
+            },
+            end: () => res
+        } as any;
+
+        await route.handler(req, res, {} as any, {
+            jsonrpc: '2.0',
+            id: 5,
+            method: 'run.turn_stream',
+            params: { sessionId: 'stream-object-s1', input: 'x' }
+        });
+
+        const messages = chunks.map(chunk => JSON.parse(chunk));
+        const completed = messages.find(message =>
+            message.method === 'run.turn_stream.chunk' && message.params.eventType === 'tool_completed');
+        expect(completed).toBeTruthy();
+        // The completed row replaces the invocation row (same toolCallId), so the
+        // command it acted on must survive onto the completed content.
+        expect(String(completed.params.content)).toContain("sed -n '1,120p' dist/src/cli.js");
+        expect(String(completed.params.content)).toContain('exit 0');
     }
 }

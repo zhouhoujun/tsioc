@@ -1,4 +1,4 @@
-import { AgentTool, AgentToolContext } from '@tsdi/agent';
+import { AgentTool, AgentToolContext, CANCELLED_MESSAGE } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { AgentToolsOptions, defaultAgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
@@ -34,7 +34,7 @@ export class HttpRequestTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
         const url = this.requireUrl(input?.url);
         const method = this.resolveMethod(input?.method);
         const headers = this.resolveHeaders(input?.headers);
@@ -45,6 +45,12 @@ export class HttpRequestTool implements AgentTool {
         }
         const timeoutMs = this.options?.http?.timeoutMs ?? defaultAgentToolsOptions.http?.timeoutMs ?? 15000;
         const controller = typeof AbortController === 'function' ? new AbortController() : undefined;
+        const onAbort = () => controller?.abort();
+        if (context?.signal?.aborted) {
+            onAbort();
+        } else {
+            context?.signal?.addEventListener('abort', onAbort, { once: true });
+        }
         const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : undefined;
         try {
             // Keep the abort timer armed through the body read: a server can send
@@ -65,10 +71,17 @@ export class HttpRequestTool implements AgentTool {
                 body: text.slice(0, maxChars),
                 truncated: text.length > maxChars
             };
+        } catch (error) {
+            // Esc must stop the request instead of waiting for the timeout.
+            if (context?.signal?.aborted) {
+                throw new Error(CANCELLED_MESSAGE);
+            }
+            throw error;
         } finally {
             if (timer) {
                 clearTimeout(timer);
             }
+            context?.signal?.removeEventListener('abort', onAbort);
         }
     }
 

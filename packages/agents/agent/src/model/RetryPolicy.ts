@@ -63,6 +63,16 @@ export function isRetryableError(kind: ModelErrorKind): boolean {
         || kind === 'server' || kind === 'network' || kind === 'timeout';
 }
 
+/**
+ * A caller-side abort (Esc / turn cancellation) is terminal. Once the runtime
+ * signal aborts, no adapter may re-issue the request — neither a retry of a
+ * retryable status nor the streaming→non-streaming fallback. Without this the
+ * cancelled turn keeps firing doomed requests and delays the cancellation.
+ */
+export function isModelRequestCancelled(request: { signal?: AbortSignal }): boolean {
+    return request.signal?.aborted === true;
+}
+
 export function shouldRetryTransport(
     error: unknown,
     attempt: number,

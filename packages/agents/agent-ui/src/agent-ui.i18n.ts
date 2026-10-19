@@ -124,7 +124,7 @@ export const agentUiEnglish: TranslationBundle = {
                 wait_all: 'Wait for all tasks', wait_any: 'Wait for any task', escalate: 'Escalate to the user',
                 tool_search: 'Search tools', tool_inspect: 'Inspect tool', review_diff: 'Review diff',
                 'process.start': 'Start process', 'process.poll': 'Poll process', 'process.kill': 'Stop process',
-                invoked: 'Running {label}', completed: '{label} completed', failed: '{label} failed', failedWithError: '{label} failed: {error}', gitMissing: 'Git repository not detected. If you want version control, ask the agent to initialize one (git init).', searchUnavailable: 'Web search is not configured; add a search adapter in settings.'
+                invoked: 'Running {label}', completed: '{label} completed', failed: '{label} failed', failedWithError: '{label} failed: {error}', skipped: '{label} skipped', skippedWithReason: '{label} skipped: {reason}', gitMissing: 'Git repository not detected. If you want version control, ask the agent to initialize one (git init).', searchUnavailable: 'Web search is not configured; add a search adapter in settings.'
             }
         }
     }
@@ -195,7 +195,7 @@ export const agentUiChinese: TranslationBundle = {
                 wait_all: '等待全部任务', wait_any: '等待任一任务', escalate: '升级处理',
                 tool_search: '搜索工具', tool_inspect: '查看工具', review_diff: '审查差异',
                 'process.start': '启动进程', 'process.poll': '查询进程', 'process.kill': '结束进程',
-                invoked: '正在执行 {label}', completed: '{label}已完成', failed: '{label}未完成', failedWithError: '{label}未完成：{error}', gitMissing: '未检测到 Git 仓库。如需版本控制，可让 agent 初始化仓库（git init）。', searchUnavailable: '未配置联网搜索适配器；请在设置中配置搜索适配器。'
+                invoked: '正在执行 {label}', completed: '{label}已完成', failed: '{label}未完成', failedWithError: '{label}未完成：{error}', skipped: '{label}已跳过', skippedWithReason: '{label}已跳过：{reason}', gitMissing: '未检测到 Git 仓库。如需版本控制，可让 agent 初始化仓库（git init）。', searchUnavailable: '未配置联网搜索适配器；请在设置中配置搜索适配器。'
             }
         }
     }
