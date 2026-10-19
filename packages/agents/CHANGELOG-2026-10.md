@@ -25,6 +25,13 @@ The build completed (82/82 workspace tests green after the change). The previous
 | `c1e858712` | `agent-cli/bin/tsdi-agent.js` | The bin let `ts-node` / `tsconfig-paths` discover configuration from the caller's cwd. Running `tsdi-agent tools list` inside `sleep-mlt` failed with `TS5109` before argument parsing. It now pins `TS_NODE_PROJECT` to the CLI package and registers path mapping with `cwd: packageRoot`; a regression spawns `--version` from a tsconfig-less temp directory. |
 | `c1e858712` | `agent/src/prompt/sections/IdentitySection.ts` | In the rerun of the previously failed `note-system` task, the agent read `AGENTS.md`, applied the five numbered rules, but left the `Project Structure` section stale (it only updated it when the prompt explicitly asked). The identity prompt now says to update structure/key-commands docs when project instructions require them. |
 
+A third real TUI run (the `note-system` test gained an `update()` assertion; the module
+still exported only `add/list/remove`) validated the first two fixes end to end: the
+failing row showed `exit 1 · SyntaxError: The requested module '../src/note.js' does not
+provide an export named 'update'`, and the non-git `git_operations diff` produced
+`--- a/src/note.js` / `@@ -17,6 +17,20 @@` with the real `update()` body. After the
+patch, `node test/note.test.js` reported `note tests passed`.
+
 ## agent-tools
 
 | Commit | File | Root cause |
