@@ -1,7 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
-import { Controller, Get, provideService, useHealth, useRegistration, useRouter } from '../src';
+import { Controller, DiscoveryHealthCheckStrategy, Get, provideService, useHealth, useRegistration, useRouter } from '../src';
 import { useHttpTransport } from '../../http/src/server';
 import { InMemoryServiceDiscovery, ServiceDiscovery } from '../../discovery/src';
 import expect = require('expect');
@@ -46,6 +46,9 @@ describe('service discovery lifecycle e2e', () => {
     });
 
     after(async () => {
+        // useHealth starts a checkInterval timer; stop it explicitly so the
+        // test process exits (ctx.close does not know about this strategy timer).
+        if (ctx) await ctx.get(DiscoveryHealthCheckStrategy).stop();
         if (ctx) await ctx.close();
     });
 
