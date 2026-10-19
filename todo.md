@@ -264,6 +264,14 @@
 - **回归测试（红→绿）**：新增 `packages/components/test/binding-destroyed-injector.spec.ts`，断言 `injector.destroyed` 时 `bindingProperty` 的工厂**不得**执行其 effect。证红：临时移除该守卫 → `0 passing 1 failed`（effect 仍执行并因解析已销毁注入器抛错）；证绿：恢复守卫 → components `147 passing`、`EXIT=0`。
 - **诚实边界**：这是**静态锁定的真实缺失守卫缺口**，但**尚不能证明就是用户实机那条崩溃**（无堆栈，无法复现第二 turn）。需完整调用栈确认；若不匹配，则该守卫修复本身独立成立、可保留。
 
+## 2026-10-18 审批面板文案接入 i18n（`9686bddfb`）
+- **问题**：审批面板的标题（`Approval required · Allow X?`）、按键行（`a Allow   d Deny   y Copy   ↑↓ Move   Esc Dismiss`）、计数（`approvals N · i/N`）、详情（`Reason:` / `No reason provided` / `Expires in Ns` / `Expired`）与无障碍标签全部硬编码英文，违反 AGENTS.md §9（用户可见文案必须经 i18n）。
+- **修复**：`agent-ui.i18n.ts` 新增 `agent.approval.*`（en / zh-CN）；`AgentConsoleApprovalsPanelComponent` 注入可选 `TranslatorService`，上述文案统一经 `translate()` 并保留英文兜底。
+- **回归（红→绿）**：新增 `agent-ui/test/p315-approval-panel-i18n.spec.ts`（2 条）；证红：回退面板文案 → `1 passing 1 failed`（`Expected: "T:agent.approval.actions" / Received: "a Allow   d Deny …"`），且旧构造签名下直接编译失败（`TS2554`）；证绿：`2 passing`。
+- **真实 TUI 验收**：`LANG=zh_CN.UTF-8` 下审批提示显示 `需要审批 · 允许 workspace_trust？` / `审批 1 · 1/1` / `a 允许   d 拒绝   y 复制   ↑↓ 移动   Esc 关闭`。
+- **诚实边界**：`Reason:` 之后的文本（`Tool "x" requires approval.`）由 agent 层 `DefaultApprovalStrategy` 生成，仍为英文；`/approvals` 选择器详情（`AgentConsoleApprovalView.ts`）尚未接入 translator——两者列为后续项。
+- **验证**：`agent-ui` **1525 passing**、`tsc` 0、`source-size` OK、`git diff --check` 干净。
+
 ## 2026-10-18 修复 TUI 审批键（`a`/`d`）无效：决议未走 runtime 的 approval manager（`4837b5ede`）
 - **现象**：真实 TUI（未信任 workspace）中 `workspace_trust` 提示可见、`approvalsFocused=true`、`inputFocused=false`，但按 `a` 既不进 composer、也不关闭提示，30s 超时后工具被 trust gate 跳过。
 - **定位（真实 TUI 插桩）**：`dispatch-focus raw="a" → focusKey=approve` → `handleApprovalKey('approve')` → `resolveApproval` → `state.resolveApprovalAction` → `getPendingApprovals` 返回 **0** → `applyApprovalDecision` 抛 **`Approval is not configured`**（来自 `AppRpcServer`）。即 console 注入的 approval manager 为 null，落到了未配置的 RPC 路径。
