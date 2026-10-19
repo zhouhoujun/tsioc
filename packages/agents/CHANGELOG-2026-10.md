@@ -39,9 +39,10 @@ Startup: SWC initially exposed a chain of circular value imports — `Translator
 `b1f5cab17` makes the i18n option imports type-only and moves the discovery/service
 option tokens into `tokens.ts` (public re-exports unchanged). The CLI now uses
 `@swc/core` when installed and falls back to ts-node when it is absent or
-`TSDI_AGENT_TRANSPILER=ts-node` is set. Measured on this machine: `--help` **3.37s**
-(ts-node fallback 12.2s, previously 15–57s), external-cwd `tools list` **3.38s**, TUI
-first screen **10s** (previously 60–90s); a real tool-using `run` succeeded.
+`TSDI_AGENT_TRANSPILER=ts-node` is set. Measured on this machine (varies with load):
+`--help` **3.4–8.0s** (ts-node fallback 12.2–21.9s, previously 15–57s), external-cwd
+`tools list` **3.4–7.3s**, TUI first screen **10s** (previously 60–90s); a real
+tool-using `run` and a streaming TUI reply both succeeded.
 
 ## agent-tools
 
