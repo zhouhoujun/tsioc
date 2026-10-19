@@ -1727,7 +1727,11 @@ export class AgentConsoleJobsPanelComponent {
     `
 })
 export class AgentConsoleApprovalsPanelComponent {
-    constructor(private state: AgentConsoleSessionState) {
+    constructor(private state: AgentConsoleSessionState, @Optional() private translator?: TranslatorService) {
+    }
+
+    private translate(key: string, params: Record<string, any> | undefined, fallback: string): string {
+        return this.translator?.translate(key, params) || fallback;
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -1820,7 +1824,7 @@ export class AgentConsoleApprovalsPanelComponent {
             return '';
         }
         const selectedIndex = Math.max(0, this.approvals.findIndex(item => item.id === this.state.selectedApprovalId));
-        return `approvals ${this.approvals.length} · ${selectedIndex + 1}/${this.approvals.length}`;
+        return `${this.translate('agent.dashboard.approvals', { count: this.approvals.length }, `approvals ${this.approvals.length}`)} · ${selectedIndex + 1}/${this.approvals.length}`;
     }
 
     get approvalsTitleLabel(): string {
@@ -1828,8 +1832,8 @@ export class AgentConsoleApprovalsPanelComponent {
             return '';
         }
         return this.state.selectedApproval
-            ? `Approval required · Allow ${this.state.selectedApproval.toolName}?`
-            : 'Approval required';
+            ? this.translate('agent.approval.allowPrompt', { tool: this.state.selectedApproval.toolName }, `Approval required · Allow ${this.state.selectedApproval.toolName}?`)
+            : this.translate('agent.approval.required', undefined, 'Approval required');
     }
 
     get approvalsHintLabel(): string {
@@ -1843,7 +1847,7 @@ export class AgentConsoleApprovalsPanelComponent {
         if (!this.shouldShow || !this.approvals.length) {
             return '';
         }
-        return 'a Allow   d Deny   y Copy   ↑↓ Move   Esc Dismiss';
+        return this.translate('agent.approval.actions', undefined, 'a Allow   d Deny   y Copy   ↑↓ Move   Esc Dismiss');
     }
 
     get selectedApprovalRequestLabel(): string {
@@ -1857,12 +1861,12 @@ export class AgentConsoleApprovalsPanelComponent {
 
     get accessibilityLabel(): string {
         if (!this.shouldShow) {
-            return 'Approvals';
+            return this.translate('agent.approval.accessibilityTitle', undefined, 'Approvals');
         }
         const selected = this.state.selectedApproval;
         return selected
-            ? `Approvals. ${this.approvals.length} pending. Selected: ${selected.toolName}.`
-            : `Approvals. ${this.approvals.length} pending.`;
+            ? this.translate('agent.approval.accessibilitySelected', { count: this.approvals.length, tool: selected.toolName }, `Approvals. ${this.approvals.length} pending. Selected: ${selected.toolName}.`)
+            : this.translate('agent.approval.accessibility', { count: this.approvals.length }, `Approvals. ${this.approvals.length} pending.`);
     }
 
     get selectedApprovalDetailLabel(): string {
@@ -1870,12 +1874,14 @@ export class AgentConsoleApprovalsPanelComponent {
             return '';
         }
         const request = this.state.selectedApproval;
-        const lines = [`Reason: ${request.reason || 'No reason provided'}`];
+        const reason = request.reason || this.translate('agent.approval.noReason', undefined, 'No reason provided');
+        const lines = [this.translate('agent.approval.reason', { reason }, `Reason: ${reason}`)];
         if (request.expiresAt && request.timeoutMs > 0) {
             const remainingMs = request.expiresAt - Date.now();
+            const seconds = Math.max(1, Math.ceil(remainingMs / 1000));
             lines.push(remainingMs > 0
-                ? `Expires in ${Math.max(1, Math.ceil(remainingMs / 1000))}s`
-                : 'Expired');
+                ? this.translate('agent.approval.expiresIn', { seconds }, `Expires in ${seconds}s`)
+                : this.translate('agent.approval.expired', undefined, 'Expired'));
         }
         return lines.join('\n');
     }
