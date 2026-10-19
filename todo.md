@@ -264,6 +264,13 @@
 - **回归测试（红→绿）**：新增 `packages/components/test/binding-destroyed-injector.spec.ts`，断言 `injector.destroyed` 时 `bindingProperty` 的工厂**不得**执行其 effect。证红：临时移除该守卫 → `0 passing 1 failed`（effect 仍执行并因解析已销毁注入器抛错）；证绿：恢复守卫 → components `147 passing`、`EXIT=0`。
 - **诚实边界**：这是**静态锁定的真实缺失守卫缺口**，但**尚不能证明就是用户实机那条崩溃**（无堆栈，无法复现第二 turn）。需完整调用栈确认；若不匹配，则该守卫修复本身独立成立、可保留。
 
+## 2026-10-18 遗留三项收口：sandbox 能力探测 / knowledge_search 信号 / 重复工具调用实测
+- **sandbox-exec 能力探测**：合并后已具备 `probeSandboxExecTool` / `detectSandboxExecTool` / `describeSandboxCapabilities`（一次 `sh -lc 'command -v <tool>'` 短探测：bwrap → unshare / sandbox-exec / windows-native），`DefaultSandboxExecutor.execute` 用它包裹命令，缺失时回退并给出可操作 reason。本机实测：无 bwrap/unshare → `{"tool":null,"reason":"No OS sandbox tool available on linux (need bwrap or unshare)."}`，能力表 filesystem-write/network/read-denied 均降级为 process 且带 reason；`agent/test/sandbox-exec.spec.ts` 覆盖。
+- **knowledge_search 遵守 turn 信号**（`c89f8b197`）：新增 `KnowledgeSearchOptions.signal` 透传；`knowledge_search` 入口检查 `context.signal` 并把 signal 传给 adapter；`DefaultKnowledgeAdapter.search` 已中止时抛 `AbortError`。回归 `test/knowledge-search-signal.spec.ts` 3 passing；证红：旧实现下测试无法编译（`TS2559`，旧选项类型无 `signal`）；证绿：3 passing；`agent-tools` 全量 **570 passing**、`tsc` 0 错误。
+- **browser/***：`PlaywrightBrowserAdapter.execute(request, context)` 已收到完整 `AgentToolContext`（含 `signal`），`playwright_browser` 直接透传；是否中止由宿主 adapter 决定（设计如此，无改动）；`browser_open` 仅返回外部打开请求，不产生阻塞 I/O。
+- **真实长会话观测（重复工具调用是否下降）**：真实 DeepSeek 会话（隔离 `--root` + 真实 workspace，`--tools list_dir,read_file`）中，模型一次发起 **8 个完全相同的 `list_dir`**：1 个真实执行、1 个 `Repeated identical read-only call; reused the earlier result.`（去重缓存）、6 个 `Tool "list_dir" repeated 5 times with identical arguments.`（循环检测）——**重复调用在真实模型下确实被消除**（8→1 次执行）。近上限提示（`nearToolRoundLimitPrompt`，剩余 2 轮）在本次单轮场景未触发，已有确定性单测覆盖。
+- **验证**：`agent-ui` 1522 / `agent` 1013 / `agent-tools` 570 / `agent-cli` 92 passing，4 个 agent 包 `tsc --noEmit` 0 错误；合并提交 `b8ddf0e29` 后工作树干净。
+
 ## 2026-10-15 真实模拟测试：sleep-mlt 系统构建 → 修复 `todo` 计划输入容忍度（`37308fb01`）
 
 ### 运行方式与 provider 现实
