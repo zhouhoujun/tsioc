@@ -45,6 +45,11 @@ option tokens into `tokens.ts` (public re-exports unchanged). The CLI now uses
 `tools list` **3.4–7.3s**, TUI first screen **10s** (previously 60–90s); a real
 tool-using `run` and a streaming TUI reply both succeeded.
 
+MCP validation (no code change): an isolated `--root` with a local stdio server added
+through `mcp add demo --command "node mcp-echo.js" --allow echo` was discovered and
+called from the TUI (`mcp call tool: echo` → `echo:hello-from-mcp`), confirming the
+newline-JSON transport, allowlist gate and dynamic tool path end to end.
+
 ## agent-tools
 
 | Commit | File | Root cause |
