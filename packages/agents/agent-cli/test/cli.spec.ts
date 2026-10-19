@@ -1,4 +1,5 @@
 import expect = require('expect');
+import { execFile } from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -756,6 +757,33 @@ export class AgentCliTest {
         expect(launched[0].options.detached).toBe(true);
         expect(launched[0].options.stdio).toBe('ignore');
         expect(unref).toBe(1);
+    }
+
+    @Test('bin starts when the caller workspace has no compatible tsconfig')
+    async binStartsFromExternalWorkspace() {
+        // The bin must compile itself against the CLI package's tsconfig. When
+        // it let ts-node/tsconfig-paths discover the caller's cwd, running
+        // `tsdi-agent` from a project without a tsconfig failed with TS5109
+        // before the CLI even parsed --help/--version.
+        const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-cli-cwd-'));
+        try {
+            const result = await new Promise<{ code: number; stdout: string; stderr: string }>(resolve => {
+                execFile(
+                    process.execPath,
+                    [path.join(__dirname, '..', 'bin', 'tsdi-agent.js'), '--version'],
+                    { cwd, timeout: 120000 },
+                    (error, stdout, stderr) => resolve({
+                        code: error ? Number((error as any).code ?? 1) : 0,
+                        stdout: String(stdout),
+                        stderr: String(stderr)
+                    })
+                );
+            });
+            expect(result.code).toBe(0);
+            expect(result.stdout.trim()).toMatch(/^\d+\.\d+\.\d+$/);
+        } finally {
+            fs.rmSync(cwd, { recursive: true, force: true });
+        }
     }
 
     @Test('normalizeCliArgv reorders leading options before import command')

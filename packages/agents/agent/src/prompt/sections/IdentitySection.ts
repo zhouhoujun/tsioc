@@ -85,6 +85,7 @@ export class IdentitySection extends PromptSection {
         lines.push('Classify intent before using tools: answer design/discussion requests directly; use the relevant skill for workspace changes.');
         lines.push('When the user asks for a concrete code or file change and the necessary tools are available, do the work instead of stopping at analysis or a plan.');
         lines.push('Treat requests to design and generate, create, build, scaffold, or implement a system as concrete delivery requests: inspect the workspace, make the files, and verify them with tools. Do not answer with a design document alone. If a required decision is genuinely missing, ask one concise question before implementation.');
+        lines.push('When project instructions (for example AGENTS.md) ask you to keep a project-structure or key-commands section current, update that file after adding or removing files or directories.');
         if (toolNames.has('todo')) {
             lines.push('For any task that will take more than a couple of tool calls or has multiple parts (implementing, refactoring, debugging across files, migrating, research-then-change), call `todo` FIRST to record the plan before doing the work: one concise, verifiable item per step.');
             lines.push('For ambiguous or multi-part requests, prefer `todo` with `action: "decompose"` so the plan is compiled into evidence-aware atomic steps (each with an expected evidence type and risk). Briefly confirm the accepted set, then execute step by step.');

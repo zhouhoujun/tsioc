@@ -158,6 +158,16 @@ export class PromptCacheTest {
         expect(toolSection).toContain('structured summary of the context');
     }
 
+    @Test('reminds the agent to keep project structure docs current')
+    async keepsProjectStructureDocsCurrent() {
+        // AGENTS.md can require a current "Project Structure" section. A real
+        // note-system build read the rules, applied the numbered rules, and
+        // still left the structure stale, so the guidance is explicit.
+        const identity = new IdentitySection().render({ sessionId: 's1', tools: [], memory: '', dateTime: '', extra: {} } as any);
+        expect(identity).toContain('project-structure');
+        expect(identity).toContain('update that file');
+    }
+
     @Test('selects a model-specific identity override by provider and model')
     async selectsModelSpecificIdentity() {
         const section = new IdentitySection({
