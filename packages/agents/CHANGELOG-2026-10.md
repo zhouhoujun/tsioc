@@ -34,9 +34,13 @@ provide an export named 'update'`, and the non-git `git_operations diff` produce
 patch, `node test/note.test.js` reported `note tests passed`.
 
 Startup investigation: `@swc/core` through ts-node reduced the `--help` path to ~7.7s,
-but the transformed CommonJS output hit a TDZ error on a circular import
-(`Cannot access 'TranslatorService' before initialization` in `packages/i18n`), so it is
-not a drop-in replacement. The SWC experiment was reverted; startup remains TypeScript
+but the transformed CommonJS output hit a chain of circular value imports — first
+`Cannot access 'TranslatorService' before initialization` (`packages/i18n`), then
+`Cannot access 'InMemoryServiceDiscovery' before initialization`
+(`packages/microservices/discovery`, which imports `DISCOVERY_OPTIONS` from the module
+that imports the class). Making SWC viable requires moving those tokens into separate
+files and auditing the rest of the graph; it is not a drop-in replacement. The SWC
+experiment was reverted and no dependency was added; startup remains TypeScript
 transpile-bound.
 
 ## agent-tools
