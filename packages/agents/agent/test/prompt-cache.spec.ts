@@ -198,6 +198,16 @@ export class PromptCacheTest {
         expect(identity).toContain('update that file');
     }
 
+    @Test('reminds the agent to preserve shared validators when behavior must not change')
+    async preservesSharedValidators() {
+        // A real ledger task said "without changing existing behavior"; the
+        // model still tightened a shared requireDate validator. Keep the rule
+        // explicit: new constraints belong at the new API boundary.
+        const identity = new IdentitySection().render({ sessionId: 's1', tools: [], memory: '', dateTime: '', extra: {} } as any);
+        expect(identity).toContain('preserve existing behavior');
+        expect(identity).toContain('shared validators');
+    }
+
     @Test('selects a model-specific identity override by provider and model')
     async selectsModelSpecificIdentity() {
         const section = new IdentitySection({
