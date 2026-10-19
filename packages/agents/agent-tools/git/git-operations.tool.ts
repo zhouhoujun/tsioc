@@ -1,10 +1,11 @@
 import { AgentTool, AgentToolContext, FileSnapshotStore, CANCELLED_MESSAGE, runChildProcess } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { promises as fs } from 'fs';
+import { isAbsolute, relative, sep } from 'path';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath } from '../files/path-policy';
-import { simpleLineDiff } from '../files/simple-diff';
+import { unifiedLineDiff } from '../files/simple-diff';
 import { assertSandboxCommand, buildSandboxEnv, resolveSandboxPolicy } from '../src/sandbox-policy';
 
 const DEFAULT_TIMEOUT_MS = 30000;
@@ -102,7 +103,7 @@ export class GitOperationsTool implements AgentTool {
         const workdir = await this.resolveWorkdir(input?.workdir);
         if (action !== 'init' && !(await this.isGitRepo(workdir))) {
             if (action === 'status' || action === 'diff') {
-                const review = this.buildSnapshotReview(context.sessionId, action, input?.path);
+                const review = this.buildSnapshotReview(context.sessionId, action, input?.path, workdir);
                 if (review) {
                     return {
                         action,
@@ -180,7 +181,7 @@ export class GitOperationsTool implements AgentTool {
         return (await this.runGit(['rev-parse', '--git-dir'], workdir)).exitCode === 0;
     }
 
-    private buildSnapshotReview(sessionId: string, _action: string, targetPath?: unknown): {
+    private buildSnapshotReview(sessionId: string, _action: string, targetPath?: unknown, workdir?: string): {
         changedFiles: Array<{ path: string; tool?: string; existedBefore: boolean; exists: boolean }>;
         diff: string;
     } | null {
@@ -240,7 +241,7 @@ export class GitOperationsTool implements AgentTool {
                 existedBefore: entry.before != null,
                 exists: entry.after != null
             })),
-            diff: entries.map(entry => renderSnapshotDiff(entry)).join('\n')
+            diff: entries.map(entry => renderSnapshotDiff(entry, workdir)).join('\n')
         };
     }
 
@@ -495,12 +496,34 @@ interface SnapshotChange {
     after: string | null;
 }
 
-function renderSnapshotDiff(change: SnapshotChange): string {
-    const header = `--- a/${change.filePath}\n+++ b/${change.filePath}`;
-    const body = simpleLineDiff(change.before ?? '', change.after ?? '');
+function renderSnapshotDiff(change: SnapshotChange, workdir?: string): string {
+    // Git prints repository-relative paths; the snapshot store records absolute
+    // ones. A `a//home/user/...` header is not a valid diff path and makes the
+    // review harder to read, so relativize when the caller supplied a workdir.
+    const filePath = diffPath(change.filePath, workdir);
+    const beforePath = change.before == null ? '/dev/null' : `a/${filePath}`;
+    const afterPath = change.after == null ? '/dev/null' : `b/${filePath}`;
+    const header = `--- ${beforePath}\n+++ ${afterPath}`;
+    // `simpleLineDiff` is an order-independent set difference: for a new file
+    // with repeated lines (blank lines, `}`, ...) it emits all copies at the
+    // first occurrence's position and drops the rest, producing a diff that
+    // does not match the file. Snapshot reviews must preserve line order.
+    const body = unifiedLineDiff(change.before ?? '', change.after ?? '');
     if (!body) {
         return `${header}\n(no content change)`;
     }
     const capped = body.length > MAX_OUTPUT_CHARS ? `${body.slice(0, MAX_OUTPUT_CHARS)}...[truncated]` : body;
     return `${header}\n${capped}`;
+}
+
+function diffPath(filePath: string, workdir?: string): string {
+    const normalized = filePath.replace(/\\/g, '/');
+    if (!workdir || !isAbsolute(filePath)) {
+        return normalized;
+    }
+    const rel = relative(workdir, filePath);
+    if (!rel || rel.startsWith('..') || isAbsolute(rel)) {
+        return normalized;
+    }
+    return sep === '/' ? rel : rel.split(sep).join('/');
 }

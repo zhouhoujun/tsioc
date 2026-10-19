@@ -87,6 +87,35 @@ export class ToolDisplaySummaryTest {
         expect(summary).toEqual('exit 1 · ENOENT: no such file or directory');
     }
 
+    @Test('terminal output surfaces the assertion instead of a runtime stack frame')
+    terminalOutputSurfacesAssertion() {
+        const summary = summarizeToolDisplayText('terminal', {
+            stdout: '',
+            stderr: [
+                'node:internal/modules/run_main:107',
+                '    triggerUncaughtException(',
+                '',
+                'node:assert:152',
+                '  throw new AssertionError(obj);',
+                '  ^',
+                '',
+                'AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:',
+                '',
+                '1 !== 2',
+                '',
+                '    at [eval]:1:52',
+                '    at node:internal/main/eval_string:71:3'
+            ].join('\n'),
+            exitCode: 1,
+            timedOut: false
+        });
+
+        expect(summary).toContain('AssertionError');
+        expect(summary).toContain('1 !== 2');
+        expect(summary).not.toContain('node:internal');
+        expect(summary).not.toContain('throw new AssertionError');
+    }
+
     @Test('terminal output marks timeouts')
     terminalOutputMarksTimeout() {
         expect(summarizeToolDisplayText('terminal', { stdout: '', stderr: '', exitCode: 124, timedOut: true })).toEqual('timed out');

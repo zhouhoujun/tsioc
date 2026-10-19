@@ -2,7 +2,7 @@ import { AgentMemoryRecord } from '../memory/MemoryStore';
 import { AgentFileMessagePart, AgentImageMessagePart, AgentMessage, AgentMessagePart, getAgentMessageText, resolveAgentMessageParts } from '../runtime/AgentMessage';
 import { AgentToolDefinition } from '../tools/AgentTool';
 import { ModelAdapter } from './ModelAdapter';
-import { classifyModelError, DEFAULT_RETRY_POLICY, isModelRequestCancelled, isRetryableError, retryDelayMs, shouldRetryTransport } from './RetryPolicy';
+import { classifyModelError, DEFAULT_RETRY_POLICY, isModelRequestCancelled, isRetryableError, shouldRetryTransport, sleepRetryDelay } from './RetryPolicy';
 import { asModelFailure, createModelRequestError, ModelRequestError } from './ModelRequestError';
 import { ModelRequest } from './ModelRequest';
 import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
@@ -238,7 +238,11 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
             if (!response.ok) {
                 const detail = await this.readResponseError(response);
                 if (!isModelRequestCancelled(request) && !emittedAnswerChunk && this.isRetryable(response.status, detail) && attempt <= (this.options.retry?.maxRetries ?? DEFAULT_RETRY_POLICY.maxRetries)) {
+                    // Back off like the non-streaming path; an immediate retry
+                    // burns the budget against a transient 502/503.
                     cleanup();
+                    await sleepRetryDelay(attempt, response.headers.get('retry-after'), this.options.retry, this.clock, request.signal);
+                    if (isModelRequestCancelled(request)) throw new Error('Model streaming request cancelled.');
                     for await (const chunk of this.stream(request, attempt + 1)) {
                         yield chunk;
                     }
@@ -454,12 +458,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
     }
 
     private async retry(request: ModelRequest, attempt: number, _lastStatus: number, retryAfter?: string | null): Promise<ModelResponse> {
-        const delay = retryDelayMs(attempt, retryAfter, this.options.retry);
-        if (this.clock) {
-            await this.clock.sleep(delay);
-        } else {
-            await new Promise(resolve => setTimeout(resolve, delay));
-        }
+        await sleepRetryDelay(attempt, retryAfter, this.options.retry, this.clock, request.signal);
         return this.complete(request, attempt + 1);
     }
 

@@ -4643,6 +4643,47 @@ export class AgentToolsPackageTest {
             ]);
             expect(result.diff).toContain('src/a.js');
             expect(result.diff).toContain('test/a.test.js');
+            // New files use git's standard /dev/null old path, and paths are
+            // repository-relative instead of leaking the absolute workspace.
+            expect(result.diff).toContain('--- /dev/null');
+            expect(result.diff).not.toContain(`--- a/${workspace}`);
+            expect(result.diff).not.toContain(`+++ b/${workspace}`);
+        } finally {
+            await fs.rm(workspace, { recursive: true, force: true });
+        }
+    }
+
+    @Test('git operations diff fallback preserves line order for repeated lines')
+    async gitOperationsDiffFallbackPreservesLineOrder() {
+        const workspace = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-git-snapshot-order-'));
+        try {
+            const content = [
+                'export function a() {',
+                '  return 1;',
+                '}',
+                '',
+                'export function b() {',
+                '  return 2;',
+                '}',
+                ''
+            ].join('\n');
+            const store = new FileSnapshotStore();
+            store.push('s1', {
+                filePath: path.join(workspace, 'src/report.js'),
+                before: null,
+                after: content,
+                timestamp: 0,
+                toolName: 'write_file',
+                toolCallId: 'call-1'
+            });
+            const tool = new GitOperationsTool({ file: { rootDir: workspace } } as any, store);
+
+            const result = await tool.invoke({ action: 'diff' }, createSessionContext());
+
+            // A set difference emits both `}` lines at the first `}` position;
+            // a unified diff must emit every source line once, in file order.
+            const added = result.diff.split('\n').filter((line: string) => line.startsWith('+') && !line.startsWith('+++'));
+            expect(added).toEqual(content.split('\n').map(line => `+${line}`));
         } finally {
             await fs.rm(workspace, { recursive: true, force: true });
         }

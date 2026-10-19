@@ -121,3 +121,21 @@ export function retryDelayMs(attempt: number, retryAfter?: string | null, policy
     const jitterMs = policy.jitterMs ?? DEFAULT_RETRY_POLICY.jitterMs;
     return Math.min(baseDelayMs * Math.pow(2, Math.max(0, attempt - 1)) + Math.random() * jitterMs, maxDelayMs);
 }
+
+/** Shared retry sleep (honors Retry-After, backoff and the injected clock). */
+export interface RetrySleepClock { sleep(ms: number, signal?: AbortSignal): Promise<void> | void; }
+
+export async function sleepRetryDelay(
+    attempt: number,
+    retryAfter: string | null | undefined,
+    policy?: AgentRetryPolicy,
+    clock?: RetrySleepClock,
+    signal?: AbortSignal
+): Promise<void> {
+    const delay = retryDelayMs(attempt, retryAfter, policy);
+    if (clock) {
+        await clock.sleep(delay, signal);
+        return;
+    }
+    await new Promise<void>(resolve => setTimeout(resolve, delay));
+}

@@ -283,6 +283,71 @@ export class ModelFailureSpec {
         expect(caught).toBeTruthy();
     }
 
+    @Test('backs off before retrying a retryable streaming status')
+    async backsOffBeforeStreamingRetry() {
+        this.originalFetch = (globalThis as any).fetch;
+        let calls = 0;
+        const delays: number[] = [];
+        (globalThis as any).fetch = async () => {
+            calls += 1;
+            return jsonResponse(503, { error: { message: 'Service Unavailable' } }, calls === 1 ? { 'retry-after': '7' } : {});
+        };
+
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'openai-compatible',
+            model: 'gpt-5.5',
+            baseUrl: 'https://example.test',
+            apiKey: 'test-key',
+            retry: { maxRetries: 2, baseDelayMs: 1000, maxDelayMs: 15000, jitterMs: 0 }
+        } as any, undefined, { sleep: async (ms: number) => { delays.push(ms); } } as any);
+
+        let caught: any;
+        try {
+            for await (const _chunk of adapter.stream(createRequest())) {
+                // the endpoint never succeeds
+            }
+        } catch (error) {
+            caught = error;
+        }
+
+        expect(calls).toEqual(3);
+        // First retry honors Retry-After; the next uses exponential backoff.
+        expect(delays).toEqual([7000, 2000]);
+        expect(caught).toBeTruthy();
+    }
+
+    @Test('anthropic backs off before retrying a retryable streaming status')
+    async anthropicBacksOffBeforeStreamingRetry() {
+        this.originalFetch = (globalThis as any).fetch;
+        let calls = 0;
+        const delays: number[] = [];
+        (globalThis as any).fetch = async () => {
+            calls += 1;
+            return jsonResponse(529, { error: { message: 'overloaded' } });
+        };
+
+        const adapter = new AnthropicModelAdapter({
+            provider: 'anthropic',
+            model: 'claude-test',
+            baseUrl: 'https://example.test',
+            apiKey: 'test-key',
+            retry: { maxRetries: 1, baseDelayMs: 1000, maxDelayMs: 15000, jitterMs: 0 }
+        } as any, undefined, { sleep: async (ms: number) => { delays.push(ms); } } as any);
+
+        let caught: any;
+        try {
+            for await (const _chunk of adapter.stream(createRequest())) {
+                // the endpoint never succeeds
+            }
+        } catch (error) {
+            caught = error;
+        }
+
+        expect(calls).toEqual(2);
+        expect(delays).toEqual([1000]);
+        expect(caught).toBeTruthy();
+    }
+
     @Test('does not fall back to a non-streaming request once the runtime signal is aborted')
     async doesNotFallbackToNonStreamingAfterAbort() {
         this.originalFetch = (globalThis as any).fetch;

@@ -190,18 +190,41 @@ function collapseSingleLine(value: string, maxLength = 120, ellipsis = '...'): s
     return collapsed.length > maxLength ? `${collapsed.slice(0, maxLength)}${ellipsis}` : collapsed;
 }
 
-/** First non-empty line of a text blob, collapsed to one bounded line. */
+const STACK_FRAME_PATTERN = /^\s*at\s|^\s*node:internal\/|^\s*internal\/|^\s*node:assert:|\($|^\s*throw\s+new\s/;
+const ERROR_LINE_PATTERN = /^(?:Uncaught\s+)?[A-Za-z_$][\w$]*(?:Error|Exception)\s*(?:\[[^\]]+\])?\s*:|^\s*(?:error|Error):|^\s*(?:not ok|FAIL|panic:)|error TS\d+/;
+const ASSERTION_METADATA_PATTERN = /^\s*(?:actual|expected|operator|generatedMessage|code|stack):/;
+
+/**
+ * Pick the line a human needs from a failed command's stderr/stdout.
+ *
+ * The previous implementation returned the first non-empty line, which for a
+ * Node test failure is `node:internal/modules/run_main:107` (or the
+ * `throw new AssertionError(...)` source frame) instead of the assertion
+ * message. Prefer an actual error line and, when it is immediately followed by
+ * the comparison detail (`1 !== 2`), keep that too.
+ */
 function firstMeaningfulLine(value: unknown): string | undefined {
     if (typeof value !== 'string') {
         return undefined;
     }
-    for (const line of value.split(/\r?\n/)) {
-        const collapsed = collapseSingleLine(line, 160);
-        if (collapsed) {
-            return collapsed;
-        }
+    const lines = value
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(Boolean);
+    if (!lines.length) {
+        return undefined;
     }
-    return undefined;
+    const meaningful = lines.filter(line => !STACK_FRAME_PATTERN.test(line));
+    const errorIndex = meaningful.findIndex(line => ERROR_LINE_PATTERN.test(line));
+    if (errorIndex >= 0) {
+        const primary = meaningful[errorIndex];
+        const next = meaningful[errorIndex + 1];
+        if (next && next.length <= 120 && !STACK_FRAME_PATTERN.test(next) && !ASSERTION_METADATA_PATTERN.test(next)) {
+            return collapseSingleLine(`${primary} ${next}`, 200);
+        }
+        return collapseSingleLine(primary, 160);
+    }
+    return collapseSingleLine(meaningful[0] ?? lines[0], 160);
 }
 
 function summarizeGenericPayload(payload: Record<string, any>): string | undefined {
