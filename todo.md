@@ -264,6 +264,13 @@
 - **回归测试（红→绿）**：新增 `packages/components/test/binding-destroyed-injector.spec.ts`，断言 `injector.destroyed` 时 `bindingProperty` 的工厂**不得**执行其 effect。证红：临时移除该守卫 → `0 passing 1 failed`（effect 仍执行并因解析已销毁注入器抛错）；证绿：恢复守卫 → components `147 passing`、`EXIT=0`。
 - **诚实边界**：这是**静态锁定的真实缺失守卫缺口**，但**尚不能证明就是用户实机那条崩溃**（无堆栈，无法复现第二 turn）。需完整调用栈确认；若不匹配，则该守卫修复本身独立成立、可保留。
 
+## 2026-10-18 `/approvals` 选择器详情接入 i18n（`4078d2abc`）
+- 承接上一条：`AgentConsoleApprovalView.selectApprovalRequest` 的标题（`Pending approvals`）与详情（`Tool:` / `Reason:` / `Input:` / `Input: -` / `Timeout:` / `Expires:`）硬编码英文。
+- **修复**：函数新增可选 `translate` 参数（默认英文兜底），组件用 `this.translator` 传入；i18n 目录新增 `agent.approval.pendingTitle/tool/input/inputNone/timeout/expiresAt`（en / zh-CN）。
+- **回归（红→绿）**：`p315` 新增第 3 条；证红（回退文案）`2 passing 1 failed`（`Expected: "T:agent.approval.pendingTitle" / Received: "Pending approvals"`）→ 证绿 `3 passing`。
+- **验证**：`agent-ui` **1526 passing**、`tsc` 0、`source-size` OK、`git diff --check` 干净。
+- **仍未覆盖**：`Reason:` 之后的文本由 agent 层 `DefaultApprovalStrategy` 生成（英文），需结构化 reason 才能本地化。
+
 ## 2026-10-18 审批面板文案接入 i18n（`9686bddfb`）
 - **问题**：审批面板的标题（`Approval required · Allow X?`）、按键行（`a Allow   d Deny   y Copy   ↑↓ Move   Esc Dismiss`）、计数（`approvals N · i/N`）、详情（`Reason:` / `No reason provided` / `Expires in Ns` / `Expired`）与无障碍标签全部硬编码英文，违反 AGENTS.md §9（用户可见文案必须经 i18n）。
 - **修复**：`agent-ui.i18n.ts` 新增 `agent.approval.*`（en / zh-CN）；`AgentConsoleApprovalsPanelComponent` 注入可选 `TranslatorService`，上述文案统一经 `translate()` 并保留英文兜底。
