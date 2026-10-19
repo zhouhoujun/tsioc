@@ -250,7 +250,7 @@ import { collectHealthItems } from './AgentConsoleHealthView';
 import { searchSessionContent } from './AgentConsoleSessionSearch';
 import { loadLocalTodoPlan } from './AgentConsoleTodoView';
 import { refreshMentionCatalog } from './AgentConsoleMentions';
-import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ToolApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc, buildHarnessProjection, formatHarnessTreeLines, formatHarnessListLines, DelegationTreeNode } from '@tsdi/agent';
+import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc, buildHarnessProjection, formatHarnessTreeLines, formatHarnessListLines, DelegationTreeNode } from '@tsdi/agent';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService } from './AgentConsoleSessionService';
 import { CommandHandlerContext } from './AgentConsoleCommandHandlers';
 import { buildCommandHandlerState } from './AgentConsoleCommandHandlerContext';
@@ -378,7 +378,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         @Optional() @Inject(ToolRegistry) private toolRegistry?: ToolRegistry | null,
         @Optional() @Inject(AGENT_CONSOLE_APP_RPC) private appRpc?: AgentConsoleAppRpc | null,
         @Optional() @Inject(AgentConsoleSessionService) private sessionService?: AgentConsoleSessionService | null,
-        @Optional() private approvalManager?: ToolApprovalManager | null,
+        @Optional() private approvalManager?: ApprovalManager | null,
         @Optional() @Inject(AgentConsoleWorkspaceMentionsProvider) private workspaceMentionsProvider?: AgentConsoleWorkspaceMentionsProvider | null,
         @Optional() @Inject(AgentConsoleInputHistoryStore) private inputHistoryStore?: AgentConsoleInputHistoryStore | null,
         @Optional() @Inject(ComponentRef) private componentRef?: ComponentRef<AgentConsoleComponent> | null,
@@ -1006,15 +1006,17 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return resolveFocusedCodingTaskFn(this.codingTaskCtx());
     }
 
+    protected get resolvedApprovalManager(): ApprovalManager | undefined { return this.approvalManager ?? this.runtime?.approvalManager; }
+
     protected async refreshPendingApprovals(sessionId = this.state.sessionId): Promise<void> {
-        return refreshPendingApprovals(sessionId, this.state, this.approvalManager, this.appRpc, this.sessionService, () => this.updateTerminalTitle());
+        return refreshPendingApprovals(sessionId, this.state, this.resolvedApprovalManager, this.appRpc, this.sessionService, () => this.updateTerminalTitle());
     }
 
     protected async applyApprovalDecision(decision: 'approve' | 'deny', requestId: string): Promise<boolean> {
-        if (this.approvalManager) {
+        if (this.resolvedApprovalManager) {
             return decision === 'approve'
-                ? this.approvalManager.approve(requestId)
-                : this.approvalManager.reject(requestId);
+                ? this.resolvedApprovalManager.approve(requestId)
+                : this.resolvedApprovalManager.reject(requestId);
         }
         if (this.appRpc && this.sessionService) {
             const result = await this.sessionService.decideApproval(decision, requestId);
@@ -1024,8 +1026,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected async getPendingApprovals(sessionId: string): Promise<AgentConsoleApprovalRequest[]> {
-        if (this.approvalManager) {
-            return this.approvalManager.getPending().filter((request: any) => request.sessionId === sessionId) as AgentConsoleApprovalRequest[];
+        if (this.resolvedApprovalManager) {
+            return this.resolvedApprovalManager.getPending().filter((request: any) => request.sessionId === sessionId) as AgentConsoleApprovalRequest[];
         }
         if (this.appRpc && this.sessionService) {
             const requests = await this.sessionService.listApprovals(sessionId);
@@ -2954,9 +2956,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
 
     protected async setYoloMode(enabled: boolean, notify = true): Promise<void> {
         this.yoloMode = enabled;
-        if (typeof (this.approvalManager as any)?.setAutoApprove === 'function') {
-            (this.approvalManager as any).setAutoApprove(enabled);
-        }
+        (this.resolvedApprovalManager as any)?.setAutoApprove?.(enabled);
         this.options.tools = { ...(this.options.tools || {}), autoApprove: enabled } as any;
         await this.persistSettings({ yoloMode: enabled });
         if (notify) this.notify(enabled ? formatAgentUiNotice(this.translator, 'yoloModeEnabled') : formatAgentUiNotice(this.translator, 'yoloModeDisabled'));

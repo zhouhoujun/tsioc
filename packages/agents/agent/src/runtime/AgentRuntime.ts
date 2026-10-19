@@ -46,6 +46,9 @@ export interface FileUndoRedoResult {
 
 @Abstract()
 export abstract class AgentRuntime {
+    /** The approval manager this runtime gates tools with; host UIs resolve pending approvals through it. */
+    approvalManager?: import('../tools/ToolApprovalManager').ApprovalManager;
+
     async createGoal(_input: import('../goal').CreateGoalInput, _sessionId?: string): Promise<import('../goal').Goal> { throw new Error('Goal store unavailable.'); }
     async listGoals(_status?: import('../goal').GoalStatus): Promise<import('../goal').Goal[]> { return []; }
     async getGoal(_goalId: string): Promise<import('../goal').Goal | undefined> { return undefined; }

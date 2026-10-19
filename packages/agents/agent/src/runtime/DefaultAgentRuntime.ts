@@ -209,7 +209,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         if (this.summarizer && this.options.context?.compactionThreshold) {
             this.contextManager.setSummarizer(this.summarizer, this.options.context.compactionThreshold);
         }
-        this.toolApprovalManager = this.resolveApprovalManager(this.approvalManagerInput);
+        this.approvalManager = this.toolApprovalManager = this.resolveApprovalManager(this.approvalManagerInput);
         if (!this.toolExecutionCoordinator) {
             this.toolExecutionCoordinator = new ToolExecutionCoordinator(
                 this.toolRegistry,
