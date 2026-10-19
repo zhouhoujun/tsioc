@@ -28,11 +28,15 @@ export class KnowledgeSearchTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
+        if (context?.signal?.aborted) {
+            throw abortError('knowledge_search');
+        }
         const query = this.requireString(input?.query, 'knowledge_search query');
         const result = await this.adapter.search(query, {
             tags: Array.isArray(input?.tags) ? input.tags.filter((t: any) => typeof t === 'string') : undefined,
-            limit: typeof input?.limit === 'number' && input.limit > 0 ? input.limit : 10
+            limit: typeof input?.limit === 'number' && input.limit > 0 ? input.limit : 10,
+            signal: context?.signal
         });
         return {
             query,
@@ -53,4 +57,10 @@ export class KnowledgeSearchTool implements AgentTool {
         }
         return value.trim();
     }
+}
+
+function abortError(tool: string): Error {
+    const error = new Error(`${tool} aborted`);
+    error.name = 'AbortError';
+    return error;
 }

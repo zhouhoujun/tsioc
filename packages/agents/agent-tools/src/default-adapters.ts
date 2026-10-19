@@ -307,7 +307,12 @@ export class DefaultModelRoutingAdapter extends ModelRoutingAdapter {
 export class DefaultKnowledgeAdapter extends KnowledgeAdapter {
     private entries: KnowledgeEntry[] = [];
 
-    async search(query: string, options?: { tags?: string[]; limit?: number; offset?: number }): Promise<KnowledgeSearchResult> {
+    async search(query: string, options?: { tags?: string[]; limit?: number; offset?: number; signal?: AbortSignal }): Promise<KnowledgeSearchResult> {
+        if (options?.signal?.aborted) {
+            const error = new Error('knowledge_search aborted');
+            error.name = 'AbortError';
+            throw error;
+        }
         const q = query.toLowerCase();
         let results = this.entries.filter(e =>
             e.title.toLowerCase().includes(q) ||

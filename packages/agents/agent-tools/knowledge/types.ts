@@ -27,5 +27,7 @@ export interface KnowledgeSearchOptions {
     tags?: string[];
     limit?: number;
     offset?: number;
+    /** Owning turn's signal: aborted searches reject instead of blocking the turn. */
+    signal?: AbortSignal;
 }
 
