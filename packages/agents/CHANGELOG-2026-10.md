@@ -33,15 +33,15 @@ provide an export named 'update'`, and the non-git `git_operations diff` produce
 `--- a/src/note.js` / `@@ -17,6 +17,20 @@` with the real `update()` body. After the
 patch, `node test/note.test.js` reported `note tests passed`.
 
-Startup investigation: `@swc/core` through ts-node reduced the `--help` path to ~7.7s,
-but the transformed CommonJS output hit a chain of circular value imports — first
-`Cannot access 'TranslatorService' before initialization` (`packages/i18n`), then
-`Cannot access 'InMemoryServiceDiscovery' before initialization`
-(`packages/microservices/discovery`, which imports `DISCOVERY_OPTIONS` from the module
-that imports the class). Making SWC viable requires moving those tokens into separate
-files and auditing the rest of the graph; it is not a drop-in replacement. The SWC
-experiment was reverted and no dependency was added; startup remains TypeScript
-transpile-bound.
+Startup: SWC initially exposed a chain of circular value imports — `TranslatorService`
+(`packages/i18n`), `InMemoryServiceDiscovery`/`DISCOVERY_OPTIONS`
+(`packages/microservices/discovery`) and `SERVICE_*_OPTIONS` (`packages/microservices/service`).
+`b1f5cab17` makes the i18n option imports type-only and moves the discovery/service
+option tokens into `tokens.ts` (public re-exports unchanged). The CLI now uses
+`@swc/core` when installed and falls back to ts-node when it is absent or
+`TSDI_AGENT_TRANSPILER=ts-node` is set. Measured on this machine: `--help` **3.37s**
+(ts-node fallback 12.2s, previously 15–57s), external-cwd `tools list` **3.38s**, TUI
+first screen **10s** (previously 60–90s); a real tool-using `run` succeeded.
 
 ## agent-tools
 
