@@ -1,9 +1,10 @@
-import { getToken, Token, Invocation } from '@tsdi/ioc';
+import { getToken, token, Token, Invocation } from '@tsdi/ioc';
 import { GuardLike } from '@tsdi/core';
 import { Transport, RequestInterceptorLike, RequestFilterLike } from '@tsdi/common';
 import { Router } from './router';
 import { MiddlewareLike } from './middleware';
-import { ServiceConfig } from './options';
+import { AuthOptions, CookieOptions, CorsOptions, ServiceConfig, ServiceOptions } from './options';
+import { GracefulShutdownOptions, HealthOptions, RegistrationOptions } from './features';
 
 
 function toMicroName(microservice?: boolean, name?: string) {
@@ -64,3 +65,25 @@ export function getServiceBackendToken(config: ServiceConfig): Token<any> {
 export function getServiceToken(config: ServiceConfig): Token<Invocation> {
     return getToken<Invocation>(`${Transport[config.transport].toUpperCase()}_SERVICE`, toMicroName(config.microservice, config.name));
 }
+
+/**
+ * Option tokens consumed by feature interceptors, strategies and handlers.
+ *
+ * They live here (instead of provider.ts) so implementations imported by the
+ * provider can inject them without a circular value import.
+ */
+export const SERVICE_REGISTRATION_OPTIONS = token<RegistrationOptions>('SERVICE_REGISTRATION_OPTIONS');
+export const SERVICE_HEALTH_OPTIONS = token<HealthOptions>('SERVICE_HEALTH_OPTIONS');
+export const SERVICE_GRACEFUL_SHUTDOWN_OPTIONS = token<GracefulShutdownOptions>('SERVICE_GRACEFUL_SHUTDOWN_OPTIONS');
+export const SERVICE_STATICS_OPTIONS = token<any>('SERVICE_STATICS_OPTIONS');
+/** @deprecated use SERVICE_STATICS_OPTIONS */
+export const SERVICE_CONTENT_OPTIONS = SERVICE_STATICS_OPTIONS;
+export const SERVICE_AUTH_OPTIONS = token<AuthOptions>('SERVICE_AUTH_OPTIONS');
+export const SERVICE_BODY_PARSER_OPTIONS = token<any>('SERVICE_BODY_PARSER_OPTIONS');
+export const SERVICE_BODY_SERIALIZER_OPTIONS = token<any>('SERVICE_BODY_SERIALIZER_OPTIONS');
+export const SERVICE_JSON_OPTIONS = token<any>('SERVICE_JSON_OPTIONS');
+export const SERVICE_SESSION_OPTIONS = token<any>('SERVICE_SESSION_OPTIONS');
+export const SERVICE_COOKIE_OPTIONS = token<any>('SERVICE_COOKIE_OPTIONS');
+export const SERVICE_CORS_OPTIONS = token<CorsOptions>('SERVICE_CORS_OPTIONS');
+export const SERVICE_CONFIGS = token<ServiceOptions[]>('SERVICE_CONFIGS');
+export const SERV_OPTIONS = token<ServiceOptions>('SERV_OPTIONS');

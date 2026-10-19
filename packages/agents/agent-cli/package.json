@@ -38,6 +38,8 @@
     "@tsdi/components/console": "6.0.0-beta7",
     "@tsdi/core": "6.0.31",
     "@tsdi/ioc": "6.0.31",
+    "@swc/core": "^1.16.18",
+    "@swc/helpers": "^0.5.23",
     "commander": "^12.1.0",
     "ts-node": "^8.10.1",
     "tsconfig-paths": "^3.9.0",

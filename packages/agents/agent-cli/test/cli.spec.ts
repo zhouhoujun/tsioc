@@ -786,6 +786,29 @@ export class AgentCliTest {
         }
     }
 
+    @Test('bin honors the ts-node transpiler fallback')
+    async binHonorsTsNodeFallback() {
+        const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-cli-cwd-'));
+        try {
+            const result = await new Promise<{ code: number; stdout: string; stderr: string }>(resolve => {
+                execFile(
+                    process.execPath,
+                    [path.join(__dirname, '..', 'bin', 'tsdi-agent.js'), '--version'],
+                    { cwd, timeout: 120000, env: { ...process.env, TSDI_AGENT_TRANSPILER: 'ts-node' } },
+                    (error, stdout, stderr) => resolve({
+                        code: error ? Number((error as any).code ?? 1) : 0,
+                        stdout: String(stdout),
+                        stderr: String(stderr)
+                    })
+                );
+            });
+            expect(result.code).toBe(0);
+            expect(result.stdout.trim()).toMatch(/^\d+\.\d+\.\d+$/);
+        } finally {
+            fs.rmSync(cwd, { recursive: true, force: true });
+        }
+    }
+
     @Test('normalizeCliArgv reorders leading options before import command')
     normalizeCliArgvReordersLeadingOptionsBeforeImport() {
         const argv = normalizeCliArgv([

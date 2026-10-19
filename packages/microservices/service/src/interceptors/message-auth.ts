@@ -5,7 +5,7 @@ import { HttpStatusCode, RequestContext, RequestHandler, StatusMessageAdapter, U
 import { Inject, Injectable, Injector, Optional } from '@tsdi/ioc';
 import { defer, from, mergeMap, Observable, throwError } from 'rxjs';
 import { AuthOptions, JwtAuthOptions } from '../options';
-import { SERVICE_AUTH_OPTIONS } from '../provider';
+import { SERVICE_AUTH_OPTIONS } from '../tokens';
 import { AuthInterceptor } from './auth';
 
 type AuthResult = { authenticated: boolean; token: string | null; claims?: any };

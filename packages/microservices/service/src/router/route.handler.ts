@@ -4,7 +4,7 @@ import { MessageAdapter, RequestHandler, RequestContext, ReadableLike, Incoming,
 import { catchError, mergeMap, Observable, throwError, timeout } from 'rxjs';
 import { ApiRateLimiter } from '../interceptors/ratelimiter';
 import { ApiRateLimitOptions, ServiceOptions } from '../options';
-import { SERV_OPTIONS } from '../provider';
+import { SERV_OPTIONS } from '../tokens';
 
 /**
  * route handler.

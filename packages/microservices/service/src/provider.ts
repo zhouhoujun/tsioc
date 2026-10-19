@@ -1,4 +1,4 @@
-import { ArgumentException, ProvdierOf, Provider, StaticProvider, Type, isArray, isBoolean, isFunction, toProvider, toProviders, token, isPlainObject } from '@tsdi/ioc';
+import { ArgumentException, ProvdierOf, Provider, StaticProvider, Type, isArray, isBoolean, isFunction, toProvider, toProviders, isPlainObject } from '@tsdi/ioc';
 import { GuardLike, MessageValueReader } from '@tsdi/core';
 import {
     matchTransport, TransportConfig, RequestInterceptorLike, TransferFilterFactory,
@@ -7,7 +7,12 @@ import {
 } from '@tsdi/common';
 import {
     getServiceFiltersToken, getServiceGuardsToken, getServiceInterceptorsToken,
-    getServiceMiddlewaresToken, getServiceRouterToken
+    getServiceMiddlewaresToken, getServiceRouterToken,
+    SERVICE_AUTH_OPTIONS, SERVICE_BODY_PARSER_OPTIONS, SERVICE_BODY_SERIALIZER_OPTIONS,
+    SERVICE_CONFIGS, SERVICE_COOKIE_OPTIONS, SERVICE_CORS_OPTIONS,
+    SERVICE_GRACEFUL_SHUTDOWN_OPTIONS, SERVICE_HEALTH_OPTIONS, SERVICE_JSON_OPTIONS,
+    SERVICE_REGISTRATION_OPTIONS, SERVICE_SESSION_OPTIONS, SERVICE_STATICS_OPTIONS,
+    SERV_OPTIONS
 } from './tokens';
 
 import { AuthOptions, CookieOptions, CorsOptions, ExecptionLoggerOptions, FeatureInterceptorOptions, ServiceFeatureKind, ServiceFeature, ServiceLoggerOptions, SERVICE_EXECEPTION_LOGGER_OPTIONS, ServiceTransportFeature, ServiceConfig, ServiceFeatureOptions, ServiceOptions } from './options';
@@ -594,22 +599,13 @@ export function useAuth(options?: boolean | AuthOptions): ServiceFeatureFn<Servi
     };
 }
 
-export const SERVICE_REGISTRATION_OPTIONS = token<RegistrationOptions>('SERVICE_REGISTRATION_OPTIONS');
-export const SERVICE_HEALTH_OPTIONS = token<HealthOptions>('SERVICE_HEALTH_OPTIONS');
-export const SERVICE_GRACEFUL_SHUTDOWN_OPTIONS = token<GracefulShutdownOptions>('SERVICE_GRACEFUL_SHUTDOWN_OPTIONS');
-
-export const SERVICE_STATICS_OPTIONS = token<any>('SERVICE_STATICS_OPTIONS');
-/** @deprecated use SERVICE_STATICS_OPTIONS */
-export const SERVICE_CONTENT_OPTIONS = SERVICE_STATICS_OPTIONS;
-export const SERVICE_AUTH_OPTIONS = token<AuthOptions>('SERVICE_AUTH_OPTIONS');
-export const SERVICE_BODY_PARSER_OPTIONS = token<any>('SERVICE_BODY_PARSER_OPTIONS');
-export const SERVICE_BODY_SERIALIZER_OPTIONS = token<any>('SERVICE_BODY_SERIALIZER_OPTIONS');
-export const SERVICE_JSON_OPTIONS = token<any>('SERVICE_JSON_OPTIONS');
-export const SERVICE_SESSION_OPTIONS = token<any>('SERVICE_SESSION_OPTIONS');
-export const SERVICE_COOKIE_OPTIONS = token<any>('SERVICE_COOKIE_OPTIONS');
-export const SERVICE_CORS_OPTIONS = token<CorsOptions>('SERVICE_CORS_OPTIONS');
-export const SERVICE_CONFIGS = token<ServiceOptions[]>('SERVICE_CONFIGS');
-export const SERV_OPTIONS = token<ServiceOptions>('SERV_OPTIONS');
+export {
+    SERVICE_AUTH_OPTIONS, SERVICE_BODY_PARSER_OPTIONS, SERVICE_BODY_SERIALIZER_OPTIONS,
+    SERVICE_CONFIGS, SERVICE_CONTENT_OPTIONS, SERVICE_COOKIE_OPTIONS, SERVICE_CORS_OPTIONS,
+    SERVICE_GRACEFUL_SHUTDOWN_OPTIONS, SERVICE_HEALTH_OPTIONS, SERVICE_JSON_OPTIONS,
+    SERVICE_REGISTRATION_OPTIONS, SERVICE_SESSION_OPTIONS, SERVICE_STATICS_OPTIONS,
+    SERV_OPTIONS
+} from './tokens';
 
 
 /**

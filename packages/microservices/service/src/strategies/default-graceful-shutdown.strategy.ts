@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@tsdi/ioc';
 import { GracefulShutdownOptions } from '../features/GracefulShutdownOptions';
-import { SERVICE_GRACEFUL_SHUTDOWN_OPTIONS } from '../provider';
+import { SERVICE_GRACEFUL_SHUTDOWN_OPTIONS } from '../tokens';
 import { IHealthCheckStrategy, HEALTH_CHECK_STRATEGY } from './IHealthCheckStrategy';
 import { IGracefulShutdownStrategy } from './IGracefulShutdownStrategy';
 

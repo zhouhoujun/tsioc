@@ -5,7 +5,24 @@ const packageRoot = path.join(__dirname, '..');
 // working directory. Without this, running `tsdi-agent` inside a project that
 // has its own tsconfig (or none) fails with TS5109 before the CLI starts.
 process.env.TS_NODE_PROJECT = path.join(packageRoot, 'tsconfig.json');
-require('ts-node/register/transpile-only');
+// SWC is a fast, optional transpiler (see @swc/core); fall back to ts-node's
+// TypeScript transpiler when it is absent or explicitly disabled with
+// TSDI_AGENT_TRANSPILER=ts-node. Both paths keep decorator metadata enabled.
+const transpiler = String(process.env.TSDI_AGENT_TRANSPILER || '').trim().toLowerCase();
+let registered = false;
+if (transpiler !== 'ts-node') {
+    try {
+        require.resolve('@swc/core', { paths: [packageRoot] });
+        require.resolve('@swc/helpers', { paths: [packageRoot] });
+        require('ts-node').register({ transpileOnly: true, swc: true, project: process.env.TS_NODE_PROJECT });
+        registered = true;
+    } catch {
+        // optional fast path
+    }
+}
+if (!registered) {
+    require('ts-node/register/transpile-only');
+}
 require('tsconfig-paths').register({ cwd: packageRoot });
 
 const { createAgentCli, normalizeCliArgv } = require('../src/cli.ts');

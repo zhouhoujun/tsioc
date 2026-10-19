@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@tsdi/ioc';
 import { ServiceDiscovery, ServiceEndpoint, ServiceInfo } from '@tsdi/discovery';
 import { ServiceConfig } from '../options';
-import { SERVICE_REGISTRATION_OPTIONS, SERV_OPTIONS } from '../provider';
+import { SERVICE_REGISTRATION_OPTIONS, SERV_OPTIONS } from '../tokens';
 import { RegistrationOptions } from '../features/RegistrationOptions';
 import { IRegistrationStrategy } from './IRegistrationStrategy';
 

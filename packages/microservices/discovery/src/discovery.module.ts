@@ -1,14 +1,12 @@
-import { Module, ModuleWithProviders, Provider, token } from '@tsdi/ioc';
+import { Module, ModuleWithProviders, Provider } from '@tsdi/ioc';
 import { ServiceDiscovery } from './registry';
 import { InMemoryServiceDiscovery } from './memory.discovery';
 import { LeastConnectionsEndpointSelector, RandomEndpointSelector, RoundRobinEndpointSelector, WeightedEndpointSelector } from './selector';
 import { EndpointSelector } from './registry';
 import { ServiceDiscoveryOptions } from './discovery';
+import { DISCOVERY_OPTIONS } from './tokens';
 
-/**
- * Service discovery options token.
- */
-export const DISCOVERY_OPTIONS = token<ServiceDiscoveryOptions>('DISCOVERY_OPTIONS');
+export { DISCOVERY_OPTIONS } from './tokens';
 
 /**
  * Service discovery providers.

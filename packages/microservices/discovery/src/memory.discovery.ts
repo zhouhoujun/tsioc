@@ -1,7 +1,7 @@
 import { Inject, Injectable, OnDestroy } from '@tsdi/ioc';
 import { ServiceEndpoint, ServiceInfo, ServiceQuery, ServiceWatchCallback, ServiceDiscoveryOptions } from './discovery';
 import { ServiceDiscovery } from './registry';
-import { DISCOVERY_OPTIONS } from './discovery.module';
+import { DISCOVERY_OPTIONS } from './tokens';
 
 /**
  * In-memory service discovery implementation.

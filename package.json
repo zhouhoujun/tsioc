@@ -110,6 +110,8 @@
   "dependencies": {
     "@grpc/grpc-js": "^1.6.3",
     "@grpc/proto-loader": "^0.6.9",
+    "@swc/core": "^1.16.18",
+    "@swc/helpers": "^0.5.23",
     "@types/content-disposition": "^0.5.4",
     "@types/cookies": "^0.9.0",
     "@types/duplexify": "^3.6.1",

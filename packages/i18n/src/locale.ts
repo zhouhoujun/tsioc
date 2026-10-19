@@ -1,6 +1,6 @@
 import { Injectable, Inject, Optional } from '@tsdi/ioc';
 import { I18N_OPTIONS } from './tokens';
-import { I18nModuleOptions } from './i18n.module';
+import type { I18nModuleOptions } from './i18n.module';
 
 /**
  * Translation bundle interface.

@@ -1,5 +1,5 @@
 import { Token, token } from '@tsdi/ioc';
-import { I18nModuleOptions } from './i18n.module';
+import type { I18nModuleOptions } from './i18n.module';
 import { TranslationBundle } from './locale';
 import { TranslationLoader } from './loaders';
 

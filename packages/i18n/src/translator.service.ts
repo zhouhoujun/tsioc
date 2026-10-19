@@ -1,7 +1,7 @@
 import { Injectable, Inject, Injector, Optional } from '@tsdi/ioc';
 import { Translator } from './translator';
 import { I18N_OPTIONS, I18N_TRANSLATIONS, TRANSLATION_LOADERS } from './tokens';
-import { I18nModuleOptions } from './i18n.module';
+import type { I18nModuleOptions } from './i18n.module';
 import { TranslationBundle, LocaleService } from './locale';
 import { MessageFormatter } from './message';
 import { TranslationLoader } from './loaders';

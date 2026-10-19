@@ -4,7 +4,7 @@ import { HealthResult } from '../../../health/src/health';
 import { ServiceDiscovery } from '@tsdi/discovery';
 import { HEALTH_INDICATORS } from '../../../health/src/tokens';
 import { HealthOptions } from '../features/HealthOptions';
-import { SERVICE_HEALTH_OPTIONS } from '../provider';
+import { SERVICE_HEALTH_OPTIONS } from '../tokens';
 import { IHealthCheckStrategy } from './IHealthCheckStrategy';
 import { IRegistrationStrategy, REGISTRATION_STRATEGY } from './IRegistrationStrategy';
 
