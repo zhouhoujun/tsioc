@@ -1108,8 +1108,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return selectApprovalRequest(
             (title: string, options: any[], index: number, hint?: string) => this.select(title, options, index, hint),
             this.state,
-            requests,
-            selectedIndex
+            requests, selectedIndex,
+            (key: string, params: Record<string, any> | undefined, fallback: string) => this.translator?.translate(key, params) || fallback
         );
     }
 

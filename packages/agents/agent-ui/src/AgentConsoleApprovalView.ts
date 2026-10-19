@@ -1,8 +1,14 @@
+/** Resolves a localized string, falling back to the English template. */
+export type ApprovalTranslate = (key: string, params: Record<string, any> | undefined, fallback: string) => string;
+
+const passthroughTranslate: ApprovalTranslate = (_key, _params, fallback) => fallback;
+
 export async function selectApprovalRequest(
     select: (title: string, options: any[], index: number, hint?: string) => Promise<string | undefined>,
     state: any,
     requests: any[],
-    selectedIndex = 0
+    selectedIndex = 0,
+    translate: ApprovalTranslate = passthroughTranslate
 ): Promise<any> {
     if (!requests.length) {
         return undefined;
@@ -10,16 +16,20 @@ export async function selectApprovalRequest(
     if (requests.length === 1) {
         return requests[0];
     }
-    const selected = await select('Pending approvals', requests.map(request => ({
+    const selected = await select(translate('agent.approval.pendingTitle', undefined, 'Pending approvals'), requests.map(request => ({
         label: `${request.toolName} (${request.id.slice(0, 8)})`,
         value: request.id,
         description: request.reason,
         detail: [
-            `Tool: ${request.toolName}`,
-            `Reason: ${request.reason}`,
-            request.inputSummary ? `Input: ${request.inputSummary}` : 'Input: -',
-            `Timeout: ${request.timeoutMs}ms`,
-            request.expiresAt ? `Expires: ${new Date(request.expiresAt).toLocaleTimeString()}` : ''
+            translate('agent.approval.tool', { tool: request.toolName }, `Tool: ${request.toolName}`),
+            translate('agent.approval.reason', { reason: request.reason }, `Reason: ${request.reason}`),
+            request.inputSummary
+                ? translate('agent.approval.input', { input: request.inputSummary }, `Input: ${request.inputSummary}`)
+                : translate('agent.approval.inputNone', undefined, 'Input: -'),
+            translate('agent.approval.timeout', { ms: request.timeoutMs }, `Timeout: ${request.timeoutMs}ms`),
+            request.expiresAt
+                ? translate('agent.approval.expiresAt', { time: new Date(request.expiresAt).toLocaleTimeString() }, `Expires: ${new Date(request.expiresAt).toLocaleTimeString()}`)
+                : ''
         ].join('\n')
     })), Math.max(0, Math.min(requests.length - 1, selectedIndex)), state.consoleOptions.selectHint);
     return requests.find(request => request.id === selected);

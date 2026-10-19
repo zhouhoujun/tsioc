@@ -1,6 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleApprovalsPanelComponent, AgentConsoleSessionState } from '../src';
+import { selectApprovalRequest } from '../src/AgentConsoleApprovalView';
 
 /**
  * P315: the approvals panel used hardcoded English for the title, actions and
@@ -36,6 +37,36 @@ export class ApprovalPanelI18nTest {
         expect(panel.approvalsSummaryLabel).toContain('T:agent.dashboard.approvals');
         expect(panel.selectedApprovalDetailLabel).toContain('T:agent.approval.reason');
         expect(panel.accessibilityLabel).toBe('T:agent.approval.accessibilitySelected');
+    }
+
+    @Test('the /approvals inspector detail lines go through the translator')
+    async inspectorUsesTranslator() {
+        const translate = (key: string) => `T:${key}`;
+        let capturedTitle = '';
+        let captured: any[] = [];
+        const select = async (title: string, options: any[]) => {
+            capturedTitle = title;
+            captured = options;
+            return options[0].value;
+        };
+        const request = {
+            id: 'approval-p315', toolName: 'delete_file', reason: 'requires approval',
+            inputSummary: '{"path":"x"}', timeoutMs: 30000, expiresAt: Date.now() + 30000
+        };
+        const selected = await selectApprovalRequest(
+            select as any,
+            { consoleOptions: { selectHint: 'hint' } },
+            [request, { ...request, id: 'approval-p315-b' }],
+            0,
+            translate
+        );
+        expect(selected?.id).toBe('approval-p315');
+        expect(capturedTitle).toBe('T:agent.approval.pendingTitle');
+        expect(captured[0].detail).toContain('T:agent.approval.tool');
+        expect(captured[0].detail).toContain('T:agent.approval.reason');
+        expect(captured[0].detail).toContain('T:agent.approval.input');
+        expect(captured[0].detail).toContain('T:agent.approval.timeout');
+        expect(captured[0].detail).toContain('T:agent.approval.expiresAt');
     }
 
     @Test('without a translator the English catalog fallback still renders')

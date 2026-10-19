@@ -86,7 +86,13 @@ export const agentUiEnglish: TranslationBundle = {
                 expired: 'Expired',
                 accessibilityTitle: 'Approvals',
                 accessibility: 'Approvals. {count} pending.',
-                accessibilitySelected: 'Approvals. {count} pending. Selected: {tool}.'
+                accessibilitySelected: 'Approvals. {count} pending. Selected: {tool}.',
+                pendingTitle: 'Pending approvals',
+                tool: 'Tool: {tool}',
+                input: 'Input: {input}',
+                inputNone: 'Input: -',
+                timeout: 'Timeout: {ms}ms',
+                expiresAt: 'Expires: {time}'
             },
             dashboard: {
                 approvals: 'approvals {count}',
@@ -169,7 +175,13 @@ export const agentUiChinese: TranslationBundle = {
                 expired: '已过期',
                 accessibilityTitle: '审批',
                 accessibility: '审批。{count} 项待处理。',
-                accessibilitySelected: '审批。{count} 项待处理。已选：{tool}。'
+                accessibilitySelected: '审批。{count} 项待处理。已选：{tool}。',
+                pendingTitle: '待处理审批',
+                tool: '工具：{tool}',
+                input: '输入：{input}',
+                inputNone: '输入：-',
+                timeout: '超时：{ms}ms',
+                expiresAt: '过期：{time}'
             },
             dashboard: {
                 approvals: '审批 {count}',
