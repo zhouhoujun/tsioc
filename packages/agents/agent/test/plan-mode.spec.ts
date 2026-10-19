@@ -384,6 +384,27 @@ export class PlanModeTest {
         } finally { await ctx.close(); }
     }
 
+    @Test('splits the static prompt and dynamic tail into separate system messages')
+    async splitsStaticAndDynamicPromptMessages() {
+        const tool = new CountingTool('read_tool', true);
+        const adapter = new SingleToolCallModelAdapter('read_tool');
+        const builder = new SystemPromptBuilder([
+            { priority: 0, name: () => 'static', render: async () => 'STATIC PROMPT' },
+            { priority: 100, name: () => 'dynamic', cacheable: false, render: async () => 'DYNAMIC TAIL' }
+        ] as any);
+        const { runtime, ctx } = await createRuntime(adapter, tool, builder);
+        try {
+            await runtime.runTurn('s1', 'inspect');
+
+            const messages = adapter.requests[0].messages;
+            expect(messages[0].role).toEqual('system');
+            expect(String(messages[0].content || '')).toContain('STATIC PROMPT');
+            expect(String(messages[0].content || '')).not.toContain('DYNAMIC TAIL');
+            expect(messages[1].role).toEqual('system');
+            expect(String(messages[1].content || '')).toContain('DYNAMIC TAIL');
+        } finally { await ctx.close(); }
+    }
+
     @Test('tool round cap keeps an unfinished plan alive instead of ending the turn')
     async roundCapContinuesUnfinishedPlan() {
         const tool = new TodoTool();

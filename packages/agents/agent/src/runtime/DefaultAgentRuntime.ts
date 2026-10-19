@@ -1308,7 +1308,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         );
 
         if (this.promptBuilder) {
-            const systemPrompt = await this.promptBuilder.build({
+            const promptContext = {
                 sessionId,
                 tools: this.getToolDefinitions(sessionId).map(t => ({
                     name: t.name,
@@ -1318,16 +1318,16 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 memory: memory.map(m => `- ${m.key}: ${m.value}`).join('\n'),
                 dateTime: new Date().toISOString(),
                 extra: { contextPreparation: preparedHistory.report, skillTokenBudget: this.options.skillTokenBudget, workspace: workspaceRoot, readFiles: collectToolReadPaths(messages), nativeToolSchemas: this.modelAdapter?.supportsNativeToolSchemas !== false, provider: this.modelAdapter?.provider }
-            });
-            if (systemPrompt) {
-                const modeHint = buildArchetypeModeHint(this.resolveArchetypeConfig(sessionId));
-                const delegationHint = buildDelegationModeHint(this.resolveDelegationMode(sessionId, turnContext));
-                const personalityHint = buildPersonalityHint(this.options.ui?.personality);
-                messages = [
-                    this.createMessage('system', systemPrompt + modeHint + delegationHint + personalityHint),
-                    ...messages
-                ];
-            }
+            };
+            // Static instructions stay in their own system message so a changing dynamic tail cannot break the cache prefix.
+            const buildParts = (this.promptBuilder as any).buildParts;
+            const parts = typeof buildParts === 'function' ? await buildParts.call(this.promptBuilder, promptContext) : { cacheable: await this.promptBuilder.build(promptContext), dynamic: '' };
+            const modeHint = buildArchetypeModeHint(this.resolveArchetypeConfig(sessionId));
+            const delegationHint = buildDelegationModeHint(this.resolveDelegationMode(sessionId, turnContext));
+            const personalityHint = buildPersonalityHint(this.options.ui?.personality);
+            const staticPrompt = `${parts.cacheable}${modeHint}${delegationHint}${personalityHint}`;
+            const systemMessages = [staticPrompt, parts.dynamic].filter(Boolean).map(text => this.createMessage('system', text));
+            if (systemMessages.length) messages = [...systemMessages, ...messages];
             const qualityNote = turnContext?.delegationQualityNote;
             if (qualityNote) {
                 turnContext!.delegationQualityNote = undefined;

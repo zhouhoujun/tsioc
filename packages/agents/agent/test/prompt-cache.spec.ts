@@ -107,6 +107,36 @@ export class PromptCacheTest {
         expect(memory).toBeGreaterThan(dateTime);
     }
 
+    @Test('buildParts separates the static prefix from the dynamic tail')
+    async buildPartsSeparatesStaticAndDynamic() {
+        const builder = new SystemPromptBuilder([
+            new IdentitySection(),
+            new DateTimeSection(),
+            new MemorySection()
+        ]);
+        const parts = await builder.buildParts({
+            sessionId: 's1',
+            dateTime: '2026-08-11T00:00:00.000Z',
+            memory: 'relevant memory',
+            tools: [],
+            model: 'test'
+        } as any);
+
+        expect(parts.cacheable).toContain('You are an autonomous task agent.');
+        expect(parts.cacheable).not.toContain('Current date and time:');
+        expect(parts.cacheable).not.toContain('## Relevant Memories');
+        expect(parts.dynamic).toContain('Current date and time: 2026-08-11T00:00:00.000Z');
+        expect(parts.dynamic).toContain('## Relevant Memories');
+        // Legacy build() keeps the same combined text for callers/tests.
+        expect(await builder.build({
+            sessionId: 's1',
+            dateTime: '2026-08-11T00:00:00.000Z',
+            memory: 'relevant memory',
+            tools: [],
+            model: 'test'
+        } as any)).toBe([parts.cacheable, parts.dynamic].filter(Boolean).join('\n\n'));
+    }
+
     @Test('sections default to cacheable unless explicitly disabled')
     async sectionsDefaultToCacheable() {
         const plain = new StubSection('plain', 100, undefined);

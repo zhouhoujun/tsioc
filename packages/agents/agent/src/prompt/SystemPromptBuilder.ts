@@ -24,8 +24,14 @@ export class SystemPromptBuilder {
         this.sections.push(...sections);
     }
 
-    /** Build the complete system prompt */
-    async build(context: Partial<PromptSectionContext>): Promise<string> {
+    /**
+     * Render the prompt as two parts: the cacheable (static) prefix and the
+     * dynamic tail (date-time, memory, ...). Keeping them in separate system
+     * messages lets providers cache the stable prefix even when the dynamic
+     * tail changes every turn; joining them into one message invalidates the
+     * whole system prompt on providers that cache per message.
+     */
+    async buildParts(context: Partial<PromptSectionContext>): Promise<{ cacheable: string; dynamic: string }> {
         const ctx: PromptSectionContext = {
             sessionId: context.sessionId ?? '',
             tools: context.tools ?? [],
@@ -54,7 +60,25 @@ export class SystemPromptBuilder {
             }
         }));
 
-        return renderedSections.filter(Boolean).join('\n\n');
+        const cacheable: string[] = [];
+        const dynamic: string[] = [];
+        sorted.forEach((section, index) => {
+            const rendered = renderedSections[index];
+            if (!rendered) {
+                return;
+            }
+            (section.cacheable === false ? dynamic : cacheable).push(rendered);
+        });
+        return {
+            cacheable: cacheable.join('\n\n'),
+            dynamic: dynamic.join('\n\n')
+        };
+    }
+
+    /** Build the complete system prompt (legacy single-string form). */
+    async build(context: Partial<PromptSectionContext>): Promise<string> {
+        const parts = await this.buildParts(context);
+        return [parts.cacheable, parts.dynamic].filter(Boolean).join('\n\n');
     }
 }
 

@@ -534,11 +534,12 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
     }
 
     protected computeStaticPrefixHash(messages: OpenAIMessage[], tools: OpenAIToolDefinition[]): string {
-        const systemText = messages
-            .filter(message => message.role === 'system')
-            .map(message => typeof message.content === 'string' ? message.content : JSON.stringify(message.content))
-            .join('\n');
-        const toolText = tools.map(tool => tool.function?.name ?? '').join(',');
+        // The static prefix is the first system message plus the tool schemas.
+        // Later system messages (summary/memory/date-time) are dynamic by
+        // design and must not make the static-prefix diagnostic fail every turn.
+        const staticSystem = messages.find(message => message.role === 'system');
+        const systemText = typeof staticSystem?.content === 'string' ? staticSystem.content : JSON.stringify(staticSystem?.content ?? '');
+        const toolText = tools.map(tool => JSON.stringify(tool)).join('\n');
         const input = `${systemText}\n---tools---\n${toolText}`;
         let hash = 0;
         for (let i = 0; i < input.length; i++) {
