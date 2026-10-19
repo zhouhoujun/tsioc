@@ -264,6 +264,14 @@
 - **回归测试（红→绿）**：新增 `packages/components/test/binding-destroyed-injector.spec.ts`，断言 `injector.destroyed` 时 `bindingProperty` 的工厂**不得**执行其 effect。证红：临时移除该守卫 → `0 passing 1 failed`（effect 仍执行并因解析已销毁注入器抛错）；证绿：恢复守卫 → components `147 passing`、`EXIT=0`。
 - **诚实边界**：这是**静态锁定的真实缺失守卫缺口**，但**尚不能证明就是用户实机那条崩溃**（无堆栈，无法复现第二 turn）。需完整调用栈确认；若不匹配，则该守卫修复本身独立成立、可保留。
 
+## 2026-10-18 修复 TUI 审批键（`a`/`d`）无效：决议未走 runtime 的 approval manager（`4837b5ede`）
+- **现象**：真实 TUI（未信任 workspace）中 `workspace_trust` 提示可见、`approvalsFocused=true`、`inputFocused=false`，但按 `a` 既不进 composer、也不关闭提示，30s 超时后工具被 trust gate 跳过。
+- **定位（真实 TUI 插桩）**：`dispatch-focus raw="a" → focusKey=approve` → `handleApprovalKey('approve')` → `resolveApproval` → `state.resolveApprovalAction` → `getPendingApprovals` 返回 **0** → `applyApprovalDecision` 抛 **`Approval is not configured`**（来自 `AppRpcServer`）。即 console 注入的 approval manager 为 null，落到了未配置的 RPC 路径。
+- **根因**：`DefaultAgentRuntime` 在 DI 注入的 `ApprovalManager` 未配置时会**自建** `ToolApprovalManager`（`resolveApprovalManager`）；console 只读自己的注入字段，因此决议发往无人处理的路径。提示之所以可见，是因为事件桥（`AgentApprovalRequestedEvent`）照常渲染。
+- **修复**：`AgentRuntime` 暴露 `approvalManager`（runtime 实际用于 gating 的实例），`DefaultAgentRuntime` 构造时把解析结果同时写入该字段；console 的 `resolvedApprovalManager = 注入值 ?? runtime.approvalManager`，`refreshPendingApprovals` / `applyApprovalDecision` / `getPendingApprovals` / `setAutoApprove` 统一走它（并借机把 `setAutoApprove` 收敛为一行以守住 source-size 预算）。
+- **回归（红→绿）**：新增 `agent-ui/test/p314-approval-runtime-manager.spec.ts`；证红：临时改回 `this.approvalManager` → `0 passing 1 failed`（`Expected: true / Received: false`）；证绿：`1 passing`。
+- **真实 TUI 验收（去插桩后）**：按 `a` → 提示消失 → `trusted-projects.json` 写入 `/tmp` → `apfix.txt` 被删除 → 回答确认。`agent-ui` **1523 passing**、`agent` **1020 passing**、两包 `tsc` 0 错误、`source-size` OK、`git diff --check` 干净。
+
 ## 2026-10-18 遗留三项收口：sandbox 能力探测 / knowledge_search 信号 / 重复工具调用实测
 - **sandbox-exec 能力探测**：合并后已具备 `probeSandboxExecTool` / `detectSandboxExecTool` / `describeSandboxCapabilities`（一次 `sh -lc 'command -v <tool>'` 短探测：bwrap → unshare / sandbox-exec / windows-native），`DefaultSandboxExecutor.execute` 用它包裹命令，缺失时回退并给出可操作 reason。本机实测：无 bwrap/unshare → `{"tool":null,"reason":"No OS sandbox tool available on linux (need bwrap or unshare)."}`，能力表 filesystem-write/network/read-denied 均降级为 process 且带 reason；`agent/test/sandbox-exec.spec.ts` 覆盖。
 - **knowledge_search 遵守 turn 信号**（`c89f8b197`）：新增 `KnowledgeSearchOptions.signal` 透传；`knowledge_search` 入口检查 `context.signal` 并把 signal 传给 adapter；`DefaultKnowledgeAdapter.search` 已中止时抛 `AbortError`。回归 `test/knowledge-search-signal.spec.ts` 3 passing；证红：旧实现下测试无法编译（`TS2559`，旧选项类型无 `signal`）；证绿：3 passing；`agent-tools` 全量 **570 passing**、`tsc` 0 错误。
