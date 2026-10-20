@@ -264,6 +264,15 @@
 - **回归测试（红→绿）**：新增 `packages/components/test/binding-destroyed-injector.spec.ts`，断言 `injector.destroyed` 时 `bindingProperty` 的工厂**不得**执行其 effect。证红：临时移除该守卫 → `0 passing 1 failed`（effect 仍执行并因解析已销毁注入器抛错）；证绿：恢复守卫 → components `147 passing`、`EXIT=0`。
 - **诚实边界**：这是**静态锁定的真实缺失守卫缺口**，但**尚不能证明就是用户实机那条崩溃**（无堆栈，无法复现第二 turn）。需完整调用栈确认；若不匹配，则该守卫修复本身独立成立、可保留。
 
+## 2026-10-19 真实模拟：sleep-mlt 系统构建 + 工具耗时显示修复（`9bf918ab6`）
+- **运行方式**：`npm run chat -- --workspace /home/zhouyou/workspace/sleep-mlt`（生产 root）。默认模型 `gpt-5.5` 与 strong profile `gpt-5.6` 当前不可用（HTTP 000/502），改用 `--model gpt-6.1-sol`（可用）；`gpt-6-astra` 在 TUI 大请求下曾返回空响应。
+- **任务**：按 sleep-mlt `AGENTS.md` 新建 `timer-system`（ESM、无依赖、首行用途注释、配套 `node:assert/strict` 测试），实现注入时钟的 `createTimer`，运行测试并报告真实输出，最后更新 `AGENTS.md`。
+- **代理表现（真实）**：创建 `timer-system/src/timer.js` + `test/timer.test.js` → 运行 `node test/timer.test.js`（exit 0，`timer tests: all assertions passed`）→ 读取并更新 `AGENTS.md`（Project Structure 增加 timer-system 行）。人工独立复核：代码符合全部规则，测试覆盖未启动/启动/停止冻结/重置/重复启动/非法时钟，独立运行通过。
+- **发现的真实缺陷**：TUI 工具行耗时显示为 `(69s)`/`(41s)`/`(5.5s)`，而审计日志与真实 receipt 是 `16ms`/`175ms`/`12ms`。根因：本地 in-process 流桥 `mapRunTurnStreamChunk` 只映射固定字段，**丢弃 `durationMs`**，UI 退化为 `Date.now() - row.createdAt`（把模型生成时间算进工具耗时）。
+- **修复**：流桥透传 `durationMs`（并补 `approvalId`/`report`/`diagnostics`）。
+- **回归（红→绿）**：`agent-gateway/test/app-server-bridge.spec.ts` 新增用例；证红（回退 mapper）`4 passing 1 failed`（`Expected: 16 / Received: undefined`）→ 证绿 `5 passing`；`agent-gateway` 全量 **322 passing**、`tsc` 0、`source-size` OK。
+- **真实 TUI 复验**：同一读取任务工具行现在显示 **`(12ms)`**（与真实耗时一致）。
+
 ## 2026-10-19 非交互 run 快速拒绝审批（`0e215b4fc`）
 - **问题**：非交互 `run` 下每次 gated 调用都要等满 30s 审批超时（无 UI 可作答）；真实任务中观察到 2 次（约 60s）。
 - **修复**：新增 opt-in `tools.approvalAutoDeny`（默认 false，行为不变）；`DefaultAgentRuntime.resolveApprovalManager` 读取它；`run` 的 3 条路径（prompt/stream/json）在合并 options 时置为 true。非交互下立即拒绝，理由为策略原因（`Tool "x" requires approval.`）。
