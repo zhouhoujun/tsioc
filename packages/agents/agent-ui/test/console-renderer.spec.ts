@@ -25,6 +25,7 @@ import {
     AgentConsoleWorkingPanelComponent,
     AgentUiModule
 } from '../src';
+import { DEFAULT_TIMELINE_LABELS } from '../src/AgentConsoleTimelineWindow';
 
 async function settleDynamicMessages(ref?: ComponentRef<unknown>): Promise<void> {
     void ref;
@@ -199,6 +200,7 @@ export class AgentConsoleDashboardRendererTest {
         ref.instance.sessionState.setMessages([
             { id: 'u1', role: 'user', content: 'history stays visible', createdAt: 1 } as any
         ]);
+        ref.instance.sessionState.setConsoleOptions({ timelineLabels: DEFAULT_TIMELINE_LABELS });
         ref.instance.sessionState.setPlanTodos([
             { id: 'p1', content: 'Design architecture', status: 'completed' },
             { id: 'p2', content: 'Generate project structure', status: 'completed' }
@@ -2395,7 +2397,7 @@ export class AgentConsoleTuiRendererTest {
     @Test('explicit dynamic timeline mode keeps a bounded scan window and summarizes hidden history')
     timelineModeBoundsHistory() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
-        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 3, messageLayout: 'viewport' });
+        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 3, messageLayout: 'viewport', timelineLabels: DEFAULT_TIMELINE_LABELS });
         ref.instance.sessionState.setMessages(Array.from({ length: 8 }, (_, index) => ({
             id: `event-${index + 1}`,
             role: 'assistant',

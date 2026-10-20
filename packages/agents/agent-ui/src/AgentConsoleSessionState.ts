@@ -48,6 +48,7 @@ import { AgentConsoleTranscriptNavigationController } from './AgentConsoleTransc
 import {
     AgentConsoleTimelineLabels,
     DEFAULT_TIMELINE_LABELS,
+    EN_TIMELINE_LABELS,
     fillTimelineLabel,
     formatTimelineClockTime,
     formatTimelineSessionDuration,
@@ -577,9 +578,16 @@ export interface AgentConsoleCommandOutputEntry {
 
 export const AGENT_CONSOLE_COMMAND_OUTPUT_RING_CAP = 20;
 
+const EN_MESSAGE_STATUS_LABELS = { running: 'Running', success: 'Success', failed: 'Failed', error: 'Error' };
+
 @Injectable()
 export class AgentConsoleSessionState {
-    constructor(@Inject(COMMAND_EXECUTION_CONTROL) protected commandExecutionControl?: CommandExecutionControlPort, @Optional() @Inject(TranslatorService) private translator?: TranslatorService) {}
+    constructor(@Inject(COMMAND_EXECUTION_CONTROL) protected commandExecutionControl?: CommandExecutionControlPort, @Optional() @Inject(TranslatorService) private translator?: TranslatorService) {
+        // The built-in label sets are zh; an en-locale host must not show zh chrome.
+        if (this.translator?.currentLocale && !this.translator.currentLocale.toLowerCase().startsWith('zh')) {
+            this.consoleOptions = { ...this.consoleOptions, messageStatusLabels: EN_MESSAGE_STATUS_LABELS, timelineLabels: EN_TIMELINE_LABELS };
+        }
+    }
     readonly inputHistoryController: AgentConsoleInputHistoryController = new DefaultAgentConsoleInputHistoryController(this);
     readonly focusLayers: AgentConsoleFocusLayers = new DefaultAgentConsoleFocusLayers(this);
 
