@@ -264,6 +264,15 @@
 - **回归测试（红→绿）**：新增 `packages/components/test/binding-destroyed-injector.spec.ts`，断言 `injector.destroyed` 时 `bindingProperty` 的工厂**不得**执行其 effect。证红：临时移除该守卫 → `0 passing 1 failed`（effect 仍执行并因解析已销毁注入器抛错）；证绿：恢复守卫 → components `147 passing`、`EXIT=0`。
 - **诚实边界**：这是**静态锁定的真实缺失守卫缺口**，但**尚不能证明就是用户实机那条崩溃**（无堆栈，无法复现第二 turn）。需完整调用栈确认；若不匹配，则该守卫修复本身独立成立、可保留。
 
+## 2026-10-19 审批原因结构化并本地化（`72a41fc71`）
+- **问题**：审批详情的 `Reason:` 文本（`Tool "x" requires approval.`）由 agent 层 `DefaultApprovalStrategy.reason()` 生成，纯自由文本，UI 无法本地化（真实 TUI zh 下仍显示英文）。
+- **修复**：`ApprovalRequest` / `ApprovalRequestView` / `AgentApprovalRequestedEvent` 增加可选 `reasonDetail?: { code, params }`；`ApprovalStrategy` 增加可选 `reasonDetail?()`，`DefaultApprovalStrategy` 返回 `{ code: 'tool-requires-approval', params: { tool } }`；`createRequest` / `toRequestView` 透传。agent-ui 状态与两个事件桥透传，审批面板与 `/approvals` 选择器优先用 `agent.approval.reasonCode.<code>`（en/zh）渲染，缺失时回退 `reason`。
+- **预算**：`ToolApprovalManager.ts` 基线 626 无余量——压缩默认规则数组（−9）并把 `reasonDetail` 合并进既有行，保持 `source-size` 通过。
+- **回归（红→绿）**：`agent/test/tools.spec.ts` 新增「structured reason」；证红（回退 `createRequest` 填充）`47 passing 1 failed`（`Expected: "tool-requires-approval" / Received: undefined`）→ 证绿 `48 passing`。`agent-ui/p315` 新增结构化原因用例；证红（回退面板逻辑）`3 passing 1 failed`（`Expected substring: "需要审批:delete_file" / Received: "原因：requires approval"`）→ 证绿 `4 passing`。
+- **真实 TUI 验收（zh）**：`原因：工具「workspace_trust」需要审批。` / `30 秒后过期` / `a 允许 …`；`a` 放行后文件删除。
+- **验证**：`agent` **1021 passing**、`agent-ui` **1531 passing**、两包 `tsc` 0、`source-size` OK、`git diff --check` 干净。
+- **仍可见英文**：事件行 `Approval required: <tool> (<id>)` 与上下文诊断行 `context unchanged · level light · …` 尚未 i18n（下一批）。
+
 ## 2026-10-19 时间线角色标签接入 i18n（`316a1fc09`）
 - **问题**：`Thought · ` / `Tool · ` / `Plan · ` / `Files · ` / `Question · ` / `Approval · ` / `Error · ` / `$ ` 是 `AgentConsoleMessageRenderers.ts` 中 `AgentConsoleKindRenderer` 子类的静态字段，zh-CN 下仍显示英文（真实 TUI 可见 `Tool · 检查目录已完成`）。
 - **修复**：`AgentConsoleKindRenderer` 注入可选 `TranslatorService`，`resolve()` 用 `formatAgentUiLabel(translator, 'agent.timeline.<kind>', label)`；新增 `agent.timeline.*` 目录（en / zh-CN：思考/工具/计划/文件/提问/审批/错误）。
