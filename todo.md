@@ -264,6 +264,15 @@
 - **回归测试（红→绿）**：新增 `packages/components/test/binding-destroyed-injector.spec.ts`，断言 `injector.destroyed` 时 `bindingProperty` 的工厂**不得**执行其 effect。证红：临时移除该守卫 → `0 passing 1 failed`（effect 仍执行并因解析已销毁注入器抛错）；证绿：恢复守卫 → components `147 passing`、`EXIT=0`。
 - **诚实边界**：这是**静态锁定的真实缺失守卫缺口**，但**尚不能证明就是用户实机那条崩溃**（无堆栈，无法复现第二 turn）。需完整调用栈确认；若不匹配，则该守卫修复本身独立成立、可保留。
 
+## 2026-10-19 会话恢复检查 + 未知/歧义命令提示 i18n（`40d42b3af`）
+- **功能检查（非 i18n）**：真实 TUI 会话恢复——`chat --session ses-resume-1` 首轮记住 `PINEAPPLE`，进程退出后用同一 session 重启：历史（用户消息 + 回答 + `Worked for 5s · done`）完整恢复，追问仍答 `PINEAPPLE`（上下文连续）。**未发现缺陷**。
+- **问题**：`AgentConsoleCommandDispatch` 的 `Unknown command:` / `Ambiguous command:` 硬编码英文（未知命令如 `/quit` 在 zh 下仍显示英文；`/quit` 本身不是命令，正确为 `/exit`）。
+- **修复**：新增 `agent.command.unknown` / `agent.command.ambiguous`（en / zh-CN）；`AgentConsoleSessionState` 暴露 `translateLabel()`（内部走 `formatAgentUiLabel`），dispatch 两处经它渲染。
+- **回归（红→绿）**：新增 `p319-command-dispatch-i18n.spec.ts` 2 条；证红（回退 dispatch）`1 passing 1 failed`（`Expected: "未知命令：/zzz-unknown" / Received: "Unknown command: /zzz-unknown"`）→ 证绿 `2 passing`。
+- **真实 TUI（zh）**：`未知命令：/zzz-unknown`（notice 与命令行一致）。
+- **验证**：`agent-ui` **1539 passing**、`tsc` 0、`source-size` OK、`git diff --check` 干净。
+- **后续**：命令行的 `failed:` 后缀由 `@tsdi/agent` 的 command-execution reducer 生成（跨层，需结构化状态才能在 UI 本地化）。
+
 ## 2026-10-19 中文环境键盘提示走 zh 文案（`05b0a4d1d`）
 - **问题**：`consoleOptions` 的键盘提示（`selectHint` / `sessionHint` / `messagesHint` / `toolsHint` / `toolRunsHint` / `messageDetailHint` / `messageDetailClosedHint` / `selectCloseHint` / `reviewDetailHint`）默认英文，zh 环境仍显示 `up/down move   enter confirm   q cancel`。
 - **修复**：新增 `ZH_CONSOLE_HINTS`；`AgentConsoleSessionState` 在 zh locale 时以**替换实例引用**方式合并（不污染共享 `defaultAgentConsoleOptions`），en / 无 translator 保持内置英文。
