@@ -264,6 +264,13 @@
 - **回归测试（红→绿）**：新增 `packages/components/test/binding-destroyed-injector.spec.ts`，断言 `injector.destroyed` 时 `bindingProperty` 的工厂**不得**执行其 effect。证红：临时移除该守卫 → `0 passing 1 failed`（effect 仍执行并因解析已销毁注入器抛错）；证绿：恢复守卫 → components `147 passing`、`EXIT=0`。
 - **诚实边界**：这是**静态锁定的真实缺失守卫缺口**，但**尚不能证明就是用户实机那条崩溃**（无堆栈，无法复现第二 turn）。需完整调用栈确认；若不匹配，则该守卫修复本身独立成立、可保留。
 
+## 2026-10-19 真实项目 e2e：read_file 目录错误可操作化（`86a41b6d3`）
+- **真实运行**：`run` 在 `/home/zhouyou/workspace/sleep-mlt`（只读分析）：152 次工具调用（`read_file` 73 / `list_dir` 68 / `glob_search` 6 / `content_search` 3 / `stat` 2），去重缓存命中 2 次；回答质量良好、引用真实路径，并诚实说明 `terminal` 因 workspace 未信任被拒。
+- **发现的工具错误**：其中 2 次 `read_file` 指向目录，直接泄漏 Node 原始错误 `EISDIR: illegal operation on a directory, read`（不可操作）。其余为模型探索式猜测路径（`*/package.json` 不存在）——错误信息本身已清晰。
+- **修复**：`read_file` 捕获 `EISDIR`，改为 `Path '<p>' is a directory; use list_dir to inspect its entries.`。
+- **回归（红→绿）**：新增 `agent-tools/test/read-file-directory.spec.ts`；证红（回退捕获）`Expected substring: "Path 'src' is a directory" / Received: "EISDIR: illegal operation on a directory, read"` → 证绿 `1 passing`；`agent-tools` 全量 **572 passing**、`tsc` 0、`source-size` OK。
+- **另一个发现（未改动，需决策）**：非交互 `run` 下 `workspace_trust` 审批**各等 30s 超时**后才被拒绝（一次任务观察到 2 次，浪费约 60s）。运行时 `resolveApprovalManager` 硬编码 `autoDeny: false`；`run` 无 UI 可作答。可选方案：(a) `run` 默认快速拒绝（autoDeny，理由更清晰、无等待）；(b) 引入 `--yes/--auto-approve`；(c) 保持现状。涉及审批安全语义，待确认后实施。
+
 ## 2026-10-19 zh 建议/审批提示改用中文（`4660e3887`）
 - **问题**：`suggestionsHint`（`enter 执行   tab 补全   up/down 选择`，混排）与 `approvalsHint`（英文）在 zh 环境仍使用 overlay 默认值。
 - **修复**：`ZH_CONSOLE_HINTS` 增补 `suggestionsHint`（回车 执行 / tab 补全 / 上/下 选择）与 `approvalsHint`（a 允许 / d 拒绝 / y 复制 / 上/下 移动 / esc 关闭）；en 静态默认保持不变（既有测试钉住）。

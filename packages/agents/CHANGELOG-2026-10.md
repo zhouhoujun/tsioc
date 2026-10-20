@@ -54,6 +54,7 @@ newline-JSON transport, allowlist gate and dynamic tool path end to end.
 
 | Commit | File | Root cause |
 | --- | --- | --- |
+| `86a41b6d3` | `files/read-file.tool.ts` | `read_file` on a directory leaked Node's raw `EISDIR: illegal operation on a directory, read`, which is not actionable (AGENTS.md §9). Now raises `Path '<p>' is a directory; use list_dir to inspect its entries.` |
 | `c89f8b197` | `knowledge/knowledge-search.tool.ts` | `knowledge_search` dropped the tool context, so the in-memory adapter never observed `AbortSignal` (Esc could not stop it). Now forwards `context.signal` via a typed option, and `DefaultKnowledgeAdapter.search` rejects with `AbortError` when already aborted. |
 | `91649673f` | `web/domain-policy.ts` | Domain allowlist used `String.includes()` (substring) → `https://evil.com/?x=example.com`, `https://example.com.evil.com/`, `https://notexample.com/` all passed. Now matches the URL **hostname** (exact or `.sub`). |
 | `f257e783b` | `git/git-operations.tool.ts` | `stash_pop`/`stash_list` set `args[0] = 'stash pop'` as one token; `spawnSync('git', argv)` has no shell → git got the invalid subcommand and always failed. Now `['stash','pop']` as separate args. |
