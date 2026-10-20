@@ -96,6 +96,10 @@ export const agentUiEnglish: TranslationBundle = {
             status: {
                 approvalRequired: 'Approval required: {tool} ({id}){extra}'
             },
+            command: {
+                unknown: 'Unknown command: {command}',
+                ambiguous: 'Ambiguous command: {command}  ({matches})'
+            },
             context: {
                 strategy: 'context {strategy}',
                 level: 'level {level}',
@@ -211,6 +215,10 @@ export const agentUiChinese: TranslationBundle = {
             },
             status: {
                 approvalRequired: '需要审批：{tool}（{id}）{extra}'
+            },
+            command: {
+                unknown: '未知命令：{command}',
+                ambiguous: '命令不唯一：{command}（{matches}）'
             },
             context: {
                 strategy: '上下文 {strategy}',

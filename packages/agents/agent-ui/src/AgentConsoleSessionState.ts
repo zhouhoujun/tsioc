@@ -608,6 +608,11 @@ export class AgentConsoleSessionState {
     readonly focusLayers: AgentConsoleFocusLayers = new DefaultAgentConsoleFocusLayers(this);
 
     /** Derived from the focus layer stack: the composer owns the keyboard unless a layer claims it. */
+    /** Localized label for derived status/error strings (see formatAgentUiLabel). */
+    translateLabel(key: string, params: Record<string, any> | undefined, fallback: string): string {
+        return formatAgentUiLabel(this.translator, key, fallback, params);
+    }
+
     get inputFocused(): boolean {
         return !this.focusLayers.blocksComposerInput();
     }
