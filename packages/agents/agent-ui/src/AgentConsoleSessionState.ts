@@ -4634,11 +4634,12 @@ export class AgentConsoleSessionState {
             return;
         }
         const details = [execution.command, execution.args].filter(Boolean).join(' ');
-        const status = execution.status === 'running' ? 'running'
+        const statusKey = execution.status === 'running' ? 'running'
             : execution.status === 'succeeded' ? 'completed'
                 : execution.status === 'cancelled' ? 'cancelled' : 'failed';
+        const status = this.translateLabel(`agent.command.status.${statusKey}`, undefined, statusKey);
         const suffix = execution.error ? `: ${execution.error}` : '';
-        const content = `${details || 'Command'} ${status}${suffix}`;
+        const content = `${details || this.translateLabel('agent.command.label', undefined, 'Command')} ${status}${suffix}`;
         this.projectThreadItem({
             kind: 'command',
             key: execution.requestId,

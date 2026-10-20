@@ -98,7 +98,9 @@ export const agentUiEnglish: TranslationBundle = {
             },
             command: {
                 unknown: 'Unknown command: {command}',
-                ambiguous: 'Ambiguous command: {command}  ({matches})'
+                ambiguous: 'Ambiguous command: {command}  ({matches})',
+                label: 'Command',
+                status: { running: 'running', completed: 'completed', cancelled: 'cancelled', failed: 'failed' }
             },
             context: {
                 strategy: 'context {strategy}',
@@ -218,7 +220,9 @@ export const agentUiChinese: TranslationBundle = {
             },
             command: {
                 unknown: '未知命令：{command}',
-                ambiguous: '命令不唯一：{command}（{matches}）'
+                ambiguous: '命令不唯一：{command}（{matches}）',
+                label: '命令',
+                status: { running: '进行中', completed: '已完成', cancelled: '已取消', failed: '失败' }
             },
             context: {
                 strategy: '上下文 {strategy}',
