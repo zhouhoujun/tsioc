@@ -264,6 +264,14 @@
 - **回归测试（红→绿）**：新增 `packages/components/test/binding-destroyed-injector.spec.ts`，断言 `injector.destroyed` 时 `bindingProperty` 的工厂**不得**执行其 effect。证红：临时移除该守卫 → `0 passing 1 failed`（effect 仍执行并因解析已销毁注入器抛错）；证绿：恢复守卫 → components `147 passing`、`EXIT=0`。
 - **诚实边界**：这是**静态锁定的真实缺失守卫缺口**，但**尚不能证明就是用户实机那条崩溃**（无堆栈，无法复现第二 turn）。需完整调用栈确认；若不匹配，则该守卫修复本身独立成立、可保留。
 
+## 2026-10-19 时间线角色标签接入 i18n（`316a1fc09`）
+- **问题**：`Thought · ` / `Tool · ` / `Plan · ` / `Files · ` / `Question · ` / `Approval · ` / `Error · ` / `$ ` 是 `AgentConsoleMessageRenderers.ts` 中 `AgentConsoleKindRenderer` 子类的静态字段，zh-CN 下仍显示英文（真实 TUI 可见 `Tool · 检查目录已完成`）。
+- **修复**：`AgentConsoleKindRenderer` 注入可选 `TranslatorService`，`resolve()` 用 `formatAgentUiLabel(translator, 'agent.timeline.<kind>', label)`；新增 `agent.timeline.*` 目录（en / zh-CN：思考/工具/计划/文件/提问/审批/错误）。
+- **自定义渲染器保护**：`defaultTimelineLabel(kind)` 返回英文默认值，仅当 `label` 等于默认值时才翻译——宿主经 `AGENT_CONSOLE_MESSAGE_RENDERER_ROUTES` 覆盖的渲染器保留自己的标签。
+- **回归（红→绿）**：新增 `p316-timeline-role-label-i18n.spec.ts` 4 条；证红（回退 `roleLabel`）`1 passing 2 failed`（`Expected: "T:agent.timeline.tool" / Received: "Tool · "`）→ 证绿 `4 passing`。期间全量暴露并修复了自定义标签被目录覆盖的回归（`p309` 动态覆盖测试由失败 → 通过）。
+- **真实 TUI 验收**：`LANG=zh_CN.UTF-8` 下时间线显示 `✓ 工具 · 检查目录已完成 …`、`✓ 思考 · …`。
+- **验证**：`agent-ui` **1530 passing**、`tsc` 0、`source-size` OK（为守住基线预算，`itemStyle` 等价压缩 + helper 放在未入基线的 i18n 文件）。
+
 ## 2026-10-18 `/approvals` 选择器详情接入 i18n（`4078d2abc`）
 - 承接上一条：`AgentConsoleApprovalView.selectApprovalRequest` 的标题（`Pending approvals`）与详情（`Tool:` / `Reason:` / `Input:` / `Input: -` / `Timeout:` / `Expires:`）硬编码英文。
 - **修复**：函数新增可选 `translate` 参数（默认英文兜底），组件用 `this.translator` 传入；i18n 目录新增 `agent.approval.pendingTitle/tool/input/inputNone/timeout/expiresAt`（en / zh-CN）。
