@@ -353,7 +353,7 @@ export async function runAgentJsonStream(
     const message = await buildTurnMessage(prompt, options);
     const output = streams?.output ?? process.stdout;
     const principalId = streams?.principalId ?? 'local-system';
-    const ctx = await runAgentRpcApplication(options, mergeAgentOptions({ hooks: resolved.hooks, format: resolved.tools.format, workspace: resolved.workspace, instructionDocs: resolveCliInstructionDocs(resolved.root) }));
+    const ctx = await runAgentRpcApplication(options, mergeAgentOptions({ hooks: resolved.hooks, format: resolved.tools.format, workspace: resolved.workspace, instructionDocs: resolveCliInstructionDocs(resolved.root), tools: { approvalAutoDeny: true } }));
     const rpc = ctx.get(AppRpcServer);
     const sessionId = resolved.sessionId;
     let lastMessage: any = null;

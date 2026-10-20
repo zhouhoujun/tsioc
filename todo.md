@@ -268,7 +268,7 @@
 - **问题**：非交互 `run` 下每次 gated 调用都要等满 30s 审批超时（无 UI 可作答）；真实任务中观察到 2 次（约 60s）。
 - **修复**：新增 opt-in `tools.approvalAutoDeny`（默认 false，行为不变）；`DefaultAgentRuntime.resolveApprovalManager` 读取它；`run` 的 3 条路径（prompt/stream/json）在合并 options 时置为 true。非交互下立即拒绝，理由为策略原因（`Tool "x" requires approval.`）。
 - **验证**：`agent/test/tools.spec.ts` 新增 auto-deny 用例（DENIED、pending=0、<1s）；`agent` **1022 passing**、`agent-cli` **94 passing**、两包 `tsc` 0、`source-size` OK。真实 `run`（未信任 workspace + 触发 `terminal`）：**15s** 完成（含模型耗时），无 30s 超时。
-- **发现的独立缺陷（未修，需架构改动）**：`run --json`（RPC 应用）仍会超时。插桩证实 RPC runtime 收到的 `AGENT_OPTIONS` 是 `defaultAgentOptions`：`AgentModule` 内 `{ provide: AGENT_OPTIONS, useValue: defaultAgentOptions, asDefault: true }`（`agent.module.ts:83`）在导入模块的注入器中优先于外层 `AgentAppServerModule` 的 provider，导致 RPC 应用的 runtime 忽略宿主 options（含 policy/context/approval）。修复需让 `AgentAppServerModule` 经 `AgentModule.withOptions(...)` 把 options 注入导入模块（或等价模块级方案）。
+- **修正（撤回上一版错误结论）**：首轮曾判断 `run --json`（RPC 应用）因 `AgentModule` 的 `asDefault` provider 无法被外层覆盖而忽略宿主 options，并拟做模块级改造。**该结论不成立**：最小 @tsdi 实验（inner `asDefault` + outer provider）实测 `tok = outer`，外层 provider 可以覆盖。真正原因是上一轮的 patch 用相似字符串匹配，只改到了 `runAgentStreaming` 而**漏掉 `runAgentJsonStream` 的那一行**。补齐后：`run --json` **9s** 完成、`Approval timeout` **0** 次。
 
 ## 2026-10-19 真实项目 e2e：read_file 目录错误可操作化（`86a41b6d3`）
 - **真实运行**：`run` 在 `/home/zhouyou/workspace/sleep-mlt`（只读分析）：152 次工具调用（`read_file` 73 / `list_dir` 68 / `glob_search` 6 / `content_search` 3 / `stat` 2），去重缓存命中 2 次；回答质量良好、引用真实路径，并诚实说明 `terminal` 因 workspace 未信任被拒。
