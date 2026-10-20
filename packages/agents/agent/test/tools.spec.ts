@@ -297,6 +297,21 @@ export class BuiltinToolsTest {
         expect((await pendingPromise).decision).toEqual(ApprovalDecision.DENIED);
     }
 
+    @Test('auto-deny hosts reject gated calls immediately without a pending request')
+    async approvalManagerAutoDeny() {
+        const approvals = new ToolApprovalManager(
+            new FakeApp() as any,
+            new RandomUuidGenerator(),
+            new DefaultApprovalStrategy(['shell.exec']),
+            { defaultTimeoutMs: 30000, autoDeny: true }
+        );
+        const started = Date.now();
+        const result = await approvals.checkApproval('shell.exec', { cmd: 'ls' }, 's1');
+        expect(result.decision).toEqual(ApprovalDecision.DENIED);
+        expect(approvals.getPending().length).toEqual(0);
+        expect(Date.now() - started).toBeLessThan(1000);
+    }
+
     @Test('approval manager exposes a structured reason for localization')
     async approvalManagerExposesReasonDetail() {
         const approvals = new ToolApprovalManager(

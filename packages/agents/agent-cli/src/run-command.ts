@@ -236,7 +236,7 @@ export async function runAgentRpcStdio(
     streams?: { input?: Readable; output?: Writable; principalId?: string; }
 ): Promise<void> {
     const resolved = createConfigService(options).resolve(options);
-    const ctx = await runAgentRpcApplication(options, mergeAgentOptions({ hooks: resolved.hooks, format: resolved.tools.format, workspace: resolved.workspace, instructionDocs: resolveCliInstructionDocs(resolved.root) }));
+    const ctx = await runAgentRpcApplication(options, mergeAgentOptions({ hooks: resolved.hooks, format: resolved.tools.format, workspace: resolved.workspace, instructionDocs: resolveCliInstructionDocs(resolved.root), tools: { approvalAutoDeny: true } }));
     const input = streams?.input ?? process.stdin;
     const output = streams?.output ?? process.stdout;
     const principalId = streams?.principalId ?? 'local-system';
@@ -267,6 +267,8 @@ export async function runAgentPrompt(prompt: string, options: AgentCliOptions = 
         format: resolved.tools.format,
         workspace: resolved.workspace,
         instructionDocs: resolveCliInstructionDocs(resolved.root),
+        // Non-interactive single-shot runs: no UI can answer an approval.
+        tools: { approvalAutoDeny: true },
         model: {
             provider: modelConfig.provider,
             model: modelConfig.model,
@@ -304,6 +306,8 @@ export async function runAgentStreaming(prompt: string, options: AgentCliOptions
         format: resolved.tools.format,
         workspace: resolved.workspace,
         instructionDocs: resolveCliInstructionDocs(resolved.root),
+        // Non-interactive single-shot runs: no UI can answer an approval.
+        tools: { approvalAutoDeny: true },
         model: {
             provider: modelConfig.provider,
             model: modelConfig.model,

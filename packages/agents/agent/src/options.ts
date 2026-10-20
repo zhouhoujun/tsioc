@@ -65,8 +65,8 @@ export interface AgentToolOptions {
     requireApproval?: ApprovalRule[];
     /** Approval timeout in ms */
     approvalTimeoutMs?: number;
-    /** A2: whether an injected ApprovalReviewer may resolve approval requests without a human. */
-    approvalAutoReview?: boolean;
+    /** A2: whether an injected ApprovalReviewer may resolve requests without a human; `approvalAutoDeny` denies immediately for non-interactive hosts (e.g. `run`). */
+    approvalAutoReview?: boolean; approvalAutoDeny?: boolean;
 }
 
 export interface AgentSchedulerOptions {
