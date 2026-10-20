@@ -85,6 +85,7 @@ newline-JSON transport, allowlist gate and dynamic tool path end to end.
 
 | Commit | File | Root cause |
 | --- | --- | --- |
+| `569c87276` | `AgentConsoleSessionState.ts` / `AgentConsolePanels.ts` | The status line (`Approval required: …`) and the context diagnostics (`context unchanged · level light · …`) were hardcoded English. The state now injects the translator for `agent.context.*`, and the status panel renders `agent.status.approvalRequired` (en / zh-CN). |
 | `72a41fc71` | `AgentConsolePanels.ts` | The approval detail printed the agent's English reason verbatim. It now prefers `agent.approval.reasonCode.<code>` (en / zh-CN) with the raw reason as fallback; the state and both event bridges forward `reasonDetail`. |
 | `4837b5ede` | `AgentConsoleComponent.ts` | Approval prompts rendered from events, but resolving them read only the injected approval manager (null in the CLI) and fell back to an unconfigured appRpc → `Approval is not configured`; `a`/`d` silently did nothing until the 30s timeout. The console now uses the runtime's actual gating manager. |
 | `9686bddfb` | `AgentConsolePanels.ts` | The approvals panel hardcoded English for the title, actions, count, detail (`Reason:`/`Expires in`) and accessibility labels, bypassing i18n (AGENTS.md §9). Now resolves `agent.approval.*` through the translator (en / zh-CN) with English fallbacks. |

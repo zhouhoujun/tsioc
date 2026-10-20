@@ -264,6 +264,14 @@
 - **回归测试（红→绿）**：新增 `packages/components/test/binding-destroyed-injector.spec.ts`，断言 `injector.destroyed` 时 `bindingProperty` 的工厂**不得**执行其 effect。证红：临时移除该守卫 → `0 passing 1 failed`（effect 仍执行并因解析已销毁注入器抛错）；证绿：恢复守卫 → components `147 passing`、`EXIT=0`。
 - **诚实边界**：这是**静态锁定的真实缺失守卫缺口**，但**尚不能证明就是用户实机那条崩溃**（无堆栈，无法复现第二 turn）。需完整调用栈确认；若不匹配，则该守卫修复本身独立成立、可保留。
 
+## 2026-10-19 状态行与上下文诊断文案接入 i18n（`569c87276`）
+- **问题**：真实 TUI（zh）仍显示 `Approval required: workspace_trust (…)`（状态面板 `statusSummary`）与 `context unchanged · level light · …`（`AgentConsoleSessionState.formatContextPreparationSummary`）。
+- **修复**：`AgentConsoleSessionState` 注入可选 `TranslatorService`，上下文摘要经 `formatAgentUiLabel('agent.context.*')`（en / zh-CN）拼接；`AgentConsoleStatusPanelComponent` 注入可选 translator，`agent.status.approvalRequired` 渲染待审批行。
+- **回归（红→绿）**：新增 `p317-status-i18n.spec.ts` 3 条；证红（回退为英文拼接）`1 passing 2 failed`（`Expected: "上下文:unchanged" / Received: "context unchanged · level light · …"`；`Expected: "需要审批:delete_file" / Received: "Approval required: delete_file (approval)"`）→ 证绿 `3 passing`。
+- **真实 TUI 验收（zh）**：`上下文 unchanged · 级别 light · 无摘要 · 6→6 条消息 · 151→151 tokens · 节省 0% · 保留 100%`、`需要审批：workspace_trust（a6bcf85b）`；`a` 放行后文件删除。
+- **验证**：`agent-ui` **1534 passing**、`tsc` 0、`source-size` OK、`git diff --check` 干净。
+- **说明**：上下文 `strategy` / `level` 的取值（`unchanged` / `light`）保留为协议标识，仅本地化其前缀。
+
 ## 2026-10-19 审批原因结构化并本地化（`72a41fc71`）
 - **问题**：审批详情的 `Reason:` 文本（`Tool "x" requires approval.`）由 agent 层 `DefaultApprovalStrategy.reason()` 生成，纯自由文本，UI 无法本地化（真实 TUI zh 下仍显示英文）。
 - **修复**：`ApprovalRequest` / `ApprovalRequestView` / `AgentApprovalRequestedEvent` 增加可选 `reasonDetail?: { code, params }`；`ApprovalStrategy` 增加可选 `reasonDetail?()`，`DefaultApprovalStrategy` 返回 `{ code: 'tool-requires-approval', params: { tool } }`；`createRequest` / `toRequestView` 透传。agent-ui 状态与两个事件桥透传，审批面板与 `/approvals` 选择器优先用 `agent.approval.reasonCode.<code>`（en/zh）渲染，缺失时回退 `reason`。
