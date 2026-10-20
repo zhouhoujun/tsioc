@@ -264,6 +264,12 @@
 - **回归测试（红→绿）**：新增 `packages/components/test/binding-destroyed-injector.spec.ts`，断言 `injector.destroyed` 时 `bindingProperty` 的工厂**不得**执行其 effect。证红：临时移除该守卫 → `0 passing 1 failed`（effect 仍执行并因解析已销毁注入器抛错）；证绿：恢复守卫 → components `147 passing`、`EXIT=0`。
 - **诚实边界**：这是**静态锁定的真实缺失守卫缺口**，但**尚不能证明就是用户实机那条崩溃**（无堆栈，无法复现第二 turn）。需完整调用栈确认；若不匹配，则该守卫修复本身独立成立、可保留。
 
+## 2026-10-19 非交互 run 快速拒绝审批（`0e215b4fc`）
+- **问题**：非交互 `run` 下每次 gated 调用都要等满 30s 审批超时（无 UI 可作答）；真实任务中观察到 2 次（约 60s）。
+- **修复**：新增 opt-in `tools.approvalAutoDeny`（默认 false，行为不变）；`DefaultAgentRuntime.resolveApprovalManager` 读取它；`run` 的 3 条路径（prompt/stream/json）在合并 options 时置为 true。非交互下立即拒绝，理由为策略原因（`Tool "x" requires approval.`）。
+- **验证**：`agent/test/tools.spec.ts` 新增 auto-deny 用例（DENIED、pending=0、<1s）；`agent` **1022 passing**、`agent-cli` **94 passing**、两包 `tsc` 0、`source-size` OK。真实 `run`（未信任 workspace + 触发 `terminal`）：**15s** 完成（含模型耗时），无 30s 超时。
+- **发现的独立缺陷（未修，需架构改动）**：`run --json`（RPC 应用）仍会超时。插桩证实 RPC runtime 收到的 `AGENT_OPTIONS` 是 `defaultAgentOptions`：`AgentModule` 内 `{ provide: AGENT_OPTIONS, useValue: defaultAgentOptions, asDefault: true }`（`agent.module.ts:83`）在导入模块的注入器中优先于外层 `AgentAppServerModule` 的 provider，导致 RPC 应用的 runtime 忽略宿主 options（含 policy/context/approval）。修复需让 `AgentAppServerModule` 经 `AgentModule.withOptions(...)` 把 options 注入导入模块（或等价模块级方案）。
+
 ## 2026-10-19 真实项目 e2e：read_file 目录错误可操作化（`86a41b6d3`）
 - **真实运行**：`run` 在 `/home/zhouyou/workspace/sleep-mlt`（只读分析）：152 次工具调用（`read_file` 73 / `list_dir` 68 / `glob_search` 6 / `content_search` 3 / `stat` 2），去重缓存命中 2 次；回答质量良好、引用真实路径，并诚实说明 `terminal` 因 workspace 未信任被拒。
 - **发现的工具错误**：其中 2 次 `read_file` 指向目录，直接泄漏 Node 原始错误 `EISDIR: illegal operation on a directory, read`（不可操作）。其余为模型探索式猜测路径（`*/package.json` 不存在）——错误信息本身已清晰。
