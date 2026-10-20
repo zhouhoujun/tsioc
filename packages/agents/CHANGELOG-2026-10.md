@@ -85,6 +85,7 @@ newline-JSON transport, allowlist gate and dynamic tool path end to end.
 
 | Commit | File | Root cause |
 | --- | --- | --- |
+| `05b0a4d1d` | `AgentConsoleSessionState.ts` | Keyboard hints (`selectHint`, `sessionHint`, `messagesHint`, `toolsHint`, `toolRunsHint`, `messageDetailHint`, `selectCloseHint`, `reviewDetailHint`) defaulted to English, so a zh host showed `up/down move   enter confirm   q cancel`. `ZH_CONSOLE_HINTS` now replaces the instance options under a zh locale (English defaults untouched). |
 | `e9b6855af` | `AgentConsoleSessionState.ts` | Default `timelineLabels` / `messageStatusLabels` were hardcoded Chinese, so an en-locale host showed `正在执行` and Chinese timeline sentences while the catalog rendered English (`EN_TIMELINE_LABELS` was test-only). Defaults now follow `translator.currentLocale`; the shared default object is cloned, not mutated. |
 | `569c87276` | `AgentConsoleSessionState.ts` / `AgentConsolePanels.ts` | The status line (`Approval required: …`) and the context diagnostics (`context unchanged · level light · …`) were hardcoded English. The state now injects the translator for `agent.context.*`, and the status panel renders `agent.status.approvalRequired` (en / zh-CN). |
 | `72a41fc71` | `AgentConsolePanels.ts` | The approval detail printed the agent's English reason verbatim. It now prefers `agent.approval.reasonCode.<code>` (en / zh-CN) with the raw reason as fallback; the state and both event bridges forward `reasonDetail`. |

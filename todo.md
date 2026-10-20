@@ -264,6 +264,13 @@
 - **回归测试（红→绿）**：新增 `packages/components/test/binding-destroyed-injector.spec.ts`，断言 `injector.destroyed` 时 `bindingProperty` 的工厂**不得**执行其 effect。证红：临时移除该守卫 → `0 passing 1 failed`（effect 仍执行并因解析已销毁注入器抛错）；证绿：恢复守卫 → components `147 passing`、`EXIT=0`。
 - **诚实边界**：这是**静态锁定的真实缺失守卫缺口**，但**尚不能证明就是用户实机那条崩溃**（无堆栈，无法复现第二 turn）。需完整调用栈确认；若不匹配，则该守卫修复本身独立成立、可保留。
 
+## 2026-10-19 中文环境键盘提示走 zh 文案（`05b0a4d1d`）
+- **问题**：`consoleOptions` 的键盘提示（`selectHint` / `sessionHint` / `messagesHint` / `toolsHint` / `toolRunsHint` / `messageDetailHint` / `messageDetailClosedHint` / `selectCloseHint` / `reviewDetailHint`）默认英文，zh 环境仍显示 `up/down move   enter confirm   q cancel`。
+- **修复**：新增 `ZH_CONSOLE_HINTS`；`AgentConsoleSessionState` 在 zh locale 时以**替换实例引用**方式合并（不污染共享 `defaultAgentConsoleOptions`），en / 无 translator 保持内置英文。
+- **回归（红→绿）**：`p318-locale-defaults.spec.ts` 增补 zh/en 提示断言；证红（仅移除提示合并）`2 passing 1 failed`（`Expected substring: "回车 关闭" / Received: "up/down move   enter close   q close"`）→ 证绿 `3 passing`。
+- **验证**：`agent-ui` **1537 passing**、`tsc` 0、`source-size` OK、`git diff --check` 干净。
+- **诚实边界**：`/model` 选择菜单当前不渲染 hint 行（既有 UI 设计），故该处无可见变化；提示在带 hint 的 select / 面板路径生效。
+
 ## 2026-10-19 默认时间线/状态标签跟随 locale（`e9b6855af`）
 - **问题**：`consoleOptions` 默认的 `timelineLabels` / `messageStatusLabels` 硬编码中文（`DEFAULT_TIMELINE_LABELS`、`正在执行/成功/失败/错误`），而 i18n 目录与 `resolveDefaultLocale()` 在 en 环境下选择英文——en 用户会看到中文 chrome（`正在执行`、中文时间线句子）；`EN_TIMELINE_LABELS` 仅被测试引用（生产死代码）。
 - **修复**：`AgentConsoleSessionState` 构造时按 `translator.currentLocale` 选择：非 zh → `EN_TIMELINE_LABELS` + `EN_MESSAGE_STATUS_LABELS`；zh / 无 translator → 保持原中文默认。**注意**：`consoleOptions` 默认引用共享对象 `defaultAgentConsoleOptions`，构造器内改为**替换实例引用**（不就地改写），避免污染全局默认（首版就地改写导致后续实例串味，被红测抓到）。
