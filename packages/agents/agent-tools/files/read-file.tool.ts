@@ -55,7 +55,13 @@ export class ReadFileTool implements AgentTool {
         // readLineRange still bounds the returned size (opencode-style).
         const ceiling = Math.max(policy.maxReadLines, policy.maxReadLinesLimit);
         const effectiveLimit = limit > 0 ? Math.min(limit, ceiling) : policy.maxReadLines;
-        const range = await this.readLineRange(absolutePath, offset, effectiveLimit, policy.maxReadBytes);
+        const range = await this.readLineRange(absolutePath, offset, effectiveLimit, policy.maxReadBytes)
+            .catch((error: any) => {
+                if (error?.code === 'EISDIR') {
+                    throw new Error(`Path '${requestedPath}' is a directory; use list_dir to inspect its entries.`);
+                }
+                throw error;
+            });
         const content = range.content
             ? range.content.split('\n').map((line, index) => `${offset + index}: ${line}`).join('\n')
             : '';
