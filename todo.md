@@ -264,6 +264,13 @@
 - **回归测试（红→绿）**：新增 `packages/components/test/binding-destroyed-injector.spec.ts`，断言 `injector.destroyed` 时 `bindingProperty` 的工厂**不得**执行其 effect。证红：临时移除该守卫 → `0 passing 1 failed`（effect 仍执行并因解析已销毁注入器抛错）；证绿：恢复守卫 → components `147 passing`、`EXIT=0`。
 - **诚实边界**：这是**静态锁定的真实缺失守卫缺口**，但**尚不能证明就是用户实机那条崩溃**（无堆栈，无法复现第二 turn）。需完整调用栈确认；若不匹配，则该守卫修复本身独立成立、可保留。
 
+## 2026-10-19 命令行执行行状态词 i18n（`afbafda87`）
+- **问题**：命令执行行（`$ /zzz-unknown failed: …`）的状态词 `running/completed/cancelled/failed` 与 `Command` 兜底硬编码英文（`syncCommandExecutionTranscript`），zh 下仍显示英文。
+- **修复**：改用 `state.translateLabel()` 渲染 `agent.command.status.*` 与 `agent.command.label`（en / zh-CN：进行中/已完成/已取消/失败、命令）。
+- **回归（红→绿）**：新增 `p320-command-execution-i18n.spec.ts` 2 条；证红（回退为英文拼接）`1 passing 1 failed`（`Expected substring: "失败" / Received: "/zzz-unknown failed: 未知命令"`）→ 证绿 `2 passing`。
+- **真实 TUI（zh）**：`$ /zzz-unknown 失败: 未知命令：/zzz-unknown`。
+- **验证**：`agent-ui` **1541 passing**、`tsc` 0、`source-size` OK、`git diff --check` 干净。
+
 ## 2026-10-19 会话恢复检查 + 未知/歧义命令提示 i18n（`40d42b3af`）
 - **功能检查（非 i18n）**：真实 TUI 会话恢复——`chat --session ses-resume-1` 首轮记住 `PINEAPPLE`，进程退出后用同一 session 重启：历史（用户消息 + 回答 + `Worked for 5s · done`）完整恢复，追问仍答 `PINEAPPLE`（上下文连续）。**未发现缺陷**。
 - **问题**：`AgentConsoleCommandDispatch` 的 `Unknown command:` / `Ambiguous command:` 硬编码英文（未知命令如 `/quit` 在 zh 下仍显示英文；`/quit` 本身不是命令，正确为 `/exit`）。

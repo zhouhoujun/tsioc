@@ -85,6 +85,7 @@ newline-JSON transport, allowlist gate and dynamic tool path end to end.
 
 | Commit | File | Root cause |
 | --- | --- | --- |
+| `afbafda87` | `AgentConsoleSessionState.ts` | The projected command-execution row hardcoded its status word (`running` / `completed` / `cancelled` / `failed`) and the `Command` fallback, so a zh host showed `$ /x failed: …`. They now resolve `agent.command.status.*` / `agent.command.label` (en / zh-CN). |
 | `40d42b3af` | `AgentConsoleCommandDispatch.ts` | `Unknown command:` / `Ambiguous command:` were hardcoded English, so a zh host showed English for mistyped commands. Added `agent.command.unknown` / `agent.command.ambiguous` (en / zh-CN) and routed the dispatch through `state.translateLabel()`. |
 | `05b0a4d1d` | `AgentConsoleSessionState.ts` | Keyboard hints (`selectHint`, `sessionHint`, `messagesHint`, `toolsHint`, `toolRunsHint`, `messageDetailHint`, `selectCloseHint`, `reviewDetailHint`) defaulted to English, so a zh host showed `up/down move   enter confirm   q cancel`. `ZH_CONSOLE_HINTS` now replaces the instance options under a zh locale (English defaults untouched). |
 | `e9b6855af` | `AgentConsoleSessionState.ts` | Default `timelineLabels` / `messageStatusLabels` were hardcoded Chinese, so an en-locale host showed `正在执行` and Chinese timeline sentences while the catalog rendered English (`EN_TIMELINE_LABELS` was test-only). Defaults now follow `translator.currentLocale`; the shared default object is cloned, not mutated. |
