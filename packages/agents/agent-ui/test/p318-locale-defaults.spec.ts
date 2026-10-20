@@ -20,6 +20,8 @@ export class LocaleDefaultsTest {
         expect(state.consoleOptions.timelineLabels.footerDone).toBe('Done');
         expect(state.consoleOptions.timelineLabels.collapsedTurn).toBe('turn {index}');
         expect(state.consoleOptions.messageStatusLabels.success).toBe('Success');
+        expect(state.consoleOptions.selectCloseHint).toContain('enter close');
+        expect(state.consoleOptions.selectHint).toContain('enter confirm');
     }
 
     @Test('a zh locale keeps the Chinese defaults')
@@ -27,6 +29,8 @@ export class LocaleDefaultsTest {
         const state = new AgentConsoleSessionState(undefined, this.translator('zh-CN'));
         expect(state.consoleOptions.timelineLabels.footerDone).toBe('完成');
         expect(state.consoleOptions.messageStatusLabels.success).toBe('成功');
+        expect(state.consoleOptions.selectCloseHint).toContain('回车 关闭');
+        expect(state.consoleOptions.selectHint).toContain('回车 确认');
     }
 
     @Test('without a translator the built-in defaults stay')

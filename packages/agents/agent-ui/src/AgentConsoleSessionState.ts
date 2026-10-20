@@ -580,11 +580,27 @@ export const AGENT_CONSOLE_COMMAND_OUTPUT_RING_CAP = 20;
 
 const EN_MESSAGE_STATUS_LABELS = { running: 'Running', success: 'Success', failed: 'Failed', error: 'Error' };
 
+/** zh keyboard hints; the built-in option defaults are English. */
+const ZH_CONSOLE_HINTS = {
+    selectHint: '1-9 选择   上/下 移动   回车 确认   q 取消',
+    sessionHint: '上/下 移动   pg 跳转   回车 切换   y 复制   esc',
+    messagesHint: '上/下 移动   pg 跳转   回车 打开   y 复制   esc',
+    toolsHint: '上/下 移动   pg 跳转   回车 激活   y 复制   esc',
+    toolRunsHint: '上/下 移动   pg 跳转   y 复制   esc',
+    messageDetailHint: '上/下 滚动   左/右 平移   pg 跳转   y 复制   esc',
+    messageDetailClosedHint: '回车 打开',
+    selectCloseHint: '上/下 移动   回车 关闭   q 关闭',
+    reviewDetailHint: ', . 分组   [ ] 文件   { } hunk 跳转   f 折叠   s 并排   a 新增   u 全部   p 上一条   n 下一条   r 重试   上/下 滚动   左/右 平移   pg 跳转   y 复制   /review approve|reject|summary|approve-all|clear-all   esc'
+};
+
 @Injectable()
 export class AgentConsoleSessionState {
     constructor(@Inject(COMMAND_EXECUTION_CONTROL) protected commandExecutionControl?: CommandExecutionControlPort, @Optional() @Inject(TranslatorService) private translator?: TranslatorService) {
-        // The built-in label sets are zh; an en-locale host must not show zh chrome.
-        if (this.translator?.currentLocale && !this.translator.currentLocale.toLowerCase().startsWith('zh')) {
+        // Built-in labels are zh while option hints are en; align both with the host locale.
+        const locale = this.translator?.currentLocale?.toLowerCase() || '';
+        if (locale.startsWith('zh')) {
+            this.consoleOptions = { ...this.consoleOptions, ...ZH_CONSOLE_HINTS };
+        } else if (locale) {
             this.consoleOptions = { ...this.consoleOptions, messageStatusLabels: EN_MESSAGE_STATUS_LABELS, timelineLabels: EN_TIMELINE_LABELS };
         }
     }
