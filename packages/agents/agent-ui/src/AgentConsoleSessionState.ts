@@ -583,6 +583,8 @@ const EN_MESSAGE_STATUS_LABELS = { running: 'Running', success: 'Success', faile
 /** zh keyboard hints; the built-in option defaults are English. */
 const ZH_CONSOLE_HINTS = {
     selectHint: '1-9 选择   上/下 移动   回车 确认   q 取消',
+    suggestionsHint: '回车 执行   tab 补全   上/下 选择',
+    approvalsHint: 'a 允许   d 拒绝   y 复制   上/下 移动   esc 关闭',
     sessionHint: '上/下 移动   pg 跳转   回车 切换   y 复制   esc',
     messagesHint: '上/下 移动   pg 跳转   回车 打开   y 复制   esc',
     toolsHint: '上/下 移动   pg 跳转   回车 激活   y 复制   esc',

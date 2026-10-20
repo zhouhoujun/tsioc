@@ -22,6 +22,7 @@ export class LocaleDefaultsTest {
         expect(state.consoleOptions.messageStatusLabels.success).toBe('Success');
         expect(state.consoleOptions.selectCloseHint).toContain('enter close');
         expect(state.consoleOptions.selectHint).toContain('enter confirm');
+        expect(state.consoleOptions.suggestionsHint).toContain('enter 执行');
     }
 
     @Test('a zh locale keeps the Chinese defaults')
@@ -31,6 +32,8 @@ export class LocaleDefaultsTest {
         expect(state.consoleOptions.messageStatusLabels.success).toBe('成功');
         expect(state.consoleOptions.selectCloseHint).toContain('回车 关闭');
         expect(state.consoleOptions.selectHint).toContain('回车 确认');
+        expect(state.consoleOptions.suggestionsHint).toContain('回车 执行');
+        expect(state.consoleOptions.approvalsHint).toContain('a 允许');
     }
 
     @Test('without a translator the built-in defaults stay')
