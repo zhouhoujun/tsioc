@@ -85,6 +85,7 @@ newline-JSON transport, allowlist gate and dynamic tool path end to end.
 
 | Commit | File | Root cause |
 | --- | --- | --- |
+| `4660e3887` | `AgentConsoleSessionState.ts` | `suggestionsHint` / `approvalsHint` stayed the English overlay defaults under zh (`enter 执行` mixed). `ZH_CONSOLE_HINTS` now also covers them (pure zh). |
 | `afbafda87` | `AgentConsoleSessionState.ts` | The projected command-execution row hardcoded its status word (`running` / `completed` / `cancelled` / `failed`) and the `Command` fallback, so a zh host showed `$ /x failed: …`. They now resolve `agent.command.status.*` / `agent.command.label` (en / zh-CN). |
 | `40d42b3af` | `AgentConsoleCommandDispatch.ts` | `Unknown command:` / `Ambiguous command:` were hardcoded English, so a zh host showed English for mistyped commands. Added `agent.command.unknown` / `agent.command.ambiguous` (en / zh-CN) and routed the dispatch through `state.translateLabel()`. |
 | `05b0a4d1d` | `AgentConsoleSessionState.ts` | Keyboard hints (`selectHint`, `sessionHint`, `messagesHint`, `toolsHint`, `toolRunsHint`, `messageDetailHint`, `selectCloseHint`, `reviewDetailHint`) defaulted to English, so a zh host showed `up/down move   enter confirm   q cancel`. `ZH_CONSOLE_HINTS` now replaces the instance options under a zh locale (English defaults untouched). |

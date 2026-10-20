@@ -264,6 +264,11 @@
 - **回归测试（红→绿）**：新增 `packages/components/test/binding-destroyed-injector.spec.ts`，断言 `injector.destroyed` 时 `bindingProperty` 的工厂**不得**执行其 effect。证红：临时移除该守卫 → `0 passing 1 failed`（effect 仍执行并因解析已销毁注入器抛错）；证绿：恢复守卫 → components `147 passing`、`EXIT=0`。
 - **诚实边界**：这是**静态锁定的真实缺失守卫缺口**，但**尚不能证明就是用户实机那条崩溃**（无堆栈，无法复现第二 turn）。需完整调用栈确认；若不匹配，则该守卫修复本身独立成立、可保留。
 
+## 2026-10-19 zh 建议/审批提示改用中文（`4660e3887`）
+- **问题**：`suggestionsHint`（`enter 执行   tab 补全   up/down 选择`，混排）与 `approvalsHint`（英文）在 zh 环境仍使用 overlay 默认值。
+- **修复**：`ZH_CONSOLE_HINTS` 增补 `suggestionsHint`（回车 执行 / tab 补全 / 上/下 选择）与 `approvalsHint`（a 允许 / d 拒绝 / y 复制 / 上/下 移动 / esc 关闭）；en 静态默认保持不变（既有测试钉住）。
+- **验证**：`p318` 增补断言；`agent-ui` **1541 passing**、`tsc` 0、`source-size` OK、`git diff --check` 干净。
+
 ## 2026-10-19 命令行执行行状态词 i18n（`afbafda87`）
 - **问题**：命令执行行（`$ /zzz-unknown failed: …`）的状态词 `running/completed/cancelled/failed` 与 `Command` 兜底硬编码英文（`syncCommandExecutionTranscript`），zh 下仍显示英文。
 - **修复**：改用 `state.translateLabel()` 渲染 `agent.command.status.*` 与 `agent.command.label`（en / zh-CN：进行中/已完成/已取消/失败、命令）。
