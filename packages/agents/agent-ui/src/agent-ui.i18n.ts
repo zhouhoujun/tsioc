@@ -93,6 +93,22 @@ export const agentUiEnglish: TranslationBundle = {
                 backgroundView: '/ps to view',
                 backgroundStop: '/ps stop to close'
             },
+            status: {
+                approvalRequired: 'Approval required: {tool} ({id}){extra}'
+            },
+            context: {
+                strategy: 'context {strategy}',
+                level: 'level {level}',
+                summary: 'summary',
+                noSummary: 'no summary',
+                messages: '{before}→{after} msgs',
+                tokens: '{before}→{after} tok',
+                saved: '{ratio}% saved',
+                retained: '{rate}% retained',
+                anchors: '{count} anchors',
+                tools: '{count} tools',
+                cumulative: 'cum {count} tok'
+            },
             timeline: {
                 thought: 'Thought · ',
                 tool: 'Tool · ',
@@ -192,6 +208,22 @@ export const agentUiChinese: TranslationBundle = {
                 backgroundRunning: '{count} 个后台终端运行中',
                 backgroundView: '/ps 查看',
                 backgroundStop: '/ps stop 关闭'
+            },
+            status: {
+                approvalRequired: '需要审批：{tool}（{id}）{extra}'
+            },
+            context: {
+                strategy: '上下文 {strategy}',
+                level: '级别 {level}',
+                summary: '已摘要',
+                noSummary: '无摘要',
+                messages: '{before}→{after} 条消息',
+                tokens: '{before}→{after} tokens',
+                saved: '节省 {ratio}%',
+                retained: '保留 {rate}%',
+                anchors: '{count} 个锚点',
+                tools: '{count} 个工具',
+                cumulative: '累计 {count} tokens'
             },
             timeline: {
                 thought: '思考 · ',

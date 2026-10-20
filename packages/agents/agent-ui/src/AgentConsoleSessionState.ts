@@ -1,4 +1,5 @@
-import { Inject, Injectable } from '@tsdi/ioc';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { TranslatorService } from '@tsdi/i18n';
 import {
     ConsoleTextChunk,
     ConsoleTextInputChunkOptions,
@@ -55,7 +56,7 @@ import {
     truncateTimelineRowText
 } from './AgentConsoleTimelineWindow';
 import { resolveHumanStatusWord } from './AgentConsoleTimelineEventPresenter';
-import { formatAgentUiNotice } from './agent-ui.i18n';
+import { formatAgentUiLabel, formatAgentUiNotice } from './agent-ui.i18n';
 import {
     AGENT_CONSOLE_SUGGESTIONS_HINT,
     AGENT_CONSOLE_SUGGESTIONS_TITLE,
@@ -578,7 +579,7 @@ export const AGENT_CONSOLE_COMMAND_OUTPUT_RING_CAP = 20;
 
 @Injectable()
 export class AgentConsoleSessionState {
-    constructor(@Inject(COMMAND_EXECUTION_CONTROL) protected commandExecutionControl?: CommandExecutionControlPort) {}
+    constructor(@Inject(COMMAND_EXECUTION_CONTROL) protected commandExecutionControl?: CommandExecutionControlPort, @Optional() @Inject(TranslatorService) private translator?: TranslatorService) {}
     readonly inputHistoryController: AgentConsoleInputHistoryController = new DefaultAgentConsoleInputHistoryController(this);
     readonly focusLayers: AgentConsoleFocusLayers = new DefaultAgentConsoleFocusLayers(this);
 
@@ -5828,17 +5829,18 @@ export class AgentConsoleSessionState {
     }
 
     protected formatContextPreparationSummary(report: ContextPreparationReport): string {
+        const t = (key: string, params: Record<string, any> | undefined, fallback: string) => formatAgentUiLabel(this.translator, key, fallback, params);
         return [
-            `context ${report.strategy}`,
-            `level ${report.level}`,
-            report.summaryInserted ? 'summary' : 'no summary',
-            `${report.beforeMessageCount}→${report.afterMessageCount} msgs`,
-            `${report.beforeTokens}→${report.afterTokens} tok`,
-            `${report.compressionRatio}% saved`,
-            `${report.retentionRate}% retained`,
-            report.preservedAnchorCount ? `${report.preservedAnchorCount} anchors` : '',
-            report.toolMessagesCompacted ? `${report.toolMessagesCompacted} tools` : '',
-            report.cumulativeTokenSavings ? `cum ${report.cumulativeTokenSavings} tok` : ''
+            t('agent.context.strategy', { strategy: report.strategy }, `context ${report.strategy}`),
+            t('agent.context.level', { level: report.level }, `level ${report.level}`),
+            report.summaryInserted ? t('agent.context.summary', undefined, 'summary') : t('agent.context.noSummary', undefined, 'no summary'),
+            t('agent.context.messages', { before: report.beforeMessageCount, after: report.afterMessageCount }, `${report.beforeMessageCount}→${report.afterMessageCount} msgs`),
+            t('agent.context.tokens', { before: report.beforeTokens, after: report.afterTokens }, `${report.beforeTokens}→${report.afterTokens} tok`),
+            t('agent.context.saved', { ratio: report.compressionRatio }, `${report.compressionRatio}% saved`),
+            t('agent.context.retained', { rate: report.retentionRate }, `${report.retentionRate}% retained`),
+            report.preservedAnchorCount ? t('agent.context.anchors', { count: report.preservedAnchorCount }, `${report.preservedAnchorCount} anchors`) : '',
+            report.toolMessagesCompacted ? t('agent.context.tools', { count: report.toolMessagesCompacted }, `${report.toolMessagesCompacted} tools`) : '',
+            report.cumulativeTokenSavings ? t('agent.context.cumulative', { count: report.cumulativeTokenSavings }, `cum ${report.cumulativeTokenSavings} tok`) : ''
         ].filter(Boolean).join(' · ');
     }
 

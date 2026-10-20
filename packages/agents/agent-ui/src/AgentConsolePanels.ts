@@ -2,6 +2,7 @@ import { Attribute, Component } from '@tsdi/components';
 import { formatCompactNumber } from '@tsdi/core';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
+import { formatAgentUiLabel } from './agent-ui.i18n';
 import { AgentMessage, basenameAgentPath, ScheduledAgentTask } from '@tsdi/agent';
 import {
     AgentConsoleActivity,
@@ -96,7 +97,7 @@ export class AgentConsoleBrandPanelComponent {
     `
 })
 export class AgentConsoleStatusPanelComponent {
-    constructor(private state: AgentConsoleSessionState) {
+    constructor(private state: AgentConsoleSessionState, @Optional() private translator?: TranslatorService) {
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -153,7 +154,7 @@ export class AgentConsoleStatusPanelComponent {
             const requests = this.state.pendingApprovals;
             const first = requests[0];
             const extra = requests.length > 1 ? ` (+${requests.length - 1})` : '';
-            lines.push(`Approval required: ${first.toolName} (${first.id.slice(0, 8)})${extra}`);
+            lines.push(formatAgentUiLabel(this.translator, 'agent.status.approvalRequired', `Approval required: ${first.toolName} (${first.id.slice(0, 8)})${extra}`, { tool: first.toolName, id: first.id.slice(0, 8), extra }));
         }
         return lines.join('\n');
     }
