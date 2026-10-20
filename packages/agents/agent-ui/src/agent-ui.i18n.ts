@@ -18,8 +18,8 @@ const AGENT_UI_ERROR_KEYS = new Set(Object.keys(AGENT_UI_ERROR_EN));
  * Resolve a plain UI label through the translator, falling back to the English
  * template when the key is missing (the translator echoes missing keys).
  */
-export function formatAgentUiLabel(translator: AgentUiTranslator | null | undefined, key: string, fallback: string): string {
-    const value = translator?.translate(key);
+export function formatAgentUiLabel(translator: AgentUiTranslator | null | undefined, key: string, fallback: string, params?: Record<string, any>): string {
+    const value = translator?.translate(key, params);
     return value && value !== key ? value : fallback;
 }
 
@@ -119,7 +119,8 @@ export const agentUiEnglish: TranslationBundle = {
                 input: 'Input: {input}',
                 inputNone: 'Input: -',
                 timeout: 'Timeout: {ms}ms',
-                expiresAt: 'Expires: {time}'
+                expiresAt: 'Expires: {time}',
+                reasonCode: { 'tool-requires-approval': 'Tool "{tool}" requires approval.' }
             },
             dashboard: {
                 approvals: 'approvals {count}',
@@ -218,7 +219,8 @@ export const agentUiChinese: TranslationBundle = {
                 input: '输入：{input}',
                 inputNone: '输入：-',
                 timeout: '超时：{ms}ms',
-                expiresAt: '过期：{time}'
+                expiresAt: '过期：{time}',
+                reasonCode: { 'tool-requires-approval': '工具「{tool}」需要审批。' }
             },
             dashboard: {
                 approvals: '审批 {count}',

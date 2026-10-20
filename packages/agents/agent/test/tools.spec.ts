@@ -297,6 +297,25 @@ export class BuiltinToolsTest {
         expect((await pendingPromise).decision).toEqual(ApprovalDecision.DENIED);
     }
 
+    @Test('approval manager exposes a structured reason for localization')
+    async approvalManagerExposesReasonDetail() {
+        const approvals = new ToolApprovalManager(
+            new FakeApp() as any,
+            new RandomUuidGenerator(),
+            new DefaultApprovalStrategy(['shell.exec']),
+            { defaultTimeoutMs: 1000 }
+        );
+        const pendingPromise = approvals.checkApproval('shell.exec', { cmd: 'ls' }, 's1');
+        await new Promise(resolve => setTimeout(resolve, 10));
+        const pending = approvals.getPending();
+        const detail = (pending[0] as any).reasonDetail;
+        expect(detail?.code).toEqual('tool-requires-approval');
+        expect(detail?.params?.tool).toEqual('shell.exec');
+        expect(pending[0].reason).toContain('requires approval');
+        approvals.reject(pending[0].id);
+        await pendingPromise;
+    }
+
     @Test('approval manager snapshots pending input')
     async approvalManagerSnapshotsPendingInput() {
         const approvals = new ToolApprovalManager(

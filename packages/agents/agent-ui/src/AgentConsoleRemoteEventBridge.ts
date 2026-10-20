@@ -200,7 +200,7 @@ export function applyRemoteEvent(state: AgentConsoleSessionState, event: RemoteA
                 id: String(request.id || ''),
                 toolName: String(request.toolName || ''),
                 sessionId: String(request.sessionId || event.sessionId || ''),
-                reason: String(request.reason || ''),
+                reason: String(request.reason || ''), reasonDetail: request.reasonDetail && typeof request.reasonDetail === 'object' ? request.reasonDetail : undefined,
                 summary: String(request.summary || ''),
                 hasInput: request.hasInput === true,
                 inputSummary: request.inputSummary,

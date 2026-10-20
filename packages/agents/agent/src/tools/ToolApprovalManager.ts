@@ -7,6 +7,8 @@ import { AgentClock, AGENT_CLOCK } from '../runtime/Clock';
 export interface ApprovalStrategy {
     requires(toolName: string, input: any): boolean;
     reason(toolName: string, input: any): string;
+    /** Structured form of `reason` for localized rendering. */
+    reasonDetail?(toolName: string, input: any): { code: string; params?: Record<string, any> };
     /** Whether a matched approval rule denies without entering the pending surface (granular `mode: 'auto-deny'`). */
     autoDenies?(toolName: string, input: any): boolean;
     /** Whether an injected ApprovalReviewer may resolve requests without a human (A2). */
@@ -85,6 +87,7 @@ export interface ApprovalRequest {
     inputSummary?: string;
     sessionId: string;
     reason: string;
+    reasonDetail?: { code: string; params?: Record<string, any> };
     summary: string;
     createdAt: number;
     timeoutMs: number;
@@ -96,6 +99,7 @@ export interface ApprovalRequestView {
     toolName: string;
     sessionId: string;
     reason: string;
+    reasonDetail?: { code: string; params?: Record<string, any> };
     summary: string;
     hasInput: boolean;
     inputSummary?: string;
@@ -404,6 +408,7 @@ export class ToolApprovalManager extends ApprovalManager {
         const requestInput = snapshotApprovalInput(input);
         const inputSummary = summarizeApprovalInput(requestInput);
         const reason = this.strategy?.reason(toolName, requestInput) ?? `Tool "${toolName}" requires approval.`;
+        const reasonDetail = this.strategy?.reasonDetail?.(toolName, requestInput);
         const timeoutMs = Math.min(
             this.options?.defaultTimeoutMs ?? DEFAULT_APPROVAL_TIMEOUT_MS,
             this.options?.maxTimeoutMs ?? DEFAULT_MAX_APPROVAL_TIMEOUT_MS
@@ -417,6 +422,7 @@ export class ToolApprovalManager extends ApprovalManager {
             inputSummary,
             sessionId,
             reason,
+            reasonDetail,
             summary: inputSummary ? `${reason} Summary: ${inputSummary}` : reason,
             createdAt,
             timeoutMs,
@@ -430,6 +436,7 @@ export class ToolApprovalManager extends ApprovalManager {
             toolName: request.toolName,
             sessionId: request.sessionId,
             reason: request.reason,
+            reasonDetail: request.reasonDetail,
             summary: request.summary,
             hasInput: request.hasInput,
             inputSummary: request.inputSummary,
@@ -569,16 +576,7 @@ export class DefaultApprovalStrategy implements ApprovalStrategy {
     readonly autoReview: boolean;
 
     constructor(blocked?: ApprovalRule[], autoReview = false) {
-        this.rules = blocked ?? [
-            'shell.exec',
-            'fs.write',
-            'fs.delete',
-            'db.execute',
-            'deploy',
-            'sudo.exec',
-            'playwright_browser',
-            'admin.*'
-        ];
+        this.rules = blocked ?? ['shell.exec', 'fs.write', 'fs.delete', 'db.execute', 'deploy', 'sudo.exec', 'playwright_browser', 'admin.*'];
         this.autoReview = autoReview;
     }
 
@@ -592,6 +590,8 @@ export class DefaultApprovalStrategy implements ApprovalStrategy {
         }
         return false;
     }
+
+    reasonDetail(toolName: string): { code: string; params?: Record<string, any> } { return { code: 'tool-requires-approval', params: { tool: toolName } }; }
 
     reason(toolName: string, _input: any): string {
         return `Tool "${toolName}" requires approval.`;

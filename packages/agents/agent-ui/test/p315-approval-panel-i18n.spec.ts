@@ -39,6 +39,21 @@ export class ApprovalPanelI18nTest {
         expect(panel.accessibilityLabel).toBe('T:agent.approval.accessibilitySelected');
     }
 
+    @Test('a structured reason code renders through the catalog')
+    async structuredReason() {
+        const translator = {
+            translate: (key: string, params?: any) => {
+                if (key === 'agent.approval.reasonCode.tool-requires-approval') return `需要审批:${params?.tool}`;
+                if (key === 'agent.approval.reason') return `原因：${params?.reason}`;
+                return `T:${key}`;
+            }
+        };
+        const state = this.stateWithApproval();
+        state.pendingApprovals[0].reasonDetail = { code: 'tool-requires-approval', params: { tool: 'delete_file' } };
+        const panel = new AgentConsoleApprovalsPanelComponent(state, translator as any);
+        expect(panel.selectedApprovalDetailLabel).toContain('需要审批:delete_file');
+    }
+
     @Test('the /approvals inspector detail lines go through the translator')
     async inspectorUsesTranslator() {
         const translate = (key: string) => `T:${key}`;

@@ -201,6 +201,7 @@ export interface AgentConsoleApprovalRequest {
     createdAt: number;
     timeoutMs: number;
     expiresAt: number;
+    reasonDetail?: { code: string; params?: Record<string, any> };
 }
 
 export interface AgentConsoleScheduledTaskItem {

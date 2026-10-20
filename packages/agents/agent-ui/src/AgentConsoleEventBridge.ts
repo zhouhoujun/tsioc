@@ -315,6 +315,7 @@ export class AgentConsoleEventBridge {
                     toolName: event.request.toolName,
                     sessionId: event.request.sessionId,
                     reason: event.request.reason,
+                    reasonDetail: event.request.reasonDetail,
                     summary: event.request.summary,
                     hasInput: event.request.hasInput,
                     inputSummary: event.request.inputSummary,

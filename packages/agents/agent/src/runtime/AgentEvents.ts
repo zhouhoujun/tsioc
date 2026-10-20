@@ -258,7 +258,7 @@ export class AgentErrorEvent extends ApplicationEvent {
 }
 
 export class AgentApprovalRequestedEvent extends ApplicationEvent {
-    constructor(source: Object, readonly request: { id: string; toolName: string; sessionId: string; reason: string; summary: string; hasInput: boolean; inputSummary?: string; timeoutMs: number; createdAt?: number; expiresAt?: number }) {
+    constructor(source: Object, readonly request: { id: string; toolName: string; sessionId: string; reason: string; reasonDetail?: { code: string; params?: Record<string, any> }; summary: string; hasInput: boolean; inputSummary?: string; timeoutMs: number; createdAt?: number; expiresAt?: number }) {
         super(source);
     }
 }

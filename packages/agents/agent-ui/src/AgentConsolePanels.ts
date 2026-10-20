@@ -1874,7 +1874,9 @@ export class AgentConsoleApprovalsPanelComponent {
             return '';
         }
         const request = this.state.selectedApproval;
-        const reason = request.reason || this.translate('agent.approval.noReason', undefined, 'No reason provided');
+        const detailKey = request.reasonDetail?.code ? `agent.approval.reasonCode.${request.reasonDetail.code}` : '';
+        const localizedReason = detailKey ? this.translator?.translate(detailKey, request.reasonDetail?.params) : undefined;
+        const reason = localizedReason && localizedReason !== detailKey ? localizedReason : (request.reason || this.translate('agent.approval.noReason', undefined, 'No reason provided'));
         const lines = [this.translate('agent.approval.reason', { reason }, `Reason: ${reason}`)];
         if (request.expiresAt && request.timeoutMs > 0) {
             const remainingMs = request.expiresAt - Date.now();
