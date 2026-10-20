@@ -264,6 +264,14 @@
 - **回归测试（红→绿）**：新增 `packages/components/test/binding-destroyed-injector.spec.ts`，断言 `injector.destroyed` 时 `bindingProperty` 的工厂**不得**执行其 effect。证红：临时移除该守卫 → `0 passing 1 failed`（effect 仍执行并因解析已销毁注入器抛错）；证绿：恢复守卫 → components `147 passing`、`EXIT=0`。
 - **诚实边界**：这是**静态锁定的真实缺失守卫缺口**，但**尚不能证明就是用户实机那条崩溃**（无堆栈，无法复现第二 turn）。需完整调用栈确认；若不匹配，则该守卫修复本身独立成立、可保留。
 
+## 2026-10-19 默认时间线/状态标签跟随 locale（`e9b6855af`）
+- **问题**：`consoleOptions` 默认的 `timelineLabels` / `messageStatusLabels` 硬编码中文（`DEFAULT_TIMELINE_LABELS`、`正在执行/成功/失败/错误`），而 i18n 目录与 `resolveDefaultLocale()` 在 en 环境下选择英文——en 用户会看到中文 chrome（`正在执行`、中文时间线句子）；`EN_TIMELINE_LABELS` 仅被测试引用（生产死代码）。
+- **修复**：`AgentConsoleSessionState` 构造时按 `translator.currentLocale` 选择：非 zh → `EN_TIMELINE_LABELS` + `EN_MESSAGE_STATUS_LABELS`；zh / 无 translator → 保持原中文默认。**注意**：`consoleOptions` 默认引用共享对象 `defaultAgentConsoleOptions`，构造器内改为**替换实例引用**（不就地改写），避免污染全局默认（首版就地改写导致后续实例串味，被红测抓到）。
+- **测试调整**：`console-renderer.spec.ts` 两处断言中文时间线文案（`计划已完成…`、`已隐藏 N 条早期事件`）显式钉住 `DEFAULT_TIMELINE_LABELS`，保持原覆盖。
+- **回归（红→绿）**：新增 `p318-locale-defaults.spec.ts` 3 条；证红（回退 locale 分支）`2 passing 1 failed`（`Expected: "Done" / Received: "完成"`）→ 证绿 `3 passing`。
+- **真实 TUI 验收**：en 环境 pane 内中文 chrome 计数 **0**（`Thought ·` / `Tool · Inspect directory completed`）；zh 环境保持 `工具 ·` / `思考 ·`。
+- **验证**：`agent-ui` **1537 passing**、`tsc` 0、`source-size` OK、`git diff --check` 干净。
+
 ## 2026-10-19 状态行与上下文诊断文案接入 i18n（`569c87276`）
 - **问题**：真实 TUI（zh）仍显示 `Approval required: workspace_trust (…)`（状态面板 `statusSummary`）与 `context unchanged · level light · …`（`AgentConsoleSessionState.formatContextPreparationSummary`）。
 - **修复**：`AgentConsoleSessionState` 注入可选 `TranslatorService`，上下文摘要经 `formatAgentUiLabel('agent.context.*')`（en / zh-CN）拼接；`AgentConsoleStatusPanelComponent` 注入可选 translator，`agent.status.approvalRequired` 渲染待审批行。
