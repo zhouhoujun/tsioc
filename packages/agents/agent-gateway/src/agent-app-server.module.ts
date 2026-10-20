@@ -23,7 +23,11 @@ export function mapRunTurnStreamChunk(params: any): Record<string, any> {
         label: params?.label,
         status: params?.status,
         toolName: params?.toolName,
-        toolCallId: params?.toolCallId
+        toolCallId: params?.toolCallId,
+        ...(Number.isFinite(Number(params?.durationMs)) ? { durationMs: Number(params.durationMs) } : {}),
+        ...(params?.approvalId ? { approvalId: params.approvalId } : {}),
+        ...(params?.report ? { report: params.report } : {}),
+        ...(params?.diagnostics ? { diagnostics: params.diagnostics } : {})
     };
 }
 

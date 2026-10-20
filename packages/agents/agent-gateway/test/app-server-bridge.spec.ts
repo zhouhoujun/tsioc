@@ -35,6 +35,22 @@ export class AppServerBridgeTest {
         expect(chunk.toolCallId).toEqual('call-1');
     }
 
+    @Test('forwards the backend durationMs so tool rows show the real execution time')
+    forwardsDurationMs() {
+        const chunk = mapRunTurnStreamChunk({
+            chunkType: 'event',
+            eventType: 'tool_completed',
+            label: 'tool',
+            status: 'success',
+            content: 'file body',
+            toolName: 'write_file',
+            toolCallId: 'call-1',
+            durationMs: 16
+        });
+        expect(chunk.durationMs).toEqual(16);
+        expect(mapRunTurnStreamChunk({ chunkType: 'event', eventType: 'tool_invoked' }).durationMs).toBeUndefined();
+    }
+
     @Test('local bridge keeps the structured ModelFailure the console renders')
     localBridgePreservesModelFailure() {
         const failure = {
