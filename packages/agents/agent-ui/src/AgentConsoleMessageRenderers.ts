@@ -1,5 +1,7 @@
 import { AgentMessage, getAgentMessageImageParts, summarizeToolDisplayText } from '@tsdi/agent';
-import { Inject, Injectable, Injector, Token, Type, token } from '@tsdi/ioc';
+import { Inject, Injectable, Injector, Optional, Token, Type, token } from '@tsdi/ioc';
+import { TranslatorService } from '@tsdi/i18n';
+import { defaultTimelineLabel, formatAgentUiLabel } from './agent-ui.i18n';
 import { noReact } from '@tsdi/components';
 import {
     AgentConsoleMarkdownLine,
@@ -229,6 +231,7 @@ type AgentConsoleKindRendererTone = 'muted' | 'accent' | 'attention' | 'error';
 
 /** IoC route handler for one semantic content kind. */
 export abstract class AgentConsoleKindRenderer extends AgentConsoleMessageRenderer {
+    constructor(@Optional() @Inject(TranslatorService) protected translator?: TranslatorService) { super(); }
     abstract readonly kind: AgentConsoleContentKind;
     abstract readonly label: string;
     abstract readonly component: Type<any>;
@@ -238,17 +241,14 @@ export abstract class AgentConsoleKindRenderer extends AgentConsoleMessageRender
         const builtin = resolveBuiltinMessageRenderer(templateKind);
         return { component: this.component, presentation: {
             ...builtin,
-            roleLabel: this.label,
+            roleLabel: this.label === defaultTimelineLabel(this.kind) ? formatAgentUiLabel(this.translator, `agent.timeline.${this.kind}`, this.label) : this.label,
             roleStyle: theme => ({
                 ...styleTextToObject(this.tone === 'error' ? theme.statusErrorValue
                     : this.tone === 'attention' ? theme.statusBusyValue
                         : this.tone === 'accent' ? theme.toolsAccent : theme.statusLabel),
                 ...(this.tone === 'muted' ? {} : { 'font-weight': 'bold' })
             }),
-            itemStyle: (theme, selected) => ({
-                ...builtin.itemStyle(theme, selected),
-                margin: '0'
-            })
+            itemStyle: (theme, selected) => ({ ...builtin.itemStyle(theme, selected), margin: '0' })
         } };
     }
 }

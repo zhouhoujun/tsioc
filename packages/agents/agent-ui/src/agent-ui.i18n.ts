@@ -14,6 +14,23 @@ const AGENT_UI_EN_TEMPLATES: Record<string, string> = {
 
 const AGENT_UI_ERROR_KEYS = new Set(Object.keys(AGENT_UI_ERROR_EN));
 
+/**
+ * Resolve a plain UI label through the translator, falling back to the English
+ * template when the key is missing (the translator echoes missing keys).
+ */
+export function formatAgentUiLabel(translator: AgentUiTranslator | null | undefined, key: string, fallback: string): string {
+    const value = translator?.translate(key);
+    return value && value !== key ? value : fallback;
+}
+
+/**
+ * The English default for a timeline role label. A renderer whose label differs
+ * (a host override) keeps its own label instead of the catalog translation.
+ */
+export function defaultTimelineLabel(kind: string): string | undefined {
+    return (agentUiEnglish.messages as any)?.agent?.timeline?.[kind];
+}
+
 const agentUiFormatter = new MessageFormatter();
 
 /**
@@ -75,6 +92,16 @@ export const agentUiEnglish: TranslationBundle = {
                 backgroundRunning: '{count} background terminal(s) running',
                 backgroundView: '/ps to view',
                 backgroundStop: '/ps stop to close'
+            },
+            timeline: {
+                thought: 'Thought · ',
+                tool: 'Tool · ',
+                command: '$ ',
+                plan: 'Plan · ',
+                'file-change': 'Files · ',
+                question: 'Question · ',
+                approval: 'Approval · ',
+                error: 'Error · '
             },
             approval: {
                 required: 'Approval required',
@@ -164,6 +191,16 @@ export const agentUiChinese: TranslationBundle = {
                 backgroundRunning: '{count} 个后台终端运行中',
                 backgroundView: '/ps 查看',
                 backgroundStop: '/ps stop 关闭'
+            },
+            timeline: {
+                thought: '思考 · ',
+                tool: '工具 · ',
+                command: '$ ',
+                plan: '计划 · ',
+                'file-change': '文件 · ',
+                question: '提问 · ',
+                approval: '审批 · ',
+                error: '错误 · '
             },
             approval: {
                 required: '需要审批',
