@@ -350,8 +350,11 @@ export function presentTimelineToolEvent(
         : (input.eventType?.startsWith('background_task') ? 'background' : 'generic');
 
     const title = CATEGORY_TITLE[category] || humanizeToolNameLocal(toolName);
-    const target = resolveToolEventTarget(input.inputSummary, category);
     const summary = resolveToolEventSummary(input.outputSummary, input.error);
+    // `todo` input is the plan delta and the output is the resulting plan
+    // state; showing both repeats the same counts in one row.
+    const planTool = toolName.toLowerCase() === 'todo';
+    const target = planTool && summary ? '' : resolveToolEventTarget(input.inputSummary, category);
     const detail = buildToolEventDetail(input.inputSummary, input.outputSummary, input.error);
 
     return { title, target, summary, detail, category };

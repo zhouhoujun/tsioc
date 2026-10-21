@@ -1066,3 +1066,37 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 应用层：`refreshSessions` 996ms → **139–244ms**；`refreshUsageDigest` 848–1557ms → **110–182ms**；`onInit` 2.2s → **0.5–0.8s**；启动期 `store.get` 145 次 / 1078ms → **12 次 / 247ms**。
 - 功能复验：真实 TUI 转录正常，两次 PageUp 仍从消息 19/20 滚到消息 12（reveal 不受启动优化影响）。
 - 遗留：`Application.run` 内约 1.9s 的 DI/模块初始化尚未拆（下一步候选：按需初始化模块）；编译缓存按 mtime 失效，改源码后首启会重新编译（预期）。
+
+## 2026-10-21 真实任务模拟（sleep-mlt）发现的三个展示缺陷
+- 场景：隔离 root `/tmp/opencode/root-sim`（生产库副本）+ 真实 workspace `/home/zhouyou/workspace/sleep-mlt`，任务「检查 timer-system 的测试并运行它们…」，gpt-6.1-sol。
+- **缺陷 1：中英混排（locale 默认被覆盖）**
+  - 现象：tool 行英文（`Update plan completed`）而计划头中文（`计划已完成：3/4 步，1 个失败`）。
+  - 根因：`AgentConsoleSessionState` 构造器按宿主 locale 选好 EN labels，组件构造时 `setConsoleOptions(this.options.ui?.console)` 又用 `defaultAgentConsoleOptions`（zh）整体覆盖；zh hints 同样被冲掉。
+  - 修复：构造器把 locale 结果存入 `localeOptionOverrides`，`setConsoleOptions` 在调用方未显式提供该键时重新套用（显式 options 仍然优先）。
+- **缺陷 2：取消被算成失败**
+  - 现象：计划头 `计划已完成：3/4 步，1 个失败`，同一时刻工具行是 `4 items · 3 completed · 1 cancelled`。
+  - 根因：`buildPlanMessage` 用 `failures: cancelledCount + failedCount`。
+  - 修复：新增 `planFailures` / `planCancelled` 片段，仅在对应计数 > 0 时追加；取消不再计为失败，`0 个失败` 噪声同时消失。
+- **缺陷 3：计划行重复计数**
+  - 现象：`Update plan completed · 2 items · 1 in progress · 1 completed · 3 items · 1 pending · 1 in progress · 1 completed`（输入增量 + 结果全量并列）。
+  - 根因：`presentTimelineToolEvent` 把 `todo` 的 `inputSummary` 当 target、`outputSummary` 当 summary 同时输出。
+  - 修复：`todo` 有结果摘要时丢弃输入增量（失败时才回退显示输入）。
+- 回归（先红后绿）：新增 `agent-ui/test/p407-plan-summary-locale.spec.ts`（5 条）：
+  - locale：`setConsoleOptions` 后 `timelineLabels.planCompleted` 仍为 EN（旧实现 `Received: 计划已完成…`）。
+  - 取消：`3 completed + 1 cancelled` 不再出现「个失败」且含「已取消」（旧实现 `3/4 步，1 个失败`）；失败步骤仍报失败。
+  - 计划行：`todo` 有结果摘要时 target 为空、行内只出现结果（去掉修复后 `Expected: "" / Received: "2 items …"`）。
+  - `console-renderer.spec.ts` 的 zh 断言改为显式钉住 zh overrides（不再依赖宿主 LANG）。
+  - labels 抽到 `AgentConsoleTimelineLabels.ts`（`AgentConsoleTimelineWindow.ts` 942 → 769，baseline 934 → 770）。
+  - 全量：agent-ui **1549 passing**；`tsc` 0；`source-size` OK。
+- 真实复验（同场景重跑）：计划头 `Plan · Success Plan completed: 3/3 steps`（无失败、全英文），工具行 `Update plan completed · 3 items · 1 in progress · 2 completed`（不再重复），最终回答正常。
+
+## 2026-10-21 preamble 误显示「已完成」footer
+- 现象：turn 仍在 `Working (2m 29s)` 时，转录中出现 `Worked for 29s · done 16:24`（同一 user 请求内 DB 只有 1 条 user + 1 条 preamble assistant + 工具 + 最终回答，没有第二个 turn）。
+- 定位：运行时每次 turn 只发一次 `AgentTurnCompletedEvent`（`runTurn`/`runStreamingTurn` 末尾），所以不是双 turn 结算；是**消息渲染**把任意 `templateKind === 'assistant'` 且带 `durationMs` 的消息都加了 worked/done footer —— preamble 也满足条件。
+- 修复：`resolveTimelineMeta` 对 `metadata.preamble === true` 或 `metadata.conversationPhase === 'preamble'` 的 assistant 消息不再输出 worked/done footer；最终回答保持原样。
+- 回归：新增 `agent-ui/test/p409-preamble-done-footer.spec.ts`（3 条）：preamble（两种标记）无 footer、最终回答有 footer、转录中逐条渲染时 preamble 无 footer 而最终回答有；去掉 `!preamble` 守卫即 2 failed（`Received: "Checking the timer tests now. … Worked for`），恢复后 3 passing。全量 agent-ui **1555 passing**、`tsc` 0、`source-size` OK。
+
+## 2026-10-21 门禁计时抖动记录（非回归）
+- 某轮 `RUN_PTY=1 bash scripts/agents-gate.sh` 出现 `gate-regression` 失败：`tui.cjk-long-history.elapsedMs +7020ms REGRESS`（10.0s vs 基线 ~3.0s），其余 26 项 PASS。
+- 复核：单独重跑 TUI 门禁两次，`cjk-long-history` 分别为 **2212ms / 3206ms**；用 `harness/run-gate-regression.ts --dom <fresh> --tui <fresh>` 复核得到 `[OK] gate metrics within baseline tolerance`。同一轮里 `tui.desktop-basic` 反而比基线快 2400ms，说明该场景撞上了机器抖动（非代码回归）。
+- 结论：功能阶段全绿，计时阈值（elapsedMs 容差 5000ms）受宿主负载影响；此类失败需先单独重跑确认，不直接当作回归。

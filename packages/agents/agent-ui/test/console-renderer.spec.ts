@@ -34,6 +34,24 @@ async function settleDynamicMessages(ref?: ComponentRef<unknown>): Promise<void>
     }
 }
 
+
+/**
+ * These suites assert the zh catalog copy. The console follows the host LANG,
+ * so pin the locale overrides instead of depending on the machine environment.
+ */
+function pinChineseConsoleCopy(ctx: ApplicationContext): void {
+    const ref = ctx?.runners?.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent> | undefined;
+    const state = ref?.instance?.sessionState as any;
+    if (!state) {
+        return;
+    }
+    state.localeOptionOverrides = {
+        timelineLabels: DEFAULT_TIMELINE_LABELS,
+        messageStatusLabels: { running: '正在执行', success: '成功', failed: '失败', error: '错误' }
+    };
+    state.setConsoleOptions();
+}
+
 @Suite('Agent Console Dashboard Renderer')
 export class AgentConsoleDashboardRendererTest {
     ctx!: ApplicationContext;
@@ -43,6 +61,7 @@ export class AgentConsoleDashboardRendererTest {
         this.ctx = await Application.run(AgentConsoleComponent, {
             deps: [AgentModule, AgentUiModule, ConsoleTemplateModule, ComponentsModule]
         });
+        pinChineseConsoleCopy(this.ctx);
     }
 
     @After()
@@ -413,6 +432,7 @@ export class AgentConsoleMessagesRendererTest {
         this.ctx = await Application.run(AgentConsoleComponent, {
             deps: [AgentModule, AgentUiModule, ConsoleTemplateModule, ComponentsModule]
         });
+        pinChineseConsoleCopy(this.ctx);
     }
 
     @After()
@@ -929,6 +949,7 @@ export class AgentConsoleOperationalPanelsRendererTest {
         this.ctx = await Application.run(AgentConsoleComponent, {
             deps: [AgentModule, AgentUiModule, ConsoleTemplateModule, ComponentsModule]
         });
+        pinChineseConsoleCopy(this.ctx);
     }
 
     @After()
@@ -1275,6 +1296,7 @@ export class AgentConsoleReviewRendererTest {
         this.ctx = await Application.run(AgentConsoleComponent, {
             deps: [AgentModule, AgentUiModule, ConsoleTemplateModule, ComponentsModule]
         });
+        pinChineseConsoleCopy(this.ctx);
     }
 
     @After()
@@ -1630,6 +1652,7 @@ export class AgentConsoleTuiRendererTest {
         this.ctx = await Application.run(AgentConsoleComponent, {
             deps: [AgentModule, AgentUiModule, ConsoleTemplateModule, ComponentsModule]
         });
+        pinChineseConsoleCopy(this.ctx);
     }
 
     @After()
@@ -2333,7 +2356,7 @@ export class AgentConsoleTuiRendererTest {
             { id: 'p2', content: 'Implement API', status: 'completed' }
         ] as any);
         expect(ref.instance.sessionState.displayMessages.find(m => m.id === '__plan_todo_inline__')?.content)
-            .toContain('计划已完成：2/2 步，0 个失败');
+            .toContain('计划已完成：2/2 步');
     }
 
     @Test('review diff appends an inline file change summary')

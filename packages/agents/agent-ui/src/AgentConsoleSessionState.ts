@@ -601,11 +601,20 @@ export class AgentConsoleSessionState {
         // Built-in labels are zh while option hints are en; align both with the host locale.
         const locale = this.translator?.currentLocale?.toLowerCase() || '';
         if (locale.startsWith('zh')) {
-            this.consoleOptions = { ...this.consoleOptions, ...ZH_CONSOLE_HINTS };
+            this.localeOptionOverrides = { ...ZH_CONSOLE_HINTS };
         } else if (locale) {
-            this.consoleOptions = { ...this.consoleOptions, messageStatusLabels: EN_MESSAGE_STATUS_LABELS, timelineLabels: EN_TIMELINE_LABELS };
+            this.localeOptionOverrides = { messageStatusLabels: EN_MESSAGE_STATUS_LABELS, timelineLabels: EN_TIMELINE_LABELS };
         }
+        this.consoleOptions = { ...this.consoleOptions, ...this.localeOptionOverrides };
     }
+
+    /**
+     * Host-locale defaults applied on construction. The component calls
+     * {@link setConsoleOptions} with `options.ui.console` right after, which
+     * rebuilds the defaults — re-apply these so an English host does not fall
+     * back to the zh label defaults (mixed-language timeline).
+     */
+    protected localeOptionOverrides: Partial<Required<AgentConsoleOptions>> = {};
     readonly inputHistoryController: AgentConsoleInputHistoryController = new DefaultAgentConsoleInputHistoryController(this);
     readonly focusLayers: AgentConsoleFocusLayers = new DefaultAgentConsoleFocusLayers(this);
 
@@ -2901,11 +2910,9 @@ export class AgentConsoleSessionState {
         const blockedCount = this.planTodos.filter(item => item.blockedBy && item.blockedBy.length > 0).length;
         const labels = { ...DEFAULT_TIMELINE_LABELS, ...(this.consoleOptions.timelineLabels || {}) };
         const summary = activeCount === 0
-            ? fillTimelineLabel(labels.planCompleted, {
-                completed: completedCount,
-                total,
-                failures: cancelledCount + failedCount
-            })
+            ? fillTimelineLabel(labels.planCompleted, { completed: completedCount, total })
+                + (failedCount ? fillTimelineLabel(labels.planFailures || '', { failures: failedCount }) : '')
+                + (cancelledCount ? fillTimelineLabel(labels.planCancelled || '', { cancelled: cancelledCount }) : '')
             : '';
         const goalProgress = this.goalCriteriaProgress;
         const goalLine = goalProgress ? `goal: ${goalProgress.met}/${goalProgress.total} criteria met` : '';
@@ -4888,6 +4895,11 @@ export class AgentConsoleSessionState {
             ...defaultAgentConsoleOptions,
             ...(options || {})
         };
+        for (const key of Object.keys(this.localeOptionOverrides) as Array<keyof AgentConsoleOptions>) {
+            if (!options || (options as any)[key] === undefined) {
+                (this.consoleOptions as any)[key] = (this.localeOptionOverrides as any)[key];
+            }
+        }
         this.inputPrompt = this.consoleOptions.inputPrompt;
         this.inputContinuationPrompt = this.consoleOptions.inputContinuationPrompt;
         this.inputPlaceholder = this.consoleOptions.inputPlaceholder;

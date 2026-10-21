@@ -1183,12 +1183,12 @@ function resolveTimelineMeta(
             duration = formatTimelineDuration(durationMs);
         }
     } else if (templateKind === 'assistant') {
-        // Final replies carry the aggregate Codex-style worked/done summary
-        // instead of a bare timestamp; sub-second turns (often derived) would
-        // only render "Worked for 0s", so the summary needs at least one second.
+        // Final replies carry the worked/done summary; a preamble runs inside
+        // the still-active turn, so a "done" footer there would mislead.
+        const preamble = message?.metadata?.preamble === true || String(message?.metadata?.conversationPhase || '').trim() === 'preamble';
         const completedAt = Number(message?.metadata?.completedAt ?? message?.metadata?.endedAt ?? message?.metadata?.finishedAt ?? message?.createdAt);
         const durationMs = resolveMessageDurationMs(message);
-        if (Number.isFinite(completedAt) && Number.isFinite(durationMs) && Math.round(durationMs / 1000) > 0) {
+        if (!preamble && Number.isFinite(completedAt) && Number.isFinite(durationMs) && Math.round(durationMs / 1000) > 0) {
             return `Worked for ${formatWorkedDuration(durationMs)} · done ${formatDoneTime(completedAt)}`;
         }
     }

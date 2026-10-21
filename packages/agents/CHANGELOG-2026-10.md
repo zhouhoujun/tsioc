@@ -175,3 +175,12 @@ newline-JSON transport, allowlist gate and dynamic tool path end to end.
 | (this commit) | `agent-gateway/src/auth/SessionOwnerStore.ts` | Every authorized RPC read the whole transcript to check the owner. `getOwner` now uses `SessionStore.getOwnerPrincipalId()` (single-column query in TypeORM), keeping a legacy `has`+`get` fallback for lighter stores. |
 | (this commit) | `agent-gateway/src/usage/UsageStats.ts` | The global usage digest deserialized every session to read `metadata.usage`. Added `SessionStore.listMessageUsageRecords()` (metadata-only query in TypeORM) with the transcript path as fallback. |
 | (this commit) | `agent-cli/bin/transpile-cache.js`, `bin/tsdi-agent.js` | Each start re-transpiled the whole dependency graph (ts-node has no disk cache). The `.ts` loader output is now cached under `~/.tsdi-agent/transpile-cache` keyed by path + mtime + size + tsconfig stamp, falling back to the loader on any miss/error. |
+
+## 2026-10-21 timeline copy (real session findings)
+
+| Commit | File | Root cause |
+| --- | --- | --- |
+| (this commit) | `agent-ui/src/AgentConsoleSessionState.ts` | The component re-applied `defaultAgentConsoleOptions` (zh labels/hints) after the state had selected labels from the host locale, producing a mixed-language timeline. Locale overrides are now remembered and re-applied unless the host passes its own. |
+| (this commit) | `agent-ui/src/AgentConsoleSessionState.ts`, `AgentConsoleTimelineWindow.ts` (labels split into `AgentConsoleTimelineLabels.ts`) | Plan summaries counted `cancelled` steps as failures (`3/4 步，1 个失败` next to `1 cancelled`). Failure and cancellation are now separate, non-zero-only segments. |
+| (this commit) | `agent-ui/src/AgentConsoleTimelineEventPresenter.ts` | `todo` rows printed the requested delta and the resulting counts together (`2 items … · 3 items …`). The delta is dropped when the result summary exists. |
+| (this commit) | `agent-ui/src/AgentConsoleMessageRenderers.ts` | While a turn was still running, the preamble reply rendered `Worked for 29s · done …`, which reads as "finished". Only final replies carry that footer now (`metadata.preamble` / `conversationPhase` are skipped). |
