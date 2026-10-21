@@ -1015,3 +1015,14 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 全量：`agent` **1008 passing**（+1）、`agent-cli` **90 passing**（+2），均 EXIT=0；`agent`/`agent-cli` `tsc --noEmit` 0 错误；`source-size` OK（runtime 仍 3507）；`git diff --check` 干净。
 - **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/hook-signal1.log`）。
 - **遗留（最终）**：`sandbox-exec` 的能力探测（bwrap/sandbox-exec 一次性短探测）、`knowledge_search`（in-memory）、`browser/*`（宿主 adapter 决定）三项为已知且低风险；「真实长会话里重复工具调用是否下降」仍属观测项。
+
+## 2026-10-21 严重回归修复：sql.js 原子保存覆盖读错字段 → 全部写入未落盘
+- 现象：门禁 `agent-cli`（`usesPersistentStoresAcrossCliRestarts`、图片附件持久化、输入历史跨重启 2 条）与 `agent-gateway`（跨进程 SQLite `durabilityAcrossProcesses`）失败；单独复现同样失败（非并发抖动）。跨进程用例期望 `[0,1,2]`，实际 `[]`。
+- 根因：上一轮 `3037c701f` 的 `installAtomicSqljsSave` 读 `driver.database`，而 TypeORM 0.3.20 `SqljsDriver` 的字段是 **`databaseConnection`**（`save()` 内部用 `this.databaseConnection.export()`）。覆盖实现里 `if (!database) return;` 静默返回 —— **autoSave 的每一次写盘都变成了 no-op**。当时的 `atomic-sqljs-save.spec.ts` 用了伪造的 `{ database: ... }` driver，因此测试是绿的。
+- 影响：自 `3037c701f` 之后通过 TUI/CLI 写入该库的会话与消息**没有落盘**（文件本身完好，无损坏、无截断）。生产库在本会话早些时候已从 10-13 备份恢复，之后全部复验都使用隔离 root，因此未再叠加新的数据损失；但这段窗口内的真实写入确实丢了，需如实告知用户。
+- 修复（`typeorm-adapter/src/TypeormAdapter.ts`）：
+  1. 连接解析改为 `driver.databaseConnection || driver.database`（兼容旧 shim）。
+  2. **不再静默丢弃写操作**：解析不到连接时回退到 `driver.save.bind(driver)` 的原始实现（宁可用非原子路径，也不能丢写）。
+  3. 保留 TypeORM `save(location?)` 语义：显式 `location` 参数优先，按该路径做 tmp+rename。
+- 回归（先红后绿）：`typeorm-adapter/test/atomic-sqljs-save.spec.ts` 用**真实 driver 形态**（`databaseConnection`）重写，新增 3 条：真实字段原子写、无连接时回退原始保存（`Expected: "original" / Received: "old"`）、显式 location 原子写；旧实现 **3 failed**，修复后 **5 passing**，`tsc` 0。
+- 真实链路复验：子进程 `cross-process-sqlite.child.ts` append 后，`sqlite3` 直接查到 `3|0,1,2`（修复前为 `0|`）；`agent-gateway` 跨进程用例 **1 passing**；`agent-cli` 全量 **94 passing**。

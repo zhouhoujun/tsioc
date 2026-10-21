@@ -331,13 +331,22 @@ export class TypeormAdapter {
      * killed mid-write truncates the file (observed: a 9MB production DB cut to
      * 4MiB and left malformed). Write to `<location>.tmp` and rename atomically
      * so a crash leaves the previous consistent file untouched.
+     *
+     * TypeORM 0.3.x `SqljsDriver` exposes the connection as `databaseConnection`
+     * (older shims used `database`). Reading only one name made every save a
+     * silent no-op, so BOTH are resolved and an unreadable connection falls back
+     * to the driver's own save instead of dropping the write.
      */
     protected installAtomicSqljsSave(dataSource: DataSource): void {
         const options = dataSource.options as { type?: string; location?: string; autoSave?: boolean };
         if (options.type !== 'sqljs' || !options.location || !options.autoSave) {
             return;
         }
-        const driver = dataSource.driver as { save?: () => void | Promise<void>; database?: { export(): Uint8Array } };
+        const driver = dataSource.driver as {
+            save?: (location?: string) => void | Promise<void>;
+            database?: { export(): Uint8Array };
+            databaseConnection?: { export(): Uint8Array };
+        };
         if (!driver || typeof driver.save !== 'function') {
             return;
         }
@@ -345,15 +354,18 @@ export class TypeormAdapter {
         if (!fs) {
             return;
         }
-        const location = String(options.location);
-        driver.save = () => {
-            const database = driver.database;
+        const fallback = driver.save.bind(driver);
+        const defaultLocation = String(options.location);
+        driver.save = (location?: string) => {
+            const target = location || defaultLocation;
+            const database = driver.databaseConnection || driver.database;
             if (!database) {
-                return;
+                return fallback(location);
             }
-            const temporary = `${location}.tmp`;
+            const temporary = `${target}.tmp`;
             fs.writeFileSync(temporary, database.export());
-            fs.renameSync(temporary, location);
+            fs.renameSync(temporary, target);
+            return undefined;
         };
     }
 

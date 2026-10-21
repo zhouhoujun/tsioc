@@ -156,3 +156,12 @@ newline-JSON transport, allowlist gate and dynamic tool path end to end.
 | Commit | File | Root cause |
 | --- | --- | --- |
 | `3037c701f` | `typeorm-adapter/TypeormAdapter.ts` | sql.js `autoSave` rewrote the whole DB file in place; a killed process truncated the production DB (9MB → 4MiB, malformed). The adapter now overrides the driver save with a `<location>.tmp` write + atomic rename, so a crash leaves the last consistent file. |
+
+## 2026-10-21 timeline selection reveal
+
+| Commit | File | Root cause |
+| --- | --- | --- |
+
+| Commit | File | Root cause |
+| --- | --- | --- |
+| (this commit) | `typeorm-adapter/src/TypeormAdapter.ts` | Follow-up to the atomic sql.js save: the override read `driver.database`, but TypeORM 0.3.x exposes the connection as `databaseConnection`, so every autoSave took the `if (!database) return;` path and **wrote nothing**. Now both field names are resolved and an unreadable connection falls back to the driver's own `save` instead of silently dropping the write; the unit test now models the real driver shape. |
