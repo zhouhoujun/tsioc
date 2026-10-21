@@ -347,6 +347,14 @@
 - **真实 TUI 验收**：`LANG=zh_CN.UTF-8` 下时间线显示 `✓ 工具 · 检查目录已完成 …`、`✓ 思考 · …`。
 - **验证**：`agent-ui` **1530 passing**、`tsc` 0、`source-size` OK（为守住基线预算，`itemStyle` 等价压缩 + helper 放在未入基线的 i18n 文件）。
 
+## 2026-10-21 🔴 生产库损坏事件与恢复 + sql.js 原子写修复（`3037c701f`）
+- **事件**：为时间线/启动验证在生产 root 上并发/强杀 TUI；TypeORM `sql.js` 的 `autoSave` 是**整库就地重写**（非原子），进程在写入中被杀 → `~/.tsdi-agent/agent.db` 从 9.0M 截断为 **4 MiB**，`PRAGMA integrity_check` 报 `database disk image is malformed`。
+- **恢复**：最佳有效备份 `/tmp/opencode/chome/.tsdi-agent/agent.db`（完整性 **ok**，**2427** 条消息，到 **2026-10-13 17:01**）→ 只读复制后替换生产库；损坏原件保留 `agent.db.corrupt-2026-10-21`，恢复副本保留 `agent.db.recovered-2026-10-13`；`.recover` 重建（1250 条，到 09-28）留在 `/tmp/opencode/recovered.db`。**数据损失**：10-13 → 10-21 约 **200 条**消息（损坏页不可恢复）。
+- **根因修复**：`TypeormAdapter` 在 `dataSource.initialize()` 后接管 sqljs driver 的 `save`，改为 `<location>.tmp` + `rename` **原子写**；进程中途被杀只会残留 `.tmp`，原库保持最后一致状态。
+- **回归（红→绿）**：新增 `typeorm-adapter/test/atomic-sqljs-save.spec.ts` 2 条；证红（移除原子实现）`1 passing 1 failed` → 证绿 `2 passing`；`tsc` 0、`source-size` OK（该包既有测试需本地 PostgreSQL，环境缺失，非本次改动）。
+- **纪律**：此后所有验证只用隔离 `--root`；生产库仅用于真实会话，绝不并发/强杀。
+- **后续**：单实例锁（并发 sql.js 写入仍会 last-writer-wins）待办。
+
 ## 2026-10-21 openTUI 参考设计：TUI 渲染/交互的最优方案（设计记录）
 - **openTUI 要点**：双缓冲 cell buffer + 逐 cell diff 只写变化单元格；保留组件树 + Flexbox 布局；渲染核心原生（Zig）实现。
 - **本仓库现状（已具备同等能力）**：
