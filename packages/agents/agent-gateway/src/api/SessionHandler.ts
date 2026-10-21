@@ -1,6 +1,6 @@
 import * as http from 'http';
 import { Injectable, Optional } from '@tsdi/ioc';
-import { AgentRuntime, MemoryStore, SessionStore, AgentTurnStartedEvent, AgentTurnCompletedEvent, AgentStreamChunkEvent, AgentErrorEvent, AgentTurnCancelledEvent } from '@tsdi/agent';
+import { AgentRuntime, MemoryStore, SessionStore, AgentTurnStartedEvent, AgentTurnCompletedEvent, AgentStreamChunkEvent, AgentErrorEvent, AgentTurnCancelledEvent, deriveSectionInfos } from '@tsdi/agent';
 import { EventHandler } from '@tsdi/core';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
 import { SessionInfo, SessionProjectGroup, SessionThreadGroup, AgentSessionSectionInfo } from '../contracts/SessionInfo';
@@ -405,8 +405,12 @@ export class SessionHandler {
     async listSessionInfos(principalId?: string, includeArchived = false, includeAutomation = false): Promise<SessionInfo[]> {
         const infos: SessionInfo[] = [];
         const ids = Array.from(new Set([...(await this.sessions.listSessionIds()), ...this.sessionIds]));
-        for (const id of await this.owners.listOwned(ids, principalId)) {
-            const state = await this.sessions.get(id);
+        const ownedIds = await this.owners.listOwned(ids, principalId);
+        // Facts carry the session row + message counts, so listing sessions no
+        // longer deserializes every transcript in the library.
+        const factById = new Map((await this.sessions.listSessionFacts(ownedIds)).map(fact => [fact.sessionId, fact]));
+        for (const id of ownedIds) {
+            const state = factById.get(id) ?? await this.sessions.get(id);
             if (!includeAutomation && state.sessionRole === 'automation') {
                 continue;
             }
@@ -419,7 +423,7 @@ export class SessionHandler {
                 sessionId: id,
                 createdAt: state.createdAt ?? 0,
                 lastActiveAt: state.updatedAt ?? state.createdAt ?? 0,
-                messageCount: state.messages.length,
+                messageCount: 'messageCount' in state ? state.messageCount : state.messages.length,
                 summary: state.summary,
                 title: state.title,
                 pinned: !!state.pinned,
@@ -433,7 +437,7 @@ export class SessionHandler {
                 rootRequest: state.rootRequest ?? undefined,
                 focusSummary: state.focusSummary ?? undefined,
                 threadStatus: state.threadStatus ?? undefined,
-                sections: this.deriveSectionInfos(state)
+                sections: 'messageCount' in state ? deriveSectionInfos(state.sections, undefined, state.sectionMessageCounts) : deriveSectionInfos(state.sections, state.messages)
             });
         }
         return infos.sort((left, right) => {
@@ -572,25 +576,6 @@ export class SessionHandler {
                 }
                 return left.threadId.localeCompare(right.threadId);
             });
-    }
-
-    private deriveSectionInfos(state: { sections?: Array<{ id: string; label: string }>; messages?: Array<{ sectionId?: string }> }): AgentSessionSectionInfo[] | undefined {
-        const sections = Array.isArray(state.sections) ? state.sections.filter(section => section && String(section.id || '').trim()) : [];
-        if (!sections.length) {
-            return undefined;
-        }
-        const counts = new Map<string, number>();
-        for (const message of state.messages ?? []) {
-            const sectionId = String(message.sectionId || '').trim();
-            if (sectionId) {
-                counts.set(sectionId, (counts.get(sectionId) ?? 0) + 1);
-            }
-        }
-        return sections.map(section => ({
-            id: section.id,
-            label: section.label,
-            messageCount: counts.get(section.id) ?? 0
-        }));
     }
 
     private resolveThreadId(state: { sessionId?: string; id?: string; primaryThreadId?: string | null }): string {

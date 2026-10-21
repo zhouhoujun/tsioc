@@ -42,6 +42,28 @@ describe('Persistent session store', () => {
         }
     });
 
+    it('lists session facts without loading message bodies', async () => {
+        const ctx = await Application.run(PersistentSessionTestModule);
+        try {
+            const store = ctx.get(TypeOrmSessionStore) as TypeOrmSessionStore;
+            await store.append('facts-1', { id: 'm1', role: 'user', content: 'a', createdAt: 1, sectionId: 's1' } as any);
+            await store.append('facts-1', { id: 'm2', role: 'assistant', content: 'b', createdAt: 2, sectionId: 's1' } as any);
+            await store.append('facts-1', { id: 'm3', role: 'assistant', content: 'c', createdAt: 3 } as any);
+            await store.append('facts-2', { id: 'm1', role: 'user', content: 'd', createdAt: 4 } as any);
+            // Session lists run on the TUI startup path; reading every transcript
+            // made listing cost grow with total history. Facts must use the
+            // aggregate query instead of `get`.
+            (store as any).get = () => { throw new Error('listSessionFacts must not load transcripts'); };
+            const facts = await store.listSessionFacts(['facts-1', 'facts-2']);
+            const first = facts.find(fact => fact.sessionId === 'facts-1');
+            expect(first?.messageCount).toEqual(3);
+            expect(first?.sectionMessageCounts?.s1).toEqual(2);
+            expect(facts.find(fact => fact.sessionId === 'facts-2')?.messageCount).toEqual(1);
+        } finally {
+            await ctx.close();
+        }
+    });
+
     it('reloads persisted transcript from the same store', async () => {
         const ctx = await Application.run(PersistentSessionTestModule);
         try {

@@ -1,10 +1,12 @@
 import { Inject, Injectable } from '@tsdi/ioc';
 import { In } from 'typeorm';
-import { AgentSessionProjectIndex, AgentSessionProjectMetadata, AgentSessionSection, AgentSessionSnapshotInfo, AgentThreadIndex, SessionSearchMatch, SessionSearchOptions, SessionStore, deriveThreadIndexes } from './SessionStore';
+import { AgentSessionFact, AgentSessionProjectIndex, AgentSessionProjectMetadata, AgentSessionSection, AgentSessionSnapshotInfo, AgentThreadIndex, SessionSearchMatch, SessionSearchOptions, SessionStore, deriveThreadIndexes } from './SessionStore';
 import { AgentState } from '../runtime/AgentState';
 import { AgentMessage, normalizeAgentMessageParts } from '../runtime/AgentMessage';
+import { AgentUsageRecord } from '../runtime/UsageSummary';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentMessageEntity, AgentSessionEntity, AgentSessionSnapshotEntity } from './entities';
+import { readMessageUsageRecords, readOwnerPrincipalId, readSessionFacts } from './TypeOrmSessionReads';
 import { normalizeAgentWorkspaceIdentity } from '../AgentWorkspacePath';
 
 @Injectable()
@@ -13,6 +15,18 @@ export class TypeOrmSessionStore extends SessionStore {
 
     constructor(@Inject(TypeormAdapter) private adapter: TypeormAdapter) {
         super();
+    }
+
+    listSessionFacts(sessionIds?: readonly string[]): Promise<AgentSessionFact[]> {
+        return readSessionFacts(this.adapter, sessionIds);
+    }
+
+    listMessageUsageRecords(sessionIds?: readonly string[]): Promise<AgentUsageRecord[]> {
+        return readMessageUsageRecords(this.adapter, sessionIds);
+    }
+
+    getOwnerPrincipalId(sessionId: string): Promise<string | undefined> {
+        return readOwnerPrincipalId(this.adapter, sessionId);
     }
 
     async get(sessionId: string): Promise<AgentState> {

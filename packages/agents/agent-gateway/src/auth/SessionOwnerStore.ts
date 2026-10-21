@@ -22,11 +22,23 @@ export class SessionOwnerStore {
         await this.sessions.setOwner(sessionId, principalId);
     }
 
+    /**
+     * Read the owner without loading the transcript. Ownership is checked for
+     * every authorized RPC, and `sessions.get()` deserializes all messages, so
+     * this used to read the whole library again on each call (the TUI startup
+     * fires hundreds of RPCs).
+     */
     async getOwner(sessionId: string): Promise<string | undefined> {
-        if (!await this.sessions.has(sessionId)) {
-            return undefined;
+        // Stores that predate the metadata read (or lighter test doubles) only
+        // implement `has`/`get`; keep them working without loading transcripts
+        // on the hot path.
+        if (typeof this.sessions.getOwnerPrincipalId !== 'function') {
+            if (!await this.sessions.has(sessionId)) {
+                return undefined;
+            }
+            return (await this.sessions.get(sessionId)).ownerPrincipalId;
         }
-        return (await this.sessions.get(sessionId)).ownerPrincipalId;
+        return this.sessions.getOwnerPrincipalId(sessionId);
     }
 
     async hasOwner(sessionId: string): Promise<boolean> {

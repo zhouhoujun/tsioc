@@ -24,6 +24,12 @@ if (!registered) {
     require('ts-node/register/transpile-only');
 }
 require('tsconfig-paths').register({ cwd: packageRoot });
+// Reuse the transpiled output across CLI starts (ts-node keeps no on-disk
+// cache), so warm starts skip re-compiling the whole dependency graph.
+require('./transpile-cache').install({
+    packageRoot,
+    tsconfig: process.env.TS_NODE_PROJECT
+});
 
 const { createAgentCli, normalizeCliArgv } = require('../src/cli.ts');
 const { formatCliError, isCliDebugEnabled } = require('../src/cli-error-format.ts');

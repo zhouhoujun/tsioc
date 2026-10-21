@@ -1041,3 +1041,28 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   3. 保留 TypeORM `save(location?)` 语义：显式 `location` 参数优先，按该路径做 tmp+rename。
 - 回归（先红后绿）：`typeorm-adapter/test/atomic-sqljs-save.spec.ts` 用**真实 driver 形态**（`databaseConnection`）重写，新增 3 条：真实字段原子写、无连接时回退原始保存（`Expected: "original" / Received: "old"`）、显式 location 原子写；旧实现 **3 failed**，修复后 **5 passing**，`tsc` 0。
 - 真实链路复验：子进程 `cross-process-sqlite.child.ts` append 后，`sqlite3` 直接查到 `3|0,1,2`（修复前为 `0|`）；`agent-gateway` 跨进程用例 **1 passing**；`agent-cli` 全量 **94 passing**。
+
+## 2026-10-21 TUI 启动优化（真实缺口，非推测）
+- 复现与拆解（隔离 root `/tmp/opencode/root-scroll`：生产库副本，150 会话 / 2467 消息；进程内计时钩子）：
+  - 首次渲染 **9.3s**；其中模块编译/加载 ~3.5s、`onInit` 2.2s、`Application.run` 其余 ~1.0s、首帧 ~0.07s。
+  - `onInit` 热点：`refreshSessions` **996ms**、`refreshUsageDigest` **848ms**。
+- 根因：
+  1. 会话列表：`SessionHandler.listSessionInfos` 对每个会话调 `sessions.get()`（连全部消息 + parts/metadata JSON 一起反序列化），只为拿 `messageCount` 和分段计数 → 列表成本随**历史总量**增长。
+  2. 鉴权：`SessionOwnerStore.getOwner` 每次 RPC 鉴权都 `sessions.get()` 读整条转录；启动期数百次 RPC → 整库被反复反序列化（`store.get` 145 次 / 1078ms）。
+  3. 用量摘要：`summarizeUsageForSessions` 逐会话 `get()`，只为读 assistant 消息的 `metadata.usage`。
+  4. 编译：CLI 每次启动用 ts-node(SWC) 逐文件转译整个依赖图，而 ts-node 10 无磁盘缓存。
+- 修复：
+  1. `SessionStore.listSessionFacts()`（默认回退 `get`）+ `TypeOrmSessionStore` 用「会话行 + 按 sessionId 过滤的分段计数」两条聚合查询；`listSessionInfos`、`SessionOwnerStore.listOwned` 改用它。分段投影复用 `@tsdi/agent` 既有的 `deriveSectionInfos(sections, messages, sectionMessageCounts)`（新增可选第三参走预计算计数，避免重复实现），`SessionHandler` 基线 716 → 701。
+  2. `SessionStore.getOwnerPrincipalId()`（默认回退 `get`）+ TypeORM 单列查询；`SessionOwnerStore.getOwner` 走它，并保留旧式 store 的 `has`+`get` 兼容分支。
+  3. `SessionStore.listMessageUsageRecords()`（默认回退逐会话 `get`）+ TypeORM 只读 assistant 消息的 `sessionId/createdAt/metadata`；`summarizeUsageForSessions` 改用它（同样保留兼容分支）。
+  4. `agent-cli/bin/transpile-cache.js`：包装已注册的 `.ts` loader，按「文件路径 + mtime + size + tsconfig 戳 + node 版本」缓存编译产物（默认 `~/.tsdi-agent/transpile-cache`；>4000 条目自清理；`TSDI_AGENT_TRANSPILE_CACHE=0` 关闭；任何缓存异常一律回退原 loader）。
+- 回归（先红后绿）：
+  - `agent/test/persistent-session.spec.ts` 新增「lists session facts without loading message bodies」：把 `store.get` 换成抛错后仍能拿到 `messageCount` / 分段计数；去掉 TypeORM 覆盖时该用例失败（`listSessionFacts must not load transcripts`），恢复后 **15 passing**。
+  - `agent-cli/test/transpile-cache.spec.ts`：源文件不变时第二次加载不再进入转译（`compiles === 1`）、源文件改动后失效重编（`compiles === 2`）、禁用开关不安装；把 `install` 改成直接返回 false 时失败（`Expected: true / Received: false`），恢复后 **2 passing**。
+  - 全量：agent **1023 passing**、agent-gateway **322 passing**、agent-ui **1544 passing**、agent-cli **96 passing**；四包 `tsc --noEmit` 0；`source-size` OK。
+- 实测（同机同 root 背靠背 A/B，进程内计时）：
+  - 首字节写入：缓存开 **~2.3s** vs 关 ~3.8s；`Application.run` 完成：**~3.6s** vs ~5.5s。
+  - 墙钟首帧（tmux 轮询同口径）：**3.7–5.6s**；优化前 **9.3s**。
+  - 应用层：`refreshSessions` 996ms → **139–244ms**；`refreshUsageDigest` 848–1557ms → **110–182ms**；`onInit` 2.2s → **0.5–0.8s**；启动期 `store.get` 145 次 / 1078ms → **12 次 / 247ms**。
+- 功能复验：真实 TUI 转录正常，两次 PageUp 仍从消息 19/20 滚到消息 12（reveal 不受启动优化影响）。
+- 遗留：`Application.run` 内约 1.9s 的 DI/模块初始化尚未拆（下一步候选：按需初始化模块）；编译缓存按 mtime 失效，改源码后首启会重新编译（预期）。

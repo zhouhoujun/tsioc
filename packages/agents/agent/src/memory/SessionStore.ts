@@ -1,3 +1,4 @@
+import { AgentUsageRecord, collectMessageUsageRecords } from '../runtime/UsageSummary';
 import { Abstract } from '@tsdi/ioc';
 import { AgentMessage } from '../runtime/AgentMessage';
 import { AgentState } from '../runtime/AgentState';
@@ -182,11 +183,19 @@ export function deriveThreadIndexes(inputs: AgentThreadSource[]): AgentThreadInd
 
 export function deriveSectionInfos(
     sections?: AgentSessionSection[] | null,
-    messages?: AgentMessage[] | string
+    messages?: AgentMessage[] | string,
+    sectionMessageCounts?: Record<string, number> | null
 ): AgentSessionSectionInfo[] | undefined {
     const resolved = Array.isArray(sections) ? sections.filter(section => section && String(section.id || '').trim()) : [];
     if (!resolved.length) {
         return undefined;
+    }
+    if (sectionMessageCounts) {
+        return resolved.map(section => ({
+            id: section.id,
+            label: section.label,
+            messageCount: sectionMessageCounts[section.id] ?? 0
+        }));
     }
     const counts = new Map<string, number>();
     if (Array.isArray(messages)) {
@@ -202,6 +211,34 @@ export function deriveSectionInfos(
         label: section.label,
         messageCount: counts.get(section.id) ?? 0
     }));
+}
+
+/**
+ * Session metadata for list/fact views. Carries the same fields as
+ * {@link AgentState} but never the message bodies — `messageCount` and the
+ * per-section counts are precomputed, so listing sessions does not have to
+ * load every transcript in the library.
+ */
+export interface AgentSessionFact {
+    sessionId: string;
+    messageCount: number;
+    sectionMessageCounts?: Record<string, number>;
+    sections?: AgentSessionSection[];
+    summary?: string;
+    title?: string;
+    pinned?: boolean;
+    archived?: boolean;
+    ownerPrincipalId?: string;
+    workspace?: string;
+    projectId?: string;
+    primaryThreadId?: string;
+    originThreadId?: string;
+    sessionRole?: AgentSessionRole;
+    rootRequest?: string;
+    focusSummary?: string;
+    threadStatus?: AgentThreadStatus;
+    createdAt?: number;
+    updatedAt?: number;
 }
 
 @Abstract()
@@ -257,6 +294,73 @@ export abstract class SessionStore {
             await this.addSection(sessionId, label, undefined, sectionId);
         }
         return { ...message, sectionId };
+    }
+
+    /**
+     * Usage records recorded on assistant messages (default: full transcript
+     * read). Stores that keep usage in message metadata override this with a
+     * metadata-only query so a global usage digest does not load every
+     * transcript in the library.
+     */
+    async listMessageUsageRecords(sessionIds?: readonly string[]): Promise<AgentUsageRecord[]> {
+        const ids = sessionIds ? [...sessionIds] : await this.listSessionIds();
+        const records: AgentUsageRecord[] = [];
+        for (const id of ids) {
+            const state = await this.get(id);
+            records.push(...collectMessageUsageRecords(id, state.messages || []));
+        }
+        return records;
+    }
+
+    /**
+     * Read the owning principal without deserializing the transcript (default:
+     * fall back to `get`). Authorization runs on every RPC, so file-backed
+     * stores override this with a single metadata read.
+     */
+    async getOwnerPrincipalId(sessionId: string): Promise<string | undefined> {
+        return (await this.get(sessionId)).ownerPrincipalId;
+    }
+
+    /**
+     * Lightweight facts for the given sessions (default: fall back to `get`).
+     * File-backed stores override this with an aggregate query so a session
+     * list never has to deserialize every stored message.
+     */
+    async listSessionFacts(sessionIds?: readonly string[]): Promise<AgentSessionFact[]> {
+        const ids = sessionIds ? [...sessionIds] : await this.listSessionIds();
+        const facts: AgentSessionFact[] = [];
+        for (const id of ids) {
+            const state = await this.get(id);
+            const sectionMessageCounts: Record<string, number> = {};
+            for (const message of state.messages ?? []) {
+                const sectionId = String(message.sectionId || '').trim();
+                if (sectionId) {
+                    sectionMessageCounts[sectionId] = (sectionMessageCounts[sectionId] ?? 0) + 1;
+                }
+            }
+            facts.push({
+                sessionId: state.sessionId,
+                messageCount: state.messages?.length ?? 0,
+                sectionMessageCounts,
+                sections: state.sections,
+                summary: state.summary,
+                title: state.title,
+                pinned: state.pinned,
+                archived: state.archived,
+                ownerPrincipalId: state.ownerPrincipalId,
+                workspace: state.workspace,
+                projectId: state.projectId,
+                primaryThreadId: state.primaryThreadId,
+                originThreadId: state.originThreadId,
+                sessionRole: state.sessionRole,
+                rootRequest: state.rootRequest,
+                focusSummary: state.focusSummary,
+                threadStatus: state.threadStatus,
+                createdAt: state.createdAt,
+                updatedAt: state.updatedAt
+            });
+        }
+        return facts;
     }
 
     /** Fork a transcript into a new branch session, optionally through a message. */

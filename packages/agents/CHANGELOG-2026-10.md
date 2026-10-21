@@ -166,3 +166,12 @@ newline-JSON transport, allowlist gate and dynamic tool path end to end.
 | Commit | File | Root cause |
 | --- | --- | --- |
 | (this commit) | `typeorm-adapter/src/TypeormAdapter.ts` | Follow-up to the atomic sql.js save: the override read `driver.database`, but TypeORM 0.3.x exposes the connection as `databaseConnection`, so every autoSave took the `if (!database) return;` path and **wrote nothing**. Now both field names are resolved and an unreadable connection falls back to the driver's own `save` instead of silently dropping the write; the unit test now models the real driver shape. |
+
+## 2026-10-21 startup (real profile-driven)
+
+| Commit | File | Root cause |
+| --- | --- | --- |
+| (this commit) | `agent/src/memory/SessionStore.ts`, `TypeOrmSessionStore.ts`, `TypeOrmSessionReads.ts`, `agent-gateway/src/api/SessionHandler.ts` | Session lists loaded every transcript just to count messages (`sessions.get()` per session). Added `listSessionFacts()` (session row + section counts) with a `get` fallback and used it for `listSessionInfos` / `listOwned`; `deriveSectionInfos` gained an optional precomputed-counts argument. |
+| (this commit) | `agent-gateway/src/auth/SessionOwnerStore.ts` | Every authorized RPC read the whole transcript to check the owner. `getOwner` now uses `SessionStore.getOwnerPrincipalId()` (single-column query in TypeORM), keeping a legacy `has`+`get` fallback for lighter stores. |
+| (this commit) | `agent-gateway/src/usage/UsageStats.ts` | The global usage digest deserialized every session to read `metadata.usage`. Added `SessionStore.listMessageUsageRecords()` (metadata-only query in TypeORM) with the transcript path as fallback. |
+| (this commit) | `agent-cli/bin/transpile-cache.js`, `bin/tsdi-agent.js` | Each start re-transpiled the whole dependency graph (ts-node has no disk cache). The `.ts` loader output is now cached under `~/.tsdi-agent/transpile-cache` keyed by path + mtime + size + tsconfig stamp, falling back to the loader on any miss/error. |
