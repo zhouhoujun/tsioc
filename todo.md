@@ -1105,3 +1105,15 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 某轮 `RUN_PTY=1 bash scripts/agents-gate.sh` 出现 `gate-regression` 失败：`tui.cjk-long-history.elapsedMs +7020ms REGRESS`（10.0s vs 基线 ~3.0s），其余 26 项 PASS。
 - 复核：单独重跑 TUI 门禁两次，`cjk-long-history` 分别为 **2212ms / 3206ms**；用 `harness/run-gate-regression.ts --dom <fresh> --tui <fresh>` 复核得到 `[OK] gate metrics within baseline tolerance`。同一轮里 `tui.desktop-basic` 反而比基线快 2400ms，说明该场景撞上了机器抖动（非代码回归）。
 - 结论：功能阶段全绿，计时阈值（elapsedMs 容差 5000ms）受宿主负载影响；此类失败需先单独重跑确认，不直接当作回归。
+
+## 2026-10-21 zh 环境全链路验证（locale 修复的反向确认 + 3 处遗留）
+- 场景：`LANG=zh_CN.UTF-8` + 隔离 root + 真实 workspace，任务「运行 seq 1 200 并贴出输出」+ Esc 中断。
+- 首轮发现并修复：
+  1. **timeline labels 用错 locale**：`AgentConsoleSessionState` 构造时注入的 translator 还没拿到最终 locale（i18n 模块稍后才配置），于是 labels=EN 而 bundle=zh（`✓ Cancelled · Turn cancelled` 与 `处理中` 同屏）。修复：构造器把决定权交给 `applyLocaleDefaults(locale)`，并在 `configure()`（会话启动/切换）时用最终 locale 再套一次；zh overrides 显式带上 labels（此前只有 hints），使中英切换对称。同时修掉 `applyLocaleDefaults` 直接写 `consoleOptions` 会**污染模块级 `defaultAgentConsoleOptions`** 的问题（构造器先复制一份）。
+  2. **zh 输入框 placeholder**：`Ask code or files` 未本地化 → `ZH_CONSOLE_HINTS.inputPlaceholder = '问我代码或文件'`。
+  3. **取消行内容**：bridge 写入的是英文样板 `Turn cancelled`，持久化后即使切换语言也只会显示英文。修复：渲染层对 `turn_cancelled` 的样板内容改用 label 目录（`轮次已取消`），自定义原因（`Stopped by user`）原样保留。
+  4. **取消行前缀**：`Cancelled · ` 是 `AgentConsoleDiagnosticMessageRenderer` 里写死的 role label。修复：改用 `agent.timeline.{error,warning,cancelled,system,event}`（en/zh 双语），`已取消 · 轮次已取消`。
+- 回归（先红后绿）：`p407-plan-summary-locale.spec.ts` 扩到 **9 条**：`configure()` 重新套用 locale（旧实现仍 EN）、host 显式 labels 不被覆盖、zh overrides 不再污染共享默认对象、取消样板按 locale、自定义取消原因保留；去掉 render 层样板规则时失败（`Received: "Turn cancelled"`），恢复后 9 passing。
+- 结构调整：`AgentConsoleMessageRenderers.ts` 1432 → **1286**（timeline meta + role label 抽到 `AgentConsoleTimelineMeta.ts`），baseline 1433 → 1287。
+- 验证：agent-ui **1559 passing**；`tsc` 0；`source-size` OK；真实 zh TUI：placeholder 中文、`✓ 已取消 · 轮次已取消`、`正在取消当前轮次…`。
+- 追加（同日第二轮门禁）：再次出现 `dom.cjk-long-history +16887ms` / `dom.timeline-naturalized +6870ms` 的 `gate-regression` 失败；单独重跑 DOM 门禁为 **4658ms / 2112ms**（基线 5917 / 805），TUI 门禁正常，`run-gate-regression --dom <fresh> --tui <fresh>` 输出 `[OK] gate metrics within baseline tolerance`。两次复现都指向宿主负载导致的 wall-clock 抖动（同轮 `tui.desktop-basic` 反而更快），不是代码回归。

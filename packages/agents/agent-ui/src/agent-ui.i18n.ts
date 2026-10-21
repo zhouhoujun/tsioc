@@ -124,7 +124,11 @@ export const agentUiEnglish: TranslationBundle = {
                 'file-change': 'Files · ',
                 question: 'Question · ',
                 approval: 'Approval · ',
-                error: 'Error · '
+                error: 'Error · ',
+                warning: 'Warning · ',
+                cancelled: 'Cancelled · ',
+                system: 'System · ',
+                event: 'Event · '
             },
             approval: {
                 required: 'Approval required',
@@ -247,7 +251,11 @@ export const agentUiChinese: TranslationBundle = {
                 'file-change': '文件 · ',
                 question: '提问 · ',
                 approval: '审批 · ',
-                error: '错误 · '
+                error: '错误 · ',
+                warning: '警告 · ',
+                cancelled: '已取消 · ',
+                system: '系统 · ',
+                event: '事件 · '
             },
             approval: {
                 required: '需要审批',

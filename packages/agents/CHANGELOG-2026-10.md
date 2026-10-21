@@ -185,3 +185,11 @@ newline-JSON transport, allowlist gate and dynamic tool path end to end.
 | (this commit) | `agent-ui/src/AgentConsoleTimelineEventPresenter.ts` | `todo` rows printed the requested delta and the resulting counts together (`2 items … · 3 items …`). The delta is dropped when the result summary exists. |
 | (this commit) | `agent-ui/src/AgentConsoleMessageRenderers.ts` | While a turn was still running, the preamble reply rendered `Worked for 29s · done …`, which reads as "finished". Only final replies carry that footer now (`metadata.preamble` / `conversationPhase` are skipped). |
 | (this commit) | `agent-ui/src/agent-ui.i18n.tools.ts`, `agent-ui.i18n.ts` | 63 builtin tools (`read_skill`, `memory.*`, `sessions_*`, `ssh_*`, `lsp_*`, `mcp.*`, …) had no display label, so rows rendered the humanized identifier and stayed English under a zh locale. Both bundles now carry the labels; a parity/coverage spec guards them. |
+
+## 2026-10-21 zh locale round-trip
+
+| Commit | File | Root cause |
+| --- | --- | --- |
+| (this commit) | `agent-ui/src/AgentConsoleSessionState.ts`, `AgentConsoleComponent.ts` | The state resolved labels from the translator before the i18n module set the final locale, so a zh host rendered English labels (`Cancelled · Turn cancelled`) next to Chinese chrome. `applyLocaleDefaults()` now runs from `configure()` too, zh overrides include labels (symmetric with en), and the constructor copies the default options instead of mutating the shared object. |
+| (this commit) | `agent-ui/src/AgentConsoleMessageRenderers.ts`, `agent-ui.i18n.ts` (via `AgentConsoleTimelineMeta.ts`) | The cancelled row's boilerplate came from persisted English text and a hardcoded `Cancelled · ` role label. The renderer now resolves turn-cancelled boilerplate from the label catalog (custom reasons verbatim) and diagnostic role labels from `agent.timeline.*`. |
+| (this commit) | `agent-ui/src/AgentConsoleSessionState.ts` | zh input placeholder was always `Ask code or files`; added to `ZH_CONSOLE_HINTS`. |

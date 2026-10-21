@@ -461,6 +461,7 @@ export interface AgentConsoleOptions {
     authorizeConnector?: (appId: string) => boolean | Promise<boolean>;
 }
 
+const ZH_MESSAGE_STATUS_LABELS = { running: '正在执行', success: '成功', failed: '失败', error: '错误' };
 export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     inputPrompt: '> ',
     inputPlaceholder: 'Ask code or files',
@@ -507,12 +508,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     selectCloseHint: 'up/down move   enter close   q close',
     suggestionsHint: AGENT_CONSOLE_SUGGESTIONS_HINT,
     brandWidth: DEFAULT_TERMINAL_COLUMNS,
-    messageStatusLabels: {
-        running: '正在执行',
-        success: '成功',
-        failed: '失败',
-        error: '错误'
-    },
+    messageStatusLabels: ZH_MESSAGE_STATUS_LABELS,
     messageStatusSymbol: '',
     timelineLabels: DEFAULT_TIMELINE_LABELS,
     username: 'you',
@@ -582,6 +578,7 @@ const EN_MESSAGE_STATUS_LABELS = { running: 'Running', success: 'Success', faile
 
 /** zh keyboard hints; the built-in option defaults are English. */
 const ZH_CONSOLE_HINTS = {
+    inputPlaceholder: '问我代码或文件',
     selectHint: '1-9 选择   上/下 移动   回车 确认   q 取消',
     suggestionsHint: '回车 执行   tab 补全   上/下 选择',
     approvalsHint: 'a 允许   d 拒绝   y 复制   上/下 移动   esc 关闭',
@@ -598,23 +595,40 @@ const ZH_CONSOLE_HINTS = {
 @Injectable()
 export class AgentConsoleSessionState {
     constructor(@Inject(COMMAND_EXECUTION_CONTROL) protected commandExecutionControl?: CommandExecutionControlPort, @Optional() @Inject(TranslatorService) private translator?: TranslatorService) {
-        // Built-in labels are zh while option hints are en; align both with the host locale.
-        const locale = this.translator?.currentLocale?.toLowerCase() || '';
-        if (locale.startsWith('zh')) {
-            this.localeOptionOverrides = { ...ZH_CONSOLE_HINTS };
-        } else if (locale) {
-            this.localeOptionOverrides = { messageStatusLabels: EN_MESSAGE_STATUS_LABELS, timelineLabels: EN_TIMELINE_LABELS };
-        }
-        this.consoleOptions = { ...this.consoleOptions, ...this.localeOptionOverrides };
+        // Own copy of the defaults: applyLocaleDefaults() writes into
+        // consoleOptions, and the field initializer shares the module-level
+        // default object (mutating it would leak one host's locale into others).
+        this.consoleOptions = { ...defaultAgentConsoleOptions };
+        // The injected translator may not carry its final locale yet (the i18n
+        // module can configure it after this state is constructed), so the
+        // locale is re-applied when the session boots.
+        this.applyLocaleDefaults(this.translator?.currentLocale);
     }
 
     /**
-     * Host-locale defaults applied on construction. The component calls
-     * {@link setConsoleOptions} with `options.ui.console` right after, which
-     * rebuilds the defaults — re-apply these so an English host does not fall
-     * back to the zh label defaults (mixed-language timeline).
+     * Host-locale option overrides (labels/hints). `setConsoleOptions` rebuilds
+     * the defaults — re-apply these unless the host passed its own value — so
+     * the timeline never mixes an English bundle with zh labels or vice versa.
      */
     protected localeOptionOverrides: Partial<Required<AgentConsoleOptions>> = {};
+
+    /** Keys the host passed explicitly through `setConsoleOptions`. */
+    protected hostProvidedOptions = new Set<string>();
+
+    /** Align built-in labels and keyboard hints with the resolved host locale. */
+    applyLocaleDefaults(locale?: string): void {
+        const normalized = String(locale || '').trim().toLowerCase();
+        this.localeOptionOverrides = normalized.startsWith('zh')
+            ? { ...ZH_CONSOLE_HINTS, messageStatusLabels: ZH_MESSAGE_STATUS_LABELS, timelineLabels: DEFAULT_TIMELINE_LABELS }
+            : normalized
+                ? { messageStatusLabels: EN_MESSAGE_STATUS_LABELS, timelineLabels: EN_TIMELINE_LABELS }
+                : {};
+        for (const key of Object.keys(this.localeOptionOverrides)) {
+            if (!this.hostProvidedOptions.has(key)) {
+                (this.consoleOptions as any)[key] = (this.localeOptionOverrides as any)[key];
+            }
+        }
+    }
     readonly inputHistoryController: AgentConsoleInputHistoryController = new DefaultAgentConsoleInputHistoryController(this);
     readonly focusLayers: AgentConsoleFocusLayers = new DefaultAgentConsoleFocusLayers(this);
 
@@ -892,6 +906,9 @@ export class AgentConsoleSessionState {
     protected overlayController = new AgentConsoleOverlayController();
 
     configure(meta: AgentConsoleSessionMeta): this {
+        // The injected translator can gain its final locale after this state is
+        // constructed; align labels/hints before the first session renders.
+        this.applyLocaleDefaults(this.translator?.currentLocale);
         const nextSessionId = String(meta.sessionId || '').trim();
         if (nextSessionId && nextSessionId !== this.sessionId) {
             this.commandExecutionController.cancelRunning();
@@ -4891,6 +4908,9 @@ export class AgentConsoleSessionState {
     }
 
     setConsoleOptions(options?: AgentConsoleOptions | null): void {
+        this.hostProvidedOptions = new Set(
+            Object.keys(options || {}).filter(key => (options as any)[key] !== undefined)
+        );
         this.consoleOptions = {
             ...defaultAgentConsoleOptions,
             ...(options || {})
