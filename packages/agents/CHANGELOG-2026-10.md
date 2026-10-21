@@ -151,4 +151,8 @@ newline-JSON transport, allowlist gate and dynamic tool path end to end.
 - `code-execution` has no strong sandbox (worker runs with full Node access) — documented limitation (`README` "no universal sandbox runtime").
 - HMAC webhook signature verification is timing-safe and uses the raw body; share tokens are 192-bit random with ownership checks.
 
+## typeorm-adapter
+
+| Commit | File | Root cause |
+| --- | --- | --- |
 | `3037c701f` | `typeorm-adapter/TypeormAdapter.ts` | sql.js `autoSave` rewrote the whole DB file in place; a killed process truncated the production DB (9MB → 4MiB, malformed). The adapter now overrides the driver save with a `<location>.tmp` write + atomic rename, so a crash leaves the last consistent file. |
