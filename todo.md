@@ -347,6 +347,19 @@
 - **真实 TUI 验收**：`LANG=zh_CN.UTF-8` 下时间线显示 `✓ 工具 · 检查目录已完成 …`、`✓ 思考 · …`。
 - **验证**：`agent-ui` **1530 passing**、`tsc` 0、`source-size` OK（为守住基线预算，`itemStyle` 等价压缩 + helper 放在未入基线的 i18n 文件）。
 
+## 2026-10-21 openTUI 参考设计：TUI 渲染/交互的最优方案（设计记录）
+- **openTUI 要点**：双缓冲 cell buffer + 逐 cell diff 只写变化单元格；保留组件树 + Flexbox 布局；渲染核心原生（Zig）实现。
+- **本仓库现状（已具备同等能力）**：
+  - `TuiRenderer` 一次产出 `lines/cursorTargets/regions/clickTargets`；`renderPrimaryTerminalScreen` 携带 `state` + `stablePrefixRows`，**只重写尾部变化行**（等价于 openTUI 的行级 diff）；
+  - 面板级 `messageItemsCache` 按 `messages/selection/theme/options` 字段比对，避免重复渲染；
+  - `scrollBox` 视窗滚动、`subtreeLayoutCache` 按 width + dirty 子树缓存。
+- **实测（真实恢复会话的 CPU profile，70s 采样）**：**75% 空闲**；前 20 热点**没有** markdown/时间线渲染函数；主要 CPU 为 `sql-wasm read` 2.3s、`readFileUtf8` 1.8s、`transformSync` 1.0s、GC 0.9s。→ **时间线渲染不是瓶颈**。
+- **结论与最优方案**：
+  1. **渲染层**：维持行级 diff（不引入 cell buffer——终端输出以行为单位，cell 化收益低、跨层改动大）；保留 `messageItemsCache`；长会话恢复按需分页（已有 `loadSessionPage`）而非全量。
+  2. **启动层（真正热点，用户可感 40s+）**：WASM SQLite 需整库载入内存（9MB → ~2-4s）；CLI 端可注入原生 SQLite（浏览器仍用 WASM），或只读当前会话/最近 N 条；`transformSync` 走 SWC 快路径（已实现）；其余等待需进一步定位（网络/provider init）。
+  3. **交互层（选择滚入视窗）**：需要「锚点→渲染行」，但模板 item 绑定无法把 id 传到 TUI 元素属性（实测 `row=undefined`，三种写法均失败）；替代方案：面板**显式计算行区间**（`messageItems` 行数 + 模板间距常量）由 state 暴露给平台适配层，或给模板增加原生 `anchor` attribute 绑定（框架级）。
+- **优先级**：启动层（可感 40s+）> 交互（选择滚入视窗）> 渲染（已足够，行级 diff + 面板缓存）。
+
 ## 2026-10-18 `/approvals` 选择器详情接入 i18n（`4078d2abc`）
 - 承接上一条：`AgentConsoleApprovalView.selectApprovalRequest` 的标题（`Pending approvals`）与详情（`Tool:` / `Reason:` / `Input:` / `Input: -` / `Timeout:` / `Expires:`）硬编码英文。
 - **修复**：函数新增可选 `translate` 参数（默认英文兜底），组件用 `this.translator` 传入；i18n 目录新增 `agent.approval.pendingTitle/tool/input/inputNone/timeout/expiresAt`（en / zh-CN）。
