@@ -1090,6 +1090,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 全量：agent-ui **1549 passing**；`tsc` 0；`source-size` OK。
 - 真实复验（同场景重跑）：计划头 `Plan · Success Plan completed: 3/3 steps`（无失败、全英文），工具行 `Update plan completed · 3 items · 1 in progress · 2 completed`（不再重复），最终回答正常。
 
+## 2026-10-21 内置工具显示名补齐（真实会话暴露的 i18n 缺口）
+- 现象：真实 TUI 里 `Tool · read skill completed · implement · …`——`read_skill` 没有显示名，回退成「humanize 的原始标识符」，且在 zh locale 下仍是英文；同类工具共 **63 个**没有标签（`memory.*`、`sessions_*`、`ssh_*`、`lsp_*`、`mcp.*`、`execute_code`、`vision_analyze`、`text_to_speech`、`knowledge_*` 等）。
+- 修复：新增 `agent-ui/src/agent-ui.i18n.tools.ts`（EN/ZH 两份 map），在两个语言包的 `agent.tool` 里展开；原有 47 个标签保持不动（显式键优先）。
+- 回归：新增 `agent-ui/test/p408-tool-labels.spec.ts`（3 条）：en/zh 键集合一致、所有标签非空、代表性 23 个内置工具在两种语言下都有且不同；去掉展开（`...AGENT_UI_TOOL_LABELS_*`）时 `Received: undefined` 失败，恢复后 3 passing。
+
 ## 2026-10-21 preamble 误显示「已完成」footer
 - 现象：turn 仍在 `Working (2m 29s)` 时，转录中出现 `Worked for 29s · done 16:24`（同一 user 请求内 DB 只有 1 条 user + 1 条 preamble assistant + 工具 + 最终回答，没有第二个 turn）。
 - 定位：运行时每次 turn 只发一次 `AgentTurnCompletedEvent`（`runTurn`/`runStreamingTurn` 末尾），所以不是双 turn 结算；是**消息渲染**把任意 `templateKind === 'assistant'` 且带 `durationMs` 的消息都加了 worked/done footer —— preamble 也满足条件。

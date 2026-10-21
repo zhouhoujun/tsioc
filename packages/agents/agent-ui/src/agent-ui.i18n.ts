@@ -2,6 +2,7 @@ import { MessageFormatter, TranslationBundle } from '@tsdi/i18n';
 import { AGENT_UI_NOTICE_EN } from './agent-ui.i18n.notice.en';
 import { AGENT_UI_NOTICE_ZH } from './agent-ui.i18n.notice.zh';
 import { AGENT_UI_ERROR_EN, AGENT_UI_ERROR_ZH } from './agent-ui.i18n.error';
+import { AGENT_UI_TOOL_LABELS_EN, AGENT_UI_TOOL_LABELS_ZH } from './agent-ui.i18n.tools';
 
 export interface AgentUiTranslator {
     translate(key: string, params?: any): string | undefined;
@@ -179,6 +180,7 @@ export const agentUiEnglish: TranslationBundle = {
                 closing: AGENT_UI_SESSION_CLOSING_MESSAGES.en
             },
             tool: {
+                ...AGENT_UI_TOOL_LABELS_EN,
                 list_dir: 'Inspect directory', glob_search: 'Search files', content_search: 'Search code',
                 read_file: 'Read file', write_file: 'Create file', edit_file: 'Edit file', apply_patch: 'Apply changes',
                 mkdir: 'Create directory', todo: 'Update plan', ask_user: 'Waiting for your input',
@@ -301,6 +303,7 @@ export const agentUiChinese: TranslationBundle = {
                 closing: AGENT_UI_SESSION_CLOSING_MESSAGES['zh-CN']
             },
             tool: {
+                ...AGENT_UI_TOOL_LABELS_ZH,
                 list_dir: '检查目录', glob_search: '搜索文件', content_search: '搜索代码',
                 read_file: '读取文件', write_file: '创建文件', edit_file: '修改文件', apply_patch: '应用修改',
                 mkdir: '创建目录', todo: '更新计划', ask_user: '等待你的输入',
