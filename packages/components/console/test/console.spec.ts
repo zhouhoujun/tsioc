@@ -2275,6 +2275,7 @@ export class ConsoleRendererTest {
         expect(surface.viewportMaxScrollOffset).toEqual(0);
         expect(surface.viewportScrollOffset).toEqual(0);
         expect(surface.scrollViewport(-3)).toBe(false);
+        expect(surface.scrollViewportToRow(10)).toBe(false);
         expect(surface.scrollViewportToEdge('start')).toBe(false);
         surface.destroy();
     }
@@ -2325,6 +2326,50 @@ export class ConsoleRendererTest {
         expect(surface.viewportScrollOffset).toEqual(0);
         expect(surface.viewportFollowing).toEqual(true);
         expect(surface.lastRenderedLines[31]).toEqual('line 210');
+        surface.destroy();
+    }
+
+    @Test('viewport scrolls to an absolute rendered row so the target stays visible')
+    viewportScrollsToAbsoluteRow() {
+        const lines = Array.from({ length: 200 }, (_value, index) => `line ${index + 1}`);
+        const root = { addEventListener() {}, removeEventListener() {} } as any;
+        const surface = new TuiTerminalSurface({
+            renderer: {
+                renderToTuiLayout: () => ({
+                    lines,
+                    regions: [
+                        { id: 'transcript', startRow: 0, endRow: lines.length },
+                        { id: 'footer', startRow: lines.length, endRow: lines.length }
+                    ]
+                })
+            },
+            root,
+            width: 80,
+            height: 32,
+            nativeScrollback: false,
+            scrollViewport: true,
+            scrollRegionId: 'transcript',
+            footerRegionId: 'footer',
+            output: { write() {} }
+        });
+        surface.render();
+
+        // Row 10 is far above the pinned bottom; scrolling to it must reveal it at the top.
+        expect(surface.scrollViewportToRow(10)).toEqual(true);
+        surface.render();
+        expect(surface.lastRenderedLines[0]).toEqual('line 11');
+        expect(surface.viewportScrollOffset).toEqual(158);
+        expect(surface.viewportFollowing).toEqual(false);
+
+        // Rows past the end clamp to the first screenful, and row 0 reaches the oldest row.
+        expect(surface.scrollViewportToRow(999)).toEqual(true);
+        surface.render();
+        expect(surface.lastRenderedLines[0]).toEqual('line 169');
+        expect(surface.viewportScrollOffset).toEqual(0);
+        expect(surface.scrollViewportToRow(0)).toEqual(true);
+        surface.render();
+        expect(surface.lastRenderedLines[0]).toEqual('line 1');
+        expect(surface.viewportScrollOffset).toEqual(168);
         surface.destroy();
     }
 

@@ -22,6 +22,8 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     abstract getLastRenderedText(stripAnsi?: (value: string) => string): string;
     dispatchMouse?(event: SelectMenuMouseEvent): void;
     scrollViewport?(deltaRows: number): boolean;
+    /** Scroll so that the given rendered row becomes the viewport top. */
+    scrollViewportToRow?(row: number): boolean;
     scrollViewportToEdge?(edge: 'start' | 'end'): boolean;
     isViewportFollowing?(): boolean | undefined;
     /** Open the base-layer transcript pager over the last full render; optional query is a find. */

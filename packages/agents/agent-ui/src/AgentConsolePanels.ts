@@ -3,6 +3,7 @@ import { formatCompactNumber } from '@tsdi/core';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import { formatAgentUiLabel } from './agent-ui.i18n';
+import { resolveMessageRowOffset } from './AgentConsoleTranscriptLayout';
 import { AgentMessage, basenameAgentPath, ScheduledAgentTask } from '@tsdi/agent';
 import {
     AgentConsoleActivity,
@@ -2920,6 +2921,11 @@ export class AgentConsoleMessagesPanelComponent {
             return;
         }
         this.state.openMessageDetail(false);
+    }
+
+    /** Rendered row offset (0-based) of one message inside the transcript region. */
+    messageRowOffset(messageId: string): number | undefined {
+        return resolveMessageRowOffset(this.renderedMessageItems, messageId);
     }
 
     get renderedMessageItems(): AgentConsoleRenderedMessageItem[] {

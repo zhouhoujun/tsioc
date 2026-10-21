@@ -8,6 +8,12 @@ import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
  * Host surface required by the turn input controller.
  * The component satisfies this interface structurally when delegating.
  */
+/** Sentinel prompts that cancel instead of submitting (`cancel`, `/cancel`, `q`). */
+export function isCancelPromptValue(value?: string): boolean {
+    const normalized = String(value || '').trim().toLowerCase();
+    return normalized === 'cancel' || normalized === '/cancel' || normalized === 'q';
+}
+
 export interface AgentConsoleTurnInputHost {
     translator?: AgentUiTranslator | null;
     state: {

@@ -161,6 +161,7 @@ newline-JSON transport, allowlist gate and dynamic tool path end to end.
 
 | Commit | File | Root cause |
 | --- | --- | --- |
+| (this commit) | `components/console/src/terminal.ts`, `agent-ui/src/AgentConsolePanels.ts`, `AgentConsoleTranscriptLayout.ts`, `AgentConsoleTranscriptNavigation.ts`, `AgentConsoleComponent.ts` | Moving the message selection (PageUp/PageDown/↑/↓) only changed `selectedMessageId`, so the highlighted message could stay offscreen. The panel now reports the rendered row offset (item lines + `spacerBefore` rows) and the TUI surface scrolls that absolute row into view via `scrollViewportToRow`. |
 
 | Commit | File | Root cause |
 | --- | --- | --- |

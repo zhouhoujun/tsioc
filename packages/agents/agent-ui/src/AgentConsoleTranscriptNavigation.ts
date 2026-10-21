@@ -17,7 +17,7 @@ export interface AgentConsoleTranscriptNavigationState {
 }
 
 export abstract class AgentConsoleTranscriptNavigationController {
-    constructor(protected readonly state: AgentConsoleTranscriptNavigationState) {}
+    constructor(protected readonly state: AgentConsoleTranscriptNavigationState, protected readonly reveal?: (messageId: string) => boolean) {}
 
     setFocused(focused: boolean): void {
         const state = this.state;
@@ -109,6 +109,7 @@ export abstract class AgentConsoleTranscriptNavigationController {
         this.state.selectedMessageId = messageId;
         this.state.messageDetailScroll = 0;
         this.state.messageDetailColumnScroll = 0;
+        this.reveal?.(messageId);
     }
 }
 

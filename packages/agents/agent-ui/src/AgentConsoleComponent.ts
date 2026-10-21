@@ -162,9 +162,10 @@ import { BackgroundTaskCommandHost, runBackgroundTasksCommandView } from './Agen
 import { decodeGlobalKey, describePendingToolCall, describeStreamEventContent } from './AgentConsoleStreamHelpers';
 import { AgentConsoleTurnStreamHost, AgentConsoleTurnStreamState, clearStreamingMessageState, consumeStreamChunkView, consumeStreamEventChunkView, runTurnStreamView } from './AgentConsoleTurnStreamController';
 import { AgentConsoleGlobalKeyInputHost, executeGlobalKeyActionView, handleBrowserGlobalKeyInputView, handleGlobalKeyInputView, handleGlobalKeySequenceView } from './AgentConsoleGlobalKeyInputController';
-import { AgentConsoleTurnInputHost, submitMultilineDraftView, submitView } from './AgentConsoleTurnInputController';
+import { AgentConsoleTurnInputHost, isCancelPromptValue, submitMultilineDraftView, submitView } from './AgentConsoleTurnInputController';
 import { AgentConsoleTerminalInputHost, closingSessionMessageView, handleTerminalInputView, openCommandPaletteView, requestTerminalExitView } from './AgentConsoleTerminalInputController';
-import { AgentConsoleTranscriptLayoutResolver, resolveTranscriptLayout, scrollAgentConsoleTranscript } from './AgentConsoleTranscriptLayout';
+import { AgentConsoleTranscriptLayoutResolver, resolveTranscriptLayout, revealAgentConsoleMessage, scrollAgentConsoleTranscript } from './AgentConsoleTranscriptLayout';
+import { AgentConsoleMessagesPanelComponent } from './AgentConsolePanels';
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
 import { openSummaryQualityRecords, openTurnDiagnosticsListView, openTurnDiagnosticsTrendView, openSummaryQualityTrendView, parseCompactionHistoryTrendArgs, parseSummaryQualityTrendArgs, refreshCompactionDigest, refreshSummaryQualityDigest, refreshTurnDiagnosticsDigest, refreshUsageDigest, runHarnessStopCommand } from './AgentConsoleDiagnosticsView';
 import {
@@ -404,7 +405,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         @Optional() @Inject(ProjectMemoryService) private projectMemory?: ProjectMemoryService | null,
         @Optional() private transcriptLayoutResolver?: AgentConsoleTranscriptLayoutResolver | null,
     ) {
-        this.transcriptNavigationController = new DefaultAgentConsoleTranscriptNavigationController(this.state);
+        this.transcriptNavigationController = new DefaultAgentConsoleTranscriptNavigationController(this.state, (messageId) => revealAgentConsoleMessage(this.componentRef?.hostView?.query?.(AgentConsoleMessagesPanelComponent)?.instance, this.surfaceAccessor, () => this.state.syncTranscriptFollowing(), messageId));
         this.globalKeymap = this.globalKeymap || new AgentConsoleKeymap();
         this.globalKeymap.configure(this.options.ui?.keymap);
         this.state.setTitle(this.options.ui?.title ?? defaultAgentOptions.ui!.title!);
@@ -438,10 +439,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return resolveInitialModelProfile(this.modelCtx());
     }
 
-    protected isCancelPromptValue(value?: string): boolean {
-        const normalized = String(value || '').trim().toLowerCase();
-        return normalized === 'cancel' || normalized === '/cancel' || normalized === 'q';
-    }
+    protected isCancelPromptValue(value?: string): boolean { return isCancelPromptValue(value); }
 
     protected isTurnInProgress(): boolean {
         return this.activeTurnRun != null || this.state.status === 'running' || this.state.status === 'reasoning';

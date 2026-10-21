@@ -94,3 +94,64 @@ export function scrollAgentConsoleTranscript(
     navigation.scroll(delta);
     syncFollowing();
 }
+
+/** One rendered transcript item (the subset the row-offset math needs). */
+export interface AgentConsoleRowOffsetItem {
+    lines?: Array<{ messageId?: string }>;
+    spacerBefore?: boolean;
+}
+
+/**
+ * Rendered row offset (0-based) of one message inside the transcript region.
+ * Major conversation blocks start after one visual row (`spacerBefore`), so the
+ * offset must include those spacer rows to keep the reveal close to the target.
+ */
+export function resolveMessageRowOffset(items: readonly AgentConsoleRowOffsetItem[], messageId: string): number | undefined {
+    const id = String(messageId || '').trim();
+    if (!id) {
+        return undefined;
+    }
+    let row = 0;
+    for (const item of items) {
+        if (item.spacerBefore) {
+            row += 1;
+        }
+        if (item.lines?.some(line => line.messageId === id)) {
+            return row;
+        }
+        row += item.lines?.length ?? 0;
+    }
+    return undefined;
+}
+
+/** Surface port used to reveal a transcript row. */
+export interface AgentConsoleTranscriptRevealSurface {
+    scrollViewportToRow?(row: number): boolean;
+}
+
+/** Rendered messages panel port used to locate a message row. */
+export interface AgentConsoleTranscriptRowSource {
+    messageRowOffset?(messageId: string): number | undefined;
+}
+
+/**
+ * Bring the selected message into view: the messages panel owns the rendered
+ * row math and the platform surface scrolls to that absolute row.
+ */
+export function revealAgentConsoleMessage(
+    source: AgentConsoleTranscriptRowSource | null | undefined,
+    surface: AgentConsoleTranscriptRevealSurface | null | undefined,
+    syncFollowing: () => void,
+    messageId: string
+): boolean {
+    const id = String(messageId || '').trim();
+    if (!id || !source?.messageRowOffset || !surface?.scrollViewportToRow) {
+        return false;
+    }
+    const row = source.messageRowOffset(id);
+    if (row == null || !surface.scrollViewportToRow(row)) {
+        return false;
+    }
+    syncFollowing();
+    return true;
+}

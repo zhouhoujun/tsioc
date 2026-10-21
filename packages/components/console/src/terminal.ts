@@ -365,6 +365,8 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     abstract dispatchMouse?(mouse: SelectMenuMouseEvent): boolean;
     dispatchKey?(_event: { key: string; [name: string]: unknown }): boolean { return false; }
     scrollViewport?(_deltaRows: number): boolean { return false; }
+    /** Scroll so that `row` (0-based rendered row) becomes the viewport top. */
+    scrollViewportToRow?(_row: number): boolean { return false; }
     scrollViewportToEdge?(_edge: 'start' | 'end'): boolean { return false; }
     isViewportFollowing?(): boolean | undefined { return undefined; }
     abstract notifyNonMouseInput?(): boolean;
@@ -608,6 +610,10 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
 
     scrollViewport?(deltaRows: number): boolean {
         return this.surface?.scrollViewport(deltaRows) ?? false;
+    }
+
+    scrollViewportToRow?(row: number): boolean {
+        return this.surface?.scrollViewportToRow(row) ?? false;
     }
 
     scrollViewportToEdge?(edge: 'start' | 'end'): boolean {
@@ -1064,6 +1070,22 @@ export class TuiTerminalSurface {
             return false;
         }
         if (!this.scrollBox.scrollBy(-delta)) {
+            return false;
+        }
+        this.scrollOffsetRows = this.scrollBox.maxTop - this.scrollBox.top;
+        this.requestRender();
+        return true;
+    }
+
+    scrollViewportToRow(row: number): boolean {
+        if (!this.isScrollViewportEnabled()) {
+            return false;
+        }
+        if (!this.maxScrollOffsetRows) {
+            return false;
+        }
+        const target = Number.isFinite(row) ? Math.max(0, Math.trunc(row)) : 0;
+        if (!this.scrollBox.scrollBy(target - this.scrollBox.top)) {
             return false;
         }
         this.scrollOffsetRows = this.scrollBox.maxTop - this.scrollBox.top;

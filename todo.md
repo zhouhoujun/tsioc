@@ -1016,6 +1016,21 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **验证**：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS，GATE_EXIT=0**（`/tmp/opencode/gate/hook-signal1.log`）。
 - **遗留（最终）**：`sandbox-exec` 的能力探测（bwrap/sandbox-exec 一次性短探测）、`knowledge_search`（in-memory）、`browser/*`（宿主 adapter 决定）三项为已知且低风险；「真实长会话里重复工具调用是否下降」仍属观测项。
 
+## 2026-10-21 时间线交互收口：选中消息即滚到可见（P321/P322）+ viewport 绝对行滚动
+- 背景：真实 TUI 里 PgUp/PgDown/↑/↓ 只改 `selectedMessageId`，视口原地不动——选中项经常在屏幕外，用户看不到高亮（上一版 `anchor` 属性绑定方案在真实 TUI 三次复现 `row=undefined`，已放弃）。
+- 方案（面板算行号 + surface 绝对滚动，不依赖模板属性绑定）：
+  1. `components/console`：`TuiTerminalSurface.scrollViewportToRow(row)` 把给定渲染行滚到视口顶部（clamp 到 `0..maxTop`，越界回落到首/尾屏），并通过 `ConsoleTerminalSurfaceAccessor.scrollViewportToRow?` 暴露给平台层；`viewportFollowing` 语义不变。
+  2. `agent-ui`：新增纯函数 `resolveMessageRowOffset(items, messageId)`（条目行数 + `spacerBefore` 空行），消息面板 `messageRowOffset(id)` 委托它；`DefaultAgentConsoleTranscriptNavigationController.select()` 触发 `reveal` 回调；`AgentConsoleComponent` 通过 `componentRef.hostView.query(AgentConsoleMessagesPanelComponent)` 取行号 → `surfaceAccessor.scrollViewportToRow(row)`，成功后 `syncTranscriptFollowing()`（保持「手动浏览时暂停跟随、Esc/回到底部恢复」的既有契约）。
+- 回归（先红后绿）：
+  - `components/console/test/console.spec.ts`：新增「viewport scrolls to an absolute rendered row…」——`scrollViewportToRow(10)` → 首行 `line 11`、offset 158；`999` clamp 到最后一屏（首行 `line 169`、offset 0）；`0` → `line 1`、offset 168；`scrollViewport:false` 时返回 false。
+  - `agent-ui/test/p322-reveal-scroll.spec.ts`：真实 `Application.run(AgentModule)` + 真实组件/消息面板，两次 PageUp 后断言 `scrollViewportToRow` 收到面板为该选中消息算出的行号；**去掉 reveal 接线后该用例失败**（`Expected -3 / Received +1`），接回即 1 passing。
+  - `agent-ui/test/p321-transcript-reveal.spec.ts`：行号纯函数（含 `spacerBefore` 与未命中）与 `select` → reveal 回调。
+  - 全量：components/console **100 passing**、agent-ui **1544 passing**，EXIT=0；components / agent-ui / agent-cli `tsc --noEmit` 0 错误；`source-size` OK。
+- **真实 TUI 复验**（隔离 root `/tmp/opencode/root-scroll`，40 条真实 ORM 行，120x24）：启动后视口停在消息 19/20；两次 PageUp → 视口跳到消息 12/13/14（选中项落在视口顶部可见），而不是只亮提示条。
+- 渲染层（同批第 3 项）结论：`renderPrimaryTerminalScreen` 已是「未变化 → `changed:false` + 空输出」「增量渲染不清屏」「稳定前缀跳过重绘」，因此**不引入 cell buffer**（终端是行式输出），本轮只补绝对行滚动 + 上述行级 diff 守卫。
+- 隔离 root 命名：`/tmp/opencode/root-scroll`（生产库副本 + 合成 40 条 `scrollprobe1` 消息，仅用于滚动复验，不触碰 `~/.tsdi-agent/agent.db`）。
+- ratchet：新增能力不靠撑大 `AgentConsoleComponent.ts`——把纯谓词 `isCancelPromptValue` 抽到 `AgentConsoleTurnInputController`（组件保留一行委托），该文件 3781 → 3779（检查口径 3780），baseline 同提交由 3782 下调为 3780。
+
 ## 2026-10-21 严重回归修复：sql.js 原子保存覆盖读错字段 → 全部写入未落盘
 - 现象：门禁 `agent-cli`（`usesPersistentStoresAcrossCliRestarts`、图片附件持久化、输入历史跨重启 2 条）与 `agent-gateway`（跨进程 SQLite `durabilityAcrossProcesses`）失败；单独复现同样失败（非并发抖动）。跨进程用例期望 `[0,1,2]`，实际 `[]`。
 - 根因：上一轮 `3037c701f` 的 `installAtomicSqljsSave` 读 `driver.database`，而 TypeORM 0.3.20 `SqljsDriver` 的字段是 **`databaseConnection`**（`save()` 内部用 `this.databaseConnection.export()`）。覆盖实现里 `if (!database) return;` 静默返回 —— **autoSave 的每一次写盘都变成了 no-op**。当时的 `atomic-sqljs-save.spec.ts` 用了伪造的 `{ database: ... }` driver，因此测试是绿的。
