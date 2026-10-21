@@ -227,6 +227,7 @@ export class TypeormAdapter {
 
         const dataSource = new DataSource(options as DataSourceOptions);
         await dataSource.initialize();
+        this.installAtomicSqljsSave(dataSource);
 
         this.sources.set(options.name, dataSource);
         return dataSource;
@@ -325,6 +326,37 @@ export class TypeormAdapter {
     }
 
 
+    /**
+     * sqljs persists the whole database file on every autoSave write. A process
+     * killed mid-write truncates the file (observed: a 9MB production DB cut to
+     * 4MiB and left malformed). Write to `<location>.tmp` and rename atomically
+     * so a crash leaves the previous consistent file untouched.
+     */
+    protected installAtomicSqljsSave(dataSource: DataSource): void {
+        const options = dataSource.options as { type?: string; location?: string; autoSave?: boolean };
+        if (options.type !== 'sqljs' || !options.location || !options.autoSave) {
+            return;
+        }
+        const driver = dataSource.driver as { save?: () => void | Promise<void>; database?: { export(): Uint8Array } };
+        if (!driver || typeof driver.save !== 'function') {
+            return;
+        }
+        const fs = loadNodeFileSystem();
+        if (!fs) {
+            return;
+        }
+        const location = String(options.location);
+        driver.save = () => {
+            const database = driver.database;
+            if (!database) {
+                return;
+            }
+            const temporary = `${location}.tmp`;
+            fs.writeFileSync(temporary, database.export());
+            fs.renameSync(temporary, location);
+        };
+    }
+
     @Dispose()
     protected async onDispose(): Promise<void> {
         await this.disconnect();
@@ -361,3 +393,20 @@ export const TypeOrmHelper = TypeormAdapter;
  * @deprecated use `TypeormAdapter` instead.
  */
 export const TypeormServer = TypeormAdapter;
+
+
+function loadNodeFileSystem(): { writeFileSync(path: string, data: any): void; renameSync(from: string, to: string): void } | null {
+    try {
+        const req = typeof require === 'function' ? require : null;
+        if (!req) {
+            return null;
+        }
+        const fs = req('fs');
+        return {
+            writeFileSync: (target: string, data: any) => fs.writeFileSync(target, data),
+            renameSync: (from: string, to: string) => fs.renameSync(from, to)
+        };
+    } catch {
+        return null;
+    }
+}
