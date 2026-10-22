@@ -362,7 +362,10 @@ export class TypeormAdapter {
             if (!database) {
                 return fallback(location);
             }
-            const temporary = `${target}.tmp`;
+            // Per-process temp file: two agents on the same database must not
+            // rename/delete each other's staging file (observed as
+            // `ENOENT: rename '<db>.tmp' -> '<db>'` and a lost write).
+            const temporary = `${target}.${process.pid}.tmp`;
             fs.writeFileSync(temporary, database.export());
             fs.renameSync(temporary, target);
             return undefined;

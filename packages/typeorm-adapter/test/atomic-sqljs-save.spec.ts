@@ -29,6 +29,9 @@ export class AtomicSqljsSaveTest {
             (adapter as any).installAtomicSqljsSave({ options: { type: 'sqljs', location: file, autoSave: true }, driver });
             await driver.save();
             expect(Array.from(readFileSync(file))).toEqual([1, 2, 3]);
+            // The staging file is per-process, so two agents on the same
+            // database can never rename/delete each other's temp file.
+            expect(existsSync(`${file}.${process.pid}.tmp`)).toBe(false);
             expect(existsSync(`${file}.tmp`)).toBe(false);
         } finally {
             rmSync(dir, { recursive: true, force: true });

@@ -1276,3 +1276,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 方案：**保留严格阈值**，仅在 `run_gate_regression` 首次判定失败时，按需重跑 `run-dom-gate.ts` / `run-tui-gate.ts` 重新采样，再用同一 baseline 与阈值复核一次；通过时标注 `(passed on re-measure)`，仍失败才判 FAIL。
 - 验证（真实运行）：`bash scripts/agents-gate.sh dom-gate tui-gate gate-regression` 首次测量确实超阈值（当前宿主负载），自动重测后 **PASS**（`[GATE-RETRY] … [GATE-PASS] … (passed on re-measure)`），5/5。
 - 说明：重测只在失败时触发（正常路径零额外开销），且阈值未放宽，真实回归仍会失败。
+
+## 2026-10-22 并发写探测：临时文件冲突已修，丢失更新属固有限制
+- 探测方法：两个独立 Node 进程各自打开同一个 sql.js 文件（`/tmp/opencode/root-conc*/agent.db`），各 append 50 条消息。
+- **修复前**：B 进程报 `ENOENT: rename '<db>.tmp' -> '<db>'` 并退出（A 把 B 的暂存文件 rename 走了），B 的 50 条写入全部丢失；DB 完整性 `ok`（原子 rename 保护了文件本身）。根因：原子保存使用固定 `<location>.tmp`。
+- **修复**：暂存文件名改为 `<location>.<pid>.tmp`（`typeorm-adapter/src/TypeormAdapter.ts`），并发保存不再互相踩踏。`atomic-sqljs-save.spec.ts` 增加断言（per-pid 暂存文件清理）。
+- **修复后**（错开 2 秒启动）：两进程都成功，`sA|50` 与 `sB|50` 都在，`integrity_check=ok`。
+- **仍存在的固有限制**（未改，属模型层面）：**同时**启动时两个进程各自持有整库快照、整文件重写 → **丢失更新**（实测 `sB` 50 条只留 32 条，A 的 50 条保留），但 DB 不损坏。sql.js 是单写者模型，真正的多进程并发写需要换成原生 SQLite/服务端。
+- 建议（待确认）：启动时检测 `<db>.lock`（pid 存活判定）并**警告**「另一个 agent 正在使用该数据库，写入可能互相覆盖」；或直接拒绝写。未实现以免误伤（陈旧锁、只读使用等场景）。
