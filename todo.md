@@ -1195,3 +1195,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 断言更新：i18n notice 数量 460 → 461、overlay/p315 的审批提示加 `A Always allow`。
   - 全量：agent **1031 passing**、agent-ui **1571 passing**；`tsc` 0；`source-size` OK。
 - 真实 TUI 复验：写文件首次弹 `Approval required · Allow write_file?`（含 path/content、reason、30s 过期）→ 按 `A` → 通知 `Always allow enabled for this session.`、文件写入 `hello`；再写第二个文件**不再弹**、直接写入 `world`。
+
+## 2026-10-22 审批门禁 + 排队真实验证（隔离 root，gpt-6.1-sol）
+- **允许（a）**：写文件首次弹 `Approval required · Allow write_file?`（path/content、Reason、`Expires in 30s`），按 `a` 后工具执行、文件写入。
+- **始终允许（A）**：按 `A` → 通知 `Always allow enabled for this session.` → 当前请求批准并写入；**下一次写入不再弹窗**，直接写入。提示行为 `a Allow   d Deny   A Always allow   y Copy   ↑↓ Move   Esc Dismiss`（zh: `a 允许 d 拒绝 A 始终允许 …`）。
+- **拒绝（d）**：通知 `Denied write_file (…).`，行变为 `✕ Tool · Create file skipped: Tool "write_file" was rejected. · retry (0ms)`，文件未创建，agent 明确回报「操作被工具拒绝」。
+- **超时（不按键 30s）**：行变为 `✕ Tool · Create file skipped: Tool "write_file" approval timed out. · retry (0ms)`，文件未创建；turn 结束后无残留「Approval required」状态。
+- **排队（turn 运行中 Enter）**：通知 `Queued prompt (1).`、输入框显示 `· 1 queued`，当前 turn 不被取消；当前 turn 完成后排队 prompt 自动开新 turn（`OK` → `SECOND`），队列提示清空。steer 仍为显式 opt-in（`ui.steerMode`）。
+- 结论：审批允许/始终允许/拒绝/超时、排队四条路径在真实 TUI 下行为符合 §6 与审批约定；无需额外代码改动。
