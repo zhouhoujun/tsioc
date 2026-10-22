@@ -842,8 +842,8 @@ export function resolveAgentConsoleMessageStatus(
     }
     if (message?.metadata?.uiKind === 'plan-todo') {
         const items: any[] = Array.isArray(message.metadata.planItems) ? message.metadata.planItems : [];
-        const hasActive = items.some(item => item.status === 'pending' || item.status === 'in_progress');
-        return hasActive ? 'running' : 'success';
+        if (!items.some(item => item.status === 'pending' || item.status === 'in_progress')) return 'success';
+        return message.metadata.planLive === false ? undefined : 'running';
     }
     if (message?.metadata?.uiKind === 'command-execution') {
         // A running/failed slash command must show ● / ✕, not the default ✓.

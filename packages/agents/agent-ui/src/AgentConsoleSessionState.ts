@@ -2987,8 +2987,11 @@ export class AgentConsoleSessionState {
             return `${marker}${hierarchy}${index + 1}. ${this.planTodoGlyph(item.status)} ${item.content}${owner}${estimate}${elapsed}${depends}${blocked}${evidence}${error}`;
         });
         const summaryHeader = `${labels.planLabel} ${doneCount}/${total} ${bar}${filterLabel} · ${labels.planActive} ${activeCount}${blockedCount ? ` · ${labels.planBlocked} ${blockedCount}` : ''}${failedCount ? ` · ${labels.planFailed} ${failedCount}` : ''}`;
+        const collapsedPlanSummary = this.translateLabel('agent.timeline.planSummary', {
+            total, completed: completedCount, failed: failedCount, blocked: blockedCount
+        }, `Plan ${total} steps (${completedCount} done${failedCount ? `, ${failedCount} failed` : ''}${blockedCount ? `, ${blockedCount} blocked` : ''})`);
         const visibleContent = collapsible && !this.planTodoExpanded && this.planTodoFilter === 'all'
-            ? `Plan ${total} steps (${completedCount} done${failedCount ? `, ${failedCount} failed` : ''}${blockedCount ? `, ${blockedCount} blocked` : ''})`
+            ? collapsedPlanSummary
             : activeCount > 0 || (this.planTodoFilter !== 'all' && filtered.length > 0)
                 ? [summaryHeader, ...items].join('\n')
                 : '';
@@ -3009,7 +3012,10 @@ export class AgentConsoleSessionState {
                 selectedPlanTodoIndex: this.selectedPlanTodoIndex,
                 planId: this.planId,
                 planRevision: this.planRevision,
-                planThreadKey: this.planThreadKey
+                planThreadKey: this.planThreadKey,
+                // Only an active turn may render the plan as running; a plan
+                // restored after a restart is paused, not running.
+                planLive: this.status === 'running' || this.status === 'reasoning'
             }
         };
     }

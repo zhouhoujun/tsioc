@@ -130,7 +130,8 @@ export const agentUiEnglish: TranslationBundle = {
                 system: 'System · ',
                 event: 'Event · ',
                 rawOutput: 'Raw output',
-                loadingOutput: 'Loading raw output…'
+                loadingOutput: 'Loading raw output…',
+                planSummary: '{total} steps ({completed} done)'
             },
             approval: {
                 required: 'Approval required',
@@ -259,7 +260,8 @@ export const agentUiChinese: TranslationBundle = {
                 system: '系统 · ',
                 event: '事件 · ',
                 rawOutput: '原始输出',
-                loadingOutput: '正在读取原始输出…'
+                loadingOutput: '正在读取原始输出…',
+                planSummary: '{total} 步（已完成 {completed} 步）'
             },
             approval: {
                 required: '需要审批',

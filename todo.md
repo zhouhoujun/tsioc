@@ -1151,3 +1151,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 回归：新增 `agent-ui/test/p411-resume-tool-rows.spec.ts`（3 条：40 行 stdout 投影成可读行且不含 `stdout`、失败 payload → `tool_failed/failed`、无可用摘要的 tool 消息仍丢弃）；旧实现 `Expected "event" / Received undefined`，修复后 3 passing。
 - 真实 TUI 复验（resume `chat3ed...`）：行显示 `✓ Tool · Run node -e ... · exit 0 · 200 lines (80ms)`，PgUp → Up → Enter 打开 `── Event Inspector ──` 且 `── Raw output ──` 从 store 现取并逐行显示。
 - 全量 agent-ui **1568 passing**；`tsc` 0；`source-size` OK。
+
+## 2026-10-22 resume 后计划状态误报 Running + 折叠摘要本地化
+- 现象：重启会话后计划块显示 `│ Plan · Running Plan 12 steps (0 done)` —— 上次中断时残留的 running 状态，实际没有 turn 在跑；折叠摘要还是硬编码英文。
+- 修复：
+  1. `buildPlanMessage` 在 metadata 写入 `planLive = (status === 'running' | 'reasoning')`；`resolveAgentConsoleMessageStatus` 对 `plan-todo` 在 `planLive === false` 且仍有未完成步骤时返回 `undefined`（不再显示 ●/Running），全部完成时仍为 `success`。
+  2. 折叠摘要改用 `agent.timeline.planSummary`（en/zh 双语），并去掉与 `Plan ·` 前缀重复的 `Plan` 字样（`Plan · 8 steps (2 done)`）。
+- 回归：新增 `agent-ui/test/p412-plan-status-on-resume.spec.ts`（3 条：idle 计划不报 running、running turn 仍报 running、折叠摘要走 locale）；旧实现 `Received "running"` / `Received "Plan 12 steps (0 done)"`，修复后 3 passing。原 `console-renderer` 对 `Plan 8 steps (2 done)` 的断言同步更新为 `8 steps (2 done)`（前缀已由行标签提供）。
+- 真实 TUI 复验（resume 同一会话）：`│ Plan · 8 steps ...` 形式的计划块不再出现 `Running`。
+- agent-ui **1571 passing**；`tsc` 0；`source-size` OK。

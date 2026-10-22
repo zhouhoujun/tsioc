@@ -2167,7 +2167,7 @@ export class AgentConsoleTuiRendererTest {
             id: `p${index + 1}`, content: `Step ${index + 1}`, status: index < 2 ? 'completed' : 'pending'
         })) as any);
         const collapsed = ref.instance.sessionState.displayMessages.find(m => m.id === '__plan_todo_inline__')!;
-        expect(collapsed.content).toEqual('Plan 8 steps (2 done)');
+        expect(collapsed.content).toEqual('8 steps (2 done)');
         expect(collapsed.metadata?.planCollapsed).toEqual(true);
 
         ref.instance.sessionState.setSelectedMessageId('__plan_todo_inline__');
