@@ -1141,3 +1141,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 真实 TUI 复验：PgUp → Up → Enter 打开 `── Event Inspector ──`，`── Raw output ──` 逐行显示 `line 1..40`；行摘要同时显示 `exit 0 · 40 lines`。
 - 验证：agent **1026**、agent-gateway **324**、agent-ui **1565** passing；`tsc` 0；`source-size` OK。
 - **新发现（未修，需确认）**：**重启后工具历史行消失**。事件行（`uiKind='event'`）不持久化，而 `normalizeLoadedMessages` 又会丢弃 `role='tool'` 消息，所以 resume 后只剩用户消息与最终回答；本轮 inspector 只能服务当前进程内的事件行。可选：(a) 持久化事件行（只存摘要+toolCallId，不存 payload）；(b) resume 时把 `role='tool'` 消息投影成只读摘要行并保留 toolCallId 供 inspector 按需读取（推荐，仍不重放 payload）。
+
+## 2026-10-22 resume 工具历史投影（用户选择「投影成摘要行」）
+- 现象：resume 后工具历史行消失（事件行不持久化 + `normalizeLoadedMessages` 丢弃 `role='tool'`）。
+- 修复：`normalizeLoadedMessages` 不再直接丢弃 tool 消息，而是投影成只读事件行：
+  - 摘要用 `summarizeToolDisplayText(toolName, payload, 'output')`（如 `exit 0 · 200 lines`），行文本用与实时行相同的 `presentTimelineToolEvent` + `formatTimelineEventLine`（`Run node -e ... · exit 0 · 200 lines`）；
+  - `uiKind='event'`、`uiEventType = tool_completed|tool_failed`、`status`、`durationMs`（取 receipt）、`timeline.toolCallId/receiptId`；
+  - payload 仍不进入转录（content 只放摘要），inspector 通过 `session.tool_payload` 按 toolCallId 现取。
+- 回归：新增 `agent-ui/test/p411-resume-tool-rows.spec.ts`（3 条：40 行 stdout 投影成可读行且不含 `stdout`、失败 payload → `tool_failed/failed`、无可用摘要的 tool 消息仍丢弃）；旧实现 `Expected "event" / Received undefined`，修复后 3 passing。
+- 真实 TUI 复验（resume `chat3ed...`）：行显示 `✓ Tool · Run node -e ... · exit 0 · 200 lines (80ms)`，PgUp → Up → Enter 打开 `── Event Inspector ──` 且 `── Raw output ──` 从 store 现取并逐行显示。
+- 全量 agent-ui **1568 passing**；`tsc` 0；`source-size` OK。
