@@ -1117,3 +1117,15 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 结构调整：`AgentConsoleMessageRenderers.ts` 1432 → **1286**（timeline meta + role label 抽到 `AgentConsoleTimelineMeta.ts`），baseline 1433 → 1287。
 - 验证：agent-ui **1559 passing**；`tsc` 0；`source-size` OK；真实 zh TUI：placeholder 中文、`✓ 已取消 · 轮次已取消`、`正在取消当前轮次…`。
 - 追加（同日第二轮门禁）：再次出现 `dom.cjk-long-history +16887ms` / `dom.timeline-naturalized +6870ms` 的 `gate-regression` 失败；单独重跑 DOM 门禁为 **4658ms / 2112ms**（基线 5917 / 805），TUI 门禁正常，`run-gate-regression --dom <fresh> --tui <fresh>` 输出 `[OK] gate metrics within baseline tolerance`。两次复现都指向宿主负载导致的 wall-clock 抖动（同轮 `tui.desktop-basic` 反而更快），不是代码回归。
+
+## 2026-10-22 真实 TUI：长输出折叠/展开/复制
+- 场景：隔离 root，任务「运行 node -e 输出 200 行后只回 DONE」。
+- 已验证可用：`y` 复制（`Copied selected message.`）、PgUp 进入转录导航（`up/down move   pg jump   enter open   y copy   esc`）。
+- **修复（本轮）**：200 行 stdout 的摘要原本是 `exit 0 · line 1`（看起来像只输出了一行）。`summarizeShellPayload` 现在对 >5 行的 stdout 报体量：`exit 0 · 200 lines`；短输出仍保留首行（`exit 0 · a`）。回归：`agent/test/tool-summary.spec.ts` 新增 2 条（200 行 → `200 lines`；3 行 → 首行），旧实现 `Expected "exit 0 · 200 lines" / Received "exit 0 · line 1"`；agent 全量 **1025 passing**。
+- **遗留缺口（需要设计确认，未改）**：事件行里没有 raw stdout 的查看入口。
+  - 现状：事件行内容由 bridge 写入的一行摘要组成（`resolution: receipt.outputSummary`），完整 payload 只存在于 `role='tool'` 的独立消息里，转录不渲染该消息；`Enter`（message-detail）对事件行是 no-op，因为没有可展开的正文。
+  - 影响：用户无法在 TUI 里查看长输出（§5「raw payload/stdout 进 inspector」未落地）。
+  - 候选方案：
+    1. 渲染层按 `toolCallId` 关联 `role='tool'` 消息：选中事件行 + `messageDetailOpen` 时把 payload（shell 取 `stdout/stderr`，其它 pretty JSON）作为详情正文，并在折叠态显示「N 行，回车展开」。（数据现成，改动集中在 `renderAgentConsoleMessageItems` + 渲染器上下文。）
+    2. 在 bridge 的 `upsertToolRun` 里保留受上限约束的 `output`（例如 20k 字符），由 tool runs 面板展示。（会引入内存上限策略，需要确认保留量与是否持久化。）
+  - 建议：先做方案 1（无新状态、无持久化、按 toolCallId 现取现用），再评估是否需要方案 2。

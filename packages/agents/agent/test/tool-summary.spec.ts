@@ -76,6 +76,22 @@ export class ToolDisplaySummaryTest {
         expect(summary).not.toContain('\n');
     }
 
+    @Test('terminal output reports the volume instead of the first line when output is long')
+    terminalOutputReportsVolumeWhenLong() {
+        const stdout = Array.from({ length: 200 }, (_value, index) => `line ${index + 1}`).join('\n');
+        const summary = summarizeToolDisplayText('terminal', { stdout, stderr: '', exitCode: 0 });
+        // A 200-line dump used to summarize as `exit 0 · line 1`, which reads as
+        // if the command printed a single line.
+        expect(summary).toEqual('exit 0 · 200 lines');
+        expect(summary).not.toContain('line 1');
+    }
+
+    @Test('terminal output keeps the first line for short output')
+    terminalOutputKeepsShortFirstLine() {
+        const summary = summarizeToolDisplayText('terminal', { stdout: 'a\nb\nc', stderr: '', exitCode: 0 });
+        expect(summary).toEqual('exit 0 · a');
+    }
+
     @Test('terminal output prefers stderr and keeps a non-zero exit code')
     terminalOutputPrefersStderr() {
         const summary = summarizeToolDisplayText('terminal', {

@@ -193,3 +193,9 @@ newline-JSON transport, allowlist gate and dynamic tool path end to end.
 | (this commit) | `agent-ui/src/AgentConsoleSessionState.ts`, `AgentConsoleComponent.ts` | The state resolved labels from the translator before the i18n module set the final locale, so a zh host rendered English labels (`Cancelled · Turn cancelled`) next to Chinese chrome. `applyLocaleDefaults()` now runs from `configure()` too, zh overrides include labels (symmetric with en), and the constructor copies the default options instead of mutating the shared object. |
 | (this commit) | `agent-ui/src/AgentConsoleMessageRenderers.ts`, `agent-ui.i18n.ts` (via `AgentConsoleTimelineMeta.ts`) | The cancelled row's boilerplate came from persisted English text and a hardcoded `Cancelled · ` role label. The renderer now resolves turn-cancelled boilerplate from the label catalog (custom reasons verbatim) and diagnostic role labels from `agent.timeline.*`. |
 | (this commit) | `agent-ui/src/AgentConsoleSessionState.ts` | zh input placeholder was always `Ask code or files`; added to `ZH_CONSOLE_HINTS`. |
+
+## 2026-10-22 shell output summary volume
+
+| Commit | File | Root cause |
+| --- | --- | --- |
+| (this commit) | `agent/src/tools/ToolSummary.ts` | A 200-line stdout summarized as `exit 0 · line 1`, which reads as a single-line output. Outputs longer than 5 lines now summarize their volume (`exit 0 · 200 lines`); short outputs keep the first line. |

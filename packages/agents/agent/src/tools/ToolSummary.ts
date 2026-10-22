@@ -169,7 +169,11 @@ function summarizeShellPayload(payload: Record<string, any>, phase: 'input' | 'o
         return 'timed out';
     }
     const exitCode = numberOrUndefined(payload.exitCode) ?? numberOrUndefined(payload.exit_code);
-    const detail = firstMeaningfulLine(payload.stderr) || firstMeaningfulLine(payload.stdout);
+    // A large stdout is summarized by volume: the first line of a 200-line dump
+    // (`line 1`) reads as if the command printed a single line.
+    const stdoutLines = String(payload.stdout || '').split('\n').filter(line => line.trim().length).length;
+    const detail = firstMeaningfulLine(payload.stderr)
+        || (stdoutLines > 5 ? `${stdoutLines} lines` : firstMeaningfulLine(payload.stdout));
     const parts = [exitCode != null ? `exit ${exitCode}` : '', detail].filter(Boolean);
     return parts.length ? parts.join(' · ') : undefined;
 }
