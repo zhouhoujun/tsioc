@@ -187,3 +187,26 @@ export class WorkspaceMentionIgnoreTest {
         }
     }
 }
+
+/** Command descriptions are localized through the describe hook. */
+@Suite('localized command descriptions')
+export class CommandDescriptionLocaleTest {
+    @Test('suggestion descriptions use the provided translator')
+    async localizedDescription() {
+        const describe = (key: string, fallback: string) => key === 'agent.command.desc.sessions' ? '会话列表' : fallback;
+        const options = resolveAgentConsoleInputSuggestions('/sessions', '/sessions'.length, ['/sessions'], [], [], {
+            groupLabels: { session: '会话' },
+            describe
+        });
+        expect(options[0].description).toContain('[会话]');
+        expect(options[0].description).toContain('会话列表');
+    }
+
+    @Test('help options accept the same describe hook')
+    async localizedHelp() {
+        const { buildAgentConsoleHelpOptions } = require('../src');
+        const options = buildAgentConsoleHelpOptions((key: string, fallback: string) => key === 'agent.command.desc.help' ? '查看命令帮助（按分类分组）' : fallback);
+        const help = options.find((option: any) => option.value === '/help');
+        expect(help.description).toEqual('查看命令帮助（按分类分组）');
+    }
+}

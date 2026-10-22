@@ -1246,3 +1246,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 排队（运行中 Enter）：`Queued prompt (1).` + `· 1 queued`，当前 turn 不取消，完成后自动开新 turn。
 - 审批允许/始终允许/拒绝/超时：见上一节，均已验证。
 - 结论：本轮未发现新的代码缺陷（除已修复项）；`/fork`、`/side`、委托、排队、审批四条路径行为符合文档。
+
+## 2026-10-22 命令描述本地化（core + session 共 49 条）
+- 机制：`resolveAgentConsoleCommandDescription(name, groupLabels, describe)` 与 `buildAgentConsoleHelpOptions(describe)` 接受 translator 钩子；`/` 菜单（state 的 `suggestionLabels().describe`）、命令面板（palette）、`/help` 对话框三处都接入；zh 包新增 `agent.command.desc.*`（49 条），en 保持定义原文（缺失即回退）。
+- 真实 TUI（zh）：`/se` 显示 `[会话] 会话列表`、`[核心] 统一设置对话框…`；`/help` 全部为中文描述。
+- 回归：`p413` 增至 13 条（建议项描述走 describe、`/help` 选项本地化）。
+- agent-ui **1584 passing**；`tsc` 0；`source-size` OK（CommandHandlers 通过复用 `ctx.translator`、避免新增 import 守住预算）。
+- 备注：其余分组（display/input/review/hooks/delegation/system）描述仍为英文，可在同一机制下增量补翻译。

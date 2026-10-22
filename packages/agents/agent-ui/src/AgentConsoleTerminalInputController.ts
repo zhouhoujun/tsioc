@@ -2,7 +2,7 @@ import type { ConsoleTextChunk, SelectMenuMouseEvent, TerminalInputSequenceResul
 import { shouldSubmitCommonTextInputChunk } from '@tsdi/components/common';
 import type { AgentConsoleSelectOption } from './AgentConsoleSessionState';
 import { AGENT_CONSOLE_OVERLAY_HINTS, AGENT_CONSOLE_OVERLAY_TITLES } from './AgentConsoleOverlayPresenter';
-import { formatAgentUiSessionClosingMessage, formatAgentUiNotice } from './agent-ui.i18n';
+import { formatAgentUiLabel, formatAgentUiSessionClosingMessage, formatAgentUiNotice } from './agent-ui.i18n';
 import { fuzzyMatchAgentConsoleCommand } from './AgentConsoleKeymap';
 import { resolveTranscriptLayout } from './AgentConsoleTranscriptLayout';
 import {
@@ -105,7 +105,11 @@ export function openCommandPaletteView(host: AgentConsoleTerminalInputHost, quer
                 label: command,
                 value: command,
                 description: [
-                    resolveAgentConsoleCommandDescription(command) || 'command',
+                    resolveAgentConsoleCommandDescription(
+                        command,
+                        undefined,
+                        (key, fallback) => formatAgentUiLabel(host.translator, key, fallback)
+                    ) || 'command',
                     formatAgentConsoleCommandArgumentTemplate(definition)
                 ].filter(Boolean).join(' '),
                 detail: form.length ? form.join('\n') : undefined

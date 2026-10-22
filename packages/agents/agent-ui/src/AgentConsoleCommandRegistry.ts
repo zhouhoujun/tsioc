@@ -425,13 +425,15 @@ export function agentConsoleCommandHints(extra: string[] = []): string[] {
 /** Format `[组] 描述` for palette/suggestions surfaces; undefined for unknown/external hints. */
 export function resolveAgentConsoleCommandDescription(
     nameOrAlias: string,
-    groupLabels?: Partial<Record<AgentConsoleCommandGroupKey, string>>
+    groupLabels?: Partial<Record<AgentConsoleCommandGroupKey, string>>,
+    describe?: (key: string, fallback: string) => string
 ): string | undefined {
     const def = getAgentConsoleCommandDefinition(nameOrAlias);
     if (!def) {
         return undefined;
     }
-    return `[${groupLabels?.[def.group] ?? AGENT_CONSOLE_COMMAND_GROUP_LABELS[def.group]}] ${def.description}`;
+    const description = describe ? describe(`agent.command.desc.${def.name.replace(/^\//, '')}`, def.description) : def.description;
+    return `[${groupLabels?.[def.group] ?? AGENT_CONSOLE_COMMAND_GROUP_LABELS[def.group]}] ${description}`;
 }
 
 /** Help option row — structurally compatible with AgentConsoleSelectOption. */
@@ -442,8 +444,11 @@ export interface AgentConsoleCommandHelpOption {
 }
 
 /** Grouped /help select options: base command rows + subcommand rows per group, '@workspace' last. */
-export function buildAgentConsoleHelpOptions(): AgentConsoleCommandHelpOption[] {
+export function buildAgentConsoleHelpOptions(
+    describe?: (key: string, fallback: string) => string
+): AgentConsoleCommandHelpOption[] {
     const options: AgentConsoleCommandHelpOption[] = [];
+    const localize = (name: string, fallback: string) => describe ? describe(`agent.command.desc.${name.replace(/^\//, '')}`, fallback) : fallback;
     AGENT_CONSOLE_COMMAND_GROUP_ORDER.forEach(group => {
         AGENT_CONSOLE_COMMAND_DEFINITIONS
             .filter(def => def.group === group)
@@ -451,7 +456,7 @@ export function buildAgentConsoleHelpOptions(): AgentConsoleCommandHelpOption[] 
                 options.push({
                     label: def.name,
                     value: def.name,
-                    description: def.description
+                    description: localize(def.name, def.description)
                 });
                 (def.subcommands || []).forEach(sub => {
                     const value = `${def.name} ${sub.sub}`;

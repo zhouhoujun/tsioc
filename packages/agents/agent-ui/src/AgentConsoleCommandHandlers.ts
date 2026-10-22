@@ -57,7 +57,7 @@ function parseTrendTokens(args: string, sep = ' '): { sessionId?: string; bucket
 // ── Handler functions ────────────────────────────────────────────────────────
 
 async function handleHelp(ctx: CommandHandlerContext, _args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
-    const helpSelection = await ctx.select('Help', buildAgentConsoleHelpOptions(), 0, ctx.state.consoleOptions.selectHint);
+    const helpSelection = await ctx.select('Help', buildAgentConsoleHelpOptions((key, fallback) => { const value = ctx.translator?.translate(key); return value && value !== key ? value : fallback; }), 0, ctx.state.consoleOptions.selectHint);
     if (helpSelection) {
         await ctx.handleMenuSelection(helpSelection);
     }

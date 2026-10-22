@@ -15,6 +15,8 @@ export interface AgentConsoleSuggestionLabels {
     groupLabels?: Partial<Record<string, string>>;
     /** Localized workspace mention kinds (`folder` → `文件夹`). */
     mentionKinds?: Record<string, string>;
+    /** Translator hook for command descriptions (`agent.command.desc.*`). */
+    describe?: (key: string, fallback: string) => string;
 }
 
 /** Inline command matches: exact > prefix > substring, fuzzy only as a fallback. */
@@ -104,7 +106,7 @@ export function resolveAgentConsoleInputSuggestions(
             label: item,
             value: item,
             description: [
-                resolveAgentConsoleCommandDescription(item, labels.groupLabels),
+                resolveAgentConsoleCommandDescription(item, labels.groupLabels, labels.describe),
                 formatAgentConsoleCommandArgumentTemplate(getAgentConsoleCommandDefinition(item))
             ].filter(Boolean).join(' ')
         }));

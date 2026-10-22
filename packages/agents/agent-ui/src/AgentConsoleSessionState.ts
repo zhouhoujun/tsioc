@@ -637,6 +637,7 @@ export class AgentConsoleSessionState {
     protected suggestionLabels(): import('./AgentConsoleSuggestions').AgentConsoleSuggestionLabels {
         const label = (key: string, fallback: string) => this.translateLabel(key, undefined, fallback);
         return {
+            describe: (key: string, fallback: string) => this.translateLabel(key, undefined, fallback),
             groupLabels: {
                 core: label('agent.command.group.core', 'core'),
                 session: label('agent.command.group.session', 'session'),
