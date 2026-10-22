@@ -1,7 +1,7 @@
 {
   "packages/agents/agent-cli/src/config.ts": 564,
   "packages/agents/agent-gateway/src/api/SessionHandler.ts": 701,
-  "packages/agents/agent-gateway/src/app-rpc/AppRpcServer.ts": 3684,
+  "packages/agents/agent-gateway/src/app-rpc/AppRpcServer.ts": 3647,
   "packages/agents/agent-tools/agent/orchestrate-primitives.tool.ts": 1290,
   "packages/agents/agent-tools/coding/coding-task.tool.ts": 1592,
   "packages/agents/agent-tools/planning/todo-store.ts": 627,

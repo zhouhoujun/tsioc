@@ -214,16 +214,24 @@ export function consumeStreamEventChunkView(host: AgentConsoleTurnStreamHost, ch
     if (eventType === 'approval_requested') {
         const toolName = String(chunk?.toolName || 'tool');
         const inputSummary = String(chunk?.inputSummary || chunk?.command || chunk?.input || '').trim();
+        const timeoutMs = Number(chunk?.timeoutMs) || 0;
+        const expiresAt = Number(chunk?.expiresAt) || 0;
+        const fallbackContent = String(chunk?.content || '');
         host.state.upsertPendingApproval({
             id: String(chunk?.approvalId || `approval-${Date.now()}`),
             toolName,
             sessionId: host.state.sessionId,
-            reason: String(chunk?.content || `Approval required for ${toolName}`),
-            summary: String(chunk?.content || ''),
-            hasInput: true,
+            // Prefer the structured fields: `content` already contains a
+            // composed sentence, so using it for both `reason` and `$ input`
+            // printed the same text twice in the approval panel.
+            reason: String(chunk?.reason || fallbackContent || `Approval required for ${toolName}`),
+            reasonDetail: chunk?.reasonDetail && typeof chunk.reasonDetail === 'object' ? chunk.reasonDetail : undefined,
+            summary: String(chunk?.summary || fallbackContent || ''),
+            hasInput: chunk?.hasInput !== false,
             inputSummary: inputSummary || undefined,
-            createdAt: Date.now(),
-            timeoutMs: Number(chunk?.timeoutMs) || 0
+            createdAt: Number(chunk?.createdAt) || Date.now(),
+            timeoutMs,
+            expiresAt: expiresAt > 0 ? expiresAt : (timeoutMs > 0 ? Date.now() + timeoutMs : 0)
         } as AgentConsoleApprovalRequest);
         host.state.requestApprovalAttention();
         host.state.pushActivity('tool', `Approval required for ${toolName}`);

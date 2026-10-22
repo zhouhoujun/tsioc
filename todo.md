@@ -1309,3 +1309,20 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 真实 TUI 验证（同一 bundle 构建，3 条 gated 命令）：修复前 3 个不同审批 id；修复后**只有 1 个 id**（同一 id 的两次绘制是面板重绘），`ALPHA`/`BETA`/`GAMMA` 全部执行成功，`Always allow enabled for this session.` 保持。
 - 回归：agent **1036**、agent-gateway **324**、agent-ui **1585** 全绿。
 - 已知遗留（本次未改，纯外观）：人工审批那一次在时间线里仍会渲染一组 `$ Approval required for …` / `Reason: …` 行（与面板内容重复），不影响功能；如需要可把该行降级为事件摘要。
+
+## 2026-10-22 审批面板信息退化修复：流式 chunk 中转丢弃结构化字段
+- 真实复现（bundle TUI，单条 gated 命令）：审批面板先显示正确内容（`$ {"command":"echo …"}` + `Reason: Tool "terminal" requires approval.`），批准后**又重绘一次**并退化为 `$ Approval required for terminal: Tool "terminal" requires approval. Summary: {…}` 与 `Reason: <同一句>`（同一事实重复两次），状态行也重复出现。
+- 根因链（三层 hand-maintained 白名单，逐层丢字段）：
+  1. `AppRpcServer.toStreamEventChunk` 只挑了 `eventType/label/status/content/toolName/approvalId`，`describeStreamEvent` 里新增的结构化字段根本出不去 → 改为 `...event` 全量透传；
+  2. `agent-app-server.module.ts::mapRunTurnStreamChunk` 同样白名单（缺 `reason/summary/inputSummary/timeoutMs/expiresAt/hasInput/reasonDetail`）→ 改为全量透传 + `durationMs` 数值化；
+  3. `HttpAgentConsoleAppRpc.stream()` 也白名单（同时丢掉 `durationMs/report/diagnostics/compensated`）→ 改为 `...p` 全量透传。
+  另：UI `consumeStreamEventChunkView` 优先使用结构化字段（`chunk.reason`/`inputSummary`/`timeoutMs`/`expiresAt`），仅在缺失时回退 `content`；`upsertPendingApproval` 改为**首个写入者保留明细**，避免同一请求被后到的稀疏副本覆盖。
+- 诊断方式：临时在 gateway 打 `[CHUNK-DEBUG]` 记录事件、在 UI 打 `CHUNK-ARGS` 打印消费到的 chunk，确认到达 UI 的字段只有白名单那几项（定位到第 2 层）；排查完成后 instrumentation 已全部删除。
+- 测试（RED→GREEN，4 例先失败）：
+  - `agent-gateway/test/app-server-bridge.spec.ts`：结构化审批字段必须透传；
+  - `agent-gateway/test/rpc-stream.spec.ts`：真实 `run.turn_stream` chunk 携带 `reason/inputSummary/timeoutMs/expiresAt`；
+  - `agent-ui/test/http-rpc-client.spec.ts`：stream 保留全部字段（含 `toolCallId/durationMs/report/diagnostics`）；
+  - `agent-ui/test/turn-stream-approval.spec.ts`（3 例）：结构化字段进入 pending、legacy chunk 回退、稀疏 upsert 不覆盖明细。
+- 真实 TUI 验证（修复后，含重构后复测）：面板只出现 `$ {"command":"echo …"}` + `Reason: Tool "terminal" requires approval.`，无退化重绘，审批 id 唯一，命令正常执行。
+- 体量 ratchet：审批 chunk 构造抽到 `agent-gateway/src/app-rpc/approval-chunk.ts`，`AppRpcServer.ts` **3684 → 3647** 行，baseline 同步下调。
+- 回归：agent-gateway **326**、agent-ui **1589**、agent 1036（前一轮）全绿；`tsc` 两包 0。

@@ -127,6 +127,60 @@ export class HttpAgentConsoleAppRpcTest {
         expect(chunks[3].sessionId).toEqual('s1');
     }
 
+    @Test('stream preserves every chunk field (approval details, timing, diagnostics)')
+    async streamPreservesChunkFields() {
+        const fetchImpl = async () => ndjsonResponse(200, [
+            JSON.stringify({
+                jsonrpc: '2.0',
+                method: 'run.turn_stream.chunk',
+                params: {
+                    chunkType: 'event',
+                    eventType: 'approval_requested',
+                    label: 'approval',
+                    status: 'running',
+                    content: 'Approval required for terminal: Tool "terminal" requires approval.',
+                    toolName: 'terminal',
+                    toolCallId: 'tc-1',
+                    approvalId: 'ap-1',
+                    reason: 'Tool "terminal" requires approval.',
+                    summary: 'Tool "terminal" requires approval. Summary: {"command":"ls"}',
+                    reasonDetail: { code: 'tool-requires-approval' },
+                    hasInput: true,
+                    inputSummary: '{"command":"ls"}',
+                    timeoutMs: 30000,
+                    expiresAt: 1700000000000,
+                    durationMs: 137,
+                    report: { strategy: 'compact' },
+                    diagnostics: { compactionCount: 1 }
+                },
+                meta: { requestId: 'r1' }
+            }),
+            JSON.stringify({ jsonrpc: '2.0', id: 1, result: { sessionId: 's1' } })
+        ]);
+        const rpc = new HttpAgentConsoleAppRpc({ baseUrl: 'http://localhost:8080', fetchImpl: fetchImpl as any });
+        const chunks: any[] = [];
+        for await (const chunk of rpc.stream('run.turn_stream', { sessionId: 's1' })) {
+            chunks.push(chunk);
+        }
+        const chunk = chunks[0];
+        // The UI renders `$ <inputSummary>` + `Reason: <reason>` and needs the
+        // approval id to resolve the request; a hand-maintained whitelist here
+        // silently dropped all of them (and backend timing/diagnostics).
+        expect(chunk.type).toEqual('event');
+        expect(chunk.eventType).toEqual('approval_requested');
+        expect(chunk.approvalId).toEqual('ap-1');
+        expect(chunk.reason).toEqual('Tool "terminal" requires approval.');
+        expect(chunk.inputSummary).toEqual('{"command":"ls"}');
+        expect(chunk.timeoutMs).toEqual(30000);
+        expect(chunk.expiresAt).toEqual(1700000000000);
+        expect(chunk.reasonDetail?.code).toEqual('tool-requires-approval');
+        expect(chunk.toolCallId).toEqual('tc-1');
+        expect(chunk.durationMs).toEqual(137);
+        expect(chunk.report?.strategy).toEqual('compact');
+        expect(chunk.diagnostics?.compactionCount).toEqual(1);
+        expect(chunk.requestId).toEqual('r1');
+    }
+
     @Test('stream throws on NDJSON error line')
     async streamThrowsOnErrorLine() {
         const fetchImpl = async () => ndjsonResponse(200, [

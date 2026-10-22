@@ -51,6 +51,36 @@ export class AppServerBridgeTest {
         expect(mapRunTurnStreamChunk({ chunkType: 'event', eventType: 'tool_invoked' }).durationMs).toBeUndefined();
     }
 
+    @Test('forwards the structured approval request (id, reason, input, timing)')
+    forwardsApprovalDetails() {
+        const chunk = mapRunTurnStreamChunk({
+            chunkType: 'event',
+            eventType: 'approval_requested',
+            label: 'approval',
+            status: 'running',
+            content: 'Approval required for terminal: Tool "terminal" requires approval.',
+            toolName: 'terminal',
+            approvalId: 'ap-1',
+            reason: 'Tool "terminal" requires approval.',
+            summary: 'Tool "terminal" requires approval. Summary: {"command":"ls"}',
+            reasonDetail: { code: 'tool-requires-approval' },
+            hasInput: true,
+            inputSummary: '{"command":"ls"}',
+            timeoutMs: 30000,
+            expiresAt: 1700000000000
+        });
+
+        // The TUI renders `$ <inputSummary>` and `Reason: <reason>`; dropping
+        // these fields made it re-render the composed `content` as both.
+        expect(chunk.approvalId).toEqual('ap-1');
+        expect(chunk.reason).toEqual('Tool "terminal" requires approval.');
+        expect(chunk.inputSummary).toEqual('{"command":"ls"}');
+        expect(chunk.timeoutMs).toEqual(30000);
+        expect(chunk.expiresAt).toEqual(1700000000000);
+        expect(chunk.reasonDetail?.code).toEqual('tool-requires-approval');
+        expect(chunk.hasInput).toEqual(true);
+    }
+
     @Test('local bridge keeps the structured ModelFailure the console renders')
     localBridgePreservesModelFailure() {
         const failure = {

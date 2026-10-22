@@ -16,6 +16,7 @@ import { CloudTaskQueue } from '../cloud/CloudTaskQueue';
 import { QuestionStore } from './QuestionStore';
 import { describeToolCompletedEvent, describeToolInvocationEvent } from './tool-event-content';
 import { toAppRpcError } from './rpcError';
+import { ApprovalRequestedChunkFields, buildApprovalRequestedChunk } from './approval-chunk';
 
 @Injectable()
 export class AppRpcServer {
@@ -1618,13 +1619,7 @@ export class AppRpcServer {
                 requestId,
                 sessionId,
                 chunkType: 'event',
-                eventType: event.eventType,
-                label: event.label,
-                status: event.status,
-                content: event.content,
-                ...(event.toolName ? { toolName: event.toolName } : {}),
-                ...(event.toolCallId ? { toolCallId: event.toolCallId } : {}),
-                ...(event.approvalId ? { approvalId: event.approvalId } : {}),
+                ...event,
                 ...(Number.isFinite(Number(data?.receipt?.durationMs)) ? { durationMs: Number(data.receipt.durationMs) } : {}),
                 ...(data.report ? { report: data.report } : {}),
                 ...(data.diagnostics ? { diagnostics: data.diagnostics } : {}),
@@ -1633,7 +1628,7 @@ export class AppRpcServer {
         };
     }
 
-    private describeStreamEvent(record: GatewayEventRecord): {
+    private describeStreamEvent(record: GatewayEventRecord): ({
         eventType: string;
         label: string;
         status: 'running' | 'success' | 'failed' | 'error';
@@ -1641,7 +1636,7 @@ export class AppRpcServer {
         toolName?: string;
         toolCallId?: string;
         approvalId?: string;
-    } | null {
+    } & ApprovalRequestedChunkFields) | null {
         const data = record.data || {};
         switch (record.type) {
             case 'turn_started':
@@ -1730,16 +1725,7 @@ export class AppRpcServer {
                     content: `Background task ${String(data?.taskId || '')} failed: ${String(data?.error || 'unknown error')}`
                 };
             case 'approval_requested':
-                return {
-                    eventType: 'approval_requested',
-                    label: 'approval',
-                    status: 'running',
-                    toolName: String(data?.request?.toolName || ''),
-                    approvalId: String(data?.request?.id || ''),
-                    content: data?.request?.summary
-                        ? `Approval required for ${data.request.toolName}: ${data.request.summary}`
-                        : `Approval required for ${data?.request?.toolName || 'tool'}`
-                };
+                return buildApprovalRequestedChunk(data);
             case 'approval_completed':
                 return {
                     eventType: 'approval_completed',

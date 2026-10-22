@@ -358,7 +358,10 @@ export class EventHandler {
                 summary: event.request.summary,
                 hasInput: event.request.hasInput,
                 inputSummary: event.request.inputSummary,
-                timeoutMs: event.request.timeoutMs
+                reasonDetail: event.request.reasonDetail,
+                timeoutMs: event.request.timeoutMs,
+                createdAt: event.request.createdAt,
+                expiresAt: event.request.expiresAt
             }
         });
     }

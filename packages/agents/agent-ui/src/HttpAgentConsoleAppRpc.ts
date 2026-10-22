@@ -249,15 +249,13 @@ export class HttpAgentConsoleAppRpc implements AgentConsoleAppRpc {
                     }
                     if (message.method === 'run.turn_stream.chunk') {
                         const p = message.params ?? {};
+                        // Forward the whole chunk: a field whitelist here
+                        // silently dropped approval details (id/reason/input),
+                        // backend `durationMs` and diagnostics, so the panel had
+                        // to fall back to the composed `content` text.
                         yield {
+                            ...p,
                             type: p.chunkType,
-                            content: p.content,
-                            toolCalls: p.toolCalls,
-                            usage: p.usage,
-                            eventType: p.eventType,
-                            label: p.label,
-                            status: p.status,
-                            toolName: p.toolName,
                             requestId: message.meta?.requestId ?? p.requestId,
                             sessionEpoch: message.meta?.sessionEpoch ?? p.sessionEpoch
                         };

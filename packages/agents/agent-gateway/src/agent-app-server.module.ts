@@ -12,22 +12,20 @@ import { AGENT_CONSOLE_APP_RPC } from '@tsdi/agent';
 import { CloudTaskQueue } from './cloud/CloudTaskQueue';
 import { QuestionStore } from './app-rpc/QuestionStore';
 
-/** Map a `run.turn_stream.chunk` notification into the shape the console UI consumes. */
+/**
+ * Map a `run.turn_stream.chunk` notification into the shape the console UI consumes.
+ *
+ * Everything is forwarded: a field whitelist here silently dropped approval
+ * details (`approvalId` used to be the only one kept, `reason`/`inputSummary`/
+ * timing were lost) so the approval panel had to re-render the composed
+ * `content` sentence as both `$ input` and `Reason:`. Keeping the payload
+ * intact also preserves future chunk fields without a second edit.
+ */
 export function mapRunTurnStreamChunk(params: any): Record<string, any> {
     return {
+        ...(params ?? {}),
         type: params?.chunkType,
-        content: params?.content,
-        toolCalls: params?.toolCalls,
-        usage: params?.usage,
-        eventType: params?.eventType,
-        label: params?.label,
-        status: params?.status,
-        toolName: params?.toolName,
-        toolCallId: params?.toolCallId,
-        ...(Number.isFinite(Number(params?.durationMs)) ? { durationMs: Number(params.durationMs) } : {}),
-        ...(params?.approvalId ? { approvalId: params.approvalId } : {}),
-        ...(params?.report ? { report: params.report } : {}),
-        ...(params?.diagnostics ? { diagnostics: params.diagnostics } : {})
+        ...(Number.isFinite(Number(params?.durationMs)) ? { durationMs: Number(params.durationMs) } : {})
     };
 }
 

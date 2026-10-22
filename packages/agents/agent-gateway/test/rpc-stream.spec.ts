@@ -16,7 +16,16 @@ async function buildStreamHarness(toolEvent: {
     inputSummary?: string;
     rawInputSummary?: string;
     outputSummary?: string;
-} = {}) {
+} = {}, approvalEvent?: {
+    id?: string;
+    toolName?: string;
+    reason?: string;
+    summary?: string;
+    hasInput?: boolean;
+    inputSummary?: string;
+    timeoutMs?: number;
+    expiresAt?: number;
+}) {
     const toolName = toolEvent.toolName || 'read_file';
     const inputSummary = toolEvent.inputSummary ?? '/tmp/a.ts';
     const rawInputSummary = toolEvent.rawInputSummary ?? '{"path":"/tmp/a.ts"}';
@@ -62,6 +71,22 @@ async function buildStreamHarness(toolEvent: {
                     durationMs: 137
                 }
             } as any);
+            if (approvalEvent) {
+                events.onApprovalRequested({
+                    sessionId,
+                    request: {
+                        id: approvalEvent.id || 'ap-1',
+                        toolName: approvalEvent.toolName || 'terminal',
+                        sessionId,
+                        reason: approvalEvent.reason || 'Tool "terminal" requires approval.',
+                        summary: approvalEvent.summary || 'Tool "terminal" requires approval. Summary: {"command":"ls"}',
+                        hasInput: approvalEvent.hasInput !== false,
+                        inputSummary: approvalEvent.inputSummary || '{"command":"ls"}',
+                        timeoutMs: approvalEvent.timeoutMs ?? 30000,
+                        expiresAt: approvalEvent.expiresAt
+                    }
+                } as any);
+            }
             yield { type: 'content', content: `chunk-${input}` };
             events.onTurnCompleted({ sessionId, message: { content: 'done' } } as any);
             yield { type: 'done', content: '' };
@@ -186,6 +211,42 @@ export class AppRpcStreamTest {
         expect(completed).toBeTruthy();
         expect(completed.params.toolCallId).toEqual('tc-1');
         expect(completed.params.durationMs).toEqual(137);
+    }
+
+    @Test('approval_requested stream chunk carries the structured request, not just content')
+    async approvalChunkCarriesStructuredFields() {
+        const { handler } = await buildStreamHarness({}, { id: 'ap-9', timeoutMs: 45000, expiresAt: 1700000000000 });
+        const route = handler.getRoutes().find(route => route.method === 'POST' && route.path === '/rpc/stream')!;
+        const chunks: string[] = [];
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: (_code: number, _headers: any) => res,
+            write: (chunk: string) => {
+                chunks.push(chunk);
+                return true;
+            },
+            end: () => res
+        } as any;
+
+        await route.handler(req, res, {} as any, {
+            jsonrpc: '2.0',
+            id: 9,
+            method: 'run.turn_stream',
+            params: { sessionId: 'stream-approval-1', input: 'hello' }
+        });
+
+        const messages = chunks.map(chunk => JSON.parse(chunk));
+        const requested = messages.find(message =>
+            message.method === 'run.turn_stream.chunk' && message.params.eventType === 'approval_requested');
+        expect(requested).toBeTruthy();
+        // The UI renders `$ <inputSummary>` and `Reason: <reason>`; without
+        // these fields it fell back to `content` for both (duplicate text).
+        expect(requested.params.inputSummary).toEqual('{"command":"ls"}');
+        expect(requested.params.reason).toEqual('Tool "terminal" requires approval.');
+        expect(requested.params.summary).toContain('Summary:');
+        expect(requested.params.timeoutMs).toEqual(45000);
+        expect(requested.params.expiresAt).toEqual(1700000000000);
     }
 
     @Test('unknown method yields NDJSON error line')

@@ -5022,8 +5022,24 @@ export class AgentConsoleSessionState {
     }
 
     upsertPendingApproval(request: AgentConsoleApprovalRequest): void {
+        // The same request can arrive twice (in-process event bridge plus the
+        // streamed RPC chunk). The first arrival owns the identity details, so
+        // a sparse duplicate must not erase the reason/input/timing of an
+        // already known request.
+        const existing = this.pendingApprovals.find(item => item.id === request.id);
+        const merged = existing ? {
+            ...existing,
+            ...request,
+            reason: existing.reason || request.reason,
+            reasonDetail: existing.reasonDetail || request.reasonDetail,
+            summary: existing.summary || request.summary,
+            inputSummary: existing.inputSummary || request.inputSummary,
+            createdAt: existing.createdAt || request.createdAt,
+            timeoutMs: existing.timeoutMs || request.timeoutMs,
+            expiresAt: existing.expiresAt || request.expiresAt
+        } : request;
         const next = this.pendingApprovals.filter(item => item.id !== request.id);
-        next.push(request);
+        next.push(merged);
         this.pendingApprovals = next.sort((left, right) => left.createdAt - right.createdAt);
         if (!this.pendingApprovals.length) {
             this.selectedApprovalId = '';
