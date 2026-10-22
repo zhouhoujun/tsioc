@@ -8,6 +8,10 @@ process.env.TS_NODE_PROJECT = path.join(packageRoot, 'tsconfig.json');
 // SWC is a fast, optional transpiler (see @swc/core); fall back to ts-node's
 // TypeScript transpiler when it is absent or explicitly disabled with
 // TSDI_AGENT_TRANSPILER=ts-node. Both paths keep decorator metadata enabled.
+// Measured (warm transpile cache, this machine): a hand-written SWC `.ts`
+// loader was *slower* than ts-node+swc (median 2069ms vs 1634ms) and lazily
+// stubbing typeorm's `cli-highlight` made no measurable difference
+// (2088ms vs 2039ms), so both shortcuts were reverted.
 const transpiler = String(process.env.TSDI_AGENT_TRANSPILER || '').trim().toLowerCase();
 let registered = false;
 if (transpiler !== 'ts-node') {

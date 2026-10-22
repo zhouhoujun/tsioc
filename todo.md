@@ -1264,3 +1264,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 机制：`buildAgentConsoleHelpOptions` 的子命令描述走同一 describe 钩子（`agent.command.sub.<parent>.<sub>`）；zh 包补 10 条。
 - 回归：`p413` 增至 14 条（`/diagnostics trend` → `轮次诊断趋势`）。
 - agent-ui **1585 passing**；门禁 27/27。
+
+## 2026-10-22 启动剩余时间：两次尝试均无可测收益（已回退，仅记结论）
+- 目标：剩余 ~2.5–3s 主要是「模块读取 + V8 编译/执行」，尝试两条低风险路径：
+  1. **自写 SWC `.ts` loader 替代 ts-node**（期望省掉 `typescript` 的 ~400–570ms 加载）：进程内 A/B（含编译缓存热态，各 5 次）中位数 **2069ms vs ts-node 1634ms** —— 反而更慢（inline source map / setSourceMapsEnabled 等开销）。**已回退**，并把结论写进 `bin/tsdi-agent.js` 注释，避免再次尝试。
+  2. **惰性加载 typeorm 的 `cli-highlight`**（它静态拉起全部 highlight.js，仅 SQL 日志高亮用）：惰性代理确实让 `require.cache` 中 highlight.js 为 0 条，但整图加载时间中位数 **2088ms vs 2039ms**，无收益。**已回退**。
+- 结论：剩余启动时间不是 transpile/单个依赖造成的，而是**约 1500 个模块的读取与求值**；进一步优化只能靠打包/预编译（独立工程，需评估 dist 与源码一致性问题），不再做零散微优化。
