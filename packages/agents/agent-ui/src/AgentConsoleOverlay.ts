@@ -14,6 +14,7 @@ export type AgentConsoleOverlayKeyDecision =
     | { action: 'page'; direction: 1 | -1 }
     | { action: 'confirm' }
     | { action: 'accept' }
+    | { action: 'complete' }
     | { action: 'choose'; index: number }
     | { action: 'digit-consume' }
     | { action: 'escape' }
@@ -144,15 +145,21 @@ export class AgentConsoleOverlayController {
     }
 
     resolveMenuKey(key: string, text: string, optionCount: number): AgentConsoleOverlayKeyDecision {
-        const keyName = String(key || text || '');
+        const raw = String(key || text || '');
+        // The terminal delivers Tab as a bare `\t` without a control key.
+        const keyName = raw === '\t' ? 'tab' : raw;
         if (keyName === 'down') {
             return { action: 'move', delta: 1 };
         }
         if (keyName === 'up') {
             return { action: 'move', delta: -1 };
         }
-        if (keyName === 'return' || keyName === 'tab') {
+        if (keyName === 'return') {
             return { action: 'accept' };
+        }
+        if (keyName === 'tab') {
+            // `tab 补全` completes the selection; only Enter executes it.
+            return { action: 'complete' };
         }
         if (keyName === 'home') {
             return { action: 'home' };

@@ -98,6 +98,7 @@ export const agentUiEnglish: TranslationBundle = {
                 approvalRequired: 'Approval required: {tool} ({id}){extra}'
             },
             command: {
+                group: { core: 'core', session: 'session', display: 'display', input: 'input', review: 'review', hooks: 'hooks', delegation: 'delegation', system: 'system' },
                 unknown: 'Unknown command: {command}',
                 ambiguous: 'Ambiguous command: {command}  ({matches})',
                 label: 'Command',
@@ -133,6 +134,7 @@ export const agentUiEnglish: TranslationBundle = {
                 loadingOutput: 'Loading raw output…',
                 planSummary: '{total} steps ({completed} done)'
             },
+            mention: { folder: 'folder', file: 'file', skill: 'skill', plugin: 'plugin' },
             approval: {
                 required: 'Approval required',
                 allowPrompt: 'Approval required · Allow {tool}?',
@@ -228,6 +230,7 @@ export const agentUiChinese: TranslationBundle = {
                 approvalRequired: '需要审批：{tool}（{id}）{extra}'
             },
             command: {
+                group: { core: '核心', session: '会话', display: '显示', input: '输入', review: '审查', hooks: '钩子', delegation: '委托', system: '系统' },
                 unknown: '未知命令：{command}',
                 ambiguous: '命令不唯一：{command}（{matches}）',
                 label: '命令',
@@ -263,6 +266,7 @@ export const agentUiChinese: TranslationBundle = {
                 loadingOutput: '正在读取原始输出…',
                 planSummary: '{total} 步（已完成 {completed} 步）'
             },
+            mention: { folder: '文件夹', file: '文件', skill: '技能', plugin: '插件' },
             approval: {
                 required: '需要审批',
                 allowPrompt: '需要审批 · 允许 {tool}？',

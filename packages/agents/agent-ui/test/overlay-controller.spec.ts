@@ -96,7 +96,9 @@ export class AgentConsoleOverlayControllerTest {
         expect(controller.resolveMenuKey('down', '', 3)).toEqual({ action: 'move', delta: 1 });
         expect(controller.resolveMenuKey('up', '', 3)).toEqual({ action: 'move', delta: -1 });
         expect(controller.resolveMenuKey('return', '', 3)).toEqual({ action: 'accept' });
-        expect(controller.resolveMenuKey('tab', '', 3)).toEqual({ action: 'accept' });
+        // Tab completes the highlighted option; only Enter executes it.
+        expect(controller.resolveMenuKey('tab', '', 3)).toEqual({ action: 'complete' });
+        expect(controller.resolveMenuKey('', '\t', 3)).toEqual({ action: 'complete' });
         // left/right move the input cursor; they must not dismiss the menu
         expect(controller.resolveMenuKey('left', '', 3)).toEqual({ action: 'none' });
         expect(controller.resolveMenuKey('right', '', 3)).toEqual({ action: 'none' });

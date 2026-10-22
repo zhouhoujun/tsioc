@@ -1203,3 +1203,30 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **超时（不按键 30s）**：行变为 `✕ Tool · Create file skipped: Tool "write_file" approval timed out. · retry (0ms)`，文件未创建；turn 结束后无残留「Approval required」状态。
 - **排队（turn 运行中 Enter）**：通知 `Queued prompt (1).`、输入框显示 `· 1 queued`，当前 turn 不被取消；当前 turn 完成后排队 prompt 自动开新 turn（`OK` → `SECOND`），队列提示清空。steer 仍为显式 opt-in（`ui.steerMode`）。
 - 结论：审批允许/始终允许/拒绝/超时、排队四条路径在真实 TUI 下行为符合 §6 与审批约定；无需额外代码改动。
+
+## 2026-10-22 '/' 与 '@' 菜单问题（真实 TUI 复现 + 修复）
+- **`/` 命令菜单**
+  1. 组标签写死中文（`[核心]`/`[会话]`），en 宿主下中英混排 → 新增 `agent.command.group.*`（en/zh）并透传到 `resolveAgentConsoleCommandDescription(name, groupLabels)`；菜单显示 `[core]`/`[session]`。
+  2. `/se` 会把 `/resume`、`/side`、`/share`、`/statusline` 也列出来（内联菜单用的是**子序列**模糊匹配）→ 新增 `rankAgentConsoleCommandMatches`：精确 > 前缀 > 子串，只有在无真实匹配时才回退子序列（palette 仍保留原模糊匹配）。
+- **`@` 提及菜单**
+  3. 裸 `@` 先列 4 个伪提及 + **64 个工具名**，文件排在后面；输入 `@tim` 时高亮还停在工具项 `@time`，按 Enter 会**提交工具提及**而不是插入文件 → 排序改为「伪提及 → 工作区文件/目录 → 工具」；并且异步文件建议到达时若用户未手动移动过选择，`selectedIndex` 回到第一项（新增 `selectMenuTouched`，移动/翻页/置位时置真，关闭菜单时复位）。
+  4. 提及类型 `folder`/`file` 未本地化 → `agent.mention.*`（en/zh，`文件夹`/`文件`）。
+- 回归：新增 `agent-ui/test/p413-suggestions.spec.ts`（6 条）：命令排序（`/se` 不含 resume/side/statusline，精确优先）、模糊兜底、`@` 文件优先于工具、组/类型本地化、伪提及仍在前、异步建议后高亮为 0；去掉 `selectMenuTouched` 时失败（`Expected: 0 / Received: 2`）。
+- 真实 TUI：`/se` 只列 6 条真实匹配且组标签随 locale；`@tim` 高亮 `@timer-system/`，Enter 插入而非提交；发送后用户消息显示 `Files · timer-system/`，无 `[Mention Context]` 泄漏。
+- agent-ui **1577 passing**；`tsc` 0；`source-size` OK。
+- 备注（未改）：命令定义描述文本本身仍是英文（100+ 条），本地化属下一批工作。
+
+### '/' 与 '@' 追加修复：Tab 只补全、不执行
+- 现象：提示写 `tab 补全`，但 `/se` + Tab **直接执行**了 `/settings`（打开设置对话框）；`@tim` + Tab 也会提交工具提及。
+- 根因：`resolveMenuKey` 把 `tab` 当作 `accept`；且终端把 Tab 送成裸 `\t`（无 controlKey），与 Enter 的 `\r` 同类。
+- 修复：新增 `complete` 决策（Tab）与 `accept`（Enter）区分；`resolveMenuKey` 把裸 `\t` 归一为 `tab`；`FocusLayers` 对 `complete` 调 `completeSelectMenu()`（只 `confirmSelectMenu`，不触发提交判定）。Esc 关闭菜单并保留输入的行为已复验正常。
+- 回归：`p413` 增至 8 条（含裸 `\t` → complete、解码 Tab 后输入为 `/settings`）；`overlay-controller.spec.ts` 的 Tab 断言同步为 `complete`。真实 TUI：`/se`+Tab → `> /settings`（不执行），Enter → 执行；`@tim`+Tab → `> @timer-system/`。
+- agent-ui **1579 passing**；`tsc` 0；`source-size` OK。
+
+### '/' 追加修复：未知命令不再执行无关命令
+- 现象：输入 `/nosuch` 后按 Enter，菜单在无匹配时回退成「全部命令」，Enter 直接执行第一条无关命令（危险），而不是报未知命令。
+- 修复：无匹配时返回空列表（不再回退全量）；裸 `/` 仍列出全部命令（前缀匹配天然覆盖）。
+- 回归：`p413` 增至 10 条（未知命令无候选、裸 `/` 全量、Enter 返回 `submit` 且输入保持 `/nosuch`）；回退到旧实现时 17 个候选全部出现（RED）。
+- 真实 TUI：`/nosuch` 不再打开菜单，Enter 输出 `Unknown command: /nosuch` 与 `$ /nosuch failed: …` 行。
+- 附带只读复验：`check /tmp`（文本中路径）不触发命令菜单；`mail me a@b`（词中 @）不触发提及菜单；`@zzz`（无匹配）不弹菜单但可正常发送；`/model`（needsArgs）Enter 只补全不执行。
+- agent-ui **1581 passing**。

@@ -221,3 +221,13 @@ newline-JSON transport, allowlist gate and dynamic tool path end to end.
 | --- | --- | --- |
 | (this commit) | `agent/src/tools/ToolApprovalManager.ts`, `agent/src/tools/approval-categories.ts`, `agent/src/harness/HarnessProfile.ts`, `agent/src/runtime/DefaultAgentRuntime.ts` | The documented default rules never fired: rule strings (`shell.exec`, `fs.write`) were compared with tool names, and no `fs` category existed, so shell commands and file writes ran un-gated. Rules now match by tool name **or** approval category (new `fs` category), and an explicit empty `requireApproval: []` disables the gate. |
 | (this commit) | `agent-ui/src/AgentConsoleFocusLayers.ts`, `AgentConsoleSessionState.ts`, `AgentConsoleComponent.ts`, `AgentConsolePanels.ts`, `agent-ui.i18n*.ts` | Approvals had no session-wide escape hatch. `A` in the approval panel approves and enables auto-approve for the session (`setAutoApprove`), with a localized notice and hint (`a 允许 d 拒绝 A 始终允许 …`). |
+
+## 2026-10-22 slash/mention menus
+
+| Commit | File | Root cause |
+| --- | --- | --- |
+| (this commit) | `agent-ui/src/AgentConsoleSuggestions.ts`, `AgentConsoleCommandRegistry.ts`, `AgentConsoleSessionState.ts`, `agent-ui.i18n.ts` | The inline command menu used subsequence matching (`/se` listed `/resume`, `/side`, `/statusline`) and hardcoded Chinese group labels; `@` listed tool mentions before workspace files, and async file suggestions kept the highlight on a tool mention (`@tim` + Enter submitted `@time`). Commands now rank exact > prefix > substring (fuzzy only as fallback), group/mention labels are localized, files precede tools, and the highlight resets to the best match unless the user moved it. |
+
+| (this commit) | `agent-ui/src/AgentConsoleOverlay.ts`, `AgentConsoleFocusLayers.ts`, `AgentConsoleSessionState.ts` | The hint advertises `tab 补全` but Tab accepted **and executed** the highlighted command (`/se`+Tab opened `/settings`); the terminal also delivers Tab as a bare `\t`. Tab now returns a distinct `complete` decision (fill without executing) and raw `\t` is normalized to `tab`. |
+
+| (this commit) | `agent-ui/src/AgentConsoleSuggestions.ts` | A typo (`/nosuch`) fell back to the full command list, so Enter executed the first unrelated command instead of reporting an unknown command. No-match now yields an empty menu; a bare `/` still lists everything. |

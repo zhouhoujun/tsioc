@@ -141,6 +141,7 @@ export abstract class AgentConsoleFocusLayers {
             case 'end': state.moveSelectMenuToEdge('end'); return true;
             case 'page': state.moveSelectMenuPage(decision.direction); return true;
             case 'accept': void state.acceptSelectMenu(); return true;
+            case 'complete': void state.completeSelectMenu(); return true;
             case 'choose': state.setSelectMenuIndex(decision.index); void state.acceptSelectMenu(); return true;
             case 'digit-consume': return true;
             case 'cancel':

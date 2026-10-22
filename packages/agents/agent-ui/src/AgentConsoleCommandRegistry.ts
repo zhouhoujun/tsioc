@@ -423,12 +423,15 @@ export function agentConsoleCommandHints(extra: string[] = []): string[] {
 }
 
 /** Format `[组] 描述` for palette/suggestions surfaces; undefined for unknown/external hints. */
-export function resolveAgentConsoleCommandDescription(nameOrAlias: string): string | undefined {
+export function resolveAgentConsoleCommandDescription(
+    nameOrAlias: string,
+    groupLabels?: Partial<Record<AgentConsoleCommandGroupKey, string>>
+): string | undefined {
     const def = getAgentConsoleCommandDefinition(nameOrAlias);
     if (!def) {
         return undefined;
     }
-    return `[${AGENT_CONSOLE_COMMAND_GROUP_LABELS[def.group]}] ${def.description}`;
+    return `[${groupLabels?.[def.group] ?? AGENT_CONSOLE_COMMAND_GROUP_LABELS[def.group]}] ${def.description}`;
 }
 
 /** Help option row — structurally compatible with AgentConsoleSelectOption. */

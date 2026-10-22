@@ -633,6 +633,30 @@ export class AgentConsoleSessionState {
     readonly focusLayers: AgentConsoleFocusLayers = new DefaultAgentConsoleFocusLayers(this);
 
     /** Derived from the focus layer stack: the composer owns the keyboard unless a layer claims it. */
+    /** Localized labels for the inline suggestion menu (command groups, mention kinds). */
+    protected suggestionLabels(): import('./AgentConsoleSuggestions').AgentConsoleSuggestionLabels {
+        const label = (key: string, fallback: string) => this.translateLabel(key, undefined, fallback);
+        return {
+            groupLabels: {
+                core: label('agent.command.group.core', 'core'),
+                session: label('agent.command.group.session', 'session'),
+                display: label('agent.command.group.display', 'display'),
+                input: label('agent.command.group.input', 'input'),
+                review: label('agent.command.group.review', 'review'),
+                hooks: label('agent.command.group.hooks', 'hooks'),
+                delegation: label('agent.command.group.delegation', 'delegation'),
+                system: label('agent.command.group.system', 'system')
+            },
+            mentionKinds: {
+                folder: label('agent.mention.folder', 'folder'),
+                directory: label('agent.mention.folder', 'folder'),
+                file: label('agent.mention.file', 'file'),
+                skill: label('agent.mention.skill', 'skill'),
+                plugin: label('agent.mention.plugin', 'plugin')
+            }
+        };
+    }
+
     /** Localized label for derived status/error strings (see formatAgentUiLabel). */
     translateLabel(key: string, params: Record<string, any> | undefined, fallback: string): string {
         return formatAgentUiLabel(this.translator, key, fallback, params);
@@ -904,6 +928,8 @@ export class AgentConsoleSessionState {
     protected mentionCatalog: AgentConsoleMentionCatalogItem[] = [];
     protected workspaceSuggestionRequestId = 0;
     protected suppressSuggestionMenu = false;
+    /** True once the user moved inside an open suggestion menu. */
+    protected selectMenuTouched = false;
     setSuppressSuggestionMenu(suppressed: boolean): void { this.suppressSuggestionMenu = suppressed; }
     protected overlayController = new AgentConsoleOverlayController();
 
@@ -5066,6 +5092,7 @@ export class AgentConsoleSessionState {
 
     closeSelectMenu(): void {
         this.selectMenu = undefined;
+        this.selectMenuTouched = false;
         this.syncDerivedInputFocus();
     }
 
@@ -5088,10 +5115,12 @@ export class AgentConsoleSessionState {
         if (!this.selectMenu || !this.selectMenu.options.length) {
             return;
         }
+        this.selectMenuTouched = true;
         this.selectMenu.selectedIndex = this.overlayController.clampIndex(index, this.selectMenu.options.length);
     }
 
     moveSelectMenu(delta: number): void {
+        this.selectMenuTouched = true;
         if (!this.selectMenu || !this.selectMenu.options.length) {
             return;
         }
@@ -5103,6 +5132,7 @@ export class AgentConsoleSessionState {
     }
 
     moveSelectMenuToEdge(edge: 'start' | 'end'): void {
+        this.selectMenuTouched = true;
         if (!this.selectMenu || !this.selectMenu.options.length) {
             return;
         }
@@ -5112,6 +5142,7 @@ export class AgentConsoleSessionState {
     }
 
     moveSelectMenuPage(direction: 1 | -1): void {
+        this.selectMenuTouched = true;
         if (!this.selectMenu || !this.selectMenu.options.length) {
             return;
         }
@@ -5165,6 +5196,11 @@ export class AgentConsoleSessionState {
         this.selectMenuAction = undefined;
         await action?.(resolved);
         return resolved;
+    }
+
+    /** Tab: fill the input with the highlighted suggestion without executing it. */
+    async completeSelectMenu(value?: string): Promise<string | undefined> {
+        return this.confirmSelectMenu(value);
     }
 
     async acceptSelectMenu(value?: string): Promise<{ value: string | undefined; submitted: boolean }> {
@@ -5252,7 +5288,8 @@ export class AgentConsoleSessionState {
                 this.inputCursor,
                 this.commandHints,
                 this.tools,
-                workspaceSuggestions
+                workspaceSuggestions,
+                this.suggestionLabels()
             );
             if (!options.length) {
                 if (isAgentConsoleSuggestionMenu(this.selectMenu)) {
@@ -5262,7 +5299,10 @@ export class AgentConsoleSessionState {
                 this.syncDerivedInputFocus();
                 return;
             }
-            const selectedValue = this.selectedSelectMenuOption?.value;
+            // Async workspace suggestions append after the first render; keeping
+            // the previous value then parked the highlight on a tool mention
+            // (`@tim` + Enter submitted `@time` instead of inserting the file).
+            const selectedValue = this.selectMenuTouched ? this.selectedSelectMenuOption?.value : undefined;
             const selectedIndex = Math.max(0, options.findIndex(option => option.value === selectedValue));
             this.selectMenu = {
                 title: AGENT_CONSOLE_SUGGESTIONS_TITLE,
