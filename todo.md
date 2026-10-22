@@ -1166,3 +1166,19 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 根因：断言依赖测试类帧出现在错误栈里，而捕获到的栈正好 **10 帧**（V8 默认 `Error.stackTraceLimit = 10`：`runStreamingTurn → AsyncGenerator.next → streamTurn → streamTurn.next → streamPayload → streamPayload.next → streamHandler → processTicksAndRejections → runNextTicks → processTimers`），帧预算被异步 RPC 帧占满，测试帧被截断。
 - 修复（测试侧）：`streamTurn()` 调用前后临时把 `Error.stackTraceLimit` 提升到 50，再恢复；断言意图（调用方帧被保留）不变。
 - 验证：该 spec 连续 3 次 4 passing；agent-gateway **324 passing** ×2；随后统一门禁 **27/27 PASS**。
+
+## 2026-10-22 发现：默认审批规则实际不生效（需产品决策，未改）
+- 探针证据（`new DefaultApprovalStrategy(DEFAULT_APPROVAL_REQUIRED_RULES)`）：
+  ```
+  terminal          | category: sandbox   | requiresApproval: false   ← 规则 'shell.exec' 不生效
+  write_file        | category: undefined | requiresApproval: false   ← 'fs.write' 无对应分类
+  edit_file         | category: undefined | requiresApproval: false
+  delete_file       | category: undefined | requiresApproval: false
+  playwright_browser| category: network   | requiresApproval: true    ← 规则名恰好等于工具名
+  ```
+- 根因：`DefaultApprovalStrategy.requires` 把规则字符串直接与**工具名**比较，而默认规则是**分类标签**（`shell.exec`/`fs.write`）；`classifyApprovalCategory` 能把 `shell.exec` 判为 `sandbox`，但策略没用它；且没有 `fs` 分类，写/删文件永远不要求审批。
+- 影响：真实任务里 `terminal` 与文件写入**全部无审批直接执行**，与 `DEFAULT_APPROVAL_REQUIRED_RULES` 的文档意图相反（安全相关）。
+- 尝试过修复（已回退）：① `requires` 增加按分类匹配；② 新增 `fs` 分类（write/edit/apply_patch/delete/move/copy/mkdir）；③ 允许显式空数组关闭审批。修复后 agent 套件 **7 个既有用例失败**（plan-mode、verification-gate、verify-command、tool-repeat-cache、trust gate 等），因为它们假定写工具无需审批 —— 属产品级行为变更，需要确认：
+  - 方案 A（推荐，需同步改测试并验证真实 TUI）：默认启用审批 + 给测试注入自动审批；同时提供 `policy.approval.requireApproval: []` 退出。
+  - 方案 B：只在 **harness/profile** 里启用（保持默认无审批），把文档改为「需在 profile 配置」。
+  - 方案 C：保持现状，仅记录。
