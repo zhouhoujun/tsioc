@@ -231,6 +231,18 @@ export const agentUiChinese: TranslationBundle = {
             },
             command: {
                 group: { core: '核心', session: '会话', display: '显示', input: '输入', review: '审查', hooks: '钩子', delegation: '委托', system: '系统' },
+                sub: {
+                    'approve.retry': '重试最近一次被自动审查拒绝的操作（一次）',
+                    'delegation.tree': '委托树 [sessionId] [status] [depth]',
+                    'delegation.lineage': '委托血缘 [sessionId]',
+                    'delegation.mode': '委托模式 [disabled|explicit|proactive|default]',
+                    'quality.trend': '质量趋势 [provider] [bucketSize] [maxBuckets]',
+                    'compactions.trend': '压缩趋势 [sessionId] [bucketSize] [maxBuckets]',
+                    'diagnostics.list': '轮次诊断记录 [sessionId]',
+                    'diagnostics.trend': '轮次诊断趋势 [sessionId] [bucketSize] [maxBuckets]',
+                    'harness.audit': '失败模式审计 [sessionId]',
+                    'harness.profile': '治理 profile 列表/当前/差异'
+                },
                 desc: {
                     'help': '查看命令帮助（按分类分组）',
                     'status': '查看会话状态',

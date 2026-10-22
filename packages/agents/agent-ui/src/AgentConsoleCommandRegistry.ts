@@ -448,7 +448,7 @@ export function buildAgentConsoleHelpOptions(
     describe?: (key: string, fallback: string) => string
 ): AgentConsoleCommandHelpOption[] {
     const options: AgentConsoleCommandHelpOption[] = [];
-    const localize = (name: string, fallback: string) => describe ? describe(`agent.command.desc.${name.replace(/^\//, '')}`, fallback) : fallback;
+    const localize = (name: string, fallback: string, kind: 'desc' | 'sub' = 'desc') => describe ? describe(`agent.command.${kind}.${name.replace(/^\//, '')}`, fallback) : fallback;
     AGENT_CONSOLE_COMMAND_GROUP_ORDER.forEach(group => {
         AGENT_CONSOLE_COMMAND_DEFINITIONS
             .filter(def => def.group === group)
@@ -463,7 +463,7 @@ export function buildAgentConsoleHelpOptions(
                     options.push({
                         label: value,
                         value,
-                        description: sub.description
+                        description: localize(`${def.name.slice(1)}.${sub.sub}`, sub.description, 'sub')
                     });
                 });
             });

@@ -1258,3 +1258,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - `/approve`、`/quality`、`/compactions`、`/diagnostics`、`/exit` 的定义是多行写法（`name` 与 `description` 分行），首轮正则未覆盖 → 已补齐；现 **92 条定义全部有中文描述**。
 - 真实 TUI（zh）：`/diagnostics → [委托] 轮次诊断 [sessionId]`；agent-ui **1584 passing**。
 - 备注：子命令（如 `/diagnostics list|trend`）的 `sub.description` 仍为英文，属下一批。
+
+### 命令子描述本地化（10 条）
+- `/help` 的子命令行（`/diagnostics list|trend`、`/delegation tree|lineage|mode`、`/quality trend`、`/compactions trend`、`/harness audit|profile`、`/approve retry`）此前仍为英文。
+- 机制：`buildAgentConsoleHelpOptions` 的子命令描述走同一 describe 钩子（`agent.command.sub.<parent>.<sub>`）；zh 包补 10 条。
+- 回归：`p413` 增至 14 条（`/diagnostics trend` → `轮次诊断趋势`）。
+- agent-ui **1585 passing**；门禁 27/27。

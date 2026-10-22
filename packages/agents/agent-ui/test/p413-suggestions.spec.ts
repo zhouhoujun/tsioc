@@ -210,3 +210,15 @@ export class CommandDescriptionLocaleTest {
         expect(help.description).toEqual('查看命令帮助（按分类分组）');
     }
 }
+
+/** Subcommand rows in /help follow the same describe hook. */
+@Suite('localized subcommand descriptions')
+export class SubcommandDescriptionLocaleTest {
+    @Test('/help localizes subcommand rows')
+    async localizedSubcommands() {
+        const { buildAgentConsoleHelpOptions } = require('../src');
+        const options = buildAgentConsoleHelpOptions((key: string, fallback: string) => key === 'agent.command.sub.diagnostics.trend' ? '轮次诊断趋势' : fallback);
+        const trend = options.find((option: any) => option.value === '/diagnostics trend');
+        expect(trend.description).toEqual('轮次诊断趋势');
+    }
+}
