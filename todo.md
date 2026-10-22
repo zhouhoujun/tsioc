@@ -1270,3 +1270,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   1. **自写 SWC `.ts` loader 替代 ts-node**（期望省掉 `typescript` 的 ~400–570ms 加载）：进程内 A/B（含编译缓存热态，各 5 次）中位数 **2069ms vs ts-node 1634ms** —— 反而更慢（inline source map / setSourceMapsEnabled 等开销）。**已回退**，并把结论写进 `bin/tsdi-agent.js` 注释，避免再次尝试。
   2. **惰性加载 typeorm 的 `cli-highlight`**（它静态拉起全部 highlight.js，仅 SQL 日志高亮用）：惰性代理确实让 `require.cache` 中 highlight.js 为 0 条，但整图加载时间中位数 **2088ms vs 2039ms**，无收益。**已回退**。
 - 结论：剩余启动时间不是 transpile/单个依赖造成的，而是**约 1500 个模块的读取与求值**；进一步优化只能靠打包/预编译（独立工程，需评估 dist 与源码一致性问题），不再做零散微优化。
+
+## 2026-10-22 门禁计时抖动治理：失败前自动重测一次（不放宽阈值）
+- 背景：`gate-regression` 的 `elapsedMs` 是 5s 绝对容差，宿主负载下会误报（曾出现 `dom.cjk-long-history +16887ms`、`tui.cjk-long-history +7020ms`，单独重跑均正常）。
+- 方案：**保留严格阈值**，仅在 `run_gate_regression` 首次判定失败时，按需重跑 `run-dom-gate.ts` / `run-tui-gate.ts` 重新采样，再用同一 baseline 与阈值复核一次；通过时标注 `(passed on re-measure)`，仍失败才判 FAIL。
+- 验证（真实运行）：`bash scripts/agents-gate.sh dom-gate tui-gate gate-regression` 首次测量确实超阈值（当前宿主负载），自动重测后 **PASS**（`[GATE-RETRY] … [GATE-PASS] … (passed on re-measure)`），5/5。
+- 说明：重测只在失败时触发（正常路径零额外开销），且阈值未放宽，真实回归仍会失败。

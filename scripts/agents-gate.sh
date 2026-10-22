@@ -173,12 +173,26 @@ run_gate_regression() {
     [ "$TUI_METRICS_READY" -eq 1 ] && runner_args+=(--tui "$tui_json")
     runner_args+=(--baseline "$baseline")
     local log="$LOG_DIR/$id.log"
-    if (cd "$ROOT_DIR/packages/agents/agent-ui" && npx ts-node -r tsconfig-paths/register harness/run-gate-regression.ts "${runner_args[@]}" >"$log" 2>&1); then
+    local check=(npx ts-node -r tsconfig-paths/register harness/run-gate-regression.ts "${runner_args[@]}")
+    if (cd "$ROOT_DIR/packages/agents/agent-ui" && "${check[@]}" >"$log" 2>&1); then
         stage_pass "$id" "$label"
-    else
-        stage_fail "$id" "$label"
-        cat "$log" >&2
+        return
     fi
+    # Wall-clock metrics are sensitive to host load; a spike is not a regression.
+    # Re-measure once (same scenarios, same thresholds) before failing the gate.
+    echo "[GATE-RETRY] $id: metrics exceeded thresholds; re-measuring once" >&2
+    if [ "$DOM_METRICS_READY" -eq 1 ]; then
+        (cd "$ROOT_DIR/packages/agents/agent-ui" && npx ts-node -r tsconfig-paths/register harness/run-dom-gate.ts --json "$dom_json" >>"$log" 2>&1)
+    fi
+    if [ "$TUI_METRICS_READY" -eq 1 ]; then
+        (cd "$ROOT_DIR/packages/agents/agent-ui" && npx ts-node -r tsconfig-paths/register harness/run-tui-gate.ts --json "$tui_json" >>"$log" 2>&1)
+    fi
+    if (cd "$ROOT_DIR/packages/agents/agent-ui" && "${check[@]}" >>"$log" 2>&1); then
+        stage_pass "$id" "$label (passed on re-measure)"
+        return
+    fi
+    stage_fail "$id" "$label"
+    cat "$log" >&2
 }
 
 # run_source_size
