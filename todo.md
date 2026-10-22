@@ -1236,3 +1236,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 工作区提及排除 agent 自身存储目录 `.tsdi-agent`（此前 `@ca` 会把 `.tsdi-agent/tool-output/*.txt` spill 文件当候选）；顶层 `readDirectoryEntries` 现在也过滤忽略目录（此前只有嵌套扫描过滤）。
 - 回归：`p413` 增至 11 条（裸 `@` 不含 `@canvas`、`@ca` 含、`.tsdi-agent` 被排除且 `@src/` 保留）；真实 TUI：`@` 为 4 伪提及 + 4 技能 + 目录；`@ca` 为真实工程文件 + `@calculator`。
 - agent-ui **1582 passing**。
+
+## 2026-10-22 附加真实路径复验：`/fork`、`/side`、`spawn_agent` 委托、排队
+- `/fork`：通知 `Forked session fork-…`，DB 新会话 `sessionRole=branch`，4 条消息复制成功。
+- `/side`：通知 `Opened side session fork-…`，DB 同样为 `branch` 会话。
+- `spawn_agent`：
+  - 失败路径（provider 502）：行 `✕ Tool · Spawn sub-agent failed: Model request failed with 502 … · retry (74s)`，主 agent 明确说明没有拿到子 agent 结果并给出替代方案。
+  - 成功路径：行 `✓ Tool · Spawn sub-agent completed · 只回复 42 · 42 · session=spawn-… · 1 turn · 0 tools (5s)`，子 agent 回复以缩进行展示。
+- 排队（运行中 Enter）：`Queued prompt (1).` + `· 1 queued`，当前 turn 不取消，完成后自动开新 turn。
+- 审批允许/始终允许/拒绝/超时：见上一节，均已验证。
+- 结论：本轮未发现新的代码缺陷（除已修复项）；`/fork`、`/side`、委托、排队、审批四条路径行为符合文档。
