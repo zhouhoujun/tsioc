@@ -1326,3 +1326,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 真实 TUI 验证（修复后，含重构后复测）：面板只出现 `$ {"command":"echo …"}` + `Reason: Tool "terminal" requires approval.`，无退化重绘，审批 id 唯一，命令正常执行。
 - 体量 ratchet：审批 chunk 构造抽到 `agent-gateway/src/app-rpc/approval-chunk.ts`，`AppRpcServer.ts` **3684 → 3647** 行，baseline 同步下调。
 - 回归：agent-gateway **326**、agent-ui **1589**、agent 1036（前一轮）全绿；`tsc` 两包 0。
+
+## 2026-10-22 打包产物启动告警清理：punycode 弃用警告
+- 现象（仅打包路径）：TUI / `doctor` 启动时 stderr 出现 `DeprecationWarning: The punycode module is deprecated`，会出现在 TUI 首屏上方。
+- 根因：bundle 内联的 `tr46`/`whatwg-url` 使用内置 `punycode`；源码路径下 `cross-fetch` 走 global fetch 分支不会加载该链，所以只有打包后暴露。
+- 修复：构建脚本加 `alias: { punycode: 'punycode/' }`，改用仓库内 userland `punycode@2.3.1`（bundle 中已无 `require("punycode")`）。
+- 验证：`doctor` stderr 为空；`--help` 与源码路径逐字一致；真实 TUI 捕获无 DEP0040；agent-cli **106 passing**。

@@ -104,6 +104,10 @@ const result = await build({
     target: 'node18',
     tsconfig: path.join(packageRoot, 'tsconfig.json'),
     external: EXTERNALS,
+    // `tr46`/`whatwg-url` require the deprecated built-in `punycode`, which
+    // prints a stderr DeprecationWarning on the first URL parse (visible in the
+    // TUI). Resolve to the userland implementation bundled with the tree.
+    alias: { punycode: 'punycode/' },
     sourcemap: 'external',
     metafile: true,
     logLevel: 'warning',
