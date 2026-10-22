@@ -1,5 +1,4 @@
 {
-  "packages/agents/agent-cli/src/cli.ts": 602,
   "packages/agents/agent-cli/src/config.ts": 564,
   "packages/agents/agent-gateway/src/api/SessionHandler.ts": 701,
   "packages/agents/agent-gateway/src/app-rpc/AppRpcServer.ts": 3684,

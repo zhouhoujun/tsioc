@@ -41,6 +41,25 @@ Running `tsdi-agent` with no arguments defaults to:
 tsdi-agent chat
 ```
 
+### Faster startup (pre-bundled CLI)
+
+A warm start still loads ~2,100 modules (`typeorm`, `rxjs`, `highlight.js`, and
+the workspace sources), which dominates startup. Build the bundle once and the
+CLI loads a single pre-compiled file instead:
+
+```shell
+npm run bundle     # run in the @tsdi/agent-cli package directory
+```
+
+Measured on the same machine: first TUI paint ~2.0s → ~0.8s, `--version`
+3.2–5.7s → 1.7–2.2s. The bundle is used only while every source file it was
+built from is unchanged; editing a source makes the CLI fall back to the
+TypeScript sources automatically, so stale code never runs.
+
+- `TSDI_AGENT_BUNDLE=0` — always run from sources
+- `TSDI_AGENT_BUNDLE=1` — require the bundle (fails with a hint when stale)
+- `TSDI_AGENT_BUNDLE_LOG=1` — print which path was chosen
+
 ## Model setup
 
 The CLI reads the default workspace config before executing commands:

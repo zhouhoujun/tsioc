@@ -5,6 +5,7 @@ node_modules
 lib
 dist
 bundles
+packages/agents/agent-cli/bundle
 es2015
 es2017
 es2015

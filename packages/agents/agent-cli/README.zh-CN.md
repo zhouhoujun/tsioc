@@ -41,6 +41,20 @@ tsdi-agent
 tsdi-agent chat
 ```
 
+### 更快的启动（预打包 CLI）
+
+冷/热启动仍要加载约 2100 个模块（`typeorm`、`rxjs`、`highlight.js` 以及工作区源码），这是启动耗时的主要来源。构建一次打包产物后，CLI 改为加载单个预编译文件：
+
+```shell
+npm run bundle     # 在 @tsdi/agent-cli 包目录执行
+```
+
+同机实测：TUI 首次出画面约 2.0s → 约 0.8s，`--version` 3.2–5.7s → 1.7–2.2s。只有当打包时的每个源文件都未变化时才会使用打包产物；修改源码后 CLI 会自动回退到 TypeScript 源码，因此不会运行旧代码。
+
+- `TSDI_AGENT_BUNDLE=0` — 始终使用源码
+- `TSDI_AGENT_BUNDLE=1` — 强制要求打包产物（过期时直接报错提示）
+- `TSDI_AGENT_BUNDLE_LOG=1` — 打印实际选择的是哪条路径
+
 ## 模型配置
 
 CLI 在执行命令前会读取默认工作区配置：

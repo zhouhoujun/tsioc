@@ -586,11 +586,6 @@ function sortProjectSessions<T extends { id: string; updatedAt?: number }>(sessi
     });
 }
 
-if (require.main === module) {
-    const argv = normalizeCliArgv(process.argv);
-    void createAgentCli().parseAsync(argv);
-}
-
 export {
     createAgentCli,
     normalizeCliArgv,

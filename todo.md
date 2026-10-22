@@ -1284,3 +1284,19 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **修复后**（错开 2 秒启动）：两进程都成功，`sA|50` 与 `sB|50` 都在，`integrity_check=ok`。
 - **仍存在的固有限制**（未改，属模型层面）：**同时**启动时两个进程各自持有整库快照、整文件重写 → **丢失更新**（实测 `sB` 50 条只留 32 条，A 的 50 条保留），但 DB 不损坏。sql.js 是单写者模型，真正的多进程并发写需要换成原生 SQLite/服务端。
 - 建议（待确认）：启动时检测 `<db>.lock`（pid 存活判定）并**警告**「另一个 agent 正在使用该数据库，写入可能互相覆盖」；或直接拒绝写。未实现以免误伤（陈旧锁、只读使用等场景）。
+
+## 2026-10-22 CLI 启动优化：预打包（SWC + esbuild）并将「模块读取」从热路径移除
+- 现状：热启动仍加载 ~2100 个模块（工作区源码 1020、typeorm 378、rxjs 226、highlight.js 193…），`--version` 3.2–5.7s，TUI 首屏 ~2.0s。
+- 方案：`packages/agents/agent-cli/scripts/build-bundle.mjs` 用 **SWC**（`legacyDecorator` + `decoratorMetadata`，与运行时 `ts-node/swc` 一致）逐文件转换，再用 **esbuild** 打成 `bundle/tsdi-agent.cjs`；`bin/tsdi-agent.js` 优先加载打包产物。
+- 关键点：
+  - **必须保留装饰器元数据**（`design:paramtypes` 驱动 IoC），esbuild 自身不支持，所以先用 SWC 转换再打包。
+  - 外部化：`sql.js`（wasm 资源）、`ssh2`/`cpu-features`、常见数据库驱动、`@swc/core`/`typescript`/`ts-node`、`jsdom`（只有 HTML renderer 懒加载）。`jsdom` 若被打进包会把整个浏览器 DOM 实现塞进 TUI 包（实测 3314 → 2175 inputs、25.1 → 13.5 MiB）。
+  - 入口统一到 `src/cli-entry.ts`（源码与打包共用），删除 `src/cli.ts` 里重复的 `require.main` 分支（打包后 `require.main === module` 会二次执行），`cli.ts` 降到 596 行并从 source-size baseline 移除。
+- 新鲜度契约（`bin/bundle-state.js`）：manifest 记录每个输入文件的 `(mtimeMs, size)`；任一文件变化/缺失、manifest 版本不符或产物缺失 → **回退源码路径**（绝不运行旧代码）。`TSDI_AGENT_BUNDLE=0` 强制源码、`=1` 强制打包（过期即报错）、`TSDI_AGENT_BUNDLE_LOG=1` 打印选择。
+- 实测（真实 PTY，isolated root `/tmp/opencode/root-sim`）：
+  - 真实 TUI 首屏：**bundle 0.79–0.81s vs source 2.02–2.10s**（各 3 次）。
+  - `--version`：bundle 1.7–2.2s vs source 3.2–5.7s。
+  - 端到端：新会话提问 → 正常回答（`1+1 等于 2。`）；shell 工具 + 审批面板（`A` 会话级允许）→ 输出正确；`--session chat…` 恢复出用户消息/工具事件/最终回答。
+  - 模块加载：8454 次 load-call / 2184 文件 → 375 次 / 32 文件。
+- 测试：`bundle-state.spec.ts` 7 个用例（fresh/stale/touch/缺失/版本/输入为空/env 三态）；`cli-bundle-smoke.spec.ts` 3 个用例（真实构建后 `--version`、`--help` 与源码路径逐字一致、改源码后自动回退并重建恢复 fresh）。agent-cli **106 passing**（原 96）。
+- 未做/边界：未加 `prepack`（发布包默认仍走源码路径，需要时再决定是否随包分发产物）；打包不影响 `npm test`/`tsc`。
