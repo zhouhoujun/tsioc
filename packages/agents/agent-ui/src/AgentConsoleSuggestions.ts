@@ -121,7 +121,10 @@ export function resolveAgentConsoleInputSuggestions(
         };
         const workspace = workspaceSuggestions.map(localizeKind);
         const pseudo = mentions.filter(item => AGENT_CONSOLE_PSEUDO_MENTIONS.includes(item.value));
-        const toolMentions = mentions.filter(item => !AGENT_CONSOLE_PSEUDO_MENTIONS.includes(item.value));
+        const allToolMentions = mentions.filter(item => !AGENT_CONSOLE_PSEUDO_MENTIONS.includes(item.value));
+        // Bare `@` lists contexts (pseudo + workspace); the ~64 tool mentions
+        // only appear once the query is specific enough to be intentional.
+        const toolMentions = active.token.length >= 3 ? allToolMentions : [];
         // Files/directories first: `@tim` + Enter must insert the file, not
         // submit the `@time` tool mention.
         const options = active.token === '@'

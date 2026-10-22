@@ -1230,3 +1230,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 真实 TUI：`/nosuch` 不再打开菜单，Enter 输出 `Unknown command: /nosuch` 与 `$ /nosuch failed: …` 行。
 - 附带只读复验：`check /tmp`（文本中路径）不触发命令菜单；`mail me a@b`（词中 @）不触发提及菜单；`@zzz`（无匹配）不弹菜单但可正常发送；`/model`（needsArgs）Enter 只补全不执行。
 - agent-ui **1581 passing**。
+
+### '@' 菜单噪音治理（追加）
+- 裸 `@` 不再列出全部 64 个工具项（改为伪提及 + 技能 + 工作区目录）；工具提及仅在输入 ≥2 字符（`@ca`）时参与匹配。
+- 工作区提及排除 agent 自身存储目录 `.tsdi-agent`（此前 `@ca` 会把 `.tsdi-agent/tool-output/*.txt` spill 文件当候选）；顶层 `readDirectoryEntries` 现在也过滤忽略目录（此前只有嵌套扫描过滤）。
+- 回归：`p413` 增至 11 条（裸 `@` 不含 `@canvas`、`@ca` 含、`.tsdi-agent` 被排除且 `@src/` 保留）；真实 TUI：`@` 为 4 伪提及 + 4 技能 + 目录；`@ca` 为真实工程文件 + `@calculator`。
+- agent-ui **1582 passing**。

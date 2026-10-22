@@ -59,13 +59,15 @@ export class SuggestionMenuTest {
         expect(mention.find(option => option.value === '@timer-system/')?.description).toEqual('文件夹');
     }
 
-    @Test('pseudo mentions stay first and tools remain available')
+    @Test('pseudo mentions stay first and tools appear once the query is specific')
     async pseudoMentionsFirst() {
         const tools: any[] = [{ name: 'canvas' }];
-        const options = resolveAgentConsoleInputSuggestions('@', 1, [], tools, []);
-        const values = options.map(option => option.value);
-        expect(values.slice(0, 4)).toEqual(['@workspace', '@model', '@tools', '@session']);
-        expect(values).toContain('@canvas');
+        const bare = resolveAgentConsoleInputSuggestions('@', 1, [], tools, []).map(option => option.value);
+        expect(bare.slice(0, 4)).toEqual(['@workspace', '@model', '@tools', '@session']);
+        // 64 tool mentions used to crowd the first screen of a bare `@`.
+        expect(bare).not.toContain('@canvas');
+        const typed = resolveAgentConsoleInputSuggestions('@ca', 3, [], tools, []).map(option => option.value);
+        expect(typed).toContain('@canvas');
         expect(getAgentConsoleMentionCandidates(tools)).toContain('@canvas');
     }
 }
@@ -158,5 +160,30 @@ export class UnknownCommandSuggestionTest {
         expect(result.handled).toEqual(true);
         expect(result.action).toEqual('submit');
         expect(state.input).toEqual('/nosuch');
+    }
+}
+
+/** The agent's own storage directory must not be offered as a mention. */
+@Suite('workspace mentions skip the agent storage directory')
+export class WorkspaceMentionIgnoreTest {
+    @Test('.tsdi-agent is excluded while real folders stay')
+    async ignoresAgentStorage() {
+        const fs = require('fs');
+        const os = require('os');
+        const path = require('path');
+        const { AgentConsoleWorkspaceMentionsProvider } = require('../src');
+        const { TestFileAdapter } = require('./_helpers');
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ui-mention-ignore-'));
+        try {
+            fs.mkdirSync(path.join(workspace, '.tsdi-agent', 'tool-output'), { recursive: true });
+            fs.writeFileSync(path.join(workspace, '.tsdi-agent', 'tool-output', 'call_00_abc.txt'), 'spill\n', 'utf8');
+            fs.mkdirSync(path.join(workspace, 'src'), { recursive: true });
+            const provider = new AgentConsoleWorkspaceMentionsProvider(new TestFileAdapter());
+            const values = (await provider.resolveSuggestions(workspace, '@', 12, [])).map((item: any) => item.value);
+            expect(values.some((value: string) => value.startsWith('@.tsdi-agent'))).toEqual(false);
+            expect(values).toContain('@src/');
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
     }
 }

@@ -25,6 +25,9 @@ const WORKSPACE_SCAN_LIMIT = 2000;
 const WORKSPACE_SCAN_DEPTH = 6;
 const WORKSPACE_IGNORED_DIRECTORIES = new Set([
     '.git',
+    // The agent's own storage/spill directory (tool output, cache) must never
+    // be offered as a workspace mention.
+    '.tsdi-agent',
     'node_modules',
     'dist',
     'build',
@@ -197,6 +200,7 @@ export class AgentConsoleWorkspaceMentionsProvider implements AgentConsoleWorksp
         }
         const entries = await this.fileAdapter.list(directoryPath);
         return entries
+            .filter(entry => entry.kind !== 'directory' || !WORKSPACE_IGNORED_DIRECTORIES.has(entry.name))
             .slice()
             .sort((left, right) => {
                 if ((left.kind === 'directory') !== (right.kind === 'directory')) {
