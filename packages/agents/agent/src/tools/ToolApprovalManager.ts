@@ -234,8 +234,10 @@ export class ToolApprovalManager extends ApprovalManager {
         const autoDeny = this.options?.autoDeny === true
             || this.strategy?.autoDenies?.(toolName, input) === true;
         if (autoDeny) {
-            this.app.publishEvent(new AgentApprovalRequestedEvent(this, this.toRequestView(request)))
-                .catch(() => {});
+            // No human is asked: announce only the outcome. Publishing
+            // `requested` here made hosts render an approval prompt/status
+            // entry (and remote clients an unanswerable request) for a call
+            // that was already resolved.
             this.app.publishEvent(new AgentApprovalCompletedEvent(this, this.toRequestRef(request), false))
                 .catch(() => {});
             await this.recordApprovalAudit(request, ApprovalDecision.DENIED);
@@ -243,8 +245,9 @@ export class ToolApprovalManager extends ApprovalManager {
         }
 
         if (this.options?.autoApprove === true) {
-            this.app.publishEvent(new AgentApprovalRequestedEvent(this, this.toRequestView(request)))
-                .catch(() => {});
+            // Session-wide allow (`A`): the call is resolved here, so it must
+            // not surface as a pending approval (the status line used to show
+            // "Approval required: <tool>" for every subsequent call).
             this.app.publishEvent(new AgentApprovalCompletedEvent(this, this.toRequestRef(request), true))
                 .catch(() => {});
             await this.recordApprovalAudit(request, ApprovalDecision.APPROVED, 'auto-approved by session flag');
@@ -322,8 +325,8 @@ export class ToolApprovalManager extends ApprovalManager {
         }
         const decision = suggestion === 'approve' ? ApprovalDecision.APPROVED : ApprovalDecision.DENIED;
         reviewReason = reviewReason ?? (suggestion === 'approve' ? 'auto-approved by review' : 'auto-denied by review');
-        this.app.publishEvent(new AgentApprovalRequestedEvent(this, this.toRequestView(request)))
-            .catch(() => {});
+        // The reviewer resolved the request without a human; only the outcome
+        // is an event (see the autoApprove/autoDeny paths above).
         this.app.publishEvent(new AgentApprovalCompletedEvent(this, this.toRequestRef(request), decision === ApprovalDecision.APPROVED))
             .catch(() => {});
         await this.recordApprovalAudit(request, decision, reviewReason);

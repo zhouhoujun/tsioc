@@ -1300,3 +1300,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 模块加载：8454 次 load-call / 2184 文件 → 375 次 / 32 文件。
 - 测试：`bundle-state.spec.ts` 7 个用例（fresh/stale/touch/缺失/版本/输入为空/env 三态）；`cli-bundle-smoke.spec.ts` 3 个用例（真实构建后 `--version`、`--help` 与源码路径逐字一致、改源码后自动回退并重建恢复 fresh）。agent-cli **106 passing**（原 96）。
 - 未做/边界：未加 `prepack`（发布包默认仍走源码路径，需要时再决定是否随包分发产物）；打包不影响 `npm test`/`tsc`。
+
+## 2026-10-22 审批事件根因修复：自动批准的请求不再对外宣告「需要审批」
+- 真实复现（bundle 路径，多工具任务）：按 `A` 选择「会话内始终允许」后，后续 terminal 调用仍反复出现状态行 `Approval required: terminal (<id>)`（每个 gated 调用一个新 id：`7b90e1fe`/`4c504744`/`9ad9208e`），但面板并不会等待用户 —— 看起来像被卡住，实际已自动批准。
+- 根因：`ToolApprovalManager.checkApproval` 的**三条自解析路径**（`autoDeny`、`autoApprove`、A2 `runAutoReview`）都先发 `AgentApprovalRequestedEvent` 再发 `Completed`。`requested` 的语义是「需要人回答」，于是宿主把已解析的请求当作 pending：状态行出现审批提示、`requestPendingApproval` 触发关注、远程端还会弹出一个无人能回答的请求（gateway `approval_requested`）。
+- 修复：自解析路径**只发结果事件**（`AgentApprovalCompletedEvent(approved)` / 失败），不再发 `requested`；审计记录（`recordApprovalAudit`，含 `auto-approved by session flag` / reviewer 原因）保持不变。真正需要人的 gated 调用仍先发 `requested` 再等待。
+- 测试（RED→GREEN）：新增 `agent/test/approval-events.spec.ts` 5 例 —— autoApprove/autoDeny/autoReview 三路 `requested` 计数必须为 0 且 `completed` 计数为 1、审计字段正确；人工路径仍 `requested=1`、批准后 `completed=1`；未命中策略的调用零事件。修复前 3 例失败（`Expected 0, Received 1`），修复后 5 passing。
+- 真实 TUI 验证（同一 bundle 构建，3 条 gated 命令）：修复前 3 个不同审批 id；修复后**只有 1 个 id**（同一 id 的两次绘制是面板重绘），`ALPHA`/`BETA`/`GAMMA` 全部执行成功，`Always allow enabled for this session.` 保持。
+- 回归：agent **1036**、agent-gateway **324**、agent-ui **1585** 全绿。
+- 已知遗留（本次未改，纯外观）：人工审批那一次在时间线里仍会渲染一组 `$ Approval required for …` / `Reason: …` 行（与面板内容重复），不影响功能；如需要可把该行降级为事件摘要。
