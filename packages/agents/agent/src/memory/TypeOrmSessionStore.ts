@@ -6,7 +6,7 @@ import { AgentMessage, normalizeAgentMessageParts } from '../runtime/AgentMessag
 import { AgentUsageRecord } from '../runtime/UsageSummary';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentMessageEntity, AgentSessionEntity, AgentSessionSnapshotEntity } from './entities';
-import { readMessageUsageRecords, readOwnerPrincipalId, readSessionFacts } from './TypeOrmSessionReads';
+import { readMessageUsageRecords, readOwnerPrincipalId, readSessionFacts, readToolPayload } from './TypeOrmSessionReads';
 import { normalizeAgentWorkspaceIdentity } from '../AgentWorkspacePath';
 
 @Injectable()
@@ -27,6 +27,10 @@ export class TypeOrmSessionStore extends SessionStore {
 
     getOwnerPrincipalId(sessionId: string): Promise<string | undefined> {
         return readOwnerPrincipalId(this.adapter, sessionId);
+    }
+
+    getToolPayload(sessionId: string, toolCallId: string): Promise<string | undefined> {
+        return readToolPayload(this.adapter, sessionId, toolCallId);
     }
 
     async get(sessionId: string): Promise<AgentState> {

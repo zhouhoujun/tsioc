@@ -1947,6 +1947,13 @@ export class AgentConsoleSessionState {
             || status === 'blocked';
     }
 
+    /** Host hook: fetch one tool call's raw payload on demand (optional). */
+    toolPayloadLoader?: (toolCallId: string) => Promise<string | undefined>;
+
+    /** Raw payload shown in the event inspector (empty until the host answers). */
+    timelineEventOutput = '';
+    protected timelineEventOutputLoading = false;
+
     openTimelineEventInspector(eventMessage?: AgentMessage): void {
         const target = eventMessage || this.selectedMessage;
         if (!target || !this.isTimelineEventMessage(target)) {
@@ -1956,6 +1963,25 @@ export class AgentConsoleSessionState {
         this.timelineEventInspectorOpen = true;
         this.timelineEventDetailScroll = 0;
         this.timelineEventDetailColumnScroll = 0;
+        this.timelineEventOutput = '';
+        this.timelineEventOutputLoading = false;
+        const toolCallId = String(target.metadata?.timeline?.toolCallId || target.metadata?.receipt?.toolCallId || '').trim();
+        if (toolCallId && this.toolPayloadLoader) {
+            this.timelineEventOutputLoading = true;
+            void this.toolPayloadLoader(toolCallId)
+                .then(text => {
+                    if (this.selectedTimelineEventId !== target.id) {
+                        return;
+                    }
+                    this.timelineEventOutput = String(text || '');
+                })
+                .catch(() => undefined)
+                .then(() => {
+                    if (this.selectedTimelineEventId === target.id) {
+                        this.timelineEventOutputLoading = false;
+                    }
+                });
+        }
         this.syncDerivedInputFocus();
     }
 
@@ -1999,6 +2025,14 @@ export class AgentConsoleSessionState {
             content.split('\n').forEach(line => lines.push(line));
         } else {
             lines.push('(no content)');
+        }
+        if (this.timelineEventOutput) {
+            lines.push('');
+            lines.push(`── ${this.translateLabel('agent.timeline.rawOutput', undefined, 'Raw output')} ──────────────────────────────`);
+            String(this.timelineEventOutput).split('\n').forEach(line => lines.push(line));
+        } else if (this.timelineEventOutputLoading) {
+            lines.push('');
+            lines.push(this.translateLabel('agent.timeline.loadingOutput', undefined, 'Loading raw output…'));
         }
         lines.push('');
         lines.push(`Status:     ${resolveHumanStatusWord(status, labels)}`);

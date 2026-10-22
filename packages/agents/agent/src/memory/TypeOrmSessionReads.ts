@@ -136,3 +136,47 @@ export async function readOwnerPrincipalId(
     });
     return row?.ownerPrincipalId ?? undefined;
 }
+
+/** Raw payload for one tool call (single row; no transcript deserialization). */
+export async function readToolPayload(
+    adapter: TypeormAdapter,
+    sessionId: string,
+    toolCallId: string
+): Promise<string | undefined> {
+    const id = String(toolCallId || '').trim();
+    if (!id) {
+        return undefined;
+    }
+    const row = await adapter.getRepository(AgentMessageEntity).findOne({
+        where: { sessionId, toolCallId: id } as any,
+        order: { sequence: 'DESC' } as any
+    });
+    return row ? formatToolPayloadText(String(row.content ?? '')) : undefined;
+}
+
+/**
+ * Tool payloads are stored as JSON envelopes (`{"stdout":"…","stderr":"…"}`);
+ * the inspector should show the actual output lines, not the escaped envelope.
+ */
+export function formatToolPayloadText(raw: string): string {
+    const text = String(raw || '');
+    const trimmed = text.trim();
+    if (!trimmed.startsWith('{')) {
+        return text;
+    }
+    try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed && typeof parsed === 'object') {
+            const stdout = typeof parsed.stdout === 'string' ? parsed.stdout : '';
+            const stderr = typeof parsed.stderr === 'string' ? parsed.stderr : '';
+            const combined = [stdout, stderr].filter(part => part && part.trim().length).join('\n');
+            if (combined.trim()) {
+                return combined.replace(/\s+$/, '');
+            }
+            return JSON.stringify(parsed, null, 2);
+        }
+    } catch {
+        // not JSON — show the raw text
+    }
+    return text;
+}

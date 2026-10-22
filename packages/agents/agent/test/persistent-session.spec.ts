@@ -64,6 +64,26 @@ describe('Persistent session store', () => {
         }
     });
 
+    it('reads one tool payload by toolCallId without loading the transcript', async () => {
+        const ctx = await Application.run(PersistentSessionTestModule);
+        try {
+            const store = ctx.get(TypeOrmSessionStore) as TypeOrmSessionStore;
+            const stdout = Array.from({ length: 200 }, (_value, index) => `line ${index + 1}`).join('\n');
+            await store.append('payload-1', { id: 'u1', role: 'user', content: 'run it', createdAt: 1 });
+            await store.append('payload-1', {
+                id: 't1', role: 'tool', name: 'terminal', toolCallId: 'call-1',
+                content: JSON.stringify({ stdout, stderr: '', exitCode: 0 }), createdAt: 2
+            } as any);
+            (store as any).get = () => { throw new Error('getToolPayload must not load transcripts'); };
+            const payload = await store.getToolPayload('payload-1', 'call-1');
+            expect(payload).toContain('line 200');
+            expect(payload).not.toContain('stdout');
+            expect(await store.getToolPayload('payload-1', 'missing')).toBeUndefined();
+        } finally {
+            await ctx.close();
+        }
+    });
+
     it('reloads persisted transcript from the same store', async () => {
         const ctx = await Application.run(PersistentSessionTestModule);
         try {

@@ -1129,3 +1129,15 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
     1. 渲染层按 `toolCallId` 关联 `role='tool'` 消息：选中事件行 + `messageDetailOpen` 时把 payload（shell 取 `stdout/stderr`，其它 pretty JSON）作为详情正文，并在折叠态显示「N 行，回车展开」。（数据现成，改动集中在 `renderAgentConsoleMessageItems` + 渲染器上下文。）
     2. 在 bridge 的 `upsertToolRun` 里保留受上限约束的 `output`（例如 20k 字符），由 tool runs 面板展示。（会引入内存上限策略，需要确认保留量与是否持久化。）
   - 建议：先做方案 1（无新状态、无持久化、按 toolCallId 现取现用），再评估是否需要方案 2。
+
+## 2026-10-22 工具输出 inspector（按需读取）+ Enter 在转录导航里失效的根因
+- 背景：上一轮确认「长输出在事件行里不可达」。用户选择**按需读取**方案。
+- 实现（先红后绿，`agent-ui/test/p410-event-inspector-output.spec.ts` 6 条）：
+  1. `SessionStore.getToolPayload(sessionId, toolCallId)`（默认回退整转录），`TypeOrmSessionStore` 用单行查询（`TypeOrmSessionReads.readToolPayload`），并把 JSON 信封展开成可读文本（shell 取 `stdout/stderr`，其它 pretty JSON）。
+  2. 新 RPC `session.tool_payload`（`app-rpc/session-tool-payload.ts`，含 `ensureSessionAccess`）；分页逻辑抽到 `app-rpc/session-messages.ts` 以守住 `AppRpcServer` 体量。
+  3. `AgentConsoleSessionState`：`toolPayloadLoader` 宿主钩子 + `timelineEventOutput`；打开事件 inspector 时按 `toolCallId` 异步拉取，`── Raw output ──` 段落展示（`agent.timeline.rawOutput` / `loadingOutput` 双语）。
+  4. 组件在 `onInit` 注入 loader（走 `appRpc`），无 RPC 时安全回退空串。
+- **顺带修掉一个真实交互 bug**：TUI 里 Enter 到达 `processDecodedInput` 时是 `text="\r"`、`controlKey=undefined`，`resolveShortcutKey` 只在 `controlKey==='return'` 时映射为 `enter` → 归一化后变成 `''` 被丢弃。因此转录导航里 `enter open` 对消息详情/事件 inspector/计划/评审**全部无效**。修复：`resolveShortcutKey` 把裸 `\r`/`\n` 映射为 `enter`（`p410` 里 2 条断言，旧实现 `Expected "enter" / Received ""`）。
+- 真实 TUI 复验：PgUp → Up → Enter 打开 `── Event Inspector ──`，`── Raw output ──` 逐行显示 `line 1..40`；行摘要同时显示 `exit 0 · 40 lines`。
+- 验证：agent **1026**、agent-gateway **324**、agent-ui **1565** passing；`tsc` 0；`source-size` OK。
+- **新发现（未修，需确认）**：**重启后工具历史行消失**。事件行（`uiKind='event'`）不持久化，而 `normalizeLoadedMessages` 又会丢弃 `role='tool'` 消息，所以 resume 后只剩用户消息与最终回答；本轮 inspector 只能服务当前进程内的事件行。可选：(a) 持久化事件行（只存摘要+toolCallId，不存 payload）；(b) resume 时把 `role='tool'` 消息投影成只读摘要行并保留 toolCallId 供 inspector 按需读取（推荐，仍不重放 payload）。

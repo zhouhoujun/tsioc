@@ -1526,8 +1526,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     async onInit(): Promise<void> {
-        this.state.submitAction = this.submitActionHandler;
-        this.state.escapeAction = () => this.handleWizardEscape();
+        this.state.toolPayloadLoader = async toolCallId => { if (!this.appRpc) { return ''; } try { const res: any = await this.appRpc.request('session.tool_payload', { sessionId: this.state.sessionId, toolCallId }); return String(res?.text || ''); } catch { return ''; } };
+        this.state.submitAction = this.submitActionHandler; this.state.escapeAction = () => this.handleWizardEscape();
         this.state.questionAction = this.appRpc
             ? async input => { await this.appRpc!.request('question.answer', input); }
             : undefined;

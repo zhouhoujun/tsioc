@@ -99,6 +99,10 @@ export abstract class AgentConsoleFocusLayers {
     resolveShortcutKey(rawText: string, controlKey?: string): string {
         if (controlKey === 'return') return 'enter';
         if (controlKey) return controlKey;
+        // The terminal can deliver Enter as a bare CR/LF without a control key;
+        // trimming it to '' used to drop the key entirely (`enter open` did
+        // nothing in the transcript/message focus layers).
+        if (rawText === '\r' || rawText === '\n') return 'enter';
         const normalized = String(rawText || '').trim().toLowerCase();
         switch (normalized) {
             case 'y': return 'copy';

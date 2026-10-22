@@ -128,7 +128,9 @@ export const agentUiEnglish: TranslationBundle = {
                 warning: 'Warning · ',
                 cancelled: 'Cancelled · ',
                 system: 'System · ',
-                event: 'Event · '
+                event: 'Event · ',
+                rawOutput: 'Raw output',
+                loadingOutput: 'Loading raw output…'
             },
             approval: {
                 required: 'Approval required',
@@ -255,7 +257,9 @@ export const agentUiChinese: TranslationBundle = {
                 warning: '警告 · ',
                 cancelled: '已取消 · ',
                 system: '系统 · ',
-                event: '事件 · '
+                event: '事件 · ',
+                rawOutput: '原始输出',
+                loadingOutput: '正在读取原始输出…'
             },
             approval: {
                 required: '需要审批',

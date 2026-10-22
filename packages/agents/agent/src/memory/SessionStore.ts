@@ -297,6 +297,21 @@ export abstract class SessionStore {
     }
 
     /**
+     * Raw payload of one tool call (default: read the transcript). The console
+     * inspector asks for a single payload on demand instead of replaying tool
+     * messages into the transcript.
+     */
+    async getToolPayload(sessionId: string, toolCallId: string): Promise<string | undefined> {
+        const id = String(toolCallId || '').trim();
+        if (!id) {
+            return undefined;
+        }
+        const state = await this.get(sessionId);
+        const message = (state.messages || []).find(item => String(item?.toolCallId || '').trim() === id);
+        return message ? String(message.content ?? '') : undefined;
+    }
+
+    /**
      * Usage records recorded on assistant messages (default: full transcript
      * read). Stores that keep usage in message metadata override this with a
      * metadata-only query so a global usage digest does not load every

@@ -199,3 +199,10 @@ newline-JSON transport, allowlist gate and dynamic tool path end to end.
 | Commit | File | Root cause |
 | --- | --- | --- |
 | (this commit) | `agent/src/tools/ToolSummary.ts` | A 200-line stdout summarized as `exit 0 · line 1`, which reads as a single-line output. Outputs longer than 5 lines now summarize their volume (`exit 0 · 200 lines`); short outputs keep the first line. |
+
+## 2026-10-22 tool output inspector
+
+| Commit | File | Root cause |
+| --- | --- | --- |
+| (this commit) | `agent/src/memory/SessionStore.ts`, `TypeOrmSessionStore.ts`, `TypeOrmSessionReads.ts`, `agent-gateway/src/app-rpc/session-tool-payload.ts`, `session-messages.ts`, `agent-ui/src/AgentConsoleSessionState.ts`, `AgentConsoleComponent.ts` | Long tool output was unreachable in the TUI: event rows only carry a one-line summary and loaded transcripts drop `role='tool'` payload messages. The event inspector now fetches one payload by `toolCallId` via `session.tool_payload` (single-row query, JSON envelope flattened to readable output) and renders it under `Raw output`. |
+| (this commit) | `agent-ui/src/AgentConsoleFocusLayers.ts` | Enter delivered as a bare `\r` (no `controlKey`) normalized to `''`, so `enter open` did nothing in the transcript/message focus layers. Raw CR/LF now maps to `enter`. |

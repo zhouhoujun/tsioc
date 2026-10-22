@@ -6,6 +6,8 @@ import { resolveModelCatalog } from './modelCatalog';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
+import { readSessionToolPayload } from './session-tool-payload';
+import { paginateSessionMessages } from './session-messages';
 import { AppRpcError, AppRpcRequest, AppRpcRequestContext, AppRpcResponse, AppRpcTransportMessage } from '../contracts/AppRpc';
 import { summarizeUsageForSessions } from '../usage/UsageStats';
 import { AudioSessionHandler, AudioSessionState } from '../audio';
@@ -327,6 +329,7 @@ export class AppRpcServer {
                 return this.queryNav(params, context);
             case 'session.messages':
                 return this.getSessionMessages(params, context);
+            case 'session.tool_payload': return readSessionToolPayload(this.sessions, this as any, params, context);
             case 'session.search':
                 return this.searchSessions(params, context);
             case 'session.delete':
@@ -870,33 +873,7 @@ export class AppRpcServer {
         await this.ensureSessionAccess(sessionId, context);
         const state = await this.sessions.get(sessionId);
         const messages = Array.isArray(state.messages) ? state.messages : [];
-        const requestedLimit = typeof params?.limit === 'number' && params.limit > 0 ? Math.floor(params.limit) : undefined;
-        const limit = Math.min(Math.max(requestedLimit ?? 50, 1), 500);
-        const cursor = typeof params?.cursor === 'string' && params.cursor.trim()
-            ? params.cursor.trim()
-            : '';
-        const before = !!params?.before;
-
-        let page: typeof messages;
-        let hasMore = false;
-        if (!cursor) {
-            page = messages.slice(Math.max(messages.length - limit, 0));
-            hasMore = messages.length > page.length;
-        } else if (before) {
-            const cursorIndex = messages.findIndex(message => message.id === cursor);
-            if (cursorIndex < 0) {
-                throw new AppRpcError(-32602, `Invalid params: cursor message '${cursor}' not found`);
-            }
-            page = messages.slice(Math.max(cursorIndex - limit, 0), cursorIndex);
-            hasMore = cursorIndex > limit;
-        } else {
-            const cursorIndex = messages.findIndex(message => message.id === cursor);
-            if (cursorIndex < 0) {
-                throw new AppRpcError(-32602, `Invalid params: cursor message '${cursor}' not found`);
-            }
-            page = messages.slice(cursorIndex + 1, cursorIndex + 1 + limit);
-            hasMore = cursorIndex + 1 + limit < messages.length;
-        }
+        const { page, hasMore } = paginateSessionMessages(messages, params, cursor => new AppRpcError(-32602, `Invalid params: cursor message '${cursor}' not found`));
 
         const sections = Array.isArray(state.sections)
             ? state.sections.map(section => ({ ...section }))
@@ -909,7 +886,7 @@ export class AppRpcServer {
             messages: page,
             sections,
             goalSummary,
-            nextCursor: page.length ? page[page.length - 1].id : (cursor || undefined),
+            nextCursor: page.length ? page[page.length - 1].id : (typeof params?.cursor === 'string' ? params.cursor : undefined),
             hasMore
         };
     }
