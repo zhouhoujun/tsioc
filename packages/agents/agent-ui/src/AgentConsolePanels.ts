@@ -1849,7 +1849,7 @@ export class AgentConsoleApprovalsPanelComponent {
         if (!this.shouldShow || !this.approvals.length) {
             return '';
         }
-        return this.translate('agent.approval.actions', undefined, 'a Allow   d Deny   y Copy   ↑↓ Move   Esc Dismiss');
+        return this.translate('agent.approval.actions', undefined, 'a Allow   d Deny   A Always allow   y Copy   ↑↓ Move   Esc Dismiss');
     }
 
     get selectedApprovalRequestLabel(): string {

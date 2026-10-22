@@ -87,7 +87,7 @@ export class ApprovalPanelI18nTest {
     @Test('without a translator the English catalog fallback still renders')
     async labelsFallback() {
         const panel = new AgentConsoleApprovalsPanelComponent(this.stateWithApproval());
-        expect(panel.approvalActionsLabel).toBe('a Allow   d Deny   y Copy   ↑↓ Move   Esc Dismiss');
+        expect(panel.approvalActionsLabel).toBe('a Allow   d Deny   A Always allow   y Copy   ↑↓ Move   Esc Dismiss');
         expect(panel.approvalsTitleLabel).toBe('Approval required · Allow delete_file?');
         expect(panel.selectedApprovalDetailLabel).toContain('Reason: requires approval');
         expect(panel.accessibilityLabel).toBe('Approvals. 1 pending. Selected: delete_file.');

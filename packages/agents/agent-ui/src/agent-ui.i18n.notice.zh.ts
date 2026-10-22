@@ -342,6 +342,7 @@ export const AGENT_UI_NOTICE_ZH: NestedMessages = {
   worktreeDiffFailed: '获取工作区 diff 失败。',
   approvalDecisionApprove: '已批准',
   approvalDecisionDeny: '已拒绝',
+  approvalAlwaysAllowed: '本会话已始终允许。',
   approvalApplied: '{decision} {tool}（{id}）。',
   approvalNoLongerPending: '审批请求 {id} 已不再待处理。',
   approvalIdAmbiguous: '审批编号 “{id}” 有歧义。',

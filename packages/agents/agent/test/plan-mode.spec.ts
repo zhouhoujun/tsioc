@@ -281,7 +281,7 @@ async function createRuntime(adapter: any, tool: any, promptBuilder?: any, optio
         providers.push({ provide: SystemPromptBuilder, useValue: promptBuilder });
     }
     if (options) {
-        providers.push({ provide: AGENT_OPTIONS, useValue: { ...defaultAgentOptions, ...options } });
+        providers.push({ provide: AGENT_OPTIONS, useValue: { ...defaultAgentOptions, ...options, tools: { ...defaultAgentOptions.tools, ...(options?.tools || {}), requireApproval: [] } } });
     }
     const ctx = await Application.run(AgentModule, { providers: [...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...providers] });
     const runtime = ctx.get(AgentRuntime);

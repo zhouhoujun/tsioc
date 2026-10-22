@@ -1182,3 +1182,16 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 方案 A（推荐，需同步改测试并验证真实 TUI）：默认启用审批 + 给测试注入自动审批；同时提供 `policy.approval.requireApproval: []` 退出。
   - 方案 B：只在 **harness/profile** 里启用（保持默认无审批），把文档改为「需在 profile 配置」。
   - 方案 C：保持现状，仅记录。
+
+## 2026-10-22 审批门禁修复并启用（用户确认：完整启用，含始终允许）
+- 修复（`agent/src/tools/ToolApprovalManager.ts` + 新增 `approval-categories.ts`）：
+  1. `DefaultApprovalStrategy.requires` 对字符串规则先按工具名匹配，再按**分类**匹配（`classifyApprovalCategory`）——`shell.exec` 现在能匹配 `terminal`/`execute_code`/`git_operations`。
+  2. 新增 `fs` 审批分类（`write_file`/`edit_file`/`apply_patch`/`delete_file`/`move_file`/`copy_file`/`mkdir`/`fs.*`），`DEFAULT_APPROVAL_REQUIRED_RULES` 中的 `fs.write`/`fs.delete` 真正生效；`HarnessProfile.deriveGranularCategories` 同步包含 `fs`。
+  3. `resolveApprovalRequired` 把**显式空数组**视为「不启用审批」（只有未设置才回退默认），给宿主一个退出开关。
+- UI：审批面板新增 `A`（大写）= 「本会话始终允许」——`resolveShortcutKey` 在转小写前识别 `A`，调用 `approvalAlwaysAllowAction`（`setAutoApprove(true)` + 立即批准当前请求 + `approvalAlwaysAllowed` 通知，中英双语）。审批提示更新为 `a 允许 d 拒绝 A 始终允许 …`（en/zh）。
+- 测试：
+  - 新增 `agent/test/tool-approval-category.spec.ts`（5 条）：`shell.exec` 覆盖 sandbox 工具、`fs.write` 只覆盖写类工具、默认规则集生效、显式工具名/空规则、`fs` 分类；旧实现 `Received: false` / `Received: undefined`。
+  - 5 个受影响 spec（plan-mode、tool-repeat-cache、verification-gate、verify-command、workspace-trust）改为 `requireApproval: []`（它们测的是计划/验证/信任逻辑，审批由新 spec 覆盖）。
+  - 断言更新：i18n notice 数量 460 → 461、overlay/p315 的审批提示加 `A Always allow`。
+  - 全量：agent **1031 passing**、agent-ui **1571 passing**；`tsc` 0；`source-size` OK。
+- 真实 TUI 复验：写文件首次弹 `Approval required · Allow write_file?`（含 path/content、reason、30s 过期）→ 按 `A` → 通知 `Always allow enabled for this session.`、文件写入 `hello`；再写第二个文件**不再弹**、直接写入 `world`。

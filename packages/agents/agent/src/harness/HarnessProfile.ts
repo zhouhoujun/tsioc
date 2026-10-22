@@ -75,7 +75,7 @@ export function deriveGranularCategories(rules: ApprovalRule[] | undefined): App
             }
         }
     }
-    return (['sandbox', 'network', 'mcp', 'skill'] as ApprovalCategory[]).filter(category => categories.has(category));
+    return (['sandbox', 'fs', 'network', 'mcp', 'skill'] as ApprovalCategory[]).filter(category => categories.has(category));
 }
 
 /**

@@ -568,7 +568,7 @@ function buildWriteRuntime(
     const providers: any[] = [
         { provide: ModelAdapter, useValue: model },
         { provide: ToolRegistry, useValue: registry },
-        { provide: AGENT_OPTIONS, useValue: { ...defaultAgentOptions, ...options } }
+        { provide: AGENT_OPTIONS, useValue: { ...defaultAgentOptions, ...options, tools: { ...defaultAgentOptions.tools, ...(options?.tools || {}), requireApproval: [] } } }
     ];
     if (diagnosticsStore) providers.push({ provide: TurnDiagnosticsStore, useValue: diagnosticsStore });
     if (sessions) providers.push({ provide: SessionStore, useValue: sessions });
@@ -581,7 +581,7 @@ function buildRuntime(model: any, registry: ToolRegistry, options: any = {}, dia
     const providers: any[] = [
         { provide: ModelAdapter, useValue: model },
         { provide: ToolRegistry, useValue: registry },
-        { provide: AGENT_OPTIONS, useValue: { ...defaultAgentOptions, ...options } }
+        { provide: AGENT_OPTIONS, useValue: { ...defaultAgentOptions, ...options, tools: { ...defaultAgentOptions.tools, ...(options?.tools || {}), requireApproval: [] } } }
     ];
     if (diagnosticsStore) providers.push({ provide: TurnDiagnosticsStore, useValue: diagnosticsStore });
     if (sessions) providers.push({ provide: SessionStore, useValue: sessions });

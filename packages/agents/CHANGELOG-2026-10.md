@@ -214,3 +214,10 @@ newline-JSON transport, allowlist gate and dynamic tool path end to end.
 | Commit | File | Root cause |
 | --- | --- | --- |
 | (this commit) | `agent-gateway/test/p405-turn-stream-stack-propagation.spec.ts` | The assertion looked for the test frame in a captured stack that was exactly 10 frames deep (V8's default `Error.stackTraceLimit`) — the async RPC frames filled the budget and truncated it intermittently. The spec raises the limit around the call and restores it. |
+
+## 2026-10-22 approval gate (enabled by default)
+
+| Commit | File | Root cause |
+| --- | --- | --- |
+| (this commit) | `agent/src/tools/ToolApprovalManager.ts`, `agent/src/tools/approval-categories.ts`, `agent/src/harness/HarnessProfile.ts`, `agent/src/runtime/DefaultAgentRuntime.ts` | The documented default rules never fired: rule strings (`shell.exec`, `fs.write`) were compared with tool names, and no `fs` category existed, so shell commands and file writes ran un-gated. Rules now match by tool name **or** approval category (new `fs` category), and an explicit empty `requireApproval: []` disables the gate. |
+| (this commit) | `agent-ui/src/AgentConsoleFocusLayers.ts`, `AgentConsoleSessionState.ts`, `AgentConsoleComponent.ts`, `AgentConsolePanels.ts`, `agent-ui.i18n*.ts` | Approvals had no session-wide escape hatch. `A` in the approval panel approves and enables auto-approve for the session (`setAutoApprove`), with a localized notice and hint (`a 允许 d 拒绝 A 始终允许 …`). |

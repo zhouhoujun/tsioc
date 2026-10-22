@@ -1,4 +1,5 @@
 import { Abstract, Injectable, Optional, Inject, token } from '@tsdi/ioc';
+import { ApprovalCategory, ApprovalCategoryMetadata, APPROVAL_CATEGORY_DEFINITIONS, classifyApprovalCategory } from './approval-categories';
 import { ApplicationContext, UuidGenerator } from '@tsdi/core';
 import { AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent } from '../runtime/AgentEvents';
 import { AuditSink, AgentAuditRecord } from '../harness/AuditSink';
@@ -22,7 +23,6 @@ export const AgentApprovalStrategy = token<ApprovalStrategy>('AgentApprovalStrat
  * Rules can be expressed as a string tool pattern (backward compatible) or as
  * a category-scoped object with an optional name allowlist and decision mode.
  */
-export type ApprovalCategory = 'sandbox' | 'network' | 'mcp' | 'skill';
 
 export interface ApprovalRuleObject {
     category: ApprovalCategory;
@@ -501,75 +501,7 @@ export class ToolApprovalManager extends ApprovalManager {
  * category is resolved in a fixed order so overlapping names (browser tools
  * are network-oriented) classify deterministically.
  */
-export const APPROVAL_CATEGORY_DEFINITIONS: Record<ApprovalCategory, { names: string[]; prefixes: string[] }> = {
-    network: {
-        names: ['web_search', 'web_extract', 'http_fetch', 'http_request', 'browser_open', 'text_browser', 'playwright_browser', 'web_fetch'],
-        prefixes: ['web_', 'http_', 'browser_']
-    },
-    mcp: {
-        names: [],
-        prefixes: ['mcp.', 'mcp_']
-    },
-    skill: {
-        names: ['skill_list', 'read_skill'],
-        prefixes: ['skill.', 'skill_']
-    },
-    sandbox: {
-        names: ['terminal', 'process.start', 'process.poll', 'process.kill', 'execute_code', 'shell.exec', 'sudo.exec', 'git_operations', 'deploy', 'bash', 'sh'],
-        prefixes: []
-    }
-};
-
-const APPROVAL_CATEGORY_ORDER: ApprovalCategory[] = ['network', 'mcp', 'skill', 'sandbox'];
-
-/** Structural tool metadata used to derive the approval category (A3). */
-export interface ApprovalCategoryMetadata {
-    origin?: 'builtin' | 'skill' | 'mcp';
-    sandboxCapability?: string;
-}
-
-/**
- * Classify a tool into its granular approval category. When `metadata` is
- * provided it is the primary signal (skill/mcp origins and network/sandbox
- * execution capabilities map directly); otherwise the historical name /
- * prefix table is used. `echo`/`memory.*` and unknown tools stay undefined.
- */
-export function classifyApprovalCategory(toolName: string, metadata?: ApprovalCategoryMetadata): ApprovalCategory | undefined {
-    if (metadata) {
-        if (metadata.origin === 'skill') {
-            return 'skill';
-        }
-        if (metadata.origin === 'mcp') {
-            return 'mcp';
-        }
-        if (metadata.sandboxCapability === 'network_fetch') {
-            return 'network';
-        }
-        if (
-            metadata.sandboxCapability === 'process_exec' ||
-            metadata.sandboxCapability === 'code_exec' ||
-            metadata.sandboxCapability === 'vcs_exec'
-        ) {
-            return 'sandbox';
-        }
-    }
-    const name = String(toolName ?? '').trim();
-    if (!name) {
-        return undefined;
-    }
-    for (const category of APPROVAL_CATEGORY_ORDER) {
-        const definition = APPROVAL_CATEGORY_DEFINITIONS[category];
-        if (definition.names.includes(name)) {
-            return category;
-        }
-        for (const prefix of definition.prefixes) {
-            if (name.startsWith(prefix)) {
-                return category;
-            }
-        }
-    }
-    return undefined;
-}
+export { ApprovalCategory, ApprovalCategoryMetadata, APPROVAL_CATEGORY_DEFINITIONS, classifyApprovalCategory } from './approval-categories';
 
 export class DefaultApprovalStrategy implements ApprovalStrategy {
     private rules: ApprovalRule[];
@@ -581,9 +513,14 @@ export class DefaultApprovalStrategy implements ApprovalStrategy {
     }
 
     requires(toolName: string, input: any): boolean {
+        const toolCategory = classifyApprovalCategory(toolName);
         for (const rule of this.rules) {
             if (typeof rule === 'string') {
                 if (this.matchesPattern(toolName, rule)) return true;
+                // Default rules name a category member (`shell.exec`, `fs.write`)
+                // rather than a tool; match those by the tool's category.
+                const ruleCategory = classifyApprovalCategory(rule);
+                if (toolCategory && ruleCategory && toolCategory === ruleCategory) return true;
             } else if (this.matchesRule(toolName, input, rule)) {
                 return true;
             }

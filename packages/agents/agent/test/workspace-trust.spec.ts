@@ -136,7 +136,7 @@ async function createWorkspaceTrustRuntime(
     const providers: any[] = [
         { provide: ModelAdapter, useValue: adapter },
         { provide: ToolRegistry, useValue: new SingleToolRegistry(tool) },
-        { provide: AGENT_OPTIONS, useValue: { ...defaultAgentOptions, workspace } },
+        { provide: AGENT_OPTIONS, useValue: { ...defaultAgentOptions, workspace, tools: { ...defaultAgentOptions.tools, requireApproval: [] } } },
         { provide: AGENT_WORKSPACE_TRUST, useValue: trust }
     ];
     if (approvalManager) {

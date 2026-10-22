@@ -1531,8 +1531,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.questionAction = this.appRpc
             ? async input => { await this.appRpc!.request('question.answer', input); }
             : undefined;
-        this.state.queueDraftAction = () => this.queueDraft();
-        this.state.toggleHealthPopoverAction = () => this.toggleHealthPopover();
+        this.state.queueDraftAction = () => this.queueDraft(); this.state.toggleHealthPopoverAction = () => this.toggleHealthPopover();
         this.state.copyFocusedTextAction = this.copyFocusedTextActionHandler;
         this.state.retryFailedEventAction = message => this.retryFailedEventHandler(message);
         this.state.activateSelectedSessionAction = this.activateSelectedSessionActionHandler;
@@ -1547,6 +1546,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.activateSelectedToolAction = this.activateSelectedToolActionHandler;
         this.state.revertGitSnapshotFromDetailAction = () => this.revertGitSnapshotFromDetail();
         this.state.resolveApprovalAction = this.resolveApprovalActionHandler;
+        this.state.approvalAlwaysAllowAction = async requestId => { (this.resolvedApprovalManager as any)?.setAutoApprove?.(true); await this.resolveApprovalActionHandler('approve', requestId); this.notify(formatAgentUiNotice(this.translator, 'approvalAlwaysAllowed')); };
         this.state.globalKeyInputAction = (key, modifiers) => this.handleBrowserGlobalKeyInput(key, modifiers);
 this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCacheToDisk(cache);
         this.state.onReviewConclusionsWriteBack = (conclusions) => this.writeReviewConclusionsToMemory(conclusions);
@@ -1625,7 +1625,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         this.state.cancelSelectedScheduledTaskAction = undefined;
         this.state.recoverSelectedScheduledTaskAction = undefined;
         this.state.activateSelectedToolAction = undefined;
-        this.state.resolveApprovalAction = undefined;
+        this.state.resolveApprovalAction = undefined; this.state.approvalAlwaysAllowAction = undefined;
         this.state.globalKeyInputAction = undefined;
         void this.persistInputHistory();
         const shell = this.sshShell;

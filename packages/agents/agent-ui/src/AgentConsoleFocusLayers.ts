@@ -103,6 +103,8 @@ export abstract class AgentConsoleFocusLayers {
         // trimming it to '' used to drop the key entirely (`enter open` did
         // nothing in the transcript/message focus layers).
         if (rawText === '\r' || rawText === '\n') return 'enter';
+        // Uppercase A = "always allow for this session"; plain `a` stays approve.
+        if (rawText === 'A') return 'approve-always';
         const normalized = String(rawText || '').trim().toLowerCase();
         switch (normalized) {
             case 'y': return 'copy';
@@ -408,6 +410,7 @@ export abstract class AgentConsoleFocusLayers {
             case 'escape': return this.dismiss(transcriptNavigation);
         }
         if (normalized === 'copy') return this.copyApproval();
+        if (normalized === 'approve-always') return this.resolveApprovalAlways();
         if (normalized === 'approve' || normalized === 'deny') return this.resolveApproval(normalized);
         return false;
     }
@@ -420,6 +423,13 @@ export abstract class AgentConsoleFocusLayers {
     private async copyApproval(): Promise<boolean> {
         await this.state.copyFocusedTextAction?.(this.state.buildSelectedApprovalCopyText(), 'selected approval'); return true;
     }
+    private async resolveApprovalAlways(): Promise<boolean> {
+        const state = this.state;
+        if (!state.selectedApproval?.id) return false;
+        await state.approvalAlwaysAllowAction?.(state.selectedApproval.id);
+        return true;
+    }
+
     private async resolveApproval(action: 'approve' | 'deny'): Promise<boolean> {
         const state = this.state;
         if (!state.selectedApproval?.id) return false;

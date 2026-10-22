@@ -191,7 +191,7 @@ function buildRuntime(model: any, registry: ToolRegistry, options: any = {}, fil
     const providers: any[] = [
         { provide: ModelAdapter, useValue: model },
         { provide: ToolRegistry, useValue: registry },
-        { provide: AGENT_OPTIONS, useValue: { ...defaultAgentOptions, ...options } },
+        { provide: AGENT_OPTIONS, useValue: { ...defaultAgentOptions, ...options, tools: { ...defaultAgentOptions.tools, ...(options?.tools || {}), requireApproval: [] } } },
         { provide: FileAdapter, useValue: fileAdapter ?? new MemoryFileAdapter() },
         { provide: FileSnapshotStore, useValue: fileSnapshotStore ?? new FileSnapshotStore() }
     ];

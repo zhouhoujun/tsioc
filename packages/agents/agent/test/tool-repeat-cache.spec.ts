@@ -143,7 +143,7 @@ async function buildRuntime(model: any, registry: ToolRegistry, options: any = {
             ...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any),
             { provide: ModelAdapter, useValue: model },
             { provide: ToolRegistry, useValue: registry },
-            { provide: AGENT_OPTIONS, useValue: { ...defaultAgentOptions, ...options } }
+            { provide: AGENT_OPTIONS, useValue: { ...defaultAgentOptions, ...options, tools: { ...defaultAgentOptions.tools, ...(options?.tools || {}), requireApproval: [] } } }
         ]
     });
     return { runtime: ctx.get(AgentRuntime), ctx };

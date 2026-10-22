@@ -2045,15 +2045,14 @@ export class DefaultAgentRuntime extends AgentRuntime {
     /** A5: approval rule list with observable source; policy `approval.requireApproval` wins over the legacy `tools.requireApproval`, then `DEFAULT_APPROVAL_REQUIRED_RULES`. */
     resolveApprovalRequired(): AgentPolicyResolution<ApprovalRule[]> {
         const policyRules = this.options.policy?.approval?.requireApproval;
-        if (policyRules?.length) {
+        // An explicit empty list disables the gate; only an unset list uses defaults.
+        if (Array.isArray(policyRules)) {
             return { value: policyRules.slice(), source: this.options.policy?.source ?? 'workspace' };
         }
         const legacyRules = this.options.tools?.requireApproval;
-        if (legacyRules?.length) {
-            return {
-                value: legacyRules.slice(),
-                source: sameApprovalRules(legacyRules, DEFAULT_APPROVAL_REQUIRED_RULES) ? 'default' : 'workspace'
-            };
+        if (Array.isArray(legacyRules)) {
+            const source = sameApprovalRules(legacyRules, DEFAULT_APPROVAL_REQUIRED_RULES) ? 'default' : 'workspace';
+            return { value: legacyRules.slice(), source };
         }
         return { value: DEFAULT_APPROVAL_REQUIRED_RULES.slice(), source: 'default' };
     }

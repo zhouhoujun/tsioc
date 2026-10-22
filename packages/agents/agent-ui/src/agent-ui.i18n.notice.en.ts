@@ -342,6 +342,7 @@ export const AGENT_UI_NOTICE_EN: NestedMessages = {
   worktreeDiffFailed: 'Failed to gather the worktree diff.',
   approvalDecisionApprove: 'Approved',
   approvalDecisionDeny: 'Denied',
+  approvalAlwaysAllowed: 'Always allow enabled for this session.',
   approvalApplied: '{decision} {tool} ({id}).',
   approvalNoLongerPending: 'Approval request {id} is no longer pending.',
   approvalIdAmbiguous: 'Approval id "{id}" is ambiguous.',
