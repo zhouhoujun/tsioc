@@ -1253,3 +1253,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 回归：`p413` 增至 13 条（建议项描述走 describe、`/help` 选项本地化）。
 - agent-ui **1584 passing**；`tsc` 0；`source-size` OK（CommandHandlers 通过复用 `ctx.translator`、避免新增 import 守住预算）。
 - 备注：其余分组（display/input/review/hooks/delegation/system）描述仍为英文，可在同一机制下增量补翻译。
+
+### 命令描述本地化补充：多行定义（补齐 5 条至 92 条）
+- `/approve`、`/quality`、`/compactions`、`/diagnostics`、`/exit` 的定义是多行写法（`name` 与 `description` 分行），首轮正则未覆盖 → 已补齐；现 **92 条定义全部有中文描述**。
+- 真实 TUI（zh）：`/diagnostics → [委托] 轮次诊断 [sessionId]`；agent-ui **1584 passing**。
+- 备注：子命令（如 `/diagnostics list|trend`）的 `sub.description` 仍为英文，属下一批。
