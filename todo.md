@@ -1160,3 +1160,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 回归：新增 `agent-ui/test/p412-plan-status-on-resume.spec.ts`（3 条：idle 计划不报 running、running turn 仍报 running、折叠摘要走 locale）；旧实现 `Received "running"` / `Received "Plan 12 steps (0 done)"`，修复后 3 passing。原 `console-renderer` 对 `Plan 8 steps (2 done)` 的断言同步更新为 `8 steps (2 done)`（前缀已由行标签提供）。
 - 真实 TUI 复验（resume 同一会话）：`│ Plan · 8 steps ...` 形式的计划块不再出现 `Running`。
 - agent-ui **1571 passing**；`tsc` 0；`source-size` OK。
+
+## 2026-10-22 门禁偶发失败治理：p405 栈断言受默认 stackTraceLimit 限制
+- 现象：`agent-gateway` 的 `p405-turn-stream-stack-propagation` 在门禁里偶发失败（`data.stack` 不含 `TurnStreamStackPropagationTest`），单独跑 3/3、全量跑 2/2 均通过。
+- 根因：断言依赖测试类帧出现在错误栈里，而捕获到的栈正好 **10 帧**（V8 默认 `Error.stackTraceLimit = 10`：`runStreamingTurn → AsyncGenerator.next → streamTurn → streamTurn.next → streamPayload → streamPayload.next → streamHandler → processTicksAndRejections → runNextTicks → processTimers`），帧预算被异步 RPC 帧占满，测试帧被截断。
+- 修复（测试侧）：`streamTurn()` 调用前后临时把 `Error.stackTraceLimit` 提升到 50，再恢复；断言意图（调用方帧被保留）不变。
+- 验证：该 spec 连续 3 次 4 passing；agent-gateway **324 passing** ×2；随后统一门禁 **27/27 PASS**。

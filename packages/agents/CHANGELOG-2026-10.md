@@ -208,3 +208,9 @@ newline-JSON transport, allowlist gate and dynamic tool path end to end.
 | (this commit) | `agent-ui/src/AgentConsoleFocusLayers.ts` | Enter delivered as a bare `\r` (no `controlKey`) normalized to `''`, so `enter open` did nothing in the transcript/message focus layers. Raw CR/LF now maps to `enter`. |
 | (this commit) | `agent-ui/src/AgentConsoleMessageNormalization.ts` | Resuming a session dropped the tool history: `role='tool'` messages were discarded (raw JSON) and UI event rows are not persisted. They are now projected into read-only event rows (`uiKind='event'`, summary + duration + `timeline.toolCallId`), so the transcript keeps the tool history and the inspector can still fetch the payload on demand. |
 | (this commit) | `agent-ui/src/AgentConsoleSessionState.ts`, `AgentConsoleMessageRenderers.ts`, `agent-ui.i18n.ts` | A plan restored after a restart still rendered `Plan · Running …` although no turn was running, and its collapsed summary was hardcoded English. Plan rows only claim running while a turn does (`planLive` metadata), and the collapsed summary uses `agent.timeline.planSummary` (en/zh). |
+
+## 2026-10-22 test stability
+
+| Commit | File | Root cause |
+| --- | --- | --- |
+| (this commit) | `agent-gateway/test/p405-turn-stream-stack-propagation.spec.ts` | The assertion looked for the test frame in a captured stack that was exactly 10 frames deep (V8's default `Error.stackTraceLimit`) — the async RPC frames filled the budget and truncated it intermittently. The spec raises the limit around the call and restores it. |

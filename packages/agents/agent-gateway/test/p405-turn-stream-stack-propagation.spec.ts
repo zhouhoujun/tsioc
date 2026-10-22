@@ -66,12 +66,21 @@ async function streamTurn(handler: any, sessionId: string) {
         end: () => res
     } as any;
 
-    await route.handler(req, res, {} as any, {
-        jsonrpc: '2.0',
-        id: 7,
-        method: 'run.turn_stream',
-        params: { sessionId, input: 'hello' }
-    });
+    // The assertion below looks for the test frame in the captured stack; with
+    // the default Error.stackTraceLimit (10) the async RPC frames fill the
+    // budget and the frame is truncated intermittently.
+    const previousStackLimit = Error.stackTraceLimit;
+    Error.stackTraceLimit = 50;
+    try {
+        await route.handler(req, res, {} as any, {
+            jsonrpc: '2.0',
+            id: 7,
+            method: 'run.turn_stream',
+            params: { sessionId, input: 'hello' }
+        });
+    } finally {
+        Error.stackTraceLimit = previousStackLimit;
+    }
     return chunks.map(chunk => JSON.parse(chunk));
 }
 
