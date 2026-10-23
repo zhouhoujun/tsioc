@@ -232,6 +232,11 @@ export const agentUiChinese: TranslationBundle = {
             command: {
                 group: { core: '核心', session: '会话', display: '显示', input: '输入', review: '审查', hooks: '钩子', delegation: '委托', system: '系统' },
                 sub: {
+                    'keymap.list': '列出某个上下文的按键绑定',
+                    'keymap.set': '设置 <按键> <动作> [上下文]',
+                    'keymap.unset': '取消 <按键> [上下文]',
+                    'keymap.reset': '恢复默认按键',
+                    'keymap.record': '录制下一个按键到 <动作>',
                     'approve.retry': '重试最近一次被自动审查拒绝的操作（一次）',
                     'delegation.tree': '委托树 [sessionId] [status] [depth]',
                     'delegation.lineage': '委托血缘 [sessionId]',

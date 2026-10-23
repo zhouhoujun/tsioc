@@ -313,6 +313,14 @@ export class SuggestionCompletionEdgeTest {
         expect(resolveAgentConsoleArgumentCandidates('/status', 'x')).toEqual([]);
     }
 
+    @Test('/keymap declares its subcommands so they complete too')
+    async keymapSubcommands() {
+        expect(resolveAgentConsoleArgumentCandidates('/keymap', 'l').map(option => option.value)).toEqual(['list']);
+        expect(resolveAgentConsoleArgumentCandidates('/keymap', 're').map(option => option.value)).toEqual(['reset', 'record']);
+        const options = resolveAgentConsoleInputSuggestions('/keymap l', '/keymap l'.length, ['/keymap'], [], []);
+        expect(options[0].value).toEqual('list');
+    }
+
     @Test('the suggestion resolver feeds the argument menu and Tab replaces the word')
     async argumentMenuAndApply() {
         const options = resolveAgentConsoleInputSuggestions('/layout st', '/layout st'.length, ['/layout'], [], []);

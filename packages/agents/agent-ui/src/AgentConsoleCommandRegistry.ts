@@ -109,7 +109,19 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/mcp', description: 'list MCP servers and tools: /mcp [verbose]', group: 'core', args: [{ name: 'mode', type: 'enum', values: ['verbose', '-v'] }] },
     { name: '/plugins', description: 'browse installed plugins: /plugins [<id>]', group: 'core', args: [{ name: 'id' }] },
     { name: '/apps', description: 'browse connectors or insert one into the prompt: /apps [<id>]', group: 'core', args: [{ name: 'id' }] },
-    { name: '/keymap', description: 'list/set/unset/reset key bindings per context (global/composer/list/approval/pager/vim); record <action> captures the next key', group: 'core', args: [{ name: 'arg', variadic: true }] },
+    {
+        name: '/keymap',
+        description: 'list/set/unset/reset key bindings per context (global/composer/list/approval/pager/vim); record <action> captures the next key',
+        group: 'core',
+        args: [{ name: 'arg', variadic: true }],
+        subcommands: [
+            { sub: 'list', description: 'list bindings for a context' },
+            { sub: 'set', description: 'set <key> <action> [context]' },
+            { sub: 'unset', description: 'unset <key> [context]' },
+            { sub: 'reset', description: 'reset bindings' },
+            { sub: 'record', description: 'record <action> to capture the next key' }
+        ]
+    },
     { name: '/vim', description: 'toggle vim-style normal/insert input mode', group: 'core', args: [{ name: 'mode', type: 'enum', values: ['on', 'off', '1', '0', 'true', 'false'] }] },
     { name: '/permissions', description: 'show or change readonly/sandbox session permissions', group: 'core', args: [{ name: 'area', type: 'enum', values: ['status', 'readonly', 'plan', 'sandbox'] }, { name: 'arg', variadic: true }] },
     { name: '/settings', description: 'unified settings dialog: general, keybinds, providers', group: 'core' },

@@ -1429,3 +1429,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `resolveAgentConsoleInputSuggestions()` 在无 `@`/`/` token 时回退到参数候选；`applyAgentConsoleSuggestion()` 回退替换参数词（含前导空白缩进）。
 - 真实 TUI：`/layout st` → 候选 `stream  mode`，Tab → `/layout stream`；`/delegation l` → `lineage  delegation lineage [sessionId]`，Tab → `/delegation lineage`；`/layout ` + Enter 直接执行（`Layout: stream (native scrollback; full history).`），确认 Enter 未被菜单劫持。
 - 测试：`p413` 新增 2 例（范围/候选/非枚举与无子命令为空、resolver + Tab 替换含缩进）。回归：agent-ui **1619 passing**，tsc/source-size OK。
+
+## 2026-10-23 `/keymap` 子命令元数据（补全 + /help）
+- `/keymap` 之前只有描述文本，没有 `subcommands` 元数据，导致 `/keymap l` + Tab 无候选、`/help` 里也没有子命令行。
+- 补充 `subcommands: list/set/unset/reset/record`（与 `runKeymapCommand` 的实际分支一致），并在 zh 目录补 5 条 `agent.command.sub.keymap.*`（en 回退到 registry 英文描述）。
+- 真实 TUI：`/keymap l` + Tab → `/keymap list`，Enter → 打开 keymap 面板（`keymap 35 lines · 1-8`、`ctrl+x n -> new-session` 等）。
+- 测试：`p413` 增加 1 例（前缀过滤 `l`/`re`、resolver 输出）。回归：agent-ui **1620 passing**，tsc/source-size OK。
