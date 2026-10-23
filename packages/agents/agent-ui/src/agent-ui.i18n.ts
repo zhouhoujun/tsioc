@@ -138,7 +138,7 @@ export const agentUiEnglish: TranslationBundle = {
             approval: {
                 required: 'Approval required',
                 allowPrompt: 'Approval required · Allow {tool}?',
-                actions: 'a Allow   d Deny   A Always allow   y Copy   ↑↓ Move   Esc Dismiss',
+                actions: 'a Allow   d Deny   A Always allow (session)   y Copy   ↑↓ Move   Esc Dismiss',
                 reason: 'Reason: {reason}',
                 noReason: 'No reason provided',
                 expiresIn: 'Expires in {seconds}s',
@@ -376,7 +376,7 @@ export const agentUiChinese: TranslationBundle = {
             approval: {
                 required: '需要审批',
                 allowPrompt: '需要审批 · 允许 {tool}？',
-                actions: 'a 允许   d 拒绝   A 始终允许   y 复制   ↑↓ 移动   Esc 关闭',
+                actions: 'a 允许   d 拒绝   A 本会话始终允许   y 复制   ↑↓ 移动   Esc 关闭',
                 reason: '原因：{reason}',
                 noReason: '未提供原因',
                 expiresIn: '{seconds} 秒后过期',

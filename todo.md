@@ -1332,3 +1332,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 根因：bundle 内联的 `tr46`/`whatwg-url` 使用内置 `punycode`；源码路径下 `cross-fetch` 走 global fetch 分支不会加载该链，所以只有打包后暴露。
 - 修复：构建脚本加 `alias: { punycode: 'punycode/' }`，改用仓库内 userland `punycode@2.3.1`（bundle 中已无 `require("punycode")`）。
 - 验证：`doctor` stderr 为空；`--help` 与源码路径逐字一致；真实 TUI 捕获无 DEP0040；agent-cli **106 passing**。
+
+## 2026-10-23 审批提示与实际作用域对齐（`A` = 会话级）
+- 真实复现：在 terminal 审批面板按 `A` 后，随后同一会话的 `write_file` **不再弹面板**并成功写盘（`MULTI_A.md` 创建成功），说明 `A` 是会话级、对所有 gated 工具生效；但面板标题是 `Allow terminal?`、提示是 `A Always allow`，读起来像「只对该工具」。
+- 决策：会话级是既定设计（此前用户确认的 approval gate 方案），因此只修**提示**，不改行为。
+- 改动：`agent.approval.actions`（en/`agent-ui.i18n.ts`、`AgentConsolePanels.ts` fallback、`AGENT_CONSOLE_OVERLAY_HINTS.approvals`）改为 `A Always allow (session)`；中文（catalog + `AgentConsoleSessionState` 默认 hint）改为 `A 本会话始终允许`。按 `A` 后的 notice 仍是 `Always allow enabled for this session.`。
+- 验证：p315/p318 断言更新并通过（4 + 3 passing）；真实 TUI 面板显示 `A Always allow (session)`，旧文案不再出现，命令正常执行。

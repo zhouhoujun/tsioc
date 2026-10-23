@@ -23,6 +23,7 @@ export class LocaleDefaultsTest {
         expect(state.consoleOptions.selectCloseHint).toContain('enter close');
         expect(state.consoleOptions.selectHint).toContain('enter confirm');
         expect(state.consoleOptions.suggestionsHint).toContain('enter 执行');
+        expect(state.consoleOptions.approvalsHint).toContain('always allow (session)');
     }
 
     @Test('a zh locale keeps the Chinese defaults')
@@ -34,6 +35,9 @@ export class LocaleDefaultsTest {
         expect(state.consoleOptions.selectHint).toContain('回车 确认');
         expect(state.consoleOptions.suggestionsHint).toContain('回车 执行');
         expect(state.consoleOptions.approvalsHint).toContain('a 允许');
+        // `A` disables approval for every gated tool in the session; the hint
+        // must not read like a per-tool switch.
+        expect(state.consoleOptions.approvalsHint).toContain('本会话始终允许');
     }
 
     @Test('without a translator the built-in defaults stay')

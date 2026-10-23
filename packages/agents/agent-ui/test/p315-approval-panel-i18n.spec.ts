@@ -87,7 +87,10 @@ export class ApprovalPanelI18nTest {
     @Test('without a translator the English catalog fallback still renders')
     async labelsFallback() {
         const panel = new AgentConsoleApprovalsPanelComponent(this.stateWithApproval());
-        expect(panel.approvalActionsLabel).toBe('a Allow   d Deny   A Always allow   y Copy   ↑↓ Move   Esc Dismiss');
+        // `A` approves every gated tool for the session (verified in a real TUI:
+        // a terminal allow also auto-approved a later write_file), so the hint
+        // must say so instead of reading as a per-tool switch.
+        expect(panel.approvalActionsLabel).toBe('a Allow   d Deny   A Always allow (session)   y Copy   ↑↓ Move   Esc Dismiss');
         expect(panel.approvalsTitleLabel).toBe('Approval required · Allow delete_file?');
         expect(panel.selectedApprovalDetailLabel).toContain('Reason: requires approval');
         expect(panel.accessibilityLabel).toBe('Approvals. 1 pending. Selected: delete_file.');

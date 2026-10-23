@@ -581,7 +581,7 @@ const ZH_CONSOLE_HINTS = {
     inputPlaceholder: '问我代码或文件',
     selectHint: '1-9 选择   上/下 移动   回车 确认   q 取消',
     suggestionsHint: '回车 执行   tab 补全   上/下 选择',
-    approvalsHint: 'a 允许   d 拒绝   A 始终允许   y 复制   上/下 移动   esc 关闭',
+    approvalsHint: 'a 允许   d 拒绝   A 本会话始终允许   y 复制   上/下 移动   esc 关闭',
     sessionHint: '上/下 移动   pg 跳转   回车 切换   y 复制   esc',
     messagesHint: '上/下 移动   pg 跳转   回车 打开   y 复制   esc',
     toolsHint: '上/下 移动   pg 跳转   回车 激活   y 复制   esc',
