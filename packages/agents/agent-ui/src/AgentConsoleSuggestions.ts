@@ -96,6 +96,66 @@ export function getAgentConsoleInputTokenRange(input: string, cursor = input.len
     };
 }
 
+export interface AgentConsoleArgumentCompletionRange {
+    /** Start of the argument word (after `/command `). */
+    start: number;
+    end: number;
+    token: string;
+    /** Command name as typed, e.g. `/layout`. */
+    command: string;
+}
+
+/**
+ * Argument-completion range for `/command <partial>`.
+ *
+ * Only the first argument word is completed, and only once the user started
+ * typing it: an empty token would otherwise open a menu right after
+ * `/layout ` and hijack Enter (which should just execute the command).
+ */
+export function getAgentConsoleArgumentRange(input: string, cursor = input.length): AgentConsoleArgumentCompletionRange | undefined {
+    const text = String(input || '');
+    const safeCursor = Math.max(0, Math.min(text.length, cursor));
+    const match = text.slice(0, safeCursor).match(/^(\s*)(\/[A-Za-z0-9_-]+)\s+([^\s]*)$/);
+    if (!match || !match[3]) {
+        return undefined;
+    }
+    return {
+        start: match[1].length + match[2].length + 1,
+        end: safeCursor,
+        token: match[3],
+        command: match[2]
+    };
+}
+
+/** Subcommand / enum-argument candidates declared by the command registry. */
+export function resolveAgentConsoleArgumentCandidates(
+    command: string,
+    token: string,
+    labels: AgentConsoleSuggestionLabels = {}
+): AgentConsoleSelectOption[] {
+    const definition = getAgentConsoleCommandDefinition(command);
+    if (!definition) {
+        return [];
+    }
+    const needle = String(token || '').toLowerCase();
+    const options: AgentConsoleSelectOption[] = [];
+    const push = (value: string, description: string) => {
+        if (!value || (needle && !value.toLowerCase().startsWith(needle)) || options.some(option => option.value === value)) {
+            return;
+        }
+        options.push({ label: value, value, description });
+    };
+    const localizeSub = (sub: string, fallback: string) => labels.describe
+        ? labels.describe(`agent.command.sub.${definition.name.replace(/^\//, '')}.${sub}`, fallback)
+        : fallback;
+    (definition.subcommands || []).forEach(sub => push(sub.sub, localizeSub(sub.sub, sub.description)));
+    const first = definition.args?.[0];
+    if (first && first.type === 'enum' && Array.isArray(first.values)) {
+        first.values.forEach(value => push(value, first.name));
+    }
+    return options;
+}
+
 export function resolveAgentConsoleInputSuggestions(
     input: string,
     cursor: number,
@@ -106,7 +166,10 @@ export function resolveAgentConsoleInputSuggestions(
 ): AgentConsoleSelectOption[] {
     const active = getAgentConsoleInputTokenRange(input, cursor);
     if (!active?.token) {
-        return [];
+        const argument = getAgentConsoleArgumentRange(input, cursor);
+        return argument
+            ? resolveAgentConsoleArgumentCandidates(argument.command, argument.token, labels)
+            : [];
     }
     if (active.token.startsWith('/')) {
         const matches = rankAgentConsoleCommandMatches(commands, active.token);
@@ -196,10 +259,15 @@ export function applyAgentConsoleSuggestion(
     const text = String(input || '');
     const active = getAgentConsoleInputTokenRange(text, cursor);
     if (!active) {
-        return {
-            value: text,
-            cursor
-        };
+        const argument = getAgentConsoleArgumentRange(text, cursor);
+        if (!argument) {
+            return {
+                value: text,
+                cursor
+            };
+        }
+        const value = `${text.slice(0, argument.start)}${suggestion} ${text.slice(argument.end)}`;
+        return { value, cursor: argument.start + suggestion.length + 1 };
     }
     const formatted = formatAgentConsoleSuggestionValue(suggestion);
     // Directories keep the menu open so the next path segment can be typed:

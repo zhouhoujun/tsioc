@@ -2,10 +2,12 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
     applyAgentConsoleSuggestion,
+    getAgentConsoleArgumentRange,
     getAgentConsoleInputTokenRange,
     getAgentConsoleMentionCandidates,
     parseAgentConsoleMentionNames,
     rankAgentConsoleCommandMatches,
+    resolveAgentConsoleArgumentCandidates,
     resolveAgentConsoleInputSuggestions
 } from '../src/AgentConsoleSuggestions';
 import { enrichPromptWithMentions } from '../src/AgentConsolePromptMentions';
@@ -293,6 +295,36 @@ export class SuggestionCompletionEdgeTest {
         expect(parseAgentConsoleMentionNames('请总结@bank-system 与 @workspace')).toEqual(['bank-system', 'workspace']);
         expect(parseAgentConsoleMentionNames('联系 test@example.com')).toEqual([]);
         expect(parseAgentConsoleMentionNames('请@')).toEqual([]);
+    }
+
+    @Test('arguments complete from subcommands and enum values')
+    async argumentCompletion() {
+        const range = getAgentConsoleArgumentRange('/delegation l', '/delegation l'.length);
+        expect(range).toEqual({ start: '/delegation '.length, end: '/delegation l'.length, token: 'l', command: '/delegation' });
+        expect(getAgentConsoleArgumentRange('/layout ', '/layout '.length)).toBeUndefined();
+        expect(getAgentConsoleArgumentRange('/layout', '/layout'.length)).toBeUndefined();
+
+        const subcommands = resolveAgentConsoleArgumentCandidates('/delegation', 'l');
+        expect(subcommands.map(option => option.value)).toEqual(['lineage']);
+
+        const enumValues = resolveAgentConsoleArgumentCandidates('/layout', 'st');
+        expect(enumValues.map(option => option.value)).toEqual(['stream']);
+        expect(resolveAgentConsoleArgumentCandidates('/queue', 'c').map(option => option.value)).toEqual(['clear']);
+        expect(resolveAgentConsoleArgumentCandidates('/status', 'x')).toEqual([]);
+    }
+
+    @Test('the suggestion resolver feeds the argument menu and Tab replaces the word')
+    async argumentMenuAndApply() {
+        const options = resolveAgentConsoleInputSuggestions('/layout st', '/layout st'.length, ['/layout'], [], []);
+        expect(options.map(option => option.value)).toEqual(['stream']);
+
+        const applied = applyAgentConsoleSuggestion('/layout st', '/layout st'.length, 'stream');
+        expect(applied.value).toEqual('/layout stream ');
+        expect(applied.cursor).toEqual('/layout stream '.length);
+
+        // Indented commands still complete their arguments.
+        const indented = applyAgentConsoleSuggestion('  /layout v', '  /layout v'.length, 'viewport');
+        expect(indented.value).toEqual('  /layout viewport ');
     }
 
     @Test('leading indentation still opens the command menu (submit trims)')

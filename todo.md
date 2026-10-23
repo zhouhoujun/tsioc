@@ -1420,3 +1420,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 修复：边界统一为「空白 **或 CJK 字符/标点**（`\u3000-\u303f`、`\u3040-\u30ff`、`\u4e00-\u9fff`、`\uff00-\uffef`）」，预编译为模块级正则（`QUOTED_MENTION_TOKEN`/`INPUT_TOKEN`，名称解析用同一 `MENTION_BOUNDARY`）；ASCII 紧邻（`test@example.com`、`Hello@World`）与 `请/foo`（非行首命令）保持不误判。
 - 真实 TUI 验证：`请总结@ban` → 候选列出 `@bank-system/…`；Tab → `请总结@bank-system/`；发送后用户消息显示 `Files · bank-system/`。
 - 测试：`p413-suggestions` 新增 2 例（CJK 边界与 ASCII 反例、解析器同边界）。回归：agent-ui **1617 passing**，tsc/source-size OK。
+
+## 2026-10-23 `/command <partial>` 参数/子命令补全
+- 现象：`/layout st`、`/delegation l` 等输入后按 Tab 无候选（菜单只识别行首 `/command` 与 `@mention`），用户需记子命令与枚举值。
+- 实现（复用 registry 元数据，无新数据）：
+  - `getAgentConsoleArgumentRange()`：行首（允许前导空白）`/cmd <word>` 的参数范围；**空参数不返回**，避免 `/layout ` 后菜单劫持 Enter（无参执行必须保留）。
+  - `resolveAgentConsoleArgumentCandidates()`：`subcommands[].sub` + `args[0].type==='enum'` 的 `values`，按已输入前缀过滤、去重；子命令描述走现有 `describe('agent.command.sub.<cmd>.<sub>')` 钩子。
+  - `resolveAgentConsoleInputSuggestions()` 在无 `@`/`/` token 时回退到参数候选；`applyAgentConsoleSuggestion()` 回退替换参数词（含前导空白缩进）。
+- 真实 TUI：`/layout st` → 候选 `stream  mode`，Tab → `/layout stream`；`/delegation l` → `lineage  delegation lineage [sessionId]`，Tab → `/delegation lineage`；`/layout ` + Enter 直接执行（`Layout: stream (native scrollback; full history).`），确认 Enter 未被菜单劫持。
+- 测试：`p413` 新增 2 例（范围/候选/非枚举与无子命令为空、resolver + Tab 替换含缩进）。回归：agent-ui **1619 passing**，tsc/source-size OK。
