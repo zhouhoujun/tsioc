@@ -1514,3 +1514,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **远程 reject**（PTY TUI + 独立 CLI 进程）：`chat --gateway-port --gateway-token` 触发 `terminal` 审批 → 外部 `approval list` 返回 1 条 → `approval reject <id>` 输出 `Rejected … (session chat…)`；TUI 状态行从 `Approval required for terminal` 变为 `Denied terminal`，turn 继续并回到输入态；objective 校验：被拒绝的 `touch <marker>` 从未执行（marker 不存在）。
 - **审批中按 Esc 取消**：待审批队列 1 → 0（无残留请求供远程误批），界面显示 `Cancelling current turn…` 与 `✓ Cancelled · Turn cancelled`，输入框恢复可用。
 - 结论：approve / reject / 本地取消三条路径都能正确收敛，不需要改代码；已记录为回归基线。
+
+## 2026-10-23 审批全路径 + 会话级 allow 真实回归（未改代码）
+- **会话级 allow（`A`）**：首次 `terminal` 调用弹审批，选 `A` 后第二次调用**不再弹**（`second_prompted=false`，`echo TWO` 正常执行）；新开 session 再次触发审批（`new_session_prompted=true`），说明会话级放行不会跨会话泄漏。提示文本包含 `session`。
+- **无人处理（走开）**：审批面板 30.5s 后自动 `Denied terminal`（策略默认 `approvalTimeoutMs=30000`），turn 继续，不会挂死。
+- **多轮排队**：turn 运行时输入第二条 prompt 会 `Queued prompt (1)`，第一轮结束后自动执行，两条用户消息各出现一次、回答顺序正确，控制台回到空闲。
+- **流式中断**：turn 进行中按 Esc → `Cancelling current turn…` / `Cancelled`，随后新 prompt 正常得到回答（`ALPHA-SEVEN`），无残留 `Working`。
+- 说明：以上为回归基线；探测脚本需按“每一步新增输出”切片判断，否则旧面板/旧状态会误报。
