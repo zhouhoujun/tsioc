@@ -19,7 +19,7 @@ export function registerChatCli(program: Command): void {
         .option('--timeout <ms>', 'Request timeout in ms.')
         .option('--gateway-port <port>', 'Expose pending approvals over loopback HTTP for third-party systems.')
         .option('--gateway-host <host>', 'Bind host for the approvals API (default 127.0.0.1).')
-        .option('--gateway-token <token>', 'Owner bearer token for the approvals API.')
+        .option('--gateway-token <token>', 'Operator bearer token for the approvals API (acts as an approver).')
         .action(async (options: any) => {
             await runAgentConsole(options);
         });

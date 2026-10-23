@@ -1488,3 +1488,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 真实端到端（PTY TUI + 独立 CLI 进程）：`chat --gateway-port 60603 --gateway-token owner-secret` + `TSDI_AGENT_APPROVER_TOKENS=ci=ci-secret`；触发 `terminal` 审批 → 另一进程 `approval list` 返回 1 条（toolName=terminal）→ `approval approve` 输出 `Approved … (session chat…)` → TUI 内命令执行并出现 `REMOTE_APPROVAL_OK`。
 - 修复 CLI 参数归一化：`--gateway-port/-host/-token` 需加入 `OPTION_FLAGS_WITH_VALUES`，否则值会被当成命令导致 `unknown option '--root'`。
 - 测试：gateway `approval-remote-server.spec.ts`（3：无令牌拒绝、approver 列表+批准+404、owner 403）；agent-cli `approval-command.spec.ts` 增加 `chat --gateway-port` 无令牌快速失败（7 例）。回归：agent-cli 114、agent-gateway 356，tsc/source-size OK。
+
+## 2026-10-23 TUI 审批端点：操作者令牌按 approver 处理
+- 真实验证发现：只给 `--gateway-token`（未设 approver 环境变量）时，`approval list` 返回 **0 条**——静态 bearer 令牌没有 principal，`isAuthorized` 对无 owner 的本地会话返回 403/空。
+- 修复：`startApprovalRemoteServer` 把 `--gateway-token` 作为 `{ id: 'owner', token }` 的 **approver** 注册（回环端点本就代表操作者本人），列表/审批对任意会话可用；`TSDI_AGENT_APPROVER_TOKENS` 依旧可用。
+- 真实验证（仅 owner 令牌）：`chat --gateway-port 57797 --gateway-token owner-secret` → `approval list` 返回 1 条（terminal）→ `approval approve` 输出 `Approved …` → TUI 批准提示出现且命令执行。
+- 测试：`approval-remote-server.spec.ts` 将“owner 403”改为“操作者令牌可列/批（即使 owner 校验会拒绝）”。回归：agent-gateway 356、agent-cli 114。

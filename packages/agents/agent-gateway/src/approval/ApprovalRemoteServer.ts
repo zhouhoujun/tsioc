@@ -46,13 +46,16 @@ export async function startApprovalRemoteServer(options: ApprovalRemoteServerOpt
     const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
     const approvers = (options.approvers?.length ? options.approvers : parseApproverTokens(env?.TSDI_AGENT_APPROVER_TOKENS))
         .filter(approver => approver?.token);
-    if (!authToken && !approvers.length) {
+    // The token passed to `chat --gateway-token` is the operator's endpoint
+    // token: treat it as an approver. As an "owner" it resolved to no principal
+    // for ownerless/foreign sessions, so listing returned nothing.
+    if (authToken) {
+        approvers.push({ id: 'owner', token: authToken });
+    }
+    if (!approvers.length) {
         throw new Error('Remote approvals need a token: pass --gateway-token <token> or set TSDI_AGENT_APPROVER_TOKENS="id=token".');
     }
-    const middleware = new AuthMiddleware(new HttpAuthService(), {
-        authToken: authToken || undefined,
-        approvers
-    });
+    const middleware = new AuthMiddleware(new HttpAuthService(), { approvers });
     const handler = new ApprovalHandler(options.manager, options.owners);
     const routes = [...handler.getRoutes(), healthRoute()];
 

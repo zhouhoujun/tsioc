@@ -60,20 +60,25 @@ export class ApprovalRemoteServerTest {
         }
     }
 
-    @Test('an owner token cannot decide another session')
-    async ownerIsScoped() {
+    @Test('the operator token works as an approver even for ownerless sessions')
+    async operatorTokenApproves() {
         const manager = buildManager();
+        // Ownership checks would reject an unknown principal; the endpoint token
+        // is the operator's, so it acts as an approver.
         const owners = { isAuthorized: async () => false, listOwned: async () => [] } as any;
         const server = await startApprovalRemoteServer({ manager, owners, port: 0, authToken: 'owner-secret' });
         try {
             const pending = manager.checkApproval('shell.exec', { cmd: 'ls' }, 's1');
             const base = `http://${server.host}:${server.port}`;
-            const id = manager.getPending()[0].id;
-            const response = await fetch(`${base}/api/approvals/${id}/approve`, {
+            const headers = { authorization: 'Bearer owner-secret' };
+            const listed = await (await fetch(`${base}/api/approvals`, { headers })).json() as any;
+            expect(listed.requests?.length).toEqual(1);
+            const approved = await (await fetch(`${base}/api/approvals/${listed.requests[0].id}/approve`, {
                 method: 'POST',
-                headers: { authorization: 'Bearer owner-secret' }
-            });
-            expect(response.status).toBe(403);
+                headers
+            })).json() as any;
+            expect(approved.applied).toBe(true);
+            expect((await pending).decision).toEqual(ApprovalDecision.APPROVED);
         } finally {
             manager.cancelBySession('s1');
             await server.close();

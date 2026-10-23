@@ -77,10 +77,10 @@ tsdi-agent approval reject <requestId> --gateway-url http://127.0.0.1:3100 --tok
   `TSDI_AGENT_APPROVER_TOKENS="ci=token1,ops=token2"`) can list and resolve
   approvals for any session without owning it. They cannot read transcripts or
   run turns.
-- **TUI-hosted sessions**: `tsdi-agent chat --gateway-port 3200 --gateway-token <owner-token>`
+- **TUI-hosted sessions**: `tsdi-agent chat --gateway-port 3200 --gateway-token <token>`
   serves `GET /api/approvals` and `POST /api/approvals/:id/approve|reject` on
-  loopback, so the same CLI (or an approver token) can resolve the TUI's
-  pending requests from another process.
+  loopback. That operator token acts as an approver, so the same CLI can resolve
+  the TUI's pending requests from another process.
 
 - **Webhook push** (`TSDI_AGENT_APPROVAL_WEBHOOK` +
   `TSDI_AGENT_APPROVAL_WEBHOOK_SECRET`) POSTs each pending request as JSON with
