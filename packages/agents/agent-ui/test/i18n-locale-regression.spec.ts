@@ -1,6 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { formatAgentUiNotice, agentUiEnglish, agentUiChinese, type AgentUiTranslator } from '../src/agent-ui.i18n';
+import { formatAgentUiNotice, formatAgentUiNoticeFromContext, agentUiEnglish, agentUiChinese, type AgentUiTranslator } from '../src/agent-ui.i18n';
+import { TranslatorService } from '@tsdi/i18n';
 import { AGENT_UI_NOTICE_EN } from '../src/agent-ui.i18n.notice.en';
 import { AGENT_UI_NOTICE_ZH } from '../src/agent-ui.i18n.notice.zh';
 import { AGENT_UI_ERROR_EN, AGENT_UI_ERROR_ZH } from '../src/agent-ui.i18n.error';
@@ -46,7 +47,7 @@ export class AgentUiLocaleRegressionTest {
     noticeParity() {
         const enKeys = Object.keys(AGENT_UI_NOTICE_EN);
         const zhKeys = Object.keys(AGENT_UI_NOTICE_ZH);
-        expect(enKeys.length).toEqual(462);
+        expect(enKeys.length).toEqual(465);
         expect(zhKeys).toEqual(enKeys);
     }
 
@@ -104,6 +105,17 @@ export class AgentUiLocaleRegressionTest {
         expect(formatAgentUiNotice(zh, 'sshNoHosts')).toEqual('未配置 SSH 主机。');
         expect(formatAgentUiNotice(en, 'sshNoHosts')).toEqual('No SSH hosts configured.');
         expect(formatAgentUiNotice(zh, 'sshConnected', { hostId: 'myhost' })).toEqual('已连接到 myhost。');
+    }
+
+    @Test('host-side notices resolve through the app context translator')
+    contextFormatter() {
+        const ctx = { get: (token: any) => token === TranslatorService ? zh : undefined };
+        expect(formatAgentUiNoticeFromContext(ctx, 'remoteApprovalsApi', { url: 'http://127.0.0.1:1234' }))
+            .toEqual('审批接口：http://127.0.0.1:1234');
+        expect(formatAgentUiNoticeFromContext(null, 'remoteApprovalsApi', { url: 'http://h:1' }))
+            .toEqual('Approvals API on http://h:1');
+        expect(formatAgentUiNoticeFromContext({ get: () => { throw new Error('missing'); } }, 'remoteApprovalsUnavailable'))
+            .toEqual('Remote approvals unavailable: configure tools.requireApproval (e.g. ["terminal"]).');
     }
 
     @Test('newly localized ssh/settings/diagnostics/approval/side copy carries CJK under zh')

@@ -1,4 +1,4 @@
-import { MessageFormatter, TranslationBundle } from '@tsdi/i18n';
+import { MessageFormatter, TranslationBundle, TranslatorService } from '@tsdi/i18n';
 import { AGENT_UI_NOTICE_EN } from './agent-ui.i18n.notice.en';
 import { AGENT_UI_NOTICE_ZH } from './agent-ui.i18n.notice.zh';
 import { AGENT_UI_ERROR_EN, AGENT_UI_ERROR_ZH } from './agent-ui.i18n.error';
@@ -55,6 +55,30 @@ export function formatAgentUiNotice(
         return '';
     }
     return agentUiFormatter.format(template, params || {}, 'en');
+}
+
+/**
+ * Format a notice from a DI application context.
+ *
+ * Host adapters (CLI/TUI launcher, desktop, VS Code) hold the started context
+ * rather than the console component's translator; this resolves the context's
+ * `TranslatorService` so host-side notices stay localized instead of hardcoded
+ * English. Falls back to the English catalog when no translator is registered.
+ */
+export function formatAgentUiNoticeFromContext(
+    context: { get?: (token: any) => any } | null | undefined,
+    key: string,
+    params?: Record<string, any>
+): string {
+    let translator: AgentUiTranslator | undefined;
+    if (context && typeof context.get === 'function') {
+        try {
+            translator = context.get(TranslatorService);
+        } catch {
+            translator = undefined;
+        }
+    }
+    return formatAgentUiNotice(translator, key, params);
 }
 
 const AGENT_UI_EN_FOLLOW_UP_ONLY_TERMS = 'more|continue|go on|keep going|carry on|next|proceed';

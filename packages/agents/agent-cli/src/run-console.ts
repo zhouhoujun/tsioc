@@ -8,11 +8,16 @@
 import { AgentHookCommandExecutor } from '@tsdi/agent';
 import { provideSkills, provideTools } from '@tsdi/agent-tools';
 import { AGENT_SSH_OPTIONS } from '@tsdi/agent-ssh';
-import { AgentUiConfigService, AgentConsoleSessionState } from '@tsdi/agent-ui';
+import {
+    AgentUiConfigService,
+    AgentConsoleSessionState,
+    formatAgentUiNoticeFromContext
+} from '@tsdi/agent-ui';
 import {
     runAgentConsole as runConsoleTui,
     createDefaultConsoleUi,
-    AgentConsoleLaunchTarget
+    AgentConsoleLaunchTarget,
+    notifyConsoleHost
 } from '@tsdi/agent-ui/console';
 import {
     AgentAppServerModule,
@@ -116,9 +121,16 @@ export async function runAgentConsole(
     if (gatewayPort > 0) {
         const manager = ctx?.get ? ctx.get(ApprovalManager) : undefined;
         const owners = ctx?.get ? ctx.get(SessionOwnerStore) : undefined;
-        const state = ctx?.get ? ctx.get(AgentConsoleSessionState) : undefined;
+        // Write through the bootstrapped console state: `ctx.get(...)` resolves
+        // root-injector instances whose state never renders.
+        const notice = (key: string, params?: Record<string, any>) => {
+            const text = formatAgentUiNoticeFromContext(ctx, key, params);
+            if (!notifyConsoleHost(ctx, text)) {
+                ctx?.get?.(AgentConsoleSessionState)?.setNotice(text);
+            }
+        };
         if (!manager) {
-            state?.setNotice('Remote approvals unavailable: configure tools.requireApproval (e.g. ["terminal"]).');
+            notice('remoteApprovalsUnavailable');
         } else {
             try {
                 const handle = await startApprovalRemoteServer({
@@ -128,9 +140,11 @@ export async function runAgentConsole(
                     host: (options as AgentGatewayOptions).gatewayHost,
                     authToken: gatewayToken || undefined
                 });
-                state?.setNotice(`Approvals API on http://${handle.host}:${handle.port}`);
+                notice('remoteApprovalsApi', { url: `http://${handle.host}:${handle.port}` });
             } catch (error) {
-                state?.setNotice(`Remote approvals failed: ${error instanceof Error ? error.message : String(error)}`);
+                notice('remoteApprovalsFailed', {
+                    error: error instanceof Error ? error.message : String(error)
+                });
             }
         }
     }

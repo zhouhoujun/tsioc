@@ -1521,3 +1521,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **多轮排队**：turn 运行时输入第二条 prompt 会 `Queued prompt (1)`，第一轮结束后自动执行，两条用户消息各出现一次、回答顺序正确，控制台回到空闲。
 - **流式中断**：turn 进行中按 Esc → `Cancelling current turn…` / `Cancelled`，随后新 prompt 正常得到回答（`ALPHA-SEVEN`），无残留 `Working`。
 - 说明：以上为回归基线；探测脚本需按“每一步新增输出”切片判断，否则旧面板/旧状态会误报。
+
+## 2026-10-23 修复：宿主侧写入落到了“不渲染”的状态实例（通知不可见）
+- 现象：`chat --gateway-port` 启动后 TUI 不显示 `Approvals API on http://…`；偶发出现（早期版本碰巧被后续重绘带出）。
+- 根因（实测）：`ctx.get(AgentConsoleSessionState)` 与 `ctx.get(AgentConsoleComponent).sessionState` 指向**根注入器**实例，而渲染用的是 **bootstrap 组件**的状态实例——`rootVsBoot=false`。写根实例值能读到（`setNotice` 生效、`state=true`），但没有 effect 依赖触发；即使 SIGWINCH 全量重绘也不可见。
+- 修复：新增 `setHostConsoleNotice(target, message)`（`agent-ui/src/AgentConsoleHostNotice.ts`），宿主通过 bootstrap 实例写入；`agent-ui/console` 增加 `resolveBootstrappedConsole(ctx)`（`ConsoleTerminalSurfaceLifecycle` 即 bootstrap 实例）与 `notifyConsoleHost(ctx, message)`；`agent-cli` 的 `--gateway-port` 通知改走 `notifyConsoleHost`。
+- 通知文案接入 i18n：新增 `remoteApprovalsApi / remoteApprovalsUnavailable / remoteApprovalsFailed`（en/zh），新增 `formatAgentUiNoticeFromContext(ctx, key, params)`；真实 TUI 下 EN/zh 各 2 次全部显示（`Approvals API on …` / `审批接口：…`），zh 无英文残留。
+- `runAgentConsole` 的 `persistCommandOutput` 同步改为 bootstrap 状态；命令输出历史是否此前完全未落盘仍需专门验证（`/queue list`、`/hooks`、`/voice status` 在空环境下只出 notice、不产生 entry），列为待办。
+- 测试：`host-notice.spec.ts`（2）、i18n 回归新增 context 用例并更新 key 数（465）；agent-ui **1624 passing**、agent-cli 117。

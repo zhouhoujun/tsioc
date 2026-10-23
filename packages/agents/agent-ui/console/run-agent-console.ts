@@ -6,7 +6,7 @@
  */
 import { mergeAgentOptions, resolveAgentRenderPolicy, AgentHookCommandExecutor, AGENT_CONSOLE_APP_RPC } from '@tsdi/agent';
 import { FileAdapter } from '@tsdi/common';
-import { TuiConsoleModule } from '@tsdi/components/console';
+import { TuiConsoleModule, ConsoleTerminalSurfaceLifecycle } from '@tsdi/components/console';
 import {
     AgentConsoleComponent,
     AgentConsoleSessionState,
@@ -15,7 +15,8 @@ import {
     BoundedFileCommandOutputStore,
     HttpAgentConsoleAppRpc,
     agentConsoleThemes,
-    isAgentConsoleThemeName
+    isAgentConsoleThemeName,
+    setHostConsoleNotice
 } from '@tsdi/agent-ui';
 import { runAgentTUI } from './run-agent-ui';
 
@@ -185,7 +186,8 @@ export async function runAgentConsole(
 
     if (extras.persistCommandOutput) {
         try {
-            const sessionState = ctx?.get ? ctx.get(AgentConsoleSessionState) : undefined;
+            const sessionState = resolveBootstrappedConsole(ctx)?.sessionState
+                ?? (ctx?.get ? ctx.get(AgentConsoleSessionState) : undefined);
             const fileAdapter = ctx?.get ? ctx.get(FileAdapter) : undefined;
             if (sessionState && fileAdapter) {
                 sessionState.setCommandOutputStore(new BoundedFileCommandOutputStore(
@@ -203,4 +205,32 @@ export async function runAgentConsole(
     }
 
     return ctx;
+}
+
+/**
+ * The bootstrapped console component instance.
+ *
+ * Components are created with their own injector, so `ctx.get(AgentConsoleComponent)`
+ * and `ctx.get(AgentConsoleSessionState)` resolve **root** instances whose state is
+ * not the one the view renders (measured: `rootVsBoot=false`). Startup writes made
+ * there are invisible — the approvals notice never appeared and command-output
+ * history was never persisted. The runner exposes the bootstrapped instance as
+ * `ConsoleTerminalSurfaceLifecycle`.
+ */
+export function resolveBootstrappedConsole(ctx: any): any {
+    try {
+        return ctx?.get ? ctx.get(ConsoleTerminalSurfaceLifecycle) : undefined;
+    } catch {
+        return undefined;
+    }
+}
+
+/**
+ * Set a host-side notice on the running TUI.
+ *
+ * @returns `true` when the bootstrapped state accepted it (the caller needs no
+ *          root-state fallback).
+ */
+export function notifyConsoleHost(ctx: any, message: string): boolean {
+    return setHostConsoleNotice(resolveBootstrappedConsole(ctx), message);
 }
