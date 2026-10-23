@@ -105,13 +105,12 @@ export class SessionOwnerStore {
         if (!principalId) {
             return [];
         }
-        const owned: string[] = [];
-        for (const sessionId of sessionIds) {
-            if ((await this.getOwner(sessionId)) === principalId) {
-                owned.push(sessionId);
-            }
-        }
-        return owned;
+        // Ownership checks are a per-session read; doing them sequentially made
+        // `session.list` take ~300ms on a 150-session workspace. Keep the input
+        // order, resolve in parallel.
+        const ids = Array.from(sessionIds);
+        const owners = await Promise.all(ids.map(sessionId => this.getOwner(sessionId)));
+        return ids.filter((_sessionId, index) => owners[index] === principalId);
     }
 
     async unbind(sessionId: string): Promise<void> {

@@ -1369,3 +1369,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 测试：gateway `session-exists.spec.ts`（3），agent-ui `session-open-notice.spec.ts`（4，含 openSession 保留/清除通知）。i18n notice 键 en/zh 各 +1（parity 测试计数同步 462）。
 - 真实 TUI：`--session typo-…` 显示通知且不再误导；`--session chat1a011a…` 正常恢复历史、无通知。
 - 回归：agent-gateway **340**、agent-ui **1600**、agent-cli **106**，agent 1038（同批前次）。
+
+## 2026-10-23 会话列表归属检查并行化
+- `SessionOwnerStore.listOwned` 原为逐会话串行 `getOwner`（150+ 会话时 `session.list` 257–563ms）。
+- 改为 `Promise.all` 并行读取、保留输入顺序；`sessionId` 本身有唯一索引，读取为单行查询。
+- 实测（root-sim，230 会话）：`session.list` **224/151ms**（原 563/257ms）；真实 TUI 恢复 2.79s（首字节 1.24s）。
+- 测试：`session-owner-list.spec.ts` 3 例（顺序/过滤、并行启动顺序、无 principal）。回归：agent-gateway **343**。
