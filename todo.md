@@ -1509,3 +1509,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - RED 证据（旧过滤逻辑同一输入）：`['src/a.ts','skill:codebase-exploration','plugin:ops','my notes.md']` → 期望无 skill/plugin。GREEN：新用例 + agent-ui **1621 passing**。
 - 真实 TUI（bundle）：`@README.md` 仍显示 `Files · README.md`；`@skill:codebase-exploration` 不再出现 `Files · skill:…`（正文仍保留 `@skill:` 提及）。
 - 附带确认：`@skill:` 菜单能列出内置技能（Codebase Exploration / Implementation / Plan Mode / Web Research），`@` 菜单顺序为内置提示 → 技能 → 目录。
+
+## 2026-10-23 远程审批的 reject / Esc 取消（真实 TUI 验证）
+- **远程 reject**（PTY TUI + 独立 CLI 进程）：`chat --gateway-port --gateway-token` 触发 `terminal` 审批 → 外部 `approval list` 返回 1 条 → `approval reject <id>` 输出 `Rejected … (session chat…)`；TUI 状态行从 `Approval required for terminal` 变为 `Denied terminal`，turn 继续并回到输入态；objective 校验：被拒绝的 `touch <marker>` 从未执行（marker 不存在）。
+- **审批中按 Esc 取消**：待审批队列 1 → 0（无残留请求供远程误批），界面显示 `Cancelling current turn…` 与 `✓ Cancelled · Turn cancelled`，输入框恢复可用。
+- 结论：approve / reject / 本地取消三条路径都能正确收敛，不需要改代码；已记录为回归基线。
