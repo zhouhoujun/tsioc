@@ -172,6 +172,7 @@ export class AppRpcServer {
                         'command_output.replay',
                         'command_output.clear',
                         'session.create',
+                        'session.exists',
                         'session.fork',
                         'session.list',
                         'session.list_projects',
@@ -319,6 +320,7 @@ export class AppRpcServer {
                 return this.clearCommandOutput(params, context);
             case 'session.create':
                 return this.createSession(params, context);
+            case 'session.exists': return { sessionId: params?.sessionId, exists: await this.sessions.has(this.requireSessionId(params)) };
             case 'session.fork':
                 return this.forkSession(params, context);
             case 'session.list':

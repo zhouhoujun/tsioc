@@ -1361,3 +1361,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 真实 PTY 恢复会话：首字节 1.2–1.3s，历史出现 **21.5s/44s → 2.65–3.36s**；新会话对话正常（`在线`），无错误。
 - 测试：`session-aggregation.spec.ts`（7）、`session-open-batching.spec.ts`（5）、`input-history-consolidation.spec.ts`（4）、`input-history-store.spec.ts`（2）、`session-user-messages.spec.ts`（2，真实 ORM）。回归：agent **1038**、agent-gateway **337**、agent-ui **1596**、agent-cli **106**，四包 `tsc` 0，source-size OK。
 - 兼容性：旧库升级时 `synchronize` 会补建索引（首次启动多花约 1s）；旧输入历史记录在下一次提交时被合并清理。
+
+## 2026-10-23 `--session` 未知 id 不再静默开空会话
+- 现象：`tsdi-agent chat --session <typo>` 会静默创建/打开一个空会话（标题显示该 id，Transcript 为空），用户容易误以为历史丢失。
+- 根因：`ensureSession` → `session.create` 是 create-idempotent；且启动早期 `app.state` 等 RPC 会先把这个 id 物化，之后再判断「是否新建」已不可靠（实测 `session.create` 返回 `created=false`）。
+- 修复：新增只读探针 `session.exists`（gateway）+ `applyMissingSessionNotice`（agent-ui）：在 `bootstrapStateFromAppRpc` **之前**探测显式 `--session` id；不存在则显示通知 `Session <id> was not found; started a new session.`（中文：`未找到会话 <id>，已开始新会话。`）。新会话（无显式 id）与正常恢复均不提示。
+- 测试：gateway `session-exists.spec.ts`（3），agent-ui `session-open-notice.spec.ts`（4，含 openSession 保留/清除通知）。i18n notice 键 en/zh 各 +1（parity 测试计数同步 462）。
+- 真实 TUI：`--session typo-…` 显示通知且不再误导；`--session chat1a011a…` 正常恢复历史、无通知。
+- 回归：agent-gateway **340**、agent-ui **1600**、agent-cli **106**，agent 1038（同批前次）。

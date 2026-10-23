@@ -1,12 +1,14 @@
 import type { AgentMessage, AgentOptions, AgentSessionSection } from '@tsdi/agent';
 import type { AgentConsoleSessionService } from './AgentConsoleSessionService';
 import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
+import { AgentUiTranslator, formatAgentUiNotice } from './agent-ui.i18n';
 
 export interface AgentConsoleSessionOpenHost {
     sessionService?: AgentConsoleSessionService | null;
     startupWorkspace?: string | null;
     options: AgentOptions;
     state: AgentConsoleSessionState;
+    translator?: AgentUiTranslator | null;
     transcriptNavigationController: { setFocused(focused: boolean): void };
     queuedPrompts: Map<string, any[]>;
     openSessionRequestId: number;
@@ -35,10 +37,43 @@ export interface AgentConsoleSessionOpenHost {
     restoreSessionModes(sessionId: string): Promise<void>;
 }
 
+/**
+ * Existence probe that runs before anything can create the session. Uses the
+ * same RPC the service wraps; service internals stay private.
+ */
+async function sessionExists(service: AgentConsoleSessionService, sessionId: string): Promise<boolean | undefined> {
+    const internals = service as unknown as {
+        appRpc?: { request(method: string, params?: any): Promise<any> } | null;
+        sessionStore?: { has?(id: string): Promise<boolean> } | null;
+    };
+    if (internals.appRpc) {
+        const result = await internals.appRpc.request('session.exists', { sessionId }).catch(() => null);
+        return typeof result?.exists === 'boolean' ? result.exists : undefined;
+    }
+    return internals.sessionStore?.has ? internals.sessionStore.has(sessionId) : undefined;
+}
+
+/**
+ * Report an unknown `--session` id before any call that may create it (the
+ * `app.state` bootstrap used to materialize the requested id, so the later
+ * create was indistinguishable from a resume).
+ */
+export async function applyMissingSessionNotice(host: AgentConsoleSessionOpenHost, sessionId?: string): Promise<boolean> {
+    const id = String(sessionId || '').trim();
+    if (!id || !host.sessionService) {
+        return false;
+    }
+    if ((await sessionExists(host.sessionService, id)) !== false) {
+        return false;
+    }
+    host.state.setNotice(formatAgentUiNotice(host.translator, 'sessionNotFound', { id }));
+    return true;
+}
+
 export async function openSession(
     host: AgentConsoleSessionOpenHost,
     sessionId?: string,
-    options?: { persistCurrentHistory?: boolean; fresh?: boolean }
+    options?: { persistCurrentHistory?: boolean; fresh?: boolean; missing?: boolean }
 ): Promise<void> {
     if (host.isTurnInProgress()) {
         host.notifyBusyState('Wait for the current turn to finish before switching sessions.');
@@ -95,7 +130,9 @@ export async function openSession(
     host.state.clearActivities();
     host.state.setLastError('');
     host.updateTerminalTitle();
-    host.state.setNotice('');
+    host.state.setNotice(options?.missing === true
+        ? formatAgentUiNotice(host.translator, 'sessionNotFound', { id: target.id })
+        : '');
     host.state.setInput('', 0);
     host.editTargetMessageId = '';
     host.editDraftBefore = '';

@@ -174,7 +174,7 @@ import {
     loadSessionPage as loadSessionContentPage,
     mapWithConcurrency as runWithConcurrency
 } from './AgentConsoleSessionContentLoader';
-import { openSession as delegateOpenSession, AgentConsoleSessionOpenHost } from './AgentConsoleSessionOpen';
+import { applyMissingSessionNotice, openSession as delegateOpenSession, AgentConsoleSessionOpenHost } from './AgentConsoleSessionOpen';
 import {
     AgentConsoleRpcCommandHost,
     runApproveRetryCommand as runApproveRetryCommandView,
@@ -1041,6 +1041,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             startupWorkspace: self.startupWorkspace,
             options: self.options,
             state: self.state,
+            translator: self.translator,
             transcriptNavigationController: self.transcriptNavigationController,
             queuedPrompts: self.queuedPrompts,
             get openSessionRequestId() { return self.openSessionRequestId; },
@@ -1080,7 +1081,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         };
     }
 
-    protected async openSession(sessionId?: string, options?: { persistCurrentHistory?: boolean; fresh?: boolean }): Promise<void> {
+    protected async openSession(sessionId?: string, options?: { persistCurrentHistory?: boolean; fresh?: boolean; missing?: boolean }): Promise<void> {
         return delegateOpenSession(this.sessionOpenHost(), sessionId, options);
     }
 
@@ -1567,6 +1568,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         // tracks a session (and can replay its transcript through the bridge).
         // Startup session contract: only --session may resume.
         const explicitSessionId = String(this.options.bootstrapTurn?.sessionId || '').trim();
+        const missingResume = await applyMissingSessionNotice(this.sessionOpenHost(), explicitSessionId);
         const freshStartup = !explicitSessionId
             && (this.options.bootstrapTurn?.enabled === false || !!this.startupWorkspace);
         if (!freshStartup) {
@@ -1575,10 +1577,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         await this.initializeInputHistory();
         // No explicit session means a fresh conversation. Resuming the state
         // default here replays the previous transcript on every console start.
-        await this.openSession(explicitSessionId || (freshStartup ? undefined : this.state.sessionId) || undefined, {
-            persistCurrentHistory: false,
-            fresh: freshStartup
-        });
+        await this.openSession(explicitSessionId || (freshStartup ? undefined : this.state.sessionId) || undefined, { persistCurrentHistory: false, fresh: freshStartup, missing: missingResume });
         // Subscribe only after the initial session is selected. Subscribing
         // earlier lets the remote bridge seed the default session's timeline
         // into a new, non-resumed chat.
