@@ -270,6 +270,18 @@ export class SuggestionCompletionEdgeTest {
         expect(getAgentConsoleInputTokenRange(continued, continued.length)?.token).toEqual('@"my dir/src');
     }
 
+    @Test('leading indentation still opens the command menu (submit trims)')
+    async leadingSpaceCommand() {
+        const range = getAgentConsoleInputTokenRange('  /se', 5);
+        expect(range?.token).toEqual('/se');
+        expect(range?.start).toEqual(2);
+        const options = resolveAgentConsoleInputSuggestions('  /se', 5, ['/session', '/status', '/settings'], [], []);
+        expect(options.map(option => option.value)).toContain('/session');
+
+        // A `/`-word inside a message still must not open the palette.
+        expect(getAgentConsoleInputTokenRange('check /tmp/foo', 'check /tmp/foo'.length)).toBeUndefined();
+    }
+
     @Test('quoted queries still match suggestions')
     async quotedQueryMatches() {
         const options = resolveAgentConsoleInputSuggestions('@"with sp', '@"with sp'.length, [], [], [

@@ -26,6 +26,18 @@ export class ComposerKeyTest {
         expect(state.selectMenu?.options.some(option => option.value === '/session')).toBe(true);
     }
 
+    @Test('Tab with an open menu completes the highlighted option')
+    async tabCompletesOpenMenu() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub());
+        const state = component.sessionState;
+        state.setInput('/se', 3);
+        expect(state.selectMenu).toBeDefined();
+        // The global Tab handler must not consume the key while the menu is
+        // open: completion happens in the menu handler.
+        expect((component as any).queueDraft()).toBe(false);
+        expect(state.input).toEqual('/se');
+    }
+
     @Test('Tab with plain text still queues as before')
     async tabQueuesPlainDraft() {
         const component = createConsole(new RuntimeStub(), new SchedulerStub());

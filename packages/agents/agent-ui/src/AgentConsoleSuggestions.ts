@@ -72,10 +72,12 @@ export function getAgentConsoleInputTokenRange(input: string, cursor = input.len
     }
     const token = match[1] || '';
     const start = safeCursor - token.length;
-    // Slash commands are line-start commands. A `/`-word elsewhere (e.g. a path
-    // in `check /tmp/foo`) must not open the command palette — otherwise the
-    // menu hijacks Enter (it confirms a command instead of sending the message).
-    if (token.startsWith('/') && start !== 0) {
+    // Slash commands are line-start commands; leading indentation is allowed
+    // because submit() trims the draft (`input.trim().startsWith('/')`) before
+    // deciding it is a command. A `/`-word elsewhere (e.g. a path in
+    // `check /tmp/foo`) must not open the palette — otherwise the menu hijacks
+    // Enter (it confirms a command instead of sending the message).
+    if (token.startsWith('/') && text.slice(0, start).trim() !== '') {
         return undefined;
     }
     return {

@@ -1398,3 +1398,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 新增全局动作 `clear-input`，composer 上下文绑定 `ctrl+u`（pager 的 `ctrl+u` 仍是 `message-half-page-up`；`effectiveBindings` 上下文合并已断言）。
 - 真实 TUI 验证：`@sr` → Esc → Tab → 候选重新出现（`@bank-system/src/` 等 12 项）；`hello world` + Ctrl+U → 输入清空，随后输入 `x` 只显示 `x`。
 - 测试：新增 `keymap-composer-input.spec.ts` 4 例（Tab 重开、纯文本不重开/不排队、仅 token 生效、ctrl+u 上下文与动作）；`vm-submit` 队列测试保持通过。回归：agent-ui **1611 passing**，tsc 0，source-size OK。
+
+## 2026-10-23 修正：菜单打开时 Tab 必须补全（不能只重开）+ 前导空格命令
+- 回归（我上一提交引入）：`queueDraft()` 无条件先调 `reopenInputSuggestions()`，而全局键处理在菜单处理之前，导致**菜单已打开时 Tab 只重开菜单、不补全**（`/se` + Tab 停在 `/se`）。真实 TUI 复现后修正为：仅当 `state.selectMenu` 为空（Esc 关闭）且空闲时才重开；菜单打开时让按键下沉到菜单处理器完成补全。
+- 前导空格一致性：submit 用 `input.trim().startsWith('/')` 判定命令，但候选要求 `/` 位于第 0 字符；现在允许**行首前导空白**（`text.slice(0, start).trim() === ''`），正文中间的 `/`（如 `check /tmp/foo`）仍不打开面板。
+- 真实 TUI 复验：
+  - `/se`+Tab → `/settings`；` /se`+Tab → ` /settings`（保留缩进）；再输入 `#` → `/settings #`。
+  - `@sr` → Esc → Tab → 候选重新出现（12 个 `*/src/`）；`hello world` + Ctrl+U 清空。
+- 测试：`keymap-composer-input.spec.ts` 5 例（含“菜单打开时 Tab 不被全局处理器吞掉”）；`p413` 增加前导空格用例。回归：agent-ui **1613 passing**，tsc/source-size OK。
