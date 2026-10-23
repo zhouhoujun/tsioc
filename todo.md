@@ -1465,3 +1465,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `DefaultAgentRuntime.resolveApprovalManager` 对 `ToolApprovalManager` 实例改为 **configure + 复用**（保留自定义 `ApprovalManager` 实现时的原逻辑）；审批策略选项抽到 `runtime/approval-policy.ts`（保持文件行数 ratchet）。
   - 同时修正 `GatewayBootstrap` 构造参数顺序（新增的 webhook 依赖放到末尾），此前导致 `registersLazyOptionalHandlerRoutes` 失败。
 - 测试：新增 `agent/test/approval-manager-sharing.spec.ts`（2 例：注入实例 === runtime 实例、`isConfigured=true`、经注入实例创建的 pending 可批准；无规则时无 manager）。回归：agent **1040**、agent-gateway **352**、agent-cli **113**，tsc/source-size OK。
+
+## 2026-10-23 远程审批可用性修复（注入元数据 + 生命周期）
+- 真实网关端到端复验发现两处问题：
+  1. `ApprovalHandler` / `AppRpcServer` 的 `approvalManager?: ApprovalManager | null`、`owners?: SessionOwnerStore | null` 因 **`T | null` 联合类型**让 TS 只发出 `Object` 作为 `design:paramtypes`，类型注入解析不到 → handler 的 manager/owners 都是 `undefined`，`/api/approvals` 永远空队列；
+  2. `GatewayServer` 没有在 context dispose 时关闭监听 → 任何 `Application.run(AgentGatewayModule)` 的进程/测试都无法退出（实测测试挂死）。
+- 修复：两处改为显式 `@Inject(ApprovalManager)` / `@Inject(SessionOwnerStore)`；`GatewayServer` 增加 `@Dispose()` 调用 `stop()`。
+- 真实网关端到端（port 0 + 临时 sql.js）：approver token 列表返回 1 条 → 批准返回 `applied=true` 且 pending promise 解析为 `approved`；owner 对他人会话 reject → **403**；`ctx.close()` 后进程正常退出。
+- 测试：`approval-remote.spec.ts` 新增真实网关用例（断言 handler 与 runtime 共用 manager、approver REST 列表/批准、owner 403）。回归：agent-gateway **353**、agent 1040、agent-cli 113，tsc/source-size OK。

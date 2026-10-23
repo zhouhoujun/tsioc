@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Buffer } from 'buffer';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Dispose } from '@tsdi/core';
 import { AgentRuntime } from '@tsdi/agent';
 import { GATEWAY_CONFIG } from '../tokens';
 import { GatewayConfig, defaultGatewayConfig } from '../contracts/GatewayConfig';
@@ -94,6 +95,12 @@ export class GatewayServer {
     /** Check if the server is running */
     get running(): boolean {
         return this.isRunning;
+    }
+
+    /** Close the listener when the application context is disposed. */
+    @Dispose()
+    protected async onDispose(): Promise<void> {
+        await this.stop();
     }
 
     /** Stop the server */

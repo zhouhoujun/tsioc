@@ -1,7 +1,7 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { UuidGenerator } from '@tsdi/core';
-import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeAgentWorkspaceIdentity, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, CommandExchangeStore, CommandExchangeRecord, CommandExchangeStaleError, parseCommandExchangeRecord, redactCommandExchangeRecord, ToolApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, redactCommandOutputEntry, normalizeAgentRpcRequestMeta, COMMAND_EXCHANGE_STORE, BACKGROUND_TASK_HISTORY_STORE, BackgroundTaskHistoryStore, BackgroundTaskPageOptions, collectDelegationSessionIds, ExchangeMetrics, ExchangeMetricsSnapshot } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeAgentWorkspaceIdentity, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, CommandExchangeStore, CommandExchangeRecord, CommandExchangeStaleError, parseCommandExchangeRecord, redactCommandExchangeRecord, ApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, redactCommandOutputEntry, normalizeAgentRpcRequestMeta, COMMAND_EXCHANGE_STORE, BACKGROUND_TASK_HISTORY_STORE, BackgroundTaskHistoryStore, BackgroundTaskPageOptions, collectDelegationSessionIds, ExchangeMetrics, ExchangeMetricsSnapshot } from '@tsdi/agent';
 import { resolveModelCatalog } from './modelCatalog';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
@@ -35,7 +35,7 @@ export class AppRpcServer {
         private events: EventHandler,
         @Inject(AGENT_OPTIONS, { defaultValue: defaultAgentOptions }) private options: AgentOptions = defaultAgentOptions,
         @Optional() private audit?: AuditSink | null,
-        @Optional() private approvalManager?: ToolApprovalManager | null,
+        @Optional() @Inject(ApprovalManager) private approvalManager?: ApprovalManager | null,
         @Optional() private summaryQuality?: SummaryQualityStore | null,
         @Optional() private compactionHistory?: CompactionHistoryStore | null,
         @Optional() private turnDiagnostics?: TurnDiagnosticsStore | null,

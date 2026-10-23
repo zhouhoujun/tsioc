@@ -1,6 +1,6 @@
 import * as http from 'http';
-import { Injectable, Optional } from '@tsdi/ioc';
-import { ToolApprovalManager } from '@tsdi/agent';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { ApprovalManager } from '@tsdi/agent';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
 import { getRequestAuth, getRequestPrincipalId } from '../auth/AuthMiddleware';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
@@ -13,8 +13,11 @@ import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 @Injectable()
 export class ApprovalHandler {
     constructor(
-        @Optional() private approvalManager?: ToolApprovalManager | null,
-        private owners?: SessionOwnerStore | null
+        // Explicit tokens: `T | null` unions emit `Object` as the design type,
+        // so optional type-based injection resolved nothing and the handler saw
+        // an empty approval queue.
+        @Optional() @Inject(ApprovalManager) private approvalManager?: ApprovalManager | null,
+        @Optional() @Inject(SessionOwnerStore) private owners?: SessionOwnerStore | null
     ) {
     }
 
