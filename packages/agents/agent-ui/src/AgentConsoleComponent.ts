@@ -175,7 +175,7 @@ import {
     mapWithConcurrency as runWithConcurrency
 } from './AgentConsoleSessionContentLoader';
 import { applyMissingSessionNotice, openSession as delegateOpenSession, AgentConsoleSessionOpenHost } from './AgentConsoleSessionOpen';
-import { isAgentConsoleExactCommandToken, parseAgentConsoleMentionNames } from './AgentConsoleSuggestions';
+import { isAgentConsoleExactCommandToken, resolveAgentConsoleMentionDisplayFiles } from './AgentConsoleSuggestions';
 import {
     AgentConsoleRpcCommandHost,
     runApproveRetryCommand as runApproveRetryCommandView,
@@ -1751,10 +1751,10 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected resolveMentionDisplayFiles(input: string): string[] {
-        const builtin = new Set(['workspace', 'session', 'model', 'tools']);
-        const toolNames = new Set((this.state.tools || []).map(tool => tool.name));
-        return parseAgentConsoleMentionNames(input)
-            .filter(name => !!name && !builtin.has(name) && !toolNames.has(name));
+        return resolveAgentConsoleMentionDisplayFiles(
+            input,
+            (this.state.tools || []).map(tool => tool.name)
+        );
     }
 
     protected async enrichPromptWithMentions(input: string): Promise<string> {

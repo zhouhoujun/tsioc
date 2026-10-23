@@ -8,7 +8,8 @@ import {
     parseAgentConsoleMentionNames,
     rankAgentConsoleCommandMatches,
     resolveAgentConsoleArgumentCandidates,
-    resolveAgentConsoleInputSuggestions
+    resolveAgentConsoleInputSuggestions,
+    resolveAgentConsoleMentionDisplayFiles
 } from '../src/AgentConsoleSuggestions';
 import { enrichPromptWithMentions } from '../src/AgentConsolePromptMentions';
 import { AgentConsoleWorkspaceMentionsProvider } from '../src/AgentConsoleWorkspaceMentions';
@@ -295,6 +296,17 @@ export class SuggestionCompletionEdgeTest {
         expect(parseAgentConsoleMentionNames('请总结@bank-system 与 @workspace')).toEqual(['bank-system', 'workspace']);
         expect(parseAgentConsoleMentionNames('联系 test@example.com')).toEqual([]);
         expect(parseAgentConsoleMentionNames('请@')).toEqual([]);
+    }
+
+    @Test('skills and plugins are not reported as mentioned files')
+    async mentionDisplayFiles() {
+        const input = '@src/a.ts @skill:codebase-exploration @plugin:ops @workspace @terminal @"my notes.md"';
+        expect(resolveAgentConsoleMentionDisplayFiles(input, ['terminal']))
+            .toEqual(['src/a.ts', 'my notes.md']);
+        // Without the tool list the tool mention still counts as a file.
+        expect(resolveAgentConsoleMentionDisplayFiles('@terminal @readme.md'))
+            .toEqual(['terminal', 'readme.md']);
+        expect(resolveAgentConsoleMentionDisplayFiles('@skill:plan-mode')).toEqual([]);
     }
 
     @Test('arguments complete from subcommands and enum values')

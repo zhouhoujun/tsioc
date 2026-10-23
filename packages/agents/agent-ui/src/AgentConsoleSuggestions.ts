@@ -293,3 +293,24 @@ export function parseAgentConsoleMentionNames(text: string): string[] {
     }
     return Array.from(new Set(names));
 }
+
+const MENTION_BUILTINS = new Set(['workspace', 'session', 'model', 'tools']);
+
+/**
+ * Mentions rendered as the compact `Files · …` line.
+ *
+ * Builtin hints (`@model`), tool names (`@terminal`) and catalog entries
+ * (`@skill:…` / `@plugin:…`) are not files: listing a skill as a file in the
+ * user message was the visible bug. They still appear in the message body.
+ */
+export function resolveAgentConsoleMentionDisplayFiles(
+    input: string,
+    toolNames: Iterable<string> = []
+): string[] {
+    const tools = new Set(toolNames);
+    return parseAgentConsoleMentionNames(input)
+        .filter(name => !!name
+            && !MENTION_BUILTINS.has(name)
+            && !tools.has(name)
+            && !/^(skill|plugin):/i.test(name));
+}

@@ -1502,3 +1502,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 真实 CLI：静默 HTTP 服务 + `--timeout 1500` → 3.1s 内退出 1 并打印含 URL 的超时信息。
 - 真实 TUI 端到端（仅 owner 令牌）：`chat --gateway-port 56985 --gateway-token owner-secret` → 外部 `approval list --timeout 10000` 返回 1 条 `terminal` → `approval approve` 输出 `Approved …` → TUI 显示批准并执行。
 - 排查结论：此前“审批面板打开时端点偶尔 15s 超时”并非产品缺陷，而是 PTY 驱动在 `subprocess.run` 期间停止读取，终端写阻塞把 TUI 事件循环一起卡住；驱动改为边跑边 drain 后稳定通过（也说明新的 15s 超时能把“永久挂起”变成可诊断错误）。
+
+## 2026-10-23 技能/插件提及不再被当成“文件”
+- 发现：`@skill:<id>` / `@plugin:<id>` 会进入 `mentionFiles`，用户消息被渲染成 `Files · skill:codebase-exploration`（技能被标成文件）。内置 `@workspace/@model/...` 与工具名本来就被排除，catalog 类提及漏了。
+- 修复：抽出纯函数 `resolveAgentConsoleMentionDisplayFiles(input, toolNames)`（`AgentConsoleSuggestions.ts`），排除内置、工具名与 `skill:`/`plugin:` 前缀；组件委托该函数。
+- RED 证据（旧过滤逻辑同一输入）：`['src/a.ts','skill:codebase-exploration','plugin:ops','my notes.md']` → 期望无 skill/plugin。GREEN：新用例 + agent-ui **1621 passing**。
+- 真实 TUI（bundle）：`@README.md` 仍显示 `Files · README.md`；`@skill:codebase-exploration` 不再出现 `Files · skill:…`（正文仍保留 `@skill:` 提及）。
+- 附带确认：`@skill:` 菜单能列出内置技能（Codebase Exploration / Implementation / Plan Mode / Web Research），`@` 菜单顺序为内置提示 → 技能 → 目录。
