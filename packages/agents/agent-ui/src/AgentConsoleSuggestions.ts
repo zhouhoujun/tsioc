@@ -60,6 +60,12 @@ export function getAgentConsoleInputTokenRange(input: string, cursor = input.len
     const text = String(input || '');
     const safeCursor = Math.max(0, Math.min(text.length, cursor));
     const prefix = text.slice(0, safeCursor);
+    // Quoted mentions keep spaces inside the token: `@"my file.txt"`.
+    const quoted = prefix.match(/(?:^|\s)(@"[^"]*"?)$/);
+    if (quoted) {
+        const token = quoted[1];
+        return { start: safeCursor - token.length, end: safeCursor, token };
+    }
     const match = prefix.match(/(?:^|\s)([@/][^\s]*)$/);
     if (!match) {
         return undefined;
@@ -112,6 +118,10 @@ export function resolveAgentConsoleInputSuggestions(
         }));
     }
     if (active.token.startsWith('@')) {
+        const quoted = active.token.startsWith('@"');
+        const query = quoted ? active.token.slice(2).replace(/"$/, '') : active.token.slice(1);
+        const matchesQuery = (value: string) => !query
+            || String(value || '').slice(1).toLowerCase().startsWith(query.toLowerCase());
         const mentions = getAgentConsoleMentionCandidates(tools).map(item => ({
             label: item,
             value: item
@@ -122,20 +132,14 @@ export function resolveAgentConsoleInputSuggestions(
             return localized ? { ...option, description: localized } : option;
         };
         const workspace = workspaceSuggestions.map(localizeKind);
-        const pseudo = mentions.filter(item => AGENT_CONSOLE_PSEUDO_MENTIONS.includes(item.value));
+        const pseudo = mentions.filter(item => AGENT_CONSOLE_PSEUDO_MENTIONS.includes(item.value) && matchesQuery(item.value));
         const allToolMentions = mentions.filter(item => !AGENT_CONSOLE_PSEUDO_MENTIONS.includes(item.value));
         // Bare `@` lists contexts (pseudo + workspace); the ~64 tool mentions
         // only appear once the query is specific enough to be intentional.
-        const toolMentions = active.token.length >= 3 ? allToolMentions : [];
+        const toolMentions = query.length >= 2 ? allToolMentions.filter(item => matchesQuery(item.value)) : [];
         // Files/directories first: `@tim` + Enter must insert the file, not
         // submit the `@time` tool mention.
-        const options = active.token === '@'
-            ? [...pseudo, ...workspace, ...toolMentions]
-            : [
-                ...pseudo.filter(item => item.value.startsWith(active.token)),
-                ...workspace,
-                ...toolMentions.filter(item => item.value.startsWith(active.token))
-            ];
+        const options = [...pseudo, ...workspace, ...toolMentions];
         const deduped: AgentConsoleSelectOption[] = [];
         const seen = new Set<string>();
         options.forEach(option => {
@@ -148,6 +152,23 @@ export function resolveAgentConsoleInputSuggestions(
         return deduped;
     }
     return [];
+}
+
+/**
+ * Mention values with spaces must be quoted, otherwise the prompt parser reads
+ * only the first word (`@with space.txt` resolved to `@with`).
+ */
+export function formatAgentConsoleSuggestionValue(suggestion: string): string {
+    const raw = String(suggestion || '');
+    if (!raw.startsWith('@') || raw.startsWith('@"')) {
+        return raw;
+    }
+    if (!/\s/.test(raw.slice(1))) {
+        return raw;
+    }
+    // A spaced directory keeps the quote open so the next segment continues the
+    // same token (`@"my dir/src`); a file closes it.
+    return raw.endsWith('/') ? `@"${raw.slice(1)}` : `@"${raw.slice(1)}"`;
 }
 
 export function applyAgentConsoleSuggestion(
@@ -163,10 +184,27 @@ export function applyAgentConsoleSuggestion(
             cursor
         };
     }
-    const nextValue = `${text.slice(0, active.start)}${suggestion} ${text.slice(active.end)}`;
-    const nextCursor = active.start + suggestion.length + 1;
+    const formatted = formatAgentConsoleSuggestionValue(suggestion);
+    // Directories keep the menu open so the next path segment can be typed:
+    // appending a space used to break `@dir/` into `@dir/ src`.
+    const suffix = String(suggestion || '').endsWith('/') ? '' : ' ';
+    const nextValue = `${text.slice(0, active.start)}${formatted}${suffix}${text.slice(active.end)}`;
     return {
         value: nextValue,
-        cursor: nextCursor
+        cursor: active.start + formatted.length + suffix.length
     };
+}
+
+/** Mention names (without `@`) from a prompt; supports quoted paths. */
+export function parseAgentConsoleMentionNames(text: string): string[] {
+    const names: string[] = [];
+    const pattern = /(^|\s)@(?:"([^"]*)"|([^\s@"]+))/g;
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(String(text || '')))) {
+        const name = String(match[2] ?? match[3] ?? '').trim();
+        if (name) {
+            names.push(name);
+        }
+    }
+    return Array.from(new Set(names));
 }

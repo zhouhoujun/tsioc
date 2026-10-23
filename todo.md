@@ -1375,3 +1375,16 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 改为 `Promise.all` 并行读取、保留输入顺序；`sessionId` 本身有唯一索引，读取为单行查询。
 - 实测（root-sim，230 会话）：`session.list` **224/151ms**（原 563/257ms）；真实 TUI 恢复 2.79s（首字节 1.24s）。
 - 测试：`session-owner-list.spec.ts` 3 例（顺序/过滤、并行启动顺序、无 principal）。回归：agent-gateway **343**。
+
+## 2026-10-23 `/` 与 `@` 菜单补全问题（真实 TUI 发现）
+- **目录补全插入尾随空格**：`@sl` + Tab → `@sleep-system/ `，再输入 `src` 变成 `@sleep-system/ src`，mention token 断裂、菜单不再打开（输入 `@sleep-system/ src/` 也不会出现命令面板，因为 `/` 不在行首——符合设计，但路径无法继续）。
+  - 修复：`applyAgentConsoleSuggestion` 对以 `/` 结尾的建议**不追加空格**，保持 token 打开（`refreshInputSuggestions` 会接着列目录内容）。
+- **含空格的文件/目录名补全后 mention 断裂**：`@with` + Tab → `@with space.txt`，prompt 解析只取 `@with`，用户消息里显示 `Files · with`（丢失上下文）。
+  - 修复：`formatAgentConsoleSuggestionValue` 对含空格路径加引号（`@"with space.txt"`；含空格的**目录**保留未闭合引号 `@"my dir/` 以便继续输入，文件则闭合）。
+  - 配套：`getAgentConsoleInputTokenRange` 识别 `@"..."`（允许未闭合）；`resolveAgentConsoleInputSuggestions` 用去掉引号的 query 过滤；`AgentConsoleWorkspaceMentions.normalizeWorkspaceQuery` 去掉首尾引号；`enrichPromptWithMentions` 与 `resolveMentionDisplayFiles` 统一用新的 `parseAgentConsoleMentionNames`（支持引号、未闭合引号不算 mention）。
+- 真实 TUI 验证：
+  - `@sl`+Tab → `@sleep-system/`，菜单立即列出 `sleep-system/src/`、`test/`、`package.json`；继续输入 `s` 仍在同一 token。
+  - 建 `my dir/file one.txt`：`@my`+Tab → `@"my dir/`（引号未闭合）→ 输入 `f` → 菜单列出 `@my dir/file one.txt` → Tab → `@"my dir/file one.txt"`。
+  - `@with`+Tab → `@"with space.txt"`，发送后用户消息显示 `Files · with space.txt`（此前是 `Files · with`）。
+- 测试：`p413-suggestions.spec.ts` 新增 6 例（目录不再加空格、空格路径加引号、空格目录未闭合引号、引号 query 过滤、`parseAgentConsoleMentionNames`、enricher 传全名、provider 去引号）；更新 `vm-mentions` 旧断言（原断言把尾随空格当预期）。
+- 回归：agent-ui **1607 passing**，tsc 0，source-size OK。

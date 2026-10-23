@@ -833,8 +833,9 @@ export class VmMentionsTest {
             expect(state.selectMenu?.options.find(o => o.value === '@src/')).toBeDefined();
 
             await state.confirmSelectMenu('@src/');
-            expect(state.input).toEqual('@src/ ');
-            expect(state.selectMenu).toBeUndefined();
+            // Directory completion keeps the token open (no trailing space) so
+            // the next path segment can be typed (`@src/index.ts`).
+            expect(state.input).toEqual('@src/');
 
             const fullText = '@src/ 写测试用例，';
             state.setInput(fullText, fullText.length);

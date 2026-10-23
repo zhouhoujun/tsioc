@@ -1,6 +1,15 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { getAgentConsoleMentionCandidates, rankAgentConsoleCommandMatches, resolveAgentConsoleInputSuggestions } from '../src/AgentConsoleSuggestions';
+import {
+    applyAgentConsoleSuggestion,
+    getAgentConsoleInputTokenRange,
+    getAgentConsoleMentionCandidates,
+    parseAgentConsoleMentionNames,
+    rankAgentConsoleCommandMatches,
+    resolveAgentConsoleInputSuggestions
+} from '../src/AgentConsoleSuggestions';
+import { enrichPromptWithMentions } from '../src/AgentConsolePromptMentions';
+import { AgentConsoleWorkspaceMentionsProvider } from '../src/AgentConsoleWorkspaceMentions';
 
 /**
  * Real TUI findings in the `/` and `@` menus:
@@ -220,5 +229,84 @@ export class SubcommandDescriptionLocaleTest {
         const options = buildAgentConsoleHelpOptions((key: string, fallback: string) => key === 'agent.command.sub.diagnostics.trend' ? '轮次诊断趋势' : fallback);
         const trend = options.find((option: any) => option.value === '/diagnostics trend');
         expect(trend.description).toEqual('轮次诊断趋势');
+    }
+}
+
+/**
+ * Real TUI findings (2026-10-23):
+ *  - Tab on a directory inserted a trailing space (`@sleep-system/ src`), so the
+ *    next path segment could not be attached to the mention;
+ *  - a file named `with space.txt` completed to `@with space.txt`, which the
+ *    prompt parser read as the mention `@with` (display showed `Files · with`).
+ */
+@Suite('/ and @ menu completion edge cases')
+export class SuggestionCompletionEdgeTest {
+    @Test('directory completion keeps the token open instead of adding a space')
+    async directoryCompletionKeepsToken() {
+        const dir = '@sleep-system/';
+        const applied = applyAgentConsoleSuggestion('@sl', '@sl'.length, dir);
+        expect(applied.value).toEqual(dir);
+        expect(applied.cursor).toEqual(dir.length);
+
+        // Typing the next segment continues the same mention token.
+        expect(getAgentConsoleInputTokenRange(`${applied.value}src`, dir.length + 3)?.token).toEqual('@sleep-system/src');
+    }
+
+    @Test('paths with spaces are quoted so the mention stays whole')
+    async spacedPathIsQuoted() {
+        const applied = applyAgentConsoleSuggestion('@with', '@with'.length, '@with space.txt');
+        expect(applied.value).toEqual('@"with space.txt" ');
+        expect(applied.cursor).toEqual('@"with space.txt" '.length);
+        const token = getAgentConsoleInputTokenRange('@"with space.txt"', 17);
+        expect(token?.token).toEqual('@"with space.txt"');
+    }
+
+    @Test('a directory with spaces is quoted and keeps the token open')
+    async spacedDirectoryCompletion() {
+        const applied = applyAgentConsoleSuggestion('@my', '@my'.length, '@my dir/');
+        expect(applied.value).toEqual('@"my dir/');
+        expect(applied.cursor).toEqual('@"my dir/'.length);
+        const continued = `${applied.value}src`;
+        expect(getAgentConsoleInputTokenRange(continued, continued.length)?.token).toEqual('@"my dir/src');
+    }
+
+    @Test('quoted queries still match suggestions')
+    async quotedQueryMatches() {
+        const options = resolveAgentConsoleInputSuggestions('@"with sp', '@"with sp'.length, [], [], [
+            { label: '@with space.txt', value: '@with space.txt', description: 'file' }
+        ]);
+        expect(options.map(option => option.value)).toContain('@with space.txt');
+    }
+
+    @Test('the prompt parser reads quoted mentions as one name')
+    async quotedMentionsParse() {
+        expect(parseAgentConsoleMentionNames('see @"my file.txt" and @plain @workspace')).toEqual(['my file.txt', 'plain', 'workspace']);
+        // Unterminated quotes are not mentions yet.
+        expect(parseAgentConsoleMentionNames('@"my file')).toEqual([]);
+    }
+
+    @Test('the prompt enricher resolves the full quoted path')
+    async enricherUsesFullName() {
+        const names: string[] = [];
+        const enriched = await enrichPromptWithMentions({
+            state: { workspace: '/w', sessionId: 's', provider: 'p', model: 'm', tools: [] },
+            mentionCatalog: [],
+            workspaceMentionsProvider: {
+                resolveContext: async (_workspace: string, name: string) => {
+                    names.push(name);
+                    return [`File ${name}`];
+                }
+            },
+            resolveApps: () => []
+        } as any, 'read @"my file.txt" please');
+        expect(names).toEqual(['my file.txt']);
+        expect(enriched).toContain('File my file.txt');
+    }
+
+    @Test('the workspace provider strips quotes from the query')
+    async providerUnquotes() {
+        const provider = new AgentConsoleWorkspaceMentionsProvider(null);
+        expect((provider as any).normalizeWorkspaceQuery('@"my dir/')).toEqual('my dir/');
+        expect((provider as any).normalizeWorkspaceQuery('@plain/path')).toEqual('plain/path');
     }
 }

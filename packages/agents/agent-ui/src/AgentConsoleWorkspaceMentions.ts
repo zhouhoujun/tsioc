@@ -157,6 +157,8 @@ export class AgentConsoleWorkspaceMentionsProvider implements AgentConsoleWorksp
         return String(tokenOrMention || '')
             .trim()
             .replace(/^@+/, '')
+            .replace(/^"/, '')
+            .replace(/"$/, '')
             .replace(/\\/g, '/')
             .replace(/^\.\//, '')
             .replace(/^\/+/, '');

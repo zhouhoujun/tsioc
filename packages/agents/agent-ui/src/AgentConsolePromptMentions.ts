@@ -1,4 +1,5 @@
 import { AgentConsoleAppStatus, extractAgentConsoleAppMentions } from './AgentConsoleApps';
+import { parseAgentConsoleMentionNames } from './AgentConsoleSuggestions';
 
 export interface PromptMentionHost {
     state: any;
@@ -10,8 +11,9 @@ export interface PromptMentionHost {
 export async function enrichPromptWithMentions(host: PromptMentionHost, input: string): Promise<string> {
     const text = String(input || '');
     const appMentions = extractAgentConsoleAppMentions(text);
-    const matches = text.match(/(^|\s)@([^\s@]+)/g) || [];
-    const mentions = Array.from(new Set(matches.map(item => item.trim())));
+    // Quoted paths (`@"my file.txt"`) are one mention; the raw regex stopped at
+    // the first space and resolved the wrong context.
+    const mentions = parseAgentConsoleMentionNames(text).map(name => `@${name}`);
     if (!mentions.length && !appMentions.length) {
         return text;
     }
