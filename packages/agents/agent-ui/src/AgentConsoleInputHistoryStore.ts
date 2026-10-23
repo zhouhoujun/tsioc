@@ -51,23 +51,32 @@ export class AgentConsoleInputHistoryStore {
         if (!this.memory) {
             return;
         }
-        const id = this.createRecordId(resolvedWorkspace, resolvedSessionId);
-        const records = await this.memory.getAll(resolvedSessionId || undefined);
-        const existing = records.find(item => item.id === id && item.scope === 'global');
+        // One record per workspace: `load` aggregates by workspace anyway, and
+        // per-session records grew with every session (105 records / 1.6 MB in
+        // one workspace), slowing every session-scoped memory read.
+        const id = this.createRecordId(resolvedWorkspace);
+        const rawWorkspace = String(workspace || '').trim() || 'default';
+        const records = await this.memory.getAll(undefined);
+        const previous = records.filter(item => item.scope === 'global'
+            && item.key === AgentConsoleInputHistoryStore.HISTORY_KEY
+            && (item.metadata?.workspace === resolvedWorkspace || item.metadata?.workspace === rawWorkspace));
+        const merged = this.mergeEntries([normalized, ...previous.map(record => this.parseEntries(record.value))]);
+        for (const record of previous) {
+            if (record.id !== id) await this.memory.delete(record.id, undefined, 'global');
+        }
         await this.memory.delete(id, undefined, 'global');
         await this.memory.put({
             id,
             key: AgentConsoleInputHistoryStore.HISTORY_KEY,
-            value: JSON.stringify(normalized),
+            value: JSON.stringify(merged),
             scope: 'global',
             namespace: 'agent-ui',
             category: 'workspace',
             metadata: {
                 workspace: resolvedWorkspace,
-                sessionId: resolvedSessionId,
                 kind: 'console-input-history'
             },
-            createdAt: existing?.createdAt || Date.now(),
+            createdAt: previous.find(item => item.id === id)?.createdAt || Date.now(),
             updatedAt: Date.now()
         });
     }

@@ -753,8 +753,10 @@ export class VmCommandsTest {
         expect(component.sessionState.planTodoSourceSessionId).toEqual('worker-b');
         expect(component.sessionState.planScope).toEqual('thread');
         const todoGetSessionIds = appRpc.calls
-            .filter(call => call.method === 'todo.get')
-            .map(call => String(call.params?.sessionId || ''))
+            .filter(call => call.method === 'todo.get' || call.method === 'todo.get_many')
+            .flatMap(call => Array.isArray(call.params?.sessionIds)
+                ? call.params.sessionIds
+                : [String(call.params?.sessionId || '')])
             .sort();
         expect(todoGetSessionIds).toEqual(['chat-a', 'worker-b', 'worker-c']);
 

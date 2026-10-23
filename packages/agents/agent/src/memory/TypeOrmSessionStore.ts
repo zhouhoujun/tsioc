@@ -17,6 +17,20 @@ export class TypeOrmSessionStore extends SessionStore {
         super();
     }
 
+    /** Targeted read for input history: no transcript deserialization. */
+    async listUserMessages(sessionIds: string[]): Promise<Array<{ content: string; createdAt: number }>> {
+        const ids = (sessionIds || []).filter(Boolean);
+        if (!ids.length) {
+            return [];
+        }
+        await this.adapter.ready();
+        const rows = await this.adapter.getRepository(AgentMessageEntity).find({
+            where: { sessionId: In(ids), role: 'user' } as any,
+            order: { createdAt: 'DESC' } as any
+        });
+        return rows.map(row => ({ content: String(row.content || ''), createdAt: Number(row.createdAt || 0) }));
+    }
+
     listSessionFacts(sessionIds?: readonly string[]): Promise<AgentSessionFact[]> {
         return readSessionFacts(this.adapter, sessionIds);
     }

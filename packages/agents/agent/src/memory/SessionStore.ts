@@ -266,6 +266,20 @@ export abstract class SessionStore {
     abstract setWorkspace(sessionId: string, workspace?: string): Promise<void>;
     abstract setProjectMetadata(sessionId: string, metadata: AgentSessionProjectMetadata): Promise<void>;
 
+    /**
+     * User prompts of the given sessions (input history).
+     *
+     * The default loads every transcript; stores backed by a database override
+     * this with a targeted read, because the console aggregates the prompts of
+     * a whole workspace on startup (one workspace had 168 sessions, ~3s).
+     */
+    async listUserMessages(sessionIds: string[]): Promise<Array<{ content: string; createdAt: number }>> {
+        const states = await Promise.all(sessionIds.map(sessionId => this.get(sessionId)));
+        return states.flatMap(state => (state.messages || [])
+            .filter(message => message.role === 'user')
+            .map(message => ({ content: String(message.content || ''), createdAt: Number(message.createdAt || 0) })));
+    }
+
     /** Append a message, attributing sub-agent messages to their origin-thread section. */
     async append(sessionId: string, message: AgentMessage): Promise<AgentState> {
         return this.appendRaw(sessionId, await this.attributeMessageSection(sessionId, message));

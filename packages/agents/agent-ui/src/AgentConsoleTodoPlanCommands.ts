@@ -41,26 +41,16 @@ export async function mergeTodoPlanForSessionsView(
     const relatedSessions = sessions
         .slice()
         .sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0));
-    const results = await Promise.allSettled(relatedSessions.map(async session => ({
-        sessionId: session.id,
-        updatedAt: session.updatedAt || 0,
-        result: await host.appRpc!.request('todo.get', { sessionId: session.id })
-    })));
+    const plans = await loadTodoPlans(host, relatedSessions);
     const merged = new Map<string, { id: string; content: string; status: 'pending' | 'in_progress' | 'completed' | 'cancelled' }>();
     let latestAnyTodoSessionId: string | undefined;
     let latestActiveTodoSessionId: string | undefined;
-    for (const entry of results) {
-        if (entry.status !== 'fulfilled') {
-            continue;
-        }
-        const value = entry.value;
-        const todos = Array.isArray(value.result?.todos)
-            ? value.result.todos.map((item: any) => ({
-                id: String(item?.id || '').trim(),
-                content: String(item?.content || '').trim(),
-                status: host.normalizeTodoStatus(item?.status)
-            })).filter((item: any) => !!item.id && !!item.content)
-            : [];
+    for (const value of plans) {
+        const todos = value.todos.map((item: any) => ({
+            id: String(item?.id || '').trim(),
+            content: String(item?.content || '').trim(),
+            status: host.normalizeTodoStatus(item?.status)
+        })).filter((item: any) => !!item.id && !!item.content);
         if (!todos.length) {
             continue;
         }
@@ -87,4 +77,38 @@ export async function mergeTodoPlanForSessionsView(
         return null;
     }
     return { todos: nextTodos, sourceSessionId: sourceSessionId || sessionId };
+}
+
+/**
+ * Read the todo plans of the related sessions.
+ *
+ * One batched RPC replaces the previous per-session `todo.get` fan-out, which
+ * kept a long-lived workspace's session open blank for ~16s (222 sessions).
+ * Older gateways without `todo.get_many` fall back to the per-session calls.
+ */
+async function loadTodoPlans(
+    host: TodoPlanCommandHost,
+    sessions: Array<{ id: string; updatedAt?: number }>
+): Promise<Array<{ sessionId: string; todos: any[] }>> {
+    const rpc = host.appRpc!;
+    if (sessions.length > 1) {
+        const batch = await rpc.request('todo.get_many', { sessionIds: sessions.map(session => session.id) })
+            .catch(() => null);
+        if (batch && batch.plans && typeof batch.plans === 'object') {
+            return sessions.map(session => ({
+                sessionId: session.id,
+                todos: Array.isArray(batch.plans[session.id]) ? batch.plans[session.id] : []
+            }));
+        }
+    }
+    const results = await Promise.allSettled(sessions.map(async session => ({
+        sessionId: session.id,
+        result: await rpc.request('todo.get', { sessionId: session.id })
+    })));
+    return results
+        .filter((entry): entry is PromiseFulfilledResult<{ sessionId: string; result: any }> => entry.status === 'fulfilled')
+        .map(entry => ({
+            sessionId: entry.value.sessionId,
+            todos: Array.isArray(entry.value.result?.todos) ? entry.value.result.todos : []
+        }));
 }

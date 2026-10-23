@@ -36,9 +36,12 @@ export class TypeOrmMemoryStore extends MemoryStore {
     async getAll(sessionId?: string): Promise<AgentMemoryRecord[]> {
         await this.adapter.ready();
         const repo = this.adapter.getRepository(AgentMemoryEntity);
-        const records = await repo.find({ order: { createdAt: 'ASC', id: 'ASC' } as any });
+        // Filter in SQL: loading the whole table and filtering in JS made every
+        // `todo.get` scan all sessions' memory (~66ms each, so the console's
+        // project aggregation froze for ~16s on a 200-session workspace).
+        const where = sessionId ? [{ scope: 'global' }, { sessionId }] : undefined;
+        const records = await repo.find({ where, order: { createdAt: 'ASC', id: 'ASC' } } as any);
         return records
-            .filter(record => record.scope === 'global' || !sessionId || record.sessionId === sessionId)
             .map(record => ({
                 id: record.id,
                 sessionId: record.sessionId ?? undefined,

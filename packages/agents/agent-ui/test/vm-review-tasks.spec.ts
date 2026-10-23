@@ -2179,7 +2179,9 @@ export class VmReviewTasksTest {
         expect(component.sessionState.taskRecords.map((task: any) => task.id).sort()).toEqual(['task-a', 'task-b']);
         const taskListSessionIds = appRpc.calls
             .filter(call => call.method === 'coding_task.list')
-            .map(call => String(call.params?.sessionId || ''))
+            .flatMap(call => Array.isArray(call.params?.sessionIds)
+                ? call.params.sessionIds
+                : [String(call.params?.sessionId || '')])
             .sort();
         expect(taskListSessionIds).toEqual(['chat-a', 'worker-b']);
     }
@@ -2236,7 +2238,9 @@ export class VmReviewTasksTest {
 
         const taskListSessionIds = appRpc.calls
             .filter(call => call.method === 'coding_task.list')
-            .map(call => String(call.params?.sessionId || ''))
+            .flatMap(call => Array.isArray(call.params?.sessionIds)
+                ? call.params.sessionIds
+                : [String(call.params?.sessionId || '')])
             .sort();
         expect(taskListSessionIds).toEqual(['chat-a', 'worker-b']);
         expect(component.sessionState.reviewTask?.id).toEqual('task-b');

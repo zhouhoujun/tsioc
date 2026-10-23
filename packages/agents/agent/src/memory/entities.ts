@@ -126,39 +126,6 @@ export class AgentMessageEntity {
 }
 
 @Entity()
-export class AgentMemoryEntity {
-    @PrimaryGeneratedColumn('uuid')
-    id!: string;
-
-    @Column({ nullable: true })
-    sessionId!: string;
-
-    @Column()
-    key!: string;
-
-    @Column({ type: 'text' })
-    value!: string;
-
-    @Column()
-    scope!: string;
-
-    @Column({ nullable: true })
-    namespace!: string;
-
-    @Column({ nullable: true })
-    category!: string;
-
-    @Column({ type: 'simple-json', nullable: true })
-    metadata!: Record<string, any>;
-
-    @Column({ type: 'bigint' })
-    createdAt!: number;
-
-    @Column({ type: 'bigint', nullable: true })
-    updatedAt!: number;
-}
-
-@Entity()
 export class AgentScheduledTaskEntity {
     @PrimaryGeneratedColumn('uuid')
     id!: string;
@@ -664,3 +631,5 @@ export class AgentCommandExchangeEntity {
     @Column({ type: 'bigint' })
     timestamp!: number;
 }
+
+export { AgentMemoryEntity } from './entities-memory';

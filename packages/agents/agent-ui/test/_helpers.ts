@@ -590,6 +590,14 @@ export class AppRpcStub {
         if (method === 'command_exchange.metrics') {
             return this.exchangeMetrics || { dropped: 0, stale: 0, duplicate: 0, unauthorized: 0 };
         }
+        if (method === 'todo.get_many') {
+            const plans: Record<string, any[]> = {};
+            for (const sessionId of Array.isArray(params?.sessionIds) ? params.sessionIds : []) {
+                if (this.todoFailuresBySession.has(sessionId)) continue;
+                plans[sessionId] = this.todoPlanBySession.get(sessionId) || this.todoPlan || [];
+            }
+            return { plans };
+        }
         if (method === 'todo.get') {
             if (this.todoFailuresBySession.has(params?.sessionId)) {
                 throw new Error(`todo lookup failed for ${params?.sessionId}`);
@@ -608,6 +616,14 @@ export class AppRpcStub {
             };
         }
         if (method === 'coding_task.list') {
+            const sessionIds = Array.isArray(params?.sessionIds) ? params.sessionIds : [];
+            if (sessionIds.length) {
+                const tasks = sessionIds
+                    .filter((sessionId: string) => !this.codingTaskFailuresBySession.has(sessionId))
+                    .flatMap((sessionId: string) => (this.codingTasksBySession.get(sessionId) || this.codingTasks || [])
+                        .map((task: any) => ({ ...task, sourceSessionId: sessionId })));
+                return { tasks, total: tasks.length };
+            }
             if (this.codingTaskFailuresBySession.has(params?.sessionId)) {
                 throw new Error(`coding task lookup failed for ${params?.sessionId}`);
             }

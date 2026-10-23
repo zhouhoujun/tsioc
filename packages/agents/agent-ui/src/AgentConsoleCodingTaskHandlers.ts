@@ -16,6 +16,7 @@ import {
 } from './AgentConsoleCommandRegistry';
 import { AGENT_CONSOLE_OVERLAY_HINTS, AGENT_CONSOLE_OVERLAY_TITLES } from './AgentConsoleOverlayPresenter';
 import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { loadProjectCodingTasks } from './AgentConsoleCodingTaskLoad';
 
 // ── Coding task handler context ─────────────────────────────────────────────
 
@@ -363,17 +364,8 @@ export async function loadCodingTasks(
         }
         return [];
     }
-    const responses = await Promise.allSettled(sessionIds.map(async sid => {
-        const result = await ctx.appRpc!.request('coding_task.list', { sessionId: sid });
-        const tasks = Array.isArray(result?.tasks) ? result.tasks : [];
-        return tasks.map((task: any) => ({
-            ...task,
-            sourceSessionId: sid
-        }));
-    }));
     const tasks = orderCodingTasksByLineage(
-        responses
-            .flatMap(result => result.status === 'fulfilled' ? result.value : [])
+        (await loadProjectCodingTasks(ctx.appRpc!, sessionIds))
             .sort((left, right) => {
                 const activityDelta = Number(right?.updatedAt || 0) - Number(left?.updatedAt || 0);
                 if (activityDelta !== 0) {
@@ -389,7 +381,6 @@ export async function loadCodingTasks(
     ctx.state.setReviewTasks(tasks.map((task: any) => buildCodingTaskChoice(task, tasks)));
     return tasks;
 }
-
 export async function selectCodingTask(ctx: CodingTaskHandlerContext, options: {
     title: string;
     unavailableNotice: string;

@@ -1338,3 +1338,26 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 决策：会话级是既定设计（此前用户确认的 approval gate 方案），因此只修**提示**，不改行为。
 - 改动：`agent.approval.actions`（en/`agent-ui.i18n.ts`、`AgentConsolePanels.ts` fallback、`AGENT_CONSOLE_OVERLAY_HINTS.approvals`）改为 `A Always allow (session)`；中文（catalog + `AgentConsoleSessionState` 默认 hint）改为 `A 本会话始终允许`。按 `A` 后的 notice 仍是 `Always allow enabled for this session.`。
 - 验证：p315/p318 断言更新并通过（4 + 3 passing）；真实 TUI 面板显示 `A Always allow (session)`，旧文案不再出现，命令正常执行。
+
+## 2026-10-23 长会话性能：恢复会话 21.5s → 2.7–3.4s（真实 222 会话库）
+- 现象：`--session` 恢复一个会话时，首屏后要等 **21.5s**（宿主负载高时 44s）才出现历史；新会话正常。库里有 222 个会话（生产 150+），说明打开耗时随会话数线性膨胀。
+- 逐层定位（真实 `rpc-stdio` 计时 + `--cpu-prof` 火焰图）：
+  1. `openSession` 对项目内**每个会话**各发一次 `todo.get` 与一次 `coding_task.list`（Promise.all，但服务端每次都要 `ensureSessionAccess` + 工具调用）→ 168 个会话 ≈ 16s（todo）+ 7s（tasks）。`AppRpcServer.toStreamEventChunk`…（无关）
+  2. `TypeOrmMemoryStore.getAll(sessionId)` **无 WHERE**，把整张 memory 表读出来在 JS 里过滤；`agent_memory_entity` 无索引 → 每次 60ms+（SQLite 全表扫描 + 临时排序，CPU profile 里 `write/read@sql-wasm` 占大头）。
+  3. 输入历史按 **每个会话** 存一条（`agent-ui.console.input-history`）：一个 workspace 105 条 / 1.6MB，且都是 `scope=global`，于是每次 `getAll(sessionId)` 都要解码这 1.6MB。
+  4. `app.inputHistory.get` 为了取用户 prompt，把 workspace 下**每个会话的完整 transcript** 都 `sessions.get` 一遍 → 3.07s。
+  5. `LocalToolRegistry.invoke` 未传 workspace 时会 `sessionStore.get(sessionId)`（读整段 transcript）来解析 workspace。
+- 修复（保留语义）：
+  - 新增批量 RPC `todo.get_many {sessionIds}` 与 `coding_task.list {sessionIds}`（`app-rpc/session-aggregation.ts`），UI 端 `mergeTodoPlanForSessions` / `loadProjectCodingTasks` 优先一次批量调用，旧 gateway 缺字段时自动退回逐会话（`AgentConsoleCodingTaskLoad.ts`）。
+  - `TypeOrmMemoryStore.getAll` 改为 SQL 过滤（`scope='global' OR sessionId=?`），`AgentMemoryEntity` 增加 `sessionId`/`scope` 索引（实体抽到 `entities-memory.ts`，`entities.ts` 只 re-export）。
+  - 输入历史改为**每 workspace/principal 一条**（gateway `putInputHistory` 与 UI `AgentConsoleInputHistoryStore.save` 都读写同一条并合并、清理历史遗留的按会话记录）。
+  - `SessionStore.listUserMessages(sessionIds)`：默认实现兼容旧 store，TypeORM 走单条 `role='user'` 查询；`app.inputHistory.get` 改用它。
+  - `tools.invoke('todo' | 'coding_task' list)` 显式传 workspace，避免为解析 workspace 去读整段会话。
+- 实测（root-sim：222 会话 / 168 有消息 / 10MB DB）：
+  - `app.inputHistory.get`：**3068ms → 219ms**
+  - `todo.get_many`（168 会话）：**10–30s → 1.03s**
+  - `coding_task.list`（168 会话）：**~7s → 0.17s**
+  - `memory` 表：1.6MB/155 行 → **61KB/57 行**；输入历史记录 105 → 7（按 principal/workspace）
+  - 真实 PTY 恢复会话：首字节 1.2–1.3s，历史出现 **21.5s/44s → 2.65–3.36s**；新会话对话正常（`在线`），无错误。
+- 测试：`session-aggregation.spec.ts`（7）、`session-open-batching.spec.ts`（5）、`input-history-consolidation.spec.ts`（4）、`input-history-store.spec.ts`（2）、`session-user-messages.spec.ts`（2，真实 ORM）。回归：agent **1038**、agent-gateway **337**、agent-ui **1596**、agent-cli **106**，四包 `tsc` 0，source-size OK。
+- 兼容性：旧库升级时 `synchronize` 会补建索引（首次启动多花约 1s）；旧输入历史记录在下一次提交时被合并清理。

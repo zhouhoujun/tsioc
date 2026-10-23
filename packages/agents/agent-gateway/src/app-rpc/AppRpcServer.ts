@@ -17,6 +17,7 @@ import { QuestionStore } from './QuestionStore';
 import { describeToolCompletedEvent, describeToolInvocationEvent } from './tool-event-content';
 import { toAppRpcError } from './rpcError';
 import { ApprovalRequestedChunkFields, buildApprovalRequestedChunk } from './approval-chunk';
+import { SessionAggregationDeps, getTodoPlan, getTodoPlans, listCodingTasks } from './session-aggregation';
 
 @Injectable()
 export class AppRpcServer {
@@ -469,9 +470,11 @@ export class AppRpcServer {
             case 'audit.list':
                 return this.listAudit(params, context);
             case 'todo.get':
-                return this.getTodoPlan(params, context);
+                return getTodoPlan(params, this.aggregationDeps(context));
+            case 'todo.get_many':
+                return getTodoPlans(params, this.aggregationDeps(context));
             case 'coding_task.list':
-                return this.listCodingTasks(params, context);
+                return listCodingTasks(params, this.aggregationDeps(context));
             case 'coding_task.get':
                 return this.getCodingTask(params, context);
             case 'coding_task.diff':
@@ -688,10 +691,8 @@ export class AppRpcServer {
             .flatMap(project => project.sessionIds || []);
         const ownedGroups = await Promise.all(principalIds.map(principalId => this.owners.listOwned(sessionIds, principalId)));
         const ownedSessionIds = Array.from(new Set(ownedGroups.flat()));
-        const states = await Promise.all(ownedSessionIds.map(sessionId => this.sessions.get(sessionId)));
-        return states
-            .flatMap(state => state.messages || [])
-            .filter(message => message.role === 'user')
+        const messages = await this.sessions.listUserMessages(ownedSessionIds);
+        return messages
             .map(message => ({
                 value: String(message.content || '').trim(),
                 createdAt: Number(message.createdAt || 0)
@@ -710,26 +711,37 @@ export class AppRpcServer {
         }
         const principalId = this.resolveHistoryPrincipalId(context);
         const entries = this.normalizeInputHistoryEntries(params?.entries);
-        const existing = this.findConsoleInputHistoryRecord(await this.memory.getAll(sessionId), workspace, principalId, sessionId);
-        const id = this.createConsoleInputHistoryRecordId(workspace, principalId, sessionId);
+        // One record per workspace/principal: per-session records grew with the
+        // workspace (105 records / 1.6 MB) and slowed every plan lookup.
+        const records = await this.memory.getAll(undefined);
+        // `local-system` also adopts legacy `anonymous` records.
+        const previous = this.listConsoleInputHistoryRecords(records, workspace, this.resolveHistoryPrincipalIds(context));
+        const merged = this.mergeConsoleInputHistoryEntries([
+            entries,
+            ...previous.map(record => this.parseInputHistoryEntries(record.value))
+        ]);
+        const id = this.createConsoleInputHistoryRecordId(workspace, principalId);
+        // Absorb legacy per-session records.
+        for (const record of previous) {
+            if (record?.id && record.id !== id) await this.memory.delete(record.id, undefined, 'global');
+        }
         await this.memory.delete(id, undefined, 'global');
         await this.memory.put({
             id,
             key: AppRpcServer.CONSOLE_INPUT_HISTORY_KEY,
-            value: JSON.stringify(entries),
+            value: JSON.stringify(merged),
             scope: 'global',
             namespace: 'agent-ui',
             category: 'workspace',
             metadata: {
                 workspace,
                 principalId,
-                sessionId: sessionId || '',
                 kind: 'console-input-history'
             },
-            createdAt: existing?.createdAt || Date.now(),
+            createdAt: previous.find(record => record?.id === id)?.createdAt || Date.now(),
             updatedAt: Date.now()
         });
-        return { workspace, entries };
+        return { workspace, entries: merged };
     }
 
     private createCommandOutputRecordId(workspace: string, principalId: string, sessionId: string): string {
@@ -3014,13 +3026,21 @@ export class AppRpcServer {
         };
     }
 
-    private async listCodingTasks(params: any, context: AppRpcRequestContext): Promise<any> {        const sessionId = this.requireSessionId(params);
-        await this.ensureSessionAccess(sessionId, context);
-        const output = await this.invokeCodingTask(sessionId, { action: 'list' }, context);
+    private aggregationDeps(context: AppRpcRequestContext): SessionAggregationDeps {
         return {
-            sessionId,
-            tasks: Array.isArray(output?.tasks) ? output.tasks : [],
-            total: typeof output?.total === 'number' ? output.total : 0
+            authorize: sessionId => this.ensureSessionAccess(sessionId, context),
+            requireSessionId: params => this.requireSessionId(params),
+            readTodoPlan: async sessionId => {
+                // Pass the workspace explicitly: `LocalToolRegistry.invoke`
+                // otherwise loads the whole session just to resolve it, and the
+                // project aggregation reads every session (~100ms each).
+                const output = await this.tools.invoke('todo', undefined, sessionId, context.principalId, this.resolveWorkspace());
+                return Array.isArray(output?.todos) ? output.todos : [];
+            },
+            listCodingTasks: async sessionId => {
+                const output = await this.invokeCodingTask(sessionId, { action: 'list' }, context);
+                return Array.isArray(output?.tasks) ? output.tasks : [];
+            }
         };
     }
 
@@ -3047,23 +3067,6 @@ export class AppRpcServer {
             executionMode: task?.result?.executionMode ?? task?.metadata?.executionMode ?? null,
             diff: task?.result?.diff ?? null,
             workers: Array.isArray(task?.result?.workers) ? task.result.workers : []
-        };
-    }
-
-    private async getTodoPlan(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
-        await this.ensureSessionAccess(sessionId, context);
-        const output = await this.tools.invoke('todo', undefined, sessionId, context.principalId);
-        return {
-            sessionId,
-            todos: Array.isArray(output?.todos) ? output.todos : [],
-            summary: output?.summary ?? {
-                total: 0,
-                pending: 0,
-                in_progress: 0,
-                completed: 0,
-                cancelled: 0
-            }
         };
     }
 
@@ -3199,7 +3202,11 @@ export class AppRpcServer {
         if (definition.activation?.kind === 'deferred' && definition.activation?.scope === 'session') {
             await this.tools.activateTool(sessionId, 'coding_task');
         }
-        return this.tools.invoke('coding_task', input, sessionId, context.principalId);
+        // The list action is read-only and the aggregation calls it for every
+        // project session, so skip the per-call session load used to resolve
+        // the workspace (see readTodoPlan above).
+        const workspace = input?.action === 'list' ? this.resolveWorkspace() : undefined;
+        return this.tools.invoke('coding_task', input, sessionId, context.principalId, workspace);
     }
 
     private async ensureSessionAccess(
@@ -3561,12 +3568,6 @@ export class AppRpcServer {
 
     private createConsoleInputHistoryRecordId(workspace: string, principalId: string, sessionId?: string): string {
         return `agent-ui:console-input-history:${encodeURIComponent(principalId)}:${encodeURIComponent(workspace)}:${encodeURIComponent(String(sessionId || '').trim() || 'default')}`;
-    }
-
-    private findConsoleInputHistoryRecord(records: any[], workspace: string, principalId: string, sessionId?: string): any | undefined {
-        const resolvedSessionId = String(sessionId || '').trim();
-        return this.listConsoleInputHistoryRecords(records, workspace, [principalId])
-            .find(record => String(record?.metadata?.sessionId || '').trim() === resolvedSessionId);
     }
 
     private listConsoleInputHistoryRecords(records: any[], workspace: string, principalIds: string[]): any[] {
