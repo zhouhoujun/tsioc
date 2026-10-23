@@ -15,6 +15,7 @@ import { AppRpcHandler } from '../api/AppRpcHandler';
 import { ChatWebSocket } from '../ws/ChatWebSocket';
 import { GATEWAY_CONFIG } from '../tokens';
 import { GatewayConfig, defaultGatewayConfig } from '../contracts/GatewayConfig';
+import { ApprovalWebhookNotifier } from '../approval/ApprovalWebhookNotifier';
 
 /**
  * Auto-registers gateway routes from all handlers on application startup,
@@ -39,6 +40,7 @@ export class GatewayBootstrap {
         @Optional() private evals?: EvalHandler | null,
         @Optional() private shares?: ShareHandler | null,
         @Optional() private chatWs?: ChatWebSocket | null,
+        @Optional() private approvalWebhook?: ApprovalWebhookNotifier | null,
         @Optional() @Inject(INJECTOR) private injector?: Injector | null,
         @Inject(GATEWAY_CONFIG, { nullable: true }) private config: GatewayConfig = defaultGatewayConfig
     ) {

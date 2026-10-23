@@ -1440,3 +1440,20 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 现象：`TSDI_AGENT_BUNDLE=1`（默认打包路径）下 `tools.invoke skill_list` 返回 **0** 个 skill，源码路径返回 4 个（codebase/implement/plan/web-research）——打包后 `getBuiltinSkills()` 按 `__dirname/builtin` 解析，bundle 目录下没有该资产（我此前的打包改动引入的功能丢失）。
 - 修复：构建脚本把 `agent-tools/skills/builtin` 复制到 `bundle/builtin`，并把源文件纳入 manifest 输入（改动 skill 文件会让 bundle 立即判定 stale）。
 - 验证：打包后 `skill_list` 返回 4 个 skill；`touch plan/SKILL.md` 后 `TSDI_AGENT_BUNDLE=1` 报 stale，重建后恢复 fresh；新增 bundle 冒烟用例（临时 root + `session.create` + `tools.invoke skill_list`，断言 ≥1）。agent-cli **107 passing**。
+
+## 2026-10-23 第三方远程审批（审批令牌 + Webhook + CLI）
+- 目标：让外部系统/TUI 之外的运维者在 agent 运行期间查看并批准/拒绝工具请求，不需要握着 TUI。
+- 1) **独立审批令牌**（与 session owner 解耦）
+  - `GatewayConfig.approvers: [{ id, token }]`，或部署环境变量 `TSDI_AGENT_APPROVER_TOKENS="ci=token1,ops=token2"`。
+  - `AuthMiddleware` 用 timing-safe 比较识别令牌，写入 `role='approver'`、principal `approver:<id>`。
+  - `GET /api/approvals`、`POST /api/approvals/:id/approve|reject`：approver 可跨 owner 查看/决定；非 approver 仍是原有 owner 校验（403）。
+- 2) **Webhook 推送**（第三方无需轮询）
+  - `GatewayConfig.approvalWebhook: { url, secret?, timeoutMs?, headers? }`，或 `TSDI_AGENT_APPROVAL_WEBHOOK` / `_SECRET` / `_TIMEOUT_MS`。
+  - `ApprovalWebhookNotifier` 订阅 `AgentApprovalRequestedEvent`，POST JSON（requestId/toolName/sessionId/reason/inputSummary/expiresAt…），带 `X-Tsdi-Timestamp` 与 `X-Tsdi-Signature: sha256=HMAC-SHA256(secret, "<ts>.<body>")`；默认 5s 超时；**投递失败只吞掉**，绝不阻塞或失败工具调用。
+  - 接入 `AgentAppServerModule`（TUI 进程内）与 `AgentGatewayModule`（HTTP 网关）：通过依赖注入强制实例化订阅（bootstrap runner 不接受普通服务，已回退该做法）。
+- 3) **CLI 远程审批**
+  - `tsdi-agent approval list [--session] [--gateway-url] [--token] [--json]`
+  - `tsdi-agent approval approve <id>` / `reject <id>`
+  - 通过网关 REST 调用；`--gateway-url` 缺省读 `TSDI_AGENT_GATEWAY_URL`；无 URL 时给出可操作提示。
+- 测试：gateway `approval-remote.spec.ts`（5：approver 鉴权/环境变量/跨 owner 列表/批准/owner 越权 403）、`approval-webhook.spec.ts`（4：签名体、事件触发、失败不抛、env 回退）；agent-cli `approval-command.spec.ts`（6：列表/JSON/批准拒绝/缺 URL/非 2xx/格式化）。回归：agent-gateway **352**、agent-cli **113**，tsc/source-size OK；真实 TUI 恢复会话正常。
+- 安全边界：approver 令牌只能列/决定审批，不能读 transcript 或执行 turn；跨主机部署需 HTTPS（本地默认 localhost）。

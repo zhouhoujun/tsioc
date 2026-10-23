@@ -38,6 +38,7 @@ import { createAgentGatewayProviders } from './provider';
 import { CloudTaskQueue } from './cloud/CloudTaskQueue';
 import { MdnsServiceDiscovery } from './discovery/MdnsServiceDiscovery';
 import { QuestionStore } from './app-rpc/QuestionStore';
+import { ApprovalWebhookNotifier } from './approval/ApprovalWebhookNotifier';
 
 @Module({
     imports: [AgentModule],
@@ -68,6 +69,7 @@ import { QuestionStore } from './app-rpc/QuestionStore';
         UsageHandler,
         DelegationHandler,
         ApprovalHandler,
+        ApprovalWebhookNotifier,
         StatsHandler,
         CloudTaskQueue,
         MdnsServiceDiscovery,

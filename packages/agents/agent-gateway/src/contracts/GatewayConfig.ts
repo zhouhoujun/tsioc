@@ -23,6 +23,30 @@ export interface AudioFrameQuotaOptions {
     windowMs?: number;
 }
 
+/**
+ * Dedicated third-party approval token.
+ *
+ * Approvers may list and resolve pending tool approvals, but they are not
+ * session owners: they cannot read transcripts, run turns or change settings.
+ */
+export interface GatewayApproverToken {
+    /** Stable identity used in audit/notices (`approver:<id>`). */
+    id: string;
+    /** Bearer token the third-party service presents. */
+    token: string;
+}
+
+export interface GatewayApprovalWebhook {
+    /** HTTPS endpoint that receives each pending approval request. */
+    url: string;
+    /** Shared secret for the `X-Tsdi-Signature` HMAC (recommended). */
+    secret?: string;
+    /** Request timeout; defaults to 5000ms. */
+    timeoutMs?: number;
+    /** Extra headers (e.g. a service token). */
+    headers?: Record<string, string>;
+}
+
 export interface GatewayConfig {
     /** HTTP listen host */
     host?: string;
@@ -32,6 +56,10 @@ export interface GatewayConfig {
     authToken?: string;
     /** Shared HTTP auth options, including JWT validation. */
     auth?: HttpAuthOptions;
+    /** Third-party approvers (no session ownership required). */
+    approvers?: GatewayApproverToken[];
+    /** Push pending approvals to an external service (webhook). */
+    approvalWebhook?: GatewayApprovalWebhook;
     /** Rate limit: max requests per window per IP */
     rateLimitMax?: number;
     /** Rate limit: window in ms */

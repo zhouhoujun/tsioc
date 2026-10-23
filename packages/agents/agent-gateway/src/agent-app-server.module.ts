@@ -11,6 +11,7 @@ import { StdioAppRpcServer } from './app-rpc/StdioAppRpcServer';
 import { AGENT_CONSOLE_APP_RPC } from '@tsdi/agent';
 import { CloudTaskQueue } from './cloud/CloudTaskQueue';
 import { QuestionStore } from './app-rpc/QuestionStore';
+import { ApprovalWebhookNotifier } from './approval/ApprovalWebhookNotifier';
 
 /**
  * Map a `run.turn_stream.chunk` notification into the shape the console UI consumes.
@@ -39,6 +40,7 @@ export function toLocalAppRpcError(rpcError: any, fallbackMessage = 'App RPC req
 
 @Module({    imports: [AgentModule],
     providers: [
+        ApprovalWebhookNotifier,
         SessionOwnerStore,
         SessionHandler,
         MemoryHandler,
@@ -49,7 +51,9 @@ export function toLocalAppRpcError(rpcError: any, fallbackMessage = 'App RPC req
         QuestionStore,
         {
             provide: AGENT_CONSOLE_APP_RPC,
-            useFactory: (rpc: AppRpcServer) => ({
+            // The notifier is a dependency (not a bootstrap runner) so its
+            // @OnEvent subscription is installed whenever the console RPC is used.
+            useFactory: (rpc: AppRpcServer, _notifier: ApprovalWebhookNotifier) => ({
                 request: async (method: string, params?: any, context?: any) => {
                     const requestContext = {
                         principalId: 'local-system',
@@ -96,7 +100,7 @@ export function toLocalAppRpcError(rpcError: any, fallbackMessage = 'App RPC req
                     }
                 }
             }),
-            deps: [AppRpcServer]
+            deps: [AppRpcServer, ApprovalWebhookNotifier]
         },
         AppRpcHandler,
         StdioAppRpcServer

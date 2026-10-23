@@ -2,7 +2,7 @@ import * as http from 'http';
 import { Injectable, Optional } from '@tsdi/ioc';
 import { ToolApprovalManager } from '@tsdi/agent';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
-import { getRequestPrincipalId } from '../auth/AuthMiddleware';
+import { getRequestAuth, getRequestPrincipalId } from '../auth/AuthMiddleware';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 
 /**
@@ -31,7 +31,8 @@ export class ApprovalHandler {
             if (sessionId) {
                 requests = requests.filter(request => request.sessionId === sessionId);
             }
-            if (this.owners && req) {
+            const approver = getRequestAuth(req)?.role === 'approver';
+            if (this.owners && req && !approver) {
                 const principalId = getRequestPrincipalId(req);
                 if (sessionId) {
                     if (!await this.owners.isAuthorized(sessionId, principalId)) {
@@ -69,7 +70,7 @@ export class ApprovalHandler {
                     .end(JSON.stringify({ requestId, applied: false }));
                 return;
             }
-            if (this.owners) {
+            if (this.owners && getRequestAuth(req)?.role !== 'approver') {
                 const principalId = getRequestPrincipalId(req);
                 if (!await this.owners.isAuthorized(request.sessionId, principalId)) {
                     res.writeHead(403, { 'Content-Type': 'application/json' })

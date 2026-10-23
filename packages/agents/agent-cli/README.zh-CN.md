@@ -55,6 +55,25 @@ npm run bundle     # 在 @tsdi/agent-cli 包目录执行
 - `TSDI_AGENT_BUNDLE=1` — 强制要求打包产物（过期时直接报错提示）
 - `TSDI_AGENT_BUNDLE_LOG=1` — 打印实际选择的是哪条路径
 
+## 远程审批（第三方）
+
+审批请求保存在运行 turn 的进程里。若要从其他系统（CI、运维机器人、另一个终端）审批，请把 agent 放在网关后，并使用：
+
+```shell
+# 通过网关 REST 查看 / 批准 / 拒绝
+tsdi-agent approval list --gateway-url http://127.0.0.1:3100 --token "$TOKEN"
+tsdi-agent approval approve <requestId> --gateway-url http://127.0.0.1:3100 --token "$TOKEN"
+tsdi-agent approval reject <requestId> --gateway-url http://127.0.0.1:3100 --token "$TOKEN"
+```
+
+- **审批令牌**（`GatewayConfig.approvers`，或
+  `TSDI_AGENT_APPROVER_TOKENS="ci=token1,ops=token2"`）无需成为会话 owner
+  即可列出并决定任意会话的审批；但不能读取 transcript，也不能执行 turn。
+- **Webhook 推送**（`TSDI_AGENT_APPROVAL_WEBHOOK` +
+  `TSDI_AGENT_APPROVAL_WEBHOOK_SECRET`）会把每个待审批请求以 JSON POST 出去，
+  带 `X-Tsdi-Timestamp` 与 `X-Tsdi-Signature: sha256=HMAC(secret, "<ts>.<body>")`；
+  投递失败不会阻塞工具调用。
+
 ## 模型配置
 
 CLI 在执行命令前会读取默认工作区配置：

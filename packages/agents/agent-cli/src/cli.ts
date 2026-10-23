@@ -4,6 +4,7 @@ import { runAgentApplication, runAgentJsonStream, runAgentPrompt, runAgentRpcStd
 import { runAgentAttach, runAgentConsole } from './run-console';
 import { runMcpAdd, runMcpAuth, runMcpList, runMcpLogout, runMcpRemove } from './mcp-command';
 import { runAgentDoctor } from './doctor';
+import { registerApprovalCli } from './approval-cli';
 import { runAgentImport } from './import-command';
 import { runAgentHarnessAudit, runAgentHarnessProfileCurrent, runAgentHarnessProfileDiff, runAgentHarnessProfileList } from './harness-command';
 import { generateAgentCompletionScript, resolveCompletionShell } from './completion';
@@ -17,7 +18,7 @@ import { runAgentCloudAction } from './cloud-command';
 const configReader = new CliAgentUiConfigReader();
 const CLI_VERSION = '6.0.31';
 const DEFAULT_COMMAND = 'chat';
-const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'attach', 'desktop', 'app', 'cloud', 'project', 'tools', 'mcp', 'doctor', 'import', 'harness', 'completion', 'update', 'rpc-stdio', 'help']);
+const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'attach', 'desktop', 'app', 'cloud', 'project', 'tools', 'mcp', 'doctor', 'import', 'harness', 'completion', 'update', 'rpc-stdio', 'approval', 'help']);
 const TOP_LEVEL_HELP_FLAGS = new Set(['-h', '--help', '-V', '--version']);
 const OPTION_FLAGS_WITH_VALUES = new Set([
     '--session',
@@ -332,6 +333,8 @@ function createAgentCli(): Command {
                 tools: resolved.tools.registration ?? {}
             }, null, 2) + '\n');
         });
+
+    registerApprovalCli(program);
 
     program
         .command('doctor')

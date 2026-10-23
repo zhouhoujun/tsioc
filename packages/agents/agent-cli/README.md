@@ -60,6 +60,28 @@ TypeScript sources automatically, so stale code never runs.
 - `TSDI_AGENT_BUNDLE=1` — require the bundle (fails with a hint when stale)
 - `TSDI_AGENT_BUNDLE_LOG=1` — print which path was chosen
 
+## Remote approvals (third-party)
+
+Approvals live in the process that runs the turn. To approve from another
+system (CI, an ops bot, a separate terminal), run the agent behind a gateway
+and use one of:
+
+```shell
+# list / approve / reject over the gateway REST API
+tsdi-agent approval list --gateway-url http://127.0.0.1:3100 --token "$TOKEN"
+tsdi-agent approval approve <requestId> --gateway-url http://127.0.0.1:3100 --token "$TOKEN"
+tsdi-agent approval reject <requestId> --gateway-url http://127.0.0.1:3100 --token "$TOKEN"
+```
+
+- **Approver tokens** (`GatewayConfig.approvers`, or
+  `TSDI_AGENT_APPROVER_TOKENS="ci=token1,ops=token2"`) can list and resolve
+  approvals for any session without owning it. They cannot read transcripts or
+  run turns.
+- **Webhook push** (`TSDI_AGENT_APPROVAL_WEBHOOK` +
+  `TSDI_AGENT_APPROVAL_WEBHOOK_SECRET`) POSTs each pending request as JSON with
+  `X-Tsdi-Timestamp` and `X-Tsdi-Signature: sha256=HMAC(secret, "<ts>.<body>")`.
+  Delivery failures never block the tool call.
+
 ## Model setup
 
 The CLI reads the default workspace config before executing commands:
