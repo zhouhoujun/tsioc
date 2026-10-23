@@ -6,6 +6,7 @@ export function registerApprovalCli(program: Command): void {
     const applyOptions = (command: any) => command
         .option('--gateway-url <url>', 'Gateway base URL (or TSDI_AGENT_GATEWAY_URL).')
         .option('--token <token>', 'Bearer token: session owner or a dedicated approver token.')
+        .option('--timeout <ms>', 'Request timeout in ms (default 15000).')
         .option('--json', 'Output JSON.');
     const approval = program
         .command('approval')

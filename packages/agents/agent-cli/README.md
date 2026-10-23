@@ -81,6 +81,9 @@ tsdi-agent approval reject <requestId> --gateway-url http://127.0.0.1:3100 --tok
   serves `GET /api/approvals` and `POST /api/approvals/:id/approve|reject` on
   loopback. That operator token acts as an approver, so the same CLI can resolve
   the TUI's pending requests from another process.
+- Requests time out after 15s (`--timeout <ms>` or
+  `TSDI_AGENT_APPROVAL_TIMEOUT_MS`); a silent endpoint or a closed port reports
+  the URL and how to fix it instead of hanging.
 
 - **Webhook push** (`TSDI_AGENT_APPROVAL_WEBHOOK` +
   `TSDI_AGENT_APPROVAL_WEBHOOK_SECRET`) POSTs each pending request as JSON with

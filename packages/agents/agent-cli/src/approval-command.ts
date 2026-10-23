@@ -12,10 +12,22 @@ export interface AgentApprovalCliOptions {
     token?: string;
     sessionId?: string;
     json?: boolean;
+    /** Request timeout in ms; `--timeout` / TSDI_AGENT_APPROVAL_TIMEOUT_MS, else 15s. */
+    timeoutMs?: number | string;
+    /** Commander's `--timeout` value (same meaning as `timeoutMs`). */
+    timeout?: number | string;
     /** Test seam for HTTP; defaults to global fetch. */
     fetchImpl?: typeof fetch;
     /** Test seam for output; defaults to stdout. */
     write?: (text: string) => void;
+}
+
+const DEFAULT_APPROVAL_TIMEOUT_MS = 15_000;
+
+interface ApprovalHttpResult {
+    ok: boolean;
+    status: number;
+    text: string;
 }
 
 export interface AgentApprovalRequestView {
@@ -62,20 +74,58 @@ function resolveFetch(options: AgentApprovalCliOptions): typeof fetch {
     return impl;
 }
 
-async function readError(response: Response): Promise<string> {
+/** Effective request timeout: option, env, else 15s. */
+export function resolveApprovalTimeoutMs(options: AgentApprovalCliOptions = {}): number {
+    const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
+    const raw = options.timeoutMs ?? options.timeout ?? env?.TSDI_AGENT_APPROVAL_TIMEOUT_MS;
+    const value = Number(raw);
+    return Number.isFinite(value) && value > 0 ? Math.floor(value) : DEFAULT_APPROVAL_TIMEOUT_MS;
+}
+
+function describeError(result: ApprovalHttpResult): string {
+    if (!result.text) {
+        return `HTTP ${result.status}`;
+    }
     try {
-        const text = await response.text();
-        if (!text) {
-            return `HTTP ${response.status}`;
-        }
-        try {
-            const parsed = JSON.parse(text) as { error?: unknown };
-            return parsed?.error ? String(parsed.error) : text.slice(0, 200);
-        } catch {
-            return text.slice(0, 200);
-        }
+        const parsed = JSON.parse(result.text) as { error?: unknown };
+        return parsed?.error ? String(parsed.error) : result.text.slice(0, 200);
     } catch {
-        return `HTTP ${response.status}`;
+        return result.text.slice(0, 200);
+    }
+}
+
+/**
+ * Perform one approval request with a bounded wait.
+ *
+ * Without the abort timer a silent endpoint (or a half-open connection) blocks
+ * `tsdi-agent approval …` forever with no diagnosis; the raw `fetch failed`
+ * TypeError also hides the address. Both cases now produce an actionable error.
+ */
+async function requestApproval(
+    options: AgentApprovalCliOptions,
+    url: string,
+    init: { method: string; headers: Record<string, string>; body?: string }
+): Promise<ApprovalHttpResult> {
+    const fetchImpl = resolveFetch(options);
+    const timeoutMs = resolveApprovalTimeoutMs(options);
+    const controller = typeof AbortController === 'function' ? new AbortController() : undefined;
+    const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : undefined;
+    (timer as { unref?: () => void } | undefined)?.unref?.();
+    try {
+        const response = await fetchImpl(url, { ...init, signal: controller?.signal });
+        const text = await response.text();
+        return { ok: response.ok, status: response.status, text };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (controller?.signal.aborted || /abort/i.test(message)) {
+            throw new Error(`Approval request timed out after ${timeoutMs}ms (${url}). Check that the gateway or TUI is still running and that the port is reachable.`);
+        }
+        const cause = (error as { cause?: { message?: string } })?.cause?.message;
+        throw new Error(`Cannot reach the approval gateway at ${url}${cause ? `: ${cause}` : ''}. Check --gateway-url, the port, and the network.`);
+    } finally {
+        if (timer) {
+            clearTimeout(timer);
+        }
     }
 }
 
@@ -83,14 +133,14 @@ async function readError(response: Response): Promise<string> {
 export async function fetchRemoteApprovals(options: AgentApprovalCliOptions = {}): Promise<AgentApprovalRequestView[]> {
     const base = resolveApprovalGatewayUrl(options);
     const query = options.sessionId ? `?sessionId=${encodeURIComponent(options.sessionId)}` : '';
-    const response = await resolveFetch(options)(`${base}/api/approvals${query}`, {
+    const result = await requestApproval(options, `${base}/api/approvals${query}`, {
         method: 'GET',
         headers: authorizationHeaders(options)
     });
-    if (!response.ok) {
-        throw new Error(`Approval list failed: ${await readError(response)}`);
+    if (!result.ok) {
+        throw new Error(`Approval list failed: ${describeError(result)}`);
     }
-    const payload = await response.json() as { requests?: AgentApprovalRequestView[] };
+    const payload = JSON.parse(result.text || '{}') as { requests?: AgentApprovalRequestView[] };
     return Array.isArray(payload?.requests) ? payload.requests : [];
 }
 
@@ -105,15 +155,15 @@ export async function decideRemoteApproval(
         throw new Error('Provide an approval request id.');
     }
     const base = resolveApprovalGatewayUrl(options);
-    const response = await resolveFetch(options)(`${base}/api/approvals/${encodeURIComponent(id)}/${decision}`, {
+    const result = await requestApproval(options, `${base}/api/approvals/${encodeURIComponent(id)}/${decision}`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', ...authorizationHeaders(options) },
         body: '{}'
     });
-    if (!response.ok) {
-        throw new Error(`Approval ${decision} failed: ${await readError(response)}`);
+    if (!result.ok) {
+        throw new Error(`Approval ${decision} failed: ${describeError(result)}`);
     }
-    return await response.json() as AgentApprovalDecisionResult;
+    return JSON.parse(result.text || '{}') as AgentApprovalDecisionResult;
 }
 
 /** Human-readable line for one pending request. */

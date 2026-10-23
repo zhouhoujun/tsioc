@@ -8,6 +8,7 @@ import { join } from 'path';
 import {
     decideRemoteApproval,
     formatApprovalLine,
+    resolveApprovalTimeoutMs,
     runAgentApprovalDecision,
     runAgentApprovalList
 } from '../src/approval-command';
@@ -64,6 +65,29 @@ function startGateway(denyDecisions = false): Promise<{ url: string; calls: Reco
                 url: `http://127.0.0.1:${port}`,
                 calls,
                 close: () => new Promise<void>(done => server.close(() => done()))
+            });
+        });
+    });
+}
+
+function startHangingGateway(): Promise<{ url: string; close(): Promise<void> }> {
+    const sockets = new Set<import('net').Socket>();
+    const server = http.createServer(() => {
+        // Accept the request but never answer: the CLI must give up on its own.
+    });
+    server.on('connection', socket => {
+        sockets.add(socket);
+        socket.on('close', () => sockets.delete(socket));
+    });
+    return new Promise(resolve => {
+        server.listen(0, '127.0.0.1', () => {
+            const { port } = server.address() as AddressInfo;
+            resolve({
+                url: `http://127.0.0.1:${port}`,
+                close: () => new Promise<void>(done => {
+                    sockets.forEach(socket => socket.destroy());
+                    server.close(() => done());
+                })
             });
         });
     });
@@ -186,6 +210,60 @@ export class ApprovalCommandTest {
             expect(String(thrown?.message)).toContain('forbidden');
         } finally {
             await gateway.close();
+        }
+    }
+
+    @Test('a silent endpoint times out with an actionable message')
+    async timesOut() {
+        const gateway = await startHangingGateway();
+        try {
+            let thrown: any = null;
+            try {
+                await runAgentApprovalList({ gatewayUrl: gateway.url, timeoutMs: 100 });
+            } catch (error) {
+                thrown = error;
+            }
+            expect(String(thrown?.message)).toContain('timed out after 100ms');
+            expect(String(thrown?.message)).toContain(gateway.url);
+            expect(String(thrown?.message)).toContain('still running');
+        } finally {
+            await gateway.close();
+        }
+    }
+
+    @Test('an unreachable gateway names the address instead of "fetch failed"')
+    async unreachable() {
+        const gateway = await startGateway();
+        const url = gateway.url;
+        await gateway.close();
+        let thrown: any = null;
+        try {
+            await decideRemoteApproval('approve', 'approval-1234567890', { gatewayUrl: url });
+        } catch (error) {
+            thrown = error;
+        }
+        expect(String(thrown?.message)).toContain(`Cannot reach the approval gateway at ${url}`);
+        expect(String(thrown?.message)).toContain('--gateway-url');
+    }
+
+    @Test('timeout falls back to 15s unless the flag or env overrides it')
+    async timeoutResolution() {
+        const previous = process.env.TSDI_AGENT_APPROVAL_TIMEOUT_MS;
+        try {
+            delete process.env.TSDI_AGENT_APPROVAL_TIMEOUT_MS;
+            expect(resolveApprovalTimeoutMs()).toEqual(15_000);
+            expect(resolveApprovalTimeoutMs({ timeoutMs: '2500' })).toEqual(2_500);
+            process.env.TSDI_AGENT_APPROVAL_TIMEOUT_MS = '7000';
+            expect(resolveApprovalTimeoutMs()).toEqual(7_000);
+            expect(resolveApprovalTimeoutMs({ timeoutMs: 300 })).toEqual(300);
+            // Commander passes the flag as `timeout`.
+            expect(resolveApprovalTimeoutMs({ timeout: '1800' })).toEqual(1_800);
+        } finally {
+            if (previous === undefined) {
+                delete process.env.TSDI_AGENT_APPROVAL_TIMEOUT_MS;
+            } else {
+                process.env.TSDI_AGENT_APPROVAL_TIMEOUT_MS = previous;
+            }
         }
     }
 

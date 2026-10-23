@@ -1494,3 +1494,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 修复：`startApprovalRemoteServer` 把 `--gateway-token` 作为 `{ id: 'owner', token }` 的 **approver** 注册（回环端点本就代表操作者本人），列表/审批对任意会话可用；`TSDI_AGENT_APPROVER_TOKENS` 依旧可用。
 - 真实验证（仅 owner 令牌）：`chat --gateway-port 57797 --gateway-token owner-secret` → `approval list` 返回 1 条（terminal）→ `approval approve` 输出 `Approved …` → TUI 批准提示出现且命令执行。
 - 测试：`approval-remote-server.spec.ts` 将“owner 403”改为“操作者令牌可列/批（即使 owner 校验会拒绝）”。回归：agent-gateway 356、agent-cli 114。
+
+## 2026-10-23 approval CLI：请求超时与可诊断网络错误
+- 真实联调中 `approval list` 曾挂死到子进程 120s 超时：`fetchRemoteApprovals`/`decideRemoteApproval` 直接 `fetch`，无 `AbortController`；连接失败只抛裸 `fetch failed`（无地址/建议）。
+- 修复：统一 `requestApproval`（option/env/15s 默认，`--timeout <ms>`、`TSDI_AGENT_APPROVAL_TIMEOUT_MS`）；超时报 `Approval request timed out after Xms (<url>). Check that the gateway or TUI is still running…`；网络错误报 `Cannot reach the approval gateway at <url>: <cause>. Check --gateway-url…`；`--timeout` 同时兼容 commander 的 `timeout` 字段。
+- RED 证据（旧实现）：静默端点上 25s 内不返回（被 timeout 杀掉）；关闭端口只得到 `fetch failed`。GREEN：10 例通过（含 100ms 超时、不可达地址、超时解析）。
+- 真实 CLI：静默 HTTP 服务 + `--timeout 1500` → 3.1s 内退出 1 并打印含 URL 的超时信息。
+- 真实 TUI 端到端（仅 owner 令牌）：`chat --gateway-port 56985 --gateway-token owner-secret` → 外部 `approval list --timeout 10000` 返回 1 条 `terminal` → `approval approve` 输出 `Approved …` → TUI 显示批准并执行。
+- 排查结论：此前“审批面板打开时端点偶尔 15s 超时”并非产品缺陷，而是 PTY 驱动在 `subprocess.run` 期间停止读取，终端写阻塞把 TUI 事件循环一起卡住；驱动改为边跑边 drain 后稳定通过（也说明新的 15s 超时能把“永久挂起”变成可诊断错误）。

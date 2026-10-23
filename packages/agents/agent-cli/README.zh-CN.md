@@ -72,6 +72,8 @@ tsdi-agent approval reject <requestId> --gateway-url http://127.0.0.1:3100 --tok
 - **TUI 进程内会话**：`tsdi-agent chat --gateway-port 3200 --gateway-token <token>`
   会在回环地址暴露 `GET /api/approvals` 与 `POST /api/approvals/:id/approve|reject`；
   该操作者令牌按 approver 处理，因此同一个 CLI 可以在另一个进程里处理 TUI 的待审批请求。
+- 请求默认 15s 超时（`--timeout <ms>` 或 `TSDI_AGENT_APPROVAL_TIMEOUT_MS`）；端点无响应或端口未监听时会报告
+  URL 与修复建议，而不是无限挂起。
 
 - **Webhook 推送**（`TSDI_AGENT_APPROVAL_WEBHOOK` +
   `TSDI_AGENT_APPROVAL_WEBHOOK_SECRET`）会把每个待审批请求以 JSON POST 出去，
