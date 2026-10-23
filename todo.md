@@ -1535,3 +1535,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 结果：`<workspace>/.tsdi-agent/command-output-history.json` **mtime 更新且包含 `/queue list`**（此前该文件一直是 10 月 13 日的旧内容）。
 - 说明：`/queue list`（空队列）、`/hooks`、`/voice status` 在空环境下只产生 notice、不产生 entry，因此之前观察不到写入；这不是持久化失效。
 - 修复前把 store 设在 `ctx.get(AgentConsoleSessionState)`（根实例）上，界面状态没有 store；改为 bootstrap 状态后恢复。
+
+## 2026-10-23 门禁 + 中文残留审计 + 命令输出历史恢复（只读验证）
+- 门禁：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS**（12:38:16Z 启动，约 20 分钟；不是 1 小时）。
+- 中文残留审计（`LANG=zh_CN.UTF-8`，真实 TUI）：启动、`/approvals`、`/queue list`、`/layout`、`/tools`、`/session`、`/status`、`/help` 采样中未发现英文残留；`chat --session chat-does-not-exist` 显示 `未找到会话 …，已开始新会话。`；一次真实 turn 的状态区也无英文。
+- 命令输出历史恢复：`/outputs` 面板按 **session** 过滤。新会话显示 `command outputs 0 · 0-0 / No command outputs yet.`；用产生过条目的会话 `--session chatf92faf…` 启动则显示 `command outputs 1 · 1-1` 且能看到 `/queue list`。说明持久化（写入）+ 水合（恢复）都正常，且是会话级设计，不是缺陷。
