@@ -1473,3 +1473,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 修复：两处改为显式 `@Inject(ApprovalManager)` / `@Inject(SessionOwnerStore)`；`GatewayServer` 增加 `@Dispose()` 调用 `stop()`。
 - 真实网关端到端（port 0 + 临时 sql.js）：approver token 列表返回 1 条 → 批准返回 `applied=true` 且 pending promise 解析为 `approved`；owner 对他人会话 reject → **403**；`ctx.close()` 后进程正常退出。
 - 测试：`approval-remote.spec.ts` 新增真实网关用例（断言 handler 与 runtime 共用 manager、approver REST 列表/批准、owner 403）。回归：agent-gateway **353**、agent 1040、agent-cli 113，tsc/source-size OK。
+
+## 2026-10-23 TUI 进程内 Webhook 端到端验证
+- 用本地 HTTP 接收器 + 真实打包 TUI 验证：`TSDI_AGENT_APPROVAL_WEBHOOK=http://127.0.0.1:<port>/approval`、`_SECRET=webhook-test-secret`；让 agent 执行 `echo WEBHOOK_E2E` 并批准。
+- 接收器收到 **1 条** `approval_requested`：`toolName=terminal`、`sessionId=chat…`、`reasonDetail.code=tool-requires-approval`、`inputSummary={"command":"echo WEBHOOK_E2E"}`、`timeoutMs=30000`、`expiresAt`，并带 `X-Tsdi-Timestamp` 与 `X-Tsdi-Signature: sha256=…`（与单测中 HMAC(`<ts>.<body>`) 的校验一致）。
+- 说明 `AgentAppServerModule` 的依赖注入确实实例化了 notifier（bootstrap runner 不接受普通服务，改为 console RPC 工厂依赖）。
