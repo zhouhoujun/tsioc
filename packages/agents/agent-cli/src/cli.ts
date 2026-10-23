@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import { runAgentApplication, runAgentJsonStream, runAgentPrompt, runAgentRpcStdio, runAgentStreaming } from './run-command';
-import { runAgentAttach, runAgentConsole } from './run-console';
+import { runAgentAttach } from './run-console';
+import { registerChatCli } from './chat-cli';
 import { runMcpAdd, runMcpAuth, runMcpList, runMcpLogout, runMcpRemove } from './mcp-command';
 import { runAgentDoctor } from './doctor';
 import { registerApprovalCli } from './approval-cli';
@@ -42,7 +43,10 @@ const OPTION_FLAGS_WITH_VALUES = new Set([
     '--mdns-service-type',
     '--mdns-timeout',
     '--desktop-entry',
-    '--electron'
+    '--electron',
+    '--gateway-port',
+    '--gateway-host',
+    '--gateway-token'
 ]);
 
 function collectValues(value: string, previous: string[]): string[] {
@@ -120,23 +124,7 @@ function createAgentCli(): Command {
             process.stdout.write(output + '\n');
         });
 
-    program
-        .command('chat')
-        .description('Start Agent UI in TUI mode.')
-        .option('--session <id>', 'Session ID for conversation continuity.')
-        .option('--root <dir>', 'Agent config root. Defaults to ~/.tsdi-agent.')
-        .option('--workspace <dir>', 'Workspace directory for file tools.')
-        .option('--tools <items>', 'Comma-separated tool names or groups to enable.')
-        .option('--no-default-tools', 'Disable default tool groups.')
-        .option('--provider <name>', 'Model provider (deepseek, openai, etc.)')
-        .option('--model <name>', 'Model name.')
-        .option('--base-url <url>', 'API base URL.')
-        .option('--api-key <key>', 'API key.')
-        .option('--api-key-env <name>', 'Env var name for API key.')
-        .option('--timeout <ms>', 'Request timeout in ms.')
-        .action(async (options: any) => {
-            await runAgentConsole(options);
-        });
+    registerChatCli(program);
 
     program
         .command('desktop')

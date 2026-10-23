@@ -69,6 +69,10 @@ tsdi-agent approval reject <requestId> --gateway-url http://127.0.0.1:3100 --tok
 - **审批令牌**（`GatewayConfig.approvers`，或
   `TSDI_AGENT_APPROVER_TOKENS="ci=token1,ops=token2"`）无需成为会话 owner
   即可列出并决定任意会话的审批；但不能读取 transcript，也不能执行 turn。
+- **TUI 进程内会话**：`tsdi-agent chat --gateway-port 3200 --gateway-token <owner-token>`
+  会在回环地址暴露 `GET /api/approvals` 与 `POST /api/approvals/:id/approve|reject`，
+  因此同一个 CLI（或 approver 令牌）可以在另一个进程里处理 TUI 的待审批请求。
+
 - **Webhook 推送**（`TSDI_AGENT_APPROVAL_WEBHOOK` +
   `TSDI_AGENT_APPROVAL_WEBHOOK_SECRET`）会把每个待审批请求以 JSON POST 出去，
   带 `X-Tsdi-Timestamp` 与 `X-Tsdi-Signature: sha256=HMAC(secret, "<ts>.<body>")`；

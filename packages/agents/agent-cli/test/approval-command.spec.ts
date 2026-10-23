@@ -2,12 +2,16 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import * as http from 'http';
 import { AddressInfo } from 'net';
+import { mkdtempSync, rmSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import {
     decideRemoteApproval,
     formatApprovalLine,
     runAgentApprovalDecision,
     runAgentApprovalList
 } from '../src/approval-command';
+import { runAgentConsole } from '../src/run-console';
 
 interface Recorded {
     method: string;
@@ -126,6 +130,27 @@ export class ApprovalCommandTest {
             expect(rejected.join('')).toContain('Rejected approval-1234567890');
         } finally {
             await gateway.close();
+        }
+    }
+
+    @Test('chat --gateway-port without a token fails before starting the TUI')
+    async gatewayPortRequiresToken() {
+        const previousApprovers = process.env.TSDI_AGENT_APPROVER_TOKENS;
+        delete process.env.TSDI_AGENT_APPROVER_TOKENS;
+        const root = mkdtempSync(join(tmpdir(), 'tsdi-chat-gateway-'));
+        try {
+            let thrown: any = null;
+            try {
+                await runAgentConsole({ root, workspace: root, gatewayPort: '43210' } as any);
+            } catch (error) {
+                thrown = error;
+            }
+            expect(String(thrown?.message)).toContain('--gateway-token');
+        } finally {
+            if (previousApprovers !== undefined) {
+                process.env.TSDI_AGENT_APPROVER_TOKENS = previousApprovers;
+            }
+            rmSync(root, { recursive: true, force: true });
         }
     }
 

@@ -16,7 +16,7 @@ export interface GatewayRequestAuth {
 const LOCAL_PRINCIPAL_ID = 'gateway-local';
 
 /** `TSDI_AGENT_APPROVER_TOKENS="ci=token1,ops=token2"`. */
-function parseApproverTokens(raw?: string): GatewayApproverToken[] {
+export function parseApproverTokens(raw?: string): GatewayApproverToken[] {
     return String(raw || '')
         .split(',')
         .map(entry => entry.trim())

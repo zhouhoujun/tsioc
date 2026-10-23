@@ -1478,3 +1478,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 用本地 HTTP 接收器 + 真实打包 TUI 验证：`TSDI_AGENT_APPROVAL_WEBHOOK=http://127.0.0.1:<port>/approval`、`_SECRET=webhook-test-secret`；让 agent 执行 `echo WEBHOOK_E2E` 并批准。
 - 接收器收到 **1 条** `approval_requested`：`toolName=terminal`、`sessionId=chat…`、`reasonDetail.code=tool-requires-approval`、`inputSummary={"command":"echo WEBHOOK_E2E"}`、`timeoutMs=30000`、`expiresAt`，并带 `X-Tsdi-Timestamp` 与 `X-Tsdi-Signature: sha256=…`（与单测中 HMAC(`<ts>.<body>`) 的校验一致）。
 - 说明 `AgentAppServerModule` 的依赖注入确实实例化了 notifier（bootstrap runner 不接受普通服务，改为 console RPC 工厂依赖）。
+
+## 2026-10-23 TUI 会话暴露远程审批端口（`chat --gateway-port`）
+- 纯 TUI 部署此前没有入站 REST（只有 webhook 出站）。新增 `tsdi-agent chat --gateway-port <port> [--gateway-host] [--gateway-token]`：
+  - 复用进程内共享的 `ApprovalManager` + `SessionOwnerStore`，在回环地址提供 `GET /api/approvals`、`POST /api/approvals/:id/approve|reject`、`/health`；
+  - 无 owner token 且无 `TSDI_AGENT_APPROVER_TOKENS` 时**拒绝启动**（避免未鉴权的审批接口），CLI 在启动 TUI 前就报错；
+  - approver 令牌跨会话可用；owner 令牌仍走所有权校验（403）；监听 `unref()`，TUI 退出不残留；
+  - 启动后通过 TUI notice 显示 `Approvals API on http://host:port`。
+- 真实端到端（PTY TUI + 独立 CLI 进程）：`chat --gateway-port 60603 --gateway-token owner-secret` + `TSDI_AGENT_APPROVER_TOKENS=ci=ci-secret`；触发 `terminal` 审批 → 另一进程 `approval list` 返回 1 条（toolName=terminal）→ `approval approve` 输出 `Approved … (session chat…)` → TUI 内命令执行并出现 `REMOTE_APPROVAL_OK`。
+- 修复 CLI 参数归一化：`--gateway-port/-host/-token` 需加入 `OPTION_FLAGS_WITH_VALUES`，否则值会被当成命令导致 `unknown option '--root'`。
+- 测试：gateway `approval-remote-server.spec.ts`（3：无令牌拒绝、approver 列表+批准+404、owner 403）；agent-cli `approval-command.spec.ts` 增加 `chat --gateway-port` 无令牌快速失败（7 例）。回归：agent-cli 114、agent-gateway 356，tsc/source-size OK。

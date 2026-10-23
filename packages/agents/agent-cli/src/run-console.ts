@@ -8,15 +8,20 @@
 import { AgentHookCommandExecutor } from '@tsdi/agent';
 import { provideSkills, provideTools } from '@tsdi/agent-tools';
 import { AGENT_SSH_OPTIONS } from '@tsdi/agent-ssh';
-import { AgentUiConfigService } from '@tsdi/agent-ui';
+import { AgentUiConfigService, AgentConsoleSessionState } from '@tsdi/agent-ui';
 import {
     runAgentConsole as runConsoleTui,
     createDefaultConsoleUi,
     AgentConsoleLaunchTarget
 } from '@tsdi/agent-ui/console';
-import { AgentAppServerModule, MdnsServiceDiscovery } from '@tsdi/agent-gateway';
+import {
+    AgentAppServerModule,
+    MdnsServiceDiscovery,
+    SessionOwnerStore,
+    startApprovalRemoteServer
+} from '@tsdi/agent-gateway';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
-import { provideAgentOrmStorage } from '@tsdi/agent';
+import { ApprovalManager, provideAgentOrmStorage } from '@tsdi/agent';
 import { AgentCliOptions } from './config';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { NodeAgentHookCommandExecutor } from './NodeAgentHookCommandExecutor';
@@ -84,7 +89,14 @@ export async function runAgentConsole(
     await ensureAgentWorkspace(resolved);
     const gatewayUrl = String((options as AgentAttachOptions).gatewayUrl || '').trim().replace(/\/+$/, '');
 
-    await runConsoleTui(resolved, options, agentOptions, [
+    const gatewayPort = Number((options as AgentGatewayOptions).gatewayPort || 0);
+    const gatewayToken = String((options as AgentGatewayOptions).gatewayToken || '').trim();
+    const approverEnv = String(process.env.TSDI_AGENT_APPROVER_TOKENS || '').trim();
+    if (gatewayPort > 0 && !gatewayToken && !approverEnv) {
+        throw new Error('Remote approvals need a token: pass --gateway-token <token> or set TSDI_AGENT_APPROVER_TOKENS="id=token".');
+    }
+
+    const ctx = await runConsoleTui(resolved, options, agentOptions, [
         ...provideAgentOrmStorage(resolved.root),
         ...provideTools(resolved.tools),
         ...provideSkills({ root: resolved.root, roots: resolved.skillRoots, remoteCacheDir: resolved.tools?.skillsRemoteCacheDir }),
@@ -100,4 +112,35 @@ export async function runAgentConsole(
         deps: gatewayUrl ? [ServerCommonModule] : [ServerCommonModule, AgentAppServerModule],
         persistCommandOutput: true
     });
+
+    if (gatewayPort > 0) {
+        const manager = ctx?.get ? ctx.get(ApprovalManager) : undefined;
+        const owners = ctx?.get ? ctx.get(SessionOwnerStore) : undefined;
+        const state = ctx?.get ? ctx.get(AgentConsoleSessionState) : undefined;
+        if (!manager) {
+            state?.setNotice('Remote approvals unavailable: configure tools.requireApproval (e.g. ["terminal"]).');
+        } else {
+            try {
+                const handle = await startApprovalRemoteServer({
+                    manager,
+                    owners,
+                    port: gatewayPort,
+                    host: (options as AgentGatewayOptions).gatewayHost,
+                    authToken: gatewayToken || undefined
+                });
+                state?.setNotice(`Approvals API on http://${handle.host}:${handle.port}`);
+            } catch (error) {
+                state?.setNotice(`Remote approvals failed: ${error instanceof Error ? error.message : String(error)}`);
+            }
+        }
+    }
+
+    return ctx;
+}
+
+/** TUI remote-approval flags (`tsdi-agent chat --gateway-port …`). */
+export interface AgentGatewayOptions extends AgentCliOptions {
+    gatewayPort?: number | string;
+    gatewayHost?: string;
+    gatewayToken?: string;
 }

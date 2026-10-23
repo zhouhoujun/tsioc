@@ -43,3 +43,5 @@ export * from './discovery/MdnsServiceDiscovery';
 export * from './ws/ChatWebSocket';
 
 export * from './audio';
+export * from './approval/ApprovalRemoteServer';
+export * from './approval/ApprovalWebhookNotifier';
