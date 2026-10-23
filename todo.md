@@ -1388,3 +1388,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `@with`+Tab → `@"with space.txt"`，发送后用户消息显示 `Files · with space.txt`（此前是 `Files · with`）。
 - 测试：`p413-suggestions.spec.ts` 新增 6 例（目录不再加空格、空格路径加引号、空格目录未闭合引号、引号 query 过滤、`parseAgentConsoleMentionNames`、enricher 传全名、provider 去引号）；更新 `vm-mentions` 旧断言（原断言把尾随空格当预期）。
 - 回归：agent-ui **1607 passing**，tsc 0，source-size OK。
+
+## 2026-10-23 composer：Esc 后 Tab 重开候选 + Ctrl+U 清空输入
+- 真实 TUI 发现：
+  1. 输入 `@sr` 打开候选 → `Esc` 关闭 → 再按 `Tab` **无任何反应**（空闲时 `tab` 映射 `queue-follow-up`，`queueDraft` 在无运行中 turn 时直接返回 false），只能删字重输才能恢复候选。
+  2. 输入框没有 `Ctrl+U` 清空（该键只在 pager 上下文映射 `message-half-page-up`）。
+- 修复：
+  - `AgentConsoleSessionState.reopenInputSuggestions()`：当前 token 为 `/` 或 `@` 时重开候选菜单；组件 `queueDraft()` 在**空闲**且 token 存在时优先走补全（运行中仍保持 Tab = 排队，避免破坏既有队列语义与 B1 测试）。
+  - 新增全局动作 `clear-input`，composer 上下文绑定 `ctrl+u`（pager 的 `ctrl+u` 仍是 `message-half-page-up`；`effectiveBindings` 上下文合并已断言）。
+- 真实 TUI 验证：`@sr` → Esc → Tab → 候选重新出现（`@bank-system/src/` 等 12 项）；`hello world` + Ctrl+U → 输入清空，随后输入 `x` 只显示 `x`。
+- 测试：新增 `keymap-composer-input.spec.ts` 4 例（Tab 重开、纯文本不重开/不排队、仅 token 生效、ctrl+u 上下文与动作）；`vm-submit` 队列测试保持通过。回归：agent-ui **1611 passing**，tsc 0，source-size OK。

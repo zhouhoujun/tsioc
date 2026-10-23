@@ -5288,6 +5288,20 @@ export class AgentConsoleSessionState {
         await action?.(value);
     }
 
+    /**
+     * Re-open the `/` or `@` suggestion menu for the current token.
+     *
+     * Esc closes the menu; without this, Tab could not bring it back and the
+     * only way to continue was editing the text.
+     */
+    reopenInputSuggestions(): boolean {
+        if (!getAgentConsoleInputTokenRange(this.input, this.inputCursor)?.token) {
+            return false;
+        }
+        this.refreshInputSuggestions();
+        return true;
+    }
+
     protected refreshInputSuggestions(): void {
         if (this.selectMenu && !isAgentConsoleSuggestionMenu(this.selectMenu)) {
             return;

@@ -472,6 +472,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected queueDraft(): boolean {
+        // While idle, Tab re-opens completion for an active `/` or `@` token
+        // (Esc closes the menu). During a turn Tab keeps its queue semantics.
+        if (!this.isTurnInProgress() && this.state.reopenInputSuggestions()) {
+            return true;
+        }
         if (!this.isTurnInProgress() || !this.state.input.trim()) {
             return false;
         }
