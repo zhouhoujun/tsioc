@@ -27,6 +27,7 @@ import { SessionSummarizer } from '../memory/SessionSummarizer';
 import { AgentSummaryAgent } from '../memory/AgentSummaryAgent';
 import { AGENT_OPTIONS, AGENT_WORKSPACE_TRUST, AgentWorkspaceTrustResolver } from '../tokens';
 import { AgentOptions, AgentPolicyResolution, DEFAULT_APPROVAL_REQUIRED_RULES, defaultAgentOptions } from '../options';
+import { resolveApprovalPolicyOptions } from './approval-policy';
 import { ExperienceDistiller } from '../memory/ExperienceDistiller';
 import { SystemPromptBuilder } from '../prompt/SystemPromptBuilder';
 import { AgentClock, AGENT_CLOCK } from './Clock';
@@ -3326,21 +3327,21 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
             return approvalManager;
         }
         const required = this.resolveApprovalRequired().value;
+        const options = resolveApprovalPolicyOptions(this.options, this.resolveApprovalAutoReview().value);
         if (!required.length) {
             return undefined;
+        }
+        const strategy = new DefaultApprovalStrategy(required);
+        // Reuse the injected instance so hosts (REST/RPC/UI) share one queue.
+        if (approvalManager instanceof ToolApprovalManager) {
+            approvalManager.configure(strategy, options);
+            return approvalManager;
         }
         return new ToolApprovalManager(
             this.app,
             this.uuid,
-            new DefaultApprovalStrategy(required),
-            {
-                defaultTimeoutMs: this.options.policy?.limits?.approvalTimeoutMs
-                    ?? this.options.tools?.approvalTimeoutMs
-                    ?? defaultAgentOptions.policy?.limits?.approvalTimeoutMs
-                    ?? defaultAgentOptions.tools?.approvalTimeoutMs,
-                autoDeny: this.options.tools?.approvalAutoDeny === true,
-                autoReview: this.resolveApprovalAutoReview().value
-            },
+            strategy,
+            options,
             undefined,
             undefined,
             this.clock

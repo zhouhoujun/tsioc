@@ -207,6 +207,22 @@ export class ToolApprovalManager extends ApprovalManager {
         return !!this.strategy;
     }
 
+    /**
+     * Apply the runtime's resolved policy to this (shared) instance.
+     *
+     * The IoC-provided manager is what REST/RPC hosts inject, while the runtime
+     * used to create a private manager when the injected one was unconfigured —
+     * so `GET /api/approvals` / `approval.list` could never see pending tool
+     * approvals. Configuring the shared instance keeps every surface on one
+     * queue.
+     */
+    configure(strategy: ApprovalStrategy, options?: ApprovalManagerOptions): void {
+        this.strategy = strategy;
+        if (options) {
+            this.options = options;
+        }
+    }
+
     setAutoApprove(enabled: boolean): void {
         if (this.options) this.options.autoApprove = enabled;
     }

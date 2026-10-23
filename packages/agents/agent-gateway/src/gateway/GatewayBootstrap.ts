@@ -40,9 +40,10 @@ export class GatewayBootstrap {
         @Optional() private evals?: EvalHandler | null,
         @Optional() private shares?: ShareHandler | null,
         @Optional() private chatWs?: ChatWebSocket | null,
-        @Optional() private approvalWebhook?: ApprovalWebhookNotifier | null,
         @Optional() @Inject(INJECTOR) private injector?: Injector | null,
-        @Inject(GATEWAY_CONFIG, { nullable: true }) private config: GatewayConfig = defaultGatewayConfig
+        @Inject(GATEWAY_CONFIG, { nullable: true }) private config: GatewayConfig = defaultGatewayConfig,
+        /** Instantiated so its approval webhook subscription is active. */
+        @Optional() private approvalWebhook?: ApprovalWebhookNotifier | null
     ) {
     }
 

@@ -1457,3 +1457,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 通过网关 REST 调用；`--gateway-url` 缺省读 `TSDI_AGENT_GATEWAY_URL`；无 URL 时给出可操作提示。
 - 测试：gateway `approval-remote.spec.ts`（5：approver 鉴权/环境变量/跨 owner 列表/批准/owner 越权 403）、`approval-webhook.spec.ts`（4：签名体、事件触发、失败不抛、env 回退）；agent-cli `approval-command.spec.ts`（6：列表/JSON/批准拒绝/缺 URL/非 2xx/格式化）。回归：agent-gateway **352**、agent-cli **113**，tsc/source-size OK；真实 TUI 恢复会话正常。
 - 安全边界：approver 令牌只能列/决定审批，不能读 transcript 或执行 turn；跨主机部署需 HTTPS（本地默认 localhost）。
+
+## 2026-10-23 远程审批真正生效：运行时复用注入的审批 manager
+- 端到端验证时发现：IoC 注入的 `ApprovalManager` **未配置策略**，且 `DefaultAgentRuntime` 在策略存在时会**新建私有实例**（实测 `injected !== runtime.approvalManager`）。因此 `GET /api/approvals`、RPC `approval.list` 对网关上运行的会话永远返回空（只有进程内 TUI 直接读 `runtime.approvalManager` 才正常）——这会让新增的 approver token/CLI 形同虚设。
+- 修复：
+  - `ToolApprovalManager.configure(strategy, options)`：允许把运行时解析出的策略/超时/autoDeny/autoReview 配置到共享实例；
+  - `DefaultAgentRuntime.resolveApprovalManager` 对 `ToolApprovalManager` 实例改为 **configure + 复用**（保留自定义 `ApprovalManager` 实现时的原逻辑）；审批策略选项抽到 `runtime/approval-policy.ts`（保持文件行数 ratchet）。
+  - 同时修正 `GatewayBootstrap` 构造参数顺序（新增的 webhook 依赖放到末尾），此前导致 `registersLazyOptionalHandlerRoutes` 失败。
+- 测试：新增 `agent/test/approval-manager-sharing.spec.ts`（2 例：注入实例 === runtime 实例、`isConfigured=true`、经注入实例创建的 pending 可批准；无规则时无 manager）。回归：agent **1040**、agent-gateway **352**、agent-cli **113**，tsc/source-size OK。
