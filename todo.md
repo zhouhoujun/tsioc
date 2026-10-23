@@ -1529,3 +1529,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 通知文案接入 i18n：新增 `remoteApprovalsApi / remoteApprovalsUnavailable / remoteApprovalsFailed`（en/zh），新增 `formatAgentUiNoticeFromContext(ctx, key, params)`；真实 TUI 下 EN/zh 各 2 次全部显示（`Approvals API on …` / `审批接口：…`），zh 无英文残留。
 - `runAgentConsole` 的 `persistCommandOutput` 同步改为 bootstrap 状态；命令输出历史是否此前完全未落盘仍需专门验证（`/queue list`、`/hooks`、`/voice status` 在空环境下只出 notice、不产生 entry），列为待办。
 - 测试：`host-notice.spec.ts`（2）、i18n 回归新增 context 用例并更新 key 数（465）；agent-ui **1624 passing**、agent-cli 117。
+
+## 2026-10-23 命令输出持久化在 bootstrap 状态修复后确认落盘
+- 构造会产生 command-output entry 的真实场景：长 turn 运行中键入第二条 prompt + **Tab 排队**（`Queued prompt (1)`），再执行 `/queue list`（输出 `Queued prompts (1): …`）。
+- 结果：`<workspace>/.tsdi-agent/command-output-history.json` **mtime 更新且包含 `/queue list`**（此前该文件一直是 10 月 13 日的旧内容）。
+- 说明：`/queue list`（空队列）、`/hooks`、`/voice status` 在空环境下只产生 notice、不产生 entry，因此之前观察不到写入；这不是持久化失效。
+- 修复前把 store 设在 `ctx.get(AgentConsoleSessionState)`（根实例）上，界面状态没有 store；改为 bootstrap 状态后恢复。
