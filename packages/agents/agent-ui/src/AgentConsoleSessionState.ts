@@ -6465,13 +6465,6 @@ export class AgentConsoleSessionState {
             return { handled: false };
         }
 
-        if (controlKey === 'tab'
-            && (this.status === 'running' || this.status === 'reasoning')
-            && this.input.trim()
-            && isAgentConsoleSuggestionMenu(this.selectMenu)) {
-            return { handled: true, action: 'queueDraft' };
-        }
-
         // A recalled entry can itself open the suggestion menu. Once history
         // browsing has started, keep up/down on history instead of letting the
         // newly opened menu steal the remaining navigation sequence.

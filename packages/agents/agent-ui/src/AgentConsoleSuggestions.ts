@@ -156,6 +156,12 @@ export function resolveAgentConsoleInputSuggestions(
     return [];
 }
 
+/** True when the active token is an exact `/command` (mid-turn Tab queues it). */
+export function isAgentConsoleExactCommandToken(input: string, cursor: number, commands: string[]): boolean {
+    const token = getAgentConsoleInputTokenRange(input, cursor)?.token || '';
+    return token.startsWith('/') && commands.includes(token);
+}
+
 /**
  * Mention values with spaces must be quoted, otherwise the prompt parser reads
  * only the first word (`@with space.txt` resolved to `@with`).

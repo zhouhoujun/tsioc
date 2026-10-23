@@ -38,6 +38,47 @@ export class ComposerKeyTest {
         expect(state.input).toEqual('/se');
     }
 
+    @Test('an open menu completes even while a turn runs (no broken queued draft)')
+    async menuCompletionWinsOverQueue() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub());
+        const state = component.sessionState;
+        state.setStatus('running');
+        state.setInput('/se', 3);
+        expect(state.selectMenu).toBeDefined();
+        expect((component as any).queueDraft()).toBe(false);
+
+        const result: any = await (state as any).processDecodedInput(
+            { text: '\t', controlKey: 'tab', partial: false },
+            '\t',
+            {
+                isClosed: false,
+                onExit: () => undefined,
+                hasActiveTextPrompt: false,
+                transcriptNavigationController: {
+                    move: () => undefined,
+                    movePage: () => undefined,
+                    selectFirst: () => undefined,
+                    selectLast: () => undefined,
+                    setFocused: () => undefined
+                }
+            }
+        );
+        expect(result.handled).toBe(true);
+        expect(state.input.trim()).toEqual('/settings');
+        expect(state.queuedPromptCount).toEqual(0);
+    }
+
+    @Test('an exact command name still queues with Tab mid-turn')
+    async exactCommandStillQueues() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub());
+        const state = component.sessionState;
+        state.setStatus('running');
+        state.setInput('/compact', '/compact'.length);
+        expect(state.selectMenu).toBeDefined();
+        // Existing follow-up behaviour: an exact command queues as-is.
+        expect((component as any).queueDraft()).toBe(true);
+    }
+
     @Test('Tab with plain text still queues as before')
     async tabQueuesPlainDraft() {
         const component = createConsole(new RuntimeStub(), new SchedulerStub());

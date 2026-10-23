@@ -175,7 +175,7 @@ import {
     mapWithConcurrency as runWithConcurrency
 } from './AgentConsoleSessionContentLoader';
 import { applyMissingSessionNotice, openSession as delegateOpenSession, AgentConsoleSessionOpenHost } from './AgentConsoleSessionOpen';
-import { parseAgentConsoleMentionNames } from './AgentConsoleSuggestions';
+import { isAgentConsoleExactCommandToken, parseAgentConsoleMentionNames } from './AgentConsoleSuggestions';
 import {
     AgentConsoleRpcCommandHost,
     runApproveRetryCommand as runApproveRetryCommandView,
@@ -472,10 +472,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected queueDraft(): boolean {
+        // An open menu owns Tab; only an exact command keeps mid-turn queueing.
+        if (this.state.selectMenu && !isAgentConsoleExactCommandToken(this.state.input, this.state.inputCursor, this.state.commandHints)) return false;
         // While idle, Tab re-opens completion for an active `/` or `@` token
-        // when the menu is closed (Esc). With the menu open the key must fall
-        // through to the menu handler, which completes the selection.
-        if (!this.isTurnInProgress() && !this.state.selectMenu && this.state.reopenInputSuggestions()) {
+        // when the menu is closed (Esc).
+        if (!this.isTurnInProgress() && this.state.reopenInputSuggestions()) {
             return true;
         }
         if (!this.isTurnInProgress() || !this.state.input.trim()) {

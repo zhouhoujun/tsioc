@@ -1406,3 +1406,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `/se`+Tab → `/settings`；` /se`+Tab → ` /settings`（保留缩进）；再输入 `#` → `/settings #`。
   - `@sr` → Esc → Tab → 候选重新出现（12 个 `*/src/`）；`hello world` + Ctrl+U 清空。
 - 测试：`keymap-composer-input.spec.ts` 5 例（含“菜单打开时 Tab 不被全局处理器吞掉”）；`p413` 增加前导空格用例。回归：agent-ui **1613 passing**，tsc/source-size OK。
+
+## 2026-10-23 运行中 Tab：菜单打开时补全优先（避免排队半截 mention）
+- 真实场景：turn 运行中给下一轮写 `@sr`，按 Tab 时旧逻辑（全局键 → `queueDraft`）会**把 `@sr` 原样排队**，菜单不收键、也不再补全；排队后无法编辑，mention 永久残缺。
+- 决策：**菜单打开即拥有 Tab**——只有当 token 是**精确命令名**（如 `/compact`，既有“Tab 排队命令”行为）时才继续排队；部分命令（`/se`）与所有 `@` token 都走补全。菜单关闭时维持原语义（运行中 Tab 排队、空闲 Tab 重开候选）。
+- 实现：`queueDraft()` 在 `selectMenu` 打开且非精确命令时返回 false，让按键下沉到菜单补全；移除 `processDecodedInput` 里“运行中 + 菜单 + tab → queueDraft”的早退分支；新增 `isAgentConsoleExactCommandToken()`。
+- 真实 TUI：turn 运行中输入 `@sr` + Tab → 补全为 `@bank-system/src/`（菜单继续列 `accounts.js`/`ledger.js`），再 Tab → `@bank-system/src/accounts.js`，**没有** Queued Prompt 通知；`/compact` + Tab 仍排队（单测覆盖）。
+- 测试：`keymap-composer-input` 7 例（含运行中菜单补全、精确命令仍排队）；`vm-submit` 队列 33 例全过。回归：agent-ui **1615 passing**，tsc/source-size OK。
