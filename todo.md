@@ -1435,3 +1435,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 补充 `subcommands: list/set/unset/reset/record`（与 `runKeymapCommand` 的实际分支一致），并在 zh 目录补 5 条 `agent.command.sub.keymap.*`（en 回退到 registry 英文描述）。
 - 真实 TUI：`/keymap l` + Tab → `/keymap list`，Enter → 打开 keymap 面板（`keymap 35 lines · 1-8`、`ctrl+x n -> new-session` 等）。
 - 测试：`p413` 增加 1 例（前缀过滤 `l`/`re`、resolver 输出）。回归：agent-ui **1620 passing**，tsc/source-size OK。
+
+## 2026-10-23 打包产物的内置 skill 资产修复
+- 现象：`TSDI_AGENT_BUNDLE=1`（默认打包路径）下 `tools.invoke skill_list` 返回 **0** 个 skill，源码路径返回 4 个（codebase/implement/plan/web-research）——打包后 `getBuiltinSkills()` 按 `__dirname/builtin` 解析，bundle 目录下没有该资产（我此前的打包改动引入的功能丢失）。
+- 修复：构建脚本把 `agent-tools/skills/builtin` 复制到 `bundle/builtin`，并把源文件纳入 manifest 输入（改动 skill 文件会让 bundle 立即判定 stale）。
+- 验证：打包后 `skill_list` 返回 4 个 skill；`touch plan/SKILL.md` 后 `TSDI_AGENT_BUNDLE=1` 报 stale，重建后恢复 fresh；新增 bundle 冒烟用例（临时 root + `session.create` + `tools.invoke skill_list`，断言 ≥1）。agent-cli **107 passing**。

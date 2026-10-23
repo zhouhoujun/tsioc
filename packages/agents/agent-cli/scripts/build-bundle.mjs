@@ -17,7 +17,7 @@
  */
 import { build } from 'esbuild';
 import { transform } from '@swc/core';
-import { mkdir, readFile, stat, writeFile, rm } from 'node:fs/promises';
+import { cp, mkdir, readFile, readdir, stat, writeFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -87,6 +87,20 @@ async function stamp(file) {
     return { file, mtimeMs: info.mtimeMs, size: info.size };
 }
 
+async function listFiles(directory) {
+    const entries = await readdir(directory, { withFileTypes: true });
+    const files = [];
+    for (const entry of entries) {
+        const full = path.join(directory, entry.name);
+        if (entry.isDirectory()) {
+            files.push(...await listFiles(full));
+        } else if (entry.isFile()) {
+            files.push(full);
+        }
+    }
+    return files;
+}
+
 const started = Date.now();
 await mkdir(outDir, { recursive: true });
 // Remove stale outputs first so a failed build can never leave a bundle the
@@ -114,8 +128,24 @@ const result = await build({
     plugins: [swcPlugin]
 });
 
-const inputs = Object.keys(result.metafile.inputs)
-    .map(file => path.resolve(packageRoot, file))
+/**
+ * `getBuiltinSkills()` resolves `__dirname/builtin`; inside the bundle that is
+ * `bundle/builtin`, so the skill assets are copied next to the output (they are
+ * loaded from disk, not imported). Without them the bundled CLI loses every
+ * builtin skill (`skill_list` returned 0 while the source path returned 4).
+ */
+const builtinSkillsSource = path.resolve(packageRoot, '../agent-tools/skills/builtin');
+const builtinSkillsTarget = path.join(outDir, 'builtin');
+await rm(builtinSkillsTarget, { recursive: true, force: true });
+let builtinSkills = [];
+try {
+    await cp(builtinSkillsSource, builtinSkillsTarget, { recursive: true });
+    builtinSkills = await listFiles(builtinSkillsSource);
+} catch {
+    // No builtin skills in this checkout; the bundle simply has none.
+}
+
+const inputs = [...Object.keys(result.metafile.inputs).map(file => path.resolve(packageRoot, file)), ...builtinSkills]
     .sort();
 const stamps = [];
 for (const file of inputs) {
