@@ -270,6 +270,31 @@ export class SuggestionCompletionEdgeTest {
         expect(getAgentConsoleInputTokenRange(continued, continued.length)?.token).toEqual('@"my dir/src');
     }
 
+    @Test('Chinese text right before @ still opens mentions (no space typed)')
+    async cjkMentionBoundary() {
+        const range = getAgentConsoleInputTokenRange('请总结@bank', '请总结@bank'.length);
+        expect(range?.token).toEqual('@bank');
+        expect(range?.start).toEqual(3);
+
+        const options = resolveAgentConsoleInputSuggestions('请总结@ban', '请总结@ban'.length, [], [], [
+            { label: '@bank-system/', value: '@bank-system/', description: 'folder' }
+        ]);
+        expect(options.map(option => option.value)).toContain('@bank-system/');
+
+        // ASCII neighbours must stay excluded (emails / handles).
+        expect(getAgentConsoleInputTokenRange('test@example.com', 'test@example.com'.length)).toBeUndefined();
+        expect(getAgentConsoleInputTokenRange('Hello@World', 'Hello@World'.length)).toBeUndefined();
+        // A CJK-prefixed slash word is still not a command (line-start only).
+        expect(getAgentConsoleInputTokenRange('请/foo', '请/foo'.length)).toBeUndefined();
+    }
+
+    @Test('the mention parser shares the CJK boundary')
+    async cjkMentionParser() {
+        expect(parseAgentConsoleMentionNames('请总结@bank-system 与 @workspace')).toEqual(['bank-system', 'workspace']);
+        expect(parseAgentConsoleMentionNames('联系 test@example.com')).toEqual([]);
+        expect(parseAgentConsoleMentionNames('请@')).toEqual([]);
+    }
+
     @Test('leading indentation still opens the command menu (submit trims)')
     async leadingSpaceCommand() {
         const range = getAgentConsoleInputTokenRange('  /se', 5);

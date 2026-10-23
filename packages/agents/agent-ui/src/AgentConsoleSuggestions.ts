@@ -50,6 +50,15 @@ export function isAgentConsoleSuggestionMenu(menu?: { title?: string | null } | 
 
 export const AGENT_CONSOLE_PSEUDO_MENTIONS = ['@workspace', '@model', '@tools', '@session'];
 
+/**
+ * `@` may follow whitespace **or CJK text**: Chinese/Japanese users rarely type
+ * a space (`请总结@bank`). ASCII neighbours (`test@example.com`, `Hello@World`)
+ * stay excluded so addresses are not read as mentions.
+ */
+const MENTION_BOUNDARY = '[\\s\\u3000-\\u303f\\u3040-\\u30ff\\u4e00-\\u9fff\\uff00-\\uffef]';
+const QUOTED_MENTION_TOKEN = new RegExp(`(?:^|${MENTION_BOUNDARY})(@"[^"]*"?)$`);
+const INPUT_TOKEN = new RegExp(`(?:^|${MENTION_BOUNDARY})([@/][^\\s]*)$`);
+
 export function getAgentConsoleMentionCandidates(tools: AgentConsoleToolItem[] = []): string[] {
     const mentions = [...AGENT_CONSOLE_PSEUDO_MENTIONS];
     tools.forEach(tool => mentions.push(`@${tool.name}`));
@@ -61,12 +70,12 @@ export function getAgentConsoleInputTokenRange(input: string, cursor = input.len
     const safeCursor = Math.max(0, Math.min(text.length, cursor));
     const prefix = text.slice(0, safeCursor);
     // Quoted mentions keep spaces inside the token: `@"my file.txt"`.
-    const quoted = prefix.match(/(?:^|\s)(@"[^"]*"?)$/);
+    const quoted = prefix.match(QUOTED_MENTION_TOKEN);
     if (quoted) {
         const token = quoted[1];
         return { start: safeCursor - token.length, end: safeCursor, token };
     }
-    const match = prefix.match(/(?:^|\s)([@/][^\s]*)$/);
+    const match = prefix.match(INPUT_TOKEN);
     if (!match) {
         return undefined;
     }
@@ -206,7 +215,7 @@ export function applyAgentConsoleSuggestion(
 /** Mention names (without `@`) from a prompt; supports quoted paths. */
 export function parseAgentConsoleMentionNames(text: string): string[] {
     const names: string[] = [];
-    const pattern = /(^|\s)@(?:"([^"]*)"|([^\s@"]+))/g;
+    const pattern = new RegExp(`(^|${MENTION_BOUNDARY})@(?:"([^"]*)"|([^\\s@"]+))`, 'g');
     let match: RegExpExecArray | null;
     while ((match = pattern.exec(String(text || '')))) {
         const name = String(match[2] ?? match[3] ?? '').trim();

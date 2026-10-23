@@ -1413,3 +1413,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 实现：`queueDraft()` 在 `selectMenu` 打开且非精确命令时返回 false，让按键下沉到菜单补全；移除 `processDecodedInput` 里“运行中 + 菜单 + tab → queueDraft”的早退分支；新增 `isAgentConsoleExactCommandToken()`。
 - 真实 TUI：turn 运行中输入 `@sr` + Tab → 补全为 `@bank-system/src/`（菜单继续列 `accounts.js`/`ledger.js`），再 Tab → `@bank-system/src/accounts.js`，**没有** Queued Prompt 通知；`/compact` + Tab 仍排队（单测覆盖）。
 - 测试：`keymap-composer-input` 7 例（含运行中菜单补全、精确命令仍排队）；`vm-submit` 队列 33 例全过。回归：agent-ui **1615 passing**，tsc/source-size OK。
+
+## 2026-10-23 中文紧邻 `@` 的 mention（无空格）
+- 现象（真实 TUI）：`请总结@bank` 不出现候选；中文用户通常不在 `@` 前加空格，导致候选不可达、`enrichPromptWithMentions` 也不会附加文件上下文。
+- 根因：token 正则与 prompt 解析器都以 `(?:^|\s)@` 为边界。
+- 修复：边界统一为「空白 **或 CJK 字符/标点**（`\u3000-\u303f`、`\u3040-\u30ff`、`\u4e00-\u9fff`、`\uff00-\uffef`）」，预编译为模块级正则（`QUOTED_MENTION_TOKEN`/`INPUT_TOKEN`，名称解析用同一 `MENTION_BOUNDARY`）；ASCII 紧邻（`test@example.com`、`Hello@World`）与 `请/foo`（非行首命令）保持不误判。
+- 真实 TUI 验证：`请总结@ban` → 候选列出 `@bank-system/…`；Tab → `请总结@bank-system/`；发送后用户消息显示 `Files · bank-system/`。
+- 测试：`p413-suggestions` 新增 2 例（CJK 边界与 ASCII 反例、解析器同边界）。回归：agent-ui **1617 passing**，tsc/source-size OK。
