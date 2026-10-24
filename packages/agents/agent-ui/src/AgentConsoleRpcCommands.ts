@@ -1,4 +1,5 @@
 import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentConsoleApprovalInput } from './AgentConsoleApprovalInput';
 import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
 
 export interface AgentConsoleRpcCommandHost {
@@ -27,11 +28,14 @@ export async function runApproveRetryCommand(host: AgentConsoleRpcCommandHost): 
         return true;
     }
     const action = actions[0];
-    const selected = await host.select('Approve retry', actions.map((item: any) => ({
-        label: `${item.toolName}${String(item.inputSummary || '').trim() ? ` · ${item.inputSummary}` : ''}`,
-        value: String(item.evidenceId || `${item.toolName}:${item.createdAt}`),
-        description: String(item.falsificationReason || '')
-    })), 0, 'enter retry once   esc close');
+    const selected = await host.select('Approve retry', actions.map((item: any) => {
+        const input = formatAgentConsoleApprovalInput(item.toolName, item.inputSummary);
+        return {
+            label: `${item.toolName}${input ? ` · ${input}` : ''}`,
+            value: String(item.evidenceId || `${item.toolName}:${item.createdAt}`),
+            description: String(item.falsificationReason || '')
+        };
+    }), 0, 'enter retry once   esc close');
     if (!selected) return true;
     try {
         await host.appRpc.request('harness.retry_rejected_action', {

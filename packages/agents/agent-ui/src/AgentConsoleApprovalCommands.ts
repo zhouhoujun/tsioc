@@ -1,4 +1,5 @@
 import { AgentConsoleApprovalRequest } from './AgentConsoleSessionState';
+import { formatAgentConsoleApprovalInput } from './AgentConsoleApprovalInput';
 import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 export interface ApprovalInspectorHost {
@@ -24,10 +25,11 @@ export async function openApprovalInspector(host: ApprovalInspectorHost, request
             return;
         }
         selectedRequestIndex = Math.max(0, requests.findIndex(item => item.id === request.id));
+        const input = formatAgentConsoleApprovalInput(request.toolName, request.inputSummary);
         const detail = [
             `Tool: ${request.toolName}`,
             `Reason: ${request.reason}`,
-            request.inputSummary ? `Input: ${request.inputSummary}` : 'Input: -',
+            input ? `Input: ${input}` : 'Input: -',
             `Timeout: ${request.timeoutMs}ms`,
             request.expiresAt ? `Expires: ${new Date(request.expiresAt).toLocaleTimeString()}` : ''
         ].join('\n');

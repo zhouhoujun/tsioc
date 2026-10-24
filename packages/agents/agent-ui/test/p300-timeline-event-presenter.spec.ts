@@ -435,4 +435,16 @@ export class FormatLineTest {
             title: 'Git', target: 'status', summary: '', detail: '', category: 'git'
         })).toBe('Git status');
     }
+
+    @Test('a summary that repeats the target does not print it twice')
+    testSummaryRepeatsTarget() {
+        expect(formatTimelineEventLine({
+            title: 'Read', target: 'README.md', summary: 'README.md (truncated)', detail: '', category: 'read'
+        })).toBe('Read README.md (truncated)');
+        // Only a boundary match counts: a longer path that merely starts with
+        // the target text is a distinct object.
+        expect(formatTimelineEventLine({
+            title: 'Read', target: 'src', summary: 'src/cli.ts', detail: '', category: 'read'
+        })).toBe('Read src · src/cli.ts');
+    }
 }

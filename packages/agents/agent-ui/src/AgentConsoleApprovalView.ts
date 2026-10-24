@@ -1,3 +1,5 @@
+import { formatAgentConsoleApprovalInput } from './AgentConsoleApprovalInput';
+
 /** Resolves a localized string, falling back to the English template. */
 export type ApprovalTranslate = (key: string, params: Record<string, any> | undefined, fallback: string) => string;
 
@@ -16,22 +18,25 @@ export async function selectApprovalRequest(
     if (requests.length === 1) {
         return requests[0];
     }
-    const selected = await select(translate('agent.approval.pendingTitle', undefined, 'Pending approvals'), requests.map(request => ({
-        label: `${request.toolName} (${request.id.slice(0, 8)})`,
-        value: request.id,
-        description: request.reason,
-        detail: [
-            translate('agent.approval.tool', { tool: request.toolName }, `Tool: ${request.toolName}`),
-            translate('agent.approval.reason', { reason: request.reason }, `Reason: ${request.reason}`),
-            request.inputSummary
-                ? translate('agent.approval.input', { input: request.inputSummary }, `Input: ${request.inputSummary}`)
-                : translate('agent.approval.inputNone', undefined, 'Input: -'),
-            translate('agent.approval.timeout', { ms: request.timeoutMs }, `Timeout: ${request.timeoutMs}ms`),
-            request.expiresAt
-                ? translate('agent.approval.expiresAt', { time: new Date(request.expiresAt).toLocaleTimeString() }, `Expires: ${new Date(request.expiresAt).toLocaleTimeString()}`)
-                : ''
-        ].join('\n')
-    })), Math.max(0, Math.min(requests.length - 1, selectedIndex)), state.consoleOptions.selectHint);
+    const selected = await select(translate('agent.approval.pendingTitle', undefined, 'Pending approvals'), requests.map(request => {
+        const input = formatAgentConsoleApprovalInput(request.toolName, request.inputSummary);
+        return {
+            label: `${request.toolName} (${request.id.slice(0, 8)})`,
+            value: request.id,
+            description: request.reason,
+            detail: [
+                translate('agent.approval.tool', { tool: request.toolName }, `Tool: ${request.toolName}`),
+                translate('agent.approval.reason', { reason: request.reason }, `Reason: ${request.reason}`),
+                input
+                    ? translate('agent.approval.input', { input }, `Input: ${input}`)
+                    : translate('agent.approval.inputNone', undefined, 'Input: -'),
+                translate('agent.approval.timeout', { ms: request.timeoutMs }, `Timeout: ${request.timeoutMs}ms`),
+                request.expiresAt
+                    ? translate('agent.approval.expiresAt', { time: new Date(request.expiresAt).toLocaleTimeString() }, `Expires: ${new Date(request.expiresAt).toLocaleTimeString()}`)
+                    : ''
+            ].join('\n')
+        };
+    }), Math.max(0, Math.min(requests.length - 1, selectedIndex)), state.consoleOptions.selectHint);
     return requests.find(request => request.id === selected);
 }
 

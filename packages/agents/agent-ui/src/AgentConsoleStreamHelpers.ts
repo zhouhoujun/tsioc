@@ -138,7 +138,10 @@ export function formatToolCallLabel(call: any, translator?: any): string {
     }
     const label = resolveAgentToolLabel(translator, name);
     const argument = resolveToolCallArgument(call?.input);
-    return argument ? `${label}: ${argument}` : label;
+    // Pending and completed rows compose the same line (`<label> · <object>`),
+    // so the in-place merge never changes the row's shape. Success is carried by
+    // the status glyph, not by a `completed` word.
+    return argument ? `${label} · ${argument}` : label;
 }
 
 /**
@@ -223,6 +226,44 @@ export function resolvePendingToolCallRows(chunk: any, translator?: any): Pendin
     }];
 }
 
+/**
+ * Compose one tool row from its input/output summaries.
+ *
+ * The live stream, a replayed session transcript and the local runtime events
+ * all describe the same tool call, so they share this formula: the localized
+ * tool label, the object acted on, and a result summary that never repeats that
+ * object (`Read file · README.md (truncated)`, not `Read README.md · README.md
+ * (truncated)`). Success is carried by the status glyph, so no `completed` word
+ * is added here.
+ */
+export function formatToolEventRow(
+    toolName: string,
+    inputSummary: string | undefined,
+    outputSummary: string | undefined,
+    error: string | undefined,
+    translator?: any
+): string {
+    const name = String(toolName || '').trim();
+    const input = String(inputSummary || '').trim();
+    const output = String(outputSummary || '').trim();
+    const reason = String(error || '').trim();
+    if (reason) {
+        return describeStreamEventContent(
+            'tool_failed',
+            { toolName: name, content: `${name} failed: ${reason}` },
+            translator
+        );
+    }
+    const detail = input && output && !output.includes(input)
+        ? `${input} · ${output}`
+        : (output || input);
+    return describeStreamEventContent(
+        'tool_completed',
+        { toolName: name, content: detail ? `${name} · ${detail}` : name },
+        translator
+    );
+}
+
 export function describeStreamEventContent(eventType: string, chunk: any, translator?: any): string {
     const content = String(chunk?.content || '').trim();
     const toolName = String(chunk?.toolName || '').trim();
@@ -232,12 +273,16 @@ export function describeStreamEventContent(eventType: string, chunk: any, transl
     const label = resolveAgentToolLabel(translator, toolName);
     const detail = content.includes(' · ') ? content.slice(content.indexOf(' · ') + 3).trim() : '';
     if (eventType === 'tool_invoked') {
-        return (translator?.translate('agent.tool.invoked', { label }) || `Running ${label}`)
-            + (detail ? ` · ${detail}` : '');
+        // Same shape as the pending row and the replayed row: verb + object.
+        // The `●` glyph already says "running"; a `Running` prefix repeated the
+        // state and made the row flicker when it became `… completed`.
+        return detail ? `${label} · ${detail}` : label;
     }
     if (eventType === 'tool_completed') {
-        return (translator?.translate('agent.tool.completed', { label }) || `${label} completed`)
-            + (detail ? ` · ${detail}` : '');
+        // Success is the glyph (`✓`), not a word. Keeping `completed` here made
+        // live rows read `Read file completed · README.md` while a reloaded
+        // session read `Read README.md` (same tool call, two identities).
+        return detail ? `${label} · ${detail}` : label;
     }
     if (eventType === 'tool_failed' && toolName === 'git_operations' && /not a Git repository/i.test(content)) {
         return translator?.translate('agent.tool.gitMissing') || 'Git repository not detected. If you want version control, ask the agent to initialize one (git init).';

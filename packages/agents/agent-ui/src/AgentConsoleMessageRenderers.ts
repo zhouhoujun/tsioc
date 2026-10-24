@@ -13,7 +13,7 @@ import {
 import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from './AgentConsoleTheme';
 import { getDisplayWidth, sliceByDisplayWidth } from './AgentConsoleTextWidth';
 import { resolveTimelineEventSentence, formatTimelineSessionDuration, AgentConsoleTimelineLabels } from './AgentConsoleTimelineWindow';
-import { resolveTimelineMeta, resolveTimelineMetaStyle, resolveMessageDurationMs, resolveMessageRoleLabel, resolveMessageRoleStyle, resolveAgentConsoleMessageRoleLabel } from './AgentConsoleTimelineMeta';
+import { resolveTimelineMeta, resolveTimelineMetaStyle, resolveMessageDurationMs, resolveMessageRoleLabel, resolveMessageRoleStyle, resolveAgentConsoleMessageRoleLabel, resolveEffectiveRoleLabel } from './AgentConsoleTimelineMeta';
 import type { MarkdownWorkerBridge } from './MarkdownWorkerBridge';
 import {
     AgentConsoleContentFamily,
@@ -212,7 +212,9 @@ export class AgentConsolePartialRenderer extends AgentConsoleFamilyMessageRender
 export class AgentConsolePreambleRenderer extends AgentConsoleFamilyMessageRenderer {
     override resolve(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): AgentConsoleMessageRenderResponse {
         const response = super.resolve(message, templateKind);
-        return { component: AgentConsoleMarkdownComponent, presentation: { ...response.presentation, roleLabel: 'Context · ' } };
+        // Preamble is ordinary assistant prose; a `Context ·` label made the
+        // same speaker read as two authors (opencode parity).
+        return { component: AgentConsoleMarkdownComponent, presentation: { ...response.presentation, roleLabel: '' } };
     }
 }
 
@@ -559,11 +561,8 @@ export function renderAgentConsoleMessageItem(
     const timelineEvent = message?.metadata?.uiKind === 'event';
     const timelineEventType = String(message?.metadata?.uiEventType || '').trim();
     const criticalMark = context.showCriticalMarks ? '★ ' : '';
-    const effectiveRoleLabel = timelineEvent
-        // Timeline rows already carry their status glyph; avoid adding a
-        // second vertical rule beside the content.
-        ? `${criticalMark}${context.rendererRegistry ? roleLabel : ''}`
-        : `${criticalMark}${roleLabel}`;
+    const effectiveRoleLabel = resolveEffectiveRoleLabel(
+        timelineEvent, presentation.kind, roleLabel, criticalMark, !!context.rendererRegistry);
     const statusKind = resolveAgentConsoleMessageStatus(message, templateKind);
     const actionLabel = timelineEvent ? resolveTimelineEventActionLabel(message, statusKind) : '';
     const itemStyle = timelineEvent

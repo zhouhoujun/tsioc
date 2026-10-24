@@ -582,8 +582,11 @@ export class AgentConsoleMessagesRendererTest {
         const renderer = this.ctx.get(ConsoleRenderer);
         const lines = renderer.renderToLines(panel.hostView.rootNodes[0]);
         expect(lines.filter(line => line.includes('more lines')).length).toEqual(1);
-        ['Tool · ', '$ ', 'Plan · ', 'Files · ', 'Question · ', 'Approval · ', 'Error · ']
+        ['$ ', 'Plan · ', 'Files · ', 'Question · ', 'Approval · ', 'Error · ']
             .forEach(label => expect(lines.some(line => line.includes(label))).toBe(true));
+        // Tool rows carry their own verb/object; the family label was dropped so
+        // the row no longer reads `✓ Tool · Read file completed · …`.
+        expect(lines.some(line => line.includes('Tool · '))).toBe(false);
     }
 
     @Test('keeps system messages expanded by default')

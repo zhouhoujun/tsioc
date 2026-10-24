@@ -1,8 +1,23 @@
 import { summarizeToolDisplayText } from '@tsdi/agent';
+import { formatToolEventRow } from './AgentConsoleStreamHelpers';
 import { formatTimelineEventLine, presentTimelineToolEvent } from './AgentConsoleTimelineEventPresenter';
 import type { AgentMessage } from '@tsdi/agent';
+import type { AgentUiTranslator } from './agent-ui.i18n';
 
-export function normalizeLoadedMessages(messages: AgentMessage[] = []): AgentMessage[] {
+export interface NormalizeLoadedMessagesOptions {
+    /**
+     * Translator used to resolve the same localized tool label the live stream
+     * rows use (`Read file`, `Run command`, …). Without it a resumed row would
+     * fall back to the presenter's category verb (`Read`) and stop matching the
+     * row the user saw while the turn ran.
+     */
+    translator?: AgentUiTranslator | null;
+}
+
+export function normalizeLoadedMessages(
+    messages: AgentMessage[] = [],
+    options: NormalizeLoadedMessagesOptions = {}
+): AgentMessage[] {
     const normalized: AgentMessage[] = [];
     for (const message of messages) {
         if (!message) {
@@ -14,7 +29,7 @@ export function normalizeLoadedMessages(messages: AgentMessage[] = []): AgentMes
         // history after a restart. The projected row keeps the toolCallId so
         // the event inspector can fetch the payload on demand.
         if (message.role === 'tool' && message.metadata?.uiKind !== 'event') {
-            const projected = projectLoadedToolMessage(message);
+            const projected = projectLoadedToolMessage(message, options);
             if (!projected) {
                 continue;
             }
@@ -48,20 +63,24 @@ export function normalizeLoadedMessages(messages: AgentMessage[] = []): AgentMes
 }
 
 /** Project one stored `tool` message into a read-only timeline event row. */
-function projectLoadedToolMessage(message: AgentMessage): AgentMessage | null {
+function projectLoadedToolMessage(
+    message: AgentMessage,
+    options: NormalizeLoadedMessagesOptions = {}
+): AgentMessage | null {
     const payload = String(message.content || '');
     const metadata = (message.metadata || {}) as Record<string, any>;
     const receipt = (metadata.receipt || {}) as Record<string, any>;
     const toolName = String(message.name || receipt.toolName || '').trim();
-    const summary = summarizeToolDisplayText(toolName, payload, 'output');
-    if (!summary) {
+    // Prefer the receipt summaries: they are exactly what the live
+    // `run.turn_stream` event rendered while the turn ran, so a resumed row
+    // stays byte-identical instead of being re-derived from the payload.
+    const inputSummary = pickSummary(receipt.inputSummary, metadata.inputSummary,
+        () => summarizeToolDisplayText(toolName, metadata.toolCallInput ?? {}, 'input'));
+    const outputSummary = pickSummary(receipt.outputSummary, undefined,
+        () => summarizeToolDisplayText(toolName, payload, 'output'));
+    if (!inputSummary && !outputSummary) {
         return null;
     }
-    const inputSummary = summarizeToolDisplayText(toolName, metadata.toolCallInput ?? {}, 'input');
-    // Same row composition as the live bridge, so a resumed row reads like the
-    // one the user saw while the turn ran.
-    const rowText = formatTimelineEventLine(presentTimelineToolEvent({ toolName, inputSummary, outputSummary: summary }))
-        || summary;
     let parsed: any;
     try {
         parsed = payload.trim().startsWith('{') ? JSON.parse(payload) : undefined;
@@ -71,7 +90,8 @@ function projectLoadedToolMessage(message: AgentMessage): AgentMessage | null {
     const exitCode = Number(parsed?.exitCode ?? parsed?.exit_code);
     const failed = Number.isFinite(exitCode)
         ? exitCode !== 0
-        : !!(parsed?.error || parsed?.timedOut || metadata.error);
+        : !!(parsed?.error || parsed?.timedOut || metadata.error || receipt.error || receipt.status === 'error');
+    const rowText = composeLoadedToolRow(toolName, inputSummary, outputSummary, metadata, parsed, failed, options.translator);
     return {
         ...message,
         role: 'assistant',
@@ -91,4 +111,58 @@ function projectLoadedToolMessage(message: AgentMessage): AgentMessage | null {
             }
         }
     };
+}
+
+function pickSummary(...candidates: Array<unknown>): string {
+    for (const candidate of candidates) {
+        const value = typeof candidate === 'function' ? (candidate as () => unknown)() : candidate;
+        const text = normalizeSummaryText(value);
+        if (text) {
+            return text;
+        }
+    }
+    return '';
+}
+
+function normalizeSummaryText(value: unknown): string {
+    if (typeof value === 'string') {
+        return value.trim();
+    }
+    if (value instanceof Error) {
+        return value.message.trim();
+    }
+    if (value && typeof value === 'object' && typeof (value as { message?: unknown }).message === 'string') {
+        return String((value as { message: string }).message).trim();
+    }
+    return '';
+}
+
+/**
+ * Compose the replayed row with the live row formula.
+ *
+ * Live chunks carry `"<toolName> · <input> · <output>"` and agent-ui maps them
+ * through `describeStreamEventContent`, which resolves the localized label and
+ * drops success words. Replaying through the same helper keeps one identity per
+ * tool call: the old presenter path produced `Read README.md · README.md
+ * (truncated)` (category verb + duplicated object) for a row that read
+ * `Read file · README.md (truncated)` while the turn ran.
+ */
+function composeLoadedToolRow(
+    toolName: string,
+    inputSummary: string,
+    outputSummary: string,
+    metadata: Record<string, any>,
+    parsed: any,
+    failed: boolean,
+    translator?: AgentUiTranslator | null
+): string {
+    if (!toolName) {
+        return formatTimelineEventLine(presentTimelineToolEvent({ toolName, inputSummary, outputSummary }))
+            || outputSummary
+            || inputSummary;
+    }
+    const reason = failed
+        ? pickSummary(metadata.error, metadata.receipt?.error, parsed?.error)
+        : '';
+    return formatToolEventRow(toolName, inputSummary, outputSummary, reason, translator);
 }

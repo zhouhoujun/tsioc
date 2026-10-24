@@ -1,7 +1,13 @@
 import type { AgentMessage, AgentSessionSection } from '@tsdi/agent';
 import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
+import type { AgentUiTranslator } from './agent-ui.i18n';
 
 export interface AgentConsoleSessionContentLoaderHost {
+    /**
+     * Translator used so replayed tool rows reuse the live row's localized
+     * label (`Read file`, not the presenter category verb `Read`).
+     */
+    translator?: AgentUiTranslator | null;
     sessionService?: {
         loadMessages(sessionId: string, context?: any): Promise<AgentMessage[]>;
         loadMessagesPage(
@@ -26,7 +32,7 @@ export async function loadSessionMessages(
     sessionId: string
 ): Promise<AgentMessage[]> {
     const messages = await (host.sessionService?.loadMessages(sessionId) || host.runtime.getMessages(sessionId));
-    return normalizeLoadedMessages(messages);
+    return normalizeLoadedMessages(messages, { translator: host.translator });
 }
 
 export async function loadSessionPage(
@@ -51,13 +57,13 @@ export async function loadSessionPage(
             hasMore = previous.hasMore === true;
         }
         return {
-            messages: normalizeLoadedMessages(messages),
+            messages: normalizeLoadedMessages(messages, { translator: host.translator }),
             sections: Array.isArray(page.sections) ? page.sections : [],
             goalSummary: page.goalSummary
         };
     }
     const messages = await host.runtime.getMessages(sessionId);
-    return { messages: normalizeLoadedMessages(messages), sections: [], goalSummary: undefined };
+    return { messages: normalizeLoadedMessages(messages, { translator: host.translator }), sections: [], goalSummary: undefined };
 }
 
 export async function mapWithConcurrency<T, R>(

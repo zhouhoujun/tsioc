@@ -32,9 +32,9 @@ import { ToolRegistry } from '@tsdi/agent';
 import { TranslatorService } from '@tsdi/i18n';
 import { AgentConsolePendingQuestion, AgentConsolePlanTodoItem, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import type { BackgroundTaskManager } from '@tsdi/agent-tools';
-import { presentTimelineToolEvent, formatTimelineEventLine, resolveTimelineToolCategory } from './AgentConsoleTimelineEventPresenter';
+import { resolveTimelineToolCategory } from './AgentConsoleTimelineEventPresenter';
 import { presentModelFailure } from './AgentConsoleModelFailurePresenter';
-import { resolveAgentToolLabel } from './AgentConsoleStreamHelpers';
+import { formatToolEventRow, resolveAgentToolLabel } from './AgentConsoleStreamHelpers';
 
 @Injectable()
 export class AgentConsoleEventBridge {
@@ -471,8 +471,7 @@ export class AgentConsoleEventBridge {
     }
 
     protected describeToolTimelineEvent(toolName: string, inputSummary?: string, outputSummary?: string, error?: string): string {
-        const presentation = presentTimelineToolEvent({ toolName, inputSummary, outputSummary, error });
-        return formatTimelineEventLine(presentation);
+        return formatToolEventRow(toolName, inputSummary, outputSummary, error, this.translator);
     }
 
     protected describeToolName(toolName: string): string {

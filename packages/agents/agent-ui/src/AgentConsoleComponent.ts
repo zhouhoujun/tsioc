@@ -2311,7 +2311,8 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     private sessionContentLoaderHost(): AgentConsoleSessionContentLoaderHost {
         return {
             sessionService: this.sessionService,
-            runtime: this.runtime
+            runtime: this.runtime,
+            translator: this.translator
         };
     }
 

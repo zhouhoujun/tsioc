@@ -23,6 +23,7 @@ import {
     AgentConsoleCommandOutputEntry
 } from './AgentConsoleSessionState';
 import { isAgentConsoleSuggestionMenu } from './AgentConsoleSuggestions';
+import { formatAgentConsoleApprovalInput } from './AgentConsoleApprovalInput';
 import {
     AgentConsoleMarkdownLine,
     AgentConsoleMarkdownToken,
@@ -1857,8 +1858,8 @@ export class AgentConsoleApprovalsPanelComponent {
             return '';
         }
         const request = this.state.selectedApproval;
-        const command = String(request.inputSummary || request.summary || '').replace(/\s+/g, ' ').trim();
-        return command ? `$ ${this.summarize(command)}` : '';
+        const input = formatAgentConsoleApprovalInput(request.toolName, request.inputSummary || request.summary);
+        return input ? this.summarize(input) : '';
     }
 
     get accessibilityLabel(): string {

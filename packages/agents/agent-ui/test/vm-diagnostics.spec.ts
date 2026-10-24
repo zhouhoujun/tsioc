@@ -90,7 +90,7 @@ export class VmDiagnosticsTest {
 
         const eventMessages = component.sessionState.displayMessages.filter(message => message.metadata?.uiKind === 'event');
         expect(eventMessages.map(message => message.content)).toEqual([
-            'read file completed · src/index.ts'
+            'read file · src/index.ts'
         ]);
         expect(component.sessionState.displayMessages.some(message => message.content === 'Patched handler')).toEqual(true);
     }

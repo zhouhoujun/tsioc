@@ -53,6 +53,37 @@ export class ResumeToolRowsTest {
         expect(String(row.content)).toContain('exit 1');
     }
 
+    @Test('a replayed read_file row matches the live row shape')
+    async replaysReadFileRow() {
+        const payload = JSON.stringify({
+            path: 'README.md',
+            content: '# Sleep MLT',
+            truncated: true
+        });
+        const [row] = normalizeLoadedMessages([{
+            id: 't4', role: 'tool', name: 'read_file', toolCallId: 'call-4', createdAt: 2,
+            content: payload,
+            metadata: {
+                toolCallInput: { path: 'README.md' },
+                receipt: { toolCallId: 'call-4', durationMs: 7, inputSummary: 'README.md', outputSummary: 'README.md (truncated)' }
+            }
+        } as any], { translator: { translate: (key: string) => key === 'agent.tool.read_file' ? 'Read file' : key } });
+        // Live row: `Read file · README.md (truncated)`. The replayed row used
+        // to read `Read README.md · README.md (truncated)` (category verb plus
+        // a duplicated object), so the same call had two identities.
+        expect(String(row.content)).toEqual('Read file · README.md (truncated)');
+    }
+
+    @Test('a replayed row never repeats the object when summary contains it')
+    async doesNotRepeatObject() {
+        const [row] = normalizeLoadedMessages([{
+            id: 't5', role: 'tool', name: 'read_file', toolCallId: 'call-5', createdAt: 2,
+            content: JSON.stringify({ path: 'src/cli.ts', content: 'x', truncated: true })
+        } as any]);
+        expect(String(row.content)).toEqual('read file · src/cli.ts (truncated)');
+        expect(String(row.content)).not.toContain('src/cli.ts · src/cli.ts');
+    }
+
     @Test('messages without a usable summary are still dropped')
     async dropsUselessToolRows() {
         expect(normalizeLoadedMessages([{ id: 't3', role: 'tool', content: '{}', createdAt: 1 } as any])).toEqual([]);

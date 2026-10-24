@@ -60,8 +60,7 @@ export function presentAgentConsoleSessionContent(message: AgentMessage): AgentC
             status === 'running' ? 'active' : 'supporting', false);
     }
     if (message.role === 'assistant') {
-        const preamble = metadata.preamble === true || metadata.conversationPhase === 'preamble'
-            || (Array.isArray(metadata.toolCalls) && metadata.toolCalls.length > 0);
+        const preamble = isAgentConsoleAssistantPreamble(message);
         if (preamble) {
             return result('conversation', 'assistant-preamble', 'Preamble', summary, 'supporting', true);
         }
@@ -81,6 +80,26 @@ export function presentAgentConsoleSessionContent(message: AgentMessage): AgentC
     ): AgentConsoleSessionContentPresentation {
         return { family, kind, title, summary: value, meta, detailRef, priority, causalKey, defaultExpanded };
     }
+}
+
+/**
+ * Assistant text that ran before the turn's final answer (narration attached
+ * to tool calls, or an explicit preamble marker). Kept as one pure predicate so
+ * the conversation projection, the role renderer and the worked/done footer all
+ * agree on what is *not* a final reply.
+ */
+export function isAgentConsoleAssistantPreamble(message?: AgentMessage): boolean {
+    const metadata = message?.metadata || {};
+    const finishReason = String(metadata.finishReason || '').trim().toLowerCase();
+    return metadata.preamble === true
+        || String(metadata.conversationPhase || '').trim() === 'preamble'
+        || (Array.isArray(metadata.toolCalls) && metadata.toolCalls.length > 0)
+        // A persisted step message ends with `finishReason: tool_calls` (not
+        // `stop`) because the turn continued with another model call. It is
+        // interim narration even when its `toolCalls` were stripped on reload.
+        || finishReason === 'tool_calls'
+        || finishReason === 'tool_use'
+        || finishReason === 'function_call';
 }
 
 /** Add display-only total duration to completed lifecycle events. */

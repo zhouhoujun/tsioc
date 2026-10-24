@@ -367,6 +367,14 @@ export function presentTimelineToolEvent(
  * summary is present.  When target is empty the title alone is returned.
  */
 export function formatTimelineEventLine(p: TimelineToolEventPresentation): string {
+    // A result summary often repeats the object it acted on — a completed
+    // `read_file` output is `<path> (truncated)` while the input target is the
+    // same path. Producers that render the pair themselves already drop the
+    // repeat; do the same here so no consumer prints
+    // `Read README.md · README.md (truncated)`.
+    if (p.target && p.summary && repeatsToolTarget(p.summary, p.target)) {
+        return `${p.title} ${p.summary}`.trim();
+    }
     const parts: string[] = [];
     if (p.target) {
         parts.push(`${p.title} ${p.target}`);
@@ -377,6 +385,12 @@ export function formatTimelineEventLine(p: TimelineToolEventPresentation): strin
         parts.push(p.summary);
     }
     return parts.join(' · ');
+}
+
+function repeatsToolTarget(summary: string, target: string): boolean {
+    return summary === target
+        || summary.startsWith(`${target} `)
+        || summary.startsWith(`${target},`);
 }
 
 /**

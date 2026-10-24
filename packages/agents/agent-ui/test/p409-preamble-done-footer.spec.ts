@@ -29,6 +29,21 @@ export class PreambleDoneFooterTest {
         expect(this.textOf(preamble)).not.toContain('Worked for');
         const phased = renderAgentConsoleMessageItem(this.message({ conversationPhase: 'preamble' }, 'a2'), {});
         expect(this.textOf(phased)).not.toContain('Worked for');
+        // Real run finding: narration attached to a tool call carries no
+        // `preamble` flag, only `toolCalls`. It must still stay footer-free while
+        // the turn is running.
+        const narration = renderAgentConsoleMessageItem(this.message({
+            toolCalls: [{ id: 'call-1', name: 'read_file', input: { path: 'README.md' } }]
+        }, 'a4'), {});
+        expect(this.textOf(narration)).not.toContain('Worked for');
+        // Real run finding: on reload the runtime has stripped `toolCalls` but
+        // keeps `finishReason: tool_calls` on the interim step message. Without
+        // that signal the fabricated duration rendered `Worked for 1s · done`
+        // while the turn was still running.
+        const step = renderAgentConsoleMessageItem(this.message({ finishReason: 'tool_calls' }, 'a5'), {});
+        expect(this.textOf(step)).not.toContain('Worked for');
+        const finished = renderAgentConsoleMessageItem(this.message({ finishReason: 'stop' }, 'a6'), {});
+        expect(this.textOf(finished)).toContain('Worked for');
     }
 
     @Test('the final reply keeps the worked/done footer')

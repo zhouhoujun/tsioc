@@ -290,9 +290,9 @@ export class VmSubmitTest {
         const eventMessages = component.sessionState.messages.filter(message => message.metadata?.uiKind === 'event');
         expect(eventMessages.map(message => message.content)).toEqual([
             'Analyzing request',
-            'read file completed · src/index.ts',
+            'read file · src/index.ts',
             'Analyzing request',
-            'read file completed · src/index.ts'
+            'read file · src/index.ts'
         ]);
         expect(new Set(eventMessages.map(message => message.metadata?.uiEventKey)).size).toEqual(4);
     }

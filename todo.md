@@ -1540,3 +1540,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 门禁：`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 PASS**（12:38:16Z 启动，约 20 分钟；不是 1 小时）。
 - 中文残留审计（`LANG=zh_CN.UTF-8`，真实 TUI）：启动、`/approvals`、`/queue list`、`/layout`、`/tools`、`/session`、`/status`、`/help` 采样中未发现英文残留；`chat --session chat-does-not-exist` 显示 `未找到会话 …，已开始新会话。`；一次真实 turn 的状态区也无英文。
 - 命令输出历史恢复：`/outputs` 面板按 **session** 过滤。新会话显示 `command outputs 0 · 0-0 / No command outputs yet.`；用产生过条目的会话 `--session chatf92faf…` 启动则显示 `command outputs 1 · 1-1` 且能看到 `/queue list`。说明持久化（写入）+ 水合（恢复）都正常，且是会话级设计，不是缺陷。
+
+## 2026-10-24 时间线内容细节对齐 opencode（真实 TUI 实测 + 恢复会话）
+- **实测缺陷（sleep-mlt 工作区）**：活行 `✓ Tool · Read file completed · README.md`（family label + 状态词重复）、preamble 渲染 `Context · I'll read both files now.`、turn 未结束时 preamble 就出现 `Worked for 1m 8s · done 22:51`、审批面板显示 `$ {"command":"…"}` 原始 JSON；重启恢复后同一调用显示 `Read README.md · README.md (truncated)`（分类动词 + 对象重复），与活行是两个身份。
+- **统一行形状**：`<状态 glyph> <本地化工具名> · <对象>[ · <结果>]`。`formatToolCallLabel` / `describeStreamEventContent` 的 pending、invoked、completed 三态复用同一文本；成功由 `✓` 承载，不再输出 `completed`/`invoked`；工具行省略 `Tool · ` family label（thought 行仍保留 `Thought · `）。preamble 不再带 `Context · ` / `Assistant · ` 标签。
+- **preamble 判定收敛**：`isAgentConsoleAssistantPreamble` 覆盖 `preamble`、`conversationPhase='preamble'`、非空 `toolCalls` 与 `finishReason` 为 `tool_calls`/`tool_use`/`function_call`（持久化步骤消息会丢 `toolCalls` 但保留 `finishReason`），只有真正的最终回答才允许 `Worked for … done`。
+- **审批可读化**：新增 `formatAgentConsoleApprovalInput`（复用 timeline 的 category/target 提取），shell 显示 `$ <command>`，文件显示路径，搜索显示 query，多审批列表与 inspector 同步；原始 JSON 仍保留在 payload。
+- **恢复会话与活行同源**：新增 `formatToolEventRow(toolName, inputSummary, outputSummary, error, translator)`，活流、`AgentConsoleMessageNormalization` 回放、`AgentConsoleEventBridge` 本地事件共用；回放优先使用 receipt 的 input/output summary，并通过 `AgentConsoleSessionContentLoaderHost.translator` 解析 `agent.tool.<name>`，因此恢复行就是 `Read file · README.md (truncated)`。`formatTimelineEventLine` 对“summary 以 target 开头”的重复对象去重（远程 SSE 路径同样受益）。
+- **回归测试**：新增 `tool-row-format.spec.ts`（5）、`approval-input-display.spec.ts`（6）；扩展 `p411-resume-tool-rows.spec.ts`（回放与活行同形状、不重复对象）、`p409-preamble-done-footer.spec.ts`（toolCalls / finishReason 不输出 footer）、`p300-timeline-event-presenter.spec.ts`（重复对象去重）。agent-ui **1638 passing**。
+- **真实 TUI 复核**：新会话 `✓ Read file · README.md (12ms)` → 纯文本最终回答，无 `Context ·` / `Tool · ` / 中途 `Worked for`；`--session chatae0e8ce6…` 恢复后同一行仍是 `✓ Read file · README.md (12ms)`，仅最终回答下方有 `Worked for 3s · done 11:31`；长会话 `chat0a372b…` 恢复行全部为 `✓ Read file · <path> (truncated)`。
+- **门禁**：`bash scripts/agents-gate.sh` → **26 PASS / 1 SKIP**（PTY 为 opt-in，EXIT=0，03:16Z）；`source-size`、`git diff --check`、production DB 完整性均通过。

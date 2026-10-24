@@ -1,6 +1,7 @@
 import { AgentMessage } from '@tsdi/agent';
 import { AgentConsoleTheme, styleTextToObject } from './AgentConsoleTheme';
 import { formatTimelineSessionDuration } from './AgentConsoleTimelineWindow';
+import { isAgentConsoleAssistantPreamble } from './AgentConsoleSessionContentPresenter';
 import type { AgentConsoleMessageTemplateKind } from './AgentConsoleMessageRenderers';
 
 /**
@@ -41,8 +42,11 @@ export function resolveTimelineMeta(
         }
     } else if (templateKind === 'assistant') {
         // Final replies carry the worked/done summary; a preamble runs inside
-        // the still-active turn, so a "done" footer there would mislead.
-        const preamble = message?.metadata?.preamble === true || String(message?.metadata?.conversationPhase || '').trim() === 'preamble';
+        // the still-active turn, so a "done" footer there would mislead. The
+        // predicate also covers narration attached to tool calls (no explicit
+        // `preamble` flag), otherwise an intermediate step gets a fake "Worked
+        // for … done" footer while the turn is still running.
+        const preamble = isAgentConsoleAssistantPreamble(message);
         const completedAt = Number(message?.metadata?.completedAt ?? message?.metadata?.endedAt ?? message?.metadata?.finishedAt ?? message?.createdAt);
         const durationMs = resolveMessageDurationMs(message);
         if (!preamble && Number.isFinite(completedAt) && Number.isFinite(durationMs) && Math.round(durationMs / 1000) > 0) {
@@ -164,4 +168,24 @@ export function resolveAgentConsoleMessageRoleLabel(message: AgentMessage | unde
         return resolveMessageRoleLabel('error');
     }
     return resolveMessageRoleLabel('system');
+}
+
+/**
+ * Compose the role cell for one rendered row.
+ *
+ * Timeline rows already carry their status glyph, so a registry label would
+ * add a second vertical rule. Tool event rows also open with their own
+ * verb/object (`Read file · README.md`) and drop the `Tool · ` family label;
+ * the glyph alone carries state.
+ */
+export function resolveEffectiveRoleLabel(
+    timelineEvent: boolean,
+    kind: string,
+    roleLabel: string,
+    criticalMark: string,
+    hasRendererRegistry: boolean
+): string {
+    if (!timelineEvent) return `${criticalMark}${roleLabel}`;
+    if (kind === 'tool') return criticalMark;
+    return `${criticalMark}${hasRendererRegistry ? roleLabel : ''}`;
 }
