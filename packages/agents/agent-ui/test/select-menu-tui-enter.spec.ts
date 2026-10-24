@@ -65,4 +65,38 @@ export class SelectMenuTuiEnterTest {
         expect(state.input).toEqual('/session ');
         expect(state.selectMenu).toBeUndefined();
     }
+
+    @Test('Enter executes a subcommand/enum argument completion')
+    async enterExecutesArgumentCompletion() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub());
+        const state = component.sessionState;
+        let submits = 0;
+        (state as any).submitAction = async () => { submits += 1; };
+        state.setInput('/statusline list', '/statusline list'.length);
+        // `/statusline` offers `list` as an argument suggestion. Enter used to
+        // only close the menu (the typed word was already identical), so the
+        // command needed a second Enter to run.
+        expect(state.selectMenu?.options.map(option => option.value)).toContain('list');
+
+        await (component as any).handleTerminalInput({ text: '\r', partial: false }, '\r');
+        await Promise.resolve();
+
+        expect(submits).toEqual(1);
+    }
+
+    @Test('Tab only fills an argument completion without running the command')
+    async tabKeepsArgumentCompletionPassive() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub());
+        const state = component.sessionState;
+        let submits = 0;
+        (state as any).submitAction = async () => { submits += 1; };
+        state.setInput('/statusline li', '/statusline li'.length);
+        expect(state.selectMenu?.options.map(option => option.value)).toContain('list');
+
+        await (component as any).handleTerminalInput({ text: '\t', partial: false }, '\t');
+        await Promise.resolve();
+
+        expect(submits).toEqual(0);
+        expect(state.input).toEqual('/statusline list ');
+    }
 }

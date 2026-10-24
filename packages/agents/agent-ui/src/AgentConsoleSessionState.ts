@@ -62,6 +62,7 @@ import {
     AGENT_CONSOLE_SUGGESTIONS_HINT,
     AGENT_CONSOLE_SUGGESTIONS_TITLE,
     applyAgentConsoleSuggestion,
+    getAgentConsoleArgumentRange,
     getAgentConsoleInputTokenRange,
     getAgentConsoleMentionCandidates,
     isAgentConsoleSuggestionMenu,
@@ -5177,6 +5178,18 @@ export class AgentConsoleSessionState {
         return this.selectMenu.options[this.selectMenu.selectedIndex];
     }
 
+    /**
+     * True when the open suggestion menu completes a subcommand/enum argument
+     * (`/statusline l|ist`). Enter must then execute the completed command;
+     * Tab stays a pure completion.
+     */
+    protected isArgumentSuggestionMenu(menu: AgentConsoleSelectMenu | undefined): boolean {
+        if (!menu || !isAgentConsoleSuggestionMenu(menu) || !this.submitAction) {
+            return false;
+        }
+        return !!getAgentConsoleArgumentRange(this.input, this.inputCursor);
+    }
+
     protected shouldSubmitConfirmedSelectMenuValue(menu: AgentConsoleSelectMenu | undefined, value?: string): boolean {
         if (!menu || !this.submitAction) {
             return false;
@@ -5222,8 +5235,13 @@ export class AgentConsoleSessionState {
 
     async acceptSelectMenu(value?: string): Promise<{ value: string | undefined; submitted: boolean }> {
         const menu = this.selectMenu;
+        // Enter executes. A subcommand/enum-argument suggestion (`/statusline
+        // list`) restores the word the user already typed, so confirming it
+        // must also submit the command; otherwise the first Enter silently
+        // closed the menu and only a second Enter ran the command.
+        const argumentCompletion = this.isArgumentSuggestionMenu(menu);
         const resolved = await this.confirmSelectMenu(value);
-        const submitted = this.shouldSubmitConfirmedSelectMenuValue(menu, resolved);
+        const submitted = argumentCompletion || this.shouldSubmitConfirmedSelectMenuValue(menu, resolved);
         if (submitted && resolved) {
             if (isAgentConsoleSuggestionMenu(menu)) {
                 const next = applyAgentConsoleSuggestion(this.input, this.inputCursor, resolved);

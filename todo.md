@@ -1560,3 +1560,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **PTY 验收同步**：场景 9/10 仍断言统一前的 `Tool · … completed` 旧行形状，`RUN_PTY=1` 首次暴露 2 个失败。已把 `_read_file_rows` 与等待模式更新为 `Read file · <path>`，成功判定改用 `✓` glyph；`RUN_PTY=1 bash scripts/agents-gate.sh pty-acceptance` → **PASS**（10/10 场景）。
 - **门禁**：全量 `bash scripts/agents-gate.sh` → **26 PASS / 1 SKIP**（EXIT=0）；tsc ×4、Web build、DOM/TUI gate、source-size、diff-check、production DB 完整性与单独 PTY acceptance 全部通过。
 - 备注：`/model` 在注册表中是 `needsArgs`，因此 suggestion 上第一次 Enter 只补全为 `/model `（smart-run），第二次 Enter 才执行并打开菜单；这是既有设计。如希望 `/model` 一次回车直接打开菜单，需要调整该命令的 `needsArgs` 与对应 registry 测试。
+
+## 2026-10-24 命令菜单 Enter 全量排查：参数补全菜单会吞掉第一次回车
+- **排查范围（真实 TUI，sleep-mlt）**：`/model` 两级/三级菜单、`/settings` 标签页与 Keybinds 子菜单、`/skills`、`/apps`、`/theme`、`/provider` 引导（类型 → base URL → auth → key → tiers → model）、`/sessions`、`/jobs`、`/tasks`、`/approvals`、`/tools`、`/outputs`、`/pager`、`/help`、`/threads`、`/projects`、`/permissions`、`/copy`、`/resume`、`/export`、`/keymap list`、`/git-snapshots list`、`Ctrl+P` palette。上一提交修复后，这些菜单的开关、方向键、Enter 均正常。
+- **新缺陷**：带**子命令/枚举参数**的补全菜单会吞掉第一次 Enter。例：输入 `/statusline list`、`/queue list`、`/stash list`、`/voice status`、`/keymap li`、`/git-snapshots li` 时菜单只显示参数候选（`› 1. list  verb`）。回车后菜单关闭但命令不执行；再回车才执行，或下一条输入被拼进同一行（实测出现 `$ /statusline list /queue list completed`）。
+- **根因**：`acceptSelectMenu` 先把高亮的参数值应用回输入（与已输入内容相同），再走 `shouldSubmitConfirmedSelectMenuValue`；该函数只为 `/command` 与 `@mention` 返回 true，参数值（`list`）既不以 `/` 也不以 `@` 开头 → 判定为“只补全不执行”。Enter 语义（execute）与 Tab 语义（complete）在这里混同了。
+- **修复**：新增 `isArgumentSuggestionMenu(menu)` —— suggestion 菜单且当前输入命中 `getAgentConsoleArgumentRange`（`/cmd <token>`）时，确认后一并提交。Tab 仍走 `completeSelectMenu`，只补全不执行。
+- **RED/GREEN**：`select-menu-tui-enter.spec.ts` 新增两条真实终端边界用例（`handleTerminalInput({ text: '\r' })`）——Enter 执行参数补全、Tab 只补全不执行；旧实现 `submits=0` 稳定失败，修复后通过。agent-ui **1643 passing**。
+- **真实 TUI 复核**：上述 `/statusline list`、`/queue list`、`/stash list`、`/voice status` 均**一次回车**执行并输出结果；`/keymap li` 一次回车打开 keymap 列表；`/git-snapshots li` 一次回车输出 “No git step snapshots…”。`/provider` 引导的每个 choose/enter 步骤都能用 Enter 前进。
+- **门禁**：全量 `bash scripts/agents-gate.sh` → **26 PASS / 1 SKIP**（EXIT=0）；`RUN_PTY=1` PTY 验收 **PASS**（10/10 场景）；tsc ×4、Web build、DOM/TUI gate、source-size、diff-check、production DB 完整性全部通过。
+- 备注：`/model`、`/fast`、`/archetype`、`/diff`、`/search`、`/cd`、`/title`、`/snapshot`、`/unshare`、`/personality` 仍是注册表里的 `needsArgs`（第一次 Enter 补全为 `/cmd `、第二次执行）。其中 `/model`、`/fast`、`/archetype`、`/diff` 的无参形式本身有意义，如需“一次回车直接执行”需要调整 `needsArgs` 与 registry 测试，待确认。
