@@ -58,7 +58,7 @@ import { getGlobalProcess } from './global-process';
 import { decodeVoiceAudioChunk, handleVoiceCommand, playVoiceReply, startVoiceCapture, stopVoiceCapture, VoiceHandlerContext } from './AgentConsoleVoiceHandlers';
 import { activateModelProfile, consumePendingTurnModelProfile, cycleModelVariant, cycleRecentModel, EffortLevel, getModelProfileOptions, loadModelProfileOptions, openModelSwitcher, persistModelStore, queueNextTurnModelProfile, recordRecentModel, resolveInitialModelProfile, resolveModelProfileConfig, restoreModelStore, setModelReasoningEffort, toggleModelFavorite, ModelHandlerContext } from './AgentConsoleModelHandlers';
 import { dismissEditMode, enterEditMode, EditModeHandlerContext, extractEditableMessageText, getEditableImageParts, getEditableUserMessages, handleIdleEscape, startEditTarget } from './AgentConsoleEditModeHandlers';
-import { formatAgentUiNotice } from './agent-ui.i18n';
+import { formatAgentUiLabel, formatAgentUiNotice } from './agent-ui.i18n';
 import {
     CodingTaskHandlerContext,
     resolveCodingTaskSessionId as resolveCodingTaskSessionIdFn,
@@ -3430,7 +3430,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected wizardTierLabel(tier?: string): string {
-        return resolveWizardTierLabel(tier);
+        return resolveWizardTierLabel(tier, (key: string, fallback: string, params?: Record<string, any>) => formatAgentUiLabel(this.translator, key, fallback, params));
     }
 
     protected handleWizardEscape(): boolean {
@@ -3446,11 +3446,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected providerWizardSteps(): AgentWizardStepDef[] {
-        return buildProviderWizardSteps(this.providerWizard?.values || {});
+        return buildProviderWizardSteps(this.providerWizard?.values || {}, (key: string, fallback: string, params?: Record<string, any>) => formatAgentUiLabel(this.translator, key, fallback, params));
     }
 
     protected wizardStepHelp(step: AgentWizardStepDef, values: NonNullable<typeof this.providerWizard>['values']): string {
-        return buildWizardStepHelp(step, values);
+        return buildWizardStepHelp(step, values, (key: string, fallback: string, params?: Record<string, any>) => formatAgentUiLabel(this.translator, key, fallback, params));
     }
 
     protected providerWizardPrefill(step: AgentWizardStepDef, values: NonNullable<typeof this.providerWizard>['values']): string {
@@ -3458,7 +3458,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected providerWizardSummary(): string[] {
-        return buildProviderWizardSummary(this.providerWizard?.values || {});
+        return buildProviderWizardSummary(this.providerWizard?.values || {}, (key: string, fallback: string, params?: Record<string, any>) => formatAgentUiLabel(this.translator, key, fallback, params));
     }
 
     protected showProviderWizardStep(): void {
@@ -3478,7 +3478,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected providerWizardConfirmOptions(): AgentConsoleSelectOption[] {
-        return buildProviderWizardConfirmOptions(this.providerWizard?.values || {}, !!this.appRpc);
+        return buildProviderWizardConfirmOptions(this.providerWizard?.values || {}, !!this.appRpc, (key: string, fallback: string, params?: Record<string, any>) => formatAgentUiLabel(this.translator, key, fallback, params));
     }
 
     protected openProviderWizardConfirm(): void {

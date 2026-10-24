@@ -1603,3 +1603,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **测试**：新增 `select-menu-mouse.spec.ts`（2 条：点击首行/第二行确认对应选项，走真实 `dispatchMouse` press/release 路径）；`menu-i18n.spec.ts` 增加 tools 文本用例（共 9 条）。components/console **100 passing**、components/common 21、components/html 124、agent-ui **1657 passing**。
 - **门禁**：全量 gate **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY 验收 **10/10 PASS**；source-size、tsc ×4、diff-check 全部通过。
 - **仍待处理**：`/provider` 向导主体（步骤 label/help/选项描述）仍为英文，需要把 translator 穿透到 `AgentConsoleProviderWizard.ts` 的纯函数；品牌名保留原文。
+
+## 2026-10-24 `/provider` 向导主体中文化（完成最后一块菜单文案）
+- **背景**：上一批已本地化菜单外壳与 hint，但 `/provider` 的步骤 label/help/选项/摘要/确认页仍是硬编码英文。
+- **做法**：给 `AgentConsoleProviderWizard.ts` 的纯函数加 `WizardTranslate`（默认 `formatAgentUiLabel(undefined, …)` 保持英文 fallback 与占位符插值），并穿透到所有 `label/help/choices/choiceTitle` 与 `buildProviderWizardSteps/Help/Summary/ConfirmOptions/ChoiceOptions`；`AgentConsoleProviderWizardFlow` 用 translator 绑定 `t` 后调用，并本地化 `步骤 {index}/{count}`、`返回 {step}`、连接测试选项/详情；`AgentConsoleComponent` 的 4 个 wizard 代理以内联 `t` 传参（文件仍 3779 < baseline 3780）；面板标题 `添加提供方 · 步骤 N/M` 由 `AgentConsoleInputPanelComponent` 解析。
+- **新增 key（中英）**：提供方选择/API 地址/认证/凭据/模型路由/三档模型/确认页的全部 label、help、选项描述、建议模型、摘要（`已设置 API key`、`模型：…`、`未设置地址`）、保存/测试/编辑/取消、连接成功/失败与重试文案。
+- **测试**：`menu-i18n.spec.ts` 增加 provider wizard 用例（步骤 label 序列、help、choice 标题/自定义地址/建议/取消、摘要、确认页 label 与描述），共 **10 条**；agent-ui **1658 passing**。
+- **真实 TUI（zh-CN）**：`/provider` → `选择提供方 / 自定义地址 / 取消 / 建议模型…`；选择 Custom 后 `添加提供方 · 步骤 2/9`、`API 地址`、`认证方式`、`模型路由`、`快速模型/均衡模型`、`确认并保存` 全中文；摘要 `Custom OpenAI-compatible · … · 已设置 API key · 自动路由 · 模型：test-fast`；hint `回车 确认   esc 返回`。
+- **门禁**：全量 gate **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY **10/10 PASS**；source-size（Component 3779、Panels 4170、wizard catalog 达标）、tsc ×4、diff-check 全部通过。
+- 备注：提供方品牌名（DeepSeek/OpenAI/…）、adapter 标识（openai-compatible）与 base URL 属数据，保留原文。

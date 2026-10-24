@@ -310,7 +310,7 @@ export class AgentConsoleStatusPanelComponent {
     `
 })
 export class AgentConsoleInputPanelComponent {
-    constructor(private state?: AgentConsoleSessionState) {}
+    constructor(private state?: AgentConsoleSessionState, @Optional() private translator?: TranslatorService) {}
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
     @Attribute() submitAction?: () => Promise<void>;
@@ -384,7 +384,8 @@ export class AgentConsoleInputPanelComponent {
 
     get wizardTitleLabel(): string {
         const wizard = this.state?.providerWizard;
-        return wizard?.open ? `Add provider · ${wizard.progress || ''}`.trim() : '';
+        const title = formatAgentUiLabel(this.translator, 'agent.menu.provider.title', 'Add provider');
+        return wizard?.open ? `${title} · ${wizard.progress || ''}`.trim() : '';
     }
 
     get wizardStepLabel(): string {

@@ -1,6 +1,17 @@
 import { AgentConsoleSelectOption } from './AgentConsoleSessionState';
+import { formatAgentUiLabel } from './agent-ui.i18n';
 
 export type AgentWizardStepId = 'provider' | 'base-url' | 'auth' | 'credential' | 'tiers' | 'model-fast' | 'model-balanced' | 'model-strong' | 'confirm';
+
+/**
+ * Resolves a wizard copy key, falling back to the English template. Pure
+ * builders accept it so the same flow renders in the host locale; an omitted
+ * translate keeps the previous English strings (tests, non-UI callers).
+ */
+export type WizardTranslate = (key: string, fallback: string, params?: Record<string, any>) => string;
+
+export const defaultWizardTranslate: WizardTranslate = (key, fallback, params) =>
+    formatAgentUiLabel(undefined, key, fallback, params);
 
 export interface AgentWizardStepDef {
     id: AgentWizardStepId;
@@ -38,8 +49,19 @@ export function resolveWizardProviderDef(id?: string): AgentWizardProviderDef | 
     return AGENT_WIZARD_PROVIDERS.find(item => item.id === id);
 }
 
-export function resolveWizardTierLabel(tier?: string): string {
-    return AGENT_WIZARD_TIERS.find(item => item.id === tier)?.label || 'Auto routing';
+export function resolveWizardTierLabel(tier?: string, t: WizardTranslate = defaultWizardTranslate): string {
+    const id = (tier || 'auto') as 'single' | 'pair' | 'auto';
+    const fallback = AGENT_WIZARD_TIERS.find(item => item.id === id)?.label || 'Auto routing';
+    return t(`agent.menu.provider.steps.tier${id.charAt(0).toUpperCase()}${id.slice(1)}`, fallback);
+}
+
+function tierCopy(id: 'single' | 'pair' | 'auto', t: WizardTranslate): { label: string; description: string } {
+    const def = AGENT_WIZARD_TIERS.find(item => item.id === id)!;
+    const suffix = `${id.charAt(0).toUpperCase()}${id.slice(1)}`;
+    return {
+        label: t(`agent.menu.provider.steps.tier${suffix}`, def.label),
+        description: t(`agent.menu.provider.steps.tier${suffix}Description`, def.description)
+    };
 }
 
 export function resolveWizardProviderName(values: AgentWizardValues = {}): string {
@@ -64,11 +86,11 @@ function midpointModel(def?: AgentWizardProviderDef): string {
 
 export interface AgentWizardStepHandler {
     kind: 'choose' | 'enter' | 'confirm';
-    label(values: AgentWizardValues): string;
-    help(values: AgentWizardValues): string;
+    label(values: AgentWizardValues, t: WizardTranslate): string;
+    help(values: AgentWizardValues, t: WizardTranslate): string;
     prefill?(values: AgentWizardValues): string;
-    choices?(values: AgentWizardValues): AgentConsoleSelectOption[];
-    choiceTitle?(values: AgentWizardValues): string;
+    choices?(values: AgentWizardValues, t: WizardTranslate): AgentConsoleSelectOption[];
+    choiceTitle?(values: AgentWizardValues, t: WizardTranslate): string;
     choiceIndex?(values: AgentWizardValues): number;
     applyChoice?(values: AgentWizardValues, value: string): void;
     applyEnter?(values: AgentWizardValues, value: string): void;
@@ -77,19 +99,25 @@ export interface AgentWizardStepHandler {
 export const WIZARD_STEP_HANDLERS: Record<AgentWizardStepId, AgentWizardStepHandler> = {
     provider: {
         kind: 'choose',
-        label: () => 'Choose a provider',
-        help: () => 'Pick a provider to connect. Custom providers let you bring your own API URL.',
-        choiceTitle: () => 'Add provider · choose provider',
+        label: (_values, t) => t('agent.menu.provider.steps.providerLabel', 'Choose a provider'),
+        help: (_values, t) => t('agent.menu.provider.steps.providerHelp', 'Pick a provider to connect. Custom providers let you bring your own API URL.'),
+        choiceTitle: (_values, t) => t('agent.menu.provider.steps.providerChoiceTitle', 'Add provider · choose provider'),
         choiceIndex: () => 0,
-        choices: () => {
+        choices: (_values, t) => {
             const options: AgentConsoleSelectOption[] = AGENT_WIZARD_PROVIDERS.map((item, index) => ({
                 label: item.label,
                 value: item.id,
-                description: `${item.adapter} · ${item.baseUrl || 'custom base URL'}`,
-                detail: item.models.length ? `Suggested models: ${item.models.join(', ')}` : 'Bring your own base URL and model names',
+                description: `${item.adapter} · ${item.baseUrl || t('agent.menu.provider.steps.customBaseUrl', 'custom base URL')}`,
+                detail: item.models.length
+                    ? t('agent.menu.provider.steps.suggestedModels', 'Suggested models: {models}', { models: item.models.join(', ') })
+                    : t('agent.menu.provider.steps.bringOwn', 'Bring your own base URL and model names'),
                 shortcut: String(index + 1)
             }));
-            options.push({ label: 'Cancel', value: '__cancel__', description: 'Abort adding a provider' });
+            options.push({
+                label: t('agent.menu.provider.steps.cancel', 'Cancel'),
+                value: '__cancel__',
+                description: t('agent.menu.provider.steps.cancelDescription', 'Abort adding a provider')
+            });
             return options;
         },
         applyChoice: (values, value) => {
@@ -102,8 +130,8 @@ export const WIZARD_STEP_HANDLERS: Record<AgentWizardStepId, AgentWizardStepHand
     },
     'base-url': {
         kind: 'enter',
-        label: () => 'API base URL',
-        help: () => 'Enter the API endpoint, e.g. https://api.example.com/v1.',
+        label: (_values, t) => t('agent.menu.provider.steps.baseUrlLabel', 'API base URL'),
+        help: (_values, t) => t('agent.menu.provider.steps.baseUrlHelp', 'Enter the API endpoint, e.g. https://api.example.com/v1.'),
         prefill: values => values.baseUrl || resolveWizardProviderDef(values.providerId)?.baseUrl || '',
         applyEnter: (values, value) => {
             values.baseUrl = value.replace(/\/+$/, '');
@@ -111,13 +139,25 @@ export const WIZARD_STEP_HANDLERS: Record<AgentWizardStepId, AgentWizardStepHand
     },
     auth: {
         kind: 'choose',
-        label: () => 'Authentication',
-        help: () => 'Choose how the API key is provided.',
-        choiceTitle: values => `${resolveWizardProviderDef(values.providerId)?.label || 'Provider'} · authentication`,
+        label: (_values, t) => t('agent.menu.provider.steps.authLabel', 'Authentication'),
+        help: (_values, t) => t('agent.menu.provider.steps.authHelp', 'Choose how the API key is provided.'),
+        choiceTitle: (values, t) => t('agent.menu.provider.steps.authChoiceTitle', '{provider} · authentication', {
+            provider: resolveWizardProviderDef(values.providerId)?.label || t('agent.menu.provider.steps.summaryProviderFallback', 'Provider')
+        }),
         choiceIndex: values => (values.authMode === 'env' ? 1 : 0),
-        choices: values => [
-            { label: 'Enter API key', value: 'key', description: 'Store the key in this configuration' },
-            { label: 'Use environment variable', value: 'env', description: `Reference ${resolveWizardProviderDef(values.providerId)?.apiKeyEnv || 'PROVIDER_API_KEY'} from the environment` }
+        choices: (values, t) => [
+            {
+                label: t('agent.menu.provider.steps.authKey', 'Enter API key'),
+                value: 'key',
+                description: t('agent.menu.provider.steps.authKeyDescription', 'Store the key in this configuration')
+            },
+            {
+                label: t('agent.menu.provider.steps.authEnv', 'Use environment variable'),
+                value: 'env',
+                description: t('agent.menu.provider.steps.authEnvDescription', 'Reference {env} from the environment', {
+                    env: resolveWizardProviderDef(values.providerId)?.apiKeyEnv || 'PROVIDER_API_KEY'
+                })
+            }
         ],
         applyChoice: (values, value) => {
             if (value === 'key' || value === 'env') {
@@ -130,10 +170,12 @@ export const WIZARD_STEP_HANDLERS: Record<AgentWizardStepId, AgentWizardStepHand
     },
     credential: {
         kind: 'enter',
-        label: values => (values.authMode === 'env' ? 'Environment variable' : 'API key'),
-        help: values => values.authMode === 'env'
-            ? 'Enter the environment variable that holds the API key, or accept the suggested one.'
-            : 'Paste the API key. It is stored locally and never shown again.',
+        label: (values, t) => values.authMode === 'env'
+            ? t('agent.menu.provider.steps.credentialEnv', 'Environment variable')
+            : t('agent.menu.provider.steps.credentialKey', 'API key'),
+        help: (values, t) => values.authMode === 'env'
+            ? t('agent.menu.provider.steps.credentialEnvHelp', 'Enter the environment variable that holds the API key, or accept the suggested one.')
+            : t('agent.menu.provider.steps.credentialKeyHelp', 'Paste the API key. It is stored locally and never shown again.'),
         prefill: values => values.credential || (values.authMode === 'env' ? resolveWizardProviderDef(values.providerId)?.apiKeyEnv || '' : ''),
         applyEnter: (values, value) => {
             values.credential = value;
@@ -141,14 +183,15 @@ export const WIZARD_STEP_HANDLERS: Record<AgentWizardStepId, AgentWizardStepHand
     },
     tiers: {
         kind: 'choose',
-        label: () => 'Model routing',
-        help: () => 'Choose how many models to configure for this provider.',
-        choiceTitle: values => `${resolveWizardProviderDef(values.providerId)?.label || 'Provider'} · model routing`,
+        label: (_values, t) => t('agent.menu.provider.steps.tiersLabel', 'Model routing'),
+        help: (_values, t) => t('agent.menu.provider.steps.tiersHelp', 'Choose how many models to configure for this provider.'),
+        choiceTitle: (values, t) => t('agent.menu.provider.steps.tiersChoiceTitle', '{provider} · model routing', {
+            provider: resolveWizardProviderDef(values.providerId)?.label || t('agent.menu.provider.steps.summaryProviderFallback', 'Provider')
+        }),
         choiceIndex: values => Math.max(0, AGENT_WIZARD_TIERS.findIndex(item => item.id === (values.tiers || 'auto'))),
-        choices: () => AGENT_WIZARD_TIERS.map((item, index) => ({
-            label: item.label,
+        choices: (_values, t) => AGENT_WIZARD_TIERS.map((item, index) => ({
+            ...tierCopy(item.id, t),
             value: item.id,
-            description: item.description,
             shortcut: String(index + 1)
         })),
         applyChoice: (values, value) => {
@@ -157,10 +200,14 @@ export const WIZARD_STEP_HANDLERS: Record<AgentWizardStepId, AgentWizardStepHand
     },
     'model-fast': {
         kind: 'enter',
-        label: values => ((values.tiers || 'auto') === 'single' ? 'Model' : 'Fast model'),
-        help: values => {
+        label: (values, t) => (values.tiers || 'auto') === 'single'
+            ? t('agent.menu.provider.steps.modelSingleLabel', 'Model')
+            : t('agent.menu.provider.steps.modelLabel', 'Fast model'),
+        help: (values, t) => {
             const def = resolveWizardProviderDef(values.providerId);
-            return def?.models.length ? `Suggested: ${def.models[0]}.` : 'Enter the model identifier to use.';
+            return def?.models.length
+                ? t('agent.menu.provider.steps.modelSuggested', 'Suggested: {model}.', { model: def.models[0] })
+                : t('agent.menu.provider.steps.modelEnter', 'Enter the model identifier to use.');
         },
         prefill: values => values.modelFast || resolveWizardProviderDef(values.providerId)?.models[0] || '',
         applyEnter: (values, value) => {
@@ -169,10 +216,12 @@ export const WIZARD_STEP_HANDLERS: Record<AgentWizardStepId, AgentWizardStepHand
     },
     'model-balanced': {
         kind: 'enter',
-        label: () => 'Balanced model',
-        help: values => {
+        label: (_values, t) => t('agent.menu.provider.steps.modelBalancedLabel', 'Balanced model'),
+        help: (values, t) => {
             const def = resolveWizardProviderDef(values.providerId);
-            return def?.models.length ? `Suggested: ${midpointModel(def)}.` : 'Enter the balanced model identifier.';
+            return def?.models.length
+                ? t('agent.menu.provider.steps.modelSuggested', 'Suggested: {model}.', { model: midpointModel(def) })
+                : t('agent.menu.provider.steps.modelEnterBalanced', 'Enter the balanced model identifier.');
         },
         prefill: values => values.modelBalanced || midpointModel(resolveWizardProviderDef(values.providerId)) || '',
         applyEnter: (values, value) => {
@@ -181,10 +230,12 @@ export const WIZARD_STEP_HANDLERS: Record<AgentWizardStepId, AgentWizardStepHand
     },
     'model-strong': {
         kind: 'enter',
-        label: () => 'Strong model',
-        help: values => {
+        label: (_values, t) => t('agent.menu.provider.steps.modelStrongLabel', 'Strong model'),
+        help: (values, t) => {
             const def = resolveWizardProviderDef(values.providerId);
-            return def?.models.length ? `Suggested: ${def.models[def.models.length - 1]}.` : 'Enter the strong model identifier.';
+            return def?.models.length
+                ? t('agent.menu.provider.steps.modelSuggested', 'Suggested: {model}.', { model: def.models[def.models.length - 1] })
+                : t('agent.menu.provider.steps.modelEnterStrong', 'Enter the strong model identifier.');
         },
         prefill: values => {
             const def = resolveWizardProviderDef(values.providerId);
@@ -197,36 +248,43 @@ export const WIZARD_STEP_HANDLERS: Record<AgentWizardStepId, AgentWizardStepHand
     },
     confirm: {
         kind: 'confirm',
-        label: () => 'Review & save',
-        help: () => 'Review the provider details, then choose how to save.'
+        label: (_values, t) => t('agent.menu.provider.steps.confirmLabel', 'Review & save'),
+        help: (_values, t) => t('agent.menu.provider.steps.confirmHelp', 'Review the provider details, then choose how to save.')
     }
 };
 
-export function buildProviderWizardSteps(values: AgentWizardValues = {}): AgentWizardStepDef[] {
+export function buildProviderWizardSteps(
+    values: AgentWizardValues = {},
+    t: WizardTranslate = defaultWizardTranslate
+): AgentWizardStepDef[] {
     const def = resolveWizardProviderDef(values.providerId);
     const steps: AgentWizardStepDef[] = [
-        { id: 'provider', kind: 'choose', label: WIZARD_STEP_HANDLERS.provider.label(values) }
+        { id: 'provider', kind: 'choose', label: WIZARD_STEP_HANDLERS.provider.label(values, t) }
     ];
     if (!def || !def.baseUrl) {
-        steps.push({ id: 'base-url', kind: 'enter', label: WIZARD_STEP_HANDLERS['base-url'].label(values) });
+        steps.push({ id: 'base-url', kind: 'enter', label: WIZARD_STEP_HANDLERS['base-url'].label(values, t) });
     }
-    steps.push({ id: 'auth', kind: 'choose', label: WIZARD_STEP_HANDLERS.auth.label(values) });
-    steps.push({ id: 'credential', kind: 'enter', label: WIZARD_STEP_HANDLERS.credential.label(values) });
-    steps.push({ id: 'tiers', kind: 'choose', label: WIZARD_STEP_HANDLERS.tiers.label(values) });
+    steps.push({ id: 'auth', kind: 'choose', label: WIZARD_STEP_HANDLERS.auth.label(values, t) });
+    steps.push({ id: 'credential', kind: 'enter', label: WIZARD_STEP_HANDLERS.credential.label(values, t) });
+    steps.push({ id: 'tiers', kind: 'choose', label: WIZARD_STEP_HANDLERS.tiers.label(values, t) });
     const tiers = values.tiers || 'auto';
-    steps.push({ id: 'model-fast', kind: 'enter', label: WIZARD_STEP_HANDLERS['model-fast'].label(values) });
+    steps.push({ id: 'model-fast', kind: 'enter', label: WIZARD_STEP_HANDLERS['model-fast'].label(values, t) });
     if (tiers === 'auto') {
-        steps.push({ id: 'model-balanced', kind: 'enter', label: WIZARD_STEP_HANDLERS['model-balanced'].label(values) });
+        steps.push({ id: 'model-balanced', kind: 'enter', label: WIZARD_STEP_HANDLERS['model-balanced'].label(values, t) });
     }
     if (tiers !== 'single') {
-        steps.push({ id: 'model-strong', kind: 'enter', label: WIZARD_STEP_HANDLERS['model-strong'].label(values) });
+        steps.push({ id: 'model-strong', kind: 'enter', label: WIZARD_STEP_HANDLERS['model-strong'].label(values, t) });
     }
-    steps.push({ id: 'confirm', kind: 'confirm', label: WIZARD_STEP_HANDLERS.confirm.label(values) });
+    steps.push({ id: 'confirm', kind: 'confirm', label: WIZARD_STEP_HANDLERS.confirm.label(values, t) });
     return steps;
 }
 
-export function buildWizardStepHelp(step: AgentWizardStepDef, values: AgentWizardValues = {}): string {
-    return WIZARD_STEP_HANDLERS[step.id]?.help(values) ?? '';
+export function buildWizardStepHelp(
+    step: AgentWizardStepDef,
+    values: AgentWizardValues = {},
+    t: WizardTranslate = defaultWizardTranslate
+): string {
+    return WIZARD_STEP_HANDLERS[step.id]?.help(values, t) ?? '';
 }
 
 export function resolveWizardPrefill(step: AgentWizardStepDef, values: AgentWizardValues = {}): string {
@@ -241,44 +299,78 @@ export function applyWizardStepEnter(values: AgentWizardValues, stepId: AgentWiz
     WIZARD_STEP_HANDLERS[stepId]?.applyEnter?.(values, value);
 }
 
-export function buildProviderWizardSummary(values: AgentWizardValues = {}): string[] {
+export function buildProviderWizardSummary(
+    values: AgentWizardValues = {},
+    t: WizardTranslate = defaultWizardTranslate
+): string[] {
     const def = resolveWizardProviderDef(values.providerId);
     const baseUrl = values.baseUrl || def?.baseUrl || '';
-    const credential = values.authMode === 'env' ? `env ${values.credential}` : 'API key set';
+    const credential = values.authMode === 'env'
+        ? t('agent.menu.provider.steps.summaryEnv', 'env {name}', { name: values.credential || '' })
+        : t('agent.menu.provider.steps.summaryApiKey', 'API key set');
     const models = [values.modelFast, values.modelBalanced, values.modelStrong].filter(Boolean).join(' · ');
     return [
-        `${def?.label || values.providerId || 'Provider'} · ${baseUrl || 'no base URL'}`,
+        `${def?.label || values.providerId || t('agent.menu.provider.steps.summaryProviderFallback', 'Provider')} · ${baseUrl || t('agent.menu.provider.steps.summaryDefaultBaseUrl', 'no base URL')}`,
         credential,
-        resolveWizardTierLabel(values.tiers),
-        models ? `Models: ${models}` : ''
+        resolveWizardTierLabel(values.tiers, t),
+        models ? t('agent.menu.provider.steps.summaryModels', 'Models: {models}', { models }) : ''
     ].filter(Boolean);
 }
 
-export function buildProviderWizardConfirmOptions(values: AgentWizardValues = {}, canTest = false): AgentConsoleSelectOption[] {
-    const summary = buildProviderWizardSummary(values).join('\n');
+export function buildProviderWizardConfirmOptions(
+    values: AgentWizardValues = {},
+    canTest = false,
+    t: WizardTranslate = defaultWizardTranslate
+): AgentConsoleSelectOption[] {
+    const summary = buildProviderWizardSummary(values, t).join('\n');
+    const name = resolveWizardProviderName(values);
     const options: AgentConsoleSelectOption[] = [
-        { label: 'Save & activate', value: 'save-active', description: `Use ${resolveWizardProviderName(values)} immediately`, detail: summary },
-        { label: 'Save only', value: 'save', description: 'Configure now, switch later with /model', detail: summary }
+        {
+            label: t('agent.menu.provider.steps.saveActive', 'Save & activate'),
+            value: 'save-active',
+            description: t('agent.menu.provider.steps.saveActiveDescription', 'Use {name} immediately', { name }),
+            detail: summary
+        },
+        {
+            label: t('agent.menu.provider.steps.save', 'Save only'),
+            value: 'save',
+            description: t('agent.menu.provider.steps.saveDescription', 'Configure now, switch later with /model'),
+            detail: summary
+        }
     ];
     if (canTest && (values.credential || resolveWizardProviderDef(values.providerId)?.apiKeyEnv)) {
-        options.push({ label: 'Test connection', value: 'test', description: 'Verify the key and base URL reach the provider', detail: summary });
+        options.push({
+            label: t('agent.menu.provider.steps.test', 'Test connection'),
+            value: 'test',
+            description: t('agent.menu.provider.steps.testDescription', 'Verify the key and base URL reach the provider'),
+            detail: summary
+        });
     }
-    options.push({ label: 'Edit…', value: 'edit', description: 'Change a field before saving' });
-    options.push({ label: 'Cancel', value: 'cancel', description: 'Discard this provider' });
+    options.push({
+        label: t('agent.menu.provider.steps.edit', 'Edit…'),
+        value: 'edit',
+        description: t('agent.menu.provider.steps.editDescription', 'Change a field before saving')
+    });
+    options.push({
+        label: t('agent.menu.provider.steps.cancel', 'Cancel'),
+        value: 'cancel',
+        description: t('agent.menu.provider.steps.cancelOptionDescription', 'Discard this provider')
+    });
     return options;
 }
 
 export function buildProviderWizardChoiceOptions(
     step: AgentWizardStepDef,
-    values: AgentWizardValues = {}
+    values: AgentWizardValues = {},
+    t: WizardTranslate = defaultWizardTranslate
 ): { title: string; options: AgentConsoleSelectOption[]; selected: number } | undefined {
     const handler = WIZARD_STEP_HANDLERS[step.id];
-    const options = handler?.choices?.(values);
+    const options = handler?.choices?.(values, t);
     if (!options?.length) {
         return undefined;
     }
     return {
-        title: handler.choiceTitle?.(values) || 'Add provider',
+        title: handler.choiceTitle?.(values, t) || t('agent.menu.provider.steps.defaultChoiceTitle', 'Add provider'),
         options,
         selected: handler.choiceIndex?.(values) ?? 0
     };

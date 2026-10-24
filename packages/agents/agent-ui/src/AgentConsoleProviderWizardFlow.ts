@@ -12,7 +12,9 @@ import {
     resolveWizardPrefill,
     resolveWizardProviderDef,
     resolveWizardProviderName,
-    resolveWizardTierLabel
+    resolveWizardTierLabel,
+    WizardTranslate,
+    defaultWizardTranslate
 } from './AgentConsoleProviderWizard';
 import { formatAgentUiLabel, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
@@ -49,16 +51,20 @@ export interface ProviderWizardContext {
     activateModelProfile(profile: string): Promise<any>;
 }
 
-export function providerWizardSteps(holder: AgentWizardHolder): AgentWizardStepDef[] {
-    return buildProviderWizardSteps(holder.wizard?.values || {});
+function wizardTranslate(ctx: ProviderWizardContext): WizardTranslate {
+    return (key, fallback, params) => formatAgentUiLabel(ctx.translator, key, fallback, params);
 }
 
-export function providerWizardSummary(holder: AgentWizardHolder): string[] {
-    return buildProviderWizardSummary(holder.wizard?.values || {});
+export function providerWizardSteps(holder: AgentWizardHolder, t: WizardTranslate = defaultWizardTranslate): AgentWizardStepDef[] {
+    return buildProviderWizardSteps(holder.wizard?.values || {}, t);
+}
+
+export function providerWizardSummary(holder: AgentWizardHolder, t: WizardTranslate = defaultWizardTranslate): string[] {
+    return buildProviderWizardSummary(holder.wizard?.values || {}, t);
 }
 
 export function providerWizardConfirmOptions(holder: AgentWizardHolder, ctx: ProviderWizardContext): AgentConsoleSelectOption[] {
-    return buildProviderWizardConfirmOptions(holder.wizard?.values || {}, !!ctx.appRpc);
+    return buildProviderWizardConfirmOptions(holder.wizard?.values || {}, !!ctx.appRpc, wizardTranslate(ctx));
 }
 
 export function startProviderWizard(ctx: ProviderWizardContext, holder: AgentWizardHolder, ): void {
@@ -104,17 +110,18 @@ export function resetProviderWizardComposer(ctx: ProviderWizardContext, holder: 
 export function showProviderWizardStep(ctx: ProviderWizardContext, holder: AgentWizardHolder, ): void {
         const wizard = holder.wizard;
         if (!wizard) return;
-        const steps = providerWizardSteps(holder);
+        const t = wizardTranslate(ctx);
+        const steps = providerWizardSteps(holder, t);
         wizard.stepIndex = Math.min(wizard.stepIndex, steps.length - 1);
         const step = steps[wizard.stepIndex];
         const count = steps.length;
-        const progress = `Step ${wizard.stepIndex + 1}/${count}`;
-        const summary = providerWizardSummary(holder);
+        const progress = t('agent.menu.provider.steps.progress', 'Step {index}/{count}', { index: wizard.stepIndex + 1, count });
+        const summary = providerWizardSummary(holder, t);
         if (step.kind === 'choose') {
             ctx.state.setProviderWizard({
                 phase: 'choose', stepIndex: wizard.stepIndex, stepCount: count,
                 stepLabel: step.label, progress, prompt: '',
-                help: buildWizardStepHelp(step, wizard.values),
+                help: buildWizardStepHelp(step, wizard.values, t),
                 hint: formatAgentUiLabel(ctx.translator, 'agent.hint.enterConfirmBack', 'enter confirm   esc back'), secret: false, summary
             });
             openProviderWizardChoice(ctx, holder, step);
@@ -124,7 +131,7 @@ export function showProviderWizardStep(ctx: ProviderWizardContext, holder: Agent
             ctx.state.setProviderWizard({
                 phase: 'confirm', stepIndex: wizard.stepIndex, stepCount: count,
                 stepLabel: step.label, progress, prompt: '',
-                help: buildWizardStepHelp(step, wizard.values),
+                help: buildWizardStepHelp(step, wizard.values, t),
                 hint: formatAgentUiLabel(ctx.translator, 'agent.hint.enterConfirmBack', 'enter confirm   esc back'), secret: false, summary
             });
             openProviderWizardConfirm(ctx, holder);
@@ -139,15 +146,15 @@ export function showProviderWizardStep(ctx: ProviderWizardContext, holder: Agent
         ctx.state.setProviderWizard({
             phase: 'enter', stepIndex: wizard.stepIndex, stepCount: count,
             stepLabel: step.label, progress, prompt: `${wizard.stepIndex + 1}/${count} › `,
-            help: buildWizardStepHelp(step, wizard.values),
+            help: buildWizardStepHelp(step, wizard.values, t),
             hint: formatAgentUiLabel(ctx.translator, 'agent.hint.enterConfirmBack', 'enter confirm   esc back'), secret, summary
         });
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'wizardProgressStep', { progress: progress, help: buildWizardStepHelp(step, wizard.values) }));
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'wizardProgressStep', { progress: progress, help: buildWizardStepHelp(step, wizard.values, t) }));
     }
 
 
 export function openProviderWizardChoice(ctx: ProviderWizardContext, holder: AgentWizardHolder, step: AgentWizardStepDef): void {
-        const built = buildProviderWizardChoiceOptions(step, holder.wizard?.values || {});
+        const built = buildProviderWizardChoiceOptions(step, holder.wizard?.values || {}, wizardTranslate(ctx));
         if (!built) return;
         ctx.state.selectMenuAction = (value: string | undefined) => handleProviderWizardChoice(ctx, holder, value);
         ctx.state.closeSelectMenu();
@@ -161,7 +168,7 @@ export async function handleProviderWizardChoice(ctx: ProviderWizardContext, hol
             handleWizardEscape(ctx, holder);
             return;
         }
-        const step = providerWizardSteps(holder)[wizard.stepIndex];
+        const step = providerWizardSteps(holder, wizardTranslate(ctx))[wizard.stepIndex];
         const values = wizard.values;
         applyWizardStepChoice(values, step.id, value);
         wizard.stepIndex += 1;
@@ -204,14 +211,15 @@ export async function handleProviderWizardConfirm(ctx: ProviderWizardContext, ho
 export async function openProviderWizardEditor(ctx: ProviderWizardContext, holder: AgentWizardHolder, ): Promise<void> {
         const wizard = holder.wizard;
         if (!wizard) return;
-        const steps = providerWizardSteps(holder);
+        const t = wizardTranslate(ctx);
+        const steps = providerWizardSteps(holder, t);
         const entries = steps
             .map((step, index) => ({ step, index }))
             .filter(item => !['provider', 'confirm'].includes(item.step.id))
             .map(item => ({
                 label: item.step.label,
                 value: String(item.index),
-                description: `Back to ${item.step.label.toLowerCase()}`
+                description: t('agent.menu.provider.steps.backTo', 'Back to {step}', { step: item.step.label.toLowerCase() })
             }));
         const choice = await ctx.state.selectAsync(formatAgentUiLabel(ctx.translator, 'agent.menu.provider.editTitle', 'Edit provider'), entries, 0, formatAgentUiLabel(ctx.translator, 'agent.hint.enterConfirmBack', 'enter confirm   esc back'));
         if (choice === undefined) {
@@ -246,25 +254,28 @@ export async function testProviderConnection(ctx: ProviderWizardContext, holder:
         } catch (error) {
             result = { ok: false, error: error instanceof Error ? error.message : String(error) };
         }
-        const summaryLines = providerWizardSummary(holder);
+        const summaryLines = providerWizardSummary(holder, wizardTranslate(ctx));
         const summary = summaryLines.join('\n');
         if (!holder.wizard) return;
         const count = result.models?.length || 0;
+        const t = wizardTranslate(ctx);
         const options: AgentConsoleSelectOption[] = result.ok
             ? [
-                { label: 'Save & activate', value: 'save-active', description: `Connection OK · ${count} model${count === 1 ? '' : 's'} found`, detail: summary },
-                { label: 'Save only', value: 'save', description: 'Connection OK · save for later', detail: summary },
-                { label: 'Edit…', value: 'edit', description: 'Change a field before saving' },
-                { label: 'Cancel', value: 'cancel', description: 'Discard this provider' }
+                { label: t('agent.menu.provider.steps.saveActive', 'Save & activate'), value: 'save-active', description: t('agent.menu.provider.steps.connectionModels', 'Connection OK · {count} model(s) found', { count }), detail: summary },
+                { label: t('agent.menu.provider.steps.save', 'Save only'), value: 'save', description: t('agent.menu.provider.steps.connectionSaveLater', 'Connection OK · save for later'), detail: summary },
+                { label: t('agent.menu.provider.steps.edit', 'Edit…'), value: 'edit', description: t('agent.menu.provider.steps.editDescription', 'Change a field before saving') },
+                { label: t('agent.menu.provider.steps.cancel', 'Cancel'), value: 'cancel', description: t('agent.menu.provider.steps.cancelOptionDescription', 'Discard this provider') }
             ]
             : [
-                { label: 'Retry test', value: 'test', description: `Last attempt failed: ${result.error || 'unknown error'}`, detail: summary },
-                { label: 'Save & activate', value: 'save-active', description: 'Save anyway and continue', detail: summary },
-                { label: 'Save only', value: 'save', description: 'Save anyway for later', detail: summary },
-                { label: 'Edit…', value: 'edit', description: 'Fix the connection before saving' },
-                { label: 'Cancel', value: 'cancel', description: 'Discard this provider' }
+                { label: t('agent.menu.provider.steps.retryTest', 'Retry test'), value: 'test', description: t('agent.menu.provider.steps.lastAttemptFailed', 'Last attempt failed: {error}', { error: result.error || 'unknown error' }), detail: summary },
+                { label: t('agent.menu.provider.steps.saveActive', 'Save & activate'), value: 'save-active', description: t('agent.menu.provider.steps.saveAnywayActive', 'Save anyway and continue'), detail: summary },
+                { label: t('agent.menu.provider.steps.save', 'Save only'), value: 'save', description: t('agent.menu.provider.steps.saveAnyway', 'Save anyway for later'), detail: summary },
+                { label: t('agent.menu.provider.steps.edit', 'Edit…'), value: 'edit', description: t('agent.menu.provider.steps.editFixConnection', 'Fix the connection before saving') },
+                { label: t('agent.menu.provider.steps.cancel', 'Cancel'), value: 'cancel', description: t('agent.menu.provider.steps.cancelOptionDescription', 'Discard this provider') }
             ];
-        const details = result.ok ? `${count} model(s) available` : `Connection failed: ${result.error || 'unknown error'}`;
+        const details = result.ok
+            ? t('agent.menu.provider.steps.connectionAvailable', '{count} model(s) available', { count })
+            : t('agent.menu.provider.steps.connectionFailedDetail', 'Connection failed: {error}', { error: result.error || 'unknown error' });
         ctx.state.setProviderWizard({
             phase: 'confirm', summary: summaryLines, help: details, hint: formatAgentUiLabel(ctx.translator, 'agent.hint.enterConfirmBack', 'enter confirm   esc back'),
             secret: false
@@ -290,7 +301,7 @@ export async function commitProviderWizard(ctx: ProviderWizardContext, holder: A
         const baseUrl = (values.baseUrl || def.baseUrl || '').replace(/\/+$/, '');
         if (!/^https?:\/\//i.test(baseUrl)) {
             ctx.notify(formatAgentUiNotice(ctx.translator, 'providerWasNot2'));
-            wizard.stepIndex = Math.max(0, providerWizardSteps(holder).findIndex(step => step.id === 'base-url'));
+            wizard.stepIndex = Math.max(0, providerWizardSteps(holder, wizardTranslate(ctx)).findIndex(step => step.id === 'base-url'));
             showProviderWizardStep(ctx, holder);
             return;
         }
@@ -371,7 +382,7 @@ export async function commitProviderWizard(ctx: ProviderWizardContext, holder: A
 export async function advanceProviderWizard(ctx: ProviderWizardContext, holder: AgentWizardHolder, value: string): Promise<void> {
         const wizard = holder.wizard;
         if (!wizard) return;
-        const step = providerWizardSteps(holder)[wizard.stepIndex];
+        const step = providerWizardSteps(holder, wizardTranslate(ctx))[wizard.stepIndex];
         if (step.kind !== 'enter') return;
         const trimmed = String(value || '').trim();
         const values = wizard.values;
