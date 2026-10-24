@@ -5,6 +5,7 @@ import { getModelProfileOptions, loadModelProfileOptions, openModelSwitcher } fr
 import { runThemeCommand } from '../src/AgentConsoleRuntimeCommands';
 import { openSettingsLanguage, runSettingsCommand } from '../src/AgentConsoleSettingsCommands';
 import { runSkillsCommand } from '../src/AgentConsoleExtensionCommands';
+import { formatToolPanelInactiveSuffix, formatToolPanelLastRun, formatToolPanelStatus, formatToolPanelTitle } from '../src/AgentConsoleToolPanelText';
 
 function translateFrom(bundle: typeof agentUiEnglish) {
     return (key: string, params?: Record<string, any>) => {
@@ -186,6 +187,18 @@ export class MenuI18nTest {
         expect(captured.hint).toContain('回车 详情');
         expect(captured.options[0].detail).toContain('标题：Codebase');
         expect(captured.options[0].detail).toContain('别名：repo');
+    }
+
+    @Test('tools panel status rows are localized')
+    async toolsPanelLocalized() {
+        expect(formatToolPanelTitle(zh, 64, 1)).toEqual('工具 64 · 1/64');
+        expect(formatToolPanelInactiveSuffix(zh)).toEqual(' [未激活]');
+        expect(formatToolPanelStatus(zh, { active: false, activationKind: 'deferred', toolset: 'filesystem' }))
+            .toEqual('状态：未激活 · 激活方式：按需 · 工具集：filesystem');
+        expect(formatToolPanelStatus(zh, { active: true, toolset: 'filesystem' }))
+            .toEqual('状态：已激活 · 激活方式：始终 · 工具集：filesystem');
+        expect(formatToolPanelLastRun(zh, 'success', ' 7ms', 'read_file'))
+            .toEqual('上次运行 success 7ms：read_file');
     }
 
     @Test('English fallback keeps the previous copy')

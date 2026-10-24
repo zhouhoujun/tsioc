@@ -65,6 +65,16 @@ export const AGENT_UI_MENU_EN: Record<string, any> = {
     apps: {
         title: 'Apps'
     },
+    tools: {
+        title: 'tools {count} · {index}/{count}',
+        inactiveSuffix: ' [inactive]',
+        status: 'status {status} · activation {activation} · toolset {toolset}',
+        stateActive: 'active',
+        stateInactive: 'inactive',
+        activationAlways: 'always',
+        activationDeferred: 'deferred',
+        lastRun: 'last run {status}{duration}: {summary}'
+    },
     provider: {
         title: 'Add provider',
         confirmTitle: 'Confirm provider',
@@ -188,6 +198,16 @@ export const AGENT_UI_MENU_ZH: Record<string, any> = {
     },
     apps: {
         title: '应用'
+    },
+    tools: {
+        title: '工具 {count} · {index}/{count}',
+        inactiveSuffix: ' [未激活]',
+        status: '状态：{status} · 激活方式：{activation} · 工具集：{toolset}',
+        stateActive: '已激活',
+        stateInactive: '未激活',
+        activationAlways: '始终',
+        activationDeferred: '按需',
+        lastRun: '上次运行 {status}{duration}：{summary}'
     },
     provider: {
         title: '添加提供方',

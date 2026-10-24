@@ -329,6 +329,7 @@ export class TuiRenderer extends ConsoleRenderer {
                 }
                 const visibleOptions = parsedOptions.slice(visibleStart, visibleStart + visibleWindow.count);
                 const optionLabelColumnWidth = resolveConsoleOptionLabelColumnWidth(visibleOptions, visibleStart);
+                const optionClickRows: Array<{ index: number; row: number }> = [];
                 visibleOptions.forEach((opt, idx) => {
                     const absoluteIndex = visibleStart + idx;
                     lines.push(this.applyAnsi(
@@ -343,6 +344,7 @@ export class TuiRenderer extends ConsoleRenderer {
                         this.mergeStyles(styleMap, absoluteIndex === safeSelectedIdx ? optionActiveStyle : optionStyle),
                         width
                     ));
+                    optionClickRows.push({ index: absoluteIndex, row: lines.length - 1 });
                 });
                 if (detailTitle) {
                     lines.push(this.applyAnsi(detailTitle, this.mergeStyles(styleMap, detailLabelStyle), width));
@@ -362,6 +364,19 @@ export class TuiRenderer extends ConsoleRenderer {
                     }), width));
                 }
                 finishClickTarget();
+                // One hit target per option row: a click selects the row under
+                // the pointer instead of being swallowed by the container.
+                for (const entry of optionClickRows) {
+                    clickTargets.push({
+                        node: element,
+                        x: 0,
+                        y: entry.row,
+                        width: width ?? this.resolveMaxLineWidth(lines.slice(entry.row, entry.row + 1)),
+                        height: 1,
+                        interactive: 'pointer',
+                        optionIndex: entry.index
+                    });
+                }
                 finishRegion();
                 return;
             }
@@ -517,13 +532,12 @@ export class TuiRenderer extends ConsoleRenderer {
                     regions.push({ ...absolute, element: region.element });
                 });
                 childClickTargets.forEach(target => {
+                    // Keep extra target metadata (e.g. the select option index);
+                    // rebuilding field-by-field silently dropped it.
                     clickTargets.push({
-                        node: target.node,
+                        ...target,
                         x: offset.column + target.x,
-                        y: start + offset.row + target.y,
-                        width: target.width,
-                        height: target.height,
-                        interactive: target.interactive
+                        y: start + offset.row + target.y
                     });
                 });
                 if (hasOwnFrame && lines.length > start && this.stripAnsi(lines[lines.length - 1]).trim()) {

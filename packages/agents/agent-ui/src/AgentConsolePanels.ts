@@ -23,6 +23,7 @@ import {
     AgentConsoleCommandOutputEntry
 } from './AgentConsoleSessionState';
 import { isAgentConsoleSuggestionMenu } from './AgentConsoleSuggestions';
+import { formatToolPanelInactiveSuffix, formatToolPanelLastRun, formatToolPanelStatus, formatToolPanelTitle } from './AgentConsoleToolPanelText';
 import { formatAgentConsoleApprovalInput } from './AgentConsoleApprovalInput';
 import {
     AgentConsoleMarkdownLine,
@@ -1915,7 +1916,7 @@ export class AgentConsoleApprovalsPanelComponent {
     `
 })
 export class AgentConsoleToolsPanelComponent {
-    constructor(private state: AgentConsoleSessionState) {
+    constructor(private state: AgentConsoleSessionState, @Optional() private translator?: TranslatorService) {
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -1964,7 +1965,7 @@ export class AgentConsoleToolsPanelComponent {
             const selected = this.state.selectedToolName === tool.name;
             return {
                 name: tool.name,
-                label: `${selected ? '›' : ' '} ${tool.name}${tool.active ? '' : ' [inactive]'}${tool.toolset ? ` (${tool.toolset})` : ''}`,
+                label: `${selected ? '›' : ' '} ${tool.name}${tool.active ? '' : formatToolPanelInactiveSuffix(this.translator)}${tool.toolset ? ` (${tool.toolset})` : ''}`,
                 style: selected
                     ? this.activeThemeStyles.sessionsSelected
                     : this.activeThemeStyles.statusValue
@@ -2008,7 +2009,7 @@ export class AgentConsoleToolsPanelComponent {
             return '';
         }
         const selectedIndex = Math.max(0, this.tools.findIndex(item => item.name === this.state.selectedToolName));
-        return `tools ${this.tools.length} · ${selectedIndex + 1}/${this.tools.length}`;
+        return formatToolPanelTitle(this.translator, this.tools.length, selectedIndex + 1);
     }
 
     get toolsHintLabel(): string {
@@ -2024,13 +2025,11 @@ export class AgentConsoleToolsPanelComponent {
         }
         const tool = this.state.selectedTool;
         const latestRun = this.state.toolRuns.find(run => run.name === tool.name);
-        const lines = [
-            `status ${tool.active ? 'active' : 'inactive'} · activation ${tool.activationKind || 'always'} · toolset ${tool.toolset || 'default'}`
-        ];
+        const lines = [formatToolPanelStatus(this.translator, tool)];
         if (latestRun) {
             const summary = latestRun.outputSummary || latestRun.inputSummary || latestRun.message || latestRun.error || '';
             const duration = latestRun.durationMs != null ? ` ${latestRun.durationMs}ms` : '';
-            lines.push(`last run ${latestRun.status}${duration}: ${this.summarize(summary || latestRun.name)}`);
+            lines.push(formatToolPanelLastRun(this.translator, latestRun.status, duration, this.summarize(summary || latestRun.name)));
         }
         return lines.join('\n');
     }
@@ -3821,7 +3820,8 @@ export class AgentConsoleActivityPanelComponent {
                 detailLines="{{menuDetailLinesJson}}"
                 optionActiveStyle="{{activeTheme.selectOptionActive}}"
                 optionStyle="{{activeTheme.selectOption}}"
-                @keydown="onKeydown($event)"></select>
+                @keydown="onKeydown($event)"
+                @select-option="onSelectOption($event)"></select>
         </div>
     </div>
     `
@@ -3938,6 +3938,16 @@ export class AgentConsoleSelectPanelComponent {
 
     optionStyleAt(index: number): Record<string, string> {
         return this.optionAt(index)?.style || {};
+    }
+
+    /** TUI pointer: the renderer reports the absolute option index of the row. */
+    async onSelectOption(event: any): Promise<void> {
+        const index = Number(event?.optionIndex);
+        const option = Number.isInteger(index) ? this.menu?.options[index] : undefined;
+        if (!option) {
+            return;
+        }
+        await this.selectOption(option.value);
     }
 
     async selectOptionAt(index: number): Promise<void> {

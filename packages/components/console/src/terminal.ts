@@ -84,6 +84,13 @@ export interface TerminalClickTarget {
      * shadow the clickable children rendered inside it.
      */
     interactive?: 'pointer' | 'focus';
+    /**
+     * Zero-based option index for a rendered `<select>` row. A click on that
+     * row dispatches `select-option` (with this index) instead of the generic
+     * `click`, so the menu can select the clicked row in terminals where the
+     * native dropdown does not exist.
+     */
+    optionIndex?: number;
 }
 
 export interface TerminalToolRunItem {
@@ -361,7 +368,7 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     abstract getLastRenderedText(stripAnsi: (value: string) => string): string;
     abstract getClickTargets(): TerminalClickTarget[];
     abstract getTerminalRootStartRow(): number;
-    abstract dispatchClickAt(node?: ConsoleNode): boolean;
+    abstract dispatchClickAt(node?: ConsoleNode, optionIndex?: number): boolean;
     abstract dispatchMouse?(mouse: SelectMenuMouseEvent): boolean;
     dispatchKey?(_event: { key: string; [name: string]: unknown }): boolean { return false; }
     scrollViewport?(_deltaRows: number): boolean { return false; }
@@ -596,8 +603,8 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
         return this.surface?.getTerminalRootStartRow() ?? 0;
     }
 
-    dispatchClickAt(node?: ConsoleNode): boolean {
-        return this.surface?.dispatchClickAt(node) ?? false;
+    dispatchClickAt(node?: ConsoleNode, optionIndex?: number): boolean {
+        return this.surface?.dispatchClickAt(node, optionIndex) ?? false;
     }
 
     dispatchMouse?(mouse: SelectMenuMouseEvent): boolean {
@@ -1259,11 +1266,13 @@ export class TuiTerminalSurface {
                         : segment.text).join(''));
     }
 
-    dispatchClickAt(node?: ConsoleNode): boolean {
+    dispatchClickAt(node?: ConsoleNode, optionIndex?: number): boolean {
         if (this.destroyed || !node?.dispatchEvent) {
             return false;
         }
-        node.dispatchEvent({ type: 'click', target: node } as unknown as Event);
+        node.dispatchEvent(optionIndex == null
+            ? { type: 'click', target: node } as unknown as Event
+            : { type: 'select-option', target: node, optionIndex } as unknown as Event);
         return true;
     }
 
@@ -1299,7 +1308,7 @@ export class TuiTerminalSurface {
             }
             const target = this.hitTest(mouse.x, mouse.y);
             const element = target?.node as ConsoleElement | undefined;
-            const dispatched = this.dispatchClickAt(target?.node);
+            const dispatched = this.dispatchClickAt(target?.node, target?.optionIndex);
             this.clearTerminalSelection();
             return !!element?.focusable || dispatched;
         }

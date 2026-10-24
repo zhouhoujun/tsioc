@@ -1590,3 +1590,16 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **验证**：`menu-i18n.spec.ts` 8 条（model/theme/settings/language/skills + 英文 fallback）；`agent-cli` 新增真实 `runAgentTUI` 集成用例断言 store 能写/读 `settings.json`。agent-ui **1654 passing**、agent-cli **85 passing**；全量 gate **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY 验收 **10/10 PASS**；source-size（拆分 i18n catalog 后两文件均达标）、tsc ×4、diff-check 全部通过。
 - **真实 TUI（zh-CN）**：`/model` → `3 个已配置模型 / 4 个已配置模型 / 添加提供方`；`/theme` → `当前主题 / 应用并保存`；`/settings` → `常规 / 快捷键 / 提供方`，General 行与 Keybinds 子菜单中文；`/skills` → `标题 / 摘要 / 别名`；`/tools` hint → `上/下 移动   pg 跳转   回车 激活   y 复制   esc`。
 - **仍为英文（后续）**：`AgentConsoleProviderWizard.ts` 的步骤 label/help/选项描述（向导主体），`/tools` 的 `status inactive · activation deferred · toolset …` 状态词，以及技能/连接器元数据（数据本身）；品牌名（DeepSeek/OpenAI 等）保留原文。
+
+## 2026-10-24 菜单鼠标点击 + `/tools` 状态中文化
+- **真实缺陷**：TUI 菜单行能渲染、键盘可用，但**鼠标点击任何选项都无效**。`select` 只产出整块 `select-core` 命中区，没有行级信息；`dispatchClickAt` 也只分发通用 `click`，select 上没有处理器。
+- **修复（components/console）**：
+  - `TerminalClickTarget` 新增 `optionIndex`；`tui.ts` 的 `select` 分支为每个可见选项行输出一个 `interactive: 'pointer'` 命中区，携带**绝对选项下标**。
+  - `TuiTerminalSurface.dispatchClickAt(node, optionIndex)` 对行命中分发 `select-option` 自定义事件（带 `optionIndex`），其余仍为 `click`；`dispatchMouse` 释放时把命中区的下标传入。
+  - 修复 block 容器转发子命中区时逐字段重建、**丢弃 `optionIndex`** 的问题，改为 `{ ...target, x, y }` 保留元数据。
+  - `AgentConsoleSelectPanelComponent` 增加 `@select-option="onSelectOption($event)"`，按绝对下标确认该行。
+- **真实 TUI 复核**：`/model` 鼠标点击 `deepseek` → 打开其模型列表；再点击 `deepseek/deepseek-chat` → `Switched model profile to deepseek/deepseek-chat.`，状态栏与命令收敛正常。
+- **`/tools` 状态中文化**：抽出 `AgentConsoleToolPanelText.ts`（避免 `AgentConsolePanels.ts` 超过 4177 baseline，实际降到 4169），本地化 `工具 64 · 1/64`、`[未激活]`、`状态：… · 激活方式：… · 工具集：…`、`上次运行 …`。
+- **测试**：新增 `select-menu-mouse.spec.ts`（2 条：点击首行/第二行确认对应选项，走真实 `dispatchMouse` press/release 路径）；`menu-i18n.spec.ts` 增加 tools 文本用例（共 9 条）。components/console **100 passing**、components/common 21、components/html 124、agent-ui **1657 passing**。
+- **门禁**：全量 gate **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY 验收 **10/10 PASS**；source-size、tsc ×4、diff-check 全部通过。
+- **仍待处理**：`/provider` 向导主体（步骤 label/help/选项描述）仍为英文，需要把 translator 穿透到 `AgentConsoleProviderWizard.ts` 的纯函数；品牌名保留原文。
