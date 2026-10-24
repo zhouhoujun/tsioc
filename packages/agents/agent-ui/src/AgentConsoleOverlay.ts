@@ -146,8 +146,16 @@ export class AgentConsoleOverlayController {
 
     resolveMenuKey(key: string, text: string, optionCount: number): AgentConsoleOverlayKeyDecision {
         const raw = String(key || text || '');
-        // The terminal delivers Tab as a bare `\t` without a control key.
-        const keyName = raw === '\t' ? 'tab' : raw;
+        // The TUI decoder groups plain characters into one text run, so a bare
+        // Enter/Tab arrives as `\r`/`\n`/`\t` *without* a control key while the
+        // arrow keys (ESC sequences) keep theirs. Without this normalization a
+        // blocking menu (the `/model` provider picker) swallowed Enter as
+        // `menuBlocked` and could only be dismissed with Escape.
+        const keyName = raw === '\t'
+            ? 'tab'
+            : (raw === '\r' || raw === '\n')
+                ? 'return'
+                : raw;
         if (keyName === 'down') {
             return { action: 'move', delta: 1 };
         }

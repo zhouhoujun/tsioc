@@ -1550,3 +1550,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **回归测试**：新增 `tool-row-format.spec.ts`（5）、`approval-input-display.spec.ts`（6）；扩展 `p411-resume-tool-rows.spec.ts`（回放与活行同形状、不重复对象）、`p409-preamble-done-footer.spec.ts`（toolCalls / finishReason 不输出 footer）、`p300-timeline-event-presenter.spec.ts`（重复对象去重）。agent-ui **1638 passing**。
 - **真实 TUI 复核**：新会话 `✓ Read file · README.md (12ms)` → 纯文本最终回答，无 `Context ·` / `Tool · ` / 中途 `Worked for`；`--session chatae0e8ce6…` 恢复后同一行仍是 `✓ Read file · README.md (12ms)`，仅最终回答下方有 `Worked for 3s · done 11:31`；长会话 `chat0a372b…` 恢复行全部为 `✓ Read file · <path> (truncated)`。
 - **门禁**：`bash scripts/agents-gate.sh` → **26 PASS / 1 SKIP**（PTY 为 opt-in，EXIT=0，03:16Z）；`source-size`、`git diff --check`、production DB 完整性均通过。
+
+## 2026-10-24 修复 `/model` 菜单回车不生效（真实 TUI）
+- **现象**：真实 TUI 输入 `/model` → 回车提示补全为 `/model ` → 再回车弹出 provider 菜单；`↑/↓` 能移动高亮，但 **Enter 完全无反应**，只能 Esc 关闭。模型选择链路（provider → model → 切换）因此走不通。
+- **根因（真实边界）**：`components/console` 的 `TerminalInputSequenceDecoder.decodeAll` 把普通字符合并成一次 text run，所以 Enter 到达时为 `{ text: '\r' }`（无 `controlKey`），而方向键是 ESC 序列、自带 `controlKey`。`processDecodedInput` 用 `controlKey || ''` 调 `handleMenuInput`，`resolveMenuKey` 只认 `'return'`/`'tab'`，于是返回 `none` → `hasBlockingSelectMenu()` 命中 → 返回 `menuBlocked`，Enter 被吞。suggestion 菜单不是 blocking 菜单，所以历史上回车还能经 composer 路径工作，掩盖了问题；Tab 在 blocking 菜单里同样被吞。
+- **修复**：`AgentConsoleOverlayController.resolveMenuKey` 把裸 `\r`/`\n` 归一化为 `'return'`、`\t` 归一化为 `'tab'`，与浏览器端的 `event.key` 路径一致。只影响菜单按键解析，不改动 composer/paste 语义。
+- **RED/GREEN**：新用例 `select-menu-tui-enter.spec.ts` 走 `component.handleTerminalInput({ text: '\r' })` 真实终端边界；旧实现稳定失败（selectAsync 一直 `pending`、`menuBlocked`），修复后返回高亮项；另覆盖 `/model` smart-run（首次回车补全 `/model ` 不执行）与 Tab 补全。`overlay-controller.spec.ts` 补充裸 CR/LF 单元断言。agent-ui **1641 passing**。
+- **真实 TUI 复核**：`/model` → Enter（补全）→ Enter（provider 菜单）→ ↓ deepseek → Enter（4 个模型列表）→ ↓ deepseek-reasoner → Enter → 状态栏变 `deepseek-reasoner · deepseek/deepseek-reasoner` 并提示 `Switched model profile to deepseek/deepseek-reasoner.`，命令以 `$ /model completed` 收敛。
+- **PTY 验收同步**：场景 9/10 仍断言统一前的 `Tool · … completed` 旧行形状，`RUN_PTY=1` 首次暴露 2 个失败。已把 `_read_file_rows` 与等待模式更新为 `Read file · <path>`，成功判定改用 `✓` glyph；`RUN_PTY=1 bash scripts/agents-gate.sh pty-acceptance` → **PASS**（10/10 场景）。
+- **门禁**：全量 `bash scripts/agents-gate.sh` → **26 PASS / 1 SKIP**（EXIT=0）；tsc ×4、Web build、DOM/TUI gate、source-size、diff-check、production DB 完整性与单独 PTY acceptance 全部通过。
+- 备注：`/model` 在注册表中是 `needsArgs`，因此 suggestion 上第一次 Enter 只补全为 `/model `（smart-run），第二次 Enter 才执行并打开菜单；这是既有设计。如希望 `/model` 一次回车直接打开菜单，需要调整该命令的 `needsArgs` 与对应 registry 测试。

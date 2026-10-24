@@ -112,6 +112,10 @@ export class AgentConsoleOverlayControllerTest {
         expect(controller.resolveMenuKey('9', '', 3)).toEqual({ action: 'digit-consume' });
         expect(controller.resolveMenuKey('x', '', 3)).toEqual({ action: 'none' });
         expect(controller.resolveMenuKey('', 'down', 3)).toEqual({ action: 'move', delta: 1 });
+        // The TUI decoder delivers a bare Enter as plain text (`\r`/`\n`)
+        // without a control key; it must still accept the highlighted option.
+        expect(controller.resolveMenuKey('', '\r', 3)).toEqual({ action: 'accept' });
+        expect(controller.resolveMenuKey('', '\n', 3)).toEqual({ action: 'accept' });
     }
 
     @Test('disabled options are reported and enabled-index scanning works')

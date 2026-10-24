@@ -889,13 +889,14 @@ def _norm_line(s: str) -> str:
 
 
 def _read_file_rows(text: str) -> list:
-    # `Tool ·` excludes the `Working ... Tool call: Read file: x` status line,
-    # which names the tool but is not a row.
+    # Live tool rows read `<glyph> Read file · <path>` (unified with replay and
+    # the local event bridge); the `Working ... Read file completed · 0 tokens`
+    # status line carries no `read file · ` separator and is not a row.
     out = []
     for line in text.splitlines():
         s = _norm_line(line)
         sl = s.lower()
-        if 'tool ·' in sl and 'read file' in sl:
+        if 'read file ·' in sl or ('read file' in sl and re.search(r'\(\d+ms\)', s)):
             out.append(s)
     return out
 
@@ -914,8 +915,8 @@ def scenario_tool_row_identity_v88(pid: int, fd: int, screen: Screen) -> bool:
 
     pending = wait_for(
         fd, screen,
-        [r'Tool · [^\n]*read file[^\n]*README\.md',
-         r'Tool · [^\n]*read file[^\n]*package\.json'],
+        [r'read file · [^\n]*README\.md',
+         r'read file · [^\n]*package\.json'],
         timeout=TIMEOUT, settle=2.0, quiet_window=2.0, tail_from=mark)
     if not pending:
         print('[FAIL] scenario 9: no per-invocation read_file rows rendered')
@@ -937,8 +938,8 @@ def scenario_tool_row_identity_v88(pid: int, fd: int, screen: Screen) -> bool:
 
     done = wait_for(
         fd, screen,
-        [r'Tool · read file completed[^\n]*README\.md',
-         r'Tool · read file completed[^\n]*package\.json'],
+        [r'✓ read file · [^\n]*README\.md',
+         r'✓ read file · [^\n]*package\.json'],
         timeout=TIMEOUT, settle=2.0, quiet_window=2.0, tail_from=mark)
     if not done:
         print('[FAIL] scenario 9: completions never rendered')
@@ -969,10 +970,11 @@ def scenario_tool_row_identity_v88(pid: int, fd: int, screen: Screen) -> bool:
     if any('+1 more' in r for r in rows):
         print(f'[FAIL] scenario 9: batch "+N more" collapse regressed: {rows!r}')
         return False
-    if not any('completed' in r and V88_PATHS[0] in r for r in readme_rows):
+    # Success is carried by the `✓` glyph, not a `completed` word.
+    if not any('✓' in r and V88_PATHS[0] in r for r in readme_rows):
         print(f'[FAIL] scenario 9: {V88_PATHS[0]} never completed: {readme_rows!r}')
         return False
-    if not any('completed' in r and V88_PATHS[1] in r for r in json_rows):
+    if not any('✓' in r and V88_PATHS[1] in r for r in json_rows):
         print(f'[FAIL] scenario 9: {V88_PATHS[1]} never completed: {json_rows!r}')
         return False
 
@@ -1008,8 +1010,8 @@ def scenario_narration_separation_v84(pid: int, fd: int, screen: Screen) -> bool
 
     rows_ready = wait_for(
         fd, screen,
-        [r'Tool · [^\n]*read file[^\n]*README\.md',
-         r'Tool · [^\n]*read file[^\n]*package\.json'],
+        [r'read file · [^\n]*README\.md',
+         r'read file · [^\n]*package\.json'],
         timeout=TIMEOUT, settle=2.0, quiet_window=2.0, tail_from=mark)
     if not rows_ready:
         print('[FAIL] scenario 10: no per-step read_file rows rendered')
