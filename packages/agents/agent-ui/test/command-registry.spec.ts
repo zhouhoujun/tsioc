@@ -26,16 +26,10 @@ const GROUP_COUNTS: Record<string, number> = {
 };
 
 const NEEDS_ARGS_COMMANDS = [
-    '/model',
-    '/fast',
-    '/archetype',
     '/unshare',
     '/title',
     '/search',
-    '/snapshot',
-    '/cd',
-    '/diff',
-    '/personality'
+    '/cd'
 ];
 
 @Suite('Agent console command registry')
@@ -140,7 +134,7 @@ export class AgentConsoleCommandRegistryTest {
         expect(new Set(values).size).toEqual(values.length);
     }
 
-    @Test('smart-run: needsArgs command injects and waits, no-arg command submits')
+    @Test('smart-run: required-argument commands wait, optional-argument commands execute')
     async smartRunRespectsNeedsArgs() {
         const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         let submitCount = 0;
@@ -148,17 +142,26 @@ export class AgentConsoleCommandRegistryTest {
             submitCount += 1;
         };
 
-        state.setInput('/mod');
-        const needsArgsResult = await state.acceptSelectMenu('/model');
+        // `/search` requires a query: Enter completes it and waits.
+        state.setInput('/sea');
+        const needsArgsResult = await state.acceptSelectMenu('/search');
         expect(needsArgsResult.submitted).toEqual(false);
-        expect(state.input).toEqual('/model ');
+        expect(state.input).toEqual('/search ');
         expect(submitCount).toEqual(0);
+
+        // `/model` has a meaningful no-argument form (open the switcher):
+        // Enter must execute it, exactly like `/help`.
+        state.setInput('/mod');
+        const modelResult = await state.acceptSelectMenu('/model');
+        expect(modelResult.submitted).toEqual(true);
+        expect(state.input).toEqual('/model ');
+        expect(submitCount).toEqual(1);
 
         state.setInput('/he');
         const noArgsResult = await state.acceptSelectMenu('/help');
         expect(noArgsResult.submitted).toEqual(true);
         expect(state.input).toEqual('/help ');
-        expect(submitCount).toEqual(1);
+        expect(submitCount).toEqual(2);
     }
 
     @Test('smart-run: external injected hints keep legacy submit behavior')

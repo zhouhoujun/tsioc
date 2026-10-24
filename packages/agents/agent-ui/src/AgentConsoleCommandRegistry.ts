@@ -101,9 +101,9 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/help', description: 'show command help, grouped by category', group: 'core' },
 
     { name: '/status', description: 'show session status', group: 'core' },
-    { name: '/model', description: 'switch model or queue next-turn profile', group: 'core', needsArgs: true, args: [{ name: 'profile', variadic: true }] },
+    { name: '/model', description: 'switch model or queue next-turn profile', group: 'core', args: [{ name: 'profile', variadic: true }] },
     { name: '/provider', description: 'add a new AI provider with the guided wizard', group: 'core', aliases: ['/connect'] },
-    { name: '/fast', description: 'switch to fast/strong model profile: /fast [profile]', group: 'core', needsArgs: true, args: [{ name: 'profile' }] },
+    { name: '/fast', description: 'switch to fast/strong model profile: /fast [profile]', group: 'core', args: [{ name: 'profile' }] },
     { name: '/tools', description: 'inspect the currently enabled tools: /tools [<name>]', group: 'core', args: [{ name: 'name' }] },
     { name: '/skills', description: 'browse skills: /skills [query | <id>]', group: 'core', args: [{ name: 'query', variadic: true }] },
     { name: '/mcp', description: 'list MCP servers and tools: /mcp [verbose]', group: 'core', args: [{ name: 'mode', type: 'enum', values: ['verbose', '-v'] }] },
@@ -131,7 +131,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/undo', description: 'revert the last file change', group: 'core' },
     { name: '/redo', description: 're-apply the last undone file change', group: 'core' },
     { name: '/copy', description: 'copy reply', group: 'core', args: [{ name: 'target', type: 'enum', values: ['input', 'workspace', 'session', 'model'] }] },
-    { name: '/archetype', description: 'switch session archetype: /archetype [build|plan|review|name]', group: 'core', needsArgs: true, args: [{ name: 'name' }] },
+    { name: '/archetype', description: 'switch session archetype: /archetype [build|plan|review|name]', group: 'core', args: [{ name: 'name' }] },
     { name: '/plan', description: 'toggle read-only plan mode (write tools denied)', group: 'core', args: [{ name: 'mode', type: 'enum', values: ['on', 'off', '1', '0', 'true', 'false'] }] },
 
     { name: '/sessions', description: 'sessions', group: 'session' },
@@ -152,7 +152,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/threadreview', description: 'thread coding task review', group: 'session' },
     { name: '/projects', description: 'browse sessions by project: /projects [<id>]', group: 'session' },
     { name: '/search', description: 'search sessions: /search <query>', group: 'session', needsArgs: true, args: [{ name: 'query', required: true, variadic: true }] },
-    { name: '/snapshot', description: 'snapshot current session: /snapshot [label]', group: 'session', needsArgs: true, args: [{ name: 'label' }] },
+    { name: '/snapshot', description: 'snapshot current session: /snapshot [label]', group: 'session', args: [{ name: 'label' }] },
     { name: '/snapshots', description: 'list / restore / delete session snapshots', group: 'session' },
     { name: '/git-snapshots', description: 'git step snapshots: list / diff <ref> / revert <messageId> / unrevert', group: 'session', args: [{ name: 'operation', type: 'enum', values: ['list', 'diff', 'revert', 'restore', 'unrevert'] }, { name: 'arg', variadic: true }] },
     { name: '/messages', description: 'messages', group: 'session' },
@@ -185,7 +185,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
 
     // Review owns an extensible subcommand grammar, so keep its tail variadic.
     { name: '/review', description: 'coding task review', group: 'review', args: [{ name: 'command', variadic: true }] },
-    { name: '/diff', description: 'worktree diff: /diff [--staged|--unstaged|--untracked|paths]', group: 'review', needsArgs: true, args: [{ name: 'pathOrFlag', variadic: true }] },
+    { name: '/diff', description: 'worktree diff: /diff [--staged|--unstaged|--untracked|paths]', group: 'review', args: [{ name: 'pathOrFlag', variadic: true }] },
     { name: '/approvals', description: 'approvals', group: 'review' },
     {
         name: '/approve',
@@ -203,7 +203,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
 
     { name: '/hooks', description: 'show registered lifecycle hooks (stages + shell commands + functions)', group: 'hooks' },
     { name: '/memories', description: 'memory injection: status / on / off', group: 'hooks', args: [{ name: 'verb', type: 'enum', values: ['list', 'injected', 'add', 'remove', 'rm', 'on', 'off'] }, { name: 'arg', variadic: true }] },
-    { name: '/personality', description: 'personality presets: list / set <name> / unset', group: 'hooks', needsArgs: true, args: [{ name: 'verb', type: 'enum', values: ['list', 'set', 'unset'] }, { name: 'name' }] },
+    { name: '/personality', description: 'personality presets: list / set <name> / unset', group: 'hooks', args: [{ name: 'verb', type: 'enum', values: ['list', 'set', 'unset'] }, { name: 'name' }] },
     { name: '/debug-config', description: 'show resolved config (model, profile, ui options, session)', group: 'hooks' },
 
     { name: '/delegation', description: 'delegation edges [sessionId]', group: 'delegation', args: [{ name: 'arg', variadic: true }], subcommands: [

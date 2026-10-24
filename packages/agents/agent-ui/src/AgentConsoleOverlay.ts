@@ -155,7 +155,12 @@ export class AgentConsoleOverlayController {
             ? 'tab'
             : (raw === '\r' || raw === '\n')
                 ? 'return'
-                : raw;
+                // A fast double-Esc coalesces into one alt-esc read; the pager
+                // already treats it as "close", so menus must too (otherwise
+                // pressing Esc twice quickly leaves the menu stuck).
+                : raw === '\u001b\u001b'
+                    ? 'escape'
+                    : raw;
         if (keyName === 'down') {
             return { action: 'move', delta: 1 };
         }

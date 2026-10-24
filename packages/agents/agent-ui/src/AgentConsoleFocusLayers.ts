@@ -103,6 +103,10 @@ export abstract class AgentConsoleFocusLayers {
         // trimming it to '' used to drop the key entirely (`enter open` did
         // nothing in the transcript/message focus layers).
         if (rawText === '\r' || rawText === '\n') return 'enter';
+        // Two fast Esc presses coalesce into one alt-esc read. The pager already
+        // closes on it; focus layers (sessions/jobs/outputs/...) must dismiss
+        // too instead of swallowing the key as an unknown alt sequence.
+        if (rawText === '\u001b\u001b') return 'escape';
         // Uppercase A = "always allow for this session"; plain `a` stays approve.
         if (rawText === 'A') return 'approve-always';
         const normalized = String(rawText || '').trim().toLowerCase();

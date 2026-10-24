@@ -1570,3 +1570,14 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **真实 TUI 复核**：上述 `/statusline list`、`/queue list`、`/stash list`、`/voice status` 均**一次回车**执行并输出结果；`/keymap li` 一次回车打开 keymap 列表；`/git-snapshots li` 一次回车输出 “No git step snapshots…”。`/provider` 引导的每个 choose/enter 步骤都能用 Enter 前进。
 - **门禁**：全量 `bash scripts/agents-gate.sh` → **26 PASS / 1 SKIP**（EXIT=0）；`RUN_PTY=1` PTY 验收 **PASS**（10/10 场景）；tsc ×4、Web build、DOM/TUI gate、source-size、diff-check、production DB 完整性全部通过。
 - 备注：`/model`、`/fast`、`/archetype`、`/diff`、`/search`、`/cd`、`/title`、`/snapshot`、`/unshare`、`/personality` 仍是注册表里的 `needsArgs`（第一次 Enter 补全为 `/cmd `、第二次执行）。其中 `/model`、`/fast`、`/archetype`、`/diff` 的无参形式本身有意义，如需“一次回车直接执行”需要调整 `needsArgs` 与 registry 测试，待确认。
+
+## 2026-10-24 菜单收尾：可选参数命令一次回车执行 + 快速双 Esc 关闭
+- **`needsArgs` 收紧**：只有“必须带参数”的命令才保留 smart-run。移除 `/model`、`/fast`、`/archetype`、`/diff`、`/snapshot`、`/personality` 的 `needsArgs`（它们的无参形式本身有明确动作：打开切换器 / 切换档位 / 列出 archetype / 查看 worktree diff / 创建快照 / 列出人格），保留 `/search`、`/cd`、`/title`、`/unshare`（缺参数无意义或具破坏性）。`shouldSubmitConfirmedSelectMenuValue` 继续用 `needsArgs` 判定，因此这些命令在建议菜单上**一次回车即执行**。
+- **真实 TUI 复核**：`/model` 一次回车直接打开 provider 菜单；`/diff` 输出 `No Working tree changes.`；`/personality`、`/archetype` 一次回车列出结果；`/search` 仍为第一次回车补全 `/search `、第二次回车给出 `Missing required argument <query>` 诊断。
+- **快速双 Esc 修复**：终端在两次 Esc 落在同一次 read 时会合并成 `\u001b\u001b`（alt-esc）。此前 select 菜单与焦点面板都把它当未知序列吞掉，实测连续按两次 Esc 后 provider 菜单仍停留、`$ /model running` 不收敛。修复点：
+  - `AgentConsoleOverlay.resolveMenuKey`：`\u001b\u001b` → `escape`；
+  - `AgentConsoleFocusLayers.resolveShortcutKey`：`\u001b\u001b` → `escape`（sessions/jobs/outputs/approval 等焦点层统一可关）；
+  - `processDecodedInput` 顶层 Esc 分支同时接受 `\u001b\u001b`（无菜单/焦点时与单 Esc 等价）。
+  - pager 本就按 `\u001b\u001b` 关闭，本次把同一约定补齐到菜单与焦点层。
+- **RED/GREEN**：`select-menu-tui-enter.spec.ts` 新增 3 条真实边界用例（可选参数命令一次回车执行、必需参数仍等待、双 Esc 关闭菜单/焦点面板），`overlay-controller.spec.ts` 补裸 `\u001b\u001b` 断言；旧实现双 Esc 两条用例稳定失败（菜单对象仍在、`commandOutputsOpen=true`），修复后通过。`command-registry.spec.ts` 的 `NEEDS_ARGS_COMMANDS` 与服务端 smart-run 用例同步更新。agent-ui **1646 passing**。
+- **门禁**：全量 `bash scripts/agents-gate.sh` → **26 PASS / 1 SKIP**（EXIT=0）；`RUN_PTY=1` PTY 验收 **PASS**（10/10）；tsc ×4、Web build、DOM/TUI gate、source-size、diff-check、production DB 完整性全部通过。

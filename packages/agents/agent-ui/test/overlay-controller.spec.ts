@@ -116,6 +116,8 @@ export class AgentConsoleOverlayControllerTest {
         // without a control key; it must still accept the highlighted option.
         expect(controller.resolveMenuKey('', '\r', 3)).toEqual({ action: 'accept' });
         expect(controller.resolveMenuKey('', '\n', 3)).toEqual({ action: 'accept' });
+        // A fast double-Esc arrives as one alt-esc read and must still close.
+        expect(controller.resolveMenuKey('', '\u001b\u001b', 3)).toEqual({ action: 'escape' });
     }
 
     @Test('disabled options are reported and enabled-index scanning works')

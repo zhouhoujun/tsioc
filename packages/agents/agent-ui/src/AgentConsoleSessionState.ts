@@ -6554,7 +6554,7 @@ export class AgentConsoleSessionState {
             }
         }
 
-        if (rawText === '\u001b' && (!controlKey || controlKey === 'escape')) {
+        if ((rawText === '\u001b' || rawText === '\u001b\u001b') && (!controlKey || controlKey === 'escape')) {
             if (this.vimMode && this.inputMode === 'insert') {
                 this.setInputMode('normal');
                 return { handled: true };
