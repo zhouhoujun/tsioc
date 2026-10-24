@@ -1,4 +1,4 @@
-import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentUiLabel, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 import { formatAgentConsoleApprovalInput } from './AgentConsoleApprovalInput';
 import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
 
@@ -35,7 +35,7 @@ export async function runApproveRetryCommand(host: AgentConsoleRpcCommandHost): 
             value: String(item.evidenceId || `${item.toolName}:${item.createdAt}`),
             description: String(item.falsificationReason || '')
         };
-    }), 0, 'enter retry once   esc close');
+    }), 0, formatAgentUiLabel(host.translator, 'agent.hint.enterRetryClose', 'enter retry once   esc close'));
     if (!selected) return true;
     try {
         await host.appRpc.request('harness.retry_rejected_action', {
@@ -145,7 +145,7 @@ export async function runUnshareCommand(host: AgentConsoleRpcCommandHost, args?:
             label: `${String(share.token || '').slice(0, 12)}…  ${String(share.url || '')}`,
             value: String(share.token || ''),
             description: new Date(Number(share.createdAt) || Date.now()).toLocaleString()
-        })), 0, 'enter revoke   esc close');
+        })), 0, formatAgentUiLabel(host.translator, 'agent.hint.enterRevokeClose', 'enter revoke   esc close'));
         if (!selected) return true;
         return host.revokeShare(selected);
     }

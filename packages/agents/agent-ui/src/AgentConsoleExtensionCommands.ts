@@ -1,5 +1,5 @@
 import { AgentConsoleAppAuthorizer, AgentConsoleAppStatus, resolveAgentConsoleApps } from './AgentConsoleApps';
-import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentUiLabel, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 export interface ExtensionCommandHost {
     translator?: AgentUiTranslator | null;
@@ -42,17 +42,17 @@ export async function runSkillsCommand(host: ExtensionCommandHost, args?: string
         host.pushCommandOutput(`/skills ${query}`, skills.map((skill: any) => formatSkillLine(skill)).join('\n'));
         return true;
     }
-    const selected = await host.select('Skills', skills.map((skill: any) => ({
+    const selected = await host.select(formatAgentUiLabel(host.translator, 'agent.menu.skills.title', 'Skills'), skills.map((skill: any) => ({
         label: `${skill.id}${String(skill.category || '').trim() ? ` [${skill.category}]` : ''}`,
         value: String(skill.id || ''),
         description: String(skill.summary || ''),
         detail: [
-            `Title: ${String(skill.title || skill.id || '-')}`,
-            String(skill.summary || '') ? `Summary: ${skill.summary}` : '',
-            Array.isArray(skill.aliases) && skill.aliases.length ? `Aliases: ${skill.aliases.join(', ')}` : '',
-            String(skill.source || '') ? `Source: ${skill.source}` : ''
+            formatAgentUiLabel(host.translator, 'agent.menu.skills.titleLabel', 'Title: {title}', { title: String(skill.title || skill.id || '-') }),
+            String(skill.summary || '') ? formatAgentUiLabel(host.translator, 'agent.menu.skills.summaryLabel', 'Summary: {summary}', { summary: skill.summary }) : '',
+            Array.isArray(skill.aliases) && skill.aliases.length ? formatAgentUiLabel(host.translator, 'agent.menu.skills.aliasesLabel', 'Aliases: {aliases}', { aliases: skill.aliases.join(', ') }) : '',
+            String(skill.source || '') ? formatAgentUiLabel(host.translator, 'agent.menu.skills.sourceLabel', 'Source: {source}', { source: skill.source }) : ''
         ].filter(Boolean).join('\n')
-    })), 0, 'enter detail   esc close');
+    })), 0, formatAgentUiLabel(host.translator, 'agent.hint.enterDetailClose', 'enter detail   esc close'));
     if (!selected) return true;
     const detail = await host.invokeTool('read_skill', { id: selected }).catch(() => undefined);
     host.pushCommandOutput(`/skills ${selected}`, detail?.skill
@@ -149,11 +149,11 @@ export async function runAppsCommand(host: ExtensionCommandHost, args?: string):
         insertAppMention(host, app);
         return true;
     }
-    const selected = await host.select('Apps', apps.map(app => ({
+    const selected = await host.select(formatAgentUiLabel(host.translator, 'agent.menu.apps.title', 'Apps'), apps.map(app => ({
         label: `${app.name} · ${app.statusLabel}`,
         value: app.id,
         description: `${app.category} · ${app.description}`
-    })), 0, 'enter insert   esc close');
+    })), 0, formatAgentUiLabel(host.translator, 'agent.hint.enterInsertClose', 'enter insert   esc close'));
     if (selected) {
         const app = apps.find(item => item.id === selected);
         if (app) insertAppMention(host, app);

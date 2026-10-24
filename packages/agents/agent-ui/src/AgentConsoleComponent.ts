@@ -2977,7 +2977,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     protected async openSettingsKeybindsTab(): Promise<boolean> {
         return openSettingsKeybindsTab(
             (title: string, options: any[], index: number, hint?: string) => this.select(title, options, index, hint),
-            (args: string) => this.runKeymapCommand(args)
+            (args: string) => this.runKeymapCommand(args), this.translator
         );
     }
 

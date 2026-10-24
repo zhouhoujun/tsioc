@@ -2,7 +2,7 @@ import { ExchangeMetricsSnapshot } from '@tsdi/agent';
 import { agentConsoleThemeNames } from './AgentConsoleTheme';
 import { defaultAgentConsoleStatusline, isAgentConsoleStatuslineField, normalizeAgentConsoleStatusline } from './AgentConsoleStatusline';
 import { defaultAgentConsoleTitle, isAgentConsoleTitleField, normalizeAgentConsoleTitle } from './AgentConsoleTitle';
-import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentUiLabel, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 export interface AgentConsoleRuntimeHost {
     translator?: AgentUiTranslator | null;
@@ -29,14 +29,16 @@ export async function runThemeCommand(host: AgentConsoleRuntimeHost, args?: stri
     const requested = String(args || '').trim().toLowerCase();
     if (!requested) {
         const selected = await host.select(
-            'Theme',
+            formatAgentUiLabel(host.translator, 'agent.menu.theme.title', 'Theme'),
             agentConsoleThemeNames.map(name => ({
                 label: `${name === host.activeThemeName ? '● ' : '  '}${name}`,
                 value: name,
-                description: name === host.activeThemeName ? 'active theme' : 'apply and save'
+                description: name === host.activeThemeName
+                    ? formatAgentUiLabel(host.translator, 'agent.menu.theme.active', 'active theme')
+                    : formatAgentUiLabel(host.translator, 'agent.menu.theme.apply', 'apply and save')
             })),
             Math.max(0, agentConsoleThemeNames.indexOf(host.activeThemeName as any)),
-            'enter apply   esc cancel'
+            formatAgentUiLabel(host.translator, 'agent.hint.enterApplyCancel', 'enter apply   esc cancel')
         );
         if (!selected) return true;
         return host.applyTheme(selected);

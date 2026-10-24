@@ -11,7 +11,7 @@ import { TuiConsoleModule } from '@tsdi/components/console';
 import { MemoryStore, SessionStore, AGENT_OPTIONS, AgentHookCommandExecutor, AgentRuntime, mergeAgentOptions, provideAgentOrmStorage } from '@tsdi/agent';
 import { AgentAppServerModule } from '@tsdi/agent-gateway';
 import { provideTools } from '@tsdi/agent-tools';
-import { AgentConsoleComponent, AgentUiConfigService } from '@tsdi/agent-ui';
+import { AgentConsoleComponent, AgentConsoleSettingsStore, AgentUiConfigService } from '@tsdi/agent-ui';
 import { runAgentTUI } from '@tsdi/agent-ui/console';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import {
@@ -259,6 +259,28 @@ export class AgentCliTest {
         expect((resolved.channels.registration?.items as any).wechat).toBe(true);
         expect((resolved.channels.registration?.groups as any).wechat).toBe(undefined);
         expect(resolved.channels.defaultChannel).toBe('local');
+    }
+
+    @Test('TUI file stores receive the host FileAdapter so settings persist')
+    async tuiFileStoresPersist() {
+        const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-agent-store-'));
+        const workspace = path.join(root, 'workspace');
+        fs.mkdirSync(workspace, { recursive: true });
+        const booted = await this.bootSimulatedChat({ workspace, root });
+        try {
+            // Real TUI finding: module-level store providers could not see the
+            // host FileAdapter, so `@Optional()` left every store without one
+            // and `/settings`, `/theme`, `/keymap` saves silently no-opped.
+            const store = booted.ctx.get(AgentConsoleSettingsStore);
+            await store.save(workspace, { language: 'zh-CN' });
+            const file = path.join(workspace, '.tsdi-agent', 'settings.json');
+            expect(fs.existsSync(file)).toBe(true);
+            expect(JSON.parse(fs.readFileSync(file, 'utf8')).language).toEqual('zh-CN');
+            expect((await store.load(workspace)).language).toEqual('zh-CN');
+        } finally {
+            await booted.close();
+            fs.rmSync(root, { recursive: true, force: true });
+        }
     }
 
     @Test('resolves workspace settings without implicitly resuming the configured session')

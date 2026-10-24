@@ -11,7 +11,11 @@
 import { AgentConsoleSelectOption } from './AgentConsoleSessionState';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
 import { AgentOptions } from '@tsdi/agent';
-import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentUiLabel, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+
+function menuLabel(ctx: ModelHandlerContext, key: string, fallback: string, params?: Record<string, any>): string {
+    return formatAgentUiLabel(ctx.translator, key, fallback, params);
+}
 
 export type EffortLevel = 'low' | 'medium' | 'high' | 'max';
 
@@ -94,16 +98,20 @@ export function getModelProfileOptions(ctx: ModelHandlerContext): AgentConsoleSe
         const merged = resolveModelProfileConfig(ctx, name);
         const selected = currentProfile === name;
         return {
-            label: selected ? `${name} [current]` : name,
+            label: selected ? `${name} ${menuLabel(ctx, 'agent.menu.model.current', '[current]')}` : name,
             value: name,
             description: [merged.provider, merged.model].filter(Boolean).join(' / '),
             detail: [
-                `Profile: ${name}`,
-                `Provider: ${merged.provider || '-'}`,
-                `Model: ${merged.model || '-'}`,
-                merged.baseUrl ? `Base URL: ${merged.baseUrl}` : '',
-                profile?.reasoning != null ? `Reasoning: ${profile.reasoning ? 'on' : 'off'}` : '',
-                profile?.thinkingBudget != null ? `Thinking budget: ${profile.thinkingBudget}` : ''
+                menuLabel(ctx, 'agent.menu.model.profile', 'Profile: {name}', { name }),
+                menuLabel(ctx, 'agent.menu.model.provider', 'Provider: {name}', { name: merged.provider || '-' }),
+                menuLabel(ctx, 'agent.menu.model.model', 'Model: {name}', { name: merged.model || '-' }),
+                merged.baseUrl ? menuLabel(ctx, 'agent.menu.model.baseUrl', 'Base URL: {url}', { url: merged.baseUrl }) : '',
+                profile?.reasoning != null ? menuLabel(ctx, 'agent.menu.model.reasoning', 'Reasoning: {state}', {
+                    state: profile.reasoning
+                        ? menuLabel(ctx, 'agent.menu.model.reasoningOn', 'on')
+                        : menuLabel(ctx, 'agent.menu.model.reasoningOff', 'off')
+                }) : '',
+                profile?.thinkingBudget != null ? menuLabel(ctx, 'agent.menu.model.thinkingBudget', 'Thinking budget: {budget}', { budget: profile.thinkingBudget }) : ''
             ].filter(Boolean).join('\n')
         };
     });
@@ -114,17 +122,23 @@ export async function loadModelProfileOptions(ctx: ModelHandlerContext): Promise
         const profiles = await ctx.appRpc.request('model.list');
         const options: AgentConsoleSelectOption[] = Array.isArray(profiles)
             ? profiles.map((profile: any) => ({
-                label: profile?.selected ? `${profile.name} [current]` : String(profile?.name || ''),
+                label: profile?.selected ? `${profile.name} ${menuLabel(ctx, 'agent.menu.model.current', '[current]')}` : String(profile?.name || ''),
                 value: String(profile?.name || ''),
                 description: [profile?.provider, profile?.model].filter(Boolean).join(' / '),
                 detail: [
-                    `Profile: ${profile?.name || '-'}`,
-                    `Provider: ${profile?.provider || '-'}`,
-                    `Model: ${profile?.model || '-'}`,
-                    profile?.baseUrl ? `Base URL: ${profile.baseUrl}` : '',
-                    profile?.reasoning != null ? `Reasoning: ${profile.reasoning ? 'on' : 'off'}` : '',
-                    profile?.thinkingBudget != null ? `Thinking budget: ${profile.thinkingBudget}` : ''
-                    ,profile?.capabilities ? `Capabilities: ${Object.entries(profile.capabilities).filter(([, enabled]) => enabled === true || enabled === 'full' || enabled === 'partial').map(([name]) => name).join(', ')}` : ''
+                    menuLabel(ctx, 'agent.menu.model.profile', 'Profile: {name}', { name: profile?.name || '-' }),
+                    menuLabel(ctx, 'agent.menu.model.provider', 'Provider: {name}', { name: profile?.provider || '-' }),
+                    menuLabel(ctx, 'agent.menu.model.model', 'Model: {name}', { name: profile?.model || '-' }),
+                    profile?.baseUrl ? menuLabel(ctx, 'agent.menu.model.baseUrl', 'Base URL: {url}', { url: profile.baseUrl }) : '',
+                    profile?.reasoning != null ? menuLabel(ctx, 'agent.menu.model.reasoning', 'Reasoning: {state}', {
+                        state: profile.reasoning
+                            ? menuLabel(ctx, 'agent.menu.model.reasoningOn', 'on')
+                            : menuLabel(ctx, 'agent.menu.model.reasoningOff', 'off')
+                    }) : '',
+                    profile?.thinkingBudget != null ? menuLabel(ctx, 'agent.menu.model.thinkingBudget', 'Thinking budget: {budget}', { budget: profile.thinkingBudget }) : ''
+                    ,profile?.capabilities ? menuLabel(ctx, 'agent.menu.model.capabilities', 'Capabilities: {names}', {
+                        names: Object.entries(profile.capabilities).filter(([, enabled]) => enabled === true || enabled === 'full' || enabled === 'partial').map(([name]) => name).join(', ')
+                    }) : ''
                 ].filter(Boolean).join('\n')
             })).filter((item: AgentConsoleSelectOption) => !!item.value)
             : [];
@@ -144,9 +158,12 @@ export async function loadModelProfileOptions(ctx: ModelHandlerContext): Promise
                     value,
                     description: [provider, id].filter(Boolean).join(' / '),
                     detail: [
-                        `Provider: ${provider || '-'}`,
-                        `Model: ${id}`,
-                        levels.length ? `Effort: ${levels.join(', ')}${entry?.effort?.defaultLevel ? ` (default ${entry.effort.defaultLevel})` : ''}` : ''
+                        menuLabel(ctx, 'agent.menu.model.provider', 'Provider: {name}', { name: provider || '-' }),
+                        menuLabel(ctx, 'agent.menu.model.model', 'Model: {name}', { name: id }),
+                        levels.length ? menuLabel(ctx, 'agent.menu.model.effort', 'Effort: {levels} (default {default})', {
+                            levels: levels.join(', '),
+                            default: entry?.effort?.defaultLevel || '-'
+                        }) : ''
                     ].filter(Boolean).join('\n')
                 });
             }
@@ -169,19 +186,21 @@ export async function openModelSwitcher(ctx: ModelHandlerContext): Promise<void>
     const options: AgentConsoleSelectOption[] = [...groups.entries()].map(([provider, entries]) => ({
         label: provider,
         value: `__provider__:${provider}`,
-        description: `${entries.length} configured model${entries.length === 1 ? '' : 's'}`
+        description: entries.length === 1
+            ? menuLabel(ctx, 'agent.menu.model.configuredOne', '{count} configured model', { count: entries.length })
+            : menuLabel(ctx, 'agent.menu.model.configuredMany', '{count} configured models', { count: entries.length })
     }));
     options.push({
-        label: 'Add new provider',
+        label: menuLabel(ctx, 'agent.menu.model.addProvider', 'Add new provider'),
         value: '__add_provider__',
-        description: 'Configure another provider connection',
-        detail: 'Opens the guided add-provider wizard.'
+        description: menuLabel(ctx, 'agent.menu.model.addProviderDescription', 'Configure another provider connection'),
+        detail: menuLabel(ctx, 'agent.menu.model.addProviderDetail', 'Opens the guided add-provider wizard.')
     });
     if (!options.length) {
         ctx.notify(formatAgentUiNotice(ctx.translator, 'modelProfilesConfigured'));
     }
     const selected = await ctx.select(
-        'Model providers',
+        menuLabel(ctx, 'agent.menu.model.title', 'Model providers'),
         options,
         0
     );
@@ -197,12 +216,13 @@ export async function openModelSwitcher(ctx: ModelHandlerContext): Promise<void>
     const modes: AgentConsoleSelectOption[] = [];
     if (hasTiers) {
         for (const mode of ['auto', 'fast', 'balanced', 'strong'] as const) {
+            const modeLabelKey = `agent.menu.model.mode${mode.charAt(0).toUpperCase()}${mode.slice(1)}`;
             modes.push({
-                label: mode,
+                label: menuLabel(ctx, modeLabelKey, mode),
                 value: mode,
                 description: mode === 'auto'
-                    ? 'Agent selects a model from request complexity'
-                    : entries.find(entry => tierOf(entry.value) === mode)?.description || 'Not configured'
+                    ? menuLabel(ctx, 'agent.menu.model.autoDescription', 'Agent selects a model from request complexity')
+                    : entries.find(entry => tierOf(entry.value) === mode)?.description || menuLabel(ctx, 'agent.menu.model.notConfigured', 'Not configured')
             });
         }
     }
@@ -214,7 +234,7 @@ export async function openModelSwitcher(ctx: ModelHandlerContext): Promise<void>
         ctx.notify(formatAgentUiNotice(ctx.translator, 'providerHasNoModels', { provider: provider }));
         return;
     }
-    const mode = await ctx.select(`${provider} · model`, modes, 0);
+    const mode = await ctx.select(menuLabel(ctx, 'agent.menu.model.listTitle', '{provider} · model', { provider }), modes, 0);
     if (!mode) return;
     if (mode === 'auto') {
         const fast = entries.find(entry => tierOf(entry.value) === 'fast')?.value;
@@ -250,14 +270,22 @@ async function pickModelEffort(ctx: ModelHandlerContext, name: string): Promise<
         return defaultLevel;
     }
     const options: AgentConsoleSelectOption[] = [
-        { label: 'default', value: 'default', description: defaultLevel ? `provider default: ${defaultLevel}` : 'provider default' },
+        {
+            label: menuLabel(ctx, 'agent.menu.model.effortDefault', 'default'),
+            value: 'default',
+            description: defaultLevel
+                ? menuLabel(ctx, 'agent.menu.model.providerDefaultLevel', 'provider default: {level}', { level: defaultLevel })
+                : menuLabel(ctx, 'agent.menu.model.providerDefault', 'provider default')
+        },
         ...levels.map(level => ({
             label: level,
             value: level,
-            description: level === defaultLevel ? 'default level' : 'reasoning effort'
+            description: level === defaultLevel
+                ? menuLabel(ctx, 'agent.menu.model.effortDefault', 'default')
+                : menuLabel(ctx, 'agent.menu.model.reasoningEffort', 'reasoning effort')
         }))
     ];
-    const selected = await ctx.select(`Reasoning effort · ${id}`, options, 0);
+    const selected = await ctx.select(menuLabel(ctx, 'agent.menu.model.effortTitle', 'Reasoning effort · {id}', { id }), options, 0);
     if (!selected || selected === 'default') {
         return undefined;
     }

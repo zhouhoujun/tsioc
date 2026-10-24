@@ -3,6 +3,7 @@ import { AGENT_UI_NOTICE_EN } from './agent-ui.i18n.notice.en';
 import { AGENT_UI_NOTICE_ZH } from './agent-ui.i18n.notice.zh';
 import { AGENT_UI_ERROR_EN, AGENT_UI_ERROR_ZH } from './agent-ui.i18n.error';
 import { AGENT_UI_TOOL_LABELS_EN, AGENT_UI_TOOL_LABELS_ZH } from './agent-ui.i18n.tools';
+import { AGENT_UI_HINT_EN, AGENT_UI_HINT_ZH, AGENT_UI_MENU_EN, AGENT_UI_MENU_ZH } from './agent-ui.i18n.menu';
 
 export interface AgentUiTranslator {
     translate(key: string, params?: any): string | undefined;
@@ -20,8 +21,15 @@ const AGENT_UI_ERROR_KEYS = new Set(Object.keys(AGENT_UI_ERROR_EN));
  * template when the key is missing (the translator echoes missing keys).
  */
 export function formatAgentUiLabel(translator: AgentUiTranslator | null | undefined, key: string, fallback: string, params?: Record<string, any>): string {
-    const value = translator?.translate(key, params);
-    return value && value !== key ? value : fallback;
+    // Hosts/tests may inject a partial translator (e.g. locale plumbing only);
+    // never call a missing `translate`.
+    const value = typeof translator?.translate === 'function' ? translator.translate(key, params) : undefined;
+    if (value && value !== key) {
+        return value;
+    }
+    // The English fallback can carry {placeholders} too (some hosts have no
+    // translator at all), so interpolate it instead of leaking raw braces.
+    return params ? agentUiFormatter.format(fallback, params, 'en') : fallback;
 }
 
 /**
@@ -128,6 +136,8 @@ export const agentUiEnglish: TranslationBundle = {
                 label: 'Command',
                 status: { running: 'running', completed: 'completed', cancelled: 'cancelled', failed: 'failed' }
             },
+            hint: AGENT_UI_HINT_EN,
+            menu: AGENT_UI_MENU_EN,
             context: {
                 strategy: 'context {strategy}',
                 level: 'level {level}',
@@ -371,6 +381,8 @@ export const agentUiChinese: TranslationBundle = {
                 label: '命令',
                 status: { running: '进行中', completed: '已完成', cancelled: '已取消', failed: '失败' }
             },
+            hint: AGENT_UI_HINT_ZH,
+            menu: AGENT_UI_MENU_ZH,
             context: {
                 strategy: '上下文 {strategy}',
                 level: '级别 {level}',

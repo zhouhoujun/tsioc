@@ -14,7 +14,7 @@ import {
     resolveWizardProviderName,
     resolveWizardTierLabel
 } from './AgentConsoleProviderWizard';
-import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentUiLabel, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 export interface AgentWizardValues {
     providerId?: string;
@@ -115,7 +115,7 @@ export function showProviderWizardStep(ctx: ProviderWizardContext, holder: Agent
                 phase: 'choose', stepIndex: wizard.stepIndex, stepCount: count,
                 stepLabel: step.label, progress, prompt: '',
                 help: buildWizardStepHelp(step, wizard.values),
-                hint: 'enter confirm   esc back', secret: false, summary
+                hint: formatAgentUiLabel(ctx.translator, 'agent.hint.enterConfirmBack', 'enter confirm   esc back'), secret: false, summary
             });
             openProviderWizardChoice(ctx, holder, step);
             return;
@@ -125,7 +125,7 @@ export function showProviderWizardStep(ctx: ProviderWizardContext, holder: Agent
                 phase: 'confirm', stepIndex: wizard.stepIndex, stepCount: count,
                 stepLabel: step.label, progress, prompt: '',
                 help: buildWizardStepHelp(step, wizard.values),
-                hint: 'enter confirm   esc back', secret: false, summary
+                hint: formatAgentUiLabel(ctx.translator, 'agent.hint.enterConfirmBack', 'enter confirm   esc back'), secret: false, summary
             });
             openProviderWizardConfirm(ctx, holder);
             return;
@@ -140,7 +140,7 @@ export function showProviderWizardStep(ctx: ProviderWizardContext, holder: Agent
             phase: 'enter', stepIndex: wizard.stepIndex, stepCount: count,
             stepLabel: step.label, progress, prompt: `${wizard.stepIndex + 1}/${count} › `,
             help: buildWizardStepHelp(step, wizard.values),
-            hint: 'enter confirm   esc back', secret, summary
+            hint: formatAgentUiLabel(ctx.translator, 'agent.hint.enterConfirmBack', 'enter confirm   esc back'), secret, summary
         });
         ctx.notify(formatAgentUiNotice(ctx.translator, 'wizardProgressStep', { progress: progress, help: buildWizardStepHelp(step, wizard.values) }));
     }
@@ -151,7 +151,7 @@ export function openProviderWizardChoice(ctx: ProviderWizardContext, holder: Age
         if (!built) return;
         ctx.state.selectMenuAction = (value: string | undefined) => handleProviderWizardChoice(ctx, holder, value);
         ctx.state.closeSelectMenu();
-        ctx.state.openSelectMenu(built.title, built.options, built.selected, 'enter confirm   esc back');
+        ctx.state.openSelectMenu(built.title, built.options, built.selected, formatAgentUiLabel(ctx.translator, 'agent.hint.enterConfirmBack', 'enter confirm   esc back'));
     }
 
 export async function handleProviderWizardChoice(ctx: ProviderWizardContext, holder: AgentWizardHolder, value?: string): Promise<void> {
@@ -171,7 +171,7 @@ export async function handleProviderWizardChoice(ctx: ProviderWizardContext, hol
 export function openProviderWizardConfirm(ctx: ProviderWizardContext, holder: AgentWizardHolder, ): void {
         ctx.state.selectMenuAction = (value: string | undefined) => handleProviderWizardConfirm(ctx, holder, value);
         ctx.state.closeSelectMenu();
-        ctx.state.openSelectMenu('Confirm provider', providerWizardConfirmOptions(holder, ctx), 0, 'enter confirm   esc back');
+        ctx.state.openSelectMenu(formatAgentUiLabel(ctx.translator, 'agent.menu.provider.confirmTitle', 'Confirm provider'), providerWizardConfirmOptions(holder, ctx), 0, formatAgentUiLabel(ctx.translator, 'agent.hint.enterConfirmBack', 'enter confirm   esc back'));
     }
 
 export async function handleProviderWizardConfirm(ctx: ProviderWizardContext, holder: AgentWizardHolder, action?: string): Promise<void> {
@@ -213,7 +213,7 @@ export async function openProviderWizardEditor(ctx: ProviderWizardContext, holde
                 value: String(item.index),
                 description: `Back to ${item.step.label.toLowerCase()}`
             }));
-        const choice = await ctx.state.selectAsync('Edit provider', entries, 0, 'enter confirm   esc back');
+        const choice = await ctx.state.selectAsync(formatAgentUiLabel(ctx.translator, 'agent.menu.provider.editTitle', 'Edit provider'), entries, 0, formatAgentUiLabel(ctx.translator, 'agent.hint.enterConfirmBack', 'enter confirm   esc back'));
         if (choice === undefined) {
             showProviderWizardStep(ctx, holder);
             return;
@@ -266,12 +266,14 @@ export async function testProviderConnection(ctx: ProviderWizardContext, holder:
             ];
         const details = result.ok ? `${count} model(s) available` : `Connection failed: ${result.error || 'unknown error'}`;
         ctx.state.setProviderWizard({
-            phase: 'confirm', summary: summaryLines, help: details, hint: 'enter confirm   esc back',
+            phase: 'confirm', summary: summaryLines, help: details, hint: formatAgentUiLabel(ctx.translator, 'agent.hint.enterConfirmBack', 'enter confirm   esc back'),
             secret: false
         });
         ctx.state.selectMenuAction = (value: string | undefined) => handleProviderWizardConfirm(ctx, holder, value);
         ctx.state.closeSelectMenu();
-        ctx.state.openSelectMenu(result.ok ? 'Connection OK' : 'Connection failed', options, 0, 'enter confirm   esc back');
+        ctx.state.openSelectMenu(result.ok
+            ? formatAgentUiLabel(ctx.translator, 'agent.menu.provider.connectionOk', 'Connection OK')
+            : formatAgentUiLabel(ctx.translator, 'agent.menu.provider.connectionFailed', 'Connection failed'), options, 0, formatAgentUiLabel(ctx.translator, 'agent.hint.enterConfirmBack', 'enter confirm   esc back'));
     }
 
 export async function commitProviderWizard(ctx: ProviderWizardContext, holder: AgentWizardHolder, ): Promise<void> {
