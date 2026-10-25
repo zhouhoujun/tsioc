@@ -1047,4 +1047,18 @@ export class PanelI18nTest {
         lines = zhState.reviewDetailLines.join('\n');
         expect(lines).toContain('[a] 批准  [r] 拒绝  [c] 清除标注');
     }
+    @Test('tasks panel filter label follows the locale')
+    async tasksFilterLabelLocalized() {
+        const buildState = () => {
+            const st = new AgentConsoleSessionState(new InMemoryCommandExecutionControl(), zh as any);
+            st.configure({ sessionId: 's1' } as any);
+            st.setReviewTasks([{ id: 'task-1', title: 'Patch handlers', status: 'failed', lineageTaskCount: 1 } as any]);
+            st.setTasksFocused(true);
+            return st;
+        };
+        const zhPanel = new AgentConsoleTasksPanelComponent(buildState() as any, zh);
+        expect(zhPanel.tasksSummaryLabel).toContain('全部');
+        const enPanel = new AgentConsoleTasksPanelComponent(buildState() as any);
+        expect(enPanel.tasksSummaryLabel).toContain('all');
+    }
 }

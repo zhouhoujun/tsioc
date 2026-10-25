@@ -1515,16 +1515,10 @@ export class AgentConsoleTasksPanelComponent {
     }
 
     protected get taskFilterLabel(): string {
-        switch (this.state.selectedTaskFilter) {
-            case 'failed':
-                return 'failed';
-            case 'lineage':
-                return this.state.selectedTaskLineageRootId ? `lineage ${this.state.selectedTaskLineageRootId}` : 'lineage';
-            case 'rollback':
-                return 'rollback';
-            default:
-                return 'all';
-        }
+        const filter = this.state.selectedTaskFilter;
+        if (filter === 'lineage' && this.state.selectedTaskLineageRootId) return panelLabel(this.translator, 'tasks', 'filterLineageRoot', 'lineage {id}', { id: this.state.selectedTaskLineageRootId });
+        const key = filter === 'failed' ? 'filterFailed' : filter === 'rollback' ? 'filterRollback' : filter === 'lineage' ? 'filterLineage' : 'filterAll';
+        return panelLabel(this.translator, 'tasks', key, filter === 'lineage' ? 'lineage' : filter);
     }
 
     protected todoStatusMark(status: AgentConsolePlanTodoItem['status']): string {

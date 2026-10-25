@@ -10,6 +10,11 @@
 export const AGENT_UI_TASKS_EN: Record<string, any> = {
         summary: 'tasks {filtered}/{total} · {filter} · {index}/{filtered}',
         summaryZero: 'tasks 0/{total} · {filter}',
+        filterAll: 'all',
+        filterFailed: 'failed',
+        filterLineage: 'lineage',
+        filterLineageRoot: 'lineage {id}',
+        filterRollback: 'rollback',
         sessionsSuffix: 'sessions {count}',
         projectSuffix: 'project {name}',
         filterSuffix: 'filter {filter}',
@@ -110,6 +115,11 @@ export const AGENT_UI_TASKS_EN: Record<string, any> = {
 export const AGENT_UI_TASKS_ZH: Record<string, any> = {
         summary: '任务 {filtered}/{total} · {filter} · {index}/{filtered}',
         summaryZero: '任务 0/{total} · {filter}',
+        filterAll: '全部',
+        filterFailed: '失败',
+        filterLineage: '血缘',
+        filterLineageRoot: '血缘 {id}',
+        filterRollback: '回滚',
         sessionsSuffix: '会话 {count}',
         projectSuffix: '项目 {name}',
         filterSuffix: '过滤 {filter}',

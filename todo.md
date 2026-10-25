@@ -1753,3 +1753,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **测试**：`panel-i18n.spec.ts` 37 → **39 条**（选中任务详情块 zh/en 对照含 `标题/状态/模式/重试深度/血缘任务/重试工作者/前移/回滚/检查点/差异`；评审标注与检查点明细 zh）。
 - **真实 TUI（zh-CN）复核**：`/diff` 评审面板 `状态 done · 模式 不适用 · 工作者 0 · 分组 1 · 文件 2 · 无法回滚`、`分组 1/1 aggregate · 文件 1/2 a.txt · 风险 low · 行 …`、明细 `评审：待处理 / 范围：2 个文件有变更 / 分组：1 / 当前分组：… 状态 done · 2 个文件有变更 / 文件：2 / 当前文件：…`、文件行 `[修改]/[新增]`（与上一批一起验证）。
 - **门禁**：agent-ui **1698 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；console-renderer 87 / vm-panels 41 / vm-review-tasks 76 保持通过；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
+
+## 2026-10-25 任务过滤标签中文化 + 排队命令英文状态词定位结论
+- **任务过滤标签**：tasks 面板 summary 里的 `all/failed/lineage/rollback`（`任务 1/2 · failed · 1/1`）改为 `agent.menu.panel.tasks.filter*`（`全部/失败/血缘/回滚`，lineage 带 root 时为 `血缘 <id>`）；`taskFilterLabel` 由 switch 改为两行映射，Panels **4154 → 4148**，baseline 4155 → **4149**。
+- **测试**：`panel-i18n.spec.ts` 39 → **40 条**（tasks summary zh `全部` / en `all`）。
+- **排队命令英文状态词定位（结论）**：对 `syncCommandExecutionTranscript` 临时注入 `[tr=<locale>]` 标记后跑真实 TUI 复现（turn 运行中排队 `/status`）：
+  - 空闲执行 → `✓ $ /status 已完成 [tr=zh-CN]`（走该函数、translator 正常）；
+  - turn 中排队执行 → `✓ $ /status completed`（**没有标记**）→ 该行**不是** `syncCommandExecutionTranscript` 生成的。
+  - 已排查：`projectThreadItem` 的 command 分支仅由该函数调用；`seedCommandExchange` 需要网关侧 `command_exchange.append`，本仓库内无客户端调用；gateway/agent/CLI 均无第二条 command thread-item 投影；`buildCommandHandlerState` 不含 commandExecutionController。结论：该行来自尚未定位的投影路径（最可能是 turn 内排队命令的远程/运行时命令交换回放），**故未盲改**。临时诊断已完全回退（`grep '\[tr='` = 0，工作树无残留）。
+- **门禁**：agent-ui **1699 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；console-renderer 87 / vm-panels 41 保持通过；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
