@@ -1827,3 +1827,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   ```
 - 覆盖了事件生命周期、推理行、工具行、耗时、最终回答、状态栏的完整链路；`进行中/处理中/正在推理/按 esc 中断` 均为中文。
 - 备注（未处理，数据/无宿主可见性）：`/harness tree|list` 在有委托数据时使用 `@tsdi/agent` 的 `formatHarnessTreeLines/ListLines`（跨包服务端格式化，含 `─ aggregates ─`、`N total` 等英文词）；activity 面板文案仍因 `showActivityPanel === false` 不可见。
+
+## 2026-10-25 `/harness list` 聚合摘要中文化（跨包 labels 回调）
+- **现象**：`/harness list` 在有委托数据时由 `@tsdi/agent` 的 `formatHarnessListLines` 生成，含 `1 task(s)`、`1 child(ren)`、`─ aggregates ─`、`1 total · 1 active / done / failed / cancelled` 等英文词。
+- **做法（保持依赖方向）**：`agent` 包新增可选 `HarnessLineLabels`（`(key, fallback, params?) => string`，缺省就地插值英文 fallback），`formatHarnessDelegationLine` / `formatHarnessListLines` 接受它，fallback 与旧字面量逐字一致；`agent-ui` 的 `openHarnessListView` 传入 `formatAgentDiagLabel(host.translator,'harness',…)`，diagnostics catalog 的 `harness` 节新增 `listAggregates/listTotal/listActive/listDone/listFailed/listCancelled/listTasks/listChildren`（`─ 汇总 ─`、`{count} 个`、`{count} 个进行中/已完成/失败/已取消`、`{count} 个任务/子会话`）。
+- **踩坑**：formatter 里最初用短 key（`tasks`/`aggregates`…），与 catalog 的 `list*` 前缀不一致 → 全部回退英文；测试当场抓到并统一为 `list*`。
+- **测试**：`panel-i18n.spec.ts` 45 → **46 条**（`buildHarnessProjection` + 真实 `formatHarnessListLines(labels)` zh/en，以及真实 `openHarnessListView` 输出含 `汇总`/`个进行中`）；agent 包 1040 保持通过（英文 fallback 不变）。
+- **门禁**：agent-ui **1707 passing**、agent **1040 passing**（均 EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
+- **仍未处理**：activity 面板文案（`showActivityPanel === false` 不可见）；排队命令行生产者根因；死代码清理（待确认）。

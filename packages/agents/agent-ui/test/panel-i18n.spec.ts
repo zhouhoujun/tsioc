@@ -52,6 +52,9 @@ import { buildCodingTaskSelectOption, describeCodingTaskRollback } from '../src/
 import { AgentConsoleTasksPanelComponent, AgentConsoleHealthPopoverComponent } from '../src/AgentConsolePanels';
 import { runDebugConfigCommand, runMemoriesCommand, runPersonalityCommand } from '../src/AgentConsolePreferenceCommands';
 import { runAppsCommand } from '../src/AgentConsoleExtensionCommands';
+import { openHarnessListView } from '../src/AgentConsoleHarnessCommands';
+import { buildHarnessProjection, formatHarnessListLines } from '@tsdi/agent';
+import { formatAgentDiagLabel } from '../src/agent-ui.i18n';
 import { AgentConsoleComponent } from '../src/AgentConsoleComponent';
 import { createConsole, RuntimeStub, SchedulerStub } from './_helpers';
 import { renderAgentConsoleMessageItems } from '../src/AgentConsoleMessageRenderers';
@@ -1152,5 +1155,37 @@ export class PanelI18nTest {
         expect(zhPanel.groupedBindings.find(group => group.label === '会话')!.items[0].label).toEqual('新建会话');
         const enPanel = build(en);
         expect(enPanel.bindings.map(binding => binding.label)).toEqual(['new session', 'health', 'custom-action']);
+    }
+    @Test('harness list digest follows the locale')
+    async harnessListLocalized() {
+        const tree = {
+            sessionId: 'root', kind: 'root', status: 'active', children: [
+                { sessionId: 'child-1', kind: 'delegate', status: 'running', metadata: { planId: 'plan-1', stepId: 'step-1' }, children: [] }
+            ]
+        };
+        const tasks = [{ id: 't1', sessionId: 'child-1', status: 'running', goal: 'build' }];
+        const projection = buildHarnessProjection(tree as any, tasks as any);
+        const labels = (key: string, fallback: string, params?: Record<string, any>) => formatAgentDiagLabel(zh, 'harness', key, fallback, params);
+        const zhLines = formatHarnessListLines(projection, labels).join('\n');
+        expect(zhLines).toContain('─ 汇总 ─');
+        expect(zhLines).toContain('个进行中');
+        expect(zhLines).toContain('1 个任务');
+        expect(zhLines).not.toContain('aggregates');
+        expect(formatHarnessListLines(projection).join('\n')).toContain('─ aggregates ─');
+
+        const outputs: string[] = [];
+        const host: any = {
+            translator: zh,
+            state: { sessionId: 'root', setHarnessState: () => { /* unused */ } },
+            sessionService: {
+                getDelegationTree: async () => tree,
+                listAllBackgroundTasks: async () => tasks
+            },
+            notify: () => { /* unused */ },
+            pushCommandOutput: (_command: string, text: string) => { outputs.push(text); }
+        };
+        await openHarnessListView(host);
+        expect(outputs[0]).toContain('汇总');
+        expect(outputs[0]).toContain('个进行中');
     }
 }

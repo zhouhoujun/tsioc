@@ -1,7 +1,7 @@
 import type { BackgroundTaskRecord } from '@tsdi/agent-tools';
 import { buildHarnessProjection, formatHarnessListLines, formatHarnessTreeLines, DelegationTreeNode, HarnessProjection } from '@tsdi/agent';
 import { formatDelegationEdge, formatDelegationTree } from './AgentConsoleDelegationView';
-import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentDiagLabel as diagLabel, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 /**
  * Host surface required by the harness / delegation tree commands.
@@ -79,7 +79,7 @@ export async function openHarnessListView(host: HarnessCommandHost, sessionId?: 
     const tasks = await host.sessionService.listAllBackgroundTasks({ delegationRoot: resolvedSessionId });
     const projection = buildHarnessProjection(tree as DelegationTreeNode, tasks as BackgroundTaskRecord[]);
     host.state.setHarnessState(projection);
-    const lines = formatHarnessListLines(projection);
+    const lines = formatHarnessListLines(projection, (key, fallback, params) => diagLabel(host.translator, 'harness', key, fallback, params));
     if (!lines.length) {
         host.notify(formatAgentUiNotice(host.translator, 'delegationEdgesRecorded', { sessionId: resolvedSessionId }));
         return true;

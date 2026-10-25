@@ -371,14 +371,22 @@ export function shortenHarnessSessionId(id: string): string {
 }
 
 /** Format a single delegation as a compact digest line. */
-export function formatHarnessDelegationLine(d: HarnessDelegation): string {
+/** Optional host translator for harness digest copy (kept out of this package's deps). */
+export type HarnessLineLabels = (key: string, fallback: string, params?: Record<string, any>) => string;
+
+function defaultHarnessLineLabels(_key: string, fallback: string, params?: Record<string, any>): string {
+    return fallback.replace(/\{(\w+)\}/g, (_match, name: string) => String(params?.[name] ?? ''));
+}
+
+export function formatHarnessDelegationLine(d: HarnessDelegation, labels?: HarnessLineLabels): string {
+    const t = labels || defaultHarnessLineLabels;
     const id = shortenHarnessSessionId(d.sessionId);
     const parts = [id];
     if (d.kind) parts.push(d.kind);
     parts.push(statusIcon(d.status));
     if (d.goal) parts.push(d.goal);
-    if (d.taskIds.length > 0) parts.push(`${d.taskIds.length} task(s)`);
-    if (d.childCount > 0) parts.push(`${d.childCount} child(ren)`);
+    if (d.taskIds.length > 0) parts.push(t('listTasks', '{count} task(s)', { count: d.taskIds.length }));
+    if (d.childCount > 0) parts.push(t('listChildren', '{count} child(ren)', { count: d.childCount }));
     const range = formatTimeRange(d.createdAt, d.completedAt);
     if (range) parts.push(range);
     return parts.join(' · ');
@@ -416,23 +424,24 @@ export function formatHarnessTreeLines(root: DelegationTreeNode, projection?: Ha
  * Render the full projection as a flat list of lines (for `/harness list`).
  * Each delegation node gets one line; aggregates are appended as a summary.
  */
-export function formatHarnessListLines(projection: HarnessProjection): string[] {
+export function formatHarnessListLines(projection: HarnessProjection, labels?: HarnessLineLabels): string[] {
+    const t = labels || defaultHarnessLineLabels;
     const list = buildHarnessList(projection);
     if (list.length === 0) return [];
-    const lines = list.map(d => formatHarnessDelegationLine(d));
+    const lines = list.map(d => formatHarnessDelegationLine(d, labels));
 
     // Append aggregate summary when there are joint-key groups
     const aggregates = Array.from(projection.taskAggregates.values())
         .filter(a => a.total > 1 || a.key.startsWith('plan:'));
     if (aggregates.length > 0) {
         lines.push('');
-        lines.push('─ aggregates ─');
+        lines.push(t('listAggregates', '─ aggregates ─'));
         for (const agg of aggregates) {
-            const parts = [agg.key, `${agg.total} total`];
-            if (agg.active > 0) parts.push(`${agg.active} active`);
-            if (agg.completed > 0) parts.push(`${agg.completed} done`);
-            if (agg.failed > 0) parts.push(`${agg.failed} failed`);
-            if (agg.cancelled > 0) parts.push(`${agg.cancelled} cancelled`);
+            const parts = [agg.key, t('listTotal', '{count} total', { count: agg.total })];
+            if (agg.active > 0) parts.push(t('listActive', '{count} active', { count: agg.active }));
+            if (agg.completed > 0) parts.push(t('listDone', '{count} done', { count: agg.completed }));
+            if (agg.failed > 0) parts.push(t('listFailed', '{count} failed', { count: agg.failed }));
+            if (agg.cancelled > 0) parts.push(t('listCancelled', '{count} cancelled', { count: agg.cancelled }));
             lines.push(parts.join(' · '));
         }
     }
