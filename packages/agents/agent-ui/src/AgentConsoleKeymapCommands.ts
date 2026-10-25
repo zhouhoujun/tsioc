@@ -62,11 +62,11 @@ export async function runKeymapCommand(host: KeymapCommandHost, args: string): P
             const conflictText = conflicts.length
                 ? panelLabel(host.translator, 'keymap', 'conflictsWith', '  conflicts with {list}', { list: conflicts.map(({ context: c, action: a }: any) => `${c}:${a}`).join(', ') })
                 : '';
-            host.notify(formatAgentUiNotice(host.translator, 'keymapSetWithConflict', { key: key, target: target, conflictText: conflictText }));
+            host.notify(formatAgentUiNotice(host.translator, 'keymapSetWithConflict', { key: key, target: formatAgentKeymapActionLabel(host.translator, target), conflictText: conflictText }));
             return;
         }
         if ((scope === 'vim' || scope === '') && isConsoleVimAction(target) && host.state.setVimBinding(key, target)) {
-            host.notify(formatAgentUiNotice(host.translator, 'vimKeymapSet', { key: key, target: target }));
+            host.notify(formatAgentUiNotice(host.translator, 'vimKeymapSet', { key: key, target: formatAgentKeymapActionLabel(host.translator, target) }));
             return;
         }
         host.notify(formatAgentUiNotice(host.translator, 'unknownKeymapActionInfo', { target: target, globalActions: AGENT_CONSOLE_GLOBAL_ACTIONS.join(', '), vimActions: VIM_ACTION_NAMES.join(', ') }));
@@ -110,7 +110,7 @@ export async function runKeymapCommand(host: KeymapCommandHost, args: string): P
             return;
         }
         host.keymapRecording = { context, action: target };
-        host.notify(formatAgentUiNotice(host.translator, 'recordingKeyPress', { target: target, context: context }));
+        host.notify(formatAgentUiNotice(host.translator, 'recordingKeyPress', { target: formatAgentKeymapActionLabel(host.translator, target), context: context }));
         return;
     }
     host.notify(formatAgentUiNotice(host.translator, 'keymapUsage'));

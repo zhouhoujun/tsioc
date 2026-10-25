@@ -1863,3 +1863,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **测试**：`panel-i18n.spec.ts` 47 → **48 条**（真实 `runKeymapCommand('list')`：zh `ctrl+x n -> 新建会话`、`ctrl+x h -> 健康状态`、vim 行保留；en `-> new session`）。
 - **真实 TUI（zh-CN）复核**：`/keymap list` → `按键映射 35 行 · 1-8`，`ctrl+x n -> 新建会话 / ctrl+x c -> 压缩会话 / ctrl+x x -> 导出会话 / ctrl+x u -> 撤销 / ctrl+x r -> 重做 / ctrl+x l -> 会话列表 / ctrl+x t -> 切换推理显示 / ctrl+x shift+t -> 主题`。
 - **门禁**：agent-ui **1709 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
+
+## 2026-10-25 `/keymap set|record` 通知里的动作名中文化
+- **现象（zh-CN 真实 TUI）**：`/keymap set` → `键位已设置：ctrl+z -> new-session`，`/keymap record` → `正在为 status-health（global）录制按键…`——通知模板已中文，但 `{target}` 是原始 action id。
+- **做法**：`keymapSetWithConflict` / `vimKeymapSet` / `recordingKeyPress` 的 `target` 统一经 `formatAgentKeymapActionLabel(host.translator, …)`（vim 动作无 catalog 时回退原 id，保持配置标识可读）；未知动作仍显示原 id 以便排查。
+- **测试**：`panel-i18n.spec.ts` 48 条（同一用例补充 `/keymap set ctrl+z new-session` → `新建会话`、`/keymap record status-health` → `健康状态`）。
+- **真实 TUI（zh-CN）复核**：
+  - `键位已设置：ctrl+z -> 新建会话`
+  - `正在为 健康状态（global）录制按键 — 现在按一个键，Esc 取消。`
+  - `/keymap reset` → `键位已重置为默认值。`（测试后已重置，未污染 workspace 设置）
+- **门禁**：agent-ui **1709 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。

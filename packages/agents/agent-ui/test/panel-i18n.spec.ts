@@ -1233,5 +1233,15 @@ export class PanelI18nTest {
         const enHost = buildHost(en);
         await runKeymapCommand(enHost.host, 'list');
         expect(enHost.overlay()!.lines).toContain('ctrl+x n -> new session');
+
+        const setHost = buildHost(zh);
+        const notices: string[] = [];
+        setHost.host.notify = (message: string) => { notices.push(message); };
+        setHost.host.globalKeymap.set = () => true;
+        setHost.host.globalKeymap.conflicts = () => [];
+        await runKeymapCommand(setHost.host, 'set ctrl+z new-session');
+        await runKeymapCommand(setHost.host, 'record status-health');
+        expect(notices.join('\n')).toContain('新建会话');
+        expect(notices.join('\n')).toContain('健康状态');
     }
 }
