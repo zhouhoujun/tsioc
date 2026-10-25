@@ -63,7 +63,9 @@ export const AGENT_UI_MENU_EN: Record<string, any> = {
         sourceLabel: 'Source: {source}'
     },
     apps: {
-        title: 'Apps'
+        title: 'Apps',
+        connected: 'connected',
+        authorizationRequired: 'authorization required'
     },
     tools: {
         title: 'tools {count} · {index}/{count}',
@@ -266,7 +268,9 @@ export const AGENT_UI_MENU_ZH: Record<string, any> = {
         sourceLabel: '来源：{source}'
     },
     apps: {
-        title: '应用'
+        title: '应用',
+        connected: '已连接',
+        authorizationRequired: '需要授权'
     },
     tools: {
         title: '工具 {count} · {index}/{count}',

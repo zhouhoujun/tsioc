@@ -2,7 +2,7 @@ import { ExchangeMetricsSnapshot } from '@tsdi/agent';
 import { agentConsoleThemeNames } from './AgentConsoleTheme';
 import { defaultAgentConsoleStatusline, isAgentConsoleStatuslineField, normalizeAgentConsoleStatusline } from './AgentConsoleStatusline';
 import { defaultAgentConsoleTitle, isAgentConsoleTitleField, normalizeAgentConsoleTitle } from './AgentConsoleTitle';
-import { formatAgentUiLabel, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentPanelLabel, formatAgentUiLabel, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 export interface AgentConsoleRuntimeHost {
     translator?: AgentUiTranslator | null;
@@ -65,20 +65,22 @@ export async function runStatusCommand(host: AgentConsoleRuntimeHost): Promise<v
         const metrics = await host.appRpc.request('command_exchange.metrics', {}, host.rpcRequestContext()).catch(() => null);
         if (metrics?.dropped != null) {
             exchangeCounts = { dropped: metrics.dropped, stale: metrics.stale, duplicate: metrics.duplicate, unauthorized: metrics.unauthorized };
-            exchangeText = ` · exchange d${metrics.dropped} s${metrics.stale} dup${metrics.duplicate} u${metrics.unauthorized}`;
+            exchangeText = formatAgentUiNotice(host.translator, 'statusExchangeSuffix', { dropped: metrics.dropped, stale: metrics.stale, duplicate: metrics.duplicate, unauthorized: metrics.unauthorized });
         }
     }
     const model = state.modelProfile || state.model || 'default';
-    const planModeText = planMode ? 'ON (read-only)' : 'off';
-    host.pushCommandOutput('/status', `session ${sessionId} · model ${model} · archetype ${archetype} · plan mode ${planModeText} · sandbox ${sandboxMode} · delegation ${delegationMode}${exchangeText}`);
-    state.openTextOverlay('status', [
-        `session: ${sessionId}`,
-        `model: ${model}`,
-        `archetype: ${archetype}`,
-        `plan mode: ${planModeText}`,
-        `sandbox: ${sandboxMode}`,
-        `delegation: ${delegationMode}`,
-        ...(exchangeCounts ? [`exchange: dropped ${exchangeCounts.dropped} · stale ${exchangeCounts.stale} · duplicate ${exchangeCounts.duplicate} · unauthorized ${exchangeCounts.unauthorized}`] : []),
+    const planModeText = planMode
+        ? formatAgentUiNotice(host.translator, 'statusPlanModeOn')
+        : formatAgentUiNotice(host.translator, 'statusPlanModeOff');
+    host.pushCommandOutput('/status', formatAgentUiNotice(host.translator, 'statusSummary', { session: sessionId, model, archetype, planMode: planModeText, sandbox: sandboxMode, delegation: delegationMode, exchange: exchangeText }));
+    state.openTextOverlay(formatAgentPanelLabel(host.translator, 'overlay', 'statusTitle', 'status'), [
+        formatAgentUiNotice(host.translator, 'statusSessionLine', { id: sessionId }),
+        formatAgentUiNotice(host.translator, 'statusModelLine', { model }),
+        formatAgentUiNotice(host.translator, 'statusArchetypeLine', { archetype }),
+        formatAgentUiNotice(host.translator, 'statusPlanModeLine', { mode: planModeText }),
+        formatAgentUiNotice(host.translator, 'statusSandboxLine', { mode: sandboxMode }),
+        formatAgentUiNotice(host.translator, 'statusDelegationLine', { mode: delegationMode }),
+        ...(exchangeCounts ? [formatAgentUiNotice(host.translator, 'statusExchangeLine', { dropped: exchangeCounts.dropped, stale: exchangeCounts.stale, duplicate: exchangeCounts.duplicate, unauthorized: exchangeCounts.unauthorized })] : []),
     ]);
 }
 
@@ -121,7 +123,7 @@ export async function runStatuslineCommand(host: AgentConsoleRuntimeHost, args?:
     const parsed = String(args || '').trim();
     if (!parsed || parsed.toLowerCase() === 'list') {
         const current = host.state.statusline;
-        host.pushCommandOutput('/statusline list', `Statusline: ${current.join(', ')}. Use /statusline set field1,field2 or unset field.`);
+        host.pushCommandOutput('/statusline list', formatAgentUiNotice(host.translator, 'statuslineList', { fields: current.join(', ') }));
         return true;
     }
     const [verb, ...rest] = parsed.split(/\s+/);

@@ -6,7 +6,7 @@ import {
     isAgentConsoleKeymapContext
 } from './AgentConsoleKeymap';
 import { VIM_ACTION_NAMES, isConsoleVimAction } from './AgentConsoleVim';
-import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentUiNotice, formatAgentPanelLabel as panelLabel, type AgentUiTranslator } from './agent-ui.i18n';
 
 export interface KeymapCommandHost {
     translator?: AgentUiTranslator | null;
@@ -44,7 +44,9 @@ export async function runKeymapCommand(host: KeymapCommandHost, args: string): P
             host.notify(formatAgentUiNotice(host.translator, 'keyBindings'));
             return;
         }
-        host.state.openTextOverlay(scope ? `keymap ${scope}` : 'keymap', entries);
+        host.state.openTextOverlay(scope
+            ? panelLabel(host.translator, 'keymap', 'overlayTitleScope', 'Keymap {scope}', { scope })
+            : panelLabel(host.translator, 'keymap', 'overlayTitle', 'Keymap'), entries);
         return;
     }
     if (action === 'set') {

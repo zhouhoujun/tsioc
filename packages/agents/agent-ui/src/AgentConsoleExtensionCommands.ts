@@ -110,12 +110,18 @@ export function resolveAppAuthorizer(host: ExtensionCommandHost): AgentConsoleAp
     return typeof authorizer === 'function' ? authorizer : undefined;
 }
 
+function formatAppStatusLabel(host: ExtensionCommandHost, app: AgentConsoleAppStatus): string {
+    return app.statusLabel === 'connected'
+        ? formatAgentUiLabel(host.translator, 'agent.menu.apps.connected', 'connected')
+        : formatAgentUiLabel(host.translator, 'agent.menu.apps.authorizationRequired', 'authorization required');
+}
+
 export function insertAppMention(host: ExtensionCommandHost, app: AgentConsoleAppStatus): void {
     const current = String(host.state.input || '');
     const spacer = current && !/\s$/.test(current) ? ' ' : '';
     const next = `${current}${spacer}$${app.id} `;
     host.state.updateDraft(next, next.length);
-    host.notify(formatAgentUiNotice(host.translator, 'appNameConnectorInserted', { appName: app.name, statusLabel: app.statusLabel }));
+    host.notify(formatAgentUiNotice(host.translator, 'appNameConnectorInserted', { appName: app.name, statusLabel: formatAppStatusLabel(host, app) }));
 }
 
 export async function runAppsCommand(host: ExtensionCommandHost, args?: string): Promise<boolean> {
@@ -150,7 +156,7 @@ export async function runAppsCommand(host: ExtensionCommandHost, args?: string):
         return true;
     }
     const selected = await host.select(formatAgentUiLabel(host.translator, 'agent.menu.apps.title', 'Apps'), apps.map(app => ({
-        label: `${app.name} · ${app.statusLabel}`,
+        label: `${app.name} · ${formatAppStatusLabel(host, app)}`,
         value: app.id,
         description: `${app.category} · ${app.description}`
     })), 0, formatAgentUiLabel(host.translator, 'agent.hint.enterInsertClose', 'enter insert   esc close'));

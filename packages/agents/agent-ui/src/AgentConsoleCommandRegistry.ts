@@ -480,6 +480,6 @@ export function buildAgentConsoleHelpOptions(
                 });
             });
     });
-    options.push({ label: '@workspace', value: '@workspace', description: 'context' });
+    options.push({ label: '@workspace', value: '@workspace', description: describe ? describe('agent.command.workspace', 'context') : 'context' });
     return options;
 }

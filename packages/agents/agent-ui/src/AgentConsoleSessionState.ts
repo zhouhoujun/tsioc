@@ -3690,27 +3690,6 @@ export class AgentConsoleSessionState {
         ].filter(Boolean).join('\n');
     }
 
-    get scheduledTaskDetailLines(): string[] {
-        const selected = this.selectedScheduledTask;
-        if (!selected) {
-            return [];
-        }
-        return [
-            `session ${selected.sessionId}`,
-            `schedule ${selected.scheduleType || 'once'}`,
-            `status ${selected.cancelled ? 'cancelled' : selected.running ? 'running' : selected.paused ? 'paused' : 'idle'}`,
-            selected.prompt ? `prompt ${selected.prompt}` : '',
-            selected.runAt ? `runAt ${this.formatScheduledTimestamp(selected.runAt)}` : '',
-            selected.nextRunAt ? `nextRunAt ${this.formatScheduledTimestamp(selected.nextRunAt)}` : '',
-            selected.lastRunAt ? `lastRunAt ${this.formatScheduledTimestamp(selected.lastRunAt)}` : '',
-            selected.runCount != null ? `runCount ${selected.runCount}` : '',
-            selected.failureCount != null ? `failureCount ${selected.failureCount}` : '',
-            selected.manualRecoveryRequired ? 'manual recovery required' : '',
-            selected.alertOnFailure ? 'alert on failure' : '',
-            selected.lastError ? `lastError ${selected.lastError}` : ''
-        ].filter(Boolean);
-    }
-
     setToolsFocused(focused: boolean): void {
         this.toolsFocused = focused;
         if (focused && !this.selectedToolName && this.tools.length) {

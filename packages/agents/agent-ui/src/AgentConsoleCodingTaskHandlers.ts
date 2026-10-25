@@ -14,8 +14,7 @@ import {
     getAgentConsoleCommandDefinition,
     resolveAgentConsoleCommandDescription
 } from './AgentConsoleCommandRegistry';
-import { AGENT_CONSOLE_OVERLAY_HINTS, AGENT_CONSOLE_OVERLAY_TITLES } from './AgentConsoleOverlayPresenter';
-import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentUiNotice, formatAgentPanelLabel as panelLabel, type AgentUiTranslator } from './agent-ui.i18n';
 import { loadProjectCodingTasks } from './AgentConsoleCodingTaskLoad';
 
 // ── Coding task handler context ─────────────────────────────────────────────
@@ -479,9 +478,9 @@ export async function openCodingTaskReview(
 
 export async function openCodingTaskReviewSelector(ctx: CodingTaskHandlerContext): Promise<boolean> {
     const selectedTask = await selectCodingTask(ctx, {
-        title: AGENT_CONSOLE_OVERLAY_TITLES.codingTasks,
-        unavailableNotice: 'Review is unavailable without app RPC.',
-        emptyNotice: 'No coding tasks available.',
+        title: panelLabel(ctx.translator, 'select', 'codingTasks', 'Coding tasks'),
+        unavailableNotice: formatAgentUiNotice(ctx.translator, 'reviewUnavailableApp'),
+        emptyNotice: formatAgentUiNotice(ctx.translator, 'codingTasksAvailable'),
         selectedTaskId: String(ctx.state.reviewTask?.id || ctx.state.selectedTask?.id || '').trim() || undefined
     });
     if (!selectedTask) {
@@ -493,9 +492,9 @@ export async function openCodingTaskReviewSelector(ctx: CodingTaskHandlerContext
 
 export async function openThreadCodingTaskReviewSelector(ctx: CodingTaskHandlerContext): Promise<boolean> {
     const selectedTask = await selectCodingTask(ctx, {
-        title: AGENT_CONSOLE_OVERLAY_TITLES.codingTasksThread,
-        unavailableNotice: 'Review is unavailable without app RPC.',
-        emptyNotice: 'No coding tasks available in this thread.',
+        title: panelLabel(ctx.translator, 'select', 'codingTasksThread', 'Coding task thread'),
+        unavailableNotice: formatAgentUiNotice(ctx.translator, 'reviewUnavailableApp'),
+        emptyNotice: formatAgentUiNotice(ctx.translator, 'codingTasksThreadAvailable'),
         selectedTaskId: String(ctx.state.reviewTask?.id || ctx.state.selectedTask?.id || '').trim() || undefined,
         sessionIds: ctx.resolveThreadSessionIdsFor()
     });

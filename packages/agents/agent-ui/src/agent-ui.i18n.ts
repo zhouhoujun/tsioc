@@ -4,6 +4,7 @@ import { AGENT_UI_NOTICE_ZH } from './agent-ui.i18n.notice.zh';
 import { AGENT_UI_ERROR_EN, AGENT_UI_ERROR_ZH } from './agent-ui.i18n.error';
 import { AGENT_UI_TOOL_LABELS_EN, AGENT_UI_TOOL_LABELS_ZH } from './agent-ui.i18n.tools';
 import { AGENT_UI_HINT_EN, AGENT_UI_HINT_ZH, AGENT_UI_MENU_EN, AGENT_UI_MENU_ZH } from './agent-ui.i18n.menu';
+import { AGENT_UI_PANEL_EN, AGENT_UI_PANEL_ZH } from './agent-ui.i18n.panel';
 
 export interface AgentUiTranslator {
     translate(key: string, params?: any): string | undefined;
@@ -30,6 +31,36 @@ export function formatAgentUiLabel(translator: AgentUiTranslator | null | undefi
     // The English fallback can carry {placeholders} too (some hosts have no
     // translator at all), so interpolate it instead of leaking raw braces.
     return params ? agentUiFormatter.format(fallback, params, 'en') : fallback;
+}
+
+/**
+ * Resolve panel chrome copy (`agent.menu.panel.<section>.<key>`) through the
+ * host translator while keeping the English fallback.
+ */
+export function formatAgentPanelLabel(
+    translator: AgentUiTranslator | null | undefined,
+    section: string,
+    key: string,
+    fallback: string,
+    params?: Record<string, any>
+): string {
+    return formatAgentUiLabel(translator, `agent.menu.panel.${section}.${key}`, fallback, params);
+}
+
+/**
+ * Localize a panel status word that arrives as an identifier (`running`,
+ * `completed`, …). Unknown statuses keep their raw identifier.
+ */
+export function formatAgentPanelStatusLabel(
+    translator: AgentUiTranslator | null | undefined,
+    section: string,
+    status: string
+): string {
+    if (!status) {
+        return status;
+    }
+    const key = status.charAt(0).toUpperCase() + status.slice(1);
+    return formatAgentPanelLabel(translator, section, `status${key}`, status);
 }
 
 /**
@@ -131,13 +162,14 @@ export const agentUiEnglish: TranslationBundle = {
             },
             command: {
                 group: { core: 'core', session: 'session', display: 'display', input: 'input', review: 'review', hooks: 'hooks', delegation: 'delegation', system: 'system' },
+                workspace: 'context',
                 unknown: 'Unknown command: {command}',
                 ambiguous: 'Ambiguous command: {command}  ({matches})',
                 label: 'Command',
                 status: { running: 'running', completed: 'completed', cancelled: 'cancelled', failed: 'failed' }
             },
             hint: AGENT_UI_HINT_EN,
-            menu: AGENT_UI_MENU_EN,
+            menu: { ...AGENT_UI_MENU_EN, panel: AGENT_UI_PANEL_EN },
             context: {
                 strategy: 'context {strategy}',
                 level: 'level {level}',
@@ -266,22 +298,28 @@ export const agentUiChinese: TranslationBundle = {
             command: {
                 group: { core: '核心', session: '会话', display: '显示', input: '输入', review: '审查', hooks: '钩子', delegation: '委托', system: '系统' },
                 sub: {
-                    'keymap.list': '列出某个上下文的按键绑定',
-                    'keymap.set': '设置 <按键> <动作> [上下文]',
-                    'keymap.unset': '取消 <按键> [上下文]',
-                    'keymap.reset': '恢复默认按键',
-                    'keymap.record': '录制下一个按键到 <动作>',
-                    'approve.retry': '重试最近一次被自动审查拒绝的操作（一次）',
-                    'delegation.tree': '委托树 [sessionId] [status] [depth]',
-                    'delegation.lineage': '委托血缘 [sessionId]',
-                    'delegation.mode': '委托模式 [disabled|explicit|proactive|default]',
-                    'quality.trend': '质量趋势 [provider] [bucketSize] [maxBuckets]',
-                    'compactions.trend': '压缩趋势 [sessionId] [bucketSize] [maxBuckets]',
-                    'diagnostics.list': '轮次诊断记录 [sessionId]',
-                    'diagnostics.trend': '轮次诊断趋势 [sessionId] [bucketSize] [maxBuckets]',
-                    'harness.audit': '失败模式审计 [sessionId]',
-                    'harness.profile': '治理 profile 列表/当前/差异'
+                    keymap: {
+                        list: '列出某个上下文的按键绑定',
+                        set: '设置 <按键> <动作> [上下文]',
+                        unset: '取消 <按键> [上下文]',
+                        reset: '恢复默认按键',
+                        record: '录制下一个按键到 <动作>'
+                    },
+                    approve: { retry: '重试最近一次被自动审查拒绝的操作（一次）' },
+                    delegation: {
+                        tree: '委托树 [sessionId] [status] [depth]',
+                        lineage: '委托血缘 [sessionId]',
+                        mode: '委托模式 [disabled|explicit|proactive|default]'
+                    },
+                    quality: { trend: '质量趋势 [provider] [bucketSize] [maxBuckets]' },
+                    compactions: { trend: '压缩趋势 [sessionId] [bucketSize] [maxBuckets]' },
+                    diagnostics: {
+                        list: '轮次诊断记录 [sessionId]',
+                        trend: '轮次诊断趋势 [sessionId] [bucketSize] [maxBuckets]'
+                    },
+                    harness: { audit: '失败模式审计 [sessionId]', profile: '治理 profile 列表/当前/差异' }
                 },
+                workspace: '上下文',
                 desc: {
                     'help': '查看命令帮助（按分类分组）',
                     'status': '查看会话状态',
@@ -382,7 +420,7 @@ export const agentUiChinese: TranslationBundle = {
                 status: { running: '进行中', completed: '已完成', cancelled: '已取消', failed: '失败' }
             },
             hint: AGENT_UI_HINT_ZH,
-            menu: AGENT_UI_MENU_ZH,
+            menu: { ...AGENT_UI_MENU_ZH, panel: AGENT_UI_PANEL_ZH },
             context: {
                 strategy: '上下文 {strategy}',
                 level: '级别 {level}',

@@ -2,7 +2,8 @@ import { Attribute, Component } from '@tsdi/components';
 import { formatCompactNumber } from '@tsdi/core';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
-import { formatAgentUiLabel } from './agent-ui.i18n';
+import { formatAgentUiLabel, formatAgentPanelLabel as panelLabel, formatAgentPanelStatusLabel as panelStatusLabel } from './agent-ui.i18n';
+import { formatScheduledTaskDetailLines } from './AgentConsoleScheduledTaskFormat';
 import { resolveMessageRowOffset } from './AgentConsoleTranscriptLayout';
 import { AgentMessage, basenameAgentPath, ScheduledAgentTask } from '@tsdi/agent';
 import {
@@ -1021,7 +1022,7 @@ export class AgentConsoleWorkingPanelComponent {
     `
 })
 export class AgentConsoleSessionsPanelComponent {
-    constructor(private state: AgentConsoleSessionState) {
+    constructor(private state: AgentConsoleSessionState, @Optional() private translator?: TranslatorService) {
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -1065,7 +1066,7 @@ export class AgentConsoleSessionsPanelComponent {
                     style: this.activeThemeStyles.sessionsAccent
                 });
             }
-            const current = session.current ? ' [current]' : '';
+            const current = session.current ? ` [${panelLabel(this.translator, 'sessions', 'current', 'current')}]` : '';
             const selected = this.state.selectedSessionId === session.id;
             const marker = selected ? '›' : ' ';
             const count = session.messageCount != null ? ` (${session.messageCount})` : '';
@@ -1106,7 +1107,7 @@ export class AgentConsoleSessionsPanelComponent {
             return '';
         }
         const selectedIndex = Math.max(0, this.sessions.findIndex(item => item.id === this.state.selectedSessionId));
-        return `sessions ${this.sessions.length} · ${selectedIndex + 1}/${this.sessions.length}`;
+        return panelLabel(this.translator, 'sessions', 'summary', 'sessions {total} · {index}/{total}', { total: this.sessions.length, index: selectedIndex + 1 });
     }
 
     get sessionsHintLabel(): string {
@@ -1144,7 +1145,7 @@ export class AgentConsoleSessionsPanelComponent {
         const label = String(session.projectLabel || session.projectId || session.workspace || session.primaryThreadId || '').trim();
         const displayLabel = this.workspaceLabel(label) || label || session.id;
         const count = Math.max(1, Number(session.projectSessionCount || 0));
-        return `project ${displayLabel} · ${count} session${count === 1 ? '' : 's'}`;
+        return panelLabel(this.translator, 'sessions', count === 1 ? 'projectOne' : 'projectMany', count === 1 ? 'project {name} · {count} session' : 'project {name} · {count} sessions', { name: displayLabel, count });
     }
 }
 
@@ -1161,7 +1162,7 @@ export class AgentConsoleSessionsPanelComponent {
     `
 })
 export class AgentConsoleTasksPanelComponent {
-    constructor(private state: AgentConsoleSessionState) {
+    constructor(private state: AgentConsoleSessionState, @Optional() private translator?: TranslatorService) {
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -1207,7 +1208,7 @@ export class AgentConsoleTasksPanelComponent {
             const marker = task.status === 'running' ? '>' : task.status === 'completed' ? 'x' : task.status === 'failed' ? '!' : '-';
             return `[${marker}] ${task.id} · ${task.goal} · ${task.sessionId}`;
         });
-        const summary = `background ${tasks.length} · running ${running}${failed ? ` · failed ${failed}` : ''}`;
+        const summary = `${panelLabel(this.translator, 'tasks', 'backgroundSummary', 'background {total} · running {running}', { total: tasks.length, running })}${failed ? ` · ${panelLabel(this.translator, 'tasks', 'backgroundFailed', 'failed {failed}', { failed })}` : ''}`;
         return [summary, ...lines].join('\n');
     }
 
@@ -1246,12 +1247,12 @@ export class AgentConsoleTasksPanelComponent {
                 ? task.lineageTaskCount
                 : undefined;
             const meta = [
-                showSourceSession && task.sourceSessionId ? `session ${task.sourceSessionId}` : '',
+                showSourceSession && task.sourceSessionId ? panelLabel(this.translator, 'tasks', 'sourceSession', 'session {id}', { id: task.sourceSessionId }) : '',
                 task.status || '',
                 task.executionMode || '',
-                typeof retryDepth === 'number' ? `retry ${retryDepth}` : '',
-                retryOfTaskId ? `from ${retryOfTaskId}` : '',
-                typeof lineageTaskCount === 'number' && lineageTaskCount > 1 ? `lineage ${lineageTaskCount}` : '',
+                typeof retryDepth === 'number' ? panelLabel(this.translator, 'tasks', 'retryMeta', 'retry {depth}', { depth: retryDepth }) : '',
+                retryOfTaskId ? panelLabel(this.translator, 'tasks', 'from', 'from {id}', { id: retryOfTaskId }) : '',
+                typeof lineageTaskCount === 'number' && lineageTaskCount > 1 ? panelLabel(this.translator, 'tasks', 'lineageMeta', 'lineage {count}', { count: lineageTaskCount }) : '',
                 typeof task.workerCount === 'number' ? `${task.workerCount}w` : ''
             ].filter(Boolean).join(' · ');
             return {
@@ -1267,7 +1268,7 @@ export class AgentConsoleTasksPanelComponent {
         }
         const sourceSessionId = String(this.state.planTodoSourceSessionId || '').trim();
         const sourcePrefix = sourceSessionId && sourceSessionId !== this.state.sessionId
-            ? `session ${sourceSessionId} · `
+            ? `${panelLabel(this.translator, 'tasks', 'sourceSession', 'session {id}', { id: sourceSessionId })} · `
             : '';
         if (!this.state.tasksFocused) {
             const active = this.planTodos.find(todo => todo.status === 'in_progress')
@@ -1275,9 +1276,9 @@ export class AgentConsoleTasksPanelComponent {
             if (!active) {
                 return '';
             }
-            const blockedInfo = active.blockedBy?.length ? ` blocked by ${active.blockedBy.join(',')}` : '';
+            const blockedInfo = active.blockedBy?.length ? ` ${panelLabel(this.translator, 'tasks', 'blockedBy', 'blocked by {ids}', { ids: active.blockedBy.join(',') })}` : '';
             const ownerInfo = active.owner ? ` (${active.owner})` : '';
-            return `${sourcePrefix}current ${this.planTodos.findIndex(todo => todo.id === active.id) + 1}. [${this.todoStatusMark(active.status)}] ${active.content}${ownerInfo}${blockedInfo}`;
+            return `${sourcePrefix}${panelLabel(this.translator, 'tasks', 'current', 'current {index}.', { index: this.planTodos.findIndex(todo => todo.id === active.id) + 1 })} [${this.todoStatusMark(active.status)}] ${active.content}${ownerInfo}${blockedInfo}`;
         }
         const filtered = this.state.filteredPlanTodos;
         const filterLabel = this.state.planTodoFilterLabel;
@@ -1285,10 +1286,10 @@ export class AgentConsoleTasksPanelComponent {
         const lines = filtered.map((todo, index) => {
             const marker = this.state.selectedPlanTodoIndex === index ? '›' : ' ';
             const hierarchy = todo.parentId ? '  ' : '';
-            const blocked = todo.blockedBy?.length ? ` ← blocked by ${todo.blockedBy.join(',')}` : '';
+            const blocked = todo.blockedBy?.length ? ` ← ${panelLabel(this.translator, 'tasks', 'blockedBy', 'blocked by {ids}', { ids: todo.blockedBy.join(',') })}` : '';
             const owner = todo.owner ? ` (${todo.owner})` : '';
             const elapsed = todo.elapsedMs ? ` ${this.state.formatElapsed(todo.elapsedMs)}` : '';
-            const error = todo.status === 'failed' && todo.error ? ` err: ${todo.error}` : '';
+            const error = todo.status === 'failed' && todo.error ? ` ${panelLabel(this.translator, 'tasks', 'errorPrefix', 'err: {error}', { error: todo.error })}` : '';
             return `${marker}${hierarchy}${index + 1}. [${this.todoStatusMark(todo.status)}] ${todo.content}${owner}${elapsed}${blocked}${error}`;
         });
         const totalCount = this.planTodos.length;
@@ -1342,13 +1343,13 @@ export class AgentConsoleTasksPanelComponent {
             return '';
         }
         const projectLabel = String(this.state.projectLabel || '').trim();
-        const projectSuffix = projectLabel ? ` · project ${projectLabel}` : '';
+        const projectSuffix = projectLabel ? ` · ${panelLabel(this.translator, 'tasks', 'projectSuffix', 'project {name}', { name: projectLabel })}` : '';
         if (this.shouldShowPlanTodos) {
             const activeCount = this.planTodos.filter(item => item.status === 'pending' || item.status === 'in_progress').length;
             const blockedCount = this.planTodos.filter(item => item.blockedBy && item.blockedBy.length > 0).length;
             const failedCount = this.planTodos.filter(item => item.status === 'failed').length;
-            const scopeSuffix = this.state.planScope === 'thread' ? ' · thread' : '';
-            const filterLabel = this.state.planTodoFilter !== 'all' ? ` · filter ${this.state.planTodoFilterLabel}` : '';
+            const scopeSuffix = this.state.planScope === 'thread' ? ` · ${panelLabel(this.translator, 'tasks', 'threadSuffix', 'thread')}` : '';
+            const filterLabel = this.state.planTodoFilter !== 'all' ? ` · ${panelLabel(this.translator, 'tasks', 'filterSuffix', 'filter {filter}', { filter: this.state.planTodoFilterLabel })}` : '';
             const selectedSuffix = this.state.selectedPlanTodoIndex >= 0 ? ` · ${this.state.selectedPlanTodoIndex + 1}/${this.state.filteredPlanTodos.length}` : '';
             const labels = { ...DEFAULT_TIMELINE_LABELS, ...(this.state.consoleOptions.timelineLabels || {}) };
             return `${labels.planLabel} ${this.planTodos.length} · ${labels.planActive} ${activeCount}${blockedCount ? ` · ${labels.planBlocked} ${blockedCount}` : ''}${failedCount ? ` · ${labels.planFailed} ${failedCount}` : ''}${filterLabel}${selectedSuffix}${scopeSuffix}${projectSuffix}`;
@@ -1361,22 +1362,22 @@ export class AgentConsoleTasksPanelComponent {
         }
         const filterLabel = this.taskFilterLabel;
         if (!filteredCount) {
-            return `tasks 0/${totalCount} · ${filterLabel}${projectSuffix}`;
+            return panelLabel(this.translator, 'tasks', 'summaryZero', 'tasks 0/{total} · {filter}', { total: totalCount, filter: filterLabel }) + projectSuffix;
         }
         const selectedIndex = Math.max(0, this.tasks.findIndex(item => item.id === this.state.selectedReviewTaskId));
-        const sourceSuffix = sessionCount > 1 ? ` · sessions ${sessionCount}` : '';
-        return `tasks ${filteredCount}/${totalCount} · ${filterLabel} · ${selectedIndex + 1}/${filteredCount}${sourceSuffix}${projectSuffix}`;
+        const sourceSuffix = sessionCount > 1 ? ` · ${panelLabel(this.translator, 'tasks', 'sessionsSuffix', 'sessions {count}', { count: sessionCount })}` : '';
+        return panelLabel(this.translator, 'tasks', 'summary', 'tasks {filtered}/{total} · {filter} · {index}/{filtered}', { filtered: filteredCount, total: totalCount, filter: filterLabel, index: selectedIndex + 1 }) + sourceSuffix + projectSuffix;
     }
 
     /** Keeps plan state understandable when glyphs and color are unavailable. */
     get accessibilityLabel(): string {
         const summary = this.tasksSummaryLabel;
         if (!summary) {
-            return 'Tasks and plan';
+            return panelLabel(this.translator, 'tasks', 'accessibilityTitle', 'Tasks and plan');
         }
         const active = this.planTodos.find(todo => todo.status === 'in_progress');
-        const activeText = active ? ` Current step: ${active.content}.` : '';
-        return `Tasks and plan. ${summary}.${activeText}`;
+        const activeText = active ? panelLabel(this.translator, 'tasks', 'accessibilityActive', ' Current step: {content}.', { content: active.content }) : '';
+        return panelLabel(this.translator, 'tasks', 'accessibility', 'Tasks and plan. {summary}.{active}', { summary, active: activeText });
     }
 
     get tasksHintLabel(): string {
@@ -1384,33 +1385,33 @@ export class AgentConsoleTasksPanelComponent {
             return '';
         }
         if (this.shouldShowPlanTodos) {
-            const actions = ['esc back'];
-            actions.push('f filter');
-            actions.push('j jump blocked');
-            actions.push('k jump failed');
-            actions.push('enter detail');
-            actions.push('e expand');
-            return `up/down move   ${actions.join('   ')}`;
+            const actions = [panelLabel(this.translator, 'tasks', 'escBack', 'esc back')];
+            actions.push(panelLabel(this.translator, 'tasks', 'filter', 'f filter'));
+            actions.push(panelLabel(this.translator, 'tasks', 'jumpBlocked', 'j jump blocked'));
+            actions.push(panelLabel(this.translator, 'tasks', 'jumpFailed', 'k jump failed'));
+            actions.push(panelLabel(this.translator, 'tasks', 'enterDetail', 'enter detail'));
+            actions.push(panelLabel(this.translator, 'tasks', 'expand', 'e expand'));
+            return `${panelLabel(this.translator, 'tasks', 'move', 'up/down move')}   ${actions.join('   ')}`;
         }
         const selected = this.state.selectedTask;
-        const actions = ['enter review'];
+        const actions = [panelLabel(this.translator, 'tasks', 'enterReview', 'enter review')];
         if (selected && this.canCancelTask(selected)) {
-            actions.push('x cancel', 'esc cancel');
+            actions.push(panelLabel(this.translator, 'tasks', 'cancelX', 'x cancel'), panelLabel(this.translator, 'tasks', 'cancelEsc', 'esc cancel'));
         } else {
-            actions.push('esc');
+            actions.push(panelLabel(this.translator, 'tasks', 'esc', 'esc'));
         }
         if (selected && this.canRetryTask(selected)) {
-            actions.push('r retry');
+            actions.push(panelLabel(this.translator, 'tasks', 'retry', 'r retry'));
         }
         if (selected && this.canRollbackTask(selected)) {
-            actions.push('b rollback');
+            actions.push(panelLabel(this.translator, 'tasks', 'rollback', 'b rollback'));
         }
         if (selected && this.canFocusLineage(selected)) {
-            actions.push('l lineage');
+            actions.push(panelLabel(this.translator, 'tasks', 'lineage', 'l lineage'));
         }
-        actions.push('f failed', 'v rollback', 'u all');
-        actions.push('y copy');
-        return `up/down move   pg jump   ${actions.join('   ')}`;
+        actions.push(panelLabel(this.translator, 'tasks', 'failed', 'f failed'), panelLabel(this.translator, 'tasks', 'rollbackAll', 'v rollback'), panelLabel(this.translator, 'tasks', 'all', 'u all'));
+        actions.push(panelLabel(this.translator, 'tasks', 'copy', 'y copy'));
+        return `${panelLabel(this.translator, 'tasks', 'move', 'up/down move')}   ${panelLabel(this.translator, 'tasks', 'pageJump', 'pg jump')}   ${actions.join('   ')}`;
     }
 
     get selectedTaskDetailLabel(): string {
@@ -1426,7 +1427,7 @@ export class AgentConsoleTasksPanelComponent {
         }
         if (!this.state.selectedTask) {
             if (this.state.reviewTaskChoices.length && !this.tasks.length) {
-                return `No tasks matched filter ${this.taskFilterLabel}.`;
+                return panelLabel(this.translator, 'tasks', 'emptyFilter', 'No tasks matched filter {filter}.', { filter: this.taskFilterLabel });
             }
             return '';
         }
@@ -1586,7 +1587,7 @@ export class AgentConsoleTasksPanelComponent {
     `
 })
 export class AgentConsoleJobsPanelComponent {
-    constructor(private state: AgentConsoleSessionState) {
+    constructor(private state: AgentConsoleSessionState, @Optional() private translator?: TranslatorService) {
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -1629,10 +1630,10 @@ export class AgentConsoleJobsPanelComponent {
         }
         return this.visibleJobs.map(job => {
             const summary = [
-                job.scheduleType || 'once',
-                job.paused ? 'paused' : '',
-                job.running ? 'running' : '',
-                job.cancelled ? 'cancelled' : ''
+                job.scheduleType ? panelStatusLabel(this.translator, 'jobs', job.scheduleType) : panelLabel(this.translator, 'jobs', 'statusOnce', 'once'),
+                job.paused ? panelLabel(this.translator, 'jobs', 'statusPaused', 'paused') : '',
+                job.running ? panelLabel(this.translator, 'jobs', 'statusRunning', 'running') : '',
+                job.cancelled ? panelLabel(this.translator, 'jobs', 'statusCancelled', 'cancelled') : ''
             ].filter(Boolean).join(' · ');
             const prompt = this.summarize(job.prompt);
             return {
@@ -1647,7 +1648,7 @@ export class AgentConsoleJobsPanelComponent {
             return '';
         }
         if (!this.jobs.length) {
-            return 'no scheduled jobs';
+            return panelLabel(this.translator, 'jobs', 'empty', 'no scheduled jobs');
         }
         return this.jobItems.map(item => item.label).join('\n');
     }
@@ -1683,10 +1684,10 @@ export class AgentConsoleJobsPanelComponent {
             return '';
         }
         if (!this.jobs.length) {
-            return 'jobs 0';
+            return panelLabel(this.translator, 'jobs', 'summaryZero', 'jobs 0');
         }
         const selectedIndex = Math.max(0, this.jobs.findIndex(item => item.id === this.state.selectedScheduledTaskId));
-        return `jobs ${this.jobs.length} · ${selectedIndex + 1}/${this.jobs.length}`;
+        return panelLabel(this.translator, 'jobs', 'summary', 'jobs {total} · {index}/{total}', { total: this.jobs.length, index: selectedIndex + 1 });
     }
 
     get jobsHintLabel(): string {
@@ -1694,16 +1695,16 @@ export class AgentConsoleJobsPanelComponent {
             return '';
         }
         if (!this.jobs.length) {
-            return 'no scheduled jobs   use schedulePrompt';
+            return panelLabel(this.translator, 'jobs', 'emptyHint', 'no scheduled jobs   use schedulePrompt');
         }
-        return 'up/down move   pg jump   enter toggle pause/resume   x cancel   r recover   y copy   esc';
+        return panelLabel(this.translator, 'jobs', 'hint', 'up/down move   pg jump   enter toggle pause/resume   x cancel   r recover   y copy   esc');
     }
 
     get selectedJobDetailLabel(): string {
         if (!this.shouldShow || !this.state.selectedScheduledTask) {
             return '';
         }
-        return this.state.scheduledTaskDetailLines.join('\n');
+        return formatScheduledTaskDetailLines(this.state.selectedScheduledTask, this.translator).join('\n');
     }
 
     get shouldShow(): boolean {
@@ -2063,7 +2064,7 @@ export class AgentConsoleToolsPanelComponent {
     `
 })
 export class AgentConsoleTextOverlayPanelComponent {
-    constructor(private state: AgentConsoleSessionState) {
+    constructor(private state: AgentConsoleSessionState, @Optional() private translator?: TranslatorService) {
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -2093,7 +2094,8 @@ export class AgentConsoleTextOverlayPanelComponent {
         if (!overlay) {
             return '';
         }
-        return `${overlay.title} ${overlay.lines.length} lines · ${overlay.scroll + 1}-${Math.min(overlay.lines.length, overlay.scroll + this.state.consoleOptions.reviewDetailVisibleLines)}`.trim();
+        const to = Math.min(overlay.lines.length, overlay.scroll + this.state.consoleOptions.reviewDetailVisibleLines);
+        return panelLabel(this.translator, 'overlay', 'title', '{title} {count} lines · {from}-{to}', { title: overlay.title, count: overlay.lines.length, from: overlay.scroll + 1, to }).trim();
     }
 
     get visibleLines(): string[] {
@@ -2101,15 +2103,16 @@ export class AgentConsoleTextOverlayPanelComponent {
     }
 
     get hintLabel(): string {
-        return this.state.hasTextOverlayFocus() ? 'Esc close · ↑↓ scroll' : '';
+        return this.state.hasTextOverlayFocus() ? panelLabel(this.translator, 'overlay', 'hint', 'Esc close · ↑↓ scroll') : '';
     }
 
     get accessibilityLabel(): string {
         const overlay = this.state.textOverlay;
         if (!overlay) {
-            return 'Text details';
+            return panelLabel(this.translator, 'overlay', 'ariaTitle', 'Text details');
         }
-        return `${overlay.title}. ${overlay.lines.length} lines. Showing ${overlay.scroll + 1} through ${Math.min(overlay.lines.length, overlay.scroll + this.state.consoleOptions.reviewDetailVisibleLines)}.`;
+        const to = Math.min(overlay.lines.length, overlay.scroll + this.state.consoleOptions.reviewDetailVisibleLines);
+        return panelLabel(this.translator, 'overlay', 'aria', '{title}. {count} lines. Showing {from} through {to}.', { title: overlay.title, count: overlay.lines.length, from: overlay.scroll + 1, to });
     }
 }
 
@@ -2128,7 +2131,7 @@ export class AgentConsoleTextOverlayPanelComponent {
     `
 })
 export class AgentConsoleCommandOutputsPanelComponent {
-    constructor(private state: AgentConsoleSessionState) {
+    constructor(private state: AgentConsoleSessionState, @Optional() private translator?: TranslatorService) {
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -2158,13 +2161,13 @@ export class AgentConsoleCommandOutputsPanelComponent {
             ? `${selected + 1}-${Math.min(entries.length, selected + visible)}`
             : '0-0';
         return entries.length !== total
-            ? `command outputs ${entries.length}/${total} · ${range}`
-            : `command outputs ${total} · ${range}`;
+            ? panelLabel(this.translator, 'outputs', 'title', 'command outputs {visible}/{total} · {range}', { visible: entries.length, total, range })
+            : panelLabel(this.translator, 'outputs', 'titleAll', 'command outputs {total} · {range}', { total, range });
     }
 
     get filterLabel(): string {
         return this.state.commandOutputsFilterMode
-            ? `filter: ${this.state.commandOutputsFilter}`
+            ? panelLabel(this.translator, 'outputs', 'filter', 'filter: {filter}', { filter: this.state.commandOutputsFilter })
             : '';
     }
 
@@ -2188,27 +2191,27 @@ export class AgentConsoleCommandOutputsPanelComponent {
 
     get emptyLabel(): string {
         if (this.state.commandOutputs.length === 0) {
-            return 'No command outputs yet.';
+            return panelLabel(this.translator, 'outputs', 'empty', 'No command outputs yet.');
         }
         if (this.state.visibleCommandOutputs.length === 0) {
-            return 'No matching command outputs.';
+            return panelLabel(this.translator, 'outputs', 'emptyFiltered', 'No matching command outputs.');
         }
         return '';
     }
 
     get hintLabel(): string {
         return this.state.hasCommandOutputsFocus()
-            ? 'Esc close · ↑↓/jk move · / filter · Enter copy'
+            ? panelLabel(this.translator, 'outputs', 'hint', 'Esc close · ↑↓/jk move · / filter · Enter copy')
             : '';
     }
 
     get accessibilityLabel(): string {
         const entries = this.state.visibleCommandOutputs;
         if (!entries.length) {
-            return 'Command output history. No command outputs.';
+            return panelLabel(this.translator, 'outputs', 'ariaEmpty', 'Command output history. No command outputs.');
         }
         const selected = entries[this.state.commandOutputsSelectedIndex];
-        return `Command output history. ${entries.length} entries. Selected ${this.state.commandOutputsSelectedIndex + 1} of ${entries.length}: ${selected?.command || 'none'}.`;
+        return panelLabel(this.translator, 'outputs', 'aria', 'Command output history. {count} entries. Selected {index} of {count}: {command}.', { count: entries.length, index: this.state.commandOutputsSelectedIndex + 1, command: selected?.command || panelLabel(this.translator, 'outputs', 'ariaNone', 'none') });
     }
 
     get activeOptionId(): string {
@@ -2233,7 +2236,7 @@ export class AgentConsoleCommandOutputsPanelComponent {
     `
 })
 export class AgentConsolePendingQuestionPanelComponent {
-    constructor(private state: AgentConsoleSessionState) {
+    constructor(private state: AgentConsoleSessionState, @Optional() private translator?: TranslatorService) {
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -2275,7 +2278,7 @@ export class AgentConsolePendingQuestionPanelComponent {
             return '';
         }
         const total = this.state.pendingQuestionTotal;
-        return total > 1 ? `Awaiting your answer · ${total} queued` : 'Awaiting your answer';
+        return total > 1 ? panelLabel(this.translator, 'question', 'queued', 'Awaiting your answer · {count} queued', { count: total }) : panelLabel(this.translator, 'question', 'title', 'Awaiting your answer');
     }
 
     get pendingQuestionContext(): string {
@@ -2288,13 +2291,13 @@ export class AgentConsolePendingQuestionPanelComponent {
             return '';
         }
         if (Date.now() > expiresAt) {
-            return 'Expired';
+            return panelLabel(this.translator, 'question', 'expired', 'Expired');
         }
         const remainingMs = expiresAt - Date.now();
         const minutes = Math.max(1, Math.ceil(remainingMs / 60000));
-        return minutes >= 60
-            ? `Expires in ${Math.floor(minutes / 60)}h${minutes % 60 ? ` ${minutes % 60}m` : ''}`
-            : `Expires in ${minutes}m`;
+        const hours = Math.floor(minutes / 60);
+        const rest = minutes % 60;
+        return hours >= 1 ? (rest ? panelLabel(this.translator, 'question', 'expiresHoursMinutes', 'Expires in {hours}h {minutes}m', { hours, minutes: rest }) : panelLabel(this.translator, 'question', 'expiresHours', 'Expires in {hours}h', { hours })) : panelLabel(this.translator, 'question', 'expiresMinutes', 'Expires in {minutes}m', { minutes });
     }
 
     get pendingQuestionOptionItems(): Array<{ id: string; label: string; value: string; selected: string }> {
@@ -2310,7 +2313,7 @@ export class AgentConsolePendingQuestionPanelComponent {
         const count = this.pendingQuestionOptionItems.length;
         if (!count) return '';
         const selected = Math.min(this.state.pendingQuestionSelectedIndex + 1, count);
-        return `selected ${selected}/${count} · ↑↓ move · 1-9 pick · Enter confirm · Esc dismiss`;
+        return panelLabel(this.translator, 'question', 'selectionHint', 'selected {selected}/{count} · ↑↓ move · 1-9 pick · Enter confirm · Esc dismiss', { selected, count });
     }
 
     get pendingQuestionCustomHint(): string {
@@ -2320,17 +2323,17 @@ export class AgentConsolePendingQuestionPanelComponent {
         }
         const typed = String(this.state.input || '').trim();
         return typed
-            ? `Custom answer: ${typed} · Enter to send`
-            : 'Or type your own answer, then press Enter';
+            ? panelLabel(this.translator, 'question', 'customAnswer', 'Custom answer: {text} · Enter to send', { text: typed })
+            : panelLabel(this.translator, 'question', 'customHint', 'Or type your own answer, then press Enter');
     }
 
     get accessibilityLabel(): string {
         const question = this.state.pendingQuestion;
         if (!question) {
-            return 'Question';
+            return panelLabel(this.translator, 'question', 'ariaTitle', 'Question');
         }
         const count = question.options.length;
-        return `Question: ${question.question}. ${count} options. Selected ${Math.min(this.state.pendingQuestionSelectedIndex + 1, count)} of ${count}.`;
+        return panelLabel(this.translator, 'question', 'aria', 'Question: {question}. {count} options. Selected {index} of {count}.', { question: question.question, count, index: Math.min(this.state.pendingQuestionSelectedIndex + 1, count) });
     }
 
     get activeOptionId(): string {
@@ -2357,7 +2360,7 @@ export class AgentConsolePendingQuestionPanelComponent {
     `
 })
 export class AgentConsoleToolRunsPanelComponent {
-    constructor(private state: AgentConsoleSessionState) {
+    constructor(private state: AgentConsoleSessionState, @Optional() private translator?: TranslatorService) {
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -2433,7 +2436,7 @@ export class AgentConsoleToolRunsPanelComponent {
             const duration = run.durationMs == null ? '' : ` ${run.durationMs}ms`;
             const attempt = run.attemptCount && run.attemptCount > 1 ? ` #${run.attemptCount}` : '';
             return {
-                label: `${selected ? '›' : ' '} ${run.name} [${run.status}]${duration}${attempt}`,
+                label: `${selected ? '›' : ' '} ${run.name} [${panelStatusLabel(this.translator, 'toolRuns', run.status)}]${duration}${attempt}`,
                 style: selected
                     ? this.activeThemeStyles.sessionsSelected
                     : this.activeThemeStyles.statusValue
@@ -2457,14 +2460,14 @@ export class AgentConsoleToolRunsPanelComponent {
             return '';
         }
         const running = this.toolRuns.filter(run => run.status === 'running').length;
-        const parts = [`tool runs ${this.toolRuns.length}`];
+        const parts = [panelLabel(this.translator, 'toolRuns', 'summary', 'tool runs {total}', { total: this.toolRuns.length })];
         if (running) {
-            parts.push(`running ${running}`);
+            parts.push(panelLabel(this.translator, 'toolRuns', 'running', 'running {count}', { count: running }));
         }
         const selected = this.selectedToolRun;
         if (selected) {
             const duration = selected.durationMs != null ? ` ${selected.durationMs}ms` : '';
-            parts.push(`${selected.name} ${selected.status}${duration}`);
+            parts.push(`${selected.name} ${panelStatusLabel(this.translator, 'toolRuns', selected.status)}${duration}`);
         }
         return parts.join(' · ');
     }
@@ -2479,20 +2482,20 @@ export class AgentConsoleToolRunsPanelComponent {
             return '';
         }
         const lines: string[] = [];
-        const attempt = selected.attemptCount && selected.attemptCount > 1 ? ` attempt #${selected.attemptCount}` : '';
-        const duration = selected.durationMs != null ? ` duration ${selected.durationMs}ms` : '';
-        lines.push(`${selected.name} [${selected.status}]${duration}${attempt}`);
+        const attempt = selected.attemptCount && selected.attemptCount > 1 ? ` ${panelLabel(this.translator, 'toolRuns', 'attempt', 'attempt #{count}', { count: selected.attemptCount })}` : '';
+        const duration = selected.durationMs != null ? ` ${panelLabel(this.translator, 'toolRuns', 'duration', 'duration {ms}ms', { ms: selected.durationMs })}` : '';
+        lines.push(`${selected.name} [${panelStatusLabel(this.translator, 'toolRuns', selected.status)}]${duration}${attempt}`);
         if (selected.executionMode) {
-            lines.push(`mode ${selected.executionMode}`);
+            lines.push(panelLabel(this.translator, 'toolRuns', 'mode', 'mode {mode}', { mode: selected.executionMode }));
         }
         if (selected.inputSummary) {
-            lines.push(`in ${this.summarize(selected.inputSummary)}`);
+            lines.push(panelLabel(this.translator, 'toolRuns', 'input', 'in {text}', { text: this.summarize(selected.inputSummary) }));
         }
         if (selected.outputSummary) {
-            lines.push(`out ${this.summarize(selected.outputSummary)}`);
+            lines.push(panelLabel(this.translator, 'toolRuns', 'output', 'out {text}', { text: this.summarize(selected.outputSummary) }));
         }
         if (selected.error) {
-            lines.push(`error ${this.summarize(selected.error)}`);
+            lines.push(panelLabel(this.translator, 'toolRuns', 'error', 'error {text}', { text: this.summarize(selected.error) }));
         }
         return lines.join('\n');
     }
@@ -4009,7 +4012,8 @@ export class AgentConsoleWhichKeyPanelComponent {
     };
 
     constructor(
-        private state: AgentConsoleSessionState
+        private state: AgentConsoleSessionState,
+        @Optional() private translator?: TranslatorService
     ) {
     }
 
@@ -4037,25 +4041,25 @@ export class AgentConsoleWhichKeyPanelComponent {
             if (!arr) { arr = []; groups.set(label, arr); }
             arr.push(b);
         }
-        return Array.from(groups.entries()).map(([label, items]) => ({ label, items }));
+        return Array.from(groups.entries()).map(([label, items]) => ({ label: panelLabel(this.translator, 'keymap', `group${label}`, label), items }));
     }
 
     get titleText(): string {
         const total = this.bindingCount;
         const page = this.state.whichKeyPage;
         const layout = this.state.whichKeyLayout;
-        const filter = this.state.whichKeyFilterCustom ? ' [custom]' : '';
-        const pageStr = page > 0 ? ` p${page + 1}` : '';
-        const layoutIcon = layout === 'grouped' ? ' grouped' : '';
-        return `Keymap (${total})${layoutIcon}${filter}${pageStr}`;
+        const filter = this.state.whichKeyFilterCustom ? panelLabel(this.translator, 'keymap', 'custom', ' [custom]') : '';
+        const pageStr = page > 0 ? panelLabel(this.translator, 'keymap', 'page', ' p{page}', { page: page + 1 }) : '';
+        const layoutIcon = layout === 'grouped' ? panelLabel(this.translator, 'keymap', 'layoutGrouped', ' grouped') : '';
+        return panelLabel(this.translator, 'keymap', 'title', 'Keymap ({total}){layout}{custom}{page}', { total, layout: layoutIcon, custom: filter, page: pageStr });
     }
 
     get hintText(): string {
-        const hints = ['Esc close'];
-        if (this.state.whichKeyPage > 0) hints.push('p prev');
-        hints.push('n next');
-        hints.push('L layout');
-        hints.push('F filter');
+        const hints = [panelLabel(this.translator, 'keymap', 'close', 'Esc close')];
+        if (this.state.whichKeyPage > 0) hints.push(panelLabel(this.translator, 'keymap', 'previous', 'p prev'));
+        hints.push(panelLabel(this.translator, 'keymap', 'next', 'n next'));
+        hints.push(panelLabel(this.translator, 'keymap', 'layout', 'L layout'));
+        hints.push(panelLabel(this.translator, 'keymap', 'filter', 'F filter'));
         return hints.join(' · ');
     }
 
@@ -4092,7 +4096,7 @@ export class AgentConsoleWhichKeyPanelComponent {
     selector: 'agent-console-health-popover',
     template: `
     <div class="console-panel console-health-popover" v-style="shellStyle">
-        <label class="health-title" v-style="titleStyle">Health ({{itemCount}})</label>
+        <label class="health-title" v-style="titleStyle">{{titleText}}</label>
         <label class="health-row" v-style="rowStyle" v-for="item in items">
             <span v-style="statusStyle(item.status)">{{statusLabel(item.status)}}</span>
             <span v-style="labelStyle"> {{item.label}}</span>
@@ -4104,7 +4108,8 @@ export class AgentConsoleWhichKeyPanelComponent {
 })
 export class AgentConsoleHealthPopoverComponent {
     constructor(
-        private state: AgentConsoleSessionState
+        private state: AgentConsoleSessionState,
+        @Optional() private translator?: TranslatorService
     ) {
     }
 
@@ -4116,12 +4121,12 @@ export class AgentConsoleHealthPopoverComponent {
         return this.state.healthItems;
     }
 
-    get itemCount(): string {
-        return String(this.items.length);
+    get titleText(): string {
+        return panelLabel(this.translator, 'health', 'title', 'Health ({count})', { count: this.items.length });
     }
 
     get hintText(): string {
-        return 'Ctrl+X H to toggle · hover to refresh';
+        return panelLabel(this.translator, 'health', 'hint', 'Ctrl+X H to toggle · hover to refresh');
     }
 
     statusLabel(status: AgentConsoleHealthStatus): string {

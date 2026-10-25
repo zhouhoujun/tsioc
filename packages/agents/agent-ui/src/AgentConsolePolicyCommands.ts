@@ -89,12 +89,12 @@ export async function showSandboxCapabilities(host: PolicyCommandHost): Promise<
     const proxy = host.options?.sandbox?.proxy;
     const capabilities = describeSandboxCapabilities(platform, probe, !!(proxy?.http || proxy?.https));
     const mode = await host.getSessionSandboxMode(host.state.sessionId).catch(() => 'default');
-    const lines = [`sandbox ${mode} · ${platform || 'unknown'} · ${probe.tool || 'process fallback'}`];
+    const lines = [formatAgentUiNotice(host.translator, 'sandboxCapabilitiesHeader', { mode, platform: platform || formatAgentUiNotice(host.translator, 'sandboxPlatformUnknown'), tool: probe.tool || formatAgentUiNotice(host.translator, 'sandboxProcessFallback') })];
     for (const item of capabilities) {
-        lines.push(`${item.capability} ${item.supported ? 'supported' : 'degraded'} · ${item.enforcement}`);
+        lines.push(formatAgentUiNotice(host.translator, item.supported ? 'sandboxCapabilitySupported' : 'sandboxCapabilityDegraded', { capability: item.capability, enforcement: item.enforcement }));
     }
     if (proxy?.required) {
-        lines.push(`proxy required · ${proxy.http || proxy.https ? 'configured' : 'missing'}`);
+        lines.push(formatAgentUiNotice(host.translator, proxy.http || proxy.https ? 'sandboxProxyConfigured' : 'sandboxProxyMissing'));
     }
     host.notify(lines.join('\n'));
 }

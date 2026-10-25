@@ -58,7 +58,7 @@ import { getGlobalProcess } from './global-process';
 import { decodeVoiceAudioChunk, handleVoiceCommand, playVoiceReply, startVoiceCapture, stopVoiceCapture, VoiceHandlerContext } from './AgentConsoleVoiceHandlers';
 import { activateModelProfile, consumePendingTurnModelProfile, cycleModelVariant, cycleRecentModel, EffortLevel, getModelProfileOptions, loadModelProfileOptions, openModelSwitcher, persistModelStore, queueNextTurnModelProfile, recordRecentModel, resolveInitialModelProfile, resolveModelProfileConfig, restoreModelStore, setModelReasoningEffort, toggleModelFavorite, ModelHandlerContext } from './AgentConsoleModelHandlers';
 import { dismissEditMode, enterEditMode, EditModeHandlerContext, extractEditableMessageText, getEditableImageParts, getEditableUserMessages, handleIdleEscape, startEditTarget } from './AgentConsoleEditModeHandlers';
-import { formatAgentUiLabel, formatAgentUiNotice } from './agent-ui.i18n';
+import { formatAgentPanelLabel, formatAgentUiLabel, formatAgentUiNotice } from './agent-ui.i18n';
 import {
     CodingTaskHandlerContext,
     resolveCodingTaskSessionId as resolveCodingTaskSessionIdFn,
@@ -517,7 +517,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         const lines = String(message || '').split('\n').filter(line => line.trim().length);
         this.state.setNotice(message);
         if (lines.length > 3) {
-            this.state.openTextOverlay('notice', lines);
+            this.state.openTextOverlay(formatAgentPanelLabel(this.translator, 'overlay', 'noticeTitle', 'notice'), lines);
         }
     }
 

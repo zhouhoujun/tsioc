@@ -18,10 +18,10 @@ import { buildAgentConsoleHelpOptions } from './AgentConsoleCommandRegistry';
 import type { AgentConsoleParsedCommandArguments } from './AgentConsoleCommandRegistry';
 import type { AgentConsoleSessionService } from './AgentConsoleSessionService';
 import type { NavFilter, NavSelection, SessionSearchMatch } from '@tsdi/agent';
-import { AGENT_CONSOLE_OVERLAY_HINTS, AGENT_CONSOLE_OVERLAY_TITLES } from './AgentConsoleOverlayPresenter';
+import { AGENT_CONSOLE_OVERLAY_HINTS } from './AgentConsoleOverlayPresenter';
 import type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
 export type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
-import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentUiNotice, formatAgentPanelLabel as panelLabel, type AgentUiTranslator } from './agent-ui.i18n';
 
 // ── Command handler type ─────────────────────────────────────────────────────
 
@@ -57,7 +57,7 @@ function parseTrendTokens(args: string, sep = ' '): { sessionId?: string; bucket
 // ── Handler functions ────────────────────────────────────────────────────────
 
 async function handleHelp(ctx: CommandHandlerContext, _args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
-    const helpSelection = await ctx.select('Help', buildAgentConsoleHelpOptions((key, fallback) => { const value = ctx.translator?.translate(key); return value && value !== key ? value : fallback; }), 0, ctx.state.consoleOptions.selectHint);
+    const helpSelection = await ctx.select(panelLabel(ctx.translator, 'select', 'help', 'Help'), buildAgentConsoleHelpOptions((key, fallback) => { const value = ctx.translator?.translate(key); return value && value !== key ? value : fallback; }), 0, ctx.state.consoleOptions.selectHint);
     if (helpSelection) {
         await ctx.handleMenuSelection(helpSelection);
     }
@@ -169,7 +169,7 @@ async function handleApproveDeny(ctx: CommandHandlerContext, args: string, resol
     }
     const req = pend.length === 1 ? pend[0] : null;
     if (!req) {
-        const sel = await ctx.select(isApprove ? 'Approve' : 'Deny',
+        const sel = await ctx.select(panelLabel(ctx.translator, 'select', isApprove ? 'approve' : 'deny', isApprove ? 'Approve' : 'Deny'),
             pend.map((r: any) => ({ label: r.toolName + ' (' + r.id.slice(0, 8) + ')', value: r.id, description: r.reason })));
         if (!sel) { return true; }
         const found = pend.find((r: any) => r.id === sel);
@@ -317,10 +317,10 @@ async function handleResume(ctx: CommandHandlerContext, _args: string, _resolved
     if (ctx.isTurnInProgress()) { ctx.notifyBusyState(); return true; }
     const all = await ctx.sessionService?.listSessions(ctx.state.sessionId, undefined, { includeArchived: true }) || [];
     if (!all.length) { ctx.notify(formatAgentUiNotice(ctx.translator, 'sessionsAvailable')); return true; }
-    const selected = await ctx.select('Resume session', all.map(item => ({
-        label: `${item.id}${item.archived ? ' (archived)' : ''}`,
+    const selected = await ctx.select(panelLabel(ctx.translator, 'select', 'resume', 'Resume session'), all.map(item => ({
+        label: `${item.id}${item.archived ? ` ${panelLabel(ctx.translator, 'select', 'archived', '(archived)')}` : ''}`,
         value: item.id,
-        description: item.title || item.summary || `${item.messageCount || 0} messages`
+        description: item.title || item.summary || panelLabel(ctx.translator, 'sessions', 'messageCount', '{count} messages', { count: item.messageCount || 0 })
     })));
     if (selected) await ctx.openSession(selected);
     return true;
@@ -420,9 +420,9 @@ async function handleSnapshots(ctx: CommandHandlerContext, _args: string, _resol
         return true;
     }
     const choice = await ctx.select(
-        `Snapshots (${snapshots.length})`,
+        panelLabel(ctx.translator, 'select', 'snapshots', 'Snapshots ({count})', { count: snapshots.length }),
         snapshots.map((snapshot, index) => ({
-            label: `${String(snapshot.label || 'snapshot').trim()} · ${snapshot.messageCount ?? 0} msgs${snapshot.summary ? ` · ${snapshot.summary}` : ''}`,
+            label: `${String(snapshot.label || panelLabel(ctx.translator, 'select', 'snapshotDefault', 'snapshot')).trim()} · ${panelLabel(ctx.translator, 'select', 'snapshotMessages', '{count} msgs', { count: snapshot.messageCount ?? 0 })}${snapshot.summary ? ` · ${snapshot.summary}` : ''}`,
             value: String(snapshot.snapshotId || index),
             detail: snapshot.snapshotId
         })),
@@ -431,10 +431,10 @@ async function handleSnapshots(ctx: CommandHandlerContext, _args: string, _resol
     );
     if (!choice) return true;
     const action = await ctx.select(
-        'Snapshot action',
+        panelLabel(ctx.translator, 'select', 'snapshotAction', 'Snapshot action'),
         [
-            { label: 'restore', value: 'restore', detail: 'replace current transcript with this snapshot' },
-            { label: 'delete', value: 'delete', detail: 'remove this snapshot' }
+            { label: panelLabel(ctx.translator, 'select', 'restore', 'restore'), value: 'restore', detail: panelLabel(ctx.translator, 'select', 'restoreDescription', 'replace current transcript with this snapshot') },
+            { label: panelLabel(ctx.translator, 'select', 'deleteSnapshot', 'delete'), value: 'delete', detail: panelLabel(ctx.translator, 'select', 'deleteSnapshotDescription', 'remove this snapshot') }
         ],
         0,
         ctx.state.consoleOptions.selectHint
@@ -501,9 +501,9 @@ async function handleSearch(ctx: CommandHandlerContext, args: string, _resolved:
         if (agentResults.length) {
             const currentId = ctx.state.sessionId;
             const sessionId = await ctx.select(
-                `Search: "${rawQuery}" (${agentResults.length})`,
+                panelLabel(ctx.translator, 'sessions', 'searchTitle', 'Search: "{query}" ({count})', { query: rawQuery, count: agentResults.length }),
                 agentResults.map(result => ({
-                    label: `${result.sessionId}${result.sessionId === currentId ? ' [current]' : ''} (${result.count} msg)`,
+                    label: `${result.sessionId}${result.sessionId === currentId ? ` [${panelLabel(ctx.translator, 'sessions', 'current', 'current')}]` : ''} (${panelLabel(ctx.translator, 'sessions', 'hitCount', '{count} msg', { count: result.count })})`,
                     value: result.sessionId,
                     detail: result.snippet || result.summary || result.workspace || ''
                 })),
@@ -569,13 +569,13 @@ async function handleSearch(ctx: CommandHandlerContext, args: string, _resolved:
             return true;
         }
         const sessionId = await ctx.select(
-            `Search: "${rawQuery}" (${merged.length})`,
+            panelLabel(ctx.translator, 'sessions', 'searchTitle', 'Search: "{query}" ({count})', { query: rawQuery, count: merged.length }),
             merged.map(s => {
                 const hit = contentHits.get(s.id);
                 const name = String(s.title || '').trim() || s.id;
                 const pinned = s.pinned ? ' 📌' : '';
                 return {
-                    label: `${name}${s.current ? ' [current]' : ''}${hit ? ` (${hit.count} msg)` : ''} (${s.messageCount ?? '?'})${pinned}`,
+                    label: `${name}${s.current ? ` [${panelLabel(ctx.translator, 'sessions', 'current', 'current')}]` : ''}${hit ? ` (${panelLabel(ctx.translator, 'sessions', 'hitCount', '{count} msg', { count: hit.count })})` : ''} (${s.messageCount ?? '?'})${pinned}`,
                     value: s.id,
                     detail: hit ? hit.snippet : (s.summary || s.workspace || '')
                 };
@@ -604,11 +604,11 @@ async function handleProjects(ctx: CommandHandlerContext, _args: string, _resolv
     ctx.state.closeGitSnapshotDetail();
     {
         const project = await ctx.select(
-            AGENT_CONSOLE_OVERLAY_TITLES.projects,
+            panelLabel(ctx.translator, 'sessions', 'projectsTitle', 'Projects'),
             ctx.state.projects.map(p => ({
                 label: `${p.label} (${p.sessionCount})`,
                 value: p.key,
-                detail: p.lastActive ? `last active ${new Date(p.lastActive).toLocaleDateString()}` : undefined
+                detail: p.lastActive ? panelLabel(ctx.translator, 'sessions', 'lastActive', 'last active {date}', { date: new Date(p.lastActive).toLocaleDateString() }) : undefined
             })),
             0,
             AGENT_CONSOLE_OVERLAY_HINTS.select
@@ -622,9 +622,9 @@ async function handleProjects(ctx: CommandHandlerContext, _args: string, _resolv
             return true;
         }
         const sessionId = await ctx.select(
-            `Sessions in ${project}`,
+            panelLabel(ctx.translator, 'sessions', 'sessionsIn', 'Sessions in {name}', { name: project }),
             projectSessions.map(s => ({
-                label: `${String(s.title || '').trim() || s.id}${s.current ? ' [current]' : ''} (${s.messageCount ?? '?'})${s.pinned ? ' 📌' : ''}`,
+                label: `${String(s.title || '').trim() || s.id}${s.current ? ` [${panelLabel(ctx.translator, 'sessions', 'current', 'current')}]` : ''} (${s.messageCount ?? '?'})${s.pinned ? ' 📌' : ''}`,
                 value: s.id,
                 detail: s.summary
             })),
@@ -657,11 +657,11 @@ async function handleThreads(ctx: CommandHandlerContext, _args: string, _resolve
             return true;
         }
         const thread = await ctx.select(
-            AGENT_CONSOLE_OVERLAY_TITLES.threads,
+            panelLabel(ctx.translator, 'sessions', 'threadsTitle', 'Threads'),
             ctx.state.threads.map(t => ({
-                label: `${t.label} (${t.sessionCount})${t.sections?.length ? ` [${t.sections.length} sections]` : ''}`,
+                label: `${t.label} (${t.sessionCount})${t.sections?.length ? ` [${panelLabel(ctx.translator, 'sessions', 'sectionsSuffix', '{count} sections', { count: t.sections.length })}]` : ''}`,
                 value: t.key,
-                detail: t.lastActive ? `last active ${new Date(t.lastActive).toLocaleDateString()}` : undefined
+                detail: t.lastActive ? panelLabel(ctx.translator, 'sessions', 'lastActive', 'last active {date}', { date: new Date(t.lastActive).toLocaleDateString() }) : undefined
             })),
             0,
             AGENT_CONSOLE_OVERLAY_HINTS.select
@@ -675,9 +675,9 @@ async function handleThreads(ctx: CommandHandlerContext, _args: string, _resolve
             return true;
         }
         const sessionId = await ctx.select(
-            `Sessions in ${thread}`,
+            panelLabel(ctx.translator, 'sessions', 'sessionsIn', 'Sessions in {name}', { name: thread }),
             threadSessions.map(s => ({
-                label: `${String(s.title || '').trim() || s.id}${s.current ? ' [current]' : ''} (${s.messageCount ?? '?'})${s.pinned ? ' 📌' : ''}`,
+                label: `${String(s.title || '').trim() || s.id}${s.current ? ` [${panelLabel(ctx.translator, 'sessions', 'current', 'current')}]` : ''} (${s.messageCount ?? '?'})${s.pinned ? ' 📌' : ''}`,
                 value: s.id,
                 detail: s.summary
             })),
@@ -713,13 +713,13 @@ async function handleSections(ctx: CommandHandlerContext, args: string, _resolve
         return true;
     }
     const section = await ctx.select(
-        'Sections',
+        panelLabel(ctx.translator, 'sessions', 'sectionsTitle', 'Sections'),
         ctx.state.sections.map(item => {
             const count = ctx.state.messages.filter(message => message.sectionId === item.id).length;
             return {
-                label: `${item.label}${count ? ` (${count} messages)` : ''}`,
+                label: `${item.label}${count ? ` (${panelLabel(ctx.translator, 'sessions', 'messageCount', '{count} messages', { count })})` : ''}`,
                 value: item.id,
-                detail: `created ${new Date(item.createdAt).toLocaleString()}`
+                detail: panelLabel(ctx.translator, 'sections', 'created', 'created {date}', { date: new Date(item.createdAt).toLocaleString() })
             };
         }),
         0,
@@ -729,14 +729,14 @@ async function handleSections(ctx: CommandHandlerContext, args: string, _resolve
         return true;
     }
     const action = await ctx.select(
-        'Section actions',
+        panelLabel(ctx.translator, 'sections', 'actions', 'Section actions'),
         [
-            { label: 'Rename', value: 'rename', description: 'rename this section (choose a new label below)' },
-            { label: 'Delete', value: 'delete', description: 'delete this section and detach its messages' },
-            { label: 'Move to start', value: 'start', description: 'move this section to the top' },
-            { label: 'Move to end', value: 'end', description: 'move this section to the bottom' },
-            { label: 'Create before', value: 'before', description: 'create a new section before this one' },
-            { label: 'Create after', value: 'after', description: 'create a new section after this one' }
+            { label: panelLabel(ctx.translator, 'sections', 'rename', 'Rename'), value: 'rename', description: panelLabel(ctx.translator, 'sections', 'renameDescription', 'rename this section (choose a new label below)') },
+            { label: panelLabel(ctx.translator, 'sections', 'delete', 'Delete'), value: 'delete', description: panelLabel(ctx.translator, 'sections', 'deleteDescription', 'delete this section and detach its messages') },
+            { label: panelLabel(ctx.translator, 'sections', 'moveStart', 'Move to start'), value: 'start', description: panelLabel(ctx.translator, 'sections', 'moveStartDescription', 'move this section to the top') },
+            { label: panelLabel(ctx.translator, 'sections', 'moveEnd', 'Move to end'), value: 'end', description: panelLabel(ctx.translator, 'sections', 'moveEndDescription', 'move this section to the bottom') },
+            { label: panelLabel(ctx.translator, 'sections', 'createBefore', 'Create before'), value: 'before', description: panelLabel(ctx.translator, 'sections', 'createBeforeDescription', 'create a new section before this one') },
+            { label: panelLabel(ctx.translator, 'sections', 'createAfter', 'Create after'), value: 'after', description: panelLabel(ctx.translator, 'sections', 'createAfterDescription', 'create a new section after this one') }
         ],
         0,
         ctx.state.consoleOptions.selectHint
@@ -771,7 +771,7 @@ async function handleSections(ctx: CommandHandlerContext, args: string, _resolve
         const beforeId = action === 'before'
             ? section
             : ctx.state.sections[targetIndex + 1]?.id;
-        const label = await ctx.select('New section label', [
+        const label = await ctx.select(panelLabel(ctx.translator, 'select', 'newSectionLabel', 'New section label'), [
             { label: 'Continue from previous section', value: '' },
             { label: 'Next step', value: 'Next step' },
             { label: 'Implementation', value: 'Implementation' },
@@ -784,7 +784,7 @@ async function handleSections(ctx: CommandHandlerContext, args: string, _resolve
         await ctx.refreshCurrentSections();
         ctx.notify(formatAgentUiNotice(ctx.translator, 'sectionLabelCreated', { label: created.label }));
     } else if (action === 'rename') {
-        const label = await ctx.select('Rename section to', [
+        const label = await ctx.select(panelLabel(ctx.translator, 'select', 'renameSectionTo', 'Rename section to'), [
             { label: 'Next step', value: 'Next step' },
             { label: 'Implementation', value: 'Implementation' },
             { label: 'Analysis', value: 'Analysis' },
