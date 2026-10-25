@@ -836,4 +836,30 @@ export class PanelI18nTest {
         const enItems = renderAgentConsoleMessageItems([message], { translator: en } as any);
         expect(enItems[0].lines.at(-1)?.meta).toContain('Worked for 9m 2s · done ');
     }
+    @Test('resumed timeline rows are projected in the current locale')
+    async replayProjectionLocalized() {
+        const zhState = new AgentConsoleSessionState(new InMemoryCommandExecutionControl(), zh as any);
+        zhState.configure({ sessionId: 'seed-zh' } as any);
+        zhState.seedTimeline([
+            { sessionId: 'seed-zh', kind: 'tool', label: 'bash', status: 'completed', durationMs: 1200, sequence: 1 },
+            { sessionId: 'seed-zh', kind: 'tool', label: 'read_file', status: 'failed', summary: 'ENOENT', sequence: 2 },
+            { sessionId: 'seed-zh', kind: 'plan', label: '修复登录', status: 'completed', sequence: 3 },
+            { sessionId: 'seed-zh', kind: 'step', label: '改代码', status: 'running', sequence: 4 }
+        ] as any);
+        const zhRows = zhState.messages.map(message => String(message.content || ''));
+        expect(zhRows).toContain('bash 已完成 · 1200ms');
+        expect(zhRows).toContain('read file 失败：ENOENT');
+        expect(zhRows).toContain('计划已完成：修复登录');
+        expect(zhRows).toContain('步骤开始：改代码');
+
+        const enState = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        enState.configure({ sessionId: 'seed-en' } as any);
+        enState.seedTimeline([
+            { sessionId: 'seed-en', kind: 'tool', label: 'bash', status: 'completed', durationMs: 1200, sequence: 1 },
+            { sessionId: 'seed-en', kind: 'turn', status: 'completed', sequence: 2 }
+        ] as any);
+        const enRows = enState.messages.map(message => String(message.content || ''));
+        expect(enRows).toContain('bash completed · 1200ms');
+        expect(enRows).toContain('Turn completed');
+    }
 }

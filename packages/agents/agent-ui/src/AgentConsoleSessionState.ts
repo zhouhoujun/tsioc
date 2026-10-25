@@ -6,6 +6,7 @@ import {
     ConsoleTextInputChunkResult,
     DEFAULT_TERMINAL_COLUMNS
 } from './console-ports';
+import { projectTimelineContent } from './AgentConsoleTimelineProjection';
 import { AgentMessage, AgentSessionSection, AgentSessionSectionInfo, AgentToolDefinition, ScheduledAgentTask, ContextPreparationReport, TimelineEntry, sortTimelineEntries, NavEntityType, NavFilter, NavSelection, NavTree, applyNavFilter, flattenNav, navigateCursor, resolveNavSelection, ThreadItemEvent, ThreadItemKind, ThreadItemStatus, normalizeThreadItemEvent, CommandExchangeRecord, compareCommandExchangeAsc, DEFAULT_RENDER_POLICY, HarnessProjection } from '@tsdi/agent';
 import type { BackgroundTaskRecord } from '@tsdi/agent-tools';
 import {
@@ -1521,7 +1522,8 @@ export class AgentConsoleSessionState {
                 source: 'remote',
                 sequence: entry.sequence
             };
-            const text = String(projectTimelineContent(entry) || '').trim();
+            const text = String(projectTimelineContent(entry, (key, fallback, params) =>
+                formatAgentUiLabel(this.translator, `agent.menu.transcript.replay.${key}`, fallback, params)) || '').trim();
             if (text) {
                 const existingIndex = eventIndexes.get(key);
                 if (existingIndex !== undefined) {
@@ -6656,58 +6658,4 @@ const REPLAY_STATUSES: Record<string, ThreadItemStatus | undefined> = {
 function normalizeReplayStatus(status?: string): ThreadItemStatus | undefined {
     const value = String(status || '').trim();
     return REPLAY_STATUSES[value];
-}
-
-function projectTimelineContent(entry: TimelineEntry): string {
-    const rawLabel = String(entry.label || entry.kind || '').trim();
-    if (isTimelineStructureOnlyLabel(rawLabel)) {
-        return '';
-    }
-    const label = summarizeTimelineEntryText(rawLabel, 120) || entry.kind;
-    if (entry.kind === 'tool') {
-        if (entry.status === 'running') {
-            return `Running ${label.replace(/[._-]+/g, ' ')}`;
-        }
-        if (entry.status === 'failed') {
-            const error = summarizeTimelineEntryText(entry.error || entry.summary, 160) || 'unknown error';
-            return `${label.replace(/[._-]+/g, ' ')} failed: ${error}`;
-        }
-        const duration = typeof entry.durationMs === 'number' ? ` · ${entry.durationMs}ms` : '';
-        return `${label.replace(/[._-]+/g, ' ')} completed${duration}`;
-    }
-    if (entry.kind === 'step') {
-        const verb = entry.status === 'running' ? 'started' : entry.status === 'blocked' ? 'blocked' : entry.status === 'failed' ? 'failed' : entry.status === 'cancelled' ? 'cancelled' : 'completed';
-        const reason = entry.status === 'blocked' && entry.detail ? ` (${entry.detail})` : '';
-        return `Step ${verb}: ${label}${reason}`;
-    }
-    if (entry.kind === 'plan') {
-        if (entry.status === 'completed') {
-            return `Plan completed: ${entry.label}`;
-        }
-        return `Plan ${entry.status === 'pending' ? 'created' : entry.status}: ${entry.label}`;
-    }
-    if (entry.kind === 'turn') {
-        if (entry.status === 'completed') {
-            return 'Turn completed';
-        }
-        if (entry.status === 'cancelled') {
-            return 'Turn cancelled';
-        }
-        return 'Turn started';
-    }
-    return `${entry.kind}: ${label}`;
-}
-
-function isTimelineStructureOnlyLabel(value: string): boolean {
-    return !!value && !value.replace(/(?:^|\s)(?:\d+\.|[-*+•◦▪])(?=\s|$)/g, '').trim();
-}
-
-function summarizeTimelineEntryText(value: unknown, maxLength: number): string {
-    const text = String(value || '')
-        .replace(/\r/g, '')
-        .split('\n')
-        .map(line => line.replace(/\s+/g, ' ').trim())
-        .find(Boolean) || '';
-    if (text.length <= maxLength) return text;
-    return `${text.slice(0, Math.max(1, maxLength - 3)).trimEnd()}...`;
 }

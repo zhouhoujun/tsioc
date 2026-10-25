@@ -6,6 +6,7 @@ import { AGENT_UI_TOOL_LABELS_EN, AGENT_UI_TOOL_LABELS_ZH } from './agent-ui.i18
 import { AGENT_UI_HINT_EN, AGENT_UI_HINT_ZH, AGENT_UI_MENU_EN, AGENT_UI_MENU_ZH } from './agent-ui.i18n.menu';
 import { AGENT_UI_PANEL_EN, AGENT_UI_PANEL_ZH } from './agent-ui.i18n.panel';
 import { AGENT_UI_DIAG_EN, AGENT_UI_DIAG_ZH } from './agent-ui.i18n.diagnostics';
+import { AGENT_UI_TRANSCRIPT_EN, AGENT_UI_TRANSCRIPT_ZH } from './agent-ui.i18n.transcript';
 
 export interface AgentUiTranslator {
     translate(key: string, params?: any): string | undefined;
@@ -215,7 +216,7 @@ export const agentUiEnglish: TranslationBundle = {
                 status: { running: 'running', completed: 'completed', cancelled: 'cancelled', failed: 'failed' }
             },
             hint: AGENT_UI_HINT_EN,
-            menu: { ...AGENT_UI_MENU_EN, panel: AGENT_UI_PANEL_EN, diag: AGENT_UI_DIAG_EN },
+            menu: { ...AGENT_UI_MENU_EN, panel: AGENT_UI_PANEL_EN, diag: AGENT_UI_DIAG_EN, transcript: AGENT_UI_TRANSCRIPT_EN },
             context: {
                 strategy: 'context {strategy}',
                 level: 'level {level}',
@@ -467,7 +468,7 @@ export const agentUiChinese: TranslationBundle = {
                 status: { running: '进行中', completed: '已完成', cancelled: '已取消', failed: '失败' }
             },
             hint: AGENT_UI_HINT_ZH,
-            menu: { ...AGENT_UI_MENU_ZH, panel: AGENT_UI_PANEL_ZH, diag: AGENT_UI_DIAG_ZH },
+            menu: { ...AGENT_UI_MENU_ZH, panel: AGENT_UI_PANEL_ZH, diag: AGENT_UI_DIAG_ZH, transcript: AGENT_UI_TRANSCRIPT_ZH },
             context: {
                 strategy: '上下文 {strategy}',
                 level: '级别 {level}',

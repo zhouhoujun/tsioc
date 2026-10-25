@@ -1709,3 +1709,14 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **真实 TUI（zh-CN）复核**：恢复会话 → `✓ 你好` / `用时 2s · 完成于 12:40` / `完成 · 耗时 43m 27s`。
 - **测试**：`panel-i18n.spec.ts` 32 → **33 条**（zh 渲染真实 `renderAgentConsoleMessageItems` 断言 `用时 9m 2s · 完成于`，en fallback 仍为 `Worked for 9m 2s · done`）；`p237`/`message-renderer`/`p409`/`console-renderer` 全部保持通过。
 - **门禁**：agent-ui **1692 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size（`MessageRenderers` 1280、`Panels` 4176、bundle 575 均在预算内）、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
+
+## 2026-10-25 会话恢复时的历史行（timeline 重放）中文化 + 状态类再瘦身
+- **现象**：远端/网页宿主切换会话时，`AgentConsoleRemoteEventBridge` 用 `timeline.query` 拉取历史并调用 `seedTimeline`；行文本由 `AgentConsoleSessionState` 内的 `projectTimelineContent` 直接拼英文，恢复后可见 `bash completed · 1200ms`、`Plan completed: …`、`Step started: …`、`Turn completed`。
+- **做法**：
+  - 抽出 `src/AgentConsoleTimelineProjection.ts`（`projectTimelineContent(entry, text?)`，纯格式化，不依赖 i18n；缺省用英文 fallback 并就地插值），状态类只负责把 `formatAgentUiLabel(this.translator, 'agent.menu.transcript.replay.*')` 作为 `text` 传入。
+  - 新增 `src/agent-ui.i18n.transcript.ts`（`AGENT_UI_TRANSCRIPT_EN/ZH`，`replay` 节 15 个 key：tool/step/plan/turn 各状态 + `unknownError`），并入 `menu.transcript`；单独成文件是为了让 notice/menu/panel/diagnostics 四个 catalog 继续留在 600 行预算内。
+  - 工具名/计划步骤名/id/后端错误文本保持原文；`planStatus` 的 `{status}` 也是标识符。
+  - **ratchet**：`AgentConsoleSessionState.ts` 6723（改完一度超 6714）→ 抽出投影后 **6661**，同提交把 baseline 6714 下调到 **6662**。
+- **测试**：`panel-i18n.spec.ts` 33 → **34 条**：真实 `seedTimeline` + zh translator 断言 `bash 已完成 · 1200ms`、`read file 失败：ENOENT`、`计划已完成：修复登录`、`步骤开始：改代码`；无 translator 时仍为 `bash completed · 1200ms` / `Turn completed`。
+- **门禁**：agent-ui **1693 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**（首轮 diff-check 因删除代码留下文件末尾空行失败，修正后通过）；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate 全部通过。
+- **范围说明**：CLI/TUI 的本地会话恢复走已存消息 + 渲染期本地化（上一批的生命周期映射），本批覆盖的是“从 timeline 条目重建历史”的宿主（web/remote bridge 与 TUI gate 场景）。
