@@ -100,20 +100,26 @@ export function resolveFocusedCodingTask(ctx: CodingTaskHandlerContext): Record<
 
 // ── Coding task inspection / selection ───────────────────────────────────────
 
-export function describeCodingTaskRollback(task: any): string {
+export function describeCodingTaskRollback(task: any, translator?: AgentUiTranslator | null): string {
     const rollback = task?.result?.rollback;
     if (rollback?.available === true) {
-        return rollback.mode ? `rollback ready (${rollback.mode})` : 'rollback ready';
+        return rollback.mode
+            ? panelLabel(translator, 'tasks', 'rollbackReadyMode', 'rollback ready ({mode})', { mode: rollback.mode })
+            : panelLabel(translator, 'tasks', 'rollbackReady', 'rollback ready');
     }
     if (rollback?.rolledBackAt) {
-        return rollback.mode ? `rolled back (${rollback.mode})` : 'rolled back';
+        return rollback.mode
+            ? panelLabel(translator, 'tasks', 'rolledBackMode', 'rolled back ({mode})', { mode: rollback.mode })
+            : panelLabel(translator, 'tasks', 'rolledBack', 'rolled back');
     }
     const checkpoints = Array.isArray(task?.metadata?.checkpoints) ? task.metadata.checkpoints : [];
     const availableCheckpoint = checkpoints.find((entry: any) => entry?.status === 'available');
     if (availableCheckpoint) {
-        return availableCheckpoint.mode ? `rollback ready (${availableCheckpoint.mode})` : 'rollback ready';
+        return availableCheckpoint.mode
+            ? panelLabel(translator, 'tasks', 'rollbackReadyMode', 'rollback ready ({mode})', { mode: availableCheckpoint.mode })
+            : panelLabel(translator, 'tasks', 'rollbackReady', 'rollback ready');
     }
-    return 'rollback unavailable';
+    return panelLabel(translator, 'tasks', 'rollbackUnavailable', 'rollback unavailable');
 }
 
 export function describeCodingTaskCheckpointSummary(task: any): string | undefined {
@@ -307,44 +313,44 @@ export function orderCodingTasksByLineage(tasks: any[]): any[] {
     return ordered;
 }
 
-export function buildCodingTaskSelectOption(task: any, tasks: any[] = []): AgentConsoleSelectOption {
+export function buildCodingTaskSelectOption(task: any, tasks: any[] = [], translator?: AgentUiTranslator | null): AgentConsoleSelectOption {
     const choice = buildCodingTaskChoice(task, tasks);
     const lineageSegments = choice.retryOfTaskId
         ? [
-            `retry ${typeof choice.retryDepth === 'number' ? choice.retryDepth : 1}`,
-            `from ${choice.retryOfTaskId}`
+            panelLabel(translator, 'tasks', 'retryMeta', 'retry {depth}', { depth: typeof choice.retryDepth === 'number' ? choice.retryDepth : 1 }),
+            panelLabel(translator, 'tasks', 'from', 'from {id}', { id: choice.retryOfTaskId })
         ]
-        : ['root'];
+        : [panelLabel(translator, 'tasks', 'root', 'root')];
     if (typeof choice.lineageTaskCount === 'number') {
-        lineageSegments.push(`lineage ${choice.lineageTaskCount}`);
+        lineageSegments.push(panelLabel(translator, 'tasks', 'lineageMeta', 'lineage {count}', { count: choice.lineageTaskCount }));
     }
     return {
         label: `${choice.id} · ${choice.title}`,
         value: choice.id,
         description: [
             ...lineageSegments,
-            choice.sourceSessionId ? `session ${choice.sourceSessionId}` : '',
+            choice.sourceSessionId ? panelLabel(translator, 'tasks', 'optionSession', 'session {id}', { id: choice.sourceSessionId }) : '',
             choice.status,
             choice.executionMode,
-            `${choice.workerCount || 0} worker${choice.workerCount === 1 ? '' : 's'}`,
-            describeCodingTaskRollback(task)
-        ].filter(Boolean).join(' · ') || 'review',
+            choice.workerCount === 1 ? panelLabel(translator, 'tasks', 'optionWorkersOne', '{count} worker', { count: choice.workerCount }) : panelLabel(translator, 'tasks', 'optionWorkers', '{count} workers', { count: choice.workerCount || 0 }),
+            describeCodingTaskRollback(task, translator)
+        ].filter(Boolean).join(' · ') || panelLabel(translator, 'tasks', 'optionFallback', 'review'),
         detail: [
-            `Task: ${choice.id}`,
-            `Title: ${choice.title}`,
-            choice.sourceSessionId ? `Session: ${choice.sourceSessionId}` : '',
-            choice.status ? `Status: ${choice.status}` : '',
-            choice.executionMode ? `Mode: ${choice.executionMode}` : '',
-            choice.retryOfTaskId ? `Retry Of: ${choice.retryOfTaskId}` : '',
-            choice.lineageRootTaskId ? `Lineage Root: ${choice.lineageRootTaskId}` : '',
-            typeof choice.retryDepth === 'number' ? `Retry Depth: ${choice.retryDepth}` : '',
-            typeof choice.lineageTaskCount === 'number' && choice.lineageTaskCount > 1 ? `Lineage Tasks: ${choice.lineageTaskCount}` : '',
-            `Workers: ${choice.workerCount || 0}`,
-            `Rollback: ${describeCodingTaskRollback(task)}`,
-            choice.checkpointSummary ? `Checkpoints: ${choice.checkpointSummary}` : '',
-            task?.result?.diff?.summary ? `Diff: ${task.result.diff.summary}` : '',
-            task?.planning?.summary ? `Plan: ${task.planning.summary}` : '',
-            task?.goal ? `Goal: ${task.goal}` : ''
+            panelLabel(translator, 'tasks', 'optionTask', 'Task: {id}', { id: choice.id }),
+            panelLabel(translator, 'tasks', 'optionTitle', 'Title: {title}', { title: choice.title }),
+            choice.sourceSessionId ? panelLabel(translator, 'tasks', 'optionSessionDetail', 'Session: {id}', { id: choice.sourceSessionId }) : '',
+            choice.status ? panelLabel(translator, 'tasks', 'optionStatus', 'Status: {status}', { status: choice.status }) : '',
+            choice.executionMode ? panelLabel(translator, 'tasks', 'optionMode', 'Mode: {mode}', { mode: choice.executionMode }) : '',
+            choice.retryOfTaskId ? panelLabel(translator, 'tasks', 'optionRetryOf', 'Retry Of: {id}', { id: choice.retryOfTaskId }) : '',
+            choice.lineageRootTaskId ? panelLabel(translator, 'tasks', 'optionLineageRoot', 'Lineage Root: {id}', { id: choice.lineageRootTaskId }) : '',
+            typeof choice.retryDepth === 'number' ? panelLabel(translator, 'tasks', 'optionRetryDepth', 'Retry Depth: {depth}', { depth: choice.retryDepth }) : '',
+            typeof choice.lineageTaskCount === 'number' && choice.lineageTaskCount > 1 ? panelLabel(translator, 'tasks', 'optionLineageTasks', 'Lineage Tasks: {count}', { count: choice.lineageTaskCount }) : '',
+            panelLabel(translator, 'tasks', 'optionWorkersDetail', 'Workers: {count}', { count: choice.workerCount || 0 }),
+            panelLabel(translator, 'tasks', 'optionRollback', 'Rollback: {value}', { value: describeCodingTaskRollback(task, translator) }),
+            choice.checkpointSummary ? panelLabel(translator, 'tasks', 'optionCheckpoints', 'Checkpoints: {summary}', { summary: choice.checkpointSummary }) : '',
+            task?.result?.diff?.summary ? panelLabel(translator, 'tasks', 'optionDiff', 'Diff: {summary}', { summary: task.result.diff.summary }) : '',
+            task?.planning?.summary ? panelLabel(translator, 'tasks', 'optionPlan', 'Plan: {summary}', { summary: task.planning.summary }) : '',
+            task?.goal ? panelLabel(translator, 'tasks', 'optionGoal', 'Goal: {goal}', { goal: task.goal }) : ''
         ].filter(Boolean).join('\n')
     };
 }
@@ -403,7 +409,7 @@ export async function selectCodingTask(ctx: CodingTaskHandlerContext, options: {
     const selectedIndex = Math.max(0, filteredTasks.findIndex(task => task?.id === options.selectedTaskId));
     const selectedTaskId = await ctx.select(
         options.title,
-        filteredTasks.map((task: any) => buildCodingTaskSelectOption(task, filteredTasks)),
+        filteredTasks.map((task: any) => buildCodingTaskSelectOption(task, filteredTasks, ctx.translator)),
         selectedIndex,
         ctx.state.consoleOptions.selectHint
     );
@@ -548,9 +554,9 @@ export async function rollbackCodingTask(ctx: CodingTaskHandlerContext, taskId?:
     let resolvedTaskId = explicitTaskId || String(fallbackTask?.id || '').trim();
     if (!resolvedTaskId || (!explicitTaskId && selectedTask && !canRollbackCodingTask(selectedTask))) {
         selectedTask = await selectCodingTask(ctx, {
-            title: 'Rollback coding tasks',
-            unavailableNotice: 'Rollback is unavailable without app RPC.',
-            emptyNotice: 'No rollbackable coding tasks available.',
+            title: panelLabel(ctx.translator, 'tasks', 'rollbackSelectTitle', 'Rollback coding tasks'),
+            unavailableNotice: panelLabel(ctx.translator, 'tasks', 'rollbackUnavailableApp', 'Rollback is unavailable without app RPC.'),
+            emptyNotice: panelLabel(ctx.translator, 'tasks', 'noRollbackableTasks', 'No rollbackable coding tasks available.'),
             filter: (task: any) => canRollbackCodingTask(task),
             selectedTaskId: String(fallbackTask?.id || '').trim() || undefined
         });
@@ -598,9 +604,9 @@ export async function retryFailedCodingTask(ctx: CodingTaskHandlerContext, taskI
     let resolvedTaskId = explicitTaskId || String(fallbackTask?.id || '').trim();
     if (!resolvedTaskId || (!explicitTaskId && selectedTask && !canRetryCodingTask(selectedTask))) {
         selectedTask = await selectCodingTask(ctx, {
-            title: 'Retry coding tasks',
-            unavailableNotice: 'Retry is unavailable without app RPC.',
-            emptyNotice: 'No retryable coding tasks available.',
+            title: panelLabel(ctx.translator, 'tasks', 'retrySelectTitle', 'Retry coding tasks'),
+            unavailableNotice: panelLabel(ctx.translator, 'tasks', 'retryUnavailableApp', 'Retry is unavailable without app RPC.'),
+            emptyNotice: panelLabel(ctx.translator, 'tasks', 'noRetryableTasks', 'No retryable coding tasks available.'),
             filter: (task: any) => canRetryCodingTask(task),
             selectedTaskId: String(fallbackTask?.id || '').trim() || undefined
         });

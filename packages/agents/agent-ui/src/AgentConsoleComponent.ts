@@ -1899,7 +1899,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected describeCodingTaskRollback(task: any): string {
-        return describeCodingTaskRollbackFn(task);
+        return describeCodingTaskRollbackFn(task, this.translator);
     }
 
     protected describeCodingTaskCheckpointSummary(task: any): string | undefined {
@@ -1940,7 +1940,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected buildCodingTaskSelectOption(task: any, tasks: any[] = []): AgentConsoleSelectOption {
-        return buildCodingTaskSelectOptionFn(task, tasks);
+        return buildCodingTaskSelectOptionFn(task, tasks, this.translator);
     }
 
     protected async loadCodingTasks(sessionId = this.state.sessionId, sessionIds?: string[]): Promise<any[]> {

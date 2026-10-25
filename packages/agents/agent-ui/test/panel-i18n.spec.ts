@@ -46,6 +46,7 @@ import { openGitSnapshotDiff, runGitSnapshotsCommand } from '../src/AgentConsole
 import { formatAgentPanelLabel } from '../src/agent-ui.i18n';
 import { formatReviewHeaderMeta, formatReviewSelectionMeta, formatReviewStatsMeta } from '../src/AgentConsoleReviewPanelFormat';
 import { createReviewTask } from './_helpers';
+import { buildCodingTaskSelectOption, describeCodingTaskRollback } from '../src/AgentConsoleCodingTaskHandlers';
 import { runDebugConfigCommand, runMemoriesCommand, runPersonalityCommand } from '../src/AgentConsolePreferenceCommands';
 import { runAppsCommand } from '../src/AgentConsoleExtensionCommands';
 import { AgentConsoleComponent } from '../src/AgentConsoleComponent';
@@ -933,5 +934,29 @@ export class PanelI18nTest {
         } as any);
         expect(enState.reviewDetailLines.join('\n')).toContain('Review: ');
         expect(enState.reviewDetailLines.join('\n')).toContain('Current File: ');
+    }
+    @Test('coding task rollback and retry labels are localized')
+    async codingTaskLabelsLocalized() {
+        expect(describeCodingTaskRollback({ result: { rollback: { available: true, mode: 'parallel' } } }, zh)).toEqual('可回滚（parallel）');
+        expect(describeCodingTaskRollback({ result: { rollback: { rolledBackAt: 1 } } }, zh)).toEqual('已回滚');
+        expect(describeCodingTaskRollback({ metadata: { checkpoints: [{ status: 'available' }] } }, zh)).toEqual('可回滚');
+        expect(describeCodingTaskRollback({}, zh)).toEqual('无法回滚');
+        expect(describeCodingTaskRollback({ result: { rollback: { available: true, mode: 'parallel' } } })).toEqual('rollback ready (parallel)');
+
+        const retryTask = {
+            id: 'task-2', title: 'retry task', status: 'failed',
+            retryOfTaskId: 'task-1', retryDepth: 2, lineageTaskCount: 3,
+            actions: [], result: {}, metadata: {}
+        };
+        const zhOption = buildCodingTaskSelectOption(retryTask as any, [retryTask as any], zh);
+        expect(zhOption.description).toContain('重试 1');
+        expect(zhOption.description).toContain('来自 task-1');
+        expect(zhOption.description).toContain('血缘 1');
+        expect(zhOption.description).toContain('无法回滚');
+        expect(zhOption.detail).toContain('任务：task-2');
+        expect(zhOption.detail).toContain('重试自：task-1');
+        const enOption = buildCodingTaskSelectOption(retryTask as any, [retryTask as any]);
+        expect(enOption.description).toContain('retry 1');
+        expect(enOption.detail).toContain('Task: task-2');
     }
 }
