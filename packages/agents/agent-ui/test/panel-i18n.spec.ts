@@ -43,6 +43,9 @@ import { collectHealthItems } from '../src/AgentConsoleHealthView';
 import { parseAgentConsoleCommandArguments, formatAgentConsoleCommandDiagnosticEcho, getAgentConsoleCommandDefinition } from '../src/AgentConsoleCommandRegistry';
 import { describeWorktreeDiffScope, parseWorktreeDiffArgs } from '../src/AgentConsoleReviewHandlers';
 import { openGitSnapshotDiff, runGitSnapshotsCommand } from '../src/AgentConsoleGitSnapshotCommands';
+import { formatAgentPanelLabel } from '../src/agent-ui.i18n';
+import { formatReviewHeaderMeta, formatReviewSelectionMeta, formatReviewStatsMeta } from '../src/AgentConsoleReviewPanelFormat';
+import { createReviewTask } from './_helpers';
 import { runDebugConfigCommand, runMemoriesCommand, runPersonalityCommand } from '../src/AgentConsolePreferenceCommands';
 import { runAppsCommand } from '../src/AgentConsoleExtensionCommands';
 import { AgentConsoleComponent } from '../src/AgentConsoleComponent';
@@ -861,5 +864,74 @@ export class PanelI18nTest {
         const enRows = enState.messages.map(message => String(message.content || ''));
         expect(enRows).toContain('bash completed · 1200ms');
         expect(enRows).toContain('Turn completed');
+    }
+    @Test('review header, stats and selection meta are localized')
+    async reviewPanelMetaLocalized() {
+        const label = (key: string, fallback: string, params?: Record<string, any>) => formatAgentPanelLabel(zh, 'review', key, fallback, params);
+        const header = formatReviewHeaderMeta({
+            taskId: 'task-1', title: 'Review worktree', sourceSessionId: 's1', projectLabel: '/tmp/ws',
+            status: 'completed', mode: 'parallel', workerCount: 2,
+            lineageIndex: 1, lineageTotal: 2, lineageRootId: 'task-0',
+            groupIndex: 1, groupTotal: 3, groupLabel: 'aggregate',
+            fileIndex: 1, fileTotal: 2, filePath: 'src/a.ts',
+            start: 1, end: 8, total: 20, column: 1, totalColumns: 60
+        }, label);
+        expect(header).toContain('评审 task-1 Review worktree');
+        expect(header).toContain('  |  会话 s1');
+        expect(header).toContain('  |  项目 /tmp/ws');
+        expect(header).toContain('工作者 2');
+        expect(header).toContain('血缘 2/2 根 task-0');
+        expect(header).toContain('分组 1/3 aggregate');
+        expect(header).toContain('文件 1/2 src/a.ts');
+        expect(header).toContain('行 1-8 / 20');
+        expect(header).toContain('列 1/60');
+
+        expect(formatReviewStatsMeta({ status: 'completed', mode: 'parallel', workers: 2, groups: 3, files: 2, rollback: 'available' }, label))
+            .toEqual('状态 completed · 模式 parallel · 工作者 2 · 分组 3 · 文件 2 · 可回滚');
+        expect(formatReviewStatsMeta({ status: 'completed', mode: 'parallel', workers: 2, groups: 3, files: 2, rollback: 'available' },
+            (key, fallback, params) => fallback.replace(/\{(\w+)\}/g, (_m, n: string) => String(params?.[n] ?? ''))))
+            .toEqual('status completed · mode parallel · workers 2 · groups 3 · files 2 · rollback available');
+
+        const selection = formatReviewSelectionMeta({
+            groupIndex: 1, groupTotal: 3, groupLabel: 'aggregate',
+            fileIndex: 2, fileTotal: 2, filePath: 'src/b.ts',
+            risk: 'low', start: 1, end: 8, total: 20, column: 1, totalColumns: 60
+        }, label);
+        expect(selection).toContain('分组 1/3 aggregate');
+        expect(selection).toContain('文件 2/2 src/b.ts');
+        expect(selection).toContain('风险 low');
+        expect(selection).toContain('行 1-8 / 20');
+        expect(selection).toContain('列 1/60');
+    }
+
+    @Test('review detail lines follow the locale while keeping identifiers')
+    async reviewDetailLinesLocalized() {
+        const reviewTask = createReviewTask();
+        const zhState = new AgentConsoleSessionState(new InMemoryCommandExecutionControl(), zh as any);
+        zhState.setReviewTasks([reviewTask as any]);
+        zhState.setSelectedReviewTaskId('task-1');
+        zhState.openReview(reviewTask as any, {
+            executionMode: 'parallel',
+            diff: { summary: '', text: 'diff --git a/src/a.ts b/src/a.ts\n+new line' },
+            workers: [{ workerId: 'worker-1', actionIds: ['edit-1'], status: 'completed', diff: { text: 'diff --git a/src/a.ts b/src/a.ts\n+new line' } }]
+        } as any);
+        const lines = zhState.reviewDetailLines.join('\n');
+        expect(lines).toContain('评审：');
+        expect(lines).toContain('范围：');
+        expect(lines).toContain('分组：');
+        expect(lines).toContain('当前分组：');
+        expect(lines).toContain('文件：');
+        expect(lines).toContain('当前文件：');
+
+        const enState = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        enState.setReviewTasks([reviewTask as any]);
+        enState.setSelectedReviewTaskId('task-1');
+        enState.openReview(reviewTask as any, {
+            executionMode: 'parallel',
+            diff: { summary: '', text: 'diff --git a/src/a.ts b/src/a.ts\n+new line' },
+            workers: [{ workerId: 'worker-1', actionIds: ['edit-1'], status: 'completed', diff: { text: 'diff --git a/src/a.ts b/src/a.ts\n+new line' } }]
+        } as any);
+        expect(enState.reviewDetailLines.join('\n')).toContain('Review: ');
+        expect(enState.reviewDetailLines.join('\n')).toContain('Current File: ');
     }
 }

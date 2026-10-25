@@ -8,6 +8,8 @@
  * components, so a host without a translator still renders the previous copy.
  */
 
+import { AGENT_UI_REVIEW_EN, AGENT_UI_REVIEW_ZH } from './agent-ui.i18n.review';
+
 export const AGENT_UI_PANEL_EN: Record<string, any> = {
     sessions: {
         summary: 'sessions {total} · {index}/{total}',
@@ -57,6 +59,7 @@ export const AGENT_UI_PANEL_EN: Record<string, any> = {
         createAfterDescription: 'create a new section after this one',
         created: 'created {date}'
     },
+    review: AGENT_UI_REVIEW_EN,
     tasks: {
         summary: 'tasks {filtered}/{total} · {filter} · {index}/{filtered}',
         summaryZero: 'tasks 0/{total} · {filter}',
@@ -301,6 +304,7 @@ export const AGENT_UI_PANEL_ZH: Record<string, any> = {
         createAfterDescription: '在该分区之后新建一个分区',
         created: '创建于 {date}'
     },
+    review: AGENT_UI_REVIEW_ZH,
     tasks: {
         summary: '任务 {filtered}/{total} · {filter} · {index}/{filtered}',
         summaryZero: '任务 0/{total} · {filter}',

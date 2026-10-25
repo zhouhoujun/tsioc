@@ -1720,3 +1720,14 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **测试**：`panel-i18n.spec.ts` 33 → **34 条**：真实 `seedTimeline` + zh translator 断言 `bash 已完成 · 1200ms`、`read file 失败：ENOENT`、`计划已完成：修复登录`、`步骤开始：改代码`；无 translator 时仍为 `bash completed · 1200ms` / `Turn completed`。
 - **门禁**：agent-ui **1693 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**（首轮 diff-check 因删除代码留下文件末尾空行失败，修正后通过）；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate 全部通过。
 - **范围说明**：CLI/TUI 的本地会话恢复走已存消息 + 渲染期本地化（上一批的生命周期映射），本批覆盖的是“从 timeline 条目重建历史”的宿主（web/remote bridge 与 TUI gate 场景）。
+
+## 2026-10-25 工作区评审面板（`/diff` review）外壳与明细中文化 + Panels/SessionState 再瘦身
+- **现象（zh-CN 真实 TUI，在 git 工作区执行 `/diff` 后）**：面板标题与明细仍是英文——`review … | session … | project … | done | n/a | workers 0 | group 1/1 aggregate | file 1/2 a.txt | lines 1-8 / 20 | col 1/54`、`status done · mode n/a · workers 0 · groups 1 · files 2 · rollback unavailable`、`group 1/1 … · risk low · lines … · col …`、`Review: pending`、`Scope: 2 files changed`、`Groups: 1`、`Current Group: … · status done · 2 files`、`Files: 2`、`Current File: a.txt (+2 -1)`、文件行 `a.txt [update]`、`files changed: 2`。
+- **做法**：
+  - 新增 `src/agent-ui.i18n.review.ts`（`AGENT_UI_REVIEW_EN/ZH`，header/stats/selection/明细/文件状态等 50+ key），仍并回 `menu.panel.review.*`；独立成文件是为了让 `agent-ui.i18n.panel.ts` 回到预算内（617 → 501）。
+  - 新增 `src/AgentConsoleReviewPanelFormat.ts`（`formatReviewHeaderMeta` / `formatReviewStatsMeta` / `formatReviewSelectionMeta`，纯格式化 + `label` 回调），`AgentConsolePanels` 的三个 getter 改为调用它——Panels **4176 → 4155**，baseline 4177 → 4156。
+  - `AgentConsoleSessionState` 的评审明细行（`Review:/Scope:/Groups:/Current Group:/Files:/Current File:/Current Patch/Current Error:/Risks:/Workers:/Worker Failures:/File Annotations:/No annotations./No diff captured./Patch Filter:/Worker Status:/Worker Branch:/folded hunk`、评审状态词、scope/risk 计数、文件变更行与状态）全部走 `this.translateLabel('agent.menu.panel.review.*')`；行数不变并进一步压缩，**6660 行**，baseline 6662 → 6661。
+  - 标识符（任务状态 `done`、`aggregate`/`worker` 分组类型、worker id、路径、diff 文本）保留原文；`n/a` 改为可本地化的 `不适用`。
+- **测试**：`panel-i18n.spec.ts` 34 → **36 条**（header/stats/selection 纯函数 zh + 英文 fallback；真实 `openReview` 的明细行 zh/en 对照）。`vm-review-tasks` 76、`console-renderer` 87、`p303` 10 条全部保持通过。
+- **真实 TUI（zh-CN）复核**：`评审 worktree-diff:working-tree 工作区 diff | 会话 … | 项目 … | done | 不适用 | 工作者 0 | 分组 1/1 aggregate | 文件 1/2 a.txt | 行 1-8 / 20 | 列 1/50`；`状态 done · 模式 不适用 · 工作者 0 · 分组 1 · 文件 2 · 无法回滚`；`分组 1/1 aggregate · 文件 1/2 a.txt · 风险 low · 行 1-8 / 20 · 列 1/50`；明细 `评审：待处理 / 范围：2 个文件有变更 / 分组：1 / › [1/1] … 状态 done · 2 个文件有变更 / 当前分组：… / 文件：2 / 当前文件：a.txt (+2 -1)`；文件行 `a.txt [修改]`、`.tsdi-agent/settings.json [新增]`。
+- **门禁**：agent-ui **1695 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。

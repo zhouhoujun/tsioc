@@ -3940,8 +3940,8 @@ export class AgentConsoleSessionState {
             return null;
         }
         const content = [
-            `files changed: ${files.length}`,
-            ...files.map(file => `${file.path} [${file.status || 'update'}] (+${file.additions} -${file.deletions})`)
+            this.translateLabel('agent.menu.panel.review.filesChanged', { count: files.length }, `files changed: ${files.length}`),
+            ...files.map(file => `${file.path} [${this.translateLabel(`agent.menu.panel.review.fileStatus${(file.status || 'update').charAt(0).toUpperCase()}${(file.status || 'update').slice(1)}`, undefined, file.status || 'update')}] (+${file.additions} -${file.deletions})`)
         ].join('\n');
         return {
             id: '__file_change_inline__',
@@ -4318,13 +4318,13 @@ export class AgentConsoleSessionState {
         const fileEntries = Object.entries(this.reviewFileAnnotations);
         const hunkEntries = Object.entries(this.reviewHunkAnnotations);
         if (!fileEntries.length && !hunkEntries.length) {
-            lines.push('No annotations.');
+            lines.push(this.translateLabel('agent.menu.panel.review.annotationsNone', undefined, 'No annotations.'));
             return lines;
         }
         if (fileEntries.length) {
             const approved = fileEntries.filter(([, a]) => a.status === 'approved').length;
             const rejected = fileEntries.filter(([, a]) => a.status === 'rejected').length;
-            lines.push(`File Annotations: ${approved} approved, ${rejected} rejected`);
+            lines.push(this.translateLabel('agent.menu.panel.review.annotationsFiles', { approved: approved, rejected: rejected }, `File Annotations: ${approved} approved, ${rejected} rejected`));
             for (const [path, annot] of fileEntries) {
                 lines.push(`  ${annot.status === 'approved' ? '✓' : '✗'} ${path}${annot.comment ? ` — ${annot.comment}` : ''}`);
             }
@@ -4360,7 +4360,7 @@ export class AgentConsoleSessionState {
         const fileEntries = Object.entries(this.reviewFileAnnotations);
         const hunkEntries = Object.entries(this.reviewHunkAnnotations);
         if (!fileEntries.length && !hunkEntries.length) {
-            lines.push('No annotations.');
+            lines.push(this.translateLabel('agent.menu.panel.review.annotationsNone', undefined, 'No annotations.'));
             return lines;
         }
         if (fileEntries.length) {
@@ -4474,14 +4474,14 @@ export class AgentConsoleSessionState {
         const groups = this.reviewGroups;
         if (groups.length) {
             const selectedGroup = this.selectedReviewGroup || groups[0];
-            lines.push(`Groups: ${groups.length}`);
+            lines.push(this.translateLabel('agent.menu.panel.review.groups', { count: groups.length }, `Groups: ${groups.length}`));
             for (let index = 0; index < groups.length; index++) {
                 const group = groups[index];
                 const marker = index === this.selectedReviewGroupIndex ? '›' : ' ';
                 lines.push(`${marker} [${index + 1}/${groups.length}] ${this.describeReviewGroup(group)}`);
             }
             if (selectedGroup) {
-                lines.push(`Current Group: ${this.describeReviewGroup(selectedGroup)}`);
+                lines.push(this.translateLabel('agent.menu.panel.review.currentGroup', { group: this.describeReviewGroup(selectedGroup) }, `Current Group: ${this.describeReviewGroup(selectedGroup)}`));
                 const groupMetaLines = this.buildSelectedReviewGroupMetaLines(selectedGroup);
                 if (groupMetaLines.length) {
                     lines.push(...groupMetaLines);
@@ -4489,7 +4489,7 @@ export class AgentConsoleSessionState {
                 const sections = selectedGroup.sections;
                 if (sections.length) {
                     const selectedSection = this.selectedReviewFileSection || sections[0];
-                    lines.push(`Files: ${sections.length}`);
+                    lines.push(this.translateLabel('agent.menu.panel.review.files', { count: sections.length }, `Files: ${sections.length}`));
                     for (let index = 0; index < sections.length; index++) {
                         const section = sections[index];
                         const marker = index === this.selectedReviewFileIndex ? '›' : ' ';
@@ -4502,21 +4502,21 @@ export class AgentConsoleSessionState {
                         const annotLine = annot
                             ? `  Annotation: ${annot.status === 'approved' ? 'approved' : 'rejected'}${annot.comment ? ` · ${annot.comment}` : ''}`
                             : '  [a]pprove  [r]eject  [c]lear annotation';
-                        lines.push(`Current File: ${selectedSection.path} (+${selectedSection.additions} -${selectedSection.deletions})`);
+                        lines.push(this.translateLabel('agent.menu.panel.review.currentFile', { path: selectedSection.path, additions: selectedSection.additions, deletions: selectedSection.deletions }, `Current File: ${selectedSection.path} (+${selectedSection.additions} -${selectedSection.deletions})`));
                         lines.push(annotLine);
                         lines.push(...this.renderReviewPatchLines(selectedSection, selectedGroup.key));
                     }
                 } else if (selectedGroup.diffText) {
-                    lines.push('Current Patch');
+                    lines.push(this.translateLabel('agent.menu.panel.review.currentPatch', undefined, 'Current Patch'));
                     lines.push(...this.filterReviewPatchLines(selectedGroup.diffText.split('\n')));
                 } else if (selectedGroup.error) {
-                    lines.push(`Current Error: ${selectedGroup.error}`);
+                    lines.push(this.translateLabel('agent.menu.panel.review.currentError', { error: selectedGroup.error }, `Current Error: ${selectedGroup.error}`));
                 }
             }
         }
 
         if (!groups.length && !lines.length) {
-            lines.push('No diff captured.');
+            lines.push(this.translateLabel('agent.menu.panel.review.noDiffCaptured', undefined, 'No diff captured.'));
         }
 
         return lines.map(line => this.expandTabs(line));
@@ -5645,49 +5645,48 @@ export class AgentConsoleSessionState {
             : -1;
 
         const reviewState = rollback?.rolledBackAt
-            ? 'rollback applied'
+            ? this.translateLabel('agent.menu.panel.review.stateRollbackApplied', undefined, 'rollback applied')
             : status === 'failed' || status === 'error' || workerFailures > 0
-                ? 'needs attention'
+                ? this.translateLabel('agent.menu.panel.review.stateNeedsAttention', undefined, 'needs attention')
                 : status === 'running' || status === 'planned'
-                    ? 'in progress'
+                    ? this.translateLabel('agent.menu.panel.review.stateInProgress', undefined, 'in progress')
                     : rollback?.available === true || availableCheckpoints > 0
-                        ? 'ready · rollback available'
+                        ? this.translateLabel('agent.menu.panel.review.stateReadyRollback', undefined, 'ready · rollback available')
                         : status === 'completed'
-                            ? 'ready'
-                            : 'pending';
-        const reviewSummary = lineageTasks.length > 1 && lineageIndex >= 0
-            ? `${reviewState} · lineage ${lineageIndex + 1}/${lineageTasks.length}`
-            : reviewState;
-        lines.push(`Review: ${reviewSummary}`);
+                            ? this.translateLabel('agent.menu.panel.review.stateReady', undefined, 'ready')
+                            : this.translateLabel('agent.menu.panel.review.statePending', undefined, 'pending');
+        const reviewSummary = lineageTasks.length > 1 && lineageIndex >= 0 ? this.translateLabel('agent.menu.panel.review.summaryLineage', { state: reviewState, index: lineageIndex + 1, total: lineageTasks.length }, `${reviewState} · lineage ${lineageIndex + 1}/${lineageTasks.length}`) : reviewState;
+        lines.push(this.translateLabel('agent.menu.panel.review.summary', { state: reviewSummary }, `Review: ${reviewSummary}`));
 
         const scopeParts = [
-            sections.length ? `${sections.length} file${sections.length === 1 ? '' : 's'} changed` : '',
-            this.reviewWorkers.length ? `${this.reviewWorkers.length} worker${this.reviewWorkers.length === 1 ? '' : 's'}` : '',
-            lineageTasks.length > 1 ? `lineage ${lineageTasks.length} tasks` : ''
+            sections.length ? this.translateLabel(sections.length === 1 ? 'agent.menu.panel.review.scopeFilesOne' : 'agent.menu.panel.review.scopeFiles', { count: sections.length }, sections.length === 1 ? '{count} file changed' : '{count} files changed') : '',
+            this.reviewWorkers.length ? this.translateLabel(this.reviewWorkers.length === 1 ? 'agent.menu.panel.review.scopeWorkersOne' : 'agent.menu.panel.review.scopeWorkers', { count: this.reviewWorkers.length }, this.reviewWorkers.length === 1 ? '{count} worker' : '{count} workers') : '',
+            lineageTasks.length > 1 ? this.translateLabel('agent.menu.panel.review.scopeLineage', { count: lineageTasks.length }, `lineage ${lineageTasks.length} tasks`) : ''
         ].filter(Boolean);
         if (scopeParts.length) {
-            lines.push(`Scope: ${scopeParts.join(' · ')}`);
+            lines.push(this.translateLabel('agent.menu.panel.review.scope', { parts: scopeParts.join(' · ') }, `Scope: ${scopeParts.join(' · ')}`));
         }
         if (aggregate) {
-            lines.push(`Workers: ${aggregate.status} · ${aggregate.completedWorkers}/${aggregate.totalWorkers} completed${aggregate.failedWorkers ? ` · ${aggregate.failedWorkers} failed` : ''}`);
+            const failedSuffix = aggregate.failedWorkers ? this.translateLabel('agent.menu.panel.review.workersFailed', { count: aggregate.failedWorkers }, ` · ${aggregate.failedWorkers} failed`) : '';
+            lines.push(this.translateLabel('agent.menu.panel.review.workersLine', { status: aggregate.status, completed: aggregate.completedWorkers, total: aggregate.totalWorkers }, `Workers: ${aggregate.status} · ${aggregate.completedWorkers}/${aggregate.totalWorkers} completed`) + failedSuffix);
         }
 
         const riskParts = [
-            workerFailures > 0 ? `${workerFailures} worker failure${workerFailures === 1 ? '' : 's'}` : '',
+            workerFailures > 0 ? this.translateLabel(workerFailures === 1 ? 'agent.menu.panel.review.riskWorkersOne' : 'agent.menu.panel.review.riskWorkers', { count: workerFailures }, workerFailures === 1 ? '{count} worker failure' : '{count} worker failures') : '',
             !rollback?.available && availableCheckpoints === 0 && (status === 'completed' || status === 'failed' || status === 'error')
-                ? 'rollback unavailable'
+                ? this.translateLabel('agent.menu.panel.review.rollbackUnavailable', undefined, 'rollback unavailable')
                 : '',
-            invalidatedCheckpoints > 0 ? `${invalidatedCheckpoints} invalidated checkpoint${invalidatedCheckpoints === 1 ? '' : 's'}` : '',
+            invalidatedCheckpoints > 0 ? this.translateLabel(invalidatedCheckpoints === 1 ? 'agent.menu.panel.review.riskInvalidatedOne' : 'agent.menu.panel.review.riskInvalidated', { count: invalidatedCheckpoints }, invalidatedCheckpoints === 1 ? '{count} invalidated checkpoint' : '{count} invalidated checkpoints') : '',
             !sections.length && !String(this.reviewDiff?.summary || this.reviewTask?.result?.diff?.summary || '').trim()
-                ? 'no diff captured'
+                ? this.translateLabel('agent.menu.panel.review.riskNoDiff', undefined, 'no diff captured')
                 : ''
         ].filter(Boolean);
         if (riskParts.length) {
-            lines.push(`Risks: ${riskParts.join(' · ')}`);
+            lines.push(this.translateLabel('agent.menu.panel.review.risks', { parts: riskParts.join(' · ') }, `Risks: ${riskParts.join(' · ')}`));
         }
         const isolatedFailures = Array.isArray(aggregate?.isolatedFailures) ? aggregate.isolatedFailures : [];
         if (isolatedFailures.length) {
-            lines.push(`Worker Failures: ${isolatedFailures.slice(0, 2).map((failure: any) => `${failure.workerId}: ${failure.error}`).join(' · ')}`);
+            lines.push(this.translateLabel('agent.menu.panel.review.workerFailures', { list: isolatedFailures.slice(0, 2).map((failure: any) => `${failure.workerId}: ${failure.error}`).join(' · ') }, `Worker Failures: ${isolatedFailures.slice(0, 2).map((failure: any) => `${failure.workerId}: ${failure.error}`).join(' · ')}`));
         }
 
         return lines;
@@ -5695,9 +5694,9 @@ export class AgentConsoleSessionState {
 
     protected buildSelectedReviewGroupMetaLines(group: AgentConsoleReviewGroup): string[] {
         const lines = [
-            this.selectedReviewPatchFilter !== 'all' ? `Patch Filter: ${this.selectedReviewPatchFilter}` : '',
-            group.kind === 'worker' && group.status ? `Worker Status: ${group.status}` : '',
-            group.kind === 'worker' && group.branch ? `Worker Branch: ${group.branch}` : '',
+            this.selectedReviewPatchFilter !== 'all' ? this.translateLabel('agent.menu.panel.review.patchFilter', { filter: this.selectedReviewPatchFilter }, `Patch Filter: ${this.selectedReviewPatchFilter}`) : '',
+            group.kind === 'worker' && group.status ? this.translateLabel('agent.menu.panel.review.workerStatus', { status: group.status }, `Worker Status: ${group.status}`) : '',
+            group.kind === 'worker' && group.branch ? this.translateLabel('agent.menu.panel.review.workerBranch', { branch: group.branch }, `Worker Branch: ${group.branch}`) : '',
             group.kind === 'worker' && group.worktreePath ? `Worker Worktree: ${group.worktreePath}` : '',
             group.kind === 'worker' && group.actionIds?.length ? `Worker Actions: ${group.actionIds.join(', ')}` : '',
             group.kind === 'worker' && group.error ? `Worker Error: ${group.error}` : ''
@@ -5711,8 +5710,8 @@ export class AgentConsoleSessionState {
         return [
             group.label,
             group.kind === 'aggregate' ? 'aggregate' : 'worker',
-            group.status ? `status ${group.status}` : '',
-            group.sections.length ? `${group.sections.length} file${group.sections.length === 1 ? '' : 's'}` : '',
+            group.status ? this.translateLabel('agent.menu.panel.review.statusLabel', { status: group.status }, `status ${group.status}`) : '',
+            group.sections.length ? this.translateLabel(group.sections.length === 1 ? 'agent.menu.panel.review.scopeFilesOne' : 'agent.menu.panel.review.scopeFiles', { count: group.sections.length }, group.sections.length === 1 ? '{count} file' : '{count} files') : '',
             group.error ? 'error' : ''
         ].filter(Boolean).join(' · ');
     }
@@ -5897,7 +5896,7 @@ export class AgentConsoleSessionState {
 
     protected buildReviewFoldedHunkSummary(hunk: AgentConsoleReviewHunk): string {
         const context = hunk.context ? ` · ${hunk.context}` : '';
-        return `  ⋯ folded hunk +${hunk.additions} -${hunk.deletions}${context} (f expand)`;
+        return this.translateLabel('agent.menu.panel.review.foldedHunk', { additions: hunk.additions, deletions: hunk.deletions, context: context }, `  ⋯ folded hunk +${hunk.additions} -${hunk.deletions}${context} (f expand)`);
     }
 
     protected isFailedTaskChoice(task: AgentConsoleReviewTaskItem | undefined): boolean {

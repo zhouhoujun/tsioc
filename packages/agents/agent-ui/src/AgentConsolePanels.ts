@@ -4,6 +4,7 @@ import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import { formatAgentUiLabel, formatAgentPanelLabel as panelLabel, formatAgentPanelStatusLabel as panelStatusLabel } from './agent-ui.i18n';
 import { formatScheduledTaskDetailLines } from './AgentConsoleScheduledTaskFormat';
+import { formatReviewHeaderMeta, formatReviewSelectionMeta, formatReviewStatsMeta } from './AgentConsoleReviewPanelFormat';
 import { resolveMessageRowOffset } from './AgentConsoleTranscriptLayout';
 import { AgentMessage, basenameAgentPath, ScheduledAgentTask } from '@tsdi/agent';
 import {
@@ -3334,7 +3335,7 @@ export class AgentConsoleTimelineEventDetailPanelComponent {
     `
 })
 export class AgentConsoleReviewPanelComponent {
-    constructor(private state: AgentConsoleSessionState) {
+    constructor(private state: AgentConsoleSessionState, @Optional() private translator?: TranslatorService) {
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -3409,38 +3410,33 @@ export class AgentConsoleReviewPanelComponent {
         if (!this.shouldShow) {
             return '';
         }
-        const title = String(this.reviewTask?.title || this.state.selectedReviewTaskId || 'review');
-        const taskId = String(this.reviewTask?.id || this.state.selectedReviewTaskId || '').trim();
-        const status = this.reviewTask?.status || 'unknown';
-        const sourceSessionId = String(this.reviewTask?.sourceSessionId || '').trim();
-        const projectLabel = String(this.state.projectLabel || '').trim();
-        const executionMode = this.state.reviewExecutionMode || 'n/a';
         const total = this.contentLines.length;
-        const start = Math.min(total, this.state.reviewDetailScroll + 1);
-        const end = Math.min(total, this.state.reviewDetailScroll + this.visibleLines.length);
-        const column = this.state.reviewDetailColumnScroll + 1;
-        const totalColumns = Math.max(1, this.state.reviewDetailMaxColumn);
-        const workerCount = this.reviewWorkers.length;
-        const selectedGroup = this.state.selectedReviewGroup;
-        const groupCount = this.state.reviewGroups.length;
-        const groupSummary = groupCount
-            ? `group ${Math.min(groupCount, this.state.selectedReviewGroupIndex + 1)}/${groupCount} ${selectedGroup?.label || '-'}`
-            : 'group -';
         const lineageTasks = this.state.currentReviewLineageTasks;
         const selectedTaskId = String(this.reviewTask?.id || this.state.selectedReviewTaskId || '').trim();
-        const lineageIndex = lineageTasks.length
-            ? Math.max(0, lineageTasks.findIndex(item => item.id === selectedTaskId))
-            : -1;
-        const lineageRootId = this.state.resolveTaskLineageRootId(this.reviewTask || this.state.selectedTask);
-        const lineageSummary = lineageTasks.length > 1 && lineageIndex >= 0
-            ? `lineage ${lineageIndex + 1}/${lineageTasks.length}${lineageRootId ? ` root ${lineageRootId}` : ''}`
-            : '';
         const selectedFile = this.state.selectedReviewFileSection;
-        const fileCount = this.state.reviewFileSections.length;
-        const fileSummary = fileCount
-            ? `file ${Math.min(fileCount, this.state.selectedReviewFileIndex + 1)}/${fileCount} ${selectedFile?.path || '-'}`
-            : 'file -';
-        return `review ${taskId || '-'} ${title}${sourceSessionId ? `  |  session ${sourceSessionId}` : ''}${projectLabel ? `  |  project ${projectLabel}` : ''}  |  ${status}  |  ${executionMode}  |  workers ${workerCount}${lineageSummary ? `  |  ${lineageSummary}` : ''}  |  ${groupSummary}  |  ${fileSummary}  |  lines ${start}-${end} / ${total}  |  col ${column}/${totalColumns}`;
+        return formatReviewHeaderMeta({
+            taskId: String(this.reviewTask?.id || this.state.selectedReviewTaskId || '').trim(),
+            title: String(this.reviewTask?.title || this.state.selectedReviewTaskId || 'review'),
+            sourceSessionId: String(this.reviewTask?.sourceSessionId || '').trim(),
+            projectLabel: String(this.state.projectLabel || '').trim(),
+            status: this.reviewTask?.status || 'unknown',
+            mode: this.state.reviewExecutionMode || panelLabel(this.translator, 'review', 'notApplicable', 'n/a'),
+            workerCount: this.reviewWorkers.length,
+            lineageIndex: lineageTasks.length ? Math.max(0, lineageTasks.findIndex(item => item.id === selectedTaskId)) : -1,
+            lineageTotal: lineageTasks.length,
+            lineageRootId: this.state.resolveTaskLineageRootId(this.reviewTask || this.state.selectedTask),
+            groupIndex: Math.min(this.state.reviewGroups.length, this.state.selectedReviewGroupIndex + 1),
+            groupTotal: this.state.reviewGroups.length,
+            groupLabel: this.state.selectedReviewGroup?.label || '-',
+            fileIndex: Math.min(this.state.reviewFileSections.length, this.state.selectedReviewFileIndex + 1),
+            fileTotal: this.state.reviewFileSections.length,
+            filePath: selectedFile?.path || '-',
+            start: Math.min(total, this.state.reviewDetailScroll + 1),
+            end: Math.min(total, this.state.reviewDetailScroll + this.visibleLines.length),
+            total,
+            column: this.state.reviewDetailColumnScroll + 1,
+            totalColumns: Math.max(1, this.state.reviewDetailMaxColumn)
+        }, (key, fallback, params) => panelLabel(this.translator, 'review', key, fallback, params));
     }
 
     get reviewHintLabel(): string {
@@ -3455,58 +3451,41 @@ export class AgentConsoleReviewPanelComponent {
             return '';
         }
         const rollback = this.reviewTask?.result?.rollback;
-        const files = this.state.reviewFileSections;
-        const parts = [
-            `status ${this.reviewTask?.status || 'unknown'}`,
-            `mode ${this.state.reviewExecutionMode || 'n/a'}`,
-            `workers ${this.reviewWorkers.length}`,
-            `groups ${this.state.reviewGroups.length}`,
-            `files ${files.length}`,
-            rollback?.available === true
-                ? 'rollback available'
-                : rollback?.rolledBackAt
-                    ? 'rollback applied'
-                    : 'rollback unavailable'
-        ];
-        return parts.join(' · ');
+        return formatReviewStatsMeta({
+            status: this.reviewTask?.status || 'unknown',
+            mode: this.state.reviewExecutionMode || panelLabel(this.translator, 'review', 'notApplicable', 'n/a'),
+            workers: this.reviewWorkers.length,
+            groups: this.state.reviewGroups.length,
+            files: this.state.reviewFileSections.length,
+            rollback: rollback?.available === true ? 'available' : rollback?.rolledBackAt ? 'applied' : 'unavailable'
+        }, (key, fallback, params) => panelLabel(this.translator, 'review', key, fallback, params));
     }
 
     get reviewSelectionLabel(): string {
         if (!this.shouldShow) {
             return '';
         }
-        const selectedGroup = this.state.selectedReviewGroup;
         const selectedFile = this.state.selectedReviewFileSection;
         const total = this.contentLines.length;
-        const start = Math.min(total, this.state.reviewDetailScroll + 1);
-        const end = Math.min(total, this.state.reviewDetailScroll + this.visibleLines.length);
-        const column = this.state.reviewDetailColumnScroll + 1;
-        const totalColumns = Math.max(1, this.state.reviewDetailMaxColumn);
         const lineageTasks = this.state.currentReviewLineageTasks;
         const selectedTaskId = String(this.reviewTask?.id || this.state.selectedReviewTaskId || '').trim();
-        const lineageIndex = lineageTasks.length
-            ? Math.max(0, lineageTasks.findIndex(item => item.id === selectedTaskId))
-            : -1;
-        const lineageRootId = this.state.resolveTaskLineageRootId(this.reviewTask || this.state.selectedTask);
-        const lineageSummary = lineageTasks.length > 1 && lineageIndex >= 0
-            ? `lineage ${lineageIndex + 1}/${lineageTasks.length}${lineageRootId ? ` root ${lineageRootId}` : ''}`
-            : '';
-        const groupCount = this.state.reviewGroups.length;
-        const groupSummary = groupCount
-            ? `group ${Math.min(groupCount, this.state.selectedReviewGroupIndex + 1)}/${groupCount} ${selectedGroup?.label || '-'}`
-            : 'group -';
-        const fileCount = this.state.reviewFileSections.length;
-        const fileSummary = fileCount
-            ? `file ${Math.min(fileCount, this.state.selectedReviewFileIndex + 1)}/${fileCount} ${selectedFile?.path || '-'}`
-            : 'file -';
-        return [
-            lineageSummary,
-            groupSummary,
-            fileSummary,
-            selectedFile ? `risk ${this.state.computeFileRiskScore(selectedFile).level}` : '',
-            `lines ${start}-${end} / ${total}`,
-            `col ${column}/${totalColumns}`
-        ].filter(Boolean).join(' · ');
+        return formatReviewSelectionMeta({
+            lineageIndex: lineageTasks.length ? Math.max(0, lineageTasks.findIndex(item => item.id === selectedTaskId)) : -1,
+            lineageTotal: lineageTasks.length,
+            lineageRootId: this.state.resolveTaskLineageRootId(this.reviewTask || this.state.selectedTask),
+            groupIndex: Math.min(this.state.reviewGroups.length, this.state.selectedReviewGroupIndex + 1),
+            groupTotal: this.state.reviewGroups.length,
+            groupLabel: this.state.selectedReviewGroup?.label || '-',
+            fileIndex: Math.min(this.state.reviewFileSections.length, this.state.selectedReviewFileIndex + 1),
+            fileTotal: this.state.reviewFileSections.length,
+            filePath: selectedFile?.path || '-',
+            risk: selectedFile ? this.state.computeFileRiskScore(selectedFile).level : '',
+            start: Math.min(total, this.state.reviewDetailScroll + 1),
+            end: Math.min(total, this.state.reviewDetailScroll + this.visibleLines.length),
+            total,
+            column: this.state.reviewDetailColumnScroll + 1,
+            totalColumns: Math.max(1, this.state.reviewDetailMaxColumn)
+        }, (key, fallback, params) => panelLabel(this.translator, 'review', key, fallback, params));
     }
 
     detailLineNumberAt(index: number): string {
