@@ -5,6 +5,7 @@ import { AGENT_UI_ERROR_EN, AGENT_UI_ERROR_ZH } from './agent-ui.i18n.error';
 import { AGENT_UI_TOOL_LABELS_EN, AGENT_UI_TOOL_LABELS_ZH } from './agent-ui.i18n.tools';
 import { AGENT_UI_HINT_EN, AGENT_UI_HINT_ZH, AGENT_UI_MENU_EN, AGENT_UI_MENU_ZH } from './agent-ui.i18n.menu';
 import { AGENT_UI_PANEL_EN, AGENT_UI_PANEL_ZH } from './agent-ui.i18n.panel';
+import { AGENT_UI_DIAG_EN, AGENT_UI_DIAG_ZH } from './agent-ui.i18n.diagnostics';
 
 export interface AgentUiTranslator {
     translate(key: string, params?: any): string | undefined;
@@ -61,6 +62,20 @@ export function formatAgentPanelStatusLabel(
     }
     const key = status.charAt(0).toUpperCase() + status.slice(1);
     return formatAgentPanelLabel(translator, section, `status${key}`, status);
+}
+
+/**
+ * Resolve diagnostics report copy (`agent.menu.diag.<section>.<key>`) through
+ * the host translator while keeping the English fallback.
+ */
+export function formatAgentDiagLabel(
+    translator: AgentUiTranslator | null | undefined,
+    section: string,
+    key: string,
+    fallback: string,
+    params?: Record<string, any>
+): string {
+    return formatAgentUiLabel(translator, `agent.menu.diag.${section}.${key}`, fallback, params);
 }
 
 /**
@@ -181,7 +196,7 @@ export const agentUiEnglish: TranslationBundle = {
                 status: { running: 'running', completed: 'completed', cancelled: 'cancelled', failed: 'failed' }
             },
             hint: AGENT_UI_HINT_EN,
-            menu: { ...AGENT_UI_MENU_EN, panel: AGENT_UI_PANEL_EN },
+            menu: { ...AGENT_UI_MENU_EN, panel: AGENT_UI_PANEL_EN, diag: AGENT_UI_DIAG_EN },
             context: {
                 strategy: 'context {strategy}',
                 level: 'level {level}',
@@ -432,7 +447,7 @@ export const agentUiChinese: TranslationBundle = {
                 status: { running: '进行中', completed: '已完成', cancelled: '已取消', failed: '失败' }
             },
             hint: AGENT_UI_HINT_ZH,
-            menu: { ...AGENT_UI_MENU_ZH, panel: AGENT_UI_PANEL_ZH },
+            menu: { ...AGENT_UI_MENU_ZH, panel: AGENT_UI_PANEL_ZH, diag: AGENT_UI_DIAG_ZH },
             context: {
                 strategy: '上下文 {strategy}',
                 level: '级别 {level}',

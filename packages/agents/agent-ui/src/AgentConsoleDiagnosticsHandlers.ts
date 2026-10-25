@@ -10,7 +10,7 @@ import {
     buildTurnDiagnosticsRecordOption,
     parseTrendArgs,
 } from './AgentConsoleFormatters';
-import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentDiagLabel as diagLabel, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 // ── Diagnostics handler context ──────────────────────────────────────────────
 
@@ -66,7 +66,7 @@ export async function openCompactionHistory(
     ctx.pushCommandOutput(
         '/compactions',
         records
-            .map(record => formatCompactionHistoryRecord(record))
+            .map(record => formatCompactionHistoryRecord(record, ctx.translator))
             .join(' | ')
     );
     return true;
@@ -90,7 +90,7 @@ export async function openCompactionHistoryTrend(
         );
         return true;
     }
-    const lines = formatCompactionHistoryTrend(trend);
+    const lines = formatCompactionHistoryTrend(trend, ctx.translator);
     ctx.pushCommandOutput('/compactions trend', lines.join('\n'));
     return true;
 }
@@ -114,7 +114,7 @@ export async function openTurnDiagnostics(
         );
         return true;
     }
-    ctx.pushCommandOutput('/diagnostics', formatTurnDiagnosticsAggregate(aggregate, sessionId));
+    ctx.pushCommandOutput('/diagnostics', formatTurnDiagnosticsAggregate(aggregate, sessionId, ctx.translator));
     return true;
 }
 
@@ -228,21 +228,33 @@ export async function openHarnessAudit(
         return true;
     }
     const lines: string[] = [];
+    const t = (key: string, fallback: string, params?: Record<string, any>) => diagLabel(ctx.translator, 'harness', key, fallback, params);
     const scope = report.scopedSessionIds
         ? report.scopedSessionIds.map((id: string) => (id.length > 16 ? `${id.slice(0, 14)}…` : id)).join(',')
-        : 'all sessions';
-    lines.push(`harness audit · ${scope} · ${Number(report.totalTurns ?? 0)} turns · ${Number(report.totalToolAttempts ?? 0)} tool attempts · fail-turn ${Number(report.failureTurnRate ?? 0)}%`);
+        : t('allSessions', 'all sessions');
+    lines.push(t('auditSummary', 'harness audit · {scope} · {turns} turns · {attempts} tool attempts · fail-turn {rate}%', {
+        scope: scope, turns: Number(report.totalTurns ?? 0), attempts: Number(report.totalToolAttempts ?? 0), rate: Number(report.failureTurnRate ?? 0)
+    }));
     for (const stat of report.topFailingTools ?? []) {
-        lines.push(`tool ${stat.toolName} · ${stat.failures}/${stat.attempts} (${Number(stat.failureRate ?? 0)}%) · falsified ${Number(stat.falsifiedCount ?? 0)}`);
+        lines.push(t('auditTool', 'tool {name} · {failures}/{attempts} ({rate}%) · falsified {falsified}', {
+            name: stat.toolName, failures: stat.failures, attempts: stat.attempts, rate: Number(stat.failureRate ?? 0), falsified: Number(stat.falsifiedCount ?? 0)
+        }));
     }
     for (const cluster of report.errorClusters ?? []) {
-        lines.push(`cluster ${cluster.signature} · x${cluster.count} · tools ${(cluster.toolNames ?? []).join(',')}${cluster.suggestedPolicy ? ` · ${cluster.suggestedPolicy}` : ''}`);
+        lines.push(t('auditCluster', 'cluster {signature} · x{count} · tools {tools}{policy}', {
+            signature: cluster.signature, count: cluster.count, tools: (cluster.toolNames ?? []).join(','),
+            policy: cluster.suggestedPolicy ? ` · ${cluster.suggestedPolicy}` : ''
+        }));
     }
     for (const falsified of report.falsifiedDistribution ?? []) {
-        lines.push(`falsified ${falsified.toolName} · ${falsified.falsifiedCount} (${Number(falsified.falsifiedRate ?? 0)}%)`);
+        lines.push(t('auditFalsified', 'falsified {name} · {count} ({rate}%)', {
+            name: falsified.toolName, count: falsified.falsifiedCount, rate: Number(falsified.falsifiedRate ?? 0)
+        }));
     }
     for (const suggestion of report.suggestions ?? []) {
-        lines.push(`suggest[${suggestion.kind}]${suggestion.toolName ? ` ${suggestion.toolName}` : ''} · ${suggestion.message}`);
+        lines.push(t('auditSuggestion', 'suggest[{kind}]{tool} · {message}', {
+            kind: suggestion.kind, tool: suggestion.toolName ? ` ${suggestion.toolName}` : '', message: suggestion.message
+        }));
     }
     ctx.pushCommandOutput('/harness audit', lines.join('\n'));
     return true;
@@ -257,16 +269,25 @@ export async function openHarnessProfile(
         return true;
     }
     const arg = (sub ?? '').trim();
+    const t = (key: string, fallback: string, params?: Record<string, any>) => diagLabel(ctx.translator, 'harness', key, fallback, params);
     if (arg === 'list' || arg === '' || arg === 'default') {
         const result = await ctx.sessionService.listHarnessProfiles();
         const lines: string[] = [];
         const active = result.current;
-        lines.push(`harness profiles${active ? ` · active '${active}'` : ' · default'}`);
+        lines.push(active
+            ? t('profilesActive', "harness profiles · active '{name}'", { name: active })
+            : t('profilesDefault', 'harness profiles · default'));
         for (const profile of result.profiles ?? []) {
             const granular = (profile.granularCategories ?? []).length
-                ? ` · granular ${(profile.granularCategories ?? []).join(',')}`
+                ? t('profileGranular', ' · granular {categories}', { categories: (profile.granularCategories ?? []).join(',') })
                 : '';
-            lines.push(`profile ${profile.name} · v${profile.version}${profile.maxRepairRounds !== undefined ? ` · repair ${profile.maxRepairRounds}` : ''}${profile.maxLoopRecoveries !== undefined ? ` · loop-recover ${profile.maxLoopRecoveries}` : ''}${profile.sandbox?.mode ? ` · sandbox ${profile.sandbox.mode}` : ''}${granular}`);
+            lines.push(t('profileRow', 'profile {name} · v{version}{repair}{loopRecover}{sandbox}{granular}', {
+                name: profile.name, version: profile.version,
+                repair: profile.maxRepairRounds !== undefined ? t('profileRepair', ' · repair {rounds}', { rounds: profile.maxRepairRounds }) : '',
+                loopRecover: profile.maxLoopRecoveries !== undefined ? t('profileLoopRecover', ' · loop-recover {count}', { count: profile.maxLoopRecoveries }) : '',
+                sandbox: profile.sandbox?.mode ? t('profileSandbox', ' · sandbox {mode}', { mode: profile.sandbox.mode }) : '',
+                granular: granular
+            }));
         }
         ctx.pushCommandOutput('/harness profile list', lines.join('\n'));
         return true;
@@ -278,19 +299,24 @@ export async function openHarnessProfile(
             return true;
         }
         const lines: string[] = [];
-        lines.push(`harness profile ${profile.name} · v${profile.version}`);
+        lines.push(t('currentHeader', 'harness profile {name} · v{version}', { name: profile.name, version: profile.version }));
         for (const rule of profile.requireApproval ?? []) {
             const category = typeof rule === 'string' ? rule : `${rule.category}${rule.names?.length ? `:${rule.names.join(',')}` : ''}${rule.mode ? `[${rule.mode}]` : ''}`;
-            lines.push(`approval ${category}`);
+            lines.push(t('approval', 'approval {category}', { category: category }));
         }
-        if (profile.sandbox) {
-            lines.push(`sandbox ${profile.sandbox.mode}${profile.sandbox.networkAllowlist?.length ? ` · allow ${profile.sandbox.networkAllowlist.join(',')}` : ''}`);
+        if (profile.sandbox?.mode) {
+            lines.push(t('sandboxLine', 'sandbox {mode}{allow}', {
+                mode: profile.sandbox.mode,
+                allow: profile.sandbox.networkAllowlist?.length
+                    ? t('sandboxAllow', ' · allow {list}', { list: profile.sandbox.networkAllowlist.join(',') })
+                    : ''
+            }));
         }
         if (profile.maxRepairRounds !== undefined) {
-            lines.push(`maxRepairRounds ${profile.maxRepairRounds}`);
+            lines.push(t('maxRepairRounds', 'maxRepairRounds {value}', { value: profile.maxRepairRounds }));
         }
         if (profile.maxLoopRecoveries !== undefined) {
-            lines.push(`maxLoopRecoveries ${profile.maxLoopRecoveries}`);
+            lines.push(t('maxLoopRecoveries', 'maxLoopRecoveries {value}', { value: profile.maxLoopRecoveries }));
         }
         ctx.pushCommandOutput('/harness profile current', lines.join('\n'));
         return true;
@@ -310,8 +336,8 @@ export async function openHarnessProfile(
         }
         const diffLines = (result.diff ?? []).length
             ? (result.diff ?? []).map((line: string) => `  ${line}`)
-            : ['  (no differences)'];
-        ctx.pushCommandOutput('/harness profile diff', `harness profile diff ${result.from} → ${result.to}\n${diffLines.join('\n')}`);
+            : [t('noDifferences', '  (no differences)')];
+        ctx.pushCommandOutput('/harness profile diff', `${t('diffTitle', 'harness profile diff {from} → {to}', { from: result.from, to: result.to })}\n${diffLines.join('\n')}`);
         return true;
     }
     ctx.notify(formatAgentUiNotice(ctx.translator, 'harnessProfileUsage'));

@@ -534,7 +534,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected formatSummaryQualityAggregate(aggregate: Record<string, any>): string {
-        return fmtSummaryQualityAggregate(aggregate);
+        return fmtSummaryQualityAggregate(aggregate, this.translator);
     }
 
     protected async openSummaryQualityRecords(provider?: string): Promise<boolean> {
@@ -2356,15 +2356,15 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async refreshTurnDiagnosticsDigest(): Promise<void> {
-        return refreshTurnDiagnosticsDigest(this.sessionService, this.state);
+        return refreshTurnDiagnosticsDigest(this.sessionService, this.state, this.translator);
     }
 
     protected async refreshCompactionDigest(): Promise<void> {
-        return refreshCompactionDigest(this.sessionService, this.state);
+        return refreshCompactionDigest(this.sessionService, this.state, this.translator);
     }
 
     protected async refreshSummaryQualityDigest(): Promise<void> {
-        return refreshSummaryQualityDigest(this.sessionService, this.state);
+        return refreshSummaryQualityDigest(this.sessionService, this.state, this.translator);
     }
 
     protected async mergeTodoPlanForSessions(

@@ -1,10 +1,10 @@
 import { formatCompactNumber } from '@tsdi/core';
 import { AgentConsoleSelectOption } from './AgentConsoleSessionState';
-import { formatAgentPanelLabel as panelLabel, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentDiagLabel as diagLabel, formatAgentPanelLabel as panelLabel, type AgentUiTranslator } from './agent-ui.i18n';
 
 // ── Formatting helpers (extracted from AgentConsoleComponent) ────────────────
 
-export function formatSummaryQualityAggregate(aggregate: Record<string, any>): string {
+export function formatSummaryQualityAggregate(aggregate: Record<string, any>, translator?: AgentUiTranslator | null): string {
     const provider = String(aggregate.provider ?? 'unknown');
     const count = Number(aggregate.recordCount ?? 0);
     const avgTotal = Number(aggregate.avgTotal ?? 0).toFixed(1);
@@ -15,7 +15,10 @@ export function formatSummaryQualityAggregate(aggregate: Record<string, any>): s
     const range = from || to
         ? ` · ${new Date(from || to).toLocaleDateString()}–${new Date(to || from).toLocaleDateString()}`
         : '';
-    return `${provider} · ${count} summary ${count === 1 ? '' : 'records'} · avg ${avgTotal} · fallback ${fallbackRate}% · evidence ${evidenceCoverage}%${range}`;
+    return diagLabel(translator, 'quality', 'aggregate', '{provider} · {count} summary {recordWord} · avg {avg} · fallback {fallback}% · evidence {evidence}%{range}', {
+        provider: provider, count: count, recordWord: count === 1 ? 'record' : 'records',
+        avg: avgTotal, fallback: fallbackRate, evidence: evidenceCoverage, range: range
+    });
 }
 
 export function formatUsageWindow(label: string, usage: Record<string, any>, translator?: AgentUiTranslator | null): string {
@@ -40,7 +43,7 @@ export function formatUsageSummary(usage: Record<string, any>, translator?: Agen
     ].join(' | ');
 }
 
-export function formatCompactionHistoryAggregate(aggregate: Record<string, any>): string {
+export function formatCompactionHistoryAggregate(aggregate: Record<string, any>, translator?: AgentUiTranslator | null): string {
     const sessionId = String(aggregate.sessionId ?? 'unknown');
     const count = Number(aggregate.recordCount ?? 0);
     const compacted = Number(aggregate.compactedCount ?? 0);
@@ -52,39 +55,44 @@ export function formatCompactionHistoryAggregate(aggregate: Record<string, any>)
         ? ` · ${new Date(from || to).toLocaleDateString()}–${new Date(to || from).toLocaleDateString()}`
         : '';
     const id = sessionId.length > 16 ? `${sessionId.slice(0, 14)}…` : sessionId;
-    return `${id} · ${count} ${count === 1 ? 'compaction' : 'compactions'} · ${compacted} triggered · saved ${formatCompactNumber(tokensSaved)} tokens · avg ${avgRatio}%${range}`;
+    return diagLabel(translator, 'compaction', 'aggregate', '{id} · {count} {recordWord} · {compacted} triggered · saved {saved} tokens · avg {avg}%{range}', {
+        id: id, count: count, recordWord: count === 1 ? 'compaction' : 'compactions', compacted: compacted,
+        saved: formatCompactNumber(tokensSaved), avg: avgRatio, range: range
+    });
 }
 
-export function buildSummaryQualityRecordOption(record: Record<string, any>): AgentConsoleSelectOption {
+export function buildSummaryQualityRecordOption(record: Record<string, any>, translator?: AgentUiTranslator | null): AgentConsoleSelectOption {
     const id = String(record.id ?? '');
     const model = record.model ? String(record.model) : 'unknown';
     const total = Number(record.total ?? 0);
     const createdAt = Number(record.createdAt ?? 0);
+    const q = (key: string, fallback: string, params?: Record<string, any>) => diagLabel(translator, 'quality', key, fallback, params);
+    const yesNo = (value: boolean) => diagLabel(translator, 'common', value ? 'yes' : 'no', value ? 'yes' : 'no');
     return {
-        label: `${record.provider ?? 'unknown'} · ${model} · ${total}`,
+        label: q('recordTitle', '{provider} · {model} · {total}', { provider: record.provider ?? 'unknown', model: model, total: total }),
         value: id || `${record.provider ?? 'unknown'}:${total}`,
         description: [
             createdAt ? new Date(createdAt).toLocaleDateString() : '',
-            `fields ${Number(record.fieldCompleteness ?? 0)}`,
-            `annotation ${Number(record.annotationQuality ?? 0)}`,
-            `length ${Number(record.lengthBalance ?? 0)}`,
-            `truncation ${Number(record.truncationScore ?? 0)}`,
-            record.evidenceCoverage != null ? `evidence ${Number(record.evidenceCoverage).toFixed(1)}%` : '',
-            record.fallbackUsed ? 'fallback' : ''
-        ].filter(Boolean).join(' · ') || 'summary quality record',
+            q('recordFields', 'fields {value}', { value: Number(record.fieldCompleteness ?? 0) }),
+            q('recordAnnotation', 'annotation {value}', { value: Number(record.annotationQuality ?? 0) }),
+            q('recordLength', 'length {value}', { value: Number(record.lengthBalance ?? 0) }),
+            q('recordTruncation', 'truncation {value}', { value: Number(record.truncationScore ?? 0) }),
+            record.evidenceCoverage != null ? q('recordEvidence', 'evidence {value}%', { value: Number(record.evidenceCoverage).toFixed(1) }) : '',
+            record.fallbackUsed ? q('recordFallbackBadge', 'fallback') : ''
+        ].filter(Boolean).join(' · ') || q('recordDescriptionFallback', 'summary quality record'),
         detail: [
-            `Record: ${id || '-'}`,
-            `Provider: ${record.provider ?? 'unknown'}`,
-            `Model: ${model}`,
-            `Total: ${total}`,
-            `Fields: ${Number(record.fieldCompleteness ?? 0)}`,
-            `Annotation: ${Number(record.annotationQuality ?? 0)}`,
-            `Length: ${Number(record.lengthBalance ?? 0)}`,
-            `Truncation: ${Number(record.truncationScore ?? 0)}`,
-            record.evidenceCoverage != null ? `Evidence coverage: ${Number(record.evidenceCoverage).toFixed(1)}%` : '',
-            `Fallback: ${record.fallbackUsed ? 'yes' : 'no'}`,
-            `Summary length: ${Number(record.summaryLength ?? 0)}`,
-            createdAt ? `Created: ${new Date(createdAt).toLocaleString()}` : ''
+            q('recordDetail', 'Record: {id}', { id: id || '-' }),
+            q('recordProvider', 'Provider: {provider}', { provider: record.provider ?? 'unknown' }),
+            q('recordModel', 'Model: {model}', { model: model }),
+            q('recordTotal', 'Total: {total}', { total: total }),
+            q('detailFields', 'Fields: {value}', { value: Number(record.fieldCompleteness ?? 0) }),
+            q('detailAnnotation', 'Annotation: {value}', { value: Number(record.annotationQuality ?? 0) }),
+            q('detailLength', 'Length: {value}', { value: Number(record.lengthBalance ?? 0) }),
+            q('detailTruncation', 'Truncation: {value}', { value: Number(record.truncationScore ?? 0) }),
+            record.evidenceCoverage != null ? q('detailEvidence', 'Evidence coverage: {value}%', { value: Number(record.evidenceCoverage).toFixed(1) }) : '',
+            q('detailFallback', 'Fallback: {value}', { value: yesNo(!!record.fallbackUsed) }),
+            q('detailSummaryLength', 'Summary length: {value}', { value: Number(record.summaryLength ?? 0) }),
+            createdAt ? q('detailCreated', 'Created: {value}', { value: new Date(createdAt).toLocaleString() }) : ''
         ].filter(Boolean).join('\n')
     };
 }
@@ -121,19 +129,20 @@ export function parseTrendArgs(
  * Renders one compact line per compaction record, for example:
  * `compacted L3 312→224 msgs (88) · 84k→41k tokens (-51%) · saved 43k total`
  */
-export function formatCompactionHistoryRecord(record: Record<string, any>): string {
+export function formatCompactionHistoryRecord(record: Record<string, any>, translator?: AgentUiTranslator | null): string {
+    const c = (key: string, fallback: string, params?: Record<string, any>) => diagLabel(translator, 'compaction', key, fallback, params);
     const parts = [
-        record.compactionTriggered ? 'compacted' : record.strategy,
+        record.compactionTriggered ? c('recordCompacted', 'compacted') : record.strategy,
         record.level ? `L${record.level}` : ''
     ].filter(Boolean);
     if (typeof record.beforeMessageCount === 'number' && typeof record.afterMessageCount === 'number') {
-        parts.push(`${record.beforeMessageCount}→${record.afterMessageCount} msgs (${record.compactedMessageCount ?? 0})`);
+        parts.push(c('recordMessages', '{before}→{after} msgs ({compacted})', { before: record.beforeMessageCount, after: record.afterMessageCount, compacted: record.compactedMessageCount ?? 0 }));
     }
     if (typeof record.beforeTokens === 'number' && typeof record.afterTokens === 'number') {
-        parts.push(`${formatCompactNumber(record.beforeTokens)}→${formatCompactNumber(record.afterTokens)} tokens (${record.compressionRatio ?? 0}%)`);
+        parts.push(c('recordTokens', '{before}→{after} tokens ({ratio}%)', { before: formatCompactNumber(record.beforeTokens), after: formatCompactNumber(record.afterTokens), ratio: record.compressionRatio ?? 0 }));
     }
     if (typeof record.cumulativeTokenSavings === 'number' && record.cumulativeTokenSavings > 0) {
-        parts.push(`saved ${formatCompactNumber(record.cumulativeTokenSavings)} total`);
+        parts.push(c('recordSavedTotal', 'saved {saved} total', { saved: formatCompactNumber(record.cumulativeTokenSavings) }));
     }
     return parts.join(' · ');
 }
@@ -143,7 +152,7 @@ export function formatCompactionHistoryRecord(record: Record<string, any>): stri
  * buckets (`avgCompressionRatio` mapped to ▁▂▃▄▅▆▇█), the bucket date
  * range, the total tokens saved, and the averaged compression ratio.
  */
-export function formatCompactionHistoryTrend(trend: Array<Record<string, any>>): string[] {
+export function formatCompactionHistoryTrend(trend: Array<Record<string, any>>, translator?: AgentUiTranslator | null): string[] {
     const bySession = new Map<string, Array<Record<string, any>>>();
     for (const point of trend) {
         const sessionId = String(point.sessionId ?? 'unknown');
@@ -170,29 +179,29 @@ export function formatCompactionHistoryTrend(trend: Array<Record<string, any>>):
             ? ` · ${new Date(from || to).toLocaleDateString()}–${new Date(to || from).toLocaleDateString()}`
             : '';
         const id = sessionId.length > 16 ? `${sessionId.slice(0, 14)}…` : sessionId;
-        lines.push(`${id} ${sorted.map(point => spark(Number(point.avgCompressionRatio ?? 0))).join('')} (${sorted.length}d${range} · saved ${formatCompactNumber(tokensSaved)} tokens · avg ${avgRatio}%)`);
+        lines.push(diagLabel(translator, 'compaction', 'trend', '{id} {spark} ({bucketWord}{range} · saved {saved} tokens · avg {avg}%)', {
+            id: id, spark: sorted.map(point => spark(Number(point.avgCompressionRatio ?? 0))).join(''), range: range,
+            bucketWord: diagLabel(translator, 'common', 'dayCount', '{count}d', { count: sorted.length }),
+            saved: formatCompactNumber(tokensSaved), avg: avgRatio
+        }));
     }
     return lines.sort((a, b) => a.localeCompare(b));
 }
 
 // ── Turn diagnostics formatting ──────────────────────────────────────────────
 
-export function formatTurnDiagnosticsAggregate(aggregate: Record<string, any>, sessionId?: string): string {
+export function formatTurnDiagnosticsAggregate(aggregate: Record<string, any>, sessionId?: string, translator?: AgentUiTranslator | null): string {
     const id = sessionId
         ? (sessionId.length > 16 ? `${sessionId.slice(0, 14)}…` : sessionId)
-        : 'all sessions';
-    const parts = [
-        `${id} · ${Number(aggregate.totalTurns ?? 0)} turns`,
-        `empty ${Number(aggregate.emptyResponseRate ?? 0)}%`,
-        `repeated ${Number(aggregate.repeatedQuestionRate ?? 0)}%`,
-        `clarif ${Number(aggregate.clarificationRate ?? 0)}%`,
-        `${Number(aggregate.compactionCount ?? 0)} compact(s)`,
-        `saved ${formatCompactNumber(Number(aggregate.totalTokenSavings ?? 0))} tokens`
-    ];
+        : diagLabel(translator, 'harness', 'allSessions', 'all sessions');
     const range = aggregate.timeRange
         ? ` · ${new Date(aggregate.timeRange.from).toLocaleDateString()}–${new Date(aggregate.timeRange.to).toLocaleDateString()}`
         : '';
-    return parts.join(' · ') + range;
+    return diagLabel(translator, 'turn', 'aggregate', '{id} · {turns} turns · empty {empty}% · repeated {repeated}% · clarif {clarif}% · {compacted} compact(s) · saved {saved} tokens{range}', {
+        id: id, turns: Number(aggregate.totalTurns ?? 0), empty: Number(aggregate.emptyResponseRate ?? 0),
+        repeated: Number(aggregate.repeatedQuestionRate ?? 0), clarif: Number(aggregate.clarificationRate ?? 0),
+        compacted: Number(aggregate.compactionCount ?? 0), saved: formatCompactNumber(Number(aggregate.totalTokenSavings ?? 0)), range: range
+    });
 }
 
 /**
@@ -201,7 +210,7 @@ export function formatTurnDiagnosticsAggregate(aggregate: Record<string, any>, s
  * ▁▂▃▄▅▆▇█), the bucket date range, the total turns, and the total tokens
  * saved.
  */
-export function formatTurnDiagnosticsTrend(trend: Array<Record<string, any>>): string[] {
+export function formatTurnDiagnosticsTrend(trend: Array<Record<string, any>>, translator?: AgentUiTranslator | null): string[] {
     const bySession = new Map<string, Array<Record<string, any>>>();
     for (const point of trend) {
         const sessionId = String(point.sessionId ?? 'unknown');
@@ -228,12 +237,16 @@ export function formatTurnDiagnosticsTrend(trend: Array<Record<string, any>>): s
             ? ` · ${new Date(from || to).toLocaleDateString()}–${new Date(to || from).toLocaleDateString()}`
             : '';
         const id = sessionId.length > 16 ? `${sessionId.slice(0, 14)}…` : sessionId;
-        lines.push(`${id} ${sorted.map(point => spark(Number(point.totalTokenSavings ?? 0), maxSaving)).join('')} (${sorted.length}d${range} · ${turns} turns · saved ${formatCompactNumber(tokensSaved)} tokens)`);
+        lines.push(diagLabel(translator, 'turn', 'trend', '{id} {spark} ({bucketWord}{range} · {turns} turns · saved {saved} tokens)', {
+            id: id, spark: sorted.map(point => spark(Number(point.totalTokenSavings ?? 0), maxSaving)).join(''), range: range,
+            bucketWord: diagLabel(translator, 'common', 'dayCount', '{count}d', { count: sorted.length }),
+            turns: turns, saved: formatCompactNumber(tokensSaved)
+        }));
     }
     return lines.sort((a, b) => a.localeCompare(b));
 }
 
-export function buildTurnDiagnosticsRecordOption(record: Record<string, any>): AgentConsoleSelectOption {
+export function buildTurnDiagnosticsRecordOption(record: Record<string, any>, translator?: AgentUiTranslator | null): AgentConsoleSelectOption {
     const id = String(record.id ?? '');
     const sessionId = String(record.sessionId ?? 'unknown');
     const createdAt = Number(record.createdAt ?? 0);
@@ -242,22 +255,23 @@ export function buildTurnDiagnosticsRecordOption(record: Record<string, any>): A
     const repeatedRate = Number(record.repeatedQuestionRate ?? 0).toFixed(1);
     const saved = formatCompactNumber(Number(record.totalTokenSavings ?? 0));
     const shortSession = sessionId.length > 16 ? `${sessionId.slice(0, 14)}…` : sessionId;
+    const t = (key: string, fallback: string, params?: Record<string, any>) => diagLabel(translator, 'turn', key, fallback, params);
     return {
-        label: `${shortSession} · ${totalTurns} turns · saved ${saved}`,
+        label: t('recordLabel', '{session} · {turns} turns · saved {saved}', { session: shortSession, turns: totalTurns, saved: saved }),
         value: id || `${sessionId}:${totalTurns}`,
         description: [
             createdAt ? new Date(createdAt).toLocaleDateString() : '',
-            `empty ${emptyRate}%`,
-            `repeated ${repeatedRate}%`
-        ].filter(Boolean).join(' · ') || 'turn diagnostics record',
+            t('recordEmptyRate', 'empty {value}%', { value: emptyRate }),
+            t('recordRepeatedRate', 'repeated {value}%', { value: repeatedRate })
+        ].filter(Boolean).join(' · ') || t('recordDescriptionFallback', 'turn diagnostics record'),
         detail: [
-            `Record: ${id || '-'}`,
-            `Session: ${sessionId}`,
-            `Turns: ${totalTurns}`,
-            `Empty response rate: ${emptyRate}%`,
-            `Repeated question rate: ${repeatedRate}%`,
-            `Token savings: ${saved}`,
-            createdAt ? `Created: ${new Date(createdAt).toLocaleString()}` : ''
+            t('recordDetail', 'Record: {id}', { id: id || '-' }),
+            t('recordSession', 'Session: {session}', { session: sessionId }),
+            t('recordTurns', 'Turns: {value}', { value: totalTurns }),
+            t('recordEmptyResponseRate', 'Empty response rate: {value}%', { value: emptyRate }),
+            t('recordRepeatedQuestionRate', 'Repeated question rate: {value}%', { value: repeatedRate }),
+            t('recordTokenSavings', 'Token savings: {value}', { value: saved }),
+            createdAt ? t('recordCreated', 'Created: {value}', { value: new Date(createdAt).toLocaleString() }) : ''
         ].filter(Boolean).join('\n')
     };
 }

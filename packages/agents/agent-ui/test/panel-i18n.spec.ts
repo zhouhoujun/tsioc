@@ -12,8 +12,23 @@ import {
     AgentConsoleWhichKeyPanelComponent,
     AgentConsoleWorkingPanelComponent
 } from '../src/AgentConsolePanels';
-import { formatUsageSummary } from '../src/AgentConsoleFormatters';
-import { refreshUsageDigest } from '../src/AgentConsoleDiagnosticsView';
+import {
+    buildSummaryQualityRecordOption,
+    formatCompactionHistoryAggregate,
+    formatCompactionHistoryRecord,
+    formatSummaryQualityAggregate,
+    formatTurnDiagnosticsAggregate,
+    formatTurnDiagnosticsTrend,
+    formatUsageSummary
+} from '../src/AgentConsoleFormatters';
+import {
+    formatSummaryQualityTrend,
+    openTurnDiagnosticsListView,
+    openSummaryQualityTrendView,
+    refreshSummaryQualityDigest,
+    refreshUsageDigest
+} from '../src/AgentConsoleDiagnosticsView';
+import { openHarnessAudit, openHarnessProfile } from '../src/AgentConsoleDiagnosticsHandlers';
 import { runDebugConfigCommand, runMemoriesCommand, runPersonalityCommand } from '../src/AgentConsolePreferenceCommands';
 import { runAppsCommand } from '../src/AgentConsoleExtensionCommands';
 import { AgentConsoleComponent } from '../src/AgentConsoleComponent';
@@ -320,5 +335,184 @@ export class PanelI18nTest {
         fake.translator = zh;
         expect(fake.gitSnapshotCommandHost().translator).toBe(zh);
         expect(fake.shellCommandHost().translator).toBe(zh);
+    }
+    @Test('quality and compaction digests are localized')
+    async digestFormattersLocalized() {
+        const quality = formatSummaryQualityAggregate(
+            { provider: 'deepseek', recordCount: 12, avgTotal: 84.2, fallbackRate: 8.3, avgEvidenceCoverage: 67.5, timeRange: {} },
+            zh
+        );
+        expect(quality).toEqual('deepseek · 12 条摘要记录 · 平均 84.2 · 回退 8.3% · 证据 67.5%');
+        expect(formatSummaryQualityAggregate({ provider: 'deepseek', recordCount: 1, avgTotal: 84.2, fallbackRate: 8.3, avgEvidenceCoverage: 67.5, timeRange: {} }))
+            .toEqual('deepseek · 1 summary record · avg 84.2 · fallback 8.3% · evidence 67.5%');
+
+        expect(formatCompactionHistoryAggregate(
+            { sessionId: 'session-1', recordCount: 2, compactedCount: 1, totalTokensSaved: 12500, avgCompressionRatio: 62.5, timeRange: {} },
+            zh
+        )).toEqual('session-1 · 2 次压缩 · 触发 1 次 · 节省 12.5K tokens · 平均 62.5%');
+
+        const digestState: any = { setSummaryQualityDigest(value: string) { this.digest = value; } };
+        await refreshSummaryQualityDigest(
+            { getSummaryQualityStats: async () => [{ provider: 'deepseek', recordCount: 12, avgTotal: 84.2, fallbackRate: 8.3, avgEvidenceCoverage: 67.5, timeRange: {} }] },
+            digestState,
+            zh
+        );
+        expect(digestState.digest).toContain('12 条摘要记录');
+        const panel = new AgentConsoleWorkingPanelComponent(state({ status: 'running', summaryQualityDigest: digestState.digest }), zh);
+        expect(panel.dashboardQualityLabel).toContain('质量 · ');
+    }
+
+    @Test('compaction records and turn diagnostics are localized')
+    async compactionAndTurnFormattersLocalized() {
+        expect(formatCompactionHistoryRecord({
+            compactionTriggered: true, level: 3, beforeMessageCount: 20, afterMessageCount: 10,
+            compactedMessageCount: 10, beforeTokens: 4000, afterTokens: 2000, compressionRatio: 50, cumulativeTokenSavings: 5000
+        }, zh)).toEqual('已压缩 · L3 · 20→10 条消息（10） · 4K→2K tokens（50%） · 累计节省 5K');
+
+        expect(formatTurnDiagnosticsAggregate(
+            { totalTurns: 12, emptyResponseRate: 8.3, repeatedQuestionRate: 16.7, clarificationRate: 0, compactionCount: 3, totalTokenSavings: 25000 },
+            undefined,
+            zh
+        )).toEqual('全部会话 · 12 轮 · 空回复 8.3% · 重复 16.7% · 澄清 0% · 压缩 3 次 · 节省 25K tokens');
+
+        const trend = formatTurnDiagnosticsTrend([
+            { sessionId: 'session-1', bucketStart: Date.parse('2026-01-01'), recordCount: 4, totalTokenSavings: 2000 },
+            { sessionId: 'session-1', bucketStart: Date.parse('2026-01-02'), recordCount: 3, totalTokenSavings: 3000 }
+        ], zh);
+        expect(trend[0]).toContain('session-1');
+        expect(trend[0]).toContain('2天');
+        expect(trend[0]).toContain('7 轮');
+        expect(trend[0]).toContain('节省 5K tokens');
+    }
+
+    @Test('quality trend view and record options are localized')
+    async qualityTrendAndRecordsLocalized() {
+        const outputs: string[] = [];
+        await openSummaryQualityTrendView(
+            { getSummaryQualityTrend: async () => [
+                { provider: 'deepseek', bucketStart: Date.parse('2026-01-01'), avgTotal: 82.5, fallbackRate: 1, avgEvidenceCoverage: 70 },
+                { provider: 'deepseek', bucketStart: Date.parse('2026-01-02'), avgTotal: 84, fallbackRate: 2, avgEvidenceCoverage: 71 }
+            ] },
+            () => { /* unused */ },
+            (_command: string, text: string) => { outputs.push(text); },
+            'deepseek', undefined, undefined, zh
+        );
+        expect(outputs[0]).toContain('deepseek');
+        expect(outputs[0]).toContain('2天');
+        expect(outputs[0]).toContain('平均 83.3');
+        expect(outputs[0]).toContain('证据 70.5%');
+
+        expect(formatSummaryQualityTrend([{ provider: 'deepseek', bucketStart: 1, avgTotal: 82.5 }]).length).toEqual(1);
+
+        const option = buildSummaryQualityRecordOption({
+            id: 'q1', provider: 'deepseek', model: 'deepseek-v4-flash', total: 92, createdAt: 1,
+            fieldCompleteness: 3, annotationQuality: 4, lengthBalance: 5, truncationScore: 6,
+            evidenceCoverage: 88.5, fallbackUsed: true, summaryLength: 120
+        }, zh);
+        expect(option.label).toEqual('deepseek · deepseek-v4-flash · 92');
+        expect(option.description).toContain('字段 3');
+        expect(option.description).toContain('证据 88.5%');
+        expect(option.description).toContain('回退');
+        expect(option.detail).toContain('记录：q1');
+        expect(option.detail).toContain('回退：是');
+    }
+
+    @Test('/diagnostics list rows and title are localized')
+    async turnDiagnosticsListLocalized() {
+        let title = '';
+        let hint = '';
+        let options: any[] = [];
+        await openTurnDiagnosticsListView(
+            { listTurnDiagnostics: async () => [{
+                id: 'r1', sessionId: 'session-1', createdAt: 1, compactionCount: 2, totalTokenSavings: 4000,
+                repeatedClarificationDetected: true, finalAssistantWasClarification: false, compactionLevel: 'L3'
+            }] },
+            () => { /* unused */ },
+            async (menuTitle: string, menuOptions: any[], _index: number, menuHint?: string) => {
+                title = menuTitle; options = menuOptions; hint = menuHint ?? ''; return undefined;
+            },
+            'session-1', 'session-1', zh
+        );
+        expect(title).toEqual('轮次诊断记录（session-1）');
+        expect(hint).toEqual('1 条');
+        expect(options[0].description).toContain('2 次压缩');
+        expect(options[0].description).toContain('节省 4K tokens');
+        expect(options[0].description).toContain('重复');
+        expect(options[0].detail).toContain('压缩层级：L3');
+        expect(options[0].detail).toContain('重复澄清：是');
+        expect(options[0].detail).toContain('最终澄清：否');
+    }
+
+    @Test('/harness profile output is localized')
+    async harnessProfileLocalized() {
+        const outputs: string[] = [];
+        const ctx: any = {
+            translator: zh,
+            state: { sessionId: 's1' },
+            sessionService: {
+                listHarnessProfiles: async () => ({
+                    current: 'default',
+                    profiles: [
+                        { name: 'default', version: 1, maxRepairRounds: 2, maxLoopRecoveries: 3, granularCategories: ['sandbox', 'fs'] },
+                        { name: 'strict', version: 1, sandbox: { mode: 'network-block' } }
+                    ]
+                }),
+                currentHarnessProfile: async () => ({
+                    name: 'strict', version: 1, requireApproval: ['shell'], sandbox: { mode: 'network-block', networkAllowlist: ['api.example.com'] },
+                    maxRepairRounds: 1, maxLoopRecoveries: 2
+                }),
+                diffHarnessProfiles: async () => ({ from: 'default', to: 'current', diff: [] })
+            },
+            notify: () => { /* unused */ },
+            pushCommandOutput: (_command: string, text: string) => { outputs.push(text); }
+        };
+        await openHarnessProfile(ctx, '');
+        expect(outputs[0].split('\n')).toEqual([
+            '治理 profile · 当前 default',
+            'profile default · v1 · 修复 2 · 循环恢复 3 · 细分 sandbox,fs',
+            'profile strict · v1 · 沙箱 network-block'
+        ]);
+        await openHarnessProfile(ctx, 'current');
+        expect(outputs[1].split('\n')).toEqual([
+            '治理 profile strict · v1',
+            '审批 shell',
+            '沙箱 network-block · 允许 api.example.com',
+            '最大修复轮次 1',
+            '最大循环恢复 2'
+        ]);
+        await openHarnessProfile(ctx, 'diff');
+        expect(outputs[2].split('\n')).toEqual(['治理 profile 差异 default → current', '  （无差异）']);
+        // A sandbox object without a mode must not render `沙箱 undefined`.
+        ctx.sessionService.currentHarnessProfile = async () => ({ name: 'default', version: 1, sandbox: {} });
+        await openHarnessProfile(ctx, 'current');
+        expect(outputs[3].split('\n')).toEqual(['治理 profile default · v1']);
+    }
+
+    @Test('/harness audit report is localized')
+    async harnessAuditLocalized() {
+        const outputs: string[] = [];
+        const ctx: any = {
+            translator: zh,
+            state: { sessionId: 's1' },
+            sessionService: {
+                runHarnessAudit: async () => ({
+                    totalTurns: 10, totalToolAttempts: 40, failureTurnRate: 20,
+                    topFailingTools: [{ toolName: 'bash', failures: 3, attempts: 8, failureRate: 37.5, falsifiedCount: 1 }],
+                    errorClusters: [{ signature: 'timeout', count: 2, toolNames: ['bash'], suggestedPolicy: 'retry' }],
+                    falsifiedDistribution: [{ toolName: 'bash', falsifiedCount: 1, falsifiedRate: 12.5 }],
+                    suggestions: [{ kind: 'retry', toolName: 'bash', message: 'retry with a shorter timeout' }]
+                })
+            },
+            notify: () => { /* unused */ },
+            pushCommandOutput: (_command: string, text: string) => { outputs.push(text); }
+        };
+        await openHarnessAudit(ctx);
+        expect(outputs[0].split('\n')).toEqual([
+            '治理审计 · 全部会话 · 10 轮 · 40 次工具调用 · 失败轮次 20%',
+            '工具 bash · 3/8（37.5%）· 伪证 1',
+            '聚类 timeout · x2 · 工具 bash · retry',
+            '伪证 bash · 1（12.5%）',
+            '建议[retry] bash · retry with a shorter timeout'
+        ]);
     }
 }

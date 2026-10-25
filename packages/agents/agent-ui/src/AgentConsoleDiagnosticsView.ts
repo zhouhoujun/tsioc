@@ -1,6 +1,6 @@
 import { formatCompactNumber } from '@tsdi/core';
 import { AgentConsoleSelectOption } from './AgentConsoleSessionState';
-import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentDiagLabel as diagLabel, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 import { formatCompactionHistoryAggregate, formatSummaryQualityAggregate, formatTurnDiagnosticsAggregate, formatTurnDiagnosticsTrend, formatUsageSummary, buildSummaryQualityRecordOption } from './AgentConsoleFormatters';
 
 export interface AgentConsoleDigestState {
@@ -29,7 +29,7 @@ export async function refreshUsageDigest(sessionService: any, state: AgentConsol
     }
 }
 
-export async function refreshSummaryQualityDigest(sessionService: any, state: AgentConsoleDigestState): Promise<void> {
+export async function refreshSummaryQualityDigest(sessionService: any, state: AgentConsoleDigestState, translator?: AgentUiTranslator | null): Promise<void> {
     if (!sessionService) {
         state.setSummaryQualityDigest('');
         return;
@@ -42,7 +42,7 @@ export async function refreshSummaryQualityDigest(sessionService: any, state: Ag
         }
         state.setSummaryQualityDigest(
             aggregates
-                .map((item: Record<string, any>) => formatSummaryQualityAggregate(item))
+                .map((item: Record<string, any>) => formatSummaryQualityAggregate(item, translator))
                 .join(' | ')
         );
     } catch {
@@ -50,7 +50,7 @@ export async function refreshSummaryQualityDigest(sessionService: any, state: Ag
     }
 }
 
-export async function refreshCompactionDigest(sessionService: any, state: AgentConsoleDigestState): Promise<void> {
+export async function refreshCompactionDigest(sessionService: any, state: AgentConsoleDigestState, translator?: AgentUiTranslator | null): Promise<void> {
     if (!sessionService) {
         state.setCompactionDigest('');
         return;
@@ -63,7 +63,7 @@ export async function refreshCompactionDigest(sessionService: any, state: AgentC
         }
         state.setCompactionDigest(
             aggregates
-                .map((item: Record<string, any>) => formatCompactionHistoryAggregate(item))
+                .map((item: Record<string, any>) => formatCompactionHistoryAggregate(item, translator))
                 .join(' | ')
         );
     } catch {
@@ -71,7 +71,7 @@ export async function refreshCompactionDigest(sessionService: any, state: AgentC
     }
 }
 
-export function formatSummaryQualityTrend(trend: Array<Record<string, any>>): string[] {
+export function formatSummaryQualityTrend(trend: Array<Record<string, any>>, translator?: AgentUiTranslator | null): string[] {
     const byProvider = new Map<string, Array<Record<string, any>>>();
     for (const point of trend) {
         const provider = String(point.provider ?? 'unknown');
@@ -102,42 +102,48 @@ export function formatSummaryQualityTrend(trend: Array<Record<string, any>>): st
         const range = from || to
             ? ` · ${new Date(from || to).toLocaleDateString()}–${new Date(to || from).toLocaleDateString()}`
             : '';
-        lines.push(`${provider} ${sorted.map(point => spark(Number(point.avgTotal ?? 0))).join('')} (${sorted.length}d${range} · avg ${avgTotal} · fb ${fallbackRate}% · evidence ${evidenceCoverage}%)`);
+        lines.push(diagLabel(translator, 'quality', 'trend', '{provider} {spark} ({bucketWord}{range} · avg {avg} · fb {fallback}% · evidence {evidence}%)', {
+            provider: provider, spark: sorted.map(point => spark(Number(point.avgTotal ?? 0))).join(''), range: range,
+            bucketWord: diagLabel(translator, 'common', 'dayCount', '{count}d', { count: sorted.length }),
+            avg: avgTotal, fallback: fallbackRate, evidence: evidenceCoverage
+        }));
     }
     return lines.sort((a, b) => a.localeCompare(b));
 }
 
-export function buildTurnDiagnosticsRecordOption(record: Record<string, any>): AgentConsoleSelectOption {
+export function buildTurnDiagnosticsRecordOption(record: Record<string, any>, translator?: AgentUiTranslator | null): AgentConsoleSelectOption {
     const id = String(record.id ?? '');
     const sessionId = String(record.sessionId ?? 'unknown');
     const createdAt = Number(record.createdAt ?? 0);
     const compacted = Number(record.compactionCount ?? 0);
     const saved = Number(record.totalTokenSavings ?? 0);
+    const t = (key: string, fallback: string, params?: Record<string, any>) => diagLabel(translator, 'turn', key, fallback, params);
+    const yesNo = (value: boolean) => diagLabel(translator, 'common', value ? 'yes' : 'no', value ? 'yes' : 'no');
     const description = [
         createdAt ? new Date(createdAt).toLocaleDateString() : '',
-        `${compacted} compact${compacted === 1 ? '' : 's'}`,
-        saved > 0 ? `saved ${formatCompactNumber(saved)} tokens` : '',
-        record.repeatedClarificationDetected ? 'repeated' : '',
-        record.finalAssistantWasClarification ? 'clarif' : ''
-    ].filter(Boolean).join(' · ') || 'turn diagnostics record';
+        compacted === 1 ? t('recordCompactsOne', '{count} compact', { count: compacted }) : t('recordCompactsMany', '{count} compacts', { count: compacted }),
+        saved > 0 ? t('recordSaved', 'saved {saved} tokens', { saved: formatCompactNumber(saved) }) : '',
+        record.repeatedClarificationDetected ? t('recordRepeated', 'repeated') : '',
+        record.finalAssistantWasClarification ? t('recordClarification', 'clarif') : ''
+    ].filter(Boolean).join(' · ') || t('recordDescriptionFallback', 'turn diagnostics record');
     return {
-        label: `${sessionId} · ${createdAt ? new Date(createdAt).toLocaleString() : 'unknown time'}`,
+        label: `${sessionId} · ${createdAt ? new Date(createdAt).toLocaleString() : t('unknownTime', 'unknown time')}`,
         value: id || `${sessionId}:${createdAt}`,
         description,
         detail: [
-            `Record: ${id || '-'}`,
-            `Session: ${sessionId}`,
-            `Created: ${createdAt ? new Date(createdAt).toLocaleString() : '-'}`,
-            `Empty response retries: ${Number(record.emptyResponseRetryCount ?? 0)}`,
-            `Repeated clarification: ${record.repeatedClarificationDetected ? 'yes' : 'no'}`,
-            `Final clarification: ${record.finalAssistantWasClarification ? 'yes' : 'no'}`,
-            `Context rewritten: ${record.followUpContextRewritten ? 'yes' : 'no'}`,
-            `Follow-up recoveries: ${Number(record.followUpRecoveryCount ?? 0)}`,
-            `Compactions: ${compacted}`,
-            `Token savings: ${formatCompactNumber(saved)}`,
-            record.compressionRatio != null ? `Compression ratio: ${record.compressionRatio}%` : '',
-            record.compactionLevel ? `Compaction level: ${record.compactionLevel}` : '',
-            record.promptCache ? `Prompt cache: ${String(record.promptCache.provider ?? '')} ${String(record.promptCache.appliedStrategy ?? '')}` : ''
+            t('recordDetail', 'Record: {id}', { id: id || '-' }),
+            t('recordSession', 'Session: {session}', { session: sessionId }),
+            t('recordCreated', 'Created: {value}', { value: createdAt ? new Date(createdAt).toLocaleString() : '-' }),
+            t('recordEmptyRetries', 'Empty response retries: {value}', { value: Number(record.emptyResponseRetryCount ?? 0) }),
+            t('recordRepeatedClarification', 'Repeated clarification: {value}', { value: yesNo(!!record.repeatedClarificationDetected) }),
+            t('recordFinalClarification', 'Final clarification: {value}', { value: yesNo(!!record.finalAssistantWasClarification) }),
+            t('recordContextRewritten', 'Context rewritten: {value}', { value: yesNo(!!record.followUpContextRewritten) }),
+            t('recordFollowUpRecoveries', 'Follow-up recoveries: {value}', { value: Number(record.followUpRecoveryCount ?? 0) }),
+            t('recordCompactions', 'Compactions: {value}', { value: compacted }),
+            t('recordTokenSavings', 'Token savings: {value}', { value: formatCompactNumber(saved) }),
+            record.compressionRatio != null ? t('recordCompressionRatio', 'Compression ratio: {value}%', { value: record.compressionRatio }) : '',
+            record.compactionLevel ? t('recordCompactionLevel', 'Compaction level: {value}', { value: record.compactionLevel }) : '',
+            record.promptCache ? t('recordPromptCache', 'Prompt cache: {provider} {strategy}', { provider: String(record.promptCache.provider ?? ''), strategy: String(record.promptCache.appliedStrategy ?? '') }) : ''
         ].filter(Boolean).join('\n')
     };
 }
@@ -218,7 +224,7 @@ export async function runHarnessStopCommand(sessionService: any, notify: (messag
     return true;
 }
 
-export async function refreshTurnDiagnosticsDigest(sessionService: any, state: AgentConsoleDigestState): Promise<void> {
+export async function refreshTurnDiagnosticsDigest(sessionService: any, state: AgentConsoleDigestState, translator?: AgentUiTranslator | null): Promise<void> {
     if (!sessionService) {
         state.setTurnDiagnosticsDigest('');
         return;
@@ -229,7 +235,7 @@ export async function refreshTurnDiagnosticsDigest(sessionService: any, state: A
             state.setTurnDiagnosticsDigest('');
             return;
         }
-        state.setTurnDiagnosticsDigest(formatTurnDiagnosticsAggregate(aggregate));
+        state.setTurnDiagnosticsDigest(formatTurnDiagnosticsAggregate(aggregate, undefined, translator));
     } catch {
         state.setTurnDiagnosticsDigest('');
     }
@@ -255,14 +261,16 @@ export async function openSummaryQualityRecords(
         );
         return true;
     }
-    const options = records.map((record: Record<string, any>) => buildSummaryQualityRecordOption(record));
+    const options = records.map((record: Record<string, any>) => buildSummaryQualityRecordOption(record, translator));
     await select(
         provider
-            ? `Summary quality records (${provider})`
-            : 'Summary quality records',
+            ? diagLabel(translator, 'quality', 'listTitle', 'Summary quality records ({provider})', { provider: provider })
+            : diagLabel(translator, 'quality', 'listTitleAll', 'Summary quality records'),
         options,
         0,
-        `${records.length} record${records.length === 1 ? '' : 's'}`
+        records.length === 1
+            ? diagLabel(translator, 'quality', 'listHintOne', '{count} record', { count: records.length })
+            : diagLabel(translator, 'quality', 'listHintMany', '{count} records', { count: records.length })
     );
     return true;
 }
@@ -294,12 +302,14 @@ export async function openTurnDiagnosticsListView(
         notify(formatAgentUiNotice(translator, 'turnDiagnosticsNoRecords', { sessionId: resolvedSessionId }));
         return true;
     }
-    const options = records.map((record: Record<string, any>) => buildTurnDiagnosticsRecordOption(record));
+    const options = records.map((record: Record<string, any>) => buildTurnDiagnosticsRecordOption(record, translator));
     await select(
-        `Turn diagnostics records (${resolvedSessionId})`,
+        diagLabel(translator, 'turn', 'listTitle', 'Turn diagnostics records ({session})', { session: resolvedSessionId }),
         options,
         0,
-        `${records.length} record${records.length === 1 ? '' : 's'}`
+        records.length === 1
+            ? diagLabel(translator, 'turn', 'listHintOne', '{count} record', { count: records.length })
+            : diagLabel(translator, 'turn', 'listHintMany', '{count} records', { count: records.length })
     );
     return true;
 }
@@ -331,7 +341,7 @@ export async function openTurnDiagnosticsTrendView(
         );
         return true;
     }
-    pushCommandOutput('/diagnostics trend', formatTurnDiagnosticsTrend(trend).join(' | '));
+    pushCommandOutput('/diagnostics trend', formatTurnDiagnosticsTrend(trend, translator).join(' | '));
     return true;
 }
 
@@ -362,6 +372,6 @@ export async function openSummaryQualityTrendView(
         );
         return true;
     }
-    pushCommandOutput('/quality trend', formatSummaryQualityTrend(trend).join(' | '));
+    pushCommandOutput('/quality trend', formatSummaryQualityTrend(trend, translator).join(' | '));
     return true;
 }

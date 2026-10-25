@@ -1,0 +1,216 @@
+/**
+ * Diagnostics copy (quality trend/records, compaction history, turn
+ * diagnostics and harness audit/profile reports) in English and Simplified
+ * Chinese.
+ *
+ * Kept apart from `agent-ui.i18n.panel.ts` so both catalogs stay inside the
+ * source-size budget. Values mirror the English fallbacks used by the
+ * diagnostics formatters, so a host without a translator still renders the
+ * previous copy.
+ *
+ * Records keep their identifiers (session ids, provider/model names, tool
+ * names, enforcement modes, strategies) untranslated; only the connective
+ * words and labels move.
+ */
+
+export const AGENT_UI_DIAG_EN: Record<string, any> = {
+    common: {
+        yes: 'yes',
+        no: 'no',
+        dayCount: '{count}d'
+    },
+    quality: {
+        aggregate: '{provider} · {count} summary {recordWord} · avg {avg} · fallback {fallback}% · evidence {evidence}%{range}',
+        trend: '{provider} {spark} ({bucketWord}{range} · avg {avg} · fb {fallback}% · evidence {evidence}%)',
+        recordTitle: '{provider} · {model} · {total}',
+        recordFields: 'fields {value}',
+        recordAnnotation: 'annotation {value}',
+        recordLength: 'length {value}',
+        recordTruncation: 'truncation {value}',
+        recordEvidence: 'evidence {value}%',
+        recordFallbackBadge: 'fallback',
+        recordDescriptionFallback: 'summary quality record',
+        recordDetail: 'Record: {id}',
+        recordProvider: 'Provider: {provider}',
+        recordModel: 'Model: {model}',
+        recordTotal: 'Total: {total}',
+        detailFields: 'Fields: {value}',
+        detailAnnotation: 'Annotation: {value}',
+        detailLength: 'Length: {value}',
+        detailTruncation: 'Truncation: {value}',
+        detailEvidence: 'Evidence coverage: {value}%',
+        detailFallback: 'Fallback: {value}',
+        detailSummaryLength: 'Summary length: {value}',
+        detailCreated: 'Created: {value}',
+        listTitle: 'Summary quality records ({provider})',
+        listTitleAll: 'Summary quality records',
+        listHintOne: '{count} record',
+        listHintMany: '{count} records'
+    },
+    compaction: {
+        aggregate: '{id} · {count} {recordWord} · {compacted} triggered · saved {saved} tokens · avg {avg}%{range}',
+        recordCompacted: 'compacted',
+        recordMessages: '{before}→{after} msgs ({compacted})',
+        recordTokens: '{before}→{after} tokens ({ratio}%)',
+        recordSavedTotal: 'saved {saved} total',
+        trend: '{id} {spark} ({bucketWord}{range} · saved {saved} tokens · avg {avg}%)'
+    },
+    turn: {
+        aggregate: '{id} · {turns} turns · empty {empty}% · repeated {repeated}% · clarif {clarif}% · {compacted} compact(s) · saved {saved} tokens{range}',
+        trend: '{id} {spark} ({bucketWord}{range} · {turns} turns · saved {saved} tokens)',
+        recordLabel: '{session} · {turns} turns · saved {saved}',
+        recordEmptyRate: 'empty {value}%',
+        recordRepeatedRate: 'repeated {value}%',
+        recordCompactsOne: '{count} compact',
+        recordCompactsMany: '{count} compacts',
+        recordSaved: 'saved {saved} tokens',
+        recordRepeated: 'repeated',
+        recordClarification: 'clarif',
+        recordDescriptionFallback: 'turn diagnostics record',
+        unknownTime: 'unknown time',
+        recordDetail: 'Record: {id}',
+        recordSession: 'Session: {session}',
+        recordTurns: 'Turns: {value}',
+        recordEmptyResponseRate: 'Empty response rate: {value}%',
+        recordRepeatedQuestionRate: 'Repeated question rate: {value}%',
+        recordCreated: 'Created: {value}',
+        recordEmptyRetries: 'Empty response retries: {value}',
+        recordRepeatedClarification: 'Repeated clarification: {value}',
+        recordFinalClarification: 'Final clarification: {value}',
+        recordContextRewritten: 'Context rewritten: {value}',
+        recordFollowUpRecoveries: 'Follow-up recoveries: {value}',
+        recordCompactions: 'Compactions: {value}',
+        recordTokenSavings: 'Token savings: {value}',
+        recordCompressionRatio: 'Compression ratio: {value}%',
+        recordCompactionLevel: 'Compaction level: {value}',
+        recordPromptCache: 'Prompt cache: {provider} {strategy}',
+        listTitle: 'Turn diagnostics records ({session})',
+        listTitleAll: 'Turn diagnostics records',
+        listHintOne: '{count} record',
+        listHintMany: '{count} records'
+    },
+    harness: {
+        allSessions: 'all sessions',
+        profilesActive: "harness profiles · active '{name}'",
+        profilesDefault: 'harness profiles · default',
+        profileRow: 'profile {name} · v{version}{repair}{loopRecover}{sandbox}{granular}',
+        profileRepair: ' · repair {rounds}',
+        profileLoopRecover: ' · loop-recover {count}',
+        profileSandbox: ' · sandbox {mode}',
+        profileGranular: ' · granular {categories}',
+        currentHeader: 'harness profile {name} · v{version}',
+        approval: 'approval {category}',
+        sandboxLine: 'sandbox {mode}{allow}',
+        sandboxAllow: ' · allow {list}',
+        maxRepairRounds: 'maxRepairRounds {value}',
+        maxLoopRecoveries: 'maxLoopRecoveries {value}',
+        diffTitle: 'harness profile diff {from} → {to}',
+        noDifferences: '  (no differences)',
+        auditSummary: 'harness audit · {scope} · {turns} turns · {attempts} tool attempts · fail-turn {rate}%',
+        auditTool: 'tool {name} · {failures}/{attempts} ({rate}%) · falsified {falsified}',
+        auditCluster: 'cluster {signature} · x{count} · tools {tools}{policy}',
+        auditFalsified: 'falsified {name} · {count} ({rate}%)',
+        auditSuggestion: 'suggest[{kind}]{tool} · {message}'
+    }
+};
+
+export const AGENT_UI_DIAG_ZH: Record<string, any> = {
+    common: {
+        yes: '是',
+        no: '否',
+        dayCount: '{count}天'
+    },
+    quality: {
+        aggregate: '{provider} · {count} 条摘要记录 · 平均 {avg} · 回退 {fallback}% · 证据 {evidence}%{range}',
+        trend: '{provider} {spark}（{bucketWord}{range} · 平均 {avg} · 回退 {fallback}% · 证据 {evidence}%）',
+        recordTitle: '{provider} · {model} · {total}',
+        recordFields: '字段 {value}',
+        recordAnnotation: '标注 {value}',
+        recordLength: '长度 {value}',
+        recordTruncation: '截断 {value}',
+        recordEvidence: '证据 {value}%',
+        recordFallbackBadge: '回退',
+        recordDescriptionFallback: '摘要质量记录',
+        recordDetail: '记录：{id}',
+        recordProvider: '提供方：{provider}',
+        recordModel: '模型：{model}',
+        recordTotal: '总分：{total}',
+        detailFields: '字段：{value}',
+        detailAnnotation: '标注：{value}',
+        detailLength: '长度：{value}',
+        detailTruncation: '截断：{value}',
+        detailEvidence: '证据覆盖：{value}%',
+        detailFallback: '回退：{value}',
+        detailSummaryLength: '摘要长度：{value}',
+        detailCreated: '创建：{value}',
+        listTitle: '摘要质量记录（{provider}）',
+        listTitleAll: '摘要质量记录',
+        listHintOne: '{count} 条',
+        listHintMany: '{count} 条'
+    },
+    compaction: {
+        aggregate: '{id} · {count} 次压缩 · 触发 {compacted} 次 · 节省 {saved} tokens · 平均 {avg}%{range}',
+        recordCompacted: '已压缩',
+        recordMessages: '{before}→{after} 条消息（{compacted}）',
+        recordTokens: '{before}→{after} tokens（{ratio}%）',
+        recordSavedTotal: '累计节省 {saved}',
+        trend: '{id} {spark}（{bucketWord}{range} · 节省 {saved} tokens · 平均 {avg}%）'
+    },
+    turn: {
+        aggregate: '{id} · {turns} 轮 · 空回复 {empty}% · 重复 {repeated}% · 澄清 {clarif}% · 压缩 {compacted} 次 · 节省 {saved} tokens{range}',
+        trend: '{id} {spark}（{bucketWord}{range} · {turns} 轮 · 节省 {saved} tokens）',
+        recordLabel: '{session} · {turns} 轮 · 节省 {saved}',
+        recordEmptyRate: '空回复 {value}%',
+        recordRepeatedRate: '重复 {value}%',
+        recordCompactsOne: '{count} 次压缩',
+        recordCompactsMany: '{count} 次压缩',
+        recordSaved: '节省 {saved} tokens',
+        recordRepeated: '重复',
+        recordClarification: '澄清',
+        recordDescriptionFallback: '轮次诊断记录',
+        unknownTime: '未知时间',
+        recordDetail: '记录：{id}',
+        recordSession: '会话：{session}',
+        recordTurns: '轮次：{value}',
+        recordEmptyResponseRate: '空回复率：{value}%',
+        recordRepeatedQuestionRate: '重复提问率：{value}%',
+        recordCreated: '创建：{value}',
+        recordEmptyRetries: '空回复重试：{value}',
+        recordRepeatedClarification: '重复澄清：{value}',
+        recordFinalClarification: '最终澄清：{value}',
+        recordContextRewritten: '上下文重写：{value}',
+        recordFollowUpRecoveries: '后续恢复：{value}',
+        recordCompactions: '压缩次数：{value}',
+        recordTokenSavings: '节省 tokens：{value}',
+        recordCompressionRatio: '压缩比：{value}%',
+        recordCompactionLevel: '压缩层级：{value}',
+        recordPromptCache: '提示缓存：{provider} {strategy}',
+        listTitle: '轮次诊断记录（{session}）',
+        listTitleAll: '轮次诊断记录',
+        listHintOne: '{count} 条',
+        listHintMany: '{count} 条'
+    },
+    harness: {
+        allSessions: '全部会话',
+        profilesActive: '治理 profile · 当前 {name}',
+        profilesDefault: '治理 profile · 默认',
+        profileRow: 'profile {name} · v{version}{repair}{loopRecover}{sandbox}{granular}',
+        profileRepair: ' · 修复 {rounds}',
+        profileLoopRecover: ' · 循环恢复 {count}',
+        profileSandbox: ' · 沙箱 {mode}',
+        profileGranular: ' · 细分 {categories}',
+        currentHeader: '治理 profile {name} · v{version}',
+        approval: '审批 {category}',
+        sandboxLine: '沙箱 {mode}{allow}',
+        sandboxAllow: ' · 允许 {list}',
+        maxRepairRounds: '最大修复轮次 {value}',
+        maxLoopRecoveries: '最大循环恢复 {value}',
+        diffTitle: '治理 profile 差异 {from} → {to}',
+        noDifferences: '  （无差异）',
+        auditSummary: '治理审计 · {scope} · {turns} 轮 · {attempts} 次工具调用 · 失败轮次 {rate}%',
+        auditTool: '工具 {name} · {failures}/{attempts}（{rate}%）· 伪证 {falsified}',
+        auditCluster: '聚类 {signature} · x{count} · 工具 {tools}{policy}',
+        auditFalsified: '伪证 {name} · {count}（{rate}%）',
+        auditSuggestion: '建议[{kind}]{tool} · {message}'
+    }
+};
