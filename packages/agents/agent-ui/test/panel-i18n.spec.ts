@@ -46,6 +46,7 @@ import { openGitSnapshotDiff, runGitSnapshotsCommand } from '../src/AgentConsole
 import { formatAgentPanelLabel } from '../src/agent-ui.i18n';
 import { formatReviewHeaderMeta, formatReviewSelectionMeta, formatReviewStatsMeta } from '../src/AgentConsoleReviewPanelFormat';
 import { createReviewTask } from './_helpers';
+import { loadInputHistory } from '../src/AgentConsoleInputHelpers';
 import { buildCodingTaskSelectOption, describeCodingTaskRollback } from '../src/AgentConsoleCodingTaskHandlers';
 import { AgentConsoleTasksPanelComponent } from '../src/AgentConsolePanels';
 import { runDebugConfigCommand, runMemoriesCommand, runPersonalityCommand } from '../src/AgentConsolePreferenceCommands';
@@ -1074,5 +1075,14 @@ export class PanelI18nTest {
         expect(render('/status running', zh)).toContain('进行中');
         expect(render('/status custom failure', zh)).toContain('custom failure');
         expect(render('/status custom failure', zh)).not.toContain('失败');
+    }
+    @Test('input history and question errors keep a localized prefix')
+    async errorPrefixesLocalized() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl(), zh as any);
+        await loadInputHistory({ load: async () => { throw new Error('disk gone'); } }, () => '/tmp/ws', state as any);
+        expect(state.lastError).toEqual('加载输入历史失败：disk gone');
+        const enState = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        await loadInputHistory({ load: async () => { throw new Error('disk gone'); } }, () => '/tmp/ws', enState as any);
+        expect(enState.lastError).toEqual('Failed to load input history: disk gone');
     }
 }

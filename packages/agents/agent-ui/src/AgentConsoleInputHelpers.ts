@@ -52,6 +52,6 @@ export async function loadInputHistory(
             state.inputHistoryController.replace(entries);
         }
     } catch (error) {
-        state.setLastError(`Failed to load input history: ${error instanceof Error ? error.message : String(error)}`);
+        state.setLastError(state.translateLabel('agent.notice.inputHistoryLoadFailed', { error: error instanceof Error ? error.message : String(error) }, 'Failed to load input history: {error}'));
     }
 }

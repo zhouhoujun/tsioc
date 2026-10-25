@@ -3320,7 +3320,7 @@ export class AgentConsoleSessionState {
             this.finishPendingQuestion();
             await this.resumeAfterQuestionAnswer();
         } catch (error: any) {
-            const message = error?.message || String(error || 'Question response failed');
+            const message = error?.message || String(error || this.translateLabel('agent.notice.questionResponseFailed', undefined, 'Question response failed'));
             if (/expired/i.test(message)) {
                 question.status = 'expired';
                 question.error = undefined;
@@ -3403,7 +3403,7 @@ export class AgentConsoleSessionState {
             this.finishPendingQuestion();
             await this.resumeAfterQuestionAnswer();
         } catch (error: any) {
-            const message = error?.message || String(error || 'Question response failed');
+            const message = error?.message || String(error || this.translateLabel('agent.notice.questionResponseFailed', undefined, 'Question response failed'));
             if (/expired/i.test(message)) {
                 question.status = 'expired';
                 question.error = undefined;

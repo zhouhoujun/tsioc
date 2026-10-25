@@ -1770,3 +1770,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **测试**：`panel-i18n.spec.ts` 40 → **41 条**（`command-execution` 行 zh `已完成/进行中`、en 原样、`custom failure` 不被误改）。
 - **门禁**：agent-ui **1700 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
 - **仍待确认（清理项）**：`AgentConsoleDiagnosticsHandlers` 4 个无调用点重复实现、`AgentConsoleFormatters` 末尾 delegation 系列（含 `(no goal)`）、`VIM_ACTION_LABELS` —— 删除属公开导出面变更。
+
+## 2026-10-25 诊断类错误前缀中文化（输入历史 / 问题回答）
+- **输入历史**：`loadInputHistory` / 保存失败原本拼接英文前缀 `Failed to load|save input history:`。改为 `agent.notice.inputHistoryLoadFailed|SaveFailed`（`加载输入历史失败：{error}` / `保存输入历史失败：{error}`），**保留原始 error 文本**（不伪装成空历史，符合“错误必须可诊断”）。
+- **问题回答失败**：pending question 在错误对象无 message 时的兜底 `Question response failed` 改为 `agent.notice.questionResponseFailed`（`问题回答失败`）。
+- **notice key** 577 → **580**（同步 locale 快照）。
+- **测试**：`panel-i18n.spec.ts` 41 → **42 条**（真实 `loadInputHistory` 抛错 → `加载输入历史失败：disk gone`，en 保持 `Failed to load input history: disk gone`）。
+- **真实 TUI（zh-CN）追加复核**：`/fork` → `已派生会话 …`、`/side` → `已打开侧会话 …`、`/pin`/`/unpin` → `已固定/已取消固定会话 …`、`/undo`/`/redo` → `没有可撤销/重做的操作。` 均为中文。
+- **门禁**：agent-ui **1701 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。

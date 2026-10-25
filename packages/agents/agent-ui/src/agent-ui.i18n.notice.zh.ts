@@ -591,4 +591,9 @@ export const AGENT_UI_NOTICE_ZH: NestedMessages = {
 
   copyLabelModel: '模型',
 
+
+  questionResponseFailed: '问题回答失败',
+  inputHistoryLoadFailed: '加载输入历史失败：{error}',
+  inputHistorySaveFailed: '保存输入历史失败：{error}',
+
 };

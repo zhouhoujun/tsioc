@@ -1826,7 +1826,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         try {
             await this.inputHistoryStore.save(this.state.inputHistoryController.entries(), this.resolveHistoryWorkspace(), this.state.sessionId);
         } catch (error) {
-            this.state.setLastError(`Failed to save input history: ${error instanceof Error ? error.message : String(error)}`);
+            this.state.setLastError(formatAgentUiNotice(this.translator, 'inputHistorySaveFailed', { error: error instanceof Error ? error.message : String(error) }));
         }
     }
 

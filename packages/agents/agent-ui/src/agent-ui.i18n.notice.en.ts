@@ -591,4 +591,9 @@ export const AGENT_UI_NOTICE_EN: NestedMessages = {
 
   copyLabelModel: 'model',
 
+
+  questionResponseFailed: 'Question response failed',
+  inputHistoryLoadFailed: 'Failed to load input history: {error}',
+  inputHistorySaveFailed: 'Failed to save input history: {error}',
+
 };
