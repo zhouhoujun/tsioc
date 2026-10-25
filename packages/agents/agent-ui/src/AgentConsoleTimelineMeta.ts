@@ -111,6 +111,28 @@ function formatDoneTime(timestamp: number): string {
     return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
+
+const COMMAND_STATUS_WORDS = ['running', 'completed', 'failed', 'cancelled'];
+
+/**
+ * Normalize the status word of a `command-execution` row at render time. Some
+ * hosts persist the English template (`<command> completed`) before the locale
+ * is known, so the exact trailing token is rewritten through the host
+ * translator; any other content stays verbatim.
+ */
+export function localizeCommandExecutionStatus(content: string, translator?: AgentUiTranslator | null): string {
+    const text = String(content || '');
+    const word = COMMAND_STATUS_WORDS.find(candidate => text === candidate || text.endsWith(` ${candidate}`));
+    if (!word) {
+        return text;
+    }
+    const localized = formatAgentUiLabel(translator, `agent.command.status.${word}`, word);
+    if (localized === word) {
+        return text;
+    }
+    return `${text.slice(0, text.length - word.length)}${localized}`;
+}
+
 export function resolveMessageDurationMs(message?: AgentMessage): number {
     const metadata = message?.metadata || {};
     const exact = Number(metadata.durationMs ?? metadata.elapsedMs);

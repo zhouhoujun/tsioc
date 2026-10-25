@@ -1061,4 +1061,18 @@ export class PanelI18nTest {
         const enPanel = new AgentConsoleTasksPanelComponent(buildState() as any);
         expect(enPanel.tasksSummaryLabel).toContain('all');
     }
+    @Test('command execution status word is normalized at render time')
+    async commandExecutionStatusLocalized() {
+        const render = (content: string, translator: any) => renderAgentConsoleMessageItems([{
+            id: 'cmd-1', role: 'assistant', content, createdAt: 1,
+            metadata: { uiKind: 'command-execution', command: '/status', status: 'succeeded' }
+        }] as any, { translator, timelineLabels: (zh as any).translate ? undefined : undefined } as any)
+            .map(item => item.lines.map((line: any) => String(line.content || '')).join(' '))
+            .join(' ');
+        expect(render('/status completed', zh)).toContain('已完成');
+        expect(render('/status completed', en)).toContain('/status completed');
+        expect(render('/status running', zh)).toContain('进行中');
+        expect(render('/status custom failure', zh)).toContain('custom failure');
+        expect(render('/status custom failure', zh)).not.toContain('失败');
+    }
 }

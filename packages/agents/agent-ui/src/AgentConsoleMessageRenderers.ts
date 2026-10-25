@@ -14,7 +14,7 @@ import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from '
 import { getDisplayWidth, sliceByDisplayWidth } from './AgentConsoleTextWidth';
 import { resolveTimelineEventSentence, formatTimelineSessionDuration, AgentConsoleTimelineLabels } from './AgentConsoleTimelineWindow';
 import { resolveTurnLifecycleLabel } from './AgentConsoleTimelineLabels';
-import { resolveTimelineMeta, resolveTimelineMetaStyle, resolveMessageDurationMs, resolveMessageRoleLabel, resolveMessageRoleStyle, resolveAgentConsoleMessageRoleLabel, resolveEffectiveRoleLabel, shouldRenderWorkedSummary } from './AgentConsoleTimelineMeta';
+import { resolveTimelineMeta, resolveTimelineMetaStyle, resolveMessageDurationMs, resolveMessageRoleLabel, resolveMessageRoleStyle, resolveAgentConsoleMessageRoleLabel, resolveEffectiveRoleLabel, shouldRenderWorkedSummary, localizeCommandExecutionStatus } from './AgentConsoleTimelineMeta';
 import type { MarkdownWorkerBridge } from './MarkdownWorkerBridge';
 import {
     AgentConsoleContentFamily,
@@ -576,9 +576,12 @@ export function renderAgentConsoleMessageItem(
     const status = formatAgentConsoleMessageStatus(statusKind, statusSymbol);
     const statusStyle = resolveAgentConsoleMessageStatusStyle(theme, statusKind, rowSelected);
     const hideToolOutput = templateKind === 'tool' && context.showToolOutput === false;
-    const displayContent = hideToolOutput
+    const rawDisplayContent = hideToolOutput
         ? ''
         : resolveMessageDisplayContent(message, templateKind, !!context.rawMode);
+    const displayContent = message?.metadata?.uiKind === 'command-execution'
+        ? localizeCommandExecutionStatus(rawDisplayContent, context.translator)
+        : rawDisplayContent;
     const timelineSentence = timelineEvent
         ? resolveTimelineEventSentence(message?.metadata, displayContent, context.timelineLabels)
         : undefined;

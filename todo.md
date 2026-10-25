@@ -1762,3 +1762,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - turn 中排队执行 → `✓ $ /status completed`（**没有标记**）→ 该行**不是** `syncCommandExecutionTranscript` 生成的。
   - 已排查：`projectThreadItem` 的 command 分支仅由该函数调用；`seedCommandExchange` 需要网关侧 `command_exchange.append`，本仓库内无客户端调用；gateway/agent/CLI 均无第二条 command thread-item 投影；`buildCommandHandlerState` 不含 commandExecutionController。结论：该行来自尚未定位的投影路径（最可能是 turn 内排队命令的远程/运行时命令交换回放），**故未盲改**。临时诊断已完全回退（`grep '\[tr='` = 0，工作树无残留）。
 - **门禁**：agent-ui **1699 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；console-renderer 87 / vm-panels 41 保持通过；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
+
+## 2026-10-25 排队命令状态词修复（渲染期归一化）+ `/help` 全量校验
+- **修复**：上一批诊断证明 turn 内排队执行的命令行**不经过** `syncCommandExecutionTranscript`（临时 `[tr=…]` 标记只出现在空闲执行的行上），其 content 已是英文模板 `<command> completed|running|failed|cancelled`。为避免在未定位的生产者上盲改，改为**渲染期归一化**：`AgentConsoleTimelineMeta.localizeCommandExecutionStatus(content, translator)` 只重写末尾这四个精确状态词（走 `agent.command.status.*`），其它内容（含 `custom failure` 等自定义文本）原样保留；`AgentConsoleMessageRenderers` 对 `uiKind === 'command-execution'` 的行应用它（`MessageRenderers` 1283 < 1287）。
+- **真实 TUI（zh-CN）复核**：turn 运行中排队 `/status` → `✓ $ /status 已完成`（修复前为 `✓ $ /status completed`）；空闲执行仍为 `✓ $ /status 已完成`。
+- **`/help` 全量校验**：用真实 registry（108 条 help option）+ zh bundle 程序化比对，**未翻译条目 = 0**（命令主描述与子命令描述全部命中 `agent.command.desc/sub`）。
+- **测试**：`panel-i18n.spec.ts` 40 → **41 条**（`command-execution` 行 zh `已完成/进行中`、en 原样、`custom failure` 不被误改）。
+- **门禁**：agent-ui **1700 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
+- **仍待确认（清理项）**：`AgentConsoleDiagnosticsHandlers` 4 个无调用点重复实现、`AgentConsoleFormatters` 末尾 delegation 系列（含 `(no goal)`）、`VIM_ACTION_LABELS` —— 删除属公开导出面变更。
