@@ -6,7 +6,7 @@ import {
     isAgentConsoleKeymapContext
 } from './AgentConsoleKeymap';
 import { VIM_ACTION_NAMES, isConsoleVimAction } from './AgentConsoleVim';
-import { formatAgentUiNotice, formatAgentPanelLabel as panelLabel, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentUiNotice, formatAgentKeymapActionLabel, formatAgentPanelLabel as panelLabel, type AgentUiTranslator } from './agent-ui.i18n';
 
 export interface KeymapCommandHost {
     translator?: AgentUiTranslator | null;
@@ -37,7 +37,7 @@ export async function runKeymapCommand(host: KeymapCommandHost, args: string): P
     const tokens = rawTokens;
     const action = (tokens[0] || 'list').toLowerCase();
     if (action === 'list') {
-        const globalEntries = Object.entries(host.globalKeymap!.effectiveBindings(context)).map(([key, value]) => `${key} -> ${value}`);
+        const globalEntries = Object.entries(host.globalKeymap!.effectiveBindings(context)).map(([key, value]) => `${key} -> ${formatAgentKeymapActionLabel(host.translator, String(value))}`);
         const vimEntries = Object.entries(host.state.effectiveVimBindings).map(([key, value]) => `vim:${key} -> ${value}`);
         const entries = [...(scope === 'vim' ? [] : globalEntries), ...(scope === '' || scope === 'vim' ? vimEntries : [])];
         if (!entries.length) {
@@ -60,7 +60,7 @@ export async function runKeymapCommand(host: KeymapCommandHost, args: string): P
             await host.persistGlobalKeymap();
             const conflicts = host.globalKeymap!.conflicts(key, target, context);
             const conflictText = conflicts.length
-                ? `  conflicts with ${conflicts.map(({ context: c, action: a }: any) => `${c}:${a}`).join(', ')}`
+                ? panelLabel(host.translator, 'keymap', 'conflictsWith', '  conflicts with {list}', { list: conflicts.map(({ context: c, action: a }: any) => `${c}:${a}`).join(', ') })
                 : '';
             host.notify(formatAgentUiNotice(host.translator, 'keymapSetWithConflict', { key: key, target: target, conflictText: conflictText }));
             return;

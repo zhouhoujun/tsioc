@@ -48,6 +48,7 @@ import { formatReviewHeaderMeta, formatReviewSelectionMeta, formatReviewStatsMet
 import { createReviewTask } from './_helpers';
 import { loadInputHistory } from '../src/AgentConsoleInputHelpers';
 import { openCommandPaletteView } from '../src/AgentConsoleTerminalInputController';
+import { runKeymapCommand } from '../src/AgentConsoleKeymapCommands';
 import { buildCodingTaskSelectOption, describeCodingTaskRollback } from '../src/AgentConsoleCodingTaskHandlers';
 import { AgentConsoleTasksPanelComponent, AgentConsoleHealthPopoverComponent, AgentConsoleToolRunsPanelComponent } from '../src/AgentConsolePanels';
 import { runDebugConfigCommand, runMemoriesCommand, runPersonalityCommand } from '../src/AgentConsolePreferenceCommands';
@@ -1202,5 +1203,35 @@ export class PanelI18nTest {
         expect(zhPanel.selectedToolRunDetailLabel).toContain('read_file [成功]');
         const enPanel = new AgentConsoleToolRunsPanelComponent(build());
         expect(enPanel.toolRunItems[0].label).toContain('[success]');
+    }
+    @Test('/keymap list shows localized action labels')
+    async keymapListLocalized() {
+        const buildHost = (translator: any) => {
+            let overlay: { title: string; lines: string[] } | null = null;
+            const st: any = {
+                focusLayers: { hasApprovalFocus: () => false, hasMessageFocus: () => false, hasMessageDetailFocus: () => false, hasTextOverlayFocus: () => false, hasSessionFocus: () => false, hasTaskFocus: () => false, hasScheduledJobFocus: () => false, hasToolFocus: () => false, hasBlockingSelectMenu: () => false, isAnyFocusActive: () => false },
+                effectiveVimBindings: { 'd d': 'delete-line' },
+                inputFocused: true,
+                openTextOverlay: (title: string, lines: string[]) => { overlay = { title, lines }; }
+            };
+            const host: any = {
+                translator,
+                state: st,
+                globalKeymap: { effectiveBindings: () => ({ 'ctrl+x n': 'new-session', 'ctrl+x h': 'status-health' }) },
+                notify: () => { /* unused */ },
+                persistGlobalKeymap: async () => { /* unused */ }
+            };
+            return { host, overlay: () => overlay };
+        };
+        const zhHost = buildHost(zh);
+        await runKeymapCommand(zhHost.host, 'list');
+        expect(zhHost.overlay()!.title).toEqual('按键映射');
+        expect(zhHost.overlay()!.lines).toContain('ctrl+x n -> 新建会话');
+        expect(zhHost.overlay()!.lines).toContain('ctrl+x h -> 健康状态');
+        expect(zhHost.overlay()!.lines.some(line => line.includes('vim:d d -> delete-line'))).toEqual(true);
+
+        const enHost = buildHost(en);
+        await runKeymapCommand(enHost.host, 'list');
+        expect(enHost.overlay()!.lines).toContain('ctrl+x n -> new session');
     }
 }

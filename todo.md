@@ -1856,3 +1856,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **测试**：`panel-i18n.spec.ts` 46 → **47 条**（真实 `setToolRuns` + `upsertToolRun`：zh 摘要 `read_file 成功`、行/详情 `[成功]`，en `[success]`）。
 - **真实 TUI（zh-CN）复核**：`工具运行 1 · read_file 成功 6ms` / `read_file [成功] 6ms` / `read_file [成功] 耗时 6ms`；`输入/输出/模式` 保持中文，`sequential` 为执行模式标识保留原文。
 - **门禁**：agent-ui **1708 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
+
+## 2026-10-25 `/keymap list` 动作名中文化（与 which-key 浮层共用标签）
+- **现象（zh-CN 真实 TUI）**：`/keymap list` 浮层里动作名仍是 `ctrl+x n -> new-session`、`ctrl+x c -> compact`…（which-key 浮层上一批已中文化，但文本列表是另一条渲染路径，直接用原始 action id）。
+- **做法**：`runKeymapCommand` 的 list 分支对 global 绑定使用 `formatAgentKeymapActionLabel(host.translator, value)`；vim 绑定保留 `vim:<key> -> <vim-action>`（配置标识）；`/keymap set` 冲突提示的连接词由硬编码 `  conflicts with` 改为 panel `keymap.conflictsWith`（`  与 {list} 冲突`）。
+- **测试**：`panel-i18n.spec.ts` 47 → **48 条**（真实 `runKeymapCommand('list')`：zh `ctrl+x n -> 新建会话`、`ctrl+x h -> 健康状态`、vim 行保留；en `-> new session`）。
+- **真实 TUI（zh-CN）复核**：`/keymap list` → `按键映射 35 行 · 1-8`，`ctrl+x n -> 新建会话 / ctrl+x c -> 压缩会话 / ctrl+x x -> 导出会话 / ctrl+x u -> 撤销 / ctrl+x r -> 重做 / ctrl+x l -> 会话列表 / ctrl+x t -> 切换推理显示 / ctrl+x shift+t -> 主题`。
+- **门禁**：agent-ui **1709 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
