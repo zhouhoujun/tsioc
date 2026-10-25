@@ -61,23 +61,6 @@ export const VIM_ACTION_NAMES: ConsoleVimAction[] = [
     'exit-insert'
 ];
 
-export const VIM_ACTION_LABELS: Record<string, string> = {
-    'insert-mode': 'enter insert mode at cursor',
-    'insert-start': 'enter insert mode at line start',
-    'insert-after': 'enter insert mode after cursor',
-    'insert-end': 'enter insert mode at line end',
-    'newline-below': 'open a new line below and insert',
-    'newline-above': 'open a new line above and insert',
-    'history-prev': 'navigate to the previous input history entry',
-    'history-next': 'navigate to the next input history entry',
-    'cursor-left': 'move cursor left',
-    'cursor-right': 'move cursor right',
-    'cursor-start': 'move cursor to line start',
-    'cursor-end': 'move cursor to line end',
-    'delete-char': 'delete the character under the cursor',
-    'delete-line': 'clear the whole input line',
-    'exit-insert': 'leave insert mode back to normal mode'
-};
 
 export const VIM_PENDING_PREFIX_KEYS = new Set<string>(['d']);
 

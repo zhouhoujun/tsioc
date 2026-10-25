@@ -1844,3 +1844,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **实测**：当前 `resolveBundle()` → `bundle (fresh)`；用 `node` 读取 bundle 文本并做 `\uXXXX` 转义还原，确认其中**已包含**最新中文化文案（`汇总/按键映射/命令面板/正常/字符串/加载输入历史失败` 等），即 bundle 与已提交源码一致。
 - **结论/运维**：真实 TUI 启动既可能走 bundle 也可能走源码，但两者行为一致；修改 `agents/**` 源码后若想保持快速启动，执行 `npm run bundle`（否则自动回退源码，仅变慢，不会运行陈旧代码）。
 - **对排队命令 bug 的意义**：bundle 不是“陈旧代码”来源；该行的生产者仍未定位，但症状已由 `localizeCommandExecutionStatus` 修复并有回归测试，不影响用户。
+
+## 2026-10-25 清理内部死代码 `VIM_ACTION_LABELS`
+- `AgentConsoleVim.ts` 的 `VIM_ACTION_LABELS`（15 条英文动作描述）全仓库**零引用**，且 `AgentConsoleVim` 未从 `src/index.ts` 导出 → 属内部死代码，按“生产零调用即死代码”规则删除；文件 113 → 96 行。
+- 仍未删除（公开导出面，需明确同意）：`AgentConsoleDiagnosticsHandlers` 的 `openSummaryQualityRecords/openTurnDiagnosticsList/openTurnDiagnosticsTrend/openSummaryQualityTrend`、`AgentConsoleFormatters` 末尾 delegation 系列。
+- 门禁：agent-ui **1707 passing**（EXIT=0），agents gate 结果见本轮报告。
