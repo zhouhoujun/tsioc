@@ -5,6 +5,12 @@ import { TranslatorService } from '@tsdi/i18n';
 import { AGENT_UI_NOTICE_EN } from '../src/agent-ui.i18n.notice.en';
 import { AGENT_UI_NOTICE_ZH } from '../src/agent-ui.i18n.notice.zh';
 import { AGENT_UI_ERROR_EN, AGENT_UI_ERROR_ZH } from '../src/agent-ui.i18n.error';
+import { AGENT_UI_PANEL_EN, AGENT_UI_PANEL_ZH } from '../src/agent-ui.i18n.panel';
+import { AGENT_UI_REVIEW_EN, AGENT_UI_REVIEW_ZH } from '../src/agent-ui.i18n.review';
+import { AGENT_UI_TASKS_EN, AGENT_UI_TASKS_ZH } from '../src/agent-ui.i18n.tasks';
+import { AGENT_UI_DIAG_EN, AGENT_UI_DIAG_ZH } from '../src/agent-ui.i18n.diagnostics';
+import { AGENT_UI_TRANSCRIPT_EN, AGENT_UI_TRANSCRIPT_ZH } from '../src/agent-ui.i18n.transcript';
+import { AGENT_UI_MENU_EN, AGENT_UI_MENU_ZH } from '../src/agent-ui.i18n.menu';
 
 function translateFrom(bundle: typeof agentUiEnglish) {
     return (key: string, params?: Record<string, any>) => {
@@ -28,6 +34,14 @@ const en: AgentUiTranslator = { translate: translateFrom(agentUiEnglish) };
 const zh: AgentUiTranslator = { translate: translateFrom(agentUiChinese) };
 
 const CJK = /[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/;
+
+function flattenCatalogKeys(value: any, prefix = ''): string[] {
+    if (!value || typeof value !== 'object') {
+        return [prefix];
+    }
+    return Object.keys(value).sort().flatMap(key => flattenCatalogKeys(value[key], prefix ? `${prefix}.${key}` : key));
+}
+
 
 /**
  * The only notice entries allowed to stay byte-identical across locales: they
@@ -140,4 +154,22 @@ export class AgentUiLocaleRegressionTest {
             expect(CJK.test(text)).toEqual(true);
         }
     }
+
+    @Test('panel, review, tasks, diagnostics and transcript catalogs stay in lockstep')
+    catalogParity() {
+        const pairs: Array<[string, any, any]> = [
+            ['panel', AGENT_UI_PANEL_EN, AGENT_UI_PANEL_ZH],
+            ['review', AGENT_UI_REVIEW_EN, AGENT_UI_REVIEW_ZH],
+            ['tasks', AGENT_UI_TASKS_EN, AGENT_UI_TASKS_ZH],
+            ['diagnostics', AGENT_UI_DIAG_EN, AGENT_UI_DIAG_ZH],
+            ['transcript', AGENT_UI_TRANSCRIPT_EN, AGENT_UI_TRANSCRIPT_ZH],
+            ['menu', AGENT_UI_MENU_EN, AGENT_UI_MENU_ZH]
+        ];
+        for (const [name, enCatalog, zhCatalog] of pairs) {
+            const enKeys = flattenCatalogKeys(enCatalog);
+            expect({ catalog: name, keys: flattenCatalogKeys(zhCatalog) }).toEqual({ catalog: name, keys: enKeys });
+            expect({ catalog: name, empty: enKeys.filter(key => !key) }).toEqual({ catalog: name, empty: [] });
+        }
+    }
+
 }

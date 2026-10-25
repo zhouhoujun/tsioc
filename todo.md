@@ -1778,3 +1778,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **测试**：`panel-i18n.spec.ts` 41 → **42 条**（真实 `loadInputHistory` 抛错 → `加载输入历史失败：disk gone`，en 保持 `Failed to load input history: disk gone`）。
 - **真实 TUI（zh-CN）追加复核**：`/fork` → `已派生会话 …`、`/side` → `已打开侧会话 …`、`/pin`/`/unpin` → `已固定/已取消固定会话 …`、`/undo`/`/redo` → `没有可撤销/重做的操作。` 均为中文。
 - **门禁**：agent-ui **1701 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
+
+## 2026-10-25 新增 catalog 的 en/zh 键集锁步回归（防漏译）
+- 现有回归只覆盖 notice/error；本批为拆出的 `panel`、`review`、`tasks`、`diagnostics`、`transcript` 与新 `menu` 增加**键集锁步**断言（`flattenCatalogKeys` 深度展开 + 排序比对），任何一边新增/遗漏 key 都会立即失败。
+- `i18n-locale-regression` 8 → **9 条**；agent-ui 全量 **1702 passing**。
+- 门禁：`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
