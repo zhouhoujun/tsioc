@@ -47,6 +47,7 @@ import { formatAgentPanelLabel } from '../src/agent-ui.i18n';
 import { formatReviewHeaderMeta, formatReviewSelectionMeta, formatReviewStatsMeta } from '../src/AgentConsoleReviewPanelFormat';
 import { createReviewTask } from './_helpers';
 import { loadInputHistory } from '../src/AgentConsoleInputHelpers';
+import { openCommandPaletteView } from '../src/AgentConsoleTerminalInputController';
 import { buildCodingTaskSelectOption, describeCodingTaskRollback } from '../src/AgentConsoleCodingTaskHandlers';
 import { AgentConsoleTasksPanelComponent, AgentConsoleHealthPopoverComponent } from '../src/AgentConsolePanels';
 import { runDebugConfigCommand, runMemoriesCommand, runPersonalityCommand } from '../src/AgentConsolePreferenceCommands';
@@ -1104,5 +1105,31 @@ export class PanelI18nTest {
         const enPanel = new AgentConsoleHealthPopoverComponent(buildState() as any);
         expect(enPanel.statusLabel('ok')).toEqual('ok');
         expect(enPanel.statusLabel('warn')).toEqual('warn');
+    }
+    @Test('command palette title, hint and argument form are localized')
+    async paletteLocalized() {
+        const build = (translator: any) => {
+            const st = new AgentConsoleSessionState(new InMemoryCommandExecutionControl(), translator);
+            const host: any = {
+                translator,
+                state: st,
+                commandPaletteQuery: '',
+                transcriptNavigationController: { setFocused: () => { /* unused */ } }
+            };
+            openCommandPaletteView(host);
+            return st;
+        };
+        const zhState = build(zh);
+        expect(zhState.selectMenu?.title).toEqual('命令面板');
+        expect((zhState.selectMenu as any)?.hint).toEqual('输入以过滤   回车执行');
+        const zhKeymap = zhState.selectMenu?.options.find(option => option.value === '/keymap');
+        expect(zhKeymap?.detail).toContain('字符串');
+        expect(zhKeymap?.description).not.toContain('Command palette');
+
+        const enState = build(en);
+        expect(enState.selectMenu?.title).toEqual('Command palette');
+        expect((enState.selectMenu as any)?.hint).toEqual('type to filter   enter execute');
+        const enKeymap = enState.selectMenu?.options.find(option => option.value === '/keymap');
+        expect(enKeymap?.detail).toContain('string');
     }
 }

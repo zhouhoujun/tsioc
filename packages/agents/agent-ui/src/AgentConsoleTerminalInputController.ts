@@ -96,11 +96,13 @@ function releaseTranscriptFocusForTextInput(host: AgentConsoleTerminalInputHost,
 /** Open the command palette with an optional pre-filter query. */
 export function openCommandPaletteView(host: AgentConsoleTerminalInputHost, query = ''): void {
     host.commandPaletteQuery = query;
+    const translate = (key: string, params?: Record<string, any>, fallback?: string) => formatAgentUiLabel(host.translator, key, fallback ?? key, params);
+    const paletteTitle = translate('agent.menu.panel.overlay.paletteTitle', undefined, 'Command palette');
     const commands = host.state.commandHints
         .filter(command => fuzzyMatchAgentConsoleCommand(command, query))
         .map(command => {
             const definition = getAgentConsoleCommandDefinition(command);
-            const form = formatAgentConsoleCommandArgumentForm(definition);
+            const form = formatAgentConsoleCommandArgumentForm(definition, translate);
             return {
                 label: command,
                 value: command,
@@ -109,13 +111,13 @@ export function openCommandPaletteView(host: AgentConsoleTerminalInputHost, quer
                         command,
                         undefined,
                         (key, fallback) => formatAgentUiLabel(host.translator, key, fallback)
-                    ) || 'command',
+                    ) || translate('agent.menu.panel.overlay.paletteCommandFallback', undefined, 'command'),
                     formatAgentConsoleCommandArgumentTemplate(definition)
                 ].filter(Boolean).join(' '),
                 detail: form.length ? form.join('\n') : undefined
             };
         });
-    host.state.openSelectMenu(query ? `${AGENT_CONSOLE_OVERLAY_TITLES.palette}: ${query}` : AGENT_CONSOLE_OVERLAY_TITLES.palette, commands, 0, AGENT_CONSOLE_OVERLAY_HINTS.palette, 'palette');
+    host.state.openSelectMenu(query ? `${paletteTitle}: ${query}` : paletteTitle, commands, 0, translate('agent.menu.panel.overlay.paletteHint', undefined, 'type to filter   enter execute'), 'palette');
     host.state.selectMenuAction = async value => {
         host.commandPaletteQuery = '';
         if (value) await host.handleCommand(value);

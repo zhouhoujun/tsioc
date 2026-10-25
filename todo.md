@@ -1795,3 +1795,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **测试**：`panel-i18n.spec.ts` 42 → **43 条**（health 标题 `健康状态（2）` + 四个状态词 zh/en）。
 - **真实 TUI（zh-CN）复核**：`Ctrl+X h` → `健康状态（3）` / `正常 Gateway 已连接` / `未知 MCP 未配置 MCP 服务器` / `未知 LSP 没有可用的 LSP 工具` / `Ctrl+X H 切换 · 悬停刷新`。
 - **门禁**：agent-ui **1704 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
+
+## 2026-10-25 命令面板（Ctrl+P）与参数类型模板中文化
+- **现象（zh-CN 真实 TUI）**：`Ctrl+P` 面板标题/hint 取的是 `AGENT_CONSOLE_OVERLAY_TITLES.palette` = `Command palette` / `type to filter   enter execute`（硬编码英文，未走 translator）；输入过滤后条目下方详情显示 `arg...: string`；无描述时的兜底是英文 `command`。
+- **做法**：
+  - panel catalog `overlay` 新增 `paletteTitle/paletteHint/paletteCommandFallback`（`命令面板`/`输入以过滤   回车执行`/`命令`）。
+  - `openCommandPaletteView` 改用 `formatAgentUiLabel(host.translator, 'agent.menu.panel.overlay.*')` 生成标题/hint/兜底，并把 translate 传给参数表单。
+  - `formatAgentConsoleCommandArgumentForm(definition, translate?)` 支持本地化类型与标记（menu `arg` 新增 `argTypeString/argTypeEnum/argFlagRequired/argFlagDefault`：`字符串`/`枚举(…)`/`必填`/`默认=…`），注册表继续保持零 i18n 依赖（复用 `commandArgText` 就地插值）。
+- **测试**：`panel-i18n.spec.ts` 43 → **44 条**（真实 `openCommandPaletteView`：标题/ hint / `/keymap` 详情 `字符串`，en 保持 `Command palette` / `string`）；catalog 锁步+值级守卫同时覆盖新增 key。
+- **真实 TUI（zh-CN）复核**：`Ctrl+P` 列表描述为中文（`[核心] 查看命令帮助…`）；输入 `key` 过滤后条目详情 `arg...: 字符串`。
+- **门禁**：agent-ui **1705 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。

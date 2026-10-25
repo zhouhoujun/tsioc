@@ -102,6 +102,9 @@ export const AGENT_UI_PANEL_EN: Record<string, any> = {
         statusPending: 'pending'
     },
     overlay: {
+        paletteTitle: 'Command palette',
+        paletteHint: 'type to filter   enter execute',
+        paletteCommandFallback: 'command',
         noticeTitle: 'notice',
         statusTitle: 'status',
         title: '{title} {count} lines · {from}-{to}',
@@ -312,6 +315,9 @@ export const AGENT_UI_PANEL_ZH: Record<string, any> = {
         statusPending: '等待中'
     },
     overlay: {
+        paletteTitle: '命令面板',
+        paletteHint: '输入以过滤   回车执行',
+        paletteCommandFallback: '命令',
         noticeTitle: '通知',
         statusTitle: '状态',
         title: '{title} {count} 行 · {from}-{to}',

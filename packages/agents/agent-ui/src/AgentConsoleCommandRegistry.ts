@@ -322,12 +322,17 @@ export function formatAgentConsoleCommandArgumentTemplate(definition: AgentConso
 }
 
 /** Renders a command's positional schema as readable catalog rows, e.g. 'query...: string (required)'. */
-export function formatAgentConsoleCommandArgumentForm(definition: AgentConsoleCommandDefinition | undefined): string[] {
+export function formatAgentConsoleCommandArgumentForm(
+    definition: AgentConsoleCommandDefinition | undefined,
+    translate?: AgentConsoleCommandTranslate
+): string[] {
     return (definition?.args || []).map(arg => {
-        const typeLabel = arg.type === 'enum' && arg.values?.length ? `enum(${arg.values.join('|')})` : 'string';
+        const typeLabel = arg.type === 'enum' && arg.values?.length
+            ? commandArgText(translate, 'argTypeEnum', 'enum({values})', { values: arg.values.join('|') })
+            : commandArgText(translate, 'argTypeString', 'string');
         const flags: string[] = [];
-        if (arg.required) flags.push('required');
-        if (arg.default !== undefined) flags.push(`default=${arg.default}`);
+        if (arg.required) flags.push(commandArgText(translate, 'argFlagRequired', 'required'));
+        if (arg.default !== undefined) flags.push(commandArgText(translate, 'argFlagDefault', 'default={value}', { value: arg.default }));
         return `${arg.name}${arg.variadic ? '...' : ''}: ${typeLabel}${flags.length ? ` (${flags.join(', ')})` : ''}`;
     });
 }

@@ -84,7 +84,11 @@ export const AGENT_UI_MENU_EN: Record<string, any> = {
         removeExtraOne: 'Remove it — the command accepts no more arguments.',
         removeExtraMany: 'Remove them — the command accepts no more arguments.',
         expected: 'expected: {value}',
-        maybe: 'maybe: {value}'
+        maybe: 'maybe: {value}',
+        argTypeString: 'string',
+        argTypeEnum: 'enum({values})',
+        argFlagRequired: 'required',
+        argFlagDefault: 'default={value}'
     },
     tools: {
         title: 'tools {count} · {index}/{count}',
@@ -308,7 +312,11 @@ export const AGENT_UI_MENU_ZH: Record<string, any> = {
         removeExtraOne: '请移除多余参数 —— 该命令不接受更多参数。',
         removeExtraMany: '请移除多余参数 —— 该命令不接受更多参数。',
         expected: '期望：{value}',
-        maybe: '可能：{value}'
+        maybe: '可能：{value}',
+        argTypeString: '字符串',
+        argTypeEnum: '枚举({values})',
+        argFlagRequired: '必填',
+        argFlagDefault: '默认={value}'
     },
     tools: {
         title: '工具 {count} · {index}/{count}',
