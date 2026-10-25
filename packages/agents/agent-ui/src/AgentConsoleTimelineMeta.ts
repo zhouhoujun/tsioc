@@ -1,6 +1,7 @@
 import { AgentMessage } from '@tsdi/agent';
 import { AgentConsoleTheme, styleTextToObject } from './AgentConsoleTheme';
 import { formatTimelineSessionDuration } from './AgentConsoleTimelineWindow';
+import { formatAgentUiLabel, type AgentUiTranslator } from './agent-ui.i18n';
 import { isAgentConsoleAssistantPreamble } from './AgentConsoleSessionContentPresenter';
 import type { AgentConsoleMessageTemplateKind } from './AgentConsoleMessageRenderers';
 
@@ -14,7 +15,8 @@ export function resolveTimelineMeta(
     message: AgentMessage | undefined,
     templateKind: AgentConsoleMessageTemplateKind,
     statusLabel: string,
-    showTimestamps = false
+    showTimestamps = false,
+    translator?: AgentUiTranslator | null
 ): string {
     const parts: string[] = [];
     let duration = '';
@@ -40,18 +42,12 @@ export function resolveTimelineMeta(
         if (Number.isFinite(durationMs) && durationMs >= 0) {
             duration = formatTimelineDuration(durationMs);
         }
-    } else if (templateKind === 'assistant') {
-        // Final replies carry the worked/done summary; a preamble runs inside
-        // the still-active turn, so a "done" footer there would mislead. The
-        // predicate also covers narration attached to tool calls (no explicit
-        // `preamble` flag), otherwise an intermediate step gets a fake "Worked
-        // for … done" footer while the turn is still running.
-        const preamble = isAgentConsoleAssistantPreamble(message);
-        const completedAt = Number(message?.metadata?.completedAt ?? message?.metadata?.endedAt ?? message?.metadata?.finishedAt ?? message?.createdAt);
+    } else if (templateKind === 'assistant' && shouldRenderWorkedSummary(message)) {
+        const completedAt = workedSummaryDoneAt(message);
         const durationMs = resolveMessageDurationMs(message);
-        if (!preamble && Number.isFinite(completedAt) && Number.isFinite(durationMs) && Math.round(durationMs / 1000) > 0) {
-            return `Worked for ${formatWorkedDuration(durationMs)} · done ${formatDoneTime(completedAt)}`;
-        }
+        return formatAgentUiLabel(translator, 'agent.timeline.workedFor', 'Worked for {duration} · done {time}', {
+            duration: formatWorkedDuration(durationMs), time: formatDoneTime(completedAt)
+        });
     }
     if (uiKind !== 'event'
         && templateKind !== 'user'
@@ -77,6 +73,30 @@ export function resolveTimelineMeta(
     }
     const details = parts.join(' · ');
     return `${details}${duration ? ` (${duration})` : ''}`;
+}
+
+/**
+ * Final replies carry the worked/done summary; a preamble runs inside the
+ * still-active turn, so a "done" footer there would mislead. The predicate also
+ * covers narration attached to tool calls (no explicit `preamble` flag),
+ * otherwise an intermediate step gets a fake footer while the turn still runs.
+ */
+export function shouldRenderWorkedSummary(message: AgentMessage | undefined): boolean {
+    // Only final assistant replies get the footer; event rows carry their own
+    // duration token and must never be mistaken for a worked/done summary.
+    if (String(message?.metadata?.uiKind || '').trim() === 'event') {
+        return false;
+    }
+    const completedAt = workedSummaryDoneAt(message);
+    const durationMs = resolveMessageDurationMs(message);
+    return !isAgentConsoleAssistantPreamble(message)
+        && Number.isFinite(completedAt)
+        && Number.isFinite(durationMs)
+        && Math.round(durationMs / 1000) > 0;
+}
+
+function workedSummaryDoneAt(message: AgentMessage | undefined): number {
+    return Number(message?.metadata?.completedAt ?? message?.metadata?.endedAt ?? message?.metadata?.finishedAt ?? message?.createdAt);
 }
 
 function formatWorkedDuration(durationMs: number): string {

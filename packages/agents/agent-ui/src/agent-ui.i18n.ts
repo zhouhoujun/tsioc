@@ -244,6 +244,7 @@ export const agentUiEnglish: TranslationBundle = {
                 event: 'Event · ',
                 rawOutput: 'Raw output',
                 loadingOutput: 'Loading raw output…',
+                workedFor: 'Worked for {duration} · done {time}',
                 planSummary: '{total} steps ({completed} done)'
             },
             mention: { folder: 'folder', file: 'file', skill: 'skill', plugin: 'plugin' },
@@ -495,6 +496,7 @@ export const agentUiChinese: TranslationBundle = {
                 event: '事件 · ',
                 rawOutput: '原始输出',
                 loadingOutput: '正在读取原始输出…',
+                workedFor: '用时 {duration} · 完成于 {time}',
                 planSummary: '{total} 步（已完成 {completed} 步）'
             },
             mention: { folder: '文件夹', file: '文件', skill: '技能', plugin: '插件' },

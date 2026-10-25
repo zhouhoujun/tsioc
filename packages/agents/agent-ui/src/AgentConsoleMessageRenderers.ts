@@ -1,7 +1,7 @@
 import { AgentMessage, getAgentMessageImageParts, summarizeToolDisplayText } from '@tsdi/agent';
 import { Inject, Injectable, Injector, Optional, Token, Type, token } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
-import { defaultTimelineLabel, formatAgentUiLabel } from './agent-ui.i18n';
+import { defaultTimelineLabel, formatAgentUiLabel, type AgentUiTranslator } from './agent-ui.i18n';
 import { noReact } from '@tsdi/components';
 import {
     AgentConsoleMarkdownLine,
@@ -14,7 +14,7 @@ import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from '
 import { getDisplayWidth, sliceByDisplayWidth } from './AgentConsoleTextWidth';
 import { resolveTimelineEventSentence, formatTimelineSessionDuration, AgentConsoleTimelineLabels } from './AgentConsoleTimelineWindow';
 import { resolveTurnLifecycleLabel } from './AgentConsoleTimelineLabels';
-import { resolveTimelineMeta, resolveTimelineMetaStyle, resolveMessageDurationMs, resolveMessageRoleLabel, resolveMessageRoleStyle, resolveAgentConsoleMessageRoleLabel, resolveEffectiveRoleLabel } from './AgentConsoleTimelineMeta';
+import { resolveTimelineMeta, resolveTimelineMetaStyle, resolveMessageDurationMs, resolveMessageRoleLabel, resolveMessageRoleStyle, resolveAgentConsoleMessageRoleLabel, resolveEffectiveRoleLabel, shouldRenderWorkedSummary } from './AgentConsoleTimelineMeta';
 import type { MarkdownWorkerBridge } from './MarkdownWorkerBridge';
 import {
     AgentConsoleContentFamily,
@@ -111,7 +111,7 @@ export interface AgentConsoleMessageRenderContext {
     username?: string;
     timelineMode?: boolean;
     /** i18n labels for timeline event sentences (empty-content events like model_completed). */
-    timelineLabels?: AgentConsoleTimelineLabels;
+    timelineLabels?: AgentConsoleTimelineLabels; translator?: AgentUiTranslator;
     /** When true, all messages carry the critical mark (★) and render uncollapsed. */
     showCriticalMarks?: boolean;
     /** When provided, long messages (>1000 chars) are routed through the bridge for off-main-thread parsing. */
@@ -608,12 +608,7 @@ export function renderAgentConsoleMessageItem(
                     ? resolveMarkdownLines(eventRowContent, { compactBlankLines: true, treatUnclosedFenceAsText: true }, context.markdownBridge)
                     : renderAgentConsolePlainTextLines(eventRowContent, { compactBlankLines: true })
                 : resolveMarkdownLines(eventRowContent, { compactBlankLines: true }, context.markdownBridge);
-    const timelineMeta = resolveTimelineMeta(
-        message,
-        templateKind,
-        statusLabel,
-        !!context.showTimestamps
-    );
+    const timelineMeta = resolveTimelineMeta(message, templateKind, statusLabel, !!context.showTimestamps, context.translator);
     const metaDurationSuffix = timelineMeta.match(/ \([^()]+\)$/)?.[0] || '';
     // Step boundaries own their duration in meta; event rows keep it as a
     // trailing muted token at the end of the row (P302 vs P237/row-end).
@@ -624,7 +619,7 @@ export function renderAgentConsoleMessageItem(
     // Final replies render the worked/done summary as a dedicated footer line
     // instead of gluing it onto the last body line; that footer already carries
     // the duration, so no trailing token is appended for them.
-    const workedSummary = templateKind === 'assistant' && timelineMeta.startsWith('Worked for ');
+    const workedSummary = templateKind === 'assistant' && shouldRenderWorkedSummary(message);
     const metaText = timelineDetails ? `${timelineDetails} ` : '';
     const tokenDurationSuffix = durationStaysInMeta ? '' : metaDurationSuffix;
     const fallbackLine = templateKind === 'assistant'

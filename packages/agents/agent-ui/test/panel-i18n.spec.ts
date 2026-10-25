@@ -47,6 +47,7 @@ import { runDebugConfigCommand, runMemoriesCommand, runPersonalityCommand } from
 import { runAppsCommand } from '../src/AgentConsoleExtensionCommands';
 import { AgentConsoleComponent } from '../src/AgentConsoleComponent';
 import { createConsole, RuntimeStub, SchedulerStub } from './_helpers';
+import { renderAgentConsoleMessageItems } from '../src/AgentConsoleMessageRenderers';
 
 function translateFrom(bundle: typeof agentUiEnglish) {
     return (key: string, params?: Record<string, any>) => {
@@ -826,5 +827,13 @@ export class PanelI18nTest {
         state.setToolsFocused(true);
         await state.handleFocusKey('copy', undefined as any);
         expect(labels[0]).toEqual('工具名');
+    }
+    @Test('assistant worked/done footer follows the locale')
+    async workedFooterLocalized() {
+        const message = { id: 'final-summary', role: 'assistant', content: '完成', createdAt: 1000, metadata: { durationMs: 542000, completedAt: 325000 } } as any;
+        const zhItems = renderAgentConsoleMessageItems([message], { translator: zh } as any);
+        expect(zhItems[0].lines.at(-1)?.meta).toContain('用时 9m 2s · 完成于 ');
+        const enItems = renderAgentConsoleMessageItems([message], { translator: en } as any);
+        expect(enItems[0].lines.at(-1)?.meta).toContain('Worked for 9m 2s · done ');
     }
 }

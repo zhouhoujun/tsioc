@@ -1700,3 +1700,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **测试**：`panel-i18n.spec.ts` 31 → **32 条**：真实 `handleCommand('/copy input|workspace|session')` 断言 `已复制 输入。/工作区。/会话。`，并通过 `setToolsFocused(true)` + `handleFocusKey('copy')` 走真实焦点路径断言 `工具名`。
 - **真实 TUI（zh-CN）复核**：`/copy session` → `已复制 会话。`；`/copy input`（空）→ `输入 没有可复制的内容。`
 - **门禁**：agent-ui **1691 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
+
+## 2026-10-25 最终回答的 `Worked for … · done …` 页脚中文化（恢复会话时可见）
+- **现象（zh-CN 真实 TUI）**：恢复历史会话后，最终回答下方显示 `Worked for 2s · done 12:40`，其余（`✓ 你好`、`完成 · 耗时 …`）已是中文。
+- **根因**：`AgentConsoleTimelineMeta.resolveTimelineMeta` 在没有 translator 的情况下硬编码 `Worked for ${duration} · done ${time}`；渲染上下文里也没有 translator 字段。
+- **做法**：bundle 的 `agent.timeline` 新增 `workedFor`（EN `Worked for {duration} · done {time}` / ZH `用时 {duration} · 完成于 {time}`）；`resolveTimelineMeta(..., translator?)` 走 `formatAgentUiLabel`；`AgentConsoleMessageRenderContext` 新增 `translator`，由 `AgentConsoleMessagesPanelComponent` 传入（面板本就有 `@Optional() translator`）。
+- **同时修掉一个回归隐患**：原来渲染层用 `timelineMeta.startsWith('Worked for ')` 判断“是否最终回答页脚”，中文化后该判断失效。抽出 `shouldRenderWorkedSummary(message)` 纯函数同时供 `resolveTimelineMeta` 与渲染层使用（并显式排除 `uiKind === 'event'`，否则带 `durationMs` 的事件行会被误判成最终回答、丢掉 `(1.3s)` 尾部耗时——该假设被 `p237` aria 用例当场抓到并补上守卫）。
+- **真实 TUI（zh-CN）复核**：恢复会话 → `✓ 你好` / `用时 2s · 完成于 12:40` / `完成 · 耗时 43m 27s`。
+- **测试**：`panel-i18n.spec.ts` 32 → **33 条**（zh 渲染真实 `renderAgentConsoleMessageItems` 断言 `用时 9m 2s · 完成于`，en fallback 仍为 `Worked for 9m 2s · done`）；`p237`/`message-renderer`/`p409`/`console-renderer` 全部保持通过。
+- **门禁**：agent-ui **1692 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size（`MessageRenderers` 1280、`Panels` 4176、bundle 575 均在预算内）、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。

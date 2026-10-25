@@ -2832,7 +2832,7 @@ export class AgentConsoleMessagesPanelComponent {
             showUsername,
             username: this.state.consoleOptions.username,
             timelineMode,
-            timelineLabels: this.state.consoleOptions.timelineLabels,
+            timelineLabels: this.state.consoleOptions.timelineLabels, translator: this.translator,
             messageDetailOpen,
             messageDetailVisibleLines: this.state.messageDetailVisibleLines
         });
