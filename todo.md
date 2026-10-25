@@ -1873,3 +1873,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `正在为 健康状态（global）录制按键 — 现在按一个键，Esc 取消。`
   - `/keymap reset` → `键位已重置为默认值。`（测试后已重置，未污染 workspace 设置）
 - **门禁**：agent-ui **1709 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
+
+## 2026-10-25 清理公开导出面死代码（诊断/委托重复实现）
+- **判据**：全仓库 `grep`（排除 dist/node_modules）确认以下符号**无任何生产调用**，且测试仅通过 `CommandHandlerContext` 接口（mock）或 `AgentConsoleDelegationView` 使用；重复实现已被 `AgentConsoleDiagnosticsView` / `AgentConsoleDelegationView` 完全取代：
+  - `AgentConsoleDiagnosticsHandlers`：`openTurnDiagnosticsList` / `openTurnDiagnosticsTrend` / `openSummaryQualityRecords` / `openSummaryQualityTrend`
+  - `AgentConsoleFormatters`：`formatDelegationEdge` / `formatDelegationTree` / `pickDelegationGoal`（含 `(no goal)`）/ `shortenSessionId`
+- **变更**：删除上述 8 个函数与随之无用的 import（`formatSummaryQualityAggregate`/`formatTurnDiagnosticsTrend`/`build*RecordOption`）；`DiagnosticsHandlers` 432 → **279 行**，`Formatters` 309 → **277 行**，均远低于 600 行上限，无需调整 baseline。
+- **兼容性**：`CommandHandlerContext` 上的同名方法仍由 Component 绑定到 View 实现，命令行为与 `/diagnostics`、`/quality`、`/delegation` 输出不变（全量测试 + 真实 TUI 验证）。
+- **门禁**：agent-ui **1709 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**（首轮 diff-check 因文件末尾空行失败，修正后通过）；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate 全部通过。
+- **备注**：删除属公开导出面变更（`src/index.ts` 的 `export *` 不再导出这些名字）；仓库内无引用，外部消费者如有使用需从 View 模块获取同名实现。

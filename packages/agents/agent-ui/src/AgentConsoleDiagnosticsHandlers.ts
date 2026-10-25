@@ -1,13 +1,9 @@
 import type { AgentConsoleCommandOutputEntry, AgentConsoleSelectOption } from './AgentConsoleSessionState';
 import {
-    formatSummaryQualityAggregate,
     formatUsageSummary,
     formatCompactionHistoryRecord,
     formatCompactionHistoryTrend,
     formatTurnDiagnosticsAggregate,
-    formatTurnDiagnosticsTrend,
-    buildSummaryQualityRecordOption,
-    buildTurnDiagnosticsRecordOption,
     parseTrendArgs,
 } from './AgentConsoleFormatters';
 import { formatAgentDiagLabel as diagLabel, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
@@ -117,68 +113,6 @@ export async function openTurnDiagnostics(
     ctx.pushCommandOutput('/diagnostics', formatTurnDiagnosticsAggregate(aggregate, sessionId, ctx.translator));
     return true;
 }
-
-export async function openTurnDiagnosticsList(
-    ctx: DiagnosticsHandlerContext,
-    args: string
-): Promise<boolean> {
-    if (!ctx.sessionService) {
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'turnDiagnosticsUnavailable'));
-        return true;
-    }
-    const sessionId = args.trim() || ctx.state.sessionId;
-    if (!sessionId) {
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'sessionSelectedDiagnostics'));
-        return true;
-    }
-    const records = await ctx.sessionService.listTurnDiagnosticsRecords(sessionId);
-    if (!records.length) {
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'noTurnDiagnosticsForSession', { sessionId: sessionId }));
-        return true;
-    }
-    const options = records.map(record => buildTurnDiagnosticsRecordOption(record));
-    const selected = await ctx.select('Turn diagnostics records', options, 'Select a record to view details. Press Esc to close.');
-    if (!selected) {
-        return true;
-    }
-    const record = records.find(r => String(r.id ?? '') === selected || `${r.sessionId}:${r.totalTurns}` === selected);
-    if (record) {
-        ctx.pushCommandOutput(
-            '/diagnostics list',
-            [
-                `Record: ${record.id ?? '-'}`,
-                `Session: ${record.sessionId ?? 'unknown'}`,
-                `Turns: ${record.totalTurns ?? 0}`,
-                `Empty response rate: ${Number(record.emptyResponseRate ?? 0).toFixed(1)}%`,
-                `Repeated question rate: ${Number(record.repeatedQuestionRate ?? 0).toFixed(1)}%`,
-                `Token savings: ${record.totalTokenSavings ?? 0}`,
-                record.createdAt ? `Created: ${new Date(record.createdAt).toLocaleString()}` : ''
-            ].filter(Boolean).join('\n')
-        );
-    }
-    return true;
-}
-
-export async function openTurnDiagnosticsTrend(
-    ctx: DiagnosticsHandlerContext,
-    args: string
-): Promise<boolean> {
-    if (!ctx.sessionService) {
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'turnDiagnosticsUnavailable'));
-        return true;
-    }
-    const { sessionId, bucketSize, maxBuckets } = parseTrendArgs(args);
-    const trend = await ctx.sessionService.listTurnDiagnosticsTrend({ sessionId, bucketSize, maxBuckets });
-    if (!trend.length) {
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'turnDiagnosticsTrend'));
-        return true;
-    }
-    const lines = formatTurnDiagnosticsTrend(trend);
-    ctx.pushCommandOutput('/diagnostics trend', lines.join('\n'));
-    return true;
-}
-
-// ── Usage ────────────────────────────────────────────────────────────────────
 
 export async function openUsage(
     ctx: DiagnosticsHandlerContext,
@@ -341,92 +275,5 @@ export async function openHarnessProfile(
         return true;
     }
     ctx.notify(formatAgentUiNotice(ctx.translator, 'harnessProfileUsage'));
-    return true;
-}
-
-// ── Summary quality ──────────────────────────────────────────────────────────
-
-export async function openSummaryQualityRecords(
-    ctx: DiagnosticsHandlerContext,
-    args: string
-): Promise<boolean> {
-    if (!ctx.sessionService) {
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'summaryQualityUnavailable'));
-        return true;
-    }
-    const sessionId = args.trim() || ctx.state.sessionId;
-    if (!sessionId) {
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'sessionSelectedQuality'));
-        return true;
-    }
-    const records = await ctx.sessionService.listSummaryQualityRecords(sessionId);
-    if (!records.length) {
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'noSummaryQualityForSession', { sessionId: sessionId }));
-        return true;
-    }
-    const options = records.map(record => buildSummaryQualityRecordOption(record));
-    const selected = await ctx.select('Summary quality records', options, 'Select a record to view details. Press Esc to close.');
-    if (!selected) {
-        return true;
-    }
-    const record = records.find(r => String(r.id ?? '') === selected);
-    if (record) {
-        ctx.pushCommandOutput(
-            '/quality list',
-            [
-                `Record: ${record.id ?? '-'}`,
-                `Provider: ${record.provider ?? 'unknown'}`,
-                `Model: ${record.model ?? 'unknown'}`,
-                `Total: ${record.total ?? 0}`,
-                `Fields: ${Number(record.fieldCompleteness ?? 0)}`,
-                `Annotation: ${Number(record.annotationQuality ?? 0)}`,
-                `Length: ${Number(record.lengthBalance ?? 0)}`,
-                `Truncation: ${Number(record.truncationScore ?? 0)}`,
-                record.evidenceCoverage != null ? `Evidence coverage: ${Number(record.evidenceCoverage).toFixed(1)}%` : '',
-                `Fallback: ${record.fallbackUsed ? 'yes' : 'no'}`,
-                `Summary length: ${record.summaryLength ?? 0}`,
-                record.createdAt ? `Created: ${new Date(record.createdAt).toLocaleString()}` : ''
-            ].filter(Boolean).join('\n')
-        );
-    }
-    return true;
-}
-
-export async function openSummaryQualityTrend(
-    ctx: DiagnosticsHandlerContext,
-    args: string
-): Promise<boolean> {
-    if (!ctx.sessionService) {
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'summaryQualityUnavailable'));
-        return true;
-    }
-    const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
-    const provider = tokens[0] || undefined;
-    let bucketSize: number | undefined;
-    let maxBuckets: number | undefined;
-    const dayToken = tokens[1]?.match(/^(\d+)d$/i);
-    if (dayToken) {
-        const days = Number(dayToken[1]);
-        if (Number.isFinite(days) && days > 0) {
-            bucketSize = days * 24 * 60 * 60 * 1000;
-        }
-    } else if (tokens[1] && /^\d+$/.test(tokens[1])) {
-        const value = Number(tokens[1]);
-        if (Number.isFinite(value) && value > 0) {
-            bucketSize = value;
-        }
-    }
-    if (tokens[2] && /^\d+$/.test(tokens[2])) {
-        const value = Number(tokens[2]);
-        if (Number.isFinite(value) && value > 0) {
-            maxBuckets = value;
-        }
-    }
-    const aggregate = await ctx.sessionService.getSummaryQualityAggregate(provider);
-    if (!aggregate || !Number(aggregate.recordCount)) {
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'summaryQualityRecords'));
-        return true;
-    }
-    ctx.pushCommandOutput('/quality trend', formatSummaryQualityAggregate(aggregate));
     return true;
 }

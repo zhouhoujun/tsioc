@@ -275,35 +275,3 @@ export function buildTurnDiagnosticsRecordOption(record: Record<string, any>, tr
         ].filter(Boolean).join('\n')
     };
 }
-
-// ── Delegation formatting ───────────────────────────────────────────────────
-
-export function formatDelegationEdge(edge: Record<string, any>): string {
-    const parent = String(edge.parentTaskId ?? edge.from ?? '?').slice(0, 12);
-    const child = String(edge.childTaskId ?? edge.to ?? '?').slice(0, 12);
-    const status = edge.status ?? 'unknown';
-    const goal = edge.goal ? ` · ${edge.goal}` : '';
-    const worker = edge.workerClass ? ` [${edge.workerClass}]` : '';
-    return `${parent}→${child} ${status}${worker}${goal}`;
-}
-
-export function formatDelegationTree(node: Record<string, any>, indent = 0): string[] {
-    const prefix = '  '.repeat(indent);
-    const id = String(node.taskId ?? node.id ?? '?').slice(0, 12);
-    const status = node.status ?? 'unknown';
-    const goal = node.goal ? ` · ${node.goal}` : '';
-    const worker = node.workerClass ? ` [${node.workerClass}]` : '';
-    const lines = [`${prefix}${id} ${status}${worker}${goal}`];
-    for (const child of node.children ?? []) {
-        lines.push(...formatDelegationTree(child, indent + 1));
-    }
-    return lines;
-}
-
-export function pickDelegationGoal(edge: Record<string, any>): string {
-    return String(edge.goal ?? edge.description ?? '').trim() || '(no goal)';
-}
-
-export function shortenSessionId(sessionId: string): string {
-    return sessionId.length > 16 ? `${sessionId.slice(0, 14)}…` : sessionId;
-}
