@@ -1835,3 +1835,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **测试**：`panel-i18n.spec.ts` 45 → **46 条**（`buildHarnessProjection` + 真实 `formatHarnessListLines(labels)` zh/en，以及真实 `openHarnessListView` 输出含 `汇总`/`个进行中`）；agent 包 1040 保持通过（英文 fallback 不变）。
 - **门禁**：agent-ui **1707 passing**、agent **1040 passing**（均 EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
 - **仍未处理**：activity 面板文案（`showActivityPanel === false` 不可见）；排队命令行生产者根因；死代码清理（待确认）。
+
+## 2026-10-25 CLI 预打包 bundle 排查（解释真实 TUI 代码来源，附运维结论）
+- **背景**：排查“排队命令行偶发英文状态词”时怀疑存在第二份代码。检查 `packages/agents/agent-cli/bin/tsdi-agent.js`：
+  - 默认优先使用预打包 `bundle/tsdi-agent.cjs`（`bin/bundle-state.js` 依据 `bundle/manifest.json` 里 2083 个输入的 `mtime+size` 判定）；
+  - 任一输入被编辑即判定 `stale` 并**回退源码路径**（`tsxi-agent` 注释承诺“editing sources never runs stale code”）；
+  - 也可用 `TSDI_AGENT_BUNDLE=0|1`、`TSDI_AGENT_BUNDLE_LOG=1` 强制/观察。
+- **实测**：当前 `resolveBundle()` → `bundle (fresh)`；用 `node` 读取 bundle 文本并做 `\uXXXX` 转义还原，确认其中**已包含**最新中文化文案（`汇总/按键映射/命令面板/正常/字符串/加载输入历史失败` 等），即 bundle 与已提交源码一致。
+- **结论/运维**：真实 TUI 启动既可能走 bundle 也可能走源码，但两者行为一致；修改 `agents/**` 源码后若想保持快速启动，执行 `npm run bundle`（否则自动回退源码，仅变慢，不会运行陈旧代码）。
+- **对排队命令 bug 的意义**：bundle 不是“陈旧代码”来源；该行的生产者仍未定位，但症状已由 `localizeCommandExecutionStatus` 修复并有回归测试，不影响用户。
