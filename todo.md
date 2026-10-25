@@ -1813,3 +1813,17 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **测试**：`panel-i18n.spec.ts` 44 → **45 条**（zh 三条绑定含未知动作回退、分组内 label；en 对照）；agent-ui **1706 passing**。
 - **真实 TUI（zh-CN）复核**：`Ctrl+Alt+K` → `按键映射（25）`，全部动作中文：`ctrl+x n 新建会话 / ctrl+x c 压缩会话 / … / pageup 上翻一页 / tab 排队后续提示 / ctrl+u 清空输入`。
 - **门禁**：`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
+
+## 2026-10-25 真实工具轮次端到端复核（zh-CN，含 thinking/read）
+- 在 zh-CN 工作区跑一轮真实工具调用（`用 read 工具读取 …/settings.json …`），完整时间线与状态均无英文外壳：
+  ```
+  ● 事件 · 已收到请求
+  ● 思考 · The user wants me to read the …           ← 模型输出（数据）
+  ● 读取文件 · .tsdi-agent/settings.json            ← 工具行标签中文
+  ✓ 思考 · … (14s)     ✓ 读取文件 · … (15ms)
+  ✓ 事件 · 轮次已完成 (18s)
+  ✓ zh-CN                                            ← 最终回答
+  完成 · 耗时 18.7s
+  ```
+- 覆盖了事件生命周期、推理行、工具行、耗时、最终回答、状态栏的完整链路；`进行中/处理中/正在推理/按 esc 中断` 均为中文。
+- 备注（未处理，数据/无宿主可见性）：`/harness tree|list` 在有委托数据时使用 `@tsdi/agent` 的 `formatHarnessTreeLines/ListLines`（跨包服务端格式化，含 `─ aggregates ─`、`N total` 等英文词）；activity 面板文案仍因 `showActivityPanel === false` 不可见。
