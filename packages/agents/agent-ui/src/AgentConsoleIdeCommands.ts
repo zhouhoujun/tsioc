@@ -23,9 +23,11 @@ export async function runIdeCommand(
             return true;
         }
         const selection = context.selection
-            ? ` lines ${context.selection.startLine}-${context.selection.endLine}`
+            ? formatAgentUiNotice(translator, 'ideContextSelection', { from: context.selection.startLine, to: context.selection.endLine })
             : '';
-        pushCommandOutput('/ide', `IDE context: ${context.activeFile}${selection}${context.platform ? ` (${context.platform})` : ''}`);
+        pushCommandOutput('/ide', formatAgentUiNotice(translator, 'ideContextOutput', {
+            file: context.activeFile, selection: selection, platform: context.platform ? ` (${context.platform})` : ''
+        }));
     } catch (error: any) {
         notify(error?.message || formatAgentUiNotice(translator, 'ideContextReadFailed'));
     }

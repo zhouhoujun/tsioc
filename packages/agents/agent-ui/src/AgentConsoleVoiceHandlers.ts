@@ -175,7 +175,11 @@ export async function handleVoiceCommand(ctx: VoiceHandlerContext, arg: string):
             const result = await ctx.sessionService.endVoiceSession(sessionId);
             if (result?.ok && result.transcribed) {
                 const playbackError = await playVoiceReply(ctx, result);
-                ctx.pushCommandOutput('/voice stop', `Transcribed: ${result.transcribed}\nReply: ${result.reply ?? ''}${playbackError ? `\nAudio playback unavailable: ${playbackError}` : ''}`);
+                ctx.pushCommandOutput('/voice stop', formatAgentUiNotice(ctx.translator, 'voiceStopOutput', {
+                    text: result.transcribed,
+                    reply: result.reply ?? '',
+                    playback: playbackError ? formatAgentUiNotice(ctx.translator, 'voicePlaybackUnavailableOutput', { error: playbackError }) : ''
+                }));
             } else {
                 ctx.notify(result?.error || (result?.transcribed ? formatAgentUiNotice(ctx.translator, 'voiceTranscribed', { text: result.transcribed }) : formatAgentUiNotice(ctx.translator, 'voiceNoTranscription')));
             }
@@ -193,12 +197,19 @@ export async function handleVoiceCommand(ctx: VoiceHandlerContext, arg: string):
         }
         default: {
             const status = await ctx.sessionService.getVoiceStatus(sessionId);
-            const available = status?.available ? 'available' : 'unavailable';
+            const available = formatAgentUiNotice(ctx.translator, status?.available ? 'voiceAvailable' : 'voiceUnavailable');
             const missing = Array.isArray(status?.missing) && status.missing.length
-                ? ` (missing ${status.missing.join(', ')})`
+                ? formatAgentUiNotice(ctx.translator, 'voiceMissingSuffix', { list: status.missing.join(', ') })
                 : '';
-            const active = status?.active ? 'active' : 'inactive';
-            ctx.pushCommandOutput('/voice status', `voice ${available}${missing} · session ${active}${Number(status?.bufferedBytes ?? 0) > 0 ? ` · buffered ${status.bufferedBytes} bytes` : ''}\nUsage: /voice start|stop|cancel|status`);
+            const active = formatAgentUiNotice(ctx.translator, status?.active ? 'voiceSessionActive' : 'voiceSessionInactive');
+            ctx.pushCommandOutput('/voice status', formatAgentUiNotice(ctx.translator, 'voiceStatusOutput', {
+                available: available,
+                missing: missing,
+                active: active,
+                buffered: Number(status?.bufferedBytes ?? 0) > 0
+                    ? formatAgentUiNotice(ctx.translator, 'voiceBufferedSuffix', { bytes: status.bufferedBytes })
+                    : ''
+            }));
             return true;
         }
     }

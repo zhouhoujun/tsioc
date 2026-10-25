@@ -26,30 +26,31 @@ export async function openApprovalInspector(host: ApprovalInspectorHost, request
         }
         selectedRequestIndex = Math.max(0, requests.findIndex(item => item.id === request.id));
         const input = formatAgentConsoleApprovalInput(request.toolName, request.inputSummary);
+        const t = (key: string, params?: Record<string, any>) => formatAgentUiNotice(host.translator, key, params);
         const detail = [
-            `Tool: ${request.toolName}`,
-            `Reason: ${request.reason}`,
-            input ? `Input: ${input}` : 'Input: -',
-            `Timeout: ${request.timeoutMs}ms`,
-            request.expiresAt ? `Expires: ${new Date(request.expiresAt).toLocaleTimeString()}` : ''
+            t('approvalDetailTool', { name: request.toolName }),
+            t('approvalDetailReason', { reason: request.reason }),
+            t('approvalDetailInput', { input: input || '-' }),
+            t('approvalDetailTimeout', { ms: request.timeoutMs }),
+            request.expiresAt ? t('approvalDetailExpires', { time: new Date(request.expiresAt).toLocaleTimeString() }) : ''
         ].join('\n');
-        const action = await host.select(`Approval ${request.id.slice(0, 8)}`, [
+        const action = await host.select(t('approvalSelectTitle', { id: request.id.slice(0, 8) }), [
             {
-                label: 'Approve',
+                label: t('approvalApprove'),
                 value: 'approve',
-                description: 'Allow this request',
+                description: t('approvalApproveDescription'),
                 detail
             },
             {
-                label: 'Deny',
+                label: t('approvalDeny'),
                 value: 'deny',
-                description: 'Reject this request',
+                description: t('approvalDenyDescription'),
                 detail
             },
             {
-                label: 'Copy input',
+                label: t('approvalCopyInput'),
                 value: 'copy-input',
-                description: 'Copy request input summary',
+                description: t('approvalCopyInputDescription'),
                 detail
             }
         ], 0, host.state.consoleOptions.selectHint);
@@ -76,7 +77,7 @@ export async function openApprovalInspector(host: ApprovalInspectorHost, request
             return;
         }
         if (action === 'copy-input') {
-            await host.copyFocusedTextActionHandler(request.inputSummary || request.summary, 'approval input');
+            await host.copyFocusedTextActionHandler(request.inputSummary || request.summary, formatAgentUiNotice(host.translator, 'approvalCopyInput'));
             return;
         }
     }

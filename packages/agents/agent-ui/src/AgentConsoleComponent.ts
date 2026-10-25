@@ -2987,10 +2987,10 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
 
     protected async openSettingsThinkingLevel(): Promise<boolean> {
         const tiers: EffortLevel[] = ['low', 'medium', 'high', 'max'];
-        const selected = await this.select('Settings · Thinking Level', tiers.map(tier => ({
+        const selected = await this.select(formatAgentUiLabel(this.translator, 'agent.menu.settings.thinkingLevelTitle', 'Settings · Thinking Level'), tiers.map(tier => ({
             label: `${tier === this.modelReasoningEffort ? '● ' : '  '}${tier}`,
             value: tier,
-            description: tier === this.modelReasoningEffort ? 'current level' : 'set reasoning effort'
+            description: formatAgentUiNotice(this.translator, tier === this.modelReasoningEffort ? 'currentLevel' : 'setReasoningEffort')
         })), Math.max(0, tiers.indexOf(this.modelReasoningEffort)), 'enter apply   esc close') as EffortLevel | undefined;
         if (!selected) return true;
         await this.setModelReasoningEffort(selected);
@@ -3106,14 +3106,14 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         const fullUrl = this.state.consoleOptions?.shareBaseUrl
             ? `${this.state.consoleOptions.shareBaseUrl.replace(/\/+$/, '')}${url}`
             : url;
-        const selected = await this.select('Session share', [
-            { label: 'Share created', value: 'info', description: `token ${String(token).slice(0, 8)}… · ${new Date().toLocaleString()}` },
-            { label: fullUrl, value: 'copy', description: 'copy the share link' },
-            { label: `Revoke (${String(token).slice(0, 8)}…)`, value: 'revoke', description: 'permanently disable this share' }
+        const selected = await this.select(formatAgentUiNotice(this.translator, 'sessionShareTitle'), [
+            { label: formatAgentUiNotice(this.translator, 'shareCreated'), value: 'info', description: `token ${String(token).slice(0, 8)}… · ${new Date().toLocaleString()}` },
+            { label: fullUrl, value: 'copy', description: formatAgentUiNotice(this.translator, 'shareCopyDescription') },
+            { label: formatAgentUiNotice(this.translator, 'shareRevoke', { id: String(token).slice(0, 8) }), value: 'revoke', description: formatAgentUiNotice(this.translator, 'shareRevokeDescription') }
         ], 1, 'enter select   esc close');
         if (!selected) return;
         if (selected === 'copy') {
-            await this.copyFocusedTextActionHandler(fullUrl, 'share link');
+            await this.copyFocusedTextActionHandler(fullUrl, formatAgentUiNotice(this.translator, 'shareLinkLabel'));
             return;
         }
         if (selected === 'revoke') {
@@ -3526,9 +3526,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         try {
             const result = await initAgentsDoc({ force, root: this.workspace || this.options.ui?.console?.workspace, fileAdapter: this.resolveFileAdapter() ?? undefined });
             if (result.created) {
-                this.pushCommandOutput('/init', `Created ${result.file}`);
+                this.pushCommandOutput('/init', formatAgentUiNotice(this.translator, 'agentsDocCreatedOutput', { file: result.file }));
             } else {
-                this.pushCommandOutput('/init', `AGENTS.md ${result.reason}`);
+                this.pushCommandOutput('/init', formatAgentUiNotice(this.translator, 'agentsDocStatusOutput', { reason: result.reason }));
             }
         } catch (error) {
             this.notify(formatAgentUiNotice(this.translator, 'failedCreateAgents', { error: error instanceof Error ? error.message : String(error) }));

@@ -156,7 +156,7 @@ export async function runTitleCommand(host: AgentConsoleRuntimeHost, args?: stri
     const parsed = String(args || '').trim();
     if (!parsed || parsed.toLowerCase() === 'list') {
         const current = host.state.titleFields;
-        host.pushCommandOutput('/title list', `Window title: ${current.join(', ')}. Use /title set field1,field2 or unset field.`);
+        host.pushCommandOutput('/title list', formatAgentUiNotice(host.translator, 'windowTitleFields', { fields: current.join(', ') }));
         return true;
     }
     const [verb, ...rest] = parsed.split(/\s+/);

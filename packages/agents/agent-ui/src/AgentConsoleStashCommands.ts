@@ -17,7 +17,8 @@ export async function runStashCommand(host: StashCommandHost, args?: string): Pr
             host.notify(formatAgentUiNotice(host.translator, 'noStashedDrafts'));
             return true;
         }
-        host.pushCommandOutput('/stash list', `Stashed drafts: ${names.map(name => `${name} (${stashes[name].length} chars)`).join(', ')}.`);
+        const list = names.map(name => formatAgentUiNotice(host.translator, 'stashedDraftEntry', { name: name, chars: stashes[name].length })).join(', ');
+        host.pushCommandOutput('/stash list', formatAgentUiNotice(host.translator, 'stashedDraftsTitle', { list: list }));
         return true;
     }
     const [verb, ...rest] = parsed.split(/\s+/);

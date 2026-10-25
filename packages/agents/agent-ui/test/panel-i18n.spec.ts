@@ -2,7 +2,7 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { agentUiChinese, agentUiEnglish } from '../src/agent-ui.i18n';
 import { buildAgentConsoleHelpOptions } from '../src/AgentConsoleCommandRegistry';
-import { runStatusCommand } from '../src/AgentConsoleRuntimeCommands';
+import { runStatusCommand, runTitleCommand } from '../src/AgentConsoleRuntimeCommands';
 import {
     AgentConsoleCommandOutputsPanelComponent,
     AgentConsoleJobsPanelComponent,
@@ -29,6 +29,12 @@ import {
     refreshUsageDigest
 } from '../src/AgentConsoleDiagnosticsView';
 import { openHarnessAudit, openHarnessProfile } from '../src/AgentConsoleDiagnosticsHandlers';
+import { runBackgroundTasksCommandView } from '../src/AgentConsoleBackgroundTaskCommands';
+import { runIdeCommand } from '../src/AgentConsoleIdeCommands';
+import { runQueueCommand } from '../src/AgentConsoleRpcCommands';
+import { runStashCommand } from '../src/AgentConsoleStashCommands';
+import { handleVoiceCommand } from '../src/AgentConsoleVoiceHandlers';
+import { openApprovalInspector } from '../src/AgentConsoleApprovalCommands';
 import { runDebugConfigCommand, runMemoriesCommand, runPersonalityCommand } from '../src/AgentConsolePreferenceCommands';
 import { runAppsCommand } from '../src/AgentConsoleExtensionCommands';
 import { AgentConsoleComponent } from '../src/AgentConsoleComponent';
@@ -529,5 +535,135 @@ export class PanelI18nTest {
         expect(calls[0].query).toEqual('needle');
         expect(calls[0].copy.plain).toEqual('翻页 · Esc 关闭 · ↑↓ 滚动');
         expect(calls[0].copy.withMatches).toEqual('翻页 {index}/{total} · Esc 关闭 · ↑↓ 滚动');
+    }
+    @Test('command output titles and rows are localized')
+    async commandOutputsLocalized() {
+        const outputs: Array<{ command: string; text: string }> = [];
+        const base = {
+            translator: zh,
+            state: { sessionId: 's1', titleFields: ['model', 'tokens'] },
+            notify: () => { /* unused */ },
+            pushCommandOutput: (command: string, text: string) => { outputs.push({ command, text }); }
+        };
+        await runTitleCommand(base as any, 'list');
+        expect(outputs[0].text).toEqual('窗口标题：model, tokens。使用 /title set field1,field2 或 unset field 修改。');
+
+        await runStashCommand({
+            ...base,
+            stashStore: { load: async () => ({ draft: 'hello' }) },
+            resolveHistoryWorkspace: () => '/tmp/ws'
+        } as any, 'list');
+        expect(outputs[1].text).toEqual('暂存草稿：draft（5 字符）。');
+
+        await runQueueCommand({
+            ...base,
+            appRpc: null,
+            runtime: { setPlanMode: () => { /* unused */ } },
+            queuedPrompts: new Map([['s1', [{ command: true, input: 'do it', attachments: [{ id: 'a1' }] }]]]),
+            select: async () => undefined,
+            rpcRequestContext: () => ({ sessionEpoch: 0 }),
+            revokeShare: async () => true
+        } as any, 'list');
+        expect(outputs[2].text.split('\n')).toEqual(['排队提示（1）：', '1. [命令] do it（+1 个附件）']);
+
+        await runBackgroundTasksCommandView({
+            ...base,
+            state: { sessionId: 's1', backgroundTaskFeed: [{ id: 't1', sessionId: 's1', status: 'running', goal: 'fix tests' }] },
+            backgroundTasks: {}
+        } as any, 'all');
+        expect(outputs[3].text.split('\n')).toEqual(['后台任务（all）：', 'RUNNING t1 [会话 s1] - fix tests']);
+    }
+
+    @Test('IDE and voice output copy is localized')
+    async ideAndVoiceOutputsLocalized() {
+        const outputs: Array<{ command: string; text: string }> = [];
+        const notices: string[] = [];
+        await runIdeCommand(
+            { getContext: async () => ({ activeFile: '/work/demo/src/main.ts', selection: { startLine: 4, endLine: 9 }, platform: 'vscode' }) },
+            (message: string) => notices.push(message),
+            (command: string, text: string) => outputs.push({ command, text }),
+            'show',
+            zh
+        );
+        expect(outputs[0].text).toEqual('IDE 上下文：/work/demo/src/main.ts 第 4-9 行 (vscode)');
+
+        const voiceCtx: any = {
+            translator: zh,
+            state: { sessionId: 's1' },
+            sessionService: {
+                getVoiceStatus: async () => ({ available: true, active: true, bufferedBytes: 12, missing: [] }),
+                endVoiceSession: async () => ({ ok: true, transcribed: 'hello', reply: 'hi there' })
+            },
+            audioCapture: null,
+            audioPlayback: null,
+            notify: () => { /* unused */ },
+            pushCommandOutput: (command: string, text: string) => { outputs.push({ command, text }); },
+            getCaptureSessionId: () => '',
+            setCaptureSessionId: () => { /* unused */ },
+            getCaptureFeed: async () => { /* unused */ },
+            setCaptureFeed: () => { /* unused */ }
+        };
+        await handleVoiceCommand(voiceCtx, 'status');
+        expect(outputs[1].text.split('\n')).toEqual(['语音 可用 · 会话 活动 · 缓冲 12 字节', '用法：/voice start|stop|cancel|status']);
+        await handleVoiceCommand(voiceCtx, 'stop');
+        expect(outputs[2].text).toEqual('转录：hello\n回复：hi there');
+    }
+
+    @Test('approval inspector title, options and detail are localized')
+    async approvalInspectorLocalized() {
+        let title = '';
+        let options: any[] = [];
+        const request = { id: 'abcd1234ef', toolName: 'bash', reason: '需要审批', inputSummary: '', timeoutMs: 30000 };
+        const host: any = {
+            translator: zh,
+            state: { consoleOptions: { selectHint: 'hint' } },
+            notify: () => { /* unused */ },
+            selectApprovalRequest: async () => ({ ...request }),
+            select: async (menuTitle: string, menuOptions: any[]) => {
+                title = menuTitle;
+                options = menuOptions;
+                return undefined;
+            },
+            applyApprovalDecision: async () => true,
+            refreshPendingApprovals: async () => { /* unused */ },
+            copyFocusedTextActionHandler: async () => { /* unused */ }
+        };
+        await openApprovalInspector(host, [{ ...request } as any]);
+        expect(title).toEqual('审批 abcd1234');
+        expect(options.map(option => option.label)).toEqual(['批准', '拒绝', '复制输入']);
+        expect(options[0].description).toEqual('允许该请求');
+        expect(options[0].detail.split('\n').filter(Boolean)).toEqual(['工具：bash', '原因：需要审批', '输入：-', '超时：30000ms']);
+    }
+
+    @Test('share panel and thinking-level dialogs are localized')
+    async shareAndThinkingDialogsLocalized() {
+        let shareTitle = '';
+        let shareOptions: any[] = [];
+        let shareLabel = '';
+        const shareFake: any = Object.create(AgentConsoleComponent.prototype);
+        shareFake.translator = zh;
+        shareFake.state = { consoleOptions: {} };
+        shareFake.select = async (title: string, options: any[]) => { shareTitle = title; shareOptions = options; return 'copy'; };
+        Object.defineProperty(shareFake, 'copyFocusedTextActionHandler', {
+            value: async (_text: string, label: string) => { shareLabel = label; }
+        });
+        await shareFake.openSharePanel('tok123456789', '/s/tok123456789');
+        expect(shareTitle).toEqual('会话分享');
+        expect(shareOptions[0].label).toEqual('已创建分享');
+        expect(shareOptions[1].description).toEqual('复制分享链接');
+        expect(shareOptions[2].label).toEqual('撤销（tok12345…）');
+        expect(shareLabel).toEqual('分享链接');
+
+        let thinkingTitle = '';
+        let thinkingOptions: any[] = [];
+        const thinkingFake: any = Object.create(AgentConsoleComponent.prototype);
+        thinkingFake.translator = zh;
+        thinkingFake.modelReasoningEffort = 'medium';
+        thinkingFake.select = async (title: string, options: any[]) => { thinkingTitle = title; thinkingOptions = options; return undefined; };
+        thinkingFake.setModelReasoningEffort = async () => true;
+        await thinkingFake.openSettingsThinkingLevel();
+        expect(thinkingTitle).toEqual('设置 · 思考强度');
+        expect(thinkingOptions.find(option => option.value === 'medium').description).toEqual('当前等级');
+        expect(thinkingOptions.find(option => option.value === 'high').description).toEqual('设置推理强度');
     }
 }

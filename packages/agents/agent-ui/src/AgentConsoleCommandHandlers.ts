@@ -384,7 +384,7 @@ async function handleTitle(ctx: CommandHandlerContext, args: string, _resolved: 
     await ctx.refreshSessions();
     ctx.state.setTitle(title);
     ctx.updateTerminalTitle();
-    ctx.pushCommandOutput('/title', title ? `Session titled "${title}".` : 'Session title cleared.');
+    ctx.pushCommandOutput('/title', formatAgentUiNotice(ctx.translator, title ? 'sessionTitled' : 'sessionTitleCleared', title ? { title: title } : undefined));
     return true;
 }
 
@@ -399,7 +399,7 @@ async function handleSnapshot(ctx: CommandHandlerContext, args: string, _resolve
     const label = String(args || '').trim() || undefined;
     const snapshotId = await ctx.sessionService.createSessionSnapshot(snapshotSessionId, label);
     if (snapshotId) {
-        ctx.pushCommandOutput('/snapshot', `Snapshot created: ${snapshotId}`);
+        ctx.pushCommandOutput('/snapshot', formatAgentUiNotice(ctx.translator, 'snapshotCreatedOutput', { id: snapshotId }));
     } else {
         ctx.notify(formatAgentUiNotice(ctx.translator, 'snapshotCreationFailed'));
     }

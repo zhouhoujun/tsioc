@@ -28,7 +28,7 @@ export async function runApproveRetryCommand(host: AgentConsoleRpcCommandHost): 
         return true;
     }
     const action = actions[0];
-    const selected = await host.select('Approve retry', actions.map((item: any) => {
+    const selected = await host.select(formatAgentUiNotice(host.translator, 'approveRetryTitle'), actions.map((item: any) => {
         const input = formatAgentConsoleApprovalInput(item.toolName, item.inputSummary);
         return {
             label: `${item.toolName}${input ? ` · ${input}` : ''}`,
@@ -59,9 +59,11 @@ export async function runQueueCommand(host: AgentConsoleRpcCommandHost, args?: s
             return true;
         }
         const lines = queue.map((entry, index) =>
-            `${index + 1}. ${entry.command ? '[command] ' : ''}${entry.input}${entry.attachments.length ? ` (+${entry.attachments.length} attachment${entry.attachments.length === 1 ? '' : 's'})` : ''}`
+            `${index + 1}. ${entry.command ? formatAgentUiNotice(host.translator, 'queuedCommandBadge') : ''}${entry.input}${entry.attachments.length
+                ? formatAgentUiNotice(host.translator, entry.attachments.length === 1 ? 'queuedAttachmentSuffix' : 'queuedAttachmentsSuffix', { count: entry.attachments.length })
+                : ''}`
         );
-        host.pushCommandOutput('/queue list', `Queued prompts (${queue.length}):\n${lines.join('\n')}`);
+        host.pushCommandOutput('/queue list', `${formatAgentUiNotice(host.translator, 'queuedPromptsTitle', { count: queue.length })}\n${lines.join('\n')}`);
         return true;
     }
     if (parsed.toLowerCase() === 'clear') {
@@ -141,7 +143,7 @@ export async function runUnshareCommand(host: AgentConsoleRpcCommandHost, args?:
             host.notify(formatAgentUiNotice(host.translator, 'activeSharesSession'));
             return true;
         }
-        const selected = await host.select('Active shares', shares.map((share: any) => ({
+        const selected = await host.select(formatAgentUiNotice(host.translator, 'activeSharesTitle'), shares.map((share: any) => ({
             label: `${String(share.token || '').slice(0, 12)}…  ${String(share.url || '')}`,
             value: String(share.token || ''),
             description: new Date(Number(share.createdAt) || Date.now()).toLocaleString()

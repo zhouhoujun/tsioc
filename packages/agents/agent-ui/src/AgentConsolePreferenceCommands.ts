@@ -44,7 +44,7 @@ export async function runHooksCommand(host: PreferenceCommandHost): Promise<bool
         const functions = entry.functions.length ? `fn: ${entry.functions.join(', ')}` : '';
         return `${entry.stage}${commands ? ` [${commands}]` : ''}${functions ? ` [${functions}]` : ''}`;
     });
-    host.pushCommandOutput('/hooks', `Registered hooks:\n${lines.join('\n')}`);
+    host.pushCommandOutput('/hooks', `${formatAgentUiNotice(host.translator, 'hooksRegisteredTitle')}\n${lines.join('\n')}`);
     return true;
 }
 
@@ -65,7 +65,7 @@ export async function runMemoriesCommand(host: PreferenceCommandHost, args?: str
             host.notify(projectId ? formatAgentUiNotice(host.translator, 'noProjectMemories') : formatAgentUiNotice(host.translator, 'projectMemoryRequiresWorkspace'));
             return true;
         }
-        host.pushCommandOutput('/memories list', `Project memories (${records.length}):\n${records.map(record => `- ${record.key}: ${record.value}`).join('\n')}`);
+        host.pushCommandOutput('/memories list', `${formatAgentUiNotice(host.translator, 'projectMemoriesTitle', { count: records.length })}\n${records.map(record => `- ${record.key}: ${record.value}`).join('\n')}`);
         return true;
     }
     if (parsed.startsWith('add ')) {
@@ -115,7 +115,7 @@ export async function runPersonalityCommand(host: PreferenceCommandHost, args?: 
     }
     if (verb === 'list') {
         const lines = names.map(name => `${name === host.options.ui?.personality ? '*' : ' '} ${name}`);
-        host.pushCommandOutput('/personality list', `Personality presets:\n${lines.join('\n')}`);
+        host.pushCommandOutput('/personality list', `${formatAgentUiNotice(host.translator, 'personalityPresetsTitle')}\n${lines.join('\n')}`);
         return true;
     }
     if (verb === 'set') {

@@ -134,8 +134,8 @@ export async function runBackgroundTasksCommandView(host: BackgroundTaskCommandH
     const lines = tasks.map(task => {
         const status = String(task.status).toUpperCase();
         const meta = task.finishedAt ? ` (${new Date(task.finishedAt).toLocaleTimeString()})` : '';
-        return `${status}${meta} ${task.id} [session ${task.sessionId}] - ${task.goal}`;
+        return formatAgentUiNotice(host.translator, 'backgroundTaskLine', { status: status, meta: meta, id: task.id, sessionId: task.sessionId, goal: task.goal });
     });
-    host.pushCommandOutput(`/ps ${filter}`, `Background tasks (${filter}):\n${lines.join('\n')}`);
+    host.pushCommandOutput(`/ps ${filter}`, `${formatAgentUiNotice(host.translator, 'backgroundTasksTitle', { filter: filter })}\n${lines.join('\n')}`);
     return true;
 }
