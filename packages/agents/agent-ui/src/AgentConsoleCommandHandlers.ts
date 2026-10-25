@@ -236,18 +236,18 @@ async function handleCopy(ctx: CommandHandlerContext, args: string, _resolved: {
     if (args) {
         switch (args) {
             case 'input':
-                await ctx.copyFocusedTextActionHandler(ctx.state.input, 'input');
+                await ctx.copyFocusedTextActionHandler(ctx.state.input, formatAgentUiNotice(ctx.translator, 'copyLabelInput'));
                 return true;
             case 'workspace':
-                await ctx.copyFocusedTextActionHandler(ctx.state.workspace, 'workspace');
+                await ctx.copyFocusedTextActionHandler(ctx.state.workspace, formatAgentUiNotice(ctx.translator, 'copyLabelWorkspace'));
                 return true;
             case 'session':
-                await ctx.copyFocusedTextActionHandler(ctx.state.sessionId, 'session');
+                await ctx.copyFocusedTextActionHandler(ctx.state.sessionId, formatAgentUiNotice(ctx.translator, 'copyLabelSession'));
                 return true;
             case 'model':
                 await ctx.copyFocusedTextActionHandler(
                     [ctx.state.provider, ctx.state.model].filter(Boolean).join(' / '),
-                    'model'
+                    formatAgentUiNotice(ctx.translator, 'copyLabelModel')
                 );
                 return true;
             default:
@@ -258,7 +258,7 @@ async function handleCopy(ctx: CommandHandlerContext, args: string, _resolved: {
     const msgs = ctx.state.messages;
     for (let i = msgs.length - 1; i >= 0; i--) {
         if (msgs[i].role === 'assistant' && msgs[i].content) {
-            await ctx.copyFocusedTextActionHandler(msgs[i].content, 'assistant message');
+            await ctx.copyFocusedTextActionHandler(msgs[i].content, formatAgentUiNotice(ctx.translator, 'copyLabelAssistantMessage'));
             return true;
         }
     }

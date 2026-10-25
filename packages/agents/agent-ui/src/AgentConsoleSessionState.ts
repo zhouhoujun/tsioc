@@ -6100,7 +6100,7 @@ export class AgentConsoleSessionState {
             }
             switch (normalized) {
                 case 'copy':
-                    await this.copyFocusedTextAction?.(this.buildSelectedTaskCopyText(), 'selected task');
+                    await this.copyFocusedTextAction?.(this.buildSelectedTaskCopyText(), this.translateLabel('agent.notice.copyLabelSelectedTask', undefined, 'selected task'));
                     return true;
                 case 'enter':
                     if (this.selectedTask?.id) {
@@ -6166,7 +6166,7 @@ export class AgentConsoleSessionState {
             }
             switch (normalized) {
                 case 'copy':
-                    await this.copyFocusedTextAction?.(this.buildSelectedScheduledTaskCopyText(), 'scheduled job');
+                    await this.copyFocusedTextAction?.(this.buildSelectedScheduledTaskCopyText(), this.translateLabel('agent.notice.copyLabelScheduledJob', undefined, 'scheduled job'));
                     return true;
                 case 'enter':
                 case 'p':
@@ -6216,7 +6216,7 @@ export class AgentConsoleSessionState {
             }
             switch (normalized) {
                 case 'copy':
-                    await this.copyFocusedTextAction?.(this.selectedTool?.name || '', 'tool name');
+                    await this.copyFocusedTextAction?.(this.selectedTool?.name || '', this.translateLabel('agent.notice.copyLabelToolName', undefined, 'tool name'));
                     return true;
                 case 'enter':
                 case 'approve':
@@ -6254,7 +6254,7 @@ export class AgentConsoleSessionState {
             }
             switch (normalized) {
                 case 'copy':
-                    await this.copyFocusedTextAction?.(this.buildSelectedToolRunCopyText(), 'tool run');
+                    await this.copyFocusedTextAction?.(this.buildSelectedToolRunCopyText(), this.translateLabel('agent.notice.copyLabelToolRun', undefined, 'tool run'));
                     return true;
                 case 'down':
                     this.moveToolRunSelection(1);
@@ -6285,7 +6285,7 @@ export class AgentConsoleSessionState {
             }
             switch (normalized) {
                 case 'copy':
-                    await this.copyFocusedTextAction?.(this.buildSelectedSessionCopyText(), 'session');
+                    await this.copyFocusedTextAction?.(this.buildSelectedSessionCopyText(), this.translateLabel('agent.notice.copyLabelSession', undefined, 'session'));
                     return true;
                 case 'down':
                     this.moveSessionSelection(1);

@@ -575,4 +575,20 @@ export const AGENT_UI_NOTICE_ZH: NestedMessages = {
   healthLspTools: '{count} 个工具可用',
   healthNoLspTools: '没有可用的 LSP 工具',
 
+
+  copyLabelInput: '输入',
+  copyLabelWorkspace: '工作区',
+  copyLabelSession: '会话',
+  copyLabelAssistantMessage: '助手消息',
+  copyLabelTimelineEvent: '时间线事件',
+  copyLabelSelectedMessage: '选中消息',
+  copyLabelReview: '评审结果',
+  copyLabelSelectedApproval: '选中审批',
+  copyLabelSelectedTask: '选中任务',
+  copyLabelScheduledJob: '定时任务',
+  copyLabelToolName: '工具名',
+  copyLabelToolRun: '工具运行记录',
+
+  copyLabelModel: '模型',
+
 };

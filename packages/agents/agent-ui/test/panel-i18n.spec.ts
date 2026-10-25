@@ -802,4 +802,29 @@ export class PanelI18nTest {
         expect(detail.stats).toEqual('引用 snap-1 · 文件 1');
         expect(detail.ref).toEqual('snap-1');
     }
+    @Test('copy notice labels are localized through the state and command contexts')
+    async copyLabelsLocalized() {
+        const notices: string[] = [];
+        const component = createConsole(new RuntimeStub(), new SchedulerStub());
+        (component as any).translator = zh;
+        (component as any).surfaceAccessor = { writeTerminalClipboardText: () => true };
+        (component as any).notify = (message: string) => notices.push(message);
+        (component as any).state.configure({ sessionId: 's1' });
+        (component as any).state.setInput('draft text');
+        (component as any).state.setWorkspace('/tmp/ws');
+        await (component as any).handleCommand('/copy input');
+        expect(notices[0]).toEqual('已复制 输入。');
+        await (component as any).handleCommand('/copy workspace');
+        expect(notices[1]).toEqual('已复制 工作区。');
+        await (component as any).handleCommand('/copy session');
+        expect(notices[2]).toEqual('已复制 会话。');
+
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl(), zh as any);
+        const labels: string[] = [];
+        state.copyFocusedTextAction = async (_text: string, label: string) => { labels.push(label); };
+        state.setSelectedToolName('bash');
+        state.setToolsFocused(true);
+        await state.handleFocusKey('copy', undefined as any);
+        expect(labels[0]).toEqual('工具名');
+    }
 }

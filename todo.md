@@ -1690,3 +1690,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **真实 TUI（zh-CN）复核**：正常轮次 → `● 事件 · 已收到请求`、`✓ 事件 · 轮次已完成 (2.6s)`；Esc 中断 → `正在取消当前轮次…`、`✓ 已取消 · 轮次已取消 (4.4s)`。
 - **门禁**：agent-ui **1690 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
 - **备注**：同一行里的 `unchanged`（上下文策略标识）、`light`（级别）、工具名、模型名仍为标识符；`AppRpcServer` 与 EventBridge 存储的 content 保持英文原样（数据），本地化只发生在渲染期。
+
+## 2026-10-25 复制通知对象名中文化（`/copy` 与各焦点面板的 `y` 复制）
+- **现象（zh-CN 真实 TUI）**：`/copy session` 显示 `已复制 session。`、空输入时为 `input 没有可复制的内容。`；面板内 `y` 复制同样是 `已复制 selected message。/tool name。/selected task。/timeline event。…`，即**通知模板已中文，但 `{label}` 参数仍是英文**。
+- **做法**：notice catalog 新增 13 个 `copyLabel*`（input/workspace/session/model/assistantMessage/timelineEvent/selectedMessage/review/selectedApproval/selectedTask/scheduledJob/toolName/toolRun），key 总数 564 → **577**（同步 locale 快照）。
+  - 命令侧（`AgentConsoleCommandHandlers` 的 `/copy input|workspace|session|model|<assistant>`）用 `formatAgentUiNotice(ctx.translator, 'copyLabel…')`；
+  - 状态/焦点侧（`AgentConsoleSessionState` 的 tasks/jobs/tools/toolRuns/sessions 复制，`AgentConsoleFocusLayers` 的 timeline/message/review/approval 复制）走既有的 `state.translateLabel('agent.notice.copyLabel…')`，不引入新的 translator 依赖。
+- **边界**：`/copy` 的**子命令名**（`input|workspace|session|model`）仍是命令参数标识，保留原文；复制内容本身（文本、id、路径）为数据。
+- **测试**：`panel-i18n.spec.ts` 31 → **32 条**：真实 `handleCommand('/copy input|workspace|session')` 断言 `已复制 输入。/工作区。/会话。`，并通过 `setToolsFocused(true)` + `handleFocusKey('copy')` 走真实焦点路径断言 `工具名`。
+- **真实 TUI（zh-CN）复核**：`/copy session` → `已复制 会话。`；`/copy input`（空）→ `输入 没有可复制的内容。`
+- **门禁**：agent-ui **1691 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。

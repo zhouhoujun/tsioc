@@ -302,7 +302,7 @@ export abstract class AgentConsoleFocusLayers {
     }
 
     private async copyTimelineEvent(): Promise<boolean> {
-        await this.state.copyFocusedTextAction?.(this.state.timelineEventDetailLines.join('\n'), 'timeline event');
+        await this.state.copyFocusedTextAction?.(this.state.timelineEventDetailLines.join('\n'), this.state.translateLabel('agent.notice.copyLabelTimelineEvent', undefined, 'timeline event'));
         return true;
     }
 
@@ -315,7 +315,7 @@ export abstract class AgentConsoleFocusLayers {
     }
 
     private async copySelectedMessage(): Promise<boolean> {
-        await this.state.copyFocusedTextAction?.(this.state.selectedMessage?.content || '', 'selected message');
+        await this.state.copyFocusedTextAction?.(this.state.selectedMessage?.content || '', this.state.translateLabel('agent.notice.copyLabelSelectedMessage', undefined, 'selected message'));
         return true;
     }
 
@@ -423,10 +423,10 @@ export abstract class AgentConsoleFocusLayers {
     private async cancelFocusedTask(): Promise<boolean> { await this.state.cancelFocusedCodingTask(); return true; }
     private async retryFocusedTask(): Promise<boolean> { await this.state.retryFocusedCodingTask(); return true; }
     private async copyReview(): Promise<boolean> {
-        await this.state.copyFocusedTextAction?.(this.state.buildSelectedReviewCopyText(), 'review'); return true;
+        await this.state.copyFocusedTextAction?.(this.state.buildSelectedReviewCopyText(), this.state.translateLabel('agent.notice.copyLabelReview', undefined, 'review')); return true;
     }
     private async copyApproval(): Promise<boolean> {
-        await this.state.copyFocusedTextAction?.(this.state.buildSelectedApprovalCopyText(), 'selected approval'); return true;
+        await this.state.copyFocusedTextAction?.(this.state.buildSelectedApprovalCopyText(), this.state.translateLabel('agent.notice.copyLabelSelectedApproval', undefined, 'selected approval')); return true;
     }
     private async resolveApprovalAlways(): Promise<boolean> {
         const state = this.state;

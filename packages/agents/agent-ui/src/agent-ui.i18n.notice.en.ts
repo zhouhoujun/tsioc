@@ -575,4 +575,20 @@ export const AGENT_UI_NOTICE_EN: NestedMessages = {
   healthLspTools: '{count} tools available',
   healthNoLspTools: 'no LSP tools available',
 
+
+  copyLabelInput: 'input',
+  copyLabelWorkspace: 'workspace',
+  copyLabelSession: 'session',
+  copyLabelAssistantMessage: 'assistant message',
+  copyLabelTimelineEvent: 'timeline event',
+  copyLabelSelectedMessage: 'selected message',
+  copyLabelReview: 'review',
+  copyLabelSelectedApproval: 'selected approval',
+  copyLabelSelectedTask: 'selected task',
+  copyLabelScheduledJob: 'scheduled job',
+  copyLabelToolName: 'tool name',
+  copyLabelToolRun: 'tool run',
+
+  copyLabelModel: 'model',
+
 };
