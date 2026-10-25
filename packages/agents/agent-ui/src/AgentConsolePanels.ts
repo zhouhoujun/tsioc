@@ -2,7 +2,7 @@ import { Attribute, Component } from '@tsdi/components';
 import { formatCompactNumber } from '@tsdi/core';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
-import { formatAgentUiLabel, formatAgentPanelLabel as panelLabel, formatAgentPanelStatusLabel as panelStatusLabel } from './agent-ui.i18n';
+import { formatAgentUiLabel, formatAgentKeymapActionLabel, formatAgentPanelLabel as panelLabel, formatAgentPanelStatusLabel as panelStatusLabel } from './agent-ui.i18n';
 import { formatScheduledTaskDetailLines } from './AgentConsoleScheduledTaskFormat';
 import { formatReviewHeaderMeta, formatReviewSelectionMeta, formatReviewStatsMeta } from './AgentConsoleReviewPanelFormat';
 import { resolveMessageRowOffset } from './AgentConsoleTranscriptLayout';
@@ -3959,14 +3959,14 @@ export class AgentConsoleSelectPanelComponent {
                 <label class="which-key-group-header" v-style="groupHeaderStyle">{{group.label}}</label>
                 <label class="which-key-row" v-style="rowStyle" v-for="binding in group.items">
                     <span v-style="keyStyle">{{binding.key}}</span>
-                    <span v-style="actionStyle"> {{binding.action}}</span>
+                    <span v-style="actionStyle"> {{binding.label || binding.action}}</span>
                 </label>
             </template>
         </template>
         <template v-else>
             <label class="which-key-row" v-style="rowStyle" v-for="binding in bindings">
                 <span v-style="keyStyle">{{binding.key}}</span>
-                <span v-style="actionStyle"> {{binding.action}}</span>
+                <span v-style="actionStyle"> {{binding.label || binding.action}}</span>
             </label>
         </template>
         <label class="which-key-hint" v-style="hintStyle">{{hintText}}</label>
@@ -3994,8 +3994,8 @@ export class AgentConsoleWhichKeyPanelComponent {
         return this.state?.theme || defaultAgentConsoleTheme;
     }
 
-    get bindings(): Array<{ key: string; action: string }> {
-        return this.state.whichKeyBindings;
+    get bindings(): Array<{ key: string; action: string; label: string }> {
+        return this.state.whichKeyBindings.map(binding => ({ ...binding, label: formatAgentKeymapActionLabel(this.translator, binding.action) }));
     }
 
     get bindingCount(): string {
@@ -4006,8 +4006,8 @@ export class AgentConsoleWhichKeyPanelComponent {
         return this.state.whichKeyLayout === 'grouped';
     }
 
-    get groupedBindings(): Array<{ label: string; items: Array<{ key: string; action: string }> }> {
-        const groups = new Map<string, Array<{ key: string; action: string }>>();
+    get groupedBindings(): Array<{ label: string; items: Array<{ key: string; action: string; label: string }> }> {
+        const groups = new Map<string, Array<{ key: string; action: string; label: string }>>();
         for (const b of this.bindings) {
             const label = AgentConsoleWhichKeyPanelComponent.ACTION_GROUPS[b.action] || 'Other';
             let arr = groups.get(label);

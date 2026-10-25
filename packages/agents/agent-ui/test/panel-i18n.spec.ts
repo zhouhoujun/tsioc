@@ -1132,4 +1132,25 @@ export class PanelI18nTest {
         const enKeymap = enState.selectMenu?.options.find(option => option.value === '/keymap');
         expect(enKeymap?.detail).toContain('string');
     }
+    @Test('keymap action labels follow the locale')
+    async keymapActionLabelsLocalized() {
+        const build = (translator: any) => {
+            const st = state({
+                whichKeyBindings: [
+                    { key: 'ctrl+x n', action: 'new-session' },
+                    { key: 'ctrl+x h', action: 'status-health' },
+                    { key: 'ctrl+x z', action: 'custom-action' }
+                ],
+                whichKeyLayout: 'grouped',
+                whichKeyPage: 0,
+                whichKeyFilterCustom: false
+            });
+            return new AgentConsoleWhichKeyPanelComponent(st, translator);
+        };
+        const zhPanel = build(zh);
+        expect(zhPanel.bindings.map(binding => binding.label)).toEqual(['新建会话', '健康状态', 'custom-action']);
+        expect(zhPanel.groupedBindings.find(group => group.label === '会话')!.items[0].label).toEqual('新建会话');
+        const enPanel = build(en);
+        expect(enPanel.bindings.map(binding => binding.label)).toEqual(['new session', 'health', 'custom-action']);
+    }
 }

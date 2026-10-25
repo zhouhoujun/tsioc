@@ -1805,3 +1805,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **测试**：`panel-i18n.spec.ts` 43 → **44 条**（真实 `openCommandPaletteView`：标题/ hint / `/keymap` 详情 `字符串`，en 保持 `Command palette` / `string`）；catalog 锁步+值级守卫同时覆盖新增 key。
 - **真实 TUI（zh-CN）复核**：`Ctrl+P` 列表描述为中文（`[核心] 查看命令帮助…`）；输入 `key` 过滤后条目详情 `arg...: 字符串`。
 - **门禁**：agent-ui **1705 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
+
+## 2026-10-25 按键映射（which-key 浮层）动作名中文化
+- **现象（zh-CN 真实 TUI，`Ctrl+Alt+K`）**：浮层标题/hint/分组已中文，但 25 条绑定的动作名仍是 `new-session`、`compact`、`toggle-thinking`、`status-health`…（`按键映射（25）` + 英文动作）。
+- **做法**：panel catalog `keymap` 新增 41 个 `action*` key（EN 原名 / ZH 动作名，如 `新建会话/压缩会话/切换推理显示/健康状态/上翻一页/排队后续提示`）；`agent-ui.i18n.ts` 新增 `formatAgentKeymapActionLabel`（`new-session` → `actionNewSession`，未知动作回退原 id）；`AgentConsoleWhichKeyPanelComponent.bindings` 附带 `label`，模板优先渲染 label，分组逻辑仍按原始 action 归类。
+- **兼容性**：`bindings` 结构新增 `label` 字段，`keymap-context` 的 P137 用例同步更新（无 translator 时 label 回退原 action id）。
+- **测试**：`panel-i18n.spec.ts` 44 → **45 条**（zh 三条绑定含未知动作回退、分组内 label；en 对照）；agent-ui **1706 passing**。
+- **真实 TUI（zh-CN）复核**：`Ctrl+Alt+K` → `按键映射（25）`，全部动作中文：`ctrl+x n 新建会话 / ctrl+x c 压缩会话 / … / pageup 上翻一页 / tab 排队后续提示 / ctrl+u 清空输入`。
+- **门禁**：`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。

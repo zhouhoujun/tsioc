@@ -883,8 +883,8 @@ export class AgentConsoleWhichKeyTest {
         ]);
         const panel = new AgentConsoleWhichKeyPanelComponent(state);
         expect(panel.bindings).toEqual([
-            { key: 'ctrl+p', action: 'command-palette' },
-            { key: 'ctrl+alt+k', action: 'which-key-toggle' }
+            { key: 'ctrl+p', action: 'command-palette', label: 'command-palette' },
+            { key: 'ctrl+alt+k', action: 'which-key-toggle', label: 'which-key-toggle' }
         ]);
         expect(panel.bindingCount).toEqual('2');
         expect(panel.hintText).toContain('Esc');
