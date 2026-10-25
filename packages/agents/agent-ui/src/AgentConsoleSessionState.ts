@@ -1323,7 +1323,7 @@ export class AgentConsoleSessionState {
             parts.push(title);
         }
         parts.push(fillTimelineLabel(labels?.headerStart || DEFAULT_TIMELINE_LABELS.headerStart, {
-            time: formatTimelineClockTime(start)
+            time: formatTimelineClockTime(start, this.translator)
         }));
         // P302: the turn header carries session context and start time only.
         // Current step position/status lives on the step boundary row, and the

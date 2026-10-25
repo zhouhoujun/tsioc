@@ -108,7 +108,7 @@ export async function openDelegationTreeView(host: HarnessCommandHost, sessionId
         host.notify(formatAgentUiNotice(host.translator, 'delegationEdgesRecorded', { sessionId: resolvedSessionId }));
         return true;
     }
-    const lines = formatDelegationTree(tree);
+    const lines = formatDelegationTree(tree, host.translator);
     if (!lines.length) {
         host.notify(formatAgentUiNotice(host.translator, 'delegationEdgesRecorded', { sessionId: resolvedSessionId }));
         return true;
@@ -136,7 +136,7 @@ export async function openDelegationLineageView(host: HarnessCommandHost, sessio
         host.notify(formatAgentUiNotice(host.translator, 'parentDelegationEdges', { sessionId: resolvedSessionId }));
         return true;
     }
-    host.pushCommandOutput('/delegation lineage', lineage.map(edge => formatDelegationEdge(edge)).join(' → '));
+    host.pushCommandOutput('/delegation lineage', lineage.map(edge => formatDelegationEdge(edge, host.translator)).join(' → '));
     return true;
 }
 
@@ -162,6 +162,6 @@ export async function openDelegationListView(host: HarnessCommandHost, sessionId
         );
         return true;
     }
-    host.pushCommandOutput('/delegation list', edges.map(edge => formatDelegationEdge(edge)).join(' | '));
+    host.pushCommandOutput('/delegation list', edges.map(edge => formatDelegationEdge(edge, host.translator)).join(' | '));
     return true;
 }

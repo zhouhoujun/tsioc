@@ -43,7 +43,8 @@ import { collectHealthItems } from '../src/AgentConsoleHealthView';
 import { parseAgentConsoleCommandArguments, formatAgentConsoleCommandDiagnosticEcho, getAgentConsoleCommandDefinition } from '../src/AgentConsoleCommandRegistry';
 import { describeWorktreeDiffScope, parseWorktreeDiffArgs } from '../src/AgentConsoleReviewHandlers';
 import { openGitSnapshotDiff, runGitSnapshotsCommand } from '../src/AgentConsoleGitSnapshotCommands';
-import { formatAgentPanelLabel } from '../src/agent-ui.i18n';
+import { agentUiLocale, formatAgentPanelLabel, formatAgentUiDate, formatAgentUiDateTime, formatAgentUiTime } from '../src/agent-ui.i18n';
+import { COMMAND_HANDLERS } from '../src/AgentConsoleCommandHandlers';
 import { formatReviewHeaderMeta, formatReviewSelectionMeta, formatReviewStatsMeta } from '../src/AgentConsoleReviewPanelFormat';
 import { createReviewTask } from './_helpers';
 import { loadInputHistory } from '../src/AgentConsoleInputHelpers';
@@ -1243,5 +1244,52 @@ export class PanelI18nTest {
         await runKeymapCommand(setHost.host, 'record status-health');
         expect(notices.join('\n')).toContain('新建会话');
         expect(notices.join('\n')).toContain('健康状态');
+    }
+
+    @Test('date and time copy follows the UI locale, not the host locale')
+    async dateCopyFollowsLocale() {
+        const stamp = new Date(2026, 9, 25, 14, 30, 5).getTime();
+        const zhLocale = { ...zh, currentLocale: 'zh-CN' };
+        const enLocale = { ...en, currentLocale: 'en' };
+        expect(formatAgentUiDate(stamp, zhLocale)).toEqual('2026/10/25');
+        expect(formatAgentUiDateTime(stamp, zhLocale)).toEqual('2026/10/25 14:30:05');
+        expect(formatAgentUiTime(stamp, zhLocale)).toEqual('14:30:05');
+        expect(formatAgentUiDate(stamp, enLocale)).toEqual('10/25/2026');
+        expect(formatAgentUiDate(stamp, null)).toEqual(new Date(stamp).toLocaleDateString());
+        expect(formatAgentUiDate(undefined, zhLocale)).toEqual('');
+        expect(formatAgentUiDate(Number.NaN, zhLocale)).toEqual('');
+        expect(agentUiLocale({ translate: () => undefined, currentLocale: 'not a locale!' })).toEqual(undefined);
+        expect(agentUiLocale({ translate: () => undefined })).toEqual(undefined);
+    }
+
+    @Test('/projects and /threads last-active detail uses the UI locale')
+    async navDatesFollowLocale() {
+        const stamp = new Date(2026, 9, 25, 14, 30, 5).getTime();
+        const run = async (translator: any) => {
+            let options: any[] = [];
+            const ctx: any = {
+                translator,
+                state: {
+                    projects: [{ key: 'k', label: 'demo', sessionCount: 1, lastActive: stamp }],
+                    threads: [{ key: 't', label: 'demo', sessionCount: 1, lastActive: stamp }],
+                    sessions: [],
+                    consoleOptions: {},
+                    closeReview: () => undefined,
+                    closeGitSnapshotDetail: () => undefined
+                },
+                select: async (_title: string, opts: any[]) => { options = opts; return undefined; },
+                refreshSessions: async () => undefined,
+                notify: () => undefined
+            };
+            await COMMAND_HANDLERS['/projects'](ctx, '', { command: '/projects', matches: [] });
+            const projectDetail = options[0]?.detail;
+            await COMMAND_HANDLERS['/threads'](ctx, '', { command: '/threads', matches: [] });
+            return { projectDetail, threadDetail: options[0]?.detail };
+        };
+        const zhDates = await run({ ...zh, currentLocale: 'zh-CN' });
+        expect(zhDates.projectDetail).toEqual('最近活跃 2026/10/25');
+        expect(zhDates.threadDetail).toEqual('最近活跃 2026/10/25');
+        const enDates = await run({ ...en, currentLocale: 'en' });
+        expect(enDates.projectDetail).toEqual('last active 10/25/2026');
     }
 }

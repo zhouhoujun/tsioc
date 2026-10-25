@@ -58,7 +58,7 @@ import { getGlobalProcess } from './global-process';
 import { decodeVoiceAudioChunk, handleVoiceCommand, playVoiceReply, startVoiceCapture, stopVoiceCapture, VoiceHandlerContext } from './AgentConsoleVoiceHandlers';
 import { activateModelProfile, consumePendingTurnModelProfile, cycleModelVariant, cycleRecentModel, EffortLevel, getModelProfileOptions, loadModelProfileOptions, openModelSwitcher, persistModelStore, queueNextTurnModelProfile, recordRecentModel, resolveInitialModelProfile, resolveModelProfileConfig, restoreModelStore, setModelReasoningEffort, toggleModelFavorite, ModelHandlerContext } from './AgentConsoleModelHandlers';
 import { dismissEditMode, enterEditMode, EditModeHandlerContext, extractEditableMessageText, getEditableImageParts, getEditableUserMessages, handleIdleEscape, startEditTarget } from './AgentConsoleEditModeHandlers';
-import { formatAgentPagerStatusCopy, formatAgentPanelLabel, formatAgentUiLabel, formatAgentUiNotice } from './agent-ui.i18n';
+import { formatAgentPagerStatusCopy, formatAgentPanelLabel, formatAgentUiDateTime, formatAgentUiLabel, formatAgentUiNotice } from './agent-ui.i18n';
 import {
     CodingTaskHandlerContext,
     resolveCodingTaskSessionId as resolveCodingTaskSessionIdFn,
@@ -1116,7 +1116,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             (title: string, options: any[], index: number, hint?: string) => this.select(title, options, index, hint),
             this.state,
             requests, selectedIndex,
-            (key: string, params: Record<string, any> | undefined, fallback: string) => this.translator?.translate(key, params) || fallback
+            (key: string, params: Record<string, any> | undefined, fallback: string) => this.translator?.translate(key, params) || fallback,
+            this.translator
         );
     }
 
@@ -2154,7 +2155,6 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         };
     }
 
-
     protected async handleMenuSelection(value: string): Promise<void> {
         return handleMenuSelection(this.state, (selected: string) => this.handleCommand(selected), value);
     }
@@ -3107,7 +3107,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             ? `${this.state.consoleOptions.shareBaseUrl.replace(/\/+$/, '')}${url}`
             : url;
         const selected = await this.select(formatAgentUiNotice(this.translator, 'sessionShareTitle'), [
-            { label: formatAgentUiNotice(this.translator, 'shareCreated'), value: 'info', description: `token ${String(token).slice(0, 8)}… · ${new Date().toLocaleString()}` },
+            { label: formatAgentUiNotice(this.translator, 'shareCreated'), value: 'info', description: `token ${String(token).slice(0, 8)}… · ${formatAgentUiDateTime(Date.now(), this.translator)}` },
             { label: fullUrl, value: 'copy', description: formatAgentUiNotice(this.translator, 'shareCopyDescription') },
             { label: formatAgentUiNotice(this.translator, 'shareRevoke', { id: String(token).slice(0, 8) }), value: 'revoke', description: formatAgentUiNotice(this.translator, 'shareRevokeDescription') }
         ], 1, 'enter select   esc close');

@@ -10,7 +10,11 @@ import { AGENT_UI_TRANSCRIPT_EN, AGENT_UI_TRANSCRIPT_ZH } from './agent-ui.i18n.
 
 export interface AgentUiTranslator {
     translate(key: string, params?: any): string | undefined;
+    /** BCP-47 tag of the active UI locale (e.g. `zh-CN`), used for date/time copy. */
+    currentLocale?: string;
 }
+
+export * from './agent-ui.i18n.format';
 
 const AGENT_UI_EN_TEMPLATES: Record<string, string> = {
     ...(AGENT_UI_NOTICE_EN as Record<string, string>),

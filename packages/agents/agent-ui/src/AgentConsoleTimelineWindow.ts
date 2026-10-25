@@ -11,6 +11,7 @@
  */
 
 import type { AgentMessage } from '@tsdi/agent';
+import { formatAgentUiTime, type AgentUiTranslator } from './agent-ui.i18n';
 import { getDisplayWidth, sliceByDisplayWidth } from './AgentConsoleTextWidth';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -134,8 +135,8 @@ export function fillTimelineLabel(template: string | undefined, vars: Record<str
 export const TIMELINE_HEADER_FOOTER_MAX_WIDTH = 100;
 
 /** Locale short time, e.g. "14:30" (en-US: "2:30 PM"); aligns with opencode Locale.time. */
-export function formatTimelineClockTime(ts: number): string {
-    return new Date(ts).toLocaleTimeString(undefined, { timeStyle: 'short' });
+export function formatTimelineClockTime(ts: number, translator?: AgentUiTranslator | null): string {
+    return formatAgentUiTime(ts, translator, { timeStyle: 'short' });
 }
 
 /** Locale duration (aligns with opencode Locale.duration): ms / X.Xs / Xm Ys / Xh Ym / Xd Yh. */
@@ -326,9 +327,7 @@ function withTurnCollapse(
     const groupOrder: string[] = [];
     items.forEach(item => {
         const key = item.groupKey || '';
-        if (!key) {
-            return;
-        }
+        if (!key) return;
         let stats = groups.get(key);
         if (!stats) {
             stats = { members: [], hasError: false, hasCancelled: false, toolCallIds: new Set(), changeCallIds: new Set(), errorCount: 0, durationMs: 0 };

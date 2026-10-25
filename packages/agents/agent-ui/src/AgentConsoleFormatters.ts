@@ -1,6 +1,6 @@
 import { formatCompactNumber } from '@tsdi/core';
 import { AgentConsoleSelectOption } from './AgentConsoleSessionState';
-import { formatAgentDiagLabel as diagLabel, formatAgentPanelLabel as panelLabel, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentDiagLabel as diagLabel, formatAgentPanelLabel as panelLabel, formatAgentUiDate, formatAgentUiDateTime, type AgentUiTranslator } from './agent-ui.i18n';
 
 // ── Formatting helpers (extracted from AgentConsoleComponent) ────────────────
 
@@ -13,7 +13,7 @@ export function formatSummaryQualityAggregate(aggregate: Record<string, any>, tr
     const from = Number(aggregate.timeRange?.from ?? 0);
     const to = Number(aggregate.timeRange?.to ?? 0);
     const range = from || to
-        ? ` · ${new Date(from || to).toLocaleDateString()}–${new Date(to || from).toLocaleDateString()}`
+        ? ` · ${formatAgentUiDate(from || to, translator)}–${formatAgentUiDate(to || from, translator)}`
         : '';
     return diagLabel(translator, 'quality', 'aggregate', '{provider} · {count} summary {recordWord} · avg {avg} · fallback {fallback}% · evidence {evidence}%{range}', {
         provider: provider, count: count, recordWord: count === 1 ? 'record' : 'records',
@@ -52,7 +52,7 @@ export function formatCompactionHistoryAggregate(aggregate: Record<string, any>,
     const from = Number(aggregate.timeRange?.from ?? 0);
     const to = Number(aggregate.timeRange?.to ?? 0);
     const range = from || to
-        ? ` · ${new Date(from || to).toLocaleDateString()}–${new Date(to || from).toLocaleDateString()}`
+        ? ` · ${formatAgentUiDate(from || to, translator)}–${formatAgentUiDate(to || from, translator)}`
         : '';
     const id = sessionId.length > 16 ? `${sessionId.slice(0, 14)}…` : sessionId;
     return diagLabel(translator, 'compaction', 'aggregate', '{id} · {count} {recordWord} · {compacted} triggered · saved {saved} tokens · avg {avg}%{range}', {
@@ -72,7 +72,7 @@ export function buildSummaryQualityRecordOption(record: Record<string, any>, tra
         label: q('recordTitle', '{provider} · {model} · {total}', { provider: record.provider ?? 'unknown', model: model, total: total }),
         value: id || `${record.provider ?? 'unknown'}:${total}`,
         description: [
-            createdAt ? new Date(createdAt).toLocaleDateString() : '',
+            createdAt ? formatAgentUiDate(createdAt, translator) : '',
             q('recordFields', 'fields {value}', { value: Number(record.fieldCompleteness ?? 0) }),
             q('recordAnnotation', 'annotation {value}', { value: Number(record.annotationQuality ?? 0) }),
             q('recordLength', 'length {value}', { value: Number(record.lengthBalance ?? 0) }),
@@ -92,7 +92,7 @@ export function buildSummaryQualityRecordOption(record: Record<string, any>, tra
             record.evidenceCoverage != null ? q('detailEvidence', 'Evidence coverage: {value}%', { value: Number(record.evidenceCoverage).toFixed(1) }) : '',
             q('detailFallback', 'Fallback: {value}', { value: yesNo(!!record.fallbackUsed) }),
             q('detailSummaryLength', 'Summary length: {value}', { value: Number(record.summaryLength ?? 0) }),
-            createdAt ? q('detailCreated', 'Created: {value}', { value: new Date(createdAt).toLocaleString() }) : ''
+            createdAt ? q('detailCreated', 'Created: {value}', { value: formatAgentUiDateTime(createdAt, translator) }) : ''
         ].filter(Boolean).join('\n')
     };
 }
@@ -176,7 +176,7 @@ export function formatCompactionHistoryTrend(trend: Array<Record<string, any>>, 
         const from = Number(sorted[0]?.bucketStart ?? 0);
         const to = Number(sorted[sorted.length - 1]?.bucketStart ?? 0);
         const range = from || to
-            ? ` · ${new Date(from || to).toLocaleDateString()}–${new Date(to || from).toLocaleDateString()}`
+            ? ` · ${formatAgentUiDate(from || to, translator)}–${formatAgentUiDate(to || from, translator)}`
             : '';
         const id = sessionId.length > 16 ? `${sessionId.slice(0, 14)}…` : sessionId;
         lines.push(diagLabel(translator, 'compaction', 'trend', '{id} {spark} ({bucketWord}{range} · saved {saved} tokens · avg {avg}%)', {
@@ -195,7 +195,7 @@ export function formatTurnDiagnosticsAggregate(aggregate: Record<string, any>, s
         ? (sessionId.length > 16 ? `${sessionId.slice(0, 14)}…` : sessionId)
         : diagLabel(translator, 'harness', 'allSessions', 'all sessions');
     const range = aggregate.timeRange
-        ? ` · ${new Date(aggregate.timeRange.from).toLocaleDateString()}–${new Date(aggregate.timeRange.to).toLocaleDateString()}`
+        ? ` · ${formatAgentUiDate(aggregate.timeRange.from, translator)}–${formatAgentUiDate(aggregate.timeRange.to, translator)}`
         : '';
     return diagLabel(translator, 'turn', 'aggregate', '{id} · {turns} turns · empty {empty}% · repeated {repeated}% · clarif {clarif}% · {compacted} compact(s) · saved {saved} tokens{range}', {
         id: id, turns: Number(aggregate.totalTurns ?? 0), empty: Number(aggregate.emptyResponseRate ?? 0),
@@ -234,7 +234,7 @@ export function formatTurnDiagnosticsTrend(trend: Array<Record<string, any>>, tr
         const from = Number(sorted[0]?.bucketStart ?? 0);
         const to = Number(sorted[sorted.length - 1]?.bucketStart ?? 0);
         const range = from || to
-            ? ` · ${new Date(from || to).toLocaleDateString()}–${new Date(to || from).toLocaleDateString()}`
+            ? ` · ${formatAgentUiDate(from || to, translator)}–${formatAgentUiDate(to || from, translator)}`
             : '';
         const id = sessionId.length > 16 ? `${sessionId.slice(0, 14)}…` : sessionId;
         lines.push(diagLabel(translator, 'turn', 'trend', '{id} {spark} ({bucketWord}{range} · {turns} turns · saved {saved} tokens)', {
@@ -260,7 +260,7 @@ export function buildTurnDiagnosticsRecordOption(record: Record<string, any>, tr
         label: t('recordLabel', '{session} · {turns} turns · saved {saved}', { session: shortSession, turns: totalTurns, saved: saved }),
         value: id || `${sessionId}:${totalTurns}`,
         description: [
-            createdAt ? new Date(createdAt).toLocaleDateString() : '',
+            createdAt ? formatAgentUiDate(createdAt, translator) : '',
             t('recordEmptyRate', 'empty {value}%', { value: emptyRate }),
             t('recordRepeatedRate', 'repeated {value}%', { value: repeatedRate })
         ].filter(Boolean).join(' · ') || t('recordDescriptionFallback', 'turn diagnostics record'),
@@ -271,7 +271,7 @@ export function buildTurnDiagnosticsRecordOption(record: Record<string, any>, tr
             t('recordEmptyResponseRate', 'Empty response rate: {value}%', { value: emptyRate }),
             t('recordRepeatedQuestionRate', 'Repeated question rate: {value}%', { value: repeatedRate }),
             t('recordTokenSavings', 'Token savings: {value}', { value: saved }),
-            createdAt ? t('recordCreated', 'Created: {value}', { value: new Date(createdAt).toLocaleString() }) : ''
+            createdAt ? t('recordCreated', 'Created: {value}', { value: formatAgentUiDateTime(createdAt, translator) }) : ''
         ].filter(Boolean).join('\n')
     };
 }

@@ -1,6 +1,6 @@
 import { AgentConsoleApprovalRequest } from './AgentConsoleSessionState';
 import { formatAgentConsoleApprovalInput } from './AgentConsoleApprovalInput';
-import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentUiNotice, formatAgentUiTime, type AgentUiTranslator } from './agent-ui.i18n';
 
 export interface ApprovalInspectorHost {
     state: any;
@@ -32,7 +32,7 @@ export async function openApprovalInspector(host: ApprovalInspectorHost, request
             t('approvalDetailReason', { reason: request.reason }),
             t('approvalDetailInput', { input: input || '-' }),
             t('approvalDetailTimeout', { ms: request.timeoutMs }),
-            request.expiresAt ? t('approvalDetailExpires', { time: new Date(request.expiresAt).toLocaleTimeString() }) : ''
+            request.expiresAt ? t('approvalDetailExpires', { time: formatAgentUiTime(request.expiresAt, host.translator) }) : ''
         ].join('\n');
         const action = await host.select(t('approvalSelectTitle', { id: request.id.slice(0, 8) }), [
             {

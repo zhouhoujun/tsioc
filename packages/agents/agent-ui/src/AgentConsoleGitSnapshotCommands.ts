@@ -1,5 +1,5 @@
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
-import { formatAgentPanelLabel as panelLabel, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentPanelLabel as panelLabel, formatAgentUiDateTime, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 export interface GitSnapshotCommandHost {
     translator?: AgentUiTranslator | null;
@@ -98,7 +98,7 @@ export async function openGitSnapshotList(host: GitSnapshotCommandHost): Promise
         gitSnapshotText(host, 'listTitle', 'Git step snapshots ({count})', { count: snapshots.length }),
         snapshots.map((snapshot: any, index: number) => {
             const label = String(snapshot.label || snapshot.messageId || `snapshot-${index + 1}`).trim();
-            const createdAt = snapshot.timestamp ? ` · ${new Date(snapshot.timestamp).toLocaleString()}` : '';
+            const createdAt = snapshot.timestamp ? ` · ${formatAgentUiDateTime(snapshot.timestamp, host.translator)}` : '';
             const ds = snapshot.diffStats;
             const diffLabel = ds
                 ? gitSnapshotText(host, 'diffLabel', ' · +{additions}/-{deletions} ({files})', {

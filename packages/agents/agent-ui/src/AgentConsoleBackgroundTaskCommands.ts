@@ -1,6 +1,6 @@
 import type { BackgroundTaskManager, BackgroundTaskRecord, BackgroundTaskCancelOutcome, BackgroundTaskRestoreOutcome } from '@tsdi/agent-tools';
 import { formatBackgroundTaskDetail } from './AgentConsoleBackgroundTaskFormat';
-import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentUiNotice, formatAgentUiTime, type AgentUiTranslator } from './agent-ui.i18n';
 
 /**
  * Host surface required by the `/ps` background task command.
@@ -133,7 +133,7 @@ export async function runBackgroundTasksCommandView(host: BackgroundTaskCommandH
     }
     const lines = tasks.map(task => {
         const status = String(task.status).toUpperCase();
-        const meta = task.finishedAt ? ` (${new Date(task.finishedAt).toLocaleTimeString()})` : '';
+        const meta = task.finishedAt ? ` (${formatAgentUiTime(task.finishedAt, host.translator)})` : '';
         return formatAgentUiNotice(host.translator, 'backgroundTaskLine', { status: status, meta: meta, id: task.id, sessionId: task.sessionId, goal: task.goal });
     });
     host.pushCommandOutput(`/ps ${filter}`, `${formatAgentUiNotice(host.translator, 'backgroundTasksTitle', { filter: filter })}\n${lines.join('\n')}`);

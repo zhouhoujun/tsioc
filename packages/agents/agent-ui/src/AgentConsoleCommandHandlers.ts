@@ -21,7 +21,7 @@ import type { NavFilter, NavSelection, SessionSearchMatch } from '@tsdi/agent';
 import { AGENT_CONSOLE_OVERLAY_HINTS } from './AgentConsoleOverlayPresenter';
 import type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
 export type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
-import { formatAgentUiNotice, formatAgentPanelLabel as panelLabel, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentUiDate, formatAgentUiDateTime, formatAgentUiNotice, formatAgentPanelLabel as panelLabel, type AgentUiTranslator } from './agent-ui.i18n';
 
 // ── Command handler type ─────────────────────────────────────────────────────
 
@@ -608,7 +608,7 @@ async function handleProjects(ctx: CommandHandlerContext, _args: string, _resolv
             ctx.state.projects.map(p => ({
                 label: `${p.label} (${p.sessionCount})`,
                 value: p.key,
-                detail: p.lastActive ? panelLabel(ctx.translator, 'sessions', 'lastActive', 'last active {date}', { date: new Date(p.lastActive).toLocaleDateString() }) : undefined
+                detail: p.lastActive ? panelLabel(ctx.translator, 'sessions', 'lastActive', 'last active {date}', { date: formatAgentUiDate(p.lastActive, ctx.translator) }) : undefined
             })),
             0,
             AGENT_CONSOLE_OVERLAY_HINTS.select
@@ -661,7 +661,7 @@ async function handleThreads(ctx: CommandHandlerContext, _args: string, _resolve
             ctx.state.threads.map(t => ({
                 label: `${t.label} (${t.sessionCount})${t.sections?.length ? ` [${panelLabel(ctx.translator, 'sessions', 'sectionsSuffix', '{count} sections', { count: t.sections.length })}]` : ''}`,
                 value: t.key,
-                detail: t.lastActive ? panelLabel(ctx.translator, 'sessions', 'lastActive', 'last active {date}', { date: new Date(t.lastActive).toLocaleDateString() }) : undefined
+                detail: t.lastActive ? panelLabel(ctx.translator, 'sessions', 'lastActive', 'last active {date}', { date: formatAgentUiDate(t.lastActive, ctx.translator) }) : undefined
             })),
             0,
             AGENT_CONSOLE_OVERLAY_HINTS.select
@@ -719,7 +719,7 @@ async function handleSections(ctx: CommandHandlerContext, args: string, _resolve
             return {
                 label: `${item.label}${count ? ` (${panelLabel(ctx.translator, 'sessions', 'messageCount', '{count} messages', { count })})` : ''}`,
                 value: item.id,
-                detail: panelLabel(ctx.translator, 'sections', 'created', 'created {date}', { date: new Date(item.createdAt).toLocaleString() })
+                detail: panelLabel(ctx.translator, 'sections', 'created', 'created {date}', { date: formatAgentUiDateTime(item.createdAt, ctx.translator) })
             };
         }),
         0,

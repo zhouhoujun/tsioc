@@ -1,4 +1,5 @@
 import { formatAgentConsoleApprovalInput } from './AgentConsoleApprovalInput';
+import { formatAgentUiTime, type AgentUiTranslator } from './agent-ui.i18n';
 
 /** Resolves a localized string, falling back to the English template. */
 export type ApprovalTranslate = (key: string, params: Record<string, any> | undefined, fallback: string) => string;
@@ -10,7 +11,8 @@ export async function selectApprovalRequest(
     state: any,
     requests: any[],
     selectedIndex = 0,
-    translate: ApprovalTranslate = passthroughTranslate
+    translate: ApprovalTranslate = passthroughTranslate,
+    translator?: AgentUiTranslator | null
 ): Promise<any> {
     if (!requests.length) {
         return undefined;
@@ -32,7 +34,7 @@ export async function selectApprovalRequest(
                     : translate('agent.approval.inputNone', undefined, 'Input: -'),
                 translate('agent.approval.timeout', { ms: request.timeoutMs }, `Timeout: ${request.timeoutMs}ms`),
                 request.expiresAt
-                    ? translate('agent.approval.expiresAt', { time: new Date(request.expiresAt).toLocaleTimeString() }, `Expires: ${new Date(request.expiresAt).toLocaleTimeString()}`)
+                    ? translate('agent.approval.expiresAt', { time: formatAgentUiTime(request.expiresAt, translator) }, `Expires: ${formatAgentUiTime(request.expiresAt, translator)}`)
                     : ''
             ].join('\n')
         };

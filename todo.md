@@ -1892,3 +1892,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `CHECKLIST.md` 补场景 11 表格行与「已知边界」说明。
 - **验证**：`python3 packages/agents/acceptance/run_acceptance.py` → 10/10 PASS（含 `[PASS] scenario 11: zh-CN command chrome localized`）；`RUN_PTY=1 bash scripts/agents-gate.sh pty-acceptance` PASS。
 - **门禁**：`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**（首轮 `agent-ssh` 因 `generateKeyPair` 生成私有键被 ssh2 判为 malformed 偶发失败，单包重跑 9 passing，复跑 gate 通过）；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
+
+## 2026-10-25 日期/时间文案跟随界面语言（不再跟随宿主 locale）
+- **现象（zh-CN 真实 TUI）**：`/projects`、`/threads` 的详情行是 `最近活跃 10/25/2026`（美式顺序），消息头是 `tsdi-agent · 开始 8:51 PM`；标签已中文，但日期/时间由 `Date#toLocaleDateString()`/`toLocaleTimeString()` 无参调用按**宿主 locale**（`LANG=C.UTF-8` → en-US）格式化。
+- **做法**：新增 `src/agent-ui.i18n.format.ts`（不在 600 行上限冲突的 `agent-ui.i18n.ts` 内，后者仅 `export *` 转发）：
+  - `agentUiLocale(translator)`：从 `AgentUiTranslator.currentLocale` 取 BCP-47 标签并做格式校验（非法值回退宿主默认，绝不抛错）。
+  - `formatAgentUiDate` / `formatAgentUiDateTime` / `formatAgentUiTime`：统一按界面 locale 格式化，空值/非法时间返回空串（与原行为一致）。
+- **接入点**（全部为 zh-CN 可见路径）：`/projects`、`/threads`、`/sections` 日期；`/usage`·`/quality`·`/diagnostics` 区间与记录时间（`AgentConsoleFormatters` + `AgentConsoleDiagnosticsView`）；`/delegation` 时间戳（`formatDelegationEdge/Tree` 新增可选 translator）；`/git-snapshots` 创建时间；`/share` 面板与 `/unshare` 列表时间；审批过期时间（`selectApprovalRequest` 新增可选 translator）；`/ps` 完成时间；时间线会话头（`formatTimelineClockTime` 新增可选 translator）。
+- **测试**：`panel-i18n.spec.ts` 48 → **50 条**（locale 格式化：zh `2026/10/25`、`2026/10/25 14:30:05`、`14:30:05`，en `10/25/2026`，无 translator 时与宿主默认一致，非法值/空值/NaN 回退；`/projects`、`/threads` 的 detail 在 zh/en 下分别为 `最近活跃 2026/10/25` 与 `last active 10/25/2026`）。
+- **真实 TUI（zh-CN）复核**：`/projects`、`/threads` → `最近活跃 2026/10/25`；会话头 → `tsdi-agent · 开始 23:09`（24 小时制，此前 `8:51 PM`）。
+- **门禁**：agent-ui **1711 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size（`AgentConsoleComponent` 3780、`AgentConsoleTimelineWindow` 770，均在预算内）、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。

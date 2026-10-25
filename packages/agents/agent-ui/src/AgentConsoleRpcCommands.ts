@@ -1,4 +1,4 @@
-import { formatAgentUiLabel, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentUiDateTime, formatAgentUiLabel, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 import { formatAgentConsoleApprovalInput } from './AgentConsoleApprovalInput';
 import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
 
@@ -146,7 +146,7 @@ export async function runUnshareCommand(host: AgentConsoleRpcCommandHost, args?:
         const selected = await host.select(formatAgentUiNotice(host.translator, 'activeSharesTitle'), shares.map((share: any) => ({
             label: `${String(share.token || '').slice(0, 12)}…  ${String(share.url || '')}`,
             value: String(share.token || ''),
-            description: new Date(Number(share.createdAt) || Date.now()).toLocaleString()
+            description: formatAgentUiDateTime(Number(share.createdAt) || Date.now(), host.translator)
         })), 0, formatAgentUiLabel(host.translator, 'agent.hint.enterRevokeClose', 'enter revoke   esc close'));
         if (!selected) return true;
         return host.revokeShare(selected);

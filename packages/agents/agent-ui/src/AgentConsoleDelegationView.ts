@@ -1,3 +1,5 @@
+import { formatAgentUiDateTime, type AgentUiTranslator } from './agent-ui.i18n';
+
 export function shortenSessionId(sessionId: string): string {
     return sessionId.length > 20 ? `${sessionId.slice(0, 18)}…` : sessionId;
 }
@@ -14,7 +16,7 @@ export function pickDelegationGoal(edge: Record<string, any>): string {
     return goal.length > 40 ? `${goal.slice(0, 38)}…` : goal;
 }
 
-export function formatDelegationEdge(edge: Record<string, any>): string {
+export function formatDelegationEdge(edge: Record<string, any>, translator?: AgentUiTranslator | null): string {
     const parent = shortenSessionId(String(edge.parentSessionId ?? '?'));
     const child = shortenSessionId(String(edge.childSessionId ?? '?'));
     const kind = String(edge.kind ?? '').trim();
@@ -27,8 +29,8 @@ export function formatDelegationEdge(edge: Record<string, any>): string {
     ];
     if (createdAt) {
         const range = completedAt
-            ? `${new Date(createdAt).toLocaleString()} → ${new Date(completedAt).toLocaleString()}`
-            : new Date(createdAt).toLocaleString();
+            ? `${formatAgentUiDateTime(createdAt, translator)} → ${formatAgentUiDateTime(completedAt, translator)}`
+            : formatAgentUiDateTime(createdAt, translator);
         parts.push(range);
     }
     const goal = pickDelegationGoal(edge);
@@ -38,7 +40,7 @@ export function formatDelegationEdge(edge: Record<string, any>): string {
     return parts.join(' · ');
 }
 
-export function formatDelegationTree(node: Record<string, any>): string[] {
+export function formatDelegationTree(node: Record<string, any>, translator?: AgentUiTranslator | null): string[] {
     const lines: string[] = [];
     const visit = (current: Record<string, any>, prefix: string, isLast: boolean, isRoot: boolean): void => {
         if (!isRoot) {
@@ -50,7 +52,7 @@ export function formatDelegationTree(node: Record<string, any>): string[] {
                 createdAt: current.createdAt,
                 completedAt: current.completedAt,
                 metadata: current.metadata
-            });
+            }, translator);
             lines.push(`${prefix}${isLast ? '└─ ' : '├─ '}${edgeLine}`);
         } else {
             lines.push(`${prefix}${shortenSessionId(String(current.sessionId ?? '?'))}`);

@@ -1,6 +1,6 @@
 import { formatCompactNumber } from '@tsdi/core';
 import { AgentConsoleSelectOption } from './AgentConsoleSessionState';
-import { formatAgentDiagLabel as diagLabel, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentDiagLabel as diagLabel, formatAgentUiDate, formatAgentUiDateTime, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 import { formatCompactionHistoryAggregate, formatSummaryQualityAggregate, formatTurnDiagnosticsAggregate, formatTurnDiagnosticsTrend, formatUsageSummary, buildSummaryQualityRecordOption } from './AgentConsoleFormatters';
 
 export interface AgentConsoleDigestState {
@@ -100,7 +100,7 @@ export function formatSummaryQualityTrend(trend: Array<Record<string, any>>, tra
         const from = Number(sorted[0]?.bucketStart ?? 0);
         const to = Number(sorted[sorted.length - 1]?.bucketStart ?? 0);
         const range = from || to
-            ? ` · ${new Date(from || to).toLocaleDateString()}–${new Date(to || from).toLocaleDateString()}`
+            ? ` · ${formatAgentUiDate(from || to, translator)}–${formatAgentUiDate(to || from, translator)}`
             : '';
         lines.push(diagLabel(translator, 'quality', 'trend', '{provider} {spark} ({bucketWord}{range} · avg {avg} · fb {fallback}% · evidence {evidence}%)', {
             provider: provider, spark: sorted.map(point => spark(Number(point.avgTotal ?? 0))).join(''), range: range,
@@ -120,20 +120,20 @@ export function buildTurnDiagnosticsRecordOption(record: Record<string, any>, tr
     const t = (key: string, fallback: string, params?: Record<string, any>) => diagLabel(translator, 'turn', key, fallback, params);
     const yesNo = (value: boolean) => diagLabel(translator, 'common', value ? 'yes' : 'no', value ? 'yes' : 'no');
     const description = [
-        createdAt ? new Date(createdAt).toLocaleDateString() : '',
+        createdAt ? formatAgentUiDate(createdAt, translator) : '',
         compacted === 1 ? t('recordCompactsOne', '{count} compact', { count: compacted }) : t('recordCompactsMany', '{count} compacts', { count: compacted }),
         saved > 0 ? t('recordSaved', 'saved {saved} tokens', { saved: formatCompactNumber(saved) }) : '',
         record.repeatedClarificationDetected ? t('recordRepeated', 'repeated') : '',
         record.finalAssistantWasClarification ? t('recordClarification', 'clarif') : ''
     ].filter(Boolean).join(' · ') || t('recordDescriptionFallback', 'turn diagnostics record');
     return {
-        label: `${sessionId} · ${createdAt ? new Date(createdAt).toLocaleString() : t('unknownTime', 'unknown time')}`,
+        label: `${sessionId} · ${createdAt ? formatAgentUiDateTime(createdAt, translator) : t('unknownTime', 'unknown time')}`,
         value: id || `${sessionId}:${createdAt}`,
         description,
         detail: [
             t('recordDetail', 'Record: {id}', { id: id || '-' }),
             t('recordSession', 'Session: {session}', { session: sessionId }),
-            t('recordCreated', 'Created: {value}', { value: createdAt ? new Date(createdAt).toLocaleString() : '-' }),
+            t('recordCreated', 'Created: {value}', { value: createdAt ? formatAgentUiDateTime(createdAt, translator) : '-' }),
             t('recordEmptyRetries', 'Empty response retries: {value}', { value: Number(record.emptyResponseRetryCount ?? 0) }),
             t('recordRepeatedClarification', 'Repeated clarification: {value}', { value: yesNo(!!record.repeatedClarificationDetected) }),
             t('recordFinalClarification', 'Final clarification: {value}', { value: yesNo(!!record.finalAssistantWasClarification) }),
