@@ -119,8 +119,8 @@ export class ConsoleLocaleReapplyTest {
  */
 @Suite('cancelled turn rows follow the locale')
 export class CancelledTurnLocaleTest {
-    protected rowText(state: any, content: string): string {
-        state.upsertUiEventMessage('turn-cancel', content, { eventType: 'turn_cancelled', label: 'state', status: 'cancelled' } as any);
+    protected rowText(state: any, content: string, eventType = 'turn_cancelled'): string {
+        state.upsertUiEventMessage('turn-cancel', content, { eventType, label: 'state', status: 'cancelled' } as any);
         const items = renderAgentConsoleMessageItems(state.messages, {
             timelineLabels: state.consoleOptions.timelineLabels
         });
@@ -141,5 +141,18 @@ export class CancelledTurnLocaleTest {
         const state = new AgentConsoleSessionState(undefined, translator);
         state.configure({ sessionId: 'cancel-custom' } as any);
         expect(this.rowText(state, 'Stopped by user')).toContain('Stopped by user');
+    }
+
+    @Test('turn completion and request-start boilerplate follow the locale')
+    async turnLifecycleBoilerplateIsLocalized() {
+        const translator: any = { currentLocale: 'zh-CN', translate: () => undefined };
+        const completed = new AgentConsoleSessionState(undefined, translator);
+        completed.configure({ sessionId: 'complete-zh' } as any);
+        expect(this.rowText(completed, 'Turn completed', 'turn_completed')).toContain('轮次已完成');
+        expect(this.rowText(completed, 'Turn completed', 'turn_completed')).not.toContain('Turn completed');
+
+        const started = new AgentConsoleSessionState(undefined, translator);
+        started.configure({ sessionId: 'start-zh' } as any);
+        expect(this.rowText(started, 'Analyzing request', 'turn_started')).toContain('已收到请求');
     }
 }

@@ -1680,3 +1680,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **真实 TUI（zh-CN）复核**：`/search` 两回车 → `缺少必需参数 <query>。` + `期望：<query>` + `可能：用法：/search query。` + `✕ $ /search 失败: 缺少必需参数 <query>。 用法：/search query。`；`/diff --staged --untracked` → `--staged、--unstaged、--untracked 只能选其一。`；`/diff --nope` → `未知的 /diff 选项：--nope`；`/attach` → `没有待处理的附件。`；`/git-snapshots revert 1` → `回退 / 取消` + `保留当前工作区`；输入长规划草稿 → `检测到规划意图 · 使用 /plan`。
 - **测试**：`panel-i18n.spec.ts` 27 → **31 条**（规划提示面板文案、参数诊断/echo/diff scope、导出/附件/health、git snapshot 列表/确认/差异全部走真实函数）。
 - **门禁**：agent-ui **1689 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size（`AgentConsolePanels.ts` 一度 +2 行、`AgentConsoleSessionState.ts` +1 行均压回预算内）、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
+
+## 2026-10-25 真实轮次时间线生命周期行中文化（`Turn completed` / `Analyzing request` / `Turn cancelled`）
+- **现象（zh-CN 真实 TUI，跑一轮对话即可复现）**：时间线事件行显示 `● 事件 · Analyzing request`、`✓ 事件 · Turn completed (2.6s)`（取消时为 `Turn cancelled`），而同一行其余部分（`事件`、`完成`、耗时）已是中文。
+- **根因**：这些是**客户端 EventBridge 与 gateway（`AppRpcServer`）写入的英文样板 content**（`upsertUiEventMessage`/事件记录），渲染层直接展示 `message.content`；既有的字符级本地化只覆盖了 `turn_cancelled`，且依赖 `eventType`。
+- **做法（渲染期本地化，纯函数可测）**：`AgentConsoleTimelineLabels` 新增 `actionTurnCompleted`（EN `Turn completed` / ZH `轮次已完成`）与 `TURN_LIFECYCLE_LABEL_KEYS` + `resolveTurnLifecycleLabel(content, labels)`：把样板英文（`analyzing request`/`turn started`/`turn completed`/`turn cancelled`）映射到标签 key，未知/自定义内容（如 `Stopped by user`）原样保留。`AgentConsoleMessageRenderers` 用该函数在渲染时替换样板行（仍是逐行内容，不改变存储数据，历史会话重放也跟随当前语言）。
+- **行数纪律**：首版直接改 `AgentConsoleTimelineWindow` 使该文件 769→773 触发 ratchet，改为把映射放进未入基线的 `AgentConsoleTimelineLabels`（194 行），`TimelineWindow` 恢复 769、`MessageRenderers` 维持 1285（<1287）。
+- **测试**：`p407-plan-summary-locale.spec.ts` 的 “cancelled turn rows follow the locale” 套件扩展为 3 条（`Turn completed`/`turn_completed` → `轮次已完成`、`Analyzing request`/`turn_started` → `已收到请求`，并断言旧英文不再出现）；原“自定义取消原因保留原文”继续通过。
+- **真实 TUI（zh-CN）复核**：正常轮次 → `● 事件 · 已收到请求`、`✓ 事件 · 轮次已完成 (2.6s)`；Esc 中断 → `正在取消当前轮次…`、`✓ 已取消 · 轮次已取消 (4.4s)`。
+- **门禁**：agent-ui **1690 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
+- **备注**：同一行里的 `unchanged`（上下文策略标识）、`light`（级别）、工具名、模型名仍为标识符；`AppRpcServer` 与 EventBridge 存储的 content 保持英文原样（数据），本地化只发生在渲染期。

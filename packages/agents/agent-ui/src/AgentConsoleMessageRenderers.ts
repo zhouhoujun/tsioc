@@ -13,6 +13,7 @@ import {
 import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from './AgentConsoleTheme';
 import { getDisplayWidth, sliceByDisplayWidth } from './AgentConsoleTextWidth';
 import { resolveTimelineEventSentence, formatTimelineSessionDuration, AgentConsoleTimelineLabels } from './AgentConsoleTimelineWindow';
+import { resolveTurnLifecycleLabel } from './AgentConsoleTimelineLabels';
 import { resolveTimelineMeta, resolveTimelineMetaStyle, resolveMessageDurationMs, resolveMessageRoleLabel, resolveMessageRoleStyle, resolveAgentConsoleMessageRoleLabel, resolveEffectiveRoleLabel } from './AgentConsoleTimelineMeta';
 import type { MarkdownWorkerBridge } from './MarkdownWorkerBridge';
 import {
@@ -584,12 +585,11 @@ export function renderAgentConsoleMessageItem(
     // Content stays the primary row text (P237 truncation/expansion contract;
     // long rows also keep the detail toggle); the sentence only fills empty
     // content events like model_completed.
-    // The event bridge writes a boilerplate `Turn cancelled` row; localize it
-    // from the label catalog at render time so a resumed session follows the
-    // current locale. Custom reasons (`Stopped by user`) stay verbatim.
-    const boilerplateCancel = (timelineEventType === 'turn_cancelled' || timelineEventType === 'turn_cancel')
-        && displayContent.trim().toLowerCase() === 'turn cancelled';
-    const eventText = boilerplateCancel && timelineSentence ? timelineSentence : (displayContent || timelineSentence || '');
+    // The event bridge/gateway writes boilerplate English turn lifecycle rows;
+    // localize them at render time so a resumed session follows the current
+    // locale. Custom reasons (`Stopped by user`) stay verbatim.
+    const lifecycleLabel = timelineEvent ? resolveTurnLifecycleLabel(displayContent, context.timelineLabels) : '';
+    const eventText = lifecycleLabel || displayContent || timelineSentence || '';
     const eventRowContent = timelineEvent
         ? (context.messageDetailOpen && selected
             ? eventText

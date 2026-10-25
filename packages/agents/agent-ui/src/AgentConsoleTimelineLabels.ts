@@ -61,6 +61,7 @@ export interface AgentConsoleTimelineLabels {
     actionGotRequest?: string;
     /** Action verb for turn_cancelled events (P301). */
     actionTurnCancelled?: string;
+    actionTurnCompleted?: string;
     /** Action verb for plan_created events (P301). */
     actionCreatedPlan?: string;
     /** Action verb for plan_step_started / step_started events (P301). */
@@ -117,6 +118,7 @@ export const DEFAULT_TIMELINE_LABELS: Required<AgentConsoleTimelineLabels> = {
     actionRunning: '运行中',
     actionGotRequest: '已收到请求',
     actionTurnCancelled: '轮次已取消',
+    actionTurnCompleted: '轮次已完成',
     actionCreatedPlan: '已创建计划',
     actionExecutingStep: '执行步骤',
     actionCompletedStep: '步骤已完成',
@@ -129,6 +131,22 @@ export const DEFAULT_TIMELINE_LABELS: Required<AgentConsoleTimelineLabels> = {
     actionBackgroundTaskFailed: '后台任务失败',
     actionCompleted: '已完成',
 };
+
+const TURN_LIFECYCLE_LABEL_KEYS: Record<string, keyof AgentConsoleTimelineLabels> = {
+    'analyzing request': 'actionGotRequest',
+    'turn started': 'actionGotRequest',
+    'turn completed': 'actionTurnCompleted',
+    'turn cancelled': 'actionTurnCancelled'
+};
+
+/** Localized label for boilerplate English turn lifecycle rows written by the bridge/gateway. */
+export function resolveTurnLifecycleLabel(content: string, labels?: AgentConsoleTimelineLabels): string {
+    const key = TURN_LIFECYCLE_LABEL_KEYS[String(content || '').trim().toLowerCase()];
+    if (!key) {
+        return '';
+    }
+    return labels?.[key] ?? EN_TIMELINE_LABELS[key];
+}
 
 export const EN_TIMELINE_LABELS: Required<AgentConsoleTimelineLabels> = {
     summaryCompact: '{hidden} events hidden · compact shows active step + errors only',
@@ -161,6 +179,7 @@ export const EN_TIMELINE_LABELS: Required<AgentConsoleTimelineLabels> = {
     actionRunning: 'Running',
     actionGotRequest: 'Got your request',
     actionTurnCancelled: 'Turn cancelled',
+    actionTurnCompleted: 'Turn completed',
     actionCreatedPlan: 'Created plan',
     actionExecutingStep: 'Executing step',
     actionCompletedStep: 'Completed step',
