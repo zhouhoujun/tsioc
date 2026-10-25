@@ -204,7 +204,7 @@ export async function openUsage(
         );
         return true;
     }
-    ctx.pushCommandOutput('/usage', formatUsageSummary(usage));
+    ctx.pushCommandOutput('/usage', formatUsageSummary(usage, ctx.translator));
     return true;
 }
 

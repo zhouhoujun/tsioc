@@ -10,7 +10,7 @@ export interface AgentConsoleDigestState {
     setTurnDiagnosticsDigest(value: string): void;
 }
 
-export async function refreshUsageDigest(sessionService: any, state: AgentConsoleDigestState): Promise<void> {
+export async function refreshUsageDigest(sessionService: any, state: AgentConsoleDigestState, translator?: AgentUiTranslator | null): Promise<void> {
     if (!sessionService) {
         state.setUsageDigest('');
         return;
@@ -23,7 +23,7 @@ export async function refreshUsageDigest(sessionService: any, state: AgentConsol
             state.setUsageDigest('');
             return;
         }
-        state.setUsageDigest(formatUsageSummary(usage));
+        state.setUsageDigest(formatUsageSummary(usage, translator));
     } catch {
         state.setUsageDigest('');
     }

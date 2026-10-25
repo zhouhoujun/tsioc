@@ -2352,7 +2352,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async refreshUsageDigest(): Promise<void> {
-        return refreshUsageDigest(this.sessionService, this.state);
+        return refreshUsageDigest(this.sessionService, this.state, this.translator);
     }
 
     protected async refreshTurnDiagnosticsDigest(): Promise<void> {
@@ -2879,7 +2879,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             set shellDraftLines(value: string[]) { self.shellDraftLines = value; },
             isTurnInProgress: () => this.isTurnInProgress(),
             notifyBusyState: (message?: string) => this.notifyBusyState(message),
-            notify: (message: string) => this.notify(message),
+            notify: (message: string) => this.notify(message), translator: this.translator,
             invokeTerminalTool: (command: string) => this.invokeTerminalTool(command),
             updateShellMessage: (id: string, patch: Partial<AgentMessage>) => this.updateShellMessage(id, patch)
         };
@@ -2899,7 +2899,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return {
             state: this.state,
             sessionService: this.sessionService,
-            notify: (message: string) => this.notify(message),
+            notify: (message: string) => this.notify(message), translator: this.translator,
             select: (title: string, opts: any[], index: number, hint?: string) => this.select(title, opts, index, hint)
         };
     }

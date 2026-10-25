@@ -1,5 +1,5 @@
 import { AgentConsoleAppAuthorizer, AgentConsoleAppStatus, resolveAgentConsoleApps } from './AgentConsoleApps';
-import { formatAgentUiLabel, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentPanelLabel as panelLabel, formatAgentUiLabel, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 export interface ExtensionCommandHost {
     translator?: AgentUiTranslator | null;
@@ -110,6 +110,16 @@ export function resolveAppAuthorizer(host: ExtensionCommandHost): AgentConsoleAp
     return typeof authorizer === 'function' ? authorizer : undefined;
 }
 
+function formatAppCategoryLabel(host: ExtensionCommandHost, category: string): string {
+    if (category === 'code') {
+        return panelLabel(host.translator, 'apps', 'categoryCode', 'code');
+    }
+    if (category === 'messaging') {
+        return panelLabel(host.translator, 'apps', 'categoryMessaging', 'messaging');
+    }
+    return category;
+}
+
 function formatAppStatusLabel(host: ExtensionCommandHost, app: AgentConsoleAppStatus): string {
     return app.statusLabel === 'connected'
         ? formatAgentUiLabel(host.translator, 'agent.menu.apps.connected', 'connected')
@@ -158,7 +168,7 @@ export async function runAppsCommand(host: ExtensionCommandHost, args?: string):
     const selected = await host.select(formatAgentUiLabel(host.translator, 'agent.menu.apps.title', 'Apps'), apps.map(app => ({
         label: `${app.name} · ${formatAppStatusLabel(host, app)}`,
         value: app.id,
-        description: `${app.category} · ${app.description}`
+        description: `${formatAppCategoryLabel(host, app.category)} · ${app.description}`
     })), 0, formatAgentUiLabel(host.translator, 'agent.hint.enterInsertClose', 'enter insert   esc close'));
     if (selected) {
         const app = apps.find(item => item.id === selected);

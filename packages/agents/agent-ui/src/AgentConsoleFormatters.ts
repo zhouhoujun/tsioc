@@ -1,5 +1,6 @@
 import { formatCompactNumber } from '@tsdi/core';
 import { AgentConsoleSelectOption } from './AgentConsoleSessionState';
+import { formatAgentPanelLabel as panelLabel, type AgentUiTranslator } from './agent-ui.i18n';
 
 // ── Formatting helpers (extracted from AgentConsoleComponent) ────────────────
 
@@ -17,19 +18,25 @@ export function formatSummaryQualityAggregate(aggregate: Record<string, any>): s
     return `${provider} · ${count} summary ${count === 1 ? '' : 'records'} · avg ${avgTotal} · fallback ${fallbackRate}% · evidence ${evidenceCoverage}%${range}`;
 }
 
-export function formatUsageWindow(label: string, usage: Record<string, any>): string {
-    return `${label} ${Number(usage?.turns ?? 0)} turns · ${formatCompactNumber(Number(usage?.promptTokens ?? 0))} in · ${formatCompactNumber(Number(usage?.completionTokens ?? 0))} out · ${formatCompactNumber(Number(usage?.totalTokens ?? 0))} total`;
+export function formatUsageWindow(label: string, usage: Record<string, any>, translator?: AgentUiTranslator | null): string {
+    return panelLabel(translator, 'usage', 'window', '{label} {turns} turns · {input} in · {output} out · {total} total', {
+        label: panelLabel(translator, 'usage', label, label),
+        turns: Number(usage?.turns ?? 0),
+        input: formatCompactNumber(Number(usage?.promptTokens ?? 0)),
+        output: formatCompactNumber(Number(usage?.completionTokens ?? 0)),
+        total: formatCompactNumber(Number(usage?.totalTokens ?? 0))
+    });
 }
 
-export function formatUsageSummary(usage: Record<string, any>): string {
+export function formatUsageSummary(usage: Record<string, any>, translator?: AgentUiTranslator | null): string {
     if (usage?.selectedRange && usage?.selected) {
         const labels: Record<string, string> = { daily: 'day', weekly: 'week', cumulative: 'all' };
-        return formatUsageWindow(labels[usage.selectedRange] ?? usage.selectedRange, usage.selected);
+        return formatUsageWindow(labels[usage.selectedRange] ?? usage.selectedRange, usage.selected, translator);
     }
     return [
-        formatUsageWindow('day', usage?.daily ?? {}),
-        formatUsageWindow('week', usage?.weekly ?? {}),
-        formatUsageWindow('all', usage?.cumulative ?? {})
+        formatUsageWindow('day', usage?.daily ?? {}, translator),
+        formatUsageWindow('week', usage?.weekly ?? {}, translator),
+        formatUsageWindow('all', usage?.cumulative ?? {}, translator)
     ].join(' | ');
 }
 

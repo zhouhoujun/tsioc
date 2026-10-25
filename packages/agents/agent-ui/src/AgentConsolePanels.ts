@@ -855,28 +855,28 @@ export class AgentConsoleWorkingPanelComponent {
         if (!this.shouldShow) {
             return '';
         }
-        return this.state.summaryQualityDigest ? `quality · ${this.state.summaryQualityDigest}` : '';
+        return this.state.summaryQualityDigest ? `${panelLabel(this.translator, 'dashboard', 'quality', 'quality')} · ${this.state.summaryQualityDigest}` : '';
     }
 
     get dashboardUsageLabel(): string {
         if (!this.shouldShow) {
             return '';
         }
-        return this.state.usageDigest ? `usage · ${this.state.usageDigest}` : '';
+        return this.state.usageDigest ? `${panelLabel(this.translator, 'dashboard', 'usage', 'usage')} · ${this.state.usageDigest}` : '';
     }
 
     get dashboardCompactionLabel(): string {
         if (!this.shouldShow) {
             return '';
         }
-        return this.state.compactionDigest ? `compaction · ${this.state.compactionDigest}` : '';
+        return this.state.compactionDigest ? `${panelLabel(this.translator, 'dashboard', 'compaction', 'compaction')} · ${this.state.compactionDigest}` : '';
     }
 
     get dashboardTurnDiagnosticsLabel(): string {
         if (!this.shouldShow) {
             return '';
         }
-        return this.state.turnDiagnosticsDigest ? `diagnostics · ${this.state.turnDiagnosticsDigest}` : '';
+        return this.state.turnDiagnosticsDigest ? `${panelLabel(this.translator, 'dashboard', 'diagnostics', 'diagnostics')} · ${this.state.turnDiagnosticsDigest}` : '';
     }
 
     get dashboardDetailLabel(): string {

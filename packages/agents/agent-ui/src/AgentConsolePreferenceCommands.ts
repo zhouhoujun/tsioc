@@ -1,5 +1,5 @@
 import { AGENT_PERSONALITY_PRESETS } from '@tsdi/agent';
-import { formatAgentUiNotice } from './agent-ui.i18n';
+import { formatAgentPanelState, formatAgentPanelLabel as panelLabel, formatAgentUiNotice } from './agent-ui.i18n';
 
 export interface PreferenceCommandHost {
     state: any;
@@ -53,7 +53,7 @@ export async function runMemoriesCommand(host: PreferenceCommandHost, args?: str
     const parsed = raw.toLowerCase();
     const current = host.options.ui?.memoryInjection !== false;
     if (!parsed) {
-        host.notify(formatAgentUiNotice(host.translator, 'memoryInjectionState', { current: current ? 'ON' : 'OFF' }));
+        host.notify(formatAgentUiNotice(host.translator, 'memoryInjectionState', { current: formatAgentPanelState(host.translator, current ? 'on' : 'off') }));
         return true;
     }
     if (parsed === 'list' || parsed === 'injected') {
@@ -110,7 +110,7 @@ export async function runPersonalityCommand(host: PreferenceCommandHost, args?: 
     const names = Object.keys(AGENT_PERSONALITY_PRESETS);
     if (!verb) {
         const active = host.options.ui?.personality;
-        host.notify(formatAgentUiNotice(host.translator, 'personalityActiveAvailable', { active: active || 'none', names: names.join(', ') }));
+        host.notify(formatAgentUiNotice(host.translator, 'personalityActiveAvailable', { active: active || formatAgentPanelState(host.translator, 'none'), names: names.join(', ') }));
         return true;
     }
     if (verb === 'list') {
@@ -143,18 +143,21 @@ export async function runDebugConfigCommand(host: PreferenceCommandHost): Promis
     const profiles = (model.profiles || {}) as Record<string, unknown>;
     const activeProfile = String(model.defaultProfile || host.state.modelProfile || 'default');
     const experimental = (ui.experimental || {}) as Record<string, boolean>;
+    const stateWord = (value: 'on' | 'off') => panelLabel(host.translator, 'debug', value, value);
+    const fallbackWord = (value: 'none' | 'default') => formatAgentPanelState(host.translator, value);
+    const profileNames = Object.keys(profiles);
     const lines = [
         `model: ${String(model.provider || '-')} / ${String(model.model || '-')}`,
-        `profile: ${activeProfile}${Object.keys(profiles).length ? ` (available: ${Object.keys(profiles).join(', ')})` : ''}`,
-        `ui.title: ${ui.title || '(default)'}`,
-        `ui.statusline: ${Array.isArray(ui.statusline) ? ui.statusline.join(', ') : '(default)'}`,
-        `ui.memoryInjection: ${ui.memoryInjection !== false ? 'on' : 'off'}`,
-        `ui.personality: ${ui.personality || '(none)'}`,
-        `ui.queueMode: ${ui.queueMode || 'off'}`,
-        `ui.planNudges: ${ui.planNudges !== false ? 'on' : 'off'}`,
-        `experimental: ${Object.keys(experimental).length ? Object.entries(experimental).map(([name, enabled]) => `${name}=${enabled ? 'on' : 'off'}`).join(', ') : '(none)'}`,
-        `session: ${host.state.sessionId} · workspace: ${host.workspace || '(none)'}`
+        `profile: ${activeProfile}${profileNames.length ? panelLabel(host.translator, 'debug', 'available', ' (available: {names})', { names: profileNames.join(', ') }) : ''}`,
+        `ui.title: ${ui.title || fallbackWord('default')}`,
+        `ui.statusline: ${Array.isArray(ui.statusline) ? ui.statusline.join(', ') : fallbackWord('default')}`,
+        `ui.memoryInjection: ${stateWord(ui.memoryInjection !== false ? 'on' : 'off')}`,
+        `ui.personality: ${ui.personality || fallbackWord('none')}`,
+        `ui.queueMode: ${ui.queueMode || stateWord('off')}`,
+        `ui.planNudges: ${stateWord(ui.planNudges !== false ? 'on' : 'off')}`,
+        `experimental: ${Object.keys(experimental).length ? Object.entries(experimental).map(([name, enabled]) => `${name}=${stateWord(enabled ? 'on' : 'off')}`).join(', ') : fallbackWord('none')}`,
+        panelLabel(host.translator, 'debug', 'session', 'session: {sessionId} · workspace: {workspace}', { sessionId: host.state.sessionId, workspace: host.workspace || fallbackWord('none') })
     ];
-    host.pushCommandOutput('/debug-config', `Debug config:\n${lines.join('\n')}`);
+    host.pushCommandOutput('/debug-config', `${panelLabel(host.translator, 'debug', 'title', 'Debug config:')}\n${lines.join('\n')}`);
     return true;
 }

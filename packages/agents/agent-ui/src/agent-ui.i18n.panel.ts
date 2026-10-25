@@ -1,7 +1,7 @@
 /**
  * Panel chrome copy (session list, task/plan, jobs, tool runs, overlays,
- * command outputs, keymap, pending questions, health popover) in English and
- * Simplified Chinese.
+ * command outputs, keymap, pending questions, health popover, usage/debug
+ * digests and shared state words) in English and Simplified Chinese.
  *
  * Kept apart from `agent-ui.i18n.menu.ts` so both catalogs stay inside the
  * source-size budget. Values mirror the English fallbacks used by the panel
@@ -193,6 +193,35 @@ export const AGENT_UI_PANEL_EN: Record<string, any> = {
     health: {
         title: 'Health ({count})',
         hint: 'Ctrl+X H to toggle · hover to refresh'
+    },
+    state: {
+        on: 'ON',
+        off: 'OFF',
+        none: 'none',
+        default: '(default)'
+    },
+    usage: {
+        day: 'day',
+        week: 'week',
+        all: 'all',
+        window: '{label} {turns} turns · {input} in · {output} out · {total} total'
+    },
+    dashboard: {
+        usage: 'usage',
+        quality: 'quality',
+        compaction: 'compaction',
+        diagnostics: 'diagnostics'
+    },
+    debug: {
+        title: 'Debug config:',
+        available: ' (available: {names})',
+        session: 'session: {sessionId} · workspace: {workspace}',
+        on: 'on',
+        off: 'off'
+    },
+    apps: {
+        categoryCode: 'code',
+        categoryMessaging: 'messaging'
     }
 };
 
@@ -381,5 +410,34 @@ export const AGENT_UI_PANEL_ZH: Record<string, any> = {
     health: {
         title: '健康状态（{count}）',
         hint: 'Ctrl+X H 切换 · 悬停刷新'
+    },
+    state: {
+        on: '开启',
+        off: '关闭',
+        none: '无',
+        default: '（默认）'
+    },
+    usage: {
+        day: '今天',
+        week: '本周',
+        all: '全部',
+        window: '{label} {turns} 轮 · 输入 {input} · 输出 {output} · 合计 {total}'
+    },
+    dashboard: {
+        usage: '用量',
+        quality: '质量',
+        compaction: '压缩',
+        diagnostics: '诊断'
+    },
+    debug: {
+        title: '调试配置：',
+        available: '（可用：{names}）',
+        session: '会话：{sessionId} · 工作区：{workspace}',
+        on: '开启',
+        off: '关闭'
+    },
+    apps: {
+        categoryCode: '代码',
+        categoryMessaging: '消息'
     }
 };

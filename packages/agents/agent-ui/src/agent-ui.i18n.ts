@@ -64,6 +64,18 @@ export function formatAgentPanelStatusLabel(
 }
 
 /**
+ * Localize a boolean-ish config state word (`ON`/`OFF`/`none`/`(default)`).
+ * The identifiers stay untranslated; only the shared display words move.
+ */
+export function formatAgentPanelState(
+    translator: AgentUiTranslator | null | undefined,
+    state: 'on' | 'off' | 'none' | 'default'
+): string {
+    const fallbacks: Record<string, string> = { on: 'ON', off: 'OFF', none: 'none', default: '(default)' };
+    return formatAgentPanelLabel(translator, 'state', state, fallbacks[state]);
+}
+
+/**
  * The English default for a timeline role label. A renderer whose label differs
  * (a host override) keeps its own label instead of the catalog translation.
  */

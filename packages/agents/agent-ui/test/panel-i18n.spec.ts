@@ -9,8 +9,14 @@ import {
     AgentConsolePendingQuestionPanelComponent,
     AgentConsoleSessionsPanelComponent,
     AgentConsoleTextOverlayPanelComponent,
-    AgentConsoleWhichKeyPanelComponent
+    AgentConsoleWhichKeyPanelComponent,
+    AgentConsoleWorkingPanelComponent
 } from '../src/AgentConsolePanels';
+import { formatUsageSummary } from '../src/AgentConsoleFormatters';
+import { refreshUsageDigest } from '../src/AgentConsoleDiagnosticsView';
+import { runDebugConfigCommand, runMemoriesCommand, runPersonalityCommand } from '../src/AgentConsolePreferenceCommands';
+import { runAppsCommand } from '../src/AgentConsoleExtensionCommands';
+import { AgentConsoleComponent } from '../src/AgentConsoleComponent';
 
 function translateFrom(bundle: typeof agentUiEnglish) {
     return (key: string, params?: Record<string, any>) => {
@@ -207,5 +213,112 @@ export class PanelI18nTest {
         expect(panel.jobsSummaryLabel).toEqual('jobs 0');
         expect(panel.jobListLines).toEqual(['no scheduled jobs']);
         expect(panel.jobsHintLabel).toEqual('no scheduled jobs   use schedulePrompt');
+    }
+    @Test('/usage windows are localized while the English default is unchanged')
+    async usageSummaryLocalized() {
+        const usage = {
+            daily: { turns: 3, promptTokens: 41800, completionTokens: 1800, totalTokens: 43500 },
+            weekly: { turns: 21, promptTokens: 354000, completionTokens: 4700, totalTokens: 358700 },
+            cumulative: { turns: 96, promptTokens: 1700000, completionTokens: 21200, totalTokens: 1700000 }
+        };
+        expect(formatUsageSummary(usage, zh)).toEqual(
+            '今天 3 轮 · 输入 41.8K · 输出 1.8K · 合计 43.5K | 本周 21 轮 · 输入 354K · 输出 4.7K · 合计 358.7K | 全部 96 轮 · 输入 1.7M · 输出 21.2K · 合计 1.7M'
+        );
+        expect(formatUsageSummary({ selectedRange: 'weekly', selected: usage.weekly }, zh)).toEqual(
+            '本周 21 轮 · 输入 354K · 输出 4.7K · 合计 358.7K'
+        );
+        expect(formatUsageSummary(usage)).toContain('day 3 turns');
+        expect(formatUsageSummary(usage)).toContain('all 96 turns');
+    }
+
+    @Test('usage digest load and dashboard prefix are localized')
+    async usageDigestLocalized() {
+        const digestState: any = { setUsageDigest(value: string) { this.usageDigest = value; } };
+        await refreshUsageDigest(
+            { getUsageStats: async () => ({ daily: { turns: 1, totalTokens: 9 }, cumulative: { turns: 1, totalTokens: 9 } }) },
+            digestState,
+            zh
+        );
+        expect(digestState.usageDigest).toContain('今天 1 轮');
+        const panel = new AgentConsoleWorkingPanelComponent(state({ status: 'running', usageDigest: digestState.usageDigest }), zh);
+        expect(panel.dashboardUsageLabel).toEqual(`用量 · ${digestState.usageDigest}`);
+    }
+
+    @Test('/debug-config header, state words and session line are localized')
+    async debugConfigLocalized() {
+        const outputs: Array<{ command: string; text: string }> = [];
+        const host: any = {
+            translator: zh,
+            options: {
+                model: { provider: 'deepseek', model: 'deepseek-v4-flash', defaultProfile: 'fast', profiles: { fast: {}, strong: {} } },
+                ui: { title: 'tsdi-agent', memoryInjection: true }
+            },
+            state: { sessionId: 's1', modelProfile: 'fast' },
+            workspace: '/tmp/opencode/zh-ws2',
+            notify() { /* not used */ },
+            pushCommandOutput: (command: string, text: string) => { outputs.push({ command, text }); },
+            rpcRequestContext: () => ({})
+        };
+        await runDebugConfigCommand(host);
+        expect(outputs[0].command).toEqual('/debug-config');
+        const lines = outputs[0].text.split('\n');
+        expect(lines[0]).toEqual('调试配置：');
+        expect(lines[2]).toEqual('profile: fast（可用：fast, strong）');
+        expect(lines[3]).toEqual('ui.title: tsdi-agent');
+        expect(lines[4]).toEqual('ui.statusline: （默认）');
+        expect(lines[5]).toEqual('ui.memoryInjection: 开启');
+        expect(lines[6]).toEqual('ui.personality: 无');
+        expect(lines[7]).toEqual('ui.queueMode: 关闭');
+        expect(lines[10]).toEqual('会话：s1 · 工作区：/tmp/opencode/zh-ws2');
+    }
+
+    @Test('/memories and /personality state words are localized')
+    async preferenceStateWordsLocalized() {
+        const notices: string[] = [];
+        const host: any = {
+            translator: zh,
+            options: { ui: {} },
+            state: { sessionId: 's1', projectKey: '' },
+            workspace: '/tmp/ws',
+            runtime: {},
+            notify: (message: string) => notices.push(message),
+            pushCommandOutput() { /* not used */ },
+            rpcRequestContext: () => ({})
+        };
+        await runMemoriesCommand(host);
+        expect(notices[0]).toContain('记忆注入 开启');
+        await runPersonalityCommand(host);
+        expect(notices[1]).toContain('人格：无');
+    }
+
+    @Test('/apps rows localize the category word and keep descriptions verbatim')
+    async appsCategoryLocalized() {
+        let title = '';
+        let options: any[] = [];
+        const host: any = {
+            translator: zh,
+            options: { ui: {} },
+            state: {},
+            notify() { /* not used */ },
+            select: async (menuTitle: string, menuOptions: any[]) => { title = menuTitle; options = menuOptions; return undefined; },
+            pushCommandOutput() { /* not used */ },
+            invokeTool: async () => ({})
+        };
+        await runAppsCommand(host);
+        expect(title).toEqual('应用');
+        expect(options.find(option => option.value === 'github').description)
+            .toEqual('代码 · Repositories, issues, pull requests, and actions');
+        expect(options.find(option => option.value === 'slack').description)
+            .toEqual('消息 · Channels, threads, and messages');
+    }
+
+    @Test('shell and git-snapshot command hosts forward the console translator')
+    async commandHostsForwardTranslator() {
+        const fake: any = Object.create(AgentConsoleComponent.prototype);
+        fake.state = { sessionId: 's1' };
+        fake.sessionService = { listGitStepSnapshots: async () => [] };
+        fake.translator = zh;
+        expect(fake.gitSnapshotCommandHost().translator).toBe(zh);
+        expect(fake.shellCommandHost().translator).toBe(zh);
     }
 }
