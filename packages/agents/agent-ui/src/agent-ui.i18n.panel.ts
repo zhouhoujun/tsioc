@@ -157,7 +157,11 @@ export const AGENT_UI_PANEL_EN: Record<string, any> = {
     },
     health: {
         title: 'Health ({count})',
-        hint: 'Ctrl+X H to toggle · hover to refresh'
+        hint: 'Ctrl+X H to toggle · hover to refresh',
+        statusOk: 'ok',
+        statusWarn: 'warn',
+        statusError: 'error',
+        statusUnknown: 'unknown'
     },
     state: {
         on: 'ON',
@@ -363,7 +367,11 @@ export const AGENT_UI_PANEL_ZH: Record<string, any> = {
     },
     health: {
         title: '健康状态（{count}）',
-        hint: 'Ctrl+X H 切换 · 悬停刷新'
+        hint: 'Ctrl+X H 切换 · 悬停刷新',
+        statusOk: '正常',
+        statusWarn: '警告',
+        statusError: '异常',
+        statusUnknown: '未知'
     },
     state: {
         on: '开启',

@@ -4103,12 +4103,8 @@ export class AgentConsoleHealthPopoverComponent {
     }
 
     statusLabel(status: AgentConsoleHealthStatus): string {
-        switch (status) {
-            case 'ok': return 'ok';
-            case 'warn': return 'warn';
-            case 'error': return 'error';
-            default: return 'unknown';
-        }
+        const key = status === 'ok' ? 'statusOk' : status === 'warn' ? 'statusWarn' : status === 'error' ? 'statusError' : 'statusUnknown';
+        return panelLabel(this.translator, 'health', key, status);
     }
 
     statusStyle(status: AgentConsoleHealthStatus) {

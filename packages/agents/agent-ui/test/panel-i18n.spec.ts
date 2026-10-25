@@ -48,7 +48,7 @@ import { formatReviewHeaderMeta, formatReviewSelectionMeta, formatReviewStatsMet
 import { createReviewTask } from './_helpers';
 import { loadInputHistory } from '../src/AgentConsoleInputHelpers';
 import { buildCodingTaskSelectOption, describeCodingTaskRollback } from '../src/AgentConsoleCodingTaskHandlers';
-import { AgentConsoleTasksPanelComponent } from '../src/AgentConsolePanels';
+import { AgentConsoleTasksPanelComponent, AgentConsoleHealthPopoverComponent } from '../src/AgentConsolePanels';
 import { runDebugConfigCommand, runMemoriesCommand, runPersonalityCommand } from '../src/AgentConsolePreferenceCommands';
 import { runAppsCommand } from '../src/AgentConsoleExtensionCommands';
 import { AgentConsoleComponent } from '../src/AgentConsoleComponent';
@@ -1084,5 +1084,25 @@ export class PanelI18nTest {
         const enState = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         await loadInputHistory({ load: async () => { throw new Error('disk gone'); } }, () => '/tmp/ws', enState as any);
         expect(enState.lastError).toEqual('Failed to load input history: disk gone');
+    }
+    @Test('health popover status words follow the locale')
+    async healthStatusLocalized() {
+        const buildState = () => {
+            const st = new AgentConsoleSessionState(new InMemoryCommandExecutionControl(), zh as any);
+            st.setHealthItems([
+                { id: 'gateway', label: 'Gateway', status: 'ok', detail: '已连接' },
+                { id: 'mcp', label: 'MCP', status: 'warn', detail: '1/2 个工具已激活' }
+            ] as any);
+            return st;
+        };
+        const zhPanel = new AgentConsoleHealthPopoverComponent(buildState() as any, zh);
+        expect(zhPanel.titleText).toEqual('健康状态（2）');
+        expect(zhPanel.statusLabel('ok')).toEqual('正常');
+        expect(zhPanel.statusLabel('warn')).toEqual('警告');
+        expect(zhPanel.statusLabel('error')).toEqual('异常');
+        expect(zhPanel.statusLabel('unknown')).toEqual('未知');
+        const enPanel = new AgentConsoleHealthPopoverComponent(buildState() as any);
+        expect(enPanel.statusLabel('ok')).toEqual('ok');
+        expect(enPanel.statusLabel('warn')).toEqual('warn');
     }
 }

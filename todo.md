@@ -1788,3 +1788,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 在键集锁步之外新增**值级守卫**：展开 `panel/review/tasks/diagnostics/transcript` 的 en/zh 值，只允许 4 个语言中性 key 相同（`esc`、`tasks.esc`、`quality.recordTitle` 纯数据骨架、`harness.profileRow` 的 `profile` 标识），其余相同即列出 offender 并失败。
 - `i18n-locale-regression` 9 → **10 条**；agent-ui **1703 passing**。
 - 门禁：`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
+
+## 2026-10-25 健康状态浮层状态词中文化
+- **现象（zh-CN 真实 TUI，`Ctrl+X h`）**：浮层条目详情已中文，但状态词仍是 `ok / warn / error / unknown`（`ok Gateway 已连接`）。
+- **做法**：`AgentConsoleHealthPopoverComponent.statusLabel` 改为 `agent.menu.panel.health.statusOk|Warn|Error|Unknown`（`正常/警告/异常/未知`），switch 压成单行映射；Panels **4148 → 4144**，baseline 4149 → **4145**。
+- **测试**：`panel-i18n.spec.ts` 42 → **43 条**（health 标题 `健康状态（2）` + 四个状态词 zh/en）。
+- **真实 TUI（zh-CN）复核**：`Ctrl+X h` → `健康状态（3）` / `正常 Gateway 已连接` / `未知 MCP 未配置 MCP 服务器` / `未知 LSP 没有可用的 LSP 工具` / `Ctrl+X H 切换 · 悬停刷新`。
+- **门禁**：agent-ui **1704 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
