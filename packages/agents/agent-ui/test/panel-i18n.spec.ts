@@ -47,6 +47,7 @@ import { formatAgentPanelLabel } from '../src/agent-ui.i18n';
 import { formatReviewHeaderMeta, formatReviewSelectionMeta, formatReviewStatsMeta } from '../src/AgentConsoleReviewPanelFormat';
 import { createReviewTask } from './_helpers';
 import { buildCodingTaskSelectOption, describeCodingTaskRollback } from '../src/AgentConsoleCodingTaskHandlers';
+import { AgentConsoleTasksPanelComponent } from '../src/AgentConsolePanels';
 import { runDebugConfigCommand, runMemoriesCommand, runPersonalityCommand } from '../src/AgentConsolePreferenceCommands';
 import { runAppsCommand } from '../src/AgentConsoleExtensionCommands';
 import { AgentConsoleComponent } from '../src/AgentConsoleComponent';
@@ -958,5 +959,92 @@ export class PanelI18nTest {
         const enOption = buildCodingTaskSelectOption(retryTask as any, [retryTask as any]);
         expect(enOption.description).toContain('retry 1');
         expect(enOption.detail).toContain('Task: task-2');
+    }
+    @Test('coding task detail block follows the locale')
+    async codingTaskDetailLocalized() {
+        const buildState = () => {
+            const zhState = new AgentConsoleSessionState(new InMemoryCommandExecutionControl(), zh as any);
+            zhState.configure({ sessionId: 's1' } as any);
+            zhState.setProjectContext({ projectLabel: 'exam-system', projectSummary: 'latest project summary', projectSessionCount: 2 } as any);
+            zhState.setReviewTasks([{
+                id: 'task-0', title: 'Initial patch', sourceSessionId: 'chat-b', status: 'failed',
+                executionMode: 'parallel', lineageTaskCount: 2, workerCount: 2,
+                rollbackAvailable: true, checkpointSummary: '1 total · 1 available · 0 applied · 0 invalidated'
+            } as any, {
+                id: 'task-1', title: 'Patch handlers', sourceSessionId: 'chat-b', status: 'completed',
+                executionMode: 'parallel', retryOfTaskId: 'task-0', retryDepth: 1, lineageTaskCount: 2, workerCount: 1,
+                rollbackAvailable: true, checkpointSummary: '1 total · 1 available · 0 applied · 0 invalidated'
+            } as any]);
+            zhState.setTaskRecords([
+                { id: 'task-0', title: 'Initial patch', sourceSessionId: 'chat-b', status: 'failed' },
+                {
+                    id: 'task-1', title: 'Patch handlers', sourceSessionId: 'chat-b', status: 'completed',
+                    result: {
+                        executionMode: 'parallel',
+                        rollback: { available: true, mode: 'parallel' },
+                        aggregate: { status: 'completed', completedWorkers: 1, totalWorkers: 1, failedWorkers: 0 },
+                        workers: [{ workerId: 'worker-1' }],
+                        diff: { summary: '1 worker diff captured' }
+                    },
+                    metadata: {
+                        executionMode: 'parallel', retryOfTaskId: 'task-0', retrySequence: 1,
+                        retryOfWorkerIds: ['worker-2'], carryForwardWorkerIds: ['worker-1'],
+                        checkpoints: [{ id: 'checkpoint-task-1', status: 'available' }]
+                    },
+                    planning: { summary: 'Patch handlers summary' },
+                    goal: 'Patch handlers goal',
+                    actions: [
+                        { title: 'Edit handlers', status: 'completed', tool: 'edit_file', workerId: 'worker-1' },
+                        { title: 'Review diff', status: 'completed', tool: 'git_operations' }
+                    ]
+                }
+            ] as any);
+            zhState.setSelectedReviewTaskId('task-1');
+            zhState.setTasksFocused(true);
+            return zhState;
+        };
+        const detail = new AgentConsoleTasksPanelComponent(buildState() as any, zh).selectedTaskDetailLabel;
+        expect(detail).toContain('摘要 latest project summary');
+        expect(detail).toContain('会话 chat-b');
+        expect(detail).toContain('标题 Patch handlers');
+        expect(detail).toContain('状态 completed');
+        expect(detail).toContain('模式 parallel');
+        expect(detail).toContain('动作 2');
+        expect(detail).toContain('工作单元 1');
+        expect(detail).toContain('重试深度 1');
+        expect(detail).toContain('血缘任务 2');
+        expect(detail).toContain('重试 task-0');
+        expect(detail).toContain('重试工作者 worker-2');
+        expect(detail).toContain('前移 worker-1');
+        expect(detail).toContain('回滚 可回滚 (parallel)');
+        expect(detail).toContain('检查点');
+
+        const enDetail = new AgentConsoleTasksPanelComponent(buildState() as any).selectedTaskDetailLabel;
+        expect(enDetail).toContain('summary latest project summary');
+        expect(enDetail).toContain('retry depth 1');
+        expect(enDetail).toContain('carry forward worker-1');
+    }
+    @Test('review annotations and checkpoints detail follow the locale')
+    async reviewExtrasLocalized() {
+        const reviewTask = {
+            ...createReviewTask(),
+            metadata: { ...(createReviewTask() as any).metadata, checkpoints: [{ id: 'c1', status: 'available' }, { id: 'c2', status: 'applied' }] }
+        } as any;
+        const zhState = new AgentConsoleSessionState(new InMemoryCommandExecutionControl(), zh as any);
+        zhState.setReviewTasks([reviewTask]);
+        zhState.setSelectedReviewTaskId(reviewTask.id);
+        zhState.openReview(reviewTask, {
+            executionMode: 'parallel',
+            diff: { summary: '', text: 'diff --git a/src/a.ts b/src/a.ts\n+new line' },
+            workers: [{ workerId: 'worker-1', actionIds: ['edit-1'], status: 'completed', diff: { text: 'diff --git a/src/a.ts b/src/a.ts\n+new line' } }]
+        } as any);
+        zhState.setReviewFileAnnotation('approved', 'looks good');
+        let lines = zhState.reviewDetailLines.join('\n');
+        expect(lines).toContain('标注：已批准 · looks good');
+        expect(lines).toContain('检查点：共 2 个 · 1 可用 · 1 已应用 · 0 已失效');
+
+        zhState.clearReviewFileAnnotation();
+        lines = zhState.reviewDetailLines.join('\n');
+        expect(lines).toContain('[a] 批准  [r] 拒绝  [c] 清除标注');
     }
 }

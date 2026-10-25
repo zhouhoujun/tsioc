@@ -1741,3 +1741,15 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **门禁**：agent-ui **1696 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
 - **仍待处理**：编码任务面板的**选中任务详情块**（`title/session/status/mode/plan/goal/actions/workers/retry depth/retry workers/carry forward/worker status/worker failures/rollback/checkpoints/diff`，位于 `AgentConsolePanels` 的 `selectedTaskDetailLabel`）以及 review 明细里的 `Carry Forward/Checkpoints/Worker Worktree/Actions/Error/[a]pprove` 尚未本地化；activity 面板文案因 `showActivityPanel === false` 当前不可见，暂不处理。
 - **另记（待查）**：turn 运行中执行的排队命令，其 `command-execution` 行偶发显示英文状态词（`✓ $ /status completed`），而空闲执行时为 `已完成`；已确认 `syncCommandExecutionTranscript` 在单测与组件级路径均本地化，真实 CLI 该分支来源未定位，先记录不盲改。
+
+## 2026-10-25 编码任务选中详情 + 评审标注/检查点明细中文化（并拆出 tasks catalog）
+- **现象**：`/tasks` 选中编码任务后详情块为英文（`summary … / title … / session … / status … / mode … / plan … / goal … / actions N / workers N / retry depth N / lineage tasks N / retry <id> / retry workers … / carry forward … / worker status … / worker failures … / rollback available (mode) / checkpoints N total · N available / diff …`）；评审明细还有 `Carry Forward:/Checkpoints:/Annotation: approved|rejected/[a]pprove [r]eject [c]lear annotation/Worker Worktree/Actions/Error`。
+- **做法**：
+  - 把整个 `tasks` 文案段从 `agent-ui.i18n.panel.ts` 拆到 `src/agent-ui.i18n.tasks.ts`（`AGENT_UI_TASKS_EN/ZH`，仍并回 `menu.panel.tasks.*`），panel catalog **567 → 424**，并新增 26 个详情 key（`checkpointSummary/rollbackAvailableOption/workerStatusLine/detailTitleLabel/detail*` 等）。
+  - `AgentConsolePanels.selectedTaskDetailLabel` 与 `projectSummaryDetail` 全部走 `panelLabel(this.translator, 'tasks', …)`，含 `rollback available (mode)`、`worker status … · N failed`、`carry forward`、`checkpoints`、`diff`、动作行的 `worker <id>` 与动作回退词。
+  - `AgentConsoleSessionState` 的评审明细新增 `carryForward/checkpoints/annotationApproved|Rejected|Hint/workerWorktree/workerActions/workerError`，仍走 `translateLabel`；行数不变（6660）。
+  - 标识符保留：任务 id/status/executionMode、checkpoint summary、diff/plan/goal 文本、worker id、标注评论。
+- **ratchet**：Panels 一度 4157 超预算 → 压缩 `workerStatus` 拼接后 **4154**，baseline 4156 → **4155**；SessionState 6660 不变（baseline 6661）；`CodingTaskHandlers` 保持 809（baseline 810）。
+- **测试**：`panel-i18n.spec.ts` 37 → **39 条**（选中任务详情块 zh/en 对照含 `标题/状态/模式/重试深度/血缘任务/重试工作者/前移/回滚/检查点/差异`；评审标注与检查点明细 zh）。
+- **真实 TUI（zh-CN）复核**：`/diff` 评审面板 `状态 done · 模式 不适用 · 工作者 0 · 分组 1 · 文件 2 · 无法回滚`、`分组 1/1 aggregate · 文件 1/2 a.txt · 风险 low · 行 …`、明细 `评审：待处理 / 范围：2 个文件有变更 / 分组：1 / 当前分组：… 状态 done · 2 个文件有变更 / 文件：2 / 当前文件：…`、文件行 `[修改]/[新增]`（与上一批一起验证）。
+- **门禁**：agent-ui **1698 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；console-renderer 87 / vm-panels 41 / vm-review-tasks 76 保持通过；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。

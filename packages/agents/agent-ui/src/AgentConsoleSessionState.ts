@@ -4459,7 +4459,7 @@ export class AgentConsoleSessionState {
             ? this.reviewTask.metadata.carryForwardWorkerIds.filter((item: any) => typeof item === 'string' && item)
             : [];
         if (carryForwardWorkerIds.length) {
-            lines.push(`Carry Forward: ${carryForwardWorkerIds.join(', ')}`);
+            lines.push(this.translateLabel('agent.menu.panel.review.carryForward', { ids: carryForwardWorkerIds.join(', ') }, `Carry Forward: ${carryForwardWorkerIds.join(', ')}`));
         }
         const checkpoints = Array.isArray(this.reviewTask?.metadata?.checkpoints)
             ? this.reviewTask?.metadata?.checkpoints
@@ -4468,7 +4468,7 @@ export class AgentConsoleSessionState {
             const available = checkpoints.filter((entry: any) => entry?.status === 'available').length;
             const applied = checkpoints.filter((entry: any) => entry?.status === 'applied').length;
             const invalidated = checkpoints.filter((entry: any) => entry?.status === 'invalidated').length;
-            lines.push(`Checkpoints: ${checkpoints.length} total · ${available} available · ${applied} applied · ${invalidated} invalidated`);
+            lines.push(this.translateLabel('agent.menu.panel.review.checkpoints', { total: checkpoints.length, available: available, applied: applied, invalidated: invalidated }, `Checkpoints: ${checkpoints.length} total · ${available} available · ${applied} applied · ${invalidated} invalidated`));
         }
 
         const groups = this.reviewGroups;
@@ -4500,8 +4500,8 @@ export class AgentConsoleSessionState {
                     if (selectedSection) {
                         const annot = this.reviewFileAnnotations[selectedSection.path];
                         const annotLine = annot
-                            ? `  Annotation: ${annot.status === 'approved' ? 'approved' : 'rejected'}${annot.comment ? ` · ${annot.comment}` : ''}`
-                            : '  [a]pprove  [r]eject  [c]lear annotation';
+                            ? `${this.translateLabel(annot.status === 'approved' ? 'agent.menu.panel.review.annotationApproved' : 'agent.menu.panel.review.annotationRejected', undefined, `  Annotation: ${annot.status === 'approved' ? 'approved' : 'rejected'}`)}${annot.comment ? ` · ${annot.comment}` : ''}`
+                            : this.translateLabel('agent.menu.panel.review.annotationHint', undefined, '  [a]pprove  [r]eject  [c]lear annotation');
                         lines.push(this.translateLabel('agent.menu.panel.review.currentFile', { path: selectedSection.path, additions: selectedSection.additions, deletions: selectedSection.deletions }, `Current File: ${selectedSection.path} (+${selectedSection.additions} -${selectedSection.deletions})`));
                         lines.push(annotLine);
                         lines.push(...this.renderReviewPatchLines(selectedSection, selectedGroup.key));
@@ -5697,9 +5697,9 @@ export class AgentConsoleSessionState {
             this.selectedReviewPatchFilter !== 'all' ? this.translateLabel('agent.menu.panel.review.patchFilter', { filter: this.selectedReviewPatchFilter }, `Patch Filter: ${this.selectedReviewPatchFilter}`) : '',
             group.kind === 'worker' && group.status ? this.translateLabel('agent.menu.panel.review.workerStatus', { status: group.status }, `Worker Status: ${group.status}`) : '',
             group.kind === 'worker' && group.branch ? this.translateLabel('agent.menu.panel.review.workerBranch', { branch: group.branch }, `Worker Branch: ${group.branch}`) : '',
-            group.kind === 'worker' && group.worktreePath ? `Worker Worktree: ${group.worktreePath}` : '',
-            group.kind === 'worker' && group.actionIds?.length ? `Worker Actions: ${group.actionIds.join(', ')}` : '',
-            group.kind === 'worker' && group.error ? `Worker Error: ${group.error}` : ''
+            group.kind === 'worker' && group.worktreePath ? this.translateLabel('agent.menu.panel.review.workerWorktree', { path: group.worktreePath }, `Worker Worktree: ${group.worktreePath}`) : '',
+            group.kind === 'worker' && group.actionIds?.length ? this.translateLabel('agent.menu.panel.review.workerActions', { ids: group.actionIds.join(', ') }, `Worker Actions: ${group.actionIds.join(', ')}`) : '',
+            group.kind === 'worker' && group.error ? this.translateLabel('agent.menu.panel.review.workerError', { error: group.error }, `Worker Error: ${group.error}`) : ''
         ].filter(Boolean);
         return [
             ...lines

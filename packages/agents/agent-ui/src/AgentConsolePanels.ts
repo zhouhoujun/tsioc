@@ -1436,8 +1436,8 @@ export class AgentConsoleTasksPanelComponent {
         const task = this.state.selectedTask;
         const checkpoints = Array.isArray(task?.metadata?.checkpoints) ? task.metadata.checkpoints : [];
         const checkpointSummary = checkpoints.length
-            ? `${checkpoints.length} total · ${checkpoints.filter((entry: any) => entry?.status === 'available').length} available`
-            : 'none';
+            ? panelLabel(this.translator, 'tasks', 'checkpointSummary', '{total} total · {available} available', { total: checkpoints.length, available: checkpoints.filter((entry: any) => entry?.status === 'available').length })
+            : panelLabel(this.translator, 'tasks', 'checkpointNone', 'none');
         const rollback = task?.result?.rollback;
         const aggregate = task?.result?.aggregate;
         const retrySourceTaskId = typeof task?.metadata?.retrySourceTaskId === 'string' && task.metadata.retrySourceTaskId
@@ -1455,46 +1455,45 @@ export class AgentConsoleTasksPanelComponent {
             ? task.metadata.retrySequence
             : undefined;
         const lineageTaskCount = this.state.reviewTaskChoices.find(item => item.id === task.id)?.lineageTaskCount;
+        const rollbackMode = rollback?.mode ? ` (${rollback.mode})` : '';
         const rollbackLabel = rollback?.available === true
-            ? `available${rollback?.mode ? ` (${rollback.mode})` : ''}`
+            ? panelLabel(this.translator, 'tasks', 'rollbackAvailableOption', 'available{mode}', { mode: rollbackMode })
             : rollback?.rolledBackAt
-                ? `applied${rollback?.mode ? ` (${rollback.mode})` : ''}`
-                : 'unavailable';
-        const workerStatus = aggregate
-            ? `${aggregate.status} · ${aggregate.completedWorkers}/${aggregate.totalWorkers} completed${aggregate.failedWorkers ? ` · ${aggregate.failedWorkers} failed` : ''}`
-            : '';
+                ? panelLabel(this.translator, 'tasks', 'rollbackAppliedOption', 'applied{mode}', { mode: rollbackMode })
+                : panelLabel(this.translator, 'tasks', 'rollbackUnavailableOption', 'unavailable');
+        const workerStatus = aggregate ? panelLabel(this.translator, 'tasks', 'workerStatusLine', '{status} · {completed}/{total} completed', { status: aggregate.status, completed: aggregate.completedWorkers, total: aggregate.totalWorkers }) + (aggregate.failedWorkers ? panelLabel(this.translator, 'tasks', 'workerStatusFailed', ' · {count} failed', { count: aggregate.failedWorkers }) : '') : '';
         const isolatedFailureLabel = Array.isArray(aggregate?.isolatedFailures) && aggregate.isolatedFailures.length
-            ? `worker failures ${aggregate.isolatedFailures.slice(0, 2).map((failure: any) => `${failure.workerId}: ${failure.error}`).join(' · ')}`
+            ? panelLabel(this.translator, 'tasks', 'workerFailuresLabel', 'worker failures {list}', { list: aggregate.isolatedFailures.slice(0, 2).map((failure: any) => `${failure.workerId}: ${failure.error}`).join(' · ') })
             : '';
         const parts = [
             this.projectSummaryDetail,
-            `title ${task.title || task.id}`,
-            task?.sourceSessionId ? `session ${task.sourceSessionId}` : '',
-            task.status ? `status ${task.status}` : '',
-            task?.result?.executionMode || task?.metadata?.executionMode ? `mode ${task?.result?.executionMode || task?.metadata?.executionMode}` : '',
-            task?.planning?.summary ? `plan ${task.planning.summary}` : '',
-            task?.goal ? `goal ${task.goal}` : '',
-            `actions ${(task.actions || []).length}`,
-            `workers ${Array.isArray(task?.result?.workers) ? task.result.workers.length : 0}`,
-            retryDepth !== undefined ? `retry depth ${retryDepth}` : '',
-            typeof lineageTaskCount === 'number' && lineageTaskCount > 1 ? `lineage tasks ${lineageTaskCount}` : '',
-            retrySourceTaskId ? `retry ${retrySourceTaskId}` : '',
-            retryWorkerIds.length ? `retry workers ${retryWorkerIds.join(', ')}` : '',
-            carryForwardWorkerIds.length ? `carry forward ${carryForwardWorkerIds.join(', ')}` : '',
-            workerStatus ? `worker status ${workerStatus}` : '',
+            panelLabel(this.translator, 'tasks', 'detailTitleLabel', 'title {value}', { value: task.title || task.id }),
+            task?.sourceSessionId ? panelLabel(this.translator, 'tasks', 'detailSessionLabel', 'session {id}', { id: task.sourceSessionId }) : '',
+            task.status ? panelLabel(this.translator, 'tasks', 'detailStatusLabel', 'status {status}', { status: task.status }) : '',
+            task?.result?.executionMode || task?.metadata?.executionMode ? panelLabel(this.translator, 'tasks', 'detailModeLabel', 'mode {value}', { value: task?.result?.executionMode || task?.metadata?.executionMode }) : '',
+            task?.planning?.summary ? panelLabel(this.translator, 'tasks', 'detailPlanLabel', 'plan {value}', { value: task.planning.summary }) : '',
+            task?.goal ? panelLabel(this.translator, 'tasks', 'detailGoalLabel', 'goal {value}', { value: task.goal }) : '',
+            panelLabel(this.translator, 'tasks', 'detailActionsLabel', 'actions {count}', { count: (task.actions || []).length }),
+            panelLabel(this.translator, 'tasks', 'detailWorkersLabel', 'workers {count}', { count: Array.isArray(task?.result?.workers) ? task.result.workers.length : 0 }),
+            retryDepth !== undefined ? panelLabel(this.translator, 'tasks', 'retryDepthLabel', 'retry depth {depth}', { depth: retryDepth }) : '',
+            typeof lineageTaskCount === 'number' && lineageTaskCount > 1 ? panelLabel(this.translator, 'tasks', 'detailLineageTasksLabel', 'lineage tasks {count}', { count: lineageTaskCount }) : '',
+            retrySourceTaskId ? panelLabel(this.translator, 'tasks', 'detailRetryLabel', 'retry {id}', { id: retrySourceTaskId }) : '',
+            retryWorkerIds.length ? panelLabel(this.translator, 'tasks', 'retryWorkersLabel', 'retry workers {ids}', { ids: retryWorkerIds.join(', ') }) : '',
+            carryForwardWorkerIds.length ? panelLabel(this.translator, 'tasks', 'detailCarryForwardLabel', 'carry forward {ids}', { ids: carryForwardWorkerIds.join(', ') }) : '',
+            workerStatus ? panelLabel(this.translator, 'tasks', 'detailWorkerStatusLabel', 'worker status {value}', { value: workerStatus }) : '',
             isolatedFailureLabel,
-            `rollback ${rollbackLabel}`,
-            `checkpoints ${checkpointSummary}`,
-            task?.result?.diff?.summary ? `diff ${task.result.diff.summary}` : ''
+            panelLabel(this.translator, 'tasks', 'detailRollbackLabel', 'rollback {value}', { value: rollbackLabel }),
+            panelLabel(this.translator, 'tasks', 'detailCheckpointsLabel', 'checkpoints {summary}', { summary: checkpointSummary }),
+            task?.result?.diff?.summary ? panelLabel(this.translator, 'tasks', 'detailDiffLabel', 'diff {summary}', { summary: task.result.diff.summary }) : ''
         ].filter(Boolean);
 
         const actionLines = (task.actions || []).map((action: any, index: number) => {
             const actionMeta = [
                 action?.status || 'unknown',
                 action?.tool || '',
-                action?.workerId ? `worker ${action.workerId}` : ''
+                action?.workerId ? panelLabel(this.translator, 'tasks', 'actionWorker', 'worker {id}', { id: action.workerId }) : ''
             ].filter(Boolean).join(' · ');
-            return `${index + 1}. ${action?.title || action?.id || 'action'}${actionMeta ? ` (${actionMeta})` : ''}`;
+            return `${index + 1}. ${action?.title || action?.id || panelLabel(this.translator, 'tasks', 'actionFallback', 'action')}${actionMeta ? ` (${actionMeta})` : ''}`;
         });
 
         return [...parts, ...actionLines].join('\n');
@@ -1504,7 +1503,7 @@ export class AgentConsoleTasksPanelComponent {
         const summary = String(this.state.projectSummary || '').trim();
         if (!summary) return '';
         const limit = Math.max(1, this.state.consoleOptions.summaryMaxLength);
-        return `summary ${summary.length > limit ? `${summary.slice(0, limit - 1).trimEnd()}…` : summary}`;
+        return panelLabel(this.translator, 'tasks', 'summaryPrefix', 'summary {value}', { value: summary.length > limit ? `${summary.slice(0, limit - 1).trimEnd()}…` : summary });
     }
 
     get shouldShow(): boolean {
