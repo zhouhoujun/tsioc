@@ -1849,3 +1849,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - `AgentConsoleVim.ts` 的 `VIM_ACTION_LABELS`（15 条英文动作描述）全仓库**零引用**，且 `AgentConsoleVim` 未从 `src/index.ts` 导出 → 属内部死代码，按“生产零调用即死代码”规则删除；文件 113 → 96 行。
 - 仍未删除（公开导出面，需明确同意）：`AgentConsoleDiagnosticsHandlers` 的 `openSummaryQualityRecords/openTurnDiagnosticsList/openTurnDiagnosticsTrend/openSummaryQualityTrend`、`AgentConsoleFormatters` 末尾 delegation 系列。
 - 门禁：agent-ui **1707 passing**（EXIT=0），agents gate 结果见本轮报告。
+
+## 2026-10-25 工具运行面板状态词中文化（真实工具轮次发现）
+- **现象（zh-CN 真实 TUI，跑完 read 工具后 `/toolruns`）**：`工具运行 1 · read_file success 6ms`、行 `read_file [success]`、详情 `read_file [success] 耗时 6ms`——状态标识 `success` 未命中 `statusCompleted`，回退原文。
+- **做法**：panel `toolRuns` 补 `statusSuccess`（`success`/`成功`）与 `statusError`（`error`/`错误`），`formatAgentPanelStatusLabel` 的 `status${Cap}` 映射即可命中；`running/completed/failed/cancelled/pending` 原有 key 不变。
+- **测试**：`panel-i18n.spec.ts` 46 → **47 条**（真实 `setToolRuns` + `upsertToolRun`：zh 摘要 `read_file 成功`、行/详情 `[成功]`，en `[success]`）。
+- **真实 TUI（zh-CN）复核**：`工具运行 1 · read_file 成功 6ms` / `read_file [成功] 6ms` / `read_file [成功] 耗时 6ms`；`输入/输出/模式` 保持中文，`sequential` 为执行模式标识保留原文。
+- **门禁**：agent-ui **1708 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。

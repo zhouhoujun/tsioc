@@ -97,6 +97,8 @@ export const AGENT_UI_PANEL_EN: Record<string, any> = {
         error: 'error {text}',
         statusRunning: 'running',
         statusCompleted: 'completed',
+        statusSuccess: 'success',
+        statusError: 'error',
         statusFailed: 'failed',
         statusCancelled: 'cancelled',
         statusPending: 'pending'
@@ -351,6 +353,8 @@ export const AGENT_UI_PANEL_ZH: Record<string, any> = {
         error: '错误 {text}',
         statusRunning: '运行中',
         statusCompleted: '已完成',
+        statusSuccess: '成功',
+        statusError: '错误',
         statusFailed: '失败',
         statusCancelled: '已取消',
         statusPending: '等待中'

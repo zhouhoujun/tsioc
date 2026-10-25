@@ -49,7 +49,7 @@ import { createReviewTask } from './_helpers';
 import { loadInputHistory } from '../src/AgentConsoleInputHelpers';
 import { openCommandPaletteView } from '../src/AgentConsoleTerminalInputController';
 import { buildCodingTaskSelectOption, describeCodingTaskRollback } from '../src/AgentConsoleCodingTaskHandlers';
-import { AgentConsoleTasksPanelComponent, AgentConsoleHealthPopoverComponent } from '../src/AgentConsolePanels';
+import { AgentConsoleTasksPanelComponent, AgentConsoleHealthPopoverComponent, AgentConsoleToolRunsPanelComponent } from '../src/AgentConsolePanels';
 import { runDebugConfigCommand, runMemoriesCommand, runPersonalityCommand } from '../src/AgentConsolePreferenceCommands';
 import { runAppsCommand } from '../src/AgentConsoleExtensionCommands';
 import { openHarnessListView } from '../src/AgentConsoleHarnessCommands';
@@ -1187,5 +1187,20 @@ export class PanelI18nTest {
         await openHarnessListView(host);
         expect(outputs[0]).toContain('汇总');
         expect(outputs[0]).toContain('个进行中');
+    }
+    @Test('tool run status words follow the locale')
+    async toolRunStatusLocalized() {
+        const build = (translator?: any) => {
+            const st = new AgentConsoleSessionState(new InMemoryCommandExecutionControl(), translator);
+            st.setToolRunsFocused(true);
+            st.upsertToolRun({ name: 'read_file', status: 'success', durationMs: 9, attemptCount: 1, inputSummary: 'a.ts', outputSummary: 'ok', updatedAt: 1 } as any);
+            return st;
+        };
+        const zhPanel = new AgentConsoleToolRunsPanelComponent(build(zh), zh);
+        expect(zhPanel.toolRunsSummaryLabel).toContain('read_file 成功');
+        expect(zhPanel.toolRunItems[0].label).toContain('[成功]');
+        expect(zhPanel.selectedToolRunDetailLabel).toContain('read_file [成功]');
+        const enPanel = new AgentConsoleToolRunsPanelComponent(build());
+        expect(enPanel.toolRunItems[0].label).toContain('[success]');
     }
 }
