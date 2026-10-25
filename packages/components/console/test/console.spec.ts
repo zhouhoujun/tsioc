@@ -558,6 +558,31 @@ export class ConsoleRendererTest {
         surface.destroy();
     }
 
+    @Test('pager surface renders host-supplied HUD copy')
+    async pagerSurfaceHostCopy() {
+        const output: string[] = [];
+        const surface = new TuiTerminalSurface({
+            renderer: { renderToTuiLayout: () => ({ lines: [] }) } as any,
+            width: 30,
+            height: 6,
+            output: { write: value => output.push(value) },
+            scheduler: task => task()
+        });
+        const strip = (line: string) => line.replace(/\x1b\[[0-9;]*m/g, '');
+        const copy = { plain: '翻页 · Esc 关闭 · ↑↓ 滚动', withMatches: '翻页 {index}/{total} · Esc 关闭 · ↑↓ 滚动' };
+
+        surface.openPager({ lines: ['alpha', 'beta needle'], statusCopy: copy });
+        expect(surface.lastRenderedLines.map(strip)[0]).toContain('翻页 · Esc 关闭');
+
+        expect(surface.pagerSearch('needle')).toEqual(1);
+        expect(surface.lastRenderedLines.map(strip)[0]).toContain('翻页 1/1 · Esc 关闭');
+
+        surface.closePager();
+        surface.openPager({ lines: ['alpha'] });
+        expect(surface.lastRenderedLines.map(strip)[0]).toContain('Pager · Esc close');
+        surface.destroy();
+    }
+
     @Test('pager surface types an incremental find')
     async pagerSurfaceIncrementalFind() {
         const output: string[] = [];

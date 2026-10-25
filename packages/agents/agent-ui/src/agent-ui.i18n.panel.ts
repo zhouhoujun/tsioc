@@ -222,6 +222,10 @@ export const AGENT_UI_PANEL_EN: Record<string, any> = {
     apps: {
         categoryCode: 'code',
         categoryMessaging: 'messaging'
+    },
+    pager: {
+        plain: 'Pager · Esc close · ↑↓ scroll',
+        withMatches: 'Pager {index}/{total} · Esc close · ↑↓ scroll'
     }
 };
 
@@ -439,5 +443,9 @@ export const AGENT_UI_PANEL_ZH: Record<string, any> = {
     apps: {
         categoryCode: '代码',
         categoryMessaging: '消息'
+    },
+    pager: {
+        plain: '翻页 · Esc 关闭 · ↑↓ 滚动',
+        withMatches: '翻页 {index}/{total} · Esc 关闭 · ↑↓ 滚动'
     }
 };

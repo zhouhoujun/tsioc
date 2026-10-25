@@ -79,6 +79,25 @@ export function formatAgentDiagLabel(
 }
 
 /**
+ * Resolve the transcript pager HUD copy for the host surface. The surface keeps
+ * the English defaults when a host does not supply copy.
+ */
+export function formatAgentPagerStatusCopy(
+    translator: AgentUiTranslator | null | undefined
+): { plain: string; withMatches: string } {
+    return {
+        plain: formatAgentPanelLabel(translator, 'pager', 'plain', 'Pager · Esc close · ↑↓ scroll'),
+        // The surface (not the translator) fills the match position, so the
+        // placeholders are passed through as literal params.
+        withMatches: formatAgentPanelLabel(
+            translator, 'pager', 'withMatches',
+            'Pager {index}/{total} · Esc close · ↑↓ scroll',
+            { index: '{index}', total: '{total}' }
+        )
+    };
+}
+
+/**
  * Localize a boolean-ish config state word (`ON`/`OFF`/`none`/`(default)`).
  * The identifiers stay untranslated; only the shared display words move.
  */

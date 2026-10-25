@@ -58,7 +58,7 @@ import { getGlobalProcess } from './global-process';
 import { decodeVoiceAudioChunk, handleVoiceCommand, playVoiceReply, startVoiceCapture, stopVoiceCapture, VoiceHandlerContext } from './AgentConsoleVoiceHandlers';
 import { activateModelProfile, consumePendingTurnModelProfile, cycleModelVariant, cycleRecentModel, EffortLevel, getModelProfileOptions, loadModelProfileOptions, openModelSwitcher, persistModelStore, queueNextTurnModelProfile, recordRecentModel, resolveInitialModelProfile, resolveModelProfileConfig, restoreModelStore, setModelReasoningEffort, toggleModelFavorite, ModelHandlerContext } from './AgentConsoleModelHandlers';
 import { dismissEditMode, enterEditMode, EditModeHandlerContext, extractEditableMessageText, getEditableImageParts, getEditableUserMessages, handleIdleEscape, startEditTarget } from './AgentConsoleEditModeHandlers';
-import { formatAgentPanelLabel, formatAgentUiLabel, formatAgentUiNotice } from './agent-ui.i18n';
+import { formatAgentPagerStatusCopy, formatAgentPanelLabel, formatAgentUiLabel, formatAgentUiNotice } from './agent-ui.i18n';
 import {
     CodingTaskHandlerContext,
     resolveCodingTaskSessionId as resolveCodingTaskSessionIdFn,
@@ -2133,7 +2133,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             queueNextTurnModelProfile: (n) => self.queueNextTurnModelProfile(n),
             startProviderWizard: () => self.startProviderWizard(),
             openUsage: (i) => self.openUsage(i),
-            openPager: (query?: string) => self.surfaceAccessor?.openPagerFromLastRender?.(query) ?? false,
+            openPager: (query?: string) => self.surfaceAccessor?.openPagerFromLastRender?.(query, formatAgentPagerStatusCopy(self.translator)) ?? false,
             closePager: () => self.surfaceAccessor?.closePager?.() ?? false,
         } as CommandHandlerContext;
     }

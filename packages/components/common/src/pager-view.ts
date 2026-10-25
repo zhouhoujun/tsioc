@@ -14,11 +14,30 @@ export interface PagerViewLine {
     row?: number;
 }
 
+/**
+ * Host-supplied pager HUD copy. `withMatches` interpolates `{index}`/`{total}`
+ * with the current find position; a host without copy keeps the English
+ * defaults.
+ */
+export interface PagerStatusCopy {
+    plain: string;
+    withMatches: string;
+}
+
+export const DEFAULT_PAGER_STATUS_COPY: PagerStatusCopy = {
+    plain: 'Pager · Esc close · ↑↓ scroll',
+    withMatches: 'Pager {index}/{total} · Esc close · ↑↓ scroll'
+};
+
 /** One-line pager status/HUD text (platform-neutral). */
-export function pagerStatusText(pager: PagerBox): string {
-    return pager.matchCount
-        ? `Pager ${pager.currentMatchIndex + 1}/${pager.matchCount} · Esc close · ↑↓ scroll`
-        : 'Pager · Esc close · ↑↓ scroll';
+export function pagerStatusText(pager: PagerBox, copy?: PagerStatusCopy | null): string {
+    const labels = copy || DEFAULT_PAGER_STATUS_COPY;
+    if (!pager.matchCount) {
+        return labels.plain;
+    }
+    return labels.withMatches
+        .replace(/\{index\}/g, String(pager.currentMatchIndex + 1))
+        .replace(/\{total\}/g, String(pager.matchCount));
 }
 
 /**
@@ -26,7 +45,7 @@ export function pagerStatusText(pager: PagerBox): string {
  * into highlight segments, so the TUI (ANSI) and the DOM (spans) render identical
  * find results from the same {@link PagerBox} model.
  */
-export function composePagerViewLines(pager: PagerBox, viewportHeight?: number): PagerViewLine[] {
+export function composePagerViewLines(pager: PagerBox, viewportHeight?: number, copy?: PagerStatusCopy | null): PagerViewLine[] {
     if (typeof viewportHeight === 'number') {
         pager.setViewportHeight(viewportHeight);
     }
@@ -34,7 +53,7 @@ export function composePagerViewLines(pager: PagerBox, viewportHeight?: number):
     const current = pager.currentMatch;
     const lines: PagerViewLine[] = [{
         kind: 'hud',
-        segments: [{ text: pagerStatusText(pager), highlight: 'none' }]
+        segments: [{ text: pagerStatusText(pager, copy), highlight: 'none' }]
     }];
     pager.visibleLines().forEach((line, index) => {
         lines.push({

@@ -15,6 +15,12 @@ export abstract class ConsoleTerminalInputHandler {}
 /** Manages terminal surface lifecycle (resize, focus, etc.). */
 export abstract class ConsoleTerminalSurfaceLifecycle {}
 
+/** Host-supplied pager HUD copy; `{index}`/`{total}` interpolate the find position. */
+export interface AgentConsolePagerStatusCopy {
+    plain: string;
+    withMatches: string;
+}
+
 /** Accessor for the terminal surface element. */
 export abstract class ConsoleTerminalSurfaceAccessor {
     writeTerminalClipboardText?(text: string): void;
@@ -27,7 +33,7 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     scrollViewportToEdge?(edge: 'start' | 'end'): boolean;
     isViewportFollowing?(): boolean | undefined;
     /** Open the base-layer transcript pager over the last full render; optional query is a find. */
-    openPagerFromLastRender?(query?: string): boolean;
+    openPagerFromLastRender?(query?: string, statusCopy?: AgentConsolePagerStatusCopy): boolean;
     closePager?(): boolean;
     isPagerOpen?(): boolean;
     pagerHandleKey?(key: 'up' | 'down' | 'pageup' | 'pagedown' | 'home' | 'end'): boolean;

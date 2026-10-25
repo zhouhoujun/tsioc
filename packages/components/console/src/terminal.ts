@@ -13,7 +13,7 @@ import { Abstract, Inject, Injectable, Injector, Optional, Provider, token } fro
 import { getDisplayWidth, sliceByDisplayWidth } from './display-width';
 import { noReact, RNode, Renderer } from '@tsdi/components';
 import { ConsoleElement, ConsoleNode } from './console';
-import { composePagerViewLines, PagerBox, ScrollBox } from '@tsdi/components/common';
+import { composePagerViewLines, PagerBox, PagerStatusCopy, ScrollBox } from '@tsdi/components/common';
 
 const CHAT_COMMANDS = ['/help', '/tools', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/copy', '/quit', '/exit'];
 
@@ -631,8 +631,8 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
         return this.surface?.viewportFollowing;
     }
 
-    openPagerFromLastRender?(query?: string): boolean {
-        return this.surface?.openPagerFromLastRender(query) ?? false;
+    openPagerFromLastRender?(query?: string, statusCopy?: PagerStatusCopy): boolean {
+        return this.surface?.openPagerFromLastRender(query, statusCopy) ?? false;
     }
 
     closePager?(): boolean {
@@ -884,6 +884,7 @@ export class TuiTerminalSurface {
     protected pagerBox?: PagerBox;
     protected lastFullLines: string[] = [];
     protected pagerQueryBuffer = '';
+    protected pagerStatusCopy?: PagerStatusCopy;
 
     constructor(protected options: TuiTerminalSurfaceOptions) {
         this.bindOutputResize();
@@ -1113,7 +1114,8 @@ export class TuiTerminalSurface {
     }
 
     /** Open a read-only full-history pager over already-rendered lines. The surface owns the pager state. */
-    openPager(options: { lines: readonly string[] }): void {
+    openPager(options: { lines: readonly string[]; statusCopy?: PagerStatusCopy }): void {
+        this.pagerStatusCopy = options.statusCopy;
         if (!this.pagerBox) {
             this.pagerBox = new PagerBox();
         }
@@ -1133,11 +1135,11 @@ export class TuiTerminalSurface {
     }
 
     /** Open the pager over the last full (unwindowed) render; an optional query is applied as a find. */
-    openPagerFromLastRender(query?: string): boolean {
+    openPagerFromLastRender(query?: string, statusCopy?: PagerStatusCopy): boolean {
         if (!this.lastFullLines.length) {
             return false;
         }
-        this.openPager({ lines: this.lastFullLines });
+        this.openPager({ lines: this.lastFullLines, statusCopy });
         const trimmed = String(query || '').trim();
         if (trimmed) {
             this.pagerSearch(trimmed);
@@ -1257,7 +1259,7 @@ export class TuiTerminalSurface {
     protected composePagerScreenLines(pager: PagerBox): string[] {
         const height = this.resolveHeight() ?? 0;
         const viewport = height > 1 ? height - 1 : Math.max(1, height || 1);
-        return composePagerViewLines(pager, viewport).map(line =>
+        return composePagerViewLines(pager, viewport, this.pagerStatusCopy).map(line =>
             line.segments.map(segment =>
                 segment.highlight === 'current'
                     ? `\u001b[1;7m${segment.text}\u001b[0m`

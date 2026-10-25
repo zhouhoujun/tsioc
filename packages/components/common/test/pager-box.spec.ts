@@ -1,6 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { PagerBox } from '../src/pager-box';
+import { composePagerViewLines, pagerStatusText } from '../src/pager-view';
 
 function linesFrom(builder: (index: number) => string, count: number): string[] {
     return Array.from({ length: count }, (_value, index) => builder(index));
@@ -109,5 +110,21 @@ export class ConsolePagerBoxTest {
         expect(pager.top).toEqual(0);
         pager.handleKey('end');
         expect(pager.top).toEqual(90);
+    }
+    @Test('pager HUD keeps English defaults and accepts host copy')
+    statusCopy() {
+        const pager = new PagerBox();
+        pager.setContent(linesFrom(index => `line ${index} needle`, 12));
+        pager.setViewportHeight(4);
+        expect(pagerStatusText(pager)).toEqual('Pager · Esc close · ↑↓ scroll');
+        expect(composePagerViewLines(pager)[0].segments[0].text).toEqual('Pager · Esc close · ↑↓ scroll');
+
+        const copy = { plain: '翻页 · Esc 关闭 · ↑↓ 滚动', withMatches: '翻页 {index}/{total} · Esc 关闭 · ↑↓ 滚动' };
+        expect(pagerStatusText(pager, copy)).toEqual('翻页 · Esc 关闭 · ↑↓ 滚动');
+
+        pager.search('needle');
+        expect(pagerStatusText(pager, copy)).toEqual('翻页 1/12 · Esc 关闭 · ↑↓ 滚动');
+        expect(pagerStatusText(pager)).toEqual('Pager 1/12 · Esc close · ↑↓ scroll');
+        expect(composePagerViewLines(pager, 4, copy)[0].segments[0].text).toEqual('翻页 1/12 · Esc 关闭 · ↑↓ 滚动');
     }
 }

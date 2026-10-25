@@ -32,6 +32,7 @@ import { openHarnessAudit, openHarnessProfile } from '../src/AgentConsoleDiagnos
 import { runDebugConfigCommand, runMemoriesCommand, runPersonalityCommand } from '../src/AgentConsolePreferenceCommands';
 import { runAppsCommand } from '../src/AgentConsoleExtensionCommands';
 import { AgentConsoleComponent } from '../src/AgentConsoleComponent';
+import { createConsole, RuntimeStub, SchedulerStub } from './_helpers';
 
 function translateFrom(bundle: typeof agentUiEnglish) {
     return (key: string, params?: Record<string, any>) => {
@@ -514,5 +515,19 @@ export class PanelI18nTest {
             '伪证 bash · 1（12.5%）',
             '建议[retry] bash · retry with a shorter timeout'
         ]);
+    }
+    @Test('/pager HUD copy is localized and forwarded to the terminal surface')
+    async pagerCopyLocalized() {
+        const calls: Array<{ query?: string; copy: any }> = [];
+        const component = createConsole(new RuntimeStub(), new SchedulerStub());
+        (component as any).translator = zh;
+        (component as any).surfaceAccessor = {
+            openPagerFromLastRender: (query: string, copy: any) => { calls.push({ query, copy }); return true; }
+        };
+        const ctx: any = (component as any).buildCommandContext();
+        expect(ctx.openPager('needle')).toEqual(true);
+        expect(calls[0].query).toEqual('needle');
+        expect(calls[0].copy.plain).toEqual('翻页 · Esc 关闭 · ↑↓ 滚动');
+        expect(calls[0].copy.withMatches).toEqual('翻页 {index}/{total} · Esc 关闭 · ↑↓ 滚动');
     }
 }

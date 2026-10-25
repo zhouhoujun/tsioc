@@ -1648,3 +1648,16 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **真实 TUI（zh-CN）复核**：`/harness profile` → `治理 profile · 默认`、`profile default · v1 · 修复 2 · 循环恢复 3 · 细分 sandbox,fs,network`、`profile strict · v1 · 修复 1 · 循环恢复 2 · 沙箱 network-block · …`；`/harness profile current` → `治理 profile default · v1`、`审批 shell.exec`…；`/harness profile diff` → `治理 profile 差异 default → current`；`/harness audit` → `尚无 harness 失败数据。`；`/diagnostics` → `尚无轮次诊断。`；`/quality` → `尚无摘要质量统计数据。`
 - **门禁**：agent-ui **1680 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1 bash scripts/agents-gate.sh pty-acceptance` PASS（production DB 未变）；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
 - **备注（未改，供后续决定）**：`AgentConsoleDiagnosticsHandlers.ts` 里的 `openTurnDiagnosticsList` / `openTurnDiagnosticsTrend` / `openSummaryQualityRecords` / `openSummaryQualityTrend` 已被 `AgentConsoleDiagnosticsView` 的同名实现取代（Component 只绑定 View 版本），属**无可达调用点**的重复实现，故本批未本地化；`AgentConsoleFormatters.ts` 末尾的 delegation 系列（含 `(no goal)`）同样无生产调用（真实 `/delegation` 走 `AgentConsoleDelegationView`）。两者均经 `src/index.ts` 导出，删除属公开 API 变更，需确认后再清理。
+
+## 2026-10-25 转录翻页器 HUD 中文化（跨 components/common → components/console → agent-ui）
+- **现象（zh-CN 真实 TUI）**：其余命令文案已中文化后，`/pager` 打开的全历史翻页器顶部仍是 `Pager · Esc close · ↑↓ scroll`（带搜索时为 `Pager 1/3 · …`）。
+- **约束**：HUD 由 `packages/components/common/src/pager-view.ts` 的 `pagerStatusText`/`composePagerViewLines` 生成，`components/common` 是 renderer-neutral 层、不能依赖 i18n；`components/console`/`components/html` 也不得引用 agent-ui 的 catalog。因此采用**宿主注入纯文本**的方式，英文默认保持不变。
+- **做法**：
+  - `components/common`：新增 `PagerStatusCopy { plain, withMatches }`（`withMatches` 用 `{index}`/`{total}` 占位）与 `DEFAULT_PAGER_STATUS_COPY`；`pagerStatusText(pager, copy?)`、`composePagerViewLines(pager, height?, copy?)` 接受可选 copy，缺省沿用原英文字面量。
+  - `components/console`：`TuiTerminalSurface.openPager({ lines, statusCopy? })` 保存本次 copy，`composePagerScreenLines` 透传；`openPagerFromLastRender(query?, statusCopy?)` 与 `ConsoleTerminalSurfaceAccessor` 委托同步扩展。每次打开重新设置，未传 copy 时自然回到英文默认，不残留上一次语言。
+  - `agent-ui`：`console-ports.ts` 新增平台无关的 `AgentConsolePagerStatusCopy` 并扩展 accessor 签名；`agent-ui.i18n.ts` 新增 `formatAgentPagerStatusCopy(translator)`（读 `agent.menu.panel.pager.plain|withMatches`）；`AgentConsoleComponent` 的 `openPager` 调用点把 copy 交给 surface（仍是 3779 行，未超 baseline）。
+  - 占位符细节：translator 会替换 `{name}` 参数，因此 copy 解析时把 `{index}`/`{total}` 作为字面参数传回，保证真正的插值留给 surface（否则模板会变成空串）。
+- **测试**：`components/common` 新增 1 条（默认英文 + 自定义 copy + 匹配位置插值 + `composePagerViewLines` HUD）；`components/console` 新增 1 条（`openPager` 注入 copy 后 HUD 为中文、搜索后 `1/1`、再次无 copy 打开恢复英文默认）；`agent-ui` 的 `panel-i18n.spec.ts` 增加 1 条（真实 `buildCommandContext().openPager('needle')` → accessor 收到查询与中文 copy）。
+- **数量**：components/common **22 passing**、components/console **101 passing**、agent-ui **1681 passing**（均 EXIT=0）。
+- **真实 TUI（zh-CN）复核**：`/pager` → `翻页 · Esc 关闭 · ↑↓ 滚动`；`/pager tsdi` → `翻页 1/3 · Esc 关闭 · ↑↓ 滚动`。
+- **门禁**：`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1 bash scripts/agents-gate.sh pty-acceptance` PASS（production DB 未变）；components ×4、agent-ui tsc、Web build、DOM/TUI gate、source-size、`git diff --check` 全部通过。
