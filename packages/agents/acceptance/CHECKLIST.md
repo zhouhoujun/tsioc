@@ -17,6 +17,7 @@
 | 8 | 主题与宽度矩阵 | 真实 PTY 切换 dark/light 主题与 80/120 列 | 主题 ANSI 色生效；CJK 根因、最终答复可见；所有视口行不破列 |
 | 9 | 工具行按调用成行（v88） | 一条 assistant 消息内两个 `read_file` 调用（`README.md`/`package.json`） | 两条 pending 行各自独立、两条完成行各自带路径；无折叠、无 `+N more` |
 | 10 | 旁白与最终回答分离（v84） | 一个 turn 内「旁白+工具」交错三轮后再给最终回答 | 三段旁白分别成行；`正在检查项目文件。同时读取种子数据。` 不出现为相邻粘连 |
+| 11 | zh-CN 界面本地化 | 以 `LANG/LC_ALL=zh_CN.UTF-8` 另起一个 agent（不注入模型调用） | 输入提示词为 `问我代码或文件`；`/status` 出现 `会话：`/`计划模式：`；`/usage` 出现中文摘要或 `尚无用量记录。`；`/keymap list` 出现 `按键映射` 与本地化动作名 |
 
 ## 运行
 
@@ -98,6 +99,9 @@ FAKE_SCENARIO=plan-lifecycle python3 packages/agents/acceptance/run_acceptance.p
   keying 还原成 v87 的 name-keyed 后本场景仍 PASS，故它是渲染冒烟，不是 v88 的回归门禁。
 - 场景 10 断言用「两段旁白之间必须夹着工具行」这一间接证据（`_fused()` 去掉所有空白后查相邻粘连），
   对驱动端的重绘策略不敏感，且已在把 `sealStreamedNarration` 改成空操作后确认 FAIL。
+- 场景 11 起一个**额外**的 zh-CN agent（`env_overrides` 覆盖 `LANG/LC_ALL`，基线 `C.UTF-8` 不再反压）；
+  它只跑 `/status`、`/usage`、`/keymap list` 三条命令、不触发模型调用，并在最后一个执行，避免污染主
+  agent 的假模型脚本与转录状态。空 `HOME` 下 `/usage` 走空态文案（`尚无用量记录。`），故断言给两个候选。
 - 场景 4（plan-lifecycle）使用 `TodoStatus`（`pending|in_progress|completed|cancelled|failed`）
   与 `dependsOn` 构造并行/失败/恢复/门禁剧本；假模型与驾驶员都需 `FAKE_SCENARIO=plan-lifecycle`，
   否则默认仍走 P200 三场景。

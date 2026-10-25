@@ -1882,3 +1882,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **兼容性**：`CommandHandlerContext` 上的同名方法仍由 Component 绑定到 View 实现，命令行为与 `/diagnostics`、`/quality`、`/delegation` 输出不变（全量测试 + 真实 TUI 验证）。
 - **门禁**：agent-ui **1709 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**（首轮 diff-check 因文件末尾空行失败，修正后通过）；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate 全部通过。
 - **备注**：删除属公开导出面变更（`src/index.ts` 的 `export *` 不再导出这些名字）；仓库内无引用，外部消费者如有使用需从 View 模块获取同名实现。
+
+## 2026-10-25 PTY 验收新增 zh-CN 场景（场景 11，防本地化回归）
+- **动机**：前 27 批中文化每次都靠人工 PTY 目检，缺少可重复的自动门禁；`agents-gate` 的 `pty-acceptance` 只覆盖英文默认场景。
+- **实现**：
+  - `run_acceptance.py` 的 `spawn_agent(port, env_overrides=None)` 支持按场景覆盖 env；基线 `C.UTF-8` 不再反压覆盖值（locale 解析读 `LANG/LC_ALL`）。
+  - 新增 `scenario_zh_locale()`：以 `LANG/LC_ALL=zh_CN.UTF-8` 另起一个 agent，断言输入提示词 `问我代码或文件`、`/status` 的 `会话：`/`计划模式：`、`/usage` 的中文摘要（空 HOME 下为 `尚无用量记录。`）、`/keymap list` 的 `按键映射` 与本地化动作名（`新建会话`）。
+  - 该场景**最后**执行：额外进程不注入模型调用，不污染主 agent 的假模型脚本与转录（实测放在最前会让 `1-tail-visibility` 失败）。
+  - `CHECKLIST.md` 补场景 11 表格行与「已知边界」说明。
+- **验证**：`python3 packages/agents/acceptance/run_acceptance.py` → 10/10 PASS（含 `[PASS] scenario 11: zh-CN command chrome localized`）；`RUN_PTY=1 bash scripts/agents-gate.sh pty-acceptance` PASS。
+- **门禁**：`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**（首轮 `agent-ssh` 因 `generateKeyPair` 生成私有键被 ssh2 判为 malformed 偶发失败，单包重跑 9 passing，复跑 gate 通过）；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。

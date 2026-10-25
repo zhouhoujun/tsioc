@@ -40,6 +40,7 @@ import sys
 import tempfile
 import time
 import urllib.request
+from typing import Optional
 import unicodedata
 import zlib
 from typing import Optional
@@ -309,7 +310,7 @@ def display_width(value: str) -> int:
                for char in visible)
 
 
-def spawn_agent(port: int):
+def spawn_agent(port: int, env_overrides: Optional[dict] = None):
     import pty
     env = dict(os.environ)
     env.update({
@@ -321,6 +322,8 @@ def spawn_agent(port: int):
         'AGENT_BASE_URL': f'http://127.0.0.1:{port}/v1',
         'COLUMNS': '100', 'LINES': '32', 'LANG': 'C.UTF-8',
     })
+    # Caller overrides win (e.g. the zh scenario flips LANG/LC_ALL).
+    env.update(env_overrides or {})
     pid, fd = pty.fork()
     if pid == 0:
         try:
@@ -1042,6 +1045,63 @@ def scenario_narration_separation_v84(pid: int, fd: int, screen: Screen) -> bool
     return True
 
 
+def scenario_zh_locale(port: int) -> bool:
+    """11: the zh-CN TUI localizes command chrome and the keymap overlay.
+
+    Spawns a second agent with LANG=zh_CN.UTF-8 (the locale resolver reads it)
+    and checks a few high-signal strings that used to leak English: the /status
+    overlay ("会话：", "计划模式："), /usage windows ("今天"), and /keymap list
+    ("按键映射" plus a localized global action like "新建会话").
+    """
+    screen = Screen()
+    pid = None
+    fd = -1
+    try:
+        pid, fd = spawn_agent(port, {'LANG': 'zh_CN.UTF-8', 'LC_ALL': 'zh_CN.UTF-8'})
+        ready = wait_for(fd, screen, ['问我代码或文件', 'Ask code or files'], timeout=TIMEOUT, quiet_window=3)
+        if not ready:
+            print('[FAIL] scenario 11: zh TUI did not become ready')
+            return False
+        want_zh = '问我代码或文件' in screen.viewport()
+        if not want_zh:
+            print('[FAIL] scenario 11: locale did not switch to zh-CN (English prompt shown)')
+            return False
+        send(fd, '/status\r'.encode())
+        ok_status = wait_for(fd, screen, ['计划模式：', '会话：'], timeout=20)
+        send(fd, b'\x1b')
+        time.sleep(0.6)
+        send(fd, '/usage\r'.encode())
+        # A fresh HOME has no usage rows: the digest falls back to a localized
+        # empty-state notice. With data it renders the window overlay instead.
+        ok_usage = wait_for(fd, screen, ['尚无用量记录。', '今天 ', '本周 '], timeout=20)
+        send(fd, b'\x1b')
+        time.sleep(0.6)
+        send(fd, '/keymap list\r'.encode())
+        ok_keymap = wait_for(fd, screen, ['按键映射', '新建会话'], timeout=20)
+        if ok_status and ok_usage and ok_keymap:
+            print('[PASS] scenario 11: zh-CN command chrome localized')
+            return True
+        print(f'[FAIL] scenario 11: zh chrome missing (status={ok_status} usage={ok_usage} keymap={ok_keymap})')
+        print(screen.viewport())
+        return False
+    finally:
+        if pid is not None:
+            try:
+                send(fd, b'\x03\x03/d\r')
+                time.sleep(0.8)
+                os.kill(pid, signal.SIGKILL)
+            except OSError:
+                pass
+            try:
+                os.waitpid(pid, 0)
+            except ChildProcessError:
+                pass
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+
+
 def main() -> int:
     global _ACTIVE_SCREEN
     ts = time.strftime('%Y%m%d-%H%M%S')
@@ -1073,6 +1133,9 @@ def main() -> int:
             results.append(('6-slash-command', scenario_slash_command_p282(pid, fd, screen)))
             results.append(('7-interrupt-reactive', scenario_interrupt_and_reactive_render(pid, fd, screen)))
             results.append(('8-theme-width-matrix', scenario_theme_width_matrix(pid, fd, screen)))
+            # Last: it spawns its own zh-CN agent, so it must not pollute the
+            # primary scenarios' request script / transcript state above.
+            results.append(('11-zh-locale', scenario_zh_locale(port)))
     except Exception as exc:  # noqa: BLE001 — acceptance driver reports everything
         print(f'[ERROR] {exc}')
         results.append(('driver-error', False))
