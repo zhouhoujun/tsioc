@@ -1783,3 +1783,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 现有回归只覆盖 notice/error；本批为拆出的 `panel`、`review`、`tasks`、`diagnostics`、`transcript` 与新 `menu` 增加**键集锁步**断言（`flattenCatalogKeys` 深度展开 + 排序比对），任何一边新增/遗漏 key 都会立即失败。
 - `i18n-locale-regression` 8 → **9 条**；agent-ui 全量 **1702 passing**。
 - 门禁：`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
+
+## 2026-10-25 catalog 半翻译守卫（除语言中性 key 外 en/zh 值必须不同）
+- 在键集锁步之外新增**值级守卫**：展开 `panel/review/tasks/diagnostics/transcript` 的 en/zh 值，只允许 4 个语言中性 key 相同（`esc`、`tasks.esc`、`quality.recordTitle` 纯数据骨架、`harness.profileRow` 的 `profile` 标识），其余相同即列出 offender 并失败。
+- `i18n-locale-regression` 9 → **10 条**；agent-ui **1703 passing**。
+- 门禁：`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。

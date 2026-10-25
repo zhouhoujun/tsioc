@@ -42,6 +42,13 @@ function flattenCatalogKeys(value: any, prefix = ''): string[] {
     return Object.keys(value).sort().flatMap(key => flattenCatalogKeys(value[key], prefix ? `${prefix}.${key}` : key));
 }
 
+function flattenCatalog(value: any, prefix = ''): Record<string, any> {
+    if (!value || typeof value !== 'object') {
+        return { [prefix]: value };
+    }
+    return Object.keys(value).reduce((acc, key) => Object.assign(acc, flattenCatalog(value[key], prefix ? `${prefix}.${key}` : key)), {} as Record<string, any>);
+}
+
 
 /**
  * The only notice entries allowed to stay byte-identical across locales: they
@@ -170,6 +177,35 @@ export class AgentUiLocaleRegressionTest {
             expect({ catalog: name, keys: flattenCatalogKeys(zhCatalog) }).toEqual({ catalog: name, keys: enKeys });
             expect({ catalog: name, empty: enKeys.filter(key => !key) }).toEqual({ catalog: name, empty: [] });
         }
+    }
+
+    @Test('no half-translated values in the panel catalogs (language-neutral keys only)')
+    catalogNoResidue() {
+        // Values that are intentionally identical: a key name, two pure data
+        // skeletons and the `profile` governance identifier.
+        const neutral = new Set([
+            'esc',
+            'tasks.esc',
+            'quality.recordTitle',
+            'harness.profileRow'
+        ]);
+        const pairs: Array<[string, any, any]> = [
+            ['panel', AGENT_UI_PANEL_EN, AGENT_UI_PANEL_ZH],
+            ['review', AGENT_UI_REVIEW_EN, AGENT_UI_REVIEW_ZH],
+            ['tasks', AGENT_UI_TASKS_EN, AGENT_UI_TASKS_ZH],
+            ['diagnostics', AGENT_UI_DIAG_EN, AGENT_UI_DIAG_ZH],
+            ['transcript', AGENT_UI_TRANSCRIPT_EN, AGENT_UI_TRANSCRIPT_ZH]
+        ];
+        const offenders: string[] = [];
+        for (const [name, enCatalog, zhCatalog] of pairs) {
+            const enValues = flattenCatalog(enCatalog);
+            const zhValues = flattenCatalog(zhCatalog);
+            for (const key of Object.keys(enValues)) {
+                if (neutral.has(key)) continue;
+                if (enValues[key] === zhValues[key]) offenders.push(`${name}.${key} -> ${enValues[key]}`);
+            }
+        }
+        expect(offenders).toEqual([]);
     }
 
 }
