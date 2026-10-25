@@ -76,7 +76,7 @@ export async function openSession(
     options?: { persistCurrentHistory?: boolean; fresh?: boolean; missing?: boolean }
 ): Promise<void> {
     if (host.isTurnInProgress()) {
-        host.notifyBusyState('Wait for the current turn to finish before switching sessions.');
+        host.notifyBusyState(formatAgentUiNotice(host.translator, 'sessionSwitchBusy'));
         return;
     }
     if (!host.sessionService) {

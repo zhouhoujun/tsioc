@@ -2409,16 +2409,16 @@ export class AgentConsoleSessionState {
         this.planNudgesEnabled = enabled;
     }
 
-    get planNudgeLabel(): string {
+    get planNudgeActive(): boolean {
         if (!this.planNudgesEnabled || this.planMode) {
-            return '';
+            return false;
         }
         const draft = String(this.input || '').trim();
         if (draft.length < 20 || draft.startsWith('/')) {
-            return '';
+            return false;
         }
         const explicitPlanIntent = /(?:\bplan(?:ning)?\b|\bdesign\b|\barchitecture\b|方案|规划|设计|先不要改|不要(?:先)?修改|先别改)/i;
-        return explicitPlanIntent.test(draft) ? 'Planning intent detected · use /plan' : '';
+        return explicitPlanIntent.test(draft);
     }
 
     setInputCursor(cursor: number): void {

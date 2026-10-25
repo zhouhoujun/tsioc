@@ -121,16 +121,18 @@ export function previewSessionExport(
 ): void {
     const messageCount = Number(result.session?.messageCount ?? result.messages.length);
     const toolCallCount = Number(result.session?.toolCallCount ?? result.toolCalls.length);
+    const messages = formatAgentUiNotice(ctx.translator, messageCount === 1 ? 'exportPreviewMessageOne' : 'exportPreviewMessages', { count: messageCount });
+    const toolCalls = formatAgentUiNotice(ctx.translator, toolCallCount === 1 ? 'exportPreviewToolCallOne' : 'exportPreviewToolCalls', { count: toolCallCount });
     ctx.state.openSelectMenu(
-        `Session export (${result.format})`,
+        formatAgentUiNotice(ctx.translator, 'exportPreviewTitle', { format: result.format }),
         [{
             label: result.fileName,
             value: result.fileName,
-            description: `${messageCount} message${messageCount === 1 ? '' : 's'} · ${toolCallCount} tool call${toolCallCount === 1 ? '' : 's'}`,
+            description: `${messages} · ${toolCalls}`,
             detail: result.content
         }],
         0,
-        'Read-only export preview. Press Esc to close.'
+        formatAgentUiNotice(ctx.translator, 'exportPreviewHint')
     );
 }
 
@@ -196,12 +198,13 @@ export function resolveAttachmentTargetPath(
 }
 
 export function describePendingAttachments(
-    attachments: AgentConsolePendingAttachment[]
+    attachments: AgentConsolePendingAttachment[],
+    translator?: AgentUiTranslator | null
 ): string {
     if (!attachments.length) {
-        return 'No pending attachments.';
+        return formatAgentUiNotice(translator, 'noPendingAttachments');
     }
-    return `Pending attachments: ${attachments.map(item => item.name).join(', ')}`;
+    return formatAgentUiNotice(translator, 'pendingAttachmentsTitle', { names: attachments.map(item => item.name).join(', ') });
 }
 
 export function buildTurnMessageInput(
@@ -239,7 +242,7 @@ export async function runAttachCommand(
 ): Promise<boolean> {
     const trimmed = String(args || '').trim();
     if (!trimmed) {
-        ctx.notify(describePendingAttachments(ctx.state.pendingAttachments));
+        ctx.notify(describePendingAttachments(ctx.state.pendingAttachments, ctx.translator));
         return true;
     }
     if (/^(clear|reset)$/i.test(trimmed)) {

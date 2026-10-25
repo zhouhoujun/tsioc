@@ -1,18 +1,21 @@
+import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+
 export async function collectHealthItems(
     appRpc: any,
     rpcRequestContext: () => any,
-    state: any
+    state: any,
+    translator?: AgentUiTranslator | null
 ): Promise<any[]> {
     const items: any[] = [];
     if (appRpc) {
         try {
             await appRpc.request('app.state', undefined, rpcRequestContext());
-            items.push({ id: 'gateway', label: 'Gateway', status: 'ok', detail: 'connected' });
+            items.push({ id: 'gateway', label: 'Gateway', status: 'ok', detail: formatAgentUiNotice(translator, 'healthGatewayConnected') });
         } catch {
-            items.push({ id: 'gateway', label: 'Gateway', status: 'error', detail: 'unreachable' });
+            items.push({ id: 'gateway', label: 'Gateway', status: 'error', detail: formatAgentUiNotice(translator, 'healthGatewayUnreachable') });
         }
     } else {
-        items.push({ id: 'gateway', label: 'Gateway', status: 'unknown', detail: 'local runtime (no gateway)' });
+        items.push({ id: 'gateway', label: 'Gateway', status: 'unknown', detail: formatAgentUiNotice(translator, 'healthGatewayLocal') });
     }
     const mcpServers = new Map<string, { total: number; active: number }>();
     const lspTools: string[] = [];
@@ -34,14 +37,14 @@ export async function collectHealthItems(
                 id: `mcp:${serverId}`,
                 label: `MCP ${serverId}`,
                 status: stats.active === 0 ? 'error' : (stats.active === stats.total ? 'ok' : 'warn'),
-                detail: `${stats.active}/${stats.total} tools active`
+                detail: formatAgentUiNotice(translator, 'healthMcpToolsActive', { active: stats.active, total: stats.total })
             });
         });
     } else {
-        items.push({ id: 'mcp', label: 'MCP', status: 'unknown', detail: 'no MCP servers configured' });
+        items.push({ id: 'mcp', label: 'MCP', status: 'unknown', detail: formatAgentUiNotice(translator, 'healthNoMcpServers') });
     }
     items.push(lspTools.length
-        ? { id: 'lsp', label: 'LSP', status: 'ok', detail: `${lspTools.length} tools available` }
-        : { id: 'lsp', label: 'LSP', status: 'unknown', detail: 'no LSP tools available' });
+        ? { id: 'lsp', label: 'LSP', status: 'ok', detail: formatAgentUiNotice(translator, 'healthLspTools', { count: lspTools.length }) }
+        : { id: 'lsp', label: 'LSP', status: 'unknown', detail: formatAgentUiNotice(translator, 'healthNoLspTools') });
     return items;
 }

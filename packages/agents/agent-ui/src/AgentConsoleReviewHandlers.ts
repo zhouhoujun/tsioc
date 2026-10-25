@@ -1,4 +1,4 @@
-import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentUiLabel, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 /**
  * Review / git-diff command handlers for AgentConsoleComponent.
  *
@@ -228,7 +228,7 @@ export async function restoreReviewAnnotationsCacheFromDisk(ctx: ReviewHandlerCo
 
 // ── Worktree diff parsing ────────────────────────────────────────────────────
 
-export function parseWorktreeDiffArgs(args?: string): {
+export function parseWorktreeDiffArgs(args?: string, translator?: AgentUiTranslator | null): {
     scope: 'working-tree' | 'staged' | 'unstaged' | 'untracked';
     paths: string[];
     error?: string;
@@ -236,18 +236,23 @@ export function parseWorktreeDiffArgs(args?: string): {
     const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
     const flags = tokens.filter(token => token === '--staged' || token === '--unstaged' || token === '--untracked');
     if (flags.length > 1) {
-        return { scope: 'working-tree', paths: [], error: 'Use only one of --staged, --unstaged, or --untracked.' };
+        return { scope: 'working-tree', paths: [], error: formatAgentUiNotice(translator, 'diffScopeUsage') };
     }
     const unknownFlag = tokens.find(token => token.startsWith('--') && !flags.some(flag => flag === token));
     if (unknownFlag) {
-        return { scope: 'working-tree', paths: [], error: `Unknown /diff option: ${unknownFlag}` };
+        return { scope: 'working-tree', paths: [], error: formatAgentUiNotice(translator, 'diffUnknownOption', { flag: unknownFlag }) };
     }
     const scope = flags[0] ? flags[0].slice(2) as 'staged' | 'unstaged' | 'untracked' : 'working-tree';
     return { scope, paths: tokens.filter(token => !token.startsWith('--')) };
 }
 
-export function describeWorktreeDiffScope(scope: 'working-tree' | 'staged' | 'unstaged' | 'untracked'): string {
-    return scope === 'working-tree' ? 'Working tree' : scope[0].toUpperCase() + scope.slice(1);
+export function describeWorktreeDiffScope(
+    scope: 'working-tree' | 'staged' | 'unstaged' | 'untracked',
+    translator?: AgentUiTranslator | null
+): string {
+    const fallback = scope === 'working-tree' ? 'Working tree' : scope[0].toUpperCase() + scope.slice(1);
+    const key = scope === 'working-tree' ? 'workingTree' : scope;
+    return formatAgentUiLabel(translator, `agent.menu.diffScope.${key}`, fallback);
 }
 
 // ── Git diff review analysis ─────────────────────────────────────────────────
@@ -517,7 +522,7 @@ export async function openWorktreeDiff(ctx: ReviewHandlerContext, args?: string)
         ctx.notify(formatAgentUiNotice(ctx.translator, 'worktreeDiffUnavailable'));
         return true;
     }
-    const parsed = parseWorktreeDiffArgs(args);
+    const parsed = parseWorktreeDiffArgs(args, ctx.translator);
     if (parsed.error) {
         ctx.notify(parsed.error);
         return true;
@@ -538,10 +543,10 @@ export async function openWorktreeDiff(ctx: ReviewHandlerContext, args?: string)
     }
     const files = Array.isArray(review?.files) ? review.files : [];
     if (!files.length) {
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'noChangesForScope', { scope: describeWorktreeDiffScope(parsed.scope) }));
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'noChangesForScope', { scope: describeWorktreeDiffScope(parsed.scope, ctx.translator) }));
         return true;
     }
-    const label = describeWorktreeDiffScope(parsed.scope);
+    const label = describeWorktreeDiffScope(parsed.scope, ctx.translator);
     const reviewTask = {
         id: `worktree-diff:${parsed.scope}`,
         title: `${label} diff`,

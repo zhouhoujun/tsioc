@@ -332,10 +332,28 @@ export function formatAgentConsoleCommandArgumentForm(definition: AgentConsoleCo
     });
 }
 
+/** Optional host translator for command-argument diagnostics (`agent.menu.arg.*`). */
+export type AgentConsoleCommandTranslate = (key: string, params?: Record<string, any>, fallback?: string) => string;
+
+function commandArgText(
+    translate: AgentConsoleCommandTranslate | undefined,
+    key: string,
+    fallback: string,
+    params?: Record<string, any>
+): string {
+    // The registry stays dependency-free (no i18n import), so the English
+    // fallback is interpolated here when no translator supplies copy.
+    const fullKey = `agent.menu.arg.${key}`;
+    const value = translate?.(fullKey, params, fallback);
+    const template = value && value !== fullKey ? value : fallback;
+    return template.replace(/\{(\w+)\}/g, (_match, name: string) => String(params?.[name] ?? ''));
+}
+
 /** Validates a positional schema and returns parsed values plus actionable diagnostics. */
 export function parseAgentConsoleCommandArguments(
     definition: AgentConsoleCommandDefinition | undefined,
-    input: string
+    input: string,
+    translate?: AgentConsoleCommandTranslate
 ): AgentConsoleParsedCommandArguments {
     const values = tokenizeAgentConsoleCommandArguments(input);
     const schema = definition?.args || [];
@@ -354,8 +372,10 @@ export function parseAgentConsoleCommandArguments(
                     argument: argument.name,
                     tokenIndex: valueIndex,
                     expected: argument.type === 'enum' && argument.values ? argument.values.join('|') : `<${argument.name}>`,
-                    suggestion: argument.type === 'enum' && argument.values ? `Provide one of: ${argument.values.join(', ')}.` : `Usage: /${definition?.name?.replace(/^\//, '') || 'command'} ${argument.name}.`,
-                    message: `Missing required argument <${argument.name}>.`
+                    suggestion: argument.type === 'enum' && argument.values
+                        ? commandArgText(translate, 'provideOne', 'Provide one of: {values}.', { values: argument.values.join(', ') })
+                        : commandArgText(translate, 'usage', 'Usage: /{command} {name}.', { command: definition?.name?.replace(/^\//, '') || 'command', name: argument.name }),
+                    message: commandArgText(translate, 'missing', 'Missing required argument <{name}>.', { name: argument.name })
                 });
             }
         } else {
@@ -366,8 +386,8 @@ export function parseAgentConsoleCommandArguments(
                     argument: argument.name,
                     tokenIndex: valueIndex,
                     expected: expectedList,
-                    suggestion: `Did you mean ${argument.values.join(' or ')}?`,
-                    message: `Invalid ${argument.name} "${raw}". Expected: ${argument.values.join(', ')}.`
+                    suggestion: commandArgText(translate, 'didYouMean', 'Did you mean {values}?', { values: argument.values.join(' or ') }),
+                    message: commandArgText(translate, 'invalid', 'Invalid {name} "{value}". Expected: {expected}.', { name: argument.name, value: raw, expected: argument.values.join(', ') })
                 });
             }
             resolved.push(raw);
@@ -380,15 +400,20 @@ export function parseAgentConsoleCommandArguments(
             code: 'extra',
             tokenIndex: valueIndex,
             expected: '<none>',
-            suggestion: `Remove ${extraTokens.length === 1 ? 'it' : 'them'} — the command accepts no more arguments.`,
-            message: `Unexpected argument${extraTokens.length === 1 ? '' : 's'}: ${extraTokens.join(' ')}.`
+            suggestion: commandArgText(translate, extraTokens.length === 1 ? 'removeExtraOne' : 'removeExtraMany', extraTokens.length === 1 ? 'Remove it — the command accepts no more arguments.' : 'Remove them — the command accepts no more arguments.'),
+            message: extraTokens.length === 1
+                ? commandArgText(translate, 'extraOne', 'Unexpected argument: {value}.', { value: extraTokens.join(' ') })
+                : commandArgText(translate, 'extraMany', 'Unexpected arguments: {value}.', { value: extraTokens.join(' ') })
         });
     }
     return { values, resolved, diagnostics };
 }
 
 /** Renders diagnostics as a single human-readable correction line for notices. */
-export function formatAgentConsoleCommandDiagnostics(diagnostics: AgentConsoleCommandArgumentDiagnostic[]): string {
+export function formatAgentConsoleCommandDiagnostics(
+    diagnostics: AgentConsoleCommandArgumentDiagnostic[],
+    translate?: AgentConsoleCommandTranslate
+): string {
     return diagnostics.map(item => {
         const parts = [item.message];
         if (item.suggestion) parts.push(item.suggestion);
@@ -397,11 +422,14 @@ export function formatAgentConsoleCommandDiagnostics(diagnostics: AgentConsoleCo
 }
 
 /** Renders diagnostics as multi-line echo rows (message, expected, maybe) for notices and overlays. */
-export function formatAgentConsoleCommandDiagnosticEcho(diagnostics: AgentConsoleCommandArgumentDiagnostic[]): string[] {
+export function formatAgentConsoleCommandDiagnosticEcho(
+    diagnostics: AgentConsoleCommandArgumentDiagnostic[],
+    translate?: AgentConsoleCommandTranslate
+): string[] {
     return diagnostics.flatMap(item => {
         const rows = [item.message];
-        if (item.expected) rows.push(`expected: ${item.expected}`);
-        if (item.suggestion) rows.push(`maybe: ${item.suggestion}`);
+        if (item.expected) rows.push(commandArgText(translate, 'expected', 'expected: {value}', { value: item.expected }));
+        if (item.suggestion) rows.push(commandArgText(translate, 'maybe', 'maybe: {value}', { value: item.suggestion }));
         return rows;
     });
 }

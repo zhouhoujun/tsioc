@@ -226,6 +226,29 @@ export const AGENT_UI_PANEL_EN: Record<string, any> = {
     pager: {
         plain: 'Pager · Esc close · ↑↓ scroll',
         withMatches: 'Pager {index}/{total} · Esc close · ↑↓ scroll'
+    },
+    input: {
+        planNudge: 'Planning intent detected · use /plan'
+    },
+    gitSnapshot: {
+        hint: 'up/down scroll · left/right pan · pg jump · home/end edge · r revert · y copy · esc close',
+        defaultHeader: 'git snapshot diff',
+        summary: '{header}  |  lines {start}-{end} / {total}  |  col {column}/{columns}',
+        listTitle: 'Git step snapshots ({count})',
+        diffLabel: ' · +{additions}/-{deletions} ({files})',
+        fileOne: '{count} file',
+        files: '{count} files',
+        detailTitle: 'git snapshot {ref}',
+        refLine: 'ref {ref}',
+        filesLine: 'files {count}',
+        filesUnknown: 'files -',
+        revertAction: 'revert',
+        revertActionDetail: 'restore the working tree from this snapshot',
+        unrevertAction: 'unrevert',
+        unrevertActionDetail: 'restore the working tree',
+        cancelAction: 'cancel',
+        cancelKeepCurrent: 'keep the current working tree',
+        cancelKeepReverted: 'keep the reverted working tree'
     }
 };
 
@@ -447,5 +470,28 @@ export const AGENT_UI_PANEL_ZH: Record<string, any> = {
     pager: {
         plain: '翻页 · Esc 关闭 · ↑↓ 滚动',
         withMatches: '翻页 {index}/{total} · Esc 关闭 · ↑↓ 滚动'
+    },
+    input: {
+        planNudge: '检测到规划意图 · 使用 /plan'
+    },
+    gitSnapshot: {
+        hint: '上/下 滚动 · 左/右 平移 · pg 跳转 · home/end 边缘 · r 回退 · y 复制 · esc 关闭',
+        defaultHeader: 'git 快照差异',
+        summary: '{header}  |  行 {start}-{end} / {total}  |  列 {column}/{columns}',
+        listTitle: 'Git 步骤快照（{count}）',
+        diffLabel: ' · +{additions}/-{deletions}（{files}）',
+        fileOne: '{count} 个文件',
+        files: '{count} 个文件',
+        detailTitle: 'git 快照 {ref}',
+        refLine: '引用 {ref}',
+        filesLine: '文件 {count}',
+        filesUnknown: '文件 -',
+        revertAction: '回退',
+        revertActionDetail: '用该快照恢复工作区',
+        unrevertAction: '撤销回退',
+        unrevertActionDetail: '恢复工作区',
+        cancelAction: '取消',
+        cancelKeepCurrent: '保留当前工作区',
+        cancelKeepReverted: '保留已回退的工作区'
     }
 };

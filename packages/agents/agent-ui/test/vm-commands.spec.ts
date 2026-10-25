@@ -987,14 +987,14 @@ export class VmCommandsTest {
     async planNudgeRespectsModeAndConfiguration() {
         const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setInput('Plan the implementation carefully before making edits.');
-        expect(state.planNudgeLabel).toContain('/plan');
+        expect(state.planNudgeActive).toEqual(true);
 
         state.setPlanMode(true);
-        expect(state.planNudgeLabel).toEqual('');
+        expect(state.planNudgeActive).toEqual(false);
 
         state.setPlanMode(false);
         state.setPlanNudgesEnabled(false);
-        expect(state.planNudgeLabel).toEqual('');
+        expect(state.planNudgeActive).toEqual(false);
     }
 
     @Test('undo command reverts the last file change through the local runtime')

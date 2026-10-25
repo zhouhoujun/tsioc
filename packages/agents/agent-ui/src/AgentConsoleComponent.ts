@@ -1859,11 +1859,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         paths: string[];
         error?: string;
     } {
-        return parseWorktreeDiffArgs(args);
+        return parseWorktreeDiffArgs(args, this.translator);
     }
 
     protected describeWorktreeDiffScope(scope: 'working-tree' | 'staged' | 'unstaged' | 'untracked'): string {
-        return describeWorktreeDiffScope(scope);
+        return describeWorktreeDiffScope(scope, this.translator);
     }
 
     protected async runGitDiffReviewAnalysis(base?: string): Promise<boolean> {
@@ -3303,7 +3303,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async collectHealthItems(): Promise<AgentConsoleHealthItem[]> {
-        return collectHealthItems(this.appRpc, () => this.rpcRequestContext(), this.state) as any;
+        return collectHealthItems(this.appRpc, () => this.rpcRequestContext(), this.state, this.translator) as any;
     }
 
     protected canThreadNavigate(): boolean {

@@ -1,5 +1,5 @@
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
-import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentPanelLabel as panelLabel, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
 export interface GitSnapshotCommandHost {
     translator?: AgentUiTranslator | null;
@@ -7,6 +7,10 @@ export interface GitSnapshotCommandHost {
     sessionService?: any;
     notify(message: string): void;
     select(title: string, options: any[], index: number, hint?: string): Promise<string | undefined>;
+}
+
+function gitSnapshotText(host: GitSnapshotCommandHost, key: string, fallback: string, params?: Record<string, any>): string {
+    return panelLabel(host.translator, 'gitSnapshot', key, fallback, params);
 }
 
 export async function runGitSnapshotsCommand(host: GitSnapshotCommandHost, args: string): Promise<void> {
@@ -24,10 +28,10 @@ export async function runGitSnapshotsCommand(host: GitSnapshotCommandHost, args:
             return;
         }
         const confirmed = await host.select(
-            `Revert working tree to snapshot of message ${ref}?`,
+            formatAgentUiNotice(host.translator, 'gitSnapshotRevertMessageConfirm', { ref: ref }),
             [
-                { label: 'revert', value: 'yes', detail: 'restore the working tree from this snapshot' },
-                { label: 'cancel', value: 'no', detail: 'keep the current working tree' }
+                { label: gitSnapshotText(host, 'revertAction', 'revert'), value: 'yes', detail: gitSnapshotText(host, 'revertActionDetail', 'restore the working tree from this snapshot') },
+                { label: gitSnapshotText(host, 'cancelAction', 'cancel'), value: 'no', detail: gitSnapshotText(host, 'cancelKeepCurrent', 'keep the current working tree') }
             ],
             1,
             host.state.consoleOptions.selectHint
@@ -45,10 +49,10 @@ export async function runGitSnapshotsCommand(host: GitSnapshotCommandHost, args:
     }
     if (operation === 'unrevert') {
         const confirmed = await host.select(
-            'Restore the working tree captured before the last git revert?',
+            formatAgentUiNotice(host.translator, 'gitSnapshotRestoreConfirm'),
             [
-                { label: 'unrevert', value: 'yes', detail: 'restore the working tree' },
-                { label: 'cancel', value: 'no', detail: 'keep the reverted working tree' }
+                { label: gitSnapshotText(host, 'unrevertAction', 'unrevert'), value: 'yes', detail: gitSnapshotText(host, 'unrevertActionDetail', 'restore the working tree') },
+                { label: gitSnapshotText(host, 'cancelAction', 'cancel'), value: 'no', detail: gitSnapshotText(host, 'cancelKeepReverted', 'keep the reverted working tree') }
             ],
             1,
             host.state.consoleOptions.selectHint
@@ -91,12 +95,19 @@ export async function openGitSnapshotList(host: GitSnapshotCommandHost): Promise
         return;
     }
     const choice = await host.select(
-        `Git step snapshots (${snapshots.length})`,
+        gitSnapshotText(host, 'listTitle', 'Git step snapshots ({count})', { count: snapshots.length }),
         snapshots.map((snapshot: any, index: number) => {
             const label = String(snapshot.label || snapshot.messageId || `snapshot-${index + 1}`).trim();
             const createdAt = snapshot.timestamp ? ` · ${new Date(snapshot.timestamp).toLocaleString()}` : '';
             const ds = snapshot.diffStats;
-            const diffLabel = ds ? ` · +${ds.totalAdditions}/-${ds.totalDeletions} (${ds.filesChanged} file${ds.filesChanged === 1 ? '' : 's'})` : '';
+            const diffLabel = ds
+                ? gitSnapshotText(host, 'diffLabel', ' · +{additions}/-{deletions} ({files})', {
+                    additions: ds.totalAdditions, deletions: ds.totalDeletions,
+                    files: ds.filesChanged === 1
+                        ? gitSnapshotText(host, 'fileOne', '{count} file', { count: ds.filesChanged })
+                        : gitSnapshotText(host, 'files', '{count} files', { count: ds.filesChanged })
+                })
+                : '';
             return {
                 label: `${label}${createdAt}${diffLabel}`,
                 value: String(snapshot.messageId || snapshot.id || index),
@@ -131,9 +142,12 @@ export async function openGitSnapshotDiff(host: GitSnapshotCommandHost, ref: str
     const fileCount = Array.isArray(diff.files) ? diff.files.length : 0;
     host.state.closeReview();
     host.state.openGitSnapshotDetail(
-        `git snapshot ${ref}`,
+        gitSnapshotText(host, 'detailTitle', 'git snapshot {ref}', { ref: ref }),
         lines,
-        [`ref ${ref}`, fileCount ? `files ${fileCount}` : 'files -'].join(' · '),
+        [
+            gitSnapshotText(host, 'refLine', 'ref {ref}', { ref: ref }),
+            fileCount ? gitSnapshotText(host, 'filesLine', 'files {count}', { count: fileCount }) : gitSnapshotText(host, 'filesUnknown', 'files -')
+        ].join(' · '),
         ref
     );
 }
@@ -146,10 +160,10 @@ export async function revertGitSnapshotFromDetail(host: GitSnapshotCommandHost):
         return;
     }
     const confirmed = await host.select(
-        `Revert working tree to snapshot ${ref}?`,
+        formatAgentUiNotice(host.translator, 'gitSnapshotRevertRefConfirm', { ref: ref }),
         [
-            { label: 'revert', value: 'yes', detail: 'restore the working tree from this snapshot' },
-            { label: 'cancel', value: 'no', detail: 'keep the current working tree' }
+            { label: gitSnapshotText(host, 'revertAction', 'revert'), value: 'yes', detail: gitSnapshotText(host, 'revertActionDetail', 'restore the working tree from this snapshot') },
+            { label: gitSnapshotText(host, 'cancelAction', 'cancel'), value: 'no', detail: gitSnapshotText(host, 'cancelKeepCurrent', 'keep the current working tree') }
         ],
         1,
         host.state.consoleOptions.selectHint

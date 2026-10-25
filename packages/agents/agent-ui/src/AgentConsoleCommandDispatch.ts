@@ -38,13 +38,14 @@ export async function dispatchAgentConsoleCommand(host: AgentConsoleCommandDispa
         host.pendingCommandRequestId = previousRequestId;
         return true;
     }
-    const parsedArgs = parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition(canonical), args);
+    const translate = (key: string, params?: Record<string, any>, fallback?: string) => host.state.translateLabel(key, params, fallback ?? key);
+    const parsedArgs = parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition(canonical), args, translate);
     if (parsedArgs.diagnostics.length) {
-        const reason = formatAgentConsoleCommandDiagnostics(parsedArgs.diagnostics);
+        const reason = formatAgentConsoleCommandDiagnostics(parsedArgs.diagnostics, translate);
         host.state.commandExecutionController.fail(requestId, reason, false);
         // Preserve the exact command so the user can correct it and retry.
         host.state.setInput(parsed.raw, parsed.raw.length);
-        host.notify(formatAgentConsoleCommandDiagnosticEcho(parsedArgs.diagnostics).join('\n'));
+        host.notify(formatAgentConsoleCommandDiagnosticEcho(parsedArgs.diagnostics, translate).join('\n'));
         host.pendingCommandRequestId = previousRequestId;
         return true;
     }

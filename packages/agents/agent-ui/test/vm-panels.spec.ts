@@ -938,14 +938,14 @@ export class VmPanelsTest {
         const panel = new AgentConsoleInputPanelComponent(state);
 
         state.setInput('Please design the architecture before changing any files.');
-        expect(state.planNudgeLabel).toContain('/plan');
+        expect(state.planNudgeActive).toEqual(true);
         expect(panel.metaLabel).toContain('/plan');
 
         state.setInput('Fix the failing unit test in parser.ts now.');
-        expect(state.planNudgeLabel).toEqual('');
+        expect(state.planNudgeActive).toEqual(false);
 
         state.setInput('先不要改代码，请给出一个完整的实现方案。');
-        expect(state.planNudgeLabel).toContain('/plan');
+        expect(state.planNudgeActive).toEqual(true);
     }
 
     @Test('input panel routes browser global keys through shared resolver')

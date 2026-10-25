@@ -452,7 +452,8 @@ export class AgentConsoleInputPanelComponent {
     }
 
     get metaPrefixLabel(): string {
-        return [this.state?.providerWizardLabel, this.state?.planNudgeLabel, this.hintLabel].filter(Boolean).join(' · ');
+        const planNudge = this.state?.planNudgeActive ? panelLabel(this.translator, 'input', 'planNudge', 'Planning intent detected · use /plan') : '';
+        return [this.state?.providerWizardLabel, planNudge, this.hintLabel].filter(Boolean).join(' · ');
     }
 
     get metaLabel(): string {
@@ -3555,7 +3556,7 @@ export class AgentConsoleReviewPanelComponent {
     `
 })
 export class AgentConsoleGitSnapshotPanelComponent {
-    constructor(private state: AgentConsoleSessionState) {
+    constructor(private state: AgentConsoleSessionState, @Optional() private translator?: TranslatorService) {
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -3622,20 +3623,20 @@ export class AgentConsoleGitSnapshotPanelComponent {
         if (!this.shouldShow) {
             return '';
         }
-        const header = this.state.gitSnapshotHeaderLabel || 'git snapshot diff';
+        const header = this.state.gitSnapshotHeaderLabel || panelLabel(this.translator, 'gitSnapshot', 'defaultHeader', 'git snapshot diff');
         const total = this.contentLines.length;
         const start = Math.min(total, this.state.gitSnapshotDetailScroll + 1);
         const end = Math.min(total, this.state.gitSnapshotDetailScroll + this.visibleLines.length);
         const column = this.state.gitSnapshotDetailColumnScroll + 1;
         const totalColumns = Math.max(1, this.gitSnapshotDetailMaxColumn);
-        return `${header}  |  lines ${start}-${end} / ${total}  |  col ${column}/${totalColumns}`;
+        return panelLabel(this.translator, 'gitSnapshot', 'summary', '{header}  |  lines {start}-{end} / {total}  |  col {column}/{columns}', { header: header, start: start, end: end, total: total, column: column, columns: totalColumns });
     }
 
     get gitSnapshotHintLabel(): string {
         if (!this.shouldShow) {
             return '';
         }
-        return 'up/down scroll · left/right pan · pg jump · home/end edge · r revert · y copy · esc close';
+        return panelLabel(this.translator, 'gitSnapshot', 'hint', 'up/down scroll · left/right pan · pg jump · home/end edge · r revert · y copy · esc close');
     }
 
     get gitSnapshotStatsLabel(): string {

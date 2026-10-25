@@ -35,6 +35,14 @@ import { runQueueCommand } from '../src/AgentConsoleRpcCommands';
 import { runStashCommand } from '../src/AgentConsoleStashCommands';
 import { handleVoiceCommand } from '../src/AgentConsoleVoiceHandlers';
 import { openApprovalInspector } from '../src/AgentConsoleApprovalCommands';
+import { AgentConsoleInputPanelComponent } from '../src/AgentConsolePanels';
+import { AgentConsoleSessionState } from '../src/AgentConsoleSessionState';
+import { InMemoryCommandExecutionControl } from '@tsdi/agent';
+import { describePendingAttachments } from '../src/AgentConsoleExportHandlers';
+import { collectHealthItems } from '../src/AgentConsoleHealthView';
+import { parseAgentConsoleCommandArguments, formatAgentConsoleCommandDiagnosticEcho, getAgentConsoleCommandDefinition } from '../src/AgentConsoleCommandRegistry';
+import { describeWorktreeDiffScope, parseWorktreeDiffArgs } from '../src/AgentConsoleReviewHandlers';
+import { openGitSnapshotDiff, runGitSnapshotsCommand } from '../src/AgentConsoleGitSnapshotCommands';
 import { runDebugConfigCommand, runMemoriesCommand, runPersonalityCommand } from '../src/AgentConsolePreferenceCommands';
 import { runAppsCommand } from '../src/AgentConsoleExtensionCommands';
 import { AgentConsoleComponent } from '../src/AgentConsoleComponent';
@@ -665,5 +673,133 @@ export class PanelI18nTest {
         expect(thinkingTitle).toEqual('设置 · 思考强度');
         expect(thinkingOptions.find(option => option.value === 'medium').description).toEqual('当前等级');
         expect(thinkingOptions.find(option => option.value === 'high').description).toEqual('设置推理强度');
+    }
+    @Test('plan nudge copy lives in the input panel and is localized')
+    async planNudgePanelCopyLocalized() {
+        const panelState = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        const panel = new AgentConsoleInputPanelComponent(panelState, zh);
+        panelState.setInput('Please design the architecture before changing any files.');
+        expect(panelState.planNudgeActive).toEqual(true);
+        expect(panel.metaLabel).toContain('检测到规划意图 · 使用 /plan');
+        const enPanel = new AgentConsoleInputPanelComponent(panelState);
+        expect(enPanel.metaLabel).toContain('Planning intent detected · use /plan');
+    }
+
+    @Test('command argument diagnostics and diff scope copy are localized')
+    async commandDiagnosticsLocalized() {
+        const translate = (key: string, params?: Record<string, any>, fallback?: string) => {
+            const value = zh.translate(key, params);
+            return value && value !== key ? value : (fallback ?? key);
+        };
+        const missing = parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition('/search'), '', translate);
+        expect(missing.diagnostics[0].message).toEqual('缺少必需参数 <query>。');
+        expect(missing.diagnostics[0].suggestion).toEqual('用法：/search query。');
+        expect(formatAgentConsoleCommandDiagnosticEcho(missing.diagnostics, translate)).toEqual([
+            '缺少必需参数 <query>。',
+            '期望：<query>',
+            '可能：用法：/search query。'
+        ]);
+
+        const single = { name: '/single', description: 'single', group: 'core' as const, args: [{ name: 'value' }] };
+        const extra = parseAgentConsoleCommandArguments(single, 'one two', translate);
+        expect(extra.diagnostics[0].message).toEqual('多余的参数：two。');
+        expect(extra.diagnostics[0].suggestion).toEqual('请移除多余参数 —— 该命令不接受更多参数。');
+        expect(parseAgentConsoleCommandArguments(single, 'one two').diagnostics[0].message).toEqual('Unexpected argument: two.');
+
+        const staged = parseWorktreeDiffArgs('--staged --untracked', zh as any);
+        expect(staged.error).toEqual('--staged、--unstaged、--untracked 只能选其一。');
+        expect(parseWorktreeDiffArgs('--staged --untracked').error).toEqual('Use only one of --staged, --unstaged, or --untracked.');
+        expect(parseWorktreeDiffArgs('--nope', zh as any).error).toEqual('未知的 /diff 选项：--nope');
+        expect(describeWorktreeDiffScope('working-tree', zh as any)).toEqual('工作区');
+        expect(describeWorktreeDiffScope('staged', zh as any)).toEqual('已暂存');
+        expect(describeWorktreeDiffScope('staged')).toEqual('Staged');
+    }
+
+    @Test('export preview, attachments and health details are localized')
+    async exportAndHealthLocalized() {
+        let menu: any = null;
+        const ctx: any = {
+            translator: zh,
+            state: {
+                openSelectMenu: (title: string, options: any[], index: number, hint?: string) => {
+                    menu = { title, options, index, hint };
+                }
+            }
+        };
+        const { previewSessionExport } = await import('../src/AgentConsoleExportHandlers');
+        previewSessionExport(ctx, {
+            format: 'json',
+            fileName: 'session.json',
+            content: '{}',
+            messages: [{}, {}],
+            toolCalls: [{}],
+            session: { messageCount: 2, toolCallCount: 1 }
+        } as any);
+        expect(menu.title).toEqual('会话导出（json）');
+        expect(menu.options[0].description).toEqual('2 条消息 · 1 次工具调用');
+        expect(menu.hint).toEqual('只读导出预览。按 Esc 关闭。');
+
+        expect(describePendingAttachments([], zh)).toEqual('没有待处理的附件。');
+        expect(describePendingAttachments([{ name: 'a.png' }] as any, zh)).toEqual('待处理附件：a.png');
+        expect(describePendingAttachments([])).toEqual('No pending attachments.');
+
+        const items = await collectHealthItems(null, () => ({}), {
+            tools: [
+                { name: 'mcp.github.list', active: true },
+                { name: 'mcp.github.create', active: false },
+                { name: 'lsp_hover', active: true }
+            ]
+        }, zh);
+        expect(items.find(item => item.id === 'gateway').detail).toEqual('本地运行时（无网关）');
+        expect(items.find(item => item.id === 'mcp:github').detail).toEqual('1/2 个工具已激活');
+        expect(items.find(item => item.id === 'lsp').detail).toEqual('1 个工具可用');
+        const noTools = await collectHealthItems(null, () => ({}), { tools: [] }, zh);
+        expect(noTools.find(item => item.id === 'mcp').detail).toEqual('未配置 MCP 服务器');
+        expect(noTools.find(item => item.id === 'lsp').detail).toEqual('没有可用的 LSP 工具');
+    }
+    @Test('git snapshot list, confirm, and diff chrome is localized')
+    async gitSnapshotCopyLocalized() {
+        const selects: Array<{ title: string; options: any[] }> = [];
+        let detail: any = null;
+        const host: any = {
+            translator: zh,
+            state: {
+                sessionId: 's1',
+                consoleOptions: { selectHint: 'hint' },
+                closeReview: () => { /* unused */ },
+                openGitSnapshotDetail: (title: string, lines: string[], stats: string, ref: string) => {
+                    detail = { title, lines, stats, ref };
+                }
+            },
+            sessionService: {
+                listGitStepSnapshots: async () => [
+                    { label: 'step 1', messageId: 'm1', id: 'snap-1', timestamp: 0, diffStats: { totalAdditions: 3, totalDeletions: 2, filesChanged: 1 } }
+                ],
+                diffGitStepSnapshot: async () => ({ files: [{ path: 'a.ts' }], hunks: [] }),
+                revertGitStepSnapshot: async () => ({ reverted: true }),
+                unrevertGitStepSnapshot: async () => ({ reverted: true })
+            },
+            notify: () => { /* unused */ },
+            select: async (title: string, options: any[]) => { selects.push({ title, options }); return undefined; }
+        };
+        await runGitSnapshotsCommand(host, 'list');
+        expect(selects[0].title).toEqual('Git 步骤快照（1）');
+        expect(selects[0].options[0].label).toEqual('step 1 · +3/-2（1 个文件）');
+
+        await runGitSnapshotsCommand(host, 'revert 1');
+        expect(selects[1].title).toEqual('将工作区恢复到消息 1 的快照？');
+        expect(selects[1].options.map(option => option.label)).toEqual(['回退', '取消']);
+        expect(selects[1].options[0].detail).toEqual('用该快照恢复工作区');
+        expect(selects[1].options[1].detail).toEqual('保留当前工作区');
+
+        await runGitSnapshotsCommand(host, 'unrevert');
+        expect(selects[2].title).toEqual('恢复最近一次 git 回退前捕获的工作区？');
+        expect(selects[2].options.map(option => option.label)).toEqual(['撤销回退', '取消']);
+        expect(selects[2].options[1].detail).toEqual('保留已回退的工作区');
+
+        await openGitSnapshotDiff(host, 'snap-1');
+        expect(detail.title).toEqual('git 快照 snap-1');
+        expect(detail.stats).toEqual('引用 snap-1 · 文件 1');
+        expect(detail.ref).toEqual('snap-1');
     }
 }

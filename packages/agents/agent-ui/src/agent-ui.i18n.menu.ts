@@ -67,6 +67,25 @@ export const AGENT_UI_MENU_EN: Record<string, any> = {
         connected: 'connected',
         authorizationRequired: 'authorization required'
     },
+    diffScope: {
+        workingTree: 'Working tree',
+        staged: 'Staged',
+        unstaged: 'Unstaged',
+        untracked: 'Untracked'
+    },
+    arg: {
+        missing: 'Missing required argument <{name}>.',
+        provideOne: 'Provide one of: {values}.',
+        usage: 'Usage: /{command} {name}.',
+        invalid: 'Invalid {name} "{value}". Expected: {expected}.',
+        didYouMean: 'Did you mean {values}?',
+        extraOne: 'Unexpected argument: {value}.',
+        extraMany: 'Unexpected arguments: {value}.',
+        removeExtraOne: 'Remove it — the command accepts no more arguments.',
+        removeExtraMany: 'Remove them — the command accepts no more arguments.',
+        expected: 'expected: {value}',
+        maybe: 'maybe: {value}'
+    },
     tools: {
         title: 'tools {count} · {index}/{count}',
         inactiveSuffix: ' [inactive]',
@@ -271,6 +290,25 @@ export const AGENT_UI_MENU_ZH: Record<string, any> = {
         title: '应用',
         connected: '已连接',
         authorizationRequired: '需要授权'
+    },
+    diffScope: {
+        workingTree: '工作区',
+        staged: '已暂存',
+        unstaged: '未暂存',
+        untracked: '未跟踪'
+    },
+    arg: {
+        missing: '缺少必需参数 <{name}>。',
+        provideOne: '可取值：{values}。',
+        usage: '用法：/{command} {name}。',
+        invalid: '参数 {name} 的值“{value}”无效。期望：{expected}。',
+        didYouMean: '是要用 {values} 吗？',
+        extraOne: '多余的参数：{value}。',
+        extraMany: '多余的参数：{value}。',
+        removeExtraOne: '请移除多余参数 —— 该命令不接受更多参数。',
+        removeExtraMany: '请移除多余参数 —— 该命令不接受更多参数。',
+        expected: '期望：{value}',
+        maybe: '可能：{value}'
     },
     tools: {
         title: '工具 {count} · {index}/{count}',
