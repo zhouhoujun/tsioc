@@ -21,7 +21,7 @@ export const AGENT_UI_NOTICE_EN: NestedMessages = {
   noQueuedPrompts: 'No queued prompts. Press Tab while a turn is running to queue a follow-up prompt.',
   noQueuedPromptsClear: 'No queued prompts to clear.',
   queueUsage: 'Usage: /queue [list|clear]',
-  noStashedDrafts: 'No stashed drafts. Use /stash push <name> to save the current draft.',
+  noStashedDrafts: 'No stashed drafts. Press ctrl+x shift+s to stash the current draft.',
   emptyStash: 'Nothing to stash: the draft is empty.',
   stashUsage: 'Usage: /stash [list|push <name>|pop <name>|rm <name>]',
   personalityCleared: 'Personality cleared.',

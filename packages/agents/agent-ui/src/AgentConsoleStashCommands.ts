@@ -29,8 +29,11 @@ export async function runStashCommand(host: StashCommandHost, args?: string): Pr
             host.notify(formatAgentUiNotice(host.translator, 'emptyStash'));
             return true;
         }
-        const name = requested || 'default';
         const stashes = await host.stashStore?.load(host.resolveHistoryWorkspace()) || {};
+        let name = requested || 'default';
+        for (let index = 2; !requested && name in stashes; index += 1) {
+            name = `default-${index}`;
+        }
         stashes[name] = draft;
         try {
             await host.stashStore?.save(host.resolveHistoryWorkspace(), stashes);
@@ -38,6 +41,9 @@ export async function runStashCommand(host: StashCommandHost, args?: string): Pr
             host.notify(error?.message || formatAgentUiNotice(host.translator, 'stashDraftFailed'));
             return true;
         }
+        // ctrl+x shift+s dispatches this command from the composer, so the draft is
+        // still in the input: clear it once it is safely stashed.
+        host.state.setInput('', 0);
         host.notify(formatAgentUiNotice(host.translator, 'draftStashedAs', { name: name }));
         return true;
     }

@@ -494,7 +494,10 @@ export async function executeGlobalKeyActionView(
         archetypes: '/archetype',
         status: '/status',
         copy: '/copy',
-        'command-outputs': '/outputs'
+        'command-outputs': '/outputs',
+        // The composer still holds the draft here (submitView is not involved), so
+        // /stash push can capture it; the command clears it after saving.
+        'stash-draft': '/stash push'
     };
     await host.handleCommand(commands[action]);
     return true;

@@ -2088,3 +2088,17 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - after：2.38 / 2.25 / 2.33 → 中位 **2.33 CPU 秒**；
   - 分布重叠、差值 ≈0.16s（≈6%）落在噪声内 → **无可测提升**。
 - 处置：按「未经实测提升的改动不得保留」**完整回退**（3 个 src + 2 个测试），只保留归因结论。后续若要动会话切换，应针对「openSession 期间多次状态写入合并 notify」或「减少单次切换的查询条数」，且同样用静默基线前后各 3 样本复测。
+
+## 2026-10-23 草稿暂存不可用：`/stash push` 在生产路径上永远读不到草稿
+- 复现（真实 TUI，两次）：
+  1. 有草稿时敲 `/stash push alpha` → 因为斜杠命令只认行首，整行被当成**用户消息**提交（`› draft text 123/stash push test1`），实际启动了一个 turn；
+  2. 空输入时敲 `/stash push alpha` → 输出只有 `$ /stash push alpha running/completed`，没有暂存任何东西。
+- 根因（代码级）：`AgentConsoleTurnInputController.submitView()` 在 `/` 分支里**先** `host.state.setInput('')` **再** `await host.handleCommand(value)`；而 `runStashCommand` 的 `push` 读 `host.state.input`。所以 `push` 永远拿到空串 → 只可能命中 `emptyStash`。
+  - 单元测试之所以一直绿：`stash.spec.ts` 直接调 `component.handleCommand('/stash push wip')` 并预先 `state.updateDraft(...)`，绕过了 `submitView` 的清空顺序——生产入口根本不存在。
+- 修复（不新增 facade 逻辑，保持 `AgentConsoleComponent` 行数基线）：
+  - 新增默认键位 `ctrl+x shift+s` → 全局动作 `stash-draft`；键位路径不经过 `submitView`，草稿仍在 input；
+  - 该动作在既有 `commands` 映射里复用 `/stash push` 命令（`handleCommand`，不清 input），由 `runStashCommand` 读取草稿；
+  - `push` 成功后清空 composer；未给名字时自动取 `default`、`default-2`…（不再静默覆盖已暂存草稿）；
+  - i18n 提示（`noStashedDrafts` en/zh）、`/stash` 命令说明、which-key 分组（Edit）都改为指向该键位。
+- 测试：`stash.spec.ts` 新增 4 例（键位映射 + 经键位派发暂存并清空、重复暂存不覆盖、空草稿、`submit` 先清空导致 `push` 读不到草稿的边界），**RED**：仅回退 src 时 3 例失败；`keymap-context.spec.ts` 的 which-key 分页断言改为按页遍历（新增键位让 composer 绑定从一页变成两页）。agent-ui **1751 passing**。
+- 真实 TUI：输入 `first draft alpha` → `ctrl+x shift+s` → `Draft stashed as "default".` 且 composer 清空；再输入 `second draft beta` → `ctrl+x shift+s` → `Draft stashed as "default-2".`；`/stash list` → `default (17 chars), default-2 (17 chars)`；`/stash pop default` → 草稿恢复为 `first draft alpha` 并提示 `Restored stash "default" into the draft.`

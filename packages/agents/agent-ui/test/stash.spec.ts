@@ -8,6 +8,7 @@ import {
     AgentConsoleSessionState
 } from '../src';
 import { AgentConsoleStashStore } from '../src/AgentConsoleStash';
+import { AGENT_CONSOLE_GLOBAL_ACTIONS, AgentConsoleKeymap } from '../src/AgentConsoleKeymap';
 
 class RuntimeStub {
     async runTurn(sessionId: string, input: string): Promise<any> {
@@ -191,6 +192,49 @@ export class AgentConsoleStashTest {
         expect(result).toEqual(true);
         expect(state.input).toEqual('/stash bogus');
         expect(state.notice).toContain('Invalid verb "bogus"');
+    }
+
+
+    @Test('ctrl+x shift+s stashes the composer draft (the only reachable push path)')
+    async keybindingStashesDraft() {
+        const { state, component, store } = createStashConsole();
+        const keymap = new AgentConsoleKeymap();
+        expect(AGENT_CONSOLE_GLOBAL_ACTIONS).toContain('stash-draft');
+        expect(keymap.effectiveBindings('global')['ctrl+x shift+s']).toEqual('stash-draft');
+        state.updateDraft('remember to check the build');
+        expect(await (component as any).executeGlobalKeyAction('stash-draft')).toEqual(true);
+        expect(store.value.default).toEqual('remember to check the build');
+        expect(state.input).toEqual('');
+        expect(state.notice).toContain('stashed as "default"');
+    }
+
+    @Test('repeated keybinding stashes keep the earlier drafts instead of overwriting')
+    async keybindingKeepsEarlierDrafts() {
+        const { state, component, store } = createStashConsole();
+        state.updateDraft('first draft');
+        await (component as any).executeGlobalKeyAction('stash-draft');
+        state.updateDraft('second draft');
+        await (component as any).executeGlobalKeyAction('stash-draft');
+        expect(store.value.default).toEqual('first draft');
+        expect(store.value['default-2']).toEqual('second draft');
+        expect(state.notice).toContain('default-2');
+    }
+
+    @Test('keybinding with an empty draft notifies without writing a stash')
+    async keybindingEmptyDraft() {
+        const { state, component, store } = createStashConsole();
+        expect(await (component as any).executeGlobalKeyAction('stash-draft')).toEqual(true);
+        expect(store.saved.length).toEqual(0);
+        expect(state.notice).toContain('Nothing to stash');
+    }
+
+    @Test('slash submission clears the composer before dispatch, so /stash push cannot see the draft')
+    async pushCannotSeeSubmittedDraft() {
+        const { state, component, store } = createStashConsole();
+        state.updateDraft('/stash push wip');
+        await (component as any).submit();
+        expect(store.saved.length).toEqual(0);
+        expect(state.notice).toContain('Nothing to stash');
     }
 
     @Test('constructor wires the stash store into the component')

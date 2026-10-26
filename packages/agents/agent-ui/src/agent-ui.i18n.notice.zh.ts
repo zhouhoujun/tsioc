@@ -21,7 +21,7 @@ export const AGENT_UI_NOTICE_ZH: NestedMessages = {
   noQueuedPrompts: '没有排队提示。turn 运行中按 Tab 可排队后续提示。',
   noQueuedPromptsClear: '没有可清空的排队提示。',
   queueUsage: '用法：/queue [list|clear]',
-  noStashedDrafts: '没有暂存草稿。用 /stash push <name> 保存当前草稿。',
+  noStashedDrafts: '没有暂存草稿。按 ctrl+x shift+s 暂存当前草稿。',
   emptyStash: '无内容可暂存：草稿为空。',
   stashUsage: '用法：/stash [list|push <name>|pop <name>|rm <name>]',
   personalityCleared: '人格已清除。',
