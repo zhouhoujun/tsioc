@@ -2003,3 +2003,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 尝试优化：给 `SessionStore` 增加批量 `getOwnerPrincipalIds`（复用 `listSessionFacts` 的聚合读），`SessionOwnerStore.listOwned` 优先走批量。
 - 实测结果：空→空 3.83 → **3.77** CPU 秒；轻→轻 5.83/6.35 → **6.41/6.53** —— **无可测提升**。
 - 处置：按“未经实测提升的改动不得保留”，**完整回退**该优化（代码、测试），仅保留测量结论与 profile 证据，留待后续用 start/stop 精确 profile 定位真正的热点。
+
+### 补充：切换-only CPU profile（start/stop 采样，排除启动尾）
+- 方法：`--require` 一个 inspector 钩子，文件哨兵触发 `Profiler.start/stop`；等空闲 CPU≈0 后再 `/session`，采样 2.5s。结果：总 2.8s，idle 仅 0.12s（说明工作确实在主线程，之前的“idle”是采样窗口错位/旧 bundle）。
+- 热点拆分：
+  - **TypeORM / sql.js 查询** ≈1.2s（`executeEntitiesAndRawResults` 1.02、`getRawAndEntities` 0.94、`loadRawResults` 0.91、`query` 0.74、`find`/`findOne`/`getMany`/`getOwner` 各 0.4–0.5）；
+  - **响应式 + 渲染** ≈1.2s（`set` 0.48、`trigger` 0.45、`set for` 0.38、`untrack` 0.38、`updateView` 0.38）——`openSession` 逐个字段赋值触发多次 effect/重绘；
+  - `openSession` 自身 0.43s。
+- 结论：切换 ~1.7–3.2 CPU 秒（静默基线 0% 下实测）。下一步若要优化，应优先「会话打开期间合并状态写入（一次性 notify）」与「减少 openSession 的查询次数」，两者都需要真实路径复测后才可保留。
+- 备注：测量期间发现 `--session` 启动若 bundle 过期会回退 ts-node（>60s 无输出），容易被误判为卡死；测量前务必确认 bundle 新鲜（`resolveBundle` → `bundle`）。
