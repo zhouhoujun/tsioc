@@ -645,6 +645,44 @@ export class PanelI18nTest {
         ]);
     }
 
+    @Test('/ps show detail labels follow the locale while values stay raw')
+    async backgroundTaskDetailLocalized() {
+        const task = {
+            id: 't1', sessionId: 's1', goal: 'fix tests', status: 'completed',
+            startedAt: new Date(2026, 9, 25, 14, 30, 0).getTime(),
+            finishedAt: new Date(2026, 9, 25, 14, 31, 0).getTime(),
+            retryCount: 2, progress: 0.5, error: 'boom'
+        };
+        const run = async (translator: any) => {
+            let text = '';
+            await runBackgroundTasksCommandView({
+                translator,
+                state: { sessionId: 's1', backgroundTaskFeed: [] },
+                backgroundTasks: { listAll: () => [task] },
+                notify: () => { /* unused */ },
+                pushCommandOutput: (_command: string, output: string) => { text = output; }
+            } as any, 'show t1');
+            return text;
+        };
+        const zhText = await run({ ...zh, currentLocale: 'zh-CN' });
+        expect(zhText.split('\n')[0]).toEqual('后台任务 t1');
+        expect(zhText).toContain('  状态：已完成');
+        expect(zhText).toContain('  会话：s1');
+        expect(zhText).toContain('  目标：fix tests');
+        expect(zhText).toContain('  开始：2026/10/25 14:30:00');
+        expect(zhText).toContain('  耗时：60s');
+        expect(zhText).toContain('  重试：2');
+        expect(zhText).toContain('  进度：50%');
+        expect(zhText).toContain('  错误：boom');
+
+        const enText = await run(en);
+        expect(enText.split('\n')[0]).toEqual('Background task t1');
+        expect(enText).toContain('  status: completed');
+        expect(enText).toContain('  session: s1');
+        expect(enText).toContain('  goal: fix tests');
+        expect(enText).toContain('  retries: 2');
+    }
+
     @Test('IDE and voice output copy is localized')
     async ideAndVoiceOutputsLocalized() {
         const outputs: Array<{ command: string; text: string }> = [];

@@ -74,7 +74,7 @@ export async function runBackgroundTasksCommandView(host: BackgroundTaskCommandH
             host.notify(formatAgentUiNotice(host.translator, 'backgroundTask', { taskId: taskId }));
             return true;
         }
-        host.pushCommandOutput(`/ps show ${taskId}`, formatBackgroundTaskDetail(task));
+        host.pushCommandOutput(`/ps show ${taskId}`, formatBackgroundTaskDetail(task, host.translator));
         return true;
     }
     if (sub === 'stop') {

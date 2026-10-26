@@ -2178,3 +2178,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **测试**：`panel-i18n.spec.ts` 52 → **53 条**（`/ps running|all` 空态、`/ps stop` 摘要+未找到+撤销提示、`/ps undo` 摘要+已结束）；既有 `/ps all` 断言同步为 `后台任务（全部）：` + `运行中 t1`；notice 键数守卫 588 → **589**（仅净增 `noBackgroundTasks`）。
 - **真实 TUI（zh-CN）复核**：`没有当前后台任务。`、`没有运行中后台任务。`、`没有后台任务。`、`已取消 0/1 个后台任务。`、`已恢复 0/1 个后台任务。`。
 - **门禁**：agent-ui **1765 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
+
+## 2026-10-26 `/ps show` 详情块中文化
+- **现象**：`/ps show <id>` 的整块输出是硬编码英文（`Background task t1`、`status:`、`session:`、`goal:`、`started:`、`duration:`、`retries:`、`progress:`、`usage:`、`error:`、`cause:`、`summary:`/`completed:`/`diff:`/`artifacts:`/`next steps:`/`risks:`、`(running - no report yet)`），只有前缀通知是中文。
+- **做法**：`formatBackgroundTaskDetail(task, translator)` 改为经 panel `ps` 组取文案（新增 `detailTitle/detailStatus/.../detailRunning/detailUnavailable/detailUnknown` 与 `detailLine` 模板，en `  {label}: {value}` / zh `  {label}：{value}`）；**值保持原样**（id、会话 id、目标、错误、JSON 报告），仅状态词复用 `formatAgentPanelStatusLabel(translator, 'toolRuns', …)`；`started` 用 `formatAgentUiDateTime` 跟随界面 locale。
+- **测试**：`panel-i18n.spec.ts` 53 → **54 条**（zh：`后台任务 t1`/`状态：已完成`/`开始：2026/10/25 14:30:00`/`耗时：60s`/`进度：50%`/`错误：boom`；en：`Background task t1`/`status: completed`/`retries: 2`）。
+- **验证边界**：该块需要真实后台任务才可达，本机 TUI 环境无后台任务（`/ps show nope` 只到 `没有后台任务 nope。`），因此本条以单测为准；`/ps` 列表与 `stop`/`undo` 摘要已在真实 zh-CN TUI 复核（上一批）。
+- **门禁**：agent-ui **1766 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size（panel catalog 592 行，仍在 600 内）、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
