@@ -12,7 +12,7 @@ import {
 } from './console-ports';
 import { Inject, Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
-import type { SshConnectionManager, SshShellSession } from '@tsdi/agent-ssh';
+import { SshConnectionManager, type SshShellSession } from '@tsdi/agent-ssh';
 import type { SandboxMode } from '@tsdi/agent/src/harness/sandbox-exec';
 import {
     runExportCommand as runExportCommandFn,
@@ -157,7 +157,7 @@ import {
     isAgentConsoleThreadNavigationAction
 } from './AgentConsoleKeymap';
 import { VIM_ACTION_NAMES, isConsoleVimAction } from './AgentConsoleVim';
-import type { BackgroundTaskManager } from '@tsdi/agent-tools';
+import { BackgroundTaskManager } from '@tsdi/agent-tools';
 import { BackgroundTaskCommandHost, runBackgroundTasksCommandView } from './AgentConsoleBackgroundTaskCommands';
 import { decodeGlobalKey, describePendingToolCall, describeStreamEventContent } from './AgentConsoleStreamHelpers';
 import { AgentConsoleTurnStreamHost, AgentConsoleTurnStreamState, clearStreamingMessageState, consumeStreamChunkView, consumeStreamEventChunkView, runTurnStreamView } from './AgentConsoleTurnStreamController';
@@ -381,31 +381,31 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         @Optional() @Inject(ToolRegistry) private toolRegistry?: ToolRegistry | null,
         @Optional() @Inject(AGENT_CONSOLE_APP_RPC) private appRpc?: AgentConsoleAppRpc | null,
         @Optional() @Inject(AgentConsoleSessionService) private sessionService?: AgentConsoleSessionService | null,
-        @Optional() private approvalManager?: ApprovalManager | null,
+        @Optional() @Inject(ApprovalManager) private approvalManager?: ApprovalManager | null,
         @Optional() @Inject(AgentConsoleWorkspaceMentionsProvider) private workspaceMentionsProvider?: AgentConsoleWorkspaceMentionsProvider | null,
         @Optional() @Inject(AgentConsoleInputHistoryStore) private inputHistoryStore?: AgentConsoleInputHistoryStore | null,
         @Optional() @Inject(ComponentRef) private componentRef?: ComponentRef<AgentConsoleComponent> | null,
         @Optional() @Inject(ConsoleTerminalSurfaceAccessor) private surfaceAccessor?: ConsoleTerminalSurfaceAccessor | null,
         @Optional() @Inject(ApplicationContext) private app?: ApplicationContext | null,
-        @Optional() private sshManager?: SshConnectionManager | null,
+        @Optional() @Inject(SshConnectionManager) private sshManager?: SshConnectionManager | null,
         @Optional() private audioCapture?: AudioCaptureAdapter | null,
         @Optional() private audioPlayback?: AudioPlaybackAdapter | null,
         @Optional() private translator?: TranslatorService,
         @Optional() @Inject(AgentConsoleKeymap) private globalKeymap?: AgentConsoleKeymap | null,
         @Optional() @Inject(AgentConsoleKeymapStore) private keymapStore?: AgentConsoleKeymapStore | null,
         @Optional() @Inject(AgentConsoleThemeStore) private themeStore?: AgentConsoleThemeStore | null,
-        @Optional() private statuslineStore?: AgentConsoleStatuslineStore | null,
-        @Optional() private titleStore?: AgentConsoleTitleStore | null,
-        @Optional() private backgroundTasks?: BackgroundTaskManager | null,
+        @Optional() @Inject(AgentConsoleStatuslineStore) private statuslineStore?: AgentConsoleStatuslineStore | null,
+        @Optional() @Inject(AgentConsoleTitleStore) private titleStore?: AgentConsoleTitleStore | null,
+        @Optional() @Inject(BackgroundTaskManager) private backgroundTasks?: BackgroundTaskManager | null,
         @Optional() @Inject(AGENT_IDE_BRIDGE) private ideBridge?: AgentIdeBridge | null,
         @Optional() @Inject(AGENT_EDITOR_BRIDGE) private editorBridge?: AgentEditorBridge | null,
         @Optional() @Inject(AgentConsoleRawModeStore) private rawModeStore?: AgentConsoleRawModeStore | null,
         @Optional() @Inject(AgentConsoleStashStore) private stashStore?: AgentConsoleStashStore | null,
-        @Optional() private modelStore?: AgentConsoleModelStore | null,
+        @Optional() @Inject(AgentConsoleModelStore) private modelStore?: AgentConsoleModelStore | null,
         @Optional() @Inject(AgentConsoleSettingsStore) private settingsStore?: AgentConsoleSettingsStore | null,
-        @Optional() private uiConfig?: AgentUiConfigService | null,
+        @Optional() @Inject(AgentUiConfigService) private uiConfig?: AgentUiConfigService | null,
         @Optional() @Inject(ProjectMemoryService) private projectMemory?: ProjectMemoryService | null,
-        @Optional() private transcriptLayoutResolver?: AgentConsoleTranscriptLayoutResolver | null,
+        @Optional() @Inject(AgentConsoleTranscriptLayoutResolver) private transcriptLayoutResolver?: AgentConsoleTranscriptLayoutResolver | null,
     ) {
         this.transcriptNavigationController = new DefaultAgentConsoleTranscriptNavigationController(this.state, (messageId) => revealAgentConsoleMessage(this.componentRef?.hostView?.query?.(AgentConsoleMessagesPanelComponent)?.instance, this.surfaceAccessor, () => this.state.syncTranscriptFollowing(), messageId));
         this.globalKeymap = this.globalKeymap || new AgentConsoleKeymap();

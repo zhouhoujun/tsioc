@@ -2043,3 +2043,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 测试：`snapshots-args.spec.ts` 6 例（精确恢复、唯一前缀、未知 id、删除、无参选择器、未知动词）→ agent-ui **1747 passing**；notice 目录 584 条。
 - 真实 TUI：先 `/snapshot`（1 条消息）→ 跑一轮（3 条）→ `/snapshots restore snap_…`：**不弹选择器**、提示 `Snapshot restored.`，DB 消息数回到 **1**。
 - 结构：`AgentConsoleCommandHandlers.ts` 1174 行，baseline 1214 → **1175**（只降不升）。
+
+## 2026-10-23 `/ps` 在 TUI 报“不可用”：`T | null` 参数缺少显式 `@Inject`
+- 现象：真实 TUI 中 `/ps` → `Background task manager not available in this environment.`（注册表明确提供 `/ps`）。根因：构造函数参数写成 `@Optional() private backgroundTasks?: BackgroundTaskManager | null`，联合类型使 `design:type` 退化为 `Object`，DI 解析不到 —— 这是仓库已知陷阱（“`T | null` 需要显式 `@Inject`”）。`approvalManager` 因为另有 `runtime.approvalManager` 回退才没暴露。
+- 修复：给 8 个 `T | null` 可选依赖补显式 `@Inject(...)`：`ApprovalManager`、`SshConnectionManager`、`AgentConsoleStatuslineStore`、`AgentConsoleTitleStore`、`BackgroundTaskManager`、`AgentConsoleModelStore`、`AgentUiConfigService`、`AgentConsoleTranscriptLayoutResolver`（并为 `BackgroundTaskManager`/`SshConnectionManager` 改为值导入）。
+- 验证：真实 TUI `/ps` 现输出 `No current background tasks.`（不再 unavailable）；审批链路仍正常（terminal 调用 → 面板 → `a` → 命令执行）；`/status` 在 turn 后正常；agent-ui **1747 passing**；tsc/source-size/diff-check OK。
+- 未做（记录）：`AudioCaptureAdapter`/`AudioPlaybackAdapter` 的显式注入会实例化 `NodeAudioCaptureAdapter`，而它的构造函数参数同样缺少 `@Optional()`（联合/对象类型 → `Object`）会抛 `MissingParameterException`；因此本次**保留**音频适配器的原状，语音接入需先修 `platform-server/common/src/audio.ts` 两个适配器的构造参数。
