@@ -2074,3 +2074,17 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 列表与 `show` 以（已水合的）manager 为准，事件 feed 仅作后备。
 - 测试：`background-task.spec.ts` 新增 1 例（历史合并、实时优先、只水合一次）→ agent-tools **573 passing**；agent-ui **1747 passing**。
 - 真实 TUI：重启后 `/ps all` 与 `/ps completed` 都列出两条历史任务（`bg-33486f27…`、`bg-16f81b14…`，含状态/时间/会话/goal），`/ps current` 仍显示 `No current background tasks.`。
+
+## 2026-10-23 会话切换热点归因（源码模式 profile）+ 一次被否决的优化
+- 方法：用 `TSDI_AGENT_BUNDLE=0`（源码模式）跑同一静默基线 + start/stop profile，绕开 bundle 匿名帧无法归因的问题；采样 2.5s 的 `/session` 切换（总 2.79s，idle 0.56s）。源码模式与 bundle 模式绝对耗时不同，但热点函数一致：**归因用源码模式，验收用 bundle**。
+- 归因结果（inclusive）：
+  - TypeORM/sql.js 查询管线 ≈0.9s：`executeEntitiesAndRawResults` 0.89、`getRawAndEntities` 0.86、`loadRawResults` 0.80、`SqljsQueryRunner.query` 0.66、`findOne` 0.45、`find` 0.42、`getMany` 0.41、`getOne` 0.40；
+  - `TypeOrmMemoryStore.getAll` **0.35s**——控制台输入历史在每次打开会话时对 memory 表做全表扫描（0.35s 是这条查询自身，不含其上的 TypeORM 开销）；
+  - 渲染/响应式 ≈0.3–0.45s：`components/src/impl/effect.ts:56` 0.43、`compiler-fns.ts:1181` 0.36、`for.dir` 的 `updateView`/`set for`/`updateViewsWithTrackBy` 各 0.30；
+  - `openSession`（`AgentConsoleSessionOpen.ts:43`）0.36s。
+- 尝试优化：`MemoryStore.listByKey(key)`（基类默认回退 `getAll` 过滤，`TypeOrmMemoryStore` 覆盖为 `WHERE key=?` 的定向查询），`AgentConsoleInputHistoryStore` 的 `load`/`save` 改用它，避免每次切换全表扫描 memory。
+- 实测（同一静默基线、bundle、`/session` 3s 窗口、各 3 样本）：
+  - before（回退源码后重建 bundle）：2.27 / 2.56 / 2.49 → 中位 **2.49 CPU 秒**；
+  - after：2.38 / 2.25 / 2.33 → 中位 **2.33 CPU 秒**；
+  - 分布重叠、差值 ≈0.16s（≈6%）落在噪声内 → **无可测提升**。
+- 处置：按「未经实测提升的改动不得保留」**完整回退**（3 个 src + 2 个测试），只保留归因结论。后续若要动会话切换，应针对「openSession 期间多次状态写入合并 notify」或「减少单次切换的查询条数」，且同样用静默基线前后各 3 样本复测。
