@@ -593,7 +593,56 @@ export class PanelI18nTest {
             state: { sessionId: 's1', backgroundTaskFeed: [{ id: 't1', sessionId: 's1', status: 'running', goal: 'fix tests' }] },
             backgroundTasks: {}
         } as any, 'all');
-        expect(outputs[3].text.split('\n')).toEqual(['后台任务（all）：', 'RUNNING t1 [会话 s1] - fix tests']);
+        expect(outputs[3].text.split('\n')).toEqual(['后台任务（全部）：', '运行中 t1 [会话 s1] - fix tests']);
+    }
+
+    @Test('/ps filters, stop and undo copy are localized')
+    async backgroundTaskCommandCopyLocalized() {
+        const outputs: Array<{ command: string; text: string }> = [];
+        const notices: string[] = [];
+        const host = (over: Record<string, any>) => ({
+            translator: zh,
+            state: { sessionId: 's1', backgroundTaskFeed: [] },
+            notify: (message: string) => { notices.push(message); },
+            pushCommandOutput: (command: string, text: string) => { outputs.push({ command, text }); },
+            ...over
+        } as any);
+
+        await runBackgroundTasksCommandView(host({ backgroundTasks: { list: () => [] } }), 'running');
+        expect(notices[0]).toEqual('没有运行中后台任务。');
+        await runBackgroundTasksCommandView(host({ backgroundTasks: { list: () => [] } }), 'all');
+        expect(notices[1]).toEqual('没有后台任务。');
+
+        await runBackgroundTasksCommandView(host({
+            backgroundTasks: {
+                list: () => [],
+                cancelBatch: () => [
+                    { id: 't1', cancelled: true },
+                    { id: 't2', cancelled: false, reason: 'not-found' }
+                ]
+            }
+        }), 'stop t1 t2');
+        expect(outputs[0].text.split('\n')).toEqual([
+            '已取消 1/2 个后台任务。',
+            '  ✓ t1',
+            '  ✗ t2 - 未找到',
+            '撤销：/ps undo'
+        ]);
+
+        await runBackgroundTasksCommandView(host({
+            backgroundTasks: {
+                list: () => [],
+                restoreBatch: () => [
+                    { id: 't1', restored: true },
+                    { id: 't2', restored: false, reason: 'already-finished' }
+                ]
+            }
+        }), 'undo t1 t2');
+        expect(outputs[1].text.split('\n')).toEqual([
+            '已恢复 1/2 个后台任务。',
+            '  ✓ t1',
+            '  ✗ t2 - 运行已结束'
+        ]);
     }
 
     @Test('IDE and voice output copy is localized')

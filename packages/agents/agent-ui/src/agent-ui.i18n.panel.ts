@@ -86,6 +86,14 @@ export const AGENT_UI_PANEL_EN: Record<string, any> = {
         detailAlertOnFailure: 'alert on failure',
         detailLastError: 'lastError {error}'
     },
+    ps: {
+        filterCurrent: 'current',
+        filterAll: 'all',
+        filterRunning: 'running',
+        filterCompleted: 'completed',
+        filterFailed: 'failed',
+        filterCancelled: 'cancelled'
+    },
     toolRuns: {
         summary: 'tool runs {total}',
         running: 'running {count}',
@@ -346,6 +354,14 @@ export const AGENT_UI_PANEL_ZH: Record<string, any> = {
         detailManualRecovery: '需要手动恢复',
         detailAlertOnFailure: '失败时告警',
         detailLastError: '最后错误 {error}'
+    },
+    ps: {
+        filterCurrent: '当前',
+        filterAll: '全部',
+        filterRunning: '运行中',
+        filterCompleted: '已完成',
+        filterFailed: '失败',
+        filterCancelled: '已取消'
     },
     toolRuns: {
         summary: '工具运行 {total}',

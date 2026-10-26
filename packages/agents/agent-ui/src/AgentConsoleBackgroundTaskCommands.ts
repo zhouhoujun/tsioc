@@ -1,6 +1,6 @@
 import type { BackgroundTaskManager, BackgroundTaskRecord, BackgroundTaskCancelOutcome, BackgroundTaskRestoreOutcome } from '@tsdi/agent-tools';
 import { formatBackgroundTaskDetail } from './AgentConsoleBackgroundTaskFormat';
-import { formatAgentUiNotice, formatAgentUiTime, type AgentUiTranslator } from './agent-ui.i18n';
+import { formatAgentPanelLabel as panelLabel, formatAgentPanelStatusLabel, formatAgentUiNotice, formatAgentUiTime, type AgentUiTranslator } from './agent-ui.i18n';
 
 /**
  * Host surface required by the `/ps` background task command.
@@ -28,14 +28,20 @@ function findBackgroundTask(host: BackgroundTaskCommandHost, taskId: string): Ba
     return host.state.backgroundTaskFeed.find(task => task.id === taskId);
 }
 
-function describeRestoreFailure(reason?: 'not-found' | 'not-cancelled' | 'already-finished'): string {
+function describeRestoreFailure(translator: AgentUiTranslator | null | undefined, reason?: 'not-found' | 'not-cancelled' | 'already-finished'): string {
     if (reason === 'not-found') {
-        return 'not found';
+        return formatAgentUiNotice(translator, 'psRestoreReasonNotFound');
     }
     if (reason === 'not-cancelled') {
-        return 'not cancelled';
+        return formatAgentUiNotice(translator, 'psRestoreReasonNotCancelled');
     }
-    return 'run already finished';
+    return formatAgentUiNotice(translator, 'psRestoreReasonFinished');
+}
+
+/** Localized label for a `/ps` filter id, keeping the id when unknown. */
+function filterLabel(translator: AgentUiTranslator | null | undefined, filter: string): string {
+    const key = `filter${filter.charAt(0).toUpperCase()}${filter.slice(1)}`;
+    return panelLabel(translator, 'ps', key, filter);
 }
 
 /**
@@ -85,16 +91,16 @@ export async function runBackgroundTasksCommandView(host: BackgroundTaskCommandH
                   return { id, cancelled: ok, reason: ok ? undefined : ('not-running' as const) };
               });
         const cancelled = outcomes.filter(o => o.cancelled);
-        const lines = [`Cancelled ${cancelled.length}/${outcomes.length} background task(s).`];
+        const lines = [formatAgentUiNotice(host.translator, 'psStopSummary', { cancelled: cancelled.length, total: outcomes.length })];
         for (const o of outcomes) {
             lines.push(
                 o.cancelled
                     ? `  \u2713 ${o.id}`
-                    : `  \u2717 ${o.id} - ${o.reason === 'not-found' ? 'not found' : 'not running'}`
+                    : `  \u2717 ${o.id} - ${formatAgentUiNotice(host.translator, o.reason === 'not-found' ? 'psStopReasonNotFound' : 'psStopReasonNotRunning')}`
             );
         }
         if (cancelled.length) {
-            lines.push('Undo: /ps undo');
+            lines.push(formatAgentUiNotice(host.translator, 'psUndoHint'));
         }
         host.pushCommandOutput('/ps stop', lines.join('\n'));
         return true;
@@ -108,12 +114,12 @@ export async function runBackgroundTasksCommandView(host: BackgroundTaskCommandH
         }
         const outcomes = manager.restoreBatch(taskIds);
         const restored = outcomes.filter(o => o.restored);
-        const lines = [`Restored ${restored.length}/${outcomes.length} background task(s).`];
+        const lines = [formatAgentUiNotice(host.translator, 'psRestoreSummary', { restored: restored.length, total: outcomes.length })];
         for (const o of outcomes) {
             lines.push(
                 o.restored
                     ? `  \u2713 ${o.id}`
-                    : `  \u2717 ${o.id} - ${describeRestoreFailure(o.reason)}`
+                    : `  \u2717 ${o.id} - ${describeRestoreFailure(host.translator, o.reason)}`
             );
         }
         host.pushCommandOutput('/ps undo', lines.join('\n'));
@@ -135,15 +141,18 @@ export async function runBackgroundTasksCommandView(host: BackgroundTaskCommandH
         (filter === 'all' || filter === 'current' ? filter === 'all' || task.sessionId === host.state.sessionId : true)
         && (['running', 'completed', 'failed', 'cancelled'].includes(filter) ? task.status === filter : true)
     );
+    const localizedFilter = filterLabel(host.translator, filter);
     if (!tasks.length) {
-        host.notify(formatAgentUiNotice(host.translator, 'noBackgroundTasksFiltered', { filter: filter === 'all' ? '' : filter + ' ' }));
+        host.notify(filter === 'all'
+            ? formatAgentUiNotice(host.translator, 'noBackgroundTasks')
+            : formatAgentUiNotice(host.translator, 'noBackgroundTasksFiltered', { filter: localizedFilter }));
         return true;
     }
     const lines = tasks.map(task => {
-        const status = String(task.status).toUpperCase();
+        const status = formatAgentPanelStatusLabel(host.translator, 'toolRuns', String(task.status));
         const meta = task.finishedAt ? ` (${formatAgentUiTime(task.finishedAt, host.translator)})` : '';
         return formatAgentUiNotice(host.translator, 'backgroundTaskLine', { status: status, meta: meta, id: task.id, sessionId: task.sessionId, goal: task.goal });
     });
-    host.pushCommandOutput(`/ps ${filter}`, `${formatAgentUiNotice(host.translator, 'backgroundTasksTitle', { filter: filter })}\n${lines.join('\n')}`);
+    host.pushCommandOutput(`/ps ${filter}`, `${formatAgentUiNotice(host.translator, 'backgroundTasksTitle', { filter: localizedFilter })}\n${lines.join('\n')}`);
     return true;
 }

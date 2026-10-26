@@ -2168,3 +2168,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **测试**：`panel-i18n.spec.ts` 51 → **52 条**（真实 `AgentConsoleInputPanelComponent.inputPrompt`：zh `计划`/`vim 插入`/`vim 普通`/`3 条排队`，en `plan`/`vim normal`/`3 queued`）。
 - **真实 TUI（zh-CN）复核**：`> · 计划`；`> · 计划 · vim 插入`；Esc 后 `> · 计划 · vim 普通`（测试后已 `/plan off`、`/vim off`，settings.json 未被污染）。
 - **门禁**：agent-ui **1764 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
+
+## 2026-10-26 `/ps` 文案修复（筛选词、状态词、停止/撤销输出）
+- **现象（zh-CN 真实 TUI）**：`/ps` → `没有current 后台任务。`（英文筛选词被拼进中文模板，还带多余空格）；`/ps running` → `没有running 后台任务。`；任务行状态是 `RUNNING`/`COMPLETED`（`status.toUpperCase()`）；`/ps stop`、`/ps undo` 整个输出块仍是硬编码英文（`Cancelled 1/2 background task(s).`、`Undo: /ps undo`、`Restored …`、`not found`/`not running`/`run already finished`）。
+- **做法**：
+  - 新增 panel `ps` 组（`filterCurrent/All/Running/Completed/Failed/Cancelled` → 当前/全部/运行中/已完成/失败/已取消），筛选词经 `filterLabel()` 本地化后再进 `backgroundTasksTitle` / 空态模板；空态拆成 `noBackgroundTasks`（`没有后台任务。`）与 `noBackgroundTasksFiltered`（`没有{filter}后台任务。`，去掉拼接空格）。
+  - 任务行状态改用 `formatAgentPanelStatusLabel(translator, 'toolRuns', status)`（运行中/已完成/失败/已取消）。
+  - `stop`/`undo` 复用既有 tail catalog 键（`psStopSummary`、`psUndoHint`、`psStopReason*`、`psRestoreSummary`、`psRestoreReason*`）——这些键此前已存在但代码未使用；同时删除我最初误加在主 catalog 的同名重复键（tail 在末尾展开会覆盖，导致文案不一致）。
+- **测试**：`panel-i18n.spec.ts` 52 → **53 条**（`/ps running|all` 空态、`/ps stop` 摘要+未找到+撤销提示、`/ps undo` 摘要+已结束）；既有 `/ps all` 断言同步为 `后台任务（全部）：` + `运行中 t1`；notice 键数守卫 588 → **589**（仅净增 `noBackgroundTasks`）。
+- **真实 TUI（zh-CN）复核**：`没有当前后台任务。`、`没有运行中后台任务。`、`没有后台任务。`、`已取消 0/1 个后台任务。`、`已恢复 0/1 个后台任务。`。
+- **门禁**：agent-ui **1765 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。

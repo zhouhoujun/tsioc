@@ -316,6 +316,7 @@ export const AGENT_UI_NOTICE_ZH: NestedMessages = {
   wizardProgressStep: '{progress}：{help}',
   providerNotSaved: 'Provider 未保存：{validation}。',
   stepRequiredPressEsc: '{label} 为必填。按 Esc 返回。',
+  noBackgroundTasks: '没有后台任务。',
   noBackgroundTasksFiltered: '没有{filter}后台任务。',
   codingTaskNotFound: '未找到编码任务 "{taskId}"。',
   scheduledTaskNotFound: '未找到已调度任务 "{taskId}"。',
