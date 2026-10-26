@@ -178,6 +178,40 @@ export class SuggestionMenuPagingTest {
     }
 }
 
+/** Esc closes an open suggestion menu instead of cancelling the turn. */
+@Suite('escape dismisses the suggestion menu first')
+export class SuggestionEscapeTest {
+    @Test('Esc mid-turn closes the menu and keeps the turn running')
+    async escapeClosesMenuMidTurn() {
+        const { AgentConsoleSessionState } = require('../src');
+        const state = new AgentConsoleSessionState();
+        state.configure({ sessionId: 's1' } as any);
+        state.setCommandHints(['/settings', '/status']);
+        state.setInput('/se', 3);
+        expect(state.selectMenu).toBeDefined();
+        state.setStatus('running');
+        const result: any = await (state as any).processDecodedInput(
+            { text: '\u001b', controlKey: 'escape', partial: false },
+            '',
+            {
+                isClosed: false,
+                onExit: () => undefined,
+                hasActiveTextPrompt: false,
+                transcriptNavigationController: {
+                    move: () => undefined,
+                    scrollPage: () => undefined,
+                    selectFirst: () => undefined,
+                    selectLast: () => undefined,
+                    setFocused: () => undefined
+                }
+            }
+        );
+        expect(result.action).not.toEqual('cancelTurn');
+        expect(state.selectMenu).toBeUndefined();
+        expect(state.status).toEqual('running');
+    }
+}
+
 /** A typo must not execute an unrelated command. */
 @Suite('unknown slash commands do not offer unrelated commands')
 export class UnknownCommandSuggestionTest {

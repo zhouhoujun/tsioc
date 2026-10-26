@@ -1926,3 +1926,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 修复：把 `handleMenuInput` 提到转录翻页之前（仍保留“历史浏览中的 ↑/↓ 优先”），菜单打开时 PageUp/PageDown 归菜单，关闭时仍滚动历史。
 - RED：单测期望 `action='menuInput'`，旧实现返回 `transcriptScroll`。GREEN 后 agent-ui **1715 passing**。
 - 真实 TUI：`/` 菜单 PageDown 可见范围 5–16 → 15–26，PageUp 回到 5–16，随后的 ↓ 继续 6–17。
+
+## 2026-10-23 `/` 菜单：turn 运行中按 Esc 会取消 turn 而不是关菜单
+- 现象（真实 TUI）：turn 运行中输入 `/sta`（菜单已打开）按 Esc → 界面 `Cancelling current turn… / Turn cancelled`，菜单消失；用户只想收起补全列表却丢了整轮回答。
+- 根因：`handleGlobalKeyInputView` 先判断 `isTurnInProgress()` → `interruptTurn()`，再判断 `selectMenu`；注释明确写着“Escape must cancel an active turn even when an input/focus panel is active”。全局按键在 `processDecodedInput` 之前执行，因此菜单的 dismiss 分支永远轮不到。
+- 修复：菜单打开时 Esc 先返回 `false`（落到菜单处理 → 关闭列表）；第二次 Esc（菜单已关）才取消 turn。两条路径（原始键 / 映射键）都调整。
+- RED：新单测（菜单打开 + turn 运行）旧实现返回 `true` 且调用 `interruptTurn`，期望 `false` 且不中断。
+- GREEN：agent-ui **1719 passing**；真实 TUI：第一次 Esc 菜单关闭且 `Working` 继续，第二次 Esc 才 `Turn cancelled`。

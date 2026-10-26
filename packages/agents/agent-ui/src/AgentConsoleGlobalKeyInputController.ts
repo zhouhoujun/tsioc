@@ -201,6 +201,14 @@ export async function handleBrowserGlobalKeyInputView(
         void host.requestTerminalExit();
         return true;
     }
+    // An open suggestion/palette menu owns Escape: the first Escape dismisses
+    // the list (falling through to the menu handler), only the next one
+    // cancels the turn. Otherwise dismissing `/` completion mid-turn silently
+    // killed the running turn.
+    if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey) && host.state.selectMenu) {
+        host.globalKeyPending = '';
+        return false;
+    }
     if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey) && host.isTurnInProgress()) {
         await host.interruptTurn();
         return true;
@@ -262,13 +270,17 @@ export async function handleGlobalKeyInputView(host: AgentConsoleGlobalKeyInputH
             host.state.setWhichKeyVisible(false);
             return true;
         }
+        // The first Escape belongs to an open suggestion/palette menu: fall
+        // through so the menu handler dismisses the list. Without this, closing
+        // `/` completion mid-turn also cancelled the running turn.
+        if (raw === '\u001b' && host.state.selectMenu) return false;
         // Escape must cancel an active turn even when an input/focus panel is
         // currently active; focus dismissal is only for idle consoles.
         if (raw === '\u001b' && host.isTurnInProgress()) {
             await host.interruptTurn();
             return true;
         }
-        if (raw === '\u001b' && (host.state.selectMenu || host.state.focusLayers.isAnyFocusActive())) return false;
+        if (raw === '\u001b' && host.state.focusLayers.isAnyFocusActive()) return false;
         if (raw === '\u001b') {
             const action = host.globalKeymap!.resolve('escape', host.resolveKeymapContext());
             if (action === 'interrupt-turn') {
