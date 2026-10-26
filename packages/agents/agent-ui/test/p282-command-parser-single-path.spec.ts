@@ -85,6 +85,23 @@ export class P282CommandParserSinglePathTest {
         expect(d.suggestion).toEqual('Did you mean fast or safe?');
     }
 
+    @Test('the "did you mean" connector is localized')
+    localizedSuggestionConnector() {
+        const def = {
+            name: '/example', description: 'example', group: 'core' as const,
+            args: [{ name: 'mode', type: 'enum' as const, values: ['stream', 'viewport'], required: true }]
+        };
+        const translate = (key: string, params?: any, fallback?: string) => {
+            if (key === 'agent.menu.arg.optionSeparator') return '或';
+            if (key === 'agent.menu.arg.didYouMean') return '是要用 {values} 吗？';
+            return fallback ?? key;
+        };
+        const zh = parseAgentConsoleCommandArguments(def, 'bogus', translate);
+        expect(zh.diagnostics[0].suggestion).toEqual('是要用 stream或viewport 吗？');
+        const en = parseAgentConsoleCommandArguments(def, 'bogus');
+        expect(en.diagnostics[0].suggestion).toEqual('Did you mean stream or viewport?');
+    }
+
     @Test('extra arg reports the first unexpected token index')
     extraArgDiagnostics() {
         const def = {

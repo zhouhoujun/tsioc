@@ -391,7 +391,11 @@ export function parseAgentConsoleCommandArguments(
                     argument: argument.name,
                     tokenIndex: valueIndex,
                     expected: expectedList,
-                    suggestion: commandArgText(translate, 'didYouMean', 'Did you mean {values}?', { values: argument.values.join(' or ') }),
+                    // The connector is copy too: joining with a hardcoded
+                    // ' or ' leaked English into zh ("是要用 stream or viewport 吗？").
+                    suggestion: commandArgText(translate, 'didYouMean', 'Did you mean {values}?', {
+                        values: argument.values.join(commandArgText(translate, 'optionSeparator', ' or '))
+                    }),
                     message: commandArgText(translate, 'invalid', 'Invalid {name} "{value}". Expected: {expected}.', { name: argument.name, value: raw, expected: argument.values.join(', ') })
                 });
             }

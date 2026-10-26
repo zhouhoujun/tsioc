@@ -1955,3 +1955,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 修复：`runKeymapCommand` 支持尾部 context（`set` 取 `tokens[3]`，`unset` 取 `tokens[2]`），前置 scope 形式保持可用；解析用 `isAgentConsoleKeymapContext` 校验，非法词仍按原样忽略。
 - RED：新用例 2 例（set/unset 尾部 context）在旧实现上失败（写成 global）。GREEN：4 例通过；agent-ui **1729 passing**。
 - 真实 TUI：`/keymap set ctrl+k copy composer` → `contexts.composer["ctrl+k"]="copy"`；`/keymap unset ctrl+k composer` → `contexts.composer["ctrl+k"]=null`；`/keymap reset` 后文件恢复空覆盖（测试后已清理该 workspace 文件）。
+
+## 2026-10-23 中文参数校验提示混入英文连接词（`or`）
+- 现象（真实 TUI，zh）：`/layout bogus` → `参数 mode 的值“bogus”无效。期望：stream, viewport。 是要用 stream or viewport 吗？` —— 建议句里的 `or` 是硬编码英文。
+- 根因：`AgentConsoleCommandRegistry` 在拼 `didYouMean` 时用 `argument.values.join(' or ')`；模板本身已 i18n，连接词没有。
+- 修复：menu 目录新增 `arg.optionSeparator`（en `' or '` / zh `'或'`），用 `commandArgText` 取本地化连接词再 join。
+- RED：新用例（zh translate）旧实现得到 `stream or viewport`，期望 `stream或viewport`。GREEN：agent-ui **1730 passing**；真实 TUI zh 提示已无英文 `or`，英文环境仍是 `Did you mean … or …?`。
