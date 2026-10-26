@@ -73,7 +73,15 @@ export function getAgentConsoleInputTokenRange(input: string, cursor = input.len
     const quoted = prefix.match(QUOTED_MENTION_TOKEN);
     if (quoted) {
         const token = quoted[1];
-        return { start: safeCursor - token.length, end: safeCursor, token };
+        const start = safeCursor - token.length;
+        let end = safeCursor;
+        while (end < text.length && text[end] !== '"') {
+            end += 1;
+        }
+        if (text[end] === '"') {
+            end += 1;
+        }
+        return { start, end, token: text.slice(start, end) };
     }
     const match = prefix.match(INPUT_TOKEN);
     if (!match) {
@@ -89,10 +97,17 @@ export function getAgentConsoleInputTokenRange(input: string, cursor = input.len
     if (token.startsWith('/') && text.slice(0, start).trim() !== '') {
         return undefined;
     }
+    // The cursor may sit inside the word (`/sta` with the caret after `/s`).
+    // Completing must replace the whole word, otherwise the tail survives and
+    // Tab produced `/settings ta`.
+    let end = safeCursor;
+    while (end < text.length && !/\s/.test(text[end])) {
+        end += 1;
+    }
     return {
         start,
-        end: safeCursor,
-        token
+        end,
+        token: text.slice(start, end)
     };
 }
 
@@ -119,10 +134,16 @@ export function getAgentConsoleArgumentRange(input: string, cursor = input.lengt
     if (!match || !match[3]) {
         return undefined;
     }
+    const start = match[1].length + match[2].length + 1;
+    // Same as the command token: the caret may sit inside the argument word.
+    let end = safeCursor;
+    while (end < text.length && !/\s/.test(text[end])) {
+        end += 1;
+    }
     return {
-        start: match[1].length + match[2].length + 1,
-        end: safeCursor,
-        token: match[3],
+        start,
+        end,
+        token: text.slice(start, end),
         command: match[2]
     };
 }

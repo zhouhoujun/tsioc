@@ -1942,3 +1942,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 顺带结论：`/keymap set <key> <action>` 对无法识别的按键（`ctrl+zz`）会接受并持久化，这是既有宽松策略（任意序列都可能是终端按键），本次不做收紧；之前以为“报错指向 action”是误判（`approve` 本就不是 global action）。
 - 结构：为守住体量 ratchet，`/cd` 逻辑抽到新模块 `agent-ui/src/AgentConsoleCdCommand.ts`（`resolveAgentConsoleCdTarget` + `runCdCommandView`），`AgentConsoleComponent.runCdCommand` 只做委托；baseline 3780 → **3771**。
 - i18n 目录拆分：新增 `workspaceMissing` 会顶破 600 行上限，把两份 notice 目录的最后 53 个键拆到 `agent-ui.i18n.notice.tail.{en,zh}.ts`（550 + 64 行），在主目录末尾用 spread 合并，键顺序与 en/zh lockstep 保持不变（581 条）。
+
+## 2026-10-23 `/` 菜单：光标在词中间时补全会残留词尾
+- 现象（真实 TUI）：输入 `/sett` 后把光标移到 `/se|tt` 再 Tab → 输入变成 `/settings ta` 这类“补全 + 残留词尾”；Enter 会把残留词当参数执行（`Unknown command`/错误参数）。
+- 根因：`getAgentConsoleInputTokenRange` / `getAgentConsoleArgumentRange` 把 `end` 设为光标位置，`INPUT_TOKEN` 只匹配到光标前的前缀；`applyAgentConsoleSuggestion` 用 `[start, cursor)` 替换，词尾被保留。引号 mention 同样只覆盖到光标。
+- 修复：两处 range 都向后扩展到词尾（遇空白停止）；引号 mention 向后找到闭合引号；`token` 改为整词（过滤也按整词）。
+- RED：新用例 3 例在旧实现上失败（`/settings ta`、`/layout viewport i`、引号 mention end）。GREEN：agent-ui **1725 passing**。
+- 真实 TUI：`/sett` + 光标回退 + Tab → `/settings`（无残留）→ Enter 执行；`/layout vi`（光标在 `v` 后）+ Tab → `/layout viewport`。注：整词不匹配时（如 `/seta`）菜单不再出现、Tab 不补全——这是正确结果（旧行为才是把残留词拼进去）。

@@ -212,6 +212,36 @@ export class SuggestionEscapeTest {
     }
 }
 
+/** Completion must replace the whole word when the caret sits inside it. */
+@Suite('completion with the caret inside the word')
+export class MidCursorCompletionTest {
+    @Test('the command token covers the whole word')
+    async tokenCoversWord() {
+        expect(getAgentConsoleInputTokenRange('/sta', 2)).toEqual({ start: 0, end: 4, token: '/sta' });
+        expect(applyAgentConsoleSuggestion('/sta', 2, '/settings')).toEqual({ value: '/settings ', cursor: '/settings '.length });
+    }
+
+    @Test('the argument word covers the whole word')
+    async argumentCoversWord() {
+        const input = '/layout vi';
+        const cursor = '/layout v'.length;
+        const range = getAgentConsoleArgumentRange(input, cursor);
+        expect(range?.start).toEqual('/layout '.length);
+        expect(range?.end).toEqual(input.length);
+        expect(range?.token).toEqual('vi');
+        expect(applyAgentConsoleSuggestion(input, cursor, 'viewport').value).toEqual('/layout viewport ');
+    }
+
+    @Test('a quoted mention keeps its closing quote')
+    async quotedMention() {
+        const input = 'see @"my file.txt"';
+        const range = getAgentConsoleInputTokenRange(input, 'see @"my f'.length);
+        expect(range?.start).toEqual(input.indexOf('@'));
+        expect(range?.end).toEqual(input.length);
+        expect(range?.token).toEqual(input.slice(input.indexOf('@')));
+    }
+}
+
 /** A typo must not execute an unrelated command. */
 @Suite('unknown slash commands do not offer unrelated commands')
 export class UnknownCommandSuggestionTest {
