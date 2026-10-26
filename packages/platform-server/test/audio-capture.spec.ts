@@ -1,6 +1,8 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { NodeAudioCaptureAdapter, NodeAudioPlaybackAdapter } from '@tsdi/platform-server/common';
+import { Application } from '@tsdi/core';
+import { AudioCaptureAdapter, AudioPlaybackAdapter } from '@tsdi/common';
+import { NodeAudioCaptureAdapter, NodeAudioPlaybackAdapter, ServerCommonModule } from '@tsdi/platform-server/common';
 
 const PCM_STREAM_SCRIPT = `
 const fs = require('fs');
@@ -155,5 +157,25 @@ export class NodeAudioPlaybackTest {
         await adapter.play([Buffer.from('he'), Buffer.from('llo')], { format: 'pcm16k' });
 
         expect(adapter.isAvailable).toBe(true);
+    }
+}
+
+/**
+ * The node adapters' options parameter is a plain object type (erased to
+ * `Object`), so DI needs `@Optional()` on the constructor. Without it the web
+ * console / TUI failed with MissingParameterException as soon as something
+ * resolved AudioCaptureAdapter.
+ */
+@Suite('Node audio adapters via DI')
+export class NodeAudioDiTest {
+    @Test('DI constructs both audio adapters without required parameters')
+    async diConstructs() {
+        const ctx = await Application.run(ServerCommonModule);
+        try {
+            expect(ctx.get(AudioCaptureAdapter)).toBeInstanceOf(NodeAudioCaptureAdapter);
+            expect(ctx.get(AudioPlaybackAdapter)).toBeInstanceOf(NodeAudioPlaybackAdapter);
+        } finally {
+            await ctx.close();
+        }
     }
 }

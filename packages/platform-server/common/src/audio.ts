@@ -1,4 +1,4 @@
-import { Injectable } from '@tsdi/ioc';
+import { Injectable, Optional } from '@tsdi/ioc';
 import { spawn, spawnSync, ChildProcessByStdio } from 'child_process';
 import { Readable } from 'stream';
 import { promises as fs, closeSync, mkdtempSync, openSync, readSync, rmSync, statSync, writeFileSync } from 'fs';
@@ -66,7 +66,7 @@ export class NodeAudioCaptureAdapter extends AudioCaptureAdapter {
     private captureOffset = 0;
     private capturePoll?: ReturnType<typeof setInterval>;
 
-    constructor(private readonly options: NodeAudioCaptureAdapterOptions = {}) {
+    constructor(@Optional() private readonly options: NodeAudioCaptureAdapterOptions = {}) {
         super();
         this.resolvedCommand = this.resolveCommand(options.command);
     }
@@ -295,7 +295,7 @@ export class NodeAudioPlaybackAdapter extends AudioPlaybackAdapter {
     private readonly resolvedCommand: string | null;
     private proc: ReturnType<typeof spawn> | null = null;
 
-    constructor(private readonly options: NodeAudioPlaybackAdapterOptions = {}) {
+    constructor(@Optional() private readonly options: NodeAudioPlaybackAdapterOptions = {}) {
         super();
         this.resolvedCommand = this.resolveCommand(options.command);
     }
