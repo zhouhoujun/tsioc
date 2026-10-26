@@ -2064,3 +2064,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - `/diagnostics` → `No turn diagnostics recorded yet.`；
 - `/apps`、`/tools`（无参）在重会话中提示/面板出现较慢（>3s），非缺陷；`/mcp` 与 `/ssh` 同批时也受重绘时序影响。
 - 说明：heavy session（62K tokens）下命令输出可能延迟到 3–4s 才进入可捕获的尾部，探针应以 4s 窗口为准。
+
+## 2026-10-23 后台任务历史只写不读：`/ps all|completed|failed` 看不到历史
+- 现象：真实 TUI 里 `/ps all` 显示 `No background tasks.`，但 DB `agent_background_task_entity` 有已完成的 `bg-…` 记录；同一进程内 `/ps` 能看到刚启动的任务，重启后消失。
+- 根因：`BackgroundTaskManager.persist()` 每次状态变更都写 `historyStore.put()`，但**没有任何读取路径**（`list/listAll` 只读内存 Map），历史存储是只写；`/ps` 的 `all/completed/failed` 过滤器因此形同虚设。
+- 修复：
+  - `BackgroundTaskManager.hydrate(sessionId?)`：首次调用从 `historyStore.pageAll/pageBySession`（limit 200）合并历史记录到内存，内存中的实时记录优先；幂等（只读一次），失败不影响实时任务；
+  - `/ps` 命令在 `show/stop/list` 前 `await hydrate()`（一次性加载全部历史，`all` 与按会话过滤都可用）；
+  - 列表与 `show` 以（已水合的）manager 为准，事件 feed 仅作后备。
+- 测试：`background-task.spec.ts` 新增 1 例（历史合并、实时优先、只水合一次）→ agent-tools **573 passing**；agent-ui **1747 passing**。
+- 真实 TUI：重启后 `/ps all` 与 `/ps completed` 都列出两条历史任务（`bg-33486f27…`、`bg-16f81b14…`，含状态/时间/会话/goal），`/ps current` 仍显示 `No current background tasks.`。

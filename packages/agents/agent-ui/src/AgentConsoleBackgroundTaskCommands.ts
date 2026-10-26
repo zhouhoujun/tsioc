@@ -19,11 +19,13 @@ export interface BackgroundTaskCommandHost {
 
 function findBackgroundTask(host: BackgroundTaskCommandHost, taskId: string): BackgroundTaskRecord | undefined {
     const manager = host.backgroundTasks as BackgroundTaskManager & { listAll?: () => BackgroundTaskRecord[] };
-    if (host.state.backgroundTaskFeed.length) {
-        return host.state.backgroundTaskFeed.find(task => task.id === taskId);
+    // The manager is authoritative once hydrated (history + live); the feed is
+    // a fallback for hosts that only stream events.
+    const records = typeof manager?.listAll === 'function' ? manager.listAll() : [];
+    if (records.length) {
+        return records.find(task => task.id === taskId);
     }
-    const records = typeof manager.listAll === 'function' ? manager.listAll() : [];
-    return records.find(task => task.id === taskId);
+    return host.state.backgroundTaskFeed.find(task => task.id === taskId);
 }
 
 function describeRestoreFailure(reason?: 'not-found' | 'not-cancelled' | 'already-finished'): string {
@@ -47,6 +49,12 @@ export async function runBackgroundTasksCommandView(host: BackgroundTaskCommandH
     if (!host.backgroundTasks) {
         host.notify(formatAgentUiNotice(host.translator, 'backgroundTaskManager'));
         return true;
+    }
+    // `persist()` recorded every task, but nothing read history back: after a
+    // restart `/ps all|completed|failed` saw only current-process tasks.
+    const hydrator = host.backgroundTasks as BackgroundTaskManager & { hydrate?: (sessionId?: string) => Promise<void> };
+    if (typeof hydrator.hydrate === 'function') {
+        await hydrator.hydrate();
     }
     const sub = (parts[0] || '').toLowerCase();
     if (sub === 'show') {
@@ -118,10 +126,10 @@ export async function runBackgroundTasksCommandView(host: BackgroundTaskCommandH
         return true;
     }
     const manager = host.backgroundTasks as BackgroundTaskManager & { listAll?: () => BackgroundTaskRecord[] };
-    const allTasks = host.state.backgroundTaskFeed.length
-        ? host.state.backgroundTaskFeed
-        : typeof manager.listAll === 'function'
-            ? manager.listAll()
+    const allTasks = typeof manager.listAll === 'function'
+        ? manager.listAll()
+        : host.state.backgroundTaskFeed.length
+            ? host.state.backgroundTaskFeed
             : manager.list(host.state.sessionId);
     const tasks = allTasks.filter(task =>
         (filter === 'all' || filter === 'current' ? filter === 'all' || task.sessionId === host.state.sessionId : true)

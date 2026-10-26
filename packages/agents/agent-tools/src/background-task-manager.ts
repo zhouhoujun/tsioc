@@ -87,6 +87,9 @@ function truncateGoal(prompt: string): string {
  * without blocking the current turn, tracks its status, publishes lifecycle
  * events through the application, and lets callers collect the result later.
  */
+/** How many historical records hydration pulls back on first `/ps`. */
+const HISTORY_HYDRATE_LIMIT = 200;
+
 @Injectable()
 export class BackgroundTaskManager {
     private tasks = new Map<string, BackgroundTaskRecord>();
@@ -96,6 +99,8 @@ export class BackgroundTaskManager {
     private pending = new Set<string>();
     /** undo buffer: snapshot of records captured at (batch) cancel time, keyed by task id. */
     private undoBuffer = new Map<string, BackgroundTaskRecord>();
+    private hydrated = false;
+    private hydrating?: Promise<void>;
 
     constructor(
         private uuid: UuidGenerator,
@@ -142,6 +147,45 @@ export class BackgroundTaskManager {
             .filter(record => record.sessionId === ownerSessionId)
             .sort((left, right) => right.startedAt - left.startedAt)
             .map(record => this.clone(record));
+    }
+
+    /**
+     * Merge persisted history into the in-memory map (once per manager).
+     *
+     * `persist()` wrote every state change to the history store, but nothing
+     * read it back, so `/ps all|completed|failed` only ever showed tasks from
+     * the current process. Live records win over historical snapshots.
+     */
+    async hydrate(sessionId?: string): Promise<void> {
+        if (this.hydrated) {
+            return;
+        }
+        if (this.hydrating) {
+            return this.hydrating;
+        }
+        const store = this.historyStore;
+        if (!store || typeof store.pageAll !== 'function') {
+            this.hydrated = true;
+            return;
+        }
+        this.hydrating = (async () => {
+            try {
+                const page = sessionId && typeof store.pageBySession === 'function'
+                    ? await store.pageBySession(sessionId, { limit: HISTORY_HYDRATE_LIMIT })
+                    : await store.pageAll({ limit: HISTORY_HYDRATE_LIMIT });
+                (page?.items || []).forEach(record => {
+                    if (record?.id && !this.tasks.has(record.id)) {
+                        this.tasks.set(record.id, this.clone(record));
+                    }
+                });
+                this.hydrated = true;
+            } catch {
+                // History is best-effort; live tasks stay usable.
+            } finally {
+                this.hydrating = undefined;
+            }
+        })();
+        return this.hydrating;
     }
 
     /** Snapshot of tasks across all sessions, newest first. */

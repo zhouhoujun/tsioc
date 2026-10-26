@@ -54,6 +54,46 @@ export class BackgroundTaskManagerTest {
         expect(finished?.summary).toEqual('final answer');
     }
 
+
+    @Test('hydrates persisted history once and keeps live records authoritative')
+    async hydratesHistory() {
+        let pageCalls = 0;
+        const history = {
+            put: async () => undefined,
+            pageAll: async () => {
+                pageCalls += 1;
+                return {
+                    items: [{
+                        id: 'bg-from-disk',
+                        sessionId: 'session-a',
+                        status: 'completed',
+                        goal: 'old task',
+                        startedAt: 1,
+                        updatedAt: 2,
+                        finishedAt: 2,
+                        retryCount: 0,
+                        progress: 1
+                    }],
+                    hasMore: false
+                };
+            }
+        };
+        const manager = new BackgroundTaskManager(
+            new RandomUuidGenerator(),
+            new ControlledRunner(async () => ({ content: 'live', sessionId: 'worker', turnCount: 1, toolCalls: 0 })),
+            createApp([]) as any,
+            history as any
+        );
+        const live = manager.start({ prompt: 'live task' }, 'session-a');
+        expect(manager.listAll().map(task => task.id)).toEqual([live.id]);
+        await manager.hydrate('session-a');
+        expect(manager.listAll().map(task => task.id).sort()).toEqual([live.id, 'bg-from-disk'].sort());
+        const hydratedLive = manager.get(live.id);
+        expect(hydratedLive?.goal).toEqual('live task');
+        await manager.hydrate('session-a');
+        expect(pageCalls).toEqual(1);
+    }
+
     @Test('failed tasks publish a failure event and record the error')
     async failurePropagation() {
         const events: any[] = [];
