@@ -230,13 +230,18 @@ export async function submitView(host: AgentConsoleTurnInputHost): Promise<void>
             }
         }
         const turnSessionId = host.state.sessionId;
+        if (host.multilineMode) {
+            // A draft line is not a prompt: keep it out of the ↑ history (the
+            // joined draft is recorded by submitMultilineDraftView) and clear the
+            // composer so the next line starts fresh instead of appending to it.
+            host.draftLines.push(value);
+            host.state.setInput('', 0);
+            host.notify(formatAgentUiNotice(host.translator, 'multilineDraftLineCount', { lineCount: host.draftLines.length }));
+            return;
+        }
         if (!steer) {
             host.state.inputHistoryController.push(value);
             await host.persistInputHistory();
-        }
-        if (host.multilineMode) {
-            host.draftLines.push(value);
-            return;
         }
         const prompt = await host.enrichPromptWithMentions(value);
         const attachments = host.state.pendingAttachments.slice();

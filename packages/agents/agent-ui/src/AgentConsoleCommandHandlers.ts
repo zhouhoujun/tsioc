@@ -23,6 +23,7 @@ import type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext'
 import { runSnapshotsCommand, type SnapshotCommandHost } from './AgentConsoleSnapshotCommands';
 export type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
 import { formatAgentUiDate, formatAgentUiDateTime, formatAgentUiNotice, formatAgentPanelLabel as panelLabel, type AgentUiTranslator } from './agent-ui.i18n';
+import { runMultilineCommand, runSendCommand } from './AgentConsoleMultilineCommands';
 
 // ── Command handler type ─────────────────────────────────────────────────────
 
@@ -198,14 +199,6 @@ async function handleQuitExit(ctx: CommandHandlerContext, _args: string, _resolv
     return true;
 }
 
-// ── /multiline ───────────────────────────────────────────────────────────────
-
-async function handleMultiline(ctx: CommandHandlerContext, _args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
-    ctx.multilineMode = !ctx.multilineMode;
-    if (!ctx.multilineMode) { ctx.draftLines = []; }
-    return true;
-}
-
 // ── /cancel ──────────────────────────────────────────────────────────────────
 
 async function handleCancel(ctx: CommandHandlerContext, _args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
@@ -220,14 +213,6 @@ async function handleCancel(ctx: CommandHandlerContext, _args: string, _resolved
     ctx.multilineMode = false;
     ctx.shellDraftLines = [];
     ctx.shellMultilineMode = false;
-    return true;
-}
-
-// ── /send ────────────────────────────────────────────────────────────────────
-
-async function handleSend(ctx: CommandHandlerContext, _args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
-    if (!ctx.draftLines.length) { return true; }
-    await ctx.submitMultilineDraft();
     return true;
 }
 
@@ -1168,7 +1153,7 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/approve': (ctx, args, meta) => handleApproveDeny(ctx, canonicalArgsOf(meta, args), meta),
     '/deny': (ctx, args, meta) => handleApproveDeny(ctx, canonicalArgsOf(meta, args), meta),
     '/exit': handleQuitExit,
-    '/multiline': handleMultiline,
+    '/multiline': runMultilineCommand,
     '/cancel': handleCancel,
-    '/send': handleSend
+    '/send': runSendCommand
 };

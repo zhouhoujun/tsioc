@@ -2110,3 +2110,16 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 测试：`keymap-composer-input.spec.ts` 新增 1 例（动作在全局动作表、默认绑定、经键位派发把草稿写入剪贴板并提示 `Copied input.`）；`keymap-context.spec.ts` 的 which-key 断言改为"遍历所有页后必须包含 ctrl+l 且最终清空"（新增两个键位后 composer 绑定超过一页，硬编码单页断言会误报）。agent-ui **1752 passing**。
 - 真实 TUI：输入 `copy me please` → `ctrl+x shift+c` → 终端收到 OSC52 `\x1b]52;c;Y29weSBtZSBwbGVhc2U=\x07`（base64 解码 = `copy me please`），并输出 `$ /copy input running/completed`；对照 `ctrl+x shift+t` 正常打开 `/theme`。
 - 保留：`/copy input` 经 `submit()` 仍提示 `Nothing to copy for input.`（该路径本来没有草稿可复制），未改动既有断言，避免删除功能。
+
+## 2026-10-23 多行草稿模式（`/multiline` + `/send`）不可用：Enter 不清 composer、还把每行写进历史
+- 复现（真实 TUI）：`/multiline` 没有任何提示；随后输入 `alpha line` + Enter，composer **没有清空**，界面无任何变化（`draftLines` 从不渲染）；再输入 `beta line` + Enter，composer 变成 `alpha linebeta line`。
+- 根因（代码级）：`submitView()` 把 multiline 分支放在 `inputHistoryController.push(value)` **之后**，且该分支只 `draftLines.push(value)` 就 `return` —— 既没 `setInput('')`（清空只发生在后面的 turn 分支），也没提示；于是
+  1. 每按一次 Enter 都把整个 composer 内容**再**追加一次（重复行），
+  2. 每一行（连同重复行）都进了 ↑ 历史，违反「历史只记录真实用户 prompt」，
+  3. `/multiline` 切换无提示、草稿行不渲染 → 用户看到"文本消失了"。
+- 修复：
+  - multiline 分支提前到历史 push 之前：只进 `draftLines`，清空 composer，并提示累计行数（`multilineDraftLineCount`）；
+  - `/multiline` 开启/关闭（含"丢弃草稿"）都有本地化提示；
+  - 把 `/multiline` `/send` 抽到 `AgentConsoleMultilineCommands.ts`（`AgentConsoleCommandHandlers` 行数 1175 → 1160，同提交下调 baseline），facade 不变。
+- 测试：新增 `multiline-draft.spec.ts` 4 例（开关提示、行累积+清空+不污染历史、`/send` 合并提交单条 prompt、`/cancel` 丢弃），**RED 4/4 失败** → 修复后通过；i18n 计数锁 584 → 588。
+- 真实 TUI：`/multiline` 后逐行输入 → 分别提示 `Multiline draft +1 line(s)…` / `+2 line(s)…` 且 composer 每次清空；↑ 不再召回这些行；`/send` 只提交一条两行 prompt（`› 只回答一个字：好` / `不要解释`），助手回 `好`。
