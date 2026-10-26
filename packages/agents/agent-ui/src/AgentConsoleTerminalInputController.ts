@@ -257,8 +257,10 @@ export async function handleTerminalInputView(
     }
     // A plain Enter submits, but a chunk carrying embedded newlines (a
     // multi-line paste) must be inserted verbatim instead of being joined and
-    // submitted. `shouldSubmitCommonTextInputChunk` distinguishes the two.
-    const submitOnEnter = shouldSubmitCommonTextInputChunk(rawChunk);
+    // submitted. Decide per **decoded item**: the decoder splits a trailing
+    // Enter/Tab off the text run, so the original chunk would otherwise mark
+    // the text item as "submit on Enter" and bypass the `/`/`@` menu.
+    const submitOnEnter = shouldSubmitCommonTextInputChunk(decoded.text || rawChunk);
     const outcome = await host.state.processDecodedInput(decoded, chunk, {
         isClosed: host.destroyed,
         onExit: () => {
@@ -294,8 +296,11 @@ export async function handleTerminalInputView(
             host.queueDraft();
             return;
         case 'textInput':
-            releaseTranscriptFocusForTextInput(host, rawChunk);
-            await host.state.processRawChunk(rawChunk, {
+            // Apply only this decoded item: the decoder may split a trailing
+            // Enter/Tab off the run, and submitting `rawChunk` would re-insert
+            // the whole text (including the newline) into the draft.
+            releaseTranscriptFocusForTextInput(host, decoded.text || rawChunk);
+            await host.state.processRawChunk(decoded.text || rawChunk, {
                 submitOnEnter,
                 hasSelectMenu: !!host.state.selectMenu
             });

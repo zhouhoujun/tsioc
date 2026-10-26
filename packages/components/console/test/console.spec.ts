@@ -1400,6 +1400,34 @@ export class ConsoleRendererTest {
         expect(decoder.decodeAll('A')).toEqual([{ text: '\u001b[A', controlKey: 'up', partial: false }]);
     }
 
+    @Test('splits Enter/Tab that arrive in the same read as their text')
+    tokenizesTrailingEnterAndTab() {
+        const decoder = new TerminalInputSequenceDecoder();
+        // Fast typing / a pasted line: the menu must see the Enter as its own
+        // key, otherwise the raw prefix is submitted (`Ambiguous command`).
+        expect(decoder.decodeAll('/se\r')).toEqual([
+            { text: '/se', partial: false },
+            { text: '\r', controlKey: 'return', partial: false }
+        ]);
+        expect(decoder.decodeAll('/se\t')).toEqual([
+            { text: '/se', partial: false },
+            { text: '\t', controlKey: 'tab', partial: false }
+        ]);
+        expect(decoder.decodeAll('alpha\tbeta')).toEqual([
+            { text: 'alpha', partial: false },
+            { text: '\t', controlKey: 'tab', partial: false },
+            { text: 'beta', partial: false }
+        ]);
+        // A CR in the middle of a read stays a pasted newline; only a trailing
+        // CR is the Enter key.
+        expect(decoder.decodeAll('line1\rline2')).toEqual([{ text: 'line1\rline2', partial: false }]);
+        expect(decoder.decodeAll('line1\nline2')).toEqual([{ text: 'line1\nline2', partial: false }]);
+        expect(decoder.decodeAll('line1\r')).toEqual([
+            { text: 'line1', partial: false },
+            { text: '\r', controlKey: 'return', partial: false }
+        ]);
+    }
+
     @Test('extracts bracketed paste payloads and preserves embedded newlines')
     decodesBracketedPaste() {
         const decoder = new TerminalInputSequenceDecoder();
@@ -1409,7 +1437,7 @@ export class ConsoleRendererTest {
         // A plain key after the paste terminator is still tokenized separately.
         expect(decoder.decodeAll('\u001b[200~abc\u001b[201~\r')).toEqual([
             { text: 'abc', paste: true, partial: false },
-            { text: '\r', partial: false }
+            { text: '\r', controlKey: 'return', partial: false }
         ]);
 
         // The paste terminator may arrive in a later read.

@@ -1909,3 +1909,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **测试**：`panel-i18n.spec.ts` 50 → **51 条**（zh 列表含 `自定义 OpenAI 兼容`/`自定义 Anthropic 兼容` 且品牌名不变；en 保持 `Custom OpenAI-compatible`；认证标题 zh `自定义 OpenAI 兼容 · 认证方式`、en `Custom OpenAI-compatible · authentication`）。
 - **真实 TUI（zh-CN）复核**：`5. 自定义 OpenAI 兼容`、`6. 自定义 Anthropic 兼容`，`7. 取消`，品牌行保持英文。
 - **门禁**：agent-ui **1712 passing**（EXIT=0）；source-size、tsc、`git diff --check` 通过（完整 `agents-gate.sh` 本轮被中断，前序阶段全部 PASS，下次批次会连同 PTY 一起补跑）。
+
+## 2026-10-23 `/` 菜单：Enter/Tab 与文本同批到达时被绕过（真实 TUI 复现 + 修复）
+- 复现（单次写入模拟快速输入/粘贴）：`/se\r` → 报 `Ambiguous command: /se (/settings, /sessions, …)`，而人工逐键输入 `/se` 再 Enter 会执行高亮的 `/settings`；`/se\t` 不补全；`alpha\tbeta` 的 Tab 被吞掉。
+- 根因 1（`components/console` 解码器）：`decodeAll` 把普通字符合并成一个 text run，尾随的 `\r`/`\t` 留在 run 里。菜单处理只识别“独立”的 `\r`/`\t`，整段文本被当作草稿应用（`/se\n`），Enter 再提交原始前缀。
+- 根因 2（`agent-ui` 终端输入控制器）：文本项用 `rawChunk`（整次读取）应用与判断 `submitOnEnter`，即使解码器已拆开也会把 `\r` 塞回草稿。
+- 修复：
+  - 解码器：`\t` 一律拆为独立键；**尾部** `\r` 拆为 `{ text:'\r', controlKey:'return' }`；中间的 `\r`/`\n` 保持原样（多行粘贴仍是草稿换行）。
+  - 控制器：`submitOnEnter` 与 `processRawChunk` 都按 `decoded.text`（单个解码项）处理。
+- 真实 TUI 验证（6 项全过）：`/se\r` 执行 `/settings` 且无 ambiguous；`/se\t` 补全为 `/settings` 不执行；`alpha\tbeta` → `alphabeta`；`alpha\nbeta` 仍是多行草稿；`hello world\r` 正常提交；`/exit\r` 正常退出。
+- 测试：components/console 新增 `tokenizesTrailingEnterAndTab`（102 passing）；agent-ui 新增 `terminal-input-split.spec.ts`（2，旧控制器 RED：收到 `/se\r`）→ agent-ui **1714 passing**；相关 tsc / source-size / diff-check OK。

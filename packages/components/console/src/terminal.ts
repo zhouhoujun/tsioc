@@ -2045,6 +2045,24 @@ export class TerminalInputSequenceDecoder {
             if (runStart < 0) {
                 runStart = index;
             }
+            // Enter/Tab must be their own key even when the terminal delivers
+            // them in the same read as the text (`/se\r` while typing fast, or
+            // a pasted `/command` line). Left inside the run, the whole chunk
+            // was applied as text and the trailing Enter submitted the raw,
+            // still-ambiguous prefix (`Ambiguous command: /se`) instead of
+            // executing the menu's highlighted `/settings`. Tab is always a
+            // boundary; a CR is one only at the end of the read so a CR in the
+            // middle of a pasted block keeps behaving as a draft newline.
+            if (text[index] === '\t' || (text[index] === '\r' && index === text.length - 1)) {
+                flushRun(index);
+                results.push({
+                    text: text[index],
+                    controlKey: text[index] === '\t' ? 'tab' : 'return',
+                    partial: false
+                });
+                index += 1;
+                continue;
+            }
             index += 1;
         }
         flushRun(text.length);
