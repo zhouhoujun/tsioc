@@ -1995,3 +1995,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 流式 turn（150 字回答，8.05s）：CPU **2.04s ≈ 25% 单核**，PTY 输出 **199KB**，RSS 288→302MB；turn 后 6s 空闲 0.7%。
 - 连续 7 轮（极短回答）：RSS 250→295→347→349→350→352→354→367MB；前两轮 +45/+52MB 为预热（JIT/堆），之后约 **+1~2MB/轮**（对话历史本身在增长，属预期），未见线性泄漏。
 - 结论：当前实现无空闲忙等、无异常重绘风暴；数值记录为后续回归基线。
+
+## 2026-10-23 会话切换性能：真实测量 + 一次被否决的优化
+- 测量（PTY + `/proc` CPU 采样，bundle）：`/session <id>` 切换在**空会话之间也要 ~3.8 CPU 秒**（3s 窗口），轻量会话之间 5.8–6.5 CPU 秒（5s 窗口）；与实际消息内容关系不大 → 属于“每次切换的固定开销”。
+- 定位：CPU profile（`--cpu-prof`）里 app 侧耗时集中在 TypeORM 查询（`executeEntitiesAndRawResults` / `loadRawResults` / `findOne` / `find` / `getMany`）、所有权读取（`getOwner` / `getOwnerPrincipalId` / `authorize` / `listOwned`）以及模板渲染（`createEmbeddedView` / `processDirectiveAttributes`）。
+- 临时插桩发现：一次切换会触发 **5 次 `listOwned`**，每次 368–392 个 session（约 1900 次单行 owner 查询）。
+- 尝试优化：给 `SessionStore` 增加批量 `getOwnerPrincipalIds`（复用 `listSessionFacts` 的聚合读），`SessionOwnerStore.listOwned` 优先走批量。
+- 实测结果：空→空 3.83 → **3.77** CPU 秒；轻→轻 5.83/6.35 → **6.41/6.53** —— **无可测提升**。
+- 处置：按“未经实测提升的改动不得保留”，**完整回退**该优化（代码、测试），仅保留测量结论与 profile 证据，留待后续用 start/stop 精确 profile 定位真正的热点。
