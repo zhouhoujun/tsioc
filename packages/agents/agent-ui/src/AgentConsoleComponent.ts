@@ -186,6 +186,7 @@ import {
 } from './AgentConsoleRpcCommands';
 import { flattenProjectSessions, navigateThreadCycle, refreshCurrentSections, refreshProjects, refreshThreads, resolveCurrentProjectSessions, resolveProjectSessionsFor, resolveSessionProjectKey, resolveSessionThreadKey, resolveThreadKeyForSession, resolveThreadSessionsFor, selectProjectRepresentative } from './AgentConsoleProjectProjection';
 import { refreshProjectContext as refreshProjectContextView } from './AgentConsoleProjectProjection';
+import { runCdCommandView } from './AgentConsoleCdCommand';
 import { refreshTools as refreshToolsView } from './AgentConsoleToolsView';
 import {
     PreferenceCommandHost,
@@ -3606,25 +3607,15 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runCdCommand(args: string): Promise<void> {
-        const target = String(args || '').trim();
-        if (!target) {
-            this.notify(this.workspace);
-            return;
-        }
-        const current = this.workspace;
-        let resolved: string;
-        if (target.startsWith('/') || /^[A-Z]:\\/i.test(target)) {
-            resolved = target;
-        } else if (current) {
-            resolved = current.endsWith('/') ? current + target : current + '/' + target;
-        } else {
-            resolved = target;
-        }
-        resolved = resolved.replace(/\/+/g, '/').replace(/\/$/, '') || '/';
-        await this.persistInputHistory();
-        this.state.setWorkspace(resolved);
-        await this.restoreInputHistory();
-        this.notify(formatAgentUiNotice(this.translator, 'workspaceArrow', { resolved: resolved }));
+        return runCdCommandView({
+            workspace: this.workspace,
+            translator: this.translator,
+            state: this.state,
+            resolveFileAdapter: () => this.resolveFileAdapter(),
+            persistInputHistory: () => this.persistInputHistory(),
+            restoreInputHistory: () => this.restoreInputHistory(),
+            notify: message => this.notify(message)
+        }, args);
     }
 
     protected async runStatusCommand(): Promise<void> {

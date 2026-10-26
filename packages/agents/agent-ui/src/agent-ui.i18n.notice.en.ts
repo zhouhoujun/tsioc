@@ -1,4 +1,5 @@
 import { NestedMessages } from '@tsdi/i18n';
+import { AGENT_UI_NOTICE_TAIL_EN } from './agent-ui.i18n.notice.tail.en';
 
 /**
  * English notice copy for agent-ui. Flat key -> template map. Templates use
@@ -269,6 +270,7 @@ export const AGENT_UI_NOTICE_EN: NestedMessages = {
   workingTreeRevertedMessage: 'Working tree reverted to snapshot of message {ref}. Use /git-snapshots unrevert to restore.',
   worktreeDiffUnavailable: 'Worktree diff is unavailable without app RPC.',
   workspaceArrow: 'workspace → {resolved}',
+  workspaceMissing: 'No such directory: {path}',
   memoryInjectionState: 'Memory injection {current}. Use /memories list|add|remove or on|off.',
   personalityActiveAvailable: 'Personality: {active}. Available: {names}. Use /personality set <name> or unset.',
   unknownPersonalityPreset: 'Unknown personality preset "{name}". Available: {names}.',
@@ -544,56 +546,5 @@ export const AGENT_UI_NOTICE_EN: NestedMessages = {
   currentLevel: 'current level',
   setReasoningEffort: 'set reasoning effort',
 
-
-  sessionSwitchBusy: 'Wait for the current turn to finish before switching sessions.',
-  gitSnapshotRevertMessageConfirm: 'Revert working tree to snapshot of message {ref}?',
-  gitSnapshotRestoreConfirm: 'Restore the working tree captured before the last git revert?',
-  gitSnapshotRevertRefConfirm: 'Revert working tree to snapshot {ref}?',
-  exportPreviewTitle: 'Session export ({format})',
-  exportPreviewMessageOne: '{count} message',
-  exportPreviewMessages: '{count} messages',
-  exportPreviewToolCallOne: '{count} tool call',
-  exportPreviewToolCalls: '{count} tool calls',
-  exportPreviewHint: 'Read-only export preview. Press Esc to close.',
-  noPendingAttachments: 'No pending attachments.',
-  pendingAttachmentsTitle: 'Pending attachments: {names}',
-  diffScopeUsage: 'Use only one of --staged, --unstaged, or --untracked.',
-  diffUnknownOption: 'Unknown /diff option: {flag}',
-  psStopSummary: 'Cancelled {cancelled}/{total} background task(s).',
-  psStopReasonNotFound: 'not found',
-  psStopReasonNotRunning: 'not running',
-  psUndoHint: 'Undo: /ps undo',
-  psRestoreSummary: 'Restored {restored}/{total} background task(s).',
-  psRestoreReasonNotFound: 'not found',
-  psRestoreReasonNotCancelled: 'not cancelled',
-  psRestoreReasonFinished: 'run already finished',
-  healthGatewayConnected: 'connected',
-  healthGatewayUnreachable: 'unreachable',
-  healthGatewayLocal: 'local runtime (no gateway)',
-  healthMcpToolsActive: '{active}/{total} tools active',
-  healthNoMcpServers: 'no MCP servers configured',
-  healthLspTools: '{count} tools available',
-  healthNoLspTools: 'no LSP tools available',
-
-
-  copyLabelInput: 'input',
-  copyLabelWorkspace: 'workspace',
-  copyLabelSession: 'session',
-  copyLabelAssistantMessage: 'assistant message',
-  copyLabelTimelineEvent: 'timeline event',
-  copyLabelSelectedMessage: 'selected message',
-  copyLabelReview: 'review',
-  copyLabelSelectedApproval: 'selected approval',
-  copyLabelSelectedTask: 'selected task',
-  copyLabelScheduledJob: 'scheduled job',
-  copyLabelToolName: 'tool name',
-  copyLabelToolRun: 'tool run',
-
-  copyLabelModel: 'model',
-
-
-  questionResponseFailed: 'Question response failed',
-  inputHistoryLoadFailed: 'Failed to load input history: {error}',
-  inputHistorySaveFailed: 'Failed to save input history: {error}',
-
+  ...AGENT_UI_NOTICE_TAIL_EN
 };

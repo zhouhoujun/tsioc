@@ -1933,3 +1933,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 修复：菜单打开时 Esc 先返回 `false`（落到菜单处理 → 关闭列表）；第二次 Esc（菜单已关）才取消 turn。两条路径（原始键 / 映射键）都调整。
 - RED：新单测（菜单打开 + turn 运行）旧实现返回 `true` 且调用 `interruptTurn`，期望 `false` 且不中断。
 - GREEN：agent-ui **1719 passing**；真实 TUI：第一次 Esc 菜单关闭且 `Working` 继续，第二次 Esc 才 `Turn cancelled`。
+
+## 2026-10-23 `/cd` 不校验目标目录（真实 TUI 复现 + 修复）
+- 现象：`/cd /nonexistent-dir-xyz` 直接成功（`workspace → /nonexistent-dir-xyz`），会话工作区被指向不存在的目录，后续文件类工具会失败或越过原本的工作区边界。
+- 修复：`runCdCommand` 在 `setWorkspace` 前用注入的 `FileAdapter.stat` 校验；不存在或不是目录时提示 `No such directory: <path>` / `目录不存在：<path>`（新增 i18n key `workspaceMissing`，en/zh 同步，notice 目录 581 条）。
+- RED：新单测（`cd-command.spec.ts`）在旧实现上失败——`/missing-dir` 也调用 `setWorkspace`。GREEN：3 例通过（缺失目录、普通文件、相对路径解析）。
+- 真实 TUI：`/cd /nonexistent-dir-xyz` → 提示且工作区保持不变；`/cd /tmp` → `workspace → /tmp`；zh 下提示 `目录不存在：/nope-zh`。
+- 顺带结论：`/keymap set <key> <action>` 对无法识别的按键（`ctrl+zz`）会接受并持久化，这是既有宽松策略（任意序列都可能是终端按键），本次不做收紧；之前以为“报错指向 action”是误判（`approve` 本就不是 global action）。
+- 结构：为守住体量 ratchet，`/cd` 逻辑抽到新模块 `agent-ui/src/AgentConsoleCdCommand.ts`（`resolveAgentConsoleCdTarget` + `runCdCommandView`），`AgentConsoleComponent.runCdCommand` 只做委托；baseline 3780 → **3771**。
+- i18n 目录拆分：新增 `workspaceMissing` 会顶破 600 行上限，把两份 notice 目录的最后 53 个键拆到 `agent-ui.i18n.notice.tail.{en,zh}.ts`（550 + 64 行），在主目录末尾用 spread 合并，键顺序与 en/zh lockstep 保持不变（581 条）。
