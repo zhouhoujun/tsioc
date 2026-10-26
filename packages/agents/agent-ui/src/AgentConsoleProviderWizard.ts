@@ -49,6 +49,26 @@ export function resolveWizardProviderDef(id?: string): AgentWizardProviderDef | 
     return AGENT_WIZARD_PROVIDERS.find(item => item.id === id);
 }
 
+/**
+ * Display label for a preset provider. Brand names stay as-is; the two
+ * "custom …-compatible" entries are UI copy and follow the host locale.
+ */
+export function resolveWizardProviderLabel(
+    def?: AgentWizardProviderDef,
+    t: WizardTranslate = defaultWizardTranslate
+): string {
+    if (!def) {
+        return t('agent.menu.provider.steps.summaryProviderFallback', 'Provider');
+    }
+    if (def.id === 'custom-openai') {
+        return t('agent.menu.provider.steps.customOpenAiLabel', def.label);
+    }
+    if (def.id === 'custom-anthropic') {
+        return t('agent.menu.provider.steps.customAnthropicLabel', def.label);
+    }
+    return def.label;
+}
+
 export function resolveWizardTierLabel(tier?: string, t: WizardTranslate = defaultWizardTranslate): string {
     const id = (tier || 'auto') as 'single' | 'pair' | 'auto';
     const fallback = AGENT_WIZARD_TIERS.find(item => item.id === id)?.label || 'Auto routing';
@@ -105,7 +125,7 @@ export const WIZARD_STEP_HANDLERS: Record<AgentWizardStepId, AgentWizardStepHand
         choiceIndex: () => 0,
         choices: (_values, t) => {
             const options: AgentConsoleSelectOption[] = AGENT_WIZARD_PROVIDERS.map((item, index) => ({
-                label: item.label,
+                label: resolveWizardProviderLabel(item, t),
                 value: item.id,
                 description: `${item.adapter} · ${item.baseUrl || t('agent.menu.provider.steps.customBaseUrl', 'custom base URL')}`,
                 detail: item.models.length
@@ -142,7 +162,7 @@ export const WIZARD_STEP_HANDLERS: Record<AgentWizardStepId, AgentWizardStepHand
         label: (_values, t) => t('agent.menu.provider.steps.authLabel', 'Authentication'),
         help: (_values, t) => t('agent.menu.provider.steps.authHelp', 'Choose how the API key is provided.'),
         choiceTitle: (values, t) => t('agent.menu.provider.steps.authChoiceTitle', '{provider} · authentication', {
-            provider: resolveWizardProviderDef(values.providerId)?.label || t('agent.menu.provider.steps.summaryProviderFallback', 'Provider')
+            provider: resolveWizardProviderLabel(resolveWizardProviderDef(values.providerId), t)
         }),
         choiceIndex: values => (values.authMode === 'env' ? 1 : 0),
         choices: (values, t) => [

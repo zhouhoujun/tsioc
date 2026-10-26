@@ -1902,3 +1902,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **测试**：`panel-i18n.spec.ts` 48 → **50 条**（locale 格式化：zh `2026/10/25`、`2026/10/25 14:30:05`、`14:30:05`，en `10/25/2026`，无 translator 时与宿主默认一致，非法值/空值/NaN 回退；`/projects`、`/threads` 的 detail 在 zh/en 下分别为 `最近活跃 2026/10/25` 与 `last active 10/25/2026`）。
 - **真实 TUI（zh-CN）复核**：`/projects`、`/threads` → `最近活跃 2026/10/25`；会话头 → `tsdi-agent · 开始 23:09`（24 小时制，此前 `8:51 PM`）。
 - **门禁**：agent-ui **1711 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size（`AgentConsoleComponent` 3780、`AgentConsoleTimelineWindow` 770，均在预算内）、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
+
+## 2026-10-25 `/provider` 向导里的“自定义兼容”预设名中文化
+- **现象（zh-CN 真实 TUI）**：`/provider` 第 1 步（选择提供方）里 5/6 行是 `Custom OpenAI-compatible`、`Custom Anthropic-compatible`，而同一行的描述已是 `自定义地址`——预设名走了 `AGENT_WIZARD_PROVIDERS[].label` 原始英文。
+- **做法**：新增 `resolveWizardProviderLabel(def, t)`：品牌名（DeepSeek/OpenAI/Anthropic/Google Gemini）原样保留；只有两条“自定义 … 兼容”预设走 catalog（`agent.menu.provider.steps.customOpenAiLabel` / `customAnthropicLabel`，en 值保持原文）。选择列表与认证步标题（`{provider} · 认证方式`）都用它，避免标题仍显示英文。
+- **测试**：`panel-i18n.spec.ts` 50 → **51 条**（zh 列表含 `自定义 OpenAI 兼容`/`自定义 Anthropic 兼容` 且品牌名不变；en 保持 `Custom OpenAI-compatible`；认证标题 zh `自定义 OpenAI 兼容 · 认证方式`、en `Custom OpenAI-compatible · authentication`）。
+- **真实 TUI（zh-CN）复核**：`5. 自定义 OpenAI 兼容`、`6. 自定义 Anthropic 兼容`，`7. 取消`，品牌行保持英文。
+- **门禁**：agent-ui **1712 passing**（EXIT=0）；source-size、tsc、`git diff --check` 通过（完整 `agents-gate.sh` 本轮被中断，前序阶段全部 PASS，下次批次会连同 PTY 一起补跑）。

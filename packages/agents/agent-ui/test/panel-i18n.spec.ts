@@ -50,6 +50,7 @@ import { createReviewTask } from './_helpers';
 import { loadInputHistory } from '../src/AgentConsoleInputHelpers';
 import { openCommandPaletteView } from '../src/AgentConsoleTerminalInputController';
 import { runKeymapCommand } from '../src/AgentConsoleKeymapCommands';
+import { buildProviderWizardChoiceOptions } from '../src/AgentConsoleProviderWizard';
 import { buildCodingTaskSelectOption, describeCodingTaskRollback } from '../src/AgentConsoleCodingTaskHandlers';
 import { AgentConsoleTasksPanelComponent, AgentConsoleHealthPopoverComponent, AgentConsoleToolRunsPanelComponent } from '../src/AgentConsolePanels';
 import { runDebugConfigCommand, runMemoriesCommand, runPersonalityCommand } from '../src/AgentConsolePreferenceCommands';
@@ -1291,5 +1292,28 @@ export class PanelI18nTest {
         expect(zhDates.threadDetail).toEqual('最近活跃 2026/10/25');
         const enDates = await run({ ...en, currentLocale: 'en' });
         expect(enDates.projectDetail).toEqual('last active 10/25/2026');
+    }
+    @Test('/provider preset labels localize the custom-compatible entries only')
+    async providerPresetLabels() {
+        const zhT = (key: string, fallback: string, params?: Record<string, any>) => zh.translate(key, params) ?? fallback;
+        const enT = (key: string, fallback: string, params?: Record<string, any>) => en.translate(key, params) ?? fallback;
+        const step: any = { id: 'provider', kind: 'choose', label: '' };
+        const zhOptions = buildProviderWizardChoiceOptions(step, {}, zhT)!.options;
+        const labels = zhOptions.map(option => String(option.label));
+        expect(labels).toContain('DeepSeek');
+        expect(labels).toContain('Google Gemini');
+        expect(labels).toContain('自定义 OpenAI 兼容');
+        expect(labels).toContain('自定义 Anthropic 兼容');
+        expect(labels).toContain('取消');
+
+        const enLabels = buildProviderWizardChoiceOptions(step, {}, enT)!.options.map(option => String(option.label));
+        expect(enLabels).toContain('Custom OpenAI-compatible');
+        expect(enLabels).toContain('Custom Anthropic-compatible');
+
+        const authStep: any = { id: 'auth', kind: 'choose', label: '' };
+        const zhAuth = buildProviderWizardChoiceOptions(authStep, { providerId: 'custom-openai', authMode: 'key' }, zhT)!;
+        expect(zhAuth.title).toEqual('自定义 OpenAI 兼容 · 认证方式');
+        const enAuth = buildProviderWizardChoiceOptions(authStep, { providerId: 'custom-openai', authMode: 'key' }, enT)!;
+        expect(enAuth.title).toEqual('Custom OpenAI-compatible · authentication');
     }
 }
