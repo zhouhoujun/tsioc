@@ -2161,3 +2161,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **根因**：`7f95648cd` 把 `SshConnectionManager` 从 type-only 改成值导入以支持 `@Inject`，于是浏览器包开始静态引入 `@tsdi/agent-ssh` → `ssh2` → 可选原生依赖 `cpu-features`；浏览器端从不建立 SSH 连接。
 - **做法**：`web/build-web.ts` 的 `nodeOnlyThirdPartyStubPlugin` 增加 `ssh2`、`cpu-features` 两个叶子桩（与既有 pg/redis 等同策略），并注明原因。`SshClient` 只在构造函数里 `new Client()`，模块加载期无副作用，桩化安全。
 - **验证**：`npm run build:web` 成功（agent-console.js 18.9mb，此前直接报错）；`bash scripts/agents-gate.sh dom-gate` 3 PASS；全量 gate **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS。
+
+## 2026-10-26 输入框提示徽标中文化（计划 / vim 模式 / 排队数）
+- **现象（zh-CN 真实 TUI）**：开启计划模式或 vim 后，输入行变成 `> · vim insert Ask code or files`、`> · plan`——徽标是硬编码英文（`plan`、`vim ${inputMode}`、`${n} queued`）。
+- **做法**：抽出 `AgentConsoleInputBadges.formatAgentConsoleInputBadges(state, translator)`（`AgentConsolePanels` 4132 行，baseline 4145 → **4133**），徽标走 panel `input` 组：`planBadge`（计划）、`vimInsert`/`vimNormal`（vim 插入 / vim 普通）、`queuedBadge`（`{count} 条排队`）；`ssh <hostId>` 保持原样（协议 + 主机标识）。
+- **测试**：`panel-i18n.spec.ts` 51 → **52 条**（真实 `AgentConsoleInputPanelComponent.inputPrompt`：zh `计划`/`vim 插入`/`vim 普通`/`3 条排队`，en `plan`/`vim normal`/`3 queued`）。
+- **真实 TUI（zh-CN）复核**：`> · 计划`；`> · 计划 · vim 插入`；Esc 后 `> · 计划 · vim 普通`（测试后已 `/plan off`、`/vim off`，settings.json 未被污染）。
+- **门禁**：agent-ui **1764 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。

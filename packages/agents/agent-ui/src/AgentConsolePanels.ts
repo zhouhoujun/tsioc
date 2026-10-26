@@ -3,6 +3,7 @@ import { formatCompactNumber } from '@tsdi/core';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import { formatAgentUiLabel, formatAgentKeymapActionLabel, formatAgentPanelLabel as panelLabel, formatAgentPanelStatusLabel as panelStatusLabel } from './agent-ui.i18n';
+import { formatAgentConsoleInputBadges } from './AgentConsoleInputBadges';
 import { formatScheduledTaskDetailLines } from './AgentConsoleScheduledTaskFormat';
 import { formatReviewHeaderMeta, formatReviewSelectionMeta, formatReviewStatsMeta } from './AgentConsoleReviewPanelFormat';
 import { resolveMessageRowOffset } from './AgentConsoleTranscriptLayout';
@@ -359,20 +360,7 @@ export class AgentConsoleInputPanelComponent {
 
     get inputPrompt(): string {
         const base = this.state?.inputPrompt || this.state?.consoleOptions?.inputPrompt || '';
-        const badges: string[] = [];
-        if (this.state?.planMode) {
-            badges.push('plan');
-        }
-        if (this.state?.vimMode) {
-            badges.push(`vim ${this.state.inputMode}`);
-        }
-        if (this.state?.isSshShellActive) {
-            badges.push(`ssh ${this.state.sshShell?.hostId || ''}`);
-        }
-        const queuedCount = this.state?.queuedPromptCount ?? 0;
-        if (queuedCount > 0) {
-            badges.push(`${queuedCount} queued`);
-        }
+        const badges = formatAgentConsoleInputBadges(this.state, this.translator);
         return badges.length ? `${base} · ${badges.join(' · ')}` : base;
     }
 

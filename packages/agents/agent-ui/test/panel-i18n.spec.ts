@@ -699,6 +699,29 @@ export class PanelI18nTest {
         expect(enPanel.metaLabel).toContain('Planning intent detected · use /plan');
     }
 
+    @Test('input prompt badges (plan, vim mode, queue) are localized')
+    async inputPromptBadgesLocalized() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        state.configure({ sessionId: 'badge-session' } as any);
+        const panel = new AgentConsoleInputPanelComponent(state, zh);
+        const prompt = () => panel.inputPrompt;
+        expect(prompt()).not.toContain('计划');
+        state.planMode = true;
+        expect(prompt()).toContain('计划');
+        state.vimMode = true;
+        state.inputMode = 'insert';
+        expect(prompt()).toContain('vim 插入');
+        state.inputMode = 'normal';
+        expect(prompt()).toContain('vim 普通');
+        state.queuedPromptCount = 3;
+        expect(prompt()).toContain('3 条排队');
+
+        const enPanel = new AgentConsoleInputPanelComponent(state);
+        expect(enPanel.inputPrompt).toContain('plan');
+        expect(enPanel.inputPrompt).toContain('vim normal');
+        expect(enPanel.inputPrompt).toContain('3 queued');
+    }
+
     @Test('command argument diagnostics and diff scope copy are localized')
     async commandDiagnosticsLocalized() {
         const translate = (key: string, params?: Record<string, any>, fallback?: string) => {

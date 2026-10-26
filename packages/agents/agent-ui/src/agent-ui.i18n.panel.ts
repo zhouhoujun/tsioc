@@ -244,7 +244,11 @@ export const AGENT_UI_PANEL_EN: Record<string, any> = {
         withMatches: 'Pager {index}/{total} · Esc close · ↑↓ scroll'
     },
     input: {
-        planNudge: 'Planning intent detected · use /plan'
+        planNudge: 'Planning intent detected · use /plan',
+        planBadge: 'plan',
+        vimInsert: 'vim insert',
+        vimNormal: 'vim normal',
+        queuedBadge: '{count} queued'
     },
     gitSnapshot: {
         hint: 'up/down scroll · left/right pan · pg jump · home/end edge · r revert · y copy · esc close',
@@ -501,7 +505,11 @@ export const AGENT_UI_PANEL_ZH: Record<string, any> = {
         withMatches: '翻页 {index}/{total} · Esc 关闭 · ↑↓ 滚动'
     },
     input: {
-        planNudge: '检测到规划意图 · 使用 /plan'
+        planNudge: '检测到规划意图 · 使用 /plan',
+        planBadge: '计划',
+        vimInsert: 'vim 插入',
+        vimNormal: 'vim 普通',
+        queuedBadge: '{count} 条排队'
     },
     gitSnapshot: {
         hint: '上/下 滚动 · 左/右 平移 · pg 跳转 · home/end 边缘 · r 回退 · y 复制 · esc 关闭',
