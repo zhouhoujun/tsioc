@@ -162,7 +162,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/projects', description: 'browse sessions by project: /projects [<id>]', group: 'session' },
     { name: '/search', description: 'search sessions: /search <query>', group: 'session', needsArgs: true, args: [{ name: 'query', required: true, variadic: true }] },
     { name: '/snapshot', description: 'snapshot current session: /snapshot [label]', group: 'session', args: [{ name: 'label' }] },
-    { name: '/snapshots', description: 'list / restore / delete session snapshots', group: 'session' },
+    { name: '/snapshots', description: 'list / restore / delete session snapshots', group: 'session', args: [{ name: 'verb', type: 'enum', values: ['list', 'restore', 'delete'] }, { name: 'id' }] },
     { name: '/git-snapshots', description: 'git step snapshots: list / diff <ref> / revert <messageId> / unrevert', group: 'session', args: [{ name: 'operation', type: 'enum', values: ['list', 'diff', 'revert', 'restore', 'unrevert'] }, { name: 'arg', variadic: true }] },
     { name: '/messages', description: 'messages', group: 'session' },
     { name: '/export', description: 'export session transcript [json|jsonl] [sessionId] [path]', group: 'session', args: [{ name: 'arg', variadic: true }] },

@@ -2032,3 +2032,14 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **plan 模式**：`/plan` 提示 `Plan mode enabled — write tools will be denied.`（已 i18n）；随后要求 `write` 创建文件被拒，模型回复“当前处于只读的计划模式…”，**文件未被创建**；`/plan off` 恢复。
 - **undo/redo**（关键数据安全）：批准一次 `write_file` 创建 `undo-check.txt`（内容 `hello-undo`）→ `/undo` 输出 `Undid <path> (deleted)` 且文件消失 → `/redo` 文件恢复为 `hello-undo`（内容一致）。测试后已删除该文件。
 - 结论：上述子系统除已修复的 `/export` 静默失败外，未发现新的正确性缺陷。
+
+## 2026-10-23 `/snapshots restore|delete <id>` 参数支持（此前被忽略）
+- 现状：`/snapshots` 无论带什么参数都弹“选快照 → 选动作”两级菜单；`/snapshots restore <id>` 的 id 被丢弃（实测 3 条消息未回滚），与注册表描述“list / restore / delete”不符。
+- 实现：`/snapshots` 抽到新模块 `AgentConsoleSnapshotCommands.ts`（`runSnapshotsCommand`）：
+  - 无参数 → 原两级选择器（行为不变）；
+  - `restore <id>` / `delete <id>` → 直接执行，支持**精确 id** 或**唯一前缀**（转录里 id 被截断）；
+  - 未知 id → 抛错（含 id）；未知动词 → 用法提示；
+  - 注册表为 `/snapshots` 声明 `verb` 枚举（list/restore/delete）+ `id`，参数补全/校验同时生效。
+- 测试：`snapshots-args.spec.ts` 6 例（精确恢复、唯一前缀、未知 id、删除、无参选择器、未知动词）→ agent-ui **1747 passing**；notice 目录 584 条。
+- 真实 TUI：先 `/snapshot`（1 条消息）→ 跑一轮（3 条）→ `/snapshots restore snap_…`：**不弹选择器**、提示 `Snapshot restored.`，DB 消息数回到 **1**。
+- 结构：`AgentConsoleCommandHandlers.ts` 1174 行，baseline 1214 → **1175**（只降不升）。

@@ -217,6 +217,8 @@ export const AGENT_UI_NOTICE_EN: NestedMessages = {
   snapshotHasWorking: 'Snapshot {ref} has no working tree changes to show.',
   snapshotCreationFailed: 'Snapshot creation failed.',
   snapshotDeleted: 'Snapshot deleted.',
+  snapshotsUsage: 'Usage: /snapshots [list | restore <id> | delete <id>]',
+  snapshotNotFound: 'Snapshot "{id}" was not found.',
   snapshotRestored: 'Snapshot restored.',
   startedNewSession: 'Started a new session.',
   summaryQualityUnavailable: 'Summary quality is unavailable without app RPC.',

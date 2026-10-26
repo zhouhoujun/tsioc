@@ -217,6 +217,8 @@ export const AGENT_UI_NOTICE_ZH: NestedMessages = {
   snapshotHasWorking: '快照 {ref} 没有可显示的工作区变更。',
   snapshotCreationFailed: '创建快照失败。',
   snapshotDeleted: '快照已删除。',
+  snapshotsUsage: '用法：/snapshots [list | restore <id> | delete <id>]',
+  snapshotNotFound: '未找到快照“{id}”。',
   snapshotRestored: '快照已恢复。',
   startedNewSession: '已启动新会话。',
   summaryQualityUnavailable: '没有 app RPC 时无法获取摘要质量。',

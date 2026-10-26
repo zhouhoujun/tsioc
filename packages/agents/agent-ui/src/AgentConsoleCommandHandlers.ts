@@ -20,6 +20,7 @@ import type { AgentConsoleSessionService } from './AgentConsoleSessionService';
 import type { NavFilter, NavSelection, SessionSearchMatch } from '@tsdi/agent';
 import { AGENT_CONSOLE_OVERLAY_HINTS } from './AgentConsoleOverlayPresenter';
 import type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
+import { runSnapshotsCommand, type SnapshotCommandHost } from './AgentConsoleSnapshotCommands';
 export type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
 import { formatAgentUiDate, formatAgentUiDateTime, formatAgentUiNotice, formatAgentPanelLabel as panelLabel, type AgentUiTranslator } from './agent-ui.i18n';
 
@@ -408,48 +409,8 @@ async function handleSnapshot(ctx: CommandHandlerContext, args: string, _resolve
 
 // ── /snapshots ───────────────────────────────────────────────────────────────
 
-async function handleSnapshots(ctx: CommandHandlerContext, _args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
-    const snapshotSessionId = ctx.state.sessionId;
-    if (!snapshotSessionId || !ctx.sessionService) {
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'currentSessionSnapshots'));
-        return true;
-    }
-    const snapshots = await ctx.sessionService.listSessionSnapshots(snapshotSessionId);
-    if (!snapshots.length) {
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'snapshotsCurrentSession'));
-        return true;
-    }
-    const choice = await ctx.select(
-        panelLabel(ctx.translator, 'select', 'snapshots', 'Snapshots ({count})', { count: snapshots.length }),
-        snapshots.map((snapshot, index) => ({
-            label: `${String(snapshot.label || panelLabel(ctx.translator, 'select', 'snapshotDefault', 'snapshot')).trim()} · ${panelLabel(ctx.translator, 'select', 'snapshotMessages', '{count} msgs', { count: snapshot.messageCount ?? 0 })}${snapshot.summary ? ` · ${snapshot.summary}` : ''}`,
-            value: String(snapshot.snapshotId || index),
-            detail: snapshot.snapshotId
-        })),
-        0,
-        ctx.state.consoleOptions.selectHint
-    );
-    if (!choice) return true;
-    const action = await ctx.select(
-        panelLabel(ctx.translator, 'select', 'snapshotAction', 'Snapshot action'),
-        [
-            { label: panelLabel(ctx.translator, 'select', 'restore', 'restore'), value: 'restore', detail: panelLabel(ctx.translator, 'select', 'restoreDescription', 'replace current transcript with this snapshot') },
-            { label: panelLabel(ctx.translator, 'select', 'deleteSnapshot', 'delete'), value: 'delete', detail: panelLabel(ctx.translator, 'select', 'deleteSnapshotDescription', 'remove this snapshot') }
-        ],
-        0,
-        ctx.state.consoleOptions.selectHint
-    );
-    if (!action) return true;
-    if (action === 'restore') {
-        await ctx.sessionService.restoreSessionSnapshot(snapshotSessionId, choice);
-        await ctx.refreshSessions();
-        await ctx.openSession(snapshotSessionId);
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'snapshotRestored'));
-    } else {
-        await ctx.sessionService.deleteSessionSnapshot(snapshotSessionId, choice);
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'snapshotDeleted'));
-    }
-    return true;
+async function handleSnapshots(ctx: CommandHandlerContext, args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
+    return runSnapshotsCommand(ctx as unknown as SnapshotCommandHost, args);
 }
 
 // ── /toolruns ────────────────────────────────────────────────────────────────
