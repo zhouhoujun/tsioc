@@ -290,6 +290,7 @@ export const AGENT_UI_NOTICE_ZH: NestedMessages = {
   reviewFixSuggestion: '  修复：{suggestion}',
   labelDiffCount: '{label} diff：{count} 个文件有变更。',
   exportedSessionToPath: '已将会话 \'{sessionId}\' 导出到 {targetPath}。',
+  exportWriteFailed: '无法写入 {path}：{error}。已改为显示导出预览。',
   exportPreviewReady: '会话 \'{sessionId}\' 的导出预览已就绪（{format}）。',
   openedSideSession: '已打开侧会话 {forked}。',
   searchingSessionsForQuery: '正在 {sessionCount} 个会话中搜索 "{rawQuery}"…',

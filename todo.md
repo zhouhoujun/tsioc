@@ -2017,3 +2017,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 空→空切换（静默基线后采样 2s）：总 4.41s、idle 0，其中 TypeORM/sql.js 查询管线 ≈2.7s（`executeEntitiesAndRawResults`/`getRawAndEntities`/`loadRawResults`/`query`），`getMany`/`getAll` 1.3s、`find`/`findOne` 1.2–1.4s；`getOwner`/`getOwnerPrincipalId`/`authorize` 0.72s、`listOwned` 0.53s；`openSession` 0.66s；另有 1.5s 落在 bundle 内匿名帧（需 sourcemap 才能归因）。
 - 说明：早前“批量 owner 查询无收益”很可能因为复用了 `listSessionFacts`（内含按 sessionId/sectionId 的 `COUNT(*) GROUP BY` 扫描），把省下的单行查询又花在聚合上；若再做，应使用**只查 owner 的批量查询**并用同一静默基线复测。
 - 目前判断：单次切换的固定查询开销是主因，优化需要 sourcemap/更细的 RPC 计时来归因那 1.5s 匿名帧，属“专门性能会话”级别，不宜在没有归因的情况下改核心响应式/ORM 代码。
+
+## 2026-10-23 `/export` 写入失败被静默吞掉（真实 TUI 复现 + 修复）
+- 复现：`/export json /nonexistent-dir-xyz/out.json`（不可写的绝对路径）→ 界面显示 `completed` 并弹出 66KB JSON 预览，**没有任何错误**；实际文件从未写入（`EACCES` 被 `tryWriteSessionExport` 的 `catch { return undefined }` 吞掉，调用方把 undefined 当作“未请求路径”走了预览分支）。
+- 修复：
+  - `tryWriteSessionExport` 返回 `{ path?, error? }`，保留失败原因；
+  - 请求了路径但写入失败时 **抛错**（`exportWriteFailed` 本地化文案），命令框架输出持久的 `$ /export … failed: …`，不再用预览掩盖失败；未指定路径时仍走预览。
+- 真实 TUI：EN `failed: Could not write /nonexistent-dir-xyz/out.json: EACCES: permission denied, mkdir …`；zh `failed: 无法写入 …：EACCES …`；正常路径仍写文件（65,987B）并提示导出路径。
+- 测试：`export-write-failure.spec.ts`（3 例：失败抛错含路径/原因、成功写路径、helper 返回 error）→ agent-ui **1741 passing**；notice 目录 582 条（lockstep 通过）。

@@ -48,10 +48,20 @@ export async function runExportCommand(
         return true;
     }
     const result = await ctx.sessionService.exportSession(sessionId, { format: parsed.format });
-    const targetPath = await tryWriteSessionExport(ctx, result, parsed.path);
-    if (targetPath) {
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'exportedSessionToPath', { sessionId: sessionId, targetPath: targetPath }));
+    const outcome = await tryWriteSessionExport(ctx, result, parsed.path);
+    if (outcome.path) {
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'exportedSessionToPath', { sessionId: sessionId, targetPath: outcome.path }));
         return true;
+    }
+    if (outcome.error) {
+        // A requested file that could not be written used to fall back to the
+        // preview silently, so the user believed the export had been saved.
+        // Throwing surfaces `$ /export … failed: …` in the transcript, which is
+        // persistent and visible (a status notice is hidden by the preview).
+        throw new Error(formatAgentUiNotice(ctx.translator, 'exportWriteFailed', {
+            path: parsed.path || result.fileName,
+            error: outcome.error
+        }));
     }
     previewSessionExport(ctx, result);
     ctx.notify(formatAgentUiNotice(ctx.translator, 'exportPreviewReady', { sessionId: sessionId, format: result.format.toUpperCase() }));
@@ -92,14 +102,20 @@ export function looksLikeExportPath(value: string): boolean {
     );
 }
 
+/** Outcome of a requested export write: the path, or why it failed. */
+export interface SessionExportWriteOutcome {
+    path?: string;
+    error?: string;
+}
+
 export async function tryWriteSessionExport(
     ctx: ExportHandlerContext,
     result: AgentSessionExportResult,
     requestedPath?: string
-): Promise<string | undefined> {
+): Promise<SessionExportWriteOutcome> {
     const fileAdapter = resolveFileAdapter(ctx);
     if (!fileAdapter) {
-        return undefined;
+        return {};
     }
     const paths = ctx.app?.get(AgentConsolePathProvider, null) as AgentConsolePathProvider | null;
     const targetPath = resolveExportTargetPath(fileAdapter, ctx.workspace, result, requestedPath, paths);
@@ -109,9 +125,9 @@ export async function tryWriteSessionExport(
             await fileAdapter.mkdir(dirname, { recursive: true });
         }
         await fileAdapter.writeText(targetPath, result.content, 'utf-8');
-        return targetPath;
-    } catch {
-        return undefined;
+        return { path: targetPath };
+    } catch (error) {
+        return { error: error instanceof Error ? error.message : String(error) };
     }
 }
 

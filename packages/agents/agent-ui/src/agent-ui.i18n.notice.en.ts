@@ -290,6 +290,7 @@ export const AGENT_UI_NOTICE_EN: NestedMessages = {
   reviewFixSuggestion: '  fix: {suggestion}',
   labelDiffCount: '{label} diff: {count} file{plural} changed.',
   exportedSessionToPath: 'Exported session \'{sessionId}\' to {targetPath}.',
+  exportWriteFailed: 'Could not write {path}: {error}. Showing a preview instead.',
   exportPreviewReady: 'Export preview ready for session \'{sessionId}\' ({format}).',
   openedSideSession: 'Opened side session {forked}.',
   searchingSessionsForQuery: 'Searching {sessionCount} session{plural} for "{rawQuery}"…',
