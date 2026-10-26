@@ -150,7 +150,11 @@ const nodeBuiltinStubPlugin: esbuild.Plugin = {
 const nodeOnlyThirdPartyStubPlugin: esbuild.Plugin = {
     name: 'node-only-third-party-stub',
     setup(build) {
-        const stubRegex = /^(mkdirp|glob|rimraf|path-scurry|graceful-fs|pg|pgpass|pg-connection-string|ioredis|redis|redis-errors|denque|cluster-key-slot|standard-as-callback|chokidar)$/;
+        // `ssh2` (via @tsdi/agent-ssh) pulls the optional native `cpu-features`
+        // binding, which cannot exist in a browser bundle. AgentConsoleComponent
+        // needs the SshConnectionManager *token* for @Inject, so the package is
+        // reachable; the browser never opens SSH sockets, so stub the leaves.
+        const stubRegex = /^(mkdirp|glob|rimraf|path-scurry|graceful-fs|pg|pgpass|pg-connection-string|ioredis|redis|redis-errors|denque|cluster-key-slot|standard-as-callback|chokidar|ssh2|cpu-features)$/;
         build.onResolve({ filter: stubRegex }, (): ResolveResult => {
             return { path: 'node-only-third-party-stub', namespace: 'node-only-third-party-stub' };
         });

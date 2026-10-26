@@ -2155,3 +2155,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 修复：`/attach`、`/export`、`/usage`、`/diff`、`/jobs`、`/tasks` 去掉忙碌守卫，直接委托；`/undo`、`/redo`、`/plan`、`/init`、`/permissions`、`/retry`、`/rollback` 等会改会话历史或触发 agent 的命令**保留守卫**。
 - 测试：新增 `busy-command-guards.spec.ts` 2 例（只读命令 mid-turn 必须执行且无 busy 提示；可变命令必须仍被拦截）。**RED** 后修复 → agent-ui **1763 passing**。
 - 真实 TUI（turn 运行中）：`/attach clear` → `Cleared pending attachments.`；`/usage` → 真实用量统计；`/undo` → 仍提示 `Wait for the current turn to finish.`
+
+## 2026-10-26 修复 Web 构建（ssh2/cpu-features 原生依赖）
+- **现象**：`agents-gate.sh build-agent-ui-web` 失败——`Could not resolve "../build/Release/cpufeatures.node"`（`node_modules/cpu-features` 无原生构建产物）。
+- **根因**：`7f95648cd` 把 `SshConnectionManager` 从 type-only 改成值导入以支持 `@Inject`，于是浏览器包开始静态引入 `@tsdi/agent-ssh` → `ssh2` → 可选原生依赖 `cpu-features`；浏览器端从不建立 SSH 连接。
+- **做法**：`web/build-web.ts` 的 `nodeOnlyThirdPartyStubPlugin` 增加 `ssh2`、`cpu-features` 两个叶子桩（与既有 pg/redis 等同策略），并注明原因。`SshClient` 只在构造函数里 `new Client()`，模块加载期无副作用，桩化安全。
+- **验证**：`npm run build:web` 成功（agent-console.js 18.9mb，此前直接报错）；`bash scripts/agents-gate.sh dom-gate` 3 PASS；全量 gate **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS。
