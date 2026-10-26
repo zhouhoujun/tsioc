@@ -2148,3 +2148,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `unsupportedAttachmentFormat` 增加 `{formats}`，由新增的 `supportedAttachmentFormats()`（合并图片/文档 MIME 表）填充；en/zh（notice + error 目录）同步。
 - 测试：`export-write-failure.spec.ts` 断言不再出现 `preview`、必须含可写路径建议；`attach-command.spec.ts` 断言中英文都会列出 `png`/`txt` 等支持格式。**RED** 后修复 → agent-ui **1761 passing**。
 - 真实 TUI：`/export json /etc/tsdi-should-fail.json` → `Could not write …: EACCES … Pick a writable path (for example under the workspace root) and retry.`；`/attach /etc/hostname` → `… Supported: bmp, css, csv, gif, htm, html, ico, jpeg, jpg, js, json, jsonl, md, pdf, png, svg, ts, txt, webp, xml, yaml, yml.`
+
+## 2026-10-23 turn 运行中连只读命令都被拒绝
+- 现象（真实 TUI）：turn 运行中输入 `/attach clear` → `Wait for the current turn to finish.`，附件没清掉；`/usage`、`/diff`、`/jobs`、`/tasks`、`/export` 同样被拒。
+- 根因：`AgentConsoleCommandHandlers` 用 `guardDelegate` 一刀切守卫了一批命令，其中把**只读/纯本地**命令也算进去了（清空 pending 附件、导出、用量、diff、任务面板）。
+- 修复：`/attach`、`/export`、`/usage`、`/diff`、`/jobs`、`/tasks` 去掉忙碌守卫，直接委托；`/undo`、`/redo`、`/plan`、`/init`、`/permissions`、`/retry`、`/rollback` 等会改会话历史或触发 agent 的命令**保留守卫**。
+- 测试：新增 `busy-command-guards.spec.ts` 2 例（只读命令 mid-turn 必须执行且无 busy 提示；可变命令必须仍被拦截）。**RED** 后修复 → agent-ui **1763 passing**。
+- 真实 TUI（turn 运行中）：`/attach clear` → `Cleared pending attachments.`；`/usage` → 真实用量统计；`/undo` → 仍提示 `Wait for the current turn to finish.`
