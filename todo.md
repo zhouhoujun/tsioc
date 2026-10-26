@@ -1971,3 +1971,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 为避免注册表引入服务依赖，把 context/action 常量与守卫抽到纯常量模块 `AgentConsoleKeymapValues.ts`（`AgentConsoleKeymap` re-export 保持 API 不变）。
 - 真实 TUI：`/keymap set ctrl+k co` → `compact / copy / command-palette / command-outputs`，Tab → `compact`；再输入 `p` → `pager`（标注 context），Tab → `pager`；Enter 后 `keymap.json` 写入 `contexts.pager["ctrl+k"]="compact"`。
 - 测试：新增 4 例（range index/words、action 候选、context 候选、无子命令时按命令 schema 回退）→ agent-ui **1734 passing**；tsc / source-size / diff-check OK。
+
+## 2026-10-23 `/` 动态参数补全（工具/会话/主题/技能/插件）
+- 现状：`/tools`、`/session`、`/theme`、`/skills`、`/plugins` 的取值是运行时数据，注册表只能声明静态 enum，用户只能手输。
+- 实现：
+  - 新纯函数模块 `AgentConsoleArgumentValues.ts`：按命令从 `tools / sessions / mentionCatalog / agentConsoleThemeNames` 生成候选，并按已输入前缀（value 或 label）过滤；`index !== 0` 或未知命令返回 undefined（保持静态行为）；
+  - 建议引擎 `resolveAgentConsoleInputSuggestions` 新增可选 `argumentValues` provider，动态候选优先、静态候选去重后追加；
+  - 状态在 `refreshInputSuggestions` 传入 provider（`{ tools, sessions, mentionCatalog }`），逻辑留在抽出模块，`AgentConsoleSessionState` 体量反而下降（baseline 6661 → 6656）。
+- 真实 TUI：`/tools ter` → `terminal`（Tab 补全）；`/theme d` → `dark`；`/skills p` → `Plan Mode`；`/session chat` → 会话列表（标题/工作区）。
+- 注意：`/tools` 的候选**不再**按 `active` 过滤——`/tools <name>` 本身就能查看未启用工具，过滤后会误删有效参数。
+- 测试：新增 4 例（运行时取值、前缀过滤、非首参/未知命令回退、引擎合并）→ agent-ui **1738 passing**；tsc / source-size / diff-check OK。

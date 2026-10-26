@@ -13,6 +13,7 @@ import {
     AgentConsoleTheme,
     AgentConsoleThemeInput,
     AgentConsoleThemeStyles,
+    agentConsoleThemeNames,
     defaultAgentConsoleTheme,
     mergeAgentConsoleTheme,
     resolveAgentConsoleThemeStyles
@@ -69,6 +70,7 @@ import {
     isAgentConsoleSuggestionMenu,
     resolveAgentConsoleInputSuggestions,
 } from './AgentConsoleSuggestions';
+import { resolveDynamicArgumentValues } from './AgentConsoleArgumentValues';
 import {
     AGENT_CONSOLE_OVERLAY_HINTS,
     AGENT_CONSOLE_OVERLAY_TITLES,
@@ -640,16 +642,8 @@ export class AgentConsoleSessionState {
         const label = (key: string, fallback: string) => this.translateLabel(key, undefined, fallback);
         return {
             describe: (key: string, fallback: string) => this.translateLabel(key, undefined, fallback),
-            groupLabels: {
-                core: label('agent.command.group.core', 'core'),
-                session: label('agent.command.group.session', 'session'),
-                display: label('agent.command.group.display', 'display'),
-                input: label('agent.command.group.input', 'input'),
-                review: label('agent.command.group.review', 'review'),
-                hooks: label('agent.command.group.hooks', 'hooks'),
-                delegation: label('agent.command.group.delegation', 'delegation'),
-                system: label('agent.command.group.system', 'system')
-            },
+            groupLabels: Object.fromEntries((['core', 'session', 'display', 'input', 'review', 'hooks', 'delegation', 'system'] as const)
+                .map(group => [group, label(`agent.command.group.${group}`, group)])),
             mentionKinds: {
                 folder: label('agent.mention.folder', 'folder'),
                 directory: label('agent.mention.folder', 'folder'),
@@ -5319,7 +5313,8 @@ export class AgentConsoleSessionState {
                 this.commandHints,
                 this.tools,
                 workspaceSuggestions,
-                this.suggestionLabels()
+                this.suggestionLabels(),
+                (command, index, words, token) => resolveDynamicArgumentValues({ tools: this.tools, sessions: this.sessions, mentionCatalog: this.mentionCatalog }, command, index, token)
             );
             if (!options.length) {
                 if (isAgentConsoleSuggestionMenu(this.selectMenu)) {

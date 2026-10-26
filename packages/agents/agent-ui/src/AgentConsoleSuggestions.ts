@@ -112,6 +112,16 @@ export function getAgentConsoleInputTokenRange(input: string, cursor = input.len
     };
 }
 
+/** Supplies argument candidates that live outside the static registry (tools,
+ * sessions, themes, skill/plugin ids). Returning undefined keeps the static
+ * behaviour for that position. */
+export type AgentConsoleArgumentValuesProvider = (
+    command: string,
+    index: number,
+    words: string[],
+    token: string
+) => AgentConsoleSelectOption[] | undefined;
+
 export interface AgentConsoleArgumentCompletionRange {
     /** Start of the argument word (after `/command `). */
     start: number;
@@ -205,14 +215,24 @@ export function resolveAgentConsoleInputSuggestions(
     commands: string[] = [],
     tools: AgentConsoleToolItem[] = [],
     workspaceSuggestions: AgentConsoleSelectOption[] = [],
-    labels: AgentConsoleSuggestionLabels = {}
+    labels: AgentConsoleSuggestionLabels = {},
+    argumentValues?: AgentConsoleArgumentValuesProvider
 ): AgentConsoleSelectOption[] {
     const active = getAgentConsoleInputTokenRange(input, cursor);
     if (!active?.token) {
         const argument = getAgentConsoleArgumentRange(input, cursor);
-        return argument
-            ? resolveAgentConsoleArgumentCandidates(argument.command, argument.token, labels, argument.index, argument.words)
-            : [];
+        if (!argument) {
+            return [];
+        }
+        const staticOptions = resolveAgentConsoleArgumentCandidates(argument.command, argument.token, labels, argument.index, argument.words);
+        const dynamicOptions = argumentValues?.(argument.command, argument.index, argument.words, argument.token) || [];
+        if (!dynamicOptions.length) {
+            return staticOptions;
+        }
+        // Dynamic values (tools, sessions, themes, skill ids) lead; static
+        // registry values follow when both apply.
+        const known = new Set(dynamicOptions.map(option => option.value));
+        return [...dynamicOptions, ...staticOptions.filter(option => !known.has(option.value))];
     }
     if (active.token.startsWith('/')) {
         const matches = rankAgentConsoleCommandMatches(commands, active.token);
