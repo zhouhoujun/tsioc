@@ -139,7 +139,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/feedback', description: 'packaging diagnostics for feedback reports', group: 'core' },
     { name: '/undo', description: 'revert the last file change', group: 'core' },
     { name: '/redo', description: 're-apply the last undone file change', group: 'core' },
-    { name: '/copy', description: 'copy reply', group: 'core', args: [{ name: 'target', type: 'enum', values: ['input', 'workspace', 'session', 'model'] }] },
+    { name: '/copy', description: 'copy reply: /copy [input|workspace|session|model], ctrl+x shift+c copies the draft', group: 'core', args: [{ name: 'target', type: 'enum', values: ['input', 'workspace', 'session', 'model'] }] },
     { name: '/archetype', description: 'switch session archetype: /archetype [build|plan|review|name]', group: 'core', args: [{ name: 'name' }] },
     { name: '/plan', description: 'toggle read-only plan mode (write tools denied)', group: 'core', args: [{ name: 'mode', type: 'enum', values: ['on', 'off', '1', '0', 'true', 'false'] }] },
 

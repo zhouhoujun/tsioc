@@ -497,7 +497,9 @@ export async function executeGlobalKeyActionView(
         'command-outputs': '/outputs',
         // The composer still holds the draft here (submitView is not involved), so
         // /stash push can capture it; the command clears it after saving.
-        'stash-draft': '/stash push'
+        'stash-draft': '/stash push',
+        // Same reason: the draft is only readable here, not after submitView clears it.
+        'copy-draft': '/copy input'
     };
     await host.handleCommand(commands[action]);
     return true;

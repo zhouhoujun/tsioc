@@ -821,12 +821,17 @@ export class AgentConsoleWhichKeyTest {
         // The overlay snapshots one page of up to 25 bindings.
         expect(state.whichKeyBindings.length).toEqual(Math.min(Object.keys(bindings).length, 25));
         expect(state.whichKeyBindings).toContainEqual({ key: 'ctrl+alt+k', action: 'which-key-toggle' });
-        expect(state.whichKeyBindings).toContainEqual({ key: 'ctrl+l', action: 'clear-scrollback' });
+        expect(bindings['ctrl+l']).toEqual('clear-scrollback');
         expect(await (component as any).handleGlobalKeyInput('n')).toEqual(true);
-        // `n` walks the remaining pages; walking past the last page clears the overlay.
+        // `n` walks the remaining pages (a binding such as ctrl+l may sit beyond the
+        // first page once the composer context grows past the page size); walking past
+        // the last page clears the overlay.
+        const seen = state.whichKeyBindings.slice();
         for (let guard = 0; state.whichKeyBindings.length > 0 && guard < 8; guard += 1) {
             expect(await (component as any).handleGlobalKeyInput('n')).toEqual(true);
+            seen.push(...state.whichKeyBindings);
         }
+        expect(seen).toContainEqual({ key: 'ctrl+l', action: 'clear-scrollback' });
         expect(state.whichKeyBindings).toEqual([]);
     }
 

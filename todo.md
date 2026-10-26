@@ -2102,3 +2102,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - i18n 提示（`noStashedDrafts` en/zh）、`/stash` 命令说明、which-key 分组（Edit）都改为指向该键位。
 - 测试：`stash.spec.ts` 新增 4 例（键位映射 + 经键位派发暂存并清空、重复暂存不覆盖、空草稿、`submit` 先清空导致 `push` 读不到草稿的边界），**RED**：仅回退 src 时 3 例失败；`keymap-context.spec.ts` 的 which-key 分页断言改为按页遍历（新增键位让 composer 绑定从一页变成两页）。agent-ui **1751 passing**。
 - 真实 TUI：输入 `first draft alpha` → `ctrl+x shift+s` → `Draft stashed as "default".` 且 composer 清空；再输入 `second draft beta` → `ctrl+x shift+s` → `Draft stashed as "default-2".`；`/stash list` → `default (17 chars), default-2 (17 chars)`；`/stash pop default` → 草稿恢复为 `first draft alpha` 并提示 `Restored stash "default" into the draft.`
+
+## 2026-10-23 `/copy input` 同样是"只有绕过入口才可用"的死目标
+- 现象：`vm-session.spec.ts` 用真实 `component.submit()` 断言 `'/copy input'` → `'Nothing to copy for input.'`（把降级行为写成了预期）；`panel-i18n.spec.ts` 则预置 `state.setInput('draft text')` 直接调 `handleCommand`，断言能复制。两处合起来说明：生产路径永远复制不到草稿。
+- 根因：与 `/stash push` 同源——`submitView()` 在派发 `/` 命令前已 `setInput('')`，`handleCopy` 读 `ctx.state.input`；用户也不可能"在草稿后面"敲命令（行首才识别），只会把草稿+命令当 prompt 提交。
+- 修复：沿用同一模式，新增默认键位 `ctrl+x shift+c` → 全局动作 `copy-draft`，在既有 `commands` 映射里复用 `/copy input`（键位路径不清 input，草稿仍在 `state.input`）；which-key 归入 Edit，`/copy` 说明补充该键位。facade 与 command 实现均未新增逻辑。
+- 测试：`keymap-composer-input.spec.ts` 新增 1 例（动作在全局动作表、默认绑定、经键位派发把草稿写入剪贴板并提示 `Copied input.`）；`keymap-context.spec.ts` 的 which-key 断言改为"遍历所有页后必须包含 ctrl+l 且最终清空"（新增两个键位后 composer 绑定超过一页，硬编码单页断言会误报）。agent-ui **1752 passing**。
+- 真实 TUI：输入 `copy me please` → `ctrl+x shift+c` → 终端收到 OSC52 `\x1b]52;c;Y29weSBtZSBwbGVhc2U=\x07`（base64 解码 = `copy me please`），并输出 `$ /copy input running/completed`；对照 `ctrl+x shift+t` 正常打开 `/theme`。
+- 保留：`/copy input` 经 `submit()` 仍提示 `Nothing to copy for input.`（该路径本来没有草稿可复制），未改动既有断言，避免删除功能。

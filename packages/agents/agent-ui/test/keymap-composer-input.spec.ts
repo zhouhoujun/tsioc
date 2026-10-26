@@ -118,4 +118,20 @@ export class ComposerKeyTest {
         expect(await executeGlobalKeyActionView(host, 'clear-input')).toBe(true);
         expect(calls).toEqual([['', 0]]);
     }
+
+    @Test('ctrl+x shift+c copies the composer draft (typing /copy input cannot)')
+    async copyDraftKeybinding() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub());
+        const state = component.sessionState;
+        const copied: string[] = [];
+        const notices: string[] = [];
+        (component as any).surfaceAccessor = { writeTerminalClipboardText: (text: string) => { copied.push(text); return true; } };
+        (component as any).notify = (message: string) => notices.push(message);
+        expect(AGENT_CONSOLE_GLOBAL_ACTIONS).toContain('copy-draft');
+        expect(new AgentConsoleKeymap().effectiveBindings('composer')['ctrl+x shift+c']).toEqual('copy-draft');
+        state.setInput('draft to copy');
+        expect(await (component as any).executeGlobalKeyAction('copy-draft')).toEqual(true);
+        expect(copied).toEqual(['draft to copy']);
+        expect(notices[0]).toContain('Copied input');
+    }
 }

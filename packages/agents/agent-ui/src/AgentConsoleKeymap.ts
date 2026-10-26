@@ -47,6 +47,7 @@ export const AGENT_CONSOLE_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalActi
     'ctrl+x a': 'archetypes',
     'ctrl+x s': 'status',
     'ctrl+x shift+s': 'stash-draft',
+    'ctrl+x shift+c': 'copy-draft',
     escape: 'interrupt-turn',
     'ctrl+p': 'command-palette',
     'ctrl+g': 'open-editor',
