@@ -2025,3 +2025,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 请求了路径但写入失败时 **抛错**（`exportWriteFailed` 本地化文案），命令框架输出持久的 `$ /export … failed: …`，不再用预览掩盖失败；未指定路径时仍走预览。
 - 真实 TUI：EN `failed: Could not write /nonexistent-dir-xyz/out.json: EACCES: permission denied, mkdir …`；zh `failed: 无法写入 …：EACCES …`；正常路径仍写文件（65,987B）并提示导出路径。
 - 测试：`export-write-failure.spec.ts`（3 例：失败抛错含路径/原因、成功写路径、helper 返回 error）→ agent-ui **1741 passing**；notice 目录 582 条（lockstep 通过）。
+
+## 2026-10-23 子系统真实审计：快照 / fork / plan / undo-redo
+- **快照**：`/snapshot` 生成 `snap_…`；`/snapshots` 打开“选择快照 → 选择动作（restore/delete）”两级菜单；选择 restore 后提示 `Snapshot restored.`，DB 中该会话消息数从 3 回滚为 1（数据层核对），恢复正确。注意：`/snapshots restore <id>` 的**参数会被忽略**（仍弹选择器），描述只写“list/restore/delete”，未承诺参数；记录为待定改进。
+- **fork**：`/fork` 产生新会话 id（`fork-…`）且转录保留（`Session restore is complete.`），会话切换正确。
+- **plan 模式**：`/plan` 提示 `Plan mode enabled — write tools will be denied.`（已 i18n）；随后要求 `write` 创建文件被拒，模型回复“当前处于只读的计划模式…”，**文件未被创建**；`/plan off` 恢复。
+- **undo/redo**（关键数据安全）：批准一次 `write_file` 创建 `undo-check.txt`（内容 `hello-undo`）→ `/undo` 输出 `Undid <path> (deleted)` 且文件消失 → `/redo` 文件恢复为 `hello-undo`（内容一致）。测试后已删除该文件。
+- 结论：上述子系统除已修复的 `/export` 静默失败外，未发现新的正确性缺陷。
