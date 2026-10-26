@@ -61,7 +61,10 @@ export class ExportWriteFailureTest {
         expect(previews.length).toEqual(0);
         expect(String(thrown?.message)).toContain('/nope/out.json');
         expect(String(thrown?.message)).toContain('EACCES');
-        expect(String(thrown?.message)).toContain('preview');
+        // No preview is produced, so the message must not claim one; it should
+        // tell the user how to fix the path instead.
+        expect(String(thrown?.message)).not.toContain('preview');
+        expect(String(thrown?.message)).toContain('writable path');
     }
 
     @Test('a successful write reports the target path')

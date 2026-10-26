@@ -317,7 +317,18 @@ export async function loadPendingAttachment(
             dataUrl: `data:${docMediaType};base64,${encodeBase64(bytes)}`
         };
     }
-    throw new Error(formatAgentUiNotice(translator, 'unsupportedAttachmentFormat', { targetPath }));
+    throw new Error(formatAgentUiNotice(translator, 'unsupportedAttachmentFormat', {
+        targetPath,
+        formats: supportedAttachmentFormats()
+    }));
+}
+
+/** Extensions `/attach` accepts, surfaced so a rejected file says what works. */
+export function supportedAttachmentFormats(): string {
+    return Object.keys({ ...IMAGE_MIME_TYPES, ...DOCUMENT_MIME_TYPES })
+        .map(extension => extension.replace(/^\./, ''))
+        .sort()
+        .join(', ');
 }
 
 export function resolveImageMediaType(filePath: string): string | undefined {

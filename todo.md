@@ -2139,3 +2139,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 根因：`resolveAttachmentTargetPath` / `loadPendingAttachment` 内部用 `formatAgentUiNotice(undefined, …)` 抛错，翻译器被写死为 `undefined`，只能命中英文模板。
 - 修复：两个函数增加可选 `translator` 参数（保持旧调用兼容），`runAttachCommand` 传入 `ctx.translator`。
 - 测试：新增 `attach-command.spec.ts` 4 例（zh 不支持格式 / en 对照 / 缺文件时外层+内层都本地化 / 不传 translator 仍可用）；**RED**：修复前 zh 用例拿到英文原因。
+
+## 2026-10-23 失败提示不可操作 + 过期文案（`/export`、`/attach`）
+- `/export json /etc/x.json`（不可写）→ 提示 `Could not write …: EACCES … Showing a preview instead.`：**"改为预览"是过期文案**——上一轮修复后失败会直接抛错、不再预览，文案却没更新；也没有告诉用户怎么办。
+- `/attach <不支持后缀>` → `Unsupported attachment format for '/etc/hostname'.`：没说支持什么，用户无从修正。
+- 修复：
+  - `exportWriteFailed` 改为要求可写路径（并给出 workspace 根目录示例），去掉虚假的预览承诺；en/zh 同步；
+  - `unsupportedAttachmentFormat` 增加 `{formats}`，由新增的 `supportedAttachmentFormats()`（合并图片/文档 MIME 表）填充；en/zh（notice + error 目录）同步。
+- 测试：`export-write-failure.spec.ts` 断言不再出现 `preview`、必须含可写路径建议；`attach-command.spec.ts` 断言中英文都会列出 `png`/`txt` 等支持格式。**RED** 后修复 → agent-ui **1761 passing**。
+- 真实 TUI：`/export json /etc/tsdi-should-fail.json` → `Could not write …: EACCES … Pick a writable path (for example under the workspace root) and retry.`；`/attach /etc/hostname` → `… Supported: bmp, css, csv, gif, htm, html, ico, jpeg, jpg, js, json, jsonl, md, pdf, png, svg, ts, txt, webp, xml, yaml, yml.`

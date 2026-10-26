@@ -79,6 +79,9 @@ export class AttachCommandLocaleTest {
         expect(notices.length).toEqual(1);
         expect(notices[0]).toContain('不支持的附件格式');
         expect(notices[0]).not.toContain('Unsupported attachment format');
+        // Actionable: the user has to know what is accepted.
+        expect(notices[0]).toContain('png');
+        expect(notices[0]).toContain('txt');
     }
 
     @Test('the English catalog still renders the English reason')
@@ -86,6 +89,8 @@ export class AttachCommandLocaleTest {
         const { ctx, notices } = createCtx(en);
         await runAttachCommand(ctx, '/ws/notes.weird');
         expect(notices[0]).toContain('Unsupported attachment format');
+        expect(notices[0]).toContain('Supported:');
+        expect(notices[0]).toContain('png');
     }
 
     @Test('a missing image reports the localized failure wrapper and reason')
