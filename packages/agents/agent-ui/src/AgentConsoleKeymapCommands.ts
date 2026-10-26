@@ -26,6 +26,12 @@ export function resolveKeymapContext(host: KeymapCommandHost): AgentConsoleKeyma
     return 'global';
 }
 
+/** A trailing context token (`set <key> <action> <context>`) or undefined. */
+function resolveTrailingContext(value?: string): AgentConsoleKeymapContext | undefined {
+    const token = String(value || '').trim().toLowerCase();
+    return token && isAgentConsoleKeymapContext(token) ? token as AgentConsoleKeymapContext : undefined;
+}
+
 export async function runKeymapCommand(host: KeymapCommandHost, args: string): Promise<void> {
     const rawTokens = String(args || '').trim().split(/\s+/).filter(Boolean);
     const first = (rawTokens[0] || '').toLowerCase();
@@ -56,9 +62,12 @@ export async function runKeymapCommand(host: KeymapCommandHost, args: string): P
             host.notify(formatAgentUiNotice(host.translator, 'keymapUsageSet'));
             return;
         }
-        if (scope !== 'vim' && isAgentConsoleGlobalAction(target) && host.globalKeymap!.set(key, target, context)) {
+        // The registry documents `set <key> <action> [context]`; the trailing
+        // context used to be ignored, so a scoped binding silently went global.
+        const setContext = resolveTrailingContext(tokens[3]) ?? context;
+        if (scope !== 'vim' && isAgentConsoleGlobalAction(target) && host.globalKeymap!.set(key, target, setContext)) {
             await host.persistGlobalKeymap();
-            const conflicts = host.globalKeymap!.conflicts(key, target, context);
+            const conflicts = host.globalKeymap!.conflicts(key, target, setContext);
             const conflictText = conflicts.length
                 ? panelLabel(host.translator, 'keymap', 'conflictsWith', '  conflicts with {list}', { list: conflicts.map(({ context: c, action: a }: any) => `${c}:${a}`).join(', ') })
                 : '';
@@ -78,7 +87,8 @@ export async function runKeymapCommand(host: KeymapCommandHost, args: string): P
             host.notify(formatAgentUiNotice(host.translator, 'keymapUsageUnset'));
             return;
         }
-        if (scope !== 'vim' && host.globalKeymap!.unset(key, context)) {
+        const unsetContext = resolveTrailingContext(tokens[2]) ?? context;
+        if (scope !== 'vim' && host.globalKeymap!.unset(key, unsetContext)) {
             await host.persistGlobalKeymap();
             host.notify(formatAgentUiNotice(host.translator, 'contextKeymapUnset', { context: context === 'global' ? 'Global' : context, key: key }));
             return;

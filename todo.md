@@ -1949,3 +1949,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 修复：两处 range 都向后扩展到词尾（遇空白停止）；引号 mention 向后找到闭合引号；`token` 改为整词（过滤也按整词）。
 - RED：新用例 3 例在旧实现上失败（`/settings ta`、`/layout viewport i`、引号 mention end）。GREEN：agent-ui **1725 passing**。
 - 真实 TUI：`/sett` + 光标回退 + Tab → `/settings`（无残留）→ Enter 执行；`/layout vi`（光标在 `v` 后）+ Tab → `/layout viewport`。注：整词不匹配时（如 `/seta`）菜单不再出现、Tab 不补全——这是正确结果（旧行为才是把残留词拼进去）。
+
+## 2026-10-23 `/keymap set <key> <action> [context]`：尾部 context 被忽略
+- 现象（真实 TUI + `keymap.json`）：`/keymap set ctrl+k copy composer` 提示成功并把 `ctrl+k` 写进 **global** `bindings`，`composer` 被静默忽略；而注册表文档写的是 `set <key> <action> [context]`，只有前置形式 `/keymap composer set …` 生效。用户以为只影响 composer，实际放宽成全局。
+- 修复：`runKeymapCommand` 支持尾部 context（`set` 取 `tokens[3]`，`unset` 取 `tokens[2]`），前置 scope 形式保持可用；解析用 `isAgentConsoleKeymapContext` 校验，非法词仍按原样忽略。
+- RED：新用例 2 例（set/unset 尾部 context）在旧实现上失败（写成 global）。GREEN：4 例通过；agent-ui **1729 passing**。
+- 真实 TUI：`/keymap set ctrl+k copy composer` → `contexts.composer["ctrl+k"]="copy"`；`/keymap unset ctrl+k composer` → `contexts.composer["ctrl+k"]=null`；`/keymap reset` 后文件恢复空覆盖（测试后已清理该 workspace 文件）。
