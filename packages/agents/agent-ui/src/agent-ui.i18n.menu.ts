@@ -71,7 +71,8 @@ export const AGENT_UI_MENU_EN: Record<string, any> = {
         workingTree: 'Working tree',
         staged: 'Staged',
         unstaged: 'Unstaged',
-        untracked: 'Untracked'
+        untracked: 'Untracked',
+        title: '{scope} diff'
     },
     arg: {
         missing: 'Missing required argument <{name}>.',
@@ -302,7 +303,8 @@ export const AGENT_UI_MENU_ZH: Record<string, any> = {
         workingTree: '工作区',
         staged: '已暂存',
         unstaged: '未暂存',
-        untracked: '未跟踪'
+        untracked: '未跟踪',
+        title: '{scope}差异'
     },
     arg: {
         missing: '缺少必需参数 <{name}>。',

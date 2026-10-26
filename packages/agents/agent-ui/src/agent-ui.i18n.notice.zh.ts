@@ -87,7 +87,7 @@ export const AGENT_UI_NOTICE_ZH: NestedMessages = {
   keymapSetMappedBinding: '键位已设置：{mappedKey} -> {action}（{context}）。',
   languageSet: '语言已设置为 {selected}。',
   modelConfigurationStorage: '模型配置存储不可用。',
-  noChangesForScope: '没有 {scope} 变更。',
+  noChangesForScope: '没有{scope}变更。',
   noActiveProfileCycle: '没有可循环切换变体的活动模型 profile。',
   noActiveProfileFavorite: '没有可收藏的活动模型 profile。',
   activeSharesSession: '此会话没有活动的分享。用法：/unshare <token>',

@@ -2185,3 +2185,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **测试**：`panel-i18n.spec.ts` 53 → **54 条**（zh：`后台任务 t1`/`状态：已完成`/`开始：2026/10/25 14:30:00`/`耗时：60s`/`进度：50%`/`错误：boom`；en：`Background task t1`/`status: completed`/`retries: 2`）。
 - **验证边界**：该块需要真实后台任务才可达，本机 TUI 环境无后台任务（`/ps show nope` 只到 `没有后台任务 nope。`），因此本条以单测为准；`/ps` 列表与 `stop`/`undo` 摘要已在真实 zh-CN TUI 复核（上一批）。
 - **门禁**：agent-ui **1766 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size（panel catalog 592 行，仍在 600 内）、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
+
+## 2026-10-26 `/diff` 评审面板：标题、状态词与空态
+- **现象（zh-CN 真实 TUI，review-ws）**：`/diff` 头部是 `工作区 diff`（英文 `diff` 后缀），状态行 `状态 done`（payload 状态直出），分组行 `状态 done`；`/diff --staged` 空态是 `没有 已暂存 变更。`（英文模板的空格被带进中文）。
+- **做法**：
+  - 新增 menu `agent.menu.diffScope.title`（en `{scope} diff` / zh `{scope}差异`），`/diff` 任务标题改用它 → `工作区差异`。
+  - review catalog 增加 `statusPending/Running/Completed/Done/Failed/Cancelled`，`formatReviewHeaderMeta`/`formatReviewStatsMeta` 经 `reviewStatusLabel()` 取值（未知状态回退原值）；分组行抽出 `formatReviewGroupMeta()` 到 `AgentConsoleReviewPanelFormat`（`AgentConsoleSessionState` 6661 → **6651**，baseline 6656 → **6652**），同样走状态映射。
+  - zh `noChangesForScope` 去空格：`没有{scope}变更。`。
+- **测试**：`panel-i18n.spec.ts` 54 条（既有统计行断言更新为 `状态 已完成`，新增 `done`/未知状态、分组行 `g1 · aggregate · 状态 已完成 · 2 个文件有变更`、`没有已暂存变更。`、`工作区差异`/`Working tree diff`）。
+- **真实 TUI（zh-CN）复核**：头部 `评审 worktree-diff:working-tree 工作区差异 | … | 已完成 | 不适用 | …`；状态行 `状态 已完成 · 模式 不适用 · 工作者 0 · 分组 1 · 文件 2 · 无法回滚`；分组行 `[1/1] aggregate · aggregate · 状态 已完成 · 2 个文件有变更`；`/diff --staged` → `没有已暂存变更。`
+- **门禁**：agent-ui **1766 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size（SessionState 6651、panel 592）、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。

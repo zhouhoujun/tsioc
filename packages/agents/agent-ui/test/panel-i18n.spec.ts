@@ -43,9 +43,9 @@ import { collectHealthItems } from '../src/AgentConsoleHealthView';
 import { parseAgentConsoleCommandArguments, formatAgentConsoleCommandDiagnosticEcho, getAgentConsoleCommandDefinition } from '../src/AgentConsoleCommandRegistry';
 import { describeWorktreeDiffScope, parseWorktreeDiffArgs } from '../src/AgentConsoleReviewHandlers';
 import { openGitSnapshotDiff, runGitSnapshotsCommand } from '../src/AgentConsoleGitSnapshotCommands';
-import { agentUiLocale, formatAgentPanelLabel, formatAgentUiDate, formatAgentUiDateTime, formatAgentUiTime } from '../src/agent-ui.i18n';
+import { agentUiLocale, formatAgentPanelLabel, formatAgentUiDate, formatAgentUiDateTime, formatAgentUiLabel, formatAgentUiNotice, formatAgentUiTime } from '../src/agent-ui.i18n';
 import { COMMAND_HANDLERS } from '../src/AgentConsoleCommandHandlers';
-import { formatReviewHeaderMeta, formatReviewSelectionMeta, formatReviewStatsMeta } from '../src/AgentConsoleReviewPanelFormat';
+import { formatReviewGroupMeta, formatReviewHeaderMeta, formatReviewSelectionMeta, formatReviewStatsMeta } from '../src/AgentConsoleReviewPanelFormat';
 import { createReviewTask } from './_helpers';
 import { loadInputHistory } from '../src/AgentConsoleInputHelpers';
 import { openCommandPaletteView } from '../src/AgentConsoleTerminalInputController';
@@ -837,6 +837,12 @@ export class PanelI18nTest {
         expect(describeWorktreeDiffScope('working-tree', zh as any)).toEqual('工作区');
         expect(describeWorktreeDiffScope('staged', zh as any)).toEqual('已暂存');
         expect(describeWorktreeDiffScope('staged')).toEqual('Staged');
+        expect(formatAgentUiNotice(zh, 'noChangesForScope', { scope: describeWorktreeDiffScope('staged', zh as any) }))
+            .toEqual('没有已暂存变更。');
+        expect(formatAgentUiLabel(zh, 'agent.menu.diffScope.title', '{scope} diff', { scope: describeWorktreeDiffScope('working-tree', zh as any) }))
+            .toEqual('工作区差异');
+        expect(formatAgentUiLabel(undefined, 'agent.menu.diffScope.title', '{scope} diff', { scope: describeWorktreeDiffScope('working-tree') }))
+            .toEqual('Working tree diff');
     }
 
     @Test('export preview, attachments and health details are localized')
@@ -1007,10 +1013,22 @@ export class PanelI18nTest {
         expect(header).toContain('列 1/60');
 
         expect(formatReviewStatsMeta({ status: 'completed', mode: 'parallel', workers: 2, groups: 3, files: 2, rollback: 'available' }, label))
-            .toEqual('状态 completed · 模式 parallel · 工作者 2 · 分组 3 · 文件 2 · 可回滚');
+            .toEqual('状态 已完成 · 模式 parallel · 工作者 2 · 分组 3 · 文件 2 · 可回滚');
         expect(formatReviewStatsMeta({ status: 'completed', mode: 'parallel', workers: 2, groups: 3, files: 2, rollback: 'available' },
             (key, fallback, params) => fallback.replace(/\{(\w+)\}/g, (_m, n: string) => String(params?.[n] ?? ''))))
             .toEqual('status completed · mode parallel · workers 2 · groups 3 · files 2 · rollback available');
+
+        expect(formatReviewStatsMeta({ status: 'done', mode: 'n/a', workers: 0, groups: 1, files: 2, rollback: 'unavailable' }, label))
+            .toContain('状态 已完成 · 模式 n/a');
+        expect(formatReviewStatsMeta({ status: 'queued-unknown', mode: 'n/a', workers: 0, groups: 1, files: 2, rollback: 'unavailable' }, label))
+            .toContain('状态 queued-unknown');
+
+        expect(formatReviewGroupMeta({ label: 'g1', kind: 'aggregate', status: 'done', fileCount: 2 }, label))
+            .toEqual('g1 · aggregate · 状态 已完成 · 2 个文件有变更');
+        expect(formatReviewGroupMeta({ label: 'w1', kind: 'worker', status: 'running', fileCount: 1, hasError: true }, label))
+            .toEqual('w1 · worker · 状态 处理中 · 1 个文件有变更 · error');
+        expect(formatReviewGroupMeta({ label: 'w2', kind: 'worker', status: 'strange', fileCount: 0 }, label))
+            .toEqual('w2 · worker · 状态 strange');
 
         const selection = formatReviewSelectionMeta({
             groupIndex: 1, groupTotal: 3, groupLabel: 'aggregate',

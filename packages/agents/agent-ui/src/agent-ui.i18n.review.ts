@@ -4,8 +4,9 @@
  * `agent-ui.i18n.panel.ts` stays inside the source-size budget; merged back as
  * `agent.menu.panel.review.*`.
  *
- * File paths, worker ids, statuses/modes from the task result and diff text are
- * data and stay untranslated.
+ * File paths, worker ids, modes from the task result and diff text are data and
+ * stay untranslated; known task statuses are displayed through `status*` keys
+ * (unknown values fall back to the raw status).
  */
 
 export const AGENT_UI_REVIEW_EN: Record<string, any> = {
@@ -26,6 +27,12 @@ export const AGENT_UI_REVIEW_EN: Record<string, any> = {
         rollbackApplied: 'rollback applied',
         rollbackUnavailable: 'rollback unavailable',
         statusLabel: 'status {status}',
+        statusPending: 'pending',
+        statusRunning: 'running',
+        statusCompleted: 'completed',
+        statusDone: 'done',
+        statusFailed: 'failed',
+        statusCancelled: 'cancelled',
         notApplicable: 'n/a',
         carryForward: 'Carry Forward: {ids}',
         checkpoints: 'Checkpoints: {total} total · {available} available · {applied} applied · {invalidated} invalidated',
@@ -98,6 +105,12 @@ export const AGENT_UI_REVIEW_ZH: Record<string, any> = {
         rollbackApplied: '已回滚',
         rollbackUnavailable: '无法回滚',
         statusLabel: '状态 {status}',
+        statusPending: '等待中',
+        statusRunning: '处理中',
+        statusCompleted: '已完成',
+        statusDone: '已完成',
+        statusFailed: '失败',
+        statusCancelled: '已取消',
         notApplicable: '不适用',
         carryForward: '继续沿用：{ids}',
         checkpoints: '检查点：共 {total} 个 · {available} 可用 · {applied} 已应用 · {invalidated} 已失效',

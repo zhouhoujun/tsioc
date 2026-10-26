@@ -549,7 +549,7 @@ export async function openWorktreeDiff(ctx: ReviewHandlerContext, args?: string)
     const label = describeWorktreeDiffScope(parsed.scope, ctx.translator);
     const reviewTask = {
         id: `worktree-diff:${parsed.scope}`,
-        title: `${label} diff`,
+        title: formatAgentUiLabel(ctx.translator, 'agent.menu.diffScope.title', '{scope} diff', { scope: label }),
         sourceSessionId: sessionId,
         status: 'done',
         metadata: { reviewMode: 'worktree-diff', scope: parsed.scope, paths: parsed.paths }

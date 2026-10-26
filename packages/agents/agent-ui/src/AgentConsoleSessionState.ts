@@ -60,6 +60,7 @@ import {
 } from './AgentConsoleTimelineWindow';
 import { resolveHumanStatusWord } from './AgentConsoleTimelineEventPresenter';
 import { formatAgentUiLabel, formatAgentUiNotice } from './agent-ui.i18n';
+import { formatReviewGroupMeta } from './AgentConsoleReviewPanelFormat';
 import {
     AGENT_CONSOLE_SUGGESTIONS_HINT,
     AGENT_CONSOLE_SUGGESTIONS_TITLE,
@@ -5702,13 +5703,8 @@ export class AgentConsoleSessionState {
     }
 
     protected describeReviewGroup(group: AgentConsoleReviewGroup): string {
-        return [
-            group.label,
-            group.kind === 'aggregate' ? 'aggregate' : 'worker',
-            group.status ? this.translateLabel('agent.menu.panel.review.statusLabel', { status: group.status }, `status ${group.status}`) : '',
-            group.sections.length ? this.translateLabel(group.sections.length === 1 ? 'agent.menu.panel.review.scopeFilesOne' : 'agent.menu.panel.review.scopeFiles', { count: group.sections.length }, group.sections.length === 1 ? '{count} file' : '{count} files') : '',
-            group.error ? 'error' : ''
-        ].filter(Boolean).join(' · ');
+        const meta = { label: group.label, kind: group.kind, status: group.status, fileCount: group.sections.length, hasError: !!group.error };
+        return formatReviewGroupMeta(meta, (key, fallback, params) => this.translateLabel(`agent.menu.panel.review.${key}`, params, fallback));
     }
 
     protected filterReviewPatchLines(lines: string[]): string[] {
