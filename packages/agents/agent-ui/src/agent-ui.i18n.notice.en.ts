@@ -339,6 +339,7 @@ export const AGENT_UI_NOTICE_EN: NestedMessages = {
   sessionDelegationModeSet: 'Session {sessionId} delegation mode set to "{mode}".',
   draftStashedAs: 'Draft stashed as "{name}".',
   noStashNamed: 'No stash named "{name}". Available: {names}.',
+  stashNoneAvailable: 'none',
   stashRestored: 'Restored stash "{name}" into the draft.',
   stashRemoved: 'Removed stash "{name}".',
   forkedSession: 'Forked session {forked}.',

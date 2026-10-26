@@ -2195,3 +2195,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **测试**：`panel-i18n.spec.ts` 54 条（既有统计行断言更新为 `状态 已完成`，新增 `done`/未知状态、分组行 `g1 · aggregate · 状态 已完成 · 2 个文件有变更`、`没有已暂存变更。`、`工作区差异`/`Working tree diff`）。
 - **真实 TUI（zh-CN）复核**：头部 `评审 worktree-diff:working-tree 工作区差异 | … | 已完成 | 不适用 | …`；状态行 `状态 已完成 · 模式 不适用 · 工作者 0 · 分组 1 · 文件 2 · 无法回滚`；分组行 `[1/1] aggregate · aggregate · 状态 已完成 · 2 个文件有变更`；`/diff --staged` → `没有已暂存变更。`
 - **门禁**：agent-ui **1766 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size（SessionState 6651、panel 592）、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
+
+## 2026-10-26 `/stash pop` 缺失提示里的 `none`
+- **现象（zh-CN 真实 TUI）**：`/stash pop` → `没有名为 "missing" 的暂存。可用：none。`（可用列表为空时后缀是英文 `none`）。
+- **做法**：新增 notice `stashNoneAvailable`（en `none` / zh `无`），`AgentConsoleStashCommands` 两处 `|| 'none'` 改走该键。
+- **测试**：`panel-i18n.spec.ts` 54 → **55 条**（`/stash pop missing` 无暂存 → `没有名为 "missing" 的暂存。可用：无。`）；notice 键数守卫 589 → **590**。
+- **真实 TUI（zh-CN）复核**：`没有名为 "missing" 的暂存。可用：无。`
+- **门禁**：agent-ui **1767 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。

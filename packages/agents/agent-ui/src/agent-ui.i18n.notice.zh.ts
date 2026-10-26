@@ -339,6 +339,7 @@ export const AGENT_UI_NOTICE_ZH: NestedMessages = {
   sessionDelegationModeSet: '会话 {sessionId} 的委托模式已设置为 "{mode}"。',
   draftStashedAs: '草稿已暂存为 "{name}"。',
   noStashNamed: '没有名为 "{name}" 的暂存。可用：{names}。',
+  stashNoneAvailable: '无',
   stashRestored: '已将暂存 "{name}" 恢复到草稿。',
   stashRemoved: '已移除暂存 "{name}"。',
   forkedSession: '已派生会话 {forked}。',

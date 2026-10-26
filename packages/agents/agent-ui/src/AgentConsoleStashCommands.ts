@@ -51,7 +51,7 @@ export async function runStashCommand(host: StashCommandHost, args?: string): Pr
         const name = requested || 'default';
         const stashes = await host.stashStore?.load(host.resolveHistoryWorkspace()) || {};
         if (!(name in stashes)) {
-            host.notify(formatAgentUiNotice(host.translator, 'noStashNamed', { name: name, names: Object.keys(stashes).join(', ') || 'none' }));
+            host.notify(formatAgentUiNotice(host.translator, 'noStashNamed', { name: name, names: Object.keys(stashes).join(', ') || formatAgentUiNotice(host.translator, 'stashNoneAvailable') }));
             return true;
         }
         host.state.updateDraft(stashes[name]);
@@ -69,7 +69,7 @@ export async function runStashCommand(host: StashCommandHost, args?: string): Pr
         const name = requested || 'default';
         const stashes = await host.stashStore?.load(host.resolveHistoryWorkspace()) || {};
         if (!(name in stashes)) {
-            host.notify(formatAgentUiNotice(host.translator, 'noStashNamed', { name: name, names: Object.keys(stashes).join(', ') || 'none' }));
+            host.notify(formatAgentUiNotice(host.translator, 'noStashNamed', { name: name, names: Object.keys(stashes).join(', ') || formatAgentUiNotice(host.translator, 'stashNoneAvailable') }));
             return true;
         }
         delete stashes[name];

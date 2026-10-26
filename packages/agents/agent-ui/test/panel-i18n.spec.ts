@@ -683,6 +683,20 @@ export class PanelI18nTest {
         expect(enText).toContain('  retries: 2');
     }
 
+    @Test('stash miss copy falls back to a localized empty list')
+    async stashMissLocalized() {
+        const notices: string[] = [];
+        await runStashCommand({
+            translator: zh,
+            state: { sessionId: 's1' },
+            stashStore: { load: async () => ({}), save: async () => undefined },
+            resolveHistoryWorkspace: () => '/tmp/ws',
+            notify: (message: string) => { notices.push(message); },
+            pushCommandOutput: () => { /* unused */ }
+        } as any, 'pop missing');
+        expect(notices[0]).toEqual('没有名为 "missing" 的暂存。可用：无。');
+    }
+
     @Test('IDE and voice output copy is localized')
     async ideAndVoiceOutputsLocalized() {
         const outputs: Array<{ command: string; text: string }> = [];
