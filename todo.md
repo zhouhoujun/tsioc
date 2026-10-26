@@ -1981,3 +1981,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 真实 TUI：`/tools ter` → `terminal`（Tab 补全）；`/theme d` → `dark`；`/skills p` → `Plan Mode`；`/session chat` → 会话列表（标题/工作区）。
 - 注意：`/tools` 的候选**不再**按 `active` 过滤——`/tools <name>` 本身就能查看未启用工具，过滤后会误删有效参数。
 - 测试：新增 4 例（运行时取值、前缀过滤、非首参/未知命令回退、引擎合并）→ agent-ui **1738 passing**；tsc / source-size / diff-check OK。
+
+## 2026-10-23 `@` 提及补全真实审计（未发现缺陷）
+- 目录补全：`@bank-system/` 列出子项；Tab 补全为 `@bank-system/src/` 并**不加空格**、菜单继续展开子项；根目录没有 `src/` 时，`@src/` 走“路径后缀”匹配（`*/src/...`）属预期。
+- 大小写：`@BANK` 能匹配 `bank-system/*`（大小写不敏感）；`@nosuchfile-xyz`、`@readme`（工作区无 README）正确不出菜单。
+- 引号提及：`@"AGENTS.md"` 显示并补全为 `@AGENTS.md`。
+- 会话级放行补充验证：`A` 之后同一会话第二次 `terminal` 调用**不再弹审批**且命令执行（切片内无 approval 提示）。
+- 结论：`@` 补全/提及链路与 `/` 一致，无回归；本轮不改代码。
