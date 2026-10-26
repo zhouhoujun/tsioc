@@ -142,6 +142,42 @@ export class SuggestionTabTest {
     }
 }
 
+/** PageUp/PageDown belong to an open suggestion menu, not the transcript. */
+@Suite('suggestion menu paging')
+export class SuggestionMenuPagingTest {
+    @Test('pagedown pages the open menu instead of the transcript')
+    async pageDownPagesMenu() {
+        const { AgentConsoleSessionState } = require('../src');
+        const state = new AgentConsoleSessionState();
+        state.configure({ sessionId: 's1' } as any);
+        const commands = 'abcdefghijklmnopqrstuvwxyz'.split('').map(letter => `/cmd${letter}`);
+        state.setCommandHints(commands);
+        state.setInput('/', 1);
+        expect(state.selectMenu?.options.length).toBeGreaterThan(12);
+        const transcriptPages: number[] = [];
+        const result: any = await (state as any).processDecodedInput(
+            { text: '\u001b[6~', controlKey: 'pagedown', partial: false },
+            '',
+            {
+                isClosed: false,
+                onExit: () => undefined,
+                hasActiveTextPrompt: false,
+                transcriptNavigationController: {
+                    move: () => undefined,
+                    scrollPage: (delta: number) => transcriptPages.push(delta),
+                    movePage: (delta: number) => transcriptPages.push(delta),
+                    selectFirst: () => undefined,
+                    selectLast: () => undefined,
+                    setFocused: () => undefined
+                }
+            }
+        );
+        expect(result.action).toEqual('menuInput');
+        expect(transcriptPages).toEqual([]);
+        expect(state.selectMenu!.selectedIndex).toBeGreaterThan(0);
+    }
+}
+
 /** A typo must not execute an unrelated command. */
 @Suite('unknown slash commands do not offer unrelated commands')
 export class UnknownCommandSuggestionTest {

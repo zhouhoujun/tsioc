@@ -1919,3 +1919,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 控制器：`submitOnEnter` 与 `processRawChunk` 都按 `decoded.text`（单个解码项）处理。
 - 真实 TUI 验证（6 项全过）：`/se\r` 执行 `/settings` 且无 ambiguous；`/se\t` 补全为 `/settings` 不执行；`alpha\tbeta` → `alphabeta`；`alpha\nbeta` 仍是多行草稿；`hello world\r` 正常提交；`/exit\r` 正常退出。
 - 测试：components/console 新增 `tokenizesTrailingEnterAndTab`（102 passing）；agent-ui 新增 `terminal-input-split.spec.ts`（2，旧控制器 RED：收到 `/se\r`）→ agent-ui **1714 passing**；相关 tsc / source-size / diff-check OK。
+
+## 2026-10-23 `/` 菜单：PageUp/PageDown 被转录滚动抢占（死映射修复）
+- 现象：`/` 菜单打开时按 PageDown 菜单不动（列表仍是第 1 页），PageUp 同样无效；而 `resolveMenuKey` 已声明 `pageup/pagedown → page`，`moveSelectMenuPage` 只有单测覆盖，真实路径永远走不到。
+- 根因：`processDecodedInput` 里 pageup/pagedown 的“转录翻页”分支在 `handleMenuInput` **之前**，先返回 `transcriptScroll`。
+- 修复：把 `handleMenuInput` 提到转录翻页之前（仍保留“历史浏览中的 ↑/↓ 优先”），菜单打开时 PageUp/PageDown 归菜单，关闭时仍滚动历史。
+- RED：单测期望 `action='menuInput'`，旧实现返回 `transcriptScroll`。GREEN 后 agent-ui **1715 passing**。
+- 真实 TUI：`/` 菜单 PageDown 可见范围 5–16 → 15–26，PageUp 回到 5–16，随后的 ↓ 继续 6–17。

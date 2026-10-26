@@ -6448,21 +6448,6 @@ export class AgentConsoleSessionState {
             return { handled: true, action: 'exit' };
         }
 
-        if (controlKey === 'pageup' || controlKey === 'pagedown') {
-            const layout = resolveTranscriptLayout(this.consoleOptions.messageLayout);
-            if (layout.ownsHistoryScroll || layout.wheelScrollsHistory || layout.mode === 'viewport') {
-                const delta = controlKey === 'pageup' ? -1 : 1;
-                const nav = options.transcriptNavigationController as any;
-                if (nav && typeof nav.scrollPage === 'function') {
-                    nav.scrollPage(delta);
-                } else {
-                    nav.scroll(delta);
-                }
-                return { handled: true, action: 'transcriptScroll', value: controlKey };
-            }
-            return { handled: false };
-        }
-
         // A recalled entry can itself open the suggestion menu. Once history
         // browsing has started, keep up/down on history instead of letting the
         // newly opened menu steal the remaining navigation sequence.
@@ -6477,6 +6462,21 @@ export class AgentConsoleSessionState {
 
         if (this.focusLayers.handleMenuInput(controlKey || '', rawText)) {
             return { handled: true, action: 'menuInput' };
+        }
+
+        if (controlKey === 'pageup' || controlKey === 'pagedown') {
+            const layout = resolveTranscriptLayout(this.consoleOptions.messageLayout);
+            if (layout.ownsHistoryScroll || layout.wheelScrollsHistory || layout.mode === 'viewport') {
+                const delta = controlKey === 'pageup' ? -1 : 1;
+                const nav = options.transcriptNavigationController as any;
+                if (nav && typeof nav.scrollPage === 'function') {
+                    nav.scrollPage(delta);
+                } else {
+                    nav.scroll(delta);
+                }
+                return { handled: true, action: 'transcriptScroll', value: controlKey };
+            }
+            return { handled: false };
         }
 
         if (this.focusLayers.hasBlockingSelectMenu()) {
