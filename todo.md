@@ -2049,3 +2049,18 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 修复：给 8 个 `T | null` 可选依赖补显式 `@Inject(...)`：`ApprovalManager`、`SshConnectionManager`、`AgentConsoleStatuslineStore`、`AgentConsoleTitleStore`、`BackgroundTaskManager`、`AgentConsoleModelStore`、`AgentUiConfigService`、`AgentConsoleTranscriptLayoutResolver`（并为 `BackgroundTaskManager`/`SshConnectionManager` 改为值导入）。
 - 验证：真实 TUI `/ps` 现输出 `No current background tasks.`（不再 unavailable）；审批链路仍正常（terminal 调用 → 面板 → `a` → 命令执行）；`/status` 在 turn 后正常；agent-ui **1747 passing**；tsc/source-size/diff-check OK。
 - 未做（记录）：`AudioCaptureAdapter`/`AudioPlaybackAdapter` 的显式注入会实例化 `NodeAudioCaptureAdapter`，而它的构造函数参数同样缺少 `@Optional()`（联合/对象类型 → `Object`）会抛 `MissingParameterException`；因此本次**保留**音频适配器的原状，语音接入需先修 `platform-server/common/src/audio.ts` 两个适配器的构造参数。
+
+## 2026-10-23 修复 node 音频适配器 DI + Web 构建 stub（两个独立缺陷）
+- **音频适配器 DI**：显式注入 `AudioCaptureAdapter`/`AudioPlaybackAdapter` 会实例化 `NodeAudioCaptureAdapter`，而它的构造参数 `options: NodeAudioCaptureAdapterOptions = {}` 类型被擦除为 `Object` 且无 `@Optional()` → `MissingParameterException`（这也是之前 `/voice` 只能保持未接入的原因）。修复：两个 Node 适配器构造参数加 `@Optional()`；组件恢复显式 `@Inject`。
+  - RED：新增平台测试（`ServerCommonModule` 解析两个适配器）旧代码抛 `MissingParameterException`；GREEN：platform-server **20 passing**（含新 1 例）。
+  - 真实 TUI：启动无 DI 报错，`/voice status` → `voice unavailable (missing streaming STT adapter, streaming TTS adapter) · session inactive`（诚实的未配置提示，不再是崩溃/不可用）。
+- **Web 构建**：`build-web.ts` 的 node 内建 stub 正则包含 `dns` 但没有 `dns/promises`，`agent-tools/browser/text-browser.tool.ts` 的 `import { lookup } from 'dns/promises'` 使 `build-agent-ui-web` 失败（上一轮门禁唯一失败项）。修复：正则加入 `dns/promises` 与 `node:dns/promises`。
+  - 验证：`npx ts-node -r tsconfig-paths/register build-web.ts` 成功产出 `web/dist/agent-console.js`（21.3MB）。
+
+## 2026-10-23 其它子系统快速核验（DI 修复后）
+- `/ssh` → `No SSH hosts configured.`（注入后的 manager 正常，不再“不可用”）；
+- `/skills` → 列表 + 详情（`Codebase Exploration` / `Summary` / `Aliases`）；`/plugins` → `No plugins installed.`；
+- `/usage` → 真实汇总（`day 31 turns · 1.3M in · 2K out · 1.3M total | week … | all 1017 turns …`）；
+- `/diagnostics` → `No turn diagnostics recorded yet.`；
+- `/apps`、`/tools`（无参）在重会话中提示/面板出现较慢（>3s），非缺陷；`/mcp` 与 `/ssh` 同批时也受重绘时序影响。
+- 说明：heavy session（62K tokens）下命令输出可能延迟到 3–4s 才进入可捕获的尾部，探针应以 4s 窗口为准。
