@@ -1961,3 +1961,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 根因：`AgentConsoleCommandRegistry` 在拼 `didYouMean` 时用 `argument.values.join(' or ')`；模板本身已 i18n，连接词没有。
 - 修复：menu 目录新增 `arg.optionSeparator`（en `' or '` / zh `'或'`），用 `commandArgText` 取本地化连接词再 join。
 - RED：新用例（zh translate）旧实现得到 `stream or viewport`，期望 `stream或viewport`。GREEN：agent-ui **1730 passing**；真实 TUI zh 提示已无英文 `or`，英文环境仍是 `Did you mean … or …?`。
+
+## 2026-10-23 `/` 多参数补全（`/keymap set <key> <action> <context>`）
+- 现状：参数补全只看第一个参数（`args[0]` 的 enum），`/keymap set ctrl+k ` 之后没有任何候选；action/context 是有限集合（60+ action、5 context），只能靠记忆输入。
+- 实现：
+  - `getAgentConsoleArgumentRange` 返回 `index`（当前第几个参数）与 `words`（已完成的参数词），并支持多词前缀；
+  - `resolveAgentConsoleArgumentCandidates(..., index, words)`：index=0 保持原子命令/首参逻辑；index>0 先按首个词匹配子命令，再取该子命令第 `index-1` 个参数的 enum，回退到命令级 `args[index]`；
+  - 注册表 `AgentConsoleCommandSubcommand` 增加可选 `args`，为 `/keymap` 的 `set/unset/list/record` 声明 key/action/context 及取值；
+  - 为避免注册表引入服务依赖，把 context/action 常量与守卫抽到纯常量模块 `AgentConsoleKeymapValues.ts`（`AgentConsoleKeymap` re-export 保持 API 不变）。
+- 真实 TUI：`/keymap set ctrl+k co` → `compact / copy / command-palette / command-outputs`，Tab → `compact`；再输入 `p` → `pager`（标注 context），Tab → `pager`；Enter 后 `keymap.json` 写入 `contexts.pager["ctrl+k"]="compact"`。
+- 测试：新增 4 例（range index/words、action 候选、context 候选、无子命令时按命令 schema 回退）→ agent-ui **1734 passing**；tsc / source-size / diff-check OK。

@@ -1,6 +1,7 @@
 import { AgentConsoleSelectOption, AgentConsoleToolItem } from './AgentConsoleSessionState';
 import { fuzzyMatchAgentConsoleCommand } from './AgentConsoleKeymap';
 import {
+    AgentConsoleCommandArgument,
     formatAgentConsoleCommandArgumentTemplate,
     getAgentConsoleCommandDefinition,
     resolveAgentConsoleCommandDescription
@@ -118,6 +119,10 @@ export interface AgentConsoleArgumentCompletionRange {
     token: string;
     /** Command name as typed, e.g. `/layout`. */
     command: string;
+    /** 0-based index of the argument word being typed. */
+    index: number;
+    /** Completed argument words before the current one, e.g. `['set', 'ctrl+k']`. */
+    words: string[];
 }
 
 /**
@@ -130,11 +135,15 @@ export interface AgentConsoleArgumentCompletionRange {
 export function getAgentConsoleArgumentRange(input: string, cursor = input.length): AgentConsoleArgumentCompletionRange | undefined {
     const text = String(input || '');
     const safeCursor = Math.max(0, Math.min(text.length, cursor));
-    const match = text.slice(0, safeCursor).match(/^(\s*)(\/[A-Za-z0-9_-]+)\s+([^\s]*)$/);
-    if (!match || !match[3]) {
+    // Multi-word arguments (`/keymap set ctrl+k <action>`) complete positionally:
+    // the completed words are reported so the resolver can pick the schema of
+    // the subcommand's n-th argument.
+    const match = text.slice(0, safeCursor).match(/^(\s*)(\/[A-Za-z0-9_-]+)((?:\s+[^\s]+)*)\s+([^\s]*)$/);
+    if (!match || !match[4]) {
         return undefined;
     }
-    const start = match[1].length + match[2].length + 1;
+    const words = match[3].trim() ? match[3].trim().split(/\s+/) : [];
+    const start = match[1].length + match[2].length + match[3].length + 1;
     // Same as the command token: the caret may sit inside the argument word.
     let end = safeCursor;
     while (end < text.length && !/\s/.test(text[end])) {
@@ -144,7 +153,9 @@ export function getAgentConsoleArgumentRange(input: string, cursor = input.lengt
         start,
         end,
         token: text.slice(start, end),
-        command: match[2]
+        command: match[2],
+        index: words.length,
+        words
     };
 }
 
@@ -152,7 +163,9 @@ export function getAgentConsoleArgumentRange(input: string, cursor = input.lengt
 export function resolveAgentConsoleArgumentCandidates(
     command: string,
     token: string,
-    labels: AgentConsoleSuggestionLabels = {}
+    labels: AgentConsoleSuggestionLabels = {},
+    index = 0,
+    words: string[] = []
 ): AgentConsoleSelectOption[] {
     const definition = getAgentConsoleCommandDefinition(command);
     if (!definition) {
@@ -169,11 +182,20 @@ export function resolveAgentConsoleArgumentCandidates(
     const localizeSub = (sub: string, fallback: string) => labels.describe
         ? labels.describe(`agent.command.sub.${definition.name.replace(/^\//, '')}.${sub}`, fallback)
         : fallback;
-    (definition.subcommands || []).forEach(sub => push(sub.sub, localizeSub(sub.sub, sub.description)));
-    const first = definition.args?.[0];
-    if (first && first.type === 'enum' && Array.isArray(first.values)) {
-        first.values.forEach(value => push(value, first.name));
+    const pushEnum = (argument?: AgentConsoleCommandArgument) => {
+        if (argument && argument.type === 'enum' && Array.isArray(argument.values)) {
+            argument.values.forEach(value => push(value, argument.name));
+        }
+    };
+    if (index === 0) {
+        (definition.subcommands || []).forEach(sub => push(sub.sub, localizeSub(sub.sub, sub.description)));
+        pushEnum(definition.args?.[0]);
+        return options;
     }
+    // Positional completion after a subcommand: `/keymap set ctrl+k <action>`.
+    const subName = String(words[0] || '').toLowerCase();
+    const subcommand = (definition.subcommands || []).find(sub => sub.sub.toLowerCase() === subName);
+    pushEnum(subcommand?.args?.[index - 1] ?? definition.args?.[index]);
     return options;
 }
 
@@ -189,7 +211,7 @@ export function resolveAgentConsoleInputSuggestions(
     if (!active?.token) {
         const argument = getAgentConsoleArgumentRange(input, cursor);
         return argument
-            ? resolveAgentConsoleArgumentCandidates(argument.command, argument.token, labels)
+            ? resolveAgentConsoleArgumentCandidates(argument.command, argument.token, labels, argument.index, argument.words)
             : [];
     }
     if (active.token.startsWith('/')) {

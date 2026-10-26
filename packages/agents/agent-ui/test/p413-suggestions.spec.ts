@@ -242,6 +242,43 @@ export class MidCursorCompletionTest {
     }
 }
 
+/** Positional argument completion after a subcommand. */
+@Suite('multi-word argument completion')
+export class MultiWordArgumentCompletionTest {
+    @Test('the range reports the word index and completed words')
+    async rangeIndex() {
+        const input = '/keymap set ctrl+k co';
+        const range = getAgentConsoleArgumentRange(input, input.length);
+        expect(range?.index).toEqual(2);
+        expect(range?.words).toEqual(['set', 'ctrl+k']);
+        expect(range?.start).toEqual('/keymap set ctrl+k '.length);
+        expect(range?.token).toEqual('co');
+    }
+
+    @Test('the action word completes from the keymap actions')
+    async actionCandidates() {
+        const candidates = resolveAgentConsoleArgumentCandidates('/keymap', 'co', {}, 2, ['set', 'ctrl+k']);
+        const values = candidates.map(option => option.value);
+        expect(values).toContain('copy');
+        expect(values).toContain('compact');
+        expect(values).not.toContain('ctrl+k');
+    }
+
+    @Test('the trailing context completes from the keymap contexts')
+    async contextCandidates() {
+        const setCandidates = resolveAgentConsoleArgumentCandidates('/keymap', 'p', {}, 3, ['set', 'ctrl+k', 'copy']);
+        expect(setCandidates.map(option => option.value)).toEqual(['pager']);
+        const unsetCandidates = resolveAgentConsoleArgumentCandidates('/keymap', 'p', {}, 2, ['unset', 'ctrl+k']);
+        expect(unsetCandidates.map(option => option.value)).toEqual(['pager']);
+    }
+
+    @Test('commands without subcommands use their positional schema')
+    async definitionIndexFallback() {
+        const candidates = resolveAgentConsoleArgumentCandidates('/experimental', 'o', {}, 1, ['feature']);
+        expect(candidates.map(option => option.value)).toEqual(['on', 'off']);
+    }
+}
+
 /** A typo must not execute an unrelated command. */
 @Suite('unknown slash commands do not offer unrelated commands')
 export class UnknownCommandSuggestionTest {
@@ -412,7 +449,7 @@ export class SuggestionCompletionEdgeTest {
     @Test('arguments complete from subcommands and enum values')
     async argumentCompletion() {
         const range = getAgentConsoleArgumentRange('/delegation l', '/delegation l'.length);
-        expect(range).toEqual({ start: '/delegation '.length, end: '/delegation l'.length, token: 'l', command: '/delegation' });
+        expect(range).toEqual({ start: '/delegation '.length, end: '/delegation l'.length, token: 'l', command: '/delegation', index: 0, words: [] });
         expect(getAgentConsoleArgumentRange('/layout ', '/layout '.length)).toBeUndefined();
         expect(getAgentConsoleArgumentRange('/layout', '/layout'.length)).toBeUndefined();
 

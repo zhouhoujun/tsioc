@@ -1,8 +1,8 @@
 /**
  * Single source of truth for agent console slash commands.
- * This module is intentionally dependency-free (no runtime imports), so it can
- * be imported from SessionState, Component, Suggestions and CommandHandlers
- * without creating any module cycle.
+ * This module is intentionally dependency-free (no runtime imports beyond the
+ * pure keymap value constants), so it can be imported from SessionState,
+ * Component, Suggestions and CommandHandlers without creating any module cycle.
  *
  * The registry drives:
  * - command hints (palette + completion candidates)
@@ -11,6 +11,7 @@
  * - smart-run decision (needsArgs -> inject & wait, else submit & execute)
  * - grouped /help options
  */
+import { AGENT_CONSOLE_GLOBAL_ACTIONS, AGENT_CONSOLE_KEYMAP_CONTEXTS } from './AgentConsoleKeymapValues';
 
 export type AgentConsoleCommandGroupKey =
     | 'core'
@@ -47,6 +48,8 @@ export const AGENT_CONSOLE_COMMAND_GROUP_ORDER: AgentConsoleCommandGroupKey[] = 
 export interface AgentConsoleCommandSubcommand {
     sub: string;
     description: string;
+    /** Positional arguments after the subcommand (multi-word completion). */
+    args?: AgentConsoleCommandArgument[];
 }
 
 export type AgentConsoleCommandArgumentType = 'string' | 'enum';
@@ -115,11 +118,17 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
         group: 'core',
         args: [{ name: 'arg', variadic: true }],
         subcommands: [
-            { sub: 'list', description: 'list bindings for a context' },
-            { sub: 'set', description: 'set <key> <action> [context]' },
-            { sub: 'unset', description: 'unset <key> [context]' },
+            { sub: 'list', description: 'list bindings for a context', args: [{ name: 'context', type: 'enum', values: [...AGENT_CONSOLE_KEYMAP_CONTEXTS] }] },
+            {
+                sub: 'set', description: 'set <key> <action> [context]', args: [
+                    { name: 'key' },
+                    { name: 'action', type: 'enum', values: [...AGENT_CONSOLE_GLOBAL_ACTIONS] },
+                    { name: 'context', type: 'enum', values: [...AGENT_CONSOLE_KEYMAP_CONTEXTS] }
+                ]
+            },
+            { sub: 'unset', description: 'unset <key> [context]', args: [{ name: 'key' }, { name: 'context', type: 'enum', values: [...AGENT_CONSOLE_KEYMAP_CONTEXTS] }] },
             { sub: 'reset', description: 'reset bindings' },
-            { sub: 'record', description: 'record <action> to capture the next key' }
+            { sub: 'record', description: 'record <action> to capture the next key', args: [{ name: 'action', type: 'enum', values: [...AGENT_CONSOLE_GLOBAL_ACTIONS] }] }
         ]
     },
     { name: '/vim', description: 'toggle vim-style normal/insert input mode', group: 'core', args: [{ name: 'mode', type: 'enum', values: ['on', 'off', '1', '0', 'true', 'false'] }] },
