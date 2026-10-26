@@ -117,7 +117,7 @@ const tscOutputAliasPlugin: esbuild.Plugin = {
 const nodeBuiltinStubPlugin: esbuild.Plugin = {
     name: 'node-builtin-stub',
     setup(build) {
-        const stubRegex = new RegExp(`^(fs|fs/promises|stream|crypto|zlib|querystring|path|os|url|tty|util|events|net|http|https|dns|assert|child_process|vm|worker_threads|async_hooks|diagnostics_channel|sqlite|string_decoder|timers|punycode|node:path|node:os|node:url|node:util|node:events|node:stream|node:fs|node:fs/promises|node:crypto|node:net|node:http|node:https|node:assert|node:zlib|node:querystring|node:tty|node:dns|node:child_process|node:vm|node:worker_threads|node:async_hooks|node:diagnostics_channel|node:sqlite|node:string_decoder|node:timers|node:punycode|tls|node:tls)$`);
+        const stubRegex = new RegExp(`^(fs|fs/promises|dns/promises|node:dns/promises|stream|crypto|zlib|querystring|path|os|url|tty|util|events|net|http|https|dns|assert|child_process|vm|worker_threads|async_hooks|diagnostics_channel|sqlite|string_decoder|timers|punycode|node:path|node:os|node:url|node:util|node:events|node:stream|node:fs|node:fs/promises|node:crypto|node:net|node:http|node:https|node:assert|node:zlib|node:querystring|node:tty|node:dns|node:child_process|node:vm|node:worker_threads|node:async_hooks|node:diagnostics_channel|node:sqlite|node:string_decoder|node:timers|node:punycode|tls|node:tls)$`);
         build.onResolve({ filter: stubRegex }, (): ResolveResult => {
             return { path: 'node-builtin-stub', namespace: 'node-builtin-stub' };
         });
