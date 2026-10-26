@@ -2123,3 +2123,19 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 把 `/multiline` `/send` 抽到 `AgentConsoleMultilineCommands.ts`（`AgentConsoleCommandHandlers` 行数 1175 → 1160，同提交下调 baseline），facade 不变。
 - 测试：新增 `multiline-draft.spec.ts` 4 例（开关提示、行累积+清空+不污染历史、`/send` 合并提交单条 prompt、`/cancel` 丢弃），**RED 4/4 失败** → 修复后通过；i18n 计数锁 584 → 588。
 - 真实 TUI：`/multiline` 后逐行输入 → 分别提示 `Multiline draft +1 line(s)…` / `+2 line(s)…` 且 composer 每次清空；↑ 不再召回这些行；`/send` 只提交一条两行 prompt（`› 只回答一个字：好` / `不要解释`），助手回 `好`。
+
+## 2026-10-23 TUI 里所有 `notify()` 提示都看不见（viewport 布局把状态面板滚出屏幕）
+- 现象（真实 TUI + pyte 屏幕回放）：`/stash list`、`/attach`、`/multiline`、`/theme nope-xyz` 等命令执行后**屏幕上没有任何提示**；`/model xxx` 之所以"有提示"，其实是命令回显 `$ /model … failed: …`，不是 notice。
+- 定位：
+  - `state.setNotice()` 确实被调用（临时 `TSDI_NOTICE_LOG` 打点验证：`[NOTICE] "Stashed drafts: …"`），状态面板 `statusLines` 也被求值且 `shouldShow=true notice="…"`；
+  - 但 `agent-console-status-panel` 在模板里**没有 `renderRegion`**，于是落在 transcript 区域；默认 `viewport` 布局把 transcript 当滚动窗口并按底部对齐 → 状态面板（在 transcript 顶部）被滚出可视区；
+  - TUI 的 `showStatusline:false` 让状态面板只在有 notice/approvals 时出现，因此平时看不见、有提示时也看不见；`stream` 布局下它会随历史滚走。
+- 修复：把 `agent-console-status-panel` 移到模板尾部（`agent-console-input-panel` 之前）并加 `renderRegion="footer"`，与输入面板同属固定 footer 区；DOM 渲染不受 `renderRegion` 影响，状态线随之移到输入框上方（与 TUI 一致）。facade 行数不变（只移动一行）。
+- 测试：`console-renderer.spec.ts` 新增 1 例（渲染 24 条 transcript + notice，断言 notice 行落在 `footer` region 内）；**RED**：回退模板后 notice 在 row 9、footer 从 row 82 开始 → 失败；修复后通过。agent-ui **1761 passing**。
+- 真实 TUI（pyte 回放）：`/stash list` → `Stashed drafts: default-2 (17 chars).`；`/attach` → `No pending attachments.`；`/multiline` → `Multiline draft mode on. …`；`/theme nope-xyz` → `Unknown theme "nope-xyz". Available: …`，都显示在输入框正上方。
+
+## 2026-10-23 `/attach` 失败原因在中文环境仍是英文
+- 现象：zh-CN 下 `/attach <不支持的后缀>` 提示 `附加失败：Unsupported attachment format for '…'.`（外层已本地化，内层原因英文）；`/attach` 用法错误同理。
+- 根因：`resolveAttachmentTargetPath` / `loadPendingAttachment` 内部用 `formatAgentUiNotice(undefined, …)` 抛错，翻译器被写死为 `undefined`，只能命中英文模板。
+- 修复：两个函数增加可选 `translator` 参数（保持旧调用兼容），`runAttachCommand` 传入 `ctx.translator`。
+- 测试：新增 `attach-command.spec.ts` 4 例（zh 不支持格式 / en 对照 / 缺文件时外层+内层都本地化 / 不传 translator 仍可用）；**RED**：修复前 zh 用例拿到英文原因。

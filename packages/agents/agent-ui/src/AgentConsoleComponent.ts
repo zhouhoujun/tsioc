@@ -272,7 +272,6 @@ interface AgentConsoleQueuedPrompt {
     template: `
     <div class="agent-console">
         <agent-console-brand-panel renderRegion="transcript" v-show="!showMessageDetailPanel"></agent-console-brand-panel>
-        <agent-console-status-panel v-show="showStatusPanel && !showMessageDetailPanel"></agent-console-status-panel>
         <agent-console-sessions-panel v-show="showSessionsPanel && !showMessageDetailPanel"></agent-console-sessions-panel>
         <agent-console-approvals-panel v-show="showApprovalsPanel && !showMessageDetailPanel"></agent-console-approvals-panel>
         <agent-console-messages-panel renderRegion="transcript" v-show="!showMessageDetailPanel"></agent-console-messages-panel>
@@ -287,6 +286,7 @@ interface AgentConsoleQueuedPrompt {
         <agent-console-working-panel v-show="showWorkingPanel && !showMessageDetailPanel"></agent-console-working-panel>
         <agent-console-tool-runs-panel v-show="showToolRunsPanel && !showMessageDetailPanel"></agent-console-tool-runs-panel>
         <agent-console-pending-question-panel v-show="showPendingQuestionPanel"></agent-console-pending-question-panel>
+        <agent-console-status-panel renderRegion="footer" v-show="showStatusPanel && !showMessageDetailPanel"></agent-console-status-panel>
         <agent-console-input-panel renderRegion="footer"></agent-console-input-panel>
         <agent-console-select-panel v-show="showSelectPanel"></agent-console-select-panel>
         <agent-console-which-key-panel v-show="showWhichKeyPanel"></agent-console-which-key-panel>

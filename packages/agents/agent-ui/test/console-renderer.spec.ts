@@ -1686,6 +1686,40 @@ export class AgentConsoleTuiRendererTest {
         }
     }
 
+
+    @Test('a notice lands in the footer region so the viewport layout keeps it visible')
+    async noticeRendersInsideFooterRegion() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const componentFactory = tuiCtx.get(ComponentFactory);
+            const consoleRef = componentFactory.create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const renderer = tuiCtx.get(TuiRenderer);
+            const state = consoleRef.instance.sessionState as any;
+            state.setMessages(Array.from({ length: 24 }, (_value, index) => ({
+                id: `m${index}`,
+                role: 'user',
+                content: `transcript row ${index}`,
+                createdAt: index
+            })));
+            state.setNotice('Draft stashed as "default".');
+            await Promise.resolve();
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            const layout = renderer.renderToTuiLayout(consoleRef.hostView.rootNodes, { width: 72 });
+            const footer = layout.regions.find(region => region.id === 'footer');
+            expect(footer).toBeTruthy();
+            const noticeRow = layout.lines.findIndex(line => line.includes('Draft stashed as'));
+            expect(noticeRow).toBeGreaterThanOrEqual(0);
+            expect(noticeRow).toBeGreaterThanOrEqual(footer!.startRow);
+            expect(noticeRow).toBeLessThan(footer!.endRow);
+        } finally {
+            await tuiCtx.close();
+        }
+    }
+
     @Test('renders live input content in root tui tree')
     async renderLiveInputInRootTree() {
         const tuiCtx = await Application.run(AgentModule, {

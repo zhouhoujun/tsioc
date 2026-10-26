@@ -198,11 +198,12 @@ export function resolvePathDirectory(targetPath: string, fileAdapter: FileAdapte
 export function resolveAttachmentTargetPath(
     targetPath: string,
     workspace: string,
-    fileAdapter: FileAdapter
+    fileAdapter: FileAdapter,
+    translator?: AgentUiTranslator | null
 ): string {
     const trimmed = String(targetPath || '').trim();
     if (!trimmed) {
-        throw new Error(formatAgentUiNotice(undefined, 'attachUsage'));
+        throw new Error(formatAgentUiNotice(translator, 'attachUsage'));
     }
     if (fileAdapter.isAbsolute(trimmed)) {
         return fileAdapter.normalize(trimmed);
@@ -272,7 +273,7 @@ export async function runAttachCommand(
         return true;
     }
     try {
-        const attachment = await loadPendingAttachment(trimmed, ctx.workspace, fileAdapter);
+        const attachment = await loadPendingAttachment(trimmed, ctx.workspace, fileAdapter, ctx.translator);
         ctx.state.setPendingAttachments([
             ...ctx.state.pendingAttachments.filter(item => item.path !== attachment.path),
             attachment
@@ -288,9 +289,10 @@ export async function runAttachCommand(
 export async function loadPendingAttachment(
     targetPath: string,
     workspace: string,
-    fileAdapter: FileAdapter
+    fileAdapter: FileAdapter,
+    translator?: AgentUiTranslator | null
 ): Promise<AgentConsolePendingAttachment> {
-    const absolutePath = resolveAttachmentTargetPath(targetPath, workspace, fileAdapter);
+    const absolutePath = resolveAttachmentTargetPath(targetPath, workspace, fileAdapter, translator);
     const imageMediaType = resolveImageMediaType(absolutePath);
     if (imageMediaType) {
         const bytes = await readFileBytes(absolutePath, fileAdapter);
@@ -315,7 +317,7 @@ export async function loadPendingAttachment(
             dataUrl: `data:${docMediaType};base64,${encodeBase64(bytes)}`
         };
     }
-    throw new Error(formatAgentUiNotice(undefined, 'unsupportedAttachmentFormat', { targetPath }));
+    throw new Error(formatAgentUiNotice(translator, 'unsupportedAttachmentFormat', { targetPath }));
 }
 
 export function resolveImageMediaType(filePath: string): string | undefined {
