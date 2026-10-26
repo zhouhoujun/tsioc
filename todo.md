@@ -2012,3 +2012,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `openSession` 自身 0.43s。
 - 结论：切换 ~1.7–3.2 CPU 秒（静默基线 0% 下实测）。下一步若要优化，应优先「会话打开期间合并状态写入（一次性 notify）」与「减少 openSession 的查询次数」，两者都需要真实路径复测后才可保留。
 - 备注：测量期间发现 `--session` 启动若 bundle 过期会回退 ts-node（>60s 无输出），容易被误判为卡死；测量前务必确认 bundle 新鲜（`resolveBundle` → `bundle`）。
+
+### 补充 2：空会话切换的 profile（固定开销来源）
+- 空→空切换（静默基线后采样 2s）：总 4.41s、idle 0，其中 TypeORM/sql.js 查询管线 ≈2.7s（`executeEntitiesAndRawResults`/`getRawAndEntities`/`loadRawResults`/`query`），`getMany`/`getAll` 1.3s、`find`/`findOne` 1.2–1.4s；`getOwner`/`getOwnerPrincipalId`/`authorize` 0.72s、`listOwned` 0.53s；`openSession` 0.66s；另有 1.5s 落在 bundle 内匿名帧（需 sourcemap 才能归因）。
+- 说明：早前“批量 owner 查询无收益”很可能因为复用了 `listSessionFacts`（内含按 sessionId/sectionId 的 `COUNT(*) GROUP BY` 扫描），把省下的单行查询又花在聚合上；若再做，应使用**只查 owner 的批量查询**并用同一静默基线复测。
+- 目前判断：单次切换的固定查询开销是主因，优化需要 sourcemap/更细的 RPC 计时来归因那 1.5s 匿名帧，属“专门性能会话”级别，不宜在没有归因的情况下改核心响应式/ORM 代码。
