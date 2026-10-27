@@ -2212,3 +2212,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **测试**：`panel-i18n.spec.ts` 55 → **56 条**（zh `消息 2/2 助手  |  行 1-3 / 5  |  列 1/16`、`消息 1/2 用户 …`；en `message 1/2 user …`；未知角色 `mystery` 原样保留）。
 - **真实 TUI（zh-CN）复核**：`/messages` → 详情头部 `消息 1/2 用户  |  行 1-1 / 1  |  列 1/16`。
 - **门禁**：agent-ui **1768 passing**（EXIT=0）；source-size、tsc、`git diff --check` 通过（完整 `agents-gate.sh` 本轮再次被中断，已通过的前序阶段见日志；下轮补跑 gate + PTY）。
+
+## 2026-10-27 长会话里 `/sessions` 选择器（以及审批面板）看不见
+- 现象（真实 TUI，pyte 回放）：402 个 session 的长会话里 `/sessions` 只显示 `$ /sessions completed`，**列表完全不可见**；同一命令在新建的短会话里正常显示 `sessions 402 · 1/402`、分组列表。
+- 根因：模板里 `agent-console-sessions-panel` / `agent-console-approvals-panel` 位于 `messages` 面板**之前**且没有 `renderRegion`，因此属于 transcript 区域；默认 `viewport` 布局把 transcript 当底部对齐窗口，位于历史之前的这两个面板被滚出可视区。审批面板同理——长会话里**待审批请求也会看不见**。
+- 修复：把 sessions / approvals 面板移到 footer（`renderRegion="footer"`，紧邻状态栏与输入框），长会话中固定在输入框上方；DOM 端随模板顺序同样移到底部（对选择器/审批更合理）。facade 行数不变（移动两行 + 加属性）。
+- 测试：`console-renderer.spec.ts` 新增 1 例（24 条 transcript + 打开 sessions 面板，断言选择器行落在 footer 起始行之后）。**RED**：回退模板后选择器在 row 6、footer 从 row 80 开始。
+- 真实 TUI：长会话 `/sessions` → 显示 `sessions 402 · 1/402` + `up/down move   pg jump   enter switch   y copy   esc` + 分组列表；↑ 改变选中、Enter 成功切换（token 106.1K → 13.6K）。
+- 顺带核实（无缺陷）：`/goal create|list|link|complete` 全链路正常且重启后仍持久（DB `goal-mvpzc8no-jqj4wu|completed`）；`/compact audit-run` 真实压缩 multi1（71→14 条、14398→9663 tok、33%，DB 记录 74→75）。
+- 观察（未改）：`/compact <reason>` 的 reason 没有进入压缩历史（`metadata` 为空，只有 `CompactNowResult.reason` 回传），命令说明却宣传了 `[reason]`；另外 `/pin` 允许把已归档会话再次置顶（`pinned=1 & archived=1`）。

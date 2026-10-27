@@ -1720,6 +1720,46 @@ export class AgentConsoleTuiRendererTest {
         }
     }
 
+
+    @Test('the session picker lands in the footer region so a long transcript cannot hide it')
+    async sessionPickerRendersInsideFooterRegion() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const componentFactory = tuiCtx.get(ComponentFactory);
+            const consoleRef = componentFactory.create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const renderer = tuiCtx.get(TuiRenderer);
+            const state = consoleRef.instance.sessionState as any;
+            state.setMessages(Array.from({ length: 24 }, (_value, index) => ({
+                id: `m${index}`,
+                role: 'user',
+                content: `transcript row ${index}`,
+                createdAt: index
+            })));
+            state.setSessions([
+                { id: 'session-alpha', workspace: '/work/demo', messageCount: 3, createdAt: 1, updatedAt: 2 },
+                { id: 'session-beta', workspace: '/work/demo', messageCount: 4, createdAt: 3, updatedAt: 4 }
+            ]);
+            state.setSessionsFocused(true);
+            await Promise.resolve();
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            const layout = renderer.renderToTuiLayout(consoleRef.hostView.rootNodes, { width: 72 });
+            // Several panels share the footer region, so the boundary is the first
+            // footer row: everything from there down stays fixed in viewport layout.
+            const footerRows = layout.regions.filter(region => region.id === 'footer').map(region => region.startRow);
+            expect(footerRows.length > 0).toEqual(true);
+            const footerStart = Math.min(...footerRows);
+            const pickerRow = layout.lines.findIndex(line => line.includes('session-alpha') || line.includes('session-beta'));
+            expect(pickerRow).toBeGreaterThanOrEqual(0);
+            expect(pickerRow).toBeGreaterThanOrEqual(footerStart);
+        } finally {
+            await tuiCtx.close();
+        }
+    }
+
     @Test('renders live input content in root tui tree')
     async renderLiveInputInRootTree() {
         const tuiCtx = await Application.run(AgentModule, {
