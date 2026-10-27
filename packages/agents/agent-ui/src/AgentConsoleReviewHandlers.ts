@@ -328,7 +328,8 @@ export async function fetchGitDiffReview(
         // RPC below then surfaces the precise error.
     }
     try {
-        const result = await ctx.appRpc.request('review.diff', { sessionId, base });
+        const workdir = String(ctx.state.workspace || '').trim();
+        const result = await ctx.appRpc.request('review.diff', { sessionId, base, ...(workdir ? { workdir } : {}) });
         if (!result || typeof result !== 'object' || !result.review) {
             ctx.notify(formatAgentUiNotice(ctx.translator, 'failedGatherGit', { base: base }));
             return null;

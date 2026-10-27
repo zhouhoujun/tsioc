@@ -2381,3 +2381,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   2. **诚实降级**：注册表为空时提示"当前版本没有可用的实验特性"，不再接受任意名字；
   3. 若确实计划扩展，保留命令但补上至少一个真实消费者。
 - 影响面：仅该命令；不影响其它路径。
+
+## 2026-10-27 `/review run|diff` 仍用旧 workspace（`/review findings` 端到端验证时发现）
+- 复现：`/cd /tmp/opencode/gitrepo`（带未提交改动）→ `/diff` 正确显示 2 文件；但 `/review run` → `'/home/zhouyou/workspace/sleep-mlt' is not a Git repository.`
+- 根因：`/cd` 补丁只给 `openWorktreeDiff` 加了 `workdir`；`fetchGitDiffReview`（`/review diff`、`/review run` 共用）仍只发 `{sessionId, base}`，网关回退到自己的 workspace。
+- 修复：`fetchGitDiffReview` 带上 `workdir: ctx.state.workspace`（空则不带）。
+- 测试：`review-multiline-output.spec.ts` 新增 1 例（`review.diff` 请求带 workdir），**RED** 后修复。
+- 真实 TUI（修复后）：
+  - `/review run` → 打开评审面板（`[1/1] aggregate … 2 files changed`、`src/sum.js (+2 -1)`、`src/extra.js (+3 -0)`）；
+  - `/review findings` → `[review-34250dd0-…] HEAD · 2 files · 3 findings · 291f31abeb8d`（**DI 修复前这里永远显示 No review runs saved**）；
+  - `/review show <id>` → 浮层列出 3 条 finding + 各自的 fix（`sum omits the first value`、`average references sum without importing it`、`average returns NaN for an empty array`），审计库 +1 条。

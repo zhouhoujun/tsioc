@@ -112,4 +112,21 @@ export class ReviewMultiLineOutputTest {
         expect(notices[0]).toContain('fix first');
         expect(notices[0]).toContain('src/b.ts');
     }
+
+    @Test('/review run sends the active workspace so the diff follows /cd')
+    async reviewRunCarriesWorkspace() {
+        const { fetchGitDiffReview } = require('../src/AgentConsoleReviewHandlers');
+        const calls: Array<{ method: string; params: any }> = [];
+        const ctx: any = {
+            translator: null,
+            notify: () => undefined,
+            state: { sessionId: 'session-1', workspace: '/ws/custom' },
+            activateToolForSession: async () => undefined,
+            appRpc: { request: async (method: string, params: any) => { calls.push({ method, params }); return { review: { files: [] } }; } }
+        };
+        await fetchGitDiffReview(ctx, 'session-1', 'HEAD');
+        expect(calls.length).toEqual(1);
+        expect(calls[0].method).toEqual('review.diff');
+        expect(calls[0].params.workdir).toEqual('/ws/custom');
+    }
 }
