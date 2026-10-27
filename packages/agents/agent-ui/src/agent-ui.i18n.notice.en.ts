@@ -437,6 +437,8 @@ export const AGENT_UI_NOTICE_EN: NestedMessages = {
   securityLevelSet: 'Security level: {level}',
   securityLevelCurrent: 'security level: {level}',
   securityLevelTitle: 'Security level',
+  configurationReloaded: 'Configuration reloaded from workspace settings.',
+  restartUnavailable: 'Restart is unavailable in this host.',
   feedbackPackagingDiagnostics: 'Packaging diagnostics for feedback:',
   feedbackStep1: '1. Run /debug-config and include the output.',
   feedbackStep2: '2. Include the session transcript (messages panel or /export).',
@@ -511,6 +513,7 @@ export const AGENT_UI_NOTICE_EN: NestedMessages = {
 
   backgroundTasksTitle: 'Background tasks ({filter}):',
   backgroundTaskLine: '{status}{meta} {id} [session {sessionId}] - {goal}',
+  renameUsage: 'Usage: /rename <name>',
   sessionTitled: 'Session titled "{title}".',
   sessionTitleCleared: 'Session title cleared.',
   snapshotCreatedOutput: 'Snapshot created: {id}',

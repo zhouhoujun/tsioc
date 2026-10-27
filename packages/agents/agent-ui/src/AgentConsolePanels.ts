@@ -6,6 +6,7 @@ import { formatAgentUiLabel, formatAgentKeymapActionLabel, formatAgentPanelLabel
 import { formatAgentConsoleInputBadges } from './AgentConsoleInputBadges';
 import { formatAgentMessageDetailSummary } from './AgentConsoleMessageDetailMeta';
 import { formatScheduledTaskDetailLines } from './AgentConsoleScheduledTaskFormat';
+import { formatSessionAge, formatSessionHint } from './AgentConsoleFormatters';
 import { formatReviewHeaderMeta, formatReviewSelectionMeta, formatReviewStatsMeta } from './AgentConsoleReviewPanelFormat';
 import { resolveMessageRowOffset } from './AgentConsoleTranscriptLayout';
 import { AgentMessage, basenameAgentPath, ScheduledAgentTask } from '@tsdi/agent';
@@ -756,7 +757,6 @@ export class AgentConsoleWorkingPanelComponent {
         return this.translator?.translate('agent.turn.interruptHint') || 'esc to interrupt';
     }
 
-
     protected get hasWorkingState(): boolean {
         return this.state.status === 'running' || this.state.status === 'reasoning';
     }
@@ -1067,7 +1067,7 @@ export class AgentConsoleSessionsPanelComponent {
             const pinned = session.pinned ? ' 📌' : '';
             rows.push({
                 id: session.id,
-                label: `${marker} ${workspacePrefix}${name}${current}${count}${pinned}`,
+                label: `${marker} ${workspacePrefix}${name}${formatSessionAge(session.updatedAt)}${current}${count}${pinned}`,
                 style: selected
                     ? this.activeThemeStyles.sessionsSelected
                     : this.activeThemeStyles.statusValue
@@ -1105,7 +1105,7 @@ export class AgentConsoleSessionsPanelComponent {
         if (!this.shouldShow || !this.sessions.length || !this.state.sessionsFocused) {
             return '';
         }
-        return this.state.consoleOptions.sessionHint;
+        return formatSessionHint(this.state.consoleOptions.sessionHint, this.state.navFilter.text);
     }
 
     get shouldShow(): boolean {

@@ -52,6 +52,8 @@ export interface AgentConsoleRunOptions {
 export interface AgentConsoleLaunchExtras {
     deps?: any[];
     persistCommandOutput?: boolean;
+    /** `/restart` relaunch hook supplied by the host process (the CLI spawns a fresh TUI). */
+    restart?: (sessionId: string) => void;
 }
 
 /**
@@ -183,6 +185,18 @@ export async function runAgentConsole(
             ...extraProviders
         ]
     });
+
+    if (extras.restart) {
+        try {
+            const bootstrapped = resolveBootstrappedConsole(ctx)?.sessionState
+                ?? (ctx?.get ? ctx.get(AgentConsoleSessionState) : undefined);
+            if (bootstrapped) {
+                bootstrapped.restartAction = extras.restart;
+            }
+        } catch {
+            // A host without a restart hook simply keeps `/restart` unavailable.
+        }
+    }
 
     if (extras.persistCommandOutput) {
         try {

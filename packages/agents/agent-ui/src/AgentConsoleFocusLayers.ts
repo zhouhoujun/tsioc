@@ -3,6 +3,7 @@ import type { AgentConsoleFocusLayer } from './AgentConsoleSessionState';
 import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import type { AgentConsoleTranscriptNavigationController } from './AgentConsoleTranscriptNavigation';
 import { AgentConsoleOverlayController } from './AgentConsoleOverlay';
+import { handleSessionsKeyView } from './AgentConsoleSessionPanelKeys';
 
 /**
  * Layers that take keyboard input away from the composer. `question` is
@@ -115,8 +116,8 @@ export abstract class AgentConsoleFocusLayers {
         const normalized = String(rawText || '').trim().toLowerCase();
         switch (normalized) {
             case 'y': return 'copy';
-            case 'a': return 'approve';
-            case 'd': return 'deny';
+            case 'a': return this.state.sessionsFocused ? normalized : 'approve';
+            case 'd': return this.state.sessionsFocused ? normalized : 'deny';
             default: return normalized;
         }
     }
@@ -217,6 +218,15 @@ export abstract class AgentConsoleFocusLayers {
             default:
                 return false;
         }
+    }
+
+    handleSessionsKey(
+        normalized: string,
+        transcriptNavigation: AgentConsoleTranscriptNavigationController
+    ): Promise<boolean | undefined> {
+        return handleSessionsKeyView(this.state, normalized, transcriptNavigation, {
+            dismiss: (navigation) => this.dismiss(navigation)
+        });
     }
 
     handleTextOverlayKey(

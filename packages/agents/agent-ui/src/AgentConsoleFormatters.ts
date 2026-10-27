@@ -275,3 +275,33 @@ export function buildTurnDiagnosticsRecordOption(record: Record<string, any>, tr
         ].filter(Boolean).join('\n')
     };
 }
+
+/** Compact session age for list rows: ` · 3h`, ` · 2d`, or the ISO date for older sessions. */
+export function formatSessionAge(updatedAt?: number, now = Date.now()): string {
+    const time = Number(updatedAt || 0);
+    if (!time || time <= 0) {
+        return '';
+    }
+    const minutes = Math.floor(Math.max(0, now - time) / 60000);
+    if (minutes < 1) {
+        return ' · <1m';
+    }
+    if (minutes < 60) {
+        return ` · ${minutes}m`;
+    }
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) {
+        return ` · ${hours}h`;
+    }
+    const days = Math.floor(hours / 24);
+    if (days < 7) {
+        return ` · ${days}d`;
+    }
+    return ` · ${new Date(time).toISOString().slice(0, 10)}`;
+}
+
+/** Append the active session search term to the panel hint. */
+export function formatSessionHint(hint: string, filterText?: string): string {
+    const filter = String(filterText || '').trim();
+    return filter ? `${hint} · filter: ${filter}` : hint;
+}

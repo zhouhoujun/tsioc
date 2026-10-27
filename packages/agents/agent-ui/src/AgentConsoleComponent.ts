@@ -250,6 +250,7 @@ import {
 } from './AgentConsoleSettingsCommands';
 import { AgentConsoleRuntimeHost, runFastCommand, runRawModeCommand, runStatusCommand, runStatuslineCommand, runThemeCommand, runTitleCommand } from './AgentConsoleRuntimeCommands';
 import { runFeedbackCommandView } from './AgentConsoleFeedbackCommand';
+import { runReloadCommandView } from './AgentConsoleReloadCommand';
 import { runIdeCommand } from './AgentConsoleIdeCommands';
 import { collectHealthItems } from './AgentConsoleHealthView';
 import { searchSessionContent } from './AgentConsoleSessionSearch';
@@ -2047,6 +2048,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             runVimCommand: (a) => self.runVimCommand(a),
             runKeymapCommand: (a) => self.runKeymapCommand(a),
             runPermissionsCommand: (a) => self.runPermissionsCommand(a),
+            runReloadCommand: () => runReloadCommandView(() => self.restoreSettings(), (message: string) => self.notify(message), self.translator),
             runStatusCommand: () => self.runStatusCommand(),
             runCdCommand: (a) => self.runCdCommand(a),
             runGoalCommand: (a) => self.runGoalCommand(a),
@@ -2581,9 +2583,6 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             this.state.setTimelineMode(persisted.timelineMode ? 'compact' : 'off');
         }
         applyPersistedLayout(this.state, persisted, () => this.surfaceAccessor?.restartRendering?.());
-        if (persisted.securityLevel) {
-            this.state.securityLevel = persisted.securityLevel;
-        }
         if (persisted.thinkingLevel) {
             this.modelReasoningEffort = persisted.thinkingLevel;
             this.options.model = this.options.model || {};
@@ -2591,6 +2590,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         }
         if (typeof persisted.yoloMode === 'boolean') {
             await this.setYoloMode(persisted.yoloMode, false);
+        }
+        if (persisted.securityLevel) {
+            this.state.securityLevel = persisted.securityLevel;
         }
         // restore task & plan filter state
         if (persisted.taskFilter) {

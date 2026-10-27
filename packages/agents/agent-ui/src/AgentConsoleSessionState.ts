@@ -501,7 +501,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     editEscapeWindowMs: 400,
     summaryMaxLength: 80,
     toolRunSummaryMaxLength: 400,
-    sessionHint: 'up/down move   pg jump   enter switch   y copy   esc',
+    sessionHint: 'type to search   up/down move   pg jump   enter switch   y copy   esc',
     messagesHint: 'up/down move   pg jump   enter open   y copy   esc',
     toolsHint: 'up/down move   pg jump   enter activate   y copy   esc',
     toolRunsHint: 'up/down move   pg jump   y copy   esc',
@@ -587,7 +587,7 @@ const ZH_CONSOLE_HINTS = {
     selectHint: '1-9 选择   上/下 移动   回车 确认   q 取消',
     suggestionsHint: '回车 执行   tab 补全   上/下 选择',
     approvalsHint: 'a 允许   d 拒绝   A 本会话始终允许   y 复制   上/下 移动   esc 关闭',
-    sessionHint: '上/下 移动   pg 跳转   回车 切换   y 复制   esc',
+    sessionHint: '输入以搜索   上/下 移动   pg 跳转   回车 切换   y 复制   esc',
     messagesHint: '上/下 移动   pg 跳转   回车 打开   y 复制   esc',
     toolsHint: '上/下 移动   pg 跳转   回车 激活   y 复制   esc',
     toolRunsHint: '上/下 移动   pg 跳转   y 复制   esc',
@@ -715,7 +715,7 @@ export class AgentConsoleSessionState {
     modelProfile = '';
     oneShotModelProfile = '';
     planMode = false;
-    yoloMode = false; securityLevel: import('./AgentConsolePolicyCommands').AgentConsoleSecurityLevel | '' = '';
+    yoloMode = false; securityLevel: import('./AgentConsolePolicyCommands').AgentConsoleSecurityLevel | '' = ''; restartAction?: (sessionId: string) => void;
     workspace = '';
     statusline: AgentConsoleStatuslineField[] = [...defaultAgentConsoleStatusline];
     titleFields: AgentConsoleTitleField[] = [...defaultAgentConsoleTitle];
@@ -2538,7 +2538,7 @@ export class AgentConsoleSessionState {
         });
     }
 
-    protected clampSessionSelectionToFilter(): void {
+    clampSessionSelectionToFilter(): void {
         const list = this.navFilteredSessions;
         if (!list.length) {
             this.selectedSessionId = '';
@@ -2672,7 +2672,7 @@ export class AgentConsoleSessionState {
         return segments[segments.length - 1] || text;
     }
 
-    protected buildSelectedSessionCopyText(): string {
+    buildSelectedSessionCopyText(): string {
         const selected = this.selectedSession;
         if (!selected) {
             return '';
@@ -6271,41 +6271,7 @@ export class AgentConsoleSessionState {
             }
         }
         if (this.sessionsFocused) {
-            if (this.focusLayers.isDismissKey(normalized)) {
-                await this.focusLayers.dismiss(transcriptNavigationController);
-                return true;
-            }
-            switch (normalized) {
-                case 'copy':
-                    await this.copyFocusedTextAction?.(this.buildSelectedSessionCopyText(), this.translateLabel('agent.notice.copyLabelSession', undefined, 'session'));
-                    return true;
-                case 'down':
-                    this.moveSessionSelection(1);
-                    return true;
-                case 'up':
-                    this.moveSessionSelection(-1);
-                    return true;
-                case 'pageup':
-                    this.moveSessionSelectionPage(-1);
-                    return true;
-                case 'pagedown':
-                    this.moveSessionSelectionPage(1);
-                    return true;
-                case 'home':
-                    this.selectFirstSession();
-                    return true;
-                case 'end':
-                    this.selectLastSession();
-                    return true;
-                case 'enter':
-                    if (this.selectedSession?.id) {
-                        await this.activateSelectedSessionAction?.(this.selectedSession.id);
-                        return true;
-                    }
-                    return false;
-                default:
-                    return false;
-            }
+            return (await this.focusLayers.handleSessionsKey(normalized, transcriptNavigationController)) ?? false;
         }
         return false;
     }

@@ -2456,3 +2456,14 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 持久化：`settings.json` 的 `securityLevel`；`restoreSettings` 读取，会话打开后 `applySecurityLevel(..., { sandbox: true })` 应用沙箱；`/yolo` 切换时同步 ask/auto，避免状态与权限不符。
 - 测试：`security-levels.spec.ts` 9 例（别名、四级效果、启动恢复无副作用、选择器、settings 往返）；`/permissions` 参数契约更新；agent-ui 1810 通过。
 - 真实 TUI（pyte，隔离 root）15/15：选择器列出四级；选 Approve for me → 通知 + `auto-approve` 徽标 + 持久化 `auto`；Full Access → 状态 `sandbox off`；Read Only → plan 徽标；重启后恢复 `auto` 与自动批准；最后恢复 `ask`。
+
+## opencode 对齐：/rename、/reload、/restart、/sessions 选择器（2026-10）
+
+- `/rename <name>`：会话重命名正式入口；`/title` 转隐藏别名，保留窗口标题字段 `list|set|unset`；空参数给用法提示。`/reload`：重读 workspace 设置（含布局/安全级别），外部修改 `settings.json` 后即时生效。`/restart`：关闭旧 app、恢复终端、**进程内**重入 CLI 启动函数并沿用当前 session（spawn 子进程会与 shell 抢 TTY / 收 SIGHUP）；无钩子时提示不可用。
+- `/sessions`：默认当前项目/workspace 作用域；行显示 `标题 · 3h`（`<1m/m/h/d`/日期）并按时间倒序；输入即搜索（标题/id/workspace），DEL/Backspace 编辑，Esc 先清搜索再关闭，`/sessions <query>` 预过滤。
+- 真实路径修复：
+  - 列表键盘映射把 `a`/`d` 当审批快捷键 → 搜索词变 `cht`；改为 sessions 聚焦时按文本处理（`y` 仍复制）。
+  - 终端把 DEL 当文本递上来 → 过滤串被拼入 `\x7f`，0 结果看起来像面板关闭；sessions 处理器按退格处理（与 `/outputs` 过滤一致）。
+- 测试：`rename-reload-restart.spec.ts` 3 例、`session-picker.spec.ts` 5 例（含 DEL、项目作用域、时间格式）；agent-ui 1822、agent-cli 118 通过。
+- 真实 TUI（pyte，隔离 root）：parity 7/7（rename/usage/title、reload 生效、restart 后 session 不变）；sessions 8/8（时间、输入搜索、退格、Esc 两级、`/sessions <query>`）。
+- 记录：`/restart` 不能 spawn 子进程（真实 shell 下 shell 会重新抢终端）；必须同一进程内重启。

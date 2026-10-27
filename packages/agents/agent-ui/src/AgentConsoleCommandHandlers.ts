@@ -21,6 +21,7 @@ import type { NavFilter, NavSelection, SessionSearchMatch } from '@tsdi/agent';
 import { AGENT_CONSOLE_OVERLAY_HINTS } from './AgentConsoleOverlayPresenter';
 import type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
 import { runSnapshotsCommand, type SnapshotCommandHost } from './AgentConsoleSnapshotCommands';
+import { handleRename, handleRestart, handleTitle } from './AgentConsoleSessionRenameCommands';
 import { mapTuiLayoutArg } from './AgentConsoleSettingsCommands';
 export type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
 import { formatAgentUiDate, formatAgentUiDateTime, formatAgentUiNotice, formatAgentPanelLabel as panelLabel, type AgentUiTranslator } from './agent-ui.i18n';
@@ -285,8 +286,12 @@ async function handleNew(ctx: CommandHandlerContext, args: string, _resolved: { 
 
 // ── /sessions ────────────────────────────────────────────────────────────────
 
-async function handleSessions(ctx: CommandHandlerContext, _args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
+async function handleSessions(ctx: CommandHandlerContext, args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
     await ctx.refreshSessions();
+    const sessionQuery = String(args || '').trim();
+    const currentSession = ctx.state.sessions.find(item => item.current);
+    const projectScope = currentSession?.projectKey || currentSession?.projectId;
+    ctx.state.setNavFilter({ ...(sessionQuery ? { text: sessionQuery } : {}), ...(projectScope ? { projectId: projectScope } : {}) });
     if (!ctx.state.sessions.length) {
         ctx.notify(formatAgentUiNotice(ctx.translator, 'sessionsAvailable'));
         return true;
@@ -350,28 +355,6 @@ async function handlePinUnpin(ctx: CommandHandlerContext, _args: string, resolve
     await ctx.sessionService.setSessionPinned(pinSessionId, pin);
     await ctx.refreshSessions();
     ctx.notify(pin ? formatAgentUiNotice(ctx.translator, 'pinnedSession', { sessionId: pinSessionId }) : formatAgentUiNotice(ctx.translator, 'unpinnedSession', { sessionId: pinSessionId }));
-    return true;
-}
-
-// ── /title ───────────────────────────────────────────────────────────────────
-
-async function handleTitle(ctx: CommandHandlerContext, args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
-    const titleText = String(args || '').trim();
-    const titleVerb = titleText.split(/\s+/)[0]?.toLowerCase();
-    if (!titleText || titleVerb === 'list' || titleVerb === 'set' || titleVerb === 'unset') {
-        return ctx.runTitleCommand(titleText);
-    }
-    const titleSessionId = ctx.state.sessionId;
-    if (!titleSessionId || !ctx.sessionService) {
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'currentSessionTitle'));
-        return true;
-    }
-    const title = titleText;
-    await ctx.sessionService.setSessionTitle(titleSessionId, title || undefined);
-    await ctx.refreshSessions();
-    ctx.state.setTitle(title);
-    ctx.updateTerminalTitle();
-    ctx.pushCommandOutput('/title', formatAgentUiNotice(ctx.translator, title ? 'sessionTitled' : 'sessionTitleCleared', title ? { title: title } : undefined));
     return true;
 }
 
@@ -1135,7 +1118,10 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/side': (ctx, args, meta) => handleForkSide(ctx, canonicalArgsOf(meta, args), meta),
     '/pin': handlePinUnpin,
     '/unpin': handlePinUnpin,
+    '/rename': (ctx, args, meta) => handleRename(ctx, canonicalArgsOf(meta, args), meta),
     '/title': (ctx, args, meta) => handleTitle(ctx, canonicalArgsOf(meta, args), meta),
+    '/reload': (ctx) => ctx.runReloadCommand(),
+    '/restart': (ctx) => handleRestart(ctx),
     '/snapshot': handleSnapshot,
     '/snapshots': handleSnapshots,
     '/git-snapshots': (ctx, args, meta) => handleGitSnapshots(ctx, canonicalArgsOf(meta, args), meta),

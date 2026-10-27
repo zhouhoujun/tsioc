@@ -36,6 +36,7 @@ export interface CommandHandlerContext {
         readonly planTodos: any[];
         readonly reviewFileSections: any[];
         readonly reviewOpen: boolean;
+        readonly restartAction?: (sessionId: string) => void;
         readonly reviewFileAnnotations: Record<string, any>;
         readonly consoleOptions: { selectHint?: string };
         readonly commandHints: string[];
@@ -144,6 +145,7 @@ export interface CommandHandlerContext {
     runTitleCommand(args: string): Promise<boolean>;
     runGitSnapshotsCommand(args: string): Promise<void>;
     runApproveRetryCommand(): Promise<boolean>;
+    runReloadCommand(): Promise<boolean>;
 
     // ── coding task methods ──
     openScheduledJobsDashboard(args: string): Promise<boolean>;
@@ -239,6 +241,7 @@ export function buildCommandHandlerState(state: AgentConsoleSessionState): Comma
         get reviewFileSections() { return state.reviewFileSections; },
         get reviewFileAnnotations() { return state.reviewFileAnnotations; },
         get reviewOpen() { return state.reviewOpen; },
+        get restartAction() { return state.restartAction; },
         get consoleOptions() { return state.consoleOptions; },
         get commandHints() { return state.commandHints; },
         setInput: (v, c) => state.setInput(v, c),

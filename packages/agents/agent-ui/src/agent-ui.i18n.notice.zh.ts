@@ -437,6 +437,8 @@ export const AGENT_UI_NOTICE_ZH: NestedMessages = {
   securityLevelSet: '安全级别：{level}',
   securityLevelCurrent: '安全级别：{level}',
   securityLevelTitle: '安全级别',
+  configurationReloaded: '已从 workspace 设置重新加载配置。',
+  restartUnavailable: '当前宿主不支持重启。',
   feedbackPackagingDiagnostics: '正在打包诊断信息用于反馈：',
   feedbackStep1: '1. 运行 /debug-config 并附上输出。',
   feedbackStep2: '2. 附上会话转录（消息面板或 /export）。',
@@ -511,6 +513,7 @@ export const AGENT_UI_NOTICE_ZH: NestedMessages = {
 
   backgroundTasksTitle: '后台任务（{filter}）：',
   backgroundTaskLine: '{status}{meta} {id} [会话 {sessionId}] - {goal}',
+  renameUsage: '用法：/rename <name>',
   sessionTitled: '会话标题已设为“{title}”。',
   sessionTitleCleared: '会话标题已清除。',
   snapshotCreatedOutput: '已创建快照：{id}',

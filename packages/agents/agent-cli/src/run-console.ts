@@ -115,7 +115,13 @@ export async function runAgentConsole(
         ...extraProviders
     ], ui, {
         deps: gatewayUrl ? [ServerCommonModule] : [ServerCommonModule, AgentAppServerModule],
-        persistCommandOutput: true
+        persistCommandOutput: true,
+        restart: (sessionId: string) => {
+            // Re-enter this launcher in-process once the old app has restored
+            // the terminal. A child process would outlive the shell's job and
+            // race the interactive shell for the TTY.
+            void runAgentConsole({ ...options, session: sessionId }, agentOptions, extraProviders, ui);
+        }
     });
 
     if (gatewayPort > 0) {

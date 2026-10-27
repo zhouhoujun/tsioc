@@ -153,7 +153,8 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/side', description: 'open a temporary side session fork', group: 'session', args: [{ name: 'messageId' }] },
     { name: '/share', description: 'create a shareable link for this session (gateway)', group: 'session' },
     { name: '/unshare', description: 'revoke a session share: /unshare [token]', group: 'session', needsArgs: true, args: [{ name: 'token' }] },
-    { name: '/title', description: 'set current session title: /title <name> (blank clears)', group: 'session', needsArgs: true, args: [{ name: 'name', variadic: true }] },
+    { name: '/rename', description: 'rename the current session: /rename <name>', group: 'session', needsArgs: true, args: [{ name: 'name', variadic: true }] },
+    { name: '/title', description: 'window title fields and legacy session rename: /title [list|set field1,field2|unset field]', group: 'session', hidden: true, args: [{ name: 'arg', variadic: true }] },
     { name: '/pin', description: 'pin the current session to the top of the list', group: 'session' },
     { name: '/unpin', description: 'unpin the current session', group: 'session' },
     { name: '/sections', description: 'session sections: /sections [<label> to create]', group: 'session', hidden: true, args: [{ name: 'label', variadic: true }] },
@@ -263,6 +264,8 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/retry', description: 'retry failed workers: /retry [<taskId>]', group: 'delegation', args: [{ name: 'taskId' }] },
     { name: '/rollback', description: 'rollback coding task: /rollback [<taskId>]', group: 'delegation', args: [{ name: 'taskId' }] },
 
+    { name: '/reload', description: 'reload workspace settings (vim, display, layout, security, yolo, filters)', group: 'system' },
+    { name: '/restart', description: 'restart the TUI and resume the current session', group: 'system' },
     { name: '/ps', description: 'background tasks: list / stop <id>', group: 'system', args: [
         { name: 'verb', type: 'enum', values: ['show', 'stop', 'undo', 'current', 'all', 'running', 'completed', 'failed', 'cancelled'] },
         { name: 'arg', variadic: true }

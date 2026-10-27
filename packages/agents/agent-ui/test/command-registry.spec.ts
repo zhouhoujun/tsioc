@@ -16,18 +16,18 @@ import { AgentConsoleSessionState } from '../src';
 
 const GROUP_COUNTS: Record<string, number> = {
     core: 21,
-    session: 26,
+    session: 27,
     display: 10,
     input: 10,
     review: 8,
     hooks: 4,
     delegation: 10,
-    system: 2
+    system: 4
 };
 
 const NEEDS_ARGS_COMMANDS = [
     '/unshare',
-    '/title',
+    '/rename',
     '/search',
     '/cd'
 ];
@@ -35,9 +35,9 @@ const NEEDS_ARGS_COMMANDS = [
 @Suite('Agent console command registry')
 export class AgentConsoleCommandRegistryTest {
 
-    @Test('defines all 91 commands with defined groups, /help first')
+    @Test('defines all 94 commands with defined groups, /help first')
     registryCompleteness() {
-        expect(AGENT_CONSOLE_COMMAND_DEFINITIONS.length).toEqual(91);
+        expect(AGENT_CONSOLE_COMMAND_DEFINITIONS.length).toEqual(94);
         expect(AGENT_CONSOLE_COMMAND_DEFINITIONS[0].name).toEqual('/help');
         AGENT_CONSOLE_COMMAND_DEFINITIONS.forEach(def => {
             expect(def.name.startsWith('/')).toEqual(true);
@@ -56,7 +56,7 @@ export class AgentConsoleCommandRegistryTest {
     @Test('hidden commands stay executable but leave the menu and /help')
     hiddenCommandsLeaveTheMenu() {
         const hidden = AGENT_CONSOLE_COMMAND_DEFINITIONS.filter(def => def.hidden).map(def => def.name);
-        expect(hidden.length).toEqual(18);
+        expect(hidden.length).toEqual(19);
         const hints = agentConsoleCommandHints();
         const help = buildAgentConsoleHelpOptions();
         hidden.forEach(name => {
