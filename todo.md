@@ -2273,3 +2273,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 测试：`shell-bang-display.spec.ts` 增加断言（shell 行内容保留命令与输出）；`shell-command.spec.ts`/`vm-shell-commands.spec.ts` 的 `$ ` 前缀断言同步为新格式。**RED**：回退 presenter 时收到 `Command completed`。
 - 真实 TUI：`!echo hi-from-bang` → 两行：`$ Success echo hi-from-bang` / `hi-from-bang`。
 - 残留（可后续）：`Success` 状态词与 ✓ 语义重复；超长输出仍需展开查看。
+
+## 2026-10-27 `/yolo`（自动批准）开启后界面无任何标识
+- 现象：`/yolo on` 把 `yoloMode` **持久化**到 settings（重启自动恢复），但主界面只有一次提示条；输入框徽章只有 `plan / vim / ssh / queued`，**没有 yolo**。重启后处于自动批准状态却看不出来——所有需审批的工具调用被静默放行。
+- 修复：
+  - `AgentConsoleSessionState` 增加 `yoloMode` 字段 + `setYoloMode`（与 `planMode` 同构，压缩原有 setter 保持 ratchet 不增行）；
+  - `AgentConsoleInputBadges` 增加 `yoloBadge`（`panel.input` 组，en `auto-approve` / zh `自动批准`），顺序为 `plan · auto-approve · vim · ssh · queued`；
+  - 组件 `setYoloMode` 同步 state（含启动恢复路径）。
+- 测试：新增 `yolo-badge.spec.ts` 4 例（en/zh 徽章、徽章顺序、`/yolo on|off` 同步 state、恢复持久化设置后徽章仍在）。**RED**：新增字段前为编译错误。
+- 真实 TUI：`/yolo on` → 输入框显示 `> · auto-approve Ask code or files`；重启后（持久化恢复）同样显示；`/yolo off` → 徽章消失并提示 `Yolo mode disabled.`（已把模拟环境恢复为 off）。

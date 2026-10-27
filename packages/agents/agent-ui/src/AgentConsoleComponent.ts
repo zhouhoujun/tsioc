@@ -2953,7 +2953,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async setYoloMode(enabled: boolean, notify = true): Promise<void> {
-        this.yoloMode = enabled;
+        this.yoloMode = enabled; this.state.setYoloMode(enabled);
         (this.resolvedApprovalManager as any)?.setAutoApprove?.(enabled);
         this.options.tools = { ...(this.options.tools || {}), autoApprove: enabled } as any;
         await this.persistSettings({ yoloMode: enabled });

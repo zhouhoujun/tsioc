@@ -715,6 +715,7 @@ export class AgentConsoleSessionState {
     modelProfile = '';
     oneShotModelProfile = '';
     planMode = false;
+    yoloMode = false;
     workspace = '';
     statusline: AgentConsoleStatuslineField[] = [...defaultAgentConsoleStatusline];
     titleFields: AgentConsoleTitleField[] = [...defaultAgentConsoleTitle];
@@ -1074,9 +1075,8 @@ export class AgentConsoleSessionState {
         this.oneShotModelProfile = String(modelProfile || '').trim();
     }
 
-    setPlanMode(enabled: boolean): void {
-        this.planMode = enabled;
-    }
+    setPlanMode(enabled: boolean): void { this.planMode = enabled; }
+    setYoloMode(enabled: boolean): void { this.yoloMode = enabled; }
 
     get effectiveVimBindings(): Record<string, string> {
         return { ...VIM_DEFAULT_BINDINGS, ...this.vimBindings };

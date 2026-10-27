@@ -250,6 +250,7 @@ const AGENT_UI_PANEL_CORE_EN: Record<string, any> = {
     input: {
         planNudge: 'Planning intent detected · use /plan',
         planBadge: 'plan',
+        yoloBadge: 'auto-approve',
         vimInsert: 'vim insert',
         vimNormal: 'vim normal',
         queuedBadge: '{count} queued'
@@ -514,6 +515,7 @@ const AGENT_UI_PANEL_CORE_ZH: Record<string, any> = {
     input: {
         planNudge: '检测到规划意图 · 使用 /plan',
         planBadge: '计划',
+        yoloBadge: '自动批准',
         vimInsert: 'vim 插入',
         vimNormal: 'vim 普通',
         queuedBadge: '{count} 条排队'

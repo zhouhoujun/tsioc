@@ -3,6 +3,8 @@ import { formatAgentPanelLabel as panelLabel, type AgentUiTranslator } from './a
 /** Minimal slice of the console state used to build the input prompt badges. */
 export interface AgentConsoleInputBadgeState {
     planMode?: boolean;
+    /** `/yolo` auto-approve is persisted, so it must stay visible. */
+    yoloMode?: boolean;
     vimMode?: boolean;
     inputMode?: string;
     isSshShellActive?: boolean;
@@ -25,6 +27,9 @@ export function formatAgentConsoleInputBadges(
     const badges: string[] = [];
     if (state?.planMode) {
         badges.push(label('planBadge', 'plan'));
+    }
+    if (state?.yoloMode) {
+        badges.push(label('yoloBadge', 'auto-approve'));
     }
     if (state?.vimMode) {
         badges.push(String(state.inputMode || '') === 'normal'
