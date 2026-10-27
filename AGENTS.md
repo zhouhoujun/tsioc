@@ -11,7 +11,7 @@
 - 动画与实时计时必须由真实时钟持续推进，DOM 与 TUI 共用 components 通用实现；测试必须验证无其他业务数据变化时也会推进，不得用手动调用内部 `render()` 代替用户可见行为验收。
 - **禁止以优化、重构、性能或架构整改为由删除、关闭、降级或改变已有用户功能**。如果既有功能与架构规则发生冲突，必须先保留功能并向用户说明冲突、询问取舍；不得自行删除功能后把降级行为改写成测试预期。
 - **禁止布局层"脏节点追踪"跳过未变面板**：响应式更新会替换节点（旧节点在渲染前离树，parentNode 链断裂）且同帧批量变更多个面板，基于变化源复用的缓存会误判并输出陈旧界面，违反"数据变化驱动界面更新"契约（P63 曾尝试，2 个 agent-ui 测试回归，已回退）。
-- **默认布局为视窗模式（`viewport`）**：消息窗口按终端高度占满全屏，长工具输出/事件与中间长正文默认折叠为一行摘要（可点击/Enter 展开），最终回答保持展开；`/layout [scrollback|viewport]`（`/tui [fullscreen|scrollback]` 是同一轴的口语入口，无参切换）可切换并持久化到 workspace 设置（旧持久化值 `stream` 视为 `scrollback`、`dynamic` 视为 `viewport` 兼容别名）；运行时切换必须重启终端 surface，真实进出备用屏（fullscreen）或原生滚屏（scrollback），不得只换布局算法。
+- **默认布局为视窗模式（`viewport`）**：消息窗口按终端高度占满全屏，长工具输出/事件与中间长正文默认折叠为一行摘要（可点击/Enter 展开），最终回答保持展开；`/tui [fullscreen|scrollback]`（`/layout` 为隐藏别名，仍可手动执行）可切换并持久化到 workspace 设置（旧持久化值 `stream` 视为 `scrollback`、`dynamic` 视为 `viewport` 兼容别名）；运行时切换必须重启终端 surface，真实进出备用屏（fullscreen）或原生滚屏（scrollback），不得只换布局算法。
 - **视窗内的历史滚动**：鼠标滚轮或 PageUp/PageDown/↑/↓ 在视窗内滚动查看历史消息，而不是被新消息顶掉；向上滚动暂停自动跟随并提示「N 条新消息」，滚到底或 Esc 恢复跟随。布局差异收敛在 `AgentConsoleTranscriptLayout` 策略中，由平台适配层（TUI/DOM）分别适配滚轮路由；`scrollback`（旧名 `stream`）仍使用 native scrollback 处理历史。
 - **职责分层（状态只承载数据）**：`AgentConsoleSessionState` 只保留数据字段与平凡 setter/getter，不再挂布局/平台行为；转录滚动策略在 `AgentConsoleTranscriptLayout`（agent-ui 抽象），纯选择/滚动导航在 `AgentConsoleTranscriptNavigation`；平台差异各自适配——TUI 由 `components/console` 的 `scrollViewport` 选项 + surface 生命周期钩子决定是否保留 surface 滚动区，DOM 由 `web-console` 适配滚动条/滚轮。
 - **`scrollback` 布局（旧名 `stream`）全程使用 native scrollback**（含 turn 运行中的流式内容），仅在显式切换为 `scrollback` 时启用；此时多轮对话历史不得按视口高度裁剪。

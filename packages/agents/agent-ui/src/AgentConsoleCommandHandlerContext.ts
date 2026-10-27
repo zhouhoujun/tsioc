@@ -135,7 +135,6 @@ export interface CommandHandlerContext {
     runDebugConfigCommand(): Promise<boolean>;
     runSettingsCommand(): Promise<boolean>;
     runYoloCommand(args: string): Promise<boolean>;
-    runExperimentalCommand(args: string): Promise<boolean>;
     runFeedbackCommand(): Promise<boolean>;
     runBackgroundTasksCommand(args: string): Promise<boolean>;
     runIdeCommand(args: string): Promise<boolean>;

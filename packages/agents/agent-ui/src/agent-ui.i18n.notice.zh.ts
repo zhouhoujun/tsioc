@@ -495,11 +495,6 @@ export const AGENT_UI_NOTICE_ZH: NestedMessages = {
   hidingTimestamps: "正在隐藏消息时间戳。",
   vimEnabled: "已启用 Vim 模式 — 输入以插入模式开始；按 Esc 进入普通模式。",
   vimDisabled: "已关闭 Vim 模式。",
-  experimentalNoneEnabled: "未启用任何实验性功能。使用 /experimental <name> on|off。",
-  experimentalListHeader: "实验性功能：",
-  experimentalUsage: "用法：/experimental [<name> on|off]",
-  experimentalFeatureEnabled: "已启用实验性功能“{name}”。",
-  experimentalFeatureDisabled: "已关闭实验性功能“{name}”。",
   cancellingTurn: "正在取消当前轮次…",
   noRunningTurn: "没有正在运行的轮次可取消。",
 

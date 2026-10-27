@@ -15,7 +15,7 @@ import {
 import { AgentConsoleSessionState } from '../src';
 
 const GROUP_COUNTS: Record<string, number> = {
-    core: 22,
+    core: 21,
     session: 26,
     display: 10,
     input: 10,
@@ -35,9 +35,9 @@ const NEEDS_ARGS_COMMANDS = [
 @Suite('Agent console command registry')
 export class AgentConsoleCommandRegistryTest {
 
-    @Test('defines all 92 commands with defined groups, /help first')
+    @Test('defines all 91 commands with defined groups, /help first')
     registryCompleteness() {
-        expect(AGENT_CONSOLE_COMMAND_DEFINITIONS.length).toEqual(92);
+        expect(AGENT_CONSOLE_COMMAND_DEFINITIONS.length).toEqual(91);
         expect(AGENT_CONSOLE_COMMAND_DEFINITIONS[0].name).toEqual('/help');
         AGENT_CONSOLE_COMMAND_DEFINITIONS.forEach(def => {
             expect(def.name.startsWith('/')).toEqual(true);
@@ -51,6 +51,24 @@ export class AgentConsoleCommandRegistryTest {
             const actual = AGENT_CONSOLE_COMMAND_DEFINITIONS.filter(def => def.group === group).length;
             expect(actual).toEqual(GROUP_COUNTS[group]);
         });
+    }
+
+    @Test('hidden commands stay executable but leave the menu and /help')
+    hiddenCommandsLeaveTheMenu() {
+        const hidden = AGENT_CONSOLE_COMMAND_DEFINITIONS.filter(def => def.hidden).map(def => def.name);
+        expect(hidden.length).toEqual(18);
+        const hints = agentConsoleCommandHints();
+        const help = buildAgentConsoleHelpOptions();
+        hidden.forEach(name => {
+            expect(hints.includes(name)).toEqual(false);
+            expect(help.some(option => option.value === name)).toEqual(false);
+            // Dispatch and argument validation still resolve the definition.
+            expect(getAgentConsoleCommandDefinition(name)?.name).toEqual(name);
+        });
+        expect(hints.includes('/tui')).toEqual(true);
+        expect(hints.includes('/new')).toEqual(true);
+        expect(hints.includes('/review')).toEqual(true);
+        expect(getAgentConsoleCommandDefinition('/experimental')).toEqual(undefined);
     }
 
     @Test('keeps canonical command names unique')
@@ -110,7 +128,7 @@ export class AgentConsoleCommandRegistryTest {
     @Test('builds grouped /help options with subcommand rows and @workspace last')
     helpOptionsGrouped() {
         const options = buildAgentConsoleHelpOptions();
-        expect(options.length).toBeGreaterThan(AGENT_CONSOLE_COMMAND_DEFINITIONS.length);
+        expect(options.length).toBeGreaterThan(AGENT_CONSOLE_COMMAND_DEFINITIONS.filter(def => !def.hidden).length);
         expect(options[0].value).toEqual('/help');
         expect(options[options.length - 1].value).toEqual('@workspace');
         const seenGroups: string[] = [];
@@ -127,9 +145,10 @@ export class AgentConsoleCommandRegistryTest {
             }
         });
         expect(seenGroups).toEqual(AGENT_CONSOLE_COMMAND_GROUP_ORDER);
-        expect(options.some(option => option.value === '/approve retry')).toEqual(true);
         expect(options.some(option => option.value === '/delegation tree')).toEqual(true);
-        expect(options.some(option => option.value === '/quality trend')).toEqual(true);
+        // Hidden commands keep their handlers but leave the menu and /help.
+        expect(options.some(option => option.value === '/approve retry')).toEqual(false);
+        expect(options.some(option => option.value === '/quality trend')).toEqual(false);
         const values = options.map(option => option.value);
         expect(new Set(values).size).toEqual(values.length);
     }

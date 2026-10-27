@@ -395,7 +395,6 @@ export const agentUiChinese: TranslationBundle = {
                     'permissions': '查看或修改只读/沙箱会话权限',
                     'settings': '统一设置对话框：常规、按键、服务商',
                     'yolo': '切换自动批准模式：/yolo [on|off]',
-                    'experimental': '实验特性：list / <name> on|off',
                     'feedback': '生成用于反馈的打包诊断信息',
                     'undo': '撤销上一次文件改动',
                     'redo': '重新应用上一次撤销的改动',

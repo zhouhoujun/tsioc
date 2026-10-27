@@ -97,6 +97,8 @@ export interface AgentConsoleCommandDefinition {
     aliases?: string[];
     /** Companion subcommand rows rendered in /help as '/name sub'. */
     subcommands?: AgentConsoleCommandSubcommand[];
+    /** Hidden from the `/` menu and `/help`; still executable when typed (key duplicates, diagnostics). */
+    hidden?: boolean;
 }
 
 /** MUST keep '/help' first: fuzzy '/he' suggestions and smart-run tests rely on it being options[0]. */
@@ -135,11 +137,10 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/permissions', description: 'show or change readonly/sandbox session permissions', group: 'core', args: [{ name: 'area', type: 'enum', values: ['status', 'readonly', 'plan', 'sandbox'] }, { name: 'arg', variadic: true }] },
     { name: '/settings', description: 'unified settings dialog: general, keybinds, providers', group: 'core' },
     { name: '/yolo', description: 'toggle auto-approve mode: /yolo [on|off]', group: 'core', args: [{ name: 'mode', type: 'enum', values: ['on', 'off'] }] },
-    { name: '/experimental', description: 'experimental features: list / <name> on|off', group: 'core', args: [{ name: 'name' }, { name: 'state', type: 'enum', values: ['on', 'off'] }] },
-    { name: '/feedback', description: 'packaging diagnostics for feedback reports', group: 'core' },
+    { name: '/feedback', description: 'packaging diagnostics for feedback reports', group: 'core', hidden: true },
     { name: '/undo', description: 'revert the last file change', group: 'core' },
     { name: '/redo', description: 're-apply the last undone file change', group: 'core' },
-    { name: '/copy', description: 'copy reply: /copy [input|workspace|session|model], ctrl+x shift+c copies the draft', group: 'core', args: [{ name: 'target', type: 'enum', values: ['input', 'workspace', 'session', 'model'] }] },
+    { name: '/copy', description: 'copy reply: /copy [input|workspace|session|model], ctrl+x shift+c copies the draft', group: 'core', hidden: true, args: [{ name: 'target', type: 'enum', values: ['input', 'workspace', 'session', 'model'] }] },
     { name: '/archetype', description: 'switch session archetype: /archetype [build|plan|review|name]', group: 'core', args: [{ name: 'name' }] },
     { name: '/plan', description: 'toggle read-only plan mode (write tools denied)', group: 'core', args: [{ name: 'mode', type: 'enum', values: ['on', 'off', '1', '0', 'true', 'false'] }] },
 
@@ -155,10 +156,10 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/title', description: 'set current session title: /title <name> (blank clears)', group: 'session', needsArgs: true, args: [{ name: 'name', variadic: true }] },
     { name: '/pin', description: 'pin the current session to the top of the list', group: 'session' },
     { name: '/unpin', description: 'unpin the current session', group: 'session' },
-    { name: '/sections', description: 'session sections: /sections [<label> to create]', group: 'session', args: [{ name: 'label', variadic: true }] },
+    { name: '/sections', description: 'session sections: /sections [<label> to create]', group: 'session', hidden: true, args: [{ name: 'label', variadic: true }] },
     { name: '/threads', description: 'browse session threads: /threads [<id>]', group: 'session' },
-    { name: '/threadplan', description: 'thread plan todos', group: 'session' },
-    { name: '/threadreview', description: 'thread coding task review', group: 'session' },
+    { name: '/threadplan', description: 'thread plan todos', group: 'session', hidden: true },
+    { name: '/threadreview', description: 'thread coding task review', group: 'session', hidden: true },
     { name: '/projects', description: 'browse sessions by project: /projects [<id>]', group: 'session' },
     { name: '/search', description: 'search sessions: /search <query>', group: 'session', needsArgs: true, args: [{ name: 'query', required: true, variadic: true }] },
     { name: '/snapshot', description: 'snapshot current session: /snapshot [label]', group: 'session', args: [{ name: 'label' }] },
@@ -174,7 +175,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/thinking', description: 'toggle reasoning/thinking message visibility (Ctrl+X T)', group: 'display', args: [{ name: 'mode', type: 'enum', values: ['on', 'off', 'show', 'hide'] }] },
     { name: '/timeline', description: 'toggle compact chronological timeline view (Ctrl+X G)', group: 'display', args: [{ name: 'mode', type: 'enum', values: ['off', 'compact', 'steps', 'verbose'] }] },
     { name: '/display', description: 'toggle message timestamp visibility: /display [on|off|critical]', group: 'display', args: [{ name: 'mode', type: 'enum', values: ['on', 'off', 'show', 'hide', 'critical'] }] },
-    { name: '/layout', description: 'switch transcript layout: /layout [scrollback|viewport]', group: 'display', args: [{ name: 'mode', type: 'enum', values: ['scrollback', 'viewport'] }] },
+    { name: '/layout', description: 'switch transcript layout: /layout [scrollback|viewport]', group: 'display', hidden: true, args: [{ name: 'mode', type: 'enum', values: ['scrollback', 'viewport'] }] },
     { name: '/tui', description: 'switch TUI buffer mode: /tui [fullscreen|scrollback]', group: 'display', args: [{ name: 'mode', type: 'enum', values: ['fullscreen', 'scrollback', 'viewport'] }] },
     { name: '/outputs', description: 'command results history: browse /outputs; up/down/j/k move, / filter, enter copy', group: 'display' },
     { name: '/pager', description: 'full-history transcript pager: /pager [query] to search; Esc close, ↑↓/PgUp/PgDn scroll', group: 'display' },
@@ -186,10 +187,10 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/stash', description: 'named draft stash: ctrl+x shift+s push, /stash [list|pop <name>|rm <name>]', group: 'input', args: [{ name: 'verb', type: 'enum', values: ['list', 'push', 'save', 'pop', 'restore', 'rm', 'drop', 'delete'] }, { name: 'name', variadic: true }] },
     { name: '/voice', description: 'voice session status/start/stop/cancel', group: 'input', args: [{ name: 'verb', type: 'enum', values: ['start', 'stop', 'cancel', 'status'] }] },
     { name: '/ide', description: 'IDE bridge: show attached editor context', group: 'input', args: [{ name: 'arg', variadic: true }] },
-    { name: '/multiline', description: 'multiline', group: 'input' },
-    { name: '/send', description: 'send the multiline draft', group: 'input' },
-    { name: '/cancel', description: 'cancel running turn', group: 'input' },
-    { name: '/clear', description: 'start a new session (clear the current conversation)', group: 'input' },
+    { name: '/multiline', description: 'multiline', group: 'input', hidden: true },
+    { name: '/send', description: 'send the multiline draft', group: 'input', hidden: true },
+    { name: '/cancel', description: 'cancel running turn', group: 'input', hidden: true },
+    { name: '/clear', description: 'start a new session (clear the current conversation)', group: 'input', hidden: true },
     { name: '/attach', description: 'attach an image for the next prompt', group: 'input', args: [{ name: 'arg', variadic: true }] },
 
     // Review owns an extensible subcommand grammar, so keep its tail variadic.
@@ -200,20 +201,21 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
         name: '/approve',
         description: 'approve pending approval request: /approve [<id>]',
         group: 'review',
+        hidden: true,
         args: [{ name: 'id' }],
         subcommands: [
             { sub: 'retry', description: 'retry the most recent auto-review-rejected action once' }
         ]
     },
-    { name: '/deny', description: 'deny pending approval request: /deny [<id>]', group: 'review', args: [{ name: 'id' }] },
+    { name: '/deny', description: 'deny pending approval request: /deny [<id>]', group: 'review', hidden: true, args: [{ name: 'id' }] },
     { name: '/jobs', description: 'scheduled jobs: /jobs [<taskId>]', group: 'review', args: [{ name: 'taskId' }] },
     { name: '/tasks', description: 'task inspector: /tasks [<taskId>]', group: 'review', args: [{ name: 'taskId' }] },
-    { name: '/toolruns', description: 'inspect tool runs for this session', group: 'review' },
+    { name: '/toolruns', description: 'inspect tool runs for this session', group: 'review', hidden: true },
 
     { name: '/hooks', description: 'show registered lifecycle hooks (stages + shell commands + functions)', group: 'hooks' },
     { name: '/memories', description: 'memory injection: status / on / off', group: 'hooks', args: [{ name: 'verb', type: 'enum', values: ['list', 'injected', 'add', 'remove', 'rm', 'on', 'off'] }, { name: 'arg', variadic: true }] },
     { name: '/personality', description: 'personality presets: list / set <name> / unset', group: 'hooks', args: [{ name: 'verb', type: 'enum', values: ['list', 'set', 'unset'] }, { name: 'name' }] },
-    { name: '/debug-config', description: 'show resolved config (model, profile, ui options, session)', group: 'hooks' },
+    { name: '/debug-config', description: 'show resolved config (model, profile, ui options, session)', group: 'hooks', hidden: true },
 
     { name: '/delegation', description: 'delegation edges [sessionId]', group: 'delegation', args: [{ name: 'arg', variadic: true }], subcommands: [
         { sub: 'tree', description: 'delegation tree [sessionId] [status] [depth]' },
@@ -226,6 +228,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
         name: '/quality',
         description: 'quality stats / list / trend by provider',
         group: 'delegation',
+        hidden: true,
         args: [{ name: 'arg', variadic: true }],
         subcommands: [
             { sub: 'trend', description: 'quality trend [provider] [bucketSize] [maxBuckets]' }
@@ -235,6 +238,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
         name: '/compactions',
         description: 'compaction history [sessionId]',
         group: 'delegation',
+        hidden: true,
         args: [{ name: 'arg', variadic: true }],
         subcommands: [
             { sub: 'trend', description: 'compaction trend [sessionId] [bucketSize] [maxBuckets]' }
@@ -245,13 +249,14 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
         name: '/diagnostics',
         description: 'turn diagnostics [sessionId]',
         group: 'delegation',
+        hidden: true,
         args: [{ name: 'arg', variadic: true }],
         subcommands: [
             { sub: 'list', description: 'turn diagnostics records [sessionId]' },
             { sub: 'trend', description: 'turn diagnostics trend [sessionId] [bucketSize] [maxBuckets]' }
         ]
     },
-    { name: '/harness', description: 'harness audit / profile', group: 'delegation', args: [{ name: 'arg', variadic: true }], subcommands: [
+    { name: '/harness', description: 'harness audit / profile', group: 'delegation', hidden: true, args: [{ name: 'arg', variadic: true }], subcommands: [
         { sub: 'audit', description: 'failure-pattern audit [sessionId]' },
         { sub: 'profile', description: 'governance profile list/current/diff' }
     ] },
@@ -460,6 +465,9 @@ export function agentConsoleCommandHints(extra: string[] = []): string[] {
     const hints: string[] = [];
     const seen = new Set<string>();
     AGENT_CONSOLE_COMMAND_DEFINITIONS.forEach(def => {
+        if (def.hidden) {
+            return;
+        }
         if (!seen.has(def.name)) {
             seen.add(def.name);
             hints.push(def.name);
@@ -509,7 +517,7 @@ export function buildAgentConsoleHelpOptions(
     const localize = (name: string, fallback: string, kind: 'desc' | 'sub' = 'desc') => describe ? describe(`agent.command.${kind}.${name.replace(/^\//, '')}`, fallback) : fallback;
     AGENT_CONSOLE_COMMAND_GROUP_ORDER.forEach(group => {
         AGENT_CONSOLE_COMMAND_DEFINITIONS
-            .filter(def => def.group === group)
+            .filter(def => def.group === group && !def.hidden)
             .forEach(def => {
                 options.push({
                     label: def.name,

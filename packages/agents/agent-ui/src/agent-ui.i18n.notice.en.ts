@@ -495,11 +495,6 @@ export const AGENT_UI_NOTICE_EN: NestedMessages = {
   hidingTimestamps: "Hiding message timestamps.",
   vimEnabled: "Vim mode enabled — input starts in insert mode; press Esc for normal mode.",
   vimDisabled: "Vim mode disabled.",
-  experimentalNoneEnabled: "No experimental features enabled. Use /experimental <name> on|off.",
-  experimentalListHeader: "Experimental features:",
-  experimentalUsage: "Usage: /experimental [<name> on|off]",
-  experimentalFeatureEnabled: "Experimental feature \"{name}\" enabled.",
-  experimentalFeatureDisabled: "Experimental feature \"{name}\" disabled.",
   cancellingTurn: "Cancelling current turn...",
   noRunningTurn: "No running turn to cancel.",
 

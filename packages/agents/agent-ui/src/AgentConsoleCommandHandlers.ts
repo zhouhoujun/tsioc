@@ -1107,7 +1107,6 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/debug-config': (ctx) => ctx.runDebugConfigCommand(),
     '/settings': (ctx) => ctx.runSettingsCommand(),
     '/yolo': (ctx, args, meta) => ctx.runYoloCommand(canonicalArgsOf(meta, args)),
-    '/experimental': (ctx, args, meta) => ctx.runExperimentalCommand(canonicalArgsOf(meta, args)),
     '/feedback': (ctx) => ctx.runFeedbackCommand(),
     '/ps': (ctx, args, meta) => ctx.runBackgroundTasksCommand(canonicalArgsOf(meta, args)),
     '/ide': (ctx, args, meta) => ctx.runIdeCommand(canonicalArgsOf(meta, args)),

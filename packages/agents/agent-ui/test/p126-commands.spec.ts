@@ -223,27 +223,6 @@ export class P126CommandClusterTest {
         expect(state.notice).toContain('workspace: /work/demo');
     }
 
-    @Test('/experimental lists, enables, and disables feature switches')
-    async experimentalLifecycle() {
-        const { state, component } = createConsole();
-        await (component as any).handleCommand('/experimental streaming on');
-        expect((component as any).options.ui.experimental).toEqual({ streaming: true });
-        expect(state.notice).toContain('"streaming" enabled');
-
-        await (component as any).handleCommand('/experimental');
-        expect(state.notice).toContain('on streaming');
-
-        await (component as any).handleCommand('/experimental streaming off');
-        expect((component as any).options.ui.experimental).toEqual({ streaming: false });
-    }
-
-    @Test('/experimental rejects missing state')
-    async experimentalInvalid() {
-        const { state, component } = createConsole();
-        await (component as any).handleCommand('/experimental streaming');
-        expect(state.notice).toContain('Usage: /experimental');
-    }
-
     @Test('/feedback prints packaging diagnostics hints')
     async feedbackPrintsHints() {
         const { state, component } = createConsole();

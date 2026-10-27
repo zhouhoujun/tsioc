@@ -242,7 +242,6 @@ import {
     openSettingsKeybindsTab,
     runDisplayCommand,
     runLayoutCommand,
-    runExperimentalCommand,
     applyPersistedLayout,
     runSettingsCommand as runSettingsCommandView,
     runTimelineModeCommand,
@@ -2071,7 +2070,6 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             runDebugConfigCommand: () => self.runDebugConfigCommand(),
             runSettingsCommand: () => self.runSettingsCommand(),
             runYoloCommand: (a) => self.runYoloCommand(a),
-            runExperimentalCommand: (a) => self.runExperimentalCommand(a),
             runFeedbackCommand: () => self.runFeedbackCommand(),
             runBackgroundTasksCommand: (a) => self.runBackgroundTasksCommand(a),
             runIdeCommand: (a) => self.runIdeCommand(a),
@@ -3137,10 +3135,6 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
 
     protected async runApproveRetryCommand(): Promise<boolean> {
         return runApproveRetryCommandView(this.rpcCommandHost());
-    }
-
-    protected async runExperimentalCommand(args?: string): Promise<boolean> {
-        return runExperimentalCommand(args, this.options, (message: string) => this.notify(message), this.translator);
     }
 
     protected async runFeedbackCommand(): Promise<boolean> {

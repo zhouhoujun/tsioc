@@ -29,7 +29,8 @@ export async function dispatchAgentConsoleCommand(host: AgentConsoleCommandDispa
     const previousRequestId = host.pendingCommandRequestId;
     const requestId = host.state.commandExecutionController.begin(canonical, args);
     host.pendingCommandRequestId = requestId;
-    if (!host.state.commandHints.includes(canonical)) {
+    const definition = getAgentConsoleCommandDefinition(canonical);
+    if (!host.state.commandHints.includes(canonical) && !definition) {
         const reason = resolved.matches.length
             ? host.state.translateLabel('agent.command.ambiguous', { command: parsed.command, matches: resolved.matches.join(', ') }, `Ambiguous command: ${parsed.command}  (${resolved.matches.join(', ')})`)
             : host.state.translateLabel('agent.command.unknown', { command: parsed.command }, `Unknown command: ${parsed.command}`);
@@ -39,7 +40,7 @@ export async function dispatchAgentConsoleCommand(host: AgentConsoleCommandDispa
         return true;
     }
     const translate = (key: string, params?: Record<string, any>, fallback?: string) => host.state.translateLabel(key, params, fallback ?? key);
-    const parsedArgs = parseAgentConsoleCommandArguments(getAgentConsoleCommandDefinition(canonical), args, translate);
+    const parsedArgs = parseAgentConsoleCommandArguments(definition, args, translate);
     if (parsedArgs.diagnostics.length) {
         const reason = formatAgentConsoleCommandDiagnostics(parsedArgs.diagnostics, translate);
         host.state.commandExecutionController.fail(requestId, reason, false);

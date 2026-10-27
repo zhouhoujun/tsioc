@@ -68,7 +68,7 @@ export class AgentUiLocaleRegressionTest {
     noticeParity() {
         const enKeys = Object.keys(AGENT_UI_NOTICE_EN);
         const zhKeys = Object.keys(AGENT_UI_NOTICE_ZH);
-        expect(enKeys.length).toEqual(592);
+        expect(enKeys.length).toEqual(587);
         expect(zhKeys).toEqual(enKeys);
     }
 
@@ -152,8 +152,7 @@ export class AgentUiLocaleRegressionTest {
             ['deniedTool', { toolName: 'Bash', id: 'abcd1234' }],
             ['openedSideSession', { forked: 'sess-1' }],
             ['forkedSession', { forked: 'sess-1' }],
-            ['cancellingTurn', undefined],
-            ['experimentalFeatureEnabled', { name: 'multiAgent' }]
+            ['cancellingTurn', undefined]
         ];
         for (const [key, params] of samples) {
             const text = formatAgentUiNotice(zh, key, params);

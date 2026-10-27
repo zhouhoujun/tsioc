@@ -274,7 +274,7 @@ export class MultiWordArgumentCompletionTest {
 
     @Test('commands without subcommands use their positional schema')
     async definitionIndexFallback() {
-        const candidates = resolveAgentConsoleArgumentCandidates('/experimental', 'o', {}, 1, ['feature']);
+        const candidates = resolveAgentConsoleArgumentCandidates('/yolo', 'o', {}, 0, []);
         expect(candidates.map(option => option.value)).toEqual(['on', 'off']);
     }
 }
@@ -366,9 +366,9 @@ export class SubcommandDescriptionLocaleTest {
     @Test('/help localizes subcommand rows')
     async localizedSubcommands() {
         const { buildAgentConsoleHelpOptions } = require('../src');
-        const options = buildAgentConsoleHelpOptions((key: string, fallback: string) => key === 'agent.command.sub.diagnostics.trend' ? '轮次诊断趋势' : fallback);
-        const trend = options.find((option: any) => option.value === '/diagnostics trend');
-        expect(trend.description).toEqual('轮次诊断趋势');
+        const options = buildAgentConsoleHelpOptions((key: string, fallback: string) => key === 'agent.command.sub.delegation.tree' ? '委派树' : fallback);
+        const tree = options.find((option: any) => option.value === '/delegation tree');
+        expect(tree.description).toEqual('委派树');
     }
 }
 

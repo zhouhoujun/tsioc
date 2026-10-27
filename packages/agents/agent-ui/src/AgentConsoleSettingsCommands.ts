@@ -165,35 +165,6 @@ export async function runVimCommand(
     notify(formatAgentUiNotice(translator, enabled ? 'vimEnabled' : 'vimDisabled'));
 }
 
-export async function runExperimentalCommand(
-    args: string | undefined,
-    options: any,
-    notify: (message: string) => void,
-    translator?: AgentUiTranslator | null
-): Promise<boolean> {
-    const parsed = String(args || '').trim();
-    const parts = parsed.split(/\s+/).filter(Boolean);
-    const experimental = { ...((options.ui?.experimental || {}) as Record<string, boolean>) };
-    if (!parts.length) {
-        if (!Object.keys(experimental).length) {
-            notify(formatAgentUiNotice(translator, 'experimentalNoneEnabled'));
-            return true;
-        }
-        const lines = Object.entries(experimental).map(([name, enabled]) => `${enabled ? 'on' : 'off'} ${name}`);
-        notify(`${formatAgentUiNotice(translator, 'experimentalListHeader')}\n${lines.join('\n')}`);
-        return true;
-    }
-    const [name, value] = parts;
-    if (!name || (value !== 'on' && value !== 'off')) {
-        notify(formatAgentUiNotice(translator, 'experimentalUsage'));
-        return true;
-    }
-    experimental[name] = value === 'on';
-    options.ui = { ...(options.ui || {}), experimental };
-    notify(formatAgentUiNotice(translator, value === 'on' ? 'experimentalFeatureEnabled' : 'experimentalFeatureDisabled', { name }));
-    return true;
-}
-
 export async function openSettingsKeybindsTab(
     select: (title: string, options: any[], index: number, hint?: string) => Promise<string | undefined>,
     runKeymapCommand: (args: string) => Promise<any>,
