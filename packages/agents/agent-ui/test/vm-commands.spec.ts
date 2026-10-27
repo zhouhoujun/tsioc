@@ -92,16 +92,17 @@ export class VmCommandsTest {
         expect(component.sessionState.selectedScheduledTask?.paused).toEqual(false);
     }
 
-    @Test('messages command focuses message panel and enter opens detail view')
-    async messagesCommandFocusesMessagePanelAndEnterOpensDetailView() {
+    @Test('PageUp focuses the message panel and enter opens the detail view')
+    async pageUpFocusesMessagePanelAndEnterOpensDetailView() {
         const runtime = new RuntimeStub();
         const scheduler = new SchedulerStub();
         const component = createConsole(runtime, scheduler, new ToolRegistryStub());
         component.sessionState.setMessages([
             { id: 'm1', role: 'user', content: 'line1\nline2\nline3\nline4\nline5\nline6\nline7\nline8\nline9', createdAt: 1 } as any
         ]);
-        component.input = '/messages';
-        await component.submit();
+
+        // `/messages` was removed; the transcript is focused from the keyboard.
+        await (component as any).handleGlobalKeyInput('\u001b[5~');
 
         expect(component.sessionState.messagesFocused).toEqual(true);
         expect(component.sessionState.messageDetailOpen).toEqual(false);

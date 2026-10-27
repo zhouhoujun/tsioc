@@ -419,16 +419,6 @@ async function handleToolruns(ctx: CommandHandlerContext, _args: string, _resolv
     return true;
 }
 
-// ── /messages ────────────────────────────────────────────────────────────────
-
-async function handleMessages(ctx: CommandHandlerContext, _args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
-    ctx.state.closeReview();
-    ctx.state.closeGitSnapshotDetail();
-    ctx.state.setSessionsFocused(false);
-    ctx.transcriptNavigationController.setFocused(true);
-    return true;
-}
-
 // ── /search ──────────────────────────────────────────────────────────────────
 
 async function handleSearch(ctx: CommandHandlerContext, args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
@@ -1146,7 +1136,6 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/projects': handleProjects,
     '/threads': handleThreads,
     '/sections': (ctx, args, meta) => handleSections(ctx, canonicalArgsOf(meta, args), meta),
-    '/messages': handleMessages,
     '/approve': (ctx, args, meta) => handleApproveDeny(ctx, canonicalArgsOf(meta, args), meta),
     '/deny': (ctx, args, meta) => handleApproveDeny(ctx, canonicalArgsOf(meta, args), meta),
     '/exit': handleQuitExit,
