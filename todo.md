@@ -2246,3 +2246,23 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 现象：`/voice cancel` 失败时走 `ctx.notify(result.error)`，会显示 `no active audio session; call audio.start first`（内部 RPC 方法名）；start/stop 上一轮已映射，cancel 漏了。
 - 修复：cancel 分支同样走 `describeVoiceFailure()`。
 - 测试：`voice-command-errors.spec.ts` 增加第 5 例（zh，`/voice cancel` 无会话 → `没有进行中的语音会话。`）。**RED**：回退 voice 源文件时该例失败。
+
+## 2026-10-27 `!cmd` 既不执行也不显示（真实 TUI）
+- 现象（pyte 回放 + 文件系统证据）：输入 `!touch /tmp/opencode/rel-probe.txt` → 文件**不存在**；`!pwd` 屏幕无任何输出行；`!`（单独）能显示用法提示，说明输入管线本身正常。
+- 两个根因：
+  1. **执行**：TUI 走 `appRpc` 的 `tools.invoke`，而网关只允许调用**已为会话激活**的工具；`invokeTerminalTool` 的 RPC 分支没有像本地分支那样先 `isToolActive/activate`，于是 terminal 工具调用失败，错误被写进一条**看不见**的 shell 消息。
+  2. **显示**：`AgentConsoleSessionState.isDisplayMessage()` 对 `role === 'tool'` 一律返回 false，而 `!cmd` 的本地 shell 行正是 `role: 'tool'` + `metadata.type = 'shell'`（UI-only、不进模型上下文），于是整行被过滤掉；`shell-command.spec.ts` 只断言了 `state.messages`，没断言 `displayMessages`。
+- 修复：
+  - `invokeTerminalTool` 的 RPC 分支先 `tools.activate`（terminal）再 `tools.invoke`，并只在 workspace 非空时带上 `workspace`；
+  - `isDisplayMessage` 放行 shell 行（`role === 'tool' && metadata.type === 'shell'`），其余 tool 行仍隐藏；
+  - shell 消息 metadata 增加 `command`，行标签显示真实命令。
+- 测试：新增 `shell-bang-display.spec.ts` 3 例（shell 行出现在 transcript 且位于请求与回答之间、普通 tool 行仍隐藏、RPC 分支先 activate 再 invoke）。**RED**：前两例失败（行被过滤、未调用 activate）。
+- 真实 TUI：`!touch before-cd-probe.txt` 在 workspace 根目录创建成功；行显示为 `$ Success pwd completed`（命令可见）。
+- 遗留（未修，需定方案）：shell 行仍以命令执行样式折叠显示，**stdout/stderr 需要展开**才可见；`$ … Success … completed` 的状态词冗余。
+
+## 2026-10-27 `/cd` 只改界面，不改 agent 工作目录（定位完成，未实施）
+- 链路：`/cd` 仅 `state.setWorkspace` + 输入历史重载；`turnContext.workspace` 来自**会话行**，而会话行每轮被 `ensureSessionWorkspace()` 用启动时 `--workspace` 覆写；`tools.invoke` 也优先会话行。
+- 更硬的限制：`terminal` 工具的 cwd 来自**构造期文件策略** `resolveFilePolicy(options).rootDir`，既不读会话行也不读 per-invocation workspace（`resolveCwd` 只在 `input.workdir` 时用 `resolveWorkspacePath`，且受 rootDir 限制）。
+- 因此"/只把 workspace 透传给 turn/tools"会得到 file 工具跟随、terminal 不跟随的**半一致**状态，已按此判断**回滚**该改动（未提交）。
+- 真实 TUI 证据：`/cd /tmp/opencode` 后 `!touch after-cd-probe.txt` 仍落在旧 workspace（`sleep-mlt`）。
+- 可选方案：①（大改）文件策略支持 per-session root + 切换时重新做工作区信任校验；②（小改）把 `/cd` 描述改为"仅切换输入历史作用域"。需要用户拍板。

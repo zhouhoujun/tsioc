@@ -2189,11 +2189,10 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     protected async invokeTerminalTool(command: string): Promise<any> {
         const sessionId = this.state.sessionId;
         if (this.appRpc) {
-            const result = await this.appRpc.request('tools.invoke', {
-                sessionId,
-                name: 'terminal',
-                input: { command }
-            }, this.rpcRequestContext());
+            // `invoke` only runs tools already active for the session, so `!cmd`
+            // silently failed against the gateway without activating first.
+            await this.appRpc.request('tools.activate', { sessionId, name: 'terminal' }, this.rpcRequestContext()).catch(() => null);
+            const result = await this.appRpc.request('tools.invoke', { sessionId, name: 'terminal', input: { command }, ...(this.workspace ? { workspace: this.workspace } : {}) }, this.rpcRequestContext());
             return result?.output;
         }
         if (!this.toolRegistry || typeof this.toolRegistry.invoke !== 'function') {

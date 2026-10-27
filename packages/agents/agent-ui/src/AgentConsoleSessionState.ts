@@ -2273,7 +2273,7 @@ export class AgentConsoleSessionState {
             return false;
         }
         if (String(message.role || '').toLowerCase() === 'tool') {
-            return false;
+            return message.metadata?.type === 'shell';
         }
         if (!this.timelineMode && message.metadata?.uiKind === 'event') {
             const eventType = String(message.metadata?.uiEventType || '').toLowerCase();

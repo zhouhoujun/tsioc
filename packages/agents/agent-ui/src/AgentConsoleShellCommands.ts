@@ -64,7 +64,7 @@ export async function runShellCommand(host: ShellCommandHost, command: string): 
         name: 'terminal',
         content: `$ ${command}`,
         createdAt: Date.now(),
-        metadata: { type: 'shell', status: 'running' }
+        metadata: { type: 'shell', status: 'running', command }
     };
     host.state.appendMessage(shellMessage);
     try {
@@ -82,7 +82,8 @@ export async function runShellCommand(host: ShellCommandHost, command: string): 
                 type: 'shell',
                 status: exitCode === 0 || exitCode === undefined ? 'success' : 'failed',
                 exitCode: exitCode ?? 0,
-                error: exitCode !== 0 && exitCode !== undefined
+                error: exitCode !== 0 && exitCode !== undefined,
+                command
             }
         });
     } catch (error: any) {
