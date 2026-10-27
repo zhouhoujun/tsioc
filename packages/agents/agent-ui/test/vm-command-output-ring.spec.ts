@@ -5,6 +5,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { createReadStream } from 'fs';
 import { Suite, Test } from '@tsdi/unit';
+import { navigationFor } from './test-transcript-navigation';
 import { AudioCaptureAdapter, AudioCaptureSessionEvents, AudioPlaybackAdapter, AudioPlaybackOptions, Encodings, FileAdapter, FileDirectoryEntry, IReadable } from '@tsdi/common';
 import {
     AgentApprovalCompletedEvent,
@@ -149,6 +150,47 @@ export class VmCommandOutputsRingTest {
         state.setCommandOutputsFilter('usage');
         state.moveCommandOutputSelection(10);
         expect(state.commandOutputsSelectedIndex).toEqual(0);
+    }
+
+    @Test('filter mode types j/k/q instead of moving, copying or closing')
+    async commandOutputsFilterModeTypesEveryLetter() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        state.pushCommandOutput('/jobs', 'no scheduled jobs');
+        state.pushCommandOutput('/queue list', 'empty');
+        state.openCommandOutputs();
+        const nav = navigationFor(state);
+
+        await state.handleFocusKey('/', nav);
+        expect(state.commandOutputsFilterMode).toEqual(true);
+
+        await state.handleFocusKey('j', nav);
+        await state.handleFocusKey('o', nav);
+        await state.handleFocusKey('b', nav);
+        await state.handleFocusKey('s', nav);
+        expect(state.commandOutputsFilter).toEqual('jobs');
+        expect(state.visibleCommandOutputs.map(entry => entry.command)).toEqual(['/jobs']);
+        expect(state.commandOutputsSelectedIndex).toEqual(0);
+
+        await state.handleFocusKey('esc', nav);
+        expect(state.commandOutputsFilterMode).toEqual(false);
+        expect(state.commandOutputsFilter).toEqual('');
+        expect(state.commandOutputsOpen).toEqual(true);
+        expect(state.visibleCommandOutputs.length).toEqual(2);
+
+        // k still moves and q still closes when the filter is off.
+        await state.handleFocusKey('k', nav);
+        expect(state.commandOutputsSelectedIndex).toEqual(0);
+        await state.handleFocusKey('q', nav);
+        expect(state.commandOutputsOpen).toEqual(false);
+
+        // q is text while filtering.
+        state.openCommandOutputs();
+        await state.handleFocusKey('/', nav);
+        for (const char of 'queue') {
+            await state.handleFocusKey(char, nav);
+        }
+        expect(state.commandOutputsFilter).toEqual('queue');
+        expect(state.commandOutputsOpen).toEqual(true);
     }
 
     @Test('copySelectedCommandOutput copies the selected entry text through copyFocusedTextAction')

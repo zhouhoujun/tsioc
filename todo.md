@@ -2427,3 +2427,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 根因：`ssh2.utils.generateKeyPair('ed25519')` 偶发生成自身解析器拒绝的私钥，测试夹具直接把它交给 `new Server`。
 - 修复：夹具改为循环生成直到 `utils.parseKey(private)` 不再是 `Error`（最多 5 次），并用同一对密钥的 public 作为 `hostKey`。
 - 验证：`agent-ssh` 连续 3 次 9 passing；随后重跑完整门禁。
+
+## `/outputs` 过滤模式全字母可输入（2026-10）
+
+- 现象：`/outputs` 打开命令结果面板后按 `/` 进入过滤，但 `j`/`k` 仍被当作上下移动、`q` 仍被当作关闭——过滤 `/jobs`、`/keymap`、`/queue` 时这些字母被吞掉，过滤串永远不完整。
+- 修复：过滤模式优先消费可打印字符（j/k/q 都是文本）；`Esc` 退出过滤并清空（面板保持打开），`Enter` 仍是复制，方向键/翻页仍可滚动；非过滤模式下 j/k/q 保持原有含义。面板提示不变（`↑↓/jk move` 指非过滤态）。
+- 测试（先 RED）：`vm-command-output-ring.spec.ts` 新增 1 例，走真实 `handleFocusKey` 路径断言 `filter: jobs`、`k` 移动、`q` 关闭、过滤态 `q` 是文本；agent-ui 1802 通过。
+- 真实 TUI：`/outputs` → `/` → 逐字输入 `hooks` 显示 `filter: hooks`；输入 `queue` 面板不关闭；8 条记录时面板标题 `command outputs 8 · 1-8`、条目与提示全部可见（footer 高度已被布局计入，无截断）。

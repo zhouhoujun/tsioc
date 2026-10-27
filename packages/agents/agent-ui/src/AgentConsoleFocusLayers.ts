@@ -187,6 +187,23 @@ export abstract class AgentConsoleFocusLayers {
     ): boolean | Promise<boolean> | undefined {
         const state = this.state;
         if (!state.commandOutputsOpen) return undefined;
+        // Filter mode owns printable keys: j/k are navigation only while the
+        // filter is off, and q closes the panel only while it is off too.
+        if (state.commandOutputsFilterMode) {
+            if (normalized === 'esc' || normalized === 'escape') {
+                state.commandOutputsFilterMode = false;
+                state.setCommandOutputsFilter('');
+                return true;
+            }
+            if (normalized === 'backspace') {
+                state.setCommandOutputsFilter(state.commandOutputsFilter.slice(0, -1));
+                return true;
+            }
+            if (normalized.length === 1) {
+                state.setCommandOutputsFilter(`${state.commandOutputsFilter}${normalized}`);
+                return true;
+            }
+        }
         if (this.isDismissKey(normalized)) return this.dismiss(transcriptNavigation);
         switch (normalized) {
             case 'up': case 'k': state.moveCommandOutputSelection(-1); return true;
@@ -197,15 +214,7 @@ export abstract class AgentConsoleFocusLayers {
             case 'end': state.scrollCommandOutputsToEdge('end'); return true;
             case '/': state.commandOutputsFilterMode = true; state.setCommandOutputsFilter(''); return true;
             case 'return': case 'enter': return state.copySelectedCommandOutput();
-            case 'backspace':
-                if (!state.commandOutputsFilterMode) return false;
-                state.setCommandOutputsFilter(state.commandOutputsFilter.slice(0, -1));
-                return true;
             default:
-                if (state.commandOutputsFilterMode && normalized.length === 1) {
-                    state.setCommandOutputsFilter(`${state.commandOutputsFilter}${normalized}`);
-                    return true;
-                }
                 return false;
         }
     }
