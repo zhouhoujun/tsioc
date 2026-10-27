@@ -2420,3 +2420,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - Esc 回面板、`]` 选第二个文件、`/` → `review reject needs tests` → summary `1 approved, 1 rejected`；
   - `/review risk` 列出两个文件；`/review export` 浮层显示 `# Review Report` 与 `Approved: 1 / Rejected: 1`；
   - 关闭面板后 `/review approve` 给出可操作提示（不再假成功）；重新打开后 `approve-all` → `2 approved`。
+
+## 门禁抖动：agent-ssh 宿主密钥（2026-10）
+
+- 现象：27 阶段门禁唯一失败为 `agent-ssh`（本次改动未触及该包），错误 `Cannot parse privateKey: Malformed OpenSSH private key`，异常来自 `new Server({hostKeys})`，同包其它 8 例通过；独立复跑两次均 9/9。
+- 根因：`ssh2.utils.generateKeyPair('ed25519')` 偶发生成自身解析器拒绝的私钥，测试夹具直接把它交给 `new Server`。
+- 修复：夹具改为循环生成直到 `utils.parseKey(private)` 不再是 `Error`（最多 5 次），并用同一对密钥的 public 作为 `hostKey`。
+- 验证：`agent-ssh` 连续 3 次 9 passing；随后重跑完整门禁。

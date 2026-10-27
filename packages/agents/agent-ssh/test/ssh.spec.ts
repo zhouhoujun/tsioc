@@ -12,16 +12,31 @@ interface MockServer {
     hostKey: string;
 }
 
-async function startMockServer(onSession?: (session: Session) => void): Promise<MockServer> {
-    const keys = await new Promise<{ private: string; public: string }>((resolve, reject) => {
-        utils.generateKeyPair('ed25519', {}, (err, pair) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(pair as any);
-            }
+/**
+ * `ssh2`'s ed25519 generator very occasionally emits a key its own parser
+ * rejects ("Malformed OpenSSH private key"), which made the gate flaky.
+ * Generate until the private key parses, with a small bounded retry.
+ */
+async function generateHostKey(attempts = 5): Promise<{ private: string; public: string }> {
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+        const pair = await new Promise<{ private: string; public: string }>((resolve, reject) => {
+            utils.generateKeyPair('ed25519', {}, (err, generated) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(generated as any);
+                }
+            });
         });
-    });
+        if (!(utils.parseKey(pair.private) instanceof Error)) {
+            return pair;
+        }
+    }
+    throw new Error('ssh2 could not generate a parseable ed25519 host key');
+}
+
+async function startMockServer(onSession?: (session: Session) => void): Promise<MockServer> {
+    const keys = await generateHostKey();
     const server = new Server({ hostKeys: [keys.private] }, () => {});
     server.on('connection', (conn: Connection) => {
         conn.on('authentication', ctx => {
