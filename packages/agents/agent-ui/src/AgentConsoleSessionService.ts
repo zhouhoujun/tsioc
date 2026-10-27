@@ -881,7 +881,7 @@ export class AgentConsoleSessionService {
         if (!this.appRpc) {
             return null;
         }
-        return this.appRpc.request('background.list', options ?? {}, context) ?? null;
+        return this.appRpc.request('background_task.list', options ?? {}, context) ?? null;
     }
 
     /** Reads every background-task page needed by collaboration projections. */
@@ -915,7 +915,7 @@ export class AgentConsoleSessionService {
         if (!this.appRpc) {
             return null;
         }
-        const result = await this.appRpc.request('background.cancel', { taskIds }, context);
+        const result = await this.appRpc.request('background_task.cancel', { taskIds }, context);
         return result && Array.isArray(result.cancelled)
             ? { taskIds: Array.isArray(result.taskIds) ? result.taskIds : taskIds, cancelled: result.cancelled }
             : null;

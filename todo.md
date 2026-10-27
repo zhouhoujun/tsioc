@@ -2295,3 +2295,17 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - `/plan off` + `/yolo on`：徽章 `· auto-approve`；同请求得到 `✓ Create file · plan-probe.txt (10ms)`，**无审批提示**，文件创建成功（探针结束已删除）。
 - 附带验证：写 `/tmp/...` 绝对路径时被文件策略拒绝，提示 `Path '…' is outside the allowed workspace root. Use a workspace-relative path (root: …); do not use absolute paths or '..'`（可操作，符合 §9）。
 - 备注：plan 模式那一轮模型是"自我克制"未调用工具，运行时 gate 本身由单测覆盖；用户可见结果正确。
+
+## 2026-10-27 网关 `AppRpcServer` 的 `@Optional() x?: Store | null` 协作对象全部注入失败
+- 现象（真实 TUI + 独立脚本双重取证）：`/delegation tree` 对**有边**的会话仍报 `No delegation edges recorded`；进程内 `delegation.tree` 返回 `{tree:null}`，而同一 DB 直接查 `DelegationGraphStore.tree()` 有 2 个子节点。脚本检查 `AppRpcServer` 实例：`delegation/audit/summaryQuality/compactionHistory/turnDiagnostics/weaknessMiner/reviewFindings/audio/shares/cloudTasks/projectMemory/timeline/commandExchange/questionStore/exchangeMetrics` **全部 undefined**，但容器里这些 token 本身都能解析。
+- 根因：`@Optional() private x?: T | null` 这种**联合类型**参数在 `emitDecoratorMetadata` 下元数据是 `Object`，容器无法按设计类型解析 → 静默注入 undefined；`@Optional()` 又把失败吞掉。与此前 `AgentConsoleComponent` 的 `T | null` 是同一类缺陷，而这里的后果是**一大批 RPC 功能整体失效**（委派树/谱系、压缩历史、回合诊断、评审发现、项目记忆、云任务、命令交换、问题存储、用量指标…），且 UI 显示的是"没有记录"这种误导性的空态。
+- 修复：给 `AppRpcServer` 全部 18 个可选协作对象加显式 `@Inject(Token)`（`COMMAND_EXCHANGE_STORE` 用 token；`AudioSessionHandler`/`SessionShareStore`/`TimelineHistoryStore` 在 CLI 容器里本就未提供，加 `@Inject` 后仍保持 undefined，行为不变）。
+- 测试：新增 `app-rpc-injection.spec.ts`（`Application.run(AgentAppServerModule)` + 临时 ORM 根，断言 11 个 store 均已注入）。**RED**：修复前 11 个全缺。
+- 真实 TUI（修复后）：`/delegation tree` → 父会话 + 2 个子会话（nested·completed·时间范围·goal）；`/delegation lineage`（子会话）→ 父边。
+
+## 2026-10-27 客户端与网关的后台任务 RPC 方法名不一致
+- 现象：`/harness list|tree` → `Method 'background.list' not found`。
+- 根因：网关注册并在方法白名单里暴露的是 `background_task.list|get|cancel`（有测试覆盖），而 `AgentConsoleSessionService` 调用的是 `background.list` / `background.cancel`。既有的 `vm-session.spec.ts` 还把错误名称写进了断言。
+- 修复：客户端改用 `background_task.list|cancel`；`vm-session.spec.ts` 的断言同步。
+- 测试：新增 `background-rpc-names.spec.ts`（断言只调用规范方法名，**RED** 前收到旧名）；agent-gateway 357、agent-ui **1791 passing**。
+- 真实 TUI：`/harness list|tree` 不再报错，输出进入可滚动浮层。

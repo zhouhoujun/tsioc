@@ -384,8 +384,8 @@ export class VmSessionTest {
 
         expect(tasks.map(task => task.id)).toEqual(['task-1', 'task-2']);
         expect(calls).toEqual([
-            { method: 'background.list', params: { delegationRoot: 'chat-1', limit: 500 } },
-            { method: 'background.list', params: { delegationRoot: 'chat-1', cursor: 'page-2', limit: 500 } }
+            { method: 'background_task.list', params: { delegationRoot: 'chat-1', limit: 500 } },
+            { method: 'background_task.list', params: { delegationRoot: 'chat-1', cursor: 'page-2', limit: 500 } }
         ]);
     }
 
