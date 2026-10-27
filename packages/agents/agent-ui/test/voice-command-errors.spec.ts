@@ -72,6 +72,17 @@ export class VoiceCommandFailureTest {
         expect(notices[0]).toEqual('Voice control is unavailable without app RPC.');
     }
 
+
+    @Test('/voice cancel maps the gateway no-session error too')
+    async cancelWithoutSession() {
+        const { ctx, notices } = createCtx(zh, {
+            cancelVoiceSession: async () => ({ ok: false, error: 'no active audio session; call audio.start first' })
+        });
+        await handleVoiceCommand(ctx, 'cancel');
+        expect(notices.length).toEqual(1);
+        expect(notices[0]).toEqual('没有进行中的语音会话。');
+    }
+
     @Test('an unknown gateway failure stays visible as a diagnostic')
     async unknownFailureIsPreserved() {
         const { ctx, notices } = createCtx(en, {

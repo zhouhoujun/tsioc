@@ -1,4 +1,17 @@
 import { formatAgentUiLabel, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+
+/**
+ * Review listings are multi-line. `notify` keeps a single notice slot, so
+ * notifying per line leaves only the last one on screen; emit one block instead
+ * (the console turns blocks longer than three lines into a scrollable overlay).
+ */
+function emitReviewBlock(ctx: ReviewHandlerContext, lines: string[]): void {
+    const text = lines.filter(line => String(line ?? '').trim().length > 0).join('\n');
+    if (text) {
+        ctx.notify(text);
+    }
+}
+
 /**
  * Review / git-diff command handlers for AgentConsoleComponent.
  *
@@ -455,11 +468,11 @@ export async function listReviewFindings(ctx: ReviewHandlerContext, commit?: str
             ctx.notify(commit ? formatAgentUiNotice(ctx.translator, 'noReviewRunsForCommit', { commit: commit }) : formatAgentUiNotice(ctx.translator, 'noReviewRunsSaved'));
             return true;
         }
-        for (const run of runs) {
+        emitReviewBlock(ctx, runs.map((run: any) => {
             const fileCount = Array.isArray(run.files) ? run.files.length : 0;
             const findingCount = Array.isArray(run.findings) ? run.findings.length : 0;
             const sha = String(run.commitSha || '').slice(0, 12);
-            ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewRunSummary', {
+            return formatAgentUiNotice(ctx.translator, 'reviewRunSummary', {
                 runId: run.id,
                 base: run.base,
                 fileCount,
@@ -467,8 +480,8 @@ export async function listReviewFindings(ctx: ReviewHandlerContext, commit?: str
                 findingCount,
                 findingPlural: findingCount === 1 ? '' : 's',
                 sha: sha ? ` · ${sha}` : ''
-            }));
-        }
+            });
+        }));
         return true;
     } catch (error: any) {
         ctx.notify(error?.message || formatAgentUiNotice(ctx.translator, 'reviewRunsListFailed'));
@@ -499,17 +512,18 @@ export async function showReviewRun(ctx: ReviewHandlerContext, id: string | unde
             ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewRunNoFindings', { resolvedId: resolvedId, base: run.base }));
             return true;
         }
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewRunFindingList', { resolvedId: resolvedId, base: run.base, findingCount: findings.length, plural: findings.length === 1 ? '' : 's' }));
+        const lines = [formatAgentUiNotice(ctx.translator, 'reviewRunFindingList', { resolvedId: resolvedId, base: run.base, findingCount: findings.length, plural: findings.length === 1 ? '' : 's' })];
         for (const finding of findings) {
             const category = String(finding?.category || 'suggestion');
             const severity = String(finding?.severity || 'info');
             const file = String(finding?.anchor?.file || '?');
             const line = typeof finding?.anchor?.line === 'number' ? `:${finding.anchor.line}` : '';
-            ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewFindingItem', { category: category, severity: severity, file: file, line: line, summary: String(finding?.summary || '') }));
+            lines.push(formatAgentUiNotice(ctx.translator, 'reviewFindingItem', { category: category, severity: severity, file: file, line: line, summary: String(finding?.summary || '') }));
             if (String(finding?.suggestion || '').trim()) {
-                ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewFixSuggestion', { suggestion: String(finding.suggestion).trim() }));
+                lines.push(formatAgentUiNotice(ctx.translator, 'reviewFixSuggestion', { suggestion: String(finding.suggestion).trim() }));
             }
         }
+        emitReviewBlock(ctx, lines);
         return true;
     } catch (error: any) {
         ctx.notify(error?.message || formatAgentUiNotice(ctx.translator, 'reviewRunLoadFailed', { id: resolvedId }));

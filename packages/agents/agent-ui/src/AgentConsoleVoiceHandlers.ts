@@ -233,7 +233,10 @@ export async function handleVoiceCommand(ctx: VoiceHandlerContext, arg: string):
             if (result?.ok) {
                 ctx.notify(result.cancelled ? formatAgentUiNotice(ctx.translator, 'voiceSessionCancelled') : formatAgentUiNotice(ctx.translator, 'voiceNoActiveSession'));
             } else {
-                ctx.notify(result?.error || formatAgentUiNotice(ctx.translator, 'voiceSessionCancelFailed'));
+                const rawError = String(result?.error || '').trim();
+                ctx.notify(rawError
+                    ? await describeVoiceFailure(ctx, rawError)
+                    : formatAgentUiNotice(ctx.translator, 'voiceSessionCancelFailed'));
             }
             return true;
         }

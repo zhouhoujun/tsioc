@@ -799,9 +799,7 @@ async function handleReview(ctx: CommandHandlerContext, args: string, _resolved:
         const arg = args.trim();
         if (arg === 'summary') {
             const lines = ctx.state.getReviewAnnotationSummary();
-            for (const line of lines) {
-                ctx.notify(line);
-            }
+            ctx.notify(lines.join('\n'));
             return true;
         }
         if (arg === 'approve-all') {
@@ -825,9 +823,7 @@ async function handleReview(ctx: CommandHandlerContext, args: string, _resolved:
                 ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewDataExport'));
                 return true;
             }
-            for (const line of report) {
-                ctx.notify(line);
-            }
+            ctx.notify(report.join('\n'));
             return true;
         }
         if (arg === 'risk') {
@@ -836,12 +832,13 @@ async function handleReview(ctx: CommandHandlerContext, args: string, _resolved:
                 ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewFilesAnalyze'));
                 return true;
             }
-            for (const section of sections) {
+            const riskLines = sections.map(section => {
                 const risk = ctx.state.computeFileRiskScore(section);
                 const annot = ctx.state.reviewFileAnnotations[section.path];
                 const marker = annot ? (annot.status === 'approved' ? ' ✓' : ' ✗') : '';
-                ctx.notify(formatAgentUiNotice(ctx.translator, 'riskTableRow', { score: String(risk.score).padStart(2, ' '), riskLevel: risk.level.padEnd(8, ' '), path: section.path, additions: section.additions, deletions: section.deletions, marker, comment: annot?.comment ? ` - ${annot.comment}` : '' }));
-            }
+                return formatAgentUiNotice(ctx.translator, 'riskTableRow', { score: String(risk.score).padStart(2, ' '), riskLevel: risk.level.padEnd(8, ' '), path: section.path, additions: section.additions, deletions: section.deletions, marker, comment: annot?.comment ? ` - ${annot.comment}` : '' });
+            });
+            ctx.notify(riskLines.join('\n'));
             return true;
         }
         if (arg.startsWith('approve')) {

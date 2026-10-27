@@ -2235,3 +2235,14 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 测试：新增 `voice-command-errors.spec.ts` 4 例（zh 无会话、zh 缺适配器含 missing 与建议、en 无网关、未知错误保留原文）。**RED**：前 3 例修复前拿到网关英文原文。notice 键数守卫 590 → **591**。
 - 真实 TUI：`/voice start` → `Voice unavailable (missing streaming STT adapter, streaming TTS adapter). Configure streaming STT and TTS adapters, then run /voice start.`；`/voice stop` → `No voice session was active.`
 - 顺带补强：`console-renderer.spec.ts` 的 footer 断言改为“该行必须落在某个 `footer` region 内”，并新增**审批面板**用例；回退两个面板的 `renderRegion` 时 2 例同时失败（此前用“行号 ≥ footer 起点”会被状态面板误判为通过）。
+
+## 2026-10-27 `/review` 多行输出只会显示最后一行
+- 现象：`/review runs`、`/review run <id>`、`/review risk`、`/review summary`、`/review export` 五处都是 `for (...) ctx.notify(line)`；`notify()` 是**单槽**状态行（`setNotice` 直接替换，>3 行才开浮层），逐行调用等于每行覆盖上一行 → 屏幕上只剩**最后一行**。N 条 finding 的评审结果、整张风险表、Markdown 评审报告都读不到。
+- 修复：五处改为先收集 `lines`，再一次性 `notify(lines.join('\n'))`（>3 行自动进可滚动浮层）。不改接口、不增 facade 行数。
+- 测试：新增 `review-multiline-output.spec.ts` 5 例（summary/export/risk/runs/run-findings，断言"只发一次且包含全部行"）。**RED**：回退两个源文件后 5/5 失败 → 修复后全绿。
+- 真实 TUI：`/review export` 现在弹出 `notice 5 lines · 1-5` 浮层，完整显示 `# Review Report / Task / Date / Status / No annotations.`（修复前只剩最后一行）；`/review summary` → `No annotations.`
+
+## 2026-10-27 `/voice cancel` 仍抛网关原文
+- 现象：`/voice cancel` 失败时走 `ctx.notify(result.error)`，会显示 `no active audio session; call audio.start first`（内部 RPC 方法名）；start/stop 上一轮已映射，cancel 漏了。
+- 修复：cancel 分支同样走 `describeVoiceFailure()`。
+- 测试：`voice-command-errors.spec.ts` 增加第 5 例（zh，`/voice cancel` 无会话 → `没有进行中的语音会话。`）。**RED**：回退 voice 源文件时该例失败。
