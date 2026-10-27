@@ -762,6 +762,24 @@ async function handleApprovals(ctx: CommandHandlerContext, _args: string, _resol
     return true;
 }
 
+// ── /pair ────────────────────────────────────────────────────────────────────
+
+async function handlePair(ctx: CommandHandlerContext, _args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
+    let pairing: { url: string; code?: string; expiresAt?: number } | null = null;
+    try {
+        pairing = await ctx.state.pairAction?.() ?? null;
+    } catch {
+        pairing = null;
+    }
+    if (!pairing?.url) {
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'pairUnavailable'));
+        return true;
+    }
+    const minutes = pairing.expiresAt ? Math.max(1, Math.round((pairing.expiresAt - Date.now()) / 60000)) : 5;
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'pairReady', { url: pairing.url, minutes }));
+    return true;
+}
+
 // ── /review ──────────────────────────────────────────────────────────────────
 
 async function handleReview(ctx: CommandHandlerContext, args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
@@ -1121,6 +1139,7 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/rename': (ctx, args, meta) => handleRename(ctx, canonicalArgsOf(meta, args), meta),
     '/title': (ctx, args, meta) => handleTitle(ctx, canonicalArgsOf(meta, args), meta),
     '/reload': (ctx) => ctx.runReloadCommand(),
+    '/pair': handlePair,
     '/restart': (ctx) => handleRestart(ctx),
     '/snapshot': handleSnapshot,
     '/snapshots': handleSnapshots,

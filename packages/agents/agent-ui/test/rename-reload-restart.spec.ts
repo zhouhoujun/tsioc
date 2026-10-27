@@ -2,6 +2,7 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { COMMAND_HANDLERS } from '../src/AgentConsoleCommandHandlers';
 import { runReloadCommandView } from '../src/AgentConsoleReloadCommand';
+import { getAgentConsoleCommandName } from '../src/AgentConsoleCommandRegistry';
 
 function metaFor(command: string) {
     return { command, matches: [command] };
@@ -53,6 +54,30 @@ export class OpenCodeParityCommandsTest {
         await COMMAND_HANDLERS['/title'](ctx, 'legacy title', metaFor('/title'));
         expect(calls.titled).toEqual([['s1', 'legacy title']]);
         expect(calls.outputs[0][0]).toEqual('/title');
+    }
+
+    @Test('/pair prints the one-time web link and reports when no web console runs')
+    async pairCommand() {
+        const notices: string[] = [];
+        const ctx: any = {
+            translator: null,
+            notify: (message: string) => notices.push(message),
+            state: {
+                pairAction: async () => ({ url: 'http://127.0.0.1:3100/?pair=abc', code: 'abc', expiresAt: Date.now() + 5 * 60_000 })
+            }
+        };
+        await COMMAND_HANDLERS['/pair'](ctx, '', metaFor('/pair'));
+        expect(notices[0]).toContain('http://127.0.0.1:3100/?pair=abc');
+        expect(notices[0]).toContain('5 min');
+
+        const missing: string[] = [];
+        await COMMAND_HANDLERS['/pair']({ ...ctx, state: {}, notify: (message: string) => missing.push(message) }, '', metaFor('/pair'));
+        expect(missing[0]).toContain('Web console is not running');
+    }
+
+    @Test('/web is an alias of /pair')
+    webAlias() {
+        expect(getAgentConsoleCommandName('/web')).toEqual('/pair');
     }
 
     @Test('/reload re-reads the workspace settings and reports it')

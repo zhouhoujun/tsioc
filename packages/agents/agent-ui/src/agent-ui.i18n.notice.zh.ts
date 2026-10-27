@@ -439,6 +439,8 @@ export const AGENT_UI_NOTICE_ZH: NestedMessages = {
   securityLevelTitle: '安全级别',
   configurationReloaded: '配置已重新加载。',
   restartUnavailable: '当前宿主不支持重启。',
+  pairReady: 'Web 控制台：{url}\n一次性链接 · {minutes} 分钟后过期 · 在要配对的设备上打开。',
+  pairUnavailable: 'Web 控制台未运行。请先执行 `tsdi-agent serve`，再用 `tsdi-agent attach <url>` 连接。',
   feedbackPackagingDiagnostics: '正在打包诊断信息用于反馈：',
   feedbackStep1: '1. 运行 /debug-config 并附上输出。',
   feedbackStep2: '2. 附上会话转录（消息面板或 /export）。',

@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { runAgentApplication, runAgentJsonStream, runAgentPrompt, runAgentRpcStdio, runAgentStreaming } from './run-command';
 import { runAgentAttach } from './run-console';
 import { registerChatCli } from './chat-cli';
+import { registerServeCli } from './serve-cli';
 import { runMcpAdd, runMcpAuth, runMcpList, runMcpLogout, runMcpRemove } from './mcp-command';
 import { runAgentDoctor } from './doctor';
 import { registerApprovalCli } from './approval-cli';
@@ -19,7 +20,7 @@ import { runAgentCloudAction } from './cloud-command';
 const configReader = new CliAgentUiConfigReader();
 const CLI_VERSION = '6.0.31';
 const DEFAULT_COMMAND = 'chat';
-const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'attach', 'desktop', 'app', 'cloud', 'project', 'tools', 'mcp', 'doctor', 'import', 'harness', 'completion', 'update', 'rpc-stdio', 'approval', 'help']);
+const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'attach', 'serve', 'desktop', 'app', 'cloud', 'project', 'tools', 'mcp', 'doctor', 'import', 'harness', 'completion', 'update', 'rpc-stdio', 'approval', 'help']);
 const TOP_LEVEL_HELP_FLAGS = new Set(['-h', '--help', '-V', '--version']);
 const OPTION_FLAGS_WITH_VALUES = new Set([
     '--session',
@@ -125,6 +126,7 @@ function createAgentCli(): Command {
         });
 
     registerChatCli(program);
+    registerServeCli(program);
 
     program
         .command('desktop')

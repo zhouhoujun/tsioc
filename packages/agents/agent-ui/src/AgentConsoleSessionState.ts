@@ -715,7 +715,7 @@ export class AgentConsoleSessionState {
     modelProfile = '';
     oneShotModelProfile = '';
     planMode = false;
-    yoloMode = false; securityLevel: import('./AgentConsolePolicyCommands').AgentConsoleSecurityLevel | '' = ''; restartAction?: (sessionId: string) => void;
+    yoloMode = false; securityLevel: import('./AgentConsolePolicyCommands').AgentConsoleSecurityLevel | '' = ''; restartAction?: (sessionId: string) => void; pairAction?: () => Promise<{ url: string; code?: string; expiresAt?: number } | null>;
     workspace = '';
     statusline: AgentConsoleStatuslineField[] = [...defaultAgentConsoleStatusline];
     titleFields: AgentConsoleTitleField[] = [...defaultAgentConsoleTitle];

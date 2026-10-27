@@ -15,7 +15,7 @@ export class PairingStore {
     generate(): PairingCode {
         this.evictExpired();
 
-        const code = crypto.randomBytes(4).toString('hex');
+        const code = crypto.randomBytes(16).toString('hex');
         const now = Date.now();
         const entry: PairingCode = {
             code,

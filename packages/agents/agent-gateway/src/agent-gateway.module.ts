@@ -18,6 +18,7 @@ import { AuditHandler } from './api/AuditHandler';
 import { ReviewHandler } from './api/ReviewHandler';
 import { EvalHandler } from './api/EvalHandler';
 import { ShareHandler } from './api/ShareHandler';
+import { PairHandler } from './api/PairHandler';
 import { SessionShareStore } from './share/SessionShareStore';
 import { CompactionHistoryHandler } from './api/CompactionHistoryHandler';
 import { CommandExchangeHandler } from './api/CommandExchangeHandler';
@@ -47,6 +48,7 @@ import { ApprovalWebhookNotifier } from './approval/ApprovalWebhookNotifier';
         { provide: GATEWAY_CONFIG, useValue: defaultGatewayConfig, asDefault: true },
         AuthMiddleware,
         PairingStore,
+        PairHandler,
         RateLimiter,
         SessionQueue,
         SessionOwnerStore,
@@ -86,6 +88,7 @@ import { ApprovalWebhookNotifier } from './approval/ApprovalWebhookNotifier';
         GatewayBootstrap,
         AuthMiddleware,
         PairingStore,
+        PairHandler,
         RateLimiter,
         SessionQueue,
         SessionOwnerStore,

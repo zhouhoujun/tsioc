@@ -265,6 +265,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/rollback', description: 'rollback coding task: /rollback [<taskId>]', group: 'delegation', args: [{ name: 'taskId' }] },
 
     { name: '/reload', description: 'reload workspace settings, theme, keymap, statusline and mentions', group: 'system' },
+    { name: '/pair', description: 'pair a browser with the running web console', group: 'system', aliases: ['/web'] },
     { name: '/restart', description: 'restart the TUI and resume the current session', group: 'system' },
     { name: '/ps', description: 'background tasks: list / stop <id>', group: 'system', args: [
         { name: 'verb', type: 'enum', values: ['show', 'stop', 'undo', 'current', 'all', 'running', 'completed', 'failed', 'cancelled'] },

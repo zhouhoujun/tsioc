@@ -37,6 +37,7 @@ export interface CommandHandlerContext {
         readonly reviewFileSections: any[];
         readonly reviewOpen: boolean;
         readonly restartAction?: (sessionId: string) => void;
+        readonly pairAction?: () => Promise<{ url: string; code?: string; expiresAt?: number } | null>;
         readonly reviewFileAnnotations: Record<string, any>;
         readonly consoleOptions: { selectHint?: string };
         readonly commandHints: string[];
@@ -242,6 +243,7 @@ export function buildCommandHandlerState(state: AgentConsoleSessionState): Comma
         get reviewFileAnnotations() { return state.reviewFileAnnotations; },
         get reviewOpen() { return state.reviewOpen; },
         get restartAction() { return state.restartAction; },
+        get pairAction() { return state.pairAction; },
         get consoleOptions() { return state.consoleOptions; },
         get commandHints() { return state.commandHints; },
         setInput: (v, c) => state.setInput(v, c),

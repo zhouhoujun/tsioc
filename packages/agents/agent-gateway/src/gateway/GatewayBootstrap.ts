@@ -11,6 +11,7 @@ import { EventHandler } from '../api/EventHandler';
 import { ReviewHandler } from '../api/ReviewHandler';
 import { EvalHandler } from '../api/EvalHandler';
 import { ShareHandler } from '../api/ShareHandler';
+import { PairHandler } from '../api/PairHandler';
 import { AppRpcHandler } from '../api/AppRpcHandler';
 import { ChatWebSocket } from '../ws/ChatWebSocket';
 import { GATEWAY_CONFIG } from '../tokens';
@@ -43,7 +44,8 @@ export class GatewayBootstrap {
         @Optional() @Inject(INJECTOR) private injector?: Injector | null,
         @Inject(GATEWAY_CONFIG, { nullable: true }) private config: GatewayConfig = defaultGatewayConfig,
         /** Instantiated so its approval webhook subscription is active. */
-        @Optional() @Inject(ApprovalWebhookNotifier) private approvalWebhook?: ApprovalWebhookNotifier | null
+        @Optional() @Inject(ApprovalWebhookNotifier) private approvalWebhook?: ApprovalWebhookNotifier | null,
+        @Optional() @Inject(PairHandler) private pair?: PairHandler | null
     ) {
     }
 
@@ -72,6 +74,7 @@ export class GatewayBootstrap {
         const evals = this.optionalHandler(EvalHandler, this.evals);
         const shares = this.optionalHandler(ShareHandler, this.shares);
         const chatWs = this.optionalHandler(ChatWebSocket, this.chatWs);
+        const pair = this.optionalHandler(PairHandler, this.pair);
 
         // Collect routes from all handlers
         const allRoutes = [
@@ -86,6 +89,7 @@ export class GatewayBootstrap {
             ...(reviews?.getRoutes() ?? []),
             ...(evals?.getRoutes() ?? []),
             ...(shares?.getRoutes() ?? []),
+            ...(pair?.getRoutes() ?? []),
             ...(chatWs?.getRoutes() ?? [])
         ];
 

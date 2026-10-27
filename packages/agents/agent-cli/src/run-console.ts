@@ -5,9 +5,6 @@
  * platform providers. TUI orchestration and console UI state are owned by
  * @tsdi/agent-ui/console.
  */
-import { AgentHookCommandExecutor } from '@tsdi/agent';
-import { provideSkills, provideTools } from '@tsdi/agent-tools';
-import { AGENT_SSH_OPTIONS } from '@tsdi/agent-ssh';
 import {
     AgentUiConfigService,
     AgentConsoleSessionState,
@@ -26,11 +23,11 @@ import {
     startApprovalRemoteServer
 } from '@tsdi/agent-gateway';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
-import { ApprovalManager, provideAgentOrmStorage } from '@tsdi/agent';
+import { ApprovalManager } from '@tsdi/agent';
 import { AgentCliOptions } from './config';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
-import { NodeAgentHookCommandExecutor } from './NodeAgentHookCommandExecutor';
-import { createAgentSandboxRuntimeProvider, ensureAgentWorkspace, provideWorkspaceTrust, resolveModelAdapter } from './run-command';
+import { ensureAgentWorkspace } from './run-command';
+import { buildAgentRuntimeProviders } from './agent-runtime-providers';
 
 // Re-export types for backward compatibility
 export { AgentConsoleLaunchTarget as AgentCliUiTarget } from '@tsdi/agent-ui/console';
@@ -102,20 +99,23 @@ export async function runAgentConsole(
     }
 
     const ctx = await runConsoleTui(resolved, options, agentOptions, [
-        ...provideAgentOrmStorage(resolved.root),
-        ...provideTools(resolved.tools),
-        ...provideSkills({ root: resolved.root, roots: resolved.skillRoots, remoteCacheDir: resolved.tools?.skillsRemoteCacheDir }),
-        createAgentSandboxRuntimeProvider(),
-        provideWorkspaceTrust(resolved.root),
-        resolveModelAdapter(config, options),
-        NodeAgentHookCommandExecutor,
-        { provide: AgentHookCommandExecutor, useExisting: NodeAgentHookCommandExecutor },
-        { provide: AgentUiConfigService, useValue: config },
-        { provide: AGENT_SSH_OPTIONS, useValue: resolved.ssh ?? {} },
+        ...buildAgentRuntimeProviders(config, resolved, options),
         ...extraProviders
     ], ui, {
         deps: gatewayUrl ? [ServerCommonModule] : [ServerCommonModule, AgentAppServerModule],
         persistCommandOutput: true,
+        pair: gatewayUrl ? async () => {
+            const response = await fetch(`${gatewayUrl}/api/pair/create`, {
+                method: 'POST',
+                headers: (options as AgentAttachOptions).token ? { Authorization: `Bearer ${(options as AgentAttachOptions).token}` } : {}
+            });
+            if (!response.ok) {
+                return null;
+            }
+            const payload = await response.json() as { code?: string; expiresAt?: number; urls?: string[] };
+            const url = Array.isArray(payload.urls) ? String(payload.urls[0] || '') : '';
+            return url ? { url, code: payload.code, expiresAt: payload.expiresAt } : null;
+        } : undefined,
         restart: (sessionId: string) => {
             // Re-enter this launcher in-process once the old app has restored
             // the terminal. A child process would outlive the shell's job and

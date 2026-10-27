@@ -54,6 +54,8 @@ export interface AgentConsoleLaunchExtras {
     persistCommandOutput?: boolean;
     /** `/restart` relaunch hook supplied by the host process (the CLI spawns a fresh TUI). */
     restart?: (sessionId: string) => void;
+    /** `/pair` mints a one-time browser link for the running web console. */
+    pair?: () => Promise<{ url: string; code?: string; expiresAt?: number } | null>;
 }
 
 /**
@@ -185,6 +187,18 @@ export async function runAgentConsole(
             ...extraProviders
         ]
     });
+
+    if (extras.pair) {
+        try {
+            const bootstrapped = resolveBootstrappedConsole(ctx)?.sessionState
+                ?? (ctx?.get ? ctx.get(AgentConsoleSessionState) : undefined);
+            if (bootstrapped) {
+                bootstrapped.pairAction = extras.pair;
+            }
+        } catch {
+            // Without a rendered state `/pair` simply reports that no web console runs.
+        }
+    }
 
     if (extras.restart) {
         try {

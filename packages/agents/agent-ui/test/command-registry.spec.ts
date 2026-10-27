@@ -22,7 +22,7 @@ const GROUP_COUNTS: Record<string, number> = {
     review: 8,
     hooks: 4,
     delegation: 10,
-    system: 4
+    system: 5
 };
 
 const NEEDS_ARGS_COMMANDS = [
@@ -35,9 +35,9 @@ const NEEDS_ARGS_COMMANDS = [
 @Suite('Agent console command registry')
 export class AgentConsoleCommandRegistryTest {
 
-    @Test('defines all 94 commands with defined groups, /help first')
+    @Test('defines all 95 commands with defined groups, /help first')
     registryCompleteness() {
-        expect(AGENT_CONSOLE_COMMAND_DEFINITIONS.length).toEqual(94);
+        expect(AGENT_CONSOLE_COMMAND_DEFINITIONS.length).toEqual(95);
         expect(AGENT_CONSOLE_COMMAND_DEFINITIONS[0].name).toEqual('/help');
         AGENT_CONSOLE_COMMAND_DEFINITIONS.forEach(def => {
             expect(def.name.startsWith('/')).toEqual(true);

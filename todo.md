@@ -2473,3 +2473,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 初版 `/reload` 只重读 `settings.json`；主题/键位/状态栏/raw 模式/模型库各自独立存储，mentions/tools 也未刷新，外部改 `securityLevel` 只更新状态不应用权限。
 - 现在 `/reload` 重跑启动恢复链（settings、theme、global keymap、statusline、title、raw mode、model store、mentions、tools），并重新应用持久化安全级别（plan/yolo/sandbox）。
 - 验证：agent-ui 1822 通过；真实 TUI parity 8/8（`securityLevel: read-only` 外部写入 → `/reload` 后 plan 徽标出现、沙箱复位、状态显示 `security level: read-only`）。
+
+## Web 协作：headless `serve` + `/pair` + 页头会话（2026-10）
+
+- 现状：`web/index.html`、`web/dist/agent-console.js`、`PairingStore` 已存在，但没有命令启动/托管它们，配对码也未接入鉴权（死代码）。
+- 新增 `tsdi-agent serve`：headless 启动 `AgentGatewayModule`（`staticDir=@tsdi/agent-ui/web`，`--host/--port/--token/--static`），打印一次性配对链接与 `attach` 命令；不启动 TUI。
+- 网关配对：`POST /api/pair`（免鉴权、限流、单次 code → bearer token）、`POST /api/pair/create`（鉴权后生成，返回 URL/过期时间）；`PairingStore` 提升到 128-bit。
+- 网页：`?pair=<code>` 自动换取 token 存入 `sessionStorage` 并清理 URL；页头会话下拉（`session.list` 标题 + 相对时间、倒序）+ `+ New`（`session.create`）+ 切换（`?session=`）；随后加载 console bundle。
+- TUI `/pair`（`/web` 别名）：attached 模式经网关 `/api/pair/create` 生成链接；无 web 服务时给出可操作提示。
+- 验证：gateway 364（新增配对 HTTP 用例）、agent-ui 1824、agent-cli 118；真实跑通 `serve` → 页面/header.js → 配对/RPC → `attach` TUI → `/pair` → 共享会话（7/7）。
+- 备注：`attach` 的 TUI 仍会打开本地 DB（与 serve 同库时打印“另一个进程正在使用数据库”的提示，WAL 下可用）；后续可考虑 attached 模式跳过本地 ORM。
