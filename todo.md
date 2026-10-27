@@ -2372,3 +2372,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - `/diagnostics` → `all sessions · 206 turns · empty 7.3% · repeated 1.9% · clarif 15% · 43 compact(s) · saved 35.8K tokens`（DI 修复后真实数据）；
 - `/delegation tree` → 父 + 2 子（nested·completed·时间范围·goal）；
 - `/cd /tmp/opencode` → 状态栏切换；`!echo smoke-ok` → `$ echo smoke-ok` + `smoke-ok`。
+
+## 2026-10-27 `/experimental` 是安慰剂开关（接受任意名字、不持久化、无消费者）
+- 实测（真实 TUI）：`/experimental bogus-flag on` → `Experimental feature "bogus-flag" enabled.`；重启后设置消失（`settings.json` 无 `ui.experimental`）。
+- 代码：`runExperimentalCommand` 只把名字写进**内存** `options.ui.experimental`，既不 `persistSettings`，也没有任何消费方（全仓仅 `/debug-config` 读取用于展示）；因此该命令不会改变任何行为，且重启即丢。
+- 建议（未实施，需拍板）：
+  1. **校验 + 持久化**：维护已知实验特性注册表，未知名字拒绝并列出可用项；已知项写入 settings（与 `/theme`、`/raw`、`/display` 一致）；
+  2. **诚实降级**：注册表为空时提示"当前版本没有可用的实验特性"，不再接受任意名字；
+  3. 若确实计划扩展，保留命令但补上至少一个真实消费者。
+- 影响面：仅该命令；不影响其它路径。
