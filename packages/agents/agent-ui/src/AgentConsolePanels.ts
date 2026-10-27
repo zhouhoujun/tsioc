@@ -4,6 +4,7 @@ import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import { formatAgentUiLabel, formatAgentKeymapActionLabel, formatAgentPanelLabel as panelLabel, formatAgentPanelStatusLabel as panelStatusLabel } from './agent-ui.i18n';
 import { formatAgentConsoleInputBadges } from './AgentConsoleInputBadges';
+import { formatAgentMessageDetailSummary } from './AgentConsoleMessageDetailMeta';
 import { formatScheduledTaskDetailLines } from './AgentConsoleScheduledTaskFormat';
 import { formatReviewHeaderMeta, formatReviewSelectionMeta, formatReviewStatsMeta } from './AgentConsoleReviewPanelFormat';
 import { resolveMessageRowOffset } from './AgentConsoleTranscriptLayout';
@@ -2972,7 +2973,7 @@ export class AgentConsoleMessagesPanelComponent {
     `
 })
 export class AgentConsoleMessageDetailPanelComponent {
-    constructor(private state: AgentConsoleSessionState) {
+    constructor(private state: AgentConsoleSessionState, @Optional() private translator?: TranslatorService) {
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -3040,15 +3041,13 @@ export class AgentConsoleMessageDetailPanelComponent {
         if (!this.shouldShow || !this.selectedMessage) {
             return '';
         }
-        const role = String(this.selectedMessage.role || 'system').toLowerCase();
-        const displayMessages = this.state.displayMessages;
-        const selectedIndex = Math.max(0, displayMessages.findIndex(item => item.id === this.selectedMessage?.id));
-        const total = this.contentLines.length;
-        const start = Math.min(total, this.state.messageDetailScroll + 1);
-        const end = Math.min(total, this.state.messageDetailScroll + this.visibleLines.length);
-        const column = this.state.messageDetailColumnScroll + 1;
-        const totalColumns = Math.max(1, this.state.messageDetailMaxColumn);
-        return `message ${selectedIndex + 1}/${displayMessages.length} ${role}  |  lines ${start}-${end} / ${total}  |  col ${column}/${totalColumns}`;
+        return formatAgentMessageDetailSummary(
+            this.state,
+            this.selectedMessage,
+            this.contentLines.length,
+            this.visibleLines.length,
+            this.translator
+        );
     }
 
     get detailHintLabel(): string {

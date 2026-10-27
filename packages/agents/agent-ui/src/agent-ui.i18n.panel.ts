@@ -1,3 +1,4 @@
+import { AGENT_UI_PANEL_RUNTIME_EN, AGENT_UI_PANEL_RUNTIME_ZH } from './agent-ui.i18n.panel.runtime';
 /**
  * Panel chrome copy (session list, task/plan, jobs, tool runs, overlays,
  * command outputs, keymap, pending questions, health popover, usage/debug
@@ -11,7 +12,7 @@
 import { AGENT_UI_REVIEW_EN, AGENT_UI_REVIEW_ZH } from './agent-ui.i18n.review';
 import { AGENT_UI_TASKS_EN, AGENT_UI_TASKS_ZH } from './agent-ui.i18n.tasks';
 
-export const AGENT_UI_PANEL_EN: Record<string, any> = {
+const AGENT_UI_PANEL_CORE_EN: Record<string, any> = {
     sessions: {
         summary: 'sessions {total} · {index}/{total}',
         current: 'current',
@@ -239,38 +240,12 @@ export const AGENT_UI_PANEL_EN: Record<string, any> = {
         statusError: 'error',
         statusUnknown: 'unknown'
     },
-    state: {
-        on: 'ON',
-        off: 'OFF',
-        none: 'none',
-        default: '(default)'
-    },
-    usage: {
-        day: 'day',
-        week: 'week',
-        all: 'all',
-        window: '{label} {turns} turns · {input} in · {output} out · {total} total'
-    },
-    dashboard: {
-        usage: 'usage',
-        quality: 'quality',
-        compaction: 'compaction',
-        diagnostics: 'diagnostics'
-    },
-    debug: {
-        title: 'Debug config:',
-        available: ' (available: {names})',
-        session: 'session: {sessionId} · workspace: {workspace}',
-        on: 'on',
-        off: 'off'
-    },
-    apps: {
-        categoryCode: 'code',
-        categoryMessaging: 'messaging'
-    },
-    pager: {
-        plain: 'Pager · Esc close · ↑↓ scroll',
-        withMatches: 'Pager {index}/{total} · Esc close · ↑↓ scroll'
+    messageDetail: {
+        summary: 'message {index}/{messages} {role}  |  lines {start}-{end} / {lines}  |  col {column}/{columns}',
+        roleUser: 'user',
+        roleAssistant: 'assistant',
+        roleTool: 'tool',
+        roleSystem: 'system'
     },
     input: {
         planNudge: 'Planning intent detected · use /plan',
@@ -301,7 +276,7 @@ export const AGENT_UI_PANEL_EN: Record<string, any> = {
     }
 };
 
-export const AGENT_UI_PANEL_ZH: Record<string, any> = {
+const AGENT_UI_PANEL_CORE_ZH: Record<string, any> = {
     sessions: {
         summary: '会话 {total} · {index}/{total}',
         current: '当前',
@@ -529,38 +504,12 @@ export const AGENT_UI_PANEL_ZH: Record<string, any> = {
         statusError: '异常',
         statusUnknown: '未知'
     },
-    state: {
-        on: '开启',
-        off: '关闭',
-        none: '无',
-        default: '（默认）'
-    },
-    usage: {
-        day: '今天',
-        week: '本周',
-        all: '全部',
-        window: '{label} {turns} 轮 · 输入 {input} · 输出 {output} · 合计 {total}'
-    },
-    dashboard: {
-        usage: '用量',
-        quality: '质量',
-        compaction: '压缩',
-        diagnostics: '诊断'
-    },
-    debug: {
-        title: '调试配置：',
-        available: '（可用：{names}）',
-        session: '会话：{sessionId} · 工作区：{workspace}',
-        on: '开启',
-        off: '关闭'
-    },
-    apps: {
-        categoryCode: '代码',
-        categoryMessaging: '消息'
-    },
-    pager: {
-        plain: '翻页 · Esc 关闭 · ↑↓ 滚动',
-        withMatches: '翻页 {index}/{total} · Esc 关闭 · ↑↓ 滚动'
+    messageDetail: {
+        summary: '消息 {index}/{messages} {role}  |  行 {start}-{end} / {lines}  |  列 {column}/{columns}',
+        roleUser: '用户',
+        roleAssistant: '助手',
+        roleTool: '工具',
+        roleSystem: '系统'
     },
     input: {
         planNudge: '检测到规划意图 · 使用 /plan',
@@ -590,3 +539,8 @@ export const AGENT_UI_PANEL_ZH: Record<string, any> = {
         cancelKeepReverted: '保留已回退的工作区'
     }
 };
+
+
+/** Full panel catalog: core groups plus the runtime chrome split (`*.runtime.ts`). */
+export const AGENT_UI_PANEL_EN: Record<string, any> = { ...AGENT_UI_PANEL_CORE_EN, ...AGENT_UI_PANEL_RUNTIME_EN };
+export const AGENT_UI_PANEL_ZH: Record<string, any> = { ...AGENT_UI_PANEL_CORE_ZH, ...AGENT_UI_PANEL_RUNTIME_ZH };

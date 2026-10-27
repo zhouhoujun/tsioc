@@ -46,6 +46,7 @@ import { openGitSnapshotDiff, runGitSnapshotsCommand } from '../src/AgentConsole
 import { agentUiLocale, formatAgentPanelLabel, formatAgentUiDate, formatAgentUiDateTime, formatAgentUiLabel, formatAgentUiNotice, formatAgentUiTime } from '../src/agent-ui.i18n';
 import { COMMAND_HANDLERS } from '../src/AgentConsoleCommandHandlers';
 import { formatReviewGroupMeta, formatReviewHeaderMeta, formatReviewSelectionMeta, formatReviewStatsMeta } from '../src/AgentConsoleReviewPanelFormat';
+import { formatAgentMessageDetailSummary } from '../src/AgentConsoleMessageDetailMeta';
 import { createReviewTask } from './_helpers';
 import { loadInputHistory } from '../src/AgentConsoleInputHelpers';
 import { openCommandPaletteView } from '../src/AgentConsoleTerminalInputController';
@@ -695,6 +696,24 @@ export class PanelI18nTest {
             pushCommandOutput: () => { /* unused */ }
         } as any, 'pop missing');
         expect(notices[0]).toEqual('没有名为 "missing" 的暂存。可用：无。');
+    }
+
+    @Test('message inspector header follows the locale')
+    async messageDetailHeaderLocalized() {
+        const state = {
+            displayMessages: [{ id: 'm1' }, { id: 'm2' }],
+            messageDetailScroll: 0,
+            messageDetailColumnScroll: 0,
+            messageDetailMaxColumn: 16
+        };
+        expect(formatAgentMessageDetailSummary(state, { id: 'm2', role: 'assistant' }, 5, 3, zh))
+            .toEqual('消息 2/2 助手  |  行 1-3 / 5  |  列 1/16');
+        expect(formatAgentMessageDetailSummary(state, { id: 'm1', role: 'user' }, 1, 1, zh))
+            .toEqual('消息 1/2 用户  |  行 1-1 / 1  |  列 1/16');
+        expect(formatAgentMessageDetailSummary(state, { id: 'm1', role: 'user' }, 1, 1, en))
+            .toEqual('message 1/2 user  |  lines 1-1 / 1  |  col 1/16');
+        expect(formatAgentMessageDetailSummary(state, { id: 'm1', role: 'mystery' }, 2, 2, zh))
+            .toEqual('消息 1/2 mystery  |  行 1-2 / 2  |  列 1/16');
     }
 
     @Test('IDE and voice output copy is localized')

@@ -2202,3 +2202,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **测试**：`panel-i18n.spec.ts` 54 → **55 条**（`/stash pop missing` 无暂存 → `没有名为 "missing" 的暂存。可用：无。`）；notice 键数守卫 589 → **590**。
 - **真实 TUI（zh-CN）复核**：`没有名为 "missing" 的暂存。可用：无。`
 - **门禁**：agent-ui **1767 passing**（EXIT=0）；`bash scripts/agents-gate.sh` **26 PASS / 1 SKIP**；`RUN_PTY=1` PTY PASS；source-size、tsc、Web build、DOM/TUI gate、`git diff --check` 全部通过。
+
+## 2026-10-27 消息检查器头部中文化 + panel catalog 拆分
+- **现象（zh-CN 真实 TUI）**：`/messages` 打开消息详情时头部是 `message 1/2 user  |  lines 1-1 / 1  |  col 1/16`（整行硬编码英文，含角色词）。
+- **做法**：
+  - 新增 panel `messageDetail` 组（`summary` 模板 + `roleUser/roleAssistant/roleTool/roleSystem`），en `message {index}/{messages} {role} | lines {start}-{end} / {lines} | col {column}/{columns}` / zh `消息 …  |  行 …  |  列 …`；未知角色回退原 role id。
+  - 逻辑抽到 `AgentConsoleMessageDetailMeta.formatAgentMessageDetailSummary()`，详情面板改为注入可选 `TranslatorService`（`@Optional()`），`AgentConsolePanels` 4137 → **4131**（baseline 4133 → **4132**）。
+  - **catalog 拆分**（panel 已达 592 行，逼近 600 上限）：`state/usage/dashboard/debug/apps/pager` 六组移入新文件 `agent-ui.i18n.panel.runtime.ts`，`agent-ui.i18n.panel.ts` 592 → **532**（+79），`AGENT_UI_PANEL_EN/ZH` 仍在原文件合并导出，key-set 锁步守卫与值级守卫无需改动。
+- **测试**：`panel-i18n.spec.ts` 55 → **56 条**（zh `消息 2/2 助手  |  行 1-3 / 5  |  列 1/16`、`消息 1/2 用户 …`；en `message 1/2 user …`；未知角色 `mystery` 原样保留）。
+- **真实 TUI（zh-CN）复核**：`/messages` → 详情头部 `消息 1/2 用户  |  行 1-1 / 1  |  列 1/16`。
+- **门禁**：agent-ui **1768 passing**（EXIT=0）；source-size、tsc、`git diff --check` 通过（完整 `agents-gate.sh` 本轮再次被中断，已通过的前序阶段见日志；下轮补跑 gate + PTY）。
