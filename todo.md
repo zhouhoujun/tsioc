@@ -2467,3 +2467,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 测试：`rename-reload-restart.spec.ts` 3 例、`session-picker.spec.ts` 5 例（含 DEL、项目作用域、时间格式）；agent-ui 1822、agent-cli 118 通过。
 - 真实 TUI（pyte，隔离 root）：parity 7/7（rename/usage/title、reload 生效、restart 后 session 不变）；sessions 8/8（时间、输入搜索、退格、Esc 两级、`/sessions <query>`）。
 - 记录：`/restart` 不能 spawn 子进程（真实 shell 下 shell 会重新抢终端）；必须同一进程内重启。
+
+## `/reload` 覆盖完整控制台配置（2026-10）
+
+- 初版 `/reload` 只重读 `settings.json`；主题/键位/状态栏/raw 模式/模型库各自独立存储，mentions/tools 也未刷新，外部改 `securityLevel` 只更新状态不应用权限。
+- 现在 `/reload` 重跑启动恢复链（settings、theme、global keymap、statusline、title、raw mode、model store、mentions、tools），并重新应用持久化安全级别（plan/yolo/sandbox）。
+- 验证：agent-ui 1822 通过；真实 TUI parity 8/8（`securityLevel: read-only` 外部写入 → `/reload` 后 plan 徽标出现、沙箱复位、状态显示 `security level: read-only`）。

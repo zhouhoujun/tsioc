@@ -437,7 +437,7 @@ export const AGENT_UI_NOTICE_EN: NestedMessages = {
   securityLevelSet: 'Security level: {level}',
   securityLevelCurrent: 'security level: {level}',
   securityLevelTitle: 'Security level',
-  configurationReloaded: 'Configuration reloaded from workspace settings.',
+  configurationReloaded: 'Configuration reloaded.',
   restartUnavailable: 'Restart is unavailable in this host.',
   feedbackPackagingDiagnostics: 'Packaging diagnostics for feedback:',
   feedbackStep1: '1. Run /debug-config and include the output.',

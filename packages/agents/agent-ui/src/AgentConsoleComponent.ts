@@ -2048,7 +2048,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             runVimCommand: (a) => self.runVimCommand(a),
             runKeymapCommand: (a) => self.runKeymapCommand(a),
             runPermissionsCommand: (a) => self.runPermissionsCommand(a),
-            runReloadCommand: () => runReloadCommandView(() => self.restoreSettings(), (message: string) => self.notify(message), self.translator),
+            runReloadCommand: () => runReloadCommandView(async () => { await self.restoreSettings(); await self.restoreTheme(); await self.restoreGlobalKeymap(); await self.restoreStatusline(); await self.restoreTitle(); await self.restoreRawMode(); await self.restoreModelStore(); await self.refreshMentionCatalog(); await self.refreshTools(); if (self.state.securityLevel) { await applySecurityLevel(self.policyCommandHost(), self.state.securityLevel, { notify: false, persist: false }); } }, (message: string) => self.notify(message), self.translator),
             runStatusCommand: () => self.runStatusCommand(),
             runCdCommand: (a) => self.runCdCommand(a),
             runGoalCommand: (a) => self.runGoalCommand(a),

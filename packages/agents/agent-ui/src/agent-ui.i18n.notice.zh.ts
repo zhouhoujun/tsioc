@@ -437,7 +437,7 @@ export const AGENT_UI_NOTICE_ZH: NestedMessages = {
   securityLevelSet: '安全级别：{level}',
   securityLevelCurrent: '安全级别：{level}',
   securityLevelTitle: '安全级别',
-  configurationReloaded: '已从 workspace 设置重新加载配置。',
+  configurationReloaded: '配置已重新加载。',
   restartUnavailable: '当前宿主不支持重启。',
   feedbackPackagingDiagnostics: '正在打包诊断信息用于反馈：',
   feedbackStep1: '1. 运行 /debug-config 并附上输出。',

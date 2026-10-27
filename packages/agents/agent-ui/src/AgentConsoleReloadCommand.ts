@@ -1,6 +1,6 @@
 import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
-/** `/reload` re-reads the workspace settings and reports the outcome. */
+/** `/reload` re-reads the workspace configuration (settings, theme, keymap, …) and reports the outcome. */
 export async function runReloadCommandView(
     reload: () => Promise<void>,
     notify: (message: string) => void,
