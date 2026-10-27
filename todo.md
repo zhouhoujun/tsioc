@@ -2288,3 +2288,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 修复：`resolveTimelineMeta()` 对 `metadata.type === 'shell'` 且 `status === 'success'` 跳过状态词；失败行仍显示 `Failed`，其他 tool 行不变。
 - 测试：新增 `shell-row-meta.spec.ts` 3 例（成功无状态词 / 失败保留 / 非 shell 行保留）。**RED**：成功行收到 `Success`。
 - 真实 TUI：`!echo hi-from-bang` → `$ echo hi-from-bang` + 输出行。
+
+## 2026-10-27 plan mode / yolo 真实 TUI 验证（无缺陷）
+- 环境：`--workspace sleep-mlt`、`gpt-6.1-sol`、相对路径 `plan-probe.txt`（避免越界策略干扰）。
+- `/plan on`：提示 `Plan mode enabled — write tools will be denied.`，输入框徽章 `· plan`；同一写文件请求后**文件未创建**，模型回复「当前处于只读规划模式，无法创建文件」。
+- `/plan off` + `/yolo on`：徽章 `· auto-approve`；同请求得到 `✓ Create file · plan-probe.txt (10ms)`，**无审批提示**，文件创建成功（探针结束已删除）。
+- 附带验证：写 `/tmp/...` 绝对路径时被文件策略拒绝，提示 `Path '…' is outside the allowed workspace root. Use a workspace-relative path (root: …); do not use absolute paths or '..'`（可操作，符合 §9）。
+- 备注：plan 模式那一轮模型是"自我克制"未调用工具，运行时 gate 本身由单测覆盖；用户可见结果正确。
