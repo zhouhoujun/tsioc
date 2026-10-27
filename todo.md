@@ -2363,3 +2363,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 顺带：`agent/src/index.ts` 导出 `project/workspace-trust`（供网关复用同一判定），`AppRpcServer` 增加 `@Inject(AGENT_WORKSPACE_TRUST)`。
 - 测试：`agent-gateway/test/tool-invoke-trust.spec.ts` 3 例（不可信拒绝且不调用工具、批准后放行、可信/只读跳过）。agent-gateway **363**、agent **1042 passing**。
 - 真实 TUI：`/cd /tmp/opencode/untrusted-probe` → `!touch x.txt` 弹出 `workspace_trust` 审批（文件未创建）→ 按 `a` 批准后文件创建成功。
+
+## 2026-10-27 回归冒烟（`/cd` + DI 大改之后，真实 TUI，无回退）
+- 会话：`chatfa2cf1a39ca44a69c853ff190941a29d`（有委派边）、`--workspace sleep-mlt`、`gpt-6.1-sol`。
+- `/stash list` → 暂存提示正常；`/ps all` → 2 条已完成历史任务（水合生效，含 session/goal）；
+- `/sessions` → 选择器可见（`enter switch`），分组列表 + `[current]`；
+- `/attach` → `No pending attachments.`；
+- `/diagnostics` → `all sessions · 206 turns · empty 7.3% · repeated 1.9% · clarif 15% · 43 compact(s) · saved 35.8K tokens`（DI 修复后真实数据）；
+- `/delegation tree` → 父 + 2 子（nested·completed·时间范围·goal）；
+- `/cd /tmp/opencode` → 状态栏切换；`!echo smoke-ok` → `$ echo smoke-ok` + `smoke-ok`。
