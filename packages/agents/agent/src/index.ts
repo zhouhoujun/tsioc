@@ -10,6 +10,7 @@ export * from './AgentWorkspacePath';
 export * from './project/agents-doc';
 export * from './project/init-agents-doc';
 export * from './project/trusted-projects';
+export * from './project/workspace-trust';
 
 export * from './model/ModelAdapter';
 export * from './model/RetryPolicy';

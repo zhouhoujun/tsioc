@@ -2356,3 +2356,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `agent-ui/test/workspace-propagation.spec.ts` 3 例：`run.turn_stream` 参数、进程内 `runStreamingTurn` 第 7 参、空 workspace 不污染。
 - 基线：agent-tools **576**、agent **1042**、agent-gateway **360**、agent-ui **1794**。
 - 语义说明：`/cd` 是会话内运行时状态（重启后回到 `--workspace`）；会话行 workspace 仍保留启动值（用于分组）。`!cmd` 走 RPC 工具调用，不受 turn 级 workspace 信任门禁约束（既有行为，已记录）。
+
+### 补：`!cmd` 在不可信工作区仍绕过信任门禁（已修）
+- 现象：`/cd` 到不可信目录后，turn 里模型调用 `write_file` 会先弹 `workspace_trust`（已实测），但 `!cmd` 走 RPC `tools.invoke`，**绕过 runtime 的信任检查**——可以直接 `!rm`。属既有行为（以前 workspace 不会变，所以不显眼），`/cd` 真正生效后成为实际风险。
+- 修复：新增 `agent-gateway/src/app-rpc/tool-invoke.ts`：`invokeToolWithWorkspaceTrust()` 承载原 `invokeTool` 逻辑；当请求带**显式 workspace**、该目录不可信、且工具属于 workspace-mutating（`terminal`/`write_file`/… 复用 `isWorkspaceMutatingTool`）时，走 `resolveWorkspaceTrustApproval`（与 turn 路径同一套审批与文案）；未批准返回 `Workspace '<x>' is not trusted; tool "<name>" would modify it. Run \`tsdi-agent trust <x>\` …`。`AppRpcServer.invokeTool` 收敛为一行委托（净减行，ratchet 不增）。
+- 顺带：`agent/src/index.ts` 导出 `project/workspace-trust`（供网关复用同一判定），`AppRpcServer` 增加 `@Inject(AGENT_WORKSPACE_TRUST)`。
+- 测试：`agent-gateway/test/tool-invoke-trust.spec.ts` 3 例（不可信拒绝且不调用工具、批准后放行、可信/只读跳过）。agent-gateway **363**、agent **1042 passing**。
+- 真实 TUI：`/cd /tmp/opencode/untrusted-probe` → `!touch x.txt` 弹出 `workspace_trust` 审批（文件未创建）→ 按 `a` 批准后文件创建成功。

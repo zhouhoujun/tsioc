@@ -1,7 +1,7 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { UuidGenerator } from '@tsdi/core';
-import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeAgentWorkspaceIdentity, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, CommandExchangeStore, CommandExchangeRecord, CommandExchangeStaleError, parseCommandExchangeRecord, redactCommandExchangeRecord, ApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, redactCommandOutputEntry, normalizeAgentRpcRequestMeta, COMMAND_EXCHANGE_STORE, BACKGROUND_TASK_HISTORY_STORE, BackgroundTaskHistoryStore, BackgroundTaskPageOptions, collectDelegationSessionIds, ExchangeMetrics, ExchangeMetricsSnapshot } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeAgentWorkspaceIdentity, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, CommandExchangeStore, CommandExchangeRecord, CommandExchangeStaleError, parseCommandExchangeRecord, redactCommandExchangeRecord, ApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, redactCommandOutputEntry, normalizeAgentRpcRequestMeta, COMMAND_EXCHANGE_STORE, BACKGROUND_TASK_HISTORY_STORE, BackgroundTaskHistoryStore, BackgroundTaskPageOptions, collectDelegationSessionIds, ExchangeMetrics, ExchangeMetricsSnapshot, AGENT_WORKSPACE_TRUST } from '@tsdi/agent';
 import { resolveModelCatalog } from './modelCatalog';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
@@ -16,6 +16,7 @@ import { CloudTaskQueue } from '../cloud/CloudTaskQueue';
 import { QuestionStore } from './QuestionStore';
 import { describeToolCompletedEvent, describeToolInvocationEvent } from './tool-event-content';
 import { toAppRpcError } from './rpcError';
+import { ToolInvokeHost, invokeToolWithWorkspaceTrust } from './tool-invoke';
 import { ApprovalRequestedChunkFields, buildApprovalRequestedChunk } from './approval-chunk';
 import { SessionAggregationDeps, getTodoPlan, getTodoPlans, listCodingTasks } from './session-aggregation';
 
@@ -51,7 +52,7 @@ export class AppRpcServer {
         @Optional() @Inject(QuestionStore) private questionStore?: QuestionStore | null,
         @Optional() private onQuestionAnswered?: ((questionId: string, sessionId: string, answer?: string, dismissed?: boolean) => void | Promise<void>) | null,
         @Optional() @Inject(BACKGROUND_TASK_HISTORY_STORE) private backgroundTaskStore?: BackgroundTaskHistoryStore | null,
-        @Optional() @Inject(ExchangeMetrics) private exchangeMetrics?: ExchangeMetrics | null
+        @Optional() @Inject(ExchangeMetrics) private exchangeMetrics?: ExchangeMetrics | null, @Optional() @Inject(AGENT_WORKSPACE_TRUST) private workspaceTrust?: import('@tsdi/agent').AgentWorkspaceTrustResolver | null
     ) {
     }
 
@@ -1827,11 +1828,7 @@ export class AppRpcServer {
     }
 
     private async invokeTool(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
-        const name = this.requireString(params?.name, 'tools.invoke name');
-        await this.ensureSessionAccess(sessionId, context);
-        const output = await this.tools.invoke(name, params?.input, sessionId, context.principalId, typeof params?.workspace === 'string' && params.workspace.trim() ? params.workspace.trim() : undefined);
-        return { sessionId, name, output };
+        return invokeToolWithWorkspaceTrust(this as unknown as ToolInvokeHost, params, context);
     }
 
     private listModelProfiles(): any[] {
