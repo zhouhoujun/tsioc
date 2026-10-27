@@ -2334,3 +2334,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 真实影响：回退对每个 handler 做 `injector.get(Ctor)`，其中 `EvalHandler → EvalRunner` 因 `options` 对象参数缺少 `@Optional()` 抛 `MissingParameterException`，被 `catch` 吞掉 → **只有 eval 路由被静默丢弃**（其余 handler 构造正常，路由照常挂载）。
 - 因此该提交的实际价值：① 构造注入不再依赖 `optionalHandler` 回退（去掉这层隐式兜底）；② 恢复 eval 路由（`EvalHandler.getRoutes()` 现在 2 条）；③ 用 DI 测试锁定这些接线，避免回退再次掩盖问题。
 - 仍未验证：独立网关的端口级端到端（`GatewayBootstrap.start()` 监听 + HTTP 请求）；本 CLI 没有 `serve` 子命令，网关由宿主进程以 `AgentGatewayModule` 启动。
+
+### 端口级端到端验证（2026-10-27，gateway）
+- 脚本：`Application.run(AgentGatewayModule)` + 临时 ORM 根 + `GATEWAY_CONFIG {host:127.0.0.1, port:18321}`。
+- 结果：`GET /health` → **200** `{"status":"ok"}`；`GET /openapi.json` → **38 条路由**，包含 `/api/eval`、`/api/eval/run`（修复前 eval handler 因 `EvalRunner` 构造抛错被 `optionalHandler` 吞掉，这两条路由缺失）。
+- 另核：`GitStepSnapshotStore` 在 DI 下可正常解析；`AcpClient` 未被 `AgentModule` 提供（按设计，非缺陷）。
