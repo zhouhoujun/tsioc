@@ -4,21 +4,22 @@ import * as os from 'os';
 import * as path from 'path';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { runLayoutCommand } from '../src/AgentConsoleSettingsCommands';
+import { applyPersistedLayout, mapTuiLayoutArg, runLayoutCommand } from '../src/AgentConsoleSettingsCommands';
 import { handleTerminalInputView, syncConsoleMessageDetailViewportView } from '../src/AgentConsoleTerminalInputController';
 import { resolveTranscriptLayout } from '../src/AgentConsoleTranscriptLayout';
 import { AgentConsoleSettingsStore } from '../src/AgentConsoleSettingsStore';
+import { normalizeMessageLayout } from '../src/AgentConsoleViewport';
 import { defaultAgentConsoleOptions } from '../src/AgentConsoleSessionState';
 import { AgentConsoleSessionState } from '../src/AgentConsoleSessionState';
 import { TestFileAdapter } from './_helpers';
 
-function layoutState(initial: 'stream' | 'viewport' = 'viewport') {
+function layoutState(initial: 'scrollback' | 'viewport' = 'viewport') {
     let current = initial;
     return {
         get current() { return current; },
         state: {
             messageLayout: initial,
-            setMessageLayout(value: 'stream' | 'viewport') {
+            setMessageLayout(value: 'scrollback' | 'viewport') {
                 current = value;
                 (this as any).messageLayout = value;
             }
@@ -33,32 +34,80 @@ export class AgentConsoleViewportLayoutTest {
         expect(defaultAgentConsoleOptions.messageLayout).toEqual('viewport');
     }
 
-    @Test('/layout toggles between viewport and stream and persists the choice')
+    @Test('/layout toggles between viewport and scrollback and persists the choice')
     async layoutTogglesAndPersists() {
         const harness = layoutState('viewport');
         const notices: string[] = [];
         const patches: Array<Record<string, any>> = [];
 
         await runLayoutCommand(undefined, harness.state as any, message => notices.push(message), async patch => { patches.push(patch); });
-        expect(harness.current).toEqual('stream');
-        expect(patches[patches.length - 1]).toEqual({ messageLayout: 'stream' });
+        expect(harness.current).toEqual('scrollback');
+        expect(patches[patches.length - 1]).toEqual({ messageLayout: 'scrollback' });
 
         await runLayoutCommand(undefined, harness.state as any, message => notices.push(message), async patch => { patches.push(patch); });
         expect(harness.current).toEqual('viewport');
         expect(patches[patches.length - 1]).toEqual({ messageLayout: 'viewport' });
-        expect(notices[notices.length - 1]).toContain('windowed');
+        expect(notices[notices.length - 1]).toContain('fullscreen');
     }
 
-    @Test('/layout accepts explicit values and legacy dynamic alias')
+    @Test('/layout accepts explicit values and the legacy dynamic alias')
     async layoutAcceptsExplicitValues() {
         const harness = layoutState('viewport');
         const run = (arg: string) => runLayoutCommand(arg, harness.state as any, () => {}, async () => {});
-        await run('stream');
-        expect(harness.current).toEqual('stream');
+        await run('scrollback');
+        expect(harness.current).toEqual('scrollback');
         await run('dynamic');
         expect(harness.current).toEqual('viewport');
         await run('windowed');
         expect(harness.current).toEqual('viewport');
+    }
+
+    @Test('restored settings apply the persisted layout and restart the surface once')
+    async restoreAppliesPersistedLayout() {
+        const harness = layoutState('viewport');
+        let restarts = 0;
+        applyPersistedLayout(harness.state as any, { messageLayout: 'scrollback' }, () => { restarts += 1; });
+        expect(harness.current).toEqual('scrollback');
+        expect(restarts).toEqual(1);
+
+        // Same mode again (e.g. the default) must not tear the surface down.
+        applyPersistedLayout(harness.state as any, { messageLayout: 'viewport' }, () => { restarts += 1; });
+        applyPersistedLayout(harness.state as any, { messageLayout: 'viewport' }, () => { restarts += 1; });
+        expect(harness.current).toEqual('viewport');
+        expect(restarts).toEqual(2);
+
+        // Legacy persisted value keeps restoring as scrollback.
+        applyPersistedLayout(harness.state as any, { messageLayout: 'stream' }, () => { restarts += 1; });
+        expect(harness.current).toEqual('scrollback');
+        expect(restarts).toEqual(3);
+
+        // No persisted value leaves the current mode alone.
+        applyPersistedLayout(harness.state as any, {}, () => { restarts += 1; });
+        expect(harness.current).toEqual('scrollback');
+        expect(restarts).toEqual(3);
+    }
+
+    @Test('/tui switches fullscreen and scrollback and restarts the surface only on change')
+    async tuiSwitchesBuffersAndRestartsSurface() {
+        expect(mapTuiLayoutArg('fullscreen')).toEqual('viewport');
+        expect(mapTuiLayoutArg('scrollback')).toEqual('scrollback');
+
+        const harness = layoutState('viewport');
+        let restarts = 0;
+        const run = (arg: string) => runLayoutCommand(
+            mapTuiLayoutArg(arg), harness.state as any, () => {}, async () => {}, null, () => { restarts += 1; }
+        );
+        await run('scrollback');
+        expect(harness.current).toEqual('scrollback');
+        expect(restarts).toEqual(1);
+
+        // Repeating the current mode must not tear the terminal surface down.
+        await run('scrollback');
+        expect(restarts).toEqual(1);
+
+        await run('fullscreen');
+        expect(harness.current).toEqual('viewport');
+        expect(restarts).toEqual(2);
     }
 
     @Test('/layout rejects unknown modes with usage text')
@@ -84,7 +133,11 @@ export class AgentConsoleViewportLayoutTest {
             expect((await store.load(workspace)).messageLayout).toEqual('viewport');
 
             fs.writeFileSync(file, JSON.stringify({ ...written, messageLayout: 'stream' }));
-            expect((await store.load(workspace)).messageLayout).toEqual('stream');
+            expect((await store.load(workspace)).messageLayout).toEqual('scrollback');
+
+            await store.save(workspace, { messageLayout: 'scrollback' });
+            expect(JSON.parse(fs.readFileSync(file, 'utf8')).messageLayout).toEqual('scrollback');
+            expect((await store.load(workspace)).messageLayout).toEqual('scrollback');
         } finally {
             fs.rmSync(workspace, { recursive: true, force: true });
         }
@@ -92,11 +145,17 @@ export class AgentConsoleViewportLayoutTest {
 
     @Test('transcript layout strategy selects native scrollback and wheel handling')
     layoutStrategy() {
-        expect(resolveTranscriptLayout('stream').usesNativeScrollback).toEqual(true);
-        expect(resolveTranscriptLayout('stream').wheelScrollsHistory).toEqual(false);
+        expect(resolveTranscriptLayout('scrollback').usesNativeScrollback).toEqual(true);
+        expect(resolveTranscriptLayout('scrollback').wheelScrollsHistory).toEqual(false);
         expect(resolveTranscriptLayout('viewport').usesNativeScrollback).toEqual(false);
         expect(resolveTranscriptLayout('viewport').wheelScrollsHistory).toEqual(true);
         expect(resolveTranscriptLayout('dynamic').usesNativeScrollback).toEqual(false);
+        // Persisted settings from older builds still resolve to the renamed mode.
+        expect(resolveTranscriptLayout('stream').mode).toEqual('scrollback');
+        expect(normalizeMessageLayout('stream')).toEqual('scrollback');
+        const legacy = new AgentConsoleSessionState();
+        legacy.setConsoleOptions({ messageLayout: 'stream' });
+        expect(legacy.messageLayout).toEqual('scrollback');
     }
 
     @Test('viewport scroll walks history and resumes follow at the tail')
@@ -139,11 +198,11 @@ export class AgentConsoleViewportLayoutTest {
         expect(state.messagesFocused).toEqual(true);
     }
 
-    @Test('stream layout ignores transcript scroll')
-    streamScrollIsNoop() {        const state = new AgentConsoleSessionState();
-        state.setConsoleOptions({ messageLayout: 'stream' });
+    @Test('scrollback layout ignores transcript scroll')
+    scrollbackScrollIsNoop() {        const state = new AgentConsoleSessionState();
+        state.setConsoleOptions({ messageLayout: 'scrollback' });
         state.setMessages(fiveMessages());
-        expect(resolveTranscriptLayout('stream').scroll(-1, navigationFor(state))).toEqual(false);
+        expect(resolveTranscriptLayout('scrollback').scroll(-1, navigationFor(state))).toEqual(false);
         expect(state.messagesFocused).toEqual(false);
         expect(state.selectedMessageId).not.toEqual('m4');
     }

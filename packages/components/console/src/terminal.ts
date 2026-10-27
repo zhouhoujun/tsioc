@@ -337,7 +337,7 @@ export abstract class ConsoleTerminalSurfaceLifecycle {
     resolveConsoleLayout?(): ConsoleTranscriptLayoutMode | undefined;
 }
 
-export type ConsoleTranscriptLayoutMode = 'stream' | 'viewport';
+export type ConsoleTranscriptLayoutMode = 'scrollback' | 'viewport';
 
 export interface ConsoleTranscriptLayoutFlags {
     nativeScrollback: boolean;
@@ -356,14 +356,16 @@ export function resolveConsoleTranscriptLayoutFlags(
             alternateScreen: lifecycle.shouldUseAlternateScreen?.() === true
         };
     }
-    const viewport = mode === 'viewport';
-    return { nativeScrollback: !viewport, scrollViewport: viewport, alternateScreen: viewport };
+    const scrollback = mode === 'scrollback' || (mode as string) === 'stream';
+    return { nativeScrollback: scrollback, scrollViewport: !scrollback, alternateScreen: !scrollback };
 }
 
 @Abstract()
 export abstract class ConsoleTerminalSurfaceAccessor {
     [noReact] = true;
     stopTerminal?(): void;
+    /** Re-evaluate the transcript layout (fullscreen vs native scrollback) and repaint. */
+    restartRendering?(): void;
     abstract getLastRenderedLines(): string[];
     abstract getLastRenderedText(stripAnsi: (value: string) => string): string;
     abstract getClickTargets(): TerminalClickTarget[];
@@ -539,6 +541,7 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
     protected readonly output = resolveConsoleHostProcess()?.stdout;
     protected useAlternateScreen = false;
     protected surfaceLayout?: ConsoleTranscriptLayoutFlags;
+    protected rendering = false;
     protected attachTimer?: ReturnType<typeof setTimeout>;
     protected readonly surfaceResizeListeners = new Set<() => void>();
     protected surfaceResizeBound = false;
@@ -578,13 +581,40 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
         );
         this.prepare();
         this.attach();
+        this.rendering = true;
     }
 
     stopRendering(): void {
+        if (!this.rendering) {
+            return;
+        }
+        this.rendering = false;
         this.cleanup({
             preserveScreen: true,
             retainedLines: this.useAlternateScreen ? [] : (this.surface?.lastRenderedLines || [])
         });
+    }
+
+    /**
+     * Re-evaluate the transcript layout after a runtime mode switch: leaves or
+     * enters the alternate screen and repaints the transcript from scratch.
+     * Surface resize listeners survive the restart (the app subscribes once).
+     */
+    restartRendering(): void {
+        if (!this.rendering) {
+            return;
+        }
+        const listeners = Array.from(this.surfaceResizeListeners);
+        this.stopRendering();
+        this.startRendering();
+        if (listeners.length === 0) {
+            return;
+        }
+        listeners.forEach(listener => this.surfaceResizeListeners.add(listener));
+        if (!this.surfaceResizeBound && this.output?.on) {
+            this.output.on('resize', this.handleSurfaceResize);
+            this.surfaceResizeBound = true;
+        }
     }
 
     getLastRenderedLines(): string[] {

@@ -560,7 +560,7 @@ export class AgentConsoleMessagesRendererTest {
     @Test('mounts semantic route components and only folds Thought in stream layout')
     async mountsSemanticRouteComponents() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
-        ref.instance.sessionState.setConsoleOptions({ messageLayout: 'stream' });
+        ref.instance.sessionState.setConsoleOptions({ messageLayout: 'scrollback' });
         const content = Array.from({ length: 12 }, (_, index) => `semantic line ${index + 1}`).join('\n');
         ref.instance.sessionState.setMessages([
             { id: 'thought', role: 'assistant', content, metadata: { uiEventType: 'reasoning' } },
@@ -655,7 +655,7 @@ export class AgentConsoleMessagesRendererTest {
     @Test('stream layout keeps focused assistant replies fully visible')
     async streamLayoutKeepsFocusedAssistantRepliesFull() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
-        ref.instance.sessionState.setConsoleOptions({ messageLayout: 'stream' });
+        ref.instance.sessionState.setConsoleOptions({ messageLayout: 'scrollback' });
         ref.instance.sessionState.setMessages([{
             id: 'a-stream',
             role: 'assistant',
@@ -679,7 +679,7 @@ export class AgentConsoleMessagesRendererTest {
     @Test('stream layout shows very long assistant replies in full (opencode-style)')
     async showsVeryLongAssistantRepliesInFullWhenUnfocused() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
-        ref.instance.sessionState.setConsoleOptions({ messageLayout: 'stream' });
+        ref.instance.sessionState.setConsoleOptions({ messageLayout: 'scrollback' });
         ref.instance.sessionState.setMessages([{
             id: 'a1',
             role: 'assistant',
@@ -740,7 +740,7 @@ export class AgentConsoleMessagesRendererTest {
             expect(consoleRef.instance.shouldEnableTerminalMouseTracking()).toBe(true);
             consoleRef.instance.sessionState.setStatus('running');
             expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(false);
-            consoleRef.instance.sessionState.setConsoleOptions({ messageLayout: 'stream' });
+            consoleRef.instance.sessionState.setConsoleOptions({ messageLayout: 'scrollback' });
             expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(true);
             expect(consoleRef.instance.shouldUseAlternateScreen()).toBe(false);
             expect(consoleRef.instance.shouldScrollViewport()).toBe(true);
@@ -748,7 +748,7 @@ export class AgentConsoleMessagesRendererTest {
             consoleRef.instance.sessionState.setConsoleOptions({ messageLayout: 'viewport' });
             expect(consoleRef.instance.shouldUseNativeScrollback()).toBe(false);
             expect(consoleRef.instance.shouldScrollViewport()).toBe(true);
-            consoleRef.instance.sessionState.setConsoleOptions({ messageLayout: 'stream' });
+            consoleRef.instance.sessionState.setConsoleOptions({ messageLayout: 'scrollback' });
             const renderer = tuiCtx.get(TuiRenderer);
 
             consoleRef.instance.sessionState.setMessages([{
@@ -2564,7 +2564,7 @@ export class AgentConsoleTuiRendererTest {
     async largeStreamRendersWindowedSlice() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setTimelineMode('off');
-        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4, messageLayout: 'stream' });
+        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4, messageLayout: 'scrollback' });
         ref.instance.sessionState.setMessages(Array.from({ length: 300 }, (_, index) => ({
             id: `msg-${index + 1}`,
             role: index % 2 === 0 ? 'user' : 'assistant',

@@ -5,7 +5,7 @@ import { Abstract, Injectable } from '@tsdi/ioc';
 /**
  * Platform-neutral transcript layout contract.
  *
- * `stream` leaves history to the terminal's native scrollback; `viewport`
+ * `scrollback` leaves history to the terminal's native scrollback; `viewport`
  * windows the transcript and scrolls history inside the window. Platform
  * adapters (TUI/DOM) can supply their own implementation when their scroll
  * mechanics differ, so shared code never branches on the layout mode directly.
@@ -24,8 +24,8 @@ export interface AgentConsoleTranscriptLayout {
     scroll(delta: number, navigation: AgentConsoleTranscriptNavigationController): boolean;
 }
 
-class StreamTranscriptLayout implements AgentConsoleTranscriptLayout {
-    readonly mode = 'stream' as const;
+class ScrollbackTranscriptLayout implements AgentConsoleTranscriptLayout {
+    readonly mode = 'scrollback' as const;
     readonly usesNativeScrollback = true;
     readonly usesAlternateScreen = false;
     readonly wheelScrollsHistory = false;
@@ -49,7 +49,7 @@ class ViewportTranscriptLayout implements AgentConsoleTranscriptLayout {
 }
 
 const TRANSCRIPT_LAYOUTS: Record<AgentConsoleMessageLayout, AgentConsoleTranscriptLayout> = {
-    stream: new StreamTranscriptLayout(),
+    scrollback: new ScrollbackTranscriptLayout(),
     viewport: new ViewportTranscriptLayout()
 };
 
@@ -61,13 +61,13 @@ export abstract class AgentConsoleTranscriptLayoutResolver {
 @Injectable()
 export class DefaultAgentConsoleTranscriptLayoutResolver extends AgentConsoleTranscriptLayoutResolver {
     resolve(mode: unknown): AgentConsoleTranscriptLayout {
-        return mode === 'stream' ? TRANSCRIPT_LAYOUTS.stream : TRANSCRIPT_LAYOUTS.viewport;
+        return mode === 'scrollback' || mode === 'stream' ? TRANSCRIPT_LAYOUTS.scrollback : TRANSCRIPT_LAYOUTS.viewport;
     }
 }
 
-/** Resolve the layout strategy for a persisted/option value (legacy `dynamic` -> viewport). */
+/** Resolve the layout strategy for a persisted/option value (legacy `stream` -> scrollback, `dynamic` -> viewport). */
 export function resolveTranscriptLayout(mode: unknown): AgentConsoleTranscriptLayout {
-    return mode === 'stream' ? TRANSCRIPT_LAYOUTS.stream : TRANSCRIPT_LAYOUTS.viewport;
+    return mode === 'scrollback' || mode === 'stream' ? TRANSCRIPT_LAYOUTS.scrollback : TRANSCRIPT_LAYOUTS.viewport;
 }
 
 /** Count messages that arrived while the transcript is scrolled up (0 while following). */

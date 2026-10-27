@@ -151,7 +151,7 @@ export abstract class AgentConsoleMessageTemplateBase {
             && cached.previewLines === previewLines) {
             return cached.lines;
         }
-        const expanded = rawMode || showCriticalMarks || messageLayout === 'stream'
+        const expanded = rawMode || showCriticalMarks || messageLayout === 'scrollback'
             || (messageId && messageId === finalAssistantMessageId)
             || (messageId && this.state.isMessageExpanded(messageId))
             || (detailOpen && selected);

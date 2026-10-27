@@ -1,11 +1,11 @@
 import type { AgentMessage } from '@tsdi/agent';
 
-/** Transcript layout. `viewport` windows to the terminal; `stream` uses native scrollback. */
-export type AgentConsoleMessageLayout = 'stream' | 'viewport';
+/** Transcript layout. `viewport` windows to the terminal; `scrollback` uses native terminal history. */
+export type AgentConsoleMessageLayout = 'scrollback' | 'viewport';
 
-/** Normalize a persisted/option value; the legacy `dynamic` alias maps to `viewport`. */
+/** Normalize a persisted/option value; legacy `stream` maps to `scrollback`, `dynamic` to `viewport`. */
 export function normalizeMessageLayout(value: unknown): AgentConsoleMessageLayout {
-    return value === 'stream' ? 'stream' : 'viewport';
+    return value === 'scrollback' || value === 'stream' ? 'scrollback' : 'viewport';
 }
 
 /** Id of the last assistant answer row; kept expanded in viewport mode while other bodies collapse. */

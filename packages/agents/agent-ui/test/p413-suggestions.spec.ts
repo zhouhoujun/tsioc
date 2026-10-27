@@ -456,8 +456,10 @@ export class SuggestionCompletionEdgeTest {
         const subcommands = resolveAgentConsoleArgumentCandidates('/delegation', 'l');
         expect(subcommands.map(option => option.value)).toEqual(['lineage']);
 
-        const enumValues = resolveAgentConsoleArgumentCandidates('/layout', 'st');
-        expect(enumValues.map(option => option.value)).toEqual(['stream']);
+        const enumValues = resolveAgentConsoleArgumentCandidates('/layout', 'sc');
+        expect(enumValues.map(option => option.value)).toEqual(['scrollback']);
+        expect(resolveAgentConsoleArgumentCandidates('/tui', 'f').map(option => option.value)).toEqual(['fullscreen']);
+        expect(resolveAgentConsoleArgumentCandidates('/tui', 's').map(option => option.value)).toEqual(['scrollback']);
         expect(resolveAgentConsoleArgumentCandidates('/queue', 'c').map(option => option.value)).toEqual(['clear']);
         expect(resolveAgentConsoleArgumentCandidates('/status', 'x')).toEqual([]);
     }
@@ -472,12 +474,12 @@ export class SuggestionCompletionEdgeTest {
 
     @Test('the suggestion resolver feeds the argument menu and Tab replaces the word')
     async argumentMenuAndApply() {
-        const options = resolveAgentConsoleInputSuggestions('/layout st', '/layout st'.length, ['/layout'], [], []);
-        expect(options.map(option => option.value)).toEqual(['stream']);
+        const options = resolveAgentConsoleInputSuggestions('/layout sc', '/layout sc'.length, ['/layout'], [], []);
+        expect(options.map(option => option.value)).toEqual(['scrollback']);
 
-        const applied = applyAgentConsoleSuggestion('/layout st', '/layout st'.length, 'stream');
-        expect(applied.value).toEqual('/layout stream ');
-        expect(applied.cursor).toEqual('/layout stream '.length);
+        const applied = applyAgentConsoleSuggestion('/layout sc', '/layout sc'.length, 'scrollback');
+        expect(applied.value).toEqual('/layout scrollback ');
+        expect(applied.cursor).toEqual('/layout scrollback '.length);
 
         // Indented commands still complete their arguments.
         const indented = applyAgentConsoleSuggestion('  /layout v', '  /layout v'.length, 'viewport');

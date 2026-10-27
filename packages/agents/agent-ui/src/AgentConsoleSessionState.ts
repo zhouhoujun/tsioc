@@ -410,8 +410,8 @@ export interface AgentConsoleOptions {
     statusVisibleLines?: number;
     sessionsVisibleItems?: number;
     messagesVisibleItems?: number;
-    /** Transcript layout: stream keeps conversation rows flowing; viewport windows them (legacy value 'dynamic' is normalized to 'viewport'). */
-    messageLayout?: 'stream' | 'viewport' | 'dynamic';
+    /** Transcript layout: scrollback keeps conversation rows flowing; viewport windows them (legacy 'stream' -> 'scrollback', 'dynamic' -> 'viewport'). */
+    messageLayout?: 'scrollback' | 'viewport' | 'dynamic' | 'stream';
     messageDetailVisibleLines?: number;
     /** v19-A8: auxiliary tool/event/file-change/system/error content preview lines (policy render, default 8). */
     auxiliaryPreviewLines?: number;
@@ -4897,11 +4897,11 @@ export class AgentConsoleSessionState {
         }
     }
 
-    get messageLayout(): 'stream' | 'viewport' {
+    get messageLayout(): 'scrollback' | 'viewport' {
         return normalizeMessageLayout(this.consoleOptions.messageLayout);
     }
 
-    setMessageLayout(value: 'stream' | 'viewport'): void {
+    setMessageLayout(value: 'scrollback' | 'viewport' | 'stream'): void {
         this.consoleOptions = {
             ...this.consoleOptions,
             messageLayout: normalizeMessageLayout(value)

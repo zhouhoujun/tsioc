@@ -21,6 +21,7 @@ import type { NavFilter, NavSelection, SessionSearchMatch } from '@tsdi/agent';
 import { AGENT_CONSOLE_OVERLAY_HINTS } from './AgentConsoleOverlayPresenter';
 import type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
 import { runSnapshotsCommand, type SnapshotCommandHost } from './AgentConsoleSnapshotCommands';
+import { mapTuiLayoutArg } from './AgentConsoleSettingsCommands';
 export type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
 import { formatAgentUiDate, formatAgentUiDateTime, formatAgentUiNotice, formatAgentPanelLabel as panelLabel, type AgentUiTranslator } from './agent-ui.i18n';
 import { runMultilineCommand, runSendCommand } from './AgentConsoleMultilineCommands';
@@ -1084,6 +1085,7 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/thinking': (ctx, args, meta) => ctx.runThinkingCommand(canonicalArgsOf(meta, args)),
     '/display': (ctx, args, meta) => ctx.runDisplayCommand(canonicalArgsOf(meta, args)),
     '/layout': (ctx, args, meta) => ctx.runLayoutCommand(canonicalArgsOf(meta, args)),
+    '/tui': (ctx, args, meta) => ctx.runLayoutCommand(mapTuiLayoutArg(canonicalArgsOf(meta, args))),
     '/outputs': handleOutputs,
     '/pager': (ctx, args) => Promise.resolve(ctx.openPager(args)),
     '/timeline': (ctx, args, meta) => ctx.runTimelineModeCommand(canonicalArgsOf(meta, args)),

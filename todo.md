@@ -2391,3 +2391,18 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `/review run` → 打开评审面板（`[1/1] aggregate … 2 files changed`、`src/sum.js (+2 -1)`、`src/extra.js (+3 -0)`）；
   - `/review findings` → `[review-34250dd0-…] HEAD · 2 files · 3 findings · 291f31abeb8d`（**DI 修复前这里永远显示 No review runs saved**）；
   - `/review show <id>` → 浮层列出 3 条 finding + 各自的 fix（`sum omits the first value`、`average references sum without importing it`、`average returns NaN for an empty array`），审计库 +1 条。
+
+## `/tui` 全屏 / 滚屏切换（2026-10）
+
+- 现象：布局只有 viewport/stream 两种算法名；运行中切换不会进出终端备用屏（`useAlternateScreen` 只在 `startRendering()` 计算一次），在备用屏里切到 scrollback 会继续往备用缓冲写入。
+- 修复：
+  - 布局模式 `stream` 重命名为 `scrollback`（持久化旧值 `stream`/`dynamic` 仍可读取，并归一化为 `scrollback`/`viewport`）。
+  - 新增 `/tui [fullscreen|scrollback]`（无参切换），走与 `/layout` 相同的切换 + 持久化路径；`/layout scrollback`、旧参数 `stream` 保持可用。
+  - `ConsoleTerminalSurfaceAccessor.restartRendering()`：真实切换后重新计算备用屏并全量重绘；未启动时为空操作，重启 surface 时保留 resize 监听，重复 `stopRendering()` 不再重复写清理序列。
+  - `restoreSettings()` 通过 `applyPersistedLayout()` 应用持久化布局，真正发生变化时重启 surface（修复"重启后持久化 scrollback 仍停留在备用屏"）。
+- 测试（均先 RED）：`components/console/test/layout.spec.ts` 4 例（scrollback 映射、旧 `stream` 别名、重启后重新计算备用屏、保留 resize 监听/启动前空操作），`agent-ui/test/layout-viewport.spec.ts` 2 例（`/tui` 切换与仅变化时重启、恢复设置）；registry/completion/i18n 断言同步更新。components/console 106、agent-ui 1797 通过。
+- 真实 TUI（pyte，隔离 `--root /tmp/opencode/root-sim`，workspace `/tmp/opencode/gitrepo`）16/16：
+  - 启动 viewport（`ESC[?1049h`）→ `/tui scrollback`（`ESC[?1049l`，通知 `TUI: scrollback (native terminal history; full transcript).`，settings 写入 `scrollback`）；
+  - `/tui fullscreen`（重新 `ESC[?1049h`）→ `/tui` 切换 → `/layout viewport` 仍可用；
+  - `/tui` 出现在命令菜单（`[display] switch TUI buffer m...`），`/messages` 已消失；
+  - 持久化 scrollback 后重启，最后一次缓冲区操作是 `ESC[?1049l`（不再停留在备用屏），并可在重启后切回 fullscreen。

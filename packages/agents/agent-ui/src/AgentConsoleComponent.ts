@@ -243,6 +243,7 @@ import {
     runDisplayCommand,
     runLayoutCommand,
     runExperimentalCommand,
+    applyPersistedLayout,
     runSettingsCommand as runSettingsCommandView,
     runTimelineModeCommand,
     runVimCommand
@@ -2290,7 +2291,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     shouldUseNativeScrollback(): boolean { return this.transcriptLayout.usesNativeScrollback; }
     shouldUseAlternateScreen(): boolean { return this.transcriptLayout.usesAlternateScreen; }
     shouldScrollViewport(): boolean { return !this.transcriptLayout.ownsHistoryScroll; }
-    resolveConsoleLayout(): 'stream' | 'viewport' { return this.transcriptLayout.mode; }
+    resolveConsoleLayout(): 'scrollback' | 'viewport' { return this.transcriptLayout.mode; }
 
     getTerminalRenderedLines(): string[] {
         return this.surfaceAccessor?.getLastRenderedLines() || [];
@@ -2576,9 +2577,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         } else if (typeof persisted.timelineMode === 'boolean') {
             this.state.setTimelineMode(persisted.timelineMode ? 'compact' : 'off');
         }
-        if (persisted.messageLayout) {
-            this.state.setMessageLayout(persisted.messageLayout === 'stream' ? 'stream' : 'viewport');
-        }
+        applyPersistedLayout(this.state, persisted, () => this.surfaceAccessor?.restartRendering?.());
         if (persisted.thinkingLevel) {
             this.modelReasoningEffort = persisted.thinkingLevel;
             this.options.model = this.options.model || {};
@@ -3002,7 +3001,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runLayoutCommand(args?: string): Promise<boolean> {
-        return runLayoutCommand(args, this.state, (message: string) => this.notify(message), (patch: Record<string, any>) => this.persistSettings(patch), this.translator);
+        return runLayoutCommand(args, this.state, (message: string) => this.notify(message), (patch: Record<string, any>) => this.persistSettings(patch), this.translator, () => this.surfaceAccessor?.restartRendering?.());
     }
 
     protected async runTimelineModeCommand(args?: string): Promise<boolean> {

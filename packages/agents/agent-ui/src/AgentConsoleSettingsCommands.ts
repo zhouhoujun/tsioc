@@ -15,12 +15,12 @@ export interface AgentConsoleSettingsState {
     showCriticalMarks: boolean;
     showTimestamps: boolean;
     vimMode: boolean;
-    messageLayout: 'stream' | 'viewport';
+    messageLayout: 'scrollback' | 'viewport';
     setTimelineMode(mode: 'off' | 'compact' | 'steps' | 'verbose'): void;
     setShowCriticalMarks(value: boolean): void;
     setShowTimestamps(value: boolean): void;
     setVimMode(value: boolean): void;
-    setMessageLayout(value: 'stream' | 'viewport'): void;
+    setMessageLayout(value: 'scrollback' | 'viewport' | 'stream'): void;
 }
 
 export async function runTimelineModeCommand(
@@ -59,31 +59,58 @@ export async function runTimelineModeCommand(
     return true;
 }
 
+/** Apply a persisted transcript layout and report whether the mode actually changed. */
+export function applyPersistedLayout(
+    state: AgentConsoleSettingsState,
+    persisted: { messageLayout?: string } | null | undefined,
+    onChanged?: () => void
+): void {
+    if (!persisted?.messageLayout) {
+        return;
+    }
+    const before = state.messageLayout;
+    state.setMessageLayout(persisted.messageLayout === 'scrollback' || persisted.messageLayout === 'stream' ? 'scrollback' : 'viewport');
+    if (state.messageLayout !== before) {
+        onChanged?.();
+    }
+}
+
+/** Map `/tui` buffer-mode names onto the transcript layout values. */
+export function mapTuiLayoutArg(value: string | undefined): string {
+    const mode = String(value || '').trim().toLowerCase();
+    return mode === 'fullscreen' ? 'viewport' : mode;
+}
+
 export async function runLayoutCommand(
     args: string | undefined,
     state: AgentConsoleSettingsState,
     notify: (message: string) => void,
     persistSettings: (patch: Record<string, any>) => Promise<any>,
-    translator?: AgentUiTranslator | null
+    translator?: AgentUiTranslator | null,
+    onLayoutChanged?: () => void
 ): Promise<boolean> {
     const requested = String(args || '').trim().toLowerCase();
-    let next: 'stream' | 'viewport';
+    let next: 'scrollback' | 'viewport';
     if (!requested) {
-        next = state.messageLayout === 'viewport' ? 'stream' : 'viewport';
-    } else if (requested === 'stream' || requested === 'native' || requested === 'scrollback') {
-        next = 'stream';
-    } else if (requested === 'viewport' || requested === 'dynamic' || requested === 'window' || requested === 'windowed') {
+        next = state.messageLayout === 'viewport' ? 'scrollback' : 'viewport';
+    } else if (requested === 'scrollback' || requested === 'native') {
+        next = 'scrollback';
+    } else if (requested === 'viewport' || requested === 'fullscreen' || requested === 'dynamic' || requested === 'window' || requested === 'windowed') {
         next = 'viewport';
     } else {
         notify(formatAgentUiNotice(translator, 'layoutUsage'));
         return true;
     }
+    const changed = state.messageLayout !== next;
     state.setMessageLayout(next);
-    notify(formatAgentUiNotice(translator, next === 'viewport' ? 'layoutViewportSet' : 'layoutStreamSet'));
+    notify(formatAgentUiNotice(translator, next === 'viewport' ? 'layoutViewportSet' : 'layoutScrollbackSet'));
     try {
         await persistSettings({ messageLayout: next });
     } catch (error: any) {
         notify(error?.message || formatAgentUiNotice(translator, 'layoutSaveFailed'));
+    }
+    if (changed) {
+        onLayoutChanged?.();
     }
     return true;
 }

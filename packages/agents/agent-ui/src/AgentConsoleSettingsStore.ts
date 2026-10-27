@@ -11,7 +11,7 @@ export interface AgentConsoleSettingsData {
     showUsername?: boolean;
     timelineMode?: boolean;
     timelineViewMode?: 'off' | 'compact' | 'steps' | 'verbose';
-    messageLayout?: 'stream' | 'viewport' | 'dynamic';
+    messageLayout?: 'scrollback' | 'viewport' | 'dynamic' | 'stream';
     thinkingLevel?: 'low' | 'medium' | 'high' | 'max';
     yoloMode?: boolean;
     taskFilter?: 'all' | 'failed' | 'rollback' | 'lineage';
@@ -37,8 +37,8 @@ export class AgentConsoleSettingsStore {
                 showToolOutput: typeof parsed?.showToolOutput === 'boolean' ? parsed.showToolOutput : undefined,
                 showUsername: typeof parsed?.showUsername === 'boolean' ? parsed.showUsername : undefined,
                 timelineViewMode,
-                messageLayout: parsed?.messageLayout === 'stream'
-                    ? 'stream'
+                messageLayout: parsed?.messageLayout === 'scrollback' || parsed?.messageLayout === 'stream'
+                    ? 'scrollback'
                     : parsed?.messageLayout === 'viewport' || parsed?.messageLayout === 'dynamic'
                         ? 'viewport'
                         : undefined,

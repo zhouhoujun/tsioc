@@ -23,6 +23,8 @@ export interface AgentConsolePagerStatusCopy {
 
 /** Accessor for the terminal surface element. */
 export abstract class ConsoleTerminalSurfaceAccessor {
+    /** Re-evaluate the transcript layout (fullscreen vs native scrollback) and repaint. */
+    restartRendering?(): void;
     writeTerminalClipboardText?(text: string): void;
     abstract getLastRenderedLines(): string[];
     abstract getLastRenderedText(stripAnsi?: (value: string) => string): string;
