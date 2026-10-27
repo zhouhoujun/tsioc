@@ -126,7 +126,8 @@ export class ShellBangCommandTest {
         expect(shellMessage.name).toEqual('terminal');
         expect(shellMessage.metadata?.type).toEqual('shell');
         expect(shellMessage.metadata?.status).toEqual('success');
-        expect(shellMessage.content).toContain('$ echo hello');
+        // the row renderer adds the `$ ` lead, so the stored content is the raw command
+        expect(shellMessage.content).toContain('echo hello');
         expect(shellMessage.content).toContain('hello from shell');
     }
 
@@ -166,7 +167,7 @@ export class ShellBangCommandTest {
         expect(registry.calls[0].input).toEqual({ command: 'ls -la\npwd' });
         const shellMessage = state.messages[state.messages.length - 1];
         expect(shellMessage.metadata?.type).toEqual('shell');
-        expect(shellMessage.content).toContain('$ ls -la\npwd');
+        expect(shellMessage.content).toContain('ls -la\npwd');
     }
 
     @Test('!! again exits draft mode and discards the draft')

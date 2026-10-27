@@ -62,7 +62,7 @@ export async function runShellCommand(host: ShellCommandHost, command: string): 
         id: messageId,
         role: 'tool',
         name: 'terminal',
-        content: `$ ${command}`,
+        content: command,
         createdAt: Date.now(),
         metadata: { type: 'shell', status: 'running', command }
     };
@@ -77,7 +77,7 @@ export async function runShellCommand(host: ShellCommandHost, command: string): 
             ? ''
             : `\n[exit code: ${exitCode}]`;
         host.updateShellMessage(messageId, {
-            content: [`$ ${command}`, body, exitSuffix].filter(Boolean).join('\n\n'),
+            content: [command, body, exitSuffix].filter(Boolean).join('\n\n'),
             metadata: {
                 type: 'shell',
                 status: exitCode === 0 || exitCode === undefined ? 'success' : 'failed',
@@ -89,7 +89,7 @@ export async function runShellCommand(host: ShellCommandHost, command: string): 
     } catch (error: any) {
         const message = error?.message || String(error || 'Unknown error');
         host.updateShellMessage(messageId, {
-            content: `$ ${command}\n\n${message}`,
+            content: `${command}\n\n${message}`,
             metadata: { type: 'shell', status: 'failed', error: true }
         });
     }

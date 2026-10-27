@@ -449,6 +449,11 @@ function presentThoughtMainline(message: AgentMessage): AgentMessage {
 
 function presentCommandMainline(message: AgentMessage): AgentMessage {
     const metadata = message.metadata || {};
+    // Local `!shell` rows carry the command *and* its output; collapsing them to
+    // the slash-command echo (`<command> completed`) hides both.
+    if (metadata.type === 'shell') {
+        return message;
+    }
     const command = [clean(metadata.command), clean(metadata.args)].filter(Boolean).join(' ') || 'Command';
     const status = String(metadata.status || '').toLowerCase();
     const statusLabel = status === 'succeeded' || status === 'success' ? 'completed'

@@ -2266,3 +2266,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 因此"/只把 workspace 透传给 turn/tools"会得到 file 工具跟随、terminal 不跟随的**半一致**状态，已按此判断**回滚**该改动（未提交）。
 - 真实 TUI 证据：`/cd /tmp/opencode` 后 `!touch after-cd-probe.txt` 仍落在旧 workspace（`sleep-mlt`）。
 - 可选方案：①（大改）文件策略支持 per-session root + 切换时重新做工作区信任校验；②（小改）把 `/cd` 描述改为"仅切换输入历史作用域"。需要用户拍板。
+
+### 补充：`!cmd` 行的输出被 `presentCommandMainline()` 吞掉
+- 定位：`isCommandMessage()` 把 shell 行也算作命令，`presentCommandMainline()` 会把内容重写成 `<command> <status>`（如 `pwd completed`），**丢掉 stdout/stderr**；再叠加行渲染器的 `$ ` 前缀与状态词，屏幕上就成了 `$ Success pwd completed`。
+- 修复：`presentCommandMainline()` 对 `metadata.type === 'shell'` 直接返回原消息（保留命令+输出）；shell 消息内容不再自带 `$ `（行渲染器已加），行内显示为 `$ echo hi-from-bang` + 下一行输出。
+- 测试：`shell-bang-display.spec.ts` 增加断言（shell 行内容保留命令与输出）；`shell-command.spec.ts`/`vm-shell-commands.spec.ts` 的 `$ ` 前缀断言同步为新格式。**RED**：回退 presenter 时收到 `Command completed`。
+- 真实 TUI：`!echo hi-from-bang` → 两行：`$ Success echo hi-from-bang` / `hi-from-bang`。
+- 残留（可后续）：`Success` 状态词与 ✓ 语义重复；超长输出仍需展开查看。

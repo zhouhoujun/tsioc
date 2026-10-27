@@ -13,7 +13,7 @@ function conversationWithShell() {
             id: 'shell-1',
             role: 'tool',
             name: 'terminal',
-            content: '$ echo hi\n\nhi',
+            content: 'echo hi\n\nhi',
             createdAt: 3,
             metadata: { type: 'shell', status: 'success' }
         },
@@ -42,6 +42,11 @@ export class ShellBangDisplayTest {
         // execution rows sit between the request and the answer
         expect(ids.indexOf('shell-1')).toBeGreaterThan(ids.indexOf('u1'));
         expect(ids.indexOf('shell-1')).toBeLessThan(ids.indexOf('a1'));
+        // the row keeps the command and its output instead of collapsing to
+        // `<command> completed`
+        const shell = state.displayMessages.find(message => message.id === 'shell-1');
+        expect(shell?.content).toContain('echo hi');
+        expect(shell?.content).toContain('hi');
     }
 
     @Test('regular tool messages stay out of the transcript')

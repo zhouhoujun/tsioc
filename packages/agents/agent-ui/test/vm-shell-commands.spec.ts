@@ -33,7 +33,7 @@ export class ShellCommandsTest {
         expect(shell.name).toEqual('terminal');
         expect(shell.metadata.type).toEqual('shell');
         expect(shell.metadata.status).toEqual('success');
-        expect(shell.content).toContain('$ echo hi');
+        expect(shell.content).toContain('echo hi');
     }
 
     @Test('multiline draft collects lines then submits with a lone bang')
