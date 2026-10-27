@@ -30,7 +30,7 @@ export class GatewayServer {
         private rateLimiter: RateLimiter,
         private runtime: AgentRuntime,
         @Inject(GATEWAY_CONFIG, { nullable: true }) private config: GatewayConfig = defaultGatewayConfig,
-        @Optional() private mdns?: MdnsServiceDiscovery | null
+        @Optional() @Inject(MdnsServiceDiscovery) private mdns?: MdnsServiceDiscovery | null
     ) {
     }
 

@@ -1,5 +1,5 @@
 import * as http from 'http';
-import { Injectable, Optional } from '@tsdi/ioc';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { AgentRuntime, MemoryStore, SessionStore, AgentTurnStartedEvent, AgentTurnCompletedEvent, AgentStreamChunkEvent, AgentErrorEvent, AgentTurnCancelledEvent, deriveSectionInfos } from '@tsdi/agent';
 import { EventHandler } from '@tsdi/core';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
@@ -21,8 +21,8 @@ export class SessionHandler {
         private runtime: AgentRuntime,
         private sessions: SessionStore,
         private owners: SessionOwnerStore,
-        @Optional() private memory?: MemoryStore | null,
-        @Optional() private questionStore?: QuestionStore | null
+        @Optional() @Inject(MemoryStore) private memory?: MemoryStore | null,
+        @Optional() @Inject(QuestionStore) private questionStore?: QuestionStore | null
     ) {
     }
 

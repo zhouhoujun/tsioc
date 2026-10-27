@@ -32,18 +32,18 @@ export class GatewayBootstrap {
         private sessions: SessionHandler,
         private memory: MemoryHandler,
         private tools: ToolsHandler,
-        @Optional() private approvals?: ApprovalHandler | null,
-        @Optional() private stats?: StatsHandler | null,
-        @Optional() private rpc?: AppRpcHandler | null,
-        @Optional() private events?: EventHandler | null,
-        @Optional() private reviews?: ReviewHandler | null,
-        @Optional() private evals?: EvalHandler | null,
-        @Optional() private shares?: ShareHandler | null,
-        @Optional() private chatWs?: ChatWebSocket | null,
+        @Optional() @Inject(ApprovalHandler) private approvals?: ApprovalHandler | null,
+        @Optional() @Inject(StatsHandler) private stats?: StatsHandler | null,
+        @Optional() @Inject(AppRpcHandler) private rpc?: AppRpcHandler | null,
+        @Optional() @Inject(EventHandler) private events?: EventHandler | null,
+        @Optional() @Inject(ReviewHandler) private reviews?: ReviewHandler | null,
+        @Optional() @Inject(EvalHandler) private evals?: EvalHandler | null,
+        @Optional() @Inject(ShareHandler) private shares?: ShareHandler | null,
+        @Optional() @Inject(ChatWebSocket) private chatWs?: ChatWebSocket | null,
         @Optional() @Inject(INJECTOR) private injector?: Injector | null,
         @Inject(GATEWAY_CONFIG, { nullable: true }) private config: GatewayConfig = defaultGatewayConfig,
         /** Instantiated so its approval webhook subscription is active. */
-        @Optional() private approvalWebhook?: ApprovalWebhookNotifier | null
+        @Optional() @Inject(ApprovalWebhookNotifier) private approvalWebhook?: ApprovalWebhookNotifier | null
     ) {
     }
 

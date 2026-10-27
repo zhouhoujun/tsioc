@@ -1,5 +1,5 @@
 import * as http from 'http';
-import { Injectable, Optional } from '@tsdi/ioc';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { EventHandler as OnEvent } from '@tsdi/core';
 import { AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentApprovalRequestedEvent, AgentBackgroundTaskCompletedEvent, AgentBackgroundTaskFailedEvent, AgentBackgroundTaskStartedEvent, AgentCompensationEvent, AgentContextPreparedEvent, AgentErrorEvent, AgentPlanCompletedEvent, AgentPlanCreatedEvent, AgentPlanStepBlockedEvent, AgentPlanStepCompletedEvent, AgentPlanStepStartedEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnDiagnosticsEvent, AgentTurnStartedEvent, TimelineEventRecord, TimelineHistoryStore, TimelineEventType } from '@tsdi/agent';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
@@ -29,8 +29,8 @@ export class EventHandler {
 
     constructor(
         private owners: SessionOwnerStore,
-        @Optional() private timeline?: TimelineHistoryStore | null,
-        @Optional() private questionStore?: QuestionStore | null
+        @Optional() @Inject(TimelineHistoryStore) private timeline?: TimelineHistoryStore | null,
+        @Optional() @Inject(QuestionStore) private questionStore?: QuestionStore | null
     ) {
     }
 

@@ -2321,3 +2321,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 功能：`ProjectMemoryService.add()` 写入后，`retriever.retrieve({projectId, query})` 能取回该记忆。
   **RED**：仅回退三个源文件时 2/2 失败。agent **1042 passing**。
 - 未改（评估后放弃）：`AgentConsoleSessionService.sessionStore/runtime/turnDiagnostics` 与 `AgentConsoleModelStore.paths` 也属同型，但 TUI 走 appRpc、且注入 `AgentConsolePathProvider` 会让无 FileAdapter 的测试容器在构造期抛错；留作后续按宿主能力统一处理。
+
+## 2026-10-27 同类 DI 缺陷（gateway 包）：独立网关的 REST/WS handler 全部未挂载
+- 取证：`Application.run(AgentGatewayModule)` 后检查实例 —— `GatewayBootstrap` 的 `approvals/stats/rpc/events/reviews/evals/shares/chatWs/approvalWebhook` **全部 undefined**；`SessionHandler.memory/questionStore`、`UsageHandler.turnDiagnostics`、`ChatWebSocket.rpc/audio/quota` 同样缺失。也就是说 `tsdi-agent serve`（独立网关）实际不会挂载任何 REST/WS 路由。
+- 根因同前：`@Optional() private x?: Handler | null` 联合类型 → 元数据 `Object` → 静默 undefined。
+- 修复：这些参数全部加显式 `@Inject(Token)`（`@Optional()` 保留）。修完顺带暴露并修掉另一个 DI 缺口：`EvalRunner` 的 `options: EvalRunnerOptions = {}` 是**对象参数**，未加 `@Optional()` 时容器解析 `Object` 失败，导致 `EvalHandler → EvalRunner` 构造直接抛错（此前 EvalHandler 是 undefined 所以从未构造到）。
+- 验证：模块可完整启动；`GatewayBootstrap` 9 个 handler、`SessionHandler.memory/questionStore`、`UsageHandler.turnDiagnostics`、`ChatWebSocket.rpc/audio/quota` 全部注入成功（`EventHandler.timeline` 因 `TimelineHistoryStore` 未被该模块提供，仍保持 optional/undefined，行为不变）。
+- 测试：新增 `agent-gateway/test/gateway-injection.spec.ts`（模块启动 + 全量断言）。**RED**：回退源码时 1 例失败（11 项缺失）。agent-gateway **358**、agent **1042 passing**。

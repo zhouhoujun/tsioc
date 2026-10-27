@@ -1,7 +1,7 @@
 import * as http from 'http';
 import * as crypto from 'crypto';
 import { Buffer } from 'buffer';
-import { Injectable, Optional } from '@tsdi/ioc';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { AgentRuntime } from '@tsdi/agent';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
 import { getRequestPrincipalId } from '../auth/AuthMiddleware';
@@ -33,9 +33,9 @@ export class ChatWebSocket {
         private runtime: AgentRuntime,
         private owners: SessionOwnerStore,
         private sessionQueue: SessionQueue,
-        @Optional() private rpc?: AppRpcServer | null,
-        @Optional() private audio?: AudioSessionHandler | null,
-        @Optional() private quota?: AudioFrameQuota | null
+        @Optional() @Inject(AppRpcServer) private rpc?: AppRpcServer | null,
+        @Optional() @Inject(AudioSessionHandler) private audio?: AudioSessionHandler | null,
+        @Optional() @Inject(AudioFrameQuota) private quota?: AudioFrameQuota | null
     ) {
     }
 

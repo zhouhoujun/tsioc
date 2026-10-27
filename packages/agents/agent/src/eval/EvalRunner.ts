@@ -1,4 +1,4 @@
-import { Abstract, Injectable } from '@tsdi/ioc';
+import { Abstract, Injectable, Optional } from '@tsdi/ioc';
 import { AgentRuntime } from '../runtime/AgentRuntime';
 import { EvalRun, EvalTask, EvalVerification } from './EvalTask';
 
@@ -11,7 +11,7 @@ export abstract class EvalReportStore {
 export interface EvalRunnerOptions { verify?: (command: string, task: EvalTask) => Promise<EvalVerification>; now?: () => Date; id?: () => string; }
 @Injectable()
 export class EvalRunner {
-    constructor(private runtime: AgentRuntime, private store: EvalReportStore, private options: EvalRunnerOptions = {}) {}
+    constructor(private runtime: AgentRuntime, private store: EvalReportStore, @Optional() private options: EvalRunnerOptions = {}) {}
     async run(task: EvalTask): Promise<EvalRun> {
         const now = this.options.now ?? (() => new Date()); const started = now();
         let status: EvalRun['status'] = 'passed'; let message: string | undefined;

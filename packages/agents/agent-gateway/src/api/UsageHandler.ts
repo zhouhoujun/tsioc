@@ -1,4 +1,4 @@
-import { Injectable, Optional } from '@tsdi/ioc';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { SessionStore, TurnDiagnosticsStore } from '@tsdi/agent';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
 import { getRequestPrincipalId } from '../auth/AuthMiddleware';
@@ -10,7 +10,7 @@ export class UsageHandler {
     constructor(
         private sessions: SessionStore,
         private owners: SessionOwnerStore,
-        @Optional() private turnDiagnostics?: TurnDiagnosticsStore | null
+        @Optional() @Inject(TurnDiagnosticsStore) private turnDiagnostics?: TurnDiagnosticsStore | null
     ) {
     }
 
