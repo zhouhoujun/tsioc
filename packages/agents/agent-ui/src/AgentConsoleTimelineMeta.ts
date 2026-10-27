@@ -68,7 +68,11 @@ export function resolveTimelineMeta(
     // of prefixing the row. The glyph column is the single state point (P289),
     // textual status stays in aria. Error rows already carry the semantic status
     // in their role label (`Error · `), so the generic label is not repeated.
-    if (statusLabel && templateKind !== 'assistant' && templateKind !== 'error' && uiKind !== 'event') {
+    // A successful `!shell` row already carries the ✓ glyph and the command text;
+    // the extra "Success" word only pushes the command to the right.
+    const shellSuccess = String(message?.metadata?.type || '') === 'shell'
+        && String(message?.metadata?.status || '').toLowerCase() === 'success';
+    if (statusLabel && !shellSuccess && templateKind !== 'assistant' && templateKind !== 'error' && uiKind !== 'event') {
         parts.push(statusLabel);
     }
     const details = parts.join(' · ');

@@ -2282,3 +2282,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 组件 `setYoloMode` 同步 state（含启动恢复路径）。
 - 测试：新增 `yolo-badge.spec.ts` 4 例（en/zh 徽章、徽章顺序、`/yolo on|off` 同步 state、恢复持久化设置后徽章仍在）。**RED**：新增字段前为编译错误。
 - 真实 TUI：`/yolo on` → 输入框显示 `> · auto-approve Ask code or files`；重启后（持久化恢复）同样显示；`/yolo off` → 徽章消失并提示 `Yolo mode disabled.`（已把模拟环境恢复为 off）。
+
+### 补充 2：shell 成功行多余的 `Success` 状态词
+- 现象：`!echo hi` 行显示 `$ Success echo hi-from-bang`——✓ 图形已表达成功，文本状态词只是把命令挤到右边。
+- 修复：`resolveTimelineMeta()` 对 `metadata.type === 'shell'` 且 `status === 'success'` 跳过状态词；失败行仍显示 `Failed`，其他 tool 行不变。
+- 测试：新增 `shell-row-meta.spec.ts` 3 例（成功无状态词 / 失败保留 / 非 shell 行保留）。**RED**：成功行收到 `Success`。
+- 真实 TUI：`!echo hi-from-bang` → `$ echo hi-from-bang` + 输出行。
