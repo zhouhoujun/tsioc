@@ -1,6 +1,37 @@
 import { AgentDelegationMode, SandboxMode, describeSandboxCapabilities, detectSandboxExecTool } from '@tsdi/agent';
 import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
+export type AgentConsoleSecurityLevel = 'read-only' | 'ask' | 'auto' | 'full';
+
+/** Codex-style approval levels, ordered from strictest to most permissive. */
+export const AGENT_CONSOLE_SECURITY_LEVELS: AgentConsoleSecurityLevel[] = ['read-only', 'ask', 'auto', 'full'];
+
+const SECURITY_LEVEL_ALIASES: Record<string, AgentConsoleSecurityLevel> = {
+    'read-only': 'read-only',
+    readonly: 'read-only',
+    ask: 'ask',
+    'ask-for-approval': 'ask',
+    auto: 'auto',
+    'approve-for-me': 'auto',
+    full: 'full',
+    'full-access': 'full'
+};
+
+export function normalizeSecurityLevel(value: unknown): AgentConsoleSecurityLevel | undefined {
+    return SECURITY_LEVEL_ALIASES[String(value || '').trim().toLowerCase()];
+}
+
+function securityLevelText(translator: AgentUiTranslator | null | undefined, level: AgentConsoleSecurityLevel): string {
+    const key = level === 'read-only'
+        ? 'securityLevelReadOnly'
+        : level === 'ask'
+            ? 'securityLevelAsk'
+            : level === 'auto'
+                ? 'securityLevelAuto'
+                : 'securityLevelFull';
+    return formatAgentUiNotice(translator, key);
+}
+
 export interface PolicyCommandHost {
     translator?: AgentUiTranslator | null;
     state: any;
@@ -13,6 +44,40 @@ export interface PolicyCommandHost {
     getSessionSandboxMode(sessionId: string): Promise<any>;
     setSessionSandboxMode(sessionId: string, mode: SandboxMode | null): Promise<void>;
     runPlanCommand(args: string): Promise<any>;
+    setYoloMode?(enabled: boolean): Promise<void> | void;
+    persistSettings?(patch: Record<string, any>): Promise<void> | void;
+    select?(title: string, options: Array<{ label: string; value: string; description?: string }>, index?: number, hint?: string): Promise<string | undefined>;
+}
+
+/**
+ * Apply one security level across the existing knobs: plan mode denies write
+ * tools, yolo auto-approves gated tools, and Full Access also drops the
+ * session sandbox. `sandbox: false` skips the sandbox when no session exists
+ * yet (startup restores the level before the session is opened).
+ */
+export async function applySecurityLevel(
+    host: PolicyCommandHost,
+    level: AgentConsoleSecurityLevel,
+    options: { notify?: boolean; persist?: boolean; sandbox?: boolean } = {}
+): Promise<void> {
+    host.state.securityLevel = level;
+    if (level === 'read-only') {
+        if (!host.state.planMode) {
+            await host.runPlanCommand('on');
+        }
+    } else if (host.state.planMode) {
+        await host.runPlanCommand('off');
+    }
+    await host.setYoloMode?.(level === 'auto' || level === 'full');
+    if (options.sandbox !== false && host.state.sessionId) {
+        await host.setSessionSandboxMode(host.state.sessionId, (level === 'full' ? 'off' : null) as SandboxMode | null);
+    }
+    if (options.persist !== false) {
+        await host.persistSettings?.({ securityLevel: level });
+    }
+    if (options.notify !== false) {
+        host.notify(formatAgentUiNotice(host.translator, 'securityLevelSet', { level: securityLevelText(host.translator, level) }));
+    }
 }
 
 export async function runDelegationModeCommand(host: PolicyCommandHost, args: string): Promise<void> {
@@ -56,6 +121,32 @@ export async function runPermissionsCommand(host: PolicyCommandHost, args: strin
         return;
     }
     const area = tokens[0].toLowerCase();
+    if (area === 'level') {
+        const requested = normalizeSecurityLevel(tokens[1]);
+        if (!tokens[1]) {
+            if (!host.select) {
+                host.notify(formatAgentUiNotice(host.translator, 'securityLevelUsage'));
+                return;
+            }
+            const current = normalizeSecurityLevel(host.state.securityLevel) || (host.state.yoloMode ? 'auto' : 'ask');
+            const selected = await host.select(
+                formatAgentUiNotice(host.translator, 'securityLevelTitle'),
+                AGENT_CONSOLE_SECURITY_LEVELS.map(level => ({ label: securityLevelText(host.translator, level), value: level })),
+                Math.max(0, AGENT_CONSOLE_SECURITY_LEVELS.indexOf(current))
+            );
+            const picked = normalizeSecurityLevel(selected);
+            if (picked) {
+                await applySecurityLevel(host, picked);
+            }
+            return;
+        }
+        if (!requested) {
+            host.notify(formatAgentUiNotice(host.translator, 'securityLevelUsage'));
+            return;
+        }
+        await applySecurityLevel(host, requested);
+        return;
+    }
     if (area === 'readonly' || area === 'plan') {
         await host.runPlanCommand(tokens.slice(1).join(' '));
         return;
@@ -89,7 +180,9 @@ export async function showSandboxCapabilities(host: PolicyCommandHost): Promise<
     const proxy = host.options?.sandbox?.proxy;
     const capabilities = describeSandboxCapabilities(platform, probe, !!(proxy?.http || proxy?.https));
     const mode = await host.getSessionSandboxMode(host.state.sessionId).catch(() => 'default');
-    const lines = [formatAgentUiNotice(host.translator, 'sandboxCapabilitiesHeader', { mode, platform: platform || formatAgentUiNotice(host.translator, 'sandboxPlatformUnknown'), tool: probe.tool || formatAgentUiNotice(host.translator, 'sandboxProcessFallback') })];
+    const level = normalizeSecurityLevel(host.state.securityLevel) || (host.state.yoloMode ? 'auto' : 'ask');
+    const lines = [formatAgentUiNotice(host.translator, 'securityLevelCurrent', { level })];
+    lines.push(formatAgentUiNotice(host.translator, 'sandboxCapabilitiesHeader', { mode, platform: platform || formatAgentUiNotice(host.translator, 'sandboxPlatformUnknown'), tool: probe.tool || formatAgentUiNotice(host.translator, 'sandboxProcessFallback') }));
     for (const item of capabilities) {
         lines.push(formatAgentUiNotice(host.translator, item.supported ? 'sandboxCapabilitySupported' : 'sandboxCapabilityDegraded', { capability: item.capability, enforcement: item.enforcement }));
     }

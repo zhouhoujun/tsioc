@@ -223,6 +223,7 @@ import {
     runDelegationModeCommand as runDelegationModeCommandView,
     runGoalCommand as runGoalCommandView,
     runPermissionsCommand as runPermissionsCommandView,
+    applySecurityLevel,
     showSandboxCapabilities as showSandboxCapabilitiesView
 } from './AgentConsolePolicyCommands';
 import { ensureMessageAtTail } from './AgentConsoleMessageState';
@@ -248,6 +249,7 @@ import {
     runVimCommand
 } from './AgentConsoleSettingsCommands';
 import { AgentConsoleRuntimeHost, runFastCommand, runRawModeCommand, runStatusCommand, runStatuslineCommand, runThemeCommand, runTitleCommand } from './AgentConsoleRuntimeCommands';
+import { runFeedbackCommandView } from './AgentConsoleFeedbackCommand';
 import { runIdeCommand } from './AgentConsoleIdeCommands';
 import { collectHealthItems } from './AgentConsoleHealthView';
 import { searchSessionContent } from './AgentConsoleSessionSearch';
@@ -1588,6 +1590,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         // No explicit session means a fresh conversation. Resuming the state
         // default here replays the previous transcript on every console start.
         await this.openSession(explicitSessionId || (freshStartup ? undefined : this.state.sessionId) || undefined, { persistCurrentHistory: false, fresh: freshStartup, missing: missingResume });
+        if (this.state.securityLevel) {
+            await applySecurityLevel(this.policyCommandHost(), this.state.securityLevel, { notify: false, persist: false });
+        }
         // Subscribe only after the initial session is selected. Subscribing
         // earlier lets the remote bridge seed the default session's timeline
         // into a new, non-resumed chat.
@@ -2576,6 +2581,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             this.state.setTimelineMode(persisted.timelineMode ? 'compact' : 'off');
         }
         applyPersistedLayout(this.state, persisted, () => this.surfaceAccessor?.restartRendering?.());
+        if (persisted.securityLevel) {
+            this.state.securityLevel = persisted.securityLevel;
+        }
         if (persisted.thinkingLevel) {
             this.modelReasoningEffort = persisted.thinkingLevel;
             this.options.model = this.options.model || {};
@@ -2923,6 +2931,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             getSessionDelegationMode: (sessionId: string) => this.getSessionDelegationMode(sessionId),
             getSessionSandboxMode: (sessionId: string) => this.getSessionSandboxMode(sessionId),
             setSessionSandboxMode: (sessionId: string, mode: SandboxMode | null) => this.setSessionSandboxMode(sessionId, mode),
+            setYoloMode: (enabled: boolean) => this.setYoloMode(enabled, false),
+            persistSettings: (patch: Record<string, any>) => this.persistSettings(patch),
+            select: (title: string, options: any[], index?: number, hint?: string) => this.select(title, options, index, hint),
             runPlanCommand: (args: string) => this.runPlanCommand(args)
         };
     }
@@ -2951,6 +2962,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
 
     protected async setYoloMode(enabled: boolean, notify = true): Promise<void> {
         this.yoloMode = enabled; this.state.setYoloMode(enabled);
+        if (this.state.securityLevel === 'ask' || this.state.securityLevel === 'auto') {
+            this.state.securityLevel = enabled ? 'auto' : 'ask';
+        }
         (this.resolvedApprovalManager as any)?.setAutoApprove?.(enabled);
         this.options.tools = { ...(this.options.tools || {}), autoApprove: enabled } as any;
         await this.persistSettings({ yoloMode: enabled });
@@ -3138,14 +3152,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runFeedbackCommand(): Promise<boolean> {
-        this.notify([
-            formatAgentUiNotice(this.translator, 'feedbackPackagingDiagnostics'),
-            formatAgentUiNotice(this.translator, 'feedbackStep1'),
-            formatAgentUiNotice(this.translator, 'feedbackStep2'),
-            formatAgentUiNotice(this.translator, 'feedbackStep3'),
-            formatAgentUiNotice(this.translator, 'feedbackStep4')
-        ].join('\n'));
-        return true;
+        return runFeedbackCommandView((message: string) => this.notify(message), this.translator);
     }
 
     protected async runBackgroundTasksCommand(args?: string): Promise<boolean> {

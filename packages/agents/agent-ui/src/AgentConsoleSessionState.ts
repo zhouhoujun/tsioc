@@ -715,7 +715,7 @@ export class AgentConsoleSessionState {
     modelProfile = '';
     oneShotModelProfile = '';
     planMode = false;
-    yoloMode = false;
+    yoloMode = false; securityLevel: import('./AgentConsolePolicyCommands').AgentConsoleSecurityLevel | '' = '';
     workspace = '';
     statusline: AgentConsoleStatuslineField[] = [...defaultAgentConsoleStatusline];
     titleFields: AgentConsoleTitleField[] = [...defaultAgentConsoleTitle];

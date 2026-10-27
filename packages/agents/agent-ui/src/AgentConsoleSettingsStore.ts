@@ -14,6 +14,7 @@ export interface AgentConsoleSettingsData {
     messageLayout?: 'scrollback' | 'viewport' | 'dynamic' | 'stream';
     thinkingLevel?: 'low' | 'medium' | 'high' | 'max';
     yoloMode?: boolean;
+    securityLevel?: 'read-only' | 'ask' | 'auto' | 'full';
     taskFilter?: 'all' | 'failed' | 'rollback' | 'lineage';
     taskLineageRootId?: string;
     planTodoFilter?: 'all' | 'active' | 'blocked' | 'failed';
@@ -46,6 +47,7 @@ export class AgentConsoleSettingsStore {
                     ? parsed.thinkingLevel
                     : undefined,
                 yoloMode: typeof parsed?.yoloMode === 'boolean' ? parsed.yoloMode : undefined,
+                securityLevel: ['read-only', 'ask', 'auto', 'full'].includes(parsed?.securityLevel) ? parsed.securityLevel : undefined,
                 taskFilter: ['all', 'failed', 'rollback', 'lineage'].includes(parsed?.taskFilter) ? parsed.taskFilter : undefined,
                 taskLineageRootId: typeof parsed?.taskLineageRootId === 'string' && parsed.taskLineageRootId.trim() ? parsed.taskLineageRootId.trim() : undefined,
                 planTodoFilter: ['all', 'active', 'blocked', 'failed'].includes(parsed?.planTodoFilter) ? parsed.planTodoFilter : undefined,
@@ -72,6 +74,7 @@ export class AgentConsoleSettingsStore {
             ...(data.messageLayout ? { messageLayout: data.messageLayout } : {}),
             ...(data.thinkingLevel ? { thinkingLevel: data.thinkingLevel } : {}),
             ...(typeof data.yoloMode === 'boolean' ? { yoloMode: data.yoloMode } : {}),
+            ...(data.securityLevel ? { securityLevel: data.securityLevel } : {}),
             ...(data.taskFilter ? { taskFilter: data.taskFilter } : {}),
             ...(data.taskLineageRootId ? { taskLineageRootId: data.taskLineageRootId } : {}),
             ...(data.planTodoFilter ? { planTodoFilter: data.planTodoFilter } : {})

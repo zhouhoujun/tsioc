@@ -73,7 +73,7 @@ export class P287CommandSchemaFormEchoTest {
         expect(formatAgentConsoleCommandArgumentForm(getAgentConsoleCommandDefinition('/mcp')))
             .toEqual(['mode: enum(verbose|-v)']);
         expect(formatAgentConsoleCommandArgumentForm(getAgentConsoleCommandDefinition('/permissions')))
-            .toEqual(['area: enum(status|readonly|plan|sandbox)', 'arg...: string']);
+            .toEqual(['area: enum(status|level|readonly|plan|sandbox)', 'arg...: string']);
     }
 
     @Test('argument form renders empty for argument-less commands')
@@ -166,12 +166,12 @@ export class P287CommandSchemaFormEchoTest {
     panelDetailLinesCap() {
         const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.openSelectMenu('Command palette', [
-            { label: '/permissions', value: '/permissions', detail: 'area: enum(status|readonly|plan|sandbox)\narg...: string' }
+            { label: '/permissions', value: '/permissions', detail: 'area: enum(status|level|readonly|plan|sandbox)\narg...: string' }
         ], 0);
         const panel = new AgentConsoleSelectPanelComponent(state);
         state.consoleOptions.selectDetailVisibleLines = 1;
-        expect(panel.menuDetailLines).toEqual(['area: enum(status|readonly|plan|sandbox)']);
-        expect(panel.menuDetailLinesJson).toEqual('["area: enum(status|readonly|plan|sandbox)"]');
+        expect(panel.menuDetailLines).toEqual(['area: enum(status|level|readonly|plan|sandbox)']);
+        expect(panel.menuDetailLinesJson).toEqual('["area: enum(status|level|readonly|plan|sandbox)"]');
     }
 
     // ── handleCommand surfaces multi-line echo while preserving the draft ────

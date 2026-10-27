@@ -134,6 +134,7 @@
 
 - 不得把无效/占位配置（`cancel`/`q` sentinel、空 profile、嵌套重复 `profiles`）持久化到 `settings.json`；读取必须净化，且净化结果应可自愈写回。
 - 路由或配置缺失/无效不得静默或抛错终止 turn；必须回退到可用配置并给出可诊断提示。
+- **安全级别（`/permissions level`）**：`read-only`（拒绝写工具，shell 仍受 workspace 沙箱）、`ask`（敏感工具询问）、`auto`（自动批准 + workspace 沙箱）、`full`（自动批准 + 关闭沙箱）；按 workspace 持久化到 `settings.json` 的 `securityLevel`，启动并在会话打开后应用；级别与 plan/yolo/sandbox 必须保持一致，不得出现状态与实际权限不符的提示。
 - 用户可见文案必须经 i18n，不得硬编码英文（含 plan 头部/结尾、事件句子、状态词）。
 - 工具失败信息必须可操作：包含允许范围（workspace root）与修复建议；越界路径不得只报 `outside the allowed workspace root`。
 

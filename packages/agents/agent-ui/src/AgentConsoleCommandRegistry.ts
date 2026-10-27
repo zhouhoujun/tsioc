@@ -134,7 +134,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
         ]
     },
     { name: '/vim', description: 'toggle vim-style normal/insert input mode', group: 'core', args: [{ name: 'mode', type: 'enum', values: ['on', 'off', '1', '0', 'true', 'false'] }] },
-    { name: '/permissions', description: 'show or change readonly/sandbox session permissions', group: 'core', args: [{ name: 'area', type: 'enum', values: ['status', 'readonly', 'plan', 'sandbox'] }, { name: 'arg', variadic: true }] },
+    { name: '/permissions', description: 'show or change the security level (read-only/ask/auto/full) and readonly/sandbox permissions', group: 'core', args: [{ name: 'area', type: 'enum', values: ['status', 'level', 'readonly', 'plan', 'sandbox'] }, { name: 'arg', variadic: true }] },
     { name: '/settings', description: 'unified settings dialog: general, keybinds, providers', group: 'core' },
     { name: '/yolo', description: 'toggle auto-approve mode: /yolo [on|off]', group: 'core', args: [{ name: 'mode', type: 'enum', values: ['on', 'off'] }] },
     { name: '/feedback', description: 'packaging diagnostics for feedback reports', group: 'core', hidden: true },

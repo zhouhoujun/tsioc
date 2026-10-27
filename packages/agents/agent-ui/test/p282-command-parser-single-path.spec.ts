@@ -442,6 +442,7 @@ export class P282CommandParserSinglePathTest {
         expect(parseAgentConsoleCommandArguments(permissions, 'status').resolved).toEqual(['status']);
         expect(parseAgentConsoleCommandArguments(permissions, 'readonly on').resolved).toEqual(['readonly', 'on']);
         expect(parseAgentConsoleCommandArguments(permissions, 'sandbox default').resolved).toEqual(['sandbox', 'default']);
+        expect(parseAgentConsoleCommandArguments(permissions, 'level auto').resolved).toEqual(['level', 'auto']);
         expect(parseAgentConsoleCommandArguments(permissions, 'bogus on').diagnostics[0].code).toEqual('invalid');
     }
 

@@ -2443,3 +2443,16 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 修复：dispatch 之前用 `commandHints` 判断已知命令，隐藏后会报 `Unknown command`；改为 hints 或 definition 任一命中（`AgentConsoleCommandDispatch.ts`）。
 - 测试：`command-registry.spec.ts` 新增 1 例（隐藏项不在 hints/help、仍可解析；`/experimental` 已不存在）；p126/p282/i18n/registry 计数同步（registry 91，menu 73，notice 587，agent-ui 1801）。
 - AGENTS.md：`/tui` 为正式入口，`/layout` 为隐藏别名。
+
+## `/permissions` 四级安全级别（codex 对齐，2026-10）
+
+- 现状：`/permissions` 只有零散的 `readonly/plan` 与 `sandbox <mode>`，加上 `/yolo`；没有统一的"安全级别"，也不持久化。
+- 新增 `/permissions level [read-only|ask|auto|full]`（无值打开选择菜单）：
+  - `read-only`（Read Only）：plan 模式开启，拒绝写工具；shell 仍受 workspace 沙箱。
+  - `ask`（Ask for approval）：默认审批策略，敏感工具询问。
+  - `auto`（Approve for me）：自动批准（yolo），沙箱保持 workspace。
+  - `full`（Full Access）：自动批准 + 关闭沙箱（`setSessionSandboxMode(..., 'off')`）。
+  - 别名：`readonly`、`ask-for-approval`、`approve-for-me`、`full-access`。
+- 持久化：`settings.json` 的 `securityLevel`；`restoreSettings` 读取，会话打开后 `applySecurityLevel(..., { sandbox: true })` 应用沙箱；`/yolo` 切换时同步 ask/auto，避免状态与权限不符。
+- 测试：`security-levels.spec.ts` 9 例（别名、四级效果、启动恢复无副作用、选择器、settings 往返）；`/permissions` 参数契约更新；agent-ui 1810 通过。
+- 真实 TUI（pyte，隔离 root）15/15：选择器列出四级；选 Approve for me → 通知 + `auto-approve` 徽标 + 持久化 `auto`；Full Access → 状态 `sandbox off`；Read Only → plan 徽标；重启后恢复 `auto` 与自动批准；最后恢复 `ask`。
