@@ -9,7 +9,7 @@ export interface AgentConsoleMentionsHost {
 export async function refreshMentionCatalog(host: AgentConsoleMentionsHost): Promise<void> {
     const invoke = async (name: string, input: any): Promise<any> => {
         if (host.appRpc) {
-            const result = await host.appRpc.request('tools.invoke', { sessionId: host.state.sessionId, name, input }, host.rpcRequestContext());
+            const result = await host.appRpc.request('tools.invoke', { sessionId: host.state.sessionId, name, input, workspace: host.state.workspace }, host.rpcRequestContext());
             return result?.output;
         }
         if (!host.toolRegistry || typeof host.toolRegistry.invoke !== 'function') return undefined;

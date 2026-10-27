@@ -116,7 +116,7 @@ export class AiCliTool implements AgentTool {
             // The spawned CLI runs unattended for minutes; the owning turn's
             // signal lets Esc stop it instead of waiting out its timeout.
             signal: context?.signal,
-            workingDirectory: await this.resolveWorkingDirectory(input?.working_directory),
+            workingDirectory: await this.resolveWorkingDirectory(input?.working_directory, context),
             timeoutMs: typeof input?.timeout_ms === 'number'
                 ? input.timeout_ms
                 : aiCliOpts?.defaultTimeoutMs ?? DEFAULT_TIMEOUT_MS,
@@ -300,8 +300,8 @@ export class AiCliTool implements AgentTool {
         return env;
     }
 
-    private async resolveWorkingDirectory(workingDirectory: unknown): Promise<string | undefined> {
-        const policy = resolveFilePolicy(this.toolsOptions ?? undefined);
+    private async resolveWorkingDirectory(workingDirectory: unknown, context?: AgentToolContext): Promise<string | undefined> {
+        const policy = resolveFilePolicy(this.toolsOptions ?? undefined, context?.workspace);
         if (typeof workingDirectory !== 'string' || !workingDirectory.trim()) {
             return policy.rootDir;
         }

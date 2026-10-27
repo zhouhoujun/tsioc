@@ -43,7 +43,7 @@ export class EditFileTool implements AgentTool {
     async captureFileSnapshot(input: any, _context?: AgentToolContext): Promise<any> {
         try {
             const requestedPath = this.requirePath(input?.path);
-            const policy = resolveFilePolicy(this.options);
+            const policy = resolveFilePolicy(this.options, _context?.workspace);
             const absolutePath = resolveWorkspacePath(requestedPath, policy.rootDir);
             return await readFileSnapshot(absolutePath);
         } catch {
@@ -56,7 +56,7 @@ export class EditFileTool implements AgentTool {
         const oldString = stripLineNumberPrefixes(this.requireOldString(input?.oldString));
         const newString = stripLineNumberPrefixes(this.requireString(input?.newString, 'newString'));
         const replaceAll = input?.replaceAll === true;
-        const policy = resolveFilePolicy(this.options);
+        const policy = resolveFilePolicy(this.options, context?.workspace);
         const absolutePath = resolveWorkspacePath(requestedPath, policy.rootDir);
         await assertNoSymlinkInWorkspacePath(absolutePath, policy.rootDir);
 

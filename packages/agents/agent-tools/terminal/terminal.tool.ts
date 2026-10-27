@@ -41,7 +41,7 @@ export class TerminalTool implements AgentTool {
         const command = this.requireCommand(input?.command);
         assertSandboxCommand(command, resolveSandboxPolicy(this.options), this.name);
         const timeoutMs = this.resolveTimeout(input?.timeoutMs);
-        const cwd = await this.resolveCwd(input?.workdir);
+        const cwd = await this.resolveCwd(input?.workdir, context);
         const result = await this.exec(command, cwd, timeoutMs, context?.signal);
         return {
             ...result,
@@ -68,8 +68,8 @@ export class TerminalTool implements AgentTool {
         return timeoutMs;
     }
 
-    private async resolveCwd(workdir: unknown): Promise<string> {
-        const policy = resolveFilePolicy(this.options);
+    private async resolveCwd(workdir: unknown, context?: AgentToolContext): Promise<string> {
+        const policy = resolveFilePolicy(this.options, context?.workspace);
         if (typeof workdir !== 'string' || !workdir.trim()) {
             return policy.rootDir;
         }

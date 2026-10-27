@@ -369,7 +369,7 @@ export class ApplyPatchTool implements AgentTool {
     async captureFileSnapshot(input: any, _context?: AgentToolContext): Promise<FileSnapshot | null> {
         try {
             const patch = this.requirePatch(input?.patch);
-            const policy = resolveFilePolicy(this.options);
+            const policy = resolveFilePolicy(this.options, _context?.workspace);
             const plan = await buildPlan(parsePatch(patch), policy.rootDir);
             const primary = plan.files[0];
             return {
@@ -386,7 +386,7 @@ export class ApplyPatchTool implements AgentTool {
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
         const patch = this.requirePatch(input?.patch);
-        const policy = resolveFilePolicy(this.options);
+        const policy = resolveFilePolicy(this.options, _context?.workspace);
         const hunks = parsePatch(patch);
         const plan = await buildPlan(hunks, policy.rootDir);
         await commitPlan(plan);

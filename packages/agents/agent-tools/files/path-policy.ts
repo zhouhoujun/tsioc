@@ -12,11 +12,14 @@ export interface ResolvedFilePolicy {
     requireReadBeforeWrite: boolean;
 }
 
-export function resolveFilePolicy(options?: AgentToolsOptions): ResolvedFilePolicy {
+export function resolveFilePolicy(options?: AgentToolsOptions, workspaceOverride?: string): ResolvedFilePolicy {
     const merged = mergeAgentToolsOptions(options);
     const file = merged.file ?? defaultAgentToolsOptions.file!;
+    // A console `/cd` (or any host that switches workspace per invocation) passes
+    // the active root here; tools keep their configured root otherwise.
+    const override = String(workspaceOverride || '').trim();
     return {
-        rootDir: path.resolve(file.rootDir ?? process.cwd()),
+        rootDir: path.resolve(override || file.rootDir || process.cwd()),
         maxReadBytes: file.maxReadBytes ?? 32 * 1024,
         maxReadLines: file.maxReadLines ?? 400,
         maxReadLinesLimit: file.maxReadLinesLimit ?? 2000,

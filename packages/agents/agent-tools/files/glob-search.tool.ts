@@ -33,7 +33,7 @@ export class GlobSearchTool implements AgentTool {
             throw new Error('Invalid glob_search input: pattern must be a non-empty string.');
         }
         this.assertWorkspacePattern(input.pattern);
-        const policy = resolveFilePolicy(this.options);
+        const policy = resolveFilePolicy(this.options, _context?.workspace);
         const subdir = resolveWorkspaceSubdir(input.path, policy.rootDir);
         const pattern = subdir ? `${subdir}/${input.pattern}` : input.pattern;
         const matches = await globby(pattern, {

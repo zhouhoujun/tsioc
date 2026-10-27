@@ -279,7 +279,7 @@ export class ImportConfigTool implements AgentTool {
     async invoke(input: any, _context: AgentToolContext): Promise<ImportConfigResult> {
         const mode = this.resolveMode(input?.mode);
         const sources = this.resolveSources(input?.sources);
-        const workspace = await this.resolveWorkspace(input?.workspace);
+        const workspace = await this.resolveWorkspace(input?.workspace, _context);
         const agentRoot = this.resolveAgentRoot(input?.agentRoot);
         const homeDir = this.resolveHomeDir(input?.homeDir);
 
@@ -592,8 +592,8 @@ export class ImportConfigTool implements AgentTool {
         return selected;
     }
 
-    private async resolveWorkspace(workspace: unknown): Promise<string> {
-        const policy = resolveFilePolicy(this.options);
+    private async resolveWorkspace(workspace: unknown, context?: AgentToolContext): Promise<string> {
+        const policy = resolveFilePolicy(this.options, context?.workspace);
         if (typeof workspace === 'string' && workspace.trim()) {
             const cwd = resolveWorkspacePath(workspace, policy.rootDir);
             await assertNoSymlinkInWorkspacePath(cwd, policy.rootDir);

@@ -36,7 +36,7 @@ export class DeleteFileTool implements AgentTool {
     async captureFileSnapshot(input: any, _context?: AgentToolContext): Promise<any> {
         try {
             const requestedPath = this.requirePath(input?.path);
-            const policy = resolveFilePolicy(this.options);
+            const policy = resolveFilePolicy(this.options, _context?.workspace);
             const absolutePath = resolveWorkspacePath(requestedPath, policy.rootDir);
             return await readFileSnapshot(absolutePath);
         } catch {
@@ -49,7 +49,7 @@ export class DeleteFileTool implements AgentTool {
         if (input?.confirm !== true) {
             throw new Error('Invalid delete_file input: confirm must be true.');
         }
-        const policy = resolveFilePolicy(this.options);
+        const policy = resolveFilePolicy(this.options, _context?.workspace);
         const absolutePath = resolveWorkspacePath(requestedPath, policy.rootDir);
         await assertNoSymlinkInWorkspacePath(absolutePath, policy.rootDir);
 

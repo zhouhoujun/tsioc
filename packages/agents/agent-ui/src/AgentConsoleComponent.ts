@@ -3011,7 +3011,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
 
     protected async invokeTool(name: string, input: any): Promise<any> {
         if (this.appRpc) {
-            const result = await this.appRpc.request('tools.invoke', { sessionId: this.state.sessionId, name, input }, this.rpcRequestContext());
+            const result = await this.appRpc.request('tools.invoke', { sessionId: this.state.sessionId, name, input, ...(this.workspace ? { workspace: this.workspace } : {}) }, this.rpcRequestContext());
             return result?.output;
         }
         if (!this.toolRegistry || typeof this.toolRegistry.invoke !== 'function') return undefined;
@@ -3377,14 +3377,13 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     ): Promise<import('@tsdi/agent').AgentTurnResult | void> {
         if (this.appRpc) {
             await this.appRpc.request('run.turn', {
-                sessionId: this.state.sessionId,
-                input,
+                sessionId: this.state.sessionId, input, workspace: this.workspace,
                 ...(profile ? { profile } : {}),
                 ...(message ? { message } : {})
             }, this.rpcRequestContext());
             return;
         }
-        return this.runtime.runTurn(this.state.sessionId, input, undefined, message, profile);
+        return this.runtime.runTurn(this.state.sessionId, input, undefined, message, profile, undefined, this.workspace);
     }
 
     protected async loadTools(sessionId = this.state.sessionId): Promise<any[]> {

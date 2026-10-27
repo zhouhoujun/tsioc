@@ -100,7 +100,7 @@ export class GitOperationsTool implements AgentTool {
         const readOnlyActions = ['status', 'log', 'diff', 'show', 'branch', 'stash_list', 'log_graph', 'remote', 'worktree_list'];
         const isReadOnly = readOnlyActions.includes(action);
 
-        const workdir = await this.resolveWorkdir(input?.workdir);
+        const workdir = await this.resolveWorkdir(input?.workdir, context);
         if (action !== 'init' && !(await this.isGitRepo(workdir))) {
             if (action === 'status' || action === 'diff') {
                 const review = this.buildSnapshotReview(context.sessionId, action, input?.path, workdir);
@@ -162,8 +162,8 @@ export class GitOperationsTool implements AgentTool {
         return value.trim();
     }
 
-    private async resolveWorkdir(workdir: unknown): Promise<string> {
-        const policy = resolveFilePolicy(this.options);
+    private async resolveWorkdir(workdir: unknown, context?: AgentToolContext): Promise<string> {
+        const policy = resolveFilePolicy(this.options, context?.workspace);
         if (typeof workdir === 'string' && workdir.trim()) {
             const cwd = resolveWorkspacePath(workdir, policy.rootDir);
             await assertNoSymlinkInWorkspacePath(cwd, policy.rootDir);

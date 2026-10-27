@@ -46,7 +46,7 @@ export class WriteFileTool implements AgentTool {
     async captureFileSnapshot(input: any, _context?: AgentToolContext): Promise<any> {
         try {
             const requestedPath = this.requirePath(input?.path);
-            const policy = resolveFilePolicy(this.options);
+            const policy = resolveFilePolicy(this.options, _context?.workspace);
             const absolutePath = resolveWorkspacePath(requestedPath, policy.rootDir);
             return await readFileSnapshot(absolutePath);
         } catch {
@@ -57,7 +57,7 @@ export class WriteFileTool implements AgentTool {
     async invoke(input: any, context: AgentToolContext): Promise<any> {
         const requestedPath = this.requirePath(input?.path);
         const content = this.requireContent(input?.content);
-        const policy = resolveFilePolicy(this.options);
+        const policy = resolveFilePolicy(this.options, context?.workspace);
         const absolutePath = resolveWorkspacePath(requestedPath, policy.rootDir);
         await assertNoSymlinkInWorkspacePath(absolutePath, policy.rootDir, { allowMissingPath: true });
 

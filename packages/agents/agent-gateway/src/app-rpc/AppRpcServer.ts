@@ -1273,7 +1273,7 @@ export class AppRpcServer {
         await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
         this.sessionHandler.track(sessionId);
         await this.setSessionWorkspace(sessionId);
-        const turn = await this.runtime.runTurn(sessionId, input, context.principalId, message, profile, agent);
+        const turn = await this.runtime.runTurn(sessionId, input, context.principalId, message, profile, agent, typeof params?.workspace === 'string' && params.workspace.trim() ? params.workspace.trim() : undefined);
         const messages = await this.runtime.getMessages(sessionId);
         return {
             sessionId,
@@ -1546,7 +1546,7 @@ export class AppRpcServer {
         });
 
         try {
-            for await (const chunk of this.runtime.runStreamingTurn(sessionId, input, context.principalId, message, profile, agent)) {
+            for await (const chunk of this.runtime.runStreamingTurn(sessionId, input, context.principalId, message, profile, agent, typeof params?.workspace === 'string' && params.workspace.trim() ? params.workspace.trim() : undefined)) {
                 yield* this.flushPendingStreamEvents(request.id ?? null, sessionId, pendingEvents);
                 if (chunk.type === 'done') {
                     continue;
@@ -1830,7 +1830,7 @@ export class AppRpcServer {
         const sessionId = this.requireSessionId(params);
         const name = this.requireString(params?.name, 'tools.invoke name');
         await this.ensureSessionAccess(sessionId, context);
-        const output = await this.tools.invoke(name, params?.input, sessionId, context.principalId);
+        const output = await this.tools.invoke(name, params?.input, sessionId, context.principalId, typeof params?.workspace === 'string' && params.workspace.trim() ? params.workspace.trim() : undefined);
         return { sessionId, name, output };
     }
 

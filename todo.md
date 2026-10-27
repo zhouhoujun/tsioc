@@ -2339,3 +2339,20 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 脚本：`Application.run(AgentGatewayModule)` + 临时 ORM 根 + `GATEWAY_CONFIG {host:127.0.0.1, port:18321}`。
 - 结果：`GET /health` → **200** `{"status":"ok"}`；`GET /openapi.json` → **38 条路由**，包含 `/api/eval`、`/api/eval/run`（修复前 eval handler 因 `EvalRunner` 构造抛错被 `optionalHandler` 吞掉，这两条路由缺失）。
 - 另核：`GitStepSnapshotStore` 在 DI 下可正常解析；`AcpClient` 未被 `AgentModule` 提供（按设计，非缺陷）。
+
+## 2026-10-27 `/cd` 真正生效（方案①：按调用传递 workspace + 信任边界跟随）
+- 设计：不改"会话行 workspace"的写入策略，而是让**每次调用显式携带当前 workspace**：
+  - `resolveFilePolicy(options, workspaceOverride?)`：工具根目录优先用调用方传入的 workspace；
+  - 全部 29 处工具调用点改为 `resolveFilePolicy(this.options, context?.workspace)`（含 `terminal/terminal`、`write_file`、`edit_file`、`glob/grep/list/stat/copy/move/delete/mkdir/watch`、`git-operations`、`review-diff`、`process-start`、`image-info`、`pdf-read`、`import-config`、`ai-cli`），辅助方法补 `context` 参数并由 `invoke` 传入；
+  - `AgentTurnInput.workspace` + `runTurn/runStreamingTurn(..., workspace?)`：turn 的 `turnContext.workspace` 优先显式值（system prompt 的 `Workspace root`、工具根、沙箱判定都跟随）；
+  - 网关：`tools.invoke` / `run.turn` / `run.turn_stream` 接受 `params.workspace`；`review.diff` 接受 `params.workdir`；
+  - 控制台：`run.turn_stream` 请求、`run.turn`、`runStreamingTurn`、`tools.invoke`（`!cmd`、mention 取上下文）都带上 `state.workspace`；`/diff` 带 `workdir`。
+- 真实 TUI 验证：
+  - `/cd /tmp/opencode` → `!touch rel-probe.txt` 落在 **/tmp/opencode**（旧 workspace 无文件）；
+  - `/cd /tmp/opencode` → 让模型用 `write_file` 创建 `turn-probe.txt` → 先弹出 **`workspace_trust` 审批**（信任边界跟随新 workspace），批准后文件落在 **/tmp/opencode**。
+- 测试（全部先 RED）：
+  - `agent-tools/test/workspace-override.spec.ts` 3 例：policy 覆盖、`write_file`/`list_dir` 按调用 workspace 读写；
+  - `agent-gateway` 2 例：`tools.invoke` 与 `run.turn` 透传显式 workspace；
+  - `agent-ui/test/workspace-propagation.spec.ts` 3 例：`run.turn_stream` 参数、进程内 `runStreamingTurn` 第 7 参、空 workspace 不污染。
+- 基线：agent-tools **576**、agent **1042**、agent-gateway **360**、agent-ui **1794**。
+- 语义说明：`/cd` 是会话内运行时状态（重启后回到 `--workspace`）；会话行 workspace 仍保留启动值（用于分组）。`!cmd` 走 RPC 工具调用，不受 turn 级 workspace 信任门禁约束（既有行为，已记录）。

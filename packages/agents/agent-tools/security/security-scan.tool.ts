@@ -83,7 +83,7 @@ export class SecurityScanTool implements AgentTool {
 
     async invoke(input: any, context: AgentToolContext): Promise<any> {
         const path = this.requireString(input?.path, 'security_scan path');
-        const policy = resolveFilePolicy(this.options);
+        const policy = resolveFilePolicy(this.options, context?.workspace);
         const absolutePath = resolveWorkspacePath(path, policy.rootDir);
 
         try {

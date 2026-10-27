@@ -47,7 +47,7 @@ export class ReadFileTool implements AgentTool {
         const requestedPath = this.getRequestedPath(input);
         const offset = this.parsePositiveInt(input?.offset, 1, 'offset');
         const limit = this.parsePositiveInt(input?.limit, 0, 'limit');
-        const policy = resolveFilePolicy(this.options);
+        const policy = resolveFilePolicy(this.options, context?.workspace);
         const absolutePath = resolveWorkspacePath(requestedPath, policy.rootDir);
         await assertNoSymlinkInWorkspacePath(absolutePath, policy.rootDir);
         // No explicit limit -> default window; an explicit limit may be raised

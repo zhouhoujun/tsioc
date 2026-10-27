@@ -59,7 +59,7 @@ export class WatchFilesTool implements AgentTool {
         const action = this.requireAction(input?.action);
         switch (action) {
             case 'start':
-                return this.startWatch(input?.path);
+                return this.startWatch(input?.path, _context);
             case 'list':
                 return this.listWatches();
             case 'poll':
@@ -69,9 +69,9 @@ export class WatchFilesTool implements AgentTool {
         }
     }
 
-    private async startWatch(targetPath: unknown): Promise<any> {
+    private async startWatch(targetPath: unknown, context?: AgentToolContext): Promise<any> {
         const requestedPath = this.requirePath(targetPath);
-        const policy = resolveFilePolicy(this.options);
+        const policy = resolveFilePolicy(this.options, context?.workspace);
         const absolutePath = resolveWorkspacePath(requestedPath, policy.rootDir);
         await assertNoSymlinkInWorkspacePath(absolutePath, policy.rootDir);
         const watchId = this.createWatchId(absolutePath);

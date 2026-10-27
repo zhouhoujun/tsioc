@@ -31,7 +31,7 @@ export class ListDirTool implements AgentTool {
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
         const requestedPath = this.requirePath(input?.path);
         const includeHidden = input?.includeHidden === true;
-        const policy = resolveFilePolicy(this.options);
+        const policy = resolveFilePolicy(this.options, _context?.workspace);
         const limit = this.resolveLimit(input?.limit, policy.maxSearchResults);
         const absolutePath = resolveWorkspacePath(requestedPath, policy.rootDir);
         await assertNoSymlinkInWorkspacePath(absolutePath, policy.rootDir);

@@ -40,7 +40,7 @@ export class PdfReadTool implements AgentTool {
         }
         const requestedPath = this.getRequestedPath(input);
         const pageSpec = this.resolvePageSpec(input?.pages);
-        const policy = resolveFilePolicy(this.options);
+        const policy = resolveFilePolicy(this.options, _context?.workspace);
         const absolutePath = resolveWorkspacePath(requestedPath, policy.rootDir);
         await assertNoSymlinkInWorkspacePath(absolutePath, policy.rootDir);
         const stat = await fs.stat(absolutePath);

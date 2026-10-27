@@ -93,7 +93,7 @@ export class ReviewDiffTool implements AgentTool {
         if (context?.signal?.aborted) {
             throw new Error(CANCELLED_MESSAGE);
         }
-        const workdir = await this.resolveWorkdir(input?.workdir);
+        const workdir = await this.resolveWorkdir(input?.workdir, context);
         await this.assertGitRepo(workdir, context?.signal);
         assertSandboxCommand('git', resolveSandboxPolicy(this.options), this.name);
 
@@ -213,8 +213,8 @@ export class ReviewDiffTool implements AgentTool {
         }
     }
 
-    private async resolveWorkdir(workdir: unknown): Promise<string> {
-        const policy = resolveFilePolicy(this.options);
+    private async resolveWorkdir(workdir: unknown, context?: AgentToolContext): Promise<string> {
+        const policy = resolveFilePolicy(this.options, context?.workspace);
         if (typeof workdir === 'string' && workdir.trim()) {
             const cwd = resolveWorkspacePath(workdir, policy.rootDir);
             await assertNoSymlinkInWorkspacePath(cwd, policy.rootDir);

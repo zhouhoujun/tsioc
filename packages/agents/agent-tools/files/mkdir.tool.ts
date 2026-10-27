@@ -35,7 +35,7 @@ export class MkdirTool implements AgentTool {
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
         const requestedPath = this.requirePath(input?.path);
         const recursive = input?.recursive !== false;
-        const policy = resolveFilePolicy(this.options);
+        const policy = resolveFilePolicy(this.options, _context?.workspace);
         const absolutePath = resolveWorkspacePath(requestedPath, policy.rootDir);
         await assertNoSymlinkInWorkspacePath(absolutePath, policy.rootDir, { allowMissingPath: true });
 

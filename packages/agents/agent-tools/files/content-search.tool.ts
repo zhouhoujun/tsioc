@@ -41,7 +41,7 @@ export class ContentSearchTool implements AgentTool {
         if (!input || typeof input.query !== 'string' || !input.query.trim()) {
             throw new Error('Invalid content_search input: query must be a non-empty string.');
         }
-        const policy = resolveFilePolicy(this.options);
+        const policy = resolveFilePolicy(this.options, _context?.workspace);
         const subdir = resolveWorkspaceSubdir(input.path, policy.rootDir);
         const basePatterns = typeof input.glob === 'string' && input.glob.trim() ? [input.glob] : policy.defaultGlob;
         const patterns = basePatterns.map(pattern => subdir ? `${subdir}/${pattern}` : pattern);

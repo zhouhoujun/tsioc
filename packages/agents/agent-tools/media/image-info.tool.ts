@@ -31,7 +31,7 @@ export class ImageInfoTool implements AgentTool {
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
         const requestedPath = this.getRequestedPath(input);
-        const policy = resolveFilePolicy(this.options);
+        const policy = resolveFilePolicy(this.options, _context?.workspace);
         const absolutePath = resolveWorkspacePath(requestedPath, policy.rootDir);
         await assertNoSymlinkInWorkspacePath(absolutePath, policy.rootDir);
         const metadata = await this.readMetadata(absolutePath);

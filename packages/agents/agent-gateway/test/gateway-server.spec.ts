@@ -3122,6 +3122,51 @@ export class AppRpcServerTest {
         expect(list.result).toHaveLength(1);
     }
 
+    @Test('tools.invoke forwards the explicit console workspace to the registry')
+    async toolsInvokeForwardsWorkspace() {
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
+        const owners = new SessionOwnerStore(store);
+        const runtime = { async getMessages() { return []; } } as any;
+        const calls: Array<{ name: string; workspace?: string }> = [];
+        const tools = {
+            async invoke(name: string, _input: any, _sessionId: string, _principalId?: string, workspace?: string) {
+                calls.push({ name, workspace });
+                return { stdout: 'ok', exitCode: 0 };
+            }
+        } as any;
+        const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, tools, owners, new SessionHandler(runtime, store, owners), new EventHandler(owners));
+        await store.get('ws-invoke');
+        await owners.create('ws-invoke', 'user-1');
+        const result = await rpc.handle({
+            jsonrpc: '2.0', id: 1, method: 'tools.invoke',
+            params: { sessionId: 'ws-invoke', name: 'terminal', input: { command: 'pwd' }, workspace: '/tmp/custom-root' }
+        }, { principalId: 'user-1' }) as any;
+        expect(calls).toEqual([{ name: 'terminal', workspace: '/tmp/custom-root' }]);
+        expect(result.result?.output).toEqual({ stdout: 'ok', exitCode: 0 });
+    }
+
+    @Test('run.turn forwards the explicit workspace to the runtime')
+    async runTurnForwardsWorkspace() {
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
+        const owners = new SessionOwnerStore(store);
+        const calls: any[][] = [];
+        const runtime = {
+            async getMessages() { return []; },
+            async runTurn(...args: any[]) { calls.push(args); return { ok: true }; }
+        } as any;
+        const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, {} as any, owners, new SessionHandler(runtime, store, owners), new EventHandler(owners));
+        await store.get('ws-turn');
+        await owners.create('ws-turn', 'user-1');
+        await rpc.handle({
+            jsonrpc: '2.0', id: 1, method: 'run.turn',
+            params: { sessionId: 'ws-turn', input: 'hello', workspace: '/tmp/custom-root' }
+        }, { principalId: 'user-1' });
+        expect(calls.length).toEqual(1);
+        expect(calls[0][6]).toEqual('/tmp/custom-root');
+    }
+
     @Test('model.activate accepts the max reasoning effort')
     async modelActivateMaxEffort() {
         const { store } = await createOrmSessionStore();

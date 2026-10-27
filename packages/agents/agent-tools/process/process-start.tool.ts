@@ -45,7 +45,7 @@ export class ProcessStartTool implements AgentTool {
         const sandbox = resolveSandboxPolicy(this.options);
         assertSandboxCommand(command, sandbox, this.name);
         this.processes.assertSessionCapacity(context.sessionId, this.resolveMaxProcessesPerSession());
-        const cwd = await this.resolveCwd(input?.workdir);
+        const cwd = await this.resolveCwd(input?.workdir, context);
         const maxOutputChars = this.resolveMaxOutputChars(input?.maxOutputChars);
         const record = this.processes.start(
             context.sessionId,
@@ -67,8 +67,8 @@ export class ProcessStartTool implements AgentTool {
         return command;
     }
 
-    private async resolveCwd(workdir: unknown): Promise<string> {
-        const policy = resolveFilePolicy(this.options);
+    private async resolveCwd(workdir: unknown, context?: AgentToolContext): Promise<string> {
+        const policy = resolveFilePolicy(this.options, context?.workspace);
         if (typeof workdir !== 'string' || !workdir.trim()) {
             return policy.rootDir;
         }

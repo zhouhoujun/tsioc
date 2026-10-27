@@ -61,7 +61,8 @@ export abstract class AgentRuntime {
         principalId?: string,
         message?: AgentTurnMessageInput,
         profile?: string,
-        agent?: import('./AgentTurnInput').AgentTurnAgentConfig
+        agent?: import('./AgentTurnInput').AgentTurnAgentConfig,
+        workspace?: string
     ): Promise<AgentTurnResult>;
 
     abstract start(): Promise<void>;
@@ -77,7 +78,8 @@ export abstract class AgentRuntime {
         principalId?: string,
         message?: AgentTurnMessageInput,
         profile?: string,
-        agent?: import('./AgentTurnInput').AgentTurnAgentConfig
+        agent?: import('./AgentTurnInput').AgentTurnAgentConfig,
+        workspace?: string
     ): AsyncGenerator<StreamChunk>;
 
     abstract putMemory(sessionId: string, key: string, value: string, scope?: AgentMemoryRecord['scope']): Promise<AgentMemoryRecord>;

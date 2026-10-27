@@ -38,7 +38,7 @@ export class CopyFileTool implements AgentTool {
     async captureFileSnapshot(input: any, _context?: AgentToolContext): Promise<any> {
         try {
             const to = this.requirePath(input?.to, 'to');
-            const policy = resolveFilePolicy(this.options);
+            const policy = resolveFilePolicy(this.options, _context?.workspace);
             const toPath = resolveWorkspacePath(to, policy.rootDir);
             return await readFileSnapshot(toPath);
         } catch {
@@ -50,7 +50,7 @@ export class CopyFileTool implements AgentTool {
         const from = this.requirePath(input?.from, 'from');
         const to = this.requirePath(input?.to, 'to');
         const overwrite = input?.overwrite === true;
-        const policy = resolveFilePolicy(this.options);
+        const policy = resolveFilePolicy(this.options, _context?.workspace);
         const fromPath = resolveWorkspacePath(from, policy.rootDir);
         const toPath = resolveWorkspacePath(to, policy.rootDir);
         if (fromPath === toPath) {

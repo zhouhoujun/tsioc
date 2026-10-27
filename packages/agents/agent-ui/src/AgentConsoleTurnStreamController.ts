@@ -15,6 +15,7 @@ import { AgentConsoleMessageState, findStreamingAssistantMessageIndex, replaceSt
 export interface AgentConsoleTurnStreamHost {
     state: {
         sessionId: string;
+        workspace: string;
         status: string;
         messages: AgentMessage[];
         setMessages(messages: AgentMessage[], ...rest: any[]): void;
@@ -497,6 +498,7 @@ export async function runTurnStreamView(
     const stream = host.appRpc?.stream?.('run.turn_stream', {
         sessionId: host.state.sessionId,
         input: prompt,
+        ...(host.state.workspace ? { workspace: host.state.workspace } : {}),
         ...(profile ? { profile } : {}),
         ...(message ? { message } : {})
     });
@@ -523,7 +525,7 @@ export async function runTurnStreamView(
 
     const runtime: any = host.runtime;
     if (typeof runtime?.runStreamingTurn === 'function') {
-        for await (const chunk of runtime.runStreamingTurn(host.state.sessionId, prompt, undefined, message, profile)) {
+        for await (const chunk of runtime.runStreamingTurn(host.state.sessionId, prompt, undefined, message, profile, undefined, host.state.workspace)) {
             consumeStreamChunkView(host, state, chunk, assistantMessage);
         }
         settleReasoningRow(host, state);

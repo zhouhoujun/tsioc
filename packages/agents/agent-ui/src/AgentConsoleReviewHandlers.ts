@@ -24,6 +24,7 @@ function emitReviewBlock(ctx: ReviewHandlerContext, lines: string[]): void {
 
 export interface ReviewHandlerState {
     sessionId: string;
+    workspace?: string;
     selectedReviewTaskId?: string | null;
     selectedReviewTaskCacheKey?: string | null;
     reviewTask?: { id?: string; sessionId?: string | null; sourceSessionId?: string | null } | null;
@@ -547,6 +548,7 @@ export async function openWorktreeDiff(ctx: ReviewHandlerContext, args?: string)
         await ctx.activateToolForSession('review_diff', sessionId);
         const result = await ctx.appRpc.request('review.diff', {
             sessionId,
+            ...(String(ctx.state.workspace || '').trim() ? { workdir: String(ctx.state.workspace).trim() } : {}),
             scope: parsed.scope,
             ...(parsed.paths.length ? { paths: parsed.paths } : {})
         });

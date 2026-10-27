@@ -252,7 +252,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         principalId?: string,
         message?: AgentTurnMessageInput,
         profile?: string,
-        agent?: AgentTurnAgentConfig
+        agent?: AgentTurnAgentConfig, workspace?: string
     ): Promise<AgentTurnResult> {
         const release = await this.acquireSessionTurnLock(sessionId);
         this.turnAbortScopes.begin(sessionId);
@@ -265,7 +265,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 } | null
                 : null;
             if (!handler) {
-                return await this.processTurn({ sessionId, input, principalId, message, profile, agent });
+                return await this.processTurn({ sessionId, input, principalId, message, profile, agent, workspace });
             }
             return await handler.handle({ sessionId, input, principalId, message, profile, agent }, createRunContext(handler.injector ?? this.app));
         } finally {
@@ -333,7 +333,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
         const turnContext: TurnExecutionContext = {
             principalId: input.principalId,
-            workspace: await this.resolveSessionWorkspace(input.sessionId),
+            workspace: String(input.workspace || '').trim() || await this.resolveSessionWorkspace(input.sessionId),
             diagnostics: this.createTurnDiagnostics(),
             evidenceLedger: new EvidenceLedger(input.sessionId, this.uuid),
             recovery: this.createTurnRecovery(),
@@ -437,7 +437,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         principalId?: string,
         message?: AgentTurnMessageInput,
         profile?: string,
-        agent?: AgentTurnAgentConfig
+        agent?: AgentTurnAgentConfig, workspace?: string
     ): AsyncGenerator<StreamChunk> {
         const release = await this.acquireSessionTurnLock(sessionId);
         this.turnAbortScopes.begin(sessionId);
@@ -459,7 +459,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }
             const turnContext: TurnExecutionContext = {
                 principalId,
-                workspace: await this.resolveSessionWorkspace(sessionId),
+                workspace: String(workspace || '').trim() || await this.resolveSessionWorkspace(sessionId),
                 diagnostics: this.createTurnDiagnostics(),
                 evidenceLedger: new EvidenceLedger(sessionId, this.uuid),
                 recovery: this.createTurnRecovery(),

@@ -28,7 +28,7 @@ export class StatTool implements AgentTool {
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
         const requestedPath = this.requirePath(input?.path);
-        const policy = resolveFilePolicy(this.options);
+        const policy = resolveFilePolicy(this.options, _context?.workspace);
         const absolutePath = resolveWorkspacePath(requestedPath, policy.rootDir);
         // A missing path is a normal inspection outcome, not an error: report
         // it as `exists: false` instead of leaking a raw ENOENT so the agent

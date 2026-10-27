@@ -50,4 +50,9 @@ export interface AgentTurnInput {
     profile?: string;
     /** A5: per-agent permission matrix applied for the duration of this turn. */
     agent?: AgentTurnAgentConfig;
+    /**
+     * Workspace root for this turn (e.g. the console `/cd` target). Falls back to
+     * the session row so existing callers keep their behaviour.
+     */
+    workspace?: string;
 }
