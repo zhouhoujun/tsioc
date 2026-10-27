@@ -35,6 +35,7 @@ export interface CommandHandlerContext {
         readonly model: string;
         readonly planTodos: any[];
         readonly reviewFileSections: any[];
+        readonly reviewOpen: boolean;
         readonly reviewFileAnnotations: Record<string, any>;
         readonly consoleOptions: { selectHint?: string };
         readonly commandHints: string[];
@@ -238,6 +239,7 @@ export function buildCommandHandlerState(state: AgentConsoleSessionState): Comma
         get planTodos() { return state.planTodos; },
         get reviewFileSections() { return state.reviewFileSections; },
         get reviewFileAnnotations() { return state.reviewFileAnnotations; },
+        get reviewOpen() { return state.reviewOpen; },
         get consoleOptions() { return state.consoleOptions; },
         get commandHints() { return state.commandHints; },
         setInput: (v, c) => state.setInput(v, c),

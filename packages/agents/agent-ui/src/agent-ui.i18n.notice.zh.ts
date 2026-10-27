@@ -394,6 +394,7 @@ export const AGENT_UI_NOTICE_ZH: NestedMessages = {
   fileApproved: '文件已批准。',
   fileRejectedWithComment: '文件已拒绝：{comment}',
   fileRejected: '文件已拒绝。',
+  reviewOpenFirst: '请先打开评审面板（/review diff 或 /review run）再重试。',
   noSummaryQualityStatsForProvider: 'provider “{provider}” 没有摘要质量统计数据。',
   noSummaryQualityStats: '尚无摘要质量统计数据。',
   vimModeSaveFailed: '保存 Vim 模式失败。',

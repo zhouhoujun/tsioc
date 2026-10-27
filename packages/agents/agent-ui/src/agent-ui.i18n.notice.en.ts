@@ -394,6 +394,7 @@ export const AGENT_UI_NOTICE_EN: NestedMessages = {
   fileApproved: 'File approved.',
   fileRejectedWithComment: 'File rejected: {comment}',
   fileRejected: 'File rejected.',
+  reviewOpenFirst: 'Open the review panel first (/review diff or /review run), then retry.',
   noSummaryQualityStatsForProvider: 'No summary quality stats recorded for provider \'{provider}\'.',
   noSummaryQualityStats: 'No summary quality stats recorded yet.',
   vimModeSaveFailed: 'Failed to save vim mode.',

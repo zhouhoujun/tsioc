@@ -40,6 +40,8 @@ export interface AgentConsoleFocusLayersPort {
 
 export abstract class AgentConsoleFocusLayers {
     private readonly overlay = new AgentConsoleOverlayController();
+    /** Review panel stays open while the composer takes a `/` command. */
+    private reviewCommandMode = false;
     constructor(protected readonly state: AgentConsoleSessionState) {}
 
     async dismiss(transcriptNavigation: AgentConsoleTranscriptNavigationController): Promise<boolean> {
@@ -48,6 +50,7 @@ export abstract class AgentConsoleFocusLayers {
         if (state.textOverlay) { state.closeTextOverlay(); return true; }
         if (state.selectMenu) { await state.cancelSelectMenu(); return true; }
         if (state.gitSnapshotOpen) { state.closeGitSnapshotDetail(); return true; }
+        if (state.reviewOpen && this.reviewCommandMode) { this.endReviewCommand(); return true; }
         if (state.reviewOpen) { state.closeReview(); return true; }
         if (state.timelineEventInspectorOpen) {
             state.closeTimelineEventInspector();
@@ -369,6 +372,7 @@ export abstract class AgentConsoleFocusLayers {
     ): boolean | Promise<boolean> | undefined {
         const state = this.state;
         if (!state.reviewOpen) return undefined;
+        if (normalized === '/') { this.beginReviewCommand(); return true; }
         if ((normalized === 'esc' || normalized === 'escape') && state.canCancelFocusedCodingTask()) {
             return this.cancelFocusedTask();
         }
@@ -442,9 +446,26 @@ export abstract class AgentConsoleFocusLayers {
         return true;
     }
 
+    /** `/` in the review panel: keep the review open (annotations still apply) and focus the composer. */
+    beginReviewCommand(): boolean {
+        if (!this.state.reviewOpen) return false;
+        this.reviewCommandMode = true;
+        this.state.setInput('/');
+        this.sync();
+        return true;
+    }
+
+    endReviewCommand(): boolean {
+        if (!this.reviewCommandMode) return false;
+        this.reviewCommandMode = false;
+        this.sync();
+        return true;
+    }
+
     sync(): void {
         const layers: AgentConsoleFocusLayer[] = [];
         const state = this.state;
+        if (!state.reviewOpen) this.reviewCommandMode = false;
         if (state.messagesFocused) layers.push('messages');
         if (state.threadsFocused) layers.push('threads');
         if (state.projectsFocused) layers.push('projects');
@@ -459,7 +480,7 @@ export abstract class AgentConsoleFocusLayers {
         if (state.textOverlay) layers.push('overlay');
         if (this.hasMessageDetailFocus()) layers.push('message-detail');
         if (state.timelineEventInspectorOpen) layers.push('timeline-inspector');
-        if (state.reviewOpen) layers.push('review');
+        if (state.reviewOpen && !this.reviewCommandMode) layers.push('review');
         if (state.gitSnapshotOpen) layers.push('git-snapshot');
         if (state.commandOutputsOpen) layers.push('command-outputs');
         state.focusStack = layers;
@@ -492,7 +513,7 @@ export abstract class AgentConsoleFocusLayers {
     hasScheduledJobFocus(): boolean { return this.state.jobsFocused; }
     hasToolFocus(): boolean { return this.state.toolsFocused; }
     hasApprovalFocus(): boolean { return this.state.approvalsFocused; }
-    hasReviewFocus(): boolean { return this.state.reviewOpen; }
+    hasReviewFocus(): boolean { return this.state.reviewOpen && !this.reviewCommandMode; }
     hasMessageFocus(): boolean { return this.state.messagesFocused; }
     hasMessageDetailFocus(): boolean { return this.state.messageDetailOpen && this.state.messageDetailTakesFocus; }
     isAnyFocusActive(): boolean {

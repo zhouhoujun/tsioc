@@ -2406,3 +2406,17 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `/tui fullscreen`（重新 `ESC[?1049h`）→ `/tui` 切换 → `/layout viewport` 仍可用；
   - `/tui` 出现在命令菜单（`[display] switch TUI buffer m...`），`/messages` 已消失；
   - 持久化 scrollback 后重启，最后一次缓冲区操作是 `ESC[?1049l`（不再停留在备用屏），并可在重启后切回 fullscreen。
+
+## 评审面板命令模式（2026-10）
+
+- 现象：面板提示写着 `/review approve|reject|summary|approve-all|clear-all`，但面板持有键盘输入，输入根本到不了 composer；按 Esc 拿回 composer 又会关闭评审面板（`reviewOpen=false`），于是所有标注命令静默空转，却仍提示 `File approved.` / `All files approved.`（单测直接设置 `reviewOpen` 绕过了真实入口）。
+- 修复：
+  - 评审判面板内按 `/` 进入命令模式：保持面板与当前文件选择（`reviewOpen` 仍为 true），composer 获得焦点并预填 `/`；Esc 退回面板，再按 Esc 才关闭面板。
+  - 面板提示改为 `/ command mode (approve|reject|summary|approve-all|clear-all)`。
+  - 标注命令先检查面板状态；面板关闭或无文件时提示可操作信息 `请先打开评审面板（/review diff 或 /review run）再重试。`，不再假成功。
+- 测试（先 RED）：`review-command-mode.spec.ts` 4 例（`/` 解锁 composer 且保持面板、关闭后重置、面板关闭时给出可操作提示、面板打开时 approve/reject 生效）；agent-ui 1801 通过。
+- 真实 TUI（pyte，隔离 root）13/13：
+  - `/review diff` → `/` → `review approve` → `File approved.` → `/review summary` 显示 `1 approved`；
+  - Esc 回面板、`]` 选第二个文件、`/` → `review reject needs tests` → summary `1 approved, 1 rejected`；
+  - `/review risk` 列出两个文件；`/review export` 浮层显示 `# Review Report` 与 `Approved: 1 / Rejected: 1`；
+  - 关闭面板后 `/review approve` 给出可操作提示（不再假成功）；重新打开后 `approve-all` → `2 approved`。

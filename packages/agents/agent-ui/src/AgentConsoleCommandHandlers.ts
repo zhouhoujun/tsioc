@@ -788,22 +788,27 @@ async function handleReview(ctx: CommandHandlerContext, args: string, _resolved:
     }
     if (args) {
         const arg = args.trim();
+        const canAnnotate = !!ctx.state.reviewOpen && ctx.state.reviewFileSections.length > 0;
+        const notifyReviewClosed = () => ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewOpenFirst'));
         if (arg === 'summary') {
             const lines = ctx.state.getReviewAnnotationSummary();
             ctx.notify(lines.join('\n'));
             return true;
         }
         if (arg === 'approve-all') {
+            if (!canAnnotate) { notifyReviewClosed(); return true; }
             ctx.state.approveAllReviewFiles();
             ctx.notify(formatAgentUiNotice(ctx.translator, 'allFilesApproved'));
             return true;
         }
         if (arg === 'clear-all') {
+            if (!canAnnotate) { notifyReviewClosed(); return true; }
             ctx.state.clearAllReviewAnnotations();
             ctx.notify(formatAgentUiNotice(ctx.translator, 'allAnnotationsCleared'));
             return true;
         }
         if (arg === 'clear') {
+            if (!canAnnotate) { notifyReviewClosed(); return true; }
             ctx.state.clearReviewFileAnnotation();
             ctx.notify(formatAgentUiNotice(ctx.translator, 'annotationCleared'));
             return true;
@@ -833,12 +838,14 @@ async function handleReview(ctx: CommandHandlerContext, args: string, _resolved:
             return true;
         }
         if (arg.startsWith('approve')) {
+            if (!canAnnotate) { notifyReviewClosed(); return true; }
             const comment = arg.slice(7).trim() || undefined;
             ctx.state.setReviewFileAnnotation('approved', comment);
             ctx.notify(comment ? formatAgentUiNotice(ctx.translator, 'fileApprovedWithComment', { comment: comment }) : formatAgentUiNotice(ctx.translator, 'fileApproved'));
             return true;
         }
         if (arg.startsWith('reject')) {
+            if (!canAnnotate) { notifyReviewClosed(); return true; }
             const comment = arg.slice(6).trim() || undefined;
             ctx.state.setReviewFileAnnotation('rejected', comment);
             ctx.notify(comment ? formatAgentUiNotice(ctx.translator, 'fileRejectedWithComment', { comment: comment }) : formatAgentUiNotice(ctx.translator, 'fileRejected'));
