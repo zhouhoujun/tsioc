@@ -1,4 +1,4 @@
-import { Injectable, Optional } from '@tsdi/ioc';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { TurnDiagnosticsRecord, TurnDiagnosticsStore } from './TurnDiagnosticsStore';
 import { AgentAuditRecord, AuditSink } from './AuditSink';
 import { ToolEvidenceEntry } from './EvidenceLedger';
@@ -363,8 +363,8 @@ export function buildSuggestionHarnessProfilePatch(
 @Injectable()
 export class WeaknessMiner {
     constructor(
-        @Optional() private turnDiagnostics?: TurnDiagnosticsStore | null,
-        @Optional() private audit?: AuditSink | null
+        @Optional() @Inject(TurnDiagnosticsStore) private turnDiagnostics?: TurnDiagnosticsStore | null,
+        @Optional() @Inject(AuditSink) private audit?: AuditSink | null
     ) {
     }
 

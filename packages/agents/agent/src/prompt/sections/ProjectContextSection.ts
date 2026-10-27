@@ -51,7 +51,7 @@ export class ProjectContextSection extends PromptSection {
     protected cache: AgentsDocCacheEntry | null = null;
 
     constructor(
-        @Optional() private fileAdapter?: FileAdapter | null,
+        @Optional() @Inject(FileAdapter) private fileAdapter?: FileAdapter | null,
         @Optional() @Inject(ApplicationArguments) private appArgs?: ApplicationArguments | null,
         @Optional() @Inject(AGENT_OPTIONS) private agentOptions?: AgentOptions | null,
         @Optional() @Inject(INJECTOR) private injector?: Injector | null

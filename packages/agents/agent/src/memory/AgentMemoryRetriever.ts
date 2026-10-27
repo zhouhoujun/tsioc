@@ -38,7 +38,7 @@ export class DefaultAgentMemoryRetriever extends AgentMemoryRetriever {
         private store: MemoryStore,
         @Optional() searchService?: MemorySearchService,
         @Optional() @Inject(MEMORY_EMBEDDER) private embedder?: MemoryEmbedder | null,
-        @Optional() private projectMemory?: ProjectMemoryService | null
+        @Optional() @Inject(ProjectMemoryService) private projectMemory?: ProjectMemoryService | null
     ) {
         super();
         this.searchService = searchService ?? new MemorySearchService(store, new SemanticMemoryRanker(), embedder ?? null);

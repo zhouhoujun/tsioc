@@ -2309,3 +2309,15 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 修复：客户端改用 `background_task.list|cancel`；`vm-session.spec.ts` 的断言同步。
 - 测试：新增 `background-rpc-names.spec.ts`（断言只调用规范方法名，**RED** 前收到旧名）；agent-gateway 357、agent-ui **1791 passing**。
 - 真实 TUI：`/harness list|tree` 不再报错，输出进入可滚动浮层。
+
+## 2026-10-27 同类 DI 缺陷（agent 包）：项目记忆/弱点挖掘/项目上下文静默失效
+- 全仓扫描 `@Optional() x?: T | null`（联合类型 → 元数据 `Object` → 静默 undefined）后确认三处**有实际影响**：
+  1. `DefaultAgentMemoryRetriever.projectMemory` 未注入 → `retrieve()` 直接跳过项目记忆，**项目记忆永远进不了模型上下文**（`/memories add` 能存但用不上）；
+  2. `WeaknessMiner.turnDiagnostics` / `.audit` 未注入 → 弱点挖掘无数据；
+  3. `ProjectContextSection.fileAdapter` 未注入 → 项目上下文段落读不到文件。
+- 修复：三处加显式 `@Inject(ProjectMemoryService / TurnDiagnosticsStore / AuditSink / FileAdapter)`（保留 `@Optional()`，宿主未提供时行为不变）。
+- 测试：新增 `agent/test/di-optional-collaborators.spec.ts` 2 例：
+  - DI：retriever.projectMemory、miner.turnDiagnostics/audit、section.fileAdapter 均已注入（宿主 FileAdapter 用 stub 提供）；
+  - 功能：`ProjectMemoryService.add()` 写入后，`retriever.retrieve({projectId, query})` 能取回该记忆。
+  **RED**：仅回退三个源文件时 2/2 失败。agent **1042 passing**。
+- 未改（评估后放弃）：`AgentConsoleSessionService.sessionStore/runtime/turnDiagnostics` 与 `AgentConsoleModelStore.paths` 也属同型，但 TUI 走 appRpc、且注入 `AgentConsolePathProvider` 会让无 FileAdapter 的测试容器在构造期抛错；留作后续按宿主能力统一处理。
