@@ -140,6 +140,38 @@ export async function stopVoiceCapture(ctx: VoiceHandlerContext, cancel: boolean
 
 // ── /voice dispatch ──────────────────────────────────────────────────────────
 
+
+const VOICE_NO_ACTIVE_SESSION = /no active (audio|voice) session/i;
+const VOICE_GATEWAY_MISSING = /requires a connected gateway|no response from gateway/i;
+const VOICE_ADAPTERS_MISSING = /audio unavailable|missing streaming/i;
+
+/**
+ * Gateway voice errors are English, method-oriented strings ("call audio.start
+ * first"). Map the actionable ones onto localized notices and keep anything
+ * unexpected verbatim so it still reads as a diagnostic.
+ */
+async function describeVoiceFailure(ctx: VoiceHandlerContext, error: string): Promise<string> {
+    if (VOICE_NO_ACTIVE_SESSION.test(error)) {
+        return formatAgentUiNotice(ctx.translator, 'voiceNoActiveSession');
+    }
+    if (VOICE_GATEWAY_MISSING.test(error)) {
+        return formatAgentUiNotice(ctx.translator, 'voiceControlUnavailable');
+    }
+    if (VOICE_ADAPTERS_MISSING.test(error)) {
+        let missing = '';
+        try {
+            const status = await ctx.sessionService?.getVoiceStatus(ctx.state.sessionId);
+            if (Array.isArray(status?.missing) && status.missing.length) {
+                missing = formatAgentUiNotice(ctx.translator, 'voiceMissingSuffix', { list: status.missing.join(', ') });
+            }
+        } catch {
+            missing = '';
+        }
+        return formatAgentUiNotice(ctx.translator, 'voiceStartUnavailable', { missing });
+    }
+    return error;
+}
+
 export async function handleVoiceCommand(ctx: VoiceHandlerContext, arg: string): Promise<boolean> {
     if (!ctx.sessionService) {
         ctx.notify(formatAgentUiNotice(ctx.translator, 'voiceControlUnavailable'));
@@ -166,7 +198,10 @@ export async function handleVoiceCommand(ctx: VoiceHandlerContext, arg: string):
                 }
                 ctx.notify(formatAgentUiNotice(ctx.translator, 'voiceSessionStarted', { sessionId: sessionId }));
             } else {
-                ctx.notify(result?.error || formatAgentUiNotice(ctx.translator, 'voiceSessionStartFailed'));
+                const rawError = String(result?.error || '').trim();
+                ctx.notify(rawError
+                    ? await describeVoiceFailure(ctx, rawError)
+                    : formatAgentUiNotice(ctx.translator, 'voiceSessionStartFailed'));
             }
             return true;
         }
@@ -181,7 +216,14 @@ export async function handleVoiceCommand(ctx: VoiceHandlerContext, arg: string):
                     playback: playbackError ? formatAgentUiNotice(ctx.translator, 'voicePlaybackUnavailableOutput', { error: playbackError }) : ''
                 }));
             } else {
-                ctx.notify(result?.error || (result?.transcribed ? formatAgentUiNotice(ctx.translator, 'voiceTranscribed', { text: result.transcribed }) : formatAgentUiNotice(ctx.translator, 'voiceNoTranscription')));
+                const rawError = String(result?.error || '').trim();
+                if (rawError) {
+                    ctx.notify(await describeVoiceFailure(ctx, rawError));
+                } else {
+                    ctx.notify(result?.transcribed
+                        ? formatAgentUiNotice(ctx.translator, 'voiceTranscribed', { text: result.transcribed })
+                        : formatAgentUiNotice(ctx.translator, 'voiceNoTranscription'));
+                }
             }
             return true;
         }

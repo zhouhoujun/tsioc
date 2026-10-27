@@ -350,6 +350,7 @@ export const AGENT_UI_NOTICE_ZH: NestedMessages = {
   redidFile: '已重做 {filePath}（{restored}）。',
   failedUndo: '撤销失败：{error}',
   failedRedo: '重做失败：{error}',
+  voiceStartUnavailable: '语音不可用{missing}。请先配置 streaming STT/TTS 适配器，再运行 /voice start。',
   voiceSessionStartFailed: '语音会话无法启动。',
   voiceTranscribed: '转写：{text}',
   voiceNoTranscription: '语音会话未产生转写结果。',

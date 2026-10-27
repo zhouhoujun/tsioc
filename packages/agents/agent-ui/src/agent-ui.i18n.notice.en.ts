@@ -350,6 +350,7 @@ export const AGENT_UI_NOTICE_EN: NestedMessages = {
   redidFile: 'Redid {filePath} ({restored}).',
   failedUndo: 'Failed to undo: {error}',
   failedRedo: 'Failed to redo: {error}',
+  voiceStartUnavailable: 'Voice unavailable{missing}. Configure streaming STT and TTS adapters, then run /voice start.',
   voiceSessionStartFailed: 'Voice session could not be started.',
   voiceTranscribed: 'Transcribed: {text}',
   voiceNoTranscription: 'Voice session produced no transcription.',

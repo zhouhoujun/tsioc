@@ -1742,19 +1742,63 @@ export class AgentConsoleTuiRendererTest {
                 { id: 'session-alpha', workspace: '/work/demo', messageCount: 3, createdAt: 1, updatedAt: 2 },
                 { id: 'session-beta', workspace: '/work/demo', messageCount: 4, createdAt: 3, updatedAt: 4 }
             ]);
+            state.setStatusline([]);
+            state.consoleOptions = { ...state.consoleOptions, showStatusline: false };
             state.setSessionsFocused(true);
             await Promise.resolve();
             await new Promise(resolve => setTimeout(resolve, 10));
 
             const layout = renderer.renderToTuiLayout(consoleRef.hostView.rootNodes, { width: 72 });
-            // Several panels share the footer region, so the boundary is the first
-            // footer row: everything from there down stays fixed in viewport layout.
-            const footerRows = layout.regions.filter(region => region.id === 'footer').map(region => region.startRow);
-            expect(footerRows.length > 0).toEqual(true);
-            const footerStart = Math.min(...footerRows);
             const pickerRow = layout.lines.findIndex(line => line.includes('session-alpha') || line.includes('session-beta'));
             expect(pickerRow).toBeGreaterThanOrEqual(0);
-            expect(pickerRow).toBeGreaterThanOrEqual(footerStart);
+            // The row must belong to a footer region: only those stay fixed in the
+            // viewport layout (transcript rows scroll away).
+            expect(layout.regions.some(region => region.id === 'footer'
+                && pickerRow >= region.startRow && pickerRow < region.endRow)).toEqual(true);
+        } finally {
+            await tuiCtx.close();
+        }
+    }
+
+
+    @Test('the approvals panel lands in the footer region so a long transcript cannot hide it')
+    async approvalsPanelRendersInsideFooterRegion() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const componentFactory = tuiCtx.get(ComponentFactory);
+            const consoleRef = componentFactory.create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const renderer = tuiCtx.get(TuiRenderer);
+            const state = consoleRef.instance.sessionState as any;
+            state.setMessages(Array.from({ length: 24 }, (_value, index) => ({
+                id: `m${index}`,
+                role: 'user',
+                content: `transcript row ${index}`,
+                createdAt: index
+            })));
+            state.setPendingApprovals([{
+                id: 'approval-abcdef12',
+                sessionId: 'session-1',
+                toolName: 'terminal',
+                input: { command: 'rm -rf /tmp/audit' },
+                createdAt: Date.now(),
+                status: 'pending'
+            }]);
+            state.setStatusline([]);
+            state.consoleOptions = { ...state.consoleOptions, showStatusline: false };
+            state.setApprovalsFocused(true);
+            await Promise.resolve();
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            const layout = renderer.renderToTuiLayout(consoleRef.hostView.rootNodes, { width: 72 });
+            // The status panel also prints "Approval required: terminal (...)", so
+            // match the panel's own action hint to prove the panel is in the footer.
+            const approvalRow = layout.lines.findIndex(line => line.includes('Allow') && line.includes('Deny'));
+            expect(approvalRow).toBeGreaterThanOrEqual(0);
+            expect(layout.regions.some(region => region.id === 'footer'
+                && approvalRow >= region.startRow && approvalRow < region.endRow)).toEqual(true);
         } finally {
             await tuiCtx.close();
         }

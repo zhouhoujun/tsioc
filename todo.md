@@ -2221,3 +2221,17 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 真实 TUI：长会话 `/sessions` → 显示 `sessions 402 · 1/402` + `up/down move   pg jump   enter switch   y copy   esc` + 分组列表；↑ 改变选中、Enter 成功切换（token 106.1K → 13.6K）。
 - 顺带核实（无缺陷）：`/goal create|list|link|complete` 全链路正常且重启后仍持久（DB `goal-mvpzc8no-jqj4wu|completed`）；`/compact audit-run` 真实压缩 multi1（71→14 条、14398→9663 tok、33%，DB 记录 74→75）。
 - 观察（未改）：`/compact <reason>` 的 reason 没有进入压缩历史（`metadata` 为空，只有 `CompactNowResult.reason` 回传），命令说明却宣传了 `[reason]`；另外 `/pin` 允许把已归档会话再次置顶（`pinned=1 & archived=1`）。
+
+## 2026-10-27 `/voice start|stop` 直接把网关内部错误抛给用户
+- 现象（真实 TUI，无 streaming STT/TTS 适配器）：
+  - `/voice stop` → `no active audio session; call audio.start first`（提到内部 RPC 方法 `audio.start`，用户无从操作）；
+  - `/voice start` → `audio unavailable: missing streaming STT and TTS adapters`（英文原文，未本地化、无修复建议）。
+- 根因：`handleVoiceCommand` 在失败分支直接 `ctx.notify(result.error)`；这些字符串来自网关 `AppRpcServer`（`startAudioSession`/`endAudioSession`）与 `AgentConsoleSessionService`（无 appRpc 时），是面向 RPC 调用方的英文诊断。
+- 修复：`AgentConsoleVoiceHandlers` 增加 `describeVoiceFailure()`，把可操作的三类映射成本地化提示：
+  - `no active (audio|voice) session` → `voiceNoActiveSession`；
+  - `requires a connected gateway` / `no response from gateway` → `voiceControlUnavailable`；
+  - `audio unavailable` / `missing streaming` → 新键 `voiceStartUnavailable`（含 `{missing}`，从 `getVoiceStatus().missing` 取，并给出“配置 streaming STT/TTS 后重试 /voice start”的建议）；
+  - 其余未知错误保持原文（仍是可诊断的）。
+- 测试：新增 `voice-command-errors.spec.ts` 4 例（zh 无会话、zh 缺适配器含 missing 与建议、en 无网关、未知错误保留原文）。**RED**：前 3 例修复前拿到网关英文原文。notice 键数守卫 590 → **591**。
+- 真实 TUI：`/voice start` → `Voice unavailable (missing streaming STT adapter, streaming TTS adapter). Configure streaming STT and TTS adapters, then run /voice start.`；`/voice stop` → `No voice session was active.`
+- 顺带补强：`console-renderer.spec.ts` 的 footer 断言改为“该行必须落在某个 `footer` region 内”，并新增**审批面板**用例；回退两个面板的 `renderRegion` 时 2 例同时失败（此前用“行号 ≥ footer 起点”会被状态面板误判为通过）。
