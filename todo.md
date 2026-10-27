@@ -2328,3 +2328,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 修复：这些参数全部加显式 `@Inject(Token)`（`@Optional()` 保留）。修完顺带暴露并修掉另一个 DI 缺口：`EvalRunner` 的 `options: EvalRunnerOptions = {}` 是**对象参数**，未加 `@Optional()` 时容器解析 `Object` 失败，导致 `EvalHandler → EvalRunner` 构造直接抛错（此前 EvalHandler 是 undefined 所以从未构造到）。
 - 验证：模块可完整启动；`GatewayBootstrap` 9 个 handler、`SessionHandler.memory/questionStore`、`UsageHandler.turnDiagnostics`、`ChatWebSocket.rpc/audio/quota` 全部注入成功（`EventHandler.timeline` 因 `TimelineHistoryStore` 未被该模块提供，仍保持 optional/undefined，行为不变）。
 - 测试：新增 `agent-gateway/test/gateway-injection.spec.ts`（模块启动 + 全量断言）。**RED**：回退源码时 1 例失败（11 项缺失）。agent-gateway **358**、agent **1042 passing**。
+
+### 更正（2026-10-27）：gateway DI 缺陷的真实影响范围
+- 复核 `GatewayBootstrap.start()`：它**早已有** `optionalHandler()` 回退（构造注入为 undefined 时会用 `injector.get(Ctor)` 重新解析），因此 REST/WS 路由**并没有整体缺失**；提交 `ec61e516d` 的说明里"mounted no routes at all"表述过度。
+- 真实影响：回退对每个 handler 做 `injector.get(Ctor)`，其中 `EvalHandler → EvalRunner` 因 `options` 对象参数缺少 `@Optional()` 抛 `MissingParameterException`，被 `catch` 吞掉 → **只有 eval 路由被静默丢弃**（其余 handler 构造正常，路由照常挂载）。
+- 因此该提交的实际价值：① 构造注入不再依赖 `optionalHandler` 回退（去掉这层隐式兜底）；② 恢复 eval 路由（`EvalHandler.getRoutes()` 现在 2 条）；③ 用 DI 测试锁定这些接线，避免回退再次掩盖问题。
+- 仍未验证：独立网关的端口级端到端（`GatewayBootstrap.start()` 监听 + HTTP 请求）；本 CLI 没有 `serve` 子命令，网关由宿主进程以 `AgentGatewayModule` 启动。

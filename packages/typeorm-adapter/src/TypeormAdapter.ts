@@ -4,6 +4,7 @@ import { Startup, PipeTransform, TransportParameter, ApplicationArguments, MODEL
 import { ConnectionOptions, createModelResolver, DBPropertyMetadata, missingPropPipe, CONNECTIONS, toPrimitType } from '@tsdi/repository';
 import { getMetadataArgsStorage, EntitySchema, DataSource, DataSourceOptions, ObjectLiteral, Repository, MongoRepository, TreeRepository, EntityManager } from 'typeorm';
 import { ObjectIDToken } from './objectid.pipe';
+import { SqljsLockHandle, acquireSqljsLock, formatSqljsLockConflict } from './sqljs-lock';
 
 
 /**
@@ -17,6 +18,9 @@ export class TypeormAdapter {
     protected options!: ConnectionOptions;
 
     private sources: Map<string, DataSource>;
+
+    /** Advisory locks for file-backed sql.js databases (one per location). */
+    private sqljsLocks = new Map<string, SqljsLockHandle>();
     private startupPromise: Promise<void> | undefined;
 
     constructor(@Inject(INJECTOR) protected injector: Injector) {
@@ -228,6 +232,7 @@ export class TypeormAdapter {
         const dataSource = new DataSource(options as DataSourceOptions);
         await dataSource.initialize();
         this.installAtomicSqljsSave(dataSource);
+        this.installSqljsLock(dataSource);
 
         this.sources.set(options.name, dataSource);
         return dataSource;
@@ -372,9 +377,36 @@ export class TypeormAdapter {
         };
     }
 
+    /**
+     * File-backed sql.js databases rewrite the whole file on each save, so two
+     * agents on one file lose each other's writes. Record the owning pid and
+     * warn when another live process already uses the same location.
+     */
+    protected installSqljsLock(dataSource: DataSource): void {
+        const options = dataSource.options as { type?: string; location?: string };
+        if (options.type !== 'sqljs' || !options.location) {
+            return;
+        }
+        const location = String(options.location);
+        if (this.sqljsLocks.has(location)) {
+            return;
+        }
+        const handle = acquireSqljsLock(location);
+        this.sqljsLocks.set(location, handle);
+        if (handle.conflict) {
+            (globalThis as { console?: { warn?(message?: any): void } }).console?.warn?.(formatSqljsLockConflict(handle.conflict));
+        }
+    }
+
+    protected releaseSqljsLocks(): void {
+        this.sqljsLocks.forEach(handle => handle.release());
+        this.sqljsLocks.clear();
+    }
+
     @Dispose()
     protected async onDispose(): Promise<void> {
         await this.disconnect();
+        this.releaseSqljsLocks();
         this.sources.clear();
         this.injector = null!;
         this.options = null!
