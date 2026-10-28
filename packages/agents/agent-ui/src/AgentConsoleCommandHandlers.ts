@@ -765,18 +765,19 @@ async function handleApprovals(ctx: CommandHandlerContext, _args: string, _resol
 // ── /pair ────────────────────────────────────────────────────────────────────
 
 async function handlePair(ctx: CommandHandlerContext, _args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
-    let pairing: { url: string; code?: string; expiresAt?: number } | null = null;
+    let pairing: { url?: string; urls?: string[]; code?: string; expiresAt?: number } | null = null;
     try {
         pairing = await ctx.state.pairAction?.() ?? null;
     } catch {
         pairing = null;
     }
-    if (!pairing?.url) {
+    const urls = (pairing?.urls?.length ? pairing.urls : pairing?.url ? [pairing.url] : []).filter(Boolean);
+    if (!urls.length) {
         ctx.notify(formatAgentUiNotice(ctx.translator, 'pairUnavailable'));
         return true;
     }
-    const minutes = pairing.expiresAt ? Math.max(1, Math.round((pairing.expiresAt - Date.now()) / 60000)) : 5;
-    ctx.notify(formatAgentUiNotice(ctx.translator, 'pairReady', { url: pairing.url, minutes }));
+    const minutes = pairing?.expiresAt ? Math.max(1, Math.round((pairing.expiresAt - Date.now()) / 60000)) : 5;
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'pairReady', { urls: urls.join('\n'), minutes }));
     return true;
 }
 

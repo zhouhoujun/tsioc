@@ -114,11 +114,18 @@
         }
     }
 
-    function navigate(sessionId) {
+    function sessionUrl(sessionId) {
         var params = new URLSearchParams(window.location.search);
         params.set('session', sessionId);
-        window.location.href = window.location.pathname + '?' + params.toString();
+        return window.location.pathname + '?' + params.toString();
     }
+
+    function navigate(sessionId) {
+        window.location.href = sessionUrl(sessionId);
+    }
+
+    // Test/automation hook: the page itself never needs this.
+    window.__TSDI_AGENT_WEB_HEADER__ = { sessionUrl: sessionUrl, formatAge: formatAge };
 
     configure().then(function (config) {
         window.__TSDI_AGENT_WEB__ = config;

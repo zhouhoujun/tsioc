@@ -19,6 +19,7 @@ export * from './app-rpc/StdioAppRpcServer';
 
 export * from './auth/AuthMiddleware';
 export * from './auth/PairingStore';
+export * from './auth/pairing-urls';
 export * from './auth/RateLimiter';
 export * from './auth/SessionQueue';
 export * from './auth/SessionOwnerStore';

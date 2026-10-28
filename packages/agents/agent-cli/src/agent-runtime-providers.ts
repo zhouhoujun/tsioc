@@ -9,10 +9,12 @@ import { createAgentSandboxRuntimeProvider, provideWorkspaceTrust, resolveModelA
 export function buildAgentRuntimeProviders(
     config: AgentUiConfigService,
     resolved: any,
-    options: any
+    options: any,
+    /** Attached consoles use an isolated local database: the gateway owns the shared one. */
+    ormRoot?: string
 ): any[] {
     return [
-        ...provideAgentOrmStorage(resolved.root),
+        ...provideAgentOrmStorage(ormRoot || resolved.root),
         ...provideTools(resolved.tools),
         ...provideSkills({ root: resolved.root, roots: resolved.skillRoots, remoteCacheDir: resolved.tools?.skillsRemoteCacheDir }),
         createAgentSandboxRuntimeProvider(),

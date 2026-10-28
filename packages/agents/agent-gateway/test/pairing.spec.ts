@@ -10,9 +10,27 @@ import { PairingStore } from '../src/auth/PairingStore';
 import { AuthMiddleware } from '../src/auth/AuthMiddleware';
 import { RateLimiter } from '../src/auth/RateLimiter';
 import { defaultGatewayConfig } from '../src/contracts/GatewayConfig';
+import { buildPairingUrls } from '../src/auth/pairing-urls';
 
 function authHeaders(token?: string): Record<string, string> {
     return token ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } : { 'Content-Type': 'application/json' };
+}
+
+@Suite('pairing links')
+export class PairingUrlTest {
+    @Test('wildcard binds list loopback first and every LAN IPv4 address')
+    wildcard() {
+        const urls = buildPairingUrls({ host: '0.0.0.0', port: 3100 } as any, 'abc');
+        expect(urls[0]).toEqual('http://127.0.0.1:3100/?pair=abc');
+        urls.forEach(url => expect(url.endsWith('/?pair=abc')).toEqual(true));
+        urls.slice(1).forEach(url => expect(url).not.toContain('127.0.0.1'));
+    }
+
+    @Test('an explicit host produces exactly one link and keeps the runtime port')
+    explicitHost() {
+        expect(buildPairingUrls({ host: '10.0.0.5', port: 1 } as any, 'xyz', 4321))
+            .toEqual(['http://10.0.0.5:4321/?pair=xyz']);
+    }
 }
 
 @Suite('gateway pairing (web console)')

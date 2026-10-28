@@ -63,11 +63,12 @@ export class OpenCodeParityCommandsTest {
             translator: null,
             notify: (message: string) => notices.push(message),
             state: {
-                pairAction: async () => ({ url: 'http://127.0.0.1:3100/?pair=abc', code: 'abc', expiresAt: Date.now() + 5 * 60_000 })
+                pairAction: async () => ({ urls: ['http://127.0.0.1:3100/?pair=abc', 'http://192.168.1.9:3100/?pair=abc'], url: 'http://127.0.0.1:3100/?pair=abc', code: 'abc', expiresAt: Date.now() + 5 * 60_000 })
             }
         };
         await COMMAND_HANDLERS['/pair'](ctx, '', metaFor('/pair'));
         expect(notices[0]).toContain('http://127.0.0.1:3100/?pair=abc');
+        expect(notices[0]).toContain('http://192.168.1.9:3100/?pair=abc');
         expect(notices[0]).toContain('5 min');
 
         const missing: string[] = [];

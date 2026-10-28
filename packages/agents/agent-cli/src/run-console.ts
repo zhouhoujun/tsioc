@@ -28,6 +28,8 @@ import { AgentCliOptions } from './config';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { ensureAgentWorkspace } from './run-command';
 import { buildAgentRuntimeProviders } from './agent-runtime-providers';
+import { tmpdir } from 'os';
+import { join } from 'path';
 
 // Re-export types for backward compatibility
 export { AgentConsoleLaunchTarget as AgentCliUiTarget } from '@tsdi/agent-ui/console';
@@ -99,7 +101,7 @@ export async function runAgentConsole(
     }
 
     const ctx = await runConsoleTui(resolved, options, agentOptions, [
-        ...buildAgentRuntimeProviders(config, resolved, options),
+        ...buildAgentRuntimeProviders(config, resolved, options, gatewayUrl ? join(tmpdir(), `tsdi-agent-attach-${process.pid}`) : undefined),
         ...extraProviders
     ], ui, {
         deps: gatewayUrl ? [ServerCommonModule] : [ServerCommonModule, AgentAppServerModule],
@@ -113,8 +115,8 @@ export async function runAgentConsole(
                 return null;
             }
             const payload = await response.json() as { code?: string; expiresAt?: number; urls?: string[] };
-            const url = Array.isArray(payload.urls) ? String(payload.urls[0] || '') : '';
-            return url ? { url, code: payload.code, expiresAt: payload.expiresAt } : null;
+            const urls = Array.isArray(payload.urls) ? payload.urls.map(String).filter(Boolean) : [];
+            return urls.length ? { url: urls[0], urls, code: payload.code, expiresAt: payload.expiresAt } : null;
         } : undefined,
         restart: (sessionId: string) => {
             // Re-enter this launcher in-process once the old app has restored

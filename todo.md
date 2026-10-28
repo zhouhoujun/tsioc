@@ -2483,3 +2483,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - TUI `/pair`（`/web` 别名）：attached 模式经网关 `/api/pair/create` 生成链接；无 web 服务时给出可操作提示。
 - 验证：gateway 364（新增配对 HTTP 用例）、agent-ui 1824、agent-cli 118；真实跑通 `serve` → 页面/header.js → 配对/RPC → `attach` TUI → `/pair` → 共享会话（7/7）。
 - 备注：`attach` 的 TUI 仍会打开本地 DB（与 serve 同库时打印“另一个进程正在使用数据库”的提示，WAL 下可用）；后续可考虑 attached 模式跳过本地 ORM。
+
+## Web 配对增强：LAN 链接 / attach 隔离 DB / 页头回归（2026-10）
+
+- LAN 配对：`--host 0.0.0.0` 时配对链接同时列 loopback 与非内部 IPv4（`buildPairingUrls`），`/pair` 与 `serve` 横幅打印全部；手机可直接打开。
+- attach 隔离 DB：attached TUI 的本地 ORM 使用 `tmpdir/tsdi-agent-attach-<pid>`，不再与 `serve` 争用 `agent.db`；会话/轮次仍全部走网关 RPC。
+- 页头回归：JSDOM 加载 `web/header.js`，验证 `?pair=` 换 token、会话选项按时间倒序、状态文案、`+ New` 调 `session.create`、`sessionUrl` 保留参数。
+- 验证：gateway 366、agent-ui 1825、agent-cli 118；真实链路 8/8（LAN 链接、attach 无 DB 竞争、终端可见浏览器创建的会话）。
+- 备注：`/pair` 多链接时是多行通知（>3 行进入可滚动浮层），Esc 关闭；QR 码仍未实现（无 QR 依赖）。

@@ -5,6 +5,7 @@ import { AGENT_OPTIONS } from '@tsdi/agent';
 import { AgentUiConfigService } from '@tsdi/agent-ui';
 import { buildConsoleAgentOptions } from '@tsdi/agent-ui/console';
 import { AgentGatewayModule, GatewayServer, PairingStore, provideAgentGateway } from '@tsdi/agent-gateway';
+import { buildPairingUrls } from '@tsdi/agent-gateway';
 import { AgentCliOptions } from './config';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { buildAgentRuntimeProviders } from './agent-runtime-providers';
@@ -84,10 +85,12 @@ export async function runAgentServe(options: AgentServeOptions = {}): Promise<an
     const base = `http://${displayHost(host)}:${address?.port ?? port}`;
     const pairing = app.get(PairingStore) as PairingStore;
     const entry = pairing.generate();
+    const pairingUrls = buildPairingUrls({ host, port } as any, entry.code, address?.port);
     const lines = [
         '',
         `  TSDI Agent web console: ${base}/`,
-        `  Pairing link (one-time, 5 minutes): ${base}/?pair=${entry.code}`,
+        `  Pairing link (one-time, 5 minutes):`,
+        ...pairingUrls.map((url: string) => `    ${url}`),
         token ? `  Terminal: tsdi-agent attach ${base} --token ${token}` : `  Terminal: tsdi-agent attach ${base}`,
         ''
     ];

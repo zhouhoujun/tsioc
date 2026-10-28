@@ -55,7 +55,7 @@ export interface AgentConsoleLaunchExtras {
     /** `/restart` relaunch hook supplied by the host process (the CLI spawns a fresh TUI). */
     restart?: (sessionId: string) => void;
     /** `/pair` mints a one-time browser link for the running web console. */
-    pair?: () => Promise<{ url: string; code?: string; expiresAt?: number } | null>;
+    pair?: () => Promise<{ url?: string; urls?: string[]; code?: string; expiresAt?: number } | null>;
 }
 
 /**

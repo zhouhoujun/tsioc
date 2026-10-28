@@ -439,7 +439,7 @@ export const AGENT_UI_NOTICE_EN: NestedMessages = {
   securityLevelTitle: 'Security level',
   configurationReloaded: 'Configuration reloaded.',
   restartUnavailable: 'Restart is unavailable in this host.',
-  pairReady: 'Web console: {url}\nOne-time link · expires in {minutes} min · open it on the device you want to pair.',
+  pairReady: 'Web console:\n{urls}\nOne-time link · expires in {minutes} min · open it on the device you want to pair.',
   pairUnavailable: 'Web console is not running. Start `tsdi-agent serve`, then attach with `tsdi-agent attach <url>`.',
   feedbackPackagingDiagnostics: 'Packaging diagnostics for feedback:',
   feedbackStep1: '1. Run /debug-config and include the output.',
