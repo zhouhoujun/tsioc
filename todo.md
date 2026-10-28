@@ -2582,3 +2582,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 缺陷：`policyCommandHost.persistSettings` 只写本地 settings store；attach 下 `/permissions level` 不会写入 gateway 的 workspace 设置，浏览器共享不到（与 `/personality` 不一致）。
 - 修复：policy 宿主与 preference 宿主一致，先发 `settings.ui.set` 再写本地；yolo 仍为客户端审批行为（本地）。
 - 验证：agent-ui 1844（组件用例断言 `settings.ui.set {securityLevel}`）；真实 attach PTY 7/7（客户端/gateway workspace 分离，gateway 文件变 full、gateway 会话沙箱 off）。
+
+## attach 状态栏模型取自 gateway（2026-10）
+
+- 缺陷：fresh attach 启动跳过 `app.state`，状态栏显示客户端默认模型（真实探针：gateway `gpt-6.1-sol`，attach 显示 `gpt-5.5`）。
+- 修复：`openSession` 后带显式 sessionId 补读 `app.state`，应用 provider/model/modelProfile；`startupWorkspace` 保留客户端 workspace，不切换会话。
+- 验证：agent-ui 1845（新增 bootstrap 用例：显式 session 优先、模型生效、workspace 不被覆盖）；真实 attach PTY 2/2（显示 gateway 模型）。

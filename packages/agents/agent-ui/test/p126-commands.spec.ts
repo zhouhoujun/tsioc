@@ -236,6 +236,23 @@ export class P126CommandClusterTest {
         expect(rpcCalls.some(call => call.method === 'settings.ui.set' && call.params.securityLevel === 'full')).toEqual(true);
     }
 
+    @Test('app.state bootstrap uses the explicit session and the gateway model without overriding the workspace')
+    async bootstrapAppState() {
+        const { component } = createConsole();
+        (component as any).appRpc = {
+            request: async (method: string, params: any) => method === 'app.state'
+                ? { sessionId: 'other', provider: 'deepseek', model: 'gpt-6.1-sol', modelProfile: 'strong', workspace: '/gateway/ws', title: 'Gateway' }
+                : {}
+        };
+        (component as any).startupWorkspace = '/client/ws';
+        await (component as any).bootstrapStateFromAppRpc('session-1');
+        const state = (component as any).state;
+        expect(state.sessionId).toEqual('session-1');
+        expect(state.model).toEqual('gpt-6.1-sol');
+        expect(state.modelProfile).toEqual('strong');
+        expect(state.workspace).toEqual('/client/ws');
+    }
+
     @Test('/personality rejects unknown presets')
     async personalityUnknown() {
         const { state, component } = createConsole();

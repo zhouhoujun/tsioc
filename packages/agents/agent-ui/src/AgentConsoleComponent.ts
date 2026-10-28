@@ -1589,7 +1589,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         await this.initializeInputHistory();
         // No explicit session means a fresh conversation. Resuming the state
         // default here replays the previous transcript on every console start.
-        await this.openSession(explicitSessionId || (freshStartup ? undefined : this.state.sessionId) || undefined, { persistCurrentHistory: false, fresh: freshStartup, missing: missingResume });
+        await this.openSession(explicitSessionId || (freshStartup ? undefined : this.state.sessionId) || undefined, { persistCurrentHistory: false, fresh: freshStartup, missing: missingResume }); if (freshStartup) { await this.bootstrapStateFromAppRpc(this.state.sessionId); }
         if (this.state.securityLevel) {
             await applySecurityLevel(this.policyCommandHost(), this.state.securityLevel, { notify: false, persist: false });
         }
@@ -1781,11 +1781,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         });
     }
 
-    protected async bootstrapStateFromAppRpc(): Promise<void> {
+    protected async bootstrapStateFromAppRpc(sessionId?: string): Promise<void> {
         if (!this.appRpc) {
             return;
         }
-        const meta = await this.appRpc.request('app.state', undefined, this.rpcRequestContext());
+        const meta = await this.appRpc.request('app.state', sessionId ? { sessionId } : undefined, this.rpcRequestContext());
         if (!meta || typeof meta !== 'object') {
             return;
         }
@@ -1796,7 +1796,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         this.state.configure({
             // CLI fresh startup skips app.state entirely. Other hosts retain
             // their established current-session bootstrap behavior.
-            sessionId: configuredSessionId || (typeof meta.sessionId === 'string' ? meta.sessionId : undefined),
+            sessionId: configuredSessionId || sessionId || (typeof meta.sessionId === 'string' ? meta.sessionId : undefined),
             provider: typeof meta.provider === 'string' ? meta.provider : undefined,
             model: typeof meta.model === 'string' ? meta.model : undefined,
             modelProfile: typeof meta.modelProfile === 'string' ? meta.modelProfile : undefined,
