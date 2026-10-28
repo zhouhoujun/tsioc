@@ -201,6 +201,23 @@ export class P126CommandClusterTest {
         expect(state.notice).toContain('Personality cleared.');
     }
 
+    @Test('/personality and /memories publish the preference to the running runtime')
+    async preferencesPublishToRuntime() {
+        const { component } = createConsole();
+        const calls: Array<{ method: string; params: any }> = [];
+        (component as any).appRpc = {
+            request: async (method: string, params: any) => {
+                calls.push({ method, params });
+                return { ok: true };
+            }
+        };
+        await (component as any).handleCommand('/personality set concise');
+        await (component as any).handleCommand('/memories off');
+        expect(calls.map(call => call.method)).toEqual(['settings.ui.set', 'settings.ui.set']);
+        expect(calls[0].params).toEqual({ personality: 'concise' });
+        expect(calls[1].params).toEqual({ memoryInjection: false });
+    }
+
     @Test('/personality rejects unknown presets')
     async personalityUnknown() {
         const { state, component } = createConsole();

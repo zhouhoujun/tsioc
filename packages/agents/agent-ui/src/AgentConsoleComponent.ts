@@ -2949,7 +2949,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             projectMemory: this.projectMemory, translator: this.translator,
             rpcRequestContext: () => this.rpcRequestContext(),
             notify: (message: string) => this.notify(message),
-            persistSettings: (patch: Record<string, any>) => this.persistSettings(patch),
+            persistSettings: async (patch: Record<string, any>) => { await this.appRpc?.request('settings.ui.set', patch).catch(() => undefined); await this.persistSettings(patch); },
             pushCommandOutput: (command: string, text: string, kind?: AgentConsoleCommandOutputEntry['kind']) => this.pushCommandOutput(command, text, kind)
         };
     }

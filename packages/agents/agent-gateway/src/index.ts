@@ -15,6 +15,7 @@ export * from './gateway/GatewayBootstrap';
 export * from './gateway/RouteMatcher';
 export * from './gateway/OpenApiDocument';
 export * from './app-rpc/AppRpcServer';
+export * from './app-rpc/console-ui-settings';
 export * from './app-rpc/StdioAppRpcServer';
 
 export * from './auth/AuthMiddleware';

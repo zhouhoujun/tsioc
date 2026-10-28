@@ -2523,3 +2523,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 修复：settings 增加 `personality`/`memoryInjection` 并往返；命令通过 `persistSettings` 写入；`applyPersistedPreferences` 在启动 `restoreSettings` 中恢复到运行 options；组件用已有 import 行/同文件宿主，保持源码体量门槛。
 - 验证：agent-ui 1830（新增 4 例）；真实 TUI 8/8（set/off 落盘、重启恢复、重置）。
 - 已知限制：attach/web 模式下 gateway（serve）进程的 options 在启动时确定，本地改动只影响当前 console；跨进程需新增 `settings.ui.set` RPC（待办）。
+
+## `/personality` / `/memories` 跨进程生效（2026-10）
+
+- 缺陷：web/attach 下命令只改本地 `options.ui`，turn 走 gateway（`serve`）进程，模型永远看不到；`serve` 重启也不读 workspace 设置。
+- 修复：新增 `settings.ui.set` RPC（修改共享 `AGENT_OPTIONS.ui`，`DefaultAgentRuntime` 每 turn 读取，并把 `personality`/`memoryInjection` 写入 workspace `settings.json`）；`/personality`、`/memories` 的 `persistSettings` 先发 RPC 再本地持久化；`serve` 启动用 `readConsoleUiSettings` + `applyPersistedPreferences` 恢复。
+- 验证：gateway 368（新增 2 例）、agent-ui 1831（新增组件→RPC 接线例）、agent-cli 122；真实 serve RPC 5/5、带持久化设置启动并完成 turn 4/4。

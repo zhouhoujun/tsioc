@@ -5,7 +5,9 @@ import { Application } from '@tsdi/core';
 import { AGENT_OPTIONS } from '@tsdi/agent';
 import { AgentUiConfigService } from '@tsdi/agent-ui';
 import { buildConsoleAgentOptions } from '@tsdi/agent-ui/console';
+import { applyPersistedPreferences } from '@tsdi/agent-ui';
 import { AgentGatewayModule, GatewayConfig, GatewayServer, PairingStore, provideAgentGateway } from '@tsdi/agent-gateway';
+import { readConsoleUiSettings } from '@tsdi/agent-gateway';
 import { buildPairingUrls } from '@tsdi/agent-gateway';
 import { AgentCliOptions } from './config';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
@@ -84,6 +86,7 @@ export async function runAgentServe(options: AgentServeOptions = {}): Promise<an
     const resolved = config.resolve(options);
     await ensureAgentWorkspace(resolved);
     const runtimeAgentOptions = buildConsoleAgentOptions(resolved, options, {});
+    applyPersistedPreferences(runtimeAgentOptions, readConsoleUiSettings(resolved.workspace));
     const staticDir = resolveAgentWebDir(options.static);
     if (!staticDir) {
         process.stderr.write('Web assets not found; run "npm run build:web" in @tsdi/agent-ui or pass --static <dir>.\n');
