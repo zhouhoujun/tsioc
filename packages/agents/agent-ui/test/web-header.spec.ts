@@ -115,4 +115,40 @@ export class WebConsoleHeaderTest {
             window.close();
         }
     }
+
+    @Test('refreshes session titles and new sessions when the tab regains focus')
+    async focusRefresh() {
+        const dom = new JSDOM(PAGE_SOURCE, {
+            url: 'http://127.0.0.1:3100/?session=chat-1',
+            runScripts: 'outside-only'
+        });
+        const { window } = dom;
+        const sessions = [{ id: 'chat-1', title: 'Original', lastActiveAt: Date.now() - 60_000 }];
+        (window as any).fetch = async (_url: string, init: any) => {
+            const body = JSON.parse(String(init?.body || '{}'));
+            if (body.method === 'session.list') {
+                return { ok: true, json: async () => ({ result: sessions.map(session => ({ ...session })) }) };
+            }
+            return { ok: true, json: async () => ({ result: null }) };
+        };
+
+        try {
+            window.eval(HEADER_SOURCE);
+            await waitFor(() => window.document.querySelectorAll('#agent-session-select option').length === 1);
+
+            sessions.unshift({ id: 'chat-2', title: 'From the terminal', lastActiveAt: Date.now() });
+            sessions[1].title = 'Renamed in terminal';
+            window.dispatchEvent(new window.Event('focus'));
+
+            await waitFor(() => window.document.querySelectorAll('#agent-session-select option').length === 2);
+            const options = Array.from(window.document.querySelectorAll('#agent-session-select option')) as any[];
+            expect(options.map(option => option.value)).toEqual(['chat-2', 'chat-1']);
+            expect(options[0].textContent).toContain('From the terminal');
+            expect(options[1].textContent).toContain('Renamed in terminal');
+            expect((window.document.getElementById('agent-session-select') as any).value).toEqual('chat-1');
+            expect(window.document.getElementById('agent-header-status')?.textContent).toContain('2 sessions');
+        } finally {
+            window.close();
+        }
+    }
 }

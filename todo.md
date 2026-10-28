@@ -2540,3 +2540,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 缺陷：`--host 0.0.0.0` 时链接列表 loopback 在前，`serve` 横幅和 `/pair` 都用 `urls[0]` 生成二维码；手机扫码打开的是手机自己的 `127.0.0.1`，LAN 链接只以文本列出。
 - 修复：`selectPairingQrUrl` 优先非 loopback（127.0.0.1/localhost/::1）并回退首个；`renderPairingQrForUrls` 统一编码入口；`serve` 与 `/pair` 共用。
 - 验证：agent-cli 124（新增策略例 + 用 jsqr 真解码二维码内容的用例）；真实 `serve --host 0.0.0.0` PTY 4/4（横幅二维码解码为 LAN URL，不含 loopback）。
+
+## Web 页头会话列表刷新（2026-10）
+
+- 缺陷：页头只在加载时读一次 `session.list`，终端新建或改名的会话在浏览器里必须手动刷新。
+- 修复：`focus`/`visibilitychange` 事件驱动刷新（无定时器），保留当前选中项，change/click 监听只绑定一次；空服务器自动建会话仍只在首次加载执行。
+- 验证：agent-ui 1832（新增用例先 RED：focus 刷新超时）；真实 serve + 真实 header.js + HTTP 6/6（终端建会话 → focus 后出现在下拉，数量 +1，不跳转）。

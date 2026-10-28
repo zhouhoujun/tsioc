@@ -63,6 +63,56 @@
         };
     }
 
+    var headerBound = false;
+    var refreshInFlight = false;
+
+    function showSessions(config, select, status, sessions) {
+        sessions.sort(function (left, right) {
+            return (Number(right.lastActiveAt) || 0) - (Number(left.lastActiveAt) || 0);
+        });
+        var preferred = select.value || config.sessionId;
+        select.textContent = '';
+        sessions.forEach(function (session) {
+            var option = document.createElement('option');
+            option.value = session.id;
+            option.textContent = (session.title || session.summary || session.id) + '  ·  ' + formatAge(session.lastActiveAt);
+            if (session.id === preferred) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+        if (!config.sessionId && sessions[0]) {
+            config.sessionId = sessions[0].id;
+            select.value = sessions[0].id;
+        }
+        if (status) {
+            status.textContent = sessions.length + (sessions.length === 1 ? ' session' : ' sessions');
+        }
+    }
+
+    /** Re-read the session list when the tab regains focus (terminal-created/renamed sessions). */
+    async function refreshHeader(config) {
+        if (refreshInFlight) {
+            return;
+        }
+        var select = document.getElementById('agent-session-select');
+        var status = document.getElementById('agent-header-status');
+        if (!select) {
+            return;
+        }
+        refreshInFlight = true;
+        try {
+            var sessions = (await rpc(config.baseUrl, config.token, 'session.list', {})) || [];
+            showSessions(config, select, status, sessions);
+        } catch (error) {
+            if (status) {
+                status.textContent = String((error && error.message) || error);
+            }
+        } finally {
+            refreshInFlight = false;
+        }
+    }
+
     async function renderHeader(config) {
         var select = document.getElementById('agent-session-select');
         var addButton = document.getElementById('agent-session-new');
@@ -82,40 +132,32 @@
                     window.__TSDI_AGENT_WEB__.sessionId = createdId;
                 }
             }
-            sessions.sort(function (left, right) {
-                return (Number(right.lastActiveAt) || 0) - (Number(left.lastActiveAt) || 0);
-            });
-            select.textContent = '';
-            sessions.forEach(function (session) {
-                var option = document.createElement('option');
-                option.value = session.id;
-                option.textContent = (session.title || session.summary || session.id) + '  ·  ' + formatAge(session.lastActiveAt);
-                if (session.id === config.sessionId) {
-                    option.selected = true;
-                }
-                select.appendChild(option);
-            });
-            if (!config.sessionId && sessions[0]) {
-                config.sessionId = sessions[0].id;
-                select.value = sessions[0].id;
-            }
-            select.addEventListener('change', function () {
-                navigate(select.value);
-            });
-            addButton.addEventListener('click', async function () {
-                addButton.disabled = true;
-                try {
-                    var created = await rpc(config.baseUrl, config.token, 'session.create', {});
-                    navigate(created.sessionId || created.id);
-                } catch (error) {
-                    if (status) {
-                        status.textContent = String((error && error.message) || error);
+            showSessions(config, select, status, sessions);
+            if (!headerBound) {
+                headerBound = true;
+                select.addEventListener('change', function () {
+                    navigate(select.value);
+                });
+                addButton.addEventListener('click', async function () {
+                    addButton.disabled = true;
+                    try {
+                        var createdSession = await rpc(config.baseUrl, config.token, 'session.create', {});
+                        navigate(createdSession.sessionId || createdSession.id);
+                    } catch (error) {
+                        if (status) {
+                            status.textContent = String((error && error.message) || error);
+                        }
+                        addButton.disabled = false;
                     }
-                    addButton.disabled = false;
-                }
-            });
-            if (status) {
-                status.textContent = sessions.length + (sessions.length === 1 ? ' session' : ' sessions');
+                });
+                window.addEventListener('focus', function () {
+                    refreshHeader(config);
+                });
+                document.addEventListener('visibilitychange', function () {
+                    if (!document.hidden) {
+                        refreshHeader(config);
+                    }
+                });
             }
         } catch (error) {
             if (status) {
