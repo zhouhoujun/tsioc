@@ -180,7 +180,8 @@ run_gate_regression() {
     fi
     # Wall-clock metrics are sensitive to host load; a spike is not a regression.
     # Re-measure once (same scenarios, same thresholds) before failing the gate.
-    echo "[GATE-RETRY] $id: metrics exceeded thresholds; re-measuring once" >&2
+    echo "[GATE-RETRY] $id: metrics exceeded thresholds; re-measuring after a short cooldown" >&2
+    sleep 5
     if [ "$DOM_METRICS_READY" -eq 1 ]; then
         (cd "$ROOT_DIR/packages/agents/agent-ui" && npx ts-node -r tsconfig-paths/register harness/run-dom-gate.ts --json "$dom_json" >>"$log" 2>&1)
     fi

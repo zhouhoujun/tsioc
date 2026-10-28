@@ -80,4 +80,39 @@ export class WebConsoleHeaderTest {
             window.close();
         }
     }
+
+    @Test('an empty server gets a session created before the console mounts')
+    async emptyServerCreatesSession() {
+        const dom = new JSDOM(PAGE_SOURCE, {
+            url: 'http://127.0.0.1:3100/',
+            runScripts: 'outside-only'
+        });
+        const { window } = dom;
+        const calls: string[] = [];
+        (window as any).fetch = async (url: string, init: any) => {
+            const target = String(url);
+            if (target.endsWith('/api/pair')) {
+                return { ok: true, json: async () => ({ token: '' }) };
+            }
+            const body = JSON.parse(String(init?.body || '{}'));
+            calls.push(body.method);
+            if (body.method === 'session.list') {
+                return { ok: true, json: async () => ({ result: [] }) };
+            }
+            if (body.method === 'session.create') {
+                return { ok: true, json: async () => ({ result: { sessionId: 'chat-first' } }) };
+            }
+            return { ok: true, json: async () => ({ result: null }) };
+        };
+        try {
+            window.eval(HEADER_SOURCE);
+            await waitFor(() => calls.includes('session.create'));
+            const options = Array.from(window.document.querySelectorAll('#agent-session-select option')) as any[];
+            expect(options.map(option => option.value)).toEqual(['chat-first']);
+            expect((window as any).__TSDI_AGENT_WEB__.sessionId).toEqual('chat-first');
+            expect(calls.filter(method => method === 'session.create').length).toEqual(1);
+        } finally {
+            window.close();
+        }
+    }
 }

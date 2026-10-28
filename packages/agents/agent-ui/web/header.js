@@ -72,6 +72,16 @@
         }
         try {
             var sessions = (await rpc(config.baseUrl, config.token, 'session.list', {})) || [];
+            if (!sessions.length) {
+                // A fresh server has no sessions; give the console one to mount on.
+                var created = await rpc(config.baseUrl, config.token, 'session.create', {});
+                var createdId = created && (created.sessionId || created.id);
+                if (createdId) {
+                    sessions = [{ id: createdId, lastActiveAt: Date.now() }];
+                    config.sessionId = createdId;
+                    window.__TSDI_AGENT_WEB__.sessionId = createdId;
+                }
+            }
             sessions.sort(function (left, right) {
                 return (Number(right.lastActiveAt) || 0) - (Number(left.lastActiveAt) || 0);
             });

@@ -2498,3 +2498,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 发现：`serve --mdns` 通过 mDNS 广播，`tsdi-agent attach --mdns` 可直接发现；横幅增加 discovery 提示。
 - 配置构造抽成 `buildServeGatewayConfig`（host/port/token/static/mdns/cors），新增 `serve-config.spec.ts`（回环无 token、通配生成 token、资产存在才启用 staticDir、mdns 透传、web 资产解析）。
 - 验证：agent-cli 118 通过；真实链路沿用的 8/8 探针（serve/配对/attach/`/pair`/共享会话）。
+
+## Web 首屏会话 + 门禁重测冷却（2026-10）
+
+- 空库首次打开 web 控制台时页头无会话，console 也没有 session；现在页头在 `session.list` 为空时自动 `session.create`，选中并把 id 交给 console（无需 reload）。JSDOM 新增用例覆盖。
+- 门禁 `gate-regression` 的墙钟重测改为先 `sleep 5` 再重跑（上次重测反而更慢，属负载尖峰，不放宽阈值）。
+- 验证：JSDOM 2 例通过；空 root 的 `serve` 实测 `session.list=[]` → `session.create` 返回新 id；agent-ui 1826。
