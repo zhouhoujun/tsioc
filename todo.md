@@ -2504,3 +2504,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 空库首次打开 web 控制台时页头无会话，console 也没有 session；现在页头在 `session.list` 为空时自动 `session.create`，选中并把 id 交给 console（无需 reload）。JSDOM 新增用例覆盖。
 - 门禁 `gate-regression` 的墙钟重测改为先 `sleep 5` 再重跑（上次重测反而更慢，属负载尖峰，不放宽阈值）。
 - 验证：JSDOM 2 例通过；空 root 的 `serve` 实测 `session.list=[]` → `session.create` 返回新 id；agent-ui 1826。
+
+## 发布包包含 web 控制台 bundle（2026-10）
+
+- 现象：`agent-ui/web/.gitignore` 忽略 `dist/`，npm 打包会尊重嵌套 ignore，`npm pack` 只带 `index.html`/`header.js`，不带 `web/dist/agent-console.js`；发布后的 `serve` 会让页面脚本 404（仓库内因门禁构建过而正常）。
+- 修复：删除 `web/.gitignore`（仓库根 `.gitignore` 的 `dist` 规则仍忽略构建产物），并在 `agent-ui/package.json` 增加 `prepack: npm run build:web`；`npm pack --dry-run` 已确认包含 `web/dist/agent-console.js`。
