@@ -61,6 +61,14 @@ export class PersistedPreferencesTest {
         expect(options.ui.personality).toEqual('terse');
     }
 
+    @Test('applyPersistedPreferences restores the persisted thinking level into the model options')
+    thinkingLevel() {
+        const options: any = { ui: {}, model: { model: 'gpt-6.1-sol' } };
+        applyPersistedPreferences(options, { thinkingLevel: 'max' });
+        expect(options.model.reasoningEffort).toEqual('max');
+        expect(options.model.model).toEqual('gpt-6.1-sol');
+    }
+
     @Test('settings store round-trips personality and memory injection')
     async storeRoundTrip() {
         const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ui-prefs-'));

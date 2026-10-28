@@ -2600,3 +2600,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 缺陷：web settings store 直接合并原始 `settings.json`，绕过 TUI 文件 store 的字段净化；手工/旧版文件可能写入未知 language、非布尔开关、非法 timeline/thinking/security 值。
 - 修复：抽出 `sanitizeAgentConsoleSettings`，文件 store 与 web RPC store 共用；`settings.ui.get` 不可用时回退到净化后的文件值。
 - 验证：agent-ui 1849（新增无效字段/回退用例）；真实 serve+JSDOM 7/7。
+
+## serve 启动恢复 thinkingLevel（2026-10）
+
+- 缺陷：`/thinking` 持久化 thinkingLevel 且本地生效，但 serve 启动只恢复 personality/memoryInjection，重启后 gateway 丢失 workspace 的 reasoning effort。
+- 修复：`readConsoleUiSettings` 校验并返回 thinkingLevel；`applyPersistedPreferences` 写入 `options.model.reasoningEffort`；serve 现有启动调用直接生效。
+- 验证：agent-ui 1850（+1 恢复用例）、agent-cli 125（+1 serve 组合用例：personality/memory/thinking 同时恢复）、gateway 371（读取校验扩展）；`model.activate` 无可用 profile 无法在线观测，故以 serve 的实际两行组合为测试边界。

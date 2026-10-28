@@ -72,7 +72,7 @@ function consoleStoreFile(workspace: string, name: string): string | null {
 }
 
 /** Read the persisted console preferences for a workspace (serve startup). */
-export function readConsoleUiSettings(workspace: string): { personality?: string; memoryInjection?: boolean; securityLevel?: string; yoloMode?: boolean } {
+export function readConsoleUiSettings(workspace: string): { personality?: string; memoryInjection?: boolean; securityLevel?: string; yoloMode?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max' } {
     const dir = String(workspace || '').trim();
     if (!dir) {
         return {};
@@ -83,7 +83,8 @@ export function readConsoleUiSettings(workspace: string): { personality?: string
             personality: typeof parsed?.personality === 'string' && parsed.personality.trim() ? parsed.personality.trim() : undefined,
             memoryInjection: typeof parsed?.memoryInjection === 'boolean' ? parsed.memoryInjection : undefined,
             securityLevel: SECURITY_LEVELS.includes(String(parsed?.securityLevel)) ? parsed.securityLevel : undefined,
-            yoloMode: typeof parsed?.yoloMode === 'boolean' ? parsed.yoloMode : undefined
+            yoloMode: typeof parsed?.yoloMode === 'boolean' ? parsed.yoloMode : undefined,
+            thinkingLevel: ['low', 'medium', 'high', 'max'].includes(String(parsed?.thinkingLevel)) ? parsed.thinkingLevel : undefined
         };
     } catch {
         return {};

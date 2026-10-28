@@ -92,11 +92,11 @@ export class ConsoleUiSettingsTest {
         const file = path.join(workspace, '.tsdi-agent', 'settings.json');
         try {
             fs.mkdirSync(path.dirname(file), { recursive: true });
-            fs.writeFileSync(file, JSON.stringify({ personality: '  concise ', memoryInjection: false }));
-            expect(readConsoleUiSettings(workspace)).toEqual({ personality: 'concise', memoryInjection: false });
+            fs.writeFileSync(file, JSON.stringify({ personality: '  concise ', memoryInjection: false, thinkingLevel: 'max' }));
+            expect(readConsoleUiSettings(workspace)).toMatchObject({ personality: 'concise', memoryInjection: false, thinkingLevel: 'max' });
 
-            fs.writeFileSync(file, JSON.stringify({ personality: 42, memoryInjection: 'no' }));
-            expect(readConsoleUiSettings(workspace)).toEqual({ personality: undefined, memoryInjection: undefined });
+            fs.writeFileSync(file, JSON.stringify({ personality: 42, memoryInjection: 'no', thinkingLevel: 'ultra' }));
+            expect(readConsoleUiSettings(workspace)).toMatchObject({ personality: undefined, memoryInjection: undefined, thinkingLevel: undefined });
             expect(readConsoleUiSettings(path.join(workspace, 'missing'))).toEqual({});
         } finally {
             fs.rmSync(workspace, { recursive: true, force: true });

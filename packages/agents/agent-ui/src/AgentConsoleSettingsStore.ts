@@ -24,7 +24,7 @@ export interface AgentConsoleSettingsData {
 
 export function applyPersistedPreferences(
     options: any,
-    persisted: { personality?: string; memoryInjection?: boolean } | null | undefined
+    persisted: { personality?: string; memoryInjection?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max' } | null | undefined
 ): void {
     if (!options || !persisted) {
         return;
@@ -37,6 +37,9 @@ export function applyPersistedPreferences(
         ui.memoryInjection = persisted.memoryInjection;
     }
     options.ui = ui;
+    if (persisted.thinkingLevel) {
+        options.model = { ...(options.model || {}), reasoningEffort: persisted.thinkingLevel };
+    }
 }
 
 /** Validate persisted console settings; shared by the file store and the web RPC store. */
