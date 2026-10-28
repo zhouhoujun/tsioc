@@ -253,6 +253,27 @@ export class P126CommandClusterTest {
         expect(state.workspace).toEqual('/client/ws');
     }
 
+    @Test('/thinking persists the reasoning effort through the runtime settings RPC')
+    async thinkingPersists() {
+        const { component } = createConsole();
+        const saved: any[] = [];
+        const rpcCalls: Array<{ method: string; params: any }> = [];
+        (component as any).settingsStore = {
+            load: async () => ({}),
+            save: async (_workspace: string, data: any) => { saved.push(data); }
+        };
+        (component as any).state.setModelProfile('strong');
+        (component as any).appRpc = {
+            request: async (method: string, params: any) => {
+                rpcCalls.push({ method, params });
+                return method === 'model.activate' ? { reasoningEffort: 'high' } : {};
+            }
+        };
+        await (component as any).setModelReasoningEffort('high');
+        expect(rpcCalls.some(call => call.method === 'settings.ui.set' && call.params.thinkingLevel === 'high')).toEqual(true);
+        expect(saved.some(entry => entry.thinkingLevel === 'high')).toEqual(true);
+    }
+
     @Test('/personality rejects unknown presets')
     async personalityUnknown() {
         const { state, component } = createConsole();

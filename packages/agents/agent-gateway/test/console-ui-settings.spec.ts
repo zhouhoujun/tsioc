@@ -51,6 +51,13 @@ export class ConsoleUiSettingsTest {
             applyConsoleUiSettings(options, { securityLevel: 'bogus' });
             expect(JSON.parse(fs.readFileSync(file, 'utf8')).securityLevel).toEqual('full');
             expect(readConsoleUiSettings(workspace).securityLevel).toEqual('full');
+
+            const thinking = applyConsoleUiSettings(options, { thinkingLevel: 'high' });
+            expect(thinking.thinkingLevel).toEqual('high');
+            expect(JSON.parse(fs.readFileSync(file, 'utf8')).thinkingLevel).toEqual('high');
+            expect(readConsoleUiSettings(workspace).thinkingLevel).toEqual('high');
+            applyConsoleUiSettings(options, { thinkingLevel: 'ultra' });
+            expect(JSON.parse(fs.readFileSync(file, 'utf8')).thinkingLevel).toEqual('high');
         } finally {
             fs.rmSync(workspace, { recursive: true, force: true });
         }

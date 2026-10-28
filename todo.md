@@ -2606,3 +2606,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 缺陷：`/thinking` 持久化 thinkingLevel 且本地生效，但 serve 启动只恢复 personality/memoryInjection，重启后 gateway 丢失 workspace 的 reasoning effort。
 - 修复：`readConsoleUiSettings` 校验并返回 thinkingLevel；`applyPersistedPreferences` 写入 `options.model.reasoningEffort`；serve 现有启动调用直接生效。
 - 验证：agent-ui 1850（+1 恢复用例）、agent-cli 125（+1 serve 组合用例：personality/memory/thinking 同时恢复）、gateway 371（读取校验扩展）；`model.activate` 无可用 profile 无法在线观测，故以 serve 的实际两行组合为测试边界。
+
+## attach reasoning effort 跨进程持久化（2026-10）
+
+- 缺陷：reasoning effort（`setModelReasoningEffort`）经 model 宿主 `persistSettings` 只写客户端本地；attach 下 gateway workspace 的 `thinkingLevel` 不更新（web 端因注入 web settings store 正常）。
+- 修复：model 宿主与 preference/policy 宿主一致，先发 `settings.ui.set {thinkingLevel}` 再写本地；gateway 校验并持久化，serve 启动已恢复。
+- 验证：agent-ui 1851（+1 组件用例断言 RPC + 本地写入）、gateway 371（thinkingLevel 持久化/非法值）、agent-cli 125。

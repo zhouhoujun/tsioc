@@ -7,6 +7,7 @@ export interface ConsoleUiSettingsPatch {
     memoryInjection?: boolean;
     securityLevel?: string | null;
     yoloMode?: boolean;
+    thinkingLevel?: string | null;
 }
 
 const SECURITY_LEVELS = ['read-only', 'ask', 'auto', 'full'];
@@ -31,9 +32,10 @@ export function applyConsoleUiSettings(options: AgentOptions, params: ConsoleUiS
         ui.memoryInjection = params.memoryInjection;
     }
     const securityLevel = SECURITY_LEVELS.includes(String(params.securityLevel)) ? String(params.securityLevel) : undefined;
+    const thinkingLevel = ['low', 'medium', 'high', 'max'].includes(String(params.thinkingLevel)) ? String(params.thinkingLevel) : undefined;
     (options as any).ui = ui;
-    persistConsoleUiSettings(options, ui, securityLevel, params.yoloMode);
-    return { personality: ui.personality, memoryInjection: ui.memoryInjection, securityLevel, yoloMode: params.yoloMode };
+    persistConsoleUiSettings(options, ui, securityLevel, params.yoloMode, thinkingLevel);
+    return { personality: ui.personality, memoryInjection: ui.memoryInjection, securityLevel, yoloMode: params.yoloMode, thinkingLevel };
 }
 
 /** Read one console store file from the gateway workspace (web console clients). */
@@ -95,7 +97,8 @@ function persistConsoleUiSettings(
     options: AgentOptions,
     ui: Record<string, any>,
     securityLevel?: string,
-    yoloMode?: boolean
+    yoloMode?: boolean,
+    thinkingLevel?: string
 ): void {
     const workspace = String((options as any).workspace || '').trim();
     if (!workspace) {
@@ -123,6 +126,9 @@ function persistConsoleUiSettings(
     }
     if (typeof yoloMode === 'boolean') {
         next.yoloMode = yoloMode;
+    }
+    if (thinkingLevel) {
+        next.thinkingLevel = thinkingLevel;
     }
     try {
         fs.mkdirSync(path.dirname(file), { recursive: true });

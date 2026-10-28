@@ -3408,7 +3408,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             notify: (message, duration) => this.notify(message, duration), translator: this.translator,
             select: (title, options, selectedIndex, hint) => this.select(title, options, selectedIndex, hint),
             updateTerminalTitle: () => this.updateTerminalTitle(),
-            persistSettings: patch => this.persistSettings(patch),
+            persistSettings: async patch => { await this.appRpc?.request('settings.ui.set', patch).catch(() => undefined); await this.persistSettings(patch); },
             addModelProvider: () => this.startProviderWizard(),
             resolveHistoryWorkspace: () => this.resolveHistoryWorkspace(),
             getFavorites: () => this.modelFavorites,
