@@ -15,9 +15,28 @@ export interface AgentConsoleSettingsData {
     thinkingLevel?: 'low' | 'medium' | 'high' | 'max';
     yoloMode?: boolean;
     securityLevel?: 'read-only' | 'ask' | 'auto' | 'full';
+    personality?: string;
+    memoryInjection?: boolean;
     taskFilter?: 'all' | 'failed' | 'rollback' | 'lineage';
     taskLineageRootId?: string;
     planTodoFilter?: 'all' | 'active' | 'blocked' | 'failed';
+}
+
+export function applyPersistedPreferences(
+    options: any,
+    persisted: { personality?: string; memoryInjection?: boolean } | null | undefined
+): void {
+    if (!options || !persisted) {
+        return;
+    }
+    const ui = { ...(options.ui || {}) };
+    if (typeof persisted.personality === 'string' && persisted.personality.trim()) {
+        ui.personality = persisted.personality.trim();
+    }
+    if (typeof persisted.memoryInjection === 'boolean') {
+        ui.memoryInjection = persisted.memoryInjection;
+    }
+    options.ui = ui;
 }
 
 @Injectable()
@@ -48,6 +67,8 @@ export class AgentConsoleSettingsStore {
                     : undefined,
                 yoloMode: typeof parsed?.yoloMode === 'boolean' ? parsed.yoloMode : undefined,
                 securityLevel: ['read-only', 'ask', 'auto', 'full'].includes(parsed?.securityLevel) ? parsed.securityLevel : undefined,
+                personality: typeof parsed?.personality === 'string' && parsed.personality.trim() ? parsed.personality.trim() : undefined,
+                memoryInjection: typeof parsed?.memoryInjection === 'boolean' ? parsed.memoryInjection : undefined,
                 taskFilter: ['all', 'failed', 'rollback', 'lineage'].includes(parsed?.taskFilter) ? parsed.taskFilter : undefined,
                 taskLineageRootId: typeof parsed?.taskLineageRootId === 'string' && parsed.taskLineageRootId.trim() ? parsed.taskLineageRootId.trim() : undefined,
                 planTodoFilter: ['all', 'active', 'blocked', 'failed'].includes(parsed?.planTodoFilter) ? parsed.planTodoFilter : undefined,
@@ -75,6 +96,8 @@ export class AgentConsoleSettingsStore {
             ...(data.thinkingLevel ? { thinkingLevel: data.thinkingLevel } : {}),
             ...(typeof data.yoloMode === 'boolean' ? { yoloMode: data.yoloMode } : {}),
             ...(data.securityLevel ? { securityLevel: data.securityLevel } : {}),
+            ...(data.personality ? { personality: data.personality } : {}),
+            ...(typeof data.memoryInjection === 'boolean' ? { memoryInjection: data.memoryInjection } : {}),
             ...(data.taskFilter ? { taskFilter: data.taskFilter } : {}),
             ...(data.taskLineageRootId ? { taskLineageRootId: data.taskLineageRootId } : {}),
             ...(data.planTodoFilter ? { planTodoFilter: data.planTodoFilter } : {})

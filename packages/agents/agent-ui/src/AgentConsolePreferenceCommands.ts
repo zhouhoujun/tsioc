@@ -12,6 +12,7 @@ export interface PreferenceCommandHost {
     rpcRequestContext(): any;
     notify(message: string): void;
     pushCommandOutput(command: string, text: string, kind?: any): void;
+    persistSettings?(patch: Record<string, any>): Promise<any> | any;
 }
 
 export function resolveProjectMemoryId(host: PreferenceCommandHost): string {
@@ -99,6 +100,7 @@ export async function runMemoriesCommand(host: PreferenceCommandHost, args?: str
         return true;
     }
     host.options.ui = { ...(host.options.ui || {}), memoryInjection: enabled };
+    await host.persistSettings?.({ memoryInjection: enabled });
     host.notify(enabled ? formatAgentUiNotice(host.translator, 'memoryInjectionEnabled') : formatAgentUiNotice(host.translator, 'memoryInjectionDisabled'));
     return true;
 }
@@ -125,11 +127,13 @@ export async function runPersonalityCommand(host: PreferenceCommandHost, args?: 
             return true;
         }
         host.options.ui = { ...(host.options.ui || {}), personality: name };
+        await host.persistSettings?.({ personality: name });
         host.notify(formatAgentUiNotice(host.translator, 'personalitySet', { name: name }));
         return true;
     }
     if (verb === 'unset') {
         host.options.ui = { ...(host.options.ui || {}), personality: undefined };
+        await host.persistSettings?.({ personality: undefined });
         host.notify(formatAgentUiNotice(host.translator, 'personalityCleared'));
         return true;
     }

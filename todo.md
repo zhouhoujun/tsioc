@@ -2516,3 +2516,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 实现：引入 `qrcode-terminal`（无依赖），CLI 侧 `renderPairingQr`；attach 的 `/pair` 在通知（可滚动浮层）里附带二维码；`serve` 横幅在 stdout 为 TTY 时打印二维码（管道/日志不污染）。
 - 打包：`qrcode-terminal` 的源码含 legacy octal escape，esbuild 严格模式无法打包 → 加入 CLI bundler 的 `EXTERNALS`，并在 `agent-cli/package.json` 声明运行时依赖（monorepo 根 `dependencies` 同步）。
 - 验证：agent-ui 1826、agent-cli 122；真实 TUI 9/9（链接 + 可扫描二维码 + attach 共享会话）。
+
+## `/personality` / `/memories` 持久化（2026-10）
+
+- 缺陷:两个命令只改内存 `options.ui`，重启丢失（个人预设回落、memory 注入重新开启）。
+- 修复：settings 增加 `personality`/`memoryInjection` 并往返；命令通过 `persistSettings` 写入；`applyPersistedPreferences` 在启动 `restoreSettings` 中恢复到运行 options；组件用已有 import 行/同文件宿主，保持源码体量门槛。
+- 验证：agent-ui 1830（新增 4 例）；真实 TUI 8/8（set/off 落盘、重启恢复、重置）。
+- 已知限制：attach/web 模式下 gateway（serve）进程的 options 在启动时确定，本地改动只影响当前 console；跨进程需新增 `settings.ui.set` RPC（待办）。

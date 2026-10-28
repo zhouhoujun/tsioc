@@ -131,7 +131,7 @@ import {
     normalizeAgentConsoleTitle
 } from './AgentConsoleTitle';
 import { AgentConsoleRawModeStore } from './AgentConsoleRawMode';
-import { AgentConsoleSettingsData, AgentConsoleSettingsStore } from './AgentConsoleSettingsStore';
+import { AgentConsoleSettingsData, AgentConsoleSettingsStore, applyPersistedPreferences } from './AgentConsoleSettingsStore';
 import {
     AgentConsoleAppAuthorizer,
     AgentConsoleAppStatus
@@ -1569,8 +1569,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         this.ensureWorkspaceMentionResolver();
         await this.restoreGlobalKeymap();
         await this.restoreTheme();
-        await this.restoreStatusline();
-        await this.restoreTitle();
+        await this.restoreStatusline(); await this.restoreTitle();
         await this.restoreRawMode();
         await this.restoreModelStore();
         await this.restoreSettings();
@@ -2582,7 +2581,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         } else if (typeof persisted.timelineMode === 'boolean') {
             this.state.setTimelineMode(persisted.timelineMode ? 'compact' : 'off');
         }
-        applyPersistedLayout(this.state, persisted, () => this.surfaceAccessor?.restartRendering?.());
+        applyPersistedLayout(this.state, persisted, () => this.surfaceAccessor?.restartRendering?.()); applyPersistedPreferences(this.options, persisted);
         if (persisted.thinkingLevel) {
             this.modelReasoningEffort = persisted.thinkingLevel;
             this.options.model = this.options.model || {};
@@ -2950,6 +2949,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             projectMemory: this.projectMemory, translator: this.translator,
             rpcRequestContext: () => this.rpcRequestContext(),
             notify: (message: string) => this.notify(message),
+            persistSettings: (patch: Record<string, any>) => this.persistSettings(patch),
             pushCommandOutput: (command: string, text: string, kind?: AgentConsoleCommandOutputEntry['kind']) => this.pushCommandOutput(command, text, kind)
         };
     }
