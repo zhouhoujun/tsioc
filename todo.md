@@ -2570,3 +2570,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 缺陷：`/pair` 通过 notice 覆盖层输出链接 + QR，而 notice 固定 8 行，真实 attach 终端只显示 4 行 QR，滚动也无法拼成可扫码整码。
 - 修复：`openTextOverlay` 支持按内容指定可见行数（默认仍为 8）；`/pair` 用整码高度打开，覆盖层标题/aria 的行号范围跟随实际页高。
 - 验证：agent-ui 1843（新增 overlay 页高 + `/pair` 用例；既有 panel i18n 保持通过）；真实 attach PTY 9/9（`/pair` 二维码解码为 LAN 地址，`/sessions` 列出 gateway 会话并可搜索）。
+
+## 浏览器 `/pair` 修复（2026-10）
+
+- 缺陷：web 挂载未设置 `pairAction`，浏览器里 `/pair` 误报 “Web console is not running / start tsdi-agent serve”，与事实（浏览器就是 web 控制台）不符。
+- 修复：web 挂载注入 `pairAction`，调用已认证的 `POST /api/pair/create` 生成新的一次性链接供另一台设备使用；浏览器不渲染终端二维码，展示链接。
+- 验证：agent-ui 1844（新增 helper 用例：认证头、非 2xx、空 urls、网络异常）；真实 serve + JSDOM 挂载 6/6（loopback + LAN 链接、无 QR）。

@@ -21,6 +21,36 @@ import {
 const CONSOLE_SECURITY_LEVELS = ['read-only', 'ask', 'auto', 'full'];
 
 /**
+ * Ask the gateway for a fresh one-time pairing link. The browser is already
+ * paired, so `/pair` means "share with another device"; the terminal QR is
+ * not used here (the links are shown in the console overlay).
+ */
+export async function requestWebPairing(
+    baseUrl: string,
+    token?: string,
+    fetchImpl?: typeof fetch
+): Promise<{ url?: string; urls?: string[]; code?: string; expiresAt?: number } | null> {
+    const request = fetchImpl ?? (typeof fetch !== 'undefined' ? fetch : undefined);
+    if (!request) {
+        return null;
+    }
+    try {
+        const response = await request(`${String(baseUrl || '').replace(/\/+$/, '')}/api/pair/create`, {
+            method: 'POST',
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (!response.ok) {
+            return null;
+        }
+        const payload = await response.json();
+        const urls = Array.isArray(payload?.urls) ? payload.urls.map(String).filter(Boolean) : [];
+        return urls.length ? { urls, code: payload.code, expiresAt: payload.expiresAt } : null;
+    } catch {
+        return null;
+    }
+}
+
+/**
  * Browser settings store: persist the console preferences the gateway owns
  * (personality, memory injection, security level, yolo) through `settings.ui.*`
  * so `/permissions` and `/personality` survive a reload and are applied to
@@ -188,6 +218,7 @@ export async function mountAgentWebConsole(
         sessionId: config.sessionId || state.sessionId || 'console',
         workspace: config.workspace || state.workspace || ''
     });
+    state.pairAction = () => requestWebPairing(baseUrl, config.token, config.fetchImpl);
 
     const bridge = new AgentConsoleRemoteEventBridge(state, {
         baseUrl,

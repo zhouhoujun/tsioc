@@ -16,7 +16,7 @@ import {
     AgentUiModule,
     HttpAgentConsoleAppRpc
 } from '../src';
-import { mountAgentWebConsole, registerAgentWebConsolePwa } from '../web-console';
+import { mountAgentWebConsole, registerAgentWebConsolePwa, requestWebPairing } from '../web-console';
 import * as legacyWebEntry from '../web';
 
 @Suite('Agent web console entry')
@@ -70,6 +70,32 @@ export class AgentWebConsoleTest {
     async clean() {
         await this.ctx?.close();
         if (global.gc) global.gc();
+    }
+
+    @Test('the browser /pair asks the gateway for a fresh one-time link')
+    async webPairing() {
+        const calls: any[] = [];
+        const fetchImpl = (async (url: string, init: any) => {
+            calls.push({ url, method: init?.method, headers: init?.headers });
+            return new Response(JSON.stringify({
+                urls: ['http://127.0.0.1:3100/?pair=abc', 'http://192.168.1.9:3100/?pair=abc'],
+                code: 'abc',
+                expiresAt: Date.now() + 5 * 60_000
+            }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }) as any;
+        const result = await requestWebPairing('http://127.0.0.1:3100/', 'secret', fetchImpl);
+        expect(result?.urls).toEqual(['http://127.0.0.1:3100/?pair=abc', 'http://192.168.1.9:3100/?pair=abc']);
+        expect(result?.code).toEqual('abc');
+        expect(calls[0].url).toEqual('http://127.0.0.1:3100/api/pair/create');
+        expect(calls[0].method).toEqual('POST');
+        expect(calls[0].headers.Authorization).toEqual('Bearer secret');
+
+        const denied = await requestWebPairing('http://127.0.0.1:3100', 'secret', (async () => new Response('{}', { status: 401 })) as any);
+        expect(denied).toEqual(null);
+        const empty = await requestWebPairing('http://127.0.0.1:3100', 'secret', (async () => new Response(JSON.stringify({ urls: [] }), { status: 200 })) as any);
+        expect(empty).toEqual(null);
+        const broken = await requestWebPairing('http://127.0.0.1:3100', 'secret', (async () => { throw new Error('offline'); }) as any);
+        expect(broken).toEqual(null);
     }
 
     @Test('mountAgentWebConsole throws without a baseUrl')
