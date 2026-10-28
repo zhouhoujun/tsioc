@@ -5,7 +5,11 @@ import type { AgentOptions } from '@tsdi/agent';
 export interface ConsoleUiSettingsPatch {
     personality?: string | null;
     memoryInjection?: boolean;
+    securityLevel?: string | null;
+    yoloMode?: boolean;
 }
+
+const SECURITY_LEVELS = ['read-only', 'ask', 'auto', 'full'];
 
 /**
  * Apply a console preference to the shared runtime options and persist it to
@@ -24,13 +28,14 @@ export function applyConsoleUiSettings(options: AgentOptions, params: ConsoleUiS
     if (typeof params.memoryInjection === 'boolean') {
         ui.memoryInjection = params.memoryInjection;
     }
+    const securityLevel = SECURITY_LEVELS.includes(String(params.securityLevel)) ? String(params.securityLevel) : undefined;
     (options as any).ui = ui;
-    persistConsoleUiSettings(options, ui);
-    return { personality: ui.personality, memoryInjection: ui.memoryInjection };
+    persistConsoleUiSettings(options, ui, securityLevel, params.yoloMode);
+    return { personality: ui.personality, memoryInjection: ui.memoryInjection, securityLevel, yoloMode: params.yoloMode };
 }
 
 /** Read the persisted console preferences for a workspace (serve startup). */
-export function readConsoleUiSettings(workspace: string): { personality?: string; memoryInjection?: boolean } {
+export function readConsoleUiSettings(workspace: string): { personality?: string; memoryInjection?: boolean; securityLevel?: string; yoloMode?: boolean } {
     const dir = String(workspace || '').trim();
     if (!dir) {
         return {};
@@ -39,14 +44,21 @@ export function readConsoleUiSettings(workspace: string): { personality?: string
         const parsed = JSON.parse(fs.readFileSync(path.join(dir, '.tsdi-agent', 'settings.json'), 'utf8'));
         return {
             personality: typeof parsed?.personality === 'string' && parsed.personality.trim() ? parsed.personality.trim() : undefined,
-            memoryInjection: typeof parsed?.memoryInjection === 'boolean' ? parsed.memoryInjection : undefined
+            memoryInjection: typeof parsed?.memoryInjection === 'boolean' ? parsed.memoryInjection : undefined,
+            securityLevel: SECURITY_LEVELS.includes(String(parsed?.securityLevel)) ? parsed.securityLevel : undefined,
+            yoloMode: typeof parsed?.yoloMode === 'boolean' ? parsed.yoloMode : undefined
         };
     } catch {
         return {};
     }
 }
 
-function persistConsoleUiSettings(options: AgentOptions, ui: Record<string, any>): void {
+function persistConsoleUiSettings(
+    options: AgentOptions,
+    ui: Record<string, any>,
+    securityLevel?: string,
+    yoloMode?: boolean
+): void {
     const workspace = String((options as any).workspace || '').trim();
     if (!workspace) {
         return;
@@ -67,6 +79,12 @@ function persistConsoleUiSettings(options: AgentOptions, ui: Record<string, any>
     }
     if (typeof ui.memoryInjection === 'boolean') {
         next.memoryInjection = ui.memoryInjection;
+    }
+    if (securityLevel) {
+        next.securityLevel = securityLevel;
+    }
+    if (typeof yoloMode === 'boolean') {
+        next.yoloMode = yoloMode;
     }
     try {
         fs.mkdirSync(path.dirname(file), { recursive: true });

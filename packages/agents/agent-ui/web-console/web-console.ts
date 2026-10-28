@@ -10,11 +10,60 @@ import {
     AgentConsoleComponent,
     AgentConsoleRemoteEventBridge,
     AgentConsoleSessionState,
+    AgentConsoleSettingsData,
+    AgentConsoleSettingsStore,
     AgentUiModule,
     HttpAgentConsoleAppRpc,
     RpcCommandOutputStore,
     VscodeIdeBridge
 } from '@tsdi/agent-ui';
+
+const CONSOLE_SECURITY_LEVELS = ['read-only', 'ask', 'auto', 'full'];
+
+/**
+ * Browser settings store: persist the console preferences the gateway owns
+ * (personality, memory injection, security level, yolo) through `settings.ui.*`
+ * so `/permissions` and `/personality` survive a reload and are applied to
+ * turns in the gateway process.
+ */
+export function createRpcConsoleSettingsStore(rpc: { request(method: string, params?: any, context?: any): Promise<any> }): {
+    load(workspace: string): Promise<AgentConsoleSettingsData>;
+    save(workspace: string, data: AgentConsoleSettingsData): Promise<void>;
+} {
+    let lastLoaded: AgentConsoleSettingsData | null = null;
+    return {
+        async load(): Promise<AgentConsoleSettingsData> {
+            const result = await rpc.request('settings.ui.get', {}).catch(() => null);
+            const data: AgentConsoleSettingsData = {
+                personality: typeof result?.personality === 'string' && result.personality.trim() ? result.personality.trim() : undefined,
+                memoryInjection: typeof result?.memoryInjection === 'boolean' ? result.memoryInjection : undefined,
+                securityLevel: CONSOLE_SECURITY_LEVELS.includes(String(result?.securityLevel)) ? result.securityLevel : undefined,
+                yoloMode: typeof result?.yoloMode === 'boolean' ? result.yoloMode : undefined
+            };
+            lastLoaded = data;
+            return data;
+        },
+        async save(_workspace: string, data: AgentConsoleSettingsData): Promise<void> {
+            const patch: Record<string, any> = {};
+            if (typeof data.personality === 'string' && data.personality) {
+                patch.personality = data.personality;
+            } else if (lastLoaded?.personality) {
+                // Only clear a preset we actually loaded; a failed read must not wipe it.
+                patch.personality = null;
+            }
+            if (typeof data.memoryInjection === 'boolean') {
+                patch.memoryInjection = data.memoryInjection;
+            }
+            if (data.securityLevel) {
+                patch.securityLevel = data.securityLevel;
+            }
+            if (typeof data.yoloMode === 'boolean') {
+                patch.yoloMode = data.yoloMode;
+            }
+            await rpc.request('settings.ui.set', patch).catch(() => undefined);
+        }
+    };
+}
 
 export interface AgentWebConsoleOptions {
     /** Gateway base URL, e.g. http://localhost:3100 */
@@ -102,6 +151,7 @@ export async function mountAgentWebConsole(
         providers: [
             { provide: DOCUMENT, useValue: doc },
             { provide: AGENT_CONSOLE_APP_RPC, useValue: rpc },
+            { provide: AgentConsoleSettingsStore, useValue: createRpcConsoleSettingsStore(rpc) },
             ...(config.state ? [{ provide: AgentConsoleSessionState, useValue: config.state }] : []),
             { provide: AGENT_IDE_BRIDGE, useValue: new VscodeIdeBridge(doc.defaultView ?? globalThis) },
             {

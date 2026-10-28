@@ -218,6 +218,19 @@ export class P126CommandClusterTest {
         expect(calls[1].params).toEqual({ memoryInjection: false });
     }
 
+    @Test('/permissions level persists the security level through the settings store')
+    async permissionsPersist() {
+        const { component } = createConsole();
+        const saved: any[] = [];
+        (component as any).settingsStore = {
+            load: async () => ({}),
+            save: async (_workspace: string, data: any) => { saved.push(data); }
+        };
+        await (component as any).handleCommand('/permissions level full');
+        expect(saved.some(entry => entry.securityLevel === 'full')).toEqual(true);
+        expect(saved.some(entry => entry.yoloMode === true)).toEqual(true);
+    }
+
     @Test('/personality rejects unknown presets')
     async personalityUnknown() {
         const { state, component } = createConsole();

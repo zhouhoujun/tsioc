@@ -34,6 +34,28 @@ export class ConsoleUiSettingsTest {
         }
     }
 
+    @Test('persists the security level and yolo flag and rejects unknown levels')
+    securityLevel() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-ui-settings-'));
+        const file = path.join(workspace, '.tsdi-agent', 'settings.json');
+        try {
+            const options: any = { workspace, ui: {} };
+            const applied = applyConsoleUiSettings(options, { securityLevel: 'full', yoloMode: true });
+            expect(applied.securityLevel).toEqual('full');
+            expect(applied.yoloMode).toEqual(true);
+            const stored = JSON.parse(fs.readFileSync(file, 'utf8'));
+            expect(stored.securityLevel).toEqual('full');
+            expect(stored.yoloMode).toEqual(true);
+            expect(readConsoleUiSettings(workspace)).toMatchObject({ securityLevel: 'full', yoloMode: true });
+
+            applyConsoleUiSettings(options, { securityLevel: 'bogus' });
+            expect(JSON.parse(fs.readFileSync(file, 'utf8')).securityLevel).toEqual('full');
+            expect(readConsoleUiSettings(workspace).securityLevel).toEqual('full');
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
     @Test('creates the settings file when the workspace has none yet')
     createsMissingFile() {
         const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-ui-settings-'));
