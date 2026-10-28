@@ -13,7 +13,7 @@ import { AgentCliOptions } from './config';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { buildAgentRuntimeProviders } from './agent-runtime-providers';
 import { ensureAgentWorkspace } from './run-command';
-import { renderPairingQr } from './pair-qr';
+import { renderPairingQrForUrls } from './pair-qr';
 
 export interface AgentServeOptions extends AgentCliOptions {
     webHost?: string;
@@ -119,7 +119,7 @@ export async function runAgentServe(options: AgentServeOptions = {}): Promise<an
         ...(gatewayConfig.mdns ? [`  Discover (mDNS): tsdi-agent attach --mdns`] : []),
         ''
     ];
-    const qr = process.stdout.isTTY ? renderPairingQr(pairingUrls[0]) : '';
+    const qr = process.stdout.isTTY ? renderPairingQrForUrls(pairingUrls) : '';
     if (qr) {
         lines.push(...qr.split('\n').map((line: string) => `  ${line}`), '');
     }

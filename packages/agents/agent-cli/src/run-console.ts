@@ -28,7 +28,7 @@ import { AgentCliOptions } from './config';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { ensureAgentWorkspace } from './run-command';
 import { buildAgentRuntimeProviders } from './agent-runtime-providers';
-import { renderPairingQr } from './pair-qr';
+import { renderPairingQrForUrls } from './pair-qr';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
@@ -117,7 +117,7 @@ export async function runAgentConsole(
             }
             const payload = await response.json() as { code?: string; expiresAt?: number; urls?: string[] };
             const urls = Array.isArray(payload.urls) ? payload.urls.map(String).filter(Boolean) : [];
-            return urls.length ? { url: urls[0], urls, qr: renderPairingQr(urls[0]), code: payload.code, expiresAt: payload.expiresAt } : null;
+            return urls.length ? { url: urls[0], urls, qr: renderPairingQrForUrls(urls), code: payload.code, expiresAt: payload.expiresAt } : null;
         } : undefined,
         restart: (sessionId: string) => {
             // Re-enter this launcher in-process once the old app has restored

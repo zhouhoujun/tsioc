@@ -2534,3 +2534,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 
 - 缺陷：`persistConsoleUiSettings` 把读+写放在同一个 try；新 workspace 没有 `settings.json` 时 `readFileSync` 抛错直接跳过写，RPC 返回成功但偏好未落盘。
 - 修复：读取失败按 `{}` 处理，写单独 try；新增单测（先 RED：ENOENT）与真实 serve 新 workspace 探针 4/4。
+
+## 配对二维码 LAN 优先（2026-10）
+
+- 缺陷：`--host 0.0.0.0` 时链接列表 loopback 在前，`serve` 横幅和 `/pair` 都用 `urls[0]` 生成二维码；手机扫码打开的是手机自己的 `127.0.0.1`，LAN 链接只以文本列出。
+- 修复：`selectPairingQrUrl` 优先非 loopback（127.0.0.1/localhost/::1）并回退首个；`renderPairingQrForUrls` 统一编码入口；`serve` 与 `/pair` 共用。
+- 验证：agent-cli 124（新增策略例 + 用 jsqr 真解码二维码内容的用例）；真实 `serve --host 0.0.0.0` PTY 4/4（横幅二维码解码为 LAN URL，不含 loopback）。
