@@ -2552,3 +2552,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 缺陷：浏览器没有 settings store，`/permissions level` 只作用于当前会话；刷新后 UI 回落默认级别，与仍为 off 的会话沙箱不一致。
 - 修复：新增 `settings.ui.get`（读 workspace 设置）；`settings.ui.set` 同时持久化 `securityLevel`/`yoloMode`；web 挂载注入 RPC 版 settings store，使 `persistSettings` 写入 gateway 设置，并在启动 `restoreSettings` 中按 TUI 相同路径恢复。读取失败时 save 不发 `personality:null`，避免误清。
 - 验证：gateway 370（新增 securityLevel/yolo 用例）、agent-ui 1837（新增 4 个 store 用例 + 组件持久化用例）、agent-cli 124；真实 serve + JSDOM 挂载 7/7（持久化 full → 挂载恢复 → gateway 沙箱 off → 复位 ask）。
+
+## PWA service worker 陈旧缓存（2026-10）
+
+- 缺陷：`sw.js` 对 `dist/agent-console.js` 是 cache-first 且缓存名固定 `v1`，CLI 升级后浏览器一直用旧控制台；`header.js` 未预缓存，离线时页面无法挂载控制台。
+- 修复：`header.js` 加入 shell 预缓存；缓存名升级到 v2；shell 资源改为 network-first + 离线回退，缓存更新用 `event.waitUntil`。
+- 验证：agent-ui 1841（新增 4 个 Node `vm` 行为用例：预缓存、在线新内容/离线回退、API 不拦截、旧缓存清理；先 RED）；真实 serve `/sw.js` 内容与 `/header.js` 200 校验。

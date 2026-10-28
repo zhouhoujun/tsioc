@@ -1,8 +1,9 @@
-const CACHE_NAME = 'tsdi-agent-shell-v1';
+const CACHE_NAME = 'tsdi-agent-shell-v2';
 const CACHE_PREFIX = 'tsdi-agent-shell-';
 const SHELL_ASSETS = [
     './',
     './index.html',
+    './header.js',
     './manifest.webmanifest',
     './icons/agent.svg',
     './dist/agent-console.js'
@@ -31,5 +32,14 @@ self.addEventListener('fetch', event => {
         return;
     }
     if (!SHELL_URLS.has(url.href)) return;
-    event.respondWith(caches.match(request).then(cached => cached || fetch(request)));
+    // Network-first: a CLI upgrade must reach the browser. A cache-first shell
+    // pinned the old console forever (the browser only reruns `install` when
+    // this file changes), so the cached copy is now just the offline fallback.
+    event.respondWith(fetch(request).then(response => {
+        if (response && response.ok) {
+            const copy = response.clone();
+            event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put(request, copy)));
+        }
+        return response;
+    }).catch(() => caches.match(request)));
 });
