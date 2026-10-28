@@ -1,5 +1,5 @@
 import type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
-import { formatAgentUiNotice } from './agent-ui.i18n';
+import { formatAgentPanelLabel, formatAgentUiNotice } from './agent-ui.i18n';
 
 /** Shared session rename used by `/rename` and the legacy `/title`. */
 async function renameSession(ctx: CommandHandlerContext, titleText: string, command: string): Promise<boolean> {
@@ -64,6 +64,7 @@ export async function handlePair(ctx: CommandHandlerContext, _args: string, _res
     const minutes = pairing?.expiresAt ? Math.max(1, Math.round((pairing.expiresAt - Date.now()) / 60000)) : 5;
     const notice = formatAgentUiNotice(ctx.translator, 'pairReady', { urls: urls.join('\n'), minutes });
     const qr = String(pairing?.qr || '').trim();
-    ctx.notify(qr ? `${notice}\n\n${qr}` : notice);
+    const lines = (qr ? `${notice}\n\n${qr}` : notice).split('\n');
+    ctx.state.openTextOverlay(formatAgentPanelLabel(ctx.translator, 'overlay', 'pairTitle', 'pairing'), lines, lines.length);
     return true;
 }

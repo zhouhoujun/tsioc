@@ -531,6 +531,8 @@ export interface AgentConsoleTextOverlayState {
     title: string;
     lines: string[];
     scroll: number;
+    /** Optional page height; defaults to reviewDetailVisibleLines (notice slot). */
+    visibleLines?: number;
 }
 
 export interface AgentConsolePendingQuestion {
@@ -4597,12 +4599,13 @@ export class AgentConsoleSessionState {
         this.notice = message;
     }
 
-    openTextOverlay(title: string, lines: string[]): void {
+    openTextOverlay(title: string, lines: string[], visibleLines?: number): void {
         const content = (Array.isArray(lines) ? lines : []).map(line => String(line ?? ''));
         if (!content.length) {
             return;
         }
-        this.textOverlay = { title: String(title || ''), lines: content, scroll: 0 };
+        const page = typeof visibleLines === 'number' && visibleLines > 0 ? Math.min(Math.floor(visibleLines), content.length) : undefined;
+        this.textOverlay = { title: String(title || ''), lines: content, scroll: 0, ...(page ? { visibleLines: page } : {}) };
         this.syncDerivedInputFocus();
     }
 
@@ -4817,11 +4820,15 @@ export class AgentConsoleSessionState {
         this.moveCommandOutputSelection(delta * resolvedPageSize);
     }
 
+    get textOverlayPageSize(): number {
+        return this.textOverlay?.visibleLines ?? this.consoleOptions.reviewDetailVisibleLines;
+    }
+
     get textOverlayVisibleLines(): string[] {
         if (!this.textOverlay) {
             return [];
         }
-        const visible = this.consoleOptions.reviewDetailVisibleLines;
+        const visible = this.textOverlayPageSize;
         return this.textOverlay.lines.slice(this.textOverlay.scroll, this.textOverlay.scroll + visible);
     }
 
@@ -4829,7 +4836,7 @@ export class AgentConsoleSessionState {
         if (!this.textOverlay) {
             return;
         }
-        const visible = this.consoleOptions.reviewDetailVisibleLines;
+        const visible = this.textOverlayPageSize;
         const maxScroll = Math.max(0, this.textOverlay.lines.length - visible);
         this.textOverlay.scroll = Math.max(0, Math.min(maxScroll, this.textOverlay.scroll + delta));
     }
@@ -4846,7 +4853,7 @@ export class AgentConsoleSessionState {
         if (!this.textOverlay) {
             return;
         }
-        const visible = this.consoleOptions.reviewDetailVisibleLines;
+        const visible = this.textOverlayPageSize;
         this.textOverlay.scroll = position === 'start' ? 0 : Math.max(0, this.textOverlay.lines.length - visible);
     }
 

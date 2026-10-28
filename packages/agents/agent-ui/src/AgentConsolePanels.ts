@@ -2078,7 +2078,7 @@ export class AgentConsoleTextOverlayPanelComponent {
         if (!overlay) {
             return '';
         }
-        const to = Math.min(overlay.lines.length, overlay.scroll + this.state.consoleOptions.reviewDetailVisibleLines);
+        const to = Math.min(overlay.lines.length, overlay.scroll + Math.min(overlay.lines.length, overlay.visibleLines ?? this.state.consoleOptions.reviewDetailVisibleLines));
         return panelLabel(this.translator, 'overlay', 'title', '{title} {count} lines · {from}-{to}', { title: overlay.title, count: overlay.lines.length, from: overlay.scroll + 1, to }).trim();
     }
 
@@ -2095,7 +2095,7 @@ export class AgentConsoleTextOverlayPanelComponent {
         if (!overlay) {
             return panelLabel(this.translator, 'overlay', 'ariaTitle', 'Text details');
         }
-        const to = Math.min(overlay.lines.length, overlay.scroll + this.state.consoleOptions.reviewDetailVisibleLines);
+        const to = Math.min(overlay.lines.length, overlay.scroll + Math.min(overlay.lines.length, overlay.visibleLines ?? this.state.consoleOptions.reviewDetailVisibleLines));
         return panelLabel(this.translator, 'overlay', 'aria', '{title}. {count} lines. Showing {from} through {to}.', { title: overlay.title, count: overlay.lines.length, from: overlay.scroll + 1, to });
     }
 }

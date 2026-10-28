@@ -59,18 +59,22 @@ export class OpenCodeParityCommandsTest {
     @Test('/pair prints the one-time web link and reports when no web console runs')
     async pairCommand() {
         const notices: string[] = [];
+        const overlays: any[] = [];
         const ctx: any = {
             translator: null,
             notify: (message: string) => notices.push(message),
             state: {
-                pairAction: async () => ({ urls: ['http://127.0.0.1:3100/?pair=abc', 'http://192.168.1.9:3100/?pair=abc'], url: 'http://127.0.0.1:3100/?pair=abc', qr: '\u2584\u2580 QR-MARKER', code: 'abc', expiresAt: Date.now() + 5 * 60_000 })
+                pairAction: async () => ({ urls: ['http://127.0.0.1:3100/?pair=abc', 'http://192.168.1.9:3100/?pair=abc'], url: 'http://127.0.0.1:3100/?pair=abc', qr: '\u2584\u2580 QR-MARKER', code: 'abc', expiresAt: Date.now() + 5 * 60_000 }),
+                openTextOverlay: (title: string, lines: string[], visibleLines?: number) => overlays.push({ title, lines, visibleLines })
             }
         };
         await COMMAND_HANDLERS['/pair'](ctx, '', metaFor('/pair'));
-        expect(notices[0]).toContain('http://127.0.0.1:3100/?pair=abc');
-        expect(notices[0]).toContain('http://192.168.1.9:3100/?pair=abc');
-        expect(notices[0]).toContain('5 min');
-        expect(notices[0]).toContain('QR-MARKER');
+        const body = overlays[0].lines.join('\n');
+        expect(body).toContain('http://127.0.0.1:3100/?pair=abc');
+        expect(body).toContain('http://192.168.1.9:3100/?pair=abc');
+        expect(body).toContain('5 min');
+        expect(body).toContain('QR-MARKER');
+        expect(overlays[0].visibleLines).toEqual(overlays[0].lines.length);
 
         const missing: string[] = [];
         await COMMAND_HANDLERS['/pair']({ ...ctx, state: {}, notify: (message: string) => missing.push(message) }, '', metaFor('/pair'));

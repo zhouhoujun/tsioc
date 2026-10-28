@@ -2564,3 +2564,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 缺陷：`review_diff` 直接使用 `git diff HEAD` / `ls-files --others`，把 `.tsdi-agent/settings.json`、`.tsdi-agent/command-output-history.json` 当作用户改动（真实 TUI `/diff` 显示 4 files，其中 2 个是 agent 状态）。
 - 修复：tracked/untracked/stats 统一加 `:(exclude).tsdi-agent` pathspec，并对文件列表再做一次防御性过滤；`/diff` 与 `/review` 共用该工具。
 - 验证：agent-tools 577（新增用例先 RED：files 含 `.tsdi-agent/`）；真实 TUI `/diff` 4 files → 2 个用户文件（src/sum.js、src/extra.js）。
+
+## TUI `/pair` 二维码被裁剪（2026-10）
+
+- 缺陷：`/pair` 通过 notice 覆盖层输出链接 + QR，而 notice 固定 8 行，真实 attach 终端只显示 4 行 QR，滚动也无法拼成可扫码整码。
+- 修复：`openTextOverlay` 支持按内容指定可见行数（默认仍为 8）；`/pair` 用整码高度打开，覆盖层标题/aria 的行号范围跟随实际页高。
+- 验证：agent-ui 1843（新增 overlay 页高 + `/pair` 用例；既有 panel i18n 保持通过）；真实 attach PTY 9/9（`/pair` 二维码解码为 LAN 地址，`/sessions` 列出 gateway 会话并可搜索）。
