@@ -55,7 +55,10 @@ const EXTERNALS = [
     'ts-node',
     'tsconfig-paths',
     'electron',
-    '@vscode/ripgrep'
+    '@vscode/ripgrep',
+    // Legacy octal escapes break esbuild's strict-mode parse; it is a tiny
+    // runtime dependency of the published CLI (see package.json).
+    'qrcode-terminal'
 ];
 
 const swcPlugin = {

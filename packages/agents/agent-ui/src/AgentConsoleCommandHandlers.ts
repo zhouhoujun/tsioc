@@ -21,7 +21,7 @@ import type { NavFilter, NavSelection, SessionSearchMatch } from '@tsdi/agent';
 import { AGENT_CONSOLE_OVERLAY_HINTS } from './AgentConsoleOverlayPresenter';
 import type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
 import { runSnapshotsCommand, type SnapshotCommandHost } from './AgentConsoleSnapshotCommands';
-import { handleRename, handleRestart, handleTitle } from './AgentConsoleSessionRenameCommands';
+import { handlePair, handleRename, handleRestart, handleTitle } from './AgentConsoleSessionRenameCommands';
 import { mapTuiLayoutArg } from './AgentConsoleSettingsCommands';
 export type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
 import { formatAgentUiDate, formatAgentUiDateTime, formatAgentUiNotice, formatAgentPanelLabel as panelLabel, type AgentUiTranslator } from './agent-ui.i18n';
@@ -759,25 +759,6 @@ async function handleApprovals(ctx: CommandHandlerContext, _args: string, _resol
     ctx.state.closeGitSnapshotDetail();
     ctx.state.setApprovalsFocused(true);
     ctx.updateTerminalTitle();
-    return true;
-}
-
-// ── /pair ────────────────────────────────────────────────────────────────────
-
-async function handlePair(ctx: CommandHandlerContext, _args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
-    let pairing: { url?: string; urls?: string[]; code?: string; expiresAt?: number } | null = null;
-    try {
-        pairing = await ctx.state.pairAction?.() ?? null;
-    } catch {
-        pairing = null;
-    }
-    const urls = (pairing?.urls?.length ? pairing.urls : pairing?.url ? [pairing.url] : []).filter(Boolean);
-    if (!urls.length) {
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'pairUnavailable'));
-        return true;
-    }
-    const minutes = pairing?.expiresAt ? Math.max(1, Math.round((pairing.expiresAt - Date.now()) / 60000)) : 5;
-    ctx.notify(formatAgentUiNotice(ctx.translator, 'pairReady', { urls: urls.join('\n'), minutes }));
     return true;
 }
 

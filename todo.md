@@ -2509,3 +2509,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 
 - 现象：`agent-ui/web/.gitignore` 忽略 `dist/`，npm 打包会尊重嵌套 ignore，`npm pack` 只带 `index.html`/`header.js`，不带 `web/dist/agent-console.js`；发布后的 `serve` 会让页面脚本 404（仓库内因门禁构建过而正常）。
 - 修复：删除 `web/.gitignore`（仓库根 `.gitignore` 的 `dist` 规则仍忽略构建产物），并在 `agent-ui/package.json` 增加 `prepack: npm run build:web`；`npm pack --dry-run` 已确认包含 `web/dist/agent-console.js`。
+
+## `/pair` 终端二维码（2026-10）
+
+- 需求：手机上打开配对链接；此前只有可复制 URL。
+- 实现：引入 `qrcode-terminal`（无依赖），CLI 侧 `renderPairingQr`；attach 的 `/pair` 在通知（可滚动浮层）里附带二维码；`serve` 横幅在 stdout 为 TTY 时打印二维码（管道/日志不污染）。
+- 打包：`qrcode-terminal` 的源码含 legacy octal escape，esbuild 严格模式无法打包 → 加入 CLI bundler 的 `EXTERNALS`，并在 `agent-cli/package.json` 声明运行时依赖（monorepo 根 `dependencies` 同步）。
+- 验证：agent-ui 1826、agent-cli 122；真实 TUI 9/9（链接 + 可扫描二维码 + attach 共享会话）。

@@ -47,3 +47,23 @@ export async function handleRestart(ctx: CommandHandlerContext): Promise<boolean
     restart(restartSessionId);
     return true;
 }
+
+/** `/pair` prints the one-time browser links (and QR when the host rendered one). */
+export async function handlePair(ctx: CommandHandlerContext, _args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
+    let pairing: { url?: string; urls?: string[]; qr?: string; code?: string; expiresAt?: number } | null = null;
+    try {
+        pairing = await ctx.state.pairAction?.() ?? null;
+    } catch {
+        pairing = null;
+    }
+    const urls = (pairing?.urls?.length ? pairing.urls : pairing?.url ? [pairing.url] : []).filter(Boolean);
+    if (!urls.length) {
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'pairUnavailable'));
+        return true;
+    }
+    const minutes = pairing?.expiresAt ? Math.max(1, Math.round((pairing.expiresAt - Date.now()) / 60000)) : 5;
+    const notice = formatAgentUiNotice(ctx.translator, 'pairReady', { urls: urls.join('\n'), minutes });
+    const qr = String(pairing?.qr || '').trim();
+    ctx.notify(qr ? `${notice}\n\n${qr}` : notice);
+    return true;
+}

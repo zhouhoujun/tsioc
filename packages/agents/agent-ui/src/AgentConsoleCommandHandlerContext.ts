@@ -37,7 +37,7 @@ export interface CommandHandlerContext {
         readonly reviewFileSections: any[];
         readonly reviewOpen: boolean;
         readonly restartAction?: (sessionId: string) => void;
-        readonly pairAction?: () => Promise<{ url?: string; urls?: string[]; code?: string; expiresAt?: number } | null>;
+        readonly pairAction?: () => Promise<{ url?: string; urls?: string[]; qr?: string; code?: string; expiresAt?: number } | null>;
         readonly reviewFileAnnotations: Record<string, any>;
         readonly consoleOptions: { selectHint?: string };
         readonly commandHints: string[];
