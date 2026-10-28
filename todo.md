@@ -2529,3 +2529,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 缺陷：web/attach 下命令只改本地 `options.ui`，turn 走 gateway（`serve`）进程，模型永远看不到；`serve` 重启也不读 workspace 设置。
 - 修复：新增 `settings.ui.set` RPC（修改共享 `AGENT_OPTIONS.ui`，`DefaultAgentRuntime` 每 turn 读取，并把 `personality`/`memoryInjection` 写入 workspace `settings.json`）；`/personality`、`/memories` 的 `persistSettings` 先发 RPC 再本地持久化；`serve` 启动用 `readConsoleUiSettings` + `applyPersistedPreferences` 恢复。
 - 验证：gateway 368（新增 2 例）、agent-ui 1831（新增组件→RPC 接线例）、agent-cli 122；真实 serve RPC 5/5、带持久化设置启动并完成 turn 4/4。
+
+## 首次写入创建设置文件（2026-10）
+
+- 缺陷：`persistConsoleUiSettings` 把读+写放在同一个 try；新 workspace 没有 `settings.json` 时 `readFileSync` 抛错直接跳过写，RPC 返回成功但偏好未落盘。
+- 修复：读取失败按 `{}` 处理，写单独 try；新增单测（先 RED：ENOENT）与真实 serve 新 workspace 探针 4/4。

@@ -52,17 +52,23 @@ function persistConsoleUiSettings(options: AgentOptions, ui: Record<string, any>
         return;
     }
     const file = path.join(workspace, '.tsdi-agent', 'settings.json');
+    let current: Record<string, any> = {};
     try {
-        const current = JSON.parse(fs.readFileSync(file, 'utf8') || '{}');
-        const next = { ...current };
-        if (ui.personality) {
-            next.personality = ui.personality;
-        } else {
-            delete next.personality;
-        }
-        if (typeof ui.memoryInjection === 'boolean') {
-            next.memoryInjection = ui.memoryInjection;
-        }
+        const parsed = JSON.parse(fs.readFileSync(file, 'utf8') || '{}');
+        current = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch {
+        // A brand-new workspace has no settings file yet: start from empty.
+    }
+    const next = { ...current };
+    if (ui.personality) {
+        next.personality = ui.personality;
+    } else {
+        delete next.personality;
+    }
+    if (typeof ui.memoryInjection === 'boolean') {
+        next.memoryInjection = ui.memoryInjection;
+    }
+    try {
         fs.mkdirSync(path.dirname(file), { recursive: true });
         fs.writeFileSync(file, JSON.stringify(next, null, 2));
     } catch {
