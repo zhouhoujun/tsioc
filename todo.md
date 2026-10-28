@@ -2558,3 +2558,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 缺陷：`sw.js` 对 `dist/agent-console.js` 是 cache-first 且缓存名固定 `v1`，CLI 升级后浏览器一直用旧控制台；`header.js` 未预缓存，离线时页面无法挂载控制台。
 - 修复：`header.js` 加入 shell 预缓存；缓存名升级到 v2；shell 资源改为 network-first + 离线回退，缓存更新用 `event.waitUntil`。
 - 验证：agent-ui 1841（新增 4 个 Node `vm` 行为用例：预缓存、在线新内容/离线回退、API 不拦截、旧缓存清理；先 RED）；真实 serve `/sw.js` 内容与 `/header.js` 200 校验。
+
+## `/diff`/`/review` 排除 agent 状态（2026-10）
+
+- 缺陷：`review_diff` 直接使用 `git diff HEAD` / `ls-files --others`，把 `.tsdi-agent/settings.json`、`.tsdi-agent/command-output-history.json` 当作用户改动（真实 TUI `/diff` 显示 4 files，其中 2 个是 agent 状态）。
+- 修复：tracked/untracked/stats 统一加 `:(exclude).tsdi-agent` pathspec，并对文件列表再做一次防御性过滤；`/diff` 与 `/review` 共用该工具。
+- 验证：agent-tools 577（新增用例先 RED：files 含 `.tsdi-agent/`）；真实 TUI `/diff` 4 files → 2 个用户文件（src/sum.js、src/extra.js）。

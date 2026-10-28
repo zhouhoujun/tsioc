@@ -4739,6 +4739,21 @@ export class AgentToolsPackageTest {
         expect(typeof result.commitSha).toEqual('string');
     }
 
+    @Test('review diff excludes the agent state directory')
+    async reviewDiffExcludesAgentState() {
+        const repo = await createTempGitRepo();
+        await fs.mkdir(path.join(repo, '.tsdi-agent'), { recursive: true });
+        await fs.writeFile(path.join(repo, '.tsdi-agent', 'settings.json'), '{"securityLevel":"ask"}\n');
+        await fs.writeFile(path.join(repo, '.tsdi-agent', 'command-output-history.json'), '[{"command":"/diff"}]\n');
+        const tool = new ReviewDiffTool({ file: { rootDir: repo } } as any);
+        const result = await tool.invoke({}, createSessionContext());
+        expect(result.files).toContain('file-a.txt');
+        expect(result.files.some(file => file.startsWith('.tsdi-agent/'))).toEqual(false);
+        expect(result.diff).not.toContain('.tsdi-agent/');
+        expect(result.diff).not.toContain('securityLevel');
+        expect(result.stats).not.toContain('.tsdi-agent');
+    }
+
     @Test('review diff honors explicit base and path restriction')
     async reviewDiffHonorsBaseAndPaths() {
         const repo = await createTempGitRepo();

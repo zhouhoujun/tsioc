@@ -10,6 +10,9 @@ const DEFAULT_TIMEOUT_MS = 30000;
 const DEFAULT_MAX_DIFF_CHARS = 60000;
 const MAX_OUTPUT_CHARS = 64000;
 
+/** Agent-owned workspace state (settings, command-output history, tool-output spill). */
+const AGENT_STATE_DIR = '.tsdi-agent';
+
 export interface ReviewDiffResult {
     readOnly: boolean;
     base: string;
@@ -104,12 +107,14 @@ export class ReviewDiffTool implements AgentTool {
         const maxDiffChars = this.resolveMaxDiffChars(input?.maxDiffChars);
 
         const diffArgs = this.buildDiffArgs(scope, base, paths);
-        const trackedFiles = scope === 'untracked'
+        const trackedFiles = (scope === 'untracked'
             ? []
-            : this.parseLines((await this.runGit([...diffArgs.slice(0, 2), '--name-only', ...diffArgs.slice(2)], workdir, context?.signal)).stdout);
-        const untrackedFiles = scope === 'working-tree' || scope === 'untracked'
+            : this.parseLines((await this.runGit([...diffArgs.slice(0, 2), '--name-only', ...diffArgs.slice(2)], workdir, context?.signal)).stdout))
+            .filter(path => !this.isAgentStatePath(path));
+        const untrackedFiles = (scope === 'working-tree' || scope === 'untracked'
             ? await this.listUntrackedFiles(workdir, paths, context?.signal)
-            : [];
+            : [])
+            .filter(path => !this.isAgentStatePath(path));
         const files = Array.from(new Set([...trackedFiles, ...untrackedFiles]));
 
         const trackedDiffResult = scope === 'untracked'
@@ -162,14 +167,21 @@ export class ReviewDiffTool implements AgentTool {
     }
 
     private buildDiffArgs(scope: ReviewDiffScope, base: string, paths: string[]): string[] {
-        if (scope === 'staged') return ['diff', '--no-color', '--cached', base, '--', ...paths];
-        if (scope === 'unstaged') return ['diff', '--no-color', '--', ...paths];
-        return ['diff', '--no-color', base, '--', ...paths];
+        // The agent's own workspace state is not a user change: keep settings,
+        // command-output history and tool-output spill out of `/diff`/`/review`.
+        const exclude = `:(exclude)${AGENT_STATE_DIR}`;
+        if (scope === 'staged') return ['diff', '--no-color', '--cached', base, '--', ...paths, exclude];
+        if (scope === 'unstaged') return ['diff', '--no-color', '--', ...paths, exclude];
+        return ['diff', '--no-color', base, '--', ...paths, exclude];
+    }
+
+    private isAgentStatePath(path: string): boolean {
+        return path === AGENT_STATE_DIR || path.startsWith(`${AGENT_STATE_DIR}/`);
     }
 
     private async listUntrackedFiles(workdir: string, paths: string[], signal?: AbortSignal): Promise<string[]> {
-        const result = await this.runGit(['ls-files', '--others', '--exclude-standard', '--', ...paths], workdir, signal);
-        return this.parseLines(result.stdout);
+        const result = await this.runGit(['ls-files', '--others', '--exclude-standard', '--', ...paths, `:(exclude)${AGENT_STATE_DIR}`], workdir, signal);
+        return this.parseLines(result.stdout).filter(path => !this.isAgentStatePath(path));
     }
 
     private parseLines(value: string): string[] {

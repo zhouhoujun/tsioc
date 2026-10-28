@@ -15,6 +15,7 @@
 - **视窗内的历史滚动**：鼠标滚轮或 PageUp/PageDown/↑/↓ 在视窗内滚动查看历史消息，而不是被新消息顶掉；向上滚动暂停自动跟随并提示「N 条新消息」，滚到底或 Esc 恢复跟随。布局差异收敛在 `AgentConsoleTranscriptLayout` 策略中，由平台适配层（TUI/DOM）分别适配滚轮路由；`scrollback`（旧名 `stream`）仍使用 native scrollback 处理历史。
 - **职责分层（状态只承载数据）**：`AgentConsoleSessionState` 只保留数据字段与平凡 setter/getter，不再挂布局/平台行为；转录滚动策略在 `AgentConsoleTranscriptLayout`（agent-ui 抽象），纯选择/滚动导航在 `AgentConsoleTranscriptNavigation`；平台差异各自适配——TUI 由 `components/console` 的 `scrollViewport` 选项 + surface 生命周期钩子决定是否保留 surface 滚动区，DOM 由 `web-console` 适配滚动条/滚轮。
 - **`scrollback` 布局（旧名 `stream`）全程使用 native scrollback**（含 turn 运行中的流式内容），仅在显式切换为 `scrollback` 时启用；此时多轮对话历史不得按视口高度裁剪。
+- `/diff` 与 `/review` 只展示用户改动；agent 自己的 `.tsdi-agent/`（settings、command-output-history、tool-output）不得进入文件列表与 diff。
 - 长回复在 native scrollback（`scrollback`）下不得向上移动超过终端视口高度，不得重复绘制或覆盖视口外历史。
 - 用户消息与最终回答由整个动态模板容器提供纵向 padding，禁止给正文每行重复添加上下 padding；最终回答不显示 assistant `•` role label（Working 状态点只属于执行状态）。
 
