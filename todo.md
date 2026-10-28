@@ -2594,3 +2594,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 缺陷：web 挂载只提供 settings store；theme/statusline/title/keymap/raw-mode 与 settings.json 其余字段不持久化，刷新丢失。浏览器是 serve 的客户端，工作区数据应在 workspace/root。
 - 修复：gateway 新增 `settings.store.get/set`（`settings.json`/`theme.json`/`statusline.json`/`title.json`/`keymap.json`/`raw-mode.json` 白名单，256KB 上限）；web 挂载用 RPC 版 theme/statusline/title/keymap/rawMode store；settings store 读写完整 settings.json（保留终端 layout，不写 localStorage）。
 - 验证：agent-ui 1848（+3 store 用例）、gateway 371（+1 store 白名单/往返）；真实 serve+JSDOM 7/7（theme.json 恢复、越界名拒绝、经 RPC 读取）。
+
+## Web 配置读取共享净化（2026-10）
+
+- 缺陷：web settings store 直接合并原始 `settings.json`，绕过 TUI 文件 store 的字段净化；手工/旧版文件可能写入未知 language、非布尔开关、非法 timeline/thinking/security 值。
+- 修复：抽出 `sanitizeAgentConsoleSettings`，文件 store 与 web RPC store 共用；`settings.ui.get` 不可用时回退到净化后的文件值。
+- 验证：agent-ui 1849（新增无效字段/回退用例）；真实 serve+JSDOM 7/7。

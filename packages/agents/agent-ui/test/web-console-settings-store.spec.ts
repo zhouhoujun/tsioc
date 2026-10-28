@@ -64,6 +64,34 @@ export class WebConsoleSettingsStoreTest {
         expect(call(calls, 'settings.store.set')?.params.data).toMatchObject({ language: 'zh', memoryInjection: true });
     }
 
+    @Test('sanitizes invalid file fields and falls back to the validated file values')
+    async sanitizes() {
+        const calls: RpcCall[] = [];
+        const store = createRpcConsoleSettingsStore(fakeRpc(null, calls, {
+            language: 42,
+            vimMode: 'yes',
+            showThinking: 1,
+            timelineViewMode: 'nope',
+            messageLayout: 'scrollback',
+            thinkingLevel: 'ultra',
+            securityLevel: 'full',
+            personality: 'terse',
+            memoryInjection: false,
+            yoloMode: true
+        }));
+        const loaded = await store.load('/work');
+        expect(loaded.language).toEqual(undefined);
+        expect(loaded.vimMode).toEqual(undefined);
+        expect(loaded.showThinking).toEqual(undefined);
+        expect(loaded.timelineViewMode).toEqual(undefined);
+        expect(loaded.thinkingLevel).toEqual(undefined);
+        expect(loaded.messageLayout).toEqual(undefined);
+        expect(loaded.securityLevel).toEqual('full');
+        expect(loaded.personality).toEqual('terse');
+        expect(loaded.memoryInjection).toEqual(false);
+        expect(loaded.yoloMode).toEqual(true);
+    }
+
     @Test('a failed read does not clear a persisted personality on an unrelated save')
     async failedRead() {
         const calls: RpcCall[] = [];

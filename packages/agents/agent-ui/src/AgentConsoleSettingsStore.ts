@@ -39,6 +39,35 @@ export function applyPersistedPreferences(
     options.ui = ui;
 }
 
+/** Validate persisted console settings; shared by the file store and the web RPC store. */
+export function sanitizeAgentConsoleSettings(parsed: any): AgentConsoleSettingsData {
+    const timelineViewMode = resolveTimelineViewMode(parsed);
+    return {
+        language: typeof parsed?.language === 'string' && parsed.language.trim() ? parsed.language.trim() : undefined,
+        vimMode: typeof parsed?.vimMode === 'boolean' ? parsed.vimMode : undefined,
+        showThinking: typeof parsed?.showThinking === 'boolean' ? parsed.showThinking : undefined,
+        showTimestamps: typeof parsed?.showTimestamps === 'boolean' ? parsed.showTimestamps : undefined,
+        showToolOutput: typeof parsed?.showToolOutput === 'boolean' ? parsed.showToolOutput : undefined,
+        showUsername: typeof parsed?.showUsername === 'boolean' ? parsed.showUsername : undefined,
+        timelineViewMode,
+        messageLayout: parsed?.messageLayout === 'scrollback' || parsed?.messageLayout === 'stream'
+            ? 'scrollback'
+            : parsed?.messageLayout === 'viewport' || parsed?.messageLayout === 'dynamic'
+                ? 'viewport'
+                : undefined,
+        thinkingLevel: parsed?.thinkingLevel === 'low' || parsed?.thinkingLevel === 'medium' || parsed?.thinkingLevel === 'high' || parsed?.thinkingLevel === 'max'
+            ? parsed.thinkingLevel
+            : undefined,
+        yoloMode: typeof parsed?.yoloMode === 'boolean' ? parsed.yoloMode : undefined,
+        securityLevel: ['read-only', 'ask', 'auto', 'full'].includes(parsed?.securityLevel) ? parsed.securityLevel : undefined,
+        personality: typeof parsed?.personality === 'string' && parsed.personality.trim() ? parsed.personality.trim() : undefined,
+        memoryInjection: typeof parsed?.memoryInjection === 'boolean' ? parsed.memoryInjection : undefined,
+        taskFilter: ['all', 'failed', 'rollback', 'lineage'].includes(parsed?.taskFilter) ? parsed.taskFilter : undefined,
+        taskLineageRootId: typeof parsed?.taskLineageRootId === 'string' && parsed.taskLineageRootId.trim() ? parsed.taskLineageRootId.trim() : undefined,
+        planTodoFilter: ['all', 'active', 'blocked', 'failed'].includes(parsed?.planTodoFilter) ? parsed.planTodoFilter : undefined
+    };
+}
+
 @Injectable()
 export class AgentConsoleSettingsStore {
     constructor(@Optional() private fileAdapter?: FileAdapter | null, @Optional() private paths?: AgentConsolePathProvider | null) {}
@@ -47,32 +76,7 @@ export class AgentConsoleSettingsStore {
         if (!workspace || !this.fileAdapter) return {};
         try {
             const text = await this.fileAdapter.readText(this.path(workspace));
-            const parsed = JSON.parse(text);
-            const timelineViewMode = resolveTimelineViewMode(parsed);
-            return {
-                language: typeof parsed?.language === 'string' && parsed.language.trim() ? parsed.language.trim() : undefined,
-                vimMode: typeof parsed?.vimMode === 'boolean' ? parsed.vimMode : undefined,
-                showThinking: typeof parsed?.showThinking === 'boolean' ? parsed.showThinking : undefined,
-                showTimestamps: typeof parsed?.showTimestamps === 'boolean' ? parsed.showTimestamps : undefined,
-                showToolOutput: typeof parsed?.showToolOutput === 'boolean' ? parsed.showToolOutput : undefined,
-                showUsername: typeof parsed?.showUsername === 'boolean' ? parsed.showUsername : undefined,
-                timelineViewMode,
-                messageLayout: parsed?.messageLayout === 'scrollback' || parsed?.messageLayout === 'stream'
-                    ? 'scrollback'
-                    : parsed?.messageLayout === 'viewport' || parsed?.messageLayout === 'dynamic'
-                        ? 'viewport'
-                        : undefined,
-                thinkingLevel: parsed?.thinkingLevel === 'low' || parsed?.thinkingLevel === 'medium' || parsed?.thinkingLevel === 'high' || parsed?.thinkingLevel === 'max'
-                    ? parsed.thinkingLevel
-                    : undefined,
-                yoloMode: typeof parsed?.yoloMode === 'boolean' ? parsed.yoloMode : undefined,
-                securityLevel: ['read-only', 'ask', 'auto', 'full'].includes(parsed?.securityLevel) ? parsed.securityLevel : undefined,
-                personality: typeof parsed?.personality === 'string' && parsed.personality.trim() ? parsed.personality.trim() : undefined,
-                memoryInjection: typeof parsed?.memoryInjection === 'boolean' ? parsed.memoryInjection : undefined,
-                taskFilter: ['all', 'failed', 'rollback', 'lineage'].includes(parsed?.taskFilter) ? parsed.taskFilter : undefined,
-                taskLineageRootId: typeof parsed?.taskLineageRootId === 'string' && parsed.taskLineageRootId.trim() ? parsed.taskLineageRootId.trim() : undefined,
-                planTodoFilter: ['all', 'active', 'blocked', 'failed'].includes(parsed?.planTodoFilter) ? parsed.planTodoFilter : undefined,
-            };
+            return sanitizeAgentConsoleSettings(JSON.parse(text));
         } catch {
             return {};
         }

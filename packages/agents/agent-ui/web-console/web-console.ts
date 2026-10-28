@@ -23,7 +23,8 @@ import {
     VscodeIdeBridge,
     isAgentConsoleThemeName,
     normalizeAgentConsoleStatusline,
-    normalizeAgentConsoleTitle
+    normalizeAgentConsoleTitle,
+    sanitizeAgentConsoleSettings
 } from '@tsdi/agent-ui';
 
 const CONSOLE_SECURITY_LEVELS = ['read-only', 'ask', 'auto', 'full'];
@@ -147,15 +148,15 @@ export function createRpcConsoleSettingsStore(rpc: { request(method: string, par
                 readFile(),
                 rpc.request('settings.ui.get', {}).catch(() => null)
             ]);
-            const stored: Record<string, any> = { ...(file || {}) };
+            const stored = sanitizeAgentConsoleSettings(file || {});
             // The transcript layout is a terminal concern; keep the browser DOM layout.
             delete stored.messageLayout;
             const data: AgentConsoleSettingsData = {
                 ...stored,
-                personality: typeof result?.personality === 'string' && result.personality.trim() ? result.personality.trim() : undefined,
-                memoryInjection: typeof result?.memoryInjection === 'boolean' ? result.memoryInjection : undefined,
-                securityLevel: CONSOLE_SECURITY_LEVELS.includes(String(result?.securityLevel)) ? result.securityLevel : undefined,
-                yoloMode: typeof result?.yoloMode === 'boolean' ? result.yoloMode : undefined
+                personality: (typeof result?.personality === 'string' && result.personality.trim() ? result.personality.trim() : undefined) || stored.personality,
+                memoryInjection: typeof result?.memoryInjection === 'boolean' ? result.memoryInjection : stored.memoryInjection,
+                securityLevel: (CONSOLE_SECURITY_LEVELS.includes(String(result?.securityLevel)) ? result.securityLevel : undefined) || stored.securityLevel,
+                yoloMode: typeof result?.yoloMode === 'boolean' ? result.yoloMode : stored.yoloMode
             };
             lastLoaded = data;
             return data;
