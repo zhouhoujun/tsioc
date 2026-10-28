@@ -80,6 +80,34 @@ tsdi-agent approval reject <requestId> --gateway-url http://127.0.0.1:3100 --tok
   带 `X-Tsdi-Timestamp` 与 `X-Tsdi-Signature: sha256=HMAC(secret, "<ts>.<body>")`；
   投递失败不会阻塞工具调用。
 
+## Web 控制台（`serve`、`attach`、`/pair`）
+
+`tsdi-agent serve` 不启动 TUI，直接启动 Gateway 与浏览器控制台：
+
+```shell
+tsdi-agent serve --workspace /path/to/repo --host 127.0.0.1 --port 3100
+```
+
+- 静态页本身免鉴权；`/rpc` 与配对接口需要 bearer token（`--token <token>`；
+  非回环绑定未指定时会生成随机 token 并打印）。
+- 启动横幅打印一次性配对链接（5 分钟、单次）。在要配对的设备打开
+  `http://<host>:<port>/?pair=<code>`。`--host 0.0.0.0` 时会同时列出 LAN
+  链接，终端二维码编码 LAN 地址（不是 loopback），手机扫码不会打开手机自身。
+- 浏览器页头可切换/新建会话（标题 + 相对时间，倒序），窗口重新聚焦时刷新；
+  终端新建或改名的会话无需手动刷新。
+- TUI 里 `/pair`（`/web`）打印新的链接与二维码；浏览器里 `/pair` 为另一台设备
+  生成新链接。
+- `tsdi-agent attach <url> --token <token>` 从终端加入同一 gateway，不需要本地
+  先启动 TUI，并使用隔离的本地数据库，不与 `serve` 争用。
+- `/permissions level`、`/personality`、`/memories on|off` 持久化到 workspace
+  `settings.json`；attach 与浏览器经 gateway 写入，重启后保留并被 web 控制台
+  共享；yolo 仍是各客户端的审批行为。
+- `--mdns` 广播 gateway，`tsdi-agent attach --mdns` 自动发现。
+- web 控制台是 PWA：shell（含 `header.js`）预缓存，资源 network-first +
+  离线回退，新构建会刷新缓存 shell。`/diff` 与 `/review` 忽略 agent 自己的
+  `.tsdi-agent/` 状态。
+- `--static <dir>` 使用自定义 web 目录。
+
 ## 模型配置
 
 CLI 在执行命令前会读取默认工作区配置：
@@ -271,6 +299,8 @@ CLI 在执行命令前会读取默认工作区配置：
 
 - `tsdi-agent run "your prompt"`：执行单次 prompt
 - `tsdi-agent chat`：以 TUI 模式启动 Agent UI
+- `tsdi-agent serve [--host <host>] [--port <port>] [--token <token>] [--mdns]`：运行 headless gateway 与 web 控制台
+- `tsdi-agent attach <url> --token <token> [--mdns]`：从终端加入远程 gateway
 - `tsdi-agent tools list`：查看解析后的工具配置
 - `tsdi-agent doctor [--json]`：检查本地配置、workspace、provider、hooks、skills 与 MCP 就绪状态
 - `tsdi-agent completion [bash|zsh|fish]`：输出 shell completion 脚本

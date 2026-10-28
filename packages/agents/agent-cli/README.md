@@ -90,6 +90,40 @@ tsdi-agent approval reject <requestId> --gateway-url http://127.0.0.1:3100 --tok
   `X-Tsdi-Timestamp` and `X-Tsdi-Signature: sha256=HMAC(secret, "<ts>.<body>")`.
   Delivery failures never block the tool call.
 
+## Web console (`serve`, `attach`, `/pair`)
+
+`tsdi-agent serve` starts the gateway and the browser console without a TUI:
+
+```shell
+tsdi-agent serve --workspace /path/to/repo --host 127.0.0.1 --port 3100
+```
+
+- The static page is unauthenticated; `/rpc` and the pairing endpoints require
+  the bearer token (`--token <token>`; a non-loopback bind without one generates
+  a random token and prints it).
+- The banner prints a one-time pairing link (5 minutes, single use). Open
+  `http://<host>:<port>/?pair=<code>` on the device you want to pair. With
+  `--host 0.0.0.0` the LAN link is listed too, and the terminal QR encodes the
+  LAN link (not loopback) so a phone does not open its own address.
+- In the browser, the header switches and creates sessions (title + relative
+  age, newest first) and refreshes when the tab regains focus, so sessions
+  created or renamed in a terminal appear without a reload.
+- `/pair` (`/web`) prints a fresh link and QR in the TUI; in the browser it
+  creates a new link for another device.
+- `tsdi-agent attach <url> --token <token>` joins the same gateway from a
+  terminal, needs no local TUI, and uses an isolated local database so it never
+  shares the `serve` process's database.
+- `/permissions level`, `/personality` and `/memories on|off` persist to the
+  workspace `settings.json`. Attach and the browser write through the gateway,
+  so the setting survives restarts and is shared by the web console; yolo stays
+  a per-client approval behavior.
+- `--mdns` advertises the gateway; `tsdi-agent attach --mdns` discovers it.
+- The web console is a PWA: the shell (including `header.js`) is precached,
+  assets are network-first with an offline fallback, and a new build refreshes
+  the cached shell. `/diff` and `/review` ignore the agent's `.tsdi-agent/`
+  state.
+- `--static <dir>` serves a custom web directory instead of the bundled UI.
+
 ## Model setup
 
 The CLI reads the default workspace config before executing commands:
@@ -321,6 +355,8 @@ Behavior of this example:
 
 - `tsdi-agent run "your prompt"`: execute a single prompt
 - `tsdi-agent chat`: start Agent UI in TUI mode
+- `tsdi-agent serve [--host <host>] [--port <port>] [--token <token>] [--mdns]`: run the headless gateway + web console
+- `tsdi-agent attach <url> --token <token> [--mdns]`: join a remote gateway from the terminal
 - `tsdi-agent tools list`: inspect resolved tool configuration
 - `tsdi-agent doctor [--json]`: inspect local config, workspace, provider, hooks, skills, and MCP readiness
 - `tsdi-agent completion [bash|zsh|fish]`: print a shell completion script
