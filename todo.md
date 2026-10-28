@@ -2576,3 +2576,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 缺陷：web 挂载未设置 `pairAction`，浏览器里 `/pair` 误报 “Web console is not running / start tsdi-agent serve”，与事实（浏览器就是 web 控制台）不符。
 - 修复：web 挂载注入 `pairAction`，调用已认证的 `POST /api/pair/create` 生成新的一次性链接供另一台设备使用；浏览器不渲染终端二维码，展示链接。
 - 验证：agent-ui 1844（新增 helper 用例：认证头、非 2xx、空 urls、网络异常）；真实 serve + JSDOM 挂载 6/6（loopback + LAN 链接、无 QR）。
+
+## attach `/permissions` 跨进程持久化（2026-10）
+
+- 缺陷：`policyCommandHost.persistSettings` 只写本地 settings store；attach 下 `/permissions level` 不会写入 gateway 的 workspace 设置，浏览器共享不到（与 `/personality` 不一致）。
+- 修复：policy 宿主与 preference 宿主一致，先发 `settings.ui.set` 再写本地；yolo 仍为客户端审批行为（本地）。
+- 验证：agent-ui 1844（组件用例断言 `settings.ui.set {securityLevel}`）；真实 attach PTY 7/7（客户端/gateway workspace 分离，gateway 文件变 full、gateway 会话沙箱 off）。

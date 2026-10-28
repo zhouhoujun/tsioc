@@ -2933,7 +2933,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             getSessionSandboxMode: (sessionId: string) => this.getSessionSandboxMode(sessionId),
             setSessionSandboxMode: (sessionId: string, mode: SandboxMode | null) => this.setSessionSandboxMode(sessionId, mode),
             setYoloMode: (enabled: boolean) => this.setYoloMode(enabled, false),
-            persistSettings: (patch: Record<string, any>) => this.persistSettings(patch),
+            persistSettings: async (patch: Record<string, any>) => { await this.appRpc?.request('settings.ui.set', patch).catch(() => undefined); await this.persistSettings(patch); },
             select: (title: string, options: any[], index?: number, hint?: string) => this.select(title, options, index, hint),
             runPlanCommand: (args: string) => this.runPlanCommand(args)
         };

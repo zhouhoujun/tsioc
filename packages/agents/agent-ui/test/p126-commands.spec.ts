@@ -222,13 +222,18 @@ export class P126CommandClusterTest {
     async permissionsPersist() {
         const { component } = createConsole();
         const saved: any[] = [];
+        const rpcCalls: Array<{ method: string; params: any }> = [];
         (component as any).settingsStore = {
             load: async () => ({}),
             save: async (_workspace: string, data: any) => { saved.push(data); }
         };
+        (component as any).appRpc = {
+            request: async (method: string, params: any) => { rpcCalls.push({ method, params }); return {}; }
+        };
         await (component as any).handleCommand('/permissions level full');
         expect(saved.some(entry => entry.securityLevel === 'full')).toEqual(true);
         expect(saved.some(entry => entry.yoloMode === true)).toEqual(true);
+        expect(rpcCalls.some(call => call.method === 'settings.ui.set' && call.params.securityLevel === 'full')).toEqual(true);
     }
 
     @Test('/personality rejects unknown presets')
