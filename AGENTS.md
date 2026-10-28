@@ -141,6 +141,7 @@
 - **`/restart` 必须进程内重启**：关闭旧 app、恢复终端后重新进入 CLI 启动函数并沿用当前 session；不得 spawn 子进程（子进程会与交互 shell 抢 TTY，或在 shell 仍持有前台进程组时收到 SIGHUP）。
 - **`/personality` 与 `/memories on|off` 必须持久化并跨进程生效**：写入 workspace `settings.json` 的 `personality` / `memoryInjection`，启动时恢复到运行 options；attach/web 下必须经 `settings.ui.set` RPC 应用到 gateway 进程的运行 options（`serve` 启动时也读取 workspace 设置），不得只改本地 console 导致重启丢失或浏览器/turn 不生效。
 - **安全级别（`/permissions level`）**：`read-only`（拒绝写工具，shell 仍受 workspace 沙箱）、`ask`（敏感工具询问）、`auto`（自动批准 + workspace 沙箱）、`full`（自动批准 + 关闭沙箱）；按 workspace 持久化到 `settings.json` 的 `securityLevel`，启动并在会话打开后应用；web 控制台必须通过 `settings.ui.get/set` 读写同一份 workspace 设置并在挂载后恢复（刷新不得回落默认级别），读取失败时不得误清已有偏好；attach 模式下 `/permissions` 也必须经 `settings.ui.set` 写入 gateway 的 workspace 设置（yolo 是客户端审批行为，可只存本地）；级别与 plan/yolo/sandbox 必须保持一致，不得出现状态与实际权限不符的提示。
+- **Web 控制台配置必须落在 workspace/root**：浏览器是 `serve` 的客户端，theme/statusline/title/keymap/raw-mode 与 settings.json 的其余字段经 `settings.store.get/set` 读写 gateway workspace 的 `.tsdi-agent/*.json`（文件名白名单），不得使用浏览器 localStorage；终端 layout 仍是 TUI 专属，不被浏览器覆盖。
 - 用户可见文案必须经 i18n，不得硬编码英文（含 plan 头部/结尾、事件句子、状态词）。
 - 工具失败信息必须可操作：包含允许范围（workspace root）与修复建议；越界路径不得只报 `outside the allowed workspace root`。
 

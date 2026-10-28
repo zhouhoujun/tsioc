@@ -10,6 +10,8 @@ export interface ConsoleUiSettingsPatch {
 }
 
 const SECURITY_LEVELS = ['read-only', 'ask', 'auto', 'full'];
+const CONSOLE_STORE_FILES = new Set(['settings.json', 'theme.json', 'statusline.json', 'title.json', 'keymap.json', 'raw-mode.json']);
+const MAX_CONSOLE_STORE_BYTES = 256 * 1024;
 
 /**
  * Apply a console preference to the shared runtime options and persist it to
@@ -32,6 +34,41 @@ export function applyConsoleUiSettings(options: AgentOptions, params: ConsoleUiS
     (options as any).ui = ui;
     persistConsoleUiSettings(options, ui, securityLevel, params.yoloMode);
     return { personality: ui.personality, memoryInjection: ui.memoryInjection, securityLevel, yoloMode: params.yoloMode };
+}
+
+/** Read one console store file from the gateway workspace (web console clients). */
+export function readConsoleStore(workspace: string, name: string): any {
+    const file = consoleStoreFile(workspace, name);
+    if (!file) {
+        return null;
+    }
+    try {
+        return JSON.parse(fs.readFileSync(file, 'utf8'));
+    } catch {
+        return null;
+    }
+}
+
+/** Write one allowlisted console store file in the gateway workspace. */
+export function writeConsoleStore(workspace: string, name: string, data: any): void {
+    const file = consoleStoreFile(workspace, name);
+    if (!file) {
+        throw new Error('Console store requires a workspace');
+    }
+    const text = JSON.stringify(data ?? {}, null, 2);
+    if (Buffer.byteLength(text, 'utf8') > MAX_CONSOLE_STORE_BYTES) {
+        throw new Error('Console store payload is too large');
+    }
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, text);
+}
+
+function consoleStoreFile(workspace: string, name: string): string | null {
+    const dir = String(workspace || '').trim();
+    if (!CONSOLE_STORE_FILES.has(name)) {
+        throw new Error(`Unsupported console store: ${name}`);
+    }
+    return dir ? path.join(dir, '.tsdi-agent', name) : null;
 }
 
 /** Read the persisted console preferences for a workspace (serve startup). */

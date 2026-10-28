@@ -8,14 +8,22 @@ import { AGENT_IDE_BRIDGE } from '@tsdi/agent-ui';
 import { AgentModule } from '@tsdi/agent';
 import {
     AgentConsoleComponent,
+    AgentConsoleKeymapStore,
+    AgentConsoleRawModeStore,
     AgentConsoleRemoteEventBridge,
     AgentConsoleSessionState,
     AgentConsoleSettingsData,
     AgentConsoleSettingsStore,
+    AgentConsoleStatuslineStore,
+    AgentConsoleThemeStore,
+    AgentConsoleTitleStore,
     AgentUiModule,
     HttpAgentConsoleAppRpc,
     RpcCommandOutputStore,
-    VscodeIdeBridge
+    VscodeIdeBridge,
+    isAgentConsoleThemeName,
+    normalizeAgentConsoleStatusline,
+    normalizeAgentConsoleTitle
 } from '@tsdi/agent-ui';
 
 const CONSOLE_SECURITY_LEVELS = ['read-only', 'ask', 'auto', 'full'];
@@ -51,6 +59,74 @@ export async function requestWebPairing(
 }
 
 /**
+ * RPC-backed console stores: the browser is a client of `serve`, so theme,
+ * statusline, title, keymap and raw-mode files live in the gateway's workspace
+ * (`.tsdi-agent/*.json`), not in browser storage.
+ */
+export function createRpcConsoleStores(rpc: { request(method: string, params?: any, context?: any): Promise<any> }): {
+    theme: { load(workspace: string): Promise<string | undefined>; save(workspace: string, theme: string): Promise<void> };
+    statusline: { load(workspace: string): Promise<string[] | undefined>; save(workspace: string, fields: string[]): Promise<void> };
+    title: { load(workspace: string): Promise<string[] | undefined>; save(workspace: string, fields: string[]): Promise<void> };
+    rawMode: { load(workspace: string): Promise<boolean>; save(workspace: string, enabled: boolean): Promise<void> };
+    keymap: {
+        load(workspace: string): Promise<Record<string, string | null>>;
+        loadContexts(workspace: string): Promise<Record<string, Record<string, string | null>>>;
+        save(workspace: string, bindings: Record<string, string | null>, contexts?: Record<string, Record<string, string | null>>): Promise<void>;
+    };
+} {
+    const read = async (name: string): Promise<any> => rpc.request('settings.store.get', { name }).catch(() => null);
+    const write = async (name: string, data: any): Promise<void> => { await rpc.request('settings.store.set', { name, data }).catch(() => undefined); };
+    return {
+        theme: {
+            async load(): Promise<string | undefined> {
+                const data = await read('theme.json');
+                return isAgentConsoleThemeName(String(data?.theme || '')) ? data.theme : undefined;
+            },
+            async save(_workspace: string, theme: string): Promise<void> {
+                await write('theme.json', { version: 1, theme });
+            }
+        },
+        statusline: {
+            async load(): Promise<string[] | undefined> {
+                return normalizeAgentConsoleStatusline((await read('statusline.json'))?.statusline);
+            },
+            async save(_workspace: string, fields: string[]): Promise<void> {
+                await write('statusline.json', { version: 1, statusline: fields });
+            }
+        },
+        title: {
+            async load(): Promise<string[] | undefined> {
+                return normalizeAgentConsoleTitle((await read('title.json'))?.title);
+            },
+            async save(_workspace: string, fields: string[]): Promise<void> {
+                await write('title.json', { version: 1, title: fields });
+            }
+        },
+        rawMode: {
+            async load(): Promise<boolean> {
+                return (await read('raw-mode.json'))?.rawMode === true;
+            },
+            async save(_workspace: string, enabled: boolean): Promise<void> {
+                await write('raw-mode.json', { version: 1, rawMode: enabled });
+            }
+        },
+        keymap: {
+            async load(): Promise<Record<string, string | null>> {
+                const data = await read('keymap.json');
+                return data?.bindings && typeof data.bindings === 'object' ? data.bindings : {};
+            },
+            async loadContexts(): Promise<Record<string, Record<string, string | null>>> {
+                const data = await read('keymap.json');
+                return data?.contexts && typeof data.contexts === 'object' ? data.contexts : {};
+            },
+            async save(_workspace: string, bindings: Record<string, string | null>, contexts?: Record<string, Record<string, string | null>>): Promise<void> {
+                await write('keymap.json', { version: 2, bindings, contexts: contexts || {} });
+            }
+        }
+    };
+}
+
+/**
  * Browser settings store: persist the console preferences the gateway owns
  * (personality, memory injection, security level, yolo) through `settings.ui.*`
  * so `/permissions` and `/personality` survive a reload and are applied to
@@ -61,10 +137,21 @@ export function createRpcConsoleSettingsStore(rpc: { request(method: string, par
     save(workspace: string, data: AgentConsoleSettingsData): Promise<void>;
 } {
     let lastLoaded: AgentConsoleSettingsData | null = null;
+    const readFile = async (): Promise<Record<string, any> | null> => {
+        const data = await rpc.request('settings.store.get', { name: 'settings.json' }).catch(() => null);
+        return data && typeof data === 'object' && !Array.isArray(data) ? data as Record<string, any> : null;
+    };
     return {
         async load(): Promise<AgentConsoleSettingsData> {
-            const result = await rpc.request('settings.ui.get', {}).catch(() => null);
+            const [file, result] = await Promise.all([
+                readFile(),
+                rpc.request('settings.ui.get', {}).catch(() => null)
+            ]);
+            const stored: Record<string, any> = { ...(file || {}) };
+            // The transcript layout is a terminal concern; keep the browser DOM layout.
+            delete stored.messageLayout;
             const data: AgentConsoleSettingsData = {
+                ...stored,
                 personality: typeof result?.personality === 'string' && result.personality.trim() ? result.personality.trim() : undefined,
                 memoryInjection: typeof result?.memoryInjection === 'boolean' ? result.memoryInjection : undefined,
                 securityLevel: CONSOLE_SECURITY_LEVELS.includes(String(result?.securityLevel)) ? result.securityLevel : undefined,
@@ -90,6 +177,16 @@ export function createRpcConsoleSettingsStore(rpc: { request(method: string, par
             if (typeof data.yoloMode === 'boolean') {
                 patch.yoloMode = data.yoloMode;
             }
+            // Share the rest of the workspace console settings with the gateway
+            // (language, display, timeline, filters); preserve the terminal layout.
+            const file = await readFile();
+            const next: Record<string, any> = { ...(file || {}), ...data };
+            if (file && 'messageLayout' in file) {
+                next.messageLayout = file.messageLayout;
+            } else {
+                delete next.messageLayout;
+            }
+            await rpc.request('settings.store.set', { name: 'settings.json', data: next }).catch(() => undefined);
             await rpc.request('settings.ui.set', patch).catch(() => undefined);
         }
     };
@@ -176,12 +273,18 @@ export async function mountAgentWebConsole(
         timeoutMs: config.timeoutMs,
         ...(config.fetchImpl ? { fetchImpl: config.fetchImpl } : {})
     });
+    const consoleStores = createRpcConsoleStores(rpc);
     const ctx = await Application.run(AgentConsoleComponent, {
         deps: [AgentModule, AgentUiModule, HtmlTemplateModule, ComponentsModule],
         providers: [
             { provide: DOCUMENT, useValue: doc },
             { provide: AGENT_CONSOLE_APP_RPC, useValue: rpc },
             { provide: AgentConsoleSettingsStore, useValue: createRpcConsoleSettingsStore(rpc) },
+            { provide: AgentConsoleThemeStore, useValue: consoleStores.theme },
+            { provide: AgentConsoleStatuslineStore, useValue: consoleStores.statusline },
+            { provide: AgentConsoleTitleStore, useValue: consoleStores.title },
+            { provide: AgentConsoleRawModeStore, useValue: consoleStores.rawMode },
+            { provide: AgentConsoleKeymapStore, useValue: consoleStores.keymap },
             ...(config.state ? [{ provide: AgentConsoleSessionState, useValue: config.state }] : []),
             { provide: AGENT_IDE_BRIDGE, useValue: new VscodeIdeBridge(doc.defaultView ?? globalThis) },
             {

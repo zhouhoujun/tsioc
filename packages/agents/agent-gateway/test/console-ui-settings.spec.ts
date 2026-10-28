@@ -3,7 +3,7 @@ import * as os from 'os';
 import * as path from 'path';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { applyConsoleUiSettings, readConsoleUiSettings } from '../src/app-rpc/console-ui-settings';
+import { applyConsoleUiSettings, readConsoleStore, readConsoleUiSettings, writeConsoleStore } from '../src/app-rpc/console-ui-settings';
 
 @Suite('gateway console UI settings (web/attach runtime)')
 export class ConsoleUiSettingsTest {
@@ -64,6 +64,23 @@ export class ConsoleUiSettingsTest {
             const options: any = { workspace, ui: {} };
             applyConsoleUiSettings(options, { personality: 'terse', memoryInjection: false });
             expect(JSON.parse(fs.readFileSync(file, 'utf8'))).toEqual({ personality: 'terse', memoryInjection: false });
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
+    @Test('console stores are allowlisted and round-trip through the workspace')
+    storeRoundTrip() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-ui-settings-'));
+        try {
+            writeConsoleStore(workspace, 'theme.json', { version: 1, theme: 'light' });
+            expect(readConsoleStore(workspace, 'theme.json')).toEqual({ version: 1, theme: 'light' });
+            writeConsoleStore(workspace, 'settings.json', { language: 'zh' });
+            expect(readConsoleStore(workspace, 'settings.json')).toEqual({ language: 'zh' });
+            expect(readConsoleStore(workspace, 'title.json')).toEqual(null);
+            expect(() => readConsoleStore(workspace, 'missing.json')).toThrow();
+            expect(() => writeConsoleStore(workspace, '../evil.json', {})).toThrow();
+            expect(() => writeConsoleStore(workspace, 'theme.json', { big: 'x'.repeat(300 * 1024) })).toThrow();
         } finally {
             fs.rmSync(workspace, { recursive: true, force: true });
         }

@@ -25,6 +25,7 @@ export * from './AgentConsoleRpcCommandOutputStore';
 export * from './AgentConsoleOverlay';
 export * from './AgentConsoleOverlayPresenter';
 export * from './AgentConsoleTheme';
+export * from './AgentConsoleTitle';
 export * from './AgentConsoleStatusline';
 export * from './AgentIdeBridge';
 export * from './AgentEditorBridge';

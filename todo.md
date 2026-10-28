@@ -2588,3 +2588,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 缺陷：fresh attach 启动跳过 `app.state`，状态栏显示客户端默认模型（真实探针：gateway `gpt-6.1-sol`，attach 显示 `gpt-5.5`）。
 - 修复：`openSession` 后带显式 sessionId 补读 `app.state`，应用 provider/model/modelProfile；`startupWorkspace` 保留客户端 workspace，不切换会话。
 - 验证：agent-ui 1845（新增 bootstrap 用例：显式 session 优先、模型生效、workspace 不被覆盖）；真实 attach PTY 2/2（显示 gateway 模型）。
+
+## 浏览器配置落在 gateway workspace（2026-10）
+
+- 缺陷：web 挂载只提供 settings store；theme/statusline/title/keymap/raw-mode 与 settings.json 其余字段不持久化，刷新丢失。浏览器是 serve 的客户端，工作区数据应在 workspace/root。
+- 修复：gateway 新增 `settings.store.get/set`（`settings.json`/`theme.json`/`statusline.json`/`title.json`/`keymap.json`/`raw-mode.json` 白名单，256KB 上限）；web 挂载用 RPC 版 theme/statusline/title/keymap/rawMode store；settings store 读写完整 settings.json（保留终端 layout，不写 localStorage）。
+- 验证：agent-ui 1848（+3 store 用例）、gateway 371（+1 store 白名单/往返）；真实 serve+JSDOM 7/7（theme.json 恢复、越界名拒绝、经 RPC 读取）。

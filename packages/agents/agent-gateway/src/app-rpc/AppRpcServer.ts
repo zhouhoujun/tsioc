@@ -19,7 +19,7 @@ import { toAppRpcError } from './rpcError';
 import { ToolInvokeHost, invokeToolWithWorkspaceTrust } from './tool-invoke';
 import { ApprovalRequestedChunkFields, buildApprovalRequestedChunk } from './approval-chunk';
 import { SessionAggregationDeps, getTodoPlan, getTodoPlans, listCodingTasks } from './session-aggregation';
-import { applyConsoleUiSettings, readConsoleUiSettings } from './console-ui-settings';
+import { applyConsoleUiSettings, readConsoleStore, readConsoleUiSettings, writeConsoleStore } from './console-ui-settings';
 
 @Injectable()
 export class AppRpcServer {
@@ -189,7 +189,7 @@ export class AppRpcServer {
                         'session.archetype.set',
                         'session.archetype.get',
                         'session.sandbox_mode.set',
-                        'session.sandbox_mode.get', 'settings.ui.set', 'settings.ui.get',
+                        'session.sandbox_mode.get', 'settings.ui.set', 'settings.ui.get', 'settings.store.get', 'settings.store.set',
                         'session.delegation_mode.set',
                         'session.delegation_mode.get',
                         'session.undo_file',
@@ -355,6 +355,7 @@ export class AppRpcServer {
             case 'session.sandbox_mode.get':
                 return this.getSessionSandboxMode(params, context);
             case 'settings.ui.set': return applyConsoleUiSettings(this.options, params || {}); case 'settings.ui.get': return readConsoleUiSettings(this.options.workspace || this.resolveWorkspace());
+            case 'settings.store.get': return readConsoleStore(this.options.workspace || this.resolveWorkspace(), String(params?.name || '')); case 'settings.store.set': writeConsoleStore(this.options.workspace || this.resolveWorkspace(), String(params?.name || ''), params?.data); return { ok: true };
             case 'session.delegation_mode.set':
                 return this.setSessionDelegationMode(params, context);
             case 'session.delegation_mode.get':
