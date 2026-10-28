@@ -2491,3 +2491,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 页头回归：JSDOM 加载 `web/header.js`，验证 `?pair=` 换 token、会话选项按时间倒序、状态文案、`+ New` 调 `session.create`、`sessionUrl` 保留参数。
 - 验证：gateway 366、agent-ui 1825、agent-cli 118；真实链路 8/8（LAN 链接、attach 无 DB 竞争、终端可见浏览器创建的会话）。
 - 备注：`/pair` 多链接时是多行通知（>3 行进入可滚动浮层），Esc 关闭；QR 码仍未实现（无 QR 依赖）。
+
+## `serve --mdns` + 非回环自动 token（2026-10）
+
+- 安全：`--host 0.0.0.0`（手机配对需要）此前在未传 token 时把 `/rpc` 暴露到 LAN；现在任何非回环绑定都会自动生成 token（打印在 attach 提示里，浏览器仍走配对拿 token）。
+- 发现：`serve --mdns` 通过 mDNS 广播，`tsdi-agent attach --mdns` 可直接发现；横幅增加 discovery 提示。
+- 配置构造抽成 `buildServeGatewayConfig`（host/port/token/static/mdns/cors），新增 `serve-config.spec.ts`（回环无 token、通配生成 token、资产存在才启用 staticDir、mdns 透传、web 资产解析）。
+- 验证：agent-cli 118 通过；真实链路沿用的 8/8 探针（serve/配对/attach/`/pair`/共享会话）。

@@ -1,10 +1,11 @@
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Application } from '@tsdi/core';
 import { AGENT_OPTIONS } from '@tsdi/agent';
 import { AgentUiConfigService } from '@tsdi/agent-ui';
 import { buildConsoleAgentOptions } from '@tsdi/agent-ui/console';
-import { AgentGatewayModule, GatewayServer, PairingStore, provideAgentGateway } from '@tsdi/agent-gateway';
+import { AgentGatewayModule, GatewayConfig, GatewayServer, PairingStore, provideAgentGateway } from '@tsdi/agent-gateway';
 import { buildPairingUrls } from '@tsdi/agent-gateway';
 import { AgentCliOptions } from './config';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
@@ -16,6 +17,30 @@ export interface AgentServeOptions extends AgentCliOptions {
     webPort?: number | string;
     static?: string;
     token?: string;
+    mdns?: boolean;
+}
+
+/**
+ * Gateway config for `serve`. A non-loopback bind without an explicit token
+ * gets a generated one: exposing the agent API on the LAN unauthenticated
+ * would let anyone drive tools.
+ */
+export function buildServeGatewayConfig(options: AgentServeOptions, staticDir?: string): GatewayConfig {
+    const host = String(options.webHost || '127.0.0.1').trim() || '127.0.0.1';
+    const port = Number(options.webPort || 3100);
+    let token = String(options.token || '').trim();
+    if (!token && !['127.0.0.1', 'localhost', '::1', '[::1]'].includes(host)) {
+        token = crypto.randomBytes(16).toString('hex');
+    }
+    const hasAssets = !!staticDir && fs.existsSync(path.join(staticDir, 'index.html'));
+    return {
+        host,
+        port,
+        authToken: token || undefined,
+        staticDir: hasAssets ? staticDir : undefined,
+        mdns: options.mdns === true,
+        cors: false
+    };
 }
 
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]', '0.0.0.0', '::', '[::]']);
@@ -58,23 +83,18 @@ export async function runAgentServe(options: AgentServeOptions = {}): Promise<an
     const resolved = config.resolve(options);
     await ensureAgentWorkspace(resolved);
     const runtimeAgentOptions = buildConsoleAgentOptions(resolved, options, {});
-    const host = String(options.webHost || '127.0.0.1').trim() || '127.0.0.1';
-    const port = Number(options.webPort || 3100);
-    const token = String(options.token || '').trim();
     const staticDir = resolveAgentWebDir(options.static);
     if (!staticDir) {
         process.stderr.write('Web assets not found; run "npm run build:web" in @tsdi/agent-ui or pass --static <dir>.\n');
     }
+    const gatewayConfig = buildServeGatewayConfig(options, staticDir);
+    const host = String(gatewayConfig.host || '127.0.0.1');
+    const port = Number(gatewayConfig.port || 3100);
+    const token = String(gatewayConfig.authToken || '');
 
     const app = await Application.run(AgentGatewayModule, {
         providers: [
-            ...provideAgentGateway({
-                host,
-                port,
-                authToken: token || undefined,
-                staticDir: staticDir && fs.existsSync(path.join(staticDir, 'index.html')) ? staticDir : undefined,
-                cors: false
-            }),
+            ...provideAgentGateway(gatewayConfig),
             ...buildAgentRuntimeProviders(config, resolved, options),
             { provide: AGENT_OPTIONS, useValue: runtimeAgentOptions }
         ]
@@ -90,8 +110,9 @@ export async function runAgentServe(options: AgentServeOptions = {}): Promise<an
         '',
         `  TSDI Agent web console: ${base}/`,
         `  Pairing link (one-time, 5 minutes):`,
-        ...pairingUrls.map((url: string) => `    ${url}`),
+        ...(pairingUrls.map((url: string) => `    ${url}`)),
         token ? `  Terminal: tsdi-agent attach ${base} --token ${token}` : `  Terminal: tsdi-agent attach ${base}`,
+        ...(gatewayConfig.mdns ? [`  Discover (mDNS): tsdi-agent attach --mdns`] : []),
         ''
     ];
     process.stdout.write(lines.join('\n'));
