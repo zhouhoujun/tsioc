@@ -118,7 +118,7 @@ export class AuthMiddleware {
         if (!authOptions) {
             setRequestAuth(req, {
                 token: null,
-                principalId: LOCAL_PRINCIPAL_ID,
+                principalId: this.config.localPrincipalId || LOCAL_PRINCIPAL_ID,
                 role: 'owner'
             });
             return true;

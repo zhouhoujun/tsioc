@@ -50,6 +50,8 @@ export interface GatewayApprovalWebhook {
 export interface GatewayConfig {
     /** HTTP listen host */
     host?: string;
+    /** Principal used for unauthenticated loopback requests (default `gateway-local`). */
+    localPrincipalId?: string;
     /** HTTP listen port */
     port?: number;
     /** Bearer token for auth. If unset, auth is disabled. */

@@ -18,8 +18,14 @@ import {
 } from '@tsdi/agent-ui/console';
 import {
     AgentAppServerModule,
+    AgentGatewayModule,
+    GatewayBootstrap,
+    GatewayServer,
     MdnsServiceDiscovery,
+    PairingStore,
     SessionOwnerStore,
+    buildPairingUrls,
+    provideAgentGateway,
     startApprovalRemoteServer
 } from '@tsdi/agent-gateway';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
@@ -28,6 +34,7 @@ import { AgentCliOptions } from './config';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { ensureAgentWorkspace } from './run-command';
 import { buildAgentRuntimeProviders } from './agent-runtime-providers';
+import { buildServeGatewayConfig, resolveAgentWebDir } from './serve';
 import { renderPairingQrForUrls } from './pair-qr';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -94,6 +101,24 @@ export async function runAgentConsole(
     await ensureAgentWorkspace(resolved);
     const gatewayUrl = String((options as AgentAttachOptions).gatewayUrl || '').trim().replace(/\/+$/, '');
 
+    const webOptions = options as any;
+    const webEnabled = webOptions.web === true;
+    if (webEnabled && gatewayUrl) {
+        throw new Error('chat --web cannot be combined with attach; run it in a local console.');
+    }
+    const webStatic = webEnabled ? resolveAgentWebDir(webOptions.webStatic) : undefined;
+    const webConfig = webEnabled
+        ? { ...buildServeGatewayConfig({ webHost: webOptions.webHost, webPort: webOptions.webPort ?? 0, token: webOptions.webToken, mdns: webOptions.webMdns } as any, webStatic), localPrincipalId: 'local-system' }
+        : null;
+    let webRuntime: { pairing: PairingStore; port: number; host: string } | null = null;
+    const localPair = webConfig ? async () => {
+        if (!webRuntime) {
+            return null;
+        }
+        const entry = webRuntime.pairing.generate();
+        const urls = buildPairingUrls({ host: webRuntime.host, port: webRuntime.port } as any, entry.code, webRuntime.port);
+        return urls.length ? { urls, qr: renderPairingQrForUrls(urls), code: entry.code, expiresAt: entry.expiresAt } : null;
+    } : undefined;
     const gatewayPort = Number((options as AgentGatewayOptions).gatewayPort || 0);
     const gatewayToken = String((options as AgentGatewayOptions).gatewayToken || '').trim();
     const approverEnv = String(process.env.TSDI_AGENT_APPROVER_TOKENS || '').trim();
@@ -103,9 +128,10 @@ export async function runAgentConsole(
 
     const ctx = await runConsoleTui(resolved, options, agentOptions, [
         ...buildAgentRuntimeProviders(config, resolved, options, gatewayUrl ? join(tmpdir(), `tsdi-agent-attach-${process.pid}`) : undefined),
-        ...extraProviders
+        ...extraProviders,
+        ...(webConfig ? provideAgentGateway(webConfig) : [])
     ], ui, {
-        deps: gatewayUrl ? [ServerCommonModule] : [ServerCommonModule, AgentAppServerModule],
+        deps: gatewayUrl ? [ServerCommonModule] : [ServerCommonModule, AgentAppServerModule, ...(webConfig ? [AgentGatewayModule] : [])],
         persistCommandOutput: true,
         pair: gatewayUrl ? async () => {
             const response = await fetch(`${gatewayUrl}/api/pair/create`, {
@@ -118,7 +144,7 @@ export async function runAgentConsole(
             const payload = await response.json() as { code?: string; expiresAt?: number; urls?: string[] };
             const urls = Array.isArray(payload.urls) ? payload.urls.map(String).filter(Boolean) : [];
             return urls.length ? { url: urls[0], urls, qr: renderPairingQrForUrls(urls), code: payload.code, expiresAt: payload.expiresAt } : null;
-        } : undefined,
+        } : localPair,
         restart: (sessionId: string) => {
             // Re-enter this launcher in-process once the old app has restored
             // the terminal. A child process would outlive the shell's job and
@@ -126,6 +152,20 @@ export async function runAgentConsole(
             void runAgentConsole({ ...options, session: sessionId }, agentOptions, extraProviders, ui);
         }
     });
+
+    if (webConfig) {
+        const gateway = ctx.get ? ctx.get(GatewayServer) as GatewayServer : undefined;
+        if (gateway && !gateway.address?.()) {
+            const bootstrap = ctx.get ? ctx.get(GatewayBootstrap) as GatewayBootstrap : undefined;
+            await bootstrap?.start?.();
+        }
+        const address = gateway?.address?.();
+        webRuntime = {
+            pairing: ctx.get ? ctx.get(PairingStore) as PairingStore : new PairingStore(),
+            port: address?.port ?? Number(webConfig.port),
+            host: String(webConfig.host || '127.0.0.1')
+        };
+    }
 
     if (gatewayPort > 0) {
         const manager = ctx?.get ? ctx.get(ApprovalManager) : undefined;

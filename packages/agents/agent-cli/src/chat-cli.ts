@@ -20,6 +20,12 @@ export function registerChatCli(program: Command): void {
         .option('--gateway-port <port>', 'Expose pending approvals over loopback HTTP for third-party systems.')
         .option('--gateway-host <host>', 'Bind host for the approvals API (default 127.0.0.1).')
         .option('--gateway-token <token>', 'Operator bearer token for the approvals API (acts as an approver).')
+        .option('--web', 'Expose this TUI session through the local web console (use /pair or /web to open a browser).')
+        .option('--web-host <host>', 'Web console bind host (default 127.0.0.1).')
+        .option('--web-port <port>', 'Web console port (default 0 = ephemeral).')
+        .option('--web-token <token>', 'Bearer token for the web console (generated for non-loopback binds).')
+        .option('--web-static <dir>', 'Web assets directory (defaults to @tsdi/agent-ui/web).')
+        .option('--web-mdns', 'Advertise the web console through mDNS.')
         .action(async (options: any) => {
             await runAgentConsole(options);
         });
