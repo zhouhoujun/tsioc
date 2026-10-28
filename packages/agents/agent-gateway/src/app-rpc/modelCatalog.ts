@@ -1,4 +1,76 @@
-import { AgentOptions, fetchAgentModelCatalog } from '@tsdi/agent';
+import { AgentModelConfig, AgentModelOptions, AgentOptions, DEFAULT_AGENT_MODEL_CATALOG, defaultAgentProviderRegistry, fetchAgentModelCatalog } from '@tsdi/agent';
+
+const CONNECTION_FIELDS = ['model', 'baseUrl', 'apiKey', 'apiKeyEnv', 'headers', 'timeoutMs'] as const;
+
+/** True when the provider is the active one, a configured profile, or a built-in provider. */
+export function hasModelProvider(options: AgentOptions | undefined, provider: string): boolean {
+    const id = String(provider || '').trim();
+    const model = options?.model;
+    if (!id) {
+        return false;
+    }
+    if (String(model?.provider || '').trim() === id) {
+        return true;
+    }
+    if (Object.values(model?.profiles || {}).some(profile => String(profile?.provider || '').trim() === id)) {
+        return true;
+    }
+    return !!defaultAgentProviderRegistry.get(id);
+}
+
+/**
+ * Connection config for a provider. Selecting another provider must not keep
+ * the active provider's baseUrl/apiKey/headers (that made every catalog look
+ * like the active OpenAI-compatible endpoint).
+ */
+export function resolveModelForProvider(options: AgentOptions | undefined, provider: string): AgentModelOptions {
+    const model = (options?.model || {}) as AgentModelOptions;
+    const id = String(provider || '').trim();
+    if (!id || id === String(model.provider || '').trim()) {
+        return model;
+    }
+    const connection = (config: AgentModelConfig | undefined, providerId: string): AgentModelConfig => {
+        if (!config) {
+            return { provider: providerId };
+        }
+        const picked: AgentModelConfig = { provider: providerId };
+        for (const field of CONNECTION_FIELDS) {
+            const value = (config as any)[field];
+            if (value !== undefined) {
+                (picked as any)[field] = value;
+            }
+        }
+        return picked;
+    };
+    const profile = Object.values(model.profiles || {}).find(entry => String(entry?.provider || '').trim() === id);
+    if (profile) {
+        return { ...model, ...connection(profile, id) };
+    }
+    const known = defaultAgentProviderRegistry.get(id);
+    if (known) {
+        return {
+            ...model,
+            ...connection({ provider: known.id, model: known.models?.[0]?.id, baseUrl: known.baseUrl, apiKeyEnv: known.apiKeyEnv } as AgentModelConfig, known.id)
+        };
+    }
+    return { ...model, provider: id };
+}
+
+/** Apply a catalog model (possibly not in the bundled registry) to the runtime options. */
+export function activateCatalogModel(options: AgentOptions, providerId: string, modelId: string, reasoningEffort?: 'low' | 'medium' | 'high' | 'max'): { provider: string; model: string; reasoningEffort?: 'low' | 'medium' | 'high' | 'max' } {
+    const model = options.model || {};
+    const resolved = resolveModelForProvider(options, providerId);
+    const next = {
+        ...model,
+        ...resolved,
+        provider: providerId,
+        model: modelId,
+        defaultProfile: undefined,
+        ...(reasoningEffort !== undefined ? { reasoningEffort } : {})
+    };
+    options.model = next;
+    return { provider: providerId, model: modelId, reasoningEffort: next.reasoningEffort };
+}
 
 export async function resolveModelCatalog(options: AgentOptions | undefined, provider?: string): Promise<{
     provider: string;
@@ -6,15 +78,33 @@ export async function resolveModelCatalog(options: AgentOptions | undefined, pro
     routingSupported: boolean;
     models: Array<{ id: string; name?: string; effort?: unknown }>;
 }> {
-    const model = options?.model || {};
+    const selected = String(provider || '').trim();
+    const resolved = resolveModelForProvider(options, selected);
+    const known = selected ? defaultAgentProviderRegistry.get(selected) : undefined;
+    const fallbackModels = (known?.models || []).map(entry => ({ id: entry.id, name: (entry as any).name }));
+    const fallback = {
+        provider: known?.id || selected || String(resolved.provider || ''),
+        source: 'static',
+        models: fallbackModels
+    };
+    if (!selected && !String(resolved.baseUrl || '').trim()) {
+        // Active provider with no configured endpoint: keep the bundled catalog
+        // (the previous default) instead of inventing a provider fallback.
+        return { ...DEFAULT_AGENT_MODEL_CATALOG, provider: String(DEFAULT_AGENT_MODEL_CATALOG.provider || resolved.provider || ''), routingSupported: false };
+    }
+    if (!String(resolved.baseUrl || '').trim()) {
+        return { ...fallback, routingSupported: false };
+    }
     const catalog = await fetchAgentModelCatalog({
-        baseUrl: String(model.baseUrl || ''),
-        apiKey: model.apiKey,
-        apiKeyEnv: model.apiKeyEnv,
-        timeoutMs: model.timeoutMs
+        baseUrl: String(resolved.baseUrl || ''),
+        apiKey: resolved.apiKey,
+        apiKeyEnv: resolved.apiKeyEnv,
+        timeoutMs: resolved.timeoutMs ?? 10000,
+        headers: resolved.headers,
+        ...(selected ? { fallback: fallback as any } : {})
     });
     return {
-        provider: catalog.provider || String(provider || model.provider || '').trim(),
+        provider: catalog.provider || selected || String(resolved.provider || ''),
         source: catalog.source,
         routingSupported: false,
         models: catalog.models.map(entry => ({ id: entry.id, name: entry.name, effort: entry.effort }))

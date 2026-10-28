@@ -131,7 +131,7 @@ import {
     normalizeAgentConsoleTitle
 } from './AgentConsoleTitle';
 import { AgentConsoleRawModeStore } from './AgentConsoleRawMode';
-import { AgentConsoleSettingsData, AgentConsoleSettingsStore, applyPersistedPreferences } from './AgentConsoleSettingsStore';
+import { AgentConsoleSettingsData, AgentConsoleSettingsStore, applyPersistedModelProfile, applyPersistedPreferences } from './AgentConsoleSettingsStore';
 import {
     AgentConsoleAppAuthorizer,
     AgentConsoleAppStatus
@@ -1589,7 +1589,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         await this.initializeInputHistory();
         // No explicit session means a fresh conversation. Resuming the state
         // default here replays the previous transcript on every console start.
-        await this.openSession(explicitSessionId || (freshStartup ? undefined : this.state.sessionId) || undefined, { persistCurrentHistory: false, fresh: freshStartup, missing: missingResume }); if (freshStartup) { await this.bootstrapStateFromAppRpc(this.state.sessionId); }
+        await this.openSession(explicitSessionId || (freshStartup ? undefined : this.state.sessionId) || undefined, { persistCurrentHistory: false, fresh: freshStartup, missing: missingResume }); if (freshStartup) { await this.bootstrapStateFromAppRpc(this.state.sessionId); } if (this.appRpc && this.state.modelProfile) { await this.activateModelProfile(this.state.modelProfile, undefined, true); }
         if (this.state.securityLevel) {
             await applySecurityLevel(this.policyCommandHost(), this.state.securityLevel, { notify: false, persist: false });
         }
@@ -2581,7 +2581,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         } else if (typeof persisted.timelineMode === 'boolean') {
             this.state.setTimelineMode(persisted.timelineMode ? 'compact' : 'off');
         }
-        applyPersistedLayout(this.state, persisted, () => this.surfaceAccessor?.restartRendering?.()); applyPersistedPreferences(this.options, persisted);
+        applyPersistedLayout(this.state, persisted, () => this.surfaceAccessor?.restartRendering?.()); applyPersistedPreferences(this.options, persisted); applyPersistedModelProfile(this.options, persisted.modelProfile); if (persisted.modelProfile) { this.state.setModelProfile(persisted.modelProfile); }
         if (persisted.thinkingLevel) {
             this.modelReasoningEffort = persisted.thinkingLevel;
             this.options.model = this.options.model || {};
@@ -3703,8 +3703,8 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return buildGitSnapshotDiffLines(diff);
     }
 
-    protected async activateModelProfile(profileName: string): Promise<void> {
-        return activateModelProfile(this.modelCtx(), profileName);
+    protected async activateModelProfile(profileName: string, reasoningEffort?: any, silent = false): Promise<void> {
+        return activateModelProfile(this.modelCtx(), profileName, reasoningEffort, silent);
     }
 
     protected async restoreModelStore(): Promise<void> {

@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { activateModelProfile, loadModelProfileOptions } from '../src/AgentConsoleModelHandlers';
+import { activateModelProfile, fetchProviderCatalog, loadModelProfileOptions, openModelSwitcher } from '../src/AgentConsoleModelHandlers';
 
 function context() {
     return {
@@ -37,17 +37,60 @@ function context() {
 
 @Suite('model catalog options')
 export class ModelCatalogOptionsTest {
-    @Test('merges live catalog models with configured profiles')
-    async mergesCatalog() {
+    @Test('loads configured profiles quickly and fetches live catalog models per provider')
+    async profilesAndLiveCatalog() {
         const options = await loadModelProfileOptions(context());
         const values = options.map(option => option.value);
         expect(values).toContain('flash');
-        expect(values).toContain('deepseek/deepseek-v4-pro');
+        expect(values).not.toContain('deepseek/deepseek-v4-pro');
 
-        const pro = options.find(option => option.value === 'deepseek/deepseek-v4-pro')!;
+        const live = await fetchProviderCatalog(context(), 'deepseek');
+        const pro = live.options.find(option => option.value === 'deepseek/deepseek-v4-pro')!;
         expect(pro.description).toBe('deepseek / deepseek-v4-pro');
         expect(pro.detail).toContain('low, high');
         expect(pro.detail).toContain('default high');
+    }
+
+    @Test('fetches the selected provider catalog live and Esc returns to the provider list')
+    async liveCatalogAndEscBack() {
+        const calls: Array<{ method: string; params: any }> = [];
+        const titles: string[] = [];
+        const captured: any[] = [];
+        let selects = 0;
+        const ctx: any = {
+            translator: null,
+            appRpc: {
+                request: async (method: string, params: any) => {
+                    calls.push({ method, params });
+                    if (method === 'model.list') {
+                        return [
+                            { name: 'gpt-5.5', provider: 'openai-compatible', model: 'gpt-5.5', selected: true },
+                            { name: 'deepseek-fast', provider: 'deepseek', model: 'deepseek-flash' }
+                        ];
+                    }
+                    if (method === 'model.catalog') {
+                        return params?.provider === 'openai-compatible'
+                            ? { provider: 'openai-compatible', models: [{ id: 'live-model', name: 'Live' }] }
+                            : { provider: params?.provider || 'deepseek', models: [] };
+                    }
+                    return undefined;
+                }
+            },
+            state: { sessionId: 's1', modelProfile: 'gpt-5.5' },
+            options: () => ({ model: { profiles: {} } }),
+            notify() {},
+            select: async (title: string, options: any[]) => {
+                titles.push(title);
+                captured.push(options);
+                selects += 1;
+                if (selects === 1) return '__provider__:openai-compatible';
+                return undefined;
+            }
+        };
+        await openModelSwitcher(ctx);
+        expect(titles.filter(title => title.includes('Model providers')).length).toEqual(2);
+        expect(captured[1].map((option: any) => option.value)).toContain('openai-compatible/live-model');
+        expect(calls.some(entry => entry.method === 'model.catalog' && entry.params?.provider === 'openai-compatible')).toEqual(true);
     }
 
     @Test('active model selection forwards the chosen reasoning effort')
@@ -73,11 +116,13 @@ export class ModelCatalogOptionsTest {
             getFavorites: () => [], setFavorites() {},
             getReasoningEffort: () => 'medium' as const,
             setReasoningEffort() {},
+            persistSettings: async (patch: any) => { calls.push({ method: 'persistSettings', params: patch }); },
             resolveHistoryWorkspace: () => ''
         };
 
         await activateModelProfile(ctx, 'deepseek/deepseek-v4-pro', 'max');
         expect(calls[0].method).toBe('model.activate');
+        expect(calls.some(call => call.method === 'persistSettings' && call.params.modelProfile === 'deepseek/deepseek-v4-pro')).toEqual(true);
         expect(calls[0].params.reasoningEffort).toBe('max');
         expect(calls[0].params.name).toBe('deepseek/deepseek-v4-pro');
     }

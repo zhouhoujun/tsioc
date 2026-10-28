@@ -8,6 +8,7 @@ export interface ConsoleUiSettingsPatch {
     securityLevel?: string | null;
     yoloMode?: boolean;
     thinkingLevel?: string | null;
+    modelProfile?: string | null;
 }
 
 const SECURITY_LEVELS = ['read-only', 'ask', 'auto', 'full'];
@@ -33,9 +34,10 @@ export function applyConsoleUiSettings(options: AgentOptions, params: ConsoleUiS
     }
     const securityLevel = SECURITY_LEVELS.includes(String(params.securityLevel)) ? String(params.securityLevel) : undefined;
     const thinkingLevel = ['low', 'medium', 'high', 'max'].includes(String(params.thinkingLevel)) ? String(params.thinkingLevel) : undefined;
+    const modelProfile = typeof params.modelProfile === 'string' && params.modelProfile.trim() ? params.modelProfile.trim() : undefined;
     (options as any).ui = ui;
-    persistConsoleUiSettings(options, ui, securityLevel, params.yoloMode, thinkingLevel);
-    return { personality: ui.personality, memoryInjection: ui.memoryInjection, securityLevel, yoloMode: params.yoloMode, thinkingLevel };
+    persistConsoleUiSettings(options, ui, securityLevel, params.yoloMode, thinkingLevel, modelProfile);
+    return { personality: ui.personality, memoryInjection: ui.memoryInjection, securityLevel, yoloMode: params.yoloMode, thinkingLevel, modelProfile };
 }
 
 /** Read one console store file from the gateway workspace (web console clients). */
@@ -74,7 +76,7 @@ function consoleStoreFile(workspace: string, name: string): string | null {
 }
 
 /** Read the persisted console preferences for a workspace (serve startup). */
-export function readConsoleUiSettings(workspace: string): { personality?: string; memoryInjection?: boolean; securityLevel?: string; yoloMode?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max' } {
+export function readConsoleUiSettings(workspace: string): { personality?: string; memoryInjection?: boolean; securityLevel?: string; yoloMode?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max'; modelProfile?: string } {
     const dir = String(workspace || '').trim();
     if (!dir) {
         return {};
@@ -86,7 +88,8 @@ export function readConsoleUiSettings(workspace: string): { personality?: string
             memoryInjection: typeof parsed?.memoryInjection === 'boolean' ? parsed.memoryInjection : undefined,
             securityLevel: SECURITY_LEVELS.includes(String(parsed?.securityLevel)) ? parsed.securityLevel : undefined,
             yoloMode: typeof parsed?.yoloMode === 'boolean' ? parsed.yoloMode : undefined,
-            thinkingLevel: ['low', 'medium', 'high', 'max'].includes(String(parsed?.thinkingLevel)) ? parsed.thinkingLevel : undefined
+            thinkingLevel: ['low', 'medium', 'high', 'max'].includes(String(parsed?.thinkingLevel)) ? parsed.thinkingLevel : undefined,
+            modelProfile: typeof parsed?.modelProfile === 'string' && parsed.modelProfile.trim() ? parsed.modelProfile.trim() : undefined
         };
     } catch {
         return {};
@@ -98,7 +101,8 @@ function persistConsoleUiSettings(
     ui: Record<string, any>,
     securityLevel?: string,
     yoloMode?: boolean,
-    thinkingLevel?: string
+    thinkingLevel?: string,
+    modelProfile?: string
 ): void {
     const workspace = String((options as any).workspace || '').trim();
     if (!workspace) {
@@ -129,6 +133,9 @@ function persistConsoleUiSettings(
     }
     if (thinkingLevel) {
         next.thinkingLevel = thinkingLevel;
+    }
+    if (modelProfile) {
+        next.modelProfile = modelProfile;
     }
     try {
         fs.mkdirSync(path.dirname(file), { recursive: true });

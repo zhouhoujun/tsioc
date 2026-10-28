@@ -109,6 +109,9 @@ export const AGENT_UI_MENU_EN: Record<string, any> = {
         connectionOk: 'Connection OK',
         connectionFailed: 'Connection failed',
         steps: {
+            modelCustom: 'Custom model…',
+            modelCustomDescription: 'Enter a model id manually',
+            modelLiveHelp: 'Live models from {provider} ({count}); choose one.',
             providerLabel: 'Choose a provider',
             providerHelp: 'Pick a provider to connect. Custom providers let you bring your own API URL.',
             providerChoiceTitle: 'Add provider · choose provider',
@@ -341,6 +344,9 @@ export const AGENT_UI_MENU_ZH: Record<string, any> = {
         connectionOk: '连接成功',
         connectionFailed: '连接失败',
         steps: {
+            modelCustom: '自定义模型…',
+            modelCustomDescription: '手动输入模型 id',
+            modelLiveHelp: '{provider} 的实时模型（{count} 个），请选择。',
             providerLabel: '选择提供方',
             providerHelp: '选择要连接的提供方；自定义提供方可自带 API 地址。',
             providerChoiceTitle: '添加提供方 · 选择提供方',

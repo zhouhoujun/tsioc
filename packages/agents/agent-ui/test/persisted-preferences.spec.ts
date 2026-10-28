@@ -4,7 +4,7 @@ import * as path from 'path';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { runMemoriesCommand, runPersonalityCommand } from '../src/AgentConsolePreferenceCommands';
-import { AgentConsoleSettingsStore, applyPersistedPreferences } from '../src/AgentConsoleSettingsStore';
+import { AgentConsoleSettingsStore, applyPersistedModelProfile, applyPersistedPreferences } from '../src/AgentConsoleSettingsStore';
 import { TestFileAdapter } from './_helpers';
 
 function preferenceHost() {
@@ -69,6 +69,34 @@ export class PersistedPreferencesTest {
         expect(options.model.model).toEqual('gpt-6.1-sol');
     }
 
+    @Test('applyPersistedModelProfile restores the active profile (and live provider/model ids)')
+    restoresModelProfile() {
+        const options: any = {
+            model: {
+                provider: 'openai-compatible',
+                model: 'gpt-5.5',
+                profiles: { 'deepseek-fast': { provider: 'deepseek', model: 'deepseek-flash', baseUrl: 'https://api.deepseek.com' } }
+            }
+        };
+        applyPersistedModelProfile(options, 'deepseek-fast');
+        expect(options.model.defaultProfile).toEqual('deepseek-fast');
+        expect(options.model.provider).toEqual('deepseek');
+        expect(options.model.model).toEqual('deepseek-flash');
+
+        const catalog: any = { model: { provider: 'openai-compatible', model: 'gpt-5.5', profiles: { 'alt': { provider: 'alt', model: 'x', baseUrl: 'https://alt.example' } } } };
+        applyPersistedModelProfile(catalog, 'alt/live-model');
+        expect(catalog.model.provider).toEqual('alt');
+        expect(catalog.model.model).toEqual('live-model');
+        expect(catalog.model.baseUrl).toEqual('https://alt.example');
+
+        const known: any = { model: { provider: 'openai-compatible', model: 'gpt-5.5', baseUrl: 'https://old.example', apiKey: 'old' } };
+        applyPersistedModelProfile(known, 'deepseek/gpt-6.1-sol');
+        expect(known.model.provider).toEqual('deepseek');
+        expect(known.model.model).toEqual('gpt-6.1-sol');
+        expect(known.model.baseUrl).toContain('deepseek.com');
+        expect(known.model.apiKey).toBeUndefined();
+    }
+
     @Test('settings store round-trips personality and memory injection')
     async storeRoundTrip() {
         const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ui-prefs-'));
@@ -79,8 +107,9 @@ export class PersistedPreferencesTest {
             expect(loaded.personality).toEqual('friendly');
             expect(loaded.memoryInjection).toEqual(false);
 
-            await store.save(workspace, { personality: 'friendly', memoryInjection: true });
+            await store.save(workspace, { personality: 'friendly', memoryInjection: true, modelProfile: 'deepseek-fast' });
             expect((await store.load(workspace)).memoryInjection).toEqual(true);
+            expect((await store.load(workspace)).modelProfile).toEqual('deepseek-fast');
         } finally {
             fs.rmSync(workspace, { recursive: true, force: true });
         }

@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { agentUiChinese, agentUiEnglish } from '../src/agent-ui.i18n';
-import { getModelProfileOptions, loadModelProfileOptions, openModelSwitcher } from '../src/AgentConsoleModelHandlers';
+import { fetchProviderCatalog, getModelProfileOptions, loadModelProfileOptions, openModelSwitcher } from '../src/AgentConsoleModelHandlers';
 import { runThemeCommand } from '../src/AgentConsoleRuntimeCommands';
 import { openSettingsLanguage, runSettingsCommand } from '../src/AgentConsoleSettingsCommands';
 import { runSkillsCommand } from '../src/AgentConsoleExtensionCommands';
@@ -61,7 +61,7 @@ export class MenuI18nTest {
         expect(options[0].detail).toContain('思考预算：1000');
     }
 
-    @Test('catalog model details and effort row are localized')
+    @Test('live catalog model details and effort row are localized')
     async catalogLocalized() {
         const ctx = modelContext(zh, {});
         ctx.appRpc = {
@@ -78,9 +78,8 @@ export class MenuI18nTest {
                 return undefined;
             }
         };
-        const options = await loadModelProfileOptions(ctx);
-        expect(options[0].label).toEqual('flash [当前]');
-        const pro = options.find(option => option.value === 'deepseek/deepseek-v4-pro')!;
+        const live = await fetchProviderCatalog(ctx, 'deepseek');
+        const pro = live.options.find(option => option.value === 'deepseek/deepseek-v4-pro')!;
         expect(pro.detail).toContain('提供方：deepseek');
         expect(pro.detail).toContain('推理强度：low, high（默认 high）');
     }

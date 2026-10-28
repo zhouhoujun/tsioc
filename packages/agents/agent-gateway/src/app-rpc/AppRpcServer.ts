@@ -2,7 +2,7 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { UuidGenerator } from '@tsdi/core';
 import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeAgentWorkspaceIdentity, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, CommandExchangeStore, CommandExchangeRecord, CommandExchangeStaleError, parseCommandExchangeRecord, redactCommandExchangeRecord, ApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, redactCommandOutputEntry, normalizeAgentRpcRequestMeta, COMMAND_EXCHANGE_STORE, BACKGROUND_TASK_HISTORY_STORE, BackgroundTaskHistoryStore, BackgroundTaskPageOptions, collectDelegationSessionIds, ExchangeMetrics, ExchangeMetricsSnapshot, AGENT_WORKSPACE_TRUST } from '@tsdi/agent';
-import { resolveModelCatalog } from './modelCatalog';
+import { activateCatalogModel, hasModelProvider, resolveModelCatalog } from './modelCatalog';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -1877,16 +1877,11 @@ export class AppRpcServer {
             const separator = name.indexOf('/');
             const providerId = separator > 0 ? name.slice(0, separator) : '';
             const modelId = separator > 0 ? name.slice(separator + 1) : '';
-            const provider = defaultAgentProviderRegistry.get(providerId);
-            if (!provider || !provider.models.some(model => model.id === modelId)) {
+            if (!providerId || !modelId || !hasModelProvider(this.options, providerId)) {
                 throw new AppRpcError(-32602, `Invalid params: unknown model profile '${name}'`);
             }
-            this.options.model = {
-                ...(this.options.model || {}), provider: provider.id, model: modelId,
-                baseUrl: provider.baseUrl, apiKeyEnv: provider.apiKeyEnv, defaultProfile: undefined,
-                ...(reasoningEffort !== undefined ? { reasoningEffort } : {})
-            };
-            return { sessionId: sessionId || null, modelProfile: name, provider: provider.id, model: modelId, catalog: true, reasoningEffort: this.options.model.reasoningEffort };
+            const activated = activateCatalogModel(this.options, providerId, modelId, reasoningEffort as 'low' | 'medium' | 'high' | 'max' | undefined);
+            return { sessionId: sessionId || null, modelProfile: name, ...activated, catalog: true };
         }
         this.options.model = this.options.model || {};
         this.options.model.defaultProfile = name;

@@ -41,7 +41,7 @@ export interface ModelHandlerContext {
     notify(message: string, duration?: number): void;
     select(title: string, options: AgentConsoleSelectOption[], selectedIndex?: number, hint?: string): Promise<string | undefined>;
     updateTerminalTitle(): void;
-    persistSettings(patch: { thinkingLevel?: EffortLevel }): unknown;
+    persistSettings(patch: { thinkingLevel?: EffortLevel; modelProfile?: string }): unknown;
     addModelProvider?(): void | Promise<void>;
     resolveHistoryWorkspace(): string;
     getFavorites(): string[];
@@ -142,32 +142,6 @@ export async function loadModelProfileOptions(ctx: ModelHandlerContext): Promise
                 ].filter(Boolean).join('\n')
             })).filter((item: AgentConsoleSelectOption) => !!item.value)
             : [];
-        const catalog = await ctx.appRpc.request('model.catalog', {}).catch(() => undefined);
-        const seen = new Set(options.map(option => option.value));
-        if (catalog && Array.isArray(catalog.models)) {
-            for (const entry of catalog.models) {
-                const id = String(entry?.id || '').trim();
-                if (!id) continue;
-                const provider = String(catalog.provider || '').trim();
-                const value = provider ? `${provider}/${id}` : id;
-                if (seen.has(value)) continue;
-                seen.add(value);
-                const levels: string[] = Array.isArray(entry?.effort?.supportedLevels) ? entry.effort.supportedLevels : [];
-                options.push({
-                    label: String(entry?.name || id),
-                    value,
-                    description: [provider, id].filter(Boolean).join(' / '),
-                    detail: [
-                        menuLabel(ctx, 'agent.menu.model.provider', 'Provider: {name}', { name: provider || '-' }),
-                        menuLabel(ctx, 'agent.menu.model.model', 'Model: {name}', { name: id }),
-                        levels.length ? menuLabel(ctx, 'agent.menu.model.effort', 'Effort: {levels} (default {default})', {
-                            levels: levels.join(', '),
-                            default: entry?.effort?.defaultLevel || '-'
-                        }) : ''
-                    ].filter(Boolean).join('\n')
-                });
-            }
-        }
         return options;
     }
     return getModelProfileOptions(ctx);
@@ -183,34 +157,136 @@ export async function openModelSwitcher(ctx: ModelHandlerContext): Promise<void>
         group.push(profile);
         groups.set(provider, group);
     }
-    const options: AgentConsoleSelectOption[] = [...groups.entries()].map(([provider, entries]) => ({
+    const providerOptions: AgentConsoleSelectOption[] = [...groups.entries()].map(([provider, entries]) => ({
         label: provider,
         value: `__provider__:${provider}`,
         description: entries.length === 1
             ? menuLabel(ctx, 'agent.menu.model.configuredOne', '{count} configured model', { count: entries.length })
             : menuLabel(ctx, 'agent.menu.model.configuredMany', '{count} configured models', { count: entries.length })
     }));
-    options.push({
+    providerOptions.push({
         label: menuLabel(ctx, 'agent.menu.model.addProvider', 'Add new provider'),
         value: '__add_provider__',
         description: menuLabel(ctx, 'agent.menu.model.addProviderDescription', 'Configure another provider connection'),
         detail: menuLabel(ctx, 'agent.menu.model.addProviderDetail', 'Opens the guided add-provider wizard.')
     });
-    if (!options.length) {
+    if (!groups.size) {
         ctx.notify(formatAgentUiNotice(ctx.translator, 'modelProfilesConfigured'));
-    }
-    const selected = await ctx.select(
-        menuLabel(ctx, 'agent.menu.model.title', 'Model providers'),
-        options,
-        0
-    );
-    if (selected === '__add_provider__') {
-        await ctx.addModelProvider?.();
         return;
     }
-    if (!selected?.startsWith('__provider__:')) return;
-    const provider = selected.slice('__provider__:'.length);
-    const entries = groups.get(provider) || [];
+
+    let provider: string | null = null;
+    let providerIndex = 0;
+    let modelIndex = 0;
+    let entries: AgentConsoleSelectOption[] = [];
+    let providerModels: any[] = [];
+    let modes: AgentConsoleSelectOption[] = [];
+    while (true) {
+        if (!provider) {
+            const selected = await ctx.select(
+                menuLabel(ctx, 'agent.menu.model.title', 'Model providers'),
+                providerOptions,
+                providerIndex
+            );
+            if (!selected) {
+                return;
+            }
+            if (selected === '__add_provider__') {
+                await ctx.addModelProvider?.();
+                return;
+            }
+            if (!selected.startsWith('__provider__:')) {
+                return;
+            }
+            provider = selected.slice('__provider__:'.length);
+            providerIndex = Math.max(0, providerOptions.findIndex(option => option.value === selected));
+            entries = [...(groups.get(provider) || [])];
+            const fetched = await fetchProviderCatalog(ctx, provider);
+            providerModels = fetched.models;
+            const seen = new Set(entries.map(entry => entry.value));
+            for (const live of fetched.options) {
+                if (seen.has(live.value)) {
+                    continue;
+                }
+                seen.add(live.value);
+                entries.push(live);
+            }
+            modes = buildProviderModes(ctx, entries);
+            modelIndex = 0;
+            if (!modes.length) {
+                ctx.notify(formatAgentUiNotice(ctx.translator, 'providerHasNoModels', { provider }));
+                provider = null;
+                continue;
+            }
+        }
+        const mode = await ctx.select(
+            menuLabel(ctx, 'agent.menu.model.listTitle', '{provider} · model', { provider }),
+            modes,
+            modelIndex
+        );
+        if (!mode) {
+            // Esc on the model list returns to the provider list.
+            provider = null;
+            continue;
+        }
+        modelIndex = Math.max(0, modes.findIndex(option => option.value === mode));
+        if (mode === 'auto') {
+            const tierOf = (value: string): string | undefined => value.match(/(?:^|-)(fast|balanced|strong)$/)?.[1];
+            const fast = entries.find(entry => tierOf(entry.value) === 'fast')?.value;
+            const balanced = entries.find(entry => tierOf(entry.value) === 'balanced')?.value;
+            const strong = entries.find(entry => tierOf(entry.value) === 'strong')?.value;
+            if (!fast || !balanced || !strong) {
+                ctx.notify(formatAgentUiNotice(ctx.translator, 'providerNeedsFastBalancedStrong', { provider }));
+                return;
+            }
+            const model = ctx.options().model || {};
+            model.defaultProfile = undefined;
+            model.complexityRouting = { ...(model.complexityRouting || {}), simple: fast, moderate: balanced, complex: strong };
+            ctx.state.setModelProfile('auto');
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'switchedAutoModel', { provider }));
+            return;
+        }
+        const effort = await pickModelEffort(ctx, mode, provider, providerModels);
+        if (effort === 'back') {
+            // Esc on the effort list returns to the model list.
+            continue;
+        }
+        await activateModelProfile(ctx, mode, effort);
+        return;
+    }
+}
+
+export async function fetchProviderCatalog(ctx: ModelHandlerContext, provider: string): Promise<{ options: AgentConsoleSelectOption[]; models: any[] }> {
+    if (!ctx.appRpc) {
+        return { options: [], models: [] };
+    }
+    const catalog = await ctx.appRpc.request('model.catalog', { provider }).catch(() => undefined);
+    const models: any[] = catalog && Array.isArray(catalog.models) ? catalog.models : [];
+    const catalogProvider = String(catalog?.provider || provider || '').trim();
+    const options = models.map(entry => {
+        const id = String(entry?.id || '').trim();
+        if (!id) {
+            return null;
+        }
+        const levels: string[] = Array.isArray(entry?.effort?.supportedLevels) ? entry.effort.supportedLevels : [];
+        return {
+            label: String(entry?.name || id),
+            value: id.includes('/') ? id : `${catalogProvider}/${id}`,
+            description: [catalogProvider, id].filter(Boolean).join(' / '),
+            detail: [
+                menuLabel(ctx, 'agent.menu.model.provider', 'Provider: {name}', { name: catalogProvider || '-' }),
+                menuLabel(ctx, 'agent.menu.model.model', 'Model: {name}', { name: id }),
+                levels.length ? menuLabel(ctx, 'agent.menu.model.effort', 'Effort: {levels} (default {default})', {
+                    levels: levels.join(', '),
+                    default: entry?.effort?.defaultLevel || '-'
+                }) : ''
+            ].filter(Boolean).join('\n')
+        } as AgentConsoleSelectOption;
+    }).filter((entry): entry is AgentConsoleSelectOption => !!entry);
+    return { options, models };
+}
+
+function buildProviderModes(ctx: ModelHandlerContext, entries: AgentConsoleSelectOption[]): AgentConsoleSelectOption[] {
     const tierOf = (value: string): string | undefined => value.match(/(?:^|-)(fast|balanced|strong)$/)?.[1];
     const hasTiers = entries.some(entry => !!tierOf(entry.value));
     const modes: AgentConsoleSelectOption[] = [];
@@ -230,38 +306,17 @@ export async function openModelSwitcher(ctx: ModelHandlerContext): Promise<void>
         if (tierOf(entry.value)) continue;
         modes.push({ label: entry.label, value: entry.value, description: entry.description, detail: entry.detail });
     }
-    if (!modes.length) {
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'providerHasNoModels', { provider: provider }));
-        return;
-    }
-    const mode = await ctx.select(menuLabel(ctx, 'agent.menu.model.listTitle', '{provider} · model', { provider }), modes, 0);
-    if (!mode) return;
-    if (mode === 'auto') {
-        const fast = entries.find(entry => tierOf(entry.value) === 'fast')?.value;
-        const balanced = entries.find(entry => tierOf(entry.value) === 'balanced')?.value;
-        const strong = entries.find(entry => tierOf(entry.value) === 'strong')?.value;
-        if (!fast || !balanced || !strong) {
-            ctx.notify(formatAgentUiNotice(ctx.translator, 'providerNeedsFastBalancedStrong', { provider: provider }));
-            return;
-        }
-        const model = ctx.options().model || {};
-        model.defaultProfile = undefined;
-        model.complexityRouting = { ...(model.complexityRouting || {}), simple: fast, moderate: balanced, complex: strong };
-        ctx.state.setModelProfile('auto');
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'switchedAutoModel', { provider: provider }));
-        return;
-    }
-    const effort = await pickModelEffort(ctx, mode);
-    await activateModelProfile(ctx, mode, effort);
+    return modes;
 }
 
-async function pickModelEffort(ctx: ModelHandlerContext, name: string): Promise<EffortLevel | undefined> {
+async function pickModelEffort(ctx: ModelHandlerContext, name: string, provider?: string, models?: any[]): Promise<EffortLevel | 'back' | undefined> {
     if (!ctx.appRpc) {
         return undefined;
     }
-    const catalog = await ctx.appRpc.request('model.catalog', {}).catch(() => undefined);
+    const selectedProvider = provider || (name.includes('/') ? name.slice(0, name.indexOf('/')) : undefined);
+    const catalogModels = models ?? (await ctx.appRpc.request('model.catalog', selectedProvider ? { provider: selectedProvider } : {}).catch(() => undefined))?.models;
     const id = name.includes('/') ? name.slice(name.indexOf('/') + 1) : name;
-    const entry = Array.isArray(catalog?.models) ? catalog.models.find((model: any) => model?.id === id) : undefined;
+    const entry = Array.isArray(catalogModels) ? catalogModels.find((model: any) => model?.id === id) : undefined;
     const levels: EffortLevel[] = Array.isArray(entry?.effort?.supportedLevels)
         ? entry.effort.supportedLevels.filter((level: string) => level === 'low' || level === 'medium' || level === 'high' || level === 'max')
         : [];
@@ -286,7 +341,10 @@ async function pickModelEffort(ctx: ModelHandlerContext, name: string): Promise<
         }))
     ];
     const selected = await ctx.select(menuLabel(ctx, 'agent.menu.model.effortTitle', 'Reasoning effort · {id}', { id }), options, 0);
-    if (!selected || selected === 'default') {
+    if (!selected) {
+        return 'back';
+    }
+    if (selected === 'default') {
         return undefined;
     }
     return selected as EffortLevel;
@@ -320,7 +378,7 @@ export async function recordRecentModel(ctx: ModelHandlerContext, name: string):
 
 // ── Activation ───────────────────────────────────────────────────────────────
 
-export async function activateModelProfile(ctx: ModelHandlerContext, profileName: string, reasoningEffort?: EffortLevel): Promise<void> {
+export async function activateModelProfile(ctx: ModelHandlerContext, profileName: string, reasoningEffort?: EffortLevel, silent = false): Promise<void> {
     const name = String(profileName || '').trim();
     if (!name) {
         return;
@@ -340,8 +398,11 @@ export async function activateModelProfile(ctx: ModelHandlerContext, profileName
             ctx.state.setModel(String(result.model));
         }
         ctx.updateTerminalTitle();
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'switchedModelProfile', { name: name }));
+        if (!silent) {
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'switchedModelProfile', { name: name }));
+        }
         await recordRecentModel(ctx, String(result?.modelProfile || name));
+        await ctx.persistSettings({ modelProfile: name });
         return;
     }
     const opts = ctx.options();
@@ -364,8 +425,11 @@ export async function activateModelProfile(ctx: ModelHandlerContext, profileName
         ctx.state.setModel(resolved.model);
     }
     ctx.updateTerminalTitle();
-    ctx.notify(formatAgentUiNotice(ctx.translator, 'switchedModelProfile', { name: name }));
+    if (!silent) {
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'switchedModelProfile', { name: name }));
+    }
     await recordRecentModel(ctx, name);
+    await ctx.persistSettings({ modelProfile: name });
 }
 
 export async function queueNextTurnModelProfile(ctx: ModelHandlerContext, profileName: string): Promise<void> {

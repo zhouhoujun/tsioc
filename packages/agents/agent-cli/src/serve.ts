@@ -5,7 +5,7 @@ import { Application } from '@tsdi/core';
 import { AGENT_OPTIONS } from '@tsdi/agent';
 import { AgentUiConfigService } from '@tsdi/agent-ui';
 import { buildConsoleAgentOptions } from '@tsdi/agent-ui/console';
-import { applyPersistedPreferences } from '@tsdi/agent-ui';
+import { applyPersistedModelProfile, applyPersistedPreferences } from '@tsdi/agent-ui';
 import { AgentGatewayModule, GatewayConfig, GatewayServer, PairingStore, provideAgentGateway } from '@tsdi/agent-gateway';
 import { readConsoleUiSettings } from '@tsdi/agent-gateway';
 import { buildPairingUrls } from '@tsdi/agent-gateway';
@@ -30,7 +30,7 @@ export interface AgentServeOptions extends AgentCliOptions {
  */
 export function buildServeGatewayConfig(options: AgentServeOptions, staticDir?: string): GatewayConfig {
     const host = String(options.webHost || '127.0.0.1').trim() || '127.0.0.1';
-    const port = Number(options.webPort || 3100);
+    const port = Number(options.webPort ?? 3100);
     let token = String(options.token || '').trim();
     if (!token && !['127.0.0.1', 'localhost', '::1', '[::1]'].includes(host)) {
         token = crypto.randomBytes(16).toString('hex');
@@ -86,7 +86,11 @@ export async function runAgentServe(options: AgentServeOptions = {}): Promise<an
     const resolved = config.resolve(options);
     await ensureAgentWorkspace(resolved);
     const runtimeAgentOptions = buildConsoleAgentOptions(resolved, options, {});
-    applyPersistedPreferences(runtimeAgentOptions, readConsoleUiSettings(resolved.workspace));
+    const persistedConsole = readConsoleUiSettings(resolved.workspace);
+    applyPersistedPreferences(runtimeAgentOptions, persistedConsole);
+    if (!String(options.model || '').trim() && !String(options.provider || '').trim()) {
+        applyPersistedModelProfile(runtimeAgentOptions, persistedConsole.modelProfile);
+    }
     const staticDir = resolveAgentWebDir(options.static);
     if (!staticDir) {
         process.stderr.write('Web assets not found; run "npm run build:web" in @tsdi/agent-ui or pass --static <dir>.\n');

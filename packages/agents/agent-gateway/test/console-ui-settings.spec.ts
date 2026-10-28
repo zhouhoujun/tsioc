@@ -58,6 +58,11 @@ export class ConsoleUiSettingsTest {
             expect(readConsoleUiSettings(workspace).thinkingLevel).toEqual('high');
             applyConsoleUiSettings(options, { thinkingLevel: 'ultra' });
             expect(JSON.parse(fs.readFileSync(file, 'utf8')).thinkingLevel).toEqual('high');
+
+            const profile = applyConsoleUiSettings(options, { modelProfile: 'deepseek-fast' });
+            expect(profile.modelProfile).toEqual('deepseek-fast');
+            expect(JSON.parse(fs.readFileSync(file, 'utf8')).modelProfile).toEqual('deepseek-fast');
+            expect(readConsoleUiSettings(workspace).modelProfile).toEqual('deepseek-fast');
         } finally {
             fs.rmSync(workspace, { recursive: true, force: true });
         }

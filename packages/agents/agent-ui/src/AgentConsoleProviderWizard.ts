@@ -97,6 +97,27 @@ export function resolveWizardProviderName(values: AgentWizardValues = {}): strin
     return host || 'custom';
 }
 
+function wizardLiveModels(values: AgentWizardValues): string[] {
+    return Array.isArray(values.availableModels) ? values.availableModels.map(String).filter(Boolean) : [];
+}
+
+function liveModelChoices(values: AgentWizardValues, t: WizardTranslate): AgentConsoleSelectOption[] {
+    return [
+        ...wizardLiveModels(values).map((id, index) => ({ label: id, value: id, shortcut: String(index + 1) })),
+        {
+            label: t('agent.menu.provider.steps.modelCustom', 'Custom model…'),
+            value: '__custom__',
+            description: t('agent.menu.provider.steps.modelCustomDescription', 'Enter a model id manually')
+        }
+    ];
+}
+
+function liveModelIndex(values: AgentWizardValues, current: string | undefined, fallback: number): number {
+    const models = wizardLiveModels(values);
+    const index = current ? models.indexOf(current) : -1;
+    return index >= 0 ? index : Math.max(0, Math.min(models.length - 1, fallback));
+}
+
 function midpointModel(def?: AgentWizardProviderDef): string {
     if (!def?.models.length) {
         return '';
@@ -155,6 +176,8 @@ export const WIZARD_STEP_HANDLERS: Record<AgentWizardStepId, AgentWizardStepHand
         prefill: values => values.baseUrl || resolveWizardProviderDef(values.providerId)?.baseUrl || '',
         applyEnter: (values, value) => {
             values.baseUrl = value.replace(/\/+$/, '');
+            values.availableModels = undefined;
+            values.manualModels = false;
         }
     },
     auth: {
@@ -182,6 +205,8 @@ export const WIZARD_STEP_HANDLERS: Record<AgentWizardStepId, AgentWizardStepHand
         applyChoice: (values, value) => {
             if (value === 'key' || value === 'env') {
                 values.authMode = value;
+                values.availableModels = undefined;
+                values.manualModels = false;
                 if (value === 'env') {
                     values.credential = resolveWizardProviderDef(values.providerId)?.apiKeyEnv || values.credential;
                 }
@@ -199,6 +224,8 @@ export const WIZARD_STEP_HANDLERS: Record<AgentWizardStepId, AgentWizardStepHand
         prefill: values => values.credential || (values.authMode === 'env' ? resolveWizardProviderDef(values.providerId)?.apiKeyEnv || '' : ''),
         applyEnter: (values, value) => {
             values.credential = value;
+            values.availableModels = undefined;
+            values.manualModels = false;
         }
     },
     tiers: {
@@ -225,11 +252,24 @@ export const WIZARD_STEP_HANDLERS: Record<AgentWizardStepId, AgentWizardStepHand
             : t('agent.menu.provider.steps.modelLabel', 'Fast model'),
         help: (values, t) => {
             const def = resolveWizardProviderDef(values.providerId);
+            if (wizardLiveModels(values).length) {
+                return t('agent.menu.provider.steps.modelLiveHelp', 'Live models from {provider} ({count}); choose one.', {
+                    provider: resolveWizardProviderLabel(def, t),
+                    count: wizardLiveModels(values).length
+                });
+            }
             return def?.models.length
                 ? t('agent.menu.provider.steps.modelSuggested', 'Suggested: {model}.', { model: def.models[0] })
                 : t('agent.menu.provider.steps.modelEnter', 'Enter the model identifier to use.');
         },
-        prefill: values => values.modelFast || resolveWizardProviderDef(values.providerId)?.models[0] || '',
+        prefill: values => values.modelFast || wizardLiveModels(values)[0] || resolveWizardProviderDef(values.providerId)?.models[0] || '',
+        choices: (values, t) => liveModelChoices(values, t),
+        choiceIndex: values => liveModelIndex(values, values.modelFast, 0),
+        applyChoice: (values, value) => {
+            if (value !== '__custom__') {
+                values.modelFast = value;
+            }
+        },
         applyEnter: (values, value) => {
             values.modelFast = value;
         }
@@ -239,11 +279,24 @@ export const WIZARD_STEP_HANDLERS: Record<AgentWizardStepId, AgentWizardStepHand
         label: (_values, t) => t('agent.menu.provider.steps.modelBalancedLabel', 'Balanced model'),
         help: (values, t) => {
             const def = resolveWizardProviderDef(values.providerId);
+            if (wizardLiveModels(values).length) {
+                return t('agent.menu.provider.steps.modelLiveHelp', 'Live models from {provider} ({count}); choose one.', {
+                    provider: resolveWizardProviderLabel(def, t),
+                    count: wizardLiveModels(values).length
+                });
+            }
             return def?.models.length
                 ? t('agent.menu.provider.steps.modelSuggested', 'Suggested: {model}.', { model: midpointModel(def) })
                 : t('agent.menu.provider.steps.modelEnterBalanced', 'Enter the balanced model identifier.');
         },
-        prefill: values => values.modelBalanced || midpointModel(resolveWizardProviderDef(values.providerId)) || '',
+        prefill: values => values.modelBalanced || wizardLiveModels(values)[Math.floor((wizardLiveModels(values).length - 1) / 2)] || midpointModel(resolveWizardProviderDef(values.providerId)) || '',
+        choices: (values, t) => liveModelChoices(values, t),
+        choiceIndex: values => liveModelIndex(values, values.modelBalanced, Math.floor((wizardLiveModels(values).length - 1) / 2)),
+        applyChoice: (values, value) => {
+            if (value !== '__custom__') {
+                values.modelBalanced = value;
+            }
+        },
         applyEnter: (values, value) => {
             values.modelBalanced = value;
         }
@@ -253,14 +306,28 @@ export const WIZARD_STEP_HANDLERS: Record<AgentWizardStepId, AgentWizardStepHand
         label: (_values, t) => t('agent.menu.provider.steps.modelStrongLabel', 'Strong model'),
         help: (values, t) => {
             const def = resolveWizardProviderDef(values.providerId);
+            if (wizardLiveModels(values).length) {
+                return t('agent.menu.provider.steps.modelLiveHelp', 'Live models from {provider} ({count}); choose one.', {
+                    provider: resolveWizardProviderLabel(def, t),
+                    count: wizardLiveModels(values).length
+                });
+            }
             return def?.models.length
                 ? t('agent.menu.provider.steps.modelSuggested', 'Suggested: {model}.', { model: def.models[def.models.length - 1] })
                 : t('agent.menu.provider.steps.modelEnterStrong', 'Enter the strong model identifier.');
         },
         prefill: values => {
             const def = resolveWizardProviderDef(values.providerId);
-            const suggested = def?.models.length ? def.models[def.models.length - 1] : '';
+            const live = wizardLiveModels(values);
+            const suggested = live[live.length - 1] || (def?.models.length ? def.models[def.models.length - 1] : '');
             return values.modelStrong || suggested || '';
+        },
+        choices: (values, t) => liveModelChoices(values, t),
+        choiceIndex: values => liveModelIndex(values, values.modelStrong, wizardLiveModels(values).length - 1),
+        applyChoice: (values, value) => {
+            if (value !== '__custom__') {
+                values.modelStrong = value;
+            }
         },
         applyEnter: (values, value) => {
             values.modelStrong = value;
@@ -288,12 +355,13 @@ export function buildProviderWizardSteps(
     steps.push({ id: 'credential', kind: 'enter', label: WIZARD_STEP_HANDLERS.credential.label(values, t) });
     steps.push({ id: 'tiers', kind: 'choose', label: WIZARD_STEP_HANDLERS.tiers.label(values, t) });
     const tiers = values.tiers || 'auto';
-    steps.push({ id: 'model-fast', kind: 'enter', label: WIZARD_STEP_HANDLERS['model-fast'].label(values, t) });
+    const modelKind: 'choose' | 'enter' = wizardLiveModels(values).length && !values.manualModels ? 'choose' : 'enter';
+    steps.push({ id: 'model-fast', kind: modelKind, label: WIZARD_STEP_HANDLERS['model-fast'].label(values, t) });
     if (tiers === 'auto') {
-        steps.push({ id: 'model-balanced', kind: 'enter', label: WIZARD_STEP_HANDLERS['model-balanced'].label(values, t) });
+        steps.push({ id: 'model-balanced', kind: modelKind, label: WIZARD_STEP_HANDLERS['model-balanced'].label(values, t) });
     }
     if (tiers !== 'single') {
-        steps.push({ id: 'model-strong', kind: 'enter', label: WIZARD_STEP_HANDLERS['model-strong'].label(values, t) });
+        steps.push({ id: 'model-strong', kind: modelKind, label: WIZARD_STEP_HANDLERS['model-strong'].label(values, t) });
     }
     steps.push({ id: 'confirm', kind: 'confirm', label: WIZARD_STEP_HANDLERS.confirm.label(values, t) });
     return steps;

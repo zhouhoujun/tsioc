@@ -27,6 +27,9 @@ export interface AgentWizardValues {
     modelFast?: string;
     modelBalanced?: string;
     modelStrong?: string;
+    availableModels?: string[];
+    manualModels?: boolean;
+    modelFetchError?: string;
 }
 
 export interface AgentWizardState {
@@ -170,6 +173,11 @@ export async function handleProviderWizardChoice(ctx: ProviderWizardContext, hol
         }
         const step = providerWizardSteps(holder, wizardTranslate(ctx))[wizard.stepIndex];
         const values = wizard.values;
+        if (value === '__custom__' && step.id.startsWith('model-')) {
+            values.manualModels = true;
+            showProviderWizardStep(ctx, holder);
+            return;
+        }
         applyWizardStepChoice(values, step.id, value);
         wizard.stepIndex += 1;
         showProviderWizardStep(ctx, holder);
@@ -395,8 +403,44 @@ export async function advanceProviderWizard(ctx: ProviderWizardContext, holder: 
             return;
         }
         applyWizardStepEnter(values, step.id, trimmed);
+        if (step.id === 'credential') {
+            await discoverProviderModels(ctx, holder);
+        }
         wizard.stepIndex += 1;
         ctx.state.setInput('', 0);
         ctx.state.inputSecret = false;
         showProviderWizardStep(ctx, holder);
+    }
+
+/** Fetch the provider's live model list before the model steps. */
+export async function discoverProviderModels(ctx: ProviderWizardContext, holder: AgentWizardHolder): Promise<void> {
+        const wizard = holder.wizard;
+        if (!wizard || !ctx.appRpc) return;
+        const values = wizard.values;
+        const def = resolveWizardProviderDef(values.providerId);
+        const baseUrl = String(values.baseUrl || def?.baseUrl || '').replace(/\/+$/, '');
+        values.availableModels = undefined;
+        values.manualModels = false;
+        values.modelFetchError = undefined;
+        if (!/^https?:\/\//i.test(baseUrl)) return;
+        const auth = values.authMode === 'key' && values.credential
+            ? { apiKey: values.credential }
+            : values.authMode === 'env' && values.credential
+                ? { apiKeyEnv: values.credential }
+                : {};
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'fetchingProviderModels', { baseUrl }));
+        const result: any = await ctx.appRpc.request('provider.test', {
+            provider: def?.adapter || 'openai-compatible',
+            baseUrl,
+            ...auth
+        }, ctx.rpcRequestContext()).catch((error: any) => ({ ok: false, models: [], error: error?.message || String(error) }));
+        const models = Array.isArray(result?.models) ? result.models.map(String).filter(Boolean) : [];
+        values.availableModels = models;
+        values.modelFetchError = result?.ok === false ? String(result.error || 'connection failed') : undefined;
+        if (!models.length) {
+            ctx.notify(formatAgentUiNotice(ctx.translator, result?.ok === false ? 'providerModelsFetchFailed' : 'providerModelsEmpty', {
+                error: values.modelFetchError || '',
+                baseUrl
+            }));
+        }
     }

@@ -3,7 +3,7 @@ import * as os from 'os';
 import * as path from 'path';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { applyPersistedPreferences } from '@tsdi/agent-ui';
+import { applyPersistedModelProfile, applyPersistedPreferences } from '@tsdi/agent-ui';
 import { readConsoleUiSettings } from '@tsdi/agent-gateway';
 
 @Suite('serve console preferences')
@@ -17,14 +17,24 @@ export class ServePreferencesTest {
                 personality: 'terse',
                 memoryInjection: false,
                 thinkingLevel: 'max',
-                securityLevel: 'full'
+                securityLevel: 'full',
+                modelProfile: 'deepseek-fast'
             }));
-            const options: any = { ui: {}, model: { model: 'gpt-6.1-sol' } };
-            applyPersistedPreferences(options, readConsoleUiSettings(workspace));
+            const options: any = {
+                ui: {},
+                model: {
+                    model: 'gpt-6.1-sol',
+                    profiles: { 'deepseek-fast': { provider: 'deepseek', model: 'deepseek-flash', baseUrl: 'https://api.deepseek.com' } }
+                }
+            };
+            const persisted = readConsoleUiSettings(workspace);
+            applyPersistedPreferences(options, persisted);
+            applyPersistedModelProfile(options, persisted.modelProfile);
             expect(options.ui.personality).toEqual('terse');
             expect(options.ui.memoryInjection).toEqual(false);
             expect(options.model.reasoningEffort).toEqual('max');
-            expect(options.model.model).toEqual('gpt-6.1-sol');
+            expect(options.model.defaultProfile).toEqual('deepseek-fast');
+            expect(options.model.model).toEqual('deepseek-flash');
         } finally {
             fs.rmSync(workspace, { recursive: true, force: true });
         }

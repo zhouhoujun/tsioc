@@ -1,4 +1,5 @@
 import { FileAdapter } from '@tsdi/common';
+import { defaultAgentProviderRegistry } from '@tsdi/agent';
 import { Injectable, Optional } from '@tsdi/ioc';
 import { AgentConsolePathProvider, resolveAgentConsoleDirectory, resolveAgentConsoleStoreFile } from './AgentConsolePathProvider';
 
@@ -20,6 +21,7 @@ export interface AgentConsoleSettingsData {
     taskFilter?: 'all' | 'failed' | 'rollback' | 'lineage';
     taskLineageRootId?: string;
     planTodoFilter?: 'all' | 'active' | 'blocked' | 'failed';
+    modelProfile?: string;
 }
 
 export function applyPersistedPreferences(
@@ -40,6 +42,44 @@ export function applyPersistedPreferences(
     if (persisted.thinkingLevel) {
         options.model = { ...(options.model || {}), reasoningEffort: persisted.thinkingLevel };
     }
+}
+
+/** Apply a persisted active model profile (or provider/model id) to the runtime options. */
+export function applyPersistedModelProfile(options: any, name?: string | null): void {
+    const profileName = String(name || '').trim();
+    if (!options || !profileName) {
+        return;
+    }
+    const model = { ...(options.model || {}) };
+    const profile = model.profiles?.[profileName];
+    if (profile) {
+        options.model = { ...model, ...profile, defaultProfile: profileName };
+        return;
+    }
+    const separator = profileName.indexOf('/');
+    if (separator <= 0) {
+        return;
+    }
+    const provider = profileName.slice(0, separator);
+    const modelId = profileName.slice(separator + 1);
+    const match = Object.values(model.profiles || {}).find(entry => String((entry as any)?.provider || '') === provider) as any;
+    if (match) {
+        options.model = { ...model, ...match, provider, model: modelId, defaultProfile: undefined };
+        return;
+    }
+    const known = defaultAgentProviderRegistry.get(provider);
+    options.model = known
+        ? {
+            ...model,
+            provider,
+            model: modelId,
+            ...(known.baseUrl ? { baseUrl: known.baseUrl } : {}),
+            ...(known.apiKeyEnv ? { apiKeyEnv: known.apiKeyEnv } : {}),
+            apiKey: undefined,
+            headers: undefined,
+            defaultProfile: undefined
+        }
+        : { ...model, provider, model: modelId, defaultProfile: undefined };
 }
 
 /** Validate persisted console settings; shared by the file store and the web RPC store. */
@@ -67,7 +107,8 @@ export function sanitizeAgentConsoleSettings(parsed: any): AgentConsoleSettingsD
         memoryInjection: typeof parsed?.memoryInjection === 'boolean' ? parsed.memoryInjection : undefined,
         taskFilter: ['all', 'failed', 'rollback', 'lineage'].includes(parsed?.taskFilter) ? parsed.taskFilter : undefined,
         taskLineageRootId: typeof parsed?.taskLineageRootId === 'string' && parsed.taskLineageRootId.trim() ? parsed.taskLineageRootId.trim() : undefined,
-        planTodoFilter: ['all', 'active', 'blocked', 'failed'].includes(parsed?.planTodoFilter) ? parsed.planTodoFilter : undefined
+        planTodoFilter: ['all', 'active', 'blocked', 'failed'].includes(parsed?.planTodoFilter) ? parsed.planTodoFilter : undefined,
+        modelProfile: typeof parsed?.modelProfile === 'string' && parsed.modelProfile.trim() ? parsed.modelProfile.trim() : undefined
     };
 }
 
@@ -107,7 +148,8 @@ export class AgentConsoleSettingsStore {
             ...(typeof data.memoryInjection === 'boolean' ? { memoryInjection: data.memoryInjection } : {}),
             ...(data.taskFilter ? { taskFilter: data.taskFilter } : {}),
             ...(data.taskLineageRootId ? { taskLineageRootId: data.taskLineageRootId } : {}),
-            ...(data.planTodoFilter ? { planTodoFilter: data.planTodoFilter } : {})
+            ...(data.planTodoFilter ? { planTodoFilter: data.planTodoFilter } : {}),
+            ...(data.modelProfile ? { modelProfile: data.modelProfile } : {})
         }, null, 2));
     }
 
