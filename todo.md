@@ -2648,3 +2648,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 缺陷：plain `chat` 里 `/web` 只提示 web console 未运行；用户必须预先 `chat --web`。
 - 修复：本地 console 始终注册 gateway providers，但 `/web` 前不启动/不监听；执行 `/web` 时惰性启动同一运行时 gateway，再用居中对话框展示链接与完整二维码；`/pair` 复用已启动实例并生成新的一次性链接；退出 TUI 时监听随之关闭。
 - 验证：真实 PTY plain `/web` 6/6（启动前无监听、启动后页面 200、退出后无监听）、`chat --web` 配对 5/5；agent-cli 128。
+
+## 小终端配对二维码打磨（2026-10）
+
+- 缺陷：24 行终端上 pairing 对话框被 footer 裁剪，顶部标题/链接/边框丢失；二维码虽可见但链接只剩一条或不显示。
+- 修复：dialog overlay 改为全视口居中；配对内容改为 QR 在前、所有一次性链接在后，标题携带过期时间；24x80（loopback）和 24x100（LAN+loopback）均完整显示二维码与链接。
+- 验证：真实 PTY 小终端 5/5、LAN 配对 5/5；`/web` 按需启动 6/6；agent-ui 1872、agent-cli 128。

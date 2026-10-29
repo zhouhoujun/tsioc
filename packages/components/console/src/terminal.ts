@@ -1464,9 +1464,11 @@ export class TuiTerminalSurface {
             if (!dialogLines.length || !height) {
                 return result;
             }
-            const footer = result.regions.find(region => region.id === footerRegionId);
-            const areaEnd = footer ? footer.startRow : height;
-            const start = Math.max(0, Math.floor((areaEnd - dialogLines.length) / 2));
+            // A modal floats over the whole viewport: tall dialogs (pairing
+            // QR) must not be clipped by the composer/footer. Small command
+            // dialogs remain visually below the transcript because they are
+            // centered in the same full-height area.
+            const start = Math.max(0, Math.floor((height - dialogLines.length) / 2));
             const lines = result.lines.slice();
             while (lines.length < height) {
                 lines.push('');

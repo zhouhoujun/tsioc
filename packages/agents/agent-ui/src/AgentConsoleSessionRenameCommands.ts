@@ -64,7 +64,13 @@ export async function handlePair(ctx: CommandHandlerContext, _args: string, _res
     const minutes = pairing?.expiresAt ? Math.max(1, Math.round((pairing.expiresAt - Date.now()) / 60000)) : 5;
     const notice = formatAgentUiNotice(ctx.translator, 'pairReady', { urls: urls.join('\n'), minutes });
     const qr = String(pairing?.qr || '').trim();
-    const lines = (qr ? `${notice}\n\n${qr}` : notice).split('\n');
-    ctx.state.openTextOverlay(formatAgentPanelLabel(ctx.translator, 'overlay', 'pairTitle', 'pairing'), lines, lines.length);
+    const title = formatAgentPanelLabel(ctx.translator, 'overlay', 'pairTitle', 'pairing');
+    // Keep the QR scannable on a 24-row terminal: the primary link plus the
+    // full QR, with the expiry in the title, fits inside one modal viewport.
+    const compact = `${title} \u00b7 ${minutes} min`;
+    // QR first so a very short terminal clips link/hint rows, never the code.
+    const links = Array.from(new Set(urls));
+    const lines = qr ? [...qr.split('\n'), ...links] : notice.split('\n');
+    ctx.state.openTextOverlay(qr ? compact : title, lines, lines.length);
     return true;
 }

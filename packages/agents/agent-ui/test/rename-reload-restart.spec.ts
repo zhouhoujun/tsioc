@@ -72,7 +72,7 @@ export class OpenCodeParityCommandsTest {
         const body = overlays[0].lines.join('\n');
         expect(body).toContain('http://127.0.0.1:3100/?pair=abc');
         expect(body).toContain('http://192.168.1.9:3100/?pair=abc');
-        expect(body).toContain('5 min');
+        expect(overlays[0].title).toContain('5 min');
         expect(body).toContain('QR-MARKER');
         expect(overlays[0].visibleLines).toEqual(overlays[0].lines.length);
 
