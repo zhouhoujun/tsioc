@@ -78,10 +78,14 @@ export class PersistedPreferencesTest {
                 profiles: { 'deepseek-fast': { provider: 'deepseek', model: 'deepseek-flash', baseUrl: 'https://api.deepseek.com' } }
             }
         };
+        options.model.apiKey = 'old-key';
+        options.model.baseUrl = 'http://old.example';
         applyPersistedModelProfile(options, 'deepseek-fast');
         expect(options.model.defaultProfile).toEqual('deepseek-fast');
         expect(options.model.provider).toEqual('deepseek');
         expect(options.model.model).toEqual('deepseek-flash');
+        expect(options.model.baseUrl).toEqual('https://api.deepseek.com');
+        expect(options.model.apiKey).toBeUndefined();
 
         const catalog: any = { model: { provider: 'openai-compatible', model: 'gpt-5.5', profiles: { 'alt': { provider: 'alt', model: 'x', baseUrl: 'https://alt.example' } } } };
         applyPersistedModelProfile(catalog, 'alt/live-model');

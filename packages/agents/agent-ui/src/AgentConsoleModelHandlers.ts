@@ -12,6 +12,7 @@ import { AgentConsoleSelectOption } from './AgentConsoleSessionState';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
 import { AgentOptions } from '@tsdi/agent';
 import { formatAgentUiLabel, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { applyProfileSelection } from './AgentConsoleSettingsStore';
 
 function menuLabel(ctx: ModelHandlerContext, key: string, fallback: string, params?: Record<string, any>): string {
     return formatAgentUiLabel(ctx.translator, key, fallback, params);
@@ -412,7 +413,7 @@ export async function activateModelProfile(ctx: ModelHandlerContext, profileName
         return;
     }
     const resolved = resolveModelProfileConfig(ctx, name);
-    opts.model = { ...resolved, defaultProfile: name, ...(reasoningEffort ? { reasoningEffort } : {}) };
+    applyProfileSelection(opts, name, reasoningEffort);
     ctx.state.setModelProfile(name);
     if (resolved.provider) {
         ctx.state.setProvider(resolved.provider);

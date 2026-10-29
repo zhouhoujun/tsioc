@@ -59,10 +59,17 @@ export function resolveModelForProvider(options: AgentOptions | undefined, provi
 /** Apply a configured profile to the top-level runtime options (not only defaultProfile). */
 export function activateProfileModel(options: AgentOptions, profileName: string, reasoningEffort?: 'low' | 'medium' | 'high' | 'max'): { provider?: string; model?: string; reasoningEffort?: 'low' | 'medium' | 'high' | 'max' } {
     const model = (options.model || {}) as AgentModelOptions;
-    const profile = model.profiles?.[profileName];
+    const profile = model.profiles?.[profileName] || {};
+    const providerChanged = !!profile.provider && profile.provider !== model.provider;
     options.model = {
         ...model,
-        ...(profile || {}),
+        ...profile,
+        provider: profile.provider || model.provider,
+        model: profile.model || model.model,
+        apiKey: profile.apiKey,
+        apiKeyEnv: profile.apiKeyEnv,
+        headers: profile.headers,
+        ...(profile.baseUrl ? { baseUrl: profile.baseUrl } : (providerChanged ? { baseUrl: undefined } : {})),
         defaultProfile: profileName,
         ...(reasoningEffort !== undefined ? { reasoningEffort } : {})
     };

@@ -44,6 +44,30 @@ export function applyPersistedPreferences(
     }
 }
 
+/** Merge a configured profile into the top-level options without leaking the previous provider's credentials. */
+export function applyProfileSelection(options: any, name: string, reasoningEffort?: 'low' | 'medium' | 'high' | 'max'): boolean {
+    const profileName = String(name || '').trim();
+    const model = options?.model;
+    const profile = model?.profiles?.[profileName];
+    if (!options || !profile) {
+        return false;
+    }
+    const providerChanged = !!profile.provider && profile.provider !== model.provider;
+    options.model = {
+        ...model,
+        ...profile,
+        provider: profile.provider || model.provider,
+        model: profile.model || model.model,
+        apiKey: profile.apiKey,
+        apiKeyEnv: profile.apiKeyEnv,
+        headers: profile.headers,
+        ...(profile.baseUrl ? { baseUrl: profile.baseUrl } : (providerChanged ? { baseUrl: undefined } : {})),
+        defaultProfile: profileName,
+        ...(reasoningEffort ? { reasoningEffort } : {})
+    };
+    return true;
+}
+
 /** Apply a persisted active model profile (or provider/model id) to the runtime options. */
 export function applyPersistedModelProfile(options: any, name?: string | null): void {
     const profileName = String(name || '').trim();
@@ -51,9 +75,7 @@ export function applyPersistedModelProfile(options: any, name?: string | null): 
         return;
     }
     const model = { ...(options.model || {}) };
-    const profile = model.profiles?.[profileName];
-    if (profile) {
-        options.model = { ...model, ...profile, defaultProfile: profileName };
+    if (applyProfileSelection(options, profileName)) {
         return;
     }
     const separator = profileName.indexOf('/');

@@ -2618,3 +2618,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 缺陷：激活已配置 profile 只写 `defaultProfile`，turn 仍用顶层旧模型（openai-compatible/gpt-5.5）；`model.add`/`model.activate` 只改内存，重启后新 provider 丢失，`modelProfile` 恢复时找不到 profile。
 - 修复：`activateProfileModel` 把 profile 的 provider/model/baseUrl/apiKey 合并到顶层 options（客户端无 appRpc 时同样合并）；gateway 通过 `AGENT_MODEL_CONFIG_WRITER` 把模型配置写回配置根（CLI 提供 `writeModelProfile`）；`modelProfile` 继续持久化/恢复。
 - 验证：agent-ui 1857（+1 本地 profile 激活）、gateway 375（+1 profile 合并）、cli 125；真实 serve 探针 6/6（激活前后 app.state、配置根写入、重启保持 fake-openai/fake-model-a）。
+
+## profile 切换凭据隔离（2026-10）
+
+- 缺陷：profile 激活/恢复只做 `{...旧顶层, ...profile}`；新 profile 仅配 `apiKeyEnv` 时会继承旧 provider 的 `apiKey`/`headers`，provider 变化但无 baseUrl 时还会沿用旧 endpoint。
+- 修复：gateway `activateProfileModel` 与共享 `applyProfileSelection`（客户端/持久化恢复）显式写入 profile 的 apiKey/apiKeyEnv/headers，未定义即清空；provider 变化且无 baseUrl 时清空 baseUrl。
+- 验证：agent-ui 1857、gateway 375（新增凭据隔离断言：旧 key/headers 清除、env 生效、endpoint 清空）。

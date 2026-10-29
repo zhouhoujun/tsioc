@@ -120,6 +120,19 @@ export class ModelCatalogOptionsTest {
         expect(options.model.model).toEqual('deepseek-flash');
         expect(options.model.baseUrl).toEqual('https://api.deepseek.com');
         expect(options.model.defaultProfile).toEqual('deepseek-fast');
+
+        const envOnly: any = {
+            model: {
+                provider: 'openai-compatible', model: 'gpt-5.5', apiKey: 'old-key', baseUrl: 'http://old.example', headers: { 'X-Old': '1' },
+                profiles: { 'env-fast': { provider: 'deepseek', model: 'deepseek-flash', apiKeyEnv: 'DEEPSEEK_API_KEY', baseUrl: 'https://api.deepseek.com' } }
+            }
+        };
+        const envCtx: any = { ...ctx, options: () => envOnly };
+        await activateModelProfile(envCtx, 'env-fast');
+        expect(envOnly.model.apiKey).toBeUndefined();
+        expect(envOnly.model.apiKeyEnv).toEqual('DEEPSEEK_API_KEY');
+        expect(envOnly.model.baseUrl).toEqual('https://api.deepseek.com');
+        expect(envOnly.model.headers).toBeUndefined();
     }
 
     @Test('active model selection forwards the chosen reasoning effort')

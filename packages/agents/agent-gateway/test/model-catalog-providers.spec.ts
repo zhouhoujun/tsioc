@@ -65,6 +65,25 @@ export class ModelCatalogProvidersTest {
         expect(options.model.model).toEqual('fake-model-a');
         expect(options.model.baseUrl).toEqual('http://fake.example/v1');
         expect(options.model.defaultProfile).toEqual('fake-fast');
+
+        const envOnly: any = {
+            model: {
+                provider: 'openai-compatible', model: 'gpt-5.5', apiKey: 'old-key', baseUrl: 'http://old.example', headers: { 'X-Old': '1' },
+                profiles: { 'env-fast': { provider: 'new-provider', model: 'new-model', apiKeyEnv: 'NEW_KEY', baseUrl: 'http://new.example/v1' } }
+            }
+        };
+        activateProfileModel(envOnly, 'env-fast');
+        expect(envOnly.model.apiKey).toBeUndefined();
+        expect(envOnly.model.apiKeyEnv).toEqual('NEW_KEY');
+        expect(envOnly.model.baseUrl).toEqual('http://new.example/v1');
+        expect(envOnly.model.headers).toBeUndefined();
+
+        const noEndpoint: any = {
+            model: { provider: 'old', model: 'old', baseUrl: 'http://old.example', apiKey: 'old', profiles: { 'p': { provider: 'new', model: 'm' } } }
+        };
+        activateProfileModel(noEndpoint, 'p');
+        expect(noEndpoint.model.baseUrl).toBeUndefined();
+        expect(noEndpoint.model.apiKey).toBeUndefined();
     }
 
     @Test('live catalog models activate with the selected provider connection')
