@@ -107,40 +107,41 @@ export function createAgentSandboxRuntimeProvider(): any {
 }
 
 export function provideWorkspaceTrust(root: string): any {
+    // A factory-with-deps provider is instantiated in the application injector
+    // after ServerCommonModule registers FileAdapter. The previous
+    // `provider(injector)` form ran during bootstrap, could not see the host
+    // FileAdapter, and made trust() a silent no-op — every mutating tool then
+    // re-asked for workspace trust.
     return {
-        provider(injector: any) {
-            const fileAdapter = injector.get(FileAdapter, null);
-            return [{
-                provide: AGENT_WORKSPACE_TRUST,
-                useValue: {
-                    isTrusted(workspace: string): boolean {
-                        const target = String(workspace || '').trim();
-                        if (!target) {
-                            return true;
-                        }
-                        if (!fileAdapter) {
-                            return false;
-                        }
-                        try {
-                            return new TrustedProjectStore({ root, fileAdapter }).isTrusted(target).trusted;
-                        } catch {
-                            return false;
-                        }
-                    },
-                    trust(workspace: string): void {
-                        const target = String(workspace || '').trim();
-                        if (!target || !fileAdapter) {
-                            return;
-                        }
-                        try {
-                            new TrustedProjectStore({ root, fileAdapter }).trust(target);
-                        } catch {
-                            return;
-                        }
-                    }
+        provide: AGENT_WORKSPACE_TRUST,
+        deps: [FileAdapter],
+        useFactory: (fileAdapter: FileAdapter | null) => ({
+            isTrusted(workspace: string): boolean {
+                const target = String(workspace || '').trim();
+                if (!target) {
+                    return true;
                 }
-            }];
-        }
+                if (!fileAdapter) {
+                    return false;
+                }
+                try {
+                    return new TrustedProjectStore({ root, fileAdapter }).isTrusted(target).trusted;
+                } catch {
+                    return false;
+                }
+            },
+            trust(workspace: string): void {
+                const target = String(workspace || '').trim();
+                if (!target || !fileAdapter) {
+                    return;
+                }
+                try {
+                    new TrustedProjectStore({ root, fileAdapter }).trust(target);
+                } catch {
+                    return;
+                }
+            }
+        })
     };
 }
 

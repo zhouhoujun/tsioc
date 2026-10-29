@@ -1016,32 +1016,32 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return resolveFocusedCodingTaskFn(this.codingTaskCtx());
     }
 
-    protected get resolvedApprovalManager(): ApprovalManager | undefined { return this.approvalManager ?? this.runtime?.approvalManager; }
+    protected get resolvedApprovalManager(): ApprovalManager | undefined { return this.runtime?.approvalManager ?? this.approvalManager ?? undefined; }
 
     protected async refreshPendingApprovals(sessionId = this.state.sessionId): Promise<void> {
         return refreshPendingApprovals(sessionId, this.state, this.resolvedApprovalManager, this.appRpc, this.sessionService, () => this.updateTerminalTitle());
     }
 
     protected async applyApprovalDecision(decision: 'approve' | 'deny', requestId: string): Promise<boolean> {
-        if (this.resolvedApprovalManager) {
-            return decision === 'approve'
-                ? this.resolvedApprovalManager.approve(requestId)
-                : this.resolvedApprovalManager.reject(requestId);
-        }
+        // In-process turns run through the app RPC server, which owns the queue.
         if (this.appRpc && this.sessionService) {
-            const result = await this.sessionService.decideApproval(decision, requestId);
+            const result = await this.sessionService.decideApproval(decision, requestId, this.rpcRequestContext());
             return result?.applied === true;
+        }
+        if (this.resolvedApprovalManager) {
+            const manager = this.resolvedApprovalManager;
+            return decision === 'approve' ? manager.approve(requestId) : manager.reject(requestId);
         }
         return false;
     }
 
     protected async getPendingApprovals(sessionId: string): Promise<AgentConsoleApprovalRequest[]> {
+        if (this.appRpc && this.sessionService) {
+            const requests = await this.sessionService.listApprovals(sessionId, this.rpcRequestContext());
+            return requests as AgentConsoleApprovalRequest[];
+        }
         if (this.resolvedApprovalManager) {
             return this.resolvedApprovalManager.getPending().filter((request: any) => request.sessionId === sessionId) as AgentConsoleApprovalRequest[];
-        }
-        if (this.appRpc && this.sessionService) {
-            const requests = await this.sessionService.listApprovals(sessionId);
-            return requests as AgentConsoleApprovalRequest[];
         }
         return [];
     }

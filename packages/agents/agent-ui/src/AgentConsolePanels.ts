@@ -48,9 +48,9 @@ import {
     AgentConsoleTheme,
     AgentConsoleThemeStyles,
     defaultAgentConsoleTheme,
-    resolveAgentConsoleThemeStyles,
     styleTextToObject
 } from './AgentConsoleTheme';
+import { resolvePanelThemeStyles, resolveSectionFrameStyle } from './AgentConsolePanelStyles';
 import { AgentConsoleStatuslineField } from './AgentConsoleStatusline';
 import { DEFAULT_TIMELINE_LABELS, resolveTimelineWindowLedger, TimelineWindowMode } from './AgentConsoleTimelineWindow';
 import {
@@ -60,19 +60,6 @@ import {
     resolveCommonListWindow as resolveConsoleListWindow,
     resolveCommonSelectWindow as resolveConsoleSelectWindow
 } from '@tsdi/components/common';
-
-function resolvePanelThemeStyles(state?: AgentConsoleSessionState, theme?: AgentConsoleTheme): AgentConsoleThemeStyles {
-    return state?.themeStyles || resolveAgentConsoleThemeStyles(theme || defaultAgentConsoleTheme);
-}
-
-function resolveSectionFrameStyle(baseStyleText: string | Record<string, string>): Record<string, string> {
-    return {
-        ...(typeof baseStyleText === 'string' ? styleTextToObject(baseStyleText) : baseStyleText),
-        'border-top': '1px solid #30363d',
-        'border-bottom': '1px solid #30363d',
-        padding: '0.35em 0'
-    };
-}
 
 @Component({
     selector: 'agent-console-brand-panel',
@@ -3778,6 +3765,7 @@ export class AgentConsoleActivityPanelComponent {
             <div class="select-shell" v-style="shellStyle">
             <select class="select-core"
                 aria-label="{{accessibilityLabel}}"
+                title="{{menuTitleText}}" hint="{{menuHintText}}" meta="{{menuMetaText}}"
                 options="{{menuOptionsJson}}"
                 selectedIndex="{{menuSelectedIndexText}}"
                 visibleCount="{{visibleOptionCountText}}"
@@ -3806,6 +3794,14 @@ export class AgentConsoleSelectPanelComponent {
     get menu(): AgentConsoleSelectMenu | undefined {
         return this.state.selectMenu;
     }
+
+    // Blocking menus show their question/title and key hint; inline
+    // suggestions keep the composer clean.
+    get menuTitleText(): string { const menu = this.menu; return !menu || isAgentConsoleSuggestionMenu(menu) ? '' : (menu.title || ''); }
+
+    get menuHintText(): string { const menu = this.menu; return !menu || isAgentConsoleSuggestionMenu(menu) ? '' : (menu.hint || ''); }
+
+    get menuMetaText(): string { const menu = this.menu; if (!menu || isAgentConsoleSuggestionMenu(menu)) return ''; const window = resolveConsoleSelectWindow(menu.options.length, menu.selectedIndex, this.state.consoleOptions.selectVisibleOptions); return window.count < menu.options.length ? `${window.start + 1}-${window.start + window.count}/${menu.options.length}` : ''; }
 
     get shellStyle() {
         return this.menu ? styleTextToObject(this.activeTheme.selectShell) : {};

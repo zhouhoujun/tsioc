@@ -128,4 +128,52 @@ export class P313ApprovalQuestionUxTest {
         await state.processDecodedInput({ text: '2' }, {} as any, options);
         expect(state.pendingQuestionSelectedIndex).toEqual(1);
     }
+
+    @Test('answering a question does not await the resumed turn')
+    async pendingQuestionAnswerDoesNotBlockInput() {
+        const state = makeState();
+        state.questionAction = async () => undefined;
+        let releaseTurn!: () => void;
+        state.submitAction = () => new Promise<void>(resolve => { releaseTurn = resolve; });
+        state.setPendingQuestion({
+            questionId: 'q1', sessionId: state.sessionId, question: 'Pick',
+            options: ['alpha', 'beta'], severity: 'medium', createdAt: 1, updatedAt: 1, status: 'pending'
+        });
+        state.setInput('custom');
+        // The input dispatch chain awaits submitPendingQuestionInput; if it
+        // waited for the resumed turn, approval keys would queue behind a
+        // prompt raised by that turn (real TUI: 30s approval timeout).
+        const outcome = await Promise.race([
+            state.submitPendingQuestionInput().then(() => 'answered'),
+            new Promise(resolve => setTimeout(() => resolve('blocked'), 120))
+        ]);
+        expect(outcome).toEqual('answered');
+        expect(state.pendingQuestion).toEqual(null);
+        releaseTurn();
+    }
+
+    @Test('a grouped TUI text run becomes a custom question answer')
+    async pendingQuestionGroupedTextRun() {
+        const state = makeState();
+        const calls: any[] = [];
+        state.questionAction = async input => { calls.push(input); };
+        state.setPendingQuestion({
+            questionId: 'q1', sessionId: state.sessionId, question: 'Pick',
+            options: ['alpha', 'beta'], severity: 'medium', createdAt: 1, updatedAt: 1, status: 'pending'
+        });
+        const options = { isClosed: false, onExit: () => {}, hasActiveTextPrompt: false,
+                transcriptNavigationController: navigationFor(state) };
+        // A fast keystroke burst/paste arrives as one decoded text run, not one
+        // character at a time.
+        await state.processDecodedInput({ text: 'gamma' }, {} as any, options);
+        expect(state.input).toEqual('gamma');
+        expect(state.pendingQuestionSelectedIndex).toEqual(0);
+
+        await state.processDecodedInput({ text: '2' }, {} as any, options);
+        expect(state.input).toEqual('gamma2');
+        await state.processDecodedInput({ text: '', controlKey: 'return' }, {} as any, options);
+        expect(calls).toEqual([{
+            questionId: 'q1', sessionId: state.sessionId, action: 'answer', answer: 'gamma2'
+        }]);
+    }
 }

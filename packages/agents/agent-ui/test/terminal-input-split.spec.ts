@@ -40,6 +40,36 @@ export class TerminalInputSplitTest {
         expect(applied).toEqual(['/se']);
     }
 
+    @Test('a state-applied text run is not inserted twice')
+    async appliedTextRunNotDoubled() {
+        const applied: string[] = [];
+        const host: any = {
+            closing: false,
+            translator: null,
+            state: {
+                vimMode: false,
+                selectMenu: undefined,
+                consoleOptions: {},
+                focusLayers: { isAnyFocusActive: () => false },
+                async processDecodedInput() {
+                    return { handled: true, action: 'textInputApplied', value: 'gamma' };
+                },
+                async processRawChunk(chunk: string) {
+                    applied.push(chunk);
+                    return { submitted: false, confirmedSelection: false };
+                }
+            },
+            getTerminalRenderedLines: () => [],
+            async handleGlobalKeyInput() {
+                return false;
+            }
+        };
+        // Pending-question custom answers already update the draft inside
+        // processDecodedInput; re-applying the decoded run doubled it.
+        await handleTerminalInputView(host, { text: 'gamma', partial: false } as any, 'gamma' as any);
+        expect(applied).toEqual([]);
+    }
+
     @Test('a split Enter item submits the draft')
     async splitEnterSubmits() {
         let submitted = 0;

@@ -3315,7 +3315,7 @@ export class AgentConsoleSessionState {
             question.status = 'answered';
             question.answer = option;
             this.finishPendingQuestion();
-            await this.resumeAfterQuestionAnswer();
+            this.resumeAfterQuestionAnswer();
         } catch (error: any) {
             const message = error?.message || String(error || this.translateLabel('agent.notice.questionResponseFailed', undefined, 'Question response failed'));
             if (/expired/i.test(message)) {
@@ -3342,11 +3342,15 @@ export class AgentConsoleSessionState {
      * when no further question is queued for this session, so a batch of
      * questions collects every answer before the agent continues.
      */
-    protected async resumeAfterQuestionAnswer(): Promise<void> {
+    protected resumeAfterQuestionAnswer(): void {
         if (!this.submitAction || this.pendingQuestion) {
             return;
         }
-        await this.submitAction();
+        // Start the resumed turn without awaiting it here: this method runs on
+        // the terminal input dispatch chain, and awaiting the whole turn made
+        // every later key (including `a`/`d` on the approval prompt the turn
+        // raises) queue until the approval timed out.
+        void Promise.resolve(this.submitAction()).catch(() => undefined);
     }
 
     /**
@@ -3398,7 +3402,7 @@ export class AgentConsoleSessionState {
             question.status = 'answered';
             question.answer = answer;
             this.finishPendingQuestion();
-            await this.resumeAfterQuestionAnswer();
+            this.resumeAfterQuestionAnswer();
         } catch (error: any) {
             const message = error?.message || String(error || this.translateLabel('agent.notice.questionResponseFailed', undefined, 'Question response failed'));
             if (/expired/i.test(message)) {
@@ -6402,7 +6406,6 @@ export class AgentConsoleSessionState {
 
         const rawText = decoded.text;
         const controlKey = decoded.controlKey;
-
         if (decoded.partial) {
             return { handled: true };
         }
@@ -6451,18 +6454,24 @@ export class AgentConsoleSessionState {
         // the composer (codex/opencode "type your own answer"). Once a draft is
         // present digits are part of that answer; with an empty draft a digit
         // still picks the numbered option below.
-        if (this.pendingQuestion && !controlKey && rawText && rawText.length === 1 && !/[\r\n]/.test(rawText)) {
-            const isDigit = /[0-9]/.test(rawText);
-            if (!isDigit || this.input) {
-                this.setInput(`${this.input}${rawText}`, this.input.length + 1);
-                return { handled: true, action: 'textInput', value: rawText };
+        //
+        // The TUI decoder groups a fast keystroke burst (or a paste) into one
+        // text run, so this must accept the whole printable run, not only
+        // `length === 1`; otherwise typing a word was swallowed by the focus
+        // layer and Enter answered the highlighted option instead.
+        if (this.pendingQuestion && !controlKey && rawText && !/[\r\n]/.test(rawText)
+            && !/[\u0000-\u001f\u007f]/.test(rawText)) {
+            const singleDigit = rawText.length === 1 && /[0-9]/.test(rawText);
+            if (!singleDigit || this.input) {
+                this.setInput(`${this.input}${rawText}`, this.input.length + rawText.length);
+                return { handled: true, action: 'textInputApplied', value: rawText };
             }
         }
         if (this.pendingQuestion && (controlKey === 'backspace' || rawText === '\b' || rawText === '\u007f')) {
             if (this.input) {
                 this.setInput(this.input.slice(0, -1), Math.max(0, this.input.length - 1));
             }
-            return { handled: true, action: 'textInput' };
+            return { handled: true, action: 'textInputApplied' };
         }
 
         // Filter-mode typing must bypass resolveFocusShortcutKey (which remaps

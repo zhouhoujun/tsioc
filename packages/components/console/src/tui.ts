@@ -318,14 +318,29 @@ export class TuiRenderer extends ConsoleRenderer {
                 const safeVisibleCount = Number.isFinite(visibleCount) && visibleCount > 0 ? visibleCount : 6;
                 const visibleWindow = resolveConsoleSelectWindow(parsedOptions.length, safeSelectedIdx, safeVisibleCount);
                 const visibleStart = visibleWindow.start;
+                // Dialog chrome (title/question, meta, details, hint) must wrap
+                // at the terminal width. Padding these through `applyAnsi`
+                // truncated a confirmation question mid-word, hiding the
+                // snapshot/ref the user was asked to approve.
+                const pushWrappedChrome = (value: string, style: Record<string, string>) => {
+                    const wrapped = this.wrapStyledSegmentLine([{ text: value, styleMap: style }], width);
+                    if (!width || width <= 0) {
+                        lines.push(...wrapped);
+                        return;
+                    }
+                    for (const line of wrapped) {
+                        const pad = Math.max(0, width - getDisplayWidth(this.stripAnsi(line)));
+                        lines.push(pad ? `${line}${this.applyAnsi(' '.repeat(pad), style, undefined, true)}` : line);
+                    }
+                };
                 if (title) {
-                    lines.push(this.applyAnsi(title, this.mergeStyles(styleMap, {
+                    pushWrappedChrome(title, this.mergeStyles(styleMap, {
                         'font-weight': 'bold',
                         ...titleStyle
-                    }), width));
+                    }));
                 }
                 if (meta) {
-                    lines.push(this.applyAnsi(meta, this.mergeStyles(styleMap, metaStyle), width));
+                    pushWrappedChrome(meta, this.mergeStyles(styleMap, metaStyle));
                 }
                 const visibleOptions = parsedOptions.slice(visibleStart, visibleStart + visibleWindow.count);
                 const optionLabelColumnWidth = resolveConsoleOptionLabelColumnWidth(visibleOptions, visibleStart);
@@ -347,21 +362,21 @@ export class TuiRenderer extends ConsoleRenderer {
                     optionClickRows.push({ index: absoluteIndex, row: lines.length - 1 });
                 });
                 if (detailTitle) {
-                    lines.push(this.applyAnsi(detailTitle, this.mergeStyles(styleMap, detailLabelStyle), width));
+                    pushWrappedChrome(detailTitle, this.mergeStyles(styleMap, detailLabelStyle));
                 }
                 if (detailTitle || detailLinesText) {
                     const resolvedDetailLines = detailLines.length
                         ? detailLines
                         : resolveConsoleSelectDetailLines(parsedOptions[safeSelectedIdx] as any);
                     resolvedDetailLines.forEach(line => {
-                        lines.push(this.applyAnsi(String(line || ''), this.mergeStyles(styleMap, detailValueStyle), width));
+                        pushWrappedChrome(String(line || ''), this.mergeStyles(styleMap, detailValueStyle));
                     });
                 }
                 if (hint) {
-                    lines.push(this.applyAnsi(hint, this.mergeStyles(styleMap, {
+                    pushWrappedChrome(hint, this.mergeStyles(styleMap, {
                         color: '#6f7c8a',
                         ...hintStyle
-                    }), width));
+                    }));
                 }
                 finishClickTarget();
                 // One hit target per option row: a click selects the row under

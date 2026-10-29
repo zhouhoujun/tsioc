@@ -305,6 +305,11 @@ export async function handleTerminalInputView(
                 hasSelectMenu: !!host.state.selectMenu
             });
             return;
+        case 'textInputApplied':
+            // The state already applied this run (pending-question custom
+            // answer/backspace). Calling processRawChunk again doubled the
+            // text into the composer ("gammagamma").
+            return;
         case 'draftNavigation':
             switch (outcome.value) {
                 case 'left':
