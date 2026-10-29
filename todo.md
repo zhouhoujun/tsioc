@@ -2642,3 +2642,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 缺陷：命令/确认菜单只是输入框下方的行；`/help` 是扁平大列表，Enter 会直接执行高亮命令（`/exit`、`/restart`）。
 - 修复：TUI 新增 `dialog` region + overlay 合成，弹出框居中覆盖对话区（圆角边框、max-width、窄屏自适应）；审批/问题/选择/帮助统一使用；`/help` 改为分组只读目录，支持 `/help <query>` 与 `/help <group>`，过滤时命令/子命令优先、描述兜底，不再执行命令。
 - 验证：真实 PTY 弹窗 13/13、help 11/11、问题+审批 26/26；agent-ui 1872、components/console 106。
+
+## `/web` 按需启动 + 配对对话框（2026-10）
+
+- 缺陷：plain `chat` 里 `/web` 只提示 web console 未运行；用户必须预先 `chat --web`。
+- 修复：本地 console 始终注册 gateway providers，但 `/web` 前不启动/不监听；执行 `/web` 时惰性启动同一运行时 gateway，再用居中对话框展示链接与完整二维码；`/pair` 复用已启动实例并生成新的一次性链接；退出 TUI 时监听随之关闭。
+- 验证：真实 PTY plain `/web` 6/6（启动前无监听、启动后页面 200、退出后无监听）、`chat --web` 配对 5/5；agent-cli 128。

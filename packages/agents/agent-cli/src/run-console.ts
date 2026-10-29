@@ -108,17 +108,44 @@ export async function runAgentConsole(
     if (webEnabled && gatewayUrl) {
         throw new Error('chat --web cannot be combined with attach; run it in a local console.');
     }
-    const webStatic = webEnabled ? resolveAgentWebDir(webOptions.webStatic) : undefined;
-    const webConfig = webEnabled
-        ? { ...buildServeGatewayConfig({ webHost: webOptions.webHost, webPort: webOptions.webPort ?? 0, token: webOptions.webToken, mdns: webOptions.webMdns } as any, webStatic), localPrincipalId: 'local-system' }
-        : null;
+    const webStatic = resolveAgentWebDir(webOptions.webStatic);
+    // `/web` in a plain local console starts the same-runtime web console on
+    // demand; `chat --web` only decides whether to start it at launch.
+    const webConfig = gatewayUrl
+        ? null
+        : { ...buildServeGatewayConfig({ webHost: webOptions.webHost, webPort: webOptions.webPort ?? 0, token: webOptions.webToken, mdns: webOptions.webMdns } as any, webStatic), localPrincipalId: 'local-system' };
+    let appContext: any;
     let webRuntime: { pairing: PairingStore; port: number; host: string } | null = null;
-    const localPair = webConfig ? async () => {
-        if (!webRuntime) {
+    const ensureWebRuntime = async (): Promise<{ pairing: PairingStore; port: number; host: string } | null> => {
+        if (webRuntime) {
+            return webRuntime;
+        }
+        if (!webConfig || !appContext?.get) {
             return null;
         }
-        const entry = webRuntime.pairing.generate();
-        const urls = buildPairingUrls({ host: webRuntime.host, port: webRuntime.port } as any, entry.code, webRuntime.port);
+        const gateway = appContext.get(GatewayServer) as GatewayServer | undefined;
+        if (!gateway) {
+            return null;
+        }
+        if (!gateway.address?.()) {
+            const bootstrap = appContext.get(GatewayBootstrap) as GatewayBootstrap | undefined;
+            await bootstrap?.start?.();
+        }
+        const address = gateway.address?.();
+        webRuntime = {
+            pairing: (appContext.get(PairingStore) as PairingStore) || new PairingStore(),
+            port: address?.port ?? Number(webConfig.port),
+            host: String(webConfig.host || '127.0.0.1')
+        };
+        return webRuntime;
+    };
+    const localPair = webConfig ? async () => {
+        const runtime = await ensureWebRuntime();
+        if (!runtime) {
+            return null;
+        }
+        const entry = runtime.pairing.generate();
+        const urls = buildPairingUrls({ host: runtime.host, port: runtime.port } as any, entry.code, runtime.port);
         return urls.length ? { urls, qr: renderPairingQrForUrls(urls), code: entry.code, expiresAt: entry.expiresAt } : null;
     } : undefined;
     const gatewayPort = Number((options as AgentGatewayOptions).gatewayPort || 0);
@@ -156,18 +183,9 @@ export async function runAgentConsole(
         }
     });
 
-    if (webConfig) {
-        const gateway = ctx.get ? ctx.get(GatewayServer) as GatewayServer : undefined;
-        if (gateway && !gateway.address?.()) {
-            const bootstrap = ctx.get ? ctx.get(GatewayBootstrap) as GatewayBootstrap : undefined;
-            await bootstrap?.start?.();
-        }
-        const address = gateway?.address?.();
-        webRuntime = {
-            pairing: ctx.get ? ctx.get(PairingStore) as PairingStore : new PairingStore(),
-            port: address?.port ?? Number(webConfig.port),
-            host: String(webConfig.host || '127.0.0.1')
-        };
+    appContext = ctx;
+    if (webConfig && webEnabled) {
+        await ensureWebRuntime();
     }
 
     if (gatewayPort > 0) {
