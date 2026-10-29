@@ -2,6 +2,7 @@ import { Abstract } from '@tsdi/ioc';
 import { ModelRequest } from './ModelRequest';
 import { ModelResponse } from './ModelResponse';
 import { StreamChunk } from './StreamChunk';
+import type { AgentModelOptions } from './ModelProviderOptions';
 
 @Abstract()
 export abstract class ModelAdapter {
@@ -20,6 +21,9 @@ export abstract class ModelAdapter {
     readonly supportsNativeToolSchemas: boolean = true;
 
     abstract complete(request: ModelRequest): Promise<ModelResponse>;
+
+    /** Apply a model activation without rebuilding the runtime. */
+    updateOptions?(_options: AgentModelOptions): void;
 
     /**
      * Optional streaming interface. Returns an async generator of chunks.

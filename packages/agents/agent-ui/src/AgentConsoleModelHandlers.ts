@@ -32,6 +32,9 @@ export interface ModelHandlerContext {
         setProvider(value: string): unknown;
         setModel(value: string): unknown;
         setOneShotModelProfile(value: string): unknown;
+        closeSelectMenu?(): void;
+        readonly input?: string;
+        setInput?(value: string, cursor?: number): void;
     };
     appRpc: { request(method: string, payload?: Record<string, any>, context?: any): Promise<any> } | null | undefined;
     options(): AgentOptions;
@@ -45,6 +48,7 @@ export interface ModelHandlerContext {
     persistSettings(patch: { thinkingLevel?: EffortLevel; modelProfile?: string }): unknown;
     addModelProvider?(): void | Promise<void>;
     activateModelProfile?(name: string, effort?: EffortLevel, silent?: boolean): Promise<void>;
+    updateModelOptions?(model: any): void;
     resolveHistoryWorkspace(): string;
     getFavorites(): string[];
     setFavorites(value: string[]): void;
@@ -415,6 +419,7 @@ export async function activateModelProfile(ctx: ModelHandlerContext, profileName
     }
     const resolved = resolveModelProfileConfig(ctx, name);
     applyProfileSelection(opts, name, reasoningEffort);
+    ctx.updateModelOptions?.(opts.model);
     ctx.state.setModelProfile(name);
     if (resolved.provider) {
         ctx.state.setProvider(resolved.provider);

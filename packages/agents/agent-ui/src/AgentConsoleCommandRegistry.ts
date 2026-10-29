@@ -101,6 +101,18 @@ export interface AgentConsoleCommandDefinition {
     hidden?: boolean;
 }
 
+/**
+ * Curated top-level `/` menu (opencode/codex-like): the full registry remains
+ * executable and visible in `/help`, but the composer only advertises the
+ * commands users reach for. Aliases stay out of the menu to avoid duplicates.
+ */
+export const AGENT_CONSOLE_FEATURED_COMMANDS: readonly string[] = [
+    '/help', '/status', '/model', '/provider', '/permissions', '/settings', '/plan',
+    '/sessions', '/new', '/resume', '/rename', '/archive', '/fork', '/compact', '/export',
+    '/theme', '/tui', '/review', '/diff', '/pair', '/reload', '/restart', '/exit'
+];
+const FEATURED_COMMAND_SET = new Set(AGENT_CONSOLE_FEATURED_COMMANDS);
+
 /** MUST keep '/help' first: fuzzy '/he' suggestions and smart-run tests rely on it being options[0]. */
 export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] = [
     { name: '/help', description: 'show command help, grouped by category', group: 'core' },
@@ -466,6 +478,28 @@ export function formatAgentConsoleCommandDiagnosticEcho(
  * injected hints (e.g. host-provided commands), deduped, '/help' first.
  */
 export function agentConsoleCommandHints(extra: string[] = []): string[] {
+    const hints: string[] = [];
+    const seen = new Set<string>();
+    AGENT_CONSOLE_COMMAND_DEFINITIONS.forEach(def => {
+        if (def.hidden || !FEATURED_COMMAND_SET.has(def.name)) {
+            return;
+        }
+        if (!seen.has(def.name)) {
+            seen.add(def.name);
+            hints.push(def.name);
+        }
+    });
+    (extra || []).forEach(hint => {
+        if (hint && !seen.has(hint)) {
+            seen.add(hint);
+            hints.push(hint);
+        }
+    });
+    return hints;
+}
+
+/** Full non-hidden catalogue (with aliases) used once the user typed past `/`. */
+export function agentConsoleAllCommandHints(extra: string[] = []): string[] {
     const hints: string[] = [];
     const seen = new Set<string>();
     AGENT_CONSOLE_COMMAND_DEFINITIONS.forEach(def => {

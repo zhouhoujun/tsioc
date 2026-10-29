@@ -39,7 +39,7 @@ function longTranscript(count: number): any[] {
  */
 @Suite('transcript reveal scrolls the viewport (P322)')
 export class AgentConsoleRevealScrollTest {
-    @Test('PageUp moves the selection and reveals its rendered row')
+    @Test('PageUp scrolls the viewport, then reveals the selected row once the transcript is focused')
     async pageUpRevealsSelectedMessage() {
         const tuiCtx = await Application.run(AgentModule, {
             deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
@@ -53,8 +53,13 @@ export class AgentConsoleRevealScrollTest {
             consoleRef.instance.sessionState.setMessages(longTranscript(12));
             await settle();
 
+            const viewportScrolls: number[] = [];
             const scrolled: number[] = [];
             (consoleRef.instance as any).surfaceAccessor = {
+                scrollViewport: (delta: number) => {
+                    viewportScrolls.push(delta);
+                    return true;
+                },
                 scrollViewportToRow: (row: number) => {
                     scrolled.push(row);
                     return true;
@@ -63,6 +68,10 @@ export class AgentConsoleRevealScrollTest {
 
             const component: any = consoleRef.instance;
             await component.handleGlobalKeyInput('\u001b[5~');
+            expect(viewportScrolls).toEqual([-10]);
+            expect(scrolled).toEqual([]);
+
+            consoleRef.instance.sessionState.setMessagesFocused(true);
             await component.handleGlobalKeyInput('\u001b[5~');
             await settle();
 

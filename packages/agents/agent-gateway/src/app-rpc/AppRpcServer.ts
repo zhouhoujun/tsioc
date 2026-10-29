@@ -1882,10 +1882,12 @@ export class AppRpcServer {
                 throw new AppRpcError(-32602, `Invalid params: unknown model profile '${name}'`);
             }
             const activated = activateCatalogModel(this.options, providerId, modelId, reasoningEffort as 'low' | 'medium' | 'high' | 'max' | undefined);
+            this.runtime.updateModelOptions?.(this.options.model);
             this.persistModelConfig?.(this.options.model);
             return { sessionId: sessionId || null, modelProfile: name, ...activated, catalog: true };
         }
         const activated = activateProfileModel(this.options, name, reasoningEffort as 'low' | 'medium' | 'high' | 'max' | undefined);
+        this.runtime.updateModelOptions?.(this.options.model);
         this.persistModelConfig?.(this.options.model);
         return { sessionId: sessionId || null, modelProfile: name, ...activated };
     }

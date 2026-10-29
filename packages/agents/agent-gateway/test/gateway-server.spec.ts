@@ -3196,7 +3196,8 @@ export class AppRpcServerTest {
         const { memory } = await createOrmSessionStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
-        const runtime = { async getMessages() { return []; } } as any;
+        const runtimeModels: any[] = [];
+        const runtime = { async getMessages() { return []; }, updateModelOptions: (model: any) => runtimeModels.push(model) } as any;
         const sessions = new SessionHandler(runtime, store, owners);
         const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, {} as any, owners, sessions, events, {
             model: {
@@ -3223,6 +3224,8 @@ export class AppRpcServerTest {
         expect(model.profiles.flash).toBeTruthy();
         expect(model.profiles.strong.model).toBe('deepseek-v4-pro');
         expect(model.complexityRouting.complex).toBe('strong');
+        expect(runtimeModels.length).toEqual(1);
+        expect(runtimeModels[0]).toMatchObject({ provider: 'openai', model: 'gpt-4.1' });
     }
 
     @Test('model.catalog returns the provider catalog with effort levels')

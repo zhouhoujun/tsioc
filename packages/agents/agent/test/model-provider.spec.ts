@@ -29,6 +29,43 @@ export class ModelProviderTest {
         }
     }
 
+    @Test('updateOptions switches subsequent routed requests to the activated model')
+    async updateOptionsSwitchesRequests() {
+        const calls: Array<{ url: string; body: any; auth: string }> = [];
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (url: string, init: any) => {
+            calls.push({ url, body: JSON.parse(init.body), auth: init.headers?.authorization });
+            return {
+                ok: true,
+                async json() {
+                    return { choices: [{ message: { content: 'ok' }, finish_reason: 'stop' }] };
+                }
+            };
+        };
+        const adapter = new RoutedModelAdapter({
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash',
+            baseUrl: 'https://deepseek.example',
+            apiKey: 'deepseek-key'
+        });
+        const input = {
+            sessionId: 'switch', summary: '', memory: [], tools: [],
+            messages: [{ id: 'u1', role: 'user' as const, content: 'hi', createdAt: 1 }]
+        };
+        await adapter.complete(input);
+        adapter.updateOptions({
+            provider: 'openai-compatible',
+            model: 'gpt-6.1-sol',
+            baseUrl: 'https://new.example/v1',
+            apiKey: 'new-key'
+        });
+        await adapter.complete(input);
+        expect(calls.length).toEqual(2);
+        expect(calls[1].url).toEqual('https://new.example/v1/chat/completions');
+        expect(calls[1].body.model).toEqual('gpt-6.1-sol');
+        expect(calls[1].auth).toEqual('Bearer new-key');
+    }
+
     @Test('maps summary memory and tools into openai request')
     async mapsRequestShape() {
         let call: any;

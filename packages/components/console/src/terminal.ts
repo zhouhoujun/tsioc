@@ -893,6 +893,95 @@ function stripTerminalAnsi(value: string): string {
     return String(value ?? '').replace(/\u001b\[[0-9;?]*[A-Za-z]/g, '');
 }
 
+const ANSI_SGR = /^\x1b\[[0-9;]*m/;
+
+/** Nth display-column range occupied by non-space glyphs across styled lines. */
+function resolveStyledColumnBounds(lines: string[]): { start: number; end: number } | undefined {
+    let start = Number.POSITIVE_INFINITY;
+    let end = 0;
+    for (const line of lines) {
+        let column = 0;
+        for (let index = 0; index < line.length;) {
+            const ansi = line.slice(index).match(ANSI_SGR)?.[0];
+            if (ansi) {
+                index += ansi.length;
+                continue;
+            }
+            const codePoint = line.codePointAt(index);
+            if (codePoint == null) {
+                break;
+            }
+            const char = String.fromCodePoint(codePoint);
+            const width = getDisplayWidth(char);
+            if (char.trim()) {
+                start = Math.min(start, column);
+                end = Math.max(end, column + width);
+            }
+            column += width;
+            index += char.length;
+        }
+    }
+    return Number.isFinite(start) && end > start ? { start, end } : undefined;
+}
+
+/** Slice a styled line by display columns, preserving SGR state at the edges. */
+function sliceStyledColumns(value: string, startColumn: number, endColumn: number): string {
+    let column = 0;
+    let prefix = '';
+    let output = '';
+    let started = false;
+    for (let index = 0; index < value.length;) {
+        const ansi = value.slice(index).match(ANSI_SGR)?.[0];
+        if (ansi) {
+            if (started) {
+                output += ansi;
+            } else {
+                prefix += ansi;
+            }
+            index += ansi.length;
+            continue;
+        }
+        const codePoint = value.codePointAt(index);
+        if (codePoint == null) {
+            break;
+        }
+        const char = String.fromCodePoint(codePoint);
+        const width = getDisplayWidth(char);
+        const charStart = column;
+        const charEnd = column + width;
+        column = charEnd;
+        index += char.length;
+        if (charEnd <= startColumn) {
+            continue;
+        }
+        if (charStart >= endColumn) {
+            break;
+        }
+        if (!started) {
+            started = true;
+            output += prefix;
+        }
+        if (charStart >= startColumn && charEnd <= endColumn) {
+            output += char;
+        }
+    }
+    return output ? `${output}\x1b[0m` : '';
+}
+
+/** Replace one column band of a base line with the dialog's styled band. */
+function overlayStyledLine(base: string, overlay: string, startColumn: number, endColumn: number): string {
+    let prefix = sliceStyledColumns(base, 0, startColumn);
+    // A blank base line has no glyphs to slice: keep the dialog's left gutter
+    // instead of collapsing the modal back to column 0.
+    const prefixWidth = getDisplayWidth(stripTerminalAnsi(prefix));
+    if (prefixWidth < startColumn) {
+        prefix += ' '.repeat(startColumn - prefixWidth);
+    }
+    const middle = sliceStyledColumns(overlay, startColumn, endColumn);
+    const suffix = sliceStyledColumns(base, endColumn, Number.MAX_SAFE_INTEGER);
+    return `${prefix}${middle}${suffix}`;
+}
+
 export class TuiTerminalSurface {
     protected root?: RNode | RNode[];
     protected renderState?: TerminalPrimaryRenderState;
@@ -1423,18 +1512,27 @@ export class TuiTerminalSurface {
             ? this.options.nativeScrollback()
             : this.options.nativeScrollback === true;
         const height = this.resolveHeight();
+        const width = this.resolveWidth();
         const scrollRegionId = this.options.scrollRegionId || 'transcript';
         const footerRegionId = this.options.footerRegionId || 'footer';
-        // A dialog is rendered as its own region so the viewport can float it
-        // above the transcript instead of appending rows below the composer.
-        // Native scrollback cannot composite, so it keeps the inline layout.
-        const dialogRegion = !nativeScrollback && height
+        // Dialogs are composited by mode: viewport floats them above the
+        // composer, native scrollback appends them below the footer.
+        const dialogRegion = height
             ? (layout.regions || []).find(region => region.id === 'dialog')
             : undefined;
         const dialogLines = dialogRegion
             ? (layout.lines || []).slice(dialogRegion.startRow, dialogRegion.endRow)
             : [];
         const dialogHeight = dialogLines.length;
+        const dialogBounds = resolveStyledColumnBounds(dialogLines);
+        const dialogStartColumn = dialogBounds?.start ?? 0;
+        const dialogEndColumn = dialogBounds?.end ?? 0;
+        const dialogWidth = dialogEndColumn - dialogStartColumn;
+        // A max-width dialog region is laid out at the left edge; center its
+        // glyph band in the viewport without repainting the side columns.
+        const dialogShift = dialogWidth > 0
+            ? Math.max(0, Math.floor((width - dialogWidth) / 2) - dialogStartColumn)
+            : 0;
         const dialogClickTargets = dialogRegion
             ? (layout.clickTargets || []).filter(target => target.y >= dialogRegion.startRow && target.y < dialogRegion.endRow)
                 .map(target => ({ ...target, y: target.y - dialogRegion.startRow }))
@@ -1464,23 +1562,43 @@ export class TuiTerminalSurface {
             if (!dialogLines.length || !height) {
                 return result;
             }
-            // A modal floats over the whole viewport: tall dialogs (pairing
-            // QR) must not be clipped by the composer/footer. Small command
-            // dialogs remain visually below the transcript because they are
-            // centered in the same full-height area.
-            const start = Math.max(0, Math.floor((height - dialogLines.length) / 2));
+            const footer = result.regions.find(region => region.id === footerRegionId);
+            const shiftedLines = dialogLines.map(line => dialogShift ? `${' '.repeat(dialogShift)}${line}` : line);
+            // Native scrollback cannot composite: drop the menu below the
+            // composer so it opens downward, away from the transcript.
+            if (nativeScrollback) {
+                const footerEnd = Math.max(0, ...result.regions
+                    .filter(region => region.id === footerRegionId)
+                    .map(region => region.endRow));
+                const insertRow = footerEnd > 0 ? Math.min(result.lines.length, footerEnd) : result.lines.length;
+                const lines = result.lines.slice();
+                lines.splice(insertRow, 0, ...shiftedLines);
+                const clickTargets = result.clickTargets
+                    .map(target => target.y >= insertRow ? { ...target, y: target.y + dialogHeight } : target)
+                    .concat(dialogClickTargets.map(target => ({ ...target, x: target.x + dialogShift, y: insertRow + target.y })));
+                const cursorTargets = result.cursorTargets
+                    .map(target => target.row >= insertRow ? { ...target, row: target.row + dialogHeight } : target);
+                return { lines, regions: result.regions, cursorTargets, clickTargets };
+            }
+            // Viewport menus float directly above the composer; bottoms align
+            // so a submenu opens from the same edge as its parent.
+            const anchorRow = footer?.startRow ?? height;
+            const start = Math.max(0, Math.min(anchorRow - dialogHeight, height - dialogHeight));
             const lines = result.lines.slice();
             while (lines.length < height) {
                 lines.push('');
             }
-            dialogLines.forEach((line, index) => {
-                if (start + index < height) {
-                    lines[start + index] = line;
+            shiftedLines.forEach((line, index) => {
+                if (start + index >= height) {
+                    return;
                 }
+                const base = lines[start + index] || '';
+                const bandStart = dialogShift ? 0 : dialogStartColumn;
+                lines[start + index] = overlayStyledLine(base, line, bandStart, dialogEndColumn + dialogShift);
             });
             const clickTargets = result.clickTargets
                 .filter(target => !(target.y >= start && target.y < start + dialogHeight))
-                .concat(dialogClickTargets.map(target => ({ ...target, y: start + target.y })));
+                .concat(dialogClickTargets.map(target => ({ ...target, x: target.x + dialogShift, y: start + target.y })));
             const cursorTargets = result.cursorTargets
                 .filter(target => !(target.row >= start && target.row < start + dialogHeight));
             return { lines, regions: result.regions, cursorTargets, clickTargets };

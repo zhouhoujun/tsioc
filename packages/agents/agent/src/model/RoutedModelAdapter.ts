@@ -29,11 +29,11 @@ export class RoutedModelAdapter extends ModelAdapter {
     private readonly adapters = new Map<string, ModelAdapter>();
     protected appArgs?: ApplicationArguments;
 
-    readonly provider: string;
+    provider: string;
 
     private readonly warnings: string[] = [];
 
-    constructor(private readonly options: AgentModelOptions, appArgs?: ApplicationArguments, protected readonly clock?: AgentClock) {
+    constructor(private options: AgentModelOptions, appArgs?: ApplicationArguments, protected readonly clock?: AgentClock) {
         super();
         this.provider = this.normalizeProvider(this.options.provider, this.options.baseUrl);
         this.appArgs = appArgs;
@@ -42,6 +42,14 @@ export class RoutedModelAdapter extends ModelAdapter {
     /** Non-fatal routing problems collected while selecting a model config. */
     getWarnings(): string[] {
         return this.warnings.slice();
+    }
+
+    /** Apply an activated model/profile: new requests use the new config. */
+    updateOptions(options: AgentModelOptions): void {
+        this.options = options;
+        this.provider = this.normalizeProvider(options.provider, options.baseUrl);
+        this.adapters.clear();
+        this.warnings.length = 0;
     }
 
     async complete(request: ModelRequest): Promise<ModelResponse> {

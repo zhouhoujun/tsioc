@@ -8,6 +8,7 @@ import { AgentTurnInput } from './AgentTurnInput';
 import { StreamChunk } from '../model/StreamChunk';
 import { SynthesisOptions, SynthesisReport } from '../context/AgentContextManager';
 import { FileSnapshot } from '../harness/FileSnapshotStore';
+import type { AgentModelOptions } from '../model/ModelProviderOptions';
 
 export interface CancelTurnResult {
     cancelled: boolean;
@@ -46,6 +47,9 @@ export interface FileUndoRedoResult {
 
 @Abstract()
 export abstract class AgentRuntime {
+    /** Update the model adapter/config after `/model` activation. */
+    updateModelOptions?(model?: AgentModelOptions): void;
+
     /** The approval manager this runtime gates tools with; host UIs resolve pending approvals through it. */
     approvalManager?: import('../tools/ToolApprovalManager').ApprovalManager;
 

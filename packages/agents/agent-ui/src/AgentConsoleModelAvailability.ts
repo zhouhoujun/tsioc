@@ -49,6 +49,14 @@ export async function promptModelUnavailable(ctx: ModelHandlerContext, failure: 
         const current = String(model?.model || failure.model || '').trim();
         const catalog = await ctx.appRpc.request('model.catalog', { provider }).catch(() => undefined);
         const models: any[] = Array.isArray(catalog?.models) ? catalog.models : [];
+        // A slash-suggestion menu may be open over a running turn. Close it so
+        // the model picker does not stack it as a parent and restore a stale
+        // 30+ item window after the switch. A bare `/` was only browsing the
+        // catalogue; keep it from becoming `//` after the picker closes.
+        ctx.state.closeSelectMenu?.();
+        if (String(ctx.state.input || '').trim() === '/') {
+            ctx.state.setInput?.('', 0);
+        }
         if (!isModelUnavailableFailure(failure, models, String(failure.detail || ''))) {
             return;
         }

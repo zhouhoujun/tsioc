@@ -87,9 +87,35 @@ export async function runLayoutCommand(
     notify: (message: string) => void,
     persistSettings: (patch: Record<string, any>) => Promise<any>,
     translator?: AgentUiTranslator | null,
-    onLayoutChanged?: () => void
+    onLayoutChanged?: () => void,
+    select?: (title: string, options: any[], selectedIndex: number, hint?: string) => Promise<string | undefined>
 ): Promise<boolean> {
     const requested = String(args || '').trim().toLowerCase();
+    if (!requested && select) {
+        const current = state.messageLayout === 'scrollback' ? 'scrollback' : 'viewport';
+        const options = [
+            {
+                label: `${formatAgentUiNotice(translator, 'layoutViewport')}${current === 'viewport' ? ` ${formatAgentUiNotice(translator, 'layoutCurrentMarker')}` : ''}`,
+                value: 'viewport',
+                description: formatAgentUiNotice(translator, 'layoutViewportDescription')
+            },
+            {
+                label: `${formatAgentUiNotice(translator, 'layoutScrollback')}${current === 'scrollback' ? ` ${formatAgentUiNotice(translator, 'layoutCurrentMarker')}` : ''}`,
+                value: 'scrollback',
+                description: formatAgentUiNotice(translator, 'layoutScrollbackDescription')
+            }
+        ];
+        const selected = await select(
+            formatAgentUiNotice(translator, 'layoutTitle'),
+            options,
+            current === 'scrollback' ? 1 : 0,
+            formatAgentUiNotice(translator, 'layoutHint')
+        );
+        if (!selected) {
+            return true;
+        }
+        return runLayoutCommand(selected, state, notify, persistSettings, translator, onLayoutChanged);
+    }
     let next: 'scrollback' | 'viewport';
     if (!requested) {
         next = state.messageLayout === 'viewport' ? 'scrollback' : 'viewport';

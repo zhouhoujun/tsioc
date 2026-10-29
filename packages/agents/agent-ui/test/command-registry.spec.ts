@@ -4,6 +4,7 @@ import { Suite, Test } from '@tsdi/unit';
 import {
     AGENT_CONSOLE_COMMAND_DEFINITIONS,
     AGENT_CONSOLE_COMMAND_GROUP_ORDER,
+    AGENT_CONSOLE_FEATURED_COMMANDS,
     agentConsoleCommandHints,
     buildAgentConsoleHelpOptions,
     formatAgentConsoleCommandArgumentTemplate,
@@ -69,6 +70,22 @@ export class AgentConsoleCommandRegistryTest {
         expect(hints.includes('/new')).toEqual(true);
         expect(hints.includes('/review')).toEqual(true);
         expect(getAgentConsoleCommandDefinition('/experimental')).toEqual(undefined);
+    }
+
+    @Test('slash menu is curated and keeps the full catalogue in /help')
+    curatedSlashMenu() {
+        const hints = agentConsoleCommandHints();
+        expect(new Set(hints)).toEqual(new Set(AGENT_CONSOLE_FEATURED_COMMANDS));
+        expect(hints.length).toEqual(23);
+        expect(hints[0]).toEqual('/help');
+        const help = buildAgentConsoleHelpOptions();
+        for (const advanced of ['/tools', '/mcp', '/keymap', '/search', '/snapshot', '/outputs', '/voice', '/jobs']) {
+            expect(hints.includes(advanced)).toEqual(false);
+            expect(help.some(option => option.value === advanced)).toEqual(true);
+        }
+        // Aliases remain executable but do not duplicate the curated menu.
+        expect(hints.includes('/connect')).toEqual(false);
+        expect(hints.includes('/web')).toEqual(false);
     }
 
     @Test('keeps canonical command names unique')

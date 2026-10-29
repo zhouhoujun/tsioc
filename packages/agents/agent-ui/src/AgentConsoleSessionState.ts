@@ -89,10 +89,7 @@ import {
     clampCommonTextCursor,
     processCommonTextInputChunk
 } from '@tsdi/components/common';
-import {
-    agentConsoleCommandHints,
-    getAgentConsoleCommandDefinition
-} from './AgentConsoleCommandRegistry';
+import { agentConsoleAllCommandHints, agentConsoleCommandHints, getAgentConsoleCommandDefinition } from './AgentConsoleCommandRegistry';
 import { AgentConsoleInputHistoryController, DefaultAgentConsoleInputHistoryController } from './AgentConsoleInputHistory';
 import { AgentConsoleFocusLayers, DefaultAgentConsoleFocusLayers } from './AgentConsoleFocusLayers';
 import { AgentConsoleCommandExecutionController, DefaultAgentConsoleCommandExecutionController } from './AgentConsoleCommandExecutionState';
@@ -892,7 +889,7 @@ export class AgentConsoleSessionState {
     theme: AgentConsoleTheme = defaultAgentConsoleTheme;
     themeStyles: AgentConsoleThemeStyles = resolveAgentConsoleThemeStyles(defaultAgentConsoleTheme);
     selectMenu?: AgentConsoleSelectMenu;
-    pendingApprovals: AgentConsoleApprovalRequest[] = []; modelUnavailableAction?: (failure: any) => void | Promise<void>;
+    pendingApprovals: AgentConsoleApprovalRequest[] = []; modelUnavailableAction?: (failure: any) => void | Promise<void>; scrollTranscriptAction?: (rows: number) => boolean;
     submitAction?: () => Promise<void>;
     escapeAction?: () => boolean | Promise<boolean>;
     queueDraftAction?: () => boolean | Promise<boolean>;
@@ -921,7 +918,7 @@ export class AgentConsoleSessionState {
     protected injectedCommandHints: string[] = [];
 
     get commandHints(): string[] {
-        return agentConsoleCommandHints(this.injectedCommandHints);
+        return agentConsoleAllCommandHints(this.injectedCommandHints);
     }
 
     protected activeToolSet = new Set<string>();
@@ -5319,10 +5316,14 @@ export class AgentConsoleSessionState {
         const currentCursor = this.inputCursor;
         const active = getAgentConsoleInputTokenRange(currentInput, currentCursor);
         const applySuggestions = (workspaceSuggestions: AgentConsoleSelectOption[] = []) => {
+            const activeToken = getAgentConsoleInputTokenRange(this.input, this.inputCursor)?.token;
+            const commandCandidates = activeToken === '/'
+                ? agentConsoleCommandHints(this.injectedCommandHints)
+                : this.commandHints;
             const options = resolveAgentConsoleInputSuggestions(
                 this.input,
                 this.inputCursor,
-                this.commandHints,
+                commandCandidates,
                 this.tools,
                 workspaceSuggestions,
                 this.suggestionLabels(),
@@ -6435,12 +6436,11 @@ export class AgentConsoleSessionState {
             const layout = resolveTranscriptLayout(this.consoleOptions.messageLayout);
             if (layout.ownsHistoryScroll || layout.wheelScrollsHistory || layout.mode === 'viewport') {
                 const delta = controlKey === 'pageup' ? -1 : 1;
+                // Page keys scroll the viewport; focusing messages here showed
+                // the selection hint/colors on a harmless scroll.
+                if (this.scrollTranscriptAction) { this.scrollTranscriptAction(delta * 10); this.syncTranscriptFollowing(); return { handled: true, action: 'transcriptScroll', value: controlKey }; }
                 const nav = options.transcriptNavigationController as any;
-                if (nav && typeof nav.scrollPage === 'function') {
-                    nav.scrollPage(delta);
-                } else {
-                    nav.scroll(delta);
-                }
+                if (nav && typeof nav.scrollPage === 'function') nav.scrollPage(delta); else nav.scroll(delta);
                 return { handled: true, action: 'transcriptScroll', value: controlKey };
             }
             return { handled: false };

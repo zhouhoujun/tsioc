@@ -875,8 +875,47 @@ export class AgentConsoleMessagesRendererTest {
             expect(boxRow).toBeGreaterThan(0);
             expect(titleRow).toBeGreaterThan(boxRow);
             expect(inputRow).toBeGreaterThan(titleRow);
-            expect(lines[boxRow].search(/\S/)).toBeGreaterThan(0);
+            // Side content may share the row (the brand box); the dialog band
+            // itself must still be inset from the terminal's left edge.
+            expect(lines[boxRow].indexOf('╭', 1)).toBeGreaterThan(0);
             expect(lines.some(line => line.includes('up/down move'))).toBe(true);
+        } finally {
+            surface?.destroy();
+            await tuiCtx.close();
+        }
+    }
+
+    @Test('a native-scrollback dialog opens below the composer')
+    async scrollbackDialogOpensBelowComposer() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const consoleRef = tuiCtx.get(ComponentFactory).create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const state = consoleRef.instance.sessionState;
+            state.setMessages([{ id: 'u1', role: 'user', content: 'hello', createdAt: 1 } as any]);
+            state.openSelectMenu('Security level', [
+                { label: 'Ask for approval', value: 'ask' },
+                { label: 'Full Access', value: 'full' }
+            ], 0, 'up/down move   enter confirm   esc close');
+            await settleDynamicMessages(consoleRef);
+            const renderer = tuiCtx.get(TuiRenderer);
+            surface = new TuiTerminalSurface({
+                renderer,
+                root: consoleRef.elementRef.nativeElement,
+                width: 120,
+                height: 30,
+                nativeScrollback: true,
+                output: { write() { /* noop */ } }
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+            const lines = surface.lastRenderedLines.map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
+            const boxRow = lines.findIndex(line => line.includes('Security level'));
+            const inputRow = lines.findIndex(line => line.includes('Ask code or files'));
+            expect(boxRow).toBeGreaterThan(inputRow);
         } finally {
             surface?.destroy();
             await tuiCtx.close();

@@ -29,6 +29,8 @@ export interface AgentConsoleGlobalKeyInputHost {
         setWhichKeyVisible(visible: boolean): void;
         focusLayers: { isAnyFocusActive(): boolean; hasMessageFocus(): boolean };
         focusLatestLongMessage(): boolean;
+        scrollTranscriptAction?: (rows: number) => boolean;
+        messageLayout?: 'scrollback' | 'viewport';
         displayMessages: AgentMessage[];
         selectedMessageId: string;
         messagesFocused: boolean;
@@ -393,6 +395,14 @@ export async function executeGlobalKeyActionView(
         return host.navigateThreadParent();
     }
     if (action === 'message-page-up') {
+        // Page keys scroll the viewport while the composer owns focus; they
+        // must not silently enter message selection.
+        if (!host.state.focusLayers.hasMessageFocus()
+            && host.state.messageLayout !== 'scrollback'
+            && host.state.scrollTranscriptAction) {
+            host.state.scrollTranscriptAction(-10);
+            return true;
+        }
         if (!host.state.focusLayers.hasMessageFocus()) {
             return host.state.focusLatestLongMessage();
         }
@@ -400,6 +410,12 @@ export async function executeGlobalKeyActionView(
         return true;
     }
     if (action === 'message-page-down') {
+        if (!host.state.focusLayers.hasMessageFocus()
+            && host.state.messageLayout !== 'scrollback'
+            && host.state.scrollTranscriptAction) {
+            host.state.scrollTranscriptAction(10);
+            return true;
+        }
         host.transcriptNavigationController.movePage(1);
         return true;
     }

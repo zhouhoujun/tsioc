@@ -246,6 +246,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         await new Promise<void>(resolve => setTimeout(resolve, ms));
     }
 
+    updateModelOptions(model?: AgentOptions['model']): void { if (!model) return; this.options.model = model; this.modelAdapter.updateOptions?.(model); }
     async runTurn(
         sessionId: string,
         input: string,
@@ -3459,8 +3460,7 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
         return [...keptPrefix, ...turnMessages];
     }
 
-    // Never begin a retained window mid tool-round: an orphaned tool result forces
-    // the adapter to synthesize an assistant tool-call message without reasoning_content.
+    // Never begin a retained window mid tool-round: an orphaned tool result forces the adapter to synthesize an assistant tool-call message without reasoning_content.
     private alignSliceStartToToolRound(messages: AgentMessage[], sliceStart: number): number {
         if (sliceStart <= 0 || messages[sliceStart]?.role !== 'tool') {
             return sliceStart;
