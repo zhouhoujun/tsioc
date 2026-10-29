@@ -85,11 +85,14 @@ export function scrollAgentConsoleTranscript(
     delta: number
 ): void {
     if (surface?.scrollViewport) {
-        const rows = delta < 0 ? 3 : -3;
-        if (surface.scrollViewport(rows)) {
-            syncFollowing();
-            return;
-        }
+        // Wheel input owns the viewport. At the top/bottom the surface reports
+        // false; falling back to message selection focused the transcript (the
+        // "up/down move pg jump..." hint and selected-row colors appeared on a
+        // harmless scroll). Do nothing instead; explicit message navigation
+        // remains a keyboard action.
+        surface.scrollViewport(delta < 0 ? 3 : -3);
+        syncFollowing();
+        return;
     }
     navigation.scroll(delta);
     syncFollowing();

@@ -26,7 +26,8 @@ import {
     AgentTurnCancelledEvent,
     AgentTurnCompletedEvent,
     AgentTurnStartedEvent,
-    threadItemKey
+    threadItemKey,
+    asModelFailure
 } from '@tsdi/agent';
 import { ToolRegistry } from '@tsdi/agent';
 import { TranslatorService } from '@tsdi/i18n';
@@ -384,6 +385,10 @@ export class AgentConsoleEventBridge {
                     });
                 }
                 this.state.appendAssistantErrorMessage(message);
+                const failure = asModelFailure(event.error);
+                if (failure) {
+                    void this.state.modelUnavailableAction?.(failure);
+                }
         });
 
         this.subscribed = true;

@@ -56,7 +56,7 @@ import {
 } from './AgentConsoleReviewHandlers';
 import { getGlobalProcess } from './global-process';
 import { decodeVoiceAudioChunk, handleVoiceCommand, playVoiceReply, startVoiceCapture, stopVoiceCapture, VoiceHandlerContext } from './AgentConsoleVoiceHandlers';
-import { activateModelProfile, consumePendingTurnModelProfile, cycleModelVariant, cycleRecentModel, EffortLevel, getModelProfileOptions, loadModelProfileOptions, openModelSwitcher, persistModelStore, queueNextTurnModelProfile, recordRecentModel, resolveInitialModelProfile, resolveModelProfileConfig, restoreModelStore, setModelReasoningEffort, toggleModelFavorite, ModelHandlerContext } from './AgentConsoleModelHandlers';
+import { activateModelProfile, consumePendingTurnModelProfile, cycleModelVariant, cycleRecentModel, EffortLevel, getModelProfileOptions, loadModelProfileOptions, openModelSwitcher, persistModelStore, queueNextTurnModelProfile, recordRecentModel, resolveInitialModelProfile, resolveModelProfileConfig, restoreModelStore, setModelReasoningEffort, toggleModelFavorite, ModelHandlerContext } from './AgentConsoleModelHandlers'; import { promptModelUnavailable } from './AgentConsoleModelAvailability';
 import { dismissEditMode, enterEditMode, EditModeHandlerContext, extractEditableMessageText, getEditableImageParts, getEditableUserMessages, handleIdleEscape, startEditTarget } from './AgentConsoleEditModeHandlers';
 import { formatAgentPagerStatusCopy, formatAgentPanelLabel, formatAgentUiDateTime, formatAgentUiLabel, formatAgentUiNotice } from './agent-ui.i18n';
 import {
@@ -1559,7 +1559,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.recoverSelectedScheduledTaskAction = this.recoverSelectedScheduledTaskActionHandler;
         this.state.activateSelectedToolAction = this.activateSelectedToolActionHandler;
         this.state.revertGitSnapshotFromDetailAction = () => this.revertGitSnapshotFromDetail();
-        this.state.resolveApprovalAction = this.resolveApprovalActionHandler;
+        this.state.resolveApprovalAction = this.resolveApprovalActionHandler; this.state.modelUnavailableAction = failure => promptModelUnavailable(this.modelCtx(), failure);
         this.state.approvalAlwaysAllowAction = async requestId => { (this.resolvedApprovalManager as any)?.setAutoApprove?.(true); await this.resolveApprovalActionHandler('approve', requestId); this.notify(formatAgentUiNotice(this.translator, 'approvalAlwaysAllowed')); };
         this.state.globalKeyInputAction = (key, modifiers) => this.handleBrowserGlobalKeyInput(key, modifiers);
 this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCacheToDisk(cache);
@@ -1639,7 +1639,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         this.state.cancelSelectedScheduledTaskAction = undefined;
         this.state.recoverSelectedScheduledTaskAction = undefined;
         this.state.activateSelectedToolAction = undefined;
-        this.state.resolveApprovalAction = undefined; this.state.approvalAlwaysAllowAction = undefined;
+        this.state.resolveApprovalAction = undefined; this.state.approvalAlwaysAllowAction = undefined; this.state.modelUnavailableAction = undefined;
         this.state.globalKeyInputAction = undefined;
         void this.persistInputHistory();
         const shell = this.sshShell;
@@ -3409,7 +3409,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             select: (title, options, selectedIndex, hint) => this.select(title, options, selectedIndex, hint),
             updateTerminalTitle: () => this.updateTerminalTitle(),
             persistSettings: async patch => { await this.appRpc?.request('settings.ui.set', patch).catch(() => undefined); await this.persistSettings(patch); },
-            addModelProvider: () => this.startProviderWizard(),
+            addModelProvider: () => this.startProviderWizard(), activateModelProfile: (name, effort, silent) => this.activateModelProfile(name, effort, silent),
             resolveHistoryWorkspace: () => this.resolveHistoryWorkspace(),
             getFavorites: () => this.modelFavorites,
             setFavorites: value => { this.modelFavorites = value; },

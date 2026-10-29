@@ -44,6 +44,7 @@ export interface ModelHandlerContext {
     updateTerminalTitle(): void;
     persistSettings(patch: { thinkingLevel?: EffortLevel; modelProfile?: string }): unknown;
     addModelProvider?(): void | Promise<void>;
+    activateModelProfile?(name: string, effort?: EffortLevel, silent?: boolean): Promise<void>;
     resolveHistoryWorkspace(): string;
     getFavorites(): string[];
     setFavorites(value: string[]): void;

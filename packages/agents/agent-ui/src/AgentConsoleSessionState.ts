@@ -892,7 +892,7 @@ export class AgentConsoleSessionState {
     theme: AgentConsoleTheme = defaultAgentConsoleTheme;
     themeStyles: AgentConsoleThemeStyles = resolveAgentConsoleThemeStyles(defaultAgentConsoleTheme);
     selectMenu?: AgentConsoleSelectMenu;
-    pendingApprovals: AgentConsoleApprovalRequest[] = [];
+    pendingApprovals: AgentConsoleApprovalRequest[] = []; modelUnavailableAction?: (failure: any) => void | Promise<void>;
     submitAction?: () => Promise<void>;
     escapeAction?: () => boolean | Promise<boolean>;
     queueDraftAction?: () => boolean | Promise<boolean>;
