@@ -93,6 +93,35 @@ export class ModelCatalogOptionsTest {
         expect(calls.some(entry => entry.method === 'model.catalog' && entry.params?.provider === 'openai-compatible')).toEqual(true);
     }
 
+    @Test('activating a configured profile without app RPC merges it into the runtime options')
+    async localProfileActivation() {
+        const options: any = {
+            model: {
+                provider: 'openai-compatible',
+                model: 'gpt-5.5',
+                profiles: { 'deepseek-fast': { provider: 'deepseek', model: 'deepseek-flash', baseUrl: 'https://api.deepseek.com' } }
+            }
+        };
+        const ctx: any = {
+            appRpc: null,
+            state: { sessionId: 's1', setModelProfile() {}, setProvider() {}, setModel() {} },
+            options: () => options,
+            notify() {},
+            updateTerminalTitle() {},
+            getRecents: () => [], setRecents() {},
+            getFavorites: () => [], setFavorites() {},
+            getReasoningEffort: () => 'medium' as const,
+            setReasoningEffort() {},
+            persistSettings: async () => undefined,
+            resolveHistoryWorkspace: () => ''
+        };
+        await activateModelProfile(ctx, 'deepseek-fast');
+        expect(options.model.provider).toEqual('deepseek');
+        expect(options.model.model).toEqual('deepseek-flash');
+        expect(options.model.baseUrl).toEqual('https://api.deepseek.com');
+        expect(options.model.defaultProfile).toEqual('deepseek-fast');
+    }
+
     @Test('active model selection forwards the chosen reasoning effort')
     async forwardsEffort() {
         const calls: Array<{ method: string; params: any }> = [];

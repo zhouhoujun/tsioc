@@ -1,7 +1,7 @@
 import * as http from 'http';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { activateCatalogModel, hasModelProvider, resolveModelCatalog } from '../src/app-rpc/modelCatalog';
+import { activateCatalogModel, activateProfileModel, hasModelProvider, resolveModelCatalog } from '../src/app-rpc/modelCatalog';
 
 function listen(server: http.Server): Promise<number> {
     return new Promise(resolve => {
@@ -47,6 +47,24 @@ export class ModelCatalogProvidersTest {
         const empty = await resolveModelCatalog(ghost, 'ghost');
         expect(empty.provider).toEqual('ghost');
         expect(empty.models).toEqual([]);
+    }
+
+    @Test('activating a configured profile applies its provider/model to the top-level runtime options')
+    profileActivation() {
+        const options: any = {
+            model: {
+                provider: 'openai-compatible',
+                model: 'gpt-5.5',
+                profiles: { 'fake-fast': { provider: 'fake-openai', model: 'fake-model-a', baseUrl: 'http://fake.example/v1', apiKey: 'k' } }
+            }
+        };
+        const result = activateProfileModel(options, 'fake-fast');
+        expect(result.provider).toEqual('fake-openai');
+        expect(result.model).toEqual('fake-model-a');
+        expect(options.model.provider).toEqual('fake-openai');
+        expect(options.model.model).toEqual('fake-model-a');
+        expect(options.model.baseUrl).toEqual('http://fake.example/v1');
+        expect(options.model.defaultProfile).toEqual('fake-fast');
     }
 
     @Test('live catalog models activate with the selected provider connection')

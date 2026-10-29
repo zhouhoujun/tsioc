@@ -19,6 +19,7 @@ import {
 import {
     AgentAppServerModule,
     AgentGatewayModule,
+    AGENT_MODEL_CONFIG_WRITER,
     GatewayBootstrap,
     GatewayServer,
     MdnsServiceDiscovery,
@@ -128,6 +129,7 @@ export async function runAgentConsole(
 
     const ctx = await runConsoleTui(resolved, options, agentOptions, [
         ...buildAgentRuntimeProviders(config, resolved, options, gatewayUrl ? join(tmpdir(), `tsdi-agent-attach-${process.pid}`) : undefined),
+        ...(gatewayUrl ? [] : [{ provide: AGENT_MODEL_CONFIG_WRITER, useValue: (model: Record<string, any>) => config.writeModelProfile(resolved.root, model as any) }]),
         ...extraProviders,
         ...(webConfig ? provideAgentGateway(webConfig) : [])
     ], ui, {

@@ -411,12 +411,8 @@ export async function activateModelProfile(ctx: ModelHandlerContext, profileName
         ctx.notify(formatAgentUiNotice(ctx.translator, 'unknownModelProfile', { name: name }));
         return;
     }
-    opts.model = opts.model || {};
-    opts.model.defaultProfile = name;
-    if (reasoningEffort) {
-        opts.model.reasoningEffort = reasoningEffort;
-    }
     const resolved = resolveModelProfileConfig(ctx, name);
+    opts.model = { ...resolved, defaultProfile: name, ...(reasoningEffort ? { reasoningEffort } : {}) };
     ctx.state.setModelProfile(name);
     if (resolved.provider) {
         ctx.state.setProvider(resolved.provider);

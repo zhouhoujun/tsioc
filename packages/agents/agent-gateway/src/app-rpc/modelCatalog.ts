@@ -56,6 +56,19 @@ export function resolveModelForProvider(options: AgentOptions | undefined, provi
     return { ...model, provider: id };
 }
 
+/** Apply a configured profile to the top-level runtime options (not only defaultProfile). */
+export function activateProfileModel(options: AgentOptions, profileName: string, reasoningEffort?: 'low' | 'medium' | 'high' | 'max'): { provider?: string; model?: string; reasoningEffort?: 'low' | 'medium' | 'high' | 'max' } {
+    const model = (options.model || {}) as AgentModelOptions;
+    const profile = model.profiles?.[profileName];
+    options.model = {
+        ...model,
+        ...(profile || {}),
+        defaultProfile: profileName,
+        ...(reasoningEffort !== undefined ? { reasoningEffort } : {})
+    };
+    return { provider: options.model.provider, model: options.model.model, reasoningEffort: options.model.reasoningEffort };
+}
+
 /** Apply a catalog model (possibly not in the bundled registry) to the runtime options. */
 export function activateCatalogModel(options: AgentOptions, providerId: string, modelId: string, reasoningEffort?: 'low' | 'medium' | 'high' | 'max'): { provider: string; model: string; reasoningEffort?: 'low' | 'medium' | 'high' | 'max' } {
     const model = options.model || {};

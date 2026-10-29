@@ -8,7 +8,7 @@ import { buildConsoleAgentOptions } from '@tsdi/agent-ui/console';
 import { applyPersistedModelProfile, applyPersistedPreferences } from '@tsdi/agent-ui';
 import { AgentGatewayModule, GatewayConfig, GatewayServer, PairingStore, provideAgentGateway } from '@tsdi/agent-gateway';
 import { readConsoleUiSettings } from '@tsdi/agent-gateway';
-import { buildPairingUrls } from '@tsdi/agent-gateway';
+import { AGENT_MODEL_CONFIG_WRITER, buildPairingUrls } from '@tsdi/agent-gateway';
 import { AgentCliOptions } from './config';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { buildAgentRuntimeProviders } from './agent-runtime-providers';
@@ -104,7 +104,8 @@ export async function runAgentServe(options: AgentServeOptions = {}): Promise<an
         providers: [
             ...provideAgentGateway(gatewayConfig),
             ...buildAgentRuntimeProviders(config, resolved, options),
-            { provide: AGENT_OPTIONS, useValue: runtimeAgentOptions }
+            { provide: AGENT_OPTIONS, useValue: runtimeAgentOptions },
+            { provide: AGENT_MODEL_CONFIG_WRITER, useValue: (model: Record<string, any>) => config.writeModelProfile(resolved.root, model as any) }
         ]
     });
 

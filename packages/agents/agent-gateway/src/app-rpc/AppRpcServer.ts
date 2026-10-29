@@ -2,7 +2,8 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { UuidGenerator } from '@tsdi/core';
 import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeAgentWorkspaceIdentity, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, CommandExchangeStore, CommandExchangeRecord, CommandExchangeStaleError, parseCommandExchangeRecord, redactCommandExchangeRecord, ApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, redactCommandOutputEntry, normalizeAgentRpcRequestMeta, COMMAND_EXCHANGE_STORE, BACKGROUND_TASK_HISTORY_STORE, BackgroundTaskHistoryStore, BackgroundTaskPageOptions, collectDelegationSessionIds, ExchangeMetrics, ExchangeMetricsSnapshot, AGENT_WORKSPACE_TRUST } from '@tsdi/agent';
-import { activateCatalogModel, hasModelProvider, resolveModelCatalog } from './modelCatalog';
+import { activateCatalogModel, activateProfileModel, hasModelProvider, resolveModelCatalog } from './modelCatalog';
+import { AGENT_MODEL_CONFIG_WRITER } from '../tokens';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
@@ -53,7 +54,7 @@ export class AppRpcServer {
         @Optional() @Inject(QuestionStore) private questionStore?: QuestionStore | null,
         @Optional() private onQuestionAnswered?: ((questionId: string, sessionId: string, answer?: string, dismissed?: boolean) => void | Promise<void>) | null,
         @Optional() @Inject(BACKGROUND_TASK_HISTORY_STORE) private backgroundTaskStore?: BackgroundTaskHistoryStore | null,
-        @Optional() @Inject(ExchangeMetrics) private exchangeMetrics?: ExchangeMetrics | null, @Optional() @Inject(AGENT_WORKSPACE_TRUST) private workspaceTrust?: import('@tsdi/agent').AgentWorkspaceTrustResolver | null
+        @Optional() @Inject(ExchangeMetrics) private exchangeMetrics?: ExchangeMetrics | null, @Optional() @Inject(AGENT_WORKSPACE_TRUST) private workspaceTrust?: import('@tsdi/agent').AgentWorkspaceTrustResolver | null, @Optional() @Inject(AGENT_MODEL_CONFIG_WRITER) private persistModelConfig?: ((model: any) => void) | null
     ) {
     }
 
@@ -1881,20 +1882,12 @@ export class AppRpcServer {
                 throw new AppRpcError(-32602, `Invalid params: unknown model profile '${name}'`);
             }
             const activated = activateCatalogModel(this.options, providerId, modelId, reasoningEffort as 'low' | 'medium' | 'high' | 'max' | undefined);
+            this.persistModelConfig?.(this.options.model);
             return { sessionId: sessionId || null, modelProfile: name, ...activated, catalog: true };
         }
-        this.options.model = this.options.model || {};
-        this.options.model.defaultProfile = name;
-        if (reasoningEffort !== undefined) {
-            this.options.model.reasoningEffort = reasoningEffort;
-        }
-        return {
-            sessionId: sessionId || null,
-            modelProfile: name,
-            provider: profile.provider || this.options.model.provider || '',
-            model: profile.model || this.options.model.model || '',
-            reasoningEffort: this.options.model.reasoningEffort
-        };
+        const activated = activateProfileModel(this.options, name, reasoningEffort as 'low' | 'medium' | 'high' | 'max' | undefined);
+        this.persistModelConfig?.(this.options.model);
+        return { sessionId: sessionId || null, modelProfile: name, ...activated };
     }
 
     private addModelProvider(params: any): any {
@@ -1956,6 +1949,7 @@ export class AppRpcServer {
         this.options.model.baseUrl = baseUrl;
         if (apiKey) this.options.model.apiKey = apiKey;
         if (apiKeyEnv) this.options.model.apiKeyEnv = apiKeyEnv;
+        this.persistModelConfig?.({ ...this.options.model });
         return { name, profiles: registered };
     }
 
