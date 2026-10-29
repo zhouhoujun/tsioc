@@ -36,6 +36,7 @@ import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { ensureAgentWorkspace } from './run-command';
 import { buildAgentRuntimeProviders } from './agent-runtime-providers';
 import { buildServeGatewayConfig, resolveAgentWebDir } from './serve';
+import { writeAgentModelConfig } from './model-config-writer';
 import { renderPairingQrForUrls } from './pair-qr';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -129,7 +130,7 @@ export async function runAgentConsole(
 
     const ctx = await runConsoleTui(resolved, options, agentOptions, [
         ...buildAgentRuntimeProviders(config, resolved, options, gatewayUrl ? join(tmpdir(), `tsdi-agent-attach-${process.pid}`) : undefined),
-        ...(gatewayUrl ? [] : [{ provide: AGENT_MODEL_CONFIG_WRITER, useValue: (model: Record<string, any>) => config.writeModelProfile(resolved.root, model as any) }]),
+        ...(gatewayUrl ? [] : [{ provide: AGENT_MODEL_CONFIG_WRITER, useValue: (model: Record<string, any>) => writeAgentModelConfig(resolved.root, model) }]),
         ...extraProviders,
         ...(webConfig ? provideAgentGateway(webConfig) : [])
     ], ui, {

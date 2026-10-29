@@ -2624,3 +2624,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 缺陷：profile 激活/恢复只做 `{...旧顶层, ...profile}`；新 profile 仅配 `apiKeyEnv` 时会继承旧 provider 的 `apiKey`/`headers`，provider 变化但无 baseUrl 时还会沿用旧 endpoint。
 - 修复：gateway `activateProfileModel` 与共享 `applyProfileSelection`（客户端/持久化恢复）显式写入 profile 的 apiKey/apiKeyEnv/headers，未定义即清空；provider 变化且无 baseUrl 时清空 baseUrl。
 - 验证：agent-ui 1857、gateway 375（新增凭据隔离断言：旧 key/headers 清除、env 生效、endpoint 清空）。
+
+## `/provider` 顶层 model 写回（2026-10）
+
+- 缺陷：`writeSettingsModelProfile` 在已有 `defaultProfile/profiles` 时只更新默认 profile 条目，不更新顶层 `model`；向导激活后 root 仍是 gpt-5.5，重启回退。
+- 修复：新增 `writeAgentModelConfig`（整段替换 root `settings.json` 的 `model`，保留其他设置），serve 与本地 console 的 `AGENT_MODEL_CONFIG_WRITER` 使用它。
+- 验证：agent-cli 127（+2 writer）；真实 `/provider` 向导 PTY：实时模型选择、root model/baseUrl 写回、turn 使用新 provider、重启保持（12 项中 11 项通过，失败项是探针未记录 GET 的检查，模型菜单已证明实时拉取）。

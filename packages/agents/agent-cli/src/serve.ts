@@ -12,6 +12,7 @@ import { AGENT_MODEL_CONFIG_WRITER, buildPairingUrls } from '@tsdi/agent-gateway
 import { AgentCliOptions } from './config';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { buildAgentRuntimeProviders } from './agent-runtime-providers';
+import { writeAgentModelConfig } from './model-config-writer';
 import { ensureAgentWorkspace } from './run-command';
 import { renderPairingQrForUrls } from './pair-qr';
 
@@ -105,7 +106,7 @@ export async function runAgentServe(options: AgentServeOptions = {}): Promise<an
             ...provideAgentGateway(gatewayConfig),
             ...buildAgentRuntimeProviders(config, resolved, options),
             { provide: AGENT_OPTIONS, useValue: runtimeAgentOptions },
-            { provide: AGENT_MODEL_CONFIG_WRITER, useValue: (model: Record<string, any>) => config.writeModelProfile(resolved.root, model as any) }
+            { provide: AGENT_MODEL_CONFIG_WRITER, useValue: (model: Record<string, any>) => writeAgentModelConfig(resolved.root, model) }
         ]
     });
 
