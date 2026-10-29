@@ -286,15 +286,15 @@ interface AgentConsoleQueuedPrompt {
         <agent-console-tools-panel v-show="showToolsPanel && !showMessageDetailPanel"></agent-console-tools-panel>
         <agent-console-working-panel v-show="showWorkingPanel && !showMessageDetailPanel"></agent-console-working-panel>
         <agent-console-tool-runs-panel v-show="showToolRunsPanel && !showMessageDetailPanel"></agent-console-tool-runs-panel>
-        <agent-console-pending-question-panel v-show="showPendingQuestionPanel"></agent-console-pending-question-panel>
+        <agent-console-pending-question-panel renderRegion="dialog" v-show="showPendingQuestionPanel"></agent-console-pending-question-panel>
+        <agent-console-select-panel renderRegion="dialog" v-show="showSelectPanel"></agent-console-select-panel>
+        <agent-console-text-overlay-panel renderRegion="dialog" v-show="showTextOverlayPanel"></agent-console-text-overlay-panel>
         <agent-console-status-panel renderRegion="footer" v-show="showStatusPanel && !showMessageDetailPanel"></agent-console-status-panel>
         <agent-console-sessions-panel renderRegion="footer" v-show="showSessionsPanel && !showMessageDetailPanel"></agent-console-sessions-panel>
         <agent-console-approvals-panel renderRegion="footer" v-show="showApprovalsPanel && !showMessageDetailPanel"></agent-console-approvals-panel>
         <agent-console-input-panel renderRegion="footer"></agent-console-input-panel>
-        <agent-console-select-panel v-show="showSelectPanel"></agent-console-select-panel>
         <agent-console-which-key-panel v-show="showWhichKeyPanel"></agent-console-which-key-panel>
         <agent-console-health-popover v-show="showHealthPopover"></agent-console-health-popover>
-        <agent-console-text-overlay-panel v-show="showTextOverlayPanel"></agent-console-text-overlay-panel>
         <agent-console-outputs-panel v-show="showCommandOutputsPanel"></agent-console-outputs-panel>
     </div>
     `

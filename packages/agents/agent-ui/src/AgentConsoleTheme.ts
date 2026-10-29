@@ -43,6 +43,7 @@ export interface AgentConsoleTheme {
     activityTitle: string;
     activityShell: string;
     selectTitle: string;
+    dialogShell: string;
     selectShell: string;
     selectHeader: string;
     selectHint: string;
@@ -98,6 +99,7 @@ export const defaultAgentConsoleTheme: AgentConsoleTheme = {
     activityTitle: 'color: #8b949e;',
     activityShell: 'color: #c9d1d9;',
     selectTitle: 'color: #8b949e;',
+    dialogShell: 'color: #d6dee6; border: 1px solid #30363d; border-radius: 1; background: #161b22; padding: 0 2; max-width: 88ch;',
     selectShell: 'color: #d6dee6; padding: 0 1ch;',
     selectHeader: 'color: #c9d1d9; font-weight: bold;',
     selectHint: 'color: #6e7681;',

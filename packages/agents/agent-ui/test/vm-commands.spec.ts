@@ -608,7 +608,7 @@ export class VmCommandsTest {
         expect(component.notice).toEqual('Activated read_file.');
     }
 
-    @Test('help command uses action hint in select menu')
+    @Test('help command opens the group picker with its action hint')
     async helpCommandUsesActionHintInSelectMenu() {
         const runtime = new RuntimeStub();
         const scheduler = new SchedulerStub();
@@ -620,7 +620,7 @@ export class VmCommandsTest {
         await waitForCondition(() => !!component.sessionState.selectMenu);
 
         expect(component.sessionState.selectMenu?.title).toEqual('Help');
-        expect(component.sessionState.selectMenu?.hint).toEqual(component.sessionState.consoleOptions.selectHint);
+        expect(component.sessionState.selectMenu?.hint).toContain('enter open group');
 
         await component.sessionState.cancelSelectMenu();
         await pending;

@@ -1726,7 +1726,7 @@ export class AgentConsoleApprovalsPanelComponent {
     }
 
     get shellStyle() {
-        return this.shouldShow ? this.activeThemeStyles.toolsShell : {};
+        return this.shouldShow ? this.activeThemeStyles.dialogShell : {};
     }
 
     get accentStyle() {
@@ -2045,7 +2045,7 @@ export class AgentConsoleTextOverlayPanelComponent {
     }
 
     get shellStyle() {
-        return this.state.hasTextOverlayFocus() ? this.activeThemeStyles.toolRunsShell : {};
+        return this.state.hasTextOverlayFocus() ? this.activeThemeStyles.dialogShell : {};
     }
 
     get accentStyle() {
@@ -2217,7 +2217,7 @@ export class AgentConsolePendingQuestionPanelComponent {
     }
 
     get shellStyle() {
-        return this.activeThemeStyles.toolRunsShell;
+        return this.activeThemeStyles.dialogShell;
     }
 
     get accentStyle() {
@@ -3804,7 +3804,7 @@ export class AgentConsoleSelectPanelComponent {
     get menuMetaText(): string { const menu = this.menu; if (!menu || isAgentConsoleSuggestionMenu(menu)) return ''; const window = resolveConsoleSelectWindow(menu.options.length, menu.selectedIndex, this.state.consoleOptions.selectVisibleOptions); return window.count < menu.options.length ? `${window.start + 1}-${window.start + window.count}/${menu.options.length}` : ''; }
 
     get shellStyle() {
-        return this.menu ? styleTextToObject(this.activeTheme.selectShell) : {};
+        return this.menu ? styleTextToObject(this.activeTheme.dialogShell) : {};
     }
 
     get menuOptions(): Array<{ label: string; value: string; description?: string }> {

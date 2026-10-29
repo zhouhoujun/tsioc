@@ -14,12 +14,12 @@ import type {
     AgentConsoleSelectOption,
     AgentConsoleSessionItem
 } from './AgentConsoleSessionState';
-import { buildAgentConsoleHelpOptions } from './AgentConsoleCommandRegistry';
 import type { AgentConsoleParsedCommandArguments } from './AgentConsoleCommandRegistry';
 import type { AgentConsoleSessionService } from './AgentConsoleSessionService';
 import type { NavFilter, NavSelection, SessionSearchMatch } from '@tsdi/agent';
 import { AGENT_CONSOLE_OVERLAY_HINTS } from './AgentConsoleOverlayPresenter';
 import type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
+import { runHelpCommand } from './AgentConsoleHelpCommand';
 import { runSnapshotsCommand, type SnapshotCommandHost } from './AgentConsoleSnapshotCommands';
 import { handlePair, handleRename, handleRestart, handleTitle } from './AgentConsoleSessionRenameCommands';
 import { mapTuiLayoutArg } from './AgentConsoleSettingsCommands';
@@ -59,14 +59,6 @@ function parseTrendTokens(args: string, sep = ' '): { sessionId?: string; bucket
 }
 
 // ── Handler functions ────────────────────────────────────────────────────────
-
-async function handleHelp(ctx: CommandHandlerContext, _args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
-    const helpSelection = await ctx.select(panelLabel(ctx.translator, 'select', 'help', 'Help'), buildAgentConsoleHelpOptions((key, fallback) => { const value = ctx.translator?.translate(key); return value && value !== key ? value : fallback; }), 0, ctx.state.consoleOptions.selectHint);
-    if (helpSelection) {
-        await ctx.handleMenuSelection(helpSelection);
-    }
-    return true;
-}
 
 async function handleModel(ctx: CommandHandlerContext, args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
     if (ctx.isTurnInProgress()) {
@@ -1042,7 +1034,7 @@ async function handleOutputs(ctx: CommandHandlerContext, _args: string, _resolve
 // ── Dispatch table ───────────────────────────────────────────────────────────
 
 export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
-    '/help': handleHelp,
+    '/help': runHelpCommand,
     '/model': handleModel,
     '/provider': handleProvider,
     '/init': (ctx, args, meta) => guardDelegate(ctx, canonicalArgsOf(meta, args), meta, a => ctx.runInitCommand(a).then(() => true)),

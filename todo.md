@@ -2636,3 +2636,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 缺陷：阻塞式 select 菜单未渲染 title/hint，确认框只显示 revert/cancel 看不到问题；超宽标题被硬截断；pending question 的自定义答案在 TUI 分组文本 run 下被吞掉，单字符又因控制器二次应用而重复；回答后 resume turn 阻塞输入分发链，审批 a/d 排队到 30s 超时；in-process 审批使用了错误的 ApprovalManager，workspace trust 未持久化。
 - 修复：select 面板绑定 title/hint/meta，长标题/详情/提示按宽度换行，长列表显示 `1-12/N`，inline suggestion 保持简洁；pending question 接受分组文本/粘贴并只应用一次；resume 异步启动；审批优先走 app RPC；workspace trust 用 FileAdapter deps 工厂并写 `trusted-projects.json`。
 - 验证：真实 PTY 弹窗 13/13、问题+审批对话 26/26；agent-ui 1864、agent-cli 128、components/console 106。
+
+## 真正的对话框与 /help 分组（2026-10）
+
+- 缺陷：命令/确认菜单只是输入框下方的行；`/help` 是扁平大列表，Enter 会直接执行高亮命令（`/exit`、`/restart`）。
+- 修复：TUI 新增 `dialog` region + overlay 合成，弹出框居中覆盖对话区（圆角边框、max-width、窄屏自适应）；审批/问题/选择/帮助统一使用；`/help` 改为分组只读目录，支持 `/help <query>` 与 `/help <group>`，过滤时命令/子命令优先、描述兜底，不再执行命令。
+- 验证：真实 PTY 弹窗 13/13、help 11/11、问题+审批 26/26；agent-ui 1872、components/console 106。

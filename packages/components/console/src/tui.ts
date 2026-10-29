@@ -519,7 +519,9 @@ export class TuiRenderer extends ConsoleRenderer {
                 const childClickTargets: TerminalClickTarget[] = [];
                 const childInherited = this.getInheritedStyleMap(styleMap);
                 const hasOwnFrame = this.hasBlockFrame(styleMap, width);
-                const childWidth = this.resolveBlockContentWidth(styleMap, width);
+                const blockMaxWidth = this.resolveBlockMaxWidth(styleMap, width);
+                const blockWidth = blockMaxWidth && width ? Math.min(width, blockMaxWidth) : width;
+                const childWidth = this.resolveBlockContentWidth(styleMap, blockWidth);
                 element.childNodes.forEach(child => this.walkTuiNode(
                     child as ConsoleNode,
                     childLines,
@@ -530,13 +532,23 @@ export class TuiRenderer extends ConsoleRenderer {
                     childClickTargets,
                     visited
                 ));
-                const framed = this.renderBlockLines(childLines, styleMap, width);
+                const framedLines = this.renderBlockLines(childLines, styleMap, blockWidth);
+                const layoutWidth = typeof width === 'number' ? width : undefined;
+                const indent = layoutWidth && blockMaxWidth && typeof blockWidth === 'number' && blockWidth < layoutWidth
+                    ? Math.floor((layoutWidth - blockWidth) / 2)
+                    : 0;
+                const framed = indent && layoutWidth
+                    ? framedLines.map(line => {
+                        const pad = Math.max(0, layoutWidth - indent - getDisplayWidth(this.stripAnsi(line)));
+                        return `${' '.repeat(indent)}${line}${' '.repeat(pad)}`;
+                    })
+                    : framedLines;
                 lines.push(...framed);
                 const offset = this.resolveBlockContentOffset(styleMap);
                 childTargets.forEach(target => cursorTargets.push({
                     ...target,
                     row: start + offset.row + target.row,
-                    column: offset.column + target.column
+                    column: indent + offset.column + target.column
                 }));
                 childRegions.forEach(region => {
                     const absolute = {
@@ -551,7 +563,7 @@ export class TuiRenderer extends ConsoleRenderer {
                     // rebuilding field-by-field silently dropped it.
                     clickTargets.push({
                         ...target,
-                        x: offset.column + target.x,
+                        x: indent + offset.column + target.x,
                         y: start + offset.row + target.y
                     });
                 });
@@ -678,6 +690,21 @@ export class TuiRenderer extends ConsoleRenderer {
         return Math.max(4, renderWidth - edgeColumns - padding.left - padding.right);
     }
 
+    protected resolveBlockMaxWidth(styleMap: Record<string, string>, width?: number): number | undefined {
+        const raw = styleMap['max-width'] || styleMap.maxWidth;
+        if (!raw || !width || width <= 0) {
+            return undefined;
+        }
+        const text = String(raw).trim();
+        const parsed = text.endsWith('%')
+            ? Math.floor(width * (parseFloat(text) / 100))
+            : parseInt(text.replace(/ch$/, ''), 10);
+        if (!Number.isFinite(parsed) || parsed <= 0) {
+            return undefined;
+        }
+        return Math.max(8, Math.min(width, Math.floor(parsed)));
+    }
+
     protected renderBlockLines(lines: string[], styleMap: Record<string, string>, width?: number): string[] {
         const hasFrame = this.hasBlockFrame(styleMap, width);
         if (!hasFrame || !width) {
@@ -699,8 +726,9 @@ export class TuiRenderer extends ConsoleRenderer {
             const trailing = border.box ? this.applyAnsi('│', styleMap, undefined, true) : '';
             return `${leading}${leftPad}${body}${rightPad}${trailing}`;
         };
+        const rounded = !!styleMap['border-radius'];
         if (border.box) {
-            framed.push(`${this.applyAnsi('┌', styleMap, undefined, true)}${horizontal}${this.applyAnsi('┐', styleMap, undefined, true)}`);
+            framed.push(`${this.applyAnsi(rounded ? '╭' : '┌', styleMap, undefined, true)}${horizontal}${this.applyAnsi(rounded ? '╮' : '┐', styleMap, undefined, true)}`);
         }
         for (let index = 0; index < padding.top; index++) {
             framed.push(renderRow(topPad));
@@ -710,7 +738,7 @@ export class TuiRenderer extends ConsoleRenderer {
             framed.push(renderRow(bottomPad));
         }
         if (border.box) {
-            framed.push(`${this.applyAnsi('└', styleMap, undefined, true)}${horizontal}${this.applyAnsi('┘', styleMap, undefined, true)}`);
+            framed.push(`${this.applyAnsi(rounded ? '╰' : '└', styleMap, undefined, true)}${horizontal}${this.applyAnsi(rounded ? '╯' : '┘', styleMap, undefined, true)}`);
         }
         return framed;
     }

@@ -1419,14 +1419,70 @@ export class TuiTerminalSurface {
         cursorTargets: TerminalCursorTarget[];
         clickTargets: TerminalClickTarget[];
     } {
-        const allLines = layout.lines || [];
-        const allRegions = layout.regions || [];
         const nativeScrollback = typeof this.options.nativeScrollback === 'function'
             ? this.options.nativeScrollback()
             : this.options.nativeScrollback === true;
         const height = this.resolveHeight();
         const scrollRegionId = this.options.scrollRegionId || 'transcript';
         const footerRegionId = this.options.footerRegionId || 'footer';
+        // A dialog is rendered as its own region so the viewport can float it
+        // above the transcript instead of appending rows below the composer.
+        // Native scrollback cannot composite, so it keeps the inline layout.
+        const dialogRegion = !nativeScrollback && height
+            ? (layout.regions || []).find(region => region.id === 'dialog')
+            : undefined;
+        const dialogLines = dialogRegion
+            ? (layout.lines || []).slice(dialogRegion.startRow, dialogRegion.endRow)
+            : [];
+        const dialogHeight = dialogLines.length;
+        const dialogClickTargets = dialogRegion
+            ? (layout.clickTargets || []).filter(target => target.y >= dialogRegion.startRow && target.y < dialogRegion.endRow)
+                .map(target => ({ ...target, y: target.y - dialogRegion.startRow }))
+            : [];
+        let allLines = layout.lines || [];
+        let allRegions = layout.regions || [];
+        let baseCursorTargets = (layout.cursorTargets || []).slice();
+        let baseClickTargets = (layout.clickTargets || []).slice();
+        if (dialogRegion) {
+            allLines = [
+                ...allLines.slice(0, dialogRegion.startRow),
+                ...allLines.slice(dialogRegion.endRow)
+            ];
+            allRegions = allRegions
+                .filter(region => region !== dialogRegion)
+                .map(region => region.startRow >= dialogRegion.endRow
+                    ? { ...region, startRow: region.startRow - dialogHeight, endRow: region.endRow - dialogHeight }
+                    : region);
+            baseCursorTargets = baseCursorTargets
+                .filter(target => !(target.row >= dialogRegion.startRow && target.row < dialogRegion.endRow))
+                .map(target => target.row >= dialogRegion.endRow ? { ...target, row: target.row - dialogHeight } : target);
+            baseClickTargets = baseClickTargets
+                .filter(target => !(target.y >= dialogRegion.startRow && target.y < dialogRegion.endRow))
+                .map(target => target.y >= dialogRegion.endRow ? { ...target, y: target.y - dialogHeight } : target);
+        }
+        const composeDialogOverlay = (result: { lines: string[]; regions: TerminalRenderRegion[]; cursorTargets: TerminalCursorTarget[]; clickTargets: TerminalClickTarget[] }) => {
+            if (!dialogLines.length || !height) {
+                return result;
+            }
+            const footer = result.regions.find(region => region.id === footerRegionId);
+            const areaEnd = footer ? footer.startRow : height;
+            const start = Math.max(0, Math.floor((areaEnd - dialogLines.length) / 2));
+            const lines = result.lines.slice();
+            while (lines.length < height) {
+                lines.push('');
+            }
+            dialogLines.forEach((line, index) => {
+                if (start + index < height) {
+                    lines[start + index] = line;
+                }
+            });
+            const clickTargets = result.clickTargets
+                .filter(target => !(target.y >= start && target.y < start + dialogHeight))
+                .concat(dialogClickTargets.map(target => ({ ...target, y: start + target.y })));
+            const cursorTargets = result.cursorTargets
+                .filter(target => !(target.row >= start && target.row < start + dialogHeight));
+            return { lines, regions: result.regions, cursorTargets, clickTargets };
+        };
         const scrollRegion = allRegions.find(region => region.id === scrollRegionId);
         const footerRegion = allRegions.find(region => region.id === footerRegionId);
         this.lastAvailableRows = height && scrollRegion && footerRegion && footerRegion.startRow > scrollRegion.startRow
@@ -1435,39 +1491,39 @@ export class TuiTerminalSurface {
         if (nativeScrollback) {
             this.maxScrollOffsetRows = 0;
             this.scrollOffsetRows = 0;
-            return {
+            return composeDialogOverlay({
                 lines: allLines,
                 regions: allRegions,
-                cursorTargets: layout.cursorTargets || [],
-                clickTargets: layout.clickTargets || []
-            };
+                cursorTargets: baseCursorTargets,
+                clickTargets: baseClickTargets
+            });
         }
         if (!height) {
             this.maxScrollOffsetRows = 0;
             this.scrollOffsetRows = 0;
-            return {
+            return composeDialogOverlay({
                 lines: allLines,
                 regions: allRegions,
-                cursorTargets: layout.cursorTargets || [],
-                clickTargets: layout.clickTargets || []
-            };
+                cursorTargets: baseCursorTargets,
+                clickTargets: baseClickTargets
+            });
         }
         if (!scrollRegion || !footerRegion || footerRegion.startRow <= scrollRegion.startRow) {
             if (allLines.length <= height) {
                 this.maxScrollOffsetRows = 0;
                 this.scrollOffsetRows = 0;
-                return {
+                return composeDialogOverlay({
                     lines: allLines,
                     regions: allRegions,
-                    cursorTargets: layout.cursorTargets || [],
-                    clickTargets: layout.clickTargets || []
-                };
+                    cursorTargets: baseCursorTargets,
+                    clickTargets: baseClickTargets
+                });
             }
             const start = allLines.length - height;
             const mapRow = (row: number): number | undefined => row >= start ? row - start : undefined;
             this.maxScrollOffsetRows = this.isScrollViewportEnabled() ? start : 0;
             this.scrollOffsetRows = 0;
-            return {
+            return composeDialogOverlay({
                 lines: allLines.slice(start),
                 regions: allRegions.flatMap(region => {
                     const regionStart = mapRow(Math.max(start, region.startRow));
@@ -1475,15 +1531,15 @@ export class TuiTerminalSurface {
                     return regionStart === undefined || regionEnd === undefined
                         ? [] : [{ id: region.id, startRow: regionStart, endRow: regionEnd + 1 }];
                 }),
-                cursorTargets: (layout.cursorTargets || []).flatMap(target => {
+                cursorTargets: baseCursorTargets.flatMap(target => {
                     const row = mapRow(target.row);
                     return row === undefined ? [] : [{ ...target, row }];
                 }),
-                clickTargets: (layout.clickTargets || []).flatMap(target => {
+                clickTargets: baseClickTargets.flatMap(target => {
                     const row = mapRow(target.y);
                     return row === undefined ? [] : [{ ...target, y: row }];
                 })
-            };
+            });
         }
         const prefix = allLines.slice(0, scrollRegion.startRow);
         const transcript = allLines.slice(scrollRegion.startRow, footerRegion.startRow);
@@ -1511,11 +1567,11 @@ export class TuiTerminalSurface {
             }
             return undefined;
         };
-        const cursorTargets = (layout.cursorTargets || []).flatMap(target => {
+        const cursorTargets = baseCursorTargets.flatMap(target => {
             const row = mapRow(target.row);
             return row === undefined ? [] : [{ ...target, row }];
         });
-        const clickTargets = (layout.clickTargets || []).flatMap(target => {
+        const clickTargets = baseClickTargets.flatMap(target => {
             const rows = Array.from({ length: Math.max(1, target.height) }, (_value, index) => mapRow(target.y + index))
                 .filter((row): row is number => row !== undefined);
             if (!rows.length) return [];
@@ -1527,12 +1583,12 @@ export class TuiTerminalSurface {
             if (startRow === undefined || endRow === undefined) return [];
             return [{ id: region.id, startRow, endRow: endRow + 1 }];
         });
-        return {
+        return composeDialogOverlay({
             lines: [...prefix, ...Array.from({ length: fillerRows }, () => ''), ...visibleTranscript, ...footer],
             regions,
             cursorTargets,
             clickTargets
-        };
+        });
     }
 
     protected resolveHeight(): number | undefined {
