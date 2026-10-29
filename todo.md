@@ -2660,3 +2660,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 缺陷：gpt-5.5 返回 503 只提示“retry/switch model”，用户不知道模型已从目录消失；鼠标滚轮到边界回退到消息选择，出现 messagesHint 并改变消息颜色。
 - 修复：模型失败时拉取实时目录，模型缺失/404/明确 retired 自动弹出模型更新框，选择后激活并持久化；已知模型的 503/429 不误报。滚轮只滚动 viewport，无 viewport 才回退消息导航。
 - 验证：真实 PTY gpt-5.5→更新框→gpt-5.6-sol→重试成功 8/8；滚轮不聚焦 3/3；agent-ui 1879。
+
+## `/` 命令建议改为 inline（2026-10）
+
+- 缺陷：把 select 菜单统一改成居中 modal 后，输入 `/` 的命令建议也变成居中弹框，不符合 opencode 式内联命令菜单。
+- 修复：新增独立的 inline suggestion panel（锚定输入框上方、无边框/标题），modal select 仅在非 suggestion 菜单显示；Enter 执行/过滤行为不变。
+- 验证：真实 PTY inline 菜单 5/5（无居中边框、位于 composer 上方、过滤、Enter）；agent-ui 1880。

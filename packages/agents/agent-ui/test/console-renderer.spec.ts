@@ -805,6 +805,43 @@ export class AgentConsoleMessagesRendererTest {
         }
     }
 
+    @Test('slash command suggestions render inline above the composer')
+    async slashSuggestionsRenderInline() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const consoleRef = tuiCtx.get(ComponentFactory).create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const state = consoleRef.instance.sessionState;
+            state.setCommandHints(['/help', '/model', '/status']);
+            state.setInput('/', 1);
+            await settleDynamicMessages(consoleRef);
+            const renderer = tuiCtx.get(TuiRenderer);
+            surface = new TuiTerminalSurface({
+                renderer,
+                root: consoleRef.elementRef.nativeElement,
+                width: 120,
+                height: 30,
+                output: { write() { /* noop */ } }
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+            const lines = surface.lastRenderedLines.map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
+            const helpRow = lines.findIndex(line => line.includes('/help'));
+            const inputRow = lines.findIndex(line => line.includes('> /'));
+            expect(helpRow).toBeGreaterThan(0);
+            expect(inputRow).toBeGreaterThan(helpRow);
+            // No dialog frame around the inline suggestions, and no modal title.
+            expect(lines[helpRow].includes('╭') || lines[helpRow].includes('│')).toEqual(false);
+            expect(lines.some(line => line.includes('Suggestions'))).toEqual(false);
+        } finally {
+            surface?.destroy();
+            await tuiCtx.close();
+        }
+    }
+
     @Test('command dialogs float above the composer as a centered box')
     async commandDialogFloatsAboveComposer() {
         const tuiCtx = await Application.run(AgentModule, {

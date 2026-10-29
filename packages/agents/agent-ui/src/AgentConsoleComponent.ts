@@ -175,7 +175,7 @@ import {
     mapWithConcurrency as runWithConcurrency
 } from './AgentConsoleSessionContentLoader';
 import { applyMissingSessionNotice, openSession as delegateOpenSession, AgentConsoleSessionOpenHost } from './AgentConsoleSessionOpen';
-import { isAgentConsoleExactCommandToken, resolveAgentConsoleMentionDisplayFiles } from './AgentConsoleSuggestions';
+import { isAgentConsoleExactCommandToken, isAgentConsoleSuggestionMenu, resolveAgentConsoleMentionDisplayFiles } from './AgentConsoleSuggestions';
 import {
     AgentConsoleRpcCommandHost,
     runApproveRetryCommand as runApproveRetryCommandView,
@@ -287,7 +287,7 @@ interface AgentConsoleQueuedPrompt {
         <agent-console-working-panel v-show="showWorkingPanel && !showMessageDetailPanel"></agent-console-working-panel>
         <agent-console-tool-runs-panel v-show="showToolRunsPanel && !showMessageDetailPanel"></agent-console-tool-runs-panel>
         <agent-console-pending-question-panel renderRegion="dialog" v-show="showPendingQuestionPanel"></agent-console-pending-question-panel>
-        <agent-console-select-panel renderRegion="dialog" v-show="showSelectPanel"></agent-console-select-panel>
+        <agent-console-select-panel renderRegion="footer" inline v-show="showSuggestionPanel"></agent-console-select-panel><agent-console-select-panel renderRegion="dialog" v-show="showSelectPanel"></agent-console-select-panel>
         <agent-console-text-overlay-panel renderRegion="dialog" v-show="showTextOverlayPanel"></agent-console-text-overlay-panel>
         <agent-console-status-panel renderRegion="footer" v-show="showStatusPanel && !showMessageDetailPanel"></agent-console-status-panel>
         <agent-console-sessions-panel renderRegion="footer" v-show="showSessionsPanel && !showMessageDetailPanel"></agent-console-sessions-panel>
@@ -1189,9 +1189,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return this.state.toolRunsFocused;
     }
 
-    get showSelectPanel(): boolean {
-        return !!this.state.selectMenu;
-    }
+    get showSelectPanel(): boolean { return !!this.state.selectMenu && !isAgentConsoleSuggestionMenu(this.state.selectMenu); }
+
+    get showSuggestionPanel(): boolean { return !!this.state.selectMenu && isAgentConsoleSuggestionMenu(this.state.selectMenu); }
 
     get showWhichKeyPanel(): boolean {
         return this.state.whichKeyVisible;
