@@ -1620,8 +1620,20 @@ export class TuiTerminalSurface {
             const clickTargets = result.clickTargets
                 .filter(target => !(target.y >= start && target.y < start + dialogHeight))
                 .concat(dialogClickTargets.map(target => ({ ...target, x: target.x + dialogShift, y: start + target.y })));
+            const lastPromptRow = (() => {
+                for (let row = lines.length - 1; row >= 0; row--) {
+                    if (stripTerminalAnsi(lines[row] || '').trimStart().startsWith('>')) {
+                        return row;
+                    }
+                }
+                return -1;
+            })();
             const cursorTargets = result.cursorTargets
-                .filter(target => !(target.row >= start && target.row < start + dialogHeight));
+                // The dialog extraction shifts footer rows up; keep the input
+                // target and remap it to the rendered prompt row so the caret
+                // cannot fall to the row below the composer.
+                .filter(target => (target as any).id === 'input' || !(target.row >= start && target.row < start + dialogHeight))
+                .map(target => (target as any).id === 'input' && lastPromptRow >= 0 ? { ...target, row: lastPromptRow } : target);
             return { lines, regions: result.regions, cursorTargets, clickTargets };
         };
         const scrollRegion = allRegions.find(region => region.id === scrollRegionId);
