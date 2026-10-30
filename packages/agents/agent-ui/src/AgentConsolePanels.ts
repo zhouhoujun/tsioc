@@ -3803,7 +3803,9 @@ export class AgentConsoleSelectPanelComponent {
 
     get menuMetaText(): string { const menu = this.menu; if (!menu || isAgentConsoleSuggestionMenu(menu)) return ''; const window = resolveConsoleSelectWindow(menu.options.length, menu.selectedIndex, this.state.consoleOptions.selectVisibleOptions); return window.count < menu.options.length ? `${window.start + 1}-${window.start + window.count}/${menu.options.length}` : ''; }
 
-    get shellStyle() { return this.menu ? styleTextToObject(isAgentConsoleSuggestionMenu(this.menu) ? this.activeTheme.selectShell : this.activeTheme.dialogShell) : {}; }
+    // Suggestions now live in the dialog overlay too, so they use the same
+    // floating shell; suggestion menus still suppress the modal title/hint.
+    get shellStyle() { return this.menu ? styleTextToObject(this.activeTheme.dialogShell) : {}; }
 
     get menuOptions(): Array<{ label: string; value: string; description?: string }> {
         return (this.menu?.options || []).map(option => ({

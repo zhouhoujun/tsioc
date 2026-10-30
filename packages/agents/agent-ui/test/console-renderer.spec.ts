@@ -805,7 +805,7 @@ export class AgentConsoleMessagesRendererTest {
         }
     }
 
-    @Test('slash command suggestions render inline above the composer')
+    @Test('slash command suggestions render in a floating overlay above the composer')
     async slashSuggestionsRenderInline() {
         const tuiCtx = await Application.run(AgentModule, {
             deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
@@ -833,8 +833,8 @@ export class AgentConsoleMessagesRendererTest {
             const inputRow = lines.findIndex(line => line.includes('> /'));
             expect(helpRow).toBeGreaterThan(0);
             expect(inputRow).toBeGreaterThan(helpRow);
-            // No dialog frame around the inline suggestions, and no modal title.
-            expect(lines[helpRow].includes('╭') || lines[helpRow].includes('│')).toEqual(false);
+            // The suggestion overlay has its own shell, but no modal title/hint.
+            expect(lines.some(line => line.includes('╭'))).toEqual(true);
             expect(lines.some(line => line.includes('Suggestions'))).toEqual(false);
         } finally {
             surface?.destroy();
