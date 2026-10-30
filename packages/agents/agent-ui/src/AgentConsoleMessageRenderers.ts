@@ -573,7 +573,10 @@ export function renderAgentConsoleMessageItem(
     const statusLabel = resolveAgentConsoleMessageStatusLabel(statusKind, context.statusLabels);
     const statusSymbol = context.statusSymbol
         || ((timelineEvent || context.timelineMode) ? resolveDefaultStatusGlyph(statusKind) : '');
-    const status = formatAgentConsoleMessageStatus(statusKind, statusSymbol);
+    // Opencode uses a compact +/− disclosure marker for reasoning rows; the
+    // running state keeps the live dot.
+    const thoughtSymbol = presentation.kind === 'thought' ? (statusKind === 'running' ? '●' : '+') : statusSymbol;
+    const status = formatAgentConsoleMessageStatus(statusKind, thoughtSymbol);
     const statusStyle = resolveAgentConsoleMessageStatusStyle(theme, statusKind, rowSelected);
     const hideToolOutput = templateKind === 'tool' && context.showToolOutput === false;
     const rawDisplayContent = hideToolOutput

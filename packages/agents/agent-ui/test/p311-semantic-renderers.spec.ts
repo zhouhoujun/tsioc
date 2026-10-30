@@ -96,6 +96,17 @@ export class SemanticRendererSuite {
         expect(error.lines[0].role).toEqual('Error · ');
     }
 
+    @Test('reasoning rows use opencode disclosure glyph')
+    thoughtGlyph() {
+        const thought = renderAgentConsoleMessageItem({
+            id: 'thought-glyph', role: 'assistant', content: 'inspect',
+            createdAt: 1,
+            metadata: { uiKind: 'event', uiEventType: 'reasoning', status: 'success', durationMs: 12 }
+        } as any, { rendererRegistry: this.registry });
+        expect(thought.lines[0].status).toContain('+');
+        expect(thought.lines[0].status).not.toContain('✓');
+    }
+
     @Test('user turn and first response are separated while execution remains compact')
     conversationSpacing() {
         const rendered = renderAgentConsoleMessageItems([

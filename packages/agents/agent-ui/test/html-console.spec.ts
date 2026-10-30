@@ -118,7 +118,7 @@ export class HtmlConsoleTest {
         expect(messageItems[0]?.getAttribute('style') || '').toContain('display: block');
         expect(messageItems[1]?.getAttribute('style') || '').toContain('overflow-wrap: anywhere');
         expect(messagesRoot.querySelector('.message-markdown')?.getAttribute('style') || '')
-            .toContain('padding: 1em 0');
+            .toContain('padding: 0px');
         expect(root.querySelector('h1')).toBeFalsy();
         expect(ref.hostView.query(AgentConsoleStatusPanelComponent)).toBeTruthy();
         expect(ref.hostView.query(AgentConsoleWorkingPanelComponent)).toBeTruthy();

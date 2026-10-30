@@ -165,7 +165,9 @@ export abstract class AgentConsoleMessageTemplateBase {
     get templateClass(): string { return 'message-template-system'; }
     get blockStyle(): Record<string, string> {
         if (!this.item?.blockPadding) return {};
-        return { ...(this.item.itemStyle || {}), padding: '1em 0', margin: '0' };
+        // The final answer already has a spacer row; adding full block padding
+        // would double the gap before it.
+        return { ...(this.item.itemStyle || {}), padding: this.item.spacerBefore ? '0' : '1em 0', margin: '0' };
     }
 
     toggleMessageDetail(line: AgentConsoleRenderedLine): void {
