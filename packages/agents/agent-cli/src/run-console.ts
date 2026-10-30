@@ -32,6 +32,7 @@ import {
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { ApprovalManager } from '@tsdi/agent';
 import { AgentCliOptions } from './config';
+import { resolveLastSessionId } from './last-session';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { ensureAgentWorkspace } from './run-command';
 import { buildAgentRuntimeProviders } from './agent-runtime-providers';
@@ -100,6 +101,11 @@ export async function runAgentConsole(
 ): Promise<void> {
     const config = new AgentUiConfigService(new CliAgentUiConfigReader(), options);
     const resolved = config.resolve(options);
+    // `--session` without an id means "resume the last session for this
+    // workspace"; a bare start always creates a new session.
+    if ((options as any).session === true) {
+        options = { ...options, session: resolveLastSessionId(resolved.workspace) };
+    }
     await ensureAgentWorkspace(resolved);
     const gatewayUrl = String((options as AgentAttachOptions).gatewayUrl || '').trim().replace(/\/+$/, '');
 

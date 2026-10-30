@@ -1725,7 +1725,7 @@ export class ConsoleRendererTest {
                 y: targetRow + 1,
                 release: false
             })).toBe(false);
-            expect(writes).toContain('\x1b[?1000l\x1b[?1002l\x1b[?1006l');
+            expect(writes).toContain('\x1b[?1000l\x1b[?1003l\x1b[?1006l');
             expect(ref.instance.selected).toBe('');
 
             // the handoff's own release is swallowed even when it lands inside
@@ -1742,11 +1742,11 @@ export class ConsoleRendererTest {
             // through the clear window so a native click can terminate the
             // terminal selection.
             expect((surface as any).mouseHandedOff).toBe(true);
-            expect(writes).not.toContain('\x1b[?1000h\x1b[?1002h\x1b[?1006h');
+            expect(writes).not.toContain('\x1b[?1000h\x1b[?1003h\x1b[?1006h');
 
             // keyboard input reclaims tracking immediately.
             expect(surface.notifyNonMouseInput()).toBe(true);
-            expect(writes).toContain('\x1b[?1000h\x1b[?1002h\x1b[?1006h');
+            expect(writes).toContain('\x1b[?1000h\x1b[?1003h\x1b[?1006h');
             expect(surface.notifyNonMouseInput()).toBe(false);
 
             // clicks work again without any further keyboard input, and the
@@ -1760,7 +1760,7 @@ export class ConsoleRendererTest {
             })).toBe(true);
             expect(ref.instance.selected).toBe('2');
             expect(writes.join('')).toContain(
-                '\x1b[?1000l\x1b[?1002l\x1b[?1006l\x1b[?1000h\x1b[?1002h\x1b[?1006h'
+                '\x1b[?1000l\x1b[?1003l\x1b[?1006l\x1b[?1000h\x1b[?1003h\x1b[?1006h'
             );
         } finally {
             surface?.destroy();
@@ -1808,7 +1808,7 @@ export class ConsoleRendererTest {
             // off/on to clear any native selection and ends re-enabled.
             expect((surface as any).mouseHandedOff).toBe(false);
             expect(writes.join('')).toContain(
-                '\x1b[?1000l\x1b[?1002l\x1b[?1006l\x1b[?1000h\x1b[?1002h\x1b[?1006h'
+                '\x1b[?1000l\x1b[?1003l\x1b[?1006l\x1b[?1000h\x1b[?1003h\x1b[?1006h'
             );
         } finally {
             surface?.destroy();

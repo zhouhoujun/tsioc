@@ -1867,12 +1867,11 @@ export class AgentConsoleTuiRendererTest {
             await new Promise(resolve => setTimeout(resolve, 10));
 
             const layout = renderer.renderToTuiLayout(consoleRef.hostView.rootNodes, { width: 72 });
-            const pickerRow = layout.lines.findIndex(line => line.includes('session-alpha') || line.includes('session-beta'));
-            expect(pickerRow).toBeGreaterThanOrEqual(0);
+            const pickerRow = layout.lines.findIndex((line, index) => (line.includes('session-alpha') || line.includes('session-beta'))
+                && layout.regions.some(region => region.id === 'footer' && index >= region.startRow && index < region.endRow));
             // The row must belong to a footer region: only those stay fixed in the
             // viewport layout (transcript rows scroll away).
-            expect(layout.regions.some(region => region.id === 'footer'
-                && pickerRow >= region.startRow && pickerRow < region.endRow)).toEqual(true);
+            expect(pickerRow).toBeGreaterThanOrEqual(0);
         } finally {
             await tuiCtx.close();
         }

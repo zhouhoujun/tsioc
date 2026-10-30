@@ -93,7 +93,6 @@ import { agentConsoleAllCommandHints, agentConsoleCommandHints, getAgentConsoleC
 import { AgentConsoleInputHistoryController, DefaultAgentConsoleInputHistoryController } from './AgentConsoleInputHistory';
 import { AgentConsoleFocusLayers, DefaultAgentConsoleFocusLayers } from './AgentConsoleFocusLayers';
 import { AgentConsoleCommandExecutionController, DefaultAgentConsoleCommandExecutionController } from './AgentConsoleCommandExecutionState';
-
 export interface AgentConsoleToolItem {
     name: string;
     toolset?: string;
@@ -914,6 +913,7 @@ export class AgentConsoleSessionState {
     resolveApprovalAction?: (decision: 'approve' | 'deny', requestId: string) => void | Promise<void>;
     /** Approve the request and auto-approve the rest of the session (`A`). */
     approvalAlwaysAllowAction?: (requestId: string) => void | Promise<void>;
+    sessionTabsAction?: { select?: (id: string) => void; create?: () => void };
     globalKeyInputAction?: (key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean; altKey?: boolean }) => boolean | Promise<boolean>;
     protected injectedCommandHints: string[] = [];
 

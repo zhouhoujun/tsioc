@@ -622,11 +622,15 @@ export class TuiRenderer extends ConsoleRenderer {
                 return;
             }
             if (this.hasPointerHandler(childElement) || childElement.focusable) {
+                const childText = this.stripAnsi(this.renderInlineText(childElement, styleMap));
+                const inline = startRow === endRow - 1 && startRow < lines.length && childText;
+                const rowText = inline ? this.stripAnsi(lines[startRow]) : '';
+                const offset = inline ? rowText.indexOf(childText) : -1;
                 clickTargets.push({
                     node: childElement,
-                    x: 0,
+                    x: offset >= 0 ? getDisplayWidth(rowText.slice(0, offset)) : 0,
                     y: startRow,
-                    width: width ?? this.resolveMaxLineWidth(lines.slice(startRow, endRow)),
+                    width: offset >= 0 ? Math.max(1, getDisplayWidth(childText)) : (width ?? this.resolveMaxLineWidth(lines.slice(startRow, endRow))),
                     height: endRow - startRow,
                     interactive: this.hasPointerHandler(childElement) ? 'pointer' : 'focus'
                 });

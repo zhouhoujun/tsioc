@@ -263,7 +263,6 @@ import { buildCommandHandlerState } from './AgentConsoleCommandHandlerContext';
 import { AgentConsoleCommandDispatchHost, dispatchAgentConsoleCommand } from './AgentConsoleCommandDispatch';
 import { AGENT_WIZARD_PROVIDERS, AGENT_WIZARD_TIERS, AgentWizardProviderDef, AgentWizardStepDef, buildProviderWizardChoiceOptions, buildProviderWizardConfirmOptions, buildProviderWizardSteps, buildProviderWizardSummary, buildWizardStepHelp, resolveWizardPrefill, resolveWizardProviderDef, resolveWizardProviderName, resolveWizardTierLabel } from './AgentConsoleProviderWizard';
 import { startProviderWizard, handleWizardEscape, cancelProviderWizard, resetProviderWizardComposer, showProviderWizardStep, openProviderWizardChoice, handleProviderWizardChoice, openProviderWizardConfirm, handleProviderWizardConfirm, openProviderWizardEditor, testProviderConnection, commitProviderWizard, advanceProviderWizard } from './AgentConsoleProviderWizardFlow';
-
 interface AgentConsoleQueuedPrompt {
     input: string;
     attachments: AgentConsolePendingAttachment[];
@@ -274,6 +273,7 @@ interface AgentConsoleQueuedPrompt {
     selector: 'agent-console',
     template: `
     <div class="agent-console">
+        <agent-console-session-tabs renderRegion="header"></agent-console-session-tabs>
         <agent-console-brand-panel renderRegion="transcript" v-show="!showMessageDetailPanel && !showSelectPanel && !showTextOverlayPanel && !showPendingQuestionPanel"></agent-console-brand-panel>
         <agent-console-messages-panel renderRegion="transcript" v-show="!showMessageDetailPanel"></agent-console-messages-panel>
         <agent-console-message-detail-panel renderRegion="transcript" v-if="showMessageDetailPanel"></agent-console-message-detail-panel>
@@ -1559,7 +1559,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.recoverSelectedScheduledTaskAction = this.recoverSelectedScheduledTaskActionHandler;
         this.state.activateSelectedToolAction = this.activateSelectedToolActionHandler;
         this.state.revertGitSnapshotFromDetailAction = () => this.revertGitSnapshotFromDetail();
-        this.state.resolveApprovalAction = this.resolveApprovalActionHandler; this.state.modelUnavailableAction = failure => promptModelUnavailable(this.modelCtx(), failure); this.state.scrollTranscriptAction = rows => this.surfaceAccessor?.scrollViewport?.(rows) ?? false;
+        this.state.resolveApprovalAction = this.resolveApprovalActionHandler; this.state.modelUnavailableAction = failure => promptModelUnavailable(this.modelCtx(), failure); this.state.scrollTranscriptAction = rows => this.surfaceAccessor?.scrollViewport?.(rows) ?? false; this.state.sessionTabsAction = { select: id => void this.openSession(id), create: () => void this.openSession() };
         this.state.approvalAlwaysAllowAction = async requestId => { (this.resolvedApprovalManager as any)?.setAutoApprove?.(true); await this.resolveApprovalActionHandler('approve', requestId); this.notify(formatAgentUiNotice(this.translator, 'approvalAlwaysAllowed')); };
         this.state.globalKeyInputAction = (key, modifiers) => this.handleBrowserGlobalKeyInput(key, modifiers);
 this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCacheToDisk(cache);
@@ -1639,9 +1639,9 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         this.state.cancelSelectedScheduledTaskAction = undefined;
         this.state.recoverSelectedScheduledTaskAction = undefined;
         this.state.activateSelectedToolAction = undefined;
-        this.state.resolveApprovalAction = undefined; this.state.approvalAlwaysAllowAction = undefined; this.state.modelUnavailableAction = undefined; this.state.scrollTranscriptAction = undefined;
+        this.state.resolveApprovalAction = undefined; this.state.approvalAlwaysAllowAction = undefined; this.state.modelUnavailableAction = undefined; this.state.scrollTranscriptAction = undefined; this.state.sessionTabsAction = undefined;
         this.state.globalKeyInputAction = undefined;
-        void this.persistInputHistory();
+        void this.persistInputHistory(); void this.persistSettings({ lastSessionId: this.state.sessionId });
         const shell = this.sshShell;
         this.sshShell = null;
         this.state.sshShell = null;

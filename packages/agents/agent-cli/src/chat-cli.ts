@@ -6,7 +6,7 @@ export function registerChatCli(program: Command): void {
     program
         .command('chat')
         .description('Start Agent UI in TUI mode.')
-        .option('--session <id>', 'Session ID for conversation continuity.')
+        .option('--session [id]', 'Resume the last session (no id) or a specific session id.')
         .option('--root <dir>', 'Agent config root. Defaults to ~/.tsdi-agent.')
         .option('--workspace <dir>', 'Workspace directory for file tools.')
         .option('--tools <items>', 'Comma-separated tool names or groups to enable.')

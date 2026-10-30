@@ -2685,3 +2685,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 需求：确认、审批、pending question 与 `/` 菜单一致，作为贴输入框的 overlay 面板；对话框右上角需要可点击关闭。
 - 修复：select/确认、审批、pending question 全部使用 `menu` overlay region（视窗贴输入框上方、与输入区同宽、底部无 border），审批从 footer 移出；新增右上角 `✕` 点击目标，选择菜单关闭即 cancel，审批关闭按 deny，question 关闭即 dismiss。TUI label 支持 `text-align:right`，关闭按钮可点击。
 - 验证：真实 PTY 菜单关闭点击 2/2；审批确认含关闭按钮 27/27（a 允许、d 拒绝、点击 ✕ 拒绝并结束 turn）；open question/approval 窄屏仍完整。实际审批 key 路径仍通过。
+
+## 视窗 session tabs + 可点击 hover + 启动 session 语义（2026-10）
+
+- 需求：viewport 顶部固定 session tabs（会话名 + `+` 新建）；可点击区域有鼠标 hover 反馈；`chat --session` 无 id 恢复上次退出会话，带 id 打开指定会话，不带则新建；`/model` 选择实时模型要更新 active profile。
+- 修复：新增 `AgentConsoleSessionTabs` 固定 `header` 区域，tab 点击切换、`+` 创建；TUI 启用 1003 any-motion 并在 hover 可点击区域时反色高亮；`lastSessionId` 写入 workspace settings，CLI `--session [id]` 可选并按上述语义解析；网关 `activateCatalogModel` 同步更新 active profile（并写回 root settings）。
+- 验证：真实 PTY tabs 切换/`+` 3/3、`--session` 4/4、`/model` active profile 11/11；时间线 Thought `+` 与单 spacer；全量 gate 26/26 code stages（production-db 阶段因用户正在运行的 TUI 写入生产库而变动，非测试失败）。

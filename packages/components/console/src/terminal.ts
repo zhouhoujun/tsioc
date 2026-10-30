@@ -994,6 +994,7 @@ export class TuiTerminalSurface {
     protected clickTargetsCache: TerminalClickTarget[] = [];
     protected mousePress?: { x: number; y: number };
     protected mouseHandedOff = false;
+    protected hoverTarget?: TerminalClickTarget;
     protected pendingRenderDuringHandoff = false;
     protected reclaimTimer?: ReturnType<typeof setTimeout>;
     protected scrollOffsetRows = 0;
@@ -1162,6 +1163,7 @@ export class TuiTerminalSurface {
         this.lastFullLines = (layout.lines || []).slice();
         const viewport = this.resolveViewportLayout(layout);
         const lines = viewport.lines;
+        this.applyHoverHighlight(lines);
         this.clickTargetsCache = viewport.clickTargets;
         const cursorTarget = viewport.cursorTargets[0];
         const cursorMode = this.resolveCursorMode();
@@ -1410,6 +1412,15 @@ export class TuiTerminalSurface {
             } as unknown as Event)) return true;
             return this.scrollViewport((mouse.button & 1) === 0 ? 3 : -3);
         }
+        if ((mouse.button & 32) !== 0 && (mouse.button & 3) === 3) {
+            // Modern terminals with any-motion tracking report hover as
+            // button 35. Highlight the clickable region under the pointer.
+            const target = this.hitTest(mouse.x, mouse.y);
+            if (this.setHoverTarget(target)) {
+                this.requestRender();
+            }
+            return false;
+        }
         if (this.mouseHandedOff) {
             // keep tracking disabled through the clear window so a native click
             // can terminate the selection; in-flight drag-tail reports only
@@ -1452,6 +1463,41 @@ export class TuiTerminalSurface {
         target?.node.dispatchEvent({ type: 'mousedown', target: target.node } as unknown as Event);
         if (element?.focusable) element.focus();
         return false;
+    }
+
+    protected setHoverTarget(target?: TerminalClickTarget): boolean {
+        const current = this.hoverTarget;
+        if (current === target
+            || (current && target
+                && current.y === target.y && current.x === target.x
+                && current.width === target.width && current.height === target.height
+                && current.node === target.node)) {
+            return false;
+        }
+        this.hoverTarget = target;
+        return true;
+    }
+
+    protected applyHoverHighlight(lines: string[]): void {
+        const target = this.hoverTarget;
+        if (!target) {
+            return;
+        }
+        for (let offset = 0; offset < Math.max(1, target.height); offset++) {
+            const row = target.y + offset;
+            if (row < 0 || row >= lines.length) {
+                continue;
+            }
+            const start = Math.max(0, target.x);
+            const end = start + Math.max(1, target.width);
+            const line = lines[row] || '';
+            const before = sliceStyledColumns(line, 0, start);
+            const middle = sliceStyledColumns(line, start, end);
+            const after = sliceStyledColumns(line, end, Number.MAX_SAFE_INTEGER);
+            if (middle) {
+                lines[row] = `${before}\x1b[7m${middle}\x1b[0m${after}`;
+            }
+        }
     }
 
     dispatchKey(event: { key: string; [name: string]: unknown }): boolean {
@@ -2333,8 +2379,8 @@ export function getChatCommands(): string[] {
     return CHAT_COMMANDS.slice();
 }
 
-export const TERMINAL_ENABLE_MOUSE_TRACKING_SEQUENCE = '\x1b[?1000h\x1b[?1002h\x1b[?1006h';
-export const TERMINAL_DISABLE_MOUSE_TRACKING_SEQUENCE = '\x1b[?1000l\x1b[?1002l\x1b[?1006l';
+export const TERMINAL_ENABLE_MOUSE_TRACKING_SEQUENCE = '\x1b[?1000h\x1b[?1003h\x1b[?1006h';
+export const TERMINAL_DISABLE_MOUSE_TRACKING_SEQUENCE = '\x1b[?1000l\x1b[?1003l\x1b[?1006l';
 
 // Bracketed paste: the terminal wraps a paste in ESC[200~ .. ESC[201~ so the
 // application can insert the payload verbatim (newlines preserved) instead of

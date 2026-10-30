@@ -22,6 +22,7 @@ import { AgentConsoleStashStore } from './AgentConsoleStash';
 import { AgentConsoleThemeStore } from './AgentConsoleTheme';
 import { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { AgentConsoleSessionService } from './AgentConsoleSessionService';
+import { AgentConsoleSessionTabsComponent } from './AgentConsoleSessionTabs';
 import { AgentConsoleTranscriptLayoutResolver, DefaultAgentConsoleTranscriptLayoutResolver } from './AgentConsoleTranscriptLayout';
 import {
     AGENT_CONSOLE_MESSAGE_RENDERER_ROUTES,
@@ -104,6 +105,7 @@ import {
         AgentConsoleInputPanelComponent,
         AgentConsoleWorkingPanelComponent,
         AgentConsoleSessionsPanelComponent,
+        AgentConsoleSessionTabsComponent,
         AgentConsoleTasksPanelComponent,
         AgentConsoleJobsPanelComponent,
         AgentConsoleApprovalsPanelComponent,
@@ -204,6 +206,7 @@ import {
         AgentConsoleInputPanelComponent,
         AgentConsoleWorkingPanelComponent,
         AgentConsoleSessionsPanelComponent,
+        AgentConsoleSessionTabsComponent,
         AgentConsoleTasksPanelComponent,
         AgentConsoleJobsPanelComponent,
         AgentConsoleApprovalsPanelComponent,

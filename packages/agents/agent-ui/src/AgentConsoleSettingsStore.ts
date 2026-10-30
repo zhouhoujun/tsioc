@@ -22,6 +22,7 @@ export interface AgentConsoleSettingsData {
     taskLineageRootId?: string;
     planTodoFilter?: 'all' | 'active' | 'blocked' | 'failed';
     modelProfile?: string;
+    lastSessionId?: string;
 }
 
 export function applyPersistedPreferences(
@@ -132,7 +133,8 @@ export function sanitizeAgentConsoleSettings(parsed: any): AgentConsoleSettingsD
         taskFilter: ['all', 'failed', 'rollback', 'lineage'].includes(parsed?.taskFilter) ? parsed.taskFilter : undefined,
         taskLineageRootId: typeof parsed?.taskLineageRootId === 'string' && parsed.taskLineageRootId.trim() ? parsed.taskLineageRootId.trim() : undefined,
         planTodoFilter: ['all', 'active', 'blocked', 'failed'].includes(parsed?.planTodoFilter) ? parsed.planTodoFilter : undefined,
-        modelProfile: typeof parsed?.modelProfile === 'string' && parsed.modelProfile.trim() ? parsed.modelProfile.trim() : undefined
+        modelProfile: typeof parsed?.modelProfile === 'string' && parsed.modelProfile.trim() ? parsed.modelProfile.trim() : undefined,
+        lastSessionId: typeof parsed?.lastSessionId === 'string' && parsed.lastSessionId.trim() ? parsed.lastSessionId.trim() : undefined
     };
 }
 
@@ -173,7 +175,8 @@ export class AgentConsoleSettingsStore {
             ...(data.taskFilter ? { taskFilter: data.taskFilter } : {}),
             ...(data.taskLineageRootId ? { taskLineageRootId: data.taskLineageRootId } : {}),
             ...(data.planTodoFilter ? { planTodoFilter: data.planTodoFilter } : {}),
-            ...(data.modelProfile ? { modelProfile: data.modelProfile } : {})
+            ...(data.modelProfile ? { modelProfile: data.modelProfile } : {}),
+            ...(data.lastSessionId ? { lastSessionId: data.lastSessionId } : {})
         }, null, 2));
     }
 
