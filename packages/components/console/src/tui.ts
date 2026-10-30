@@ -262,7 +262,14 @@ export class TuiRenderer extends ConsoleRenderer {
                 if (text.trim()) {
                     const labelStyle = element.getAttribute('labelStyle');
                     const merged = labelStyle ? this.mergeStyles(styleMap, this.parseInlineStyle(labelStyle)) : styleMap;
-                    lines.push(...this.renderInlineLines(element, merged, width));
+                    const rendered = this.renderInlineLines(element, merged, width);
+                    const align = String(merged['text-align'] || merged.textAlign || '').trim().toLowerCase();
+                    lines.push(...(align === 'right' && width
+                        ? rendered.map(line => {
+                            const pad = width - getDisplayWidth(this.stripAnsi(line));
+                            return pad > 0 ? `${' '.repeat(pad)}${line}` : line;
+                        })
+                        : rendered));
                 }
                 this.collectNestedClickTargets(element, clickStart >= 0 ? clickStart : contentStartRow, lines.length, lines, width, clickTargets, visited);
                 finishClickTarget();
@@ -670,9 +677,10 @@ export class TuiRenderer extends ConsoleRenderer {
         return (element.tagName || '').toLowerCase();
     }
 
-    protected resolveBorderEdges(styleMap: Record<string, string>): { box: boolean; left: boolean } {
+    protected resolveBorderEdges(styleMap: Record<string, string>): { box: boolean; left: boolean; bottom: boolean } {
         const box = !!styleMap.border;
-        return { box, left: box || !!(styleMap['border-left'] || styleMap.borderLeft) };
+        const bottomStyle = String(styleMap['border-bottom'] ?? styleMap.borderBottom ?? '').trim().toLowerCase();
+        return { box, left: box || !!(styleMap['border-left'] || styleMap.borderLeft), bottom: box && !/^(none|0|no)$/.test(bottomStyle) };
     }
 
     protected resolveBlockContentWidth(styleMap: Record<string, string>, width?: number): number | undefined {
@@ -737,7 +745,7 @@ export class TuiRenderer extends ConsoleRenderer {
         for (let index = 0; index < padding.bottom; index++) {
             framed.push(renderRow(bottomPad));
         }
-        if (border.box) {
+        if (border.box && border.bottom) {
             framed.push(`${this.applyAnsi(rounded ? '╰' : '└', styleMap, undefined, true)}${horizontal}${this.applyAnsi(rounded ? '╯' : '┘', styleMap, undefined, true)}`);
         }
         return framed;

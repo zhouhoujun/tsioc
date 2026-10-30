@@ -833,8 +833,10 @@ export class AgentConsoleMessagesRendererTest {
             const inputRow = lines.findIndex(line => line.includes('> /'));
             expect(helpRow).toBeGreaterThan(0);
             expect(inputRow).toBeGreaterThan(helpRow);
-            // The suggestion overlay has its own shell, but no modal title/hint.
+            // The suggestion overlay has its own shell, a clickable close glyph,
+            // but no modal title/hint.
             expect(lines.some(line => line.includes('╭'))).toEqual(true);
+            expect(lines.some(line => line.includes('✕'))).toEqual(true);
             expect(lines.some(line => line.includes('Suggestions'))).toEqual(false);
         } finally {
             surface?.destroy();
@@ -842,7 +844,7 @@ export class AgentConsoleMessagesRendererTest {
         }
     }
 
-    @Test('command dialogs float above the composer as a centered box')
+    @Test('command dialogs dock above the composer as a full-width box')
     async commandDialogFloatsAboveComposer() {
         const tuiCtx = await Application.run(AgentModule, {
             deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
@@ -875,9 +877,8 @@ export class AgentConsoleMessagesRendererTest {
             expect(boxRow).toBeGreaterThan(0);
             expect(titleRow).toBeGreaterThan(boxRow);
             expect(inputRow).toBeGreaterThan(titleRow);
-            // Side content may share the row (the brand box); the dialog band
-            // itself must still be inset from the terminal's left edge.
-            expect(lines[boxRow].indexOf('╭', 1)).toBeGreaterThan(0);
+            // The menu spans the composer and attaches to its top edge.
+            expect(lines[boxRow].startsWith('╭')).toEqual(true);
             expect(lines.some(line => line.includes('up/down move'))).toBe(true);
         } finally {
             surface?.destroy();
@@ -1878,7 +1879,7 @@ export class AgentConsoleTuiRendererTest {
     }
 
 
-    @Test('the approvals panel lands in the footer region so a long transcript cannot hide it')
+    @Test('the approvals panel lands in the menu overlay so a long transcript cannot hide it')
     async approvalsPanelRendersInsideFooterRegion() {
         const tuiCtx = await Application.run(AgentModule, {
             deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
@@ -1911,10 +1912,10 @@ export class AgentConsoleTuiRendererTest {
 
             const layout = renderer.renderToTuiLayout(consoleRef.hostView.rootNodes, { width: 72 });
             // The status panel also prints "Approval required: terminal (...)", so
-            // match the panel's own action hint to prove the panel is in the footer.
+            // match the panel's own action hint to prove the panel is in the menu overlay.
             const approvalRow = layout.lines.findIndex(line => line.includes('Allow') && line.includes('Deny'));
             expect(approvalRow).toBeGreaterThanOrEqual(0);
-            expect(layout.regions.some(region => region.id === 'footer'
+            expect(layout.regions.some(region => region.id === 'menu'
                 && approvalRow >= region.startRow && approvalRow < region.endRow)).toEqual(true);
         } finally {
             await tuiCtx.close();

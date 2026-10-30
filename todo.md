@@ -2679,3 +2679,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 根因：启动时 `applyPersistedModelProfile` → `applyProfileSelection` 无条件用 profile 的 `apiKey/apiKeyEnv/headers`（strong profile 未定义这些字段）覆盖顶层连接配置，把同 provider 的 key 清空；RPC `activateProfileModel` 有同样问题。
 - 修复：只有 provider 真正变化时才清除旧凭据/headers；同一 provider 的 tier/模型切换继承顶层 `apiKey`、`apiKeyEnv`、`headers`，profile 显式值时仍优先。agent-ui 与 gateway 两条激活路径同步修复。
 - 验证：agent-ui/gateway 同 provider 凭据回归；本地假 provider 持久化 strong profile 启动 3/3（真实认证头、gpt-5.6、pong）；真实凭据 `/v1/models` 200。重开 TUI 即可恢复，无需重新输入 key。
+
+## 确认/审批对话框 overlay + 点击关闭（2026-10）
+
+- 需求：确认、审批、pending question 与 `/` 菜单一致，作为贴输入框的 overlay 面板；对话框右上角需要可点击关闭。
+- 修复：select/确认、审批、pending question 全部使用 `menu` overlay region（视窗贴输入框上方、与输入区同宽、底部无 border），审批从 footer 移出；新增右上角 `✕` 点击目标，选择菜单关闭即 cancel，审批关闭按 deny，question 关闭即 dismiss。TUI label 支持 `text-align:right`，关闭按钮可点击。
+- 验证：真实 PTY 菜单关闭点击 2/2；审批确认含关闭按钮 27/27（a 允许、d 拒绝、点击 ✕ 拒绝并结束 turn）；open question/approval 窄屏仍完整。实际审批 key 路径仍通过。

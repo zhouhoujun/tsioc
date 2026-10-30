@@ -1518,11 +1518,19 @@ export class TuiTerminalSurface {
         // Dialogs are composited by mode: viewport floats them above the
         // composer, native scrollback appends them below the footer.
         const dialogRegion = height
-            ? (layout.regions || []).find(region => region.id === 'dialog')
+            ? (layout.regions || []).find(region => region.id === 'dialog' || region.id === 'menu')
             : undefined;
+        const dialogIsMenu = dialogRegion?.id === 'menu';
         const dialogLines = dialogRegion
             ? (layout.lines || []).slice(dialogRegion.startRow, dialogRegion.endRow)
             : [];
+        // Menus emit a trailing blank row from their select core; drop it so
+        // the last option sits directly on the composer's top edge.
+        if (dialogRegion?.id === 'menu') {
+            while (dialogLines.length && !stripTerminalAnsi(dialogLines[dialogLines.length - 1]).trim()) {
+                dialogLines.pop();
+            }
+        }
         const dialogHeight = dialogLines.length;
         const dialogBounds = resolveStyledColumnBounds(dialogLines);
         const dialogStartColumn = dialogBounds?.start ?? 0;
@@ -1562,14 +1570,12 @@ export class TuiTerminalSurface {
             if (!dialogLines.length || !height) {
                 return result;
             }
-            const footer = result.regions.find(region => region.id === footerRegionId);
+            const footerRegions = result.regions.filter(region => region.id === footerRegionId);
             const shiftedLines = dialogLines.map(line => dialogShift ? `${' '.repeat(dialogShift)}${line}` : line);
             // Native scrollback cannot composite: drop the menu below the
             // composer so it opens downward, away from the transcript.
             if (nativeScrollback) {
-                const footerEnd = Math.max(0, ...result.regions
-                    .filter(region => region.id === footerRegionId)
-                    .map(region => region.endRow));
+                const footerEnd = Math.max(0, ...footerRegions.map(region => region.endRow));
                 const insertRow = footerEnd > 0 ? Math.min(result.lines.length, footerEnd) : result.lines.length;
                 const lines = result.lines.slice();
                 lines.splice(insertRow, 0, ...shiftedLines);
@@ -1580,9 +1586,28 @@ export class TuiTerminalSurface {
                     .map(target => target.row >= insertRow ? { ...target, row: target.row + dialogHeight } : target);
                 return { lines, regions: result.regions, cursorTargets, clickTargets };
             }
-            // Viewport menus float directly above the composer; bottoms align
-            // so a submenu opens from the same edge as its parent.
-            const anchorRow = footer?.startRow ?? height;
+            // Select menus sit directly on the composer's top edge so the
+            // panel looks attached to the input; other dialogs stay above the
+            // whole footer. Both anchor by the bottom edge.
+            const footerStart = footerRegions.length ? Math.min(...footerRegions.map(region => region.startRow)) : height;
+            const composerStart = footerRegions.length ? Math.max(...footerRegions.map(region => region.startRow)) : height;
+            const cursorRow = result.cursorTargets.length ? Math.max(...result.cursorTargets.map(target => target.row)) : -1;
+            const inputRegion = footerRegions.reduce((current, region) => !current || region.startRow > current.startRow ? region : current, undefined as TerminalRenderRegion | undefined);
+            let promptRow = -1;
+            if (inputRegion) {
+                for (let row = inputRegion.startRow; row < Math.min(inputRegion.endRow, result.lines.length); row++) {
+                    if (stripTerminalAnsi(result.lines[row] || '').includes('>')) {
+                        promptRow = row;
+                        break;
+                    }
+                }
+            }
+            // A menu ends on the composer's text row (not its padding) so it
+            // reads as if it grows out of the input; other dialogs clear the
+            // whole footer.
+            const anchorRow = dialogIsMenu
+                ? (promptRow >= 0 ? promptRow : (cursorRow >= 0 ? cursorRow + 1 : composerStart))
+                : footerStart;
             const start = Math.max(0, Math.min(anchorRow - dialogHeight, height - dialogHeight));
             const lines = result.lines.slice();
             while (lines.length < height) {

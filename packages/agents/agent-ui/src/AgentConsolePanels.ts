@@ -61,6 +61,9 @@ import {
     resolveCommonSelectWindow as resolveConsoleSelectWindow
 } from '@tsdi/components/common';
 
+const DIALOG_CLOSE_STYLE = { 'text-align': 'right', color: '#8b949e' };
+function menuShellStyle(theme: AgentConsoleTheme): Record<string, string> { const style = styleTextToObject(theme.dialogShell); delete style['max-width']; style['border-bottom'] = 'none'; return style; }
+
 @Component({
     selector: 'agent-console-brand-panel',
     template: `
@@ -1693,7 +1696,7 @@ export class AgentConsoleJobsPanelComponent {
 @Component({
     selector: 'agent-console-approvals-panel',
     template: `
-    <div class="console-panel console-approvals-panel" v-style="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}">
+    <div class="console-panel console-approvals-panel" v-style="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}"><label class="dialog-close" v-style="closeStyle" @click="closeApproval">✕</label>
         <label v-style="accentStyle">{{approvalsTitleLabel}}</label>
         <label v-style="metaStyle" v-show="approvalsSummaryLabel">{{approvalsSummaryLabel}}</label>
         <label v-style="listStyle" v-for="line in approvalListLines">{{line}}</label>
@@ -1725,9 +1728,8 @@ export class AgentConsoleApprovalsPanelComponent {
         return this.state.pendingApprovals;
     }
 
-    get shellStyle() {
-        return this.shouldShow ? this.activeThemeStyles.dialogShell : {};
-    }
+    get shellStyle() { return this.shouldShow ? menuShellStyle(this.activeTheme) : {}; } get closeStyle() { return DIALOG_CLOSE_STYLE; }
+    async closeApproval(): Promise<void> { const approval = this.state.selectedApproval; if (approval) await this.state.resolveApprovalAction?.('deny', approval.id); this.state.setApprovalsFocused(false); }
 
     get accentStyle() {
         return this.activeThemeStyles.toolsAccent;
@@ -2193,7 +2195,7 @@ export class AgentConsoleCommandOutputsPanelComponent {
 @Component({
     selector: 'agent-console-pending-question-panel',
     template: `
-    <div class="console-panel console-pending-question-panel" v-style="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}" aria-activedescendant="{{activeOptionId}}">
+    <div class="console-panel console-pending-question-panel" v-style="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}" aria-activedescendant="{{activeOptionId}}"><label class="dialog-close" v-style="closeStyle" @click="closeQuestion">✕</label>
         <label v-style="accentStyle">{{pendingQuestionHeader}}</label>
         <label v-style="accentStyle">{{pendingQuestionTitle}}</label>
         <label v-style="metaStyle" v-show="pendingQuestionContext">{{pendingQuestionContext}}</label>
@@ -2216,9 +2218,8 @@ export class AgentConsolePendingQuestionPanelComponent {
         return resolvePanelThemeStyles(this.state, this.theme);
     }
 
-    get shellStyle() {
-        return this.activeThemeStyles.dialogShell;
-    }
+    get shellStyle() { return menuShellStyle(this.state.theme || this.theme || defaultAgentConsoleTheme); } get closeStyle() { return DIALOG_CLOSE_STYLE; }
+    async closeQuestion(): Promise<void> { await this.state.dismissPendingQuestion(); }
 
     get accentStyle() {
         return this.activeThemeStyles.toolRunsAccent;
@@ -3762,7 +3763,7 @@ export class AgentConsoleActivityPanelComponent {
     selector: 'agent-console-select-panel',
     template: `
         <div class="console-panel console-select-panel" role="dialog" aria-label="{{accessibilityLabel}}">
-            <div class="select-shell" v-style="shellStyle">
+            <div class="select-shell" v-style="shellStyle"><label class="dialog-close" v-style="closeStyle" @click="closeMenu">✕</label>
             <select class="select-core"
                 aria-label="{{accessibilityLabel}}"
                 title="{{menuTitleText}}" hint="{{menuHintText}}" meta="{{menuMetaText}}"
@@ -3803,7 +3804,8 @@ export class AgentConsoleSelectPanelComponent {
 
     get menuMetaText(): string { const menu = this.menu; if (!menu || isAgentConsoleSuggestionMenu(menu)) return ''; const window = resolveConsoleSelectWindow(menu.options.length, menu.selectedIndex, this.state.consoleOptions.selectVisibleOptions); return window.count < menu.options.length ? `${window.start + 1}-${window.start + window.count}/${menu.options.length}` : ''; }
 
-    get shellStyle() { if (!this.menu) return {}; const style = styleTextToObject(this.activeTheme.dialogShell); if (isAgentConsoleSuggestionMenu(this.menu)) delete style['max-width']; return style; }
+    get shellStyle() { return this.menu ? menuShellStyle(this.activeTheme) : {}; } get closeStyle() { return DIALOG_CLOSE_STYLE; }
+    async closeMenu(): Promise<void> { await this.state.cancelSelectMenu(); }
 
     get menuOptions(): Array<{ label: string; value: string; description?: string }> {
         return (this.menu?.options || []).map(option => ({
