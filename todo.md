@@ -2670,7 +2670,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 ## 菜单按布局停靠 + 精简 `/` 目录（2026-10）
 
 - 缺陷：命令菜单在 viewport 与 scrollback 都按同一位置绘制，scrollback 菜单会覆盖对话历史；`/` 默认展开 78 项（含大量低频命令与别名），远超 opencode/codex 的命令菜单；PageUp 在滚到边界后会把焦点切到消息选择，随后 ↑ 只显示消息提示而不是回忆输入历史。
-- 修复：viewport 菜单改为输入框上方浮动面板，底边对齐输入区，二级菜单与一级菜单同底边；scrollback 菜单改为输入框下方向下展开，`/` 建议菜单改为 `dialog` overlay 浮动框（有边框/背景），不再占用 footer 行，因此不会压缩时间线；`/` 默认菜单扩展为 36 个常用公开命令（含 `/init`、`/web`），别名与低频命令不重复展示；继续键入前缀搜索全量目录，命令执行与 `/help` 全量分组目录保持不变。PageUp/PageDown 始终滚动 viewport；输入框 ↑/↓ 始终回忆历史，即使已在滚动边界。
+- 修复：viewport 菜单改为输入框上方浮动面板，底边对齐输入区，二级菜单与一级菜单同底边；scrollback 菜单改为输入框下方向下展开，`/` 建议菜单改为 opencode 风格 `dialog` overlay 浮动框（与输入区同宽、有边框/背景、贴输入框上方），不再占用 footer 行，因此不会压缩时间线；`/` 默认菜单扩展为 36 个常用公开命令（含 `/init`、`/web`），别名与低频命令不重复展示；继续键入前缀搜索全量目录，命令执行与 `/help` 全量分组目录保持不变。PageUp/PageDown 始终滚动 viewport；输入框 ↑/↓ 始终回忆历史，即使已在滚动边界。
 - 验证：真实 PTY `/` 精简 10/10（36 项，含 /init、/web；隐藏低频/别名、前缀仍可搜索、命令可执行）、overlay 不压缩时间线 4/4、二级菜单同底边 2/2、wheel/PageUp/↑ 6/6；真实 scrollback 菜单位于输入框下方，viewport 菜单位于输入框上方；本地假 provider 的 404 模型更新链路 8/8（对话框、实时目录、切换持久化、`/status`、重试请求确实使用新模型）；弹窗交互 13/13 + 26/26、`/help` 11/11、配对 24 行完整；agent-ui 1882、components/console 106、components 147、components/common 22、components/html 124、agent-cli 128、agent-gateway 375。
 
 ## 修复持久化 strong profile 清空 API key（2026-10）
