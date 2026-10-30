@@ -1591,10 +1591,19 @@ export class TuiTerminalSurface {
             // whole footer. Both anchor by the bottom edge.
             const footerStart = footerRegions.length ? Math.min(...footerRegions.map(region => region.startRow)) : height;
             const composerStart = footerRegions.length ? Math.max(...footerRegions.map(region => region.startRow)) : height;
-            // A menu ends on the composer panel's top edge (not over its
-            // padding/text); the shared background makes the two panels look
-            // continuous. Other dialogs clear the whole footer.
-            const anchorRow = dialogIsMenu ? composerStart : footerStart;
+            let promptRow = -1;
+            for (let row = Math.max(0, composerStart - 2); row < Math.min(composerStart + 2, result.lines.length); row++) {
+                if (stripTerminalAnsi(result.lines[row] || '').includes('>')) {
+                    promptRow = row;
+                    break;
+                }
+            }
+            // A menu ends one row above the composer text (the panel's top
+            // edge). The shared background continues through the panel padding
+            // and text without the menu covering the input.
+            const anchorRow = dialogIsMenu
+                ? (promptRow > 0 ? promptRow - 1 : composerStart)
+                : footerStart;
             const start = Math.max(0, Math.min(anchorRow - dialogHeight, height - dialogHeight));
             const lines = result.lines.slice();
             while (lines.length < height) {
