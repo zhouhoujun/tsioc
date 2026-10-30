@@ -99,6 +99,24 @@ export class ModelCatalogProvidersTest {
         expect(noEndpoint.model.apiKey).toBeUndefined();
     }
 
+    @Test('activating a live model updates the selected profile model')
+    catalogActivationUpdatesProfile() {
+        const options: any = {
+            model: {
+                provider: 'openai-compatible', model: 'old-model', defaultProfile: 'strong',
+                profiles: {
+                    strong: { provider: 'openai-compatible', model: 'old-model' },
+                    fast: { provider: 'openai-compatible', model: 'fast-model' }
+                }
+            }
+        };
+        activateCatalogModel(options, 'openai-compatible', 'new-model');
+        expect(options.model.model).toEqual('new-model');
+        expect(options.model.defaultProfile).toEqual('strong');
+        expect(options.model.profiles.strong.model).toEqual('new-model');
+        expect(options.model.profiles.fast.model).toEqual('fast-model');
+    }
+
     @Test('live catalog models activate with the selected provider connection')
     async activateLiveModel() {
         const options: any = {

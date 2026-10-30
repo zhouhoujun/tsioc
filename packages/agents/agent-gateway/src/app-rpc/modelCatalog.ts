@@ -82,12 +82,21 @@ export function activateProfileModel(options: AgentOptions, profileName: string,
 export function activateCatalogModel(options: AgentOptions, providerId: string, modelId: string, reasoningEffort?: 'low' | 'medium' | 'high' | 'max'): { provider: string; model: string; reasoningEffort?: 'low' | 'medium' | 'high' | 'max' } {
     const model = options.model || {};
     const resolved = resolveModelForProvider(options, providerId);
+    const activeProfile = String(model.defaultProfile || '').trim();
+    const sameProvider = providerId === String(model.provider || '').trim();
+    // A live model chosen for the active provider is a new model for the
+    // selected profile, not just a top-level override. Persisting the profile
+    // keeps /model and a later restart from restoring the old model.
+    const profiles = sameProvider && activeProfile && model.profiles?.[activeProfile]
+        ? { ...model.profiles, [activeProfile]: { ...model.profiles[activeProfile], provider: providerId, model: modelId } }
+        : model.profiles;
     const next = {
         ...model,
         ...resolved,
+        ...(profiles ? { profiles } : {}),
         provider: providerId,
         model: modelId,
-        defaultProfile: undefined,
+        defaultProfile: sameProvider && activeProfile ? activeProfile : undefined,
         ...(reasoningEffort !== undefined ? { reasoningEffort } : {})
     };
     options.model = next;
