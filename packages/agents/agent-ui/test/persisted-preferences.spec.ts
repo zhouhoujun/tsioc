@@ -87,6 +87,21 @@ export class PersistedPreferencesTest {
         expect(options.model.baseUrl).toEqual('https://api.deepseek.com');
         expect(options.model.apiKey).toBeUndefined();
 
+        // A same-provider tier switch must keep the active credential; otherwise
+        // startup with a persisted strong profile sends an unauthenticated turn.
+        const sameProvider: any = {
+            model: {
+                provider: 'openai-compatible', model: 'gpt-5.5', apiKey: 'shared-key',
+                baseUrl: 'https://provider.example', headers: { 'X-Org': 'acme' },
+                profiles: { strong: { provider: 'openai-compatible', model: 'gpt-5.6' } }
+            }
+        };
+        applyPersistedModelProfile(sameProvider, 'strong');
+        expect(sameProvider.model.model).toEqual('gpt-5.6');
+        expect(sameProvider.model.apiKey).toEqual('shared-key');
+        expect(sameProvider.model.baseUrl).toEqual('https://provider.example');
+        expect(sameProvider.model.headers).toEqual({ 'X-Org': 'acme' });
+
         const catalog: any = { model: { provider: 'openai-compatible', model: 'gpt-5.5', profiles: { 'alt': { provider: 'alt', model: 'x', baseUrl: 'https://alt.example' } } } };
         applyPersistedModelProfile(catalog, 'alt/live-model');
         expect(catalog.model.provider).toEqual('alt');

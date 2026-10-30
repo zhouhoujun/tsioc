@@ -66,9 +66,11 @@ export function activateProfileModel(options: AgentOptions, profileName: string,
         ...profile,
         provider: profile.provider || model.provider,
         model: profile.model || model.model,
-        apiKey: profile.apiKey,
-        apiKeyEnv: profile.apiKeyEnv,
-        headers: profile.headers,
+        // A profile may only override the model/tier while sharing the active
+        // provider's credential. Clear credentials only on a provider switch.
+        apiKey: profile.apiKey ?? (providerChanged ? undefined : model.apiKey),
+        apiKeyEnv: profile.apiKeyEnv ?? (providerChanged ? undefined : model.apiKeyEnv),
+        headers: profile.headers ?? (providerChanged ? undefined : model.headers),
         ...(profile.baseUrl ? { baseUrl: profile.baseUrl } : (providerChanged ? { baseUrl: undefined } : {})),
         defaultProfile: profileName,
         ...(reasoningEffort !== undefined ? { reasoningEffort } : {})

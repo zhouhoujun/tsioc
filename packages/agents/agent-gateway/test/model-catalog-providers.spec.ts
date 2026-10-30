@@ -66,6 +66,19 @@ export class ModelCatalogProvidersTest {
         expect(options.model.baseUrl).toEqual('http://fake.example/v1');
         expect(options.model.defaultProfile).toEqual('fake-fast');
 
+        const sameProvider: any = {
+            model: {
+                provider: 'openai-compatible', model: 'gpt-5.5', apiKey: 'shared-key',
+                baseUrl: 'http://provider.example', headers: { 'X-Org': 'acme' },
+                profiles: { strong: { provider: 'openai-compatible', model: 'gpt-5.6' } }
+            }
+        };
+        activateProfileModel(sameProvider, 'strong');
+        expect(sameProvider.model.model).toEqual('gpt-5.6');
+        expect(sameProvider.model.apiKey).toEqual('shared-key');
+        expect(sameProvider.model.baseUrl).toEqual('http://provider.example');
+        expect(sameProvider.model.headers).toEqual({ 'X-Org': 'acme' });
+
         const envOnly: any = {
             model: {
                 provider: 'openai-compatible', model: 'gpt-5.5', apiKey: 'old-key', baseUrl: 'http://old.example', headers: { 'X-Old': '1' },

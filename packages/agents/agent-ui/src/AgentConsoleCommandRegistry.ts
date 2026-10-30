@@ -107,9 +107,14 @@ export interface AgentConsoleCommandDefinition {
  * commands users reach for. Aliases stay out of the menu to avoid duplicates.
  */
 export const AGENT_CONSOLE_FEATURED_COMMANDS: readonly string[] = [
-    '/help', '/status', '/model', '/provider', '/permissions', '/settings', '/plan',
-    '/sessions', '/new', '/resume', '/rename', '/archive', '/fork', '/compact', '/export',
-    '/theme', '/tui', '/review', '/diff', '/pair', '/reload', '/restart', '/exit'
+    '/help', '/status', '/model', '/provider', '/permissions', '/settings', '/plan', '/mcp',
+    '/undo', '/redo',
+    '/sessions', '/new', '/resume', '/rename', '/archive', '/fork', '/init', '/share', '/unshare',
+    '/theme', '/tui', '/thinking', '/timeline', '/outputs', '/pager',
+    '/editor', '/attach',
+    '/review', '/diff', '/approvals',
+    '/compact',
+    '/pair', '/web', '/reload', '/restart', '/exit'
 ];
 const FEATURED_COMMAND_SET = new Set(AGENT_CONSOLE_FEATURED_COMMANDS);
 
@@ -481,13 +486,16 @@ export function agentConsoleCommandHints(extra: string[] = []): string[] {
     const hints: string[] = [];
     const seen = new Set<string>();
     AGENT_CONSOLE_COMMAND_DEFINITIONS.forEach(def => {
-        if (def.hidden || !FEATURED_COMMAND_SET.has(def.name)) {
+        if (def.hidden) {
             return;
         }
-        if (!seen.has(def.name)) {
-            seen.add(def.name);
-            hints.push(def.name);
-        }
+        [def.name, ...(def.aliases || [])].forEach(name => {
+            if (!FEATURED_COMMAND_SET.has(name) || seen.has(name)) {
+                return;
+            }
+            seen.add(name);
+            hints.push(name);
+        });
     });
     (extra || []).forEach(hint => {
         if (hint && !seen.has(hint)) {

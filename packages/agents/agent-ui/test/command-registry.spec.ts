@@ -76,16 +76,18 @@ export class AgentConsoleCommandRegistryTest {
     curatedSlashMenu() {
         const hints = agentConsoleCommandHints();
         expect(new Set(hints)).toEqual(new Set(AGENT_CONSOLE_FEATURED_COMMANDS));
-        expect(hints.length).toEqual(23);
+        expect(hints.length).toEqual(36);
         expect(hints[0]).toEqual('/help');
         const help = buildAgentConsoleHelpOptions();
-        for (const advanced of ['/tools', '/mcp', '/keymap', '/search', '/snapshot', '/outputs', '/voice', '/jobs']) {
+        for (const advanced of ['/tools', '/skills', '/keymap', '/search', '/snapshot', '/voice', '/jobs']) {
             expect(hints.includes(advanced)).toEqual(false);
             expect(help.some(option => option.value === advanced)).toEqual(true);
         }
-        // Aliases remain executable but do not duplicate the curated menu.
+        // Common workflows and the user-facing /web alias stay discoverable.
+        for (const command of ['/init', '/web', '/mcp', '/outputs', '/editor']) {
+            expect(hints.includes(command)).toEqual(true);
+        }
         expect(hints.includes('/connect')).toEqual(false);
-        expect(hints.includes('/web')).toEqual(false);
     }
 
     @Test('keeps canonical command names unique')
