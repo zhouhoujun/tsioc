@@ -1084,15 +1084,14 @@ export class AgentConsoleSessionsPanelComponent {
     }
 
     get sessionsSummaryLabel(): string {
-        if (!this.shouldShow || !this.sessions.length) {
-            return '';
-        }
+        if (!this.shouldShow) return '';
+        if (!this.sessions.length) return panelLabel(this.translator, 'sessions', 'emptyFilter', 'no sessions match "{filter}"', { filter: this.state.navFilter.text || '' });
         const selectedIndex = Math.max(0, this.sessions.findIndex(item => item.id === this.state.selectedSessionId));
         return panelLabel(this.translator, 'sessions', 'summary', 'sessions {total} · {index}/{total}', { total: this.sessions.length, index: selectedIndex + 1 });
     }
 
     get sessionsHintLabel(): string {
-        if (!this.shouldShow || !this.sessions.length || !this.state.sessionsFocused) {
+        if (!this.shouldShow || !this.state.sessionsFocused) {
             return '';
         }
         return formatSessionHint(this.state.consoleOptions.sessionHint, this.state.navFilter.text);

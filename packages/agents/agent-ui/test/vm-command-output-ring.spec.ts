@@ -152,6 +152,19 @@ export class VmCommandOutputsRingTest {
         expect(state.commandOutputsSelectedIndex).toEqual(0);
     }
 
+    @Test('a coalesced DEL chunk edits the output filter')
+    async commandOutputsFilterDelChunk() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        state.pushCommandOutput('/jobs', 'no scheduled jobs');
+        state.openCommandOutputs();
+        const nav = navigationFor(state);
+        await state.handleFocusKey('/', nav);
+        await state.handleFocusKey('jobs', nav);
+        expect(state.commandOutputsFilter).toEqual('jobs');
+        await state.handleFocusKey('\u007f\u007f', nav);
+        expect(state.commandOutputsFilter).toEqual('jo');
+    }
+
     @Test('filter mode types j/k/q instead of moving, copying or closing')
     async commandOutputsFilterModeTypesEveryLetter() {
         const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());

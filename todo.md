@@ -2724,3 +2724,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 缺陷：zh-CN 主line 的失败工具行以英文结尾：`✕ 读取文件未完成：Path 'nope.md' does not exist. · retry (6ms)`；而 plan 步骤却硬编码中文 `重试`，英文界面反而出现中文。
 - 修复：`resolveTimelineEventActionLabel` 接受 translator，失败工具/plan 步骤统一走 `agent.timeline.actionRetry`（重试/Retry），审批走 `agent.timeline.actionReview`（审批/Review）；无 translator 时回退中文。
 - 验证：真实 PTY 失败读取显示 `· 重试 (6ms)`；新增中英用例并更新 P237 断言；agent-ui 全量回归、tsc、source-size 通过。
+
+
+## `/` 命令交互真实问题修复（2026-10）
+
+- 缺陷 1：输入 `/use` 时建议首位是 `/unshare`（按注册顺序），Enter 会把用户带到错误命令；`/usage` 排在其后。
+- 缺陷 2：`/sessions` 搜索无匹配时整个面板消失（只剩顶部 tabs），没有空结果提示，用户看不到自己输入了什么；且筛选提示被一起隐藏。
+- 缺陷 3：终端把快速输入/粘贴合并成一个多字符块时，`/sessions` 搜索与 `/outputs` 过滤会整块丢弃（只处理单字符）；合并的连续退格（多个 DEL 字节）也被丢弃。
+- 修复：子序列回退按匹配质量排序（更短、间隙更小优先），`/use` 首位变为 `/usage`；无匹配时保留面板并显示 `没有匹配“{filter}”的会话` 且保留筛选提示；新增 `agentConsoleTextChunk` 统一识别文本块，搜索/过滤接收多字符块，连续 DEL 按字节退格。
+- 验证：真实 PTY `/use` → `/usage` 首位且 Enter 直接执行；`/sessions` 输入 `zzz` 显示空结果与 `filter: zzz`，DEL 块清空后恢复列表，Esc 先清搜索再关闭；`/outputs` 过滤 `profile` 生效；新增 p413/session-picker/命令输出过滤用例；agent-ui 回归通过。

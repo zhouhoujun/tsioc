@@ -43,6 +43,13 @@ export class SuggestionMenuTest {
         expect(rankAgentConsoleCommandMatches(['/compact'], '/cmp')).toEqual(['/compact']);
     }
 
+    @Test('subsequence fallback ranks the tightest match first')
+    async fuzzyRanking() {
+        const commands = ['/unshare', '/statusline', '/usage'];
+        expect(rankAgentConsoleCommandMatches(commands, '/use')).toEqual(['/usage', '/unshare', '/statusline']);
+        expect(rankAgentConsoleCommandMatches(commands, '/use')[0]).toEqual('/usage');
+    }
+
     @Test('@ puts workspace files before tool mentions')
     async mentionOrdering() {
         const tools: any[] = [{ name: 'time' }, { name: 'terminal' }];

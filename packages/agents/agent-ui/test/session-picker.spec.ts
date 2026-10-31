@@ -77,6 +77,44 @@ export class SessionPickerTest {
         expect(state.sessionsFocused).toEqual(false);
     }
 
+    @Test('a pasted or fast-typed chunk extends the search instead of being dropped')
+    async chunkExtendsSearch() {
+        const state = sessionsState();
+        const nav = navigationFor(state);
+        const outcome = await state.processDecodedInput(
+            { text: 'chat' } as any,
+            'chat',
+            {
+                isClosed: false,
+                onExit: () => undefined,
+                hasActiveTextPrompt: false,
+                transcriptNavigationController: nav
+            }
+        );
+        expect(outcome.handled).toEqual(true);
+        expect(state.navFilter.text).toEqual('chat');
+        expect(state.sessionsFocused).toEqual(true);
+    }
+
+    @Test('a coalesced DEL chunk removes one char per byte')
+    async delChunkEditsSearch() {
+        const state = sessionsState();
+        state.navFilter = { text: 'chat' };
+        const outcome = await state.processDecodedInput(
+            { text: '\u007f\u007f' } as any,
+            '\u007f\u007f',
+            {
+                isClosed: false,
+                onExit: () => undefined,
+                hasActiveTextPrompt: false,
+                transcriptNavigationController: navigationFor(state)
+            }
+        );
+        expect(outcome.handled).toEqual(true);
+        expect(state.navFilter.text).toEqual('ch');
+        expect(state.sessionsFocused).toEqual(true);
+    }
+
     @Test('a raw DEL byte edits the search instead of becoming filter text')
     async delByteEditsSearch() {
         const state = sessionsState();

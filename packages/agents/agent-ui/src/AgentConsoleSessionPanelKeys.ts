@@ -1,4 +1,5 @@
 import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
+import { agentConsoleTextChunk } from './AgentConsoleKeyText';
 import type { AgentConsoleTranscriptNavigationController } from './AgentConsoleTranscriptNavigation';
 
 export interface SessionPanelKeyHost {
@@ -37,11 +38,18 @@ export async function handleSessionsKeyView(
         }
         return false;
     }
+    // Fast backspace arrives as a single DEL chunk; remove one char per byte.
+    if (/^[\u007f\b]+$/.test(normalized)) {
+        if (!filter) return false;
+        setFilter(filter.slice(0, -normalized.length));
+        return true;
+    }
     if (normalized === 'q' && !filter) {
         return host.dismiss(transcriptNavigation);
     }
-    if (normalized.length === 1) {
-        setFilter(filter + normalized);
+    const chunk = agentConsoleTextChunk(normalized);
+    if (chunk) {
+        setFilter(filter + chunk);
         return true;
     }
     switch (normalized) {

@@ -4,6 +4,7 @@ import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import type { AgentConsoleTranscriptNavigationController } from './AgentConsoleTranscriptNavigation';
 import { AgentConsoleOverlayController } from './AgentConsoleOverlay';
 import { handleSessionsKeyView } from './AgentConsoleSessionPanelKeys';
+import { agentConsoleTextChunk } from './AgentConsoleKeyText';
 
 /**
  * Layers that take keyboard input away from the composer. `question` is
@@ -196,12 +197,14 @@ export abstract class AgentConsoleFocusLayers {
                 state.setCommandOutputsFilter('');
                 return true;
             }
-            if (normalized === 'backspace') {
-                state.setCommandOutputsFilter(state.commandOutputsFilter.slice(0, -1));
+            if (normalized === 'backspace' || /^[\u007f\b]+$/.test(normalized)) {
+                const drop = normalized === 'backspace' ? 1 : normalized.length;
+                state.setCommandOutputsFilter(state.commandOutputsFilter.slice(0, -drop));
                 return true;
             }
-            if (normalized.length === 1) {
-                state.setCommandOutputsFilter(`${state.commandOutputsFilter}${normalized}`);
+            const chunk = agentConsoleTextChunk(normalized);
+            if (chunk) {
+                state.setCommandOutputsFilter(`${state.commandOutputsFilter}${chunk}`);
                 return true;
             }
         }

@@ -15,6 +15,7 @@ import { AGENT_UI_TASKS_EN, AGENT_UI_TASKS_ZH } from './agent-ui.i18n.tasks';
 const AGENT_UI_PANEL_CORE_EN: Record<string, any> = {
     sessions: {
         summary: 'sessions {total} · {index}/{total}',
+        emptyFilter: 'no sessions match "{filter}"',
         current: 'current',
         projectOne: 'project {name} · {count} session',
         projectMany: 'project {name} · {count} sessions',
@@ -281,6 +282,7 @@ const AGENT_UI_PANEL_CORE_EN: Record<string, any> = {
 const AGENT_UI_PANEL_CORE_ZH: Record<string, any> = {
     sessions: {
         summary: '会话 {total} · {index}/{total}',
+        emptyFilter: '没有匹配“{filter}”的会话',
         current: '当前',
         projectOne: '项目 {name} · {count} 个会话',
         projectMany: '项目 {name} · {count} 个会话',

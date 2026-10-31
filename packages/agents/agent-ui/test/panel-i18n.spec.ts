@@ -119,6 +119,20 @@ export class PanelI18nTest {
         expect(panel.sessionItems[1].label).toContain('first [当前] (3)');
     }
 
+    @Test('a zero-match session search keeps the panel and explains the filter')
+    async sessionsEmptyFilterLocalized() {
+        const base = state({
+            sessionsFocused: true,
+            selectedSessionId: '',
+            navFilter: { text: 'zzz' },
+            navFilteredSessions: []
+        });
+        const panel = new AgentConsoleSessionsPanelComponent(base, zh);
+        expect(panel.sessionsSummaryLabel).toEqual('没有匹配“zzz”的会话');
+        expect(panel.sessionsHintLabel).toContain('filter: zzz');
+        expect(panel.sessionItems).toEqual([]);
+    }
+
     @Test('jobs panel summary and empty hint are localized')
     async jobsPanelLocalized() {
         const panel = new AgentConsoleJobsPanelComponent(state({ jobsFocused: true, scheduledTasks: [] }), zh);

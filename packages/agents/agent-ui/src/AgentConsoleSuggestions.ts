@@ -35,8 +35,34 @@ export function rankAgentConsoleCommandMatches(commands: string[], token: string
     });
     const strong = [...exact, ...prefix, ...substring];
     // Subsequence matching only when nothing real matches, so `/se` no longer
-    // surfaces `/resume` or `/side`.
-    return strong.length ? strong : commands.filter(item => fuzzyMatchAgentConsoleCommand(item, needle));
+    // surfaces `/resume` or `/side`. Rank the fallback by match quality so
+    // `/use` puts `/usage` ahead of `/unshare` instead of registry order.
+    return strong.length
+        ? strong
+        : commands
+            .filter(item => fuzzyMatchAgentConsoleCommand(item, needle))
+            .map((item, index) => ({ item, index, score: fuzzyCommandScore(item, needle) }))
+            .sort((a, b) => a.score - b.score || a.index - b.index)
+            .map(entry => entry.item);
+}
+
+/** Lower is better: fewer missing characters and tighter subsequence gaps. */
+function fuzzyCommandScore(command: string, needle: string): number {
+    const target = String(command || '').toLowerCase();
+    let cursor = 0;
+    let previous = -1;
+    let gaps = 0;
+    for (let index = 0; index < target.length && cursor < needle.length; index += 1) {
+        if (target[index] !== needle[cursor]) {
+            continue;
+        }
+        if (previous >= 0) {
+            gaps += index - previous - 1;
+        }
+        previous = index;
+        cursor += 1;
+    }
+    return (target.length - needle.length) + gaps * 2;
 }
 
 export interface AgentConsoleInputTokenRange {
