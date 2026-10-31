@@ -549,7 +549,7 @@ export class VmPanelsTest {
         expect(state.displayMessages).toEqual([]);
     }
 
-    @Test('default stream hides routine turn lifecycle rows but keeps useful events')
+    @Test('routine turn lifecycle rows stay hidden in every timeline mode')
     sessionStateHidesRoutineTurnLifecycleRows() {
         const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.upsertUiEventMessage('turn-start', 'Analyzing request', {
@@ -570,11 +570,12 @@ export class VmPanelsTest {
             'Turn cancelled'
         ]);
 
+        // Opencode parity: the timeline keeps the same quiet mainline in every
+        // mode — routine start/completion rows never reach the transcript, while
+        // failures and real events stay.
         state.setTimelineMode('steps');
         expect(state.displayMessages.map(message => message.content)).toEqual([
-            'Analyzing request',
             'weather completed · Hangzhou',
-            'Turn completed',
             'Turn cancelled'
         ]);
     }

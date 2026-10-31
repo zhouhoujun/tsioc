@@ -571,8 +571,8 @@ export function renderAgentConsoleMessageItem(
         : baseItemStyle;
     const inlineRowStyle = resolveInlineRowStyle(itemStyle);
     const statusLabel = resolveAgentConsoleMessageStatusLabel(statusKind, context.statusLabels);
-    const statusSymbol = context.statusSymbol
-        || ((timelineEvent || context.timelineMode) ? resolveDefaultStatusGlyph(statusKind) : '');
+    // Opencode renders assistant prose (final answer included) without a glyph; steps keep theirs.
+    const statusSymbol = context.statusSymbol || ((timelineEvent || (context.timelineMode && templateKind !== 'assistant') || message?.metadata?.uiKind === 'command-execution') ? resolveDefaultStatusGlyph(statusKind) : '');
     // Opencode uses a compact +/− disclosure marker for reasoning rows; the
     // running state keeps the live dot.
     const thoughtSymbol = presentation.kind === 'thought' ? (statusKind === 'running' ? '●' : '+') : statusSymbol;

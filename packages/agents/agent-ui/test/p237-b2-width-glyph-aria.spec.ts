@@ -141,12 +141,18 @@ export class P237B2WidthGlyphAriaTest {
         expect(items[0].lines[0].status?.trim()).toEqual('');
     }
 
-    @Test('timeline mode adds glyphs to non-event rows too')
+    @Test('timeline mode keeps assistant prose plain and marks execution rows')
     timelineModeGlyphFallback() {
-        const items = renderAgentConsoleMessageItems([{
+        const prose = renderAgentConsoleMessageItems([{
             id: 'a1', role: 'assistant', content: 'world', createdAt: 1
         }] as any, { timelineMode: true });
-        expect(items[0].lines[0].status?.trim()).toEqual('✓');
+        expect(prose[0].lines[0].status?.trim()).toEqual('');
+
+        const step = renderAgentConsoleMessageItems([{
+            id: 'e1', role: 'assistant', content: 'Read files', createdAt: 1,
+            metadata: { uiKind: 'event', uiEventType: 'tool_completed', status: 'success' }
+        }] as any, { timelineMode: true });
+        expect(step[0].lines[0].status?.trim()).toEqual('✓');
     }
 
     @Test('command-execution rows reflect running/failed/success instead of always ✓')

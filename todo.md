@@ -2703,3 +2703,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 缺陷：鼠标划过输入框或消息区任意时间线内容都会出现 hover 背景动画；可展开/收起行的提示仍是英文 `Click to expand`/`Click to collapse`；工具结果 `(truncated)` 仍是英文；turn 结束后 footer 耗时会被空闲时间继续累加。
 - 修复：TUI click target 增加 `hoverable`，只有 pointer 目标且未标记 `data-hover="none"` 才高亮/淡入；输入框与消息面板容器（focus）不再响应 hover，仅可展开行的 `… 还有 N 行，点击展开`/`点击收起` 保留反馈并走 `agent.message.expand/collapse`；工具结果尾标记按 locale 显示 `（已截断）`；footer 耗时在 turn 结束后冻结在最后一次活动时间。
 - 验证：components/console hover-targets 3 用例（可 hover / data-hover=none / 输入框都不上色）、agent-ui 行尾标记与展开提示/footer 冻结用例；真实 PTY：tab hover 仍淡入，输入框与时间线正文不淡入；agent-ui 定向 112 passing。
+
+
+## 时间线主线对齐 opencode（2026-10）
+
+- 缺陷：每个 turn 固定多出 `● 事件 · 已收到请求` / `✓ 事件 · 轮次已完成` 两行；最终回答与中间旁白也带 `✓`，与工具/步骤行混在一起；compact 的隐藏摘要行显示为 `✓ 事件 · timeline 已隐藏 N 条事件`。
+- 修复：routine 的 `turn_started` 与成功的 `turn_completed`/`turn` 行在所有时间线模式都不进入主line（失败/取消仍保留）；assistant 正文（preamble 与最终回答）不再带状态符号，工具/命令/步骤/事件行保留 ✓ ● ✕；隐藏事件摘要改为 `timeline-collapsed` 渲染（`⋮ 已隐藏 N 条事件…`，无事件前缀与状态符号）。
+- 验证：新增 `timeline-opencode-mainline` 5 用例，更新 P237/P302/VM 面板契约；真实 PTY verbose/compact 确认无生命周期行、最终回答纯正文、错误行仍 ✕+retry；agent-ui 1906 passing。

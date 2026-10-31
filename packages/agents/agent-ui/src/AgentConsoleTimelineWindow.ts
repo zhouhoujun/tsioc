@@ -407,7 +407,7 @@ function makeSummary(
             role: 'assistant',
             content,
             createdAt: Number((firstMessage as AgentMessage)?.createdAt || Date.now()),
-            metadata: { uiKind: 'event', uiEventType: 'timeline_summary', status: 'success', label: 'timeline' }
+            metadata: { uiKind: 'timeline-collapsed', uiEventType: 'timeline_summary', status: 'success', label: 'timeline' }
         },
         priority: TIMELINE_PRIORITY_ERROR + 1, // Always show summary
         category: 'summary',
