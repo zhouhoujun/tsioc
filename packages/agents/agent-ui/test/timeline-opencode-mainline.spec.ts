@@ -2,6 +2,27 @@ import { InMemoryCommandExecutionControl } from '@tsdi/agent';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleSessionState, renderAgentConsoleMessageItems } from '../src';
+import { agentUiChinese, agentUiEnglish } from '../src/agent-ui.i18n';
+
+function translateFrom(bundle: typeof agentUiEnglish) {
+    return (key: string, params?: Record<string, any>) => {
+        const parts = key.split('.');
+        let current: any = bundle.messages;
+        for (const part of parts) {
+            if (current && typeof current === 'object' && part in current) {
+                current = current[part];
+            } else {
+                return key;
+            }
+        }
+        return typeof current === 'string'
+            ? current.replace(/\{(\w+)\}/g, (_m: string, name: string) => String(params?.[name] ?? ''))
+            : key;
+    };
+}
+
+const zh = { translate: translateFrom(agentUiChinese as any) } as any;
+const en = { translate: translateFrom(agentUiEnglish as any) } as any;
 
 function state(): AgentConsoleSessionState {
     return new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
@@ -48,6 +69,19 @@ export class TimelineOpencodeMainlineTest {
             metadata: { uiKind: 'event', uiEventType: 'tool_completed', status: 'success' }
         } as any], { timelineMode: true });
         expect(items[0].lines[0].status?.trim()).toEqual('✓');
+    }
+
+    @Test('failed tool rows show a localized retry hint')
+    failedToolRetryIsLocalized() {
+        const text = (translator: any) => renderAgentConsoleMessageItems([{
+            id: 'e1',
+            role: 'assistant',
+            content: '读取文件未完成：Path does not exist',
+            createdAt: 2,
+            metadata: { uiKind: 'event', uiEventType: 'tool_failed', status: 'error' }
+        } as any], { timelineMode: true, translator })[0].lines[0].tokens.map(token => token.text).join('');
+        expect(text(zh)).toContain('· 重试');
+        expect(text(en)).toContain('· Retry');
     }
 
     @Test('routine turn start/completion rows stay hidden in every timeline mode')

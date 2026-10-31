@@ -2717,3 +2717,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 缺陷：zh-CN 下 `/threads`、`/projects` 的操作提示仍是 `1-9 select   up/down move   enter confirm   q cancel`，`/share` 是 `enter select   esc close`，思考等级菜单是 `enter apply   esc close`。
 - 修复：`/threads`、`/projects` 改用 `consoleOptions.selectHint`（随 locale 本地化）；分享面板与思考等级菜单走 `agent.hint.enterSelectClose` / `agent.hint.enterApplyClose`。
 - 验证：真实 PTY `/threads`、`/projects`、`/share` 显示 `1-9 选择   上/下 移动   回车 确认   q 取消` / `回车 选择   esc 关闭`；新增 panel-i18n 用例覆盖中英 hint；agent-ui 全量回归通过。
+
+
+## 失败工具行的重试动作本地化（2026-10）
+
+- 缺陷：zh-CN 主line 的失败工具行以英文结尾：`✕ 读取文件未完成：Path 'nope.md' does not exist. · retry (6ms)`；而 plan 步骤却硬编码中文 `重试`，英文界面反而出现中文。
+- 修复：`resolveTimelineEventActionLabel` 接受 translator，失败工具/plan 步骤统一走 `agent.timeline.actionRetry`（重试/Retry），审批走 `agent.timeline.actionReview`（审批/Review）；无 translator 时回退中文。
+- 验证：真实 PTY 失败读取显示 `· 重试 (6ms)`；新增中英用例并更新 P237 断言；agent-ui 全量回归、tsc、source-size 通过。

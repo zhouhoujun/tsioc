@@ -52,7 +52,7 @@ export class P237EventRowSummaryTest {
             id: 'e3', role: 'assistant', content: 'Read failed', createdAt: 1,
             metadata: { uiKind: 'event', uiEventType: 'tool_failed', status: 'error' }
         }] as any);
-        expect(failed[0].lines[0].tokens.map(token => token.text).join('')).toContain('retry');
+        expect(failed[0].lines[0].tokens.map(token => token.text).join('')).toContain('重试');
         expect(failed[0].lines[0].meta).not.toContain('错误');
         expect(failed[0].status).toContain('✕');
         expect(failed[0].lines[0].ariaLabel).toContain('错误');
@@ -111,16 +111,16 @@ export class P237EventRowSummaryTest {
         const items = renderAgentConsoleMessageItems([message] as any);
         expect(items[0].lines[0].content).toEqual(`${'x'.repeat(TIMELINE_EVENT_ROW_CONTENT_MAX)}…`);
         expect(message.content).toEqual(longContent);
-        expect(items[0].lines[0].tokens.map(token => token.text).join('')).toContain('retry');
+        expect(items[0].lines[0].tokens.map(token => token.text).join('')).toContain('重试');
     }
 
     @Test('resolveTimelineEventActionLabel maps actionable states to labels')
     actionLabelMapping() {
         expect(resolveTimelineEventActionLabel(undefined, 'error')).toEqual('');
         expect(resolveTimelineEventActionLabel({ id: 'x', role: 'user', content: 'hi', createdAt: 1 } as any, 'error')).toEqual('');
-        expect(resolveTimelineEventActionLabel({ id: 'x', role: 'assistant', content: 'c', createdAt: 1, metadata: { uiKind: 'event', uiEventType: 'tool_failed' } } as any, 'error')).toEqual('retry');
+        expect(resolveTimelineEventActionLabel({ id: 'x', role: 'assistant', content: 'c', createdAt: 1, metadata: { uiKind: 'event', uiEventType: 'tool_failed' } } as any, 'error')).toEqual('重试');
         expect(resolveTimelineEventActionLabel({ id: 'x', role: 'assistant', content: 'c', createdAt: 1, metadata: { uiKind: 'event', uiEventType: 'tool_completed' } } as any, 'success')).toEqual('');
-        expect(resolveTimelineEventActionLabel({ id: 'x', role: 'assistant', content: 'c', createdAt: 1, metadata: { uiKind: 'event', uiEventType: 'tool_call' } } as any, 'failed')).toEqual('retry');
+        expect(resolveTimelineEventActionLabel({ id: 'x', role: 'assistant', content: 'c', createdAt: 1, metadata: { uiKind: 'event', uiEventType: 'tool_call' } } as any, 'failed')).toEqual('重试');
         expect(resolveTimelineEventActionLabel({ id: 'x', role: 'assistant', content: 'c', createdAt: 1, metadata: { uiKind: 'event', uiEventType: 'plan_step_failed' } } as any, 'error')).toEqual('重试');
         expect(resolveTimelineEventActionLabel({ id: 'x', role: 'assistant', content: 'c', createdAt: 1, metadata: { uiKind: 'event', uiEventType: 'plan_step_blocked', status: 'blocked' } } as any, undefined)).toEqual('重试');
         expect(resolveTimelineEventActionLabel({ id: 'x', role: 'assistant', content: 'c', createdAt: 1, metadata: { uiKind: 'event', uiEventType: 'approval_request' } } as any, 'success')).toEqual('审批');

@@ -257,6 +257,8 @@ export const agentUiEnglish: TranslationBundle = {
                 rawOutput: 'Raw output',
                 loadingOutput: 'Loading raw output…',
                 truncated: '(truncated)',
+                actionRetry: 'Retry',
+                actionReview: 'Review',
                 workedFor: 'Worked for {duration} · done {time}',
                 planSummary: '{total} steps ({completed} done)'
             },
@@ -511,6 +513,8 @@ export const agentUiChinese: TranslationBundle = {
                 rawOutput: '原始输出',
                 loadingOutput: '正在读取原始输出…',
                 truncated: '（已截断）',
+                actionRetry: '重试',
+                actionReview: '审批',
                 workedFor: '用时 {duration} · 完成于 {time}',
                 planSummary: '{total} 步（已完成 {completed} 步）'
             },

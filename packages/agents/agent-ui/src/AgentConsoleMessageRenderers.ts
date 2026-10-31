@@ -565,7 +565,7 @@ export function renderAgentConsoleMessageItem(
     const effectiveRoleLabel = resolveEffectiveRoleLabel(
         timelineEvent, presentation.kind, roleLabel, criticalMark, !!context.rendererRegistry);
     const statusKind = resolveAgentConsoleMessageStatus(message, templateKind);
-    const actionLabel = timelineEvent ? resolveTimelineEventActionLabel(message, statusKind) : '';
+    const actionLabel = timelineEvent ? resolveTimelineEventActionLabel(message, statusKind, context.translator) : '';
     const itemStyle = timelineEvent
         ? resolveTimelineEventItemStyle(theme, baseItemStyle, statusKind, rowSelected)
         : baseItemStyle;
@@ -1155,10 +1155,8 @@ export function truncateTimelineEventRowContent(
     return `${sliceByDisplayWidth(text, TIMELINE_EVENT_ROW_CONTENT_MAX).replace(/\s+$/, '')}…`;
 }
 
-export function resolveTimelineEventActionLabel(
-    message?: AgentMessage | null,
-    statusKind?: AgentConsoleMessageStatus
-): string {
+export function resolveTimelineEventActionLabel(message?: AgentMessage | null,
+    statusKind?: AgentConsoleMessageStatus, translator?: AgentUiTranslator | null): string {
     const metadata = message?.metadata || {};
     if (metadata.uiKind !== 'event') {
         return '';
@@ -1166,14 +1164,14 @@ export function resolveTimelineEventActionLabel(
     const eventType = String(metadata.uiEventType || '').trim();
     const failed = statusKind === 'failed' || statusKind === 'error';
     if ((eventType.startsWith('tool_') || eventType === 'tool_call') && failed) {
-        return 'retry';
+        return formatAgentUiLabel(translator, 'agent.timeline.actionRetry', '重试');
     }
     if (eventType.startsWith('plan_step_') && (failed || statusKind === 'blocked'
         || eventType === 'plan_step_blocked' || String(metadata.status || '') === 'blocked')) {
-        return '重试';
+        return formatAgentUiLabel(translator, 'agent.timeline.actionRetry', '重试');
     }
     if (eventType === 'approval' || eventType === 'approval_request') {
-        return '审批';
+        return formatAgentUiLabel(translator, 'agent.timeline.actionReview', '审批');
     }
     return '';
 }

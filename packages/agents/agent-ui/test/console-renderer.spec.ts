@@ -552,9 +552,9 @@ export class AgentConsoleMessagesRendererTest {
         const toolLine = lines.find(line => line.includes('agent.tool.web_search failed')) || '';
 
         expect(toolLine.includes('·  ·')).toBe(false);
-        expect(toolLine).toContain('agent.tool.web_search failed · retry');
-        expect(toolLine.includes('retryagent')).toBe(false);
-        expect(toolLine.trimEnd().endsWith('retry (24s)')).toBe(true);
+        expect(toolLine).toMatch(/agent\.tool\.web_search failed · (?:retry|Retry|重试)/);
+        expect(toolLine).not.toMatch(/(?:retry|Retry|重试)agent/);
+        expect(toolLine.trimEnd()).toMatch(/· (?:retry|Retry|重试) \(24s\)$/);
     }
 
     @Test('mounts semantic route components and only folds Thought in stream layout')
