@@ -2,6 +2,20 @@ import { InMemoryCommandExecutionControl } from '@tsdi/agent';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleSessionState, defaultAgentConsoleOptions } from '../src';
+import { agentUiChinese, agentUiEnglish } from '../src/agent-ui.i18n';
+
+function translateFrom(bundle: any) {
+    return (key: string, params?: Record<string, any>) => {
+        let current: any = bundle.messages;
+        for (const part of key.split('.')) {
+            if (current && typeof current === 'object' && part in current) current = current[part];
+            else return key;
+        }
+        return typeof current === 'string'
+            ? current.replace(/\{(\w+)\}/g, (_m: string, name: string) => String(params?.[name] ?? ''))
+            : key;
+    };
+}
 
 /**
  * Real TUI finding: a host that forwards the full built-in options object
@@ -28,6 +42,28 @@ export class ConsoleOptionsLocaleTest {
         state.applyLocaleDefaults('zh-CN');
         state.setConsoleOptions({ messagesHint: 'custom hint' });
         expect(state.consoleOptions.messagesHint).toEqual('custom hint');
+    }
+
+    @Test('the plan row is rebuilt when the locale arrives after session open')
+    planRowFollowsLocale() {
+        let locale = 'en';
+        const translator: any = {
+            get currentLocale() { return locale === 'zh' ? 'zh-CN' : 'en-US'; },
+            translate: (key: string, params?: Record<string, any>) =>
+                (locale === 'zh' ? translateFrom(agentUiChinese) : translateFrom(agentUiEnglish))(key, params)
+        };
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl(), translator);
+        state.applyLocaleDefaults('en-US');
+        state.setPlanTodos(Array.from({ length: 9 }, (_value, index) => ({
+            id: `p${index + 1}`,
+            content: `step ${index + 1}`,
+            status: 'pending'
+        })) as any);
+        expect((state as any).planMessage?.content).toContain('steps');
+        locale = 'zh';
+        state.applyLocaleDefaults('zh-CN');
+        expect((state as any).planMessage?.content).toContain('步');
+        expect((state as any).planMessage?.content).not.toContain('steps');
     }
 
     @Test('English locale keeps the English hints')

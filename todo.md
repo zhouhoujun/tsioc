@@ -2748,3 +2748,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 根因：宿主把整份内置选项（`{...defaultAgentConsoleOptions}`）传给 `setConsoleOptions` 时，内置英文 hint 被当成"宿主显式设置"，`applyLocaleDefaults` 的本地化覆盖被跳过。
 - 修复：`setConsoleOptions` 把"值等于内置英文默认"的 `*Hint` 视为未设置，继续应用 locale 覆盖；宿主真正自定义的 hint 仍然优先；英文 locale 行为不变。
 - 验证：新增 `console-options-locale` 3 用例（zh 覆盖、宿主自定义优先、en 保持）；`source-size` 基线随 `AgentConsoleSessionState` 6578→6576 下调。
+
+
+## 会话打开时计划行显示英文（2026-10）
+
+- 缺陷：打开带计划的会话时，计划行显示 `Plan · 9 steps (0 done)`；目标进度行也是英文 `goal: n/m criteria met`。
+- 根因：计划行在会话水合时用当时的 translator 构建并缓存，宿主随后才应用 workspace 语言；语言切换后没有重建该行。
+- 修复：`applyLocaleDefaults` 在语言变化时重建 `planMessage`；目标进度改走 `agent.timeline.goalProgress`（`目标：n/m 项达成`）。
+- 验证：新增 `console-options-locale` 计划行用例（en 构建 → zh 切换后为中文）；定向 4 passing。

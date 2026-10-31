@@ -627,10 +627,9 @@ export class AgentConsoleSessionState {
                 ? { messageStatusLabels: EN_MESSAGE_STATUS_LABELS, timelineLabels: EN_TIMELINE_LABELS }
                 : {};
         for (const key of Object.keys(this.localeOptionOverrides)) {
-            if (!this.hostProvidedOptions.has(key)) {
-                (this.consoleOptions as any)[key] = (this.localeOptionOverrides as any)[key];
-            }
+            if (!this.hostProvidedOptions.has(key)) (this.consoleOptions as any)[key] = (this.localeOptionOverrides as any)[key];
         }
+        if (this.planTodos.length) this.planMessage = this.buildPlanMessage();
     }
     readonly inputHistoryController: AgentConsoleInputHistoryController = new DefaultAgentConsoleInputHistoryController(this);
     readonly focusLayers: AgentConsoleFocusLayers = new DefaultAgentConsoleFocusLayers(this);
@@ -2936,7 +2935,7 @@ export class AgentConsoleSessionState {
                 + (cancelledCount ? fillTimelineLabel(labels.planCancelled || '', { cancelled: cancelledCount }) : '')
             : '';
         const goalProgress = this.goalCriteriaProgress;
-        const goalLine = goalProgress ? `goal: ${goalProgress.met}/${goalProgress.total} criteria met` : '';
+        const goalLine = goalProgress ? this.translateLabel('agent.timeline.goalProgress', { met: goalProgress.met, total: goalProgress.total }, `goal: ${goalProgress.met}/${goalProgress.total} criteria met`) : '';
         const collapsible = total > 7;
         const barWidth = Math.min(total, 20);
         const doneCount = completedCount + inProgressCount;

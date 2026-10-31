@@ -260,7 +260,8 @@ export const agentUiEnglish: TranslationBundle = {
                 actionRetry: 'Retry',
                 actionReview: 'Review',
                 workedFor: 'Worked for {duration} · done {time}',
-                planSummary: '{total} steps ({completed} done)'
+                planSummary: '{total} steps ({completed} done)',
+                goalProgress: 'goal: {met}/{total} criteria met'
             },
             mention: { folder: 'folder', file: 'file', skill: 'skill', plugin: 'plugin' },
             approval: {
@@ -516,7 +517,8 @@ export const agentUiChinese: TranslationBundle = {
                 actionRetry: '重试',
                 actionReview: '审批',
                 workedFor: '用时 {duration} · 完成于 {time}',
-                planSummary: '{total} 步（已完成 {completed} 步）'
+                planSummary: '{total} 步（已完成 {completed} 步）',
+                goalProgress: '目标：{met}/{total} 项达成'
             },
             mention: { folder: '文件夹', file: '文件', skill: '技能', plugin: '插件' },
             approval: {
