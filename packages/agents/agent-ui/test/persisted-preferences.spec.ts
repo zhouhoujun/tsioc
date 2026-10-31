@@ -5,6 +5,9 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { runMemoriesCommand, runPersonalityCommand } from '../src/AgentConsolePreferenceCommands';
 import { AgentConsoleSettingsStore, applyPersistedModelProfile, applyPersistedPreferences } from '../src/AgentConsoleSettingsStore';
+import { AgentConsoleComponent } from '../src/AgentConsoleComponent';
+import { AgentConsoleSessionState } from '../src/AgentConsoleSessionState';
+import { InMemoryCommandExecutionControl } from '@tsdi/agent';
 import { TestFileAdapter } from './_helpers';
 
 function preferenceHost() {
@@ -129,6 +132,26 @@ export class PersistedPreferencesTest {
             await store.save(workspace, { personality: 'friendly', memoryInjection: true, modelProfile: 'deepseek-fast' });
             expect((await store.load(workspace)).memoryInjection).toEqual(true);
             expect((await store.load(workspace)).modelProfile).toEqual('deepseek-fast');
+            await store.save(workspace, { openSessionIds: ['chat-a', 'chat-b', 'chat-a', '   '] });
+            expect((await store.load(workspace)).openSessionIds).toEqual(['chat-a', 'chat-b']);
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
+    @Test('restoring workspace settings loads the recorded open tab set')
+    async restoresOpenSessions() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ui-open-tabs-'));
+        try {
+            const store = new AgentConsoleSettingsStore(new TestFileAdapter());
+            await store.save(workspace, { lastSessionId: 'chat-b', openSessionIds: ['chat-a', 'chat-b'] });
+            const component: any = Object.create(AgentConsoleComponent.prototype);
+            component.state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+            component.settingsStore = store;
+            component.options = { ui: {} };
+            component.resolveHistoryWorkspace = () => workspace;
+            await component.restoreSettings();
+            expect(component.state.openSessionIds).toEqual(['chat-a', 'chat-b']);
         } finally {
             fs.rmSync(workspace, { recursive: true, force: true });
         }

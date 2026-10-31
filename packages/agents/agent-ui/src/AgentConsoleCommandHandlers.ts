@@ -271,7 +271,7 @@ async function handleSession(ctx: CommandHandlerContext, args: string, _resolved
 // ── /new ─────────────────────────────────────────────────────────────────────
 
 async function handleNew(ctx: CommandHandlerContext, args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
-    await ctx.openSession(args || undefined);
+    await ctx.openSession(args || undefined, { scoped: true });
     return true;
 }
 

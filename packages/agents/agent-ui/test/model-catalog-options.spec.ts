@@ -135,6 +135,110 @@ export class ModelCatalogOptionsTest {
         expect(envOnly.model.headers).toBeUndefined();
     }
 
+    @Test('bare model ids target the active provider and update console state')
+    async bareModelTargetsActiveProvider() {
+        const calls: Array<{ method: string; params: any }> = [];
+        const state: any = {
+            sessionId: 's1', modelProfile: '', provider: '', model: '',
+            setModelProfile(value: string) { this.modelProfile = value; },
+            setProvider(value: string) { this.provider = value; },
+            setModel(value: string) { this.model = value; }
+        };
+        const ctx: any = {
+            appRpc: {
+                request: async (method: string, params: any) => {
+                    calls.push({ method, params });
+                    return { modelProfile: `deepseek/${params.name}`, provider: 'deepseek', model: params.name };
+                }
+            },
+            state,
+            options: () => ({ model: { provider: 'deepseek', model: 'deepseek-flash', profiles: {} } }),
+            notify() {},
+            updateTerminalTitle() {},
+            nextActivateRequestId: () => 1,
+            peekActivateRequestId: () => 1,
+            getRecents: () => [], setRecents() {},
+            getFavorites: () => [], setFavorites() {},
+            getReasoningEffort: () => 'medium' as const,
+            setReasoningEffort() {},
+            persistSettings: async () => undefined,
+            resolveHistoryWorkspace: () => ''
+        };
+
+        await activateModelProfile(ctx, 'deepseek-v4.1-flash', undefined, true);
+        expect(calls[0].params.name).toEqual('deepseek-v4.1-flash');
+        expect(state.provider).toEqual('deepseek');
+        expect(state.model).toEqual('deepseek-v4.1-flash');
+        expect(state.modelProfile).toEqual('deepseek/deepseek-v4.1-flash');
+    }
+
+    @Test('a profile activation falls back to the local profile model when the RPC omits it')
+    async profileActivationFallsBackToLocalModel() {
+        const state: any = {
+            sessionId: 's1', modelProfile: '', provider: '', model: '',
+            setModelProfile(value: string) { this.modelProfile = value; },
+            setProvider(value: string) { this.provider = value; },
+            setModel(value: string) { this.model = value; }
+        };
+        const ctx: any = {
+            appRpc: { request: async () => ({ modelProfile: 'strong', provider: 'deepseek' }) },
+            state,
+            options: () => ({
+                model: {
+                    provider: 'deepseek', model: 'deepseek-flash',
+                    profiles: { strong: { provider: 'deepseek', model: 'deepseek-v4.1-flash' } }
+                }
+            }),
+            notify() {},
+            updateTerminalTitle() {},
+            nextActivateRequestId: () => 1,
+            peekActivateRequestId: () => 1,
+            getRecents: () => [], setRecents() {},
+            getFavorites: () => [], setFavorites() {},
+            getReasoningEffort: () => 'medium' as const,
+            setReasoningEffort() {},
+            persistSettings: async () => undefined,
+            resolveHistoryWorkspace: () => ''
+        };
+
+        await activateModelProfile(ctx, 'strong', undefined, true);
+        expect(state.provider).toEqual('deepseek');
+        expect(state.model).toEqual('deepseek-v4.1-flash');
+        expect(state.modelProfile).toEqual('strong');
+    }
+
+    @Test('local provider/model ids switch even without a profile entry')
+    async localDirectModelId() {
+        const options: any = {
+            model: { provider: 'deepseek', model: 'deepseek-flash', profiles: { strong: { provider: 'deepseek', model: 'deepseek-v4.1-flash' } } }
+        };
+        const state: any = {
+            sessionId: 's1', modelProfile: '', provider: '', model: '',
+            setModelProfile(value: string) { this.modelProfile = value; },
+            setProvider(value: string) { this.provider = value; },
+            setModel(value: string) { this.model = value; }
+        };
+        const ctx: any = {
+            appRpc: null,
+            state,
+            options: () => options,
+            notify() {},
+            updateTerminalTitle() {},
+            updateModelOptions() {},
+            getRecents: () => [], setRecents() {},
+            getFavorites: () => [], setFavorites() {},
+            getReasoningEffort: () => 'medium' as const,
+            setReasoningEffort() {},
+            persistSettings: async () => undefined,
+            resolveHistoryWorkspace: () => ''
+        };
+
+        await activateModelProfile(ctx, 'deepseek/deepseek-v4.1-flash', undefined, true);
+        expect(options.model.provider).toEqual('deepseek');
+        expect(options.model.model).toEqual('deepseek-v4.1-flash');
+        expect(state.model).toEqual('deepseek-v4.1-flash');
+    }
+
     @Test('active model selection forwards the chosen reasoning effort')
     async forwardsEffort() {
         const calls: Array<{ method: string; params: any }> = [];

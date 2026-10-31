@@ -119,7 +119,7 @@ export class P237B2WidthGlyphAriaTest {
             metadata: { uiKind: 'event', uiEventType: 'tool_completed', status: 'success' }
         }] as any)[0].lines[0];
         expect(code.lineStyle?.background).toEqual('#161b22');
-        expect(code.lineStyle?.color).toEqual('#86a9d6');
+        expect(code.lineStyle?.color).toEqual('#6fa37a');
     }
 
     @Test('custom status symbol wins over the default glyph')

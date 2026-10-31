@@ -2698,12 +2698,32 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 修复：把 `timelineEventDetailLines` 抽成纯格式化器 `AgentConsoleTimelineEventInspector`（同时下调 `AgentConsoleSessionState` ratchet 基线），标题/字段/按键提示走 `agent.menu.panel.inspector.*`；状态词复用时间线标签（完成/失败/进行中），事件类型、来源、序号、toolCallId/receiptId、payload 仍保持原样便于复制排障。
 - 验证：新增 panel-i18n 用例（中英对照、值保持 raw）；真实 PTY scrollback 下工具事件检查器首行为 `── 事件检查器 ──`；agent-ui 1885、source-size 基线 6634→6578。
 
+## Tabs 下沉 + 启动恢复开放 tab 集合（2026-10）
+
+- 需求：`chat --session <id>` 打开启动项目/工作区的该 session，顶部 tab 选中并加载；不带 `--session`（或 `--session` 无 id）时恢复上次退出时该项目已打开的 tab 集合；tabs 只显示当前项目/工作区；tab 条作为公用组件下沉，效果参考 opencode。
+- 修复：新增 `@tsdi/components/common` 的 `common-tab-bar`（通过 `COMMON_TAB_BAR_SOURCE` 注入宿主数据），agent-ui 以 `AgentConsoleSessionTabsSource` 提供会话范围/主题/点击动作；viewport 顶部直接渲染公用 tab 条。启动退出时在 workspace `settings.json` 持久化 `lastSessionId` 与 `openSessionIds`，CLI 解析启动 session 时显式 id 优先，否则恢复上次活跃 session；无记录才新建。tabs 按当前 session 的项目/工作区过滤，并按记录的开放集合恢复顺序。
+- 验证：components（147）、components/common（24）、components/html（124）、components/console（106）、agent-ui（1886）、agent-cli（132）全部通过；source-size OK（Component 实际 3769 行、SessionState 实际 6577 行，均在基线内）。
+
+## Tabs 关闭 + 主题名称（2026-10）
+
+- 需求：顶部 tab 可关闭；tab 标题不要显示 session id，改用 session 主题/标题。
+- 修复：`common-tab-bar` 每个 tab 增加可点击 `✕`，新增 `close` 数据源动作；关闭非当前 tab 仅从开放集合移除，关闭当前 tab 切到前一个（否则后一个）开放 tab，关闭最后一个 tab 新建会话，turn 运行中拒绝关闭当前 tab。tab 标题按 `title → summary → focusSummary → rootRequest` 取会话主题，过滤与 id 相同的占位值，缺失时回退本地化“新会话/New session”，不再显示 id。
+- 验证：新增 session-tab-close 4 用例、tabs 关闭/标题/✕ 渲染回归；components/common 24、agent-ui 定向、tsc、source-size、diff-check 通过。
+
+## Tabs 鼠标反馈修复（2026-10）
+
+- 缺陷：tab hover 没有动画；第一个 tab 切换无效；关闭按钮 hover 无动画且点击无效。
+- 根因 1：`v-for` 复用视图时，事件参数在绑定时求值并缓存，复用后仍携带首个 item（tab 的 session id 过期）。
+- 根因 2：TUI 嵌套点击目标用 `rowText.indexOf(text)` 定位，重复 `✕` 全部落在第一个关闭按钮；close 点击命中错误/落空。
+- 修复：`parseEventExpression` 改为事件触发时求值参数；`collectNestedClickTargets` 按行维护搜索游标，重复文本命中各自列；hover 改为共享 `AnimationClock` 驱动的背景渐变动画（tab 与 `✕` 都生效），离开时淡出；悬停/点击目标保持真实列宽。
+- 验证：新增 components `vfor-event-args` 用例、agent-ui 真实 surface tab 切换/第二个 `✕` 点击/hover 渐变用例；components 148 passing，agent-ui 全量通过，dom/tui gate 通过。
+- 视觉：tab 关闭按钮文本扩展为 `✕  `（右侧两个空格，命中/hover 区域同步扩大），避免与后一个 tab 贴得过近。
+
 ## 时间线 hover 只给可展开项 + 行内文案本地化（2026-10）
 
 - 缺陷：鼠标划过输入框或消息区任意时间线内容都会出现 hover 背景动画；可展开/收起行的提示仍是英文 `Click to expand`/`Click to collapse`；工具结果 `(truncated)` 仍是英文；turn 结束后 footer 耗时会被空闲时间继续累加。
 - 修复：TUI click target 增加 `hoverable`，只有 pointer 目标且未标记 `data-hover="none"` 才高亮/淡入；输入框与消息面板容器（focus）不再响应 hover，仅可展开行的 `… 还有 N 行，点击展开`/`点击收起` 保留反馈并走 `agent.message.expand/collapse`；工具结果尾标记按 locale 显示 `（已截断）`；footer 耗时在 turn 结束后冻结在最后一次活动时间。
 - 验证：components/console hover-targets 3 用例（可 hover / data-hover=none / 输入框都不上色）、agent-ui 行尾标记与展开提示/footer 冻结用例；真实 PTY：tab hover 仍淡入，输入框与时间线正文不淡入；agent-ui 定向 112 passing。
-
 
 ## 时间线主线对齐 opencode（2026-10）
 
@@ -2711,20 +2731,17 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 修复：routine 的 `turn_started` 与成功的 `turn_completed`/`turn` 行在所有时间线模式都不进入主line（失败/取消仍保留）；assistant 正文（preamble 与最终回答）不再带状态符号，工具/命令/步骤/事件行保留 ✓ ● ✕；隐藏事件摘要改为 `timeline-collapsed` 渲染（`⋮ 已隐藏 N 条事件…`，无事件前缀与状态符号）。
 - 验证：新增 `timeline-opencode-mainline` 5 用例，更新 P237/P302/VM 面板契约；真实 PTY verbose/compact 确认无生命周期行、最终回答纯正文、错误行仍 ✕+retry；agent-ui 1906 passing。
 
-
 ## 会话/分享/思考等级菜单提示本地化（2026-10）
 
 - 缺陷：zh-CN 下 `/threads`、`/projects` 的操作提示仍是 `1-9 select   up/down move   enter confirm   q cancel`，`/share` 是 `enter select   esc close`，思考等级菜单是 `enter apply   esc close`。
 - 修复：`/threads`、`/projects` 改用 `consoleOptions.selectHint`（随 locale 本地化）；分享面板与思考等级菜单走 `agent.hint.enterSelectClose` / `agent.hint.enterApplyClose`。
 - 验证：真实 PTY `/threads`、`/projects`、`/share` 显示 `1-9 选择   上/下 移动   回车 确认   q 取消` / `回车 选择   esc 关闭`；新增 panel-i18n 用例覆盖中英 hint；agent-ui 全量回归通过。
 
-
 ## 失败工具行的重试动作本地化（2026-10）
 
 - 缺陷：zh-CN 主line 的失败工具行以英文结尾：`✕ 读取文件未完成：Path 'nope.md' does not exist. · retry (6ms)`；而 plan 步骤却硬编码中文 `重试`，英文界面反而出现中文。
 - 修复：`resolveTimelineEventActionLabel` 接受 translator，失败工具/plan 步骤统一走 `agent.timeline.actionRetry`（重试/Retry），审批走 `agent.timeline.actionReview`（审批/Review）；无 translator 时回退中文。
 - 验证：真实 PTY 失败读取显示 `· 重试 (6ms)`；新增中英用例并更新 P237 断言；agent-ui 全量回归、tsc、source-size 通过。
-
 
 ## `/` 命令交互真实问题修复（2026-10）
 
@@ -2734,13 +2751,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 修复：子序列回退按匹配质量排序（更短、间隙更小优先），`/use` 首位变为 `/usage`；无匹配时保留面板并显示 `没有匹配“{filter}”的会话` 且保留筛选提示；新增 `agentConsoleTextChunk` 统一识别文本块，搜索/过滤接收多字符块，连续 DEL 按字节退格。
 - 验证：真实 PTY `/use` → `/usage` 首位且 Enter 直接执行；`/sessions` 输入 `zzz` 显示空结果与 `filter: zzz`，DEL 块清空后恢复列表，Esc 先清搜索再关闭；`/outputs` 过滤 `profile` 生效；新增 p413/session-picker/命令输出过滤用例；agent-ui 回归通过。
 
-
 ## 时间线视觉降噪与留白（2026-10）
 
 - 问题：时间线颜色过饱和（亮绿 ✓ `#7ee787`、鲑红错误 `#ffa198`、亮蓝强调 `#79c0ff`），失败/阻塞行整行高饱和；header/footer/折叠摘要加粗高对比；思考行整段与正文同亮度；最终回答紧贴执行轨迹，读起来刺眼且缺少层次。
 - 修复：主题改为低饱和配色（成功 `#6fa37a`、运行 `#c2a05e`、错误 `#c87670`/`#cf9893`、强调 `#86a9d6`），light/solarized/high-contrast 映射同步；header/footer/折叠摘要改为弱化灰（`#8b949e`）取消加粗；已完成的思考行披露标记改为弱化灰；最终回答上方增加 `0.5em` 留白，形成“执行轨迹 → 结论 → footer”的层次。
 - 验证：真实 PTY 捕获 SGR 颜色确认旧亮色 0 次、新柔和色生效；布局为 用户 → 步骤/工具 → 空行 → 最终回答 → 空行 → footer；p237/p302/p311/P291 等定向 80 passing，agent-ui 全量 1913 passing。
-
 
 ## 宿主透传默认选项时提示语回退英文（2026-10）
 
@@ -2749,17 +2764,48 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 修复：`setConsoleOptions` 把"值等于内置英文默认"的 `*Hint` 视为未设置，继续应用 locale 覆盖；宿主真正自定义的 hint 仍然优先；英文 locale 行为不变。
 - 验证：新增 `console-options-locale` 3 用例（zh 覆盖、宿主自定义优先、en 保持）；`source-size` 基线随 `AgentConsoleSessionState` 6578→6576 下调。
 
-
 ## 会话打开时计划行显示英文（2026-10）
 
 - 缺陷：打开带计划的会话时，计划行显示 `Plan · 9 steps (0 done)`；目标进度行也是英文 `goal: n/m criteria met`。
 - 根因：计划行在会话水合时用当时的 translator 构建并缓存，宿主随后才应用 workspace 语言；语言切换后没有重建该行。
 - 修复：`applyLocaleDefaults` 在语言变化时重建 `planMessage`；目标进度改走 `agent.timeline.goalProgress`（`目标：n/m 项达成`）。
 - 验证：新增 `console-options-locale` 计划行用例（en 构建 → zh 切换后为中文）；定向 4 passing。
+- 视觉：选中 tab 仅使用稍亮字体颜色（去掉选中背景块/加粗），未选中 tab 使用灰色且不显示 `✕`；`✕` 只在当前 tab 上出现，点击/悬停区域随 `✕` 保留。
 
+## 切换模型后底部模型不更新（2026-10）
+
+- 缺陷：切换模型后，底部 `模型 · workspace`（以及状态栏）仍显示旧模型。
+- 修复：模型激活现在同时同步 `state.provider/model/modelProfile`、本地 `options.model`，并在 RPC 返回缺少 model 时回退到本地 profile/裸 id；gateway 对裸 model id 按当前 provider 解析（返回 `provider/model` catalog id），客户端保留原始 name 以兼容 attach 的远程 profile；非 RPC 模式同样支持裸 id 与 `provider/model`；`modelProfile` 持久化使用实际激活的 profile/catalog id。
+- 验证：新增裸 model id、RPC 缺 model 回退、本地 provider/model id 用例；真实 TUI surface 用例断言切换后品牌面板与输入 footer 都显示新模型。
 
 ## tab hover 动画卡顿修复（2026-10）
 
 - 问题：tab 切换/悬停时画面发卡：hover 渐变为 100ms 一步（10fps），4 步共 400ms，肉眼可见跳动；在 tab 标题与 `✕` 之间移动会重置 alpha 从 0 重新淡入，产生闪烁。
 - 修复：共享 `ConsoleAnimationClock` 间隔 100ms→40ms（25fps），fade 步长 0.25→0.2（约 200ms 平滑淡入）；相邻同高目标（同一行的 tab 标签与其 `✕`）之间移动保持当前 alpha，不重启渐变。
 - 验证：真实 PTY 悬停 tab 捕获到 4 级渐变背景（24;32;41→32;42;54→40;52;66→48;62;78）并在 ~200ms 完成；tab 切换 active 标记 0.12s 内更新；新增 console 连续性用例。
+
+## 新会话继承旧 Plan（2026-10）
+
+- 缺陷：新建会话（`+`/`/new`）直接显示项目内旧会话的 `Plan · 9 steps (0 done)`。
+- 根因：`openSession` 只把 `options.fresh` 当作 self scope；新建会话没有 fresh 标记，`refreshTodoPlan`/`loadCodingTasks` 仍按项目聚合兄弟会话的计划。
+- 修复：打开会话前探测显式 id 是否存在；无 id、显式 id 尚不存在、`missing` 或 startup fresh 都使用 self scope（plan/todos/tasks 只属于新会话），只有恢复/切换既有会话才按项目聚合。
+- 验证：新增 3 条 openSession 回归（无 id、missing id、显式新 id）；session-open-notice 7 passing；tsc 通过。
+
+## Tab 切换卡顿（2026-10）
+
+- 现象：tab 切换变卡；用户询问是否必须全量重绘。
+- 结论：终端写入本来只重写变化的行（`renderPrimaryTerminalScreen` 对比 `paintedLines`），但布局每次仍需完整 pass；禁止恢复脏节点跳过（会输出陈旧面板，AGENTS 已记录回退）。
+- 修复：`openSession` 期间对 surface 做 render batch，把 configure/refresh/page/todo/task/mode 多次状态变更合并为一次最终布局与屏幕 diff；`/new` 通过 `scoped` 显式声明 self scope，移除每次打开会话额外的 `session.exists` RPC。
+- 验证：components/console 新增 render batch coalesce 用例；session-open 7；components 全量；agent-ui/gateway、tui-gate、source-size、diff-check 通过。
+
+## TUI Markdown 表格、多语言高亮与视觉层级（2026-10）
+
+- 需求：TUI 时间线对 Markdown 表格、代码块等还原度更友好，参考 opencode（`<markdown tableOptions={{ style: "grid", cellPaddingX: 1 }}>`）。
+- 根因修正：TUI 时间线真正走 `AgentConsoleMarkdown.renderAgentConsoleMarkdownLines`（结构化 token → components/console），不是 `terminal.ts` 的 `renderTerminalMarkdownLines`；此前的表格/高亮改动落在未参与生产渲染的路径上。本次修复以 `AgentConsoleMarkdown.ts` 为主，`terminal.ts` 同步保留公共工具实现。
+- 真实渲染路径修复：
+  - 表格：识别表头/分隔行/数据行，输出 `┌─┬─┐` grid（`cellPaddingX=1`），支持 `:---` 左右/居中对齐、CJK 显示宽度、单元格内联 Markdown、窄屏单元格换行；列过多无法画 grid 时退化为可读 columns。
+  - 代码块：`╭─ 语言` / `╰─` 轻量框 + 共享 `@tsdi/components/common` 语法 tokenizer，覆盖 JS/TS、Python、Go、Rust、Java/Kotlin/C#/C/C++、Ruby、PHP、SQL、Shell、YAML/TOML、Dockerfile、HTML/XML、CSS、Lua、Dart、Scala、Groovy、Perl、PowerShell 等，块注释跨行保持状态。
+  - 视觉层级：表头 heading、边框 muted、行内代码绿色背景、链接下划线、粗体强调色、`*斜体*` 真 italic、`~~删除~~` 真删除线、引用 `│`、嵌套列表 `◦`、任务 `☑/☐`、hr 使用 `─`。
+  - 宽度：终端 `getTerminalSize().cols` 经 resize 订阅同步到 `state.markdownContentWidth`，表格按真实终端宽度重排；worker 缓存 key 包含 tableWidth。
+- 通用层：`components/console` 的 TUI `applyAnsi` 支持 `font-style: italic`、`text-decoration: underline/line-through`。
+- 验证：agent-ui 新增 `markdown-rendering.spec.ts`（grid/CJK/对齐/窄屏/fallback/代码高亮/行内样式/列表/宽度传递）；components/common 新增 tokenizer 用例；components/console 新增 ANSI decoration 用例；agent-ui 1931 passing、components 全量、components/common、components/console、components/html、tui-gate、tsc、source-size、diff-check 通过。

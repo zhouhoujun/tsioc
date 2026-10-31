@@ -1,6 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { TransformModule } from '@tsdi/core';
 import { ComponentsModule } from '@tsdi/components';
+import { CommonComponentsModule, COMMON_TAB_BAR_SOURCE } from '@tsdi/components/common';
 import { AgentModule } from '@tsdi/agent';
 import { I18nModule, I18N_PROVIDERS } from '@tsdi/i18n';
 import { getGlobalProcess } from './global-process';
@@ -22,7 +23,7 @@ import { AgentConsoleStashStore } from './AgentConsoleStash';
 import { AgentConsoleThemeStore } from './AgentConsoleTheme';
 import { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { AgentConsoleSessionService } from './AgentConsoleSessionService';
-import { AgentConsoleSessionTabsComponent } from './AgentConsoleSessionTabs';
+import { AgentConsoleSessionTabsSource } from './AgentConsoleSessionTabsSource';
 import { AgentConsoleTranscriptLayoutResolver, DefaultAgentConsoleTranscriptLayoutResolver } from './AgentConsoleTranscriptLayout';
 import {
     AGENT_CONSOLE_MESSAGE_RENDERER_ROUTES,
@@ -87,6 +88,7 @@ import {
 @Module({
     imports: [
         ComponentsModule,
+        CommonComponentsModule,
         TransformModule,
         AgentModule,
         I18nModule.withLocales({
@@ -105,7 +107,6 @@ import {
         AgentConsoleInputPanelComponent,
         AgentConsoleWorkingPanelComponent,
         AgentConsoleSessionsPanelComponent,
-        AgentConsoleSessionTabsComponent,
         AgentConsoleTasksPanelComponent,
         AgentConsoleJobsPanelComponent,
         AgentConsoleApprovalsPanelComponent,
@@ -147,6 +148,8 @@ import {
         ...I18N_PROVIDERS,
         AgentConsoleSessionState,
         AgentConsoleSessionService,
+        AgentConsoleSessionTabsSource,
+        { provide: COMMON_TAB_BAR_SOURCE, useClass: AgentConsoleSessionTabsSource },
         { provide: AgentConsoleTranscriptLayoutResolver, useClass: DefaultAgentConsoleTranscriptLayoutResolver },
         AgentConsoleMessageRendererRegistry,
         AgentConsoleUserRenderer,
@@ -206,7 +209,6 @@ import {
         AgentConsoleInputPanelComponent,
         AgentConsoleWorkingPanelComponent,
         AgentConsoleSessionsPanelComponent,
-        AgentConsoleSessionTabsComponent,
         AgentConsoleTasksPanelComponent,
         AgentConsoleJobsPanelComponent,
         AgentConsoleApprovalsPanelComponent,

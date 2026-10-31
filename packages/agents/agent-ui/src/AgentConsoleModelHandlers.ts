@@ -389,6 +389,10 @@ export async function activateModelProfile(ctx: ModelHandlerContext, profileName
     if (!name) {
         return;
     }
+    const opts = ctx.options();
+    const profiles = opts.model?.profiles || {};
+    const localProfile = profiles[name];
+    const separator = name.indexOf('/');
     if (ctx.appRpc) {
         const requestId = ctx.nextActivateRequestId();
         const sessionId = ctx.state.sessionId;
@@ -396,25 +400,64 @@ export async function activateModelProfile(ctx: ModelHandlerContext, profileName
         if (requestId !== ctx.peekActivateRequestId() || sessionId !== ctx.state.sessionId) {
             return;
         }
-        ctx.state.setModelProfile(String(result?.modelProfile || name));
-        if (result?.provider) {
-            ctx.state.setProvider(String(result.provider));
+        const expected = localProfile ? resolveModelProfileConfig(ctx, name) : undefined;
+        const fallbackModel = separator > 0 ? name.slice(separator + 1) : name;
+        const provider = String(result?.provider || expected?.provider || opts.model?.provider || '');
+        const model = String(result?.model || expected?.model || fallbackModel || opts.model?.model || '');
+        const modelProfile = String(result?.modelProfile || name);
+        ctx.state.setModelProfile(modelProfile);
+        if (provider) {
+            ctx.state.setProvider(provider);
         }
-        if (result?.model) {
-            ctx.state.setModel(String(result.model));
+        if (model) {
+            ctx.state.setModel(model);
+        }
+        // Keep the local options in step with the gateway response so other
+        // console surfaces reading options.model do not show the old model.
+        if (opts.model) {
+            opts.model = {
+                ...opts.model,
+                ...(provider ? { provider } : {}),
+                ...(model ? { model } : {}),
+                defaultProfile: modelProfile
+            };
         }
         ctx.updateTerminalTitle();
         if (!silent) {
-            ctx.notify(formatAgentUiNotice(ctx.translator, 'switchedModelProfile', { name: name }));
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'switchedModelProfile', { name: modelProfile }));
         }
-        await recordRecentModel(ctx, String(result?.modelProfile || name));
-        await ctx.persistSettings({ modelProfile: name });
+        await recordRecentModel(ctx, modelProfile);
+        await ctx.persistSettings({ modelProfile });
         return;
     }
-    const opts = ctx.options();
-    const profiles = opts.model?.profiles || {};
-    if (!profiles[name]) {
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'unknownModelProfile', { name: name }));
+    if (!localProfile) {
+        const directProvider = separator > 0 ? name.slice(0, separator).trim() : '';
+        const directModel = separator > 0
+            ? name.slice(separator + 1).trim()
+            : (!opts.model?.provider ? '' : name);
+        if (!directModel || (separator > 0 && !directProvider)) {
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'unknownModelProfile', { name }));
+            return;
+        }
+        const provider = directProvider || String(opts.model?.provider || '');
+        opts.model = {
+            ...opts.model,
+            ...(provider ? { provider } : {}),
+            model: directModel,
+            defaultProfile: undefined
+        };
+        ctx.updateModelOptions?.(opts.model);
+        ctx.state.setModelProfile(name);
+        if (provider) {
+            ctx.state.setProvider(provider);
+        }
+        ctx.state.setModel(directModel);
+        ctx.updateTerminalTitle();
+        if (!silent) {
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'switchedModelProfile', { name }));
+        }
+        await recordRecentModel(ctx, name);
+        await ctx.persistSettings({ modelProfile: name });
         return;
     }
     const resolved = resolveModelProfileConfig(ctx, name);

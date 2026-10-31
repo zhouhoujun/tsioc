@@ -175,6 +175,7 @@ import {
     mapWithConcurrency as runWithConcurrency
 } from './AgentConsoleSessionContentLoader';
 import { applyMissingSessionNotice, openSession as delegateOpenSession, AgentConsoleSessionOpenHost } from './AgentConsoleSessionOpen';
+import { closeAgentConsoleSessionTab } from './AgentConsoleSessionTabClose';
 import { isAgentConsoleExactCommandToken, isAgentConsoleSuggestionMenu, resolveAgentConsoleMentionDisplayFiles } from './AgentConsoleSuggestions';
 import {
     AgentConsoleRpcCommandHost,
@@ -273,7 +274,7 @@ interface AgentConsoleQueuedPrompt {
     selector: 'agent-console',
     template: `
     <div class="agent-console">
-        <agent-console-session-tabs renderRegion="header"></agent-console-session-tabs>
+        <common-tab-bar renderRegion="header"></common-tab-bar>
         <agent-console-brand-panel renderRegion="transcript" v-show="!showMessageDetailPanel && !showSelectPanel && !showTextOverlayPanel && !showPendingQuestionPanel"></agent-console-brand-panel>
         <agent-console-messages-panel renderRegion="transcript" v-show="!showMessageDetailPanel"></agent-console-messages-panel>
         <agent-console-message-detail-panel renderRegion="transcript" v-if="showMessageDetailPanel"></agent-console-message-detail-panel>
@@ -1093,8 +1094,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         };
     }
 
-    protected async openSession(sessionId?: string, options?: { persistCurrentHistory?: boolean; fresh?: boolean; missing?: boolean }): Promise<void> {
-        return delegateOpenSession(this.sessionOpenHost(), sessionId, options);
+    protected async openSession(sessionId?: string, options?: { persistCurrentHistory?: boolean; fresh?: boolean; missing?: boolean; scoped?: boolean }): Promise<void> {
+        this.surfaceAccessor?.beginRenderBatch?.(); try { return await delegateOpenSession(this.sessionOpenHost(), sessionId, options); } finally { this.surfaceAccessor?.endRenderBatch?.(); }
     }
 
     protected async restoreSessionModes(sessionId: string): Promise<void> {
@@ -1559,7 +1560,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.recoverSelectedScheduledTaskAction = this.recoverSelectedScheduledTaskActionHandler;
         this.state.activateSelectedToolAction = this.activateSelectedToolActionHandler;
         this.state.revertGitSnapshotFromDetailAction = () => this.revertGitSnapshotFromDetail();
-        this.state.resolveApprovalAction = this.resolveApprovalActionHandler; this.state.modelUnavailableAction = failure => promptModelUnavailable(this.modelCtx(), failure); this.state.scrollTranscriptAction = rows => this.surfaceAccessor?.scrollViewport?.(rows) ?? false; this.state.sessionTabsAction = { select: id => void this.openSession(id), create: () => void this.openSession() };
+        this.state.resolveApprovalAction = this.resolveApprovalActionHandler; this.state.modelUnavailableAction = failure => promptModelUnavailable(this.modelCtx(), failure); this.state.scrollTranscriptAction = rows => this.surfaceAccessor?.scrollViewport?.(rows) ?? false; this.state.sessionTabsAction = { select: id => void this.openSession(id), create: () => void this.openSession(), close: id => void closeAgentConsoleSessionTab({ state: this.state, translator: this.translator, isTurnInProgress: () => this.isTurnInProgress(), notifyBusyState: (message: string) => this.notifyBusyState(message), openSession: sessionId => this.openSession(sessionId) }, id) };
         this.state.approvalAlwaysAllowAction = async requestId => { (this.resolvedApprovalManager as any)?.setAutoApprove?.(true); await this.resolveApprovalActionHandler('approve', requestId); this.notify(formatAgentUiNotice(this.translator, 'approvalAlwaysAllowed')); };
         this.state.globalKeyInputAction = (key, modifiers) => this.handleBrowserGlobalKeyInput(key, modifiers);
 this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCacheToDisk(cache);
@@ -1641,7 +1642,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         this.state.activateSelectedToolAction = undefined;
         this.state.resolveApprovalAction = undefined; this.state.approvalAlwaysAllowAction = undefined; this.state.modelUnavailableAction = undefined; this.state.scrollTranscriptAction = undefined; this.state.sessionTabsAction = undefined;
         this.state.globalKeyInputAction = undefined;
-        void this.persistInputHistory(); void this.persistSettings({ lastSessionId: this.state.sessionId });
+        void this.persistInputHistory(); void this.persistSettings({ lastSessionId: this.state.sessionId, openSessionIds: this.state.openSessionIds });
         const shell = this.sshShell;
         this.sshShell = null;
         this.state.sshShell = null;
@@ -2598,9 +2599,8 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             this.state.selectedTaskFilter = persisted.taskFilter;
             this.state.selectedTaskLineageRootId = persisted.taskLineageRootId || '';
         }
-        if (persisted.planTodoFilter) {
-            this.state.planTodoFilter = persisted.planTodoFilter;
-        }
+        if (persisted.planTodoFilter) { this.state.planTodoFilter = persisted.planTodoFilter; }
+        if (Array.isArray(persisted.openSessionIds)) { this.state.setOpenSessionIds(persisted.openSessionIds); }
     }
 
     protected async persistSettings(patch: Partial<AgentConsoleSettingsData>): Promise<void> {

@@ -34,6 +34,9 @@ import { CommonComponentsModule } from '@tsdi/components/common';
 
 const ANSI_RESET = '\x1b[0m';
 const ANSI_BOLD = '\x1b[1m';
+const ANSI_ITALIC = '\x1b[3m';
+const ANSI_UNDERLINE = '\x1b[4m';
+const ANSI_STRIKE = '\x1b[9m';
 
 export interface TuiRenderOptions {
     width?: number;
@@ -1047,6 +1050,17 @@ export class TuiRenderer extends ConsoleRenderer {
         const background = this.resolveColor(styleMap['background-color'] || styleMap.background, true);
         if (styleMap['font-weight'] === 'bold') {
             codes.push(ANSI_BOLD);
+        }
+        const fontStyle = String(styleMap['font-style'] || '').trim().toLowerCase();
+        if (fontStyle === 'italic' || fontStyle === 'oblique') {
+            codes.push(ANSI_ITALIC);
+        }
+        const decoration = String(styleMap['text-decoration'] || '').trim().toLowerCase();
+        if (decoration.includes('underline')) {
+            codes.push(ANSI_UNDERLINE);
+        }
+        if (decoration.includes('line-through')) {
+            codes.push(ANSI_STRIKE);
         }
         if (foreground) {
             codes.push(foreground);

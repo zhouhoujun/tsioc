@@ -28,6 +28,7 @@ export interface AgentConsoleTerminalInputHost {
         commandHints: string[];
         selectMenu?: { title?: string; kind?: string } | null;
         messageDetailVisibleLines: number;
+        markdownContentWidth: number;
         consoleOptions: { messageToggleInteraction?: string; messageLayout?: string };
         isSshShellActive: boolean;
         focusLayers: { isAnyFocusActive(): boolean };
@@ -61,7 +62,7 @@ export interface AgentConsoleTerminalInputHost {
         notifyNonMouseInput?(): void;
         stopTerminal?(): void;
         writeRawTerminalData?(data: string): void;
-        getTerminalSize?(): { rows?: number };
+        getTerminalSize?(): { columns?: number; cols?: number; rows?: number };
         getTerminalViewportRows?(): number;
         subscribeToSurfaceResize?(listener: () => void): () => void;
         dispatchMouse?(mouse: SelectMenuMouseEvent): void;
@@ -203,6 +204,7 @@ export async function handleTerminalInputView(
         return;
     }
     syncConsoleMessageDetailViewportView(host);
+    syncConsoleMarkdownContentWidth(host);
     if (decoded.mouse) {
         if (resolveTranscriptLayout(host.state.consoleOptions.messageLayout).wheelScrollsHistory && (decoded.mouse.button & 64) !== 0) {
             host.scrollMessages?.((decoded.mouse.button & 1) === 0 ? -1 : 1);
@@ -411,9 +413,51 @@ function syncMessageDetailViewportRows(host: AgentConsoleTerminalInputHost, rows
     }
 }
 
+const markdownWidthResizeSyncHosts = new WeakSet<AgentConsoleTerminalInputHost>();
+
+/**
+ * Keep Markdown tables inside the real terminal width.
+ *
+ * The parse step runs outside the renderer (and in a worker in browsers), so it
+ * cannot measure the transcript itself. Feeding it the surface width keeps grid
+ * borders from being wrapped mid-row by the terminal renderer.
+ */
+export function syncConsoleMarkdownContentWidth(host: AgentConsoleTerminalInputHost): void {
+    ensureMarkdownWidthResizeSync(host);
+    const size = host.surfaceAccessor?.getTerminalSize?.();
+    const columns = Number(size?.columns ?? size?.cols);
+    if (!Number.isFinite(columns) || columns <= 0) {
+        return;
+    }
+    // Leave a small gutter so tables never sit flush against the terminal edge.
+    const width = Math.max(24, Math.floor(columns) - 2);
+    if (host.state.markdownContentWidth !== width) {
+        host.state.markdownContentWidth = width;
+    }
+}
+
+/** Subscribe once per host so terminal resizes recompute the table width without a keypress. */
+function ensureMarkdownWidthResizeSync(host: AgentConsoleTerminalInputHost): void {
+    if (markdownWidthResizeSyncHosts.has(host)) {
+        return;
+    }
+    const accessor = host.surfaceAccessor;
+    if (!accessor?.subscribeToSurfaceResize) {
+        return;
+    }
+    markdownWidthResizeSyncHosts.add(host);
+    let unsubscribe: (() => void) | undefined;
+    unsubscribe = accessor.subscribeToSurfaceResize(() => {
+        if (host.destroyed) {
+            unsubscribe?.();
+            return;
+        }
+        syncConsoleMarkdownContentWidth(host);
+    });
+}
+
 /** Subscribe once per host so terminal resizes recompute the detail viewport without a keypress. */
-function ensureDetailViewportResizeSync(host: AgentConsoleTerminalInputHost): void {
-    if (detailViewportResizeSyncHosts.has(host)) {
+function ensureDetailViewportResizeSync(host: AgentConsoleTerminalInputHost): void {    if (detailViewportResizeSyncHosts.has(host)) {
         return;
     }
     const accessor = host.surfaceAccessor;

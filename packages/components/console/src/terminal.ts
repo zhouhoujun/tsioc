@@ -9,6 +9,7 @@ import {
     shouldSkipConsoleHistoryEntry
 } from './input';
 import { Runner, Shutdown } from '@tsdi/core';
+import { highlightTerminalCodeLine as highlightCodeLine, TerminalCodeTheme, TerminalCodeHighlightState } from './syntax-highlight';
 import { Abstract, Inject, Injectable, Injector, Optional, Provider, token } from '@tsdi/ioc';
 import { getDisplayWidth, sliceByDisplayWidth } from './display-width';
 import { noReact, RNode, Renderer, AnimationClock } from '@tsdi/components';
@@ -28,6 +29,10 @@ function resolveConsoleHostEnv(): Record<string, string | undefined> {
 const TERMINAL_RENDER_ANSI = {
     reset: '\x1b[0m',
     dim: '\x1b[38;2;110;118;129m',
+    bold: '\x1b[1m',
+    italic: '\x1b[3m',
+    underline: '\x1b[4m',
+    strike: '\x1b[9m',
     blue: '\x1b[38;2;121;192;255m',
     blueStrong: '\x1b[1m\x1b[38;2;143;208;255m',
     green: '\x1b[1m\x1b[38;2;126;231;135m',
@@ -35,17 +40,19 @@ const TERMINAL_RENDER_ANSI = {
     bgSelected: '\x1b[48;2;19;32;43m'
 } as const;
 
-const JS_LIKE_TERMINAL_KEYWORDS = new Set([
-    'async', 'await', 'break', 'case', 'catch', 'class', 'const', 'continue', 'default',
-    'delete', 'else', 'export', 'extends', 'false', 'finally', 'for', 'from', 'function',
-    'if', 'import', 'in', 'interface', 'let', 'new', 'null', 'return', 'static', 'switch',
-    'throw', 'true', 'try', 'type', 'typeof', 'undefined', 'var', 'while', 'yield'
-]);
-
-const SHELL_TERMINAL_KEYWORDS = new Set([
-    'case', 'cd', 'do', 'done', 'echo', 'elif', 'else', 'esac', 'export', 'fi', 'for',
-    'function', 'git', 'if', 'local', 'node', 'npm', 'pnpm', 'return', 'then', 'while', 'yarn'
-]);
+const TERMINAL_CODE_THEME: TerminalCodeTheme = {
+    keyword: TERMINAL_RENDER_ANSI.blueStrong,
+    string: TERMINAL_RENDER_ANSI.green,
+    number: TERMINAL_RENDER_ANSI.amber,
+    comment: TERMINAL_RENDER_ANSI.dim,
+    property: TERMINAL_RENDER_ANSI.blue,
+    type: TERMINAL_RENDER_ANSI.blueStrong,
+    constant: TERMINAL_RENDER_ANSI.amber,
+    variable: TERMINAL_RENDER_ANSI.amber,
+    tag: TERMINAL_RENDER_ANSI.blueStrong,
+    attribute: TERMINAL_RENDER_ANSI.blue,
+    function: TERMINAL_RENDER_ANSI.blueStrong
+};
 
 export const DEFAULT_TERMINAL_APP_TITLE = 'TSDI Agent';
 export const DEFAULT_TERMINAL_COLUMNS = 100;
@@ -393,6 +400,9 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     abstract resetTerminalRenderState?(): boolean;
     abstract getTerminalSize?(): { cols: number; rows: number };
     getTerminalViewportRows?(): number { return 0; }
+    /** Coalesce intermediate renders (e.g. a session switch) into one final frame. */
+    beginRenderBatch?(): void;
+    endRenderBatch?(): void;
     subscribeToSurfaceResize?(_listener: () => void): () => void { return () => undefined; }
 }
 
@@ -749,6 +759,14 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
         return this.surface?.viewportAvailableRows ?? 0;
     }
 
+    beginRenderBatch(): void {
+        this.surface?.beginRenderBatch();
+    }
+
+    endRenderBatch(): void {
+        this.surface?.endRenderBatch();
+    }
+
     subscribeToSurfaceResize?(listener: () => void): () => void {
         this.surfaceResizeListeners.add(listener);
         if (!this.surfaceResizeBound && this.output?.on) {
@@ -1004,6 +1022,8 @@ export class TuiTerminalSurface {
     protected clickTargetsCache: TerminalClickTarget[] = [];
     protected mousePress?: { x: number; y: number };
     protected mouseHandedOff = false;
+    protected renderBatchDepth = 0;
+    protected renderBatchPending = false;
     protected hoverTarget?: TerminalClickTarget;
     protected hoverPaintTarget?: TerminalClickTarget;
     protected hoverAlpha = 0;
@@ -1131,12 +1151,32 @@ export class TuiTerminalSurface {
         this.scheduled = false;
         this.pendingRenderDuringHandoff = false;
         this.pendingRenderOrigin = undefined;
+        this.renderBatchDepth = 0;
+        this.renderBatchPending = false;
     }
 
     protected pendingRenderOrigin?: ConsoleNode;
 
+    beginRenderBatch(): void {
+        this.renderBatchDepth += 1;
+    }
+
+    endRenderBatch(): void {
+        if (this.renderBatchDepth > 0) {
+            this.renderBatchDepth -= 1;
+        }
+        if (this.renderBatchDepth === 0 && this.renderBatchPending) {
+            this.renderBatchPending = false;
+            this.requestRender();
+        }
+    }
+
     requestRender(origin?: ConsoleNode): void {
         if (this.destroyed) {
+            return;
+        }
+        if (this.renderBatchDepth > 0) {
+            this.renderBatchPending = true;
             return;
         }
         if (this.scheduled) {
@@ -1160,8 +1200,7 @@ export class TuiTerminalSurface {
         Promise.resolve().then(run);
     }
 
-    protected resolveDirtyTopLevel(origin?: ConsoleNode): ConsoleNode | undefined {
-        if (!origin) {
+    protected resolveDirtyTopLevel(origin?: ConsoleNode): ConsoleNode | undefined {        if (!origin) {
             return undefined;
         }
         const nodes = Array.isArray(this.root) ? this.root : (this.root ? [this.root] : []);
@@ -2743,25 +2782,9 @@ export function buildTerminalEmptyStateBlock(width: number, appTitle = DEFAULT_T
     return buildTerminalBrandBlock(width, appTitle, model, workspace, version);
 }
 
-function paintTerminalToken(value: string, color?: string): string {
-    return color ? paintTerminalText(value, color) : value;
-}
-
 interface StyledTerminalTextSegment {
     text: string;
     codes?: string[];
-}
-
-function isTerminalJsonLanguage(lang: string): boolean {
-    return lang === 'json' || lang === 'jsonc';
-}
-
-function isTerminalShellLanguage(lang: string): boolean {
-    return lang === 'bash' || lang === 'sh' || lang === 'shell' || lang === 'zsh';
-}
-
-function isTerminalJsLikeLanguage(lang: string): boolean {
-    return !lang || lang === 'js' || lang === 'jsx' || lang === 'ts' || lang === 'tsx' || lang === 'javascript' || lang === 'typescript';
 }
 
 function mergeTerminalAnsiCodes(...groups: Array<string[] | undefined>): string[] | undefined {
@@ -2774,7 +2797,7 @@ function paintStyledTerminalSegment(segment: StyledTerminalTextSegment): string 
 }
 
 function unescapeTerminalMarkdownText(value: string): string {
-    return String(value || '').replace(/\\([\\`*_{}\[\]()#+\-.!>])/g, '$1');
+    return String(value || '').replace(/\\([\\`*_{}\[\]()#+\-.!>|])/g, '$1');
 }
 
 function tokenizeTerminalMarkdownInline(value: string, baseCodes?: string[]): StyledTerminalTextSegment[] {
@@ -2789,7 +2812,7 @@ function tokenizeTerminalMarkdownInline(value: string, baseCodes?: string[]): St
         }
         const token = match[0];
         if (token.startsWith('`')) {
-            segments.push({ text: token.slice(1, -1), codes: mergeTerminalAnsiCodes(baseCodes, [TERMINAL_RENDER_ANSI.bgSelected, TERMINAL_RENDER_ANSI.amber]) });
+            segments.push({ text: token.slice(1, -1), codes: mergeTerminalAnsiCodes(baseCodes, [TERMINAL_RENDER_ANSI.bgSelected, TERMINAL_RENDER_ANSI.green]) });
         } else if (token.startsWith('![')) {
             const imageMatch = /^!\[([^\]]*)\]\(([^)]+)\)$/.exec(token);
             const alt = unescapeTerminalMarkdownText(imageMatch?.[1] || 'image');
@@ -2802,16 +2825,16 @@ function tokenizeTerminalMarkdownInline(value: string, baseCodes?: string[]): St
             const linkMatch = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(token);
             const label = unescapeTerminalMarkdownText(linkMatch?.[1] || '');
             const url = unescapeTerminalMarkdownText(linkMatch?.[2] || '');
-            segments.push({ text: label || url, codes: mergeTerminalAnsiCodes(baseCodes, [TERMINAL_RENDER_ANSI.blueStrong]) });
+            segments.push({ text: label || url, codes: mergeTerminalAnsiCodes(baseCodes, [TERMINAL_RENDER_ANSI.blueStrong, TERMINAL_RENDER_ANSI.underline]) });
             if (url && url !== label) {
                 segments.push({ text: ` (${url})`, codes: mergeTerminalAnsiCodes(baseCodes, [TERMINAL_RENDER_ANSI.dim]) });
             }
         } else if (token.startsWith('**') || token.startsWith('__')) {
-            segments.push({ text: unescapeTerminalMarkdownText(token.slice(2, -2)), codes: mergeTerminalAnsiCodes(baseCodes, [TERMINAL_RENDER_ANSI.blueStrong]) });
+            segments.push({ text: unescapeTerminalMarkdownText(token.slice(2, -2)), codes: mergeTerminalAnsiCodes(baseCodes, [TERMINAL_RENDER_ANSI.bold, TERMINAL_RENDER_ANSI.amber]) });
         } else if (token.startsWith('~~')) {
-            segments.push({ text: unescapeTerminalMarkdownText(token.slice(2, -2)), codes: mergeTerminalAnsiCodes(baseCodes, [TERMINAL_RENDER_ANSI.dim]) });
+            segments.push({ text: unescapeTerminalMarkdownText(token.slice(2, -2)), codes: mergeTerminalAnsiCodes(baseCodes, [TERMINAL_RENDER_ANSI.dim, TERMINAL_RENDER_ANSI.strike]) });
         } else {
-            segments.push({ text: unescapeTerminalMarkdownText(token.slice(1, -1)), codes: mergeTerminalAnsiCodes(baseCodes, [TERMINAL_RENDER_ANSI.blue]) });
+            segments.push({ text: unescapeTerminalMarkdownText(token.slice(1, -1)), codes: mergeTerminalAnsiCodes(baseCodes, [TERMINAL_RENDER_ANSI.amber, TERMINAL_RENDER_ANSI.italic]) });
         }
         lastIndex = match.index + token.length;
     }
@@ -2853,6 +2876,141 @@ function wrapStyledTerminalSegments(segments: StyledTerminalTextSegment[], width
     return lines;
 }
 
+type TerminalTableAlign = 'left' | 'center' | 'right';
+
+function splitTerminalTableRow(value: string): string[] {
+    let line = String(value || '').trim();
+    if (line.startsWith('|')) {
+        line = line.slice(1);
+    }
+    if (line.endsWith('|') && !line.endsWith('\\|')) {
+        line = line.slice(0, -1);
+    }
+    const cells: string[] = [];
+    let cell = '';
+    let escaped = false;
+    let inCode = false;
+    for (const char of line) {
+        if (escaped) {
+            cell += char === '|' || char === '\\' ? char : `\\${char}`;
+            escaped = false;
+        } else if (char === '\\') {
+            escaped = true;
+        } else if (char === '`') {
+            inCode = !inCode;
+            cell += char;
+        } else if (char === '|' && !inCode) {
+            cells.push(cell.trim());
+            cell = '';
+        } else {
+            cell += char;
+        }
+    }
+    if (escaped) {
+        cell += '\\';
+    }
+    cells.push(cell.trim());
+    return cells;
+}
+
+function isTerminalTableSeparator(line: string): boolean {
+    const cells = splitTerminalTableRow(line);
+    return cells.length > 0 && cells.every(cell => /^:?-{3,}:?$/.test(cell));
+}
+
+function terminalTableAligns(cells: string[]): TerminalTableAlign[] {
+    return cells.map(cell => {
+        const left = cell.startsWith(':');
+        const right = cell.endsWith(':');
+        return left && right ? 'center' : right ? 'right' : 'left';
+    });
+}
+
+function terminalTableCellWidth(cell: string): number {
+    return tokenizeTerminalMarkdownInline(cell).reduce((width, segment) => width + getDisplayWidth(segment.text), 0);
+}
+
+function padTerminalTableCell(line: string, width: number, align: TerminalTableAlign): string {
+    const contentWidth = getDisplayWidth(stripAnsi(line));
+    const diff = Math.max(0, width - contentWidth);
+    const left = align === 'right' ? diff : align === 'center' ? Math.floor(diff / 2) : 0;
+    return `${' '.repeat(left)}${line}${' '.repeat(diff - left)}`;
+}
+
+function renderTerminalMarkdownTable(
+    header: string[],
+    separator: string[],
+    rows: string[][],
+    width: number,
+    indent: string
+): string[] {
+    const columnCount = Math.max(header.length, separator.length, ...rows.map(row => row.length));
+    const aligns = terminalTableAligns(separator);
+    const headerCells = Array.from({ length: columnCount }, (_value, index) => header[index] || '');
+    const bodyRows = rows.map(row => Array.from({ length: columnCount }, (_value, index) => row[index] || ''));
+    const naturalWidths = Array.from({ length: columnCount }, (_value, column) => Math.max(
+        1,
+        terminalTableCellWidth(headerCells[column]),
+        ...bodyRows.map(row => terminalTableCellWidth(row[column]))
+    ));
+    const indentWidth = getDisplayWidth(indent);
+    const paddingX = 1;
+    const borderOverhead = columnCount + 1 + columnCount * paddingX * 2;
+    const available = Math.max(columnCount, width - indentWidth - borderOverhead);
+    const contentWidths = naturalWidths.slice();
+    let totalWidth = contentWidths.reduce((sum, item) => sum + item, 0);
+    while (totalWidth > available) {
+        let widest = 0;
+        for (let column = 1; column < contentWidths.length; column++) {
+            if (contentWidths[column] > contentWidths[widest]) {
+                widest = column;
+            }
+        }
+        if (contentWidths[widest] <= 1) {
+            break;
+        }
+        contentWidths[widest] -= 1;
+        totalWidth -= 1;
+    }
+    if (contentWidths.reduce((sum, item) => sum + item, 0) > available) {
+        // Too many columns to paint a grid: keep the data readable instead of
+        // producing broken borders.
+        return [headerCells.join(' | '), ...bodyRows.map(row => row.join(' | '))]
+            .flatMap(line => wrapTerminalText(`${indent}${line}`, width));
+    }
+
+    const border = (left: string, middle: string, right: string) => `${indent}${paintTerminalText(
+        `${left}${contentWidths.map(item => '─'.repeat(item + paddingX * 2)).join(middle)}${right}`,
+        TERMINAL_RENDER_ANSI.dim
+    )}`;
+    const renderRow = (cells: string[], headerRow: boolean) => {
+        const cellLines = cells.map((cell, column) => {
+            const baseCodes = headerRow ? [TERMINAL_RENDER_ANSI.bold] : undefined;
+            const wrapped = wrapStyledTerminalSegments(
+                tokenizeTerminalMarkdownInline(cell, baseCodes),
+                contentWidths[column]
+            );
+            return wrapped.map(line => ` ${padTerminalTableCell(line, contentWidths[column], aligns[column] || 'left')} `);
+        });
+        const height = Math.max(1, ...cellLines.map(lines => lines.length));
+        return Array.from({ length: height }, (_value, rowIndex) => {
+            const content = cellLines
+                .map((lines, column) => lines[rowIndex] ?? ` ${' '.repeat(contentWidths[column])} `)
+                .join(paintTerminalText('│', TERMINAL_RENDER_ANSI.dim));
+            return `${indent}${paintTerminalText('│', TERMINAL_RENDER_ANSI.dim)}${content}${paintTerminalText('│', TERMINAL_RENDER_ANSI.dim)}`;
+        });
+    };
+
+    const rendered = [
+        border('┌', '┬', '┐'),
+        ...renderRow(headerCells, true),
+        border('├', '┼', '┤'),
+        ...bodyRows.flatMap(row => renderRow(row, false)),
+        border('└', '┴', '┘')
+    ];
+    return rendered;
+}
+
 function renderTerminalMarkdownTextLine(sourceLine: string, width: number): string[] {
     const chunkWidth = Math.max(12, width);
     const original = String(sourceLine || '');
@@ -2862,33 +3020,40 @@ function renderTerminalMarkdownTextLine(sourceLine: string, width: number): stri
     let baseCodes: string[] | undefined;
     const headingMatch = /^(\s*)(#{1,6})\s+(.*)$/.exec(line);
     if (headingMatch) {
+        const level = headingMatch[2].length;
         firstPrefix = headingMatch[1];
         continuationPrefix = headingMatch[1];
         line = headingMatch[3];
-        baseCodes = [TERMINAL_RENDER_ANSI.blueStrong];
+        baseCodes = level === 1
+            ? [TERMINAL_RENDER_ANSI.bold, TERMINAL_RENDER_ANSI.underline, TERMINAL_RENDER_ANSI.blueStrong]
+            : level === 2
+                ? [TERMINAL_RENDER_ANSI.bold, TERMINAL_RENDER_ANSI.blueStrong]
+                : [TERMINAL_RENDER_ANSI.bold, TERMINAL_RENDER_ANSI.blue];
     } else {
         const quoteMatch = /^(\s*)>\s?(.*)$/.exec(line);
         if (quoteMatch) {
-            firstPrefix = `${quoteMatch[1]}| `;
-            continuationPrefix = `${quoteMatch[1]}  `;
+            firstPrefix = `${quoteMatch[1]}${paintTerminalText('│ ', TERMINAL_RENDER_ANSI.dim)}`;
+            continuationPrefix = firstPrefix;
             line = quoteMatch[2];
-            baseCodes = [TERMINAL_RENDER_ANSI.dim];
+            baseCodes = [TERMINAL_RENDER_ANSI.amber, TERMINAL_RENDER_ANSI.italic];
         } else {
             const taskMatch = /^(\s*)[-*+]\s+\[([ xX])\]\s+(.*)$/.exec(line);
             if (taskMatch) {
-                firstPrefix = `${taskMatch[1]}[${taskMatch[2].toLowerCase() === 'x' ? 'x' : ' '}] `;
+                const checked = taskMatch[2].toLowerCase() === 'x';
+                firstPrefix = `${taskMatch[1]}${paintTerminalText(checked ? '[x]' : '[ ]', checked ? TERMINAL_RENDER_ANSI.green : TERMINAL_RENDER_ANSI.dim)} `;
                 continuationPrefix = `${taskMatch[1]}    `;
                 line = taskMatch[3];
             } else {
-                const orderedMatch = /^(\s*\d+\.)\s+(.*)$/.exec(line);
+                const orderedMatch = /^(\s*)(\d+\.)\s+(.*)$/.exec(line);
                 if (orderedMatch) {
-                    firstPrefix = `${orderedMatch[1]} `;
-                    continuationPrefix = `${' '.repeat(getDisplayWidth(firstPrefix))}`;
-                    line = orderedMatch[2];
+                    firstPrefix = `${orderedMatch[1]}${paintTerminalText(orderedMatch[2], TERMINAL_RENDER_ANSI.blueStrong)} `;
+                    continuationPrefix = `${orderedMatch[1]}${' '.repeat(getDisplayWidth(orderedMatch[2]) + 1)}`;
+                    line = orderedMatch[3];
                 } else {
                     const bulletMatch = /^(\s*)[-*+]\s+(.*)$/.exec(line);
                     if (bulletMatch) {
-                        firstPrefix = `${bulletMatch[1]}- `;
+                        const nested = bulletMatch[1].length > 0;
+                        firstPrefix = `${bulletMatch[1]}${paintTerminalText(nested ? '◦' : '•', TERMINAL_RENDER_ANSI.blue)} `;
                         continuationPrefix = `${bulletMatch[1]}  `;
                         line = bulletMatch[2];
                     }
@@ -2897,110 +3062,111 @@ function renderTerminalMarkdownTextLine(sourceLine: string, width: number): stri
         }
     }
     if (/^\s*([-*_])(?:\s*\1){2,}\s*$/.test(original)) {
-        return [paintTerminalText('-'.repeat(chunkWidth), TERMINAL_RENDER_ANSI.dim)];
+        return [paintTerminalText('─'.repeat(Math.max(1, chunkWidth - getDisplayWidth(continuationPrefix))), TERMINAL_RENDER_ANSI.dim)];
     }
+    const prefixWidth = getDisplayWidth(stripAnsi(firstPrefix || continuationPrefix));
     const wrapped = wrapStyledTerminalSegments(
         tokenizeTerminalMarkdownInline(line, baseCodes),
-        Math.max(1, chunkWidth - getDisplayWidth(firstPrefix || continuationPrefix))
+        Math.max(1, chunkWidth - prefixWidth)
     );
     return wrapped.map((chunk, index) => `${index === 0 ? firstPrefix : continuationPrefix}${chunk}`);
 }
 
-export function highlightTerminalCodeLine(line: string, language = ''): string {
-    const lang = String(language || '').trim().toLowerCase();
-    const source = String(line || '');
-    const jsLike = isTerminalJsLikeLanguage(lang);
-    const keywordSet = isTerminalShellLanguage(lang) ? SHELL_TERMINAL_KEYWORDS : JS_LIKE_TERMINAL_KEYWORDS;
-    let index = 0;
-    let result = '';
-    while (index < source.length) {
-        const rest = source.slice(index);
-        if (rest.startsWith('//') && jsLike) {
-            result += paintTerminalToken(rest, TERMINAL_RENDER_ANSI.dim);
-            break;
-        }
-        if (rest.startsWith('#') && isTerminalShellLanguage(lang)) {
-            result += paintTerminalToken(rest, TERMINAL_RENDER_ANSI.dim);
-            break;
-        }
-        const char = source[index];
-        if (char === '"' || char === '\'' || char === '`') {
-            let end = index + 1;
-            while (end < source.length) {
-                if (source[end] === '\\') {
-                    end += 2;
-                    continue;
-                }
-                if (source[end] === char) {
-                    end += 1;
-                    break;
-                }
-                end += 1;
-            }
-            const token = source.slice(index, end);
-            if (isTerminalJsonLanguage(lang)) {
-                const remaining = source.slice(end);
-                result += paintTerminalToken(token, /^(\s*):/.test(remaining) ? TERMINAL_RENDER_ANSI.blueStrong : TERMINAL_RENDER_ANSI.green);
-            } else {
-                result += paintTerminalToken(token, TERMINAL_RENDER_ANSI.green);
-            }
-            index = end;
-            continue;
-        }
-        const numberMatch = /^\d+(?:\.\d+)?/.exec(rest);
-        if (numberMatch) {
-            result += paintTerminalToken(numberMatch[0], TERMINAL_RENDER_ANSI.amber);
-            index += numberMatch[0].length;
-            continue;
-        }
-        const variableMatch = isTerminalShellLanguage(lang) ? /^\$[A-Za-z_][A-Za-z0-9_]*/.exec(rest) : null;
-        if (variableMatch) {
-            result += paintTerminalToken(variableMatch[0], TERMINAL_RENDER_ANSI.blue);
-            index += variableMatch[0].length;
-            continue;
-        }
-        const identifierMatch = /^[A-Za-z_$][A-Za-z0-9_$-]*/.exec(rest);
-        if (identifierMatch) {
-            const token = identifierMatch[0];
-            if (keywordSet.has(token)) {
-                result += paintTerminalToken(token, TERMINAL_RENDER_ANSI.blueStrong);
-            } else if (token === 'true' || token === 'false' || token === 'null') {
-                result += paintTerminalToken(token, TERMINAL_RENDER_ANSI.amber);
-            } else {
-                result += token;
-            }
-            index += token.length;
-            continue;
-        }
-        result += char;
-        index += 1;
-    }
-    return result;
+function padTerminalAnsiLine(line: string, width: number): string {
+    const contentWidth = getDisplayWidth(stripAnsi(line));
+    return contentWidth >= width ? line : `${line}${' '.repeat(width - contentWidth)}`;
+}
+
+function renderTerminalFencedCode(lines: string[], language: string, width: number): string[] {
+    const rawLabel = String(language || 'code').trim() || 'code';
+    const label = sliceByDisplayWidth(rawLabel, Math.max(1, Math.min(getDisplayWidth(rawLabel), width - 8)));
+    const natural = Math.max(20, getDisplayWidth(label) + 6, ...lines.map(line => getDisplayWidth(line) + 4));
+    const blockWidth = Math.max(8, Math.min(width, natural));
+    const inner = Math.max(4, blockWidth - 4);
+    const fill = Math.max(0, blockWidth - getDisplayWidth(label) - 5);
+    const top = `${paintTerminalText('╭─ ', TERMINAL_RENDER_ANSI.dim)}${paintTerminalText(label, TERMINAL_RENDER_ANSI.blueStrong)}${paintTerminalText(` ${'─'.repeat(fill)}╮`, TERMINAL_RENDER_ANSI.dim)}`;
+    const bottom = paintTerminalText(`╰${'─'.repeat(Math.max(0, blockWidth - 2))}╯`, TERMINAL_RENDER_ANSI.dim);
+    const state: TerminalCodeHighlightState = {};
+    const body = (lines.length ? lines : ['']).flatMap(line =>
+        wrapTerminalText(line, inner).map(wrapped => {
+            const highlighted = highlightTerminalCodeLine(wrapped, language, state);
+            return `${paintTerminalText('│ ', TERMINAL_RENDER_ANSI.dim)}${padTerminalAnsiLine(highlighted, inner)}${paintTerminalText(' │', TERMINAL_RENDER_ANSI.dim)}`;
+        })
+    );
+    return [top, ...body, bottom];
+}
+
+export function highlightTerminalCodeLine(line: string, language = '', state: TerminalCodeHighlightState = {}): string {
+    return highlightCodeLine(line, language, TERMINAL_CODE_THEME, state);
 }
 
 export function renderTerminalMarkdownLines(content: string, width: number): string[] {
     const chunkWidth = Math.max(12, width);
     const sourceLines = String(content || '').replace(/\r/g, '').split('\n');
     const rendered: string[] = [];
+    const pushBlock = (block: string[]) => {
+        if (!block.length) {
+            return;
+        }
+        const previous = rendered[rendered.length - 1];
+        if (previous !== undefined && stripAnsi(previous).trim() && stripAnsi(block[0]).trim()) {
+            rendered.push('');
+        }
+        rendered.push(...block);
+    };
     let inFence = false;
     let fenceLanguage = '';
-    for (const sourceLine of sourceLines) {
+    let fenceLines: string[] = [];
+    for (let lineIndex = 0; lineIndex < sourceLines.length; lineIndex++) {
+        const sourceLine = sourceLines[lineIndex];
         const trimmed = sourceLine.trim();
         if (trimmed.startsWith('```')) {
             if (inFence) {
                 inFence = false;
+                pushBlock(renderTerminalFencedCode(fenceLines, fenceLanguage, chunkWidth));
+                fenceLines = [];
                 fenceLanguage = '';
                 continue;
             }
             inFence = true;
             fenceLanguage = trimmed.slice(3).trim().toLowerCase();
+            fenceLines = [];
             continue;
         }
         if (inFence) {
-            wrapTerminalText(sourceLine, chunkWidth).forEach(line => rendered.push(highlightTerminalCodeLine(line, fenceLanguage)));
+            fenceLines.push(sourceLine);
             continue;
         }
+        const nextLine = sourceLines[lineIndex + 1] || '';
+        const headerCells = splitTerminalTableRow(sourceLine);
+        if (sourceLine.includes('|')
+            && isTerminalTableSeparator(nextLine)
+            && splitTerminalTableRow(nextLine).length === headerCells.length) {
+            const indent = /^(\s*)/.exec(sourceLine)?.[1] || '';
+            const rows: string[][] = [];
+            let rowIndex = lineIndex + 2;
+            while (rowIndex < sourceLines.length) {
+                const rowLine = sourceLines[rowIndex];
+                if (!rowLine.trim() || !rowLine.includes('|') || rowLine.trim().startsWith('```')) {
+                    break;
+                }
+                rows.push(splitTerminalTableRow(rowLine));
+                rowIndex += 1;
+            }
+            pushBlock(renderTerminalMarkdownTable(headerCells, splitTerminalTableRow(nextLine), rows, chunkWidth, indent));
+            lineIndex = rowIndex - 1;
+            continue;
+        }
+        if (/^\s*#{1,6}\s+/.test(sourceLine) || /^\s*([-*_])(?:\s*\1){2,}\s*$/.test(sourceLine)) {
+            const previous = rendered[rendered.length - 1];
+            if (previous !== undefined && stripAnsi(previous).trim()) {
+                rendered.push('');
+            }
+        }
         rendered.push(...renderTerminalMarkdownTextLine(sourceLine, chunkWidth));
+    }
+    if (inFence && fenceLines.length) {
+        pushBlock(renderTerminalFencedCode(fenceLines, fenceLanguage, chunkWidth));
     }
     return rendered.length ? rendered : ['…'];
 }

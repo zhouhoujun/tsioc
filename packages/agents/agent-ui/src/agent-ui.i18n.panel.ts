@@ -25,6 +25,7 @@ const AGENT_UI_PANEL_CORE_EN: Record<string, any> = {
         sessionsIn: 'Sessions in {name}',
         sectionsSuffix: '{count} sections',
         messageCount: '{count} messages',
+        untitled: 'New session',
         projectsTitle: 'Projects',
         threadsTitle: 'Threads',
         sectionsTitle: 'Sections'
@@ -292,6 +293,7 @@ const AGENT_UI_PANEL_CORE_ZH: Record<string, any> = {
         sessionsIn: '{name} 中的会话',
         sectionsSuffix: '{count} 个分区',
         messageCount: '{count} 条消息',
+        untitled: '新会话',
         projectsTitle: '项目',
         threadsTitle: '线程',
         sectionsTitle: '分区'

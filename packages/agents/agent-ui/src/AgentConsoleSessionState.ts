@@ -629,6 +629,7 @@ export class AgentConsoleSessionState {
         for (const key of Object.keys(this.localeOptionOverrides)) {
             if (!this.hostProvidedOptions.has(key)) (this.consoleOptions as any)[key] = (this.localeOptionOverrides as any)[key];
         }
+        // The plan row is built from translated copy; rebuild it when the host locale arrives.
         if (this.planTodos.length) this.planMessage = this.buildPlanMessage();
     }
     readonly inputHistoryController: AgentConsoleInputHistoryController = new DefaultAgentConsoleInputHistoryController(this);
@@ -678,6 +679,7 @@ export class AgentConsoleSessionState {
     projectCommandExecution(requestId: string): void { this.syncCommandExecutionTranscript(requestId); }
     consoleOptions: Required<AgentConsoleOptions> = defaultAgentConsoleOptions;
     messageDetailVisibleLines = defaultAgentConsoleOptions.messageDetailVisibleLines;
+    markdownContentWidth = 0;
     sessionId = 'console';
     input = '';
     inputSecret = false;
@@ -733,6 +735,7 @@ export class AgentConsoleSessionState {
     contextPreparation?: AgentConsoleContextPreparationSnapshot | null = null;
     tasksCount = 0;
     sessions: AgentConsoleSessionItem[] = [];
+    openSessionIds: string[] = [];
     sessionsFocused = false;
     selectedSessionId = '';
     tasksFocused = false;
@@ -912,7 +915,7 @@ export class AgentConsoleSessionState {
     resolveApprovalAction?: (decision: 'approve' | 'deny', requestId: string) => void | Promise<void>;
     /** Approve the request and auto-approve the rest of the session (`A`). */
     approvalAlwaysAllowAction?: (requestId: string) => void | Promise<void>;
-    sessionTabsAction?: { select?: (id: string) => void; create?: () => void };
+    sessionTabsAction?: { select?: (id: string) => void; create?: () => void; close?: (id: string) => void };
     globalKeyInputAction?: (key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean; altKey?: boolean }) => boolean | Promise<boolean>;
     protected injectedCommandHints: string[] = [];
 
@@ -2435,10 +2438,9 @@ export class AgentConsoleSessionState {
         this.tasksCount = value;
     }
 
-    setSessions(sessions: AgentConsoleSessionItem[]): void {
-        this.sessions = sessions.slice();
-        this.clampSessionSelectionToFilter();
-    }
+    setSessions(sessions: AgentConsoleSessionItem[]): void { this.sessions = sessions.slice(); this.clampSessionSelectionToFilter(); }
+
+    setOpenSessionIds(ids: string[]): void { const seen = new Set<string>(); this.openSessionIds = (ids || []).map(id => String(id || '').trim()).filter(id => id && !seen.has(id) && !!seen.add(id)); }
 
     get navFilteredSessions(): AgentConsoleSessionItem[] {
         const filter = this.navFilter;
@@ -4931,7 +4933,6 @@ export class AgentConsoleSessionState {
         const maxScroll = Math.max(0, this.messageDetailLines.length - this.messageDetailVisibleLines);
         this.messageDetailScroll = Math.min(this.messageDetailScroll, maxScroll);
     }
-
     setPendingApprovals(requests: AgentConsoleApprovalRequest[]): void {
         this.pendingApprovals = requests
             .slice()

@@ -140,9 +140,8 @@ export function buildConsoleAgentOptions(
             }
         }
     });
-    // A plain `chat` starts a fresh session. Do not carry a bootstrap turn
-    // (which may contain prior transcript/tool payloads) unless the caller
-    // explicitly selected a session to resume.
+    // No resolved session id means the host did not choose a resume. Do not
+    // carry a bootstrap turn (which may contain prior transcript/tool payloads).
     if (!sessionId) {
         // mergeAgentOptions supplies a default `sessionId: "default"`; an
         // implicit default must not be mistaken for an explicit resume.

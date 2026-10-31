@@ -23,6 +23,7 @@ export interface AgentConsoleSettingsData {
     planTodoFilter?: 'all' | 'active' | 'blocked' | 'failed';
     modelProfile?: string;
     lastSessionId?: string;
+    openSessionIds?: string[];
 }
 
 export function applyPersistedPreferences(
@@ -134,8 +135,21 @@ export function sanitizeAgentConsoleSettings(parsed: any): AgentConsoleSettingsD
         taskLineageRootId: typeof parsed?.taskLineageRootId === 'string' && parsed.taskLineageRootId.trim() ? parsed.taskLineageRootId.trim() : undefined,
         planTodoFilter: ['all', 'active', 'blocked', 'failed'].includes(parsed?.planTodoFilter) ? parsed.planTodoFilter : undefined,
         modelProfile: typeof parsed?.modelProfile === 'string' && parsed.modelProfile.trim() ? parsed.modelProfile.trim() : undefined,
-        lastSessionId: typeof parsed?.lastSessionId === 'string' && parsed.lastSessionId.trim() ? parsed.lastSessionId.trim() : undefined
+        lastSessionId: typeof parsed?.lastSessionId === 'string' && parsed.lastSessionId.trim() ? parsed.lastSessionId.trim() : undefined,
+        openSessionIds: sanitizeOpenSessionIds(parsed?.openSessionIds)
     };
+}
+
+/** Open tabs are bounded and deduplicated; the most recently opened ids win. */
+export function sanitizeOpenSessionIds(value: unknown): string[] | undefined {
+    if (!Array.isArray(value)) {
+        return undefined;
+    }
+    const seen = new Set<string>();
+    const ids = value
+        .map(item => typeof item === 'string' ? item.trim() : '')
+        .filter(id => id && !seen.has(id) && !!seen.add(id));
+    return ids.length ? ids.slice(-50) : undefined;
 }
 
 @Injectable()
@@ -176,7 +190,8 @@ export class AgentConsoleSettingsStore {
             ...(data.taskLineageRootId ? { taskLineageRootId: data.taskLineageRootId } : {}),
             ...(data.planTodoFilter ? { planTodoFilter: data.planTodoFilter } : {}),
             ...(data.modelProfile ? { modelProfile: data.modelProfile } : {}),
-            ...(data.lastSessionId ? { lastSessionId: data.lastSessionId } : {})
+            ...(data.lastSessionId ? { lastSessionId: data.lastSessionId } : {}),
+            ...(data.openSessionIds?.length ? { openSessionIds: sanitizeOpenSessionIds(data.openSessionIds) } : {})
         }, null, 2));
     }
 

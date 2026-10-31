@@ -111,7 +111,8 @@ export class HtmlConsoleTest {
         expect(messagesRoot.textContent).not.toContain('agent>');
         const messageItems = Array.from(messagesRoot.querySelectorAll('label'))
             .filter((item: any) => (item.getAttribute('style') || '').includes('overflow-wrap')) as HTMLElement[];
-        expect(messageItems.length).toEqual(3);
+        expect(messageItems.length).toEqual(5);
+        expect(messagesRoot.textContent).toContain('╭─ ts');
         expect(messageItems[0]?.getAttribute('style') || '').toContain('padding');
         expect(messageItems[0]?.getAttribute('style') || '').toContain('padding: 0em 0px 0em 1ch');
         expect(messageItems[0]?.style.background).toEqual('rgb(27, 33, 40)');

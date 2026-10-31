@@ -158,6 +158,17 @@ class ConsoleStyleTestComponent {
 }
 
 @Component({
+    selector: 'console-decoration-test',
+    template: `
+    <section>
+        <p style="font-style: italic; text-decoration: underline line-through;">Decorated</p>
+    </section>
+    `
+})
+class ConsoleDecorationTestComponent {
+}
+
+@Component({
     selector: 'console-working-child',
     template: '<p>Working</p>'
 })
@@ -518,6 +529,25 @@ export class ConsoleRendererTest {
         }
     }
 
+    @Test('render batching coalesces intermediate frames into one')
+    async renderBatchCoalesces() {
+        let renders = 0;
+        const surface = new TuiTerminalSurface({
+            renderer: { renderToTuiLayout: () => { renders += 1; return { lines: ['frame'] }; } } as any,
+            root: { addEventListener: () => undefined, removeEventListener: () => undefined } as any,
+            width: 40,
+            output: { write: () => undefined },
+            scheduler: task => task()
+        });
+        const initial = renders;
+        surface.beginRenderBatch();
+        surface.requestRender();
+        surface.requestRender();
+        expect(renders).toEqual(initial);
+        surface.endRenderBatch();
+        expect(renders).toEqual(initial + 1);
+    }
+
     @Test('pager surface opens, searches, navigates and closes without a component root')
     async pagerSurfaceOpensSearchesNavigatesCloses() {
         const output: string[] = [];
@@ -865,6 +895,25 @@ export class ConsoleRendererTest {
             expect(lines.length).toBeGreaterThan(0);
             expect(lines[0]).toContain('\x1b[');
             expect(lines[0]).toContain('Styled');
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('renders italic, underline, and strike-through styles in tui output')
+    async rendersDecorationStylesThroughTuiRenderer() {
+        const ctx = await Application.run(ConsoleDecorationTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(ConsoleDecorationTestComponent) as ComponentRef<ConsoleDecorationTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            const lines = renderer.renderToTuiLines(root, { width: 20 });
+            expect(lines[0]).toContain('\x1b[3m');
+            expect(lines[0]).toContain('\x1b[4m');
+            expect(lines[0]).toContain('\x1b[9m');
+            expect(lines[0]).toContain('Decorated');
         } finally {
             await ctx.close();
         }

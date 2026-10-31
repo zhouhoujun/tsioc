@@ -90,7 +90,7 @@ export interface CommandHandlerContext {
 
     // ── session management ──
     readonly sessionService: AgentConsoleSessionService | null | undefined;
-    openSession(sessionId?: string): Promise<void>;
+    openSession(sessionId?: string, options?: { persistCurrentHistory?: boolean; fresh?: boolean; missing?: boolean; scoped?: boolean }): Promise<void>;
     refreshSessions(): Promise<void>;
     refreshCurrentSections(): Promise<void>;
     refreshThreadTodoPlan(): Promise<void>;

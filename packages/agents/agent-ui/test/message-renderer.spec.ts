@@ -220,7 +220,7 @@ export class AgentConsoleMessageRendererDispatchTest {
             createdAt: 1
         }] as any);
         expect(items[0].lines.map(line => `${line.prefix || ''}${line.content}`))
-            .toEqual(['正文', '2. 完整条目', '   • 子项']);
+            .toEqual(['正文', '2. 完整条目', '   ◦ 子项']);
     }
 
     @Test('resolves shared reply statuses and localized labels')

@@ -12,6 +12,8 @@ import {
 } from './AgentConsoleMarkdown';
 import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from './AgentConsoleTheme';
 import { getDisplayWidth, sliceByDisplayWidth } from './AgentConsoleTextWidth';
+import { resolveAgentConsoleMarkdownPrefixStyle, resolveAgentConsoleMarkdownToneStyle } from './AgentConsoleMarkdownStyles';
+export { resolveAgentConsoleMarkdownPrefixStyle, resolveAgentConsoleMarkdownToneStyle } from './AgentConsoleMarkdownStyles';
 import { resolveTimelineEventSentence, formatTimelineSessionDuration, AgentConsoleTimelineLabels } from './AgentConsoleTimelineWindow';
 import { resolveTurnLifecycleLabel } from './AgentConsoleTimelineLabels';
 import { resolveTimelineMeta, resolveTimelineMetaStyle, resolveMessageDurationMs, resolveMessageRoleLabel, resolveMessageRoleStyle, resolveAgentConsoleMessageRoleLabel, resolveEffectiveRoleLabel, shouldRenderWorkedSummary, localizeCommandExecutionStatus, localizeTimelineContentSuffix, resolveTimelineDetailToggle } from './AgentConsoleTimelineMeta';
@@ -119,6 +121,8 @@ export interface AgentConsoleMessageRenderContext {
     rendererRegistry?: AgentConsoleMessageRendererRegistry;
     messageDetailOpen?: boolean;
     messageDetailVisibleLines?: number;
+    /** Terminal column budget for grid tables; 0/undefined uses the shared fallback. */
+    markdownContentWidth?: number;
 }
 
 export interface AgentConsoleResolvedMessageRenderer {
@@ -602,9 +606,9 @@ export function renderAgentConsoleMessageItem(
             ? renderAgentConsolePlainTextLines(eventRowContent, { compactBlankLines: false })
             : streaming || templateKind === 'user'
                 ? streaming
-                    ? resolveMarkdownLines(eventRowContent, { compactBlankLines: true, treatUnclosedFenceAsText: true }, context.markdownBridge)
+                    ? resolveMarkdownLines(eventRowContent, { compactBlankLines: true, treatUnclosedFenceAsText: true, tableWidth: context.markdownContentWidth }, context.markdownBridge)
                     : renderAgentConsolePlainTextLines(eventRowContent, { compactBlankLines: true })
-                : resolveMarkdownLines(eventRowContent, { compactBlankLines: true }, context.markdownBridge);
+                : resolveMarkdownLines(eventRowContent, { compactBlankLines: true, tableWidth: context.markdownContentWidth }, context.markdownBridge);
     const timelineMeta = resolveTimelineMeta(message, templateKind, statusLabel, !!context.showTimestamps, context.translator);
     const metaDurationSuffix = timelineMeta.match(/ \([^()]+\)$/)?.[0] || '';
     // Step boundaries own their duration in meta; event rows keep it as a
@@ -894,69 +898,6 @@ export function resolveAgentConsoleMessageStatusLabel(
             return labels?.success || '成功';
         default:
             return '';
-    }
-}
-
-export function resolveAgentConsoleMarkdownPrefixStyle(
-    line: AgentConsoleMarkdownLine,
-    theme: AgentConsoleTheme,
-    rowSelected: boolean
-): Record<string, string> {
-    if (rowSelected) {
-        return {};
-    }
-    if (line.prefixTone === 'quote') {
-        return styleTextToObject(theme.statusLabel);
-    }
-    if (line.prefixTone === 'accent') {
-        return {
-            ...styleTextToObject(theme.toolsAccent),
-            'font-weight': 'bold'
-        };
-    }
-    if (line.prefixTone === 'heading') {
-        return {
-            ...styleTextToObject(theme.toolsAccent),
-            'font-weight': 'bold'
-        };
-    }
-    return styleTextToObject(theme.statusValue);
-}
-
-export function resolveAgentConsoleMarkdownToneStyle(
-    tone: AgentConsoleMarkdownTone,
-    theme: AgentConsoleTheme,
-    templateKind: AgentConsoleMessageTemplateKind = 'system'
-): Record<string, string> {
-    switch (tone) {
-        case 'accent':
-            return styleTextToObject(theme.toolsAccent);
-        case 'strong':
-            return {
-                ...styleTextToObject(templateKind === 'error' ? theme.statusErrorValue : theme.statusValue),
-                'font-weight': 'bold'
-            };
-        case 'code':
-            return {
-                ...styleTextToObject(templateKind === 'error' ? theme.statusErrorValue : theme.toolsAccent),
-                background: '#161b22'
-            };
-        case 'heading':
-            return {
-                ...styleTextToObject(templateKind === 'error' ? theme.statusErrorValue : theme.toolsAccent),
-                'font-weight': 'bold'
-            };
-        case 'muted':
-        case 'quote':
-            return styleTextToObject(templateKind === 'error' ? theme.statusErrorValue : theme.statusLabel);
-        default:
-            if (templateKind === 'error') {
-                return styleTextToObject(theme.statusErrorValue);
-            }
-            if (templateKind === 'timelineHeader' || templateKind === 'timelineFooter' || templateKind === 'timelineCollapsed') {
-                return styleTextToObject(theme.statusTitle);
-            }
-            return styleTextToObject(theme.statusValue);
     }
 }
 

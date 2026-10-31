@@ -2595,6 +2595,7 @@ const messageItemsCache = new WeakMap<object, {
     showUsername: boolean;
     timelineMode: boolean;
     messageDetailOpen: boolean;
+    markdownContentWidth: number;
     collapsedTurns: Record<string, boolean>;
     items: AgentConsoleRenderedMessageItem[];
 }>();
@@ -2782,7 +2783,7 @@ export class AgentConsoleMessagesPanelComponent {
             && cached.showToolOutput === showToolOutput
             && cached.showUsername === showUsername
             && cached.timelineMode === timelineMode
-            && cached.messageDetailOpen === messageDetailOpen
+            && cached.messageDetailOpen === messageDetailOpen && cached.markdownContentWidth === this.state.markdownContentWidth
             && cached.collapsedTurns === collapsedTurns) {
             return cached.items;
         }
@@ -2803,8 +2804,7 @@ export class AgentConsoleMessagesPanelComponent {
             username: this.state.consoleOptions.username,
             timelineMode,
             timelineLabels: this.state.consoleOptions.timelineLabels, translator: this.translator,
-            messageDetailOpen,
-            messageDetailVisibleLines: this.state.messageDetailVisibleLines
+            messageDetailOpen, messageDetailVisibleLines: this.state.messageDetailVisibleLines, markdownContentWidth: this.state.markdownContentWidth
         });
         messageItemsCache.set(this, {
             messages,
@@ -2820,7 +2820,7 @@ export class AgentConsoleMessagesPanelComponent {
             showToolOutput,
             showUsername,
             timelineMode,
-            messageDetailOpen,
+            messageDetailOpen, markdownContentWidth: this.state.markdownContentWidth,
             collapsedTurns,
             items
         });

@@ -22,7 +22,7 @@ export class AgentConsolePlatformPolicyTest {
         expect(options.ui.console.messageToggleInteraction).toEqual('enter');
     }
 
-    @Test('plain chat has no resume session and defaults to viewport layout')
+    @Test('buildConsoleAgentOptions leaves resume selection to the host and defaults to viewport')
     plainChatStartsFreshViewport() {
         const resolved = { workspace: '/work', hooks: {}, model: { provider: 'echo', model: 'echo' }, tui: {} } as AgentUiResolvedConfig;
         const options = buildConsoleAgentOptions(resolved, {}, {});

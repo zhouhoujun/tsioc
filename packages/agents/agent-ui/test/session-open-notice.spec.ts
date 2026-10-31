@@ -78,6 +78,52 @@ export class SessionOpenNoticeTest {
         expect(state.notice).toEqual('');
     }
 
+    @Test('opening a new session scopes its plan and tasks to itself, not the project history')
+    async newSessionDoesNotInheritProjectPlan() {
+        const state = makeState();
+        const host: any = buildHost(state, true);
+        let todoSessions: any[] | undefined;
+        let taskSessionIds: string[] | undefined;
+        host.resolveProjectSessionsFor = () => [{ id: 'chat-old', current: false }];
+        host.resolveProjectSessionIdsFor = () => ['chat-old'];
+        host.refreshTodoPlan = async (_id: string, sessions: any[]) => { todoSessions = sessions; };
+        host.loadCodingTasks = async (_id: string, ids: string[]) => { taskSessionIds = ids; return []; };
+
+        await openSession(host, undefined);
+
+        expect(host.freshSessionScoped).toEqual(true);
+        expect(todoSessions?.map(item => item.id)).toEqual([state.sessionId]);
+        expect(taskSessionIds).toEqual([state.sessionId]);
+    }
+
+    @Test('an unknown explicit id that has to be created is also scoped to itself')
+    async missingIdIsScopedToItself() {
+        const state = makeState();
+        const host: any = buildHost(state, false);
+        let todoSessions: any[] | undefined;
+        host.resolveProjectSessionsFor = () => [{ id: 'chat-old', current: false }];
+        host.refreshTodoPlan = async (_id: string, sessions: any[]) => { todoSessions = sessions; };
+
+        await openSession(host, 'chat-missing', { missing: true });
+
+        expect(host.freshSessionScoped).toEqual(true);
+        expect(todoSessions?.map(item => item.id)).toEqual(['chat-missing']);
+    }
+
+    @Test('a newly created explicit id is scoped to itself')
+    async newExplicitIdIsScopedToItself() {
+        const state = makeState();
+        const host: any = buildHost(state, false);
+        let todoSessions: any[] | undefined;
+        host.resolveProjectSessionsFor = () => [{ id: 'chat-old', current: false }];
+        host.refreshTodoPlan = async (_id: string, sessions: any[]) => { todoSessions = sessions; };
+
+        await openSession(host, 'chat-brand-new', { scoped: true });
+
+        expect(host.freshSessionScoped).toEqual(true);
+        expect(todoSessions?.map(item => item.id)).toEqual(['chat-brand-new']);
+    }
+
     @Test('openSession keeps the notice for a missing resume and clears it otherwise')
     async openSessionShowsNotice() {
         const missing = makeState();
@@ -87,5 +133,6 @@ export class SessionOpenNoticeTest {
         const resumed = makeState();
         await openSession(buildHost(resumed, true), 'chat-existing', { missing: false });
         expect(resumed.notice).toEqual('');
+        expect(resumed.openSessionIds).toContain('chat-existing');
     }
 }

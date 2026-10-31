@@ -164,7 +164,7 @@ export class BrowserMarkdownWorkerBridge implements MarkdownWorkerBridge {
     private hashContent(content: string, options?: AgentConsoleMarkdownRenderOptions): string {
         // Fast hash: length + first/last 64 chars + option flags
         const optKey = options
-            ? `${options.compactBlankLines ? 'c' : ''}${options.preserveFenceMarkers ? 'f' : ''}${options.treatUnclosedFenceAsText ? 't' : ''}`
+            ? `${options.compactBlankLines ? 'c' : ''}${options.preserveFenceMarkers ? 'f' : ''}${options.treatUnclosedFenceAsText ? 't' : ''}w${Math.floor(Number(options.tableWidth) || 0)}`
             : '';
         const prefix = content.slice(0, 64);
         const suffix = content.slice(-64);

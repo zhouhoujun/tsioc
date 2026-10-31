@@ -3190,6 +3190,36 @@ export class AppRpcServerTest {
         expect(response.result.reasoningEffort).toBe('max');
     }
 
+    @Test('bare catalog model ids target the active provider')
+    async bareCatalogModelTargetsActiveProvider() {
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const runtime = { async getMessages() { return []; }, updateModelOptions: () => undefined } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, {} as any, owners, sessions, events, {
+            model: {
+                provider: 'deepseek', model: 'deepseek-flash',
+                profiles: { flash: { provider: 'deepseek', model: 'deepseek-flash' } }
+            }
+        } as any);
+        await owners.create('bare-model-s1', 'user-1');
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0', id: 42, method: 'model.activate',
+            params: { sessionId: 'bare-model-s1', name: 'deepseek-v4.1-flash' }
+        }, { principalId: 'user-1' }) as any;
+        expect(response.error).toBeUndefined();
+        expect(response.result).toMatchObject({
+            provider: 'deepseek',
+            model: 'deepseek-v4.1-flash',
+            modelProfile: 'deepseek/deepseek-v4.1-flash',
+            catalog: true
+        });
+        expect((rpc as any).options.model.model).toBe('deepseek-v4.1-flash');
+    }
+
     @Test('catalog model activation preserves router profiles and complexity routing')
     async catalogActivationPreservesRouter() {
         const { store } = await createOrmSessionStore();

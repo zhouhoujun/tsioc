@@ -46,7 +46,7 @@ async function sessionExists(service: AgentConsoleSessionService, sessionId: str
         appRpc?: { request(method: string, params?: any): Promise<any> } | null;
         sessionStore?: { has?(id: string): Promise<boolean> } | null;
     };
-    if (internals.appRpc) {
+    if (internals.appRpc && typeof internals.appRpc.request === 'function') {
         const result = await internals.appRpc.request('session.exists', { sessionId }).catch(() => null);
         return typeof result?.exists === 'boolean' ? result.exists : undefined;
     }
@@ -73,7 +73,7 @@ export async function applyMissingSessionNotice(host: AgentConsoleSessionOpenHos
 export async function openSession(
     host: AgentConsoleSessionOpenHost,
     sessionId?: string,
-    options?: { persistCurrentHistory?: boolean; fresh?: boolean; missing?: boolean }
+    options?: { persistCurrentHistory?: boolean; fresh?: boolean; missing?: boolean; scoped?: boolean }
 ): Promise<void> {
     if (host.isTurnInProgress()) {
         host.notifyBusyState(formatAgentUiNotice(host.translator, 'sessionSwitchBusy'));
@@ -89,6 +89,7 @@ export async function openSession(
             return;
         }
     }
+    const requestedId = String(sessionId || '').trim();
     const target = await host.sessionService.ensureSession(sessionId);
     if (requestId !== host.openSessionRequestId) {
         return;
@@ -97,7 +98,18 @@ export async function openSession(
         await host.sessionService.setSessionArchived(target.id, false);
         target.archived = false;
     }
-    host.freshSessionScoped = options?.fresh === true;
+    const openSessionIds = host.state.openSessionIds || [];
+    if (!openSessionIds.includes(target.id)) {
+        host.state.setOpenSessionIds([...openSessionIds, target.id]);
+    }
+    // A new session (no requested id / an explicit /new target) must not
+    // inherit a sibling session's project plan; only an explicit resume/switch
+    // aggregates project todos.
+    const freshScope = options?.fresh === true
+        || options?.missing === true
+        || options?.scoped === true
+        || !requestedId;
+    host.freshSessionScoped = freshScope;
     const configuredWorkspace = String(host.startupWorkspace || host.state.workspace || (host.options.ui?.console as any)?.workspace || '').trim();
     const nextWorkspace = requestId === 1 && configuredWorkspace
         ? configuredWorkspace
@@ -147,10 +159,10 @@ export async function openSession(
     // A plain startup owns a new session. Project aggregation is useful
     // after an explicit resume/switch, but on a fresh launch it would pull
     // old plans and task summaries from sibling sessions into the empty UI.
-    const projectSessions = options?.fresh
+    const projectSessions = freshScope
         ? [{ ...target, current: true, updatedAt: target.lastActiveAt }]
         : host.resolveProjectSessionsFor(target.id);
-    const projectSessionIds = options?.fresh ? [target.id] : host.resolveProjectSessionIdsFor(target.id);
+    const projectSessionIds = freshScope ? [target.id] : host.resolveProjectSessionIdsFor(target.id);
     const [page] = await Promise.all([
         host.loadSessionPage(target.id),
         host.refreshTools(target.id),

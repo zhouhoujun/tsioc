@@ -89,6 +89,6 @@ export class MarkdownWorkerBridgeTest {
         const content = 'the value is _critical_ here';
         const result = bridge.render(content, { compactBlankLines: true });
         const critical = result.flatMap(line => line.tokens).find(token => token.text === 'critical');
-        expect(critical?.tone).toEqual('accent');
+        expect(critical?.tone).toEqual('emphasis');
     }
 }

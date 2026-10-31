@@ -53,5 +53,6 @@ export * from './AgentConsoleSessionService';
 export * from './AgentConsoleEventBridge';
 export * from './AgentConsoleRemoteEventBridge';
 export * from './AgentConsolePanels';
-export * from './AgentConsoleSessionTabs';
+export * from './AgentConsoleSessionTabsSource';
+export * from './AgentConsoleSessionTabClose';
 export * from './AgentConsoleHostNotice';

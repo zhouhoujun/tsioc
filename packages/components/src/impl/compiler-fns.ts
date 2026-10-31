@@ -1434,7 +1434,6 @@ export function parseEventExpression(expr: string, context: any, effect: Reactiv
 
     const [, funcPath, argsStr] = match;
     const funcParts = funcPath.split('.');
-    const args = parseArguments(argsStr, context, injector, delimiter);
 
     return effect.run(() => {
         const resolved = resolvePath(context, funcParts);
@@ -1444,6 +1443,10 @@ export function parseEventExpression(expr: string, context: any, effect: Reactiv
         }
 
         return (event: Event) => {
+            // Arguments must be evaluated when the event fires: v-for reuses a
+            // view and mutates its context, so binding-time `item.id` values
+            // would keep dispatching the first item after the list changes.
+            const args = parseArguments(argsStr, context, injector, delimiter);
             const resolvedArgs = args.map(arg => {
                 if (arg === '$event') return event;
                 if (typeof arg === 'string') {

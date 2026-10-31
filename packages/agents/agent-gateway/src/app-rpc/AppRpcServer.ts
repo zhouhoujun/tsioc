@@ -1876,15 +1876,20 @@ export class AppRpcServer {
         const profile = profiles[name];
         if (!profile) {
             const separator = name.indexOf('/');
-            const providerId = separator > 0 ? name.slice(0, separator) : '';
-            const modelId = separator > 0 ? name.slice(separator + 1) : '';
+            // A bare id (no provider prefix) targets the provider currently
+            // active on the gateway, so `/model deepseek-v4.1-flash` works in
+            // both in-process and attach consoles.
+            const providerId = separator > 0
+                ? name.slice(0, separator)
+                : String(this.options.model?.provider || '').trim();
+            const modelId = separator > 0 ? name.slice(separator + 1) : name;
             if (!providerId || !modelId || !hasModelProvider(this.options, providerId)) {
                 throw new AppRpcError(-32602, `Invalid params: unknown model profile '${name}'`);
             }
             const activated = activateCatalogModel(this.options, providerId, modelId, reasoningEffort as 'low' | 'medium' | 'high' | 'max' | undefined);
             this.runtime.updateModelOptions?.(this.options.model);
             this.persistModelConfig?.(this.options.model);
-            return { sessionId: sessionId || null, modelProfile: name, ...activated, catalog: true };
+            return { sessionId: sessionId || null, modelProfile: `${providerId}/${modelId}`, ...activated, catalog: true };
         }
         const activated = activateProfileModel(this.options, name, reasoningEffort as 'low' | 'medium' | 'high' | 'max' | undefined);
         this.runtime.updateModelOptions?.(this.options.model);

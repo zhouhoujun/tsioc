@@ -98,6 +98,100 @@ export class RuntimeMousePipelineReproTest {
 
     }
 
+    @Test('composer footer follows the active model after a switch')
+    async composerFooterFollowsModel() {
+        const ref = this.ctx.get(ApplicationRunners).getRef(AgentConsoleComponent)!;
+        const instance: any = ref.instance;
+        instance.options.model = {
+            provider: 'deepseek', model: 'deepseek-flash',
+            profiles: { strong: { provider: 'deepseek', model: 'deepseek-v4.1-flash' } }
+        };
+        instance.appRpc = null;
+        await instance.activateModelProfile('strong', undefined, true);
+        await this.settle();
+        const surface = this.ctx.get(ConsoleTerminalSurfaceAccessor)!;
+        const text = surface.getLastRenderedText((value: string) => String(value).replace(/\u001b\[[0-9;]*m/g, ''));
+        expect(text).toContain('deepseek-v4.1-flash');
+        expect(text).toContain('strong');
+        expect(text).not.toContain('deepseek-flash');
+    }
+
+    @Test('session tabs switch on every tab and close from the strip')
+    async sessionTabsMouseActions() {
+        const ref = this.ctx.get(ApplicationRunners).getRef(AgentConsoleComponent)!;
+        const state: any = ref.instance.sessionState;
+        const selected: string[] = [];
+        const closed: string[] = [];
+        state.sessionTabsAction = {
+            select: (id: string) => selected.push(id),
+            create: () => undefined,
+            close: (id: string) => closed.push(id)
+        };
+        state.setSessions([
+            { id: 'session-a', current: true, title: 'Alpha', workspace: '/work/a' },
+            { id: 'session-b', current: false, title: 'Beta', workspace: '/work/a' }
+        ]);
+        await this.settle();
+        const surface = this.ctx.get(ConsoleTerminalSurfaceAccessor)!;
+        const target = (needle: string, className: string) => surface.getClickTargets()
+            .find((entry: any) => String((entry.node as any)?.getAttribute?.('class') || '').includes(className)
+                && String((entry.node as any)?.textContent || '').includes(needle));
+        const click = async (entry: any) => {
+            surface.dispatchMouse?.({ x: entry.x + 1, y: entry.y + 1, button: 0, release: false });
+            surface.dispatchMouse?.({ x: entry.x + 1, y: entry.y + 1, button: 0, release: true });
+            await this.settle();
+        };
+
+        await click(target('Beta', 'common-tab-label'));
+        state.setSessions([
+            { id: 'session-a', current: false, title: 'Alpha', workspace: '/work/a' },
+            { id: 'session-b', current: true, title: 'Beta', workspace: '/work/a' }
+        ]);
+        await this.settle();
+        await click(target('Alpha', 'common-tab-label'));
+        state.setSessions([
+            { id: 'session-a', current: true, title: 'Alpha', workspace: '/work/a' },
+            { id: 'session-b', current: false, title: 'Beta', workspace: '/work/a' }
+        ]);
+        await this.settle();
+        await click(target('Beta', 'common-tab-label'));
+        state.setSessions([
+            { id: 'session-a', current: false, title: 'Alpha', workspace: '/work/a' },
+            { id: 'session-b', current: true, title: 'Beta', workspace: '/work/a' }
+        ]);
+        await this.settle();
+        const closes = surface.getClickTargets()
+            .filter((entry: any) => String((entry.node as any)?.getAttribute?.('class') || '').includes('common-tab-close'));
+        expect(closes.length).toEqual(1);
+        await click(closes[0]);
+
+        expect(selected).toEqual(['session-b', 'session-a', 'session-b']);
+        expect(closed).toEqual(['session-b']);
+    }
+
+    @Test('session tab hover fades a background instead of flipping instantly')
+    async sessionTabsHoverFade() {
+        const ref = this.ctx.get(ApplicationRunners).getRef(AgentConsoleComponent)!;
+        const state: any = ref.instance.sessionState;
+        state.sessionTabsAction = { select: () => undefined, create: () => undefined, close: () => undefined };
+        state.setSessions([
+            { id: 'session-a', current: true, title: 'Alpha', workspace: '/work/a' },
+            { id: 'session-b', current: false, title: 'Beta', workspace: '/work/a' }
+        ]);
+        await this.settle();
+        const surface = this.ctx.get(ConsoleTerminalSurfaceAccessor)!;
+        const beta = surface.getClickTargets().find((entry: any) =>
+            String((entry.node as any)?.getAttribute?.('class') || '').includes('common-tab-label')
+            && String((entry.node as any)?.textContent || '').includes('Beta'));
+        expect(beta).toBeDefined();
+
+        surface.dispatchMouse?.({ x: beta!.x + 2, y: beta!.y + 1, button: 35, release: false });
+        await new Promise(resolve => setTimeout(resolve, 250));
+        await Promise.resolve();
+
+        expect(surface.getLastRenderedLines()[0]).toContain('\x1b[48;2;');
+    }
+
     @Test('ConsoleTerminalInputController decodes and forwards real SGR stdin chunks')
     async controllerForwardsSgrChunks() {
         const decoder = new TerminalInputSequenceDecoder();
