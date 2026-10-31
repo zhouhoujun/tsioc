@@ -99,7 +99,7 @@ export class P237B2WidthGlyphAriaTest {
             id: 'a1', role: 'assistant', content: 'Done', createdAt: 1
         }] as any)[0].lines[0];
         expect(answer.itemStyle?.padding).toEqual('0em 1ch 0em 1ch');
-        expect(answer.itemStyle?.margin).toEqual('0 0 0.25em 0');
+        expect(answer.itemStyle?.margin).toEqual('0.5em 0 0.25em 0');
     }
 
     @Test('timeline event text hierarchy mutes completion and emphasizes failures')
@@ -111,15 +111,15 @@ export class P237B2WidthGlyphAriaTest {
 
         expect(render('success').lineStyle?.color).toEqual('#6e7681');
         expect(render('running').lineStyle?.color).toEqual('#c9d1d9');
-        expect(render('blocked').lineStyle?.color).toEqual('#d29922');
-        expect(render('error').lineStyle?.color).toEqual('#ffa198');
+        expect(render('blocked').lineStyle?.color).toEqual('#c2a05e');
+        expect(render('error').lineStyle?.color).toEqual('#cf9893');
 
         const code = renderAgentConsoleMessageItems([{
             id: 'code', role: 'assistant', content: '`npm test`', createdAt: 1,
             metadata: { uiKind: 'event', uiEventType: 'tool_completed', status: 'success' }
         }] as any)[0].lines[0];
         expect(code.lineStyle?.background).toEqual('#161b22');
-        expect(code.lineStyle?.color).toEqual('#79c0ff');
+        expect(code.lineStyle?.color).toEqual('#86a9d6');
     }
 
     @Test('custom status symbol wins over the default glyph')

@@ -2733,3 +2733,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 缺陷 3：终端把快速输入/粘贴合并成一个多字符块时，`/sessions` 搜索与 `/outputs` 过滤会整块丢弃（只处理单字符）；合并的连续退格（多个 DEL 字节）也被丢弃。
 - 修复：子序列回退按匹配质量排序（更短、间隙更小优先），`/use` 首位变为 `/usage`；无匹配时保留面板并显示 `没有匹配“{filter}”的会话` 且保留筛选提示；新增 `agentConsoleTextChunk` 统一识别文本块，搜索/过滤接收多字符块，连续 DEL 按字节退格。
 - 验证：真实 PTY `/use` → `/usage` 首位且 Enter 直接执行；`/sessions` 输入 `zzz` 显示空结果与 `filter: zzz`，DEL 块清空后恢复列表，Esc 先清搜索再关闭；`/outputs` 过滤 `profile` 生效；新增 p413/session-picker/命令输出过滤用例；agent-ui 回归通过。
+
+
+## 时间线视觉降噪与留白（2026-10）
+
+- 问题：时间线颜色过饱和（亮绿 ✓ `#7ee787`、鲑红错误 `#ffa198`、亮蓝强调 `#79c0ff`），失败/阻塞行整行高饱和；header/footer/折叠摘要加粗高对比；思考行整段与正文同亮度；最终回答紧贴执行轨迹，读起来刺眼且缺少层次。
+- 修复：主题改为低饱和配色（成功 `#6fa37a`、运行 `#c2a05e`、错误 `#c87670`/`#cf9893`、强调 `#86a9d6`），light/solarized/high-contrast 映射同步；header/footer/折叠摘要改为弱化灰（`#8b949e`）取消加粗；已完成的思考行披露标记改为弱化灰；最终回答上方增加 `0.5em` 留白，形成“执行轨迹 → 结论 → footer”的层次。
+- 验证：真实 PTY 捕获 SGR 颜色确认旧亮色 0 次、新柔和色生效；布局为 用户 → 步骤/工具 → 空行 → 最终回答 → 空行 → footer；p237/p302/p311/P291 等定向 80 passing，agent-ui 全量 1913 passing。

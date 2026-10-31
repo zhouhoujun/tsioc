@@ -468,13 +468,9 @@ const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
     {
         templateKind: 'timelineHeader',
         roleLabel: '┌ ',
-        roleStyle: theme => ({
-            ...styleTextToObject(theme.toolsAccent),
-            'font-weight': 'bold'
-        }),
+        roleStyle: theme => styleTextToObject(theme.statusTitle),
         itemStyle: (theme, rowSelected) => ({
             ...resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'system'),
-            'font-weight': 'bold',
             margin: '0'
         }),
         lead: () => '',
@@ -483,13 +479,9 @@ const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
     {
         templateKind: 'timelineFooter',
         roleLabel: '└ ',
-        roleStyle: theme => ({
-            ...styleTextToObject(theme.toolsAccent),
-            'font-weight': 'bold'
-        }),
+        roleStyle: theme => styleTextToObject(theme.statusTitle),
         itemStyle: (theme, rowSelected) => ({
             ...resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'system'),
-            'font-weight': 'bold',
             margin: '0'
         }),
         lead: () => '',
@@ -498,13 +490,9 @@ const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
     {
         templateKind: 'timelineCollapsed',
         roleLabel: '⋮ ',
-        roleStyle: theme => ({
-            ...styleTextToObject(theme.toolsAccent),
-            'font-weight': 'bold'
-        }),
+        roleStyle: theme => styleTextToObject(theme.statusTitle),
         itemStyle: (theme, rowSelected) => ({
             ...resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'system'),
-            'font-weight': 'bold',
             margin: '0'
         }),
         lead: () => '',
@@ -577,7 +565,10 @@ export function renderAgentConsoleMessageItem(
     // running state keeps the live dot.
     const thoughtSymbol = presentation.kind === 'thought' ? (statusKind === 'running' ? '●' : '+') : statusSymbol;
     const status = formatAgentConsoleMessageStatus(statusKind, thoughtSymbol);
-    const statusStyle = resolveAgentConsoleMessageStatusStyle(theme, statusKind, rowSelected);
+    // Settled thoughts are chrome: keep the disclosure marker muted so it does not compete with live steps.
+    const statusStyle = presentation.kind === 'thought' && statusKind !== 'running'
+        ? styleTextToObject(theme.statusLabel)
+        : resolveAgentConsoleMessageStatusStyle(theme, statusKind, rowSelected);
     const hideToolOutput = templateKind === 'tool' && context.showToolOutput === false;
     const rawDisplayContent = hideToolOutput
         ? ''
@@ -962,6 +953,9 @@ export function resolveAgentConsoleMarkdownToneStyle(
             if (templateKind === 'error') {
                 return styleTextToObject(theme.statusErrorValue);
             }
+            if (templateKind === 'timelineHeader' || templateKind === 'timelineFooter' || templateKind === 'timelineCollapsed') {
+                return styleTextToObject(theme.statusTitle);
+            }
             return styleTextToObject(theme.statusValue);
     }
 }
@@ -1054,7 +1048,9 @@ function resolveSemanticLineMargin(
     fallback: string
 ): string {
     if (!isFirst) return '0';
-    if (presentation.kind === 'user' || presentation.kind === 'assistant-final') return fallback;
+    if (presentation.kind === 'user') return fallback;
+    // Give the conclusion air after the execution track (opencode spacing).
+    if (presentation.kind === 'assistant-final') return '0.5em 0 0.25em 0';
     if (timelineEvent) return '0';
     if (presentation.family === 'execution') return '0.2em 0 0 0';
     if (presentation.family === 'decision' || presentation.family === 'diagnostic') return '0.55em 0 0 0';

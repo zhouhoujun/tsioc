@@ -88,7 +88,7 @@ export class SemanticRendererSuite {
         expect(answer.itemStyle['border-left']).toBeUndefined();
         expect(answer.spacerBefore).toEqual(true);
         expect(answer.blockPadding).toEqual(true);
-        expect(answer.lines[0].itemStyle?.margin).toEqual('0');
+        expect(answer.lines[0].itemStyle?.margin).toEqual('0.5em 0 0.25em 0');
         expect(thought.lines[0].role).toEqual('Thought · ');
         expect(thought.lines[0].itemStyle?.margin).toEqual('0.2em 0 0 0');
         expect(plan.lines[0].role).toEqual('Plan · ');
