@@ -82,6 +82,28 @@ export class ConsoleHoverTargetsTest {
         })();
     }
 
+    @Test('moving between adjacent targets of one row keeps the fade')
+    fadeContinuity() {
+        const renderer = new TuiRenderer();
+        const root = renderer.createElement('div');
+        renderer.appendChild(root, renderer.createText('tabs'));
+        const clock = { subscribe() { }, unsubscribe() { } };
+        const surface: any = new TuiTerminalSurface({
+            renderer, root, width: 40, output: { write() { } }, animationClock: clock as any
+        });
+        const target = (x: number) => ({ node: root, x, y: 0, width: 5, height: 1, hoverable: true });
+        try {
+            surface.setHoverTarget(target(0));
+            surface.hoverAlpha = 1;
+            surface.setHoverTarget(target(6));
+            expect(surface.hoverAlpha).toEqual(1);
+            surface.setHoverTarget(target(30));
+            expect(surface.hoverAlpha).toEqual(0);
+        } finally {
+            surface.destroy();
+        }
+    }
+
     @Test('the composer input never flickers on hover')
     composerStaysFlat() {
         const renderer = new TuiRenderer();

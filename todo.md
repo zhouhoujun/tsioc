@@ -2756,3 +2756,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 根因：计划行在会话水合时用当时的 translator 构建并缓存，宿主随后才应用 workspace 语言；语言切换后没有重建该行。
 - 修复：`applyLocaleDefaults` 在语言变化时重建 `planMessage`；目标进度改走 `agent.timeline.goalProgress`（`目标：n/m 项达成`）。
 - 验证：新增 `console-options-locale` 计划行用例（en 构建 → zh 切换后为中文）；定向 4 passing。
+
+
+## tab hover 动画卡顿修复（2026-10）
+
+- 问题：tab 切换/悬停时画面发卡：hover 渐变为 100ms 一步（10fps），4 步共 400ms，肉眼可见跳动；在 tab 标题与 `✕` 之间移动会重置 alpha 从 0 重新淡入，产生闪烁。
+- 修复：共享 `ConsoleAnimationClock` 间隔 100ms→40ms（25fps），fade 步长 0.25→0.2（约 200ms 平滑淡入）；相邻同高目标（同一行的 tab 标签与其 `✕`）之间移动保持当前 alpha，不重启渐变。
+- 验证：真实 PTY 悬停 tab 捕获到 4 级渐变背景（24;32;41→32;42;54→40;52;66→48;62;78）并在 ~200ms 完成；tab 切换 active 标记 0.12s 内更新；新增 console 连续性用例。

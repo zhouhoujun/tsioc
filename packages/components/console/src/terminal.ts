@@ -11,7 +11,7 @@ import {
 import { Runner, Shutdown } from '@tsdi/core';
 import { Abstract, Inject, Injectable, Injector, Optional, Provider, token } from '@tsdi/ioc';
 import { getDisplayWidth, sliceByDisplayWidth } from './display-width';
-import { noReact, RNode, Renderer } from '@tsdi/components';
+import { noReact, RNode, Renderer, AnimationClock } from '@tsdi/components';
 import { ConsoleElement, ConsoleNode } from './console';
 import { composePagerViewLines, PagerBox, PagerStatusCopy, ScrollBox } from '@tsdi/components/common';
 
@@ -274,6 +274,8 @@ export interface TuiTerminalSurfaceOptions {
     mouseHandoffReclaimMs?: number;
     /** Whether mouse tracking sequences may be written at all. Defaults to true; the runtime passes the lifecycle's `shouldEnableTerminalMouseTracking` value down. */
     mouseTrackingEnabled?: boolean;
+    /** Shared lifecycle clock for hover fades; without it hover highlight is applied instantly. */
+    animationClock?: AnimationClock;
 }
 
 export interface ConsoleTerminalInputLike {
@@ -812,7 +814,8 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
             cursorMode: () => lifecycle?.resolveTerminalCursorMode?.() ?? 'prompt',
             nativeScrollback: () => this.surfaceLayout ? this.surfaceLayout.nativeScrollback : lifecycle?.shouldUseNativeScrollback?.() === true,
             scrollViewport: () => this.surfaceLayout ? this.surfaceLayout.scrollViewport : lifecycle?.shouldScrollViewport?.() !== false,
-            mouseTrackingEnabled: this.mouseTrackingEnabled
+            mouseTrackingEnabled: this.mouseTrackingEnabled,
+            animationClock: this.injector.get(AnimationClock, null) || undefined
         });
         this.surface.render();
     }
@@ -1002,6 +1005,24 @@ export class TuiTerminalSurface {
     protected mousePress?: { x: number; y: number };
     protected mouseHandedOff = false;
     protected hoverTarget?: TerminalClickTarget;
+    protected hoverPaintTarget?: TerminalClickTarget;
+    protected hoverAlpha = 0;
+    protected hoverClock?: AnimationClock;
+    protected readonly handleHoverAnimation = (): void => {
+        const step = 0.25;
+        if (this.hoverTarget) {
+            this.hoverAlpha = Math.min(1, this.hoverAlpha + step);
+        } else {
+            this.hoverAlpha = Math.max(0, this.hoverAlpha - step);
+        }
+        this.requestRender();
+        if ((this.hoverTarget && this.hoverAlpha >= 1) || (!this.hoverTarget && this.hoverAlpha <= 0)) {
+            this.stopHoverAnimation();
+            if (!this.hoverTarget) {
+                this.hoverPaintTarget = undefined;
+            }
+        }
+    };
     protected pendingRenderDuringHandoff = false;
     protected reclaimTimer?: ReturnType<typeof setTimeout>;
     protected scrollOffsetRows = 0;
@@ -1103,6 +1124,10 @@ export class TuiTerminalSurface {
         this.maxScrollOffsetRows = 0;
         this.scrollBox.reset();
         this.pagerBox?.close();
+        this.stopHoverAnimation();
+        this.hoverTarget = undefined;
+        this.hoverPaintTarget = undefined;
+        this.hoverAlpha = 0;
         this.scheduled = false;
         this.pendingRenderDuringHandoff = false;
         this.pendingRenderOrigin = undefined;
@@ -1473,7 +1498,7 @@ export class TuiTerminalSurface {
     }
 
     protected setHoverTarget(hoverTarget?: TerminalClickTarget): boolean {
-        // Only targets that own a pointer affordance may highlight; focus-only
+        // Only targets that own a pointer affordance may fade; focus-only
         // targets (the composer input) and rows marked data-hover="none" stay
         // silent, while an empty move still clears a previous highlight.
         const target = hoverTarget && hoverTarget.hoverable !== false ? hoverTarget : undefined;
@@ -1485,15 +1510,55 @@ export class TuiTerminalSurface {
                 && current.node === target.node)) {
             return false;
         }
+        // Moving between adjacent targets of the same row (a tab label and its
+        // close button) must not restart the fade, or the strip flickers.
+        const continuous = !!current && !!target
+            && current.y === target.y && current.height === target.height
+            && target.x <= current.x + current.width + 1
+            && current.x <= target.x + target.width + 1;
         this.hoverTarget = target;
+        if (target) {
+            this.hoverPaintTarget = target;
+            if (!continuous) this.hoverAlpha = 0;
+        }
+        if (!this.options.animationClock) {
+            this.hoverPaintTarget = target;
+            this.hoverAlpha = target ? 1 : 0;
+            return true;
+        }
+        this.startHoverAnimation();
         return true;
     }
 
-    protected applyHoverHighlight(lines: string[]): void {
-        const target = this.hoverTarget;
-        if (!target) {
+    protected startHoverAnimation(): void {
+        const clock = this.options.animationClock;
+        if (!clock || this.hoverClock === clock) {
             return;
         }
+        this.stopHoverAnimation();
+        this.hoverClock = clock;
+        clock.subscribe(this.handleHoverAnimation);
+    }
+
+    protected stopHoverAnimation(): void {
+        const clock = this.hoverClock;
+        if (!clock) {
+            return;
+        }
+        clock.unsubscribe(this.handleHoverAnimation);
+        this.hoverClock = undefined;
+    }
+
+    protected applyHoverHighlight(lines: string[]): void {
+        const target = this.hoverPaintTarget;
+        const alpha = Math.max(0, Math.min(1, this.hoverAlpha));
+        if (!target || alpha <= 0.01) {
+            return;
+        }
+        // Fade a neutral background instead of a hard reverse-video flip so
+        // tab and close-button hover read as a transition.
+        const mix = (from: number, to: number) => Math.round(from + (to - from) * alpha);
+        const background = `\x1b[48;2;${mix(16, 48)};${mix(22, 62)};${mix(29, 78)}m`;
         for (let offset = 0; offset < Math.max(1, target.height); offset++) {
             const row = target.y + offset;
             if (row < 0 || row >= lines.length) {
@@ -1506,7 +1571,13 @@ export class TuiTerminalSurface {
             const middle = sliceStyledColumns(line, start, end);
             const after = sliceStyledColumns(line, end, Number.MAX_SAFE_INTEGER);
             if (middle) {
-                lines[row] = `${before}\x1b[7m${middle}\x1b[0m${after}`;
+                // Inner style segments often end with SGR reset and selected
+                // tabs carry their own background; drop those so the fade owns
+                // the whole hovered region.
+                const painted = middle
+                    .replace(/\x1b\[(?:0|49|4[0-7]|48;(?:5;\d+|2;\d+;\d+;\d+))m/g, match =>
+                        match === '\x1b[0m' ? `\x1b[0m${background}` : '');
+                lines[row] = `${before}${background}${painted}\x1b[0m${after}`;
             }
         }
     }

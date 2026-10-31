@@ -5,7 +5,8 @@ type TimerHandle = ReturnType<typeof setInterval> & { unref?: () => void };
 
 @Injectable()
 export class ConsoleAnimationClock extends AnimationClock {
-    protected readonly interval = 100;
+    // 25 fps keeps the short hover fade smooth without a per-frame CPU cost.
+    protected readonly interval = 40;
     protected listeners = new Set<() => void>();
     protected timer?: TimerHandle;
 

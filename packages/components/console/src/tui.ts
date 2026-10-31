@@ -604,6 +604,16 @@ export class TuiRenderer extends ConsoleRenderer {
         return !!element && ['click', 'mousedown', 'wheel'].some(type => element.hasEventListener(type));
     }
 
+    /** Whether a pointer target contains its own pointer targets (those need the shared search cursor). */
+    protected hasNestedPointerTarget(element: ConsoleElement): boolean {
+        return (element.childNodes || []).some(child => {
+            if (!(child instanceof ConsoleElement)) {
+                return false;
+            }
+            return this.hasPointerHandler(child) || !!child.focusable || this.hasNestedPointerTarget(child);
+        });
+    }
+
     protected collectNestedClickTargets(
         element: ConsoleElement,
         startRow: number,
@@ -611,7 +621,8 @@ export class TuiRenderer extends ConsoleRenderer {
         lines: string[],
         width: number | undefined,
         clickTargets: TerminalClickTarget[],
-        visited: WeakSet<object>
+        visited: WeakSet<object>,
+        searchCursor: Map<number, number> = new Map<number, number>()
     ): void {
         element.childNodes.forEach(child => {
             if (!(child instanceof ConsoleElement) || visited.has(child)) {
@@ -627,7 +638,11 @@ export class TuiRenderer extends ConsoleRenderer {
                 const childText = this.stripAnsi(this.renderInlineText(childElement, styleMap));
                 const inline = startRow === endRow - 1 && startRow < lines.length && childText;
                 const rowText = inline ? this.stripAnsi(lines[startRow]) : '';
-                const offset = inline ? rowText.indexOf(childText) : -1;
+                // Repeated inline labels (e.g. two identical tab close buttons)
+                // must resolve to their own columns; `indexOf` from 0 would put
+                // every later duplicate on the first occurrence.
+                const searchStart = inline ? (searchCursor.get(startRow) ?? 0) : 0;
+                const offset = inline ? rowText.indexOf(childText, searchStart) : -1;
                 clickTargets.push({
                     node: childElement,
                     x: offset >= 0 ? getDisplayWidth(rowText.slice(0, offset)) : 0,
@@ -637,8 +652,11 @@ export class TuiRenderer extends ConsoleRenderer {
                     interactive: this.hasPointerHandler(childElement) ? 'pointer' : 'focus',
                     hoverable: this.resolveHoverable(childElement)
                 });
+                if (offset >= 0 && !this.hasNestedPointerTarget(childElement)) {
+                    searchCursor.set(startRow, offset + childText.length);
+                }
             }
-            this.collectNestedClickTargets(childElement, startRow, endRow, lines, width, clickTargets, visited);
+            this.collectNestedClickTargets(childElement, startRow, endRow, lines, width, clickTargets, visited, searchCursor);
         });
     }
 
