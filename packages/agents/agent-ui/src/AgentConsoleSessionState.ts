@@ -4906,15 +4906,13 @@ export class AgentConsoleSessionState {
     }
 
     setConsoleOptions(options?: AgentConsoleOptions | null): void {
-        this.hostProvidedOptions = new Set(
-            Object.keys(options || {}).filter(key => (options as any)[key] !== undefined)
-        );
+        this.hostProvidedOptions = new Set(Object.keys(options || {}).filter(key => (options as any)[key] !== undefined && !(key.endsWith('Hint') && (options as any)[key] === (defaultAgentConsoleOptions as any)[key])));
         this.consoleOptions = {
             ...defaultAgentConsoleOptions,
             ...(options || {})
         };
         for (const key of Object.keys(this.localeOptionOverrides) as Array<keyof AgentConsoleOptions>) {
-            if (!options || (options as any)[key] === undefined) {
+            if (!options || (options as any)[key] === undefined || (key.endsWith('Hint') && (options as any)[key] === (defaultAgentConsoleOptions as any)[key])) {
                 (this.consoleOptions as any)[key] = (this.localeOptionOverrides as any)[key];
             }
         }

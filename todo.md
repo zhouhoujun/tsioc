@@ -2740,3 +2740,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 问题：时间线颜色过饱和（亮绿 ✓ `#7ee787`、鲑红错误 `#ffa198`、亮蓝强调 `#79c0ff`），失败/阻塞行整行高饱和；header/footer/折叠摘要加粗高对比；思考行整段与正文同亮度；最终回答紧贴执行轨迹，读起来刺眼且缺少层次。
 - 修复：主题改为低饱和配色（成功 `#6fa37a`、运行 `#c2a05e`、错误 `#c87670`/`#cf9893`、强调 `#86a9d6`），light/solarized/high-contrast 映射同步；header/footer/折叠摘要改为弱化灰（`#8b949e`）取消加粗；已完成的思考行披露标记改为弱化灰；最终回答上方增加 `0.5em` 留白，形成“执行轨迹 → 结论 → footer”的层次。
 - 验证：真实 PTY 捕获 SGR 颜色确认旧亮色 0 次、新柔和色生效；布局为 用户 → 步骤/工具 → 空行 → 最终回答 → 空行 → footer；p237/p302/p311/P291 等定向 80 passing，agent-ui 全量 1913 passing。
+
+
+## 宿主透传默认选项时提示语回退英文（2026-10）
+
+- 缺陷：zh-CN 下消息焦点提示又出现英文 `up/down move   pg jump   enter open   y copy   esc`。
+- 根因：宿主把整份内置选项（`{...defaultAgentConsoleOptions}`）传给 `setConsoleOptions` 时，内置英文 hint 被当成"宿主显式设置"，`applyLocaleDefaults` 的本地化覆盖被跳过。
+- 修复：`setConsoleOptions` 把"值等于内置英文默认"的 `*Hint` 视为未设置，继续应用 locale 覆盖；宿主真正自定义的 hint 仍然优先；英文 locale 行为不变。
+- 验证：新增 `console-options-locale` 3 用例（zh 覆盖、宿主自定义优先、en 保持）；`source-size` 基线随 `AgentConsoleSessionState` 6578→6576 下调。
