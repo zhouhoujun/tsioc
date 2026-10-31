@@ -3004,7 +3004,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             label: `${tier === this.modelReasoningEffort ? '● ' : '  '}${tier}`,
             value: tier,
             description: formatAgentUiNotice(this.translator, tier === this.modelReasoningEffort ? 'currentLevel' : 'setReasoningEffort')
-        })), Math.max(0, tiers.indexOf(this.modelReasoningEffort)), 'enter apply   esc close') as EffortLevel | undefined;
+        })), Math.max(0, tiers.indexOf(this.modelReasoningEffort)), formatAgentUiLabel(this.translator, 'agent.hint.enterApplyClose', 'enter apply   esc close')) as EffortLevel | undefined;
         if (!selected) return true;
         await this.setModelReasoningEffort(selected);
         return true;
@@ -3123,7 +3123,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             { label: formatAgentUiNotice(this.translator, 'shareCreated'), value: 'info', description: `token ${String(token).slice(0, 8)}… · ${formatAgentUiDateTime(Date.now(), this.translator)}` },
             { label: fullUrl, value: 'copy', description: formatAgentUiNotice(this.translator, 'shareCopyDescription') },
             { label: formatAgentUiNotice(this.translator, 'shareRevoke', { id: String(token).slice(0, 8) }), value: 'revoke', description: formatAgentUiNotice(this.translator, 'shareRevokeDescription') }
-        ], 1, 'enter select   esc close');
+        ], 1, formatAgentUiLabel(this.translator, 'agent.hint.enterSelectClose', 'enter select   esc close'));
         if (!selected) return;
         if (selected === 'copy') {
             await this.copyFocusedTextActionHandler(fullUrl, formatAgentUiNotice(this.translator, 'shareLinkLabel'));

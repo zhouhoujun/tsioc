@@ -17,7 +17,6 @@ import type {
 import type { AgentConsoleParsedCommandArguments } from './AgentConsoleCommandRegistry';
 import type { AgentConsoleSessionService } from './AgentConsoleSessionService';
 import type { NavFilter, NavSelection, SessionSearchMatch } from '@tsdi/agent';
-import { AGENT_CONSOLE_OVERLAY_HINTS } from './AgentConsoleOverlayPresenter';
 import type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
 import { runHelpCommand } from './AgentConsoleHelpCommand';
 import { runSnapshotsCommand, type SnapshotCommandHost } from './AgentConsoleSnapshotCommands';
@@ -523,7 +522,7 @@ async function handleProjects(ctx: CommandHandlerContext, _args: string, _resolv
                 detail: p.lastActive ? panelLabel(ctx.translator, 'sessions', 'lastActive', 'last active {date}', { date: formatAgentUiDate(p.lastActive, ctx.translator) }) : undefined
             })),
             0,
-            AGENT_CONSOLE_OVERLAY_HINTS.select
+            ctx.state.consoleOptions.selectHint
         );
         if (!project) return true;
         const projectSessions = ctx.state.sessions.filter(
@@ -576,7 +575,7 @@ async function handleThreads(ctx: CommandHandlerContext, _args: string, _resolve
                 detail: t.lastActive ? panelLabel(ctx.translator, 'sessions', 'lastActive', 'last active {date}', { date: formatAgentUiDate(t.lastActive, ctx.translator) }) : undefined
             })),
             0,
-            AGENT_CONSOLE_OVERLAY_HINTS.select
+            ctx.state.consoleOptions.selectHint
         );
         if (!thread) return true;
         const threadSessions = ctx.state.sessions.filter(

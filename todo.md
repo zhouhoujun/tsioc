@@ -2710,3 +2710,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 缺陷：每个 turn 固定多出 `● 事件 · 已收到请求` / `✓ 事件 · 轮次已完成` 两行；最终回答与中间旁白也带 `✓`，与工具/步骤行混在一起；compact 的隐藏摘要行显示为 `✓ 事件 · timeline 已隐藏 N 条事件`。
 - 修复：routine 的 `turn_started` 与成功的 `turn_completed`/`turn` 行在所有时间线模式都不进入主line（失败/取消仍保留）；assistant 正文（preamble 与最终回答）不再带状态符号，工具/命令/步骤/事件行保留 ✓ ● ✕；隐藏事件摘要改为 `timeline-collapsed` 渲染（`⋮ 已隐藏 N 条事件…`，无事件前缀与状态符号）。
 - 验证：新增 `timeline-opencode-mainline` 5 用例，更新 P237/P302/VM 面板契约；真实 PTY verbose/compact 确认无生命周期行、最终回答纯正文、错误行仍 ✕+retry；agent-ui 1906 passing。
+
+
+## 会话/分享/思考等级菜单提示本地化（2026-10）
+
+- 缺陷：zh-CN 下 `/threads`、`/projects` 的操作提示仍是 `1-9 select   up/down move   enter confirm   q cancel`，`/share` 是 `enter select   esc close`，思考等级菜单是 `enter apply   esc close`。
+- 修复：`/threads`、`/projects` 改用 `consoleOptions.selectHint`（随 locale 本地化）；分享面板与思考等级菜单走 `agent.hint.enterSelectClose` / `agent.hint.enterApplyClose`。
+- 验证：真实 PTY `/threads`、`/projects`、`/share` 显示 `1-9 选择   上/下 移动   回车 确认   q 取消` / `回车 选择   esc 关闭`；新增 panel-i18n 用例覆盖中英 hint；agent-ui 全量回归通过。

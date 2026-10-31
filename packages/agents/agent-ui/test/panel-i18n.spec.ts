@@ -1503,6 +1503,35 @@ export class PanelI18nTest {
         const enDates = await run({ ...en, currentLocale: 'en' });
         expect(enDates.projectDetail).toEqual('last active 10/25/2026');
     }
+    @Test('/projects and /threads pass the localized select hint')
+    async navHintsFollowLocale() {
+        const run = async (translator: any) => {
+            const hints: string[] = [];
+            const selectHint = translator.translate('agent.hint.enterSelectClose');
+            const ctx: any = {
+                translator,
+                state: {
+                    projects: [{ key: 'k', label: 'demo', sessionCount: 1 }],
+                    threads: [{ key: 't', label: 'demo', sessionCount: 1 }],
+                    sessions: [],
+                    consoleOptions: { selectHint },
+                    closeReview: () => undefined,
+                    closeGitSnapshotDetail: () => undefined
+                },
+                select: async (_title: string, _opts: any[], _selected: number, hint: string) => { hints.push(hint); return undefined; },
+                refreshSessions: async () => undefined,
+                notify: () => undefined
+            };
+            await COMMAND_HANDLERS['/projects'](ctx, '', { command: '/projects', matches: [] });
+            await COMMAND_HANDLERS['/threads'](ctx, '', { command: '/threads', matches: [] });
+            return hints;
+        };
+        const zhHints = await run({ ...zh, currentLocale: 'zh-CN' });
+        expect(zhHints).toEqual(['回车 选择   esc 关闭', '回车 选择   esc 关闭']);
+        const enHints = await run({ ...en, currentLocale: 'en' });
+        expect(enHints).toEqual(['enter select   esc close', 'enter select   esc close']);
+    }
+
     @Test('/provider preset labels localize the custom-compatible entries only')
     async providerPresetLabels() {
         const zhT = (key: string, fallback: string, params?: Record<string, any>) => zh.translate(key, params) ?? fallback;
