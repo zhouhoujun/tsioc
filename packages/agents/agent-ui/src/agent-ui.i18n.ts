@@ -256,6 +256,7 @@ export const agentUiEnglish: TranslationBundle = {
                 event: 'Event · ',
                 rawOutput: 'Raw output',
                 loadingOutput: 'Loading raw output…',
+                truncated: '(truncated)',
                 workedFor: 'Worked for {duration} · done {time}',
                 planSummary: '{total} steps ({completed} done)'
             },
@@ -306,6 +307,7 @@ export const agentUiEnglish: TranslationBundle = {
             message: {
                 expand: '… {count} more lines. Click to expand',
                 collapse: 'Click to collapse',
+                expandAction: 'Click to expand',
                 expandEnter: '… {count} more lines. Press Enter to expand',
                 collapseEnter: 'Press Enter to collapse',
                 followUpOnlyTerms: AGENT_UI_EN_FOLLOW_UP_ONLY_TERMS
@@ -508,6 +510,7 @@ export const agentUiChinese: TranslationBundle = {
                 event: '事件 · ',
                 rawOutput: '原始输出',
                 loadingOutput: '正在读取原始输出…',
+                truncated: '（已截断）',
                 workedFor: '用时 {duration} · 完成于 {time}',
                 planSummary: '{total} 步（已完成 {completed} 步）'
             },
@@ -558,6 +561,7 @@ export const agentUiChinese: TranslationBundle = {
             message: {
                 expand: '… 还有 {count} 行，点击展开',
                 collapse: '点击收起',
+                expandAction: '点击展开',
                 expandEnter: '… 还有 {count} 行，按 Enter 展开',
                 collapseEnter: '按 Enter 收起',
                 followUpOnlyTerms: AGENT_UI_ZH_CN_FOLLOW_UP_ONLY_TERMS

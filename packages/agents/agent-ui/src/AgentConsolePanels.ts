@@ -286,7 +286,7 @@ export class AgentConsoleStatusPanelComponent {
                     cursorStyle="color: #7ee787;"
                     cursorTarget="input"
                     continuationPrompt="  "
-                    mask="{{inputSecret}}"
+                    mask="{{inputSecret}}" data-hover="none"
                     @input="onInput($event)"
                     @click="onCursorChange($event)"
                     @keyup="onCursorChange($event)"
@@ -2500,7 +2500,7 @@ export class AgentConsoleMessageTokensComponent {
     selector: 'agent-console-message-line',
     imports: [AgentConsoleMessageTokensComponent],
     template: `
-    <label class="message-line" v-style="itemStyle" aria-label="{{ariaLabel}}" @click="toggleMessageDetail"><span v-style="statusStyle">{{status}}</span><span v-style="roleStyle" v-show="role">{{role}}</span><span v-style="prefixStyle" v-show="prefix">{{prefix}}</span><span v-style="lineStyle"><agent-console-message-tokens :tokens="contentTokens"></agent-console-message-tokens></span><span class="message-detail-toggle" v-style="lineStyle" v-if="toggleContent">{{toggleContent}}</span><span v-style="metaStyle" v-show="meta">{{meta}}</span></label>
+    <label class="message-line" v-style="itemStyle" aria-label="{{ariaLabel}}" data-hover="{{toggleContent ? 'fade' : 'none'}}" @click="toggleMessageDetail"><span v-style="statusStyle">{{status}}</span><span v-style="roleStyle" v-show="role">{{role}}</span><span v-style="prefixStyle" v-show="prefix">{{prefix}}</span><span v-style="lineStyle"><agent-console-message-tokens :tokens="contentTokens"></agent-console-message-tokens></span><span class="message-detail-toggle" v-style="lineStyle" v-if="toggleContent">{{toggleContent}}</span><span v-style="metaStyle" v-show="meta">{{meta}}</span></label>
     `
 })
 export class AgentConsoleMessageLineComponent {

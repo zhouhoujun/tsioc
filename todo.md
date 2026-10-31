@@ -2697,3 +2697,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 缺陷：zh-CN 下消息焦点按 Enter 打开工具事件检查器，面板仍是英文 `── Event Inspector ──`、`Status:`、`Diagnostic`、`Key Bindings` 与按键提示。
 - 修复：把 `timelineEventDetailLines` 抽成纯格式化器 `AgentConsoleTimelineEventInspector`（同时下调 `AgentConsoleSessionState` ratchet 基线），标题/字段/按键提示走 `agent.menu.panel.inspector.*`；状态词复用时间线标签（完成/失败/进行中），事件类型、来源、序号、toolCallId/receiptId、payload 仍保持原样便于复制排障。
 - 验证：新增 panel-i18n 用例（中英对照、值保持 raw）；真实 PTY scrollback 下工具事件检查器首行为 `── 事件检查器 ──`；agent-ui 1885、source-size 基线 6634→6578。
+
+## 时间线 hover 只给可展开项 + 行内文案本地化（2026-10）
+
+- 缺陷：鼠标划过输入框或消息区任意时间线内容都会出现 hover 背景动画；可展开/收起行的提示仍是英文 `Click to expand`/`Click to collapse`；工具结果 `(truncated)` 仍是英文；turn 结束后 footer 耗时会被空闲时间继续累加。
+- 修复：TUI click target 增加 `hoverable`，只有 pointer 目标且未标记 `data-hover="none"` 才高亮/淡入；输入框与消息面板容器（focus）不再响应 hover，仅可展开行的 `… 还有 N 行，点击展开`/`点击收起` 保留反馈并走 `agent.message.expand/collapse`；工具结果尾标记按 locale 显示 `（已截断）`；footer 耗时在 turn 结束后冻结在最后一次活动时间。
+- 验证：components/console hover-targets 3 用例（可 hover / data-hover=none / 输入框都不上色）、agent-ui 行尾标记与展开提示/footer 冻结用例；真实 PTY：tab hover 仍淡入，输入框与时间线正文不淡入；agent-ui 定向 112 passing。

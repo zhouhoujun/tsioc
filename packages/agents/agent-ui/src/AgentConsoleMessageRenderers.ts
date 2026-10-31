@@ -14,7 +14,7 @@ import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from '
 import { getDisplayWidth, sliceByDisplayWidth } from './AgentConsoleTextWidth';
 import { resolveTimelineEventSentence, formatTimelineSessionDuration, AgentConsoleTimelineLabels } from './AgentConsoleTimelineWindow';
 import { resolveTurnLifecycleLabel } from './AgentConsoleTimelineLabels';
-import { resolveTimelineMeta, resolveTimelineMetaStyle, resolveMessageDurationMs, resolveMessageRoleLabel, resolveMessageRoleStyle, resolveAgentConsoleMessageRoleLabel, resolveEffectiveRoleLabel, shouldRenderWorkedSummary, localizeCommandExecutionStatus } from './AgentConsoleTimelineMeta';
+import { resolveTimelineMeta, resolveTimelineMetaStyle, resolveMessageDurationMs, resolveMessageRoleLabel, resolveMessageRoleStyle, resolveAgentConsoleMessageRoleLabel, resolveEffectiveRoleLabel, shouldRenderWorkedSummary, localizeCommandExecutionStatus, localizeTimelineContentSuffix, resolveTimelineDetailToggle } from './AgentConsoleTimelineMeta';
 import type { MarkdownWorkerBridge } from './MarkdownWorkerBridge';
 import {
     AgentConsoleContentFamily,
@@ -582,9 +582,9 @@ export function renderAgentConsoleMessageItem(
     const rawDisplayContent = hideToolOutput
         ? ''
         : resolveMessageDisplayContent(message, templateKind, !!context.rawMode);
-    const displayContent = message?.metadata?.uiKind === 'command-execution'
-        ? localizeCommandExecutionStatus(rawDisplayContent, context.translator)
-        : rawDisplayContent;
+    // Tool-result markers (`<path> (truncated)`) are written by the runtime before the locale is known.
+    const rowDisplayContent = (timelineEvent || templateKind === 'tool') ? localizeTimelineContentSuffix(rawDisplayContent, context.translator) : rawDisplayContent;
+    const displayContent = message?.metadata?.uiKind === 'command-execution' ? localizeCommandExecutionStatus(rowDisplayContent, context.translator) : rowDisplayContent;
     const timelineSentence = timelineEvent
         ? resolveTimelineEventSentence(message?.metadata, displayContent, context.timelineLabels)
         : undefined;
@@ -633,11 +633,11 @@ export function renderAgentConsoleMessageItem(
             : { rawText: '', tokens: [] as AgentConsoleMarkdownToken[] };
     const sourceLines = markdownLines.length ? markdownLines : [fallbackLine as AgentConsoleMarkdownLine];
     const detailLimit = Math.max(1, Math.floor(context.messageDetailVisibleLines || 6));
-    const detailToggle = timelineEvent && (sourceLines.length > detailLimit
-        || String(displayContent).split('\n').length > detailLimit
-        || String(message?.content || '').split('\n').length > detailLimit)
-        ? (context.messageDetailOpen && selected ? 'Click to collapse' : 'Click to expand')
-        : '';
+    // The expand/collapse affordance is UI copy; the row body stays verbatim.
+    const detailToggle = resolveTimelineDetailToggle(
+        timelineEvent, selected, !!context.messageDetailOpen,
+        Math.max(sourceLines.length, String(displayContent).split('\n').length, String(message?.content || '').split('\n').length),
+        detailLimit, context.translator);
     const timelineMetaStyle = resolveTimelineMetaStyle(theme, rowSelected, templateKind);
     const lines: AgentConsoleRenderedLine[] = sourceLines.map((line, index) => {
         const isFirst = index === 0;

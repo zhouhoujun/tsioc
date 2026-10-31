@@ -240,7 +240,8 @@ export class TuiRenderer extends ConsoleRenderer {
                 y: clickStart,
                 width: width ?? this.resolveMaxLineWidth(lines.slice(clickStart)),
                 height: lines.length - clickStart,
-                interactive: this.hasPointerHandler(element) ? 'pointer' : 'focus'
+                interactive: this.hasPointerHandler(element) ? 'pointer' : 'focus',
+                hoverable: this.resolveHoverable(element)
             });
         };
 
@@ -396,6 +397,7 @@ export class TuiRenderer extends ConsoleRenderer {
                         width: width ?? this.resolveMaxLineWidth(lines.slice(entry.row, entry.row + 1)),
                         height: 1,
                         interactive: 'pointer',
+                        hoverable: true,
                         optionIndex: entry.index
                     });
                 }
@@ -632,11 +634,25 @@ export class TuiRenderer extends ConsoleRenderer {
                     y: startRow,
                     width: offset >= 0 ? Math.max(1, getDisplayWidth(childText)) : (width ?? this.resolveMaxLineWidth(lines.slice(startRow, endRow))),
                     height: endRow - startRow,
-                    interactive: this.hasPointerHandler(childElement) ? 'pointer' : 'focus'
+                    interactive: this.hasPointerHandler(childElement) ? 'pointer' : 'focus',
+                    hoverable: this.resolveHoverable(childElement)
                 });
             }
             this.collectNestedClickTargets(childElement, startRow, endRow, lines, width, clickTargets, visited);
         });
+    }
+
+    /**
+     * Hover fades belong to pointer affordances only. A row opts out with
+     * `data-hover="none"` (timeline rows that cannot expand/collapse); focus
+     * targets such as the composer input never fade.
+     */
+    protected resolveHoverable(element: ConsoleElement): boolean {
+        if (!this.hasPointerHandler(element)) {
+            return false;
+        }
+        const marker = String(element.getAttribute('data-hover') || '').trim().toLowerCase();
+        return marker !== 'none';
     }
 
     protected getInheritedStyleMap(styleMap: Record<string, string>): Record<string, string> {

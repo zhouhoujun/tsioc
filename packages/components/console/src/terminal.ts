@@ -85,6 +85,13 @@ export interface TerminalClickTarget {
      */
     interactive?: 'pointer' | 'focus';
     /**
+     * Whether the pointer may highlight this target on hover. Plain focusable
+     * containers (composer inputs) and rows without an expand/collapse action
+     * opt out so hovering them stays silent; defaults to true for pointer
+     * targets.
+     */
+    hoverable?: boolean;
+    /**
      * Zero-based option index for a rendered `<select>` row. A click on that
      * row dispatches `select-option` (with this index) instead of the generic
      * `click`, so the menu can select the clicked row in terminals where the
@@ -1465,7 +1472,11 @@ export class TuiTerminalSurface {
         return false;
     }
 
-    protected setHoverTarget(target?: TerminalClickTarget): boolean {
+    protected setHoverTarget(hoverTarget?: TerminalClickTarget): boolean {
+        // Only targets that own a pointer affordance may highlight; focus-only
+        // targets (the composer input) and rows marked data-hover="none" stay
+        // silent, while an empty move still clears a previous highlight.
+        const target = hoverTarget && hoverTarget.hoverable !== false ? hoverTarget : undefined;
         const current = this.hoverTarget;
         if (current === target
             || (current && target

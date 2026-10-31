@@ -1337,14 +1337,14 @@ export class AgentConsoleSessionState {
         }
         const labels = this.consoleOptions.timelineLabels;
         const start = this.timelineSessionStartTime;
-        const statusWord = this.status === 'error'
-            ? labels?.footerFailed || DEFAULT_TIMELINE_LABELS.footerFailed
-            : this.status === 'running' || this.status === 'reasoning'
-                ? labels?.footerRunning || DEFAULT_TIMELINE_LABELS.footerRunning
+        const running = this.status === 'running' || this.status === 'reasoning';
+        const statusWord = this.status === 'error' ? labels?.footerFailed || DEFAULT_TIMELINE_LABELS.footerFailed
+            : running ? labels?.footerRunning || DEFAULT_TIMELINE_LABELS.footerRunning
                 : labels?.footerDone || DEFAULT_TIMELINE_LABELS.footerDone;
+        const end = running ? Date.now() : this.messages.reduce((latest, message) => Math.max(latest, Number(message?.createdAt) || 0), 0) || Date.now();
         const parts: string[] = [statusWord];
         parts.push(fillTimelineLabel(labels?.footerDuration || DEFAULT_TIMELINE_LABELS.footerDuration, {
-            duration: formatTimelineSessionDuration(Math.max(0, Date.now() - start))
+            duration: formatTimelineSessionDuration(Math.max(0, end - start))
         }));
         const errorCount = this.messages.filter(m => m.metadata?.uiKind === 'event' && isError(m.metadata)).length;
         if (errorCount > 0) {
