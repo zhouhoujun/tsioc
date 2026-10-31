@@ -2691,3 +2691,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 需求：viewport 顶部固定 session tabs（会话名 + `+` 新建）；可点击区域有鼠标 hover 反馈；`chat --session` 无 id 恢复上次退出会话，带 id 打开指定会话，不带则新建；`/model` 选择实时模型要更新 active profile。
 - 修复：新增 `AgentConsoleSessionTabs` 固定 `header` 区域，tab 点击切换、`+` 创建；TUI 启用 1003 any-motion 并在 hover 可点击区域时反色高亮；`lastSessionId` 写入 workspace settings，CLI `--session [id]` 可选并按上述语义解析；网关 `activateCatalogModel` 同步更新 active profile（并写回 root settings）。
 - 验证：真实 PTY tabs 切换/`+` 3/3、`--session` 4/4、`/model` active profile 11/11；时间线 Thought `+` 与单 spacer；全量 gate 26/26 code stages（production-db 阶段因用户正在运行的 TUI 写入生产库而变动，非测试失败）。
+
+## 事件检查器 overlay 本地化（2026-10）
+
+- 缺陷：zh-CN 下消息焦点按 Enter 打开工具事件检查器，面板仍是英文 `── Event Inspector ──`、`Status:`、`Diagnostic`、`Key Bindings` 与按键提示。
+- 修复：把 `timelineEventDetailLines` 抽成纯格式化器 `AgentConsoleTimelineEventInspector`（同时下调 `AgentConsoleSessionState` ratchet 基线），标题/字段/按键提示走 `agent.menu.panel.inspector.*`；状态词复用时间线标签（完成/失败/进行中），事件类型、来源、序号、toolCallId/receiptId、payload 仍保持原样便于复制排障。
+- 验证：新增 panel-i18n 用例（中英对照、值保持 raw）；真实 PTY scrollback 下工具事件检查器首行为 `── 事件检查器 ──`；agent-ui 1885、source-size 基线 6634→6578。

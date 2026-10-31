@@ -716,6 +716,55 @@ export class PanelI18nTest {
             .toEqual('消息 1/2 mystery  |  行 1-2 / 2  |  列 1/16');
     }
 
+    @Test('event inspector overlay follows the locale while values stay raw')
+    async timelineInspectorLocalized() {
+        const event = {
+            id: 'evt-1',
+            role: 'assistant',
+            content: 'tool output content',
+            createdAt: 1,
+            metadata: {
+                uiKind: 'event',
+                uiEventType: 'tool_invoked',
+                status: 'success',
+                durationMs: 150,
+                timeline: { source: 'local', sequence: 1, toolCallId: 'tc-evt-1', receiptId: 'rc-evt-1', attempt: 3 }
+            }
+        };
+        const build = (translator: any, locale: string) => {
+            const result = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+            (result as any).translator = translator;
+            result.applyLocaleDefaults(locale);
+            result.configure({ sessionId: 's1' } as any);
+            result.setMessages([{ id: 'u1', role: 'user', content: 'hello', createdAt: 1 } as any, event as any]);
+            result.selectedMessageId = 'evt-1';
+            result.openTimelineEventInspector();
+            return result.timelineEventDetailLines;
+        };
+
+        const zhLines = build(zh, 'zh-CN');
+        expect(zhLines[0]).toEqual('── 事件检查器 ──────────────────────────');
+        expect(zhLines).toContain('状态：完成');
+        expect(zhLines).toContain('耗时：150ms');
+        expect(zhLines).toContain('── 诊断 ──────────────────────────────');
+        expect(zhLines).toContain('类型：tool_invoked');
+        expect(zhLines).toContain('序号：1');
+        expect(zhLines).toContain('来源：local');
+        expect(zhLines).toContain('工具调用 ID：tc-evt-1');
+        expect(zhLines).toContain('回执 ID：rc-evt-1');
+        expect(zhLines).toContain('尝试：3');
+        expect(zhLines).toContain('── 按键 ─────────────────────────────');
+        expect(zhLines).toContain('  r       重试工具调用（若失败）');
+        expect(zhLines).toContain('  Enter/Esc  关闭检查器');
+
+        const enLines = build(en, 'en-US');
+        expect(enLines[0]).toEqual('── Event Inspector ──────────────────────────');
+        expect(enLines).toContain('Status:     Done');
+        expect(enLines).toContain('Type:       tool_invoked');
+        expect(enLines).toContain('ToolCallID: tc-evt-1');
+        expect(enLines).toContain('  Enter/Esc  close inspector');
+    }
+
     @Test('IDE and voice output copy is localized')
     async ideAndVoiceOutputsLocalized() {
         const outputs: Array<{ command: string; text: string }> = [];

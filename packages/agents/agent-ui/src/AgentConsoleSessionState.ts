@@ -58,9 +58,9 @@ import {
     TimelineWindowMessage,
     truncateTimelineRowText
 } from './AgentConsoleTimelineWindow';
-import { resolveHumanStatusWord } from './AgentConsoleTimelineEventPresenter';
 import { formatAgentUiLabel, formatAgentUiNotice } from './agent-ui.i18n';
 import { formatReviewGroupMeta } from './AgentConsoleReviewPanelFormat';
+import { formatTimelineEventInspectorLines } from './AgentConsoleTimelineEventInspector';
 import {
     AGENT_CONSOLE_SUGGESTIONS_HINT,
     AGENT_CONSOLE_SUGGESTIONS_TITLE,
@@ -2027,70 +2027,14 @@ export class AgentConsoleSessionState {
     }
 
     get timelineEventDetailLines(): string[] {
-        const event = this.selectedTimelineEvent;
-        if (!event) {
-            return [];
-        }
-        const m = event.metadata || {};
-        const timeline = m.timeline || {};
-        const status = m.status || 'running';
-        const eventType = m.uiEventType || 'unknown';
-        const durationMs = m.durationMs;
-        const attempt = timeline.attempt;
-        const sequence = timeline.sequence;
-        const source = timeline.source || 'local';
-        const toolCallId = timeline.toolCallId || '';
-        const receiptId = timeline.receiptId || '';
-        const labels = { ...DEFAULT_TIMELINE_LABELS, ...(this.consoleOptions.timelineLabels || {}) };
-
-        const lines: string[] = [];
-        lines.push(`── Event Inspector ──────────────────────────`);
-        lines.push('');
-        const content = String(event.content || '');
-        if (content) {
-            content.split('\n').forEach(line => lines.push(line));
-        } else {
-            lines.push('(no content)');
-        }
-        if (this.timelineEventOutput) {
-            lines.push('');
-            lines.push(`── ${this.translateLabel('agent.timeline.rawOutput', undefined, 'Raw output')} ──────────────────────────────`);
-            String(this.timelineEventOutput).split('\n').forEach(line => lines.push(line));
-        } else if (this.timelineEventOutputLoading) {
-            lines.push('');
-            lines.push(this.translateLabel('agent.timeline.loadingOutput', undefined, 'Loading raw output…'));
-        }
-        lines.push('');
-        lines.push(`Status:     ${resolveHumanStatusWord(status, labels)}`);
-        if (durationMs != null) {
-            lines.push(`Duration:   ${this.formatDuration(durationMs)}`);
-        }
-        lines.push('');
-        lines.push(`── Diagnostic ──────────────────────────────`);
-        lines.push(`Type:       ${eventType}`);
-        if (sequence != null) {
-            lines.push(`Sequence:   ${sequence}`);
-        }
-        lines.push(`Source:     ${source}`);
-        if (toolCallId) {
-            lines.push(`ToolCallID: ${toolCallId}`);
-        }
-        if (receiptId) {
-            lines.push(`ReceiptID:  ${receiptId}`);
-        }
-        if (attempt != null && attempt > 1) {
-            lines.push(`Attempt:    ${attempt}`);
-        }
-        lines.push('');
-        lines.push(`── Key Bindings ─────────────────────────────`);
-        lines.push(`  r       retry tool call (if failed)`);
-        lines.push(`  copy    copy event detail`);
-        lines.push(`  ↑/↓     scroll detail`);
-        lines.push(`  PgUp/PgDn  scroll page`);
-        lines.push(`  ←/→     scroll columns`);
-        lines.push(`  Home/End   jump to start/end`);
-        lines.push(`  Enter/Esc  close inspector`);
-        return lines;
+        return formatTimelineEventInspectorLines({
+            event: this.selectedTimelineEvent,
+            output: this.timelineEventOutput,
+            outputLoading: this.timelineEventOutputLoading,
+            labels: { ...DEFAULT_TIMELINE_LABELS, ...(this.consoleOptions.timelineLabels || {}) },
+            translate: (key, params, fallback) => this.translateLabel(key, params, fallback),
+            formatDuration: ms => this.formatDuration(ms)
+        });
     }
 
     get timelineEventDetailMaxColumn(): number {
