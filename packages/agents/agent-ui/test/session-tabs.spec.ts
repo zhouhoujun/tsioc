@@ -31,7 +31,7 @@ export class SessionTabsTest {
             for (let index = 0; index < 32; index++) await Promise.resolve();
             const tabs = ref.hostView.query(CommonTabBarComponent) as any;
             expect(tabs.instance.visible).toEqual(true);
-            expect(tabs.instance.items.map((tab: any) => tab.label)).toEqual(['● Alpha ', '  Beta ']);
+            expect(tabs.instance.items.map((tab: any) => tab.label)).toEqual([' Alpha ', ' Beta ']);
             const layout = ctx.get(TuiRenderer).renderToTuiLayout(ref.hostView.rootNodes as any, { width: 100 });
             const bar = layout.lines.find(line => line.includes('Alpha'));
             expect(bar).toContain('Beta');
@@ -74,7 +74,8 @@ export class SessionTabsTest {
             expect(tabs.instance.items.map((tab: any) => tab.id)).toEqual(['session-b', 'session-a']);
 
             state.configure({ sessionId: 'session-b' });
-            expect(tabs.instance.items.find((tab: any) => tab.id === 'session-b').label.startsWith('●')).toEqual(true);
+            expect(tabs.instance.items.find((tab: any) => tab.id === 'session-b').showClose).toEqual(true);
+            expect(tabs.instance.items.every((tab: any) => !tab.label.includes('●'))).toEqual(true);
         } finally {
             await ctx.close();
         }

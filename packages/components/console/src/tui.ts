@@ -646,11 +646,18 @@ export class TuiRenderer extends ConsoleRenderer {
                 // every later duplicate on the first occurrence.
                 const searchStart = inline ? (searchCursor.get(startRow) ?? 0) : 0;
                 const offset = inline ? rowText.indexOf(childText, searchStart) : -1;
+                // Ambiguous glyphs (e.g. the tab close ✕) render two cells in
+                // CJK terminals while measuring one; hosts can declare the real
+                // cell width so hover/click cover the whole glyph.
+                const declaredWidth = this.resolveDeclaredCellWidth(childElement);
+                const measuredWidth = offset >= 0 ? Math.max(1, getDisplayWidth(childText)) : 0;
                 clickTargets.push({
                     node: childElement,
                     x: offset >= 0 ? getDisplayWidth(rowText.slice(0, offset)) : 0,
                     y: startRow,
-                    width: offset >= 0 ? Math.max(1, getDisplayWidth(childText)) : (width ?? this.resolveMaxLineWidth(lines.slice(startRow, endRow))),
+                    width: offset >= 0
+                        ? Math.max(measuredWidth, declaredWidth || 0)
+                        : (width ?? this.resolveMaxLineWidth(lines.slice(startRow, endRow))),
                     height: endRow - startRow,
                     interactive: this.hasPointerHandler(childElement) ? 'pointer' : 'focus',
                     hoverable: this.resolveHoverable(childElement)
@@ -790,6 +797,12 @@ export class TuiRenderer extends ConsoleRenderer {
             framed.push(`${this.applyAnsi(rounded ? '╰' : '└', styleMap, undefined, true)}${horizontal}${this.applyAnsi(rounded ? '╯' : '┘', styleMap, undefined, true)}`);
         }
         return framed;
+    }
+
+    protected resolveDeclaredCellWidth(element: ConsoleElement): number {
+        const raw = element.getAttribute?.('data-cell-width') ?? element.getAttribute?.('cellWidth');
+        const value = Number(raw);
+        return Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
     }
 
     protected resolveMaxLineWidth(lines: string[]): number {
