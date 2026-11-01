@@ -3,6 +3,8 @@ import { Suite, Test } from '@tsdi/unit';
 import { renderAgentConsoleMarkdownLines } from '../src/AgentConsoleMarkdown';
 import { getDisplayWidth } from '../src/AgentConsoleTextWidth';
 import { renderAgentConsoleMessageItems } from '../src/AgentConsoleMessageRenderers';
+import { resolveAgentConsoleMarkdownToneStyle } from '../src/AgentConsoleMarkdownStyles';
+import { defaultAgentConsoleTheme } from '../src/AgentConsoleTheme';
 
 const plain = (value: string): string => String(value || '').replace(/\x1b\[[0-9;]*m/g, '');
 const flatten = (line: { prefix?: string; tokens: Array<{ text: string }> }): string =>
@@ -129,5 +131,65 @@ export class AgentConsoleMarkdownRenderingTest {
         const text = items[0].lines.map(line => plain(line.content));
         expect(text.some(line => line.includes('┌'))).toEqual(true);
         text.forEach(line => expect(getDisplayWidth(line)).toBeLessThanOrEqual(44));
+    }
+
+    @Test('message markdown gets block rhythm while compact timeline rows stay single-spaced')
+    messageMarkdownRhythmOnly() {
+        // No authored blank lines: the renderer must add the rhythm itself.
+        const content = [
+            '## Heading',
+            'Paragraph body.',
+            '```ts',
+            'const value = 1;',
+            '```',
+            '| col | value |',
+            '| --- | --- |',
+            '| a | 1 |'
+        ].join('\n');
+        const messageLines = renderAgentConsoleMarkdownLines(content);
+        const compactLines = renderAgentConsoleMarkdownLines(content, { compactBlankLines: true });
+        const blankMarkerRows = (lines: Array<{ tokens: Array<{ text: string }> }>): number =>
+            lines.filter(line => line.tokens.map(token => token.text).join('').replace(/\u200b/g, '').trim() === '').length;
+        expect(blankMarkerRows(messageLines)).toBeGreaterThan(0);
+        expect(messageLines.length).toBeGreaterThan(compactLines.length);
+        // Timeline event rows pass compactBlankLines: no rhythm rows leak there.
+        expect(blankMarkerRows(compactLines)).toEqual(0);
+    }
+
+    @Test('heading hierarchy keeps h1/h2 accent and drops h3+ to body weight')
+    headingHierarchy() {
+        const lines = renderAgentConsoleMarkdownLines('# Section\n\n### Detail', { compactBlankLines: true });
+        const h1 = lines.find(line => line.prefixTone === 'heading' && line.tokens.some(token => token.text === 'Section'));
+        const h3 = lines.find(line => line.prefixTone === 'heading' && line.tokens.some(token => token.text === 'Detail'));
+        expect(h1?.tone).toEqual('heading');
+        expect(h3?.tone).toEqual('strong');
+    }
+
+    @Test('code body stays unboxed and quotes render italic')
+    tonePalette() {
+        const code = resolveAgentConsoleMarkdownToneStyle('code', defaultAgentConsoleTheme);
+        const quote = resolveAgentConsoleMarkdownToneStyle('quote', defaultAgentConsoleTheme);
+        const strong = resolveAgentConsoleMarkdownToneStyle('strong', defaultAgentConsoleTheme);
+        expect(code.background).toBeFalsy();
+        expect(code['background-color']).toBeFalsy();
+        expect(quote['font-style']).toEqual('italic');
+        expect(strong['font-weight']).toEqual('bold');
+    }
+
+    @Test('blank rhythm rows carry no padding, meta, or ARIA content')
+    blankRhythmRowsAreNotContent() {
+        const items = renderAgentConsoleMessageItems([{
+            id: 'a1',
+            role: 'assistant',
+            content: '## Heading\n\nParagraph body.',
+            createdAt: 1
+        }] as any);
+        const blank = items[0].lines.filter(line => String(line.content || '').replace(/\u200b/g, '').trim() === '');
+        expect(blank.length).toBeGreaterThan(0);
+        blank.forEach(line => {
+            expect(line.itemStyle?.padding).toEqual('0');
+            expect(line.itemStyle?.margin).toEqual('0');
+            expect(line.ariaLabel).toEqual('');
+        });
     }
 }

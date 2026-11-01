@@ -12,7 +12,13 @@ import {
 } from './AgentConsoleMarkdown';
 import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from './AgentConsoleTheme';
 import { getDisplayWidth, sliceByDisplayWidth } from './AgentConsoleTextWidth';
-import { resolveAgentConsoleMarkdownPrefixStyle, resolveAgentConsoleMarkdownToneStyle } from './AgentConsoleMarkdownStyles';
+import {
+    isAgentConsoleBlankMarkdownLine,
+    resolveAgentConsoleLineItemStyle,
+    resolveAgentConsoleMarkdownPrefixStyle,
+    resolveAgentConsoleMarkdownToneStyle
+} from './AgentConsoleMarkdownStyles';
+import { renderAgentConsolePlainTextLines } from './markdown/spacing';
 export { resolveAgentConsoleMarkdownPrefixStyle, resolveAgentConsoleMarkdownToneStyle } from './AgentConsoleMarkdownStyles';
 import { resolveTimelineEventSentence, formatTimelineSessionDuration, AgentConsoleTimelineLabels } from './AgentConsoleTimelineWindow';
 import { resolveTurnLifecycleLabel } from './AgentConsoleTimelineLabels';
@@ -608,7 +614,7 @@ export function renderAgentConsoleMessageItem(
                 ? streaming
                     ? resolveMarkdownLines(eventRowContent, { compactBlankLines: true, treatUnclosedFenceAsText: true, tableWidth: context.markdownContentWidth }, context.markdownBridge)
                     : renderAgentConsolePlainTextLines(eventRowContent, { compactBlankLines: true })
-                : resolveMarkdownLines(eventRowContent, { compactBlankLines: true, tableWidth: context.markdownContentWidth }, context.markdownBridge);
+                : resolveMarkdownLines(eventRowContent, { compactBlankLines: !timelineEvent, tableWidth: context.markdownContentWidth }, context.markdownBridge);
     const timelineMeta = resolveTimelineMeta(message, templateKind, statusLabel, !!context.showTimestamps, context.translator);
     const metaDurationSuffix = timelineMeta.match(/ \([^()]+\)$/)?.[0] || '';
     // Step boundaries own their duration in meta; event rows keep it as a
@@ -637,6 +643,7 @@ export function renderAgentConsoleMessageItem(
     const lines: AgentConsoleRenderedLine[] = sourceLines.map((line, index) => {
         const isFirst = index === 0;
         const isLast = index === sourceLines.length - 1;
+        const blankLine = isAgentConsoleBlankMarkdownLine(line);
         const rendered = buildRenderedLine(
             { ...line, tokens: line.tokens || [] },
             isFirst ? renderer.lead(rowSelected) : renderer.continuationLead(rowSelected),
@@ -662,12 +669,12 @@ export function renderAgentConsoleMessageItem(
             ...rendered,
             tokens,
             messageId: message?.id,
-            toggleContent: isFirst ? detailToggle : '',
-            role: isFirst ? rendered.role : rendered.role ? '    ' : '',
-            roleStyle: isFirst ? rendered.roleStyle : {},
-            meta: workedSummary ? '' : (isFirst ? metaText : ''),
-            metaStyle: workedSummary ? {} : (isFirst || isLast ? timelineMetaStyle : {}),
-            ariaLabel: [
+            toggleContent: blankLine ? '' : isFirst ? detailToggle : '',
+            role: blankLine ? '' : isFirst ? rendered.role : rendered.role ? '    ' : '',
+            roleStyle: blankLine || !isFirst ? {} : rendered.roleStyle,
+            meta: blankLine ? '' : workedSummary ? '' : (isFirst ? metaText : ''),
+            metaStyle: blankLine ? {} : workedSummary ? {} : (isFirst || isLast ? timelineMetaStyle : {}),
+            ariaLabel: blankLine ? '' : [
                 isFirst ? presentation.title : '',
                 isFirst && String(timelineMeta || '').split(' · ').includes(String(rendered.statusLabel || '')) ? '' : isFirst ? rendered.statusLabel : '',
                 isLast && !workedSummary ? timelineMeta : '',
@@ -675,11 +682,12 @@ export function renderAgentConsoleMessageItem(
                 rendered.prefix,
                 rendered.content
             ].filter(part => String(part || '').trim()).join(' ').replace(/\s+/g, ' ').trim(),
-            itemStyle: {
-                ...itemStyle,
-                padding: resolveSemanticLinePadding(presentation, isFirst, isLast, timelineEvent),
-                margin: resolveSemanticLineMargin(presentation, isFirst, timelineEvent, String(itemStyle.margin || '0'))
-            },
+            itemStyle: resolveAgentConsoleLineItemStyle(
+                itemStyle,
+                resolveSemanticLinePadding(presentation, isFirst, isLast, timelineEvent),
+                resolveSemanticLineMargin(presentation, isFirst, timelineEvent, String(itemStyle.margin || '0')),
+                blankLine
+            ),
             lineStyle: {
                 ...(rendered.lineStyle || {}),
                 ...resolveRenderedLineToneStyle(theme, rendered, rowSelected, templateKind, timelineEvent)
@@ -758,36 +766,6 @@ function resolveMarkdownLines(
     return renderAgentConsoleMarkdownLines(content, options);
 }
 
-function renderAgentConsolePlainTextLines(
-    content: string,
-    options: { compactBlankLines?: boolean } = {}
-): AgentConsoleMarkdownLine[] {
-    const lines = String(content || '')
-        .replace(/\r/g, '')
-        .split('\n')
-        .map(rawText => ({
-            rawText,
-            tokens: rawText ? [{ text: rawText }] as AgentConsoleMarkdownToken[] : []
-        }));
-    if (!options.compactBlankLines) {
-        return lines;
-    }
-    const normalized: AgentConsoleMarkdownLine[] = [];
-    lines.forEach(line => {
-        const text = flattenAgentConsoleMarkdownLine(line).trim();
-        if (!text && (!normalized.length || !flattenAgentConsoleMarkdownLine(normalized[normalized.length - 1]).trim())) {
-            return;
-        }
-        normalized.push(line);
-    });
-    while (normalized.length && !flattenAgentConsoleMarkdownLine(normalized[0]).trim()) {
-        normalized.shift();
-    }
-    while (normalized.length && !flattenAgentConsoleMarkdownLine(normalized[normalized.length - 1]).trim()) {
-        normalized.pop();
-    }
-    return normalized;
-}
 
 export function resolveMessageTemplateKind(message?: AgentMessage | null): AgentConsoleMessageTemplateKind {
     // Plan todo messages are synthesized by the session state and rendered

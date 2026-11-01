@@ -4,6 +4,7 @@ import {
 } from './AgentConsoleMarkdown';
 import type { AgentConsoleMessageTemplateKind } from './AgentConsoleMessageRenderers';
 import { AgentConsoleTheme, styleTextToObject } from './AgentConsoleTheme';
+import { flattenAgentConsoleMarkdownLine } from './markdown/spacing';
 
 /** Chrome for Markdown block prefixes (headings, quotes, list markers). */
 export function resolveAgentConsoleMarkdownPrefixStyle(
@@ -15,13 +16,11 @@ export function resolveAgentConsoleMarkdownPrefixStyle(
         return {};
     }
     if (line.prefixTone === 'quote') {
-        return styleTextToObject(theme.statusLabel);
+        return styleTextToObject(theme.statusNoticeLabel);
     }
     if (line.prefixTone === 'accent') {
-        return {
-            ...styleTextToObject(theme.toolsAccent),
-            'font-weight': 'bold'
-        };
+        // List/task markers stay quiet so the message body keeps the weight.
+        return styleTextToObject(theme.toolsAccent);
     }
     if (line.prefixTone === 'heading') {
         return {
@@ -43,14 +42,12 @@ export function resolveAgentConsoleMarkdownToneStyle(
             return styleTextToObject(theme.toolsAccent);
         case 'strong':
             return {
-                ...styleTextToObject(templateKind === 'error' ? theme.statusErrorValue : theme.sessionsAccent),
+                ...styleTextToObject(templateKind === 'error' ? theme.statusErrorValue : theme.statusValue),
                 'font-weight': 'bold'
             };
         case 'code':
-            return {
-                ...styleTextToObject(templateKind === 'error' ? theme.statusErrorValue : theme.toolsAccent),
-                background: '#161b22'
-            };
+            // Code body reads as body text; the fence frame provides the chrome.
+            return styleTextToObject(templateKind === 'error' ? theme.statusErrorValue : theme.statusValue);
         case 'inline-code':
             return {
                 ...styleTextToObject(templateKind === 'error' ? theme.statusErrorValue : theme.statusIdleValue),
@@ -62,8 +59,9 @@ export function resolveAgentConsoleMarkdownToneStyle(
                 'text-decoration': 'underline'
             };
         case 'heading':
+            // opencode keeps headings in the body colour; weight + rhythm carry them.
             return {
-                ...styleTextToObject(templateKind === 'error' ? theme.statusErrorValue : theme.toolsAccent),
+                ...styleTextToObject(templateKind === 'error' ? theme.statusErrorValue : theme.statusValue),
                 'font-weight': 'bold'
             };
         case 'emphasis':
@@ -100,8 +98,13 @@ export function resolveAgentConsoleMarkdownToneStyle(
         case 'syntax-function':
             return styleTextToObject(theme.toolsAccent);
         case 'muted':
-        case 'quote':
             return styleTextToObject(templateKind === 'error' ? theme.statusErrorValue : theme.statusLabel);
+        case 'quote':
+            // opencode tints blockquotes yellow; italics keep the body readable.
+            return {
+                ...styleTextToObject(templateKind === 'error' ? theme.statusErrorValue : theme.statusNoticeLabel),
+                'font-style': 'italic'
+            };
         default:
             if (templateKind === 'error') {
                 return styleTextToObject(theme.statusErrorValue);
@@ -111,4 +114,25 @@ export function resolveAgentConsoleMarkdownToneStyle(
             }
             return styleTextToObject(theme.statusValue);
     }
+}
+
+/** A Markdown block-rhythm row carries only the zero-width blank marker. */
+export function isAgentConsoleBlankMarkdownLine(line: AgentConsoleMarkdownLine): boolean {
+    return !flattenAgentConsoleMarkdownLine(line).replace(/\u200b/g, '').trim();
+}
+
+/**
+ * Per-line style: rhythm rows are spacing, not content, so they keep no padding
+ * or margins; content rows use the semantic line spacing.
+ */
+export function resolveAgentConsoleLineItemStyle(
+    itemStyle: Record<string, string>,
+    padding: string,
+    margin: string,
+    blank: boolean
+): Record<string, string> {
+    if (blank) {
+        return { ...itemStyle, padding: '0', margin: '0' };
+    }
+    return { ...itemStyle, padding, margin };
 }
