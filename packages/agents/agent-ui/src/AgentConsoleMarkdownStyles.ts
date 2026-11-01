@@ -75,7 +75,8 @@ export function resolveAgentConsoleMarkdownToneStyle(
                 'text-decoration': 'line-through'
             };
         case 'syntax-keyword':
-            return styleTextToObject(theme.toolsAccent);
+            // opencode syntax uses a warm keyword colour, distinct from functions.
+            return styleTextToObject(templateKind === 'error' ? theme.statusErrorValue : theme.statusErrorLabel);
         case 'syntax-string':
             return styleTextToObject(theme.statusIdleValue);
         case 'syntax-number':
@@ -87,12 +88,11 @@ export function resolveAgentConsoleMarkdownToneStyle(
                 'font-style': 'italic'
             };
         case 'syntax-property':
+        case 'syntax-variable':
             return styleTextToObject(theme.statusValue);
         case 'syntax-type':
         case 'syntax-tag':
-            return styleTextToObject(theme.sessionsAccent);
-        case 'syntax-variable':
-            return styleTextToObject(theme.statusNoticeLabel);
+            return styleTextToObject(theme.toolsAccent);
         case 'syntax-attribute':
             return styleTextToObject(theme.statusNoticeValue);
         case 'syntax-function':
