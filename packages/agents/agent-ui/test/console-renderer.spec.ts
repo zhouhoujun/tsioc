@@ -2594,6 +2594,52 @@ export class AgentConsoleTuiRendererTest {
         }
     }
 
+    @Test('the dialog ✕ close button only targets the glyph, not the whole row')
+    async dialogCloseHoverTargetsGlyph() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const consoleRef = tuiCtx.get(ComponentFactory).create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const state: any = consoleRef.instance.sessionState;
+            state.openTextOverlay('pairing · 5 min', ['QR-ROW-1', 'QR-ROW-2'], 3);
+            await settleDynamicMessages(consoleRef);
+
+            surface = new TuiTerminalSurface({
+                renderer: tuiCtx.get(TuiRenderer),
+                root: consoleRef.elementRef.nativeElement,
+                width: 90,
+                height: 30,
+                nativeScrollback: false,
+                scrollViewport: true,
+                output: { write() { /* noop */ } }
+            });
+            surface.render();
+            const close = surface.clickTargets.find(target =>
+                String((target.node as any)?.textContent || '').trim() === '✕');
+            expect(close).toBeTruthy();
+            // The old target spanned the full row; only the ambiguous ✕ glyph
+            // (two cells in CJK terminals) may fade on hover.
+            expect(close!.width).toEqual(2);
+            expect(close!.x).toBeGreaterThan(1);
+
+            surface.dispatchMouse({ button: 35, x: close!.x + 1, y: close!.y + 1, release: false });
+            const hover = (surface as any).hoverTarget;
+            expect(hover?.node).toBe(close!.node);
+            expect(hover?.width).toEqual(2);
+            expect((surface as any).hoverAlpha).toBeGreaterThan(0);
+
+            // Hovering the blank part of the same row must not highlight it.
+            surface.dispatchMouse({ button: 35, x: 1, y: close!.y + 1, release: false });
+            expect((surface as any).hoverTarget).toBeUndefined();
+        } finally {
+            surface?.destroy();
+            await tuiCtx.close();
+        }
+    }
+
     @Test('long notices open a text overlay instead of the status strip')
     async longNoticeOpensTextOverlay() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;

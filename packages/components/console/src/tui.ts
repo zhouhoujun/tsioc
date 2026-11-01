@@ -237,11 +237,30 @@ export class TuiRenderer extends ConsoleRenderer {
             if (clickStart < 0 || lines.length <= clickStart) {
                 return;
             }
+            // A dialog's ✕ sits in a right-aligned label on its own row. The
+            // whole row is not the button: hover/click must target the glyph,
+            // otherwise the fade highlights a full-width bar (and CJK
+            // terminals report the ambiguous ✕ as two cells).
+            const isDialogClose = /(?:^|\s)dialog-close(?:\s|$)/.test(String(element.getAttribute?.('class') || ''));
+            let targetX = 0;
+            let targetWidth = width ?? this.resolveMaxLineWidth(lines.slice(clickStart));
+            if (isDialogClose && lines.length - clickStart === 1) {
+                const renderedText = this.stripAnsi(this.renderInlineText(element, styleMap));
+                const plainLine = this.stripAnsi(lines[clickStart] || '');
+                const offset = renderedText ? plainLine.indexOf(renderedText) : -1;
+                if (offset >= 0) {
+                    targetX = getDisplayWidth(plainLine.slice(0, offset));
+                    targetWidth = Math.max(
+                        getDisplayWidth(renderedText),
+                        this.resolveDeclaredCellWidth(element) || 0
+                    );
+                }
+            }
             clickTargets.push({
                 node: element,
-                x: 0,
+                x: targetX,
                 y: clickStart,
-                width: width ?? this.resolveMaxLineWidth(lines.slice(clickStart)),
+                width: targetWidth,
                 height: lines.length - clickStart,
                 interactive: this.hasPointerHandler(element) ? 'pointer' : 'focus',
                 hoverable: this.resolveHoverable(element)

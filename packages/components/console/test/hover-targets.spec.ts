@@ -104,6 +104,36 @@ export class ConsoleHoverTargetsTest {
         }
     }
 
+    @Test('a dialog ✕ close label targets only its glyph, not the row')
+    dialogCloseTargetsGlyph() {
+        const renderer = new TuiRenderer();
+        const root = renderer.createElement('div');
+        const close = hoverableRow(renderer, '✕', {
+            class: 'dialog-close',
+            'data-cell-width': '2',
+            style: 'text-align: right'
+        });
+        renderer.appendChild(root, close);
+        const surface = new TuiTerminalSurface({ renderer, root, width: 40, output: { write() { } } });
+        try {
+            surface.render();
+            const target = surface.clickTargets.find(item => item.node === close);
+            expect(target).toBeTruthy();
+            // East-Asian ambiguous glyph: two declared cells, at the right edge.
+            expect(target!.width).toEqual(2);
+            expect(target!.x).toBeGreaterThan(20);
+
+            hover(surface, target!.x + 1, target!.y + 1);
+            expect((surface as any).hoverTarget?.node).toBe(close);
+
+            // The blank left part of the same row is not the button.
+            hover(surface, 1, target!.y + 1);
+            expect((surface as any).hoverTarget).toBeUndefined();
+        } finally {
+            surface.destroy();
+        }
+    }
+
     @Test('the composer input never flickers on hover')
     composerStaysFlat() {
         const renderer = new TuiRenderer();

@@ -1838,7 +1838,7 @@ export class AgentConsoleToolsPanelComponent {
 @Component({
     selector: 'agent-console-text-overlay-panel',
     template: `
-    <div class="console-panel console-text-overlay-panel" v-style="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}"><label class="dialog-close" v-style="closeStyle" @click="closeOverlay">✕</label>
+    <div class="console-panel console-text-overlay-panel" v-style="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}"><label class="dialog-close" data-cell-width="2" v-style="closeStyle" @click="closeOverlay">✕</label>
         <label v-style="accentStyle">{{overlayTitle}}</label>
         <label v-style="listStyle" v-for="line in visibleLines">{{line}}</label>
         <label v-style="metaStyle" v-show="hintLabel">{{hintLabel}}</label>
@@ -2002,7 +2002,7 @@ export class AgentConsoleCommandOutputsPanelComponent {
 @Component({
     selector: 'agent-console-pending-question-panel',
     template: `
-    <div class="console-panel console-pending-question-panel" v-style="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}" aria-activedescendant="{{activeOptionId}}"><label class="dialog-close" v-style="closeStyle" @click="closeQuestion">✕</label>
+    <div class="console-panel console-pending-question-panel" v-style="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}" aria-activedescendant="{{activeOptionId}}"><label class="dialog-close" data-cell-width="2" v-style="closeStyle" @click="closeQuestion">✕</label>
         <label v-style="accentStyle">{{pendingQuestionHeader}}</label>
         <label v-style="accentStyle">{{pendingQuestionTitle}}</label>
         <label v-style="metaStyle" v-show="pendingQuestionContext">{{pendingQuestionContext}}</label>
@@ -3570,7 +3570,7 @@ export class AgentConsoleActivityPanelComponent {
     selector: 'agent-console-select-panel',
     template: `
         <div class="console-panel console-select-panel" role="dialog" aria-label="{{accessibilityLabel}}">
-            <div class="select-shell" v-style="shellStyle"><label class="dialog-close" v-style="closeStyle" @click="closeMenu">✕</label>
+            <div class="select-shell" v-style="shellStyle"><label class="dialog-close" data-cell-width="2" v-style="closeStyle" @click="closeMenu">✕</label>
             <select class="select-core"
                 aria-label="{{accessibilityLabel}}"
                 title="{{menuTitleText}}" hint="{{menuHintText}}" meta="{{menuMetaText}}"

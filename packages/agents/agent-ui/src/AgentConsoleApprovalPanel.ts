@@ -17,7 +17,7 @@ import { AgentConsoleTheme, AgentConsoleThemeStyles, defaultAgentConsoleTheme } 
 @Component({
     selector: 'agent-console-approvals-panel',
     template: `
-    <div class="console-panel console-approvals-panel" v-style="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}"><label class="dialog-close" v-style="closeStyle" @click="closeApproval">✕</label>
+    <div class="console-panel console-approvals-panel" v-style="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}"><label class="dialog-close" data-cell-width="2" v-style="closeStyle" @click="closeApproval">✕</label>
         <label v-style="accentStyle">{{approvalsTitleLabel}}</label>
         <label v-style="metaStyle" v-show="approvalsSummaryLabel">{{approvalsSummaryLabel}}</label>
         <label v-style="listStyle" v-for="item in approvalItems" @click="selectApproval(item.id)">{{item.label}}</label>
