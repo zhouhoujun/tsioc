@@ -104,7 +104,7 @@
 - 用户消息和最终回答由整个动态模板容器提供纵向 padding，禁止给正文每行重复添加上下 padding。
 - 最终回答不显示 assistant `•` role label；Working 状态点只属于执行状态。
 - 长回复在 native scrollback（`scrollback`）下不得向上移动超过终端视口高度，不得重复绘制或覆盖视口外历史。
-- **Markdown 渲染契约**：表格/代码块/行内样式必须在 `agents/agent-ui/src/AgentConsoleMarkdown.ts` 生成结构化 tone，再由 `components/console` 与 `components/html` 各自渲染；不得在模板里硬编码颜色。该解析实现按 Markdown 功能拆分在 `agents/agent-ui/src/markdown/`：`model`（tone/token/line 类型）、`inline`（链接/强调/行内代码）、`structure`（行内编号列表拆分）、`blocks`（标题/引用/列表/任务/分隔线）、`code`（围栏代码块）、`table`（grid 表格）、`layout`（块间距与空行）、`parser`（文档遍历）；`AgentConsoleMarkdown.ts` 只做 facade re-export，新增语法必须落到对应模块，不得回填成单体 parser。表格使用 grid（`:---` 对齐、CJK 显示宽度、列宽跟随终端宽度且窄屏单元格换行），代码块使用 `@tsdi/components/common` 的共享语法 tokenizer（`╭─ lang` / `╰─` 框），禁止在 agent-ui 重复实现语言 profiles 或直接引用 `@tsdi/components/console`。
+- **Markdown 渲染契约**：表格/代码块/行内样式必须在 `agents/agent-ui/src/AgentConsoleMarkdown.ts` 生成结构化 tone，再由 `components/console` 与 `components/html` 各自渲染；不得在模板里硬编码颜色。表格使用 grid（`:---` 对齐、CJK 显示宽度、列宽跟随终端宽度且窄屏单元格换行），代码块使用 `@tsdi/components/common` 的共享语法 tokenizer（`╭─ lang` / `╰─` 框），禁止在 agent-ui 重复实现语言 profiles 或直接引用 `@tsdi/components/console`。
 
 ### 6. 输入、历史与候选
 

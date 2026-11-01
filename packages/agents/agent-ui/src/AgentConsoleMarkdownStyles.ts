@@ -15,10 +15,13 @@ export function resolveAgentConsoleMarkdownPrefixStyle(
         return {};
     }
     if (line.prefixTone === 'quote') {
-        return styleTextToObject(theme.statusNoticeLabel);
+        return styleTextToObject(theme.statusLabel);
     }
     if (line.prefixTone === 'accent') {
-        return styleTextToObject(theme.toolsAccent);
+        return {
+            ...styleTextToObject(theme.toolsAccent),
+            'font-weight': 'bold'
+        };
     }
     if (line.prefixTone === 'heading') {
         return {
@@ -27,39 +30,6 @@ export function resolveAgentConsoleMarkdownPrefixStyle(
         };
     }
     return styleTextToObject(theme.statusValue);
-}
-
-/** A row carrying only the zero-width blank-line marker (Markdown block rhythm). */
-export function isAgentConsoleBlankMarkdownContent(content: string): boolean {
-    const text = String(content || '');
-    return text !== '' && !text.replace(/\u200b/g, '').trim();
-}
-
-/**
- * Row style for one rendered Markdown line. Blank rhythm rows are not semantic
- * content: they drop the ARIA label upstream, keep no per-line padding and omit
- * the `overflow-wrap` marker the transcript uses to count real content rows.
- */
-export function resolveAgentConsoleLineItemStyle(
-    itemStyle: Record<string, string>,
-    padding: string,
-    margin: string,
-    blank: boolean
-): Record<string, string> {
-    if (!blank) {
-        return { ...itemStyle, padding, margin };
-    }
-    const style: Record<string, string> = {};
-    Object.keys(itemStyle || {}).forEach(key => {
-        if (key === 'overflow-wrap' || key === 'padding' || key === 'margin' || key === 'white-space') {
-            return;
-        }
-        style[key] = itemStyle[key];
-    });
-    style.padding = '0';
-    style.margin = '0';
-    style['white-space'] = 'pre';
-    return style;
 }
 
 /** Inline tone palette shared by the DOM and TUI renderers. */
@@ -73,11 +43,14 @@ export function resolveAgentConsoleMarkdownToneStyle(
             return styleTextToObject(theme.toolsAccent);
         case 'strong':
             return {
-                ...styleTextToObject(templateKind === 'error' ? theme.statusErrorValue : theme.statusValue),
+                ...styleTextToObject(templateKind === 'error' ? theme.statusErrorValue : theme.sessionsAccent),
                 'font-weight': 'bold'
             };
         case 'code':
-            return styleTextToObject(templateKind === 'error' ? theme.statusErrorValue : theme.statusValue);
+            return {
+                ...styleTextToObject(templateKind === 'error' ? theme.statusErrorValue : theme.toolsAccent),
+                background: '#161b22'
+            };
         case 'inline-code':
             return {
                 ...styleTextToObject(templateKind === 'error' ? theme.statusErrorValue : theme.statusIdleValue),
@@ -127,12 +100,8 @@ export function resolveAgentConsoleMarkdownToneStyle(
         case 'syntax-function':
             return styleTextToObject(theme.toolsAccent);
         case 'muted':
-            return styleTextToObject(templateKind === 'error' ? theme.statusErrorValue : theme.statusLabel);
         case 'quote':
-            return {
-                ...styleTextToObject(templateKind === 'error' ? theme.statusErrorValue : theme.statusLabel),
-                'font-style': 'italic'
-            };
+            return styleTextToObject(templateKind === 'error' ? theme.statusErrorValue : theme.statusLabel);
         default:
             if (templateKind === 'error') {
                 return styleTextToObject(theme.statusErrorValue);
