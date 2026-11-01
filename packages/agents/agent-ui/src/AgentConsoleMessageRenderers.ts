@@ -607,12 +607,12 @@ export function renderAgentConsoleMessageItem(
         : displayContent;
     const messageStreaming = templateKind === 'assistant' && !!(message?.metadata?.streaming);
     const streaming = messageStreaming || !!context.streaming;
-    // opencode insets assistant prose by three columns (paddingLeft={3});
-    // item padding already contributes one column, so add two here.
+    // opencode insets assistant prose five columns (session inset plus
+    // paddingLeft={3}); item padding already contributes one, so add four.
     const bodyIndent = !timelineEvent
         && templateKind === 'assistant'
         && (presentation.kind === 'assistant-final' || presentation.kind === 'assistant-partial')
-        ? '  '
+        ? '    '
         : '';
     const markdownWidth = context.markdownContentWidth
         ? Math.max(24, context.markdownContentWidth - bodyIndent.length)

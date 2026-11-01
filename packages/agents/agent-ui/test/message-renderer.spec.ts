@@ -219,7 +219,7 @@ export class AgentConsoleMessageRendererDispatchTest {
             content: '正文\n1.\n   -\n2. 完整条目\n   - 子项',
             createdAt: 1
         }] as any);
-        expect(items[0].lines.map(line => `${line.prefix || ''}${line.content}`.replace(/^ {2}/, '')))
+        expect(items[0].lines.map(line => `${line.prefix || ''}${line.content}`.replace(/^ {4}/, '')))
             .toEqual(['正文', '2. 完整条目', '   ◦ 子项']);
     }
 

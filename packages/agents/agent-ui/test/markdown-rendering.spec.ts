@@ -183,9 +183,9 @@ export class AgentConsoleMarkdownRenderingTest {
             createdAt: 1
         }] as any, { markdownContentWidth: 40 });
         const row = items[0].lines.find(line => String(line.prefix || '').includes('•'));
-        expect(row?.continuationIndent).toEqual(4);
-        expect(row?.itemStyle?.['padding-left']).toEqual('4ch');
-        expect(row?.itemStyle?.['text-indent']).toEqual('-4ch');
+        expect(row?.continuationIndent).toEqual(6);
+        expect(row?.itemStyle?.['padding-left']).toEqual('6ch');
+        expect(row?.itemStyle?.['text-indent']).toEqual('-6ch');
     }
 
     @Test('heading hierarchy keeps h1/h2 accent and drops h3+ to body weight')
