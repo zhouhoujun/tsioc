@@ -15,7 +15,6 @@ import {
     AgentConsoleHealthItem,
     AgentConsoleHealthStatus,
     AgentConsolePlanTodoItem,
-    AgentConsoleApprovalRequest,
     AgentConsoleReviewWorker,
     AgentConsoleReviewTaskItem,
     AgentConsoleSelectOption,
@@ -29,7 +28,6 @@ import {
 } from './AgentConsoleSessionState';
 import { isAgentConsoleSuggestionMenu } from './AgentConsoleSuggestions';
 import { formatToolPanelInactiveSuffix, formatToolPanelLastRun, formatToolPanelStatus, formatToolPanelTitle } from './AgentConsoleToolPanelText';
-import { formatAgentConsoleApprovalInput } from './AgentConsoleApprovalInput';
 import {
     AgentConsoleMarkdownLine,
     AgentConsoleMarkdownToken,
@@ -50,7 +48,7 @@ import {
     defaultAgentConsoleTheme,
     styleTextToObject
 } from './AgentConsoleTheme';
-import { resolvePanelThemeStyles, resolveSectionFrameStyle } from './AgentConsolePanelStyles';
+import { DIALOG_CLOSE_STYLE, menuShellStyle, resolvePanelThemeStyles, resolveSectionFrameStyle } from './AgentConsolePanelStyles';
 import { AgentConsoleStatuslineField } from './AgentConsoleStatusline';
 import { DEFAULT_TIMELINE_LABELS, resolveTimelineWindowLedger, TimelineWindowMode } from './AgentConsoleTimelineWindow';
 import {
@@ -60,9 +58,6 @@ import {
     resolveCommonListWindow as resolveConsoleListWindow,
     resolveCommonSelectWindow as resolveConsoleSelectWindow
 } from '@tsdi/components/common';
-
-const DIALOG_CLOSE_STYLE = { 'text-align': 'right', color: '#8b949e' };
-function menuShellStyle(theme: AgentConsoleTheme): Record<string, string> { const style = styleTextToObject(theme.dialogShell); delete style['max-width']; style['border-bottom'] = 'none'; const input = styleTextToObject(theme.inputShell); const background = input.background || input['background-color']; if (background) style.background = background; return style; }
 
 @Component({
     selector: 'agent-console-brand-panel',
@@ -1692,192 +1687,7 @@ export class AgentConsoleJobsPanelComponent {
     }
 }
 
-@Component({
-    selector: 'agent-console-approvals-panel',
-    template: `
-    <div class="console-panel console-approvals-panel" v-style="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}"><label class="dialog-close" v-style="closeStyle" @click="closeApproval">✕</label>
-        <label v-style="accentStyle">{{approvalsTitleLabel}}</label>
-        <label v-style="metaStyle" v-show="approvalsSummaryLabel">{{approvalsSummaryLabel}}</label>
-        <label v-style="listStyle" v-for="line in approvalListLines">{{line}}</label>
-        <label v-style="detailStyle" v-for="line in selectedApprovalRequestLines">{{line}}</label>
-        <label v-style="detailStyle" v-for="line in selectedApprovalDetailLines">{{line}}</label>
-        <label v-style="metaStyle" v-show="approvalActionsLabel">{{approvalActionsLabel}}</label>
-    </div>
-    `
-})
-export class AgentConsoleApprovalsPanelComponent {
-    constructor(private state: AgentConsoleSessionState, @Optional() private translator?: TranslatorService) {
-    }
-
-    private translate(key: string, params: Record<string, any> | undefined, fallback: string): string {
-        return this.translator?.translate(key, params) || fallback;
-    }
-
-    @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
-
-    protected get activeTheme(): AgentConsoleTheme {
-        return this.state?.theme || this.theme || defaultAgentConsoleTheme;
-    }
-
-    protected get activeThemeStyles(): AgentConsoleThemeStyles {
-        return resolvePanelThemeStyles(this.state, this.theme);
-    }
-
-    get approvals(): AgentConsoleApprovalRequest[] {
-        return this.state.pendingApprovals;
-    }
-
-    get shellStyle() { return this.shouldShow ? menuShellStyle(this.activeTheme) : {}; } get closeStyle() { return DIALOG_CLOSE_STYLE; }
-    async closeApproval(): Promise<void> { const approval = this.state.selectedApproval; if (approval) await this.state.resolveApprovalAction?.('deny', approval.id); this.state.setApprovalsFocused(false); }
-
-    get accentStyle() {
-        return this.activeThemeStyles.toolsAccent;
-    }
-
-    get metaStyle() {
-        return this.activeThemeStyles.statusLabel;
-    }
-
-    get detailStyle() {
-        return this.activeThemeStyles.statusValue;
-    }
-
-    get listStyle() {
-        return this.activeThemeStyles.statusValue;
-    }
-
-    get approvalItems(): Array<{ id: string; label: string }> {
-        if (!this.shouldShow) {
-            return [];
-        }
-        return this.visibleApprovals.map(request => {
-            const selected = this.state.selectedApprovalId === request.id;
-            return {
-                id: request.id,
-                label: `${selected ? '›' : ' '} ${request.toolName} (${request.id.slice(0, 8)})`
-            };
-        });
-    }
-
-    get approvalListLabel(): string {
-        if (!this.shouldShow || !this.approvalItems.length) {
-            return '';
-        }
-        return this.approvalItems.map(item => item.label).join('\n');
-    }
-
-    get approvalListLines(): string[] {
-        const label = this.approvalListLabel;
-        return label ? label.split('\n') : [];
-    }
-
-    get selectedApprovalRequestLines(): string[] {
-        const label = this.selectedApprovalRequestLabel;
-        return label ? label.split('\n') : [];
-    }
-
-    get selectedApprovalDetailLines(): string[] {
-        const label = this.selectedApprovalDetailLabel;
-        return label ? label.split('\n') : [];
-    }
-
-    get visibleApprovalStart(): number {
-        const selectedIndex = Math.max(0, this.approvals.findIndex(item => item.id === this.state.selectedApprovalId));
-        return resolveConsoleListWindow(
-            this.approvals.length,
-            selectedIndex,
-            this.state.consoleOptions.approvalsVisibleItems
-        ).start;
-    }
-
-    get visibleApprovals(): AgentConsoleApprovalRequest[] {
-        return this.approvals.slice(
-            this.visibleApprovalStart,
-            this.visibleApprovalStart + this.state.consoleOptions.approvalsVisibleItems
-        );
-    }
-
-    get approvalsSummaryLabel(): string {
-        if (!this.shouldShow || !this.approvals.length) {
-            return '';
-        }
-        const selectedIndex = Math.max(0, this.approvals.findIndex(item => item.id === this.state.selectedApprovalId));
-        return `${this.translate('agent.dashboard.approvals', { count: this.approvals.length }, `approvals ${this.approvals.length}`)} · ${selectedIndex + 1}/${this.approvals.length}`;
-    }
-
-    get approvalsTitleLabel(): string {
-        if (!this.shouldShow || !this.approvals.length) {
-            return '';
-        }
-        return this.state.selectedApproval
-            ? this.translate('agent.approval.allowPrompt', { tool: this.state.selectedApproval.toolName }, `Approval required · Allow ${this.state.selectedApproval.toolName}?`)
-            : this.translate('agent.approval.required', undefined, 'Approval required');
-    }
-
-    get approvalsHintLabel(): string {
-        if (!this.shouldShow || !this.approvals.length || !this.state.approvalsFocused) {
-            return '';
-        }
-        return this.state.consoleOptions.approvalsHint;
-    }
-
-    get approvalActionsLabel(): string {
-        if (!this.shouldShow || !this.approvals.length) {
-            return '';
-        }
-        return this.translate('agent.approval.actions', undefined, 'a Allow   d Deny   A Always allow (session)   y Copy   ↑↓ Move   Esc Dismiss');
-    }
-
-    get selectedApprovalRequestLabel(): string {
-        if (!this.shouldShow || !this.state.selectedApproval) {
-            return '';
-        }
-        const request = this.state.selectedApproval;
-        const input = formatAgentConsoleApprovalInput(request.toolName, request.inputSummary || request.summary);
-        return input ? this.summarize(input) : '';
-    }
-
-    get accessibilityLabel(): string {
-        if (!this.shouldShow) {
-            return this.translate('agent.approval.accessibilityTitle', undefined, 'Approvals');
-        }
-        const selected = this.state.selectedApproval;
-        return selected
-            ? this.translate('agent.approval.accessibilitySelected', { count: this.approvals.length, tool: selected.toolName }, `Approvals. ${this.approvals.length} pending. Selected: ${selected.toolName}.`)
-            : this.translate('agent.approval.accessibility', { count: this.approvals.length }, `Approvals. ${this.approvals.length} pending.`);
-    }
-
-    get selectedApprovalDetailLabel(): string {
-        if (!this.shouldShow || !this.state.selectedApproval) {
-            return '';
-        }
-        const request = this.state.selectedApproval;
-        const detailKey = request.reasonDetail?.code ? `agent.approval.reasonCode.${request.reasonDetail.code}` : '';
-        const localizedReason = detailKey ? this.translator?.translate(detailKey, request.reasonDetail?.params) : undefined;
-        const reason = localizedReason && localizedReason !== detailKey ? localizedReason : (request.reason || this.translate('agent.approval.noReason', undefined, 'No reason provided'));
-        const lines = [this.translate('agent.approval.reason', { reason }, `Reason: ${reason}`)];
-        if (request.expiresAt && request.timeoutMs > 0) {
-            const remainingMs = request.expiresAt - Date.now();
-            const seconds = Math.max(1, Math.ceil(remainingMs / 1000));
-            lines.push(remainingMs > 0
-                ? this.translate('agent.approval.expiresIn', { seconds }, `Expires in ${seconds}s`)
-                : this.translate('agent.approval.expired', undefined, 'Expired'));
-        }
-        return lines.join('\n');
-    }
-
-    get shouldShow(): boolean {
-        return this.state.approvalsFocused;
-    }
-
-    protected summarize(value: string): string {
-        const text = String(value || '').replace(/\s+/g, ' ').trim();
-        return text.length > this.state.consoleOptions.toolRunSummaryMaxLength
-            ? `${text.slice(0, this.state.consoleOptions.toolRunSummaryMaxLength)}...`
-            : text;
-    }
-}
-
+export { AgentConsoleApprovalsPanelComponent } from './AgentConsoleApprovalPanel';
 @Component({
     selector: 'agent-console-tools-panel',
     template: `

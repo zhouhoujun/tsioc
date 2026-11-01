@@ -13,3 +13,16 @@ export function resolveSectionFrameStyle(baseStyleText: string | Record<string, 
         padding: '0.35em 0'
     };
 }
+
+export const DIALOG_CLOSE_STYLE = { 'text-align': 'right', color: '#8b949e' };
+
+/** Dialog shell used by the composer-anchored overlays (menus, approvals, questions). */
+export function menuShellStyle(theme: AgentConsoleTheme): Record<string, string> {
+    const style = styleTextToObject(theme.dialogShell);
+    delete style['max-width'];
+    style['border-bottom'] = 'none';
+    const input = styleTextToObject(theme.inputShell);
+    const background = input.background || input['background-color'];
+    if (background) style.background = background;
+    return style;
+}

@@ -44,6 +44,8 @@ export interface AgentConsoleGlobalKeyInputHost {
         whichKeyPage: number;
         setWhichKeyPage(page: number): void;
         messageDetailOpen: boolean;
+        approvalsFocused?: boolean;
+        pendingApprovals?: unknown[];
     };
     globalKeyPending: string;
     keymapRecording?: { context: AgentConsoleKeymapContext; action: AgentConsoleGlobalAction };
@@ -73,6 +75,15 @@ export interface AgentConsoleGlobalKeyInputHost {
     cycleRecentModel(delta: 1 | -1): Promise<void>;
     cycleModelVariant(): Promise<void>;
     queueDraft(): boolean;
+}
+
+/**
+ * The permission prompt owns Escape: opencode maps Esc on a pending approval
+ * to reject, so it must reach the approval focus layer instead of cancelling
+ * the running turn (the turn is already paused waiting for the decision).
+ */
+function approvalPromptOwnsEscape(host: AgentConsoleGlobalKeyInputHost): boolean {
+    return !!host.state.approvalsFocused && (host.state.pendingApprovals?.length || 0) > 0;
 }
 
 /**
@@ -211,6 +222,9 @@ export async function handleBrowserGlobalKeyInputView(
         host.globalKeyPending = '';
         return false;
     }
+    if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey) && approvalPromptOwnsEscape(host)) {
+        return false;
+    }
     if (!ctrlKey && ['escape', 'esc'].includes(normalizedKey) && host.isTurnInProgress()) {
         await host.interruptTurn();
         return true;
@@ -276,6 +290,8 @@ export async function handleGlobalKeyInputView(host: AgentConsoleGlobalKeyInputH
         // through so the menu handler dismisses the list. Without this, closing
         // `/` completion mid-turn also cancelled the running turn.
         if (raw === '\u001b' && host.state.selectMenu) return false;
+        // A pending permission prompt owns Escape (reject), even mid-turn.
+        if (raw === '\u001b' && approvalPromptOwnsEscape(host)) return false;
         // Escape must cancel an active turn even when an input/focus panel is
         // currently active; focus dismissal is only for idle consoles.
         if (raw === '\u001b' && host.isTurnInProgress()) {

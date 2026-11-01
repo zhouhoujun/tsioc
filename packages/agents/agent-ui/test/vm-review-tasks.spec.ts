@@ -1554,6 +1554,39 @@ export class VmReviewTasksTest {
         expect(component.tools[0].active).toEqual(true);
     }
 
+    @Test('escape rejects a pending approval instead of cancelling the turn')
+    async escapeRejectsApproval() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        const resolved: Array<{ decision: 'approve' | 'deny'; requestId: string }> = [];
+        state.setStatus('running');
+        state.setPendingApprovals([{
+            id: 'approval-escape',
+            toolName: 'write_file',
+            sessionId: 'console',
+            reason: 'Writing files requires approval.',
+            createdAt: 1,
+            timeoutMs: 30000
+        } as any]);
+        state.resolveApprovalAction = async (decision, requestId) => {
+            resolved.push({ decision, requestId });
+        };
+        state.setApprovalsFocused(true);
+
+        const result = await state.processDecodedInput(
+            { text: '\u001b', partial: false },
+            '\u001b',
+            {
+                isClosed: false,
+                onExit() {},
+                hasActiveTextPrompt: false,
+                transcriptNavigationController: navigationFor(state),
+            }
+        );
+
+        expect(result.action).toEqual('focusKey');
+        expect(resolved).toEqual([{ decision: 'deny', requestId: 'approval-escape' }]);
+    }
+
     @Test('focused approval panel accepts letter shortcuts from terminal input')
     async focusedApprovalPanelAcceptsLetterShortcuts() {
         const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());

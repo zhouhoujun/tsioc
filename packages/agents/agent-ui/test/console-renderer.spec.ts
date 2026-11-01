@@ -1921,6 +1921,69 @@ export class AgentConsoleTuiRendererTest {
         }
     }
 
+    @Test('approval options are mouse clickable in the TUI menu')
+    async approvalOptionsClickable() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const consoleRef = tuiCtx.get(ComponentFactory).create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const state: any = consoleRef.instance.sessionState;
+            const resolved: Array<{ decision: string; requestId: string }> = [];
+            let alwaysAllowed = 0;
+            state.resolveApprovalAction = async (decision: string, requestId: string) => {
+                resolved.push({ decision, requestId });
+            };
+            state.approvalAlwaysAllowAction = async () => { alwaysAllowed += 1; };
+            state.setPendingApprovals([{
+                id: 'approval-1',
+                sessionId: 'console',
+                toolName: 'write_file',
+                input: { path: 'README.md' },
+                inputSummary: 'write README.md',
+                reason: 'Writing files requires approval.',
+                createdAt: 1,
+                timeoutMs: 30000,
+                status: 'pending'
+            }]);
+            state.setApprovalsFocused(true);
+            await settleDynamicMessages(consoleRef);
+
+            surface = new TuiTerminalSurface({
+                renderer: tuiCtx.get(TuiRenderer),
+                root: consoleRef.elementRef.nativeElement,
+                width: 90,
+                height: 32,
+                nativeScrollback: false,
+                scrollViewport: true,
+                output: { write() { /* noop */ } }
+            });
+            surface.render();
+            const option = (label: string) => surface!.clickTargets.find(target =>
+                String((target.node as any)?.textContent || '').trim() === label);
+            const click = async (label: string) => {
+                const target = option(label);
+                expect(target).toBeTruthy();
+                surface!.dispatchClickAt(target!.node);
+                await settleDynamicMessages(consoleRef);
+            };
+
+            await click('Allow once');
+            await click('Always allow (session)');
+            await click('Deny');
+            expect(resolved).toEqual([
+                { decision: 'approve', requestId: 'approval-1' },
+                { decision: 'deny', requestId: 'approval-1' }
+            ]);
+            expect(alwaysAllowed).toEqual(1);
+        } finally {
+            surface?.destroy();
+            await tuiCtx.close();
+        }
+    }
+
     @Test('renders live input content in root tui tree')
     async renderLiveInputInRootTree() {
         const tuiCtx = await Application.run(AgentModule, {

@@ -1,8 +1,8 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { handleGlobalKeyInputView } from '../src/AgentConsoleGlobalKeyInputController';
+import { handleBrowserGlobalKeyInputView, handleGlobalKeyInputView } from '../src/AgentConsoleGlobalKeyInputController';
 
-function hostWith(options: { running: boolean; menu: boolean }): { host: any; interrupts: () => number } {
+function hostWith(options: { running: boolean; menu: boolean; approval?: boolean }): { host: any; interrupts: () => number } {
     let interrupts = 0;
     const host: any = {
         translator: null,
@@ -10,6 +10,9 @@ function hostWith(options: { running: boolean; menu: boolean }): { host: any; in
         state: {
             whichKeyVisible: false,
             whichKeyPage: 0,
+            hasCommandOutputsFocus: () => false,
+            approvalsFocused: !!options.approval,
+            pendingApprovals: options.approval ? [{ id: 'approval-1' }] : [],
             selectMenu: options.menu ? { kind: 'suggestions', options: [{ value: '/status' }] } : undefined,
             focusLayers: {
                 isAnyFocusActive: () => false,
@@ -46,6 +49,15 @@ export class GlobalEscapeMenuTest {
         const { host, interrupts } = hostWith({ running: true, menu: false });
         expect(await handleGlobalKeyInputView(host, '\u001b')).toBe(true);
         expect(interrupts()).toEqual(1);
+    }
+
+    @Test('a pending approval owns Escape instead of cancelling the turn')
+    async approvalOwnsEscape() {
+        const { host, interrupts } = hostWith({ running: true, menu: false, approval: true });
+        expect(await handleGlobalKeyInputView(host, '\u001b')).toBe(false);
+        expect(interrupts()).toEqual(0);
+        expect(await handleBrowserGlobalKeyInputView(host, 'Escape', {})).toBe(false);
+        expect(interrupts()).toEqual(0);
     }
 
     @Test('an idle console with no menu falls through to the keymap')

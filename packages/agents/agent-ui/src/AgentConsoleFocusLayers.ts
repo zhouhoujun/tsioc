@@ -111,7 +111,9 @@ export abstract class AgentConsoleFocusLayers {
         // Two fast Esc presses coalesce into one alt-esc read. The pager already
         // closes on it; focus layers (sessions/jobs/outputs/...) must dismiss
         // too instead of swallowing the key as an unknown alt sequence.
-        if (rawText === '\u001b\u001b') return 'escape';
+        // A lone Esc arrives as a bare escape byte; focus layers must treat it
+        // as reject/dismiss instead of swallowing it as an unknown alt sequence.
+        if (rawText === '\u001b' || rawText === '\u001b\u001b') return 'escape';
         // Uppercase A = "always allow for this session"; plain `a` stays approve.
         if (rawText === 'A') return 'approve-always';
         const normalized = String(rawText || '').trim().toLowerCase();
@@ -432,13 +434,16 @@ export abstract class AgentConsoleFocusLayers {
     ): boolean | Promise<boolean> | undefined {
         const state = this.state;
         if (!state.approvalsFocused) return undefined;
+        // opencode maps Escape on a permission prompt to reject, never to
+        // cancelling the running turn.
+        if (this.isDismissKey(normalized)) return this.resolveApproval('deny');
         const decision = this.overlay.resolveListKey(normalized);
         switch (decision.action) {
             case 'move': state.moveApprovalSelection(decision.delta); return true;
             case 'home': state.selectFirstApproval(); return true;
             case 'end': state.selectLastApproval(); return true;
             case 'page': state.moveApprovalSelectionPage(decision.direction); return true;
-            case 'escape': return this.dismiss(transcriptNavigation);
+            case 'escape': return this.resolveApproval('deny');
         }
         if (normalized === 'copy') return this.copyApproval();
         if (normalized === 'approve-always') return this.resolveApprovalAlways();

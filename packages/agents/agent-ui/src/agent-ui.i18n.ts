@@ -5,6 +5,7 @@ import { AGENT_UI_ERROR_EN, AGENT_UI_ERROR_ZH } from './agent-ui.i18n.error';
 import { AGENT_UI_TOOL_LABELS_EN, AGENT_UI_TOOL_LABELS_ZH } from './agent-ui.i18n.tools';
 import { AGENT_UI_HINT_EN, AGENT_UI_HINT_ZH, AGENT_UI_MENU_EN, AGENT_UI_MENU_ZH } from './agent-ui.i18n.menu';
 import { AGENT_UI_PANEL_EN, AGENT_UI_PANEL_ZH } from './agent-ui.i18n.panel';
+import { AGENT_UI_APPROVAL_EN, AGENT_UI_APPROVAL_ZH } from './agent-ui.i18n.approval';
 import { AGENT_UI_DIAG_EN, AGENT_UI_DIAG_ZH } from './agent-ui.i18n.diagnostics';
 import { AGENT_UI_TRANSCRIPT_EN, AGENT_UI_TRANSCRIPT_ZH } from './agent-ui.i18n.transcript';
 
@@ -265,25 +266,7 @@ export const agentUiEnglish: TranslationBundle = {
                 goalProgress: 'goal: {met}/{total} criteria met'
             },
             mention: { folder: 'folder', file: 'file', skill: 'skill', plugin: 'plugin' },
-            approval: {
-                required: 'Approval required',
-                allowPrompt: 'Approval required · Allow {tool}?',
-                actions: 'a Allow   d Deny   A Always allow (session)   y Copy   ↑↓ Move   Esc Dismiss',
-                reason: 'Reason: {reason}',
-                noReason: 'No reason provided',
-                expiresIn: 'Expires in {seconds}s',
-                expired: 'Expired',
-                accessibilityTitle: 'Approvals',
-                accessibility: 'Approvals. {count} pending.',
-                accessibilitySelected: 'Approvals. {count} pending. Selected: {tool}.',
-                pendingTitle: 'Pending approvals',
-                tool: 'Tool: {tool}',
-                input: 'Input: {input}',
-                inputNone: 'Input: -',
-                timeout: 'Timeout: {ms}ms',
-                expiresAt: 'Expires: {time}',
-                reasonCode: { 'tool-requires-approval': 'Tool "{tool}" requires approval.' }
-            },
+            approval: AGENT_UI_APPROVAL_EN,
             dashboard: {
                 approvals: 'approvals {count}',
                 jobs: 'jobs {running}/{total}',
@@ -523,25 +506,7 @@ export const agentUiChinese: TranslationBundle = {
                 goalProgress: '目标：{met}/{total} 项达成'
             },
             mention: { folder: '文件夹', file: '文件', skill: '技能', plugin: '插件' },
-            approval: {
-                required: '需要审批',
-                allowPrompt: '需要审批 · 允许 {tool}？',
-                actions: 'a 允许   d 拒绝   A 本会话始终允许   y 复制   ↑↓ 移动   Esc 关闭',
-                reason: '原因：{reason}',
-                noReason: '未提供原因',
-                expiresIn: '{seconds} 秒后过期',
-                expired: '已过期',
-                accessibilityTitle: '审批',
-                accessibility: '审批。{count} 项待处理。',
-                accessibilitySelected: '审批。{count} 项待处理。已选：{tool}。',
-                pendingTitle: '待处理审批',
-                tool: '工具：{tool}',
-                input: '输入：{input}',
-                inputNone: '输入：-',
-                timeout: '超时：{ms}ms',
-                expiresAt: '过期：{time}',
-                reasonCode: { 'tool-requires-approval': '工具「{tool}」需要审批。' }
-            },
+            approval: AGENT_UI_APPROVAL_ZH,
             dashboard: {
                 approvals: '审批 {count}',
                 jobs: '任务 {running}/{total}',
