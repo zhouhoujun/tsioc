@@ -37,6 +37,10 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     scrollViewportToRow?(row: number): boolean;
     scrollViewportToEdge?(edge: 'start' | 'end'): boolean;
     isViewportFollowing?(): boolean | undefined;
+    /** Scroll offset measured from the latest row, for per-session restore. */
+    getViewportScrollOffset?(): number;
+    /** Restore a transcript scroll offset measured from the latest row. */
+    scrollViewportToOffset?(offsetRows: number): boolean;
     /** Open the base-layer transcript pager over the last full render; optional query is a find. */
     openPagerFromLastRender?(query?: string, statusCopy?: AgentConsolePagerStatusCopy): boolean;
     closePager?(): boolean;

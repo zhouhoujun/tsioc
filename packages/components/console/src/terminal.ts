@@ -676,9 +676,19 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
         return this.surface?.scrollViewportToEdge(edge) ?? false;
     }
 
+    /** Restore a transcript scroll offset measured from the latest row. */
+    scrollViewportToOffset?(offsetRows: number): boolean {
+        return this.surface?.scrollViewportToOffset(offsetRows) ?? false;
+    }
+
+    getViewportScrollOffset?(): number {
+        return this.surface?.viewportScrollOffset ?? 0;
+    }
+
     isViewportFollowing?(): boolean | undefined {
         return this.surface?.viewportFollowing;
     }
+
 
     openPagerFromLastRender?(query?: string, statusCopy?: PagerStatusCopy): boolean {
         return this.surface?.openPagerFromLastRender(query, statusCopy) ?? false;
@@ -1093,6 +1103,7 @@ export class TuiTerminalSurface {
         return this.scrollOffsetRows;
     }
 
+
     get viewportMaxScrollOffset(): number {
         return this.maxScrollOffsetRows;
     }
@@ -1300,6 +1311,25 @@ export class TuiTerminalSurface {
         if (!this.scrollBox.scrollToEdge(edge)) {
             return false;
         }
+        this.scrollOffsetRows = this.scrollBox.maxTop - this.scrollBox.top;
+        this.requestRender();
+        return true;
+    }
+
+    /** Restore a scroll offset measured from the latest row (per-session tabs). */
+    scrollViewportToOffset(offsetRows: number): boolean {
+        if (!this.isScrollViewportEnabled()) {
+            return false;
+        }
+        if (!this.maxScrollOffsetRows) {
+            this.scrollOffsetRows = 0;
+            return false;
+        }
+        const offset = Math.max(0, Math.min(
+            this.maxScrollOffsetRows,
+            Math.trunc(Number.isFinite(offsetRows) ? offsetRows : 0)
+        ));
+        this.scrollBox.scrollTo(this.maxScrollOffsetRows - offset);
         this.scrollOffsetRows = this.scrollBox.maxTop - this.scrollBox.top;
         this.requestRender();
         return true;

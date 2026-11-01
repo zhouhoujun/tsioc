@@ -2809,3 +2809,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 宽度：终端 `getTerminalSize().cols` 经 resize 订阅同步到 `state.markdownContentWidth`，表格按真实终端宽度重排；worker 缓存 key 包含 tableWidth。
 - 通用层：`components/console` 的 TUI `applyAnsi` 支持 `font-style: italic`、`text-decoration: underline/line-through`。
 - 验证：agent-ui 新增 `markdown-rendering.spec.ts`（grid/CJK/对齐/窄屏/fallback/代码高亮/行内样式/列表/宽度传递）；components/common 新增 tokenizer 用例；components/console 新增 ANSI decoration 用例；agent-ui 1931 passing、components 全量、components/common、components/console、components/html、tui-gate、tsc、source-size、diff-check 通过。
+
+## Session tab 完全隔离（2026-11）
+
+- 需求：每个 session tab 视作完整的 agent TUI，拥有独立消息线、滚动位置、输入草稿/附件、消息选中与详情视图；切换 tab 不得互相污染，切回时恢复该 tab 自己的状态。
+- 实现：`AgentConsoleSessionUiState` 在离开 tab 时快照 `scrollOffset`（距最新行的距离）、following/newCount、input/cursor、pendingAttachments、选中消息/焦点/详情滚动；`openSession` 切换开始时立即清空上一个会话的消息/sections/goal，避免慢加载把 A 的 transcript 显示在 B 的 tab 下；目标首页渲染后恢复快照，首次访问从最新消息跟随，关闭 tab 丢弃快照。
+- 通用层：`TuiTerminalSurface` 新增 `scrollViewportToOffset` 与 `viewportScrollOffset` 访问器，`ConsoleTerminalSurfaceAccessor` 同步暴露，供按 tab 保存/恢复滚动距离。
+- 测试：新增 `test/session-tab-isolation.spec.ts`（加载中不外泄上一个 tab、首次访问在尾部、各自 scroll/draft/state 往返恢复、newCount/draft 不串）与 `test/viewport-chrome-pinning.spec.ts`（真实 ANSI 屏幕断言 tab 栏与输入框在长 CJK 回复/Markdown 表格代码/新增消息后仍固定，frame 不超过终端宽高、不触发原生动滚）；agent-ui 1938 passing、components/console 117 passing、tsc、source-size、tui-gate、dom-gate、gate-regression、diff-check、production-db-integrity 全部通过。

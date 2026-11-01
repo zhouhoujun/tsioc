@@ -123,6 +123,14 @@ export async function openSession(
     if (nextWorkspace) {
         host.state.setWorkspace(nextWorkspace);
     }
+    // Tab isolation: the incoming tab owns the transcript. Drop the outgoing
+    // session's rows (and its new-message counter) immediately, before any
+    // awaited reload, so a slow page load can never render session A under
+    // session B's tab. The saved per-tab state is restored after the load.
+    host.state.setMessages([]);
+    host.state.setSections([]);
+    host.state.setGoalSummary(null);
+    host.state.messagesNewCount = 0;
     host.state.setQueuedPromptCount((host.queuedPrompts.get(target.id) || []).length);
     host.transcriptNavigationController.setFocused(false);
     host.state.setSessionsFocused(false);
@@ -181,4 +189,32 @@ export async function openSession(
     host.state.setSections(options?.fresh ? [] : page.sections);
     host.state.setGoalSummary(options?.fresh ? null : (page.goalSummary || null));
     await host.restoreSessionModes(target.id);
+}
+
+/** Restore per-session plan mode from the runtime/app RPC (best effort). */
+export async function restoreSessionModes(
+    host: {
+        appRpc?: { request(method: string, params?: any, context?: any): Promise<any> } | null;
+        runtime: { isPlanMode(sessionId: string): boolean };
+        state: AgentConsoleSessionState;
+        rpcRequestContext?(): any;
+    },
+    sessionId: string
+): Promise<void> {
+    try {
+        let planMode = false;
+        if (host.appRpc) {
+            const result = await host.appRpc.request(
+                'session.plan_mode.get',
+                { sessionId },
+                host.rpcRequestContext?.()
+            ).catch(() => null);
+            planMode = result?.enabled === true;
+        } else {
+            planMode = host.runtime.isPlanMode(sessionId);
+        }
+        host.state.setPlanMode(planMode);
+    } catch {
+        // runtime may not support plan mode queries — leave current value
+    }
 }

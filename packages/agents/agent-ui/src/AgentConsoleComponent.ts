@@ -174,7 +174,8 @@ import {
     loadSessionPage as loadSessionContentPage,
     mapWithConcurrency as runWithConcurrency
 } from './AgentConsoleSessionContentLoader';
-import { applyMissingSessionNotice, openSession as delegateOpenSession, AgentConsoleSessionOpenHost } from './AgentConsoleSessionOpen';
+import { applyMissingSessionNotice, openSession as delegateOpenSession, restoreSessionModes as restoreSessionModesView, AgentConsoleSessionOpenHost } from './AgentConsoleSessionOpen';
+import { AgentConsoleSessionUiState } from './AgentConsoleSessionUiState';
 import { closeAgentConsoleSessionTab } from './AgentConsoleSessionTabClose';
 import { isAgentConsoleExactCommandToken, isAgentConsoleSuggestionMenu, resolveAgentConsoleMentionDisplayFiles } from './AgentConsoleSuggestions';
 import {
@@ -1090,28 +1091,21 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             refreshTodoPlan: (sessionId?: string, projectSessions?: any[]) => self.refreshTodoPlan(sessionId, projectSessions),
             loadCodingTasks: (sessionId?: string, projectSessionIds?: string[]) => self.loadCodingTasks(sessionId, projectSessionIds),
             restoreInputHistory: () => self.restoreInputHistory(),
-            restoreSessionModes: (sessionId: string) => self.restoreSessionModes(sessionId)
+            restoreSessionModes: (sessionId: string) => restoreSessionModesView({ appRpc: self.appRpc, runtime: self.runtime, state: self.state, rpcRequestContext: () => self.rpcRequestContext() }, sessionId)
         };
     }
 
+    protected readonly sessionUiState = new AgentConsoleSessionUiState(() => ({ state: this.state, surfaceAccessor: this.surfaceAccessor }));
+
     protected async openSession(sessionId?: string, options?: { persistCurrentHistory?: boolean; fresh?: boolean; missing?: boolean; scoped?: boolean }): Promise<void> {
-        this.surfaceAccessor?.beginRenderBatch?.(); try { return await delegateOpenSession(this.sessionOpenHost(), sessionId, options); } finally { this.surfaceAccessor?.endRenderBatch?.(); }
+        return this.sessionUiState.switchSession(
+            () => delegateOpenSession(this.sessionOpenHost(), sessionId, options),
+            () => this.state.sessionId,
+            () => this.surfaceAccessor?.beginRenderBatch?.(),
+            () => this.surfaceAccessor?.endRenderBatch?.()
+        );
     }
 
-    protected async restoreSessionModes(sessionId: string): Promise<void> {
-        try {
-            let planMode = false;
-            if (this.appRpc) {
-                const result = await this.appRpc.request('session.plan_mode.get', { sessionId }, this.rpcRequestContext()).catch(() => null);
-                planMode = result?.enabled === true;
-            } else {
-                planMode = this.runtime.isPlanMode(sessionId);
-            }
-            this.state.setPlanMode(planMode);
-        } catch {
-            // runtime may not support plan mode queries — leave current value
-        }
-    }
 
     protected async selectApprovalRequest(
         requests: AgentConsoleApprovalRequest[],
@@ -1560,7 +1554,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.recoverSelectedScheduledTaskAction = this.recoverSelectedScheduledTaskActionHandler;
         this.state.activateSelectedToolAction = this.activateSelectedToolActionHandler;
         this.state.revertGitSnapshotFromDetailAction = () => this.revertGitSnapshotFromDetail();
-        this.state.resolveApprovalAction = this.resolveApprovalActionHandler; this.state.modelUnavailableAction = failure => promptModelUnavailable(this.modelCtx(), failure); this.state.scrollTranscriptAction = rows => this.surfaceAccessor?.scrollViewport?.(rows) ?? false; this.state.sessionTabsAction = { select: id => void this.openSession(id), create: () => void this.openSession(), close: id => void closeAgentConsoleSessionTab({ state: this.state, translator: this.translator, isTurnInProgress: () => this.isTurnInProgress(), notifyBusyState: (message: string) => this.notifyBusyState(message), openSession: sessionId => this.openSession(sessionId) }, id) };
+        this.state.resolveApprovalAction = this.resolveApprovalActionHandler; this.state.modelUnavailableAction = failure => promptModelUnavailable(this.modelCtx(), failure); this.state.scrollTranscriptAction = rows => this.surfaceAccessor?.scrollViewport?.(rows) ?? false; this.state.sessionTabsAction = { select: id => void this.openSession(id), create: () => void this.openSession(), close: id => { void closeAgentConsoleSessionTab({ state: this.state, translator: this.translator, isTurnInProgress: () => this.isTurnInProgress(), notifyBusyState: (message: string) => this.notifyBusyState(message), openSession: sessionId => this.openSession(sessionId) }, id).then(() => this.sessionUiState.forget(id)); } };
         this.state.approvalAlwaysAllowAction = async requestId => { (this.resolvedApprovalManager as any)?.setAutoApprove?.(true); await this.resolveApprovalActionHandler('approve', requestId); this.notify(formatAgentUiNotice(this.translator, 'approvalAlwaysAllowed')); };
         this.state.globalKeyInputAction = (key, modifiers) => this.handleBrowserGlobalKeyInput(key, modifiers);
 this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCacheToDisk(cache);
