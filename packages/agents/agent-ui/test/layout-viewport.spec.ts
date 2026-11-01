@@ -5,7 +5,7 @@ import * as path from 'path';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { applyPersistedLayout, mapTuiLayoutArg, runLayoutCommand } from '../src/AgentConsoleSettingsCommands';
-import { handleTerminalInputView, syncConsoleMessageDetailViewportView } from '../src/AgentConsoleTerminalInputController';
+import { handleTerminalInputView, syncConsoleMessageDetailViewportView, syncMarkdownWidthFromSurface } from '../src/AgentConsoleTerminalInputController';
 import { resolveTranscriptLayout } from '../src/AgentConsoleTranscriptLayout';
 import { AgentConsoleSettingsStore } from '../src/AgentConsoleSettingsStore';
 import { normalizeMessageLayout } from '../src/AgentConsoleViewport';
@@ -156,6 +156,13 @@ export class AgentConsoleViewportLayoutTest {
         const legacy = new AgentConsoleSessionState();
         legacy.setConsoleOptions({ messageLayout: 'stream' });
         expect(legacy.messageLayout).toEqual('scrollback');
+    }
+
+    @Test('terminal surface width feeds markdown before the first resumed render')
+    surfaceWidthSyncsMarkdownBeforeRender() {
+        const state = { markdownContentWidth: 0 };
+        syncMarkdownWidthFromSurface(state, { getTerminalSize: () => ({ columns: 72, rows: 24 }) });
+        expect(state.markdownContentWidth).toEqual(70);
     }
 
     @Test('viewport scroll walks history and resumes follow at the tail')

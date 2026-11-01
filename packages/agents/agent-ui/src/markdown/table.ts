@@ -67,6 +67,12 @@ function markdownTokensWidth(tokens: AgentConsoleMarkdownToken[]): number {
     return tokens.reduce((width, token) => width + getDisplayWidth(token.text), 0);
 }
 
+/** Longest unbreakable ASCII word (words should not split while space allows). */
+function longestWordWidth(value: string): number {
+    const words = String(value || '').match(/[A-Za-z0-9][A-Za-z0-9_./:@#+-]*/g) || [];
+    return words.reduce((max, word) => Math.max(max, getDisplayWidth(word)), 0);
+}
+
 interface WrapUnit {
     tokens: AgentConsoleMarkdownToken[];
     whitespace: boolean;
@@ -286,12 +292,24 @@ export function renderMarkdownTable(
     const headerWidths = headerRows.map(cell => markdownTokensWidth(tokenizeMarkdownInline(cell, 'heading')));
     // Columns never render narrower than their header (numeric columns stay
     // aligned instead of splitting 数值 into two rows), unless space forces it.
+    const longestWordWidths = Array.from({ length: columnCount }, (_value, column) => Math.max(
+        headerWidths[column],
+        longestWordWidth(headerRows[column]),
+        ...bodyRows.map(row => longestWordWidth(row[column]))
+    ));
+    const share = Math.max(TABLE_MIN_COLUMN_WIDTH, Math.floor(available / columnCount));
     const minimumWidths = naturalWidths.map((width, index) => {
-        const baseline = Math.max(TABLE_MIN_COLUMN_WIDTH, headerWidths[index]);
-        // Numeric (right-aligned) cells read badly when split; keep short
-        // numbers intact, while long prose columns may still wrap.
+        // Keep short numbers and unbreakable words intact, give CJK columns at
+        // least ~3 glyphs, but never exceed an equal share of the available
+        // width (otherwise a narrow terminal would force the columns fallback).
         const valueFloor = aligns[index] === 'right' ? Math.min(width, 12) : 0;
-        return Math.min(width, Math.max(baseline, valueFloor));
+        const desired = Math.max(
+            headerWidths[index],
+            Math.min(longestWordWidths[index], 12),
+            valueFloor,
+            Math.min(6, width)
+        );
+        return Math.min(width, desired, share);
     });
     const contentWidths = distributeColumnWidths(naturalWidths, minimumWidths, available);
     if (!contentWidths) {

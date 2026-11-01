@@ -413,7 +413,7 @@ function syncMessageDetailViewportRows(host: AgentConsoleTerminalInputHost, rows
     }
 }
 
-const markdownWidthResizeSyncHosts = new WeakSet<AgentConsoleTerminalInputHost>();
+const markdownWidthResizeSyncHosts = new WeakSet<AgentConsoleMarkdownContentWidthHost>();
 
 /**
  * Keep Markdown tables inside the real terminal width.
@@ -422,7 +422,22 @@ const markdownWidthResizeSyncHosts = new WeakSet<AgentConsoleTerminalInputHost>(
  * cannot measure the transcript itself. Feeding it the surface width keeps grid
  * borders from being wrapped mid-row by the terminal renderer.
  */
-export function syncConsoleMarkdownContentWidth(host: AgentConsoleTerminalInputHost): void {
+export interface AgentConsoleMarkdownContentWidthHost {
+    state: { markdownContentWidth: number };
+    destroyed?: boolean;
+    surfaceAccessor?: Pick<AgentConsoleTerminalInputHost['surfaceAccessor'] & object,
+        'getTerminalSize' | 'subscribeToSurfaceResize'> | null;
+}
+
+export function syncMarkdownWidthFromSurface(
+    state: { markdownContentWidth: number },
+    surfaceAccessor: AgentConsoleMarkdownContentWidthHost['surfaceAccessor'],
+    destroyed = false
+): void {
+    syncConsoleMarkdownContentWidth({ state, surfaceAccessor, destroyed });
+}
+
+export function syncConsoleMarkdownContentWidth(host: AgentConsoleMarkdownContentWidthHost): void {
     ensureMarkdownWidthResizeSync(host);
     const size = host.surfaceAccessor?.getTerminalSize?.();
     const columns = Number(size?.columns ?? size?.cols);
@@ -437,7 +452,7 @@ export function syncConsoleMarkdownContentWidth(host: AgentConsoleTerminalInputH
 }
 
 /** Subscribe once per host so terminal resizes recompute the table width without a keypress. */
-function ensureMarkdownWidthResizeSync(host: AgentConsoleTerminalInputHost): void {
+function ensureMarkdownWidthResizeSync(host: AgentConsoleMarkdownContentWidthHost): void {
     if (markdownWidthResizeSyncHosts.has(host)) {
         return;
     }

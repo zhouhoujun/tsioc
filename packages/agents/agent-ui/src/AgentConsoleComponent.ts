@@ -163,7 +163,7 @@ import { decodeGlobalKey, describePendingToolCall, describeStreamEventContent } 
 import { AgentConsoleTurnStreamHost, AgentConsoleTurnStreamState, clearStreamingMessageState, consumeStreamChunkView, consumeStreamEventChunkView, runTurnStreamView } from './AgentConsoleTurnStreamController';
 import { AgentConsoleGlobalKeyInputHost, executeGlobalKeyActionView, handleBrowserGlobalKeyInputView, handleGlobalKeyInputView, handleGlobalKeySequenceView } from './AgentConsoleGlobalKeyInputController';
 import { AgentConsoleTurnInputHost, isCancelPromptValue, submitMultilineDraftView, submitView } from './AgentConsoleTurnInputController';
-import { AgentConsoleTerminalInputHost, closingSessionMessageView, handleTerminalInputView, openCommandPaletteView, requestTerminalExitView } from './AgentConsoleTerminalInputController';
+import { AgentConsoleTerminalInputHost, closingSessionMessageView, handleTerminalInputView, openCommandPaletteView, requestTerminalExitView, syncMarkdownWidthFromSurface } from './AgentConsoleTerminalInputController';
 import { AgentConsoleTranscriptLayoutResolver, resolveTranscriptLayout, revealAgentConsoleMessage, scrollAgentConsoleTranscript } from './AgentConsoleTranscriptLayout';
 import { AgentConsoleMessagesPanelComponent } from './AgentConsolePanels';
 import { buildGitSnapshotDiffLines } from './AgentConsoleGitView';
@@ -1098,7 +1098,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected readonly sessionUiState = new AgentConsoleSessionUiState(() => ({ state: this.state, surfaceAccessor: this.surfaceAccessor }));
 
     protected async openSession(sessionId?: string, options?: { persistCurrentHistory?: boolean; fresh?: boolean; missing?: boolean; scoped?: boolean }): Promise<void> {
-        return this.sessionUiState.switchSession(
+        syncMarkdownWidthFromSurface(this.state, this.surfaceAccessor, this.destroyed); return this.sessionUiState.switchSession(
             () => delegateOpenSession(this.sessionOpenHost(), sessionId, options),
             () => this.state.sessionId,
             () => this.surfaceAccessor?.beginRenderBatch?.(),
