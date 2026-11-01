@@ -110,7 +110,7 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(items[0].lines[0].status?.trim()).toEqual('');
         expect(items[0].lines[0].statusKind).toEqual('running');
         expect(items[0].lines[0].statusStyle?.color).toBeTruthy();
-        expect(items[0].lines.some(line => line.prefix?.trimStart() === '│ ' && line.content.includes('const x = 1;'))).toBe(true);
+        expect(items[0].lines.some(line => line.content.includes('const x = 1;') && !line.prefix?.includes('│'))).toBe(true);
         expect(items[0].lines.some(line => line.content.includes('```ts'))).toBe(false);
         expect(items[0].lines.some(line => line.content.includes('▍'))).toBe(false);
     }
@@ -130,7 +130,7 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(items[0].lines[0].content).toEqual('before');
         expect(items[0].lines.some(line => line.content.includes('```ts'))).toBe(true);
         expect(items[0].lines.some(line => line.content.includes('const y = 2;'))).toBe(true);
-        expect(items[0].lines.some(line => line.prefix === '│ ')).toBe(false);
+        expect(items[0].lines.some(line => line.prefix?.includes('│'))).toBe(false);
         expect(items[0].lines.some(line => line.content.includes('▍'))).toBe(false);
     }
 
@@ -208,7 +208,7 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(items[0].lines.some(line => line.prefix?.trimStart() === '1. ' && line.content === '题库')).toBe(true);
         expect(items[0].lines.some(line => line.prefix?.trimStart() === '2. ' && line.content === '随机组合试卷')).toBe(true);
         expect(items[0].lines.some(line => line.prefix?.trimStart() === '3. ' && line.content === '评分')).toBe(true);
-        expect(items[0].lines.some(line => line.prefix?.trimStart() === '│ ' && line.content.includes('const score = 100;'))).toBe(true);
+        expect(items[0].lines.some(line => line.content.includes('const score = 100;') && !line.prefix?.includes('│'))).toBe(true);
     }
 
     @Test('drops marker-only streaming fragments from compact markdown replies')

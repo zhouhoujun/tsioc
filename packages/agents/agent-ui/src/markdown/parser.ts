@@ -1,6 +1,6 @@
 import { CommonSyntaxState } from '@tsdi/components/common';
 import { renderMarkdownBlockLine } from './blocks';
-import { renderCodeFenceFooter, renderCodeFenceHeader, renderCodeLineTokens, resetCommonSyntaxState } from './code';
+import { renderCodeLineTokens, resetCommonSyntaxState } from './code';
 import { AgentConsoleMarkdownLine, AgentConsoleMarkdownRenderOptions, DEFAULT_MARKDOWN_TABLE_WIDTH } from './model';
 import { applyMarkdownBlockSpacing, compactMarkdownLines } from './spacing';
 import { normalizeMarkdownStructure } from './structure';
@@ -40,13 +40,9 @@ export function renderAgentConsoleMarkdownLines(
                 });
             }
             if (!inFence) {
-                if (!options.preserveFenceMarkers) {
-                    rendered.push(renderCodeFenceHeader(trimmed.slice(3).trim(), tableWidth));
-                }
                 fenceLanguage = trimmed.slice(3).trim().toLowerCase();
                 resetCommonSyntaxState(codeState);
-            } else if (!options.preserveFenceMarkers) {
-                rendered.push(renderCodeFenceFooter(tableWidth));
+            } else {
                 fenceLanguage = '';
             }
             inFence = !inFence;
@@ -60,8 +56,6 @@ export function renderAgentConsoleMarkdownLines(
         if (inFence) {
             rendered.push({
                 rawText: sourceLine,
-                prefix: sourceLine ? '│ ' : '',
-                prefixTone: 'muted',
                 tokens: sourceLine ? renderCodeLineTokens(sourceLine, fenceLanguage, codeState) : [],
                 tone: 'code',
                 code: true

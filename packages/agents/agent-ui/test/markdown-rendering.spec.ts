@@ -62,7 +62,7 @@ export class AgentConsoleMarkdownRenderingTest {
         expect(text[0]).toContain('f');
     }
 
-    @Test('renders a labelled code frame with shared syntax tokens')
+    @Test('renders syntax-highlighted code without an ASCII frame')
     rendersSyntaxHighlightedCodeFence() {
         const lines = renderAgentConsoleMarkdownLines([
             '```python',
@@ -70,14 +70,15 @@ export class AgentConsoleMarkdownRenderingTest {
             '    return "ok"  # done',
             '```'
         ].join('\n'), { compactBlankLines: true, tableWidth: 60 });
-        const header = lines.find(line => plain(line.rawText).includes('python'));
-        expect(header?.tokens.some(token => token.tone === 'accent')).toEqual(true);
-        const bodies = lines.filter(line => line.prefix === '│ ');
+        const bodies = lines.filter(line => line.code);
         const bodyTokens = bodies.flatMap(line => line.tokens);
         expect(bodyTokens.some(token => token.tone === 'syntax-keyword' && token.text === 'def')).toEqual(true);
         expect(bodyTokens.some(token => token.tone === 'syntax-string' && token.text.includes('"ok"'))).toEqual(true);
         expect(bodyTokens.some(token => token.tone === 'syntax-comment' && token.text.includes('# done'))).toEqual(true);
-        expect(flatten(lines[lines.length - 1]).startsWith('╰')).toEqual(true);
+        // opencode renders code blocks as plain syntax lines: no fence/rail.
+        expect(bodies.every(line => !line.prefix)).toEqual(true);
+        expect(lines.some(line => plain(line.rawText).includes('python'))).toEqual(false);
+        expect(lines.some(line => flatten(line).includes('╭') || flatten(line).includes('╰'))).toEqual(false);
     }
 
     @Test('styles emphasis, strike, strong, code, and links distinctly')
