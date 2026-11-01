@@ -70,6 +70,61 @@ interface TuiStyledSegment {
     styleMap: Record<string, string>;
 }
 
+interface TuiWrapUnit {
+    runs: TuiStyledSegment[];
+    whitespace: boolean;
+    width: number;
+}
+
+/**
+ * Group a styled line into word / whitespace units so wrapping can prefer
+ * spaces. A word split across style runs (`**stre**aming`) stays one unit and
+ * moves to the next row as a whole.
+ */
+function buildTuiWrapUnits(segments: TuiStyledSegment[]): TuiWrapUnit[] {
+    const units: TuiWrapUnit[] = [];
+    segments.forEach(segment => {
+        const text = String(segment.text ?? '');
+        if (!text) {
+            return;
+        }
+        (text.match(/\s+|\S+/g) || []).forEach(part => {
+            const whitespace = !part.trim();
+            const previous = units[units.length - 1];
+            if (previous && previous.whitespace === whitespace) {
+                previous.runs.push({ text: part, styleMap: segment.styleMap });
+                previous.width += getDisplayWidth(part);
+                return;
+            }
+            units.push({
+                runs: [{ text: part, styleMap: segment.styleMap }],
+                whitespace,
+                width: getDisplayWidth(part)
+            });
+        });
+    });
+    return units;
+}
+
+/** Cut runs after `maxWidth` display columns without losing the style boundaries. */
+function sliceTuiWrapRuns(runs: TuiStyledSegment[], maxWidth: number): { head: TuiStyledSegment[]; tail: TuiStyledSegment[] } {
+    const head: TuiStyledSegment[] = [];
+    const tail: TuiStyledSegment[] = [];
+    let remaining = maxWidth;
+    runs.forEach(run => {
+        const chunk = remaining > 0 ? sliceByDisplayWidth(run.text, remaining) : '';
+        if (chunk) {
+            head.push({ text: chunk, styleMap: run.styleMap });
+            remaining -= getDisplayWidth(chunk);
+        }
+        const rest = run.text.slice(chunk.length);
+        if (rest) {
+            tail.push({ text: rest, styleMap: run.styleMap });
+        }
+    });
+    return { head, tail };
+}
+
 @Injectable()
 export class TuiRenderer extends ConsoleRenderer {
     renderToTuiLines(node: RNode | RNode[], options: TuiRenderOptions = {}): string[] {
@@ -863,7 +918,10 @@ export class TuiRenderer extends ConsoleRenderer {
         if (current instanceof ConsoleText) {
             const value = current.textContent || '';
             if (!value.trim()) {
-                return '';
+                // Pure spaces are meaningful inline tokens (syntax-highlight
+                // separators, table cell padding); indentation from template
+                // markup always carries a newline or tab and is dropped.
+                return /[\r\n\t]/.test(value) ? '' : this.applyAnsi(value, inherited, undefined, true);
             }
             const text = /[\r\n\t]/.test(value)
                 ? this.normalizeInlineWhitespace(value).trim()
@@ -902,6 +960,9 @@ export class TuiRenderer extends ConsoleRenderer {
         if (current instanceof ConsoleText) {
             const value = current.textContent || '';
             if (!value.trim()) {
+                if (!/[\r\n\t]/.test(value)) {
+                    lines[lines.length - 1].push({ text: value, styleMap: inherited });
+                }
                 return;
             }
             const text = /[\r\n\t]/.test(value)
@@ -952,34 +1013,86 @@ export class TuiRenderer extends ConsoleRenderer {
         if (!wrap || !width || width <= 0) {
             return [segments.map(segment => this.applyAnsi(segment.text, segment.styleMap, undefined, true)).join('')];
         }
-        const lines: string[] = [];
-        let currentLine = '';
+        const limit = Math.max(1, width);
+        const rows: TuiStyledSegment[][] = [];
+        let current: TuiStyledSegment[] = [];
         let currentWidth = 0;
         const flush = () => {
-            lines.push(currentLine);
-            currentLine = '';
+            rows.push(current);
+            current = [];
             currentWidth = 0;
         };
-        segments.forEach(segment => {
-            let rest = segment.text;
-            while (rest) {
-                if (currentWidth >= width) {
+        const append = (runs: TuiStyledSegment[]) => {
+            runs.forEach(run => {
+                current.push(run);
+                currentWidth += getDisplayWidth(run.text);
+            });
+        };
+        let pending: TuiWrapUnit[] = [];
+        buildTuiWrapUnits(segments).forEach(unit => {
+            if (unit.whitespace) {
+                pending.push(unit);
+                return;
+            }
+            const pendingWidth = pending.reduce((sum, item) => sum + item.width, 0);
+            // Prefer breaking at a space; only slice inside a word when it cannot
+            // fit on a row of its own.
+            if (currentWidth > 0 && currentWidth + pendingWidth + unit.width > limit) {
+                pending = [];
+                flush();
+            }
+            pending.forEach(space => append(space.runs));
+            pending = [];
+            if (currentWidth + unit.width <= limit) {
+                append(unit.runs);
+                return;
+            }
+            let rest = unit.runs;
+            while (rest.length) {
+                const remaining = limit - currentWidth;
+                if (remaining <= 0) {
                     flush();
+                    continue;
                 }
-                const availableWidth = Math.max(1, width - currentWidth);
-                const chunk = sliceByDisplayWidth(rest, availableWidth) || rest.slice(0, 1);
-                currentLine += this.applyAnsi(chunk, segment.styleMap, undefined, true);
-                currentWidth += getDisplayWidth(chunk);
-                rest = rest.slice(chunk.length);
-                if (rest && currentWidth >= width) {
+                const { head, tail } = sliceTuiWrapRuns(rest, remaining);
+                if (!head.length) {
+                    // No glyph fits (wide character on a one-column row): emit one
+                    // code point so broken widths can never loop forever.
+                    const forced = sliceTuiWrapRuns(rest, getDisplayWidth(Array.from(rest[0].text)[0] || ' ') || 1);
+                    append(forced.head);
+                    rest = forced.tail;
                     flush();
+                    continue;
                 }
+                append(head);
+                if (!tail.length) {
+                    return;
+                }
+                rest = tail;
+                flush();
             }
         });
-        if (!lines.length || currentLine) {
-            lines.push(currentLine);
+        if (pending.length && currentWidth < limit) {
+            append(sliceTuiWrapRuns(pending.flatMap(unit => unit.runs), limit - currentWidth).head);
         }
-        return lines;
+        if (!rows.length || current.length) {
+            rows.push(current);
+        }
+        return rows.map(row => {
+            // Re-join adjacent runs that share the same style so a plain text
+            // node still renders as one ANSI chunk (tests and hover hit-testing
+            // rely on contiguous text).
+            const merged: TuiStyledSegment[] = [];
+            row.forEach(run => {
+                const previous = merged[merged.length - 1];
+                if (previous && previous.styleMap === run.styleMap) {
+                    merged[merged.length - 1] = { text: previous.text + run.text, styleMap: previous.styleMap };
+                    return;
+                }
+                merged.push(run);
+            });
+            return merged.map(run => this.applyAnsi(run.text, run.styleMap, undefined, true)).join('');
+        });
     }
 
     protected collectText(current: ConsoleNode, visited: WeakSet<object> = new WeakSet<object>()): string {

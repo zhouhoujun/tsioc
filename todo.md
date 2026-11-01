@@ -2809,3 +2809,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 宽度：终端 `getTerminalSize().cols` 经 resize 订阅同步到 `state.markdownContentWidth`，表格按真实终端宽度重排；worker 缓存 key 包含 tableWidth。
 - 通用层：`components/console` 的 TUI `applyAnsi` 支持 `font-style: italic`、`text-decoration: underline/line-through`。
 - 验证：agent-ui 新增 `markdown-rendering.spec.ts`（grid/CJK/对齐/窄屏/fallback/代码高亮/行内样式/列表/宽度传递）；components/common 新增 tokenizer 用例；components/console 新增 ANSI decoration 用例；agent-ui 1931 passing、components 全量、components/common、components/console、components/html、tui-gate、tsc、source-size、diff-check 通过。
+
+## Markdown 解析按功能拆分（2026-11）
+
+- 需求：`AgentConsoleMarkdown.ts` 单体 parser 不便扩展，按 Markdown 功能拆分。
+- 结构：`agents/agent-ui/src/markdown/` 下 `model`（tone/token/line 类型、默认表格宽度）、`inline`（行内链接/强调/代码/删除线）、`structure`（行内编号列表拆分）、`blocks`（标题/引用/有序与无序列表/任务/分隔线）、`code`（围栏框 + 共享语法 token 映射）、`table`（grid 表格）、`layout`（块间距、空行 `\u200b`、`flattenAgentConsoleMarkdownLine`）、`parser`（文档遍历与 fence/table 分派）；`AgentConsoleMarkdown.ts` 仅 facade re-export，外部 import 路径不变。
+- 附带：`resolveSemanticLinePadding` / `resolveSemanticLineMargin` 移入 `AgentConsoleMessageLineStyles.ts`，`AgentConsoleMessageRenderers.ts` 由 1222 baseline 降至 1194。
+- 验证：agent-ui 1931 passing、components 148、components/common 28、components/console 117、components/html 124；`tsc --noEmit`、`check-source-size`、`tui-gate`、`dom-gate`、`gate-regression`、`diff-check`、`production-db-integrity` 全通过。

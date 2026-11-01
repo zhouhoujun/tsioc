@@ -132,8 +132,8 @@ export class AgentConsoleRawModeTest {
             }
         ] as any);
 
-        expect(items[0].lines[0].content).toEqual('bold');
-        expect(items[0].lines[1].content).toEqual('item');
+        expect(items[0].lines.map(line => line.content).filter(content => content !== '\u200b'))
+            .toEqual(['bold', 'item']);
     }
 
     @Test('raw mode bypasses tool output summarization')
