@@ -582,7 +582,7 @@ export class AgentConsoleMessagesRendererTest {
         const renderer = this.ctx.get(ConsoleRenderer);
         const lines = renderer.renderToLines(panel.hostView.rootNodes[0]);
         expect(lines.filter(line => line.includes('more lines')).length).toEqual(1);
-        ['$ ', 'Plan · ', 'Files · ', 'Question · ', 'Approval · ', 'Error · ']
+        ['$ ', 'Files · ', 'Question · ', 'Approval · ', 'Error · ']
             .forEach(label => expect(lines.some(line => line.includes(label))).toBe(true));
         // Tool rows carry their own verb/object; the family label was dropped so
         // the row no longer reads `✓ Tool · Read file completed · …`.
@@ -2374,10 +2374,10 @@ export class AgentConsoleTuiRendererTest {
             { id: 'p2', content: 'Implement API', status: 'pending' },
             { id: 'p3', content: 'Write tests', status: 'pending' }
         ]);
-        expect(planMessage!.content).toContain('▸ Design architecture');
-        expect(planMessage!.content).toContain('☐ Implement API');
-        expect(planMessage!.content).toContain('☐ Write tests');
-        expect(planMessage!.content).toContain('计划 1/3 ');
+        expect(planMessage!.content).toContain('# 待办');
+        expect(planMessage!.content).toContain('[•] Design architecture');
+        expect(planMessage!.content).toContain('[ ] Implement API');
+        expect(planMessage!.content).toContain('[ ] Write tests');
     }
 
     @Test('failed plan step can be reset with retry shortcut')
@@ -2401,20 +2401,20 @@ export class AgentConsoleTuiRendererTest {
     @Test('collapses long inline plans and expands them with Enter')
     async longInlinePlanTogglesWithEnter() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
-        ref.instance.sessionState.setPlanTodos(Array.from({ length: 8 }, (_, index) => ({
+        ref.instance.sessionState.setPlanTodos(Array.from({ length: 13 }, (_, index) => ({
             id: `p${index + 1}`, content: `Step ${index + 1}`, status: index < 2 ? 'completed' : 'pending'
         })) as any);
         const collapsed = ref.instance.sessionState.displayMessages.find(m => m.id === '__plan_todo_inline__')!;
-        expect(collapsed.content).toEqual('8 steps (2 done)');
+        expect(collapsed.content).toEqual('# 待办 · 13');
         expect(collapsed.metadata?.planCollapsed).toEqual(true);
 
         ref.instance.sessionState.setSelectedMessageId('__plan_todo_inline__');
         navigationFor(ref.instance.sessionState).setFocused(true);
         expect(await ref.instance.sessionState.handleFocusKey('enter', navigationFor(ref.instance.sessionState))).toEqual(true);
         const expanded = ref.instance.sessionState.displayMessages.find(m => m.id === '__plan_todo_inline__')!;
-        expect(expanded.content).toContain('计划 2/8 ▓▓░░░░░░');
-        expect(expanded.content).toContain('1. ✓ Step 1');
-        expect(expanded.content).toContain('8. ☐ Step 8');
+        expect(expanded.content).toContain('# 待办');
+        expect(expanded.content).toContain('[✓] Step 1');
+        expect(expanded.content).toContain('[ ] Step 13');
         expect(expanded.metadata?.planCollapsed).toEqual(false);
     }
 
@@ -2440,7 +2440,7 @@ export class AgentConsoleTuiRendererTest {
     @Test('expanded plan stays fully visible when messages are not focused')
     async expandedPlanStaysVisibleWhenUnfocused() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
-        ref.instance.sessionState.setPlanTodos(Array.from({ length: 8 }, (_, index) => ({
+        ref.instance.sessionState.setPlanTodos(Array.from({ length: 13 }, (_, index) => ({
             id: `p${index + 1}`, content: `Step ${index + 1}`, status: index < 2 ? 'completed' : 'pending'
         })) as any);
         ref.instance.sessionState.setSelectedMessageId('__plan_todo_inline__');
@@ -2452,8 +2452,8 @@ export class AgentConsoleTuiRendererTest {
         const rendered = (panel.instance as any).renderedMessageItems as Array<{ lines: Array<{ messageId?: string; content: string }> }>;
         const planItem = rendered.find(item => item.lines.some(line => line.messageId === '__plan_todo_inline__'));
         const contents = planItem!.lines.map(line => line.content).join('\n');
-        expect(contents).toContain('计划 2/8 ▓▓░░░░░░');
-        expect(contents).toContain('8. ☐ Step 8');
+        expect(contents).toContain('# 待办');
+        expect(contents).toContain('[ ] Step 13');
     }
 
     @Test('/keymap list opens a scrollable overlay that Esc closes')
@@ -2593,8 +2593,10 @@ export class AgentConsoleTuiRendererTest {
             { id: 'p1', content: 'Design architecture', status: 'completed' },
             { id: 'p2', content: 'Implement API', status: 'completed' }
         ] as any);
-        expect(ref.instance.sessionState.displayMessages.find(m => m.id === '__plan_todo_inline__')?.content)
-            .toContain('计划已完成：2/2 步');
+        const content = ref.instance.sessionState.displayMessages.find(m => m.id === '__plan_todo_inline__')?.content;
+        expect(content).toContain('# 待办');
+        expect(content).toContain('[✓] Design architecture');
+        expect(content).toContain('[✓] Implement API');
     }
 
     @Test('review diff appends an inline file change summary')

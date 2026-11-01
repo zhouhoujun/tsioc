@@ -294,7 +294,8 @@ export class AgentConsoleCommandMessageRenderer extends AgentConsoleKindRenderer
 @Injectable()
 export class AgentConsolePlanMessageRenderer extends AgentConsoleKindRenderer {
     readonly kind = 'plan' as const;
-    readonly label = 'Plan · ';
+    // opencode's todo block is titled by its content (`# Todos`), not a role label.
+    readonly label = '';
     readonly component = AgentConsolePlanTemplate;
     override readonly tone = 'accent' as const;
 }
@@ -442,18 +443,11 @@ const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
     },
     {
         templateKind: 'planTodo',
-        roleLabel: '◈ ',
-        roleStyle: theme => ({
-            ...styleTextToObject(theme.toolsAccent),
-            'font-weight': 'bold'
-        }),
-        itemStyle: (theme, rowSelected) => ({
-            ...resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'system'),
-            borderLeft: `3px solid ${rowSelected ? 'transparent' : '#58a6ff'}`,
-            background: rowSelected ? '' : 'rgba(88, 166, 255, 0.05)'
-        }),
+        roleLabel: '',
+        roleStyle: theme => styleTextToObject(theme.toolsAccent),
+        itemStyle: (theme, rowSelected) => resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'system'),
         lead: () => '',
-        continuationLead: () => '  '
+        continuationLead: () => ''
     },
     {
         templateKind: 'fileChange',
@@ -577,7 +571,7 @@ export function renderAgentConsoleMessageItem(
     // Opencode uses a compact +/− disclosure marker for reasoning rows; the
     // running state keeps the live dot.
     const thoughtSymbol = presentation.kind === 'thought' ? (statusKind === 'running' ? '●' : '+') : statusSymbol;
-    const status = formatAgentConsoleMessageStatus(statusKind, thoughtSymbol);
+    const status = templateKind === 'planTodo' ? '' : formatAgentConsoleMessageStatus(statusKind, thoughtSymbol);
     // Settled thoughts are chrome: keep the disclosure marker muted so it does not compete with live steps.
     const statusStyle = presentation.kind === 'thought' && statusKind !== 'running'
         ? styleTextToObject(theme.statusLabel)
@@ -688,8 +682,8 @@ export function renderAgentConsoleMessageItem(
             toggleContent: blankLine ? '' : isFirst ? detailToggle : '',
             role: blankLine ? '' : isFirst ? rendered.role : rendered.role ? '    ' : '',
             roleStyle: blankLine || !isFirst ? {} : rendered.roleStyle,
-            meta: blankLine ? '' : workedSummary ? '' : (isFirst ? metaText : ''),
-            metaStyle: blankLine ? {} : workedSummary ? {} : (isFirst || isLast ? timelineMetaStyle : {}),
+            meta: blankLine || templateKind === 'planTodo' ? '' : workedSummary ? '' : (isFirst ? metaText : ''),
+            metaStyle: blankLine || templateKind === 'planTodo' ? {} : workedSummary ? {} : (isFirst || isLast ? timelineMetaStyle : {}),
             ariaLabel: blankLine ? '' : [
                 isFirst ? presentation.title : '',
                 isFirst && String(timelineMeta || '').split(' · ').includes(String(rendered.statusLabel || '')) ? '' : isFirst ? rendered.statusLabel : '',

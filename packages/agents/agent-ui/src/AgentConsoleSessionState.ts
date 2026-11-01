@@ -2924,30 +2924,18 @@ export class AgentConsoleSessionState {
             return null;
         }
         const total = this.planTodos.length;
-        const activeCount = this.planTodos.filter(item => item.status === 'pending' || item.status === 'in_progress').length;
-        const completedCount = this.planTodos.filter(item => item.status === 'completed').length;
-        const inProgressCount = this.planTodos.filter(item => item.status === 'in_progress').length;
-        const cancelledCount = this.planTodos.filter(item => item.status === 'cancelled').length;
-        const failedCount = this.planTodos.filter(item => item.status === 'failed').length;
-        const blockedCount = this.planTodos.filter(item => item.blockedBy && item.blockedBy.length > 0).length;
         const labels = { ...DEFAULT_TIMELINE_LABELS, ...(this.consoleOptions.timelineLabels || {}) };
-        const summary = activeCount === 0
-            ? fillTimelineLabel(labels.planCompleted, { completed: completedCount, total })
-                + (failedCount ? fillTimelineLabel(labels.planFailures || '', { failures: failedCount }) : '')
-                + (cancelledCount ? fillTimelineLabel(labels.planCancelled || '', { cancelled: cancelledCount }) : '')
-            : '';
         const goalProgress = this.goalCriteriaProgress;
         const goalLine = goalProgress ? this.translateLabel('agent.timeline.goalProgress', { met: goalProgress.met, total: goalProgress.total }, `goal: ${goalProgress.met}/${goalProgress.total} criteria met`) : '';
-        const collapsible = total > 7;
-        const barWidth = Math.min(total, 20);
-        const doneCount = completedCount + inProgressCount;
-        const filled = Math.round((barWidth * doneCount) / total);
-        const bar = '▓'.repeat(filled) + '░'.repeat(barWidth - filled);
+        const collapsible = total > 10;
         const filtered = this.filteredPlanTodos;
         const filterLabel = this.planTodoFilter !== 'all' ? ` [${this.planTodoFilter}]` : '';
+        const title = labels.todosTitle || '# Todos';
+        // opencode's TodoItem list: marker + content, no numbering or progress bar.
         const items = filtered.map((item, index) => {
-            const marker = this.selectedPlanTodoIndex === index ? '›' : ' ';
+            const selected = this.selectedPlanTodoIndex === index ? '› ' : '';
             const hierarchy = item.parentId ? '  ' : '';
+            const glyph = item.blockedBy?.length ? '[!]' : this.planTodoGlyph(item.status);
             const blocked = item.blockedBy?.length ? ` ← blocked by ${item.blockedBy.join(',')}` : '';
             const depends = item.dependsOn?.length ? ` needs ${item.dependsOn.join(',')}` : '';
             const owner = item.owner ? ` (${item.owner})` : '';
@@ -2955,22 +2943,16 @@ export class AgentConsoleSessionState {
             const elapsed = item.elapsedMs ? ` ${this.formatElapsed(item.elapsedMs)}` : '';
             const error = item.status === 'failed' && item.error ? ` err: ${item.error}` : '';
             const evidence = item.evidenceIds?.length ? ` evidence[${item.evidenceIds.length}]` : '';
-            return `${marker}${hierarchy}${index + 1}. ${this.planTodoGlyph(item.status)} ${item.content}${owner}${estimate}${elapsed}${depends}${blocked}${evidence}${error}`;
+            return `${selected}${hierarchy}${glyph} ${item.content}${owner}${estimate}${elapsed}${depends}${blocked}${evidence}${error}`;
         });
-        const summaryHeader = `${labels.planLabel} ${doneCount}/${total} ${bar}${filterLabel} · ${labels.planActive} ${activeCount}${blockedCount ? ` · ${labels.planBlocked} ${blockedCount}` : ''}${failedCount ? ` · ${labels.planFailed} ${failedCount}` : ''}`;
-        const collapsedPlanSummary = this.translateLabel('agent.timeline.planSummary', {
-            total, completed: completedCount, failed: failedCount, blocked: blockedCount
-        }, `Plan ${total} steps (${completedCount} done${failedCount ? `, ${failedCount} failed` : ''}${blockedCount ? `, ${blockedCount} blocked` : ''})`);
         const visibleContent = collapsible && !this.planTodoExpanded && this.planTodoFilter === 'all'
-            ? collapsedPlanSummary
-            : activeCount > 0 || (this.planTodoFilter !== 'all' && filtered.length > 0)
-                ? [summaryHeader, ...items].join('\n')
-                : '';
+            ? `${title} · ${total}`
+            : `${title}${filterLabel}${items.length ? `\n${items.join('\n')}` : ''}`;
         const detailLine = this.selectedPlanTodoDetailLabel;
         return {
             id: '__plan_todo_inline__',
             role: 'assistant',
-            content: [visibleContent, summary, goalLine, detailLine].filter(Boolean).join('\n'),
+            content: [visibleContent, goalLine, detailLine].filter(Boolean).join('\n'),
             createdAt: Date.now(),
             metadata: {
                 uiKind: 'plan-todo',
@@ -3000,7 +2982,7 @@ export class AgentConsoleSessionState {
     }
 
     togglePlanTodoExpanded(): boolean {
-        if (this.planTodos.length <= 7) {
+        if (this.planTodos.length <= 10) {
             return false;
         }
         this.planTodoExpanded = !this.planTodoExpanded;
@@ -3011,15 +2993,15 @@ export class AgentConsoleSessionState {
     protected planTodoGlyph(status: AgentConsolePlanTodoItem['status']): string {
         switch (status) {
             case 'completed':
-                return '✓';
+                return '[✓]';
             case 'cancelled':
-                return '⊘';
+                return '[-]';
             case 'in_progress':
-                return '▸';
+                return '[•]';
             case 'failed':
-                return '✗';
+                return '[✗]';
             default:
-                return '☐';
+                return '[ ]';
         }
     }
 

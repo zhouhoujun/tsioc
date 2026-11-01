@@ -34,6 +34,8 @@ export interface AgentConsoleTimelineLabels {
     collapsedChanges?: string;
     /** Collapsed-turn error-count template (P303); `{errors}` placeholder, shown only when > 0. */
     collapsedErrors?: string;
+    /** Todos block title (opencode-style `# Todos`). */
+    todosTitle?: string;
     /** Plan progress word in the plan header (e.g. `plan`). */
     planLabel?: string;
     /** Plan active-count word in the plan header. */
@@ -105,6 +107,7 @@ export const DEFAULT_TIMELINE_LABELS: Required<AgentConsoleTimelineLabels> = {
     collapsedTools: '{tools} 个工具',
     collapsedChanges: '{changes} 处变更',
     collapsedErrors: '{errors} 个错误',
+    todosTitle: '# 待办',
     planLabel: '计划',
     planActive: '进行中',
     planBlocked: '阻塞',
@@ -166,6 +169,7 @@ export const EN_TIMELINE_LABELS: Required<AgentConsoleTimelineLabels> = {
     collapsedTools: '{tools} tool calls',
     collapsedChanges: '{changes} change(s)',
     collapsedErrors: '{errors} error(s)',
+    todosTitle: '# Todos',
     planLabel: 'plan',
     planActive: 'active',
     planBlocked: 'blocked',

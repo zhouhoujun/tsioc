@@ -62,7 +62,7 @@ export class ResumedPlanStatusTest {
         const todos = Array.from({ length: 12 }, (_value, index) => ({ id: `p${index}`, content: `Step ${index}`, status: 'pending' }));
         state.setPlanTodos(todos as any);
         const plan = state.displayMessages.find(message => message.id === '__plan_todo_inline__') as any;
-        expect(String(plan.content)).toContain('12 步（已完成 0 步）');
+        expect(String(plan.content)).toContain('# 待办 · 12');
         expect(String(plan.content)).not.toContain('steps (');
     }
 }

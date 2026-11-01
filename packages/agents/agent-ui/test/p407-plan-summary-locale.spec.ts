@@ -29,11 +29,11 @@ export class PlanSummaryLocaleTest {
             { id: 'p3', content: 'Report results', status: 'completed' },
             { id: 'p4', content: 'Fix failures', status: 'cancelled' }
         ] as any);
-        const plan = state.displayMessages.find(message => String(message.content || '').includes('计划已完成'));
+        const plan = state.displayMessages.find(message => message.id === '__plan_todo_inline__');
         expect(plan).toBeDefined();
-        expect(plan!.content).toContain('3/4');
-        expect(plan!.content).not.toContain('个失败');
-        expect(plan!.content).toContain('已取消');
+        expect(plan!.content).toContain('# 待办');
+        expect(plan!.content).toContain('[✓] Inspect layout');
+        expect(plan!.content).toContain('[-] Fix failures');
     }
 
     @Test('failed steps still report failures')
@@ -43,9 +43,11 @@ export class PlanSummaryLocaleTest {
             { id: 'p1', content: 'Run the tests', status: 'completed' },
             { id: 'p2', content: 'Fix failures', status: 'failed' }
         ] as any);
-        const plan = state.displayMessages.find(message => String(message.content || '').includes('计划已完成'));
-        expect(plan!.content).toContain('1 个失败');
-        expect(plan!.content).not.toContain('已取消');
+        const plan = state.displayMessages.find(message => message.id === '__plan_todo_inline__');
+        expect(plan!.content).toContain('# 待办');
+        expect(plan!.content).toContain('[✓] Run the tests');
+        expect(plan!.content).toContain('[✗] Fix failures');
+        expect(plan!.content).not.toContain('[-]');
     }
 }
 

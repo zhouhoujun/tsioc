@@ -59,11 +59,11 @@ export class ConsoleOptionsLocaleTest {
             content: `step ${index + 1}`,
             status: 'pending'
         })) as any);
-        expect((state as any).planMessage?.content).toContain('steps');
+        expect((state as any).planMessage?.content).toContain('# Todos');
         locale = 'zh';
         state.applyLocaleDefaults('zh-CN');
-        expect((state as any).planMessage?.content).toContain('步');
-        expect((state as any).planMessage?.content).not.toContain('steps');
+        expect((state as any).planMessage?.content).toContain('# 待办');
+        expect((state as any).planMessage?.content).not.toContain('# Todos');
     }
 
     @Test('English locale keeps the English hints')

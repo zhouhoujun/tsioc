@@ -91,7 +91,7 @@ export class SemanticRendererSuite {
         expect(answer.lines[0].itemStyle?.margin).toEqual('0.5em 0 0.25em 0');
         expect(thought.lines[0].role).toEqual('Thought · ');
         expect(thought.lines[0].itemStyle?.margin).toEqual('0.2em 0 0 0');
-        expect(plan.lines[0].role).toEqual('Plan · ');
+        expect(plan.lines[0].role).toEqual('');
         expect(question.lines[0].role).toEqual('Question · ');
         expect(error.lines[0].role).toEqual('Error · ');
     }
