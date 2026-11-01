@@ -761,9 +761,11 @@ export class VmCommandsTest {
             .sort();
         expect(todoGetSessionIds).toEqual(['chat-a', 'worker-b', 'worker-c']);
 
-        // project-scoped refresh flips the scope marker back
+        // the per-session refresh drops the thread marker and shows only the
+        // session's own todos (never a merged project-wide list)
         await (component as any).refreshTodoPlan();
-        expect(component.sessionState.planScope).toEqual('project');
+        expect(component.sessionState.planTodos.map(item => item.id)).toEqual(['todo-a']);
+        expect(component.sessionState.planScope).toEqual('');
     }
 
     @Test('session state copies selected message content when messages are focused')

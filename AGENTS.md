@@ -97,7 +97,7 @@
 - 用户请求是 turn 的视觉锚点；最终回答独立于 thought、tool、command 和 lifecycle event。
 - 生命周期事件属于 `event`，不能替换、合并或升级为最终结论。
 - 同一事实默认只出现一次；tool 生命周期按稳定 key 原地归并。
-- 新建会话（`+`、`/new <id>`、`--session` 未找到后创建）不得继承项目内其他会话的 plan/todos 与任务汇总；只有显式恢复/切换既有会话才按项目聚合。
+- **plan/todos 属于单个 session（每个 tab 独立）**：任何会话（新建、`+`、`/new <id>`、`--session`、显式恢复/切换）都只能显示自己的 plan/todos，禁止按项目把兄弟会话的 Todos 合并进来；项目级只聚合 coding tasks 等其它产物。`/threadplan` 是显式请求的线程级聚合视图，不得作为默认刷新行为。
 - 事件主线只展示动作、对象、状态和必要摘要；raw payload、stdout/stderr、stack、diff 进入 inspector。
 - 事件只展示总耗时：后端 `durationMs` 优先，否则按稳定 identity 配对开始/结束时间。
 - execution 轨道紧凑；running/blocked/error 保持较高权重，completed 降噪；错误根因和最终回答不能被折叠吞掉。

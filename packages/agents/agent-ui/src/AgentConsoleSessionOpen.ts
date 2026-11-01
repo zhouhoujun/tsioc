@@ -26,12 +26,11 @@ export interface AgentConsoleSessionOpenHost {
     notifyBusyState(message: string): void;
     updateTerminalTitle(): void;
     refreshSessions(currentId?: string): Promise<void>;
-    resolveProjectSessionsFor(sessionId: string): any[];
     resolveProjectSessionIdsFor(sessionId: string): string[];
     loadSessionPage(sessionId: string): Promise<{ messages: AgentMessage[]; sections: AgentSessionSection[]; goalSummary?: any }>;
     refreshTools(sessionId?: string): Promise<void>;
     refreshPendingApprovals(sessionId?: string): Promise<void>;
-    refreshTodoPlan(sessionId?: string, projectSessions?: any[]): Promise<void>;
+    refreshTodoPlan(sessionId?: string): Promise<void>;
     loadCodingTasks(sessionId?: string, projectSessionIds?: string[]): Promise<any>;
     restoreInputHistory(): Promise<void>;
     restoreSessionModes(sessionId: string): Promise<void>;
@@ -164,18 +163,15 @@ export async function openSession(
     if (requestId !== host.openSessionRequestId || host.state.sessionId !== target.id) {
         return;
     }
-    // A plain startup owns a new session. Project aggregation is useful
-    // after an explicit resume/switch, but on a fresh launch it would pull
-    // old plans and task summaries from sibling sessions into the empty UI.
-    const projectSessions = freshScope
-        ? [{ ...target, current: true, updatedAt: target.lastActiveAt }]
-        : host.resolveProjectSessionsFor(target.id);
+    // A plain startup owns a new session, so it must not inherit sibling
+    // sessions' coding tasks and task summaries. Explicit resume/switch
+    // aggregates those project artifacts; Todos stay per session.
     const projectSessionIds = freshScope ? [target.id] : host.resolveProjectSessionIdsFor(target.id);
     const [page] = await Promise.all([
         host.loadSessionPage(target.id),
         host.refreshTools(target.id),
         host.refreshPendingApprovals(target.id),
-        host.refreshTodoPlan(target.id, projectSessions),
+        host.refreshTodoPlan(target.id),
         host.loadCodingTasks(target.id, projectSessionIds),
         host.restoreInputHistory()
     ]);

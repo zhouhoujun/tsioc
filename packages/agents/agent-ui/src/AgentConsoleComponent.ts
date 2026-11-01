@@ -1083,12 +1083,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             notifyBusyState: (message: string) => self.notifyBusyState(message),
             updateTerminalTitle: () => self.updateTerminalTitle(),
             refreshSessions: (currentId?: string) => self.refreshSessions(currentId),
-            resolveProjectSessionsFor: (sessionId: string) => self.resolveProjectSessionsFor(sessionId),
             resolveProjectSessionIdsFor: (sessionId: string) => self.resolveProjectSessionIdsFor(sessionId),
             loadSessionPage: (sessionId: string) => self.loadSessionPage(sessionId),
             refreshTools: (sessionId?: string) => self.refreshTools(sessionId),
             refreshPendingApprovals: (sessionId?: string) => self.refreshPendingApprovals(sessionId),
-            refreshTodoPlan: (sessionId?: string, projectSessions?: any[]) => self.refreshTodoPlan(sessionId, projectSessions),
+            refreshTodoPlan: (sessionId?: string) => self.refreshTodoPlan(sessionId),
             loadCodingTasks: (sessionId?: string, projectSessionIds?: string[]) => self.loadCodingTasks(sessionId, projectSessionIds),
             restoreInputHistory: () => self.restoreInputHistory(),
             restoreSessionModes: (sessionId: string) => restoreSessionModesView({ appRpc: self.appRpc, runtime: self.runtime, state: self.state, rpcRequestContext: () => self.rpcRequestContext() }, sessionId)
@@ -2387,17 +2386,17 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return loadLocalTodoPlan(sessionId, this.toolRegistry, this.state, (status: unknown) => this.normalizeTodoStatus(status)) as any;
     }
 
-    protected async refreshTodoPlan(
-        sessionId = this.state.sessionId,
-        sessions?: Array<{ id: string; updatedAt?: number }>
-    ): Promise<void> {
-        const resolvedSessions = sessions
-            ?? (this.freshSessionScoped ? [{ id: sessionId }] : this.resolveProjectSessionsFor(sessionId));
-        const merged = await this.mergeTodoPlanForSessions(sessionId, resolvedSessions);
+    /**
+     * Todos belong to one session (one tab): never merge sibling sessions'
+     * plans, or every tab in the same workspace shows the same Todos block.
+     * Project-level views (`/threadplan`) opt into aggregation explicitly.
+     */
+    protected async refreshTodoPlan(sessionId = this.state.sessionId): Promise<void> {
+        const merged = await this.mergeTodoPlanForSessions(sessionId, [{ id: sessionId }]);
         if (!merged) {
             return;
         }
-        this.state.setPlanTodos(merged.todos, merged.sourceSessionId, 'project');
+        this.state.setPlanTodos(merged.todos, merged.sourceSessionId);
     }
 
     protected async refreshThreadTodoPlan(

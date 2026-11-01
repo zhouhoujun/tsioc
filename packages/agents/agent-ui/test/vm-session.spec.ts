@@ -725,8 +725,8 @@ export class VmSessionTest {
         expect(component.sessionState.projects.map(item => item.label)).toEqual(['Latest summary']);
     }
 
-    @Test('openSession prefers latest project summary and aggregates todos across session order')
-    async openSessionPrefersLatestProjectSummaryAndAggregatesTodosAcrossSessionOrder() {
+    @Test('openSession keeps the project summary but scopes todos to the opened session')
+    async openSessionKeepsSummaryAndScopesTodosToTheSession() {
         const runtime = new RuntimeStub();
         const scheduler = new SchedulerStub();
         const sessionService = new SessionServiceStub(runtime);
@@ -750,12 +750,18 @@ export class VmSessionTest {
         await (component as any).openSession('chat-a');
 
         expect(component.sessionState.projectSummary).toEqual('latest project summary');
-        expect(component.sessionState.planTodos.map(item => item.id)).toEqual(['todo-b', 'todo-a']);
+        expect(component.sessionState.planTodos.map(item => item.id)).toEqual(['todo-a']);
+        expect(component.sessionState.planTodoSourceSessionId).toEqual('chat-a');
+
+        // Switching tabs must show the other session's own Todos instead of a
+        // merged project-wide list.
+        await (component as any).openSession('chat-b');
+        expect(component.sessionState.planTodos.map(item => item.id)).toEqual(['todo-b']);
         expect(component.sessionState.planTodoSourceSessionId).toEqual('chat-b');
     }
 
-    @Test('openSession prefers active todo source session over newer completed-only sessions')
-    async openSessionPrefersActiveTodoSourceSessionOverNewerCompletedOnlySessions() {
+    @Test('openSession restores only its own todos even when siblings are newer')
+    async openSessionRestoresOnlyItsOwnTodos() {
         const runtime = new RuntimeStub();
         const scheduler = new SchedulerStub();
         const sessionService = new SessionServiceStub(runtime);

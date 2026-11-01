@@ -2091,7 +2091,7 @@ export class VmReviewTasksTest {
         expect(tailLines).not.toContain('diff --git a/src/file-0.ts b/src/file-0.ts');
     }
 
-    @Test('openSession aggregates project summary, todo, and coding tasks across related sessions')
+    @Test('openSession aggregates project summary and coding tasks but keeps todos per session')
     async openSessionAggregatesProjectArtifactsAcrossSessions() {
         const runtime = new RuntimeStub();
         const scheduler = new SchedulerStub();
@@ -2129,8 +2129,8 @@ export class VmReviewTasksTest {
 
         expect(component.sessionState.projectLabel).toEqual('exam-system');
         expect(component.sessionState.projectSummary).toEqual('latest project summary');
-        expect(component.sessionState.planTodos.map(item => item.id)).toEqual(['todo-b']);
-        expect(component.sessionState.planTodoSourceSessionId).toEqual('chat-b');
+        expect(component.sessionState.planTodos.map(item => item.id)).toEqual(['todo-a']);
+        expect(component.sessionState.planTodoSourceSessionId).toEqual('chat-a');
         expect(component.sessionState.reviewTaskChoices.map(item => ({
             id: item.id,
             sourceSessionId: item.sourceSessionId,
