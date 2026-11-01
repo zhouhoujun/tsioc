@@ -110,7 +110,7 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(items[0].lines[0].status?.trim()).toEqual('');
         expect(items[0].lines[0].statusKind).toEqual('running');
         expect(items[0].lines[0].statusStyle?.color).toBeTruthy();
-        expect(items[0].lines.some(line => line.prefix === '│ ' && line.content.includes('const x = 1;'))).toBe(true);
+        expect(items[0].lines.some(line => line.prefix?.trimStart() === '│ ' && line.content.includes('const x = 1;'))).toBe(true);
         expect(items[0].lines.some(line => line.content.includes('```ts'))).toBe(false);
         expect(items[0].lines.some(line => line.content.includes('▍'))).toBe(false);
     }
@@ -205,10 +205,10 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(items[0].lines[0].content).toEqual('Implementation Plan');
         expect(items[0].lines[0].tone).toEqual('heading');
         expect(items[0].lines.some(line => line.content === '功能有')).toBe(true);
-        expect(items[0].lines.some(line => line.prefix === '1. ' && line.content === '题库')).toBe(true);
-        expect(items[0].lines.some(line => line.prefix === '2. ' && line.content === '随机组合试卷')).toBe(true);
-        expect(items[0].lines.some(line => line.prefix === '3. ' && line.content === '评分')).toBe(true);
-        expect(items[0].lines.some(line => line.prefix === '│ ' && line.content.includes('const score = 100;'))).toBe(true);
+        expect(items[0].lines.some(line => line.prefix?.trimStart() === '1. ' && line.content === '题库')).toBe(true);
+        expect(items[0].lines.some(line => line.prefix?.trimStart() === '2. ' && line.content === '随机组合试卷')).toBe(true);
+        expect(items[0].lines.some(line => line.prefix?.trimStart() === '3. ' && line.content === '评分')).toBe(true);
+        expect(items[0].lines.some(line => line.prefix?.trimStart() === '│ ' && line.content.includes('const score = 100;'))).toBe(true);
     }
 
     @Test('drops marker-only streaming fragments from compact markdown replies')
@@ -219,7 +219,7 @@ export class AgentConsoleMessageRendererDispatchTest {
             content: '正文\n1.\n   -\n2. 完整条目\n   - 子项',
             createdAt: 1
         }] as any);
-        expect(items[0].lines.map(line => `${line.prefix || ''}${line.content}`))
+        expect(items[0].lines.map(line => `${line.prefix || ''}${line.content}`.replace(/^ {2}/, '')))
             .toEqual(['正文', '2. 完整条目', '   ◦ 子项']);
     }
 

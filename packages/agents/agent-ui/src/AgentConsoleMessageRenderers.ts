@@ -19,6 +19,7 @@ import {
     resolveAgentConsoleMarkdownToneStyle
 } from './AgentConsoleMarkdownStyles';
 import { renderAgentConsolePlainTextLines } from './markdown/spacing';
+import { resolveSemanticLineMargin, resolveSemanticLinePadding } from './AgentConsoleMessageLineStyles';
 export { resolveAgentConsoleMarkdownPrefixStyle, resolveAgentConsoleMarkdownToneStyle } from './AgentConsoleMarkdownStyles';
 import { resolveTimelineEventSentence, formatTimelineSessionDuration, AgentConsoleTimelineLabels } from './AgentConsoleTimelineWindow';
 import { resolveTurnLifecycleLabel } from './AgentConsoleTimelineLabels';
@@ -604,6 +605,16 @@ export function renderAgentConsoleMessageItem(
         : displayContent;
     const messageStreaming = templateKind === 'assistant' && !!(message?.metadata?.streaming);
     const streaming = messageStreaming || !!context.streaming;
+    // opencode insets assistant prose by three columns (paddingLeft={3});
+    // item padding already contributes one column, so add two here.
+    const bodyIndent = !timelineEvent
+        && templateKind === 'assistant'
+        && (presentation.kind === 'assistant-final' || presentation.kind === 'assistant-partial')
+        ? '  '
+        : '';
+    const markdownWidth = context.markdownContentWidth
+        ? Math.max(24, context.markdownContentWidth - bodyIndent.length)
+        : context.markdownContentWidth;
     const markdownLines = hideToolOutput
         ? []
         : context.rawMode || templateKind === 'planTodo'
@@ -612,9 +623,9 @@ export function renderAgentConsoleMessageItem(
             ? renderAgentConsolePlainTextLines(eventRowContent, { compactBlankLines: false })
             : streaming || templateKind === 'user'
                 ? streaming
-                    ? resolveMarkdownLines(eventRowContent, { compactBlankLines: true, treatUnclosedFenceAsText: true, tableWidth: context.markdownContentWidth }, context.markdownBridge)
+                    ? resolveMarkdownLines(eventRowContent, { compactBlankLines: true, treatUnclosedFenceAsText: true, tableWidth: markdownWidth }, context.markdownBridge)
                     : renderAgentConsolePlainTextLines(eventRowContent, { compactBlankLines: true })
-                : resolveMarkdownLines(eventRowContent, { compactBlankLines: !timelineEvent, tableWidth: context.markdownContentWidth }, context.markdownBridge);
+                : resolveMarkdownLines(eventRowContent, { compactBlankLines: !timelineEvent, tableWidth: markdownWidth }, context.markdownBridge);
     const timelineMeta = resolveTimelineMeta(message, templateKind, statusLabel, !!context.showTimestamps, context.translator);
     const metaDurationSuffix = timelineMeta.match(/ \([^()]+\)$/)?.[0] || '';
     // Step boundaries own their duration in meta; event rows keep it as a
@@ -668,6 +679,7 @@ export function renderAgentConsoleMessageItem(
         return {
             ...rendered,
             tokens,
+            prefix: bodyIndent ? `${bodyIndent}${rendered.prefix || ''}` : rendered.prefix,
             messageId: message?.id,
             toggleContent: blankLine ? '' : isFirst ? detailToggle : '',
             role: blankLine ? '' : isFirst ? rendered.role : rendered.role ? '    ' : '',
@@ -939,41 +951,6 @@ function resolveMessageRowStyle(
         margin: '0 0 0.25em 0',
         ...(rowStyleText ? styleTextToObject(rowStyleText) : {})
     };
-}
-
-function resolveSemanticLinePadding(
-    presentation: AgentConsoleSessionContentPresentation,
-    isFirst: boolean,
-    isLast: boolean,
-    timelineEvent: boolean
-): string {
-    if (timelineEvent) return '0 1ch';
-    if (presentation.family === 'execution') {
-        return `${isFirst ? '0.2em' : '0'} 1ch ${isLast ? '0.2em' : '0'} 1ch`;
-    }
-    const vertical = presentation.kind === 'user' || presentation.kind === 'assistant-final' ? 0
-        : presentation.family === 'decision' || presentation.family === 'diagnostic' ? 0.6
-            : presentation.family === 'artifact' ? 0.4 : 0.5;
-    if (presentation.kind === 'user') {
-        return `${isFirst ? `${vertical}em` : '0'} 0 ${isLast ? `${vertical}em` : '0'} 1ch`;
-    }
-    return `${isFirst ? `${vertical}em` : '0'} 1ch ${isLast ? `${vertical}em` : '0'} 1ch`;
-}
-
-function resolveSemanticLineMargin(
-    presentation: AgentConsoleSessionContentPresentation,
-    isFirst: boolean,
-    timelineEvent: boolean,
-    fallback: string
-): string {
-    if (!isFirst) return '0';
-    if (presentation.kind === 'user') return fallback;
-    // Give the conclusion air after the execution track (opencode spacing).
-    if (presentation.kind === 'assistant-final') return '0.5em 0 0.25em 0';
-    if (timelineEvent) return '0';
-    if (presentation.family === 'execution') return '0.2em 0 0 0';
-    if (presentation.family === 'decision' || presentation.family === 'diagnostic') return '0.55em 0 0 0';
-    return '0.4em 0 0 0';
 }
 
 function buildRenderedLine(
