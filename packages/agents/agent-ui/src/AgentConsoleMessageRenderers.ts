@@ -19,7 +19,7 @@ import {
     resolveAgentConsoleMarkdownToneStyle
 } from './AgentConsoleMarkdownStyles';
 import { renderAgentConsolePlainTextLines } from './markdown/spacing';
-import { resolveSemanticLineMargin, resolveSemanticLinePadding } from './AgentConsoleMessageLineStyles';
+import { resolveSemanticLineMargin, resolveSemanticLinePadding, stripMentionContextBlock } from './AgentConsoleMessageLineStyles';
 export { resolveAgentConsoleMarkdownPrefixStyle, resolveAgentConsoleMarkdownToneStyle } from './AgentConsoleMarkdownStyles';
 import { resolveTimelineEventSentence, formatTimelineSessionDuration, AgentConsoleTimelineLabels } from './AgentConsoleTimelineWindow';
 import { resolveTurnLifecycleLabel } from './AgentConsoleTimelineLabels';
@@ -66,6 +66,8 @@ export interface AgentConsoleRenderedLine {
     tokens: AgentConsoleRenderedToken[];
     itemStyle?: Record<string, string>;
     lineStyle?: Record<string, string>;
+    /** Markdown list/quote continuation indent (columns). */
+    continuationIndent?: number;
     tone?: AgentConsoleMarkdownTone;
     renderRegion?: string;
     spacing?: boolean;
@@ -676,10 +678,12 @@ export function renderAgentConsoleMessageItem(
                 ...(tokenDurationSuffix ? [{ text: tokenDurationSuffix, tone: 'muted' as const, style: timelineMetaStyle }] : [])
             ]
             : rendered.tokens;
+        const continuationIndent = rendered.continuationIndent ? rendered.continuationIndent + bodyIndent.length : 0;
         return {
             ...rendered,
             tokens,
             prefix: bodyIndent ? `${bodyIndent}${rendered.prefix || ''}` : rendered.prefix,
+            continuationIndent: continuationIndent || undefined,
             messageId: message?.id,
             toggleContent: blankLine ? '' : isFirst ? detailToggle : '',
             role: blankLine ? '' : isFirst ? rendered.role : rendered.role ? '    ' : '',
@@ -698,7 +702,8 @@ export function renderAgentConsoleMessageItem(
                 itemStyle,
                 resolveSemanticLinePadding(presentation, isFirst, isLast, timelineEvent),
                 resolveSemanticLineMargin(presentation, isFirst, timelineEvent, String(itemStyle.margin || '0')),
-                blankLine
+                blankLine,
+                continuationIndent
             ),
             lineStyle: {
                 ...(rendered.lineStyle || {}),
@@ -896,14 +901,6 @@ function resolveBuiltinMessageRenderer(templateKind: AgentConsoleMessageTemplate
         || agentConsoleMessageRenderers[agentConsoleMessageRenderers.length - 1];
 }
 
-function stripMentionContextBlock(content: string): string {
-    const marker = '[Mention Context]';
-    if (!content.startsWith(marker)) {
-        return content;
-    }
-    const separator = content.indexOf('\n\n', marker.length);
-    return separator >= 0 ? content.slice(separator + 2) : content;
-}
 
 function resolveMessageDisplayContent(
     message: AgentMessage,
@@ -1003,6 +1000,7 @@ function buildRenderedLine(
         content: tokens.map(token => token.text).join(''),
         tokens,
         lineStyle,
+        continuationIndent: line.continuationIndent,
         tone: line.tone
     };
 }

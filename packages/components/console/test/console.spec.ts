@@ -410,6 +410,20 @@ export class ConsoleRendererTest {
         expect(renderer.renderToLines(root)).toEqual(['Agent Console']);
     }
 
+    @Test('continuation indent aligns wrapped markdown list rows')
+    continuationIndentAlignsWrappedRows() {
+        const renderer = new TuiRenderer();
+        const clean = (lines: string[]) => lines.map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
+        const row = renderer.createElement('label') as ConsoleElement;
+        row.setAttribute('continuationIndent', '2');
+        renderer.appendChild(row, renderer.createText('alpha beta gamma delta'));
+        const lines = clean(renderer.renderToTuiLines(row, { width: 12 }));
+        expect(lines[0].startsWith('alpha')).toEqual(true);
+        expect(lines.length).toBeGreaterThan(1);
+        expect(lines[1].startsWith('  ')).toEqual(true);
+        lines.forEach(line => expect(getDisplayWidth(line)).toBeLessThanOrEqual(12));
+    }
+
     @Test('preserves inline space tokens so markdown table padding survives')
     preservesInlineSpaceTokens() {
         const renderer = new TuiRenderer();

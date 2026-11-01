@@ -156,6 +156,37 @@ export class AgentConsoleMarkdownRenderingTest {
         expect(blankMarkerRows(compactLines)).toEqual(0);
     }
 
+    @Test('list and quote lines expose a continuation indent for wrapped rows')
+    continuationIndent() {
+        const lines = renderAgentConsoleMarkdownLines([
+            '- one',
+            '  - two',
+            '1. three',
+            '> quote'
+        ].join('\n'), { compactBlankLines: true });
+        const nested = lines.find(line => String(line.prefix || '').includes('◦'));
+        const ordered = lines.find(line => String(line.prefix || '').includes('1.'));
+        const quote = lines.find(line => String(line.prefix || '').includes('│'));
+        expect(lines.find(line => String(line.prefix || '').includes('•'))?.continuationIndent).toEqual(2);
+        expect(nested?.continuationIndent).toEqual(4);
+        expect(ordered?.continuationIndent).toEqual(3);
+        expect(quote?.continuationIndent).toEqual(2);
+    }
+
+    @Test('assistant list rows carry the DOM hanging indent')
+    listRowsHang() {
+        const items = renderAgentConsoleMessageItems([{
+            id: 'a1',
+            role: 'assistant',
+            content: `- ${'很长的列表内容'.repeat(12)}`,
+            createdAt: 1
+        }] as any, { markdownContentWidth: 40 });
+        const row = items[0].lines.find(line => String(line.prefix || '').includes('•'));
+        expect(row?.continuationIndent).toEqual(4);
+        expect(row?.itemStyle?.['padding-left']).toEqual('4ch');
+        expect(row?.itemStyle?.['text-indent']).toEqual('-4ch');
+    }
+
     @Test('heading hierarchy keeps h1/h2 accent and drops h3+ to body weight')
     headingHierarchy() {
         const lines = renderAgentConsoleMarkdownLines('# Section\n\n### Detail', { compactBlankLines: true });

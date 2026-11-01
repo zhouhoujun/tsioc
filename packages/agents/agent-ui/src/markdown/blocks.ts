@@ -1,5 +1,6 @@
 import { tokenizeMarkdownInline } from './inline';
 import { AgentConsoleMarkdownLine, AgentConsoleMarkdownTone, DEFAULT_MARKDOWN_TABLE_WIDTH } from './model';
+import { getDisplayWidth } from '../AgentConsoleTextWidth';
 
 /**
  * Block-level Markdown: headings, quotes, ordered/unordered lists, task items
@@ -15,6 +16,7 @@ export function renderMarkdownBlockLine(sourceLine: string, width = DEFAULT_MARK
     let prefix = '';
     let prefixTone: AgentConsoleMarkdownTone | undefined;
     let tone: AgentConsoleMarkdownTone | undefined;
+    let continuationIndent: number | undefined;
 
     const strongHeadingMatch = STANDALONE_STRONG_HEADING_RE.exec(line);
     if (strongHeadingMatch) {
@@ -48,6 +50,7 @@ export function renderMarkdownBlockLine(sourceLine: string, width = DEFAULT_MARK
             prefix = `${quoteMatch[1]}│ `;
             prefixTone = 'quote';
             tone = 'quote';
+            continuationIndent = getDisplayWidth(prefix);
             line = quoteMatch[2];
         } else {
             const taskMatch = /^(\s*)[-*+]\s+\[([ xX])\]\s+(.*)$/.exec(line);
@@ -55,12 +58,14 @@ export function renderMarkdownBlockLine(sourceLine: string, width = DEFAULT_MARK
                 const checked = taskMatch[2].toLowerCase() === 'x';
                 prefix = `${taskMatch[1]}${checked ? '☑' : '☐'} `;
                 prefixTone = checked ? 'muted' : 'accent';
+                continuationIndent = getDisplayWidth(prefix);
                 line = taskMatch[3];
             } else {
                 const orderedMatch = /^(\s*\d+\.)\s+(.*)$/.exec(line);
                 if (orderedMatch) {
                     prefix = `${orderedMatch[1]} `;
                     prefixTone = 'accent';
+                    continuationIndent = getDisplayWidth(prefix);
                     line = orderedMatch[2];
                 } else {
                     const bulletMatch = /^(\s*)[-*+]\s+(.*)$/.exec(line);
@@ -68,6 +73,7 @@ export function renderMarkdownBlockLine(sourceLine: string, width = DEFAULT_MARK
                         const depth = Math.floor(bulletMatch[1].replace(/\t/g, '  ').length / 2);
                         prefix = `${bulletMatch[1]}${depth >= 2 ? '▪' : depth === 1 ? '◦' : '•'} `;
                         prefixTone = 'accent';
+                        continuationIndent = getDisplayWidth(prefix);
                         line = bulletMatch[2];
                     }
                 }
@@ -89,6 +95,7 @@ export function renderMarkdownBlockLine(sourceLine: string, width = DEFAULT_MARK
         prefix,
         prefixTone,
         tokens: tokenizeMarkdownInline(line, tone),
-        tone
+        tone,
+        continuationIndent
     };
 }

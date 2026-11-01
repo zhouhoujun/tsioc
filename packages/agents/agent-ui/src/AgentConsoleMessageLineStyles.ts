@@ -38,3 +38,13 @@ export function resolveSemanticLineMargin(
     if (presentation.family === 'decision' || presentation.family === 'diagnostic') return '0.55em 0 0 0';
     return '0.4em 0 0 0';
 }
+
+/** User rows store @mention context ahead of the actual prompt. */
+export function stripMentionContextBlock(content: string): string {
+    const marker = '[Mention Context]';
+    if (!content.startsWith(marker)) {
+        return content;
+    }
+    const separator = content.indexOf('\n\n', marker.length);
+    return separator >= 0 ? content.slice(separator + 2) : content;
+}

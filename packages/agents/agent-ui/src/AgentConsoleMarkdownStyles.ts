@@ -129,10 +129,17 @@ export function resolveAgentConsoleLineItemStyle(
     itemStyle: Record<string, string>,
     padding: string,
     margin: string,
-    blank: boolean
+    blank: boolean,
+    continuationIndent = 0
 ): Record<string, string> {
     if (blank) {
         return { ...itemStyle, padding: '0', margin: '0' };
     }
-    return { ...itemStyle, padding, margin };
+    const style: Record<string, string> = { ...itemStyle, padding, margin };
+    if (continuationIndent > 0) {
+        // DOM hanging indent; TUI uses the continuationIndent attribute.
+        style['padding-left'] = `${continuationIndent}ch`;
+        style['text-indent'] = `-${continuationIndent}ch`;
+    }
+    return style;
 }

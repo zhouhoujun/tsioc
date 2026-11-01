@@ -843,10 +843,15 @@ export class TuiRenderer extends ConsoleRenderer {
             : undefined;
         const hasBackground = !!(inherited.background || inherited['background-color']);
         const hasPadding = padding.top > 0 || padding.right > 0 || padding.bottom > 0 || padding.left > 0;
+        const continuationIndent = Number(
+            element.getAttribute?.('continuationIndent')
+            ?? element.getAttribute?.('data-continuation-indent')
+        ) || 0;
         const wrapped = this.wrapStyledSegments(
             this.collectInlineSegmentLines(element, inherited),
             availableWidth,
-            width != null && String(inherited['white-space'] || '').trim().toLowerCase() !== 'nowrap'
+            width != null && String(inherited['white-space'] || '').trim().toLowerCase() !== 'nowrap',
+            continuationIndent
         );
         const rows = wrapped.map(chunk => {
             const content = `${leftPad}${chunk}${rightPad}`;
@@ -952,18 +957,20 @@ export class TuiRenderer extends ConsoleRenderer {
     protected wrapStyledSegments(
         segmentLines: TuiStyledSegment[][],
         width?: number,
-        wrap = true
+        wrap = true,
+        continuationIndent = 0
     ): string[] {
         if (!segmentLines.length) {
             return [''];
         }
-        return segmentLines.flatMap(segments => this.wrapStyledSegmentLine(segments, width, wrap));
+        return segmentLines.flatMap(segments => this.wrapStyledSegmentLine(segments, width, wrap, continuationIndent));
     }
 
     protected wrapStyledSegmentLine(
         segments: TuiStyledSegment[],
         width?: number,
-        wrap = true
+        wrap = true,
+        continuationIndent = 0
     ): string[] {
         if (!segments.length) {
             return [''];
@@ -971,13 +978,16 @@ export class TuiRenderer extends ConsoleRenderer {
         if (!wrap || !width || width <= 0) {
             return [segments.map(segment => this.applyAnsi(segment.text, segment.styleMap, undefined, true)).join('')];
         }
+        const indentColumns = Math.max(0, Math.min(Math.floor(continuationIndent || 0), Math.max(0, width - 1)));
+        const indentText = indentColumns ? ' '.repeat(indentColumns) : '';
+        const indentStyle = segments[0]?.styleMap || {};
         const lines: string[] = [];
         let currentLine = '';
         let currentWidth = 0;
         const flush = () => {
             lines.push(currentLine);
-            currentLine = '';
-            currentWidth = 0;
+            currentLine = indentText ? this.applyAnsi(indentText, indentStyle, undefined, true) : '';
+            currentWidth = indentColumns;
         };
         segments.forEach(segment => {
             let rest = segment.text;
@@ -995,7 +1005,7 @@ export class TuiRenderer extends ConsoleRenderer {
                 }
             }
         });
-        if (!lines.length || currentLine) {
+        if (!lines.length || (currentLine && currentWidth > indentColumns)) {
             lines.push(currentLine);
         }
         return lines;

@@ -38,6 +38,8 @@ export interface AgentConsoleMarkdownLine {
     tokens: AgentConsoleMarkdownToken[];
     tone?: AgentConsoleMarkdownTone;
     code?: boolean;
+    /** Columns used to align wrapped continuation lines (list/quote markers). */
+    continuationIndent?: number;
 }
 
 export interface AgentConsoleMarkdownRenderOptions {

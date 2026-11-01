@@ -8,7 +8,7 @@ import { styleTextToObject } from './AgentConsoleTheme';
 const ITEM_TEMPLATE = `
     <div class="message-block-spacing" v-if="spacerBefore">​</div>
     <div class="message-item-block {{templateClass}}" v-style="blockStyle">
-        <label class="message-line" v-for="line in lines" v-style="line.itemStyle" aria-label="{{line.ariaLabel}}">
+        <label class="message-line" v-for="line in lines" v-style="line.itemStyle" aria-label="{{line.ariaLabel}}" continuationIndent="{{line.continuationIndent}}">
             <span v-style="line.statusStyle">{{line.status}}</span>
             <span v-style="line.roleStyle" v-show="line.role">{{line.role}}</span>
             <span v-style="line.metaStyle" v-show="line.meta">{{line.meta}}</span>
@@ -22,7 +22,7 @@ const ITEM_TEMPLATE = `
 const MARKDOWN_TEMPLATE = `
     <div class="message-block-spacing" v-if="spacerBefore">​</div>
     <div class="message-markdown {{templateClass}}" v-style="blockStyle">
-        <label class="message-line markdown-line" v-for="line in lines" v-style="line.itemStyle" aria-label="{{line.ariaLabel}}">
+        <label class="message-line markdown-line" v-for="line in lines" v-style="line.itemStyle" aria-label="{{line.ariaLabel}}" continuationIndent="{{line.continuationIndent}}">
             <span v-style="line.statusStyle">{{line.status}}</span>
             <span v-style="line.roleStyle" v-show="line.role">{{line.role}}</span>
             <span v-style="line.metaStyle" v-show="line.meta">{{line.meta}}</span>

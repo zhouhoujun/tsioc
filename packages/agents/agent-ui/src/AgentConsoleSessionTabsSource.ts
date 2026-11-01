@@ -56,7 +56,7 @@ export class AgentConsoleSessionTabsSource implements CommonTabBarSource {
         }
         return resolveAgentConsoleSessionTabs(this.state).map(session => ({
             id: session.id,
-            label: ` ${this.tabTitle(session)} `,
+            label: `  ${this.tabTitle(session)} `,
             style: session.id === this.state.sessionId || session.current
                 ? this.themeStyles.statusValue
                 : this.themeStyles.statusLabel,
