@@ -410,6 +410,15 @@ export class ConsoleRendererTest {
         expect(renderer.renderToLines(root)).toEqual(['Agent Console']);
     }
 
+    @Test('preserves inline space tokens so markdown table padding survives')
+    preservesInlineSpaceTokens() {
+        const renderer = new TuiRenderer();
+        const clean = (lines: string[]) => lines.map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
+        const row = renderer.createElement('label') as ConsoleElement;
+        ['│', ' ', 'cell', ' ', '│'].forEach(part => renderer.appendChild(row, renderer.createText(part)));
+        expect(clean(renderer.renderToTuiLines(row, { width: 20 }))).toEqual(['│ cell │']);
+    }
+
     @Test('reuses cached layout for non-dirty top-level subtrees')
     reusesNonDirtyTopLevelLayout() {
         const renderer = new TuiRenderer();

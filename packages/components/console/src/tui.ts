@@ -876,7 +876,10 @@ export class TuiRenderer extends ConsoleRenderer {
         if (current instanceof ConsoleText) {
             const value = current.textContent || '';
             if (!value.trim()) {
-                return '';
+                // Pure spaces are meaningful inline tokens (syntax-highlight
+                // separators, table cell padding); template indentation always
+                // carries a newline or tab and is dropped.
+                return /[\r\n\t]/.test(value) ? '' : this.applyAnsi(value, inherited, undefined, true);
             }
             const text = /[\r\n\t]/.test(value)
                 ? this.normalizeInlineWhitespace(value).trim()
@@ -915,6 +918,9 @@ export class TuiRenderer extends ConsoleRenderer {
         if (current instanceof ConsoleText) {
             const value = current.textContent || '';
             if (!value.trim()) {
+                if (!/[\r\n\t]/.test(value)) {
+                    lines[lines.length - 1].push({ text: value, styleMap: inherited });
+                }
                 return;
             }
             const text = /[\r\n\t]/.test(value)
