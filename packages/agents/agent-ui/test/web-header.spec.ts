@@ -21,6 +21,21 @@ async function waitFor(check: () => boolean, timeoutMs = 3000): Promise<void> {
 
 @Suite('web console session header')
 export class WebConsoleHeaderTest {
+    @Test('the page uses the terminal layout and flat panel chrome')
+    layoutParityContract() {
+        // The browser transcript must look like the TUI: full-height scrolling
+        // body, pinned composer, flat panels, preserved mono spacing and CJK
+        // fallbacks. Guards the visual contract without a real browser install.
+        expect(PAGE_SOURCE).toContain('height: 100dvh;');
+        expect(PAGE_SOURCE).toContain('overflow: hidden;');
+        expect(PAGE_SOURCE).toContain('#agent-console .agent-console {');
+        expect(PAGE_SOURCE).toContain('flex-direction: column;');
+        expect(PAGE_SOURCE).toContain('white-space: pre-wrap !important;');
+        expect(PAGE_SOURCE).toContain('border: 0 !important;');
+        expect(PAGE_SOURCE).toContain('Noto Sans Mono CJK SC');
+        expect(PAGE_SOURCE).toContain('display: none;');
+    }
+
     @Test('redeems the pairing code, lists sessions newest-first and creates a new session')
     async headerFlow() {
         const dom = new JSDOM(PAGE_SOURCE, {

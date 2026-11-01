@@ -417,9 +417,19 @@ export interface AgentToolsOptions {
     registration?: AgentToolsRegistrationOptions;
 }
 
+/** Browser hosts have no node `process`; never touch it unguarded at module scope. */
+function defaultToolRootDir(): string {
+    const proc = (globalThis as { process?: { cwd?: () => string } }).process;
+    try {
+        return typeof proc?.cwd === 'function' ? proc.cwd() : '';
+    } catch {
+        return '';
+    }
+}
+
 export const defaultAgentToolsOptions: AgentToolsOptions = {
     file: {
-        rootDir: process.cwd(),
+        rootDir: defaultToolRootDir(),
         maxReadBytes: 32 * 1024,
         maxReadLines: 400,
         maxReadLinesLimit: 2000,

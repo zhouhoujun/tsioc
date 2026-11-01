@@ -13,7 +13,7 @@ export { AGENT_CONSOLE_APP_RPC } from './ui/AgentConsoleAppRpc';
 export type { AgentConsoleAppRpc } from './ui/AgentConsoleAppRpc';
 export { AGENT_OPTIONS } from './tokens';
 export type { AgentOptions } from './options';
-export { defaultAgentOptions } from './options';
+export { defaultAgentOptions, DEFAULT_RENDER_POLICY } from './options';
 export { AgentModule } from './agent.module';
 export { AgentRuntime } from './runtime/AgentRuntime';
 export { AgentScheduler } from './scheduler/AgentScheduler';

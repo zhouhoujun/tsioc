@@ -2,7 +2,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { DOCUMENT } from '@tsdi/common';
 import { ComponentRef, ComponentsModule, ReactiveEffect, reactive } from '@tsdi/components';
 import { HtmlTemplateModule } from '@tsdi/components/html';
-import { DomTranscriptFollower } from '@tsdi/components/html';
+import { DomTranscriptFollower, measureDomConsoleColumns } from '@tsdi/components/html';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, COMMAND_EXECUTION_CONTROL, CommandExecutionControlPort, defaultAgentOptions } from '@tsdi/agent';
 import { AGENT_IDE_BRIDGE } from '@tsdi/agent-ui';
 import { AgentModule } from '@tsdi/agent';
@@ -14,6 +14,7 @@ import {
     AgentConsoleSessionState,
     AgentConsoleSettingsData,
     AgentConsoleSettingsStore,
+    ConsoleTerminalSurfaceAccessor,
     AgentConsoleStatuslineStore,
     AgentConsoleThemeStore,
     AgentConsoleTitleStore,
@@ -275,10 +276,30 @@ export async function mountAgentWebConsole(
         ...(config.fetchImpl ? { fetchImpl: config.fetchImpl } : {})
     });
     const consoleStores = createRpcConsoleStores(rpc);
+    const resolveMessagesPanel = (): HTMLElement | null =>
+        (mount.querySelector?.('.console-messages-panel') as HTMLElement | null) ?? null;
+    const surfaceAccessor = {
+        getLastRenderedLines: () => [] as string[],
+        getLastRenderedText: () => '',
+        getTerminalSize: () => ({ columns: measureDomConsoleColumns(resolveMessagesPanel() ?? mount), rows: 0 }),
+        getTerminalViewportRows: () => 0,
+        subscribeToSurfaceResize: (listener: () => void): (() => void) => {
+            const view = doc.defaultView as (Window & typeof globalThis) | null | undefined;
+            const Observer = (view as { ResizeObserver?: typeof ResizeObserver } | null | undefined)?.ResizeObserver;
+            if (!Observer) {
+                view?.addEventListener?.('resize', listener);
+                return () => view?.removeEventListener?.('resize', listener);
+            }
+            const observer = new Observer(() => listener());
+            observer.observe(resolveMessagesPanel() ?? mount);
+            return () => observer.disconnect();
+        }
+    };
     const ctx = await Application.run(AgentConsoleComponent, {
         deps: [AgentModule, AgentUiModule, HtmlTemplateModule, ComponentsModule],
         providers: [
             { provide: DOCUMENT, useValue: doc },
+            { provide: ConsoleTerminalSurfaceAccessor, useValue: surfaceAccessor },
             { provide: AGENT_CONSOLE_APP_RPC, useValue: rpc },
             { provide: AgentConsoleSettingsStore, useValue: createRpcConsoleSettingsStore(rpc) },
             { provide: AgentConsoleThemeStore, useValue: consoleStores.theme },
@@ -297,7 +318,12 @@ export async function mountAgentWebConsole(
                         title: 'TSDI Agent Web Console',
                         console: {
                             ...(defaultAgentOptions.ui?.console || {}),
-                            workspace: config.workspace
+                            workspace: config.workspace,
+                            // Match the terminal host's compact footer; the
+                            // statusline stays opt-in on both platforms.
+                            workingPresentation: 'compact',
+                            showStatusline: false,
+                            showMessageTimestamps: false
                         }
                     },
                     bootstrapTurn: config.sessionId ? { sessionId: config.sessionId } : undefined
@@ -345,8 +371,36 @@ export async function mountAgentWebConsole(
         mount.textContent = 'Console component did not render.';
     }
 
-    const disposeBridge = await bridge.subscribe(state.sessionId);
-    await registerAgentWebConsolePwa(config).catch(() => null);
+    // The SSE subscription stays open for the life of the console; awaiting it
+    // would block mount forever and skip the adapter setup below.
+    // The welcome brand block belongs to the transcript start in the TUI;
+    // hide it once real rows exist so it does not pin a blank band above the
+    // scrolling conversation in the browser.
+    const transcriptPanel = resolveMessagesPanel();
+    let brandObserver: MutationObserver | null = null;
+    const syncBrandVisibility = (): void => {
+        const hasMessages = !!transcriptPanel?.querySelector('.message-row');
+        (root as HTMLElement | undefined)?.classList?.toggle('has-transcript', hasMessages);
+    };
+    const MutationObserverCtor = (doc.defaultView as (Window & typeof globalThis) | null | undefined)?.MutationObserver;
+    if (transcriptPanel && MutationObserverCtor) {
+        brandObserver = new MutationObserverCtor(() => syncBrandVisibility());
+        brandObserver.observe(transcriptPanel, { childList: true, subtree: true });
+    }
+    syncBrandVisibility();
+
+    let disposeBridge = (): void => undefined;
+    let disposed = false;
+    void bridge.subscribe(state.sessionId)
+        .then(dispose => {
+            if (disposed) {
+                dispose();
+            } else {
+                disposeBridge = dispose;
+            }
+        })
+        .catch(() => undefined);
+    void registerAgentWebConsolePwa(config).catch(() => null);
 
     // Platform adaptation: the base-layer DomTranscriptFollower (backed by the
     // shared ScrollBox) owns viewport history scrolling, sticky-follow, and the
@@ -400,6 +454,8 @@ export async function mountAgentWebConsole(
             indicator.removeEventListener('click', onIndicatorClick);
             follower?.detach();
             indicator.remove();
+            brandObserver?.disconnect();
+            disposed = true;
             disposeBridge();
             await ctx.close();
         }

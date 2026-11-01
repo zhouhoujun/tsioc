@@ -185,6 +185,46 @@ export class AgentWebConsoleTest {
         expect(state.runningTools).toEqual(['echo']);
     }
 
+    @Test('mounting does not wait for the long-lived SSE subscription')
+    async mountDoesNotAwaitSse() {
+        const doc = this.dom.window.document;
+        const container = doc.createElement('div');
+        doc.body.appendChild(container);
+        const previousDocument = (globalThis as any).document;
+        (globalThis as any).document = doc;
+        const fetchImpl = (async (url: string) => {
+            if (String(url).includes('/api/events')) {
+                // A connected SSE stream never resolves its fetch promise.
+                return new Promise<Response>(() => undefined);
+            }
+            return new Response(JSON.stringify({
+                jsonrpc: '2.0',
+                id: 1,
+                result: { sessionId: 'w1', id: 'w1', messages: [], sections: [], items: [], todos: [], steps: [] }
+            }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }) as any;
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        let mounted: any;
+        try {
+            mounted = await Promise.race([
+                mountAgentWebConsole({
+                    baseUrl: 'http://localhost:3100',
+                    sessionId: 'w1',
+                    fetchImpl,
+                    mount: container,
+                    state,
+                    pwa: false
+                }),
+                new Promise((_resolve, reject) => setTimeout(() => reject(new Error('mount blocked on the SSE stream')), 5000))
+            ]);
+            expect(container.children.length).toBeGreaterThan(0);
+            expect(mounted.state).toBeTruthy();
+        } finally {
+            (globalThis as any).document = previousDocument;
+            await mounted?.dispose?.();
+        }
+    }
+
     @Test('renders console component into the DOM')
     async rendersIntoDom() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as any;

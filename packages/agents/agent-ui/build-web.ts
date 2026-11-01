@@ -18,7 +18,7 @@ import * as esbuild from 'esbuild';
 const ROOT = path.resolve(__dirname, '../../..');
 const PACKAGE_DIR = path.resolve(__dirname);
 const TSC_OUT = path.join('/tmp', `tsdi-agent-web-tsc-${Date.now()}`);
-const BUNDLE_ENTRY = path.join(TSC_OUT, 'agents', 'agent-ui', 'web-console', 'web-console.js');
+const BUNDLE_ENTRY = path.join(TSC_OUT, 'agents', 'agent-ui', 'web', 'browser-entry.js');
 
 interface ResolveResult {
     path: string;
@@ -57,7 +57,7 @@ function compileWithTsc(): void {
         }
     }
     if (!fs.existsSync(BUNDLE_ENTRY)) {
-        throw new Error(`tsc output missing web-console entry: ${BUNDLE_ENTRY}`);
+        throw new Error(`tsc output missing web console browser entry: ${BUNDLE_ENTRY}`);
     }
 }
 
@@ -70,6 +70,14 @@ const tscOutputAliasPlugin: esbuild.Plugin = {
                 const webEntry = path.join(TSC_OUT, 'agents', 'agent', 'src', 'web-entry.js');
                 if (fs.existsSync(webEntry)) {
                     return { path: webEntry, namespace: 'file' };
+                }
+            }
+            if (specifier === 'agent-tools') {
+                // The browser only needs the background-task DI class; the
+                // package index pulls fs/globby tool implementations.
+                const browserSafe = path.join(TSC_OUT, 'agents', 'agent-tools', 'src', 'background-task-manager.js');
+                if (fs.existsSync(browserSafe)) {
+                    return { path: browserSafe, namespace: 'file' };
                 }
             }
             const candidates = [

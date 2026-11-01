@@ -17,99 +17,208 @@
             height: 100%;
             background: #0d1117;
             color: #c9d1d9;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono CJK SC", "Source Han Mono SC", "Sarasa Mono SC", "PingFang SC", "Microsoft YaHei", monospace;
+            font-size: 13px;
+            line-height: 1.4;
         }
-        #agent-console {
+        body {
+            display: flex;
+            flex-direction: column;
             height: 100vh;
             height: 100dvh;
-            overflow: auto;
+            overflow: hidden;
+        }
+        /* Compact session bootstrap bar. The component's own tab strip below
+           is the primary switcher, matching the terminal TUI. */
+        #agent-header {
+            /* Bootstrap/pairing only: the in-console tab strip is the visible
+               session switcher, exactly like the terminal TUI. Keep the nodes
+               mounted (display:none still lets header.js pair/create sessions). */
+            display: none;
+            gap: 1ch;
+            align-items: center;
+            padding: max(4px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 0 max(10px, env(safe-area-inset-left));
+        }
+        #agent-header select {
+            flex: 1 1 auto;
+            min-width: 0;
+            appearance: none;
+            background: transparent;
+            color: #8b949e;
+            border: 0;
+            border-radius: 0;
+            padding: 0;
+            font: inherit;
+            font-size: 12px;
+            outline: none;
+        }
+        #agent-header button {
+            background: transparent;
+            color: #d8a86f;
+            border: 0;
+            border-radius: 0;
+            padding: 0 1ch;
+            font: inherit;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        #agent-header button:disabled {
+            color: #6e7681;
+            cursor: default;
+        }
+        #agent-header-status {
+            color: #6e7681;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        /* Full-height terminal viewport: header, scrolling transcript, fixed
+           status + composer. The page itself never scrolls. */
+        #agent-console {
+            position: relative;
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: hidden;
             box-sizing: border-box;
-            padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
-            overscroll-behavior: contain;
+            padding: 0 0 max(6px, env(safe-area-inset-bottom)) 0;
         }
+        #agent-console .agent-console {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 0;
+        }
+        #agent-console .agent-console > [renderregion="header"],
+        #agent-console .agent-console > [renderregion="footer"] {
+            flex: 0 0 auto;
+        }
+        /* The region is a flex slot; the inner panel is the scroll box, which
+           is the node DomTranscriptFollower binds to (wheel/follow/new-count). */
+        #agent-console .agent-console > [renderregion="transcript"] {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #agent-console .agent-console > [renderregion="transcript"] > .console-panel {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+        }
+        /* TUI chrome is flat terminal text, not cards. Neutralize the panel
+           borders/background that the shared inline styles carry. */
         #agent-console .console-panel {
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 6px;
-            margin-bottom: 10px;
-            padding: 10px;
+            background: transparent !important;
+            border: 0 !important;
+            border-radius: 0;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        #agent-console .console-brand-panel {
-            position: sticky;
-            top: 0;
-            z-index: 2;
+        /* Composer and status line sit on the terminal background. */
+        #agent-console .console-input-panel .input-shell {
+            background: #1b2128 !important;
+            padding: 0.5em 1ch !important;
         }
         #agent-console textarea.agent-input {
             width: 100%;
             max-width: 100%;
             box-sizing: border-box;
             display: block;
-            background: #0d1117;
+            background: transparent;
             color: #c9d1d9;
-            border: 1px solid #30363d;
-            border-radius: 4px;
-            padding: 8px;
-            resize: vertical;
+            border: 0;
+            border-radius: 0;
+            padding: 0;
+            margin: 0;
+            resize: none;
+            overflow-y: auto;
             font-family: inherit;
-            font-size: 14px;
+            font-size: inherit;
+            line-height: inherit;
             outline: none;
             box-shadow: none;
             appearance: none;
+            min-height: 1.4em;
+            max-height: 8em;
+            field-sizing: content;
         }
-        #agent-console textarea.agent-input:focus {
-            border-color: #58a6ff;
+        /* Each label is one terminal row; inline labels collapsed unrelated
+           rows onto one line (status, question title, hints). */
+        #agent-console .console-panel label {
+            display: block;
+            margin: 0;
         }
-        #agent-header {
-            position: sticky;
-            top: 0;
-            z-index: 3;
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            padding: 8px 12px;
-            background: #161b22;
-            border-bottom: 1px solid #30363d;
+        /* The TUI keeps the assistant inset, code indentation and table column
+           padding as literal spaces; HTML would collapse them under the
+           default white-space. */
+        #agent-console .message-line > span,
+        #agent-console .message-token {
+            white-space: pre-wrap !important;
         }
-        #agent-header select {
-            flex: 1 1 auto;
-            min-width: 0;
-            background: #0d1117;
-            color: #c9d1d9;
+        /* Terminal rows have no card background; only the composer keeps its
+           panel fill. Selection still uses the renderer's foreground styles. */
+        #agent-console .message-item-block,
+        #agent-console .message-line {
+            background: transparent !important;
+        }
+        #agent-console .console-brand-panel {
+            padding: 0 1ch;
+        }
+        /* The TUI welcome block scrolls away with the transcript; once rows
+           exist the browser keeps only the conversation area. */
+        #agent-console .agent-console.has-transcript .console-brand-panel {
+            display: none !important;
+        }
+        /* Menus/dialogs keep the terminal overlay box, anchored above the
+           composer in normal flow (header -> transcript -> overlay -> footer). */
+        #agent-console agent-console-pending-question-panel > .console-panel,
+        #agent-console agent-console-approvals-panel > .console-panel,
+        #agent-console agent-console-select-panel > .console-panel,
+        #agent-console agent-console-text-overlay-panel > .console-panel,
+        #agent-console agent-console-command-outputs-panel > .console-panel,
+        #agent-console agent-console-which-key-panel > .console-panel,
+        #agent-console agent-console-health-popover > .console-panel,
+        #agent-console [renderregion="menu"] > .console-panel,
+        #agent-console [renderregion="dialog"] > .console-panel {
+            background: #1b2128 !important;
+            border: 1px solid #30363d !important;
+            border-bottom: 0 !important;
+            padding: 0 1ch !important;
+        }
+        /* The tab strip matches the terminal: plain labels, one active color. */
+        #agent-console common-tab-bar[header] {
+            flex: 0 0 auto;
+            display: block;
+        }
+        #agent-console common-tab-bar[header] .common-tab-bar {
+            margin: 0;
+            padding: 0;
+            white-space: nowrap;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        #agent-console .console-new-messages {
+            position: absolute;
+            left: 50%;
+            bottom: 8px;
+            transform: translateX(-50%);
+            background: #1b2128;
+            color: #86a9d6;
             border: 1px solid #30363d;
-            border-radius: 4px;
-            padding: 6px 8px;
+            border-radius: 0;
+            padding: 2px 1ch;
             font: inherit;
-        }
-        #agent-header button {
-            background: #21262d;
-            color: #c9d1d9;
-            border: 1px solid #30363d;
-            border-radius: 4px;
-            padding: 6px 10px;
-            font: inherit;
+            font-size: 12px;
             cursor: pointer;
         }
-        #agent-header button:hover {
-            border-color: #58a6ff;
-        }
-        #agent-header-status {
-            color: #8b949e;
-            font-size: 12px;
-            white-space: nowrap;
-        }
         @media (max-width: 640px) {
-            #agent-console {
-                padding-top: max(8px, env(safe-area-inset-top));
-                padding-bottom: max(8px, env(safe-area-inset-bottom));
-            }
-            #agent-console .console-panel {
-                margin-bottom: 8px;
-                padding: 8px;
-            }
-            #agent-console textarea.agent-input,
-            #agent-console button,
-            #agent-console select {
-                min-height: 44px;
+            html, body { font-size: 12.5px; }
+            #agent-header { padding-left: max(6px, env(safe-area-inset-left)); padding-right: max(6px, env(safe-area-inset-right)); }
+            #agent-console { padding-left: max(6px, env(safe-area-inset-left)); padding-right: max(6px, env(safe-area-inset-right)); }
+            #agent-console textarea.agent-input {
                 font-size: 16px;
             }
         }
