@@ -2541,6 +2541,59 @@ export class AgentConsoleTuiRendererTest {
         expect(ref.instance.sessionState.hasTextOverlayFocus()).toBe(false);
     }
 
+    @Test('the text overlay (/pair, /web) exposes a clickable ✕ close button')
+    async textOverlayClosesFromCloseButton() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const consoleRef = tuiCtx.get(ComponentFactory).create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const state: any = consoleRef.instance.sessionState;
+            state.openTextOverlay('pairing · 5 min', [
+                'QR-ROW-1',
+                'QR-ROW-2',
+                'QR-ROW-3',
+                'http://127.0.0.1:3100/?pair=abc'
+            ], 4);
+            await settleDynamicMessages(consoleRef);
+
+            surface = new TuiTerminalSurface({
+                renderer: tuiCtx.get(TuiRenderer),
+                root: consoleRef.elementRef.nativeElement,
+                width: 90,
+                height: 30,
+                nativeScrollback: false,
+                scrollViewport: true,
+                output: { write() { /* noop */ } }
+            });
+            surface.render();
+
+            const panelRef = consoleRef.hostView.query(AgentConsoleTextOverlayPanelComponent) as ComponentRef<AgentConsoleTextOverlayPanelComponent>;
+            const panelElement = panelRef.elementRef.nativeElement;
+            const insidePanel = (node: any) => {
+                let current = node;
+                while (current) {
+                    if (current === panelElement) return true;
+                    current = current.parentNode;
+                }
+                return false;
+            };
+            const close = surface.clickTargets.find(target =>
+                String((target.node as any)?.textContent || '').trim() === '✕' && insidePanel(target.node));
+            expect(close).toBeTruthy();
+
+            surface.dispatchClickAt(close!.node);
+            await settleDynamicMessages(consoleRef);
+            expect(state.textOverlay).toBeNull();
+            expect(state.hasTextOverlayFocus()).toEqual(false);
+        } finally {
+            surface?.destroy();
+            await tuiCtx.close();
+        }
+    }
+
     @Test('long notices open a text overlay instead of the status strip')
     async longNoticeOpensTextOverlay() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;

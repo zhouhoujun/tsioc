@@ -1838,7 +1838,7 @@ export class AgentConsoleToolsPanelComponent {
 @Component({
     selector: 'agent-console-text-overlay-panel',
     template: `
-    <div class="console-panel console-text-overlay-panel" v-style="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}">
+    <div class="console-panel console-text-overlay-panel" v-style="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}"><label class="dialog-close" v-style="closeStyle" @click="closeOverlay">✕</label>
         <label v-style="accentStyle">{{overlayTitle}}</label>
         <label v-style="listStyle" v-for="line in visibleLines">{{line}}</label>
         <label v-style="metaStyle" v-show="hintLabel">{{hintLabel}}</label>
@@ -1855,9 +1855,7 @@ export class AgentConsoleTextOverlayPanelComponent {
         return resolvePanelThemeStyles(this.state, this.theme);
     }
 
-    get shellStyle() {
-        return this.state.hasTextOverlayFocus() ? this.activeThemeStyles.dialogShell : {};
-    }
+    get shellStyle() { return this.state.hasTextOverlayFocus() ? this.activeThemeStyles.dialogShell : {}; } get closeStyle() { return DIALOG_CLOSE_STYLE; } closeOverlay(): void { this.state.closeTextOverlay(); }
 
     get accentStyle() {
         return this.activeThemeStyles.toolRunsAccent;
