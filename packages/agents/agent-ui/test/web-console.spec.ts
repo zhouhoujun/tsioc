@@ -225,6 +225,54 @@ export class AgentWebConsoleTest {
         }
     }
 
+    @Test('mounting restores a persisted model profile without failing')
+    async mountAppliesPersistedModelProfile() {
+        const doc = this.dom.window.document;
+        const container = doc.createElement('div');
+        doc.body.appendChild(container);
+        const previousDocument = (globalThis as any).document;
+        (globalThis as any).document = doc;
+        const fetchImpl = (async (url: string, init: any) => {
+            if (String(url).includes('/api/events')) {
+                return new Response('event: connected\ndata: {}\n\n', {
+                    status: 200,
+                    headers: { 'Content-Type': 'text/event-stream' }
+                });
+            }
+            let method = '';
+            try {
+                method = JSON.parse(String(init?.body || '{}')).method || '';
+            } catch {
+                method = '';
+            }
+            const result = method === 'settings.store.get'
+                ? { modelProfile: 'openai/fake-web-model' }
+                : { sessionId: 'w1', id: 'w1', messages: [], sections: [], items: [], todos: [], steps: [] };
+            return new Response(JSON.stringify({ jsonrpc: '2.0', id: 1, result }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }) as any;
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        let mounted: any;
+        try {
+            mounted = await mountAgentWebConsole({
+                baseUrl: 'http://localhost:3100',
+                sessionId: 'w1',
+                fetchImpl,
+                mount: container,
+                state,
+                pwa: false,
+                reconnectDelayMs: 100_000
+            });
+            expect(mounted.state).toBeTruthy();
+            expect(container.children.length).toBeGreaterThan(0);
+        } finally {
+            (globalThis as any).document = previousDocument;
+            await mounted?.dispose?.();
+        }
+    }
+
     @Test('renders console component into the DOM')
     async rendersIntoDom() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as any;
