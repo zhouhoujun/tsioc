@@ -480,7 +480,9 @@ def scenario_plan_checkbox(pid: int, fd: int, screen: Screen) -> bool:
     # streaming, so it is matched on sight. Completion is asserted on the
     # persistent `1 item · 1 completed` tool receipt and the collapsed
     # `Plan completed` summary.
-    pending = wait_for(fd, screen, [rf'☐[^\n]*{esc}', rf'{esc}[^\n]*(?:pending|待处理)'],
+    # opencode-style Todos use `[ ]` while pending and `[✓]` when done; keep
+    # the legacy ☐ marker accepted for older themes.
+    pending = wait_for(fd, screen, [rf'(?:☐|\[ \])[^\n]*{esc}', rf'{esc}[^\n]*(?:pending|待处理)'],
                        timeout=TIMEOUT, on_sight=True)
     if not pending:
         print(f'[FAIL] scenario 3: pending plan item "{TODO_LABEL}" never rendered')

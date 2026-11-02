@@ -58,7 +58,6 @@ import {
     resolveCommonListWindow as resolveConsoleListWindow,
     resolveCommonSelectWindow as resolveConsoleSelectWindow
 } from '@tsdi/components/common';
-
 @Component({
     selector: 'agent-console-brand-panel',
     template: `
@@ -272,7 +271,7 @@ export class AgentConsoleStatusPanelComponent {
                     class="agent-input"
                     v-style="fieldStyle"
                     value="{{input}}"
-                    prompt="{{inputPrompt}}"
+                    prompt="{{inputPromptBase}}"
                     placeholder="{{inputPlaceholderLabel}}"
                     cursor=" "
                     cursorPos="{{inputCursor}}"
@@ -295,7 +294,7 @@ export class AgentConsoleStatusPanelComponent {
                 <label class="wizard-hint" v-style="wizardHintStyle" v-show="wizardHintLabel">{{wizardHintLabel}}</label>
             </div>
         </div>
-        <label class="input-meta" v-style="hintStyle"><span v-show="metaPrefixLabel">{{metaPrefixLabel}} · </span>{{totalTokens | number-format}} tokens</label>
+        <label class="input-meta" v-style="hintStyle"><span v-show="metaPrefixLabel">{{metaPrefixLabel}} · </span>{{totalTokens | number-format}} tokens<span v-show="inputBadgeLabel">{{inputBadgeLabel}}</span></label>
     </div>
     `
 })
@@ -345,11 +344,9 @@ export class AgentConsoleInputPanelComponent {
         return this.activeThemeStyles.inputCaption;
     }
 
-    get inputPrompt(): string {
-        const base = this.state?.inputPrompt || this.state?.consoleOptions?.inputPrompt || '';
-        const badges = formatAgentConsoleInputBadges(this.state, this.translator);
-        return badges.length ? `${base} · ${badges.join(' · ')}` : base;
-    }
+    get inputPromptBase(): string { return this.state?.inputPrompt || this.state?.consoleOptions?.inputPrompt || ''; }
+    get inputBadgeLabel(): string { const badges = formatAgentConsoleInputBadges(this.state, this.translator); return badges.length ? ` · ${badges.join(' · ')}` : ''; }
+    get inputPrompt(): string { return `${this.inputPromptBase}${this.inputBadgeLabel}`; }
 
     get inputPlaceholderLabel(): string {
         return this.state?.inputPlaceholderLabel || '';

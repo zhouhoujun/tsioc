@@ -2816,3 +2816,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 实现：`AgentConsoleSessionUiState` 在离开 tab 时快照 `scrollOffset`（距最新行的距离）、following/newCount、input/cursor、pendingAttachments、选中消息/焦点/详情滚动；`openSession` 切换开始时立即清空上一个会话的消息/sections/goal，避免慢加载把 A 的 transcript 显示在 B 的 tab 下；目标首页渲染后恢复快照，首次访问从最新消息跟随，关闭 tab 丢弃快照。
 - 通用层：`TuiTerminalSurface` 新增 `scrollViewportToOffset` 与 `viewportScrollOffset` 访问器，`ConsoleTerminalSurfaceAccessor` 同步暴露，供按 tab 保存/恢复滚动距离。
 - 测试：新增 `test/session-tab-isolation.spec.ts`（加载中不外泄上一个 tab、首次访问在尾部、各自 scroll/draft/state 往返恢复、newCount/draft 不串）与 `test/viewport-chrome-pinning.spec.ts`（真实 ANSI 屏幕断言 tab 栏与输入框在长 CJK 回复/Markdown 表格代码/新增消息后仍固定，frame 不超过终端宽高、不触发原生动滚）；agent-ui 1938 passing、components/console 117 passing、tsc、source-size、tui-gate、dom-gate、gate-regression、diff-check、production-db-integrity 全部通过。
+
+## 时间线/输入框与 web 兼容打磨（2026-11）
+
+- 需求：继续按 opencode 打磨时间线与 composer，让 `/web` 浏览器控制台和 TUI 保持同一套层级和专业排版。
+- 修复：输入模式徽标从 prompt 移到输入框下方 meta 行（`> Ask code or files` + `0 tokens · auto-approve`），TUI/web 共用；时间线 Thought 使用 `+`、最终回答 5 列 inset、单一 spacer；固定顶部 session tabs 同样使用共享 tab bar。
+- 验证：真实 TUI 带 reasoning/tool 的 turn 检查 composer/tabs/Thought/工具/最终回答层级；agent-ui 相关 badge/vim/panel 149 passing。
