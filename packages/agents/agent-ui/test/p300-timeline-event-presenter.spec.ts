@@ -436,6 +436,13 @@ export class FormatLineTest {
         })).toBe('Git status');
     }
 
+    @Test('generic shell target uses the command summary')
+    testGenericShellTarget() {
+        expect(formatTimelineEventLine({
+            title: 'Run', target: 'command', summary: 'echo hi · exit 0', detail: '', category: 'shell'
+        })).toBe('Run echo hi · exit 0');
+    }
+
     @Test('a summary that repeats the target does not print it twice')
     testSummaryRepeatsTarget() {
         expect(formatTimelineEventLine({

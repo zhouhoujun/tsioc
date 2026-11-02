@@ -367,6 +367,11 @@ export function presentTimelineToolEvent(
  * summary is present.  When target is empty the title alone is returned.
  */
 export function formatTimelineEventLine(p: TimelineToolEventPresentation): string {
+    // Terminal receipts sometimes use the generic target "command"; the
+    // actual command lives in the result summary. Avoid "Run command · ...".
+    if (p.category === 'shell' && p.summary && /^(command|cmd|shell|run|terminal)$/i.test(p.target)) {
+        return `${p.title} ${p.summary}`.trim();
+    }
     // A result summary often repeats the object it acted on — a completed
     // `read_file` output is `<path> (truncated)` while the input target is the
     // same path. Producers that render the pair themselves already drop the
