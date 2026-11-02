@@ -12,6 +12,7 @@ import {
     flattenAgentConsoleMarkdownLine,
     renderAgentConsoleMarkdownLines
 } from './AgentConsoleMarkdown';
+import { AGENT_CONSOLE_MARKDOWN_COMPONENT } from './AgentConsoleMessageComponents';
 import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from './AgentConsoleTheme';
 import { getDisplayWidth, sliceByDisplayWidth } from './AgentConsoleTextWidth';
 import {
@@ -36,16 +37,13 @@ import {
 import {
     AgentConsoleApprovalTemplate, AgentConsoleCommandTemplate, AgentConsoleErrorTemplate,
     AgentConsoleFilesTemplate, AgentConsolePlanTemplate, AgentConsoleQuestionTemplate,
-    AgentConsoleMarkdownComponent, AgentConsoleSystemTemplate, AgentConsoleThoughtTemplate,
+    AgentConsoleSystemTemplate, AgentConsoleThoughtTemplate,
     AgentConsoleToolTemplate, AgentConsoleUserTemplate
 } from './AgentConsoleMessageTemplates';
-
 export type AgentConsoleMessageTemplateKind = 'user' | 'assistant' | 'tool' | 'error' | 'system' | 'planTodo' | 'fileChange' | 'timelineBoundary' | 'timelineHeader' | 'timelineFooter' | 'timelineCollapsed';
-
 export interface AgentConsoleRenderedToken extends AgentConsoleMarkdownToken {
     style: Record<string, string>;
 }
-
 export interface AgentConsoleRenderedLine {
     /** Stable identity used by the transcript v-for across window shifts. */
     renderKey?: string;
@@ -78,7 +76,6 @@ export interface AgentConsoleRenderedLine {
     semanticFamily?: AgentConsoleContentFamily;
     semanticKind?: AgentConsoleContentKind;
 }
-
 export interface AgentConsoleRenderedMessageItem {
     [noReact]?: boolean;
     kind: string;
@@ -206,9 +203,10 @@ export class AgentConsoleUserRenderer extends AgentConsoleFamilyMessageRenderer 
 
 @Injectable()
 export class AgentConsoleAnswerRenderer extends AgentConsoleFamilyMessageRenderer {
+    constructor(@Inject(AGENT_CONSOLE_MARKDOWN_COMPONENT) private markdownComponent: Type<any>) { super(); }
     override resolve(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): AgentConsoleMessageRenderResponse {
         const presentation = super.resolve(message, templateKind).presentation;
-        return { component: AgentConsoleMarkdownComponent, presentation: {
+        return { component: this.markdownComponent, presentation: {
             ...presentation,
             roleLabel: '',
             itemStyle: (theme, selected) => ({
@@ -221,18 +219,20 @@ export class AgentConsoleAnswerRenderer extends AgentConsoleFamilyMessageRendere
 
 @Injectable()
 export class AgentConsolePartialRenderer extends AgentConsoleFamilyMessageRenderer {
+    constructor(@Inject(AGENT_CONSOLE_MARKDOWN_COMPONENT) private markdownComponent: Type<any>) { super(); }
     override resolve(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): AgentConsoleMessageRenderResponse {
-        return { ...super.resolve(message, templateKind), component: AgentConsoleMarkdownComponent };
+        return { ...super.resolve(message, templateKind), component: this.markdownComponent };
     }
 }
 
 @Injectable()
 export class AgentConsolePreambleRenderer extends AgentConsoleFamilyMessageRenderer {
+    constructor(@Inject(AGENT_CONSOLE_MARKDOWN_COMPONENT) private markdownComponent: Type<any>) { super(); }
     override resolve(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): AgentConsoleMessageRenderResponse {
         const response = super.resolve(message, templateKind);
         // Preamble is ordinary assistant prose; a `Context ·` label made the
         // same speaker read as two authors (opencode parity).
-        return { component: AgentConsoleMarkdownComponent, presentation: { ...response.presentation, roleLabel: '' } };
+        return { component: this.markdownComponent, presentation: { ...response.presentation, roleLabel: '' } };
     }
 }
 

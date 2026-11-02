@@ -42,7 +42,6 @@ import {
     resolveAgentConsoleMarkdownToneStyle
 } from './AgentConsoleMessageRenderers';
 import { AgentConsoleMessageOutletDirective } from './AgentConsoleMessageOutlet';
-import { AgentConsoleMarkdownComponent, AgentConsoleWebMarkdownComponent } from './AgentConsoleMessageTemplates';
 import {
     AgentConsoleTheme,
     AgentConsoleThemeStyles,
@@ -2710,7 +2709,7 @@ export class AgentConsoleMessagesPanelComponent {
     }
 
     get renderedMessageItems(): AgentConsoleRenderedMessageItem[] {
-        const items = this.state.surface === 'web' ? this.messageItems.map(item => item.component === AgentConsoleMarkdownComponent ? { ...item, component: AgentConsoleWebMarkdownComponent } : item) : this.messageItems;
+        const items = this.messageItems;
         if (!this.state.messageDetailOpen) {
             return items;
         }

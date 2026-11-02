@@ -9,6 +9,7 @@ import {
 } from '@tsdi/components';
 import { Module, Optional } from '@tsdi/ioc';
 import { CommonTabBarComponent } from './tab-bar';
+import { CommonMarkdownCodeComponent, CommonMarkdownTableComponent } from './markdown';
 
 interface CommonProjectionNode extends RNode {
     tagName?: string;
@@ -96,7 +97,7 @@ export class PanelComponent {
 }
 
 @Module({
-    declarations: [PanelComponent, CommonTabBarComponent],
-    exports: [PanelComponent, CommonTabBarComponent]
+    declarations: [PanelComponent, CommonTabBarComponent, CommonMarkdownTableComponent, CommonMarkdownCodeComponent],
+    exports: [PanelComponent, CommonTabBarComponent, CommonMarkdownTableComponent, CommonMarkdownCodeComponent]
 })
 export class CommonComponentsModule {}

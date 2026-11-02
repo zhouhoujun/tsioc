@@ -84,6 +84,7 @@ import {
     AgentConsoleToolTemplate, AgentConsoleUserTemplate, AgentConsoleRoutedLineComponent,
     AgentConsoleRoutedTokensComponent
 } from './AgentConsoleMessageTemplates';
+import { AGENT_CONSOLE_MARKDOWN_COMPONENT } from './AgentConsoleMessageComponents';
 
 @Module({
     imports: [
@@ -152,6 +153,7 @@ import {
         { provide: COMMON_TAB_BAR_SOURCE, useClass: AgentConsoleSessionTabsSource },
         { provide: AgentConsoleTranscriptLayoutResolver, useClass: DefaultAgentConsoleTranscriptLayoutResolver },
         AgentConsoleMessageRendererRegistry,
+        { provide: AGENT_CONSOLE_MARKDOWN_COMPONENT, useValue: AgentConsoleMarkdownComponent },
         AgentConsoleUserRenderer,
         AgentConsoleAnswerRenderer,
         AgentConsolePartialRenderer,

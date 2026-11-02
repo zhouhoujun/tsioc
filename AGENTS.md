@@ -32,7 +32,7 @@
 - `components/console` 与 agents 库**不得直接引用 node API**（`node:` 模块、`process`、`Buffer`、`fs`、`__dirname` 等）；需要环境信息时用全局守卫（如 `(globalThis as { process?: ... }).process`）访问。
 - `components/common` 是 renderer-neutral 公共层，只能依赖 components 核心，不得反向引用 `components/html` 或 `components/console`。
 - `components/html` 与 `components/console` 是并列平台 renderer，禁止互相引用、互相模拟或把一端兼容逻辑塞入另一端。
-- **平台差异通过语义和 skin 分层**：共享 message/timeline 模板在 agent-ui 输出稳定语义（`data-template-kind`、`data-semantic-kind`、`data-code`、`data-table` 等），TUI 由 `components/console` 绘制，浏览器由 `agent-ui/web-console` + `web/console.css` 绘制；浏览器 Markdown 使用 `AgentConsoleWebMarkdownComponent` 渲染原生表格/代码块并复用共享 syntax tokens 做高亮，TUI 继续使用终端网格/代码行；不得为浏览器复制一套时间线解析/投影逻辑，也不得让 TUI 承担浏览器卡片布局。
+- **平台差异通过语义和 skin 分层**：共享 message/timeline 模板在 agent-ui 输出稳定语义（`data-template-kind`、`data-semantic-kind`、`data-code`、`data-table` 等），TUI 由 `components/console` 绘制，浏览器由 `agent-ui/web-console` + `web/console.css` 绘制；浏览器 Markdown 使用 `AgentConsoleWebMarkdownComponent` 渲染原生表格/代码块并复用共享 syntax tokens 做高亮，TUI 继续使用终端网格/代码行；不得为浏览器复制一套时间线解析/投影逻辑，也不得让 TUI 承担浏览器卡片布局。抽象组件通过 DI token（如 `AGENT_CONSOLE_MARKDOWN_COMPONENT`）由宿主统一提供，renderer/panel 不得直接 import Web 组件或每次渲染判断平台；通用 Markdown table/code 语义组件放在 `components/common`，HTML/console renderer 只负责各自布局差异。
 - **Web skin 必须跟随主题**：浏览器适配层把当前 console theme 名镜像到根节点/document（`data-theme` / `data-agent-theme`），`web/console.css` 为 light/solarized/high-contrast 等主题各自定义 Web 专用变量与完整颜色覆盖；不得把 Web 端固定成 dark 配色，也不得用硬编码颜色覆盖用户主题。
 - `agent-ui/src` 是平台无关 UI 层，不得直接引用 `@tsdi/components/html` 或 `@tsdi/components/console`。
 - `agent-ui/console` 只连接 agent-ui 与 `components/console`；`agent-ui/web-console` 只连接 agent-ui 与 `components/html`，两个适配层禁止互相引用。

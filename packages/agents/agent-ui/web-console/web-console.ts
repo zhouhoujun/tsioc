@@ -1,5 +1,6 @@
 import { Application, ApplicationContext } from '@tsdi/core';
 import { DOCUMENT } from '@tsdi/common';
+import { Injectable } from '@tsdi/ioc';
 import { ComponentRef, ComponentsModule, ReactiveEffect, reactive } from '@tsdi/components';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { DomTranscriptFollower, measureDomConsoleColumns } from '@tsdi/components/html';
@@ -14,6 +15,7 @@ import {
     AgentConsoleSessionState,
     AgentConsoleSettingsData,
     AgentConsoleSettingsStore,
+    AGENT_CONSOLE_MARKDOWN_COMPONENT,
     ConsoleTerminalSurfaceAccessor,
     AgentConsoleStatuslineStore,
     AgentConsoleThemeStore,
@@ -27,6 +29,7 @@ import {
     normalizeAgentConsoleTitle,
     sanitizeAgentConsoleSettings
 } from '@tsdi/agent-ui';
+import { AgentConsoleWebMarkdownComponent } from './AgentConsoleWebMarkdown';
 
 const CONSOLE_SECURITY_LEVELS = ['read-only', 'ask', 'auto', 'full'];
 
@@ -301,6 +304,7 @@ export async function mountAgentWebConsole(
             { provide: DOCUMENT, useValue: doc },
             { provide: ConsoleTerminalSurfaceAccessor, useValue: surfaceAccessor },
             { provide: AGENT_CONSOLE_APP_RPC, useValue: rpc },
+            { provide: AGENT_CONSOLE_MARKDOWN_COMPONENT, useValue: AgentConsoleWebMarkdownComponent },
             { provide: AgentConsoleSettingsStore, useValue: createRpcConsoleSettingsStore(rpc) },
             { provide: AgentConsoleThemeStore, useValue: consoleStores.theme },
             { provide: AgentConsoleStatuslineStore, useValue: consoleStores.statusline },
@@ -343,7 +347,6 @@ export async function mountAgentWebConsole(
         state.setCommandExecutionControl(ctx.get(COMMAND_EXECUTION_CONTROL) as CommandExecutionControlPort);
     }
     state.setCommandOutputStore(new RpcCommandOutputStore(rpc, () => state.sessionId));
-    state.surface = 'web';
 
     state.configure({
         sessionId: config.sessionId || state.sessionId || 'console',

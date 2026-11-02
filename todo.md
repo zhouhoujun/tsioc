@@ -2873,3 +2873,16 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 浏览器代码块增加行号（CSS counter，不进入复制文本）与 Copy 成功反馈（Copied/已复制，1.5s 后恢复）。
 - 复制仍使用纯文本 codeData.text；行号/高亮 span 不污染剪贴板。
 - TUI 代码块保持原终端行；markdown/html-console/web-console 回归 34 passing；gate 27/27。
+
+## DI 抽象组件（2026-11）
+
+- 新增 `AGENT_CONSOLE_MARKDOWN_COMPONENT` token；AgentUiModule 默认提供 TUI Markdown 组件，web-console 用 useValue 提供 `AgentConsoleWebMarkdownComponent`。
+- Answer/Partial/Preamble renderer 通过构造注入读取该 token；Panels 不再有任何 surface 环境判断或 Web 组件直接 import。
+- Web Markdown 组件移入 `agent-ui/web-console`，核心 agent-ui 不依赖 DOM 实现。
+- web-markdown-surface / html-console / web-console / session-tabs 回归 23 passing；TUI/Web 截图正常。
+
+## common Markdown base components（2026-11）
+
+- `components/common` 新增 `common-markdown-table` / `common-markdown-code`，承载 renderer-neutral 的 header/rows/cells、code lines/tokens。
+- web-console 的 Web Markdown 只保留语言头、Copy、行号/主题 chrome，表格/代码主体使用 common 组件；agent-ui 通过 DI 提供 Markdown 组件，不在 TUI 每次判断环境。
+- components/common 28 passing；web-console/html/markdown 回归通过；TUI/Web 截图正常。
