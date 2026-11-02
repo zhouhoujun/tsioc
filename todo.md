@@ -2861,3 +2861,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - web-console 将 activeThemeName 镜像到 `.agent-console[data-theme]` 与 `documentElement[data-agent-theme]`，通过 MutationObserver 跟随 `/theme` 的内联样式更新。
 - `web/console.css` 增加 light 主题变量与卡片/表格/代码/composer/syntax 颜色覆盖；dark 保持原样。
 - 真实 Chromium `/theme light` 验证白色背景、浅色卡片与可读 syntax；dark/mobile 回归；gate 27/27。
+
+## Web solarized / high-contrast（2026-11）
+
+- `web/console.css` 抽出 Web 表面变量（user/tool/code/table/row/link/inline-code/thought 等），light 覆盖全部变量。
+- 新增 solarized 与 high-contrast 变量块及 syntax token 配色；根节点 `data-agent-theme` 自动切换。
+- 真实 Chromium 验证 solarized（base03/base02）与 high-contrast（纯黑/白边框）下的卡片、composer、tabs、代码与状态行。
