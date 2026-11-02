@@ -390,6 +390,22 @@ export async function mountAgentWebConsole(
     }
     syncBrandVisibility();
 
+    // The shared theme is a style map, so the browser skin cannot infer its
+    // name from CSS. Mirror the active terminal theme onto the document for
+    // light/dark skin variables; observe style changes because `/theme`
+    // updates inline styles rather than replacing the root node.
+    let themeObserver: MutationObserver | null = null;
+    const syncTheme = (): void => {
+        const name = String((rootRef?.instance as unknown as { activeThemeName?: string })?.activeThemeName || 'dark');
+        root?.setAttribute('data-theme', name);
+        doc.documentElement?.setAttribute('data-agent-theme', name);
+    };
+    syncTheme();
+    if (root && MutationObserverCtor) {
+        themeObserver = new MutationObserverCtor(() => syncTheme());
+        themeObserver.observe(root, { attributes: true, subtree: true, attributeFilter: ['style', 'class'] });
+    }
+
     let disposeBridge = (): void => undefined;
     let disposed = false;
     void bridge.subscribe(state.sessionId)
@@ -456,6 +472,9 @@ export async function mountAgentWebConsole(
             follower?.detach();
             indicator.remove();
             brandObserver?.disconnect();
+            themeObserver?.disconnect();
+            root?.removeAttribute('data-theme');
+            doc.documentElement?.removeAttribute('data-agent-theme');
             disposed = true;
             disposeBridge();
             await ctx.close();

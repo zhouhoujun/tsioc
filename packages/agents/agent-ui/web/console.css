@@ -438,3 +438,121 @@ body {
         border-radius: 12px !important;
     }
 }
+
+/* Light theme: the shared theme already paints inline light colors; keep the
+   browser skin in the same palette instead of forcing dark cards over it. */
+html[data-agent-theme="light"] {
+    --agent-web-bg: #ffffff;
+    --agent-web-panel: #f6f8fa;
+    --agent-web-panel-raised: #ffffff;
+    --agent-web-border: #d0d7de;
+    --agent-web-text: #24292f;
+    --agent-web-muted: #57606a;
+    --agent-web-accent: #bc4c00;
+    --agent-web-danger: #cf222e;
+}
+
+html[data-agent-theme="light"] body {
+    background: var(--agent-web-bg);
+    color: var(--agent-web-text);
+}
+
+html[data-agent-theme="light"] #agent-console .message-template-user {
+    background: #f6f8fa !important;
+    border-color: #d0d7de;
+    color: #24292f !important;
+}
+
+html[data-agent-theme="light"] #agent-console .message-template-tool,
+html[data-agent-theme="light"] #agent-console .message-template-command {
+    background: #f6f8fa !important;
+    border-color: #d0d7de;
+    color: #24292f !important;
+}
+
+html[data-agent-theme="light"] #agent-console .message-template-plan {
+    background: #f6f8fa !important;
+    border-color: #d0d7de;
+}
+
+html[data-agent-theme="light"] #agent-console .console-input-panel .input-shell {
+    background: #f6f8fa !important;
+    border-color: #d0d7de !important;
+    box-shadow: 0 8px 24px rgba(27, 31, 36, 0.08);
+}
+
+html[data-agent-theme="light"] #agent-console textarea.agent-input {
+    color: #24292f;
+}
+
+html[data-agent-theme="light"] #agent-console .console-input-panel .input-meta {
+    color: #57606a;
+}
+
+html[data-agent-theme="light"] #agent-console common-tab-bar .common-tab[aria-selected="true"] {
+    background: #eaeef2 !important;
+    border-color: #d0d7de;
+    color: #24292f !important;
+}
+
+html[data-agent-theme="light"] #agent-console common-tab-bar .common-tab-new {
+    border-color: #d0d7de;
+}
+
+html[data-agent-theme="light"] #agent-console .web-markdown-table,
+html[data-agent-theme="light"] #agent-console .web-code-block {
+    background: #f6f8fa;
+    border-color: #d0d7de;
+}
+
+html[data-agent-theme="light"] #agent-console .web-code-head {
+    background: #eaeef2;
+    border-color: #d0d7de;
+    color: #57606a;
+}
+
+html[data-agent-theme="light"] #agent-console .web-code-head button {
+    border-color: #d0d7de;
+    color: #0969da;
+}
+
+html[data-agent-theme="light"] #agent-console .web-code-block pre {
+    color: #24292f;
+}
+
+html[data-agent-theme="light"] #agent-console .web-table-row,
+html[data-agent-theme="light"] #agent-console .web-table-cell {
+    border-color: #d0d7de;
+}
+
+html[data-agent-theme="light"] #agent-console .web-table-head {
+    background: #f6f8fa;
+    color: #24292f;
+}
+
+html[data-agent-theme="light"] #agent-console .web-code-token[data-tone="syntax-keyword"] { color: #cf222e; }
+html[data-agent-theme="light"] #agent-console .web-code-token[data-tone="syntax-string"] { color: #0a3069; }
+html[data-agent-theme="light"] #agent-console .web-code-token[data-tone="syntax-number"] { color: #0550ae; }
+html[data-agent-theme="light"] #agent-console .web-code-token[data-tone="syntax-comment"] { color: #6e7781; }
+html[data-agent-theme="light"] #agent-console .web-code-token[data-tone="syntax-property"] { color: #8250df; }
+html[data-agent-theme="light"] #agent-console .web-code-token[data-tone="syntax-type"] { color: #953800; }
+html[data-agent-theme="light"] #agent-console .web-code-token[data-tone="syntax-constant"] { color: #0550ae; }
+html[data-agent-theme="light"] #agent-console .web-code-token[data-tone="syntax-variable"] { color: #953800; }
+html[data-agent-theme="light"] #agent-console .web-code-token[data-tone="syntax-tag"] { color: #116329; }
+html[data-agent-theme="light"] #agent-console .web-code-token[data-tone="syntax-attribute"] { color: #0550ae; }
+html[data-agent-theme="light"] #agent-console .web-code-token[data-tone="syntax-function"] { color: #8250df; }
+
+html[data-agent-theme="light"] #agent-console .web-table-token[data-tone="inline-code"] {
+    background: #eaeef2;
+    color: #0a3069;
+}
+
+html[data-agent-theme="light"] #agent-console .web-table-token[data-tone="link"] {
+    color: #0969da;
+}
+
+html[data-agent-theme="light"] #agent-console .console-new-messages {
+    background: #ffffff;
+    border-color: #d0d7de;
+    color: #0969da;
+}

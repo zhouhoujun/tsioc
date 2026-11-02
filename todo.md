@@ -2855,3 +2855,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 表格 tableData 增加 headerTokens / rowTokens；浏览器原生表格单元格复用共享 inline Markdown tokenizer。
 - 支持粗体、斜体、删除线、链接、行内代码、muted tone；TUI 网格表格保持不变。
 - html-console / markdown 回归通过；全量 gate 27/27。
+
+## Web theme parity（2026-11）
+
+- web-console 将 activeThemeName 镜像到 `.agent-console[data-theme]` 与 `documentElement[data-agent-theme]`，通过 MutationObserver 跟随 `/theme` 的内联样式更新。
+- `web/console.css` 增加 light 主题变量与卡片/表格/代码/composer/syntax 颜色覆盖；dark 保持原样。
+- 真实 Chromium `/theme light` 验证白色背景、浅色卡片与可读 syntax；dark/mobile 回归；gate 27/27。
