@@ -66,7 +66,7 @@ const WEB_MARKDOWN_TEMPLATE = `
             <div class="web-code-block" v-if="segment.isCode">
                 <div class="web-code-head">
                     <span>{{segment.codeData.language || 'code'}}</span>
-                    <button type="button" @click="copyCode(segment.codeData.text)">{{copyLabel}}</button>
+                    <button type="button" @click="copyCode(segment.codeData.text, $event)">{{copyLabel}}</button>
                 </div>
                 <pre><code><span class="web-code-line" v-for="line in segment.codeData.lines || []"><span class="web-code-token" data-tone="{{token.tone}}" v-for="token in line">{{token.text}}</span></span></code></pre>
             </div>
@@ -252,16 +252,26 @@ export abstract class AgentConsoleMessageTemplateBase {
         return segments;
     }
     get copyLabel(): string { return this.translator?.translate('agent.message.copyCode') || 'Copy'; }
+    get copiedLabel(): string { return this.translator?.translate('agent.message.copiedCode') || 'Copied'; }
     tableCellStyle(align?: string): Record<string, string> {
         return { 'text-align': align === 'center' || align === 'right' ? align : 'left' };
     }
-    async copyCode(text: string): Promise<void> {
+    async copyCode(text: string, event?: { target?: { textContent?: string | null } }): Promise<void> {
         const clipboard = (globalThis as { navigator?: { clipboard?: { writeText?(value: string): Promise<void> } } }).navigator?.clipboard;
         try {
             await clipboard?.writeText?.(String(text || ''));
         } catch {
             // Clipboard permission can be denied; the code block remains selectable.
         }
+        const button = event?.target;
+        if (!button) {
+            return;
+        }
+        const original = button.textContent;
+        button.textContent = this.copiedLabel;
+        (globalThis as { setTimeout?: (fn: () => void, delay: number) => unknown }).setTimeout?.(() => {
+            button.textContent = original;
+        }, 1500);
     }
     get templateClass(): string { return 'message-template-system'; }
     get blockStyle(): Record<string, string> {

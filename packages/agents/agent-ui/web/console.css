@@ -302,9 +302,26 @@ body {
     font-family: inherit;
 }
 
+#agent-console .web-code-block pre {
+    counter-reset: code-line;
+}
+
 #agent-console .web-code-line {
+    position: relative;
     display: block;
     min-height: 1.55em;
+    padding-left: 4ch;
+}
+
+#agent-console .web-code-line::before {
+    position: absolute;
+    left: 0;
+    width: 3ch;
+    color: var(--agent-web-code-muted);
+    content: counter(code-line);
+    counter-increment: code-line;
+    text-align: right;
+    user-select: none;
 }
 
 #agent-console .web-code-token {

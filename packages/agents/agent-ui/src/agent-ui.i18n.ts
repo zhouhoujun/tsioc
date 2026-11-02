@@ -298,6 +298,7 @@ export const agentUiEnglish: TranslationBundle = {
                 expandEnter: '… {count} more lines. Press Enter to expand',
                 collapseEnter: 'Press Enter to collapse',
                 copyCode: 'Copy',
+                copiedCode: 'Copied',
                 followUpOnlyTerms: AGENT_UI_EN_FOLLOW_UP_ONLY_TERMS
             },
             session: {
@@ -539,6 +540,7 @@ export const agentUiChinese: TranslationBundle = {
                 expandEnter: '… 还有 {count} 行，按 Enter 展开',
                 collapseEnter: '按 Enter 收起',
                 copyCode: '复制',
+                copiedCode: '已复制',
                 followUpOnlyTerms: AGENT_UI_ZH_CN_FOLLOW_UP_ONLY_TERMS
             },
             session: {

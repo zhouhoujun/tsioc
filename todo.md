@@ -2867,3 +2867,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - `web/console.css` 抽出 Web 表面变量（user/tool/code/table/row/link/inline-code/thought 等），light 覆盖全部变量。
 - 新增 solarized 与 high-contrast 变量块及 syntax token 配色；根节点 `data-agent-theme` 自动切换。
 - 真实 Chromium 验证 solarized（base03/base02）与 high-contrast（纯黑/白边框）下的卡片、composer、tabs、代码与状态行。
+
+## Web code block polish（2026-11）
+
+- 浏览器代码块增加行号（CSS counter，不进入复制文本）与 Copy 成功反馈（Copied/已复制，1.5s 后恢复）。
+- 复制仍使用纯文本 codeData.text；行号/高亮 span 不污染剪贴板。
+- TUI 代码块保持原终端行；markdown/html-console/web-console 回归 34 passing；gate 27/27。
