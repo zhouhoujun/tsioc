@@ -69,6 +69,10 @@ export interface AgentConsoleRenderedLine {
     /** Markdown list/quote continuation indent (columns). */
     continuationIndent?: number;
     tone?: AgentConsoleMarkdownTone;
+    /** Markdown fence body (browser renderers use a code surface). */
+    code?: boolean;
+    /** Markdown grid-table visual row/border. */
+    table?: boolean;
     renderRegion?: string;
     spacing?: boolean;
     semanticFamily?: AgentConsoleContentFamily;
@@ -995,7 +999,9 @@ function buildRenderedLine(
         tokens,
         lineStyle,
         continuationIndent: line.continuationIndent,
-        tone: line.tone
+        tone: line.tone,
+        code: line.code,
+        table: line.table
     };
 }
 

@@ -7,7 +7,7 @@ import { styleTextToObject } from './AgentConsoleTheme';
 
 const ITEM_TEMPLATE = `
     <div class="message-block-spacing" v-if="spacerBefore">​</div>
-    <div class="message-item-block {{templateClass}}" v-style="blockStyle">
+    <div class="message-item-block {{templateClass}}" data-template-kind="{{templateKind}}" data-semantic-kind="{{semanticKind}}" data-status="{{item.statusKind}}" v-style="blockStyle">
         <label class="message-line" v-for="line in lines" v-style="line.itemStyle" aria-label="{{line.ariaLabel}}" continuationIndent="{{line.continuationIndent}}">
             <span v-style="line.statusStyle">{{line.status}}</span>
             <span v-style="line.roleStyle" v-show="line.role">{{line.role}}</span>
@@ -21,8 +21,8 @@ const ITEM_TEMPLATE = `
 
 const MARKDOWN_TEMPLATE = `
     <div class="message-block-spacing" v-if="spacerBefore">​</div>
-    <div class="message-markdown {{templateClass}}" v-style="blockStyle">
-        <label class="message-line markdown-line" v-for="line in lines" v-style="line.itemStyle" aria-label="{{line.ariaLabel}}" continuationIndent="{{line.continuationIndent}}">
+    <div class="message-markdown {{templateClass}}" data-template-kind="{{templateKind}}" data-semantic-kind="{{semanticKind}}" data-status="{{item.statusKind}}" v-style="blockStyle">
+        <label class="message-line markdown-line" v-for="line in lines" v-style="line.itemStyle" aria-label="{{line.ariaLabel}}" continuationIndent="{{line.continuationIndent}}" data-code="{{line.code}}" data-table="{{line.table}}">
             <span v-style="line.statusStyle">{{line.status}}</span>
             <span v-style="line.roleStyle" v-show="line.role">{{line.role}}</span>
             <span v-style="line.metaStyle" v-show="line.meta">{{line.meta}}</span>
@@ -162,6 +162,8 @@ export abstract class AgentConsoleMessageTemplateBase {
         return lines;
     }
     get spacerBefore(): boolean { return !!this.item?.spacerBefore; }
+    get templateKind(): string { return this.item?.templateKind || ''; }
+    get semanticKind(): string { return this.item?.semanticKind || ''; }
     get templateClass(): string { return 'message-template-system'; }
     get blockStyle(): Record<string, string> {
         if (!this.item?.blockPadding) return {};
@@ -236,11 +238,14 @@ export abstract class AgentConsoleMessageTemplateBase {
 }
 
 @Component({ selector: 'agent-console-user-template', template: ITEM_TEMPLATE, imports: [AgentConsoleRoutedTokensComponent] })
-export class AgentConsoleUserTemplate extends AgentConsoleMessageTemplateBase {}
+export class AgentConsoleUserTemplate extends AgentConsoleMessageTemplateBase {
+    override get templateClass(): string { return 'message-template-user'; }
+}
 
 /** Cross-platform Markdown document. Parsed tokens are shared by DOM and TUI renderers. */
 @Component({ selector: 'agent-console-markdown', template: MARKDOWN_TEMPLATE, imports: [AgentConsoleRoutedTokensComponent] })
 export class AgentConsoleMarkdownComponent extends AgentConsoleMessageTemplateBase {
+    override get templateClass(): string { return 'message-template-assistant'; }
     override get lines(): AgentConsoleRenderedLine[] {
         return this.bodyPreviewLines(this.item?.lines || [], Math.max(1, this.state.consoleOptions.auxiliaryPreviewLines));
     }

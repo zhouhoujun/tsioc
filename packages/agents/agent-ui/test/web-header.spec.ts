@@ -34,6 +34,7 @@ export class WebConsoleHeaderTest {
         expect(PAGE_SOURCE).toContain('border: 0 !important;');
         expect(PAGE_SOURCE).toContain('Noto Sans Mono CJK SC');
         expect(PAGE_SOURCE).toContain('display: none;');
+        expect(PAGE_SOURCE).toContain('href="./console.css"');
     }
 
     @Test('redeems the pairing code, lists sessions newest-first and creates a new session')

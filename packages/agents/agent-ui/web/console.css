@@ -1,0 +1,307 @@
+/*
+ * Browser presentation layer for the agent console.
+ *
+ * The transcript model, hierarchy and timeline identity live in agent-ui and
+ * are shared with the terminal. This file only changes how the DOM renderer
+ * paints that model: a readable web column, prose typography, compact tool
+ * cards and a floating composer. TUI styling stays in components/console.
+ */
+
+:root {
+    --agent-web-bg: #0b0f14;
+    --agent-web-panel: #111820;
+    --agent-web-panel-raised: #151f2a;
+    --agent-web-border: #243142;
+    --agent-web-text: #d8e2ee;
+    --agent-web-muted: #8394a8;
+    --agent-web-accent: #d8a86f;
+    --agent-web-danger: #e07a7a;
+    --agent-web-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --agent-web-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono CJK SC", "Source Han Mono SC", monospace;
+}
+
+html,
+body {
+    background: var(--agent-web-bg);
+    color: var(--agent-web-text);
+    font-family: var(--agent-web-sans);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+#agent-console {
+    padding-left: max(24px, env(safe-area-inset-left));
+    padding-right: max(24px, env(safe-area-inset-right));
+}
+
+#agent-console .agent-console {
+    max-width: 980px;
+}
+
+/* Session tabs read as selectable chips rather than terminal text. */
+#agent-console common-tab-bar .common-tab-bar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 0 10px;
+}
+
+#agent-console common-tab-bar .common-tab {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 3px 8px;
+    font-family: var(--agent-web-sans);
+    font-size: 12.5px;
+    line-height: 1.4;
+    cursor: pointer;
+}
+
+#agent-console common-tab-bar .common-tab[aria-selected="true"] {
+    background: var(--agent-web-panel-raised) !important;
+    border-color: var(--agent-web-border);
+    color: #f0f4f8 !important;
+}
+
+#agent-console common-tab-bar .common-tab:not([aria-selected="true"]) {
+    color: var(--agent-web-muted) !important;
+}
+
+#agent-console common-tab-bar .common-tab-close {
+    opacity: 0.55;
+    font-size: 11px;
+}
+
+#agent-console common-tab-bar .common-tab-new {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    margin-left: 2px;
+    border: 1px solid var(--agent-web-border);
+    border-radius: 8px;
+    color: var(--agent-web-accent) !important;
+    font-family: var(--agent-web-sans);
+    font-size: 15px;
+    line-height: 1;
+}
+
+#agent-console [renderregion="transcript"] > .console-panel {
+    padding: 6px 2px 28px;
+    scrollbar-color: #334155 transparent;
+}
+
+#agent-console .message-item-block,
+#agent-console .message-markdown {
+    margin: 8px 0;
+}
+
+/* User input is the visual anchor: one soft card per turn. */
+#agent-console .message-template-user {
+    margin: 16px 0 10px;
+    padding: 10px 14px !important;
+    border: 1px solid var(--agent-web-border);
+    border-radius: 12px;
+    background: var(--agent-web-panel-raised) !important;
+    color: #e6edf3 !important;
+    font-family: var(--agent-web-sans);
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+#agent-console .message-template-user .message-line {
+    padding: 0 !important;
+    text-indent: 0 !important;
+}
+
+/* Assistant prose uses a readable web face; code/commands stay monospace. */
+#agent-console .message-template-assistant {
+    margin: 6px 0 20px;
+    padding-left: 0 !important;
+    color: var(--agent-web-text);
+    font-family: var(--agent-web-sans);
+    font-size: 14.5px;
+    line-height: 1.7;
+}
+
+#agent-console .message-template-assistant .message-line {
+    padding-left: 0 !important;
+    text-indent: 0 !important;
+}
+
+#agent-console .message-template-assistant .message-token {
+    font-family: inherit;
+}
+
+#agent-console .message-template-assistant .message-token[style*="monospace"] {
+    font-family: var(--agent-web-mono);
+}
+
+#agent-console .message-template-assistant .message-line[data-code="true"] {
+    padding: 1px 10px !important;
+    border-left: 2px solid #2a3b4f;
+    background: #0d141d;
+    color: #c9d7e6;
+    font-family: var(--agent-web-mono);
+    font-size: 12.5px;
+    line-height: 1.55;
+    white-space: normal !important;
+}
+
+#agent-console .message-template-assistant .message-line[data-table="true"] {
+    padding: 0 8px !important;
+    background: #0d141d;
+    color: #b8c7d8;
+    font-family: var(--agent-web-mono);
+    font-size: 11.5px;
+    line-height: 1.35;
+    white-space: normal !important;
+    overflow-x: auto;
+}
+
+#agent-console .message-template-assistant .message-line[data-table="true"] .message-token {
+    white-space: pre !important;
+}
+
+/* Reasoning is an auxiliary track: compact and subdued. */
+#agent-console .message-template-thought {
+    margin: 6px 0;
+    color: var(--agent-web-muted);
+    font-family: var(--agent-web-sans);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+#agent-console .message-template-thought .message-line {
+    padding: 2px 0 2px 8px;
+    border-left: 2px solid #223044;
+}
+
+/* Tool activity is scannable as a compact mono card, not a second prose row. */
+#agent-console .message-template-tool,
+#agent-console .message-template-command {
+    margin: 6px 0;
+    padding: 6px 10px !important;
+    border: 1px solid #1d2a3a;
+    border-radius: 8px;
+    background: #0e151d !important;
+    color: #b8c7d8 !important;
+    font-family: var(--agent-web-mono);
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+#agent-console .message-template-tool .message-line,
+#agent-console .message-template-command .message-line {
+    padding: 0 !important;
+    text-indent: 0 !important;
+}
+
+#agent-console .message-template-error {
+    margin: 8px 0;
+    padding: 8px 12px !important;
+    border: 1px solid rgba(224, 122, 122, 0.42);
+    border-radius: 8px;
+    background: rgba(224, 122, 122, 0.08) !important;
+    color: var(--agent-web-danger) !important;
+}
+
+#agent-console .message-template-plan {
+    margin: 8px 0;
+    padding: 8px 12px !important;
+    border: 1px solid var(--agent-web-border);
+    border-radius: 10px;
+    background: var(--agent-web-panel) !important;
+}
+
+/* Composer: one floating, rounded input surface. */
+#agent-console .console-input-panel {
+    padding-top: 8px;
+}
+
+#agent-console .console-input-panel .input-shell {
+    background: var(--agent-web-panel) !important;
+    border: 1px solid var(--agent-web-border) !important;
+    border-radius: 14px !important;
+    padding: 10px 14px 10px 36px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+}
+
+#agent-console .console-input-panel .input-shell::before {
+    top: 10px;
+    left: 14px;
+    color: var(--agent-web-accent);
+    font-family: var(--agent-web-mono);
+    font-weight: 700;
+}
+
+#agent-console textarea.agent-input {
+    color: var(--agent-web-text);
+    font-family: var(--agent-web-sans) !important;
+    font-size: 14px !important;
+    line-height: 1.55 !important;
+    min-height: 1.55em;
+}
+
+#agent-console textarea.agent-input::placeholder {
+    color: #6f8094;
+}
+
+#agent-console .console-input-panel .input-meta {
+    padding: 6px 2px 0;
+    color: var(--agent-web-muted);
+    font-family: var(--agent-web-sans);
+    font-size: 11px;
+}
+
+/* Floating menus retain the overlay contract but read as web cards. */
+#agent-console [renderregion="menu"] > .console-panel,
+#agent-console [renderregion="dialog"] > .console-panel,
+#agent-console agent-console-pending-question-panel > .console-panel,
+#agent-console agent-console-approvals-panel > .console-panel,
+#agent-console agent-console-select-panel > .console-panel,
+#agent-console agent-console-text-overlay-panel > .console-panel {
+    border: 1px solid var(--agent-web-border) !important;
+    border-bottom: 0 !important;
+    border-radius: 12px 12px 0 0;
+    background: var(--agent-web-panel) !important;
+    box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.32);
+    padding: 10px 14px !important;
+}
+
+#agent-console .console-new-messages {
+    border-radius: 999px;
+    background: var(--agent-web-panel-raised);
+    border-color: var(--agent-web-border);
+    color: #9fc3e8;
+    font-family: var(--agent-web-sans);
+}
+
+@media (max-width: 640px) {
+    html,
+    body {
+        font-size: 13px;
+    }
+
+    #agent-console {
+        padding-left: max(10px, env(safe-area-inset-left));
+        padding-right: max(10px, env(safe-area-inset-right));
+    }
+
+    #agent-console .message-template-user {
+        margin-top: 10px;
+        padding: 8px 10px !important;
+    }
+
+    #agent-console .message-template-assistant {
+        font-size: 14px;
+        line-height: 1.65;
+    }
+
+    #agent-console .console-input-panel .input-shell {
+        border-radius: 12px !important;
+    }
+}

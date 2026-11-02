@@ -1,8 +1,9 @@
-const CACHE_NAME = 'tsdi-agent-shell-v2';
+const CACHE_NAME = 'tsdi-agent-shell-v3';
 const CACHE_PREFIX = 'tsdi-agent-shell-';
 const SHELL_ASSETS = [
     './',
     './index.html',
+    './console.css',
     './header.js',
     './manifest.webmanifest',
     './icons/agent.svg',

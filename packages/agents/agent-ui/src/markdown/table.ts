@@ -268,7 +268,8 @@ function distributeColumnWidths(
 function markdownTableLine(tokens: AgentConsoleMarkdownToken[]): AgentConsoleMarkdownLine {
     return {
         rawText: tokens.map(token => token.text).join(''),
-        tokens
+        tokens,
+        table: true
     };
 }
 
@@ -366,7 +367,8 @@ function renderMarkdownColumnTable(headerCells: string[], rows: string[][]): Age
         tokens: cells.flatMap((cell, index) => [
             ...(index ? [{ text: '  ' } as AgentConsoleMarkdownToken] : []),
             ...tokenizeMarkdownInline(cell, headerRow ? 'heading' : undefined)
-        ])
+        ]),
+        table: true
     });
     return [renderRow(headerCells, true), ...rows.map(row => renderRow(row, false))];
 }

@@ -38,6 +38,8 @@ export interface AgentConsoleMarkdownLine {
     tokens: AgentConsoleMarkdownToken[];
     tone?: AgentConsoleMarkdownTone;
     code?: boolean;
+    /** The visual line belongs to a table (grid rows and borders). */
+    table?: boolean;
     /** Columns used to align wrapped continuation lines (list/quote markers). */
     continuationIndent?: number;
 }

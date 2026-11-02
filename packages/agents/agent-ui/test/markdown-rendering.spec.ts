@@ -34,6 +34,9 @@ export class AgentConsoleMarkdownRenderingTest {
         lines.forEach(line => expect(getDisplayWidth(plain(line.rawText))).toBeLessThanOrEqual(60));
         const header = lines.find(line => plain(line.rawText).includes('Name'));
         expect(header?.tokens.some(token => token.tone === 'heading' && token.text.includes('Name'))).toEqual(true);
+        // Renderer-neutral metadata lets the DOM skin use a code/table surface
+        // while the terminal keeps the same grid rows.
+        expect(lines.some(line => line.table === true)).toEqual(true);
     }
 
     @Test('wraps narrow table cells instead of overflowing the terminal')

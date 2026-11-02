@@ -6,6 +6,8 @@ export interface CommonTabItem {
     id: string;
     label: string;
     style?: Record<string, string>;
+    /** Semantic selection state; renderers may use it for accessibility and skinning. */
+    active?: boolean;
     /** Whether this tab shows its close affordance (defaults to true). */
     showClose?: boolean;
 }
@@ -37,7 +39,7 @@ export const COMMON_TAB_BAR_SOURCE = token<CommonTabBarSource>('COMMON_TAB_BAR_S
     selector: 'common-tab-bar',
     template: `
     <p class="common-tab-bar" role="tablist" v-style="barStyle" v-show="visible">
-        <span class="common-tab" role="tab" v-for="tab in items" v-style="tab.style" @click="select(tab.id)">
+        <span class="common-tab" role="tab" aria-selected="{{tab.active}}" v-for="tab in items" v-style="tab.style" @click="select(tab.id)">
             <span class="common-tab-label" @click="select(tab.id)">{{tab.label}}</span><span class="common-tab-close" role="button" v-if="tab.showClose !== false" v-style="closeStyle" data-cell-width="2" @click="close(tab.id)">{{closeLabel}}</span>
         </span>
         <span class="common-tab-new" role="button" v-style="actionStyle" v-show="showCreate" @click="create">{{createLabel}}</span>

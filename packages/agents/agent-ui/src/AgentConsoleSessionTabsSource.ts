@@ -54,14 +54,16 @@ export class AgentConsoleSessionTabsSource implements CommonTabBarSource {
         if (!this.visible) {
             return [];
         }
-        return resolveAgentConsoleSessionTabs(this.state).map(session => ({
-            id: session.id,
-            label: `  ${this.tabTitle(session)} `,
-            style: session.id === this.state.sessionId || session.current
-                ? this.themeStyles.statusValue
-                : this.themeStyles.statusLabel,
-            showClose: session.id === this.state.sessionId || session.current
-        }));
+        return resolveAgentConsoleSessionTabs(this.state).map(session => {
+            const active = session.id === this.state.sessionId || !!session.current;
+            return {
+                id: session.id,
+                label: `  ${this.tabTitle(session)} `,
+                active,
+                style: active ? this.themeStyles.statusValue : this.themeStyles.statusLabel,
+                showClose: active
+            };
+        });
     }
 
     get barStyle(): Record<string, string> {

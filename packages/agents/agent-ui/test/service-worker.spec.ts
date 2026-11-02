@@ -105,6 +105,7 @@ export class ServiceWorkerTest {
         const sw = createHarness();
         await sw.install();
         expect(sw.cached.has(`${SCOPE}header.js`)).toEqual(true);
+        expect(sw.cached.has(`${SCOPE}console.css`)).toEqual(true);
         expect(sw.cached.has(`${SCOPE}dist/agent-console.js`)).toEqual(true);
         // The cache name must move with the release, otherwise an upgraded
         // bundle stays pinned in the old cache.
