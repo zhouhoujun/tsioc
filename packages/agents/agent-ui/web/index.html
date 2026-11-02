@@ -79,11 +79,17 @@
             min-height: 0;
             overflow: hidden;
             box-sizing: border-box;
-            padding: 0 0 max(6px, env(safe-area-inset-bottom)) 0;
+            padding: 0 max(20px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
         }
+        /* Keep the terminal transcript and composer in one readable desktop
+           column. The TUI uses the full viewport, but the browser needs a
+           bounded measure so long lines do not run edge to edge. */
         #agent-console .agent-console {
             display: flex;
             flex-direction: column;
+            width: 100%;
+            max-width: 1080px;
+            margin: 0 auto;
             height: 100%;
             min-height: 0;
         }
@@ -119,8 +125,19 @@
         }
         /* Composer and status line sit on the terminal background. */
         #agent-console .console-input-panel .input-shell {
+            position: relative;
             background: #1b2128 !important;
-            padding: 0.5em 1ch !important;
+            padding: 0.5em 1ch 0.5em 3ch !important;
+        }
+        /* The terminal textarea's prompt attribute is not rendered by HTML;
+           draw the same leading `>` without baking it into the value. */
+        #agent-console .console-input-panel .input-shell::before {
+            content: ">";
+            position: absolute;
+            left: 1ch;
+            top: 0.5em;
+            color: #6e7681;
+            pointer-events: none;
         }
         #agent-console textarea.agent-input {
             width: 100%;
@@ -164,11 +181,32 @@
         #agent-console .message-line {
             background: transparent !important;
         }
+        /* The TUI carries the final-answer inset as literal leading spaces.
+           DOM interpolation trims them, so keep the same four-column body
+           inset at the layout layer for assistant Markdown. */
+        #agent-console .message-markdown {
+            padding-left: 3ch !important;
+        }
+
+        #agent-console agent-console-brand-panel {
+            flex: 0 0 auto;
+        }
         #agent-console .console-brand-panel {
             padding: 0 1ch;
         }
+        /* Keep the token/mode line one row on phones; the composer above it
+           already exposes the actions, so ellipsis is better than a wrapped
+           second line at the viewport edge. */
+        #agent-console .console-input-panel .input-meta {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
         /* The TUI welcome block scrolls away with the transcript; once rows
-           exist the browser keeps only the conversation area. */
+           exist the browser keeps only the conversation area. Hide the host as
+           well: hiding only the inner panel left an empty flex slot above the
+           messages and pushed the transcript to the middle of the viewport. */
+        #agent-console .agent-console.has-transcript > agent-console-brand-panel,
         #agent-console .agent-console.has-transcript .console-brand-panel {
             display: none !important;
         }

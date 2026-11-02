@@ -2822,3 +2822,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 需求：继续按 opencode 打磨时间线与 composer，让 `/web` 浏览器控制台和 TUI 保持同一套层级和专业排版。
 - 修复：输入模式徽标从 prompt 移到输入框下方 meta 行（`> Ask code or files` + `0 tokens · auto-approve`），TUI/web 共用；时间线 Thought 使用 `+`、最终回答 5 列 inset、单一 spacer；固定顶部 session tabs 同样使用共享 tab bar。
 - 验证：真实 TUI 带 reasoning/tool 的 turn 检查 composer/tabs/Thought/工具/最终回答层级；agent-ui 相关 badge/vim/panel 149 passing。
+
+## Web console / TUI surface parity（2026-11）
+
+- Web console now uses a centered, bounded desktop column (max 1080px) while the TUI keeps the full viewport; mobile keeps safe-area padding.
+- Hide the welcome host (not only its inner panel) once a transcript exists; this removed the empty flex slot that centered the conversation and created a large dead area.
+- Browser composer renders the same `>` prompt as the terminal; the token/mode line stays one row with ellipsis on phones.
+- Assistant Markdown keeps the TUI's five-column body inset, and tool rows retain the same label/object formula.
+- Verified with real Chromium at 1280×800 and 390×844 against a fake provider turn (welcome, thought, tool, final answer, composer).
