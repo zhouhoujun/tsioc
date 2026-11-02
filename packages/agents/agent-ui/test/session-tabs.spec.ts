@@ -31,7 +31,7 @@ export class SessionTabsTest {
             for (let index = 0; index < 32; index++) await Promise.resolve();
             const tabs = ref.hostView.query(CommonTabBarComponent) as any;
             expect(tabs.instance.visible).toEqual(true);
-            expect(tabs.instance.items.map((tab: any) => tab.label)).toEqual(['  Alpha ', '  Beta ']);
+            expect(tabs.instance.items.map((tab: any) => tab.label)).toEqual([' Alpha ', ' Beta ']);
             expect(tabs.instance.items.map((tab: any) => tab.active)).toEqual([true, false]);
             const layout = ctx.get(TuiRenderer).renderToTuiLayout(ref.hostView.rootNodes as any, { width: 100 });
             const bar = layout.lines.find(line => line.includes('Alpha'));

@@ -58,7 +58,7 @@ export class AgentConsoleSessionTabsSource implements CommonTabBarSource {
             const active = session.id === this.state.sessionId || !!session.current;
             return {
                 id: session.id,
-                label: `  ${this.tabTitle(session)} `,
+                label: ` ${this.tabTitle(session)} `,
                 active,
                 style: active ? this.themeStyles.statusValue : this.themeStyles.statusLabel,
                 showClose: active
@@ -67,7 +67,7 @@ export class AgentConsoleSessionTabsSource implements CommonTabBarSource {
     }
 
     get barStyle(): Record<string, string> {
-        return { ...this.themeStyles.statusValue, padding: '0 1ch' };
+        return { ...this.themeStyles.statusValue, padding: '0' };
     }
 
     get actionStyle(): Record<string, string> {

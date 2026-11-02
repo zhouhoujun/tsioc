@@ -42,7 +42,7 @@ body {
 #agent-console common-tab-bar .common-tab-bar {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 0;
     padding: 8px 0 10px;
 }
 
@@ -52,11 +52,15 @@ body {
     min-height: 26px;
     border: 1px solid transparent;
     border-radius: 8px;
-    padding: 3px 8px;
+    padding: 3px 0;
     font-family: var(--agent-web-sans);
     font-size: 12.5px;
     line-height: 1.4;
     cursor: pointer;
+}
+
+#agent-console common-tab-bar .common-tab-label {
+    white-space: pre;
 }
 
 #agent-console common-tab-bar .common-tab[aria-selected="true"] {
@@ -78,15 +82,17 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
+    min-width: 1ch;
     height: 26px;
-    margin-left: 2px;
+    margin-left: 0;
+    padding: 0;
     border: 1px solid var(--agent-web-border);
     border-radius: 8px;
     color: var(--agent-web-accent) !important;
     font-family: var(--agent-web-sans);
     font-size: 15px;
     line-height: 1;
+    white-space: pre;
 }
 
 #agent-console [renderregion="transcript"] > .console-panel {
