@@ -283,6 +283,8 @@ export function renderMarkdownTable(
     const aligns: Array<'left' | 'center' | 'right'> = markdownTableAligns(delimiterCells);
     const headerRows = Array.from({ length: columnCount }, (_value, index) => headerCells[index] || '');
     const bodyRows = rows.map(row => Array.from({ length: columnCount }, (_value, index) => row[index] || ''));
+    const headerTokens = headerRows.map(cell => tokenizeMarkdownInline(cell, 'heading'));
+    const bodyTokens = bodyRows.map(row => row.map(cell => tokenizeMarkdownInline(cell)));
     const naturalWidths = Array.from({ length: columnCount }, (_value, column) => Math.max(
         TABLE_MIN_COLUMN_WIDTH,
         markdownTokensWidth(tokenizeMarkdownInline(headerRows[column], 'heading')),
@@ -361,7 +363,7 @@ export function renderMarkdownTable(
     if (lines[0]) {
         lines[0] = {
             ...lines[0],
-            tableData: { header: headerRows, rows: bodyRows, aligns }
+            tableData: { header: headerRows, rows: bodyRows, aligns, headerTokens, rowTokens: bodyTokens }
         };
     }
     return lines;
@@ -385,7 +387,9 @@ function renderMarkdownColumnTable(headerCells: string[], rows: string[][]): Age
         tableData: {
             header,
             rows: body,
-            aligns: header.map(() => 'left' as const)
+            aligns: header.map(() => 'left' as const),
+            headerTokens: header.map(cell => tokenizeMarkdownInline(cell, 'heading')),
+            rowTokens: body.map(row => row.map(cell => tokenizeMarkdownInline(cell)))
         }
     };
     return lines;

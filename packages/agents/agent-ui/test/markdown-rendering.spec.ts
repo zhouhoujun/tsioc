@@ -41,6 +41,8 @@ export class AgentConsoleMarkdownRenderingTest {
         expect(table?.header).toEqual(['Name', 'Status', 'Notes']);
         expect(table?.rows[0]).toEqual(['alpha', 'ok', '`fast`']);
         expect(table?.aligns).toEqual(['left', 'center', 'right']);
+        expect(table?.headerTokens?.[0].some(token => token.tone === 'heading')).toEqual(true);
+        expect(table?.rowTokens?.[0]?.[2].some(token => token.tone === 'inline-code')).toEqual(true);
     }
 
     @Test('wraps narrow table cells instead of overflowing the terminal')

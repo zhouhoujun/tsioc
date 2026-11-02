@@ -2849,3 +2849,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - `codeData` 增加逐行 syntax tokens；浏览器 `AgentConsoleWebMarkdownComponent` 用原生 span 行渲染并复用共享 tokenizer，不重复实现语言 profile。
 - Web skin 增加 keyword/string/number/comment/type/function 等 tone 颜色；Copy 仍复制纯文本。
 - TUI 代码块保持终端 syntax 行不变；原生表格/代码/移动端 Chromium 验证；gate 代码阶段通过，production-db 首次因用户活动 TUI 变更后复测通过。
+
+## Web table inline Markdown（2026-11）
+
+- 表格 tableData 增加 headerTokens / rowTokens；浏览器原生表格单元格复用共享 inline Markdown tokenizer。
+- 支持粗体、斜体、删除线、链接、行内代码、muted tone；TUI 网格表格保持不变。
+- html-console / markdown 回归通过；全量 gate 27/27。

@@ -422,7 +422,7 @@ export class HtmlConsoleTest {
             { id: 'u1', role: 'user', content: 'show a table', createdAt: 1 } as any,
             {
                 id: 'a1', role: 'assistant', createdAt: 2,
-                content: '## Result\n\n```ts\nconst x = 1;\n```\n\n| Model | Latency |\n| --- | --- |\n| fake | 26ms |'
+                content: '## Result\n\n```ts\nconst x = 1;\n```\n\n| Model | Latency |\n| --- | --- |\n| **fake** | `26ms` |'
             } as any
         ]);
         await ref.render();
@@ -432,6 +432,8 @@ export class HtmlConsoleTest {
         expect(root.querySelector('.web-code-block code')?.textContent).toContain('const x = 1;');
         expect(root.querySelectorAll('.web-table-cell').length).toBeGreaterThanOrEqual(4);
         expect(root.querySelector('.web-table-head')?.textContent).toContain('Model');
+        expect(root.querySelector('.web-table-token[data-tone="strong"]')?.textContent).toContain('fake');
+        expect(root.querySelector('.web-table-token[data-tone="inline-code"]')?.textContent).toContain('26ms');
         expect(root.querySelector('.message-line[data-code="true"]')).toBeFalsy();
 
         state.surface = 'tui';

@@ -2,6 +2,7 @@ import { Component, Attribute } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import type { AgentConsoleRenderedMessageItem, AgentConsoleRenderedLine } from './AgentConsoleMessageRenderers';
+import type { AgentConsoleMarkdownToken } from './AgentConsoleMarkdown';
 import { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { styleTextToObject } from './AgentConsoleTheme';
 
@@ -19,12 +20,19 @@ const ITEM_TEMPLATE = `
     </div>
 `;
 
+interface AgentConsoleWebTableCell {
+    tokens: AgentConsoleMarkdownToken[];
+    align: string;
+}
+
 interface AgentConsoleWebMarkdownSegment {
     kind: 'text' | 'table' | 'code';
     isText: boolean;
     isTable: boolean;
     isCode: boolean;
     lines: AgentConsoleRenderedLine[];
+    tableHeader?: AgentConsoleWebTableCell[];
+    tableRows?: AgentConsoleWebTableCell[][];
     tableData?: AgentConsoleRenderedLine['tableData'];
     codeData?: AgentConsoleRenderedLine['codeData'];
 }
@@ -49,10 +57,10 @@ const WEB_MARKDOWN_TEMPLATE = `
         <div class="markdown-web-segment" v-for="segment in webSegments">
             <div class="web-markdown-table" v-if="segment.isTable" role="table">
                 <div class="web-table-row web-table-head" role="row">
-                    <div class="web-table-cell" role="columnheader" v-for="(cell, index) in segment.tableData.header" v-style="tableCellStyle(segment.tableData.aligns[index])">{{cell}}</div>
+                    <div class="web-table-cell" role="columnheader" v-for="cell in segment.tableHeader" v-style="tableCellStyle(cell.align)"><span class="web-table-token" data-tone="{{token.tone}}" v-for="token in cell.tokens">{{token.text}}</span></div>
                 </div>
-                <div class="web-table-row" role="row" v-for="row in segment.tableData.rows">
-                    <div class="web-table-cell" role="cell" v-for="(cell, index) in row" v-style="tableCellStyle(segment.tableData.aligns[index])">{{cell}}</div>
+                <div class="web-table-row" role="row" v-for="row in segment.tableRows">
+                    <div class="web-table-cell" role="cell" v-for="cell in row" v-style="tableCellStyle(cell.align)"><span class="web-table-token" data-tone="{{token.tone}}" v-for="token in cell.tokens">{{token.text}}</span></div>
                 </div>
             </div>
             <div class="web-code-block" v-if="segment.isCode">
@@ -224,13 +232,20 @@ export abstract class AgentConsoleMessageTemplateBase {
                 previous.lines.push(line);
                 continue;
             }
+            const tableData = kind === 'table' ? (line.tableData || { header: [], rows: [], aligns: [], headerTokens: [], rowTokens: [] }) : undefined;
+            const tableCell = (text: string, index: number, tokens?: AgentConsoleMarkdownToken[][]): AgentConsoleWebTableCell => ({
+                tokens: tokens?.[index] || [{ text }],
+                align: tableData?.aligns[index] || 'left'
+            });
             segments.push({
                 kind,
                 isText: kind === 'text',
                 isTable: kind === 'table',
                 isCode: kind === 'code',
                 lines: [line],
-                tableData: kind === 'table' ? (line.tableData || { header: [], rows: [], aligns: [] }) : undefined,
+                tableHeader: tableData ? tableData.header.map((cell, index) => tableCell(cell, index, tableData.headerTokens)) : undefined,
+                tableRows: tableData ? tableData.rows.map((row, rowIndex) => row.map((cell, index) => tableCell(cell, index, tableData.rowTokens?.[rowIndex]))) : undefined,
+                tableData,
                 codeData: kind === 'code' ? (line.codeData || { text: '' }) : undefined
             });
         }

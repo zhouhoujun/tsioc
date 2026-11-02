@@ -35,6 +35,10 @@ export interface AgentConsoleMarkdownTableData {
     header: string[];
     rows: string[][];
     aligns: Array<'left' | 'center' | 'right'>;
+    /** Inline Markdown tokens for header cells (browser surface). */
+    headerTokens?: AgentConsoleMarkdownToken[][];
+    /** Inline Markdown tokens for body rows (browser surface). */
+    rowTokens?: AgentConsoleMarkdownToken[][][];
 }
 
 export interface AgentConsoleMarkdownCodeData {
