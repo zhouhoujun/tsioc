@@ -244,6 +244,10 @@ body {
     cursor: pointer;
 }
 
+#agent-console .web-code-block v-container {
+    display: contents;
+}
+
 #agent-console .web-code-block pre {
     margin: 0;
     padding: 10px 12px;
@@ -258,6 +262,27 @@ body {
 #agent-console .web-code-block code {
     font-family: inherit;
 }
+
+#agent-console .web-code-line {
+    display: block;
+    min-height: 1.55em;
+}
+
+#agent-console .web-code-token {
+    white-space: pre;
+}
+
+#agent-console .web-code-token[data-tone="syntax-keyword"] { color: #ff7b72; }
+#agent-console .web-code-token[data-tone="syntax-string"] { color: #a5d6ff; }
+#agent-console .web-code-token[data-tone="syntax-number"] { color: #79c0ff; }
+#agent-console .web-code-token[data-tone="syntax-comment"] { color: #8b949e; font-style: italic; }
+#agent-console .web-code-token[data-tone="syntax-property"] { color: #d2a8ff; }
+#agent-console .web-code-token[data-tone="syntax-type"] { color: #ffa657; }
+#agent-console .web-code-token[data-tone="syntax-constant"] { color: #79c0ff; }
+#agent-console .web-code-token[data-tone="syntax-variable"] { color: #ffa657; }
+#agent-console .web-code-token[data-tone="syntax-tag"] { color: #7ee787; }
+#agent-console .web-code-token[data-tone="syntax-attribute"] { color: #79c0ff; }
+#agent-console .web-code-token[data-tone="syntax-function"] { color: #d2a8ff; }
 
 /* Reasoning is an auxiliary track: compact and subdued. */
 #agent-console .message-template-thought {

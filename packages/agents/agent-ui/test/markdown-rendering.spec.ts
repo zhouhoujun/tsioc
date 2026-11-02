@@ -89,6 +89,7 @@ export class AgentConsoleMarkdownRenderingTest {
         expect(code?.language).toEqual('python');
         expect(code?.text).toContain('def run(value):');
         expect(code?.text).toContain('return "ok"');
+        expect(code?.lines?.[0].some(token => token.tone === 'syntax-keyword' && token.text === 'def')).toEqual(true);
         expect(lines.some(line => flatten(line).includes('╭') || flatten(line).includes('╰'))).toEqual(false);
     }
 

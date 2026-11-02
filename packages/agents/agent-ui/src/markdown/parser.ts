@@ -1,7 +1,7 @@
 import { CommonSyntaxState } from '@tsdi/components/common';
 import { renderMarkdownBlockLine } from './blocks';
 import { renderCodeLineTokens, resetCommonSyntaxState } from './code';
-import { AgentConsoleMarkdownLine, AgentConsoleMarkdownRenderOptions, DEFAULT_MARKDOWN_TABLE_WIDTH } from './model';
+import { AgentConsoleMarkdownLine, AgentConsoleMarkdownRenderOptions, AgentConsoleMarkdownToken, DEFAULT_MARKDOWN_TABLE_WIDTH } from './model';
 import { applyMarkdownBlockSpacing, compactMarkdownLines } from './spacing';
 import { normalizeMarkdownStructure } from './structure';
 import { isMarkdownTableHeader, renderMarkdownTable, splitMarkdownTableRow } from './table';
@@ -24,6 +24,7 @@ export function renderAgentConsoleMarkdownLines(
     let codeBlockStart = -1;
     let codeBlockLanguage = '';
     const codeBlockLines: string[] = [];
+    const codeBlockTokenLines: AgentConsoleMarkdownToken[][] = [];
     let unclosedFenceStart = -1;
     let unclosedFenceRenderStart = -1;
 
@@ -47,17 +48,19 @@ export function renderAgentConsoleMarkdownLines(
                 codeBlockLanguage = fenceLanguage;
                 codeBlockStart = rendered.length;
                 codeBlockLines.length = 0;
+                codeBlockTokenLines.length = 0;
                 resetCommonSyntaxState(codeState);
             } else {
                 fenceLanguage = '';
                 if (codeBlockStart >= 0 && rendered[codeBlockStart]) {
                     rendered[codeBlockStart] = {
                         ...rendered[codeBlockStart],
-                        codeData: { language: codeBlockLanguage, text: codeBlockLines.join('\n') }
+                        codeData: { language: codeBlockLanguage, text: codeBlockLines.join('\n'), lines: codeBlockTokenLines.slice() }
                     };
                 }
                 codeBlockStart = -1;
                 codeBlockLines.length = 0;
+                codeBlockTokenLines.length = 0;
             }
             inFence = !inFence;
             if (!inFence) {
@@ -68,10 +71,12 @@ export function renderAgentConsoleMarkdownLines(
         }
 
         if (inFence) {
+            const codeTokens = sourceLine ? renderCodeLineTokens(sourceLine, fenceLanguage, codeState) : [];
             codeBlockLines.push(sourceLine);
+            codeBlockTokenLines.push(codeTokens);
             rendered.push({
                 rawText: sourceLine,
-                tokens: sourceLine ? renderCodeLineTokens(sourceLine, fenceLanguage, codeState) : [],
+                tokens: codeTokens,
                 tone: 'code',
                 code: true
             });
@@ -109,7 +114,7 @@ export function renderAgentConsoleMarkdownLines(
     } else if (inFence && codeBlockStart >= 0 && rendered[codeBlockStart]) {
         rendered[codeBlockStart] = {
             ...rendered[codeBlockStart],
-            codeData: { language: codeBlockLanguage, text: codeBlockLines.join('\n') }
+            codeData: { language: codeBlockLanguage, text: codeBlockLines.join('\n'), lines: codeBlockTokenLines.slice() }
         };
     }
 

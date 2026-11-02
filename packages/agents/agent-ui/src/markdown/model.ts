@@ -40,6 +40,8 @@ export interface AgentConsoleMarkdownTableData {
 export interface AgentConsoleMarkdownCodeData {
     language?: string;
     text: string;
+    /** Syntax-highlighted visual lines, used by the browser code surface. */
+    lines?: AgentConsoleMarkdownToken[][];
 }
 
 export interface AgentConsoleMarkdownLine {

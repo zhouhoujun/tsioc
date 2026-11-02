@@ -60,7 +60,7 @@ const WEB_MARKDOWN_TEMPLATE = `
                     <span>{{segment.codeData.language || 'code'}}</span>
                     <button type="button" @click="copyCode(segment.codeData.text)">{{copyLabel}}</button>
                 </div>
-                <pre><code>{{segment.codeData.text}}</code></pre>
+                <pre><code><span class="web-code-line" v-for="line in segment.codeData.lines || []"><span class="web-code-token" data-tone="{{token.tone}}" v-for="token in line">{{token.text}}</span></span></code></pre>
             </div>
             <div class="web-markdown-text" v-if="segment.isText">
                 <label class="message-line markdown-line" v-for="line in segment.lines" v-style="line.itemStyle" aria-label="{{line.ariaLabel}}" continuationIndent="{{line.continuationIndent}}" data-code="{{line.code}}" data-table="{{line.table}}">

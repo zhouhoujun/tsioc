@@ -2843,3 +2843,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 共享 Markdown 模型增加 `tableData` / `codeData`（表格 header/rows/aligns、代码 language/text），TUI 继续消费网格/代码行。
 - 浏览器通过 `AgentConsoleWebMarkdownComponent` 渲染原生表格、代码块、语言标签与 Copy 按钮；TUI surface 仍走 `AgentConsoleMarkdownComponent`，真实终端输出不变。
 - Web skin 增加原生表格/代码卡片样式；真实 Chromium 1280×800 与 390×844 验证；gate 27/27。
+
+## Web code syntax highlighting（2026-11）
+
+- `codeData` 增加逐行 syntax tokens；浏览器 `AgentConsoleWebMarkdownComponent` 用原生 span 行渲染并复用共享 tokenizer，不重复实现语言 profile。
+- Web skin 增加 keyword/string/number/comment/type/function 等 tone 颜色；Copy 仍复制纯文本。
+- TUI 代码块保持终端 syntax 行不变；原生表格/代码/移动端 Chromium 验证；gate 代码阶段通过，production-db 首次因用户活动 TUI 变更后复测通过。
