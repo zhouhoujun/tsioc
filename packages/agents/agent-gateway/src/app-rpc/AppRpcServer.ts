@@ -1838,15 +1838,6 @@ export class AppRpcServer {
     private listModelProfiles(): any[] {
         const profiles = this.options.model?.profiles || {};
         const current = String(this.options.model?.defaultProfile || '').trim();
-        if (!Object.keys(profiles).length) {
-            return defaultAgentProviderRegistry.list().flatMap(provider => provider.models.map(model => ({
-                name: `${provider.id}/${model.id}`,
-                selected: this.options.model?.provider === provider.id && this.options.model?.model === model.id,
-                provider: provider.id, model: model.id, baseUrl: provider.baseUrl || '',
-                capabilities: defaultAgentProviderRegistry.resolveModel(provider.id, model.id).capabilities,
-                catalog: true
-            })));
-        }
         return Object.entries(profiles)
             .filter(([, profile]) => !!profile)
             .map(([name, profile]) => ({

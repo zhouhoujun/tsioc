@@ -93,6 +93,58 @@ export class ModelCatalogOptionsTest {
         expect(calls.some(entry => entry.method === 'model.catalog' && entry.params?.provider === 'openai-compatible')).toEqual(true);
     }
 
+    @Test('a provider without profiles still opens its live server catalog')
+    async liveCatalogWithoutProfiles() {
+        const calls: Array<{ method: string; params: any }> = [];
+        const captured: any[] = [];
+        let selects = 0;
+        const ctx: any = {
+            translator: null,
+            appRpc: {
+                request: async (method: string, params: any) => {
+                    calls.push({ method, params });
+                    if (method === 'model.list') return [];
+                    if (method === 'model.catalog') {
+                        return { provider: 'deepseek', models: [{ id: 'server-live-model', name: 'Server Live' }] };
+                    }
+                    if (method === 'model.activate') {
+                        return { provider: 'deepseek', model: params.name, modelProfile: params.name };
+                    }
+                    return undefined;
+                }
+            },
+            state: {
+                sessionId: 's1', modelProfile: '', model: '', provider: '',
+                setModelProfile(value: string) { this.modelProfile = value; },
+                setModel(value: string) { this.model = value; },
+                setProvider(value: string) { this.provider = value; }
+            },
+            options: () => ({ model: { provider: 'deepseek', model: 'stale-model', baseUrl: 'https://api.deepseek.test/v1' } }),
+            notify() {},
+            select: async (_title: string, options: any[]) => {
+                captured.push(options);
+                selects += 1;
+                if (selects === 1) return '__provider__:deepseek';
+                return options.find(option => option.value === 'deepseek/server-live-model')?.value;
+            },
+            updateTerminalTitle() {},
+            updateModelOptions() {},
+            persistSettings: async () => undefined,
+            resolveHistoryWorkspace: () => '',
+            getFavorites: () => [], setFavorites() {},
+            getRecents: () => [], setRecents() {},
+            getReasoningEffort: () => 'medium' as const,
+            setReasoningEffort() {},
+            nextActivateRequestId: () => 1,
+            peekActivateRequestId: () => 1
+        };
+        await openModelSwitcher(ctx);
+        expect(calls.some(call => call.method === 'model.catalog' && call.params?.provider === 'deepseek')).toEqual(true);
+        expect(calls.some(call => call.method === 'model.activate' && call.params?.name === 'deepseek/server-live-model')).toEqual(true);
+        expect(captured[1].map((option: any) => option.value)).toContain('deepseek/server-live-model');
+        expect(captured[1].map((option: any) => option.value)).not.toContain('stale-model');
+    }
+
     @Test('auto routing persists through app RPC and updates local options')
     async autoRoutingPersists() {
         const calls: Array<{ method: string; params: any }> = [];

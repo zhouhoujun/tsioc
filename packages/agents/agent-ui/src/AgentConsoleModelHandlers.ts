@@ -122,7 +122,6 @@ export function getModelProfileOptions(ctx: ModelHandlerContext): AgentConsoleSe
         };
     });
 }
-
 export async function loadModelProfileOptions(ctx: ModelHandlerContext): Promise<AgentConsoleSelectOption[]> {
     if (ctx.appRpc) {
         const profiles = await ctx.appRpc.request('model.list');
@@ -163,12 +162,25 @@ export async function openModelSwitcher(ctx: ModelHandlerContext): Promise<void>
         group.push(profile);
         groups.set(provider, group);
     }
+    // Profiles are optional. With a configured top-level provider we can still
+    // ask the server for its live catalog instead of showing bundled/static
+    // model ids just because no profile aliases exist yet.
+    if (!groups.size) {
+        const activeProvider = String(ctx.options().model?.provider || '').trim();
+        if (!activeProvider) {
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'modelProfilesConfigured'));
+            return;
+        }
+        groups.set(activeProvider, []);
+    }
     const providerOptions: AgentConsoleSelectOption[] = [...groups.entries()].map(([provider, entries]) => ({
         label: provider,
         value: `__provider__:${provider}`,
-        description: entries.length === 1
-            ? menuLabel(ctx, 'agent.menu.model.configuredOne', '{count} configured model', { count: entries.length })
-            : menuLabel(ctx, 'agent.menu.model.configuredMany', '{count} configured models', { count: entries.length })
+        description: entries.length
+            ? (entries.length === 1
+                ? menuLabel(ctx, 'agent.menu.model.configuredOne', '{count} configured model', { count: entries.length })
+                : menuLabel(ctx, 'agent.menu.model.configuredMany', '{count} configured models', { count: entries.length }))
+            : menuLabel(ctx, 'agent.menu.model.liveCatalog', 'Live server models')
     }));
     providerOptions.push({
         label: menuLabel(ctx, 'agent.menu.model.addProvider', 'Add new provider'),
@@ -176,10 +188,6 @@ export async function openModelSwitcher(ctx: ModelHandlerContext): Promise<void>
         description: menuLabel(ctx, 'agent.menu.model.addProviderDescription', 'Configure another provider connection'),
         detail: menuLabel(ctx, 'agent.menu.model.addProviderDetail', 'Opens the guided add-provider wizard.')
     });
-    if (!groups.size) {
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'modelProfilesConfigured'));
-        return;
-    }
 
     let provider: string | null = null;
     let providerIndex = 0;
@@ -206,16 +214,19 @@ export async function openModelSwitcher(ctx: ModelHandlerContext): Promise<void>
             }
             provider = selected.slice('__provider__:'.length);
             providerIndex = Math.max(0, providerOptions.findIndex(option => option.value === selected));
-            entries = [...(groups.get(provider) || [])];
             const fetched = await fetchProviderCatalog(ctx, provider);
             providerModels = fetched.models;
+            // Server models are the source of truth; configured profiles follow
+            // as aliases for routes/tiers. This keeps a newer server catalog
+            // ahead of stale model ids saved in settings.json.
+            entries = [...fetched.options];
             const seen = new Set(entries.map(entry => entry.value));
-            for (const live of fetched.options) {
-                if (seen.has(live.value)) {
+            for (const configured of groups.get(provider) || []) {
+                if (seen.has(configured.value)) {
                     continue;
                 }
-                seen.add(live.value);
-                entries.push(live);
+                seen.add(configured.value);
+                entries.push(configured);
             }
             modes = buildProviderModes(ctx, entries);
             modelIndex = 0;
