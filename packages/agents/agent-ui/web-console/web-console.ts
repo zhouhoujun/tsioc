@@ -343,6 +343,7 @@ export async function mountAgentWebConsole(
         state.setCommandExecutionControl(ctx.get(COMMAND_EXECUTION_CONTROL) as CommandExecutionControlPort);
     }
     state.setCommandOutputStore(new RpcCommandOutputStore(rpc, () => state.sessionId));
+    state.surface = 'web';
 
     state.configure({
         sessionId: config.sessionId || state.sessionId || 'console',

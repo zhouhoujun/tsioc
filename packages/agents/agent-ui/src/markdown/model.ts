@@ -31,6 +31,17 @@ export interface AgentConsoleMarkdownToken {
     tone?: AgentConsoleMarkdownTone;
 }
 
+export interface AgentConsoleMarkdownTableData {
+    header: string[];
+    rows: string[][];
+    aligns: Array<'left' | 'center' | 'right'>;
+}
+
+export interface AgentConsoleMarkdownCodeData {
+    language?: string;
+    text: string;
+}
+
 export interface AgentConsoleMarkdownLine {
     rawText: string;
     prefix?: string;
@@ -40,6 +51,10 @@ export interface AgentConsoleMarkdownLine {
     code?: boolean;
     /** The visual line belongs to a table (grid rows and borders). */
     table?: boolean;
+    /** Structured table payload attached once to the first table line. */
+    tableData?: AgentConsoleMarkdownTableData;
+    /** Fenced code payload attached once to the first code line. */
+    codeData?: AgentConsoleMarkdownCodeData;
     /** Columns used to align wrapped continuation lines (list/quote markers). */
     continuationIndent?: number;
 }

@@ -2837,3 +2837,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 平台层：TUI 保持 components/console 文本层级；浏览器新增 `web/console.css` skin（用户消息卡、assistant 正文排版、thought 轨道、tool 卡片、composer、菜单），不复制时间线投影逻辑。
 - service worker 预缓存 `console.css` 并升级缓存名；web-header 契约与 TUI gate 同步回归。
 - 真实 Chromium 1280×800 / 390×844 验证普通 turn 与 Markdown 表格/代码块；TUI 时间线输出保持原样。
+
+## Web native Markdown surface（2026-11）
+
+- 共享 Markdown 模型增加 `tableData` / `codeData`（表格 header/rows/aligns、代码 language/text），TUI 继续消费网格/代码行。
+- 浏览器通过 `AgentConsoleWebMarkdownComponent` 渲染原生表格、代码块、语言标签与 Copy 按钮；TUI surface 仍走 `AgentConsoleMarkdownComponent`，真实终端输出不变。
+- Web skin 增加原生表格/代码卡片样式；真实 Chromium 1280×800 与 390×844 验证；gate 27/27。

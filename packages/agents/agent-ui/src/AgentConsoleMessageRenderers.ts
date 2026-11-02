@@ -4,7 +4,9 @@ import { TranslatorService } from '@tsdi/i18n';
 import { defaultTimelineLabel, formatAgentUiLabel, type AgentUiTranslator } from './agent-ui.i18n';
 import { noReact } from '@tsdi/components';
 import {
+    AgentConsoleMarkdownCodeData,
     AgentConsoleMarkdownLine,
+    AgentConsoleMarkdownTableData,
     AgentConsoleMarkdownToken,
     AgentConsoleMarkdownTone,
     flattenAgentConsoleMarkdownLine,
@@ -69,10 +71,8 @@ export interface AgentConsoleRenderedLine {
     /** Markdown list/quote continuation indent (columns). */
     continuationIndent?: number;
     tone?: AgentConsoleMarkdownTone;
-    /** Markdown fence body (browser renderers use a code surface). */
-    code?: boolean;
-    /** Markdown grid-table visual row/border. */
-    table?: boolean;
+    code?: boolean; codeData?: AgentConsoleMarkdownCodeData;
+    table?: boolean; tableData?: AgentConsoleMarkdownTableData;
     renderRegion?: string;
     spacing?: boolean;
     semanticFamily?: AgentConsoleContentFamily;
@@ -781,7 +781,6 @@ function resolveMarkdownLines(
     return renderAgentConsoleMarkdownLines(content, options);
 }
 
-
 export function resolveMessageTemplateKind(message?: AgentMessage | null): AgentConsoleMessageTemplateKind {
     // Plan todo messages are synthesized by the session state and rendered
     // inline in the conversation flow with a distinct visual treatment.
@@ -899,7 +898,6 @@ function resolveBuiltinMessageRenderer(templateKind: AgentConsoleMessageTemplate
         || agentConsoleMessageRenderers[agentConsoleMessageRenderers.length - 1];
 }
 
-
 function resolveMessageDisplayContent(
     message: AgentMessage,
     templateKind: AgentConsoleMessageTemplateKind,
@@ -1001,7 +999,9 @@ function buildRenderedLine(
         continuationIndent: line.continuationIndent,
         tone: line.tone,
         code: line.code,
-        table: line.table
+        codeData: line.codeData,
+        table: line.table,
+        tableData: line.tableData
     };
 }
 

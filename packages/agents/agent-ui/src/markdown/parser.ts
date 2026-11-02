@@ -21,6 +21,9 @@ export function renderAgentConsoleMarkdownLines(
     const codeState: CommonSyntaxState = {};
     let inFence = false;
     let fenceLanguage = '';
+    let codeBlockStart = -1;
+    let codeBlockLanguage = '';
+    const codeBlockLines: string[] = [];
     let unclosedFenceStart = -1;
     let unclosedFenceRenderStart = -1;
 
@@ -41,9 +44,20 @@ export function renderAgentConsoleMarkdownLines(
             }
             if (!inFence) {
                 fenceLanguage = trimmed.slice(3).trim().toLowerCase();
+                codeBlockLanguage = fenceLanguage;
+                codeBlockStart = rendered.length;
+                codeBlockLines.length = 0;
                 resetCommonSyntaxState(codeState);
             } else {
                 fenceLanguage = '';
+                if (codeBlockStart >= 0 && rendered[codeBlockStart]) {
+                    rendered[codeBlockStart] = {
+                        ...rendered[codeBlockStart],
+                        codeData: { language: codeBlockLanguage, text: codeBlockLines.join('\n') }
+                    };
+                }
+                codeBlockStart = -1;
+                codeBlockLines.length = 0;
             }
             inFence = !inFence;
             if (!inFence) {
@@ -54,6 +68,7 @@ export function renderAgentConsoleMarkdownLines(
         }
 
         if (inFence) {
+            codeBlockLines.push(sourceLine);
             rendered.push({
                 rawText: sourceLine,
                 tokens: sourceLine ? renderCodeLineTokens(sourceLine, fenceLanguage, codeState) : [],
@@ -91,6 +106,11 @@ export function renderAgentConsoleMarkdownLines(
             rendered.length - unclosedFenceRenderStart,
             ...unclosedSection.map(sourceLine => renderMarkdownBlockLine(sourceLine, tableWidth))
         );
+    } else if (inFence && codeBlockStart >= 0 && rendered[codeBlockStart]) {
+        rendered[codeBlockStart] = {
+            ...rendered[codeBlockStart],
+            codeData: { language: codeBlockLanguage, text: codeBlockLines.join('\n') }
+        };
     }
 
     return options.compactBlankLines

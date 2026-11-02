@@ -10,6 +10,8 @@ export type {
     AgentConsoleMarkdownTone,
     AgentConsoleMarkdownToken,
     AgentConsoleMarkdownLine,
+    AgentConsoleMarkdownTableData,
+    AgentConsoleMarkdownCodeData,
     AgentConsoleMarkdownRenderOptions
 } from './markdown/model';
 export { DEFAULT_MARKDOWN_TABLE_WIDTH } from './markdown/model';

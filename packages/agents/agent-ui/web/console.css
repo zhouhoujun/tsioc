@@ -132,6 +132,10 @@ body {
     text-indent: 0 !important;
 }
 
+#agent-console .message-template-assistant .markdown-line-slot {
+    display: contents;
+}
+
 #agent-console .message-template-assistant .message-token {
     font-family: inherit;
 }
@@ -164,6 +168,95 @@ body {
 
 #agent-console .message-template-assistant .message-line[data-table="true"] .message-token {
     white-space: pre !important;
+}
+
+/* Native DOM table/code surfaces. TUI keeps the grid/plain-code lines. */
+#agent-console .web-markdown-table {
+    margin: 10px 0;
+    overflow-x: auto;
+    border: 1px solid var(--agent-web-border);
+    border-radius: 10px;
+}
+
+#agent-console .web-markdown-table v-container {
+    display: contents;
+}
+
+#agent-console .web-table-row {
+    display: flex;
+    align-items: stretch;
+    border-bottom: 1px solid #1d2a3a;
+    font-family: var(--agent-web-sans);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+#agent-console .web-table-row:last-child {
+    border-bottom: 0;
+}
+
+#agent-console .web-table-head {
+    background: #121b25;
+    color: #dce7f3;
+    font-weight: 600;
+}
+
+#agent-console .web-table-cell {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 8px 12px;
+    border-right: 1px solid #1d2a3a;
+    overflow-wrap: anywhere;
+    vertical-align: top;
+}
+
+#agent-console .web-table-cell:last-child {
+    border-right: 0;
+}
+
+#agent-console .web-code-block {
+    margin: 10px 0;
+    overflow: hidden;
+    border: 1px solid #253447;
+    border-radius: 10px;
+    background: #0d141d;
+}
+
+#agent-console .web-code-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    border-bottom: 1px solid #1d2a3a;
+    background: #111a24;
+    color: #8b9bb0;
+    font-family: var(--agent-web-mono);
+    font-size: 11px;
+}
+
+#agent-console .web-code-head button {
+    border: 1px solid #2a3b4f;
+    border-radius: 6px;
+    background: transparent;
+    color: #9fc3e8;
+    padding: 2px 8px;
+    font: inherit;
+    cursor: pointer;
+}
+
+#agent-console .web-code-block pre {
+    margin: 0;
+    padding: 10px 12px;
+    overflow-x: auto;
+    color: #c9d7e6;
+    font-family: var(--agent-web-mono);
+    font-size: 12.5px;
+    line-height: 1.55;
+    white-space: pre;
+}
+
+#agent-console .web-code-block code {
+    font-family: inherit;
 }
 
 /* Reasoning is an auxiliary track: compact and subdued. */

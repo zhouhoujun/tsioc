@@ -280,7 +280,7 @@ export function renderMarkdownTable(
     width: number
 ): AgentConsoleMarkdownLine[] {
     const columnCount = Math.max(headerCells.length, delimiterCells.length, ...rows.map(row => row.length));
-    const aligns = markdownTableAligns(delimiterCells);
+    const aligns: Array<'left' | 'center' | 'right'> = markdownTableAligns(delimiterCells);
     const headerRows = Array.from({ length: columnCount }, (_value, index) => headerCells[index] || '');
     const bodyRows = rows.map(row => Array.from({ length: columnCount }, (_value, index) => row[index] || ''));
     const naturalWidths = Array.from({ length: columnCount }, (_value, column) => Math.max(
@@ -358,10 +358,19 @@ export function renderMarkdownTable(
         }
     });
     lines.push(border('└', '┴', '┘'));
+    if (lines[0]) {
+        lines[0] = {
+            ...lines[0],
+            tableData: { header: headerRows, rows: bodyRows, aligns }
+        };
+    }
     return lines;
 }
 
 function renderMarkdownColumnTable(headerCells: string[], rows: string[][]): AgentConsoleMarkdownLine[] {
+    const width = Math.max(headerCells.length, ...rows.map(row => row.length));
+    const header = Array.from({ length: width }, (_value, index) => headerCells[index] || '');
+    const body = rows.map(row => Array.from({ length: width }, (_value, index) => row[index] || ''));
     const renderRow = (cells: string[], headerRow: boolean): AgentConsoleMarkdownLine => ({
         rawText: cells.join(' | '),
         tokens: cells.flatMap((cell, index) => [
@@ -370,5 +379,14 @@ function renderMarkdownColumnTable(headerCells: string[], rows: string[][]): Age
         ]),
         table: true
     });
-    return [renderRow(headerCells, true), ...rows.map(row => renderRow(row, false))];
+    const lines = [renderRow(header, true), ...body.map(row => renderRow(row, false))];
+    lines[0] = {
+        ...lines[0],
+        tableData: {
+            header,
+            rows: body,
+            aligns: header.map(() => 'left' as const)
+        }
+    };
+    return lines;
 }

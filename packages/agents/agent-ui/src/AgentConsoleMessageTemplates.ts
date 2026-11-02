@@ -19,6 +19,16 @@ const ITEM_TEMPLATE = `
     </div>
 `;
 
+interface AgentConsoleWebMarkdownSegment {
+    kind: 'text' | 'table' | 'code';
+    isText: boolean;
+    isTable: boolean;
+    isCode: boolean;
+    lines: AgentConsoleRenderedLine[];
+    tableData?: AgentConsoleRenderedLine['tableData'];
+    codeData?: AgentConsoleRenderedLine['codeData'];
+}
+
 const MARKDOWN_TEMPLATE = `
     <div class="message-block-spacing" v-if="spacerBefore">​</div>
     <div class="message-markdown {{templateClass}}" data-template-kind="{{templateKind}}" data-semantic-kind="{{semanticKind}}" data-status="{{item.statusKind}}" v-style="blockStyle">
@@ -30,6 +40,39 @@ const MARKDOWN_TEMPLATE = `
             <span v-style="line.lineStyle" v-if="!line.toggleContent || line.content !== line.toggleContent"><agent-console-routed-tokens :tokens="line.tokens"></agent-console-routed-tokens></span>
             <span class="message-detail-toggle" v-style="line.lineStyle" v-if="line.toggleContent" @click="toggleMessageDetail(line)">{{line.toggleContent}}</span>
         </label>
+    </div>
+`;
+
+const WEB_MARKDOWN_TEMPLATE = `
+    <div class="message-block-spacing" v-if="spacerBefore">​</div>
+    <div class="message-markdown message-template-assistant" data-template-kind="{{templateKind}}" data-semantic-kind="{{semanticKind}}" data-status="{{item.statusKind}}" v-style="blockStyle">
+        <div class="markdown-web-segment" v-for="segment in webSegments">
+            <div class="web-markdown-table" v-if="segment.isTable" role="table">
+                <div class="web-table-row web-table-head" role="row">
+                    <div class="web-table-cell" role="columnheader" v-for="(cell, index) in segment.tableData.header" v-style="tableCellStyle(segment.tableData.aligns[index])">{{cell}}</div>
+                </div>
+                <div class="web-table-row" role="row" v-for="row in segment.tableData.rows">
+                    <div class="web-table-cell" role="cell" v-for="(cell, index) in row" v-style="tableCellStyle(segment.tableData.aligns[index])">{{cell}}</div>
+                </div>
+            </div>
+            <div class="web-code-block" v-if="segment.isCode">
+                <div class="web-code-head">
+                    <span>{{segment.codeData.language || 'code'}}</span>
+                    <button type="button" @click="copyCode(segment.codeData.text)">{{copyLabel}}</button>
+                </div>
+                <pre><code>{{segment.codeData.text}}</code></pre>
+            </div>
+            <div class="web-markdown-text" v-if="segment.isText">
+                <label class="message-line markdown-line" v-for="line in segment.lines" v-style="line.itemStyle" aria-label="{{line.ariaLabel}}" continuationIndent="{{line.continuationIndent}}" data-code="{{line.code}}" data-table="{{line.table}}">
+                    <span v-style="line.statusStyle">{{line.status}}</span>
+                    <span v-style="line.roleStyle" v-show="line.role">{{line.role}}</span>
+                    <span v-style="line.metaStyle" v-show="line.meta">{{line.meta}}</span>
+                    <span v-style="line.prefixStyle" v-show="line.prefix">{{line.prefix}}</span>
+                    <span v-style="line.lineStyle" v-if="!line.toggleContent || line.content !== line.toggleContent"><agent-console-routed-tokens :tokens="line.tokens"></agent-console-routed-tokens></span>
+                    <span class="message-detail-toggle" v-style="line.lineStyle" v-if="line.toggleContent" @click="toggleMessageDetail(line)">{{line.toggleContent}}</span>
+                </label>
+            </div>
+        </div>
     </div>
 `;
 
@@ -164,6 +207,47 @@ export abstract class AgentConsoleMessageTemplateBase {
     get spacerBefore(): boolean { return !!this.item?.spacerBefore; }
     get templateKind(): string { return this.item?.templateKind || ''; }
     get semanticKind(): string { return this.item?.semanticKind || ''; }
+    get webSegments(): AgentConsoleWebMarkdownSegment[] {
+        const segments: AgentConsoleWebMarkdownSegment[] = [];
+        for (const line of this.lines) {
+            const kind: AgentConsoleWebMarkdownSegment['kind'] = line.table
+                ? 'table'
+                : line.code
+                    ? 'code'
+                    : 'text';
+            const previous = segments[segments.length - 1];
+            if (previous && previous.kind === kind && kind === 'text') {
+                previous.lines.push(line);
+                continue;
+            }
+            if (previous && previous.kind === kind && kind !== 'text') {
+                previous.lines.push(line);
+                continue;
+            }
+            segments.push({
+                kind,
+                isText: kind === 'text',
+                isTable: kind === 'table',
+                isCode: kind === 'code',
+                lines: [line],
+                tableData: kind === 'table' ? (line.tableData || { header: [], rows: [], aligns: [] }) : undefined,
+                codeData: kind === 'code' ? (line.codeData || { text: '' }) : undefined
+            });
+        }
+        return segments;
+    }
+    get copyLabel(): string { return this.translator?.translate('agent.message.copyCode') || 'Copy'; }
+    tableCellStyle(align?: string): Record<string, string> {
+        return { 'text-align': align === 'center' || align === 'right' ? align : 'left' };
+    }
+    async copyCode(text: string): Promise<void> {
+        const clipboard = (globalThis as { navigator?: { clipboard?: { writeText?(value: string): Promise<void> } } }).navigator?.clipboard;
+        try {
+            await clipboard?.writeText?.(String(text || ''));
+        } catch {
+            // Clipboard permission can be denied; the code block remains selectable.
+        }
+    }
     get templateClass(): string { return 'message-template-system'; }
     get blockStyle(): Record<string, string> {
         if (!this.item?.blockPadding) return {};
@@ -249,6 +333,11 @@ export class AgentConsoleMarkdownComponent extends AgentConsoleMessageTemplateBa
     override get lines(): AgentConsoleRenderedLine[] {
         return this.bodyPreviewLines(this.item?.lines || [], Math.max(1, this.state.consoleOptions.auxiliaryPreviewLines));
     }
+}
+
+/** DOM-only Markdown surface: native tables/code blocks with the terminal fallback components unchanged. */
+@Component({ selector: 'agent-console-web-markdown', template: WEB_MARKDOWN_TEMPLATE, imports: [AgentConsoleRoutedTokensComponent] })
+export class AgentConsoleWebMarkdownComponent extends AgentConsoleMarkdownComponent {
 }
 
 @Component({ selector: 'agent-console-thought-template', template: ITEM_TEMPLATE, imports: [AgentConsoleRoutedTokensComponent] })

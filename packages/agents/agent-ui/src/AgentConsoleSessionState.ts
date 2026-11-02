@@ -613,6 +613,9 @@ export class AgentConsoleSessionState {
      * the defaults — re-apply these unless the host passed its own value — so
      * the timeline never mixes an English bundle with zh labels or vice versa.
      */
+    /** Presentation surface; the shared renderers use it only for optional DOM-only affordances. */
+    surface: 'tui' | 'web' = 'tui';
+
     protected localeOptionOverrides: Partial<Required<AgentConsoleOptions>> = {};
 
     /** Keys the host passed explicitly through `setConsoleOptions`. */

@@ -37,6 +37,10 @@ export class AgentConsoleMarkdownRenderingTest {
         // Renderer-neutral metadata lets the DOM skin use a code/table surface
         // while the terminal keeps the same grid rows.
         expect(lines.some(line => line.table === true)).toEqual(true);
+        const table = lines.find(line => line.tableData)?.tableData;
+        expect(table?.header).toEqual(['Name', 'Status', 'Notes']);
+        expect(table?.rows[0]).toEqual(['alpha', 'ok', '`fast`']);
+        expect(table?.aligns).toEqual(['left', 'center', 'right']);
     }
 
     @Test('wraps narrow table cells instead of overflowing the terminal')
@@ -81,6 +85,10 @@ export class AgentConsoleMarkdownRenderingTest {
         // opencode renders code blocks as plain syntax lines: no fence/rail.
         expect(bodies.every(line => !line.prefix)).toEqual(true);
         expect(lines.some(line => plain(line.rawText).includes('python'))).toEqual(false);
+        const code = lines.find(line => line.codeData)?.codeData;
+        expect(code?.language).toEqual('python');
+        expect(code?.text).toContain('def run(value):');
+        expect(code?.text).toContain('return "ok"');
         expect(lines.some(line => flatten(line).includes('╭') || flatten(line).includes('╰'))).toEqual(false);
     }
 
