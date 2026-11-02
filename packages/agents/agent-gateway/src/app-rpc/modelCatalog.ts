@@ -103,6 +103,33 @@ export function activateCatalogModel(options: AgentOptions, providerId: string, 
     return { provider: providerId, model: modelId, reasoningEffort: next.reasoningEffort };
 }
 
+/**
+ * Apply `/model` auto routing from the configured tier profiles. Returns null
+ * when the provider has not configured fast/balanced/strong profiles.
+ */
+export function activateAutoRouting(options: AgentOptions): {
+    routing: { simple: string; moderate: string; complex: string };
+    provider?: string;
+    model?: string;
+} | null {
+    const available = options.model?.profiles || {};
+    const tierProfile = (tier: 'fast' | 'balanced' | 'strong') =>
+        Object.keys(available).find(key => key === tier || key.endsWith(`-${tier}`));
+    const fast = tierProfile('fast');
+    const balanced = tierProfile('balanced');
+    const strong = tierProfile('strong');
+    if (!fast || !balanced || !strong) {
+        return null;
+    }
+    const routing = { simple: fast, moderate: balanced, complex: strong };
+    options.model = {
+        ...options.model,
+        defaultProfile: undefined,
+        complexityRouting: { ...(options.model?.complexityRouting || {}), ...routing }
+    };
+    return { routing, provider: options.model.provider, model: options.model.model };
+}
+
 export async function resolveModelCatalog(options: AgentOptions | undefined, provider?: string): Promise<{
     provider: string;
     source: string;

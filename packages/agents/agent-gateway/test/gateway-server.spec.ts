@@ -3220,6 +3220,46 @@ export class AppRpcServerTest {
         expect((rpc as any).options.model.model).toBe('deepseek-v4.1-flash');
     }
 
+    @Test('model.activate auto persists complexity routing and updates the runtime')
+    async autoRoutingPersists() {
+        const { store } = await createOrmSessionStore();
+        const { memory } = await createOrmSessionStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const runtimeModels: any[] = [];
+        const runtime = { async getMessages() { return []; }, updateModelOptions: (model: any) => runtimeModels.push(model) } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, new RandomUuidGenerator(), store, memory, {} as any, owners, sessions, events, {
+            model: {
+                provider: 'deepseek', model: 'fast-model',
+                profiles: {
+                    'p-fast': { provider: 'deepseek', model: 'fast-model' },
+                    'p-balanced': { provider: 'deepseek', model: 'balanced-model' },
+                    'p-strong': { provider: 'deepseek', model: 'strong-model' }
+                },
+                complexityRouting: { simple: 'old' }
+            }
+        } as any);
+        const persisted: any[] = [];
+        (rpc as any).persistModelConfig = (model: any) => persisted.push(model);
+        await owners.create('auto-route-s1', 'user-1');
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0', id: 43, method: 'model.activate',
+            params: { sessionId: 'auto-route-s1', name: 'auto' }
+        }, { principalId: 'user-1' }) as any;
+        expect(response.error).toBeUndefined();
+        expect(response.result).toMatchObject({
+            modelProfile: 'auto',
+            complexityRouting: { simple: 'p-fast', moderate: 'p-balanced', complex: 'p-strong' }
+        });
+        const model = (rpc as any).options.model;
+        expect(model.defaultProfile).toBeUndefined();
+        expect(model.complexityRouting).toEqual({ simple: 'p-fast', moderate: 'p-balanced', complex: 'p-strong' });
+        expect(runtimeModels.length).toEqual(1);
+        expect(persisted.length).toEqual(1);
+    }
+
     @Test('catalog model activation preserves router profiles and complexity routing')
     async catalogActivationPreservesRouter() {
         const { store } = await createOrmSessionStore();

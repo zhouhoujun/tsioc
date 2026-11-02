@@ -246,9 +246,23 @@ export async function openModelSwitcher(ctx: ModelHandlerContext): Promise<void>
                 return;
             }
             const model = ctx.options().model || {};
+            if (ctx.appRpc) {
+                const result = await ctx.appRpc.request('model.activate', {
+                    sessionId: ctx.state.sessionId,
+                    name: 'auto'
+                }).catch(() => undefined);
+                if (!result) {
+                    ctx.notify(formatAgentUiNotice(ctx.translator, 'providerNeedsFastBalancedStrong', { provider }));
+                    return;
+                }
+                model.complexityRouting = result.complexityRouting || result.routing || model.complexityRouting;
+            } else {
+                model.complexityRouting = { ...(model.complexityRouting || {}), simple: fast, moderate: balanced, complex: strong };
+            }
             model.defaultProfile = undefined;
-            model.complexityRouting = { ...(model.complexityRouting || {}), simple: fast, moderate: balanced, complex: strong };
+            ctx.updateModelOptions?.(model);
             ctx.state.setModelProfile('auto');
+            await ctx.persistSettings({ modelProfile: 'auto' });
             ctx.notify(formatAgentUiNotice(ctx.translator, 'switchedAutoModel', { provider }));
             return;
         }

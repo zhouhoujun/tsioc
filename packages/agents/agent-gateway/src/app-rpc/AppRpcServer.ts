@@ -2,7 +2,7 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { UuidGenerator } from '@tsdi/core';
 import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeAgentWorkspaceIdentity, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, CommandExchangeStore, CommandExchangeRecord, CommandExchangeStaleError, parseCommandExchangeRecord, redactCommandExchangeRecord, ApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, redactCommandOutputEntry, normalizeAgentRpcRequestMeta, COMMAND_EXCHANGE_STORE, BACKGROUND_TASK_HISTORY_STORE, BackgroundTaskHistoryStore, BackgroundTaskPageOptions, collectDelegationSessionIds, ExchangeMetrics, ExchangeMetricsSnapshot, AGENT_WORKSPACE_TRUST } from '@tsdi/agent';
-import { activateCatalogModel, activateProfileModel, hasModelProvider, resolveModelCatalog } from './modelCatalog';
+import { activateAutoRouting, activateCatalogModel, activateProfileModel, hasModelProvider, resolveModelCatalog } from './modelCatalog';
 import { AGENT_MODEL_CONFIG_WRITER } from '../tokens';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
@@ -1860,7 +1860,6 @@ export class AppRpcServer {
             }))
             .sort((left, right) => left.name.localeCompare(right.name));
     }
-
     private async activateModelProfile(params: any, context: AppRpcRequestContext): Promise<any> {
         const sessionId = this.optionalSessionId(params);
         if (sessionId) {
@@ -1871,6 +1870,11 @@ export class AppRpcServer {
         const reasoningEffort = typeof params?.reasoningEffort === 'string' ? params.reasoningEffort : undefined;
         if (reasoningEffort !== undefined && reasoningEffort !== 'low' && reasoningEffort !== 'medium' && reasoningEffort !== 'high' && reasoningEffort !== 'max') {
             throw new AppRpcError(-32602, `Invalid params: reasoningEffort must be 'low', 'medium', 'high' or 'max'`);
+        }
+        if (name === 'auto') {
+            const auto = activateAutoRouting(this.options); if (!auto) throw new AppRpcError(-32602, 'Invalid params: auto routing requires fast, balanced and strong profiles');
+            this.runtime.updateModelOptions?.(this.options.model); this.persistModelConfig?.(this.options.model);
+            return { sessionId: sessionId || null, modelProfile: 'auto', provider: auto.provider, model: auto.model, complexityRouting: auto.routing };
         }
         const profiles = this.options.model?.profiles || {};
         const profile = profiles[name];

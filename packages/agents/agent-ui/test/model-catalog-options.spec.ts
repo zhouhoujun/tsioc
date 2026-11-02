@@ -93,6 +93,60 @@ export class ModelCatalogOptionsTest {
         expect(calls.some(entry => entry.method === 'model.catalog' && entry.params?.provider === 'openai-compatible')).toEqual(true);
     }
 
+    @Test('auto routing persists through app RPC and updates local options')
+    async autoRoutingPersists() {
+        const calls: Array<{ method: string; params: any }> = [];
+        const updates: any[] = [];
+        const settings: any[] = [];
+        const options: any = {
+            model: {
+                provider: 'deepseek', model: 'fast-model',
+                profiles: {
+                    'p-fast': { provider: 'deepseek', model: 'fast-model' },
+                    'p-balanced': { provider: 'deepseek', model: 'balanced-model' },
+                    'p-strong': { provider: 'deepseek', model: 'strong-model' }
+                }
+            }
+        };
+        let selects = 0;
+        const ctx: any = {
+            translator: null,
+            appRpc: {
+                request: async (method: string, params: any) => {
+                    calls.push({ method, params });
+                    if (method === 'model.list') {
+                        return Object.keys(options.model.profiles).map(name => ({
+                            name, provider: 'deepseek', model: options.model.profiles[name].model
+                        }));
+                    }
+                    if (method === 'model.catalog') {
+                        return { provider: 'deepseek', models: [] };
+                    }
+                    if (method === 'model.activate' && params?.name === 'auto') {
+                        return {
+                            modelProfile: 'auto',
+                            complexityRouting: { simple: 'p-fast', moderate: 'p-balanced', complex: 'p-strong' }
+                        };
+                    }
+                    return undefined;
+                }
+            },
+            state: { sessionId: 's1', modelProfile: '', setModelProfile(value: string) { this.modelProfile = value; } },
+            options: () => options,
+            notify() {},
+            select: async () => (++selects === 1 ? '__provider__:p' : 'auto'),
+            updateModelOptions: (model: any) => updates.push(model),
+            persistSettings: async (patch: any) => settings.push(patch)
+        };
+        await openModelSwitcher(ctx);
+        expect(calls.some(call => call.method === 'model.activate' && call.params?.name === 'auto')).toEqual(true);
+        expect(options.model.defaultProfile).toBeUndefined();
+        expect(options.model.complexityRouting).toEqual({ simple: 'p-fast', moderate: 'p-balanced', complex: 'p-strong' });
+        expect(updates.length).toEqual(1);
+        expect(settings).toContainEqual({ modelProfile: 'auto' });
+        expect(ctx.state.modelProfile).toEqual('auto');
+    }
+
     @Test('activating a configured profile without app RPC merges it into the runtime options')
     async localProfileActivation() {
         const options: any = {
