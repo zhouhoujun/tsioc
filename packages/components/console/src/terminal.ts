@@ -1763,9 +1763,19 @@ export class TuiTerminalSurface {
                 .filter(target => !(target.y >= dialogRegion.startRow && target.y < dialogRegion.endRow))
                 .map(target => target.y >= dialogRegion.endRow ? { ...target, y: target.y - dialogHeight } : target);
         }
+        const fitViewportHeight = (lines: string[]): string[] => {
+            if (nativeScrollback || !height) {
+                return lines;
+            }
+            const fitted = lines.slice(0, height);
+            while (fitted.length < height) {
+                fitted.push('');
+            }
+            return fitted;
+        };
         const composeDialogOverlay = (result: { lines: string[]; regions: TerminalRenderRegion[]; cursorTargets: TerminalCursorTarget[]; clickTargets: TerminalClickTarget[] }) => {
             if (!dialogLines.length || !height) {
-                return result;
+                return { ...result, lines: fitViewportHeight(result.lines) };
             }
             const footerRegions = result.regions.filter(region => region.id === footerRegionId);
             const shiftedLines = dialogLines.map(line => dialogShift ? `${' '.repeat(dialogShift)}${line}` : line);
@@ -1831,7 +1841,7 @@ export class TuiTerminalSurface {
                 // cannot fall to the row below the composer.
                 .filter(target => (target as any).id === 'input' || !(target.row >= start && target.row < start + dialogHeight))
                 .map(target => (target as any).id === 'input' && lastPromptRow >= 0 ? { ...target, row: lastPromptRow } : target);
-            return { lines, regions: result.regions, cursorTargets, clickTargets };
+            return { lines: fitViewportHeight(lines), regions: result.regions, cursorTargets, clickTargets };
         };
         const scrollRegion = allRegions.find(region => region.id === scrollRegionId);
         const footerRegion = allRegions.find(region => region.id === footerRegionId);
@@ -1895,7 +1905,15 @@ export class TuiTerminalSurface {
         const transcript = allLines.slice(scrollRegion.startRow, footerRegion.startRow);
         const footer = allLines.slice(footerRegion.startRow);
         const availableRows = Math.max(0, height - prefix.length - footer.length);
+        // A dialog is chrome, not transcript content. Keep the user's distance
+        // from the latest row when only the overlay changes (opening/closing a
+        // menu or a tall /web QR panel must not move the scrollbar).
+        const previousOffset = this.scrollBox.maxTop - this.scrollBox.top;
+        const previousContentRows = this.scrollBox.contentHeight;
         this.scrollBox.setMetrics(transcript.length, this.isScrollViewportEnabled() ? availableRows : transcript.length);
+        if (previousContentRows === transcript.length) {
+            this.scrollBox.scrollTo(this.scrollBox.maxTop - previousOffset);
+        }
         this.maxScrollOffsetRows = this.scrollBox.maxTop;
         this.scrollOffsetRows = this.scrollBox.maxTop - this.scrollBox.top;
         const end = Math.max(0, transcript.length - this.scrollOffsetRows);

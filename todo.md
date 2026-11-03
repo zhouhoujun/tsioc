@@ -2899,3 +2899,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 关闭使用组件输出 `@closeAction`（框架 @xxx 绑定同时监听值），不再在 agent-ui 复制 dialog shell/close 布局。
 - TUI/Web renderer 分别负责终端/网页 chrome；agent-ui 不处理 dialog 的滚动/重绘。
 - console-renderer 96 passing；components/common 28 passing；gate 27/27。
+
+## TUI dialog viewport stability（2026-11）
+
+- base surface 始终把 viewport 输出补齐/裁剪到终端高度，弹窗开关不再因行数变化走整段清屏分支。
+- transcript 内容未变化时保存并恢复 ScrollBox 相对底部偏移，弹窗开关不移动滚动条。
+- `/pair`、`/web` 交接仍使用 dialog overlay；关闭事件和 Esc 已验证。点击 ✕ 的真实 PTY 坐标仍需进一步校验。
+- components/console 120 passing；agent-ui viewport/console 103 passing。
