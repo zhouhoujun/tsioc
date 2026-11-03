@@ -1,6 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
+    DetailPanelComponent,
     DialogComponent,
     ListPanelComponent,
     MessageRowComponent,
@@ -163,5 +164,17 @@ export class CommonComponentUtilitiesTest {
         row.toggle();
         expect(toggled).toEqual(1);
         expect(row.tokens.map(token => token.text).join('')).toEqual('hello world');
+    }
+
+    @Test('detail panel keeps numbered rows and summary')
+    detailPanelRows() {
+        const panel = new DetailPanelComponent();
+        panel.summary = 'summary';
+        panel.items = [
+            { lineNumber: '  1| ', text: 'first' },
+            { lineNumber: '  2| ', text: 'second', contentStyle: { color: 'red' } }
+        ];
+        expect(panel.summary).toEqual('summary');
+        expect(panel.items.map(item => `${item.lineNumber}${item.text}`)).toEqual(['  1| first', '  2| second']);
     }
 }

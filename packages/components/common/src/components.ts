@@ -14,6 +14,7 @@ import { DialogComponent } from './dialog';
 import { SelectComponent } from './select';
 import { ListPanelComponent } from './list-panel';
 import { MessageRowComponent } from './message-row';
+import { DetailPanelComponent } from './detail-panel';
 
 interface CommonProjectionNode extends RNode {
     tagName?: string;
@@ -101,7 +102,7 @@ export class PanelComponent {
 }
 
 @Module({
-    declarations: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, SelectComponent, ListPanelComponent, MessageRowComponent],
-    exports: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, SelectComponent, ListPanelComponent, MessageRowComponent]
+    declarations: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, SelectComponent, ListPanelComponent, MessageRowComponent, DetailPanelComponent],
+    exports: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, SelectComponent, ListPanelComponent, MessageRowComponent, DetailPanelComponent]
 })
 export class BaseComponentsModule {}
