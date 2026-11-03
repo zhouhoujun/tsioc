@@ -2588,6 +2588,9 @@ export class AgentConsoleTuiRendererTest {
             await settleDynamicMessages(consoleRef);
             expect(state.textOverlay).toBeNull();
             expect(state.hasTextOverlayFocus()).toEqual(false);
+            // State closing alone is not enough: the reactive root must repaint
+            // and remove the dialog from the visible terminal frame.
+            expect(surface.lastRenderedLines.some(line => line.includes('pairing') || line.includes('QR-ROW-1'))).toEqual(false);
         } finally {
             surface?.destroy();
             await tuiCtx.close();

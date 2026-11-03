@@ -2906,3 +2906,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - transcript 内容未变化时保存并恢复 ScrollBox 相对底部偏移，弹窗开关不移动滚动条。
 - `/pair`、`/web` 交接仍使用 dialog overlay；关闭事件和 Esc 已验证。点击 ✕ 的真实 PTY 坐标仍需进一步校验。
 - components/console 120 passing；agent-ui viewport/console 103 passing。
+
+## TUI dialog reactive close（2026-11）
+
+- 根因：text overlay panel 注入 raw state，close 直接改 raw，root 的 v-show 不触发重渲染，状态已 null 但屏幕仍显示。
+- 修复：panel 在 close 时用注入的 ReactiveEffect 把 raw state 包成响应式 proxy，再调用 closeTextOverlay，触发 root effect。
+- 真实 PTY `/web` 点击 ✕ 现在关闭；console-renderer 增加“状态 null 且屏幕消失”断言，96 passing。
