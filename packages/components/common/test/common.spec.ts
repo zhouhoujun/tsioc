@@ -2,6 +2,7 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
     DialogComponent,
+    ListPanelComponent,
     SelectComponent,
     formatCommonIndexedOptionLabel,
     processCommonTextInputChunk,
@@ -135,5 +136,19 @@ export class CommonComponentUtilitiesTest {
         const entered = processCommonTextInputChunk('go', 2, '\r', { submitOnEnter: true });
         expect(entered.value).toEqual('go');
         expect(entered.shouldSubmit).toBeTruthy();
+    }
+
+    @Test('list panel forwards row selection and close')
+    listPanelEvents() {
+        const panel = new ListPanelComponent();
+        panel.items = [{ id: 'row-1', label: 'one', selected: 'true' }];
+        let selected = '';
+        let closed = 0;
+        panel.selectAction = value => { selected = value; };
+        panel.closeAction = () => { closed += 1; };
+        panel.selectItem(panel.items[0]);
+        panel.close();
+        expect(selected).toEqual('row-1');
+        expect(closed).toEqual(1);
     }
 }

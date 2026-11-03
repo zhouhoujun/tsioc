@@ -986,12 +986,9 @@ export class AgentConsoleWorkingPanelComponent {
 
 @Component({
     selector: 'agent-console-sessions-panel',
+    imports: [ListPanelComponent],
     template: `
-    <div class="console-panel console-sessions-panel" v-style="shellStyle">
-        <label v-style="accentStyle">{{sessionsSummaryLabel}}</label>
-        <label v-style="metaStyle" v-show="sessionsHintLabel">{{sessionsHintLabel}}</label>
-        <label v-style="item.style" v-for="item in sessionItems">{{item.label}}</label>
-    </div>
+    <common-list-panel :header="sessionsSummaryLabel" :hint="sessionsHintLabel" :items="sessionItems" :showClose="false" :shellStyle="shellStyle" :accentStyle="accentStyle" :metaStyle="metaStyle"></common-list-panel>
     `
 })
 export class AgentConsoleSessionsPanelComponent {
@@ -1687,13 +1684,9 @@ export class AgentConsoleJobsPanelComponent {
 export { AgentConsoleApprovalsPanelComponent } from './AgentConsoleApprovalPanel';
 @Component({
     selector: 'agent-console-tools-panel',
+    imports: [ListPanelComponent],
     template: `
-    <div class="console-panel console-tools-panel" v-style="shellStyle">
-        <label v-style="accentStyle">{{toolsSummaryLabel}}</label>
-        <label v-style="metaStyle" v-show="toolsHintLabel">{{toolsHintLabel}}</label>
-        <label v-style="item.style" v-for="item in toolItems">{{item.label}}</label>
-        <label v-style="detailStyle" v-for="line in selectedToolDetailLines">{{line}}</label>
-    </div>
+    <common-list-panel :header="toolsSummaryLabel" :hint="toolsHintLabel" :items="toolItems" :detailLines="selectedToolDetailLines" :showClose="false" :shellStyle="shellStyle" :accentStyle="accentStyle" :metaStyle="metaStyle" :detailStyle="detailStyle"></common-list-panel>
     `
 })
 export class AgentConsoleToolsPanelComponent {
@@ -2113,13 +2106,9 @@ export class AgentConsolePendingQuestionPanelComponent {
 
 @Component({
     selector: 'agent-console-tool-runs-panel',
+    imports: [ListPanelComponent],
     template: `
-    <div class="console-panel console-tool-runs-panel" v-style="shellStyle">
-        <label v-style="accentStyle">{{toolRunsSummaryLabel}}</label>
-        <label v-style="metaStyle" v-show="toolRunsHintLabel">{{toolRunsHintLabel}}</label>
-        <label v-style="item.style" v-for="item in toolRunItems">{{item.label}}</label>
-        <label v-style="detailStyle" v-for="line in selectedToolRunDetailLines">{{line}}</label>
-    </div>
+    <common-list-panel :header="toolRunsSummaryLabel" :hint="toolRunsHintLabel" :items="toolRunItems" :detailLines="selectedToolRunDetailLines" :showClose="false" :shellStyle="shellStyle" :accentStyle="accentStyle" :metaStyle="metaStyle" :detailStyle="detailStyle"></common-list-panel>
     `
 })
 export class AgentConsoleToolRunsPanelComponent {

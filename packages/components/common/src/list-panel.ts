@@ -3,7 +3,7 @@ import { Attribute, Component } from '@tsdi/components';
 export interface CommonListItem {
     id: string;
     label: string;
-    value: string;
+    value?: string;
     selected?: string;
     style?: Record<string, string> | string;
 }
@@ -56,7 +56,7 @@ export class ListPanelComponent {
     @Attribute() closeAction?: () => void;
 
     selectItem(item: CommonListItem): void {
-        this.selectAction?.(item.value);
+        this.selectAction?.(item.value ?? item.id);
     }
 
     close(): void {
