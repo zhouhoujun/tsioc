@@ -94,6 +94,18 @@ import { AgentConsoleInputHistoryController, DefaultAgentConsoleInputHistoryCont
 import { AgentConsoleFocusLayers, DefaultAgentConsoleFocusLayers } from './AgentConsoleFocusLayers';
 import { AgentConsoleCommandExecutionController, DefaultAgentConsoleCommandExecutionController } from './AgentConsoleCommandExecutionState';
 import {
+    moveReviewFileSelection as moveReviewFileSelectionInState,
+    moveReviewGroupSelection as moveReviewGroupSelectionInState,
+    resolveAggregateReviewFileSections,
+    resolveReviewExecutionMode,
+    resolveReviewFileSections,
+    resolveReviewGroups,
+    resolveSelectedReviewFileSection,
+    resolveSelectedReviewGroup,
+    setReviewPatchFilter as setReviewPatchFilterInState,
+    setSelectedReviewFileIndex as setSelectedReviewFileIndexInState,
+} from './AgentConsoleReviewNavigation';
+import {
     clearAllReviewAnnotations as clearAllReviewAnnotationsInState,
     clearReviewFileAnnotation as clearReviewFileAnnotationInState,
     clearReviewHunkAnnotation as clearReviewHunkAnnotationInState,
@@ -3528,23 +3540,7 @@ export class AgentConsoleSessionState {
         setSelectedReviewTaskIdInState(this, taskId);
     }
 
-    moveTaskSelection(delta: number): void {
-        moveTaskSelectionInState(this, delta);
-    }
-
-    moveTaskSelectionPage(delta: number, pageSize?: number): void {
-        moveTaskSelectionPageInState(this, delta, pageSize);
-    }
-
-    selectFirstTask(): void {
-        selectFirstTaskInState(this);
-    }
-
-    selectLastTask(): void {
-        selectLastTaskInState(this);
-    }
-
-    get selectedTask(): Record<string, any> | undefined {
+                    get selectedTask(): Record<string, any> | undefined {
         return resolveSelectedTask(this);
     }
 
@@ -3552,15 +3548,7 @@ export class AgentConsoleSessionState {
         return resolveFilteredReviewTaskChoices(this);
     }
 
-    setTaskFilter(filter: AgentConsoleTaskFilter): void {
-        setTaskFilterInState(this, filter);
-    }
-
-    focusSelectedTaskLineageFilter(): boolean {
-        return focusSelectedTaskLineageFilterInState(this);
-    }
-
-    protected formatScheduledTimestamp(value?: number): string {
+            protected formatScheduledTimestamp(value?: number): string {
         return typeof value === 'number' && Number.isFinite(value)
             ? new Date(value).toISOString()
             : '';
@@ -3944,110 +3932,31 @@ export class AgentConsoleSessionState {
     }
 
     get reviewExecutionMode(): 'sequential' | 'parallel' | null {
-        const mode = this.reviewTask?.result?.executionMode
-            ?? this.reviewTask?.metadata?.executionMode
-            ?? null;
-        return mode === 'parallel' || mode === 'sequential' ? mode : null;
+        return resolveReviewExecutionMode(this);
     }
 
     get reviewGroups(): AgentConsoleReviewGroup[] {
-        const groups: AgentConsoleReviewGroup[] = [];
-        const aggregateText = this.stringifyReviewContent(this.reviewDiff);
-        if (aggregateText || this.reviewDiff || this.reviewTask?.result?.diff) {
-            groups.push({
-                key: 'aggregate',
-                kind: 'aggregate',
-                label: 'aggregate',
-                status: this.reviewTask?.status,
-                diffText: aggregateText,
-                sections: this.parseUnifiedDiffSections(aggregateText)
-            });
-        }
-        for (let index = 0; index < this.reviewWorkers.length; index++) {
-            const worker = this.reviewWorkers[index];
-            const diffText = this.stringifyReviewContent(worker.diff ?? worker.output);
-            groups.push({
-                key: `worker:${worker.workerId || index + 1}`,
-                kind: 'worker',
-                label: worker.workerId || `worker-${index + 1}`,
-                status: worker.status,
-                workerId: worker.workerId,
-                branch: worker.branch,
-                worktreePath: worker.worktreePath,
-                actionIds: worker.actionIds,
-                error: worker.error,
-                diffText,
-                sections: this.parseUnifiedDiffSections(diffText)
-            });
-        }
-        return groups;
+        return resolveReviewGroups(this);
     }
 
     get selectedReviewGroup(): AgentConsoleReviewGroup | undefined {
-        const groups = this.reviewGroups;
-        if (!groups.length) {
-            return undefined;
-        }
-        const nextIndex = Math.max(0, Math.min(groups.length - 1, this.selectedReviewGroupIndex));
-        return groups[nextIndex];
+        return resolveSelectedReviewGroup(this);
     }
 
     get aggregateReviewFileSections(): AgentConsoleReviewDiffSection[] {
-        const files = new Map<string, AgentConsoleReviewDiffSection>();
-        for (const section of this.parseUnifiedDiffSections(this.stringifyReviewContent(this.reviewDiff))) {
-            const current = files.get(section.path);
-            if (current) {
-                current.additions += section.additions;
-                current.deletions += section.deletions;
-                current.lines.push(...section.lines);
-                current.status = section.status === 'delete' ? 'delete' : current.status === 'add' ? 'add' : section.status || current.status;
-            } else {
-                files.set(section.path, { ...section, lines: section.lines.slice() });
-            }
-        }
-        return Array.from(files.values());
+        return resolveAggregateReviewFileSections(this);
     }
 
     get reviewFileSections(): AgentConsoleReviewDiffSection[] {
-        return this.selectedReviewGroup?.sections || this.aggregateReviewFileSections;
-    }
-
-    setSelectedReviewGroupIndex(index: number): void {
-        const groups = this.reviewGroups;
-        if (!groups.length) {
-            return;
-        }
-        const nextIndex = Math.max(0, Math.min(groups.length - 1, index));
-        if (nextIndex === this.selectedReviewGroupIndex) {
-            return;
-        }
-        this.selectedReviewGroupIndex = nextIndex;
-        this.selectedReviewFileIndex = 0;
-        this.selectedReviewHunkIndex = 0;
-        this.resetReviewDetailViewport();
+        return resolveReviewFileSections(this);
     }
 
     moveReviewGroupSelection(delta: number): void {
-        const groups = this.reviewGroups;
-        if (!groups.length) {
-            return;
-        }
-        const nextIndex = (this.selectedReviewGroupIndex + delta + groups.length) % groups.length;
-        if (nextIndex === this.selectedReviewGroupIndex) {
-            return;
-        }
-        this.selectedReviewGroupIndex = nextIndex;
-        this.selectedReviewFileIndex = 0;
-        this.selectedReviewHunkIndex = 0;
-        this.resetReviewDetailViewport();
+        moveReviewGroupSelectionInState(this, delta);
     }
 
     setReviewPatchFilter(filter: AgentConsoleReviewPatchFilter): void {
-        if (this.selectedReviewPatchFilter === filter) {
-            return;
-        }
-        this.selectedReviewPatchFilter = filter;
-        this.resetReviewDetailViewport();
+        setReviewPatchFilterInState(this, filter);
     }
 
     setReviewFileAnnotation(status: 'approved' | 'rejected', comment?: string, filePath?: string): void {
@@ -4148,40 +4057,15 @@ export class AgentConsoleSessionState {
     }
 
     get selectedReviewFileSection(): AgentConsoleReviewDiffSection | undefined {
-        const sections = this.reviewFileSections;
-        if (!sections.length) {
-            return undefined;
-        }
-        const nextIndex = Math.max(0, Math.min(sections.length - 1, this.selectedReviewFileIndex));
-        return sections[nextIndex];
+        return resolveSelectedReviewFileSection(this);
     }
 
     setSelectedReviewFileIndex(index: number): void {
-        const sections = this.reviewFileSections;
-        if (!sections.length) {
-            return;
-        }
-        const nextIndex = Math.max(0, Math.min(sections.length - 1, index));
-        if (nextIndex === this.selectedReviewFileIndex) {
-            return;
-        }
-        this.selectedReviewFileIndex = nextIndex;
-        this.selectedReviewHunkIndex = 0;
-        this.resetReviewDetailViewport();
+        setSelectedReviewFileIndexInState(this, index);
     }
 
     moveReviewFileSelection(delta: number): void {
-        const sections = this.reviewFileSections;
-        if (!sections.length) {
-            return;
-        }
-        const nextIndex = (this.selectedReviewFileIndex + delta + sections.length) % sections.length;
-        if (nextIndex === this.selectedReviewFileIndex) {
-            return;
-        }
-        this.selectedReviewFileIndex = nextIndex;
-        this.selectedReviewHunkIndex = 0;
-        this.resetReviewDetailViewport();
+        moveReviewFileSelectionInState(this, delta);
     }
 
     get reviewDetailLines(): string[] {
@@ -5245,7 +5129,7 @@ export class AgentConsoleSessionState {
         return String(value || '').replace(/\t/g, '    ');
     }
 
-    protected stringifyReviewContent(value: any): string {
+    stringifyReviewContent(value: any): string {
         if (value == null) {
             return '';
         }
@@ -5274,7 +5158,7 @@ export class AgentConsoleSessionState {
         }
     }
 
-    protected parseUnifiedDiffSections(diffText: string): AgentConsoleReviewDiffSection[] {
+    parseUnifiedDiffSections(diffText: string): AgentConsoleReviewDiffSection[] {
         const text = String(diffText || '').trim();
         if (!text) {
             return [];
@@ -5385,7 +5269,7 @@ export class AgentConsoleSessionState {
         return [header, ...this.reviewDetailLines].filter(Boolean).join('\n');
     }
 
-    protected resetReviewDetailViewport(): void {
+    resetReviewDetailViewport(): void {
         this.reviewDetailScroll = 0;
         this.reviewDetailColumnScroll = 0;
     }
@@ -5868,33 +5752,33 @@ export class AgentConsoleSessionState {
                     }
                     return false;
                 case 'l':
-                    return this.focusSelectedTaskLineageFilter();
+                    return focusSelectedTaskLineageFilterInState(this);
                 case 'f':
-                    this.setTaskFilter('failed');
+                    setTaskFilterInState(this, 'failed');
                     return true;
                 case 'v':
-                    this.setTaskFilter('rollback');
+                    setTaskFilterInState(this, 'rollback');
                     return true;
                 case 'u':
-                    this.setTaskFilter('all');
+                    setTaskFilterInState(this, 'all');
                     return true;
                 case 'down':
-                    this.moveTaskSelection(1);
+                    moveTaskSelectionInState(this, 1);
                     return true;
                 case 'up':
-                    this.moveTaskSelection(-1);
+                    moveTaskSelectionInState(this, -1);
                     return true;
                 case 'pageup':
-                    this.moveTaskSelectionPage(-1);
+                    moveTaskSelectionPageInState(this, -1);
                     return true;
                 case 'pagedown':
-                    this.moveTaskSelectionPage(1);
+                    moveTaskSelectionPageInState(this, 1);
                     return true;
                 case 'home':
-                    this.selectFirstTask();
+                    selectFirstTaskInState(this);
                     return true;
                 case 'end':
-                    this.selectLastTask();
+                    selectLastTaskInState(this);
                     return true;
                 default:
                     return false;
