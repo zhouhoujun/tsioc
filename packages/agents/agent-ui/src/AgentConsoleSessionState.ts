@@ -108,6 +108,30 @@ import {
     toggleReviewSideBySide as toggleReviewSideBySideInState
 } from './AgentConsoleReviewPatch';
 import {
+    applyPlanActionOptimistically as applyPlanActionOptimisticallyInState,
+    confirmPlanAction as confirmPlanActionInState,
+    dismissPlanAction as dismissPlanActionInState,
+    isPlanActionApplicable as isPlanActionApplicableInState,
+    planActionPromptLabel as planActionPromptLabelInState,
+    requestPlanAction as requestPlanActionInState,
+    retrySelectedPlanTodo as retrySelectedPlanTodoInState,
+    rollbackPlanAction as rollbackPlanActionInState
+} from './AgentConsolePlanActionState';
+import {
+    buildLegacyQuestionId as buildLegacyQuestionIdInState,
+    choosePendingQuestion as choosePendingQuestionInState,
+    dismissPendingQuestion as dismissPendingQuestionInState,
+    finishPendingQuestion as finishPendingQuestionInState,
+    markPendingQuestionExpired as markPendingQuestionExpiredInState,
+    movePendingQuestionSelection as movePendingQuestionSelectionInState,
+    movePendingQuestionSelectionPage as movePendingQuestionSelectionPageInState,
+    movePendingQuestionSelectionToEdge as movePendingQuestionSelectionToEdgeInState,
+    resolvePendingQuestionTotal,
+    resumeAfterQuestionAnswer as resumeAfterQuestionAnswerInState,
+    setPendingQuestion as setPendingQuestionInState,
+    submitPendingQuestionInput as submitPendingQuestionInputInState
+} from './AgentConsoleQuestionState';
+import {
     moveApprovalSelection as moveApprovalSelectionInState,
     moveApprovalSelectionPage as moveApprovalSelectionPageInState,
     moveToolRunSelection as moveToolRunSelectionInState,
@@ -130,18 +154,28 @@ import {
     setToolsFocused as setToolsFocusedInState
 } from './AgentConsoleToolNavigation';
 import {
+    buildSelectedScheduledTaskCopyText as buildSelectedScheduledTaskCopyTextInState,
     buildSelectedSessionCopyText as buildSelectedSessionCopyTextInState,
     clampSessionSelectionToFilter as clampSessionSelectionToFilterInState,
+    formatScheduledTimestamp as formatScheduledTimestampInState,
     formatSessionWorkspaceLabel as formatSessionWorkspaceLabelInState,
+    moveScheduledTaskSelection as moveScheduledTaskSelectionInState,
+    moveScheduledTaskSelectionPage as moveScheduledTaskSelectionPageInState,
     moveSessionSelection as moveSessionSelectionInState,
     moveSessionSelectionPage as moveSessionSelectionPageInState,
     resolveNavFilteredSessions,
+    resolveSelectedScheduledTask,
     restoreSessionsViewState as restoreSessionsViewStateInState,
     persistSessionsViewState as persistSessionsViewStateInState,
     resolveSelectedSession,
+    selectFirstScheduledTask as selectFirstScheduledTaskInState,
     selectFirstSession as selectFirstSessionInState,
+    selectLastScheduledTask as selectLastScheduledTaskInState,
     selectLastSession as selectLastSessionInState,
+    setJobsFocused as setJobsFocusedInState,
     setProjectsFocused as setProjectsFocusedInState,
+    setScheduledTasks as setScheduledTasksInState,
+    setSelectedScheduledTaskId as setSelectedScheduledTaskIdInState,
     setSelectedSessionId as setSelectedSessionIdInState,
     setSessionsFocused as setSessionsFocusedInState,
     setThreadsFocused as setThreadsFocusedInState,
@@ -902,7 +936,7 @@ export class AgentConsoleSessionState {
     pendingQuestionQueue: AgentConsolePendingQuestion[] = [];
     pendingQuestionSelectedIndex = 0;
     questionAction?: (input: { questionId: string; sessionId: string; action: 'answer' | 'dismiss'; answer?: string }) => Promise<void>;
-    protected planMessage: AgentMessage | null = null;
+    planMessage: AgentMessage | null = null;
     /** Ephemeral command lifecycle projections; never persisted as conversation history. */
     protected commandExecutionMessages: AgentMessage[] = [];
     fileChangeMessage: AgentMessage | null = null;
@@ -1044,7 +1078,7 @@ export class AgentConsoleSessionState {
     /** True once the user moved inside an open suggestion menu. */
     protected selectMenuTouched = false;
     setSuppressSuggestionMenu(suppressed: boolean): void { this.suppressSuggestionMenu = suppressed; }
-    protected overlayController = new AgentConsoleOverlayController();
+    overlayController = new AgentConsoleOverlayController();
 
     configure(meta: AgentConsoleSessionMeta): this {
         // The injected translator can gain its final locale after this state is
@@ -2644,66 +2678,35 @@ export class AgentConsoleSessionState {
     }
 
     setScheduledTasks(tasks: ScheduledAgentTask[]): void {
-        this.scheduledTasks = tasks.slice();
-        if (!this.scheduledTasks.length) {
-            this.selectedScheduledTaskId = '';
-        } else if (this.selectedScheduledTaskId && this.scheduledTasks.some(item => item.id === this.selectedScheduledTaskId)) {
-            // Preserve explicit selection when possible.
-        } else {
-            this.selectedScheduledTaskId = this.scheduledTasks[0].id;
-        }
+        setScheduledTasksInState(this, tasks);
     }
 
     setJobsFocused(focused: boolean): void {
-        this.jobsFocused = focused;
-        if (focused && !this.selectedScheduledTaskId && this.scheduledTasks.length) {
-            this.selectedScheduledTaskId = this.scheduledTasks[0].id;
-        }
-        this.syncDerivedInputFocus();
+        setJobsFocusedInState(this, focused);
     }
 
     setSelectedScheduledTaskId(taskId: string): void {
-        if (!taskId || !this.scheduledTasks.some(item => item.id === taskId)) {
-            return;
-        }
-        this.selectedScheduledTaskId = taskId;
+        setSelectedScheduledTaskIdInState(this, taskId);
     }
 
     moveScheduledTaskSelection(delta: number): void {
-        if (!this.scheduledTasks.length) {
-            return;
-        }
-        const currentIndex = Math.max(0, this.scheduledTasks.findIndex(item => item.id === this.selectedScheduledTaskId));
-        const nextIndex = (currentIndex + delta + this.scheduledTasks.length) % this.scheduledTasks.length;
-        this.selectedScheduledTaskId = this.scheduledTasks[nextIndex].id;
+        moveScheduledTaskSelectionInState(this, delta);
     }
 
     moveScheduledTaskSelectionPage(delta: number, pageSize?: number): void {
-        if (!this.scheduledTasks.length) {
-            return;
-        }
-        const currentIndex = Math.max(0, this.scheduledTasks.findIndex(item => item.id === this.selectedScheduledTaskId));
-        const resolvedPageSize = pageSize ?? this.consoleOptions.sessionsVisibleItems;
-        const nextIndex = Math.max(0, Math.min(this.scheduledTasks.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
-        this.selectedScheduledTaskId = this.scheduledTasks[nextIndex].id;
+        moveScheduledTaskSelectionPageInState(this, delta, pageSize);
     }
 
     selectFirstScheduledTask(): void {
-        if (!this.scheduledTasks.length) {
-            return;
-        }
-        this.selectedScheduledTaskId = this.scheduledTasks[0].id;
+        selectFirstScheduledTaskInState(this);
     }
 
     selectLastScheduledTask(): void {
-        if (!this.scheduledTasks.length) {
-            return;
-        }
-        this.selectedScheduledTaskId = this.scheduledTasks[this.scheduledTasks.length - 1].id;
+        selectLastScheduledTaskInState(this);
     }
 
     get selectedScheduledTask(): ScheduledAgentTask | undefined {
-        return this.scheduledTasks.find(item => item.id === this.selectedScheduledTaskId);
+        return resolveSelectedScheduledTask(this);
     }
 
     setTaskRecords(tasks: Record<string, any>[]): void {
@@ -2917,7 +2920,7 @@ export class AgentConsoleSessionState {
         return { met, total: criteria.length };
     }
 
-    protected buildPlanMessage(): AgentMessage | null {
+    buildPlanMessage(): AgentMessage | null {
         if (!this.planTodos.length) {
             return null;
         }
@@ -3137,356 +3140,88 @@ export class AgentConsoleSessionState {
     }
 
     setPendingQuestion(question: AgentConsolePendingQuestion | null): void {
-        if (question && question.sessionId && question.sessionId !== this.sessionId) return;
-        if (!question) {
-            this.pendingQuestionQueue = [];
-            this.pendingQuestion = null;
-            this.pendingQuestionSelectedIndex = 0;
-            this.syncDerivedInputFocus();
-            return;
-        }
-        const existingIndex = this.pendingQuestionQueue.findIndex(item => item.questionId === question.questionId);
-        if (existingIndex >= 0) {
-            const existing = this.pendingQuestionQueue[existingIndex];
-            if ((existing.updatedAt || 0) > (question.updatedAt || 0)) return;
-            if (existing.status === 'answered' || existing.status === 'dismissed') return;
-            this.pendingQuestionQueue[existingIndex] = { ...existing, ...question };
-        } else {
-            this.pendingQuestionQueue.push(question);
-        }
-        this.pendingQuestion = this.pendingQuestionQueue[0] ?? null;
-        this.pendingQuestionSelectedIndex = 0;
-        this.syncDerivedInputFocus();
+        setPendingQuestionInState(this, question);
     }
 
-    /**
-     * Pop the front question after it is answered/dismissed/expired and advance
-     * the active item to the next in the queue. Returns the removed question.
-     */
     finishPendingQuestion(): AgentConsolePendingQuestion | null {
-        const finished = this.pendingQuestionQueue.shift() ?? null;
-        this.pendingQuestion = this.pendingQuestionQueue[0] ?? null;
-        this.pendingQuestionSelectedIndex = 0;
-        this.syncDerivedInputFocus();
-        return finished;
+        return finishPendingQuestionInState(this);
     }
 
     /** Queue count exposed for `current/total` UI projection. */
     get pendingQuestionTotal(): number {
-        return this.pendingQuestionQueue.length;
+        return resolvePendingQuestionTotal(this);
     }
 
     markPendingQuestionExpired(questionId?: string): void {
-        const target = questionId
-            ? this.pendingQuestionQueue.find(item => item.questionId === questionId)
-            : this.pendingQuestionQueue[0];
-        if (!target) return;
-        target.status = 'expired';
+        markPendingQuestionExpiredInState(this, questionId);
     }
 
     movePendingQuestionSelection(delta: number): void {
-        const count = this.pendingQuestion?.options.length || 0;
-        if (!count) return;
-        this.pendingQuestionSelectedIndex = (this.pendingQuestionSelectedIndex + delta + count) % count;
+        movePendingQuestionSelectionInState(this, delta);
     }
 
     movePendingQuestionSelectionToEdge(edge: 'start' | 'end'): void {
-        const count = this.pendingQuestion?.options.length || 0;
-        if (!count) return;
-        this.pendingQuestionSelectedIndex = edge === 'start'
-            ? this.overlayController.homeIndex(count)
-            : this.overlayController.endIndex(count);
+        movePendingQuestionSelectionToEdgeInState(this, edge);
     }
 
     movePendingQuestionSelectionPage(direction: 1 | -1): void {
-        const count = this.pendingQuestion?.options.length || 0;
-        if (!count) return;
-        this.pendingQuestionSelectedIndex = this.overlayController.pageIndex(
-            this.pendingQuestionSelectedIndex,
-            direction,
-            count
-        );
+        movePendingQuestionSelectionPageInState(this, direction);
     }
 
     async choosePendingQuestion(index = this.pendingQuestionSelectedIndex): Promise<boolean> {
-        const option = this.pendingQuestion?.options[index];
-        if (!option) return false;
-        this.pendingQuestionSelectedIndex = index;
-        this.setInput(option, option.length);
-        const question = this.pendingQuestion;
-        if (!question) return false;
-        // Standalone/legacy hosts retain the previous compose-only behavior.
-        if (!this.questionAction) {
-            return true;
-        }
-        if (question.expiresAt && Date.now() > question.expiresAt) {
-            question.status = 'expired';
-            question.error = undefined;
-            this.finishPendingQuestion();
-            return true;
-        }
-        question.status = 'submitting';
-        question.error = undefined;
-        try {
-            await this.questionAction({
-                questionId: question.questionId || this.buildLegacyQuestionId(question),
-                sessionId: question.sessionId || this.sessionId,
-                action: 'answer',
-                answer: option
-            });
-            question.status = 'answered';
-            question.answer = option;
-            this.finishPendingQuestion();
-            this.resumeAfterQuestionAnswer();
-        } catch (error: any) {
-            const message = error?.message || String(error || this.translateLabel('agent.notice.questionResponseFailed', undefined, 'Question response failed'));
-            if (/expired/i.test(message)) {
-                question.status = 'expired';
-                question.error = undefined;
-                this.finishPendingQuestion();
-            } else {
-                question.status = 'pending';
-                question.error = message;
-            }
-        }
-        return true;
+        return choosePendingQuestionInState(this, index);
     }
 
-    protected buildLegacyQuestionId(question: AgentConsolePendingQuestion): string {
-        return `legacy-question-${question.question}`;
+    buildLegacyQuestionId(question: AgentConsolePendingQuestion): string {
+        return buildLegacyQuestionIdInState(question);
     }
 
-    /**
-     * Feed an answered question back to the agent as the next user turn.
-     *
-     * `ask_user` is non-blocking: the model's turn already ended when it asked,
-     * so without this the stored answer never reaches the model. Resume only
-     * when no further question is queued for this session, so a batch of
-     * questions collects every answer before the agent continues.
-     */
-    protected resumeAfterQuestionAnswer(): void {
-        if (!this.submitAction || this.pendingQuestion) {
-            return;
-        }
-        // Start the resumed turn without awaiting it here: this method runs on
-        // the terminal input dispatch chain, and awaiting the whole turn made
-        // every later key (including `a`/`d` on the approval prompt the turn
-        // raises) queue until the approval timed out.
-        void Promise.resolve(this.submitAction()).catch(() => undefined);
+    resumeAfterQuestionAnswer(): void {
+        resumeAfterQuestionAnswerInState(this);
     }
 
-    /**
-     * Dismiss the active pending question. The dismissal is reported to the
-     * server (so it does not reappear on a later reseed/reconnect) and the
-     * queue advances to the next question. Local dismissal is kept even if the
-     * server is unreachable; the store expires the question on its own timeout.
-     */
     async dismissPendingQuestion(): Promise<boolean> {
-        const question = this.pendingQuestion;
-        if (!question) {
-            return false;
-        }
-        const questionId = question.questionId || this.buildLegacyQuestionId(question);
-        const sessionId = question.sessionId || this.sessionId;
-        if (this.questionAction) {
-            try {
-                await this.questionAction({ questionId, sessionId, action: 'dismiss' });
-            } catch {
-                // Preserve the local dismissal when the server is unreachable.
-            }
-        }
-        question.status = 'dismissed';
-        this.finishPendingQuestion();
-        return true;
+        return dismissPendingQuestionInState(this);
     }
 
     async submitPendingQuestionInput(): Promise<boolean> {
-        const question = this.pendingQuestion;
-        const answer = String(this.input || '').trim();
-        if (!question || !answer || !this.questionAction) {
-            return false;
-        }
-        if (question.expiresAt && Date.now() > question.expiresAt) {
-            question.status = 'expired';
-            question.error = undefined;
-            this.finishPendingQuestion();
-            return true;
-        }
-        question.status = 'submitting';
-        question.error = undefined;
-        try {
-            await this.questionAction({
-                questionId: question.questionId || this.buildLegacyQuestionId(question),
-                sessionId: question.sessionId || this.sessionId,
-                action: 'answer',
-                answer
-            });
-            question.status = 'answered';
-            question.answer = answer;
-            this.finishPendingQuestion();
-            this.resumeAfterQuestionAnswer();
-        } catch (error: any) {
-            const message = error?.message || String(error || this.translateLabel('agent.notice.questionResponseFailed', undefined, 'Question response failed'));
-            if (/expired/i.test(message)) {
-                question.status = 'expired';
-                question.error = undefined;
-                this.finishPendingQuestion();
-            } else {
-                question.status = 'pending';
-                question.error = message;
-            }
-        }
-        return true;
+        return submitPendingQuestionInputInState(this);
     }
 
     async retrySelectedPlanTodo(): Promise<boolean> {
-        const item = this.selectedPlanTodo;
-        if (!item || item.status !== 'failed') return false;
-        this.planTodos = this.planTodos.map(todo => todo.id === item.id
-            ? { ...todo, status: 'pending', error: undefined, blockedBy: undefined, elapsedMs: undefined }
-            : todo);
-        this.planMessage = this.buildPlanMessage();
-        await this.retrySelectedPlanTodoAction?.(item);
-        return true;
+        return retrySelectedPlanTodoInState(this);
     }
 
     isPlanActionApplicable(action: AgentConsolePlanActionKind, item: AgentConsolePlanTodoItem): boolean {
-        switch (action) {
-            case 'complete':
-                return item.status === 'pending' || item.status === 'in_progress';
-            case 'retry':
-                return item.status === 'failed' || item.status === 'cancelled';
-            case 'block':
-                return item.status !== 'completed' && item.status !== 'cancelled'
-                    && !(item.blockedBy && item.blockedBy.length > 0);
-            case 'unblock':
-                return !!(item.blockedBy && item.blockedBy.length > 0) || !!item.blockedReason;
-            case 'assign':
-                return item.status !== 'completed' && item.status !== 'cancelled';
-            default:
-                return false;
-        }
+        return isPlanActionApplicableInState(action, item);
     }
 
     requestPlanAction(action: AgentConsolePlanActionKind, stepId: string, payload?: Record<string, unknown>): boolean {
-        const item = this.planTodos.find(todo => todo.id === stepId);
-        if (!item || !this.isPlanActionApplicable(action, item)) {
-            return false;
-        }
-        if (action === 'retry') {
-            const previous = this.applyPlanActionOptimistically(action, item, payload);
-            void this.dispatchPlanAction(action, stepId, payload)
-                .then(ok => { if (!ok) this.rollbackPlanAction(stepId, previous); })
-                .catch(() => this.rollbackPlanAction(stepId, previous));
-            return true;
-        }
-        this.planActionPrompt = {
-            action,
-            stepId,
-            label: this.planActionPromptLabel(action, item),
-            confirmLabel: action === 'block' ? 'Block' : action === 'unblock' ? 'Unblock' : action === 'assign' ? 'Assign' : 'Complete',
-            denyLabel: 'Cancel',
-            payload
-        };
-        return true;
+        return requestPlanActionInState(this, action, stepId, payload);
     }
 
-    protected planActionPromptLabel(action: AgentConsolePlanActionKind, item: AgentConsolePlanTodoItem): string {
-        const whom = item.content ? `'${String(item.content).slice(0, 40)}'` : `step ${item.id}`;
-        switch (action) {
-            case 'complete': return `Mark ${whom} as complete?`;
-            case 'block': return `Block ${whom}?`;
-            case 'unblock': return `Unblock ${whom}?`;
-            case 'assign': return `Assign ${whom}?`;
-            default: return `Apply action to ${whom}?`;
-        }
+    planActionPromptLabel(action: AgentConsolePlanActionKind, item: AgentConsolePlanTodoItem): string {
+        return planActionPromptLabelInState(action, item);
     }
 
     dismissPlanAction(): void {
-        this.planActionPrompt = null;
+        dismissPlanActionInState(this);
     }
 
     confirmPlanAction(): boolean {
-        const prompt = this.planActionPrompt;
-        if (!prompt) return false;
-        const item = this.planTodos.find(todo => todo.id === prompt.stepId);
-        if (!item) {
-            this.planActionPrompt = null;
-            return false;
-        }
-        const previous = this.applyPlanActionOptimistically(prompt.action, item, prompt.payload);
-        this.planActionPrompt = null;
-        void this.dispatchPlanAction(prompt.action, prompt.stepId, prompt.payload)
-            .then(ok => { if (!ok) this.rollbackPlanAction(prompt.stepId, previous); })
-            .catch(() => this.rollbackPlanAction(prompt.stepId, previous));
-        return true;
+        return confirmPlanActionInState(this);
     }
 
-    protected applyPlanActionOptimistically(
+    applyPlanActionOptimistically(
         action: AgentConsolePlanActionKind,
         item: AgentConsolePlanTodoItem,
         payload?: Record<string, unknown>
     ): AgentConsolePlanTodoItem {
-        this.planActionApplying = true;
-        const next: AgentConsolePlanTodoItem = { ...item, updatedAt: Date.now() };
-        switch (action) {
-            case 'complete':
-                next.status = 'completed';
-                break;
-            case 'retry':
-                next.status = 'pending';
-                next.error = undefined;
-                next.blockedBy = undefined;
-                next.blockedReason = undefined;
-                next.elapsedMs = undefined;
-                break;
-            case 'block': {
-                const reason = typeof payload?.reason === 'string' ? payload.reason : 'blocked by user';
-                next.status = next.status === 'failed' ? 'pending' : next.status;
-                next.blockedReason = reason;
-                next.blockedBy = [...(next.blockedBy ?? []), next.id];
-                break;
-            }
-            case 'unblock':
-                next.blockedBy = undefined;
-                next.blockedReason = undefined;
-                break;
-            case 'assign':
-                next.owner = typeof payload?.owner === 'string' ? payload.owner : next.owner;
-                break;
-            default:
-                break;
-        }
-        this.planTodos = this.planTodos.map(todo => todo.id === item.id ? next : todo);
-        this.planMessage = this.buildPlanMessage();
-        return item;
+        return applyPlanActionOptimisticallyInState(this, action, item, payload);
     }
 
     rollbackPlanAction(stepId: string, previous: AgentConsolePlanTodoItem | null): void {
-        this.planActionApplying = false;
-        if (!previous) return;
-        this.planTodos = this.planTodos.map(todo => todo.id === stepId ? previous : todo);
-        this.planMessage = this.buildPlanMessage();
-    }
-
-    protected async dispatchPlanAction(action: AgentConsolePlanActionKind, stepId: string, payload?: Record<string, unknown>): Promise<boolean> {
-        if (this.planActionBus) {
-            const ok = await this.planActionBus(action, stepId, payload);
-            if (ok) {
-                this.planActionApplying = false;
-            }
-            return ok;
-        }
-        if (action === 'retry') {
-            const item = this.planTodos.find(todo => todo.id === stepId);
-            if (item) {
-                await this.retrySelectedPlanTodoAction?.(item);
-            }
-            this.planActionApplying = false;
-            return true;
-        }
-        this.planActionApplying = false;
-        return true;
+        rollbackPlanActionInState(this, stepId, previous);
     }
 
     setTasksFocused(focused: boolean): void {
@@ -3505,30 +3240,12 @@ export class AgentConsoleSessionState {
         return resolveFilteredReviewTaskChoices(this);
     }
 
-    protected formatScheduledTimestamp(value?: number): string {
-        return typeof value === 'number' && Number.isFinite(value)
-            ? new Date(value).toISOString()
-            : '';
+    formatScheduledTimestamp(value?: number): string {
+        return formatScheduledTimestampInState(value);
     }
 
-    protected buildSelectedScheduledTaskCopyText(): string {
-        const selected = this.selectedScheduledTask;
-        if (!selected) {
-            return '';
-        }
-        return [
-            `${selected.id} (${selected.scheduleType || 'once'})`,
-            selected.prompt,
-            selected.paused ? 'paused' : '',
-            selected.running ? 'running' : '',
-            selected.cancelled ? 'cancelled' : '',
-            selected.runAt ? `runAt=${this.formatScheduledTimestamp(selected.runAt)}` : '',
-            selected.nextRunAt ? `nextRunAt=${this.formatScheduledTimestamp(selected.nextRunAt)}` : '',
-            selected.lastRunAt ? `lastRunAt=${this.formatScheduledTimestamp(selected.lastRunAt)}` : '',
-            selected.runCount != null ? `runCount=${selected.runCount}` : '',
-            selected.failureCount != null ? `failureCount=${selected.failureCount}` : '',
-            selected.lastError ? `lastError=${selected.lastError}` : ''
-        ].filter(Boolean).join('\n');
+    buildSelectedScheduledTaskCopyText(): string {
+        return buildSelectedScheduledTaskCopyTextInState(this);
     }
 
     setToolsFocused(focused: boolean): void {

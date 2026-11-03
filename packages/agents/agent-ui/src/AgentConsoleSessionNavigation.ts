@@ -179,3 +179,92 @@ export function buildSelectedSessionCopyText(state: AgentConsoleSessionState): s
         selected.updatedAt != null ? `updatedAt=${new Date(selected.updatedAt).toISOString()}` : ''
     ].filter(Boolean).join('\n');
 }
+
+export function setScheduledTasks(state: AgentConsoleSessionState, tasks: import('@tsdi/agent').ScheduledAgentTask[]): void {
+    state.scheduledTasks = tasks.slice();
+    if (!state.scheduledTasks.length) {
+        state.selectedScheduledTaskId = '';
+    } else if (state.selectedScheduledTaskId && state.scheduledTasks.some(item => item.id === state.selectedScheduledTaskId)) {
+        // Preserve explicit selection when possible.
+    } else {
+        state.selectedScheduledTaskId = state.scheduledTasks[0].id;
+    }
+}
+
+export function setJobsFocused(state: AgentConsoleSessionState, focused: boolean): void {
+    state.jobsFocused = focused;
+    if (focused && !state.selectedScheduledTaskId && state.scheduledTasks.length) {
+        state.selectedScheduledTaskId = state.scheduledTasks[0].id;
+    }
+    state.syncDerivedInputFocus();
+}
+
+export function setSelectedScheduledTaskId(state: AgentConsoleSessionState, taskId: string): void {
+    if (!taskId || !state.scheduledTasks.some(item => item.id === taskId)) {
+        return;
+    }
+    state.selectedScheduledTaskId = taskId;
+}
+
+export function moveScheduledTaskSelection(state: AgentConsoleSessionState, delta: number): void {
+    if (!state.scheduledTasks.length) {
+        return;
+    }
+    const currentIndex = Math.max(0, state.scheduledTasks.findIndex(item => item.id === state.selectedScheduledTaskId));
+    const nextIndex = (currentIndex + delta + state.scheduledTasks.length) % state.scheduledTasks.length;
+    state.selectedScheduledTaskId = state.scheduledTasks[nextIndex].id;
+}
+
+export function moveScheduledTaskSelectionPage(state: AgentConsoleSessionState, delta: number, pageSize?: number): void {
+    if (!state.scheduledTasks.length) {
+        return;
+    }
+    const currentIndex = Math.max(0, state.scheduledTasks.findIndex(item => item.id === state.selectedScheduledTaskId));
+    const resolvedPageSize = pageSize ?? state.consoleOptions.sessionsVisibleItems;
+    const nextIndex = Math.max(0, Math.min(state.scheduledTasks.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
+    state.selectedScheduledTaskId = state.scheduledTasks[nextIndex].id;
+}
+
+export function selectFirstScheduledTask(state: AgentConsoleSessionState): void {
+    if (!state.scheduledTasks.length) {
+        return;
+    }
+    state.selectedScheduledTaskId = state.scheduledTasks[0].id;
+}
+
+export function selectLastScheduledTask(state: AgentConsoleSessionState): void {
+    if (!state.scheduledTasks.length) {
+        return;
+    }
+    state.selectedScheduledTaskId = state.scheduledTasks[state.scheduledTasks.length - 1].id;
+}
+
+export function resolveSelectedScheduledTask(state: AgentConsoleSessionState): import('@tsdi/agent').ScheduledAgentTask | undefined {
+    return state.scheduledTasks.find(item => item.id === state.selectedScheduledTaskId);
+}
+
+export function formatScheduledTimestamp(value?: number): string {
+    return typeof value === 'number' && Number.isFinite(value)
+        ? new Date(value).toISOString()
+        : '';
+}
+
+export function buildSelectedScheduledTaskCopyText(state: AgentConsoleSessionState): string {
+    const selected = state.selectedScheduledTask;
+    if (!selected) {
+        return '';
+    }
+    return [
+        `${selected.id} (${selected.scheduleType || 'once'})`,
+        selected.prompt,
+        selected.paused ? 'paused' : '',
+        selected.running ? 'running' : '',
+        selected.cancelled ? 'cancelled' : '',
+        selected.runAt ? `runAt=${formatScheduledTimestamp(selected.runAt)}` : '',
+        selected.nextRunAt ? `nextRunAt=${formatScheduledTimestamp(selected.nextRunAt)}` : '',
+        selected.lastRunAt ? `lastRunAt=${formatScheduledTimestamp(selected.lastRunAt)}` : '',
+        selected.runCount != null ? `runCount=${selected.runCount}` : '',
+        selected.failureCount != null ? `failureCount=${selected.failureCount}` : '',
+        selected.lastError ? `lastError=${selected.lastError}` : ''
+    ].filter(Boolean).join('\n');
+}
