@@ -4,5 +4,6 @@ export * from './pager-box';
 export * from './pager-view';
 export * from './components';
 export * from './markdown';
+export * from './dialog';
 export * from './tab-bar';
 export * from './syntax-tokens';

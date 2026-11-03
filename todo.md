@@ -2892,3 +2892,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 浏览器 tabs、+、✕、Copy、回到底部按钮增加 120ms hover 过渡；禁用/选中态不误用 hover 背景。
 - 键盘 focus-visible 使用主题 accent outline；light/solarized/high-contrast 各自 hover 变量。
 - 真实 Chromium 验证 hover；gate 代码阶段 26/26，production DB 空窗复测通过。
+
+## common dialog shell（2026-11）
+
+- 新增 `components/common` 的 `common-dialog`（title/lines/hint/close + 可注入样式）；agent-ui 的 `/pair`、`/web` text overlay 只提供内容与关闭事件。
+- 关闭使用组件输出 `@closeAction`（框架 @xxx 绑定同时监听值），不再在 agent-ui 复制 dialog shell/close 布局。
+- TUI/Web renderer 分别负责终端/网页 chrome；agent-ui 不处理 dialog 的滚动/重绘。
+- console-renderer 96 passing；components/common 28 passing；gate 27/27。

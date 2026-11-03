@@ -478,6 +478,7 @@ body {
 /* Floating menus retain the overlay contract but read as web cards. */
 #agent-console [renderregion="menu"] > .console-panel,
 #agent-console [renderregion="dialog"] > .console-panel,
+#agent-console common-dialog > .console-panel,
 #agent-console agent-console-pending-question-panel > .console-panel,
 #agent-console agent-console-approvals-panel > .console-panel,
 #agent-console agent-console-select-panel > .console-panel,

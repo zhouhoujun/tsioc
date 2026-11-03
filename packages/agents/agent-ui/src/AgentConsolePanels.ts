@@ -53,6 +53,7 @@ import { AgentConsoleStatuslineField } from './AgentConsoleStatusline';
 import { DEFAULT_TIMELINE_LABELS, resolveTimelineWindowLedger, TimelineWindowMode } from './AgentConsoleTimelineWindow';
 import {
     buildCommonBrandBlock as buildTerminalBrandBlock,
+    CommonDialogComponent,
     formatCommonIndexedOptionLabel as formatConsoleIndexedOptionLabel,
     resolveCommonEnterAction as resolveConsoleEnterAction,
     resolveCommonListWindow as resolveConsoleListWindow,
@@ -1834,12 +1835,11 @@ export class AgentConsoleToolsPanelComponent {
 
 @Component({
     selector: 'agent-console-text-overlay-panel',
+    imports: [CommonDialogComponent],
     template: `
-    <div class="console-panel console-text-overlay-panel" v-style="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}"><label class="dialog-close" data-cell-width="2" v-style="closeStyle" @click="closeOverlay">✕</label>
-        <label v-style="accentStyle">{{overlayTitle}}</label>
-        <label v-style="listStyle" v-for="line in visibleLines">{{line}}</label>
-        <label v-style="metaStyle" v-show="hintLabel">{{hintLabel}}</label>
-    </div>
+    <common-dialog :title="overlayTitle" :lines="visibleLines" :hint="hintLabel"
+        :ariaLabel="accessibilityLabel" :shellStyle="shellStyle" :titleStyle="accentStyle"
+        :lineStyle="listStyle" :hintStyle="metaStyle" :closeStyle="closeStyle" @closeAction="closeOverlay"></common-dialog>
     `
 })
 export class AgentConsoleTextOverlayPanelComponent {
@@ -1852,7 +1852,7 @@ export class AgentConsoleTextOverlayPanelComponent {
         return resolvePanelThemeStyles(this.state, this.theme);
     }
 
-    get shellStyle() { return this.state.hasTextOverlayFocus() ? this.activeThemeStyles.dialogShell : {}; } get closeStyle() { return DIALOG_CLOSE_STYLE; } closeOverlay(): void { this.state.closeTextOverlay(); }
+    get shellStyle() { return this.state.hasTextOverlayFocus() ? this.activeThemeStyles.dialogShell : {}; } get closeStyle() { return DIALOG_CLOSE_STYLE; } closeOverlay = (): void => { this.state.closeTextOverlay(); };
 
     get accentStyle() {
         return this.activeThemeStyles.toolRunsAccent;
