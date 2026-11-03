@@ -1,6 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
+    CommonDialogComponent,
     formatCommonIndexedOptionLabel,
     processCommonTextInputChunk,
     resolveCommonSelectWindow,
@@ -62,6 +63,25 @@ export class CommonComponentUtilitiesTest {
     history() {
         expect(shouldSkipCommonHistoryEntry(' /help')).toBeTruthy();
         expect(shouldSkipCommonHistoryEntry('hello')).toBeFalsy();
+    }
+
+    @Test('sizes dialog chrome from content and bounds')
+    dialogContentWidth() {
+        const dialog = new CommonDialogComponent();
+        const maxWidth = () => String((dialog.resolvedShellStyle as Record<string, string>)['max-width']);
+        dialog.lines = ['█'.repeat(33)];
+        dialog.title = 'pairing 19 lines · 1-19';
+        expect(maxWidth()).toBe('39ch');
+
+        dialog.lines = ['short'];
+        dialog.title = '';
+        expect(maxWidth()).toBe('24ch');
+
+        dialog.lines = ['x'.repeat(200)];
+        expect(maxWidth()).toBe('88ch');
+
+        dialog.shellStyle = 'background: #000;';
+        expect(dialog.resolvedShellStyle).toContain('background: #000; max-width: 88ch;');
     }
 
     @Test('only bare trailing-newline chunks submit on enter')

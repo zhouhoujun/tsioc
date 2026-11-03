@@ -2029,6 +2029,65 @@ export class ConsoleRendererTest {
         expect(layout.cursorTargets[0]).toEqual({ row: 3, column: 4 });
     }
 
+    @Test('rewrites only the overlay band when a dialog opens over stable content')
+    rewritesOnlyOverlayBandOnDialogOpen() {
+        const first = renderPrimaryTerminalScreen({
+            lines: ['logo', 'LEFT|OLD|RIGHT', '> ask'],
+            width: 40
+        });
+        const second = renderPrimaryTerminalScreen({
+            state: first.state,
+            lines: ['logo', 'LEFT|BOX|RIGHT', '> ask'],
+            width: 40,
+            rowBands: new Map([[1, { start: 5, end: 8 }]])
+        });
+        expect(second.output).toContain('BOX');
+        expect(second.output).not.toContain('LEFT');
+        expect(second.output).not.toContain('RIGHT');
+        expect(second.output).not.toContain('\x1b[J');
+    }
+
+    @Test('restores only the previous overlay band when a dialog closes')
+    restoresOnlyPreviousOverlayBandOnDialogClose() {
+        const first = renderPrimaryTerminalScreen({
+            lines: ['logo', 'LEFT|   |RIGHT', '> ask'],
+            width: 40
+        });
+        const opened = renderPrimaryTerminalScreen({
+            state: first.state,
+            lines: ['logo', 'LEFT|BOX|RIGHT', '> ask'],
+            width: 40,
+            rowBands: new Map([[1, { start: 5, end: 8 }]])
+        });
+        const closed = renderPrimaryTerminalScreen({
+            state: opened.state,
+            lines: ['logo', 'LEFT|   |RIGHT', '> ask'],
+            width: 40,
+            rowBands: new Map([[1, { start: 5, end: 8 }]])
+        });
+        expect(closed.output).not.toContain('LEFT');
+        expect(closed.output).not.toContain('RIGHT');
+        expect(closed.output).not.toContain('\x1b[J');
+        expect(closed.state.paintedLines[1]).toBe('LEFT|   |RIGHT');
+    }
+
+    @Test('rewrites the full row when stable content outside a dialog band changes')
+    rewritesFullRowWhenOutsideBandChanges() {
+        const first = renderPrimaryTerminalScreen({
+            lines: ['logo', 'OLD|BOX|RIGHT', '> ask'],
+            width: 40
+        });
+        const second = renderPrimaryTerminalScreen({
+            state: first.state,
+            lines: ['logo', 'NEW|BOX2|RIGHT', '> ask'],
+            width: 40,
+            rowBands: new Map([[1, { start: 4, end: 8 }]])
+        });
+        expect(second.output).toContain('NEW');
+        expect(second.output).toContain('BOX2');
+        expect(second.output).toContain('RIGHT');
+    }
+
     @Test('lets primary body grow when height is unset')
     letsPrimaryBodyGrowWhenHeightIsUnset() {
         const first = composePrimaryTerminalScreen({

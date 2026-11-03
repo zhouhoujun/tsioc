@@ -1,4 +1,5 @@
 import { Attribute, Component } from '@tsdi/components';
+import { getDisplayWidth } from './display-width';
 
 /**
  * Renderer-neutral dialog shell: title, body lines, hint and a glyph-only close
@@ -8,7 +9,7 @@ import { Attribute, Component } from '@tsdi/components';
 @Component({
     selector: 'common-dialog',
     template: `
-    <div class="console-panel common-dialog" role="dialog" aria-label="{{ariaLabel}}" v-style="shellStyle">
+    <div class="console-panel common-dialog" role="dialog" aria-label="{{ariaLabel}}" v-style="resolvedShellStyle">
         <label class="dialog-close" data-cell-width="2" v-style="closeStyle" @click="close">{{closeLabel}}</label>
         <label class="common-dialog-title" v-style="titleStyle" v-show="title">{{title}}</label>
         <label class="common-dialog-line" v-for="line in lines" v-style="lineStyle">{{line}}</label>
@@ -21,12 +22,40 @@ export class CommonDialogComponent {
     @Attribute() hint = '';
     @Attribute() ariaLabel = '';
     @Attribute() closeLabel = '✕';
-    @Attribute() shellStyle: Record<string, string> = {};
+    @Attribute() shellStyle: Record<string, string> | string = {};
     @Attribute() titleStyle: Record<string, string> = {};
     @Attribute() lineStyle: Record<string, string> = {};
     @Attribute() hintStyle: Record<string, string> = {};
     @Attribute() closeStyle: Record<string, string> = {};
+    /** Upper/lower bounds for content-derived width, in terminal cells. */
+    @Attribute() maxWidth = 88;
+    @Attribute() minWidth = 24;
+    /** Border + horizontal padding assumed around the content. */
+    @Attribute() horizontalChrome = 6;
     @Attribute() closeAction?: () => void;
+
+    get resolvedShellStyle(): Record<string, string> | string {
+        const maxWidth = `${this.resolveContentWidth()}ch`;
+        if (this.shellStyle && typeof this.shellStyle === 'object') {
+            return { ...this.shellStyle, 'max-width': maxWidth };
+        }
+        const base = String(this.shellStyle || '').trim();
+        return `${base ? `${base.replace(/;+$/, '')};` : ''} max-width: ${maxWidth};`;
+    }
+
+    /** Fit the modal to its content so a tall QR panel leaves the transcript visible. */
+    protected resolveContentWidth(): number {
+        const max = Math.max(8, Number(this.maxWidth) || 88);
+        const min = Math.max(8, Math.min(max, Number(this.minWidth) || 24));
+        const chrome = Math.max(0, Number(this.horizontalChrome) || 0);
+        const longest = Math.max(
+            0,
+            getDisplayWidth(String(this.title || '')),
+            getDisplayWidth(String(this.hint || '')),
+            ...(this.lines || []).map(line => getDisplayWidth(String(line || '')))
+        );
+        return Math.max(min, Math.min(max, longest + chrome));
+    }
 
     close(): void {
         this.closeAction?.();

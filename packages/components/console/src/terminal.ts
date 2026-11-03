@@ -227,6 +227,8 @@ export interface TerminalPrimaryRenderOptions {
     cursorTarget?: TerminalCursorTarget;
     cursorMode?: 'prompt' | 'bottom';
     placeCursor?: boolean;
+    /** Rows whose painted content is an overlay band; rewrite only these columns. */
+    rowBands?: Map<number, { start: number; end: number }>;
 }
 
 export interface TerminalPrimaryRenderState {
@@ -1061,6 +1063,7 @@ export class TuiTerminalSurface {
     protected readonly scrollBox = new ScrollBox();
     protected pagerBox?: PagerBox;
     protected lastFullLines: string[] = [];
+    protected lastOverlayBands?: Map<number, { start: number; end: number }>;
     protected pagerQueryBuffer = '';
     protected pagerStatusCopy?: PagerStatusCopy;
 
@@ -1149,6 +1152,7 @@ export class TuiTerminalSurface {
         this.root = undefined;
         this.renderState = undefined;
         this.renderedLines = [];
+        this.lastOverlayBands = undefined;
         this.terminalRow = 0;
         this.clickTargetsCache = [];
         this.scrollOffsetRows = 0;
@@ -1246,6 +1250,7 @@ export class TuiTerminalSurface {
         const viewport = this.resolveViewportLayout(layout);
         const lines = viewport.lines;
         this.applyHoverHighlight(lines);
+        const rowBands = mergeTerminalRowBands(this.lastOverlayBands, viewport.overlayBands);
         this.clickTargetsCache = viewport.clickTargets;
         const cursorTarget = viewport.cursorTargets[0];
         const cursorMode = this.resolveCursorMode();
@@ -1257,6 +1262,7 @@ export class TuiTerminalSurface {
             lines,
             regions: viewport.regions,
             width,
+            rowBands,
             stablePrefixRows: this.resolveStablePrefixRows(lines, layout.regions || []),
             cursorRow,
             cursorTarget: this.resolvePlaceCursor() ? cursorTarget : undefined,
@@ -1266,6 +1272,9 @@ export class TuiTerminalSurface {
         this.renderState = result.state;
         this.renderedLines = result.fittedLines.slice();
         this.terminalRow = result.terminalRow;
+        this.lastOverlayBands = viewport.overlayBands
+            ? new Map(viewport.overlayBands)
+            : undefined;
         if (result.output) {
             this.resolveOutput()?.write(result.output);
         }
@@ -1704,6 +1713,7 @@ export class TuiTerminalSurface {
         regions: TerminalRenderRegion[];
         cursorTargets: TerminalCursorTarget[];
         clickTargets: TerminalClickTarget[];
+        overlayBands?: Map<number, { start: number; end: number }>;
     } {
         const nativeScrollback = typeof this.options.nativeScrollback === 'function'
             ? this.options.nativeScrollback()
@@ -1816,13 +1826,17 @@ export class TuiTerminalSurface {
             while (lines.length < height) {
                 lines.push('');
             }
+            const overlayBands = new Map<number, { start: number; end: number }>();
             shiftedLines.forEach((line, index) => {
-                if (start + index >= height) {
+                const row = start + index;
+                if (row >= height) {
                     return;
                 }
-                const base = lines[start + index] || '';
-                const bandStart = dialogShift ? 0 : dialogStartColumn;
-                lines[start + index] = overlayStyledLine(base, line, bandStart, dialogEndColumn + dialogShift);
+                const base = lines[row] || '';
+                const bandStart = dialogStartColumn + dialogShift;
+                const bandEnd = dialogEndColumn + dialogShift;
+                lines[row] = overlayStyledLine(base, line, bandStart, bandEnd);
+                overlayBands.set(row, { start: bandStart, end: bandEnd });
             });
             const clickTargets = result.clickTargets
                 .filter(target => !(target.y >= start && target.y < start + dialogHeight))
@@ -1841,7 +1855,7 @@ export class TuiTerminalSurface {
                 // cannot fall to the row below the composer.
                 .filter(target => (target as any).id === 'input' || !(target.row >= start && target.row < start + dialogHeight))
                 .map(target => (target as any).id === 'input' && lastPromptRow >= 0 ? { ...target, row: lastPromptRow } : target);
-            return { lines: fitViewportHeight(lines), regions: result.regions, cursorTargets, clickTargets };
+            return { lines: fitViewportHeight(lines), regions: result.regions, cursorTargets, clickTargets, overlayBands };
         };
         const scrollRegion = allRegions.find(region => region.id === scrollRegionId);
         const footerRegion = allRegions.find(region => region.id === footerRegionId);
@@ -3797,7 +3811,19 @@ export function renderPrimaryTerminalScreen(options: TerminalPrimaryRenderOption
             } else if (delta > 0) {
                 commands.push(`\x1b[${delta}B`);
             }
-            commands.push(`\r${line}\x1b[K`);
+            const band = options.rowBands?.get(index);
+            const previousLine = previous.paintedLines[index] || '';
+            const outsideUnchanged = band
+                ? stripTerminalAnsi(sliceStyledColumns(previousLine, 0, band.start))
+                    === stripTerminalAnsi(sliceStyledColumns(line, 0, band.start))
+                    && stripTerminalAnsi(sliceStyledColumns(previousLine, band.end, Number.MAX_SAFE_INTEGER))
+                        === stripTerminalAnsi(sliceStyledColumns(line, band.end, Number.MAX_SAFE_INTEGER))
+                : false;
+            if (band && outsideUnchanged) {
+                commands.push(`\r\x1b[${Math.max(1, band.start + 1)}G${sliceStyledColumns(line, band.start, band.end)}`);
+            } else {
+                commands.push(`\r${line}\x1b[K`);
+            }
             terminalRow = index;
         });
         const placed = placeCursor(commands.join(''), terminalRow);
@@ -3901,6 +3927,28 @@ export function renderPrimaryTerminalScreen(options: TerminalPrimaryRenderOption
         changed: true,
         state: createNextState(placed.terminalRow)
     };
+}
+
+export function mergeTerminalRowBands(
+    first?: Map<number, { start: number; end: number }>,
+    second?: Map<number, { start: number; end: number }>
+): Map<number, { start: number; end: number }> | undefined {
+    if (!first?.size && !second?.size) {
+        return undefined;
+    }
+    const merged = new Map<number, { start: number; end: number }>();
+    for (const source of [first, second]) {
+        if (!source) {
+            continue;
+        }
+        source.forEach((band, row) => {
+            const existing = merged.get(row);
+            merged.set(row, existing
+                ? { start: Math.min(existing.start, band.start), end: Math.max(existing.end, band.end) }
+                : { ...band });
+        });
+    }
+    return merged;
 }
 
 function resolveCommonPrefixRowCount(previousLines: string[], nextLines: string[]): number {

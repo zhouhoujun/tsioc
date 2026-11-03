@@ -7,3 +7,4 @@ export * from './markdown';
 export * from './dialog';
 export * from './tab-bar';
 export * from './syntax-tokens';
+export * from './display-width';
