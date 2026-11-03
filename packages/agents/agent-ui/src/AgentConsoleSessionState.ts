@@ -108,6 +108,46 @@ import {
     toggleReviewSideBySide as toggleReviewSideBySideInState
 } from './AgentConsoleReviewPatch';
 import {
+    moveApprovalSelection as moveApprovalSelectionInState,
+    moveApprovalSelectionPage as moveApprovalSelectionPageInState,
+    moveToolRunSelection as moveToolRunSelectionInState,
+    moveToolRunSelectionPage as moveToolRunSelectionPageInState,
+    moveToolSelection as moveToolSelectionInState,
+    moveToolSelectionPage as moveToolSelectionPageInState,
+    requestApprovalAttention as requestApprovalAttentionInState,
+    resolveSelectedApproval,
+    resolveSelectedTool,
+    resolveSelectedToolRun,
+    selectFirstApproval as selectFirstApprovalInState,
+    selectFirstTool as selectFirstToolInState,
+    selectFirstToolRun as selectFirstToolRunInState,
+    selectLastApproval as selectLastApprovalInState,
+    selectLastTool as selectLastToolInState,
+    selectLastToolRun as selectLastToolRunInState,
+    setApprovalsFocused as setApprovalsFocusedInState,
+    setSelectedApprovalId as setSelectedApprovalIdInState,
+    setSelectedToolName as setSelectedToolNameInState,
+    setToolsFocused as setToolsFocusedInState
+} from './AgentConsoleToolNavigation';
+import {
+    buildSelectedSessionCopyText as buildSelectedSessionCopyTextInState,
+    clampSessionSelectionToFilter as clampSessionSelectionToFilterInState,
+    formatSessionWorkspaceLabel as formatSessionWorkspaceLabelInState,
+    moveSessionSelection as moveSessionSelectionInState,
+    moveSessionSelectionPage as moveSessionSelectionPageInState,
+    resolveNavFilteredSessions,
+    restoreSessionsViewState as restoreSessionsViewStateInState,
+    persistSessionsViewState as persistSessionsViewStateInState,
+    resolveSelectedSession,
+    selectFirstSession as selectFirstSessionInState,
+    selectLastSession as selectLastSessionInState,
+    setProjectsFocused as setProjectsFocusedInState,
+    setSelectedSessionId as setSelectedSessionIdInState,
+    setSessionsFocused as setSessionsFocusedInState,
+    setThreadsFocused as setThreadsFocusedInState,
+    setToolRunsFocused as setToolRunsFocusedInState
+} from './AgentConsoleSessionNavigation';
+import {
     buildFileChangeMessage as buildFileChangeMessageInState,
     clearReview as clearReviewInState,
     closeReview as closeReviewInState,
@@ -2515,191 +2555,76 @@ export class AgentConsoleSessionState {
 
     setOpenSessionIds(ids: string[]): void { const seen = new Set<string>(); this.openSessionIds = (ids || []).map(id => String(id || '').trim()).filter(id => id && !seen.has(id) && !!seen.add(id)); }
 
-    get navFilteredSessions(): AgentConsoleSessionItem[] {
-        const filter = this.navFilter;
-        if (!filter || (!filter.text && !filter.workspace && !filter.projectId && !filter.threadId && !filter.pinnedOnly)) {
-            return this.sessions;
-        }
-        const text = String(filter.text || '').trim().toLowerCase();
-        const workspace = String(filter.workspace || '').trim();
-        const projectId = String(filter.projectId || '').trim();
-        const threadId = String(filter.threadId || '').trim();
-        return this.sessions.filter(session => {
-            if (text) {
-                const haystack = [
-                    session.id,
-                    session.title,
-                    session.summary,
-                    session.workspace,
-                    session.projectKey,
-                    session.projectId,
-                    session.primaryThreadId
-                ].filter(Boolean).map(value => String(value).toLowerCase()).join(' ');
-                if (!haystack.includes(text)) {
-                    return false;
-                }
-            }
-            if (workspace && String(session.workspace || '') !== workspace) {
-                return false;
-            }
-            if (projectId && session.projectId !== projectId && session.projectKey !== projectId) {
-                return false;
-            }
-            if (threadId && session.primaryThreadId !== threadId) {
-                return false;
-            }
-            if (filter.pinnedOnly && session.pinned !== true) {
-                return false;
-            }
-            return true;
-        });
-    }
-
-    clampSessionSelectionToFilter(): void {
-        const list = this.navFilteredSessions;
-        if (!list.length) {
-            this.selectedSessionId = '';
-        } else if (this.selectedSessionId && list.some(item => item.id === this.selectedSessionId)) {
-            // Preserve explicit selection when the session list refreshes.
-        } else {
-            this.selectedSessionId = list.find(item => item.current)?.id || list[0].id;
-        }
-    }
-
-    setSessionsFocused(focused: boolean): void {
-        this.sessionsFocused = focused;
-        if (focused) {
-            this.restoreSessionsViewState();
-        } else {
-            this.persistSessionsViewState();
-        }
-        this.syncDerivedInputFocus();
-    }
-
-    protected restoreSessionsViewState(): void {
-        const list = this.navFilteredSessions;
-        if (!list.length) {
-            this.selectedSessionId = '';
-            return;
-        }
-        const savedScroll = this.getNavViewScroll('sessions');
-        if (savedScroll > 0 && savedScroll < list.length) {
-            this.selectedSessionId = list[savedScroll].id;
-        } else if (!this.selectedSessionId || !list.some(item => item.id === this.selectedSessionId)) {
-            this.selectedSessionId = list.find(item => item.current)?.id || list[0].id;
-        }
-        const index = list.findIndex(item => item.id === this.selectedSessionId);
-        if (index >= 0) {
-            this.setNavSelection({ type: 'session', id: this.selectedSessionId, index });
-        }
-    }
-
-    protected persistSessionsViewState(): void {
-        const list = this.navFilteredSessions;
-        if (!list.length) {
-            return;
-        }
-        const index = Math.max(0, list.findIndex(item => item.id === this.selectedSessionId));
-        this.setNavViewScroll('sessions', index);
-    }
-
     setProjects(projects: AgentConsoleProjectItem[]): void {
         this.projects = projects.slice();
-    }
-
-    setProjectsFocused(focused: boolean): void {
-        this.projectsFocused = focused;
-        if (focused && !this.selectedSessionId && this.sessions.length) {
-            this.selectedSessionId = this.sessions.find(item => item.current)?.id || this.sessions[0].id;
-        }
-        this.syncDerivedInputFocus();
     }
 
     setThreads(threads: AgentConsoleThreadItem[]): void {
         this.threads = threads.slice();
     }
 
+    get navFilteredSessions(): AgentConsoleSessionItem[] {
+        return resolveNavFilteredSessions(this);
+    }
+
+    clampSessionSelectionToFilter(): void {
+        clampSessionSelectionToFilterInState(this);
+    }
+
+    setSessionsFocused(focused: boolean): void {
+        setSessionsFocusedInState(this, focused);
+    }
+
+    restoreSessionsViewState(): void {
+        restoreSessionsViewStateInState(this);
+    }
+
+    persistSessionsViewState(): void {
+        persistSessionsViewStateInState(this);
+    }
+
+    setProjectsFocused(focused: boolean): void {
+        setProjectsFocusedInState(this, focused);
+    }
+
     setThreadsFocused(focused: boolean): void {
-        this.threadsFocused = focused;
-        if (focused && !this.selectedSessionId && this.sessions.length) {
-            this.selectedSessionId = this.sessions.find(item => item.current)?.id || this.sessions[0].id;
-        }
-        this.syncDerivedInputFocus();
+        setThreadsFocusedInState(this, focused);
     }
 
     setToolRunsFocused(focused: boolean): void {
-        this.toolRunsFocused = focused;
-        this.syncDerivedInputFocus();
+        setToolRunsFocusedInState(this, focused);
     }
 
     setSelectedSessionId(sessionId: string): void {
-        if (!sessionId || !this.navFilteredSessions.some(item => item.id === sessionId)) {
-            return;
-        }
-        this.selectedSessionId = sessionId;
+        setSelectedSessionIdInState(this, sessionId);
     }
 
     moveSessionSelection(delta: number): void {
-        const list = this.navFilteredSessions;
-        if (!list.length) {
-            return;
-        }
-        const currentIndex = Math.max(0, list.findIndex(item => item.id === this.selectedSessionId));
-        const nextIndex = (currentIndex + delta + list.length) % list.length;
-        this.selectedSessionId = list[nextIndex].id;
+        moveSessionSelectionInState(this, delta);
     }
 
     moveSessionSelectionPage(delta: number, pageSize?: number): void {
-        const list = this.navFilteredSessions;
-        if (!list.length) {
-            return;
-        }
-        const currentIndex = Math.max(0, list.findIndex(item => item.id === this.selectedSessionId));
-        const resolvedPageSize = pageSize ?? this.consoleOptions.sessionSelectionPageSize;
-        const nextIndex = Math.max(0, Math.min(list.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
-        this.selectedSessionId = list[nextIndex].id;
+        moveSessionSelectionPageInState(this, delta, pageSize);
     }
 
     selectFirstSession(): void {
-        const list = this.navFilteredSessions;
-        if (!list.length) {
-            return;
-        }
-        this.selectedSessionId = list[0].id;
+        selectFirstSessionInState(this);
     }
 
     selectLastSession(): void {
-        const list = this.navFilteredSessions;
-        if (!list.length) {
-            return;
-        }
-        this.selectedSessionId = list[list.length - 1].id;
+        selectLastSessionInState(this);
     }
 
     get selectedSession(): AgentConsoleSessionItem | undefined {
-        return this.navFilteredSessions.find(item => item.id === this.selectedSessionId);
+        return resolveSelectedSession(this);
     }
 
-    protected formatSessionWorkspaceLabel(workspace?: string): string {
-        const text = String(workspace || '').trim();
-        if (!text) {
-            return '';
-        }
-        const segments = text.split(/[\\/]/).filter(Boolean);
-        return segments[segments.length - 1] || text;
+    formatSessionWorkspaceLabel(workspace?: string): string {
+        return formatSessionWorkspaceLabelInState(workspace);
     }
 
     buildSelectedSessionCopyText(): string {
-        const selected = this.selectedSession;
-        if (!selected) {
-            return '';
-        }
-        return [
-            selected.id,
-            selected.workspace ? `workspace=${selected.workspace}` : '',
-            selected.messageCount != null ? `messageCount=${selected.messageCount}` : '',
-            selected.updatedAt != null ? `updatedAt=${new Date(selected.updatedAt).toISOString()}` : ''
-        ].filter(Boolean).join('\n');
+        return buildSelectedSessionCopyTextInState(this);
     }
 
     protected buildSelectedToolRunCopyText(): string {
@@ -3572,7 +3497,7 @@ export class AgentConsoleSessionState {
         setSelectedReviewTaskIdInState(this, taskId);
     }
 
-                    get selectedTask(): Record<string, any> | undefined {
+    get selectedTask(): Record<string, any> | undefined {
         return resolveSelectedTask(this);
     }
 
@@ -3580,7 +3505,7 @@ export class AgentConsoleSessionState {
         return resolveFilteredReviewTaskChoices(this);
     }
 
-            protected formatScheduledTimestamp(value?: number): string {
+    protected formatScheduledTimestamp(value?: number): string {
         return typeof value === 'number' && Number.isFinite(value)
             ? new Date(value).toISOString()
             : '';
@@ -3607,164 +3532,83 @@ export class AgentConsoleSessionState {
     }
 
     setToolsFocused(focused: boolean): void {
-        this.toolsFocused = focused;
-        if (focused && !this.selectedToolName && this.tools.length) {
-            this.selectedToolName = this.tools[0].name;
-        }
-        this.syncDerivedInputFocus();
+        setToolsFocusedInState(this, focused);
     }
 
     setSelectedToolName(toolName: string): void {
-        if (!toolName || !this.tools.some(item => item.name === toolName)) {
-            return;
-        }
-        this.selectedToolName = toolName;
+        setSelectedToolNameInState(this, toolName);
     }
 
     moveToolSelection(delta: number): void {
-        if (!this.tools.length) {
-            return;
-        }
-        const currentIndex = Math.max(0, this.tools.findIndex(item => item.name === this.selectedToolName));
-        const nextIndex = (currentIndex + delta + this.tools.length) % this.tools.length;
-        this.selectedToolName = this.tools[nextIndex].name;
+        moveToolSelectionInState(this, delta);
     }
 
     moveToolSelectionPage(delta: number, pageSize?: number): void {
-        if (!this.tools.length) {
-            return;
-        }
-        const currentIndex = Math.max(0, this.tools.findIndex(item => item.name === this.selectedToolName));
-        const resolvedPageSize = pageSize ?? this.consoleOptions.toolSelectionPageSize;
-        const nextIndex = Math.max(0, Math.min(this.tools.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
-        this.selectedToolName = this.tools[nextIndex].name;
+        moveToolSelectionPageInState(this, delta, pageSize);
     }
 
     selectFirstTool(): void {
-        if (!this.tools.length) {
-            return;
-        }
-        this.selectedToolName = this.tools[0].name;
+        selectFirstToolInState(this);
     }
 
     selectLastTool(): void {
-        if (!this.tools.length) {
-            return;
-        }
-        this.selectedToolName = this.tools[this.tools.length - 1].name;
+        selectLastToolInState(this);
     }
 
     get selectedTool(): AgentConsoleToolItem | undefined {
-        return this.tools.find(item => item.name === this.selectedToolName);
+        return resolveSelectedTool(this);
     }
 
     moveToolRunSelection(delta: number): void {
-        if (!this.toolRuns.length) {
-            return;
-        }
-        const nextIndex = (this.selectedToolRunIndex + delta + this.toolRuns.length) % this.toolRuns.length;
-        this.selectedToolRunIndex = Math.max(0, Math.min(this.toolRuns.length - 1, nextIndex));
+        moveToolRunSelectionInState(this, delta);
     }
 
     moveToolRunSelectionPage(delta: number, pageSize?: number): void {
-        if (!this.toolRuns.length) {
-            return;
-        }
-        const resolvedPageSize = pageSize ?? this.consoleOptions.toolSelectionPageSize;
-        const nextIndex = this.selectedToolRunIndex + (delta * Math.max(1, resolvedPageSize));
-        this.selectedToolRunIndex = Math.max(0, Math.min(this.toolRuns.length - 1, nextIndex));
+        moveToolRunSelectionPageInState(this, delta, pageSize);
     }
 
     selectFirstToolRun(): void {
-        if (!this.toolRuns.length) {
-            return;
-        }
-        this.selectedToolRunIndex = 0;
+        selectFirstToolRunInState(this);
     }
 
     selectLastToolRun(): void {
-        if (!this.toolRuns.length) {
-            return;
-        }
-        this.selectedToolRunIndex = this.toolRuns.length - 1;
+        selectLastToolRunInState(this);
     }
 
     get selectedToolRun(): AgentConsoleToolRun | undefined {
-        return this.toolRuns[this.selectedToolRunIndex];
+        return resolveSelectedToolRun(this);
     }
 
     setApprovalsFocused(focused: boolean): void {
-        this.approvalsFocused = focused;
-        if (focused && !this.selectedApprovalId && this.pendingApprovals.length) {
-            this.selectedApprovalId = this.pendingApprovals[0].id;
-        }
-        this.syncDerivedInputFocus();
+        setApprovalsFocusedInState(this, focused);
     }
 
-    /**
-     * Surface a newly arrived approval prompt the way codex/opencode interrupt
-     * for permission. The composer keeps focus only when a higher-priority layer
-     * (question, blocking select menu, detail inspector) already owns the turn.
-     */
     requestApprovalAttention(): void {
-        if (!this.pendingApprovals.length) {
-            return;
-        }
-        if (this.pendingQuestion
-            || this.focusLayers.hasBlockingSelectMenu()
-            || this.textOverlay
-            || this.reviewOpen
-            || this.timelineEventInspectorOpen
-            || this.messageDetailOpen) {
-            return;
-        }
-        if (!this.approvalsFocused) {
-            this.setApprovalsFocused(true);
-        }
+        requestApprovalAttentionInState(this);
     }
 
     setSelectedApprovalId(approvalId: string): void {
-        if (!approvalId || !this.pendingApprovals.some(item => item.id === approvalId)) {
-            return;
-        }
-        this.selectedApprovalId = approvalId;
+        setSelectedApprovalIdInState(this, approvalId);
     }
 
     moveApprovalSelection(delta: number): void {
-        if (!this.pendingApprovals.length) {
-            return;
-        }
-        const currentIndex = Math.max(0, this.pendingApprovals.findIndex(item => item.id === this.selectedApprovalId));
-        const nextIndex = (currentIndex + delta + this.pendingApprovals.length) % this.pendingApprovals.length;
-        this.selectedApprovalId = this.pendingApprovals[nextIndex].id;
+        moveApprovalSelectionInState(this, delta);
     }
 
     moveApprovalSelectionPage(delta: number, pageSize?: number): void {
-        if (!this.pendingApprovals.length) {
-            return;
-        }
-        const currentIndex = Math.max(0, this.pendingApprovals.findIndex(item => item.id === this.selectedApprovalId));
-        const resolvedPageSize = pageSize ?? this.consoleOptions.approvalSelectionPageSize;
-        const nextIndex = Math.max(0, Math.min(this.pendingApprovals.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
-        this.selectedApprovalId = this.pendingApprovals[nextIndex].id;
+        moveApprovalSelectionPageInState(this, delta, pageSize);
     }
 
     selectFirstApproval(): void {
-        if (!this.pendingApprovals.length) {
-            return;
-        }
-        this.selectedApprovalId = this.pendingApprovals[0].id;
+        selectFirstApprovalInState(this);
     }
 
     selectLastApproval(): void {
-        if (!this.pendingApprovals.length) {
-            return;
-        }
-        this.selectedApprovalId = this.pendingApprovals[this.pendingApprovals.length - 1].id;
+        selectLastApprovalInState(this);
     }
 
     get selectedApproval(): AgentConsoleApprovalRequest | undefined {
-        return this.pendingApprovals.find(item => item.id === this.selectedApprovalId);
+        return resolveSelectedApproval(this);
     }
 
     setReviewTasks(tasks: AgentConsoleReviewTaskItem[]): void {
