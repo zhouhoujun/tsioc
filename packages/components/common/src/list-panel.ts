@@ -31,6 +31,7 @@ export interface CommonListItem {
         <label class="common-list-title" v-style="styles.title" v-show="title">{{title}}</label>
         <label class="common-list-meta" v-style="styles.meta" v-show="context">{{context}}</label>
         <label class="common-list-meta" v-style="styles.meta" v-show="meta">{{meta}}</label>
+        <label class="common-list-context" v-style="styles.meta" v-for="line in contextLines">{{line}}</label>
         <div role="listbox" aria-label="{{listLabel}}">
             <div id="{{item.id}}" v-style="item.style" role="option" aria-selected="{{item.selected}}" v-for="item in items" @click="selectItem(item)">{{item.label}}</div>
         </div>
@@ -45,6 +46,7 @@ export class ListPanelComponent {
     @Attribute() title = '';
     @Attribute() context = '';
     @Attribute() meta = '';
+    @Attribute() contextLines: string[] = [];
     @Attribute() hint = '';
     @Attribute() secondaryHint = '';
     @Attribute() empty = '';

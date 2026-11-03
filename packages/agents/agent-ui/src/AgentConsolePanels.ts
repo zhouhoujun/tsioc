@@ -1123,14 +1123,9 @@ export class AgentConsoleSessionsPanelComponent {
 
 @Component({
     selector: 'agent-console-tasks-panel',
+    imports: [ListPanelComponent],
     template: `
-    <div class="console-panel console-tasks-panel" v-style="shellStyle" role="region" aria-label="{{accessibilityLabel}}">
-        <label v-style="accentStyle">{{tasksSummaryLabel}}</label>
-        <label v-style="metaStyle" v-for="line in backgroundTaskFeedLines">{{line}}</label>
-        <label v-style="metaStyle" v-show="tasksHintLabel">{{tasksHintLabel}}</label>
-        <label v-style="listStyle" v-for="line in taskListLines">{{line}}</label>
-        <label v-style="detailStyle" v-for="line in selectedTaskDetailLines">{{line}}</label>
-    </div>
+    <common-list-panel :header="tasksSummaryLabel" :contextLines="backgroundTaskFeedLines" :hint="tasksHintLabel" :items="taskDisplayItems" :detailLines="selectedTaskDetailLines" :ariaLabel="accessibilityLabel" :showClose="false" :styles="panelStyles"></common-list-panel>
     `
 })
 export class AgentConsoleTasksPanelComponent {
@@ -1171,6 +1166,8 @@ export class AgentConsoleTasksPanelComponent {
         return this.activeThemeStyles.statusValue;
     }
 
+    get panelStyles() { return { shell: this.shellStyle, header: this.accentStyle, meta: this.metaStyle, detail: this.detailStyle }; }
+
     get backgroundTaskFeedLabel(): string {
         const tasks = this.state.filteredBackgroundTasks;
         if (!tasks.length) return '';
@@ -1193,7 +1190,7 @@ export class AgentConsoleTasksPanelComponent {
         return this.activeThemeStyles.statusValue;
     }
 
-    get taskItems(): Array<{ id: string; label: string }> {
+    get taskItems(): Array<{ id: string; label: string; style: Record<string, string> }> {
         if (!this.shouldShow) {
             return [];
         }
@@ -1229,9 +1226,15 @@ export class AgentConsoleTasksPanelComponent {
             ].filter(Boolean).join(' · ');
             return {
                 id: task.id,
-                label: `${this.state.selectedReviewTaskId === task.id ? '›' : ' '} ${indentation}${task.id} · ${task.title}${meta ? ` (${meta})` : ''}`
+                label: `${this.state.selectedReviewTaskId === task.id ? '›' : ' '} ${indentation}${task.id} · ${task.title}${meta ? ` (${meta})` : ''}`,
+                style: this.listStyle
             };
         });
+    }
+
+    get taskDisplayItems(): Array<{ id: string; label: string; style: Record<string, string> }> {
+        const plan = this.planListLabel ? this.planListLabel.split('\n') : [];
+        return [...plan.map((label, index) => ({ id: `plan-${index}`, label, style: this.listStyle })), ...this.taskItems];
     }
 
     get planListLabel(): string {
@@ -1282,11 +1285,6 @@ export class AgentConsoleTasksPanelComponent {
             this.taskItems.length ? this.taskItems.map(item => item.label).join('\n') : ''
         ].filter(Boolean);
         return sections.join('\n');
-    }
-
-    get taskListLines(): string[] {
-        const label = this.taskListLabel;
-        return label ? label.split('\n') : [];
     }
 
     get selectedTaskDetailLines(): string[] {
@@ -1542,13 +1540,9 @@ export class AgentConsoleTasksPanelComponent {
 
 @Component({
     selector: 'agent-console-jobs-panel',
+    imports: [ListPanelComponent],
     template: `
-    <div class="console-panel console-jobs-panel" v-style="shellStyle">
-        <label v-style="accentStyle">{{jobsSummaryLabel}}</label>
-        <label v-style="metaStyle" v-show="jobsHintLabel">{{jobsHintLabel}}</label>
-        <label v-style="listStyle" v-for="line in jobListLines">{{line}}</label>
-        <label v-style="detailStyle" v-for="line in selectedJobDetailLines">{{line}}</label>
-    </div>
+    <common-list-panel :header="jobsSummaryLabel" :hint="jobsHintLabel" :items="jobItems" :detailLines="selectedJobDetailLines" :showClose="false" :styles="panelStyles"></common-list-panel>
     `
 })
 export class AgentConsoleJobsPanelComponent {
@@ -1589,7 +1583,9 @@ export class AgentConsoleJobsPanelComponent {
         return this.activeThemeStyles.statusValue;
     }
 
-    get jobItems(): Array<{ id: string; label: string }> {
+    get panelStyles() { return { shell: this.shellStyle, header: this.accentStyle, meta: this.metaStyle, detail: this.detailStyle }; }
+
+    get jobItems(): Array<{ id: string; label: string; style: Record<string, string> }> {
         if (!this.shouldShow) {
             return [];
         }
@@ -1603,6 +1599,7 @@ export class AgentConsoleJobsPanelComponent {
             const prompt = this.summarize(job.prompt);
             return {
                 id: job.id,
+                style: this.listStyle,
                 label: `${this.state.selectedScheduledTaskId === job.id ? '›' : ' '} ${job.id} · ${prompt}${summary ? ` (${summary})` : ''}`
             };
         });
