@@ -31,7 +31,7 @@ export interface CommonSelectOption {
         </div>
     </div>`
 })
-export class CommonSelectComponent {
+export class SelectComponent {
     @Attribute() options: CommonSelectOption[] = [];
     @Attribute() selectedIndex = 0;
     @Attribute() visibleCount = 0;

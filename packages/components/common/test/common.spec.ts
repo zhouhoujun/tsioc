@@ -1,8 +1,8 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
-    CommonDialogComponent,
-    CommonSelectComponent,
+    DialogComponent,
+    SelectComponent,
     formatCommonIndexedOptionLabel,
     processCommonTextInputChunk,
     resolveCommonSelectWindow,
@@ -68,7 +68,7 @@ export class CommonComponentUtilitiesTest {
 
     @Test('sizes dialog chrome from content and bounds')
     dialogContentWidth() {
-        const dialog = new CommonDialogComponent();
+        const dialog = new DialogComponent();
         const maxWidth = () => String((dialog.resolvedShellStyle as Record<string, string>)['max-width']);
         dialog.lines = ['█'.repeat(33)];
         dialog.title = 'pairing 19 lines · 1-19';
@@ -87,7 +87,7 @@ export class CommonComponentUtilitiesTest {
 
     @Test('select shell forwards selection, close and key events')
     selectShellEvents() {
-        const select = new CommonSelectComponent();
+        const select = new SelectComponent();
         select.options = [
             { label: 'one', value: '1' },
             { label: 'two', value: '2' }

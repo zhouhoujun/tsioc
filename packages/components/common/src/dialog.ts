@@ -16,7 +16,7 @@ import { getDisplayWidth } from './display-width';
         <label class="common-dialog-hint" v-style="hintStyle" v-show="hint">{{hint}}</label>
     </div>`
 })
-export class CommonDialogComponent {
+export class DialogComponent {
     @Attribute() title = '';
     @Attribute() lines: string[] = [];
     @Attribute() hint = '';

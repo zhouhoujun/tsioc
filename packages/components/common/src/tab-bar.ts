@@ -46,7 +46,7 @@ export const COMMON_TAB_BAR_SOURCE = token<CommonTabBarSource>('COMMON_TAB_BAR_S
     </p>
     `
 })
-export class CommonTabBarComponent {
+export class TabBarComponent {
     /** Direct source wins over the injected one (hosts without a provider). */
     @Attribute() source?: CommonTabBarSource;
 

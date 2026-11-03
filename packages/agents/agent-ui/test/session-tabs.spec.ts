@@ -5,7 +5,7 @@ import { ComponentFactory, ComponentsModule } from '@tsdi/components';
 import { TuiRenderer, TuiTemplateModule } from '@tsdi/components/console';
 import { AgentModule } from '@tsdi/agent';
 import { AgentConsoleComponent, AgentUiModule } from '../src';
-import { CommonTabBarComponent } from '@tsdi/components/common';
+import { TabBarComponent } from '@tsdi/components/common';
 
 @Suite('session tabs')
 export class SessionTabsTest {
@@ -29,7 +29,7 @@ export class SessionTabsTest {
                 { id: 'session-b', current: false, title: 'Beta' }
             ]);
             for (let index = 0; index < 32; index++) await Promise.resolve();
-            const tabs = ref.hostView.query(CommonTabBarComponent) as any;
+            const tabs = ref.hostView.query(TabBarComponent) as any;
             expect(tabs.instance.visible).toEqual(true);
             expect(tabs.instance.items.map((tab: any) => tab.label)).toEqual([' Alpha ', ' Beta ']);
             expect(tabs.instance.items.map((tab: any) => tab.active)).toEqual([true, false]);
@@ -65,7 +65,7 @@ export class SessionTabsTest {
                 { id: 'session-untitled', current: false, workspace: '/work/a' },
                 { id: 'session-c', current: false, title: 'Gamma', workspace: '/work/b' }
             ]);
-            const tabs = ref.hostView.query(CommonTabBarComponent) as any;
+            const tabs = ref.hostView.query(TabBarComponent) as any;
             expect(tabs.instance.items.map((tab: any) => tab.id)).toEqual(['session-a', 'session-b', 'session-untitled']);
             const untitled = tabs.instance.items.find((tab: any) => tab.id === 'session-untitled');
             expect(untitled.label).not.toContain('session-untitled');

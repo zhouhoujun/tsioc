@@ -30,7 +30,7 @@ import {
     resolveConsoleSelectWindow
 } from './input';
 import { provideConsoleTerminalLifecycle, TerminalClickTarget } from './terminal';
-import { CommonComponentsModule } from '@tsdi/components/common';
+import { BaseComponentsModule } from '@tsdi/components/common';
 
 const ANSI_RESET = '\x1b[0m';
 const ANSI_BOLD = '\x1b[1m';
@@ -1320,7 +1320,7 @@ export class TuiTemplateCompiler extends AbstractTemplateCompiler {
 }
 
 @Module({
-    imports: [CommonComponentsModule],
+    imports: [BaseComponentsModule],
     declarations: [],
     providers: [
         TuiRenderer,
@@ -1333,7 +1333,7 @@ export class TuiTemplateCompiler extends AbstractTemplateCompiler {
         { provide: TemplateCompiler, useClass: TuiTemplateCompiler, deps: [ConsoleTemplateParser, ConsoleRenderer, CONSOLE_TEMPLATE], asDefault: true }
     ],
     exports: [
-        CommonComponentsModule,
+        BaseComponentsModule,
         TuiRenderer,
         ConsoleRenderer,
         ConsoleTemplateParser,
@@ -1356,7 +1356,7 @@ export class TuiTemplateModule {
         ...provideConsoleTerminalLifecycle()
     ],
     exports: [
-        CommonComponentsModule,
+        BaseComponentsModule,
         TuiTemplateModule,
         TuiRenderer,
         ConsoleRenderer,

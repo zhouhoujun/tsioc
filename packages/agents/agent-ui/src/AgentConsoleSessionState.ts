@@ -108,6 +108,24 @@ import {
     toggleReviewSideBySide as toggleReviewSideBySideInState
 } from './AgentConsoleReviewPatch';
 import {
+    buildPlanMessage as buildPlanMessageInState,
+    clearPlanTodos as clearPlanTodosInState,
+    formatElapsed as formatElapsedInState,
+    hasActivePlanTodos as hasActivePlanTodosInState,
+    jumpToNextBlockedPlanTodo as jumpToNextBlockedPlanTodoInState,
+    jumpToNextFailedPlanTodo as jumpToNextFailedPlanTodoInState,
+    movePlanTodoSelection as movePlanTodoSelectionInState,
+    planTodoGlyph as planTodoGlyphInState,
+    resolveFilteredPlanTodos,
+    resolveGoalCriteriaProgress,
+    resolvePlanTodoFilterLabel,
+    resolveSelectedPlanTodo,
+    resolveSelectedPlanTodoDetailLabel,
+    setGoalSummary as setGoalSummaryInState,
+    setPlanTodoFilter as setPlanTodoFilterInState,
+    togglePlanTodoExpanded as togglePlanTodoExpandedInState
+} from './AgentConsolePlanState';
+import {
     applyPlanActionOptimistically as applyPlanActionOptimisticallyInState,
     confirmPlanAction as confirmPlanActionInState,
     dismissPlanAction as dismissPlanActionInState,
@@ -2904,239 +2922,67 @@ export class AgentConsoleSessionState {
     }
 
     setGoalSummary(goal: AgentConsoleGoalSummary | null | undefined): void {
-        this.goalSummary = goal ? {
-            id: String(goal.id || ''), title: String(goal.title || ''),
-            successCriteria: Array.isArray(goal.successCriteria) ? goal.successCriteria.map(String) : [],
-            status: goal.status
-        } : null;
-        this.planMessage = this.buildPlanMessage();
+        setGoalSummaryInState(this, goal);
     }
 
     get goalCriteriaProgress(): { met: number; total: number } | null {
-        const criteria = this.goalSummary?.successCriteria || [];
-        if (!criteria.length) return null;
-        const planText = this.planTodos.map(item => item.content).join(' ').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ');
-        const met = criteria.filter(item => planText.includes(String(item).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim())).length;
-        return { met, total: criteria.length };
+        return resolveGoalCriteriaProgress(this);
     }
 
     buildPlanMessage(): AgentMessage | null {
-        if (!this.planTodos.length) {
-            return null;
-        }
-        const total = this.planTodos.length;
-        const labels = { ...DEFAULT_TIMELINE_LABELS, ...(this.consoleOptions.timelineLabels || {}) };
-        const goalProgress = this.goalCriteriaProgress;
-        const goalLine = goalProgress ? this.translateLabel('agent.timeline.goalProgress', { met: goalProgress.met, total: goalProgress.total }, `goal: ${goalProgress.met}/${goalProgress.total} criteria met`) : '';
-        const collapsible = total > 10;
-        const filtered = this.filteredPlanTodos;
-        const filterLabel = this.planTodoFilter !== 'all' ? ` [${this.planTodoFilter}]` : '';
-        const title = labels.todosTitle || '# Todos';
-        // opencode's TodoItem list: marker + content, no numbering or progress bar.
-        const items = filtered.map((item, index) => {
-            const selected = this.selectedPlanTodoIndex === index ? '› ' : '';
-            const hierarchy = item.parentId ? '  ' : '';
-            const glyph = item.blockedBy?.length ? '[!]' : this.planTodoGlyph(item.status);
-            const blocked = item.blockedBy?.length ? ` ← blocked by ${item.blockedBy.join(',')}` : '';
-            const depends = item.dependsOn?.length ? ` needs ${item.dependsOn.join(',')}` : '';
-            const owner = item.owner ? ` (${item.owner})` : '';
-            const estimate = item.estimate ? ` ~${item.estimate}` : '';
-            const elapsed = item.elapsedMs ? ` ${this.formatElapsed(item.elapsedMs)}` : '';
-            const error = item.status === 'failed' && item.error ? ` err: ${item.error}` : '';
-            const evidence = item.evidenceIds?.length ? ` evidence[${item.evidenceIds.length}]` : '';
-            return `${selected}${hierarchy}${glyph} ${item.content}${owner}${estimate}${elapsed}${depends}${blocked}${evidence}${error}`;
-        });
-        const visibleContent = collapsible && !this.planTodoExpanded && this.planTodoFilter === 'all'
-            ? `${title} · ${total}`
-            : `${title}${filterLabel}${items.length ? `\n${items.join('\n')}` : ''}`;
-        const detailLine = this.selectedPlanTodoDetailLabel;
-        return {
-            id: '__plan_todo_inline__',
-            role: 'assistant',
-            content: [visibleContent, goalLine, detailLine].filter(Boolean).join('\n'),
-            createdAt: Date.now(),
-            metadata: {
-                uiKind: 'plan-todo',
-                planItems: this.planTodos,
-                planTodoSourceSessionId: this.planTodoSourceSessionId,
-                planScope: this.planScope,
-                planCollapsed: collapsible && !this.planTodoExpanded,
-                planTodoExpanded: this.planTodoExpanded,
-                planTodoFilter: this.planTodoFilter,
-                selectedPlanTodoIndex: this.selectedPlanTodoIndex,
-                planId: this.planId,
-                planRevision: this.planRevision,
-                planThreadKey: this.planThreadKey,
-                // Only an active turn may render the plan as running; a plan
-                // restored after a restart is paused, not running.
-                planLive: this.status === 'running' || this.status === 'reasoning'
-            }
-        };
+        return buildPlanMessageInState(this);
     }
 
     formatElapsed(ms: number): string {
-        if (ms < 1000) return `${ms}ms`;
-        if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
-        const m = Math.floor(ms / 60000);
-        const s = Math.floor((ms % 60000) / 1000);
-        return `${m}m${s}s`;
+        return formatElapsedInState(ms);
     }
 
     togglePlanTodoExpanded(): boolean {
-        if (this.planTodos.length <= 10) {
-            return false;
-        }
-        this.planTodoExpanded = !this.planTodoExpanded;
-        this.planMessage = this.buildPlanMessage();
-        return true;
+        return togglePlanTodoExpandedInState(this);
     }
 
-    protected planTodoGlyph(status: AgentConsolePlanTodoItem['status']): string {
-        switch (status) {
-            case 'completed':
-                return '[✓]';
-            case 'cancelled':
-                return '[-]';
-            case 'in_progress':
-                return '[•]';
-            case 'failed':
-                return '[✗]';
-            default:
-                return '[ ]';
-        }
+    planTodoGlyph(status: AgentConsolePlanTodoItem['status']): string {
+        return planTodoGlyphInState(status);
     }
 
     hasActivePlanTodos(): boolean {
-        return this.planTodos.some(item => item.status === 'pending' || item.status === 'in_progress');
+        return hasActivePlanTodosInState(this);
     }
 
     clearPlanTodos(): void {
-        if (!this.planTodos.length && !this.planScope) {
-            return;
-        }
-        this.planTodos = [];
-        this.planTodoExpanded = false;
-        this.planTodoFilter = 'all';
-        this.selectedPlanTodoIndex = -1;
-        this.goalSummary = null;
-        this.planTodoSourceSessionId = '';
-        this.planScope = '';
-        this.planMessage = null;
+        clearPlanTodosInState(this);
     }
 
     get filteredPlanTodos(): AgentConsolePlanTodoItem[] {
-        if (this.planTodoFilter === 'all') {
-            return this.planTodos;
-        }
-        switch (this.planTodoFilter) {
-            case 'active':
-                return this.planTodos.filter(item => item.status === 'pending' || item.status === 'in_progress');
-            case 'blocked':
-                return this.planTodos.filter(item => (item.blockedBy && item.blockedBy.length > 0) || item.status === 'pending');
-            case 'failed':
-                return this.planTodos.filter(item => item.status === 'failed' || item.status === 'cancelled');
-            default:
-                return this.planTodos;
-        }
+        return resolveFilteredPlanTodos(this);
     }
 
     get selectedPlanTodo(): AgentConsolePlanTodoItem | null {
-        const filtered = this.filteredPlanTodos;
-        if (this.selectedPlanTodoIndex < 0 || this.selectedPlanTodoIndex >= filtered.length) {
-            return null;
-        }
-        return filtered[this.selectedPlanTodoIndex];
+        return resolveSelectedPlanTodo(this);
     }
 
     get planTodoFilterLabel(): string {
-        switch (this.planTodoFilter) {
-            case 'active': return 'active';
-            case 'blocked': return 'blocked';
-            case 'failed': return 'failed';
-            default: return 'all';
-        }
+        return resolvePlanTodoFilterLabel(this);
     }
 
     setPlanTodoFilter(filter: 'all' | 'active' | 'blocked' | 'failed'): void {
-        this.planTodoFilter = filter;
-        this.selectedPlanTodoIndex = -1;
-        this.planMessage = this.buildPlanMessage();
+        setPlanTodoFilterInState(this, filter);
     }
 
     movePlanTodoSelection(direction: -1 | 1): boolean {
-        const filtered = this.filteredPlanTodos;
-        if (!filtered.length) {
-            this.selectedPlanTodoIndex = -1;
-            return false;
-        }
-        if (this.selectedPlanTodoIndex < 0) {
-            this.selectedPlanTodoIndex = direction > 0 ? 0 : filtered.length - 1;
-        } else {
-            this.selectedPlanTodoIndex = Math.max(0, Math.min(filtered.length - 1, this.selectedPlanTodoIndex + direction));
-        }
-        return true;
+        return movePlanTodoSelectionInState(this, direction);
     }
 
     jumpToNextBlockedPlanTodo(): boolean {
-        const filtered = this.filteredPlanTodos;
-        if (!filtered.length) return false;
-        const start = this.selectedPlanTodoIndex < 0 ? 0 : this.selectedPlanTodoIndex + 1;
-        for (let i = start; i < filtered.length; i++) {
-            if (filtered[i].blockedBy && filtered[i].blockedBy!.length > 0) {
-                this.selectedPlanTodoIndex = i;
-                return true;
-            }
-        }
-        for (let i = 0; i < start; i++) {
-            if (filtered[i].blockedBy && filtered[i].blockedBy!.length > 0) {
-                this.selectedPlanTodoIndex = i;
-                return true;
-            }
-        }
-        return false;
+        return jumpToNextBlockedPlanTodoInState(this);
     }
 
     jumpToNextFailedPlanTodo(): boolean {
-        const filtered = this.filteredPlanTodos;
-        if (!filtered.length) return false;
-        const start = this.selectedPlanTodoIndex < 0 ? 0 : this.selectedPlanTodoIndex + 1;
-        for (let i = start; i < filtered.length; i++) {
-            if (filtered[i].status === 'failed' || filtered[i].status === 'cancelled') {
-                this.selectedPlanTodoIndex = i;
-                return true;
-            }
-        }
-        for (let i = 0; i < start; i++) {
-            if (filtered[i].status === 'failed' || filtered[i].status === 'cancelled') {
-                this.selectedPlanTodoIndex = i;
-                return true;
-            }
-        }
-        return false;
+        return jumpToNextFailedPlanTodoInState(this);
     }
 
     get selectedPlanTodoDetailLabel(): string {
-        const item = this.selectedPlanTodo;
-        if (!item) return '';
-        const parts = [
-            `#${item.id} ${item.content}`,
-            `status ${item.status}`,
-            item.kind ? `kind ${item.kind}` : '',
-            item.owner ? `owner ${item.owner}` : '',
-            item.estimate ? `estimate ${item.estimate}` : '',
-            item.dependsOn?.length ? `depends on ${item.dependsOn.join(', ')}` : '',
-            item.blockedBy?.length ? `blocked by ${item.blockedBy.join(', ')}` : '',
-            item.blockedReason ? `reason: ${item.blockedReason}` : '',
-            item.acceptance ? `acceptance: ${item.acceptance}` : '',
-            item.error ? `error: ${item.error}` : '',
-            item.elapsedMs ? `elapsed ${item.elapsedMs}ms` : '',
-            item.evidenceIds?.length ? `evidence ${item.evidenceIds.join(', ')}` : '',
-            item.receiptId ? `receipt ${item.receiptId}` : '',
-            item.testSummary ? `test: ${item.testSummary}` : '',
-            item.diffSummary ? `diff: ${item.diffSummary}` : '',
-            item.reviewSummary ? `review: ${item.reviewSummary}` : ''
-        ];
-        return parts.filter(Boolean).join('\n');
+        return resolveSelectedPlanTodoDetailLabel(this);
     }
 
     setPendingQuestion(question: AgentConsolePendingQuestion | null): void {

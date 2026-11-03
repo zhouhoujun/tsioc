@@ -5,6 +5,6 @@ export * from './display-width';
 export * from './input';
 export * from './terminal';
 export {
-    CommonComponentsModule,
+    BaseComponentsModule,
     PanelComponent
 } from '@tsdi/components/common';

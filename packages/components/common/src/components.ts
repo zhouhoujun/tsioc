@@ -8,10 +8,11 @@ import {
     RNode
 } from '@tsdi/components';
 import { Module, Optional } from '@tsdi/ioc';
-import { CommonTabBarComponent } from './tab-bar';
-import { CommonMarkdownCodeComponent, CommonMarkdownTableComponent } from './markdown';
-import { CommonDialogComponent } from './dialog';
-import { CommonSelectComponent } from './select';
+import { TabBarComponent } from './tab-bar';
+import { MarkdownCodeComponent, MarkdownTableComponent } from './markdown';
+import { DialogComponent } from './dialog';
+import { SelectComponent } from './select';
+import { ListPanelComponent } from './list-panel';
 
 interface CommonProjectionNode extends RNode {
     tagName?: string;
@@ -99,7 +100,7 @@ export class PanelComponent {
 }
 
 @Module({
-    declarations: [PanelComponent, CommonTabBarComponent, CommonMarkdownTableComponent, CommonMarkdownCodeComponent, CommonDialogComponent, CommonSelectComponent],
-    exports: [PanelComponent, CommonTabBarComponent, CommonMarkdownTableComponent, CommonMarkdownCodeComponent, CommonDialogComponent, CommonSelectComponent]
+    declarations: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, SelectComponent, ListPanelComponent],
+    exports: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, SelectComponent, ListPanelComponent]
 })
-export class CommonComponentsModule {}
+export class BaseComponentsModule {}

@@ -1,7 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { TransformModule } from '@tsdi/core';
 import { ComponentsModule } from '@tsdi/components';
-import { CommonComponentsModule, COMMON_TAB_BAR_SOURCE } from '@tsdi/components/common';
+import { BaseComponentsModule, COMMON_TAB_BAR_SOURCE } from '@tsdi/components/common';
 import { AgentModule } from '@tsdi/agent';
 import { I18nModule, I18N_PROVIDERS } from '@tsdi/i18n';
 import { getGlobalProcess } from './global-process';
@@ -89,7 +89,7 @@ import { AGENT_CONSOLE_MARKDOWN_COMPONENT } from './AgentConsoleMessageComponent
 @Module({
     imports: [
         ComponentsModule,
-        CommonComponentsModule,
+        BaseComponentsModule,
         TransformModule,
         AgentModule,
         I18nModule.withLocales({

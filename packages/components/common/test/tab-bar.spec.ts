@@ -1,12 +1,12 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { CommonTabBarComponent, CommonTabBarSource } from '../src';
+import { TabBarComponent, CommonTabBarSource } from '../src';
 
 @Suite('common tab bar')
 export class CommonTabBarTest {
     @Test('paints the source items and forwards tab selection/creation')
     forwardsHostActions() {
-        const bar = new CommonTabBarComponent();
+        const bar = new TabBarComponent();
         const selected: string[] = [];
         const closed: string[] = [];
         let created = 0;
@@ -33,7 +33,7 @@ export class CommonTabBarTest {
 
     @Test('is renderer-neutral: no source means sensible defaults')
     toleratesMissingSource() {
-        const bar = new CommonTabBarComponent();
+        const bar = new TabBarComponent();
         bar.select('a');
         bar.create();
         bar.close('a');

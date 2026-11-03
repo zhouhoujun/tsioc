@@ -28,7 +28,7 @@ export interface CommonMarkdownTableCell {
         </div>
     </div>`
 })
-export class CommonMarkdownTableComponent {
+export class MarkdownTableComponent {
     @Attribute() header: CommonMarkdownTableCell[] = [];
     @Attribute() rows: CommonMarkdownTableCell[][] = [];
 
@@ -45,6 +45,6 @@ export class CommonMarkdownTableComponent {
     template: `
     <pre class="common-markdown-code"><code><span class="common-markdown-code-line" v-for="line in lines"><span class="common-markdown-code-token" data-tone="{{token.tone}}" v-for="token in line">{{token.text}}</span></span></code></pre>`
 })
-export class CommonMarkdownCodeComponent {
+export class MarkdownCodeComponent {
     @Attribute() lines: CommonMarkdownToken[][] = [];
 }

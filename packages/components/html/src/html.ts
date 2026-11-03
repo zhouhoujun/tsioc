@@ -6,7 +6,7 @@ import {
     AnimationClock, TemplateCompiler, TemplateCompilerOptions, noReact
 } from '@tsdi/components';
 import { transformBlocks } from '../../src/impl/block';
-import { CommonComponentsModule } from '@tsdi/components/common';
+import { BaseComponentsModule } from '@tsdi/components/common';
 import { BrowserAnimationClock } from './animation-clock';
 
 @Injectable()
@@ -347,7 +347,7 @@ export class HtmlTemplateCompiler extends AbstractTemplateCompiler {
 }
 
 @Module({
-    imports: [CommonComponentsModule],
+    imports: [BaseComponentsModule],
     providers: [
         HtmlRenderer,
         HtmlTemplateParser,
@@ -358,7 +358,7 @@ export class HtmlTemplateCompiler extends AbstractTemplateCompiler {
         { provide: TemplateParser, useClass: HtmlTemplateParser, asDefault: true },
         { provide: TemplateCompiler, useClass: HtmlTemplateCompiler, asDefault: true }
     ],
-    exports: [CommonComponentsModule]
+    exports: [BaseComponentsModule]
 })
 export class HtmlTemplateModule {
     static withOptions(options: TemplateCompilerOptions): ModuleWithProviders<HtmlTemplateModule> {

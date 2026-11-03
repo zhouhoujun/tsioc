@@ -52,8 +52,9 @@ import { AgentConsoleStatuslineField } from './AgentConsoleStatusline';
 import { DEFAULT_TIMELINE_LABELS, resolveTimelineWindowLedger, TimelineWindowMode } from './AgentConsoleTimelineWindow';
 import {
     buildCommonBrandBlock as buildTerminalBrandBlock,
-    CommonDialogComponent,
-    CommonSelectComponent,
+    DialogComponent,
+    ListPanelComponent,
+    SelectComponent,
     resolveCommonEnterAction as resolveConsoleEnterAction,
     resolveCommonListWindow as resolveConsoleListWindow,
     resolveCommonSelectWindow as resolveConsoleSelectWindow
@@ -1833,7 +1834,7 @@ export class AgentConsoleToolsPanelComponent {
 
 @Component({
     selector: 'agent-console-text-overlay-panel',
-    imports: [CommonDialogComponent],
+    imports: [DialogComponent],
     template: `
     <common-dialog :title="overlayTitle" :lines="visibleLines" :hint="hintLabel"
         :ariaLabel="accessibilityLabel" :shellStyle="shellStyle" :titleStyle="accentStyle"
@@ -1897,16 +1898,9 @@ export class AgentConsoleTextOverlayPanelComponent {
 
 @Component({
     selector: 'agent-console-outputs-panel',
+    imports: [ListPanelComponent],
     template: `
-    <div class="console-panel console-command-outputs-panel" v-style="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}" aria-activedescendant="{{activeOptionId}}">
-        <label v-style="accentStyle">{{panelTitle}}</label>
-        <label v-style="metaStyle" v-show="filterLabel">{{filterLabel}}</label>
-        <div role="listbox" aria-label="Command output history">
-            <div id="{{item.id}}" v-style="item.style" role="option" aria-selected="{{item.selected}}" v-for="item in entryItems">{{item.label}}</div>
-        </div>
-        <label v-style="metaStyle" v-show="emptyLabel">{{emptyLabel}}</label>
-        <label v-style="metaStyle" v-show="hintLabel">{{hintLabel}}</label>
-    </div>
+    <common-list-panel :header="panelTitle" :meta="filterLabel" :items="entryItems" :empty="emptyLabel" :hint="hintLabel" :showClose="false" :ariaLabel="accessibilityLabel" :listLabel="'Command output history'" :activeOptionId="activeOptionId" :shellStyle="shellStyle" :accentStyle="accentStyle" :metaStyle="metaStyle"></common-list-panel>
     `
 })
 export class AgentConsoleCommandOutputsPanelComponent {
@@ -2000,18 +1994,9 @@ export class AgentConsoleCommandOutputsPanelComponent {
 
 @Component({
     selector: 'agent-console-pending-question-panel',
+    imports: [ListPanelComponent],
     template: `
-    <div class="console-panel console-pending-question-panel" v-style="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}" aria-activedescendant="{{activeOptionId}}"><label class="dialog-close" data-cell-width="2" v-style="closeStyle" @click="closeQuestion">✕</label>
-        <label v-style="accentStyle">{{pendingQuestionHeader}}</label>
-        <label v-style="accentStyle">{{pendingQuestionTitle}}</label>
-        <label v-style="metaStyle" v-show="pendingQuestionContext">{{pendingQuestionContext}}</label>
-        <label v-style="metaStyle" v-show="pendingQuestionExpiryHint">{{pendingQuestionExpiryHint}}</label>
-        <div role="listbox" aria-label="Question options">
-            <div id="{{item.id}}" v-style="listStyle" role="option" aria-selected="{{item.selected}}" v-for="item in pendingQuestionOptionItems" @click="onPendingQuestionOptionClick(item.value)">{{item.label}}</div>
-        </div>
-        <label v-style="metaStyle" v-show="pendingQuestionOptionItems.length">{{pendingQuestionSelectionHint}}</label>
-        <label v-style="metaStyle" v-show="pendingQuestionCustomHint">{{pendingQuestionCustomHint}}</label>
-    </div>
+    <common-list-panel :header="pendingQuestionHeader" :title="pendingQuestionTitle" :context="pendingQuestionContext" :meta="pendingQuestionExpiryHint" :hint="pendingQuestionSelectionHint" :secondaryHint="pendingQuestionCustomHint" :items="pendingQuestionOptionItems" :showClose="true" :closeLabel="'✕'" :ariaLabel="accessibilityLabel" :listLabel="'Question options'" :activeOptionId="activeOptionId" :shellStyle="shellStyle" :accentStyle="accentStyle" :metaStyle="metaStyle" :closeStyle="closeStyle" @closeAction="closeQuestion" @selectAction="onPendingQuestionOptionClick"></common-list-panel>
     `
 })
 export class AgentConsolePendingQuestionPanelComponent {
@@ -3567,7 +3552,7 @@ export class AgentConsoleActivityPanelComponent {
 
 @Component({
     selector: 'agent-console-select-panel',
-    imports: [CommonSelectComponent],
+    imports: [SelectComponent],
     template: `
         <common-select
             :options="menuOptions"

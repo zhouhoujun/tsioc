@@ -1,5 +1,5 @@
 import { Component } from '@tsdi/components';
-import { CommonMarkdownCodeComponent, CommonMarkdownTableComponent } from '@tsdi/components/common';
+import { MarkdownCodeComponent, MarkdownTableComponent } from '@tsdi/components/common';
 import type { AgentConsoleMarkdownToken, AgentConsoleRenderedLine } from '@tsdi/agent-ui';
 import { AgentConsoleMarkdownComponent, AgentConsoleRoutedTokensComponent } from '@tsdi/agent-ui';
 
@@ -56,7 +56,7 @@ const WEB_MARKDOWN_TEMPLATE = `
 @Component({
     selector: 'agent-console-web-markdown',
     template: WEB_MARKDOWN_TEMPLATE,
-    imports: [AgentConsoleRoutedTokensComponent, CommonMarkdownTableComponent, CommonMarkdownCodeComponent]
+    imports: [AgentConsoleRoutedTokensComponent, MarkdownTableComponent, MarkdownCodeComponent]
 })
 export class AgentConsoleWebMarkdownComponent extends AgentConsoleMarkdownComponent {
     get webSegments(): AgentConsoleWebMarkdownSegment[] {
