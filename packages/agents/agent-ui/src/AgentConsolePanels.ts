@@ -54,6 +54,7 @@ import {
     buildCommonBrandBlock as buildTerminalBrandBlock,
     DialogComponent,
     ListPanelComponent,
+    MessageRowComponent,
     SelectComponent,
     resolveCommonEnterAction as resolveConsoleEnterAction,
     resolveCommonListWindow as resolveConsoleListWindow,
@@ -2265,22 +2266,10 @@ export class AgentConsoleToolRunsPanelComponent {
 }
 
 @Component({
-    selector: 'agent-console-message-tokens',
-    template: `
-    <span class="message-content">
-        <span class="message-token" v-style="token.style" v-for="token in tokens">{{token.text}}</span>
-    </span>
-    `
-})
-export class AgentConsoleMessageTokensComponent {
-    @Attribute() tokens: Array<AgentConsoleMarkdownToken & { style: Record<string, string> }> = [];
-}
-
-@Component({
     selector: 'agent-console-message-line',
-    imports: [AgentConsoleMessageTokensComponent],
+    imports: [MessageRowComponent],
     template: `
-    <label class="message-line" v-style="itemStyle" aria-label="{{ariaLabel}}" data-hover="{{toggleContent ? 'fade' : 'none'}}" @click="toggleMessageDetail"><span v-style="statusStyle">{{status}}</span><span v-style="roleStyle" v-show="role">{{role}}</span><span v-style="prefixStyle" v-show="prefix">{{prefix}}</span><span v-style="lineStyle"><agent-console-message-tokens :tokens="contentTokens"></agent-console-message-tokens></span><span class="message-detail-toggle" v-style="lineStyle" v-if="toggleContent">{{toggleContent}}</span><span v-style="metaStyle" v-show="meta">{{meta}}</span></label>
+    <message-row :tokens="contentTokens" :status="status" :role="role" :prefix="prefix" :meta="meta" :toggleContent="toggleContent" :ariaLabel="ariaLabel" :itemStyle="itemStyle" :statusStyle="statusStyle" :roleStyle="roleStyle" :prefixStyle="prefixStyle" :lineStyle="lineStyle" :metaStyle="metaStyle" :toggleAction="toggleMessageDetail"></message-row>
     `
 })
 export class AgentConsoleMessageLineComponent {

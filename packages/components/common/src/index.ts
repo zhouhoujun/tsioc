@@ -7,6 +7,7 @@ export * from './markdown';
 export * from './dialog';
 export * from './select';
 export * from './list-panel';
+export * from './message-row';
 export * from './tab-bar';
 export * from './syntax-tokens';
 export * from './display-width';

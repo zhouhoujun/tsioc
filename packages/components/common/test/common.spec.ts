@@ -3,6 +3,7 @@ import { Suite, Test } from '@tsdi/unit';
 import {
     DialogComponent,
     ListPanelComponent,
+    MessageRowComponent,
     SelectComponent,
     formatCommonIndexedOptionLabel,
     processCommonTextInputChunk,
@@ -150,5 +151,17 @@ export class CommonComponentUtilitiesTest {
         panel.close();
         expect(selected).toEqual('row-1');
         expect(closed).toEqual(1);
+    }
+
+    @Test('message row forwards toggle action and keeps token text')
+    messageRowToggle() {
+        const row = new MessageRowComponent();
+        row.tokens = [{ text: 'hello' }, { text: ' world' }];
+        row.toggleContent = '…';
+        let toggled = 0;
+        row.toggleAction = () => { toggled += 1; };
+        row.toggle();
+        expect(toggled).toEqual(1);
+        expect(row.tokens.map(token => token.text).join('')).toEqual('hello world');
     }
 }

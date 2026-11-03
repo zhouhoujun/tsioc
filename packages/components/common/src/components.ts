@@ -13,6 +13,7 @@ import { MarkdownCodeComponent, MarkdownTableComponent } from './markdown';
 import { DialogComponent } from './dialog';
 import { SelectComponent } from './select';
 import { ListPanelComponent } from './list-panel';
+import { MessageRowComponent } from './message-row';
 
 interface CommonProjectionNode extends RNode {
     tagName?: string;
@@ -100,7 +101,7 @@ export class PanelComponent {
 }
 
 @Module({
-    declarations: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, SelectComponent, ListPanelComponent],
-    exports: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, SelectComponent, ListPanelComponent]
+    declarations: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, SelectComponent, ListPanelComponent, MessageRowComponent],
+    exports: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, SelectComponent, ListPanelComponent, MessageRowComponent]
 })
 export class BaseComponentsModule {}
