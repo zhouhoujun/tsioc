@@ -94,6 +94,20 @@ import { AgentConsoleInputHistoryController, DefaultAgentConsoleInputHistoryCont
 import { AgentConsoleFocusLayers, DefaultAgentConsoleFocusLayers } from './AgentConsoleFocusLayers';
 import { AgentConsoleCommandExecutionController, DefaultAgentConsoleCommandExecutionController } from './AgentConsoleCommandExecutionState';
 import {
+    buildReviewAssessmentLines as buildReviewAssessmentLinesInState,
+    buildReviewFoldedHunkSummary as buildReviewFoldedHunkSummaryInState,
+    buildSideBySidePatchRows as buildSideBySidePatchRowsInState,
+    clampReviewDetailScroll as clampReviewDetailScrollInState,
+    filterReviewPatchLines as filterReviewPatchLinesInState,
+    getReviewExportReport as getReviewExportReportInState,
+    isReviewHunkFolded as isReviewHunkFoldedInState,
+    parseReviewHunks as parseReviewHunksInState,
+    renderReviewPatchLines as renderReviewPatchLinesInState,
+    renderReviewPatchSideBySide as renderReviewPatchSideBySideInState,
+    toggleReviewHunkFold as toggleReviewHunkFoldInState,
+    toggleReviewSideBySide as toggleReviewSideBySideInState
+} from './AgentConsoleReviewPatch';
+import {
     buildFileChangeMessage as buildFileChangeMessageInState,
     clearReview as clearReviewInState,
     closeReview as closeReviewInState,
@@ -3921,45 +3935,38 @@ export class AgentConsoleSessionState {
     }
 
     getReviewExportReport(): string[] {
-        const lines: string[] = [];
-        const task = this.filteredReviewTaskChoices.find(t => t.id === this.selectedReviewTaskId);
-        lines.push(`# Review Report`);
-        lines.push(`Task: ${(task?.title ?? this.selectedReviewTaskId) || '(none)'}`);
-        lines.push(`Date: ${new Date().toISOString()}`);
-        lines.push(`Status: ${task?.status ?? 'unknown'}`);
-        lines.push('');
-        const fileEntries = Object.entries(this.reviewFileAnnotations);
-        const hunkEntries = Object.entries(this.reviewHunkAnnotations);
-        if (!fileEntries.length && !hunkEntries.length) {
-            lines.push(this.translateLabel('agent.menu.panel.review.annotationsNone', undefined, 'No annotations.'));
-            return lines;
-        }
-        if (fileEntries.length) {
-            const approved = fileEntries.filter(([, a]) => a.status === 'approved');
-            const rejected = fileEntries.filter(([, a]) => a.status === 'rejected');
-            lines.push(`## File Annotations`);
-            lines.push(`- Approved: ${approved.length}`);
-            lines.push(`- Rejected: ${rejected.length}`);
-            lines.push('');
-            for (const [path, annot] of fileEntries) {
-                lines.push(`- ${annot.status === 'approved' ? '✓' : '✗'} ${path}${annot.comment ? `: ${annot.comment}` : ''}`);
-            }
-            lines.push('');
-        }
-        if (hunkEntries.length) {
-            const hApproved = hunkEntries.filter(([, a]) => a.status === 'approved');
-            const hRejected = hunkEntries.filter(([, a]) => a.status === 'rejected');
-            lines.push(`## Hunk Annotations`);
-            lines.push(`- Approved: ${hApproved.length}`);
-            lines.push(`- Rejected: ${hRejected.length}`);
-            lines.push('');
-            for (const [key, annot] of hunkEntries) {
-                lines.push(`- ${annot.status === 'approved' ? '✓' : '✗'} ${key}${annot.comment ? `: ${annot.comment}` : ''}`);
-            }
-            lines.push('');
-        }
-        return lines;
+        return getReviewExportReportInState(this);
     }
+
+    buildReviewAssessmentLines(): string[] {
+        return buildReviewAssessmentLinesInState(this);
+    }
+
+    filterReviewPatchLines(lines: string[]): string[] {
+        return filterReviewPatchLinesInState(this, lines);
+    }
+
+    parseReviewHunks(section: AgentConsoleReviewDiffSection): AgentConsoleReviewHunk[] {
+        return parseReviewHunksInState(this, section);
+    }
+
+    isReviewHunkFolded(groupKey: string, path: string, hunkIndex: number): boolean {
+        return isReviewHunkFoldedInState(this, groupKey, path, hunkIndex);
+    }
+
+    toggleReviewHunkFold(): void {
+        toggleReviewHunkFoldInState(this);
+    }
+
+    renderReviewPatchLines(section: AgentConsoleReviewDiffSection, groupKey: string): string[] {
+        return renderReviewPatchLinesInState(this, section, groupKey);
+    }
+
+    toggleReviewSideBySide(): void {
+        toggleReviewSideBySideInState(this);
+    }
+
+
 
     get selectedReviewFileSection(): AgentConsoleReviewDiffSection | undefined {
         return resolveSelectedReviewFileSection(this);
@@ -5040,71 +5047,7 @@ export class AgentConsoleSessionState {
         this.reviewDetailColumnScroll = 0;
     }
 
-    buildReviewAssessmentLines(): string[] {
-        const lines: string[] = [];
-        const status = String(this.reviewTask?.status || '').trim().toLowerCase();
-        const aggregate = this.reviewTask?.result?.aggregate;
-        const checkpoints = Array.isArray(this.reviewTask?.metadata?.checkpoints)
-            ? this.reviewTask?.metadata?.checkpoints
-            : [];
-        const availableCheckpoints = checkpoints.filter((entry: any) => entry?.status === 'available').length;
-        const invalidatedCheckpoints = checkpoints.filter((entry: any) => entry?.status === 'invalidated').length;
-        const workerFailures = this.reviewWorkers.filter(worker => worker.error || String(worker.status || '').trim().toLowerCase() === 'failed').length;
-        const sections = this.aggregateReviewFileSections;
-        const rollback = this.reviewTask?.result?.rollback;
-        const lineageTasks = this.currentReviewLineageTasks;
-        const selectedTaskId = String(this.reviewTask?.id || this.selectedReviewTaskId || '').trim();
-        const lineageIndex = lineageTasks.length
-            ? Math.max(0, lineageTasks.findIndex(item => item.id === selectedTaskId))
-            : -1;
 
-        const reviewState = rollback?.rolledBackAt
-            ? this.translateLabel('agent.menu.panel.review.stateRollbackApplied', undefined, 'rollback applied')
-            : status === 'failed' || status === 'error' || workerFailures > 0
-                ? this.translateLabel('agent.menu.panel.review.stateNeedsAttention', undefined, 'needs attention')
-                : status === 'running' || status === 'planned'
-                    ? this.translateLabel('agent.menu.panel.review.stateInProgress', undefined, 'in progress')
-                    : rollback?.available === true || availableCheckpoints > 0
-                        ? this.translateLabel('agent.menu.panel.review.stateReadyRollback', undefined, 'ready · rollback available')
-                        : status === 'completed'
-                            ? this.translateLabel('agent.menu.panel.review.stateReady', undefined, 'ready')
-                            : this.translateLabel('agent.menu.panel.review.statePending', undefined, 'pending');
-        const reviewSummary = lineageTasks.length > 1 && lineageIndex >= 0 ? this.translateLabel('agent.menu.panel.review.summaryLineage', { state: reviewState, index: lineageIndex + 1, total: lineageTasks.length }, `${reviewState} · lineage ${lineageIndex + 1}/${lineageTasks.length}`) : reviewState;
-        lines.push(this.translateLabel('agent.menu.panel.review.summary', { state: reviewSummary }, `Review: ${reviewSummary}`));
-
-        const scopeParts = [
-            sections.length ? this.translateLabel(sections.length === 1 ? 'agent.menu.panel.review.scopeFilesOne' : 'agent.menu.panel.review.scopeFiles', { count: sections.length }, sections.length === 1 ? '{count} file changed' : '{count} files changed') : '',
-            this.reviewWorkers.length ? this.translateLabel(this.reviewWorkers.length === 1 ? 'agent.menu.panel.review.scopeWorkersOne' : 'agent.menu.panel.review.scopeWorkers', { count: this.reviewWorkers.length }, this.reviewWorkers.length === 1 ? '{count} worker' : '{count} workers') : '',
-            lineageTasks.length > 1 ? this.translateLabel('agent.menu.panel.review.scopeLineage', { count: lineageTasks.length }, `lineage ${lineageTasks.length} tasks`) : ''
-        ].filter(Boolean);
-        if (scopeParts.length) {
-            lines.push(this.translateLabel('agent.menu.panel.review.scope', { parts: scopeParts.join(' · ') }, `Scope: ${scopeParts.join(' · ')}`));
-        }
-        if (aggregate) {
-            const failedSuffix = aggregate.failedWorkers ? this.translateLabel('agent.menu.panel.review.workersFailed', { count: aggregate.failedWorkers }, ` · ${aggregate.failedWorkers} failed`) : '';
-            lines.push(this.translateLabel('agent.menu.panel.review.workersLine', { status: aggregate.status, completed: aggregate.completedWorkers, total: aggregate.totalWorkers }, `Workers: ${aggregate.status} · ${aggregate.completedWorkers}/${aggregate.totalWorkers} completed`) + failedSuffix);
-        }
-
-        const riskParts = [
-            workerFailures > 0 ? this.translateLabel(workerFailures === 1 ? 'agent.menu.panel.review.riskWorkersOne' : 'agent.menu.panel.review.riskWorkers', { count: workerFailures }, workerFailures === 1 ? '{count} worker failure' : '{count} worker failures') : '',
-            !rollback?.available && availableCheckpoints === 0 && (status === 'completed' || status === 'failed' || status === 'error')
-                ? this.translateLabel('agent.menu.panel.review.rollbackUnavailable', undefined, 'rollback unavailable')
-                : '',
-            invalidatedCheckpoints > 0 ? this.translateLabel(invalidatedCheckpoints === 1 ? 'agent.menu.panel.review.riskInvalidatedOne' : 'agent.menu.panel.review.riskInvalidated', { count: invalidatedCheckpoints }, invalidatedCheckpoints === 1 ? '{count} invalidated checkpoint' : '{count} invalidated checkpoints') : '',
-            !sections.length && !String(this.reviewDiff?.summary || this.reviewTask?.result?.diff?.summary || '').trim()
-                ? this.translateLabel('agent.menu.panel.review.riskNoDiff', undefined, 'no diff captured')
-                : ''
-        ].filter(Boolean);
-        if (riskParts.length) {
-            lines.push(this.translateLabel('agent.menu.panel.review.risks', { parts: riskParts.join(' · ') }, `Risks: ${riskParts.join(' · ')}`));
-        }
-        const isolatedFailures = Array.isArray(aggregate?.isolatedFailures) ? aggregate.isolatedFailures : [];
-        if (isolatedFailures.length) {
-            lines.push(this.translateLabel('agent.menu.panel.review.workerFailures', { list: isolatedFailures.slice(0, 2).map((failure: any) => `${failure.workerId}: ${failure.error}`).join(' · ') }, `Worker Failures: ${isolatedFailures.slice(0, 2).map((failure: any) => `${failure.workerId}: ${failure.error}`).join(' · ')}`));
-        }
-
-        return lines;
-    }
 
     buildSelectedReviewGroupMetaLines(group: AgentConsoleReviewGroup): string[] {
         const lines = [
@@ -5125,188 +5068,27 @@ export class AgentConsoleSessionState {
         return formatReviewGroupMeta(meta, (key, fallback, params) => this.translateLabel(`agent.menu.panel.review.${key}`, params, fallback));
     }
 
-    filterReviewPatchLines(lines: string[]): string[] {
-        if (this.selectedReviewPatchFilter !== 'additions') {
-            return lines.slice();
-        }
-        return lines.filter(line => line.startsWith('diff --git ')
-            || line.startsWith('index ')
-            || line.startsWith('--- ')
-            || line.startsWith('+++ ')
-            || line.startsWith('@@')
-            || (line.startsWith('+') && !line.startsWith('+++')));
-    }
 
-    parseReviewHunks(section: AgentConsoleReviewDiffSection): AgentConsoleReviewHunk[] {
-        const hunks: AgentConsoleReviewHunk[] = [];
-        let current: AgentConsoleReviewHunk | undefined;
-        for (let index = 0; index < section.lines.length; index++) {
-            const line = section.lines[index];
-            if (line.startsWith('@@')) {
-                if (current) {
-                    current.endIndex = index;
-                    hunks.push(current);
-                }
-                current = {
-                    header: line,
-                    context: this.resolveReviewHunkContext(line),
-                    startIndex: index,
-                    endIndex: section.lines.length,
-                    additions: 0,
-                    deletions: 0
-                };
-                continue;
-            }
-            if (current) {
-                if (line.startsWith('+') && !line.startsWith('+++')) {
-                    current.additions += 1;
-                } else if (line.startsWith('-') && !line.startsWith('---')) {
-                    current.deletions += 1;
-                }
-            }
-        }
-        if (current) {
-            hunks.push(current);
-        }
-        return hunks;
-    }
 
-    protected resolveReviewHunkContext(header: string): string {
-        const match = /^@@[^@]*@@\s*(.*)$/.exec(String(header || '').trim());
-        return String(match?.[1] || '').trim();
-    }
 
-    isReviewHunkFolded(groupKey: string, path: string, hunkIndex: number): boolean {
-        return this.foldedReviewHunks.has(`${groupKey}:${path}#${hunkIndex}`);
-    }
 
-    toggleReviewHunkFold(): void {
-        if (!this.reviewOpen) {
-            return;
-        }
-        const group = this.selectedReviewGroup;
-        const section = this.selectedReviewFileSection;
-        if (!group || !section) {
-            return;
-        }
-        const hunks = this.parseReviewHunks(section);
-        if (!hunks.length) {
-            return;
-        }
-        const index = Math.max(0, Math.min(hunks.length - 1, this.selectedReviewHunkIndex));
-        const key = `${group.key}:${section.path}#${index}`;
-        if (this.foldedReviewHunks.has(key)) {
-            this.foldedReviewHunks.delete(key);
-        } else {
-            this.foldedReviewHunks.add(key);
-        }
-        this.clampReviewDetailScroll();
-    }
 
-    protected clampReviewDetailScroll(): void {
-        const lines = this.reviewDetailLines;
-        this.reviewDetailScroll = Math.max(0, Math.min(this.reviewDetailScroll, Math.max(0, lines.length - this.consoleOptions.reviewDetailVisibleLines)));
-    }
 
-    renderReviewPatchLines(section: AgentConsoleReviewDiffSection, groupKey: string): string[] {
-        if (this.reviewSideBySide) {
-            return this.renderReviewPatchSideBySide(section, groupKey);
-        }
-        const hunks = this.parseReviewHunks(section);
-        if (!hunks.length) {
-            return this.filterReviewPatchLines(section.lines);
-        }
-        const lines: string[] = [];
-        let cursor = 0;
-        for (let hunkIndex = 0; hunkIndex < hunks.length; hunkIndex++) {
-            const hunk = hunks[hunkIndex];
-            lines.push(...this.filterReviewPatchLines(section.lines.slice(cursor, hunk.startIndex)));
-            const hunkAnnot = this.getReviewHunkAnnotation(section.path, hunkIndex);
-            const hunkMark = hunkAnnot ? (hunkAnnot.status === 'approved' ? ' ✓' : ' ✗') : '';
-            lines.push(`${hunk.header}${hunkMark}`);
-            if (this.isReviewHunkFolded(groupKey, section.path, hunkIndex)) {
-                lines.push(this.buildReviewFoldedHunkSummary(hunk));
-            } else {
-                lines.push(...this.filterReviewPatchLines(section.lines.slice(hunk.startIndex + 1, hunk.endIndex)));
-            }
-            cursor = hunk.endIndex;
-        }
-        lines.push(...this.filterReviewPatchLines(section.lines.slice(cursor)));
-        return lines;
-    }
 
-    protected renderReviewPatchSideBySide(section: AgentConsoleReviewDiffSection, groupKey: string): string[] {
-        const hunks = this.parseReviewHunks(section);
-        if (!hunks.length) {
-            return this.buildSideBySidePatchRows(this.filterReviewPatchLines(section.lines));
-        }
-        const lines: string[] = [];
-        let cursor = 0;
-        for (let hunkIndex = 0; hunkIndex < hunks.length; hunkIndex++) {
-            const hunk = hunks[hunkIndex];
-            lines.push(...this.filterReviewPatchLines(section.lines.slice(cursor, hunk.startIndex)));
-            const hunkAnnot = this.getReviewHunkAnnotation(section.path, hunkIndex);
-            const hunkMark = hunkAnnot ? (hunkAnnot.status === 'approved' ? ' ✓' : ' ✗') : '';
-            lines.push(`${hunk.header}${hunkMark}`);
-            if (this.isReviewHunkFolded(groupKey, section.path, hunkIndex)) {
-                lines.push(this.buildReviewFoldedHunkSummary(hunk));
-            } else {
-                lines.push(...this.buildSideBySidePatchRows(this.filterReviewPatchLines(section.lines.slice(hunk.startIndex + 1, hunk.endIndex))));
-            }
-            cursor = hunk.endIndex;
-        }
-        lines.push(...this.buildSideBySidePatchRows(this.filterReviewPatchLines(section.lines.slice(cursor))));
-        return lines;
-    }
 
-    protected buildSideBySidePatchRows(lines: string[]): string[] {
-        const rows: string[] = [];
-        let oldLines: string[] = [];
-        let newLines: string[] = [];
-        const flush = () => {
-            if (!oldLines.length && !newLines.length) {
-                return;
-            }
-            const oldWidth = Math.max(0, ...oldLines.map(line => line.length));
-            const newWidth = Math.max(0, ...newLines.map(line => line.length));
-            const rowCount = Math.max(oldLines.length, newLines.length);
-            for (let index = 0; index < rowCount; index++) {
-                const oldCell = oldLines[index] ?? '';
-                const newCell = newLines[index] ?? '';
-                rows.push(`${oldCell.padEnd(oldWidth)} │ ${newCell.padEnd(newWidth)}`);
-            }
-            oldLines = [];
-            newLines = [];
-        };
-        for (const line of lines) {
-            if (line.startsWith('-') && !line.startsWith('---')) {
-                oldLines.push(line.slice(1));
-            } else if (line.startsWith('+') && !line.startsWith('+++')) {
-                newLines.push(line.slice(1));
-            } else if (line.startsWith(' ')) {
-                oldLines.push(line.slice(1));
-                newLines.push(line.slice(1));
-            } else {
-                flush();
-                rows.push(line);
-            }
-        }
-        flush();
-        return rows;
-    }
 
-    toggleReviewSideBySide(): void {
-        if (!this.reviewOpen) {
-            return;
-        }
-        this.reviewSideBySide = !this.reviewSideBySide;
-        this.clampReviewDetailScroll();
-    }
 
-    protected buildReviewFoldedHunkSummary(hunk: AgentConsoleReviewHunk): string {
-        const context = hunk.context ? ` · ${hunk.context}` : '';
-        return this.translateLabel('agent.menu.panel.review.foldedHunk', { additions: hunk.additions, deletions: hunk.deletions, context: context }, `  ⋯ folded hunk +${hunk.additions} -${hunk.deletions}${context} (f expand)`);
-    }
+
+
+
+
+
+
+
+
+
+
+
 
     syncCurrentReviewAnnotationCache(): void {
         const cacheKey = this.getCurrentReviewAnnotationCacheKey();
