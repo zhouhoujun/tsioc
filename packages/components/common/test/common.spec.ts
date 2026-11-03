@@ -2,6 +2,7 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
     CommonDialogComponent,
+    CommonSelectComponent,
     formatCommonIndexedOptionLabel,
     processCommonTextInputChunk,
     resolveCommonSelectWindow,
@@ -82,6 +83,29 @@ export class CommonComponentUtilitiesTest {
 
         dialog.shellStyle = 'background: #000;';
         expect(dialog.resolvedShellStyle).toContain('background: #000; max-width: 88ch;');
+    }
+
+    @Test('select shell forwards selection, close and key events')
+    selectShellEvents() {
+        const select = new CommonSelectComponent();
+        select.options = [
+            { label: 'one', value: '1' },
+            { label: 'two', value: '2' }
+        ];
+        const selected: string[] = [];
+        let closed = 0;
+        let key = '';
+        select.selectAction = value => selected.push(value);
+        select.closeAction = () => { closed += 1; };
+        select.keydownAction = event => { key = event.key; };
+        select.emitSelection({ optionIndex: 1 });
+        select.emitSelection({ optionIndex: 99 });
+        select.close();
+        select.emitKeydown({ key: 'Escape' } as KeyboardEvent);
+        expect(selected).toEqual(['2']);
+        expect(closed).toEqual(1);
+        expect(key).toEqual('Escape');
+        expect(select.optionsJson).toContain('"value":"1"');
     }
 
     @Test('only bare trailing-newline chunks submit on enter')

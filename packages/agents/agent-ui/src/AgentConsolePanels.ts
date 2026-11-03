@@ -17,7 +17,6 @@ import {
     AgentConsolePlanTodoItem,
     AgentConsoleReviewWorker,
     AgentConsoleReviewTaskItem,
-    AgentConsoleSelectOption,
     AgentConsoleSessionItem,
     AgentConsoleSelectMenu,
     AgentConsoleSessionState,
@@ -54,7 +53,7 @@ import { DEFAULT_TIMELINE_LABELS, resolveTimelineWindowLedger, TimelineWindowMod
 import {
     buildCommonBrandBlock as buildTerminalBrandBlock,
     CommonDialogComponent,
-    formatCommonIndexedOptionLabel as formatConsoleIndexedOptionLabel,
+    CommonSelectComponent,
     resolveCommonEnterAction as resolveConsoleEnterAction,
     resolveCommonListWindow as resolveConsoleListWindow,
     resolveCommonSelectWindow as resolveConsoleSelectWindow
@@ -3568,22 +3567,24 @@ export class AgentConsoleActivityPanelComponent {
 
 @Component({
     selector: 'agent-console-select-panel',
+    imports: [CommonSelectComponent],
     template: `
-        <div class="console-panel console-select-panel" role="dialog" aria-label="{{accessibilityLabel}}">
-            <div class="select-shell" v-style="shellStyle"><label class="dialog-close" data-cell-width="2" v-style="closeStyle" @click="closeMenu">✕</label>
-            <select class="select-core"
-                aria-label="{{accessibilityLabel}}"
-                title="{{menuTitleText}}" hint="{{menuHintText}}" meta="{{menuMetaText}}"
-                options="{{menuOptionsJson}}"
-                selectedIndex="{{menuSelectedIndexText}}"
-                visibleCount="{{visibleOptionCountText}}"
-                detailLines="{{menuDetailLinesJson}}"
-                optionActiveStyle="{{activeTheme.selectOptionActive}}"
-                optionStyle="{{activeTheme.selectOption}}"
-                @keydown="onKeydown($event)"
-                @select-option="onSelectOption($event)"></select>
-        </div>
-    </div>
+        <common-select
+            :options="menuOptions"
+            :selectedIndex="menuSelectedIndex"
+            :visibleCount="visibleOptionCount"
+            :title="menuTitleText"
+            :hint="menuHintText"
+            :meta="menuMetaText"
+            :detailLines="menuDetailLines"
+            :accessibilityLabel="accessibilityLabel"
+            :shellStyle="shellStyle"
+            :closeStyle="closeStyle"
+            :optionStyle="activeTheme.selectOption"
+            :optionActiveStyle="activeTheme.selectOptionActive"
+            @selectAction="selectOption"
+            @closeAction="closeMenu"
+            @keydownAction="onKeydown"></common-select>
     `
 })
 export class AgentConsoleSelectPanelComponent {
@@ -3609,10 +3610,10 @@ export class AgentConsoleSelectPanelComponent {
 
     get menuHintText(): string { const menu = this.menu; return !menu || isAgentConsoleSuggestionMenu(menu) ? '' : (menu.hint || ''); }
 
-    get menuMetaText(): string { const menu = this.menu; if (!menu || isAgentConsoleSuggestionMenu(menu)) return ''; const window = resolveConsoleSelectWindow(menu.options.length, menu.selectedIndex, this.state.consoleOptions.selectVisibleOptions); return window.count < menu.options.length ? `${window.start + 1}-${window.start + window.count}/${menu.options.length}` : ''; }
+    get menuMetaText(): string { const menu = this.menu; if (!menu || isAgentConsoleSuggestionMenu(menu)) return ''; const window = resolveConsoleSelectWindow(menu.options.length, menu.selectedIndex, this.visibleOptionCount); return window.count < menu.options.length ? `${window.start + 1}-${window.start + window.count}/${menu.options.length}` : ''; }
 
     get shellStyle() { return this.menu ? menuShellStyle(this.activeTheme) : {}; } get closeStyle() { return DIALOG_CLOSE_STYLE; }
-    async closeMenu(): Promise<void> { await this.state.cancelSelectMenu(); }
+    closeMenu = async (): Promise<void> => { await this.state.cancelSelectMenu(); };
 
     get menuOptions(): Array<{ label: string; value: string; description?: string }> {
         return (this.menu?.options || []).map(option => ({
@@ -3620,10 +3621,6 @@ export class AgentConsoleSelectPanelComponent {
             value: option.value,
             description: option.description || ''
         }));
-    }
-
-    get menuOptionsJson(): string {
-        return JSON.stringify(this.menuOptions);
     }
 
     get menuDetailLines(): string[] {
@@ -3635,6 +3632,7 @@ export class AgentConsoleSelectPanelComponent {
         return detail.split('\n').map(line => line.trim()).filter(Boolean).slice(0, cap);
     }
 
+    /** Compatibility projection for hosts/tests that inspect the select core payload. */
     get menuDetailLinesJson(): string {
         const lines = this.menuDetailLines;
         return lines.length ? JSON.stringify(lines) : '';
@@ -3644,12 +3642,8 @@ export class AgentConsoleSelectPanelComponent {
         return this.menu?.selectedIndex ?? 0;
     }
 
-    get menuSelectedIndexText(): string {
-        return String(this.menuSelectedIndex);
-    }
-
-    get visibleOptionCountText(): string {
-        return String(this.state.consoleOptions.selectVisibleOptions);
+    get visibleOptionCount(): number {
+        return this.state.consoleOptions.selectVisibleOptions;
     }
 
     get accessibilityLabel(): string {
@@ -3659,84 +3653,26 @@ export class AgentConsoleSelectPanelComponent {
         return `${this.menu.title || 'Selection menu'}. ${this.menu.options.length} options. Selected ${this.menu.selectedIndex + 1} of ${this.menu.options.length}.`;
     }
 
-    get visibleOptionStart(): number {
-        if (!this.menu) {
-            return 0;
-        }
-        return resolveConsoleSelectWindow(
-            this.menu.options.length,
-            this.menu.selectedIndex,
-            this.state.consoleOptions.selectVisibleOptions
-        ).start;
-    }
-
-    get visibleMenuOptions(): AgentConsoleSelectOption[] {
-        if (!this.menu) {
-            return [];
-        }
-        return this.menu.options.slice(this.visibleOptionStart, this.visibleOptionStart + this.state.consoleOptions.selectVisibleOptions);
-    }
-
-    get menuOptionItems(): Array<{ label: string; value: string; style: Record<string, string> }> {
-        if (!this.menu) {
-            return [];
-        }
-        return this.visibleMenuOptions.map((option, index) => {
-            const absoluteIndex = this.visibleOptionStart + index;
-            return {
-                label: formatConsoleIndexedOptionLabel(
-                    absoluteIndex,
-                    option.label,
-                    !!this.menu && this.menu.selectedIndex === absoluteIndex
-                ),
-                value: option.value,
-                style: styleTextToObject(this.menu && this.menu.selectedIndex === absoluteIndex ? this.activeTheme.selectOptionActive : this.activeTheme.selectOption)
-            };
-        });
-    }
-
-    optionAt(index: number): { label: string; value: string; style: Record<string, string> } | undefined {
-        return this.menuOptionItems[index];
-    }
-
-    optionLabelAt(index: number): string {
-        return this.optionAt(index)?.label || '';
-    }
-
-    optionStyleAt(index: number): Record<string, string> {
-        return this.optionAt(index)?.style || {};
-    }
-
-    /** TUI pointer: the renderer reports the absolute option index of the row. */
-    async onSelectOption(event: any): Promise<void> {
-        const index = Number(event?.optionIndex);
-        const option = Number.isInteger(index) ? this.menu?.options[index] : undefined;
-        if (!option) {
-            return;
-        }
-        await this.selectOption(option.value);
-    }
-
     async selectOptionAt(index: number): Promise<void> {
-        const option = this.optionAt(index);
+        const option = this.menu?.options[index];
         if (!option) {
             return;
         }
         await this.selectOption(option.value);
     }
 
-    async selectOption(value: string): Promise<void> {
+    selectOption = async (value: string): Promise<void> => {
         await (this.selectAction || this.state.confirmSelectMenu.bind(this.state))(value);
-    }
+    };
 
-    async onKeydown(event: KeyboardEvent): Promise<void> {
+    onKeydown = async (event: KeyboardEvent): Promise<void> => {
         if (!this.menu) {
             return;
         }
         if (this.state.focusLayers.handleSelectKey(event.key)) {
             event.preventDefault?.();
         }
-    }
+    };
 }
 
 @Component({
