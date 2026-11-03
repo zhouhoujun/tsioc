@@ -2886,3 +2886,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - `components/common` 新增 `common-markdown-table` / `common-markdown-code`，承载 renderer-neutral 的 header/rows/cells、code lines/tokens。
 - web-console 的 Web Markdown 只保留语言头、Copy、行号/主题 chrome，表格/代码主体使用 common 组件；agent-ui 通过 DI 提供 Markdown 组件，不在 TUI 每次判断环境。
 - components/common 28 passing；web-console/html/markdown 回归通过；TUI/Web 截图正常。
+
+## Web hover/focus polish（2026-11）
+
+- 浏览器 tabs、+、✕、Copy、回到底部按钮增加 120ms hover 过渡；禁用/选中态不误用 hover 背景。
+- 键盘 focus-visible 使用主题 accent outline；light/solarized/high-contrast 各自 hover 变量。
+- 真实 Chromium 验证 hover；gate 代码阶段 26/26，production DB 空窗复测通过。

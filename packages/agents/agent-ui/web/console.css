@@ -16,6 +16,7 @@
     --agent-web-muted: #8394a8;
     --agent-web-accent: #d8a86f;
     --agent-web-danger: #e07a7a;
+    --agent-web-hover: #1b2735;
     --agent-web-strong: #f0f4f8;
     --agent-web-user-text: #e6edf3;
     --agent-web-tool-bg: #0e151d;
@@ -111,6 +112,49 @@ body {
     font-size: 15px;
     line-height: 1;
     white-space: pre;
+}
+
+#agent-console common-tab-bar .common-tab,
+#agent-console common-tab-bar .common-tab-new,
+#agent-console .web-code-head button,
+#agent-console .console-new-messages {
+    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, opacity 120ms ease;
+}
+
+#agent-console common-tab-bar .common-tab:hover:not([aria-selected="true"]) {
+    background: var(--agent-web-hover);
+}
+
+#agent-console common-tab-bar .common-tab[aria-selected="true"]:hover {
+    border-color: var(--agent-web-accent);
+}
+
+#agent-console common-tab-bar .common-tab-close:hover {
+    color: var(--agent-web-danger) !important;
+    opacity: 1;
+}
+
+#agent-console common-tab-bar .common-tab-new:hover {
+    background: var(--agent-web-hover);
+    border-color: var(--agent-web-accent);
+}
+
+#agent-console .web-code-head button:hover {
+    background: var(--agent-web-hover);
+    border-color: var(--agent-web-accent);
+    color: var(--agent-web-accent);
+}
+
+#agent-console .console-new-messages:hover {
+    border-color: var(--agent-web-accent);
+    color: var(--agent-web-accent);
+}
+
+#agent-console common-tab-bar .common-tab:focus-visible,
+#agent-console common-tab-bar .common-tab-new:focus-visible,
+#agent-console .web-code-head button:focus-visible {
+    outline: 2px solid var(--agent-web-accent);
+    outline-offset: 2px;
 }
 
 #agent-console [renderregion="transcript"] > .console-panel {
@@ -491,6 +535,7 @@ html[data-agent-theme="light"] {
     --agent-web-muted: #57606a;
     --agent-web-accent: #bc4c00;
     --agent-web-danger: #cf222e;
+    --agent-web-hover: #eaeef2;
     --agent-web-strong: #24292f;
     --agent-web-user-text: #24292f;
     --agent-web-tool-bg: #f6f8fa;
@@ -625,6 +670,7 @@ html[data-agent-theme="solarized"] {
     --agent-web-muted: #839496;
     --agent-web-accent: #cb4b16;
     --agent-web-danger: #dc322f;
+    --agent-web-hover: #0a4a5a;
     --agent-web-strong: #eee8d5;
     --agent-web-user-text: #93a1a1;
     --agent-web-tool-bg: #073642;
@@ -666,6 +712,7 @@ html[data-agent-theme="high-contrast"] {
     --agent-web-muted: #d0d0d0;
     --agent-web-accent: #ff9900;
     --agent-web-danger: #ff4d4d;
+    --agent-web-hover: #222222;
     --agent-web-strong: #ffffff;
     --agent-web-user-text: #ffffff;
     --agent-web-tool-bg: #000000;
