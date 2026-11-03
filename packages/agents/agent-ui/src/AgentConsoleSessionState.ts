@@ -94,6 +94,24 @@ import { AgentConsoleInputHistoryController, DefaultAgentConsoleInputHistoryCont
 import { AgentConsoleFocusLayers, DefaultAgentConsoleFocusLayers } from './AgentConsoleFocusLayers';
 import { AgentConsoleCommandExecutionController, DefaultAgentConsoleCommandExecutionController } from './AgentConsoleCommandExecutionState';
 import {
+    buildFileChangeMessage as buildFileChangeMessageInState,
+    clearReview as clearReviewInState,
+    closeReview as closeReviewInState,
+    openReview as openReviewInState,
+    syncReviewFileSelection,
+    syncReviewGroupSelection
+} from './AgentConsoleReviewLifecycle';
+import {
+    jumpReviewHunk as jumpReviewHunkInState,
+    resolveReviewDetailLines,
+    resolveReviewDetailMaxColumn,
+    scrollReviewDetail as scrollReviewDetailInState,
+    scrollReviewDetailColumns as scrollReviewDetailColumnsInState,
+    scrollReviewDetailColumnsToEdge as scrollReviewDetailColumnsToEdgeInState,
+    scrollReviewDetailPage as scrollReviewDetailPageInState,
+    scrollReviewDetailToEdge as scrollReviewDetailToEdgeInState
+} from './AgentConsoleReviewDetail';
+import {
     moveReviewFileSelection as moveReviewFileSelectionInState,
     moveReviewGroupSelection as moveReviewGroupSelectionInState,
     resolveAggregateReviewFileSections,
@@ -833,7 +851,7 @@ export class AgentConsoleSessionState {
     protected planMessage: AgentMessage | null = null;
     /** Ephemeral command lifecycle projections; never persisted as conversation history. */
     protected commandExecutionMessages: AgentMessage[] = [];
-    protected fileChangeMessage: AgentMessage | null = null;
+    fileChangeMessage: AgentMessage | null = null;
     selectedReviewTaskId = '';
     selectedReviewTaskCacheKey = '';
     selectedTaskFilter: AgentConsoleTaskFilter = 'all';
@@ -846,7 +864,7 @@ export class AgentConsoleSessionState {
     reviewSideBySide = false;
     reviewFileAnnotations: Record<string, AgentConsoleReviewAnnotation> = {};
     reviewHunkAnnotations: Record<string, AgentConsoleReviewAnnotation> = {};
-    protected reviewAnnotationCache: Record<string, Record<string, AgentConsoleReviewAnnotation>> = {};
+    reviewAnnotationCache: Record<string, Record<string, AgentConsoleReviewAnnotation>> = {};
     onReviewAnnotationsPersist?: (cache: Record<string, Record<string, AgentConsoleReviewAnnotation>>) => void;
     onReviewConclusionsWriteBack?: (conclusions: { files: Record<string, AgentConsoleReviewAnnotation>; hunks: Record<string, AgentConsoleReviewAnnotation>; summary: { totalFiles: number; approvedFiles: number; rejectedFiles: number; totalHunks: number; approvedHunks: number; rejectedHunks: number } }) => void;
     onSessionReconnected?: () => void;
@@ -3748,108 +3766,15 @@ export class AgentConsoleSessionState {
             executionMode?: 'sequential' | 'parallel' | null;
         }
     ): void {
-        const preferredGroupKey = this.selectedReviewGroup?.key;
-        const preferredFilePath = this.selectedReviewFileSection?.path;
-        this.syncCurrentReviewAnnotationCache();
-        if (task !== undefined) {
-            this.reviewTask = task || null;
-        }
-        if (payload) {
-            this.reviewDiff = payload.diff ?? null;
-            this.reviewWorkers = Array.isArray(payload.workers) ? payload.workers.slice() : [];
-        }
-        this.fileChangeMessage = this.buildFileChangeMessage();
-        const selectedTaskId = String(this.reviewTask?.id || this.selectedReviewTaskId || '').trim();
-        if (selectedTaskId) {
-            this.selectedReviewTaskId = selectedTaskId;
-            const executionMode = payload?.executionMode ?? this.reviewExecutionMode;
-            const existingIndex = this.reviewTaskChoices.findIndex(item => item.id === selectedTaskId);
-            const nextItem: AgentConsoleReviewTaskItem = {
-                id: selectedTaskId,
-                title: String(this.reviewTask?.title || selectedTaskId),
-                cacheKey: this.resolveReviewAnnotationCacheKey(this.reviewTask),
-                sourceSessionId: this.reviewTask?.sourceSessionId || this.reviewTask?.sessionId,
-                status: this.reviewTask?.status,
-                executionMode,
-                retryOfTaskId: this.reviewTask?.metadata?.retrySourceTaskId || this.reviewTask?.metadata?.retryOfTaskId,
-                lineageRootTaskId: this.reviewTask?.metadata?.retryOfTaskId || this.reviewTask?.id,
-                retryDepth: typeof this.reviewTask?.metadata?.retrySequence === 'number' ? this.reviewTask.metadata.retrySequence : undefined,
-                updatedAt: this.reviewTask?.updatedAt,
-                detail: typeof this.reviewDiff?.summary === 'string' ? this.reviewDiff.summary : undefined
-            };
-            if (existingIndex >= 0) {
-                this.reviewTaskChoices = this.reviewTaskChoices.map(item => item.id === selectedTaskId ? {
-                    ...item,
-                    ...nextItem
-                } : item);
-            } else {
-                this.reviewTaskChoices = [nextItem, ...this.reviewTaskChoices];
-            }
-            this.selectedReviewTaskCacheKey = this.resolveReviewAnnotationCacheKey(this.reviewTask) || this.resolveReviewAnnotationCacheKey(nextItem) || selectedTaskId;
-            const cached = this.reviewAnnotationCache[this.selectedReviewTaskCacheKey] || this.reviewAnnotationCache[selectedTaskId];
-            if (cached) {
-                const fileAnnots: Record<string, AgentConsoleReviewAnnotation> = {};
-                const hunkAnnots: Record<string, AgentConsoleReviewAnnotation> = {};
-                for (const [key, val] of Object.entries(cached)) {
-                    const hashIdx = key.lastIndexOf('#');
-                    if (hashIdx > 0 && /^\d+$/.test(key.slice(hashIdx + 1))) {
-                        hunkAnnots[key] = val;
-                    } else {
-                        fileAnnots[key] = val;
-                    }
-                }
-                this.reviewFileAnnotations = fileAnnots;
-                this.reviewHunkAnnotations = hunkAnnots;
-            } else {
-                this.reviewFileAnnotations = {};
-                this.reviewHunkAnnotations = {};
-            }
-        }
-        if (!this.reviewTask && !this.reviewDiff && !this.reviewWorkers.length) {
-            return;
-        }
-        this.syncReviewGroupSelection(preferredGroupKey);
-        this.syncReviewFileSelection(preferredFilePath);
-        this.reviewOpen = true;
-        this.selectedReviewHunkIndex = 0;
-        this.resetReviewDetailViewport();
-        this.syncDerivedInputFocus();
+        openReviewInState(this, task, payload);
     }
 
-    protected buildFileChangeMessage(): AgentMessage | null {
-        const files = this.aggregateReviewFileSections;
-        if (!files.length) {
-            return null;
-        }
-        const content = [
-            this.translateLabel('agent.menu.panel.review.filesChanged', { count: files.length }, `files changed: ${files.length}`),
-            ...files.map(file => `${file.path} [${this.translateLabel(`agent.menu.panel.review.fileStatus${(file.status || 'update').charAt(0).toUpperCase()}${(file.status || 'update').slice(1)}`, undefined, file.status || 'update')}] (+${file.additions} -${file.deletions})`)
-        ].join('\n');
-        return {
-            id: '__file_change_inline__',
-            role: 'assistant',
-            content,
-            createdAt: Date.now(),
-            metadata: {
-                uiKind: 'file-change',
-                reviewTaskId: this.reviewTask?.id,
-                detailRef: this.reviewTask?.id,
-                sourceMessageId: this.reviewTask?.metadata?.sourceMessageId,
-                planId: this.reviewTask?.metadata?.planId,
-                planStepId: this.reviewTask?.metadata?.stepId
-            }
-        };
+    buildFileChangeMessage(): AgentMessage | null {
+        return buildFileChangeMessageInState(this);
     }
 
     closeReview(): void {
-        if (!this.reviewOpen && this.reviewDetailScroll === 0 && this.reviewDetailColumnScroll === 0) {
-            return;
-        }
-        this.syncCurrentReviewAnnotationCache();
-        this.onReviewAnnotationsPersist?.(this.getAnnotationCache());
-        this.reviewOpen = false;
-        this.resetReviewDetailViewport();
-        this.syncDerivedInputFocus();
+        closeReviewInState(this);
     }
 
     openGitSnapshotDetail(header: string, lines: string[], stats?: string, ref?: string): void {
@@ -3908,27 +3833,7 @@ export class AgentConsoleSessionState {
     }
 
     clearReview(): void {
-        this.syncCurrentReviewAnnotationCache();
-        this.reviewTask = null;
-        this.reviewDiff = null;
-        this.reviewWorkers = [];
-        this.reviewTaskChoices = [];
-        this.taskRecords = [];
-        this.selectedReviewTaskId = '';
-        this.selectedReviewTaskCacheKey = '';
-        this.selectedTaskFilter = 'all';
-        this.selectedTaskLineageRootId = '';
-        this.selectedReviewGroupIndex = 0;
-        this.selectedReviewFileIndex = 0;
-        this.selectedReviewHunkIndex = 0;
-        this.foldedReviewHunks.clear();
-        this.selectedReviewPatchFilter = 'all';
-        this.reviewSideBySide = false;
-        this.reviewFileAnnotations = {};
-        this.reviewHunkAnnotations = {};
-        this.reviewOpen = false;
-        this.resetReviewDetailViewport();
-        this.syncDerivedInputFocus();
+        clearReviewInState(this);
     }
 
     get reviewExecutionMode(): 'sequential' | 'parallel' | null {
@@ -4069,174 +3974,35 @@ export class AgentConsoleSessionState {
     }
 
     get reviewDetailLines(): string[] {
-        const lines: string[] = [];
-        const summary = this.reviewDiff?.summary ?? this.reviewTask?.result?.diff?.summary;
-        if (summary) {
-            lines.push(`Summary: ${summary}`);
-        }
-        lines.push(...this.buildReviewAssessmentLines());
-
-        const rollback = this.reviewTask?.result?.rollback;
-        if (rollback) {
-            const rollbackParts = [
-                rollback.available === true ? 'available' : 'unavailable',
-                rollback.mode ? `mode ${rollback.mode}` : '',
-                rollback.checkpointId ? `checkpoint ${rollback.checkpointId}` : '',
-                rollback.rolledBackAt ? `applied ${new Date(rollback.rolledBackAt).toISOString()}` : '',
-                rollback.reason ? rollback.reason : ''
-            ].filter(Boolean);
-            if (rollbackParts.length) {
-                lines.push(`Rollback: ${rollbackParts.join(' · ')}`);
-            }
-        }
-
-        const retryWorkerIds = Array.isArray(this.reviewTask?.metadata?.retryOfWorkerIds)
-            ? this.reviewTask.metadata.retryOfWorkerIds.filter((item: any) => typeof item === 'string' && item)
-            : [];
-        if (retryWorkerIds.length) {
-            lines.push(`Retry Workers: ${retryWorkerIds.join(', ')}`);
-        }
-        const carryForwardWorkerIds = Array.isArray(this.reviewTask?.metadata?.carryForwardWorkerIds)
-            ? this.reviewTask.metadata.carryForwardWorkerIds.filter((item: any) => typeof item === 'string' && item)
-            : [];
-        if (carryForwardWorkerIds.length) {
-            lines.push(this.translateLabel('agent.menu.panel.review.carryForward', { ids: carryForwardWorkerIds.join(', ') }, `Carry Forward: ${carryForwardWorkerIds.join(', ')}`));
-        }
-        const checkpoints = Array.isArray(this.reviewTask?.metadata?.checkpoints)
-            ? this.reviewTask?.metadata?.checkpoints
-            : [];
-        if (checkpoints.length) {
-            const available = checkpoints.filter((entry: any) => entry?.status === 'available').length;
-            const applied = checkpoints.filter((entry: any) => entry?.status === 'applied').length;
-            const invalidated = checkpoints.filter((entry: any) => entry?.status === 'invalidated').length;
-            lines.push(this.translateLabel('agent.menu.panel.review.checkpoints', { total: checkpoints.length, available: available, applied: applied, invalidated: invalidated }, `Checkpoints: ${checkpoints.length} total · ${available} available · ${applied} applied · ${invalidated} invalidated`));
-        }
-
-        const groups = this.reviewGroups;
-        if (groups.length) {
-            const selectedGroup = this.selectedReviewGroup || groups[0];
-            lines.push(this.translateLabel('agent.menu.panel.review.groups', { count: groups.length }, `Groups: ${groups.length}`));
-            for (let index = 0; index < groups.length; index++) {
-                const group = groups[index];
-                const marker = index === this.selectedReviewGroupIndex ? '›' : ' ';
-                lines.push(`${marker} [${index + 1}/${groups.length}] ${this.describeReviewGroup(group)}`);
-            }
-            if (selectedGroup) {
-                lines.push(this.translateLabel('agent.menu.panel.review.currentGroup', { group: this.describeReviewGroup(selectedGroup) }, `Current Group: ${this.describeReviewGroup(selectedGroup)}`));
-                const groupMetaLines = this.buildSelectedReviewGroupMetaLines(selectedGroup);
-                if (groupMetaLines.length) {
-                    lines.push(...groupMetaLines);
-                }
-                const sections = selectedGroup.sections;
-                if (sections.length) {
-                    const selectedSection = this.selectedReviewFileSection || sections[0];
-                    lines.push(this.translateLabel('agent.menu.panel.review.files', { count: sections.length }, `Files: ${sections.length}`));
-                    for (let index = 0; index < sections.length; index++) {
-                        const section = sections[index];
-                        const marker = index === this.selectedReviewFileIndex ? '›' : ' ';
-                        const annot = this.reviewFileAnnotations[section.path];
-                        const annotMark = annot ? (annot.status === 'approved' ? ' ✓' : ' ✗') : '';
-                        lines.push(`${marker} [${index + 1}/${sections.length}] ${section.path} (+${section.additions} -${section.deletions})${annotMark}`);
-                    }
-                    if (selectedSection) {
-                        const annot = this.reviewFileAnnotations[selectedSection.path];
-                        const annotLine = annot
-                            ? `${this.translateLabel(annot.status === 'approved' ? 'agent.menu.panel.review.annotationApproved' : 'agent.menu.panel.review.annotationRejected', undefined, `  Annotation: ${annot.status === 'approved' ? 'approved' : 'rejected'}`)}${annot.comment ? ` · ${annot.comment}` : ''}`
-                            : this.translateLabel('agent.menu.panel.review.annotationHint', undefined, '  [a]pprove  [r]eject  [c]lear annotation');
-                        lines.push(this.translateLabel('agent.menu.panel.review.currentFile', { path: selectedSection.path, additions: selectedSection.additions, deletions: selectedSection.deletions }, `Current File: ${selectedSection.path} (+${selectedSection.additions} -${selectedSection.deletions})`));
-                        lines.push(annotLine);
-                        lines.push(...this.renderReviewPatchLines(selectedSection, selectedGroup.key));
-                    }
-                } else if (selectedGroup.diffText) {
-                    lines.push(this.translateLabel('agent.menu.panel.review.currentPatch', undefined, 'Current Patch'));
-                    lines.push(...this.filterReviewPatchLines(selectedGroup.diffText.split('\n')));
-                } else if (selectedGroup.error) {
-                    lines.push(this.translateLabel('agent.menu.panel.review.currentError', { error: selectedGroup.error }, `Current Error: ${selectedGroup.error}`));
-                }
-            }
-        }
-
-        if (!groups.length && !lines.length) {
-            lines.push(this.translateLabel('agent.menu.panel.review.noDiffCaptured', undefined, 'No diff captured.'));
-        }
-
-        return lines.map(line => this.expandTabs(line));
+        return resolveReviewDetailLines(this);
     }
 
     get reviewDetailMaxColumn(): number {
-        return this.reviewDetailLines.reduce((max, line) => Math.max(max, line.length), 0);
+        return resolveReviewDetailMaxColumn(this);
     }
 
     scrollReviewDetail(delta: number): void {
-        if (!this.reviewOpen) {
-            return;
-        }
-        const lines = this.reviewDetailLines;
-        const maxScroll = Math.max(0, lines.length - this.consoleOptions.reviewDetailVisibleLines);
-        this.reviewDetailScroll = Math.max(0, Math.min(maxScroll, this.reviewDetailScroll + delta));
+        scrollReviewDetailInState(this, delta);
     }
 
     scrollReviewDetailPage(delta: number, pageSize?: number): void {
-        if (!this.reviewOpen) {
-            return;
-        }
-        const resolvedPageSize = pageSize ?? this.consoleOptions.reviewDetailPageSize;
-        this.scrollReviewDetail(delta * Math.max(1, resolvedPageSize));
+        scrollReviewDetailPageInState(this, delta, pageSize);
     }
 
     scrollReviewDetailToEdge(position: 'start' | 'end'): void {
-        if (!this.reviewOpen) {
-            return;
-        }
-        const lines = this.reviewDetailLines;
-        this.reviewDetailScroll = position === 'start'
-            ? 0
-            : Math.max(0, lines.length - this.consoleOptions.reviewDetailVisibleLines);
+        scrollReviewDetailToEdgeInState(this, position);
     }
 
     jumpReviewHunk(direction: -1 | 1): void {
-        if (!this.reviewOpen) return;
-        const group = this.selectedReviewGroup;
-        const section = this.selectedReviewFileSection;
-        if (!group || !section) return;
-        const hunks = this.parseReviewHunks(section);
-        if (!hunks.length) return;
-        const count = hunks.length;
-        const current = Math.max(0, Math.min(count - 1, this.selectedReviewHunkIndex));
-        this.selectedReviewHunkIndex = (current + direction + count) % count;
-        const detailLines = this.reviewDetailLines;
-        const patchStart = detailLines.findIndex(line => line.startsWith('diff --git '));
-        const base = patchStart >= 0 ? patchStart : 0;
-        const rendered = this.renderReviewPatchLines(section, group.key);
-        let renderedOffset = -1;
-        let seen = 0;
-        for (let index = 0; index < rendered.length; index++) {
-            if (rendered[index].startsWith('@@')) {
-                if (seen === this.selectedReviewHunkIndex) {
-                    renderedOffset = index;
-                    break;
-                }
-                seen++;
-            }
-        }
-        this.reviewDetailScroll = renderedOffset >= 0 ? Math.max(0, base + renderedOffset - 2) : 0;
+        jumpReviewHunkInState(this, direction);
     }
 
     scrollReviewDetailColumns(delta: number): void {
-        if (!this.reviewOpen) {
-            return;
-        }
-        const maxScroll = Math.max(0, this.reviewDetailMaxColumn - 1);
-        this.reviewDetailColumnScroll = Math.max(0, Math.min(maxScroll, this.reviewDetailColumnScroll + delta));
+        scrollReviewDetailColumnsInState(this, delta);
     }
 
     scrollReviewDetailColumnsToEdge(position: 'start' | 'end'): void {
-        if (!this.reviewOpen) {
-            return;
-        }
-        this.reviewDetailColumnScroll = position === 'start'
-            ? 0
-            : Math.max(0, this.reviewDetailMaxColumn - 1);
+        scrollReviewDetailColumnsToEdgeInState(this, position);
     }
 
     setNotice(message: string): void {
@@ -5125,7 +4891,7 @@ export class AgentConsoleSessionState {
         }, { promptTokens: 0, completionTokens: 0, totalTokens: 0 });
     }
 
-    protected expandTabs(value: string): string {
+    expandTabs(value: string): string {
         return String(value || '').replace(/\t/g, '    ');
     }
 
@@ -5274,7 +5040,7 @@ export class AgentConsoleSessionState {
         this.reviewDetailColumnScroll = 0;
     }
 
-    protected buildReviewAssessmentLines(): string[] {
+    buildReviewAssessmentLines(): string[] {
         const lines: string[] = [];
         const status = String(this.reviewTask?.status || '').trim().toLowerCase();
         const aggregate = this.reviewTask?.result?.aggregate;
@@ -5340,7 +5106,7 @@ export class AgentConsoleSessionState {
         return lines;
     }
 
-    protected buildSelectedReviewGroupMetaLines(group: AgentConsoleReviewGroup): string[] {
+    buildSelectedReviewGroupMetaLines(group: AgentConsoleReviewGroup): string[] {
         const lines = [
             this.selectedReviewPatchFilter !== 'all' ? this.translateLabel('agent.menu.panel.review.patchFilter', { filter: this.selectedReviewPatchFilter }, `Patch Filter: ${this.selectedReviewPatchFilter}`) : '',
             group.kind === 'worker' && group.status ? this.translateLabel('agent.menu.panel.review.workerStatus', { status: group.status }, `Worker Status: ${group.status}`) : '',
@@ -5354,12 +5120,12 @@ export class AgentConsoleSessionState {
         ].filter(Boolean);
     }
 
-    protected describeReviewGroup(group: AgentConsoleReviewGroup): string {
+    describeReviewGroup(group: AgentConsoleReviewGroup): string {
         const meta = { label: group.label, kind: group.kind, status: group.status, fileCount: group.sections.length, hasError: !!group.error };
         return formatReviewGroupMeta(meta, (key, fallback, params) => this.translateLabel(`agent.menu.panel.review.${key}`, params, fallback));
     }
 
-    protected filterReviewPatchLines(lines: string[]): string[] {
+    filterReviewPatchLines(lines: string[]): string[] {
         if (this.selectedReviewPatchFilter !== 'additions') {
             return lines.slice();
         }
@@ -5442,7 +5208,7 @@ export class AgentConsoleSessionState {
         this.reviewDetailScroll = Math.max(0, Math.min(this.reviewDetailScroll, Math.max(0, lines.length - this.consoleOptions.reviewDetailVisibleLines)));
     }
 
-    protected renderReviewPatchLines(section: AgentConsoleReviewDiffSection, groupKey: string): string[] {
+    renderReviewPatchLines(section: AgentConsoleReviewDiffSection, groupKey: string): string[] {
         if (this.reviewSideBySide) {
             return this.renderReviewPatchSideBySide(section, groupKey);
         }
@@ -5583,32 +5349,6 @@ export class AgentConsoleSessionState {
         }
         const sourceSessionId = String(task?.sourceSessionId || task?.sessionId || '').trim();
         return sourceSessionId ? `${sourceSessionId}:${taskId}` : taskId;
-    }
-
-    protected syncReviewGroupSelection(preferredKey?: string): void {
-        const groups = this.reviewGroups;
-        if (!groups.length) {
-            this.selectedReviewGroupIndex = 0;
-            return;
-        }
-        const preferredIndex = preferredKey
-            ? groups.findIndex(group => group.key === preferredKey)
-            : -1;
-        const currentIndex = Math.max(0, Math.min(groups.length - 1, this.selectedReviewGroupIndex));
-        this.selectedReviewGroupIndex = preferredIndex >= 0 ? preferredIndex : currentIndex;
-    }
-
-    protected syncReviewFileSelection(preferredPath?: string): void {
-        const sections = this.reviewFileSections;
-        if (!sections.length) {
-            this.selectedReviewFileIndex = 0;
-            return;
-        }
-        const preferredIndex = preferredPath
-            ? sections.findIndex(section => section.path === preferredPath)
-            : -1;
-        const currentIndex = Math.max(0, Math.min(sections.length - 1, this.selectedReviewFileIndex));
-        this.selectedReviewFileIndex = preferredIndex >= 0 ? preferredIndex : currentIndex;
     }
 
     protected buildSelectedTaskCopyText(): string {
