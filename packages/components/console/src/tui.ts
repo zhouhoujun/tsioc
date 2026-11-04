@@ -31,6 +31,7 @@ import {
 } from './input';
 import { provideConsoleTerminalLifecycle, TerminalClickTarget } from './terminal';
 import { ConsoleStyleRule, parseConsoleStyleSheet, resolveConsoleStyleSheet } from './stylesheet';
+import { ConsoleAnimationSpec, parseConsoleAnimations, parseConsoleKeyframes, resolveConsoleAnimationFrame } from './animation';
 import { DEFAULT_CONSOLE_STYLESHEET } from './default-styles.generated';
 import { BaseComponentsModule } from '@tsdi/components/common';
 
@@ -86,11 +87,37 @@ export class TuiRenderer extends ConsoleRenderer {
     }>();
     protected subtreeLayoutWidth?: number;
     protected styleSheetRules: ConsoleStyleRule[] = parseConsoleStyleSheet(DEFAULT_CONSOLE_STYLESHEET);
+    protected animationKeyframes = parseConsoleKeyframes(DEFAULT_CONSOLE_STYLESHEET);
+    protected animationStates = new Map<ConsoleElement, { signature: string; startedAt: number; specs: ConsoleAnimationSpec[] }>();
+    protected animationSeen = new Set<ConsoleElement>();
+    protected animationNow: () => number = () => Date.now();
 
     /** Install a compiled stylesheet (the same CSS used by the web console). */
     setStyleSheet(css: string): void {
         this.styleSheetRules = parseConsoleStyleSheet(css);
+        this.animationKeyframes = parseConsoleKeyframes(css);
+        this.animationStates.clear();
         this.subtreeLayoutCache.clear();
+    }
+
+    /** Deterministic time source for tests and hosts that own the clock. */
+    setAnimationTimeProvider(provider: () => number): void {
+        this.animationNow = provider;
+        this.animationStates.clear();
+    }
+
+    /** Whether CSS animations still need clock ticks. */
+    hasRunningAnimations(now = this.animationNow()): boolean {
+        for (const state of this.animationStates.values()) {
+            for (const spec of state.specs) {
+                const frames = this.animationKeyframes.get(spec.name);
+                if (!frames?.length) continue;
+                if (resolveConsoleAnimationFrame(spec, frames, now - state.startedAt).running) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     renderToTuiLayout(node: RNode | RNode[], options: TuiRenderOptions = {}): TuiRenderLayout {
@@ -101,7 +128,8 @@ export class TuiRenderer extends ConsoleRenderer {
             this.subtreeLayoutCache.clear();
             this.subtreeLayoutWidth = width;
         }
-        const recomputeAll = !dirty || !nodes.includes(dirty as any);
+        const recomputeAll = this.hasRunningAnimations() || !dirty || !nodes.includes(dirty as any);
+        this.animationSeen = new Set();
         const lines: string[] = [];
         const cursorTargets: TuiCursorTarget[] = [];
         const regions: TuiRenderRegionDraft[] = [];
@@ -127,6 +155,13 @@ export class TuiRenderer extends ConsoleRenderer {
                 regions.push({ ...region, startRow: region.startRow + baseRow, endRow: region.endRow + baseRow });
             }
         });
+        if (recomputeAll) {
+            for (const element of this.animationStates.keys()) {
+                if (!this.animationSeen.has(element)) {
+                    this.animationStates.delete(element);
+                }
+            }
+        }
         while (lines.length && !this.stripAnsi(lines[lines.length - 1]).trim()) {
             lines.pop();
         }
@@ -224,6 +259,7 @@ export class TuiRenderer extends ConsoleRenderer {
 
         const element = current as ConsoleElement;
         const styleMap = this.mergeStyles(inherited, this.getStyleMap(element));
+        this.applyCssAnimations(element, styleMap);
         if (String(styleMap.display || '').trim().toLowerCase() === 'none') {
             return;
         }
@@ -1096,6 +1132,31 @@ export class TuiRenderer extends ConsoleRenderer {
             merged[key] = this.resolveCssValue(merged[key], merged);
         }
         return merged;
+    }
+
+    /** Apply the element's CSS animations at the renderer's current time. */
+    protected applyCssAnimations(element: ConsoleElement, styleMap: Record<string, string>): void {
+        const specs = parseConsoleAnimations(styleMap);
+        if (!specs.length) {
+            this.animationStates.delete(element);
+            return;
+        }
+        const signature = JSON.stringify(specs);
+        let state = this.animationStates.get(element);
+        if (!state || state.signature !== signature) {
+            state = { signature, startedAt: this.animationNow(), specs };
+            this.animationStates.set(element, state);
+        }
+        this.animationSeen.add(element);
+        const elapsed = this.animationNow() - state.startedAt;
+        for (const spec of specs) {
+            const frames = this.animationKeyframes.get(spec.name);
+            if (!frames?.length) continue;
+            const frame = resolveConsoleAnimationFrame(spec, frames, elapsed);
+            if (frame.declarations) {
+                Object.assign(styleMap, this.mergeStyles(styleMap, frame.declarations));
+            }
+        }
     }
 
     /** Resolved styles while the pointer hovers this element (CSS :hover). */

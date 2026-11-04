@@ -261,6 +261,8 @@ export interface TuiTerminalSurfaceRenderer {
     };
     /** CSS-resolved hover styles for the element under the pointer. */
     resolveHoverStyle?(element: ConsoleElement): Record<string, string>;
+    /** Whether CSS animations still need clock ticks. */
+    hasRunningAnimations?(): boolean;
 }
 
 export interface TuiTerminalSurfaceOptions {
@@ -1057,11 +1059,11 @@ export class TuiTerminalSurface {
         this.requestRender();
         if (progress >= 1) {
             this.hoverAlpha = this.hoverToAlpha;
-            this.stopHoverAnimation();
             if (!this.hoverTarget && this.hoverToAlpha <= 0) {
                 this.hoverPaintTarget = undefined;
             }
         }
+        this.syncAnimationClock();
     };
     protected pendingRenderDuringHandoff = false;
     protected reclaimTimer?: ReturnType<typeof setTimeout>;
@@ -1258,6 +1260,7 @@ export class TuiTerminalSurface {
         const viewport = this.resolveViewportLayout(layout);
         const lines = viewport.lines;
         this.applyHoverHighlight(lines);
+        this.syncAnimationClock();
         const rowBands = mergeTerminalRowBands(this.lastOverlayBands, viewport.overlayBands);
         this.clickTargetsCache = viewport.clickTargets;
         const cursorTarget = viewport.cursorTargets[0];
@@ -1671,6 +1674,16 @@ export class TuiTerminalSurface {
         }
         clock.unsubscribe(this.handleHoverAnimation);
         this.hoverClock = undefined;
+    }
+
+    /** Keep the shared clock alive only while hover or CSS animations run. */
+    protected syncAnimationClock(): void {
+        const animations = this.options.renderer.hasRunningAnimations?.() === true;
+        if ((animations || this.hoverTarget || this.hoverAlpha > 0) && this.options.animationClock) {
+            this.startHoverAnimation();
+        } else {
+            this.stopHoverAnimation();
+        }
     }
 
     protected applyHoverHighlight(lines: string[]): void {

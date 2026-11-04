@@ -22,13 +22,18 @@ export interface ConsoleStyleSelector {
     hover?: boolean;
 }
 
+/** Remove keyframe blocks before parsing element style rules. */
+export function stripConsoleKeyframes(css: string): string {
+    return String(css || '').replace(/@(?:-\w+-)?keyframes\s+[\w-]+\s*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g, '');
+}
+
 export function parseConsoleStyleSheet(css: string): ConsoleStyleRule[] {
     const rules: ConsoleStyleRule[] = [];
     const source = stripCssComments(String(css || ''));
     let order = 0;
     for (const match of source.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
         const selectorText = match[1].trim();
-        const declarations = parseDeclarations(match[2]);
+        const declarations = parseConsoleDeclarations(match[2]);
         if (!selectorText || !Object.keys(declarations).length) {
             continue;
         }
@@ -177,7 +182,7 @@ function selectorSpecificity(selector: string): number {
     return classes * 100 + attributes * 100 + tags;
 }
 
-function parseDeclarations(value: string): Record<string, string> {
+export function parseConsoleDeclarations(value: string): Record<string, string> {
     const declarations: Record<string, string> = {};
     for (const part of String(value || '').split(';')) {
         const index = part.indexOf(':');
