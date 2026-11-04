@@ -93,6 +93,7 @@ import { agentConsoleAllCommandHints, agentConsoleCommandHints, getAgentConsoleC
 import { AgentConsoleInputHistoryController, DefaultAgentConsoleInputHistoryController } from './AgentConsoleInputHistory';
 import { AgentConsoleFocusLayers, DefaultAgentConsoleFocusLayers } from './AgentConsoleFocusLayers';
 import { AgentConsoleCommandExecutionController, DefaultAgentConsoleCommandExecutionController } from './AgentConsoleCommandExecutionState';
+import { buildTimelineEventRetryPayload as buildTimelineEventRetryPayloadInState, canRetryTimelineEvent as canRetryTimelineEventInState, closeTimelineEventInspector as closeTimelineEventInspectorInState, formatDuration as formatDurationInState, isFailedEventMessage as isFailedEventMessageInState, isTimelineEventMessage as isTimelineEventMessageInState, openTimelineEventInspector as openTimelineEventInspectorInState, resolveTimelineEventDetailLines, resolveTimelineEventDetailMaxColumn, scrollTimelineEventDetail as scrollTimelineEventDetailInState, scrollTimelineEventDetailColumns as scrollTimelineEventDetailColumnsInState, scrollTimelineEventDetailColumnsToEdge as scrollTimelineEventDetailColumnsToEdgeInState, scrollTimelineEventDetailPage as scrollTimelineEventDetailPageInState, scrollTimelineEventDetailToEdge as scrollTimelineEventDetailToEdgeInState } from './AgentConsoleTimelineInspector';
 import {
     buildReviewAssessmentLines as buildReviewAssessmentLinesInState,
     buildReviewFoldedHunkSummary as buildReviewFoldedHunkSummaryInState,
@@ -2112,185 +2113,59 @@ export class AgentConsoleSessionState {
         return this.displayMessages.find(item => item.id === this.selectedTimelineEventId);
     }
 
-    isTimelineEventMessage(message?: AgentMessage | null): boolean {
-        if (!message) {
-            return false;
-        }
-        const metadata = message.metadata || {};
-        if (metadata.uiKind !== 'event') {
-            return false;
-        }        return metadata.uiEventType === 'tool_invoked'
-            || metadata.uiEventType === 'tool_completed'
-            || metadata.uiEventType === 'tool_failed'
-            || metadata.uiEventType === 'plan_step_failed'
-            || metadata.uiEventType === 'plan_step_blocked'
-            || metadata.uiEventType === 'approval'
-            || metadata.uiEventType === 'approval_request';
-    }
 
-    isFailedEventMessage(message?: AgentMessage | null): boolean {
-        if (!this.isTimelineEventMessage(message)) {
-            return false;
-        }
-        const metadata = message!.metadata || {};
-        const status = String(metadata.status || '').toLowerCase();
-        return metadata.error === true
-            || status === 'failed'
-            || status === 'error'
-            || status === 'blocked';
-    }
+
+
 
     /** Host hook: fetch one tool call's raw payload on demand (optional). */
     toolPayloadLoader?: (toolCallId: string) => Promise<string | undefined>;
 
     /** Raw payload shown in the event inspector (empty until the host answers). */
     timelineEventOutput = '';
-    protected timelineEventOutputLoading = false;
+    timelineEventOutputLoading = false;
 
-    openTimelineEventInspector(eventMessage?: AgentMessage): void {
-        const target = eventMessage || this.selectedMessage;
-        if (!target || !this.isTimelineEventMessage(target)) {
-            return;
-        }
-        this.selectedTimelineEventId = target.id;
-        this.timelineEventInspectorOpen = true;
-        this.timelineEventDetailScroll = 0;
-        this.timelineEventDetailColumnScroll = 0;
-        this.timelineEventOutput = '';
-        this.timelineEventOutputLoading = false;
-        const toolCallId = String(target.metadata?.timeline?.toolCallId || target.metadata?.receipt?.toolCallId || '').trim();
-        if (toolCallId && this.toolPayloadLoader) {
-            this.timelineEventOutputLoading = true;
-            void this.toolPayloadLoader(toolCallId)
-                .then(text => {
-                    if (this.selectedTimelineEventId !== target.id) {
-                        return;
-                    }
-                    this.timelineEventOutput = String(text || '');
-                })
-                .catch(() => undefined)
-                .then(() => {
-                    if (this.selectedTimelineEventId === target.id) {
-                        this.timelineEventOutputLoading = false;
-                    }
-                });
-        }
-        this.syncDerivedInputFocus();
-    }
 
-    closeTimelineEventInspector(): void {
-        if (!this.timelineEventInspectorOpen) {
-            return;
-        }
-        this.timelineEventInspectorOpen = false;
-        this.selectedTimelineEventId = '';
-        this.timelineEventDetailScroll = 0;
-        this.timelineEventDetailColumnScroll = 0;
-        this.syncDerivedInputFocus();
-    }
+
+
 
     get hasTimelineEventInspectorFocus(): boolean {
         return !!this.timelineEventInspectorOpen;
     }
 
-    get timelineEventDetailLines(): string[] {
-        return formatTimelineEventInspectorLines({
-            event: this.selectedTimelineEvent,
-            output: this.timelineEventOutput,
-            outputLoading: this.timelineEventOutputLoading,
-            labels: { ...DEFAULT_TIMELINE_LABELS, ...(this.consoleOptions.timelineLabels || {}) },
-            translate: (key, params, fallback) => this.translateLabel(key, params, fallback),
-            formatDuration: ms => this.formatDuration(ms)
-        });
-    }
 
-    get timelineEventDetailMaxColumn(): number {
-        return this.timelineEventDetailLines.reduce((max, line) => Math.max(max, line.length), 0);
-    }
 
-    protected formatDuration(ms: number): string {
-        if (ms < 1000) {
-            return `${ms}ms`;
-        }
-        const s = ms / 1000;
-        if (s < 60) {
-            return `${s.toFixed(1)}s`;
-        }
-        const m = Math.floor(s / 60);
-        const rem = s - m * 60;
-        return `${m}m ${rem.toFixed(0)}s`;
-    }
 
-    scrollTimelineEventDetail(delta: number): void {
-        if (!this.timelineEventInspectorOpen) {
-            return;
-        }
-        const lines = this.timelineEventDetailLines;
-        const maxScroll = Math.max(0, lines.length - this.messageDetailVisibleLines);
-        this.timelineEventDetailScroll = Math.max(0, Math.min(maxScroll, this.timelineEventDetailScroll + delta));
-    }
 
-    scrollTimelineEventDetailPage(delta: number, pageSize?: number): void {
-        if (!this.timelineEventInspectorOpen) {
-            return;
-        }
-        const resolvedPageSize = pageSize ?? Math.max(1, this.messageDetailVisibleLines - 1);
-        this.scrollTimelineEventDetail(delta * Math.max(1, resolvedPageSize));
-    }
 
-    scrollTimelineEventDetailToEdge(position: 'start' | 'end'): void {
-        if (!this.timelineEventInspectorOpen) {
-            return;
-        }
-        const lines = this.timelineEventDetailLines;
-        this.timelineEventDetailScroll = position === 'start'
-            ? 0
-            : Math.max(0, lines.length - this.messageDetailVisibleLines);
-    }
 
-    scrollTimelineEventDetailColumns(delta: number): void {
-        if (!this.timelineEventInspectorOpen) {
-            return;
-        }
-        const maxScroll = Math.max(0, this.timelineEventDetailMaxColumn - 1);
-        this.timelineEventDetailColumnScroll = Math.max(0, Math.min(maxScroll, this.timelineEventDetailColumnScroll + delta));
-    }
 
-    scrollTimelineEventDetailColumnsToEdge(position: 'start' | 'end'): void {
-        if (!this.timelineEventInspectorOpen) {
-            return;
-        }
-        this.timelineEventDetailColumnScroll = position === 'start'
-            ? 0
-            : Math.max(0, this.timelineEventDetailMaxColumn - 1);
-    }
 
-    canRetryTimelineEvent(): boolean {
-        if (!this.timelineEventInspectorOpen) {
-            return false;
-        }
-        const event = this.selectedTimelineEvent;
-        if (!event) {
-            return false;
-        }
-        return event.metadata?.uiEventType === 'tool_failed'
-            || event.metadata?.status === 'error'
-            || event.metadata?.status === 'failed';
-    }
 
-    buildTimelineEventRetryPayload(): { toolCallId?: string; receiptId?: string; attempt?: number; uiEventKey?: string } | null {
-        const event = this.selectedTimelineEvent;
-        if (!event) {
-            return null;
-        }
-        const m = event.metadata || {};
-        return {
-            toolCallId: m.timeline?.toolCallId,
-            receiptId: m.timeline?.receiptId,
-            attempt: m.timeline?.attempt,
-            uiEventKey: m.uiEventKey
-        };
-    }
+
+
+
+
+
+
+
+
+
+
+
+    isTimelineEventMessage(message?: AgentMessage | null): boolean { return isTimelineEventMessageInState(this, message); }
+    isFailedEventMessage(message?: AgentMessage | null): boolean { return isFailedEventMessageInState(this, message); }
+    openTimelineEventInspector(eventMessage?: AgentMessage): void { openTimelineEventInspectorInState(this, eventMessage); }
+    closeTimelineEventInspector(): void { closeTimelineEventInspectorInState(this); }
+    get timelineEventDetailLines(): string[] { return resolveTimelineEventDetailLines(this); }
+    get timelineEventDetailMaxColumn(): number { return resolveTimelineEventDetailMaxColumn(this); }
+    formatDuration(ms: number): string { return formatDurationInState(ms); }
+    scrollTimelineEventDetail(delta: number): void { scrollTimelineEventDetailInState(this, delta); }
+    scrollTimelineEventDetailPage(delta: number, pageSize?: number): void { scrollTimelineEventDetailPageInState(this, delta, pageSize); }
+    scrollTimelineEventDetailToEdge(position: 'start' | 'end'): void { scrollTimelineEventDetailToEdgeInState(this, position); }
+    scrollTimelineEventDetailColumns(delta: number): void { scrollTimelineEventDetailColumnsInState(this, delta); }
+    scrollTimelineEventDetailColumnsToEdge(position: 'start' | 'end'): void { scrollTimelineEventDetailColumnsToEdgeInState(this, position); }
+    canRetryTimelineEvent(): boolean { return canRetryTimelineEventInState(this); }
+    buildTimelineEventRetryPayload(): { toolCallId?: string; receiptId?: string; attempt?: number; uiEventKey?: string } | null { return buildTimelineEventRetryPayloadInState(this); }
 
     isMessageExpanded(messageId: string): boolean {
         return this.expandedMessageIds.includes(String(messageId || '').trim());
