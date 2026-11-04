@@ -424,6 +424,23 @@ export class ConsoleRendererTest {
         lines.forEach(line => expect(getDisplayWidth(line)).toBeLessThanOrEqual(12));
     }
 
+    @Test('applies host stylesheet classes before inline overrides')
+    appliesStylesheetClasses() {
+        const renderer = new TuiRenderer();
+        renderer.setStyleSheet(`
+            .sheet-row { color: #ff0000; font-weight: bold; }
+            .sheet-row[aria-selected="true"] { color: #00ff00; }
+        `);
+        const row = renderer.createElement('label') as ConsoleElement;
+        row.setAttribute('class', 'sheet-row');
+        renderer.appendChild(row, renderer.createText('styled'));
+        const selected = renderer.renderToTuiLines(row)[0];
+        expect(selected).toContain('\x1b[38;2;255;0;0m');
+        row.setAttribute('aria-selected', 'true');
+        const active = renderer.renderToTuiLines(row)[0];
+        expect(active).toContain('\x1b[38;2;0;255;0m');
+    }
+
     @Test('preserves inline space tokens so markdown table padding survives')
     preservesInlineSpaceTokens() {
         const renderer = new TuiRenderer();

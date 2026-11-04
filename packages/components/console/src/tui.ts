@@ -30,6 +30,7 @@ import {
     resolveConsoleSelectWindow
 } from './input';
 import { provideConsoleTerminalLifecycle, TerminalClickTarget } from './terminal';
+import { ConsoleStyleRule, parseConsoleStyleSheet, resolveConsoleStyleSheet } from './stylesheet';
 import { BaseComponentsModule } from '@tsdi/components/common';
 
 const ANSI_RESET = '\x1b[0m';
@@ -83,6 +84,13 @@ export class TuiRenderer extends ConsoleRenderer {
         clickTargets: TerminalClickTarget[];
     }>();
     protected subtreeLayoutWidth?: number;
+    protected styleSheetRules: ConsoleStyleRule[] = [];
+
+    /** Install a compiled stylesheet (the same CSS used by the web console). */
+    setStyleSheet(css: string): void {
+        this.styleSheetRules = parseConsoleStyleSheet(css);
+        this.subtreeLayoutCache.clear();
+    }
 
     renderToTuiLayout(node: RNode | RNode[], options: TuiRenderOptions = {}): TuiRenderLayout {
         const nodes = Array.isArray(node) ? node : [node];
@@ -1047,7 +1055,7 @@ export class TuiRenderer extends ConsoleRenderer {
     }
 
     protected getStyleMap(element: ConsoleElement): Record<string, string> {
-        const styles: Record<string, string> = {};
+        const styles: Record<string, string> = resolveConsoleStyleSheet(element, this.styleSheetRules);
         const styleDeclaration = element.style as ConsoleCssStyleDeclaration;
         if (styleDeclaration && typeof styleDeclaration.getProperties === 'function') {
             Object.assign(styles, styleDeclaration.getProperties());

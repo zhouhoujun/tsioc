@@ -3,6 +3,7 @@ export * from './animation-clock';
 export * from './tui';
 export * from './display-width';
 export * from './input';
+export * from './stylesheet';
 export * from './terminal';
 export {
     BaseComponentsModule,
