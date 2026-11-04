@@ -92,8 +92,8 @@ export class AgentConsoleBrandPanelComponent {
 @Component({
     selector: 'agent-console-status-panel',
     template: `
-    <div class="console-panel console-status-panel" v-style="shellStyle" @mouseenter="onHoverEnter()" @mouseleave="onHoverLeave()">
-        <label class="status-line" v-style="statusStyle" v-for="line in statusLines">{{line}}</label>
+    <div class="console-panel console-status-panel" [style]="shellStyle" @mouseenter="onHoverEnter()" @mouseleave="onHoverLeave()">
+        <label class="status-line" [style]="statusStyle" v-for="line in statusLines">{{line}}</label>
     </div>
     `
 })

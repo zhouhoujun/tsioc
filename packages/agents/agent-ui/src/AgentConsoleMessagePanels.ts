@@ -129,7 +129,7 @@ export class AgentConsoleMessageLineComponent {
 
 const MESSAGE_ITEM_TEMPLATE = `
     <div class="message-block-spacing" v-if="spacerBefore">​</div>
-    <div class="message-item-block" v-style="blockStyle">
+    <div class="message-item-block" [style]="blockStyle">
         <agent-console-message-line v-for="line in lines" :line="line"></agent-console-message-line>
     </div>
 `;

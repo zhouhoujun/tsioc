@@ -66,10 +66,10 @@ export * from './AgentConsoleMessagePanels';
 @Component({
     selector: 'agent-console-activity-panel',
     template: `
-    <div class="console-panel console-activity-panel" v-style="shellStyle">
+    <div class="console-panel console-activity-panel" [style]="shellStyle">
         <label class="activity-item" v-for="item in activityItems">
-            <span v-style="item.kindStyle">{{item.kind}}</span>
-            <span v-style="item.messageStyle">{{item.message}}</span>
+            <span [style]="item.kindStyle">{{item.kind}}</span>
+            <span [style]="item.messageStyle">{{item.message}}</span>
         </label>
     </div>
     `
@@ -300,24 +300,24 @@ export class AgentConsoleSelectPanelComponent {
 @Component({
     selector: 'agent-console-which-key-panel',
     template: `
-    <div class="console-panel console-which-key-panel" v-style="shellStyle">
-        <label class="which-key-title" v-style="titleStyle">{{titleText}}</label>
+    <div class="console-panel console-which-key-panel" [style]="shellStyle">
+        <label class="which-key-title" [style]="titleStyle">{{titleText}}</label>
         <template v-if="isGrouped">
             <template v-for="group in groupedBindings">
-                <label class="which-key-group-header" v-style="groupHeaderStyle">{{group.label}}</label>
-                <label class="which-key-row" v-style="rowStyle" v-for="binding in group.items">
-                    <span v-style="keyStyle">{{binding.key}}</span>
-                    <span v-style="actionStyle"> {{binding.label || binding.action}}</span>
+                <label class="which-key-group-header" [style]="groupHeaderStyle">{{group.label}}</label>
+                <label class="which-key-row" [style]="rowStyle" v-for="binding in group.items">
+                    <span [style]="keyStyle">{{binding.key}}</span>
+                    <span [style]="actionStyle"> {{binding.label || binding.action}}</span>
                 </label>
             </template>
         </template>
         <template v-else>
-            <label class="which-key-row" v-style="rowStyle" v-for="binding in bindings">
-                <span v-style="keyStyle">{{binding.key}}</span>
-                <span v-style="actionStyle"> {{binding.label || binding.action}}</span>
+            <label class="which-key-row" [style]="rowStyle" v-for="binding in bindings">
+                <span [style]="keyStyle">{{binding.key}}</span>
+                <span [style]="actionStyle"> {{binding.label || binding.action}}</span>
             </label>
         </template>
-        <label class="which-key-hint" v-style="hintStyle">{{hintText}}</label>
+        <label class="which-key-hint" [style]="hintStyle">{{hintText}}</label>
     </div>
     `
 })
@@ -416,14 +416,14 @@ export class AgentConsoleWhichKeyPanelComponent {
 @Component({
     selector: 'agent-console-health-popover',
     template: `
-    <div class="console-panel console-health-popover" v-style="shellStyle">
-        <label class="health-title" v-style="titleStyle">{{titleText}}</label>
-        <label class="health-row" v-style="rowStyle" v-for="item in items">
-            <span v-style="statusStyle(item.status)">{{statusLabel(item.status)}}</span>
-            <span v-style="labelStyle"> {{item.label}}</span>
-            <span v-style="detailStyle"> {{item.detail}}</span>
+    <div class="console-panel console-health-popover" [style]="shellStyle">
+        <label class="health-title" [style]="titleStyle">{{titleText}}</label>
+        <label class="health-row" [style]="rowStyle" v-for="item in items">
+            <span [style]="statusStyle(item.status)">{{statusLabel(item.status)}}</span>
+            <span [style]="labelStyle"> {{item.label}}</span>
+            <span [style]="detailStyle"> {{item.detail}}</span>
         </label>
-        <label class="health-hint" v-style="hintStyle">{{hintText}}</label>
+        <label class="health-hint" [style]="hintStyle">{{hintText}}</label>
     </div>
     `
 })

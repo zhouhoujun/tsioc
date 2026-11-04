@@ -70,10 +70,10 @@ export * from './AgentConsoleInputPanel';
 @Component({
     selector: 'agent-console-working-panel',
     template: `
-    <div class="console-panel console-working-panel" v-style="shellStyle">
-        <label class="working-line" v-style="workingLineStyle">
+    <div class="console-panel console-working-panel" [style]="shellStyle">
+        <label class="working-line" [style]="workingLineStyle">
             <span class="working-scan" render-region="agent-working-animation"><span class="working-scan-char {{char.delayClass}}" v-for="char in workingChars">{{char.text}}</span></span>
-            <span v-style="labelStyle"> (<span elapsed-time :started-at="state.turnStartedAt" :active="shouldShow"></span> • {{interruptHint}}){{workingDetail}}<span v-show="hasTokenUsage"> · {{totalTokens | number-format}} tokens</span></span>
+            <span [style]="labelStyle"> (<span elapsed-time :started-at="state.turnStartedAt" :active="shouldShow"></span> • {{interruptHint}}){{workingDetail}}<span v-show="hasTokenUsage"> · {{totalTokens | number-format}} tokens</span></span>
         </label>
     </div>
     `
