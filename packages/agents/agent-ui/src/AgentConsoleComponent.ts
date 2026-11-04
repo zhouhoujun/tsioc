@@ -276,6 +276,18 @@ import {
     rpcCommandHost,
     backgroundTaskCommandHost
 } from './AgentConsoleHostFactories';
+import {
+    getExportHandlerContext,
+    getDiagnosticsHandlerContext,
+    harnessCommandHost,
+    voiceCtx,
+    reviewCtx,
+    codingTaskCtx,
+    editCtx,
+    modelCtx,
+    sshHost,
+    pwctx
+} from './AgentConsoleHandlerContexts';
 import { runFeedbackCommandView } from './AgentConsoleFeedbackCommand';
 import { runReloadCommandView } from './AgentConsoleReloadCommand';
 import { runIdeCommand } from './AgentConsoleIdeCommands';
@@ -387,19 +399,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected set providerWizard(value: import('./AgentConsoleProviderWizardFlow').AgentWizardState | undefined) {
         this.wizHolder.wizard = value;
     }
-    protected pwctx(): import('./AgentConsoleProviderWizardFlow').ProviderWizardContext {
-        return {
-            state: this.state,
-            appRpc: this.appRpc,
-            uiConfig: this.uiConfig,
-            options: this.options,
-            notify: (message: string) => this.notify(message), translator: this.translator,
-            notifyBusyState: () => this.notifyBusyState(),
-            isTurnInProgress: () => this.isTurnInProgress(),
-            rpcRequestContext: () => this.rpcRequestContext(),
-            activateModelProfile: (profile: string) => this.activateModelProfile(profile)
-        };
-    }
+
     protected yoloMode = false;
     readonly transcriptNavigationController: DefaultAgentConsoleTranscriptNavigationController;
     constructor(
@@ -608,15 +608,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return runAttachCommandFn(this.getExportHandlerContext(), args);
     }
 
-    private getExportHandlerContext() {
-        return {
-            state: this.state,
-            sessionService: this.sessionService!,
-            app: this.app!,
-            workspace: this.workspace,
-            notify: (msg: string) => this.notify(msg), translator: this.translator,
-        };
-    }
+
 
     protected async openCompactionHistory(args: string): Promise<boolean> {
         return openCompactionHistory(this.getDiagnosticsHandlerContext(), args);
@@ -643,15 +635,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return openHarnessAudit(this.getDiagnosticsHandlerContext(), sessionId);
     }
 
-    private getDiagnosticsHandlerContext() {
-        return {
-            state: this.state,
-            sessionService: this.sessionService!,
-            notify: (msg: string) => this.notify(msg), translator: this.translator,
-            pushCommandOutput: (command: string, text: string, kind?: AgentConsoleCommandOutputEntry['kind']) => this.pushCommandOutput(command, text, kind),
-            select: (title: string, options: any[], footer?: string) => this.select(title, options, 0, footer),
-        };
-    }
+
 
     protected async openHarnessProfile(sub?: string): Promise<boolean> {
         return openHarnessProfile(this.getDiagnosticsHandlerContext(), sub);
@@ -661,14 +645,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return openHarnessTreeView(this.harnessCommandHost(), sessionId);
     }
 
-    private harnessCommandHost(): HarnessCommandHost {
-        return {
-            sessionService: this.sessionService ?? null,
-            state: this.state,
-            notify: message => this.notify(message), translator: this.translator,
-            pushCommandOutput: (command, text) => this.pushCommandOutput(command, text)
-        };
-    }
+
 
     protected async openHarnessList(sessionId?: string): Promise<boolean> {
         return openHarnessListView(this.harnessCommandHost(), sessionId);
@@ -682,20 +659,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return runHarnessStopCommand(this.sessionService, (message: string) => this.notify(message), taskId, this.translator);
     }
 
-    private voiceCtx(): VoiceHandlerContext {
-        return {
-            state: this.state,
-            sessionService: this.sessionService,
-            audioCapture: this.audioCapture,
-            audioPlayback: this.audioPlayback,
-            notify: (message, duration) => this.notify(message, duration), translator: this.translator,
-            pushCommandOutput: (command, text, kind) => this.pushCommandOutput(command, text, kind),
-            getCaptureSessionId: () => this.voiceCaptureSessionId,
-            setCaptureSessionId: value => { this.voiceCaptureSessionId = value; },
-            getCaptureFeed: () => this.voiceCaptureFeed,
-            setCaptureFeed: feed => { this.voiceCaptureFeed = feed; }
-        };
-    }
+
 
     protected async handleVoiceCommand(arg: string): Promise<boolean> {
         return handleVoiceCommand(this.voiceCtx(), arg);
@@ -788,33 +752,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     ): { sessionId?: string; bucketSize?: number; maxBuckets?: number } {
         return this.parseCompactionHistoryTrendArgs(args);
     }
-    private reviewCtx(): ReviewHandlerContext {
-        return {
-            state: this.state,
-            transcriptNavigationController: this.transcriptNavigationController,
-            appRpc: this.appRpc,
-            notify: (message, duration) => this.notify(message, duration), translator: this.translator,
-            activateToolForSession: (toolName, sessionId) => this.activateToolForSession(toolName, sessionId),
-            getOpenReviewRequestId: () => this.openReviewRequestId
-        };
-    }
-    private codingTaskCtx(): CodingTaskHandlerContext {
-        return {
-            state: this.state,
-            transcriptNavigationController: this.transcriptNavigationController,
-            appRpc: this.appRpc,
-            scheduler: this.scheduler,
-            notify: (message, duration) => this.notify(message, duration), translator: this.translator,
-            select: (title, options, selectedIndex, hint) => this.select(title, options, selectedIndex, hint),
-            getTaskViewContextVersion: () => this.taskViewContextVersion,
-            bumpTaskViewContextVersion: () => ++this.taskViewContextVersion,
-            getOpenReviewRequestId: () => this.openReviewRequestId,
-            bumpOpenReviewRequestId: () => ++this.openReviewRequestId,
-            resolveProjectSessionIdsFor: (sessionId) => this.resolveProjectSessionIdsFor(sessionId),
-            resolveThreadSessionIdsFor: (sessionId) => this.resolveThreadSessionIdsFor(sessionId),
-            restoreReviewAnnotationsCacheFromDiskForScope: (scope) => this.restoreReviewAnnotationsCacheFromDiskForScope(scope)
-        };
-    }
+
+
 
     protected resolveReviewAnnotationsSessionId(): string {
         return resolveReviewAnnotationsSessionId(this.reviewCtx());
@@ -1530,6 +1469,16 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected async restoreRawMode(): Promise<void> { return restoreRawModeInState(this); }
     protected async restoreSettings(): Promise<void> { return restoreSettingsInState(this); }
     protected async persistSettings(patch: Partial<AgentConsoleSettingsData>): Promise<void> { return persistSettingsInState(this, patch); }
+    private getExportHandlerContext() { return getExportHandlerContext(this); }
+    private getDiagnosticsHandlerContext() { return getDiagnosticsHandlerContext(this); }
+    private harnessCommandHost(): HarnessCommandHost { return harnessCommandHost(this); }
+    private voiceCtx(): VoiceHandlerContext { return voiceCtx(this); }
+    private reviewCtx(): ReviewHandlerContext { return reviewCtx(this); }
+    private codingTaskCtx(): CodingTaskHandlerContext { return codingTaskCtx(this); }
+    private editCtx(): EditModeHandlerContext { return editCtx(this); }
+    private modelCtx(): ModelHandlerContext { return modelCtx(this); }
+    private sshHost(): AgentConsoleSshHost { return sshHost(this); }
+    private pwctx(): import('./AgentConsoleProviderWizardFlow').ProviderWizardContext { return pwctx(this); }
     protected gitSnapshotCommandHost(): GitSnapshotCommandHost { return gitSnapshotCommandHost(this); }
     protected shellCommandHost(): ShellCommandHost { return shellCommandHost(this); }
 
@@ -2815,28 +2764,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return handleIdleEscape(this.editCtx());
     }
 
-    private editCtx(): EditModeHandlerContext {
-        return {
-            state: this.state,
-            notify: (message, duration) => this.notify(message, duration), translator: this.translator,
-            editEscapeWindowMs: this.state.consoleOptions.editEscapeWindowMs,
-            getEditableUserMessages: () => getEditableUserMessages(this.state.messages),
-            extractEditableMessageText: target => extractEditableMessageText(target),
-            getEditableImageParts: target => getEditableImageParts(target),
-            getTargetMessageId: () => this.editTargetMessageId,
-            setTargetMessageId: value => { this.editTargetMessageId = value; },
-            getLastSessionMessageId: () => this.lastEditSessionMessageId,
-            setLastSessionMessageId: value => { this.lastEditSessionMessageId = value; },
-            getDismissedAt: () => this.editDismissedAt,
-            setDismissedAt: value => { this.editDismissedAt = value; },
-            getDraftBefore: () => this.editDraftBefore,
-            setDraftBefore: value => { this.editDraftBefore = value; },
-            getAttachmentsBefore: () => this.editAttachmentsBefore,
-            setAttachmentsBefore: value => { this.editAttachmentsBefore = value; },
-            getLastEscapeAt: () => this.lastEscapeAt,
-            setLastEscapeAt: value => { this.lastEscapeAt = value; },
-        };
-    }
+
 
     protected async enterEditMode(): Promise<boolean> {
         return enterEditMode(this.editCtx());
@@ -2986,28 +2914,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return this.toolRegistry.getToolDefinitions(sessionId);
     }
 
-    private modelCtx(): ModelHandlerContext {
-        return {
-            state: this.state,
-            appRpc: this.appRpc,
-            options: () => this.options,
-            modelStore: this.modelStore,
-            notify: (message, duration) => this.notify(message, duration), translator: this.translator,
-            select: (title, options, selectedIndex, hint) => this.select(title, options, selectedIndex, hint),
-            updateTerminalTitle: () => this.updateTerminalTitle(),
-            persistSettings: async patch => { await this.appRpc?.request('settings.ui.set', patch).catch(() => undefined); await this.persistSettings(patch); },
-            addModelProvider: () => this.startProviderWizard(), activateModelProfile: (name, effort, silent) => this.activateModelProfile(name, effort, silent), updateModelOptions: model => this.runtime.updateModelOptions?.(model),
-            resolveHistoryWorkspace: () => this.resolveHistoryWorkspace(),
-            getFavorites: () => this.modelFavorites,
-            setFavorites: value => { this.modelFavorites = value; },
-            getRecents: () => this.modelRecents,
-            setRecents: value => { this.modelRecents = value; },
-            getReasoningEffort: () => this.modelReasoningEffort,
-            setReasoningEffort: value => { this.modelReasoningEffort = value; },
-            nextActivateRequestId: () => ++this.activateModelRequestId,
-            peekActivateRequestId: () => this.activateModelRequestId
-        };
-    }
+
 
     protected startProviderWizard(): void {
         return startProviderWizard(this.pwctx(), this.wizHolder);
@@ -3172,18 +3079,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return detachSshShell(this.sshHost(), reason);
     }
 
-    protected sshHost(): AgentConsoleSshHost {
-        const self = this;
-        return {
-            translator: self.translator,
-            state: self.state,
-            get sshManager() { return self.sshManager; },
-            get sshShell() { return self.sshShell; },
-            set sshShell(value) { self.sshShell = value; },
-            surface: self.surfaceAccessor,
-            notify: (message, duration) => self.notify(message, duration)
-        };
-    }
+
 
     protected async runPermissionsCommand(args: string): Promise<void> {
         return runPermissionsCommandView(policyCommandHost(this), args);
