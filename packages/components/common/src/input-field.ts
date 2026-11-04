@@ -17,7 +17,6 @@ import { Attribute, Component } from '@tsdi/components';
         cursorPos="{{cursorPos}}"
         [focused]="focused"
         showCursor="false"
-        cursorStyle="{{cursorStyle}}"
         cursorTarget="input"
         continuationPrompt="{{continuationPrompt}}"
         mask="{{mask}}" data-hover="none"
@@ -32,7 +31,6 @@ export class InputFieldComponent {
     @Attribute() placeholder = '';
     @Attribute() cursorPos = 0;
     @Attribute() focused = true;
-    @Attribute() cursorStyle = 'color: #7ee787;';
     @Attribute() continuationPrompt = '  ';
     @Attribute() mask = false;
     @Attribute() fieldStyle: Record<string, string> | string = {};

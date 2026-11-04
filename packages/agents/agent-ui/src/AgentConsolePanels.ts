@@ -271,7 +271,7 @@ export class AgentConsoleStatusPanelComponent {
     <div class="console-panel console-input-panel">
         <div class="input-shell" v-style="shellStyle">
             <div class="input-entry" v-style="entryShellStyle">
-                <input-field :value="input" :prompt="inputPromptBase" :placeholder="inputPlaceholderLabel" :cursorPos="inputCursor" :focused="inputFocused" :cursorStyle="'color: #7ee787;'" :continuationPrompt="'  '" :mask="inputSecret" :fieldStyle="fieldStyle" @inputAction="onInput" @cursorAction="onCursorChange" @keydownAction="onKeydown"></input-field>
+                <input-field :value="input" :prompt="inputPromptBase" :placeholder="inputPlaceholderLabel" :cursorPos="inputCursor" :focused="inputFocused" :continuationPrompt="'  '" :mask="inputSecret" :fieldStyle="fieldStyle" @inputAction="onInput" @cursorAction="onCursorChange" @keydownAction="onKeydown"></input-field>
             </div>
             <div class="wizard-banner" v-show="wizardOpen">
                 <label class="wizard-title" v-style="wizardTitleStyle">{{wizardTitleLabel}}</label>
