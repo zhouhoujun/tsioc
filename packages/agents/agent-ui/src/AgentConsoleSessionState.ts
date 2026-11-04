@@ -129,6 +129,10 @@ import {
     resolveSelectedPlanTodo,
     resolveSelectedPlanTodoDetailLabel,
     setGoalSummary as setGoalSummaryInState,
+    setPlanTodos as setPlanTodosInState,
+    mergePlanCreated as mergePlanCreatedInState,
+    mergePlanStepStatus as mergePlanStepStatusInState,
+    cancelRemainingPlanSteps as cancelRemainingPlanStepsInState,
     setPlanTodoFilter as setPlanTodoFilterInState,
     togglePlanTodoExpanded as togglePlanTodoExpandedInState
 } from './AgentConsolePlanState';
@@ -485,7 +489,7 @@ export class AgentConsoleSessionState {
     planTodoExpanded = false;
     planTodoFilter: 'all' | 'active' | 'blocked' | 'failed' = 'all';
     selectedPlanTodoIndex = -1;
-    protected planEventSequence = 0;
+    planEventSequence = 0;
     commandOutputSequence = 0;
     commandExecutionSequence = 0;
     commandExchangeSessionEpoch = 0;
@@ -1433,35 +1437,7 @@ export class AgentConsoleSessionState {
     }
 
     setPlanTodos(todos: AgentConsolePlanTodoItem[], sourceSessionId?: string, scope?: 'project' | 'thread', sequence?: number, revision?: number, planId?: string): void {
-        if (sequence !== undefined && sequence <= this.planEventSequence) {
-            return;
-        }
-        if (sequence !== undefined) {
-            this.planEventSequence = sequence;
-        }
-        if (revision !== undefined && revision >= 0) {
-            this.planRevision = revision;
-        }
-        if (planId) {
-            this.planId = String(planId);
-        }
-        this.planTodos = todos.map(todo => {
-            const pid = this.planId || (planId ? String(planId) : undefined);
-            if (!pid) {
-                return { ...todo };
-            }
-            return {
-                ...todo,
-                planId: pid,
-                revision: this.planRevision
-            };
-        });
-        if (this.planTodos.length <= 7) {
-            this.planTodoExpanded = false;
-        }
-        this.planTodoSourceSessionId = String(sourceSessionId || '').trim();
-        this.planScope = scope || '';
-        this.planMessage = this.buildPlanMessage();
+        setPlanTodosInState(this, todos, sourceSessionId, scope, sequence, revision, planId);
     }
 
     get planThreadKey(): string {
@@ -1476,50 +1452,7 @@ export class AgentConsoleSessionState {
         sourceSessionId?: string,
         scope?: 'project' | 'thread'
     ): void {
-        if (sequence !== undefined && sequence <= this.planEventSequence) {
-            return;
-        }
-        if (sequence !== undefined) {
-            this.planEventSequence = sequence;
-        }
-        this.planTodos = steps.map((step, index) => ({
-            id: String(step.id || '').trim() || `step-${index}`,
-            content: String(step.content || '').trim(),
-            status: (step.status === 'cancelled' || step.status === 'failed' || step.status === 'in_progress' || step.status === 'completed' ? step.status : 'pending'),
-            parentId: step.parentId,
-            kind: step.kind,
-            acceptance: step.acceptance,
-            dependsOn: Array.isArray(step.dependsOn) ? step.dependsOn.slice() : undefined,
-            blockedBy: Array.isArray(step.blockedBy) ? step.blockedBy.slice() : undefined,
-            estimate: step.estimate,
-            owner: step.owner,
-            evidenceIds: Array.isArray(step.evidenceIds) ? step.evidenceIds.slice() : undefined,
-            receiptId: step.receiptId,
-            testSummary: step.testSummary,
-            diffSummary: step.diffSummary,
-            reviewSummary: step.reviewSummary,
-            error: step.error,
-            elapsedMs: step.elapsedMs,
-            planId: planId ? String(planId) : this.planId,
-            revision: revision !== undefined && revision >= 0 ? revision : this.planRevision,
-            updatedAt: Date.now()
-        }));
-        if (this.planTodos.length <= 7) {
-            this.planTodoExpanded = false;
-        }
-        if (sourceSessionId !== undefined) {
-            this.planTodoSourceSessionId = String(sourceSessionId || '').trim();
-        }
-        if (scope !== undefined) {
-            this.planScope = scope || '';
-        }
-        if (planId) {
-            this.planId = String(planId);
-        }
-        if (revision !== undefined && revision >= 0) {
-            this.planRevision = revision;
-        }
-        this.planMessage = this.buildPlanMessage();
+        mergePlanCreatedInState(this, steps, planId, revision, sequence, sourceSessionId, scope);
     }
 
     mergePlanStepStatus(
@@ -1528,74 +1461,11 @@ export class AgentConsoleSessionState {
         status: 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'failed',
         opts: { sequence?: number; owner?: string; reason?: string; error?: string; elapsedMs?: number } = {}
     ): boolean {
-        const currentPlanId = String(planId || '').trim();
-        if (currentPlanId && this.planId && currentPlanId !== this.planId) {
-            return false;
-        }
-        if (opts.sequence !== undefined && opts.sequence <= this.planEventSequence) {
-            return false;
-        }
-        const index = this.planTodos.findIndex(todo => todo.id === stepId);
-        if (index < 0) {
-            return false;
-        }
-        if (opts.sequence !== undefined) {
-            this.planEventSequence = opts.sequence;
-        }
-        const current = this.planTodos[index];
-        const next: AgentConsolePlanTodoItem = {
-            ...current,
-            status,
-            planId: this.planId || currentPlanId,
-            updatedAt: Date.now()
-        };
-        if (opts.owner !== undefined) {
-            next.owner = opts.owner;
-        }
-        if (opts.reason !== undefined) {
-            next.blockedReason = opts.reason;
-            if (!next.blockedBy) {
-                next.blockedBy = [];
-            }
-            if (!next.blockedBy.includes(stepId)) {
-                next.blockedBy = [...next.blockedBy, stepId];
-            }
-        }
-        if (opts.error !== undefined) {
-            next.error = opts.error;
-        }
-        if (opts.elapsedMs !== undefined) {
-            next.elapsedMs = opts.elapsedMs;
-        }
-        this.planTodos = [
-            ...this.planTodos.slice(0, index),
-            next,
-            ...this.planTodos.slice(index + 1)
-        ];
-        this.planMessage = this.buildPlanMessage();
-        return true;
+        return mergePlanStepStatusInState(this, planId, stepId, status, opts);
     }
 
-    // Cancel all remaining pending/in-progress steps. Sequence-guarded ONCE for the
-    // whole bulk (not per step), so a single reused event sequence cannot drop later steps.
     cancelRemainingPlanSteps(planId?: string, sequence?: number): void {
-        if (sequence !== undefined && sequence <= this.planEventSequence) {
-            return;
-        }
-        if (sequence !== undefined) {
-            this.planEventSequence = sequence;
-        }
-        let changed = false;
-        this.planTodos = this.planTodos.map(todo => {
-            if (todo.status === 'pending' || todo.status === 'in_progress') {
-                changed = true;
-                return { ...todo, status: 'cancelled' as const, planId: this.planId || (planId ? String(planId) : todo.planId), updatedAt: Date.now() };
-            }
-            return todo;
-        });
-        if (changed) {
-            this.planMessage = this.buildPlanMessage();
-        }
+        cancelRemainingPlanStepsInState(this, planId, sequence);
     }
 
     setGoalSummary(goal: AgentConsoleGoalSummary | null | undefined): void {

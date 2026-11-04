@@ -245,3 +245,166 @@ export function resolveSelectedPlanTodoDetailLabel(state: AgentConsoleSessionSta
     ];
     return parts.filter(Boolean).join('\n');
 }
+
+/** Replace the plan with a full projection (sequence/revision guarded). */
+export function setPlanTodos(
+    state: AgentConsoleSessionState,
+    todos: AgentConsolePlanTodoItem[],
+    sourceSessionId?: string,
+    scope?: 'project' | 'thread',
+    sequence?: number,
+    revision?: number,
+    planId?: string
+): void {
+    if (sequence !== undefined && sequence <= state.planEventSequence) {
+        return;
+    }
+    if (sequence !== undefined) {
+        state.planEventSequence = sequence;
+    }
+    if (revision !== undefined && revision >= 0) {
+        state.planRevision = revision;
+    }
+    if (planId) {
+        state.planId = String(planId);
+    }
+    state.planTodos = todos.map(todo => {
+        const pid = state.planId || (planId ? String(planId) : undefined);
+        if (!pid) {
+            return { ...todo };
+        }
+        return { ...todo, planId: pid, revision: state.planRevision };
+    });
+    if (state.planTodos.length <= 7) {
+        state.planTodoExpanded = false;
+    }
+    state.planTodoSourceSessionId = String(sourceSessionId || '').trim();
+    state.planScope = scope || '';
+    state.planMessage = buildPlanMessage(state);
+}
+
+/** Merge a plan-created event into the todo projection. */
+export function mergePlanCreated(
+    state: AgentConsoleSessionState,
+    steps: Array<Partial<AgentConsolePlanTodoItem> & { id: string; content: string }>,
+    planId?: string,
+    revision?: number,
+    sequence?: number,
+    sourceSessionId?: string,
+    scope?: 'project' | 'thread'
+): void {
+    if (sequence !== undefined && sequence <= state.planEventSequence) {
+        return;
+    }
+    if (sequence !== undefined) {
+        state.planEventSequence = sequence;
+    }
+    state.planTodos = steps.map((step, index) => ({
+        id: String(step.id || '').trim() || `step-${index}`,
+        content: String(step.content || '').trim(),
+        status: (step.status === 'cancelled' || step.status === 'failed' || step.status === 'in_progress' || step.status === 'completed' ? step.status : 'pending'),
+        parentId: step.parentId,
+        kind: step.kind,
+        acceptance: step.acceptance,
+        dependsOn: Array.isArray(step.dependsOn) ? step.dependsOn.slice() : undefined,
+        blockedBy: Array.isArray(step.blockedBy) ? step.blockedBy.slice() : undefined,
+        estimate: step.estimate,
+        owner: step.owner,
+        evidenceIds: Array.isArray(step.evidenceIds) ? step.evidenceIds.slice() : undefined,
+        receiptId: step.receiptId,
+        testSummary: step.testSummary,
+        diffSummary: step.diffSummary,
+        reviewSummary: step.reviewSummary,
+        error: step.error,
+        elapsedMs: step.elapsedMs,
+        planId: planId ? String(planId) : state.planId,
+        revision: revision !== undefined && revision >= 0 ? revision : state.planRevision,
+        updatedAt: Date.now()
+    }));
+    if (state.planTodos.length <= 7) {
+        state.planTodoExpanded = false;
+    }
+    if (sourceSessionId !== undefined) {
+        state.planTodoSourceSessionId = String(sourceSessionId || '').trim();
+    }
+    if (scope !== undefined) {
+        state.planScope = scope || '';
+    }
+    if (planId) {
+        state.planId = String(planId);
+    }
+    if (revision !== undefined && revision >= 0) {
+        state.planRevision = revision;
+    }
+    state.planMessage = buildPlanMessage(state);
+}
+
+/** Apply one plan-step status transition, preserving inline metadata. */
+export function mergePlanStepStatus(
+    state: AgentConsoleSessionState,
+    planId: string,
+    stepId: string,
+    status: 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'failed',
+    opts: { sequence?: number; owner?: string; reason?: string; error?: string; elapsedMs?: number } = {}
+): boolean {
+    const currentPlanId = String(planId || '').trim();
+    if (currentPlanId && state.planId && currentPlanId !== state.planId) {
+        return false;
+    }
+    if (opts.sequence !== undefined && opts.sequence <= state.planEventSequence) {
+        return false;
+    }
+    const index = state.planTodos.findIndex(todo => todo.id === stepId);
+    if (index < 0) {
+        return false;
+    }
+    if (opts.sequence !== undefined) {
+        state.planEventSequence = opts.sequence;
+    }
+    const current = state.planTodos[index];
+    const next: AgentConsolePlanTodoItem = {
+        ...current,
+        status,
+        planId: state.planId || currentPlanId,
+        updatedAt: Date.now()
+    };
+    if (opts.owner !== undefined) {
+        next.owner = opts.owner;
+    }
+    if (opts.reason !== undefined) {
+        next.blockedReason = opts.reason;
+        if (!next.blockedBy) next.blockedBy = [];
+        if (!next.blockedBy.includes(stepId)) next.blockedBy = [...next.blockedBy, stepId];
+    }
+    if (opts.error !== undefined) next.error = opts.error;
+    if (opts.elapsedMs !== undefined) next.elapsedMs = opts.elapsedMs;
+    state.planTodos = [...state.planTodos.slice(0, index), next, ...state.planTodos.slice(index + 1)];
+    state.planMessage = buildPlanMessage(state);
+    return true;
+}
+
+/** Cancel all remaining pending/in-progress steps once per event sequence. */
+export function cancelRemainingPlanSteps(state: AgentConsoleSessionState, planId?: string, sequence?: number): void {
+    if (sequence !== undefined && sequence <= state.planEventSequence) {
+        return;
+    }
+    if (sequence !== undefined) {
+        state.planEventSequence = sequence;
+    }
+    let changed = false;
+    state.planTodos = state.planTodos.map(todo => {
+        if (todo.status === 'pending' || todo.status === 'in_progress') {
+            changed = true;
+            return {
+                ...todo,
+                status: 'cancelled' as const,
+                planId: state.planId || (planId ? String(planId) : todo.planId),
+                updatedAt: Date.now()
+            };
+        }
+        return todo;
+    });
+    if (changed) {
+        state.planMessage = buildPlanMessage(state);
+    }
+}
