@@ -3,7 +3,7 @@
  *
  * TUI components should describe semantic classes; the host supplies the
  * compiled stylesheet (the same CSS used by the web console). Inline
- * `v-style` remains only as a dynamic override.
+ * Standard `[style]` remains only as a dynamic override.
  */
 export interface ConsoleStyleRule {
     selector: string;

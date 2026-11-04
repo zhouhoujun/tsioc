@@ -9,7 +9,7 @@ import { DOCUMENT } from '@tsdi/common';
     selector: 'style-binding-spec',
     template: `
     <section>
-        <p class="status-line" v-style="statusStyle">State: {{status}}</p>
+        <p class="status-line" [style]="statusStyle">State: {{status}}</p>
     </section>
     `
 })
@@ -42,7 +42,7 @@ export class StyleBindingRegressionTest {
         });
     }
 
-    @Test('keeps v-style object binding and inline interpolation in sync')
+    @Test('keeps style object binding and inline interpolation in sync')
     async renderAndRefresh() {
         const ref = this.ctx.runners.getRef(StyleBindingSpecComponent) as ComponentRef<StyleBindingSpecComponent>;
         const root = ref.hostView.rootNodes[0] as any;

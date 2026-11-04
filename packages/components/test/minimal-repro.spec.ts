@@ -57,10 +57,10 @@ export class MinimalIfElseClickReproTest {
     template: `
     <div class="console-panel">
         <div class="message-row" v-for="line in lines">
-            <label class="message-line" v-style="lineStyle">
-                <span v-style="contentStyle">{{line.role}}</span>
-                <span class="message-detail-toggle" v-style="lineStyle" v-if="line.toggleContent" @click="onToggle(line)">{{line.toggleContent}}</span>
-                <span v-style="lineStyle" v-else>{{line.content}}</span>
+            <label class="message-line" [style]="lineStyle">
+                <span [style]="contentStyle">{{line.role}}</span>
+                <span class="message-detail-toggle" [style]="lineStyle" v-if="line.toggleContent" @click="onToggle(line)">{{line.toggleContent}}</span>
+                <span [style]="lineStyle" v-else>{{line.content}}</span>
             </label>
         </div>
     </div>

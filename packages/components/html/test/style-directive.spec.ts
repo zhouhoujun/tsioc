@@ -8,10 +8,10 @@ import { HtmlTemplateModule } from '../src';
 @Component({
     selector: 'style-directive-regression',
     template: `
-    <section class="wrapper" v-style="wrapperStyle">
-        <p class="caption" v-style="captionStyle">Caption</p>
-        <input class="field" v-style="fieldStyle" />
-        <button class="action" v-style="buttonStyle">Go</button>
+    <section class="wrapper" [style]="wrapperStyle">
+        <p class="caption" [style]="captionStyle">Caption</p>
+        <input class="field" [style]="fieldStyle" />
+        <button class="action" [style]="buttonStyle">Go</button>
     </section>
     `
 })
@@ -41,7 +41,7 @@ export class HtmlStyleDirectiveRegressionTest {
         });
     }
 
-    @Test('binds v-style objects to each matching element')
+    @Test('binds style objects to each matching element')
     async render() {
         const ref = this.ctx.runners.getRef(StyleDirectiveRegressionComponent) as ComponentRef<StyleDirectiveRegressionComponent>;
         const root = ref.hostView.rootNodes[0] as any;

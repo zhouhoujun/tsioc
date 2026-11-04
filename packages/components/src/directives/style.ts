@@ -28,7 +28,7 @@ export interface StyleDirectiveMetadata {
  * @class StyleDirective
  */
 @Directive({
-    selector: '[v-style],[style]'
+    selector: '[style]'
 })
 export class StyleDirective {
     constructor(
