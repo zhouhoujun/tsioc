@@ -89,9 +89,9 @@ function messageRenderSignature(message: any): string {
         AgentConsoleMessageOutletDirective
     ],
     template: `
-    <div class="console-panel console-messages-panel" [style]="shellStyle" renderRegion="messages" focusable [focused]="transcriptFocused">
-        <label class="message-empty" [style]="emptyStyle" v-show="emptyLabel">{{emptyLabel}}</label>
-        <label class="message-hint" [style]="titleStyle" v-show="messagesHintLabel">{{messagesHintLabel}}</label>
+    <div class="console-panel console-messages-panel" renderRegion="messages" focusable [focused]="transcriptFocused">
+        <label class="message-empty" v-show="emptyLabel">{{emptyLabel}}</label>
+        <label class="message-hint" v-show="messagesHintLabel">{{messagesHintLabel}}</label>
         <div class="message-row" v-for="item in renderedMessageItems">
             <div [agentConsoleMessageOutlet]="item"></div>
         </div>

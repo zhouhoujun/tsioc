@@ -135,13 +135,13 @@ export class AgentConsoleTimelineEventDetailPanelComponent {
 @Component({
     selector: 'agent-console-review-panel',
     template: `
-    <div class="console-panel console-review-panel" [style]="shellStyle">
-        <label [style]="accentStyle">{{reviewSummaryLabel}}</label>
-        <label [style]="metaStyle" v-show="reviewStatsLabel">{{reviewStatsLabel}}</label>
-        <label [style]="detailStyle" v-show="reviewSelectionLabel">{{reviewSelectionLabel}}</label>
-        <label [style]="hintStyle">{{reviewHintLabel}}</label>
-        <label [style]="detailLineStyleAt(index)" v-for="index in detailIndexes">
-            <span [style]="lineNumberStyle">{{detailLineNumberAt(index)}}</span><span [style]="detailLineContentStyle">{{detailLineContentAt(index)}}</span>
+    <div class="console-panel console-review-panel">
+        <label class="review-summary">{{reviewSummaryLabel}}</label>
+        <label class="review-stats" v-show="reviewStatsLabel">{{reviewStatsLabel}}</label>
+        <label class="review-selection" v-show="reviewSelectionLabel">{{reviewSelectionLabel}}</label>
+        <label class="review-hint">{{reviewHintLabel}}</label>
+        <label class="review-detail-line" v-for="index in detailIndexes">
+            <span class="review-line-number">{{detailLineNumberAt(index)}}</span><span class="review-line-content">{{detailLineContentAt(index)}}</span>
         </label>
     </div>
     `

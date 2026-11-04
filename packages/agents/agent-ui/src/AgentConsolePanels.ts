@@ -92,8 +92,8 @@ export class AgentConsoleBrandPanelComponent {
 @Component({
     selector: 'agent-console-status-panel',
     template: `
-    <div class="console-panel console-status-panel" [style]="shellStyle" @mouseenter="onHoverEnter()" @mouseleave="onHoverLeave()">
-        <label class="status-line" [style]="statusStyle" v-for="line in statusLines">{{line}}</label>
+    <div class="console-panel console-status-panel" data-tone="{{statusTone}}" @mouseenter="onHoverEnter()" @mouseleave="onHoverLeave()">
+        <label class="status-line" v-for="line in statusLines">{{line}}</label>
     </div>
     `
 })
@@ -184,8 +184,10 @@ export class AgentConsoleStatusPanelComponent {
         return this.state.lastError || this.state.consoleOptions.noneValueLabel;
     }
 
-    get statusStyle() {
-        return styleTextToObject(this.resolveToneStyle(this.state.status));
+    get statusTone(): 'error' | 'notice' | 'busy' | 'idle' {
+        if (this.state.lastError) return 'error';
+        if (this.notice) return 'notice';
+        return this.state.status === 'running' || this.state.status === 'reasoning' ? 'busy' : 'idle';
     }
 
     get statusLines(): string[] {
@@ -253,21 +255,6 @@ export class AgentConsoleStatusPanelComponent {
         return this.activeThemeStyles.statusNoticeValue;
     }
 
-    protected resolveToneStyle(status: string): string {
-        if (this.state.lastError) {
-            return this.activeTheme.statusErrorValue;
-        }
-        if (this.notice) {
-            return this.activeTheme.statusNoticeValue;
-        }
-        switch (status) {
-            case 'running':
-            case 'reasoning':
-                return this.activeTheme.statusBusyValue;
-            default:
-                return this.activeTheme.statusIdleValue;
-        }
-    }
 }
 
 @Component({

@@ -66,10 +66,10 @@ export * from './AgentConsoleMessagePanels';
 @Component({
     selector: 'agent-console-activity-panel',
     template: `
-    <div class="console-panel console-activity-panel" [style]="shellStyle">
-        <label class="activity-item" v-for="item in activityItems">
-            <span [style]="item.kindStyle">{{item.kind}}</span>
-            <span [style]="item.messageStyle">{{item.message}}</span>
+    <div class="console-panel console-activity-panel">
+        <label class="activity-item" data-kind="{{item.kindKey}}" v-for="item in activityItems">
+            <span class="activity-kind">{{item.kind}}</span>
+            <span class="activity-message">{{item.message}}</span>
         </label>
     </div>
     `
@@ -96,7 +96,7 @@ export class AgentConsoleActivityPanelComponent {
         return styleTextToObject(this.activeTheme.activityTitle);
     }
 
-    get activityItems(): Array<{ kind: string; message: string; kindStyle: Record<string, string>; messageStyle: Record<string, string> }> {
+    get activityItems(): Array<{ kind: string; message: string; kindKey: string; kindStyle: Record<string, string>; messageStyle: Record<string, string> }> {
         if (!this.shouldShow) {
             return [];
         }
@@ -113,6 +113,7 @@ export class AgentConsoleActivityPanelComponent {
         return compact.slice(-this.state.consoleOptions.activityVisibleItems).map(activity => ({
             kind: `${this.activityKindLabel(activity.kind)} `,
             message: `${this.summarize(activity.message)}${activity.repeatCount > 1 ? ` ×${activity.repeatCount}` : ''}`,
+            kindKey: activity.kind,
             kindStyle: this.activityKindStyle(activity.kind),
             messageStyle: this.activityMessageStyle(activity.kind)
         }));
@@ -160,7 +161,7 @@ export class AgentConsoleActivityPanelComponent {
         return this.activityLabels.join(' | ');
     }
 
-    activityAt(index: number): { kind: string; message: string; kindStyle: Record<string, string>; messageStyle: Record<string, string> } | undefined {
+    activityAt(index: number): { kind: string; message: string; kindKey: string; kindStyle: Record<string, string>; messageStyle: Record<string, string> } | undefined {
         return this.activityItems[index];
     }
 
@@ -300,24 +301,24 @@ export class AgentConsoleSelectPanelComponent {
 @Component({
     selector: 'agent-console-which-key-panel',
     template: `
-    <div class="console-panel console-which-key-panel" [style]="shellStyle">
-        <label class="which-key-title" [style]="titleStyle">{{titleText}}</label>
+    <div class="console-panel console-which-key-panel">
+        <label class="which-key-title">{{titleText}}</label>
         <template v-if="isGrouped">
             <template v-for="group in groupedBindings">
-                <label class="which-key-group-header" [style]="groupHeaderStyle">{{group.label}}</label>
-                <label class="which-key-row" [style]="rowStyle" v-for="binding in group.items">
-                    <span [style]="keyStyle">{{binding.key}}</span>
-                    <span [style]="actionStyle"> {{binding.label || binding.action}}</span>
+                <label class="which-key-group-header">{{group.label}}</label>
+                <label class="which-key-row" v-for="binding in group.items">
+                    <span class="which-key-key">{{binding.key}}</span>
+                    <span class="which-key-action"> {{binding.label || binding.action}}</span>
                 </label>
             </template>
         </template>
         <template v-else>
-            <label class="which-key-row" [style]="rowStyle" v-for="binding in bindings">
-                <span [style]="keyStyle">{{binding.key}}</span>
-                <span [style]="actionStyle"> {{binding.label || binding.action}}</span>
+            <label class="which-key-row" v-for="binding in bindings">
+                <span class="which-key-key">{{binding.key}}</span>
+                <span class="which-key-action"> {{binding.label || binding.action}}</span>
             </label>
         </template>
-        <label class="which-key-hint" [style]="hintStyle">{{hintText}}</label>
+        <label class="which-key-hint">{{hintText}}</label>
     </div>
     `
 })
@@ -416,14 +417,14 @@ export class AgentConsoleWhichKeyPanelComponent {
 @Component({
     selector: 'agent-console-health-popover',
     template: `
-    <div class="console-panel console-health-popover" [style]="shellStyle">
-        <label class="health-title" [style]="titleStyle">{{titleText}}</label>
-        <label class="health-row" [style]="rowStyle" v-for="item in items">
-            <span [style]="statusStyle(item.status)">{{statusLabel(item.status)}}</span>
-            <span [style]="labelStyle"> {{item.label}}</span>
-            <span [style]="detailStyle"> {{item.detail}}</span>
+    <div class="console-panel console-health-popover">
+        <label class="health-title">{{titleText}}</label>
+        <label class="health-row" data-status="{{item.status}}" v-for="item in items">
+            <span class="health-status">{{statusLabel(item.status)}}</span>
+            <span class="health-label"> {{item.label}}</span>
+            <span class="health-detail"> {{item.detail}}</span>
         </label>
-        <label class="health-hint" [style]="hintStyle">{{hintText}}</label>
+        <label class="health-hint">{{hintText}}</label>
     </div>
     `
 })

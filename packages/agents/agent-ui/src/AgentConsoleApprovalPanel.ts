@@ -17,16 +17,16 @@ import { AgentConsoleTheme, AgentConsoleThemeStyles, defaultAgentConsoleTheme } 
 @Component({
     selector: 'agent-console-approvals-panel',
     template: `
-    <div class="console-panel console-approvals-panel" [style]="shellStyle" role="dialog" aria-label="{{accessibilityLabel}}"><label class="dialog-close" data-cell-width="2" [style]="closeStyle" @click="closeApproval">✕</label>
-        <label [style]="accentStyle">{{approvalsTitleLabel}}</label>
-        <label [style]="metaStyle" v-show="approvalsSummaryLabel">{{approvalsSummaryLabel}}</label>
-        <label [style]="listStyle" v-for="item in approvalItems" @click="selectApproval(item.id)">{{item.label}}</label>
-        <label [style]="detailStyle" v-for="line in selectedApprovalRequestLines">{{line}}</label>
-        <label [style]="detailStyle" v-for="line in selectedApprovalDetailLines">{{line}}</label>
-        <label class="approval-option approval-option-once" [style]="allowOptionStyle" @click="approveSelected">{{allowOnceLabel}}</label>
-        <label class="approval-option approval-option-always" [style]="allowOptionStyle" @click="approveAlwaysSelected">{{allowAlwaysLabel}}</label>
-        <label class="approval-option approval-option-deny" [style]="denyOptionStyle" @click="denySelected">{{denyLabel}}</label>
-        <label [style]="metaStyle" v-show="approvalActionsLabel">{{approvalActionsLabel}}</label>
+    <div class="console-panel console-approvals-panel" role="dialog" aria-label="{{accessibilityLabel}}"><label class="dialog-close" data-cell-width="2" @click="closeApproval">✕</label>
+        <label class="approval-title">{{approvalsTitleLabel}}</label>
+        <label class="approval-summary" v-show="approvalsSummaryLabel">{{approvalsSummaryLabel}}</label>
+        <label class="approval-item" v-for="item in approvalItems" @click="selectApproval(item.id)">{{item.label}}</label>
+        <label class="approval-detail" v-for="line in selectedApprovalRequestLines">{{line}}</label>
+        <label class="approval-detail" v-for="line in selectedApprovalDetailLines">{{line}}</label>
+        <label class="approval-option approval-option-once" @click="approveSelected">{{allowOnceLabel}}</label>
+        <label class="approval-option approval-option-always" @click="approveAlwaysSelected">{{allowAlwaysLabel}}</label>
+        <label class="approval-option approval-option-deny" @click="denySelected">{{denyLabel}}</label>
+        <label class="approval-actions" v-show="approvalActionsLabel">{{approvalActionsLabel}}</label>
     </div>
     `
 })

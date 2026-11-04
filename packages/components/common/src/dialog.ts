@@ -9,7 +9,7 @@ import { getDisplayWidth } from './display-width';
 @Component({
     selector: 'common-dialog',
     template: `
-    <div class="console-panel common-dialog" role="dialog" aria-label="{{ariaLabel}}" [style]="resolvedShellStyle">
+    <div class="console-panel common-dialog {{widthClass}}" role="dialog" aria-label="{{ariaLabel}}">
         <label class="dialog-close" data-cell-width="2" @click="close">{{closeLabel}}</label>
         <label class="common-dialog-title" v-show="title">{{title}}</label>
         <label class="common-dialog-line" v-for="line in lines">{{line}}</label>
@@ -31,6 +31,10 @@ export class DialogComponent {
 
     get resolvedShellStyle(): string {
         return `max-width: ${this.resolveContentWidth()}ch;`;
+    }
+
+    get widthClass(): string {
+        return `common-dialog-w-${this.resolveContentWidth()}`;
     }
 
     /** Fit the modal to its content so a tall QR panel leaves the transcript visible. */

@@ -71,19 +71,19 @@ export * from './AgentConsoleResourcePanels';
     imports: [InputFieldComponent],
     template: `
     <div class="console-panel console-input-panel">
-        <div class="input-shell" [style]="shellStyle">
-            <div class="input-entry" [style]="entryShellStyle">
+        <div class="input-shell">
+            <div class="input-entry">
                 <input-field :value="input" :prompt="inputPromptBase" :placeholder="inputPlaceholderLabel" :cursorPos="inputCursor" :focused="inputFocused" :continuationPrompt="'  '" :mask="inputSecret" @inputAction="onInput" @cursorAction="onCursorChange" @keydownAction="onKeydown"></input-field>
             </div>
             <div class="wizard-banner" v-show="wizardOpen">
-                <label class="wizard-title" [style]="wizardTitleStyle">{{wizardTitleLabel}}</label>
-                <label class="wizard-step" [style]="wizardStepStyle">{{wizardStepLabel}}</label>
-                <label class="wizard-help" [style]="wizardHelpStyle" v-show="wizardHelpLabel">{{wizardHelpLabel}}</label>
-                <label class="wizard-summary" [style]="wizardHelpStyle" v-show="wizardSummaryLabel">{{wizardSummaryLabel}}</label>
-                <label class="wizard-hint" [style]="wizardHintStyle" v-show="wizardHintLabel">{{wizardHintLabel}}</label>
+                <label class="wizard-title">{{wizardTitleLabel}}</label>
+                <label class="wizard-step">{{wizardStepLabel}}</label>
+                <label class="wizard-help" v-show="wizardHelpLabel">{{wizardHelpLabel}}</label>
+                <label class="wizard-summary" v-show="wizardSummaryLabel">{{wizardSummaryLabel}}</label>
+                <label class="wizard-hint" v-show="wizardHintLabel">{{wizardHintLabel}}</label>
             </div>
         </div>
-        <label class="input-meta" [style]="hintStyle"><span v-show="metaPrefixLabel">{{metaPrefixLabel}} · </span>{{totalTokens | number-format}} tokens<span v-show="inputBadgeLabel">{{inputBadgeLabel}}</span></label>
+        <label class="input-meta"><span v-show="metaPrefixLabel">{{metaPrefixLabel}} · </span>{{totalTokens | number-format}} tokens<span v-show="inputBadgeLabel">{{inputBadgeLabel}}</span></label>
     </div>
     `
 })

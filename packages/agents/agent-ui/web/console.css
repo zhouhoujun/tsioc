@@ -154,6 +154,131 @@ body {
 #agent-console .working-delay-14 { animation-delay: 1050ms; }
 #agent-console .working-delay-15 { animation-delay: 1125ms; }
 
+#agent-console .console-review-panel {
+    color: var(--agent-theme-messages-shell-color);
+    background: var(--agent-theme-messages-shell-background);
+    background-color: var(--agent-theme-messages-shell-background-color);
+    padding: 1em 1ch;
+}
+#agent-console .review-summary { color: var(--agent-theme-tools-accent-color); font-weight: bold; }
+#agent-console .review-stats,
+#agent-console .review-hint { color: var(--agent-theme-status-label-color); }
+#agent-console .review-selection { color: var(--agent-theme-status-value-color); }
+#agent-console .review-detail-line { display: block; white-space: nowrap; }
+#agent-console .review-line-number { color: var(--agent-theme-message-detail-line-number-color); }
+#agent-console .review-line-content { color: var(--agent-theme-status-value-color); white-space: nowrap; }
+
+#agent-console .console-activity-panel {
+    color: var(--agent-theme-activity-shell-color);
+    background: var(--agent-theme-activity-shell-background);
+    background-color: var(--agent-theme-activity-shell-background-color);
+}
+#agent-console .activity-kind { color: var(--agent-theme-tools-accent-color); }
+#agent-console .activity-message { color: var(--agent-theme-status-value-color); }
+#agent-console .activity-item[data-kind="error"] .activity-kind { color: var(--agent-theme-status-error-label-color); }
+#agent-console .activity-item[data-kind="error"] .activity-message { color: var(--agent-theme-status-error-value-color); }
+#agent-console .activity-item[data-kind="rollback"] .activity-kind { color: var(--agent-theme-status-notice-label-color); }
+#agent-console .activity-item[data-kind="model"] .activity-message { color: var(--agent-theme-status-label-color); }
+#agent-console .console-which-key-panel,
+#agent-console .console-health-popover {
+    color: var(--agent-theme-select-shell-color);
+    background: var(--agent-theme-select-shell-background);
+    background-color: var(--agent-theme-select-shell-background-color);
+    padding: var(--agent-theme-select-shell-padding);
+}
+#agent-console .which-key-title,
+#agent-console .which-key-hint,
+#agent-console .health-title,
+#agent-console .health-hint,
+#agent-console .which-key-action,
+#agent-console .health-detail { color: var(--agent-theme-select-hint-color); }
+#agent-console .which-key-group-header { color: var(--agent-theme-select-hint-color); font-weight: bold; }
+#agent-console .which-key-row,
+#agent-console .health-row { color: var(--agent-theme-select-option-color); }
+#agent-console .which-key-key,
+#agent-console .health-label { color: var(--agent-theme-select-option-active-color); font-weight: var(--agent-theme-select-option-active-font-weight); }
+#agent-console .health-row[data-status="ok"] .health-status { color: var(--agent-theme-status-idle-value-color); }
+#agent-console .health-row[data-status="warn"] .health-status { color: var(--agent-theme-status-notice-value-color); }
+#agent-console .health-row[data-status="error"] .health-status { color: var(--agent-theme-status-error-value-color); }
+
+#agent-console .console-status-panel {
+    color: var(--agent-theme-status-shell-color);
+    background: var(--agent-theme-status-shell-background);
+    background-color: var(--agent-theme-status-shell-background-color);
+}
+#agent-console .console-status-panel[data-tone="error"] .status-line { color: var(--agent-theme-status-error-value-color); }
+#agent-console .console-status-panel[data-tone="notice"] .status-line { color: var(--agent-theme-status-notice-value-color); }
+#agent-console .console-status-panel[data-tone="busy"] .status-line { color: var(--agent-theme-status-busy-value-color); }
+#agent-console .console-status-panel[data-tone="idle"] .status-line { color: var(--agent-theme-status-idle-value-color); }
+
+#agent-console .console-approvals-panel {
+    color: var(--agent-theme-dialog-shell-color);
+    background: var(--agent-theme-input-shell-background, var(--agent-theme-dialog-shell-background));
+    background-color: var(--agent-theme-input-shell-background-color, var(--agent-theme-dialog-shell-background-color));
+    padding: var(--agent-theme-dialog-shell-padding);
+    border: var(--agent-theme-dialog-shell-border);
+    border-radius: var(--agent-theme-dialog-shell-border-radius);
+}
+#agent-console .approval-title { color: var(--agent-theme-tools-accent-color); }
+#agent-console .approval-summary,
+#agent-console .approval-actions { color: var(--agent-theme-status-label-color); }
+#agent-console .approval-item,
+#agent-console .approval-detail { color: var(--agent-theme-status-value-color); }
+#agent-console .approval-option-once,
+#agent-console .approval-option-always { color: var(--agent-theme-tools-accent-color); }
+#agent-console .approval-option-deny { color: var(--agent-theme-status-error-value-color); }
+
+#agent-console .input-shell {
+    color: var(--agent-theme-input-shell-color);
+    background: var(--agent-theme-input-shell-background);
+    background-color: var(--agent-theme-input-shell-background-color);
+    padding: var(--agent-theme-input-shell-padding);
+    border: var(--agent-theme-input-shell-border);
+    border-radius: var(--agent-theme-input-shell-border-radius);
+}
+#agent-console .input-entry {
+    color: var(--agent-theme-input-entry-color);
+    background: var(--agent-theme-input-entry-background);
+    padding: var(--agent-theme-input-entry-padding);
+}
+#agent-console .wizard-title { color: var(--agent-theme-input-title-color); }
+#agent-console .wizard-step { color: var(--agent-theme-input-caption-color); }
+#agent-console .wizard-help,
+#agent-console .wizard-summary { color: var(--agent-theme-input-hint-color, var(--agent-theme-input-caption-color)); }
+#agent-console .wizard-hint,
+#agent-console .input-meta { color: var(--agent-theme-input-hint-color); }
+
+#agent-console .console-working-panel {
+    color: var(--agent-theme-working-shell-color);
+    background: var(--agent-theme-working-shell-background);
+    background-color: var(--agent-theme-working-shell-background-color);
+    padding: var(--agent-theme-working-shell-padding);
+}
+
+#agent-console .working-line {
+    color: var(--agent-theme-working-value-color);
+    padding: 1em 1ch 1em;
+}
+
+#agent-console .working-label {
+    color: var(--agent-theme-working-label-color);
+}
+
+#agent-console .console-messages-panel {
+    color: var(--agent-theme-messages-shell-color);
+    background: var(--agent-theme-messages-shell-background);
+    background-color: var(--agent-theme-messages-shell-background-color);
+    padding: var(--agent-theme-messages-shell-padding);
+}
+
+#agent-console .message-hint {
+    color: var(--agent-theme-messages-title-color);
+}
+
+#agent-console .message-empty {
+    color: var(--agent-theme-status-label-color);
+}
+
 #agent-console .console-new-messages {
     transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, opacity 120ms ease;
 }
@@ -792,3 +917,78 @@ html[data-agent-theme="high-contrast"] #agent-console .common-markdown-code-toke
 #agent-console .message-line[data-hover="fade"]:hover {
     background: var(--agent-web-hover);
 }
+
+/* common-dialog width buckets keep content-fit sizing out of inline styles. */
+#agent-console .common-dialog-w-24 { max-width: 24ch; }
+#agent-console .common-dialog-w-25 { max-width: 25ch; }
+#agent-console .common-dialog-w-26 { max-width: 26ch; }
+#agent-console .common-dialog-w-27 { max-width: 27ch; }
+#agent-console .common-dialog-w-28 { max-width: 28ch; }
+#agent-console .common-dialog-w-29 { max-width: 29ch; }
+#agent-console .common-dialog-w-30 { max-width: 30ch; }
+#agent-console .common-dialog-w-31 { max-width: 31ch; }
+#agent-console .common-dialog-w-32 { max-width: 32ch; }
+#agent-console .common-dialog-w-33 { max-width: 33ch; }
+#agent-console .common-dialog-w-34 { max-width: 34ch; }
+#agent-console .common-dialog-w-35 { max-width: 35ch; }
+#agent-console .common-dialog-w-36 { max-width: 36ch; }
+#agent-console .common-dialog-w-37 { max-width: 37ch; }
+#agent-console .common-dialog-w-38 { max-width: 38ch; }
+#agent-console .common-dialog-w-39 { max-width: 39ch; }
+#agent-console .common-dialog-w-40 { max-width: 40ch; }
+#agent-console .common-dialog-w-41 { max-width: 41ch; }
+#agent-console .common-dialog-w-42 { max-width: 42ch; }
+#agent-console .common-dialog-w-43 { max-width: 43ch; }
+#agent-console .common-dialog-w-44 { max-width: 44ch; }
+#agent-console .common-dialog-w-45 { max-width: 45ch; }
+#agent-console .common-dialog-w-46 { max-width: 46ch; }
+#agent-console .common-dialog-w-47 { max-width: 47ch; }
+#agent-console .common-dialog-w-48 { max-width: 48ch; }
+#agent-console .common-dialog-w-49 { max-width: 49ch; }
+#agent-console .common-dialog-w-50 { max-width: 50ch; }
+#agent-console .common-dialog-w-51 { max-width: 51ch; }
+#agent-console .common-dialog-w-52 { max-width: 52ch; }
+#agent-console .common-dialog-w-53 { max-width: 53ch; }
+#agent-console .common-dialog-w-54 { max-width: 54ch; }
+#agent-console .common-dialog-w-55 { max-width: 55ch; }
+#agent-console .common-dialog-w-56 { max-width: 56ch; }
+#agent-console .common-dialog-w-57 { max-width: 57ch; }
+#agent-console .common-dialog-w-58 { max-width: 58ch; }
+#agent-console .common-dialog-w-59 { max-width: 59ch; }
+#agent-console .common-dialog-w-60 { max-width: 60ch; }
+#agent-console .common-dialog-w-61 { max-width: 61ch; }
+#agent-console .common-dialog-w-62 { max-width: 62ch; }
+#agent-console .common-dialog-w-63 { max-width: 63ch; }
+#agent-console .common-dialog-w-64 { max-width: 64ch; }
+#agent-console .common-dialog-w-65 { max-width: 65ch; }
+#agent-console .common-dialog-w-66 { max-width: 66ch; }
+#agent-console .common-dialog-w-67 { max-width: 67ch; }
+#agent-console .common-dialog-w-68 { max-width: 68ch; }
+#agent-console .common-dialog-w-69 { max-width: 69ch; }
+#agent-console .common-dialog-w-70 { max-width: 70ch; }
+#agent-console .common-dialog-w-71 { max-width: 71ch; }
+#agent-console .common-dialog-w-72 { max-width: 72ch; }
+#agent-console .common-dialog-w-73 { max-width: 73ch; }
+#agent-console .common-dialog-w-74 { max-width: 74ch; }
+#agent-console .common-dialog-w-75 { max-width: 75ch; }
+#agent-console .common-dialog-w-76 { max-width: 76ch; }
+#agent-console .common-dialog-w-77 { max-width: 77ch; }
+#agent-console .common-dialog-w-78 { max-width: 78ch; }
+#agent-console .common-dialog-w-79 { max-width: 79ch; }
+#agent-console .common-dialog-w-80 { max-width: 80ch; }
+#agent-console .common-dialog-w-81 { max-width: 81ch; }
+#agent-console .common-dialog-w-82 { max-width: 82ch; }
+#agent-console .common-dialog-w-83 { max-width: 83ch; }
+#agent-console .common-dialog-w-84 { max-width: 84ch; }
+#agent-console .common-dialog-w-85 { max-width: 85ch; }
+#agent-console .common-dialog-w-86 { max-width: 86ch; }
+#agent-console .common-dialog-w-87 { max-width: 87ch; }
+#agent-console .common-dialog-w-88 { max-width: 88ch; }
+#agent-console .common-dialog-w-89 { max-width: 89ch; }
+#agent-console .common-dialog-w-90 { max-width: 90ch; }
+#agent-console .common-dialog-w-91 { max-width: 91ch; }
+#agent-console .common-dialog-w-92 { max-width: 92ch; }
+#agent-console .common-dialog-w-93 { max-width: 93ch; }
+#agent-console .common-dialog-w-94 { max-width: 94ch; }
+#agent-console .common-dialog-w-95 { max-width: 95ch; }
+#agent-console .common-dialog-w-96 { max-width: 96ch; }
