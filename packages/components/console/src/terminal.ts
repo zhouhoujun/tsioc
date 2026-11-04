@@ -3919,7 +3919,10 @@ export function renderPrimaryTerminalScreen(options: TerminalPrimaryRenderOption
                         === stripTerminalAnsi(sliceStyledColumns(line, band.end, Number.MAX_SAFE_INTEGER))
                 : false;
             if (band && outsideUnchanged) {
-                commands.push(`\r\x1b[${Math.max(1, band.start + 1)}G${sliceStyledColumns(line, band.start, band.end)}`);
+                const segment = sliceStyledColumns(line, band.start, band.end);
+                const segmentWidth = getDisplayWidth(stripTerminalAnsi(segment));
+                const padding = ' '.repeat(Math.max(0, band.end - band.start - segmentWidth));
+                commands.push(`\r\x1b[${Math.max(1, band.start + 1)}G${segment}${padding}`);
             } else {
                 commands.push(`\r${line}\x1b[K`);
             }

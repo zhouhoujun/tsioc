@@ -2101,6 +2101,31 @@ export class ConsoleRendererTest {
         expect(closed.state.paintedLines[1]).toBe('LEFT|   |RIGHT');
     }
 
+    @Test('clears the whole previous band when a shorter dialog closes')
+    clearsWholePreviousBandOnShortDialogClose() {
+        const first = renderPrimaryTerminalScreen({
+            lines: ['logo', 'LEFT|', '> ask'],
+            width: 40
+        });
+        const opened = renderPrimaryTerminalScreen({
+            state: first.state,
+            lines: ['logo', 'LEFT|BOX|RIGHT', '> ask'],
+            width: 40,
+            rowBands: new Map([[1, { start: 5, end: 14 }]])
+        });
+        const closed = renderPrimaryTerminalScreen({
+            state: opened.state,
+            lines: ['logo', 'LEFT|', '> ask'],
+            width: 40,
+            rowBands: new Map([[1, { start: 5, end: 14 }]])
+        });
+        const plain = closed.output.replace(/\x1b\[[0-9;]*[A-Za-z]/g, '');
+        // Only the former band is repainted; the unchanged prefix stays on screen.
+        expect(plain).toContain('         ');
+        expect(plain).not.toContain('BOX');
+        expect(closed.state.paintedLines[1]).toBe('LEFT|');
+    }
+
     @Test('rewrites the full row when stable content outside a dialog band changes')
     rewritesFullRowWhenOutsideBandChanges() {
         const first = renderPrimaryTerminalScreen({
