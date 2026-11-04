@@ -46,6 +46,7 @@ import {
     , AgentConsoleUserRenderer
 } from './AgentConsoleMessageRenderers';
 import { AgentConsoleComponent } from './AgentConsoleComponent';
+import { AgentConsoleThemeVarsDirective } from './AgentConsoleThemeVars';
 import {
     AgentConsoleActivityPanelComponent,
     AgentConsoleBrandPanelComponent,
@@ -103,6 +104,7 @@ import { AGENT_CONSOLE_MARKDOWN_COMPONENT } from './AgentConsoleMessageComponent
     ],
     declarations: [
         AgentConsoleComponent,
+        AgentConsoleThemeVarsDirective,
         AgentConsoleBrandPanelComponent,
         AgentConsoleCommandOutputsPanelComponent,
         AgentConsoleStatusPanelComponent,

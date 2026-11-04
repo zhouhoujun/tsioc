@@ -312,7 +312,7 @@ interface AgentConsoleQueuedPrompt {
 @Component({
     selector: 'agent-console',
     template: `
-    <div class="agent-console" [style]="rootStyle">
+    <div class="agent-console" [agentThemeVars]="rootStyle">
         <common-tab-bar renderRegion="header"></common-tab-bar>
         <agent-console-brand-panel renderRegion="transcript" v-show="!showMessageDetailPanel && !showSelectPanel && !showTextOverlayPanel && !showPendingQuestionPanel"></agent-console-brand-panel>
         <agent-console-messages-panel renderRegion="transcript" v-show="!showMessageDetailPanel"></agent-console-messages-panel>
