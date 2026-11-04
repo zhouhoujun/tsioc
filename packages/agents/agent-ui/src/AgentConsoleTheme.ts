@@ -195,9 +195,29 @@ export function mergeAgentConsoleTheme(theme?: AgentConsoleThemeInput | null): A
 export function resolveAgentConsoleThemeStyles(theme: AgentConsoleTheme): AgentConsoleThemeStyles {
     return Object.keys(theme).reduce((styles, key) => {
         const themeKey = key as keyof AgentConsoleTheme;
-        styles[themeKey] = styleTextToObject(theme[themeKey]);
+        styles[themeKey] = resolveAgentConsoleThemeStyleVariables(themeKey, theme[themeKey]);
         return styles;
     }, {} as AgentConsoleThemeStyles);
+}
+
+function toKebabCase(value: string): string {
+    return String(value || '').replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
+}
+
+/**
+ * Theme fields are declarative CSS, not per-component literals. Resolve each
+ * declaration to a CSS variable so switching a theme only changes the variables
+ * on the console root; component rules stay class-based and static.
+ */
+export function resolveAgentConsoleThemeStyleVariables(
+    themeKey: keyof AgentConsoleTheme,
+    styleText?: string | null
+): Record<string, string> {
+    const declarations = styleTextToObject(styleText);
+    return Object.keys(declarations).reduce((result, property) => {
+        result[property] = `var(--agent-theme-${toKebabCase(String(themeKey))}-${toKebabCase(property)}, ${declarations[property]})`;
+        return result;
+    }, {} as Record<string, string>);
 }
 
 export function styleTextToObject(styleText?: string | null): Record<string, string> {
@@ -224,7 +244,7 @@ export function styleTextToObject(styleText?: string | null): Record<string, str
 export function resolveAgentConsoleCssVariables(theme?: AgentConsoleTheme | null): string {
     const active = theme || defaultAgentConsoleTheme;
     const color = (style: string, key: 'color' | 'background' = 'color') => styleTextToObject(style)?.[key] || '';
-    return [
+    const variables = [
         `--console-text:${color(active.statusValue) || '#c9d1d9'}`,
         `--console-meta:${color(active.statusLabel) || '#6e7681'}`,
         `--console-accent:${color(active.toolsAccent) || '#86a9d6'}`,
@@ -237,5 +257,12 @@ export function resolveAgentConsoleCssVariables(theme?: AgentConsoleTheme | null
         `--console-idle:${color(active.statusIdleValue) || '#6fa37a'}`,
         `--console-title:${color(active.statusTitle) || '#8b949e'}`,
         `--console-input-bg:${color(active.inputShell, 'background') || '#161b22'}`
-    ].join(';') + ';';
+    ];
+    for (const key of Object.keys(active) as Array<keyof AgentConsoleTheme>) {
+        const declarations = styleTextToObject(active[key]);
+        for (const property of Object.keys(declarations)) {
+            variables.push(`--agent-theme-${toKebabCase(String(key))}-${toKebabCase(property)}:${declarations[property]}`);
+        }
+    }
+    return variables.join(';') + ';';
 }
