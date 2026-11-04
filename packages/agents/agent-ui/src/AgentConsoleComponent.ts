@@ -252,6 +252,22 @@ import {
     runVimCommand
 } from './AgentConsoleSettingsCommands';
 import { AgentConsoleRuntimeHost, runFastCommand, runRawModeCommand, runStatusCommand, runStatuslineCommand, runThemeCommand, runTitleCommand } from './AgentConsoleRuntimeCommands';
+import {
+    runtimeHost,
+    keymapCommandHost,
+    globalKeyInputHost,
+    terminalInputHost,
+    turnInputHost,
+    promptMentionHost,
+    approvalInspectorHost,
+    settingsPanelHost,
+    shellCommandHost,
+    stashCommandHost,
+    gitSnapshotCommandHost,
+    extensionCommandHost,
+    policyCommandHost,
+    preferenceCommandHost
+} from './AgentConsoleHostFactories';
 import { runFeedbackCommandView } from './AgentConsoleFeedbackCommand';
 import { runReloadCommandView } from './AgentConsoleReloadCommand';
 import { runIdeCommand } from './AgentConsoleIdeCommands';
@@ -1120,7 +1136,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected async openApprovalInspector(requests: AgentConsoleApprovalRequest[]): Promise<void> {
-        return openApprovalInspectorView(this.approvalInspectorHost(), requests);
+        return openApprovalInspectorView(approvalInspectorHost(this), requests);
     }
 
     get title(): string {
@@ -1534,6 +1550,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     get rootStyle(): string { return resolveAgentConsoleCssVariables(this.state?.theme); }
+    protected gitSnapshotCommandHost(): GitSnapshotCommandHost { return gitSnapshotCommandHost(this); }
+    protected shellCommandHost(): ShellCommandHost { return shellCommandHost(this); }
+
     async onInit(): Promise<void> {
         this.state.toolPayloadLoader = async toolCallId => { if (!this.appRpc) { return ''; } try { const res: any = await this.appRpc.request('session.tool_payload', { sessionId: this.state.sessionId, toolCallId }); return String(res?.text || ''); } catch { return ''; } };
         this.state.submitAction = this.submitActionHandler; this.state.escapeAction = () => this.handleWizardEscape();
@@ -1586,7 +1605,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         // default here replays the previous transcript on every console start.
         await this.openSession(explicitSessionId || (freshStartup ? undefined : this.state.sessionId) || undefined, { persistCurrentHistory: false, fresh: freshStartup, missing: missingResume }); if (freshStartup) { await this.bootstrapStateFromAppRpc(this.state.sessionId); } if (this.appRpc && this.state.modelProfile) { await this.activateModelProfile(this.state.modelProfile, undefined, true); }
         if (this.state.securityLevel) {
-            await applySecurityLevel(this.policyCommandHost(), this.state.securityLevel, { notify: false, persist: false });
+            await applySecurityLevel(policyCommandHost(this), this.state.securityLevel, { notify: false, persist: false });
         }
         // Subscribe only after the initial session is selected. Subscribing
         // earlier lets the remote bridge seed the default session's timeline
@@ -1760,7 +1779,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async enrichPromptWithMentions(input: string): Promise<string> {
-        return enrichPromptWithMentionsView(this.promptMentionHost(), input);
+        return enrichPromptWithMentionsView(promptMentionHost(this), input);
     }
 
     protected async refreshMentionCatalog(): Promise<void> {
@@ -2042,7 +2061,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
             runVimCommand: (a) => self.runVimCommand(a),
             runKeymapCommand: (a) => self.runKeymapCommand(a),
             runPermissionsCommand: (a) => self.runPermissionsCommand(a),
-            runReloadCommand: () => runReloadCommandView(async () => { await self.restoreSettings(); await self.restoreTheme(); await self.restoreGlobalKeymap(); await self.restoreStatusline(); await self.restoreTitle(); await self.restoreRawMode(); await self.restoreModelStore(); await self.refreshMentionCatalog(); await self.refreshTools(); if (self.state.securityLevel) { await applySecurityLevel(self.policyCommandHost(), self.state.securityLevel, { notify: false, persist: false }); } }, (message: string) => self.notify(message), self.translator),
+            runReloadCommand: () => runReloadCommandView(async () => { await self.restoreSettings(); await self.restoreTheme(); await self.restoreGlobalKeymap(); await self.restoreStatusline(); await self.restoreTitle(); await self.restoreRawMode(); await self.restoreModelStore(); await self.refreshMentionCatalog(); await self.refreshTools(); if (self.state.securityLevel) { await applySecurityLevel(policyCommandHost(self), self.state.securityLevel, { notify: false, persist: false }); } }, (message: string) => self.notify(message), self.translator),
             runStatusCommand: () => self.runStatusCommand(),
             runCdCommand: (a) => self.runCdCommand(a),
             runGoalCommand: (a) => self.runGoalCommand(a),
@@ -2161,10 +2180,10 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async submitMultilineDraft(): Promise<void> {
-        await submitMultilineDraftView(this.turnInputHost());
+        await submitMultilineDraftView(turnInputHost(this));
     }
     async submit(): Promise<void> {
-        await submitView(this.turnInputHost());
+        await submitView(turnInputHost(this));
     }
 
     /**
@@ -2173,7 +2192,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
      * Returns true when the input was consumed as a shell command.
      */
     protected async handleShellBang(value: string): Promise<boolean> {
-        return handleShellBangView(this.shellCommandHost(), value);
+        return handleShellBangView(shellCommandHost(this), value);
     }
 
     /**
@@ -2459,30 +2478,10 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         }
     }
 
-    protected runtimeHost(): AgentConsoleRuntimeHost {
-        return {
-            state: this.state,
-            options: this.options,
-            runtime: this.runtime,
-            appRpc: this.appRpc,
-            rawModeStore: this.rawModeStore,
-            activeThemeName: this.activeThemeName,
-            notify: (message: string) => this.notify(message), translator: this.translator,
-            select: (title: string, options: any[], index: number, hint?: string) => this.select(title, options, index, hint),
-            pushCommandOutput: (command: string, text: string, kind?: any) => this.pushCommandOutput(command, text, kind),
-            applyTheme: (name: string) => this.applyTheme(name),
-            applyStatusline: (fields: any[]) => this.applyStatusline(fields as any),
-            applyTitleFields: (fields: any[]) => this.applyTitleFields(fields as any),
-            activateModelProfile: (profile: string) => this.activateModelProfile(profile),
-            resolveHistoryWorkspace: () => this.resolveHistoryWorkspace(),
-            getSessionSandboxMode: (sessionId: string) => this.getSessionSandboxMode(sessionId),
-            getSessionDelegationMode: (sessionId: string) => this.getSessionDelegationMode(sessionId),
-            rpcRequestContext: () => this.rpcRequestContext()
-        };
-    }
+
 
     protected async runThemeCommand(args?: string): Promise<boolean> {
-        return runThemeCommand(this.runtimeHost(), args);
+        return runThemeCommand(runtimeHost(this), args);
     }
 
     protected async runThinkingCommand(args?: string): Promise<boolean> {
@@ -2499,11 +2498,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runRawModeCommand(args?: string): Promise<boolean> {
-        return runRawModeCommand(this.runtimeHost(), args);
+        return runRawModeCommand(runtimeHost(this), args);
     }
 
     protected async runStashCommand(args?: string): Promise<boolean> {
-        return runStashCommandView(this.stashCommandHost(), args);
+        return runStashCommandView(stashCommandHost(this), args);
     }
 
     protected async runQueueCommand(args?: string): Promise<boolean> {
@@ -2604,7 +2603,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runTitleCommand(args?: string): Promise<boolean> {
-        return runTitleCommand(this.runtimeHost(), args);
+        return runTitleCommand(runtimeHost(this), args);
     }
 
     protected async applyTitleFields(fields: AgentConsoleTitleField[]): Promise<boolean> {
@@ -2637,7 +2636,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runStatuslineCommand(args?: string): Promise<boolean> {
-        return runStatuslineCommand(this.runtimeHost(), args);
+        return runStatuslineCommand(runtimeHost(this), args);
     }
 
     protected async applyStatusline(fields: AgentConsoleStatuslineField[]): Promise<boolean> {
@@ -2675,285 +2674,58 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runHooksCommand(): Promise<boolean> {
-        return runHooksCommandView(this.preferenceCommandHost());
+        return runHooksCommandView(preferenceCommandHost(this));
     }
 
     protected async runMemoriesCommand(args?: string): Promise<boolean> {
-        return runMemoriesCommandView(this.preferenceCommandHost(), args);
+        return runMemoriesCommandView(preferenceCommandHost(this), args);
     }
 
     protected resolveProjectMemoryId(): string {
-        return resolveProjectMemoryIdView(this.preferenceCommandHost());
+        return resolveProjectMemoryIdView(preferenceCommandHost(this));
     }
 
     protected async runFastCommand(args?: string): Promise<boolean> {
-        return runFastCommand(this.runtimeHost(), args);
+        return runFastCommand(runtimeHost(this), args);
     }
 
     protected async runPersonalityCommand(args?: string): Promise<boolean> {
-        return runPersonalityCommandView(this.preferenceCommandHost(), args);
+        return runPersonalityCommandView(preferenceCommandHost(this), args);
     }
 
     protected async runDebugConfigCommand(): Promise<boolean> {
-        return runDebugConfigCommandView(this.preferenceCommandHost());
+        return runDebugConfigCommandView(preferenceCommandHost(this));
     }
 
-    protected keymapCommandHost(): KeymapCommandHost {
-        const self = this;
-        return {
-            state: this.state,
-            globalKeymap: this.globalKeymap,
-            get keymapRecording() { return self.keymapRecording; },
-            set keymapRecording(value) { self.keymapRecording = value; },
-            persistGlobalKeymap: () => this.persistGlobalKeymap(),
-            notify: (message: string) => this.notify(message), translator: this.translator,
-        };
-    }
-    protected globalKeyInputHost(): AgentConsoleGlobalKeyInputHost {
-        const self = this;
-        return {
-            state: this.state,
-            transcriptNavigationController: this.transcriptNavigationController,
-            dismissFocusLayer: () => this.state.focusLayers.dismiss(this.transcriptNavigationController),
-            handleFocusKey: (key: string) => this.state.handleFocusKey(key, this.transcriptNavigationController),
-            globalKeymap: this.globalKeymap,
-            get globalKeyPending() { return self.globalKeyPending; },
-            set globalKeyPending(value) { self.globalKeyPending = value; },
-            get keymapRecording() { return self.keymapRecording; },
-            set keymapRecording(value) { self.keymapRecording = value; },
-            get commandPaletteQuery() { return self.commandPaletteQuery; },
-            set commandPaletteQuery(value) { self.commandPaletteQuery = value; },
-            isTurnInProgress: () => this.isTurnInProgress(),
-            interruptTurn: () => this.interruptTurn(),
-            notify: (message: string, duration?: number) => this.notify(message, duration), translator: this.translator,
-            handleCommand: (value: string) => this.handleCommand(value),
-            persistGlobalKeymap: () => this.persistGlobalKeymap(),
-            runTimelineModeCommand: (args?: string) => this.runTimelineModeCommand(args),
-            runEditorCommand: (args?: string) => this.runEditorCommand(args),
-            handleIdleEscape: () => this.handleIdleEscape(),
-            clearScrollback: () => this.clearScrollback(),
-            toggleWhichKeyOverlay: () => this.toggleWhichKeyOverlay(),
-            refreshWhichKeyBindings: () => this.refreshWhichKeyBindings(),
-            toggleHealthPopover: () => this.toggleHealthPopover(),
-            navigateThreadChildFirst: () => this.navigateThreadChildFirst(),
-            navigateThreadCycle: (delta: 1 | -1) => this.navigateThreadCycle(delta),
-            navigateThreadParent: () => this.navigateThreadParent(),
-            openCommandPalette: (query?: string) => this.openCommandPalette(query),
-            requestTerminalExit: (message?: string) => this.requestTerminalExit(message),
-            resolveKeymapContext: () => this.resolveKeymapContext(),
-            canThreadNavigate: () => this.canThreadNavigate(),
-            canMessageNavigate: () => this.canMessageNavigate(),
-            toggleModelFavorite: () => this.toggleModelFavorite(),
-            cycleRecentModel: (delta: 1 | -1) => this.cycleRecentModel(delta),
-            cycleModelVariant: () => this.cycleModelVariant(),
-            queueDraft: () => this.queueDraft()
-        };
-    }
-    protected terminalInputHost(): AgentConsoleTerminalInputHost {
-        const self = this;
-        return {
-            state: this.state,
-            transcriptNavigationController: this.transcriptNavigationController,
-            get closing() { return self.closing; },
-            set closing(value) { self.closing = value; },
-            destroyed: this.destroyed,
-            get commandPaletteQuery() { return self.commandPaletteQuery; },
-            set commandPaletteQuery(value) { self.commandPaletteQuery = value; },
-            sshShell: this.sshShell,
-            surfaceAccessor: this.surfaceAccessor,
-            app: this.app, translator: this.translator,
-            sessionService: this.sessionService,
-            isTurnInProgress: () => this.isTurnInProgress(),
-            notify: (message: string, duration?: number) => this.notify(message, duration),
-            scrollMessages: (delta: number) => scrollAgentConsoleTranscript(this.surfaceAccessor, this.transcriptNavigationController, () => this.state.syncTranscriptFollowing(), delta),
-            getTerminalRenderedLines: () => this.getTerminalRenderedLines(),
-            handleGlobalKeyInput: (raw: string) => this.handleGlobalKeyInput(raw),
-            detachSshShell: (reason: 'detached' | 'closed') => this.detachSshShell(reason),
-            submit: () => this.submit(),
-            queueDraft: () => this.queueDraft(),
-            handleCommand: (value: string) => this.handleCommand(value),
-            focusComposer: () => this.state.setMessagesFocused(false)
-        };
-    }
-    protected turnInputHost(): AgentConsoleTurnInputHost {
-        const self = this;
-        return {
-            state: this.state,
-            sessionService: this.sessionService,
-            scheduler: this.scheduler,
-            get draftLines() { return self.draftLines; },
-            set draftLines(value) { self.draftLines = value; },
-            get multilineMode() { return self.multilineMode; },
-            set multilineMode(value) { self.multilineMode = value; },
-            get shellMultilineMode() { return self.shellMultilineMode; },
-            set shellMultilineMode(value) { self.shellMultilineMode = value; },
-            get shellDraftLines() { return self.shellDraftLines; },
-            set shellDraftLines(value) { self.shellDraftLines = value; },
-            get editTargetMessageId() { return self.editTargetMessageId; },
-            set editTargetMessageId(value) { self.editTargetMessageId = value; },
-            get lastEditSessionMessageId() { return self.lastEditSessionMessageId; },
-            set lastEditSessionMessageId(value) { self.lastEditSessionMessageId = value; },
-            get editDismissedAt() { return self.editDismissedAt; },
-            set editDismissedAt(value) { self.editDismissedAt = value; },
-            get activeTurnRun() { return self.activeTurnRun; },
-            set activeTurnRun(value) { self.activeTurnRun = value; },
-            isTurnInProgress: () => this.isTurnInProgress(),
-            notifyBusyState: (message?: string) => this.notifyBusyState(message),
-            enrichPromptWithMentions: (input: string) => this.enrichPromptWithMentions(input),
-            buildTurnMessageInput: (prompt: string, attachments: AgentConsolePendingAttachment[]) => this.buildTurnMessageInput(prompt, attachments),
-            consumePendingTurnModelProfile: () => this.consumePendingTurnModelProfile(),
-            persistInputHistory: () => this.persistInputHistory(),
-            clearStreamingMessageState: () => this.clearStreamingMessageState(),
-            updateTerminalTitle: () => this.updateTerminalTitle(),
-            runTurnStream: (prompt: string, assistantMessage: AgentMessage, message?: AgentTurnMessageInput, profile?: string) => this.runTurnStream(prompt, assistantMessage, message, profile),
-            ensureMessageAtTail: (messageId: string) => this.ensureMessageAtTail(messageId),
-            advanceProviderWizard: (value: string) => this.advanceProviderWizard(value),
-            notify: (message: string, duration?: number) => this.notify(message, duration), translator: this.translator,
-            handleShellBang: (value: string) => this.handleShellBang(value),
-            handleCommand: (value: string) => this.handleCommand(value),
-            interruptTurn: () => this.interruptTurn(),
-            isSteerModeEnabled: () => this.isSteerModeEnabled(),
-            isQueueModeEnabled: () => this.isQueueModeEnabled(),
-            enqueuePrompt: (input: string) => this.enqueuePrompt(input),
-            openSession: (sessionId?: string, options?: { persistCurrentHistory?: boolean; fresh?: boolean }) => this.openSession(sessionId, options),
-            resolveMentionDisplayFiles: (input: string) => this.resolveMentionDisplayFiles(input),
-            refreshTurnArtifacts: () => this.refreshTurnArtifacts(),
-            drainQueuedPrompts: (sessionId: string) => this.drainQueuedPrompts(sessionId),
-            translate: this.translator ? (key: string, params?: Record<string, any>) => this.translator!.translate(key, params) : undefined
-        };
-    }
 
-    protected promptMentionHost(): PromptMentionHost {
-        return {
-            state: this.state,
-            mentionCatalog: this.mentionCatalog,
-            workspaceMentionsProvider: this.workspaceMentionsProvider,
-            resolveApps: () => this.resolveApps()
-        };
-    }
 
-    protected approvalInspectorHost(): ApprovalInspectorHost {
-        return {
-            state: this.state, translator: this.translator,
-            notify: (message: string) => this.notify(message),
-            select: (title: string, opts: any[], index: number, hint?: string) => this.select(title, opts, index, hint),
-            selectApprovalRequest: (requests: AgentConsoleApprovalRequest[], index: number) => this.selectApprovalRequest(requests, index),
-            applyApprovalDecision: (decision: 'approve' | 'deny', requestId: string) => this.applyApprovalDecision(decision, requestId),
-            refreshPendingApprovals: () => this.refreshPendingApprovals(),
-            copyFocusedTextActionHandler: (text: string, label: string) => this.copyFocusedTextActionHandler(text, label)
-        };
-    }
 
-    protected settingsPanelHost(): SettingsPanelHost {
-        return {
-            state: this.state,
-            options: this.options, translator: this.translator,
-            activeThemeName: this.activeThemeName,
-            yoloMode: this.yoloMode,
-            modelReasoningEffort: this.modelReasoningEffort,
-            select: (title: string, opts: any[], index: number, hint?: string) => this.select(title, opts, index, hint),
-            notify: (message: string) => this.notify(message),
-            runThemeCommand: () => this.runThemeCommand(),
-            runVimCommand: (args?: string) => this.runVimCommand(args || ''),
-            runDisplayCommand: (args?: string) => this.runDisplayCommand(args),
-            runLayoutCommand: (args?: string) => this.runLayoutCommand(args),
-            runRawModeCommand: () => this.runRawModeCommand(),
-            runFastCommand: (args?: string) => this.runFastCommand(args),
-            runStatusCommand: () => this.runStatusCommand(),
-            runKeymapCommand: (args: string) => this.runKeymapCommand(args),
-            openModelSwitcher: () => this.openModelSwitcher(),
-            openSettingsThinkingLevel: () => this.openSettingsThinkingLevel(),
-            openSettingsLanguage: () => this.openSettingsLanguage(),
-            setYoloMode: (enabled: boolean, showNotice?: boolean) => this.setYoloMode(enabled, showNotice),
-            persistSettings: (patch: any) => this.persistSettings(patch)
-        };
-    }
 
-    protected shellCommandHost(): ShellCommandHost {
-        const self = this;
-        return {
-            state: this.state,
-            get shellMultilineMode() { return self.shellMultilineMode; },
-            set shellMultilineMode(value: boolean) { self.shellMultilineMode = value; },
-            get shellDraftLines() { return self.shellDraftLines; },
-            set shellDraftLines(value: string[]) { self.shellDraftLines = value; },
-            isTurnInProgress: () => this.isTurnInProgress(),
-            notifyBusyState: (message?: string) => this.notifyBusyState(message),
-            notify: (message: string) => this.notify(message), translator: this.translator,
-            invokeTerminalTool: (command: string) => this.invokeTerminalTool(command),
-            updateShellMessage: (id: string, patch: Partial<AgentMessage>) => this.updateShellMessage(id, patch)
-        };
-    }
 
-    protected stashCommandHost(): StashCommandHost {
-        return {
-            state: this.state,
-            stashStore: this.stashStore, translator: this.translator,
-            resolveHistoryWorkspace: () => this.resolveHistoryWorkspace(),
-            notify: (message: string) => this.notify(message),
-            pushCommandOutput: (command: string, text: string, kind?: AgentConsoleCommandOutputEntry['kind']) => this.pushCommandOutput(command, text, kind)
-        };
-    }
 
-    protected gitSnapshotCommandHost(): GitSnapshotCommandHost {
-        return {
-            state: this.state,
-            sessionService: this.sessionService,
-            notify: (message: string) => this.notify(message), translator: this.translator,
-            select: (title: string, opts: any[], index: number, hint?: string) => this.select(title, opts, index, hint)
-        };
-    }
 
-    protected extensionCommandHost(): ExtensionCommandHost {
-        return {
-            state: this.state,
-            options: this.options,
-            notify: (message: string) => this.notify(message), translator: this.translator,
-            select: (title: string, opts: any[], index: number, hint?: string) => this.select(title, opts, index, hint),
-            pushCommandOutput: (command: string, out: string, kind?: AgentConsoleCommandOutputEntry['kind']) => this.pushCommandOutput(command, out, kind),
-            invokeTool: (name: string, input?: any) => this.invokeTool(name, input)
-        };
-    }
 
-    protected policyCommandHost(): PolicyCommandHost {
-        return {
-            state: this.state,
-            options: this.options,
-            runtime: this.runtime,
-            appRpc: this.appRpc,
-            notify: (message: string) => this.notify(message), translator: this.translator,
-            rpcRequestContext: () => this.rpcRequestContext(),
-            getSessionDelegationMode: (sessionId: string) => this.getSessionDelegationMode(sessionId),
-            getSessionSandboxMode: (sessionId: string) => this.getSessionSandboxMode(sessionId),
-            setSessionSandboxMode: (sessionId: string, mode: SandboxMode | null) => this.setSessionSandboxMode(sessionId, mode),
-            setYoloMode: (enabled: boolean) => this.setYoloMode(enabled, false),
-            persistSettings: async (patch: Record<string, any>) => { await this.appRpc?.request('settings.ui.set', patch).catch(() => undefined); await this.persistSettings(patch); },
-            select: (title: string, options: any[], index?: number, hint?: string) => this.select(title, options, index, hint),
-            runPlanCommand: (args: string) => this.runPlanCommand(args)
-        };
-    }
 
-    protected preferenceCommandHost(): PreferenceCommandHost {
-        return {
-            state: this.state,
-            options: this.options,
-            workspace: this.workspace,
-            runtime: this.runtime,
-            appRpc: this.appRpc,
-            projectMemory: this.projectMemory, translator: this.translator,
-            rpcRequestContext: () => this.rpcRequestContext(),
-            notify: (message: string) => this.notify(message),
-            persistSettings: async (patch: Record<string, any>) => { await this.appRpc?.request('settings.ui.set', patch).catch(() => undefined); await this.persistSettings(patch); },
-            pushCommandOutput: (command: string, text: string, kind?: AgentConsoleCommandOutputEntry['kind']) => this.pushCommandOutput(command, text, kind)
-        };
-    }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     protected async runSettingsCommand(): Promise<boolean> {
-        return runSettingsCommandView(this.settingsPanelHost());
+        return runSettingsCommandView(settingsPanelHost(this));
     }
 
     protected async openSettingsGeneralTab(): Promise<boolean> {
-        return openSettingsGeneralTabView(this.settingsPanelHost());
+        return openSettingsGeneralTabView(settingsPanelHost(this));
     }
 
     protected async setYoloMode(enabled: boolean, notify = true): Promise<void> {
@@ -2978,7 +2750,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async openSettingsLanguage(): Promise<boolean> {
-        return openSettingsLanguageView(this.settingsPanelHost());
+        return openSettingsLanguageView(settingsPanelHost(this));
     }
 
     protected async openSettingsKeybindsTab(): Promise<boolean> {
@@ -2989,7 +2761,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async openSettingsProvidersTab(): Promise<boolean> {
-        return openSettingsProvidersTabView(this.settingsPanelHost());
+        return openSettingsProvidersTabView(settingsPanelHost(this));
     }
 
     protected async openSettingsThinkingLevel(): Promise<boolean> {
@@ -3026,7 +2798,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runSkillsCommand(args?: string): Promise<boolean> {
-        return runSkillsCommandView(this.extensionCommandHost(), args);
+        return runSkillsCommandView(extensionCommandHost(this), args);
     }
 
     protected formatSkillLine(skill: any): string {
@@ -3042,23 +2814,23 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runPluginsCommand(args?: string): Promise<boolean> {
-        return runPluginsCommandView(this.extensionCommandHost(), args);
+        return runPluginsCommandView(extensionCommandHost(this), args);
     }
 
     protected resolveApps(): AgentConsoleAppStatus[] {
-        return resolveAppsView(this.extensionCommandHost());
+        return resolveAppsView(extensionCommandHost(this));
     }
 
     protected resolveAppAuthorizer(): AgentConsoleAppAuthorizer | undefined {
-        return resolveAppAuthorizerView(this.extensionCommandHost());
+        return resolveAppAuthorizerView(extensionCommandHost(this));
     }
 
     protected async runAppsCommand(args?: string): Promise<boolean> {
-        return runAppsCommandView(this.extensionCommandHost(), args);
+        return runAppsCommandView(extensionCommandHost(this), args);
     }
 
     protected insertAppMention(app: AgentConsoleAppStatus): void {
-        return insertAppMentionView(this.extensionCommandHost(), app);
+        return insertAppMentionView(extensionCommandHost(this), app);
     }
 
     protected formatPluginLine(plugin: any): string {
@@ -3205,11 +2977,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async handleGlobalKeyInput(raw: string): Promise<boolean> {
-        return handleGlobalKeyInputView(this.globalKeyInputHost(), raw);
+        return handleGlobalKeyInputView(globalKeyInputHost(this), raw);
     }
 
     protected async handleBrowserGlobalKeyInput(key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean; altKey?: boolean }): Promise<boolean> {
-        return handleBrowserGlobalKeyInputView(this.globalKeyInputHost(), key, modifiers);
+        return handleBrowserGlobalKeyInputView(globalKeyInputHost(this), key, modifiers);
     }
 
     /**
@@ -3258,7 +3030,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async executeGlobalKeyAction(action: AgentConsoleGlobalAction): Promise<boolean> {
-        return executeGlobalKeyActionView(this.globalKeyInputHost(), action);
+        return executeGlobalKeyActionView(globalKeyInputHost(this), action);
     }
 
     protected clearScrollback(): boolean {
@@ -3348,22 +3120,22 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected openCommandPalette(query = ''): void {
-        openCommandPaletteView(this.terminalInputHost(), query);
+        openCommandPaletteView(terminalInputHost(this), query);
     }
 
     async handleTerminalInput(
         decoded: TerminalInputSequenceResult,
         chunk: ConsoleTextChunk
     ): Promise<void> {
-        await handleTerminalInputView(this.terminalInputHost(), decoded, chunk);
+        await handleTerminalInputView(terminalInputHost(this), decoded, chunk);
     }
 
     protected async requestTerminalExit(message?: string): Promise<void> {
-        await requestTerminalExitView(this.terminalInputHost(), message ?? this.closingSessionMessage());
+        await requestTerminalExitView(terminalInputHost(this), message ?? this.closingSessionMessage());
     }
 
     protected closingSessionMessage(): string {
-        return closingSessionMessageView(this.terminalInputHost());
+        return closingSessionMessageView(terminalInputHost(this));
     }
 
     protected async executeTurn(
@@ -3556,7 +3328,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runDelegationModeCommand(args: string): Promise<void> {
-        return runDelegationModeCommandView(this.policyCommandHost(), args);
+        return runDelegationModeCommandView(policyCommandHost(this), args);
     }
 
     protected async runVimCommand(args: string): Promise<void> {
@@ -3564,11 +3336,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected resolveKeymapContext(): AgentConsoleKeymapContext {
-        return resolveKeymapContextView(this.keymapCommandHost());
+        return resolveKeymapContextView(keymapCommandHost(this));
     }
 
     protected async runKeymapCommand(args: string): Promise<void> {
-        return runKeymapCommandView(this.keymapCommandHost(), args);
+        return runKeymapCommandView(keymapCommandHost(this), args);
     }
 
     protected async runSshCommand(args: string): Promise<void> {
@@ -3593,11 +3365,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runPermissionsCommand(args: string): Promise<void> {
-        return runPermissionsCommandView(this.policyCommandHost(), args);
+        return runPermissionsCommandView(policyCommandHost(this), args);
     }
 
     protected async showSandboxCapabilities(): Promise<void> {
-        return showSandboxCapabilitiesView(this.policyCommandHost());
+        return showSandboxCapabilitiesView(policyCommandHost(this));
     }
 
     protected async runCdCommand(args: string): Promise<void> {
@@ -3613,11 +3385,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runStatusCommand(): Promise<void> {
-        return runStatusCommand(this.runtimeHost());
+        return runStatusCommand(runtimeHost(this));
     }
 
     protected async runGoalCommand(args: string): Promise<void> {
-        return runGoalCommandView(this.policyCommandHost(), args);
+        return runGoalCommandView(policyCommandHost(this), args);
     }
 
     protected async setSessionSandboxMode(
@@ -3678,19 +3450,19 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async runGitSnapshotsCommand(args: string): Promise<void> {
-        return runGitSnapshotsCommandView(this.gitSnapshotCommandHost(), args);
+        return runGitSnapshotsCommandView(gitSnapshotCommandHost(this), args);
     }
 
     protected async openGitSnapshotList(): Promise<void> {
-        return openGitSnapshotListView(this.gitSnapshotCommandHost());
+        return openGitSnapshotListView(gitSnapshotCommandHost(this));
     }
 
     protected async openGitSnapshotDiff(ref: string): Promise<void> {
-        return openGitSnapshotDiffView(this.gitSnapshotCommandHost(), ref);
+        return openGitSnapshotDiffView(gitSnapshotCommandHost(this), ref);
     }
 
     protected async revertGitSnapshotFromDetail(): Promise<void> {
-        return revertGitSnapshotFromDetailView(this.gitSnapshotCommandHost());
+        return revertGitSnapshotFromDetailView(gitSnapshotCommandHost(this));
     }
 
     protected buildGitSnapshotDiffLines(diff: Record<string, any>): string[] {

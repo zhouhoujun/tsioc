@@ -1817,9 +1817,7 @@ export class AgentConsoleToolsPanelComponent {
     selector: 'agent-console-text-overlay-panel',
     imports: [DialogComponent],
     template: `
-    <common-dialog :title="overlayTitle" :lines="visibleLines" :hint="hintLabel"
-        :ariaLabel="accessibilityLabel" :shellStyle="shellStyle" :titleStyle="accentStyle"
-        :lineStyle="listStyle" :hintStyle="metaStyle" :closeStyle="closeStyle" @closeAction="closeOverlay"></common-dialog>
+    <common-dialog :title="overlayTitle" :lines="visibleLines" :hint="hintLabel" :ariaLabel="accessibilityLabel" @closeAction="closeOverlay"></common-dialog>
     `
 })
 export class AgentConsoleTextOverlayPanelComponent {
@@ -2975,10 +2973,6 @@ export class AgentConsoleActivityPanelComponent {
             :meta="menuMetaText"
             :detailLines="menuDetailLines"
             :accessibilityLabel="accessibilityLabel"
-            :shellStyle="shellStyle"
-            :closeStyle="closeStyle"
-            :optionStyle="activeTheme.selectOption"
-            :optionActiveStyle="activeTheme.selectOptionActive"
             @selectAction="selectOption"
             @closeAction="closeMenu"
             @keydownAction="onKeydown"></common-select>
