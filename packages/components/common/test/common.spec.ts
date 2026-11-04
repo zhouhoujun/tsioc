@@ -73,7 +73,7 @@ export class CommonComponentUtilitiesTest {
     @Test('sizes dialog chrome from content and bounds')
     dialogContentWidth() {
         const dialog = new DialogComponent();
-        const maxWidth = () => String((dialog.resolvedShellStyle as Record<string, string>)['max-width']);
+        const maxWidth = () => String(dialog.resolvedShellStyle).match(/max-width:\s*([^;]+)/)?.[1] || '';
         dialog.lines = ['█'.repeat(33)];
         dialog.title = 'pairing 19 lines · 1-19';
         expect(maxWidth()).toBe('39ch');
@@ -84,9 +84,6 @@ export class CommonComponentUtilitiesTest {
 
         dialog.lines = ['x'.repeat(200)];
         expect(maxWidth()).toBe('88ch');
-
-        dialog.shellStyle = 'background: #000;';
-        expect(dialog.resolvedShellStyle).toContain('background: #000; max-width: 88ch;');
     }
 
     @Test('select shell forwards selection, close and key events')

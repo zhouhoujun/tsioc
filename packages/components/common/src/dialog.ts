@@ -10,10 +10,10 @@ import { getDisplayWidth } from './display-width';
     selector: 'common-dialog',
     template: `
     <div class="console-panel common-dialog" role="dialog" aria-label="{{ariaLabel}}" v-style="resolvedShellStyle">
-        <label class="dialog-close" data-cell-width="2" v-style="closeStyle" @click="close">{{closeLabel}}</label>
-        <label class="common-dialog-title" v-style="titleStyle" v-show="title">{{title}}</label>
-        <label class="common-dialog-line" v-for="line in lines" v-style="lineStyle">{{line}}</label>
-        <label class="common-dialog-hint" v-style="hintStyle" v-show="hint">{{hint}}</label>
+        <label class="dialog-close" data-cell-width="2" @click="close">{{closeLabel}}</label>
+        <label class="common-dialog-title" v-show="title">{{title}}</label>
+        <label class="common-dialog-line" v-for="line in lines">{{line}}</label>
+        <label class="common-dialog-hint" v-show="hint">{{hint}}</label>
     </div>`
 })
 export class DialogComponent {
@@ -22,11 +22,6 @@ export class DialogComponent {
     @Attribute() hint = '';
     @Attribute() ariaLabel = '';
     @Attribute() closeLabel = '✕';
-    @Attribute() shellStyle: Record<string, string> | string = {};
-    @Attribute() titleStyle: Record<string, string> = {};
-    @Attribute() lineStyle: Record<string, string> = {};
-    @Attribute() hintStyle: Record<string, string> = {};
-    @Attribute() closeStyle: Record<string, string> = {};
     /** Upper/lower bounds for content-derived width, in terminal cells. */
     @Attribute() maxWidth = 88;
     @Attribute() minWidth = 24;
@@ -34,13 +29,8 @@ export class DialogComponent {
     @Attribute() horizontalChrome = 6;
     @Attribute() closeAction?: () => void;
 
-    get resolvedShellStyle(): Record<string, string> | string {
-        const maxWidth = `${this.resolveContentWidth()}ch`;
-        if (this.shellStyle && typeof this.shellStyle === 'object') {
-            return { ...this.shellStyle, 'max-width': maxWidth };
-        }
-        const base = String(this.shellStyle || '').trim();
-        return `${base ? `${base.replace(/;+$/, '')};` : ''} max-width: ${maxWidth};`;
+    get resolvedShellStyle(): string {
+        return `max-width: ${this.resolveContentWidth()}ch;`;
     }
 
     /** Fit the modal to its content so a tall QR panel leaves the transcript visible. */

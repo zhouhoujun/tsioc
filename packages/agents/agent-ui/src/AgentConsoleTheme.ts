@@ -230,6 +230,7 @@ export function resolveAgentConsoleCssVariables(theme?: AgentConsoleTheme | null
         `--console-accent:${color(active.toolsAccent) || '#86a9d6'}`,
         `--console-selected:${color(active.sessionsSelected) || '#7fa6d4'}`,
         `--console-panel-bg:${color(active.messagesShell, 'background') || 'transparent'}`,
+        `--console-dialog-bg:${color(active.dialogShell, 'background') || '#161b22'}`,
         `--console-input-bg:${color(active.inputShell, 'background') || '#161b22'}`
     ].join(';') + ';';
 }

@@ -53,3 +53,21 @@
     color: var(--console-accent, #86a9d6);
     font-weight: bold;
 }
+.common-dialog {
+    background: var(--console-dialog-bg, #161b22);
+    color: var(--console-text, #d6dee6);
+    border: 1px solid var(--console-border, #30363d);
+    border-radius: 1;
+    padding: 0 2;
+}
+.common-dialog-title {
+    color: var(--console-accent, #86a9d6);
+    font-weight: bold;
+}
+.common-dialog-line {
+    color: var(--console-text, #d6dee6);
+}
+.common-dialog-hint,
+.common-dialog .dialog-close {
+    color: var(--console-meta, #6e7681);
+}
