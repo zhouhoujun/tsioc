@@ -1,14 +1,14 @@
 import { Attribute, Directive, ElementRef, Renderer } from '@tsdi/components';
 
 /**
- * Publishes the active theme as CSS custom properties on the console root.
- * Component styling stays class-based; this directive only installs the
- * variables that those classes consume.
+ * Installs a CSS-variable declaration string on the host element. This is the
+ * renderer-neutral bridge between a theme model and class-based component
+ * styles; components themselves never bind per-element style objects.
  */
-@Directive({ selector: '[agentThemeVars]' })
-export class AgentConsoleThemeVarsDirective {
+@Directive({ selector: '[cssVariables]' })
+export class CssVariablesDirective {
     @Attribute()
-    set agentThemeVars(value: string) {
+    set cssVariables(value: string) {
         const element = this.elementRef?.nativeElement;
         if (!element) return;
         const text = String(value || '').trim();

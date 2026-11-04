@@ -312,7 +312,7 @@ interface AgentConsoleQueuedPrompt {
 @Component({
     selector: 'agent-console',
     template: `
-    <div class="agent-console" [agentThemeVars]="rootStyle">
+    <div class="agent-console" [cssVariables]="rootStyle">
         <common-tab-bar renderRegion="header"></common-tab-bar>
         <agent-console-brand-panel renderRegion="transcript" v-show="!showMessageDetailPanel && !showSelectPanel && !showTextOverlayPanel && !showPendingQuestionPanel"></agent-console-brand-panel>
         <agent-console-messages-panel renderRegion="transcript" v-show="!showMessageDetailPanel"></agent-console-messages-panel>
@@ -829,24 +829,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         refreshProjects(this.state);
     }
 
-    protected flattenProjectSessions(groups: AgentConsoleSessionProjectGroup[]): Array<{
-        id: string;
-        current: boolean;
-        workspace?: string;
-        updatedAt?: number;
-        messageCount?: number;
-        summary?: string;
-        title?: string;
-        pinned?: boolean;
-        projectKey?: string;
-        projectId?: string;
-        primaryThreadId?: string;
-        originThreadId?: string;
-        rootRequest?: string;
-        focusSummary?: string;
-        projectLabel?: string;
-        projectSessionCount?: number;
-    }> {
+    protected flattenProjectSessions(groups: AgentConsoleSessionProjectGroup[]) {
         return flattenProjectSessions(groups);
     }
 
@@ -857,39 +840,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         });
     }
 
-    protected resolveProjectSessionsFor(sessionId = this.state.sessionId): Array<{
-        id: string;
-        current: boolean;
-        workspace?: string;
-        updatedAt?: number;
-        messageCount?: number;
-        summary?: string;
-        projectKey?: string;
-        projectId?: string;
-        primaryThreadId?: string;
-        rootRequest?: string;
-        focusSummary?: string;
-        projectLabel?: string;
-        projectSessionCount?: number;
-    }> {
+    protected resolveProjectSessionsFor(sessionId = this.state.sessionId) {
         return resolveProjectSessionsFor(this.state, sessionId) as any;
     }
 
-    protected resolveCurrentProjectSessions(): Array<{
-        id: string;
-        current: boolean;
-        workspace?: string;
-        updatedAt?: number;
-        messageCount?: number;
-        summary?: string;
-        projectKey?: string;
-        projectId?: string;
-        primaryThreadId?: string;
-        rootRequest?: string;
-        focusSummary?: string;
-        projectLabel?: string;
-        projectSessionCount?: number;
-    }> {
+    protected resolveCurrentProjectSessions() {
         return resolveCurrentProjectSessions(this.state) as any;
     }
 
@@ -934,32 +889,17 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     protected resolveProjectSessionIdsFor(sessionId = this.state.sessionId): string[] {
         const sessions = this.resolveProjectSessionsFor(sessionId);
-        const ids = sessions.map(item => String(item.id || '').trim()).filter(Boolean);
+        const ids = sessions.map((item: { id?: string }) => String(item.id || '').trim()).filter(Boolean);
         return ids.length ? ids : [sessionId];
     }
 
-    protected resolveThreadSessionsFor(sessionId = this.state.sessionId): Array<{
-        id: string;
-        current: boolean;
-        workspace?: string;
-        updatedAt?: number;
-        messageCount?: number;
-        summary?: string;
-        projectKey?: string;
-        projectId?: string;
-        primaryThreadId?: string;
-        originThreadId?: string;
-        rootRequest?: string;
-        focusSummary?: string;
-        projectLabel?: string;
-        projectSessionCount?: number;
-    }> {
+    protected resolveThreadSessionsFor(sessionId = this.state.sessionId) {
         return resolveThreadSessionsFor(this.state, sessionId) as any;
     }
 
     protected resolveThreadSessionIdsFor(sessionId = this.state.sessionId): string[] {
         const sessions = this.resolveThreadSessionsFor(sessionId);
-        const ids = sessions.map(item => String(item.id || '').trim()).filter(Boolean);
+        const ids = sessions.map((item: { id?: string }) => String(item.id || '').trim()).filter(Boolean);
         return ids.length ? ids : [sessionId];
     }
 

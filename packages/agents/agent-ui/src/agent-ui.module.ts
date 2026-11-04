@@ -46,7 +46,7 @@ import {
     , AgentConsoleUserRenderer
 } from './AgentConsoleMessageRenderers';
 import { AgentConsoleComponent } from './AgentConsoleComponent';
-import { AgentConsoleThemeVarsDirective } from './AgentConsoleThemeVars';
+import { CssVariablesDirective } from '@tsdi/components/common';
 import {
     AgentConsoleActivityPanelComponent,
     AgentConsoleBrandPanelComponent,
@@ -104,7 +104,7 @@ import { AGENT_CONSOLE_MARKDOWN_COMPONENT } from './AgentConsoleMessageComponent
     ],
     declarations: [
         AgentConsoleComponent,
-        AgentConsoleThemeVarsDirective,
+        CssVariablesDirective,
         AgentConsoleBrandPanelComponent,
         AgentConsoleCommandOutputsPanelComponent,
         AgentConsoleStatusPanelComponent,
