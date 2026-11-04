@@ -94,6 +94,7 @@ import { agentConsoleAllCommandHints, agentConsoleCommandHints, getAgentConsoleC
 import { AgentConsoleInputHistoryController, DefaultAgentConsoleInputHistoryController } from './AgentConsoleInputHistory';
 import { AgentConsoleFocusLayers, DefaultAgentConsoleFocusLayers } from './AgentConsoleFocusLayers';
 import { AgentConsoleCommandExecutionController, DefaultAgentConsoleCommandExecutionController } from './AgentConsoleCommandExecutionState';
+import { appendAssistantErrorMessage as appendAssistantErrorMessageInState, appendUiEventMessage as appendUiEventMessageInState, clearUiEventMessages as clearUiEventMessagesInState, createUiEventMessage as createUiEventMessageInState, getNavViewScroll as getNavViewScrollInState, isSameUiEventMessage as isSameUiEventMessageInState, markTimelineReconnecting as markTimelineReconnectingInState, navigateNav as navigateNavInState, projectCommandExchangeRecord as projectCommandExchangeRecordInState, projectThreadItem as projectThreadItemInState, qualifyUiEventKey as qualifyUiEventKeyInState, removeUiEventMessage as removeUiEventMessageInState, resolveNavSelectionTarget as resolveNavSelectionTargetInState, resolveUiEventDurationFallback as resolveUiEventDurationFallbackInState, seedCommandExchange as seedCommandExchangeInState, seedNavTree as seedNavTreeInState, seedTimeline as seedTimelineInState, setNavFilter as setNavFilterInState, setNavSelection as setNavSelectionInState, setNavViewScroll as setNavViewScrollInState, toggleTimelineCollapse as toggleTimelineCollapseInState, upsertUiEventMessage as upsertUiEventMessageInState, withoutUiEventMessages as withoutUiEventMessagesInState } from './AgentConsoleStreamProjectionState';
 import { closeMessageDetail as closeMessageDetailInState, isMessageExpanded as isMessageExpandedInState, openMessageDetail as openMessageDetailInState, resolveMessageDetailLines, resolveMessageDetailMaxColumn, scrollMessageDetail as scrollMessageDetailInState, scrollMessageDetailColumns as scrollMessageDetailColumnsInState, scrollMessageDetailColumnsToEdge as scrollMessageDetailColumnsToEdgeInState, scrollMessageDetailPage as scrollMessageDetailPageInState, scrollMessageDetailToEdge as scrollMessageDetailToEdgeInState, setMessageExpanded as setMessageExpandedInState, toggleMessageExpanded as toggleMessageExpandedInState, toggleSelectedMessageExpanded as toggleSelectedMessageExpandedInState } from './AgentConsoleMessageDetailState';
 import { buildTimelineEventRetryPayload as buildTimelineEventRetryPayloadInState, canRetryTimelineEvent as canRetryTimelineEventInState, closeTimelineEventInspector as closeTimelineEventInspectorInState, formatDuration as formatDurationInState, isFailedEventMessage as isFailedEventMessageInState, isTimelineEventMessage as isTimelineEventMessageInState, openTimelineEventInspector as openTimelineEventInspectorInState, resolveTimelineEventDetailLines, resolveTimelineEventDetailMaxColumn, scrollTimelineEventDetail as scrollTimelineEventDetailInState, scrollTimelineEventDetailColumns as scrollTimelineEventDetailColumnsInState, scrollTimelineEventDetailColumnsToEdge as scrollTimelineEventDetailColumnsToEdgeInState, scrollTimelineEventDetailPage as scrollTimelineEventDetailPageInState, scrollTimelineEventDetailToEdge as scrollTimelineEventDetailToEdgeInState } from './AgentConsoleTimelineInspector';
 import {
@@ -326,6 +327,8 @@ export interface AgentConsoleActivity {
 }
 
 export interface AgentConsoleUiEventOptions {
+    id?: string;
+    createdAt?: number;
     eventType?: string;
     label?: string;
     status?: 'running' | 'success' | 'failed' | 'error';
@@ -1502,305 +1505,41 @@ export class AgentConsoleSessionState {
         }
     }
 
-    toggleTimelineCollapse(scopeKey: string): void {
-        const key = String(scopeKey || '').trim();
-        if (!key || key === this.activeTurnEventScope) {
-            return;
-        }
-        const next = { ...this.timelineCollapsedTurns };
-        if (next[key]) {
-            delete next[key];
-        } else {
-            next[key] = true;
-        }
-        this.timelineCollapsedTurns = next;
-    }
 
-    qualifyUiEventKey(key: string): string {
-        const resolvedKey = String(key || '').trim();
-        if (!resolvedKey) {
-            return '';
-        }
-        const scope = String(this.activeTurnEventScope || '').trim();
-        return scope ? `${scope}:${resolvedKey}` : resolvedKey;
-    }
 
-    withoutUiEventMessages(messages: AgentMessage[] = this.messages): AgentMessage[] {
-        return messages.filter(message => message?.metadata?.uiKind !== 'event');
-    }
 
-    clearUiEventMessages(): void {
-        const filtered = this.withoutUiEventMessages();
-        if (filtered.length === this.messages.length) {
-            return;
-        }
-        this.setMessages(filtered, true);
-    }
 
-    removeUiEventMessage(eventKey: string): void {
-        const key = String(eventKey || '').trim();
-        if (!key) return;
-        const filtered = this.messages.filter(message => message?.metadata?.uiKind !== 'event' || message?.metadata?.uiEventKey !== key);
-        if (filtered.length !== this.messages.length) this.setMessages(filtered, true);
-    }
 
-    seedTimeline(entries: TimelineEntry[]): void {
-        let seedCount = 0;
-        let changed = false;
-        // Bulk history load: apply all entries in ONE render cycle instead of
-        // one setMessages per entry (600 reactive cascades = minutes of sync
-        // work). Replicates upsertUiEventMessage dedup on a working array.
-        const pending = this.messages.slice();
-        const eventIndexes = new Map<string, number>();
-        pending.forEach((message, index) => {
-            const eventKey = message?.metadata?.uiKind === 'event' ? message.metadata.uiEventKey : undefined;
-            if (eventKey) eventIndexes.set(eventKey, index);
-        });
-        for (const entry of sortTimelineEntries(entries).filter(item => !item.sessionId || item.sessionId === this.sessionId)) {
-            const key = this.qualifyUiEventKey(projectTimelineKey(entry));
-            if (!key) {
-                continue;
-            }
-            const options: AgentConsoleUiEventOptions = {
-                eventType: entry.kind,
-                label: entry.kind,
-                status: entry.status === 'failed' ? 'error' : entry.status === 'running' ? 'running' : 'success',
-                eventKey: key,
-                durationMs: entry.durationMs,
-                toolCallId: entry.toolCallId,
-                receiptId: entry.receiptId,
-                attempt: entry.attempt,
-                source: 'remote',
-                sequence: entry.sequence
-            };
-            const text = String(projectTimelineContent(entry, (key, fallback, params) =>
-                formatAgentUiLabel(this.translator, `agent.menu.transcript.replay.${key}`, fallback, params)) || '').trim();
-            if (text) {
-                const existingIndex = eventIndexes.get(key);
-                if (existingIndex !== undefined) {
-                    const existing = pending[existingIndex];
-                    const nextMessage = this.createUiEventMessage(text, {
-                        ...options,
-                        id: existing.id,
-                        createdAt: existing.createdAt
-                    });
-                    if (!this.isSameUiEventMessage(existing, nextMessage)) {
-                        pending[existingIndex] = nextMessage;
-                        changed = true;
-                    }
-                } else {
-                    pending.push(this.createUiEventMessage(text, options));
-                    eventIndexes.set(key, pending.length - 1);
-                    changed = true;
-                }
-            }
-            seedCount += 1;
-        }
-        if (changed) {
-            this.setMessages(pending, true);
-        }
-        if (seedCount > 0) {
-            this.timelineSeedCount = seedCount;
-        }
-        if (entries.length) {
-            this.timelineTailSeq = Math.max(...entries.map(entry => entry.lastSeq ?? -1));
-        }
-    }
 
-    seedCommandExchange(records: CommandExchangeRecord[]): void {
-        const list = Array.isArray(records) ? records : [];
-        if (!list.length) {
-            return;
-        }
-        const ordered = list.filter(record => !record.sessionId || record.sessionId === this.sessionId).sort(compareCommandExchangeAsc);
-        let seedCount = 0;
-        const accepted: CommandExchangeRecord[] = [];
-        for (const record of ordered) {
-            if (record.sessionEpoch !== this.commandExchangeSessionEpoch) {
-                continue;
-            }
-            accepted.push(record);
-        }
-        const commands = accepted.filter(record => toThreadItemKind(record.kind) === 'command');
-        const others = accepted.filter(record => toThreadItemKind(record.kind) !== 'command');
-        for (const record of [...others, ...commands]) {
-            if (this.projectCommandExchangeRecord(record)) {
-                seedCount += 1;
-            }
-        }
-        if (seedCount > 0) {
-            this.commandExchangeSeedCount = seedCount;
-        }
-        this.commandExchangeTailSeq = Math.max(ordered[ordered.length - 1].seq, this.commandExchangeTailSeq);
-    }
 
-    protected projectCommandExchangeRecord(record: CommandExchangeRecord): boolean {
-        const kind = toThreadItemKind(record.kind);
-        const key = String(record.key || '').trim();
-        if (!kind || !key) {
-            return false;
-        }
-        const status = normalizeReplayStatus(record.status);
-        this.projectThreadItem({
-            kind,
-            key,
-            sessionId: record.sessionId || this.sessionId,
-            content: record.content || record.command || 'Command',
-            status,
-            sequence: record.sequence,
-            attempt: record.attempt,
-            durationMs: record.durationMs,
-            receiptId: record.receipt,
-            toolCallId: record.toolCallId,
-            command: record.command,
-            args: record.args,
-            outputIds: record.outputIds,
-            error: record.error,
-            retryable: record.retryable,
-            source: 'replay'
-        });
-        return true;
-    }
 
-    markTimelineReconnecting(reconnecting: boolean): void {
-        this.timelineReconnecting = reconnecting;
-        this.timelineStale = reconnecting;
-    }
 
-    seedNavTree(tree: NavTree | null | undefined): void {
-        if (!tree || !Array.isArray(tree.sessions)) {
-            return;
-        }
-        this.navTree = tree;
-        this.navSeedCount = tree.totalSessions ?? tree.sessions.length;
-    }
 
-    setNavFilter(filter?: NavFilter): void {
-        if (!filter) {
-            this.navFilter = {};
-        } else {
-            const next: NavFilter = {};
-            if (filter.text) {
-                next.text = String(filter.text).trim();
-            }
-            if (filter.status) {
-                next.status = filter.status;
-            }
-            if (filter.stage) {
-                next.stage = filter.stage;
-            }
-            if (filter.workspace) {
-                next.workspace = String(filter.workspace).trim();
-            }
-            if (filter.projectId) {
-                next.projectId = String(filter.projectId).trim();
-            }
-            if (filter.threadId) {
-                next.threadId = String(filter.threadId).trim();
-            }
-            if (filter.pinnedOnly) {
-                next.pinnedOnly = true;
-            }
-            this.navFilter = next;
-        }
-        this.navSelection = this.resolveNavSelectionTarget();
-    }
 
-    setNavSelection(selection?: NavSelection): void {
-        if (!selection) {
-            this.navSelection = undefined;
-            return;
-        }
-        this.navSelection = { type: selection.type || 'session', id: selection.id, index: selection.index };
-    }
 
-    navigateNav(direction: 'up' | 'down', type?: NavEntityType): NavSelection | undefined {
-        if (!this.navTree) {
-            return undefined;
-        }
-        const next = navigateCursor(this.navSelection, applyNavFilter(this.navTree, this.navFilter), direction, type);
-        if (next) {
-            this.navSelection = next;
-        }
-        return next;
-    }
 
-    resolveNavSelectionTarget(): NavSelection | undefined {
-        if (!this.navTree) {
-            return undefined;
-        }
-        const node = resolveNavSelection(this.navSelection, applyNavFilter(this.navTree, this.navFilter));
-        if (!node) {
-            return undefined;
-        }
-        return { type: node.type, id: node.id, index: this.navSelection?.index ?? -1 };
-    }
 
-    setNavViewScroll(viewId: string, scroll: number): void {
-        const key = String(viewId || '').trim();
-        if (!key) {
-            return;
-        }
-        this.navViewScroll = { ...this.navViewScroll, [key]: Math.max(0, Math.floor(Number(scroll) || 0)) };
-    }
 
-    getNavViewScroll(viewId: string): number {
-        const key = String(viewId || '').trim();
-        if (!key) {
-            return 0;
-        }
-        return this.navViewScroll[key] ?? 0;
-    }
 
-    appendUiEventMessage(content: string, options: AgentConsoleUiEventOptions = {}): void {
-        const text = String(content || '').trim();
-        if (!text) {
-            return;
-        }
-        const next = this.messages.slice();
-        next.push(this.createUiEventMessage(text, options));
-        this.setMessages(next, true);
-    }
 
-    upsertUiEventMessage(
-        eventKey: string,
-        content: string,
-        options: AgentConsoleUiEventOptions = {}
-    ): void {
-        const text = String(content || '').trim();
-        if (!text) {
-            return;
-        }
-        const next = this.messages.slice();
-        const existingIndex = findTimelineLifecycleMessageIndex(next, {
-            eventKey,
-            toolCallId: options.toolCallId,
-            receiptId: options.receiptId
-        });
-        if (existingIndex >= 0) {
-            const existing = next[existingIndex];
-            if (!shouldApplyTimelineLifecycleUpdate(existing, options)) {
-                return;
-            }
-            const resolvedOptions = this.resolveUiEventDurationFallback(existing, options);
-            const nextMessage = this.createUiEventMessage(text, {
-                ...resolvedOptions,
-                eventKey,
-                id: existing.id,
-                createdAt: existing.createdAt
-            });
-            if (this.isSameUiEventMessage(existing, nextMessage)) {
-                return;
-            }
-            next[existingIndex] = nextMessage;
-        } else {
-            next.push(this.createUiEventMessage(text, {
-                ...options,
-                eventKey
-            }));
-        }
-        this.setMessages(next, true);
-    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     /**
      * Derive the per-step elapsed time when a terminal event replaces a still-running
@@ -1808,149 +1547,40 @@ export class AgentConsoleSessionState {
      * original start time (createdAt), so the processed duration is always available
      * for the timeline UI even when the incoming event has no receipt duration.
      */
-    protected resolveUiEventDurationFallback(
-        existing: AgentMessage,
-        incoming: AgentConsoleUiEventOptions
-    ): AgentConsoleUiEventOptions {
-        if (incoming.durationMs != null) {
-            return incoming;
-        }
-        const currentStatus = String(existing.metadata?.status || '');
-        if (isTerminalUiEventStatus(currentStatus) && existing.metadata?.durationMs != null) {
-            return { ...incoming, durationMs: existing.metadata.durationMs };
-        }
-        if (currentStatus !== 'running' || !isTerminalUiEventStatus(incoming.status)) {
-            return incoming;
-        }
-        const startedAt = Number(existing.createdAt) || Date.now();
-        return { ...incoming, durationMs: Math.max(0, Date.now() - startedAt) };
-    }
+
 
     /** Shared cross-host projection entry point for transcript thread items. */
-    projectThreadItem(event: ThreadItemEvent): void {
-        const normalized = normalizeThreadItemEvent(event);
-        if (!normalized.key || !normalized.content) return;
-        if (normalized.kind === 'command') {
-            const executionId = `__command_execution_${normalized.key}__`;
-            const message: AgentMessage = {
-                id: executionId,
-                role: 'assistant',
-                content: normalized.content,
-                createdAt: Date.now(),
-                metadata: {
-                    uiKind: 'command-execution',
-                    uiEventKey: normalized.key,
-                    command: normalized.command,
-                    args: normalized.args,
-                    requestId: normalized.key,
-                    status: normalized.status === 'success' ? 'succeeded' : normalized.status,
-                    sequence: normalized.sequence,
-                    attempt: normalized.attempt || 1,
-                    outputIds: normalized.outputIds?.slice() || [],
-                    error: normalized.error,
-                    retryable: normalized.retryable
-                }
-            };
-            const next = this.commandExecutionMessages.slice();
-            const index = next.findIndex(item => item.id === executionId);
-            if (index >= 0) next[index] = { ...message, createdAt: next[index].createdAt };
-            else next.push(message);
-            this.commandExecutionMessages = next;
-            return;
-        }
-        this.upsertUiEventMessage(this.qualifyUiEventKey(normalized.key), normalized.content, {
-            eventType: normalized.kind,
-            label: normalized.kind,
-            status: normalized.status === 'error' ? 'error' : normalized.status === 'success' ? 'success' : normalized.status === 'running' ? 'running' : undefined,
-            eventKey: normalized.key,
-            toolCallId: normalized.toolCallId,
-            receiptId: normalized.receiptId,
-            attempt: normalized.attempt,
-            durationMs: normalized.durationMs,
-            source: normalized.source === 'remote' ? 'remote' : 'local',
-            sequence: normalized.sequence,
-            category: normalized.category
-        });
-    }
 
-    appendAssistantErrorMessage(message: string): void {
-        const text = String(message || '').trim();
-        const currentMessages = this.messages.slice();
-        while (currentMessages.length) {
-            const lastMessage = currentMessages[currentMessages.length - 1];
-            if (lastMessage?.role === 'assistant' && !String(lastMessage.content || '').trim()) {
-                currentMessages.pop();
-                continue;
-            }
-            break;
-        }
-        const lastMessage = currentMessages[currentMessages.length - 1];
-        const nextContent = text ? `Error: ${text}` : 'Error';
-        if (lastMessage?.role === 'assistant'
-            && lastMessage?.metadata?.error
-            && String(lastMessage.content || '').trim() === nextContent) {
-            return;
-        }
-        currentMessages.push({
-            id: `assistant-error-${Date.now()}`,
-            role: 'assistant',
-            content: nextContent,
-            createdAt: Date.now(),
-            metadata: {
-                error: true
-            }
-        });
-        this.setMessages(currentMessages, true);
-    }
 
-    protected createUiEventMessage(
-        content: string,
-        options: AgentConsoleUiEventOptions & { id?: string; createdAt?: number } = {}
-    ): AgentMessage {
-        return {
-            id: options.id || `ui-event-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
-            role: 'assistant',
-            content,
-            createdAt: options.createdAt ?? Date.now(),
-            metadata: {
-                uiKind: 'event',
-                uiEventType: options.eventType || 'state',
-                uiEventLabel: options.label || 'state',
-                uiEventKey: options.eventKey,
-                durationMs: options.durationMs,
-                status: options.status || 'running',
-                category: options.category,
-                timeline: {
-                    source: options.source || 'local',
-                    sequence: options.sequence,
-                    toolCallId: options.toolCallId,
-                    receiptId: options.receiptId,
-                    attempt: options.attempt
-                }
-            }
-        };
-    }
 
-    protected isSameUiEventMessage(left: AgentMessage | undefined, right: AgentMessage | undefined): boolean {
-        if (!left || !right) {
-            return false;
-        }
-        const leftMetadata = left.metadata || {};
-        const rightMetadata = right.metadata || {};
-        return String(left.content || '').trim() === String(right.content || '').trim()
-            && leftMetadata.uiKind === rightMetadata.uiKind
-            && leftMetadata.uiEventType === rightMetadata.uiEventType
-            && leftMetadata.uiEventLabel === rightMetadata.uiEventLabel
-            && leftMetadata.uiEventKey === rightMetadata.uiEventKey
-            && leftMetadata.durationMs === rightMetadata.durationMs
-            && leftMetadata.status === rightMetadata.status
-            && leftMetadata.category === rightMetadata.category
-            && leftMetadata.timeline?.source === rightMetadata.timeline?.source
-            && leftMetadata.timeline?.sequence === rightMetadata.timeline?.sequence
-            && leftMetadata.timeline?.toolCallId === rightMetadata.timeline?.toolCallId
-            && leftMetadata.timeline?.receiptId === rightMetadata.timeline?.receiptId
-            && leftMetadata.timeline?.attempt === rightMetadata.timeline?.attempt;
-    }
+
+
+
+
+
+    toggleTimelineCollapse(scopeKey: string): void { toggleTimelineCollapseInState(this, scopeKey); }
+    qualifyUiEventKey(key: string): string { return qualifyUiEventKeyInState(this, key); }
+    withoutUiEventMessages(messages: AgentMessage[] = this.messages): AgentMessage[] { return withoutUiEventMessagesInState(this, messages); }
+    clearUiEventMessages(): void { clearUiEventMessagesInState(this); }
+    removeUiEventMessage(eventKey: string): void { removeUiEventMessageInState(this, eventKey); }
+    seedTimeline(entries: TimelineEntry[]): void { seedTimelineInState(this, entries); }
+    seedCommandExchange(records: CommandExchangeRecord[]): void { seedCommandExchangeInState(this, records); }
+    projectCommandExchangeRecord(record: CommandExchangeRecord): boolean { return projectCommandExchangeRecordInState(this, record); }
+    markTimelineReconnecting(reconnecting: boolean): void { markTimelineReconnectingInState(this, reconnecting); }
+    seedNavTree(tree: NavTree | null | undefined): void { seedNavTreeInState(this, tree); }
+    setNavFilter(filter?: NavFilter): void { setNavFilterInState(this, filter); }
+    setNavSelection(selection?: NavSelection): void { setNavSelectionInState(this, selection); }
+    navigateNav(direction: 'up' | 'down', type?: NavEntityType): NavSelection | undefined { return navigateNavInState(this, direction, type); }
+    resolveNavSelectionTarget(): NavSelection | undefined { return resolveNavSelectionTargetInState(this); }
+    setNavViewScroll(viewId: string, scroll: number): void { setNavViewScrollInState(this, viewId, scroll); }
+    getNavViewScroll(viewId: string): number { return getNavViewScrollInState(this, viewId); }
+    appendUiEventMessage(content: string, options: AgentConsoleUiEventOptions = {}): void { appendUiEventMessageInState(this, content, options); }
+    upsertUiEventMessage(eventKey: string, content: string, options: AgentConsoleUiEventOptions = {}): void { upsertUiEventMessageInState(this, eventKey, content, options); }
+    resolveUiEventDurationFallback(existing: AgentMessage, incoming: AgentConsoleUiEventOptions): AgentConsoleUiEventOptions { return resolveUiEventDurationFallbackInState(this, existing, incoming); }
+    projectThreadItem(event: ThreadItemEvent): void { projectThreadItemInState(this, event); }
+    appendAssistantErrorMessage(message: string): void { appendAssistantErrorMessageInState(this, message); }
+    createUiEventMessage(content: string, options: AgentConsoleUiEventOptions = {}): AgentMessage { return createUiEventMessageInState(this, content, options); }
+    isSameUiEventMessage(left: AgentMessage | undefined, right: AgentMessage | undefined): boolean { return isSameUiEventMessageInState(this, left, right); }
 
     setSelectedMessageId(messageId: string): void {
         if (!messageId || !this.displayMessages.some(item => item.id === messageId)) {
@@ -4812,29 +4442,4 @@ export class AgentConsoleSessionState {
     }
 }
 
-function projectTimelineKey(entry: TimelineEntry): string {
-    return entry.key || `${entry.kind}:${entry.label}`;
-}
 
-const REPLAY_THREAD_KINDS: Record<string, ThreadItemKind | undefined> = {
-    command: 'command',
-    tool: 'tool',
-    plan: 'plan'
-};
-
-function toThreadItemKind(kind: string): ThreadItemKind | undefined {
-    return REPLAY_THREAD_KINDS[String(kind || '').trim()];
-}
-
-const REPLAY_STATUSES: Record<string, ThreadItemStatus | undefined> = {
-    running: 'running',
-    success: 'success',
-    error: 'error',
-    cancelled: 'cancelled',
-    pending: 'pending'
-};
-
-function normalizeReplayStatus(status?: string): ThreadItemStatus | undefined {
-    const value = String(status || '').trim();
-    return REPLAY_STATUSES[value];
-}
