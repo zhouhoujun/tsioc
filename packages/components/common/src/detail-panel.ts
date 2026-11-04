@@ -1,15 +1,5 @@
 import { Attribute, Component } from '@tsdi/components';
 
-export interface DetailPanelStyles {
-    shell?: Record<string, string> | string;
-    header?: Record<string, string> | string;
-    meta?: Record<string, string> | string;
-    selection?: Record<string, string> | string;
-    hint?: Record<string, string> | string;
-    line?: Record<string, string> | string;
-    number?: Record<string, string> | string;
-    content?: Record<string, string> | string;
-}
 
 export interface DetailLineItem {
     lineNumber?: string;
@@ -28,12 +18,12 @@ export interface DetailLineItem {
 @Component({
     selector: 'detail-panel',
     template: `
-    <div class="console-panel detail-panel" v-style="styles.shell">
-        <label class="detail-summary" v-style="styles.header" v-show="summary">{{summary}}</label>
-        <label class="detail-meta" v-style="styles.meta" v-show="meta">{{meta}}</label>
-        <label class="detail-selection" v-style="styles.selection" v-show="selection">{{selection}}</label>
-        <label class="detail-hint" v-style="styles.hint" v-show="hint">{{hint}}</label>
-        <label class="detail-line" v-style="item.style || styles.line" v-for="item in items">
+    <div class="console-panel detail-panel" >
+        <label class="detail-summary"  v-show="summary">{{summary}}</label>
+        <label class="detail-meta"  v-show="meta">{{meta}}</label>
+        <label class="detail-selection"  v-show="selection">{{selection}}</label>
+        <label class="detail-hint"  v-show="hint">{{hint}}</label>
+        <label class="detail-line" v-style="item.style" v-for="item in items">
             <span v-show="item.lineNumber" v-style="item.numberStyle || styles.number">{{item.lineNumber}}</span><span v-show="item.prefix" v-style="item.prefixStyle || styles.content">{{item.prefix}}</span><span v-style="item.contentStyle || styles.content">{{item.text}}</span>
         </label>
     </div>`
@@ -44,5 +34,4 @@ export class DetailPanelComponent {
     @Attribute() selection = '';
     @Attribute() hint = '';
     @Attribute() items: DetailLineItem[] = [];
-    @Attribute() styles: DetailPanelStyles = {};
 }

@@ -31,6 +31,7 @@ import {
 } from './input';
 import { provideConsoleTerminalLifecycle, TerminalClickTarget } from './terminal';
 import { ConsoleStyleRule, parseConsoleStyleSheet, resolveConsoleStyleSheet } from './stylesheet';
+import { DEFAULT_CONSOLE_STYLESHEET } from './default-styles.generated';
 import { BaseComponentsModule } from '@tsdi/components/common';
 
 const ANSI_RESET = '\x1b[0m';
@@ -84,7 +85,7 @@ export class TuiRenderer extends ConsoleRenderer {
         clickTargets: TerminalClickTarget[];
     }>();
     protected subtreeLayoutWidth?: number;
-    protected styleSheetRules: ConsoleStyleRule[] = [];
+    protected styleSheetRules: ConsoleStyleRule[] = parseConsoleStyleSheet(DEFAULT_CONSOLE_STYLESHEET);
 
     /** Install a compiled stylesheet (the same CSS used by the web console). */
     setStyleSheet(css: string): void {
@@ -717,6 +718,9 @@ export class TuiRenderer extends ConsoleRenderer {
                 inherited[key] = styleMap[key];
             }
         });
+        Object.keys(styleMap).filter(key => key.startsWith('--')).forEach(key => {
+            inherited[key] = styleMap[key];
+        });
         return inherited;
     }
 
@@ -1081,10 +1085,23 @@ export class TuiRenderer extends ConsoleRenderer {
     }
 
     protected mergeStyles(left: Record<string, string>, right: Record<string, string>): Record<string, string> {
-        return {
-            ...left,
-            ...right
-        };
+        const merged = { ...left, ...right };
+        // Resolve compiled CSS custom properties (the host sets them on the
+        // root from the active theme; common components stay class-only).
+        for (const key of Object.keys(merged)) {
+            merged[key] = this.resolveCssValue(merged[key], merged);
+        }
+        return merged;
+    }
+
+    protected resolveCssValue(value: string, styles: Record<string, string>): string {
+        let next = String(value || '');
+        for (let depth = 0; depth < 4 && next.includes('var('); depth++) {
+            next = next.replace(/var\(\s*(--[\w-]+)\s*(?:,\s*([^\)]+))?\)/g, (_match, name: string, fallback?: string) => {
+                return styles[name] ?? String(fallback ?? '').trim();
+            });
+        }
+        return next;
     }
 
     protected parseInlineStyle(styleText: string): Record<string, string> {

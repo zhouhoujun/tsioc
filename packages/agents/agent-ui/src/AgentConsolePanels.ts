@@ -2722,7 +2722,7 @@ export class AgentConsoleMessagesPanelComponent {
     selector: 'agent-console-message-detail-panel',
     imports: [DetailPanelComponent],
     template: `
-    <detail-panel :summary="detailSummaryLabel" :hint="detailHintLabel" :items="detailItems" :styles="panelStyles"></detail-panel>
+    <detail-panel :summary="detailSummaryLabel" :hint="detailHintLabel" :items="detailItems"></detail-panel>
     `
 })
 export class AgentConsoleMessageDetailPanelComponent {

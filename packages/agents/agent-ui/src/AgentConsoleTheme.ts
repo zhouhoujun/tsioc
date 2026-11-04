@@ -219,3 +219,17 @@ export function styleTextToObject(styleText?: string | null): Record<string, str
         });
     return style;
 }
+
+/** CSS variables consumed by renderer-neutral common components. */
+export function resolveAgentConsoleCssVariables(theme?: AgentConsoleTheme | null): string {
+    const active = theme || defaultAgentConsoleTheme;
+    const color = (style: string, key: 'color' | 'background' = 'color') => styleTextToObject(style)?.[key] || '';
+    return [
+        `--console-text:${color(active.statusValue) || '#c9d1d9'}`,
+        `--console-meta:${color(active.statusLabel) || '#6e7681'}`,
+        `--console-accent:${color(active.toolsAccent) || '#86a9d6'}`,
+        `--console-selected:${color(active.sessionsSelected) || '#7fa6d4'}`,
+        `--console-panel-bg:${color(active.messagesShell, 'background') || 'transparent'}`,
+        `--console-input-bg:${color(active.inputShell, 'background') || '#161b22'}`
+    ].join(';') + ';';
+}

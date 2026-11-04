@@ -1,0 +1,42 @@
+/* Compiled TUI stylesheet. Hosts may replace it with their own compiled CSS. */
+.console-panel {
+    color: var(--console-text, #c9d1d9);
+}
+.common-list-panel,
+.detail-panel {
+    padding: 0 1ch;
+}
+.common-list-header,
+.detail-summary {
+    color: var(--console-accent, #86a9d6);
+    font-weight: bold;
+}
+.common-list-title {
+    color: var(--console-accent, #86a9d6);
+}
+.common-list-meta,
+.common-list-empty,
+.common-list-hint,
+.detail-meta,
+.detail-selection,
+.detail-hint {
+    color: var(--console-meta, #6e7681);
+}
+.common-list-detail,
+.detail-line {
+    color: var(--console-text, #c9d1d9);
+}
+.common-list-panel [aria-selected="true"] {
+    color: var(--console-selected, #7fa6d4);
+    font-weight: bold;
+}
+.message-line {
+    color: var(--console-text, #c9d1d9);
+}
+.message-line [data-hover="fade"] {
+    color: var(--console-meta, #6e7681);
+}
+.agent-input {
+    color: var(--console-text, #c9d1d9);
+    background: var(--console-input-bg, #161b22);
+}

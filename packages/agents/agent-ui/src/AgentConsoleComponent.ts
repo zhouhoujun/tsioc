@@ -113,6 +113,7 @@ import {
     agentConsoleThemes,
     AgentConsoleThemeName,
     AgentConsoleThemeStore,
+    resolveAgentConsoleCssVariables,
     isAgentConsoleThemeName,
     mergeAgentConsoleTheme
 } from './AgentConsoleTheme';
@@ -274,7 +275,7 @@ interface AgentConsoleQueuedPrompt {
 @Component({
     selector: 'agent-console',
     template: `
-    <div class="agent-console">
+    <div class="agent-console" v-style="rootStyle">
         <common-tab-bar renderRegion="header"></common-tab-bar>
         <agent-console-brand-panel renderRegion="transcript" v-show="!showMessageDetailPanel && !showSelectPanel && !showTextOverlayPanel && !showPendingQuestionPanel"></agent-console-brand-panel>
         <agent-console-messages-panel renderRegion="transcript" v-show="!showMessageDetailPanel"></agent-console-messages-panel>
@@ -1105,7 +1106,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         );
     }
 
-
     protected async selectApprovalRequest(
         requests: AgentConsoleApprovalRequest[],
         selectedIndex = 0
@@ -1533,6 +1533,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         };
     }
 
+    get rootStyle(): string { return resolveAgentConsoleCssVariables(this.state?.theme); }
     async onInit(): Promise<void> {
         this.state.toolPayloadLoader = async toolCallId => { if (!this.appRpc) { return ''; } try { const res: any = await this.appRpc.request('session.tool_payload', { sessionId: this.state.sessionId, toolCallId }); return String(res?.text || ''); } catch { return ''; } };
         this.state.submitAction = this.submitActionHandler; this.state.escapeAction = () => this.handleWizardEscape();

@@ -441,6 +441,19 @@ export class ConsoleRendererTest {
         expect(active).toContain('\x1b[38;2;0;255;0m');
     }
 
+    @Test('resolves stylesheet variables inherited from a surface root')
+    resolvesStylesheetVariables() {
+        const renderer = new TuiRenderer();
+        renderer.setStyleSheet('.sheet-var { color: var(--sheet-color, #111111); }');
+        const root = renderer.createElement('div') as ConsoleElement;
+        root.setAttribute('style', '--sheet-color: #00ff00;');
+        const row = renderer.createElement('label') as ConsoleElement;
+        row.setAttribute('class', 'sheet-var');
+        renderer.appendChild(row, renderer.createText('variable'));
+        renderer.appendChild(root, row);
+        expect(renderer.renderToTuiLines(root)[0]).toContain('\x1b[38;2;0;255;0m');
+    }
+
     @Test('preserves inline space tokens so markdown table padding survives')
     preservesInlineSpaceTokens() {
         const renderer = new TuiRenderer();
