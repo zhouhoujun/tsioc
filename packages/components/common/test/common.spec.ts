@@ -170,7 +170,7 @@ export class CommonComponentUtilitiesTest {
         panel.summary = 'summary';
         panel.items = [
             { lineNumber: '  1| ', text: 'first' },
-            { lineNumber: '  2| ', text: 'second', contentStyle: { color: 'red' } }
+            { lineNumber: '  2| ', text: 'second' }
         ];
         expect(panel.summary).toEqual('summary');
         expect(panel.items.map(item => `${item.lineNumber}${item.text}`)).toEqual(['  1| first', '  2| second']);

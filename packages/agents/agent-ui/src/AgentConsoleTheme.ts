@@ -231,6 +231,11 @@ export function resolveAgentConsoleCssVariables(theme?: AgentConsoleTheme | null
         `--console-selected:${color(active.sessionsSelected) || '#7fa6d4'}`,
         `--console-panel-bg:${color(active.messagesShell, 'background') || 'transparent'}`,
         `--console-dialog-bg:${color(active.dialogShell, 'background') || '#161b22'}`,
+        `--console-error:${color(active.statusErrorValue) || '#cf9893'}`,
+        `--console-notice:${color(active.statusNoticeValue) || '#c2a05e'}`,
+        `--console-busy:${color(active.statusBusyValue) || '#7fa6d4'}`,
+        `--console-idle:${color(active.statusIdleValue) || '#6fa37a'}`,
+        `--console-title:${color(active.statusTitle) || '#8b949e'}`,
         `--console-input-bg:${color(active.inputShell, 'background') || '#161b22'}`
     ].join(';') + ';';
 }

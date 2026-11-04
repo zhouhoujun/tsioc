@@ -5,10 +5,10 @@ export interface DetailLineItem {
     lineNumber?: string;
     prefix?: string;
     text: string;
-    style?: Record<string, string> | string;
-    numberStyle?: Record<string, string> | string;
-    prefixStyle?: Record<string, string> | string;
-    contentStyle?: Record<string, string> | string;
+    className?: string;
+    numberClass?: string;
+    prefixClass?: string;
+    contentClass?: string;
 }
 
 /**
@@ -23,8 +23,8 @@ export interface DetailLineItem {
         <label class="detail-meta"  v-show="meta">{{meta}}</label>
         <label class="detail-selection"  v-show="selection">{{selection}}</label>
         <label class="detail-hint"  v-show="hint">{{hint}}</label>
-        <label class="detail-line" v-style="item.style" v-for="item in items">
-            <span v-show="item.lineNumber" v-style="item.numberStyle">{{item.lineNumber}}</span><span v-show="item.prefix" v-style="item.prefixStyle">{{item.prefix}}</span><span v-style="item.contentStyle">{{item.text}}</span>
+        <label class="detail-line {{item.className}}" v-for="item in items">
+            <span class="detail-line-number" v-show="item.lineNumber">{{item.lineNumber}}</span><span class="detail-line-prefix {{item.prefixClass}}" v-show="item.prefix">{{item.prefix}}</span><span class="detail-line-content {{item.contentClass}}">{{item.text}}</span>
         </label>
     </div>`
 })

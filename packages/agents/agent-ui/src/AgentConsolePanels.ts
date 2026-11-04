@@ -2723,17 +2723,6 @@ export class AgentConsoleMessageDetailPanelComponent {
         return styleTextToObject(this.activeTheme.statusLabel);
     }
 
-    get lineStyle() {
-        return {
-            ...styleTextToObject(this.activeTheme.statusValue),
-            'white-space': 'nowrap'
-        };
-    }
-
-    get lineNumberStyle() {
-        return styleTextToObject(this.activeTheme.messageDetailLineNumber);
-    }
-
     get shouldShow(): boolean {
         return !!this.selectedMessage && this.state.messageDetailOpen;
     }
@@ -2758,7 +2747,18 @@ export class AgentConsoleMessageDetailPanelComponent {
     }
 
 
-    get detailItems() { return this.detailIndexes.map(index => ({ lineNumber: this.detailLineNumberAt(index), prefix: this.detailLinePrefixAt(index), text: this.detailLineContentAt(index), style: this.detailLineStyleAt(index), numberStyle: this.lineNumberStyle, prefixStyle: this.detailLinePrefixStyleAt(index), contentStyle: this.detailLineContentStyleAt(index) })); }
+    get detailItems() {
+        return this.detailIndexes.map(index => {
+            const line = this.detailMarkdownLineAt(index);
+            return {
+                lineNumber: this.detailLineNumberAt(index),
+                prefix: this.detailLinePrefixAt(index),
+                text: this.detailLineContentAt(index),
+                prefixClass: line?.prefixTone ? `tone-${line.prefixTone}` : '',
+                contentClass: line?.tone && line.tone !== 'default' ? `tone-${line.tone}` : ''
+            };
+        });
+    }
 
     get detailSummaryLabel(): string {
         if (!this.shouldShow || !this.selectedMessage) {
@@ -2817,69 +2817,6 @@ export class AgentConsoleMessageDetailPanelComponent {
             return '';
         }
         return line.prefix || '';
-    }
-
-    detailLinePrefixStyleAt(index: number): Record<string, string> {
-        const line = this.detailMarkdownLineAt(index);
-        if (!line || this.state.messageDetailColumnScroll > 0) {
-            return this.lineStyle;
-        }
-        if (line.prefixTone === 'quote') {
-            return styleTextToObject(this.activeTheme.statusLabel);
-        }
-        if (line.prefixTone === 'heading') {
-            return {
-                ...styleTextToObject(this.activeTheme.toolsAccent),
-                'font-weight': 'bold'
-            };
-        }
-        return this.lineStyle;
-    }
-
-    detailLineStyleAt(index: number): Record<string, string> {
-        return {
-            display: 'block',
-            'white-space': 'nowrap',
-            ...(this.detailLineContentStyleAt(index))
-        };
-    }
-
-    detailLineContentStyleAt(index: number): Record<string, string> {
-        const line = this.detailMarkdownLineAt(index);
-        if (!line || this.state.messageDetailColumnScroll > 0) {
-            return this.lineStyle;
-        }
-        return {
-            ...this.resolveMarkdownToneStyle(line.tone || 'default'),
-            'white-space': 'nowrap'
-        };
-    }
-
-    protected resolveMarkdownToneStyle(tone: AgentConsoleMarkdownTone): Record<string, string> {
-        switch (tone) {
-            case 'accent':
-                return styleTextToObject(this.activeTheme.toolsAccent);
-            case 'strong':
-                return {
-                    ...styleTextToObject(this.activeTheme.statusValue),
-                    'font-weight': 'bold'
-                };
-            case 'code':
-                return {
-                    ...styleTextToObject(this.activeTheme.toolsAccent),
-                    background: '#161b22'
-                };
-            case 'heading':
-                return {
-                    ...styleTextToObject(this.activeTheme.toolsAccent),
-                    'font-weight': 'bold'
-                };
-            case 'muted':
-            case 'quote':
-                return styleTextToObject(this.activeTheme.statusLabel);
-            default:
-                return styleTextToObject(this.activeTheme.statusValue);
-        }
     }
 
     protected detailMarkdownLineAt(index: number): AgentConsoleMarkdownLine | undefined {

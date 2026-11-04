@@ -90,3 +90,58 @@
     color: var(--console-accent, #7fa6d4);
     font-weight: bold;
 }
+.tone-accent,
+.tone-link,
+.tone-syntax-type,
+.tone-syntax-tag,
+.tone-syntax-function {
+    color: var(--console-accent, #86a9d6);
+}
+.tone-link {
+    text-decoration: underline;
+}
+.tone-strong,
+.tone-heading {
+    color: var(--console-text, #c9d1d9);
+    font-weight: bold;
+}
+.tone-code,
+.tone-inline-code,
+.tone-syntax-property,
+.tone-syntax-variable {
+    color: var(--console-text, #c9d1d9);
+}
+.tone-inline-code {
+    background: #161b22;
+}
+.tone-muted,
+.tone-strike,
+.tone-syntax-comment {
+    color: var(--console-meta, #6e7681);
+}
+.tone-syntax-keyword {
+    color: var(--console-error, #cf9893);
+}
+.tone-syntax-string,
+.tone-syntax-number,
+.tone-syntax-constant {
+    color: var(--console-idle, #6fa37a);
+}
+.tone-emphasis,
+.tone-quote,
+.tone-syntax-attribute {
+    color: var(--console-notice, #c2a05e);
+    font-style: italic;
+}
+.detail-line {
+    display: block;
+    white-space: nowrap;
+}
+.detail-line-number {
+    color: var(--console-meta, #6e7681);
+}
+.detail-line-prefix,
+.detail-line-content {
+    color: var(--console-text, #c9d1d9);
+    white-space: nowrap;
+}

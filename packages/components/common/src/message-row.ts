@@ -19,7 +19,7 @@ export interface MessageToken {
         <span class="message-prefix" v-show="prefix">{{prefix}}</span>
         <span class="message-line-content">
             <span class="message-content">
-                <span class="message-token" v-style="token.style" v-for="token in tokens">{{token.text}}</span>
+                <span class="message-token tone-{{token.tone || 'default'}}" v-for="token in tokens">{{token.text}}</span>
             </span>
         </span>
         <span class="message-detail-toggle" v-if="toggleContent">{{toggleContent}}</span>
