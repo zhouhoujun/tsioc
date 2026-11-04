@@ -270,6 +270,7 @@ import {
     setTasksFocused as setTasksFocusedInState,
     syncFilteredTaskSelection as syncFilteredTaskSelectionInState
 } from './AgentConsoleReviewTaskState';
+import { handleJobsFocusedKey, handleTasksFocusedKey, handleToolRunsFocusedKey, handleToolsFocusedKey } from './AgentConsoleFocusedPanelKeys';
 import type {
     AgentConsoleActivity,
     AgentConsoleApprovalRequest,
@@ -1330,7 +1331,7 @@ export class AgentConsoleSessionState {
         return buildSelectedSessionCopyTextInState(this);
     }
 
-    protected buildSelectedToolRunCopyText(): string {
+    buildSelectedToolRunCopyText(): string {
         const selected = this.selectedToolRun;
         if (!selected) {
             return '';
@@ -2629,7 +2630,7 @@ export class AgentConsoleSessionState {
         return sourceSessionId ? `${sourceSessionId}:${taskId}` : taskId;
     }
 
-    protected buildSelectedTaskCopyText(): string {
+    buildSelectedTaskCopyText(): string {
         const selected = this.selectedTask;
         if (!selected) {
             return '';
@@ -2685,241 +2686,16 @@ export class AgentConsoleSessionState {
         const approvalResult = this.focusLayers.handleApprovalKey(normalized, transcriptNavigationController);
         if (approvalResult !== undefined) return approvalResult;
         if (this.tasksFocused) {
-            if ((normalized === 'esc' || normalized === 'escape') && this.canCancelFocusedCodingTask()) {
-                await this.cancelFocusedCodingTask();
-                return true;
-            }
-            if (this.focusLayers.isDismissKey(normalized)) {
-                await this.focusLayers.dismiss(transcriptNavigationController);
-                return true;
-            }
-            if (this.hasActivePlanTodos()) {
-                switch (normalized) {
-                    case 'up':
-                        this.movePlanTodoSelection(-1);
-                        return true;
-                    case 'down':
-                        this.movePlanTodoSelection(1);
-                        return true;
-                    case 'home':
-                        this.selectedPlanTodoIndex = 0;
-                        return true;
-                    case 'end': {
-                        const filtered = this.filteredPlanTodos;
-                        this.selectedPlanTodoIndex = filtered.length > 0 ? filtered.length - 1 : -1;
-                        return true;
-                    }
-                    case 'pageup': {
-                        const pfUp = this.filteredPlanTodos;
-                        this.selectedPlanTodoIndex = pfUp.length > 0 ? 0 : -1;
-                        return true;
-                    }
-                    case 'pagedown': {
-                        const pfDown = this.filteredPlanTodos;
-                        this.selectedPlanTodoIndex = pfDown.length > 0 ? pfDown.length - 1 : -1;
-                        return true;
-                    }
-                    case 'f': {
-                        const cycle: Array<'all' | 'active' | 'blocked' | 'failed'> = ['all', 'active', 'blocked', 'failed'];
-                        const next = cycle[(cycle.indexOf(this.planTodoFilter) + 1) % cycle.length];
-                        this.setPlanTodoFilter(next);
-                        return true;
-                    }
-                    case 'j':
-                        this.jumpToNextBlockedPlanTodo();
-                        return true;
-                    case 'k':
-                        this.jumpToNextFailedPlanTodo();
-                        return true;
-                    case 'enter':
-                        this.planTodoExpanded = !this.planTodoExpanded;
-                        return true;
-                    case 'e':
-                        this.planTodoExpanded = !this.planTodoExpanded;
-                        return true;
-                    case 'r':
-                        return this.retrySelectedPlanTodo();
-                }
-            }
-            switch (normalized) {
-                case 'copy':
-                    await this.copyFocusedTextAction?.(this.buildSelectedTaskCopyText(), this.translateLabel('agent.notice.copyLabelSelectedTask', undefined, 'selected task'));
-                    return true;
-                case 'enter':
-                    if (this.selectedTask?.id) {
-                        await this.openSelectedTaskAction?.(this.selectedTask.id);
-                        return true;
-                    }
-                    return false;
-                case 'r':
-                    if (this.canRetryFocusedCodingTask()) {
-                        await this.retryFocusedCodingTask();
-                        return true;
-                    }
-                    return false;
-                case 'x':
-                    if (this.selectedTask?.id) {
-                        await this.cancelSelectedTaskAction?.(this.selectedTask.id);
-                        return true;
-                    }
-                    return false;
-                case 'b':
-                    if (this.selectedTask?.id) {
-                        await this.rollbackSelectedTaskAction?.(this.selectedTask.id);
-                        return true;
-                    }
-                    return false;
-                case 'l':
-                    return focusSelectedTaskLineageFilterInState(this);
-                case 'f':
-                    setTaskFilterInState(this, 'failed');
-                    return true;
-                case 'v':
-                    setTaskFilterInState(this, 'rollback');
-                    return true;
-                case 'u':
-                    setTaskFilterInState(this, 'all');
-                    return true;
-                case 'down':
-                    moveTaskSelectionInState(this, 1);
-                    return true;
-                case 'up':
-                    moveTaskSelectionInState(this, -1);
-                    return true;
-                case 'pageup':
-                    moveTaskSelectionPageInState(this, -1);
-                    return true;
-                case 'pagedown':
-                    moveTaskSelectionPageInState(this, 1);
-                    return true;
-                case 'home':
-                    selectFirstTaskInState(this);
-                    return true;
-                case 'end':
-                    selectLastTaskInState(this);
-                    return true;
-                default:
-                    return false;
-            }
+            return handleTasksFocusedKey(this, normalized, transcriptNavigationController);
         }
         if (this.jobsFocused) {
-            if (this.focusLayers.isDismissKey(normalized)) {
-                await this.focusLayers.dismiss(transcriptNavigationController);
-                return true;
-            }
-            switch (normalized) {
-                case 'copy':
-                    await this.copyFocusedTextAction?.(this.buildSelectedScheduledTaskCopyText(), this.translateLabel('agent.notice.copyLabelScheduledJob', undefined, 'scheduled job'));
-                    return true;
-                case 'enter':
-                case 'p':
-                    if (this.selectedScheduledTask?.id) {
-                        await this.toggleSelectedScheduledTaskAction?.(this.selectedScheduledTask.id);
-                        return true;
-                    }
-                    return false;
-                case 'x':
-                    if (this.selectedScheduledTask?.id) {
-                        await this.cancelSelectedScheduledTaskAction?.(this.selectedScheduledTask.id);
-                        return true;
-                    }
-                    return false;
-                case 'r':
-                    if (this.selectedScheduledTask?.id) {
-                        await this.recoverSelectedScheduledTaskAction?.(this.selectedScheduledTask.id);
-                        return true;
-                    }
-                    return false;
-                case 'down':
-                    this.moveScheduledTaskSelection(1);
-                    return true;
-                case 'up':
-                    this.moveScheduledTaskSelection(-1);
-                    return true;
-                case 'pageup':
-                    this.moveScheduledTaskSelectionPage(-1);
-                    return true;
-                case 'pagedown':
-                    this.moveScheduledTaskSelectionPage(1);
-                    return true;
-                case 'home':
-                    this.selectFirstScheduledTask();
-                    return true;
-                case 'end':
-                    this.selectLastScheduledTask();
-                    return true;
-                default:
-                    return false;
-            }
+            return handleJobsFocusedKey(this, normalized, transcriptNavigationController);
         }
         if (this.toolsFocused) {
-            if (this.focusLayers.isDismissKey(normalized)) {
-                await this.focusLayers.dismiss(transcriptNavigationController);
-                return true;
-            }
-            switch (normalized) {
-                case 'copy':
-                    await this.copyFocusedTextAction?.(this.selectedTool?.name || '', this.translateLabel('agent.notice.copyLabelToolName', undefined, 'tool name'));
-                    return true;
-                case 'enter':
-                case 'approve':
-                    if (this.selectedTool?.name) {
-                        await this.activateSelectedToolAction?.(this.selectedTool.name);
-                        return true;
-                    }
-                    return false;
-                case 'down':
-                    this.moveToolSelection(1);
-                    return true;
-                case 'up':
-                    this.moveToolSelection(-1);
-                    return true;
-                case 'pageup':
-                    this.moveToolSelectionPage(-1);
-                    return true;
-                case 'pagedown':
-                    this.moveToolSelectionPage(1);
-                    return true;
-                case 'home':
-                    this.selectFirstTool();
-                    return true;
-                case 'end':
-                    this.selectLastTool();
-                    return true;
-                default:
-                    return false;
-            }
+            return handleToolsFocusedKey(this, normalized, transcriptNavigationController);
         }
         if (this.toolRunsFocused) {
-            if (this.focusLayers.isDismissKey(normalized)) {
-                await this.focusLayers.dismiss(transcriptNavigationController);
-                return true;
-            }
-            switch (normalized) {
-                case 'copy':
-                    await this.copyFocusedTextAction?.(this.buildSelectedToolRunCopyText(), this.translateLabel('agent.notice.copyLabelToolRun', undefined, 'tool run'));
-                    return true;
-                case 'down':
-                    this.moveToolRunSelection(1);
-                    return true;
-                case 'up':
-                    this.moveToolRunSelection(-1);
-                    return true;
-                case 'pageup':
-                    this.moveToolRunSelectionPage(-1);
-                    return true;
-                case 'pagedown':
-                    this.moveToolRunSelectionPage(1);
-                    return true;
-                case 'home':
-                    this.selectFirstToolRun();
-                    return true;
-                case 'end':
-                    this.selectLastToolRun();
-                    return true;
-                default:
-                    return false;
-            }
+            return handleToolRunsFocusedKey(this, normalized, transcriptNavigationController);
         }
         if (this.sessionsFocused) {
             return (await this.focusLayers.handleSessionsKey(normalized, transcriptNavigationController)) ?? false;
