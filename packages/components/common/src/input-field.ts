@@ -9,7 +9,6 @@ import { Attribute, Component } from '@tsdi/components';
     template: `
     <textarea
         class="agent-input"
-        v-style="fieldStyle"
         value="{{value}}"
         prompt="{{prompt}}"
         placeholder="{{placeholder}}"
@@ -33,7 +32,6 @@ export class InputFieldComponent {
     @Attribute() focused = true;
     @Attribute() continuationPrompt = '  ';
     @Attribute() mask = false;
-    @Attribute() fieldStyle: Record<string, string> | string = {};
     @Attribute() inputAction?: (event: Event) => void;
     @Attribute() cursorAction?: (event: Event) => void;
     @Attribute() keydownAction?: (event: KeyboardEvent) => void;

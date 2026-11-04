@@ -271,7 +271,7 @@ export class AgentConsoleStatusPanelComponent {
     <div class="console-panel console-input-panel">
         <div class="input-shell" v-style="shellStyle">
             <div class="input-entry" v-style="entryShellStyle">
-                <input-field :value="input" :prompt="inputPromptBase" :placeholder="inputPlaceholderLabel" :cursorPos="inputCursor" :focused="inputFocused" :continuationPrompt="'  '" :mask="inputSecret" :fieldStyle="fieldStyle" @inputAction="onInput" @cursorAction="onCursorChange" @keydownAction="onKeydown"></input-field>
+                <input-field :value="input" :prompt="inputPromptBase" :placeholder="inputPlaceholderLabel" :cursorPos="inputCursor" :focused="inputFocused" :continuationPrompt="'  '" :mask="inputSecret" @inputAction="onInput" @cursorAction="onCursorChange" @keydownAction="onKeydown"></input-field>
             </div>
             <div class="wizard-banner" v-show="wizardOpen">
                 <label class="wizard-title" v-style="wizardTitleStyle">{{wizardTitleLabel}}</label>
@@ -975,7 +975,7 @@ export class AgentConsoleWorkingPanelComponent {
     selector: 'agent-console-sessions-panel',
     imports: [ListPanelComponent],
     template: `
-    <common-list-panel :header="sessionsSummaryLabel" :hint="sessionsHintLabel" :items="sessionItems" :showClose="false" :styles="panelStyles"></common-list-panel>
+    <common-list-panel :header="sessionsSummaryLabel" :hint="sessionsHintLabel" :items="sessionItems" :showClose="false"></common-list-panel>
     `
 })
 export class AgentConsoleSessionsPanelComponent {
@@ -999,7 +999,6 @@ export class AgentConsoleSessionsPanelComponent {
     get shellStyle() {
         return this.shouldShow ? this.activeThemeStyles.sessionsShell : {};
     }
-    get panelStyles() { return { shell: this.shellStyle, header: this.accentStyle, meta: this.metaStyle }; }
 
     get accentStyle() {
         return this.activeThemeStyles.sessionsAccent;
@@ -1013,7 +1012,7 @@ export class AgentConsoleSessionsPanelComponent {
         if (!this.shouldShow) {
             return [];
         }
-        const rows: Array<{ id: string; label: string; style: Record<string, string> }> = [];
+        const rows: Array<{ id: string; label: string; style: Record<string, string>; selected: string; className?: string }> = [];
         let previousProjectKey = '';
         for (const session of this.visibleSessions) {
             const projectKey = String(session.projectKey || '').trim();
@@ -1021,7 +1020,9 @@ export class AgentConsoleSessionsPanelComponent {
                 rows.push({
                     id: `${projectKey}::header`,
                     label: this.projectHeaderLabel(session),
-                    style: this.activeThemeStyles.sessionsAccent
+                    style: this.activeThemeStyles.sessionsAccent,
+                    selected: 'false',
+                    className: 'common-list-section'
                 });
             }
             const current = session.current ? ` [${panelLabel(this.translator, 'sessions', 'current', 'current')}]` : '';
@@ -1037,7 +1038,8 @@ export class AgentConsoleSessionsPanelComponent {
                 label: `${marker} ${workspacePrefix}${name}${formatSessionAge(session.updatedAt)}${current}${count}${pinned}`,
                 style: selected
                     ? this.activeThemeStyles.sessionsSelected
-                    : this.activeThemeStyles.statusValue
+                    : this.activeThemeStyles.statusValue,
+                selected: String(selected)
             });
             previousProjectKey = projectKey;
         }
@@ -1110,7 +1112,7 @@ export class AgentConsoleSessionsPanelComponent {
     selector: 'agent-console-tasks-panel',
     imports: [ListPanelComponent],
     template: `
-    <common-list-panel :header="tasksSummaryLabel" :contextLines="backgroundTaskFeedLines" :hint="tasksHintLabel" :items="taskDisplayItems" :detailLines="selectedTaskDetailLines" :ariaLabel="accessibilityLabel" :showClose="false" :styles="panelStyles"></common-list-panel>
+    <common-list-panel :header="tasksSummaryLabel" :contextLines="backgroundTaskFeedLines" :hint="tasksHintLabel" :items="taskDisplayItems" :detailLines="selectedTaskDetailLines" :ariaLabel="accessibilityLabel" :showClose="false"></common-list-panel>
     `
 })
 export class AgentConsoleTasksPanelComponent {
@@ -1151,7 +1153,6 @@ export class AgentConsoleTasksPanelComponent {
         return this.activeThemeStyles.statusValue;
     }
 
-    get panelStyles() { return { shell: this.shellStyle, header: this.accentStyle, meta: this.metaStyle, detail: this.detailStyle }; }
 
     get backgroundTaskFeedLabel(): string {
         const tasks = this.state.filteredBackgroundTasks;
@@ -1175,7 +1176,7 @@ export class AgentConsoleTasksPanelComponent {
         return this.activeThemeStyles.statusValue;
     }
 
-    get taskItems(): Array<{ id: string; label: string; style: Record<string, string> }> {
+    get taskItems(): Array<{ id: string; label: string; style: Record<string, string>; selected: string }> {
         if (!this.shouldShow) {
             return [];
         }
@@ -1212,7 +1213,8 @@ export class AgentConsoleTasksPanelComponent {
             return {
                 id: task.id,
                 label: `${this.state.selectedReviewTaskId === task.id ? '›' : ' '} ${indentation}${task.id} · ${task.title}${meta ? ` (${meta})` : ''}`,
-                style: this.listStyle
+                style: this.listStyle,
+                selected: String(this.state.selectedReviewTaskId === task.id)
             };
         });
     }
@@ -1527,7 +1529,7 @@ export class AgentConsoleTasksPanelComponent {
     selector: 'agent-console-jobs-panel',
     imports: [ListPanelComponent],
     template: `
-    <common-list-panel :header="jobsSummaryLabel" :hint="jobsHintLabel" :items="jobItems" :detailLines="selectedJobDetailLines" :showClose="false" :styles="panelStyles"></common-list-panel>
+    <common-list-panel :header="jobsSummaryLabel" :hint="jobsHintLabel" :items="jobItems" :detailLines="selectedJobDetailLines" :showClose="false"></common-list-panel>
     `
 })
 export class AgentConsoleJobsPanelComponent {
@@ -1568,9 +1570,8 @@ export class AgentConsoleJobsPanelComponent {
         return this.activeThemeStyles.statusValue;
     }
 
-    get panelStyles() { return { shell: this.shellStyle, header: this.accentStyle, meta: this.metaStyle, detail: this.detailStyle }; }
 
-    get jobItems(): Array<{ id: string; label: string; style: Record<string, string> }> {
+    get jobItems(): Array<{ id: string; label: string; style: Record<string, string>; selected: string }> {
         if (!this.shouldShow) {
             return [];
         }
@@ -1585,6 +1586,7 @@ export class AgentConsoleJobsPanelComponent {
             return {
                 id: job.id,
                 style: this.listStyle,
+                selected: String(this.state.selectedScheduledTaskId === job.id),
                 label: `${this.state.selectedScheduledTaskId === job.id ? '›' : ' '} ${job.id} · ${prompt}${summary ? ` (${summary})` : ''}`
             };
         });
@@ -1671,7 +1673,7 @@ export { AgentConsoleApprovalsPanelComponent } from './AgentConsoleApprovalPanel
     selector: 'agent-console-tools-panel',
     imports: [ListPanelComponent],
     template: `
-    <common-list-panel :header="toolsSummaryLabel" :hint="toolsHintLabel" :items="toolItems" :detailLines="selectedToolDetailLines" :showClose="false" :styles="panelStyles"></common-list-panel>
+    <common-list-panel :header="toolsSummaryLabel" :hint="toolsHintLabel" :items="toolItems" :detailLines="selectedToolDetailLines" :showClose="false"></common-list-panel>
     `
 })
 export class AgentConsoleToolsPanelComponent {
@@ -1695,7 +1697,6 @@ export class AgentConsoleToolsPanelComponent {
     get shellStyle() {
         return this.shouldShow ? this.activeThemeStyles.toolsShell : {};
     }
-    get panelStyles() { return { shell: this.shellStyle, header: this.accentStyle, meta: this.metaStyle, detail: this.detailStyle }; }
 
     get titleStyle() {
         return this.activeThemeStyles.toolsTitle;
@@ -1717,7 +1718,7 @@ export class AgentConsoleToolsPanelComponent {
         return this.activeThemeStyles.statusValue;
     }
 
-    get toolItems(): Array<{ name: string; label: string; style: Record<string, string> }> {
+    get toolItems(): Array<{ name: string; label: string; style: Record<string, string>; selected: string }> {
         if (!this.shouldShow) {
             return [];
         }
@@ -1728,7 +1729,8 @@ export class AgentConsoleToolsPanelComponent {
                 label: `${selected ? '›' : ' '} ${tool.name}${tool.active ? '' : formatToolPanelInactiveSuffix(this.translator)}${tool.toolset ? ` (${tool.toolset})` : ''}`,
                 style: selected
                     ? this.activeThemeStyles.sessionsSelected
-                    : this.activeThemeStyles.statusValue
+                    : this.activeThemeStyles.statusValue,
+                selected: String(selected)
             };
         });
     }
@@ -1879,7 +1881,7 @@ export class AgentConsoleTextOverlayPanelComponent {
     selector: 'agent-console-outputs-panel',
     imports: [ListPanelComponent],
     template: `
-    <common-list-panel :header="panelTitle" :meta="filterLabel" :items="entryItems" :empty="emptyLabel" :hint="hintLabel" :showClose="false" :ariaLabel="accessibilityLabel" :listLabel="'Command output history'" :activeOptionId="activeOptionId" :styles="panelStyles"></common-list-panel>
+    <common-list-panel :header="panelTitle" :meta="filterLabel" :items="entryItems" :empty="emptyLabel" :hint="hintLabel" :showClose="false" :ariaLabel="accessibilityLabel" :listLabel="'Command output history'" :activeOptionId="activeOptionId"></common-list-panel>
     `
 })
 export class AgentConsoleCommandOutputsPanelComponent {
@@ -1895,7 +1897,6 @@ export class AgentConsoleCommandOutputsPanelComponent {
     get shellStyle() {
         return this.state.hasCommandOutputsFocus() ? this.activeThemeStyles.toolRunsShell : {};
     }
-    get panelStyles() { return { shell: this.shellStyle, header: this.accentStyle, meta: this.metaStyle }; }
 
     get accentStyle() {
         return this.activeThemeStyles.toolRunsAccent;
@@ -1976,7 +1977,7 @@ export class AgentConsoleCommandOutputsPanelComponent {
     selector: 'agent-console-pending-question-panel',
     imports: [ListPanelComponent],
     template: `
-    <common-list-panel :header="pendingQuestionHeader" :title="pendingQuestionTitle" :context="pendingQuestionContext" :meta="pendingQuestionExpiryHint" :hint="pendingQuestionSelectionHint" :secondaryHint="pendingQuestionCustomHint" :items="pendingQuestionOptionItems" :showClose="true" :closeLabel="'✕'" :ariaLabel="accessibilityLabel" :listLabel="'Question options'" :activeOptionId="activeOptionId" :styles="panelStyles" @closeAction="closeQuestion" @selectAction="onPendingQuestionOptionClick"></common-list-panel>
+    <common-list-panel :header="pendingQuestionHeader" :title="pendingQuestionTitle" :context="pendingQuestionContext" :meta="pendingQuestionExpiryHint" :hint="pendingQuestionSelectionHint" :secondaryHint="pendingQuestionCustomHint" :items="pendingQuestionOptionItems" :showClose="true" :closeLabel="'✕'" :ariaLabel="accessibilityLabel" :listLabel="'Question options'" :activeOptionId="activeOptionId" @closeAction="closeQuestion" @selectAction="onPendingQuestionOptionClick"></common-list-panel>
     `
 })
 export class AgentConsolePendingQuestionPanelComponent {
@@ -1990,7 +1991,6 @@ export class AgentConsolePendingQuestionPanelComponent {
     }
 
     get shellStyle() { return menuShellStyle(this.state.theme || this.theme || defaultAgentConsoleTheme); } get closeStyle() { return DIALOG_CLOSE_STYLE; }
-    get panelStyles() { return { shell: this.shellStyle, header: this.accentStyle, title: this.accentStyle, meta: this.metaStyle, close: this.closeStyle }; }
     async closeQuestion(): Promise<void> { await this.state.dismissPendingQuestion(); }
 
     get accentStyle() {
@@ -2096,7 +2096,7 @@ export class AgentConsolePendingQuestionPanelComponent {
     selector: 'agent-console-tool-runs-panel',
     imports: [ListPanelComponent],
     template: `
-    <common-list-panel :header="toolRunsSummaryLabel" :hint="toolRunsHintLabel" :items="toolRunItems" :detailLines="selectedToolRunDetailLines" :showClose="false" :styles="panelStyles"></common-list-panel>
+    <common-list-panel :header="toolRunsSummaryLabel" :hint="toolRunsHintLabel" :items="toolRunItems" :detailLines="selectedToolRunDetailLines" :showClose="false"></common-list-panel>
     `
 })
 export class AgentConsoleToolRunsPanelComponent {
@@ -2128,7 +2128,6 @@ export class AgentConsoleToolRunsPanelComponent {
     get shellStyle() {
         return this.toolRuns.length ? this.activeThemeStyles.toolRunsShell : {};
     }
-    get panelStyles() { return { shell: this.shellStyle, header: this.accentStyle, meta: this.metaStyle, detail: this.detailStyle }; }
 
     get titleStyle() {
         return this.activeThemeStyles.toolRunsTitle;
@@ -2166,7 +2165,7 @@ export class AgentConsoleToolRunsPanelComponent {
         );
     }
 
-    get toolRunItems(): Array<{ label: string; style: Record<string, string> }> {
+    get toolRunItems(): Array<{ id: string; label: string; style: Record<string, string>; selected: string }> {
         if (!this.toolRuns.length) {
             return [];
         }
@@ -2177,10 +2176,12 @@ export class AgentConsoleToolRunsPanelComponent {
             const duration = run.durationMs == null ? '' : ` ${run.durationMs}ms`;
             const attempt = run.attemptCount && run.attemptCount > 1 ? ` #${run.attemptCount}` : '';
             return {
+                id: `tool-run-${index}`,
                 label: `${selected ? '›' : ' '} ${run.name} [${panelStatusLabel(this.translator, 'toolRuns', run.status)}]${duration}${attempt}`,
                 style: selected
                     ? this.activeThemeStyles.sessionsSelected
-                    : this.activeThemeStyles.statusValue
+                    : this.activeThemeStyles.statusValue,
+                selected: String(selected)
             };
         });
     }
@@ -2257,17 +2258,13 @@ export class AgentConsoleToolRunsPanelComponent {
     selector: 'agent-console-message-line',
     imports: [MessageRowComponent],
     template: `
-    <message-row :tokens="contentTokens" :status="status" :role="role" :prefix="prefix" :meta="meta" :toggleContent="toggleContent" :ariaLabel="ariaLabel" :styles="rowStyles" :toggleAction="toggleMessageDetail"></message-row>
+    <message-row :tokens="contentTokens" :status="status" :role="role" :prefix="prefix" :meta="meta" :toggleContent="toggleContent" :ariaLabel="ariaLabel" :toggleAction="toggleMessageDetail"></message-row>
     `
 })
 export class AgentConsoleMessageLineComponent {
     @Attribute() line?: AgentConsoleRenderedLine;
 
     constructor(private state: AgentConsoleSessionState) {}
-
-    get itemStyle(): Record<string, string> {
-        return this.line?.itemStyle || {};
-    }
 
     get role(): string {
         return this.line?.role || '';
@@ -2277,20 +2274,8 @@ export class AgentConsoleMessageLineComponent {
         return this.line?.status || '';
     }
 
-    get statusStyle(): Record<string, string> {
-        return this.line?.statusStyle || {};
-    }
-
-    get roleStyle(): Record<string, string> {
-        return this.line?.roleStyle || {};
-    }
-
     get prefix(): string {
         return this.line?.prefix || '';
-    }
-
-    get prefixStyle(): Record<string, string> {
-        return this.line?.prefixStyle || {};
     }
 
     get meta(): string {
@@ -2299,10 +2284,6 @@ export class AgentConsoleMessageLineComponent {
 
     get ariaLabel(): string {
         return this.line?.ariaLabel || '';
-    }
-
-    get metaStyle(): Record<string, string> {
-        return this.line?.metaStyle || {};
     }
 
     get toggleContent(): string { return this.line?.previewCollapsed ? this.line.content : ''; }
@@ -2326,20 +2307,6 @@ export class AgentConsoleMessageLineComponent {
         return this.line?.previewCollapsed ? [] : this.tokens;
     }
 
-    get lineStyle(): Record<string, string> {
-        return this.line?.lineStyle || {};
-    }
-
-    get rowStyles() {
-        return {
-            item: this.itemStyle,
-            status: this.statusStyle,
-            role: this.roleStyle,
-            prefix: this.prefixStyle,
-            line: this.lineStyle,
-            meta: this.metaStyle
-        };
-    }
 }
 
 const MESSAGE_ITEM_TEMPLATE = `
@@ -2790,7 +2757,6 @@ export class AgentConsoleMessageDetailPanelComponent {
         }).filter(line => !!String(line || '').trim());
     }
 
-    get panelStyles() { return { shell: this.shellStyle, header: this.accentStyle, hint: this.hintStyle, line: this.lineStyle, number: this.lineNumberStyle, content: this.lineStyle }; }
 
     get detailItems() { return this.detailIndexes.map(index => ({ lineNumber: this.detailLineNumberAt(index), prefix: this.detailLinePrefixAt(index), text: this.detailLineContentAt(index), style: this.detailLineStyleAt(index), numberStyle: this.lineNumberStyle, prefixStyle: this.detailLinePrefixStyleAt(index), contentStyle: this.detailLineContentStyleAt(index) })); }
 

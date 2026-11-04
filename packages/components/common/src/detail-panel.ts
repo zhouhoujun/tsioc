@@ -24,7 +24,7 @@ export interface DetailLineItem {
         <label class="detail-selection"  v-show="selection">{{selection}}</label>
         <label class="detail-hint"  v-show="hint">{{hint}}</label>
         <label class="detail-line" v-style="item.style" v-for="item in items">
-            <span v-show="item.lineNumber" v-style="item.numberStyle || styles.number">{{item.lineNumber}}</span><span v-show="item.prefix" v-style="item.prefixStyle || styles.content">{{item.prefix}}</span><span v-style="item.contentStyle || styles.content">{{item.text}}</span>
+            <span v-show="item.lineNumber" v-style="item.numberStyle">{{item.lineNumber}}</span><span v-show="item.prefix" v-style="item.prefixStyle">{{item.prefix}}</span><span v-style="item.contentStyle">{{item.text}}</span>
         </label>
     </div>`
 })

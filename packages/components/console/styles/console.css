@@ -40,3 +40,16 @@
     color: var(--console-text, #c9d1d9);
     background: var(--console-input-bg, #161b22);
 }
+.message-status,
+.message-role,
+.message-prefix,
+.message-meta {
+    color: var(--console-meta, #6e7681);
+}
+.message-detail-toggle {
+    color: var(--console-meta, #6e7681);
+}
+.common-list-section {
+    color: var(--console-accent, #86a9d6);
+    font-weight: bold;
+}

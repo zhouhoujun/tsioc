@@ -99,7 +99,7 @@ export class HtmlConsoleTest {
         expect(inputRoot.querySelector('.input-shell')?.getAttribute('style')).toContain('background');
         expect(inputRoot.querySelector('.input-entry')?.getAttribute('style')).toContain('color');
         expect(inputRoot.querySelector('.agent-input')?.getAttribute('placeholder')).toContain('Ask code or files');
-        expect(inputRoot.querySelector('.agent-input')?.getAttribute('style')).toContain('color');
+        expect(inputRoot.querySelector('.agent-input')?.getAttribute('class')).toContain('agent-input');
         expect(inputRoot.querySelector('.input-meta')?.textContent).toContain('deepseek-v4-flash');
         expect(inputRoot.textContent).toContain('deepseek-v4-flash · 1.2K tokens');
         expect(messagesRoot.textContent).toContain('›');
