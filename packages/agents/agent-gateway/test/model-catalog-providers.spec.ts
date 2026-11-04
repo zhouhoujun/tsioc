@@ -70,6 +70,7 @@ export class ModelCatalogProvidersTest {
             model: {
                 provider: 'openai-compatible', model: 'gpt-5.5', apiKey: 'shared-key',
                 baseUrl: 'http://provider.example', headers: { 'X-Org': 'acme' },
+                complexityRouting: { simple: 'strong', moderate: 'strong', complex: 'strong' },
                 profiles: { strong: { provider: 'openai-compatible', model: 'gpt-5.6' } }
             }
         };
@@ -78,6 +79,7 @@ export class ModelCatalogProvidersTest {
         expect(sameProvider.model.apiKey).toEqual('shared-key');
         expect(sameProvider.model.baseUrl).toEqual('http://provider.example');
         expect(sameProvider.model.headers).toEqual({ 'X-Org': 'acme' });
+        expect(sameProvider.model.complexityRouting).toBeUndefined();
 
         const envOnly: any = {
             model: {
@@ -104,6 +106,7 @@ export class ModelCatalogProvidersTest {
         const options: any = {
             model: {
                 provider: 'openai-compatible', model: 'old-model', defaultProfile: 'strong',
+                complexityRouting: { simple: 'fast', moderate: 'strong', complex: 'strong' },
                 profiles: {
                     strong: { provider: 'openai-compatible', model: 'old-model' },
                     fast: { provider: 'openai-compatible', model: 'fast-model' }
@@ -114,6 +117,7 @@ export class ModelCatalogProvidersTest {
         expect(options.model.model).toEqual('new-model');
         expect(options.model.defaultProfile).toEqual('strong');
         expect(options.model.profiles.strong.model).toEqual('new-model');
+        expect(options.model.complexityRouting).toBeUndefined();
         expect(options.model.profiles.fast.model).toEqual('fast-model');
     }
 

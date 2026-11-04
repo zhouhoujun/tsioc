@@ -73,6 +73,8 @@ export function activateProfileModel(options: AgentOptions, profileName: string,
         headers: profile.headers ?? (providerChanged ? undefined : model.headers),
         ...(profile.baseUrl ? { baseUrl: profile.baseUrl } : (providerChanged ? { baseUrl: undefined } : {})),
         defaultProfile: profileName,
+        // An explicit model/profile choice must win over stale tier routing.
+        complexityRouting: undefined,
         ...(reasoningEffort !== undefined ? { reasoningEffort } : {})
     };
     return { provider: options.model.provider, model: options.model.model, reasoningEffort: options.model.reasoningEffort };
@@ -97,6 +99,8 @@ export function activateCatalogModel(options: AgentOptions, providerId: string, 
         provider: providerId,
         model: modelId,
         defaultProfile: sameProvider && activeProfile ? activeProfile : undefined,
+        // Selecting a concrete model must disable stale complexity routing.
+        complexityRouting: undefined,
         ...(reasoningEffort !== undefined ? { reasoningEffort } : {})
     };
     options.model = next;

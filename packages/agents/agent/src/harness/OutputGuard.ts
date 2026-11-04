@@ -3,7 +3,7 @@ import { Injectable } from '@tsdi/ioc';
 const REDACTED = '[REDACTED]';
 const SECRET_KEY_PATTERN = /(api[-_]?key|token|secret|password|authorization)/i;
 const BEARER_PATTERN = /Bearer\s+[A-Za-z0-9._-]+/gi;
-const OPENAI_KEY_PATTERN = /sk-[A-Za-z0-9_-]+/g;
+const OPENAI_KEY_PATTERN = /\bsk-[A-Za-z0-9_-]{8,}\b/g;
 
 @Injectable()
 export class OutputGuard {
