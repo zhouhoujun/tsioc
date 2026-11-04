@@ -2912,3 +2912,25 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 根因：text overlay panel 注入 raw state，close 直接改 raw，root 的 v-show 不触发重渲染，状态已 null 但屏幕仍显示。
 - 修复：panel 在 close 时用注入的 ReactiveEffect 把 raw state 包成响应式 proxy，再调用 closeTextOverlay，触发 root effect。
 - 真实 PTY `/web` 点击 ✕ 现在关闭；console-renderer 增加“状态 null 且屏幕消失”断言，96 passing。
+
+## Agent-ui structure split + real TUI verification（2026-11-04）
+
+- agent-ui 业务域继续拆分，common 只保留通用能力：
+  - `AgentConsolePlanState.ts`：计划创建/状态合并/取消剩余步骤
+  - `AgentConsoleTokenUsageState.ts`：usage 解析与 turn/absolute 聚合
+  - `AgentConsoleFocusedPanelKeys.ts`：tasks/jobs/tools/tool-runs 聚焦键盘
+  - `AgentConsoleSessionGrouping.ts`：project/thread 分组与排序
+  - `AgentConsoleSessionRefresh.ts`：会话列表刷新
+  - `AgentConsoleSessionCommands.ts`：/search、/projects、/threads、/sections、/threadplan
+  - `AgentConsoleReviewCommands.ts` / `AgentConsoleDiagnosticsCommands.ts`
+- 体量下降：`AgentConsoleSessionState.ts` 3679→2893，`AgentConsoleComponent.ts` 3132→2951，`AgentConsoleCommandHandlers.ts` 1131→536，`AgentConsoleSessionService.ts` 1470→1206。
+- 真实 CLI/TUI 验证（`workspace: /home/zhouyou/workspace/sleep-mlt`）：
+  - 要求新建 `task-system`，真实生成了 `src/task.js`、`test/task.test.js`，`node task-system/test/task.test.js` 退出码 0。
+  - 发现并修复：`/model` 切换后仍被旧 `complexityRouting` 覆盖（模型仍请求旧 deepseek-v4.1-flash-1017）；现在手动选择模型会清空陈旧路由。
+  - 发现并修复：`/model` 的 fast/balanced/strong 模式错误地把 tier 名当 profile 名（显示 fast 但请求 deepseek/fast）；现在激活真实 profile（如 deepseek-fast）。
+  - 发现并修复：`OutputGuard` 的 `sk-` 规则误把 `task-system` 显示为 `ta[REDACTED]`；现在要求完整 secret 边界与最小长度。
+  - 发现并修复：关闭 dialog 后 short overlay band 未补空格，存在残影；现在按完整旧 band 清除。
+  - 修复：上一条命令 notice（如模型切换）残留到下一轮；turn 启动时清空旧 notice。
+- Web 端通过真实 `serve` 校验：`/?pair=...` 200、`header.js` 200、`dist/agent-console.js` 200；当前环境缺少 Chromium `libatk`，无法进行真实浏览器截图，DOM/Web 单测已回归。
+- 回归：agent-ui 1968、agent-cli 132、components/console 132、components/common 34、gateway model catalog 5、OutputGuard redaction 2；真实 TUI 重跑确认 `task-system` 路径不再被 redacted，模型切换不再被旧路由覆盖。
+- 仍需补：安装 Chromium 系统依赖后做真实浏览器截图验收；`/model` notice 的短时消失而不是仅下一轮清除。
