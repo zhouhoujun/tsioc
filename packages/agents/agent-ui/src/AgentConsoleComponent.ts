@@ -267,7 +267,14 @@ import {
     gitSnapshotCommandHost,
     extensionCommandHost,
     policyCommandHost,
-    preferenceCommandHost
+    preferenceCommandHost,
+    sessionOpenHost,
+    commandDispatchHost,
+    turnStreamHost,
+    sessionContentLoaderHost,
+    todoPlanCommandHost,
+    rpcCommandHost,
+    backgroundTaskCommandHost
 } from './AgentConsoleHostFactories';
 import { runFeedbackCommandView } from './AgentConsoleFeedbackCommand';
 import { runReloadCommandView } from './AgentConsoleReloadCommand';
@@ -1066,51 +1073,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return [];
     }
 
-    private sessionOpenHost(): AgentConsoleSessionOpenHost {
-        const self = this;
-        return {
-            sessionService: self.sessionService,
-            startupWorkspace: self.startupWorkspace,
-            options: self.options,
-            state: self.state,
-            translator: self.translator,
-            transcriptNavigationController: self.transcriptNavigationController,
-            queuedPrompts: self.queuedPrompts,
-            get openSessionRequestId() { return self.openSessionRequestId; },
-            set openSessionRequestId(value: number) { self.openSessionRequestId = value; },
-            get freshSessionScoped() { return self.freshSessionScoped; },
-            set freshSessionScoped(value: boolean) { self.freshSessionScoped = value; },
-            get openReviewRequestId() { return self.openReviewRequestId; },
-            set openReviewRequestId(value: number) { self.openReviewRequestId = value; },
-            get taskViewContextVersion() { return self.taskViewContextVersion; },
-            set taskViewContextVersion(value: number) { self.taskViewContextVersion = value; },
-            get editTargetMessageId() { return self.editTargetMessageId; },
-            set editTargetMessageId(value: string) { self.editTargetMessageId = value; },
-            get editDraftBefore() { return self.editDraftBefore; },
-            set editDraftBefore(value: string) { self.editDraftBefore = value; },
-            get editAttachmentsBefore() { return self.editAttachmentsBefore; },
-            set editAttachmentsBefore(value: any[]) { self.editAttachmentsBefore = value; },
-            get lastEditSessionMessageId() { return self.lastEditSessionMessageId; },
-            set lastEditSessionMessageId(value: string) { self.lastEditSessionMessageId = value; },
-            get editDismissedAt() { return self.editDismissedAt; },
-            set editDismissedAt(value: number) { self.editDismissedAt = value; },
-            get lastEscapeAt() { return self.lastEscapeAt; },
-            set lastEscapeAt(value: number) { self.lastEscapeAt = value; },
-            isTurnInProgress: () => self.isTurnInProgress(),
-            persistInputHistory: () => self.persistInputHistory(),
-            notifyBusyState: (message: string) => self.notifyBusyState(message),
-            updateTerminalTitle: () => self.updateTerminalTitle(),
-            refreshSessions: (currentId?: string) => self.refreshSessions(currentId),
-            resolveProjectSessionIdsFor: (sessionId: string) => self.resolveProjectSessionIdsFor(sessionId),
-            loadSessionPage: (sessionId: string) => self.loadSessionPage(sessionId),
-            refreshTools: (sessionId?: string) => self.refreshTools(sessionId),
-            refreshPendingApprovals: (sessionId?: string) => self.refreshPendingApprovals(sessionId),
-            refreshTodoPlan: (sessionId?: string) => self.refreshTodoPlan(sessionId),
-            loadCodingTasks: (sessionId?: string, projectSessionIds?: string[]) => self.loadCodingTasks(sessionId, projectSessionIds),
-            restoreInputHistory: () => self.restoreInputHistory(),
-            restoreSessionModes: (sessionId: string) => restoreSessionModesView({ appRpc: self.appRpc, runtime: self.runtime, state: self.state, rpcRequestContext: () => self.rpcRequestContext() }, sessionId)
-        };
-    }
+
 
     protected readonly sessionUiState = new AgentConsoleSessionUiState(() => ({ state: this.state, surfaceAccessor: this.surfaceAccessor }));
 
@@ -1551,6 +1514,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     get rootStyle(): string { return resolveAgentConsoleCssVariables(this.state?.theme); }
+    private sessionOpenHost(): AgentConsoleSessionOpenHost { return sessionOpenHost(this); }
+    private commandDispatchHost(): AgentConsoleCommandDispatchHost { return commandDispatchHost(this); }
+    private turnStreamHost(): AgentConsoleTurnStreamHost { return turnStreamHost(this); }
+    private sessionContentLoaderHost(): AgentConsoleSessionContentLoaderHost { return sessionContentLoaderHost(this); }
+    private todoPlanCommandHost(): TodoPlanCommandHost { return todoPlanCommandHost(this); }
+    private rpcCommandHost(): AgentConsoleRpcCommandHost { return rpcCommandHost(this); }
+    private backgroundTaskCommandHost(): BackgroundTaskCommandHost { return backgroundTaskCommandHost(this); }
     protected async restoreGlobalKeymap(): Promise<void> { return restoreGlobalKeymapInState(this); }
     protected async persistGlobalKeymap(): Promise<void> { return persistGlobalKeymapInState(this); }
     protected async restoreTheme(): Promise<void> { return restoreThemeInState(this); }
@@ -2173,17 +2143,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return dispatchAgentConsoleCommand(this.commandDispatchHost(), value);
     }
 
-    protected commandDispatchHost(): AgentConsoleCommandDispatchHost {
-        const self = this;
-        return {
-            state: this.state,
-            get pendingCommandRequestId() { return self.pendingCommandRequestId; },
-            set pendingCommandRequestId(value) { self.pendingCommandRequestId = value; },
-            resolveUniqueCommandPrefix: (input) => self.resolveUniqueCommandPrefix(input),
-            notify: (message, duration) => self.notify(message, duration),
-            buildCommandContext: (abortSignal) => self.buildCommandContext(abortSignal)
-        };
-    }
+
 
     protected async handleMenuSelection(value: string): Promise<void> {
         return handleMenuSelection(this.state, (selected: string) => this.handleCommand(selected), value);
@@ -2264,18 +2224,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return describePendingToolCall(chunk, this.translator);
     }
 
-    private turnStreamHost(): AgentConsoleTurnStreamHost {
-        return {
-            state: this.state,
-            destroyed: this.destroyed, translator: this.translator,
-            appRpc: this.appRpc,
-            runtime: this.runtime,
-            updateTerminalTitle: () => this.updateTerminalTitle(),
-            executeTurn: (input, message, profile) => this.executeTurn(input, message, profile),
-            refreshTodoPlan: () => this.refreshTodoPlan(),
-            refreshPendingApprovals: () => this.refreshPendingApprovals()
-        };
-    }
+
 
     async schedulePrompt(prompt: string, delayMs: number): Promise<void> {
         await this.scheduler.schedule({
@@ -2337,13 +2286,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         ensureMessageAtTail(this.state, messageId);
     }
 
-    private sessionContentLoaderHost(): AgentConsoleSessionContentLoaderHost {
-        return {
-            sessionService: this.sessionService,
-            runtime: this.runtime,
-            translator: this.translator
-        };
-    }
+
 
     protected async loadSessionMessages(sessionId = this.state.sessionId): Promise<AgentMessage[]> {
         return loadSessionContentMessages(this.sessionContentLoaderHost(), sessionId);
@@ -2403,14 +2346,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return mergeTodoPlanForSessionsView(this.todoPlanCommandHost(), sessionId, sessions);
     }
 
-    private todoPlanCommandHost(): TodoPlanCommandHost {
-        return {
-            appRpc: this.appRpc ?? null,
-            state: this.state,
-            loadLocalTodoPlan: sessionId => this.loadLocalTodoPlan(sessionId),
-            normalizeTodoStatus: status => this.normalizeTodoStatus(status)
-        };
-    }
+
 
     protected async loadLocalTodoPlan(sessionId: string): Promise<AgentConsolePlanTodoItem[]> {
         return loadLocalTodoPlan(sessionId, this.toolRegistry, this.state, (status: unknown) => this.normalizeTodoStatus(status)) as any;
@@ -2805,20 +2741,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         }
     }
 
-    private rpcCommandHost(): AgentConsoleRpcCommandHost {
-        return {
-            appRpc: this.appRpc,
-            state: this.state,
-            runtime: this.runtime,
-            translator: this.translator,
-            queuedPrompts: this.queuedPrompts,
-            notify: (message: string) => this.notify(message),
-            select: (title: string, options: any[], selectedIndex?: number, hint?: string) => this.select(title, options, selectedIndex, hint),
-            pushCommandOutput: (command: string, text: string) => this.pushCommandOutput(command, text),
-            rpcRequestContext: (requestId?: string) => this.rpcRequestContext(requestId),
-            revokeShare: (token: string) => this.revokeShare(token)
-        };
-    }
+
 
     protected async runApproveRetryCommand(): Promise<boolean> {
         return runApproveRetryCommandView(this.rpcCommandHost());
@@ -2832,14 +2755,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return runBackgroundTasksCommandView(this.backgroundTaskCommandHost(), args);
     }
 
-    private backgroundTaskCommandHost(): BackgroundTaskCommandHost {
-        return {
-            backgroundTasks: this.backgroundTasks ?? null,
-            state: this.state,
-            notify: message => this.notify(message), translator: this.translator,
-            pushCommandOutput: (command, text) => this.pushCommandOutput(command, text)
-        };
-    }
+
 
     protected async runIdeCommand(args?: string): Promise<boolean> {
         return runIdeCommand(this.ideBridge, (message: string) => this.notify(message), (command: string, text: string) => this.pushCommandOutput(command, text), args, this.translator);

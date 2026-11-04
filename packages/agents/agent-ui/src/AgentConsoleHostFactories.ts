@@ -1,6 +1,14 @@
 import type { AgentMessage, AgentTurnMessageInput, SandboxMode } from '@tsdi/agent';
 import type { AgentConsoleApprovalRequest, AgentConsoleCommandOutputEntry, AgentConsolePendingAttachment } from './AgentConsoleSessionState';
 import type { AgentConsoleRuntimeHost } from './AgentConsoleRuntimeCommands';
+import type { AgentConsoleSessionOpenHost } from './AgentConsoleSessionOpen';
+import { restoreSessionModes as restoreSessionModesView } from './AgentConsoleSessionOpen';
+import type { AgentConsoleCommandDispatchHost } from './AgentConsoleCommandDispatch';
+import type { AgentConsoleTurnStreamHost } from './AgentConsoleTurnStreamController';
+import type { AgentConsoleSessionContentLoaderHost } from './AgentConsoleSessionContentLoader';
+import type { TodoPlanCommandHost } from './AgentConsoleTodoPlanCommands';
+import type { AgentConsoleRpcCommandHost } from './AgentConsoleRpcCommands';
+import type { BackgroundTaskCommandHost } from './AgentConsoleBackgroundTaskCommands';
 import { scrollAgentConsoleTranscript } from './AgentConsoleTranscriptLayout';
 import type { KeymapCommandHost } from './AgentConsoleKeymapCommands';
 import type { AgentConsoleGlobalKeyInputHost } from './AgentConsoleGlobalKeyInputController';
@@ -279,3 +287,113 @@ export function preferenceCommandHost(self: any): PreferenceCommandHost {
         pushCommandOutput: (command: string, text: string, kind?: AgentConsoleCommandOutputEntry['kind']) => self.pushCommandOutput(command, text, kind)
     };
 }
+
+export function sessionOpenHost(self: any): AgentConsoleSessionOpenHost {
+            return {
+            sessionService: self.sessionService,
+            startupWorkspace: self.startupWorkspace,
+            options: self.options,
+            state: self.state,
+            translator: self.translator,
+            transcriptNavigationController: self.transcriptNavigationController,
+            queuedPrompts: self.queuedPrompts,
+            get openSessionRequestId() { return self.openSessionRequestId; },
+            set openSessionRequestId(value: number) { self.openSessionRequestId = value; },
+            get freshSessionScoped() { return self.freshSessionScoped; },
+            set freshSessionScoped(value: boolean) { self.freshSessionScoped = value; },
+            get openReviewRequestId() { return self.openReviewRequestId; },
+            set openReviewRequestId(value: number) { self.openReviewRequestId = value; },
+            get taskViewContextVersion() { return self.taskViewContextVersion; },
+            set taskViewContextVersion(value: number) { self.taskViewContextVersion = value; },
+            get editTargetMessageId() { return self.editTargetMessageId; },
+            set editTargetMessageId(value: string) { self.editTargetMessageId = value; },
+            get editDraftBefore() { return self.editDraftBefore; },
+            set editDraftBefore(value: string) { self.editDraftBefore = value; },
+            get editAttachmentsBefore() { return self.editAttachmentsBefore; },
+            set editAttachmentsBefore(value: any[]) { self.editAttachmentsBefore = value; },
+            get lastEditSessionMessageId() { return self.lastEditSessionMessageId; },
+            set lastEditSessionMessageId(value: string) { self.lastEditSessionMessageId = value; },
+            get editDismissedAt() { return self.editDismissedAt; },
+            set editDismissedAt(value: number) { self.editDismissedAt = value; },
+            get lastEscapeAt() { return self.lastEscapeAt; },
+            set lastEscapeAt(value: number) { self.lastEscapeAt = value; },
+            isTurnInProgress: () => self.isTurnInProgress(),
+            persistInputHistory: () => self.persistInputHistory(),
+            notifyBusyState: (message: string) => self.notifyBusyState(message),
+            updateTerminalTitle: () => self.updateTerminalTitle(),
+            refreshSessions: (currentId?: string) => self.refreshSessions(currentId),
+            resolveProjectSessionIdsFor: (sessionId: string) => self.resolveProjectSessionIdsFor(sessionId),
+            loadSessionPage: (sessionId: string) => self.loadSessionPage(sessionId),
+            refreshTools: (sessionId?: string) => self.refreshTools(sessionId),
+            refreshPendingApprovals: (sessionId?: string) => self.refreshPendingApprovals(sessionId),
+            refreshTodoPlan: (sessionId?: string) => self.refreshTodoPlan(sessionId),
+            loadCodingTasks: (sessionId?: string, projectSessionIds?: string[]) => self.loadCodingTasks(sessionId, projectSessionIds),
+            restoreInputHistory: () => self.restoreInputHistory(),
+            restoreSessionModes: (sessionId: string) => restoreSessionModesView({ appRpc: self.appRpc, runtime: self.runtime, state: self.state, rpcRequestContext: () => self.rpcRequestContext() }, sessionId)
+        };
+    }
+
+export function commandDispatchHost(self: any): AgentConsoleCommandDispatchHost {
+            return {
+            state: self.state,
+            get pendingCommandRequestId() { return self.pendingCommandRequestId; },
+            set pendingCommandRequestId(value) { self.pendingCommandRequestId = value; },
+            resolveUniqueCommandPrefix: (input) => self.resolveUniqueCommandPrefix(input),
+            notify: (message, duration) => self.notify(message, duration),
+            buildCommandContext: (abortSignal) => self.buildCommandContext(abortSignal)
+        };
+    }
+
+export function turnStreamHost(self: any): AgentConsoleTurnStreamHost {
+        return {
+            state: self.state,
+            destroyed: self.destroyed, translator: self.translator,
+            appRpc: self.appRpc,
+            runtime: self.runtime,
+            updateTerminalTitle: () => self.updateTerminalTitle(),
+            executeTurn: (input, message, profile) => self.executeTurn(input, message, profile),
+            refreshTodoPlan: () => self.refreshTodoPlan(),
+            refreshPendingApprovals: () => self.refreshPendingApprovals()
+        };
+    }
+
+export function sessionContentLoaderHost(self: any): AgentConsoleSessionContentLoaderHost {
+        return {
+            sessionService: self.sessionService,
+            runtime: self.runtime,
+            translator: self.translator
+        };
+    }
+
+export function todoPlanCommandHost(self: any): TodoPlanCommandHost {
+        return {
+            appRpc: self.appRpc ?? null,
+            state: self.state,
+            loadLocalTodoPlan: sessionId => self.loadLocalTodoPlan(sessionId),
+            normalizeTodoStatus: status => self.normalizeTodoStatus(status)
+        };
+    }
+
+export function rpcCommandHost(self: any): AgentConsoleRpcCommandHost {
+        return {
+            appRpc: self.appRpc,
+            state: self.state,
+            runtime: self.runtime,
+            translator: self.translator,
+            queuedPrompts: self.queuedPrompts,
+            notify: (message: string) => self.notify(message),
+            select: (title: string, options: any[], selectedIndex?: number, hint?: string) => self.select(title, options, selectedIndex, hint),
+            pushCommandOutput: (command: string, text: string) => self.pushCommandOutput(command, text),
+            rpcRequestContext: (requestId?: string) => self.rpcRequestContext(requestId),
+            revokeShare: (token: string) => self.revokeShare(token)
+        };
+    }
+
+export function backgroundTaskCommandHost(self: any): BackgroundTaskCommandHost {
+        return {
+            backgroundTasks: self.backgroundTasks ?? null,
+            state: self.state,
+            notify: message => self.notify(message), translator: self.translator,
+            pushCommandOutput: (command, text) => self.pushCommandOutput(command, text)
+        };
+    }
