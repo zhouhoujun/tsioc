@@ -1063,7 +1063,7 @@ export class TuiRenderer extends ConsoleRenderer {
     }
 
     protected getStyleMap(element: ConsoleElement): Record<string, string> {
-        const styles: Record<string, string> = resolveConsoleStyleSheet(element, this.styleSheetRules);
+        const styles: Record<string, string> = { ...resolveConsoleStyleSheet(element, this.styleSheetRules) };
         const styleDeclaration = element.style as ConsoleCssStyleDeclaration;
         if (styleDeclaration && typeof styleDeclaration.getProperties === 'function') {
             Object.assign(styles, styleDeclaration.getProperties());
@@ -1103,10 +1103,10 @@ export class TuiRenderer extends ConsoleRenderer {
         if (!classes) {
             return {};
         }
-        return resolveConsoleStyleSheet({
+        return { ...resolveConsoleStyleSheet({
             tagName: 'div',
             getAttribute: (name: string) => name === 'class' ? classes : null
-        }, this.styleSheetRules);
+        }, this.styleSheetRules) };
     }
 
     protected resolveCssValue(value: string, styles: Record<string, string>): string {

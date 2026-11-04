@@ -38,26 +38,21 @@ function eventMessage(lines: number): any {
  * Only rows that can expand/collapse own a hover affordance (opencode keeps
  * plain transcript rows quiet). The affordance text itself follows the locale.
  */
-@Suite('timeline hover affordance')
+@Suite('viewport disclosure affordance')
 export class TimelineHoverAffordanceTest {
-    @Test('long event rows carry a localized expand toggle')
-    longEventRowHasLocalizedToggle() {
-        const zhLines = renderAgentConsoleMessageItems([eventMessage(12)], {
-            timelineMode: true,
-            translator: zh,
-            messageDetailVisibleLines: 6
-        })[0].lines;
-        expect(zhLines[0].toggleContent).toEqual('点击展开');
-
-        const enLines = renderAgentConsoleMessageItems([eventMessage(12)], {
-            timelineMode: true,
-            translator: en,
-            messageDetailVisibleLines: 6
-        })[0].lines;
-        expect(enLines[0].toggleContent).toContain('Click to expand');
+    @Test('disclosure rows carry no instructional text')
+    longEventRowHasNoInstructionText() {
+        for (const translator of [zh, en]) {
+            const lines = renderAgentConsoleMessageItems([eventMessage(12)], {
+                timelineMode: true,
+                translator,
+                messageDetailVisibleLines: 6
+            })[0].lines;
+            expect(lines.every(line => !line.toggleContent)).toBe(true);
+        }
     }
 
-    @Test('short rows carry no toggle, so they never ask for hover')
+    @Test('short rows carry no toggle either')
     shortRowsStayQuiet() {
         const lines = renderAgentConsoleMessageItems([{
             id: 'a1',
@@ -72,17 +67,5 @@ export class TimelineHoverAffordanceTest {
             messageDetailVisibleLines: 6
         })[0].lines;
         expect(shortEvent[0].toggleContent).toBe('');
-    }
-
-    @Test('an open detail row offers the localized collapse label')
-    openRowCollapsesLocalized() {
-        const lines = renderAgentConsoleMessageItems([eventMessage(12)], {
-            timelineMode: true,
-            translator: zh,
-            messageDetailVisibleLines: 6,
-            messageDetailOpen: true,
-            selectedMessageId: 'e-12'
-        })[0].lines;
-        expect(lines[0].toggleContent).toEqual('点击收起');
     }
 }

@@ -365,7 +365,7 @@ export function flushStreamingAssistantMessage(
     if (!text.trim() && state.sealedNarrationCount > 0) {
         if (targetIndex >= 0) {
             current.splice(targetIndex, 1);
-            host.state.setMessages(current);
+            host.state.setMessages(current, true);
         }
         return;
     }
@@ -401,7 +401,7 @@ export function flushStreamingAssistantMessage(
     } else {
         return;
     }
-    host.state.setMessages(current);
+    host.state.setMessages(current, true);
 }
 
 function removeStreamingAssistantRow(state: AgentConsoleMessageState, message: AgentMessage): void {
@@ -411,7 +411,7 @@ function removeStreamingAssistantRow(state: AgentConsoleMessageState, message: A
         return;
     }
     current.splice(targetIndex, 1);
-    state.setMessages(current);
+    state.setMessages(current, true);
 }
 
 /**
@@ -445,7 +445,7 @@ function sealStreamedNarration(
             streaming: false
         }
     });
-    host.state.setMessages(current);
+    host.state.setMessages(current, true);
     state.streamMessageText = '';
     message.content = '';
 }

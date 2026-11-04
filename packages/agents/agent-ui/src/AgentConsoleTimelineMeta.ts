@@ -138,28 +138,6 @@ export function localizeCommandExecutionStatus(content: string, translator?: Age
 }
 
 /**
- * Compose the expand/collapse affordance shown at the end of a timeline row.
- * Only rows that exceed the visible budget carry it, and the label follows the
- * host locale while the row body stays verbatim.
- */
-export function resolveTimelineDetailToggle(
-    timelineEvent: boolean,
-    selected: boolean,
-    detailOpen: boolean,
-    sourceLineCount: number,
-    detailLimit: number,
-    translator?: AgentUiTranslator | null
-): string {
-    if (!timelineEvent || sourceLineCount <= detailLimit) {
-        return '';
-    }
-    if (detailOpen && selected) {
-        return formatAgentUiLabel(translator, 'agent.message.collapse', 'Click to collapse');
-    }
-    return formatAgentUiLabel(translator, 'agent.message.expandAction', 'Click to expand');
-}
-
-/**
  * Normalize the persisted tool-result marker at render time. The runtime writes
  * `<path> (truncated)` before the locale is known; the trailing marker is UI
  * copy, so it follows the host locale while the path stays verbatim.

@@ -37,9 +37,12 @@ import {
     AgentConsoleRenderedLine,
     AgentConsoleRenderedMessageItem,
     renderAgentConsoleMessageItems,
+    renderAgentConsoleMessageItem,
+    deriveTimelineDurations,
     AgentConsoleMessageRendererRegistry,
     resolveAgentConsoleMarkdownToneStyle
 } from './AgentConsoleMessageRenderers';
+import { presentAgentConsoleSessionContent } from './AgentConsoleSessionContentPresenter';
 import { AgentConsoleMessageOutletDirective } from './AgentConsoleMessageOutlet';
 import {
     AgentConsoleTheme,
@@ -63,6 +66,23 @@ import {
     resolveCommonSelectWindow as resolveConsoleSelectWindow
 } from '@tsdi/components/common';
 import { messageItemsCache } from './AgentConsoleMessageCache';
+
+/** Stable, proxy-independent render key for one message plus its predecessor. */
+function messageRenderSignature(message: any): string {
+    if (!message) return '';
+    try {
+        return [
+            message.id || '',
+            message.role || '',
+            Number(message.createdAt) || 0,
+            String(message.content || ''),
+            JSON.stringify(message.metadata || null),
+            JSON.stringify(message.parts || null)
+        ].join('\u0000');
+    } catch {
+        return '';
+    }
+}
 @Component({
     selector: 'agent-console-messages-panel',
     imports: [
@@ -103,7 +123,7 @@ export class AgentConsoleMessagesPanelComponent {
     }
 
     get shellStyle() {
-        return (this.messageItems.length || this.emptyLabel)
+        return (this.messages.length || this.emptyLabel)
             ? resolveSectionFrameStyle(this.activeTheme.messagesShell)
             : {};
     }
@@ -167,26 +187,7 @@ export class AgentConsoleMessagesPanelComponent {
         const collapsedTurns = this.state.timelineCollapsedTurns;
         const cached = messageItemsCache.get(this);
 
-        if (cached
-            && cached.messages === messages
-            && cached.selectedMessageId === selectedMessageId
-            && cached.messagesFocused === messagesFocused
-            && cached.theme === theme
-            && cached.statusLabels === consoleOptions.messageStatusLabels
-            && cached.statusSymbol === consoleOptions.messageStatusSymbol
-            && cached.username === consoleOptions.username
-            && cached.rawMode === rawMode
-            && cached.showTimestamps === showTimestamps
-            && cached.showCriticalMarks === showCriticalMarks
-            && cached.showToolOutput === showToolOutput
-            && cached.showUsername === showUsername
-            && cached.timelineMode === timelineMode
-            && cached.messageDetailOpen === messageDetailOpen && cached.markdownContentWidth === this.state.markdownContentWidth
-            && cached.collapsedTurns === collapsedTurns) {
-            return cached.items;
-        }
-
-        const items = renderAgentConsoleMessageItems(this.visibleMessages as any, {
+        const context = {
             rendererRegistry: this.messageRendererRegistry,
             theme: this.activeTheme,
             selectedMessageId: this.state.selectedMessageId,
@@ -203,9 +204,52 @@ export class AgentConsoleMessagesPanelComponent {
             timelineMode,
             timelineLabels: this.state.consoleOptions.timelineLabels, translator: this.translator,
             messageDetailOpen, messageDetailVisibleLines: this.state.messageDetailVisibleLines, markdownContentWidth: this.state.markdownContentWidth
-        });
+        };
+        const sameContext = !!cached
+            && cached.selectedMessageId === selectedMessageId
+            && cached.messagesFocused === messagesFocused
+            && cached.theme === theme
+            && cached.statusLabels === consoleOptions.messageStatusLabels
+            && cached.statusSymbol === consoleOptions.messageStatusSymbol
+            && cached.username === consoleOptions.username
+            && cached.rawMode === rawMode
+            && cached.showTimestamps === showTimestamps
+            && cached.showCriticalMarks === showCriticalMarks
+            && cached.showToolOutput === showToolOutput
+            && cached.showUsername === showUsername
+            && cached.timelineMode === timelineMode
+            && cached.messageDetailOpen === messageDetailOpen && cached.markdownContentWidth === this.state.markdownContentWidth
+            && cached.collapsedTurns === collapsedTurns;
+        if (cached && sameContext && cached.messages === messages) {
+            return cached.items;
+        }
+
+        // Streaming replaces only the moving message. Reuse already rendered
+        // items whose content and predecessor are unchanged instead of
+        // re-parsing the whole transcript for every token.
+        const source = deriveTimelineDurations(this.visibleMessages as any);
+        const signatures = source.map(message => messageRenderSignature(message));
+        const slotKeys = signatures.map((signature, index) =>
+            `${index > 0 ? signatures[index - 1] : ''}\u0000${signature}`);
+        const items = cached && sameContext && cached.slotKeys
+            ? source.map((message, index) => {
+                const cachedItem = cached.items[index];
+                if (cached.slotKeys[index] === slotKeys[index] && cachedItem) {
+                    return cachedItem;
+                }
+                const item = renderAgentConsoleMessageItem(message as any, context);
+                const previous = index > 0 ? source[index - 1] : undefined;
+                const previousPresentation = previous ? presentAgentConsoleSessionContent(previous as any) : undefined;
+                if (previousPresentation?.kind === 'user' && item.semanticKind !== 'user') {
+                    item.spacerBefore = true;
+                    item.blockPadding = true;
+                }
+                return item;
+            })
+            : renderAgentConsoleMessageItems(this.visibleMessages as any, context);
         messageItemsCache.set(this, {
             messages,
+            slotKeys,
             selectedMessageId,
             messagesFocused,
             theme,
@@ -303,10 +347,7 @@ export class AgentConsoleMessagesPanelComponent {
 
     get renderedMessageItems(): AgentConsoleRenderedMessageItem[] {
         const items = this.messageItems;
-        if (!this.state.messageDetailOpen) {
-            return items;
-        }
-        return items.map(item => {
+        const detailItems = !this.state.messageDetailOpen ? items : items.map(item => {
             if (!item.lines.some(line => line.messageId === this.state.selectedMessageId)) {
                 return item;
             }
@@ -331,6 +372,7 @@ export class AgentConsoleMessagesPanelComponent {
                 }]
             };
         });
+        return detailItems as AgentConsoleRenderedMessageItem[];
     }
 
     protected messageCollapseLabel(): string {

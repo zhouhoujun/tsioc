@@ -3,7 +3,57 @@ import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { projectAgentConsoleArtifactMainline, projectAgentConsoleConversationMainline, projectAgentConsoleDecisionMainline, projectAgentConsoleDiagnosticMainline, projectAgentConsoleExecutionMainline, projectAgentConsoleTimelineDurations } from './AgentConsoleSessionContentPresenter';
 import { DEFAULT_TIMELINE_LABELS, TimelineWindowMessage, fillTimelineLabel, formatTimelineClockTime, formatTimelineSessionDuration, isError, truncateTimelineRowText } from './AgentConsoleTimelineWindow';
 
+const displayMessagesCache = new WeakMap<object, {
+    messages: AgentMessage[];
+    planMessage: AgentMessage | null;
+    fileChangeMessage: AgentMessage | null;
+    commandExecutionMessages: AgentMessage[];
+    timelineMode: boolean;
+    showThinking: boolean;
+    planTodos: AgentConsoleSessionState['planTodos'];
+    planSignature: string;
+    consoleOptions: AgentConsoleSessionState['consoleOptions'];
+    timelineLabels: AgentConsoleSessionState['consoleOptions']['timelineLabels'];
+    result: AgentMessage[];
+}>();
+
 export function resolveDisplayMessages(state: AgentConsoleSessionState): AgentMessage[] {
+    const planTodos = state.planTodos;
+    const planSignature = planTodos
+        .map(todo => `${todo.id}:${todo.status}:${todo.content}:${todo.elapsedMs ?? ''}`)
+        .join('|');
+    const cached = displayMessagesCache.get(state);
+    if (cached
+        && cached.messages === state.messages
+        && cached.planMessage === state.planMessage
+        && cached.fileChangeMessage === state.fileChangeMessage
+        && cached.commandExecutionMessages === state.commandExecutionMessages
+        && cached.timelineMode === state.timelineMode
+        && cached.showThinking === state.showThinking
+        && cached.planTodos === planTodos
+        && cached.planSignature === planSignature
+        && cached.consoleOptions === state.consoleOptions
+        && cached.timelineLabels === state.consoleOptions.timelineLabels) {
+        return cached.result;
+    }
+    const result = buildDisplayMessages(state);
+    displayMessagesCache.set(state, {
+        messages: state.messages,
+        planMessage: state.planMessage,
+        fileChangeMessage: state.fileChangeMessage,
+        commandExecutionMessages: state.commandExecutionMessages,
+        timelineMode: state.timelineMode,
+        showThinking: state.showThinking,
+        planTodos,
+        planSignature,
+        consoleOptions: state.consoleOptions,
+        timelineLabels: state.consoleOptions.timelineLabels,
+        result
+    });
+    return result;
+}
+
+function buildDisplayMessages(state: AgentConsoleSessionState): AgentMessage[] {
         const filtered = projectAgentConsoleConversationMainline(
             projectAgentConsoleTimelineDurations(state.messages.filter(message => isDisplayMessage(state, message)))
         );

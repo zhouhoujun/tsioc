@@ -2,7 +2,7 @@ import type { AgentMessage } from '@tsdi/agent';
 
 export interface AgentConsoleMessageState {
     messages: AgentMessage[];
-    setMessages(messages: AgentMessage[]): void;
+    setMessages(messages: AgentMessage[], preserveCommandExecutionMessages?: boolean): void;
 }
 
 export function findStreamingAssistantMessageIndex(messages: AgentMessage[], message?: AgentMessage): number {

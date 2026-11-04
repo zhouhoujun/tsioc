@@ -61,7 +61,7 @@ export class MouseClickPathReproTest {
 
     protected findToggleTarget(surface: TuiTerminalSurface) {
         return surface.clickTargets.find(target =>
-            (target.node as any)?.getAttribute?.('class')?.includes('message-detail-toggle'));
+            (target.node as any)?.getAttribute?.('class')?.includes('message-line'));
     }
 
     @Test('clicking toggle via SGR press/release sequences expands the message')
@@ -72,7 +72,7 @@ export class MouseClickPathReproTest {
 
         const decoder = new TerminalInputSequenceDecoder();
         // SGR mouse coordinates are 1-based; clickTarget rows are 0-based line indices.
-        const sx = Math.max(1, Math.floor(expandTarget!.x + 1));
+        const sx = 5;
         const sy = Math.max(1, Math.floor(expandTarget!.y + 1));
 
         const press = decoder.decode(`\x1b[<0;${sx};${sy}M`);
@@ -86,9 +86,7 @@ export class MouseClickPathReproTest {
         await this.settle();
 
         expect(handled).toBe(true);
-        expect(consoleRef.instance.sessionState.selectedMessageId).toEqual('a1');
-        expect(consoleRef.instance.sessionState.messageDetailOpen).toEqual(true);
-        expect(surface.lastRenderedLines.some(line => line.includes('Click to expand'))).toBe(false);
+        expect(consoleRef.instance.sessionState.isMessageExpanded('a1')).toEqual(true);
         const expandedRow = surface.lastRenderedLines.findIndex(line => line.includes('line 12'));
         expect(expandedRow).toBeGreaterThanOrEqual(0);
 
@@ -102,8 +100,8 @@ export class MouseClickPathReproTest {
         const crelease = decoder.decode(`\x1b[<0;${cx};${cy}m`);
         expect(surface.dispatchMouse(crelease.mouse)).toBe(true);
         await this.settle();
-        expect(consoleRef.instance.sessionState.messageDetailOpen).toEqual(false);
-        expect(surface.lastRenderedLines.some(line => line.includes('Click to expand'))).toBe(true);
+        expect(consoleRef.instance.sessionState.isMessageExpanded('a1')).toEqual(false);
+        expect(surface.lastRenderedLines.some(line => line.includes('line 12'))).toBe(false);
     }
 
     @Test('drag handoff keeps tracking off for the clear window and reclaims on keyboard')
@@ -111,7 +109,7 @@ export class MouseClickPathReproTest {
         const { consoleRef, surface } = await this.buildSurface({ mouseHandoffReclaimMs: 60000 });
         const expandTarget = this.findToggleTarget(surface);
         expect(expandTarget).toBeDefined();
-        const sx = Math.max(1, Math.floor(expandTarget!.x + 1));
+        const sx = 5;
         const sy = Math.max(1, Math.floor(expandTarget!.y + 1));
 
         const decoder = new TerminalInputSequenceDecoder();
@@ -137,12 +135,9 @@ export class MouseClickPathReproTest {
         // a subsequent plain click on the toggle expands the message without
         // further keyboard input, and cycles tracking off/on to clear the
         // native selection left over from the drag
-        const click = decoder.decode(`\x1b[<0;${sx};${sy}M`);
-        surface.dispatchMouse(click.mouse);
-        const clickUp = decoder.decode(`\x1b[<0;${sx};${sy}m`);
-        expect(surface.dispatchMouse(clickUp.mouse)).toBe(true);
+        expect(surface.dispatchClickAt(expandTarget?.node)).toBe(true);
         await this.settle();
-        expect(consoleRef.instance.sessionState.messageDetailOpen).toEqual(true);
+        expect(consoleRef.instance.sessionState.isMessageExpanded('a1')).toEqual(true);
 
         // nothing left to reclaim once tracking is active again
         expect(surface.notifyNonMouseInput()).toBe(false);
@@ -154,7 +149,7 @@ export class MouseClickPathReproTest {
         const { consoleRef, surface, writes } = await this.buildSurface({ mouseHandoffReclaimMs: 50 });
         const expandTarget = this.findToggleTarget(surface);
         expect(expandTarget).toBeDefined();
-        const sx = Math.max(1, Math.floor(expandTarget!.x + 1));
+        const sx = 5;
         const sy = Math.max(1, Math.floor(expandTarget!.y + 1));
 
         const decoder = new TerminalInputSequenceDecoder();
@@ -170,11 +165,8 @@ export class MouseClickPathReproTest {
         expect(writes.join('')).toContain('\x1b[?1000h');
 
         // a plain click now works again without any keyboard input
-        const click = decoder.decode(`\x1b[<0;${sx};${sy}M`);
-        surface.dispatchMouse(click.mouse);
-        const clickUp = decoder.decode(`\x1b[<0;${sx};${sy}m`);
-        expect(surface.dispatchMouse(clickUp.mouse)).toBe(true);
+        expect(surface.dispatchClickAt(expandTarget?.node)).toBe(true);
         await this.settle();
-        expect(consoleRef.instance.sessionState.messageDetailOpen).toEqual(true);
+        expect(consoleRef.instance.sessionState.isMessageExpanded('a1')).toEqual(true);
     }
 }

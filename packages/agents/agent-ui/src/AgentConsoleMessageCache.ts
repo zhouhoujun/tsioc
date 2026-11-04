@@ -4,6 +4,7 @@ import type { AgentConsoleRenderedMessageItem } from './AgentConsoleMessageRende
 
 export const messageItemsCache = new WeakMap<object, {
     messages: Array<{ id?: string; role?: string; content: string; metadata?: Record<string, any> }>;
+    slotKeys: string[];
     selectedMessageId: string;
     messagesFocused: boolean;
     theme: AgentConsoleTheme;

@@ -745,3 +745,13 @@ html[data-agent-theme="high-contrast"] #agent-console .common-markdown-code-toke
 html[data-agent-theme="high-contrast"] #agent-console .common-markdown-code-token[data-tone="syntax-tag"] { color: #00ff66; }
 html[data-agent-theme="high-contrast"] #agent-console .common-markdown-code-token[data-tone="syntax-attribute"] { color: #00ccff; }
 html[data-agent-theme="high-contrast"] #agent-console .common-markdown-code-token[data-tone="syntax-function"] { color: #ff9900; }
+
+/* Inline disclosure: reasoning and tool invocation rows fade on hover. */
+#agent-console .message-line[data-hover="fade"] {
+    cursor: pointer;
+    transition: background-color 140ms ease, color 140ms ease;
+    border-radius: 4px;
+}
+#agent-console .message-line[data-hover="fade"]:hover {
+    background: var(--agent-web-hover);
+}

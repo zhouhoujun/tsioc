@@ -10,6 +10,8 @@ export interface ConsoleStyleRule {
     declarations: Record<string, string>;
     specificity: number;
     order: number;
+    /** Parsed selector; computed once so element matching is regex-free. */
+    parsed?: ConsoleStyleSelector;
 }
 
 export interface ConsoleStyleSelector {
@@ -39,12 +41,15 @@ export function parseConsoleStyleSheet(css: string): ConsoleStyleRule[] {
                 selector: trimmed,
                 declarations,
                 specificity: selectorSpecificity(trimmed),
-                order: order++
+                order: order++,
+                parsed: parseSelector(trimmed)
             });
         }
     }
     return rules;
 }
+
+const styleCache = new WeakMap<ConsoleStyleRule[], Map<string, Record<string, string>>>();
 
 export function resolveConsoleStyleSheet(
     element: { tagName?: string; getAttribute?: (name: string) => string | null },
@@ -52,31 +57,53 @@ export function resolveConsoleStyleSheet(
 ): Record<string, string> {
     const tag = String(element?.tagName || '').toLowerCase();
     const className = String(element?.getAttribute?.('class') || '').trim();
-    const classes = new Set(className.split(/\s+/).filter(Boolean));
-    const attributes = new Map<string, string>();
+    const attributeEntries: string[] = [];
     for (const name of ['role', 'aria-selected', 'aria-label', 'data-hover']) {
         const value = element?.getAttribute?.(name);
         if (value != null) {
-            attributes.set(name, String(value));
+            attributeEntries.push(`${name}=${String(value)}`);
         }
     }
-    const matched = rules
-        .filter(rule => selectorMatches(rule.selector, tag, classes, attributes))
-        .sort((left, right) => left.specificity - right.specificity || left.order - right.order);
+    const cacheKey = `${tag}\u0000${className}\u0000${attributeEntries.join('\u0001')}`;
+    let bucket = styleCache.get(rules);
+    if (!bucket) {
+        bucket = new Map();
+        styleCache.set(rules, bucket);
+    }
+    const cached = bucket.get(cacheKey);
+    if (cached) {
+        return cached;
+    }
+    const classes = new Set(className.split(/\s+/).filter(Boolean));
+    const attributes = new Map<string, string>();
+    for (const entry of attributeEntries) {
+        const index = entry.indexOf('=');
+        attributes.set(entry.slice(0, index), entry.slice(index + 1));
+    }
+    const matched: ConsoleStyleRule[] = [];
+    for (const rule of rules) {
+        if (selectorMatches(rule.parsed || (rule.parsed = parseSelector(rule.selector)), tag, classes, attributes)) {
+            matched.push(rule);
+        }
+    }
+    matched.sort((left, right) => left.specificity - right.specificity || left.order - right.order);
     const declarations: Record<string, string> = {};
     for (const rule of matched) {
         Object.assign(declarations, rule.declarations);
     }
+    if (bucket.size > 4096) {
+        bucket.clear();
+    }
+    bucket.set(cacheKey, declarations);
     return declarations;
 }
 
 function selectorMatches(
-    selector: string,
+    parsed: ConsoleStyleSelector | undefined,
     tag: string,
     classes: Set<string>,
     attributes: Map<string, string>
 ): boolean {
-    const parsed = parseSelector(selector);
     if (!parsed) {
         return false;
     }

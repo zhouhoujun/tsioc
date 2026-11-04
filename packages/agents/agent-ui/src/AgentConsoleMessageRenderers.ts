@@ -26,7 +26,7 @@ import { resolveSemanticLineMargin, resolveSemanticLinePadding, stripMentionCont
 export { resolveAgentConsoleMarkdownPrefixStyle, resolveAgentConsoleMarkdownToneStyle } from './AgentConsoleMarkdownStyles';
 import { resolveTimelineEventSentence, formatTimelineSessionDuration, AgentConsoleTimelineLabels } from './AgentConsoleTimelineWindow';
 import { resolveTurnLifecycleLabel } from './AgentConsoleTimelineLabels';
-import { resolveTimelineMeta, resolveTimelineMetaStyle, resolveMessageDurationMs, resolveMessageRoleLabel, resolveMessageRoleStyle, resolveAgentConsoleMessageRoleLabel, resolveEffectiveRoleLabel, shouldRenderWorkedSummary, localizeCommandExecutionStatus, localizeTimelineContentSuffix, resolveTimelineDetailToggle } from './AgentConsoleTimelineMeta';
+import { resolveTimelineMeta, resolveTimelineMetaStyle, resolveMessageDurationMs, resolveMessageRoleLabel, resolveMessageRoleStyle, resolveAgentConsoleMessageRoleLabel, resolveEffectiveRoleLabel, shouldRenderWorkedSummary, localizeCommandExecutionStatus, localizeTimelineContentSuffix } from './AgentConsoleTimelineMeta';
 import type { MarkdownWorkerBridge } from './MarkdownWorkerBridge';
 import {
     AgentConsoleContentFamily,
@@ -50,6 +50,8 @@ export interface AgentConsoleRenderedLine {
     messageId?: string;
     previewCollapsed?: boolean;
     toggleContent?: string;
+    /** Inline rows toggle collapse in place; detail rows open the inspector. */
+    toggleMode?: 'inline' | 'detail';
     statusKind?: AgentConsoleMessageStatus;
     statusLabel?: string;
     /** Screen-reader label for the row: status + prefix + content + meta (depends only on text, never color). */
@@ -560,6 +562,7 @@ export function renderAgentConsoleMessageItem(
         : baseRoleLabel;
     const timelineEvent = message?.metadata?.uiKind === 'event';
     const timelineEventType = String(message?.metadata?.uiEventType || '').trim();
+    const reasoningRow = timelineEventType === 'reasoning';
     const criticalMark = context.showCriticalMarks ? '★ ' : '';
     const effectiveRoleLabel = resolveEffectiveRoleLabel(
         timelineEvent, presentation.kind, roleLabel, criticalMark, !!context.rendererRegistry);
@@ -598,8 +601,10 @@ export function renderAgentConsoleMessageItem(
     // locale. Custom reasons (`Stopped by user`) stay verbatim.
     const lifecycleLabel = timelineEvent ? resolveTurnLifecycleLabel(displayContent, context.timelineLabels) : '';
     const eventText = lifecycleLabel || displayContent || timelineSentence || '';
+    // Reasoning stays a compact execution row but keeps its full source so the
+    // Thought disclosure can reveal every line on demand.
     const eventRowContent = timelineEvent
-        ? (context.messageDetailOpen && selected
+        ? (reasoningRow || (context.messageDetailOpen && selected)
             ? eventText
             : truncateTimelineEventRowContent(eventText, statusKind, timelineEventType))
         : displayContent;
@@ -644,12 +649,7 @@ export function renderAgentConsoleMessageItem(
             ? { rawText: '', tokens: [{ text: '…' }] as AgentConsoleMarkdownToken[] }
             : { rawText: '', tokens: [] as AgentConsoleMarkdownToken[] };
     const sourceLines = markdownLines.length ? markdownLines : [fallbackLine as AgentConsoleMarkdownLine];
-    const detailLimit = Math.max(1, Math.floor(context.messageDetailVisibleLines || 6));
-    // The expand/collapse affordance is UI copy; the row body stays verbatim.
-    const detailToggle = resolveTimelineDetailToggle(
-        timelineEvent, selected, !!context.messageDetailOpen,
-        Math.max(sourceLines.length, String(displayContent).split('\n').length, String(message?.content || '').split('\n').length),
-        detailLimit, context.translator);
+    // Inline disclosure is signaled by hover/click affordance, not copy.
     const timelineMetaStyle = resolveTimelineMetaStyle(theme, rowSelected, templateKind);
     const lines: AgentConsoleRenderedLine[] = sourceLines.map((line, index) => {
         const isFirst = index === 0;
@@ -683,7 +683,7 @@ export function renderAgentConsoleMessageItem(
             prefix: bodyIndent ? `${bodyIndent}${rendered.prefix || ''}` : rendered.prefix,
             continuationIndent: continuationIndent || undefined,
             messageId: message?.id,
-            toggleContent: blankLine ? '' : isFirst ? detailToggle : '',
+            toggleContent: '',
             role: blankLine ? '' : isFirst ? rendered.role : rendered.role ? '    ' : '',
             roleStyle: blankLine || !isFirst ? {} : rendered.roleStyle,
             meta: blankLine || templateKind === 'planTodo' ? '' : workedSummary ? '' : (isFirst ? metaText : ''),
@@ -1005,7 +1005,7 @@ function buildRenderedLine(
     };
 }
 
-function deriveTimelineDurations(messages: AgentMessage[]): AgentMessage[] {
+export function deriveTimelineDurations(messages: AgentMessage[]): AgentMessage[] {
     let turnStartedAt = NaN;
     return messages.map(message => {
         const createdAt = Number(message?.createdAt);

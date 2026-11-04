@@ -358,7 +358,7 @@ export class HtmlConsoleTest {
         expect(messagesRoot.textContent).not.toContain('{"location":"Chengdu"}');
     }
 
-    @Test('clicking a collapsed message preview toggles message detail')
+    @Test('clicking a collapsed reasoning row expands it inline')
     async clickingCollapsedMessagePreviewTogglesMessageDetail() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setMessages([{
@@ -373,20 +373,21 @@ export class HtmlConsoleTest {
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         const messagesRoot = messagesPanel.hostView.rootNodes[0] as HTMLElement;
 
-        const collapsedToggle = messagesRoot.querySelector('.message-detail-toggle') as HTMLElement;
-        expect(collapsedToggle?.textContent).toContain('Click to expand');
-
-        collapsedToggle.click();
+        const collapsedLine = messagesRoot.querySelector('.message-line') as HTMLElement;
+        expect(messagesRoot.textContent).not.toContain('line 12');
+        collapsedLine.click();
         await settleDynamicMessages();
-        expect(ref.instance.sessionState.messageDetailOpen).toEqual(true);
-        expect(ref.instance.sessionState.selectedMessageId).toEqual('a1');
+        expect(ref.instance.sessionState.isMessageExpanded('a1')).toEqual(true);
+        const expandedRoot = messagesPanel.hostView.rootNodes[0] as HTMLElement;
+        expect(expandedRoot.textContent).toContain('line 12');
         expect(ref.instance.sessionState.inputFocused).toEqual(true);
 
-        const collapseToggle = messagesRoot.querySelector('.message-detail-toggle') as HTMLElement;
-        expect(collapseToggle?.textContent).toContain('Click to collapse');
-        collapseToggle.click();
+        const expandedLine = expandedRoot.querySelector('.message-line') as HTMLElement;
+        expandedLine.click();
         await settleDynamicMessages();
-        expect(ref.instance.sessionState.messageDetailOpen).toEqual(false);
+        expect(ref.instance.sessionState.isMessageExpanded('a1')).toEqual(false);
+        const collapsedRoot = messagesPanel.hostView.rootNodes[0] as HTMLElement;
+        expect(collapsedRoot.textContent).not.toContain('line 12');
         expect(ref.instance.sessionState.inputFocused).toEqual(true);
     }
 

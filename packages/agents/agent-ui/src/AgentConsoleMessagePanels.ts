@@ -67,7 +67,7 @@ import { messageItemsCache } from './AgentConsoleMessageCache';
     selector: 'agent-console-message-line',
     imports: [MessageRowComponent],
     template: `
-    <message-row :tokens="contentTokens" :status="status" :role="role" :prefix="prefix" :meta="meta" :toggleContent="toggleContent" :ariaLabel="ariaLabel" :toggleAction="toggleMessageDetail"></message-row>
+    <message-row :tokens="contentTokens" :status="status" :role="role" :prefix="prefix" :meta="meta" :toggleContent="toggleContent" :ariaLabel="ariaLabel" :hoverable="!!line?.toggleMode" :toggleAction="toggleMessageDetail"></message-row>
     `
 })
 export class AgentConsoleMessageLineComponent {
@@ -95,12 +95,18 @@ export class AgentConsoleMessageLineComponent {
         return this.line?.ariaLabel || '';
     }
 
-    get toggleContent(): string { return this.line?.previewCollapsed ? this.line.content : ''; }
+    get toggleContent(): string { return this.line?.toggleContent || ''; }
     toggleMessageDetail(): void {
-        this.state.setMessagesFocused(true);
-        if (this.state.messageLayout !== 'viewport' || !this.toggleContent) return;
+        if (this.state.messageLayout !== 'viewport') return;
         const messageId = String(this.line?.messageId || '').trim();
         if (!messageId) return;
+        if (this.line?.toggleMode === 'inline') {
+            this.state.setSelectedMessageId(messageId);
+            this.state.toggleMessageExpanded(messageId);
+            return;
+        }
+        this.state.setMessagesFocused(true);
+        if (!this.toggleContent) return;
         if (this.state.messageDetailOpen && this.state.selectedMessageId === messageId) {
             this.state.closeMessageDetail();
             return;

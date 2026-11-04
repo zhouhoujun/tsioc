@@ -13,7 +13,7 @@ export interface MessageToken {
 @Component({
     selector: 'message-row',
     template: `
-    <label class="message-line" aria-label="{{ariaLabel}}" data-hover="{{toggleContent ? 'fade' : 'none'}}" @click="toggle">
+    <label class="message-line" aria-label="{{ariaLabel}}" data-hover="{{hoverable || toggleContent ? 'fade' : 'none'}}" @click="toggle">
         <span class="message-status" v-show="status">{{status}}</span>
         <span class="message-role" v-show="role">{{role}}</span>
         <span class="message-prefix" v-show="prefix">{{prefix}}</span>
@@ -34,6 +34,7 @@ export class MessageRowComponent {
     @Attribute() meta = '';
     @Attribute() toggleContent = '';
     @Attribute() ariaLabel = '';
+    @Attribute() hoverable = false;
     @Attribute() toggleAction?: () => void;
 
     toggle(): void {

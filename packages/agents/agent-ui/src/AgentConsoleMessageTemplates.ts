@@ -3,19 +3,26 @@ import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import type { AgentConsoleRenderedMessageItem, AgentConsoleRenderedLine } from './AgentConsoleMessageRenderers';
 import { AgentConsoleSessionState } from './AgentConsoleSessionState';
-import { styleTextToObject } from './AgentConsoleTheme';
 
 const ITEM_TEMPLATE = `
     <div class="message-block-spacing" v-if="spacerBefore">​</div>
     <div class="message-item-block {{templateClass}}" data-template-kind="{{templateKind}}" data-semantic-kind="{{semanticKind}}" data-status="{{item.statusKind}}" v-style="blockStyle">
-        <label class="message-line" v-for="line in lines" v-style="line.itemStyle" aria-label="{{line.ariaLabel}}" continuationIndent="{{line.continuationIndent}}">
-            <span v-style="line.statusStyle">{{line.status}}</span>
-            <span v-style="line.roleStyle" v-show="line.role">{{line.role}}</span>
-            <span v-style="line.metaStyle" v-show="line.meta">{{line.meta}}</span>
-            <span v-style="line.prefixStyle" v-show="line.prefix">{{line.prefix}}</span>
-            <span v-style="line.lineStyle" v-if="!line.toggleContent || line.content !== line.toggleContent"><agent-console-routed-tokens :tokens="line.tokens"></agent-console-routed-tokens></span>
-            <span class="message-detail-toggle" v-style="line.lineStyle" v-if="line.toggleContent" @click="toggleMessageDetail(line)">{{line.toggleContent}}</span>
-        </label>
+        <div class="message-line-wrap" v-for="line in lines">
+            <label class="message-line" v-if="line.toggleMode === 'inline'" v-style="line.itemStyle" aria-label="{{line.ariaLabel}}" continuationIndent="{{line.continuationIndent}}" data-hover="fade" @click="toggleMessageDetail(line)">
+                <span v-style="line.statusStyle">{{line.status}}</span>
+                <span v-style="line.roleStyle" v-show="line.role">{{line.role}}</span>
+                <span v-style="line.metaStyle" v-show="line.meta">{{line.meta}}</span>
+                <span v-style="line.prefixStyle" v-show="line.prefix">{{line.prefix}}</span>
+                <span v-style="line.lineStyle"><agent-console-routed-tokens :tokens="line.tokens"></agent-console-routed-tokens></span>
+            </label>
+            <label class="message-line" v-else v-style="line.itemStyle" aria-label="{{line.ariaLabel}}" continuationIndent="{{line.continuationIndent}}" data-hover="none">
+                <span v-style="line.statusStyle">{{line.status}}</span>
+                <span v-style="line.roleStyle" v-show="line.role">{{line.role}}</span>
+                <span v-style="line.metaStyle" v-show="line.meta">{{line.meta}}</span>
+                <span v-style="line.prefixStyle" v-show="line.prefix">{{line.prefix}}</span>
+                <span v-style="line.lineStyle"><agent-console-routed-tokens :tokens="line.tokens"></agent-console-routed-tokens></span>
+            </label>
+        </div>
     </div>
 `;
 
@@ -27,8 +34,7 @@ const MARKDOWN_TEMPLATE = `
             <span v-style="line.roleStyle" v-show="line.role">{{line.role}}</span>
             <span v-style="line.metaStyle" v-show="line.meta">{{line.meta}}</span>
             <span v-style="line.prefixStyle" v-show="line.prefix">{{line.prefix}}</span>
-            <span v-style="line.lineStyle" v-if="!line.toggleContent || line.content !== line.toggleContent"><agent-console-routed-tokens :tokens="line.tokens"></agent-console-routed-tokens></span>
-            <span class="message-detail-toggle" v-style="line.lineStyle" v-if="line.toggleContent" @click="toggleMessageDetail(line)">{{line.toggleContent}}</span>
+            <span v-style="line.lineStyle"><agent-console-routed-tokens :tokens="line.tokens"></agent-console-routed-tokens></span>
         </label>
     </div>
 `;
@@ -39,6 +45,7 @@ const thoughtLinesCache = new WeakMap<object, {
     detailOpen: boolean;
     rawMode: boolean;
     showCriticalMarks: boolean;
+    expandedIds: readonly string[];
     reasoningPreviewLines: number;
     lines: AgentConsoleRenderedLine[];
 }>();
@@ -72,15 +79,14 @@ export class AgentConsoleRoutedTokensComponent {
     selector: 'agent-console-routed-line',
     imports: [AgentConsoleRoutedTokensComponent],
     template: `
-        <label class="message-line" v-style="lineStyle" aria-label="{{ariaLabel}}">
+        <label class="message-line" v-style="lineStyle" aria-label="{{ariaLabel}}" data-hover="{{line.toggleMode === 'inline' ? 'fade' : 'none'}}" @click="toggleMessageDetail()">
             <span v-style="statusStyle">{{status}}</span>
             <span v-style="roleStyle" v-show="role">{{role}}</span>
             <span v-style="metaStyle" v-show="meta">{{meta}}</span>
             <span v-style="prefixStyle" v-show="prefix">{{prefix}}</span>
-            <span v-style="contentStyle" v-if="!toggleContent || content !== toggleContent">
+            <span v-style="contentStyle">
                 <agent-console-routed-tokens :tokens="tokens"></agent-console-routed-tokens>
             </span>
-            <span class="message-detail-toggle" v-style="contentStyle" v-if="toggleContent" @click="toggleMessageDetail()">{{toggleContent}}</span>
         </label>
     `
 })
@@ -105,13 +111,9 @@ export class AgentConsoleRoutedLineComponent {
 
     toggleMessageDetail(): void {
         const messageId = String(this.line?.messageId || '').trim();
-        if (!messageId) return;
-        if (this.state.messageDetailOpen && this.state.selectedMessageId === messageId) {
-            this.state.closeMessageDetail();
-            return;
-        }
+        if (!messageId || this.line?.toggleMode !== 'inline') return;
         this.state.setSelectedMessageId(messageId);
-        this.state.openMessageDetail(false);
+        this.state.toggleMessageExpanded(messageId);
     }
 }
 
@@ -155,7 +157,7 @@ export abstract class AgentConsoleMessageTemplateBase {
             || (messageId && messageId === finalAssistantMessageId)
             || (messageId && this.state.isMessageExpanded(messageId))
             || (detailOpen && selected);
-        const lines = expanded ? source : this.previewLines(source, previewLines, true);
+        const lines = expanded ? source.map(line => ({ ...line, toggleMode: 'inline' as const })) : this.previewLines(source, previewLines, true);
         bodyLinesCache.set(this, {
             source, selected, detailOpen, rawMode, showCriticalMarks, messageLayout, finalAssistantMessageId, expandedIds, previewLines, lines
         });
@@ -174,13 +176,9 @@ export abstract class AgentConsoleMessageTemplateBase {
 
     toggleMessageDetail(line: AgentConsoleRenderedLine): void {
         const messageId = String(line?.messageId || '').trim();
-        if (!messageId) return;
-        if (this.state.messageDetailOpen && this.state.selectedMessageId === messageId) {
-            this.state.closeMessageDetail();
-            return;
-        }
+        if (!messageId || line?.toggleMode !== 'inline') return;
         this.state.setSelectedMessageId(messageId);
-        this.state.openMessageDetail(false);
+        this.state.toggleMessageExpanded(messageId);
     }
 
     protected previewLines(
@@ -189,33 +187,15 @@ export abstract class AgentConsoleMessageTemplateBase {
         preserveTail: boolean
     ): AgentConsoleRenderedLine[] {
         if (this.state.rawMode || this.state.showCriticalMarks || lines.length <= previewLines) {
-            return lines;
+            return lines.map(line => ({ ...line, toggleMode: 'inline' as const }));
         }
         const questionTail = preserveTail ? this.trailingQuestionLineCount(lines) : 0;
-        const tailLines = questionTail > 0 ? questionTail : preserveTail ? Math.min(2, previewLines - 2) : 0;
+        const tailLines = questionTail > 0 ? questionTail : preserveTail ? Math.min(2, Math.max(0, previewLines - 2)) : 0;
         const visibleBudget = questionTail > 0 ? this.state.consoleOptions.questionTailVisibleLines : previewLines;
-        const headCount = preserveTail ? Math.max(visibleBudget - tailLines - 1, 1) : previewLines;
-        const head = lines.slice(0, headCount);
+        const headCount = preserveTail ? Math.max(visibleBudget - tailLines, 1) : previewLines;
+        const head = lines.slice(0, Math.max(1, headCount));
         const tail = tailLines > 0 ? lines.slice(-tailLines) : [];
-        const hiddenCount = lines.length - headCount - tailLines;
-        const baseLine = head[head.length - 1];
-        const toggleText = this.expandLabel(hiddenCount);
-        const toggleStyle = {
-            ...(baseLine.lineStyle || {}),
-            ...styleTextToObject(this.state.theme.statusLabel),
-            cursor: 'pointer'
-        };
-        return [...head, {
-            ...baseLine,
-            previewCollapsed: true,
-            prefix: '',
-            prefixStyle: {},
-            content: toggleText,
-            toggleContent: toggleText,
-            tokens: [{ text: toggleText, tone: 'muted', style: toggleStyle }],
-            itemStyle: { ...(baseLine.itemStyle || {}), padding: '1em 1ch' },
-            lineStyle: toggleStyle
-        }, ...tail];
+        return [...head, ...tail].map(line => ({ ...line, toggleMode: 'inline' as const }));
     }
 
     private trailingQuestionLineCount(lines: AgentConsoleRenderedLine[]): number {
@@ -224,15 +204,6 @@ export abstract class AgentConsoleMessageTemplateBase {
             count++;
         }
         return count;
-    }
-
-    private expandLabel(hiddenCount: number): string {
-        if (this.state.consoleOptions.messageToggleInteraction === 'enter') {
-            return this.translator?.translate('agent.message.expandEnter', { count: hiddenCount })
-                || `… ${hiddenCount} more lines. Press Enter to expand`;
-        }
-        return this.translator?.translate('agent.message.expand', { count: hiddenCount })
-            || `… ${hiddenCount} more lines. Click to expand`;
     }
 
 }
@@ -247,7 +218,7 @@ export class AgentConsoleUserTemplate extends AgentConsoleMessageTemplateBase {
 export class AgentConsoleMarkdownComponent extends AgentConsoleMessageTemplateBase {
     override get templateClass(): string { return 'message-template-assistant'; }
     override get lines(): AgentConsoleRenderedLine[] {
-        return this.bodyPreviewLines(this.item?.lines || [], Math.max(1, this.state.consoleOptions.auxiliaryPreviewLines));
+        return this.item?.lines || [];
     }
 }
 
@@ -261,6 +232,8 @@ export class AgentConsoleThoughtTemplate extends AgentConsoleMessageTemplateBase
         const rawMode = this.state.rawMode;
         const showCriticalMarks = this.state.showCriticalMarks;
         const reasoningPreviewLines = this.state.consoleOptions.reasoningPreviewLines;
+        const expandedIds = this.state.expandedMessageIds;
+        const messageId = String(source[0]?.messageId || '');
         const cached = thoughtLinesCache.get(this);
         if (cached
             && cached.source === source
@@ -268,14 +241,15 @@ export class AgentConsoleThoughtTemplate extends AgentConsoleMessageTemplateBase
             && cached.detailOpen === detailOpen
             && cached.rawMode === rawMode
             && cached.showCriticalMarks === showCriticalMarks
+            && cached.expandedIds === expandedIds
             && cached.reasoningPreviewLines === reasoningPreviewLines) {
             return cached.lines;
         }
-        const lines = detailOpen && selected
-            ? source
+        const lines = rawMode || (messageId && this.state.isMessageExpanded(messageId))
+            ? source.map(line => ({ ...line, toggleMode: 'inline' as const }))
             : this.previewLines(source, reasoningPreviewLines, false);
         thoughtLinesCache.set(this, {
-            source, selected, detailOpen, rawMode, showCriticalMarks, reasoningPreviewLines, lines
+            source, selected, detailOpen, rawMode, showCriticalMarks, expandedIds, reasoningPreviewLines, lines
         });
         return lines;
     }

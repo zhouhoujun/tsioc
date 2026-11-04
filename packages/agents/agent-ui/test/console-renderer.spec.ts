@@ -581,7 +581,8 @@ export class AgentConsoleMessagesRendererTest {
 
         const renderer = this.ctx.get(ConsoleRenderer);
         const lines = renderer.renderToLines(panel.hostView.rootNodes[0]);
-        expect(lines.filter(line => line.includes('more lines')).length).toEqual(1);
+        expect(lines.some(line => line.includes('more lines'))).toBe(false);
+        expect(lines.some(line => line.includes('Click to expand'))).toBe(false);
         ['$ ', 'Files · ', 'Question · ', 'Approval · ', 'Error · ']
             .forEach(label => expect(lines.some(line => line.includes(label))).toBe(true));
         // Tool rows carry their own verb/object; the family label was dropped so
@@ -769,36 +770,24 @@ export class AgentConsoleMessagesRendererTest {
             await Promise.resolve();
             await Promise.resolve();
 
-            const previewLine = surface.lastRenderedLines.findIndex(line => line.includes('Click to expand'));
-            expect(previewLine).toBeGreaterThanOrEqual(0);
+            expect(surface.lastRenderedLines.some(line => line.includes('line 12'))).toBe(false);
             const expandTarget = surface.clickTargets.find(target =>
-                (target.node as any)?.getAttribute?.('class')?.includes('message-detail-toggle'));
+                (target.node as any)?.getAttribute?.('class')?.includes('message-line'));
             expect(expandTarget).toBeDefined();
             expect(surface.dispatchClickAt(expandTarget?.node)).toBe(true);
             await settleDynamicMessages();
 
             expect(consoleRef.instance.sessionState.selectedMessageId).toEqual('a1');
-            expect(consoleRef.instance.sessionState.messageDetailOpen).toEqual(true);
-            expect(surface.lastRenderedLines.some(line => line.includes('Click to expand'))).toBe(false);
-            const expandedRow = surface.lastRenderedLines.findIndex(line => line.includes('line 12'));
-            expect(expandedRow).toBeGreaterThanOrEqual(0);
+            expect(consoleRef.instance.sessionState.isMessageExpanded('a1')).toEqual(true);
+            expect(surface.lastRenderedLines.some(line => line.includes('line 12'))).toBe(true);
 
             const collapseTarget = surface.clickTargets.find(target =>
-                (target.node as any)?.getAttribute?.('class')?.includes('message-detail-toggle'));
-            // New rendering design: an open detail shows the full source lines
-            // with no in-place toggle row; collapse goes through state instead.
-            if (!collapseTarget) {
-                consoleRef.instance.sessionState.closeMessageDetail();
-                await settleDynamicMessages();
-                expect(consoleRef.instance.sessionState.messageDetailOpen).toEqual(false);
-                expect(surface.lastRenderedLines.some(line => line.includes('Click to expand'))).toBe(true);
-                return;
-            }
+                (target.node as any)?.getAttribute?.('class')?.includes('message-line'));
             expect(surface.dispatchClickAt(collapseTarget?.node)).toBe(true);
             await settleDynamicMessages();
 
-            expect(consoleRef.instance.sessionState.messageDetailOpen).toEqual(false);
-            expect(surface.lastRenderedLines.some(line => line.includes('Click to expand'))).toBe(true);
+            expect(consoleRef.instance.sessionState.isMessageExpanded('a1')).toEqual(false);
+            expect(surface.lastRenderedLines.some(line => line.includes('line 12'))).toBe(false);
         } finally {
             surface?.destroy();
             await tuiCtx.close();
@@ -957,7 +946,7 @@ export class AgentConsoleMessagesRendererTest {
             // Regression: the collapsed row used to render ONLY the toggle, dropping
             // the tool summary. Both the summary and the toggle must be present.
             expect(lines.some(line => line.includes('stdout=1'))).toBe(true);
-            expect(lines.some(line => line.includes('Click to expand'))).toBe(true);
+            expect(lines.some(line => line.includes('stdout=60'))).toBe(false);
         } finally {
             surface?.destroy();
             await tuiCtx.close();
@@ -998,15 +987,15 @@ export class AgentConsoleMessagesRendererTest {
             await Promise.resolve();
             await Promise.resolve();
 
-            const previewLine = surface.lastRenderedLines.findIndex(line => line.includes('Click to expand'));
-            expect(previewLine).toBeGreaterThanOrEqual(0);
+            expect(surface.lastRenderedLines.some(line => line.includes('line 12'))).toBe(false);
             const expandTarget = surface.clickTargets.find(target =>
-                (target.node as any)?.getAttribute?.('class')?.includes('message-detail-toggle'));
+                (target.node as any)?.getAttribute?.('class')?.includes('message-line'));
             expect(expandTarget).toBeDefined();
             expect(surface.dispatchClickAt(expandTarget?.node)).toBe(true);
             await Promise.resolve();
             await Promise.resolve();
 
+            consoleRef.instance.sessionState.setMessagesFocused(true);
             expect(await consoleRef.instance.sessionState.handleFocusKey('copy', navigationFor(consoleRef.instance.sessionState))).toBe(true);
             expect(copied).toEqual([{
                 text: Array.from({ length: 12 }, (_value, index) => `line ${index + 1}`).join('\n'),
@@ -1108,7 +1097,7 @@ export class AgentConsoleOperationalPanelsRendererTest {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setConsoleOptions({ messageLayout: 'viewport', auxiliaryPreviewLines: 3, messagesVisibleItems: 20 });
         ref.instance.sessionState.setMessages([
-            { id: 'a-old', role: 'assistant', content: Array.from({ length: 12 }, (_, index) => `old line ${index + 1}`).join('\n'), createdAt: 1 },
+            { id: 'a-old', role: 'tool', content: Array.from({ length: 12 }, (_, index) => `old line ${index + 1}`).join('\n'), createdAt: 1, metadata: { type: 'shell' } },
             { id: 'a-final', role: 'assistant', content: Array.from({ length: 12 }, (_, index) => `final line ${index + 1}`).join('\n'), createdAt: 2 }
         ] as any);
         await settleDynamicMessages(ref);
@@ -1119,7 +1108,6 @@ export class AgentConsoleOperationalPanelsRendererTest {
 
         expect(messageLines.some(line => line.includes('old line 1'))).toBe(true);
         expect(messageLines.some(line => line.includes('old line 6'))).toBe(false);
-        expect(messageLines.some(line => line.includes('more lines'))).toBe(true);
         expect(messageLines.some(line => line.includes('final line 12'))).toBe(true);
     }
 
@@ -1239,7 +1227,7 @@ export class AgentConsoleOperationalPanelsRendererTest {
         const state = ref.instance.sessionState;
         state.setConsoleOptions({ messageLayout: 'viewport', auxiliaryPreviewLines: 3, messagesVisibleItems: 20 });
         state.setMessages([
-            { id: 'a1', role: 'assistant', content: Array.from({ length: 12 }, (_, index) => `alpha line ${index + 1}`).join('\n'), createdAt: 1 } as any,
+            { id: 'a1', role: 'assistant', content: Array.from({ length: 12 }, (_, index) => `alpha line ${index + 1}`).join('\n'), createdAt: 1, metadata: { uiEventType: 'reasoning' } } as any,
             { id: 'a2', role: 'assistant', content: 'final answer', createdAt: 2 } as any
         ]);
         navigationFor(state).setFocused(true);
@@ -1250,7 +1238,6 @@ export class AgentConsoleOperationalPanelsRendererTest {
         const panel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         const collapsedLines = renderer.renderToLines(panel.hostView.rootNodes[0]);
         expect(collapsedLines.some(line => line.includes('alpha line 6'))).toBe(false);
-        expect(collapsedLines.some(line => line.includes('more lines'))).toBe(true);
 
         expect(await state.handleFocusKey('e', navigationFor(state))).toEqual(true);
         expect(state.messageDetailOpen).toBe(false);
@@ -1269,8 +1256,8 @@ export class AgentConsoleOperationalPanelsRendererTest {
         const state = ref.instance.sessionState;
         state.setConsoleOptions({ messageLayout: 'viewport', auxiliaryPreviewLines: 3, messagesVisibleItems: 20 });
         state.setMessages([
-            { id: 'ma1', role: 'assistant', content: Array.from({ length: 12 }, (_, index) => `alpha line ${index + 1}`).join('\n'), createdAt: 1 } as any,
-            { id: 'ma2', role: 'assistant', content: Array.from({ length: 12 }, (_, index) => `beta line ${index + 1}`).join('\n'), createdAt: 2 } as any,
+            { id: 'ma1', role: 'assistant', content: Array.from({ length: 12 }, (_, index) => `alpha line ${index + 1}`).join('\n'), createdAt: 1, metadata: { uiEventType: 'reasoning' } } as any,
+            { id: 'ma2', role: 'assistant', content: Array.from({ length: 12 }, (_, index) => `beta line ${index + 1}`).join('\n'), createdAt: 2, metadata: { uiEventType: 'reasoning' } } as any,
             { id: 'ma3', role: 'assistant', content: 'final answer', createdAt: 3 } as any
         ]);
         navigationFor(state).setFocused(true);
