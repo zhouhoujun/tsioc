@@ -277,16 +277,14 @@ export async function openModelSwitcher(ctx: ModelHandlerContext): Promise<void>
             ctx.notify(formatAgentUiNotice(ctx.translator, 'switchedAutoModel', { provider }));
             return;
         }
-        const effort = await pickModelEffort(ctx, mode, provider, providerModels);
-        if (effort === 'back') {
-            // Esc on the effort list returns to the model list.
-            continue;
-        }
-        await activateModelProfile(ctx, mode, effort);
+        const tier = /^(fast|balanced|strong)$/.exec(mode)?.[1];
+        const activationName = tier ? (entries.find(entry => new RegExp(`(?:^|-)${tier}$`).test(entry.value))?.value || mode) : mode;
+        const effort = await pickModelEffort(ctx, activationName, provider, providerModels);
+        if (effort === 'back') continue;
+        await activateModelProfile(ctx, activationName, effort);
         return;
     }
 }
-
 export async function fetchProviderCatalog(ctx: ModelHandlerContext, provider: string): Promise<{ options: AgentConsoleSelectOption[]; models: any[] }> {
     if (!ctx.appRpc) {
         return { options: [], models: [] };

@@ -145,6 +145,56 @@ export class ModelCatalogOptionsTest {
         expect(captured[1].map((option: any) => option.value)).not.toContain('stale-model');
     }
 
+    @Test('tier modes activate the configured profile instead of the tier label')
+    async tierModeActivatesProfile() {
+        const calls: Array<{ method: string; params: any }> = [];
+        let selects = 0;
+        const ctx: any = {
+            translator: null,
+            appRpc: {
+                request: async (method: string, params: any) => {
+                    calls.push({ method, params });
+                    if (method === 'model.list') {
+                        return [
+                            { name: 'deepseek-fast', provider: 'openai-compatible', model: 'deepseek-flash' },
+                            { name: 'deepseek-balanced', provider: 'openai-compatible', model: 'deepseek-balanced' },
+                            { name: 'deepseek-strong', provider: 'openai-compatible', model: 'deepseek-strong' }
+                        ];
+                    }
+                    if (method === 'model.catalog') return { provider: params?.provider, models: [] };
+                    if (method === 'model.activate') return { modelProfile: params.name, provider: 'openai-compatible', model: 'deepseek-flash' };
+                    return undefined;
+                }
+            },
+            state: {
+                sessionId: 's1', modelProfile: '', provider: '', model: '',
+                setModelProfile(value: string) { this.modelProfile = value; },
+                setProvider(value: string) { this.provider = value; },
+                setModel(value: string) { this.model = value; }
+            },
+            options: () => ({ model: { provider: 'openai-compatible', model: 'gpt-5.6', profiles: {} } }),
+            notify() {},
+            select: async (_title: string, options: any[]) => {
+                selects += 1;
+                if (selects === 1) return '__provider__:deepseek';
+                return options.find(option => option.value === 'fast')?.value;
+            },
+            updateTerminalTitle() {},
+            updateModelOptions() {},
+            persistSettings: async () => undefined,
+            resolveHistoryWorkspace: () => '',
+            getFavorites: () => [], setFavorites() {},
+            getRecents: () => [], setRecents() {},
+            getReasoningEffort: () => 'medium' as const,
+            setReasoningEffort() {},
+            nextActivateRequestId: () => 1,
+            peekActivateRequestId: () => 1
+        };
+        await openModelSwitcher(ctx);
+        const activation = calls.find(call => call.method === 'model.activate');
+        expect(activation?.params?.name).toEqual('deepseek-fast');
+    }
+
     @Test('auto routing persists through app RPC and updates local options')
     async autoRoutingPersists() {
         const calls: Array<{ method: string; params: any }> = [];
