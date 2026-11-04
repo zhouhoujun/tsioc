@@ -145,3 +145,49 @@
     color: var(--console-text, #c9d1d9);
     white-space: nowrap;
 }
+.common-tab-bar {
+    padding: 0;
+    color: var(--console-text, #c9d1d9);
+}
+.common-tab[aria-selected="true"] {
+    color: var(--console-text, #c9d1d9);
+}
+.common-tab:not([aria-selected="true"]) {
+    color: var(--console-meta, #6e7681);
+}
+.common-tab-close {
+    padding: 0 0 0 1ch;
+    color: var(--console-text, #c9d1d9);
+}
+.common-tab-new {
+    color: var(--console-accent, #86a9d6);
+    font-weight: bold;
+}
+.console-base-panel {
+    background: var(--console-dialog-bg, #10161d);
+    color: var(--console-text, #d6dee6);
+    padding: 1;
+    border: 1px solid var(--console-border, #2a3441);
+}
+.panel-header {
+    color: var(--console-text, #f3f6fb);
+    font-weight: bold;
+}
+.panel-summary,
+.panel-toggle {
+    color: var(--console-meta, #6f7c8a);
+}
+.panel-body {
+    color: var(--console-text, #d6dee6);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+.common-markdown-cell.align-left {
+    text-align: left;
+}
+.common-markdown-cell.align-center {
+    text-align: center;
+}
+.common-markdown-cell.align-right {
+    text-align: right;
+}

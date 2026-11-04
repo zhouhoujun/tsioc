@@ -26,11 +26,11 @@ interface CommonProjectionNode extends RNode {
 @Component({
     selector: 'panel',
     template: `
-    <div class="console-panel console-base-panel" v-style="shellStyle">
-        <label class="panel-header" v-style="headerStyle" @click="toggle" v-for="index in headerIndexes">{{headerLineAt(index)}}</label>
-        <label class="panel-summary" v-style="summaryStyle" @click="toggle" v-show="!expanded" v-for="index in summaryIndexes">{{summaryLineAt(index)}}</label>
-        <label class="panel-body" v-style="bodyStyle" v-show="bodyVisible" v-for="index in bodyIndexes">{{bodyLineAt(index)}}</label>
-        <label class="panel-toggle" v-style="toggleStyle" @click="toggle" v-show="hasSummary">{{toggleLabel}}</label>
+    <div class="console-panel console-base-panel" >
+        <label class="panel-header"  @click="toggle" v-for="index in headerIndexes">{{headerLineAt(index)}}</label>
+        <label class="panel-summary"  @click="toggle" v-show="!expanded" v-for="index in summaryIndexes">{{summaryLineAt(index)}}</label>
+        <label class="panel-body"  v-show="bodyVisible" v-for="index in bodyIndexes">{{bodyLineAt(index)}}</label>
+        <label class="panel-toggle"  @click="toggle" v-show="hasSummary">{{toggleLabel}}</label>
     </div>`
 })
 export class PanelComponent {
@@ -57,14 +57,9 @@ export class PanelComponent {
     get hasSummary(): boolean { return this.summaryLines.length > 0; }
     get bodyVisible(): boolean { return !this.hasSummary || this._expanded; }
     get toggleLabel(): string { return this._expanded ? this.collapseText : this.expandText; }
-    get shellStyle(): string { return 'background: #10161d; color: #d6dee6; padding: 1; border: 1px solid #2a3441;'; }
     get headerIndexes(): number[] { return this.indexes(this.headerLines); }
     get summaryIndexes(): number[] { return this.indexes(this._expanded ? [] : this.summaryLines); }
     get bodyIndexes(): number[] { return this.indexes(this.bodyVisible ? this.bodyLines : []); }
-    get headerStyle(): Record<string, string> { return { color: '#f3f6fb', 'font-weight': 'bold', cursor: this.hasSummary ? 'pointer' : 'default' }; }
-    get summaryStyle(): Record<string, string> { return { color: '#6f7c8a', cursor: 'pointer' }; }
-    get bodyStyle(): Record<string, string> { return { color: '#d6dee6', 'white-space': 'pre-wrap', 'overflow-wrap': 'anywhere' }; }
-    get toggleStyle(): Record<string, string> { return { color: '#6f7c8a', cursor: 'pointer' }; }
 
     headerLineAt(index: number): string {
         const line = this.headerLines[index] || '';

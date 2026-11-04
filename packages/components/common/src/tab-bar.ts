@@ -5,7 +5,6 @@ import { Inject, Optional, token } from '@tsdi/ioc';
 export interface CommonTabItem {
     id: string;
     label: string;
-    style?: Record<string, string>;
     /** Semantic selection state; renderers may use it for accessibility and skinning. */
     active?: boolean;
     /** Whether this tab shows its close affordance (defaults to true). */
@@ -16,12 +15,9 @@ export interface CommonTabItem {
 export interface CommonTabBarSource {
     visible: boolean;
     items: CommonTabItem[];
-    barStyle?: Record<string, string>;
-    actionStyle?: Record<string, string>;
     showCreate?: boolean;
     createLabel?: string;
     closeLabel?: string;
-    closeStyle?: Record<string, string>;
     select?(id: string): void;
     create?(): void;
     close?(id: string): void;
@@ -38,11 +34,11 @@ export const COMMON_TAB_BAR_SOURCE = token<CommonTabBarSource>('COMMON_TAB_BAR_S
 @Component({
     selector: 'common-tab-bar',
     template: `
-    <p class="common-tab-bar" role="tablist" v-style="barStyle" v-show="visible">
-        <span class="common-tab" role="tab" aria-selected="{{tab.active}}" v-for="tab in items" v-style="tab.style" @click="select(tab.id)">
-            <span class="common-tab-label" @click="select(tab.id)">{{tab.label}}</span><span class="common-tab-close" role="button" v-if="tab.showClose !== false" v-style="closeStyle" data-cell-width="2" @click="close(tab.id)">{{closeLabel}}</span>
+    <p class="common-tab-bar" role="tablist" v-show="visible">
+        <span class="common-tab" role="tab" aria-selected="{{tab.active}}" v-for="tab in items" @click="select(tab.id)">
+            <span class="common-tab-label" @click="select(tab.id)">{{tab.label}}</span><span class="common-tab-close" role="button" v-if="tab.showClose !== false" data-cell-width="2" @click="close(tab.id)">{{closeLabel}}</span>
         </span>
-        <span class="common-tab-new" role="button" v-style="actionStyle" v-show="showCreate" @click="create">{{createLabel}}</span>
+        <span class="common-tab-new" role="button" v-show="showCreate" @click="create">{{createLabel}}</span>
     </p>
     `
 })
@@ -65,14 +61,6 @@ export class TabBarComponent {
         return this.activeSource?.items || [];
     }
 
-    get barStyle(): Record<string, string> {
-        return this.activeSource?.barStyle || {};
-    }
-
-    get actionStyle(): Record<string, string> {
-        return this.activeSource?.actionStyle || {};
-    }
-
     get showCreate(): boolean {
         return this.activeSource ? this.activeSource.showCreate !== false : true;
     }
@@ -83,10 +71,6 @@ export class TabBarComponent {
 
     get closeLabel(): string {
         return this.activeSource?.closeLabel || '✕';
-    }
-
-    get closeStyle(): Record<string, string> {
-        return this.activeSource?.closeStyle || {};
     }
 
     select(id: string): void {

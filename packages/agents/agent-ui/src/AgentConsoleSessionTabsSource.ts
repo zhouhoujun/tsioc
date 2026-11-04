@@ -2,7 +2,6 @@ import { Injectable, Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import { CommonTabBarSource, CommonTabItem } from '@tsdi/components/common';
 import { AgentConsoleSessionState, AgentConsoleSessionItem } from './AgentConsoleSessionState';
-import { resolvePanelThemeStyles } from './AgentConsolePanelStyles';
 import { resolveSessionProjectKey } from './AgentConsoleProjectProjection';
 import { formatAgentUiLabel } from './agent-ui.i18n';
 
@@ -60,22 +59,9 @@ export class AgentConsoleSessionTabsSource implements CommonTabBarSource {
                 id: session.id,
                 label: ` ${this.tabTitle(session)} `,
                 active,
-                style: active ? this.themeStyles.statusValue : this.themeStyles.statusLabel,
                 showClose: active
             };
         });
-    }
-
-    get barStyle(): Record<string, string> {
-        return { ...this.themeStyles.statusValue, padding: '0' };
-    }
-
-    get actionStyle(): Record<string, string> {
-        return { ...this.themeStyles.sessionsAccent, 'font-weight': 'bold' };
-    }
-
-    get closeStyle(): Record<string, string> {
-        return { ...this.themeStyles.statusValue, padding: '0 0 0 1ch' };
     }
 
     get createLabel(): string {
@@ -96,10 +82,6 @@ export class AgentConsoleSessionTabsSource implements CommonTabBarSource {
 
     close(id: string): void {
         this.state.sessionTabsAction?.close?.(id);
-    }
-
-    protected get themeStyles() {
-        return resolvePanelThemeStyles(this.state);
     }
 
     /** Tab names use the session topic/title, never the raw session id. */

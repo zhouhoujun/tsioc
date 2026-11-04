@@ -21,22 +21,16 @@ export interface CommonMarkdownTableCell {
     template: `
     <div class="common-markdown-table" role="table">
         <div class="common-markdown-row common-markdown-head" role="row">
-            <div class="common-markdown-cell" role="columnheader" v-for="cell in header" v-style="cellStyle(cell)"><span class="common-markdown-token" data-tone="{{token.tone}}" v-for="token in cell.tokens">{{token.text}}</span></div>
+            <div class="common-markdown-cell align-{{cell.align || 'left'}}" role="columnheader" v-for="cell in header"><span class="common-markdown-token" data-tone="{{token.tone}}" v-for="token in cell.tokens">{{token.text}}</span></div>
         </div>
         <div class="common-markdown-row" role="row" v-for="row in rows">
-            <div class="common-markdown-cell" role="cell" v-for="cell in row" v-style="cellStyle(cell)"><span class="common-markdown-token" data-tone="{{token.tone}}" v-for="token in cell.tokens">{{token.text}}</span></div>
+            <div class="common-markdown-cell align-{{cell.align || 'left'}}" role="cell" v-for="cell in row"><span class="common-markdown-token" data-tone="{{token.tone}}" v-for="token in cell.tokens">{{token.text}}</span></div>
         </div>
     </div>`
 })
 export class MarkdownTableComponent {
     @Attribute() header: CommonMarkdownTableCell[] = [];
     @Attribute() rows: CommonMarkdownTableCell[][] = [];
-
-    cellStyle(cell: CommonMarkdownTableCell): Record<string, string> {
-        return {
-            'text-align': cell.align === 'center' || cell.align === 'right' ? cell.align : 'left'
-        };
-    }
 }
 
 /** Semantic code shell; hosts own the surrounding language/copy chrome. */
