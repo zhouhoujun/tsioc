@@ -30,9 +30,88 @@
     color: var(--console-selected, #7fa6d4);
     font-weight: bold;
 }
+.message-item-block.is-block-padded {
+    padding: 1em 0;
+    margin: 0;
+}
+.message-item-block,
+.message-markdown {
+    display: block;
+    box-sizing: border-box;
+    min-width: 0;
+    margin: 0 0 0.25em 0;
+    color: var(--agent-theme-messages-shell-color, #c9d1d9);
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+.message-item-block[data-template-kind="user"] {
+    padding: 0;
+    background: var(--agent-theme-messages-user-background, #1b2128);
+    background-color: var(--agent-theme-messages-user-background-color, #1b2128);
+    color: var(--agent-theme-messages-user-color, #c9d1d9);
+}
+.message-item-block[data-template-kind="thought"],
+.message-item-block[data-template-kind="tool"],
+.message-item-block[data-template-kind="command"] {
+    padding: 0.6em 1ch;
+}
+.message-item-block[data-template-kind="thought"] .message-line,
+.message-item-block[data-template-kind="tool"] .message-line,
+.message-item-block[data-template-kind="command"] .message-line {
+    padding: 0.2em 1ch;
+    margin: 0.2em 0 0 0;
+}
+.message-item-block[data-template-kind="user"] .message-line {
+    padding: 0 0 0 1ch;
+}
+.message-item-block[data-selected="true"] .message-line {
+    background: var(--agent-theme-messages-selected-background, #13202b);
+    background-color: var(--agent-theme-messages-selected-background-color, #13202b);
+    color: var(--agent-theme-messages-selected-color, #9fc0e4);
+    padding: 0 0 0 1ch;
+    font-weight: var(--agent-theme-messages-selected-font-weight, bold);
+}
 .message-line {
     color: var(--console-text, #c9d1d9);
 }
+.message-role {
+    color: var(--console-meta, #6e7681);
+}
+.message-body,
+.message-prefix {
+    color: inherit;
+}
+.message-status,
+.message-meta {
+    color: var(--console-meta, #6e7681);
+}
+.message-item-block[data-template-kind="thought"] .message-role {
+    color: var(--agent-theme-tools-accent-color, #86a9d6);
+    font-weight: bold;
+}
+.message-token.tone-accent,
+.message-token.tone-link { color: var(--console-accent, #86a9d6); }
+.message-token.tone-muted { color: var(--console-meta, #6e7681); }
+.message-token.tone-strong,
+.message-token.tone-heading { color: var(--console-text, #c9d1d9); font-weight: bold; }
+.message-token.tone-code,
+.message-token.tone-inline-code { color: var(--console-text, #c9d1d9); }
+.message-token.tone-inline-code { background: #161b22; }
+.message-token.tone-emphasis,
+.message-token.tone-quote { color: var(--console-notice, #c2a05e); font-style: italic; }
+.message-token.tone-strike { color: var(--console-meta, #6e7681); text-decoration: line-through; }
+.message-token.tone-syntax-keyword { color: var(--console-error, #cf9893); }
+.message-token.tone-syntax-string,
+.message-token.tone-syntax-number,
+.message-token.tone-syntax-constant { color: var(--console-idle, #6fa37a); }
+.message-token.tone-syntax-comment { color: var(--console-meta, #6e7681); }
+.message-token.tone-syntax-type,
+.message-token.tone-syntax-tag,
+.message-token.tone-syntax-function { color: var(--console-accent, #86a9d6); }
+.message-token.tone-syntax-property,
+.message-token.tone-syntax-variable { color: var(--console-text, #c9d1d9); }
+.message-token.tone-syntax-attribute { color: var(--console-notice, #c2a05e); font-style: italic; }
+
 .message-line,
 .common-tab,
 .common-tab-close,
@@ -190,62 +269,62 @@
 .working-delay-14 { animation-delay: 1050ms; }
 .working-delay-15 { animation-delay: 1125ms; }
 .console-review-panel {
-    color: var(--agent-theme-messages-shell-color);
+    color: var(--agent-theme-messages-shell-color, #c9d1d9);
     background: var(--agent-theme-messages-shell-background);
     background-color: var(--agent-theme-messages-shell-background-color);
     padding: 1em 1ch;
 }
 .review-summary {
-    color: var(--agent-theme-tools-accent-color);
+    color: var(--agent-theme-tools-accent-color, #86a9d6);
     font-weight: bold;
 }
 .review-stats,
 .review-hint {
-    color: var(--agent-theme-status-label-color);
+    color: var(--agent-theme-status-label-color, #6e7681);
 }
 .review-selection {
-    color: var(--agent-theme-status-value-color);
+    color: var(--agent-theme-status-value-color, #c9d1d9);
 }
 .review-detail-line {
     display: block;
     white-space: nowrap;
 }
 .review-line-number {
-    color: var(--agent-theme-message-detail-line-number-color);
+    color: var(--agent-theme-message-detail-line-number-color, #6e7681);
 }
 .review-line-content {
-    color: var(--agent-theme-status-value-color);
+    color: var(--agent-theme-status-value-color, #c9d1d9);
     white-space: nowrap;
 }
 .console-activity-panel {
-    color: var(--agent-theme-activity-shell-color);
+    color: var(--agent-theme-activity-shell-color, #c9d1d9);
     background: var(--agent-theme-activity-shell-background);
     background-color: var(--agent-theme-activity-shell-background-color);
 }
 .activity-kind {
-    color: var(--agent-theme-tools-accent-color);
+    color: var(--agent-theme-tools-accent-color, #86a9d6);
 }
 .activity-message {
-    color: var(--agent-theme-status-value-color);
+    color: var(--agent-theme-status-value-color, #c9d1d9);
 }
 .activity-item[data-kind="error"] .activity-kind {
-    color: var(--agent-theme-status-error-label-color);
+    color: var(--agent-theme-status-error-label-color, #c87670);
 }
 .activity-item[data-kind="error"] .activity-message {
-    color: var(--agent-theme-status-error-value-color);
+    color: var(--agent-theme-status-error-value-color, #cf9893);
 }
 .activity-item[data-kind="rollback"] .activity-kind {
-    color: var(--agent-theme-status-notice-label-color);
+    color: var(--agent-theme-status-notice-label-color, #d29922);
 }
 .activity-item[data-kind="model"] .activity-message {
-    color: var(--agent-theme-status-label-color);
+    color: var(--agent-theme-status-label-color, #6e7681);
 }
 .console-which-key-panel,
 .console-health-popover {
-    color: var(--agent-theme-select-shell-color);
+    color: var(--agent-theme-select-shell-color, #d6dee6);
     background: var(--agent-theme-select-shell-background);
     background-color: var(--agent-theme-select-shell-background-color);
-    padding: var(--agent-theme-select-shell-padding);
+    padding: var(--agent-theme-select-shell-padding, 0 1ch);
 }
 .which-key-title,
 .which-key-hint,
@@ -253,124 +332,124 @@
 .health-hint,
 .which-key-action,
 .health-detail {
-    color: var(--agent-theme-select-hint-color);
+    color: var(--agent-theme-select-hint-color, #6e7681);
 }
 .which-key-group-header {
-    color: var(--agent-theme-select-hint-color);
+    color: var(--agent-theme-select-hint-color, #6e7681);
     font-weight: bold;
 }
 .which-key-row,
 .health-row {
-    color: var(--agent-theme-select-option-color);
+    color: var(--agent-theme-select-option-color, #8b949e);
 }
 .which-key-key,
 .health-label {
-    color: var(--agent-theme-select-option-active-color);
-    font-weight: var(--agent-theme-select-option-active-font-weight);
+    color: var(--agent-theme-select-option-active-color, #7fa6d4);
+    font-weight: var(--agent-theme-select-option-active-font-weight, bold);
 }
 .health-row[data-status="ok"] .health-status {
-    color: var(--agent-theme-status-idle-value-color);
+    color: var(--agent-theme-status-idle-value-color, #6fa37a);
 }
 .health-row[data-status="warn"] .health-status {
-    color: var(--agent-theme-status-notice-value-color);
+    color: var(--agent-theme-status-notice-value-color, #cdb06a);
 }
 .health-row[data-status="error"] .health-status {
-    color: var(--agent-theme-status-error-value-color);
+    color: var(--agent-theme-status-error-value-color, #cf9893);
 }
 .console-status-panel {
-    color: var(--agent-theme-status-shell-color);
+    color: var(--agent-theme-status-shell-color, #c9d1d9);
     background: var(--agent-theme-status-shell-background);
     background-color: var(--agent-theme-status-shell-background-color);
 }
 .console-status-panel[data-tone="error"] .status-line {
-    color: var(--agent-theme-status-error-value-color);
+    color: var(--agent-theme-status-error-value-color, #cf9893);
 }
 .console-status-panel[data-tone="notice"] .status-line {
-    color: var(--agent-theme-status-notice-value-color);
+    color: var(--agent-theme-status-notice-value-color, #cdb06a);
 }
 .console-status-panel[data-tone="busy"] .status-line {
-    color: var(--agent-theme-status-busy-value-color);
+    color: var(--agent-theme-status-busy-value-color, #c2a05e);
 }
 .console-status-panel[data-tone="idle"] .status-line {
-    color: var(--agent-theme-status-idle-value-color);
+    color: var(--agent-theme-status-idle-value-color, #6fa37a);
 }
 .console-approvals-panel {
-    color: var(--agent-theme-dialog-shell-color);
-    background: var(--agent-theme-input-shell-background, var(--agent-theme-dialog-shell-background));
+    color: var(--agent-theme-dialog-shell-color, #d6dee6);
+    background: var(--agent-theme-input-shell-background, var(--agent-theme-dialog-shell-background, #161b22));
     background-color: var(--agent-theme-input-shell-background-color, var(--agent-theme-dialog-shell-background-color));
-    padding: var(--agent-theme-dialog-shell-padding);
-    border: var(--agent-theme-dialog-shell-border);
-    border-radius: var(--agent-theme-dialog-shell-border-radius);
+    padding: var(--agent-theme-dialog-shell-padding, 0 2);
+    border: var(--agent-theme-dialog-shell-border, 1px solid #30363d);
+    border-radius: var(--agent-theme-dialog-shell-border-radius, 1);
 }
 .approval-title {
-    color: var(--agent-theme-tools-accent-color);
+    color: var(--agent-theme-tools-accent-color, #86a9d6);
 }
 .approval-summary,
 .approval-actions {
-    color: var(--agent-theme-status-label-color);
+    color: var(--agent-theme-status-label-color, #6e7681);
 }
 .approval-item,
 .approval-detail {
-    color: var(--agent-theme-status-value-color);
+    color: var(--agent-theme-status-value-color, #c9d1d9);
 }
 .approval-option-once,
 .approval-option-always {
-    color: var(--agent-theme-tools-accent-color);
+    color: var(--agent-theme-tools-accent-color, #86a9d6);
 }
 .approval-option-deny {
-    color: var(--agent-theme-status-error-value-color);
+    color: var(--agent-theme-status-error-value-color, #cf9893);
 }
 .input-shell {
-    color: var(--agent-theme-input-shell-color);
-    background: var(--agent-theme-input-shell-background);
+    color: var(--agent-theme-input-shell-color, #c9d1d9);
+    background: var(--agent-theme-input-shell-background, #1b2128);
     background-color: var(--agent-theme-input-shell-background-color);
-    padding: var(--agent-theme-input-shell-padding);
+    padding: var(--agent-theme-input-shell-padding, 1em 0 1em 1ch);
     border: var(--agent-theme-input-shell-border);
     border-radius: var(--agent-theme-input-shell-border-radius);
 }
 .input-entry {
-    color: var(--agent-theme-input-entry-color);
+    color: var(--agent-theme-input-entry-color, #c9d1d9);
     background: var(--agent-theme-input-entry-background);
     padding: var(--agent-theme-input-entry-padding);
 }
 .wizard-title {
-    color: var(--agent-theme-input-title-color);
+    color: var(--agent-theme-input-title-color, #8b949e);
 }
 .wizard-step {
-    color: var(--agent-theme-input-caption-color);
+    color: var(--agent-theme-input-caption-color, #8b949e);
 }
 .wizard-help,
 .wizard-summary {
-    color: var(--agent-theme-input-hint-color, var(--agent-theme-input-caption-color));
+    color: var(--agent-theme-input-hint-color, var(--agent-theme-input-caption-color, #8b949e));
 }
 .wizard-hint,
 .input-meta {
-    color: var(--agent-theme-input-hint-color);
+    color: var(--agent-theme-input-hint-color, #6e7681);
 }
 .console-working-panel {
-    color: var(--agent-theme-working-shell-color);
+    color: var(--agent-theme-working-shell-color, #c9d1d9);
     background: var(--agent-theme-working-shell-background);
     background-color: var(--agent-theme-working-shell-background-color);
     padding: var(--agent-theme-working-shell-padding);
 }
 .working-line {
-    color: var(--agent-theme-working-value-color);
+    color: var(--agent-theme-working-value-color, #c9d1d9);
     padding: 1em 1ch 1em;
 }
 .working-label {
-    color: var(--agent-theme-working-label-color);
+    color: var(--agent-theme-working-label-color, #6e7681);
 }
 .console-messages-panel {
-    color: var(--agent-theme-messages-shell-color);
+    color: var(--agent-theme-messages-shell-color, #c9d1d9);
     background: var(--agent-theme-messages-shell-background);
     background-color: var(--agent-theme-messages-shell-background-color);
     padding: var(--agent-theme-messages-shell-padding);
 }
 .message-hint {
-    color: var(--agent-theme-messages-title-color);
+    color: var(--agent-theme-messages-title-color, #8b949e);
 }
 .message-empty {
-    color: var(--agent-theme-status-label-color);
+    color: var(--agent-theme-status-label-color, #6e7681);
 }
 .common-tab-bar {
     padding: 0;

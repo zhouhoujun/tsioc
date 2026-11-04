@@ -129,7 +129,7 @@ export class AgentConsoleMessageLineComponent {
 
 const MESSAGE_ITEM_TEMPLATE = `
     <div class="message-block-spacing" v-if="spacerBefore">​</div>
-    <div class="message-item-block" [style]="blockStyle">
+    <div class="message-item-block {{blockClass}}">
         <agent-console-message-line v-for="line in lines" :line="line"></agent-console-message-line>
     </div>
 `;
@@ -145,13 +145,8 @@ abstract class AgentConsoleMessageItemComponentBase {
         return !!this.item?.spacerBefore;
     }
 
-    get blockStyle(): Record<string, string> {
-        if (!this.item?.blockPadding) return {};
-        return {
-            ...(this.item.itemStyle || {}),
-            padding: '1em 0',
-            margin: '0'
-        };
+    get blockClass(): string {
+        return this.item?.blockPadding ? 'is-block-padded' : '';
     }
 }
 

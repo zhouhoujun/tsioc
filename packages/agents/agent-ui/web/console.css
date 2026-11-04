@@ -155,128 +155,128 @@ body {
 #agent-console .working-delay-15 { animation-delay: 1125ms; }
 
 #agent-console .console-review-panel {
-    color: var(--agent-theme-messages-shell-color);
+    color: var(--agent-theme-messages-shell-color, #c9d1d9);
     background: var(--agent-theme-messages-shell-background);
     background-color: var(--agent-theme-messages-shell-background-color);
     padding: 1em 1ch;
 }
-#agent-console .review-summary { color: var(--agent-theme-tools-accent-color); font-weight: bold; }
+#agent-console .review-summary { color: var(--agent-theme-tools-accent-color, #86a9d6); font-weight: bold; }
 #agent-console .review-stats,
-#agent-console .review-hint { color: var(--agent-theme-status-label-color); }
-#agent-console .review-selection { color: var(--agent-theme-status-value-color); }
+#agent-console .review-hint { color: var(--agent-theme-status-label-color, #6e7681); }
+#agent-console .review-selection { color: var(--agent-theme-status-value-color, #c9d1d9); }
 #agent-console .review-detail-line { display: block; white-space: nowrap; }
-#agent-console .review-line-number { color: var(--agent-theme-message-detail-line-number-color); }
-#agent-console .review-line-content { color: var(--agent-theme-status-value-color); white-space: nowrap; }
+#agent-console .review-line-number { color: var(--agent-theme-message-detail-line-number-color, #6e7681); }
+#agent-console .review-line-content { color: var(--agent-theme-status-value-color, #c9d1d9); white-space: nowrap; }
 
 #agent-console .console-activity-panel {
-    color: var(--agent-theme-activity-shell-color);
+    color: var(--agent-theme-activity-shell-color, #c9d1d9);
     background: var(--agent-theme-activity-shell-background);
     background-color: var(--agent-theme-activity-shell-background-color);
 }
-#agent-console .activity-kind { color: var(--agent-theme-tools-accent-color); }
-#agent-console .activity-message { color: var(--agent-theme-status-value-color); }
-#agent-console .activity-item[data-kind="error"] .activity-kind { color: var(--agent-theme-status-error-label-color); }
-#agent-console .activity-item[data-kind="error"] .activity-message { color: var(--agent-theme-status-error-value-color); }
-#agent-console .activity-item[data-kind="rollback"] .activity-kind { color: var(--agent-theme-status-notice-label-color); }
-#agent-console .activity-item[data-kind="model"] .activity-message { color: var(--agent-theme-status-label-color); }
+#agent-console .activity-kind { color: var(--agent-theme-tools-accent-color, #86a9d6); }
+#agent-console .activity-message { color: var(--agent-theme-status-value-color, #c9d1d9); }
+#agent-console .activity-item[data-kind="error"] .activity-kind { color: var(--agent-theme-status-error-label-color, #c87670); }
+#agent-console .activity-item[data-kind="error"] .activity-message { color: var(--agent-theme-status-error-value-color, #cf9893); }
+#agent-console .activity-item[data-kind="rollback"] .activity-kind { color: var(--agent-theme-status-notice-label-color, #d29922); }
+#agent-console .activity-item[data-kind="model"] .activity-message { color: var(--agent-theme-status-label-color, #6e7681); }
 #agent-console .console-which-key-panel,
 #agent-console .console-health-popover {
-    color: var(--agent-theme-select-shell-color);
+    color: var(--agent-theme-select-shell-color, #d6dee6);
     background: var(--agent-theme-select-shell-background);
     background-color: var(--agent-theme-select-shell-background-color);
-    padding: var(--agent-theme-select-shell-padding);
+    padding: var(--agent-theme-select-shell-padding, 0 1ch);
 }
 #agent-console .which-key-title,
 #agent-console .which-key-hint,
 #agent-console .health-title,
 #agent-console .health-hint,
 #agent-console .which-key-action,
-#agent-console .health-detail { color: var(--agent-theme-select-hint-color); }
-#agent-console .which-key-group-header { color: var(--agent-theme-select-hint-color); font-weight: bold; }
+#agent-console .health-detail { color: var(--agent-theme-select-hint-color, #6e7681); }
+#agent-console .which-key-group-header { color: var(--agent-theme-select-hint-color, #6e7681); font-weight: bold; }
 #agent-console .which-key-row,
-#agent-console .health-row { color: var(--agent-theme-select-option-color); }
+#agent-console .health-row { color: var(--agent-theme-select-option-color, #8b949e); }
 #agent-console .which-key-key,
-#agent-console .health-label { color: var(--agent-theme-select-option-active-color); font-weight: var(--agent-theme-select-option-active-font-weight); }
-#agent-console .health-row[data-status="ok"] .health-status { color: var(--agent-theme-status-idle-value-color); }
-#agent-console .health-row[data-status="warn"] .health-status { color: var(--agent-theme-status-notice-value-color); }
-#agent-console .health-row[data-status="error"] .health-status { color: var(--agent-theme-status-error-value-color); }
+#agent-console .health-label { color: var(--agent-theme-select-option-active-color, #7fa6d4); font-weight: var(--agent-theme-select-option-active-font-weight, bold); }
+#agent-console .health-row[data-status="ok"] .health-status { color: var(--agent-theme-status-idle-value-color, #6fa37a); }
+#agent-console .health-row[data-status="warn"] .health-status { color: var(--agent-theme-status-notice-value-color, #cdb06a); }
+#agent-console .health-row[data-status="error"] .health-status { color: var(--agent-theme-status-error-value-color, #cf9893); }
 
 #agent-console .console-status-panel {
-    color: var(--agent-theme-status-shell-color);
+    color: var(--agent-theme-status-shell-color, #c9d1d9);
     background: var(--agent-theme-status-shell-background);
     background-color: var(--agent-theme-status-shell-background-color);
 }
-#agent-console .console-status-panel[data-tone="error"] .status-line { color: var(--agent-theme-status-error-value-color); }
-#agent-console .console-status-panel[data-tone="notice"] .status-line { color: var(--agent-theme-status-notice-value-color); }
-#agent-console .console-status-panel[data-tone="busy"] .status-line { color: var(--agent-theme-status-busy-value-color); }
-#agent-console .console-status-panel[data-tone="idle"] .status-line { color: var(--agent-theme-status-idle-value-color); }
+#agent-console .console-status-panel[data-tone="error"] .status-line { color: var(--agent-theme-status-error-value-color, #cf9893); }
+#agent-console .console-status-panel[data-tone="notice"] .status-line { color: var(--agent-theme-status-notice-value-color, #cdb06a); }
+#agent-console .console-status-panel[data-tone="busy"] .status-line { color: var(--agent-theme-status-busy-value-color, #c2a05e); }
+#agent-console .console-status-panel[data-tone="idle"] .status-line { color: var(--agent-theme-status-idle-value-color, #6fa37a); }
 
 #agent-console .console-approvals-panel {
-    color: var(--agent-theme-dialog-shell-color);
-    background: var(--agent-theme-input-shell-background, var(--agent-theme-dialog-shell-background));
+    color: var(--agent-theme-dialog-shell-color, #d6dee6);
+    background: var(--agent-theme-input-shell-background, var(--agent-theme-dialog-shell-background, #161b22));
     background-color: var(--agent-theme-input-shell-background-color, var(--agent-theme-dialog-shell-background-color));
-    padding: var(--agent-theme-dialog-shell-padding);
-    border: var(--agent-theme-dialog-shell-border);
-    border-radius: var(--agent-theme-dialog-shell-border-radius);
+    padding: var(--agent-theme-dialog-shell-padding, 0 2);
+    border: var(--agent-theme-dialog-shell-border, 1px solid #30363d);
+    border-radius: var(--agent-theme-dialog-shell-border-radius, 1);
 }
-#agent-console .approval-title { color: var(--agent-theme-tools-accent-color); }
+#agent-console .approval-title { color: var(--agent-theme-tools-accent-color, #86a9d6); }
 #agent-console .approval-summary,
-#agent-console .approval-actions { color: var(--agent-theme-status-label-color); }
+#agent-console .approval-actions { color: var(--agent-theme-status-label-color, #6e7681); }
 #agent-console .approval-item,
-#agent-console .approval-detail { color: var(--agent-theme-status-value-color); }
+#agent-console .approval-detail { color: var(--agent-theme-status-value-color, #c9d1d9); }
 #agent-console .approval-option-once,
-#agent-console .approval-option-always { color: var(--agent-theme-tools-accent-color); }
-#agent-console .approval-option-deny { color: var(--agent-theme-status-error-value-color); }
+#agent-console .approval-option-always { color: var(--agent-theme-tools-accent-color, #86a9d6); }
+#agent-console .approval-option-deny { color: var(--agent-theme-status-error-value-color, #cf9893); }
 
 #agent-console .input-shell {
-    color: var(--agent-theme-input-shell-color);
-    background: var(--agent-theme-input-shell-background);
+    color: var(--agent-theme-input-shell-color, #c9d1d9);
+    background: var(--agent-theme-input-shell-background, #1b2128);
     background-color: var(--agent-theme-input-shell-background-color);
-    padding: var(--agent-theme-input-shell-padding);
+    padding: var(--agent-theme-input-shell-padding, 1em 0 1em 1ch);
     border: var(--agent-theme-input-shell-border);
     border-radius: var(--agent-theme-input-shell-border-radius);
 }
 #agent-console .input-entry {
-    color: var(--agent-theme-input-entry-color);
+    color: var(--agent-theme-input-entry-color, #c9d1d9);
     background: var(--agent-theme-input-entry-background);
     padding: var(--agent-theme-input-entry-padding);
 }
-#agent-console .wizard-title { color: var(--agent-theme-input-title-color); }
-#agent-console .wizard-step { color: var(--agent-theme-input-caption-color); }
+#agent-console .wizard-title { color: var(--agent-theme-input-title-color, #8b949e); }
+#agent-console .wizard-step { color: var(--agent-theme-input-caption-color, #8b949e); }
 #agent-console .wizard-help,
-#agent-console .wizard-summary { color: var(--agent-theme-input-hint-color, var(--agent-theme-input-caption-color)); }
+#agent-console .wizard-summary { color: var(--agent-theme-input-hint-color, var(--agent-theme-input-caption-color, #8b949e)); }
 #agent-console .wizard-hint,
-#agent-console .input-meta { color: var(--agent-theme-input-hint-color); }
+#agent-console .input-meta { color: var(--agent-theme-input-hint-color, #6e7681); }
 
 #agent-console .console-working-panel {
-    color: var(--agent-theme-working-shell-color);
+    color: var(--agent-theme-working-shell-color, #c9d1d9);
     background: var(--agent-theme-working-shell-background);
     background-color: var(--agent-theme-working-shell-background-color);
     padding: var(--agent-theme-working-shell-padding);
 }
 
 #agent-console .working-line {
-    color: var(--agent-theme-working-value-color);
+    color: var(--agent-theme-working-value-color, #c9d1d9);
     padding: 1em 1ch 1em;
 }
 
 #agent-console .working-label {
-    color: var(--agent-theme-working-label-color);
+    color: var(--agent-theme-working-label-color, #6e7681);
 }
 
 #agent-console .console-messages-panel {
-    color: var(--agent-theme-messages-shell-color);
+    color: var(--agent-theme-messages-shell-color, #c9d1d9);
     background: var(--agent-theme-messages-shell-background);
     background-color: var(--agent-theme-messages-shell-background-color);
     padding: var(--agent-theme-messages-shell-padding);
 }
 
 #agent-console .message-hint {
-    color: var(--agent-theme-messages-title-color);
+    color: var(--agent-theme-messages-title-color, #8b949e);
 }
 
 #agent-console .message-empty {
-    color: var(--agent-theme-status-label-color);
+    color: var(--agent-theme-status-label-color, #6e7681);
 }
 
 #agent-console .console-new-messages {
@@ -324,7 +324,41 @@ body {
     scrollbar-color: #334155 transparent;
 }
 
+#agent-console .message-status,
+#agent-console .message-meta { color: var(--agent-web-muted); }
+#agent-console .message-role { color: var(--agent-web-muted); }
+#agent-console .message-template-thought .message-role { color: var(--agent-web-code-accent); font-weight: 600; }
+#agent-console .message-body,
+#agent-console .message-prefix { color: inherit; }
+#agent-console .message-token.tone-accent,
+#agent-console .message-token.tone-link { color: var(--agent-web-code-accent); }
+#agent-console .message-token.tone-muted,
+#agent-console .message-token.tone-syntax-comment { color: var(--agent-web-muted); }
+#agent-console .message-token.tone-strong,
+#agent-console .message-token.tone-heading,
+#agent-console .message-token.tone-code,
+#agent-console .message-token.tone-inline-code,
+#agent-console .message-token.tone-syntax-property,
+#agent-console .message-token.tone-syntax-variable { color: var(--agent-web-text); }
+#agent-console .message-token.tone-inline-code {
+    background: var(--agent-web-inline-code-bg);
+    border-radius: 4px;
+    padding: 1px 4px;
+}
+#agent-console .message-token.tone-emphasis,
+#agent-console .message-token.tone-quote,
+#agent-console .message-token.tone-syntax-attribute { color: var(--agent-web-accent); font-style: italic; }
+#agent-console .message-token.tone-strike { color: var(--agent-web-muted); text-decoration: line-through; }
+#agent-console .message-token.tone-syntax-keyword { color: var(--agent-web-danger); }
+#agent-console .message-token.tone-syntax-string,
+#agent-console .message-token.tone-syntax-number,
+#agent-console .message-token.tone-syntax-constant { color: #7ee787; }
+#agent-console .message-token.tone-syntax-type,
+#agent-console .message-token.tone-syntax-tag,
+#agent-console .message-token.tone-syntax-function { color: var(--agent-web-code-accent); }
+
 #agent-console .message-item-block,
+
 #agent-console .message-markdown {
     margin: 8px 0;
 }

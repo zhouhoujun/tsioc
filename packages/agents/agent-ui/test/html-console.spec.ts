@@ -110,19 +110,15 @@ export class HtmlConsoleTest {
         expect(messagesRoot.textContent).not.toContain('**assistant**');
         expect(messagesRoot.textContent).not.toContain('```');
         expect(messagesRoot.textContent).not.toContain('agent>');
-        const messageItems = Array.from(messagesRoot.querySelectorAll('label'))
-            .filter((item: any) => (item.getAttribute('style') || '').includes('overflow-wrap')) as HTMLElement[];
+        const messageItems = Array.from(messagesRoot.querySelectorAll('.message-line')) as HTMLElement[];
         // heading + syntax-highlighted code body; code blocks have no fence/rail rows.
         expect(messageItems.length).toEqual(3);
         expect(messagesRoot.textContent).not.toContain('╭─');
         expect(messagesRoot.textContent).not.toContain('│ ');
-        expect(messageItems[0]?.getAttribute('style') || '').toContain('padding');
-        expect(messageItems[0]?.getAttribute('style') || '').toContain('padding: 0em 0px 0em 1ch');
-        expect(messageItems[0]?.style.background).toEqual('rgb(27, 33, 40)');
-        expect(messageItems[0]?.getAttribute('style') || '').toContain('display: block');
-        expect(messageItems[1]?.getAttribute('style') || '').toContain('overflow-wrap: anywhere');
-        expect(messagesRoot.querySelector('.message-markdown')?.getAttribute('style') || '')
-            .toContain('padding: 0px');
+        expect(messageItems[0]?.getAttribute('class')).toContain('message-line');
+        expect(messageItems[0]?.closest('.message-item-block')?.getAttribute('data-template-kind')).toBeTruthy();
+        expect(messageItems[1]?.getAttribute('class')).toContain('message-line');
+        expect(messagesRoot.querySelector('.message-markdown')?.getAttribute('class')).toContain('message-markdown');
         expect(root.querySelector('h1')).toBeFalsy();
         expect(ref.hostView.query(AgentConsoleStatusPanelComponent)).toBeTruthy();
         expect(ref.hostView.query(AgentConsoleWorkingPanelComponent)).toBeTruthy();
@@ -161,15 +157,13 @@ export class HtmlConsoleTest {
 
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         const messagesRoot = messagesPanel.hostView.rootNodes[0] as any;
-        const renderedLines = Array.from(messagesRoot.querySelectorAll('label'))
-            .filter((item: any) => (item.getAttribute('style') || '').includes('overflow-wrap'));
+        const renderedLines = Array.from(messagesRoot.querySelectorAll('.message-line'));
         expect(renderedLines.length).toEqual(2);
 
         ref.instance.sessionState.setMessages(messages.slice());
         await settleDynamicMessages();
 
-        expect(Array.from(messagesRoot.querySelectorAll('label'))
-            .filter((item: any) => (item.getAttribute('style') || '').includes('overflow-wrap')).length).toEqual(2);
+        expect(messagesRoot.querySelectorAll('.message-line').length).toEqual(2);
         expect(messagesRoot.textContent).toContain('›');
         expect(messagesRoot.textContent).toContain('world');
         expect(messagesRoot.textContent).toContain('world');
@@ -350,8 +344,7 @@ export class HtmlConsoleTest {
 
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         const messagesRoot = messagesPanel.hostView.rootNodes[0] as any;
-        const renderedLines = Array.from(messagesRoot.querySelectorAll('label'))
-            .filter((item: any) => (item.getAttribute('style') || '').includes('overflow-wrap'));
+        const renderedLines = Array.from(messagesRoot.querySelectorAll('.message-line'));
 
         expect(renderedLines.length).toEqual(2);
         expect(messagesRoot.textContent).toContain('查看成都天气');

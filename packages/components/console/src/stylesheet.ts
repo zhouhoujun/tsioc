@@ -75,7 +75,7 @@ export function resolveConsoleStyleSheet(
     const tag = String(element?.tagName || '').toLowerCase();
     const className = String(element?.getAttribute?.('class') || '').trim();
     const attributeEntries: string[] = [];
-    for (const name of ['role', 'aria-selected', 'aria-label', 'data-hover']) {
+    for (const name of ['role', 'aria-selected', 'aria-label', 'data-hover', 'data-template-kind', 'data-semantic-kind', 'data-status', 'data-selected', 'data-tone', 'data-code', 'data-table', 'data-kind']) {
         const value = element?.getAttribute?.(name);
         if (value != null) {
             attributeEntries.push(`${name}=${String(value)}`);
