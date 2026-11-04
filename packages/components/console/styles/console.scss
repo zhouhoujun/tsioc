@@ -1,0 +1,204 @@
+// Compiled to console.css by scripts/build-console-styles.mjs.
+// Keep this file as the source of truth; do not edit console.css directly.
+$text: var(--console-text, #c9d1d9);
+$meta: var(--console-meta, #6e7681);
+$accent: var(--console-accent, #86a9d6);
+$selected: var(--console-selected, #7fa6d4);
+$dialog-bg: var(--console-dialog-bg, #161b22);
+$border: var(--console-border, #30363d);
+$error: var(--console-error, #cf9893);
+$notice: var(--console-notice, #c2a05e);
+$idle: var(--console-idle, #6fa37a);
+
+.console-panel {
+    color: $text;
+}
+.common-list-panel,
+.detail-panel {
+    padding: 0 1ch;
+}
+.common-list-header,
+.detail-summary {
+    color: $accent;
+    font-weight: bold;
+}
+.common-list-title {
+    color: $accent;
+}
+.common-list-meta,
+.common-list-empty,
+.common-list-hint,
+.detail-meta,
+.detail-selection,
+.detail-hint {
+    color: $meta;
+}
+.common-list-detail,
+.detail-line {
+    color: $text;
+}
+.common-list-panel [aria-selected="true"] {
+    color: $selected;
+    font-weight: bold;
+}
+.message-line {
+    color: $text;
+}
+.message-line [data-hover="fade"] {
+    color: $meta;
+}
+.agent-input {
+    color: $text;
+    background: var(--console-input-bg, #161b22);
+}
+.message-status,
+.message-role,
+.message-prefix,
+.message-meta {
+    color: $meta;
+}
+.message-detail-toggle {
+    color: $meta;
+}
+.common-list-section {
+    color: $accent;
+    font-weight: bold;
+}
+.common-dialog {
+    background: $dialog-bg;
+    color: $text;
+    border: 1px solid $border;
+    border-radius: 1;
+    padding: 0 2;
+}
+.common-dialog-title {
+    color: $accent;
+    font-weight: bold;
+}
+.common-dialog-line {
+    color: $text;
+}
+.common-dialog-hint,
+.common-dialog .dialog-close {
+    color: $meta;
+}
+.select-shell {
+    background: $dialog-bg;
+    color: $text;
+    border: 1px solid $border;
+    border-bottom: none;
+    border-radius: 1;
+    padding: 0 2;
+}
+.common-select .dialog-close {
+    color: $meta;
+}
+.common-select-option {
+    color: $meta;
+    padding: 0 1ch;
+}
+.common-select-option.is-selected {
+    color: $accent;
+    font-weight: bold;
+}
+.tone-accent,
+.tone-link,
+.tone-syntax-type,
+.tone-syntax-tag,
+.tone-syntax-function {
+    color: $accent;
+}
+.tone-link {
+    text-decoration: underline;
+}
+.tone-strong,
+.tone-heading {
+    color: $text;
+    font-weight: bold;
+}
+.tone-code,
+.tone-inline-code,
+.tone-syntax-property,
+.tone-syntax-variable {
+    color: $text;
+}
+.tone-inline-code {
+    background: #161b22;
+}
+.tone-muted,
+.tone-strike,
+.tone-syntax-comment {
+    color: $meta;
+}
+.tone-syntax-keyword {
+    color: $error;
+}
+.tone-syntax-string,
+.tone-syntax-number,
+.tone-syntax-constant {
+    color: $idle;
+}
+.tone-emphasis,
+.tone-quote,
+.tone-syntax-attribute {
+    color: $notice;
+    font-style: italic;
+}
+.detail-line {
+    display: block;
+    white-space: nowrap;
+}
+.detail-line-number {
+    color: $meta;
+}
+.detail-line-prefix,
+.detail-line-content {
+    color: $text;
+    white-space: nowrap;
+}
+.common-tab-bar {
+    padding: 0;
+    color: $text;
+}
+.common-tab[aria-selected="true"] {
+    color: $text;
+}
+.common-tab:not([aria-selected="true"]) {
+    color: $meta;
+}
+.common-tab-close {
+    padding: 0 0 0 1ch;
+    color: $text;
+}
+.common-tab-new {
+    color: $accent;
+    font-weight: bold;
+}
+.console-base-panel {
+    background: $dialog-bg;
+    color: $text;
+    padding: 1;
+    border: 1px solid $border;
+}
+.panel-header {
+    color: $text;
+    font-weight: bold;
+}
+.panel-summary,
+.panel-toggle {
+    color: $meta;
+}
+.panel-body {
+    color: $text;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+.common-markdown-cell.align-left {
+    text-align: left;
+}
+.common-markdown-cell.align-center {
+    text-align: center;
+}
+.common-markdown-cell.align-right {
+    text-align: right;
+}

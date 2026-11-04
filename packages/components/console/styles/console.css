@@ -1,4 +1,4 @@
-/* Compiled TUI stylesheet. Hosts may replace it with their own compiled CSS. */
+/* Compiled from console.scss by scripts/build-console-styles.mjs. Do not edit. */
 .console-panel {
     color: var(--console-text, #c9d1d9);
 }
@@ -55,7 +55,7 @@
 }
 .common-dialog {
     background: var(--console-dialog-bg, #161b22);
-    color: var(--console-text, #d6dee6);
+    color: var(--console-text, #c9d1d9);
     border: 1px solid var(--console-border, #30363d);
     border-radius: 1;
     padding: 0 2;
@@ -65,7 +65,7 @@
     font-weight: bold;
 }
 .common-dialog-line {
-    color: var(--console-text, #d6dee6);
+    color: var(--console-text, #c9d1d9);
 }
 .common-dialog-hint,
 .common-dialog .dialog-close {
@@ -83,11 +83,11 @@
     color: var(--console-meta, #6e7681);
 }
 .common-select-option {
-    color: var(--console-meta, #8b949e);
+    color: var(--console-meta, #6e7681);
     padding: 0 1ch;
 }
 .common-select-option.is-selected {
-    color: var(--console-accent, #7fa6d4);
+    color: var(--console-accent, #86a9d6);
     font-weight: bold;
 }
 .tone-accent,
@@ -164,21 +164,21 @@
     font-weight: bold;
 }
 .console-base-panel {
-    background: var(--console-dialog-bg, #10161d);
-    color: var(--console-text, #d6dee6);
+    background: var(--console-dialog-bg, #161b22);
+    color: var(--console-text, #c9d1d9);
     padding: 1;
-    border: 1px solid var(--console-border, #2a3441);
+    border: 1px solid var(--console-border, #30363d);
 }
 .panel-header {
-    color: var(--console-text, #f3f6fb);
+    color: var(--console-text, #c9d1d9);
     font-weight: bold;
 }
 .panel-summary,
 .panel-toggle {
-    color: var(--console-meta, #6f7c8a);
+    color: var(--console-meta, #6e7681);
 }
 .panel-body {
-    color: var(--console-text, #d6dee6);
+    color: var(--console-text, #c9d1d9);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
 }
