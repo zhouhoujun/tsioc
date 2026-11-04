@@ -1862,12 +1862,8 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return handleMenuSelection(this.state, (selected: string) => this.handleCommand(selected), value);
     }
 
-    protected async submitMultilineDraft(): Promise<void> {
-        await submitMultilineDraftView(turnInputHost(this));
-    }
-    async submit(): Promise<void> {
-        await submitView(turnInputHost(this));
-    }
+    protected async submitMultilineDraft(): Promise<void> { this.state.setNotice(''); await submitMultilineDraftView(turnInputHost(this)); }
+    async submit(): Promise<void> { this.state.setNotice(''); await submitView(turnInputHost(this)); }
 
     /**
      * `!cmd` runs a shell command; `!!` toggles multiline draft mode; a bare

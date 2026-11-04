@@ -1174,10 +1174,9 @@ export class AgentConsoleSessionState {
         if (this.status === nextStatus) {
             return;
         }
-        if (nextStatus === 'running' || nextStatus === 'reasoning') {
-            this.turnStartedAt = this.turnStartedAt || Date.now();
+        if ((nextStatus === 'running' || nextStatus === 'reasoning') && !this.turnStartedAt) {
+            this.turnStartedAt = Date.now();
         }
-        if (nextStatus === 'running' || nextStatus === 'reasoning') this.notice = '';
         // A cancelled turn is over too: clear the clock so the next turn starts at zero.
         if (nextStatus === 'idle' || nextStatus === 'error' || nextStatus === 'cancelled') {
             this.turnStartedAt = 0;
