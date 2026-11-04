@@ -7,6 +7,7 @@ import {
     DEFAULT_TERMINAL_COLUMNS
 } from './console-ports';
 import { projectTimelineContent } from './AgentConsoleTimelineProjection';
+import { resolveDisplayMessages, resolveSessionFooter, resolveSessionHeader } from './AgentConsoleMessageProjection';
 import { AgentMessage, AgentSessionSection, AgentSessionSectionInfo, AgentToolDefinition, ScheduledAgentTask, ContextPreparationReport, TimelineEntry, sortTimelineEntries, NavEntityType, NavFilter, NavSelection, NavTree, applyNavFilter, flattenNav, navigateCursor, resolveNavSelection, ThreadItemEvent, ThreadItemKind, ThreadItemStatus, normalizeThreadItemEvent, CommandExchangeRecord, compareCommandExchangeAsc, DEFAULT_RENDER_POLICY, HarnessProjection } from '@tsdi/agent';
 import type { BackgroundTaskRecord } from '@tsdi/agent-tools';
 import {
@@ -764,7 +765,7 @@ const ZH_CONSOLE_HINTS = {
 
 @Injectable()
 export class AgentConsoleSessionState {
-    constructor(@Inject(COMMAND_EXECUTION_CONTROL) protected commandExecutionControl?: CommandExecutionControlPort, @Optional() @Inject(TranslatorService) private translator?: TranslatorService) {
+    constructor(@Inject(COMMAND_EXECUTION_CONTROL) protected commandExecutionControl?: CommandExecutionControlPort, @Optional() @Inject(TranslatorService) public translator?: TranslatorService) {
         // Own copy of the defaults: applyLocaleDefaults() writes into
         // consoleOptions, and the field initializer shares the module-level
         // default object (mutating it would leak one host's locale into others).
@@ -958,7 +959,7 @@ export class AgentConsoleSessionState {
     questionAction?: (input: { questionId: string; sessionId: string; action: 'answer' | 'dismiss'; answer?: string }) => Promise<void>;
     planMessage: AgentMessage | null = null;
     /** Ephemeral command lifecycle projections; never persisted as conversation history. */
-    protected commandExecutionMessages: AgentMessage[] = [];
+    commandExecutionMessages: AgentMessage[] = [];
     fileChangeMessage: AgentMessage | null = null;
     selectedReviewTaskId = '';
     selectedReviewTaskCacheKey = '';
@@ -1398,135 +1399,22 @@ export class AgentConsoleSessionState {
     }
 
     /** Last assistant answer row; kept fully expanded in viewport mode while other long bodies collapse. */
+    get displayMessages(): AgentMessage[] { return resolveDisplayMessages(this); }
+    get sessionHeader(): TimelineWindowMessage | undefined { return resolveSessionHeader(this); }
+    get sessionFooter(): TimelineWindowMessage | undefined { return resolveSessionFooter(this); }
+
     get finalAssistantMessageId(): string {
         return resolveFinalAssistantMessageId(this.messages);
     }
 
-    get displayMessages(): AgentMessage[] {
-        const filtered = projectAgentConsoleConversationMainline(
-            projectAgentConsoleTimelineDurations(this.messages.filter(message => this.isDisplayMessage(message)))
-        );
-        if (this.planMessage) {
-            let lastUserIndex = -1;
-            for (let index = filtered.length - 1; index >= 0; index--) {
-                if (String(filtered[index]?.role || '').toLowerCase() === 'user') {
-                    lastUserIndex = index;
-                    break;
-                }
-            }
-            if (lastUserIndex >= 0) {
-                filtered.splice(lastUserIndex + 1, 0, this.planMessage);
-            } else {
-                filtered.unshift(this.planMessage);
-            }
-        }
-        if (this.fileChangeMessage) {
-            filtered.push(this.fileChangeMessage);
-        }
-        filtered.push(...this.commandExecutionMessages);
-        if (this.timelineMode) {
-            const active = this.planTodos.find(todo => todo.status === 'in_progress')
-                || this.planTodos.find(todo => todo.status === 'pending');
-            if (active) {
-                const index = this.planTodos.indexOf(active) + 1;
-                filtered.push({
-                    id: '__timeline_plan_boundary__',
-                    role: 'assistant',
-                    content: truncateTimelineRowText(fillTimelineLabel(
-                        this.consoleOptions.timelineLabels.boundaryStep || DEFAULT_TIMELINE_LABELS.boundaryStep,
-                        {
-                            index,
-                            total: this.planTodos.length,
-                            content: active.content
-                        }
-                    )),
-                    createdAt: Date.now(),
-                    metadata: {
-                        uiKind: 'timeline-boundary',
-                        planIndex: index,
-                        planTotal: this.planTodos.length,
-                        planStepId: active.id,
-                        planStepStatus: active.status,
-                        planStepContent: active.content,
-                        planStepElapsedMs: typeof active.elapsedMs === 'number' && Number.isFinite(active.elapsedMs)
-                            ? active.elapsedMs
-                            : undefined
-                    }
-                } as AgentMessage);
-            }
-        }
-        return projectAgentConsoleExecutionMainline(projectAgentConsoleDiagnosticMainline(
-            projectAgentConsoleDecisionMainline(projectAgentConsoleArtifactMainline(filtered))
-        ));
-    }
+
 
     /** Earliest session timestamp: first message createdAt → turn start → now. */
-    private get timelineSessionStartTime(): number {
-        const created = this.messages
-            .map(message => Number(message?.createdAt))
-            .filter(ts => Number.isFinite(ts) && ts > 0);
-        if (created.length) {
-            return Math.min(...created);
-        }
-        if (this.turnStartedAt > 0) {
-            return this.turnStartedAt;
-        }
-        return Date.now();
-    }
 
-    get sessionHeader(): TimelineWindowMessage | undefined {
-        if (!this.timelineMode) {
-            return undefined;
-        }
-        const labels = this.consoleOptions.timelineLabels;
-        const start = this.timelineSessionStartTime;
-        const parts: string[] = [];
-        const title = String(this.title || '').trim();
-        if (title) {
-            parts.push(title);
-        }
-        parts.push(fillTimelineLabel(labels?.headerStart || DEFAULT_TIMELINE_LABELS.headerStart, {
-            time: formatTimelineClockTime(start, this.translator)
-        }));
-        // P302: the turn header carries session context and start time only.
-        // Current step position/status lives on the step boundary row, and the
-        // error count on the session footer (P303) / event rows — not here.
-        return {
-            id: '__timeline_session_header__',
-            role: 'assistant',
-            content: truncateTimelineRowText(parts.join(' · ')),
-            createdAt: start,
-            metadata: { uiKind: 'timeline-header' }
-        };
-    }
 
-    get sessionFooter(): TimelineWindowMessage | undefined {
-        if (!this.timelineMode) {
-            return undefined;
-        }
-        const labels = this.consoleOptions.timelineLabels;
-        const start = this.timelineSessionStartTime;
-        const running = this.status === 'running' || this.status === 'reasoning';
-        const statusWord = this.status === 'error' ? labels?.footerFailed || DEFAULT_TIMELINE_LABELS.footerFailed
-            : running ? labels?.footerRunning || DEFAULT_TIMELINE_LABELS.footerRunning
-                : labels?.footerDone || DEFAULT_TIMELINE_LABELS.footerDone;
-        const end = running ? Date.now() : this.messages.reduce((latest, message) => Math.max(latest, Number(message?.createdAt) || 0), 0) || Date.now();
-        const parts: string[] = [statusWord];
-        parts.push(fillTimelineLabel(labels?.footerDuration || DEFAULT_TIMELINE_LABELS.footerDuration, {
-            duration: formatTimelineSessionDuration(Math.max(0, end - start))
-        }));
-        const errorCount = this.messages.filter(m => m.metadata?.uiKind === 'event' && isError(m.metadata)).length;
-        if (errorCount > 0) {
-            parts.push(fillTimelineLabel(labels?.footerErrors || DEFAULT_TIMELINE_LABELS.footerErrors, { count: errorCount }));
-        }
-        return {
-            id: '__timeline_session_footer__',
-            role: 'assistant',
-            content: truncateTimelineRowText(parts.join(' · ')),
-            createdAt: Date.now(),
-            metadata: { uiKind: 'timeline-footer' }
-        };
-    }
+
+
+
 
     setMessages(messages: AgentMessage[], preserveCommandExecutionMessages = false): void {
         const previousCount = this.messages.length;
@@ -2188,38 +2076,7 @@ export class AgentConsoleSessionState {
 
 
 
-    protected isDisplayMessage(message?: AgentMessage | null): boolean {
-        if (!message) {
-            return false;
-        }
-        if (String(message.role || '').toLowerCase() === 'tool') {
-            return message.metadata?.type === 'shell';
-        }
-        if (message.metadata?.uiKind === 'event') {
-            const eventType = String(message.metadata?.uiEventType || '').toLowerCase();
-            const status = String(message.metadata?.status || '').toLowerCase();
-            // Opencode hides routine turn start/completion rows; failures still show.
-            if (eventType === 'turn_started'
-                || ((eventType === 'turn_completed' || eventType === 'turn') && !['failed', 'error', 'cancelled'].includes(status))) {
-                return false;
-            }
-        }
-        if (!this.showThinking && message?.metadata?.uiEventType === 'reasoning') {
-            return false;
-        }
-        if (String(message.role || '').toLowerCase() === 'assistant'
-            && Array.isArray(message.metadata?.toolCalls)
-            && message.metadata.toolCalls.length
-            && (!this.timelineMode || !String(message.content || '').trim())) {
-            return false;
-        }
-        if (String(message.role || '').toLowerCase() === 'assistant'
-            && message.metadata?.streaming === true
-            && !String(message.content || '').trim()) {
-            return false;
-        }
-        return true;
-    }
+
 
 
 
