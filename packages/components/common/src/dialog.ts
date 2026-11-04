@@ -9,7 +9,7 @@ import { getDisplayWidth } from './display-width';
 @Component({
     selector: 'common-dialog',
     template: `
-    <div class="console-panel common-dialog" role="dialog" aria-label="{{ariaLabel}}" v-style="resolvedShellStyle">
+    <div class="console-panel common-dialog" role="dialog" aria-label="{{ariaLabel}}" [style]="resolvedShellStyle">
         <label class="dialog-close" data-cell-width="2" @click="close">{{closeLabel}}</label>
         <label class="common-dialog-title" v-show="title">{{title}}</label>
         <label class="common-dialog-line" v-for="line in lines">{{line}}</label>
