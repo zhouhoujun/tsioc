@@ -156,7 +156,39 @@ export function parseConsoleAnimations(styles: Record<string, string>): ConsoleA
         })).filter(spec => spec.name && spec.name !== 'none');
     }
 
-    return splitTopLevel(styles.animation || '').map(parseAnimationShorthand).filter((spec): spec is ConsoleAnimationSpec => !!spec && spec.name !== 'none');
+    const shorthand = splitTopLevel(styles.animation || '')
+        .map(parseAnimationShorthand)
+        .filter((spec): spec is ConsoleAnimationSpec => !!spec && spec.name !== 'none');
+    return applyLonghandOverrides(shorthand, styles);
+}
+
+function applyLonghandOverrides(specs: ConsoleAnimationSpec[], styles: Record<string, string>): ConsoleAnimationSpec[] {
+    if (!specs.length) return specs;
+    const names = longhandList(styles, 'animation-name');
+    const durations = longhandList(styles, 'animation-duration');
+    const timing = longhandList(styles, 'animation-timing-function');
+    const delays = longhandList(styles, 'animation-delay');
+    const iterations = longhandList(styles, 'animation-iteration-count');
+    const directions = longhandList(styles, 'animation-direction');
+    const fills = longhandList(styles, 'animation-fill-mode');
+    const play = longhandList(styles, 'animation-play-state');
+    const pick = (values: string[], index: number): string | undefined =>
+        values.length ? values[index % values.length] : undefined;
+    return specs.map((spec, index) => ({
+        ...spec,
+        name: stripQuotes(pick(names, index) || spec.name),
+        durationMs: pick(durations, index) ? parseTimeMs(pick(durations, index)!, spec.durationMs) : spec.durationMs,
+        delayMs: pick(delays, index) ? parseTimeMs(pick(delays, index)!, spec.delayMs) : spec.delayMs,
+        iterationCount: pick(iterations, index) ? parseIteration(pick(iterations, index)!) : spec.iterationCount,
+        direction: (DIRECTION_KEYWORDS.has(String(pick(directions, index) || '').toLowerCase())
+            ? String(pick(directions, index)).toLowerCase()
+            : spec.direction) as ConsoleAnimationSpec['direction'],
+        fillMode: (FILL_KEYWORDS.has(String(pick(fills, index) || '').toLowerCase())
+            ? String(pick(fills, index)).toLowerCase()
+            : spec.fillMode) as ConsoleAnimationSpec['fillMode'],
+        timingFunction: pick(timing, index) || spec.timingFunction,
+        playState: (String(pick(play, index) || '').toLowerCase() === 'paused' ? 'paused' : spec.playState)
+    }));
 }
 
 function parseAnimationShorthand(value: string): ConsoleAnimationSpec | undefined {

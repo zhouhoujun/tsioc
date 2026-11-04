@@ -128,6 +128,32 @@ body {
     background: var(--agent-web-hover);
 }
 
+@keyframes agent-web-working-scan {
+    0%, 100% { color: var(--agent-web-muted); }
+    50% { color: var(--agent-web-code-accent); }
+}
+
+#agent-console .working-scan-char {
+    animation: agent-web-working-scan 1200ms ease-in-out infinite;
+}
+
+#agent-console .working-delay-0 { animation-delay: 0ms; }
+#agent-console .working-delay-1 { animation-delay: 75ms; }
+#agent-console .working-delay-2 { animation-delay: 150ms; }
+#agent-console .working-delay-3 { animation-delay: 225ms; }
+#agent-console .working-delay-4 { animation-delay: 300ms; }
+#agent-console .working-delay-5 { animation-delay: 375ms; }
+#agent-console .working-delay-6 { animation-delay: 450ms; }
+#agent-console .working-delay-7 { animation-delay: 525ms; }
+#agent-console .working-delay-8 { animation-delay: 600ms; }
+#agent-console .working-delay-9 { animation-delay: 675ms; }
+#agent-console .working-delay-10 { animation-delay: 750ms; }
+#agent-console .working-delay-11 { animation-delay: 825ms; }
+#agent-console .working-delay-12 { animation-delay: 900ms; }
+#agent-console .working-delay-13 { animation-delay: 975ms; }
+#agent-console .working-delay-14 { animation-delay: 1050ms; }
+#agent-console .working-delay-15 { animation-delay: 1125ms; }
+
 #agent-console .console-new-messages {
     transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, opacity 120ms ease;
 }

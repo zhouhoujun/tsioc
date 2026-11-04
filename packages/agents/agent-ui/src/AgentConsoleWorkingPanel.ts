@@ -72,13 +72,7 @@ export * from './AgentConsoleInputPanel';
     template: `
     <div class="console-panel console-working-panel" v-style="shellStyle">
         <label class="working-line" v-style="workingLineStyle">
-            <span animated-text
-                render-region="agent-working-animation"
-                :text="animatedLabel"
-                :scan-width="3"
-                :active-style="accentStyle"
-                :trail-style="labelStyle"
-                :base-style="labelStyle">{{animatedLabel}}</span>
+            <span class="working-scan" render-region="agent-working-animation"><span class="working-scan-char {{char.delayClass}}" v-for="char in workingChars">{{char.text}}</span></span>
             <span v-style="labelStyle"> (<span elapsed-time :started-at="state.turnStartedAt" :active="shouldShow"></span> • {{interruptHint}}){{workingDetail}}<span v-show="hasTokenUsage"> · {{totalTokens | number-format}} tokens</span></span>
         </label>
     </div>
@@ -265,6 +259,15 @@ export class AgentConsoleWorkingPanelComponent {
             return '';
         }
         return `• ${this.translator?.translate('agent.turn.working') || 'Working'}`;
+    }
+
+    get workingChars(): Array<{ text: string; delayClass: string }> {
+        // CSS keyframes own the sweep; the delay class only staggers the same
+        // animation across characters so no directive timer is involved.
+        return Array.from(this.animatedLabel).map((text, index) => ({
+            text,
+            delayClass: `working-delay-${index % 16}`
+        }));
     }
 
     get dashboardCountersLabel(): string {

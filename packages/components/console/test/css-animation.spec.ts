@@ -44,6 +44,11 @@ export class ConsoleCssAnimationTest {
             playState: 'running'
         });
 
+        expect(parseConsoleAnimations({
+            animation: 'pulse 100ms linear infinite',
+            'animation-delay': '75ms'
+        })[0]).toMatchObject({ name: 'pulse', durationMs: 100, delayMs: 75, iterationCount: Infinity });
+
         const longhand = parseConsoleAnimations({
             'animation-name': 'pulse, fade',
             'animation-duration': '1s, 2s',

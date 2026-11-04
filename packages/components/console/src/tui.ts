@@ -963,7 +963,9 @@ export class TuiRenderer extends ConsoleRenderer {
             return this.applyAnsi(text, inherited, undefined, true);
         }
         const element = current as ConsoleElement;
-        const styleMap = this.mergeStyles(inherited, this.getStyleMap(element));
+        const elementStyle = this.getStyleMap(element);
+        this.applyCssAnimations(element, elementStyle);
+        const styleMap = this.mergeStyles(inherited, elementStyle);
         const tag = (element.tagName || '').toLowerCase();
         if (tag === 'br') {
             return '';
@@ -1009,7 +1011,9 @@ export class TuiRenderer extends ConsoleRenderer {
             return;
         }
         const element = current as ConsoleElement;
-        const styleMap = this.mergeStyles(inherited, this.getStyleMap(element));
+        const elementStyle = this.getStyleMap(element);
+        this.applyCssAnimations(element, elementStyle);
+        const styleMap = this.mergeStyles(inherited, elementStyle);
         const tag = (element.tagName || '').toLowerCase();
         if (tag === 'br') {
             lines.push([]);
