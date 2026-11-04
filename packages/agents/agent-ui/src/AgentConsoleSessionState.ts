@@ -8,6 +8,7 @@ import {
 } from './console-ports';
 import { projectTimelineContent } from './AgentConsoleTimelineProjection';
 import { resolveDisplayMessages, resolveSessionFooter, resolveSessionHeader } from './AgentConsoleMessageProjection';
+import { applyAbsoluteTokenUsage, applyTokenUsage, resetTurnTokenUsage as resetTurnTokenUsageInState, resolveTokenUsageFromMessages, resolveUsagePayload } from './AgentConsoleTokenUsageState';
 import { AgentMessage, AgentSessionSection, AgentSessionSectionInfo, AgentToolDefinition, ScheduledAgentTask, ContextPreparationReport, TimelineEntry, sortTimelineEntries, NavEntityType, NavFilter, NavSelection, NavTree, applyNavFilter, flattenNav, navigateCursor, resolveNavSelection, ThreadItemEvent, ThreadItemKind, ThreadItemStatus, normalizeThreadItemEvent, CommandExchangeRecord, compareCommandExchangeAsc, DEFAULT_RENDER_POLICY, HarnessProjection } from '@tsdi/agent';
 import type { BackgroundTaskRecord } from '@tsdi/agent-tools';
 import {
@@ -546,7 +547,7 @@ export class AgentConsoleSessionState {
         completionTokens: 0,
         totalTokens: 0
     };
-    protected turnTokenUsageBase: AgentConsoleTokenUsage = {
+    turnTokenUsageBase: AgentConsoleTokenUsage = {
         promptTokens: 0,
         completionTokens: 0,
         totalTokens: 0
@@ -967,9 +968,9 @@ export class AgentConsoleSessionState {
         if (!preserveCommandExecutionMessages) {
             this.commandExecutionMessages = [];
         }
-        const messageUsage = messages.some(message => !!this.resolveUsagePayload(message?.metadata?.usage));
+        const messageUsage = messages.some(message => !!resolveUsagePayload(message?.metadata?.usage));
         if (messageUsage || !preserveCommandExecutionMessages) {
-            this.tokenUsage = this.resolveTokenUsageFromMessages(messages);
+            this.tokenUsage = resolveTokenUsageFromMessages(messages);
         }
         const displayMessages = this.displayMessages;
         if (!displayMessages.length) {
@@ -1194,46 +1195,15 @@ export class AgentConsoleSessionState {
     }
 
     setTokenUsage(usage?: Partial<AgentConsoleTokenUsage> | Record<string, any> | null): void {
-        const source = this.resolveUsagePayload(usage);
-        if (!source) return;
-
-        const promptTokens = this.resolveUsageNumber(source, ['promptTokens', 'prompt_tokens', 'input_tokens']);
-        const completionTokens = this.resolveUsageNumber(source, ['completionTokens', 'completion_tokens', 'output_tokens']);
-        const explicitTotal = this.resolveUsageNumber(source, ['totalTokens', 'total_tokens']);
-        const nextPromptTokens = promptTokens ?? this.turnTokenUsage.promptTokens;
-        const nextCompletionTokens = completionTokens ?? this.turnTokenUsage.completionTokens;
-        const totalTokens = explicitTotal
-            ?? (promptTokens != null || completionTokens != null
-                ? nextPromptTokens + nextCompletionTokens
-                : this.turnTokenUsage.totalTokens);
-
-        this.turnTokenUsage = {
-            promptTokens: nextPromptTokens,
-            completionTokens: nextCompletionTokens,
-            totalTokens
-        };
-        this.tokenUsage = {
-            promptTokens: this.turnTokenUsageBase.promptTokens + nextPromptTokens,
-            completionTokens: this.turnTokenUsageBase.completionTokens + nextCompletionTokens,
-            totalTokens: this.turnTokenUsageBase.totalTokens + totalTokens
-        };
+        applyTokenUsage(this, usage);
     }
 
     setTokenUsageAbsolute(usage?: Partial<AgentConsoleTokenUsage> | Record<string, any> | null): void {
-        const source = this.resolveUsagePayload(usage);
-        if (!source) return;
-
-        const promptTokens = this.resolveUsageNumber(source, ['promptTokens', 'prompt_tokens', 'input_tokens']) ?? 0;
-        const completionTokens = this.resolveUsageNumber(source, ['completionTokens', 'completion_tokens', 'output_tokens']) ?? 0;
-        const totalTokens = this.resolveUsageNumber(source, ['totalTokens', 'total_tokens']) ?? (promptTokens + completionTokens);
-        this.turnTokenUsageBase = { promptTokens, completionTokens, totalTokens };
-        this.turnTokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
-        this.tokenUsage = { promptTokens, completionTokens, totalTokens };
+        applyAbsoluteTokenUsage(this, usage);
     }
 
     resetTurnTokenUsage(): void {
-        this.turnTokenUsageBase = { ...this.tokenUsage };
-        this.turnTokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+        resetTurnTokenUsageInState(this);
     }
 
     get planNudgeActive(): boolean {
@@ -2446,55 +2416,6 @@ export class AgentConsoleSessionState {
             active,
             activationKind: definition.activation?.kind
         };
-    }
-
-    protected resolveUsageNumber(usage: any, keys: string[]): number | undefined {
-        if (!usage || typeof usage !== 'object') {
-            return undefined;
-        }
-        for (const key of keys) {
-            const value = usage[key];
-            if (typeof value === 'number' && Number.isFinite(value)) {
-                return value;
-            }
-        }
-        return undefined;
-    }
-
-    protected resolveUsagePayload(payload: any): Record<string, any> | undefined {
-        if (!payload || typeof payload !== 'object') return undefined;
-        const candidates = [
-            payload.usage,
-            payload.metadata?.usage,
-            payload.message?.metadata?.usage,
-            payload.response?.metadata?.usage,
-            payload
-        ];
-        return candidates.find(candidate => candidate && typeof candidate === 'object'
-            && this.resolveUsageNumber(candidate, [
-                'promptTokens', 'prompt_tokens', 'input_tokens',
-                'completionTokens', 'completion_tokens', 'output_tokens',
-                'totalTokens', 'total_tokens'
-            ]) != null);
-    }
-
-    protected resolveTokenUsageFromMessages(messages: AgentMessage[]): AgentConsoleTokenUsage {
-        return messages.reduce<AgentConsoleTokenUsage>((total, message) => {
-            const usage = message?.metadata?.usage;
-            if (!usage || typeof usage !== 'object') {
-                return total;
-            }
-            const promptTokens = this.resolveUsageNumber(usage, ['promptTokens', 'prompt_tokens', 'input_tokens']);
-            const completionTokens = this.resolveUsageNumber(usage, ['completionTokens', 'completion_tokens', 'output_tokens']);
-            const totalTokens = this.resolveUsageNumber(usage, ['totalTokens', 'total_tokens'])
-                ?? (promptTokens != null || completionTokens != null
-                    ? (promptTokens || 0) + (completionTokens || 0)
-                    : 0);
-            total.promptTokens += promptTokens || 0;
-            total.completionTokens += completionTokens || 0;
-            total.totalTokens += totalTokens || 0;
-            return total;
-        }, { promptTokens: 0, completionTokens: 0, totalTokens: 0 });
     }
 
     expandTabs(value: string): string {
