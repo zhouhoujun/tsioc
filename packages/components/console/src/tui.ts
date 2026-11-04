@@ -341,6 +341,8 @@ export class TuiRenderer extends ConsoleRenderer {
                 const hintStyle = this.parseInlineStyle(element.getAttribute('hintStyle') || '');
                 const optionStyle = this.parseInlineStyle(element.getAttribute('optionStyle') || '');
                 const optionActiveStyle = this.parseInlineStyle(element.getAttribute('optionActiveStyle') || '');
+                const optionClassStyle = this.resolveClassStyle(element.getAttribute('optionClass') || '');
+                const optionActiveClassStyle = this.resolveClassStyle(element.getAttribute('optionActiveClass') || '');
                 const detailLabelStyle = this.parseInlineStyle(element.getAttribute('detailLabelStyle') || '');
                 const detailValueStyle = this.parseInlineStyle(element.getAttribute('detailValueStyle') || '');
                 let parsedOptions: Array<{label: string; value: string}> = [];
@@ -395,7 +397,9 @@ export class TuiRenderer extends ConsoleRenderer {
                             optionLabelColumnWidth,
                             Number.isFinite(descriptionMaxWidth) && descriptionMaxWidth > 0 ? descriptionMaxWidth : 32
                         ),
-                        this.mergeStyles(styleMap, absoluteIndex === safeSelectedIdx ? optionActiveStyle : optionStyle),
+                        this.mergeStyles(styleMap, absoluteIndex === safeSelectedIdx
+                            ? { ...optionClassStyle, ...optionActiveClassStyle, ...optionActiveStyle }
+                            : { ...optionClassStyle, ...optionStyle }),
                         width
                     ));
                     optionClickRows.push({ index: absoluteIndex, row: lines.length - 1 });
@@ -1092,6 +1096,17 @@ export class TuiRenderer extends ConsoleRenderer {
             merged[key] = this.resolveCssValue(merged[key], merged);
         }
         return merged;
+    }
+
+    protected resolveClassStyle(classNames: string): Record<string, string> {
+        const classes = String(classNames || '').trim();
+        if (!classes) {
+            return {};
+        }
+        return resolveConsoleStyleSheet({
+            tagName: 'div',
+            getAttribute: (name: string) => name === 'class' ? classes : null
+        }, this.styleSheetRules);
     }
 
     protected resolveCssValue(value: string, styles: Record<string, string>): string {

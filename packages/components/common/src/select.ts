@@ -15,8 +15,8 @@ export interface CommonSelectOption {
     selector: 'common-select',
     template: `
     <div class="console-panel common-select" role="dialog" aria-label="{{accessibilityLabel}}">
-        <div class="select-shell" v-style="shellStyle">
-            <label class="dialog-close" data-cell-width="2" v-style="closeStyle" @click="close">{{closeLabel}}</label>
+        <div class="select-shell">
+            <label class="dialog-close" data-cell-width="2" @click="close">{{closeLabel}}</label>
             <select class="select-core"
                 aria-label="{{accessibilityLabel}}"
                 title="{{title}}" hint="{{hint}}" meta="{{meta}}"
@@ -24,8 +24,8 @@ export interface CommonSelectOption {
                 selectedIndex="{{selectedIndexText}}"
                 visibleCount="{{visibleCountText}}"
                 detailLines="{{detailLinesJson}}"
-                optionActiveStyle="{{optionActiveStyle}}"
-                optionStyle="{{optionStyle}}"
+                optionClass="common-select-option"
+                optionActiveClass="common-select-option is-selected"
                 @keydown="emitKeydown($event)"
                 @select-option="emitSelection($event)"></select>
         </div>
@@ -41,10 +41,6 @@ export class SelectComponent {
     @Attribute() detailLines: string[] = [];
     @Attribute() accessibilityLabel = 'Selection menu';
     @Attribute() closeLabel = '✕';
-    @Attribute() shellStyle: Record<string, string> | string = {};
-    @Attribute() closeStyle: Record<string, string> | string = {};
-    @Attribute() optionStyle: Record<string, string> | string = {};
-    @Attribute() optionActiveStyle: Record<string, string> | string = {};
     @Attribute() selectAction?: (value: string) => void;
     @Attribute() closeAction?: () => void;
     @Attribute() keydownAction?: (event: KeyboardEvent) => void;

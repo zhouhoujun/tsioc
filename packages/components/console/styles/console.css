@@ -71,3 +71,22 @@
 .common-dialog .dialog-close {
     color: var(--console-meta, #6e7681);
 }
+.select-shell {
+    background: var(--console-dialog-bg, #161b22);
+    color: var(--console-text, #c9d1d9);
+    border: 1px solid var(--console-border, #30363d);
+    border-bottom: none;
+    border-radius: 1;
+    padding: 0 2;
+}
+.common-select .dialog-close {
+    color: var(--console-meta, #6e7681);
+}
+.common-select-option {
+    color: var(--console-meta, #8b949e);
+    padding: 0 1ch;
+}
+.common-select-option.is-selected {
+    color: var(--console-accent, #7fa6d4);
+    font-weight: bold;
+}

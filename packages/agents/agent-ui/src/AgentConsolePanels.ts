@@ -3072,7 +3072,6 @@ export class AgentConsoleSelectPanelComponent {
 
     get menuMetaText(): string { const menu = this.menu; if (!menu || isAgentConsoleSuggestionMenu(menu)) return ''; const window = resolveConsoleSelectWindow(menu.options.length, menu.selectedIndex, this.visibleOptionCount); return window.count < menu.options.length ? `${window.start + 1}-${window.start + window.count}/${menu.options.length}` : ''; }
 
-    get shellStyle() { return this.menu ? menuShellStyle(this.activeTheme) : {}; } get closeStyle() { return DIALOG_CLOSE_STYLE; }
     closeMenu = async (): Promise<void> => { await this.state.cancelSelectMenu(); };
 
     get menuOptions(): Array<{ label: string; value: string; description?: string }> {
