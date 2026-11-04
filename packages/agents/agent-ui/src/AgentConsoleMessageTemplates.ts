@@ -8,7 +8,7 @@ const ITEM_TEMPLATE = `
     <div class="message-block-spacing" v-if="spacerBefore">​</div>
     <div class="message-item-block {{templateClass}}" data-template-kind="{{templateKind}}" data-semantic-kind="{{semanticKind}}" data-status="{{item.statusKind}}" v-style="blockStyle">
         <div class="message-line-wrap" v-for="line in lines">
-            <label class="message-line" v-if="line.toggleMode === 'inline'" v-style="line.itemStyle" aria-label="{{line.ariaLabel}}" continuationIndent="{{line.continuationIndent}}" data-hover="fade" @click="toggleMessageDetail(line)">
+            <label class="message-line" v-if="line.toggleMode" v-style="line.itemStyle" aria-label="{{line.ariaLabel}}" continuationIndent="{{line.continuationIndent}}" data-hover="fade" @click="toggleMessageDetail(line)">
                 <span v-style="line.statusStyle">{{line.status}}</span>
                 <span v-style="line.roleStyle" v-show="line.role">{{line.role}}</span>
                 <span v-style="line.metaStyle" v-show="line.meta">{{line.meta}}</span>
@@ -79,7 +79,7 @@ export class AgentConsoleRoutedTokensComponent {
     selector: 'agent-console-routed-line',
     imports: [AgentConsoleRoutedTokensComponent],
     template: `
-        <label class="message-line" v-style="lineStyle" aria-label="{{ariaLabel}}" data-hover="{{line.toggleMode === 'inline' ? 'fade' : 'none'}}" @click="toggleMessageDetail()">
+        <label class="message-line" v-style="lineStyle" aria-label="{{ariaLabel}}" data-hover="{{line.toggleMode ? 'fade' : 'none'}}" @click="toggleMessageDetail()">
             <span v-style="statusStyle">{{status}}</span>
             <span v-style="roleStyle" v-show="role">{{role}}</span>
             <span v-style="metaStyle" v-show="meta">{{meta}}</span>
@@ -111,8 +111,14 @@ export class AgentConsoleRoutedLineComponent {
 
     toggleMessageDetail(): void {
         const messageId = String(this.line?.messageId || '').trim();
-        if (!messageId || this.line?.toggleMode !== 'inline') return;
+        if (!messageId || !this.line?.toggleMode) return;
         this.state.setSelectedMessageId(messageId);
+        if (this.line.toggleMode === 'detail') {
+            if (this.state.messageDetailOpen) {
+                this.state.closeMessageDetail();
+            }
+            return;
+        }
         this.state.toggleMessageExpanded(messageId);
     }
 }
@@ -176,8 +182,14 @@ export abstract class AgentConsoleMessageTemplateBase {
 
     toggleMessageDetail(line: AgentConsoleRenderedLine): void {
         const messageId = String(line?.messageId || '').trim();
-        if (!messageId || line?.toggleMode !== 'inline') return;
+        if (!messageId || !line?.toggleMode) return;
         this.state.setSelectedMessageId(messageId);
+        if (line.toggleMode === 'detail') {
+            if (this.state.messageDetailOpen) {
+                this.state.closeMessageDetail();
+            }
+            return;
+        }
         this.state.toggleMessageExpanded(messageId);
     }
 

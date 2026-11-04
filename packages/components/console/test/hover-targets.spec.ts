@@ -104,14 +104,37 @@ export class ConsoleHoverTargetsTest {
         }
     }
 
+    @Test('hover timing and colour come from the console stylesheet')
+    hoverReadsCssTransition() {
+        const renderer = new TuiRenderer();
+        renderer.setStyleSheet('.hover-probe { transition: background-color 80ms linear; } .hover-probe:hover { background-color: #123456; }');
+        const root = renderer.createElement('div');
+        const row = hoverableRow(renderer, 'probe', { class: 'hover-probe' });
+        renderer.appendChild(root, row);
+        const clock = { subscribe() { }, unsubscribe() { } };
+        const surface: any = new TuiTerminalSurface({
+            renderer, root, width: 40, output: { write() { } }, animationClock: clock as any
+        });
+        try {
+            surface.render();
+            const target = surface.clickTargets.find((item: any) => item.node === row);
+            expect(target).toBeTruthy();
+            surface.setHoverTarget(target);
+            expect(surface.hoverDurationMs).toEqual(80);
+            expect(surface.hoverTiming).toEqual('linear');
+            expect(surface.hoverBackgroundTo).toEqual([18, 52, 86]);
+        } finally {
+            surface.destroy();
+        }
+    }
+
     @Test('a dialog ✕ close label targets only its glyph, not the row')
     dialogCloseTargetsGlyph() {
         const renderer = new TuiRenderer();
         const root = renderer.createElement('div');
         const close = hoverableRow(renderer, '✕', {
             class: 'dialog-close',
-            'data-cell-width': '2',
-            style: 'text-align: right'
+            'data-cell-width': '2'
         });
         renderer.appendChild(root, close);
         const surface = new TuiTerminalSurface({ renderer, root, width: 40, output: { write() { } } });

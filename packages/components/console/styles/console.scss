@@ -44,6 +44,18 @@ $idle: var(--console-idle, #6fa37a);
 .message-line {
     color: $text;
 }
+.message-line,
+.common-tab,
+.common-tab-close,
+.dialog-close {
+    transition: background-color 140ms ease;
+}
+.message-line[data-hover="fade"]:hover,
+.common-tab:hover,
+.common-tab-close:hover,
+.dialog-close:hover {
+    background-color: var(--console-hover-bg, #303e4f);
+}
 .message-line [data-hover="fade"] {
     color: $meta;
 }
@@ -81,6 +93,12 @@ $idle: var(--console-idle, #6fa37a);
 .common-dialog-hint,
 .common-dialog .dialog-close {
     color: $meta;
+}
+/* The close affordance is the dialog's top-right corner, never a leading
+   left-aligned row. TUI and web renderers both consume this declaration. */
+.dialog-close {
+    display: block;
+    text-align: right;
 }
 .select-shell {
     background: $dialog-bg;

@@ -259,6 +259,8 @@ export interface TuiTerminalSurfaceRenderer {
         regions?: TerminalRenderRegion[];
         clickTargets?: TerminalClickTarget[];
     };
+    /** CSS-resolved hover styles for the element under the pointer. */
+    resolveHoverStyle?(element: ConsoleElement): Record<string, string>;
 }
 
 export interface TuiTerminalSurfaceOptions {
@@ -1040,17 +1042,23 @@ export class TuiTerminalSurface {
     protected hoverPaintTarget?: TerminalClickTarget;
     protected hoverAlpha = 0;
     protected hoverClock?: AnimationClock;
+    protected hoverFromAlpha = 0;
+    protected hoverToAlpha = 0;
+    protected hoverStartedAt = 0;
+    protected hoverDurationMs = 160;
+    protected hoverTiming = 'ease';
+    protected hoverBackgroundFrom: [number, number, number] = [16, 22, 29];
+    protected hoverBackgroundTo?: [number, number, number];
     protected readonly handleHoverAnimation = (): void => {
-        const step = 0.25;
-        if (this.hoverTarget) {
-            this.hoverAlpha = Math.min(1, this.hoverAlpha + step);
-        } else {
-            this.hoverAlpha = Math.max(0, this.hoverAlpha - step);
-        }
+        const duration = Math.max(1, this.hoverDurationMs);
+        const progress = Math.min(1, Math.max(0, (Date.now() - this.hoverStartedAt) / duration));
+        const eased = easeHoverProgress(progress, this.hoverTiming);
+        this.hoverAlpha = this.hoverFromAlpha + (this.hoverToAlpha - this.hoverFromAlpha) * eased;
         this.requestRender();
-        if ((this.hoverTarget && this.hoverAlpha >= 1) || (!this.hoverTarget && this.hoverAlpha <= 0)) {
+        if (progress >= 1) {
+            this.hoverAlpha = this.hoverToAlpha;
             this.stopHoverAnimation();
-            if (!this.hoverTarget) {
+            if (!this.hoverTarget && this.hoverToAlpha <= 0) {
                 this.hoverPaintTarget = undefined;
             }
         }
@@ -1594,10 +1602,19 @@ export class TuiTerminalSurface {
             && current.y === target.y && current.height === target.height
             && target.x <= current.x + current.width + 1
             && current.x <= target.x + target.width + 1;
+        if (target) {
+            this.configureHoverAnimation(target);
+        }
         this.hoverTarget = target;
+        this.hoverFromAlpha = this.hoverAlpha;
+        this.hoverToAlpha = target ? 1 : 0;
+        this.hoverStartedAt = Date.now();
         if (target) {
             this.hoverPaintTarget = target;
-            if (!continuous) this.hoverAlpha = 0;
+            if (!continuous) {
+                this.hoverAlpha = 0;
+                this.hoverFromAlpha = 0;
+            }
         }
         if (!this.options.animationClock) {
             this.hoverPaintTarget = target;
@@ -1606,6 +1623,35 @@ export class TuiTerminalSurface {
         }
         this.startHoverAnimation();
         return true;
+    }
+
+    /** Read hover duration/colour from the same CSS the renderers consume. */
+    protected configureHoverAnimation(target: TerminalClickTarget): void {
+        const element = target.node as ConsoleElement;
+        this.hoverDurationMs = 160;
+        this.hoverTiming = 'ease';
+        this.hoverBackgroundTo = undefined;
+        const styles = this.options.renderer.resolveHoverStyle?.(element);
+        if (!styles) {
+            return;
+        }
+        const transition = String(styles.transition || styles['transition-duration'] || '');
+        const duration = /([\d.]+)\s*(ms|s)\b/i.exec(transition);
+        if (duration) {
+            const value = Number(duration[1]);
+            const milliseconds = duration[2].toLowerCase() === 's' ? value * 1000 : value;
+            if (Number.isFinite(milliseconds) && milliseconds > 0) {
+                this.hoverDurationMs = Math.max(1, milliseconds);
+            }
+        }
+        const timing = /\b(linear|ease-in-out|ease-in|ease-out|ease)\b/i.exec(transition);
+        if (timing) {
+            this.hoverTiming = timing[1].toLowerCase();
+        }
+        const background = parseHoverColor(styles['background-color'] || styles.background);
+        if (background) {
+            this.hoverBackgroundTo = background;
+        }
     }
 
     protected startHoverAnimation(): void {
@@ -1636,7 +1682,9 @@ export class TuiTerminalSurface {
         // Fade a neutral background instead of a hard reverse-video flip so
         // tab and close-button hover read as a transition.
         const mix = (from: number, to: number) => Math.round(from + (to - from) * alpha);
-        const background = `\x1b[48;2;${mix(16, 48)};${mix(22, 62)};${mix(29, 78)}m`;
+        const to = this.hoverBackgroundTo || [48, 62, 78];
+        const from = this.hoverBackgroundFrom;
+        const background = `\x1b[48;2;${mix(from[0], to[0])};${mix(from[1], to[1])};${mix(from[2], to[2])}m`;
         for (let offset = 0; offset < Math.max(1, target.height); offset++) {
             const row = target.y + offset;
             if (row < 0 || row >= lines.length) {
@@ -2572,6 +2620,44 @@ export const TERMINAL_ENABLE_BRACKETED_PASTE_SEQUENCE = '\x1b[?2004h';
 export const TERMINAL_DISABLE_BRACKETED_PASTE_SEQUENCE = '\x1b[?2004l';
 const BRACKETED_PASTE_START = '\u001b[200~';
 const BRACKETED_PASTE_END = '\u001b[201~';
+
+function parseHoverColor(value?: string): [number, number, number] | undefined {
+    const text = String(value || '').trim().toLowerCase();
+    const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/.exec(text);
+    if (hex) {
+        const raw = hex[1].length === 3
+            ? hex[1].split('').map(char => `${char}${char}`).join('')
+            : hex[1];
+        return [
+            parseInt(raw.slice(0, 2), 16),
+            parseInt(raw.slice(2, 4), 16),
+            parseInt(raw.slice(4, 6), 16)
+        ];
+    }
+    const rgb = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/.exec(text);
+    if (rgb) {
+        return [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])];
+    }
+    return undefined;
+}
+
+function easeHoverProgress(progress: number, timing: string): number {
+    const t = Math.max(0, Math.min(1, progress));
+    switch (timing) {
+        case 'linear':
+            return t;
+        case 'ease-in':
+            return t * t * t;
+        case 'ease-out':
+            return 1 - Math.pow(1 - t, 3);
+        case 'ease-in-out':
+            return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        default:
+            // CSS `ease`: cubic-bezier(0.25, 0.1, 0.25, 1), approximated by
+            // the same smooth ease-out curve used by the short TUI fades.
+            return 1 - Math.pow(1 - t, 3);
+    }
+}
 
 export const TUI_MOUSE_DRAG_THRESHOLD = 3;
 // How long the surface keeps mouse tracking disabled after a selection handoff

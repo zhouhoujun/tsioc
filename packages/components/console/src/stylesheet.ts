@@ -18,6 +18,8 @@ export interface ConsoleStyleSelector {
     tag?: string;
     classes: string[];
     attributes: Array<{ name: string; value?: string }>;
+    /** Apply only while the pointer hovers this element. */
+    hover?: boolean;
 }
 
 export function parseConsoleStyleSheet(css: string): ConsoleStyleRule[] {
@@ -31,18 +33,27 @@ export function parseConsoleStyleSheet(css: string): ConsoleStyleRule[] {
             continue;
         }
         for (const selector of selectorText.split(',')) {
-            const trimmed = selector.trim();
+            let trimmed = selector.trim();
+            const hover = trimmed.endsWith(':hover');
+            if (hover) {
+                trimmed = trimmed.slice(0, -':hover'.length).trim();
+            }
             if (!trimmed || /[:>+~]/.test(trimmed)) {
                 // Descendant/pseudo selectors are intentionally not guessed;
                 // keep the parser honest and let the host compile them away.
                 continue;
             }
+            const parsed = parseSelector(trimmed);
+            if (!parsed) {
+                continue;
+            }
+            parsed.hover = hover;
             rules.push({
-                selector: trimmed,
+                selector: selector.trim(),
                 declarations,
-                specificity: selectorSpecificity(trimmed),
+                specificity: selectorSpecificity(trimmed) + (hover ? 10 : 0),
                 order: order++,
-                parsed: parseSelector(trimmed)
+                parsed
             });
         }
     }
@@ -53,7 +64,8 @@ const styleCache = new WeakMap<ConsoleStyleRule[], Map<string, Record<string, st
 
 export function resolveConsoleStyleSheet(
     element: { tagName?: string; getAttribute?: (name: string) => string | null },
-    rules: ConsoleStyleRule[]
+    rules: ConsoleStyleRule[],
+    hovered = false
 ): Record<string, string> {
     const tag = String(element?.tagName || '').toLowerCase();
     const className = String(element?.getAttribute?.('class') || '').trim();
@@ -64,7 +76,7 @@ export function resolveConsoleStyleSheet(
             attributeEntries.push(`${name}=${String(value)}`);
         }
     }
-    const cacheKey = `${tag}\u0000${className}\u0000${attributeEntries.join('\u0001')}`;
+    const cacheKey = `${hovered ? 'h' : 'n'}\u0000${tag}\u0000${className}\u0000${attributeEntries.join('\u0001')}`;
     let bucket = styleCache.get(rules);
     if (!bucket) {
         bucket = new Map();
@@ -82,7 +94,7 @@ export function resolveConsoleStyleSheet(
     }
     const matched: ConsoleStyleRule[] = [];
     for (const rule of rules) {
-        if (selectorMatches(rule.parsed || (rule.parsed = parseSelector(rule.selector)), tag, classes, attributes)) {
+        if (selectorMatches(rule.parsed || (rule.parsed = parseSelector(rule.selector)), tag, classes, attributes, hovered)) {
             matched.push(rule);
         }
     }
@@ -102,9 +114,10 @@ function selectorMatches(
     parsed: ConsoleStyleSelector | undefined,
     tag: string,
     classes: Set<string>,
-    attributes: Map<string, string>
+    attributes: Map<string, string>,
+    hovered: boolean
 ): boolean {
-    if (!parsed) {
+    if (!parsed || (parsed.hover && !hovered)) {
         return false;
     }
     if (parsed.tag && parsed.tag !== tag) {

@@ -117,6 +117,17 @@ body {
 #agent-console common-tab-bar .common-tab,
 #agent-console common-tab-bar .common-tab-new,
 #agent-console .web-code-head button,
+#agent-console .dialog-close {
+    display: block;
+    text-align: right;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 140ms ease, color 140ms ease;
+}
+#agent-console .dialog-close:hover {
+    background: var(--agent-web-hover);
+}
+
 #agent-console .console-new-messages {
     transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, opacity 120ms ease;
 }

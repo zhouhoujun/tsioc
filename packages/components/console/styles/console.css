@@ -33,6 +33,18 @@
 .message-line {
     color: var(--console-text, #c9d1d9);
 }
+.message-line,
+.common-tab,
+.common-tab-close,
+.dialog-close {
+    transition: background-color 140ms ease;
+}
+.message-line[data-hover="fade"]:hover,
+.common-tab:hover,
+.common-tab-close:hover,
+.dialog-close:hover {
+    background-color: var(--console-hover-bg, #303e4f);
+}
 .message-line [data-hover="fade"] {
     color: var(--console-meta, #6e7681);
 }
@@ -70,6 +82,11 @@
 .common-dialog-hint,
 .common-dialog .dialog-close {
     color: var(--console-meta, #6e7681);
+}
+
+.dialog-close {
+    display: block;
+    text-align: right;
 }
 .select-shell {
     background: var(--console-dialog-bg, #161b22);

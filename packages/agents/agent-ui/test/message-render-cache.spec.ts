@@ -31,6 +31,20 @@ export class MessageProjectionCacheTest {
         expect(second.some(message => message.id === 'a2')).toBe(true);
     }
 
+    @Test('detail view closes from the selected row without instructional copy')
+    detailViewHasNoInstructionalLabel() {
+        const state = this.state();
+        state.setSelectedMessageId('a1');
+        state.openMessageDetail(false);
+        const panel = new AgentConsoleMessagesPanelComponent(state);
+        const lines = panel.renderedMessageItems.flatMap(item => item.lines);
+
+        expect(lines.some(line => /Click to collapse|Press Enter to collapse/i.test(String(line.content || '')))).toBe(false);
+        expect(panel.renderedMessageItems
+            .find(item => item.lines.some(line => line.messageId === 'a1'))
+            ?.lines.every(line => line.toggleMode === 'detail')).toBe(true);
+    }
+
     @Test('streaming only re-renders the message whose content changed')
     streamingReusesUnchangedItems() {
         const state = this.state();

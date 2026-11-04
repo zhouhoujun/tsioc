@@ -319,25 +319,17 @@ export class AgentConsoleMessagesPanelComponent {
 
     onMessageLineClick(line?: AgentConsoleRenderedLine): void {
         const messageId = String(line?.messageId || '').trim();
-        if (!messageId) {
-            return;
-        }
-        const sameMessageSelected = this.state.selectedMessageId === messageId;
-        if (sameMessageSelected && this.state.messageDetailOpen && line?.toggleContent) {
-            this.state.closeMessageDetail();
-            return;
-        }
-        if (!line?.toggleContent) {
+        if (!messageId || !line?.toggleMode) {
             return;
         }
         this.state.setSelectedMessageId(messageId);
-        const truncatedItem = this.renderedMessageItems.find(item =>
-            item.lines.some(renderedLine => renderedLine.messageId === messageId && renderedLine.previewCollapsed)
-        );
-        if (!truncatedItem) {
+        if (line.toggleMode === 'detail') {
+            if (this.state.messageDetailOpen) {
+                this.state.closeMessageDetail();
+            }
             return;
         }
-        this.state.openMessageDetail(false);
+        this.state.toggleMessageExpanded(messageId);
     }
 
     /** Rendered row offset (0-based) of one message inside the transcript region. */
@@ -347,41 +339,18 @@ export class AgentConsoleMessagesPanelComponent {
 
     get renderedMessageItems(): AgentConsoleRenderedMessageItem[] {
         const items = this.messageItems;
-        const detailItems = !this.state.messageDetailOpen ? items : items.map(item => {
-            if (!item.lines.some(line => line.messageId === this.state.selectedMessageId)) {
-                return item;
-            }
-            const baseLine = item.lines[item.lines.length - 1];
-            const content = this.messageCollapseLabel();
-            const toggleStyle = { ...(baseLine.lineStyle || {}), cursor: 'pointer' };
-            return {
-                ...item,
-                lines: [...item.lines, {
-                    ...baseLine,
-                    previewCollapsed: true,
-                    prefix: '',
-                    prefixStyle: {},
-                    content,
-                    toggleContent: content,
-                    tokens: [{ text: content, tone: 'muted', style: toggleStyle }],
-                    itemStyle: {
-                        ...(baseLine.itemStyle || {}),
-                        padding: '1em 1ch'
-                    },
-                    lineStyle: toggleStyle
-                }]
-            };
-        });
-        return detailItems as AgentConsoleRenderedMessageItem[];
-    }
-
-    protected messageCollapseLabel(): string {
-        if (this.state.consoleOptions.messageToggleInteraction === 'enter') {
-            return this.translator?.translate('agent.message.collapseEnter')
-                || 'Press Enter to collapse';
+        if (!this.state.messageDetailOpen) {
+            return items;
         }
-        return this.translator?.translate('agent.message.collapse')
-            || 'Click to collapse';
+        // Detail view has no instructional footer row. The selected message's
+        // own rows are the close affordance: clicking any row returns to the
+        // transcript, while Esc keeps working everywhere.
+        return items.map(item => item.lines.some(line => line.messageId === this.state.selectedMessageId)
+            ? {
+                ...item,
+                lines: item.lines.map(line => ({ ...line, toggleMode: 'detail' as const, toggleContent: '' }))
+            }
+            : item);
     }
 
     protected resolveMarkdownToneStyle(tone: AgentConsoleMarkdownTone): Record<string, string> {

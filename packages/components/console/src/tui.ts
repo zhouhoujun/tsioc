@@ -1098,6 +1098,13 @@ export class TuiRenderer extends ConsoleRenderer {
         return merged;
     }
 
+    /** Resolved styles while the pointer hovers this element (CSS :hover). */
+    resolveHoverStyle(element: ConsoleElement): Record<string, string> {
+        const base = resolveConsoleStyleSheet(element, this.styleSheetRules);
+        const hover = resolveConsoleStyleSheet(element, this.styleSheetRules, true);
+        return this.mergeStyles(base, hover);
+    }
+
     protected resolveClassStyle(classNames: string): Record<string, string> {
         const classes = String(classNames || '').trim();
         if (!classes) {

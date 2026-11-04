@@ -105,12 +105,15 @@ export class AgentConsoleMessageLineComponent {
             this.state.toggleMessageExpanded(messageId);
             return;
         }
-        this.state.setMessagesFocused(true);
-        if (!this.toggleContent) return;
-        if (this.state.messageDetailOpen && this.state.selectedMessageId === messageId) {
-            this.state.closeMessageDetail();
+        if (this.line?.toggleMode === 'detail') {
+            this.state.setSelectedMessageId(messageId);
+            if (this.state.messageDetailOpen) {
+                this.state.closeMessageDetail();
+            }
             return;
         }
+        this.state.setMessagesFocused(true);
+        if (!this.toggleContent) return;
         this.state.setSelectedMessageId(messageId);
         this.state.openMessageDetail(false);
     }
