@@ -252,6 +252,7 @@ import {
     runVimCommand
 } from './AgentConsoleSettingsCommands';
 import { AgentConsoleRuntimeHost, runFastCommand, runRawModeCommand, runStatusCommand, runStatuslineCommand, runThemeCommand, runTitleCommand } from './AgentConsoleRuntimeCommands';
+import { applyTheme as applyThemeInState, persistGlobalKeymap as persistGlobalKeymapInState, persistSettings as persistSettingsInState, restoreGlobalKeymap as restoreGlobalKeymapInState, restoreRawMode as restoreRawModeInState, restoreSettings as restoreSettingsInState, restoreStatusline as restoreStatuslineInState, restoreTheme as restoreThemeInState, restoreTitle as restoreTitleInState } from './AgentConsoleSettingsRuntime';
 import {
     runtimeHost,
     keymapCommandHost,
@@ -1550,6 +1551,15 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     get rootStyle(): string { return resolveAgentConsoleCssVariables(this.state?.theme); }
+    protected async restoreGlobalKeymap(): Promise<void> { return restoreGlobalKeymapInState(this); }
+    protected async persistGlobalKeymap(): Promise<void> { return persistGlobalKeymapInState(this); }
+    protected async restoreTheme(): Promise<void> { return restoreThemeInState(this); }
+    protected async applyTheme(value: string): Promise<boolean> { return applyThemeInState(this, value); }
+    protected async restoreStatusline(): Promise<void> { return restoreStatuslineInState(this); }
+    protected async restoreTitle(): Promise<void> { return restoreTitleInState(this); }
+    protected async restoreRawMode(): Promise<void> { return restoreRawModeInState(this); }
+    protected async restoreSettings(): Promise<void> { return restoreSettingsInState(this); }
+    protected async persistSettings(patch: Partial<AgentConsoleSettingsData>): Promise<void> { return persistSettingsInState(this, patch); }
     protected gitSnapshotCommandHost(): GitSnapshotCommandHost { return gitSnapshotCommandHost(this); }
     protected shellCommandHost(): ShellCommandHost { return shellCommandHost(this); }
 
@@ -2448,35 +2458,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         }
     }
 
-    protected async restoreGlobalKeymap(): Promise<void> {
-        const persisted = await this.keymapStore?.load(this.state.workspace) || {};
-        this.globalKeymap!.configure({ ...(this.options.ui?.keymap || {}), ...persisted });
-        const contexts = await this.keymapStore?.loadContexts(this.state.workspace) || {};
-        AGENT_CONSOLE_KEYMAP_CONTEXTS.forEach(context => {
-            if (context !== 'global' && contexts[context]) {
-                this.globalKeymap!.configureContext(context, contexts[context]);
-            }
-        });
-    }
 
-    protected async persistGlobalKeymap(): Promise<void> {
-        const contexts: Partial<Record<AgentConsoleKeymapContext, Record<string, string | null>>> = {};
-        AGENT_CONSOLE_KEYMAP_CONTEXTS.forEach(context => {
-            if (context !== 'global') {
-                const bindings = this.globalKeymap!.customBindingsFor(context);
-                if (Object.keys(bindings).length) contexts[context] = bindings;
-            }
-        });
-        await this.keymapStore?.save(this.state.workspace, this.globalKeymap!.customBindings, contexts);
-    }
 
-    protected async restoreTheme(): Promise<void> {
-        const persisted = await this.themeStore?.load(this.resolveHistoryWorkspace());
-        if (persisted) {
-            this.activeThemeName = persisted;
-            this.state.setTheme(agentConsoleThemes[persisted]);
-        }
-    }
+
+
+
 
 
 
@@ -2509,98 +2495,17 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return runQueueCommandView(this.rpcCommandHost(), args);
     }
 
-    protected async applyTheme(value: string): Promise<boolean> {
-        if (!isAgentConsoleThemeName(value)) {
-            this.notify(formatAgentUiNotice(this.translator, 'unknownThemeValue', { value: value, names: agentConsoleThemeNames.join(', ') }));
-            return true;
-        }
-        this.activeThemeName = value;
-        this.state.setTheme(agentConsoleThemes[value]);
-        try {
-            await this.themeStore?.save(this.resolveHistoryWorkspace(), value);
-        } catch (error: any) {
-            this.notify(error?.message || formatAgentUiNotice(this.translator, 'themeApplySaveFailed', { theme: value }));
-            return true;
-        }
-        this.notify(formatAgentUiNotice(this.translator, 'themeSet', { value: value }));
-        return true;
-    }
 
-    protected async restoreStatusline(): Promise<void> {
-        const persisted = await this.statuslineStore?.load(this.resolveHistoryWorkspace());
-        if (persisted) {
-            this.state.setStatusline(persisted);
-        }
-    }
 
-    protected async restoreTitle(): Promise<void> {
-        const persisted = await this.titleStore?.load(this.resolveHistoryWorkspace());
-        if (persisted) {
-            this.state.setTitleFields(persisted);
-        }
-    }
 
-    protected async restoreRawMode(): Promise<void> {
-        const persisted = await this.rawModeStore?.load(this.resolveHistoryWorkspace());
-        if (persisted) {
-            this.state.setRawMode(persisted);
-        }
-    }
 
-    protected async restoreSettings(): Promise<void> {
-        const persisted = await this.settingsStore?.load(this.resolveHistoryWorkspace());
-        if (!persisted) {
-            return;
-        }
-        if (persisted.language && this.translator?.availableLocales.includes(persisted.language)) {
-            this.translator.setLocale(persisted.language);
-        }
-        if (typeof persisted.vimMode === 'boolean') {
-            this.state.setVimMode(persisted.vimMode);
-        }
-        if (typeof persisted.showThinking === 'boolean') {
-            this.state.setShowThinking(persisted.showThinking);
-        }
-        if (typeof persisted.showTimestamps === 'boolean') {
-            this.state.setShowTimestamps(persisted.showTimestamps);
-        }
-        if (typeof persisted.showToolOutput === 'boolean') {
-            this.state.setShowToolOutput(persisted.showToolOutput);
-        }
-        if (typeof persisted.showUsername === 'boolean') {
-            this.state.setShowUsername(persisted.showUsername);
-        }
-        if (persisted.timelineViewMode) {
-            this.state.setTimelineMode(persisted.timelineViewMode);
-        } else if (typeof persisted.timelineMode === 'boolean') {
-            this.state.setTimelineMode(persisted.timelineMode ? 'compact' : 'off');
-        }
-        applyPersistedLayout(this.state, persisted, () => this.surfaceAccessor?.restartRendering?.()); applyPersistedPreferences(this.options, persisted); applyPersistedModelProfile(this.options, persisted.modelProfile); if (persisted.modelProfile) { this.state.setModelProfile(persisted.modelProfile); }
-        if (persisted.thinkingLevel) {
-            this.modelReasoningEffort = persisted.thinkingLevel;
-            this.options.model = this.options.model || {};
-            this.options.model.reasoningEffort = persisted.thinkingLevel;
-        }
-        if (typeof persisted.yoloMode === 'boolean') {
-            await this.setYoloMode(persisted.yoloMode, false);
-        }
-        if (persisted.securityLevel) {
-            this.state.securityLevel = persisted.securityLevel;
-        }
-        // restore task & plan filter state
-        if (persisted.taskFilter) {
-            this.state.selectedTaskFilter = persisted.taskFilter;
-            this.state.selectedTaskLineageRootId = persisted.taskLineageRootId || '';
-        }
-        if (persisted.planTodoFilter) { this.state.planTodoFilter = persisted.planTodoFilter; }
-        if (Array.isArray(persisted.openSessionIds)) { this.state.setOpenSessionIds(persisted.openSessionIds); }
-    }
 
-    protected async persistSettings(patch: Partial<AgentConsoleSettingsData>): Promise<void> {
-        const workspace = this.resolveHistoryWorkspace();
-        const current = await this.settingsStore?.load(workspace) || {};
-        await this.settingsStore?.save(workspace, { ...current, ...patch });
-    }
+
+
+
+
+
+
 
     protected async runTitleCommand(args?: string): Promise<boolean> {
         return runTitleCommand(runtimeHost(this), args);
