@@ -94,6 +94,7 @@ import { agentConsoleAllCommandHints, agentConsoleCommandHints, getAgentConsoleC
 import { AgentConsoleInputHistoryController, DefaultAgentConsoleInputHistoryController } from './AgentConsoleInputHistory';
 import { AgentConsoleFocusLayers, DefaultAgentConsoleFocusLayers } from './AgentConsoleFocusLayers';
 import { AgentConsoleCommandExecutionController, DefaultAgentConsoleCommandExecutionController } from './AgentConsoleCommandExecutionState';
+import { appendPendingAttachment as appendPendingAttachmentInState, clearPendingAttachments as clearPendingAttachmentsInState, moveInputCursor as moveInputCursorInState, moveInputCursorToEdge as moveInputCursorToEdgeInState, setInput as setInputInState, setInputCursor as setInputCursorInState, setInputPlaceholder as setInputPlaceholderInState, setMessagesFocused as setMessagesFocusedInState, setPendingAttachments as setPendingAttachmentsInState, setPlanNudgesEnabled as setPlanNudgesEnabledInState, setTranscriptFollowProvider as setTranscriptFollowProviderInState, syncTranscriptFollowing as syncTranscriptFollowingInState } from './AgentConsoleInputState';
 import { closeCommandOutputs as closeCommandOutputsInState, closeTextOverlay as closeTextOverlayInState, copySelectedCommandOutput as copySelectedCommandOutputInState, hasCommandOutputsFocus as hasCommandOutputsFocusInState, hasTextOverlayFocus as hasTextOverlayFocusInState, loadCommandOutputHistory as loadCommandOutputHistoryInState, moveCommandOutputSelection as moveCommandOutputSelectionInState, openCommandOutputs as openCommandOutputsInState, openTextOverlay as openTextOverlayInState, persistCommandOutput as persistCommandOutputInState, pushCommandOutput as pushCommandOutputInState, scrollCommandOutputsPage as scrollCommandOutputsPageInState, scrollCommandOutputsToEdge as scrollCommandOutputsToEdgeInState, scrollTextOverlay as scrollTextOverlayInState, scrollTextOverlayPage as scrollTextOverlayPageInState, scrollTextOverlayToEdge as scrollTextOverlayToEdgeInState, setCommandOutputStore as setCommandOutputStoreInState, setCommandOutputsFilter as setCommandOutputsFilterInState, setNotice as setNoticeInState, toggleCommandOutputs as toggleCommandOutputsInState } from './AgentConsoleOverlayState';
 import { acceptSelectMenu as acceptSelectMenuInState, acceptSelectMenuIndex as acceptSelectMenuIndexInState, cancelSelectMenu as cancelSelectMenuInState, chooseSelectMenuIndex as chooseSelectMenuIndexInState, closeSelectMenu as closeSelectMenuInState, completeSelectMenu as completeSelectMenuInState, confirmSelectMenu as confirmSelectMenuInState, confirmSelectMenuAndKeepOpen as confirmSelectMenuAndKeepOpenInState, dismissSelectMenuLayer as dismissSelectMenuLayerInState, isArgumentSuggestionMenu as isArgumentSuggestionMenuInState, moveSelectMenu as moveSelectMenuInState, moveSelectMenuPage as moveSelectMenuPageInState, moveSelectMenuToEdge as moveSelectMenuToEdgeInState, openSelectMenu as openSelectMenuInState, openSubSelectMenu as openSubSelectMenuInState, resolveSelectMenu as resolveSelectMenuInState, resolveSelectedSelectMenuOption, selectAsync as selectAsyncInState, setSelectMenuIndex as setSelectMenuIndexInState, shouldSubmitConfirmedSelectMenuValue as shouldSubmitConfirmedSelectMenuValueInState } from './AgentConsoleSelectMenuState';
 import { appendAssistantErrorMessage as appendAssistantErrorMessageInState, appendUiEventMessage as appendUiEventMessageInState, clearUiEventMessages as clearUiEventMessagesInState, createUiEventMessage as createUiEventMessageInState, getNavViewScroll as getNavViewScrollInState, isSameUiEventMessage as isSameUiEventMessageInState, markTimelineReconnecting as markTimelineReconnectingInState, navigateNav as navigateNavInState, projectCommandExchangeRecord as projectCommandExchangeRecordInState, projectThreadItem as projectThreadItemInState, qualifyUiEventKey as qualifyUiEventKeyInState, removeUiEventMessage as removeUiEventMessageInState, resolveNavSelectionTarget as resolveNavSelectionTargetInState, resolveUiEventDurationFallback as resolveUiEventDurationFallbackInState, seedCommandExchange as seedCommandExchangeInState, seedNavTree as seedNavTreeInState, seedTimeline as seedTimelineInState, setNavFilter as setNavFilterInState, setNavSelection as setNavSelectionInState, setNavViewScroll as setNavViewScrollInState, toggleTimelineCollapse as toggleTimelineCollapseInState, upsertUiEventMessage as upsertUiEventMessageInState, withoutUiEventMessages as withoutUiEventMessagesInState } from './AgentConsoleStreamProjectionState';
@@ -869,7 +870,7 @@ export class AgentConsoleSessionState {
     messagesNewCount = 0;
     /** True when the platform transcript viewport is following the latest content. */
     transcriptFollowing = true;
-    private transcriptFollowProvider?: () => boolean;
+    transcriptFollowProvider?: () => boolean;
     selectedMessageId = '';
     messageDetailOpen = false;
     expandedMessageIds: string[] = [];
@@ -1100,7 +1101,7 @@ export class AgentConsoleSessionState {
     protected workspaceMentionResolver?: AgentConsoleWorkspaceMentionResolver;
     protected mentionCatalog: AgentConsoleMentionCatalogItem[] = [];
     protected workspaceSuggestionRequestId = 0;
-    protected suppressSuggestionMenu = false;
+    suppressSuggestionMenu = false;
     /** True once the user moved inside an open suggestion menu. */
     selectMenuTouched = false;
     setSuppressSuggestionMenu(suppressed: boolean): void { this.suppressSuggestionMenu = suppressed; }
@@ -1803,16 +1804,9 @@ export class AgentConsoleSessionState {
         this.turnTokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
     }
 
-    setInput(value: string, cursor = value.length): void {
-        this.input = value;
-        this.inputCursor = this.clampCursor(this.input, cursor);
-        this.refreshInputSuggestions();
-        this.syncDerivedInputFocus();
-    }
 
-    setPlanNudgesEnabled(enabled: boolean): void {
-        this.planNudgesEnabled = enabled;
-    }
+
+
 
     get planNudgeActive(): boolean {
         if (!this.planNudgesEnabled || this.planMode) {
@@ -1826,42 +1820,19 @@ export class AgentConsoleSessionState {
         return explicitPlanIntent.test(draft);
     }
 
-    setInputCursor(cursor: number): void {
-        this.inputCursor = this.clampCursor(this.input, cursor);
-        this.refreshInputSuggestions();
-        this.syncDerivedInputFocus();
-    }
 
-    moveInputCursor(delta: number): void {
-        this.suppressSuggestionMenu = true;
-        this.setInputCursor(this.inputCursor + delta);
-    }
 
-    moveInputCursorToEdge(position: 'start' | 'end'): void {
-        this.suppressSuggestionMenu = true;
-        this.setInputCursor(position === 'start' ? 0 : this.input.length);
-    }
 
-    setMessagesFocused(focused: boolean): void {
-        this.messagesFocused = !!focused;
-        this.syncDerivedInputFocus();
-    }
 
-    setTranscriptFollowProvider(provider?: () => boolean): void {
-        this.transcriptFollowProvider = provider;
-    }
 
-    syncTranscriptFollowing(): void {
-        const following = this.transcriptFollowProvider ? this.transcriptFollowProvider() : true;
-        this.transcriptFollowing = following;
-        if (following) {
-            this.messagesNewCount = 0;
-        }
-    }
 
-    setInputPlaceholder(value: string): void {
-        this.inputPlaceholder = String(value || '').trim();
-    }
+
+
+
+
+
+
+
 
     get inputPlaceholderLabel(): string {
         return this.input ? '' : this.inputPlaceholder;
@@ -1878,20 +1849,24 @@ export class AgentConsoleSessionState {
         return [base, oneShotSummary, attachmentSummary].filter(Boolean).join(' · ');
     }
 
-    setPendingAttachments(attachments: AgentConsolePendingAttachment[]): void {
-        this.pendingAttachments = attachments.slice();
-    }
 
-    appendPendingAttachment(attachment: AgentConsolePendingAttachment): void {
-        this.pendingAttachments = [...this.pendingAttachments, attachment];
-    }
 
-    clearPendingAttachments(): void {
-        if (!this.pendingAttachments.length) {
-            return;
-        }
-        this.pendingAttachments = [];
-    }
+
+
+
+
+    setInput(value: string, cursor = value.length): void { setInputInState(this, value, cursor); }
+    setPlanNudgesEnabled(enabled: boolean): void { setPlanNudgesEnabledInState(this, enabled); }
+    setInputCursor(cursor: number): void { setInputCursorInState(this, cursor); }
+    moveInputCursor(delta: number): void { moveInputCursorInState(this, delta); }
+    moveInputCursorToEdge(position: 'start' | 'end'): void { moveInputCursorToEdgeInState(this, position); }
+    setMessagesFocused(focused: boolean): void { setMessagesFocusedInState(this, focused); }
+    setTranscriptFollowProvider(provider?: () => boolean): void { setTranscriptFollowProviderInState(this, provider); }
+    syncTranscriptFollowing(): void { syncTranscriptFollowingInState(this); }
+    setInputPlaceholder(value: string): void { setInputPlaceholderInState(this, value); }
+    setPendingAttachments(attachments: AgentConsolePendingAttachment[]): void { setPendingAttachmentsInState(this, attachments); }
+    appendPendingAttachment(attachment: AgentConsolePendingAttachment): void { appendPendingAttachmentInState(this, attachment); }
+    clearPendingAttachments(): void { clearPendingAttachmentsInState(this); }
 
     setLastError(message: string): void {
         this.lastError = message;
@@ -3144,7 +3119,7 @@ export class AgentConsoleSessionState {
         return true;
     }
 
-    protected refreshInputSuggestions(): void {
+    refreshInputSuggestions(): void {
         if (this.selectMenu && !isAgentConsoleSuggestionMenu(this.selectMenu)) {
             return;
         }
