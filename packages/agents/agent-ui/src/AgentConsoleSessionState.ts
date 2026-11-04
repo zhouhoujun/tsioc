@@ -93,6 +93,7 @@ import { agentConsoleAllCommandHints, agentConsoleCommandHints, getAgentConsoleC
 import { AgentConsoleInputHistoryController, DefaultAgentConsoleInputHistoryController } from './AgentConsoleInputHistory';
 import { AgentConsoleFocusLayers, DefaultAgentConsoleFocusLayers } from './AgentConsoleFocusLayers';
 import { AgentConsoleCommandExecutionController, DefaultAgentConsoleCommandExecutionController } from './AgentConsoleCommandExecutionState';
+import { closeMessageDetail as closeMessageDetailInState, isMessageExpanded as isMessageExpandedInState, openMessageDetail as openMessageDetailInState, resolveMessageDetailLines, resolveMessageDetailMaxColumn, scrollMessageDetail as scrollMessageDetailInState, scrollMessageDetailColumns as scrollMessageDetailColumnsInState, scrollMessageDetailColumnsToEdge as scrollMessageDetailColumnsToEdgeInState, scrollMessageDetailPage as scrollMessageDetailPageInState, scrollMessageDetailToEdge as scrollMessageDetailToEdgeInState, setMessageExpanded as setMessageExpandedInState, toggleMessageExpanded as toggleMessageExpandedInState, toggleSelectedMessageExpanded as toggleSelectedMessageExpandedInState } from './AgentConsoleMessageDetailState';
 import { buildTimelineEventRetryPayload as buildTimelineEventRetryPayloadInState, canRetryTimelineEvent as canRetryTimelineEventInState, closeTimelineEventInspector as closeTimelineEventInspectorInState, formatDuration as formatDurationInState, isFailedEventMessage as isFailedEventMessageInState, isTimelineEventMessage as isTimelineEventMessageInState, openTimelineEventInspector as openTimelineEventInspectorInState, resolveTimelineEventDetailLines, resolveTimelineEventDetailMaxColumn, scrollTimelineEventDetail as scrollTimelineEventDetailInState, scrollTimelineEventDetailColumns as scrollTimelineEventDetailColumnsInState, scrollTimelineEventDetailColumnsToEdge as scrollTimelineEventDetailColumnsToEdgeInState, scrollTimelineEventDetailPage as scrollTimelineEventDetailPageInState, scrollTimelineEventDetailToEdge as scrollTimelineEventDetailToEdgeInState } from './AgentConsoleTimelineInspector';
 import {
     buildReviewAssessmentLines as buildReviewAssessmentLinesInState,
@@ -2167,91 +2168,25 @@ export class AgentConsoleSessionState {
     canRetryTimelineEvent(): boolean { return canRetryTimelineEventInState(this); }
     buildTimelineEventRetryPayload(): { toolCallId?: string; receiptId?: string; attempt?: number; uiEventKey?: string } | null { return buildTimelineEventRetryPayloadInState(this); }
 
-    isMessageExpanded(messageId: string): boolean {
-        return this.expandedMessageIds.includes(String(messageId || '').trim());
-    }
 
-    setMessageExpanded(messageId: string, expanded: boolean): void {
-        const id = String(messageId || '').trim();
-        if (!id || expanded === this.isMessageExpanded(id)) {
-            return;
-        }
-        this.expandedMessageIds = expanded
-            ? [...this.expandedMessageIds, id]
-            : this.expandedMessageIds.filter(item => item !== id);
-    }
 
-    toggleMessageExpanded(messageId: string): void {
-        this.setMessageExpanded(messageId, !this.isMessageExpanded(messageId));
-    }
 
-    toggleSelectedMessageExpanded(): boolean {
-        const id = String(this.selectedMessageId || '').trim();
-        if (!id) {
-            return false;
-        }
-        this.toggleMessageExpanded(id);
-        return true;
-    }
 
-    openMessageDetail(takeFocus = true): void {
-        if (!this.selectedMessage) {
-            return;
-        }
-        this.messageDetailOpen = true;
-        this.messageDetailTakesFocus = takeFocus;
-        this.messageDetailScroll = 0;
-        this.messageDetailColumnScroll = 0;
-        this.syncDerivedInputFocus();
-    }
 
-    closeMessageDetail(): void {
-        if (!this.messageDetailOpen && this.messageDetailScroll === 0) {
-            return;
-        }
-        this.messageDetailOpen = false;
-        this.messageDetailTakesFocus = true;
-        this.messageDetailScroll = 0;
-        this.messageDetailColumnScroll = 0;
-        this.syncDerivedInputFocus();
-    }
 
-    scrollMessageDetail(delta: number): void {
-        if (!this.messageDetailOpen || !this.selectedMessage) {
-            return;
-        }
-        const lines = this.messageDetailLines;
-        const maxScroll = Math.max(0, lines.length - this.messageDetailVisibleLines);
-        this.messageDetailScroll = Math.max(0, Math.min(maxScroll, this.messageDetailScroll + delta));
-    }
 
-    scrollMessageDetailPage(delta: number, pageSize?: number): void {
-        if (!this.messageDetailOpen || !this.selectedMessage) {
-            return;
-        }
-        const resolvedPageSize = pageSize ?? Math.max(1, this.messageDetailVisibleLines - 1);
-        this.scrollMessageDetail(delta * Math.max(1, resolvedPageSize));
-    }
 
-    scrollMessageDetailToEdge(position: 'start' | 'end'): void {
-        if (!this.messageDetailOpen || !this.selectedMessage) {
-            return;
-        }
-        const lines = this.messageDetailLines;
-        this.messageDetailScroll = position === 'start'
-            ? 0
-            : Math.max(0, lines.length - this.messageDetailVisibleLines);
-    }
 
-    get messageDetailLines(): string[] {
-        if (!this.selectedMessage) {
-            return [];
-        }
-        return String(this.selectedMessage?.content || '')
-            .replace(/\r/g, '')
-            .split('\n')
-            .map(line => this.expandTabs(line));
-    }
+
+
+
+
+
+
+
+
+
+
 
     protected isDisplayMessage(message?: AgentMessage | null): boolean {
         if (!message) {
@@ -2286,26 +2221,25 @@ export class AgentConsoleSessionState {
         return true;
     }
 
-    get messageDetailMaxColumn(): number {
-        return this.messageDetailLines.reduce((max, line) => Math.max(max, line.length), 0);
-    }
 
-    scrollMessageDetailColumns(delta: number): void {
-        if (!this.messageDetailOpen || !this.selectedMessage) {
-            return;
-        }
-        const maxScroll = Math.max(0, this.messageDetailMaxColumn - 1);
-        this.messageDetailColumnScroll = Math.max(0, Math.min(maxScroll, this.messageDetailColumnScroll + delta));
-    }
 
-    scrollMessageDetailColumnsToEdge(position: 'start' | 'end'): void {
-        if (!this.messageDetailOpen || !this.selectedMessage) {
-            return;
-        }
-        this.messageDetailColumnScroll = position === 'start'
-            ? 0
-            : Math.max(0, this.messageDetailMaxColumn - 1);
-    }
+
+
+
+
+    isMessageExpanded(messageId: string): boolean { return isMessageExpandedInState(this, messageId); }
+    setMessageExpanded(messageId: string, expanded: boolean): void { setMessageExpandedInState(this, messageId, expanded); }
+    toggleMessageExpanded(messageId: string): void { toggleMessageExpandedInState(this, messageId); }
+    toggleSelectedMessageExpanded(): boolean { return toggleSelectedMessageExpandedInState(this); }
+    openMessageDetail(takeFocus = true): void { openMessageDetailInState(this, takeFocus); }
+    closeMessageDetail(): void { closeMessageDetailInState(this); }
+    scrollMessageDetail(delta: number): void { scrollMessageDetailInState(this, delta); }
+    scrollMessageDetailPage(delta: number, pageSize?: number): void { scrollMessageDetailPageInState(this, delta, pageSize); }
+    scrollMessageDetailToEdge(position: 'start' | 'end'): void { scrollMessageDetailToEdgeInState(this, position); }
+    get messageDetailLines(): string[] { return resolveMessageDetailLines(this); }
+    get messageDetailMaxColumn(): number { return resolveMessageDetailMaxColumn(this); }
+    scrollMessageDetailColumns(delta: number): void { scrollMessageDetailColumnsInState(this, delta); }
+    scrollMessageDetailColumnsToEdge(position: 'start' | 'end'): void { scrollMessageDetailColumnsToEdgeInState(this, position); }
 
     setStatus(status: string): void {
         const nextStatus = status || 'idle';
