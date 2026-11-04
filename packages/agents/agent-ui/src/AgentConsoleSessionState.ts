@@ -241,6 +241,7 @@ import {
     setReviewPatchFilter as setReviewPatchFilterInState,
     setSelectedReviewFileIndex as setSelectedReviewFileIndexInState,
 } from './AgentConsoleReviewNavigation';
+import { parseUnifiedDiffSections as parseUnifiedDiffSectionsInState, stringifyReviewContent as stringifyReviewContentInState } from './AgentConsoleReviewPatch';
 import {
     clearAllReviewAnnotations as clearAllReviewAnnotationsInState,
     clearReviewFileAnnotation as clearReviewFileAnnotationInState,
@@ -255,7 +256,11 @@ import {
     rejectAllReviewHunksForFile as rejectAllReviewHunksForFileInState,
     setReviewFileAnnotation as setReviewFileAnnotationInState,
     setReviewHunkAnnotation as setReviewHunkAnnotationInState,
-    writeReviewConclusions as writeReviewConclusionsInState
+    writeReviewConclusions as writeReviewConclusionsInState,
+    getAnnotationCache as getAnnotationCacheInState,
+    setAnnotationCache as setAnnotationCacheInState,
+    syncCurrentReviewAnnotationCache as syncCurrentReviewAnnotationCacheInState,
+    getCurrentReviewAnnotationCacheKey as getCurrentReviewAnnotationCacheKeyInState
 } from './AgentConsoleReviewAnnotations';
 import {
     focusSelectedTaskLineageFilter as focusSelectedTaskLineageFilterInState,    moveTaskSelection as moveTaskSelectionInState,
@@ -525,11 +530,10 @@ export class AgentConsoleSessionState {
     onReviewConclusionsWriteBack?: (conclusions: { files: Record<string, AgentConsoleReviewAnnotation>; hunks: Record<string, AgentConsoleReviewAnnotation>; summary: { totalFiles: number; approvedFiles: number; rejectedFiles: number; totalHunks: number; approvedHunks: number; rejectedHunks: number } }) => void;
     onSessionReconnected?: () => void;
     getAnnotationCache(): Record<string, Record<string, AgentConsoleReviewAnnotation>> {
-        this.syncCurrentReviewAnnotationCache();
-        return { ...this.reviewAnnotationCache };
+        return getAnnotationCacheInState(this);
     }
     setAnnotationCache(cache: Record<string, Record<string, AgentConsoleReviewAnnotation>>): void {
-        this.reviewAnnotationCache = { ...(cache || {}) };
+        setAnnotationCacheInState(this, cache);
     }
     scheduledTasks: ScheduledAgentTask[] = [];
     selectedScheduledTaskId = '';
@@ -2424,118 +2428,11 @@ export class AgentConsoleSessionState {
     }
 
     stringifyReviewContent(value: any): string {
-        if (value == null) {
-            return '';
-        }
-        if (typeof value === 'string') {
-            return value.trim();
-        }
-        if (typeof value?.text === 'string') {
-            return value.text.trim();
-        }
-        if (typeof value?.diff === 'string') {
-            return value.diff.trim();
-        }
-        if (typeof value?.output === 'string') {
-            return value.output.trim();
-        }
-        if (typeof value?.output?.text === 'string') {
-            return value.output.text.trim();
-        }
-        if (typeof value?.output?.diff === 'string') {
-            return value.output.diff.trim();
-        }
-        try {
-            return JSON.stringify(value, null, 2);
-        } catch {
-            return String(value);
-        }
+        return stringifyReviewContentInState(value);
     }
 
     parseUnifiedDiffSections(diffText: string): AgentConsoleReviewDiffSection[] {
-        const text = String(diffText || '').trim();
-        if (!text) {
-            return [];
-        }
-
-        const sourceLines = text.split('\n');
-        const sections: AgentConsoleReviewDiffSection[] = [];
-        let current: AgentConsoleReviewDiffSection | undefined;
-
-        const pushCurrent = () => {
-            if (current?.lines.length) {
-                const joined = current.lines.join('\n');
-                const renameFrom = /^rename from (.+)$/m.exec(joined)?.[1]?.trim();
-                const renameTo = /^rename to (.+)$/m.exec(joined)?.[1]?.trim();
-                if (renameTo) {
-                    current.path = renameTo;
-                    current.previousPath = renameFrom;
-                    current.status = 'rename';
-                } else if (/^new file mode /m.test(joined) || /^--- \/dev\/null$/m.test(joined)) {
-                    current.status = 'add';
-                } else if (/^deleted file mode /m.test(joined) || /^\+\+\+ \/dev\/null$/m.test(joined)) {
-                    current.status = 'delete';
-                } else {
-                    current.status = 'update';
-                }
-                sections.push(current);
-            }
-        };
-
-        for (const line of sourceLines) {
-            if (line.startsWith('diff --git ')) {
-                pushCurrent();
-                current = {
-                    path: this.resolveDiffPathFromHeader(line),
-                    additions: 0,
-                    deletions: 0,
-                    lines: [line]
-                };
-                continue;
-            }
-
-            if (!current) {
-                current = {
-                    path: 'unknown',
-                    additions: 0,
-                    deletions: 0,
-                    lines: []
-                };
-            }
-
-            current.lines.push(line);
-            if (line.startsWith('+++ ')) {
-                current.path = this.resolveDiffPathFromMarker(line, current.path);
-                continue;
-            }
-            if (line.startsWith('+') && !line.startsWith('+++')) {
-                current.additions += 1;
-                continue;
-            }
-            if (line.startsWith('-') && !line.startsWith('---')) {
-                current.deletions += 1;
-            }
-        }
-
-        pushCurrent();
-        return sections;
-    }
-
-    protected resolveDiffPathFromHeader(line: string): string {
-        const match = /^diff --git a\/(.+?) b\/(.+)$/.exec(String(line || '').trim());
-        if (!match) {
-            return 'unknown';
-        }
-        return match[2] || match[1] || 'unknown';
-    }
-
-    protected resolveDiffPathFromMarker(line: string, fallback: string): string {
-        const match = /^\+\+\+\s+(?:b\/)?(.+)$/.exec(String(line || '').trim());
-        if (!match) {
-            return fallback;
-        }
-        const path = String(match[1] || '').trim();
-        return path && path !== '/dev/null' ? path : fallback;
+        return parseUnifiedDiffSectionsInState(diffText);
     }
 
     buildSelectedApprovalCopyText(): string {
@@ -2588,28 +2485,11 @@ export class AgentConsoleSessionState {
     }
 
     syncCurrentReviewAnnotationCache(): void {
-        const cacheKey = this.getCurrentReviewAnnotationCacheKey();
-        if (!cacheKey) {
-            return;
-        }
-        const hasFileAnnots = Object.keys(this.reviewFileAnnotations).length > 0;
-        const hasHunkAnnots = Object.keys(this.reviewHunkAnnotations).length > 0;
-        if (hasFileAnnots || hasHunkAnnots) {
-            this.reviewAnnotationCache[cacheKey] = { ...this.reviewFileAnnotations, ...this.reviewHunkAnnotations };
-            return;
-        }
-        delete this.reviewAnnotationCache[cacheKey];
+        syncCurrentReviewAnnotationCacheInState(this);
     }
 
     protected getCurrentReviewAnnotationCacheKey(): string {
-        const explicit = String(this.selectedReviewTaskCacheKey || '').trim();
-        if (explicit) {
-            return explicit;
-        }
-        const taskChoice = this.reviewTaskChoices.find(item => item.id === this.selectedReviewTaskId);
-        return this.resolveReviewAnnotationCacheKey(this.reviewTask)
-            || this.resolveReviewAnnotationCacheKey(taskChoice)
-            || String(this.selectedReviewTaskId || '').trim();
+        return getCurrentReviewAnnotationCacheKeyInState(this);
     }
 
     resolveReviewAnnotationCacheKey(task?: {

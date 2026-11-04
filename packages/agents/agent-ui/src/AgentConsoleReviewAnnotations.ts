@@ -195,3 +195,38 @@ export function computeFileRiskScore(section: AgentConsoleReviewDiffSection): {
 function hunkAnnotationKey(filePath: string, hunkIndex: number): string {
     return `${filePath}#${hunkIndex}`;
 }
+
+
+/** Read the latest session-scoped annotation cache. */
+export function getAnnotationCache(state: AgentConsoleSessionState): Record<string, Record<string, AgentConsoleReviewAnnotation>> {
+    syncCurrentReviewAnnotationCache(state);
+    return { ...state.reviewAnnotationCache };
+}
+
+export function setAnnotationCache(
+    state: AgentConsoleSessionState,
+    cache: Record<string, Record<string, AgentConsoleReviewAnnotation>>
+): void {
+    state.reviewAnnotationCache = { ...(cache || {}) };
+}
+
+export function syncCurrentReviewAnnotationCache(state: AgentConsoleSessionState): void {
+    const cacheKey = getCurrentReviewAnnotationCacheKey(state);
+    if (!cacheKey) return;
+    const hasFileAnnots = Object.keys(state.reviewFileAnnotations).length > 0;
+    const hasHunkAnnots = Object.keys(state.reviewHunkAnnotations).length > 0;
+    if (hasFileAnnots || hasHunkAnnots) {
+        state.reviewAnnotationCache[cacheKey] = { ...state.reviewFileAnnotations, ...state.reviewHunkAnnotations };
+        return;
+    }
+    delete state.reviewAnnotationCache[cacheKey];
+}
+
+export function getCurrentReviewAnnotationCacheKey(state: AgentConsoleSessionState): string {
+    const explicit = String(state.selectedReviewTaskCacheKey || '').trim();
+    if (explicit) return explicit;
+    const taskChoice = state.reviewTaskChoices.find(item => item.id === state.selectedReviewTaskId);
+    return state.resolveReviewAnnotationCacheKey(state.reviewTask)
+        || state.resolveReviewAnnotationCacheKey(taskChoice)
+        || String(state.selectedReviewTaskId || '').trim();
+}

@@ -282,3 +282,80 @@ export function buildReviewFoldedHunkSummary(state: AgentConsoleSessionState, hu
         const context = hunk.context ? ` · ${hunk.context}` : '';
         return state.translateLabel('agent.menu.panel.review.foldedHunk', { additions: hunk.additions, deletions: hunk.deletions, context: context }, `  ⋯ folded hunk +${hunk.additions} -${hunk.deletions}${context} (f expand)`);
     }
+
+
+/** Normalize a review payload (string/text/diff/output) into display text. */
+export function stringifyReviewContent(value: any): string {
+    if (value == null) return '';
+    if (typeof value === 'string') return value.trim();
+    if (typeof value?.text === 'string') return value.text.trim();
+    if (typeof value?.diff === 'string') return value.diff.trim();
+    if (typeof value?.output === 'string') return value.output.trim();
+    if (typeof value?.output?.text === 'string') return value.output.text.trim();
+    if (typeof value?.output?.diff === 'string') return value.output.diff.trim();
+    try {
+        return JSON.stringify(value, null, 2);
+    } catch {
+        return String(value);
+    }
+}
+
+/** Split a unified diff into review sections with add/delete/rename status. */
+export function parseUnifiedDiffSections(diffText: string): AgentConsoleReviewDiffSection[] {
+    const text = String(diffText || '').trim();
+    if (!text) return [];
+    const sourceLines = text.split('\n');
+    const sections: AgentConsoleReviewDiffSection[] = [];
+    let current: AgentConsoleReviewDiffSection | undefined;
+
+    const pushCurrent = () => {
+        if (!current?.lines.length) return;
+        const joined = current.lines.join('\n');
+        const renameFrom = /^rename from (.+)$/m.exec(joined)?.[1]?.trim();
+        const renameTo = /^rename to (.+)$/m.exec(joined)?.[1]?.trim();
+        if (renameTo) {
+            current.path = renameTo;
+            current.previousPath = renameFrom;
+            current.status = 'rename';
+        } else if (/^new file mode /m.test(joined) || /^--- \/dev\/null$/m.test(joined)) {
+            current.status = 'add';
+        } else if (/^deleted file mode /m.test(joined) || /^\+\+\+ \/dev\/null$/m.test(joined)) {
+            current.status = 'delete';
+        } else {
+            current.status = 'update';
+        }
+        sections.push(current);
+    };
+
+    const resolveHeaderPath = (line: string): string => {
+        const match = /^diff --git a\/(.+?) b\/(.+)$/.exec(String(line || '').trim());
+        return match ? (match[2] || match[1] || 'unknown') : 'unknown';
+    };
+    const resolveMarkerPath = (line: string, fallback: string): string => {
+        const match = /^\+\+\+\s+(?:b\/)?(.+)$/.exec(String(line || '').trim());
+        if (!match) return fallback;
+        const path = String(match[1] || '').trim();
+        return path && path !== '/dev/null' ? path : fallback;
+    };
+
+    for (const line of sourceLines) {
+        if (line.startsWith('diff --git ')) {
+            pushCurrent();
+            current = { path: resolveHeaderPath(line), additions: 0, deletions: 0, lines: [line] };
+            continue;
+        }
+        if (!current) {
+            current = { path: 'unknown', additions: 0, deletions: 0, lines: [] };
+        }
+        current.lines.push(line);
+        if (line.startsWith('+++ ')) {
+            current.path = resolveMarkerPath(line, current.path);
+        } else if (line.startsWith('+') && !line.startsWith('+++')) {
+            current.additions += 1;
+        } else if (line.startsWith('-') && !line.startsWith('---')) {
+            current.deletions += 1;
+        }
+    }
+    pushCurrent();
+    return sections;
+}
