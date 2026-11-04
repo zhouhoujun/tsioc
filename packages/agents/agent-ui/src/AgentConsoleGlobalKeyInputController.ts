@@ -248,7 +248,6 @@ export async function handleBrowserGlobalKeyInputView(
     return handleGlobalKeySequenceView(host, mappedKey);
 }
 
-
 /**
  * Handles a raw TUI terminal global key input (control sequences, escape
  * prefixes, keymap recording, which-key navigation) before composer focus.

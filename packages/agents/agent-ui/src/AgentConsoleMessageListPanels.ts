@@ -419,7 +419,6 @@ export class AgentConsoleMessageDetailPanelComponent {
         }).filter(line => !!String(line || '').trim());
     }
 
-
     get detailItems() {
         return this.detailIndexes.map(index => {
             const line = this.detailMarkdownLineAt(index);

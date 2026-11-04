@@ -61,7 +61,6 @@ export const VIM_ACTION_NAMES: ConsoleVimAction[] = [
     'exit-insert'
 ];
 
-
 export const VIM_PENDING_PREFIX_KEYS = new Set<string>(['d']);
 
 export function isConsoleVimAction(value: string): boolean {

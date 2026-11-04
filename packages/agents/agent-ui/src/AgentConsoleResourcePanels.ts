@@ -247,7 +247,6 @@ export class AgentConsoleJobsPanelComponent {
         return this.activeThemeStyles.statusValue;
     }
 
-
     get jobItems(): Array<{ id: string; label: string; style: Record<string, string>; selected: string }> {
         if (!this.shouldShow) {
             return [];

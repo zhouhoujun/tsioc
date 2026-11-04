@@ -948,14 +948,7 @@ export class AgentConsoleSessionState {
         return resolveFinalAssistantMessageId(this.messages);
     }
 
-
-
     /** Earliest session timestamp: first message createdAt → turn start → now. */
-
-
-
-
-
 
     setMessages(messages: AgentMessage[], preserveCommandExecutionMessages = false): void {
         const previousCount = this.messages.length;
@@ -1043,42 +1036,6 @@ export class AgentConsoleSessionState {
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     /**
      * Derive the per-step elapsed time when a terminal event replaces a still-running
      * timeline row that carries no explicit duration. The replacement row preserves the
@@ -1086,15 +1043,7 @@ export class AgentConsoleSessionState {
      * for the timeline UI even when the incoming event has no receipt duration.
      */
 
-
     /** Shared cross-host projection entry point for transcript thread items. */
-
-
-
-
-
-
-
 
     toggleTimelineCollapse(scopeKey: string): void { toggleTimelineCollapseInState(this, scopeKey); }
     qualifyUiEventKey(key: string): string { return qualifyUiEventKeyInState(this, key); }
@@ -1170,10 +1119,6 @@ export class AgentConsoleSessionState {
         return this.displayMessages.find(item => item.id === this.selectedTimelineEventId);
     }
 
-
-
-
-
     /** Host hook: fetch one tool call's raw payload on demand (optional). */
     toolPayloadLoader?: (toolCallId: string) => Promise<string | undefined>;
 
@@ -1181,33 +1126,9 @@ export class AgentConsoleSessionState {
     timelineEventOutput = '';
     timelineEventOutputLoading = false;
 
-
-
-
-
     get hasTimelineEventInspectorFocus(): boolean {
         return !!this.timelineEventInspectorOpen;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     isTimelineEventMessage(message?: AgentMessage | null): boolean { return isTimelineEventMessageInState(this, message); }
     isFailedEventMessage(message?: AgentMessage | null): boolean { return isFailedEventMessageInState(this, message); }
@@ -1223,34 +1144,6 @@ export class AgentConsoleSessionState {
     scrollTimelineEventDetailColumnsToEdge(position: 'start' | 'end'): void { scrollTimelineEventDetailColumnsToEdgeInState(this, position); }
     canRetryTimelineEvent(): boolean { return canRetryTimelineEventInState(this); }
     buildTimelineEventRetryPayload(): { toolCallId?: string; receiptId?: string; attempt?: number; uiEventKey?: string } | null { return buildTimelineEventRetryPayloadInState(this); }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     isMessageExpanded(messageId: string): boolean { return isMessageExpandedInState(this, messageId); }
     setMessageExpanded(messageId: string, expanded: boolean): void { setMessageExpandedInState(this, messageId, expanded); }
@@ -1339,10 +1232,6 @@ export class AgentConsoleSessionState {
         this.turnTokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
     }
 
-
-
-
-
     get planNudgeActive(): boolean {
         if (!this.planNudgesEnabled || this.planMode) {
             return false;
@@ -1354,20 +1243,6 @@ export class AgentConsoleSessionState {
         const explicitPlanIntent = /(?:\bplan(?:ning)?\b|\bdesign\b|\barchitecture\b|方案|规划|设计|先不要改|不要(?:先)?修改|先别改)/i;
         return explicitPlanIntent.test(draft);
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     get inputPlaceholderLabel(): string {
         return this.input ? '' : this.inputPlaceholder;
@@ -1383,12 +1258,6 @@ export class AgentConsoleSessionState {
             : '';
         return [base, oneShotSummary, attachmentSummary].filter(Boolean).join(' · ');
     }
-
-
-
-
-
-
 
     setInput(value: string, cursor = value.length): void { setInputInState(this, value, cursor); }
     setPlanNudgesEnabled(enabled: boolean): void { setPlanNudgesEnabledInState(this, enabled); }
@@ -2181,8 +2050,6 @@ export class AgentConsoleSessionState {
         toggleReviewSideBySideInState(this);
     }
 
-
-
     get selectedReviewFileSection(): AgentConsoleReviewDiffSection | undefined {
         return resolveSelectedReviewFileSection(this);
     }
@@ -2227,33 +2094,20 @@ export class AgentConsoleSessionState {
         scrollReviewDetailColumnsToEdgeInState(this, position);
     }
 
-
-
-
-
-
-
-
-
-
-
     /**
      * Persists a command output to the durable store when one is configured.
      * Never throws: persistence is best-effort and must not break the live ring.
      */
-
 
     /**
      * Injects a durable command-output store. When provided, results are
      * persisted and can be rehydrated via `loadCommandOutputHistory`.
      */
 
-
     /**
      * Hydrates the in-memory command-output ring from the durable store
      * (newest-first, capped at the ring cap). Used on configure/session switch.
      */
-
 
     get latestCommandExecution(): AgentConsoleCommandExecution | undefined {
         return this.commandExecutions[0];
@@ -2322,14 +2176,6 @@ export class AgentConsoleSessionState {
         });
     }
 
-
-
-
-
-
-
-
-
     get visibleCommandOutputs(): AgentConsoleCommandOutputEntry[] {
         const needle = this.commandOutputsFilter.trim().toLowerCase();
         if (!needle) {
@@ -2339,16 +2185,6 @@ export class AgentConsoleSessionState {
             entry.command.toLowerCase().includes(needle) || entry.text.toLowerCase().includes(needle)
         );
     }
-
-
-
-
-
-
-
-
-
-
 
     get textOverlayPageSize(): number {
         return this.textOverlay?.visibleLines ?? this.consoleOptions.reviewDetailVisibleLines;
@@ -2361,12 +2197,6 @@ export class AgentConsoleSessionState {
         const visible = this.textOverlayPageSize;
         return this.textOverlay.lines.slice(this.textOverlay.scroll, this.textOverlay.scroll + visible);
     }
-
-
-
-
-
-
 
     setCommandHints(commands: string[]): void {
         this.injectedCommandHints = Array.from(new Set(commands.filter(Boolean)));
@@ -2557,8 +2387,6 @@ export class AgentConsoleSessionState {
         this.syncDerivedInputFocus();
     }
 
-
-
     selectAsync(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string, kind?: string): Promise<string | undefined> { return selectAsyncInState(this, title, options, selectedIndex, hint, kind); }
     openSelectMenu(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string, kind?: string): void { openSelectMenuInState(this, title, options, selectedIndex, hint, kind); }
     closeSelectMenu(): void { closeSelectMenuInState(this); }
@@ -2596,49 +2424,13 @@ export class AgentConsoleSessionState {
         this.inputPrompt = this.consoleOptions.inputPrompt;
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     /**
      * True when the open suggestion menu completes a subcommand/enum argument
      * (`/statusline l|ist`). Enter must then execute the completed command;
      * Tab stays a pure completion.
      */
 
-
-
-
-
-
-
-
     /** Tab: fill the input with the highlighted suggestion without executing it. */
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     /**
      * Re-open the `/` or `@` suggestion menu for the current token.
@@ -2984,8 +2776,6 @@ export class AgentConsoleSessionState {
         this.reviewDetailColumnScroll = 0;
     }
 
-
-
     buildSelectedReviewGroupMetaLines(group: AgentConsoleReviewGroup): string[] {
         const lines = [
             this.selectedReviewPatchFilter !== 'all' ? this.translateLabel('agent.menu.panel.review.patchFilter', { filter: this.selectedReviewPatchFilter }, `Patch Filter: ${this.selectedReviewPatchFilter}`) : '',
@@ -3004,28 +2794,6 @@ export class AgentConsoleSessionState {
         const meta = { label: group.label, kind: group.kind, status: group.status, fileCount: group.sections.length, hasError: !!group.error };
         return formatReviewGroupMeta(meta, (key, fallback, params) => this.translateLabel(`agent.menu.panel.review.${key}`, params, fallback));
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     syncCurrentReviewAnnotationCache(): void {
         const cacheKey = this.getCurrentReviewAnnotationCacheKey();
@@ -3675,5 +3443,4 @@ export class AgentConsoleSessionState {
         return next;
     }
 }
-
 

@@ -140,7 +140,6 @@ export async function stopVoiceCapture(ctx: VoiceHandlerContext, cancel: boolean
 
 // ── /voice dispatch ──────────────────────────────────────────────────────────
 
-
 const VOICE_NO_ACTIVE_SESSION = /no active (audio|voice) session/i;
 const VOICE_GATEWAY_MISSING = /requires a connected gateway|no response from gateway/i;
 const VOICE_ADAPTERS_MISSING = /audio unavailable|missing streaming/i;

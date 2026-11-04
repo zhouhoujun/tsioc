@@ -63,7 +63,6 @@ export abstract class AgentConsoleCommandExecutionController {
         signal(requestId: string, sessionId: string): AbortSignal | undefined;
     }) {}
 
-
     begin(command: string, args: string): string {
         const sequence = ++this.state.commandExecutionSequence;
         const requestId = nextCommandRequestId(sequence);

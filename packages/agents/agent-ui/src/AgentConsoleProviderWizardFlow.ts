@@ -155,7 +155,6 @@ export function showProviderWizardStep(ctx: ProviderWizardContext, holder: Agent
         ctx.notify(formatAgentUiNotice(ctx.translator, 'wizardProgressStep', { progress: progress, help: buildWizardStepHelp(step, wizard.values, t) }));
     }
 
-
 export function openProviderWizardChoice(ctx: ProviderWizardContext, holder: AgentWizardHolder, step: AgentWizardStepDef): void {
         const built = buildProviderWizardChoiceOptions(step, holder.wizard?.values || {}, wizardTranslate(ctx));
         if (!built) return;

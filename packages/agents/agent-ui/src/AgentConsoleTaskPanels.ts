@@ -109,7 +109,6 @@ export class AgentConsoleTasksPanelComponent {
         return this.activeThemeStyles.statusValue;
     }
 
-
     get backgroundTaskFeedLabel(): string {
         const tasks = this.state.filteredBackgroundTasks;
         if (!tasks.length) return '';

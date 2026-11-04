@@ -70,7 +70,6 @@ export function formatAgentPanelStatusLabel(
     return formatAgentPanelLabel(translator, section, `status${key}`, status);
 }
 
-
 /** Localize a keymap action id (`new-session` → `新建会话`), keeping the raw id when unknown. */
 export function formatAgentKeymapActionLabel(translator: AgentUiTranslator | null | undefined, action: string): string {
     const suffix = String(action || '').split('-').map(part => (part ? part.charAt(0).toUpperCase() + part.slice(1) : '')).join('');

@@ -46,7 +46,6 @@ export function runtimeHost(self: any): AgentConsoleRuntimeHost {
     };
 }
 
-
 export function keymapCommandHost(self: any): KeymapCommandHost {
     
     return {

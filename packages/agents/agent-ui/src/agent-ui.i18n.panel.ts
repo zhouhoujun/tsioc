@@ -548,7 +548,6 @@ const AGENT_UI_PANEL_CORE_ZH: Record<string, any> = {
     }
 };
 
-
 /** Full panel catalog: core groups plus the runtime chrome split (`*.runtime.ts`). */
 export const AGENT_UI_PANEL_EN: Record<string, any> = { ...AGENT_UI_PANEL_CORE_EN, ...AGENT_UI_PANEL_RUNTIME_EN };
 export const AGENT_UI_PANEL_ZH: Record<string, any> = { ...AGENT_UI_PANEL_CORE_ZH, ...AGENT_UI_PANEL_RUNTIME_ZH };

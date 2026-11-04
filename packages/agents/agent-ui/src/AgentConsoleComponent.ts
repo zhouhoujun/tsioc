@@ -609,8 +609,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return runAttachCommandFn(this.getExportHandlerContext(), args);
     }
 
-
-
     protected async openCompactionHistory(args: string): Promise<boolean> {
         return openCompactionHistory(this.getDiagnosticsHandlerContext(), args);
     }
@@ -636,8 +634,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return openHarnessAudit(this.getDiagnosticsHandlerContext(), sessionId);
     }
 
-
-
     protected async openHarnessProfile(sub?: string): Promise<boolean> {
         return openHarnessProfile(this.getDiagnosticsHandlerContext(), sub);
     }
@@ -645,8 +641,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected async openHarnessTree(sessionId?: string): Promise<boolean> {
         return openHarnessTreeView(this.harnessCommandHost(), sessionId);
     }
-
-
 
     protected async openHarnessList(sessionId?: string): Promise<boolean> {
         return openHarnessListView(this.harnessCommandHost(), sessionId);
@@ -659,8 +653,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected async runHarnessStopCommand(taskId: string): Promise<boolean> {
         return runHarnessStopCommand(this.sessionService, (message: string) => this.notify(message), taskId, this.translator);
     }
-
-
 
     protected async handleVoiceCommand(arg: string): Promise<boolean> {
         return handleVoiceCommand(this.voiceCtx(), arg);
@@ -753,8 +745,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     ): { sessionId?: string; bucketSize?: number; maxBuckets?: number } {
         return this.parseCompactionHistoryTrendArgs(args);
     }
-
-
 
     protected resolveReviewAnnotationsSessionId(): string {
         return resolveReviewAnnotationsSessionId(this.reviewCtx());
@@ -952,8 +942,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
         return [];
     }
-
-
 
     protected readonly sessionUiState = new AgentConsoleSessionUiState(() => ({ state: this.state, surfaceAccessor: this.surfaceAccessor }));
 
@@ -1903,15 +1891,11 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return cancelCodingTaskFn(this.codingTaskCtx(), taskId);
     }
 
-
-
     protected buildCommandContext(abortSignal?: AbortSignal): CommandHandlerContext { return buildCommandContext(this, abortSignal); }
 
     protected async handleCommand(value: string): Promise<boolean> {
         return dispatchAgentConsoleCommand(this.commandDispatchHost(), value);
     }
-
-
 
     protected async handleMenuSelection(value: string): Promise<void> {
         return handleMenuSelection(this.state, (selected: string) => this.handleCommand(selected), value);
@@ -1992,8 +1976,6 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return describePendingToolCall(chunk, this.translator);
     }
 
-
-
     async schedulePrompt(prompt: string, delayMs: number): Promise<void> {
         await this.scheduler.schedule({
             id: `task-${Date.now()}`,
@@ -2054,8 +2036,6 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         ensureMessageAtTail(this.state, messageId);
     }
 
-
-
     protected async loadSessionMessages(sessionId = this.state.sessionId): Promise<AgentMessage[]> {
         return loadSessionContentMessages(this.sessionContentLoaderHost(), sessionId);
     }
@@ -2114,8 +2094,6 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         return mergeTodoPlanForSessionsView(this.todoPlanCommandHost(), sessionId, sessions);
     }
 
-
-
     protected async loadLocalTodoPlan(sessionId: string): Promise<AgentConsolePlanTodoItem[]> {
         return loadLocalTodoPlan(sessionId, this.toolRegistry, this.state, (status: unknown) => this.normalizeTodoStatus(status)) as any;
     }
@@ -2162,14 +2140,6 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         }
     }
 
-
-
-
-
-
-
-
-
     protected async runThemeCommand(args?: string): Promise<boolean> {
         return runThemeCommand(runtimeHost(this), args);
     }
@@ -2198,18 +2168,6 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     protected async runQueueCommand(args?: string): Promise<boolean> {
         return runQueueCommandView(this.rpcCommandHost(), args);
     }
-
-
-
-
-
-
-
-
-
-
-
-
 
     protected async runTitleCommand(args?: string): Promise<boolean> {
         return runTitleCommand(runtimeHost(this), args);
@@ -2305,29 +2263,6 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     protected async runDebugConfigCommand(): Promise<boolean> {
         return runDebugConfigCommandView(preferenceCommandHost(this));
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     protected async runSettingsCommand(): Promise<boolean> {
         return runSettingsCommandView(settingsPanelHost(this));
@@ -2509,8 +2444,6 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         }
     }
 
-
-
     protected async runApproveRetryCommand(): Promise<boolean> {
         return runApproveRetryCommandView(this.rpcCommandHost());
     }
@@ -2522,8 +2455,6 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     protected async runBackgroundTasksCommand(args?: string): Promise<boolean> {
         return runBackgroundTasksCommandView(this.backgroundTaskCommandHost(), args);
     }
-
-
 
     protected async runIdeCommand(args?: string): Promise<boolean> {
         return runIdeCommand(this.ideBridge, (message: string) => this.notify(message), (command: string, text: string) => this.pushCommandOutput(command, text), args, this.translator);
@@ -2582,8 +2513,6 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     protected async handleIdleEscape(): Promise<boolean> {
         return handleIdleEscape(this.editCtx());
     }
-
-
 
     protected async enterEditMode(): Promise<boolean> {
         return enterEditMode(this.editCtx());
@@ -2732,8 +2661,6 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
         }
         return this.toolRegistry.getToolDefinitions(sessionId);
     }
-
-
 
     protected startProviderWizard(): void {
         return startProviderWizard(this.pwctx(), this.wizHolder);
@@ -2897,8 +2824,6 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     protected async detachSshShell(reason: 'detached' | 'closed'): Promise<void> {
         return detachSshShell(this.sshHost(), reason);
     }
-
-
 
     protected async runPermissionsCommand(args: string): Promise<void> {
         return runPermissionsCommandView(policyCommandHost(this), args);

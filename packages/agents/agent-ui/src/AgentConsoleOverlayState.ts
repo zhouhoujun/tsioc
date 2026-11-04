@@ -4,7 +4,6 @@ import type { CommandOutputStore } from './AgentConsoleCommandOutputHistory';
 import type { AgentConsoleCommandOutputHistoryEntry } from './AgentConsoleCommandOutputHistory';
 import { redactCommandOutputSecret } from './AgentConsoleCommandOutputHistory';
 
-
 export function setNotice(state: AgentConsoleSessionState, message: string): void {
         state.notice = message;
     }
