@@ -46,4 +46,49 @@ export class ReactiveDomainStateTest {
         expect(proxy.hasTextOverlayFocus()).toBe(true);
         expect(proxy.visibleCommandOutputs.length).toBe(1);
     }
+
+    @Test('review domain mutations reach bindings')
+    reviewDomainIsReactive() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        const effect = new DefaultReactiveEffect();
+        const proxy = reactive(state, effect) as AgentConsoleSessionState;
+        let runs = 0;
+        effect.run(() => {
+            runs++;
+            void proxy.reviewOpen;
+            void proxy.reviewGroups.length;
+        });
+        const before = runs;
+        proxy.openReview({ id: 'task-1', title: 'Task', status: 'completed' }, {
+            diff: { text: 'diff --git a/a.ts b/a.ts\n--- a/a.ts\n+++ b/a.ts\n@@ -1 +1 @@\n-old\n+new' }
+        });
+        expect(runs).toBeGreaterThan(before);
+        expect(proxy.reviewOpen).toBe(true);
+        proxy.closeReview();
+        expect(proxy.reviewOpen).toBe(false);
+    }
+
+    @Test('select menu and session navigation stay reactive')
+    menuAndSessionDomainAreReactive() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        const effect = new DefaultReactiveEffect();
+        const proxy = reactive(state, effect) as AgentConsoleSessionState;
+        let runs = 0;
+        effect.run(() => {
+            runs++;
+            void proxy.selectMenu;
+            void proxy.selectedSessionId;
+            void proxy.navFilteredSessions.length;
+        });
+        const before = runs;
+        proxy.setSessions([
+            { id: 'one', current: true, messageCount: 1, updatedAt: 1 } as any,
+            { id: 'two', messageCount: 2, updatedAt: 2 } as any
+        ]);
+        proxy.openSelectMenu('Pick', [{ label: 'A', value: 'a' }], 0);
+        proxy.selectLastSession();
+        expect(runs).toBeGreaterThan(before);
+        expect(proxy.selectMenu?.title).toBe('Pick');
+        expect(proxy.selectedSessionId).toBe('two');
+    }
 }
