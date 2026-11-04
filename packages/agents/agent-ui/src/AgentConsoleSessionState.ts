@@ -94,6 +94,8 @@ import { agentConsoleAllCommandHints, agentConsoleCommandHints, getAgentConsoleC
 import { AgentConsoleInputHistoryController, DefaultAgentConsoleInputHistoryController } from './AgentConsoleInputHistory';
 import { AgentConsoleFocusLayers, DefaultAgentConsoleFocusLayers } from './AgentConsoleFocusLayers';
 import { AgentConsoleCommandExecutionController, DefaultAgentConsoleCommandExecutionController } from './AgentConsoleCommandExecutionState';
+import { closeCommandOutputs as closeCommandOutputsInState, closeTextOverlay as closeTextOverlayInState, copySelectedCommandOutput as copySelectedCommandOutputInState, hasCommandOutputsFocus as hasCommandOutputsFocusInState, hasTextOverlayFocus as hasTextOverlayFocusInState, loadCommandOutputHistory as loadCommandOutputHistoryInState, moveCommandOutputSelection as moveCommandOutputSelectionInState, openCommandOutputs as openCommandOutputsInState, openTextOverlay as openTextOverlayInState, persistCommandOutput as persistCommandOutputInState, pushCommandOutput as pushCommandOutputInState, scrollCommandOutputsPage as scrollCommandOutputsPageInState, scrollCommandOutputsToEdge as scrollCommandOutputsToEdgeInState, scrollTextOverlay as scrollTextOverlayInState, scrollTextOverlayPage as scrollTextOverlayPageInState, scrollTextOverlayToEdge as scrollTextOverlayToEdgeInState, setCommandOutputStore as setCommandOutputStoreInState, setCommandOutputsFilter as setCommandOutputsFilterInState, setNotice as setNoticeInState, toggleCommandOutputs as toggleCommandOutputsInState } from './AgentConsoleOverlayState';
+import { acceptSelectMenu as acceptSelectMenuInState, acceptSelectMenuIndex as acceptSelectMenuIndexInState, cancelSelectMenu as cancelSelectMenuInState, chooseSelectMenuIndex as chooseSelectMenuIndexInState, closeSelectMenu as closeSelectMenuInState, completeSelectMenu as completeSelectMenuInState, confirmSelectMenu as confirmSelectMenuInState, confirmSelectMenuAndKeepOpen as confirmSelectMenuAndKeepOpenInState, dismissSelectMenuLayer as dismissSelectMenuLayerInState, isArgumentSuggestionMenu as isArgumentSuggestionMenuInState, moveSelectMenu as moveSelectMenuInState, moveSelectMenuPage as moveSelectMenuPageInState, moveSelectMenuToEdge as moveSelectMenuToEdgeInState, openSelectMenu as openSelectMenuInState, openSubSelectMenu as openSubSelectMenuInState, resolveSelectMenu as resolveSelectMenuInState, resolveSelectedSelectMenuOption, selectAsync as selectAsyncInState, setSelectMenuIndex as setSelectMenuIndexInState, shouldSubmitConfirmedSelectMenuValue as shouldSubmitConfirmedSelectMenuValueInState } from './AgentConsoleSelectMenuState';
 import { appendAssistantErrorMessage as appendAssistantErrorMessageInState, appendUiEventMessage as appendUiEventMessageInState, clearUiEventMessages as clearUiEventMessagesInState, createUiEventMessage as createUiEventMessageInState, getNavViewScroll as getNavViewScrollInState, isSameUiEventMessage as isSameUiEventMessageInState, markTimelineReconnecting as markTimelineReconnectingInState, navigateNav as navigateNavInState, projectCommandExchangeRecord as projectCommandExchangeRecordInState, projectThreadItem as projectThreadItemInState, qualifyUiEventKey as qualifyUiEventKeyInState, removeUiEventMessage as removeUiEventMessageInState, resolveNavSelectionTarget as resolveNavSelectionTargetInState, resolveUiEventDurationFallback as resolveUiEventDurationFallbackInState, seedCommandExchange as seedCommandExchangeInState, seedNavTree as seedNavTreeInState, seedTimeline as seedTimelineInState, setNavFilter as setNavFilterInState, setNavSelection as setNavSelectionInState, setNavViewScroll as setNavViewScrollInState, toggleTimelineCollapse as toggleTimelineCollapseInState, upsertUiEventMessage as upsertUiEventMessageInState, withoutUiEventMessages as withoutUiEventMessagesInState } from './AgentConsoleStreamProjectionState';
 import { closeMessageDetail as closeMessageDetailInState, isMessageExpanded as isMessageExpandedInState, openMessageDetail as openMessageDetailInState, resolveMessageDetailLines, resolveMessageDetailMaxColumn, scrollMessageDetail as scrollMessageDetailInState, scrollMessageDetailColumns as scrollMessageDetailColumnsInState, scrollMessageDetailColumnsToEdge as scrollMessageDetailColumnsToEdgeInState, scrollMessageDetailPage as scrollMessageDetailPageInState, scrollMessageDetailToEdge as scrollMessageDetailToEdgeInState, setMessageExpanded as setMessageExpandedInState, toggleMessageExpanded as toggleMessageExpandedInState, toggleSelectedMessageExpanded as toggleSelectedMessageExpandedInState } from './AgentConsoleMessageDetailState';
 import { buildTimelineEventRetryPayload as buildTimelineEventRetryPayloadInState, canRetryTimelineEvent as canRetryTimelineEventInState, closeTimelineEventInspector as closeTimelineEventInspectorInState, formatDuration as formatDurationInState, isFailedEventMessage as isFailedEventMessageInState, isTimelineEventMessage as isTimelineEventMessageInState, openTimelineEventInspector as openTimelineEventInspectorInState, resolveTimelineEventDetailLines, resolveTimelineEventDetailMaxColumn, scrollTimelineEventDetail as scrollTimelineEventDetailInState, scrollTimelineEventDetailColumns as scrollTimelineEventDetailColumnsInState, scrollTimelineEventDetailColumnsToEdge as scrollTimelineEventDetailColumnsToEdgeInState, scrollTimelineEventDetailPage as scrollTimelineEventDetailPageInState, scrollTimelineEventDetailToEdge as scrollTimelineEventDetailToEdgeInState } from './AgentConsoleTimelineInspector';
@@ -924,7 +926,7 @@ export class AgentConsoleSessionState {
     commandOutputsFilterMode = false;
     commandOutputsSelectedIndex = 0;
     commandExecutions: AgentConsoleCommandExecution[] = [];
-    protected commandOutputStore: CommandOutputStore | undefined;
+    commandOutputStore: CommandOutputStore | undefined;
     reviewOpen = false;
     gitSnapshotOpen = false;
     gitSnapshotCurrentRef = '';
@@ -948,7 +950,7 @@ export class AgentConsoleSessionState {
     planTodoFilter: 'all' | 'active' | 'blocked' | 'failed' = 'all';
     selectedPlanTodoIndex = -1;
     protected planEventSequence = 0;
-    protected commandOutputSequence = 0;
+    commandOutputSequence = 0;
     commandExecutionSequence = 0;
     commandExchangeSessionEpoch = 0;
     planId = '';
@@ -1100,7 +1102,7 @@ export class AgentConsoleSessionState {
     protected workspaceSuggestionRequestId = 0;
     protected suppressSuggestionMenu = false;
     /** True once the user moved inside an open suggestion menu. */
-    protected selectMenuTouched = false;
+    selectMenuTouched = false;
     setSuppressSuggestionMenu(suppressed: boolean): void { this.suppressSuggestionMenu = suppressed; }
     overlayController = new AgentConsoleOverlayController();
 
@@ -2715,100 +2717,58 @@ export class AgentConsoleSessionState {
         scrollReviewDetailColumnsToEdgeInState(this, position);
     }
 
-    setNotice(message: string): void {
-        this.notice = message;
-    }
 
-    openTextOverlay(title: string, lines: string[], visibleLines?: number): void {
-        const content = (Array.isArray(lines) ? lines : []).map(line => String(line ?? ''));
-        if (!content.length) {
-            return;
-        }
-        const page = typeof visibleLines === 'number' && visibleLines > 0 ? Math.min(Math.floor(visibleLines), content.length) : undefined;
-        this.textOverlay = { title: String(title || ''), lines: content, scroll: 0, ...(page ? { visibleLines: page } : {}) };
-        this.syncDerivedInputFocus();
-    }
 
-    closeTextOverlay(): void {
-        if (!this.textOverlay) {
-            return;
-        }
-        this.textOverlay = null;
-        this.syncDerivedInputFocus();
-    }
 
-    hasTextOverlayFocus(): boolean {
-        return !!this.textOverlay;
-    }
 
-    pushCommandOutput(command: string, text: string, kind: AgentConsoleCommandOutputEntry['kind'] = 'result'): string {
-        const body = String(text ?? '').trim();
-        if (!body || !String(command ?? '').trim()) {
-            return '';
-        }
-        const entry: AgentConsoleCommandOutputEntry = {
-            id: `output-${++this.commandOutputSequence}`,
-            command: String(command).trim(),
-            text: body,
-            ts: Date.now(),
-            kind
-        };
-        this.commandOutputs = [entry, ...this.commandOutputs].slice(0, AGENT_CONSOLE_COMMAND_OUTPUT_RING_CAP);
-        if (this.commandOutputsSelectedIndex >= this.visibleCommandOutputs.length) {
-            this.commandOutputsSelectedIndex = Math.max(0, this.visibleCommandOutputs.length - 1);
-        }
-        this.persistCommandOutput(entry);
-        return entry.id;
-    }
+
+
+
+
+
 
     /**
      * Persists a command output to the durable store when one is configured.
      * Never throws: persistence is best-effort and must not break the live ring.
      */
-    protected persistCommandOutput(entry: AgentConsoleCommandOutputEntry): Promise<void> {
-        const store = this.commandOutputStore;
-        if (!store) {
-            return Promise.resolve();
-        }
-        const execution = this.latestCommandExecution;
-        const historyEntry: AgentConsoleCommandOutputHistoryEntry = {
-            ...entry,
-            text: redactCommandOutputSecret(entry.text),
-            argsSummary: execution && execution.command === entry.command ? execution.args : undefined,
-            requestId: execution && execution.status === 'running' ? execution.requestId : undefined,
-            status: entry.kind === 'error' ? 'failed' : undefined,
-            sessionId: this.sessionId || undefined,
-            source: 'local'
-        };
-        return store.append(historyEntry) as Promise<void>;
-    }
+
 
     /**
      * Injects a durable command-output store. When provided, results are
      * persisted and can be rehydrated via `loadCommandOutputHistory`.
      */
-    setCommandOutputStore(store: CommandOutputStore | undefined): void {
-        this.commandOutputStore = store;
-    }
+
 
     /**
      * Hydrates the in-memory command-output ring from the durable store
      * (newest-first, capped at the ring cap). Used on configure/session switch.
      */
-    async loadCommandOutputHistory(): Promise<void> {
-        const store = this.commandOutputStore;
-        if (!store) {
-            return;
-        }
-        const page = await store.list({ sessionId: this.sessionId, limit: AGENT_CONSOLE_COMMAND_OUTPUT_RING_CAP });
-        if (page.items.length) {
-            this.commandOutputs = page.items.slice(0, AGENT_CONSOLE_COMMAND_OUTPUT_RING_CAP) as unknown as AgentConsoleCommandOutputEntry[];
-        }
-    }
+
 
     get latestCommandExecution(): AgentConsoleCommandExecution | undefined {
         return this.commandExecutions[0];
     }
+
+    setNotice(message: string): void { setNoticeInState(this, message); }
+    openTextOverlay(title: string, lines: string[], visibleLines?: number): void { openTextOverlayInState(this, title, lines, visibleLines); }
+    closeTextOverlay(): void { closeTextOverlayInState(this); }
+    hasTextOverlayFocus(): boolean { return hasTextOverlayFocusInState(this); }
+    pushCommandOutput(command: string, text: string, kind: AgentConsoleCommandOutputEntry['kind'] = 'result'): string { return pushCommandOutputInState(this, command, text, kind); }
+    persistCommandOutput(entry: AgentConsoleCommandOutputEntry): Promise<void> { return persistCommandOutputInState(this, entry); }
+    setCommandOutputStore(store: CommandOutputStore | undefined): void { setCommandOutputStoreInState(this, store); }
+    async loadCommandOutputHistory(): Promise<void> { return loadCommandOutputHistoryInState(this); }
+    openCommandOutputs(): void { openCommandOutputsInState(this); }
+    closeCommandOutputs(): void { closeCommandOutputsInState(this); }
+    toggleCommandOutputs(): void { toggleCommandOutputsInState(this); }
+    hasCommandOutputsFocus(): boolean { return hasCommandOutputsFocusInState(this); }
+    setCommandOutputsFilter(filter: string): void { setCommandOutputsFilterInState(this, filter); }
+    moveCommandOutputSelection(delta: number): void { moveCommandOutputSelectionInState(this, delta); }
+    copySelectedCommandOutput(): Promise<boolean> { return copySelectedCommandOutputInState(this); }
+    scrollCommandOutputsToEdge(position: 'start' | 'end'): void { scrollCommandOutputsToEdgeInState(this, position); }
+    scrollCommandOutputsPage(delta: number, pageSize?: number): void { scrollCommandOutputsPageInState(this, delta, pageSize); }
+    scrollTextOverlay(delta: number): void { scrollTextOverlayInState(this, delta); }
+    scrollTextOverlayPage(delta: number, pageSize?: number): void { scrollTextOverlayPageInState(this, delta, pageSize); }
+    scrollTextOverlayToEdge(position: 'start' | 'end'): void { scrollTextOverlayToEdgeInState(this, position); }
 
     setCommandExecutionControl(control: CommandExecutionControlPort): void {
         this.commandExecutionControl = control;
@@ -2852,36 +2812,13 @@ export class AgentConsoleSessionState {
         });
     }
 
-    openCommandOutputs(): void {
-        this.commandOutputsOpen = true;
-        this.commandOutputsFilter = '';
-        this.commandOutputsFilterMode = false;
-        this.commandOutputsSelectedIndex = 0;
-        this.syncDerivedInputFocus();
-    }
 
-    closeCommandOutputs(): void {
-        if (!this.commandOutputsOpen) {
-            return;
-        }
-        this.commandOutputsOpen = false;
-        this.commandOutputsFilter = '';
-        this.commandOutputsFilterMode = false;
-        this.commandOutputsSelectedIndex = 0;
-        this.syncDerivedInputFocus();
-    }
 
-    toggleCommandOutputs(): void {
-        if (this.commandOutputsOpen) {
-            this.closeCommandOutputs();
-        } else {
-            this.openCommandOutputs();
-        }
-    }
 
-    hasCommandOutputsFocus(): boolean {
-        return this.commandOutputsOpen;
-    }
+
+
+
+
 
     get visibleCommandOutputs(): AgentConsoleCommandOutputEntry[] {
         const needle = this.commandOutputsFilter.trim().toLowerCase();
@@ -2893,52 +2830,15 @@ export class AgentConsoleSessionState {
         );
     }
 
-    setCommandOutputsFilter(filter: string): void {
-        this.commandOutputsFilter = String(filter ?? '').slice(0, 64);
-        this.commandOutputsSelectedIndex = 0;
-    }
 
-    moveCommandOutputSelection(delta: number): void {
-        const count = this.visibleCommandOutputs.length;
-        if (!count) {
-            this.commandOutputsSelectedIndex = 0;
-            return;
-        }
-        this.commandOutputsSelectedIndex = Math.max(0, Math.min(count - 1, this.commandOutputsSelectedIndex + delta));
-    }
 
-    copySelectedCommandOutput(): Promise<boolean> {
-        const selected = this.visibleCommandOutputs[this.commandOutputsSelectedIndex];
-        if (!selected || !this.copyFocusedTextAction) {
-            return Promise.resolve(false);
-        }
-        Promise.resolve(this.copyFocusedTextAction(
-            selected.text,
-            `command ${selected.command} output`
-        )).catch(() => {
-            return;
-        });
-        return Promise.resolve(true);
-    }
 
-    scrollCommandOutputsToEdge(position: 'start' | 'end'): void {
-        const count = this.visibleCommandOutputs.length;
-        if (!count) {
-            this.commandOutputsSelectedIndex = 0;
-            return;
-        }
-        this.commandOutputsSelectedIndex = position === 'start' ? 0 : count - 1;
-    }
 
-    scrollCommandOutputsPage(delta: number, pageSize?: number): void {
-        const count = this.visibleCommandOutputs.length;
-        if (!count) {
-            this.commandOutputsSelectedIndex = 0;
-            return;
-        }
-        const resolvedPageSize = Math.max(1, pageSize ?? this.consoleOptions.reviewDetailPageSize);
-        this.moveCommandOutputSelection(delta * resolvedPageSize);
-    }
+
+
+
+
+
 
     get textOverlayPageSize(): number {
         return this.textOverlay?.visibleLines ?? this.consoleOptions.reviewDetailVisibleLines;
@@ -2952,30 +2852,11 @@ export class AgentConsoleSessionState {
         return this.textOverlay.lines.slice(this.textOverlay.scroll, this.textOverlay.scroll + visible);
     }
 
-    scrollTextOverlay(delta: number): void {
-        if (!this.textOverlay) {
-            return;
-        }
-        const visible = this.textOverlayPageSize;
-        const maxScroll = Math.max(0, this.textOverlay.lines.length - visible);
-        this.textOverlay.scroll = Math.max(0, Math.min(maxScroll, this.textOverlay.scroll + delta));
-    }
 
-    scrollTextOverlayPage(delta: number, pageSize?: number): void {
-        if (!this.textOverlay) {
-            return;
-        }
-        const resolvedPageSize = pageSize ?? this.consoleOptions.reviewDetailPageSize;
-        this.scrollTextOverlay(delta * Math.max(1, resolvedPageSize));
-    }
 
-    scrollTextOverlayToEdge(position: 'start' | 'end'): void {
-        if (!this.textOverlay) {
-            return;
-        }
-        const visible = this.textOverlayPageSize;
-        this.textOverlay.scroll = position === 'start' ? 0 : Math.max(0, this.textOverlay.lines.length - visible);
-    }
+
+
+
 
     setCommandHints(commands: string[]): void {
         this.injectedCommandHints = Array.from(new Set(commands.filter(Boolean)));
@@ -3166,15 +3047,28 @@ export class AgentConsoleSessionState {
         this.syncDerivedInputFocus();
     }
 
-    selectAsync(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string, kind?: string): Promise<string | undefined> {
-        return new Promise(resolve => {
-            this.openSelectMenu(title, options, selectedIndex, hint, kind);
-            this.selectMenuAction = async (value: string | undefined) => {
-                this.closeSelectMenu();
-                resolve(value);
-            };
-        });
-    }
+
+
+    selectAsync(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string, kind?: string): Promise<string | undefined> { return selectAsyncInState(this, title, options, selectedIndex, hint, kind); }
+    openSelectMenu(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string, kind?: string): void { openSelectMenuInState(this, title, options, selectedIndex, hint, kind); }
+    closeSelectMenu(): void { closeSelectMenuInState(this); }
+    async dismissSelectMenuLayer(): Promise<void> { return dismissSelectMenuLayerInState(this); }
+    setSelectMenuIndex(index: number): void { setSelectMenuIndexInState(this, index); }
+    moveSelectMenu(delta: number): void { moveSelectMenuInState(this, delta); }
+    moveSelectMenuToEdge(edge: 'start' | 'end'): void { moveSelectMenuToEdgeInState(this, edge); }
+    moveSelectMenuPage(direction: 1 | -1): void { moveSelectMenuPageInState(this, direction); }
+    get selectedSelectMenuOption(): AgentConsoleSelectOption | undefined { return resolveSelectedSelectMenuOption(this); }
+    isArgumentSuggestionMenu(menu: AgentConsoleSelectMenu | undefined): boolean { return isArgumentSuggestionMenuInState(this, menu); }
+    shouldSubmitConfirmedSelectMenuValue(menu: AgentConsoleSelectMenu | undefined, value?: string): boolean { return shouldSubmitConfirmedSelectMenuValueInState(this, menu, value); }
+    async confirmSelectMenu(value?: string): Promise<string | undefined> { return confirmSelectMenuInState(this, value); }
+    async confirmSelectMenuAndKeepOpen(value?: string): Promise<string | undefined> { return confirmSelectMenuAndKeepOpenInState(this, value); }
+    async completeSelectMenu(value?: string): Promise<string | undefined> { return completeSelectMenuInState(this, value); }
+    async acceptSelectMenu(value?: string): Promise<{ value: string | undefined; submitted: boolean }> { return acceptSelectMenuInState(this, value); }
+    async acceptSelectMenuIndex(index: number): Promise<{ value: string | undefined; submitted: boolean }> { return acceptSelectMenuIndexInState(this, index); }
+    async chooseSelectMenuIndex(index: number): Promise<void> { return chooseSelectMenuIndexInState(this, index); }
+    async cancelSelectMenu(): Promise<void> { return cancelSelectMenuInState(this); }
+    async openSubSelectMenu(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string): Promise<void> { return openSubSelectMenuInState(this, title, options, selectedIndex, hint); }
+    async resolveSelectMenu(value: string | undefined): Promise<void> { return resolveSelectMenuInState(this, value); }
 
     setProviderWizard(patch: Partial<AgentConsoleProviderWizardState>): void {
         this.providerWizard = {
@@ -3192,219 +3086,49 @@ export class AgentConsoleSessionState {
         this.inputPrompt = this.consoleOptions.inputPrompt;
     }
 
-    openSelectMenu(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string, kind?: string): void {
-        const currentMenu = this.selectMenu;
-        const currentAction = this.selectMenuAction;
 
-        this.selectMenu = {
-            title,
-            kind,
-            hint: hint || this.consoleOptions.selectHint,
-            options: options.slice(),
-            selectedIndex: Math.max(0, Math.min(Math.max(options.length - 1, 0), selectedIndex)),
-            parentMenu: currentMenu,
-            parentMenuAction: currentAction
-        };
-        this.syncDerivedInputFocus();
-    }
 
-    closeSelectMenu(): void {
-        this.selectMenu = undefined;
-        this.selectMenuTouched = false;
-        this.syncDerivedInputFocus();
-    }
 
-    async dismissSelectMenuLayer(): Promise<void> {
-        const currentMenu = this.selectMenu;
-        const parentMenu = currentMenu?.parentMenu;
-        if (!currentMenu) return;
-        if (parentMenu) {
-            this.selectMenuAction = undefined;
-            this.closeSelectMenu();
-            this.selectMenu = parentMenu;
-            this.selectMenuAction = currentMenu.parentMenuAction;
-            this.syncDerivedInputFocus();
-            return;
-        }
-        await this.cancelSelectMenu();
-    }
 
-    setSelectMenuIndex(index: number): void {
-        if (!this.selectMenu || !this.selectMenu.options.length) {
-            return;
-        }
-        this.selectMenuTouched = true;
-        this.selectMenu.selectedIndex = this.overlayController.clampIndex(index, this.selectMenu.options.length);
-    }
 
-    moveSelectMenu(delta: number): void {
-        this.selectMenuTouched = true;
-        if (!this.selectMenu || !this.selectMenu.options.length) {
-            return;
-        }
-        this.selectMenu.selectedIndex = this.overlayController.moveIndex(
-            this.selectMenu.selectedIndex,
-            delta,
-            this.selectMenu.options.length
-        );
-    }
 
-    moveSelectMenuToEdge(edge: 'start' | 'end'): void {
-        this.selectMenuTouched = true;
-        if (!this.selectMenu || !this.selectMenu.options.length) {
-            return;
-        }
-        this.selectMenu.selectedIndex = edge === 'start'
-            ? this.overlayController.homeIndex(this.selectMenu.options.length)
-            : this.overlayController.endIndex(this.selectMenu.options.length);
-    }
 
-    moveSelectMenuPage(direction: 1 | -1): void {
-        this.selectMenuTouched = true;
-        if (!this.selectMenu || !this.selectMenu.options.length) {
-            return;
-        }
-        this.selectMenu.selectedIndex = this.overlayController.pageIndex(
-            this.selectMenu.selectedIndex,
-            direction,
-            this.selectMenu.options.length
-        );
-    }
 
-    get selectedSelectMenuOption(): AgentConsoleSelectOption | undefined {
-        if (!this.selectMenu) {
-            return undefined;
-        }
-        return this.selectMenu.options[this.selectMenu.selectedIndex];
-    }
+
+
+
+
+
+
+
 
     /**
      * True when the open suggestion menu completes a subcommand/enum argument
      * (`/statusline l|ist`). Enter must then execute the completed command;
      * Tab stays a pure completion.
      */
-    protected isArgumentSuggestionMenu(menu: AgentConsoleSelectMenu | undefined): boolean {
-        if (!menu || !isAgentConsoleSuggestionMenu(menu) || !this.submitAction) {
-            return false;
-        }
-        return !!getAgentConsoleArgumentRange(this.input, this.inputCursor);
-    }
 
-    protected shouldSubmitConfirmedSelectMenuValue(menu: AgentConsoleSelectMenu | undefined, value?: string): boolean {
-        if (!menu || !this.submitAction) {
-            return false;
-        }
-        const resolved = String(value || '').trim();
-        if (!resolved) {
-            return false;
-        }
-        if (resolved.startsWith('/')) {
-            const def = getAgentConsoleCommandDefinition(resolved);
-            return !def || !def.needsArgs;
-        }
-        if (!isAgentConsoleSuggestionMenu(menu) || !resolved.startsWith('@')) {
-            return false;
-        }
-        // Only submit for known mention candidates (@workspace, @model, @tools, @session, @toolName).
-        // Workspace file/directory path suggestions should insert into input without submitting.
-        const mentionCandidates = getAgentConsoleMentionCandidates(this.tools);
-        return mentionCandidates.includes(resolved);
-    }
 
-    async confirmSelectMenu(value?: string): Promise<string | undefined> {
-        const resolved = value ?? this.selectedSelectMenuOption?.value;
-        const action = this.selectMenuAction;
-        this.selectMenuAction = undefined;
-        this.closeSelectMenu();
-        await action?.(resolved);
-        return resolved;
-    }
 
-    async confirmSelectMenuAndKeepOpen(value?: string): Promise<string | undefined> {
-        const resolved = value ?? this.selectedSelectMenuOption?.value;
-        const action = this.selectMenuAction;
-        this.selectMenuAction = undefined;
-        await action?.(resolved);
-        return resolved;
-    }
+
+
+
+
 
     /** Tab: fill the input with the highlighted suggestion without executing it. */
-    async completeSelectMenu(value?: string): Promise<string | undefined> {
-        return this.confirmSelectMenu(value);
-    }
 
-    async acceptSelectMenu(value?: string): Promise<{ value: string | undefined; submitted: boolean }> {
-        const menu = this.selectMenu;
-        // Enter executes. A subcommand/enum-argument suggestion (`/statusline
-        // list`) restores the word the user already typed, so confirming it
-        // must also submit the command; otherwise the first Enter silently
-        // closed the menu and only a second Enter ran the command.
-        const argumentCompletion = this.isArgumentSuggestionMenu(menu);
-        const resolved = await this.confirmSelectMenu(value);
-        const submitted = argumentCompletion || this.shouldSubmitConfirmedSelectMenuValue(menu, resolved);
-        if (submitted && resolved) {
-            if (isAgentConsoleSuggestionMenu(menu)) {
-                const next = applyAgentConsoleSuggestion(this.input, this.inputCursor, resolved);
-                this.setInput(next.value, next.cursor);
-            } else {
-                const valueWithSpace = resolved + ' ';
-                this.setInput(valueWithSpace, valueWithSpace.length);
-            }
-            await this.submitAction?.();
-        }
-        return {
-            value: resolved,
-            submitted
-        };
-    }
 
-    async acceptSelectMenuIndex(index: number): Promise<{ value: string | undefined; submitted: boolean }> {
-        if (!this.selectMenu || !this.selectMenu.options.length) {
-            return {
-                value: undefined,
-                submitted: false
-            };
-        }
-        this.setSelectMenuIndex(index);
-        return this.acceptSelectMenu(this.selectedSelectMenuOption?.value);
-    }
 
-    async chooseSelectMenuIndex(index: number): Promise<void> {
-        if (!this.selectMenu || !this.selectMenu.options.length) {
-            return;
-        }
-        this.setSelectMenuIndex(index);
-        await this.confirmSelectMenu(this.selectedSelectMenuOption?.value);
-    }
 
-    async cancelSelectMenu(): Promise<void> {
-        const action = this.selectMenuAction;
-        this.selectMenuAction = undefined;
-        this.closeSelectMenu();
-        await action?.(undefined);
-    }
 
-    async openSubSelectMenu(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string): Promise<void> {
-        const currentMenu = this.selectMenu;
-        const currentAction = this.selectMenuAction;
 
-        this.selectMenu = {
-            title,
-            hint: hint || this.consoleOptions.selectHint,
-            options: options.slice(),
-            selectedIndex: Math.max(0, Math.min(Math.max(options.length - 1, 0), selectedIndex)),
-            parentMenu: currentMenu,
-            parentMenuAction: currentAction
-        };
-        this.syncDerivedInputFocus();
-    }
 
-    async resolveSelectMenu(value: string | undefined): Promise<void> {
-        const action = this.selectMenuAction;
-        this.selectMenuAction = undefined;
-        this.closeSelectMenu();
-        await action?.(value);
-    }
+
+
+
+
+
+
 
     /**
      * Re-open the `/` or `@` suggestion menu for the current token.
