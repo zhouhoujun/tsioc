@@ -3,6 +3,7 @@ import { Suite, Test } from '@tsdi/unit';
 import {
     DetailPanelComponent,
     DialogComponent,
+    InputFieldComponent,
     ListPanelComponent,
     MessageRowComponent,
     SelectComponent,
@@ -176,5 +177,24 @@ export class CommonComponentUtilitiesTest {
         ];
         expect(panel.summary).toEqual('summary');
         expect(panel.items.map(item => `${item.lineNumber}${item.text}`)).toEqual(['  1| first', '  2| second']);
+    }
+
+    @Test('input field forwards editing events')
+    inputFieldEvents() {
+        const field = new InputFieldComponent();
+        field.value = 'draft';
+        let input = 0;
+        let cursor = 0;
+        let key = '';
+        field.inputAction = () => { input += 1; };
+        field.cursorAction = () => { cursor += 1; };
+        field.keydownAction = event => { key = event.key; };
+        field.emitInput({} as Event);
+        field.emitCursor({} as Event);
+        field.emitKeydown({ key: 'Enter' } as KeyboardEvent);
+        expect(field.value).toEqual('draft');
+        expect(input).toEqual(1);
+        expect(cursor).toEqual(1);
+        expect(key).toEqual('Enter');
     }
 }

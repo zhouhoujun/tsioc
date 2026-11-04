@@ -9,6 +9,7 @@ export * from './select';
 export * from './list-panel';
 export * from './message-row';
 export * from './detail-panel';
+export * from './input-field';
 export * from './tab-bar';
 export * from './syntax-tokens';
 export * from './display-width';
