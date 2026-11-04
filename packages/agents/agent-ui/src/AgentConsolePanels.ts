@@ -2720,12 +2720,9 @@ export class AgentConsoleMessagesPanelComponent {
 
 @Component({
     selector: 'agent-console-message-detail-panel',
+    imports: [DetailPanelComponent],
     template: `
-    <div class="console-panel console-message-detail-panel" v-style="shellStyle">
-        <label v-style="accentStyle">{{detailSummaryLabel}}</label>
-        <label v-style="hintStyle">{{detailHintLabel}}</label>
-        <label v-style="lineStyle" v-for="line in detailLines">{{line}}</label>
-    </div>
+    <detail-panel :summary="detailSummaryLabel" :hint="detailHintLabel" :items="detailItems" :styles="panelStyles"></detail-panel>
     `
 })
 export class AgentConsoleMessageDetailPanelComponent {
@@ -2793,6 +2790,10 @@ export class AgentConsoleMessageDetailPanelComponent {
         }).filter(line => !!String(line || '').trim());
     }
 
+    get panelStyles() { return { shell: this.shellStyle, header: this.accentStyle, hint: this.hintStyle, line: this.lineStyle, number: this.lineNumberStyle, content: this.lineStyle }; }
+
+    get detailItems() { return this.detailIndexes.map(index => ({ lineNumber: this.detailLineNumberAt(index), prefix: this.detailLinePrefixAt(index), text: this.detailLineContentAt(index), style: this.detailLineStyleAt(index), numberStyle: this.lineNumberStyle, prefixStyle: this.detailLinePrefixStyleAt(index), contentStyle: this.detailLineContentStyleAt(index) })); }
+
     get detailSummaryLabel(): string {
         if (!this.shouldShow || !this.selectedMessage) {
             return '';
@@ -2815,9 +2816,7 @@ export class AgentConsoleMessageDetailPanelComponent {
             : this.state.consoleOptions.messageDetailClosedHint;
     }
 
-    get detailIndexes(): number[] {
-        return Array.from({ length: this.state.messageDetailVisibleLines }, (_value, index) => index);
-    }
+    get detailIndexes(): number[] { return Array.from({ length: this.state.messageDetailVisibleLines }, (_value, index) => index); }
 
     detailLineNumberAt(index: number): string {
         if (!this.shouldShow) {

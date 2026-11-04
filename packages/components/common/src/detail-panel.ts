@@ -13,9 +13,11 @@ export interface DetailPanelStyles {
 
 export interface DetailLineItem {
     lineNumber?: string;
+    prefix?: string;
     text: string;
     style?: Record<string, string> | string;
     numberStyle?: Record<string, string> | string;
+    prefixStyle?: Record<string, string> | string;
     contentStyle?: Record<string, string> | string;
 }
 
@@ -32,7 +34,7 @@ export interface DetailLineItem {
         <label class="detail-selection" v-style="styles.selection" v-show="selection">{{selection}}</label>
         <label class="detail-hint" v-style="styles.hint" v-show="hint">{{hint}}</label>
         <label class="detail-line" v-style="item.style || styles.line" v-for="item in items">
-            <span v-show="item.lineNumber" v-style="item.numberStyle || styles.number">{{item.lineNumber}}</span><span v-style="item.contentStyle || styles.content">{{item.text}}</span>
+            <span v-show="item.lineNumber" v-style="item.numberStyle || styles.number">{{item.lineNumber}}</span><span v-show="item.prefix" v-style="item.prefixStyle || styles.content">{{item.prefix}}</span><span v-style="item.contentStyle || styles.content">{{item.text}}</span>
         </label>
     </div>`
 })
