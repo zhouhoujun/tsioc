@@ -298,6 +298,8 @@ import { loadLocalTodoPlan } from './AgentConsoleTodoView';
 import { refreshMentionCatalog } from './AgentConsoleMentions';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentConsoleAppRpc, AgentMessage, AgentOptions, AgentRuntime, AgentScheduler, AgentSessionSection, AgentSessionSectionInfo, AgentTurnMessageInput, ExchangeMetricsSnapshot, ProjectMemoryService, normalizeAgentWorkspaceIdentity, SessionSearchMatch, ApprovalManager, ToolRegistry, defaultAgentOptions, initAgentsDoc, buildHarnessProjection, formatHarnessTreeLines, formatHarnessListLines, DelegationTreeNode } from '@tsdi/agent';
 import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService } from './AgentConsoleSessionService';
+import { refreshSessionsView } from './AgentConsoleSessionRefresh';
+import { normalizeTodoStatus } from './AgentConsolePlanState';
 import { CommandHandlerContext } from './AgentConsoleCommandHandlers';
 import { buildCommandHandlerState } from './AgentConsoleCommandHandlerContext';
 import { AgentConsoleCommandDispatchHost, dispatchAgentConsoleCommand } from './AgentConsoleCommandDispatch';
@@ -755,56 +757,15 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     protected async refreshSessions(currentSessionId = this.state.sessionId): Promise<void> {
-        if (!this.sessionService) {
-            return;
-        }
-        const groups = await this.sessionService.listProjectSessions(currentSessionId);
-        if (currentSessionId !== this.state.sessionId) {
-            return;
-        }
-        const groupedSessions = this.flattenProjectSessions(groups);
-        if (groupedSessions.length) {
-            this.state.setSessions(groupedSessions);
-            this.refreshProjectContext();
-            this.refreshProjects();
-            this.refreshThreads();
-            return;
-        }
-        const sessions = await this.sessionService.listSessions(currentSessionId);
-        if (currentSessionId !== this.state.sessionId) {
-            return;
-        }
-        if (!sessions.length) {
-            this.state.setSessions([]);
-            this.state.setProjects([]);
-            this.state.setThreads([]);
-            this.state.setProjectContext();
-            this.updateTerminalTitle();
-            return;
-        }
-        this.state.setSessions(sessions.map(item => ({
-            id: item.id,
-            current: !!item.current,
-            workspace: item.workspace,
-            updatedAt: item.lastActiveAt,
-            messageCount: item.messageCount,
-            summary: item.summary,
-            title: item.title,
-            pinned: !!item.pinned,
-            archived: !!item.archived,
-            projectKey: item.projectKey,
-            projectId: item.projectId,
-            primaryThreadId: item.primaryThreadId,
-            originThreadId: item.originThreadId,
-            sessionRole: item.sessionRole,
-            rootRequest: item.rootRequest,
-            focusSummary: item.focusSummary,
-            projectLabel: item.projectId || item.focusSummary || item.workspace || item.primaryThreadId || item.rootRequest || item.id,
-            sections: Array.isArray(item.sections) ? item.sections : undefined
-        })));
-        this.refreshProjectContext();
-        this.refreshProjects();
-        this.refreshThreads();
+        return refreshSessionsView({
+            state: this.state,
+            sessionService: this.sessionService,
+            flattenProjectSessions: (groups: AgentConsoleSessionProjectGroup[]) => this.flattenProjectSessions(groups),
+            refreshProjectContext: () => this.refreshProjectContext(),
+            refreshProjects: () => this.refreshProjects(),
+            refreshThreads: () => this.refreshThreads(),
+            updateTerminalTitle: () => this.updateTerminalTitle()
+        }, currentSessionId);
     }
 
     protected refreshThreads(): void {
@@ -2095,7 +2056,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected async loadLocalTodoPlan(sessionId: string): Promise<AgentConsolePlanTodoItem[]> {
-        return loadLocalTodoPlan(sessionId, this.toolRegistry, this.state, (status: unknown) => this.normalizeTodoStatus(status)) as any;
+        return loadLocalTodoPlan(sessionId, this.toolRegistry, this.state, (status: unknown) => normalizeTodoStatus(status)) as any;
     }
 
     /**
@@ -2130,14 +2091,7 @@ this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCac
     }
 
     protected normalizeTodoStatus(status: unknown): 'pending' | 'in_progress' | 'completed' | 'cancelled' {
-        switch (String(status || '').trim()) {
-            case 'in_progress':
-            case 'completed':
-            case 'cancelled':
-                return status as 'in_progress' | 'completed' | 'cancelled';
-            default:
-                return 'pending';
-        }
+        return normalizeTodoStatus(status);
     }
 
     protected async runThemeCommand(args?: string): Promise<boolean> {

@@ -408,3 +408,16 @@ export function cancelRemainingPlanSteps(state: AgentConsoleSessionState, planId
         state.planMessage = buildPlanMessage(state);
     }
 }
+
+
+/** Normalize persisted/external todo statuses to the console plan model. */
+export function normalizeTodoStatus(status: unknown): 'pending' | 'in_progress' | 'completed' | 'cancelled' {
+    switch (String(status || '').trim()) {
+        case 'in_progress':
+        case 'completed':
+        case 'cancelled':
+            return status as 'in_progress' | 'completed' | 'cancelled';
+        default:
+            return 'pending';
+    }
+}
