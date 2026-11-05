@@ -3000,3 +3000,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - Web 端通过真实 `serve` 校验：`/?pair=...` 200、`header.js` 200、`dist/agent-console.js` 200；当前环境缺少 Chromium `libatk`，无法进行真实浏览器截图，DOM/Web 单测已回归。
 - 回归：agent-ui 1968、agent-cli 132、components/console 132、components/common 36、gateway model catalog 5、OutputGuard redaction 2；真实 TUI 重跑确认 `task-system` 路径不再被 redacted，模型切换不再被旧路由覆盖。
 - 仍需补：安装 Chromium 系统依赖后做真实浏览器截图验收；`/model` notice 的短时消失而不是仅下一轮清除。
+- 完成 SessionState 整理：运行期 command execution / 最后一批 runtime setter 移入 `AgentConsoleSessionRuntimeHost`；locale 字段与 vim controller 下沉到对应 host；`AgentConsoleSessionState` 460→34 行，仅保留构造、默认选项与 `self()`。
+- 真实 TUI 模型配置修复：
+  - 显式 `chat --provider/--model/--base-url/--api-key` 不再被持久化 `defaultProfile`/`profiles` 覆盖；显式选择会清除陈旧 profile 路由（`explicitModel`）。
+  - 持久化 profile 只剩陈旧的 tier 名（如 `openai-compatible/strong`）时不再当作真实模型 id；直接 provider/model 选择遇到 `strong/flash/fast/balanced` 会拒绝，避免整轮请求发到不存在的模型。
+  - 修复状态栏“模型已切换但标题仍显示 strong”：只有真实应用成功的 persisted profile 才更新 profile 标签。
+- 真实 TUI 系统构建任务（`/home/zhouyou/workspace/sleep-mlt`，命令 `npm run chat -- --workspace ...`）：
+  - 生成 `warehouse-system`（store/stock/report/reorder + 4 个测试文件），真实运行 `node --test warehouse-system/test/*.test.js`：44 passing、0 failing。
+  - 验证 `/yolo on` 后写工具/命令正常执行，模型标题为 `deepseek-chat`（不再回落到 strong）。
+  - 待继续排查：本轮 deepseek-chat 在部分长 turn 中最终回答已渲染、文件与测试均完成后，TUI 状态仍偶发停在 `Working`（无后续 turn_end 渲染），需要单独定位流结束事件/状态收敛。
+- 回归：agent-ui 1968、agent-cli 133、source-size OK、`git diff --check` OK。

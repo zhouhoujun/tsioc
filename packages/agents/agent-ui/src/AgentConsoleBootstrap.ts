@@ -4,6 +4,7 @@ import { closeAgentConsoleSessionTab } from './AgentConsoleSessionTabClose';
 import { applySecurityLevel } from './AgentConsolePolicyCommands';
 import { policyCommandHost } from './AgentConsoleHostFactories';
 import { promptModelUnavailable } from './AgentConsoleModelAvailability';
+import { applyPersistedModelProfile } from './AgentConsoleSettingsStore';
 
 /** Composition-root bootstrap boundary; all members are supplied by AgentConsoleComponent. */
 export interface AgentConsoleBootstrapHost {
@@ -60,7 +61,24 @@ host.state.onReviewAnnotationsPersist = (cache: any) => host.saveReviewAnnotatio
         await host.initializeInputHistory();
         // No explicit session means a fresh conversation. Resuming the state
         // default here replays the previous transcript on every console start.
-        await host.openSession(explicitSessionId || (freshStartup ? undefined : host.state.sessionId) || undefined, { persistCurrentHistory: false, fresh: freshStartup, missing: missingResume }); if (freshStartup) { await host.bootstrapStateFromAppRpc(host.state.sessionId); } if (host.appRpc && host.state.modelProfile) { await host.activateModelProfile(host.state.modelProfile, undefined, true); }
+        await host.openSession(explicitSessionId || (freshStartup ? undefined : host.state.sessionId) || undefined, { persistCurrentHistory: false, fresh: freshStartup, missing: missingResume }); if (freshStartup) { await host.bootstrapStateFromAppRpc(host.state.sessionId); }
+        const persistedProfileName = String(host.state.modelProfile || '').trim();
+        const directProfile = persistedProfileName.includes('/');
+        const profileExists = !!persistedProfileName && !!(host.options.model as any)?.profiles?.[persistedProfileName];
+        if ((host.options.model as any)?.explicitModel) {
+            host.state.setModelProfile('');
+            host.updateTerminalTitle?.();
+        } else if (directProfile && host.appRpc) {
+            const profileApplied = applyPersistedModelProfile(host.options, persistedProfileName);
+            if (!profileApplied) {
+                host.state.setModelProfile('');
+                host.updateTerminalTitle?.();
+            } else {
+                await host.activateModelProfile(persistedProfileName, undefined, true);
+            }
+        } else if (profileExists && host.appRpc) {
+            await host.activateModelProfile(persistedProfileName, undefined, true);
+        }
         if (host.state.securityLevel) {
             await applySecurityLevel(policyCommandHost(host), host.state.securityLevel, { notify: false, persist: false });
         }

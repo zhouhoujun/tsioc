@@ -15,7 +15,9 @@ export function resolveInitialModelProfile(ctx: ModelHandlerContext): string {
     if (model?.defaultProfile === 'flash' || model?.defaultProfile === 'fast') {
         return 'flash';
     }
-    if (model?.thinkingBudget || model?.reasoning) {
+    // A reasoning flag alone must not invent a `strong` tier: stale settings
+    // once rendered `strong` while the runtime used the direct model.
+    if ((model?.thinkingBudget || model?.reasoning) && model?.profiles?.strong) {
         return 'strong';
     }
     return '';

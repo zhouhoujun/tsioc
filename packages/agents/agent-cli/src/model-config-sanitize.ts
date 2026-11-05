@@ -114,3 +114,20 @@ export function sanitizeModelProfile(model: Record<string, any>, isTopLevel = tr
     }
     return next as Partial<AgentCliProviderProfile>;
 }
+
+/** Drop persisted profile routing when explicit CLI model flags must win. */
+export function applyExplicitModelSelection<T extends Record<string, any>>(model: T, explicit: boolean): T {
+    if (!explicit) {
+        return model;
+    }
+    return {
+        ...model,
+        explicitModel: true,
+        defaultProfile: undefined,
+        profiles: undefined,
+        routes: undefined,
+        complexityRouting: undefined,
+        savedProfiles: undefined,
+        activeSavedProfile: undefined
+    };
+}

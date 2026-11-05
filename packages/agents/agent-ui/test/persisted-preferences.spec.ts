@@ -111,6 +111,12 @@ export class PersistedPreferencesTest {
         expect(catalog.model.model).toEqual('live-model');
         expect(catalog.model.baseUrl).toEqual('https://alt.example');
 
+        // Tier labels persisted as direct model ids (a stale profile bug) must
+        // be rejected instead of routing turns to a nonexistent model.
+        const staleTier: any = { model: { provider: 'openai-compatible', model: 'deepseek-chat' } };
+        expect(applyPersistedModelProfile(staleTier, 'openai-compatible/strong')).toBe(false);
+        expect(staleTier.model.model).toEqual('deepseek-chat');
+
         const known: any = { model: { provider: 'openai-compatible', model: 'gpt-5.5', baseUrl: 'https://old.example', apiKey: 'old' } };
         applyPersistedModelProfile(known, 'deepseek/gpt-6.1-sol');
         expect(known.model.provider).toEqual('deepseek');

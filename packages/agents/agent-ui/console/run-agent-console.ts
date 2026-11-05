@@ -115,6 +115,7 @@ export function buildConsoleAgentOptions(
             routes: modelConfig.routes,
             complexityRouting: modelConfig.complexityRouting,
             complexityThresholds: modelConfig.complexityThresholds,
+            explicitModel: (modelConfig as any).explicitModel,
             ...(agentOptions?.model || {})
         },
         bootstrapTurn: {

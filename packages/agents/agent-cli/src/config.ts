@@ -6,7 +6,7 @@ import { AGENT_CHANNEL_GROUPS, AgentChannelsOptions } from '@tsdi/agent-channels
 import { AGENT_TOOL_GROUPS, AgentRootSettings, AgentToolsOptions, parseAgentSettingsList, resolveAgentToolDiscovery, loadEnvFiles } from '@tsdi/agent-tools';
 import { SshOptions } from '@tsdi/agent-ssh';
 import { cliCredentialId, cliCredentialStore, collectApiKeys, restoreStoredApiKeys } from './credential-keys';
-import { hasInvalidConfigSentinel, sanitizeModelProfile } from './model-config-sanitize';
+import { applyExplicitModelSelection, hasInvalidConfigSentinel, sanitizeModelProfile } from './model-config-sanitize';
 
 export interface AgentCliModelRoute {
     name?: string;
@@ -63,6 +63,8 @@ export interface AgentCliProviderProfile {
     };
     savedProfiles?: Record<string, AgentCliSavedModelProfile>;
     activeSavedProfile?: string;
+    /** Explicit CLI provider/model flags must win over persisted profiles. */
+    explicitModel?: boolean;
 }
 
 export interface AgentCliOptions {
@@ -427,8 +429,7 @@ export function resolveCliModelConfig(options: AgentCliOptions, root?: string): 
     const initialModel = resolveInitialModelSelection(settingsModel);
     const providerProfile = root ? resolveProviderProfile(root) : undefined;
     const providerRegistry = root ? resolveProviderRegistry(root) : defaultAgentProviderRegistry;
-    const provider = options.provider || process.env.AGENT_PROVIDER || initialModel.provider || providerProfile?.provider || 'deepseek';
-    const model = options.model || process.env.AGENT_MODEL || initialModel.model || providerProfile?.model || 'deepseek-v4-flash';
+    const provider = options.provider || process.env.AGENT_PROVIDER || initialModel.provider || providerProfile?.provider || 'deepseek'; const model = options.model || process.env.AGENT_MODEL || initialModel.model || providerProfile?.model || 'deepseek-v4-flash';
     const apiKeyEnv = options.apiKeyEnv
         || initialModel.apiKeyEnv
         || settingsModel?.apiKeyEnv
@@ -443,8 +444,7 @@ export function resolveCliModelConfig(options: AgentCliOptions, root?: string): 
         || undefined;
     const timeoutMs = parseInt(options.timeout as string) || initialModel.timeoutMs || providerProfile?.timeoutMs || 120000;
     const baseUrl = options.baseUrl || process.env.AGENT_BASE_URL || initialModel.baseUrl || providerProfile?.baseUrl || providerRegistry.get(provider)?.baseUrl;
-
-    return {
+    const explicitModel = !!(options.provider || options.model || options.baseUrl || options.apiKey || options.apiKeyEnv); return applyExplicitModelSelection({
         ...(settingsModel || {}),
         provider,
         model,
@@ -457,7 +457,7 @@ export function resolveCliModelConfig(options: AgentCliOptions, root?: string): 
         headers: initialModel.headers ?? settingsModel?.headers ?? providerProfile?.headers,
         thinkingBudget: initialModel.thinkingBudget ?? settingsModel?.thinkingBudget ?? providerProfile?.thinkingBudget,
         reasoning: initialModel.reasoning ?? settingsModel?.reasoning ?? providerProfile?.reasoning
-    };
+    }, explicitModel);
 }
 
 export function resolveProviderApiKeyEnv(provider: string): string | undefined {

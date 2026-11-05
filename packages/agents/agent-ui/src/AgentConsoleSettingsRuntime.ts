@@ -102,7 +102,26 @@ export async function restoreSettings(self: any): Promise<void> {
         } else if (typeof persisted.timelineMode === 'boolean') {
             self.state.setTimelineMode(persisted.timelineMode ? 'compact' : 'off');
         }
-        applyPersistedLayout(self.state, persisted, () => self.surfaceAccessor?.restartRendering?.()); applyPersistedPreferences(self.options, persisted); applyPersistedModelProfile(self.options, persisted.modelProfile); if (persisted.modelProfile) { self.state.setModelProfile(persisted.modelProfile); }
+        applyPersistedLayout(self.state, persisted, () => self.surfaceAccessor?.restartRendering?.()); applyPersistedPreferences(self.options, persisted);
+        if (!(self.options.model as any)?.explicitModel) {
+            const persistedProfile = String(persisted.modelProfile || '').trim();
+            const directProfile = persistedProfile.includes('/');
+            const profileExists = !!persistedProfile && !!(self.options.model as any)?.profiles?.[persistedProfile];
+            if (directProfile) {
+                if (applyPersistedModelProfile(self.options, persistedProfile)) {
+                    self.state.setModelProfile(persistedProfile);
+                } else {
+                    self.state.setModelProfile('');
+                    self.updateTerminalTitle();
+                }
+            } else if (persistedProfile) {
+                if (profileExists) {
+                    applyPersistedModelProfile(self.options, persistedProfile);
+                }
+                // Bare names may refer to profiles only the gateway knows about.
+                self.state.setModelProfile(persistedProfile);
+            }
+        }
         if (persisted.thinkingLevel) {
             self.modelReasoningEffort = persisted.thinkingLevel;
             self.options.model = self.options.model || {};

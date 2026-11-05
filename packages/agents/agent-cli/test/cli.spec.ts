@@ -1806,6 +1806,31 @@ export class AgentCliTest {
         expect(registry.get('openai')).toBeTruthy();
     }
 
+    @Test('explicit cli model flags override persisted profiles')
+    async explicitCliModelOverridesPersistedProfiles() {
+        const root = await this.createRoot();
+        await fs.promises.writeFile(path.join(root, 'settings.json'), JSON.stringify({
+            model: {
+                provider: 'openai-compatible',
+                model: 'gpt-5.6',
+                defaultProfile: 'strong',
+                profiles: { strong: { provider: 'openai-compatible', model: 'gpt-5.6' } }
+            }
+        }));
+
+        const modelConfig = resolveCliModelConfig({
+            provider: 'openai-compatible',
+            model: 'deepseek-chat',
+            baseUrl: 'https://api.deepseek.com'
+        }, root);
+
+        expect(modelConfig.explicitModel).toBe(true);
+        expect(modelConfig.model).toBe('deepseek-chat');
+        expect(modelConfig.baseUrl).toBe('https://api.deepseek.com');
+        expect(modelConfig.defaultProfile).toBeUndefined();
+        expect(modelConfig.profiles).toBeUndefined();
+    }
+
     @Test('provider defaults switch with provider instead of reusing previous provider model')
     providerDefaultsSwitchWithProvider() {
         const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-cli-provider-defaults-'));

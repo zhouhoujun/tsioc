@@ -73,25 +73,31 @@ export function applyProfileSelection(options: any, name: string, reasoningEffor
 }
 
 /** Apply a persisted active model profile (or provider/model id) to the runtime options. */
-export function applyPersistedModelProfile(options: any, name?: string | null): void {
+export function applyPersistedModelProfile(options: any, name?: string | null): boolean {
     const profileName = String(name || '').trim();
     if (!options || !profileName) {
-        return;
+        return false;
     }
     const model = { ...(options.model || {}) };
     if (applyProfileSelection(options, profileName)) {
-        return;
+        return true;
     }
     const separator = profileName.indexOf('/');
     if (separator <= 0) {
-        return;
+        return false;
     }
     const provider = profileName.slice(0, separator);
     const modelId = profileName.slice(separator + 1);
+    // Older builds could persist a tier label as a direct model id (for
+    // example `openai-compatible/strong`) after a stale profile activation.
+    // Treat it as invalid instead of routing every turn to a nonexistent model.
+    if (['strong', 'flash', 'fast', 'balanced'].includes(modelId.toLowerCase())) {
+        return false;
+    }
     const match = Object.values(model.profiles || {}).find(entry => String((entry as any)?.provider || '') === provider) as any;
     if (match) {
         options.model = { ...model, ...match, provider, model: modelId, defaultProfile: undefined };
-        return;
+        return true;
     }
     const known = defaultAgentProviderRegistry.get(provider);
     options.model = known
@@ -106,6 +112,7 @@ export function applyPersistedModelProfile(options: any, name?: string | null): 
             defaultProfile: undefined
         }
         : { ...model, provider, model: modelId, defaultProfile: undefined };
+    return true;
 }
 
 /** Validate persisted console settings; shared by the file store and the web RPC store. */
