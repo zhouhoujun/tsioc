@@ -2973,6 +2973,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - `/`、`@` 建议刷新逻辑移入 `AgentConsoleSuggestionRefresh`，`AgentConsoleSuggestions` 483→409。
 - timeline window ledger（compact/steps/verbose 窗口选择）移入 `AgentConsoleTimelineLedger`，`AgentConsoleTimelineWindow` 523→425。
 - message item 主渲染（markdown 行、token、line/item 组装）移入 `AgentConsoleMessageItemRenderer`，`AgentConsoleMessageRenderers` 523→182。
+- local event 的 plan/tool/question/event key 辅助移入 `AgentConsoleLocalEventHelperHost`，`AgentConsoleLocalEventBindings` 433→368。
 - 真实 TUI 验证改用标准库 PTY 交互（等待 prompt 后发送 `/exit`），避免管道提前注入导致的 teardown race。
 - 修复 components 子组件 callback input 绑定：普通父方法保持父组件 proxy 作为 `this`，agent-ui overlay 关闭不再手工 `reactive(state, effect)`，直接走组件响应式写入。
 - 真实 CLI/TUI 验证（`workspace: /home/zhouyou/workspace/sleep-mlt`）：
