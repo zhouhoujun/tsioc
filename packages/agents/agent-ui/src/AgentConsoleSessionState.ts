@@ -317,12 +317,12 @@ import type {
     AgentConsoleUiEventOptions
 } from './AgentConsoleStateTypes';
 import { EN_MESSAGE_STATUS_LABELS, ZH_CONSOLE_HINTS, ZH_MESSAGE_STATUS_LABELS, defaultAgentConsoleOptions } from './AgentConsoleStateTypes';
-import { AgentConsoleSessionOptionsHost } from './AgentConsoleSessionOptionsHost';
+import { AgentConsoleSessionTimelineHost } from './AgentConsoleSessionTimelineHost';
 
 export * from './AgentConsoleStateTypes';
 
 @Injectable()
-export class AgentConsoleSessionState extends AgentConsoleSessionOptionsHost {
+export class AgentConsoleSessionState extends AgentConsoleSessionTimelineHost {
     protected self(): AgentConsoleSessionState { return this; }
     constructor(@Inject(COMMAND_EXECUTION_CONTROL) protected commandExecutionControl?: CommandExecutionControlPort, @Optional() @Inject(TranslatorService) public translator?: TranslatorService) {
         super();
@@ -659,82 +659,6 @@ export class AgentConsoleSessionState extends AgentConsoleSessionOptionsHost {
     }
 
     /** Last assistant answer row; kept fully expanded in viewport mode while other long bodies collapse. */
-    get displayMessages(): AgentMessage[] { return resolveDisplayMessages(this); }
-    get sessionHeader(): TimelineWindowMessage | undefined { return resolveSessionHeader(this); }
-    get sessionFooter(): TimelineWindowMessage | undefined { return resolveSessionFooter(this); }
-
-    get finalAssistantMessageId(): string {
-        return resolveFinalAssistantMessageId(this.messages);
-    }
-
-    /** Earliest session timestamp: first message createdAt → turn start → now. */
-
-    setMessages(messages: AgentMessage[], preserveCommandExecutionMessages = false): void {
-        setMessagesInState(this, messages, preserveCommandExecutionMessages);
-    }
-
-    appendMessage(message: AgentMessage): void {
-        appendMessageInState(this, message);
-    }
-
-    setSections(sections: AgentSessionSection[]): void {
-        this.sections = Array.isArray(sections) ? sections : [];
-    }
-
-    mergeMessagesPage(page: {
-        messages: AgentMessage[];
-        sections?: AgentSessionSection[];
-        hasMore?: boolean;
-        mode?: 'append' | 'prepend';
-    }): void {
-        mergeMessagesPageInState(this, page);
-    }
-
-    beginTurnEventScope(scope?: string): string {
-        this.activeTurnEventScope = String(scope || '').trim() || `turn-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
-        return this.activeTurnEventScope;
-    }
-
-    clearTurnEventScope(scope?: string): void {
-        const resolvedScope = String(scope || '').trim();
-        if (!resolvedScope || this.activeTurnEventScope === resolvedScope) {
-            this.activeTurnEventScope = '';
-        }
-    }
-
-    /**
-     * Derive the per-step elapsed time when a terminal event replaces a still-running
-     * timeline row that carries no explicit duration. The replacement row preserves the
-     * original start time (createdAt), so the processed duration is always available
-     * for the timeline UI even when the incoming event has no receipt duration.
-     */
-
-    /** Shared cross-host projection entry point for transcript thread items. */
-
-    toggleTimelineCollapse(scopeKey: string): void { toggleTimelineCollapseInState(this, scopeKey); }
-    qualifyUiEventKey(key: string): string { return qualifyUiEventKeyInState(this, key); }
-    withoutUiEventMessages(messages: AgentMessage[] = this.messages): AgentMessage[] { return withoutUiEventMessagesInState(this, messages); }
-    clearUiEventMessages(): void { clearUiEventMessagesInState(this); }
-    removeUiEventMessage(eventKey: string): void { removeUiEventMessageInState(this, eventKey); }
-    seedTimeline(entries: TimelineEntry[]): void { seedTimelineInState(this, entries); }
-    seedCommandExchange(records: CommandExchangeRecord[]): void { seedCommandExchangeInState(this, records); }
-    projectCommandExchangeRecord(record: CommandExchangeRecord): boolean { return projectCommandExchangeRecordInState(this, record); }
-    markTimelineReconnecting(reconnecting: boolean): void { markTimelineReconnectingInState(this, reconnecting); }
-    seedNavTree(tree: NavTree | null | undefined): void { seedNavTreeInState(this, tree); }
-    setNavFilter(filter?: NavFilter): void { setNavFilterInState(this, filter); }
-    setNavSelection(selection?: NavSelection): void { setNavSelectionInState(this, selection); }
-    navigateNav(direction: 'up' | 'down', type?: NavEntityType): NavSelection | undefined { return navigateNavInState(this, direction, type); }
-    resolveNavSelectionTarget(): NavSelection | undefined { return resolveNavSelectionTargetInState(this); }
-    setNavViewScroll(viewId: string, scroll: number): void { setNavViewScrollInState(this, viewId, scroll); }
-    getNavViewScroll(viewId: string): number { return getNavViewScrollInState(this, viewId); }
-    appendUiEventMessage(content: string, options: AgentConsoleUiEventOptions = {}): void { appendUiEventMessageInState(this, content, options); }
-    upsertUiEventMessage(eventKey: string, content: string, options: AgentConsoleUiEventOptions = {}): void { upsertUiEventMessageInState(this, eventKey, content, options); }
-    resolveUiEventDurationFallback(existing: AgentMessage, incoming: AgentConsoleUiEventOptions): AgentConsoleUiEventOptions { return resolveUiEventDurationFallbackInState(this, existing, incoming); }
-    projectThreadItem(event: ThreadItemEvent): void { projectThreadItemInState(this, event); }
-    appendAssistantErrorMessage(message: string): void { appendAssistantErrorMessageInState(this, message); }
-    createUiEventMessage(content: string, options: AgentConsoleUiEventOptions = {}): AgentMessage { return createUiEventMessageInState(this, content, options); }
-    isSameUiEventMessage(left: AgentMessage | undefined, right: AgentMessage | undefined): boolean { return isSameUiEventMessageInState(this, left, right); }
-
     setStatus(status: string): void {
         const nextStatus = status || 'idle';
         if (this.status === nextStatus) {
