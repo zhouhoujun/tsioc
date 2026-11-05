@@ -2,6 +2,7 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Application } from '@tsdi/core';
+import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { AGENT_OPTIONS } from '@tsdi/agent';
 import { AgentUiConfigService } from '@tsdi/agent-ui';
 import { buildConsoleAgentOptions } from '@tsdi/agent-ui/console';
@@ -102,6 +103,7 @@ export async function runAgentServe(options: AgentServeOptions = {}): Promise<an
     const token = String(gatewayConfig.authToken || '');
 
     const app = await Application.run(AgentGatewayModule, {
+        deps: [ServerCommonModule],
         providers: [
             ...provideAgentGateway(gatewayConfig),
             ...buildAgentRuntimeProviders(config, resolved, options),
