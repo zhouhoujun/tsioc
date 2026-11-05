@@ -82,11 +82,11 @@ import { AgentConsoleTimelineLabels, DEFAULT_TIMELINE_LABELS } from './AgentCons
 
 const STRUCTURAL_KINDS = new Set(['plan-todo', 'file-change', 'timeline-boundary']);
 
-function isStructural(metadata?: Record<string, any>): boolean {
+export function isStructural(metadata?: Record<string, any>): boolean {
     return STRUCTURAL_KINDS.has(metadata?.uiKind);
 }
 
-function isCurrentScope(message: TimelineWindowMessage, scope: string): boolean {
+export function isCurrentScope(message: TimelineWindowMessage, scope: string): boolean {
     return scope !== '' && String(message.metadata?.uiEventKey || '').startsWith(`${scope}:`);
 }
 
@@ -95,7 +95,7 @@ export function isError(metadata?: Record<string, any>): boolean {
 }
 
 /** Estimate how many display rows a message will occupy. */
-function estimateRows(message: TimelineWindowMessage): number {
+export function estimateRows(message: TimelineWindowMessage): number {
     const content = String(message.content || '');
     // Structural items (plan-todo, file-change) are multi-line
     if (message.metadata?.uiKind === 'plan-todo') return 3;
@@ -107,7 +107,7 @@ function estimateRows(message: TimelineWindowMessage): number {
     return Math.max(1, Math.ceil(getDisplayWidth(content) / 80));
 }
 
-function classifyItem(
+export function classifyItem(
     message: TimelineWindowMessage,
     scope: string,
     isStruct: boolean,
@@ -165,7 +165,7 @@ export function truncateTimelineRowText(
     return truncateByDisplayWidth(content, maxWidth);
 }
 
-function withTimelineBounds(
+export function withTimelineBounds(
     result: TimelineWindowLedgerResult,
     header?: TimelineWindowMessage,
     footer?: TimelineWindowMessage
@@ -295,7 +295,7 @@ function makeCollapsedTurnItem(
     };
 }
 
-function withTurnCollapse(
+export function withTurnCollapse(
     result: TimelineWindowLedgerResult,
     options: TimelineWindowLedgerOptions
 ): TimelineWindowLedgerResult {
@@ -379,7 +379,7 @@ function withTurnCollapse(
     return { ...result, items: output };
 }
 
-function makeSummary(
+export function makeSummary(
     hidden: number,
     mode: TimelineWindowMode,
     firstMessage: TimelineWindowMessage,
@@ -421,103 +421,5 @@ export type { TimelineSentenceParts } from './AgentConsoleTimelineFormat';
  * Returns a ledger with per-item priority/category/estimatedRows annotations
  * so callers can render hidden-range markers or re-budget as needed.
  */
-export function resolveTimelineWindowLedger(
-    options: TimelineWindowLedgerOptions
-): TimelineWindowLedgerResult {
-    const { messages, limit, mode, activeScope, header, footer } = options;
 
-    if (mode === 'verbose') {
-        return withTurnCollapse(withTimelineBounds({
-            items: messages.map(msg => {
-                const struct = isStructural(msg.metadata);
-                const err = isError(msg.metadata);
-                const current = isCurrentScope(msg, activeScope);
-                const { priority, category } = classifyItem(msg, activeScope, struct, err, current);
-                return { message: msg, priority, category, estimatedRows: estimateRows(msg) };
-            }),
-            hiddenCount: 0
-        }, header, footer), options);
-    }
-
-    if (messages.length <= limit) {
-        return withTurnCollapse(withTimelineBounds({
-            items: messages.map(msg => {
-                const struct = isStructural(msg.metadata);
-                const err = isError(msg.metadata);
-                const current = isCurrentScope(msg, activeScope);
-                const { priority, category } = classifyItem(msg, activeScope, struct, err, current);
-                return { message: msg, priority, category, estimatedRows: estimateRows(msg) };
-            }),
-            hiddenCount: 0
-        }, header, footer), options);
-    }
-
-    const structural = messages.filter(msg => isStructural(msg.metadata));
-    const transcript = messages.filter(msg => !isStructural(msg.metadata));
-
-    if (mode === 'compact') {
-        const current = activeScope
-            ? transcript.filter(msg => isCurrentScope(msg, activeScope))
-            : [];
-        const errors = transcript.filter(msg => isError(msg.metadata));
-
-        const retained = new Set<string>();
-        current.forEach(msg => { if (msg.id) retained.add(msg.id); });
-        errors.forEach(msg => { if (msg.id) retained.add(msg.id); });
-        const visible = transcript.filter(msg => msg.id != null && retained.has(msg.id));
-        const hidden = transcript.length - visible.length;
-
-        const items: TimelineWindowItem[] = [];
-        if (hidden > 0) {
-            items.push(makeSummary(hidden, mode, messages[0], options.summaryLabels));
-        }
-        visible.forEach(msg => {
-            const struct = isStructural(msg.metadata);
-            const err = isError(msg.metadata);
-            const current = isCurrentScope(msg, activeScope);
-            const { priority, category } = classifyItem(msg, activeScope, struct, err, current);
-            items.push({ message: msg, priority, category, estimatedRows: estimateRows(msg) });
-        });
-        structural.forEach(msg => {
-            const err = isError(msg.metadata);
-            const { priority, category } = classifyItem(msg, activeScope, true, err, false);
-            items.push({ message: msg, priority, category, estimatedRows: estimateRows(msg) });
-        });
-
-        return withTurnCollapse(withTimelineBounds({ items, hiddenCount: hidden }, header, footer), options);
-    }
-
-    // steps mode (default): tail + active scope + structural
-    const current = activeScope
-        ? transcript.filter(msg => isCurrentScope(msg, activeScope))
-        : [];
-    const tail = transcript.slice(-limit);
-    const retained = new Set(tail.map(msg => msg.id));
-    current.forEach(msg => retained.add(msg.id));
-    const visible = transcript.filter(msg => retained.has(msg.id));
-    const hidden = transcript.length - visible.length;
-
-    const items: TimelineWindowItem[] = [];
-    if (hidden > 0) {
-        items.push(makeSummary(hidden, mode, messages[0], options.summaryLabels));
-    }
-    visible.forEach(msg => {
-        const err = isError(msg.metadata);
-        const inTail = tail.some(t => t.id === msg.id);
-        const inCurrent = current.some(c => c.id === msg.id);
-        if (inCurrent) {
-            const { priority, category } = classifyItem(msg, activeScope, false, err, true);
-            items.push({ message: msg, priority, category, estimatedRows: estimateRows(msg) });
-        } else if (inTail) {
-            const { priority, category } = classifyItem(msg, activeScope, false, err, false);
-            items.push({ message: msg, priority, category, estimatedRows: estimateRows(msg) });
-        }
-    });
-    structural.forEach(msg => {
-        const err = isError(msg.metadata);
-        const { priority, category } = classifyItem(msg, activeScope, true, err, false);
-        items.push({ message: msg, priority, category, estimatedRows: estimateRows(msg) });
-    });
-
-    return withTurnCollapse(withTimelineBounds({ items, hiddenCount: hidden }, header, footer), options);
-}
+export { resolveTimelineWindowLedger } from './AgentConsoleTimelineLedger';
