@@ -76,8 +76,8 @@ import {
     getAgentConsoleMentionCandidates,
     isAgentConsoleSuggestionMenu,
     resolveAgentConsoleInputSuggestions,
-    refreshInputSuggestions,
 } from './AgentConsoleSuggestions';
+import { refreshInputSuggestions } from './AgentConsoleSuggestionRefresh';
 import { resolveDynamicArgumentValues } from './AgentConsoleArgumentValues';
 import {
     AGENT_CONSOLE_OVERLAY_HINTS,
