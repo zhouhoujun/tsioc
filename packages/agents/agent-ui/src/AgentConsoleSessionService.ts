@@ -1,6 +1,7 @@
 import { Injectable, Inject, Optional } from '@tsdi/ioc';
 import { AGENT_CONSOLE_APP_RPC, AgentConsoleAppRpc, AgentMessage, AgentRuntime, AgentSessionSection, AgentSessionSectionInfo, TurnDiagnosticsStore, buildUsageSummary, collectMessageUsageRecords, collectTurnUsageRecords, deriveSectionInfos, normalizeAgentWorkspaceIdentity, SessionSearchMatch, SessionStore } from '@tsdi/agent';
 import { AgentConsoleSessionGrouping } from './AgentConsoleSessionGrouping';
+import { collectExportToolCalls, createExportResult, normalizeExportFormat, normalizeExportResult } from './AgentConsoleSessionExport';
 import { formatAgentUiNotice } from './agent-ui.i18n';
 
 export type AgentSessionExportFormat = 'json' | 'jsonl';
@@ -553,10 +554,10 @@ export class AgentConsoleSessionService {
     ): Promise<AgentSessionExportResult> {
         const resolvedSessionId = String(sessionId || '').trim();
         if (!resolvedSessionId) { throw new Error(formatAgentUiNotice(undefined, 'sessionIdRequired')); }
-        const format = this.normalizeExportFormat(options?.format);
+        const format = normalizeExportFormat(options?.format);
         if (this.appRpc) {
             const result = await this.appRpc.request('session.export', { sessionId: resolvedSessionId, format }, context);
-            return this.normalizeExportResult(resolvedSessionId, format, result);
+            return normalizeExportResult(resolvedSessionId, format, result);
         }
         const state = this.sessionStore
             ? await this.sessionStore.get(resolvedSessionId)
@@ -566,7 +567,7 @@ export class AgentConsoleSessionService {
             : this.runtime
                 ? await this.runtime.getMessages(resolvedSessionId)
                 : [];
-        const toolCalls = this.collectExportToolCalls(messages);
+        const toolCalls = collectExportToolCalls(messages);
         const exportedAt = Date.now();
         const session = {
             id: resolvedSessionId,
@@ -584,7 +585,7 @@ export class AgentConsoleSessionService {
             messageCount: messages.length,
             toolCallCount: toolCalls.length
         };
-        return this.createExportResult(resolvedSessionId, format, exportedAt, session, messages, toolCalls);
+        return createExportResult(resolvedSessionId, format, exportedAt, session, messages, toolCalls);
     }
 
     async listApprovals(sessionId?: string, context?: any): Promise<Array<Record<string, any>>> {
@@ -1022,128 +1023,8 @@ export class AgentConsoleSessionService {
         };
     }
 
-    protected normalizeExportFormat(format?: string): AgentSessionExportFormat {
-        return String(format || '').trim().toLowerCase() === 'jsonl'
-            ? 'jsonl'
-            : 'json';
-    }
-
-    protected normalizeExportResult(
-        sessionId: string,
-        format: AgentSessionExportFormat,
-        result: any
-    ): AgentSessionExportResult {
-        const exportedAt = Number(result?.exportedAt ?? Date.now());
-        const messages = Array.isArray(result?.messages) ? result.messages : [];
-        const toolCalls = Array.isArray(result?.toolCalls) ? result.toolCalls : this.collectExportToolCalls(messages);
-        const session = result?.session && typeof result.session === 'object'
-            ? result.session
-            : {
-                id: sessionId,
-                messageCount: messages.length,
-                toolCallCount: toolCalls.length
-            };
-        return {
-            sessionId,
-            format: this.normalizeExportFormat(result?.format ?? format),
-            exportedAt,
-            fileName: String(result?.fileName || this.buildExportFileName(sessionId, exportedAt, format)),
-            contentType: String(result?.contentType || this.resolveExportContentType(format)),
-            content: String(result?.content || this.serializeSessionExport(format, exportedAt, session, messages, toolCalls)),
-            session,
-            messages,
-            toolCalls
-        };
-    }
-
-    protected createExportResult(
-        sessionId: string,
-        format: AgentSessionExportFormat,
-        exportedAt: number,
-        session: Record<string, any>,
-        messages: AgentMessage[],
-        toolCalls: Array<Record<string, any>>
-    ): AgentSessionExportResult {
-        return {
-            sessionId,
-            format,
-            exportedAt,
-            fileName: this.buildExportFileName(sessionId, exportedAt, format),
-            contentType: this.resolveExportContentType(format),
-            content: this.serializeSessionExport(format, exportedAt, session, messages, toolCalls),
-            session,
-            messages,
-            toolCalls
-        };
-    }
-
-    protected buildExportFileName(
-        sessionId: string,
-        exportedAt: number,
-        format: AgentSessionExportFormat
-    ): string {
-        const ext = format === 'jsonl' ? 'jsonl' : 'json';
-        const stamp = new Date(exportedAt).toISOString().replace(/[:.]/g, '-');
-        const safeSessionId = String(sessionId || 'session').replace(/[^a-zA-Z0-9._-]+/g, '-');
-        return `agent-session-${safeSessionId}-${stamp}.${ext}`;
-    }
-
-    protected resolveExportContentType(format: AgentSessionExportFormat): string {
-        return format === 'jsonl'
-            ? 'application/x-ndjson; charset=utf-8'
-            : 'application/json; charset=utf-8';
-    }
-
-    protected serializeSessionExport(
-        format: AgentSessionExportFormat,
-        exportedAt: number,
-        session: Record<string, any>,
-        messages: AgentMessage[],
-        toolCalls: Array<Record<string, any>>
-    ): string {
-        if (format === 'jsonl') {
-            const lines = [
-                JSON.stringify({ type: 'session', exportedAt, session }),
-                ...messages.map(message => JSON.stringify({ type: 'message', message })),
-                ...toolCalls.map(toolCall => JSON.stringify({ type: 'tool_call', toolCall }))
-            ];
-            return `${lines.join('\n')}\n`;
-        }
-        return JSON.stringify({
-            type: 'session_export',
-            format,
-            exportedAt,
-            session,
-            messages,
-            toolCalls
-        }, null, 2);
-    }
-
-    protected collectExportToolCalls(messages: AgentMessage[]): Array<Record<string, any>> {
-        const records: Array<Record<string, any>> = [];
-        for (const message of messages || []) {
-            const toolCalls = Array.isArray(message?.metadata?.toolCalls)
-                ? message.metadata.toolCalls
-                : [];
-            for (const toolCall of toolCalls) {
-                if (!toolCall || typeof toolCall !== 'object') {
-                    continue;
-                }
-                const id = typeof toolCall.id === 'string' ? toolCall.id : '';
-                const name = typeof toolCall.name === 'string' ? toolCall.name : '';
-                if (!id && !name) {
-                    continue;
-                }
-                records.push({
-                    id: id || null,
-                    name: name || null,
-                    input: toolCall.input ?? null,
-                    messageId: message.id,
-                    createdAt: message.createdAt
-                });
-            }
-        }
-        return records;
+    protected normalizeExportResult(sessionId: string, format: AgentSessionExportFormat, result: any): AgentSessionExportResult {
+        return normalizeExportResult(sessionId, format, result);
     }
 
     protected sortSessionChoices(sessions: AgentConsoleSessionChoice[]): AgentConsoleSessionChoice[] {
