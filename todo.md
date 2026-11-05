@@ -2981,6 +2981,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - review task copy / group meta / focused coding-task / lineage 投影移入 `AgentConsoleSessionCodingTaskHost`，`AgentConsoleSessionState` 1366→1208。
 - theme / console options / layout / which-key / health / raw mode 投影移入 `AgentConsoleSessionOptionsHost`，`AgentConsoleSessionState` 1208→1117。
 - message list / timeline / command exchange / nav 投影移入 `AgentConsoleSessionTimelineHost`，`AgentConsoleSessionState` 1117→1041。
+- vim 输入模式 / focus sync / select interaction 投影移入 `AgentConsoleSessionInputHost`，`AgentConsoleSessionState` 1041→969。
 - 真实 TUI 验证改用标准库 PTY 交互（等待 prompt 后发送 `/exit`），避免管道提前注入导致的 teardown race。
 - 修复 components 子组件 callback input 绑定：普通父方法保持父组件 proxy 作为 `this`，agent-ui overlay 关闭不再手工 `reactive(state, effect)`，直接走组件响应式写入。
 - 真实 CLI/TUI 验证（`workspace: /home/zhouyou/workspace/sleep-mlt`）：
