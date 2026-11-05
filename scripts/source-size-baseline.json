@@ -28,5 +28,6 @@
   "packages/agents/agent/src/scheduler/IntervalAgentScheduler.ts": 628,
   "packages/agents/agent/src/tools/ToolApprovalManager.ts": 626,
   "packages/agents/agent-ui/src/AgentConsoleModelHandlers.ts": 426,
-  "packages/agents/agent-ui/src/AgentConsoleFocusLayers.ts": 359
+  "packages/agents/agent-ui/src/AgentConsoleFocusLayers.ts": 359,
+  "packages/agents/agent-ui/src/AgentConsoleSessionContentPresenter.ts": 391
 }
