@@ -385,7 +385,6 @@ export class AgentConsoleSessionState extends AgentConsoleSessionListHost {
     translateLabel(key: string, params: Record<string, any> | undefined, fallback: string): string {
         return formatAgentUiLabel(this.translator, key, fallback, params);
     }
-
     get inputFocused(): boolean {
         return !this.focusLayers.blocksComposerInput();
     }
