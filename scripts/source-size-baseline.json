@@ -37,5 +37,6 @@
   "packages/agents/agent-ui/src/AgentConsoleProviderWizard.ts": 353,
   "packages/agents/agent-ui/src/AgentConsoleProviderWizardFlow.ts": 204,
   "packages/agents/agent-ui/src/AgentConsoleHostFactories.ts": 209,
-  "packages/agents/agent-ui/src/AgentConsoleTaskPanels.ts": 334
+  "packages/agents/agent-ui/src/AgentConsoleTaskPanels.ts": 334,
+  "packages/agents/agent-ui/src/AgentConsoleTurnStreamController.ts": 403
 }
