@@ -317,12 +317,12 @@ import type {
     AgentConsoleUiEventOptions
 } from './AgentConsoleStateTypes';
 import { EN_MESSAGE_STATUS_LABELS, ZH_CONSOLE_HINTS, ZH_MESSAGE_STATUS_LABELS, defaultAgentConsoleOptions } from './AgentConsoleStateTypes';
-import { AgentConsoleSessionListHost } from './AgentConsoleSessionListHost';
+import { AgentConsoleSessionTranscriptHost } from './AgentConsoleSessionTranscriptHost';
 
 export * from './AgentConsoleStateTypes';
 
 @Injectable()
-export class AgentConsoleSessionState extends AgentConsoleSessionListHost {
+export class AgentConsoleSessionState extends AgentConsoleSessionTranscriptHost {
     protected self(): AgentConsoleSessionState { return this; }
     constructor(@Inject(COMMAND_EXECUTION_CONTROL) protected commandExecutionControl?: CommandExecutionControlPort, @Optional() @Inject(TranslatorService) public translator?: TranslatorService) {
         super();
@@ -734,96 +734,6 @@ export class AgentConsoleSessionState extends AgentConsoleSessionListHost {
     appendAssistantErrorMessage(message: string): void { appendAssistantErrorMessageInState(this, message); }
     createUiEventMessage(content: string, options: AgentConsoleUiEventOptions = {}): AgentMessage { return createUiEventMessageInState(this, content, options); }
     isSameUiEventMessage(left: AgentMessage | undefined, right: AgentMessage | undefined): boolean { return isSameUiEventMessageInState(this, left, right); }
-
-    setSelectedMessageId(messageId: string): void {
-        if (!messageId || !this.displayMessages.some(item => item.id === messageId)) {
-            return;
-        }
-        this.selectedMessageId = messageId;
-        this.messageDetailScroll = 0;
-        this.messageDetailColumnScroll = 0;
-    }
-
-    isPlanTodoMessageSelected(): boolean {
-        return this.selectedMessageId === '__plan_todo_inline__' && this.planTodos.length > 7;
-    }
-
-    focusLatestLongMessage(): boolean {
-        if (this.input || this.inputLocked || this.modalPromptActive || this.focusLayers.hasBlockingSelectMenu()) {
-            return false;
-        }
-        const messages = this.displayMessages;
-        for (let index = messages.length - 1; index >= 0; index -= 1) {
-            const message = messages[index];
-            const content = String(message.content || '');
-            if (content.split('\n').length > 8 || content.length > 800) {
-                this.selectedMessageId = message.id;
-                this.messageDetailOpen = false;
-                this.messagesFocused = true;
-                this.syncDerivedInputFocus();
-                return true;
-            }
-        }
-        if (!messages.length) {
-            return false;
-        }
-        this.selectedMessageId = messages[messages.length - 1].id;
-        this.messageDetailOpen = false;
-        this.messagesFocused = true;
-        this.syncDerivedInputFocus();
-        return true;
-    }
-
-    get selectedMessage(): AgentMessage | undefined {
-        return this.displayMessages.find(item => item.id === this.selectedMessageId);
-    }
-
-    get selectedTimelineEvent(): AgentMessage | undefined {
-        if (!this.selectedTimelineEventId) {
-            return undefined;
-        }
-        return this.displayMessages.find(item => item.id === this.selectedTimelineEventId);
-    }
-
-    /** Host hook: fetch one tool call's raw payload on demand (optional). */
-    toolPayloadLoader?: (toolCallId: string) => Promise<string | undefined>;
-
-    /** Raw payload shown in the event inspector (empty until the host answers). */
-    timelineEventOutput = '';
-    timelineEventOutputLoading = false;
-
-    get hasTimelineEventInspectorFocus(): boolean {
-        return !!this.timelineEventInspectorOpen;
-    }
-
-    isTimelineEventMessage(message?: AgentMessage | null): boolean { return isTimelineEventMessageInState(this, message); }
-    isFailedEventMessage(message?: AgentMessage | null): boolean { return isFailedEventMessageInState(this, message); }
-    openTimelineEventInspector(eventMessage?: AgentMessage): void { openTimelineEventInspectorInState(this, eventMessage); }
-    closeTimelineEventInspector(): void { closeTimelineEventInspectorInState(this); }
-    get timelineEventDetailLines(): string[] { return resolveTimelineEventDetailLines(this); }
-    get timelineEventDetailMaxColumn(): number { return resolveTimelineEventDetailMaxColumn(this); }
-    formatDuration(ms: number): string { return formatDurationInState(ms); }
-    scrollTimelineEventDetail(delta: number): void { scrollTimelineEventDetailInState(this, delta); }
-    scrollTimelineEventDetailPage(delta: number, pageSize?: number): void { scrollTimelineEventDetailPageInState(this, delta, pageSize); }
-    scrollTimelineEventDetailToEdge(position: 'start' | 'end'): void { scrollTimelineEventDetailToEdgeInState(this, position); }
-    scrollTimelineEventDetailColumns(delta: number): void { scrollTimelineEventDetailColumnsInState(this, delta); }
-    scrollTimelineEventDetailColumnsToEdge(position: 'start' | 'end'): void { scrollTimelineEventDetailColumnsToEdgeInState(this, position); }
-    canRetryTimelineEvent(): boolean { return canRetryTimelineEventInState(this); }
-    buildTimelineEventRetryPayload(): { toolCallId?: string; receiptId?: string; attempt?: number; uiEventKey?: string } | null { return buildTimelineEventRetryPayloadInState(this); }
-
-    isMessageExpanded(messageId: string): boolean { return isMessageExpandedInState(this, messageId); }
-    setMessageExpanded(messageId: string, expanded: boolean): void { setMessageExpandedInState(this, messageId, expanded); }
-    toggleMessageExpanded(messageId: string): void { toggleMessageExpandedInState(this, messageId); }
-    toggleSelectedMessageExpanded(): boolean { return toggleSelectedMessageExpandedInState(this); }
-    openMessageDetail(takeFocus = true): void { openMessageDetailInState(this, takeFocus); }
-    closeMessageDetail(): void { closeMessageDetailInState(this); }
-    scrollMessageDetail(delta: number): void { scrollMessageDetailInState(this, delta); }
-    scrollMessageDetailPage(delta: number, pageSize?: number): void { scrollMessageDetailPageInState(this, delta, pageSize); }
-    scrollMessageDetailToEdge(position: 'start' | 'end'): void { scrollMessageDetailToEdgeInState(this, position); }
-    get messageDetailLines(): string[] { return resolveMessageDetailLines(this); }
-    get messageDetailMaxColumn(): number { return resolveMessageDetailMaxColumn(this); }
-    scrollMessageDetailColumns(delta: number): void { scrollMessageDetailColumnsInState(this, delta); }
-    scrollMessageDetailColumnsToEdge(position: 'start' | 'end'): void { scrollMessageDetailColumnsToEdgeInState(this, position); }
 
     setStatus(status: string): void {
         const nextStatus = status || 'idle';
