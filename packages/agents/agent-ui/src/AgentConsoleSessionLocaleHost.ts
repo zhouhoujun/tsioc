@@ -16,10 +16,14 @@ import { AgentConsoleSessionActionsHost } from './AgentConsoleSessionActionsHost
 
 /** Locale defaults, translated labels and annotation cache facade. */
 export abstract class AgentConsoleSessionLocaleHost extends AgentConsoleSessionActionsHost {
-    protected abstract localeOptionOverrides: Partial<Required<AgentConsoleOptions>>;
-    protected abstract hostProvidedOptions: Set<string>;
+    protected localeOptionOverrides: Partial<Required<AgentConsoleOptions>> = {};
+    protected hostProvidedOptions = new Set<string>();
     protected abstract self(): AgentConsoleSessionState;
     abstract translator?: import('@tsdi/i18n').TranslatorService;
+
+    get inputFocused(): boolean {
+        return !this.focusLayers.blocksComposerInput();
+    }
 
     /** Align built-in labels and keyboard hints with the resolved host locale. */
     applyLocaleDefaults(locale?: string): void {

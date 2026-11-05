@@ -1,13 +1,14 @@
-import type { AgentConsoleVimController } from './AgentConsoleVimController';
+import { AgentConsoleVimController, createAgentConsoleVimController } from './AgentConsoleVimController';
 import type { AgentConsoleFocusLayers } from './AgentConsoleFocusLayers';
 import type { AgentConsoleSelectOption } from './AgentConsoleStateTypes';
 import type { ConsoleInputMode } from './AgentConsoleVim';
 import { VIM_DEFAULT_BINDINGS } from './AgentConsoleVim';
+import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { AgentConsoleSessionTimelineHost } from './AgentConsoleSessionTimelineHost';
 
 /** Vim input mode, focus sync and select interaction facade. */
 export abstract class AgentConsoleSessionInputHost extends AgentConsoleSessionTimelineHost {
-    abstract readonly vimController: AgentConsoleVimController;
+    readonly vimController: AgentConsoleVimController = createAgentConsoleVimController(this as unknown as AgentConsoleSessionState);
     abstract readonly focusLayers: AgentConsoleFocusLayers;
     abstract cancelSelectMenu(): Promise<void>;
     abstract selectAsync(title: string, options: AgentConsoleSelectOption[], selectedIndex?: number, hint?: string, kind?: string): Promise<string | undefined>;
