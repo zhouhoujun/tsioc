@@ -1,5 +1,6 @@
 import { ApplicationContext, formatCompactNumber } from '@tsdi/core';
 import { bootstrapConsole, disposeConsole } from './AgentConsoleBootstrap';
+import { drainQueuedPrompts, enqueuePrompt, queueDraft } from './AgentConsoleQueuedPrompts';
 import { DefaultAgentConsoleTranscriptNavigationController } from './AgentConsoleTranscriptNavigation';
 import { Component, ComponentRef, OnDestroy, RNode } from '@tsdi/components';
 import { AudioCaptureAdapter, AudioPlaybackAdapter, AudioPlaybackFormat, FileAdapter } from '@tsdi/common';
@@ -493,51 +494,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return mode === true || mode === 'on';
     }
 
-    protected enqueuePrompt(input: string): void {
-        const sessionId = this.state.sessionId;
-        const queue = this.queuedPrompts.get(sessionId) || [];
-        const command = input.trim().startsWith('/');
-        queue.push({ input, attachments: command ? [] : this.state.pendingAttachments.slice(), command });
-        this.queuedPrompts.set(sessionId, queue);
-        this.state.setInput('');
-        this.state.clearPendingAttachments();
-        this.state.setQueuedPromptCount(queue.length);
-        const noticeKey = command ? 'queuedCommand' : 'queuedPrompt';
-        this.notify(formatAgentUiNotice(this.translator, noticeKey, { count: queue.length }));
-    }
+    protected enqueuePrompt(input: string): void { enqueuePrompt(this as any, input); }
 
-    protected queueDraft(): boolean {
-        // An open menu owns Tab; only an exact command keeps mid-turn queueing.
-        if (this.state.selectMenu && !isAgentConsoleExactCommandToken(this.state.input, this.state.inputCursor, this.state.commandHints)) return false;
-        // While idle, Tab re-opens completion for an active `/` or `@` token
-        // when the menu is closed (Esc).
-        if (!this.isTurnInProgress() && this.state.reopenInputSuggestions()) {
-            return true;
-        }
-        if (!this.isTurnInProgress() || !this.state.input.trim()) {
-            return false;
-        }
-        this.enqueuePrompt(this.state.input);
-        return true;
-    }
+    protected queueDraft(): boolean { return queueDraft(this as any); }
 
-    protected async drainQueuedPrompts(sessionId: string): Promise<void> {
-        if (this.destroyed || this.drainingQueuedSessions.has(sessionId) || this.state.sessionId !== sessionId) return;
-        this.drainingQueuedSessions.add(sessionId);
-        try {
-            const queue = this.queuedPrompts.get(sessionId) || [];
-            while (queue.length && this.state.sessionId === sessionId && !this.isTurnInProgress()) {
-                const next = queue.shift()!;
-                this.state.setQueuedPromptCount(queue.length);
-                this.state.setInput(next.input, next.input.length);
-                this.state.setPendingAttachments(next.attachments);
-                await this.submit();
-            }
-            if (!queue.length) this.queuedPrompts.delete(sessionId);
-        } finally {
-            this.drainingQueuedSessions.delete(sessionId);
-        }
-    }
+    protected async drainQueuedPrompts(sessionId: string): Promise<void> { return drainQueuedPrompts(this as any, sessionId); }
 
     protected async interruptTurn(): Promise<void> {
         if (!this.isTurnInProgress()) return;
