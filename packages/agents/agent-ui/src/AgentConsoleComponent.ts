@@ -1,5 +1,6 @@
 import { ApplicationContext, formatCompactNumber } from '@tsdi/core';
 import { bootstrapConsole, disposeConsole } from './AgentConsoleBootstrap';
+import { AgentConsolePanelVisibilityHost } from './AgentConsolePanelVisibility';
 import { drainQueuedPrompts, enqueuePrompt, queueDraft } from './AgentConsoleQueuedPrompts';
 import { DefaultAgentConsoleTranscriptNavigationController } from './AgentConsoleTranscriptNavigation';
 import { Component, ComponentRef, OnDestroy, RNode } from '@tsdi/components';
@@ -318,32 +319,32 @@ interface AgentConsoleQueuedPrompt {
     template: `
     <div class="agent-console" [cssVariables]="rootStyle">
         <common-tab-bar renderRegion="header"></common-tab-bar>
-        <agent-console-brand-panel renderRegion="transcript" v-show="!showMessageDetailPanel && !showSelectPanel && !showTextOverlayPanel && !showPendingQuestionPanel"></agent-console-brand-panel>
-        <agent-console-messages-panel renderRegion="transcript" v-show="!showMessageDetailPanel"></agent-console-messages-panel>
-        <agent-console-message-detail-panel renderRegion="transcript" v-if="showMessageDetailPanel"></agent-console-message-detail-panel>
-        <agent-console-timeline-event-detail-panel renderRegion="transcript" v-if="showTimelineEventInspector"></agent-console-timeline-event-detail-panel>
-        <agent-console-tasks-panel v-show="showTasksPanel && !showMessageDetailPanel"></agent-console-tasks-panel>
-        <agent-console-jobs-panel v-show="showJobsPanel && !showMessageDetailPanel"></agent-console-jobs-panel>
-        <agent-console-review-panel v-show="showReviewPanel && !showMessageDetailPanel"></agent-console-review-panel>
-        <agent-console-git-snapshot-panel v-show="showGitSnapshotPanel && !showMessageDetailPanel"></agent-console-git-snapshot-panel>
-        <agent-console-activity-panel v-show="showActivityPanel && !showMessageDetailPanel"></agent-console-activity-panel>
-        <agent-console-tools-panel v-show="showToolsPanel && !showMessageDetailPanel"></agent-console-tools-panel>
-        <agent-console-working-panel v-show="showWorkingPanel && !showMessageDetailPanel"></agent-console-working-panel>
-        <agent-console-tool-runs-panel v-show="showToolRunsPanel && !showMessageDetailPanel"></agent-console-tool-runs-panel>
-        <agent-console-pending-question-panel renderRegion="menu" v-show="showPendingQuestionPanel"></agent-console-pending-question-panel>
-        <agent-console-select-panel renderRegion="menu" v-show="showSuggestionPanel"></agent-console-select-panel><agent-console-select-panel renderRegion="menu" v-show="showSelectPanel"></agent-console-select-panel>
-        <agent-console-text-overlay-panel renderRegion="dialog" v-show="showTextOverlayPanel"></agent-console-text-overlay-panel>
-        <agent-console-status-panel renderRegion="footer" v-show="showStatusPanel && !showMessageDetailPanel"></agent-console-status-panel>
-        <agent-console-sessions-panel renderRegion="footer" v-show="showSessionsPanel && !showMessageDetailPanel"></agent-console-sessions-panel>
-        <agent-console-approvals-panel renderRegion="menu" v-show="showApprovalsPanel && !showMessageDetailPanel"></agent-console-approvals-panel>
+        <agent-console-brand-panel renderRegion="transcript" v-show="!panels.messageDetail && !panels.select && !panels.textOverlay && !panels.pendingQuestion"></agent-console-brand-panel>
+        <agent-console-messages-panel renderRegion="transcript" v-show="!panels.messageDetail"></agent-console-messages-panel>
+        <agent-console-message-detail-panel renderRegion="transcript" v-if="panels.messageDetail"></agent-console-message-detail-panel>
+        <agent-console-timeline-event-detail-panel renderRegion="transcript" v-if="panels.timelineEventInspector"></agent-console-timeline-event-detail-panel>
+        <agent-console-tasks-panel v-show="panels.tasks && !panels.messageDetail"></agent-console-tasks-panel>
+        <agent-console-jobs-panel v-show="panels.jobs && !panels.messageDetail"></agent-console-jobs-panel>
+        <agent-console-review-panel v-show="panels.review && !panels.messageDetail"></agent-console-review-panel>
+        <agent-console-git-snapshot-panel v-show="panels.gitSnapshot && !panels.messageDetail"></agent-console-git-snapshot-panel>
+        <agent-console-activity-panel v-show="panels.activity && !panels.messageDetail"></agent-console-activity-panel>
+        <agent-console-tools-panel v-show="panels.tools && !panels.messageDetail"></agent-console-tools-panel>
+        <agent-console-working-panel v-show="panels.working && !panels.messageDetail"></agent-console-working-panel>
+        <agent-console-tool-runs-panel v-show="panels.toolRuns && !panels.messageDetail"></agent-console-tool-runs-panel>
+        <agent-console-pending-question-panel renderRegion="menu" v-show="panels.pendingQuestion"></agent-console-pending-question-panel>
+        <agent-console-select-panel renderRegion="menu" v-show="panels.suggestion"></agent-console-select-panel><agent-console-select-panel renderRegion="menu" v-show="panels.select"></agent-console-select-panel>
+        <agent-console-text-overlay-panel renderRegion="dialog" v-show="panels.textOverlay"></agent-console-text-overlay-panel>
+        <agent-console-status-panel renderRegion="footer" v-show="panels.status && !panels.messageDetail"></agent-console-status-panel>
+        <agent-console-sessions-panel renderRegion="footer" v-show="panels.sessions && !panels.messageDetail"></agent-console-sessions-panel>
+        <agent-console-approvals-panel renderRegion="menu" v-show="panels.approvals && !panels.messageDetail"></agent-console-approvals-panel>
         <agent-console-input-panel renderRegion="footer"></agent-console-input-panel>
-        <agent-console-which-key-panel v-show="showWhichKeyPanel"></agent-console-which-key-panel>
-        <agent-console-health-popover v-show="showHealthPopover"></agent-console-health-popover>
-        <agent-console-outputs-panel v-show="showCommandOutputsPanel"></agent-console-outputs-panel>
+        <agent-console-which-key-panel v-show="panels.whichKey"></agent-console-which-key-panel>
+        <agent-console-health-popover v-show="panels.healthPopover"></agent-console-health-popover>
+        <agent-console-outputs-panel v-show="panels.commandOutputs"></agent-console-outputs-panel>
     </div>
     `
 })
-export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHandler, ConsoleTerminalSurfaceLifecycle {
+export class AgentConsoleComponent extends AgentConsolePanelVisibilityHost implements OnDestroy, ConsoleTerminalInputHandler, ConsoleTerminalSurfaceLifecycle {
     protected static readonly IMAGE_MIME_TYPES: Record<string, string> = {
         '.png': 'image/png',
         '.jpg': 'image/jpeg',
@@ -408,7 +409,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected yoloMode = false;
     readonly transcriptNavigationController: DefaultAgentConsoleTranscriptNavigationController;
     constructor(
-        private state: AgentConsoleSessionState,
+        protected state: AgentConsoleSessionState,
         private runtime: AgentRuntime,
         private scheduler: AgentScheduler,
         private bridge: AgentConsoleEventBridge,
@@ -442,6 +443,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         @Optional() @Inject(ProjectMemoryService) private projectMemory?: ProjectMemoryService | null,
         @Optional() @Inject(AgentConsoleTranscriptLayoutResolver) private transcriptLayoutResolver?: AgentConsoleTranscriptLayoutResolver | null,
     ) {
+        super();
         this.transcriptNavigationController = new DefaultAgentConsoleTranscriptNavigationController(this.state, (messageId) => revealAgentConsoleMessage(this.componentRef?.hostView?.query?.(AgentConsoleMessagesPanelComponent)?.instance, this.surfaceAccessor, () => this.state.syncTranscriptFollowing(), messageId));
         this.globalKeymap = this.globalKeymap || new AgentConsoleKeymap();
         this.globalKeymap.configure(this.options.ui?.keymap);
@@ -896,86 +898,6 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     get title(): string {
         return this.state.title;
-    }
-
-    get showStatusPanel(): boolean {
-        return (this.state.consoleOptions.showStatusline && !!this.state.statusline.length)
-            || !!this.state.notice
-            || !!this.state.pendingApprovals.length;
-    }
-
-    get showSessionsPanel(): boolean {
-        return this.state.sessionsFocused;
-    }
-
-    get showApprovalsPanel(): boolean {
-        return this.state.approvalsFocused;
-    }
-
-    get showTasksPanel(): boolean {
-        return this.state.tasksFocused;
-    }
-
-    get showJobsPanel(): boolean {
-        return this.state.jobsFocused;
-    }
-
-    get showMessageDetailPanel(): boolean {
-        return this.state.consoleOptions.messageToggleInteraction === 'enter'
-            && this.state.messageDetailOpen
-            && !!this.state.selectedMessage;
-    }
-
-    get showTimelineEventInspector(): boolean {
-        return this.state.timelineEventInspectorOpen;
-    }
-
-    get showReviewPanel(): boolean {
-        return !!this.state.reviewOpen;
-    }
-
-    get showGitSnapshotPanel(): boolean {
-        return !!this.state.gitSnapshotOpen;
-    }
-
-    get showActivityPanel(): boolean {
-        return false;
-    }
-
-    get showToolsPanel(): boolean {
-        return this.state.toolsFocused;
-    }
-
-    get showWorkingPanel(): boolean {
-        return this.state.status === 'running' || this.state.status === 'reasoning';
-    }
-
-    get showToolRunsPanel(): boolean {
-        return this.state.toolRunsFocused;
-    }
-
-    get showSelectPanel(): boolean { return !!this.state.selectMenu && !isAgentConsoleSuggestionMenu(this.state.selectMenu); }
-
-    get showSuggestionPanel(): boolean { return !!this.state.selectMenu && isAgentConsoleSuggestionMenu(this.state.selectMenu); }
-
-    get showWhichKeyPanel(): boolean {
-        return this.state.whichKeyVisible;
-    }
-
-    get showHealthPopover(): boolean {
-        return this.state.healthPopoverVisible;
-    }
-
-    get showTextOverlayPanel(): boolean {
-        return this.state.hasTextOverlayFocus();
-    }
-
-    get showCommandOutputsPanel(): boolean {
-        return this.state.commandOutputsOpen;
-    }
-
-    get showPendingQuestionPanel(): boolean {
-        return !!this.state.pendingQuestion;
     }
 
     // ---- generic component bindings ----
