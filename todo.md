@@ -2966,6 +2966,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - provider wizard 构建器（steps/help/summary/choice/confirm/prefill）移入 `AgentConsoleProviderWizardBuilders`，`AgentConsoleProviderWizard` 465→352。
 - provider wizard 连接/提交流程移入 `AgentConsoleProviderWizardConnect`，`AgentConsoleProviderWizardFlow` 445→203。
 - runtime/tool/approval/copy 命令移入 `AgentConsoleRuntimeCommandHandlers`，`AgentConsoleCommandHandlers` 409→211。
+- command/session/turn host factories 移入 `AgentConsoleCommandHostFactories`，`AgentConsoleHostFactories` 398→208。
 - 修复 components 子组件 callback input 绑定：普通父方法保持父组件 proxy 作为 `this`，agent-ui overlay 关闭不再手工 `reactive(state, effect)`，直接走组件响应式写入。
 - 真实 CLI/TUI 验证（`workspace: /home/zhouyou/workspace/sleep-mlt`）：
   - 要求新建 `task-system`，真实生成了 `src/task.js`、`test/task.test.js`，`node task-system/test/task.test.js` 退出码 0。
