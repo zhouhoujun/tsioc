@@ -1,6 +1,6 @@
 import { ApplicationContext, formatCompactNumber } from '@tsdi/core';
 import { bootstrapConsole, disposeConsole } from './AgentConsoleBootstrap';
-import { AgentConsolePanelVisibilityHost } from './AgentConsolePanelVisibility';
+import { AgentConsoleProjectHost } from './AgentConsoleProjectHost';
 import { drainQueuedPrompts, enqueuePrompt, queueDraft } from './AgentConsoleQueuedPrompts';
 import { DefaultAgentConsoleTranscriptNavigationController } from './AgentConsoleTranscriptNavigation';
 import { Component, ComponentRef, OnDestroy, RNode } from '@tsdi/components';
@@ -344,7 +344,7 @@ interface AgentConsoleQueuedPrompt {
     </div>
     `
 })
-export class AgentConsoleComponent extends AgentConsolePanelVisibilityHost implements OnDestroy, ConsoleTerminalInputHandler, ConsoleTerminalSurfaceLifecycle {
+export class AgentConsoleComponent extends AgentConsoleProjectHost implements OnDestroy, ConsoleTerminalInputHandler, ConsoleTerminalSurfaceLifecycle {
     protected static readonly IMAGE_MIME_TYPES: Record<string, string> = {
         '.png': 'image/png',
         '.jpg': 'image/jpeg',
@@ -416,7 +416,7 @@ export class AgentConsoleComponent extends AgentConsolePanelVisibilityHost imple
         @Inject(AGENT_OPTIONS, { defaultValue: defaultAgentOptions }) private options: AgentOptions,
         @Optional() @Inject(ToolRegistry) private toolRegistry?: ToolRegistry | null,
         @Optional() @Inject(AGENT_CONSOLE_APP_RPC) private appRpc?: AgentConsoleAppRpc | null,
-        @Optional() @Inject(AgentConsoleSessionService) private sessionService?: AgentConsoleSessionService | null,
+        @Optional() @Inject(AgentConsoleSessionService) protected sessionService?: AgentConsoleSessionService | null,
         @Optional() @Inject(ApprovalManager) private approvalManager?: ApprovalManager | null,
         @Optional() @Inject(AgentConsoleWorkspaceMentionsProvider) private workspaceMentionsProvider?: AgentConsoleWorkspaceMentionsProvider | null,
         @Optional() @Inject(AgentConsoleInputHistoryStore) private inputHistoryStore?: AgentConsoleInputHistoryStore | null,
@@ -718,124 +718,6 @@ export class AgentConsoleComponent extends AgentConsolePanelVisibilityHost imple
 
     protected getReviewAnnotationsCacheKey(): string | undefined {
         return getReviewAnnotationsCacheKey(this.reviewCtx());
-    }
-
-    protected async refreshSessions(currentSessionId = this.state.sessionId): Promise<void> {
-        return refreshSessionsView({
-            state: this.state,
-            sessionService: this.sessionService,
-            flattenProjectSessions: (groups: AgentConsoleSessionProjectGroup[]) => this.flattenProjectSessions(groups),
-            refreshProjectContext: () => this.refreshProjectContext(),
-            refreshProjects: () => this.refreshProjects(),
-            refreshThreads: () => this.refreshThreads(),
-            updateTerminalTitle: () => this.updateTerminalTitle()
-        }, currentSessionId);
-    }
-
-    protected refreshThreads(): void {
-        refreshThreads(this.state);
-    }
-
-    protected async refreshCurrentSections(): Promise<void> {
-        return refreshCurrentSections(this.sessionService, this.state);
-    }
-
-    protected refreshProjects(): void {
-        refreshProjects(this.state);
-    }
-
-    protected flattenProjectSessions(groups: AgentConsoleSessionProjectGroup[]) {
-        return flattenProjectSessions(groups);
-    }
-
-    protected refreshProjectContext(): void {
-        return refreshProjectContextView({
-            state: this.state,
-            updateTerminalTitle: () => this.updateTerminalTitle()
-        });
-    }
-
-    protected resolveProjectSessionsFor(sessionId = this.state.sessionId) {
-        return resolveProjectSessionsFor(this.state, sessionId) as any;
-    }
-
-    protected resolveCurrentProjectSessions() {
-        return resolveCurrentProjectSessions(this.state) as any;
-    }
-
-    protected selectProjectRepresentative<T extends {
-        id: string;
-        updatedAt?: number;
-    }>(sessions: T[]): T | undefined {
-        return selectProjectRepresentative(sessions);
-    }
-
-    protected resolveSessionProjectKey(session?: {
-        projectKey?: string;
-        projectId?: string;
-        workspace?: string;
-        primaryThreadId?: string;
-    } | null): string {
-        return resolveSessionProjectKey(session);
-    }
-
-    protected resolveSessionThreadKey(session?: {
-        primaryThreadId?: string;
-        id?: string;
-    } | null): string {
-        return resolveSessionThreadKey(session);
-    }
-
-    protected resolveThreadKeyForSession(
-        session?: {
-            primaryThreadId?: string;
-            originThreadId?: string;
-            id?: string;
-        } | null,
-        sessions: Array<{
-            id: string;
-            primaryThreadId?: string;
-            originThreadId?: string;
-        }> = this.state.sessions,
-        visited = new Set<string>()
-    ): string {
-        return resolveThreadKeyForSession(session, sessions, visited);
-    }
-
-    protected resolveProjectSessionIdsFor(sessionId = this.state.sessionId): string[] {
-        const sessions = this.resolveProjectSessionsFor(sessionId);
-        const ids = sessions.map((item: { id?: string }) => String(item.id || '').trim()).filter(Boolean);
-        return ids.length ? ids : [sessionId];
-    }
-
-    protected resolveThreadSessionsFor(sessionId = this.state.sessionId) {
-        return resolveThreadSessionsFor(this.state, sessionId) as any;
-    }
-
-    protected resolveThreadSessionIdsFor(sessionId = this.state.sessionId): string[] {
-        const sessions = this.resolveThreadSessionsFor(sessionId);
-        const ids = sessions.map((item: { id?: string }) => String(item.id || '').trim()).filter(Boolean);
-        return ids.length ? ids : [sessionId];
-    }
-
-    protected resolveCurrentProjectSessionIds(): string[] {
-        return this.resolveProjectSessionIdsFor(this.state.sessionId);
-    }
-
-    protected resolveCodingTaskSessionId(task?: Record<string, any> | null): string {
-        return resolveCodingTaskSessionIdFn(this.codingTaskCtx(), task);
-    }
-
-    protected captureTaskViewContext(): { sessionId: string; version: number } {
-        return captureTaskViewContextFn(this.codingTaskCtx());
-    }
-
-    protected isTaskViewContextCurrent(context: { sessionId: string; version: number }): boolean {
-        return isTaskViewContextCurrentFn(this.codingTaskCtx(), context);
-    }
-
-    protected resolveFocusedCodingTask(): Record<string, any> | null {
-        return resolveFocusedCodingTaskFn(this.codingTaskCtx());
     }
 
     protected get resolvedApprovalManager(): ApprovalManager | undefined { return this.runtime?.approvalManager ?? this.approvalManager ?? undefined; }
@@ -1248,7 +1130,7 @@ export class AgentConsoleComponent extends AgentConsolePanelVisibilityHost imple
     private harnessCommandHost(): HarnessCommandHost { return harnessCommandHost(this); }
     private voiceCtx(): VoiceHandlerContext { return voiceCtx(this); }
     private reviewCtx(): ReviewHandlerContext { return reviewCtx(this); }
-    private codingTaskCtx(): CodingTaskHandlerContext { return codingTaskCtx(this); }
+    protected codingTaskCtx(): CodingTaskHandlerContext { return codingTaskCtx(this); }
     private editCtx(): EditModeHandlerContext { return editCtx(this); }
     private modelCtx(): ModelHandlerContext { return modelCtx(this); }
     private sshHost(): AgentConsoleSshHost { return sshHost(this); }
