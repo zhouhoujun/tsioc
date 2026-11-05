@@ -317,12 +317,12 @@ import type {
     AgentConsoleUiEventOptions
 } from './AgentConsoleStateTypes';
 import { EN_MESSAGE_STATUS_LABELS, ZH_CONSOLE_HINTS, ZH_MESSAGE_STATUS_LABELS, defaultAgentConsoleOptions } from './AgentConsoleStateTypes';
-import { AgentConsoleSessionPlanningHost } from './AgentConsoleSessionPlanningHost';
+import { AgentConsoleSessionSelectionHost } from './AgentConsoleSessionSelectionHost';
 
 export * from './AgentConsoleStateTypes';
 
 @Injectable()
-export class AgentConsoleSessionState extends AgentConsoleSessionPlanningHost {
+export class AgentConsoleSessionState extends AgentConsoleSessionSelectionHost {
     protected self(): AgentConsoleSessionState { return this; }
     constructor(@Inject(COMMAND_EXECUTION_CONTROL) protected commandExecutionControl?: CommandExecutionControlPort, @Optional() @Inject(TranslatorService) public translator?: TranslatorService) {
         super();
@@ -1064,110 +1064,6 @@ export class AgentConsoleSessionState extends AgentConsoleSessionPlanningHost {
             (this.backgroundTaskFilter === 'all' || task.status === this.backgroundTaskFilter)
             && (!query || `${task.id} ${task.sessionId} ${task.goal}`.toLowerCase().includes(query))
         );
-    }
-
-    setTasksFocused(focused: boolean): void {
-        setTasksFocusedInState(this, focused);
-    }
-
-    setSelectedReviewTaskId(taskId: string): void {
-        setSelectedReviewTaskIdInState(this, taskId);
-    }
-
-    get selectedTask(): Record<string, any> | undefined {
-        return resolveSelectedTask(this);
-    }
-
-    get filteredReviewTaskChoices(): AgentConsoleReviewTaskItem[] {
-        return resolveFilteredReviewTaskChoices(this);
-    }
-
-    formatScheduledTimestamp(value?: number): string {
-        return formatScheduledTimestampInState(value);
-    }
-
-    buildSelectedScheduledTaskCopyText(): string {
-        return buildSelectedScheduledTaskCopyTextInState(this);
-    }
-
-    setToolsFocused(focused: boolean): void {
-        setToolsFocusedInState(this, focused);
-    }
-
-    setSelectedToolName(toolName: string): void {
-        setSelectedToolNameInState(this, toolName);
-    }
-
-    moveToolSelection(delta: number): void {
-        moveToolSelectionInState(this, delta);
-    }
-
-    moveToolSelectionPage(delta: number, pageSize?: number): void {
-        moveToolSelectionPageInState(this, delta, pageSize);
-    }
-
-    selectFirstTool(): void {
-        selectFirstToolInState(this);
-    }
-
-    selectLastTool(): void {
-        selectLastToolInState(this);
-    }
-
-    get selectedTool(): AgentConsoleToolItem | undefined {
-        return resolveSelectedTool(this);
-    }
-
-    moveToolRunSelection(delta: number): void {
-        moveToolRunSelectionInState(this, delta);
-    }
-
-    moveToolRunSelectionPage(delta: number, pageSize?: number): void {
-        moveToolRunSelectionPageInState(this, delta, pageSize);
-    }
-
-    selectFirstToolRun(): void {
-        selectFirstToolRunInState(this);
-    }
-
-    selectLastToolRun(): void {
-        selectLastToolRunInState(this);
-    }
-
-    get selectedToolRun(): AgentConsoleToolRun | undefined {
-        return resolveSelectedToolRun(this);
-    }
-
-    setApprovalsFocused(focused: boolean): void {
-        setApprovalsFocusedInState(this, focused);
-    }
-
-    requestApprovalAttention(): void {
-        requestApprovalAttentionInState(this);
-    }
-
-    setSelectedApprovalId(approvalId: string): void {
-        setSelectedApprovalIdInState(this, approvalId);
-    }
-
-    moveApprovalSelection(delta: number): void {
-        moveApprovalSelectionInState(this, delta);
-    }
-
-    moveApprovalSelectionPage(delta: number, pageSize?: number): void {
-        moveApprovalSelectionPageInState(this, delta, pageSize);
-    }
-
-    selectFirstApproval(): void {
-        selectFirstApprovalInState(this);
-    }
-
-    selectLastApproval(): void {
-        selectLastApprovalInState(this);
-    }
-
-    get selectedApproval(): AgentConsoleApprovalRequest | undefined {
-        return resolveSelectedApproval(this);
     }
 
     get latestCommandExecution(): AgentConsoleCommandExecution | undefined {
