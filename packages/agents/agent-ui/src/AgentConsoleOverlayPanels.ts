@@ -1,4 +1,4 @@
-import { Attribute, Component, ReactiveEffect, reactive } from '@tsdi/components';
+import { Attribute, Component } from '@tsdi/components';
 import { formatCompactNumber } from '@tsdi/core';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
@@ -71,11 +71,7 @@ export * from './AgentConsoleMessagePanels';
     `
 })
 export class AgentConsoleTextOverlayPanelComponent {
-    constructor(private state: AgentConsoleSessionState, @Optional() private translator?: TranslatorService, @Optional() private effect?: ReactiveEffect) {
-    }
-
-    protected get reactiveState(): AgentConsoleSessionState {
-        return this.effect ? reactive(this.state, this.effect) : this.state;
+    constructor(private state: AgentConsoleSessionState, @Optional() private translator?: TranslatorService) {
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -84,7 +80,9 @@ export class AgentConsoleTextOverlayPanelComponent {
         return resolvePanelThemeStyles(this.state, this.theme);
     }
 
-    get shellStyle() { return this.state.hasTextOverlayFocus() ? this.activeThemeStyles.dialogShell : {}; } get closeStyle() { return DIALOG_CLOSE_STYLE; } closeOverlay = (): void => { this.reactiveState.closeTextOverlay(); };
+    get shellStyle() { return this.state.hasTextOverlayFocus() ? this.activeThemeStyles.dialogShell : {}; } get closeStyle() { return DIALOG_CLOSE_STYLE; }
+
+    closeOverlay(): void { this.state.closeTextOverlay(); }
 
     get accentStyle() {
         return this.activeThemeStyles.toolRunsAccent;

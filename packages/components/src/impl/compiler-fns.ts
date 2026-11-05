@@ -1055,16 +1055,20 @@ export function processComponentAttribute(componentRef: any, attrName: string, e
         if (inputDef) {
             effect.run(() => {
                 const handler = evaluateExpression(expr, context, injector, delimiter);
+                // Callback inputs belong to the parent expression context: a
+                // regular method passed to a child must keep the parent
+                // component proxy as `this` so state writes stay reactive.
+                const boundHandler = typeof handler === 'function' ? handler.bind(context) : handler;
                 if (componentRef.instance[inputDef.propertyKey] instanceof EventEmitter) {
                     replaceOutputSubscription(
                         componentRef.instance,
                         `component:${inputDef.propertyKey}:${eventName}`,
                         componentRef.instance[inputDef.propertyKey],
-                        handler,
+                        boundHandler,
                         injector
                     );
                 } else if (!componentRef.instance[inputDef.propertyKey]) {
-                    componentRef.instance[inputDef.propertyKey] = handler;
+                    componentRef.instance[inputDef.propertyKey] = boundHandler;
                 }
             });
         }
