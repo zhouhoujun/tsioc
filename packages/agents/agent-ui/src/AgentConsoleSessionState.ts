@@ -73,6 +73,7 @@ import {
     getAgentConsoleMentionCandidates,
     isAgentConsoleSuggestionMenu,
     resolveAgentConsoleInputSuggestions,
+    refreshInputSuggestions,
 } from './AgentConsoleSuggestions';
 import { resolveDynamicArgumentValues } from './AgentConsoleArgumentValues';
 import {
@@ -358,7 +359,7 @@ export class AgentConsoleSessionState {
 
     /** Derived from the focus layer stack: the composer owns the keyboard unless a layer claims it. */
     /** Localized labels for the inline suggestion menu (command groups, mention kinds). */
-    protected suggestionLabels(): import('./AgentConsoleSuggestions').AgentConsoleSuggestionLabels {
+    suggestionLabels(): import('./AgentConsoleSuggestions').AgentConsoleSuggestionLabels {
         const label = (key: string, fallback: string) => this.translateLabel(key, undefined, fallback);
         return {
             describe: (key: string, fallback: string) => this.translateLabel(key, undefined, fallback),
@@ -637,16 +638,16 @@ export class AgentConsoleSessionState {
     approvalAlwaysAllowAction?: (requestId: string) => void | Promise<void>;
     sessionTabsAction?: { select?: (id: string) => void; create?: () => void; close?: (id: string) => void };
     globalKeyInputAction?: (key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean; altKey?: boolean }) => boolean | Promise<boolean>;
-    protected injectedCommandHints: string[] = [];
+    injectedCommandHints: string[] = [];
 
     get commandHints(): string[] {
         return agentConsoleAllCommandHints(this.injectedCommandHints);
     }
 
     protected activeToolSet = new Set<string>();
-    protected workspaceMentionResolver?: AgentConsoleWorkspaceMentionResolver;
-    protected mentionCatalog: AgentConsoleMentionCatalogItem[] = [];
-    protected workspaceSuggestionRequestId = 0;
+    workspaceMentionResolver?: AgentConsoleWorkspaceMentionResolver;
+    mentionCatalog: AgentConsoleMentionCatalogItem[] = [];
+    workspaceSuggestionRequestId = 0;
     suppressSuggestionMenu = false;
     /** True once the user moved inside an open suggestion menu. */
     selectMenuTouched = false;
@@ -2233,76 +2234,7 @@ export class AgentConsoleSessionState {
     }
 
     refreshInputSuggestions(): void {
-        if (this.selectMenu && !isAgentConsoleSuggestionMenu(this.selectMenu)) {
-            return;
-        }
-        if (this.suppressSuggestionMenu) {
-            this.suppressSuggestionMenu = false;
-            return;
-        }
-        const currentInput = this.input;
-        const currentCursor = this.inputCursor;
-        const active = getAgentConsoleInputTokenRange(currentInput, currentCursor);
-        const applySuggestions = (workspaceSuggestions: AgentConsoleSelectOption[] = []) => {
-            const activeToken = getAgentConsoleInputTokenRange(this.input, this.inputCursor)?.token;
-            const commandCandidates = activeToken === '/'
-                ? agentConsoleCommandHints(this.injectedCommandHints)
-                : this.commandHints;
-            const options = resolveAgentConsoleInputSuggestions(
-                this.input,
-                this.inputCursor,
-                commandCandidates,
-                this.tools,
-                workspaceSuggestions,
-                this.suggestionLabels(),
-                (command, index, words, token) => resolveDynamicArgumentValues({ tools: this.tools, sessions: this.sessions, mentionCatalog: this.mentionCatalog }, command, index, token)
-            );
-            if (!options.length) {
-                if (isAgentConsoleSuggestionMenu(this.selectMenu)) {
-                    this.selectMenu = undefined;
-                    this.selectMenuAction = undefined;
-                }
-                this.syncDerivedInputFocus();
-                return;
-            }
-            // Async workspace suggestions append after the first render; keeping
-            // the previous value then parked the highlight on a tool mention
-            // (`@tim` + Enter submitted `@time` instead of inserting the file).
-            const selectedValue = this.selectMenuTouched ? this.selectedSelectMenuOption?.value : undefined;
-            const selectedIndex = Math.max(0, options.findIndex(option => option.value === selectedValue));
-            this.selectMenu = {
-                title: AGENT_CONSOLE_SUGGESTIONS_TITLE,
-                hint: this.consoleOptions.suggestionsHint,
-                options,
-                selectedIndex
-            };
-            this.syncDerivedInputFocus();
-            this.selectMenuAction = async (value?: string) => {
-                if (!value) {
-                    return;
-                }
-                const next = applyAgentConsoleSuggestion(this.input, this.inputCursor, value);
-                this.input = next.value;
-                this.inputCursor = this.clampCursor(this.input, next.cursor);
-                this.refreshInputSuggestions();
-                this.syncDerivedInputFocus();
-            };
-        };
-
-        applySuggestions();
-        if (!active?.token?.startsWith('@') || !this.workspaceMentionResolver) {
-            return;
-        }
-        const requestId = ++this.workspaceSuggestionRequestId;
-        void this.workspaceMentionResolver.resolveSuggestions(this.workspace, active.token, undefined, this.mentionCatalog).then(options => {
-            if (requestId !== this.workspaceSuggestionRequestId) {
-                return;
-            }
-            if (this.input !== currentInput || this.inputCursor !== currentCursor) {
-                return;
-            }
-            applySuggestions(options);
-        }).catch(() => undefined);
+        refreshInputSuggestions(this);
     }
 
     setRunningTool(toolName: string): void {
