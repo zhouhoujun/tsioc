@@ -5,6 +5,7 @@ import type { AgentConsoleTranscriptNavigationController } from './AgentConsoleT
 import { AgentConsoleOverlayController } from './AgentConsoleOverlay';
 import { handleSessionsKeyView } from './AgentConsoleSessionPanelKeys';
 import { agentConsoleTextChunk } from './AgentConsoleKeyText';
+import { AgentConsoleFocusTranscriptLayers } from './AgentConsoleFocusTranscriptLayers';
 
 /**
  * Layers that take keyboard input away from the composer. `question` is
@@ -40,11 +41,12 @@ export interface AgentConsoleFocusLayersPort {
     selectMenu?: unknown;
 }
 
-export abstract class AgentConsoleFocusLayers {
-    private readonly overlay = new AgentConsoleOverlayController();
-    /** Review panel stays open while the composer takes a `/` command. */
-    private reviewCommandMode = false;
-    constructor(protected readonly state: AgentConsoleSessionState) {}
+export abstract class AgentConsoleFocusLayers extends AgentConsoleFocusTranscriptLayers {
+    protected readonly overlay = new AgentConsoleOverlayController();
+
+    constructor(protected readonly state: AgentConsoleSessionState) {
+        super();
+    }
 
     async dismiss(transcriptNavigation: AgentConsoleTranscriptNavigationController): Promise<boolean> {
         const state = this.state;
@@ -280,212 +282,6 @@ export abstract class AgentConsoleFocusLayers {
             state.gitSnapshotDetailLines.slice(state.gitSnapshotDetailScroll).join('\n'),
             'git snapshot diff'
         );
-        return true;
-    }
-
-    handleTimelineInspectorKey(
-        normalized: string,
-        transcriptNavigation: AgentConsoleTranscriptNavigationController
-    ): boolean | Promise<boolean> | undefined {
-        const state = this.state;
-        if (!state.timelineEventInspectorOpen) return undefined;
-        if (this.isDismissKey(normalized)) return this.dismiss(transcriptNavigation);
-        switch (normalized) {
-            case 'enter': case 'esc': state.closeTimelineEventInspector(); return true;
-            case 'copy': return this.copyTimelineEvent();
-            case 'down': state.scrollTimelineEventDetail(1); return true;
-            case 'up': state.scrollTimelineEventDetail(-1); return true;
-            case 'left': state.scrollTimelineEventDetailColumns(-4); return true;
-            case 'right': state.scrollTimelineEventDetailColumns(4); return true;
-            case 'pageup': state.scrollTimelineEventDetailPage(-1); return true;
-            case 'pagedown': state.scrollTimelineEventDetailPage(1); return true;
-            case 'home': state.scrollTimelineEventDetailToEdge('start'); return true;
-            case 'end': state.scrollTimelineEventDetailToEdge('end'); return true;
-            case 'r': return state.canRetryTimelineEvent() ? this.retryTimelineEvent() : false;
-            default: return false;
-        }
-    }
-
-    handleMessageDetailKey(
-        normalized: string,
-        transcriptNavigation: AgentConsoleTranscriptNavigationController
-    ): boolean | Promise<boolean> | undefined {
-        const state = this.state;
-        if (!state.messageDetailOpen) return undefined;
-        if (this.isDismissKey(normalized)) return this.dismiss(transcriptNavigation);
-        switch (normalized) {
-            case 'enter': state.closeMessageDetail(); return true;
-            case 'copy': return this.copySelectedMessage();
-            case 'down': state.scrollMessageDetail(1); return true;
-            case 'up': state.scrollMessageDetail(-1); return true;
-            case 'left': state.scrollMessageDetailColumns(-4); return true;
-            case 'right': state.scrollMessageDetailColumns(4); return true;
-            case 'pageup': state.scrollMessageDetailPage(-1); return true;
-            case 'pagedown': state.scrollMessageDetailPage(1); return true;
-            case 'home': state.scrollMessageDetailToEdge('start'); return true;
-            case 'end': state.scrollMessageDetailToEdge('end'); return true;
-            default: return false;
-        }
-    }
-
-    private async copyTimelineEvent(): Promise<boolean> {
-        await this.state.copyFocusedTextAction?.(this.state.timelineEventDetailLines.join('\n'), this.state.translateLabel('agent.notice.copyLabelTimelineEvent', undefined, 'timeline event'));
-        return true;
-    }
-
-    private async retryTimelineEvent(): Promise<boolean> {
-        const state = this.state;
-        const payload = state.buildTimelineEventRetryPayload();
-        if (payload?.toolCallId) await state.retrySelectedTaskAction?.(payload.toolCallId);
-        state.closeTimelineEventInspector();
-        return true;
-    }
-
-    private async copySelectedMessage(): Promise<boolean> {
-        await this.state.copyFocusedTextAction?.(this.state.selectedMessage?.content || '', this.state.translateLabel('agent.notice.copyLabelSelectedMessage', undefined, 'selected message'));
-        return true;
-    }
-
-    handleMessageListKey(
-        normalized: string,
-        transcriptNavigation: AgentConsoleTranscriptNavigationController
-    ): boolean | Promise<boolean> | undefined {
-        const state = this.state;
-        if (!state.messagesFocused) return undefined;
-        if (this.isDismissKey(normalized)) return this.dismiss(transcriptNavigation);
-        switch (normalized) {
-            case 'copy': return this.copySelectedMessage();
-            case 'down':
-                if (state.selectedMessage?.metadata?.uiKind === 'file-change') state.moveReviewFileSelection(1);
-                else transcriptNavigation.move(1);
-                return true;
-            case 'up':
-                if (state.selectedMessage?.metadata?.uiKind === 'file-change') state.moveReviewFileSelection(-1);
-                else transcriptNavigation.move(-1);
-                return true;
-            case 'pageup': transcriptNavigation.movePage(-1); return true;
-            case 'pagedown': transcriptNavigation.movePage(1); return true;
-            case 'home': transcriptNavigation.selectFirst(); return true;
-            case 'end': transcriptNavigation.selectLast(); return true;
-            case 'r': return this.retryFailedMessage();
-            case 'e': return state.toggleSelectedMessageExpanded();
-            case 'enter': return this.openSelectedMessage();
-            default: return false;
-        }
-    }
-
-    private async retryFailedMessage(): Promise<boolean> {
-        const state = this.state;
-        const selected = state.selectedMessage;
-        if (!selected || !state.isFailedEventMessage(selected) || !state.retryFailedEventAction) return false;
-        return (await state.retryFailedEventAction(selected)) !== false;
-    }
-
-    private openSelectedMessage(): boolean {
-        const state = this.state;
-        if (state.selectedMessage?.metadata?.uiKind === 'plan-todo') return state.togglePlanTodoExpanded();
-        if (state.selectedMessage?.metadata?.uiKind === 'file-change') { state.openReview(); return true; }
-        if (state.isTimelineEventMessage(state.selectedMessage)) { state.openTimelineEventInspector(); return true; }
-        state.openMessageDetail();
-        return true;
-    }
-
-    handleReviewKey(
-        normalized: string,
-        transcriptNavigation: AgentConsoleTranscriptNavigationController
-    ): boolean | Promise<boolean> | undefined {
-        const state = this.state;
-        if (!state.reviewOpen) return undefined;
-        if (normalized === '/') { this.beginReviewCommand(); return true; }
-        if ((normalized === 'esc' || normalized === 'escape') && state.canCancelFocusedCodingTask()) {
-            return this.cancelFocusedTask();
-        }
-        if (this.isDismissKey(normalized)) return this.dismiss(transcriptNavigation);
-        switch (normalized) {
-            case 'copy': return this.copyReview();
-            case ',': state.moveReviewGroupSelection(-1); return true;
-            case '.': state.moveReviewGroupSelection(1); return true;
-            case 'a': state.setReviewPatchFilter('additions'); return true;
-            case 'u': state.setReviewPatchFilter('all'); return true;
-            case '[': state.moveReviewFileSelection(-1); return true;
-            case ']': state.moveReviewFileSelection(1); return true;
-            case 'p': return state.navigateReviewLineage(-1);
-            case 'n': return state.navigateReviewLineage(1);
-            case 'down': state.scrollReviewDetail(1); return true;
-            case 'up': state.scrollReviewDetail(-1); return true;
-            case 'left': state.scrollReviewDetailColumns(-4); return true;
-            case 'right': state.scrollReviewDetailColumns(4); return true;
-            case 'pageup': state.scrollReviewDetailPage(-1); return true;
-            case 'pagedown': state.scrollReviewDetailPage(1); return true;
-            case 'home': state.scrollReviewDetailToEdge('start'); return true;
-            case 'end': state.scrollReviewDetailToEdge('end'); return true;
-            case '{': state.jumpReviewHunk(-1); return true;
-            case '}': state.jumpReviewHunk(1); return true;
-            case 'f': state.toggleReviewHunkFold(); return true;
-            case 's': state.toggleReviewSideBySide(); return true;
-            case 'r': return state.canRetryFocusedCodingTask() ? this.retryFocusedTask() : false;
-            default: return false;
-        }
-    }
-
-    handleApprovalKey(
-        normalized: string,
-        transcriptNavigation: AgentConsoleTranscriptNavigationController
-    ): boolean | Promise<boolean> | undefined {
-        const state = this.state;
-        if (!state.approvalsFocused) return undefined;
-        // opencode maps Escape on a permission prompt to reject, never to
-        // cancelling the running turn.
-        if (this.isDismissKey(normalized)) return this.resolveApproval('deny');
-        const decision = this.overlay.resolveListKey(normalized);
-        switch (decision.action) {
-            case 'move': state.moveApprovalSelection(decision.delta); return true;
-            case 'home': state.selectFirstApproval(); return true;
-            case 'end': state.selectLastApproval(); return true;
-            case 'page': state.moveApprovalSelectionPage(decision.direction); return true;
-            case 'escape': return this.resolveApproval('deny');
-        }
-        if (normalized === 'copy') return this.copyApproval();
-        if (normalized === 'approve-always') return this.resolveApprovalAlways();
-        if (normalized === 'approve' || normalized === 'deny') return this.resolveApproval(normalized);
-        return false;
-    }
-
-    private async cancelFocusedTask(): Promise<boolean> { await this.state.cancelFocusedCodingTask(); return true; }
-    private async retryFocusedTask(): Promise<boolean> { await this.state.retryFocusedCodingTask(); return true; }
-    private async copyReview(): Promise<boolean> {
-        await this.state.copyFocusedTextAction?.(this.state.buildSelectedReviewCopyText(), this.state.translateLabel('agent.notice.copyLabelReview', undefined, 'review')); return true;
-    }
-    private async copyApproval(): Promise<boolean> {
-        await this.state.copyFocusedTextAction?.(this.state.buildSelectedApprovalCopyText(), this.state.translateLabel('agent.notice.copyLabelSelectedApproval', undefined, 'selected approval')); return true;
-    }
-    private async resolveApprovalAlways(): Promise<boolean> {
-        const state = this.state;
-        if (!state.selectedApproval?.id) return false;
-        await state.approvalAlwaysAllowAction?.(state.selectedApproval.id);
-        return true;
-    }
-
-    private async resolveApproval(action: 'approve' | 'deny'): Promise<boolean> {
-        const state = this.state;
-        if (!state.selectedApproval?.id) return false;
-        await state.resolveApprovalAction?.(action, state.selectedApproval.id);
-        return true;
-    }
-
-    /** `/` in the review panel: keep the review open (annotations still apply) and focus the composer. */
-    beginReviewCommand(): boolean {
-        if (!this.state.reviewOpen) return false;
-        this.reviewCommandMode = true;
-        this.state.setInput('/');
-        this.sync();
-        return true;
-    }
-
-    endReviewCommand(): boolean {
-        if (!this.reviewCommandMode) return false;
-        this.reviewCommandMode = false;
-        this.sync();
         return true;
     }
 
