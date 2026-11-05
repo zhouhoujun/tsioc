@@ -317,12 +317,12 @@ import type {
     AgentConsoleUiEventOptions
 } from './AgentConsoleStateTypes';
 import { EN_MESSAGE_STATUS_LABELS, ZH_CONSOLE_HINTS, ZH_MESSAGE_STATUS_LABELS, defaultAgentConsoleOptions } from './AgentConsoleStateTypes';
-import { AgentConsoleSessionInputProcessingHost } from './AgentConsoleSessionInputProcessingHost';
+import { AgentConsoleSessionActionsHost } from './AgentConsoleSessionActionsHost';
 
 export * from './AgentConsoleStateTypes';
 
 @Injectable()
-export class AgentConsoleSessionState extends AgentConsoleSessionInputProcessingHost {
+export class AgentConsoleSessionState extends AgentConsoleSessionActionsHost {
     protected self(): AgentConsoleSessionState { return this; }
     constructor(@Inject(COMMAND_EXECUTION_CONTROL) protected commandExecutionControl?: CommandExecutionControlPort, @Optional() @Inject(TranslatorService) public translator?: TranslatorService) {
         super();
@@ -584,101 +584,6 @@ export class AgentConsoleSessionState extends AgentConsoleSessionInputProcessing
 
     setShowUsername(value: boolean): void {
         this.showUsername = !!value;
-    }
-
-    setPendingApprovals(requests: AgentConsoleApprovalRequest[]): void { setPendingApprovalsInState(this, requests); }
-
-    upsertPendingApproval(request: AgentConsoleApprovalRequest): void { upsertPendingApprovalInState(this, request); }
-
-    removePendingApproval(requestId: string): void { removePendingApprovalInState(this, requestId); }
-
-    selectAsync(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string, kind?: string): Promise<string | undefined> { return selectAsyncInState(this, title, options, selectedIndex, hint, kind); }
-    openSelectMenu(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string, kind?: string): void { openSelectMenuInState(this, title, options, selectedIndex, hint, kind); }
-    closeSelectMenu(): void { closeSelectMenuInState(this); }
-    async dismissSelectMenuLayer(): Promise<void> { return dismissSelectMenuLayerInState(this); }
-    setSelectMenuIndex(index: number): void { setSelectMenuIndexInState(this, index); }
-    moveSelectMenu(delta: number): void { moveSelectMenuInState(this, delta); }
-    moveSelectMenuToEdge(edge: 'start' | 'end'): void { moveSelectMenuToEdgeInState(this, edge); }
-    moveSelectMenuPage(direction: 1 | -1): void { moveSelectMenuPageInState(this, direction); }
-    get selectedSelectMenuOption(): AgentConsoleSelectOption | undefined { return resolveSelectedSelectMenuOption(this); }
-    isArgumentSuggestionMenu(menu: AgentConsoleSelectMenu | undefined): boolean { return isArgumentSuggestionMenuInState(this, menu); }
-    shouldSubmitConfirmedSelectMenuValue(menu: AgentConsoleSelectMenu | undefined, value?: string): boolean { return shouldSubmitConfirmedSelectMenuValueInState(this, menu, value); }
-    async confirmSelectMenu(value?: string): Promise<string | undefined> { return confirmSelectMenuInState(this, value); }
-    async confirmSelectMenuAndKeepOpen(value?: string): Promise<string | undefined> { return confirmSelectMenuAndKeepOpenInState(this, value); }
-    async completeSelectMenu(value?: string): Promise<string | undefined> { return completeSelectMenuInState(this, value); }
-    async acceptSelectMenu(value?: string): Promise<{ value: string | undefined; submitted: boolean }> { return acceptSelectMenuInState(this, value); }
-    async acceptSelectMenuIndex(index: number): Promise<{ value: string | undefined; submitted: boolean }> { return acceptSelectMenuIndexInState(this, index); }
-    async chooseSelectMenuIndex(index: number): Promise<void> { return chooseSelectMenuIndexInState(this, index); }
-    async cancelSelectMenu(): Promise<void> { return cancelSelectMenuInState(this); }
-    async openSubSelectMenu(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string): Promise<void> { return openSubSelectMenuInState(this, title, options, selectedIndex, hint); }
-    async resolveSelectMenu(value: string | undefined): Promise<void> { return resolveSelectMenuInState(this, value); }
-
-    setProviderWizard(patch: Partial<AgentConsoleProviderWizardState>): void {
-        this.providerWizard = {
-            ...(this.providerWizard || {
-                open: true, phase: 'choose', stepIndex: 0, stepCount: 1,
-                stepLabel: '', progress: '', prompt: '', help: '', hint: '', secret: false, summary: []
-            }),
-            ...patch
-        };
-    }
-
-    closeProviderWizard(): void {
-        this.providerWizard = undefined;
-        this.inputSecret = false;
-        this.inputPrompt = this.consoleOptions.inputPrompt;
-    }
-
-    /**
-     * True when the open suggestion menu completes a subcommand/enum argument
-     * (`/statusline l|ist`). Enter must then execute the completed command;
-     * Tab stays a pure completion.
-     */
-
-    /** Tab: fill the input with the highlighted suggestion without executing it. */
-
-    /**
-     * Re-open the `/` or `@` suggestion menu for the current token.
-     *
-     * Esc closes the menu; without this, Tab could not bring it back and the
-     * only way to continue was editing the text.
-     */
-    reopenInputSuggestions(): boolean {
-        if (!getAgentConsoleInputTokenRange(this.input, this.inputCursor)?.token) {
-            return false;
-        }
-        this.refreshInputSuggestions();
-        return true;
-    }
-
-    refreshInputSuggestions(): void {
-        refreshInputSuggestions(this);
-    }
-
-    setRunningTool(toolName: string): void { setRunningToolInState(this, toolName); }
-
-    clearRunningTool(toolName: string): void { clearRunningToolInState(this, toolName); }
-
-    clearToolActivity(): void { clearToolActivityInState(this); }
-
-    pushActivity(kind: AgentConsoleActivity['kind'], message: string): void { pushActivityInState(this, kind, message); }
-
-    upsertToolRun(run: AgentConsoleToolRun): void { upsertToolRunInState(this, run); }
-
-    summarize(value: string): string {
-        const text = value.replace(/\s+/g, ' ').trim();
-        return text.length > this.consoleOptions.summaryMaxLength
-            ? `${text.slice(0, this.consoleOptions.summaryMaxLength)}...`
-            : text;
-    }
-
-    toToolItem(definition: AgentToolDefinition, active: boolean): AgentConsoleToolItem {
-        return {
-            name: definition.name,
-            toolset: definition.toolset,
-            active,
-            activationKind: definition.activation?.kind
-        };
     }
 
     expandTabs(value: string): string {
