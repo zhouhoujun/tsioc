@@ -50,6 +50,7 @@ import { AgentConsoleMessageStatusLabels } from './AgentConsoleMessageRenderers'
 import { normalizeMessageLayout, resolveFinalAssistantMessageId } from './AgentConsoleViewport';
 import { resolveTranscriptLayout } from './AgentConsoleTranscriptLayout';
 import { clearRunningToolInState, clearToolActivityInState, pushActivityInState, removePendingApprovalInState, setPendingApprovalsInState, setRunningToolInState, upsertPendingApprovalInState, upsertToolRunInState } from './AgentConsoleExecutionState';
+import { projectCommandExecutionInState } from './AgentConsoleCommandExecutionState';
 import { appendMessageInState, mergeMessagesPageInState, setMessagesInState } from './AgentConsoleMessageState';
 import { AgentConsoleTranscriptNavigationController } from './AgentConsoleTranscriptNavigation';
 import {
@@ -400,7 +401,6 @@ export class AgentConsoleSessionState {
         return this._commandExecutionController;
     }
 
-    projectCommandExecution(requestId: string): void { this.syncCommandExecutionTranscript(requestId); }
     consoleOptions: Required<AgentConsoleOptions> = defaultAgentConsoleOptions;
     messageDetailVisibleLines = defaultAgentConsoleOptions.messageDetailVisibleLines;
     markdownContentWidth = 0;
@@ -1882,35 +1882,7 @@ export class AgentConsoleSessionState {
         return this.commandExecutionControl;
     }
 
-    /** Projects one command lifecycle into the shared, stable-key transcript. */
-    protected syncCommandExecutionTranscript(requestId: string): void {
-        const execution = this.commandExecutions.find(item => item.requestId === requestId);
-        if (!execution) {
-            return;
-        }
-        const details = [execution.command, execution.args].filter(Boolean).join(' ');
-        const statusKey = execution.status === 'running' ? 'running'
-            : execution.status === 'succeeded' ? 'completed'
-                : execution.status === 'cancelled' ? 'cancelled' : 'failed';
-        const status = this.translateLabel(`agent.command.status.${statusKey}`, undefined, statusKey);
-        const suffix = execution.error ? `: ${execution.error}` : '';
-        const content = `${details || this.translateLabel('agent.command.label', undefined, 'Command')} ${status}${suffix}`;
-        this.projectThreadItem({
-            kind: 'command',
-            key: execution.requestId,
-            sessionId: this.sessionId,
-            content,
-            status: execution.status === 'succeeded' ? 'success' : execution.status === 'failed' ? 'error' : execution.status === 'cancelled' ? 'cancelled' : execution.status === 'running' ? 'running' : undefined,
-            sequence: execution.sequence,
-            attempt: execution.attempt,
-            command: execution.command,
-            args: execution.args,
-            outputIds: execution.outputIds,
-            error: execution.error,
-            retryable: execution.retryable,
-            source: 'local'
-        });
-    }
+    projectCommandExecution(requestId: string): void { projectCommandExecutionInState(this, requestId); }
 
     get visibleCommandOutputs(): AgentConsoleCommandOutputEntry[] {
         const needle = this.commandOutputsFilter.trim().toLowerCase();

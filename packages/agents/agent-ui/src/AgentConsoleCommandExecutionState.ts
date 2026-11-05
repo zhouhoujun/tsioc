@@ -105,3 +105,42 @@ export abstract class AgentConsoleCommandExecutionController {
 }
 
 export class DefaultAgentConsoleCommandExecutionController extends AgentConsoleCommandExecutionController {}
+
+export interface AgentConsoleCommandExecutionProjectionState {
+    commandExecutions: Array<{
+        requestId: string; command: string; args?: string; status: string; error?: string;
+        sequence?: number; attempt?: number; outputIds?: string[]; retryable?: boolean;
+    }>;
+    sessionId: string;
+    translateLabel(key: string, params?: Record<string, any>, fallback?: string): string;
+    projectThreadItem(event: any): void;
+}
+
+export function projectCommandExecutionInState(state: AgentConsoleCommandExecutionProjectionState, requestId: string): void {
+    const execution = state.commandExecutions.find(item => item.requestId === requestId);
+    if (!execution) {
+        return;
+    }
+    const details = [execution.command, execution.args].filter(Boolean).join(' ');
+    const statusKey = execution.status === 'running' ? 'running'
+        : execution.status === 'succeeded' ? 'completed'
+            : execution.status === 'cancelled' ? 'cancelled' : 'failed';
+    const status = state.translateLabel(`agent.command.status.${statusKey}`, undefined, statusKey);
+    const suffix = execution.error ? `: ${execution.error}` : '';
+    const content = `${details || state.translateLabel('agent.command.label', undefined, 'Command')} ${status}${suffix}`;
+    state.projectThreadItem({
+        kind: 'command',
+        key: execution.requestId,
+        sessionId: state.sessionId,
+        content,
+        status: execution.status === 'succeeded' ? 'success' : execution.status === 'failed' ? 'error' : execution.status === 'cancelled' ? 'cancelled' : execution.status === 'running' ? 'running' : undefined,
+        sequence: execution.sequence,
+        attempt: execution.attempt,
+        command: execution.command,
+        args: execution.args,
+        outputIds: execution.outputIds,
+        error: execution.error,
+        retryable: execution.retryable,
+    source: 'local'
+    });
+}
