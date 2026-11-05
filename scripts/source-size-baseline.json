@@ -15,7 +15,7 @@
   "packages/agents/agent-ui/src/AgentConsoleMessageRenderers.ts": 778,
   "packages/agents/agent-ui/src/AgentConsolePanels.ts": 423,
   "packages/agents/agent-ui/src/AgentConsoleRemoteEventBridge.ts": 731,
-  "packages/agents/agent-ui/src/AgentConsoleSessionService.ts": 1088,
+  "packages/agents/agent-ui/src/AgentConsoleSessionService.ts": 1058,
   "packages/agents/agent-ui/src/AgentConsoleSessionState.ts": 2545,
   "packages/agents/agent-ui/src/AgentConsoleTimelineWindow.ts": 535,
   "packages/agents/agent/src/context/AgentContextManager.ts": 1996,

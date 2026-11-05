@@ -108,30 +108,34 @@ export class AgentConsoleSessionService {
         return { id: resolvedId };
     }
 
+    protected mapSessionChoice(item: any): AgentConsoleSessionChoice {
+        return {
+            id: String(item?.id || ''),
+            createdAt: item?.createdAt,
+            lastActiveAt: item?.lastActiveAt,
+            messageCount: item?.messageCount,
+            summary: item?.summary,
+            title: item?.title,
+            pinned: !!item?.pinned,
+            archived: !!item?.archived,
+            workspace: item?.workspace,
+            projectKey: item?.projectKey,
+            projectId: item?.projectId,
+            primaryThreadId: item?.primaryThreadId,
+            originThreadId: item?.originThreadId,
+            sessionRole: item?.sessionRole,
+            rootRequest: item?.rootRequest,
+            focusSummary: item?.focusSummary,
+            threadStatus: item?.threadStatus,
+            sections: Array.isArray(item?.sections) ? item.sections : undefined
+        };
+    }
+
     async listSessions(currentSessionId?: string, context?: any, options?: { includeArchived?: boolean }): Promise<AgentConsoleSessionChoice[]> {
         if (this.appRpc) {
             const sessions = await this.appRpc.request('session.list', options?.includeArchived ? { includeArchived: true } : undefined, context);
             const items = Array.isArray(sessions)
-                ? sessions.map(item => ({
-                    id: String(item?.id || ''),
-                    createdAt: item?.createdAt,
-                    lastActiveAt: item?.lastActiveAt,
-                    messageCount: item?.messageCount,
-                    summary: item?.summary,
-                    title: item?.title,
-                    pinned: !!item?.pinned,
-                    archived: !!item?.archived,
-                    workspace: item?.workspace,
-                    projectKey: item?.projectKey,
-                    projectId: item?.projectId,
-                    primaryThreadId: item?.primaryThreadId,
-                    originThreadId: item?.originThreadId,
-                    sessionRole: item?.sessionRole,
-                    rootRequest: item?.rootRequest,
-                    focusSummary: item?.focusSummary,
-                    threadStatus: item?.threadStatus,
-                    sections: Array.isArray(item?.sections) ? item.sections : undefined
-                })).filter(item => !!item.id)
+                ? sessions.map(item => this.mapSessionChoice(item)).filter(item => !!item.id)
                 : [];
             return this.withCurrent(this.sortSessionChoices(items), currentSessionId);
         }
@@ -159,24 +163,7 @@ export class AgentConsoleSessionService {
                     sessionCount: Number(project?.sessionCount || 0),
                     lastActiveAt: Number(project?.lastActiveAt || 0),
                     sessions: Array.isArray(project?.sessions)
-                        ? this.sortSessionChoices(project.sessions.map((item: any) => ({
-                            id: String(item?.id || ''),
-                            createdAt: item?.createdAt,
-                            lastActiveAt: item?.lastActiveAt,
-                            messageCount: item?.messageCount,
-                            summary: item?.summary,
-                            title: item?.title,
-                            pinned: !!item?.pinned,
-                            workspace: item?.workspace,
-                            projectId: item?.projectId,
-                            primaryThreadId: item?.primaryThreadId,
-                            originThreadId: item?.originThreadId,
-                            sessionRole: item?.sessionRole,
-                            rootRequest: item?.rootRequest,
-                            focusSummary: item?.focusSummary,
-                            threadStatus: item?.threadStatus,
-                            sections: Array.isArray(item?.sections) ? item.sections : undefined
-                        })).filter((item: AgentConsoleSessionChoice) => !!item.id))
+                        ? this.sortSessionChoices(project.sessions.map((item: any) => this.mapSessionChoice(item)).filter((item: AgentConsoleSessionChoice) => !!item.id))
                         : []
                 }))
                 : [];
@@ -212,24 +199,7 @@ export class AgentConsoleSessionService {
                     lastActiveAt: Number(thread?.lastActiveAt || 0),
                     sections: Array.isArray(thread?.sections) ? thread.sections : undefined,
                     sessions: Array.isArray(thread?.sessions)
-                        ? this.sortSessionChoices(thread.sessions.map((item: any) => ({
-                            id: String(item?.id || ''),
-                            createdAt: item?.createdAt,
-                            lastActiveAt: item?.lastActiveAt,
-                            messageCount: item?.messageCount,
-                            summary: item?.summary,
-                            title: item?.title,
-                            pinned: !!item?.pinned,
-                            workspace: item?.workspace,
-                            projectKey: item?.projectKey,
-                            projectId: item?.projectId,
-                            primaryThreadId: item?.primaryThreadId,
-                            sessionRole: item?.sessionRole,
-                            rootRequest: item?.rootRequest,
-                            focusSummary: item?.focusSummary,
-                            threadStatus: item?.threadStatus,
-                            sections: Array.isArray(item?.sections) ? item.sections : undefined
-                        })).filter((item: AgentConsoleSessionChoice) => !!item.id))
+                        ? this.sortSessionChoices(thread.sessions.map((item: any) => this.mapSessionChoice(item)).filter((item: AgentConsoleSessionChoice) => !!item.id))
                         : []
                 }))
                 : [];
