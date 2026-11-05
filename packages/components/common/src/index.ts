@@ -14,3 +14,4 @@ export * from './tab-bar';
 export * from './syntax-tokens';
 export * from './display-width';
 export * from './css-variables';
+export * from './input-history';
