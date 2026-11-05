@@ -2949,6 +2949,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - terminal input / global key / edit mode / which-key / health / navigation 移入 `AgentConsoleKeyInputHost`，Component 1747→1604。
 - turn artifacts / digest refresh / todo plan / executeTurn / loadTools 移入 `AgentConsoleSessionArtifactsHost`，Component 1604→1499，提前达到 `<1500` 目标。
 - 远端事件桥拆分：SSE 协议解析移入 `AgentConsoleRemoteEventProtocol`，事件投影移入 `AgentConsoleRemoteEventApply`，`AgentConsoleRemoteEventBridge` 730→349 行。
+- model catalog / 配置解析移入 `AgentConsoleModelCatalog`，`AgentConsoleModelHandlers` 597→425 行；profile 激活与持久化仍留在 handlers。
 - 修复 components 子组件 callback input 绑定：普通父方法保持父组件 proxy 作为 `this`，agent-ui overlay 关闭不再手工 `reactive(state, effect)`，直接走组件响应式写入。
 - 真实 CLI/TUI 验证（`workspace: /home/zhouyou/workspace/sleep-mlt`）：
   - 要求新建 `task-system`，真实生成了 `src/task.js`、`test/task.test.js`，`node task-system/test/task.test.js` 退出码 0。
