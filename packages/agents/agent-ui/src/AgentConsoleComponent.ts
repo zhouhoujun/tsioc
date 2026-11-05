@@ -1,6 +1,6 @@
 import { ApplicationContext, formatCompactNumber } from '@tsdi/core';
 import { bootstrapConsole, disposeConsole } from './AgentConsoleBootstrap';
-import { AgentConsoleRuntimeCommandHost } from './AgentConsoleRuntimeHost';
+import { AgentConsoleModelHost } from './AgentConsoleModelHost';
 import { drainQueuedPrompts, enqueuePrompt, queueDraft } from './AgentConsoleQueuedPrompts';
 import { DefaultAgentConsoleTranscriptNavigationController } from './AgentConsoleTranscriptNavigation';
 import { Component, ComponentRef, OnDestroy, RNode } from '@tsdi/components';
@@ -344,7 +344,7 @@ interface AgentConsoleQueuedPrompt {
     </div>
     `
 })
-export class AgentConsoleComponent extends AgentConsoleRuntimeCommandHost implements OnDestroy, ConsoleTerminalInputHandler, ConsoleTerminalSurfaceLifecycle {
+export class AgentConsoleComponent extends AgentConsoleModelHost implements OnDestroy, ConsoleTerminalInputHandler, ConsoleTerminalSurfaceLifecycle {
     protected static readonly IMAGE_MIME_TYPES: Record<string, string> = {
         '.png': 'image/png',
         '.jpg': 'image/jpeg',
@@ -396,14 +396,6 @@ export class AgentConsoleComponent extends AgentConsoleRuntimeCommandHost implem
     protected lastEscapeAt = 0;
     protected modelFavorites: string[] = [];
     protected modelRecents: string[] = [];
-    protected wizHolder: import('./AgentConsoleProviderWizardFlow').AgentWizardHolder = {};
-    protected get providerWizard(): import('./AgentConsoleProviderWizardFlow').AgentWizardState | undefined {
-        return this.wizHolder.wizard;
-    }
-    protected set providerWizard(value: import('./AgentConsoleProviderWizardFlow').AgentWizardState | undefined) {
-        this.wizHolder.wizard = value;
-    }
-
     readonly transcriptNavigationController: DefaultAgentConsoleTranscriptNavigationController;
     constructor(
         protected state: AgentConsoleSessionState,
@@ -954,7 +946,7 @@ export class AgentConsoleComponent extends AgentConsoleRuntimeCommandHost implem
     private editCtx(): EditModeHandlerContext { return editCtx(this); }
     protected modelCtx(): ModelHandlerContext { return modelCtx(this); }
     private sshHost(): AgentConsoleSshHost { return sshHost(this); }
-    private pwctx(): import('./AgentConsoleProviderWizardFlow').ProviderWizardContext { return pwctx(this); }
+    protected pwctx(): import('./AgentConsoleProviderWizardFlow').ProviderWizardContext { return pwctx(this); }
     protected gitSnapshotCommandHost(): GitSnapshotCommandHost { return gitSnapshotCommandHost(this); }
     protected shellCommandHost(): ShellCommandHost { return shellCommandHost(this); }
 
@@ -1749,106 +1741,6 @@ export class AgentConsoleComponent extends AgentConsoleRuntimeCommandHost implem
             return [];
         }
         return this.toolRegistry.getToolDefinitions(sessionId);
-    }
-
-    protected startProviderWizard(): void {
-        return startProviderWizard(this.pwctx(), this.wizHolder);
-    }
-
-    protected wizardProviderDef(id?: string): AgentWizardProviderDef | undefined {
-        return resolveWizardProviderDef(id);
-    }
-
-    protected wizardTierLabel(tier?: string): string {
-        return resolveWizardTierLabel(tier, (key: string, fallback: string, params?: Record<string, any>) => formatAgentUiLabel(this.translator, key, fallback, params));
-    }
-
-    protected handleWizardEscape(): boolean {
-        return handleWizardEscape(this.pwctx(), this.wizHolder);
-    }
-
-    protected cancelProviderWizard(): boolean {
-        return cancelProviderWizard(this.pwctx(), this.wizHolder);
-    }
-
-    protected resetProviderWizardComposer(): void {
-        return resetProviderWizardComposer(this.pwctx(), this.wizHolder);
-    }
-
-    protected providerWizardSteps(): AgentWizardStepDef[] {
-        return buildProviderWizardSteps(this.providerWizard?.values || {}, (key: string, fallback: string, params?: Record<string, any>) => formatAgentUiLabel(this.translator, key, fallback, params));
-    }
-
-    protected wizardStepHelp(step: AgentWizardStepDef, values: NonNullable<typeof this.providerWizard>['values']): string {
-        return buildWizardStepHelp(step, values, (key: string, fallback: string, params?: Record<string, any>) => formatAgentUiLabel(this.translator, key, fallback, params));
-    }
-
-    protected providerWizardPrefill(step: AgentWizardStepDef, values: NonNullable<typeof this.providerWizard>['values']): string {
-        return resolveWizardPrefill(step, values);
-    }
-
-    protected providerWizardSummary(): string[] {
-        return buildProviderWizardSummary(this.providerWizard?.values || {}, (key: string, fallback: string, params?: Record<string, any>) => formatAgentUiLabel(this.translator, key, fallback, params));
-    }
-
-    protected showProviderWizardStep(): void {
-        return showProviderWizardStep(this.pwctx(), this.wizHolder);
-    }
-
-    protected openProviderWizardChoice(step: AgentWizardStepDef): void {
-        return openProviderWizardChoice(this.pwctx(), this.wizHolder, step);
-    }
-
-    protected async handleProviderWizardChoice(value?: string): Promise<void> {
-        return await handleProviderWizardChoice(this.pwctx(), this.wizHolder, value);
-    }
-
-    protected wizardProviderName(values: NonNullable<typeof this.providerWizard>['values']): string {
-        return resolveWizardProviderName(values);
-    }
-
-    protected providerWizardConfirmOptions(): AgentConsoleSelectOption[] {
-        return buildProviderWizardConfirmOptions(this.providerWizard?.values || {}, !!this.appRpc, (key: string, fallback: string, params?: Record<string, any>) => formatAgentUiLabel(this.translator, key, fallback, params));
-    }
-
-    protected openProviderWizardConfirm(): void {
-        return openProviderWizardConfirm(this.pwctx(), this.wizHolder);
-    }
-
-    protected async handleProviderWizardConfirm(action?: string): Promise<void> {
-        return await handleProviderWizardConfirm(this.pwctx(), this.wizHolder, action);
-    }
-
-    protected async openProviderWizardEditor(): Promise<void> {
-        return await openProviderWizardEditor(this.pwctx(), this.wizHolder);
-    }
-
-    protected async testProviderConnection(): Promise<void> {
-        return await testProviderConnection(this.pwctx(), this.wizHolder);
-    }
-
-    protected async commitProviderWizard(): Promise<void> {
-        return await commitProviderWizard(this.pwctx(), this.wizHolder);
-    }
-
-    protected async advanceProviderWizard(value: string): Promise<void> {
-        return await advanceProviderWizard(this.pwctx(), this.wizHolder, value);
-    }
-
-    protected getModelProfileOptions(): AgentConsoleSelectOption[] {
-        return getModelProfileOptions(this.modelCtx());
-    }
-
-    protected async loadModelProfileOptions(): Promise<AgentConsoleSelectOption[]> {
-        return loadModelProfileOptions(this.modelCtx());
-    }
-
-    protected resolveModelProfileConfig(profileName: string): AgentUiResolvedModelProfile {
-        return resolveModelProfileConfig(this.modelCtx(), profileName);
-    }
-
-    protected async openModelSwitcher(): Promise<void> {
-        return openModelSwitcher(this.modelCtx());
     }
 
     protected async runInitCommand(args: string): Promise<void> {
