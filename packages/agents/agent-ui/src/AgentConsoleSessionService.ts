@@ -1,6 +1,6 @@
 import { Injectable, Inject, Optional } from '@tsdi/ioc';
 import { AGENT_CONSOLE_APP_RPC, AgentConsoleAppRpc, AgentMessage, AgentRuntime, AgentSessionSection, AgentSessionSectionInfo, TurnDiagnosticsStore, buildUsageSummary, collectMessageUsageRecords, collectTurnUsageRecords, deriveSectionInfos, normalizeAgentWorkspaceIdentity, SessionSearchMatch, SessionStore } from '@tsdi/agent';
-import { AgentConsoleSessionSectionRpc } from './AgentConsoleSessionSectionRpc';
+import { AgentConsoleSessionExportRpc } from './AgentConsoleSessionExportRpc';
 import { AgentConsoleSessionGrouping } from './AgentConsoleSessionGrouping';
 import { collectExportToolCalls, createExportResult, normalizeExportFormat, normalizeExportResult } from './AgentConsoleSessionExport';
 import { formatAgentUiNotice } from './agent-ui.i18n';
@@ -77,7 +77,7 @@ export interface AgentConsoleSessionThreadGroup {
 }
 
 @Injectable()
-export class AgentConsoleSessionService extends AgentConsoleSessionSectionRpc {
+export class AgentConsoleSessionService extends AgentConsoleSessionExportRpc {
     protected readonly sessionGrouping = new AgentConsoleSessionGrouping({
         selectProjectRepresentative: (sessions: import('./AgentConsoleSessionService').AgentConsoleSessionChoice[]) => this.selectProjectRepresentative(sessions),
         sortSessionChoices: (sessions: import('./AgentConsoleSessionService').AgentConsoleSessionChoice[]) => this.sortSessionChoices(sessions)
@@ -266,67 +266,6 @@ export class AgentConsoleSessionService extends AgentConsoleSessionSectionRpc {
     async loadMessages(sessionId: string, context?: any): Promise<AgentMessage[]> {
         const page = await this.loadMessagesPage(sessionId, context);
         return page.messages;
-    }
-
-    async exportSession(
-        sessionId: string,
-        options?: AgentSessionExportOptions,
-        context?: any
-    ): Promise<AgentSessionExportResult> {
-        const resolvedSessionId = String(sessionId || '').trim();
-        if (!resolvedSessionId) { throw new Error(formatAgentUiNotice(undefined, 'sessionIdRequired')); }
-        const format = normalizeExportFormat(options?.format);
-        if (this.appRpc) {
-            const result = await this.appRpc.request('session.export', { sessionId: resolvedSessionId, format }, context);
-            return normalizeExportResult(resolvedSessionId, format, result);
-        }
-        const state = this.sessionStore
-            ? await this.sessionStore.get(resolvedSessionId)
-            : undefined;
-        const messages = state?.messages
-            ? state.messages.slice()
-            : this.runtime
-                ? await this.runtime.getMessages(resolvedSessionId)
-                : [];
-        const toolCalls = collectExportToolCalls(messages);
-        const exportedAt = Date.now();
-        const session = {
-            id: resolvedSessionId,
-            createdAt: state?.createdAt ?? null,
-            updatedAt: state?.updatedAt ?? null,
-            summary: state?.summary ?? null,
-            workspace: state?.workspace ?? null,
-            projectId: state?.projectId ?? null,
-            primaryThreadId: state?.primaryThreadId ?? null,
-            originThreadId: state?.originThreadId ?? null,
-            sessionRole: state?.sessionRole ?? null,
-            rootRequest: state?.rootRequest ?? null,
-            focusSummary: state?.focusSummary ?? null,
-            threadStatus: state?.threadStatus ?? null,
-            messageCount: messages.length,
-            toolCallCount: toolCalls.length
-        };
-        return createExportResult(resolvedSessionId, format, exportedAt, session, messages, toolCalls);
-    }
-
-    async listApprovals(sessionId?: string, context?: any): Promise<Array<Record<string, any>>> {
-        if (this.appRpc) {
-            const result = await this.appRpc.request('approval.list', sessionId ? { sessionId } : {}, context);
-            return Array.isArray(result?.requests) ? result.requests : [];
-        }
-        return [];
-    }
-
-    async decideApproval(decision: 'approve' | 'deny', requestId: string, context?: any): Promise<Record<string, any> | null> {
-        if (!this.appRpc || !requestId) {
-            return null;
-        }
-        const result = await this.appRpc.request(
-            decision === 'approve' ? 'approval.approve' : 'approval.reject',
-            { requestId },
-            context
-        );
-        return result ?? null;
     }
 
     protected withCurrent(
