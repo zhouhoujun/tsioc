@@ -421,3 +421,49 @@ export function normalizeTodoStatus(status: unknown): 'pending' | 'in_progress' 
             return 'pending';
     }
 }
+
+export function resolvePlanTodoStatusMark(status: string): string {
+    switch (status) {
+        case 'completed':
+            return 'x';
+        case 'cancelled':
+            return '-';
+        case 'in_progress':
+            return '>';
+        case 'failed':
+            return '✗';
+        case 'blocked':
+            return '⏸';
+        default:
+            return ' ';
+    }
+}
+
+export function resolvePlanTodoContent(message: AgentMessage, compact = false): string {
+    const items = Array.isArray(message.metadata?.planItems) ? message.metadata.planItems : [];
+    if (!items.length) {
+        return String(message.content || '').trim();
+    }
+    if (compact) {
+        const active = items.find((item: any) => item.status === 'in_progress')
+            || items.find((item: any) => item.status === 'pending');
+        if (!active) {
+            const completed = items.filter((item: any) => item.status === 'completed').length;
+            return `plan ${items.length} · ${completed}/${items.length} completed`;
+        }
+        const activeIndex = items.indexOf(active);
+        return `plan ${items.length} · current ${activeIndex + 1}. [${resolvePlanTodoStatusMark(active.status)}] ${active.content}`;
+    }
+    return items.map((item: any, index: number) => {
+        const status = item.status === 'pending' && Array.isArray(item.blockedBy) && item.blockedBy.length
+            ? 'blocked'
+            : item.status;
+        const reason = status === 'failed' && item.error
+            ? ` · failed: ${item.error}`
+            : status === 'blocked' && (item.blockedReason || item.blockedBy?.length)
+                ? ` · blocked: ${item.blockedReason || item.blockedBy.join(', ')}`
+                : '';
+        return `${index + 1}. [${resolvePlanTodoStatusMark(status)}] ${item.content}${reason}`;
+    }).join('\n');
+}
+
