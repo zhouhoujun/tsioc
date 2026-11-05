@@ -2956,6 +2956,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - session list / tabs / projects / threads / scheduled jobs / background tasks 移入 `AgentConsoleSessionListHost`，SessionState 1652→1499。
 - message template/status 判定、时间线行截断与状态样式移入 `AgentConsoleMessageStatus`，`AgentConsoleMessageRenderers` 777→523。
 - focus 键盘路由拆分：review/approval 移入 `AgentConsoleFocusReviewLayers`，timeline/message 移入 `AgentConsoleFocusTranscriptLayers`，`AgentConsoleFocusLayers` 562→358。
+- scheduled jobs 操作移入 `AgentConsoleScheduledTaskHandlers`，`AgentConsoleCodingTaskHandlers` 541→427。
 - 修复 components 子组件 callback input 绑定：普通父方法保持父组件 proxy 作为 `this`，agent-ui overlay 关闭不再手工 `reactive(state, effect)`，直接走组件响应式写入。
 - 真实 CLI/TUI 验证（`workspace: /home/zhouyou/workspace/sleep-mlt`）：
   - 要求新建 `task-system`，真实生成了 `src/task.js`、`test/task.test.js`，`node task-system/test/task.test.js` 退出码 0。
