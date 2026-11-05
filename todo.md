@@ -2923,13 +2923,14 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `AgentConsoleSessionRefresh.ts`：会话列表刷新
   - `AgentConsoleSessionCommands.ts`：/search、/projects、/threads、/sections、/threadplan
   - `AgentConsoleReviewCommands.ts` / `AgentConsoleDiagnosticsCommands.ts`
-- 体量下降：`AgentConsoleSessionState.ts` 3679→2664，`AgentConsoleComponent.ts` 3132→2805，`AgentConsoleCommandHandlers.ts` 1131→536，`AgentConsoleSessionService.ts` 1470→1087。
+- 体量下降：`AgentConsoleSessionState.ts` 3679→2596，`AgentConsoleComponent.ts` 3132→2805，`AgentConsoleCommandHandlers.ts` 1131→536，`AgentConsoleSessionService.ts` 1470→1087。
 - 继续拆分：`AgentConsoleSessionExport.ts`（session export serialization）、`AgentConsoleReviewCommands.ts`、`AgentConsoleDiagnosticsCommands.ts`；SessionService 导出逻辑由 facade 委托。
 - common 下沉：`CommonInputHistoryController`（共享输入历史导航/草稿恢复）、`parseCommonSlashCommandLine`；agent-ui 保留同名 re-export 兼容。
 - 再拆分：plan todo 渲染移入 `AgentConsolePlanState`，`AgentConsoleMessageRenderers` 1174→1130。
 - 再拆分：`processDecodedInput` 输入路由移入 `AgentConsoleDecodedInputState`，`AgentConsoleSessionState` 2891→2722。
 - 再拆分：`onInit`/`onDestroy` 启动与清理编排移入 `AgentConsoleBootstrap`；queued prompt 处理移入 `AgentConsoleQueuedPrompts`；`AgentConsoleComponent` 2947→2805。
 - 清理 `AgentConsoleSessionState.applyVimAction` 的死注释分支，SessionState 2722→2664。
+- 输入建议刷新移入 `AgentConsoleSuggestions`，SessionState 2664→2596。
 - 真实 CLI/TUI 验证（`workspace: /home/zhouyou/workspace/sleep-mlt`）：
   - 要求新建 `task-system`，真实生成了 `src/task.js`、`test/task.test.js`，`node task-system/test/task.test.js` 退出码 0。
   - 发现并修复：`/model` 切换后仍被旧 `complexityRouting` 覆盖（模型仍请求旧 deepseek-v4.1-flash-1017）；现在手动选择模型会清空陈旧路由。
