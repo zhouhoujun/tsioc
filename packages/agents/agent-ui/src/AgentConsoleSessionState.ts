@@ -317,12 +317,12 @@ import type {
     AgentConsoleUiEventOptions
 } from './AgentConsoleStateTypes';
 import { EN_MESSAGE_STATUS_LABELS, ZH_CONSOLE_HINTS, ZH_MESSAGE_STATUS_LABELS, defaultAgentConsoleOptions } from './AgentConsoleStateTypes';
-import { AgentConsoleSessionTranscriptHost } from './AgentConsoleSessionTranscriptHost';
+import { AgentConsoleSessionOverlayHost } from './AgentConsoleSessionOverlayHost';
 
 export * from './AgentConsoleStateTypes';
 
 @Injectable()
-export class AgentConsoleSessionState extends AgentConsoleSessionTranscriptHost {
+export class AgentConsoleSessionState extends AgentConsoleSessionOverlayHost {
     protected self(): AgentConsoleSessionState { return this; }
     constructor(@Inject(COMMAND_EXECUTION_CONTROL) protected commandExecutionControl?: CommandExecutionControlPort, @Optional() @Inject(TranslatorService) public translator?: TranslatorService) {
         super();
@@ -827,27 +827,6 @@ export class AgentConsoleSessionState extends AgentConsoleSessionTranscriptHost 
         return this.commandExecutions[0];
     }
 
-    setNotice(message: string): void { setNoticeInState(this, message); }
-    openTextOverlay(title: string, lines: string[], visibleLines?: number): void { openTextOverlayInState(this, title, lines, visibleLines); }
-    closeTextOverlay(): void { closeTextOverlayInState(this); }
-    hasTextOverlayFocus(): boolean { return hasTextOverlayFocusInState(this); }
-    pushCommandOutput(command: string, text: string, kind: AgentConsoleCommandOutputEntry['kind'] = 'result'): string { return pushCommandOutputInState(this, command, text, kind); }
-    persistCommandOutput(entry: AgentConsoleCommandOutputEntry): Promise<void> { return persistCommandOutputInState(this, entry); }
-    setCommandOutputStore(store: CommandOutputStore | undefined): void { setCommandOutputStoreInState(this, store); }
-    async loadCommandOutputHistory(): Promise<void> { return loadCommandOutputHistoryInState(this); }
-    openCommandOutputs(): void { openCommandOutputsInState(this); }
-    closeCommandOutputs(): void { closeCommandOutputsInState(this); }
-    toggleCommandOutputs(): void { toggleCommandOutputsInState(this); }
-    hasCommandOutputsFocus(): boolean { return hasCommandOutputsFocusInState(this); }
-    setCommandOutputsFilter(filter: string): void { setCommandOutputsFilterInState(this, filter); }
-    moveCommandOutputSelection(delta: number): void { moveCommandOutputSelectionInState(this, delta); }
-    copySelectedCommandOutput(): Promise<boolean> { return copySelectedCommandOutputInState(this); }
-    scrollCommandOutputsToEdge(position: 'start' | 'end'): void { scrollCommandOutputsToEdgeInState(this, position); }
-    scrollCommandOutputsPage(delta: number, pageSize?: number): void { scrollCommandOutputsPageInState(this, delta, pageSize); }
-    scrollTextOverlay(delta: number): void { scrollTextOverlayInState(this, delta); }
-    scrollTextOverlayPage(delta: number, pageSize?: number): void { scrollTextOverlayPageInState(this, delta, pageSize); }
-    scrollTextOverlayToEdge(position: 'start' | 'end'): void { scrollTextOverlayToEdgeInState(this, position); }
-
     setCommandExecutionControl(control: CommandExecutionControlPort): void {
         this.commandExecutionControl = control;
         this._commandExecutionController = undefined;
@@ -861,28 +840,6 @@ export class AgentConsoleSessionState extends AgentConsoleSessionTranscriptHost 
     }
 
     projectCommandExecution(requestId: string): void { projectCommandExecutionInState(this, requestId); }
-
-    get visibleCommandOutputs(): AgentConsoleCommandOutputEntry[] {
-        const needle = this.commandOutputsFilter.trim().toLowerCase();
-        if (!needle) {
-            return this.commandOutputs;
-        }
-        return this.commandOutputs.filter(entry =>
-            entry.command.toLowerCase().includes(needle) || entry.text.toLowerCase().includes(needle)
-        );
-    }
-
-    get textOverlayPageSize(): number {
-        return this.textOverlay?.visibleLines ?? this.consoleOptions.reviewDetailVisibleLines;
-    }
-
-    get textOverlayVisibleLines(): string[] {
-        if (!this.textOverlay) {
-            return [];
-        }
-        const visible = this.textOverlayPageSize;
-        return this.textOverlay.lines.slice(this.textOverlay.scroll, this.textOverlay.scroll + visible);
-    }
 
     setCommandHints(commands: string[]): void {
         this.injectedCommandHints = Array.from(new Set(commands.filter(Boolean)));
