@@ -1,6 +1,6 @@
 import { ApplicationContext, formatCompactNumber } from '@tsdi/core';
 import { bootstrapConsole, disposeConsole } from './AgentConsoleBootstrap';
-import { AgentConsoleModelHost } from './AgentConsoleModelHost';
+import { AgentConsolePolicyHost } from './AgentConsolePolicyHost';
 import { drainQueuedPrompts, enqueuePrompt, queueDraft } from './AgentConsoleQueuedPrompts';
 import { DefaultAgentConsoleTranscriptNavigationController } from './AgentConsoleTranscriptNavigation';
 import { Component, ComponentRef, OnDestroy, RNode } from '@tsdi/components';
@@ -344,7 +344,7 @@ interface AgentConsoleQueuedPrompt {
     </div>
     `
 })
-export class AgentConsoleComponent extends AgentConsoleModelHost implements OnDestroy, ConsoleTerminalInputHandler, ConsoleTerminalSurfaceLifecycle {
+export class AgentConsoleComponent extends AgentConsolePolicyHost implements OnDestroy, ConsoleTerminalInputHandler, ConsoleTerminalSurfaceLifecycle {
     protected static readonly IMAGE_MIME_TYPES: Record<string, string> = {
         '.png': 'image/png',
         '.jpg': 'image/jpeg',
@@ -945,7 +945,7 @@ export class AgentConsoleComponent extends AgentConsoleModelHost implements OnDe
     protected codingTaskCtx(): CodingTaskHandlerContext { return codingTaskCtx(this); }
     private editCtx(): EditModeHandlerContext { return editCtx(this); }
     protected modelCtx(): ModelHandlerContext { return modelCtx(this); }
-    private sshHost(): AgentConsoleSshHost { return sshHost(this); }
+    protected sshHost(): AgentConsoleSshHost { return sshHost(this); }
     protected pwctx(): import('./AgentConsoleProviderWizardFlow').ProviderWizardContext { return pwctx(this); }
     protected gitSnapshotCommandHost(): GitSnapshotCommandHost { return gitSnapshotCommandHost(this); }
     protected shellCommandHost(): ShellCommandHost { return shellCommandHost(this); }
@@ -1741,89 +1741,6 @@ export class AgentConsoleComponent extends AgentConsoleModelHost implements OnDe
             return [];
         }
         return this.toolRegistry.getToolDefinitions(sessionId);
-    }
-
-    protected async runInitCommand(args: string): Promise<void> {
-        const force = String(args || '').trim().split(/\s+/).includes('--force');
-        try {
-            const result = await initAgentsDoc({ force, root: this.workspace || this.options.ui?.console?.workspace, fileAdapter: this.resolveFileAdapter() ?? undefined });
-            if (result.created) {
-                this.pushCommandOutput('/init', formatAgentUiNotice(this.translator, 'agentsDocCreatedOutput', { file: result.file }));
-            } else {
-                this.pushCommandOutput('/init', formatAgentUiNotice(this.translator, 'agentsDocStatusOutput', { reason: result.reason }));
-            }
-        } catch (error) {
-            this.notify(formatAgentUiNotice(this.translator, 'failedCreateAgents', { error: error instanceof Error ? error.message : String(error) }));
-        }
-    }
-
-    protected async runPlanCommand(args: string): Promise<void> {
-        return runPlanCommandView(this.rpcCommandHost(), args);
-    }
-
-    protected async runArchetypeCommand(args: string): Promise<void> {
-        const sessionId = this.state.sessionId;
-        const name = String(args || '').trim().toLowerCase();
-        try {
-            if (!name) {
-                const current = this.runtime.getSessionArchetype(sessionId);
-                const available = this.runtime.listArchetypes().join(', ');
-                this.notify(formatAgentUiNotice(this.translator, 'sessionArchetypeAvailable', { current: current, available: available }));
-                return;
-            }
-            if (this.appRpc) {
-                await this.appRpc.request('session.archetype.set', { sessionId, archetype: name }, this.rpcRequestContext());
-            } else {
-                this.runtime.setSessionArchetype(sessionId, name);
-            }
-            this.notify(formatAgentUiNotice(this.translator, 'sessionSwitchedArchetype', { sessionId: sessionId, name: name }));
-        } catch (error) {
-            this.notify(formatAgentUiNotice(this.translator, 'failedSetArchetype', { error: error instanceof Error ? error.message : String(error) }));
-        }
-    }
-
-    protected async runDelegationModeCommand(args: string): Promise<void> {
-        return runDelegationModeCommandView(policyCommandHost(this), args);
-    }
-
-    protected async runVimCommand(args: string): Promise<void> {
-        return runVimCommand(args, this.state, (message: string) => this.notify(message), this.translator);
-    }
-
-    protected resolveKeymapContext(): AgentConsoleKeymapContext {
-        return resolveKeymapContextView(keymapCommandHost(this));
-    }
-
-    protected async runKeymapCommand(args: string): Promise<void> {
-        return runKeymapCommandView(keymapCommandHost(this), args);
-    }
-
-    protected async runSshCommand(args: string): Promise<void> {
-        return runSshCommand(this.sshHost(), args);
-    }
-
-    protected async detachSshShell(reason: 'detached' | 'closed'): Promise<void> {
-        return detachSshShell(this.sshHost(), reason);
-    }
-
-    protected async runPermissionsCommand(args: string): Promise<void> {
-        return runPermissionsCommandView(policyCommandHost(this), args);
-    }
-
-    protected async showSandboxCapabilities(): Promise<void> {
-        return showSandboxCapabilitiesView(policyCommandHost(this));
-    }
-
-    protected async runCdCommand(args: string): Promise<void> {
-        return runCdCommandView({
-            workspace: this.workspace,
-            translator: this.translator,
-            state: this.state,
-            resolveFileAdapter: () => this.resolveFileAdapter(),
-            persistInputHistory: () => this.persistInputHistory(),
-            restoreInputHistory: () => this.restoreInputHistory(),
-            notify: message => this.notify(message)
-        }, args);
     }
 
 
