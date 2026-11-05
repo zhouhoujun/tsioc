@@ -1,5 +1,5 @@
 import { ApplicationContext, formatCompactNumber } from '@tsdi/core';
-import { bootstrapConsole } from './AgentConsoleBootstrap';
+import { bootstrapConsole, disposeConsole } from './AgentConsoleBootstrap';
 import { DefaultAgentConsoleTranscriptNavigationController } from './AgentConsoleTranscriptNavigation';
 import { Component, ComponentRef, OnDestroy, RNode } from '@tsdi/components';
 import { AudioCaptureAdapter, AudioPlaybackAdapter, AudioPlaybackFormat, FileAdapter } from '@tsdi/common';
@@ -1378,32 +1378,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     onDestroy(): void {
-        this.destroyed = true;
-        void this.stopVoiceCapture(true).catch(() => undefined);
-        void Promise.resolve(this.audioPlayback?.stop()).catch(() => undefined);
-        this.clearStreamingMessageState();
-        this.clearInputHistoryRestoreTimers();
-        this.state.copyFocusedTextAction = undefined;
-        this.state.activateSelectedSessionAction = undefined;
-        this.state.openSelectedTaskAction = undefined;
-        this.state.cancelSelectedTaskAction = undefined;
-        this.state.retrySelectedTaskAction = undefined;
-        this.state.retrySelectedPlanTodoAction = undefined;
-        this.state.rollbackSelectedTaskAction = undefined;
-        this.state.toggleSelectedScheduledTaskAction = undefined;
-        this.state.cancelSelectedScheduledTaskAction = undefined;
-        this.state.recoverSelectedScheduledTaskAction = undefined;
-        this.state.activateSelectedToolAction = undefined;
-        this.state.resolveApprovalAction = undefined; this.state.approvalAlwaysAllowAction = undefined; this.state.modelUnavailableAction = undefined; this.state.scrollTranscriptAction = undefined; this.state.sessionTabsAction = undefined;
-        this.state.globalKeyInputAction = undefined;
-        void this.persistInputHistory(); void this.persistSettings({ lastSessionId: this.state.sessionId, openSessionIds: this.state.openSessionIds });
-        const shell = this.sshShell;
-        this.sshShell = null;
-        this.state.sshShell = null;
-        if (shell) {
-            void shell.close().catch(() => void 0);
-        }
-        this.dispose();
+        disposeConsole(this as any);
     }
 
     protected async saveReviewAnnotationsCacheToDisk(cache: Record<string, Record<string, any>>): Promise<void> {

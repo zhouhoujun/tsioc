@@ -93,3 +93,33 @@ host.state.onReviewAnnotationsPersist = (cache: any) => host.saveReviewAnnotatio
         host.state.setTasksCount(host.scheduler.getTasks().length);
 
 }
+
+export function disposeConsole(host: AgentConsoleBootstrapHost): void {
+        host.destroyed = true;
+        void host.stopVoiceCapture(true).catch(() => undefined);
+        void Promise.resolve(host.audioPlayback?.stop()).catch(() => undefined);
+        host.clearStreamingMessageState();
+        host.clearInputHistoryRestoreTimers();
+        host.state.copyFocusedTextAction = undefined;
+        host.state.activateSelectedSessionAction = undefined;
+        host.state.openSelectedTaskAction = undefined;
+        host.state.cancelSelectedTaskAction = undefined;
+        host.state.retrySelectedTaskAction = undefined;
+        host.state.retrySelectedPlanTodoAction = undefined;
+        host.state.rollbackSelectedTaskAction = undefined;
+        host.state.toggleSelectedScheduledTaskAction = undefined;
+        host.state.cancelSelectedScheduledTaskAction = undefined;
+        host.state.recoverSelectedScheduledTaskAction = undefined;
+        host.state.activateSelectedToolAction = undefined;
+        host.state.resolveApprovalAction = undefined; host.state.approvalAlwaysAllowAction = undefined; host.state.modelUnavailableAction = undefined; host.state.scrollTranscriptAction = undefined; host.state.sessionTabsAction = undefined;
+        host.state.globalKeyInputAction = undefined;
+        void host.persistInputHistory(); void host.persistSettings({ lastSessionId: host.state.sessionId, openSessionIds: host.state.openSessionIds });
+        const shell = host.sshShell;
+        host.sshShell = null;
+        host.state.sshShell = null;
+        if (shell) {
+            void shell.close().catch(() => void 0);
+        }
+        host.dispose();
+
+}
