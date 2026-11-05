@@ -49,6 +49,7 @@ import {
 import { AgentConsoleMessageStatusLabels } from './AgentConsoleMessageRenderers';
 import { normalizeMessageLayout, resolveFinalAssistantMessageId } from './AgentConsoleViewport';
 import { resolveTranscriptLayout } from './AgentConsoleTranscriptLayout';
+import { clearRunningToolInState, clearToolActivityInState, pushActivityInState, removePendingApprovalInState, setPendingApprovalsInState, setRunningToolInState, upsertPendingApprovalInState, upsertToolRunInState } from './AgentConsoleExecutionState';
 import { appendMessageInState, mergeMessagesPageInState, setMessagesInState } from './AgentConsoleMessageState';
 import { AgentConsoleTranscriptNavigationController } from './AgentConsoleTranscriptNavigation';
 import {
@@ -645,7 +646,7 @@ export class AgentConsoleSessionState {
         return agentConsoleAllCommandHints(this.injectedCommandHints);
     }
 
-    protected activeToolSet = new Set<string>();
+    activeToolSet = new Set<string>();
     workspaceMentionResolver?: AgentConsoleWorkspaceMentionResolver;
     mentionCatalog: AgentConsoleMentionCatalogItem[] = [];
     workspaceSuggestionRequestId = 0;
@@ -2063,64 +2064,11 @@ export class AgentConsoleSessionState {
         const maxScroll = Math.max(0, this.messageDetailLines.length - this.messageDetailVisibleLines);
         this.messageDetailScroll = Math.min(this.messageDetailScroll, maxScroll);
     }
-    setPendingApprovals(requests: AgentConsoleApprovalRequest[]): void {
-        this.pendingApprovals = requests
-            .slice()
-            .sort((left, right) => left.createdAt - right.createdAt);
-        if (!this.pendingApprovals.length) {
-            this.selectedApprovalId = '';
-            this.approvalsFocused = false;
-        } else if (this.selectedApprovalId && this.pendingApprovals.some(item => item.id === this.selectedApprovalId)) {
-            // Preserve explicit approval selection when possible.
-        } else {
-            this.selectedApprovalId = this.pendingApprovals[0].id;
-        }
-        this.syncDerivedInputFocus();
-    }
+    setPendingApprovals(requests: AgentConsoleApprovalRequest[]): void { setPendingApprovalsInState(this, requests); }
 
-    upsertPendingApproval(request: AgentConsoleApprovalRequest): void {
-        // The same request can arrive twice (in-process event bridge plus the
-        // streamed RPC chunk). The first arrival owns the identity details, so
-        // a sparse duplicate must not erase the reason/input/timing of an
-        // already known request.
-        const existing = this.pendingApprovals.find(item => item.id === request.id);
-        const merged = existing ? {
-            ...existing,
-            ...request,
-            reason: existing.reason || request.reason,
-            reasonDetail: existing.reasonDetail || request.reasonDetail,
-            summary: existing.summary || request.summary,
-            inputSummary: existing.inputSummary || request.inputSummary,
-            createdAt: existing.createdAt || request.createdAt,
-            timeoutMs: existing.timeoutMs || request.timeoutMs,
-            expiresAt: existing.expiresAt || request.expiresAt
-        } : request;
-        const next = this.pendingApprovals.filter(item => item.id !== request.id);
-        next.push(merged);
-        this.pendingApprovals = next.sort((left, right) => left.createdAt - right.createdAt);
-        if (!this.pendingApprovals.length) {
-            this.selectedApprovalId = '';
-            this.approvalsFocused = false;
-        } else if (!this.pendingApprovals.some(item => item.id === this.selectedApprovalId)) {
-            this.selectedApprovalId = this.pendingApprovals[0].id;
-        }
-        this.syncDerivedInputFocus();
-    }
+    upsertPendingApproval(request: AgentConsoleApprovalRequest): void { upsertPendingApprovalInState(this, request); }
 
-    removePendingApproval(requestId: string): void {
-        const next = this.pendingApprovals.filter(item => item.id !== requestId);
-        if (next.length === this.pendingApprovals.length) {
-            return;
-        }
-        this.pendingApprovals = next;
-        if (!this.pendingApprovals.length) {
-            this.selectedApprovalId = '';
-            this.approvalsFocused = false;
-        } else if (!this.pendingApprovals.some(item => item.id === this.selectedApprovalId)) {
-            this.selectedApprovalId = this.pendingApprovals[0].id;
-        }
-        this.syncDerivedInputFocus();
-    }
+    removePendingApproval(requestId: string): void { removePendingApprovalInState(this, requestId); }
 
     selectAsync(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string, kind?: string): Promise<string | undefined> { return selectAsyncInState(this, title, options, selectedIndex, hint, kind); }
     openSelectMenu(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string, kind?: string): void { openSelectMenuInState(this, title, options, selectedIndex, hint, kind); }
@@ -2185,48 +2133,15 @@ export class AgentConsoleSessionState {
         refreshInputSuggestions(this);
     }
 
-    setRunningTool(toolName: string): void {
-        this.activeToolSet.add(toolName);
-        this.runningTools = Array.from(this.activeToolSet.values()).sort();
-    }
+    setRunningTool(toolName: string): void { setRunningToolInState(this, toolName); }
 
-    clearRunningTool(toolName: string): void {
-        this.activeToolSet.delete(toolName);
-        this.runningTools = Array.from(this.activeToolSet.values()).sort();
-    }
+    clearRunningTool(toolName: string): void { clearRunningToolInState(this, toolName); }
 
-    clearToolActivity(): void {
-        if (!this.activeToolSet.size && !this.runningTools.length && !this.toolRuns.length) {
-            return;
-        }
-        this.activeToolSet.clear();
-        this.runningTools = [];
-        this.toolRuns = [];
-    }
+    clearToolActivity(): void { clearToolActivityInState(this); }
 
-    pushActivity(kind: AgentConsoleActivity['kind'], message: string): void {
-        const normalizedMessage = String(message || '').trim();
-        const lastActivity = this.activities[this.activities.length - 1];
-        if (normalizedMessage && lastActivity?.kind === kind && lastActivity.message === normalizedMessage) {
-            return;
-        }
-        this.activities = [
-            ...this.activities.slice(-(this.consoleOptions.activityHistoryLimit - 1)),
-            {
-                id: `${kind}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
-                kind,
-                message: normalizedMessage,
-                createdAt: Date.now()
-            }
-        ];
-    }
+    pushActivity(kind: AgentConsoleActivity['kind'], message: string): void { pushActivityInState(this, kind, message); }
 
-    upsertToolRun(run: AgentConsoleToolRun): void {
-        const next = this.toolRuns.filter(item => item.name !== run.name);
-        next.unshift(run);
-        this.toolRuns = next.slice(0, this.consoleOptions.storedToolRunsLimit);
-        this.selectedToolRunIndex = Math.max(0, Math.min(this.selectedToolRunIndex, this.toolRuns.length - 1));
-    }
+    upsertToolRun(run: AgentConsoleToolRun): void { upsertToolRunInState(this, run); }
 
     summarize(value: string): string {
         const text = value.replace(/\s+/g, ' ').trim();
