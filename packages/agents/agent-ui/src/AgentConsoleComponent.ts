@@ -1,6 +1,6 @@
 import { ApplicationContext, formatCompactNumber } from '@tsdi/core';
 import { bootstrapConsole, disposeConsole } from './AgentConsoleBootstrap';
-import { AgentConsolePolicyHost } from './AgentConsolePolicyHost';
+import { AgentConsoleSessionArtifactsHost } from './AgentConsoleSessionArtifactsHost';
 import { drainQueuedPrompts, enqueuePrompt, queueDraft } from './AgentConsoleQueuedPrompts';
 import { DefaultAgentConsoleTranscriptNavigationController } from './AgentConsoleTranscriptNavigation';
 import { Component, ComponentRef, OnDestroy, RNode } from '@tsdi/components';
@@ -344,7 +344,7 @@ interface AgentConsoleQueuedPrompt {
     </div>
     `
 })
-export class AgentConsoleComponent extends AgentConsolePolicyHost implements OnDestroy, ConsoleTerminalInputHandler, ConsoleTerminalSurfaceLifecycle {
+export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost implements OnDestroy, ConsoleTerminalInputHandler, ConsoleTerminalSurfaceLifecycle {
     protected static readonly IMAGE_MIME_TYPES: Record<string, string> = {
         '.png': 'image/png',
         '.jpg': 'image/jpeg',
@@ -354,7 +354,6 @@ export class AgentConsoleComponent extends AgentConsolePolicyHost implements OnD
         '.bmp': 'image/bmp',
         '.svg': 'image/svg+xml'
     };
-
     shouldEnableTerminalMouseTracking(): boolean {
         return !this.transcriptLayout.usesNativeScrollback;
     }
@@ -416,7 +415,7 @@ export class AgentConsoleComponent extends AgentConsolePolicyHost implements OnD
         @Optional() @Inject(AudioCaptureAdapter) private audioCapture?: AudioCaptureAdapter | null,
         @Optional() @Inject(AudioPlaybackAdapter) private audioPlayback?: AudioPlaybackAdapter | null,
         @Optional() protected translator?: TranslatorService,
-        @Optional() @Inject(AgentConsoleKeymap) private globalKeymap?: AgentConsoleKeymap | null,
+        @Optional() @Inject(AgentConsoleKeymap) protected globalKeymap?: AgentConsoleKeymap | null,
         @Optional() @Inject(AgentConsoleKeymapStore) private keymapStore?: AgentConsoleKeymapStore | null,
         @Optional() @Inject(AgentConsoleThemeStore) private themeStore?: AgentConsoleThemeStore | null,
         @Optional() @Inject(AgentConsoleStatuslineStore) protected statuslineStore?: AgentConsoleStatuslineStore | null,
@@ -943,7 +942,7 @@ export class AgentConsoleComponent extends AgentConsolePolicyHost implements OnD
     protected voiceCtx(): VoiceHandlerContext { return voiceCtx(this); }
     private reviewCtx(): ReviewHandlerContext { return reviewCtx(this); }
     protected codingTaskCtx(): CodingTaskHandlerContext { return codingTaskCtx(this); }
-    private editCtx(): EditModeHandlerContext { return editCtx(this); }
+    protected editCtx(): EditModeHandlerContext { return editCtx(this); }
     protected modelCtx(): ModelHandlerContext { return modelCtx(this); }
     protected sshHost(): AgentConsoleSshHost { return sshHost(this); }
     protected pwctx(): import('./AgentConsoleProviderWizardFlow').ProviderWizardContext { return pwctx(this); }
@@ -1489,81 +1488,6 @@ export class AgentConsoleComponent extends AgentConsolePolicyHost implements OnD
         );
     }
 
-    protected async refreshTurnArtifacts(): Promise<void> {
-        await Promise.allSettled([
-            this.refreshTools(),
-            this.refreshScheduledTasks(),
-            this.refreshTodoPlan(),
-            this.loadCodingTasks(),
-            this.refreshUsageDigest(),
-            this.refreshSummaryQualityDigest(),
-            this.refreshCompactionDigest(),
-            this.refreshTurnDiagnosticsDigest()
-        ]);
-    }
-
-    protected async refreshUsageDigest(): Promise<void> {
-        return refreshUsageDigest(this.sessionService, this.state, this.translator);
-    }
-
-    protected async refreshTurnDiagnosticsDigest(): Promise<void> {
-        return refreshTurnDiagnosticsDigest(this.sessionService, this.state, this.translator);
-    }
-
-    protected async refreshCompactionDigest(): Promise<void> {
-        return refreshCompactionDigest(this.sessionService, this.state, this.translator);
-    }
-
-    protected async refreshSummaryQualityDigest(): Promise<void> {
-        return refreshSummaryQualityDigest(this.sessionService, this.state, this.translator);
-    }
-
-    protected async mergeTodoPlanForSessions(
-        sessionId: string,
-        sessions: Array<{ id: string; updatedAt?: number }>
-    ): Promise<{ todos: AgentConsolePlanTodoItem[]; sourceSessionId?: string } | null> {
-        return mergeTodoPlanForSessionsView(this.todoPlanCommandHost(), sessionId, sessions);
-    }
-
-    protected async loadLocalTodoPlan(sessionId: string): Promise<AgentConsolePlanTodoItem[]> {
-        return loadLocalTodoPlan(sessionId, this.toolRegistry, this.state, (status: unknown) => normalizeTodoStatus(status)) as any;
-    }
-
-    /**
-     * Todos belong to one session (one tab): never merge sibling sessions'
-     * plans, or every tab in the same workspace shows the same Todos block.
-     * Project-level views (`/threadplan`) opt into aggregation explicitly.
-     */
-    protected async refreshTodoPlan(sessionId = this.state.sessionId): Promise<void> {
-        const merged = await this.mergeTodoPlanForSessions(sessionId, [{ id: sessionId }]);
-        if (!merged) {
-            return;
-        }
-        this.state.setPlanTodos(merged.todos, merged.sourceSessionId);
-    }
-
-    protected async refreshThreadTodoPlan(
-        sessionId = this.state.sessionId,
-        sessions = this.resolveThreadSessionsFor(sessionId)
-    ): Promise<void> {
-        const merged = await this.mergeTodoPlanForSessions(sessionId, sessions);
-        if (!merged) {
-            return;
-        }
-        this.state.setPlanTodos(merged.todos, merged.sourceSessionId, 'thread');
-    }
-
-    protected async loadThreadCodingTasks(
-        sessionId = this.state.sessionId,
-        sessionIds = this.resolveThreadSessionIdsFor(sessionId)
-    ): Promise<any[]> {
-        return loadCodingTasksFn(this.codingTaskCtx(), sessionId, sessionIds);
-    }
-
-    protected normalizeTodoStatus(status: unknown): 'pending' | 'in_progress' | 'completed' | 'cancelled' {
-        return normalizeTodoStatus(status);
-    }
-
     protected async invokeTool(name: string, input: any): Promise<any> {
         if (this.appRpc) {
             const result = await this.appRpc.request('tools.invoke', { sessionId: this.state.sessionId, name, input, ...(this.workspace ? { workspace: this.workspace } : {}) }, this.rpcRequestContext());
@@ -1572,176 +1496,4 @@ export class AgentConsoleComponent extends AgentConsolePolicyHost implements OnD
         if (!this.toolRegistry || typeof this.toolRegistry.invoke !== 'function') return undefined;
         return this.toolRegistry.invoke(name, input, this.state.sessionId, undefined, this.state.workspace);
     }
-
-    protected decodeGlobalKey(raw: string): string {
-        return decodeGlobalKey(raw);
-    }
-
-    protected async handleGlobalKeyInput(raw: string): Promise<boolean> {
-        return handleGlobalKeyInputView(globalKeyInputHost(this), raw);
-    }
-
-    protected async handleBrowserGlobalKeyInput(key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean; altKey?: boolean }): Promise<boolean> {
-        return handleBrowserGlobalKeyInputView(globalKeyInputHost(this), key, modifiers);
-    }
-
-    /**
-     * P130 edit-last-message Esc state machine (G55/G70):
-     * edit-active Esc dismisses (records target for step-back); idle double
-     * Esc within the configured editEscapeWindowMs re-enters at the previous message, or
-     * at the last editable user message when no dismissal is recent.
-     */
-    protected async handleIdleEscape(): Promise<boolean> {
-        return handleIdleEscape(this.editCtx());
-    }
-
-    protected async enterEditMode(): Promise<boolean> {
-        return enterEditMode(this.editCtx());
-    }
-
-    protected startEditTarget(target: AgentMessage): void {
-        startEditTarget(this.editCtx(), target);
-    }
-
-    protected dismissEditMode(): boolean {
-        return dismissEditMode(this.editCtx());
-    }
-
-    protected async executeGlobalKeyAction(action: AgentConsoleGlobalAction): Promise<boolean> {
-        return executeGlobalKeyActionView(globalKeyInputHost(this), action);
-    }
-
-    protected clearScrollback(): boolean {
-        if (this.surfaceAccessor) {
-            this.surfaceAccessor.writeRawTerminalData?.(CLEAR_SCROLLBACK_SEQUENCE);
-            this.surfaceAccessor.resetTerminalRenderState?.();
-        }
-        return true;
-    }
-
-    protected toggleWhichKeyOverlay(): void {
-        const visible = !this.state.whichKeyVisible;
-        if (visible) {
-            this.state.whichKeyPage = 0;
-            this.refreshWhichKeyBindings();
-        }
-        this.state.setWhichKeyVisible(visible);
-    }
-
-    protected refreshWhichKeyBindings(): void {
-        const context = this.resolveKeymapContext();
-        const allBindings = Object.entries(this.globalKeymap!.effectiveBindings(context));
-        const filtered = this.state.whichKeyFilterCustom
-            ? allBindings.filter(([key]) => !(key in AGENT_CONSOLE_DEFAULT_KEYMAP) || AGENT_CONSOLE_DEFAULT_KEYMAP[key] === undefined)
-            : allBindings;
-        const pageSize = 25;
-        const start = this.state.whichKeyPage * pageSize;
-        const paged = filtered.slice(start, start + pageSize);
-        this.state.setWhichKeyBindings(paged.map(([key, action]) => ({ key, action })));
-    }
-
-    protected async toggleHealthPopover(): Promise<void> {
-        const visible = !this.state.healthPopoverVisible;
-        if (visible) {
-            this.state.setHealthItems(await this.collectHealthItems());
-        }
-        this.state.setHealthPopoverVisible(visible);
-    }
-
-    protected async collectHealthItems(): Promise<AgentConsoleHealthItem[]> {
-        return collectHealthItems(this.appRpc, () => this.rpcRequestContext(), this.state, this.translator) as any;
-    }
-
-    protected canThreadNavigate(): boolean {
-        return !!this.appRpc
-            && this.state.focusLayers.hasMessageFocus()
-            && !this.state.messageDetailOpen
-            && !this.state.selectMenu;
-    }
-
-    protected canMessageNavigate(): boolean {
-        return this.state.focusLayers.hasMessageFocus()
-            && !this.state.messageDetailOpen
-            && !this.state.selectMenu;
-    }
-
-    protected async navigateThreadChildFirst(): Promise<boolean> {
-        const sessionId = this.state.sessionId;
-        if (!sessionId || !this.sessionService) {
-            return false;
-        }
-        const children = await this.sessionService.getDelegationChildren(sessionId, {}, this.state);
-        const first = children?.[0];
-        if (!first?.childSessionId) {
-            return false;
-        }
-        await this.openSession(String(first.childSessionId));
-        return true;
-    }
-
-    protected async navigateThreadCycle(delta: 1 | -1): Promise<boolean> {
-        return navigateThreadCycle(delta, this.sessionService, this.state, (sessionId: string) => this.openSession(sessionId));
-    }
-
-    protected async navigateThreadParent(): Promise<boolean> {
-        const sessionId = this.state.sessionId;
-        if (!sessionId || !this.sessionService) {
-            return false;
-        }
-        const lineage = await this.sessionService.getDelegationLineage(sessionId, { limit: 1 }, this.state);
-        const parentEdge = lineage?.[0];
-        if (!parentEdge?.parentSessionId) {
-            return false;
-        }
-        await this.openSession(String(parentEdge.parentSessionId));
-        return true;
-    }
-
-    protected openCommandPalette(query = ''): void {
-        openCommandPaletteView(terminalInputHost(this), query);
-    }
-
-    async handleTerminalInput(
-        decoded: TerminalInputSequenceResult,
-        chunk: ConsoleTextChunk
-    ): Promise<void> {
-        await handleTerminalInputView(terminalInputHost(this), decoded, chunk);
-    }
-
-    protected async requestTerminalExit(message?: string): Promise<void> {
-        await requestTerminalExitView(terminalInputHost(this), message ?? this.closingSessionMessage());
-    }
-
-    protected closingSessionMessage(): string {
-        return closingSessionMessageView(terminalInputHost(this));
-    }
-
-    protected async executeTurn(
-        input: string,
-        message?: AgentTurnMessageInput,
-        profile?: string
-    ): Promise<import('@tsdi/agent').AgentTurnResult | void> {
-        if (this.appRpc) {
-            await this.appRpc.request('run.turn', {
-                sessionId: this.state.sessionId, input, workspace: this.workspace,
-                ...(profile ? { profile } : {}),
-                ...(message ? { message } : {})
-            }, this.rpcRequestContext());
-            return;
-        }
-        return this.runtime.runTurn(this.state.sessionId, input, undefined, message, profile, undefined, this.workspace);
-    }
-
-    protected async loadTools(sessionId = this.state.sessionId): Promise<any[]> {
-        if (this.appRpc) {
-            const tools = await this.appRpc.request('tools.list', { sessionId }, this.rpcRequestContext());
-            return Array.isArray(tools) ? tools : [];
-        }
-        if (!this.toolRegistry) {
-            return [];
-        }
-        return this.toolRegistry.getToolDefinitions(sessionId);
-    }
-
-
 }
