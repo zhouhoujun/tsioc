@@ -3,9 +3,11 @@
  * web console and dialog chrome all measure columns the same way.
  */
 export {
+    fillCommonTemplate,
     fitByDisplayWidth,
     getDisplayWidth,
     isWideCodePoint,
     padByDisplayWidth,
-    sliceByDisplayWidth
+    sliceByDisplayWidth,
+    truncateByDisplayWidth
 } from '@tsdi/components/common';

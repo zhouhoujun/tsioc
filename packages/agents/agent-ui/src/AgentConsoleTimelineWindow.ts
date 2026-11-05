@@ -12,7 +12,7 @@
 
 import type { AgentMessage } from '@tsdi/agent';
 import { formatAgentUiTime, type AgentUiTranslator } from './agent-ui.i18n';
-import { getDisplayWidth, sliceByDisplayWidth } from './AgentConsoleTextWidth';
+import { fillCommonTemplate, getDisplayWidth, sliceByDisplayWidth, truncateByDisplayWidth } from './AgentConsoleTextWidth';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -126,9 +126,7 @@ function classifyItem(
 }
 
 export function fillTimelineLabel(template: string | undefined, vars: Record<string, string | number>): string {
-    return String(template || '').replace(/\{(\w+)\}/g, (_, key: string) =>
-        key in vars ? String(vars[key]) : `{${key}}`
-    );
+    return fillCommonTemplate(template, vars);
 }
 
 /** Max display width (CJK/emoji double-width aware) for the single-line session header/footer row (P291). */
@@ -164,16 +162,7 @@ export function truncateTimelineRowText(
     content: string,
     maxWidth = TIMELINE_HEADER_FOOTER_MAX_WIDTH
 ): string {
-    const text = String(content || '');
-    if (getDisplayWidth(text) <= maxWidth) {
-        return text;
-    }
-    if (maxWidth <= 0) {
-        return '';
-    }
-    const ellipsis = '…';
-    const contentWidth = Math.max(0, maxWidth - getDisplayWidth(ellipsis));
-    return `${sliceByDisplayWidth(text, contentWidth).replace(/\s+$/, '')}${ellipsis}`;
+    return truncateByDisplayWidth(content, maxWidth);
 }
 
 function withTimelineBounds(

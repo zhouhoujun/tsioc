@@ -13,5 +13,6 @@ export * from './input-field';
 export * from './tab-bar';
 export * from './syntax-tokens';
 export * from './display-width';
+export * from './text';
 export * from './css-variables';
 export * from './input-history';
