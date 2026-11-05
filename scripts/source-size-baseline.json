@@ -31,5 +31,6 @@
   "packages/agents/agent-ui/src/AgentConsoleFocusLayers.ts": 359,
   "packages/agents/agent-ui/src/AgentConsoleSessionContentPresenter.ts": 391,
   "packages/agents/agent-ui/src/AgentConsoleEventBridge.ts": 132,
-  "packages/agents/agent-ui/src/AgentConsoleReviewHandlers.ts": 229
+  "packages/agents/agent-ui/src/AgentConsoleReviewHandlers.ts": 229,
+  "packages/agents/agent-ui/src/AgentConsoleGlobalKeyInputController.ts": 378
 }
