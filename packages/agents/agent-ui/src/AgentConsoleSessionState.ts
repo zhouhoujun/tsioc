@@ -840,64 +840,6 @@ export class AgentConsoleSessionState {
 
     applyVimAction(action: string): boolean {
         return this.vimController.applyAction(action);
-        /* switch (action) {
-            case 'insert-mode':
-                this.setInputMode('insert');
-                break;
-            case 'insert-start':
-                this.moveInputCursorToEdge('start');
-                this.setInputMode('insert');
-                break;
-            case 'insert-after':
-                this.setInputCursor(this.inputCursor + 1);
-                this.setInputMode('insert');
-                break;
-            case 'insert-end':
-                this.moveInputCursorToEdge('end');
-                this.setInputMode('insert');
-                break;
-            case 'newline-below':
-                this.setInput(this.input ? `${this.input}\n` : '', this.input.length + 1);
-                this.setInputMode('insert');
-                break;
-            case 'newline-above':
-                this.setInput(this.input ? `\n${this.input}` : '', 0);
-                this.setInputMode('insert');
-                break;
-            case 'history-prev':
-                return this.inputHistoryController.navigate(-1);
-            case 'history-next':
-                return this.inputHistoryController.navigate(1);
-            case 'cursor-left':
-                this.moveInputCursor(-1);
-                break;
-            case 'cursor-right':
-                this.moveInputCursor(1);
-                break;
-            case 'cursor-start':
-                this.moveInputCursorToEdge('start');
-                break;
-            case 'cursor-end':
-                this.moveInputCursorToEdge('end');
-                break;
-            case 'delete-char':
-                if (this.inputCursor < this.input.length) {
-                    this.setInput(
-                        this.input.slice(0, this.inputCursor) + this.input.slice(this.inputCursor + 1),
-                        this.inputCursor
-                    );
-                }
-                break;
-            case 'delete-line':
-                this.setInput('', 0);
-                break;
-            case 'exit-insert':
-                this.setInputMode('normal');
-                break;
-            default:
-                return false;
-        }
-        return true; */
     }
 
     syncDerivedInputFocus(): void {
