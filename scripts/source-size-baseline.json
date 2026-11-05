@@ -9,7 +9,7 @@
   "packages/agents/agent-tools/src/provider.ts": 681,
   "packages/agents/agent-ui/harness/FakeAgentGateway.ts": 661,
   "packages/agents/agent-ui/harness/scenarios.ts": 651,
-  "packages/agents/agent-ui/src/AgentConsoleCodingTaskHandlers.ts": 542,
+  "packages/agents/agent-ui/src/AgentConsoleCodingTaskHandlers.ts": 428,
   "packages/agents/agent-ui/src/AgentConsoleCommandHandlers.ts": 537,
   "packages/agents/agent-ui/src/AgentConsoleComponent.ts": 1500,
   "packages/agents/agent-ui/src/AgentConsoleMessageRenderers.ts": 524,
