@@ -317,12 +317,12 @@ import type {
     AgentConsoleUiEventOptions
 } from './AgentConsoleStateTypes';
 import { EN_MESSAGE_STATUS_LABELS, ZH_CONSOLE_HINTS, ZH_MESSAGE_STATUS_LABELS, defaultAgentConsoleOptions } from './AgentConsoleStateTypes';
-import { AgentConsoleSessionTimelineHost } from './AgentConsoleSessionTimelineHost';
+import { AgentConsoleSessionInputHost } from './AgentConsoleSessionInputHost';
 
 export * from './AgentConsoleStateTypes';
 
 @Injectable()
-export class AgentConsoleSessionState extends AgentConsoleSessionTimelineHost {
+export class AgentConsoleSessionState extends AgentConsoleSessionInputHost {
     protected self(): AgentConsoleSessionState { return this; }
     constructor(@Inject(COMMAND_EXECUTION_CONTROL) protected commandExecutionControl?: CommandExecutionControlPort, @Optional() @Inject(TranslatorService) public translator?: TranslatorService) {
         super();
@@ -564,78 +564,6 @@ export class AgentConsoleSessionState extends AgentConsoleSessionTimelineHost {
 
     setPlanMode(enabled: boolean): void { this.planMode = enabled; }
     setYoloMode(enabled: boolean): void { this.yoloMode = enabled; }
-
-    get effectiveVimBindings(): Record<string, string> {
-        return { ...VIM_DEFAULT_BINDINGS, ...this.vimBindings };
-    }
-
-    setVimMode(enabled: boolean): void {
-        this.vimMode = !!enabled;
-        if (!this.vimMode) {
-            this.inputMode = 'insert';
-            this.vimPendingKey = '';
-        }
-    }
-
-    setInputMode(mode: ConsoleInputMode): void {
-        if (!this.vimMode) {
-            this.inputMode = 'insert';
-            return;
-        }
-        this.inputMode = mode;
-        if (mode === 'insert') {
-            this.vimPendingKey = '';
-        }
-    }
-
-    setVimBinding(key: string, action: string): boolean {
-        return this.vimController.setBinding(key, action);
-    }
-
-    unsetVimBinding(key: string): boolean {
-        return this.vimController.unsetBinding(key);
-    }
-
-    resetVimBindings(): void {
-        this.vimController.resetBindings();
-    }
-
-    handleVimKey(key: string): boolean {
-        return this.vimController.handleKey(key);
-    }
-
-    applyVimAction(action: string): boolean {
-        return this.vimController.applyAction(action);
-    }
-
-    syncDerivedInputFocus(): void {
-        this.focusLayers.sync();
-    }
-
-    beginSelectInteraction(): () => void {
-        const previousInputLocked = this.inputLocked;
-        this.inputLocked = true;
-        this.modalPromptActive = true;
-        let finished = false;
-        return () => {
-            if (finished) {
-                return;
-            }
-            finished = true;
-            this.modalPromptActive = false;
-            this.inputLocked = previousInputLocked;
-            void this.cancelSelectMenu();
-        };
-    }
-
-    async promptSelect(title: string, options: AgentConsoleSelectOption[], initialIndex = 0, hint?: string): Promise<string | undefined> {
-        const finishSelectInteraction = this.beginSelectInteraction();
-        try {
-            return await this.selectAsync(title, options, initialIndex, hint);
-        } finally {
-            finishSelectInteraction();
-        }
-    }
 
     get highlightedToolRun(): AgentConsoleToolRun | undefined {
         const active = this.toolRuns.find(item => item.status === 'running');
