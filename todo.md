@@ -2923,7 +2923,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `AgentConsoleSessionRefresh.ts`：会话列表刷新
   - `AgentConsoleSessionCommands.ts`：/search、/projects、/threads、/sections、/threadplan
   - `AgentConsoleReviewCommands.ts` / `AgentConsoleDiagnosticsCommands.ts`
-- 体量下降：`AgentConsoleSessionState.ts` 3679→2893，`AgentConsoleComponent.ts` 3132→2951，`AgentConsoleCommandHandlers.ts` 1131→536，`AgentConsoleSessionService.ts` 1470→1206。
+- 体量下降：`AgentConsoleSessionState.ts` 3679→2893，`AgentConsoleComponent.ts` 3132→2951，`AgentConsoleCommandHandlers.ts` 1131→536，`AgentConsoleSessionService.ts` 1470→1087。
+- 继续拆分：`AgentConsoleSessionExport.ts`（session export serialization）、`AgentConsoleReviewCommands.ts`、`AgentConsoleDiagnosticsCommands.ts`；SessionService 导出逻辑由 facade 委托。
+- common 下沉：`CommonInputHistoryController`（共享输入历史导航/草稿恢复）、`parseCommonSlashCommandLine`；agent-ui 保留同名 re-export 兼容。
 - 真实 CLI/TUI 验证（`workspace: /home/zhouyou/workspace/sleep-mlt`）：
   - 要求新建 `task-system`，真实生成了 `src/task.js`、`test/task.test.js`，`node task-system/test/task.test.js` 退出码 0。
   - 发现并修复：`/model` 切换后仍被旧 `complexityRouting` 覆盖（模型仍请求旧 deepseek-v4.1-flash-1017）；现在手动选择模型会清空陈旧路由。
@@ -2931,6 +2933,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 发现并修复：`OutputGuard` 的 `sk-` 规则误把 `task-system` 显示为 `ta[REDACTED]`；现在要求完整 secret 边界与最小长度。
   - 发现并修复：关闭 dialog 后 short overlay band 未补空格，存在残影；现在按完整旧 band 清除。
   - 修复：上一条命令 notice（如模型切换）残留到下一轮；turn 启动时清空旧 notice。
+- 第二轮真实任务：在 `task-system` 上增加 priority / setPriority / sortByPriority，真实更新实现与测试，`node task-system/test/task.test.js` 再次 exit 0；未发现新的 TUI 阻塞问题。
 - Web 端通过真实 `serve` 校验：`/?pair=...` 200、`header.js` 200、`dist/agent-console.js` 200；当前环境缺少 Chromium `libatk`，无法进行真实浏览器截图，DOM/Web 单测已回归。
-- 回归：agent-ui 1968、agent-cli 132、components/console 132、components/common 34、gateway model catalog 5、OutputGuard redaction 2；真实 TUI 重跑确认 `task-system` 路径不再被 redacted，模型切换不再被旧路由覆盖。
+- 回归：agent-ui 1968、agent-cli 132、components/console 132、components/common 36、gateway model catalog 5、OutputGuard redaction 2；真实 TUI 重跑确认 `task-system` 路径不再被 redacted，模型切换不再被旧路由覆盖。
 - 仍需补：安装 Chromium 系统依赖后做真实浏览器截图验收；`/model` notice 的短时消失而不是仅下一轮清除。
