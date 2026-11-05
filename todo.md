@@ -2961,6 +2961,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 本地 runtime 事件绑定移入 `AgentConsoleLocalEventBindings`，`AgentConsoleEventBridge` 501→131。
 - review workflow（diff 解析、findings、review 面板、worktree diff）移入 `AgentConsoleReviewWorkflow`，`AgentConsoleReviewHandlers` 586→228。
 - global key action dispatch 移入 `AgentConsoleGlobalKeyActions`，`AgentConsoleGlobalKeyInputController` 537→377。
+- session 命令（/session /new /sessions /resume /archive /fork /pin /snapshot）移入 `AgentConsoleSessionCommandHandlers`，`AgentConsoleCommandHandlers` 536→409。
 - 修复 components 子组件 callback input 绑定：普通父方法保持父组件 proxy 作为 `this`，agent-ui overlay 关闭不再手工 `reactive(state, effect)`，直接走组件响应式写入。
 - 真实 CLI/TUI 验证（`workspace: /home/zhouyou/workspace/sleep-mlt`）：
   - 要求新建 `task-system`，真实生成了 `src/task.js`、`test/task.test.js`，`node task-system/test/task.test.js` 退出码 0。
