@@ -317,12 +317,12 @@ import type {
     AgentConsoleUiEventOptions
 } from './AgentConsoleStateTypes';
 import { EN_MESSAGE_STATUS_LABELS, ZH_CONSOLE_HINTS, ZH_MESSAGE_STATUS_LABELS, defaultAgentConsoleOptions } from './AgentConsoleStateTypes';
-import { AgentConsoleSessionSelectionHost } from './AgentConsoleSessionSelectionHost';
+import { AgentConsoleSessionListHost } from './AgentConsoleSessionListHost';
 
 export * from './AgentConsoleStateTypes';
 
 @Injectable()
-export class AgentConsoleSessionState extends AgentConsoleSessionSelectionHost {
+export class AgentConsoleSessionState extends AgentConsoleSessionListHost {
     protected self(): AgentConsoleSessionState { return this; }
     constructor(@Inject(COMMAND_EXECUTION_CONTROL) protected commandExecutionControl?: CommandExecutionControlPort, @Optional() @Inject(TranslatorService) public translator?: TranslatorService) {
         super();
@@ -912,158 +912,6 @@ export class AgentConsoleSessionState extends AgentConsoleSessionSelectionHost {
 
     setTasksCount(value: number): void {
         this.tasksCount = value;
-    }
-
-    setSessions(sessions: AgentConsoleSessionItem[]): void { this.sessions = sessions.slice(); this.clampSessionSelectionToFilter(); }
-
-    setOpenSessionIds(ids: string[]): void { const seen = new Set<string>(); this.openSessionIds = (ids || []).map(id => String(id || '').trim()).filter(id => id && !seen.has(id) && !!seen.add(id)); }
-
-    setProjects(projects: AgentConsoleProjectItem[]): void {
-        this.projects = projects.slice();
-    }
-
-    setThreads(threads: AgentConsoleThreadItem[]): void {
-        this.threads = threads.slice();
-    }
-
-    get navFilteredSessions(): AgentConsoleSessionItem[] {
-        return resolveNavFilteredSessions(this);
-    }
-
-    clampSessionSelectionToFilter(): void {
-        clampSessionSelectionToFilterInState(this);
-    }
-
-    setSessionsFocused(focused: boolean): void {
-        setSessionsFocusedInState(this, focused);
-    }
-
-    restoreSessionsViewState(): void {
-        restoreSessionsViewStateInState(this);
-    }
-
-    persistSessionsViewState(): void {
-        persistSessionsViewStateInState(this);
-    }
-
-    setProjectsFocused(focused: boolean): void {
-        setProjectsFocusedInState(this, focused);
-    }
-
-    setThreadsFocused(focused: boolean): void {
-        setThreadsFocusedInState(this, focused);
-    }
-
-    setToolRunsFocused(focused: boolean): void {
-        setToolRunsFocusedInState(this, focused);
-    }
-
-    setSelectedSessionId(sessionId: string): void {
-        setSelectedSessionIdInState(this, sessionId);
-    }
-
-    moveSessionSelection(delta: number): void {
-        moveSessionSelectionInState(this, delta);
-    }
-
-    moveSessionSelectionPage(delta: number, pageSize?: number): void {
-        moveSessionSelectionPageInState(this, delta, pageSize);
-    }
-
-    selectFirstSession(): void {
-        selectFirstSessionInState(this);
-    }
-
-    selectLastSession(): void {
-        selectLastSessionInState(this);
-    }
-
-    get selectedSession(): AgentConsoleSessionItem | undefined {
-        return resolveSelectedSession(this);
-    }
-
-    formatSessionWorkspaceLabel(workspace?: string): string {
-        return formatSessionWorkspaceLabelInState(workspace);
-    }
-
-    buildSelectedSessionCopyText(): string {
-        return buildSelectedSessionCopyTextInState(this);
-    }
-
-    buildSelectedToolRunCopyText(): string {
-        const selected = this.selectedToolRun;
-        if (!selected) {
-            return '';
-        }
-        return [
-            `${selected.name} [${selected.status}]`,
-            selected.durationMs != null ? `duration=${selected.durationMs}ms` : '',
-            selected.attemptCount && selected.attemptCount > 1 ? `attempt=#${selected.attemptCount}` : '',
-            selected.executionMode ? `mode=${selected.executionMode}` : '',
-            selected.inputSummary ? `in=${selected.inputSummary}` : '',
-            selected.outputSummary ? `out=${selected.outputSummary}` : '',
-            selected.error ? `error=${selected.error}` : ''
-        ].filter(Boolean).join('\n');
-    }
-
-    setScheduledTasks(tasks: ScheduledAgentTask[]): void {
-        setScheduledTasksInState(this, tasks);
-    }
-
-    setJobsFocused(focused: boolean): void {
-        setJobsFocusedInState(this, focused);
-    }
-
-    setSelectedScheduledTaskId(taskId: string): void {
-        setSelectedScheduledTaskIdInState(this, taskId);
-    }
-
-    moveScheduledTaskSelection(delta: number): void {
-        moveScheduledTaskSelectionInState(this, delta);
-    }
-
-    moveScheduledTaskSelectionPage(delta: number, pageSize?: number): void {
-        moveScheduledTaskSelectionPageInState(this, delta, pageSize);
-    }
-
-    selectFirstScheduledTask(): void {
-        selectFirstScheduledTaskInState(this);
-    }
-
-    selectLastScheduledTask(): void {
-        selectLastScheduledTaskInState(this);
-    }
-
-    get selectedScheduledTask(): ScheduledAgentTask | undefined {
-        return resolveSelectedScheduledTask(this);
-    }
-
-    setTaskRecords(tasks: Record<string, any>[]): void {
-        this.taskRecords = tasks.slice();
-    }
-
-    setBackgroundTaskFeed(tasks: BackgroundTaskRecord[]): void {
-        this.backgroundTaskFeed = tasks.slice().sort((a, b) => b.startedAt - a.startedAt);
-    }
-
-    setHarnessState(projection: HarnessProjection | null): void {
-        this.harnessState = projection;
-    }
-
-    upsertBackgroundTask(record: BackgroundTaskRecord): void {
-        const index = this.backgroundTaskFeed.findIndex(item => item.id === record.id);
-        const next = this.backgroundTaskFeed.slice();
-        if (index >= 0) next[index] = { ...next[index], ...record };
-        else next.push(record);
-        this.setBackgroundTaskFeed(next);
-    }
-
-    get filteredBackgroundTasks(): BackgroundTaskRecord[] {
-        const query = this.backgroundTaskQuery.trim().toLowerCase();
-        return this.backgroundTaskFeed.filter(task =>
-            (this.backgroundTaskFilter === 'all' || task.status === this.backgroundTaskFilter)
-            && (!query || `${task.id} ${task.sessionId} ${task.goal}`.toLowerCase().includes(query))
-        );
     }
 
     get latestCommandExecution(): AgentConsoleCommandExecution | undefined {
