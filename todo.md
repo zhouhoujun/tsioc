@@ -2969,6 +2969,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - command/session/turn host factories 移入 `AgentConsoleCommandHostFactories`，`AgentConsoleHostFactories` 398→208。
 - task panel summary/detail/filter/capability 投影移入 `AgentConsoleTaskPanelDetailHost`，`AgentConsoleTaskPanels` 482→333。
 - stream event chunk projection 移入 `AgentConsoleStreamEventProjection`，`AgentConsoleTurnStreamController` 547→402。
+- terminal exit / closing message / viewport & markdown width resize 移入 `AgentConsoleTerminalViewHelpers`，`AgentConsoleTerminalInputController` 491→361。
 - 真实 TUI 验证改用标准库 PTY 交互（等待 prompt 后发送 `/exit`），避免管道提前注入导致的 teardown race。
 - 修复 components 子组件 callback input 绑定：普通父方法保持父组件 proxy 作为 `this`，agent-ui overlay 关闭不再手工 `reactive(state, effect)`，直接走组件响应式写入。
 - 真实 CLI/TUI 验证（`workspace: /home/zhouyou/workspace/sleep-mlt`）：
