@@ -48,7 +48,8 @@ import {
 } from './AgentConsoleWorkspaceMentions';
 import { AgentConsoleMessageStatusLabels } from './AgentConsoleMessageRenderers';
 import { normalizeMessageLayout, resolveFinalAssistantMessageId } from './AgentConsoleViewport';
-import { resolveTranscriptLayout, trackMessagesNewCount } from './AgentConsoleTranscriptLayout';
+import { resolveTranscriptLayout } from './AgentConsoleTranscriptLayout';
+import { appendMessageInState, mergeMessagesPageInState, setMessagesInState } from './AgentConsoleMessageState';
 import { AgentConsoleTranscriptNavigationController } from './AgentConsoleTranscriptNavigation';
 import {
     AgentConsoleTimelineLabels,
@@ -905,51 +906,11 @@ export class AgentConsoleSessionState {
     /** Earliest session timestamp: first message createdAt → turn start → now. */
 
     setMessages(messages: AgentMessage[], preserveCommandExecutionMessages = false): void {
-        const previousCount = this.messages.length;
-        this.messages = messages.filter(message => {
-            if (!message || typeof message.content !== 'string') return false;
-            const content = message.content;
-            const roleMarkers = content.match(/(?:^|\|\s*)(?:assistant|tool|user):/g) || [];
-            return !(roleMarkers.length >= 2
-                || (roleMarkers.length >= 1
-                    && (content.includes('truncated') || content.includes('"path"') || content.includes('path":"'))));
-        });
-        if (!preserveCommandExecutionMessages) {
-            this.commandExecutionMessages = [];
-        }
-        const messageUsage = messages.some(message => !!resolveUsagePayload(message?.metadata?.usage));
-        if (messageUsage || !preserveCommandExecutionMessages) {
-            this.tokenUsage = resolveTokenUsageFromMessages(messages);
-        }
-        const displayMessages = this.displayMessages;
-        if (!displayMessages.length) {
-            this.selectedMessageId = '';
-            this.messageDetailOpen = false;
-            this.messageDetailScroll = 0;
-            this.messageDetailColumnScroll = 0;
-        } else {
-            const selectable = displayMessages.filter(m =>
-                m.id !== '__plan_todo_inline__' && m.id !== '__file_change_inline__' && m.id !== '__timeline_plan_boundary__'
-                    && m.metadata?.uiKind !== 'command-execution'
-            );
-            const shouldFollowLatest = !this.messagesFocused && !this.messageDetailOpen;
-            if (shouldFollowLatest || !this.selectedMessageId || !selectable.some(item => item.id === this.selectedMessageId)) {
-                this.selectedMessageId = selectable.length ? selectable[selectable.length - 1].id : '';
-                this.messageDetailScroll = 0;
-                this.messageDetailColumnScroll = 0;
-            }
-        }
-        const following = this.transcriptFollowProvider ? this.transcriptFollowProvider() : true;
-        this.transcriptFollowing = following;
-        if (this.messagesFocused || !following) {
-            this.messagesNewCount = trackMessagesNewCount(previousCount, this.messages.length, true, this.messagesNewCount);
-        } else {
-            this.messagesNewCount = 0;
-        }
+        setMessagesInState(this, messages, preserveCommandExecutionMessages);
     }
 
     appendMessage(message: AgentMessage): void {
-        this.setMessages([...this.messages, message], true);
+        appendMessageInState(this, message);
     }
 
     setSections(sections: AgentSessionSection[]): void {
@@ -962,20 +923,7 @@ export class AgentConsoleSessionState {
         hasMore?: boolean;
         mode?: 'append' | 'prepend';
     }): void {
-        const incoming = Array.isArray(page.messages) ? page.messages : [];
-        if (Array.isArray(page.sections)) {
-            this.sections = page.sections;
-        }
-        if (!incoming.length) {
-            return;
-        }
-        const mode = page.mode === 'prepend' ? 'prepend' : 'append';
-        const existingIds = new Set(this.messages.map(message => message.id));
-        const fresh = incoming.filter(message => !existingIds.has(message.id));
-        if (!fresh.length) {
-            return;
-        }
-        this.setMessages(mode === 'prepend' ? [...fresh, ...this.messages] : [...this.messages, ...fresh], true);
+        mergeMessagesPageInState(this, page);
     }
 
     beginTurnEventScope(scope?: string): string {
