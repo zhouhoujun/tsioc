@@ -317,12 +317,12 @@ import type {
     AgentConsoleUiEventOptions
 } from './AgentConsoleStateTypes';
 import { EN_MESSAGE_STATUS_LABELS, ZH_CONSOLE_HINTS, ZH_MESSAGE_STATUS_LABELS, defaultAgentConsoleOptions } from './AgentConsoleStateTypes';
-import { AgentConsoleSessionActionsHost } from './AgentConsoleSessionActionsHost';
+import { AgentConsoleSessionLocaleHost } from './AgentConsoleSessionLocaleHost';
 
 export * from './AgentConsoleStateTypes';
 
 @Injectable()
-export class AgentConsoleSessionState extends AgentConsoleSessionActionsHost {
+export class AgentConsoleSessionState extends AgentConsoleSessionLocaleHost {
     protected self(): AgentConsoleSessionState { return this; }
     constructor(@Inject(COMMAND_EXECUTION_CONTROL) protected commandExecutionControl?: CommandExecutionControlPort, @Optional() @Inject(TranslatorService) public translator?: TranslatorService) {
         super();
@@ -346,45 +346,6 @@ export class AgentConsoleSessionState extends AgentConsoleSessionActionsHost {
     /** Keys the host passed explicitly through `setConsoleOptions`. */
     protected hostProvidedOptions = new Set<string>();
 
-    /** Align built-in labels and keyboard hints with the resolved host locale. */
-    applyLocaleDefaults(locale?: string): void {
-        const normalized = String(locale || '').trim().toLowerCase();
-        this.localeOptionOverrides = normalized.startsWith('zh')
-            ? { ...ZH_CONSOLE_HINTS, messageStatusLabels: ZH_MESSAGE_STATUS_LABELS, timelineLabels: DEFAULT_TIMELINE_LABELS }
-            : normalized
-                ? { messageStatusLabels: EN_MESSAGE_STATUS_LABELS, timelineLabels: EN_TIMELINE_LABELS }
-                : {};
-        for (const key of Object.keys(this.localeOptionOverrides)) {
-            if (!this.hostProvidedOptions.has(key)) (this.consoleOptions as any)[key] = (this.localeOptionOverrides as any)[key];
-        }
-        // The plan row is built from translated copy; rebuild it when the host locale arrives.
-        if (this.planTodos.length) this.planMessage = this.buildPlanMessage();
-    }
-    readonly inputHistoryController: AgentConsoleInputHistoryController = new DefaultAgentConsoleInputHistoryController(this);
-    readonly focusLayers: AgentConsoleFocusLayers = new DefaultAgentConsoleFocusLayers(this);
-
-    /** Derived from the focus layer stack: the composer owns the keyboard unless a layer claims it. */
-    /** Localized labels for the inline suggestion menu (command groups, mention kinds). */
-    suggestionLabels(): import('./AgentConsoleSuggestions').AgentConsoleSuggestionLabels {
-        const label = (key: string, fallback: string) => this.translateLabel(key, undefined, fallback);
-        return {
-            describe: (key: string, fallback: string) => this.translateLabel(key, undefined, fallback),
-            groupLabels: Object.fromEntries((['core', 'session', 'display', 'input', 'review', 'hooks', 'delegation', 'system'] as const)
-                .map(group => [group, label(`agent.command.group.${group}`, group)])),
-            mentionKinds: {
-                folder: label('agent.mention.folder', 'folder'),
-                directory: label('agent.mention.folder', 'folder'),
-                file: label('agent.mention.file', 'file'),
-                skill: label('agent.mention.skill', 'skill'),
-                plugin: label('agent.mention.plugin', 'plugin')
-            }
-        };
-    }
-
-    /** Localized label for derived status/error strings (see formatAgentUiLabel). */
-    translateLabel(key: string, params: Record<string, any> | undefined, fallback: string): string {
-        return formatAgentUiLabel(this.translator, key, fallback, params);
-    }
     get inputFocused(): boolean {
         return !this.focusLayers.blocksComposerInput();
     }
@@ -402,22 +363,6 @@ export class AgentConsoleSessionState extends AgentConsoleSessionActionsHost {
         }
         return this._commandExecutionController;
     }
-
-    getAnnotationCache(): Record<string, Record<string, AgentConsoleReviewAnnotation>> {
-        return getAnnotationCacheInState(this);
-    }
-    setAnnotationCache(cache: Record<string, Record<string, AgentConsoleReviewAnnotation>>): void {
-        setAnnotationCacheInState(this, cache);
-    }
-    get timelineMode(): boolean {
-        return this.timelineViewMode !== 'off';
-    }
-    get commandHints(): string[] {
-        return agentConsoleAllCommandHints(this.injectedCommandHints);
-    }
-
-    setSuppressSuggestionMenu(suppressed: boolean): void { this.suppressSuggestionMenu = suppressed; }
-    overlayController = new AgentConsoleOverlayController();
 
     get highlightedToolRun(): AgentConsoleToolRun | undefined {
         const active = this.toolRuns.find(item => item.status === 'running');
