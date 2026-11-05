@@ -317,12 +317,12 @@ import type {
     AgentConsoleUiEventOptions
 } from './AgentConsoleStateTypes';
 import { EN_MESSAGE_STATUS_LABELS, ZH_CONSOLE_HINTS, ZH_MESSAGE_STATUS_LABELS, defaultAgentConsoleOptions } from './AgentConsoleStateTypes';
-import { AgentConsoleSessionMetaHost } from './AgentConsoleSessionMetaHost';
+import { AgentConsoleSessionInputProcessingHost } from './AgentConsoleSessionInputProcessingHost';
 
 export * from './AgentConsoleStateTypes';
 
 @Injectable()
-export class AgentConsoleSessionState extends AgentConsoleSessionMetaHost {
+export class AgentConsoleSessionState extends AgentConsoleSessionInputProcessingHost {
     protected self(): AgentConsoleSessionState { return this; }
     constructor(@Inject(COMMAND_EXECUTION_CONTROL) protected commandExecutionControl?: CommandExecutionControlPort, @Optional() @Inject(TranslatorService) public translator?: TranslatorService) {
         super();
@@ -708,116 +708,4 @@ export class AgentConsoleSessionState extends AgentConsoleSessionMetaHost {
             report.cumulativeTokenSavings ? t('agent.context.cumulative', { count: report.cumulativeTokenSavings }, `cum ${report.cumulativeTokenSavings} tok`) : ''
         ].filter(Boolean).join(' · ');
     }
-
-    async handleFocusKey(key: string, transcriptNavigationController: AgentConsoleTranscriptNavigationController): Promise<boolean> {
-        const normalized = String(key || '').trim().toLowerCase();
-        if (!normalized) {
-            return false;
-        }
-        const questionResult = this.focusLayers.handlePendingQuestionKey(normalized);
-        if (questionResult !== undefined) return questionResult;
-        const commandOutputsResult = this.focusLayers.handleCommandOutputsKey(normalized, transcriptNavigationController);
-        if (commandOutputsResult !== undefined) return commandOutputsResult;
-        const textOverlayResult = this.focusLayers.handleTextOverlayKey(normalized, transcriptNavigationController);
-        if (textOverlayResult !== undefined) return textOverlayResult;
-        const gitSnapshotResult = this.focusLayers.handleGitSnapshotKey(normalized, transcriptNavigationController);
-        if (gitSnapshotResult !== undefined) return gitSnapshotResult;
-        const reviewResult = this.focusLayers.handleReviewKey(normalized, transcriptNavigationController);
-        if (reviewResult !== undefined) return reviewResult;
-        const timelineInspectorResult = this.focusLayers.handleTimelineInspectorKey(normalized, transcriptNavigationController);
-        if (timelineInspectorResult !== undefined) return timelineInspectorResult;
-        const messageDetailResult = this.focusLayers.handleMessageDetailKey(normalized, transcriptNavigationController);
-        if (messageDetailResult !== undefined) return messageDetailResult;
-        const messageListResult = this.focusLayers.handleMessageListKey(normalized, transcriptNavigationController);
-        if (messageListResult !== undefined) return messageListResult;
-        const approvalResult = this.focusLayers.handleApprovalKey(normalized, transcriptNavigationController);
-        if (approvalResult !== undefined) return approvalResult;
-        if (this.tasksFocused) {
-            return handleTasksFocusedKey(this, normalized, transcriptNavigationController);
-        }
-        if (this.jobsFocused) {
-            return handleJobsFocusedKey(this, normalized, transcriptNavigationController);
-        }
-        if (this.toolsFocused) {
-            return handleToolsFocusedKey(this, normalized, transcriptNavigationController);
-        }
-        if (this.toolRunsFocused) {
-            return handleToolRunsFocusedKey(this, normalized, transcriptNavigationController);
-        }
-        if (this.sessionsFocused) {
-            return (await this.focusLayers.handleSessionsKey(normalized, transcriptNavigationController)) ?? false;
-        }
-        return false;
-    }
-
-    async processRawChunk(
-        chunk: string,
-        options: { submitOnEnter?: boolean; ctrlKey?: boolean; altKey?: boolean; hasSelectMenu?: boolean } = {}
-    ): Promise<{ submitted: boolean; confirmedSelection: boolean }> {
-        const next = this.processInputChunk(this.input, this.inputCursor, chunk, options);
-        this.input = this.expandTabs(next.value);
-        this.inputCursor = this.clampCursor(this.input, next.cursor);
-        this.inputHistoryController.resetNavigation();
-        let submitted = next.shouldSubmit;
-
-        if (next.shouldConfirmSelection && this.selectMenu) {
-            const accepted = await this.acceptSelectMenu();
-            submitted = submitted || accepted.submitted;
-        } else {
-            this.refreshInputSuggestions();
-            if (next.shouldSubmit && this.submitAction) {
-                void this.submitAction();
-            }
-        }
-
-        return {
-            submitted,
-            confirmedSelection: next.shouldConfirmSelection
-        };
-    }
-
-    async processDecodedInput(
-        decoded: { text: string; controlKey?: string; partial?: boolean },
-        chunk: ConsoleTextChunk,
-        options: {
-            isClosed: boolean;
-            onExit: (force?: boolean) => void;
-            hasActiveTextPrompt: boolean;
-            lastRenderedLines?: string[];
-            transcriptNavigationController: AgentConsoleTranscriptNavigationController;
-        }
-    ): Promise<{ handled: boolean; action?: string; value?: string }> {
-        return processDecodedInput(this, decoded, chunk, options);
-    }
-
-    clampCursor(value: string, cursor: number): number {
-        return clampCommonTextCursor(value, cursor);
-    }
-
-    formatStatusFooter(model: string, profile: string, workspace: string): string {
-        const parts = [model, profile, workspace].filter(Boolean);
-        return parts.join(' · ') || 'idle';
-    }
-
-    processInputChunk(
-        value: string,
-        cursor: number,
-        chunk: Uint8Array | string,
-        options?: ConsoleTextInputChunkOptions
-    ): ConsoleTextInputChunkResult {
-        return processCommonTextInputChunk(value, cursor, chunk, options);
-    }
-
-    updateDraft(draft: string, cursor?: number): void {
-        this.input = draft;
-        this.inputCursor = this.clampCursor(draft, cursor ?? draft.length);
-    }
-
-    applyChunkToDraft(chunk: string, cursor: number): { value: string; cursor: number } {
-        const next = this.processInputChunk(this.input, cursor, chunk);
-        this.input = next.value;
-        this.inputCursor = this.clampCursor(this.input, next.cursor);
-        return next;
-    }
 }
-
