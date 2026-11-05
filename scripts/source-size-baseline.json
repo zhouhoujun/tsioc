@@ -40,5 +40,6 @@
   "packages/agents/agent-ui/src/AgentConsoleTaskPanels.ts": 334,
   "packages/agents/agent-ui/src/AgentConsoleTurnStreamController.ts": 403,
   "packages/agents/agent-ui/src/AgentConsoleTerminalInputController.ts": 362,
-  "packages/agents/agent-ui/src/AgentConsoleSuggestions.ts": 410
+  "packages/agents/agent-ui/src/AgentConsoleSuggestions.ts": 410,
+  "packages/agents/agent-ui/src/AgentConsoleLocalEventBindings.ts": 369
 }
