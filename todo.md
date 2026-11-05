@@ -2923,7 +2923,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `AgentConsoleSessionRefresh.ts`：会话列表刷新
   - `AgentConsoleSessionCommands.ts`：/search、/projects、/threads、/sections、/threadplan
   - `AgentConsoleReviewCommands.ts` / `AgentConsoleDiagnosticsCommands.ts`
-- 体量下降：`AgentConsoleSessionState.ts` 3679→2431，`AgentConsoleComponent.ts` 3132→2432，`AgentConsoleMessageRenderers.ts` 1174→777，`AgentConsoleCommandHandlers.ts` 1131→536，`AgentConsoleSessionService.ts` 1470→498。
+- 体量下降：`AgentConsoleSessionState.ts` 3679→2431，`AgentConsoleComponent.ts` 3132→2281，`AgentConsoleMessageRenderers.ts` 1174→777，`AgentConsoleCommandHandlers.ts` 1131→536，`AgentConsoleSessionService.ts` 1470→498。
 - 继续拆分：`AgentConsoleSessionExport.ts`（session export serialization）、`AgentConsoleReviewCommands.ts`、`AgentConsoleDiagnosticsCommands.ts`；SessionService 导出逻辑由 facade 委托。
 - common 下沉：`CommonInputHistoryController`（共享输入历史导航/草稿恢复）、`parseCommonSlashCommandLine`；agent-ui 保留同名 re-export 兼容。
 - 再拆分：plan todo 渲染移入 `AgentConsolePlanState`，`AgentConsoleMessageRenderers` 1174→1130。
@@ -2940,6 +2940,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - diagnostics / harness / export / voice 命令投影移入 `AgentConsoleDiagnosticsHost`，Component 2609→2432。
 - session analytics / harness / delegation RPC 移入 `AgentConsoleSessionDiagnosticsRpc`，SessionService 1057→788。
 - session mutation / snapshot / background / voice RPC 移入 `AgentConsoleSessionOperationsRpc`，SessionService 788→498。
+- extension / share / background / IDE / editor 命令投影移入 `AgentConsoleIntegrationHost`，Component 2432→2281。
 - 真实 CLI/TUI 验证（`workspace: /home/zhouyou/workspace/sleep-mlt`）：
   - 要求新建 `task-system`，真实生成了 `src/task.js`、`test/task.test.js`，`node task-system/test/task.test.js` 退出码 0。
   - 发现并修复：`/model` 切换后仍被旧 `complexityRouting` 覆盖（模型仍请求旧 deepseek-v4.1-flash-1017）；现在手动选择模型会清空陈旧路由。
