@@ -1,4 +1,5 @@
 import { ApplicationContext, formatCompactNumber } from '@tsdi/core';
+import { bootstrapConsole } from './AgentConsoleBootstrap';
 import { DefaultAgentConsoleTranscriptNavigationController } from './AgentConsoleTranscriptNavigation';
 import { Component, ComponentRef, OnDestroy, RNode } from '@tsdi/components';
 import { AudioCaptureAdapter, AudioPlaybackAdapter, AudioPlaybackFormat, FileAdapter } from '@tsdi/common';
@@ -1373,86 +1374,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     protected shellCommandHost(): ShellCommandHost { return shellCommandHost(this); }
 
     async onInit(): Promise<void> {
-        this.state.toolPayloadLoader = async toolCallId => { if (!this.appRpc) { return ''; } try { const res: any = await this.appRpc.request('session.tool_payload', { sessionId: this.state.sessionId, toolCallId }); return String(res?.text || ''); } catch { return ''; } };
-        this.state.submitAction = this.submitActionHandler; this.state.escapeAction = () => this.handleWizardEscape();
-        this.state.questionAction = this.appRpc
-            ? async input => { await this.appRpc!.request('question.answer', input); }
-            : undefined;
-        this.state.queueDraftAction = () => this.queueDraft(); this.state.toggleHealthPopoverAction = () => this.toggleHealthPopover();
-        this.state.copyFocusedTextAction = this.copyFocusedTextActionHandler;
-        this.state.retryFailedEventAction = message => this.retryFailedEventHandler(message);
-        this.state.activateSelectedSessionAction = this.activateSelectedSessionActionHandler;
-        this.state.openSelectedTaskAction = this.openSelectedTaskActionHandler;
-        this.state.cancelSelectedTaskAction = this.cancelSelectedTaskActionHandler;
-        this.state.retrySelectedTaskAction = this.retrySelectedTaskActionHandler;
-        this.state.retrySelectedPlanTodoAction = this.retrySelectedPlanTodoActionHandler;
-        this.state.rollbackSelectedTaskAction = this.rollbackSelectedTaskActionHandler;
-        this.state.toggleSelectedScheduledTaskAction = this.toggleSelectedScheduledTaskActionHandler;
-        this.state.cancelSelectedScheduledTaskAction = this.cancelSelectedScheduledTaskActionHandler;
-        this.state.recoverSelectedScheduledTaskAction = this.recoverSelectedScheduledTaskActionHandler;
-        this.state.activateSelectedToolAction = this.activateSelectedToolActionHandler;
-        this.state.revertGitSnapshotFromDetailAction = () => this.revertGitSnapshotFromDetail();
-        this.state.resolveApprovalAction = this.resolveApprovalActionHandler; this.state.modelUnavailableAction = failure => promptModelUnavailable(this.modelCtx(), failure); this.state.scrollTranscriptAction = rows => this.surfaceAccessor?.scrollViewport?.(rows) ?? false; this.state.sessionTabsAction = { select: id => void this.openSession(id), create: () => void this.openSession(), close: id => { void closeAgentConsoleSessionTab({ state: this.state, translator: this.translator, isTurnInProgress: () => this.isTurnInProgress(), notifyBusyState: (message: string) => this.notifyBusyState(message), openSession: sessionId => this.openSession(sessionId) }, id).then(() => this.sessionUiState.forget(id)); } };
-        this.state.approvalAlwaysAllowAction = async requestId => { (this.resolvedApprovalManager as any)?.setAutoApprove?.(true); await this.resolveApprovalActionHandler('approve', requestId); this.notify(formatAgentUiNotice(this.translator, 'approvalAlwaysAllowed')); };
-        this.state.globalKeyInputAction = (key, modifiers) => this.handleBrowserGlobalKeyInput(key, modifiers);
-this.state.onReviewAnnotationsPersist = (cache) => this.saveReviewAnnotationsCacheToDisk(cache);
-        this.state.onReviewConclusionsWriteBack = (conclusions) => this.writeReviewConclusionsToMemory(conclusions);
-        this.state.onSessionReconnected = () => this.restoreReviewAnnotationsCacheFromDisk();
-        this.restoreReviewAnnotationsCacheFromDisk();
-        this.ensureWorkspaceMentionResolver();
-        await this.restoreGlobalKeymap();
-        await this.restoreTheme();
-        await this.restoreStatusline(); await this.restoreTitle();
-        await this.restoreRawMode();
-        await this.restoreModelStore();
-        await this.restoreSettings();
-        this.state.setTranscriptFollowProvider(() => this.surfaceAccessor?.isViewportFollowing?.() ?? true);
-        this.updateTerminalTitle();
-        await this.resolveGitBranch();
-        // Do not ask app.state for an implicit session: that RPC creates and
-        // tracks a session (and can replay its transcript through the bridge).
-        // Startup session contract: only --session may resume.
-        const explicitSessionId = String(this.options.bootstrapTurn?.sessionId || '').trim();
-        const missingResume = await applyMissingSessionNotice(this.sessionOpenHost(), explicitSessionId);
-        const freshStartup = !explicitSessionId
-            && (this.options.bootstrapTurn?.enabled === false || !!this.startupWorkspace);
-        if (!freshStartup) {
-            await this.bootstrapStateFromAppRpc();
-        }
-        await this.initializeInputHistory();
-        // No explicit session means a fresh conversation. Resuming the state
-        // default here replays the previous transcript on every console start.
-        await this.openSession(explicitSessionId || (freshStartup ? undefined : this.state.sessionId) || undefined, { persistCurrentHistory: false, fresh: freshStartup, missing: missingResume }); if (freshStartup) { await this.bootstrapStateFromAppRpc(this.state.sessionId); } if (this.appRpc && this.state.modelProfile) { await this.activateModelProfile(this.state.modelProfile, undefined, true); }
-        if (this.state.securityLevel) {
-            await applySecurityLevel(policyCommandHost(this), this.state.securityLevel, { notify: false, persist: false });
-        }
-        // Subscribe only after the initial session is selected. Subscribing
-        // earlier lets the remote bridge seed the default session's timeline
-        // into a new, non-resumed chat.
-        this.bridge.bindState(this.sessionState);
-        // Await remote seed/replay before declaring startup complete. Without
-        // this, a fresh-session clear races async replay and old project
-        // transcript can be appended after the clear.
-        await Promise.resolve(this.bridge.subscribe());
-        if (freshStartup) {
-            // Local bridge subscription can synchronously project retained
-            // host events, including a plan from a previous workspace session.
-            // A plain workspace start owns a clean conversation unless the
-            // caller explicitly supplied --session.
-            this.state.setMessages([]);
-            this.state.clearPlanTodos();
-            this.state.setGoalSummary(null);
-            this.state.clearActivities();
-        }
-        this.scheduleInputHistoryRestore();
-        await this.refreshTools();
-        await this.refreshMentionCatalog();
-        await this.refreshScheduledTasks();
-        await this.refreshUsageDigest();
-        await this.refreshSummaryQualityDigest();
-        await this.refreshCompactionDigest();
-        await this.refreshTurnDiagnosticsDigest();
-        this.state.setTasksCount(this.scheduler.getTasks().length);
+        return bootstrapConsole(this as any);
     }
 
     onDestroy(): void {
