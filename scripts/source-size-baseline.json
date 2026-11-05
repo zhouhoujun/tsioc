@@ -34,5 +34,6 @@
   "packages/agents/agent-ui/src/AgentConsoleReviewHandlers.ts": 229,
   "packages/agents/agent-ui/src/AgentConsoleGlobalKeyInputController.ts": 378,
   "packages/agents/agent-ui/src/AgentConsoleSettingsCommands.ts": 244,
-  "packages/agents/agent-ui/src/AgentConsoleProviderWizard.ts": 353
+  "packages/agents/agent-ui/src/AgentConsoleProviderWizard.ts": 353,
+  "packages/agents/agent-ui/src/AgentConsoleProviderWizardFlow.ts": 204
 }
