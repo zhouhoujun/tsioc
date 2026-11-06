@@ -3050,3 +3050,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `@tsdi/components/router`：Angular 风格 Routes、Router 服务、参数/嵌套/通配/重定向、CanActivate 守卫、RouterOutlet、RouterLink/RouterLinkActive；包含独立 unit/taskfile/package。
   - `@tsdi/components/forms`：FormControl/FormGroup/FormArray、valueChanges/statusChanges、同步/异步 Validators、FormBuilder、`[formControl]` 指令（同步 input/change、aria-invalid/is-invalid）。
   - router 6 passing、forms 6 passing；两个子项目 build 通过。
+- 真实 TUI 系统构建任务（`npm run chat -- --workspace /home/zhouyou/workspace/sleep-mlt`）：生成 `ticketing-system`（tickets/queue/sla + 3 个测试文件），真实 `node --test ticketing-system/test/*.test.js`：23 passing、0 failing。
+- 将新的 `@tsdi/components/forms` 用于真实复杂数据提交验证：provider wizard 的 base URL、credential、模型步骤与最终提交统一通过 `FormGroup`/`Validators`/`FormControl` 校验；新增 provider-wizard-form 回归，原有 provider 实时模型流程保持通过。
+- 回归：agent-ui 1975、`build:web`、source-size、`git diff --check` 通过。

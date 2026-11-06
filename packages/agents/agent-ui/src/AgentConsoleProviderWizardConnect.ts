@@ -11,6 +11,7 @@ import {
     WizardTranslate,
     defaultWizardTranslate
 } from './AgentConsoleProviderWizard';
+import { validateProviderWizardStep } from './AgentConsoleProviderWizardForm';
 import { formatAgentUiLabel, formatAgentUiNotice } from './agent-ui.i18n';
 import {
     AgentWizardHolder,
@@ -218,8 +219,11 @@ export async function advanceProviderWizard(ctx: ProviderWizardContext, holder: 
             ctx.notify(formatAgentUiNotice(ctx.translator, 'stepRequiredPressEsc', { label: step.label }));
             return;
         }
-        if (step.id === 'base-url' && !/^https?:\/\//i.test(trimmed)) {
-            ctx.notify(formatAgentUiNotice(ctx.translator, 'baseUrlMust'));
+        const validation = validateProviderWizardStep(values, step.id, trimmed);
+        if (!validation.valid) {
+            ctx.notify(formatAgentUiNotice(ctx.translator, validation.reason === 'baseUrl' ? 'baseUrlMust' : 'stepRequiredPressEsc', {
+                label: step.label
+            }));
             return;
         }
         applyWizardStepEnter(values, step.id, trimmed);
