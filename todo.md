@@ -3101,7 +3101,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 修复：`AgentConsoleLocalEventBindings` 改为 `getState()` 在事件发生时解析 state（恢复拆分前 `this.state` 的动态语义），`AgentConsoleEventBridge` 传入 `getState: () => this.state`。
   - 回归：新增 `test/approval-bridge-rebind.spec.ts`（先 `subscribe()` 再 `bindState()`，审批事件必须落到新 state 并聚焦；旧实现失败）；agent-ui 1980 passing。
   - 真实 TUI 验证：`terminal` 审批弹窗 2s 内出现（标题「允许 terminal？」，`a` 批准），随后 `echo still-ok` 正常执行；`web_search` 同样恢复弹窗（批准后仍因未配置 search adapter 报错）。
-- `web_search` 仍不可用：`AgentToolsWebOptions.search` 在整个仓库没有任何 `WebSearchAdapter` 实现，批准后返回 `web_search requires a configured search adapter.`。需决定提供方式（内置免密 HTML 搜索 / 配置 API key 的搜索 provider / 无适配器时隐藏工具），未擅自改默认注册。
+- `web_search` 恢复可用：新增内置免密 HTML 搜索适配器（`web/html-search.ts`）作为默认实现，查询 Bing 静态结果页并用 parse5 解析标题/链接/摘要，支持 Bing `ck/a` 跳转解码、超时与 turn 取消信号；注入 `web.search` 时仍优先使用宿主适配器。DuckDuckGo HTML 端点在本机网络不可达（20s 超时），故选用可达的 Bing。
+  - 回归：`test/web-search-html.spec.ts` 5 用例（解析、默认适配器、宿主覆盖、HTTP 失败、超时）；agent-tools 582 passing。
+  - 真实 TUI：审批通过后 `✓ 联网搜索 (758ms)` 返回真实结果并交给模型总结；README/README.zh-CN 同步更新。
 - 修复 TUI 主题不生效（PTY acceptance scenario 8：`/theme light` 后仍按 dark 调色板重绘）：
   - PTY 二分定位到 `428e2aead refactor(agent-ui): finish CSS class styling for messages and theme vars`：根节点从内联 CSS 变量改为 `data-theme` + class CSS 变量（`162f04aca` 最终定型），但 `components/console` 的样式表解析器只把固定白名单里的属性纳入选择器匹配与缓存键，没有 `data-theme`，于是 `.agent-console[data-theme="light"]` 永远不命中，`var(--console-text, #c9d1d9)` 一路回退到 dark 默认值；重启恢复 light 也一样。
   - 修复：`resolveConsoleStyleSheet` 的属性白名单加入 `data-theme`（根节点变量随属性重算并被子节点继承），CSS/HTML 端不受影响。

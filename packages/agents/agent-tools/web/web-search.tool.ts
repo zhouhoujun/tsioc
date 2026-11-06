@@ -4,11 +4,12 @@ import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { withTurnSignal } from '../src/turn-signal';
 import { domainAllowed, resolveIndexedEnabled } from './domain-policy';
+import { createDefaultWebSearchAdapter } from './html-search';
 
 @Injectable()
 export class WebSearchTool implements AgentTool {
     name = 'web_search';
-    description = 'Search the web via a configured adapter.';
+    description = 'Search the web (keyless HTML search by default, configurable adapter).';
     inputSchema = {
         type: 'object',
         properties: {
@@ -21,6 +22,8 @@ export class WebSearchTool implements AgentTool {
     source = 'local';
     execution = { readOnly: true };
 
+    private defaultSearch?: ReturnType<typeof createDefaultWebSearchAdapter>;
+
     constructor(
         @Optional() @Inject(AGENT_TOOLS_OPTIONS, { defaultValue: null })
         private options?: AgentToolsOptions
@@ -31,10 +34,8 @@ export class WebSearchTool implements AgentTool {
         if (!input || typeof input.query !== 'string' || !input.query.trim()) {
             throw new Error('Invalid web_search input: query must be a non-empty string.');
         }
-        const search = this.options?.web?.search;
-        if (!search) {
-            throw new Error('web_search requires a configured search adapter.');
-        }
+        const search = this.options?.web?.search
+            ?? (this.defaultSearch ??= createDefaultWebSearchAdapter(this.options?.web));
         const limit = typeof input.limit === 'number' ? input.limit : undefined;
         const results = await withTurnSignal(context, () => search.search(input.query, limit, context?.signal));
         const allowedDomains = this.options?.web?.allowedDomains;

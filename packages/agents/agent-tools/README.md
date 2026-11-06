@@ -91,7 +91,7 @@ npm run test:coverage
 ## Notes
 
 - `ReadFileTool` enforces the configured workspace root and relative-path policy for file reads.
-- `web_search` requires a configured search adapter.
+- `web_search` uses a built-in keyless HTML search (Bing) by default; inject `web.search` to override it.
 - `web_extract` uses the configured fetch implementation when provided, otherwise falls back to `globalThis.fetch`, and returns extracted readable text.
 - `tool_inspect` is read-only and does not activate deferred tools.
 - Manifest-backed MCP tools registered as `mcp.<serverId>.<toolName>` stay session-gated and must be activated before either direct invocation or `mcp.call_tool` bridging.

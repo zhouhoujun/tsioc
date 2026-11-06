@@ -78,7 +78,7 @@ npm run test:coverage
 ## 说明
 
 - `ReadFileTool` 在读取文件时会限制在配置的工作区根目录内，并强制使用相对路径策略。
-- `web_search` 需要注入可用的搜索适配器。
+- `web_search` 默认使用内置免密 HTML 搜索（Bing）；可通过 `web.search` 注入适配器覆盖。
 - `web_extract` 优先使用配置的 fetch 实现；若未提供，则回退到 `globalThis.fetch`，并返回提取后的可读文本。
 - `tool_inspect` 是只读的，不会激活 deferred tool。
 - 通过 manifest 注册的 MCP 工具会以 `mcp.<serverId>.<toolName>` 暴露，并保持 session 级激活边界；无论直接调用还是经 `mcp.call_tool` 桥接调用，都必须先激活。
