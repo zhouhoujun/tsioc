@@ -68,14 +68,7 @@ export class DingtalkAgentChannel extends BaseAgentChannel {
 
 @Module({
     providers: [
-        {
-            provider(injector) {
-                if (injector.has(DINGTALK_AGENT_CHANNEL_OPTIONS)) {
-                    return;
-                }
-                return [{ provide: DINGTALK_AGENT_CHANNEL_OPTIONS, useValue: defaultDingtalkAgentChannelOptions }];
-            }
-        },
+        { provide: DINGTALK_AGENT_CHANNEL_OPTIONS, useValue: defaultDingtalkAgentChannelOptions, asDefault: true },
         DingtalkAgentChannel,
         { provide: AGENT_CHANNELS, useExisting: DingtalkAgentChannel, multi: true }
     ],

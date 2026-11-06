@@ -64,14 +64,7 @@ export class MatrixAgentChannel extends BaseAgentChannel {
 
 @Module({
     providers: [
-        {
-            provider(injector) {
-                if (injector.has(MATRIX_AGENT_CHANNEL_OPTIONS)) {
-                    return;
-                }
-                return [{ provide: MATRIX_AGENT_CHANNEL_OPTIONS, useValue: defaultMatrixAgentChannelOptions }];
-            }
-        },
+        { provide: MATRIX_AGENT_CHANNEL_OPTIONS, useValue: defaultMatrixAgentChannelOptions, asDefault: true },
         MatrixAgentChannel,
         { provide: AGENT_CHANNELS, useExisting: MatrixAgentChannel, multi: true }
     ],

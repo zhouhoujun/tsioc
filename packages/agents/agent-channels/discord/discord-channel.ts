@@ -73,14 +73,7 @@ export class DiscordAgentChannel extends BaseAgentChannel {
 
 @Module({
     providers: [
-        {
-            provider(injector) {
-                if (injector.has(DISCORD_AGENT_CHANNEL_OPTIONS)) {
-                    return;
-                }
-                return [{ provide: DISCORD_AGENT_CHANNEL_OPTIONS, useValue: defaultDiscordAgentChannelOptions }];
-            }
-        },
+        { provide: DISCORD_AGENT_CHANNEL_OPTIONS, useValue: defaultDiscordAgentChannelOptions, asDefault: true },
         DiscordAgentChannel,
         { provide: AGENT_CHANNELS, useExisting: DiscordAgentChannel, multi: true }
     ],

@@ -73,14 +73,7 @@ export class SlackAgentChannel extends BaseAgentChannel {
 
 @Module({
     providers: [
-        {
-            provider(injector) {
-                if (injector.has(SLACK_AGENT_CHANNEL_OPTIONS)) {
-                    return;
-                }
-                return [{ provide: SLACK_AGENT_CHANNEL_OPTIONS, useValue: defaultSlackAgentChannelOptions }];
-            }
-        },
+        { provide: SLACK_AGENT_CHANNEL_OPTIONS, useValue: defaultSlackAgentChannelOptions, asDefault: true },
         SlackAgentChannel,
         { provide: AGENT_CHANNELS, useExisting: SlackAgentChannel, multi: true }
     ],

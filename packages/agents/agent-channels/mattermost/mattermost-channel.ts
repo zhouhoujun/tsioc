@@ -64,14 +64,7 @@ export class MattermostAgentChannel extends BaseAgentChannel {
 
 @Module({
     providers: [
-        {
-            provider(injector) {
-                if (injector.has(MATTERMOST_AGENT_CHANNEL_OPTIONS)) {
-                    return;
-                }
-                return [{ provide: MATTERMOST_AGENT_CHANNEL_OPTIONS, useValue: defaultMattermostAgentChannelOptions }];
-            }
-        },
+        { provide: MATTERMOST_AGENT_CHANNEL_OPTIONS, useValue: defaultMattermostAgentChannelOptions, asDefault: true },
         MattermostAgentChannel,
         { provide: AGENT_CHANNELS, useExisting: MattermostAgentChannel, multi: true }
     ],

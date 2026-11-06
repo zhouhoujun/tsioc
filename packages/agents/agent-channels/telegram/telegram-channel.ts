@@ -77,14 +77,7 @@ export class TelegramAgentChannel extends BaseAgentChannel {
 
 @Module({
     providers: [
-        {
-            provider(injector) {
-                if (injector.has(TELEGRAM_AGENT_CHANNEL_OPTIONS)) {
-                    return;
-                }
-                return [{ provide: TELEGRAM_AGENT_CHANNEL_OPTIONS, useValue: defaultTelegramAgentChannelOptions }];
-            }
-        },
+        { provide: TELEGRAM_AGENT_CHANNEL_OPTIONS, useValue: defaultTelegramAgentChannelOptions, asDefault: true },
         TelegramAgentChannel,
         { provide: AGENT_CHANNELS, useExisting: TelegramAgentChannel, multi: true }
     ],

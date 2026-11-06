@@ -64,14 +64,7 @@ export class WecomAgentChannel extends BaseAgentChannel {
 
 @Module({
     providers: [
-        {
-            provider(injector) {
-                if (injector.has(WECOM_AGENT_CHANNEL_OPTIONS)) {
-                    return;
-                }
-                return [{ provide: WECOM_AGENT_CHANNEL_OPTIONS, useValue: defaultWecomAgentChannelOptions }];
-            }
-        },
+        { provide: WECOM_AGENT_CHANNEL_OPTIONS, useValue: defaultWecomAgentChannelOptions, asDefault: true },
         WecomAgentChannel,
         { provide: AGENT_CHANNELS, useExisting: WecomAgentChannel, multi: true }
     ],

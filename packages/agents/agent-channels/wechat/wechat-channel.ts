@@ -71,14 +71,7 @@ export class WechatAgentChannel extends BaseAgentChannel {
 
 @Module({
     providers: [
-        {
-            provider(injector) {
-                if (injector.has(WECHAT_AGENT_CHANNEL_OPTIONS)) {
-                    return;
-                }
-                return [{ provide: WECHAT_AGENT_CHANNEL_OPTIONS, useValue: defaultWechatAgentChannelOptions }];
-            }
-        },
+        { provide: WECHAT_AGENT_CHANNEL_OPTIONS, useValue: defaultWechatAgentChannelOptions, asDefault: true },
         WechatAgentChannel,
         { provide: AGENT_CHANNELS, useExisting: WechatAgentChannel, multi: true }
     ],

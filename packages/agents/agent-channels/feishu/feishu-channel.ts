@@ -64,14 +64,7 @@ export class FeishuAgentChannel extends BaseAgentChannel {
 
 @Module({
     providers: [
-        {
-            provider(injector) {
-                if (injector.has(FEISHU_AGENT_CHANNEL_OPTIONS)) {
-                    return;
-                }
-                return [{ provide: FEISHU_AGENT_CHANNEL_OPTIONS, useValue: defaultFeishuAgentChannelOptions }];
-            }
-        },
+        { provide: FEISHU_AGENT_CHANNEL_OPTIONS, useValue: defaultFeishuAgentChannelOptions, asDefault: true },
         FeishuAgentChannel,
         { provide: AGENT_CHANNELS, useExisting: FeishuAgentChannel, multi: true }
     ],

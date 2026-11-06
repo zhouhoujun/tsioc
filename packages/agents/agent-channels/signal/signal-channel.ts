@@ -64,14 +64,7 @@ export class SignalAgentChannel extends BaseAgentChannel {
 
 @Module({
     providers: [
-        {
-            provider(injector) {
-                if (injector.has(SIGNAL_AGENT_CHANNEL_OPTIONS)) {
-                    return;
-                }
-                return [{ provide: SIGNAL_AGENT_CHANNEL_OPTIONS, useValue: defaultSignalAgentChannelOptions }];
-            }
-        },
+        { provide: SIGNAL_AGENT_CHANNEL_OPTIONS, useValue: defaultSignalAgentChannelOptions, asDefault: true },
         SignalAgentChannel,
         { provide: AGENT_CHANNELS, useExisting: SignalAgentChannel, multi: true }
     ],

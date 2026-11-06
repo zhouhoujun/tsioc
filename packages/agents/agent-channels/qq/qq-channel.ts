@@ -65,14 +65,7 @@ export class QQAgentChannel extends BaseAgentChannel {
 
 @Module({
     providers: [
-        {
-            provider(injector) {
-                if (injector.has(QQ_AGENT_CHANNEL_OPTIONS)) {
-                    return;
-                }
-                return [{ provide: QQ_AGENT_CHANNEL_OPTIONS, useValue: defaultQQAgentChannelOptions }];
-            }
-        },
+        { provide: QQ_AGENT_CHANNEL_OPTIONS, useValue: defaultQQAgentChannelOptions, asDefault: true },
         QQAgentChannel,
         { provide: AGENT_CHANNELS, useExisting: QQAgentChannel, multi: true }
     ],

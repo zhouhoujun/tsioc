@@ -123,14 +123,7 @@ function provideCodingTaskToolFactory() {
 @Module({
     imports: [AgentModule],
     providers: [
-        {
-            provider(injector) {
-                if (injector.has(AGENT_TOOLS_OPTIONS)) {
-                    return;
-                }
-                return [{ provide: AGENT_TOOLS_OPTIONS, useValue: defaultAgentToolsOptions }];
-            }
-        },
+        { provide: AGENT_TOOLS_OPTIONS, useValue: defaultAgentToolsOptions, asDefault: true },
         ReadFileTool,
         WriteFileTool,
         EditFileTool,

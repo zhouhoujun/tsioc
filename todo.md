@@ -3120,3 +3120,5 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 拖拽到 transcript 上下边缘时按 60ms 持续自动滚动并继续扩展选区；边缘范围按 transcript region/可见 transcript 行计算，header/footer 不计入选区。
   - Web 控制台新增 `web-console/selection-anchor.ts`：把原生选区记录为 transcript 内的字符偏移，DOM 重渲染/流式更新导致选区丢失时自动恢复；pointerdown 开始新手势时清空快照，不抢用户的拖选。
   - 回归：components/console 140 passing（新增多击、边缘自动滚动用例）；agent-ui 选区快照 3 用例（capture/restore、root 外忽略、重渲染后恢复）；真实 PTY：双击 band=`116`、三击整行、行文本不位移，边缘拖拽持续滚动。
+- 简化默认 options 注册：12 个 channel 模块与 `agent-tools` 模块中 `provider(injector) { if (injector.has(token)) return; ... }` 统一改为 `{ provide: token, useValue: default, asDefault: true }`（`@tsdi/ioc` 的 `ProviderExts.asDefault` 原生支持“已存在则不覆盖”），行为不变。
+  - 回归：agent-channels 59 passing、agent-tools 582 passing、全量 gate 26 passed / 1 skipped、PTY acceptance 11/11。

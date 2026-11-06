@@ -65,14 +65,7 @@ export class LineAgentChannel extends BaseAgentChannel {
 
 @Module({
     providers: [
-        {
-            provider(injector) {
-                if (injector.has(LINE_AGENT_CHANNEL_OPTIONS)) {
-                    return;
-                }
-                return [{ provide: LINE_AGENT_CHANNEL_OPTIONS, useValue: defaultLineAgentChannelOptions }];
-            }
-        },
+        { provide: LINE_AGENT_CHANNEL_OPTIONS, useValue: defaultLineAgentChannelOptions, asDefault: true },
         LineAgentChannel,
         { provide: AGENT_CHANNELS, useExisting: LineAgentChannel, multi: true }
     ],
