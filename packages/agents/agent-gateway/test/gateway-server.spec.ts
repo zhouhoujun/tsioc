@@ -3260,7 +3260,7 @@ export class AppRpcServerTest {
         expect(persisted.length).toEqual(1);
     }
 
-    @Test('catalog model activation preserves router profiles and complexity routing')
+    @Test('catalog model activation preserves profiles but disables stale complexity routing')
     async catalogActivationPreservesRouter() {
         const { store } = await createOrmSessionStore();
         const { memory } = await createOrmSessionStore();
@@ -3293,7 +3293,7 @@ export class AppRpcServerTest {
         expect(model.model).toBe('gpt-4.1');
         expect(model.profiles.flash).toBeTruthy();
         expect(model.profiles.strong.model).toBe('deepseek-v4-pro');
-        expect(model.complexityRouting.complex).toBe('strong');
+        expect(model.complexityRouting).toBeUndefined();
         expect(runtimeModels.length).toEqual(1);
         expect(runtimeModels[0]).toMatchObject({ provider: 'openai', model: 'gpt-4.1' });
     }
