@@ -3056,3 +3056,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 真实 TUI 系统构建任务（`npm run chat -- --workspace /home/zhouyou/workspace/sleep-mlt`）：生成 `clinic-system`（patients/appointments/invoices + 3 个测试文件），真实 `node --test clinic-system/test/*.test.js`：30 passing、0 failing；TUI 状态正常收敛 idle，未出现错误/异常。
 - Web 真实 `serve` 冒烟（同一 workspace）：`/`、`/header.js`、`/dist/agent-console.js` 均 200，`console.css` 含横向 tab 规则。
 - 本轮未发现新的阻塞性 console/web 交互缺陷；继续保留已修复的 tab 横排、应用层选区/滚动锁定、右键复制 toast、表单验证等回归。
+- 真实 TUI 系统构建任务：生成 `asset-system`（assets/depreciation + 测试），真实 `node --test asset-system/test/*.test.js`：21 passing、0 failing。
+- 选区性能优化：拖拽选择/清除选择改为复用上一帧布局的 selection-only 重绘，不再每次鼠标移动重跑整棵组件树；新增回归断言拖拽期间不调用 `renderToTuiLayout`。滚动仍会全量重算以更新视口映射。
+- 回归：components/console 133、agent-ui 鼠标交互 3、source-size、`git diff --check` 通过。
