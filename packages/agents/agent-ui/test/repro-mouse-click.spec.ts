@@ -104,8 +104,8 @@ export class MouseClickPathReproTest {
         expect(surface.lastRenderedLines.some(line => line.includes('line 12'))).toBe(false);
     }
 
-    @Test('drag handoff keeps tracking off for the clear window and reclaims on keyboard')
-    async dragHandoffKeepsTrackingOffUntilKeyboardReclaim() {
+    @Test('drag selects text without handing off and keyboard input clears the selection')
+    async dragSelectsTextWithoutHandoff() {
         const { consoleRef, surface } = await this.buildSurface({ mouseHandoffReclaimMs: 60000 });
         const expandTarget = this.findToggleTarget(surface);
         expect(expandTarget).toBeDefined();
@@ -113,60 +113,42 @@ export class MouseClickPathReproTest {
         const sy = Math.max(1, Math.floor(expandTarget!.y + 1));
 
         const decoder = new TerminalInputSequenceDecoder();
-        // press left button
         const press = decoder.decode(`\x1b[<0;${sx};${sy}M`);
         surface.dispatchMouse(press.mouse);
-        // motion event (button=32) dragging >=3 columns hands off to native selection
         const motion = decoder.decode(`\x1b[<32;${sx + 3};${sy}M`);
         expect(motion.mouse).toBeDefined();
         surface.dispatchMouse(motion.mouse);
-        expect((surface as any).mouseHandedOff).toBe(true);
-
-        // the next mouse event (the handoff's own release) does NOT reclaim:
-        // tracking stays off so a native click can terminate the selection
-        const release = decoder.decode(`\x1b[<0;1;99m`);
-        expect(surface.dispatchMouse(release.mouse)).toBe(false);
-        expect((surface as any).mouseHandedOff).toBe(true);
-
-        // keyboard input reclaims tracking immediately
-        expect(surface.notifyNonMouseInput()).toBe(true);
         expect((surface as any).mouseHandedOff).toBe(false);
+        expect(surface.getTextSelectionText()).not.toEqual('');
 
-        // a subsequent plain click on the toggle expands the message without
-        // further keyboard input, and cycles tracking off/on to clear the
-        // native selection left over from the drag
+        // the drag release must not turn into a click and keeps the selection.
+        const release = decoder.decode(`\x1b[<0;${sx + 3};${sy}m`);
+        expect(surface.dispatchMouse(release.mouse)).toBe(false);
+        expect(surface.getTextSelectionText()).not.toEqual('');
+        expect(consoleRef.instance.sessionState.isMessageExpanded('a1')).toBe(false);
+
+        // keyboard input clears the app selection and leaves normal clicks working.
+        expect(surface.notifyNonMouseInput()).toBe(false);
+        expect(surface.getTextSelectionText()).toEqual('');
         expect(surface.dispatchClickAt(expandTarget?.node)).toBe(true);
         await this.settle();
         expect(consoleRef.instance.sessionState.isMessageExpanded('a1')).toEqual(true);
-
-        // nothing left to reclaim once tracking is active again
-        expect(surface.notifyNonMouseInput()).toBe(false);
-        expect((surface as any).mouseHandedOff).toBe(false);
     }
 
-    @Test('drag handoff auto-recovers after the reclaim timeout without any input')
-    async dragHandoffAutoRecoversAfterReclaimTimeout() {
-        const { consoleRef, surface, writes } = await this.buildSurface({ mouseHandoffReclaimMs: 50 });
+    @Test('selected text stays anchored across a redraw')
+    async selectedTextStaysAnchoredAcrossRedraw() {
+        const { surface } = await this.buildSurface({ mouseHandoffReclaimMs: 60000 });
         const expandTarget = this.findToggleTarget(surface);
         expect(expandTarget).toBeDefined();
         const sx = 5;
         const sy = Math.max(1, Math.floor(expandTarget!.y + 1));
-
         const decoder = new TerminalInputSequenceDecoder();
-        const press = decoder.decode(`\x1b[<0;${sx};${sy}M`);
-        surface.dispatchMouse(press.mouse);
-        const motion = decoder.decode(`\x1b[<32;${sx + 3};${sy}M`);
-        surface.dispatchMouse(motion.mouse);
-        expect((surface as any).mouseHandedOff).toBe(true);
-
-        // after the reclaim timeout the surface re-enables tracking by itself
-        await new Promise(resolve => setTimeout(resolve, 120));
-        expect((surface as any).mouseHandedOff).toBe(false);
-        expect(writes.join('')).toContain('\x1b[?1000h');
-
-        // a plain click now works again without any keyboard input
-        expect(surface.dispatchClickAt(expandTarget?.node)).toBe(true);
+        surface.dispatchMouse(decoder.decode(`\x1b[<0;${sx};${sy}M`).mouse);
+        surface.dispatchMouse(decoder.decode(`\x1b[<32;${sx + 4};${sy}M`).mouse);
+        const before = surface.getTextSelectionText();
+        expect(before).not.toEqual('');
+        surface.requestRender();
         await this.settle();
-        expect(consoleRef.instance.sessionState.isMessageExpanded('a1')).toEqual(true);
+        expect(surface.getTextSelectionText()).toEqual(before);
     }
 }

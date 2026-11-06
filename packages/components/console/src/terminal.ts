@@ -289,6 +289,8 @@ export interface TuiTerminalSurfaceOptions {
     mouseTrackingEnabled?: boolean;
     /** Shared lifecycle clock for hover fades; without it hover highlight is applied instantly. */
     animationClock?: AnimationClock;
+    /** Called after a text selection is copied, so hosts can show a toast. */
+    onTextCopied?: (text: string) => void;
 }
 
 export interface ConsoleTerminalInputLike {
@@ -357,6 +359,8 @@ export abstract class ConsoleTerminalSurfaceLifecycle {
     shouldUseAlternateScreen?(): boolean;
     shouldScrollViewport?(): boolean;
     resolveConsoleLayout?(): ConsoleTranscriptLayoutMode | undefined;
+    /** Host toast hook after the user copies an app-managed text selection. */
+    onTerminalTextCopied?(text: string): void;
 }
 
 export type ConsoleTranscriptLayoutMode = 'scrollback' | 'viewport';
@@ -849,7 +853,8 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
             nativeScrollback: () => this.surfaceLayout ? this.surfaceLayout.nativeScrollback : lifecycle?.shouldUseNativeScrollback?.() === true,
             scrollViewport: () => this.surfaceLayout ? this.surfaceLayout.scrollViewport : lifecycle?.shouldScrollViewport?.() !== false,
             mouseTrackingEnabled: this.mouseTrackingEnabled,
-            animationClock: this.injector.get(AnimationClock, null) || undefined
+            animationClock: this.injector.get(AnimationClock, null) || undefined,
+            onTextCopied: text => lifecycle.onTerminalTextCopied?.(text)
         });
         this.surface.render();
     }
@@ -1012,6 +1017,18 @@ function sliceStyledColumns(value: string, startColumn: number, endColumn: numbe
     return output ? `${output}\x1b[0m` : '';
 }
 
+/** Wrap a display-column band in reverse video without resetting inner SGR. */
+function applyColumnReverse(value: string, startColumn: number, endColumn: number): string {
+    const segment = sliceStyledColumns(value, startColumn, endColumn);
+    if (!segment) {
+        return value;
+    }
+    const reversed = segment
+        .replace(/\x1b\[0m/g, '\x1b[0m\x1b[7m')
+        .replace(/^/, '\x1b[7m');
+    return `${sliceStyledColumns(value, 0, startColumn)}${reversed}\x1b[27m${sliceStyledColumns(value, endColumn, Number.MAX_SAFE_INTEGER)}`;
+}
+
 /** Replace one column band of a base line with the dialog's styled band. */
 function overlayStyledLine(base: string, overlay: string, startColumn: number, endColumn: number): string {
     let prefix = sliceStyledColumns(base, 0, startColumn);
@@ -1037,6 +1054,8 @@ export class TuiTerminalSurface {
     protected terminalRow = 0;
     protected clickTargetsCache: TerminalClickTarget[] = [];
     protected mousePress?: { x: number; y: number };
+    protected viewportSourceRows: Array<number | undefined> = [];
+    protected textSelection?: { anchorRow: number; anchorCol: number; focusRow: number; focusCol: number };
     protected mouseHandedOff = false;
     /** A native terminal selection may still exist after a handoff. */
     protected terminalSelectionMayExist = false;
@@ -1261,6 +1280,8 @@ export class TuiTerminalSurface {
         this.lastFullLines = (layout.lines || []).slice();
         const viewport = this.resolveViewportLayout(layout);
         const lines = viewport.lines;
+        this.viewportSourceRows = viewport.sourceRows || [];
+        this.applyTextSelection(lines);
         this.applyHoverHighlight(lines);
         this.syncAnimationClock();
         const rowBands = mergeTerminalRowBands(this.lastOverlayBands, viewport.overlayBands);
@@ -1526,6 +1547,12 @@ export class TuiTerminalSurface {
         if (!mouse) {
             return false;
         }
+        if ((Math.floor(mouse.button || 0) & 3) === 2 && this.textSelection) {
+            if (!mouse.release) {
+                this.copyTextSelection();
+            }
+            return true;
+        }
         if ((mouse.button & 32) !== 0 && (mouse.button & 3) === 3) {
             // Modern terminals with any-motion tracking report hover as
             // button 35. Highlight the clickable region under the pointer.
@@ -1579,7 +1606,7 @@ export class TuiTerminalSurface {
                 && (button & 0b11) === 0
                 && this.mousePress
                 && this.isTuiMouseDrag(this.mousePress, mouse)) {
-                this.handOffMouseSelection();
+                this.updateTextSelection(mouse);
             }
             return false;
         }
@@ -1588,6 +1615,10 @@ export class TuiTerminalSurface {
             return false;
         }
         this.mousePress = { x: mouse.x, y: mouse.y };
+        if (this.textSelection) {
+            this.textSelection = undefined;
+            this.requestRender();
+        }
         const target = this.hitTest(mouse.x, mouse.y);
         const element = target?.node as ConsoleElement | undefined;
         target?.node.dispatchEvent({ type: 'mousedown', target: target.node } as unknown as Event);
@@ -1695,6 +1726,96 @@ export class TuiTerminalSurface {
         }
     }
 
+    protected updateTextSelection(mouse: SelectMenuMouseEvent): void {
+        const press = this.mousePress;
+        if (!press) {
+            return;
+        }
+        const rootStart = this.getTerminalRootStartRow();
+        const anchorScreenRow = Math.max(0, Math.floor((press.y || 1) - 1) - rootStart);
+        const focusScreenRow = Math.max(0, Math.floor((mouse.y || 1) - 1) - rootStart);
+        const anchorRow = this.viewportSourceRows[anchorScreenRow];
+        const focusRow = this.viewportSourceRows[focusScreenRow];
+        const dbg = (globalThis as any).process?.env?.TSDI_SELECTION_DEBUG;
+        if (dbg) console.error('[sel]', {press, mouse, rootStart, anchorScreenRow, focusScreenRow, rows: this.viewportSourceRows.length, anchorRow, focusRow});
+        if (anchorRow === undefined || focusRow === undefined) {
+            return;
+        }
+        this.textSelection = {
+            anchorRow,
+            anchorCol: Math.max(0, Math.floor((press.x || 1) - 1)),
+            focusRow,
+            focusCol: Math.max(0, Math.floor((mouse.x || 1) - 1))
+        };
+        this.requestRender();
+    }
+
+    protected applyTextSelection(lines: string[]): void {
+        const selection = this.textSelection;
+        if (!selection) {
+            return;
+        }
+        const start = this.normalizedTextSelection();
+        if (!start) {
+            return;
+        }
+        for (let screenRow = 0; screenRow < lines.length; screenRow++) {
+            const sourceRow = this.viewportSourceRows[screenRow];
+            if (sourceRow === undefined || sourceRow < start.startRow || sourceRow > start.endRow) {
+                continue;
+            }
+            const lineWidth = getDisplayWidth(stripTerminalAnsi(lines[screenRow]));
+            const from = sourceRow === start.startRow ? Math.min(start.startCol, lineWidth) : 0;
+            const to = sourceRow === start.endRow ? Math.min(start.endCol, lineWidth) : lineWidth;
+            if (to <= from) {
+                continue;
+            }
+            lines[screenRow] = applyColumnReverse(lines[screenRow], from, to);
+        }
+    }
+
+    protected normalizedTextSelection(): {
+        startRow: number; startCol: number; endRow: number; endCol: number;
+    } | undefined {
+        const selection = this.textSelection;
+        if (!selection) {
+            return undefined;
+        }
+        const before = selection.anchorRow < selection.focusRow
+            || (selection.anchorRow === selection.focusRow && selection.anchorCol <= selection.focusCol);
+        return before
+            ? { startRow: selection.anchorRow, startCol: selection.anchorCol, endRow: selection.focusRow, endCol: selection.focusCol }
+            : { startRow: selection.focusRow, startCol: selection.focusCol, endRow: selection.anchorRow, endCol: selection.anchorCol };
+    }
+
+    getTextSelectionText(): string {
+        const selection = this.normalizedTextSelection();
+        if (!selection) {
+            return '';
+        }
+        const lines: string[] = [];
+        for (let row = selection.startRow; row <= selection.endRow; row++) {
+            const line = this.lastFullLines[row] || '';
+            const width = getDisplayWidth(stripTerminalAnsi(line));
+            const from = row === selection.startRow ? Math.min(selection.startCol, width) : 0;
+            const to = row === selection.endRow ? Math.min(selection.endCol, width) : width;
+            lines.push(stripTerminalAnsi(sliceStyledColumns(line, from, to)).replace(/\s+$/, ''));
+        }
+        return lines.join('\n').replace(/\n+$/, '');
+    }
+
+    protected copyTextSelection(): boolean {
+        const text = this.getTextSelectionText();
+        const dbg = (globalThis as any).process?.env?.TSDI_SELECTION_DEBUG;
+        if (dbg) console.error('[copy]', JSON.stringify(text), this.textSelection);
+        if (!text) {
+            return false;
+        }
+        this.resolveOutput()?.write(buildOsc52ClipboardSequence(text));
+        this.options.onTextCopied?.(text);
+        return true;
+    }
+
     protected applyHoverHighlight(lines: string[]): void {
         const target = this.hoverPaintTarget;
         const alpha = Math.max(0, Math.min(1, this.hoverAlpha));
@@ -1759,6 +1880,10 @@ export class TuiTerminalSurface {
     }
 
     notifyNonMouseInput(): boolean {
+        if (this.textSelection) {
+            this.textSelection = undefined;
+            this.requestRender();
+        }
         if (!this.mouseHandedOff) {
             return false;
         }
@@ -1784,6 +1909,7 @@ export class TuiTerminalSurface {
         cursorTargets: TerminalCursorTarget[];
         clickTargets: TerminalClickTarget[];
         overlayBands?: Map<number, { start: number; end: number }>;
+        sourceRows?: Array<number | undefined>;
     } {
         const nativeScrollback = typeof this.options.nativeScrollback === 'function'
             ? this.options.nativeScrollback()
@@ -1853,7 +1979,7 @@ export class TuiTerminalSurface {
             }
             return fitted;
         };
-        const composeDialogOverlay = (result: { lines: string[]; regions: TerminalRenderRegion[]; cursorTargets: TerminalCursorTarget[]; clickTargets: TerminalClickTarget[] }) => {
+        const composeDialogOverlay = (result: { lines: string[]; regions: TerminalRenderRegion[]; cursorTargets: TerminalCursorTarget[]; clickTargets: TerminalClickTarget[]; sourceRows?: Array<number | undefined> }) => {
             if (!dialogLines.length || !height) {
                 return { ...result, lines: fitViewportHeight(result.lines) };
             }
@@ -1871,7 +1997,10 @@ export class TuiTerminalSurface {
                     .concat(dialogClickTargets.map(target => ({ ...target, x: target.x + dialogShift, y: insertRow + target.y })));
                 const cursorTargets = result.cursorTargets
                     .map(target => target.row >= insertRow ? { ...target, row: target.row + dialogHeight } : target);
-                return { lines, regions: result.regions, cursorTargets, clickTargets };
+                const sourceRows = result.sourceRows
+                    ? [...result.sourceRows.slice(0, insertRow), ...Array.from({ length: dialogHeight }, () => undefined as number | undefined), ...result.sourceRows.slice(insertRow)]
+                    : undefined;
+                return { lines, regions: result.regions, cursorTargets, clickTargets, sourceRows };
             }
             // Select menus sit directly on the composer's top edge so the
             // panel looks attached to the input; other dialogs stay above the
@@ -1925,7 +2054,7 @@ export class TuiTerminalSurface {
                 // cannot fall to the row below the composer.
                 .filter(target => (target as any).id === 'input' || !(target.row >= start && target.row < start + dialogHeight))
                 .map(target => (target as any).id === 'input' && lastPromptRow >= 0 ? { ...target, row: lastPromptRow } : target);
-            return { lines: fitViewportHeight(lines), regions: result.regions, cursorTargets, clickTargets, overlayBands };
+            return { lines: fitViewportHeight(lines), regions: result.regions, cursorTargets, clickTargets, overlayBands, sourceRows: result.sourceRows };
         };
         const scrollRegion = allRegions.find(region => region.id === scrollRegionId);
         const footerRegion = allRegions.find(region => region.id === footerRegionId);
@@ -1939,7 +2068,8 @@ export class TuiTerminalSurface {
                 lines: allLines,
                 regions: allRegions,
                 cursorTargets: baseCursorTargets,
-                clickTargets: baseClickTargets
+                clickTargets: baseClickTargets,
+                sourceRows: allLines.map((_line, index) => index)
             });
         }
         if (!height) {
@@ -1949,7 +2079,8 @@ export class TuiTerminalSurface {
                 lines: allLines,
                 regions: allRegions,
                 cursorTargets: baseCursorTargets,
-                clickTargets: baseClickTargets
+                clickTargets: baseClickTargets,
+                sourceRows: allLines.map((_line, index) => index)
             });
         }
         if (!scrollRegion || !footerRegion || footerRegion.startRow <= scrollRegion.startRow) {
@@ -1960,7 +2091,8 @@ export class TuiTerminalSurface {
                     lines: allLines,
                     regions: allRegions,
                     cursorTargets: baseCursorTargets,
-                    clickTargets: baseClickTargets
+                    clickTargets: baseClickTargets,
+                    sourceRows: allLines.map((_line, index) => index)
                 });
             }
             const start = allLines.length - height;
@@ -1982,7 +2114,8 @@ export class TuiTerminalSurface {
                 clickTargets: baseClickTargets.flatMap(target => {
                     const row = mapRow(target.y);
                     return row === undefined ? [] : [{ ...target, y: row }];
-                })
+                }),
+                sourceRows: allLines.slice(start).map((_line, index) => start + index)
             });
         }
         const prefix = allLines.slice(0, scrollRegion.startRow);
@@ -2035,11 +2168,18 @@ export class TuiTerminalSurface {
             if (startRow === undefined || endRow === undefined) return [];
             return [{ id: region.id, startRow, endRow: endRow + 1 }];
         });
+        const sourceRows: Array<number | undefined> = [
+            ...prefix.map((_line, index) => index),
+            ...Array.from({ length: fillerRows }, () => undefined as number | undefined),
+            ...visibleTranscript.map((_line, index) => scrollRegion.startRow + start + index),
+            ...footer.map((_line, index) => footerRegion.startRow + index)
+        ];
         return composeDialogOverlay({
             lines: [...prefix, ...Array.from({ length: fillerRows }, () => ''), ...visibleTranscript, ...footer],
             regions,
             cursorTargets,
-            clickTargets
+            clickTargets,
+            sourceRows
         });
     }
 

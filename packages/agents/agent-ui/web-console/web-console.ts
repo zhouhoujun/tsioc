@@ -2,6 +2,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { DOCUMENT } from '@tsdi/common';
 import { Injectable } from '@tsdi/ioc';
 import { ComponentRef, ComponentsModule, ReactiveEffect, reactive } from '@tsdi/components';
+import { CommonToastService } from '@tsdi/components/common';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { DomTranscriptFollower, measureDomConsoleColumns } from '@tsdi/components/html';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, COMMAND_EXECUTION_CONTROL, CommandExecutionControlPort, defaultAgentOptions } from '@tsdi/agent';
@@ -380,6 +381,50 @@ export async function mountAgentWebConsole(
     // The welcome brand block belongs to the transcript start in the TUI;
     // hide it once real rows exist so it does not pin a blank band above the
     // scrolling conversation in the browser.
+    const toastService = new CommonToastService();
+    const toast = doc.createElement('div');
+    toast.className = 'console-toast';
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
+    mount.appendChild(toast);
+    const unsubscribeToast = toastService.subscribe(entries => {
+        const latest = entries[entries.length - 1];
+        toast.textContent = latest?.message || '';
+        toast.setAttribute('data-tone', latest?.tone || 'info');
+        toast.classList.toggle('is-visible', !!latest);
+    });
+
+    const copySelection = (): string => {
+        const selection = doc.defaultView?.getSelection?.()?.toString()?.trim() || '';
+        return selection;
+    };
+    const onContextMenu = (event: MouseEvent): void => {
+        const text = copySelection();
+        if (!text) {
+            return;
+        }
+        event.preventDefault();
+        const clipboard = doc.defaultView?.navigator?.clipboard;
+        const zh = String(rawState.translator?.currentLocale || '').toLowerCase().startsWith('zh');
+        const copied = zh ? '已复制' : 'Copied';
+        const done = (): void => { toastService.show(copied, { tone: 'success', durationMs: 1800 }); };
+        if (clipboard?.writeText) {
+            void clipboard.writeText(text).then(done).catch(done);
+            return;
+        }
+        // Last-resort copy path for browsers without the async clipboard API.
+        const area = doc.createElement('textarea');
+        area.value = text;
+        area.setAttribute('readonly', '');
+        area.className = 'console-clipboard-fallback';
+        doc.body.appendChild(area);
+        area.select();
+        try { doc.execCommand('copy'); } catch { /* ignore */ }
+        area.remove();
+        done();
+    };
+    mount.addEventListener('contextmenu', onContextMenu);
+
     const transcriptPanel = resolveMessagesPanel();
     let brandObserver: MutationObserver | null = null;
     const syncBrandVisibility = (): void => {
@@ -471,7 +516,11 @@ export async function mountAgentWebConsole(
         state,
         dispose: async () => {
             mount.removeEventListener('wheel', onWheel);
+            mount.removeEventListener('contextmenu', onContextMenu);
             indicator.removeEventListener('click', onIndicatorClick);
+            unsubscribeToast();
+            toastService.clear();
+            toast.remove();
             follower?.detach();
             indicator.remove();
             brandObserver?.disconnect();

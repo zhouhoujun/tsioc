@@ -60,13 +60,21 @@ body {
 /* Session tabs read as selectable chips rather than terminal text. */
 #agent-console common-tab-bar .common-tab-bar {
     display: flex;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 0;
     padding: 8px 0 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+#agent-console common-tab-bar .common-tab-bar::-webkit-scrollbar {
+    display: none;
 }
 
 #agent-console common-tab-bar .common-tab {
     display: inline-flex;
+    flex: 0 0 auto;
     align-items: center;
     min-height: 26px;
     border: 1px solid transparent;
@@ -99,6 +107,7 @@ body {
 
 #agent-console common-tab-bar .common-tab-new {
     display: inline-flex;
+    flex: 0 0 auto;
     align-items: center;
     justify-content: center;
     min-width: 1ch;
@@ -114,8 +123,6 @@ body {
     white-space: pre;
 }
 
-#agent-console common-tab-bar .common-tab,
-#agent-console common-tab-bar .common-tab-new,
 #agent-console .web-code-head button,
 #agent-console .dialog-close {
     display: block;
@@ -277,6 +284,49 @@ body {
 
 #agent-console .message-empty {
     color: var(--agent-theme-status-label-color, #6e7681);
+}
+
+#agent-console .console-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    z-index: 60;
+    transform: translate(-50%, 8px);
+    max-width: min(80vw, 560px);
+    padding: 8px 14px;
+    border: 1px solid var(--agent-web-border);
+    border-radius: 8px;
+    background: var(--agent-web-panel-raised);
+    color: var(--agent-web-text);
+    font-family: var(--agent-web-sans);
+    font-size: 13px;
+    line-height: 1.4;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 140ms ease, transform 140ms ease;
+}
+
+#agent-console .console-toast.is-visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+#agent-console .console-toast[data-tone="success"] {
+    border-color: var(--agent-theme-status-idle-value-color, #6fa37a);
+}
+
+#agent-console .console-toast[data-tone="error"] {
+    border-color: var(--agent-theme-status-error-value-color, #cf9893);
+}
+
+#agent-console .console-clipboard-fallback {
+    position: fixed;
+    left: -9999px;
+    top: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
 }
 
 #agent-console .console-new-messages {

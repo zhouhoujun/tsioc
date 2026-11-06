@@ -952,6 +952,7 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
         return bootstrapConsole(this as any);
     }
 
+    onTerminalTextCopied(): void { this.notify(this.translator?.translate('agent.message.copiedCode') || 'Copied', 1800); }
     onDestroy(): void {
         this.noticeExpiry?.dispose(); disposeConsole(this as any);
     }

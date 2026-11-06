@@ -1749,12 +1749,13 @@ export class ConsoleRendererTest {
         }
     }
 
-    @Test('defers redraws while a native terminal selection is handed off, flushing on reclaim')
-    async defersRedrawDuringSelectionHandoff() {
+    @Test('keeps app text selection anchored when redrawing and copies on right click')
+    async keepsAppTextSelectionAndCopiesOnRightClick() {
         const ctx = await Application.run(ConsoleLoopTestComponent, {
             deps: [TuiTemplateModule, ComponentsModule]
         });
         const writes: string[] = [];
+        const copied: string[] = [];
         let surface: TuiTerminalSurface | undefined;
         try {
             const ref = ctx.runners.getRef(ConsoleLoopTestComponent) as ComponentRef<ConsoleLoopTestComponent>;
@@ -1764,130 +1765,96 @@ export class ConsoleRendererTest {
                 renderer,
                 root,
                 width: 40,
-                output: { write: (value: string) => writes.push(value) }
-            });
-            await Promise.resolve();
-            await Promise.resolve();
-
-            const targetRow = surface.lastRenderedLines.findIndex(line => line.includes('Two'));
-            surface.dispatchMouse({ button: 0, x: 2, y: targetRow + 1, release: false });
-            surface.dispatchMouse({ button: 32, x: 12, y: targetRow + 1, release: false });
-            expect((surface as any).mouseHandedOff).toBe(true);
-
-            const writesAtHandoff = writes.length;
-            surface.requestRender();
-            await Promise.resolve();
-            // Redraw suppressed so the in-progress selection survives.
-            expect(writes.length).toEqual(writesAtHandoff);
-            expect((surface as any).pendingRenderDuringHandoff).toBe(true);
-
-            surface.notifyNonMouseInput();
-            await Promise.resolve();
-            // The deferred redraw flushes once tracking is reclaimed.
-            expect(writes.length).toBeGreaterThan(writesAtHandoff);
-        } finally {
-            surface?.destroy();
-            await ctx.close();
-        }
-    }
-
-    @Test('hands terminal selection off on tui drag and keeps tracking off for the clear window')
-    async handsTerminalSelectionOffOnTuiDrag() {
-        const ctx = await Application.run(ConsoleLoopTestComponent, {
-            deps: [TuiTemplateModule, ComponentsModule]
-        });
-        const writes: string[] = [];
-        let surface: TuiTerminalSurface | undefined;
-        try {
-            const ref = ctx.runners.getRef(ConsoleLoopTestComponent) as ComponentRef<ConsoleLoopTestComponent>;
-            const renderer = ctx.get(TuiRenderer);
-            const root = ref.hostView.rootNodes[0] as ConsoleElement;
-            surface = new TuiTerminalSurface({
-                renderer,
-                root,
-                width: 40,
-                output: { write: (value: string) => writes.push(value) }
+                output: { write: (value: string) => writes.push(value) },
+                onTextCopied: text => copied.push(text)
             });
             await Promise.resolve();
             await Promise.resolve();
 
             const targetRow = surface.lastRenderedLines.findIndex(line => line.includes('Two'));
             expect(targetRow).toBeGreaterThanOrEqual(0);
+            surface.dispatchMouse({ button: 0, x: 2, y: targetRow + 1, release: false });
+            surface.dispatchMouse({ button: 32, x: 8, y: targetRow + 1, release: false });
+            expect(surface.getTextSelectionText()).toContain('Two');
 
-            // press, then drag beyond the threshold.
-            expect(surface.dispatchMouse({
-                button: 0,
-                x: 2,
-                y: targetRow + 1,
-                release: false
-            })).toBe(false);
-            expect(surface.dispatchMouse({
-                button: 32,
-                x: 12,
-                y: targetRow + 1,
-                release: false
-            })).toBe(false);
-            expect(writes).toContain('\x1b[?1000l\x1b[?1003l\x1b[?1006l');
+            // A redraw keeps the selection anchored to the same source row.
+            surface.requestRender();
+            await Promise.resolve();
+            expect(surface.getTextSelectionText()).toContain('Two');
+
+            expect(surface.dispatchMouse({ button: 2, x: 3, y: targetRow + 1, release: false })).toBe(true);
+            expect(copied.length).toEqual(1);
+            expect(copied[0]).toContain('Two');
+            expect(writes.join('')).toContain('\x1b]52;c;');
+        } finally {
+            surface?.destroy();
+            await ctx.close();
+        }
+    }
+
+    @Test('app text selection stays anchored to the same transcript rows after scrolling')
+    async appSelectionAnchorsAcrossScroll() {
+        const ctx = await Application.run(ConsoleViewportTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const ref = ctx.runners.getRef(ConsoleViewportTestComponent) as ComponentRef<ConsoleViewportTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            surface = new TuiTerminalSurface({
+                renderer,
+                root: ref.hostView.rootNodes[0] as ConsoleElement,
+                width: 40,
+                height: 8,
+                output: { write: () => undefined }
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+            const targetRow = surface.lastRenderedLines.findIndex(line => line.includes('transcript 28'));
+            expect(targetRow).toBeGreaterThanOrEqual(0);
+            surface.dispatchMouse({ button: 0, x: 1, y: targetRow + 1, release: false });
+            surface.dispatchMouse({ button: 32, x: 30, y: targetRow + 1, release: false });
+            const before = surface.getTextSelectionText();
+            expect(before).toContain('transcript 28');
+
+            expect(surface.scrollViewport(3)).toBe(true);
+            await Promise.resolve();
+            expect(surface.getTextSelectionText()).toEqual(before);
+        } finally {
+            surface?.destroy();
+            await ctx.close();
+        }
+    }
+
+    @Test('tui drag selects text without turning it into a click, and keyboard input clears it')
+    async dragSelectsTextWithoutClick() {
+        const ctx = await Application.run(ConsoleLoopTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const ref = ctx.runners.getRef(ConsoleLoopTestComponent) as ComponentRef<ConsoleLoopTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            surface = new TuiTerminalSurface({
+                renderer,
+                root,
+                width: 40,
+                output: { write: () => undefined }
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+
+            const targetRow = surface.lastRenderedLines.findIndex(line => line.includes('Two'));
+            expect(targetRow).toBeGreaterThanOrEqual(0);
+            expect(surface.dispatchMouse({ button: 0, x: 2, y: targetRow + 1, release: false })).toBe(false);
+            expect(surface.dispatchMouse({ button: 32, x: 8, y: targetRow + 1, release: false })).toBe(false);
+            expect(surface.dispatchMouse({ button: 0, x: 8, y: targetRow + 1, release: true })).toBe(false);
             expect(ref.instance.selected).toBe('');
+            expect(surface.getTextSelectionText()).toContain('Two');
 
-            // the handoff's own release is swallowed even when it lands inside
-            // a row: the drag ends without a phantom click.
-            expect(surface.dispatchMouse({
-                button: 0,
-                x: 12,
-                y: targetRow + 1,
-                release: true
-            })).toBe(false);
-            expect(ref.instance.selected).toBe('');
-
-            // the release must NOT reclaim tracking: tracking stays disabled
-            // through the clear window so a native click can terminate the
-            // terminal selection.
-            expect((surface as any).mouseHandedOff).toBe(true);
-            expect(writes).not.toContain('\x1b[?1000h\x1b[?1003h\x1b[?1006h');
-
-            // Wheel events during the handoff must not scroll/redraw the
-            // viewport: the native selection is anchored to screen cells.
-            let scrolled = 0;
-            (surface as any).scrollViewport = (delta: number) => { scrolled += delta; return true; };
-            expect(surface.dispatchMouse({
-                button: 65,
-                x: 12,
-                y: targetRow + 1,
-                release: false
-            })).toBe(false);
-            expect(scrolled).toEqual(0);
-            expect((surface as any).mouseHandedOff).toBe(true);
-
-            // keyboard input reclaims tracking immediately.
-            expect(surface.notifyNonMouseInput()).toBe(true);
-            expect(writes).toContain('\x1b[?1000h\x1b[?1003h\x1b[?1006h');
-            expect(surface.notifyNonMouseInput()).toBe(false);
-
-            // Once tracking is reclaimed a wheel event clears any native
-            // selection before scrolling, so no stale highlight remains.
-            expect(surface.dispatchMouse({
-                button: 65,
-                x: 12,
-                y: targetRow + 1,
-                release: false
-            })).toBe(true);
-            expect(scrolled).not.toEqual(0);
-            expect((surface as any).terminalSelectionMayExist).toBe(false);
-
-            // clicks work again without any further keyboard input, and the
-            // completed click cycles tracking off/on to clear any native
-            // selection left over from the handoff.
-            expect(surface.dispatchMouse({
-                button: 0,
-                x: 2,
-                y: targetRow + 1,
-                release: true
-            })).toBe(true);
-            expect(ref.instance.selected).toBe('2');
-            expect(writes.join('')).toContain(
-                '\x1b[?1000l\x1b[?1003l\x1b[?1006l\x1b[?1000h\x1b[?1003h\x1b[?1006h'
-            );
+            surface.notifyNonMouseInput();
+            expect(surface.getTextSelectionText()).toBe('');
         } finally {
             surface?.destroy();
             await ctx.close();

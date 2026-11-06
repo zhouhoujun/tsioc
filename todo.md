@@ -3036,3 +3036,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - handoff 期间的滚轮/拖动事件现在不再滚动 viewport，并延长 handoff 窗口，保留选择与文字的相对位置。
   - tracking 回收后若仍可能存在原生选择，第一次滚轮会先清除选择再滚动，避免遗留错误高亮。
   - components/console 新增回归：handoff 期间滚轮不触发 scrollViewport；回收后滚轮清除选择并正常滚动；agent-ui 鼠标交互回归通过。
+- 真实 TUI 系统构建任务（`npm run chat -- --workspace /home/zhouyou/workspace/sleep-mlt`）：生成 `billing-system`（ledger/invoices/reports + 3 个测试文件），真实 `node --test billing-system/test/*.test.js`：30 passing、0 failing。
+- 修复 Web 会话 tab 不横排：移除后续误把 `.common-tab`/`.common-tab-new` 覆盖为 `display:block;text-align:right` 的规则，tab bar 改为 nowrap 横向滚动，参考 opencode 的 `/web` 顶栏。
+- TUI 改为应用层文本选择：
+  - 拖拽选择不再 handoff 给终端原生选择；按渲染源行/列记录选区，滚动或重绘时高亮始终锁定原文字。
+  - 右键复制当前选区（OSC52），并调用宿主 `onTerminalTextCopied` 显示“已复制” toast/notice。
+  - 方向/键盘输入清除选择；纯点击仍正常触发行点击。新增跨滚动、右键复制、拖拽不误点击回归。
+- Web 浏览器增加右键复制选中文字 + 全局 toast：`contextmenu` 读取 selection、写入 clipboard、`CommonToastService` 展示“已复制/Copied”。
+- common 新增 `CommonToastService`（队列/订阅/自动过期）和 `CommonAlertDialogComponent`（语义 tone + 确认/关闭），并入 `BaseComponentsModule` 与导出。
+- 回归：components/common 40、components/console 133、agent-ui 1972、`build:web`、source-size、`git diff --check` 通过。

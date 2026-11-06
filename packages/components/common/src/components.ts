@@ -11,6 +11,7 @@ import { Module, Optional } from '@tsdi/ioc';
 import { TabBarComponent } from './tab-bar';
 import { MarkdownCodeComponent, MarkdownTableComponent } from './markdown';
 import { DialogComponent } from './dialog';
+import { AlertDialogComponent } from './alert-dialog';
 import { SelectComponent } from './select';
 import { ListPanelComponent } from './list-panel';
 import { MessageRowComponent } from './message-row';
@@ -98,7 +99,7 @@ export class PanelComponent {
 }
 
 @Module({
-    declarations: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, SelectComponent, ListPanelComponent, MessageRowComponent, DetailPanelComponent, InputFieldComponent],
-    exports: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, SelectComponent, ListPanelComponent, MessageRowComponent, DetailPanelComponent, InputFieldComponent]
+    declarations: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, AlertDialogComponent, SelectComponent, ListPanelComponent, MessageRowComponent, DetailPanelComponent, InputFieldComponent],
+    exports: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, AlertDialogComponent, SelectComponent, ListPanelComponent, MessageRowComponent, DetailPanelComponent, InputFieldComponent]
 })
 export class BaseComponentsModule {}
