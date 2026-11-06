@@ -3072,3 +3072,5 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 存在文本选区时打开 `/help`、再关闭，对话框正常显示/清除，未出现旧布局插帧；选区存在时切 Tab 也能正常切换。
   - 子集 gate 通过：components 148、components/common 40、components/console 135、components/html 127、`tsc --noEmit @tsdi/agent-ui`、agent-ui web build、diff-check、production-db-integrity。
 - 加固 Tab restore 事务：恢复过程抛错时仍执行 `endRenderBatch`，避免渲染事务永久停留、后续会话更新被冻结；新增失败路径回归（旧实现失败）。
+- 修复 timeline 视图缓存未随 `timelineViewMode` 失效：`steps` 切到 `compact` 时 `timelineMode` 仍为 true，`messageItemsCache` 命中旧 steps 结果，紧凑摘要“已隐藏 N 条事件 · 紧凑模式仅显示当前步骤与错误”不出现；缓存上下文加入 `timelineViewMode`，新增回归（旧实现失败）。
+- 渲染 gate 复核：DOM 5/5、TUI 5/5 通过，timeline compact 摘要恢复；gate metrics regression `[OK]`。`production-db-integrity` 在 gate 期间检测到生产库变化，原因是外部有一个正在运行的 `npm run chat` TUI 进程（pts/1）持续写库，不是代码改动，未终止用户进程。

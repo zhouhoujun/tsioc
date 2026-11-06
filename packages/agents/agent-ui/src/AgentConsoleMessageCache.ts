@@ -17,6 +17,7 @@ export const messageItemsCache = new WeakMap<object, {
     showToolOutput: boolean;
     showUsername: boolean;
     timelineMode: boolean;
+    timelineViewMode: string;
     messageDetailOpen: boolean;
     markdownContentWidth: number;
     collapsedTurns: Record<string, boolean>;

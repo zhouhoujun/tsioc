@@ -183,6 +183,7 @@ export class AgentConsoleMessagesPanelComponent {
         const showToolOutput = this.state.showToolOutput;
         const showUsername = this.state.showUsername;
         const timelineMode = this.state.timelineMode;
+        const timelineViewMode = this.state.timelineViewMode;
         const messageDetailOpen = this.state.messageDetailOpen;
         const collapsedTurns = this.state.timelineCollapsedTurns;
         const cached = messageItemsCache.get(this);
@@ -202,6 +203,7 @@ export class AgentConsoleMessagesPanelComponent {
             showUsername,
             username: this.state.consoleOptions.username,
             timelineMode,
+            timelineViewMode,
             timelineLabels: this.state.consoleOptions.timelineLabels, translator: this.translator,
             messageDetailOpen, messageDetailVisibleLines: this.state.messageDetailVisibleLines, markdownContentWidth: this.state.markdownContentWidth
         };
@@ -218,6 +220,7 @@ export class AgentConsoleMessagesPanelComponent {
             && cached.showToolOutput === showToolOutput
             && cached.showUsername === showUsername
             && cached.timelineMode === timelineMode
+            && cached.timelineViewMode === timelineViewMode
             && cached.messageDetailOpen === messageDetailOpen && cached.markdownContentWidth === this.state.markdownContentWidth
             && cached.collapsedTurns === collapsedTurns;
         if (cached && sameContext && cached.messages === messages) {
@@ -262,6 +265,7 @@ export class AgentConsoleMessagesPanelComponent {
             showToolOutput,
             showUsername,
             timelineMode,
+            timelineViewMode,
             messageDetailOpen, markdownContentWidth: this.state.markdownContentWidth,
             collapsedTurns,
             items

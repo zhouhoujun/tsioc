@@ -2831,6 +2831,31 @@ export class AgentConsoleTuiRendererTest {
             .toEqual(['event-6', 'event-7', 'event-8']);
     }
 
+    @Test('switching timeline view mode invalidates the rendered message cache')
+    timelineViewModeInvalidatesMessageItemsCache() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 3, messageLayout: 'viewport', timelineLabels: DEFAULT_TIMELINE_LABELS });
+        ref.instance.sessionState.setMessages(Array.from({ length: 8 }, (_, index) => ({
+            id: `event-${index + 1}`,
+            role: 'assistant',
+            content: `event ${index + 1}`,
+            createdAt: index + 1,
+            metadata: { uiKind: 'event', uiEventType: 'tool_completed', status: 'success' }
+        })) as any);
+        const panel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        ref.instance.sessionState.setTimelineMode('steps');
+        const stepsItems = panel.instance.messageItems;
+        const stepsText = stepsItems.flatMap(item => item.lines.map(line => line.content)).join('\n');
+        expect(stepsText).toContain('已隐藏 5 条早期事件');
+
+        ref.instance.sessionState.setTimelineMode('compact');
+        const compactItems = panel.instance.messageItems;
+        const compactText = compactItems.flatMap(item => item.lines.map(line => line.content)).join('\n');
+        // Both modes keep timelineMode=true; only timelineViewMode differs, so
+        // the compact summary must not be served from the steps cache.
+        expect(compactText).toContain('紧凑模式仅显示当前步骤与错误');
+    }
+
     @Test('explicit stream layout remains unbounded')
     async largeStreamRendersWindowedSlice() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
