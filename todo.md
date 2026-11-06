@@ -3090,3 +3090,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 回归：components/common 43、components/console 136、components/html 128、agent-ui 1979、tsc、build:web、source-size、diff-check 通过。
 - common 包进一步去掉剩余 `Common*` 公共命名：`SelectWindow`、`EnterAction`、`TextInputChunk*`、`clampSelectIndex`、`resolveSelectWindow`、`resolveListWindow`、`formatIndexedOptionLabel`、`clampTextCursor`、`shouldSkipHistoryEntry`、`shouldSubmitTextInputChunk`、`processTextInputChunk`、`resolveEnterAction`、`buildBrandBlock`、`parseSlashCommandLine`、`SyntaxToken*`/`SyntaxState`、`normalizeCodeLanguage`/`tokenizeCodeLine`、`fillTemplate`；agent-ui/console 的导入与 re-export 同步更新。
 - 回归：components/common 43、components/console 136、components/html 128、agent-ui 1979、tsc、build:web、source-size、diff-check 通过。
+- 全量 agents gate 通过：26 passed、1 skipped（pty opt-in）；包括 10 个 agents 子包、4 个 components 包、tsc、web build、DOM/TUI gate、metrics regression、diff-check、source-size、production-db-integrity。
+- 修正 agent-gateway 旧断言：手动 catalog 模型激活会主动清除 stale `complexityRouting`（与 `model-catalog-providers` 契约一致），gateway 测试改为断言清除而不是保留。
+- 真实 TUI 冒烟：重命名后的 `<tab-bar>`/`<select-list>`/`<list-panel>`/`<dialog-panel>`/`<markdown-*>` 正常渲染，Tab 点击与切回滚动位置正常。
