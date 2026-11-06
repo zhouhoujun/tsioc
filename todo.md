@@ -3109,3 +3109,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 修复：`resolveConsoleStyleSheet` 的属性白名单加入 `data-theme`（根节点变量随属性重算并被子节点继承），CSS/HTML 端不受影响。
   - 回归：`components/console` 新增“data-theme 变量块被根节点继承”用例（旧实现失败），console 99 passing。
   - 真实 TUI/PTY 验证：`/theme light` 立即出现 `#24292f` 前景；重启恢复 light；切回 dark 正常；scenario 8 四个矩阵单元全部通过。
+- 修复 TUI 选文本时文字抖动（CJK 行选中后文字左移）：
+  - 原因：选区/hover 的列带切片（`sliceStyledColumns`）在边界落在宽字符内部时会同时从“前缀”“高亮段”“后缀”中丢弃该字，导致整行后续文字左移 1–2 列；复制文本同样丢字。
+  - 复现：真实 PTY 在 `中文内容测试一二三四五六七八九十 abcdefghij` 行从第 5 列选到第 21 列（落在「中」「三」内部），行变为 `文内容测试一二四五六七八九十 ...`。
+  - 修复：新增 `snapColumnToGlyph`，选区起止列吸附到字形边缘（起点向前、终点向后），用于选区反显、hover 背景与复制文本；非宽字符行为不变。
+  - 回归：components/console 新增宽字符选区用例（旧实现失败），console 138 passing；真实 PTY 选中后整行文本保持不变，复制结果包含边界汉字。
+  - 浏览器端复核：原生选择过程中 transcript 无 DOM 变更、`scrollTop` 无跳变（Chrome 实测拖动 20 步）；如仍有抖动需按具体场景（流式输出中/缩放/滚动边界）继续定位。

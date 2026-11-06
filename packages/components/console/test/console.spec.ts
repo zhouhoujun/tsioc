@@ -1862,6 +1862,32 @@ export class ConsoleRendererTest {
         surface.destroy();
     }
 
+    @Test('selection bands keep wide glyphs so rows do not shift')
+    async selectionKeepsWideGlyphs() {
+        const lines = ['中文内容 abc', 'second row'];
+        const root = { addEventListener() {}, removeEventListener() {} } as any;
+        const surface = new TuiTerminalSurface({
+            renderer: { renderToTuiLayout: () => ({ lines, regions: [] }) },
+            root,
+            width: 20,
+            height: 5,
+            nativeScrollback: false,
+            scrollViewport: false,
+            output: { write: () => undefined }
+        });
+        surface.render();
+        // Start inside the first wide glyph (columns 0-1) and end inside a
+        // later one: the highlight must snap to glyph edges instead of
+        // dropping characters and shifting the rest of the row left.
+        surface.dispatchMouse({ button: 0, x: 2, y: 1, release: false });
+        surface.dispatchMouse({ button: 32, x: 6, y: 1, release: false });
+        for (let index = 0; index < 10; index++) await Promise.resolve();
+        const rendered = surface.lastRenderedLines.join('\n').replace(/\x1b\[[0-9;]*m/g, '');
+        expect(rendered).toContain('中文内容 abc');
+        expect(surface.getTextSelectionText()).toContain('中文内');
+        surface.destroy();
+    }
+
     @Test('app text selection stays anchored to the same transcript rows after scrolling')
     async appSelectionAnchorsAcrossScroll() {
         const ctx = await Application.run(ConsoleViewportTestComponent, {

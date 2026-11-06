@@ -1034,16 +1034,43 @@ function sliceStyledColumns(value: string, startColumn: number, endColumn: numbe
     return output ? `${output}\x1b[0m` : '';
 }
 
+/**
+ * Snap a display column to a glyph edge. Slices must never cut a wide glyph:
+ * dropping it from both the prefix and the band shifts every following cell to
+ * the left, which looked like text "jitter" while selecting CJK rows.
+ */
+function snapColumnToGlyph(value: string, column: number, edge: 'start' | 'end'): number {
+    const target = Math.max(0, Math.floor(Number.isFinite(column) ? column : 0));
+    let current = 0;
+    for (const char of stripTerminalAnsi(value)) {
+        const width = getDisplayWidth(char);
+        if (width <= 0) {
+            continue;
+        }
+        const next = current + width;
+        if (target > current && target < next) {
+            return edge === 'start' ? current : next;
+        }
+        current = next;
+        if (current >= target) {
+            break;
+        }
+    }
+    return target;
+}
+
 /** Wrap a display-column band in reverse video without resetting inner SGR. */
 function applyColumnReverse(value: string, startColumn: number, endColumn: number): string {
-    const segment = sliceStyledColumns(value, startColumn, endColumn);
+    const start = snapColumnToGlyph(value, startColumn, 'start');
+    const end = snapColumnToGlyph(value, endColumn, 'end');
+    const segment = sliceStyledColumns(value, start, end);
     if (!segment) {
         return value;
     }
     const reversed = segment
         .replace(/\x1b\[0m/g, '\x1b[0m\x1b[7m')
         .replace(/^/, '\x1b[7m');
-    return `${sliceStyledColumns(value, 0, startColumn)}${reversed}\x1b[27m${sliceStyledColumns(value, endColumn, Number.MAX_SAFE_INTEGER)}`;
+    return `${sliceStyledColumns(value, 0, start)}${reversed}\x1b[27m${sliceStyledColumns(value, end, Number.MAX_SAFE_INTEGER)}`;
 }
 
 /** Replace one column band of a base line with the dialog's styled band. */
@@ -1940,8 +1967,10 @@ export class TuiTerminalSurface {
         for (let row = selection.startRow; row <= selection.endRow; row++) {
             const line = this.lastFullLines[row] || '';
             const width = getDisplayWidth(stripTerminalAnsi(line));
-            const from = row === selection.startRow ? Math.min(selection.startCol, width) : 0;
-            const to = row === selection.endRow ? Math.min(selection.endCol, width) : width;
+            const rawFrom = row === selection.startRow ? Math.min(selection.startCol, width) : 0;
+            const rawTo = row === selection.endRow ? Math.min(selection.endCol, width) : width;
+            const from = snapColumnToGlyph(line, rawFrom, 'start');
+            const to = snapColumnToGlyph(line, rawTo, 'end');
             lines.push(stripTerminalAnsi(sliceStyledColumns(line, from, to)).replace(/\s+$/, ''));
         }
         return lines.join('\n').replace(/\n+$/, '');
@@ -1974,9 +2003,12 @@ export class TuiTerminalSurface {
             if (row < 0 || row >= lines.length) {
                 continue;
             }
-            const start = Math.max(0, target.x);
-            const end = start + Math.max(1, target.width);
             const line = lines[row] || '';
+            const start = snapColumnToGlyph(line, Math.max(0, target.x), 'start');
+            const end = snapColumnToGlyph(line, Math.max(0, target.x) + Math.max(1, target.width), 'end');
+            if (end <= start) {
+                continue;
+            }
             const before = sliceStyledColumns(line, 0, start);
             const middle = sliceStyledColumns(line, start, end);
             const after = sliceStyledColumns(line, end, Number.MAX_SAFE_INTEGER);
