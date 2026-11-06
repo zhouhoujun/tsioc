@@ -1,6 +1,6 @@
 import { Injectable, Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
-import { CommonTabBarSource, CommonTabItem } from '@tsdi/components/common';
+import { TabBarSource, TabItem } from '@tsdi/components/common';
 import { AgentConsoleSessionState, AgentConsoleSessionItem } from './AgentConsoleSessionState';
 import { resolveSessionProjectKey } from './AgentConsoleProjectProjection';
 import { formatAgentUiLabel } from './agent-ui.i18n';
@@ -36,12 +36,12 @@ export function resolveAgentConsoleSessionTabs(state: AgentConsoleSessionState):
 }
 
 /**
- * Agent-ui data/actions for the shared `common-tab-bar`. It scopes the strip to
+ * Agent-ui data/actions for the shared `tab-bar`. It scopes the strip to
  * the current project/workspace, applies the console theme and forwards tab
  * actions to the console state.
  */
 @Injectable()
-export class AgentConsoleSessionTabsSource implements CommonTabBarSource {
+export class AgentConsoleSessionTabsSource implements TabBarSource {
     constructor(private state: AgentConsoleSessionState, @Optional() private translator?: TranslatorService) {
     }
 
@@ -49,7 +49,7 @@ export class AgentConsoleSessionTabsSource implements CommonTabBarSource {
         return this.state.messageLayout === 'viewport';
     }
 
-    get items(): CommonTabItem[] {
+    get items(): TabItem[] {
         if (!this.visible) {
             return [];
         }

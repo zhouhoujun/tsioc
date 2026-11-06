@@ -1,12 +1,12 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { CommonToastService } from '../src';
+import { ToastService } from '../src';
 
 @Suite('common toast service')
-export class CommonToastServiceTest {
+export class ToastServiceTest {
     @Test('queues messages, notifies subscribers and dismisses by id')
     queueAndDismiss() {
-        const service = new CommonToastService();
+        const service = new ToastService();
         const snapshots: string[][] = [];
         const unsubscribe = service.subscribe(entries => snapshots.push(entries.map(entry => entry.message)));
         const first = service.show('Copied', { tone: 'success', durationMs: 0 });
@@ -25,7 +25,7 @@ export class CommonToastServiceTest {
 
     @Test('empty messages are ignored')
     ignoresEmptyMessages() {
-        const service = new CommonToastService();
+        const service = new ToastService();
         expect(service.show('   ')).toEqual('');
         expect(service.current).toEqual([]);
         service.onDestroy();

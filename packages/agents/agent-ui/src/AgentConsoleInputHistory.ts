@@ -1,6 +1,6 @@
 export {
     COMMON_INPUT_HISTORY_LIMIT,
-    CommonInputHistoryController as AgentConsoleInputHistoryController,
-    CommonInputHistoryStatePort as AgentConsoleInputHistoryStatePort,
-    DefaultCommonInputHistoryController as DefaultAgentConsoleInputHistoryController
+    InputHistoryController as AgentConsoleInputHistoryController,
+    InputHistoryStatePort as AgentConsoleInputHistoryStatePort,
+    DefaultInputHistoryController as DefaultAgentConsoleInputHistoryController
 } from '@tsdi/components/common';

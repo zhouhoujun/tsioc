@@ -261,7 +261,7 @@ export class AgentConsoleStatusPanelComponent {
     selector: 'agent-console-tool-runs-panel',
     imports: [ListPanelComponent],
     template: `
-    <common-list-panel :header="toolRunsSummaryLabel" :hint="toolRunsHintLabel" :items="toolRunItems" :detailLines="selectedToolRunDetailLines" :showClose="false"></common-list-panel>
+    <list-panel :header="toolRunsSummaryLabel" :hint="toolRunsHintLabel" :items="toolRunItems" :detailLines="selectedToolRunDetailLines" :showClose="false"></list-panel>
     `
 })
 export class AgentConsoleToolRunsPanelComponent {

@@ -7,14 +7,14 @@ import { getDisplayWidth } from './display-width';
  * not have to clone modal markup for notices and confirmations.
  */
 @Component({
-    selector: 'common-alert-dialog',
+    selector: 'alert-dialog',
     template: `
-    <div class="console-panel common-dialog common-alert-dialog {{widthClass}}" role="alertdialog" data-tone="{{tone}}" aria-label="{{ariaLabel}}">
+    <div class="console-panel dialog-panel alert-dialog {{widthClass}}" role="alertdialog" data-tone="{{tone}}" aria-label="{{ariaLabel}}">
         <label class="dialog-close" data-cell-width="2" @click="close">{{closeLabel}}</label>
-        <label class="common-dialog-title" v-if="title">{{title}}</label>
-        <label class="common-dialog-line" v-for="line in lines">{{line}}</label>
-        <label class="common-dialog-hint" v-if="hint">{{hint}}</label>
-        <label class="common-alert-action" data-cell-width="2" @click="accept">{{actionLabel}}</label>
+        <label class="dialog-title" v-if="title">{{title}}</label>
+        <label class="dialog-line" v-for="line in lines">{{line}}</label>
+        <label class="dialog-hint" v-if="hint">{{hint}}</label>
+        <label class="alert-action" data-cell-width="2" @click="accept">{{actionLabel}}</label>
     </div>`
 })
 export class AlertDialogComponent {
@@ -32,7 +32,7 @@ export class AlertDialogComponent {
     @Attribute() acceptAction?: () => void;
 
     get widthClass(): string {
-        return `common-dialog-w-${this.resolveContentWidth()}`;
+        return `dialog-w-${this.resolveContentWidth()}`;
     }
 
     close(): void {

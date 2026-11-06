@@ -7,13 +7,13 @@ import { getDisplayWidth } from './display-width';
  * own the visual chrome.
  */
 @Component({
-    selector: 'common-dialog',
+    selector: 'dialog-panel',
     template: `
-    <div class="console-panel common-dialog {{widthClass}}" role="dialog" aria-label="{{ariaLabel}}">
+    <div class="console-panel dialog-panel {{widthClass}}" role="dialog" aria-label="{{ariaLabel}}">
         <label class="dialog-close" data-cell-width="2" @click="close">{{closeLabel}}</label>
-        <label class="common-dialog-title" v-show="title">{{title}}</label>
-        <label class="common-dialog-line" v-for="line in lines">{{line}}</label>
-        <label class="common-dialog-hint" v-show="hint">{{hint}}</label>
+        <label class="dialog-title" v-show="title">{{title}}</label>
+        <label class="dialog-line" v-for="line in lines">{{line}}</label>
+        <label class="dialog-hint" v-show="hint">{{hint}}</label>
     </div>`
 })
 export class DialogComponent {
@@ -34,7 +34,7 @@ export class DialogComponent {
     }
 
     get widthClass(): string {
-        return `common-dialog-w-${this.resolveContentWidth()}`;
+        return `dialog-w-${this.resolveContentWidth()}`;
     }
 
     /** Fit the modal to its content so a tall QR panel leaves the transcript visible. */

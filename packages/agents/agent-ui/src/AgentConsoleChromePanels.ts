@@ -197,7 +197,7 @@ export class AgentConsoleActivityPanelComponent {
     selector: 'agent-console-select-panel',
     imports: [SelectComponent],
     template: `
-        <common-select
+        <select-list
             :options="menuOptions"
             :selectedIndex="menuSelectedIndex"
             :visibleCount="visibleOptionCount"
@@ -208,7 +208,7 @@ export class AgentConsoleActivityPanelComponent {
             :accessibilityLabel="accessibilityLabel"
             @selectAction="selectOption"
             @closeAction="closeMenu"
-            @keydownAction="onKeydown"></common-select>
+            @keydownAction="onKeydown"></select-list>
     `
 })
 export class AgentConsoleSelectPanelComponent {

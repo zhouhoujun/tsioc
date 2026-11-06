@@ -142,26 +142,26 @@ export class RuntimeMousePipelineReproTest {
             await this.settle();
         };
 
-        await click(target('Beta', 'common-tab-label'));
+        await click(target('Beta', 'tab-label'));
         state.setSessions([
             { id: 'session-a', current: false, title: 'Alpha', workspace: '/work/a' },
             { id: 'session-b', current: true, title: 'Beta', workspace: '/work/a' }
         ]);
         await this.settle();
-        await click(target('Alpha', 'common-tab-label'));
+        await click(target('Alpha', 'tab-label'));
         state.setSessions([
             { id: 'session-a', current: true, title: 'Alpha', workspace: '/work/a' },
             { id: 'session-b', current: false, title: 'Beta', workspace: '/work/a' }
         ]);
         await this.settle();
-        await click(target('Beta', 'common-tab-label'));
+        await click(target('Beta', 'tab-label'));
         state.setSessions([
             { id: 'session-a', current: false, title: 'Alpha', workspace: '/work/a' },
             { id: 'session-b', current: true, title: 'Beta', workspace: '/work/a' }
         ]);
         await this.settle();
         const closes = surface.getClickTargets()
-            .filter((entry: any) => String((entry.node as any)?.getAttribute?.('class') || '').includes('common-tab-close'));
+            .filter((entry: any) => String((entry.node as any)?.getAttribute?.('class') || '').includes('tab-close'));
         expect(closes.length).toEqual(1);
         // The ✕ glyph is East Asian ambiguous: CJK terminals paint two cells,
         // so the hover/click target must cover both (host declares the width).
@@ -184,7 +184,7 @@ export class RuntimeMousePipelineReproTest {
         await this.settle();
         const surface = this.ctx.get(ConsoleTerminalSurfaceAccessor)!;
         const beta = surface.getClickTargets().find((entry: any) =>
-            String((entry.node as any)?.getAttribute?.('class') || '').includes('common-tab-label')
+            String((entry.node as any)?.getAttribute?.('class') || '').includes('tab-label')
             && String((entry.node as any)?.textContent || '').includes('Beta'));
         expect(beta).toBeDefined();
 

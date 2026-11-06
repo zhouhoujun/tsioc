@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { TabBarComponent, CommonTabBarSource } from '../src';
+import { TabBarComponent, TabBarSource } from '../src';
 
 @Suite('common tab bar')
 export class CommonTabBarTest {
@@ -10,7 +10,7 @@ export class CommonTabBarTest {
         const selected: string[] = [];
         const closed: string[] = [];
         let created = 0;
-        const source: CommonTabBarSource = {
+        const source: TabBarSource = {
             visible: true,
             items: [{ id: 'a', label: 'Alpha' }, { id: 'b', label: 'Beta' }],
             createLabel: ' + ',

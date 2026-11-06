@@ -47,10 +47,10 @@ export class WebMarkdownSurfaceTest {
             const panel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
             const root = panel.hostView.rootNodes[0] as any;
             expect(root.querySelector('.web-code-block code')?.textContent).toContain('const x = 1;');
-            expect(root.querySelectorAll('.common-markdown-cell').length).toBeGreaterThanOrEqual(4);
-            expect(root.querySelector('.common-markdown-head')?.textContent).toContain('Model');
-            expect(root.querySelector('.common-markdown-token[data-tone="strong"]')?.textContent).toContain('fake');
-            expect(root.querySelector('.common-markdown-token[data-tone="inline-code"]')?.textContent).toContain('26ms');
+            expect(root.querySelectorAll('.markdown-cell').length).toBeGreaterThanOrEqual(4);
+            expect(root.querySelector('.markdown-head')?.textContent).toContain('Model');
+            expect(root.querySelector('.markdown-token[data-tone="strong"]')?.textContent).toContain('fake');
+            expect(root.querySelector('.markdown-token[data-tone="inline-code"]')?.textContent).toContain('26ms');
             expect(root.querySelector('.message-line[data-code="true"]')).toBeFalsy();
             const markdown = root.querySelector('.message-markdown[data-template-kind="assistant"]');
             expect(markdown.querySelector('.message-line[data-indent="6"]')?.textContent).toContain('one');

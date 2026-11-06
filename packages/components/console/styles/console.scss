@@ -16,31 +16,31 @@ $idle: var(--console-idle, #6fa37a);
 .console-panel {
     color: $text;
 }
-.common-list-panel,
+.list-panel,
 .detail-panel {
     padding: 0 1ch;
 }
-.common-list-header,
+.list-panel-header,
 .detail-summary {
     color: $accent;
     font-weight: bold;
 }
-.common-list-title {
+.list-panel-title {
     color: $accent;
 }
-.common-list-meta,
-.common-list-empty,
-.common-list-hint,
+.list-panel-meta,
+.list-panel-empty,
+.list-panel-hint,
 .detail-meta,
 .detail-selection,
 .detail-hint {
     color: $meta;
 }
-.common-list-detail,
+.list-panel-detail,
 .detail-line {
     color: $text;
 }
-.common-list-panel [aria-selected="true"] {
+.list-panel [aria-selected="true"] {
     color: $selected;
     font-weight: bold;
 }
@@ -130,14 +130,14 @@ $idle: var(--console-idle, #6fa37a);
 .message-token.tone-syntax-attribute { color: $notice; font-style: italic; }
 
 .message-line,
-.common-tab,
-.common-tab-close,
+.tab,
+.tab-close,
 .dialog-close {
     transition: background-color 140ms ease;
 }
 .message-line[data-hover="fade"]:hover,
-.common-tab:hover,
-.common-tab-close:hover,
+.tab:hover,
+.tab-close:hover,
 .dialog-close:hover {
     background-color: var(--console-hover-bg, #303e4f);
 }
@@ -157,26 +157,26 @@ $idle: var(--console-idle, #6fa37a);
 .message-detail-toggle {
     color: $meta;
 }
-.common-list-section {
+.list-panel-section {
     color: $accent;
     font-weight: bold;
 }
-.common-dialog {
+.dialog-panel {
     background: $dialog-bg;
     color: $text;
     border: 1px solid $border;
     border-radius: 1;
     padding: 0 2;
 }
-.common-dialog-title {
+.dialog-title {
     color: $accent;
     font-weight: bold;
 }
-.common-dialog-line {
+.dialog-line {
     color: $text;
 }
-.common-dialog-hint,
-.common-dialog .dialog-close {
+.dialog-hint,
+.dialog-panel .dialog-close {
     color: $meta;
 }
 /* The close affordance is the dialog's top-right corner, never a leading
@@ -193,14 +193,14 @@ $idle: var(--console-idle, #6fa37a);
     border-radius: 1;
     padding: 0 2;
 }
-.common-select .dialog-close {
+.select-list .dialog-close {
     color: $meta;
 }
-.common-select-option {
+.select-option {
     color: $meta;
     padding: 0 1ch;
 }
-.common-select-option.is-selected {
+.select-option.is-selected {
     color: $accent;
     font-weight: bold;
 }
@@ -469,21 +469,21 @@ $idle: var(--console-idle, #6fa37a);
 .message-empty {
     color: var(--agent-theme-status-label-color, #6e7681);
 }
-.common-tab-bar {
+.tab-bar {
     padding: 0;
     color: $text;
 }
-.common-tab[aria-selected="true"] {
+.tab[aria-selected="true"] {
     color: $text;
 }
-.common-tab[aria-selected="false"] {
+.tab[aria-selected="false"] {
     color: $meta;
 }
-.common-tab-close {
+.tab-close {
     padding: 0 0 0 1ch;
     color: $text;
 }
-.common-tab-new {
+.tab-new {
     color: $accent;
     font-weight: bold;
 }
@@ -506,90 +506,90 @@ $idle: var(--console-idle, #6fa37a);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
 }
-.common-markdown-cell.align-left {
+.markdown-cell.align-left {
     text-align: left;
 }
-.common-markdown-cell.align-center {
+.markdown-cell.align-center {
     text-align: center;
 }
-.common-markdown-cell.align-right {
+.markdown-cell.align-right {
     text-align: right;
 }
 
-/* common-dialog width buckets keep content-fit sizing out of inline styles. */
-.common-dialog-w-24 { max-width: 24ch; }
-.common-dialog-w-25 { max-width: 25ch; }
-.common-dialog-w-26 { max-width: 26ch; }
-.common-dialog-w-27 { max-width: 27ch; }
-.common-dialog-w-28 { max-width: 28ch; }
-.common-dialog-w-29 { max-width: 29ch; }
-.common-dialog-w-30 { max-width: 30ch; }
-.common-dialog-w-31 { max-width: 31ch; }
-.common-dialog-w-32 { max-width: 32ch; }
-.common-dialog-w-33 { max-width: 33ch; }
-.common-dialog-w-34 { max-width: 34ch; }
-.common-dialog-w-35 { max-width: 35ch; }
-.common-dialog-w-36 { max-width: 36ch; }
-.common-dialog-w-37 { max-width: 37ch; }
-.common-dialog-w-38 { max-width: 38ch; }
-.common-dialog-w-39 { max-width: 39ch; }
-.common-dialog-w-40 { max-width: 40ch; }
-.common-dialog-w-41 { max-width: 41ch; }
-.common-dialog-w-42 { max-width: 42ch; }
-.common-dialog-w-43 { max-width: 43ch; }
-.common-dialog-w-44 { max-width: 44ch; }
-.common-dialog-w-45 { max-width: 45ch; }
-.common-dialog-w-46 { max-width: 46ch; }
-.common-dialog-w-47 { max-width: 47ch; }
-.common-dialog-w-48 { max-width: 48ch; }
-.common-dialog-w-49 { max-width: 49ch; }
-.common-dialog-w-50 { max-width: 50ch; }
-.common-dialog-w-51 { max-width: 51ch; }
-.common-dialog-w-52 { max-width: 52ch; }
-.common-dialog-w-53 { max-width: 53ch; }
-.common-dialog-w-54 { max-width: 54ch; }
-.common-dialog-w-55 { max-width: 55ch; }
-.common-dialog-w-56 { max-width: 56ch; }
-.common-dialog-w-57 { max-width: 57ch; }
-.common-dialog-w-58 { max-width: 58ch; }
-.common-dialog-w-59 { max-width: 59ch; }
-.common-dialog-w-60 { max-width: 60ch; }
-.common-dialog-w-61 { max-width: 61ch; }
-.common-dialog-w-62 { max-width: 62ch; }
-.common-dialog-w-63 { max-width: 63ch; }
-.common-dialog-w-64 { max-width: 64ch; }
-.common-dialog-w-65 { max-width: 65ch; }
-.common-dialog-w-66 { max-width: 66ch; }
-.common-dialog-w-67 { max-width: 67ch; }
-.common-dialog-w-68 { max-width: 68ch; }
-.common-dialog-w-69 { max-width: 69ch; }
-.common-dialog-w-70 { max-width: 70ch; }
-.common-dialog-w-71 { max-width: 71ch; }
-.common-dialog-w-72 { max-width: 72ch; }
-.common-dialog-w-73 { max-width: 73ch; }
-.common-dialog-w-74 { max-width: 74ch; }
-.common-dialog-w-75 { max-width: 75ch; }
-.common-dialog-w-76 { max-width: 76ch; }
-.common-dialog-w-77 { max-width: 77ch; }
-.common-dialog-w-78 { max-width: 78ch; }
-.common-dialog-w-79 { max-width: 79ch; }
-.common-dialog-w-80 { max-width: 80ch; }
-.common-dialog-w-81 { max-width: 81ch; }
-.common-dialog-w-82 { max-width: 82ch; }
-.common-dialog-w-83 { max-width: 83ch; }
-.common-dialog-w-84 { max-width: 84ch; }
-.common-dialog-w-85 { max-width: 85ch; }
-.common-dialog-w-86 { max-width: 86ch; }
-.common-dialog-w-87 { max-width: 87ch; }
-.common-dialog-w-88 { max-width: 88ch; }
-.common-dialog-w-89 { max-width: 89ch; }
-.common-dialog-w-90 { max-width: 90ch; }
-.common-dialog-w-91 { max-width: 91ch; }
-.common-dialog-w-92 { max-width: 92ch; }
-.common-dialog-w-93 { max-width: 93ch; }
-.common-dialog-w-94 { max-width: 94ch; }
-.common-dialog-w-95 { max-width: 95ch; }
-.common-dialog-w-96 { max-width: 96ch; }
+/* dialog-panel width buckets keep content-fit sizing out of inline styles. */
+.dialog-w-24 { max-width: 24ch; }
+.dialog-w-25 { max-width: 25ch; }
+.dialog-w-26 { max-width: 26ch; }
+.dialog-w-27 { max-width: 27ch; }
+.dialog-w-28 { max-width: 28ch; }
+.dialog-w-29 { max-width: 29ch; }
+.dialog-w-30 { max-width: 30ch; }
+.dialog-w-31 { max-width: 31ch; }
+.dialog-w-32 { max-width: 32ch; }
+.dialog-w-33 { max-width: 33ch; }
+.dialog-w-34 { max-width: 34ch; }
+.dialog-w-35 { max-width: 35ch; }
+.dialog-w-36 { max-width: 36ch; }
+.dialog-w-37 { max-width: 37ch; }
+.dialog-w-38 { max-width: 38ch; }
+.dialog-w-39 { max-width: 39ch; }
+.dialog-w-40 { max-width: 40ch; }
+.dialog-w-41 { max-width: 41ch; }
+.dialog-w-42 { max-width: 42ch; }
+.dialog-w-43 { max-width: 43ch; }
+.dialog-w-44 { max-width: 44ch; }
+.dialog-w-45 { max-width: 45ch; }
+.dialog-w-46 { max-width: 46ch; }
+.dialog-w-47 { max-width: 47ch; }
+.dialog-w-48 { max-width: 48ch; }
+.dialog-w-49 { max-width: 49ch; }
+.dialog-w-50 { max-width: 50ch; }
+.dialog-w-51 { max-width: 51ch; }
+.dialog-w-52 { max-width: 52ch; }
+.dialog-w-53 { max-width: 53ch; }
+.dialog-w-54 { max-width: 54ch; }
+.dialog-w-55 { max-width: 55ch; }
+.dialog-w-56 { max-width: 56ch; }
+.dialog-w-57 { max-width: 57ch; }
+.dialog-w-58 { max-width: 58ch; }
+.dialog-w-59 { max-width: 59ch; }
+.dialog-w-60 { max-width: 60ch; }
+.dialog-w-61 { max-width: 61ch; }
+.dialog-w-62 { max-width: 62ch; }
+.dialog-w-63 { max-width: 63ch; }
+.dialog-w-64 { max-width: 64ch; }
+.dialog-w-65 { max-width: 65ch; }
+.dialog-w-66 { max-width: 66ch; }
+.dialog-w-67 { max-width: 67ch; }
+.dialog-w-68 { max-width: 68ch; }
+.dialog-w-69 { max-width: 69ch; }
+.dialog-w-70 { max-width: 70ch; }
+.dialog-w-71 { max-width: 71ch; }
+.dialog-w-72 { max-width: 72ch; }
+.dialog-w-73 { max-width: 73ch; }
+.dialog-w-74 { max-width: 74ch; }
+.dialog-w-75 { max-width: 75ch; }
+.dialog-w-76 { max-width: 76ch; }
+.dialog-w-77 { max-width: 77ch; }
+.dialog-w-78 { max-width: 78ch; }
+.dialog-w-79 { max-width: 79ch; }
+.dialog-w-80 { max-width: 80ch; }
+.dialog-w-81 { max-width: 81ch; }
+.dialog-w-82 { max-width: 82ch; }
+.dialog-w-83 { max-width: 83ch; }
+.dialog-w-84 { max-width: 84ch; }
+.dialog-w-85 { max-width: 85ch; }
+.dialog-w-86 { max-width: 86ch; }
+.dialog-w-87 { max-width: 87ch; }
+.dialog-w-88 { max-width: 88ch; }
+.dialog-w-89 { max-width: 89ch; }
+.dialog-w-90 { max-width: 90ch; }
+.dialog-w-91 { max-width: 91ch; }
+.dialog-w-92 { max-width: 92ch; }
+.dialog-w-93 { max-width: 93ch; }
+.dialog-w-94 { max-width: 94ch; }
+.dialog-w-95 { max-width: 95ch; }
+.dialog-w-96 { max-width: 96ch; }
 
 /* Class-based console theme variables; no inline root style. */
 .agent-console[data-theme="dark"] {

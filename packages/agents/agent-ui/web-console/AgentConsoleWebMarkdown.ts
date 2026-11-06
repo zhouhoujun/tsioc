@@ -31,13 +31,13 @@ const WEB_MARKDOWN_TEMPLATE = `
     <div class="message-block-spacing" v-if="spacerBefore">​</div>
     <div class="message-markdown message-template-assistant" data-template-kind="{{templateKind}}" data-semantic-kind="{{semanticKind}}" data-status="{{item.statusKind}}" data-selected="{{item.selected}}" data-block-padded="{{item.blockPadding}}" data-spacer-before="{{item.spacerBefore}}">
         <div class="markdown-web-segment" v-for="segment in webSegments">
-            <common-markdown-table v-if="segment.isTable" :header="segment.tableHeader" :rows="segment.tableRows"></common-markdown-table>
+            <markdown-table v-if="segment.isTable" :header="segment.tableHeader" :rows="segment.tableRows"></markdown-table>
             <div class="web-code-block" v-if="segment.isCode">
                 <div class="web-code-head">
                     <span>{{segment.codeData.language || 'code'}}</span>
                     <button type="button" @click="copyCode(segment.codeData.text, $event)">{{copyLabel}}</button>
                 </div>
-                <common-markdown-code :lines="segment.codeData.lines || []"></common-markdown-code>
+                <markdown-code :lines="segment.codeData.lines || []"></markdown-code>
             </div>
             <div class="web-markdown-text" v-if="segment.isText">
                 <label class="message-line markdown-line" v-for="line in segment.lines" data-tone="{{line.tone}}" data-indent="{{line.continuationIndent}}" data-status-kind="{{line.statusKind}}" aria-label="{{line.ariaLabel}}" continuationIndent="{{line.continuationIndent}}" data-code="{{line.code}}" data-table="{{line.table}}">

@@ -1,9 +1,9 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { DefaultCommonInputHistoryController } from '../src';
+import { DefaultInputHistoryController } from '../src';
 
 @Suite('common input history')
-export class CommonInputHistoryTest {
+export class InputHistoryTest {
     protected state() {
         return {
             input: '',
@@ -17,7 +17,7 @@ export class CommonInputHistoryTest {
     @Test('navigates recent prompts and restores the original draft')
     navigatesAndRestoresDraft() {
         const state = this.state();
-        const history = new DefaultCommonInputHistoryController(state);
+        const history = new DefaultInputHistoryController(state);
         history.push('first');
         history.push('second');
         state.input = 'draft';
@@ -35,7 +35,7 @@ export class CommonInputHistoryTest {
     @Test('skips slash commands and de-duplicates entries')
     skipsSlashCommands() {
         const state = this.state();
-        const history = new DefaultCommonInputHistoryController(state);
+        const history = new DefaultInputHistoryController(state);
         history.push('/help');
         history.push('prompt');
         history.push('prompt');

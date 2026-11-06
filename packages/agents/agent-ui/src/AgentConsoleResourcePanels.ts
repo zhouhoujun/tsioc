@@ -69,7 +69,7 @@ export * from './AgentConsoleTaskPanels';
     selector: 'agent-console-sessions-panel',
     imports: [ListPanelComponent],
     template: `
-    <common-list-panel :header="sessionsSummaryLabel" :hint="sessionsHintLabel" :items="sessionItems" :showClose="false"></common-list-panel>
+    <list-panel :header="sessionsSummaryLabel" :hint="sessionsHintLabel" :items="sessionItems" :showClose="false"></list-panel>
     `
 })
 export class AgentConsoleSessionsPanelComponent {
@@ -116,7 +116,7 @@ export class AgentConsoleSessionsPanelComponent {
                     label: this.projectHeaderLabel(session),
                     style: this.activeThemeStyles.sessionsAccent,
                     selected: 'false',
-                    className: 'common-list-section'
+                    className: 'list-panel-section'
                 });
             }
             const current = session.current ? ` [${panelLabel(this.translator, 'sessions', 'current', 'current')}]` : '';
@@ -206,7 +206,7 @@ export class AgentConsoleSessionsPanelComponent {
     selector: 'agent-console-jobs-panel',
     imports: [ListPanelComponent],
     template: `
-    <common-list-panel :header="jobsSummaryLabel" :hint="jobsHintLabel" :items="jobItems" :detailLines="selectedJobDetailLines" :showClose="false"></common-list-panel>
+    <list-panel :header="jobsSummaryLabel" :hint="jobsHintLabel" :items="jobItems" :detailLines="selectedJobDetailLines" :showClose="false"></list-panel>
     `
 })
 export class AgentConsoleJobsPanelComponent {
@@ -349,7 +349,7 @@ export { AgentConsoleApprovalsPanelComponent } from './AgentConsoleApprovalPanel
     selector: 'agent-console-tools-panel',
     imports: [ListPanelComponent],
     template: `
-    <common-list-panel :header="toolsSummaryLabel" :hint="toolsHintLabel" :items="toolItems" :detailLines="selectedToolDetailLines" :showClose="false"></common-list-panel>
+    <list-panel :header="toolsSummaryLabel" :hint="toolsHintLabel" :items="toolItems" :detailLines="selectedToolDetailLines" :showClose="false"></list-panel>
     `
 })
 export class AgentConsoleToolsPanelComponent {

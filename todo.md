@@ -3083,3 +3083,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `ListComponent`（`list`）：列表行、空状态、加载/错误提示、Load more 按钮，`onReachEnd()` 供滚动边界调用；已加入 `BaseComponentsModule` 与 common 导出，Web 样式使用主题 class 变量。
   - 通用组件命名不再使用 `common-` 前缀：文件 `list.ts`、类 `ListComponent`、selector `list`、样式 `.list-*`。
   - 回归：components/common 43 passing（新增 pager/component 用例）、components/console 136、components/html 128、agent-ui 1979、tsc、build:web、source-size、diff-check 通过。
+- 重构 components/common 所有通用组件的 `common-` 前缀：
+  - selectors：`select-list`、`list-panel`、`tab-bar`、`dialog-panel`、`alert-dialog`、`markdown-table`、`markdown-code`；新增列表保持 `list`。
+  - CSS/模板 class 同步改为 `select-*`、`list-panel-*`、`tab-*`、`dialog-*`、`alert-*`、`markdown-*`；`default-styles.generated.ts` 由 console 样式脚本重新生成。
+  - 类型/Token 去除 Common 前缀：`SelectOption`、`ListPanelItem`、`TabItem`/`TabBarSource`/`TAB_BAR_SOURCE`、`MarkdownToken`/`MarkdownTableCell`、`ToastService`/`Toast*`、`InputHistoryController`。
+  - 回归：components/common 43、components/console 136、components/html 128、agent-ui 1979、tsc、build:web、source-size、diff-check 通过。

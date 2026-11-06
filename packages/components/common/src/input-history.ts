@@ -1,6 +1,6 @@
 import { shouldSkipCommonHistoryEntry } from './input';
 
-export interface CommonInputHistoryStatePort {
+export interface InputHistoryStatePort {
     input: string;
     inputHistoryEntries: string[];
     inputHistoryIndex: number;
@@ -14,9 +14,9 @@ export const COMMON_INPUT_HISTORY_LIMIT = 200;
  * Renderer-neutral prompt history navigation (up/down), shared by TUI and DOM
  * composers. Workspace persistence remains host-owned.
  */
-export abstract class CommonInputHistoryController {
+export abstract class InputHistoryController {
     constructor(
-        protected readonly state: CommonInputHistoryStatePort,
+        protected readonly state: InputHistoryStatePort,
         protected readonly limit = COMMON_INPUT_HISTORY_LIMIT
     ) {}
 
@@ -73,4 +73,4 @@ export abstract class CommonInputHistoryController {
     }
 }
 
-export class DefaultCommonInputHistoryController extends CommonInputHistoryController {}
+export class DefaultInputHistoryController extends InputHistoryController {}

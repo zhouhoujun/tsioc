@@ -1,6 +1,6 @@
 import { Attribute, Component } from '@tsdi/components';
 
-export interface CommonSelectOption {
+export interface SelectOption {
     label: string;
     value: string;
     description?: string;
@@ -12,9 +12,9 @@ export interface CommonSelectOption {
  * how `<select>` is painted and how pointer rows are hit-tested.
  */
 @Component({
-    selector: 'common-select',
+    selector: 'select-list',
     template: `
-    <div class="console-panel common-select" role="dialog" aria-label="{{accessibilityLabel}}">
+    <div class="console-panel select-list" role="dialog" aria-label="{{accessibilityLabel}}">
         <div class="select-shell">
             <label class="dialog-close" data-cell-width="2" @click="close">{{closeLabel}}</label>
             <select class="select-core"
@@ -24,15 +24,15 @@ export interface CommonSelectOption {
                 selectedIndex="{{selectedIndexText}}"
                 visibleCount="{{visibleCountText}}"
                 detailLines="{{detailLinesJson}}"
-                optionClass="common-select-option"
-                optionActiveClass="common-select-option is-selected"
+                optionClass="select-option"
+                optionActiveClass="select-option is-selected"
                 @keydown="emitKeydown($event)"
                 @select-option="emitSelection($event)"></select>
         </div>
     </div>`
 })
 export class SelectComponent {
-    @Attribute() options: CommonSelectOption[] = [];
+    @Attribute() options: SelectOption[] = [];
     @Attribute() selectedIndex = 0;
     @Attribute() visibleCount = 0;
     @Attribute() title = '';

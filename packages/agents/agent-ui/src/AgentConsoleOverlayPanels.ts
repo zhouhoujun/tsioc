@@ -67,7 +67,7 @@ export * from './AgentConsoleMessagePanels';
     selector: 'agent-console-text-overlay-panel',
     imports: [DialogComponent],
     template: `
-    <common-dialog :title="overlayTitle" :lines="visibleLines" :hint="hintLabel" :ariaLabel="accessibilityLabel" @closeAction="closeOverlay"></common-dialog>
+    <dialog-panel :title="overlayTitle" :lines="visibleLines" :hint="hintLabel" :ariaLabel="accessibilityLabel" @closeAction="closeOverlay"></dialog-panel>
     `
 })
 export class AgentConsoleTextOverlayPanelComponent {
@@ -127,7 +127,7 @@ export class AgentConsoleTextOverlayPanelComponent {
     selector: 'agent-console-outputs-panel',
     imports: [ListPanelComponent],
     template: `
-    <common-list-panel :header="panelTitle" :meta="filterLabel" :items="entryItems" :empty="emptyLabel" :hint="hintLabel" :showClose="false" :ariaLabel="accessibilityLabel" :listLabel="'Command output history'" :activeOptionId="activeOptionId"></common-list-panel>
+    <list-panel :header="panelTitle" :meta="filterLabel" :items="entryItems" :empty="emptyLabel" :hint="hintLabel" :showClose="false" :ariaLabel="accessibilityLabel" :listLabel="'Command output history'" :activeOptionId="activeOptionId"></list-panel>
     `
 })
 export class AgentConsoleCommandOutputsPanelComponent {
@@ -223,7 +223,7 @@ export class AgentConsoleCommandOutputsPanelComponent {
     selector: 'agent-console-pending-question-panel',
     imports: [ListPanelComponent],
     template: `
-    <common-list-panel :header="pendingQuestionHeader" :title="pendingQuestionTitle" :context="pendingQuestionContext" :meta="pendingQuestionExpiryHint" :hint="pendingQuestionSelectionHint" :secondaryHint="pendingQuestionCustomHint" :items="pendingQuestionOptionItems" :showClose="true" :closeLabel="'✕'" :ariaLabel="accessibilityLabel" :listLabel="'Question options'" :activeOptionId="activeOptionId" @closeAction="closeQuestion" @selectAction="onPendingQuestionOptionClick"></common-list-panel>
+    <list-panel :header="pendingQuestionHeader" :title="pendingQuestionTitle" :context="pendingQuestionContext" :meta="pendingQuestionExpiryHint" :hint="pendingQuestionSelectionHint" :secondaryHint="pendingQuestionCustomHint" :items="pendingQuestionOptionItems" :showClose="true" :closeLabel="'✕'" :ariaLabel="accessibilityLabel" :listLabel="'Question options'" :activeOptionId="activeOptionId" @closeAction="closeQuestion" @selectAction="onPendingQuestionOptionClick"></list-panel>
     `
 })
 export class AgentConsolePendingQuestionPanelComponent {

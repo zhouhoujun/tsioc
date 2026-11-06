@@ -2,7 +2,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { DOCUMENT } from '@tsdi/common';
 import { Injectable } from '@tsdi/ioc';
 import { ComponentRef, ComponentsModule, ReactiveEffect, reactive } from '@tsdi/components';
-import { CommonToastService } from '@tsdi/components/common';
+import { ToastService } from '@tsdi/components/common';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { DomTranscriptFollower, measureDomConsoleColumns } from '@tsdi/components/html';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, COMMAND_EXECUTION_CONTROL, CommandExecutionControlPort, defaultAgentOptions } from '@tsdi/agent';
@@ -387,7 +387,7 @@ export async function mountAgentWebConsole(
     // The welcome brand block belongs to the transcript start in the TUI;
     // hide it once real rows exist so it does not pin a blank band above the
     // scrolling conversation in the browser.
-    const toastService = new CommonToastService();
+    const toastService = new ToastService();
     const toast = doc.createElement('div');
     toast.className = 'console-toast';
     toast.setAttribute('role', 'status');

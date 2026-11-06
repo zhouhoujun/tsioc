@@ -1,44 +1,44 @@
 import { Injectable } from '@tsdi/ioc';
 
-export type CommonToastTone = 'info' | 'success' | 'warning' | 'error';
+export type ToastTone = 'info' | 'success' | 'warning' | 'error';
 
-export interface CommonToastOptions {
-    tone?: CommonToastTone;
+export interface ToastOptions {
+    tone?: ToastTone;
     /** Milliseconds before auto-dismiss; `0` keeps the toast until dismissed. */
     durationMs?: number;
 }
 
-export interface CommonToastEntry {
+export interface ToastEntry {
     id: string;
     message: string;
-    tone: CommonToastTone;
+    tone: ToastTone;
     createdAt: number;
 }
 
-export type CommonToastListener = (entries: readonly CommonToastEntry[]) => void;
+export type ToastListener = (entries: readonly ToastEntry[]) => void;
 
 /**
  * Renderer-neutral toast queue. Hosts subscribe and paint the current entries;
  * the service owns ids, ordering and auto-dismiss timing.
  */
 @Injectable()
-export class CommonToastService {
-    protected entries: CommonToastEntry[] = [];
-    protected readonly listeners = new Set<CommonToastListener>();
+export class ToastService {
+    protected entries: ToastEntry[] = [];
+    protected readonly listeners = new Set<ToastListener>();
     protected sequence = 0;
     protected readonly timers = new Map<string, ReturnType<typeof setTimeout>>();
 
-    get current(): readonly CommonToastEntry[] {
+    get current(): readonly ToastEntry[] {
         return this.entries;
     }
 
-    show(message: string, options: CommonToastOptions = {}): string {
+    show(message: string, options: ToastOptions = {}): string {
         const text = String(message || '').trim();
         if (!text) {
             return '';
         }
         const id = `toast-${++this.sequence}`;
-        const entry: CommonToastEntry = {
+        const entry: ToastEntry = {
             id,
             message: text,
             tone: options.tone || 'info',
@@ -81,7 +81,7 @@ export class CommonToastService {
         this.emit();
     }
 
-    subscribe(listener: CommonToastListener): () => void {
+    subscribe(listener: ToastListener): () => void {
         this.listeners.add(listener);
         listener(this.entries);
         return () => this.listeners.delete(listener);
