@@ -1,0 +1,10 @@
+{
+  "name": "@tsdi/components/forms",
+  "version": "6.0.0-beta7",
+  "description": "Reactive form controls, groups, arrays and validators for @tsdi/components.",
+  "scripts": {
+    "build": "ts-node -r tsconfig-paths/register taskfile.ts",
+    "test": "ts-node -r tsconfig-paths/register unit.ts"
+  },
+  "license": "Apache-2.0"
+}

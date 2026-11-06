@@ -3046,3 +3046,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - common 新增 `CommonToastService`（队列/订阅/自动过期）和 `CommonAlertDialogComponent`（语义 tone + 确认/关闭），并入 `BaseComponentsModule` 与导出。
 - 真实 TUI 右键复制验证：拖拽 transcript 选区后滚动，再右键触发 OSC52 剪贴板写入并显示“已复制”toast；选区文本与高亮保持锁定。
 - 回归：components/common 40、components/console 133、agent-ui 1972、`build:web`、source-size、`git diff --check` 通过。
+- 新增两个独立子项目（结构同 `components/html`）：
+  - `@tsdi/components/router`：Angular 风格 Routes、Router 服务、参数/嵌套/通配/重定向、CanActivate 守卫、RouterOutlet、RouterLink/RouterLinkActive；包含独立 unit/taskfile/package。
+  - `@tsdi/components/forms`：FormControl/FormGroup/FormArray、valueChanges/statusChanges、同步/异步 Validators、FormBuilder、`[formControl]` 指令（同步 input/change、aria-invalid/is-invalid）。
+  - router 6 passing、forms 6 passing；两个子项目 build 通过。

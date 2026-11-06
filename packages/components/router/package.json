@@ -1,0 +1,10 @@
+{
+  "name": "@tsdi/components/router",
+  "version": "6.0.0-beta7",
+  "description": "Angular-style route matching, guards, links and router outlets for @tsdi/components.",
+  "scripts": {
+    "build": "ts-node -r tsconfig-paths/register taskfile.ts",
+    "test": "ts-node -r tsconfig-paths/register unit.ts"
+  },
+  "license": "Apache-2.0"
+}
