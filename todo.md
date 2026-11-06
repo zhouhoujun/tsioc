@@ -3079,6 +3079,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - TUI surface 在视图顶部触发 `onViewportTop`，并在 prepend 时保持当前阅读行；web `DomTranscriptFollower` 增加顶部回调与 prepend 滚动锚定。
   - 真实 TUI 验证：`stream-debug-2`（109 条）打开时只加载最新页，滚轮到顶部后旧消息出现；更新 `session-lifecycle` 回归为“首屏一页 + 按需 prepend”。
 - common 新增通用分页列表：
-  - `CommonListPager`：cursor/hasMore/loading/error，去重、并发保护、失败可重试。
-  - `CommonListComponent`（`common-list`）：列表行、空状态、加载/错误提示、Load more 按钮，`onReachEnd()` 供滚动边界调用；已加入 `BaseComponentsModule` 与 common 导出，Web 样式使用主题 class 变量。
+  - `ListPager`：cursor/hasMore/loading/error，去重、并发保护、失败可重试。
+  - `ListComponent`（`list`）：列表行、空状态、加载/错误提示、Load more 按钮，`onReachEnd()` 供滚动边界调用；已加入 `BaseComponentsModule` 与 common 导出，Web 样式使用主题 class 变量。
+  - 通用组件命名不再使用 `common-` 前缀：文件 `list.ts`、类 `ListComponent`、selector `list`、样式 `.list-*`。
   - 回归：components/common 43 passing（新增 pager/component 用例）、components/console 136、components/html 128、agent-ui 1979、tsc、build:web、source-size、diff-check 通过。

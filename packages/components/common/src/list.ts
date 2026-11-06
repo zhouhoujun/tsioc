@@ -1,6 +1,6 @@
 import { Attribute, Component } from '@tsdi/components';
 
-export interface CommonListEntry {
+export interface ListEntry {
     id: string;
     label: string;
     value?: string;
@@ -9,7 +9,7 @@ export interface CommonListEntry {
     disabled?: boolean;
 }
 
-export interface CommonListPage<T extends CommonListEntry = CommonListEntry> {
+export interface ListPage<T extends ListEntry = ListEntry> {
     items: T[];
     /** Whether a further page exists. Defaults to false for array results. */
     hasMore?: boolean;
@@ -17,11 +17,11 @@ export interface CommonListPage<T extends CommonListEntry = CommonListEntry> {
     nextCursor?: string;
 }
 
-export type CommonListLoader<T extends CommonListEntry = CommonListEntry> = (
+export type ListLoader<T extends ListEntry = ListEntry> = (
     cursor?: string
-) => Promise<CommonListPage<T> | T[]>;
+) => Promise<ListPage<T> | T[]>;
 
-function normalizePage<T extends CommonListEntry>(result: CommonListPage<T> | T[] | undefined): CommonListPage<T> & { hasMore: boolean } {
+function normalizePage<T extends ListEntry>(result: ListPage<T> | T[] | undefined): ListPage<T> & { hasMore: boolean } {
     if (Array.isArray(result)) {
         return { items: result, hasMore: false };
     }
@@ -34,11 +34,11 @@ function normalizePage<T extends CommonListEntry>(result: CommonListPage<T> | T[
 
 /**
  * Renderer-neutral paged list state. Hosts can own it directly (for example a
- * session selector) or bind it to {@link CommonListComponent}. Concurrent calls
+ * session selector) or bind it to {@link ListComponent}. Concurrent calls
  * are ignored and duplicate ids are dropped, so wheel/key bursts cannot enqueue
  * the same page twice.
  */
-export class CommonListPager<T extends CommonListEntry = CommonListEntry> {
+export class ListPager<T extends ListEntry = ListEntry> {
     items: T[] = [];
     cursor?: string;
     hasMore = true;
@@ -46,7 +46,7 @@ export class CommonListPager<T extends CommonListEntry = CommonListEntry> {
     error = '';
     protected request = 0;
 
-    constructor(protected readonly loader?: CommonListLoader<T>) {
+    constructor(protected readonly loader?: ListLoader<T>) {
     }
 
     reset(items: T[] = [], hasMore = true): void {
@@ -58,7 +58,7 @@ export class CommonListPager<T extends CommonListEntry = CommonListEntry> {
         this.error = '';
     }
 
-    async loadMore(loader: CommonListLoader<T> | undefined = this.loader): Promise<boolean> {
+    async loadMore(loader: ListLoader<T> | undefined = this.loader): Promise<boolean> {
         if (!loader || this.loading || !this.hasMore) {
             return false;
         }
@@ -98,21 +98,21 @@ export class CommonListPager<T extends CommonListEntry = CommonListEntry> {
  * load-more button.
  */
 @Component({
-    selector: 'common-list',
+    selector: 'list',
     template: `
-    <div class="common-list" role="list" aria-label="{{ariaLabel}}">
-        <div class="common-list-row {{item.className}}" role="listitem" v-for="item in items" @click="selectItem(item)">
-            <span class="common-list-label">{{item.label}}</span>
-            <span class="common-list-description" v-if="item.description"> {{item.description}}</span>
+    <div class="list" role="list" aria-label="{{ariaLabel}}">
+        <div class="list-row {{item.className}}" role="listitem" v-for="item in items" @click="selectItem(item)">
+            <span class="list-label">{{item.label}}</span>
+            <span class="list-description" v-if="item.description"> {{item.description}}</span>
         </div>
-        <label class="common-list-empty" v-show="!items.length && !loading">{{empty}}</label>
-        <label class="common-list-loading" v-show="loading">{{loadingLabel}}</label>
-        <label class="common-list-error" v-show="error">{{error}}</label>
-        <button class="common-list-more" v-show="hasMore && !loading" @click="loadMore">{{moreLabel}}</button>
+        <label class="list-empty" v-show="!items.length && !loading">{{empty}}</label>
+        <label class="list-loading" v-show="loading">{{loadingLabel}}</label>
+        <label class="list-error" v-show="error">{{error}}</label>
+        <button class="list-more" v-show="hasMore && !loading" @click="loadMore">{{moreLabel}}</button>
     </div>`
 })
-export class CommonListComponent {
-    @Attribute() items: CommonListEntry[] = [];
+export class ListComponent {
+    @Attribute() items: ListEntry[] = [];
     @Attribute() cursor?: string;
     @Attribute() hasMore = true;
     @Attribute() loading = false;
@@ -121,8 +121,8 @@ export class CommonListComponent {
     @Attribute() loadingLabel = 'Loading…';
     @Attribute() moreLabel = 'Load more';
     @Attribute() ariaLabel = 'List';
-    @Attribute() loadPage?: CommonListLoader;
-    @Attribute() selectAction?: (item: CommonListEntry) => void;
+    @Attribute() loadPage?: ListLoader;
+    @Attribute() selectAction?: (item: ListEntry) => void;
 
     /** Called by a renderer/scroll adapter when the last row becomes visible. */
     onReachEnd(): void {
@@ -153,7 +153,7 @@ export class CommonListComponent {
         }
     }
 
-    selectItem(item: CommonListEntry): void {
+    selectItem(item: ListEntry): void {
         if (item?.disabled) {
             return;
         }

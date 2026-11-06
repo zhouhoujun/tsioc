@@ -1464,15 +1464,15 @@ html[data-agent-theme="high-contrast"] #agent-console .common-markdown-code-toke
     --agent-theme-select-detail-value-padding:0 1ch;
 }
 
-/* Shared paged list (common-list). */
-.common-list {
+/* Shared paged list. */
+#agent-console .list {
     display: flex;
     flex-direction: column;
     gap: 2px;
     min-width: 0;
 }
 
-.common-list-row {
+#agent-console .list-row {
     display: flex;
     align-items: baseline;
     gap: 1ch;
@@ -1482,13 +1482,13 @@ html[data-agent-theme="high-contrast"] #agent-console .common-markdown-code-toke
     color: var(--console-text);
 }
 
-.common-list-row:hover,
-.common-list-row:focus-visible {
+#agent-console .list-row:hover,
+#agent-console .list-row:focus-visible {
     background: var(--console-input-bg);
     outline: none;
 }
 
-.common-list-description {
+#agent-console .list-description {
     color: var(--console-meta);
     font-size: 0.92em;
     overflow: hidden;
@@ -1496,18 +1496,18 @@ html[data-agent-theme="high-contrast"] #agent-console .common-markdown-code-toke
     white-space: nowrap;
 }
 
-.common-list-empty,
-.common-list-loading,
-.common-list-error {
+#agent-console .list-empty,
+#agent-console .list-loading,
+#agent-console .list-error {
     padding: 2px 8px;
     color: var(--console-meta);
 }
 
-.common-list-error {
+#agent-console .list-error {
     color: var(--console-error);
 }
 
-.common-list-more {
+#agent-console .list-more {
     align-self: flex-start;
     margin: 2px 8px;
 }

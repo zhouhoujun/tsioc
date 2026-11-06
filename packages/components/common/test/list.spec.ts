@@ -1,20 +1,20 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { CommonListComponent, CommonListEntry, CommonListPager } from '../src';
+import { ListComponent, ListEntry, ListPager } from '../src';
 
-interface Item extends CommonListEntry {
+interface Item extends ListEntry {
     id: string;
     label: string;
 }
 
 const item = (id: string): Item => ({ id, label: `Item ${id}` });
 
-@Suite('common paged list')
-export class CommonListTest {
+@Suite('paged list')
+export class ListTest {
     @Test('pager appends pages, dedupes ids and stops at hasMore=false')
     async pagerPages() {
         const requests: Array<string | undefined> = [];
-        const pager = new CommonListPager<Item>(async cursor => {
+        const pager = new ListPager<Item>(async cursor => {
             requests.push(cursor);
             return cursor
                 ? { items: [item('b'), item('c')], hasMore: false }
@@ -36,7 +36,7 @@ export class CommonListTest {
     @Test('pager ignores concurrent loads and records loader errors')
     async pagerGuards() {
         let release: (value: any) => void = () => undefined;
-        const pager = new CommonListPager<Item>(() => new Promise(resolve => { release = resolve; }));
+        const pager = new ListPager<Item>(() => new Promise(resolve => { release = resolve; }));
         const first = pager.loadMore();
         expect(pager.loading).toEqual(true);
         expect(await pager.loadMore()).toEqual(false);
@@ -44,7 +44,7 @@ export class CommonListTest {
         expect(await first).toEqual(true);
         expect(pager.loading).toEqual(false);
 
-        const failing = new CommonListPager<Item>(async () => { throw new Error('offline'); });
+        const failing = new ListPager<Item>(async () => { throw new Error('offline'); });
         expect(await failing.loadMore()).toEqual(false);
         expect(failing.error).toEqual('offline');
         expect(failing.loading).toEqual(false);
@@ -52,7 +52,7 @@ export class CommonListTest {
 
     @Test('component drives the same paging contract and selects rows')
     async componentPaging() {
-        const component = new CommonListComponent();
+        const component = new ListComponent();
         const selected: string[] = [];
         component.selectAction = entry => selected.push(entry.id);
         component.loadPage = async cursor => cursor
