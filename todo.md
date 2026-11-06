@@ -3056,4 +3056,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 真实 TUI 系统构建任务（`npm run chat -- --workspace /home/zhouyou/workspace/sleep-mlt`）：生成 `clinic-system`（patients/appointments/invoices + 3 个测试文件），真实 `node --test clinic-system/test/*.test.js`：30 passing、0 failing；TUI 状态正常收敛 idle，未出现错误/异常。
 - Web 真实 `serve` 冒烟（同一 workspace）：`/`、`/header.js`、`/dist/agent-console.js` 均 200，`console.css` 含横向 tab 规则。
 - 本轮未发现新的阻塞性 console/web 交互缺陷；继续保留已修复的 tab 横排、应用层选区/滚动锁定、右键复制 toast、表单验证等回归。
-- 回退 11:30 之后引入的 TUI 性能改动：`d1e2a9057`（selection-only repaint）与 `c3dadbe26`（command popup render batch）在真实使用中引起对话框时间线抖动/Tab 切换卡顿，已整体回退到 `5e3cb5bcb`（forms/router 提交之后）的已知正常状态。选区高亮/滚动逻辑恢复到该版本，后续若要优化需先做真实 A/B 复现，不再直接改渲染事务。
+- 真实 TUI 系统构建任务：生成 `asset-system`（assets/depreciation + 测试），真实 `node --test asset-system/test/*.test.js`：21 passing、0 failing。
+- 选区性能优化：拖拽选择/清除选择改为复用上一帧布局的 selection-only 重绘，不再每次鼠标移动重跑整棵组件树；新增回归断言拖拽期间不调用 `renderToTuiLayout`。滚动仍会全量重算以更新视口映射。
+- 回归：components/console 133、agent-ui 鼠标交互 3、source-size、`git diff --check` 通过。
+- 弹出框/命令切换性能：复核 2026-10 的既有方案（openSession render batch + 行级 diff），补充 command dispatch 的短渲染事务：一次 `/command` 的 popup burst 合并为一次布局，网络/服务型长命令最多阻塞 48ms 后自动释放，避免整屏多次重绘。未知命令回归新增 begin/end batch 断言。
+- 选区卡顿继续优化为 selection-only repaint；真实 `/help` 布局耗时与 11:02 基线一致（约 50ms），确认不是 forms/toast 引入的布局退化；本轮主要减少重复全量 pass。
+- 回归：agent-ui 1976、components/console 133、build:web、source-size、`git diff --check` 通过。

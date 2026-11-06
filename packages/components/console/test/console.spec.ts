@@ -1773,8 +1773,14 @@ export class ConsoleRendererTest {
 
             const targetRow = surface.lastRenderedLines.findIndex(line => line.includes('Two'));
             expect(targetRow).toBeGreaterThanOrEqual(0);
+            const originalLayout = renderer.renderToTuiLayout.bind(renderer) as any;
+            let layouts = 0;
+            renderer.renderToTuiLayout = ((...args: any[]) => { layouts += 1; return originalLayout(...(args as [any, any])); }) as any;
+            const layoutsBeforeSelection = layouts;
             surface.dispatchMouse({ button: 0, x: 2, y: targetRow + 1, release: false });
             surface.dispatchMouse({ button: 32, x: 8, y: targetRow + 1, release: false });
+            for (let index = 0; index < 10; index++) await Promise.resolve();
+            expect(layouts).toEqual(layoutsBeforeSelection);
             expect(surface.getTextSelectionText()).toContain('Two');
 
             // A redraw keeps the selection anchored to the same source row.

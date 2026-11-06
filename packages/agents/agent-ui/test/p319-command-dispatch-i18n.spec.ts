@@ -45,6 +45,18 @@ export class CommandDispatchI18nTest {
         expect(notices[0]).toBe('未知命令：/zzz-unknown');
     }
 
+    @Test('a command wraps its popup burst in a render batch')
+    async renderBatch() {
+        const { host } = this.host('en');
+        let begins = 0;
+        let ends = 0;
+        host.beginRenderBatch = () => { begins += 1; };
+        host.endRenderBatch = () => { ends += 1; };
+        await dispatchAgentConsoleCommand(host, '/zzz-unknown');
+        expect(begins).toEqual(1);
+        expect(ends).toEqual(1);
+    }
+
     @Test('an en host keeps the English fallback')
     async unknownEnglish() {
         const { host, notices } = this.host('en');
