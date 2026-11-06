@@ -39,7 +39,7 @@ export class WebMarkdownSurfaceTest {
                 { id: 'u1', role: 'user', content: 'show a table', createdAt: 1 } as any,
                 {
                     id: 'a1', role: 'assistant', createdAt: 2,
-                    content: '## Result\n\n```ts\nconst x = 1;\n```\n\n| Model | Latency |\n| --- | --- |\n| **fake** | `26ms` |'
+                    content: '## Result\n\n- one\n- two\n\n```ts\nconst x = 1;\n```\n\n| Model | Latency |\n| --- | --- |\n| **fake** | `26ms` |'
                 } as any
             ]);
             await ref.render();
@@ -52,6 +52,10 @@ export class WebMarkdownSurfaceTest {
             expect(root.querySelector('.common-markdown-token[data-tone="strong"]')?.textContent).toContain('fake');
             expect(root.querySelector('.common-markdown-token[data-tone="inline-code"]')?.textContent).toContain('26ms');
             expect(root.querySelector('.message-line[data-code="true"]')).toBeFalsy();
+            const markdown = root.querySelector('.message-markdown[data-template-kind="assistant"]');
+            expect(markdown.querySelector('.message-line[data-indent="6"]')?.textContent).toContain('one');
+            expect(markdown.querySelectorAll('[style]').length).toEqual(0);
+            expect(root.querySelectorAll('[style]').length).toEqual(0);
         } finally {
             await this.ctx.close();
         }

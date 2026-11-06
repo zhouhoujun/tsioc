@@ -10,16 +10,16 @@ const ITEM_TEMPLATE = `
         <div class="message-line-wrap" v-for="line in lines">
             <label class="message-line" v-if="line.toggleMode" data-tone="{{line.tone}}" aria-label="{{line.ariaLabel}}" continuationIndent="{{line.continuationIndent}}" data-hover="fade" @click="toggleMessageDetail(line)">
                 <span class="message-status">{{line.status}}</span>
-                <span class="message-role" v-show="line.role">{{line.role}}</span>
-                <span class="message-meta" v-show="line.meta">{{line.meta}}</span>
-                <span class="message-prefix" v-show="line.prefix">{{line.prefix}}</span>
+                <span class="message-role" v-if="line.role">{{line.role}}</span>
+                <span class="message-meta" v-if="line.meta">{{line.meta}}</span>
+                <span class="message-prefix" v-if="line.prefix">{{line.prefix}}</span>
                 <span class="message-body"><agent-console-routed-tokens :tokens="line.tokens"></agent-console-routed-tokens></span>
             </label>
             <label class="message-line" v-else data-tone="{{line.tone}}" aria-label="{{line.ariaLabel}}" continuationIndent="{{line.continuationIndent}}" data-hover="none">
                 <span class="message-status">{{line.status}}</span>
-                <span class="message-role" v-show="line.role">{{line.role}}</span>
-                <span class="message-meta" v-show="line.meta">{{line.meta}}</span>
-                <span class="message-prefix" v-show="line.prefix">{{line.prefix}}</span>
+                <span class="message-role" v-if="line.role">{{line.role}}</span>
+                <span class="message-meta" v-if="line.meta">{{line.meta}}</span>
+                <span class="message-prefix" v-if="line.prefix">{{line.prefix}}</span>
                 <span class="message-body"><agent-console-routed-tokens :tokens="line.tokens"></agent-console-routed-tokens></span>
             </label>
         </div>
@@ -31,9 +31,9 @@ const MARKDOWN_TEMPLATE = `
     <div class="message-markdown {{templateClass}}" data-template-kind="{{templateKind}}" data-semantic-kind="{{semanticKind}}" data-status="{{item.statusKind}}" data-selected="{{item.selected}}">
         <label class="message-line markdown-line" v-for="line in lines" data-tone="{{line.tone}}" aria-label="{{line.ariaLabel}}" continuationIndent="{{line.continuationIndent}}" data-code="{{line.code}}" data-table="{{line.table}}">
             <span class="message-status">{{line.status}}</span>
-            <span class="message-role" v-show="line.role">{{line.role}}</span>
-            <span class="message-meta" v-show="line.meta">{{line.meta}}</span>
-            <span class="message-prefix" v-show="line.prefix">{{line.prefix}}</span>
+            <span class="message-role" v-if="line.role">{{line.role}}</span>
+            <span class="message-meta" v-if="line.meta">{{line.meta}}</span>
+            <span class="message-prefix" v-if="line.prefix">{{line.prefix}}</span>
             <span class="message-body"><agent-console-routed-tokens :tokens="line.tokens"></agent-console-routed-tokens></span>
         </label>
     </div>
@@ -81,9 +81,9 @@ export class AgentConsoleRoutedTokensComponent {
     template: `
         <label class="message-line" data-tone="{{line.tone}}" aria-label="{{ariaLabel}}" data-hover="{{line.toggleMode ? 'fade' : 'none'}}" @click="toggleMessageDetail()">
             <span class="message-status">{{status}}</span>
-            <span class="message-role" v-show="role">{{role}}</span>
-            <span class="message-meta" v-show="meta">{{meta}}</span>
-            <span class="message-prefix" v-show="prefix">{{prefix}}</span>
+            <span class="message-role" v-if="role">{{role}}</span>
+            <span class="message-meta" v-if="meta">{{meta}}</span>
+            <span class="message-prefix" v-if="prefix">{{prefix}}</span>
             <span class="message-body">
                 <agent-console-routed-tokens :tokens="tokens"></agent-console-routed-tokens>
             </span>

@@ -74,12 +74,14 @@ export class ReactiveSubscribableTest {
         const root = ref.hostView.rootNodes[0] as any;
         const child = root.querySelector('subscribable-child');
 
-        expect(child?.getAttribute('style')).toContain('display: none');
+        expect(child?.classList.contains('is-hidden')).toBe(true);
+        expect(child?.hasAttribute('hidden')).toBe(true);
 
         this.state.setStatus('running');
         await Promise.resolve();
 
-        expect(child?.getAttribute('style') || '').not.toContain('display: none');
+        expect(child?.classList.contains('is-hidden')).toBe(false);
+        expect(child?.hasAttribute('hidden')).toBe(false);
         expect(child?.textContent).toContain('Working');
     }
 

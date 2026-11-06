@@ -283,7 +283,7 @@ body {
     transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, opacity 120ms ease;
 }
 
-#agent-console common-tab-bar .common-tab:hover:not([aria-selected="true"]) {
+#agent-console common-tab-bar .common-tab[aria-selected="false"]:hover {
     background: var(--agent-web-hover);
 }
 
@@ -359,6 +359,10 @@ body {
 
 #agent-console .message-item-block,
 
+#agent-console .is-hidden {
+    display: none !important;
+}
+
 #agent-console .message-markdown {
     margin: 8px 0;
 }
@@ -391,22 +395,55 @@ body {
     line-height: 1.7;
 }
 
-#agent-console .message-template-assistant .message-line {
-    padding-left: 0 !important;
-    text-indent: 0 !important;
+#agent-console .message-template-assistant[data-block-padded="true"] {
+    padding-block: 1em;
 }
 
-#agent-console .message-template-assistant .markdown-line-slot {
-    display: contents;
+#agent-console .message-template-assistant[data-block-padded="true"][data-spacer-before="true"] {
+    padding-block-start: 0;
+}
+
+#agent-console .message-template-assistant .message-line {
+    padding-left: 0;
+    text-indent: 0;
+}
+
+#agent-console .message-template-assistant .message-line[data-tone="heading"] {
+    padding: 0.45em 1ch 0.2em;
+    font-weight: 600;
 }
 
 #agent-console .message-template-assistant .message-token {
     font-family: inherit;
 }
 
-#agent-console .message-template-assistant .message-token[style*="monospace"] {
+#agent-console .message-template-assistant .message-token.tone-code,
+#agent-console .message-template-assistant .message-token.tone-inline-code {
     font-family: var(--agent-web-mono);
 }
+
+#agent-console .message-template-assistant .message-line[data-status-kind="success"] .message-status { color: var(--agent-theme-status-idle-value-color, #6fa37a); }
+#agent-console .message-template-assistant .message-line[data-status-kind="error"] .message-status,
+#agent-console .message-template-assistant .message-line[data-status-kind="failed"] .message-status { color: var(--agent-theme-status-error-value-color, #cf9893); }
+#agent-console .message-template-assistant .message-line[data-status-kind="running"] .message-status { color: var(--agent-web-accent); }
+#agent-console .message-template-assistant .message-prefix { color: var(--agent-web-code-accent); }
+
+#agent-console .message-template-assistant .message-line[data-indent="1"] { padding-left: 1ch; text-indent: -1ch; }
+#agent-console .message-template-assistant .message-line[data-indent="2"] { padding-left: 2ch; text-indent: -2ch; }
+#agent-console .message-template-assistant .message-line[data-indent="3"] { padding-left: 3ch; text-indent: -3ch; }
+#agent-console .message-template-assistant .message-line[data-indent="4"] { padding-left: 4ch; text-indent: -4ch; }
+#agent-console .message-template-assistant .message-line[data-indent="5"] { padding-left: 5ch; text-indent: -5ch; }
+#agent-console .message-template-assistant .message-line[data-indent="6"] { padding-left: 6ch; text-indent: -6ch; }
+#agent-console .message-template-assistant .message-line[data-indent="7"] { padding-left: 7ch; text-indent: -7ch; }
+#agent-console .message-template-assistant .message-line[data-indent="8"] { padding-left: 8ch; text-indent: -8ch; }
+#agent-console .message-template-assistant .message-line[data-indent="9"] { padding-left: 9ch; text-indent: -9ch; }
+#agent-console .message-template-assistant .message-line[data-indent="10"] { padding-left: 10ch; text-indent: -10ch; }
+#agent-console .message-template-assistant .message-line[data-indent="11"] { padding-left: 11ch; text-indent: -11ch; }
+#agent-console .message-template-assistant .message-line[data-indent="12"] { padding-left: 12ch; text-indent: -12ch; }
+#agent-console .message-template-assistant .message-line[data-indent="13"] { padding-left: 13ch; text-indent: -13ch; }
+#agent-console .message-template-assistant .message-line[data-indent="14"] { padding-left: 14ch; text-indent: -14ch; }
+#agent-console .message-template-assistant .message-line[data-indent="15"] { padding-left: 15ch; text-indent: -15ch; }
+#agent-console .message-template-assistant .message-line[data-indent="16"] { padding-left: 16ch; text-indent: -16ch; }
 
 #agent-console .message-template-assistant .message-line[data-code="true"] {
     padding: 1px 10px !important;

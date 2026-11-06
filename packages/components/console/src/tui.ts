@@ -1104,6 +1104,12 @@ export class TuiRenderer extends ConsoleRenderer {
 
     protected getStyleMap(element: ConsoleElement): Record<string, string> {
         const styles: Record<string, string> = { ...resolveConsoleStyleSheet(element, this.styleSheetRules) };
+        // `v-show` toggles the semantic hidden state (class + native attribute)
+        // instead of writing inline styles; the terminal renderer honours the
+        // same contract so DOM and TUI hide exactly the same nodes.
+        if (element.getAttribute('hidden') != null || styles.display === 'none') {
+            styles.display = 'none';
+        }
         const styleDeclaration = element.style as ConsoleCssStyleDeclaration;
         if (styleDeclaration && typeof styleDeclaration.getProperties === 'function') {
             Object.assign(styles, styleDeclaration.getProperties());

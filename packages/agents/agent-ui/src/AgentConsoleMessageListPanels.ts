@@ -90,8 +90,8 @@ function messageRenderSignature(message: any): string {
     ],
     template: `
     <div class="console-panel console-messages-panel" renderRegion="messages" focusable [focused]="transcriptFocused">
-        <label class="message-empty" v-show="emptyLabel">{{emptyLabel}}</label>
-        <label class="message-hint" v-show="messagesHintLabel">{{messagesHintLabel}}</label>
+        <label class="message-empty" v-if="emptyLabel">{{emptyLabel}}</label>
+        <label class="message-hint" v-if="messagesHintLabel">{{messagesHintLabel}}</label>
         <div class="message-row" v-for="item in renderedMessageItems">
             <div [agentConsoleMessageOutlet]="item"></div>
         </div>

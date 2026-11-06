@@ -10,6 +10,9 @@ $error: var(--console-error, #cf9893);
 $notice: var(--console-notice, #c2a05e);
 $idle: var(--console-idle, #6fa37a);
 
+.is-hidden {
+    display: none;
+}
 .console-panel {
     color: $text;
 }
@@ -470,7 +473,7 @@ $idle: var(--console-idle, #6fa37a);
 .common-tab[aria-selected="true"] {
     color: $text;
 }
-.common-tab:not([aria-selected="true"]) {
+.common-tab[aria-selected="false"] {
     color: $meta;
 }
 .common-tab-close {

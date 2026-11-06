@@ -1,4 +1,7 @@
 /* Compiled from console.scss by scripts/build-console-styles.mjs. Do not edit. */
+.is-hidden {
+    display: none;
+}
 .console-panel {
     color: var(--console-text, #c9d1d9);
 }
@@ -458,7 +461,7 @@
 .common-tab[aria-selected="true"] {
     color: var(--console-text, #c9d1d9);
 }
-.common-tab:not([aria-selected="true"]) {
+.common-tab[aria-selected="false"] {
     color: var(--console-meta, #6e7681);
 }
 .common-tab-close {

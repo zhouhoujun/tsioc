@@ -29,7 +29,7 @@ interface AgentConsoleWebMarkdownSegment {
 
 const WEB_MARKDOWN_TEMPLATE = `
     <div class="message-block-spacing" v-if="spacerBefore">​</div>
-    <div class="message-markdown message-template-assistant" data-template-kind="{{templateKind}}" data-semantic-kind="{{semanticKind}}" data-status="{{item.statusKind}}" [style]="blockStyle">
+    <div class="message-markdown message-template-assistant" data-template-kind="{{templateKind}}" data-semantic-kind="{{semanticKind}}" data-status="{{item.statusKind}}" data-selected="{{item.selected}}" data-block-padded="{{item.blockPadding}}" data-spacer-before="{{item.spacerBefore}}">
         <div class="markdown-web-segment" v-for="segment in webSegments">
             <common-markdown-table v-if="segment.isTable" :header="segment.tableHeader" :rows="segment.tableRows"></common-markdown-table>
             <div class="web-code-block" v-if="segment.isCode">
@@ -40,13 +40,13 @@ const WEB_MARKDOWN_TEMPLATE = `
                 <common-markdown-code :lines="segment.codeData.lines || []"></common-markdown-code>
             </div>
             <div class="web-markdown-text" v-if="segment.isText">
-                <label class="message-line markdown-line" v-for="line in segment.lines" [style]="line.itemStyle" aria-label="{{line.ariaLabel}}" continuationIndent="{{line.continuationIndent}}" data-code="{{line.code}}" data-table="{{line.table}}">
-                    <span [style]="line.statusStyle">{{line.status}}</span>
-                    <span [style]="line.roleStyle" v-show="line.role">{{line.role}}</span>
-                    <span [style]="line.metaStyle" v-show="line.meta">{{line.meta}}</span>
-                    <span [style]="line.prefixStyle" v-show="line.prefix">{{line.prefix}}</span>
-                    <span [style]="line.lineStyle" v-if="!line.toggleContent || line.content !== line.toggleContent"><agent-console-routed-tokens :tokens="line.tokens"></agent-console-routed-tokens></span>
-                    <span class="message-detail-toggle" [style]="line.lineStyle" v-if="line.toggleContent" @click="toggleMessageDetail(line)">{{line.toggleContent}}</span>
+                <label class="message-line markdown-line" v-for="line in segment.lines" data-tone="{{line.tone}}" data-indent="{{line.continuationIndent}}" data-status-kind="{{line.statusKind}}" aria-label="{{line.ariaLabel}}" continuationIndent="{{line.continuationIndent}}" data-code="{{line.code}}" data-table="{{line.table}}">
+                    <span class="message-status">{{line.status}}</span>
+                    <span class="message-role" v-if="line.role">{{line.role}}</span>
+                    <span class="message-meta" v-if="line.meta">{{line.meta}}</span>
+                    <span class="message-prefix" v-if="line.prefix">{{line.prefix}}</span>
+                    <span class="message-body" v-if="!line.toggleContent || line.content !== line.toggleContent"><agent-console-routed-tokens :tokens="line.tokens"></agent-console-routed-tokens></span>
+                    <span class="message-detail-toggle" v-if="line.toggleContent" @click="toggleMessageDetail(line)">{{line.toggleContent}}</span>
                 </label>
             </div>
         </div>

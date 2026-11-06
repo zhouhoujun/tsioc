@@ -18,7 +18,6 @@ import { Attribute } from '../decorators/atteribute';
 })
 export class VShowDirective {
     private _hidden = false;
-    private _displayValue = '';
 
     constructor(
         private elementRef: ElementRef,
@@ -33,21 +32,16 @@ export class VShowDirective {
 
     private updateVisibility(visible: boolean) {
         const el = this.elementRef.nativeElement;
-        
+        // Toggle a semantic class instead of writing an inline `display` style.
+        // Browser and TUI stylesheets both define `.is-hidden`, so hidden
+        // elements no longer mix generated `style` attributes with class CSS.
         if (!visible) {
-            if (!this._displayValue) {
-                const style = el.getAttribute('style');
-                if (style) {
-                    const displayMatch = style.match(/display\s*:\s*([^;]+)/);
-                    if (displayMatch) {
-                        this._displayValue = displayMatch[1].trim();
-                    }
-                }
-            }
-            this.renderer.setStyle(el, 'display', 'none');
+            this.renderer.addClass(el, 'is-hidden');
+            this.renderer.setAttribute(el, 'hidden', '');
             this._hidden = true;
         } else {
-            this.renderer.setStyle(el, 'display', this._displayValue || '');
+            this.renderer.removeClass(el, 'is-hidden');
+            this.renderer.removeAttribute(el, 'hidden');
             this._hidden = false;
         }
     }

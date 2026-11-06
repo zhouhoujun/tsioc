@@ -38,6 +38,16 @@ export class SessionTabsTest {
             expect(bar).toContain('Beta');
             expect(bar).toContain('+');
             expect(bar).toContain('✕');
+            // Selected and inactive tabs must not share the same foreground
+            // colour: the TUI stylesheet cannot parse `:not(...)`, so inactive
+            // tabs are matched by `aria-selected="false"` instead.
+            const colorOf = (label: string): string => {
+                const match = new RegExp(`\\x1b\\[38;2;(\\d+);(\\d+);(\\d+)m${label}`).exec(String(bar));
+                return match ? `${match[1]},${match[2]},${match[3]}` : '';
+            };
+            expect(colorOf(' Alpha ')).not.toEqual('');
+            expect(colorOf(' Beta ')).not.toEqual('');
+            expect(colorOf(' Alpha ')).not.toEqual(colorOf(' Beta '));
             tabs.instance.select('session-b');
             tabs.instance.create();
             tabs.instance.close('session-b');

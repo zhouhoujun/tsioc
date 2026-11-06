@@ -3012,3 +3012,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 修复真实 TUI 完成后标题停在 `Working`：runtime 的 `turn_completed` 事件已把状态置为 idle，submit 的 finally 因“状态已不是 running”而跳过 `updateTerminalTitle()`；现在无论状态由哪一层收敛，finally 都会刷新终端标题。新增回归 `turn-complete-title.spec.ts`，真实 TUI 标题已从 `working` 收敛到 `idle`。
 - `/model` 等短时 notice 使用共享 `AnimationClock` 自动过期（`AgentConsoleNoticeExpiry`），不再只能等下一轮清除；新增 `notice-expiry.spec.ts`。
 - 回归：agent-ui 1971、agent-cli 133、source-size OK、`git diff --check` OK。
+- 修复 TUI 选中 tab 无样式：`components/console` 的 CSS 解析器不支持 `:not(...)`，未选中 tab 的 `:not([aria-selected="true"])` 被整条忽略；改为显式 `[aria-selected="false"]`，并新增真实 TUI ANSI 颜色回归（选中/未选中颜色必须不同）。
+- 去除 `/web` 浏览器中的大量内联 style：
+  - `AgentConsoleWebMarkdown` 移除全部 `[style]` 绑定，改为 `data-tone` / `data-indent` / `data-status-kind` / `data-block-padded` 等语义属性 + `web/console.css` 类样式；列表缩进、标题、状态色、代码/行内代码字体均由 class CSS 控制。
+  - `v-show` 从写内联 `display: none` 改为共享语义隐藏（`.is-hidden` + `hidden` 属性）；浏览器与 TUI 都按同一契约隐藏。
+  - 验证：挂载真实 Web Markdown 后整个 console DOM 的 `[style]` 数量为 0（隐藏节点使用 class/hidden），原为 102。
+- 回归：components 148、components/common 38、components/console 132、components/html 127、agent-ui 1971；`build:web`、source-size、`git diff --check` 均通过。

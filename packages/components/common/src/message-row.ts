@@ -14,16 +14,16 @@ export interface MessageToken {
     selector: 'message-row',
     template: `
     <label class="message-line" aria-label="{{ariaLabel}}" data-hover="{{hoverable || toggleContent ? 'fade' : 'none'}}" @click="toggle">
-        <span class="message-status" v-show="status">{{status}}</span>
-        <span class="message-role" v-show="role">{{role}}</span>
-        <span class="message-prefix" v-show="prefix">{{prefix}}</span>
+        <span class="message-status" v-if="status">{{status}}</span>
+        <span class="message-role" v-if="role">{{role}}</span>
+        <span class="message-prefix" v-if="prefix">{{prefix}}</span>
         <span class="message-line-content">
             <span class="message-content">
                 <span class="message-token tone-{{token.tone || 'default'}}" v-for="token in tokens">{{token.text}}</span>
             </span>
         </span>
         <span class="message-detail-toggle" v-if="toggleContent">{{toggleContent}}</span>
-        <span class="message-meta" v-show="meta">{{meta}}</span>
+        <span class="message-meta" v-if="meta">{{meta}}</span>
     </label>`
 })
 export class MessageRowComponent {
