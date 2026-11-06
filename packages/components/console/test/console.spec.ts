@@ -1922,6 +1922,80 @@ export class ConsoleRendererTest {
         }
     }
 
+    @Test('double click selects a token and triple click selects the row')
+    async multiClickSelection() {
+        const ctx = await Application.run(ConsoleViewportTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const ref = ctx.runners.getRef(ConsoleViewportTestComponent) as ComponentRef<ConsoleViewportTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const writes: string[] = [];
+            surface = new TuiTerminalSurface({
+                renderer,
+                root: ref.hostView.rootNodes[0] as ConsoleElement,
+                width: 40,
+                height: 8,
+                output: { write: (value: string) => writes.push(value) }
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+            const targetRow = surface.lastRenderedLines.findIndex(line => line.includes('transcript 28'));
+            expect(targetRow).toBeGreaterThanOrEqual(0);
+            const y = targetRow + 1;
+            surface.dispatchMouse({ button: 0, x: 3, y, release: false });
+            surface.dispatchMouse({ button: 0, x: 3, y, release: true });
+            surface.dispatchMouse({ button: 0, x: 3, y, release: false });
+            for (let index = 0; index < 10; index++) await Promise.resolve();
+            expect(surface.getTextSelectionText()).toEqual('transcript');
+            writes.length = 0;
+            expect(surface.dispatchMouse({ button: 2, x: 3, y, release: false })).toBe(true);
+            expect(writes.join('')).toContain('\x1b]52;c;');
+
+            surface.dispatchMouse({ button: 0, x: 3, y, release: true });
+            surface.dispatchMouse({ button: 0, x: 3, y, release: false });
+            for (let index = 0; index < 10; index++) await Promise.resolve();
+            expect(surface.getTextSelectionText()).toEqual('transcript 28');
+        } finally {
+            surface?.destroy();
+            await ctx.close();
+        }
+    }
+
+    @Test('dragging beyond the viewport edge auto-scrolls and extends the selection')
+    async edgeDragAutoScrollsSelection() {
+        const ctx = await Application.run(ConsoleViewportTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const ref = ctx.runners.getRef(ConsoleViewportTestComponent) as ComponentRef<ConsoleViewportTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            surface = new TuiTerminalSurface({
+                renderer,
+                root: ref.hostView.rootNodes[0] as ConsoleElement,
+                width: 40,
+                height: 8,
+                output: { write: () => undefined }
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+            expect(surface.scrollViewportToEdge('start')).toBe(true);
+            for (let index = 0; index < 10; index++) await Promise.resolve();
+            surface.dispatchMouse({ button: 0, x: 1, y: 1, release: false });
+            surface.dispatchMouse({ button: 32, x: 20, y: 12, release: false });
+            await new Promise(resolve => setTimeout(resolve, 240));
+            surface.dispatchMouse({ button: 0, x: 20, y: 8, release: true });
+            const text = surface.getTextSelectionText();
+            expect(text).toContain('transcript 01');
+            expect(text.split('\n').length).toBeGreaterThan(2);
+        } finally {
+            surface?.destroy();
+            await ctx.close();
+        }
+    }
+
     @Test('tui drag selects text without turning it into a click, and keyboard input clears it')
     async dragSelectsTextWithoutClick() {
         const ctx = await Application.run(ConsoleLoopTestComponent, {

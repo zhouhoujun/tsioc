@@ -1059,6 +1059,36 @@ function snapColumnToGlyph(value: string, column: number, edge: 'start' | 'end')
     return target;
 }
 
+/** Display-column span of the whitespace-delimited token containing a column. */
+function resolveWordColumnBounds(value: string, column: number): { start: number; end: number } | undefined {
+    const glyphs: Array<{ char: string; start: number; end: number }> = [];
+    let cursor = 0;
+    for (const char of value) {
+        const width = getDisplayWidth(char);
+        glyphs.push({ char, start: cursor, end: cursor + width });
+        cursor += width;
+    }
+    if (!glyphs.length) {
+        return undefined;
+    }
+    let index = glyphs.findIndex(glyph => column < glyph.end);
+    if (index < 0) {
+        index = glyphs.length - 1;
+    }
+    if (!/\S/.test(glyphs[index].char)) {
+        return { start: glyphs[index].start, end: glyphs[index].end };
+    }
+    let start = index;
+    while (start > 0 && /\S/.test(glyphs[start - 1].char)) {
+        start -= 1;
+    }
+    let end = index;
+    while (end + 1 < glyphs.length && /\S/.test(glyphs[end + 1].char)) {
+        end += 1;
+    }
+    return { start: glyphs[start].start, end: glyphs[end].end };
+}
+
 /** Wrap a display-column band in reverse video without resetting inner SGR. */
 function applyColumnReverse(value: string, startColumn: number, endColumn: number): string {
     const start = snapColumnToGlyph(value, startColumn, 'start');
@@ -1098,7 +1128,13 @@ export class TuiTerminalSurface {
     protected terminalRow = 0;
     protected clickTargetsCache: TerminalClickTarget[] = [];
     protected mousePress?: { x: number; y: number };
+    protected lastPointerClick?: { x: number; y: number; at: number; count: number };
+    protected suppressClickAfterMultiClick = false;
+    protected selectionScrollTimer?: ReturnType<typeof setTimeout>;
+    protected selectionScrollDirection = 0;
     protected viewportSourceRows: Array<number | undefined> = [];
+    /** Screen row range occupied by the scrollable transcript (viewport mode). */
+    protected viewportTranscriptRange?: { start: number; end: number };
     protected textSelection?: { anchorRow: number; anchorCol: number; focusRow: number; focusCol: number };
     protected mouseHandedOff = false;
     /** A native terminal selection may still exist after a handoff. */
@@ -1234,6 +1270,8 @@ export class TuiTerminalSurface {
         this.lastOverlayBands = undefined;
         this.terminalRow = 0;
         this.clickTargetsCache = [];
+        this.mousePress = undefined;
+        this.stopSelectionAutoScroll();
         this.scrollOffsetRows = 0;
         this.maxScrollOffsetRows = 0;
         this.scrollBox.reset();
@@ -1761,6 +1799,11 @@ export class TuiTerminalSurface {
         if (mouse.release) {
             const pressed = this.mousePress;
             this.mousePress = undefined;
+            this.stopSelectionAutoScroll();
+            if (this.suppressClickAfterMultiClick) {
+                this.suppressClickAfterMultiClick = false;
+                return false;
+            }
             if (!this.isPrimaryMouseRelease(mouse)) {
                 return false;
             }
@@ -1786,7 +1829,17 @@ export class TuiTerminalSurface {
             this.mousePress = undefined;
             return false;
         }
+        const clickCount = this.updateClickCount(mouse);
         this.mousePress = { x: mouse.x, y: mouse.y };
+        if (clickCount === 2 || clickCount === 3) {
+            this.suppressClickAfterMultiClick = true;
+            if (clickCount === 2) {
+                this.selectWordAt(mouse);
+            } else {
+                this.selectLineAt(mouse);
+            }
+            return false;
+        }
         if (this.textSelection) {
             this.textSelection = undefined;
             this.requestRender();
@@ -1898,14 +1951,103 @@ export class TuiTerminalSurface {
         }
     }
 
+    protected updateClickCount(mouse: SelectMenuMouseEvent): number {
+        const now = Date.now();
+        const x = Math.floor(mouse.x || 1);
+        const y = Math.floor(mouse.y || 1);
+        const previous = this.lastPointerClick;
+        const repeated = !!previous && now - previous.at <= 500
+            && previous.x === x && previous.y === y;
+        const count = repeated ? previous.count + 1 : 1;
+        this.lastPointerClick = { x, y, at: now, count: count >= 4 ? 1 : count };
+        return this.lastPointerClick.count;
+    }
+
+    /** Visible screen row range occupied by the scrollable transcript region. */
+    protected resolveTranscriptScreenRange(): { start: number; end: number } | undefined {
+        if (this.viewportTranscriptRange) {
+            return this.viewportTranscriptRange;
+        }
+        const regionId = this.options.scrollRegionId || 'transcript';
+        // Several panels can carry the transcript region (brand block and the
+        // message list); the selectable transcript is their union.
+        const regions = (this.selectionFrame?.regions || [])
+            .filter(item => item.id === regionId && item.endRow > item.startRow);
+        if (!regions.length) {
+            return undefined;
+        }
+        return {
+            start: Math.min(...regions.map(item => item.startRow)),
+            end: Math.max(...regions.map(item => item.endRow)) - 1
+        };
+    }
+
+    protected resolveVisibleSourceRow(y: number): number | undefined {
+        const screenRow = Math.floor((y || 1) - 1) - this.getTerminalRootStartRow();
+        const range = this.resolveTranscriptScreenRange();
+        if (range && (screenRow < range.start || screenRow > range.end)) {
+            return undefined;
+        }
+        return this.viewportSourceRows[screenRow];
+    }
+
+    /** Double click: select the whitespace-delimited token under the pointer. */
+    protected selectWordAt(mouse: SelectMenuMouseEvent): void {
+        const row = this.resolveVisibleSourceRow(mouse.y);
+        if (row === undefined) {
+            return;
+        }
+        const line = stripTerminalAnsi(this.lastFullLines[row] || '');
+        const bounds = resolveWordColumnBounds(line, Math.floor((mouse.x || 1) - 1));
+        if (!bounds) {
+            return;
+        }
+        this.textSelection = { anchorRow: row, anchorCol: bounds.start, focusRow: row, focusCol: bounds.end };
+        this.requestSelectionRender();
+    }
+
+    /** Triple click: select the whole rendered row. */
+    protected selectLineAt(mouse: SelectMenuMouseEvent): void {
+        const row = this.resolveVisibleSourceRow(mouse.y);
+        if (row === undefined) {
+            return;
+        }
+        const line = this.lastFullLines[row] || '';
+        this.textSelection = {
+            anchorRow: row,
+            anchorCol: 0,
+            focusRow: row,
+            focusCol: getDisplayWidth(stripTerminalAnsi(line))
+        };
+        this.requestSelectionRender();
+    }
+
     protected updateTextSelection(mouse: SelectMenuMouseEvent): void {
         const press = this.mousePress;
         if (!press) {
             return;
         }
         const rootStart = this.getTerminalRootStartRow();
-        const anchorScreenRow = Math.max(0, Math.floor((press.y || 1) - 1) - rootStart);
-        const focusScreenRow = Math.max(0, Math.floor((mouse.y || 1) - 1) - rootStart);
+        const visibleRows = this.viewportSourceRows.length;
+        const range = this.resolveTranscriptScreenRange();
+        const transcriptStart = range ? range.start : 0;
+        const transcriptEnd = range ? range.end : Math.max(0, visibleRows - 1);
+        const anchorScreenRow = Math.floor((press.y || 1) - 1) - rootStart;
+        if (anchorScreenRow < transcriptStart || anchorScreenRow > transcriptEnd) {
+            this.stopSelectionAutoScroll();
+            return;
+        }
+        const rawFocusScreenRow = Math.floor((mouse.y || 1) - 1) - rootStart;
+        let focusScreenRow = rawFocusScreenRow;
+        if (rawFocusScreenRow < transcriptStart) {
+            focusScreenRow = transcriptStart;
+            this.startSelectionAutoScroll(1);
+        } else if (rawFocusScreenRow > transcriptEnd) {
+            focusScreenRow = transcriptEnd;
+            this.startSelectionAutoScroll(-1);
+        } else {
+            this.stopSelectionAutoScroll();
+        }
         const anchorRow = this.viewportSourceRows[anchorScreenRow];
         const focusRow = this.viewportSourceRows[focusScreenRow];
         if (anchorRow === undefined || focusRow === undefined) {
@@ -1918,6 +2060,55 @@ export class TuiTerminalSurface {
             focusCol: Math.max(0, Math.floor((mouse.x || 1) - 1))
         };
         this.requestSelectionRender();
+    }
+
+    /** Keep extending the selection while the pointer rests beyond the viewport edge. */
+    protected startSelectionAutoScroll(direction: 1 | -1): void {
+        this.selectionScrollDirection = direction;
+        if (this.selectionScrollTimer || !this.mousePress) {
+            return;
+        }
+        const tick = (): void => {
+            this.selectionScrollTimer = undefined;
+            if (!this.selectionScrollDirection || !this.mousePress) {
+                this.stopSelectionAutoScroll();
+                return;
+            }
+            this.selectionScrollTimer = setTimeout(tick, 60);
+            (this.selectionScrollTimer as unknown as { unref?: () => void }).unref?.();
+            if (!this.scrollViewport(this.selectionScrollDirection)) {
+                this.stopSelectionAutoScroll();
+                return;
+            }
+            const range = this.resolveTranscriptScreenRange();
+            const visibleRows = this.viewportSourceRows.length;
+            const edgeScreenRow = this.selectionScrollDirection > 0
+                ? (range ? range.start : 0)
+                : (range ? range.end : Math.max(0, visibleRows - 1));
+            const row = this.viewportSourceRows[edgeScreenRow];
+            const selection = this.textSelection;
+            if (row === undefined || !selection) {
+                return;
+            }
+            const line = this.lastFullLines[row] || '';
+            this.textSelection = {
+                ...selection,
+                focusRow: row,
+                focusCol: this.selectionScrollDirection > 0 ? 0 : getDisplayWidth(stripTerminalAnsi(line))
+            };
+            this.requestSelectionRender();
+        };
+        this.selectionScrollTimer = setTimeout(tick, 60);
+        (this.selectionScrollTimer as unknown as { unref?: () => void }).unref?.();
+    }
+
+    protected stopSelectionAutoScroll(): void {
+        this.selectionScrollDirection = 0;
+        if (!this.selectionScrollTimer) {
+            return;
+        }
+        clearTimeout(this.selectionScrollTimer);
+        this.selectionScrollTimer = undefined;
     }
 
     protected applyTextSelection(lines: string[]): void {
@@ -2098,6 +2289,7 @@ export class TuiTerminalSurface {
         overlayBands?: Map<number, { start: number; end: number }>;
         sourceRows?: Array<number | undefined>;
     } {
+        this.viewportTranscriptRange = undefined;
         const nativeScrollback = typeof this.options.nativeScrollback === 'function'
             ? this.options.nativeScrollback()
             : this.options.nativeScrollback === true;
@@ -2370,6 +2562,12 @@ export class TuiTerminalSurface {
             if (startRow === undefined || endRow === undefined) return [];
             return [{ id: region.id, startRow, endRow: endRow + 1 }];
         });
+        if (visibleTranscript.length) {
+            this.viewportTranscriptRange = {
+                start: prefix.length + fillerRows,
+                end: prefix.length + fillerRows + visibleTranscript.length - 1
+            };
+        }
         const sourceRows: Array<number | undefined> = [
             ...prefix.map((_line, index) => index),
             ...Array.from({ length: fillerRows }, () => undefined as number | undefined),

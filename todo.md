@@ -3115,3 +3115,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 修复：新增 `snapColumnToGlyph`，选区起止列吸附到字形边缘（起点向前、终点向后），用于选区反显、hover 背景与复制文本；非宽字符行为不变。
   - 回归：components/console 新增宽字符选区用例（旧实现失败），console 138 passing；真实 PTY 选中后整行文本保持不变，复制结果包含边界汉字。
   - 浏览器端复核：原生选择过程中 transcript 无 DOM 变更、`scrollTop` 无跳变（Chrome 实测拖动 20 步）；如仍有抖动需按具体场景（流式输出中/缩放/滚动边界）继续定位。
+- TUI/Web 选区交互补齐（在宽字符抖动修复之后）：
+  - 双击选词（按空白分隔的 token，CJK 连续文本整体选中）、三击选整行；多击后的 release 不再触发底层行点击。
+  - 拖拽到 transcript 上下边缘时按 60ms 持续自动滚动并继续扩展选区；边缘范围按 transcript region/可见 transcript 行计算，header/footer 不计入选区。
+  - Web 控制台新增 `web-console/selection-anchor.ts`：把原生选区记录为 transcript 内的字符偏移，DOM 重渲染/流式更新导致选区丢失时自动恢复；pointerdown 开始新手势时清空快照，不抢用户的拖选。
+  - 回归：components/console 140 passing（新增多击、边缘自动滚动用例）；agent-ui 选区快照 3 用例（capture/restore、root 外忽略、重渲染后恢复）；真实 PTY：双击 band=`116`、三击整行、行文本不位移，边缘拖拽持续滚动。

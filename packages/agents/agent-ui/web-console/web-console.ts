@@ -31,6 +31,7 @@ import {
     sanitizeAgentConsoleSettings
 } from '@tsdi/agent-ui';
 import { AgentConsoleWebMarkdownComponent } from './AgentConsoleWebMarkdown';
+import { keepTranscriptSelection } from './selection-anchor';
 
 const CONSOLE_SECURITY_LEVELS = ['read-only', 'ask', 'auto', 'full'];
 
@@ -432,6 +433,9 @@ export async function mountAgentWebConsole(
     mount.addEventListener('contextmenu', onContextMenu);
 
     const transcriptPanel = resolveMessagesPanel();
+    const selectionKeeper = transcriptPanel
+        ? keepTranscriptSelection(transcriptPanel, doc)
+        : { dispose: () => undefined };
     let brandObserver: MutationObserver | null = null;
     const syncBrandVisibility = (): void => {
         const hasMessages = !!transcriptPanel?.querySelector('.message-row');
@@ -527,6 +531,7 @@ export async function mountAgentWebConsole(
             mount.removeEventListener('contextmenu', onContextMenu);
             indicator.removeEventListener('click', onIndicatorClick);
             unsubscribeToast();
+            selectionKeeper.dispose();
             toastService.clear();
             toast.remove();
             follower?.detach();
