@@ -1,6 +1,6 @@
-import { CommonSyntaxState } from '@tsdi/components/common';
+import { SyntaxState } from '@tsdi/components/common';
 import { renderMarkdownBlockLine } from './blocks';
-import { renderCodeLineTokens, resetCommonSyntaxState } from './code';
+import { renderCodeLineTokens, resetSyntaxState } from './code';
 import { AgentConsoleMarkdownLine, AgentConsoleMarkdownRenderOptions, AgentConsoleMarkdownToken, DEFAULT_MARKDOWN_TABLE_WIDTH } from './model';
 import { applyMarkdownBlockSpacing, compactMarkdownLines } from './spacing';
 import { normalizeMarkdownStructure } from './structure';
@@ -18,7 +18,7 @@ export function renderAgentConsoleMarkdownLines(
     const sourceLines = String(normalizedContent || '').replace(/\r/g, '').split('\n');
     const rendered: AgentConsoleMarkdownLine[] = [];
     const tableWidth = Math.max(24, Math.floor(Number(options.tableWidth) || DEFAULT_MARKDOWN_TABLE_WIDTH));
-    const codeState: CommonSyntaxState = {};
+    const codeState: SyntaxState = {};
     let inFence = false;
     let fenceLanguage = '';
     let codeBlockStart = -1;
@@ -49,7 +49,7 @@ export function renderAgentConsoleMarkdownLines(
                 codeBlockStart = rendered.length;
                 codeBlockLines.length = 0;
                 codeBlockTokenLines.length = 0;
-                resetCommonSyntaxState(codeState);
+                resetSyntaxState(codeState);
             } else {
                 fenceLanguage = '';
                 if (codeBlockStart >= 0 && rendered[codeBlockStart]) {

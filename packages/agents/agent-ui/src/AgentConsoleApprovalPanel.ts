@@ -1,7 +1,7 @@
 import { Attribute, Component } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
-import { resolveCommonListWindow as resolveConsoleListWindow } from '@tsdi/components/common';
+import { resolveListWindow as resolveConsoleListWindow } from '@tsdi/components/common';
 import { formatAgentConsoleApprovalInput } from './AgentConsoleApprovalInput';
 import { DIALOG_CLOSE_STYLE, menuShellStyle, resolvePanelThemeStyles } from './AgentConsolePanelStyles';
 import { AgentConsoleApprovalRequest, AgentConsoleSessionState } from './AgentConsoleSessionState';

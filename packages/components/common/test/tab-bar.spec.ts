@@ -3,7 +3,7 @@ import { Suite, Test } from '@tsdi/unit';
 import { TabBarComponent, TabBarSource } from '../src';
 
 @Suite('common tab bar')
-export class CommonTabBarTest {
+export class TabBarComponentTest {
     @Test('paints the source items and forwards tab selection/creation')
     forwardsHostActions() {
         const bar = new TabBarComponent();

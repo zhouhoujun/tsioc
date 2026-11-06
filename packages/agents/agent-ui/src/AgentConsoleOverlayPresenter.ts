@@ -228,7 +228,7 @@ export function composeOverlayLines(
     if (emptyState) {
         lines.push(fitByDisplayWidth(emptyState, maxWidth));
     } else {
-        // option rows: format mirrors formatCommonIndexedOptionLabel
+        // option rows: format mirrors formatIndexedOptionLabel
         // (' › N. label' when selected, else ' N. label')
         const labelColumnWidth = options.reduce((w, _opt, i) =>
             Math.max(w,
@@ -263,7 +263,7 @@ export function composeOverlayLines(
 
 /**
  * Resolve the TUI window start index given an option count, selected index,
- * and visible count — mirrors `resolveCommonSelectWindow` from
+ * and visible count — mirrors `resolveSelectWindow` from
  * `@tsdi/components/common` (used by AgentConsolePanels).
  */
 export function resolveOverlaySelectWindow(

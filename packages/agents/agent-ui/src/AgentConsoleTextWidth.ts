@@ -3,7 +3,7 @@
  * web console and dialog chrome all measure columns the same way.
  */
 export {
-    fillCommonTemplate,
+    fillTemplate,
     fitByDisplayWidth,
     getDisplayWidth,
     isWideCodePoint,

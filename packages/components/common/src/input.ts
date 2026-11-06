@@ -1,34 +1,34 @@
-export interface CommonSelectWindow {
+export interface SelectWindow {
     start: number;
     count: number;
 }
 
-export type CommonEnterAction = 'submit' | 'newline' | 'confirm-selection';
+export type EnterAction = 'submit' | 'newline' | 'confirm-selection';
 
-export interface CommonTextInputChunkOptions {
+export interface TextInputChunkOptions {
     submitOnEnter?: boolean;
     ctrlKey?: boolean;
     altKey?: boolean;
     hasSelectMenu?: boolean;
 }
 
-export interface CommonTextInputChunkResult {
+export interface TextInputChunkResult {
     value: string;
     cursor: number;
     shouldSubmit: boolean;
     shouldConfirmSelection: boolean;
 }
 
-export function clampCommonSelectIndex(length: number, selectedIndex: number): number {
+export function clampSelectIndex(length: number, selectedIndex: number): number {
     if (!Number.isFinite(length) || length <= 0) return 0;
     const index = Number.isFinite(selectedIndex) ? selectedIndex : 0;
     return Math.max(0, Math.min(length - 1, index));
 }
 
-export function resolveCommonSelectWindow(length: number, selectedIndex: number, visibleCount: number): CommonSelectWindow {
+export function resolveSelectWindow(length: number, selectedIndex: number, visibleCount: number): SelectWindow {
     const count = Number.isFinite(visibleCount) && visibleCount > 0 ? Math.floor(visibleCount) : 0;
     if (!Number.isFinite(length) || length <= 0 || count <= 0) return { start: 0, count: 0 };
-    const selected = clampCommonSelectIndex(length, selectedIndex);
+    const selected = clampSelectIndex(length, selectedIndex);
     if (length <= count) return { start: 0, count: length };
     return {
         start: Math.max(0, Math.min(length - count, selected - Math.floor(count / 2))),
@@ -36,19 +36,19 @@ export function resolveCommonSelectWindow(length: number, selectedIndex: number,
     };
 }
 
-export const resolveCommonListWindow = resolveCommonSelectWindow;
+export const resolveListWindow = resolveSelectWindow;
 
-export function formatCommonIndexedOptionLabel(index: number, label: string, selected = false): string {
+export function formatIndexedOptionLabel(index: number, label: string, selected = false): string {
     return `${selected ? '›' : ' '} ${index + 1}. ${label}`;
 }
 
-export function clampCommonTextCursor(value: string, cursor: number): number {
+export function clampTextCursor(value: string, cursor: number): number {
     const text = String(value || '');
     const index = Number.isFinite(cursor) ? cursor : text.length;
     return Math.max(0, Math.min(text.length, index));
 }
 
-export function shouldSkipCommonHistoryEntry(value: string): boolean {
+export function shouldSkipHistoryEntry(value: string): boolean {
     const text = String(value || '').trimStart();
     return !!text && text.startsWith('/');
 }
@@ -61,7 +61,7 @@ export function shouldSkipCommonHistoryEntry(value: string): boolean {
  * newlines would be dropped and the lines concatenated. The console renderer
  * has an equivalent helper for its own input pipeline.
  */
-export function shouldSubmitCommonTextInputChunk(chunk: Uint8Array | string): boolean {
+export function shouldSubmitTextInputChunk(chunk: Uint8Array | string): boolean {
     const text = typeof chunk === 'string' ? chunk : new TextDecoder().decode(chunk);
     if (!text || text === '\u001b\r' || text === '\u001b\n') {
         return false;
@@ -84,24 +84,24 @@ export function shouldSubmitCommonTextInputChunk(chunk: Uint8Array | string): bo
     return /^[\r\n]+$/.test(trailing);
 }
 
-export function processCommonTextInputChunk(
+export function processTextInputChunk(
     value: string,
     cursor: number,
     chunk: Uint8Array | string,
-    options: CommonTextInputChunkOptions = {}
-): CommonTextInputChunkResult {
+    options: TextInputChunkOptions = {}
+): TextInputChunkResult {
     const text = typeof chunk === 'string' ? chunk : new TextDecoder().decode(chunk);
     let nextValue = String(value || '');
-    let nextCursor = clampCommonTextCursor(nextValue, cursor);
+    let nextCursor = clampTextCursor(nextValue, cursor);
     let shouldSubmit = false;
     let shouldConfirmSelection = false;
-    const enterAction = resolveCommonEnterAction({
+    const enterAction = resolveEnterAction({
         ctrlKey: options.ctrlKey,
         altKey: options.altKey || text === '\u001b\r' || text === '\u001b\n',
         hasSelectMenu: options.hasSelectMenu
     });
     for (let index = 0; index < text.length;) {
-        const escape = consumeCommonEscapeSequence(nextValue, nextCursor, text, index);
+        const escape = consumeEscapeSequence(nextValue, nextCursor, text, index);
         if (escape) {
             nextValue = escape.value;
             nextCursor = escape.cursor;
@@ -144,18 +144,18 @@ export function processCommonTextInputChunk(
     return { value: nextValue, cursor: nextCursor, shouldSubmit, shouldConfirmSelection };
 }
 
-interface CommonEscapeConsumption {
+interface EscapeConsumption {
     value: string;
     cursor: number;
     nextIndex: number;
 }
 
-function consumeCommonEscapeSequence(
+function consumeEscapeSequence(
     value: string,
     cursor: number,
     text: string,
     index: number
-): CommonEscapeConsumption | undefined {
+): EscapeConsumption | undefined {
     if (text[index] !== '\u001b') {
         return undefined;
     }
@@ -186,12 +186,12 @@ function consumeCommonEscapeSequence(
     return { value, cursor, nextIndex: index + 1 };
 }
 
-export function resolveCommonEnterAction(options: { ctrlKey?: boolean; altKey?: boolean; hasSelectMenu?: boolean } = {}): CommonEnterAction {
+export function resolveEnterAction(options: { ctrlKey?: boolean; altKey?: boolean; hasSelectMenu?: boolean } = {}): EnterAction {
     if (options.ctrlKey || options.altKey) return 'newline';
     return options.hasSelectMenu ? 'confirm-selection' : 'submit';
 }
 
-export function buildCommonBrandBlock(width: number, appTitle = 'TSDI Agent', model = '', workspace = '', version = ''): string[] {
+export function buildBrandBlock(width: number, appTitle = 'TSDI Agent', model = '', workspace = '', version = ''): string[] {
     const title = version ? `${appTitle.toUpperCase()} v${version}` : appTitle.toUpperCase();
     const meta = [String(model || '').trim(), String(workspace || '').trim()].filter(Boolean).join(' · ');
     const innerWidth = Math.max(8, Math.min(Math.max(8, Math.floor(width) - 2), Math.max(title.length, meta.length, 8)));
@@ -204,7 +204,7 @@ export function buildCommonBrandBlock(width: number, appTitle = 'TSDI Agent', mo
     return [`╭${'─'.repeat(innerWidth)}╮`, fit(title, true), fit(meta), `╰${'─'.repeat(innerWidth)}╯`];
 }
 /** Split `/command args` into stable command and argument parts. */
-export function parseCommonSlashCommandLine(input: string): { raw: string; command: string; args: string } {
+export function parseSlashCommandLine(input: string): { raw: string; command: string; args: string } {
     const raw = String(input || '').trim();
     if (!raw.startsWith('/')) {
         return { raw, command: raw, args: '' };

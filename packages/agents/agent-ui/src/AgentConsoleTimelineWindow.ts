@@ -12,7 +12,7 @@
 
 import type { AgentMessage } from '@tsdi/agent';
 import { formatAgentUiTime, type AgentUiTranslator } from './agent-ui.i18n';
-import { fillCommonTemplate, getDisplayWidth, sliceByDisplayWidth, truncateByDisplayWidth } from './AgentConsoleTextWidth';
+import { fillTemplate, getDisplayWidth, sliceByDisplayWidth, truncateByDisplayWidth } from './AgentConsoleTextWidth';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -126,7 +126,7 @@ export function classifyItem(
 }
 
 export function fillTimelineLabel(template: string | undefined, vars: Record<string, string | number>): string {
-    return fillCommonTemplate(template, vars);
+    return fillTemplate(template, vars);
 }
 
 /** Max display width (CJK/emoji double-width aware) for the single-line session header/footer row (P291). */

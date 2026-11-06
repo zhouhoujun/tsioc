@@ -1,8 +1,8 @@
 import {
-    CommonSyntaxTokenKind,
-    CommonSyntaxState,
-    normalizeCommonCodeLanguage,
-    tokenizeCommonCodeLine
+    SyntaxTokenKind,
+    SyntaxState,
+    normalizeCodeLanguage,
+    tokenizeCodeLine
 } from '@tsdi/components/common';
 
 /**
@@ -31,7 +31,7 @@ export interface TerminalCodeHighlightState {
 
 const RESET = '\x1b[0m';
 
-const THEME_KEYS: Record<Exclude<CommonSyntaxTokenKind, 'plain'>, keyof TerminalCodeTheme> = {
+const THEME_KEYS: Record<Exclude<SyntaxTokenKind, 'plain'>, keyof TerminalCodeTheme> = {
     keyword: 'keyword',
     string: 'string',
     number: 'number',
@@ -45,7 +45,7 @@ const THEME_KEYS: Record<Exclude<CommonSyntaxTokenKind, 'plain'>, keyof Terminal
     function: 'function'
 };
 
-export { normalizeCommonCodeLanguage as normalizeTerminalCodeLanguage };
+export { normalizeCodeLanguage as normalizeTerminalCodeLanguage };
 
 export function highlightTerminalCodeLine(
     line: string,
@@ -53,7 +53,7 @@ export function highlightTerminalCodeLine(
     theme: TerminalCodeTheme,
     state: TerminalCodeHighlightState = {}
 ): string {
-    const tokens = tokenizeCommonCodeLine(line, language, state as CommonSyntaxState);
+    const tokens = tokenizeCodeLine(line, language, state as SyntaxState);
     return tokens.map(token => {
         if (token.kind === 'plain' || !token.text) {
             return token.text;

@@ -7,27 +7,27 @@ import {
     ListPanelComponent,
     MessageRowComponent,
     SelectComponent,
-    fillCommonTemplate,
-    formatCommonIndexedOptionLabel,
-    processCommonTextInputChunk,
-    resolveCommonSelectWindow,
-    shouldSkipCommonHistoryEntry,
-    shouldSubmitCommonTextInputChunk,
+    fillTemplate,
+    formatIndexedOptionLabel,
+    processTextInputChunk,
+    resolveSelectWindow,
+    shouldSkipHistoryEntry,
+    shouldSubmitTextInputChunk,
     truncateByDisplayWidth
 } from '../src';
 
 @Suite('common component utilities')
-export class CommonComponentUtilitiesTest {
+export class ComponentUtilitiesTest {
     @Test('resolves stable select windows')
     selectWindow() {
-        expect(resolveCommonSelectWindow(10, 8, 4)).toEqual({ start: 6, count: 4 });
+        expect(resolveSelectWindow(10, 8, 4)).toEqual({ start: 6, count: 4 });
     }
 
 
     @Test('fills placeholder templates without touching unknown keys')
     fillTemplate() {
-        expect(fillCommonTemplate('{count} files in {name}', { count: 2, name: 'src' })).toEqual('2 files in src');
-        expect(fillCommonTemplate('{count} / {missing}', { count: 1 })).toEqual('1 / {missing}');
+        expect(fillTemplate('{count} files in {name}', { count: 2, name: 'src' })).toEqual('2 files in src');
+        expect(fillTemplate('{count} / {missing}', { count: 1 })).toEqual('1 / {missing}');
     }
 
     @Test('truncates by display width with an ellipsis')
@@ -40,51 +40,51 @@ export class CommonComponentUtilitiesTest {
 
     @Test('formats indexed labels')
     indexedLabel() {
-        expect(formatCommonIndexedOptionLabel(1, 'two', true)).toEqual('› 2. two');
+        expect(formatIndexedOptionLabel(1, 'two', true)).toEqual('› 2. two');
     }
 
     @Test('processes enter actions without platform APIs')
     inputChunk() {
-        expect(processCommonTextInputChunk('go', 2, '\r').shouldSubmit).toBeTruthy();
-        expect(processCommonTextInputChunk('go', 2, '\r', { hasSelectMenu: true }).shouldConfirmSelection).toBeTruthy();
+        expect(processTextInputChunk('go', 2, '\r').shouldSubmit).toBeTruthy();
+        expect(processTextInputChunk('go', 2, '\r', { hasSelectMenu: true }).shouldConfirmSelection).toBeTruthy();
     }
 
     @Test('handles backspace delete and cursor sequences')
     textEditing() {
-        expect(processCommonTextInputChunk('abcd', 4, '\u007f').value).toEqual('abc');
-        expect(processCommonTextInputChunk('abcd', 1, '\u001b[3~').value).toEqual('acd');
-        const moved = processCommonTextInputChunk('abcd', 4, '\u001b[D');
+        expect(processTextInputChunk('abcd', 4, '\u007f').value).toEqual('abc');
+        expect(processTextInputChunk('abcd', 1, '\u001b[3~').value).toEqual('acd');
+        const moved = processTextInputChunk('abcd', 4, '\u001b[D');
         expect(moved.cursor).toEqual(3);
         expect(moved.value).toEqual('abcd');
     }
 
     @Test('consumes batched escape sequences without leaking literal bytes')
     batchedEscapeSequences() {
-        expect(processCommonTextInputChunk('', 0, '\u001b[A\u001b[A\u001b[A')).toEqual({
+        expect(processTextInputChunk('', 0, '\u001b[A\u001b[A\u001b[A')).toEqual({
             value: '',
             cursor: 0,
             shouldSubmit: false,
             shouldConfirmSelection: false
         });
-        expect(processCommonTextInputChunk('', 0, '\u001b[5~\u001b[5~')).toEqual({
+        expect(processTextInputChunk('', 0, '\u001b[5~\u001b[5~')).toEqual({
             value: '',
             cursor: 0,
             shouldSubmit: false,
             shouldConfirmSelection: false
         });
-        expect(processCommonTextInputChunk('abc', 3, '\u001b[D\u001b[D')).toEqual({
+        expect(processTextInputChunk('abc', 3, '\u001b[D\u001b[D')).toEqual({
             value: 'abc',
             cursor: 1,
             shouldSubmit: false,
             shouldConfirmSelection: false
         });
-        expect(processCommonTextInputChunk('', 0, 'ab\u001b[Ac\u001b[A').value).toEqual('abc');
+        expect(processTextInputChunk('', 0, 'ab\u001b[Ac\u001b[A').value).toEqual('abc');
     }
 
     @Test('filters command history entries')
     history() {
-        expect(shouldSkipCommonHistoryEntry(' /help')).toBeTruthy();
-        expect(shouldSkipCommonHistoryEntry('hello')).toBeFalsy();
+        expect(shouldSkipHistoryEntry(' /help')).toBeTruthy();
+        expect(shouldSkipHistoryEntry('hello')).toBeFalsy();
     }
 
     @Test('sizes dialog chrome from content and bounds')
@@ -129,28 +129,28 @@ export class CommonComponentUtilitiesTest {
     @Test('only bare trailing-newline chunks submit on enter')
     submitDetection() {
         // Embedded newlines must not submit (multi-line paste).
-        expect(shouldSubmitCommonTextInputChunk('first\nsecond')).toBeFalsy();
-        expect(shouldSubmitCommonTextInputChunk('first\r\nsecond')).toBeFalsy();
-        expect(shouldSubmitCommonTextInputChunk('first\nsecond\n')).toBeFalsy();
+        expect(shouldSubmitTextInputChunk('first\nsecond')).toBeFalsy();
+        expect(shouldSubmitTextInputChunk('first\r\nsecond')).toBeFalsy();
+        expect(shouldSubmitTextInputChunk('first\nsecond\n')).toBeFalsy();
         // A bare Enter (or a line followed by Enter) submits.
-        expect(shouldSubmitCommonTextInputChunk('\r')).toBeTruthy();
-        expect(shouldSubmitCommonTextInputChunk('\n')).toBeTruthy();
-        expect(shouldSubmitCommonTextInputChunk('text\n')).toBeTruthy();
-        expect(shouldSubmitCommonTextInputChunk('text\r')).toBeTruthy();
+        expect(shouldSubmitTextInputChunk('\r')).toBeTruthy();
+        expect(shouldSubmitTextInputChunk('\n')).toBeTruthy();
+        expect(shouldSubmitTextInputChunk('text\n')).toBeTruthy();
+        expect(shouldSubmitTextInputChunk('text\r')).toBeTruthy();
         // Empty / no-newline / alt-enter chunks never submit on enter.
-        expect(shouldSubmitCommonTextInputChunk('')).toBeFalsy();
-        expect(shouldSubmitCommonTextInputChunk('\u001b\r')).toBeFalsy();
-        expect(shouldSubmitCommonTextInputChunk('\u001b\n')).toBeFalsy();
+        expect(shouldSubmitTextInputChunk('')).toBeFalsy();
+        expect(shouldSubmitTextInputChunk('\u001b\r')).toBeFalsy();
+        expect(shouldSubmitTextInputChunk('\u001b\n')).toBeFalsy();
     }
 
     @Test('preserves multi-line paste newlines instead of joining them')
     multilinePaste() {
-        const pasted = processCommonTextInputChunk('', 0, 'line1\nline2', { submitOnEnter: false });
+        const pasted = processTextInputChunk('', 0, 'line1\nline2', { submitOnEnter: false });
         expect(pasted.value).toEqual('line1\nline2');
         expect(pasted.shouldSubmit).toBeFalsy();
 
         // A plain Enter still submits and is not inserted into the value.
-        const entered = processCommonTextInputChunk('go', 2, '\r', { submitOnEnter: true });
+        const entered = processTextInputChunk('go', 2, '\r', { submitOnEnter: true });
         expect(entered.value).toEqual('go');
         expect(entered.shouldSubmit).toBeTruthy();
     }

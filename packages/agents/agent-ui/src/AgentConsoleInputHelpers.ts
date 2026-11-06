@@ -1,4 +1,4 @@
-export { parseCommonSlashCommandLine as parseSlashCommandLine } from '@tsdi/components/common';
+export { parseSlashCommandLine as parseSlashCommandLine } from '@tsdi/components/common';
 
 export async function handleMenuSelection(state: any, handleCommand: (value: string) => Promise<any>, value: string): Promise<void> {
     const selected = String(value || '').trim();

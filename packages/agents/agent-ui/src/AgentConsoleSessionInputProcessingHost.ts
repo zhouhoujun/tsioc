@@ -5,7 +5,7 @@ import { handleJobsFocusedKey, handleTasksFocusedKey, handleToolRunsFocusedKey, 
 import { processDecodedInput } from './AgentConsoleDecodedInputState';
 import type { AgentConsoleInputHistoryController } from './AgentConsoleInputHistory';
 import type { ConsoleTextChunk, ConsoleTextInputChunkOptions, ConsoleTextInputChunkResult } from './console-ports';
-import { clampCommonTextCursor, processCommonTextInputChunk } from '@tsdi/components/common';
+import { clampTextCursor, processTextInputChunk } from '@tsdi/components/common';
 
 /** Focus-key routing and raw/decoded input processing facade. */
 export abstract class AgentConsoleSessionInputProcessingHost extends AgentConsoleSessionMetaHost {
@@ -97,7 +97,7 @@ export abstract class AgentConsoleSessionInputProcessingHost extends AgentConsol
     }
 
     clampCursor(value: string, cursor: number): number {
-        return clampCommonTextCursor(value, cursor);
+        return clampTextCursor(value, cursor);
     }
 
     formatStatusFooter(model: string, profile: string, workspace: string): string {
@@ -111,7 +111,7 @@ export abstract class AgentConsoleSessionInputProcessingHost extends AgentConsol
         chunk: Uint8Array | string,
         options?: ConsoleTextInputChunkOptions
     ): ConsoleTextInputChunkResult {
-        return processCommonTextInputChunk(value, cursor, chunk, options);
+        return processTextInputChunk(value, cursor, chunk, options);
     }
 
     updateDraft(draft: string, cursor?: number): void {

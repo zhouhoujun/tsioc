@@ -1,4 +1,4 @@
-import { CommonSyntaxState, tokenizeCommonCodeLine } from '@tsdi/components/common';
+import { SyntaxState, tokenizeCodeLine } from '@tsdi/components/common';
 import type { AgentConsoleMarkdownToken, AgentConsoleMarkdownTone } from './model';
 
 /**
@@ -21,14 +21,14 @@ const SYNTAX_TONES = {
     function: 'syntax-function'
 } as const;
 
-export function renderCodeLineTokens(line: string, language: string, state: CommonSyntaxState): AgentConsoleMarkdownToken[] {
-    const tokens = tokenizeCommonCodeLine(line, language, state);
+export function renderCodeLineTokens(line: string, language: string, state: SyntaxState): AgentConsoleMarkdownToken[] {
+    const tokens = tokenizeCodeLine(line, language, state);
     return tokens.map(token => ({
         text: token.text,
         tone: token.kind === 'plain' ? 'code' : SYNTAX_TONES[token.kind]
     }));
 }
 
-export function resetCommonSyntaxState(state: CommonSyntaxState): void {
+export function resetSyntaxState(state: SyntaxState): void {
     state.blockComment = false;
 }

@@ -134,7 +134,7 @@ newline-JSON transport, allowlist gate and dynamic tool path end to end.
 | `23b2ea8d4` | agent `model/OpenAICompatibleModelAdapter.ts` | A stream interruption was not degraded/retried based on un-emitted body, and the reasoning phase showed no status. |
 | `7a1961a57` / `d7ad4bbb7` | agent `prompt/sections/IdentitySection.ts` | The prompt forced `ask_user` / a `git diff` check in non-git workspaces. |
 | `acd3ad623` | components `common/src/input.ts`, `console/src/input.ts`, `console/src/terminal.ts` | Terminal escape sequences were consumed non-atomically and batched keys were not tokenized. |
-| `05369cbda` / `f191b5b05` | components `console/src/terminal.ts`, `common/src/input.ts` | Enabled bracketed paste; added `shouldSubmitCommonTextInputChunk`. |
+| `05369cbda` / `f191b5b05` | components `console/src/terminal.ts`, `common/src/input.ts` | Enabled bracketed paste; added `shouldSubmitTextInputChunk`. |
 | `79698f110` | agent-ssh `src/ssh-client.ts` | `knownHosts: 'strict'` never accepted any host: `loadKnownHosts` only kept lines whose third column was literally `sha256`, and it compared a SHA256 fingerprint against the stored public key. Now parses real `known_hosts` lines and compares the key. |
 | `7348ca435` | agent-desktop `src/desktop-html.ts` | The window title was interpolated raw into `<title>`; a `</title>` broke out and injected markup. Now HTML-escaped. |
 

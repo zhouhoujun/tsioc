@@ -7,7 +7,7 @@
  * adding a native dependency to the renderers.
  */
 
-export type CommonSyntaxTokenKind =
+export type SyntaxTokenKind =
     | 'plain'
     | 'keyword'
     | 'string'
@@ -21,16 +21,16 @@ export type CommonSyntaxTokenKind =
     | 'attribute'
     | 'function';
 
-export interface CommonSyntaxToken {
+export interface SyntaxToken {
     text: string;
-    kind: CommonSyntaxTokenKind;
+    kind: SyntaxTokenKind;
 }
 
-export interface CommonSyntaxState {
+export interface SyntaxState {
     blockComment?: boolean;
 }
 
-interface CommonSyntaxProfile {
+interface SyntaxProfile {
     keywords: Set<string>;
     types?: Set<string>;
     constants?: Set<string>;
@@ -191,7 +191,7 @@ const ALIASES: Record<string, string> = {
     make: 'makefile', mk: 'makefile'
 };
 
-function createProfile(language: string): CommonSyntaxProfile {
+function createProfile(language: string): SyntaxProfile {
     switch (language) {
         case 'python':
             return { keywords: PYTHON_KEYWORDS, constants: PYTHON_CONSTANTS, lineComments: ['#'], strings: ['"', "'"], tripleStrings: ['"""', "'''"] };
@@ -251,9 +251,9 @@ function createProfile(language: string): CommonSyntaxProfile {
     }
 }
 
-const PROFILE_CACHE = new Map<string, CommonSyntaxProfile>();
+const PROFILE_CACHE = new Map<string, SyntaxProfile>();
 
-function profileFor(language: string): CommonSyntaxProfile {
+function profileFor(language: string): SyntaxProfile {
     const cached = PROFILE_CACHE.get(language);
     if (cached) {
         return cached;
@@ -269,7 +269,7 @@ function profileFor(language: string): CommonSyntaxProfile {
     return profile;
 }
 
-export function normalizeCommonCodeLanguage(language: string): string {
+export function normalizeCodeLanguage(language: string): string {
     const value = String(language || '').trim().toLowerCase().replace(/^language-/, '');
     return ALIASES[value] || value || 'javascript';
 }
@@ -280,10 +280,10 @@ function isWordChar(value: string): boolean {
 }
 
 class TokenSink {
-    readonly tokens: CommonSyntaxToken[] = [];
+    readonly tokens: SyntaxToken[] = [];
     private plain = '';
 
-    push(text: string, kind: CommonSyntaxTokenKind = 'plain'): void {
+    push(text: string, kind: SyntaxTokenKind = 'plain'): void {
         if (!text) {
             return;
         }
@@ -295,7 +295,7 @@ class TokenSink {
         this.tokens.push({ text, kind });
     }
 
-    finish(): CommonSyntaxToken[] {
+    finish(): SyntaxToken[] {
         this.flush();
         return this.tokens.length ? this.tokens : [{ text: '', kind: 'plain' }];
     }
@@ -309,7 +309,7 @@ class TokenSink {
     }
 }
 
-function tokenizeMarkupLine(source: string, state: CommonSyntaxState): CommonSyntaxToken[] {
+function tokenizeMarkupLine(source: string, state: SyntaxState): SyntaxToken[] {
     const sink = new TokenSink();
     let index = 0;
     while (index < source.length) {
@@ -375,12 +375,12 @@ function tokenizeMarkupLine(source: string, state: CommonSyntaxState): CommonSyn
  * Callers keep the `state` object between lines so block comments and other
  * multi-line constructs stay highlighted across a fenced code block.
  */
-export function tokenizeCommonCodeLine(
+export function tokenizeCodeLine(
     line: string,
     language: string,
-    state: CommonSyntaxState = {}
-): CommonSyntaxToken[] {
-    const profile = profileFor(normalizeCommonCodeLanguage(language));
+    state: SyntaxState = {}
+): SyntaxToken[] {
+    const profile = profileFor(normalizeCodeLanguage(language));
     const source = String(line || '');
     if (profile.markup) {
         return tokenizeMarkupLine(source, state);

@@ -54,16 +54,16 @@ import { DIALOG_CLOSE_STYLE, menuShellStyle, resolvePanelThemeStyles, resolveSec
 import { AgentConsoleStatuslineField } from './AgentConsoleStatusline';
 import { DEFAULT_TIMELINE_LABELS, resolveTimelineWindowLedger, TimelineWindowMode } from './AgentConsoleTimelineWindow';
 import {
-    buildCommonBrandBlock as buildTerminalBrandBlock,
+    buildBrandBlock as buildTerminalBrandBlock,
     DialogComponent,
     DetailPanelComponent,
     InputFieldComponent,
     ListPanelComponent,
     MessageRowComponent,
     SelectComponent,
-    resolveCommonEnterAction as resolveConsoleEnterAction,
-    resolveCommonListWindow as resolveConsoleListWindow,
-    resolveCommonSelectWindow as resolveConsoleSelectWindow
+    resolveEnterAction as resolveConsoleEnterAction,
+    resolveListWindow as resolveConsoleListWindow,
+    resolveSelectWindow as resolveConsoleSelectWindow
 } from '@tsdi/components/common';
 import { messageItemsCache } from './AgentConsoleMessageCache';
 

@@ -1,4 +1,4 @@
-import { shouldSkipCommonHistoryEntry } from './input';
+import { shouldSkipHistoryEntry } from './input';
 
 export interface InputHistoryStatePort {
     input: string;
@@ -69,7 +69,7 @@ export abstract class InputHistoryController {
     }
 
     shouldSkip(entry: string): boolean {
-        return shouldSkipCommonHistoryEntry(entry);
+        return shouldSkipHistoryEntry(entry);
     }
 }
 

@@ -1,7 +1,7 @@
 import { getDisplayWidth, sliceByDisplayWidth } from './display-width';
 
 /** Renderer-neutral `{name}` interpolation used by labels and panel copy. */
-export function fillCommonTemplate(template: string | undefined, vars: Record<string, string | number>): string {
+export function fillTemplate(template: string | undefined, vars: Record<string, string | number>): string {
     return String(template || '').replace(/\{(\w+)\}/g, (_, key: string) =>
         key in vars ? String(vars[key]) : `{${key}}`
     );

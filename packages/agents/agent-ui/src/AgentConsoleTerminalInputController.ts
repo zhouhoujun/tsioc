@@ -1,5 +1,5 @@
 import type { ConsoleTextChunk, SelectMenuMouseEvent, TerminalInputSequenceResult } from './console-ports';
-import { shouldSubmitCommonTextInputChunk } from '@tsdi/components/common';
+import { shouldSubmitTextInputChunk } from '@tsdi/components/common';
 import type { AgentConsoleSelectOption } from './AgentConsoleSessionState';
 import { AGENT_CONSOLE_OVERLAY_HINTS, AGENT_CONSOLE_OVERLAY_TITLES } from './AgentConsoleOverlayPresenter';
 import { formatAgentUiLabel, formatAgentUiSessionClosingMessage, formatAgentUiNotice } from './agent-ui.i18n';
@@ -262,7 +262,7 @@ export async function handleTerminalInputView(
     // submitted. Decide per **decoded item**: the decoder splits a trailing
     // Enter/Tab off the text run, so the original chunk would otherwise mark
     // the text item as "submit on Enter" and bypass the `/`/`@` menu.
-    const submitOnEnter = shouldSubmitCommonTextInputChunk(decoded.text || rawChunk);
+    const submitOnEnter = shouldSubmitTextInputChunk(decoded.text || rawChunk);
     const outcome = await host.state.processDecodedInput(decoded, chunk, {
         isClosed: host.destroyed,
         onExit: () => {

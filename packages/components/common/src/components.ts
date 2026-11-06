@@ -19,7 +19,7 @@ import { MessageRowComponent } from './message-row';
 import { DetailPanelComponent } from './detail-panel';
 import { InputFieldComponent } from './input-field';
 
-interface CommonProjectionNode extends RNode {
+interface ProjectionNode extends RNode {
     tagName?: string;
     textContent?: string | null;
     [PROJECTION_NODES]?: RNode[];
@@ -79,23 +79,23 @@ export class PanelComponent {
     protected collectProjectionSlot(tagName: string): string[] {
         const lines: string[] = [];
         this.resolveProjectedContent()
-            .filter(node => String((node as CommonProjectionNode).tagName || '').toLowerCase() === tagName)
+            .filter(node => String((node as ProjectionNode).tagName || '').toLowerCase() === tagName)
             .forEach(node => this.collectContentText(node, lines));
         return lines;
     }
     protected resolveProjectedContent(): RNode[] {
-        const nodes = (this.elementRef?.nativeElement as CommonProjectionNode | undefined)?.[PROJECTION_NODES];
+        const nodes = (this.elementRef?.nativeElement as ProjectionNode | undefined)?.[PROJECTION_NODES];
         return nodes?.length ? nodes : [];
     }
     protected collectContentText(node: RNode | null | undefined, lines: string[]): void {
         if (!node) return;
         if (node.nodeType === NodeType.Text || node.nodeType === NodeType.Comment) {
-            String((node as CommonProjectionNode).textContent || '').split('\n').map(line => line.trim()).filter(Boolean).forEach(line => lines.push(line));
+            String((node as ProjectionNode).textContent || '').split('\n').map(line => line.trim()).filter(Boolean).forEach(line => lines.push(line));
             return;
         }
         const children = node.childNodes;
         if (children?.length) children.forEach(child => this.collectContentText(child, lines));
-        else String((node as CommonProjectionNode).textContent || '').split('\n').map(line => line.trim()).filter(Boolean).forEach(line => lines.push(line));
+        else String((node as ProjectionNode).textContent || '').split('\n').map(line => line.trim()).filter(Boolean).forEach(line => lines.push(line));
     }
 }
 

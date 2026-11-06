@@ -3088,3 +3088,5 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - CSS/模板 class 同步改为 `select-*`、`list-panel-*`、`tab-*`、`dialog-*`、`alert-*`、`markdown-*`；`default-styles.generated.ts` 由 console 样式脚本重新生成。
   - 类型/Token 去除 Common 前缀：`SelectOption`、`ListPanelItem`、`TabItem`/`TabBarSource`/`TAB_BAR_SOURCE`、`MarkdownToken`/`MarkdownTableCell`、`ToastService`/`Toast*`、`InputHistoryController`。
   - 回归：components/common 43、components/console 136、components/html 128、agent-ui 1979、tsc、build:web、source-size、diff-check 通过。
+- common 包进一步去掉剩余 `Common*` 公共命名：`SelectWindow`、`EnterAction`、`TextInputChunk*`、`clampSelectIndex`、`resolveSelectWindow`、`resolveListWindow`、`formatIndexedOptionLabel`、`clampTextCursor`、`shouldSkipHistoryEntry`、`shouldSubmitTextInputChunk`、`processTextInputChunk`、`resolveEnterAction`、`buildBrandBlock`、`parseSlashCommandLine`、`SyntaxToken*`/`SyntaxState`、`normalizeCodeLanguage`/`tokenizeCodeLine`、`fillTemplate`；agent-ui/console 的导入与 re-export 同步更新。
+- 回归：components/common 43、components/console 136、components/html 128、agent-ui 1979、tsc、build:web、source-size、diff-check 通过。
