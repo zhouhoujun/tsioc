@@ -3122,3 +3122,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 回归：components/console 140 passing（新增多击、边缘自动滚动用例）；agent-ui 选区快照 3 用例（capture/restore、root 外忽略、重渲染后恢复）；真实 PTY：双击 band=`116`、三击整行、行文本不位移，边缘拖拽持续滚动。
 - 简化默认 options 注册：12 个 channel 模块与 `agent-tools` 模块中 `provider(injector) { if (injector.has(token)) return; ... }` 统一改为 `{ provide: token, useValue: default, asDefault: true }`（`@tsdi/ioc` 的 `ProviderExts.asDefault` 原生支持“已存在则不覆盖”），行为不变。
   - 回归：agent-channels 59 passing、agent-tools 582 passing、全量 gate 26 passed / 1 skipped、PTY acceptance 11/11。
+- 选区滚动与短距离拖选修复（真实 TUI 复现）：
+  - `PageUp/PageDown` 属于滚动键，不再经过 `notifyNonMouseInput` 清空文字选区（新增 `keepSelection` 选项）；滚动后选区仍按源行锚定，复制内容不变。
+  - 修正 PageUp/PageDown 方向：视口滚动 API 正数表示向更旧内容；此前 `message-page-up` 与 decoded-input 两条路径都传反，PageUp 反而滚向最新。两条路径统一为 PageUp=+10、PageDown=-10，并修正既有 P322 断言。
+  - 拖选阈值从 3 列降到 1 列：1–2 列的短拖选不再被当成点击（此前短选不可能），release 也不会触发行点击。
+  - 回归：components/console 新增“滚动保留选区”“单列拖选”用例；agent-ui 新增 PageUp/PageDown 方向用例；真实 TUI：PageUp 72→62 且选区三行高亮保留，PageDown 回滚，复制文本一致。
+- TUI 输入框补齐 opencode 风格编辑键：
+  - Shift+Enter / Ctrl+Enter（kitty CSI-u、xterm modifyOtherKeys）插入换行而不是提交。
+  - Ctrl+A/E 行首/行尾、Ctrl+K/U 删除到行尾/行首、Ctrl+W/Alt+Backspace 删除前一词、Ctrl+Left/Right 按词移动、Ctrl+Backspace 删除前一词。
+  - 退格/Delete 按字素删除（emoji/代理对不再被切成半个）。
+  - 回归：components/common 45 passing（readline 编辑、字素删除、词边界）、components/console 142 passing（解码器新序列）、真实 TUI 逐键验证。

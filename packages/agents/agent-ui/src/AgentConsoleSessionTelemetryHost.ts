@@ -10,7 +10,10 @@ import {
     appendPendingAttachment as appendPendingAttachmentInState,
     clearPendingAttachments as clearPendingAttachmentsInState,
     moveInputCursor as moveInputCursorInState,
+    moveInputCursorByWord as moveInputCursorByWordInState,
     moveInputCursorToEdge as moveInputCursorToEdgeInState,
+    deleteInputWord as deleteInputWordInState,
+    killInputToEdge as killInputToEdgeInState,
     setInput as setInputInState,
     setInputCursor as setInputCursorInState,
     setInputPlaceholder as setInputPlaceholderInState,
@@ -121,6 +124,9 @@ export abstract class AgentConsoleSessionTelemetryHost extends AgentConsoleSessi
     setInputCursor(cursor: number): void { setInputCursorInState(this.self(), cursor); }
     moveInputCursor(delta: number): void { moveInputCursorInState(this.self(), delta); }
     moveInputCursorToEdge(position: 'start' | 'end'): void { moveInputCursorToEdgeInState(this.self(), position); }
+    moveInputCursorByWord(delta: number): void { moveInputCursorByWordInState(this.self(), delta); }
+    deleteInputWord(direction: -1 | 1): void { deleteInputWordInState(this.self(), direction); }
+    killInputToEdge(edge: 'start' | 'end'): void { killInputToEdgeInState(this.self(), edge); }
     setMessagesFocused(focused: boolean): void { setMessagesFocusedInState(this.self(), focused); }
     setTranscriptFollowProvider(provider?: () => boolean): void { setTranscriptFollowProviderInState(this.self(), provider); }
     syncTranscriptFollowing(): void { syncTranscriptFollowingInState(this.self()); }

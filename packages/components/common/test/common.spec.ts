@@ -9,6 +9,8 @@ import {
     SelectComponent,
     fillTemplate,
     formatIndexedOptionLabel,
+    nextWordEnd,
+    previousWordStart,
     processTextInputChunk,
     resolveSelectWindow,
     shouldSkipHistoryEntry,
@@ -56,6 +58,30 @@ export class ComponentUtilitiesTest {
         const moved = processTextInputChunk('abcd', 4, '\u001b[D');
         expect(moved.cursor).toEqual(3);
         expect(moved.value).toEqual('abcd');
+    }
+
+    @Test('supports readline editing keys and grapheme deletion')
+    readlineEditing() {
+        expect(processTextInputChunk('abcd', 4, '\u0001').cursor).toEqual(0);
+        expect(processTextInputChunk('abcd', 0, '\u0005').cursor).toEqual(4);
+        expect(processTextInputChunk('abcd', 2, '\u000b').value).toEqual('ab');
+        const killStart = processTextInputChunk('abcd', 2, '\u0015');
+        expect(killStart.value).toEqual('cd');
+        expect(killStart.cursor).toEqual(0);
+        expect(processTextInputChunk('alpha beta', 10, '\u0017').value).toEqual('alpha ');
+        expect(processTextInputChunk('alpha beta', 10, '\u001b\u007f').value).toEqual('alpha ');
+        const emoji = processTextInputChunk('a\u{1F600}', 3, '\u007f');
+        expect(emoji.value).toEqual('a');
+        expect(emoji.cursor).toEqual(1);
+        expect(processTextInputChunk('a\u{1F600}b', 1, '\u001b[3~').value).toEqual('ab');
+    }
+
+    @Test('resolves word boundaries for composer navigation')
+    wordBoundaries() {
+        expect(previousWordStart('alpha beta', 10)).toEqual(6);
+        expect(previousWordStart('alpha beta  ', 12)).toEqual(6);
+        expect(nextWordEnd('alpha beta', 0)).toEqual(5);
+        expect(nextWordEnd('alpha   beta', 5)).toEqual(12);
     }
 
     @Test('consumes batched escape sequences without leaking literal bytes')

@@ -1963,6 +1963,59 @@ export class ConsoleRendererTest {
         }
     }
 
+    @Test('a one-cell drag selects text instead of clicking')
+    async oneCellDragSelects() {
+        const lines = ['alpha beta', 'second row'];
+        const root = { addEventListener() {}, removeEventListener() {} } as any;
+        const surface = new TuiTerminalSurface({
+            renderer: { renderToTuiLayout: () => ({ lines, regions: [] }) },
+            root,
+            width: 40,
+            height: 5,
+            nativeScrollback: false,
+            scrollViewport: false,
+            output: { write: () => undefined }
+        });
+        surface.render();
+        surface.dispatchMouse({ button: 0, x: 2, y: 1, release: false });
+        surface.dispatchMouse({ button: 32, x: 3, y: 1, release: false });
+        for (let index = 0; index < 10; index++) await Promise.resolve();
+        expect(surface.getTextSelectionText()).toEqual('l');
+        expect(surface.dispatchMouse({ button: 0, x: 3, y: 1, release: true })).toBe(false);
+        expect(surface.getTextSelectionText()).toEqual('l');
+        surface.destroy();
+    }
+
+    @Test('page scrolling keeps an active text selection')
+    async pageScrollKeepsSelection() {
+        const lines = ['alpha beta', 'second row'];
+        const root = { addEventListener() {}, removeEventListener() {} } as any;
+        const surface = new TuiTerminalSurface({
+            renderer: { renderToTuiLayout: () => ({ lines, regions: [] }) },
+            root,
+            width: 40,
+            height: 5,
+            nativeScrollback: false,
+            scrollViewport: false,
+            output: { write: () => undefined }
+        });
+        surface.render();
+        surface.dispatchMouse({ button: 0, x: 2, y: 1, release: false });
+        surface.dispatchMouse({ button: 32, x: 8, y: 1, release: false });
+        for (let index = 0; index < 10; index++) await Promise.resolve();
+        const before = surface.getTextSelectionText();
+        expect(before).not.toEqual('');
+
+        surface.notifyNonMouseInput({ keepSelection: true });
+        for (let index = 0; index < 10; index++) await Promise.resolve();
+        expect(surface.getTextSelectionText()).toEqual(before);
+
+        surface.notifyNonMouseInput();
+        for (let index = 0; index < 10; index++) await Promise.resolve();
+        expect(surface.getTextSelectionText()).toEqual('');
+        surface.destroy();
+    }
+
     @Test('dragging beyond the viewport edge auto-scrolls and extends the selection')
     async edgeDragAutoScrollsSelection() {
         const ctx = await Application.run(ConsoleViewportTestComponent, {

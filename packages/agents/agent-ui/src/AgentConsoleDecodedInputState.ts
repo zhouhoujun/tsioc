@@ -49,12 +49,14 @@ import { resolveTranscriptLayout } from './AgentConsoleTranscriptLayout';
         if (controlKey === 'pageup' || controlKey === 'pagedown') {
             const layout = resolveTranscriptLayout(state.consoleOptions.messageLayout);
             if (layout.ownsHistoryScroll || layout.wheelScrollsHistory || layout.mode === 'viewport') {
-                const delta = controlKey === 'pageup' ? -1 : 1;
+                // Surface rows: positive scrolls toward older content (PageUp).
+                // Navigation fallback keeps its own -1 = up convention.
+                const direction = controlKey === 'pageup' ? -1 : 1;
                 // Page keys scroll the viewport; focusing messages here showed
                 // the selection hint/colors on a harmless scroll.
-                if (state.scrollTranscriptAction) { state.scrollTranscriptAction(delta * 10); state.syncTranscriptFollowing(); return { handled: true, action: 'transcriptScroll', value: controlKey }; }
+                if (state.scrollTranscriptAction) { state.scrollTranscriptAction(-direction * 10); state.syncTranscriptFollowing(); return { handled: true, action: 'transcriptScroll', value: controlKey }; }
                 const nav = options.transcriptNavigationController as any;
-                if (nav && typeof nav.scrollPage === 'function') nav.scrollPage(delta); else nav.scroll(delta);
+                if (nav && typeof nav.scrollPage === 'function') nav.scrollPage(direction); else nav.scroll(direction);
                 return { handled: true, action: 'transcriptScroll', value: controlKey };
             }
             return { handled: false };
@@ -134,6 +136,44 @@ import { resolveTranscriptLayout } from './AgentConsoleTranscriptLayout';
         }
         if (rawText === '\u001b\r' || rawText === '\u001b\n') {
             return { handled: true, action: 'altNewline' };
+        }
+
+        // Shift/Ctrl/Alt+Enter (kitty CSI-u, xterm modifyOtherKeys) insert a
+        // newline instead of submitting, matching the browser composer.
+        if (controlKey === 'newline') {
+            return { handled: true, action: 'altNewline' };
+        }
+        if (controlKey === 'word-left' || controlKey === 'word-right') {
+            if (state.focusLayers.shouldRouteDraftNavigation(options.hasActiveTextPrompt)) {
+                return { handled: true, action: 'wordNavigation', value: controlKey };
+            }
+            return { handled: true };
+        }
+        if (controlKey === 'delete-word-left' || controlKey === 'delete-word-right') {
+            if (state.focusLayers.shouldRouteDraftNavigation(options.hasActiveTextPrompt)) {
+                return { handled: true, action: 'deleteWord', value: controlKey };
+            }
+            return { handled: true };
+        }
+        if (controlKey === 'kill-line-end' || controlKey === 'kill-line-start') {
+            if (state.focusLayers.shouldRouteDraftNavigation(options.hasActiveTextPrompt)) {
+                return {
+                    handled: true,
+                    action: 'killLine',
+                    value: controlKey === 'kill-line-start' ? 'start' : 'end'
+                };
+            }
+            return { handled: true };
+        }
+        if (controlKey === 'line-start' || controlKey === 'line-end') {
+            if (state.focusLayers.shouldRouteDraftNavigation(options.hasActiveTextPrompt)) {
+                return {
+                    handled: true,
+                    action: 'draftNavigation',
+                    value: controlKey === 'line-start' ? 'start' : 'end'
+                };
+            }
+            return { handled: true };
         }
 
         if (options.hasActiveTextPrompt && !controlKey && (rawText.includes('\r') || rawText.includes('\n'))) {

@@ -1,4 +1,5 @@
 import type { ConsoleTextChunk, SelectMenuMouseEvent, TerminalInputSequenceResult } from './console-ports';
+import { handleComposerEditingAction } from './AgentConsoleComposerEditing';
 import { shouldSubmitTextInputChunk } from '@tsdi/components/common';
 import type { AgentConsoleSelectOption } from './AgentConsoleSessionState';
 import { AGENT_CONSOLE_OVERLAY_HINTS, AGENT_CONSOLE_OVERLAY_TITLES } from './AgentConsoleOverlayPresenter';
@@ -50,6 +51,9 @@ export interface AgentConsoleTerminalInputHost {
         ): Promise<{ submitted: boolean; confirmedSelection: boolean }>;
         moveInputCursor(delta: number): void;
         moveInputCursorToEdge(position: 'start' | 'end'): void;
+        moveInputCursorByWord(delta: number): void;
+        deleteInputWord(direction: -1 | 1): void;
+        killInputToEdge(edge: 'start' | 'end'): void;
         openSelectMenu(title: string, options: AgentConsoleSelectOption[], selectedIndex?: number, hint?: string, kind?: string): void;
         setMessageDetailVisibleLines(value: number): void;
         selectMenuAction?: ((value: string | undefined) => void | Promise<void>) | undefined;
@@ -59,7 +63,7 @@ export interface AgentConsoleTerminalInputHost {
     commandPaletteQuery: string;
     sshShell: { write(raw: string): void } | null;
     surfaceAccessor?: {
-        notifyNonMouseInput?(): void;
+        notifyNonMouseInput?(options?: { keepSelection?: boolean }): void;
         stopTerminal?(): void;
         writeRawTerminalData?(data: string): void;
         getTerminalSize?(): { columns?: number; cols?: number; rows?: number };
@@ -216,7 +220,10 @@ export async function handleTerminalInputView(
     if (decoded.partial) {
         return;
     }
-    host.surfaceAccessor?.notifyNonMouseInput?.();
+    // Page scrolling is not text input: keep an active text selection while
+    // the user reads older rows instead of silently clearing the highlight.
+    const scrollOnlyKey = decoded.controlKey === 'pageup' || decoded.controlKey === 'pagedown';
+    host.surfaceAccessor?.notifyNonMouseInput?.({ keepSelection: scrollOnlyKey });
     if (host.state.isSshShellActive && host.sshShell) {
         const raw = typeof chunk === 'string' ? chunk : chunk.toString();
         if (raw === SSH_SHELL_DETACH_SEQUENCE) {
@@ -313,22 +320,11 @@ export async function handleTerminalInputView(
             // text into the composer ("gammagamma").
             return;
         case 'draftNavigation':
-            switch (outcome.value) {
-                case 'left':
-                    host.state.moveInputCursor(-1);
-                    return;
-                case 'right':
-                    host.state.moveInputCursor(1);
-                    return;
-                case 'home':
-                    host.state.moveInputCursorToEdge('start');
-                    return;
-                case 'end':
-                    host.state.moveInputCursorToEdge('end');
-                    return;
-                default:
-                    return;
-            }
+        case 'wordNavigation':
+        case 'deleteWord':
+        case 'killLine':
+            handleComposerEditingAction(host, outcome.action, outcome.value);
+            return;
         case 'altNewline':
             releaseTranscriptFocusForTextInput(host, '\n');
             await host.state.processRawChunk('\n', {

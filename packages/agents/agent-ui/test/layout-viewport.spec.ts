@@ -205,6 +205,25 @@ export class AgentConsoleViewportLayoutTest {
         expect(state.messagesFocused).toEqual(true);
     }
 
+    @Test('PageUp scrolls toward older rows and PageDown toward newer rows')
+    async pageKeysScrollInTheRightDirection() {
+        const state = new AgentConsoleSessionState();
+        state.setConsoleOptions({ messageLayout: 'viewport' });
+        state.setMessages(fiveMessages());
+        const rows: number[] = [];
+        state.scrollTranscriptAction = (value: number) => { rows.push(value); return true; };
+        const nav = navigationFor(state);
+        const options = {
+            isClosed: false,
+            onExit: () => undefined,
+            hasActiveTextPrompt: false,
+            transcriptNavigationController: nav
+        };
+        await state.processDecodedInput({ text: '', controlKey: 'pageup', partial: false }, '', options);
+        await state.processDecodedInput({ text: '', controlKey: 'pagedown', partial: false }, '', options);
+        expect(rows).toEqual([10, -10]);
+    }
+
     @Test('scrollback layout ignores transcript scroll')
     scrollbackScrollIsNoop() {        const state = new AgentConsoleSessionState();
         state.setConsoleOptions({ messageLayout: 'scrollback' });

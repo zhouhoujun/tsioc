@@ -48,6 +48,69 @@ export function clampTextCursor(value: string, cursor: number): number {
     return Math.max(0, Math.min(text.length, index));
 }
 
+/** Index before the grapheme ending at `cursor` (surrogate/emoji safe). */
+export function previousGraphemeIndex(value: string, cursor: number): number {
+    const text = String(value || '');
+    const index = clampTextCursor(text, cursor);
+    if (index <= 0) {
+        return 0;
+    }
+    const Segmenter = (Intl as any).Segmenter;
+    if (typeof Segmenter === 'function') {
+        let start = 0;
+        for (const part of new Segmenter(undefined, { granularity: 'grapheme' }).segment(text.slice(0, index))) {
+            start = part.index;
+        }
+        return start;
+    }
+    const code = text.codePointAt(index - 1);
+    return code != null && code > 0xffff ? index - 2 : index - 1;
+}
+
+/** Index after the grapheme starting at `cursor` (surrogate/emoji safe). */
+export function nextGraphemeIndex(value: string, cursor: number): number {
+    const text = String(value || '');
+    const index = clampTextCursor(text, cursor);
+    if (index >= text.length) {
+        return text.length;
+    }
+    const Segmenter = (Intl as any).Segmenter;
+    if (typeof Segmenter === 'function') {
+        for (const part of new Segmenter(undefined, { granularity: 'grapheme' }).segment(text.slice(index))) {
+            return index + part.segment.length;
+        }
+        return text.length;
+    }
+    const code = text.codePointAt(index);
+    return code != null && code > 0xffff ? index + 2 : index + 1;
+}
+
+/** Start of the word before `cursor` (skips trailing whitespace first). */
+export function previousWordStart(value: string, cursor: number): number {
+    const text = String(value || '');
+    let index = clampTextCursor(text, cursor);
+    while (index > 0 && /\s/.test(text[index - 1])) {
+        index -= 1;
+    }
+    while (index > 0 && !/\s/.test(text[index - 1])) {
+        index -= 1;
+    }
+    return index;
+}
+
+/** End of the word after `cursor` (skips leading whitespace first). */
+export function nextWordEnd(value: string, cursor: number): number {
+    const text = String(value || '');
+    let index = clampTextCursor(text, cursor);
+    while (index < text.length && /\s/.test(text[index])) {
+        index += 1;
+    }
+    while (index < text.length && !/\s/.test(text[index])) {
+        index += 1;
+    }
+    return index;
+}
+
 export function shouldSkipHistoryEntry(value: string): boolean {
     const text = String(value || '').trimStart();
     return !!text && text.startsWith('/');
@@ -101,6 +164,13 @@ export function processTextInputChunk(
         hasSelectMenu: options.hasSelectMenu
     });
     for (let index = 0; index < text.length;) {
+        if (text.startsWith('\u001b\u007f', index) || text.startsWith('\u001b\b', index)) {
+            const start = previousWordStart(nextValue, nextCursor);
+            nextValue = `${nextValue.slice(0, start)}${nextValue.slice(nextCursor)}`;
+            nextCursor = start;
+            index += 2;
+            continue;
+        }
         const escape = consumeEscapeSequence(nextValue, nextCursor, text, index);
         if (escape) {
             nextValue = escape.value;
@@ -126,10 +196,23 @@ export function processTextInputChunk(
             continue;
         }
         if (char === '\u007f' || char === '\b') {
-            if (nextCursor > 0) {
-                nextValue = `${nextValue.slice(0, nextCursor - 1)}${nextValue.slice(nextCursor)}`;
-                nextCursor -= 1;
+            const start = previousGraphemeIndex(nextValue, nextCursor);
+            if (start < nextCursor) {
+                nextValue = `${nextValue.slice(0, start)}${nextValue.slice(nextCursor)}`;
+                nextCursor = start;
             }
+            index += 1;
+            continue;
+        }
+        // Emacs-style composer editing (TUI terminals send these as raw C0).
+        if (char === '\u0001') { nextCursor = 0; index += 1; continue; }
+        if (char === '\u0005') { nextCursor = nextValue.length; index += 1; continue; }
+        if (char === '\u000b') { nextValue = nextValue.slice(0, nextCursor); index += 1; continue; }
+        if (char === '\u0015') { nextValue = nextValue.slice(nextCursor); nextCursor = 0; index += 1; continue; }
+        if (char === '\u0017') {
+            const start = previousWordStart(nextValue, nextCursor);
+            nextValue = `${nextValue.slice(0, start)}${nextValue.slice(nextCursor)}`;
+            nextCursor = start;
             index += 1;
             continue;
         }
@@ -167,8 +250,9 @@ function consumeEscapeSequence(
         if (final === 'H') return { value, cursor: 0, nextIndex: index + 3 };
         if (final === 'F') return { value, cursor: value.length, nextIndex: index + 3 };
         if (final === '3' && text[index + 3] === '~') {
-            const nextValue = cursor < value.length
-                ? `${value.slice(0, cursor)}${value.slice(cursor + 1)}`
+            const end = nextGraphemeIndex(value, cursor);
+            const nextValue = end > cursor
+                ? `${value.slice(0, cursor)}${value.slice(end)}`
                 : value;
             return { value: nextValue, cursor, nextIndex: index + 4 };
         }

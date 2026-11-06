@@ -68,7 +68,7 @@ export class AgentConsoleRevealScrollTest {
 
             const component: any = consoleRef.instance;
             await component.handleGlobalKeyInput('\u001b[5~');
-            expect(viewportScrolls).toEqual([-10]);
+            expect(viewportScrolls).toEqual([10]);
             expect(scrolled).toEqual([]);
 
             consoleRef.instance.sessionState.setMessagesFocused(true);

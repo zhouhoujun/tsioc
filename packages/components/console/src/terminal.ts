@@ -411,7 +411,7 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     /** Mark the next frame as a prepend so the visible history row is preserved. */
     notifyViewportPrepend?(): void { return undefined; }
     isViewportFollowing?(): boolean | undefined { return undefined; }
-    abstract notifyNonMouseInput?(): boolean;
+    abstract notifyNonMouseInput?(options?: { keepSelection?: boolean }): boolean;
     abstract writeTerminalClipboardText(text: string): boolean;
     abstract writeRawTerminalData?(text: string): boolean;
     abstract resetTerminalRenderState?(): boolean;
@@ -756,8 +756,8 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
         return this.surface?.pagerBackspace() ?? 0;
     }
 
-    notifyNonMouseInput?(): boolean {
-        return this.surface?.notifyNonMouseInput() ?? false;
+    notifyNonMouseInput?(options?: { keepSelection?: boolean }): boolean {
+        return this.surface?.notifyNonMouseInput(options) ?? false;
     }
 
     writeTerminalClipboardText(text: string): boolean {
@@ -2243,8 +2243,8 @@ export class TuiTerminalSurface {
         return outermost;
     }
 
-    notifyNonMouseInput(): boolean {
-        if (this.textSelection) {
+    notifyNonMouseInput(options: { keepSelection?: boolean } = {}): boolean {
+        if (this.textSelection && !options.keepSelection) {
             this.textSelection = undefined;
             this.requestRender();
         }
@@ -2831,8 +2831,17 @@ export type TerminalInputControlKey =
     | 'pageup'
     | 'pagedown'
     | 'return'
+    | 'newline'
     | 'escape'
-    | 'tab';
+    | 'tab'
+    | 'word-left'
+    | 'word-right'
+    | 'delete-word-left'
+    | 'delete-word-right'
+    | 'line-start'
+    | 'line-end'
+    | 'kill-line-end'
+    | 'kill-line-start';
 
 export interface TerminalInputSequenceResult {
     text: string;
@@ -2945,6 +2954,26 @@ export function parseTerminalInputControlKey(input: ConsoleTextChunk): TerminalI
     if (text === '\u001b') {
         return 'escape';
     }
+    const csiU = /^\u001b\[(\d+)(?:;(\d+))?u$/.exec(text);
+    if (csiU) {
+        return resolveModifiedKey(Number(csiU[1]), Number(csiU[2] || 1));
+    }
+    const modifyOtherKeys = /^\u001b\[27;(\d+);(\d+)~$/.exec(text);
+    if (modifyOtherKeys) {
+        return resolveModifiedKey(Number(modifyOtherKeys[2]), Number(modifyOtherKeys[1]));
+    }
+    if (/^\u001b\[1;[3579]D$/.test(text)) {
+        return 'word-left';
+    }
+    if (/^\u001b\[1;[3579]C$/.test(text)) {
+        return 'word-right';
+    }
+    if (text === '\u001b[127;5u' || text === '\u001b[127;3u' || text === '\u001b[8;5u' || text === '\u001b[8;3u') {
+        return 'delete-word-left';
+    }
+    if (text === '\u001b[3;5~' || text === '\u001b[3;3~') {
+        return 'delete-word-right';
+    }
     if (text === '\u001b[A' || text === '\u001bOA' || /^\u001b\[\d+(;\d+)*A$/.test(text)) {
         return 'up';
     }
@@ -2970,6 +2999,35 @@ export function parseTerminalInputControlKey(input: ConsoleTextChunk): TerminalI
         return 'pagedown';
     }
     return undefined;
+}
+
+/**
+ * Resolve kitty CSI-u / xterm modifyOtherKeys input.
+ *
+ * Enter with any modifier inserts a newline (Shift+Enter / Ctrl+Enter), and
+ * Ctrl/Alt+A/E/K/U/W map to the familiar readline editing actions.
+ */
+function resolveModifiedKey(code: number, modifier: number): TerminalInputControlKey | undefined {
+    const mod = Number.isFinite(modifier) && modifier > 0 ? modifier : 1;
+    const ctrl = ((mod - 1) & 4) !== 0;
+    const alt = ((mod - 1) & 2) !== 0;
+    if (code === 13) {
+        return mod > 1 ? 'newline' : 'return';
+    }
+    if (code === 127 || code === 8) {
+        return ctrl || alt ? 'delete-word-left' : undefined;
+    }
+    if (!ctrl && !alt) {
+        return undefined;
+    }
+    switch (code) {
+        case 97: return 'line-start';
+        case 101: return 'line-end';
+        case 107: return 'kill-line-end';
+        case 117: return 'kill-line-start';
+        case 119: return 'delete-word-left';
+        default: return undefined;
+    }
 }
 
 function isPartialTerminalInputSequence(text: string): boolean {
@@ -3223,7 +3281,7 @@ function easeHoverProgress(progress: number, timing: string): number {
     }
 }
 
-export const TUI_MOUSE_DRAG_THRESHOLD = 3;
+export const TUI_MOUSE_DRAG_THRESHOLD = 1;
 // How long the surface keeps mouse tracking disabled after a selection handoff
 // so a native click can terminate the selection before tracking is reclaimed.
 // In-flight drag-tail reports extend this window; keyboard input reclaims sooner.

@@ -45,7 +45,7 @@ export async function executeGlobalKeyActionView(
         if (!host.state.focusLayers.hasMessageFocus()
             && host.state.messageLayout !== 'scrollback'
             && host.state.scrollTranscriptAction) {
-            host.state.scrollTranscriptAction(-10);
+            host.state.scrollTranscriptAction(10);
             return true;
         }
         if (!host.state.focusLayers.hasMessageFocus()) {
@@ -58,7 +58,7 @@ export async function executeGlobalKeyActionView(
         if (!host.state.focusLayers.hasMessageFocus()
             && host.state.messageLayout !== 'scrollback'
             && host.state.scrollTranscriptAction) {
-            host.state.scrollTranscriptAction(10);
+            host.state.scrollTranscriptAction(-10);
             return true;
         }
         host.transcriptNavigationController.movePage(1);

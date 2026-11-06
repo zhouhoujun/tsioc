@@ -56,7 +56,7 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     pagerTypeChar?(char: string): number;
     pagerBackspace?(): number;
     writeRawTerminalData?(data: string): void;
-    notifyNonMouseInput?(): void;
+    notifyNonMouseInput?(options?: { keepSelection?: boolean }): void;
     stopTerminal?(): void;
     getTerminalSize?(): { columns?: number; cols?: number; rows: number };
     /** Terminal rows actually available for scrollable content (excludes rendered chrome rows). */
