@@ -3053,3 +3053,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 真实 TUI 系统构建任务（`npm run chat -- --workspace /home/zhouyou/workspace/sleep-mlt`）：生成 `ticketing-system`（tickets/queue/sla + 3 个测试文件），真实 `node --test ticketing-system/test/*.test.js`：23 passing、0 failing。
 - 将新的 `@tsdi/components/forms` 用于真实复杂数据提交验证：provider wizard 的 base URL、credential、模型步骤与最终提交统一通过 `FormGroup`/`Validators`/`FormControl` 校验；新增 provider-wizard-form 回归，原有 provider 实时模型流程保持通过。
 - 回归：agent-ui 1975、`build:web`、source-size、`git diff --check` 通过。
+- 真实 TUI 系统构建任务（`npm run chat -- --workspace /home/zhouyou/workspace/sleep-mlt`）：生成 `clinic-system`（patients/appointments/invoices + 3 个测试文件），真实 `node --test clinic-system/test/*.test.js`：30 passing、0 failing；TUI 状态正常收敛 idle，未出现错误/异常。
+- Web 真实 `serve` 冒烟（同一 workspace）：`/`、`/header.js`、`/dist/agent-console.js` 均 200，`console.css` 含横向 tab 规则。
+- 本轮未发现新的阻塞性 console/web 交互缺陷；继续保留已修复的 tab 横排、应用层选区/滚动锁定、右键复制 toast、表单验证等回归。
