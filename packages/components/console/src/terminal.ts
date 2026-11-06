@@ -1038,6 +1038,8 @@ export class TuiTerminalSurface {
     protected clickTargetsCache: TerminalClickTarget[] = [];
     protected mousePress?: { x: number; y: number };
     protected mouseHandedOff = false;
+    /** A native terminal selection may still exist after a handoff. */
+    protected terminalSelectionMayExist = false;
     protected renderBatchDepth = 0;
     protected renderBatchPending = false;
     protected hoverTarget?: TerminalClickTarget;
@@ -1524,15 +1526,6 @@ export class TuiTerminalSurface {
         if (!mouse) {
             return false;
         }
-        if ((mouse.button & 64) !== 0) {
-            const target = this.hitTest(mouse.x, mouse.y);
-            if (target?.node.dispatchEvent({
-                type: 'wheel',
-                target: target.node,
-                deltaY: (mouse.button & 1) === 0 ? -3 : 3
-            } as unknown as Event)) return true;
-            return this.scrollViewport((mouse.button & 1) === 0 ? 3 : -3);
-        }
         if ((mouse.button & 32) !== 0 && (mouse.button & 3) === 3) {
             // Modern terminals with any-motion tracking report hover as
             // button 35. Highlight the clickable region under the pointer.
@@ -1543,11 +1536,27 @@ export class TuiTerminalSurface {
             return false;
         }
         if (this.mouseHandedOff) {
-            // keep tracking disabled through the clear window so a native click
-            // can terminate the selection; in-flight drag-tail reports only
-            // extend the window instead of prematurely reclaiming tracking.
+            // Wheel/scroll and drag-tail events must not move the viewport while
+            // a native terminal selection is active: the highlight is anchored
+            // to screen cells, so redrawing under it would detach the selection
+            // from the text. Keep tracking disabled and extend the window.
             this.scheduleMouseReclaim();
             return false;
+        }
+        if ((mouse.button & 64) !== 0) {
+            const target = this.hitTest(mouse.x, mouse.y);
+            if (target?.node.dispatchEvent({
+                type: 'wheel',
+                target: target.node,
+                deltaY: (mouse.button & 1) === 0 ? -3 : 3
+            } as unknown as Event)) return true;
+            if (this.terminalSelectionMayExist) {
+                // Tracking has been reclaimed but the terminal may still paint a
+                // native selection. Clear it before scrolling so it cannot stay
+                // frozen at stale screen coordinates.
+                this.clearTerminalSelection();
+            }
+            return this.scrollViewport((mouse.button & 1) === 0 ? 3 : -3);
         }
         const button = Math.max(0, Math.floor(mouse.button || 0));
         if (mouse.release) {
@@ -2086,11 +2095,13 @@ export class TuiTerminalSurface {
     protected handOffMouseSelection(): void {
         this.mousePress = undefined;
         this.mouseHandedOff = true;
+        this.terminalSelectionMayExist = true;
         this.resolveOutput()?.write(TERMINAL_DISABLE_MOUSE_TRACKING_SEQUENCE);
         this.scheduleMouseReclaim();
     }
 
     protected clearTerminalSelection(): void {
+        this.terminalSelectionMayExist = false;
         if (this.destroyed || this.options.mouseTrackingEnabled === false) {
             return;
         }

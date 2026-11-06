@@ -1846,10 +1846,34 @@ export class ConsoleRendererTest {
             expect((surface as any).mouseHandedOff).toBe(true);
             expect(writes).not.toContain('\x1b[?1000h\x1b[?1003h\x1b[?1006h');
 
+            // Wheel events during the handoff must not scroll/redraw the
+            // viewport: the native selection is anchored to screen cells.
+            let scrolled = 0;
+            (surface as any).scrollViewport = (delta: number) => { scrolled += delta; return true; };
+            expect(surface.dispatchMouse({
+                button: 65,
+                x: 12,
+                y: targetRow + 1,
+                release: false
+            })).toBe(false);
+            expect(scrolled).toEqual(0);
+            expect((surface as any).mouseHandedOff).toBe(true);
+
             // keyboard input reclaims tracking immediately.
             expect(surface.notifyNonMouseInput()).toBe(true);
             expect(writes).toContain('\x1b[?1000h\x1b[?1003h\x1b[?1006h');
             expect(surface.notifyNonMouseInput()).toBe(false);
+
+            // Once tracking is reclaimed a wheel event clears any native
+            // selection before scrolling, so no stale highlight remains.
+            expect(surface.dispatchMouse({
+                button: 65,
+                x: 12,
+                y: targetRow + 1,
+                release: false
+            })).toBe(true);
+            expect(scrolled).not.toEqual(0);
+            expect((surface as any).terminalSelectionMayExist).toBe(false);
 
             // clicks work again without any further keyboard input, and the
             // completed click cycles tracking off/on to clear any native

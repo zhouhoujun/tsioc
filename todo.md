@@ -3031,3 +3031,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `AgentConsoleMessageItemRenderer.ts` 的 markdown/display/build line 逻辑移到 `AgentConsoleMessageContentRenderer.ts`（21K → 17.8K + 4.3K）。
   - i18n lockstep / key 顺序测试通过。
 - 回归：agent-ui 1972、components/console 132、build:web、source-size、`git diff --check` 通过。
+- 修复 TUI 选中文字后滚动导致高亮错位：
+  - 原生终端选择锚定屏幕单元格，鼠标 handoff 期间滚动会重绘页面并让高亮停在旧坐标。
+  - handoff 期间的滚轮/拖动事件现在不再滚动 viewport，并延长 handoff 窗口，保留选择与文字的相对位置。
+  - tracking 回收后若仍可能存在原生选择，第一次滚轮会先清除选择再滚动，避免遗留错误高亮。
+  - components/console 新增回归：handoff 期间滚轮不触发 scrollViewport；回收后滚轮清除选择并正常滚动；agent-ui 鼠标交互回归通过。
