@@ -3059,3 +3059,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 真实 TUI 系统构建任务：生成 `asset-system`（assets/depreciation + 测试），真实 `node --test asset-system/test/*.test.js`：21 passing、0 failing。
 - 选区性能优化：拖拽选择/清除选择改为复用上一帧布局的 selection-only 重绘，不再每次鼠标移动重跑整棵组件树；新增回归断言拖拽期间不调用 `renderToTuiLayout`。滚动仍会全量重算以更新视口映射。
 - 回归：components/console 133、agent-ui 鼠标交互 3、source-size、`git diff --check` 通过。
+- 弹出框/命令切换性能：复核 2026-10 的既有方案（openSession render batch + 行级 diff），补充 command dispatch 的短渲染事务：一次 `/command` 的 popup burst 合并为一次布局，网络/服务型长命令最多阻塞 48ms 后自动释放，避免整屏多次重绘。未知命令回归新增 begin/end batch 断言。
+- 选区卡顿继续优化为 selection-only repaint；真实 `/help` 布局耗时与 11:02 基线一致（约 50ms），确认不是 forms/toast 引入的布局退化；本轮主要减少重复全量 pass。
+- 回归：agent-ui 1976、components/console 133、build:web、source-size、`git diff --check` 通过。
