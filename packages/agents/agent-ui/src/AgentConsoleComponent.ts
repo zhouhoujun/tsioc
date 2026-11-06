@@ -178,6 +178,7 @@ import {
     loadSessionPage as loadSessionContentPage,
     mapWithConcurrency as runWithConcurrency
 } from './AgentConsoleSessionContentLoader';
+import { loadOlderSessionMessages } from './AgentConsoleSessionHistoryPaging';
 import { applyMissingSessionNotice, openSession as delegateOpenSession, restoreSessionModes as restoreSessionModesView, AgentConsoleSessionOpenHost } from './AgentConsoleSessionOpen';
 import { AgentConsoleSessionUiState } from './AgentConsoleSessionUiState';
 import { closeAgentConsoleSessionTab } from './AgentConsoleSessionTabClose';
@@ -953,6 +954,7 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
     }
 
     onTerminalTextCopied(): void { this.notify(this.translator?.translate('agent.message.copiedCode') || 'Copied', 1800); }
+    onTerminalViewportTop(): void { void loadOlderSessionMessages({ state: this.state, translator: this.translator, surfaceAccessor: this.surfaceAccessor, sessionService: this.sessionService }); }
     onDestroy(): void {
         this.noticeExpiry?.dispose(); disposeConsole(this as any);
     }
@@ -1466,11 +1468,9 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
         ensureMessageAtTail(this.state, messageId);
     }
 
-    protected async loadSessionMessages(sessionId = this.state.sessionId): Promise<AgentMessage[]> {
-        return loadSessionContentMessages(this.sessionContentLoaderHost(), sessionId);
-    }
+    protected async loadSessionMessages(sessionId = this.state.sessionId): Promise<AgentMessage[]> { return loadSessionContentMessages(this.sessionContentLoaderHost(), sessionId); }
 
-    protected async loadSessionPage(sessionId = this.state.sessionId): Promise<{ messages: AgentMessage[]; sections: AgentSessionSection[]; goalSummary?: any }> {
+    protected async loadSessionPage(sessionId = this.state.sessionId): Promise<import('./AgentConsoleSessionContentLoader').AgentConsoleSessionPage> {
         return loadSessionContentPage(this.sessionContentLoaderHost(), sessionId);
     }
 

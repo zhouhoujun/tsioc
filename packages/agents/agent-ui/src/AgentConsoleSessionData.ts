@@ -54,6 +54,12 @@ export class AgentConsoleSessionData {
     focusStack: AgentConsoleFocusLayer[] = [];
     title = '';
     messages: AgentMessage[] = [];
+    /** Oldest loaded message id; next prepend request uses it as cursor. */
+    messagesPageCursor = '';
+    /** Whether older transcript pages remain on the server. */
+    messagesHasMore = false;
+    /** Guards concurrent older-page requests while the user keeps scrolling. */
+    messagesPageLoading = false;
     sections: AgentSessionSection[] = [];
     messagesFocused = false;
     /** Messages that arrived while the viewport transcript is scrolled up (0 = following latest). */

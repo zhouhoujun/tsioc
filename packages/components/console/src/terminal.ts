@@ -291,6 +291,8 @@ export interface TuiTerminalSurfaceOptions {
     animationClock?: AnimationClock;
     /** Called after a text selection is copied, so hosts can show a toast. */
     onTextCopied?: (text: string) => void;
+    /** The user reached the oldest rendered transcript row (load an older page). */
+    onViewportTop?: () => void;
 }
 
 export interface ConsoleTerminalInputLike {
@@ -361,6 +363,8 @@ export abstract class ConsoleTerminalSurfaceLifecycle {
     resolveConsoleLayout?(): ConsoleTranscriptLayoutMode | undefined;
     /** Host toast hook after the user copies an app-managed text selection. */
     onTerminalTextCopied?(text: string): void;
+    /** The viewport reached its oldest row; hosts may load an older transcript page. */
+    onTerminalViewportTop?(): void;
 }
 
 export type ConsoleTranscriptLayoutMode = 'scrollback' | 'viewport';
@@ -404,6 +408,8 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     scrollViewportToRow?(_row: number): boolean { return false; }
     scrollViewportToEdge?(_edge: 'start' | 'end'): boolean { return false; }
     queueViewportOffset?(_offsetRows: number): void { return undefined; }
+    /** Mark the next frame as a prepend so the visible history row is preserved. */
+    notifyViewportPrepend?(): void { return undefined; }
     isViewportFollowing?(): boolean | undefined { return undefined; }
     abstract notifyNonMouseInput?(): boolean;
     abstract writeTerminalClipboardText(text: string): boolean;
@@ -697,6 +703,10 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
         this.surface?.queueViewportOffset(offsetRows);
     }
 
+    notifyViewportPrepend?(): void {
+        this.surface?.notifyViewportPrepend();
+    }
+
     getViewportScrollOffset?(): number {
         return this.surface?.viewportScrollOffset ?? 0;
     }
@@ -860,7 +870,8 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
             scrollViewport: () => this.surfaceLayout ? this.surfaceLayout.scrollViewport : lifecycle?.shouldScrollViewport?.() !== false,
             mouseTrackingEnabled: this.mouseTrackingEnabled,
             animationClock: this.injector.get(AnimationClock, null) || undefined,
-            onTextCopied: text => lifecycle.onTerminalTextCopied?.(text)
+            onTextCopied: text => lifecycle.onTerminalTextCopied?.(text),
+            onViewportTop: () => lifecycle.onTerminalViewportTop?.()
         });
         this.surface.render();
     }
@@ -1098,6 +1109,8 @@ export class TuiTerminalSurface {
     protected maxScrollOffsetRows = 0;
     /** A tab switch supplies the reading distance before the new transcript metrics exist. */
     protected pendingViewportOffset?: number;
+    /** The next layout prepends an older transcript page above the current rows. */
+    protected viewportPrependPending = false;
     protected lastAvailableRows = 0;
     protected readonly scrollBox = new ScrollBox();
     protected pagerBox?: PagerBox;
@@ -1418,19 +1431,30 @@ export class TuiTerminalSurface {
     }
 
     scrollViewport(deltaRows: number): boolean {
-        if (!this.isScrollViewportEnabled()) {
-            return false;
-        }
         const delta = Number.isFinite(deltaRows) ? Math.trunc(deltaRows) : 0;
-        if (!delta || !this.maxScrollOffsetRows) {
+        if (!this.isScrollViewportEnabled()) {
+            // Native scrollback owns history; wheel-up still asks the host for
+            // an older page instead of leaving the app unable to page history.
+            if (delta > 0) {
+                this.options.onViewportTop?.();
+            }
             return false;
         }
-        if (!this.scrollBox.scrollBy(-delta)) {
+        if (!delta) {
             return false;
         }
+        const moved = !!this.maxScrollOffsetRows && this.scrollBox.scrollBy(-delta);
         this.scrollOffsetRows = this.scrollBox.maxTop - this.scrollBox.top;
-        this.requestRender();
-        return true;
+        if (moved) {
+            this.requestRender();
+        }
+        // At the oldest row, ask the host for a previous page. Positive deltas
+        // scroll toward older rows, so wheel-down at a fitting transcript must
+        // not trigger a page load. The host guards hasMore/loading.
+        if (delta > 0 && this.scrollBox.atTop) {
+            this.options.onViewportTop?.();
+        }
+        return moved;
     }
 
     scrollViewportToRow(row: number): boolean {
@@ -1492,6 +1516,11 @@ export class TuiTerminalSurface {
         }
         this.pendingViewportOffset = Math.max(0, Math.floor(Number.isFinite(offsetRows) ? offsetRows : 0));
         this.requestRender();
+    }
+
+    /** Keep the visible row stable when an older page is prepended. */
+    notifyViewportPrepend(): void {
+        this.viewportPrependPending = true;
     }
 
     /** Open a read-only full-history pager over already-rendered lines. The surface owns the pager state. */
@@ -2255,11 +2284,21 @@ export class TuiTerminalSurface {
         // A dialog is chrome, not transcript content. Keep the user's distance
         // from the latest row when only the overlay changes (opening/closing a
         // menu or a tall /web QR panel must not move the scrollbar).
+        const previousTop = this.scrollBox.top;
         const previousOffset = this.scrollBox.maxTop - this.scrollBox.top;
         const previousContentRows = this.scrollBox.contentHeight;
         this.scrollBox.setMetrics(transcript.length, this.isScrollViewportEnabled() ? availableRows : transcript.length);
         if (previousContentRows === transcript.length) {
             this.scrollBox.scrollTo(this.scrollBox.maxTop - previousOffset);
+        }
+        if (this.viewportPrependPending) {
+            this.viewportPrependPending = false;
+            // At the very top we want to reveal the newly loaded page; while
+            // reading lower, add the prepended rows to keep the same text under
+            // the cursor instead of letting the transcript jump.
+            if (previousTop > 0 && transcript.length > previousContentRows) {
+                this.scrollBox.scrollTo(previousTop + (transcript.length - previousContentRows));
+            }
         }
         this.applyPendingViewportOffset();
         this.maxScrollOffsetRows = this.scrollBox.maxTop;

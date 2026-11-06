@@ -1,6 +1,7 @@
 import type { AgentMessage, AgentOptions, AgentSessionSection } from '@tsdi/agent';
 import type { AgentConsoleSessionService } from './AgentConsoleSessionService';
 import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
+import type { AgentConsoleSessionPage } from './AgentConsoleSessionContentLoader';
 import { AgentUiTranslator, formatAgentUiNotice } from './agent-ui.i18n';
 
 export interface AgentConsoleSessionOpenHost {
@@ -27,7 +28,7 @@ export interface AgentConsoleSessionOpenHost {
     updateTerminalTitle(): void;
     refreshSessions(currentId?: string): Promise<void>;
     resolveProjectSessionIdsFor(sessionId: string): string[];
-    loadSessionPage(sessionId: string): Promise<{ messages: AgentMessage[]; sections: AgentSessionSection[]; goalSummary?: any }>;
+    loadSessionPage(sessionId: string): Promise<AgentConsoleSessionPage>;
     refreshTools(sessionId?: string): Promise<void>;
     refreshPendingApprovals(sessionId?: string): Promise<void>;
     refreshTodoPlan(sessionId?: string): Promise<void>;
@@ -129,6 +130,9 @@ export async function openSession(
     host.state.setMessages([]);
     host.state.setSections([]);
     host.state.setGoalSummary(null);
+    host.state.messagesPageCursor = '';
+    host.state.messagesHasMore = false;
+    host.state.messagesPageLoading = false;
     host.state.messagesNewCount = 0;
     host.state.setQueuedPromptCount((host.queuedPrompts.get(target.id) || []).length);
     host.transcriptNavigationController.setFocused(false);
@@ -184,6 +188,8 @@ export async function openSession(
     host.state.setMessages(options?.fresh ? [] : page.messages);
     host.state.setSections(options?.fresh ? [] : page.sections);
     host.state.setGoalSummary(options?.fresh ? null : (page.goalSummary || null));
+    host.state.messagesPageCursor = options?.fresh ? '' : (page.nextCursor || '');
+    host.state.messagesHasMore = options?.fresh ? false : page.hasMore === true;
     await host.restoreSessionModes(target.id);
 }
 

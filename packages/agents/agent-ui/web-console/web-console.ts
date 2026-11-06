@@ -282,11 +282,17 @@ export async function mountAgentWebConsole(
     const consoleStores = createRpcConsoleStores(rpc);
     const resolveMessagesPanel = (): HTMLElement | null =>
         (mount.querySelector?.('.console-messages-panel') as HTMLElement | null) ?? null;
+    let follower: DomTranscriptFollower | null = null;
+    const requestOlderMessages = (): void => {
+        const instance = ctx.runners.getRef(AgentConsoleComponent)?.instance as any;
+        instance?.onTerminalViewportTop?.();
+    };
     const surfaceAccessor = {
         getLastRenderedLines: () => [] as string[],
         getLastRenderedText: () => '',
         getTerminalSize: () => ({ columns: measureDomConsoleColumns(resolveMessagesPanel() ?? mount), rows: 0 }),
         getTerminalViewportRows: () => 0,
+        notifyViewportPrepend: () => follower?.notifyPrepend(),
         subscribeToSurfaceResize: (listener: () => void): (() => void) => {
             const view = doc.defaultView as (Window & typeof globalThis) | null | undefined;
             const Observer = (view as { ResizeObserver?: typeof ResizeObserver } | null | undefined)?.ResizeObserver;
@@ -477,7 +483,6 @@ export async function mountAgentWebConsole(
     indicator.setAttribute('aria-live', 'polite');
     mount.appendChild(indicator);
 
-    let follower: DomTranscriptFollower | null = null;
     let followerElement: HTMLElement | null = null;
     const resolveFollower = (): DomTranscriptFollower | null => {
         const element = (root?.querySelector?.('.console-messages-panel') as HTMLElement | null) ?? null;
@@ -487,7 +492,7 @@ export async function mountAgentWebConsole(
         if (element !== followerElement) {
             follower?.detach();
             followerElement = element;
-            follower = new DomTranscriptFollower(element, indicator);
+            follower = new DomTranscriptFollower(element, indicator, { onReachTop: requestOlderMessages });
             follower.attach();
         }
         return follower;
@@ -501,6 +506,9 @@ export async function mountAgentWebConsole(
             return;
         }
         activeFollower.wheel(event.deltaY);
+        if (event.deltaY < 0 && activeFollower.atTop) {
+            requestOlderMessages();
+        }
         event.preventDefault();
     };
     const onIndicatorClick = (): void => {

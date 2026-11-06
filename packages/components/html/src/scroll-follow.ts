@@ -8,6 +8,8 @@ export interface TranscriptFollowLabels {
 
 export interface DomTranscriptFollowerOptions {
     labels?: Partial<TranscriptFollowLabels>;
+    /** Called when the user reaches the oldest rendered row. */
+    onReachTop?: () => void;
 }
 
 const DEFAULT_LABELS: TranscriptFollowLabels = {
@@ -26,27 +28,40 @@ export class DomTranscriptFollower {
     private readonly box: DomScrollBox;
     private readonly labels: TranscriptFollowLabels;
     private observer?: MutationObserver | null;
+    private previousScrollHeight = 0;
+    private lastScrollTop = 0;
+    private prependPending = false;
 
     private readonly onScroll = (): void => {
+        const scrollTop = this.transcript.scrollTop;
+        const movedUp = scrollTop < this.lastScrollTop;
+        this.lastScrollTop = scrollTop;
         this.box.sync();
         if (this.box.atBottom) {
             this.resumeFollow();
         } else {
             this.updateIndicator();
         }
+        this.previousScrollHeight = this.transcript.scrollHeight;
+        if (movedUp && this.box.atTop) {
+            this.options.onReachTop?.();
+        }
     };
 
     constructor(
         private readonly transcript: HTMLElement,
         private readonly indicator?: HTMLElement | null,
-        options: DomTranscriptFollowerOptions = {}
+        private readonly options: DomTranscriptFollowerOptions = {}
     ) {
         this.box = new DomScrollBox(transcript);
         this.labels = { ...DEFAULT_LABELS, ...(options.labels || {}) };
+        this.previousScrollHeight = transcript.scrollHeight;
     }
 
     attach(): void {
         this.box.scrollToBottom();
+        this.previousScrollHeight = this.transcript.scrollHeight;
+        this.lastScrollTop = this.transcript.scrollTop;
         this.updateIndicator();
         this.transcript.addEventListener('scroll', this.onScroll);
         const view = this.transcript.ownerDocument?.defaultView as (Window & typeof globalThis) | null | undefined;
@@ -74,15 +89,31 @@ export class DomTranscriptFollower {
         return moved;
     }
 
-    /** Called when the transcript content grows (new rows appended). */
+    /** Preserve the reading row when an older page is prepended. */
+    notifyPrepend(): void {
+        this.prependPending = true;
+    }
+
+    /** Called when the transcript content grows (new rows appended or prepended). */
     onContentGrew(): void {
         const wasAtBottom = this.box.atBottom;
+        const previousHeight = this.previousScrollHeight;
         this.box.sync();
-        if (wasAtBottom) {
+        const height = this.transcript.scrollHeight;
+        if (this.prependPending) {
+            this.prependPending = false;
+            if (wasAtBottom) {
+                this.box.scrollToBottom();
+            } else if (height > previousHeight) {
+                this.transcript.scrollTop += height - previousHeight;
+                this.box.sync();
+            }
+        } else if (wasAtBottom) {
             this.box.scrollToBottom();
         } else {
             this.box.noteNewItems(1);
         }
+        this.previousScrollHeight = height;
         this.updateIndicator();
     }
 
@@ -97,6 +128,10 @@ export class DomTranscriptFollower {
 
     get following(): boolean {
         return this.box.following;
+    }
+
+    get atTop(): boolean {
+        return this.box.atTop;
     }
 
     private updateIndicator(): void {

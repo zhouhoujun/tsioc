@@ -110,9 +110,9 @@ export class SessionLifecycleCommandTest {
         expect(state.turnStartedAt).toBeGreaterThan(0);
     }
 
-    @Test('restoring a paged session keeps messages from the beginning')
-    async restoringPagedSessionKeepsBeginning() {
-        const { component, rpc } = createLifecycleConsole();
+    @Test('restoring a paged session loads the newest page and prepends older pages on demand')
+    async restoringPagedSessionLoadsNewestPageThenPrepends() {
+        const { component, rpc, state } = createLifecycleConsole();
         rpc.messagePages = {
             tail: {
                 messages: [
@@ -134,10 +134,24 @@ export class SessionLifecycleCommandTest {
 
         const page = await (component as any).loadSessionPage('active-1');
 
-        expect(page.messages.map((message: any) => message.id)).toEqual(['m1', 'm2', 'm3', 'm4']);
+        // Opening a session never walks the entire transcript before the first
+        // frame; only the newest page is fetched.
+        expect(page.messages.map((message: any) => message.id)).toEqual(['m3', 'm4']);
+        expect(page.nextCursor).toEqual('m3');
+        expect(page.hasMore).toEqual(true);
         expect(rpc.calls.filter(call => call.method === 'session.messages').map(call => call.params)).toEqual([
-            { sessionId: 'active-1' },
-            { sessionId: 'active-1', cursor: 'm3', before: true }
+            { sessionId: 'active-1', limit: 50 }
+        ]);
+
+        state.setMessages(page.messages as any);
+        state.messagesPageCursor = page.nextCursor || '';
+        state.messagesHasMore = page.hasMore;
+        (component as any).onTerminalViewportTop();
+        await new Promise(resolve => setTimeout(resolve, 0));
+        expect(state.messages.map((message: any) => message.id)).toEqual(['m1', 'm2', 'm3', 'm4']);
+        expect(rpc.calls.filter(call => call.method === 'session.messages').map(call => call.params)).toEqual([
+            { sessionId: 'active-1', limit: 50 },
+            { sessionId: 'active-1', cursor: 'm3', before: true, limit: 50 }
         ]);
     }
 

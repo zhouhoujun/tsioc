@@ -2648,6 +2648,50 @@ export class ConsoleRendererTest {
         surface.destroy();
     }
 
+    @Test('requests an older transcript page at the top and preserves the reading row on prepend')
+    viewportPaginationPreservesReadingRow() {
+        let lines = Array.from({ length: 100 }, (_value, index) => `line ${index + 1}`);
+        let topRequests = 0;
+        const root = { addEventListener() {}, removeEventListener() {} } as any;
+        const surface = new TuiTerminalSurface({
+            renderer: {
+                renderToTuiLayout: () => ({
+                    lines,
+                    regions: [
+                        { id: 'transcript', startRow: 0, endRow: lines.length },
+                        { id: 'footer', startRow: lines.length, endRow: lines.length }
+                    ]
+                })
+            },
+            root,
+            width: 80,
+            height: 20,
+            nativeScrollback: false,
+            scrollViewport: true,
+            scrollRegionId: 'transcript',
+            footerRegionId: 'footer',
+            output: { write() {} },
+            onViewportTop: () => { topRequests += 1; }
+        });
+        surface.render();
+        expect(surface.scrollViewport(5)).toEqual(true);
+        surface.render();
+        const anchor = surface.lastRenderedLines[0];
+        expect(anchor).toEqual('line 76');
+
+        lines = [
+            ...Array.from({ length: 10 }, (_value, index) => `older ${index + 1}`),
+            ...lines
+        ];
+        surface.notifyViewportPrepend();
+        surface.render();
+        expect(surface.lastRenderedLines[0]).toEqual(anchor);
+
+        surface.scrollViewport(1000);
+        expect(topRequests).toBeGreaterThan(0);
+        surface.destroy();
+    }
+
     @Test('viewport scrolls to an absolute rendered row so the target stays visible')
     viewportScrollsToAbsoluteRow() {
         const lines = Array.from({ length: 200 }, (_value, index) => `line ${index + 1}`);

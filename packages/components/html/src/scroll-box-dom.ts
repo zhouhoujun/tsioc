@@ -61,6 +61,10 @@ export class DomScrollBox {
         return this.box.atBottom;
     }
 
+    get atTop(): boolean {
+        return this.box.atTop;
+    }
+
     get newItemCount(): number {
         return this.box.newItemCount;
     }

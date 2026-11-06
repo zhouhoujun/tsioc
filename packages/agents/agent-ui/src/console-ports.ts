@@ -43,6 +43,8 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     scrollViewportToOffset?(offsetRows: number): boolean;
     /** Queue the offset until the target transcript layout exists (tab switch). */
     queueViewportOffset?(offsetRows: number): void;
+    /** Mark the next frame as a prepend so the visible history row is preserved. */
+    notifyViewportPrepend?(): void;
     /** Open the base-layer transcript pager over the last full render; optional query is a find. */
     openPagerFromLastRender?(query?: string, statusCopy?: AgentConsolePagerStatusCopy): boolean;
     closePager?(): boolean;

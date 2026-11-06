@@ -35,35 +35,46 @@ export async function loadSessionMessages(
     return normalizeLoadedMessages(messages, { translator: host.translator });
 }
 
+/**
+ * Initial transcript page size. Older pages are loaded only when the user
+ * reaches the top of the viewport, so opening a huge session stays O(page).
+ */
+export const AGENT_CONSOLE_SESSION_PAGE_SIZE = 50;
+
+export interface AgentConsoleSessionPage {
+    messages: AgentMessage[];
+    sections: AgentSessionSection[];
+    goalSummary?: any;
+    /** Oldest loaded message id, used as the cursor for the previous page. */
+    nextCursor?: string;
+    /** Whether an older page exists. */
+    hasMore: boolean;
+}
+
 export async function loadSessionPage(
     host: AgentConsoleSessionContentLoaderHost,
     sessionId: string
-): Promise<{ messages: AgentMessage[]; sections: AgentSessionSection[]; goalSummary?: any }> {
+): Promise<AgentConsoleSessionPage> {
     if (host.sessionService) {
-        const page = await host.sessionService.loadMessagesPage(sessionId);
-        const messages = page.messages.slice();
-        const seenCursors = new Set<string>();
-        let cursor = page.messages[0]?.id;
-        let hasMore = page.hasMore === true;
-        while (hasMore && cursor && !seenCursors.has(cursor)) {
-            seenCursors.add(cursor);
-            const previous = await host.sessionService.loadMessagesPage(
-                sessionId,
-                undefined,
-                { cursor, before: true }
-            );
-            messages.unshift(...previous.messages);
-            cursor = previous.messages[0]?.id;
-            hasMore = previous.hasMore === true;
-        }
+        const page = await host.sessionService.loadMessagesPage(sessionId, undefined, {
+            limit: AGENT_CONSOLE_SESSION_PAGE_SIZE
+        });
         return {
-            messages: normalizeLoadedMessages(messages, { translator: host.translator }),
+            messages: normalizeLoadedMessages(page.messages.slice(), { translator: host.translator }),
             sections: Array.isArray(page.sections) ? page.sections : [],
-            goalSummary: page.goalSummary
+            goalSummary: page.goalSummary,
+            nextCursor: page.messages[0]?.id,
+            hasMore: page.hasMore === true
         };
     }
     const messages = await host.runtime.getMessages(sessionId);
-    return { messages: normalizeLoadedMessages(messages, { translator: host.translator }), sections: [], goalSummary: undefined };
+    return {
+        messages: normalizeLoadedMessages(messages, { translator: host.translator }),
+        sections: [],
+        goalSummary: undefined,
+        nextCursor: messages[0]?.id,
+        hasMore: false
+    };
 }
 
 export async function mapWithConcurrency<T, R>(

@@ -42,6 +42,35 @@ export class DomTranscriptFollowerTest {
         expect(indicator.style.display).toEqual('none');
     }
 
+    @Test('requests an older page at the top and preserves the scroll row on prepend')
+    paginationTopAndPrepend() {
+        const dom = new JSDOM('<!DOCTYPE html><body><div id="t"></div><button id="i"></button></body>');
+        const transcript = dom.window.document.getElementById('t') as HTMLElement;
+        const indicator = dom.window.document.getElementById('i') as HTMLElement;
+        stubMetrics(transcript, 1000, 100);
+        let topRequests = 0;
+        const follower = new DomTranscriptFollower(transcript, indicator, {
+            onReachTop: () => { topRequests += 1; }
+        });
+        follower.attach();
+        expect(topRequests).toEqual(0);
+
+        // Scroll to the top: one request for the previous page.
+        transcript.scrollTop = 0;
+        transcript.dispatchEvent(new dom.window.Event('scroll'));
+        expect(topRequests).toEqual(1);
+
+        // Reading lower: a prepend must keep the same row under the viewport.
+        transcript.scrollTop = 700;
+        follower.sync();
+        const before = transcript.scrollTop;
+        stubMetrics(transcript, 1200, 100);
+        follower.notifyPrepend();
+        follower.onContentGrew();
+        expect(transcript.scrollTop).toEqual(before + 200);
+        follower.detach();
+    }
+
     @Test('scrolling back to the bottom resumes following')
     scrollToBottomResumes() {
         const dom = new JSDOM('<!DOCTYPE html><body><div id="t"></div><button id="i"></button></body>');

@@ -3074,3 +3074,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 加固 Tab restore 事务：恢复过程抛错时仍执行 `endRenderBatch`，避免渲染事务永久停留、后续会话更新被冻结；新增失败路径回归（旧实现失败）。
 - 修复 timeline 视图缓存未随 `timelineViewMode` 失效：`steps` 切到 `compact` 时 `timelineMode` 仍为 true，`messageItemsCache` 命中旧 steps 结果，紧凑摘要“已隐藏 N 条事件 · 紧凑模式仅显示当前步骤与错误”不出现；缓存上下文加入 `timelineViewMode`，新增回归（旧实现失败）。
 - 渲染 gate 复核：DOM 5/5、TUI 5/5 通过，timeline compact 摘要恢复；gate metrics regression `[OK]`。`production-db-integrity` 在 gate 期间检测到生产库变化，原因是外部有一个正在运行的 `npm run chat` TUI 进程（pts/1）持续写库，不是代码改动，未终止用户进程。
+- 会话时间线改为分页加载：打开会话只取最新一页（50 条），滚轮/PageUp 到顶部时按 cursor 预取上一页并 prepend，不再在 openSession 中循环拉完整会话。
+  - `AgentConsoleSessionData` 增加 `messagesPageCursor/messagesHasMore/messagesPageLoading`；`AgentConsoleSessionHistoryPaging` 负责去重、并发保护、失败保留重试。
+  - TUI surface 在视图顶部触发 `onViewportTop`，并在 prepend 时保持当前阅读行；web `DomTranscriptFollower` 增加顶部回调与 prepend 滚动锚定。
+  - 真实 TUI 验证：`stream-debug-2`（109 条）打开时只加载最新页，滚轮到顶部后旧消息出现；更新 `session-lifecycle` 回归为“首屏一页 + 按需 prepend”。
+- common 新增通用分页列表：
+  - `CommonListPager`：cursor/hasMore/loading/error，去重、并发保护、失败可重试。
+  - `CommonListComponent`（`common-list`）：列表行、空状态、加载/错误提示、Load more 按钮，`onReachEnd()` 供滚动边界调用；已加入 `BaseComponentsModule` 与 common 导出，Web 样式使用主题 class 变量。
+  - 回归：components/common 43 passing（新增 pager/component 用例）、components/console 136、components/html 128、agent-ui 1979、tsc、build:web、source-size、diff-check 通过。
