@@ -3067,3 +3067,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 选中文字后的 selection-only 重绘可能落在渲染事务（`beginRenderBatch`/`endRenderBatch`）中间，用旧布局提前绘制，随后又被完整帧覆盖，表现为对话框打开/切换时的时间线闪动；现在 selection 重绘会延后到事务结束后的完整帧，点击/键盘清除选区也回到完整帧。
   - Tab 切换恢复阅读位置原先在首个完整帧之后再用微任务执行，先画底部再跳到保存行；现在 surface 增加 `queueViewportOffset`，在目标会话的 transcript 指标建立后、第一帧内应用保存的 offset，避免二次帧跳动。
   - 回归：components/console 135 passing（新增 batch selection 与 queued offset 用例，旧实现均失败）、agents/agent-ui 1977 passing（新增 Tab restore 事务顺序用例）、`build:web`、source-size、`git diff --check` 通过。
+- 真实 TUI 复核（`/home/zhouyou/workspace/sleep-mlt`，PTY）：
+  - 首个 Tab 滚轮上翻后切换到第二个 Tab，再切回：返回首 Tab 的屏幕内容与切换前完全一致，返回过程只产生 1 帧，不再先画底部再跳。
+  - 存在文本选区时打开 `/help`、再关闭，对话框正常显示/清除，未出现旧布局插帧；选区存在时切 Tab 也能正常切换。
+  - 子集 gate 通过：components 148、components/common 40、components/console 135、components/html 127、`tsc --noEmit @tsdi/agent-ui`、agent-ui web build、diff-check、production-db-integrity。
+- 加固 Tab restore 事务：恢复过程抛错时仍执行 `endRenderBatch`，避免渲染事务永久停留、后续会话更新被冻结；新增失败路径回归（旧实现失败）。

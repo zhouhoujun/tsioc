@@ -166,6 +166,50 @@ export class AgentConsoleSessionTabIsolationTest {
         expect(events).toEqual(['begin', 'queue:12', 'end']);
     }
 
+    @Test('a restore failure still closes the tab render transaction')
+    async restoreFailureClosesRenderBatch() {
+        const events: string[] = [];
+        let failRestore = false;
+        const state: any = {
+            sessionId: 'session-a', messages: [], input: '', inputCursor: 0,
+            pendingAttachments: [], selectedMessageId: '', messagesFocused: false,
+            messageDetailOpen: false, messageDetailScroll: 0, messagesNewCount: 0,
+            transcriptFollowing: true,
+            setInput(value: string, cursor: number) { this.input = value; this.inputCursor = cursor; },
+            setPendingAttachments(value: any[]) { this.pendingAttachments = value; },
+            setMessagesFocused(value: boolean) { this.messagesFocused = value; },
+            openMessageDetail() { this.messageDetailOpen = true; },
+            syncTranscriptFollowing() { this.transcriptFollowing = false; }
+        };
+        const ui = new AgentConsoleSessionUiState(() => ({
+            state,
+            surfaceAccessor: {
+                getViewportScrollOffset: () => 12,
+                isViewportFollowing: () => false,
+                queueViewportOffset: () => {
+                    if (failRestore) throw new Error('restore failed');
+                    events.push('queue');
+                },
+                scrollViewportToOffset: () => { events.push('offset'); return true; },
+                scrollViewportToEdge: () => { events.push('edge'); return true; }
+            } as any
+        }));
+        const begin = () => events.push('begin');
+        const end = () => events.push('end');
+        await ui.switchSession(async () => { state.sessionId = 'session-b'; }, () => state.sessionId, begin, end);
+        failRestore = true;
+        events.length = 0;
+        let failure: unknown;
+        try {
+            await ui.switchSession(async () => { state.sessionId = 'session-a'; }, () => state.sessionId, begin, end);
+        } catch (error) {
+            failure = error;
+        }
+        expect(failure).toBeTruthy();
+        expect(events).toContain('end');
+        expect(events.filter(event => event === 'end')).toHaveLength(1);
+    }
+
     @Test('switching a tab never shows the previous tab transcript')
     async switchDoesNotLeakMessagesWhileLoading() {
         const aMessages = messages('alpha', 40);

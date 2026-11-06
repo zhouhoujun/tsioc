@@ -99,10 +99,15 @@ export class AgentConsoleSessionUiState {
             // render transaction so the first frame already has the target
             // scroll position and draft instead of painting the bottom and then
             // jumping to the saved reading row.
-            if (previousSessionId && targetSessionId && targetSessionId !== previousSessionId) {
-                this.restore(targetSessionId);
+            try {
+                if (previousSessionId && targetSessionId && targetSessionId !== previousSessionId) {
+                    this.restore(targetSessionId);
+                }
+            } finally {
+                // A restore failure must never leave the surface's render batch
+                // open; that would freeze every later session update.
+                end();
             }
-            end();
         }
     }
 
