@@ -126,8 +126,11 @@ export async function submitMultilineDraftView(host: AgentConsoleTurnInputHost):
             host.ensureMessageAtTail(asstMsg.id);
                 if (host.state.status === 'running' || host.state.status === 'reasoning') {
                     host.state.setStatus('idle');
-                    host.updateTerminalTitle();
                 }
+                // The runtime's turn-completed event already moves status to
+                // idle; the title still has to be refreshed or it keeps saying
+                // Working after the final answer.
+                host.updateTerminalTitle();
         } catch (error: any) {
             // `error.message` alone drops the ModelFailure remedy hint and leaks the
             // raw provider string, so route model failures through the presenter.
@@ -302,8 +305,8 @@ export async function submitView(host: AgentConsoleTurnInputHost): Promise<void>
             host.ensureMessageAtTail(assistantMessage.id);
                 if (host.state.status === 'running' || host.state.status === 'reasoning') {
                     host.state.setStatus('idle');
-                    host.updateTerminalTitle();
                 }
+                host.updateTerminalTitle();
                 host.state.setTasksCount(host.scheduler.getTasks().length);
             void host.refreshTurnArtifacts();
             host.state.clearTurnEventScope(turnScope);

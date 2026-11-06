@@ -3008,6 +3008,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 真实 TUI 系统构建任务（`/home/zhouyou/workspace/sleep-mlt`，命令 `npm run chat -- --workspace ...`）：
   - 生成 `warehouse-system`（store/stock/report/reorder + 4 个测试文件），真实运行 `node --test warehouse-system/test/*.test.js`：44 passing、0 failing。
   - 验证 `/yolo on` 后写工具/命令正常执行，模型标题为 `deepseek-chat`（不再回落到 strong）。
-  - 待继续排查：本轮 deepseek-chat 在部分长 turn 中最终回答已渲染、文件与测试均完成后，TUI 状态仍偶发停在 `Working`（无后续 turn_end 渲染），需要单独定位流结束事件/状态收敛。
-- 修复 `serve` 缺少 `ServerCommonModule` 导致 `No provider for FileAdapter`、web 控制台无法启动；真实 `serve` 冒烟：`/`、`/header.js`、`/dist/agent-console.js`、`/health` 全部 200。
-- 回归：agent-ui 1968、agent-cli 133、source-size OK、`git diff --check` OK。
+  - 修复 `serve` 缺少 `ServerCommonModule` 导致 `No provider for FileAdapter`、web 控制台无法启动；真实 `serve` 冒烟：`/`、`/header.js`、`/dist/agent-console.js`、`/health` 全部 200。
+- 修复真实 TUI 完成后标题停在 `Working`：runtime 的 `turn_completed` 事件已把状态置为 idle，submit 的 finally 因“状态已不是 running”而跳过 `updateTerminalTitle()`；现在无论状态由哪一层收敛，finally 都会刷新终端标题。新增回归 `turn-complete-title.spec.ts`，真实 TUI 标题已从 `working` 收敛到 `idle`。
+- 回归：agent-ui 1969、agent-cli 133、source-size OK、`git diff --check` OK。
