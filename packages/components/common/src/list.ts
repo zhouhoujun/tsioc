@@ -9,7 +9,7 @@ export interface ListEntry {
     disabled?: boolean;
 }
 
-export interface ListPage<T extends ListEntry = ListEntry> {
+export interface ListPage<T extends { id: string } = ListEntry> {
     items: T[];
     /** Whether a further page exists. Defaults to false for array results. */
     hasMore?: boolean;
@@ -17,11 +17,11 @@ export interface ListPage<T extends ListEntry = ListEntry> {
     nextCursor?: string;
 }
 
-export type ListLoader<T extends ListEntry = ListEntry> = (
+export type ListLoader<T extends { id: string } = ListEntry> = (
     cursor?: string
 ) => Promise<ListPage<T> | T[]>;
 
-function normalizePage<T extends ListEntry>(result: ListPage<T> | T[] | undefined): ListPage<T> & { hasMore: boolean } {
+function normalizePage<T extends { id: string }>(result: ListPage<T> | T[] | undefined): ListPage<T> & { hasMore: boolean } {
     if (Array.isArray(result)) {
         return { items: result, hasMore: false };
     }
@@ -38,7 +38,7 @@ function normalizePage<T extends ListEntry>(result: ListPage<T> | T[] | undefine
  * are ignored and duplicate ids are dropped, so wheel/key bursts cannot enqueue
  * the same page twice.
  */
-export class ListPager<T extends ListEntry = ListEntry> {
+export class ListPager<T extends { id: string } = ListEntry> {
     items: T[] = [];
     cursor?: string;
     hasMore = true;
@@ -123,6 +123,7 @@ export class ListComponent {
     @Attribute() ariaLabel = 'List';
     @Attribute() loadPage?: ListLoader;
     @Attribute() selectAction?: (item: ListEntry) => void;
+    protected readonly pager = new ListPager<ListEntry>();
 
     /** Called by a renderer/scroll adapter when the last row becomes visible. */
     onReachEnd(): void {
@@ -133,23 +134,22 @@ export class ListComponent {
         if (!this.loadPage || this.loading || !this.hasMore) {
             return false;
         }
+        // The component is a thin reactive projection of the shared pager:
+        // cursor/hasMore/loading/dedupe stay identical to timeline paging.
+        this.pager.items = this.items;
+        this.pager.cursor = this.cursor;
+        this.pager.hasMore = this.hasMore;
         this.loading = true;
         this.error = '';
         try {
-            const page = normalizePage(await this.loadPage(this.cursor));
-            const known = new Set(this.items.map(item => String(item.id)));
-            const fresh = page.items.filter(item => item && !known.has(String(item.id)));
-            if (fresh.length) {
-                this.items = [...this.items, ...fresh];
-            }
-            this.cursor = page.nextCursor || this.items[this.items.length - 1]?.id;
-            this.hasMore = page.hasMore;
-            return fresh.length > 0;
-        } catch (error) {
-            this.error = error instanceof Error ? error.message : String(error);
-            return false;
+            const changed = await this.pager.loadMore(cursor => this.loadPage!(cursor));
+            this.items = this.pager.items;
+            this.cursor = this.pager.cursor;
+            this.hasMore = this.pager.hasMore;
+            this.error = this.pager.error;
+            return changed;
         } finally {
-            this.loading = false;
+            this.loading = this.pager.loading;
         }
     }
 

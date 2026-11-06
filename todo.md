@@ -3093,3 +3093,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 全量 agents gate 通过：26 passed、1 skipped（pty opt-in）；包括 10 个 agents 子包、4 个 components 包、tsc、web build、DOM/TUI gate、metrics regression、diff-check、source-size、production-db-integrity。
 - 修正 agent-gateway 旧断言：手动 catalog 模型激活会主动清除 stale `complexityRouting`（与 `model-catalog-providers` 契约一致），gateway 测试改为断言清除而不是保留。
 - 真实 TUI 冒烟：重命名后的 `<tab-bar>`/`<select-list>`/`<list-panel>`/`<dialog-panel>`/`<markdown-*>` 正常渲染，Tab 点击与切回滚动位置正常。
+- 会话时间线分页改为复用 common List 的 `ListPager` 特性：cursor/hasMore/loading/error、id 去重、并发加载保护与失败重试统一由 List 层承担；session paging 只负责拉页、规范化和 prepend。
+- `ListComponent` 也改为 `ListPager` 的响应式投影，组件与时间线使用同一套分页状态机；`onReachEnd()` 仍可直接触发下一页。
+- 验证：components/common 43、session lifecycle 14、tsc、真实 TUI 109 条会话首屏仅最新页、滚到顶部后旧消息出现、source-size、diff-check 通过。

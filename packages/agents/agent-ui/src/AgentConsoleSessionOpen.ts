@@ -2,6 +2,7 @@ import type { AgentMessage, AgentOptions, AgentSessionSection } from '@tsdi/agen
 import type { AgentConsoleSessionService } from './AgentConsoleSessionService';
 import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import type { AgentConsoleSessionPage } from './AgentConsoleSessionContentLoader';
+import { resetSessionMessagePager } from './AgentConsoleSessionHistoryPaging';
 import { AgentUiTranslator, formatAgentUiNotice } from './agent-ui.i18n';
 
 export interface AgentConsoleSessionOpenHost {
@@ -133,6 +134,7 @@ export async function openSession(
     host.state.messagesPageCursor = '';
     host.state.messagesHasMore = false;
     host.state.messagesPageLoading = false;
+    resetSessionMessagePager(host.state);
     host.state.messagesNewCount = 0;
     host.state.setQueuedPromptCount((host.queuedPrompts.get(target.id) || []).length);
     host.transcriptNavigationController.setFocused(false);
