@@ -98,7 +98,8 @@ export class HtmlConsoleTest {
         expect(inputRoot.querySelector('.input-shell')).toBeTruthy();
         expect(inputRoot.querySelector('.input-shell')?.getAttribute('class')).toContain('input-shell');
         expect(inputRoot.querySelector('.input-entry')?.getAttribute('class')).toContain('input-entry');
-        expect(root.getAttribute('style') || '').toContain('--agent-theme-input-shell-background');
+        expect(root.getAttribute('style')).toBeFalsy();
+        expect(root.getAttribute('data-theme')).toEqual('dark');
         expect(inputRoot.querySelector('.agent-input')?.getAttribute('placeholder')).toContain('Ask code or files');
         expect(inputRoot.querySelector('.agent-input')?.getAttribute('class')).toContain('agent-input');
         expect(inputRoot.querySelector('.input-meta')?.textContent).toContain('deepseek-v4-flash');

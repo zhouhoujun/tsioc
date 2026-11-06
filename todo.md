@@ -3018,3 +3018,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `v-show` 从写内联 `display: none` 改为共享语义隐藏（`.is-hidden` + `hidden` 属性）；浏览器与 TUI 都按同一契约隐藏。
   - 验证：挂载真实 Web Markdown 后整个 console DOM 的 `[style]` 数量为 0（隐藏节点使用 class/hidden），原为 102。
 - 回归：components 148、components/common 38、components/console 132、components/html 127、agent-ui 1971；`build:web`、source-size、`git diff --check` 均通过。
+- 进一步统一 class 样式：
+  - console 根节点不再写整段内联 CSS 变量，改为 `data-theme` + 预生成的主题变量 class CSS；浏览器 DOM 根节点 `[style]` 为空。
+  - 用户消息容器使用 `blockClass` 统一输出 `message-item-block/message-template-user/is-block-padded`，并补充 user padded 规则，TUI 用户输入框恢复纵向 padding；新增 message-renderer 回归。
+  - `.message-item-block` / `.message-markdown` 不再依赖静态 class 与模板插值混写。
+- i18n notice 大文件拆分：中英文 notice 目录各拆成 3 个顺序保持的分片 + 聚合入口，单文件均降到 20K 以下，lockstep 顺序测试通过。
+- 回归：agent-ui 1972、components/console 132、`build:web`、source-size、`git diff --check` 通过。

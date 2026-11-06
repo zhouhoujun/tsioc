@@ -3,6 +3,8 @@ import { Suite, Test } from '@tsdi/unit';
 import {
     defaultAgentConsoleOptions,
     defaultAgentConsoleTheme,
+    AgentConsoleUserTemplate,
+    renderAgentConsoleMessageItem,
     renderAgentConsoleMessageItems,
     resolveAgentConsoleMessageStatus,
     resolveAgentConsoleMessageStatusLabel,
@@ -27,6 +29,17 @@ export class AgentConsoleMessageRendererDispatchTest {
             { id: 'u1', role: 'user', content: 'hello', createdAt: 1 }
         ] as any);
         expect(items[0].lines[0].itemStyle?.padding).toEqual('0em 0 0em 1ch');
+    }
+
+    @Test('user message block keeps padded container spacing')
+    userMessageBlockKeepsPadding() {
+        const item = renderAgentConsoleMessageItem({ id: 'u1', role: 'user', content: 'hello', createdAt: 1 } as any);
+        expect(item.blockPadding).toEqual(true);
+        const template = new AgentConsoleUserTemplate();
+        template.item = item;
+        expect(template.blockClass).toContain('message-item-block');
+        expect(template.blockClass).toContain('message-template-user');
+        expect(template.blockClass).toContain('is-block-padded');
     }
 
     @Test('dispatches message template kinds by role and metadata')

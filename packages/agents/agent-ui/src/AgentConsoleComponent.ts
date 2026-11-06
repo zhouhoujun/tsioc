@@ -117,7 +117,6 @@ import {
     agentConsoleThemes,
     AgentConsoleThemeName,
     AgentConsoleThemeStore,
-    resolveAgentConsoleCssVariables,
     isAgentConsoleThemeName,
     mergeAgentConsoleTheme
 } from './AgentConsoleTheme';
@@ -318,7 +317,7 @@ interface AgentConsoleQueuedPrompt {
 @Component({
     selector: 'agent-console',
     template: `
-    <div class="agent-console" [cssVariables]="rootStyle">
+    <div class="agent-console" data-theme="{{themeName}}">
         <common-tab-bar renderRegion="header"></common-tab-bar>
         <agent-console-brand-panel renderRegion="transcript" v-show="!panels.messageDetail && !panels.select && !panels.textOverlay && !panels.pendingQuestion"></agent-console-brand-panel>
         <agent-console-messages-panel renderRegion="transcript" v-show="!panels.messageDetail"></agent-console-messages-panel>
@@ -919,7 +918,7 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
         };
     }
 
-    get rootStyle(): string { return resolveAgentConsoleCssVariables(this.state?.theme); }
+    get themeName(): string { return this.activeThemeName; }
     private sessionOpenHost(): AgentConsoleSessionOpenHost { return sessionOpenHost(this); }
     private commandDispatchHost(): AgentConsoleCommandDispatchHost { return commandDispatchHost(this); }
     private turnStreamHost(): AgentConsoleTurnStreamHost { return turnStreamHost(this); }
