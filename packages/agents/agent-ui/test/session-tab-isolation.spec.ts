@@ -5,6 +5,7 @@ import { ComponentFactory, ComponentRef, ComponentsModule } from '@tsdi/componen
 import { TuiRenderer, TuiTerminalSurface, TuiTemplateModule } from '@tsdi/components/console';
 import { AgentModule } from '@tsdi/agent';
 import { AgentConsoleComponent, AgentUiModule } from '../src';
+import { AgentConsoleSessionUiState } from '../src/AgentConsoleSessionUiState';
 import { ansiScreenLines, createAnsiScreenBuffer, feedAnsiScreen } from './ansi-screen';
 
 async function settle(times = 96): Promise<void> {
@@ -96,6 +97,7 @@ export class AgentConsoleSessionTabIsolationTest {
             scrollViewport: (delta: number) => surface.scrollViewport(delta),
             scrollViewportToRow: (row: number) => surface.scrollViewportToRow(row),
             scrollViewportToOffset: (offset: number) => surface.scrollViewportToOffset(offset),
+            queueViewportOffset: (offset: number) => surface.queueViewportOffset(offset),
             scrollViewportToEdge: (edge: 'start' | 'end') => surface.scrollViewportToEdge(edge)
         };
         return {
@@ -122,6 +124,46 @@ export class AgentConsoleSessionTabIsolationTest {
                 { id: 'session-b', title: 'Beta', workspace: '/work', updatedAt: 1 }
             ]
         };
+    }
+
+    @Test('a returning tab queues its saved scroll row before the restore frame ends')
+    async returningTabRestoresInsideRenderTransaction() {
+        const events: string[] = [];
+        const state: any = {
+            sessionId: 'session-a',
+            messages: [],
+            input: '',
+            inputCursor: 0,
+            pendingAttachments: [],
+            selectedMessageId: '',
+            messagesFocused: false,
+            messageDetailOpen: false,
+            messageDetailScroll: 0,
+            messagesNewCount: 0,
+            transcriptFollowing: true,
+            setInput(value: string, cursor: number) { this.input = value; this.inputCursor = cursor; },
+            setPendingAttachments(value: any[]) { this.pendingAttachments = value; },
+            setMessagesFocused(value: boolean) { this.messagesFocused = value; },
+            openMessageDetail() { this.messageDetailOpen = true; },
+            syncTranscriptFollowing() { this.transcriptFollowing = false; }
+        };
+        const ui = new AgentConsoleSessionUiState(() => ({
+            state,
+            surfaceAccessor: {
+                getViewportScrollOffset: () => 12,
+                isViewportFollowing: () => false,
+                queueViewportOffset: (offset: number) => events.push(`queue:${offset}`),
+                scrollViewportToOffset: () => { events.push('offset'); return true; },
+                scrollViewportToEdge: () => { events.push('edge'); return true; }
+            } as any
+        }));
+        const begin = () => events.push('begin');
+        const end = () => events.push('end');
+        await ui.switchSession(async () => { state.sessionId = 'session-b'; }, () => state.sessionId, begin, end);
+        events.length = 0;
+        await ui.switchSession(async () => { state.sessionId = 'session-a'; }, () => state.sessionId, begin, end);
+        // The saved row must be part of the first frame, not a post-frame jump.
+        expect(events).toEqual(['begin', 'queue:12', 'end']);
     }
 
     @Test('switching a tab never shows the previous tab transcript')

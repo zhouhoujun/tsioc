@@ -41,6 +41,8 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     getViewportScrollOffset?(): number;
     /** Restore a transcript scroll offset measured from the latest row. */
     scrollViewportToOffset?(offsetRows: number): boolean;
+    /** Queue the offset until the target transcript layout exists (tab switch). */
+    queueViewportOffset?(offsetRows: number): void;
     /** Open the base-layer transcript pager over the last full render; optional query is a find. */
     openPagerFromLastRender?(query?: string, statusCopy?: AgentConsolePagerStatusCopy): boolean;
     closePager?(): boolean;

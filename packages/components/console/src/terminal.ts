@@ -403,6 +403,7 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     /** Scroll so that `row` (0-based rendered row) becomes the viewport top. */
     scrollViewportToRow?(_row: number): boolean { return false; }
     scrollViewportToEdge?(_edge: 'start' | 'end'): boolean { return false; }
+    queueViewportOffset?(_offsetRows: number): void { return undefined; }
     isViewportFollowing?(): boolean | undefined { return undefined; }
     abstract notifyNonMouseInput?(): boolean;
     abstract writeTerminalClipboardText(text: string): boolean;
@@ -689,6 +690,11 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
     /** Restore a transcript scroll offset measured from the latest row. */
     scrollViewportToOffset?(offsetRows: number): boolean {
         return this.surface?.scrollViewportToOffset(offsetRows) ?? false;
+    }
+
+    /** Queue a transcript offset for the next layout (tab switch transaction). */
+    queueViewportOffset?(offsetRows: number): void {
+        this.surface?.queueViewportOffset(offsetRows);
     }
 
     getViewportScrollOffset?(): number {
@@ -1090,6 +1096,8 @@ export class TuiTerminalSurface {
     protected reclaimTimer?: ReturnType<typeof setTimeout>;
     protected scrollOffsetRows = 0;
     protected maxScrollOffsetRows = 0;
+    /** A tab switch supplies the reading distance before the new transcript metrics exist. */
+    protected pendingViewportOffset?: number;
     protected lastAvailableRows = 0;
     protected readonly scrollBox = new ScrollBox();
     protected pagerBox?: PagerBox;
@@ -1342,6 +1350,14 @@ export class TuiTerminalSurface {
         if (this.destroyed) {
             return;
         }
+        if (this.renderBatchDepth > 0) {
+            // Never bypass an active render transaction: a selection repaint
+            // based on the previous layout would flash before the new dialog or
+            // session frame lands.
+            this.renderBatchPending = true;
+            this.selectionRenderPending = false;
+            return;
+        }
         if (!this.selectionFrame) {
             this.requestRender();
             return;
@@ -1462,6 +1478,20 @@ export class TuiTerminalSurface {
         this.scrollOffsetRows = this.scrollBox.maxTop - this.scrollBox.top;
         this.requestRender();
         return true;
+    }
+
+    /**
+     * Queue a reading distance for the next layout. Tab switches must apply the
+     * saved offset after the target session's transcript metrics exist; applying
+     * it immediately renders the bottom of the target first and then jumps,
+     * which is the visible tab-switch jitter.
+     */
+    queueViewportOffset(offsetRows: number): void {
+        if (!this.isScrollViewportEnabled()) {
+            return;
+        }
+        this.pendingViewportOffset = Math.max(0, Math.floor(Number.isFinite(offsetRows) ? offsetRows : 0));
+        this.requestRender();
     }
 
     /** Open a read-only full-history pager over already-rendered lines. The surface owns the pager state. */
@@ -1703,7 +1733,7 @@ export class TuiTerminalSurface {
         this.mousePress = { x: mouse.x, y: mouse.y };
         if (this.textSelection) {
             this.textSelection = undefined;
-            this.requestSelectionRender();
+            this.requestRender();
         }
         const target = this.hitTest(mouse.x, mouse.y);
         const element = target?.node as ConsoleElement | undefined;
@@ -1964,7 +1994,7 @@ export class TuiTerminalSurface {
     notifyNonMouseInput(): boolean {
         if (this.textSelection) {
             this.textSelection = undefined;
-            this.requestSelectionRender();
+            this.requestRender();
         }
         if (!this.mouseHandedOff) {
             return false;
@@ -1983,6 +2013,20 @@ export class TuiTerminalSurface {
             this.reclaimMouseTracking();
         }, this.resolveMouseHandoffReclaimMs());
         this.reclaimTimer.unref?.();
+    }
+
+    /**
+     * Apply a queued reading distance once the target transcript metrics are
+     * available. Called from every viewport branch so a pending tab restore can
+     * never leak into a later unrelated layout.
+     */
+    protected applyPendingViewportOffset(): void {
+        if (this.pendingViewportOffset === undefined) {
+            return;
+        }
+        const offset = this.pendingViewportOffset;
+        this.pendingViewportOffset = undefined;
+        this.scrollBox.scrollTo(this.scrollBox.maxTop - Math.max(0, Math.floor(offset)));
     }
 
     protected resolveViewportLayout(layout: ReturnType<TuiTerminalSurfaceRenderer['renderToTuiLayout']>): {
@@ -2145,6 +2189,7 @@ export class TuiTerminalSurface {
             : (height || 0);
         if (nativeScrollback) {
             this.maxScrollOffsetRows = 0;
+            this.applyPendingViewportOffset();
             this.scrollOffsetRows = 0;
             return composeDialogOverlay({
                 lines: allLines,
@@ -2156,6 +2201,7 @@ export class TuiTerminalSurface {
         }
         if (!height) {
             this.maxScrollOffsetRows = 0;
+            this.applyPendingViewportOffset();
             this.scrollOffsetRows = 0;
             return composeDialogOverlay({
                 lines: allLines,
@@ -2168,6 +2214,7 @@ export class TuiTerminalSurface {
         if (!scrollRegion || !footerRegion || footerRegion.startRow <= scrollRegion.startRow) {
             if (allLines.length <= height) {
                 this.maxScrollOffsetRows = 0;
+                this.applyPendingViewportOffset();
                 this.scrollOffsetRows = 0;
                 return composeDialogOverlay({
                     lines: allLines,
@@ -2180,7 +2227,8 @@ export class TuiTerminalSurface {
             const start = allLines.length - height;
             const mapRow = (row: number): number | undefined => row >= start ? row - start : undefined;
             this.maxScrollOffsetRows = this.isScrollViewportEnabled() ? start : 0;
-            this.scrollOffsetRows = 0;
+            this.applyPendingViewportOffset();
+            this.scrollOffsetRows = this.scrollBox.maxTop - this.scrollBox.top;
             return composeDialogOverlay({
                 lines: allLines.slice(start),
                 regions: allRegions.flatMap(region => {
@@ -2213,6 +2261,7 @@ export class TuiTerminalSurface {
         if (previousContentRows === transcript.length) {
             this.scrollBox.scrollTo(this.scrollBox.maxTop - previousOffset);
         }
+        this.applyPendingViewportOffset();
         this.maxScrollOffsetRows = this.scrollBox.maxTop;
         this.scrollOffsetRows = this.scrollBox.maxTop - this.scrollBox.top;
         const end = Math.max(0, transcript.length - this.scrollOffsetRows);

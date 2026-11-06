@@ -3062,3 +3062,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 弹出框/命令切换性能：复核 2026-10 的既有方案（openSession render batch + 行级 diff），补充 command dispatch 的短渲染事务：一次 `/command` 的 popup burst 合并为一次布局，网络/服务型长命令最多阻塞 48ms 后自动释放，避免整屏多次重绘。未知命令回归新增 begin/end batch 断言。
 - 选区卡顿继续优化为 selection-only repaint；真实 `/help` 布局耗时与 11:02 基线一致（约 50ms），确认不是 forms/toast 引入的布局退化；本轮主要减少重复全量 pass。
 - 回归：agent-ui 1976、components/console 133、build:web、source-size、`git diff --check` 通过。
+- 定位并修复 TUI 对话框/Tab 切换的渲染事务问题（真实 PTY 对比 `91343c187` 前后）：
+  - 表单/router 子项目与 provider wizard 的 forms 校验只在命令执行时加载，未进入 TUI 渲染热路径；toast 与 `CommonAlertDialogComponent` 也不在 TUI 会话/对话框渲染链上。
+  - 选中文字后的 selection-only 重绘可能落在渲染事务（`beginRenderBatch`/`endRenderBatch`）中间，用旧布局提前绘制，随后又被完整帧覆盖，表现为对话框打开/切换时的时间线闪动；现在 selection 重绘会延后到事务结束后的完整帧，点击/键盘清除选区也回到完整帧。
+  - Tab 切换恢复阅读位置原先在首个完整帧之后再用微任务执行，先画底部再跳到保存行；现在 surface 增加 `queueViewportOffset`，在目标会话的 transcript 指标建立后、第一帧内应用保存的 offset，避免二次帧跳动。
+  - 回归：components/console 135 passing（新增 batch selection 与 queued offset 用例，旧实现均失败）、agents/agent-ui 1977 passing（新增 Tab restore 事务顺序用例）、`build:web`、source-size、`git diff --check` 通过。

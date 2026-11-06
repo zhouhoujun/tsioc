@@ -92,20 +92,17 @@ export class AgentConsoleSessionUiState {
         try {
             await open();
         } finally {
-            end();
             const targetSessionId = currentSessionId();
-            // Startup (no previous tab) must not schedule a restore: the
-            // session-open path already cleared the composer, and an early
-            // keystroke must not be wiped by the first frame.
+            // Startup (no previous tab) must not restore: the session-open path
+            // already cleared the composer, and an early keystroke must not be
+            // wiped by the first frame. For a real tab switch, restore inside the
+            // render transaction so the first frame already has the target
+            // scroll position and draft instead of painting the bottom and then
+            // jumping to the saved reading row.
             if (previousSessionId && targetSessionId && targetSessionId !== previousSessionId) {
-                // Restore after the target transcript's first frame so the saved
-                // reading distance maps onto that session's own metrics.
-                void Promise.resolve().then(() => {
-                    if (currentSessionId() === targetSessionId) {
-                        this.restore(targetSessionId);
-                    }
-                });
+                this.restore(targetSessionId);
             }
+            end();
         }
     }
 
@@ -140,8 +137,16 @@ export class AgentConsoleSessionUiState {
         }
         if (saved && !saved.scrollFollowing && saved.scrollOffset > 0) {
             // Anchor by distance from the latest row: restoring a tab can add
-            // rows above (message hint), so row-from-top drifts. Re-apply once
-            // the restored frame (and its hint row) has rendered.
+            // rows above (message hint), so row-from-top drifts. The console
+            // surface queues the distance until the target transcript metrics
+            // exist, keeping the restore in the first frame instead of emitting
+            // a second frame that visibly jumps.
+            if (accessor.queueViewportOffset) {
+                accessor.queueViewportOffset(saved.scrollOffset);
+                state.transcriptFollowing = false;
+                state.messagesNewCount = saved.newCount;
+                return;
+            }
             const applyOffset = () => accessor.scrollViewportToOffset?.(saved.scrollOffset);
             applyOffset();
             state.syncTranscriptFollowing();

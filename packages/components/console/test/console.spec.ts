@@ -1798,6 +1798,48 @@ export class ConsoleRendererTest {
         }
     }
 
+    @Test('a selection repaint cannot swallow a dialog render inside a batch')
+    async selectionRepaintDoesNotBypassRenderBatch() {
+        let lines = ['Chat One', 'Chat Two'];
+        const root = { addEventListener() {}, removeEventListener() {} } as any;
+        const writes: string[] = [];
+        const surface = new TuiTerminalSurface({
+            renderer: {
+                renderToTuiLayout: () => ({ lines, regions: [] })
+            },
+            root,
+            width: 40,
+            height: 10,
+            nativeScrollback: false,
+            scrollViewport: false,
+            output: { write: (value: string) => writes.push(value) }
+        });
+        surface.render();
+        surface.dispatchMouse({ button: 0, x: 2, y: 2, release: false });
+        surface.dispatchMouse({ button: 32, x: 8, y: 2, release: false });
+        for (let index = 0; index < 10; index++) await Promise.resolve();
+        expect(surface.getTextSelectionText()).toContain('Tw');
+
+        // A new dialog frame arrives while the selection repaint is queued.
+        // The selection-only frame must not reuse the pre-dialog base lines and
+        // swallow the deferred full render.
+        lines = ['Chat One', 'Dialog'];
+        surface.beginRenderBatch();
+        surface.requestRender();
+        // Extend the selection while the dialog render is pending. The old
+        // fast path painted this selection against the pre-dialog base lines.
+        surface.dispatchMouse({ button: 32, x: 6, y: 2, release: false });
+        const writesBeforeFrame = writes.length;
+        // Give a queued microtask the chance to paint. A selection-only frame
+        // must not run while the transaction is still open.
+        for (let index = 0; index < 10; index++) await Promise.resolve();
+        expect(writes.length).toEqual(writesBeforeFrame);
+        surface.endRenderBatch();
+        for (let index = 0; index < 10; index++) await Promise.resolve();
+        expect(surface.lastRenderedLines.join('\n').replace(/\x1b\[[0-9;]*m/g, '')).toContain('Dialog');
+        surface.destroy();
+    }
+
     @Test('app text selection stays anchored to the same transcript rows after scrolling')
     async appSelectionAnchorsAcrossScroll() {
         const ctx = await Application.run(ConsoleViewportTestComponent, {
@@ -2562,6 +2604,47 @@ export class ConsoleRendererTest {
         expect(surface.viewportScrollOffset).toEqual(0);
         expect(surface.viewportFollowing).toEqual(true);
         expect(surface.lastRenderedLines[31]).toEqual('line 210');
+        surface.destroy();
+    }
+
+    @Test('queued viewport offset lands the first frame of a new transcript')
+    queuedViewportOffsetLandsFirstFrame() {
+        let lines = Array.from({ length: 200 }, (_value, index) => `line ${index + 1}`);
+        const root = { addEventListener() {}, removeEventListener() {} } as any;
+        const surface = new TuiTerminalSurface({
+            renderer: {
+                renderToTuiLayout: () => ({
+                    lines,
+                    regions: [
+                        { id: 'transcript', startRow: 0, endRow: lines.length },
+                        { id: 'footer', startRow: lines.length, endRow: lines.length }
+                    ]
+                })
+            },
+            root,
+            width: 80,
+            height: 32,
+            nativeScrollback: false,
+            scrollViewport: true,
+            scrollRegionId: 'transcript',
+            footerRegionId: 'footer',
+            output: { write() {} }
+        });
+        surface.render();
+        expect(surface.scrollViewport(5)).toEqual(true);
+        surface.render();
+        expect(surface.viewportScrollOffset).toEqual(5);
+
+        // Switch to a different transcript and supply its saved reading distance
+        // before the first layout. The very first frame must already be at that
+        // row, not at the bottom followed by a second-frame jump.
+        lines = Array.from({ length: 100 }, (_value, index) => `beta ${index + 1}`);
+        surface.queueViewportOffset(5);
+        surface.render();
+        expect(surface.viewportScrollOffset).toEqual(5);
+        expect(surface.viewportFollowing).toEqual(false);
+        expect(surface.lastRenderedLines[0]).toEqual('beta 64');
+        expect(surface.lastRenderedLines[31]).toEqual('beta 95');
         surface.destroy();
     }
 
