@@ -1736,8 +1736,6 @@ export class TuiTerminalSurface {
         const focusScreenRow = Math.max(0, Math.floor((mouse.y || 1) - 1) - rootStart);
         const anchorRow = this.viewportSourceRows[anchorScreenRow];
         const focusRow = this.viewportSourceRows[focusScreenRow];
-        const dbg = (globalThis as any).process?.env?.TSDI_SELECTION_DEBUG;
-        if (dbg) console.error('[sel]', {press, mouse, rootStart, anchorScreenRow, focusScreenRow, rows: this.viewportSourceRows.length, anchorRow, focusRow});
         if (anchorRow === undefined || focusRow === undefined) {
             return;
         }
@@ -1806,8 +1804,6 @@ export class TuiTerminalSurface {
 
     protected copyTextSelection(): boolean {
         const text = this.getTextSelectionText();
-        const dbg = (globalThis as any).process?.env?.TSDI_SELECTION_DEBUG;
-        if (dbg) console.error('[copy]', JSON.stringify(text), this.textSelection);
         if (!text) {
             return false;
         }

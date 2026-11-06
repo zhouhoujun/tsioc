@@ -3044,4 +3044,5 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 方向/键盘输入清除选择；纯点击仍正常触发行点击。新增跨滚动、右键复制、拖拽不误点击回归。
 - Web 浏览器增加右键复制选中文字 + 全局 toast：`contextmenu` 读取 selection、写入 clipboard、`CommonToastService` 展示“已复制/Copied”。
 - common 新增 `CommonToastService`（队列/订阅/自动过期）和 `CommonAlertDialogComponent`（语义 tone + 确认/关闭），并入 `BaseComponentsModule` 与导出。
+- 真实 TUI 右键复制验证：拖拽 transcript 选区后滚动，再右键触发 OSC52 剪贴板写入并显示“已复制”toast；选区文本与高亮保持锁定。
 - 回归：components/common 40、components/console 133、agent-ui 1972、`build:web`、source-size、`git diff --check` 通过。
