@@ -3010,4 +3010,5 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 验证 `/yolo on` 后写工具/命令正常执行，模型标题为 `deepseek-chat`（不再回落到 strong）。
   - 修复 `serve` 缺少 `ServerCommonModule` 导致 `No provider for FileAdapter`、web 控制台无法启动；真实 `serve` 冒烟：`/`、`/header.js`、`/dist/agent-console.js`、`/health` 全部 200。
 - 修复真实 TUI 完成后标题停在 `Working`：runtime 的 `turn_completed` 事件已把状态置为 idle，submit 的 finally 因“状态已不是 running”而跳过 `updateTerminalTitle()`；现在无论状态由哪一层收敛，finally 都会刷新终端标题。新增回归 `turn-complete-title.spec.ts`，真实 TUI 标题已从 `working` 收敛到 `idle`。
-- 回归：agent-ui 1969、agent-cli 133、source-size OK、`git diff --check` OK。
+- `/model` 等短时 notice 使用共享 `AnimationClock` 自动过期（`AgentConsoleNoticeExpiry`），不再只能等下一轮清除；新增 `notice-expiry.spec.ts`。
+- 回归：agent-ui 1971、agent-cli 133、source-size OK、`git diff --check` OK。

@@ -197,7 +197,7 @@ export async function openModelSwitcher(ctx: ModelHandlerContext): Promise<void>
             ctx.updateModelOptions?.(model);
             ctx.state.setModelProfile('auto');
             await ctx.persistSettings({ modelProfile: 'auto' });
-            ctx.notify(formatAgentUiNotice(ctx.translator, 'switchedAutoModel', { provider }));
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'switchedAutoModel', { provider }), 4000);
             return;
         }
         const tier = /^(fast|balanced|strong)$/.exec(mode)?.[1];
@@ -275,7 +275,7 @@ export async function activateModelProfile(ctx: ModelHandlerContext, profileName
         }
         ctx.updateTerminalTitle();
         if (!silent) {
-            ctx.notify(formatAgentUiNotice(ctx.translator, 'switchedModelProfile', { name: modelProfile }));
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'switchedModelProfile', { name: modelProfile }), 4000);
         }
         await recordRecentModel(ctx, modelProfile);
         await ctx.persistSettings({ modelProfile });
@@ -305,7 +305,7 @@ export async function activateModelProfile(ctx: ModelHandlerContext, profileName
         ctx.state.setModel(directModel);
         ctx.updateTerminalTitle();
         if (!silent) {
-            ctx.notify(formatAgentUiNotice(ctx.translator, 'switchedModelProfile', { name }));
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'switchedModelProfile', { name }), 4000);
         }
         await recordRecentModel(ctx, name);
         await ctx.persistSettings({ modelProfile: name });
@@ -323,7 +323,7 @@ export async function activateModelProfile(ctx: ModelHandlerContext, profileName
     }
     ctx.updateTerminalTitle();
     if (!silent) {
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'switchedModelProfile', { name: name }));
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'switchedModelProfile', { name: name }), 4000);
     }
     await recordRecentModel(ctx, name);
     await ctx.persistSettings({ modelProfile: name });
@@ -421,5 +421,5 @@ export async function setModelReasoningEffort(ctx: ModelHandlerContext, next: Ef
     opts.model = opts.model || {};
     opts.model.reasoningEffort = next;
     await ctx.persistSettings({ thinkingLevel: next });
-    ctx.notify(formatAgentUiNotice(ctx.translator, 'reasoningEffort', { effort: ctx.getReasoningEffort() }));
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'reasoningEffort', { effort: ctx.getReasoningEffort() }), 4000);
 }

@@ -1,9 +1,10 @@
 import { ApplicationContext, formatCompactNumber } from '@tsdi/core';
 import { bootstrapConsole, disposeConsole } from './AgentConsoleBootstrap';
 import { AgentConsoleSessionArtifactsHost } from './AgentConsoleSessionArtifactsHost';
+import { AgentConsoleNoticeExpiry } from './AgentConsoleNoticeExpiry';
 import { drainQueuedPrompts, enqueuePrompt, queueDraft } from './AgentConsoleQueuedPrompts';
 import { DefaultAgentConsoleTranscriptNavigationController } from './AgentConsoleTranscriptNavigation';
-import { Component, ComponentRef, OnDestroy, RNode } from '@tsdi/components';
+import { AnimationClock, Component, ComponentRef, OnDestroy, RNode } from '@tsdi/components';
 import { AudioCaptureAdapter, AudioPlaybackAdapter, AudioPlaybackFormat, FileAdapter } from '@tsdi/common';
 import {
     CLEAR_SCROLLBACK_SEQUENCE,
@@ -392,7 +393,7 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
     protected editAttachmentsBefore: AgentConsolePendingAttachment[] = [];
     protected lastEditSessionMessageId = '';
     protected editDismissedAt = 0;
-    protected lastEscapeAt = 0;
+    protected lastEscapeAt = 0; protected noticeExpiry?: AgentConsoleNoticeExpiry;
     protected modelFavorites: string[] = [];
     protected modelRecents: string[] = [];
     readonly transcriptNavigationController: DefaultAgentConsoleTranscriptNavigationController;
@@ -429,7 +430,7 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
         @Optional() @Inject(AgentConsoleSettingsStore) private settingsStore?: AgentConsoleSettingsStore | null,
         @Optional() @Inject(AgentUiConfigService) private uiConfig?: AgentUiConfigService | null,
         @Optional() @Inject(ProjectMemoryService) private projectMemory?: ProjectMemoryService | null,
-        @Optional() @Inject(AgentConsoleTranscriptLayoutResolver) private transcriptLayoutResolver?: AgentConsoleTranscriptLayoutResolver | null,
+        @Optional() @Inject(AgentConsoleTranscriptLayoutResolver) private transcriptLayoutResolver?: AgentConsoleTranscriptLayoutResolver | null, @Optional() @Inject(AnimationClock) protected animationClock?: AnimationClock | null,
     ) {
         super();
         this.transcriptNavigationController = new DefaultAgentConsoleTranscriptNavigationController(this.state, (messageId) => revealAgentConsoleMessage(this.componentRef?.hostView?.query?.(AgentConsoleMessagesPanelComponent)?.instance, this.surfaceAccessor, () => this.state.syncTranscriptFollowing(), messageId));
@@ -499,10 +500,9 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
     }
 
     protected notify(message: string, duration?: number): void {
-        void duration;
         const lines = String(message || '').split('\n').filter(line => line.trim().length);
-        this.state.setNotice(message);
-        if (lines.length > 3) {
+        this.state.setNotice(message); this.noticeExpiry ??= new AgentConsoleNoticeExpiry(() => this.state.setNotice(''), this.animationClock);
+        this.noticeExpiry.schedule(duration); if (lines.length > 3) {
             this.state.openTextOverlay(formatAgentPanelLabel(this.translator, 'overlay', 'noticeTitle', 'notice'), lines);
         }
     }
@@ -954,7 +954,7 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
     }
 
     onDestroy(): void {
-        disposeConsole(this as any);
+        this.noticeExpiry?.dispose(); disposeConsole(this as any);
     }
 
     protected async saveReviewAnnotationsCacheToDisk(cache: Record<string, Record<string, any>>): Promise<void> {
