@@ -3024,3 +3024,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `.message-item-block` / `.message-markdown` 不再依赖静态 class 与模板插值混写。
 - i18n notice 大文件拆分：中英文 notice 目录各拆成 3 个顺序保持的分片 + 聚合入口，单文件均降到 20K 以下，lockstep 顺序测试通过。
 - 回归：agent-ui 1972、components/console 132、`build:web`、source-size、`git diff --check` 通过。
+- 继续拆分大文件，消除 20K 以上 i18n/渲染文件：
+  - `agent-ui.i18n.panel.ts` 拆成 en/zh core 分片 + 聚合入口（22K → 1K + 10K/10K）。
+  - `agent-ui.i18n.menu.ts` 拆成 en/zh 分片 + 聚合入口（22K → 10K/10K）。
+  - `agent-ui.i18n.ts` 的中英文 bundle 移到 `agent-ui.i18n.bundle.en/zh.ts` + `constants`，主文件 31K → 7.5K。
+  - `AgentConsoleMessageItemRenderer.ts` 的 markdown/display/build line 逻辑移到 `AgentConsoleMessageContentRenderer.ts`（21K → 17.8K + 4.3K）。
+  - i18n lockstep / key 顺序测试通过。
+- 回归：agent-ui 1972、components/console 132、build:web、source-size、`git diff --check` 通过。
