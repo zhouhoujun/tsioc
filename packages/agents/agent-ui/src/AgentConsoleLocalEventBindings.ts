@@ -34,7 +34,7 @@ import { formatToolEventRow, resolveAgentToolLabel } from './AgentConsoleStreamH
 import { AgentConsoleLocalEventHelperHost } from './AgentConsoleLocalEventHelperHost';
 
 export interface AgentConsoleLocalEventContext {
-    state: AgentConsoleSessionState;
+    getState(): AgentConsoleSessionState; // resolve per event: the bridge may rebind the reactive state after subscribe
     appRpc?: AgentConsoleAppRpc | null;
     translator?: TranslatorService;
     backgroundTasks?: BackgroundTaskManager | null;
@@ -47,7 +47,7 @@ export class AgentConsoleLocalEventBindings extends AgentConsoleLocalEventHelper
         super();
     }
 
-    get state(): AgentConsoleSessionState { return this.ctx.state; }
+    get state(): AgentConsoleSessionState { return this.ctx.getState(); }
     get appRpc(): AgentConsoleAppRpc | null | undefined { return this.ctx.appRpc; }
     get translator(): TranslatorService | undefined { return this.ctx.translator; }
     get backgroundTasks(): BackgroundTaskManager | null | undefined { return this.ctx.backgroundTasks; }

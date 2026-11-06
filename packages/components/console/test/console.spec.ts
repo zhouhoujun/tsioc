@@ -454,6 +454,28 @@ export class ConsoleRendererTest {
         expect(renderer.renderToTuiLines(root)[0]).toContain('\x1b[38;2;0;255;0m');
     }
 
+    @Test('resolves data-theme variable blocks inherited from the surface root')
+    resolvesDataThemeVariableBlocks() {
+        const renderer = new TuiRenderer();
+        renderer.setStyleSheet(`
+            .theme-root[data-theme="light"] { --theme-text: #24292f; }
+            .theme-root[data-theme="dark"] { --theme-text: #c9d1d9; }
+            .theme-child { color: var(--theme-text, #111111); }
+        `);
+        const root = renderer.createElement('div') as ConsoleElement;
+        root.setAttribute('class', 'theme-root');
+        root.setAttribute('data-theme', 'dark');
+        const row = renderer.createElement('label') as ConsoleElement;
+        row.setAttribute('class', 'theme-child');
+        renderer.appendChild(row, renderer.createText('variable'));
+        renderer.appendChild(root, row);
+
+        expect(renderer.renderToTuiLines(root)[0]).toContain('\x1b[38;2;201;209;217m');
+
+        root.setAttribute('data-theme', 'light');
+        expect(renderer.renderToTuiLines(root)[0]).toContain('\x1b[38;2;36;41;47m');
+    }
+
     @Test('preserves inline space tokens so markdown table padding survives')
     preservesInlineSpaceTokens() {
         const renderer = new TuiRenderer();

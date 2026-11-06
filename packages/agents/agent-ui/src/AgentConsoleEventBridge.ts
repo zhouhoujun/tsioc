@@ -84,7 +84,7 @@ export class AgentConsoleEventBridge {
         };
 
         new AgentConsoleLocalEventBindings({
-            state: this.state,
+            getState: () => this.state,
             appRpc: this.appRpc,
             translator: this.translator,
             backgroundTasks: this.backgroundTasks,

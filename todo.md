@@ -3096,3 +3096,14 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 会话时间线分页改为复用 common List 的 `ListPager` 特性：cursor/hasMore/loading/error、id 去重、并发加载保护与失败重试统一由 List 层承担；session paging 只负责拉页、规范化和 prepend。
 - `ListComponent` 也改为 `ListPager` 的响应式投影，组件与时间线使用同一套分页状态机；`onReachEnd()` 仍可直接触发下一页。
 - 验证：components/common 43、session lifecycle 14、tsc、真实 TUI 109 条会话首屏仅最新页、滚到顶部后旧消息出现、source-size、diff-check 通过。
+- 修复审批弹窗回归（真实 TUI：`web_search`/`terminal` 等审批工具不再弹窗，30s 后报 `approval timed out`）：
+  - PTY 二分定位到 `eab06f8fd refactor(agent-ui): split local event bindings from the event bridge`：拆分后事件处理器在 `subscribe()` 时捕获了当时的 `state` 实例，而 bridge 会在之后 `bindState(组件响应式 state 代理)`；处理器写的是原始 state，绕过代理，`pendingApprovals`/`approvalsFocused` 变化不触发重绘，弹窗永不出现。时间线仍会更新，因为流式 turn 走的是组件代理那条路径。
+  - 修复：`AgentConsoleLocalEventBindings` 改为 `getState()` 在事件发生时解析 state（恢复拆分前 `this.state` 的动态语义），`AgentConsoleEventBridge` 传入 `getState: () => this.state`。
+  - 回归：新增 `test/approval-bridge-rebind.spec.ts`（先 `subscribe()` 再 `bindState()`，审批事件必须落到新 state 并聚焦；旧实现失败）；agent-ui 1980 passing。
+  - 真实 TUI 验证：`terminal` 审批弹窗 2s 内出现（标题「允许 terminal？」，`a` 批准），随后 `echo still-ok` 正常执行；`web_search` 同样恢复弹窗（批准后仍因未配置 search adapter 报错）。
+- `web_search` 仍不可用：`AgentToolsWebOptions.search` 在整个仓库没有任何 `WebSearchAdapter` 实现，批准后返回 `web_search requires a configured search adapter.`。需决定提供方式（内置免密 HTML 搜索 / 配置 API key 的搜索 provider / 无适配器时隐藏工具），未擅自改默认注册。
+- 修复 TUI 主题不生效（PTY acceptance scenario 8：`/theme light` 后仍按 dark 调色板重绘）：
+  - PTY 二分定位到 `428e2aead refactor(agent-ui): finish CSS class styling for messages and theme vars`：根节点从内联 CSS 变量改为 `data-theme` + class CSS 变量（`162f04aca` 最终定型），但 `components/console` 的样式表解析器只把固定白名单里的属性纳入选择器匹配与缓存键，没有 `data-theme`，于是 `.agent-console[data-theme="light"]` 永远不命中，`var(--console-text, #c9d1d9)` 一路回退到 dark 默认值；重启恢复 light 也一样。
+  - 修复：`resolveConsoleStyleSheet` 的属性白名单加入 `data-theme`（根节点变量随属性重算并被子节点继承），CSS/HTML 端不受影响。
+  - 回归：`components/console` 新增“data-theme 变量块被根节点继承”用例（旧实现失败），console 99 passing。
+  - 真实 TUI/PTY 验证：`/theme light` 立即出现 `#24292f` 前景；重启恢复 light；切回 dark 正常；scenario 8 四个矩阵单元全部通过。
