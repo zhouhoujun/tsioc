@@ -1197,24 +1197,11 @@ export class TuiTerminalSurface {
         this.scheduled = false;
         this.pendingRenderDuringHandoff = false;
         this.pendingRenderOrigin = undefined;
-        this.selectionFrame = undefined;
-        this.selectionRenderPending = false;
         this.renderBatchDepth = 0;
         this.renderBatchPending = false;
     }
 
     protected pendingRenderOrigin?: ConsoleNode;
-    protected selectionRenderPending = false;
-    protected selectionFrame?: {
-        baseLines: string[];
-        regions: TerminalRenderRegion[];
-        width: number;
-        rowBands?: Map<number, { start: number; end: number }>;
-        stablePrefixRows: number;
-        cursorRow: number;
-        cursorTarget?: TerminalCursorTarget;
-        cursorMode: 'prompt' | 'bottom';
-    };
 
     beginRenderBatch(): void {
         this.renderBatchDepth += 1;
@@ -1238,7 +1225,6 @@ export class TuiTerminalSurface {
             this.renderBatchPending = true;
             return;
         }
-        this.selectionRenderPending = false;
         if (this.scheduled) {
             // A second, different origin before the frame flushes makes the
             // single dirty-subtree hint unreliable; fall back to a full pass.
@@ -1251,11 +1237,6 @@ export class TuiTerminalSurface {
         this.pendingRenderOrigin = origin;
         const run = () => {
             this.scheduled = false;
-            if (this.selectionRenderPending) {
-                this.selectionRenderPending = false;
-                this.renderSelectionFrame();
-                return;
-            }
             this.render();
         };
         if (this.options.scheduler) {
@@ -1299,7 +1280,6 @@ export class TuiTerminalSurface {
         this.lastFullLines = (layout.lines || []).slice();
         const viewport = this.resolveViewportLayout(layout);
         const lines = viewport.lines;
-        const baseLines = lines.slice();
         this.viewportSourceRows = viewport.sourceRows || [];
         this.applyTextSelection(lines);
         this.applyHoverHighlight(lines);
@@ -1311,15 +1291,13 @@ export class TuiTerminalSurface {
         const cursorRow = cursorMode === 'prompt' && cursorTarget
             ? cursorTarget.row
             : Math.max(0, lines.length - 1);
-        const stablePrefixRows = this.resolveStablePrefixRows(lines, layout.regions || []);
-        this.selectionFrame = { baseLines, regions: viewport.regions, width, rowBands, stablePrefixRows, cursorRow, cursorTarget, cursorMode };
         const result = renderPrimaryTerminalScreen({
             state: this.renderState,
             lines,
             regions: viewport.regions,
             width,
             rowBands,
-            stablePrefixRows,
+            stablePrefixRows: this.resolveStablePrefixRows(lines, layout.regions || []),
             cursorRow,
             cursorTarget: this.resolvePlaceCursor() ? cursorTarget : undefined,
             cursorMode,
@@ -1335,70 +1313,6 @@ export class TuiTerminalSurface {
             this.resolveOutput()?.write(result.output);
         }
         return result;
-    }
-
-    /** Repaint only the selection overlay, reusing the last layout frame. */
-    requestSelectionRender(): void {
-        if (this.destroyed) {
-            return;
-        }
-        if (!this.selectionFrame) {
-            this.requestRender();
-            return;
-        }
-        if (this.scheduled) {
-            return;
-        }
-        this.scheduled = true;
-        this.selectionRenderPending = true;
-        this.pendingRenderOrigin = undefined;
-        const run = () => {
-            this.scheduled = false;
-            if (this.selectionRenderPending) {
-                this.selectionRenderPending = false;
-                this.renderSelectionFrame();
-                return;
-            }
-            this.render();
-        };
-        if (this.options.scheduler) {
-            this.options.scheduler(run);
-            return;
-        }
-        Promise.resolve().then(run);
-    }
-
-    protected renderSelectionFrame(): void {
-        const frame = this.selectionFrame;
-        if (!frame) {
-            this.render();
-            return;
-        }
-        if (this.mouseHandedOff) {
-            this.pendingRenderDuringHandoff = true;
-            return;
-        }
-        const lines = frame.baseLines.slice();
-        this.applyTextSelection(lines);
-        this.applyHoverHighlight(lines);
-        const result = renderPrimaryTerminalScreen({
-            state: this.renderState,
-            lines,
-            regions: frame.regions,
-            width: frame.width,
-            rowBands: frame.rowBands,
-            stablePrefixRows: frame.stablePrefixRows,
-            cursorRow: frame.cursorRow,
-            cursorTarget: this.resolvePlaceCursor() ? frame.cursorTarget : undefined,
-            cursorMode: frame.cursorMode,
-            placeCursor: this.resolvePlaceCursor()
-        });
-        this.renderState = result.state;
-        this.renderedLines = result.fittedLines.slice();
-        this.terminalRow = result.terminalRow;
-        if (result.output) {
-            this.resolveOutput()?.write(result.output);
-        }
     }
 
     scrollViewport(deltaRows: number): boolean {
@@ -1703,7 +1617,7 @@ export class TuiTerminalSurface {
         this.mousePress = { x: mouse.x, y: mouse.y };
         if (this.textSelection) {
             this.textSelection = undefined;
-            this.requestSelectionRender();
+            this.requestRender();
         }
         const target = this.hitTest(mouse.x, mouse.y);
         const element = target?.node as ConsoleElement | undefined;
@@ -1831,7 +1745,7 @@ export class TuiTerminalSurface {
             focusRow,
             focusCol: Math.max(0, Math.floor((mouse.x || 1) - 1))
         };
-        this.requestSelectionRender();
+        this.requestRender();
     }
 
     protected applyTextSelection(lines: string[]): void {
@@ -1964,7 +1878,7 @@ export class TuiTerminalSurface {
     notifyNonMouseInput(): boolean {
         if (this.textSelection) {
             this.textSelection = undefined;
-            this.requestSelectionRender();
+            this.requestRender();
         }
         if (!this.mouseHandedOff) {
             return false;

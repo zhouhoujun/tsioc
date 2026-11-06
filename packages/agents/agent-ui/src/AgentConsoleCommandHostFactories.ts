@@ -175,9 +175,7 @@ export function commandDispatchHost(self: any): AgentConsoleCommandDispatchHost 
             set pendingCommandRequestId(value) { self.pendingCommandRequestId = value; },
             resolveUniqueCommandPrefix: (input) => self.resolveUniqueCommandPrefix(input),
             notify: (message, duration) => self.notify(message, duration),
-            buildCommandContext: (abortSignal) => self.buildCommandContext(abortSignal),
-            beginRenderBatch: () => self.surfaceAccessor?.beginRenderBatch?.(),
-            endRenderBatch: () => self.surfaceAccessor?.endRenderBatch?.()
+            buildCommandContext: (abortSignal) => self.buildCommandContext(abortSignal)
         };
     }
 

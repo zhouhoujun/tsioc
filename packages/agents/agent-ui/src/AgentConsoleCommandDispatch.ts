@@ -16,33 +16,9 @@ export interface AgentConsoleCommandDispatchHost {
     resolveUniqueCommandPrefix(input: string): { command: string; matches: string[] };
     notify(message: string, duration?: number): void;
     buildCommandContext(abortSignal?: AbortSignal): CommandHandlerContext;
-    /** Optional host render transaction around a command's synchronous burst. */
-    beginRenderBatch?(): void;
-    endRenderBatch?(): void;
 }
 
 export async function dispatchAgentConsoleCommand(host: AgentConsoleCommandDispatchHost, value: string): Promise<boolean> {
-    const begin = host.beginRenderBatch ? () => host.beginRenderBatch!() : undefined;
-    const end = host.endRenderBatch ? () => host.endRenderBatch!() : undefined;
-    begin?.();
-    let released = false;
-    const release = (): void => {
-        if (released) return;
-        released = true;
-        end?.();
-    };
-    // Commands that stay open for network/server work must not freeze the UI;
-    // release the transaction shortly after the synchronous popup burst.
-    const timer = begin ? setTimeout(release, 48) : undefined;
-    try {
-        return await dispatchAgentConsoleCommandInternal(host, value);
-    } finally {
-        if (timer) clearTimeout(timer);
-        release();
-    }
-}
-
-async function dispatchAgentConsoleCommandInternal(host: AgentConsoleCommandDispatchHost, value: string): Promise<boolean> {
     const parsed = parseSlashCommandLine(value);
     if (!parsed.command.startsWith('/')) {
         return false;
