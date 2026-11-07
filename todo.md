@@ -3188,3 +3188,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 浅色主题还残留旧规则：选中 tab 有 chip 背景/边框、`+` 有边框，与深色“纯文字 tab”不一致。改为各主题统一：选中只加粗+更亮字体，`✕`/`+` 无边框；真实 Chrome `data-agent-theme=light` 下 tab/`+` 背景与边框均为透明。
   - 文本浮层打开时 footer 状态行会重复展示同一段摘要（弹窗下方一行醒目文字，像没样式的续行）。`AgentConsoleStatusPanelComponent.notice` 在 `state.textOverlay` 打开时返回空串，关闭后恢复；真实 TUI `/status` 打开时不再出现重复摘要，`Esc` 关闭后摘要恢复。
   - 回归：新增 `test/status-notice-overlay.spec.ts`；agent-ui 1994 passing。
+- TUI 多会话 tab 窗口化与窄终端收尾（真实 PTY 100/60 列验收）：
+  - 终端 tab 条不能滚动：会话多时原先从右侧裁剪，活动 tab 和 `+` 可能被裁掉。`AgentConsoleSessionTabsSource` 按 `state.tabStripColumns`（仅终端宿主设置，浏览器保持 0）计算窗口，围绕活动 tab 选择能放下的连续区间，并在两侧补 `…` 标记；`TabItem` 新增 `disabled`，`TabBarComponent.select` 忽略空/禁用项（Web skin 同步置灰、无 hover）。
+  - 实测 100 列 11 个会话出现 `… 新会话 ×N ✕ +`，活动 tab 与 `+` 始终可见；60 列 6 个会话同样窗口化；浏览器（`tabStripColumns=0`）保持全部 tab 可横向滚动。
+  - 窄终端（60 列）footer 元信息行不再把 “0 tokens” 折成 “0 tok / ens”，改为裁剪（`.input-meta { white-space: nowrap }`）。
+  - 回归：`test/session-tab-window.spec.ts`（浏览器不窗口化、活动在尾/中时的窗口与标记、标记不可选）；components/common 49、components/console 149、agent-ui 1997 passing。

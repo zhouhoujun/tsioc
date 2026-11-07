@@ -439,6 +439,9 @@
 .wizard-hint,
 .input-meta {
     color: var(--agent-theme-input-hint-color, #6e7681);
+
+
+    white-space: nowrap;
 }
 .console-working-panel {
     color: var(--agent-theme-working-shell-color, #c9d1d9);

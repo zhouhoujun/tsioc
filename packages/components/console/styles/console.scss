@@ -451,6 +451,9 @@ $idle: var(--console-idle, #6fa37a);
 .wizard-hint,
 .input-meta {
     color: var(--agent-theme-input-hint-color, #6e7681);
+    // The composer meta line is chrome: clip at the edge instead of wrapping
+    // mid-word ("0 tok / ens") on narrow terminals.
+    white-space: nowrap;
 }
 .console-working-panel {
     color: var(--agent-theme-working-shell-color, #c9d1d9);

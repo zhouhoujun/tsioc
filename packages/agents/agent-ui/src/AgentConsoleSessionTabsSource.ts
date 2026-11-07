@@ -1,6 +1,6 @@
 import { Injectable, Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
-import { TabBarSource, TabItem } from '@tsdi/components/common';
+import { getDisplayWidth, TabBarSource, TabItem } from '@tsdi/components/common';
 import { AgentConsoleSessionState, AgentConsoleSessionItem } from './AgentConsoleSessionState';
 import { resolveSessionProjectKey } from './AgentConsoleProjectProjection';
 import { formatAgentUiLabel } from './agent-ui.i18n';
@@ -53,7 +53,7 @@ export class AgentConsoleSessionTabsSource implements TabBarSource {
         if (!this.visible) {
             return [];
         }
-        return resolveAgentConsoleSessionTabs(this.state).map(session => {
+        const items = resolveAgentConsoleSessionTabs(this.state).map(session => {
             const active = session.id === this.state.sessionId || !!session.current;
             return {
                 id: session.id,
@@ -62,6 +62,56 @@ export class AgentConsoleSessionTabsSource implements TabBarSource {
                 showClose: active
             };
         });
+        return this.windowItems(items);
+    }
+
+    /**
+     * Terminal strips cannot scroll: keep the active tab and `+` visible by
+     * showing a window around it plus `…` markers. Browser strips keep every
+     * tab (they scroll horizontally), so this only runs when the host reports
+     * terminal columns.
+     */
+    protected windowItems(items: TabItem[]): TabItem[] {
+        const columns = Math.floor(Number(this.state.tabStripColumns) || 0);
+        if (!items.length || columns <= 0) {
+            return items;
+        }
+        const budget = Math.max(12, columns - getDisplayWidth(this.createLabel) - 1);
+        const widthOf = (item: TabItem): number => getDisplayWidth(item.label) + (item.showClose ? 2 : 0);
+        const total = items.reduce((sum, item) => sum + widthOf(item), 0);
+        if (total <= budget) {
+            return items;
+        }
+        const active = Math.max(0, items.findIndex(item => item.active));
+        const indicator = 3;
+        const fits = (start: number, end: number, used: number): boolean =>
+            used + (start > 0 ? indicator : 0) + (end < items.length ? indicator : 0) <= budget;
+        let best = { start: active, end: active + 1 };
+        for (let start = active; start >= 0; start -= 1) {
+            let used = 0;
+            for (let end = start + 1; end <= items.length; end += 1) {
+                used += widthOf(items[end - 1]);
+                if (!fits(start, end, used)) {
+                    break;
+                }
+                if (start <= active && end > active) {
+                    const size = end - start;
+                    const bestSize = best.end - best.start;
+                    const centered = Math.abs((start + end - 1) / 2 - active);
+                    const bestCentered = Math.abs((best.start + best.end - 1) / 2 - active);
+                    if (size > bestSize || (size === bestSize && centered < bestCentered)) {
+                        best = { start, end };
+                    }
+                }
+            }
+        }
+        const windowed = items.slice(best.start, best.end);
+        const marker = (): TabItem => ({ id: '', label: ' … ', active: false, showClose: false, disabled: true });
+        return [
+            ...(best.start > 0 ? [marker()] : []),
+            ...windowed,
+            ...(best.end < items.length ? [marker()] : [])
+        ];
     }
 
     get createLabel(): string {

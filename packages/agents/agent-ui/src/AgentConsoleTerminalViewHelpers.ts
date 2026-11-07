@@ -81,7 +81,7 @@ const markdownWidthResizeSyncHosts = new WeakSet<AgentConsoleMarkdownContentWidt
  * borders from being wrapped mid-row by the terminal renderer.
  */
 export interface AgentConsoleMarkdownContentWidthHost {
-    state: { markdownContentWidth: number; maxOverlayVisibleLines?: number };
+    state: { markdownContentWidth: number; maxOverlayVisibleLines?: number; tabStripColumns?: number };
     destroyed?: boolean;
     surfaceAccessor?: Pick<AgentConsoleTerminalInputHost['surfaceAccessor'] & object,
         'getTerminalSize' | 'subscribeToSurfaceResize'> | null;
@@ -99,9 +99,16 @@ export function syncConsoleMarkdownContentWidth(host: AgentConsoleMarkdownConten
     ensureMarkdownWidthResizeSync(host);
     const size = host.surfaceAccessor?.getTerminalSize?.();
     const rows = Number(size?.rows);
-    if (Number.isFinite(rows) && rows > 0 && typeof host.state.maxOverlayVisibleLines === 'number') {
+    if (Number.isFinite(rows) && rows > 0) {
         // Leave room for the tab bar, dialog chrome, status line and composer.
-        host.state.maxOverlayVisibleLines = Math.max(3, Math.floor(rows) - 13);
+        if (typeof host.state.maxOverlayVisibleLines === 'number') {
+            host.state.maxOverlayVisibleLines = Math.max(3, Math.floor(rows) - 13);
+        }
+        // Terminal strip: window the tabs instead of clipping the active one.
+        const tabColumns = Number(size?.columns ?? size?.cols);
+        if (typeof host.state.tabStripColumns === 'number' && Number.isFinite(tabColumns) && tabColumns > 0) {
+            host.state.tabStripColumns = Math.floor(tabColumns);
+        }
     }
     const columns = Number(size?.columns ?? size?.cols);
     if (!Number.isFinite(columns) || columns <= 0) {

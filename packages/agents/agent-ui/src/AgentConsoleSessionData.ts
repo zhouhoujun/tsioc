@@ -47,6 +47,8 @@ export class AgentConsoleSessionData {
     markdownContentWidth = 0;
     /** Cap for scrollable overlay content so dialogs fit above the composer. */
     maxOverlayVisibleLines = 0;
+    /** Terminal columns for the session tab strip; 0 on hosts that scroll it (web). */
+    tabStripColumns = 0;
     sessionId = 'console';
     input = '';
     inputSecret = false;
