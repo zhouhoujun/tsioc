@@ -123,10 +123,6 @@ export class GatewayServer {
             return;
         }
 
-        // Rate limiting by IP
-        const ip = req.socket.remoteAddress ?? 'unknown';
-        if (!this.rateLimiter.checkAndRespond(ip, res)) return;
-
         // Parse URL
         const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
         const pathname = url.pathname;
@@ -135,6 +131,8 @@ export class GatewayServer {
         const matched = this.matcher.match(req.method ?? 'GET', pathname);
 
         if (!matched) {
+            // The static shell is public and must always load: limiting it made
+            // browsers render a blank page after a few refreshes (429 on CSS/JS).
             if (await this.tryServeStatic(req, res, pathname)) {
                 return;
             }
@@ -142,6 +140,10 @@ export class GatewayServer {
                 .end(JSON.stringify({ error: 'not found', path: pathname }));
             return;
         }
+
+        // Rate limiting by IP (API routes only)
+        const ip = req.socket.remoteAddress ?? 'unknown';
+        if (!this.rateLimiter.checkAndRespond(ip, res)) return;
 
         // Auth check
         if (matched.route.auth !== false) {

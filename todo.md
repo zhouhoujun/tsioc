@@ -3165,3 +3165,17 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - alert（>3 行 `notify` 浮层）新增自动关闭：`NOTICE_OVERLAY_AUTO_CLOSE_MS = 20s`，显式 `duration` 优先；手点 `✕` 仍立即关闭，且只关闭本次打开的浮层（避免误关后续面板）；`AgentConsoleToasts.disposeConsoleToasts` 清理计时器。
   - 回归：components/console `test/toast-overlay.spec.ts` 2 用例（浮层不移动 footer、scrollback 保持流内），console 148 passing；agent-ui `test/toast-notifications.spec.ts` 增加 alert 定时/手动关闭 2 用例，agent-ui 1992 passing。
   - 真实 TUI（PTY 100×24）：密集转录下复制 → 右下浮层覆盖最后一行右侧、左侧文字保留，布局不位移；2s 后自动消失。
+- Web 观感与稳定性收尾（真实 Chrome 验收）：
+  - 修复“刷新几次后网页变全黑”：`GatewayServer` 把限流放在路由匹配之前，静态 shell（index.html/console.css/agent-console.js）也计入每 IP 100 req/min，超限后 CSS/JS 直接 429，页面只剩深色背景（真实复现：连续几次打开后 `/console.css` 429）。限流移到路由匹配之后，仅作用于 API/RPC；静态 shell 不再限流。
+  - 回归：`agent-gateway` 新增“静态 shell 不限流、API 仍限流”用例；agent-gateway 193 passing。
+  - Web markdown 恢复段落节奏：终端模型用空行表示块间距，之前空行高度被压成 0，标题/段落/列表/引用/代码块全挤在一起；给 `.message-markdown .message-line` 补 `min-height: 1.65em`，块之间恢复一行间距（中文长段、代码块、表格均正常）。
+  - 会话 tab 选中/hover 不再出现“chip 边框”：`[aria-selected="true"]:hover` 与 `+` 的 hover 改为背景高亮、无边框；`✕` hover 不再变红，只提亮+背景。
+  - 真实 Chrome（1280×1000、390×844）：标题 15.5px、块间距正常，tab 纯文字、选中加粗、仅选中显示 `✕`；移动端表格/代码块不溢出。
+- 修复 Web 端选择/提示弹窗“没有样式、看不到选项”（真实 Chrome 定位）：
+  - 根因：共享 `select-list` 只渲染一个 `<select options="{json}">`，只有 console 渲染器会解析这个属性并画行；浏览器拿到的是**空的原生 select**（只剩一个 ✕ 和下拉箭头），所以 `/`、`/model`、`/theme`、`/help` 等所有选择菜单在网页里都不可见/不可点。
+  - 修复：`SelectComponent` 复用 `resolveSelectWindow`/`clampSelectIndex` 生成同一窗口的 `visibleOptions`，模板新增 `.select-rows` 真实行（label/description/选中态/title/meta/detail/hint，点击派发 `selectAction`）；console 样式表把 `.select-rows` 设为 `display:none`，TUI 仍走原 `<select>` 合成，行为不变。
+  - Web skin：隐藏原生 `.select-core`，行改为 hover/选中高亮的列表；弹窗（dialog/select/list-panel）统一为居中圆角卡片（1px 边框、阴影、`max-height: 60vh` 滚动、标题分隔线、右上 `✕`）。
+  - 顺带把网关默认限流 100/min 提到 600/min（单页加载 + 多次 RPC 很容易在测试/多标签下打满）。
+  - 回归：components/common `browserRows` 用例（窗口/选中/派发）；agent-ui 新增 `web-select-rows.spec.ts`（DOM 渲染行、点击关闭菜单）；common 49 / console 148 / agent-ui 1993 passing。
+  - 真实 Chrome（1280×900、390×844）：`/` 菜单 12 行可选、点击后补全命令；`/status` 为居中卡片（标题/分隔线/✕/hint）；TUI `/` 菜单与 `/status` 保持原样。
+- TUI 代码块分组（对齐 opencode 的 CodeRenderable 观感）：fenced code 行加主题化背景带（`--console-code-bg`：dark `#0d1117`、light `#f6f8fa`、solarized/solarized/high-contrast 各自取值）与 1ch 左内边距，和正文/列表区分开；真实 TUI 验证 dark/light 都输出对应 `48;2;…` 背景，表格/引用不受影响。

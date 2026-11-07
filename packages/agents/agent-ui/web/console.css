@@ -370,6 +370,88 @@ body {
     opacity: 0;
 }
 
+/* Select menus: the console renderer paints the `<select>` JSON payload; the
+   browser gets real rows from the same window instead of an empty control. */
+#agent-console agent-console-select-panel .select-core {
+    display: none !important;
+}
+
+#agent-console agent-console-select-panel .select-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+#agent-console agent-console-select-panel .select-title {
+    display: block;
+    padding: 0 28px 8px 0;
+    border-bottom: 1px solid var(--agent-web-border);
+    margin-bottom: 8px;
+    color: var(--agent-web-strong);
+    font-weight: 600;
+    font-size: 13.5px;
+}
+
+#agent-console agent-console-select-panel .select-meta {
+    display: block;
+    color: var(--agent-web-muted);
+    font-size: 11.5px;
+    margin-bottom: 6px;
+}
+
+#agent-console agent-console-select-panel .select-option {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 6px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    color: var(--agent-web-text);
+    transition: background-color 120ms ease, color 120ms ease;
+}
+
+#agent-console agent-console-select-panel .select-option:hover {
+    background: var(--agent-web-hover);
+}
+
+#agent-console agent-console-select-panel .select-option.is-selected {
+    background: var(--agent-web-panel-raised);
+    color: var(--agent-web-strong);
+    font-weight: 600;
+}
+
+#agent-console agent-console-select-panel .select-option-label {
+    white-space: pre;
+    font-family: var(--agent-web-mono);
+    font-size: 12.5px;
+}
+
+#agent-console agent-console-select-panel .select-option-description {
+    min-width: 0;
+    color: var(--agent-web-muted);
+    font-size: 11.5px;
+    overflow-wrap: anywhere;
+}
+
+#agent-console agent-console-select-panel .select-detail {
+    display: block;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--agent-web-border);
+    color: var(--agent-web-text);
+    font-size: 12px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+#agent-console agent-console-select-panel .select-hint {
+    display: block;
+    margin-top: 8px;
+    color: var(--agent-web-muted);
+    font-size: 11.5px;
+}
+
 #agent-console .console-new-messages {
     transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, opacity 120ms ease;
 }
@@ -379,17 +461,19 @@ body {
 }
 
 #agent-console tab-bar .tab[aria-selected="true"]:hover {
-    border-color: var(--agent-web-accent);
+    background: var(--agent-web-hover);
+    border-color: transparent;
 }
 
 #agent-console tab-bar .tab-close:hover {
-    color: var(--agent-web-danger) !important;
     opacity: 1;
+    background: var(--agent-web-hover);
 }
 
 #agent-console tab-bar .tab-new:hover {
     background: var(--agent-web-hover);
-    border-color: var(--agent-web-accent);
+    border-color: transparent;
+    color: var(--agent-web-accent) !important;
 }
 
 #agent-console .web-code-head button:hover {
@@ -473,6 +557,12 @@ body {
 
 #agent-console .message-markdown {
     margin: 8px 0;
+}
+
+/* The terminal model carries paragraph/block breaks as blank lines. Collapsing
+   their height removed every gap, so keep one line of vertical rhythm. */
+#agent-console .message-markdown .message-line {
+    min-height: 1.65em;
 }
 
 /* User input is the visual anchor: one soft card per turn. */
@@ -828,20 +918,75 @@ body {
     font-size: 11px;
 }
 
-/* Floating menus retain the overlay contract but read as web cards. */
+/* Floating menus read as centered web cards: full border, real shadow and a
+   header row with the close affordance on the right. The terminal keeps the
+   composer-attached band; the browser has room for the open card. */
 #agent-console [renderregion="menu"] > .console-panel,
 #agent-console [renderregion="dialog"] > .console-panel,
 #agent-console dialog-panel > .console-panel,
-#agent-console agent-console-pending-question-panel > .console-panel,
-#agent-console agent-console-approvals-panel > .console-panel,
-#agent-console agent-console-select-panel > .console-panel,
+#agent-console agent-console-pending-question-panel .console-panel.list-panel,
+#agent-console agent-console-approvals-panel .console-panel.list-panel,
+#agent-console agent-console-select-panel .console-panel.select-list,
 #agent-console agent-console-text-overlay-panel > .console-panel {
+    position: relative;
+    width: fit-content;
+    min-width: min(360px, 100%);
+    max-width: min(720px, 100%);
+    margin: 12px auto;
     border: 1px solid var(--agent-web-border) !important;
-    border-bottom: 0 !important;
-    border-radius: 12px 12px 0 0;
+    border-radius: 12px !important;
     background: var(--agent-web-panel) !important;
-    box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.32);
-    padding: 10px 14px !important;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+    padding: 12px 16px 14px !important;
+    font-family: var(--agent-web-sans);
+    font-size: 13px;
+    line-height: 1.6;
+    max-height: 60vh;
+    overflow: auto;
+}
+
+#agent-console dialog-panel > .console-panel > .dialog-close,
+#agent-console agent-console-text-overlay-panel .dialog-close,
+#agent-console agent-console-pending-question-panel .dialog-close,
+#agent-console agent-console-approvals-panel .dialog-close,
+#agent-console agent-console-select-panel .dialog-close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    min-height: 20px;
+    padding: 0 4px;
+    margin: 0;
+    color: var(--agent-web-muted);
+    line-height: 1;
+}
+
+#agent-console dialog-panel > .console-panel > .dialog-title,
+#agent-console agent-console-text-overlay-panel > .console-panel > .dialog-title {
+    padding: 0 28px 8px 0;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--agent-web-border);
+    color: var(--agent-web-strong);
+    font-weight: 600;
+    font-size: 13.5px;
+}
+
+#agent-console dialog-panel > .console-panel > .dialog-line {
+    color: var(--agent-web-text);
+    padding: 1px 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+#agent-console dialog-panel > .console-panel > .dialog-hint {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--agent-web-border);
+    color: var(--agent-web-muted);
+    font-size: 11.5px;
 }
 
 #agent-console .console-new-messages {

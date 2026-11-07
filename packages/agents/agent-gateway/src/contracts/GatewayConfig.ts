@@ -89,7 +89,7 @@ export const defaultGatewayConfig: GatewayConfig = {
     port: 3100,
     authToken: '',
     auth: undefined,
-    rateLimitMax: 100,
+    rateLimitMax: 600,
     rateLimitWindowMs: 60_000,
     cors: true,
     corsOrigins: ['*'],

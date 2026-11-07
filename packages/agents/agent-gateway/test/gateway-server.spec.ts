@@ -115,6 +115,52 @@ export class RateLimiterTest {
     }
 }
 
+@Suite('GatewayServer rate limiting')
+export class GatewayServerRateLimitTest {
+    @Test('the public static shell is never rate limited; API routes still are')
+    async staticShellBypassesLimiter() {
+        const config = { cors: false, rateLimitMax: 1, rateLimitWindowMs: 60000, auth: { enabled: false } } as any;
+        const limiter = new RateLimiter(config);
+        const auth = { authenticate: async () => true } as any;
+        const server = new GatewayServer(auth, limiter, {} as any, config);
+        (server as any).tryServeStatic = async (_req: any, res: any) => {
+            res.writeHead(200, { 'Content-Type': 'text/css' }).end('body{}');
+            return true;
+        };
+        server.addRoute({
+            method: 'GET',
+            path: '/rpc',
+            auth: false,
+            handler: async (_req: any, res: any) => { res.writeHead(200).end('{}'); }
+        });
+
+        const call = async (pathname: string): Promise<number> => {
+            let status = 0;
+            const res = {
+                writeHead: (code: number) => { status = code; return res; },
+                setHeader: () => undefined,
+                end: () => undefined,
+                writableEnded: false
+            } as any;
+            const req = {
+                method: 'GET',
+                url: pathname,
+                headers: { host: 'localhost' },
+                socket: { remoteAddress: '127.0.0.9' }
+            } as any;
+            await (server as any).handleRequest(req, res);
+            return status;
+        };
+
+        // Two static requests with max=1: both load (the shell must not 429).
+        expect(await call('/console.css')).toEqual(200);
+        expect(await call('/agent-console.js')).toEqual(200);
+        // API routes share the same window and still enforce the limit.
+        expect(await call('/rpc')).toEqual(200);
+        expect(await call('/rpc')).toEqual(429);
+    }
+}
+
 @Suite('AuthMiddleware')
 export class AuthMiddlewareTest {
     @Test('extracts Bearer token from Authorization header')

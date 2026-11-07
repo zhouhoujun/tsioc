@@ -80,6 +80,11 @@
 .message-line {
     color: var(--console-text, #c9d1d9);
 }
+.message-line[data-code="true"] {
+    background: var(--console-code-bg, #0d1117);
+    padding: 0 1ch;
+    color: var(--console-text, #c9d1d9);
+}
 .message-role {
     color: var(--console-meta, #6e7681);
 }
@@ -172,6 +177,9 @@
 .dialog-close {
     display: block;
     text-align: right;
+}
+.select-rows {
+    display: none;
 }
 .select-shell {
     background: var(--console-dialog-bg, #161b22);
@@ -608,6 +616,7 @@
 
 
 .agent-console[data-theme="dark"] {
+    --console-code-bg:#0d1117;
     --console-text:#c9d1d9;
     --console-meta:#6e7681;
     --console-accent:#86a9d6;
@@ -695,6 +704,7 @@
     --agent-theme-select-detail-value-padding:0 1ch;
 }
 .agent-console[data-theme="light"] {
+    --console-code-bg:#f6f8fa;
     --console-text:#24292f;
     --console-meta:#6e7781;
     --console-accent:#0969da;
@@ -782,6 +792,7 @@
     --agent-theme-select-detail-value-padding:0 1ch;
 }
 .agent-console[data-theme="solarized"] {
+    --console-code-bg:#073642;
     --console-text:#93a1a1;
     --console-meta:#657b83;
     --console-accent:#268bd2;
@@ -869,6 +880,7 @@
     --agent-theme-select-detail-value-padding:0 1ch;
 }
 .agent-console[data-theme="high-contrast"] {
+    --console-code-bg:#000000;
     --console-text:#ffffff;
     --console-meta:#d0d0d0;
     --console-accent:#00ccff;

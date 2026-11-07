@@ -149,6 +149,31 @@ export class ComponentUtilitiesTest {
         expect(selected).toEqual(['2']);
         expect(closed).toEqual(1);
         expect(key).toEqual('Escape');
+    }
+
+    @Test('browser rows window the options and dispatch the chosen value')
+    browserRows() {
+        const select = new SelectComponent();
+        select.options = Array.from({ length: 10 }, (_value, index) => ({
+            label: `item ${index + 1}`,
+            value: `${index + 1}`,
+            description: index % 2 === 0 ? `desc ${index + 1}` : ''
+        }));
+        select.selectedIndex = 8;
+        select.visibleCount = 4;
+        const chosen: string[] = [];
+        select.selectAction = value => chosen.push(value);
+
+        const rows = select.visibleOptions;
+        expect(rows.map(row => row.index)).toEqual([6, 7, 8, 9]);
+        expect(rows.filter(row => row.selected).map(row => row.label)).toEqual(['item 9']);
+        expect(rows[0].description).toEqual('desc 7');
+        expect(rows[0].className).toEqual('select-option');
+
+        select.choose(9);
+        expect(chosen).toEqual(['10']);
+        select.choose(42);
+        expect(chosen).toEqual(['10']);
         expect(select.optionsJson).toContain('"value":"1"');
     }
 
