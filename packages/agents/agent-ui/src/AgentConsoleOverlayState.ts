@@ -13,7 +13,15 @@ export function openTextOverlay(state: AgentConsoleSessionState, title: string, 
         if (!content.length) {
             return;
         }
-        const page = typeof visibleLines === 'number' && visibleLines > 0 ? Math.min(Math.floor(visibleLines), content.length) : undefined;
+        // Short terminals: a tall dialog could not fit above the composer and the
+        // compositor would clamp it over the tab bar / status line. Cap the page
+        // height and let the overlay scroll instead.
+        const cap = Math.max(0, Math.floor(Number(state.maxOverlayVisibleLines) || 0));
+        const requested = typeof visibleLines === 'number' && visibleLines > 0 ? Math.floor(visibleLines) : undefined;
+        const pageLimit = cap > 0 ? Math.min(cap, content.length) : content.length;
+        const page = typeof requested === 'number'
+            ? Math.min(requested, pageLimit)
+            : (cap > 0 ? pageLimit : undefined);
         state.textOverlay = { title: String(title || ''), lines: content, scroll: 0, ...(page ? { visibleLines: page } : {}) };
         state.syncDerivedInputFocus();
     }

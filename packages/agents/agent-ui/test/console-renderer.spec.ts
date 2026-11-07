@@ -2607,8 +2607,10 @@ export class AgentConsoleTuiRendererTest {
                 output: { write() { /* noop */ } }
             });
             surface.render();
-            const close = surface.clickTargets.find(target =>
-                String((target.node as any)?.textContent || '').trim() === '✕');
+            // The tab strip also exposes a ✕; the dialog one sits lower on screen.
+            const close = surface.clickTargets
+                .filter(target => String((target.node as any)?.textContent || '').trim() === '✕')
+                .sort((left, right) => right.y - left.y)[0];
             expect(close).toBeTruthy();
             // The old target spanned the full row; only the ambiguous ✕ glyph
             // (two cells in CJK terminals) may fade on hover.

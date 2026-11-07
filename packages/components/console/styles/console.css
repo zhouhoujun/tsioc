@@ -468,6 +468,9 @@
 .tab-bar {
     padding: 0;
     color: var(--console-text, #c9d1d9);
+
+
+    white-space: nowrap;
 }
 .tab[aria-selected="true"] {
     color: var(--console-text, #c9d1d9);

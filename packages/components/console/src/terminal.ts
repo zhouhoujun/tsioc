@@ -2520,7 +2520,14 @@ export class TuiTerminalSurface {
             const anchorRow = dialogIsMenu
                 ? (promptRow > 0 ? promptRow - 1 : composerStart)
                 : footerStart;
-            const start = Math.max(0, Math.min(anchorRow - dialogHeight, height - dialogHeight));
+            // Never draw over the header (session tabs): on very short terminals
+            // clamping to 0 corrupted the strip while the dialog was open.
+            const headerRegion = (result.regions || []).find(region => region.id === 'header');
+            const headerRows = headerRegion ? Math.max(0, headerRegion.endRow) : 0;
+            const start = Math.max(
+                Math.min(headerRows, Math.max(0, height - dialogHeight)),
+                Math.min(anchorRow - dialogHeight, height - dialogHeight)
+            );
             const lines = result.lines.slice();
             while (lines.length < height) {
                 lines.push('');

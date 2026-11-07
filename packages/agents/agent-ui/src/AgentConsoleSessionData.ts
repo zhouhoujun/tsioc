@@ -45,6 +45,8 @@ export class AgentConsoleSessionData {
     consoleOptions: Required<AgentConsoleOptions> = defaultAgentConsoleOptions;
     messageDetailVisibleLines = defaultAgentConsoleOptions.messageDetailVisibleLines;
     markdownContentWidth = 0;
+    /** Cap for scrollable overlay content so dialogs fit above the composer. */
+    maxOverlayVisibleLines = 0;
     sessionId = 'console';
     input = '';
     inputSecret = false;

@@ -3179,3 +3179,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 回归：components/common `browserRows` 用例（窗口/选中/派发）；agent-ui 新增 `web-select-rows.spec.ts`（DOM 渲染行、点击关闭菜单）；common 49 / console 148 / agent-ui 1993 passing。
   - 真实 Chrome（1280×900、390×844）：`/` 菜单 12 行可选、点击后补全命令；`/status` 为居中卡片（标题/分隔线/✕/hint）；TUI `/` 菜单与 `/status` 保持原样。
 - TUI 代码块分组（对齐 opencode 的 CodeRenderable 观感）：fenced code 行加主题化背景带（`--console-code-bg`：dark `#0d1117`、light `#f6f8fa`、solarized/solarized/high-contrast 各自取值）与 1ch 左内边距，和正文/列表区分开；真实 TUI 验证 dark/light 都输出对应 `48;2;…` 背景，表格/引用不受影响。
+- TUI 弹窗在矮终端不再覆盖 tab 栏/状态行（真实 PTY 复现：18 行终端 `/status` 12 行浮层从第 0 行开始画，tab 栏与状态摘要被覆盖成乱码）：
+  - `AgentConsoleSessionState` 增加 `maxOverlayVisibleLines`（按终端行数在 `syncConsoleMarkdownContentWidth` 里更新为 `max(3, rows-13)`），`openTextOverlay` 用它限制分页高度，超出时浮层内部滚动（真实 18 行终端显示 `状态 7 行 · 1-5`）而不顶到屏幕顶部。
+  - console 合成层把浮层起点限制在 header 区域高度之下，任何时候都不覆盖 session tab 栏；新增 `test/dialog-header.spec.ts`（无此限制时失败）。
+  - tab 条 `white-space: nowrap`：会话很多时只裁剪、不再折行（折行会把 composer 挤出屏幕并让浮层落到第 0 行）；真实 PTY 16 个 tab + 长通知浮层，tab 行与 footer 均完整。
+  - 回归：components/console 149 passing（新增 dialog header 用例）、agent-ui 1993 passing。

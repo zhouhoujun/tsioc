@@ -480,6 +480,9 @@ $idle: var(--console-idle, #6fa37a);
 .tab-bar {
     padding: 0;
     color: $text;
+    // The strip is chrome: overflow must clip, never wrap into the transcript
+    // (a wrapped strip pushed the composer off-screen and dialogs to row 0).
+    white-space: nowrap;
 }
 .tab[aria-selected="true"] {
     color: $text;

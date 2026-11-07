@@ -81,14 +81,14 @@ const markdownWidthResizeSyncHosts = new WeakSet<AgentConsoleMarkdownContentWidt
  * borders from being wrapped mid-row by the terminal renderer.
  */
 export interface AgentConsoleMarkdownContentWidthHost {
-    state: { markdownContentWidth: number };
+    state: { markdownContentWidth: number; maxOverlayVisibleLines?: number };
     destroyed?: boolean;
     surfaceAccessor?: Pick<AgentConsoleTerminalInputHost['surfaceAccessor'] & object,
         'getTerminalSize' | 'subscribeToSurfaceResize'> | null;
 }
 
 export function syncMarkdownWidthFromSurface(
-    state: { markdownContentWidth: number },
+    state: { markdownContentWidth: number; maxOverlayVisibleLines?: number },
     surfaceAccessor: AgentConsoleMarkdownContentWidthHost['surfaceAccessor'],
     destroyed = false
 ): void {
@@ -98,6 +98,11 @@ export function syncMarkdownWidthFromSurface(
 export function syncConsoleMarkdownContentWidth(host: AgentConsoleMarkdownContentWidthHost): void {
     ensureMarkdownWidthResizeSync(host);
     const size = host.surfaceAccessor?.getTerminalSize?.();
+    const rows = Number(size?.rows);
+    if (Number.isFinite(rows) && rows > 0 && typeof host.state.maxOverlayVisibleLines === 'number') {
+        // Leave room for the tab bar, dialog chrome, status line and composer.
+        host.state.maxOverlayVisibleLines = Math.max(3, Math.floor(rows) - 13);
+    }
     const columns = Number(size?.columns ?? size?.cols);
     if (!Number.isFinite(columns) || columns <= 0) {
         return;
