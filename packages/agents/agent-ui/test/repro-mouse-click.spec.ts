@@ -160,6 +160,46 @@ export class MouseClickPathReproTest {
         }
     }
 
+    @Test('markdown block first rows select their own text')
+    async markdownFirstRowsAreSelectable() {
+        const { consoleRef, surface } = await this.buildSurface({ mouseHandoffReclaimMs: 60000 });
+        const content = [
+            'MARKHEAD heading first row',
+            '',
+            'MARKPARA a paragraph that wraps across the terminal width with more words to force a second row here.',
+            '',
+            '```js',
+            'const MARKCODE = 1;',
+            'const second = 2;',
+            '```',
+            '',
+            '| MARKCELL | value |',
+            '| --- | --- |',
+            '| one | two |'
+        ].join('\n');
+        consoleRef.instance.sessionState.setMessages([
+            { id: 'md-1', role: 'assistant', content, createdAt: 1 } as any
+        ]);
+        await this.settle();
+        const rows = surface.lastRenderedLines.map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
+        const markers = ['MARKHEAD', 'MARKPARA', 'MARKCODE', 'MARKCELL'];
+        const targets = rows
+            .map((line, index) => ({ line, index }))
+            .filter(item => markers.some(marker => item.line.includes(marker)));
+        expect(targets.length).toBeGreaterThanOrEqual(4);
+        for (const target of targets) {
+            const expected = target.line.slice(0, 10).replace(/\s+$/, '');
+            const y = target.index + 1;
+            surface.dispatchMouse({ button: 0, x: 1, y, release: false });
+            surface.dispatchMouse({ button: 32, x: 11, y, release: false });
+            for (let step = 0; step < 10; step++) await Promise.resolve();
+            expect({ row: target.line.slice(0, 30), selected: surface.getTextSelectionText() })
+                .toEqual({ row: target.line.slice(0, 30), selected: expected });
+            surface.notifyNonMouseInput();
+            for (let step = 0; step < 10; step++) await Promise.resolve();
+        }
+    }
+
     @Test('selected text stays anchored across a redraw')
     async selectedTextStaysAnchoredAcrossRedraw() {
         const { surface } = await this.buildSurface({ mouseHandoffReclaimMs: 60000 });

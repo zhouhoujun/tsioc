@@ -2029,6 +2029,37 @@ export class ConsoleRendererTest {
         surface.destroy();
     }
 
+    @Test('selection paints the first visible row after scrolling')
+    async topRowSelectionPaints() {
+        const ctx = await Application.run(ConsoleViewportTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const ref = ctx.runners.getRef(ConsoleViewportTestComponent) as ComponentRef<ConsoleViewportTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            surface = new TuiTerminalSurface({
+                renderer,
+                root: ref.hostView.rootNodes[0] as ConsoleElement,
+                width: 40,
+                height: 8,
+                output: { write: () => undefined }
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+            expect(surface.scrollViewportToEdge('start')).toBe(true);
+            for (let index = 0; index < 10; index++) await Promise.resolve();
+            surface.dispatchMouse({ button: 0, x: 1, y: 1, release: false });
+            surface.dispatchMouse({ button: 32, x: 10, y: 1, release: false });
+            for (let index = 0; index < 10; index++) await Promise.resolve();
+            expect(surface.getTextSelectionText()).not.toEqual('');
+            expect((surface as any).renderedLines.join('\n')).toContain('\x1b[7m');
+        } finally {
+            surface?.destroy();
+            await ctx.close();
+        }
+    }
+
     @Test('a text selection pauses sticky follow until it is cleared')
     async selectionPausesStickyFollow() {
         let transcript = Array.from({ length: 8 }, (_value, index) => `row ${index + 1}`);
