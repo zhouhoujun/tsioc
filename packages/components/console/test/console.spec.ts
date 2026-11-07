@@ -2029,6 +2029,29 @@ export class ConsoleRendererTest {
         surface.destroy();
     }
 
+    @Test('an over-wide line keeps its selection band when fitted')
+    async overWideSelectionKeepsBand() {
+        const lines = ['x'.repeat(25), 'short'];
+        const root = { addEventListener() {}, removeEventListener() {} } as any;
+        const surface = new TuiTerminalSurface({
+            renderer: { renderToTuiLayout: () => ({ lines, regions: [] }) },
+            root,
+            width: 20,
+            height: 4,
+            nativeScrollback: false,
+            scrollViewport: false,
+            output: { write: () => undefined }
+        });
+        surface.render();
+        surface.dispatchMouse({ button: 0, x: 1, y: 1, release: false });
+        surface.dispatchMouse({ button: 32, x: 6, y: 1, release: false });
+        for (let index = 0; index < 10; index++) await Promise.resolve();
+        const painted = (surface as any).renderedLines[0] as string;
+        expect(painted).toContain('\x1b[7m');
+        expect(getDisplayWidth(painted.replace(/\x1b\[[0-9;]*m/g, ''))).toBeLessThanOrEqual(20);
+        surface.destroy();
+    }
+
     @Test('selection paints the first visible row after scrolling')
     async topRowSelectionPaints() {
         const ctx = await Application.run(ConsoleViewportTestComponent, {

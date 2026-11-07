@@ -3406,7 +3406,10 @@ function fitAnsiLine(line: string, width: number): string {
     if (getDisplayWidth(plain) <= width) {
         return line;
     }
-    return sliceByDisplayWidth(plain, width);
+    // Keep SGR state while truncating: stripping to plain text dropped syntax
+    // colours and the selection band on any line that was one column too wide
+    // for the terminal (the first row of a wrapped line, typically).
+    return sliceStyledColumns(line, 0, width);
 }
 
 function padTerminalDisplayText(value: string, width: number): string {

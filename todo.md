@@ -3136,3 +3136,5 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 选区期间暂停 sticky follow：流式输出/新消息到达时不再把正在选中的文字向上顶走；清除选区（输入、Esc、重新点击）后，若用户没有手动滚动则恢复跟随到最新，若滚动过则保留当前阅读位置。`PageUp/PageDown` 等滚动键保持选区不触发恢复。
   - 换行后的每个物理行都按自身源行映射并分别可选中；新增真实 console 布局回归（首行与续行分别选中应复制各自文本），并覆盖滚动后的选区锚定。
   - 回归：components/console 144 passing（新增换行续行选区、follow 暂停/恢复用例）、agent-ui 1985 passing；真实 TUI：流式过程中选区文本与屏幕位置保持不变，滚动/翻页后仍可复制同一段文字。
+- 修复“部分首行选不中”（真实 TUI 定位）：`fitAnsiLine` 在行宽超过终端宽度时用 `sliceByDisplayWidth(plain, width)` 截断，会把整行 ANSI 全部丢掉——选区反显和语法色一起消失。换行后的首行常正好比终端宽 1 列（其余续行较短），所以表现为“只有部分首行选不中”。改为 `sliceStyledColumns(line, 0, width)`，在同样截断宽度的同时保留 SGR；不增加布局或重绘开销。
+  - 回归：components/console 新增“超宽行截断保留选区反显”用例（旧实现失败）；真实 TUI 滚动后逐行拖选，首行与续行均正常高亮。
