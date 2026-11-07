@@ -107,6 +107,9 @@ export class AgentConsoleSessionsPanelComponent {
             return [];
         }
         const rows: Array<{ id: string; label: string; style: Record<string, string>; selected: string; className?: string }> = [];
+        // The picker is project-scoped by default: only disambiguate workspaces
+        // when the visible rows actually span more than one.
+        const multiWorkspace = new Set(this.sessions.map(session => String(session.workspace || '')).filter(Boolean)).size > 1;
         let previousProjectKey = '';
         for (const session of this.visibleSessions) {
             const projectKey = String(session.projectKey || '').trim();
@@ -122,10 +125,10 @@ export class AgentConsoleSessionsPanelComponent {
             const current = session.current ? ` [${panelLabel(this.translator, 'sessions', 'current', 'current')}]` : '';
             const selected = this.state.selectedSessionId === session.id;
             const marker = selected ? '›' : ' ';
-            const count = session.messageCount != null ? ` (${session.messageCount})` : '';
-            const workspace = this.workspaceLabel(session.workspace);
+            const count = Number(session.messageCount) > 0 ? ` (${session.messageCount})` : '';
+            const workspace = multiWorkspace ? this.workspaceLabel(session.workspace) : '';
             const workspacePrefix = workspace ? `[${workspace}] ` : '';
-            const name = String(session.title || '').trim() || session.id;
+            const name = this.sessionRowTitle(session);
             const pinned = session.pinned ? ' 📌' : '';
             rows.push({
                 id: session.id,
@@ -184,6 +187,17 @@ export class AgentConsoleSessionsPanelComponent {
 
     sessionStyleAt(index: number): Record<string, string> {
         return this.sessionAt(index)?.style || {};
+    }
+
+    /** Prefer the title, then the first request: never an opaque id when we can do better. */
+    protected sessionRowTitle(session: AgentConsoleSessionItem): string {
+        const candidate = [session.title, session.focusSummary, session.rootRequest, session.summary]
+            .map(value => String(value || '').replace(/\s+/g, ' ').trim())
+            .find(value => value && value !== session.id);
+        if (!candidate) {
+            return session.id;
+        }
+        return candidate.length > 36 ? `${candidate.slice(0, 35)}…` : candidate;
     }
 
     protected workspaceLabel(workspace?: string): string {

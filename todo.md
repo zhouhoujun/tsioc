@@ -3199,3 +3199,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - Web skin 补齐审批卡片：标题/摘要层级、请求行 hover、详情弱化、三个操作改为带边框的按钮（允许=强调色、始终允许、拒绝=危险色），提示行弱化。
   - 真实 Chrome：卡片显示 `workspace_trust (9dee4154)`、原因、30s 过期；点「允许一次」后卡片消失、终端命令执行并显示 `approval-ok`，底部出现 `Approved workspace_trust (...)`。
   - 回归：agent-ui 1998 passing（含 decodeSseFrame 包装用例）。
+- `/sessions` 选择器行信息去噪（真实 attach 会话实测）：
+  - 单项目作用域下不再每行重复 `[workspace]` 前缀（仅当行跨多个 workspace 时才加，便于区分）；`(0)` 消息数不再显示，只有 >0 才带计数；无标题会话优先回退到 `focusSummary`/首个请求（截断 36 字符）再回退 id。
+  - attach 到网关（`tsdi-agent attach http://127.0.0.1:4099`，同一 workspace）实测：`/sessions` 正确列出网关会话（含 `批准测试 (4)`），行变为 `› 标题 · <相对时间> [当前]`；attach 默认新建本地会话、可在该面板切到网页会话，符合“不重用本地 workspace 记录”的设计。
+  - 回归：`panel-i18n` 新增多 workspace 前缀/零计数用例、`console-renderer` 会话窗口断言同步；agent-ui 1999 passing。

@@ -2392,9 +2392,12 @@ export class AgentConsoleTuiRendererTest {
 
         expect(sessionLines.some(line => line.includes('sessions 10 · 9/10'))).toBe(true);
         expect(sessionLines.some(line => line.includes('project exam-system · 10 sessions'))).toBe(true);
-        expect(sessionLines.some(line => line.includes('› [project-a] chat-9'))).toBe(true);
-        expect(sessionLines.some(line => line.includes('[project-a] chat-10'))).toBe(true);
-        expect(sessionLines.some(line => line.includes('[project-a] chat-8'))).toBe(true);
+        // Single-project lists read as title + age; the workspace prefix is only
+        // added when the visible rows span several workspaces.
+        expect(sessionLines.some(line => line.includes('› chat-9'))).toBe(true);
+        expect(sessionLines.some(line => line.includes('chat-10'))).toBe(true);
+        expect(sessionLines.some(line => line.includes('chat-8'))).toBe(true);
+        expect(sessionLines.some(line => line.includes('[project-a]'))).toBe(false);
         expect(sessionLines.some(line => line.includes('chat-2'))).toBe(false);
         ref.instance.sessionState.setSessionsFocused(false);
     }

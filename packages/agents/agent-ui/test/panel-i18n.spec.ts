@@ -119,6 +119,25 @@ export class PanelI18nTest {
         expect(panel.sessionItems[1].label).toContain('first [当前] (3)');
     }
 
+    @Test('workspace prefixes appear only when rows span several workspaces')
+    sessionsPanelMultiWorkspace() {
+        const base = state({
+            sessionsFocused: true,
+            selectedSessionId: 's1',
+            navFilteredSessions: [
+                { id: 's1', title: 'first', workspace: '/tmp/ws-a', current: false, messageCount: 0, projectKey: 'p1', projectLabel: 'a' },
+                { id: 's2', title: 'second', workspace: '/tmp/ws-b', current: false, messageCount: 2, projectKey: 'p2', projectLabel: 'b' }
+            ]
+        });
+        const panel = new AgentConsoleSessionsPanelComponent(base, zh);
+        const labels = panel.sessionItems.map(item => item.label);
+        expect(labels.some(label => label.includes('[ws-a] first'))).toBe(true);
+        expect(labels.some(label => label.includes('[ws-b] second'))).toBe(true);
+        // Zero message counts stay out of the row.
+        expect(labels.some(label => label.includes('(0)'))).toBe(false);
+        expect(labels.some(label => label.includes('(2)'))).toBe(true);
+    }
+
     @Test('a zero-match session search keeps the panel and explains the filter')
     async sessionsEmptyFilterLocalized() {
         const base = state({
