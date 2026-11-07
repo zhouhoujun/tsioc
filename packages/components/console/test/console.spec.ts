@@ -55,6 +55,17 @@ class ConsoleTestComponent {
 }
 
 @Component({
+    selector: 'console-wrap-test',
+    template: `
+    <section>
+        <label class="wrap-line">alpha bravo charlie delta echo foxtrot golf hotel india juliet</label>
+    </section>
+    `
+})
+class ConsoleWrapTestComponent {
+}
+
+@Component({
     selector: 'console-loop-test',
     template: `
     <section>
@@ -1963,6 +1974,38 @@ export class ConsoleRendererTest {
         }
     }
 
+    @Test('selecting text on a wrapped continuation row keeps that row text')
+    async wrappedRowSelection() {
+        const ctx = await Application.run(ConsoleWrapTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const ref = ctx.runners.getRef(ConsoleWrapTestComponent) as ComponentRef<ConsoleWrapTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            surface = new TuiTerminalSurface({
+                renderer,
+                root: ref.hostView.rootNodes[0] as ConsoleElement,
+                width: 20,
+                output: { write: () => undefined }
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+            const rows = surface.lastRenderedLines.map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
+            const rowIndex = rows.findIndex(line => line.includes('charlie') || line.includes('bravo'));
+            expect(rowIndex).toBeGreaterThanOrEqual(0);
+            const y = rowIndex + 1;
+            surface.dispatchMouse({ button: 0, x: 1, y, release: false });
+            surface.dispatchMouse({ button: 32, x: 6, y, release: false });
+            for (let index = 0; index < 10; index++) await Promise.resolve();
+            const expected = rows[rowIndex].slice(0, 5).replace(/\s+$/, '');
+            expect(surface.getTextSelectionText()).toEqual(expected);
+        } finally {
+            surface?.destroy();
+            await ctx.close();
+        }
+    }
+
     @Test('a one-cell drag selects text instead of clicking')
     async oneCellDragSelects() {
         const lines = ['alpha beta', 'second row'];
@@ -1983,6 +2026,50 @@ export class ConsoleRendererTest {
         expect(surface.getTextSelectionText()).toEqual('l');
         expect(surface.dispatchMouse({ button: 0, x: 3, y: 1, release: true })).toBe(false);
         expect(surface.getTextSelectionText()).toEqual('l');
+        surface.destroy();
+    }
+
+    @Test('a text selection pauses sticky follow until it is cleared')
+    async selectionPausesStickyFollow() {
+        let transcript = Array.from({ length: 8 }, (_value, index) => `row ${index + 1}`);
+        const footer = ['status', ' > input'];
+        const root = { addEventListener() {}, removeEventListener() {} } as any;
+        const surface = new TuiTerminalSurface({
+            renderer: {
+                renderToTuiLayout: () => ({
+                    lines: [...transcript, ...footer],
+                    regions: [
+                        { id: 'transcript', startRow: 0, endRow: transcript.length },
+                        { id: 'footer', startRow: transcript.length, endRow: transcript.length + footer.length }
+                    ]
+                })
+            },
+            root,
+            width: 30,
+            height: 5,
+            output: { write: () => undefined }
+        });
+        surface.render();
+        const box = (surface as any).scrollBox;
+        const topBefore = box.top;
+        const maxBefore = box.maxTop;
+        expect(box.following).toBe(true);
+
+        // Last visible transcript row (footer occupies the two rows below it).
+        surface.dispatchMouse({ button: 0, x: 1, y: 3, release: false });
+        surface.dispatchMouse({ button: 32, x: 5, y: 3, release: false });
+        for (let index = 0; index < 10; index++) await Promise.resolve();
+        expect(surface.getTextSelectionText()).not.toEqual('');
+
+        transcript = [...transcript, 'row 9', 'row 10'];
+        surface.requestRender();
+        for (let index = 0; index < 10; index++) await Promise.resolve();
+        expect(box.top).toEqual(topBefore);
+        expect(box.maxTop).toBeGreaterThan(maxBefore);
+
+        surface.notifyNonMouseInput();
+        for (let index = 0; index < 10; index++) await Promise.resolve();
+        expect(box.top).toEqual(box.maxTop);
         surface.destroy();
     }
 

@@ -135,6 +135,31 @@ export class MouseClickPathReproTest {
         expect(consoleRef.instance.sessionState.isMessageExpanded('a1')).toEqual(true);
     }
 
+    @Test('wrapped continuation rows keep their own text when selected')
+    async wrappedRowsSelectTheirOwnText() {
+        const { consoleRef, surface } = await this.buildSurface({ mouseHandoffReclaimMs: 60000 });
+        const longText = 'wrapstart ' + 'auto wrap content '.repeat(28) + 'wrapend';
+        consoleRef.instance.sessionState.setMessages([
+            { id: 'wrap-1', role: 'assistant', content: longText, createdAt: 1 } as any
+        ]);
+        await this.settle();
+        const rows = surface.lastRenderedLines.map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
+        const indices = rows
+            .map((line, index) => (line.includes('auto wrap content') ? index : -1))
+            .filter(index => index >= 0);
+        expect(indices.length).toBeGreaterThan(1);
+        for (const index of indices.slice(0, 3)) {
+            const expected = rows[index].slice(0, 9).replace(/\s+$/, '');
+            const y = index + 1;
+            surface.dispatchMouse({ button: 0, x: 1, y, release: false });
+            surface.dispatchMouse({ button: 32, x: 10, y, release: false });
+            for (let step = 0; step < 10; step++) await Promise.resolve();
+            expect(surface.getTextSelectionText()).toEqual(expected);
+            surface.notifyNonMouseInput();
+            for (let step = 0; step < 10; step++) await Promise.resolve();
+        }
+    }
+
     @Test('selected text stays anchored across a redraw')
     async selectedTextStaysAnchoredAcrossRedraw() {
         const { surface } = await this.buildSurface({ mouseHandoffReclaimMs: 60000 });

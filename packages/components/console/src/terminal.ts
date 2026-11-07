@@ -1130,6 +1130,9 @@ export class TuiTerminalSurface {
     protected mousePress?: { x: number; y: number };
     protected lastPointerClick?: { x: number; y: number; at: number; count: number };
     protected suppressClickAfterMultiClick = false;
+    /** Selecting text freezes sticky follow so streaming rows do not move under the pointer. */
+    protected selectionFollowPaused = false;
+    protected selectionPausedTop = 0;
     protected selectionScrollTimer?: ReturnType<typeof setTimeout>;
     protected selectionScrollDirection = 0;
     protected viewportSourceRows: Array<number | undefined> = [];
@@ -1272,6 +1275,10 @@ export class TuiTerminalSurface {
         this.clickTargetsCache = [];
         this.mousePress = undefined;
         this.stopSelectionAutoScroll();
+        if (this.selectionFollowPaused) {
+            this.selectionFollowPaused = false;
+            this.scrollBox.setSticky(true, 'bottom');
+        }
         this.scrollOffsetRows = 0;
         this.maxScrollOffsetRows = 0;
         this.scrollBox.reset();
@@ -1842,6 +1849,7 @@ export class TuiTerminalSurface {
         }
         if (this.textSelection) {
             this.textSelection = undefined;
+            this.resumeSelectionFollow();
             this.requestRender();
         }
         const target = this.hitTest(mouse.x, mouse.y);
@@ -2053,6 +2061,11 @@ export class TuiTerminalSurface {
         if (anchorRow === undefined || focusRow === undefined) {
             return;
         }
+        if (!this.textSelection && this.scrollBox.following) {
+            this.selectionFollowPaused = true;
+            this.selectionPausedTop = this.scrollBox.top;
+            this.scrollBox.setSticky(false);
+        }
         this.textSelection = {
             anchorRow,
             anchorCol: Math.max(0, Math.floor((press.x || 1) - 1)),
@@ -2109,6 +2122,22 @@ export class TuiTerminalSurface {
         }
         clearTimeout(this.selectionScrollTimer);
         this.selectionScrollTimer = undefined;
+    }
+
+    /**
+     * Restore sticky follow after a selection ends. If the user scrolled while
+     * selecting, keep that reading position; otherwise jump to the latest row.
+     */
+    protected resumeSelectionFollow(): void {
+        if (!this.selectionFollowPaused) {
+            return;
+        }
+        this.selectionFollowPaused = false;
+        const top = this.scrollBox.top;
+        this.scrollBox.setSticky(true, 'bottom');
+        if (top !== this.selectionPausedTop) {
+            this.scrollBox.scrollTo(top);
+        }
     }
 
     protected applyTextSelection(lines: string[]): void {
@@ -2246,6 +2275,7 @@ export class TuiTerminalSurface {
     notifyNonMouseInput(options: { keepSelection?: boolean } = {}): boolean {
         if (this.textSelection && !options.keepSelection) {
             this.textSelection = undefined;
+            this.resumeSelectionFollow();
             this.requestRender();
         }
         if (!this.mouseHandedOff) {

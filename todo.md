@@ -3132,3 +3132,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - Ctrl+A/E 行首/行尾、Ctrl+K/U 删除到行尾/行首、Ctrl+W/Alt+Backspace 删除前一词、Ctrl+Left/Right 按词移动、Ctrl+Backspace 删除前一词。
   - 退格/Delete 按字素删除（emoji/代理对不再被切成半个）。
   - 回归：components/common 45 passing（readline 编辑、字素删除、词边界）、components/console 142 passing（解码器新序列）、真实 TUI 逐键验证。
+- 修复自动换行行选区与“选中文字滚动”（真实 TUI）：
+  - 选区期间暂停 sticky follow：流式输出/新消息到达时不再把正在选中的文字向上顶走；清除选区（输入、Esc、重新点击）后，若用户没有手动滚动则恢复跟随到最新，若滚动过则保留当前阅读位置。`PageUp/PageDown` 等滚动键保持选区不触发恢复。
+  - 换行后的每个物理行都按自身源行映射并分别可选中；新增真实 console 布局回归（首行与续行分别选中应复制各自文本），并覆盖滚动后的选区锚定。
+  - 回归：components/console 144 passing（新增换行续行选区、follow 暂停/恢复用例）、agent-ui 1985 passing；真实 TUI：流式过程中选区文本与屏幕位置保持不变，滚动/翻页后仍可复制同一段文字。
