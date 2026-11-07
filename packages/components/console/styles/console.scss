@@ -487,6 +487,29 @@ $idle: var(--console-idle, #6fa37a);
     color: $accent;
     font-weight: bold;
 }
+.console-toast-stack {
+    padding: 0 1ch;
+}
+.console-toast {
+    color: $text;
+    text-align: right;
+}
+.console-toast[data-tone="success"] {
+    color: $idle;
+}
+.console-toast[data-tone="warning"] {
+    color: $notice;
+}
+.console-toast[data-tone="error"] {
+    color: $error;
+}
+.toast-close {
+    padding: 0 0 0 1ch;
+    color: $meta;
+}
+.toast-close:hover {
+    background-color: var(--console-hover-bg, #303e4f);
+}
 .console-base-panel {
     background: $dialog-bg;
     color: $text;

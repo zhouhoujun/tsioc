@@ -475,6 +475,29 @@
     color: var(--console-accent, #86a9d6);
     font-weight: bold;
 }
+.console-toast-stack {
+    padding: 0 1ch;
+}
+.console-toast {
+    color: var(--console-text, #c9d1d9);
+    text-align: right;
+}
+.console-toast[data-tone="success"] {
+    color: var(--console-idle, #6fa37a);
+}
+.console-toast[data-tone="warning"] {
+    color: var(--console-notice, #c2a05e);
+}
+.console-toast[data-tone="error"] {
+    color: var(--console-error, #cf9893);
+}
+.toast-close {
+    padding: 0 0 0 1ch;
+    color: var(--console-meta, #6e7681);
+}
+.toast-close:hover {
+    background-color: var(--console-hover-bg, #303e4f);
+}
 .console-base-panel {
     background: var(--console-dialog-bg, #161b22);
     color: var(--console-text, #c9d1d9);

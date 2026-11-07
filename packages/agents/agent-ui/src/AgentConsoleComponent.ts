@@ -1,8 +1,10 @@
 import { ApplicationContext, formatCompactNumber } from '@tsdi/core';
 import { bootstrapConsole, disposeConsole } from './AgentConsoleBootstrap';
 import { AgentConsoleSessionArtifactsHost } from './AgentConsoleSessionArtifactsHost';
+import { ToastService } from '@tsdi/components/common';
+import { bindConsoleToasts, dismissConsoleToast, disposeConsoleToasts, ensureConsoleToasts, notifyConsole } from './AgentConsoleToasts';
 import { AgentConsoleNoticeExpiry } from './AgentConsoleNoticeExpiry';
-import { drainQueuedPrompts, enqueuePrompt, queueDraft } from './AgentConsoleQueuedPrompts';
+import { AgentConsoleQueuedPrompt, drainQueuedPrompts, enqueuePrompt, queueDraft } from './AgentConsoleQueuedPrompts';
 import { DefaultAgentConsoleTranscriptNavigationController } from './AgentConsoleTranscriptNavigation';
 import { AnimationClock, Component, ComponentRef, OnDestroy, RNode } from '@tsdi/components';
 import { AudioCaptureAdapter, AudioPlaybackAdapter, AudioPlaybackFormat, FileAdapter } from '@tsdi/common';
@@ -309,12 +311,6 @@ import { buildCommandHandlerState } from './AgentConsoleCommandHandlerContext';
 import { AgentConsoleCommandDispatchHost, dispatchAgentConsoleCommand } from './AgentConsoleCommandDispatch';
 import { AGENT_WIZARD_PROVIDERS, AGENT_WIZARD_TIERS, AgentWizardProviderDef, AgentWizardStepDef, buildProviderWizardChoiceOptions, buildProviderWizardConfirmOptions, buildProviderWizardSteps, buildProviderWizardSummary, buildWizardStepHelp, resolveWizardPrefill, resolveWizardProviderDef, resolveWizardProviderName, resolveWizardTierLabel } from './AgentConsoleProviderWizard';
 import { startProviderWizard, handleWizardEscape, cancelProviderWizard, resetProviderWizardComposer, showProviderWizardStep, openProviderWizardChoice, handleProviderWizardChoice, openProviderWizardConfirm, handleProviderWizardConfirm, openProviderWizardEditor, testProviderConnection, commitProviderWizard, advanceProviderWizard } from './AgentConsoleProviderWizardFlow';
-interface AgentConsoleQueuedPrompt {
-    input: string;
-    attachments: AgentConsolePendingAttachment[];
-    command?: boolean;
-}
-
 @Component({
     selector: 'agent-console',
     template: `
@@ -335,6 +331,7 @@ interface AgentConsoleQueuedPrompt {
         <agent-console-pending-question-panel renderRegion="menu" v-show="panels.pendingQuestion"></agent-console-pending-question-panel>
         <agent-console-select-panel renderRegion="menu" v-show="panels.suggestion"></agent-console-select-panel><agent-console-select-panel renderRegion="menu" v-show="panels.select"></agent-console-select-panel>
         <agent-console-text-overlay-panel renderRegion="dialog" v-show="panels.textOverlay"></agent-console-text-overlay-panel>
+        <toast-stack renderRegion="footer" :items="state.toasts" @closeAction="dismissToast"></toast-stack>
         <agent-console-status-panel renderRegion="footer" v-show="panels.status && !panels.messageDetail"></agent-console-status-panel>
         <agent-console-sessions-panel renderRegion="footer" v-show="panels.sessions && !panels.messageDetail"></agent-console-sessions-panel>
         <agent-console-approvals-panel renderRegion="menu" v-show="panels.approvals && !panels.messageDetail"></agent-console-approvals-panel>
@@ -346,15 +343,6 @@ interface AgentConsoleQueuedPrompt {
     `
 })
 export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost implements OnDestroy, ConsoleTerminalInputHandler, ConsoleTerminalSurfaceLifecycle {
-    protected static readonly IMAGE_MIME_TYPES: Record<string, string> = {
-        '.png': 'image/png',
-        '.jpg': 'image/jpeg',
-        '.jpeg': 'image/jpeg',
-        '.gif': 'image/gif',
-        '.webp': 'image/webp',
-        '.bmp': 'image/bmp',
-        '.svg': 'image/svg+xml'
-    };
     shouldEnableTerminalMouseTracking(): boolean {
         return !this.transcriptLayout.usesNativeScrollback;
     }
@@ -393,7 +381,8 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
     protected editAttachmentsBefore: AgentConsolePendingAttachment[] = [];
     protected lastEditSessionMessageId = '';
     protected editDismissedAt = 0;
-    protected lastEscapeAt = 0; protected noticeExpiry?: AgentConsoleNoticeExpiry;
+    protected lastEscapeAt = 0; public noticeExpiry?: AgentConsoleNoticeExpiry;
+    public toastUnsubscribe?: () => void;
     protected modelFavorites: string[] = [];
     protected modelRecents: string[] = [];
     readonly transcriptNavigationController: DefaultAgentConsoleTranscriptNavigationController;
@@ -430,9 +419,11 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
         @Optional() @Inject(AgentConsoleSettingsStore) private settingsStore?: AgentConsoleSettingsStore | null,
         @Optional() @Inject(AgentUiConfigService) private uiConfig?: AgentUiConfigService | null,
         @Optional() @Inject(ProjectMemoryService) private projectMemory?: ProjectMemoryService | null,
-        @Optional() @Inject(AgentConsoleTranscriptLayoutResolver) private transcriptLayoutResolver?: AgentConsoleTranscriptLayoutResolver | null, @Optional() @Inject(AnimationClock) protected animationClock?: AnimationClock | null,
+        @Optional() @Inject(AgentConsoleTranscriptLayoutResolver) private transcriptLayoutResolver?: AgentConsoleTranscriptLayoutResolver | null, @Optional() @Inject(AnimationClock) public animationClock?: AnimationClock | null,
+        @Optional() @Inject(ToastService) public toastService?: ToastService | null,
     ) {
         super();
+        ensureConsoleToasts(this);
         this.transcriptNavigationController = new DefaultAgentConsoleTranscriptNavigationController(this.state, (messageId) => revealAgentConsoleMessage(this.componentRef?.hostView?.query?.(AgentConsoleMessagesPanelComponent)?.instance, this.surfaceAccessor, () => this.state.syncTranscriptFollowing(), messageId));
         this.globalKeymap = this.globalKeymap || new AgentConsoleKeymap();
         this.globalKeymap.configure(this.options.ui?.keymap);
@@ -500,11 +491,7 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
     }
 
     protected notify(message: string, duration?: number): void {
-        const lines = String(message || '').split('\n').filter(line => line.trim().length);
-        this.state.setNotice(message); this.noticeExpiry ??= new AgentConsoleNoticeExpiry(() => this.state.setNotice(''), this.animationClock);
-        this.noticeExpiry.schedule(duration); if (lines.length > 3) {
-            this.state.openTextOverlay(formatAgentPanelLabel(this.translator, 'overlay', 'noticeTitle', 'notice'), lines);
-        }
+        notifyConsole(this, message, duration, () => formatAgentPanelLabel(this.translator, 'overlay', 'noticeTitle', 'notice'));
     }
 
     protected pushCommandOutput(command: string, text: string, kind?: AgentConsoleCommandOutputEntry['kind']): void {
@@ -730,7 +717,7 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
                 return;
             }
             if (this.surfaceAccessor?.writeTerminalClipboardText?.(text)) {
-                this.notify(formatAgentUiNotice(this.translator, 'copiedLabel', { label: label }));
+                this.notify(formatAgentUiNotice(this.translator, 'copiedLabel', { label: label }), 1800);
                 return;
             }
             this.notify(text);
@@ -950,12 +937,20 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
     protected shellCommandHost(): ShellCommandHost { return shellCommandHost(this); }
 
     async onInit(): Promise<void> {
+        // Subscribe from a lifecycle hook (proxy `this`), not the constructor.
+        bindConsoleToasts(this);
         return bootstrapConsole(this as any);
     }
+
+    getState(): AgentConsoleSessionState { return this.state; }
+
+    /** Close one queued toast (the shared strip's ✕ affordance). */
+    dismissToast(id: string): void { dismissConsoleToast(this, id); }
 
     onTerminalTextCopied(): void { this.notify(this.translator?.translate('agent.message.copiedCode') || 'Copied', 1800); }
     onTerminalViewportTop(): void { void loadOlderSessionMessages({ state: this.state, translator: this.translator, surfaceAccessor: this.surfaceAccessor, sessionService: this.sessionService }); }
     onDestroy(): void {
+        disposeConsoleToasts(this);
         this.noticeExpiry?.dispose(); disposeConsole(this as any);
     }
 

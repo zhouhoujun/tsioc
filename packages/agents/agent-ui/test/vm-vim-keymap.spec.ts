@@ -585,7 +585,8 @@ export class VmVimKeymapTest {
 
             expect((component as any).options.model.reasoningEffort).toEqual('high');
             expect(await store.load(workspace)).toEqual({ thinkingLevel: 'high' });
-            expect(component.notice).toContain('Reasoning effort: high');
+            expect(component.notice).toEqual('');
+            expect(component.sessionState.toasts.map(entry => entry.message).join('\n')).toContain('Reasoning effort: high');
         } finally {
             fs.rmSync(workspace, { recursive: true, force: true });
         }

@@ -1,3 +1,4 @@
+import type { ToastEntry } from '@tsdi/components/common';
 import type { AgentMessage, AgentSessionSection, ScheduledAgentTask, NavTree, NavFilter, NavSelection, HarnessProjection, AgentConsoleCommandExecution } from '@tsdi/agent';
 import type { BackgroundTaskRecord } from '@tsdi/agent-tools';
 import type { ConsoleInputMode } from './AgentConsoleVim';
@@ -219,6 +220,8 @@ export class AgentConsoleSessionData {
     activeTurnEventScope = '';
     lastError = '';
     notice = '';
+    /** Transient toast queue painted by the shared toast strip. */
+    toasts: ToastEntry[] = [];
     pendingAttachments: AgentConsolePendingAttachment[] = [];
     queuedPromptCount = 0;
     showThinking = true;

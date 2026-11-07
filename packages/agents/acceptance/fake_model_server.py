@@ -219,6 +219,27 @@ def _default_turn(messages):
         content = '\n'.join(lines) + '\n\n是否继续？'
         total_tokens += len(content) // 4
         return {'role': 'assistant', 'content': content + '\n'}
+    if 'markdown 排版' in text:
+        # Rich Markdown surface: heading, inline styles, list, quote, fenced
+        # code and a table in one reply, so browser/TUI skins can be compared.
+        content = (
+            '## Result\n\n'
+            'Here is **bold**, *italic*, `inline code` and a [link](https://example.com).\n\n'
+            '- first bullet item\n'
+            '- second bullet item with `code`\n\n'
+            '> quoted line for muted emphasis\n\n'
+            '```ts\n'
+            'const answer: number = 42;\n'
+            'console.log(answer);\n'
+            '```\n\n'
+            '| Model | Latency |\n'
+            '| :--- | ---: |\n'
+            '| fake | 26ms |\n'
+            '| real | 1.2s |\n\n'
+            '这是一段用于检查中文换行与行距的长文本，确认中文段落不会被终端网格空白撑开。\n'
+        )
+        total_tokens += len(content) // 4
+        return {'role': 'assistant', 'content': content}
     if '主题宽度矩阵' in text:
         content = (
             '恢复索引写入失败：权限不足。正在保留可读根因并验证窄终端中文换行不会破坏列边界。\n\n'

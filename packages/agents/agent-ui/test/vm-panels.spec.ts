@@ -284,7 +284,10 @@ export class VmPanelsTest {
         await handler('hello world', 'selected message');
 
         expect(written).toEqual(['hello world']);
-        expect(component.notice).toEqual('Copied selected message.');
+        // Copy feedback is transient: it lands in the toast queue (auto-dismiss,
+        // closable) instead of the persistent notice line.
+        expect(component.notice).toEqual('');
+        expect(component.sessionState.toasts.map(entry => entry.message)).toEqual(['Copied selected message.']);
     }
 
     @Test('input panel closes normal select menus with q and escape')

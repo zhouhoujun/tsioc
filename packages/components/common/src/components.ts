@@ -12,6 +12,7 @@ import { TabBarComponent } from './tab-bar';
 import { MarkdownCodeComponent, MarkdownTableComponent } from './markdown';
 import { DialogComponent } from './dialog';
 import { AlertDialogComponent } from './alert-dialog';
+import { ToastStackComponent } from './toast-stack';
 import { SelectComponent } from './select';
 import { ListPanelComponent } from './list-panel';
 import { ListComponent } from './list';
@@ -100,7 +101,7 @@ export class PanelComponent {
 }
 
 @Module({
-    declarations: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, AlertDialogComponent, SelectComponent, ListPanelComponent, ListComponent, MessageRowComponent, DetailPanelComponent, InputFieldComponent],
-    exports: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, AlertDialogComponent, SelectComponent, ListPanelComponent, ListComponent, MessageRowComponent, DetailPanelComponent, InputFieldComponent]
+    declarations: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, AlertDialogComponent, ToastStackComponent, SelectComponent, ListPanelComponent, ListComponent, MessageRowComponent, DetailPanelComponent, InputFieldComponent],
+    exports: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, AlertDialogComponent, ToastStackComponent, SelectComponent, ListPanelComponent, ListComponent, MessageRowComponent, DetailPanelComponent, InputFieldComponent]
 })
 export class BaseComponentsModule {}

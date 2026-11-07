@@ -388,18 +388,9 @@ export async function mountAgentWebConsole(
     // The welcome brand block belongs to the transcript start in the TUI;
     // hide it once real rows exist so it does not pin a blank band above the
     // scrolling conversation in the browser.
-    const toastService = new ToastService();
-    const toast = doc.createElement('div');
-    toast.className = 'console-toast';
-    toast.setAttribute('role', 'status');
-    toast.setAttribute('aria-live', 'polite');
-    mount.appendChild(toast);
-    const unsubscribeToast = toastService.subscribe(entries => {
-        const latest = entries[entries.length - 1];
-        toast.textContent = latest?.message || '';
-        toast.setAttribute('data-tone', latest?.tone || 'info');
-        toast.classList.toggle('is-visible', !!latest);
-    });
+    // Selection copy feeds the same toast queue the console component paints,
+    // so the browser and terminal share one transient-feedback surface.
+    const toastService = ctx.get(ToastService);
 
     const copySelection = (): string => {
         const selection = doc.defaultView?.getSelection?.()?.toString()?.trim() || '';
@@ -530,10 +521,8 @@ export async function mountAgentWebConsole(
             mount.removeEventListener('wheel', onWheel);
             mount.removeEventListener('contextmenu', onContextMenu);
             indicator.removeEventListener('click', onIndicatorClick);
-            unsubscribeToast();
             selectionKeeper.dispose();
             toastService.clear();
-            toast.remove();
             follower?.detach();
             indicator.remove();
             brandObserver?.disconnect();

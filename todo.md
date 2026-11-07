@@ -3147,3 +3147,15 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 回归：`components/common/test/tab-bar-dom.spec.ts`（点 `✕` 只关闭不选中，旧实现失败）；`components/html/test/class-interpolation.spec.ts`（类名不残留 `{{...}}`，旧实现失败）；`agents/agent-ui/test/routed-token-classes.spec.ts`（tone 类名正确且 DOM 无 `{{`）。components 148 / common 46 / html 129 / console 146 / agent-ui 1987 passing。
   - 真实浏览器（Chrome 1280×860 + 390×844）：三个 tab 时点标签切换正常，点选中 tab 的 `✕` 从 3 → 2 且不重开；DOM 无 `class*="{{"`；用户卡片 36px；移动端布局正常。
   - 真实 TUI（PTY 100×28）：点 `+` 新建 tab（`show a plan` 会话保留），点新 tab 的 `✕` 关闭后回到原会话且消息完整。
+- 恢复 `components/common` 的 toast 提示（TUI + Web 共用，手动关闭 + 定时自动关闭）：
+  - 现象：`ToastService` 只被 web-console 的右键复制单独使用，TUI 的复制/模型切换等短提示仍写进 footer 状态行（“出现在会话下面”），`alert-dialog` 也没有任何调用点。
+  - 新增共享视图 `toast-stack`（`components/common/src/toast-stack.ts`）：渲染 `ToastEntry[]`、tone 语义、`✕` 关闭（带 `data-cell-width`，内联嵌套点击不再冒泡）、空队列自动隐藏；`BaseComponentsModule` 声明导出。
+  - `AgentConsoleComponent` 注入/兜底 `ToastService`，`notify(message, duration)` 在 `duration > 0` 且不超过 3 行时改走 toast（复制、模型切换、思考等级等），持久通知仍保留状态行；多行输出继续走文本浮层。
+  - 复制确认（`copyFocusedTextActionHandler` / 终端选区复制）统一 1.8s toast；web-console 改用同一 `ToastService` 实例，不再维护第二个 toast DOM。
+  - 自动关闭不回绘的根因：订阅写在构造函数里，闭包捕获的是**未代理实例**，`this.state.setToasts` 绕过了响应式代理；改为在 `onInit`（`this` 为代理）订阅。
+  - 回调输入必须用 `@closeAction`（`bind(context)` 保留父组件代理），`:closeAction` 传入未绑定的方法会让 `this` 丢失。
+  - TUI 呈现：`label.console-toast` 内联渲染（`已复制 ␣✕` 右对齐），`text-align: right`，tone 颜色；Web 呈现：右下角浮动卡片（`position: fixed`，底部不压 composer），成功/警告/错误左侧色条，`✕` 可点、hover 有反馈。
+  - 回归：`components/common/test/toast-stack.spec.ts`；`agents/agent-ui/test/toast-stack-live.spec.ts`（toast 出现 → 手关 → 定时消失，旧实现失败）、`test/toast-notifications.spec.ts`；components/common 48 / components/console 146 / agent-ui 1990 passing。
+  - 真实 TUI（PTY 100×28）：选区右键复制 → 右下 `已复制 ✕` 出现，点 `✕` 立即消失，再复制 1.8s 后自动消失。
+  - 真实浏览器（Chrome 1280×1000）：右键复制 → 右下浮动 `Copied ✕`，手关与 2s 自动消失均正常；`/` 复制类命令同队列。
+- 顺带补齐 Web Markdown 观感：表格 `align-left/center/right` 真正生效（此前 computed 为 start），标题提升到 15.5px 并增加上下留白；新增 fake model `markdown 排版` 场景（标题/列表/引用/行内代码/代码块/表格/中文长段落）用于两端真实对照。

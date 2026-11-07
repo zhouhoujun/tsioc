@@ -1,7 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { TransformModule } from '@tsdi/core';
 import { ComponentsModule } from '@tsdi/components';
-import { BaseComponentsModule, TAB_BAR_SOURCE } from '@tsdi/components/common';
+import { BaseComponentsModule, TAB_BAR_SOURCE, ToastService } from '@tsdi/components/common';
 import { AgentModule } from '@tsdi/agent';
 import { I18nModule, I18N_PROVIDERS } from '@tsdi/i18n';
 import { getGlobalProcess } from './global-process';
@@ -153,6 +153,7 @@ import { AGENT_CONSOLE_MARKDOWN_COMPONENT } from './AgentConsoleMessageComponent
         AgentConsoleSessionService,
         AgentConsoleSessionTabsSource,
         { provide: TAB_BAR_SOURCE, useClass: AgentConsoleSessionTabsSource },
+        ToastService,
         { provide: AgentConsoleTranscriptLayoutResolver, useClass: DefaultAgentConsoleTranscriptLayoutResolver },
         AgentConsoleMessageRendererRegistry,
         { provide: AGENT_CONSOLE_MARKDOWN_COMPONENT, useValue: AgentConsoleMarkdownComponent },

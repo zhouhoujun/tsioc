@@ -302,39 +302,64 @@ body {
     color: var(--agent-theme-status-label-color, #6e7681);
 }
 
-#agent-console .console-toast {
+#agent-console .console-toast-stack {
     position: fixed;
-    left: 50%;
-    bottom: 24px;
+    right: 24px;
+    bottom: 104px;
     z-index: 60;
-    transform: translate(-50%, 8px);
     max-width: min(80vw, 560px);
-    padding: 8px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    pointer-events: none;
+}
+
+/* Toast entries are transient confirmations: tone bar on the left, close on
+   the right, auto-dismissed by the shared service. */
+#agent-console .console-toast {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 8px 7px 12px;
     border: 1px solid var(--agent-web-border);
+    border-left: 3px solid var(--agent-web-border);
     border-radius: 8px;
     background: var(--agent-web-panel-raised);
     color: var(--agent-web-text);
     font-family: var(--agent-web-sans);
     font-size: 13px;
-    line-height: 1.4;
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 140ms ease, transform 140ms ease;
+    line-height: 1.45;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.32);
+    pointer-events: auto;
+    animation: console-toast-in 140ms ease;
 }
 
-#agent-console .console-toast.is-visible {
+@keyframes console-toast-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#agent-console .console-toast .toast-message {
+    white-space: pre-line;
+}
+
+#agent-console .console-toast .toast-close {
+    cursor: pointer;
+    opacity: 0.55;
+    padding: 0 4px;
+    border-radius: 4px;
+    line-height: 1;
+}
+
+#agent-console .console-toast .toast-close:hover {
     opacity: 1;
-    transform: translate(-50%, 0);
+    background: var(--agent-web-hover);
 }
 
-#agent-console .console-toast[data-tone="success"] {
-    border-color: var(--agent-theme-status-idle-value-color, #6fa37a);
-}
-
-#agent-console .console-toast[data-tone="error"] {
-    border-color: var(--agent-theme-status-error-value-color, #cf9893);
-}
+#agent-console .console-toast[data-tone="success"] { border-left-color: var(--agent-theme-status-idle-value-color, #6fa37a); }
+#agent-console .console-toast[data-tone="warning"] { border-left-color: var(--agent-theme-status-notice-value-color, #cdb06a); }
+#agent-console .console-toast[data-tone="error"] { border-left-color: var(--agent-theme-status-error-value-color, #cf9893); }
 
 #agent-console .console-clipboard-fallback {
     position: fixed;
@@ -492,8 +517,14 @@ body {
 }
 
 #agent-console .message-template-assistant .message-line[data-tone="heading"] {
-    padding: 0.45em 1ch 0.2em;
+    padding: 0.7em 0 0.3em;
+    font-size: 15.5px;
     font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+#agent-console .message-template-assistant .message-line[data-tone="heading"]:first-child {
+    padding-top: 0.2em;
 }
 
 #agent-console .message-template-assistant .message-token {
@@ -597,6 +628,10 @@ body {
 #agent-console .markdown-cell:last-child {
     border-right: 0;
 }
+
+#agent-console .markdown-cell.align-left { text-align: left; }
+#agent-console .markdown-cell.align-center { text-align: center; }
+#agent-console .markdown-cell.align-right { text-align: right; }
 
 #agent-console .markdown-token[data-tone="strong"] { font-weight: 600; }
 #agent-console .markdown-token[data-tone="heading"] { color: var(--agent-web-user-text); font-weight: 600; }

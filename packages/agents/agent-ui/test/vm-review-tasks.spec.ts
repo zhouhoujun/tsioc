@@ -1392,7 +1392,8 @@ export class VmReviewTasksTest {
         expect(component.sessionState.modelProfile).toEqual('strong');
         expect(component.provider).toEqual('deepseek');
         expect(component.model).toEqual('deepseek-v4-pro');
-        expect(component.notice).toEqual('Switched model profile to strong.');
+        expect(component.notice).toEqual('');
+        expect(component.sessionState.toasts.map(entry => entry.message)).toContain('Switched model profile to strong.');
     }
 
     @Test('model command uses app rpc for profile listing and activation')

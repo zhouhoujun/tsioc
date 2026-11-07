@@ -7,6 +7,7 @@ export * from './markdown';
 export * from './dialog';
 export * from './alert-dialog';
 export * from './toast';
+export * from './toast-stack';
 export * from './select';
 export * from './list-panel';
 export * from './list';

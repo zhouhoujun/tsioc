@@ -765,7 +765,8 @@ export class AgentConsoleModelKeymapTest {
         expect(await (component as any).executeGlobalKeyAction('model-variant-cycle')).toEqual(true);
         expect((component as any).modelReasoningEffort).toEqual('medium');
         expect((component as any).options.model.reasoningEffort).toEqual('medium');
-        expect(state.notice).toContain('Reasoning effort: medium.');
+        expect(state.notice).toEqual('');
+        expect(state.toasts.map(entry => entry.message).join('\n')).toContain('Reasoning effort: medium.');
     }
 
     @Test('variant cycle over RPC sends reasoningEffort and adopts the returned tier')
@@ -777,7 +778,8 @@ export class AgentConsoleModelKeymapTest {
         const call = rpc.calls.find((entry) => entry.method === 'model.activate');
         expect(call?.params).toMatchObject({ name: 'flash', reasoningEffort: 'high' });
         expect((component as any).modelReasoningEffort).toEqual('high');
-        expect(state.notice).toContain('Reasoning effort: high.');
+        expect(state.notice).toEqual('');
+        expect(state.toasts.map(entry => entry.message).join('\n')).toContain('Reasoning effort: high.');
     }
 
     @Test('variant cycle over RPC without a profile notifies')

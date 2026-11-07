@@ -1,3 +1,4 @@
+import type { ToastEntry } from '@tsdi/components/common';
 import type { CommandOutputStore } from './AgentConsoleCommandOutputHistory';
 import type { AgentConsoleCommandOutputEntry } from './AgentConsoleSessionState';
 import { AgentConsoleSessionTranscriptHost } from './AgentConsoleSessionTranscriptHost';
@@ -30,6 +31,7 @@ export abstract class AgentConsoleSessionOverlayHost extends AgentConsoleSession
     protected abstract self(): AgentConsoleSessionState;
 
     setNotice(message: string): void { setNoticeInState(this.self(), message); }
+    setToasts(entries: readonly ToastEntry[]): void { this.self().toasts = Array.isArray(entries) ? [...entries] : []; }
     openTextOverlay(title: string, lines: string[], visibleLines?: number): void { openTextOverlayInState(this.self(), title, lines, visibleLines); }
     closeTextOverlay(): void { closeTextOverlayInState(this.self()); }
     hasTextOverlayFocus(): boolean { return hasTextOverlayFocusInState(this.self()); }
