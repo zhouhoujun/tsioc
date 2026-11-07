@@ -73,6 +73,13 @@ export class ClassDirective {
     }
 
     private classTokens(value?: string): string[] {
-        return String(value || '').split(/\s+/).filter(Boolean);
+        // `class="tone-{{tone}}"` reaches the directive as raw template text
+        // before (or alongside) the interpolation binding. Unresolved segments
+        // are not class names: keeping them left `tone-{{tone}}` / `{{blockClass}}`
+        // in the rendered class list and polluted DOM hosts.
+        return String(value || '')
+            .split(/\s+/)
+            .filter(Boolean)
+            .filter(name => name.indexOf('{') < 0 && name.indexOf('}') < 0);
     }
 }

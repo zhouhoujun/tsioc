@@ -3138,3 +3138,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 回归：components/console 144 passing（新增换行续行选区、follow 暂停/恢复用例）、agent-ui 1985 passing；真实 TUI：流式过程中选区文本与屏幕位置保持不变，滚动/翻页后仍可复制同一段文字。
 - 修复“部分首行选不中”（真实 TUI 定位）：`fitAnsiLine` 在行宽超过终端宽度时用 `sliceByDisplayWidth(plain, width)` 截断，会把整行 ANSI 全部丢掉——选区反显和语法色一起消失。换行后的首行常正好比终端宽 1 列（其余续行较短），所以表现为“只有部分首行选不中”。改为 `sliceStyledColumns(line, 0, width)`，在同样截断宽度的同时保留 SGR；不增加布局或重绘开销。
   - 回归：components/console 新增“超宽行截断保留选区反显”用例（旧实现失败）；真实 TUI 滚动后逐行拖选，首行与续行均正常高亮。
+- Web 控制台与 TUI 会话 tab 关闭/观感修复（真实 Chrome + 真实 PTY 验收）：
+  - “web 的 tab 按钮关闭不了”根因是 DOM 事件冒泡：`✕` 嵌在可点击的 `.tab` 内，点击关闭先关闭再冒泡到 tab 触发 `select`，把已关闭的会话重新选中（看起来“关不掉”）。`TabBarComponent` 的 `select` 现在忽略来自 `.tab-close` 的冒泡点击，`closeTab` 主动 `stopPropagation`；TUI 端（不冒泡、无 Event）行为不变。
+  - Web 转录区整块不可见：`web/console.css` 里一条 `#agent-console .message-item-block, .is-hidden { display: none }` 把所有消息块隐藏了（用户可见的是空面板）。只保留 `.is-hidden`，消息模板恢复显示。
+  - 共享模板里的 `class="message-token tone-{{token.tone}}"` 在 DOM 端会留下 `tone-{{token.tone}}` / 空 tone 时的悬挂 `tone-`；`AgentConsoleRoutedTokensComponent` 改为渲染缓存好的 `token.className`（完整类名，简单路径绑定）。
+  - `components` 核心同类问题：`class="a {{b}}"` 会把未解析的 `{{b}}` 当成类名追加到元素（`{{blockClass}}` 等）。`ClassDirective` 过滤掉仍含 `{`/`}` 的 token（CSS 标识符不可能含花括号），不改变已解析类名。
+  - Web skin 对齐 opencode 的“文字优先、安静框架”：tab 去掉 chip 背景（选中=更亮更粗，未选=灰，仅选中显示 `✕`，`✕` 命中区 24×20 且 hover 有反馈）、用户消息卡片压缩（87px → 36px）、错误卡片压缩、CJK 字体回退、`v-container` 用 `display: contents` 且正文折叠结构空白（代码/表格保留自己的 white-space）。
+  - 回归：`components/common/test/tab-bar-dom.spec.ts`（点 `✕` 只关闭不选中，旧实现失败）；`components/html/test/class-interpolation.spec.ts`（类名不残留 `{{...}}`，旧实现失败）；`agents/agent-ui/test/routed-token-classes.spec.ts`（tone 类名正确且 DOM 无 `{{`）。components 148 / common 46 / html 129 / console 146 / agent-ui 1987 passing。
+  - 真实浏览器（Chrome 1280×860 + 390×844）：三个 tab 时点标签切换正常，点选中 tab 的 `✕` 从 3 → 2 且不重开；DOM 无 `class*="{{"`；用户卡片 36px；移动端布局正常。
+  - 真实 TUI（PTY 100×28）：点 `+` 新建 tab（`show a plan` 会话保留），点新 tab 的 `✕` 关闭后回到原会话且消息完整。

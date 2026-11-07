@@ -35,7 +35,7 @@
     --agent-web-inline-code-bg: #1b2836;
     --agent-web-inline-code-text: #a5d6ff;
     --agent-web-thought-border: #223044;
-    --agent-web-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --agent-web-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans CJK SC", "Source Han Sans SC", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
     --agent-web-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono CJK SC", "Source Han Mono SC", monospace;
 }
 
@@ -62,8 +62,8 @@ body {
     display: flex;
     flex-wrap: nowrap;
     align-items: center;
-    gap: 0;
-    padding: 8px 0 10px;
+    gap: 2px;
+    padding: 10px 0 12px;
     overflow-x: auto;
     scrollbar-width: none;
 }
@@ -76,14 +76,15 @@ body {
     display: inline-flex;
     flex: 0 0 auto;
     align-items: center;
-    min-height: 26px;
+    min-height: 28px;
     border: 1px solid transparent;
-    border-radius: 8px;
-    padding: 3px 0;
+    border-radius: 7px;
+    padding: 3px 6px;
     font-family: var(--agent-web-sans);
     font-size: 12.5px;
     line-height: 1.4;
     cursor: pointer;
+    transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
 }
 
 #agent-console tab-bar .tab-label {
@@ -91,9 +92,10 @@ body {
 }
 
 #agent-console tab-bar .tab[aria-selected="true"] {
-    background: var(--agent-web-panel-raised) !important;
-    border-color: var(--agent-web-border);
+    background: transparent !important;
+    border-color: transparent;
     color: var(--agent-web-strong) !important;
+    font-weight: 600;
 }
 
 #agent-console tab-bar .tab:not([aria-selected="true"]) {
@@ -101,8 +103,22 @@ body {
 }
 
 #agent-console tab-bar .tab-close {
-    opacity: 0.55;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.5;
     font-size: 11px;
+    min-width: 16px;
+    min-height: 16px;
+    padding: 2px 4px;
+    margin-left: 2px;
+    border-radius: 4px;
+    line-height: 1;
+}
+
+#agent-console tab-bar .tab-close:hover {
+    opacity: 1;
+    background: var(--agent-web-hover, rgba(255, 255, 255, 0.08));
 }
 
 #agent-console tab-bar .tab-new {
@@ -110,13 +126,13 @@ body {
     flex: 0 0 auto;
     align-items: center;
     justify-content: center;
-    min-width: 1ch;
-    height: 26px;
-    margin-left: 0;
-    padding: 0;
-    border: 1px solid var(--agent-web-border);
-    border-radius: 8px;
-    color: var(--agent-web-accent) !important;
+    min-width: 20px;
+    height: 28px;
+    margin-left: 2px;
+    padding: 0 6px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    color: var(--agent-web-muted) !important;
     font-family: var(--agent-web-sans);
     font-size: 15px;
     line-height: 1;
@@ -407,7 +423,24 @@ body {
 #agent-console .message-token.tone-syntax-tag,
 #agent-console .message-token.tone-syntax-function { color: var(--agent-web-code-accent); }
 
-#agent-console .message-item-block,
+#agent-console v-container {
+    display: contents;
+}
+
+/* The shared templates are written for the terminal grid; the DOM renderer
+   keeps their structural whitespace. Collapse it for prose while code/table
+   lines keep their own white-space rules. */
+#agent-console .message-line,
+#agent-console .message-body,
+#agent-console .message-content,
+#agent-console agent-console-routed-tokens {
+    white-space: normal;
+}
+
+#agent-console .message-status:empty,
+#agent-console .message-meta:empty {
+    display: none;
+}
 
 #agent-console .is-hidden {
     display: none !important;
@@ -419,15 +452,15 @@ body {
 
 /* User input is the visual anchor: one soft card per turn. */
 #agent-console .message-template-user {
-    margin: 16px 0 10px;
-    padding: 10px 14px !important;
+    margin: 12px 0 6px;
+    padding: 7px 12px !important;
     border: 1px solid var(--agent-web-border);
-    border-radius: 12px;
+    border-radius: 8px;
     background: var(--agent-web-panel-raised) !important;
     color: var(--agent-web-user-text) !important;
     font-family: var(--agent-web-sans);
-    font-size: 14px;
-    line-height: 1.55;
+    font-size: 13.5px;
+    line-height: 1.5;
 }
 
 #agent-console .message-template-user .message-line {
@@ -437,12 +470,12 @@ body {
 
 /* Assistant prose uses a readable web face; code/commands stay monospace. */
 #agent-console .message-template-assistant {
-    margin: 6px 0 20px;
+    margin: 4px 0 16px;
     padding-left: 0 !important;
     color: var(--agent-web-text);
     font-family: var(--agent-web-sans);
-    font-size: 14.5px;
-    line-height: 1.7;
+    font-size: 14px;
+    line-height: 1.65;
 }
 
 #agent-console .message-template-assistant[data-block-padded="true"] {
@@ -702,12 +735,14 @@ body {
 }
 
 #agent-console .message-template-error {
-    margin: 8px 0;
-    padding: 8px 12px !important;
-    border: 1px solid rgba(224, 122, 122, 0.42);
-    border-radius: 8px;
-    background: rgba(224, 122, 122, 0.08) !important;
+    margin: 6px 0;
+    padding: 4px 10px !important;
+    border: 1px solid rgba(224, 122, 122, 0.3);
+    border-radius: 6px;
+    background: rgba(224, 122, 122, 0.06) !important;
     color: var(--agent-web-danger) !important;
+    font-size: 13px;
+    line-height: 1.5;
 }
 
 #agent-console .message-template-plan {

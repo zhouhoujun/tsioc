@@ -63,16 +63,38 @@ const bodyLinesCache = new WeakMap<object, {
     lines: AgentConsoleRenderedLine[];
 }>();
 
+/**
+ * Visible token views, cached by the source token array. The template renders
+ * `class="{{token.className}}"` (a simple path): a partially interpolated class
+ * such as `tone-{{token.tone}}` keeps a dangling `tone-` prefix when the token
+ * has no tone, so the whole class list is resolved here instead.
+ */
+const routedTokenViews = new WeakMap<object, Array<{ text: string; className: string }>>();
+
 @Component({
     selector: 'agent-console-routed-tokens',
     template: `
         <span class="message-content">
-            <span class="message-token tone-{{token.tone}}" v-for="token in tokens">{{token.text}}</span>
+            <span class="{{token.className}}" v-for="token in renderedTokens">{{token.text}}</span>
         </span>
     `
 })
 export class AgentConsoleRoutedTokensComponent {
     @Attribute() tokens: AgentConsoleRenderedLine['tokens'] = [];
+
+    get renderedTokens(): Array<{ text: string; className: string }> {
+        const tokens = (Array.isArray(this.tokens) ? this.tokens : []) as unknown as object & Array<{ text?: string; tone?: string }>;
+        const cached = routedTokenViews.get(tokens);
+        if (cached) {
+            return cached;
+        }
+        const views = (Array.isArray(tokens) ? tokens : []).map(token => ({
+            text: String(token?.text ?? ''),
+            className: token?.tone ? `message-token tone-${token.tone}` : 'message-token'
+        }));
+        routedTokenViews.set(tokens, views);
+        return views;
+    }
 }
 
 @Component({
