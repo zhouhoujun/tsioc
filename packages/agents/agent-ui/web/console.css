@@ -1092,14 +1092,16 @@ html[data-agent-theme="light"] #agent-console .console-input-panel .input-meta {
     color: #57606a;
 }
 
+/* Text-first tabs in every theme: no chip background/border on the active tab. */
 html[data-agent-theme="light"] #agent-console tab-bar .tab[aria-selected="true"] {
-    background: #eaeef2 !important;
-    border-color: #d0d7de;
+    background: transparent !important;
+    border-color: transparent;
     color: #24292f !important;
+    font-weight: 600;
 }
 
 html[data-agent-theme="light"] #agent-console tab-bar .tab-new {
-    border-color: #d0d7de;
+    border-color: transparent;
 }
 
 html[data-agent-theme="light"] #agent-console .markdown-table,

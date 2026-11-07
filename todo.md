@@ -3184,3 +3184,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - console 合成层把浮层起点限制在 header 区域高度之下，任何时候都不覆盖 session tab 栏；新增 `test/dialog-header.spec.ts`（无此限制时失败）。
   - tab 条 `white-space: nowrap`：会话很多时只裁剪、不再折行（折行会把 composer 挤出屏幕并让浮层落到第 0 行）；真实 PTY 16 个 tab + 长通知浮层，tab 行与 footer 均完整。
   - 回归：components/console 149 passing（新增 dialog header 用例）、agent-ui 1993 passing。
+- Web 浅色主题 tab 与弹窗重复信息收尾（真实 Chrome 验收）：
+  - 浅色主题还残留旧规则：选中 tab 有 chip 背景/边框、`+` 有边框，与深色“纯文字 tab”不一致。改为各主题统一：选中只加粗+更亮字体，`✕`/`+` 无边框；真实 Chrome `data-agent-theme=light` 下 tab/`+` 背景与边框均为透明。
+  - 文本浮层打开时 footer 状态行会重复展示同一段摘要（弹窗下方一行醒目文字，像没样式的续行）。`AgentConsoleStatusPanelComponent.notice` 在 `state.textOverlay` 打开时返回空串，关闭后恢复；真实 TUI `/status` 打开时不再出现重复摘要，`Esc` 关闭后摘要恢复。
+  - 回归：新增 `test/status-notice-overlay.spec.ts`；agent-ui 1994 passing。
