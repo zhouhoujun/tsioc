@@ -86,9 +86,19 @@ export function decodeSseFrame(frame: SseFrame): RemoteAgentConsoleEvent | undef
     if (!payload || typeof payload !== 'object') {
         return undefined;
     }
+    // The gateway broadcasts the full event record (`{id,type,sessionId,
+    // timestamp,data}`); older brokers may send the payload directly. Unwrap
+    // the record so appliers read the event fields (toolName, request, …)
+    // instead of the envelope.
+    const envelope = payload.data && typeof payload.data === 'object'
+        && typeof payload.type === 'string'
+        && typeof payload.sessionId === 'string'
+        && (typeof payload.id === 'string' || typeof payload.timestamp === 'number')
+        ? payload
+        : undefined;
     return {
-        type: frame.event || payload.type || 'message',
-        sessionId: payload.sessionId,
-        data: payload
+        type: envelope?.type || frame.event || payload.type || 'message',
+        sessionId: envelope?.sessionId ?? payload.sessionId,
+        data: envelope ? envelope.data : payload
     };
 }

@@ -3193,3 +3193,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 实测 100 列 11 个会话出现 `… 新会话 ×N ✕ +`，活动 tab 与 `+` 始终可见；60 列 6 个会话同样窗口化；浏览器（`tabStripColumns=0`）保持全部 tab 可横向滚动。
   - 窄终端（60 列）footer 元信息行不再把 “0 tokens” 折成 “0 tok / ens”，改为裁剪（`.input-meta { white-space: nowrap }`）。
   - 回归：`test/session-tab-window.spec.ts`（浏览器不窗口化、活动在尾/中时的窗口与标记、标记不可选）；components/common 49、components/console 149、agent-ui 1997 passing。
+- 修复 Web 端审批卡片信息为空、按钮样式缺失（真实 Chrome 复现）：
+  - 现象：`/permissions level ask` 后触发审批，卡片显示 `Approval required · Allow ?`、`› ()`、`Reason: No reason provided`，点「允许一次」无法定位请求。
+  - 根因：网关 SSE 广播的是完整事件记录 `{id,type,sessionId,timestamp,data}`，而 `decodeSseFrame` 把整条记录当成 payload 交给 `applyRemoteEvent`，于是 `request/toolName/id` 全部读不到（所有 SSE 事件字段都受影响，审批只是最明显的一个）。`decodeSseFrame` 现在识别并解包记录包装（保留旧的扁平 payload 兼容），新增 `remote-event-bridge` 回归用例。
+  - Web skin 补齐审批卡片：标题/摘要层级、请求行 hover、详情弱化、三个操作改为带边框的按钮（允许=强调色、始终允许、拒绝=危险色），提示行弱化。
+  - 真实 Chrome：卡片显示 `workspace_trust (9dee4154)`、原因、30s 过期；点「允许一次」后卡片消失、终端命令执行并显示 `approval-ok`，底部出现 `Approved workspace_trust (...)`。
+  - 回归：agent-ui 1998 passing（含 decodeSseFrame 包装用例）。

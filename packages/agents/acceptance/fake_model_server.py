@@ -219,6 +219,14 @@ def _default_turn(messages):
         content = '\n'.join(lines) + '\n\n是否继续？'
         total_tokens += len(content) // 4
         return {'role': 'assistant', 'content': content + '\n'}
+    if '批准测试' in text:
+        # One terminal tool call so the host shows a real approval prompt.
+        if n_tool == 0:
+            return {'role': 'assistant', 'content': None,
+                    'tool_calls': [{'id': 'call_approval_1', 'type': 'function',
+                                    'function': {'name': 'terminal',
+                                                 'arguments': json.dumps({'command': 'echo approval-ok'}, ensure_ascii=False)}}]}
+        return {'role': 'assistant', 'content': '批准测试完成。'}
     if 'markdown 排版' in text:
         # Rich Markdown surface: heading, inline styles, list, quote, fenced
         # code and a table in one reply, so browser/TUI skins can be compared.

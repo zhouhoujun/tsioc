@@ -50,6 +50,22 @@ export class RemoteEventBridgeParsingTest {
         expect(event.type).toEqual('tool_failed');
         expect(event.sessionId).toEqual('s1');
     }
+
+    @Test('decodeSseFrame unwraps the gateway record envelope')
+    decodeSseUnwrapsRecord() {
+        const frame = {
+            event: 'approval_requested',
+            data: JSON.stringify({
+                id: 'e1', type: 'approval_requested', sessionId: 's1', timestamp: 1,
+                data: { sessionId: 's1', request: { id: 'a1', toolName: 'terminal', reason: 'why' } }
+            })
+        };
+        const event = decodeSseFrame(frame as any)!;
+        expect(event.type).toEqual('approval_requested');
+        expect(event.sessionId).toEqual('s1');
+        expect((event.data as any).request.toolName).toEqual('terminal');
+        expect((event.data as any).request.id).toEqual('a1');
+    }
 }
 
 @Suite('AgentConsoleRemoteEventBridge mapping')

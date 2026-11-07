@@ -380,6 +380,82 @@ body {
     opacity: 0;
 }
 
+/* Approval card: options read as clickable buttons, requests as rows. */
+#agent-console .console-approvals-panel {
+    font-family: var(--agent-web-sans);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+#agent-console .console-approvals-panel .approval-title {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--agent-web-strong);
+    padding-right: 24px;
+    margin-bottom: 2px;
+}
+
+#agent-console .console-approvals-panel .approval-summary {
+    color: var(--agent-web-muted);
+    font-size: 11.5px;
+    margin-bottom: 6px;
+}
+
+#agent-console .console-approvals-panel .approval-item {
+    display: block;
+    padding: 5px 8px;
+    border-radius: 6px;
+    color: var(--agent-web-text);
+    cursor: pointer;
+}
+
+#agent-console .console-approvals-panel .approval-item:hover {
+    background: var(--agent-web-hover);
+}
+
+#agent-console .console-approvals-panel .approval-detail {
+    color: var(--agent-web-muted);
+    font-size: 12px;
+    padding-top: 2px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+#agent-console .console-approvals-panel .approval-option {
+    display: block;
+    margin-top: 6px;
+    padding: 7px 10px;
+    border: 1px solid var(--agent-web-border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+#agent-console .console-approvals-panel .approval-option:hover {
+    background: var(--agent-web-hover);
+}
+
+#agent-console .console-approvals-panel .approval-option-once {
+    color: var(--agent-web-accent);
+    border-color: var(--agent-web-accent);
+}
+
+#agent-console .console-approvals-panel .approval-option-always {
+    color: var(--agent-web-strong);
+}
+
+#agent-console .console-approvals-panel .approval-option-deny {
+    color: var(--agent-web-danger);
+    border-color: rgba(224, 122, 122, 0.45);
+}
+
+#agent-console .console-approvals-panel .approval-actions {
+    color: var(--agent-web-muted);
+    font-size: 11.5px;
+    margin-top: 8px;
+}
+
 /* Select menus: the console renderer paints the `<select>` JSON payload; the
    browser gets real rows from the same window instead of an empty control. */
 #agent-console agent-console-select-panel .select-core {
