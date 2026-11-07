@@ -1,4 +1,5 @@
 import { Attribute, Component } from '@tsdi/components';
+import { getDisplayWidth } from './display-width';
 import type { ToastEntry } from './toast';
 
 /**
@@ -13,15 +14,19 @@ import type { ToastEntry } from './toast';
     selector: 'toast-stack',
     template: `
     <div class="console-toast-stack" role="status" aria-live="polite" v-show="visible">
+        <div class="console-toast-card">
         <label class="console-toast" data-tone="{{item.tone}}" v-for="item in entries">
-            <span class="toast-message">{{item.message}}</span><span class="toast-close" role="button" data-cell-width="3" @click="dismiss(item.id, $event)">{{closeAffordance}}</span>
+            <span class="toast-message">{{item.text}}</span><span class="toast-close" role="button" data-cell-width="3" @click="dismiss(item.id, $event)">{{closeAffordance}}</span>
         </label>
+        </div>
     </div>`
 })
 export class ToastStackComponent {
     @Attribute() items: readonly ToastEntry[] = [];
     @Attribute() closeLabel = '✕';
     @Attribute() closeAction?: (id: string) => void;
+    /** Inner content width for terminal cards; pads the message so ✕ sits right. */
+    @Attribute() messageWidth = 0;
 
     /** The close glyph carries a leading no-break space: terminal spans do not
      * honour padding, so the gap has to be part of the text run. */
@@ -29,8 +34,18 @@ export class ToastStackComponent {
         return `\u00a0${this.closeLabel}`;
     }
 
-    get entries(): readonly ToastEntry[] {
-        return Array.isArray(this.items) ? this.items : [];
+    get entries(): Array<ToastEntry & { text: string }> {
+        const items = Array.isArray(this.items) ? this.items : [];
+        const width = Math.max(0, Math.floor(Number(this.messageWidth) || 0));
+        if (!width) {
+            return items.map(item => ({ ...item, text: String(item?.message ?? '') }));
+        }
+        const closeWidth = getDisplayWidth(this.closeAffordance);
+        return items.map(item => {
+            const message = String(item?.message ?? '');
+            const pad = Math.max(1, width - closeWidth - getDisplayWidth(message));
+            return { ...item, text: `${message}${' '.repeat(pad)}` };
+        });
     }
 
     get visible(): boolean {

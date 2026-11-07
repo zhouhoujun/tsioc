@@ -353,11 +353,24 @@ export class StdioMcpClient implements McpClient {
         if (this.closed) {
             throw new Error(`MCP server '${this.server.id}' is closed.`);
         }
-        if (!this.process?.stdin) {
+        const stdin = this.process?.stdin;
+        if (!stdin) {
             throw new Error(`MCP server '${this.server.id}' is not running.`);
         }
         // MCP stdio messages are newline-delimited JSON, not Content-Length frames.
-        this.process.stdin.write(`${JSON.stringify(message)}\n`);
+        // A dead child can surface an async EPIPE: consume it through the write
+        // callback (and guard destroyed sockets) so it never becomes an unhandled
+        // 'error' event that takes the host process down. Reconnect/exit handlers
+        // remain responsible for recovering the session.
+        if (stdin.destroyed || stdin.writableEnded) {
+            return;
+        }
+        try {
+            stdin.write(`${JSON.stringify(message)}\n`, () => undefined);
+        } catch {
+            // The process died between the guard and the write; the exit handler
+            // rejects pending requests and triggers reconnect.
+        }
     }
 
     private failAll(error: Error): void {

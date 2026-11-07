@@ -312,6 +312,10 @@ body {
     color: var(--agent-theme-status-label-color, #6e7681);
 }
 
+#agent-console .console-toast-card {
+    display: contents;
+}
+
 #agent-console .console-toast-stack {
     position: fixed;
     right: 24px;

@@ -44,7 +44,8 @@ export class ConsoleToastOverlayTest {
             expect(lines[toastRow].startsWith('t')).toBe(true);
             const target = surface.clickTargets.find(item => item.node === closeNode);
             expect(target?.y).toEqual(toastRow);
-            expect(target?.x).toEqual(57);
+            // The card is slid to the right edge (one column here).
+            expect(target?.x).toEqual(58);
         } finally {
             surface.destroy();
         }

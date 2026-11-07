@@ -492,13 +492,20 @@
 .console-toast-stack {
     padding: 0 1ch;
 }
+
+
+.console-toast-card {
+    border: 1px solid var(--console-border, #30363d);
+    border-radius: 1;
+    background: var(--console-dialog-bg, #161b22);
+    padding: 0 1ch;
+    max-width: 34ch;
+}
 .console-toast {
     color: var(--console-text, #c9d1d9);
-    text-align: right;
-}
-.console-toast .toast-message,
-.console-toast .toast-close {
-    background: var(--console-dialog-bg, #161b22);
+
+
+    text-align: left;
 }
 .console-toast[data-tone="success"] {
     color: var(--console-idle, #6fa37a);

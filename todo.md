@@ -3203,3 +3203,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 单项目作用域下不再每行重复 `[workspace]` 前缀（仅当行跨多个 workspace 时才加，便于区分）；`(0)` 消息数不再显示，只有 >0 才带计数；无标题会话优先回退到 `focusSummary`/首个请求（截断 36 字符）再回退 id。
   - attach 到网关（`tsdi-agent attach http://127.0.0.1:4099`，同一 workspace）实测：`/sessions` 正确列出网关会话（含 `批准测试 (4)`），行变为 `› 标题 · <相对时间> [当前]`；attach 默认新建本地会话、可在该面板切到网页会话，符合“不重用本地 workspace 记录”的设计。
   - 回归：`panel-i18n` 新增多 workspace 前缀/零计数用例、`console-renderer` 会话窗口断言同步；agent-ui 1999 passing。
+- toast（alert）提示框观感对齐 opencode（真实 TUI/Chrome 验收）：
+  - TUI 之前只是右对齐的浮层文字（只有文字背景、没有边框）。共享 `toast-stack` 增加 `console-toast-card` 容器：1px 边框 + 主题 dialog 背景 + `padding: 0 1ch` + `max-width: 34ch`；`applyToastOverlay` 把居中卡片整体右移贴到终端右边缘，并把 toast 点击目标同步右移。
+  - 内容改为**左对齐**（opencode 风格），关闭按钮固定在卡片右侧：`ToastStackComponent` 新增 `messageWidth`，终端宿主按 `min(34, columns) - 4` 传入，消息用空格补齐到右边缘；Web 传入 0 保持“内容自适应 + ✕ 紧随”的卡片。
+  - 真实 TUI（100×24，dark/light）：`╭─╮ │ 已复制 … ✕ │ ╰─╯` 右下角有边框/背景，文案左对齐、✕ 在右边；真实 Chrome：卡片 `Copied ✕`，宽度自适应，✕ 贴右边（卡片 102px，✕ 右缘距卡片 9px 内边距）。
+  - 回归：common 49、console 149、agent-ui 2001 passing。
+- 修复 MCP stdio 客户端在子进程退出时的未捕获 EPIPE（gate 偶发 agent-tools 失败）：`StdioMcpClient.write` 现在通过 write 回调吞掉异步写错误并跳过已销毁/已结束的 stdin，避免 `notifications/initialized` 在进程刚死时把宿进程带崩；重连/退出处理仍负责 reject 未完成请求。agent-tools 582 passing（MCP stdio 3 用例）。

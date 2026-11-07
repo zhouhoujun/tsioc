@@ -331,7 +331,7 @@ import { startProviderWizard, handleWizardEscape, cancelProviderWizard, resetPro
         <agent-console-pending-question-panel renderRegion="menu" v-show="panels.pendingQuestion"></agent-console-pending-question-panel>
         <agent-console-select-panel renderRegion="menu" v-show="panels.suggestion"></agent-console-select-panel><agent-console-select-panel renderRegion="menu" v-show="panels.select"></agent-console-select-panel>
         <agent-console-text-overlay-panel renderRegion="dialog" v-show="panels.textOverlay"></agent-console-text-overlay-panel>
-        <toast-stack renderRegion="toast" :items="state.toasts" @closeAction="dismissToast"></toast-stack>
+        <toast-stack renderRegion="toast" :items="state.toasts" :messageWidth="toastMessageWidth" @closeAction="dismissToast"></toast-stack>
         <agent-console-status-panel renderRegion="footer" v-show="panels.status && !panels.messageDetail"></agent-console-status-panel>
         <agent-console-sessions-panel renderRegion="footer" v-show="panels.sessions && !panels.messageDetail"></agent-console-sessions-panel>
         <agent-console-approvals-panel renderRegion="menu" v-show="panels.approvals && !panels.messageDetail"></agent-console-approvals-panel>
@@ -944,6 +944,9 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
 
     getState(): AgentConsoleSessionState { return this.state; }
 
+    /** Terminal toast content width (34ch card minus borders/padding); 0 on web. */
+    get toastMessageWidth(): number { const columns = Math.floor(Number(this.state.tabStripColumns) || 0); return columns > 0 ? Math.max(8, Math.min(34, columns) - 4) : 0; }
+
     /** Close one queued toast (the shared strip's ✕ affordance). */
     dismissToast(id: string): void { dismissConsoleToast(this, id); }
 
@@ -1333,7 +1336,7 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
     }
 
     protected async submitMultilineDraft(): Promise<void> { this.state.setNotice(''); await submitMultilineDraftView(turnInputHost(this)); }
-    async submit(): Promise<void> { this.state.setNotice(''); await submitView(turnInputHost(this)); }
+    async submit(): Promise<void> { this.state.setNotice(''); this.state.closeTextOverlay(); await submitView(turnInputHost(this)); }
 
     /**
      * `!cmd` runs a shell command; `!!` toggles multiline draft mode; a bare

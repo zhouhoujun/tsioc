@@ -108,18 +108,32 @@ import { resolveTranscriptLayout } from './AgentConsoleTranscriptLayout';
             }
         }
 
-        if (state.pendingQuestion || state.focusLayers.hasReviewFocus() || state.focusLayers.hasMessageDetailFocus() || state.focusLayers.hasMessageFocus() || state.focusLayers.hasApprovalFocus() || state.focusLayers.hasScheduledJobFocus() || state.focusLayers.hasToolFocus() || state.focusLayers.hasSessionFocus() || state.hasTextOverlayFocus() || state.hasCommandOutputsFocus()) {
+        const otherFocus = state.pendingQuestion || state.focusLayers.hasReviewFocus() || state.focusLayers.hasMessageDetailFocus() || state.focusLayers.hasMessageFocus() || state.focusLayers.hasApprovalFocus() || state.focusLayers.hasScheduledJobFocus() || state.focusLayers.hasToolFocus() || state.focusLayers.hasSessionFocus() || state.hasCommandOutputsFocus();
+        const overlayOnly = state.hasTextOverlayFocus() && !otherFocus;
+        if (otherFocus || state.hasTextOverlayFocus()) {
             const focusKey = state.focusLayers.resolveShortcutKey(rawText, controlKey);
-            if (focusKey) {
-                const consumed = await state.handleFocusKey(focusKey, options.transcriptNavigationController);
-                if (consumed) {
+            if (overlayOnly) {
+                // A read-only notice overlay owns only its navigation keys; the
+                // composer stays usable (typing and Enter work as in the browser)
+                // instead of silently dropping every keystroke.
+                if (focusKey && ['escape', 'up', 'down', 'pageup', 'pagedown', 'home', 'end'].includes(focusKey)) {
+                    const consumed = await state.handleFocusKey(focusKey, options.transcriptNavigationController);
+                    if (consumed) {
+                        return { handled: true, action: 'focusKey' };
+                    }
+                }
+            } else {
+                if (focusKey) {
+                    const consumed = await state.handleFocusKey(focusKey, options.transcriptNavigationController);
+                    if (consumed) {
+                        return { handled: true, action: 'focusKey' };
+                    }
+                }
+                // Focus layer did not consume the key: let up/down fall through
+                // to history navigation, keep swallowing other keys.
+                if (controlKey !== 'up' && controlKey !== 'down') {
                     return { handled: true, action: 'focusKey' };
                 }
-            }
-            // Focus layer did not consume the key: let up/down fall through
-            // to history navigation, keep swallowing other keys.
-            if (controlKey !== 'up' && controlKey !== 'down') {
-                return { handled: true, action: 'focusKey' };
             }
         }
 

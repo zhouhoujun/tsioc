@@ -504,13 +504,20 @@ $idle: var(--console-idle, #6fa37a);
 .console-toast-stack {
     padding: 0 1ch;
 }
+// The terminal toast is a real card: border + background so it reads as a
+// floating alert instead of plain text over the transcript.
+.console-toast-card {
+    border: 1px solid $border;
+    border-radius: 1;
+    background: $dialog-bg;
+    padding: 0 1ch;
+    max-width: 34ch;
+}
 .console-toast {
     color: $text;
-    text-align: right;
-}
-.console-toast .toast-message,
-.console-toast .toast-close {
-    background: $dialog-bg;
+    // Left-aligned like opencode's toast: the card sits bottom-right, the copy
+    // inside reads from its left edge.
+    text-align: left;
 }
 .console-toast[data-tone="success"] {
     color: $idle;

@@ -2383,8 +2383,12 @@ export class TuiTerminalSurface {
             return;
         }
         const bounds = resolveStyledColumnBounds(overlay.lines);
-        const startColumn = bounds?.start ?? 0;
-        const endColumn = bounds?.end ?? this.resolveWidth();
+        const width = this.resolveWidth();
+        // The toast card is centered by the block layout; slide it to the right
+        // edge so alerts stack in the corner (transcript stays readable left).
+        const shift = bounds && width > 0 ? Math.max(0, (width - 1) - bounds.end) : 0;
+        const startColumn = (bounds?.start ?? 0) + shift;
+        const endColumn = (bounds?.end ?? width) + shift;
         const footerRows = (viewport.regions || [])
             .filter(region => region.id === 'footer')
             .map(region => region.startRow);
@@ -2393,12 +2397,13 @@ export class TuiTerminalSurface {
         overlay.lines.forEach((line, index) => {
             const row = start + index;
             if (row >= 0 && row < lines.length) {
-                lines[row] = overlayStyledLine(lines[row] || '', line, startColumn, endColumn);
+                const shiftedLine = shift ? `${' '.repeat(shift)}${line}` : line;
+                lines[row] = overlayStyledLine(lines[row] || '', shiftedLine, startColumn, endColumn);
             }
         });
         viewport.clickTargets = [
             ...(viewport.clickTargets || []),
-            ...overlay.clickTargets.map(target => ({ ...target, y: target.y + start }))
+            ...overlay.clickTargets.map(target => ({ ...target, x: target.x + shift, y: target.y + start }))
         ];
     }
 
