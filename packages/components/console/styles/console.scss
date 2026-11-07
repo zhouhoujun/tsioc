@@ -494,6 +494,10 @@ $idle: var(--console-idle, #6fa37a);
     color: $text;
     text-align: right;
 }
+.console-toast .toast-message,
+.console-toast .toast-close {
+    background: $dialog-bg;
+}
 .console-toast[data-tone="success"] {
     color: $idle;
 }

@@ -3159,3 +3159,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 真实 TUI（PTY 100×28）：选区右键复制 → 右下 `已复制 ✕` 出现，点 `✕` 立即消失，再复制 1.8s 后自动消失。
   - 真实浏览器（Chrome 1280×1000）：右键复制 → 右下浮动 `Copied ✕`，手关与 2s 自动消失均正常；`/` 复制类命令同队列。
 - 顺带补齐 Web Markdown 观感：表格 `align-left/center/right` 真正生效（此前 computed 为 start），标题提升到 15.5px 并增加上下留白；新增 fake model `markdown 排版` 场景（标题/列表/引用/行内代码/代码块/表格/中文长段落）用于两端真实对照。
+- toast 提示继续对齐 opencode：TUI 改为悬浮覆盖转录区右下角，alert 支持定时自动关闭。
+  - TUI toast 不再占用 footer 行：`components/console` 新增 `toast` 区域提取（`extractToastOverlay`）与覆盖绘制（`applyToastOverlay`）；行按 toast 自身列范围 `overlayStyledLine` 叠加，左侧会话正文仍可读，footer/输入框行号不变（实测 24 行终端 toast 前后 answer=19、input=21 不变）；`nativeScrollback` 仍保留原地下移（历史已写入，无法回撤）。
+  - toast 文字/✕ 加 `$dialog-bg` 背景，形成右下角浮起的小卡片；`✕` 点击/自动消失均正常。
+  - alert（>3 行 `notify` 浮层）新增自动关闭：`NOTICE_OVERLAY_AUTO_CLOSE_MS = 20s`，显式 `duration` 优先；手点 `✕` 仍立即关闭，且只关闭本次打开的浮层（避免误关后续面板）；`AgentConsoleToasts.disposeConsoleToasts` 清理计时器。
+  - 回归：components/console `test/toast-overlay.spec.ts` 2 用例（浮层不移动 footer、scrollback 保持流内），console 148 passing；agent-ui `test/toast-notifications.spec.ts` 增加 alert 定时/手动关闭 2 用例，agent-ui 1992 passing。
+  - 真实 TUI（PTY 100×24）：密集转录下复制 → 右下浮层覆盖最后一行右侧、左侧文字保留，布局不位移；2s 后自动消失。

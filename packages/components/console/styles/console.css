@@ -482,6 +482,10 @@
     color: var(--console-text, #c9d1d9);
     text-align: right;
 }
+.console-toast .toast-message,
+.console-toast .toast-close {
+    background: var(--console-dialog-bg, #161b22);
+}
 .console-toast[data-tone="success"] {
     color: var(--console-idle, #6fa37a);
 }

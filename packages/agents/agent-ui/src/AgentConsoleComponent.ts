@@ -331,7 +331,7 @@ import { startProviderWizard, handleWizardEscape, cancelProviderWizard, resetPro
         <agent-console-pending-question-panel renderRegion="menu" v-show="panels.pendingQuestion"></agent-console-pending-question-panel>
         <agent-console-select-panel renderRegion="menu" v-show="panels.suggestion"></agent-console-select-panel><agent-console-select-panel renderRegion="menu" v-show="panels.select"></agent-console-select-panel>
         <agent-console-text-overlay-panel renderRegion="dialog" v-show="panels.textOverlay"></agent-console-text-overlay-panel>
-        <toast-stack renderRegion="footer" :items="state.toasts" @closeAction="dismissToast"></toast-stack>
+        <toast-stack renderRegion="toast" :items="state.toasts" @closeAction="dismissToast"></toast-stack>
         <agent-console-status-panel renderRegion="footer" v-show="panels.status && !panels.messageDetail"></agent-console-status-panel>
         <agent-console-sessions-panel renderRegion="footer" v-show="panels.sessions && !panels.messageDetail"></agent-console-sessions-panel>
         <agent-console-approvals-panel renderRegion="menu" v-show="panels.approvals && !panels.messageDetail"></agent-console-approvals-panel>

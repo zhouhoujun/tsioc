@@ -1390,7 +1390,11 @@ export class TuiTerminalSurface {
         this.pendingRenderOrigin = undefined;
         const layout = this.options.renderer.renderToTuiLayout(this.root, { width, dirty });
         this.lastFullLines = (layout.lines || []).slice();
-        const viewport = this.resolveViewportLayout(layout);
+        // Toast rows float over the transcript instead of consuming footer rows;
+        // in native scrollback the appends are already written, so they stay in flow.
+        const toast = this.extractToastOverlay(layout);
+        const viewport = this.resolveViewportLayout(toast.layout);
+        this.applyToastOverlay(viewport, toast.overlay);
         const lines = viewport.lines;
         const baseLines = lines.slice();
         this.viewportSourceRows = viewport.sourceRows || [];
@@ -2309,6 +2313,93 @@ export class TuiTerminalSurface {
         const offset = this.pendingViewportOffset;
         this.pendingViewportOffset = undefined;
         this.scrollBox.scrollTo(this.scrollBox.maxTop - Math.max(0, Math.floor(offset)));
+    }
+
+    /**
+     * Pull the `toast` region out of the layout so it does not take footer rows.
+     * Returns a layout copy without the region plus the rows/click targets to
+     * paint over the transcript; the renderer's own layout object stays intact
+     * (a surface may render the same layout twice, e.g. when a frame is queued).
+     */
+    protected extractToastOverlay(layout: ReturnType<TuiTerminalSurfaceRenderer['renderToTuiLayout']>): {
+        layout: ReturnType<TuiTerminalSurfaceRenderer['renderToTuiLayout']>;
+        overlay?: { lines: string[]; clickTargets: TerminalClickTarget[] };
+    } {
+        const height = this.resolveHeight();
+        const nativeScrollback = typeof this.options.nativeScrollback === 'function'
+            ? this.options.nativeScrollback()
+            : this.options.nativeScrollback === true;
+        const regions = layout.regions || [];
+        const region = !height || nativeScrollback || !this.isScrollViewportEnabled()
+            ? undefined
+            : regions.find(entry => entry.id === 'toast' && entry.endRow > entry.startRow);
+        if (!region) {
+            return { layout };
+        }
+        const overlayHeight = region.endRow - region.startRow;
+        const lines = (layout.lines || []).slice(region.startRow, region.endRow);
+        const shift = (row: number): number => row >= region.endRow ? row - overlayHeight : row;
+        const clickTargets = (layout.clickTargets || [])
+            .filter(target => target.y >= region.startRow && target.y < region.endRow)
+            .map(target => ({ ...target, y: target.y - region.startRow }));
+        return {
+            layout: {
+                ...layout,
+                lines: [
+                    ...(layout.lines || []).slice(0, region.startRow),
+                    ...(layout.lines || []).slice(region.endRow)
+                ],
+                regions: regions
+                    .filter(entry => entry !== region)
+                    .map(entry => entry.startRow >= region.endRow
+                        ? { ...entry, startRow: shift(entry.startRow), endRow: shift(entry.endRow) }
+                        : entry),
+                cursorTargets: (layout.cursorTargets || [])
+                    .filter(target => target.row < region.startRow || target.row >= region.endRow)
+                    .map(target => target.row >= region.endRow ? { ...target, row: shift(target.row) } : target),
+                clickTargets: (layout.clickTargets || [])
+                    .filter(target => target.y < region.startRow || target.y >= region.endRow)
+                    .map(target => target.y >= region.endRow ? { ...target, y: shift(target.y) } : target)
+            },
+            overlay: { lines, clickTargets }
+        };
+    }
+
+    /**
+     * Paint toast rows over the transcript, bottom-aligned above the footer and
+     * only across the toast's own columns, so the conversation stays readable
+     * behind and beside it and the layout never shifts.
+     */
+    protected applyToastOverlay(
+        viewport: { lines: string[]; regions: TerminalRenderRegion[]; clickTargets: TerminalClickTarget[] },
+        overlay?: { lines: string[]; clickTargets: TerminalClickTarget[] }
+    ): void {
+        if (!overlay || !overlay.lines.length) {
+            return;
+        }
+        const lines = viewport.lines;
+        const height = this.resolveHeight();
+        if (!height || lines.length < height) {
+            return;
+        }
+        const bounds = resolveStyledColumnBounds(overlay.lines);
+        const startColumn = bounds?.start ?? 0;
+        const endColumn = bounds?.end ?? this.resolveWidth();
+        const footerRows = (viewport.regions || [])
+            .filter(region => region.id === 'footer')
+            .map(region => region.startRow);
+        const footerStart = footerRows.length ? Math.min(...footerRows) : lines.length;
+        const start = Math.max(0, Math.min(footerStart - overlay.lines.length, lines.length - overlay.lines.length));
+        overlay.lines.forEach((line, index) => {
+            const row = start + index;
+            if (row >= 0 && row < lines.length) {
+                lines[row] = overlayStyledLine(lines[row] || '', line, startColumn, endColumn);
+            }
+        });
+        viewport.clickTargets = [
+            ...(viewport.clickTargets || []),
+            ...overlay.clickTargets.map(target => ({ ...target, y: target.y + start }))
+        ];
     }
 
     protected resolveViewportLayout(layout: ReturnType<TuiTerminalSurfaceRenderer['renderToTuiLayout']>): {

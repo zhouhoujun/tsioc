@@ -17,6 +17,28 @@ export interface AgentConsoleToastHost {
     animationClock?: AnimationClock | null;
 }
 
+/** Alerts (multi-line notices) close themselves unless the host timed them. */
+export const NOTICE_OVERLAY_AUTO_CLOSE_MS = 20_000;
+
+const overlayTimers = new WeakMap<object, ReturnType<typeof setTimeout>>();
+
+function scheduleOverlayAutoClose(host: AgentConsoleToastHost, state: AgentConsoleSessionState, ms: number): void {
+    const pending = overlayTimers.get(host);
+    if (pending) {
+        clearTimeout(pending);
+    }
+    const opened = state.textOverlay;
+    const timer = setTimeout(() => {
+        overlayTimers.delete(host);
+        // Only close the alert we opened; a newer panel must survive.
+        if (opened && host.getState().textOverlay === opened) {
+            host.getState().closeTextOverlay();
+        }
+    }, Math.max(1, ms));
+    (timer as { unref?: () => void }).unref?.();
+    overlayTimers.set(host, timer);
+}
+
 /** Keep a queue even when the host did not provide one (tests, standalone). */
 export function ensureConsoleToasts(host: AgentConsoleToastHost): void {
     host.toastService = host.toastService || new ToastService();
@@ -30,6 +52,11 @@ export function bindConsoleToasts(host: AgentConsoleToastHost): void {
 }
 
 export function disposeConsoleToasts(host: AgentConsoleToastHost): void {
+    const pending = overlayTimers.get(host);
+    if (pending) {
+        clearTimeout(pending);
+        overlayTimers.delete(host);
+    }
     host.toastUnsubscribe?.();
     host.toastUnsubscribe = undefined;
     host.toastService?.clear();
@@ -64,5 +91,6 @@ export function notifyConsole(
     host.noticeExpiry.schedule(duration);
     if (lines.length > 3) {
         host.getState().openTextOverlay(overlayTitle(), lines);
+        scheduleOverlayAutoClose(host, host.getState(), Number(duration) > 0 ? Number(duration) : NOTICE_OVERLAY_AUTO_CLOSE_MS);
     }
 }
