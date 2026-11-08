@@ -206,7 +206,7 @@ export class AgentConsoleActivityPanelComponent {
             :meta="menuMetaText"
             :detailLines="menuDetailLines"
             :fitContent="menuFitContent"
-            :suggestion="!menuFitContent"
+            :suggestion="menuIsSuggestion"
             :accessibilityLabel="accessibilityLabel"
             @selectAction="selectOption"
             @closeAction="closeMenu"
@@ -236,8 +236,11 @@ export class AgentConsoleSelectPanelComponent {
 
     get menuHintText(): string { const menu = this.menu; return !menu || isAgentConsoleSuggestionMenu(menu) ? '' : (menu.hint || ''); }
 
-    /** Blocking menus fit their content; suggestion menus stay composer-wide. */
+    /** Blocking menus are content-fit popup cards; suggestions stay composer-wide. */
     get menuFitContent(): boolean { return !!this.menu && !isAgentConsoleSuggestionMenu(this.menu); }
+
+    /** Only the inline slash/mention palette keeps the composer rails. */
+    get menuIsSuggestion(): boolean { return !!this.menu && isAgentConsoleSuggestionMenu(this.menu); }
 
     get menuMetaText(): string { const menu = this.menu; if (!menu || isAgentConsoleSuggestionMenu(menu)) return ''; const window = resolveConsoleSelectWindow(menu.options.length, menu.selectedIndex, this.visibleOptionCount); return window.count < menu.options.length ? `${window.start + 1}-${window.start + window.count}/${menu.options.length}` : ''; }
 

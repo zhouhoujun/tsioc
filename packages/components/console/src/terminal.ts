@@ -2637,7 +2637,10 @@ export class TuiTerminalSurface {
                 .concat(foldedClickTargets.map(target => ({ ...target, x: target.x + dialogShift, y: start + target.y })));
             const lastPromptRow = (() => {
                 for (let row = lines.length - 1; row >= 0; row--) {
-                    if (stripTerminalAnsi(lines[row] || '').trimStart().startsWith('>')) {
+                    const text = stripTerminalAnsi(lines[row] || '')
+                        .trimStart()
+                        .replace(/^[│┃║]\s*/, '');
+                    if (text.startsWith('>')) {
                         return row;
                     }
                 }

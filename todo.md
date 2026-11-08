@@ -3246,3 +3246,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 输入框增加左侧竖轨（`border-left`），为弹窗提供真实锚点；修复 `promptRow` 在 `│ >` 输入行上的识别，命令菜单严格停在输入框顶部 padding 行之上，不再遮挡输入框。
   - 选中行继续使用强调色背景；描述宽度预算保留；Logo 仅在空会话显示，消息提示行已移除。
   - 真实 PTY 100×30：`/theme` 为扁平居中列表、`/` 为带左右轨的 composer 列表，菜单与输入框之间保留 `│` padding 行；测试更新输入行断言（`│ >`）。
+- TUI 弹窗按 web 端样式美化（不改变输入框）：
+  - 阻塞式对话框/选择菜单/审批/问题/Toast 使用带圆角边框的卡片（`$dialog-bg` + `$border`），标题与内容留在卡片内，✕ 折叠到顶边；主题边框色与 web 端一致（dark/light/solarized/high-contrast）。
+  - 输入框保持原高度与左侧竖轨，不新增整圈边框；`/` 命令菜单保持原来的 composer 全宽列表 + 左右竖轨，底边紧贴输入框 padding 行之上。
+  - 修复弹窗打开时输入光标被挤到下一行：`lastPromptRow` 识别 `│ >` 输入行（与菜单锚点同一规则），光标始终留在 prompt 行。
+  - 回归：agent-ui、components、components/common、components/html、components/console；真实 PTY 100×30 / 120×40 / 80×24 验证卡片不遮挡输入框。

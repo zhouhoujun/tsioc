@@ -6,7 +6,7 @@ const strip = (line: string) => line.replace(/\x1b\[[0-9;]*m/g, '');
 
 @Suite('console dialog layout')
 export class ConsoleDialogLayoutTest {
-    @Test('the close affordance rides the title row on a borderless card')
+    @Test('the close affordance rides the framed card top-right corner')
     closeFoldsIntoFrame() {
         const renderer = new TuiRenderer();
         const root = renderer.createElement('div');
@@ -34,17 +34,20 @@ export class ConsoleDialogLayoutTest {
         try {
             surface.render();
             const rawTitleRow = surface.lastRenderedLines.find(line => line.includes('状态 7 行')) || '';
-            // The card is a filled background band even without border lines.
-            expect(rawTitleRow).toContain('48;2;27;33;40');
+            // The card is a filled panel with the web dialog palette.
+            expect(rawTitleRow).toContain('48;2;22;27;34');
             const rendered = surface.lastRenderedLines.map(strip);
-            // Borderless card: no frame glyphs, and the ✕ rides the title row.
-            expect(rendered.some(line => line.includes('╭') || line.includes('╰'))).toEqual(false);
+            // Framed card: rounded top/bottom borders and the ✕ on the top edge.
+            expect(rendered.some(line => line.includes('╭') || line.includes('╰'))).toEqual(true);
+            const frameRow = rendered.findIndex(line => line.includes('╭'));
             const titleRow = rendered.findIndex(line => line.includes('状态 7 行'));
-            expect(titleRow).toBeGreaterThanOrEqual(0);
-            expect(rendered[titleRow]).toContain('✕');
+            expect(frameRow).toBeGreaterThanOrEqual(0);
+            expect(titleRow).toBeGreaterThan(frameRow);
+            expect(rendered[frameRow]).toContain('✕');
+            expect(rendered[titleRow]).not.toContain('✕');
             expect(rendered.filter(line => line.includes('✕')).length).toEqual(1);
             const target = surface.clickTargets.find((item: any) => item.node === close);
-            expect(target?.y).toEqual(titleRow);
+            expect(target?.y).toEqual(frameRow);
             expect(target?.width).toEqual(2);
         } finally {
             surface.destroy();

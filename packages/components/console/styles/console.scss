@@ -167,8 +167,10 @@ $idle: var(--console-idle, #6fa37a);
     font-weight: bold;
 }
 .dialog-panel {
-    background: var(--console-input-bg, #1b2128);
+    background: $dialog-bg;
     color: $text;
+    border: 1px solid $border;
+    border-radius: 1;
     padding: 1 2;
 }
 .dialog-title {
@@ -192,14 +194,22 @@ $idle: var(--console-idle, #6fa37a);
     display: none;
 }
 .question-panel {
-    background: var(--console-input-bg, #1b2128);
+    background: $dialog-bg;
+    border: 1px solid $border;
+    border-radius: 1;
     padding: 1 2;
     max-width: 78ch;
 }
 .select-shell {
-    background: var(--console-input-bg, #1b2128);
+    background: $dialog-bg;
     color: $text;
     padding: 1 2;
+}
+/* Blocking menus are popup cards; slash/mention suggestions stay the
+   composer-attached rail list. */
+.select-card {
+    border: 1px solid $border;
+    border-radius: 1;
 }
 .select-suggestions {
     border-left: 1px solid $border;
@@ -212,11 +222,12 @@ $idle: var(--console-idle, #6fa37a);
     color: $meta;
     padding: 0 1ch;
 }
-/* A quiet selected band: colour alone was too easy to miss in long menus. */
+/* Match the web card: the selected row is a raised panel, not a loud accent
+   band, so the label keeps the readable body colour. */
 .select-option.is-selected {
-    color: $dialog-bg;
+    color: $text;
     font-weight: bold;
-    background: $selected;
+    background: var(--console-select-selected-bg, #202a36);
 }
 .tone-accent,
 .tone-link,
@@ -409,8 +420,10 @@ $idle: var(--console-idle, #6fa37a);
    content-sized and centered like the other modals. */
 .console-approvals-panel {
     color: var(--agent-theme-dialog-shell-color, #d6dee6);
-    background: var(--console-input-bg, #1b2128);
-    background-color: var(--agent-theme-input-shell-background-color);
+    background: $dialog-bg;
+    background-color: $dialog-bg;
+    border: 1px solid $border;
+    border-radius: 1;
     padding: 1 2;
     max-width: 78ch;
 }
@@ -544,6 +557,8 @@ $idle: var(--console-idle, #6fa37a);
 // floating alert instead of plain text over the transcript.
 .console-toast-card {
     background: $dialog-bg;
+    border: 1px solid $border;
+    border-radius: 1;
     padding: 0 1ch;
     max-width: 34ch;
 }
@@ -676,6 +691,7 @@ $idle: var(--console-idle, #6fa37a);
 /* Class-based console theme variables; no inline root style. */
 .agent-console[data-theme="dark"] {
     --console-code-bg:#0d1117;
+    --console-border:#243142;
     --console-text:#c9d1d9;
     --console-meta:#6e7681;
     --console-accent:#86a9d6;
@@ -765,6 +781,7 @@ $idle: var(--console-idle, #6fa37a);
 }
 .agent-console[data-theme="light"] {
     --console-code-bg:#f6f8fa;
+    --console-border:#d0d7de;
     --console-text:#24292f;
     --console-meta:#6e7781;
     --console-accent:#0969da;
@@ -854,6 +871,7 @@ $idle: var(--console-idle, #6fa37a);
 }
 .agent-console[data-theme="solarized"] {
     --console-code-bg:#073642;
+    --console-border:#586e75;
     --console-text:#93a1a1;
     --console-meta:#657b83;
     --console-accent:#268bd2;
@@ -943,6 +961,7 @@ $idle: var(--console-idle, #6fa37a);
 }
 .agent-console[data-theme="high-contrast"] {
     --console-code-bg:#000000;
+    --console-border:#ffffff;
     --console-text:#ffffff;
     --console-meta:#d0d0d0;
     --console-accent:#00ccff;

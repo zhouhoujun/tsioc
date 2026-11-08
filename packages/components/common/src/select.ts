@@ -17,7 +17,7 @@ export interface SelectOption {
     selector: 'select-list',
     template: `
     <div class="console-panel select-list {{widthClass}}" role="dialog" aria-label="{{accessibilityLabel}}">
-        <div class="select-shell {{suggestion ? 'select-suggestions' : ''}}">
+        <div class="select-shell {{suggestion ? 'select-suggestions' : 'select-card'}}">
             <label class="dialog-close" data-cell-width="2" @click="close">{{closeLabel}}</label>
             <select class="select-core"
                 aria-label="{{accessibilityLabel}}"

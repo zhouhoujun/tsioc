@@ -156,8 +156,10 @@
     font-weight: bold;
 }
 .dialog-panel {
-    background: var(--console-input-bg, #1b2128);
+    background: var(--console-dialog-bg, #161b22);
     color: var(--console-text, #c9d1d9);
+    border: 1px solid var(--console-border, #30363d);
+    border-radius: 1;
     padding: 1 2;
 }
 .dialog-title {
@@ -180,14 +182,21 @@
     display: none;
 }
 .question-panel {
-    background: var(--console-input-bg, #1b2128);
+    background: var(--console-dialog-bg, #161b22);
+    border: 1px solid var(--console-border, #30363d);
+    border-radius: 1;
     padding: 1 2;
     max-width: 78ch;
 }
 .select-shell {
-    background: var(--console-input-bg, #1b2128);
+    background: var(--console-dialog-bg, #161b22);
     color: var(--console-text, #c9d1d9);
     padding: 1 2;
+}
+
+.select-card {
+    border: 1px solid var(--console-border, #30363d);
+    border-radius: 1;
 }
 .select-suggestions {
     border-left: 1px solid var(--console-border, #30363d);
@@ -202,9 +211,9 @@
 }
 
 .select-option.is-selected {
-    color: var(--console-dialog-bg, #161b22);
+    color: var(--console-text, #c9d1d9);
     font-weight: bold;
-    background: var(--console-selected, #7fa6d4);
+    background: var(--console-select-selected-bg, #202a36);
 }
 .tone-accent,
 .tone-link,
@@ -396,8 +405,10 @@
 
 .console-approvals-panel {
     color: var(--agent-theme-dialog-shell-color, #d6dee6);
-    background: var(--console-input-bg, #1b2128);
-    background-color: var(--agent-theme-input-shell-background-color);
+    background: var(--console-dialog-bg, #161b22);
+    background-color: var(--console-dialog-bg, #161b22);
+    border: 1px solid var(--console-border, #30363d);
+    border-radius: 1;
     padding: 1 2;
     max-width: 78ch;
 }
@@ -528,6 +539,8 @@
 
 .console-toast-card {
     background: var(--console-dialog-bg, #161b22);
+    border: 1px solid var(--console-border, #30363d);
+    border-radius: 1;
     padding: 0 1ch;
     max-width: 34ch;
 }
@@ -660,6 +673,7 @@
 
 .agent-console[data-theme="dark"] {
     --console-code-bg:#0d1117;
+    --console-border:#243142;
     --console-text:#c9d1d9;
     --console-meta:#6e7681;
     --console-accent:#86a9d6;
@@ -749,6 +763,7 @@
 }
 .agent-console[data-theme="light"] {
     --console-code-bg:#f6f8fa;
+    --console-border:#d0d7de;
     --console-text:#24292f;
     --console-meta:#6e7781;
     --console-accent:#0969da;
@@ -838,6 +853,7 @@
 }
 .agent-console[data-theme="solarized"] {
     --console-code-bg:#073642;
+    --console-border:#586e75;
     --console-text:#93a1a1;
     --console-meta:#657b83;
     --console-accent:#268bd2;
@@ -927,6 +943,7 @@
 }
 .agent-console[data-theme="high-contrast"] {
     --console-code-bg:#000000;
+    --console-border:#ffffff;
     --console-text:#ffffff;
     --console-meta:#d0d0d0;
     --console-accent:#00ccff;

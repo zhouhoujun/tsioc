@@ -822,17 +822,19 @@ export class AgentConsoleMessagesRendererTest {
             const inputRow = lines.findIndex(line => line.includes('> /'));
             expect(helpRow).toBeGreaterThan(0);
             expect(inputRow).toBeGreaterThan(helpRow);
-            // The suggestion overlay is a borderless card with a clickable close
-            // glyph and no modal title/hint; its last row sits on the composer edge.
+            // The suggestion overlay is a composer-attached list with a
+            // clickable close glyph and no modal title/hint; it keeps the
+            // composer rails and ends on the row above the input padding.
             expect(lines.some(line => line.includes('╭'))).toEqual(false);
             expect(lines.some(line => line.includes('✕'))).toEqual(true);
             expect(lines.some(line => line.includes('Suggestions'))).toEqual(false);
             expect(lines[inputRow]).toContain('> /');
             expect(lines[inputRow]).not.toContain('/help');
             // The composer keeps its top padding row; the menu ends above it.
-            // The composer keeps its top rail row; the menu ends above it.
             expect(lines[inputRow - 1].trim()).toEqual('│');
             expect(lines.findIndex(line => line.includes('/new'))).toBeLessThan(inputRow - 1);
+            // The open menu must not push the input caret below the prompt row.
+            expect((surface as any).selectionFrame?.cursorTarget?.row).toEqual(inputRow);
         } finally {
             surface?.destroy();
             await tuiCtx.close();
@@ -911,12 +913,13 @@ export class AgentConsoleMessagesRendererTest {
             const inputRow = lines.findIndex(line => line.includes('Ask code or files'));
             expect(titleRow).toBeGreaterThan(0);
             expect(inputRow).toBeGreaterThan(titleRow);
-            // Borderless card, content-fit width, and its bottom row rests on
-            // the composer's top edge without covering the input row.
-            expect(lines.some(line => line.includes('╭') || line.includes('╰'))).toEqual(false);
+            // Framed card, content-fit width, and its bottom border rests on
+            // the composer's top padding row without covering the input row.
+            expect(lines.some(line => line.includes('╭') || line.includes('╰'))).toEqual(true);
             expect(lines[titleRow].indexOf('Security level')).toBeGreaterThan(0);
             const hintRow = lines.findIndex(line => line.includes('up/down move'));
             expect(lines[inputRow - 1].trim()).toEqual('│');
+            expect(lines[inputRow - 2].trim().endsWith('╯')).toEqual(true);
             expect(hintRow).toBeGreaterThan(titleRow);
             expect(hintRow).toBeLessThan(inputRow);
             expect(inputRow).not.toContain('Security level');
