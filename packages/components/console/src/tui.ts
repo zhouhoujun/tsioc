@@ -970,6 +970,9 @@ export class TuiRenderer extends ConsoleRenderer {
         }
         const element = current as ConsoleElement;
         const elementStyle = this.getStyleMap(element);
+        if (String(elementStyle.display || '').trim().toLowerCase() === 'none' || element.getAttribute('hidden') != null) {
+            return '';
+        }
         this.applyCssAnimations(element, elementStyle);
         const styleMap = this.mergeStyles(inherited, elementStyle);
         const tag = (element.tagName || '').toLowerCase();
@@ -1018,6 +1021,9 @@ export class TuiRenderer extends ConsoleRenderer {
         }
         const element = current as ConsoleElement;
         const elementStyle = this.getStyleMap(element);
+        if (String(elementStyle.display || '').trim().toLowerCase() === 'none' || element.getAttribute('hidden') != null) {
+            return;
+        }
         this.applyCssAnimations(element, elementStyle);
         const styleMap = this.mergeStyles(inherited, elementStyle);
         const tag = (element.tagName || '').toLowerCase();

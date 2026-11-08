@@ -22,6 +22,7 @@ export interface AgentConsolePanelVisibility {
     textOverlay: boolean;
     commandOutputs: boolean;
     pendingQuestion: boolean;
+    welcome: boolean;
 }
 
 /** Panel shown/hidden projection for the console template; data only, no layout branching. */
@@ -50,7 +51,10 @@ export function resolveAgentConsolePanelVisibility(state: AgentConsoleSessionSta
         healthPopover: state.healthPopoverVisible,
         textOverlay: state.hasTextOverlayFocus(),
         commandOutputs: state.commandOutputsOpen,
-        pendingQuestion: !!state.pendingQuestion
+        pendingQuestion: !!state.pendingQuestion,
+        // The welcome card belongs to an empty transcript only; as soon as the
+        // first user row exists it must yield the rows to the conversation.
+        welcome: state.messages.length === 0
     };
 }
 
@@ -82,4 +86,5 @@ export abstract class AgentConsolePanelVisibilityHost {
     get showTextOverlayPanel(): boolean { return this.panels.textOverlay; }
     get showCommandOutputsPanel(): boolean { return this.panels.commandOutputs; }
     get showPendingQuestionPanel(): boolean { return this.panels.pendingQuestion; }
+    get showBrandPanel(): boolean { return this.panels.welcome; }
 }

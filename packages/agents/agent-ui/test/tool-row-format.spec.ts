@@ -108,6 +108,20 @@ export class ToolRowFormatTest {
             .toEqual('Run command failed: Command cancelled by the user.');
     }
 
+    @Test('todo merge rows keep only the resulting plan summary')
+    todoMergeSummary() {
+        expect(formatToolEventRow('todo', '1 item · 1 completed', '3 items · 3 completed', undefined, en))
+            .toEqual('Update plan · 3 items · 3 completed');
+    }
+
+    @Test('merged todo stream rows keep only the resulting plan counts')
+    todoStreamRowSummary() {
+        expect(describeStreamEventContent('tool_completed', {
+            toolName: 'todo',
+            content: 'todo · 1 item · 1 completed · 3 items · 3 completed'
+        }, en)).toEqual('Update plan · 3 items · 3 completed');
+    }
+
     @Test('a rendered tool event omits the redundant `Tool · ` family label')
     renderedToolRowHasNoFamilyLabel() {
         const rendered = renderAgentConsoleMessageItem(
