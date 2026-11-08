@@ -464,6 +464,27 @@
 .working-label {
     color: var(--agent-theme-working-label-color, #6e7681);
 }
+
+
+.console-brand-panel {
+    border: 1px solid var(--console-border, #30363d);
+    border-radius: 1;
+    padding: 1 2;
+    max-width: 56ch;
+}
+.brand-line {
+    display: block;
+    text-align: center;
+    white-space: pre;
+}
+.brand-line[data-role="rule"],
+.brand-line[data-role="meta"] {
+    color: var(--console-meta, #6e7681);
+}
+.brand-line[data-role="title"] {
+    color: var(--console-accent, #86a9d6);
+    font-weight: bold;
+}
 .console-messages-panel {
     color: var(--agent-theme-messages-shell-color, #c9d1d9);
     background: var(--agent-theme-messages-shell-background);

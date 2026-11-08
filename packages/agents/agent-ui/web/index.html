@@ -114,8 +114,9 @@
             scrollbar-width: thin;
         }
         /* TUI chrome is flat terminal text, not cards. Neutralize the panel
-           borders/background that the shared inline styles carry. */
-        #agent-console .console-panel {
+           borders/background that the shared inline styles carry; the welcome
+           card opts back in with its own bordered card skin. */
+        #agent-console .console-panel:not(.console-brand-panel) {
             background: transparent !important;
             border: 0 !important;
             border-radius: 0;
@@ -189,7 +190,7 @@
         }
 
         #agent-console agent-console-brand-panel {
-            flex: 0 0 auto;
+            flex: 0 0 auto !important;
         }
         #agent-console .console-brand-panel {
             padding: 0 1ch;

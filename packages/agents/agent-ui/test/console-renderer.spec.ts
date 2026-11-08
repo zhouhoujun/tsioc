@@ -2977,7 +2977,7 @@ export class AgentConsoleSurfaceReattachRegressionTest {
             await Promise.resolve();
             await Promise.resolve();
 
-            const brandCount = (lines: string[]) => lines.filter(line => line.includes('TSDI-AGENT')).length;
+            const brandCount = (lines: string[]) => lines.filter(line => line.includes('T S D I')).length;
             expect(brandCount(surface.lastRenderedLines)).toBe(1);
             expect(firstWrites.join('').startsWith('\x1b[2J\x1b[H')).toBe(true);
 

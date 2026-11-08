@@ -311,19 +311,17 @@ export class AgentConsoleThoughtTemplate extends AgentConsoleMessageTemplateBase
      * grow the transcript, and the whole row stays clickable to expand.
      */
     protected collapsedThoughtLines(source: AgentConsoleRenderedLine[], contentWidth: number): AgentConsoleRenderedLine[] {
-        const base = source.find(line => (line.tokens || []).some(token => String(token?.text || '').trim())) || source[0];
+        const base = source.find(line => this.visibleThoughtText(line)) || source[0];
         if (!base) {
             return [];
         }
         const budget = Math.max(24, (contentWidth > 0 ? contentWidth - 18 : 72));
-        const truncated = this.truncateThoughtTokens(base.tokens || [], budget);
-        // The renderer appends the duration to the last line; carry it onto the
-        // collapsed summary so the disclosure still shows how long thinking took.
-        const last = source[source.length - 1];
-        const duration = last && last !== base
-            ? (last.tokens || []).find(token => token?.tone === 'muted' && /^\s*\([^()]+\)\s*$/.test(String(token?.text || '')))
-            : undefined;
-        const tokens = duration ? [...truncated, { ...duration, text: String(duration.text || '') }] : truncated;
+        const duration = this.thoughtDurationToken(source[source.length - 1]) || this.thoughtDurationToken(base);
+        const contentTokens = (base.tokens || []).filter(token => !this.isThoughtDurationToken(token));
+        const preview = contentTokens.length
+            ? this.truncateThoughtTokens(contentTokens, budget)
+            : this.plainThoughtPreview(this.visibleThoughtText(base), budget);
+        const tokens = duration ? [...preview, { ...duration, text: String(duration.text || '') }] : preview;
         const expandHint = this.translator?.translate?.('agent.message.expandAction');
         return [{
             ...base,
@@ -332,6 +330,36 @@ export class AgentConsoleThoughtTemplate extends AgentConsoleMessageTemplateBase
             toggleMode: 'inline' as const,
             ariaLabel: [base.ariaLabel, typeof expandHint === 'string' ? expandHint : ''].filter(Boolean).join(' · ')
         }];
+    }
+
+    /** Visible text, ignoring zero-width/whitespace-only lines and duration tokens. */
+    protected visibleThoughtText(line?: AgentConsoleRenderedLine): string {
+        const content = String(line?.content || '').replace(/[\u200b-\u200f\u2060\ufeff]/g, '').trim();
+        if (content) {
+            return content;
+        }
+        return (line?.tokens || [])
+            .filter(token => !this.isThoughtDurationToken(token))
+            .map(token => String(token?.text || ''))
+            .join('')
+            .replace(/[\u200b-\u200f\u2060\ufeff]/g, '')
+            .trim();
+    }
+
+    protected thoughtDurationToken(line?: AgentConsoleRenderedLine) {
+        return (line?.tokens || []).find(token => this.isThoughtDurationToken(token));
+    }
+
+    protected isThoughtDurationToken(token?: AgentConsoleRenderedLine['tokens'][number]): boolean {
+        return token?.tone === 'muted' && /^\s*\([^()]+\)\s*$/.test(String(token?.text || ''));
+    }
+
+    protected plainThoughtPreview(text: string, budget: number): NonNullable<AgentConsoleRenderedLine['tokens']> {
+        if (!text) {
+            return [];
+        }
+        const clipped = getDisplayWidth(text) > budget ? `${sliceByDisplayWidth(text, Math.max(1, budget - 1))}…` : text;
+        return [{ text: clipped, style: {} }];
     }
 
     protected disclosureStatus(status: string | undefined, glyph: string): string {

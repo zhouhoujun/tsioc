@@ -48,10 +48,10 @@ import {
     styleTextToObject
 } from './AgentConsoleTheme';
 import { DIALOG_CLOSE_STYLE, menuShellStyle, resolvePanelThemeStyles, resolveSectionFrameStyle } from './AgentConsolePanelStyles';
+import { buildAgentConsoleBrandBlock, type AgentConsoleBrandLine } from './AgentConsoleBrand';
 import { AgentConsoleStatuslineField } from './AgentConsoleStatusline';
 import { DEFAULT_TIMELINE_LABELS, resolveTimelineWindowLedger, TimelineWindowMode } from './AgentConsoleTimelineWindow';
 import {
-    buildBrandBlock as buildTerminalBrandBlock,
     DialogComponent,
     DetailPanelComponent,
     InputFieldComponent,
@@ -72,20 +72,17 @@ export * from './AgentConsoleWorkingPanel';
     selector: 'agent-console-brand-panel',
     template: `
     <div class="console-panel console-brand-panel">
-        <label class="brand-line" v-for="line in brandLines">{{line}}</label>
+        <label class="brand-line" data-role="{{line.role}}" v-for="line in brandLines">{{line.text}}</label>
     </div>
     `
 })
 export class AgentConsoleBrandPanelComponent {
     constructor(private state: AgentConsoleSessionState) {
     }
-    get brandLines(): string[] {
-        return buildTerminalBrandBlock(
-            this.state.consoleOptions.brandWidth,
-            this.state.title,
-            this.state.model,
-            this.state.workspace
-        );
+    get brandLines(): AgentConsoleBrandLine[] {
+        const width = Number(this.state.tabStripColumns) || Number(this.state.markdownContentWidth)
+            || Number(this.state.consoleOptions.brandWidth) || 80;
+        return buildAgentConsoleBrandBlock(width, this.state.title, this.state.model, this.state.workspace);
     }
 }
 

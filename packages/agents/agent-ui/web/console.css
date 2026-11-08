@@ -926,6 +926,39 @@ body {
 #agent-console .markdown-code-token[data-tone="syntax-attribute"] { color: #79c0ff; }
 #agent-console .markdown-code-token[data-tone="syntax-function"] { color: #d2a8ff; }
 
+/* Welcome card: centred wordmark on an empty transcript. */
+#agent-console .console-panel.console-brand-panel {
+    width: min(520px, calc(100% - 32px));
+    box-sizing: border-box;
+    flex: 0 0 auto !important;
+    height: auto !important;
+    min-height: 0;
+    overflow: visible;
+    margin: 40px auto 24px;
+    padding: 22px 32px;
+    border: 1px solid var(--agent-web-border);
+    border-radius: 12px;
+    background: var(--agent-web-panel-raised);
+    text-align: center;
+    font-family: var(--agent-web-mono);
+}
+
+#agent-console .console-brand-panel .brand-line {
+    display: block;
+    white-space: pre-wrap;
+    line-height: 1.65;
+}
+
+#agent-console .console-brand-panel .brand-line[data-role="rule"],
+#agent-console .console-brand-panel .brand-line[data-role="meta"] {
+    color: var(--agent-web-muted);
+}
+
+#agent-console .console-brand-panel .brand-line[data-role="title"] {
+    color: var(--agent-web-accent);
+    font-weight: 600;
+}
+
 /* Reasoning is an auxiliary track: compact and subdued. */
 #agent-console .message-template-thought {
     margin: 6px 0;

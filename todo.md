@@ -3223,3 +3223,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - Web 与 TUI 共用同一 `AgentConsoleThoughtTemplate`：Web 保留左侧思考轨道，移动端同样折叠为单行；TUI 展开行保持缩进与耗时。
   - fake model 新增 `思考排版` 场景（`delta.reasoning_content` 流式输出 8 行推理）用于两端真实对照。
   - 回归：agent-ui 2003 passing（新增折叠/展开单测）；真实 PTY 100×32、60×30 验证折叠单行、`…`/耗时、点击展开 `−` 与完整 8 行、再次点击收起；真实 Chrome 1280×900、390×844 验证单行折叠、展开 8 行与再次收起。
+- TUI/Web 新会话 Logo 卡片美化（真实 PTY + 真实 Chrome 验收）：
+  - 新会话欢迎区从“只有文字的方框”改为语义化品牌卡：字标 `T S D I   A G E N T`、点状分隔线、模型/工作区元信息；TUI 由 console renderer 绘制边框并自动水平居中，Web 由 `web/console.css` 绘制圆角描边卡片并居中。
+  - TUI 增加 label `text-align: center` 支持（`console/src/tui.ts`），品牌行在终端宽度内居中；窄终端（60 列）卡片完整、元信息按显示宽度裁剪为 `…`，不折行。
+  - Web 卡片排除全局“面板无边框”重置（`index.html` 的 `.console-panel` 规则），并修正 flex 拉伸导致卡片占满 transcript 高度的问题；1280×900 与 390×844 均居中、不溢出。
+  - 思考行收尾：单行长思考折叠时保留预览 + `…` + 耗时（此前单行截断会丢耗时）；预览基于可见文本（忽略零宽字符与纯耗时 token），推理内容为空时回退 `metadata.reasoningContent`。
+  - 回归：components 148、components/common 49、components/html 129、components/console 153（新增 label 居中与品牌卡用例）、agent-ui 2007 通过；真实 PTY 100×30、60×24 验证品牌卡居中与 60 列不裁剪；真实 Chrome 1280×900、390×844 验证圆角卡片居中且无溢出。

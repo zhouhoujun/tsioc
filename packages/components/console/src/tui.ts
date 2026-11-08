@@ -332,12 +332,18 @@ export class TuiRenderer extends ConsoleRenderer {
                     const merged = labelStyle ? this.mergeStyles(styleMap, this.parseInlineStyle(labelStyle)) : styleMap;
                     const rendered = this.renderInlineLines(element, merged, width);
                     const align = String(merged['text-align'] || merged.textAlign || '').trim().toLowerCase();
-                    lines.push(...(align === 'right' && width
+                    const aligned = align === 'right' && width
                         ? rendered.map(line => {
                             const pad = width - getDisplayWidth(this.stripAnsi(line));
                             return pad > 0 ? `${' '.repeat(pad)}${line}` : line;
                         })
-                        : rendered));
+                        : align === 'center' && width
+                            ? rendered.map(line => {
+                                const pad = Math.floor((width - getDisplayWidth(this.stripAnsi(line))) / 2);
+                                return pad > 0 ? `${' '.repeat(pad)}${line}` : line;
+                            })
+                            : rendered;
+                    lines.push(...aligned);
                 }
                 this.collectNestedClickTargets(element, clickStart >= 0 ? clickStart : contentStartRow, lines.length, lines, width, clickTargets, visited);
                 finishClickTarget();

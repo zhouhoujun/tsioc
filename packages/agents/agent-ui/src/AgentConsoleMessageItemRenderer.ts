@@ -156,7 +156,10 @@ export function renderAgentConsoleMessageItem(
     // localize them at render time so a resumed session follows the current
     // locale. Custom reasons (`Stopped by user`) stay verbatim.
     const lifecycleLabel = timelineEvent ? resolveTurnLifecycleLabel(displayContent, context.timelineLabels) : '';
-    const eventText = lifecycleLabel || displayContent || timelineSentence || '';
+    const reasoningFallback = reasoningRow
+        ? String(message?.metadata?.reasoningContent || (message?.metadata as any)?.reasoning_content || '').trim()
+        : '';
+    const eventText = lifecycleLabel || displayContent || reasoningFallback || timelineSentence || '';
     // Reasoning stays a compact execution row but keeps its full source so the
     // Thought disclosure can reveal every line on demand.
     const eventRowContent = timelineEvent

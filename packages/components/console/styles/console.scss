@@ -477,6 +477,30 @@ $idle: var(--console-idle, #6fa37a);
 .working-label {
     color: var(--agent-theme-working-label-color, #6e7681);
 }
+/* The welcome card is the only chrome on an empty transcript; centre it. */
+/* The welcome card is the only chrome on an empty transcript. The renderer
+   frames and centres the block; rows themselves are centre-aligned. The TUI
+   stylesheet matches a single compound selector, so rows are keyed by their
+   own class/data-role rather than the panel ancestor. */
+.console-brand-panel {
+    border: 1px solid var(--console-border, #30363d);
+    border-radius: 1;
+    padding: 1 2;
+    max-width: 56ch;
+}
+.brand-line {
+    display: block;
+    text-align: center;
+    white-space: pre;
+}
+.brand-line[data-role="rule"],
+.brand-line[data-role="meta"] {
+    color: var(--console-meta, #6e7681);
+}
+.brand-line[data-role="title"] {
+    color: var(--console-accent, #86a9d6);
+    font-weight: bold;
+}
 .console-messages-panel {
     color: var(--agent-theme-messages-shell-color, #c9d1d9);
     background: var(--agent-theme-messages-shell-background);

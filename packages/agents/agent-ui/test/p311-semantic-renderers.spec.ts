@@ -150,6 +150,43 @@ export class SemanticRendererSuite {
         state.setMessageExpanded('r1', false);
     }
 
+    @Test('collapsed single-line reasoning keeps the preview and the duration')
+    thoughtSingleLine() {
+        const state = this.ctx.get(AgentConsoleSessionState);
+        state.markdownContentWidth = 98;
+        const projected = projectAgentConsoleExecutionMainline([
+            message('u1', 'user', '解释递归'),
+            message('r1', 'assistant', `The user asks: ${'explain recursion with a base case. '.repeat(8)}`, {
+                uiKind: 'event', uiEventType: 'reasoning', status: 'success', durationMs: 1800
+            })
+        ]);
+        const rendered = renderAgentConsoleMessageItem(projected[1], {
+            rendererRegistry: this.registry,
+            markdownContentWidth: 98
+        });
+        const template = new AgentConsoleThoughtTemplate();
+        template.item = rendered;
+        template.state = state;
+        const collapsed = template.lines;
+        expect(collapsed).toHaveLength(1);
+        const text = collapsed[0].tokens.map(token => token.text).join('');
+        expect(text).toContain('The user asks');
+        expect(text).toContain('…');
+        expect(text).toMatch(/\(\d+(\.\d+)?s\)/);
+    }
+
+    @Test('empty reasoning content falls back to metadata reasoning text')
+    thoughtMetadataFallback() {
+        const rendered = renderAgentConsoleMessageItem({
+            id: 'reasoning-fallback', role: 'assistant', content: '', createdAt: 1,
+            metadata: {
+                uiKind: 'event', uiEventType: 'reasoning', status: 'success', durationMs: 1800,
+                reasoningContent: 'recovered reasoning text'
+            }
+        } as any, { rendererRegistry: this.registry, markdownContentWidth: 98 });
+        expect(rendered.lines.some(line => line.content.includes('recovered reasoning text'))).toEqual(true);
+    }
+
     @Test('user turn and first response are separated while execution remains compact')
     conversationSpacing() {
         const rendered = renderAgentConsoleMessageItems([
