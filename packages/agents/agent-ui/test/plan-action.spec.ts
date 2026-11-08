@@ -20,19 +20,6 @@ export class PlanActionSuite {
         expect(state.planTodos[0].status).toEqual('pending');
     }
 
-    @Test('a partial todo merge keeps the untouched plan items')
-    partialTodoMerge() {
-        const state = this.createState();
-        state.mergePlanCreated([
-            { id: 'a', content: 'one', status: 'pending' },
-            { id: 'b', content: 'two', status: 'pending' },
-            { id: 'c', content: 'three', status: 'pending' }
-        ], 'plan-1', 1, 1);
-        state.setPlanTodos([{ id: 'c', content: 'three', status: 'completed' }], undefined, undefined, undefined, 2, 'plan-1');
-        expect(state.planTodos.map(todo => todo.id)).toEqual(['a', 'b', 'c']);
-        expect(state.planTodos.map(todo => todo.status)).toEqual(['pending', 'pending', 'completed']);
-    }
-
     @Test('requestPlanAction rejects an action that is not applicable to the item')
     requestPlanActionRejectsInapplicable() {
         const state = this.createState();

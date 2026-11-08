@@ -268,25 +268,13 @@ export function setPlanTodos(
     if (planId) {
         state.planId = String(planId);
     }
-    const incoming = todos.map(todo => {
+    state.planTodos = todos.map(todo => {
         const pid = state.planId || (planId ? String(planId) : undefined);
         if (!pid) {
             return { ...todo };
         }
         return { ...todo, planId: pid, revision: state.planRevision };
     });
-    // A todo tool merge reports only changed items; do not drop the siblings
-    // that the model has not touched in this update.
-    const current = state.planTodos;
-    const partial = !!planId && planId === state.planId
-        && incoming.length > 0 && incoming.length < current.length
-        && incoming.every(todo => current.some(existing => existing.id === todo.id));
-    state.planTodos = partial
-        ? current.map(existing => {
-            const update = incoming.find(todo => todo.id === existing.id);
-            return update ? { ...existing, ...update } : existing;
-        })
-        : incoming;
     if (state.planTodos.length <= 7) {
         state.planTodoExpanded = false;
     }

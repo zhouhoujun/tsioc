@@ -67,10 +67,7 @@ RETRY_QUESTION = '步骤 1 失败，请输入 y 确认重试。'
 REVIEW_GATE = '进入 review 门禁，确认后继续发布。'
 
 
-def _todo_call(call_id, todos, merge=False):
-    args = {'todos': todos}
-    if merge:
-        args['merge'] = True
+def _todo_call(call_id, todos):
     return {
         'role': 'assistant',
         'content': None,
@@ -79,7 +76,7 @@ def _todo_call(call_id, todos, merge=False):
             'type': 'function',
             'function': {
                 'name': 'todo',
-                'arguments': json.dumps(args, ensure_ascii=False),
+                'arguments': json.dumps({'todos': todos}, ensure_ascii=False),
             },
         }],
     }
@@ -216,23 +213,6 @@ def _default_turn(messages):
         content = '\n'.join(f'慢速输出 {n}：等待用户中断。' for n in range(1, 301))
         total_tokens += len(content) // 4
         return {'role': 'assistant', 'content': content + '\n'}
-    if '计划合并' in text:
-        step = _tool_results_this_turn(messages)
-        if step == 0:
-            return _todo_call('call_merge_1', [
-                {'id': 'm1', 'content': '合并步骤一：读取输入', 'status': 'in_progress'},
-                {'id': 'm2', 'content': '合并步骤二：整理结果', 'status': 'pending'},
-                {'id': 'm3', 'content': '合并步骤三：给出建议', 'status': 'pending'}
-            ])
-        if step == 1:
-            return _todo_call('call_merge_2', [
-                {'id': 'm1', 'status': 'completed'},
-                {'id': 'm2', 'status': 'completed'},
-                {'id': 'm3', 'status': 'in_progress'}
-            ], merge=True)
-        if step == 2:
-            return _todo_call('call_merge_3', [{'id': 'm3', 'status': 'completed'}], merge=True)
-        return {'role': 'assistant', 'content': '计划合并检查完成。'}
     if '思考排版' in text:
         thought = '\n'.join([
             f'思考第 {n} 行：先确认 {n} 号假设，再比较输入、输出与错误分支，'

@@ -2990,12 +2990,6 @@ export class AgentConsoleSurfaceReattachRegressionTest {
             } as any)));
             await consoleRef.render();
             await Promise.resolve();
-            // Once the transcript has rows the welcome card yields its space.
-            expect(brandCount(surface.lastRenderedLines)).toBe(0);
-
-            consoleRef.instance.sessionState.setMessages([]);
-            await consoleRef.render();
-            await Promise.resolve();
             expect(brandCount(surface.lastRenderedLines)).toBe(1);
 
             surface.destroy();

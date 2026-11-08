@@ -316,7 +316,7 @@ import { startProviderWizard, handleWizardEscape, cancelProviderWizard, resetPro
     template: `
     <div class="agent-console" data-theme="{{themeName}}">
         <tab-bar renderRegion="header"></tab-bar>
-        <agent-console-brand-panel renderRegion="transcript" v-show="panels.welcome && !panels.messageDetail && !panels.select && !panels.textOverlay && !panels.pendingQuestion"></agent-console-brand-panel>
+        <agent-console-brand-panel renderRegion="transcript" v-show="!panels.messageDetail && !panels.select && !panels.textOverlay && !panels.pendingQuestion"></agent-console-brand-panel>
         <agent-console-messages-panel renderRegion="transcript" v-show="!panels.messageDetail"></agent-console-messages-panel>
         <agent-console-message-detail-panel renderRegion="transcript" v-if="panels.messageDetail"></agent-console-message-detail-panel>
         <agent-console-timeline-event-detail-panel renderRegion="transcript" v-if="panels.timelineEventInspector"></agent-console-timeline-event-detail-panel>

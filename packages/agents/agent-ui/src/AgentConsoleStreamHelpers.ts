@@ -254,14 +254,9 @@ export function formatToolEventRow(
             translator
         );
     }
-    // A todo update is a partial merge; its output is the authoritative list
-    // summary. Concatenating input + output produced rows like
-    // "1 item · 1 completed · 3 items · 3 completed".
-    const detail = name === 'todo' && output
-        ? output
-        : input && output && !output.includes(input)
-            ? `${input} · ${output}`
-            : (output || input);
+    const detail = input && output && !output.includes(input)
+        ? `${input} · ${output}`
+        : (output || input);
     return describeStreamEventContent(
         'tool_completed',
         { toolName: name, content: detail ? `${name} · ${detail}` : name },
@@ -287,14 +282,6 @@ export function describeStreamEventContent(eventType: string, chunk: any, transl
         // Success is the glyph (`✓`), not a word. Keeping `completed` here made
         // live rows read `Read file completed · README.md` while a reloaded
         // session read `Read README.md` (same tool call, two identities).
-        if (toolName === 'todo' && detail) {
-            // A merged todo update can arrive as `<delta> · <result>`; only the
-            // resulting plan counts describe the row.
-            const counts = detail.match(/\d+\s+items?/g) || [];
-            const lastCount = counts[counts.length - 1];
-            const result = lastCount ? detail.slice(detail.lastIndexOf(lastCount)) : detail;
-            return `${label} · ${result}`;
-        }
         return detail ? `${label} · ${detail}` : label;
     }
     if (eventType === 'tool_failed' && toolName === 'git_operations' && /not a Git repository/i.test(content)) {

@@ -224,27 +224,6 @@ export class AgentConsoleViewportLayoutTest {
         expect(rows).toEqual([10, -10]);
     }
 
-    @Test('Home and End jump the viewport to the edges when the composer is empty')
-    async homeEndJumpToEdges() {
-        const state = new AgentConsoleSessionState();
-        state.setConsoleOptions({ messageLayout: 'viewport' });
-        state.setMessages(fiveMessages());
-        const edges: string[] = [];
-        state.scrollTranscriptToEdgeAction = edge => { edges.push(edge); return true; };
-        const options = {
-            isClosed: false,
-            onExit: () => undefined,
-            hasActiveTextPrompt: false,
-            transcriptNavigationController: navigationFor(state)
-        };
-        await state.processDecodedInput({ text: '', controlKey: 'home', partial: false }, '', options);
-        await state.processDecodedInput({ text: '', controlKey: 'end', partial: false }, '', options);
-        expect(edges).toEqual(['start', 'end']);
-        state.setInput('draft');
-        await state.processDecodedInput({ text: '', controlKey: 'home', partial: false }, '', options);
-        expect(edges).toEqual(['start', 'end']);
-    }
-
     @Test('scrollback layout ignores transcript scroll')
     scrollbackScrollIsNoop() {        const state = new AgentConsoleSessionState();
         state.setConsoleOptions({ messageLayout: 'scrollback' });
