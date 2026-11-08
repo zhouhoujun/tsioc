@@ -3,6 +3,7 @@ import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import type { AgentConsoleRenderedMessageItem, AgentConsoleRenderedLine } from './AgentConsoleMessageRenderers';
 import { AgentConsoleSessionState } from './AgentConsoleSessionState';
+import { getDisplayWidth, sliceByDisplayWidth } from './AgentConsoleTextWidth';
 
 const ITEM_TEMPLATE = `
     <div class="message-block-spacing" v-if="spacerBefore">​</div>
@@ -46,7 +47,7 @@ const thoughtLinesCache = new WeakMap<object, {
     rawMode: boolean;
     showCriticalMarks: boolean;
     expandedIds: readonly string[];
-    reasoningPreviewLines: number;
+    markdownContentWidth: number;
     lines: AgentConsoleRenderedLine[];
 }>();
 
@@ -267,7 +268,7 @@ export class AgentConsoleThoughtTemplate extends AgentConsoleMessageTemplateBase
         const detailOpen = this.state.messageDetailOpen;
         const rawMode = this.state.rawMode;
         const showCriticalMarks = this.state.showCriticalMarks;
-        const reasoningPreviewLines = this.state.consoleOptions.reasoningPreviewLines;
+        const markdownContentWidth = Number(this.state.markdownContentWidth) || 0;
         const expandedIds = this.state.expandedMessageIds;
         const messageId = String(source[0]?.messageId || '');
         const cached = thoughtLinesCache.get(this);
@@ -278,16 +279,89 @@ export class AgentConsoleThoughtTemplate extends AgentConsoleMessageTemplateBase
             && cached.rawMode === rawMode
             && cached.showCriticalMarks === showCriticalMarks
             && cached.expandedIds === expandedIds
-            && cached.reasoningPreviewLines === reasoningPreviewLines) {
+            && cached.markdownContentWidth === markdownContentWidth) {
             return cached.lines;
         }
-        const lines = rawMode || (messageId && this.state.isMessageExpanded(messageId))
-            ? source.map(line => ({ ...line, toggleMode: 'inline' as const }))
-            : this.previewLines(source, reasoningPreviewLines, false);
+        const expanded = rawMode || (!!messageId && this.state.isMessageExpanded(messageId));
+        const lines = expanded
+            ? this.expandedThoughtLines(source)
+            : this.collapsedThoughtLines(source, markdownContentWidth);
         thoughtLinesCache.set(this, {
-            source, selected, detailOpen, rawMode, showCriticalMarks, expandedIds, reasoningPreviewLines, lines
+            source, selected, detailOpen, rawMode, showCriticalMarks, expandedIds, markdownContentWidth, lines
         });
         return lines;
+    }
+
+    /** Expanded thoughts keep every line; the first line swaps + for −. */
+    protected expandedThoughtLines(source: AgentConsoleRenderedLine[]): AgentConsoleRenderedLine[] {
+        const collapseHint = this.translator?.translate?.('agent.message.collapse');
+        return source.map((line, index) => ({
+            ...line,
+            status: index === 0 ? this.disclosureStatus(line.status, '−') : line.status,
+            ariaLabel: index === 0
+                ? [line.ariaLabel, typeof collapseHint === 'string' ? collapseHint : ''].filter(Boolean).join(' · ')
+                : line.ariaLabel,
+            toggleMode: 'inline' as const
+        }));
+    }
+
+    /**
+     * Collapsed thoughts are a single scannable row: `+ Thought · <preview> (1.2s)`.
+     * The preview is clipped to the terminal budget so live reasoning can never
+     * grow the transcript, and the whole row stays clickable to expand.
+     */
+    protected collapsedThoughtLines(source: AgentConsoleRenderedLine[], contentWidth: number): AgentConsoleRenderedLine[] {
+        const base = source.find(line => (line.tokens || []).some(token => String(token?.text || '').trim())) || source[0];
+        if (!base) {
+            return [];
+        }
+        const budget = Math.max(24, (contentWidth > 0 ? contentWidth - 18 : 72));
+        const truncated = this.truncateThoughtTokens(base.tokens || [], budget);
+        // The renderer appends the duration to the last line; carry it onto the
+        // collapsed summary so the disclosure still shows how long thinking took.
+        const last = source[source.length - 1];
+        const duration = last && last !== base
+            ? (last.tokens || []).find(token => token?.tone === 'muted' && /^\s*\([^()]+\)\s*$/.test(String(token?.text || '')))
+            : undefined;
+        const tokens = duration ? [...truncated, { ...duration, text: String(duration.text || '') }] : truncated;
+        const expandHint = this.translator?.translate?.('agent.message.expandAction');
+        return [{
+            ...base,
+            status: this.disclosureStatus(base.status, '+'),
+            tokens,
+            toggleMode: 'inline' as const,
+            ariaLabel: [base.ariaLabel, typeof expandHint === 'string' ? expandHint : ''].filter(Boolean).join(' · ')
+        }];
+    }
+
+    protected disclosureStatus(status: string | undefined, glyph: string): string {
+        const text = String(status || '');
+        return text ? `${glyph}${text.slice(1)}` : `${glyph} `;
+    }
+
+    protected truncateThoughtTokens(tokens: NonNullable<AgentConsoleRenderedLine['tokens']>, budget: number): NonNullable<AgentConsoleRenderedLine['tokens']> {
+        const result: NonNullable<AgentConsoleRenderedLine['tokens']> = [];
+        let used = 0;
+        for (const token of tokens) {
+            const text = String(token?.text || '');
+            if (!text) {
+                continue;
+            }
+            const width = getDisplayWidth(text);
+            if (used + width <= budget) {
+                result.push(token);
+                used += width;
+                continue;
+            }
+            const remaining = Math.max(0, budget - used);
+            const slice = remaining > 1 ? sliceByDisplayWidth(text, remaining - 1) : '';
+            if (slice) {
+                result.push({ ...token, text: slice });
+            }
+            result.push({ text: '…', tone: 'muted', style: token?.style || {} });
+            return result;
+        }
+        return result;
     }
 }
 

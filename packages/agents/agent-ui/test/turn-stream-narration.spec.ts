@@ -7,7 +7,7 @@ import {
     consumeStreamChunkView,
     runTurnStreamView
 } from '../src/AgentConsoleTurnStreamController';
-import { projectAgentConsoleExecutionMainline } from '../src/AgentConsoleSessionContentPresenter';
+import { presentAgentConsoleSessionContent, projectAgentConsoleExecutionMainline } from '../src/AgentConsoleSessionContentPresenter';
 
 /**
  * Regression coverage for the narration/final-answer fusion defect.
@@ -263,10 +263,12 @@ export class TurnStreamNarrationTest {
         // Settling keeps the whole turn's reasoning for the inspector.
         expect(String(row?.content)).toContain('detail detail');
 
-        // The main line carries one bounded supporting summary.
+        // The row keeps the full turn reasoning; the Thought template is what
+        // collapses it to one scannable line in the transcript.
         const projected = projectAgentConsoleExecutionMainline(host.state.messages);
-        const summary = String(projected.find(item => item.metadata?.uiEventType === 'reasoning')?.content || '');
-        expect(summary.length).toBeLessThanOrEqual(120);
-        expect(summary).toContain('Inspecting the parser.');
+        const projectedThought = projected.find(item => item.metadata?.uiEventType === 'reasoning')!;
+        expect(String(projectedThought.content)).toContain('detail detail');
+        expect(String(projectedThought.content)).toContain('Now summarising');
+        expect(presentAgentConsoleSessionContent(projectedThought).summary).toContain('Inspecting the parser.');
     }
 }

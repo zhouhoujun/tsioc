@@ -225,7 +225,7 @@ export function projectExecutionTurn(messages: AgentMessage[]): AgentMessage[] {
 export function presentThoughtMainline(message: AgentMessage): AgentMessage {
     const metadata = message.metadata || {};
     const running = String(metadata.status || '').toLowerCase() === 'running';
-    const content = running ? firstMeaningfulLine(message.content) : summarizeExecutionText(message.content, 120);
+    const content = running ? firstMeaningfulLine(message.content) : String(message.content || '').trim(); // full text; the Thought template collapses it
     return {
         ...message,
         content: content || 'Thought',

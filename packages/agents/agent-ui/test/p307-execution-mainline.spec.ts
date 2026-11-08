@@ -8,7 +8,7 @@ function message(id: string, content: string, metadata?: Record<string, any>, ro
 
 @Suite('execution mainline projection (P307)')
 export class ExecutionMainlineProjectionTest {
-    @Test('completed reasoning becomes one supporting Thought summary')
+    @Test('completed reasoning keeps full text for the Thought disclosure')
     thoughtSummary() {
         const projected = projectAgentConsoleExecutionMainline([
             message('u1', 'Fix it', undefined, 'user'),
@@ -19,7 +19,8 @@ export class ExecutionMainlineProjectionTest {
         const thoughts = projected.filter(item => item.metadata?.uiEventType === 'reasoning');
         expect(thoughts).toHaveLength(1);
         expect(thoughts[0].id).toEqual('r2');
-        expect(thoughts[0].content.length).toBeLessThanOrEqual(120);
+        expect(thoughts[0].content).toContain('Useful reasoning');
+        expect(thoughts[0].content.length).toBeGreaterThan(120);
         expect(presentAgentConsoleSessionContent(thoughts[0]).priority).toEqual('supporting');
         expect(thoughts[0].metadata?.detailRef).toEqual('r2');
     }

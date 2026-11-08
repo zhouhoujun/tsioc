@@ -3217,3 +3217,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 选择菜单选中行增加主题化背景带（`--console-select-selected-bg`，dark/light/solarized/high-contrast）。
   - 修复选择菜单关闭/取消后浮层不消失（真实 TUI + Chrome 复现）：`AgentConsoleSelectPanelComponent` 的 `closeMenu`/`selectOption`/`onKeydown` 原先用箭头函数，绑定回调拿到的是原始实例，`state` 写入绕过响应式代理；改为普通方法后 `this` 是父组件代理，关闭即刻重绘。新增回归用例（旧实现失败）。
   - 回归：components 148、components/common 49、components/html 129、components/console 151、agent-ui 2002 通过；`git diff --check` 通过；真实 PTY 100×30 验证选择框/浮层关闭、审批键位与批准；真实 Chrome 1280×900、390×844 验证深/浅主题选择卡、审批卡、`/status` 卡与关闭。
+- TUI 思考行对齐 opencode 的折叠观感（真实 PTY + 真实 Chrome 验收）：
+  - 已结束的思考不再把 120 字摘要折成 3 行铺在转录区：折叠态固定为单行 `+ 思考 · <首行预览>… (耗时)`，超过终端宽度时按显示列截断并带 `…`；点击整行展开为完整推理（`− 思考 · …`），再次点击收起。
+  - 完整推理保存在投影消息的 `metadata.fullReasoning`（主线路仍保留 120 字摘要，detail 与其他消费者不受影响），渲染器仅在推理行使用全文，模板负责单行折叠/展开。
+  - Web 与 TUI 共用同一 `AgentConsoleThoughtTemplate`：Web 保留左侧思考轨道，移动端同样折叠为单行；TUI 展开行保持缩进与耗时。
+  - fake model 新增 `思考排版` 场景（`delta.reasoning_content` 流式输出 8 行推理）用于两端真实对照。
+  - 回归：agent-ui 2003 passing（新增折叠/展开单测）；真实 PTY 100×32、60×30 验证折叠单行、`…`/耗时、点击展开 `−` 与完整 8 行、再次点击收起；真实 Chrome 1280×900、390×844 验证单行折叠、展开 8 行与再次收起。

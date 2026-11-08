@@ -213,6 +213,17 @@ def _default_turn(messages):
         content = '\n'.join(f'慢速输出 {n}：等待用户中断。' for n in range(1, 301))
         total_tokens += len(content) // 4
         return {'role': 'assistant', 'content': content + '\n'}
+    if '思考排版' in text:
+        thought = '\n'.join([
+            f'思考第 {n} 行：先确认 {n} 号假设，再比较输入、输出与错误分支，'
+            f'这段用于验证 TUI 思考行的折叠与展开观感。'
+            for n in range(1, 9)
+        ])
+        return {
+            'role': 'assistant',
+            'content': '思考排版检查完成：折叠时只占一行，展开后可读完整推理。',
+            'reasoning_content': thought
+        }
     if '长文' in text:
         lines = [f'第 {n} 行：这是用于撑满视口的长回复内容，验证滚动后尾部问询仍然可见。'
                  for n in range(1, 121)]
@@ -327,7 +338,12 @@ class Handler(BaseHTTPRequestHandler):
                 'choices': [{'index': 0, 'finish_reason': None, 'delta': {}}]}
         pieces = []
         content = message.get('content')
+        reasoning = message.get('reasoning_content')
         tool_calls = message.get('tool_calls') or []
+        if reasoning:
+            for line in re.split(r'(?<=\n)', reasoning):
+                if line:
+                    pieces.append(('reasoning', line))
         # Tagged, not a plain string list: one message can carry both narration and
         # tool calls, and an untagged `elif` silently drops the call arguments.
         if content:
@@ -353,6 +369,8 @@ class Handler(BaseHTTPRequestHandler):
             for piece in pieces:
                 if piece[0] == 'text':
                     delta = {'content': piece[1]}
+                elif piece[0] == 'reasoning':
+                    delta = {'reasoning_content': piece[1]}
                 else:
                     _, index, arguments = piece
                     delta = {'tool_calls': [{'index': index,

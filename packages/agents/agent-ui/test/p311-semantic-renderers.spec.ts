@@ -6,7 +6,10 @@ import { TuiTemplateModule } from '@tsdi/components/console';
 import { AgentModule } from '@tsdi/agent';
 import {
     AgentConsoleMessageRendererRegistry,
+    AgentConsoleSessionState,
+    AgentConsoleThoughtTemplate,
     AgentUiModule,
+    projectAgentConsoleExecutionMainline,
     renderAgentConsoleMessageItem,
     renderAgentConsoleMessageItems
 } from '../src';
@@ -105,6 +108,46 @@ export class SemanticRendererSuite {
         } as any, { rendererRegistry: this.registry });
         expect(thought.lines[0].status).toContain('+');
         expect(thought.lines[0].status).not.toContain('✓');
+    }
+
+    @Test('settled reasoning collapses to one row and expands on click')
+    thoughtCollapse() {
+        const state = this.ctx.get(AgentConsoleSessionState);
+        state.markdownContentWidth = 98;
+        const projected = projectAgentConsoleExecutionMainline([
+            message('u1', 'user', '修复恢复索引'),
+            message('r1', 'assistant', [
+                `第一行推理：${'确认恢复索引的写入路径与权限边界，并检查失败分支。'.repeat(3)}`,
+                '第二行推理：对比输入、输出和错误处理，确认不会覆盖生产库。',
+                '第三行推理：补上回滚方案后再次验证。'
+            ].join('\n'), {
+                uiKind: 'event', uiEventType: 'reasoning', status: 'success', durationMs: 1234
+            })
+        ]);
+        const rendered = renderAgentConsoleMessageItem(projected[1], {
+            rendererRegistry: this.registry,
+            markdownContentWidth: 98
+        });
+        const template = new AgentConsoleThoughtTemplate();
+        template.item = rendered;
+        template.state = state;
+
+        const collapsed = template.lines;
+        expect(collapsed).toHaveLength(1);
+        expect(collapsed[0].status).toContain('+');
+        expect(collapsed[0].toggleMode).toEqual('inline');
+        const collapsedText = collapsed[0].tokens.map(token => token.text).join('');
+        expect(collapsedText).toContain('第一行推理');
+        expect(collapsedText).toContain('…');
+        expect(collapsedText).toMatch(/\(\d+(\.\d+)?s\)/);
+
+        state.toggleMessageExpanded('r1');
+        const expanded = template.lines;
+        expect(expanded.length).toBeGreaterThan(1);
+        expect(expanded[0].status).toContain('−');
+        expect(expanded.map(line => line.tokens.map(token => token.text).join('')).join('\n'))
+            .toContain('第三行推理');
+        state.setMessageExpanded('r1', false);
     }
 
     @Test('user turn and first response are separated while execution remains compact')
