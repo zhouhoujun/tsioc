@@ -3236,3 +3236,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - **todo 部分 merge 丢兄弟项**：`setPlanTodos` 在 planId 相同、输入为当前计划子集时按 id 合并而非整体替换，避免模型只回传变更项时计划面板只剩一条；新增 plan-action 回归。
   - 真实会话侧证：Resume 的 timeline compact 显示 `tsdi-agent · 开始 12:57`、`已隐藏 7 条事件 · 紧凑模式仅显示当前步骤与错误`、完整 3 条 todo 和 `完成 · 耗时 1m 53s`；`/timeline compact` 切换正常。
   - 回归：components 148、components/common 49、components/html 129、components/console 154（新增 inline 可见性/居中用例）、agent-ui 2010 通过；真实 TUI 100×34 验证新会话→发消息 logo 消失、todo merge 行去重、计划项完整；真实 PTY 运行中验证 token 行；真实 Chrome 1280×900 验证新会话卡片居中、发消息后品牌卡隐藏、todo merge 行去重。
+  - **时间线导航**：viewport 模式下输入框为空时 `Home`/`End` 直接跳到转录顶部/最新；已有草稿时仍保持行首/行尾编辑。新增 decoded-input 回归，真实 PTY 用 120 行长回答验证 `Home` 到第 1 行、`End` 回到底部问询。
+  - 真实会话时间线侧证补充：Resume timeline compact 的计划 3 条完整、footer 显示 `完成 · 耗时 1m 53s`；`/timeline compact` 切换与隐藏事件计数正常。仍待观察：未完成 turn 恢复后的 footer 状态、单轮 answer footer 与 timeline footer 的耗时重复。
+- TUI 弹窗/提示框去掉线框，改为浏览器式浮动卡片（真实 PTY 验收）：
+  - `.dialog-panel`、`.select-shell`、`.console-approvals-panel`、`.console-toast-card` 去掉边框/圆角线框，仅保留主题化背景 + 内边距；TUI 渲染为整块背景卡片，状态浮层、选择菜单、审批卡、toast 都是浮动面板。
+  - `foldDialogCloseRow` 扩展为无边框模式：✕ 不再独占一行，直接绘制到标题行右侧；无标题的建议菜单绘制到第一行选项右侧；点击/hover 目标随之移动。
+  - 选择菜单/命令面板底部严格停在输入框面板顶边之上（`promptRow - 1`，保留输入框顶部 padding 行），不再覆盖输入框文本或背景；内容宽度自适应并居中。
+  - pending question 复用 `list-panel` 增加 `question-panel` skin（背景 + padding），与其它弹窗一致。
+  - 真实 PTY 100×30：`/theme`、`/status`、`/` 建议菜单、审批卡、`/copy session` toast 均无线框；原始 ANSI 确认菜单/卡片使用 `#161b22` 背景与选中行 `#202a36` 背景；菜单最后一行与输入行之间保留空白 padding 行。
+  - 回归：components/console 154（边框移除/背景/标题行 ✕）、components/common 49、components/html 129、agent-ui 2011 通过；统一 gate 27/27。

@@ -2380,19 +2380,16 @@ export class TuiTerminalSurface {
     }
 
     /**
-     * Fold a standalone close row into the dialog's top border.
+     * Fold a standalone close row into the dialog's first content row (or its
+     * top border when a framed dialog still uses one).
      *
      * The shared shell renders `.dialog-close` as its own right-aligned row, so
      * every TUI modal spent a full content row on a lone ✕. Painting the glyph
-     * into the frame gives the panel a proper top-right affordance and returns
-     * that row to the body. The ✕ click target moves with the glyph.
+     * onto the title row gives the panel a proper top-right affordance and
+     * returns that row to the body; the ✕ click target moves with the glyph.
      */
     protected foldDialogCloseRow(lines: string[], targets: TerminalClickTarget[]): TerminalClickTarget[] {
         if (lines.length < 2 || !targets.length) {
-            return targets;
-        }
-        const topPlain = stripTerminalAnsi(lines[0] || '');
-        if (!/^\s*[╭┌]/.test(topPlain)) {
             return targets;
         }
         const closeTarget = targets.find(target => {
@@ -2403,37 +2400,47 @@ export class TuiTerminalSurface {
             return targets;
         }
         const closeRow = closeTarget.y;
-        if (closeRow < 1 || closeRow >= lines.length) {
+        if (closeRow < 0 || closeRow >= lines.length) {
             return targets;
         }
         const label = String((closeTarget.node as any)?.textContent || '').trim();
-        // The row is framed, so compare the inner content (strip the vertical
-        // borders) against the close glyph.
         const closeText = stripTerminalAnsi(lines[closeRow] || '')
             .replace(/^[\s│┃║|]+|[\s│┃║|]+$/g, '');
         if (!label || closeText !== label) {
             return targets;
         }
-        // Keep the frame's top-right corner intact; the glyph sits one cell in
-        // from it with an empty cell on either side so the notch reads as a
-        // deliberate badge rather than a broken border.
-        const lineWidth = getDisplayWidth(topPlain);
-        const glyphWidth = Math.max(1, Math.floor(closeTarget.width) || 1);
-        if (closeTarget.x < 1 || closeTarget.x + glyphWidth + 1 > lineWidth - 1) {
+        const framed = /^\s*[╭┌]/.test(stripTerminalAnsi(lines[0] || ''));
+        let targetRow = framed ? 0 : closeRow + 1;
+        if (!framed) {
+            while (targetRow < lines.length && !stripTerminalAnsi(lines[targetRow] || '').trim()) {
+                targetRow += 1;
+            }
+        }
+        if (targetRow >= lines.length || targetRow === closeRow) {
             return targets;
         }
-        lines[0] = overlayStyledLine(
-            lines[0],
+        const lineWidth = getDisplayWidth(stripTerminalAnsi(lines[targetRow] || ''));
+        const glyphWidth = Math.max(1, Math.floor(closeTarget.width) || 1);
+        // A framed dialog keeps its corner; a borderless card can put the glyph
+        // flush against its right edge.
+        const required = closeTarget.x + glyphWidth + (framed ? 1 : 0);
+        if (closeTarget.x < 1 || required > lineWidth - (framed ? 1 : 0)) {
+            return targets;
+        }
+        const startColumn = Math.max(0, closeTarget.x - 1);
+        const endColumn = Math.min(lineWidth, closeTarget.x + glyphWidth + 1);
+        lines[targetRow] = overlayStyledLine(
+            lines[targetRow],
             lines[closeRow],
-            closeTarget.x - 1,
-            closeTarget.x + glyphWidth + 1
+            startColumn,
+            endColumn
         );
         lines.splice(closeRow, 1);
+        const foldedY = closeRow < targetRow ? targetRow - 1 : targetRow;
         return targets.map(target => target === closeTarget
-            ? { ...target, y: 0 }
+            ? { ...target, y: foldedY }
             : target.y > closeRow ? { ...target, y: target.y - 1 } : target);
     }
-
     /**
      * Paint toast rows over the transcript, bottom-aligned above the footer and
      * only across the toast's own columns, so the conversation stays readable
@@ -2586,16 +2593,15 @@ export class TuiTerminalSurface {
             // whole footer. Both anchor by the bottom edge.
             const footerStart = footerRegions.length ? Math.min(...footerRegions.map(region => region.startRow)) : height;
             const composerStart = footerRegions.length ? Math.max(...footerRegions.map(region => region.startRow)) : height;
+            // A menu ends on the row above the prompt text, leaving the whole
+            // composer (including its padding) visible.
             let promptRow = -1;
-            for (let row = Math.max(0, composerStart - 2); row < Math.min(composerStart + 2, result.lines.length); row++) {
-                if (stripTerminalAnsi(result.lines[row] || '').includes('>')) {
+            for (let row = Math.max(0, composerStart - 2); row < Math.min(composerStart + 3, result.lines.length); row++) {
+                if (stripTerminalAnsi(result.lines[row] || '').trimStart().startsWith('>')) {
                     promptRow = row;
                     break;
                 }
             }
-            // A menu ends one row above the composer text (the panel's top
-            // edge). The shared background continues through the panel padding
-            // and text without the menu covering the input.
             const anchorRow = dialogIsMenu
                 ? (promptRow > 0 ? promptRow - 1 : composerStart)
                 : footerStart;

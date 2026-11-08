@@ -16,7 +16,7 @@ export interface ListPanelItem {
 @Component({
     selector: 'list-panel',
     template: `
-    <div class="console-panel list-panel" role="dialog" aria-label="{{ariaLabel}}" aria-activedescendant="{{activeOptionId}}">
+    <div class="console-panel list-panel {{panelClass}}" role="dialog" aria-label="{{ariaLabel}}" aria-activedescendant="{{activeOptionId}}">
         <label class="dialog-close" data-cell-width="2" v-show="showClose" @click="close">{{closeLabel}}</label>
         <label class="list-panel-header" v-show="header">{{header}}</label>
         <label class="list-panel-title" v-show="title">{{title}}</label>
@@ -45,6 +45,8 @@ export class ListPanelComponent {
     @Attribute() listLabel = '';
     @Attribute() activeOptionId = '';
     @Attribute() showClose = false;
+    /** Host-specific card skin (e.g. the question overlay). */
+    @Attribute() panelClass = '';
     @Attribute() closeLabel = '✕';
     @Attribute() items: ListPanelItem[] = [];
     @Attribute() detailLines: string[] = [];

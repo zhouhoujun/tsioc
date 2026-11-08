@@ -6,7 +6,7 @@ const strip = (line: string) => line.replace(/\x1b\[[0-9;]*m/g, '');
 
 @Suite('console dialog layout')
 export class ConsoleDialogLayoutTest {
-    @Test('the close affordance moves into the dialog frame instead of owning a row')
+    @Test('the close affordance rides the title row on a borderless card')
     closeFoldsIntoFrame() {
         const renderer = new TuiRenderer();
         const root = renderer.createElement('div');
@@ -33,15 +33,18 @@ export class ConsoleDialogLayoutTest {
         const surface = new TuiTerminalSurface({ renderer, root, width: 70, height: 20, output: { write() { } } });
         try {
             surface.render();
+            const rawTitleRow = surface.lastRenderedLines.find(line => line.includes('状态 7 行')) || '';
+            // The card is a filled background band even without border lines.
+            expect(rawTitleRow).toContain('48;2;22;27;34');
             const rendered = surface.lastRenderedLines.map(strip);
-            const frameRow = rendered.findIndex(line => line.includes('╭'));
-            expect(frameRow).toBeGreaterThanOrEqual(0);
-            // The ✕ sits in the top border; content starts on the next row.
-            expect(rendered[frameRow]).toContain('✕');
-            expect(rendered[frameRow + 1]).toContain('状态 7 行');
+            // Borderless card: no frame glyphs, and the ✕ rides the title row.
+            expect(rendered.some(line => line.includes('╭') || line.includes('╰'))).toEqual(false);
+            const titleRow = rendered.findIndex(line => line.includes('状态 7 行'));
+            expect(titleRow).toBeGreaterThanOrEqual(0);
+            expect(rendered[titleRow]).toContain('✕');
             expect(rendered.filter(line => line.includes('✕')).length).toEqual(1);
             const target = surface.clickTargets.find((item: any) => item.node === close);
-            expect(target?.y).toEqual(frameRow);
+            expect(target?.y).toEqual(titleRow);
             expect(target?.width).toEqual(2);
         } finally {
             surface.destroy();

@@ -223,7 +223,7 @@ export class AgentConsoleCommandOutputsPanelComponent {
     selector: 'agent-console-pending-question-panel',
     imports: [ListPanelComponent],
     template: `
-    <list-panel :header="pendingQuestionHeader" :title="pendingQuestionTitle" :context="pendingQuestionContext" :meta="pendingQuestionExpiryHint" :hint="pendingQuestionSelectionHint" :secondaryHint="pendingQuestionCustomHint" :items="pendingQuestionOptionItems" :showClose="true" :closeLabel="'✕'" :ariaLabel="accessibilityLabel" :listLabel="'Question options'" :activeOptionId="activeOptionId" @closeAction="closeQuestion" @selectAction="onPendingQuestionOptionClick"></list-panel>
+    <list-panel panelClass="question-panel" :header="pendingQuestionHeader" :title="pendingQuestionTitle" :context="pendingQuestionContext" :meta="pendingQuestionExpiryHint" :hint="pendingQuestionSelectionHint" :secondaryHint="pendingQuestionCustomHint" :items="pendingQuestionOptionItems" :showClose="true" :closeLabel="'✕'" :ariaLabel="accessibilityLabel" :listLabel="'Question options'" :activeOptionId="activeOptionId" @closeAction="closeQuestion" @selectAction="onPendingQuestionOptionClick"></list-panel>
     `
 })
 export class AgentConsolePendingQuestionPanelComponent {

@@ -822,11 +822,16 @@ export class AgentConsoleMessagesRendererTest {
             const inputRow = lines.findIndex(line => line.includes('> /'));
             expect(helpRow).toBeGreaterThan(0);
             expect(inputRow).toBeGreaterThan(helpRow);
-            // The suggestion overlay has its own shell, a clickable close glyph,
-            // but no modal title/hint.
-            expect(lines.some(line => line.includes('╭'))).toEqual(true);
+            // The suggestion overlay is a borderless card with a clickable close
+            // glyph and no modal title/hint; its last row sits on the composer edge.
+            expect(lines.some(line => line.includes('╭'))).toEqual(false);
             expect(lines.some(line => line.includes('✕'))).toEqual(true);
             expect(lines.some(line => line.includes('Suggestions'))).toEqual(false);
+            expect(lines[inputRow]).toContain('> /');
+            expect(lines[inputRow]).not.toContain('/help');
+            // The composer keeps its top padding row; the menu ends above it.
+            expect(lines[inputRow - 1].trim()).toEqual('');
+            expect(lines[inputRow - 2].trim().length).toBeGreaterThan(0);
         } finally {
             surface?.destroy();
             await tuiCtx.close();
@@ -902,22 +907,18 @@ export class AgentConsoleMessagesRendererTest {
             await Promise.resolve();
             const lines = surface.lastRenderedLines.map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
             const titleRow = lines.findIndex(line => line.includes('Security level'));
-            const boxRow = titleRow - 1;
             const inputRow = lines.findIndex(line => line.includes('Ask code or files'));
-            expect(boxRow).toBeGreaterThan(0);
-            expect(titleRow).toBeGreaterThan(boxRow);
+            expect(titleRow).toBeGreaterThan(0);
             expect(inputRow).toBeGreaterThan(titleRow);
-            // Blocking menus fit their content and centre in the viewport
-            // instead of spanning the whole terminal. Other chrome can share
-            // the overlay row, so inspect the frame from its own corner.
-            const leading = lines[boxRow].indexOf('╭');
-            const frame = lines[boxRow].slice(leading).trimEnd();
-            expect(leading).toBeGreaterThan(0);
-            expect(frame.startsWith('╭')).toEqual(true);
-            expect(frame.endsWith('╮')).toEqual(true);
-            expect(frame.length).toBeLessThan(120);
-            expect(Math.abs(leading - Math.floor((120 - frame.length) / 2))).toBeLessThanOrEqual(1);
-            expect(lines.some(line => line.includes('up/down move'))).toBe(true);
+            // Borderless card, content-fit width, and its bottom row rests on
+            // the composer's top edge without covering the input row.
+            expect(lines.some(line => line.includes('╭') || line.includes('╰'))).toEqual(false);
+            expect(lines[titleRow].indexOf('Security level')).toBeGreaterThan(0);
+            expect(lines[inputRow - 1].trim()).toEqual('');
+            expect(lines[inputRow - 2]).toContain('up/down move');
+            expect(lines[inputRow]).not.toContain('Security level');
+            expect(lines[inputRow]).not.toContain('up/down move');
+            expect(lines[inputRow - 2].trimEnd().length).toBeLessThan(110);
         } finally {
             surface?.destroy();
             await tuiCtx.close();

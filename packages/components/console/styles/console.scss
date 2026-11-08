@@ -169,9 +169,7 @@ $idle: var(--console-idle, #6fa37a);
 .dialog-panel {
     background: $dialog-bg;
     color: $text;
-    border: 1px solid $border;
-    border-radius: 1;
-    padding: 0 2;
+    padding: 1 2;
 }
 .dialog-title {
     color: $accent;
@@ -193,13 +191,15 @@ $idle: var(--console-idle, #6fa37a);
 .select-rows {
     display: none;
 }
+.question-panel {
+    background: $dialog-bg;
+    padding: 1 2;
+    max-width: 78ch;
+}
 .select-shell {
     background: $dialog-bg;
     color: $text;
-    border: 1px solid $border;
-    border-bottom: none;
-    border-radius: 1;
-    padding: 0 2;
+    padding: 1 2;
 }
 .select-list .dialog-close {
     color: $meta;
@@ -405,11 +405,9 @@ $idle: var(--console-idle, #6fa37a);
    content-sized and centered like the other modals. */
 .console-approvals-panel {
     color: var(--agent-theme-dialog-shell-color, #d6dee6);
-    background: var(--agent-theme-input-shell-background, var(--agent-theme-dialog-shell-background, #161b22));
-    background-color: var(--agent-theme-input-shell-background-color, var(--agent-theme-dialog-shell-background-color));
-    padding: var(--agent-theme-dialog-shell-padding, 0 2);
-    border: var(--agent-theme-dialog-shell-border, 1px solid #30363d);
-    border-radius: var(--agent-theme-dialog-shell-border-radius, 1);
+    background: var(--agent-theme-dialog-shell-background, #161b22);
+    background-color: var(--agent-theme-dialog-shell-background-color);
+    padding: 1 2;
     max-width: 78ch;
 }
 .approval-title {
@@ -540,8 +538,6 @@ $idle: var(--console-idle, #6fa37a);
 // The terminal toast is a real card: border + background so it reads as a
 // floating alert instead of plain text over the transcript.
 .console-toast-card {
-    border: 1px solid $border;
-    border-radius: 1;
     background: $dialog-bg;
     padding: 0 1ch;
     max-width: 34ch;
