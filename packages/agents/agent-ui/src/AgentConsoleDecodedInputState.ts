@@ -204,6 +204,18 @@ import { resolveTranscriptLayout } from './AgentConsoleTranscriptLayout';
             return { handled: true };
         }
 
+        if ((controlKey === 'home' || controlKey === 'end')
+            && !state.input.trim()
+            && !options.hasActiveTextPrompt
+            && !state.inputLocked
+            && !state.modalPromptActive
+            && state.scrollTranscriptToEdgeAction) {
+            const consumed = state.scrollTranscriptToEdgeAction(controlKey === 'home' ? 'start' : 'end');
+            if (consumed) {
+                state.syncTranscriptFollowing();
+                return { handled: true, action: 'transcriptScroll', value: controlKey };
+            }
+        }
         if (controlKey === 'left' || controlKey === 'right' || controlKey === 'home' || controlKey === 'end') {
             if (state.focusLayers.shouldRouteDraftNavigation(options.hasActiveTextPrompt)) {
                 return { handled: true, action: 'draftNavigation', value: controlKey };
