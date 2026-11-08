@@ -17,7 +17,7 @@ export interface SelectOption {
     selector: 'select-list',
     template: `
     <div class="console-panel select-list {{widthClass}}" role="dialog" aria-label="{{accessibilityLabel}}">
-        <div class="select-shell">
+        <div class="select-shell {{suggestion ? 'select-suggestions' : ''}}">
             <label class="dialog-close" data-cell-width="2" @click="close">{{closeLabel}}</label>
             <select class="select-core"
                 aria-label="{{accessibilityLabel}}"
@@ -52,6 +52,8 @@ export class SelectComponent {
     @Attribute() detailLines: string[] = [];
     @Attribute() accessibilityLabel = 'Selection menu';
     @Attribute() closeLabel = '✕';
+    /** Composer-attached suggestion lists keep the opencode rails. */
+    @Attribute() suggestion = false;
     /** Content-fit the blocking menu instead of spanning the terminal. */
     @Attribute() fitContent = false;
     @Attribute() maxWidth = 88;

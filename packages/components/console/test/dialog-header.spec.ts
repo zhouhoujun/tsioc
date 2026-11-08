@@ -35,7 +35,7 @@ export class ConsoleDialogLayoutTest {
             surface.render();
             const rawTitleRow = surface.lastRenderedLines.find(line => line.includes('状态 7 行')) || '';
             // The card is a filled background band even without border lines.
-            expect(rawTitleRow).toContain('48;2;22;27;34');
+            expect(rawTitleRow).toContain('48;2;27;33;40');
             const rendered = surface.lastRenderedLines.map(strip);
             // Borderless card: no frame glyphs, and the ✕ rides the title row.
             expect(rendered.some(line => line.includes('╭') || line.includes('╰'))).toEqual(false);

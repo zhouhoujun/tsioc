@@ -156,9 +156,8 @@
     font-weight: bold;
 }
 .dialog-panel {
-    background: var(--console-dialog-bg, #161b22);
+    background: var(--console-input-bg, #1b2128);
     color: var(--console-text, #c9d1d9);
-    border-left: 1px solid var(--console-accent, #86a9d6);
     padding: 1 2;
 }
 .dialog-title {
@@ -181,17 +180,18 @@
     display: none;
 }
 .question-panel {
-    background: var(--console-dialog-bg, #161b22);
-    border-left: 1px solid var(--console-accent, #86a9d6);
+    background: var(--console-input-bg, #1b2128);
     padding: 1 2;
     max-width: 78ch;
 }
 .select-shell {
-    background: var(--console-dialog-bg, #161b22);
+    background: var(--console-input-bg, #1b2128);
     color: var(--console-text, #c9d1d9);
+    padding: 1 2;
+}
+.select-suggestions {
     border-left: 1px solid var(--console-border, #30363d);
     border-right: 1px solid var(--console-border, #30363d);
-    padding: 1 2;
 }
 .select-list .dialog-close {
     color: var(--console-meta, #6e7681);
@@ -396,9 +396,8 @@
 
 .console-approvals-panel {
     color: var(--agent-theme-dialog-shell-color, #d6dee6);
-    background: var(--agent-theme-dialog-shell-background, #161b22);
-    background-color: var(--agent-theme-dialog-shell-background-color);
-    border-left: 1px solid var(--console-accent, #86a9d6);
+    background: var(--console-input-bg, #1b2128);
+    background-color: var(--agent-theme-input-shell-background-color);
     padding: 1 2;
     max-width: 78ch;
 }
@@ -425,6 +424,7 @@
     color: var(--agent-theme-status-error-value-color, #cf9893);
 }
 .input-shell {
+    border-left: 1px solid var(--console-border, #30363d);
     color: var(--agent-theme-input-shell-color, #c9d1d9);
     background: var(--agent-theme-input-shell-background, #1b2128);
     background-color: var(--agent-theme-input-shell-background-color);

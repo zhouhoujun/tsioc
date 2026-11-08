@@ -3241,3 +3241,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 真实 PTY 100×30：新会话只有居中 Logo、无提示；发消息后 Logo 消失；`/theme` 显示左右竖轨、选中强调、菜单底部在输入框 padding 之上。
   - **tab 会话丢失排查**：非代码/数据库丢失；是真实 TUI 探针使用真实 workspace 时覆写了 `.tsdi-agent/settings.json` 的 `openSessionIds` 与 `timelineViewMode`。已恢复原来的 5 个打开会话（含“今天天气怎么样”），并确认 5 个会话消息数 27/12/4/5/8 完整；后续探针改用 workspace/HOME 副本。
   - 回归：agent-ui 2007、components 148、components/common 49、components/html 129、components/console 153 通过；gate 26/27（仅 production-db-integrity 因用户当前 TUI 活动写入而失败）。
+- TUI 弹窗再对齐 opencode（真实 PTY 验收）：
+  - 阻塞式选择/状态/审批弹窗去掉背景卡片与左右竖轨，改为输入框同色的扁平列表；仅 `/` 建议菜单保留左右竖轨并与输入框左轨对齐。
+  - 输入框增加左侧竖轨（`border-left`），为弹窗提供真实锚点；修复 `promptRow` 在 `│ >` 输入行上的识别，命令菜单严格停在输入框顶部 padding 行之上，不再遮挡输入框。
+  - 选中行继续使用强调色背景；描述宽度预算保留；Logo 仅在空会话显示，消息提示行已移除。
+  - 真实 PTY 100×30：`/theme` 为扁平居中列表、`/` 为带左右轨的 composer 列表，菜单与输入框之间保留 `│` padding 行；测试更新输入行断言（`│ >`）。

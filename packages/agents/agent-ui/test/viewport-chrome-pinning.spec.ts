@@ -85,8 +85,9 @@ export class AgentConsoleViewportChromePinningTest {
         expect(screen[0]).toContain('Alpha');
         expect(screen[0]).toContain('Beta');
         // The composer (with its statusline) stays inside the last rows.
-        expect(screen.some(line => line.trimStart().startsWith('>'))).toBe(true);
-        expect(screen.slice(-5).some(line => line.trimStart().startsWith('>'))).toBe(true);
+        const isPrompt = (line: string) => line.trimStart().replace(/^[│┃║]\s*/, '').startsWith('>');
+        expect(screen.some(isPrompt)).toBe(true);
+        expect(screen.slice(-5).some(isPrompt)).toBe(true);
         // The frame must fit the window exactly; anything wider/taller scrolls
         // the alternate screen and takes the chrome with it.
         expect(harness.surface.lastRenderedLines.length).toBeLessThanOrEqual(harness.height);

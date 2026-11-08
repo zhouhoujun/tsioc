@@ -273,7 +273,7 @@ export class UiInputInteractionRegressionTest {
         // exactly one visible composer prompt row starts with '> '
         const promptRows = after.split('\n')
             .map(line => line.replace(/\x1b\[[0-9;]*[A-Za-z]/g, ''))
-            .filter(line => line.trim().startsWith('> '));
+            .filter(line => line.trim().replace(/^[│┃║]\s*/, '').startsWith('> '));
         expect(promptRows.length).toBe(1);
         expect(promptRows[0]).toContain('/');
     }

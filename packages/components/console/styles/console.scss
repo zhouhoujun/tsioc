@@ -167,9 +167,8 @@ $idle: var(--console-idle, #6fa37a);
     font-weight: bold;
 }
 .dialog-panel {
-    background: $dialog-bg;
+    background: var(--console-input-bg, #1b2128);
     color: $text;
-    border-left: 1px solid $accent;
     padding: 1 2;
 }
 .dialog-title {
@@ -193,17 +192,18 @@ $idle: var(--console-idle, #6fa37a);
     display: none;
 }
 .question-panel {
-    background: $dialog-bg;
-    border-left: 1px solid $accent;
+    background: var(--console-input-bg, #1b2128);
     padding: 1 2;
     max-width: 78ch;
 }
 .select-shell {
-    background: $dialog-bg;
+    background: var(--console-input-bg, #1b2128);
     color: $text;
+    padding: 1 2;
+}
+.select-suggestions {
     border-left: 1px solid $border;
     border-right: 1px solid $border;
-    padding: 1 2;
 }
 .select-list .dialog-close {
     color: $meta;
@@ -409,9 +409,8 @@ $idle: var(--console-idle, #6fa37a);
    content-sized and centered like the other modals. */
 .console-approvals-panel {
     color: var(--agent-theme-dialog-shell-color, #d6dee6);
-    background: var(--agent-theme-dialog-shell-background, #161b22);
-    background-color: var(--agent-theme-dialog-shell-background-color);
-    border-left: 1px solid var(--console-accent, #86a9d6);
+    background: var(--console-input-bg, #1b2128);
+    background-color: var(--agent-theme-input-shell-background-color);
     padding: 1 2;
     max-width: 78ch;
 }
@@ -438,6 +437,7 @@ $idle: var(--console-idle, #6fa37a);
     color: var(--agent-theme-status-error-value-color, #cf9893);
 }
 .input-shell {
+    border-left: 1px solid var(--console-border, #30363d);
     color: var(--agent-theme-input-shell-color, #c9d1d9);
     background: var(--agent-theme-input-shell-background, #1b2128);
     background-color: var(--agent-theme-input-shell-background-color);

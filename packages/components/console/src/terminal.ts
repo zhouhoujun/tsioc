@@ -2597,7 +2597,10 @@ export class TuiTerminalSurface {
             // composer (including its padding) visible.
             let promptRow = -1;
             for (let row = Math.max(0, composerStart - 2); row < Math.min(composerStart + 3, result.lines.length); row++) {
-                if (stripTerminalAnsi(result.lines[row] || '').trimStart().startsWith('>')) {
+                const text = stripTerminalAnsi(result.lines[row] || '')
+                    .trimStart()
+                    .replace(/^[│┃║]\s*/, '');
+                if (text.startsWith('>')) {
                     promptRow = row;
                     break;
                 }

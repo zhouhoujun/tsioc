@@ -246,7 +246,7 @@ export class AgentConsoleSessionTabIsolationTest {
             expect(harness.screen().some(line => line.includes('alpha message'))).toBe(false);
             // Chrome stays pinned during the switch as well.
             expect(harness.screen()[0]).toContain('Beta');
-            expect(harness.screen().some(line => line.trimStart().startsWith('>'))).toBe(true);
+            expect(harness.screen().some(line => line.trimStart().replace(/^[│┃║]\s*/, '').startsWith('>'))).toBe(true);
 
             releaseB({ messages: bMessages, hasMore: false });
             await switching;
@@ -257,7 +257,7 @@ export class AgentConsoleSessionTabIsolationTest {
             expect(screen.some(line => line.includes('alpha message'))).toBe(false);
             expect(screen.some(line => line.includes('beta message'))).toBe(true);
             expect(screen[0]).toContain('Beta');
-            expect(screen.slice(-5).some(line => line.trimStart().startsWith('>'))).toBe(true);
+            expect(screen.slice(-5).some(line => line.trimStart().replace(/^[│┃║]\s*/, '').startsWith('>'))).toBe(true);
         } finally {
             harness.surface.destroy();
         }
@@ -291,7 +291,7 @@ export class AgentConsoleSessionTabIsolationTest {
             const screen = harness.screen();
             expect(screen.some(line => line.includes('beta message 69'))).toBe(true);
             expect(screen.some(line => line.includes('alpha message'))).toBe(false);
-            expect(screen.slice(-5).some(line => line.trimStart().startsWith('>'))).toBe(true);
+            expect(screen.slice(-5).some(line => line.trimStart().replace(/^[│┃║]\s*/, '').startsWith('>'))).toBe(true);
         } finally {
             harness.surface.destroy();
         }

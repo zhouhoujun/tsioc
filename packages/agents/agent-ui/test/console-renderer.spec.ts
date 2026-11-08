@@ -830,8 +830,9 @@ export class AgentConsoleMessagesRendererTest {
             expect(lines[inputRow]).toContain('> /');
             expect(lines[inputRow]).not.toContain('/help');
             // The composer keeps its top padding row; the menu ends above it.
-            expect(lines[inputRow - 1].trim()).toEqual('');
-            expect(lines.findIndex(line => line.includes('/new'))).toBeLessThan(inputRow);
+            // The composer keeps its top rail row; the menu ends above it.
+            expect(lines[inputRow - 1].trim()).toEqual('│');
+            expect(lines.findIndex(line => line.includes('/new'))).toBeLessThan(inputRow - 1);
         } finally {
             surface?.destroy();
             await tuiCtx.close();
@@ -914,8 +915,8 @@ export class AgentConsoleMessagesRendererTest {
             // the composer's top edge without covering the input row.
             expect(lines.some(line => line.includes('╭') || line.includes('╰'))).toEqual(false);
             expect(lines[titleRow].indexOf('Security level')).toBeGreaterThan(0);
-            expect(lines[inputRow - 1].trim()).toEqual('');
             const hintRow = lines.findIndex(line => line.includes('up/down move'));
+            expect(lines[inputRow - 1].trim()).toEqual('│');
             expect(hintRow).toBeGreaterThan(titleRow);
             expect(hintRow).toBeLessThan(inputRow);
             expect(inputRow).not.toContain('Security level');

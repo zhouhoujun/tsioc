@@ -206,6 +206,7 @@ export class AgentConsoleActivityPanelComponent {
             :meta="menuMetaText"
             :detailLines="menuDetailLines"
             :fitContent="menuFitContent"
+            :suggestion="!menuFitContent"
             :accessibilityLabel="accessibilityLabel"
             @selectAction="selectOption"
             @closeAction="closeMenu"
