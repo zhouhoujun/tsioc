@@ -293,6 +293,8 @@ export interface TuiTerminalSurfaceOptions {
     onTextCopied?: (text: string) => void;
     /** The user reached the oldest rendered transcript row (load an older page). */
     onViewportTop?: () => void;
+    /** A primary click landed outside the open overlay (menu/dialog). */
+    onBackgroundClick?: () => void;
 }
 
 export interface ConsoleTerminalInputLike {
@@ -365,6 +367,8 @@ export abstract class ConsoleTerminalSurfaceLifecycle {
     onTerminalTextCopied?(text: string): void;
     /** The viewport reached its oldest row; hosts may load an older transcript page. */
     onTerminalViewportTop?(): void;
+    /** A primary click landed outside the open overlay; dismiss non-blocking chrome. */
+    onTerminalBackgroundClick?(): void;
 }
 
 export type ConsoleTranscriptLayoutMode = 'scrollback' | 'viewport';
@@ -871,7 +875,8 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
             mouseTrackingEnabled: this.mouseTrackingEnabled,
             animationClock: this.injector.get(AnimationClock, null) || undefined,
             onTextCopied: text => lifecycle.onTerminalTextCopied?.(text),
-            onViewportTop: () => lifecycle.onTerminalViewportTop?.()
+            onViewportTop: () => lifecycle.onTerminalViewportTop?.(),
+            onBackgroundClick: () => lifecycle.onTerminalBackgroundClick?.()
         });
         this.surface.render();
     }
@@ -1360,15 +1365,18 @@ export class TuiTerminalSurface {
         Promise.resolve().then(run);
     }
 
-    protected resolveDirtyTopLevel(origin?: ConsoleNode): ConsoleNode | undefined {        if (!origin) {
+    protected resolveDirtyTopLevel(origin?: ConsoleNode): ConsoleNode | undefined {
+        if (!origin) {
             return undefined;
         }
         const nodes = Array.isArray(this.root) ? this.root : (this.root ? [this.root] : []);
+        // Keep the deepest origin: the renderer re-renders only the panel that
+        // contains it. A detached node walks off the tree and disables caching.
         let node: ConsoleNode | null | undefined = origin;
         while (node && !nodes.includes(node as any)) {
             node = node.parentNode;
         }
-        return (node as ConsoleNode | undefined) ?? undefined;
+        return node ? origin : undefined;
     }
 
     render(): TerminalPrimaryRenderResult | undefined {
@@ -1823,6 +1831,9 @@ export class TuiTerminalSurface {
             if (pressed && this.isTuiMouseDrag(pressed, mouse)) {
                 return false;
             }
+            if (this.isClickOutsideOverlay(mouse.x, mouse.y)) {
+                this.options.onBackgroundClick?.();
+            }
             const target = this.hitTest(mouse.x, mouse.y);
             const element = target?.node as ConsoleElement | undefined;
             const dispatched = this.dispatchClickAt(target?.node, target?.optionIndex);
@@ -2274,6 +2285,18 @@ export class TuiTerminalSurface {
         return (roots[0] as ConsoleNode | undefined)?.ownerDocument || null;
     }
 
+    /** Whether the click landed outside an open popup band. */
+    protected isClickOutsideOverlay(x: number, y: number): boolean {
+        const bands = this.lastOverlayBands;
+        if (!bands || !bands.size) {
+            return false;
+        }
+        const targetRow = Math.max(0, Math.floor((y || 1) - 1) - this.getTerminalRootStartRow());
+        const targetColumn = Math.max(0, Math.floor((x || 1) - 1));
+        const band = bands.get(targetRow);
+        return !band || targetColumn < band.start || targetColumn >= band.end;
+    }
+
     protected hitTest(x: number, y: number): TerminalClickTarget | undefined {
         const targetRow = Math.max(0, Math.floor((y || 1) - 1) - this.getTerminalRootStartRow());
         const targetColumn = Math.max(0, Math.floor((x || 1) - 1));
@@ -2612,16 +2635,24 @@ export class TuiTerminalSurface {
             // clamping to 0 corrupted the strip while the dialog was open.
             const headerRegion = (result.regions || []).find(region => region.id === 'header');
             const headerRows = headerRegion ? Math.max(0, headerRegion.endRow) : 0;
+            // A popup must never cover the composer: if it is taller than the
+            // space above the input, keep its title/top rows and clip the
+            // bottom instead of spilling into the input box.
+            const availableRows = Math.max(0, Math.min(height, anchorRow) - headerRows);
+            const visibleLines = shiftedLines.length > availableRows
+                ? shiftedLines.slice(0, availableRows)
+                : shiftedLines;
+            const visibleHeight = visibleLines.length;
             const start = Math.max(
-                Math.min(headerRows, Math.max(0, height - dialogHeight)),
-                Math.min(anchorRow - dialogHeight, height - dialogHeight)
+                headerRows,
+                Math.min(anchorRow - visibleHeight, Math.max(headerRows, height - visibleHeight))
             );
             const lines = result.lines.slice();
             while (lines.length < height) {
                 lines.push('');
             }
             const overlayBands = new Map<number, { start: number; end: number }>();
-            shiftedLines.forEach((line, index) => {
+            visibleLines.forEach((line, index) => {
                 const row = start + index;
                 if (row >= height) {
                     return;
@@ -2633,8 +2664,10 @@ export class TuiTerminalSurface {
                 overlayBands.set(row, { start: bandStart, end: bandEnd });
             });
             const clickTargets = result.clickTargets
-                .filter(target => !(target.y >= start && target.y < start + dialogHeight))
-                .concat(foldedClickTargets.map(target => ({ ...target, x: target.x + dialogShift, y: start + target.y })));
+                .filter(target => !(target.y >= start && target.y < start + visibleHeight))
+                .concat(foldedClickTargets
+                    .filter(target => target.y < visibleHeight)
+                    .map(target => ({ ...target, x: target.x + dialogShift, y: start + target.y })));
             const lastPromptRow = (() => {
                 for (let row = lines.length - 1; row >= 0; row--) {
                     const text = stripTerminalAnsi(lines[row] || '')
@@ -2650,7 +2683,7 @@ export class TuiTerminalSurface {
                 // The dialog extraction shifts footer rows up; keep the input
                 // target and remap it to the rendered prompt row so the caret
                 // cannot fall to the row below the composer.
-                .filter(target => (target as any).id === 'input' || !(target.row >= start && target.row < start + dialogHeight))
+                .filter(target => (target as any).id === 'input' || !(target.row >= start && target.row < start + visibleHeight))
                 .map(target => (target as any).id === 'input' && lastPromptRow >= 0 ? { ...target, row: lastPromptRow } : target);
             return { lines: fitViewportHeight(lines), regions: result.regions, cursorTargets, clickTargets, overlayBands, sourceRows: result.sourceRows };
         };
@@ -2688,6 +2721,29 @@ export class TuiTerminalSurface {
                 this.maxScrollOffsetRows = 0;
                 this.applyPendingViewportOffset();
                 this.scrollOffsetRows = 0;
+                // With no transcript rows (empty session) the footer would sit
+                // at the top and leave no room for a popup above the composer.
+                // Bottom-align it like the normal viewport path.
+                const footerStart = footerRegion ? Math.max(0, Math.min(allLines.length, footerRegion.startRow)) : allLines.length;
+                const fillerRows = height - allLines.length;
+                if (footerStart < allLines.length && fillerRows > 0) {
+                    const shift = (row: number): number => row >= footerStart ? row + fillerRows : row;
+                    return composeDialogOverlay({
+                        lines: [
+                            ...allLines.slice(0, footerStart),
+                            ...Array.from({ length: fillerRows }, () => ''),
+                            ...allLines.slice(footerStart)
+                        ],
+                        regions: allRegions.map(region => ({
+                            id: region.id,
+                            startRow: shift(region.startRow),
+                            endRow: shift(region.endRow)
+                        })),
+                        cursorTargets: baseCursorTargets.map(target => ({ ...target, row: shift(target.row) })),
+                        clickTargets: baseClickTargets.map(target => ({ ...target, y: shift(target.y) })),
+                        sourceRows: allLines.map((_line, index) => index)
+                    });
+                }
                 return composeDialogOverlay({
                     lines: allLines,
                     regions: allRegions,

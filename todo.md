@@ -3251,3 +3251,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 输入框保持原高度与左侧竖轨，不新增整圈边框；`/` 命令菜单保持原来的 composer 全宽列表 + 左右竖轨，底边紧贴输入框 padding 行之上。
   - 修复弹窗打开时输入光标被挤到下一行：`lastPromptRow` 识别 `│ >` 输入行（与菜单锚点同一规则），光标始终留在 prompt 行。
   - 回归：agent-ui、components、components/common、components/html、components/console；真实 PTY 100×30 / 120×40 / 80×24 验证卡片不遮挡输入框。
+- TUI 弹窗遮挡/卡顿/点击关闭（真实反馈）：
+  - 空会话打开菜单时 footer 不再停在顶部：viewport 缺 transcript 行时把 footer 底部对齐，菜单有空间停靠在输入框上方，标题/顶部边框/✕ 完整。
+  - 弹窗高度超出可用空间时只保留顶部并裁剪底部，绝不覆盖输入框；短终端按 `maxOverlayVisibleLines` 缩小选项窗口（20 项在 24/20/16 行都能完整显示在输入框上方）。
+  - 面板级布局复用：单一起点的变更只重渲染对应 renderRegion 面板（菜单按键从约 900ms 降到 1-3ms/200 条消息），多起点/无起点/宽度或主题变化仍全量渲染。
+  - TUI 鼠标点击弹窗外部立即关闭选择菜单/文本弹层（surface `onBackgroundClick` → lifecycle）。
+  - 回归：agent-ui 2010、components 148、common 49、html 129、console 153；真实 PTY 验证空会话 `/theme`、`/` 菜单与点击关闭。

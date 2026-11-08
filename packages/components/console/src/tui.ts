@@ -40,6 +40,14 @@ const ANSI_BOLD = '\x1b[1m';
 const ANSI_ITALIC = '\x1b[3m';
 const ANSI_UNDERLINE = '\x1b[4m';
 const ANSI_STRIKE = '\x1b[9m';
+/** Theme colours repeat on every token; memoize their ANSI code. */
+const colorCodeCache = new Map<string, string>();
+/** ANSI stripping/width measuring repeats on every line and frame. */
+const stripAnsiCache = new Map<string, string>();
+const displayWidthCache = new Map<string, number>();
+/** Repeated tokens (message bodies, tables) re-use their painted ANSI run. */
+const ansiTextCache = new Map<string, string>();
+const ANSI_TEXT_CACHE_LIMIT = 8192;
 
 export interface TuiRenderOptions {
     width?: number;
@@ -73,18 +81,23 @@ interface TuiStyledSegment {
     styleMap: Record<string, string>;
 }
 
+interface TuiSubtreeLayout {
+    lines: string[];
+    cursorTargets: TuiCursorTarget[];
+    regions: TuiRenderRegionDraft[];
+    clickTargets: TerminalClickTarget[];
+}
+
 @Injectable()
 export class TuiRenderer extends ConsoleRenderer {
     renderToTuiLines(node: RNode | RNode[], options: TuiRenderOptions = {}): string[] {
         return this.renderToTuiLayout(node, options).lines;
     }
 
-    protected subtreeLayoutCache = new Map<object, {
-        lines: string[];
-        cursorTargets: TuiCursorTarget[];
-        regions: TuiRenderRegionDraft[];
-        clickTargets: TerminalClickTarget[];
-    }>();
+    protected subtreeLayoutCache = new Map<object, TuiSubtreeLayout>();
+    /** Per-panel layouts: unchanged panels are reused for a single-origin frame. */
+    protected panelLayoutCache = new Map<object, TuiSubtreeLayout>();
+    protected activeDirtyPanel?: ConsoleNode;
     protected subtreeLayoutWidth?: number;
     protected styleSheetRules: ConsoleStyleRule[] = parseConsoleStyleSheet(DEFAULT_CONSOLE_STYLESHEET);
     protected animationKeyframes = parseConsoleKeyframes(DEFAULT_CONSOLE_STYLESHEET);
@@ -98,6 +111,7 @@ export class TuiRenderer extends ConsoleRenderer {
         this.animationKeyframes = parseConsoleKeyframes(css);
         this.animationStates.clear();
         this.subtreeLayoutCache.clear();
+        this.panelLayoutCache.clear();
     }
 
     /** Deterministic time source for tests and hosts that own the clock. */
@@ -126,35 +140,30 @@ export class TuiRenderer extends ConsoleRenderer {
         const dirty = options.dirty;
         if (this.subtreeLayoutWidth !== width) {
             this.subtreeLayoutCache.clear();
+            this.panelLayoutCache.clear();
             this.subtreeLayoutWidth = width;
         }
-        const recomputeAll = this.hasRunningAnimations() || !dirty || !nodes.includes(dirty as any);
+        const recomputeAll = this.hasRunningAnimations() || !this.isDirtyWithinNodes(dirty, nodes);
         this.animationSeen = new Set();
+        const rootNode = nodes.length === 1 ? nodes[0] as ConsoleNode : undefined;
+        const rootEntry = rootNode ? this.tryRenderPanelRoot(rootNode, width, dirty, recomputeAll) : undefined;
         const lines: string[] = [];
         const cursorTargets: TuiCursorTarget[] = [];
         const regions: TuiRenderRegionDraft[] = [];
         const clickTargets: TerminalClickTarget[] = [];
-        nodes.forEach(current => {
-            const key = current as object;
-            let entry = this.subtreeLayoutCache.get(key);
-            if (recomputeAll || dirty === current || !entry) {
-                entry = this.renderSubtreeLayout(current as ConsoleNode, width);
-                this.subtreeLayoutCache.set(key, entry);
-            }
-            const baseRow = lines.length;
-            for (const line of entry.lines) {
-                lines.push(line);
-            }
-            for (const target of entry.cursorTargets) {
-                cursorTargets.push({ id: target.id, row: target.row + baseRow, column: target.column });
-            }
-            for (const target of entry.clickTargets) {
-                clickTargets.push({ ...target, y: target.y + baseRow });
-            }
-            for (const region of entry.regions) {
-                regions.push({ ...region, startRow: region.startRow + baseRow, endRow: region.endRow + baseRow });
-            }
-        });
+        if (rootEntry) {
+            this.appendSubtreeLayout(rootEntry, lines, cursorTargets, regions, clickTargets);
+        } else {
+            nodes.forEach(current => {
+                const key = current as object;
+                let entry = this.subtreeLayoutCache.get(key);
+                if (recomputeAll || dirty === current || !entry) {
+                    entry = this.renderSubtreeLayout(current as ConsoleNode, width);
+                    this.subtreeLayoutCache.set(key, entry);
+                }
+                this.appendSubtreeLayout(entry, lines, cursorTargets, regions, clickTargets);
+            });
+        }
         if (recomputeAll) {
             for (const element of this.animationStates.keys()) {
                 if (!this.animationSeen.has(element)) {
@@ -177,57 +186,131 @@ export class TuiRenderer extends ConsoleRenderer {
         };
     }
 
-    protected renderSubtreeLayout(node: ConsoleNode, width?: number): {
-        lines: string[];
-        cursorTargets: TuiCursorTarget[];
-        regions: TuiRenderRegionDraft[];
-        clickTargets: TerminalClickTarget[];
-    } {
+    protected appendSubtreeLayout(
+        entry: TuiSubtreeLayout,
+        lines: string[],
+        cursorTargets: TuiCursorTarget[],
+        regions: TuiRenderRegionDraft[],
+        clickTargets: TerminalClickTarget[]
+    ): void {
+        const baseRow = lines.length;
+        for (const line of entry.lines) {
+            lines.push(line);
+        }
+        for (const target of entry.cursorTargets) {
+            cursorTargets.push({ id: target.id, row: target.row + baseRow, column: target.column });
+        }
+        for (const target of entry.clickTargets) {
+            clickTargets.push({ ...target, y: target.y + baseRow });
+        }
+        for (const region of entry.regions) {
+            regions.push({ ...region, startRow: region.startRow + baseRow, endRow: region.endRow + baseRow });
+        }
+    }
+
+    /**
+     * Render the console root panel by panel. A frame whose change origin is a
+     * single panel re-renders only that panel; every other panel reuses its
+     * previous layout. Multi-panel frames arrive without a dirty origin and
+     * fall back to a full walk, so the cache can never mask a second change.
+     */
+    protected tryRenderPanelRoot(
+        root: ConsoleNode,
+        width: number | undefined,
+        dirty: ConsoleNode | undefined,
+        recomputeAll: boolean
+    ): TuiSubtreeLayout | undefined {
+        if (!(root instanceof ConsoleElement)) {
+            return undefined;
+        }
+        // The component host may wrap the themed `.agent-console` shell. Walk
+        // through frameless single-child wrappers so the panel container (and
+        // its theme variables) is what we cache and inherit.
+        let shell: ConsoleElement = root;
+        let shellStyle = this.getStyleMap(shell);
+        let shellInherited = this.mergeStyles({}, shellStyle);
+        for (let depth = 0; depth < 8; depth++) {
+            if (String(shellStyle.display || '').trim().toLowerCase() === 'none'
+                || this.hasBlockFrame(shellStyle, width)
+                || shellStyle.animation || shellStyle['animation-name']) {
+                this.panelLayoutCache.clear();
+                return undefined;
+            }
+            const childNodes = shell.childNodes || [];
+            if (childNodes.some(child => !(child instanceof ConsoleElement) && !!(child as { textContent?: string }).textContent?.trim())) {
+                this.panelLayoutCache.clear();
+                return undefined;
+            }
+            const elementChildren = childNodes.filter((child): child is ConsoleElement => child instanceof ConsoleElement);
+            const only = elementChildren.length === 1 ? elementChildren[0] : undefined;
+            if (!only || only.getAttribute('renderRegion')) {
+                break;
+            }
+            // Only unwrap container wrappers; never descend into a leaf that
+            // would be rendered as content (textarea, input, label, span...).
+            if (!(only.childNodes || []).some(child => child instanceof ConsoleElement)) {
+                break;
+            }
+            shell = only;
+            shellStyle = this.getStyleMap(shell);
+            shellInherited = this.mergeStyles(shellInherited, shellStyle);
+        }
+        if (dirty === root || dirty === shell) {
+            this.panelLayoutCache.clear();
+        }
+        const dirtyPanel = dirty && dirty !== root && dirty !== shell ? this.resolveDirtyPanel(shell, dirty) : undefined;
+        const lines: string[] = [];
+        const cursorTargets: TuiCursorTarget[] = [];
+        const regions: TuiRenderRegionDraft[] = [];
+        const clickTargets: TerminalClickTarget[] = [];
+        for (const child of (shell.childNodes || []).filter((node): node is ConsoleElement => node instanceof ConsoleElement)) {
+            const cacheable = !!child.getAttribute('renderRegion');
+            const reusable = cacheable && !recomputeAll && child !== dirtyPanel && this.panelLayoutCache.get(child);
+            const entry = reusable || this.renderSubtreeLayout(child, width, shellInherited);
+            if (cacheable && !reusable) {
+                this.panelLayoutCache.set(child, entry);
+            }
+            this.appendSubtreeLayout(entry, lines, cursorTargets, regions, clickTargets);
+        }
+        return { lines, cursorTargets, regions, clickTargets };
+    }
+
+    protected resolveDirtyPanel(root: ConsoleElement, dirty: ConsoleNode): ConsoleElement | undefined {
+        let node: ConsoleNode | null | undefined = dirty;
+        while (node && node.parentNode && node.parentNode !== root) {
+            node = node.parentNode;
+        }
+        return node && node.parentNode === root && node instanceof ConsoleElement ? node : undefined;
+    }
+
+    /** A dirty origin counts only while it is still attached under a render root. */
+    protected isDirtyWithinNodes(dirty: ConsoleNode | undefined, nodes: RNode[]): boolean {
+        if (!dirty) {
+            return false;
+        }
+        const roots = nodes as unknown as ConsoleNode[];
+        let node: ConsoleNode | null | undefined = dirty;
+        while (node) {
+            if (roots.includes(node)) {
+                return true;
+            }
+            node = node.parentNode;
+        }
+        return false;
+    }
+
+    protected renderSubtreeLayout(
+        node: ConsoleNode,
+        width?: number,
+        inherited: Record<string, string> = {}
+    ): TuiSubtreeLayout {
         const lines: string[] = [];
         const cursorTargets: TuiCursorTarget[] = [];
         const regions: TuiRenderRegionDraft[] = [];
         const clickTargets: TerminalClickTarget[] = [];
         const visited = new WeakSet<object>();
-        this.tuiTextCache = this.buildTuiTextMap([node]);
-        try {
-            this.walkTuiNode(node, lines, {}, width, cursorTargets, regions, clickTargets, visited);
-        } finally {
-            this.tuiTextCache = undefined;
-        }
+        this.walkTuiNode(node, lines, inherited, width, cursorTargets, regions, clickTargets, visited);
         return { lines, cursorTargets, regions, clickTargets };
-    }
-
-    protected tuiTextCache?: Map<object, string>;
-
-    protected buildTuiTextMap(nodes: ConsoleNode[]): Map<object, string> {
-        const map = new Map<object, string>();
-        const computing = new WeakSet<object>();
-        const compute = (node: ConsoleNode): string => {
-            if (!node || typeof node !== 'object') {
-                return '';
-            }
-            const cached = map.get(node);
-            if (cached !== undefined) {
-                return cached;
-            }
-            if (computing.has(node)) {
-                return '';
-            }
-            computing.add(node);
-            let text: string;
-            if (node instanceof ConsoleText || node instanceof ConsoleComment) {
-                text = node.textContent || '';
-            } else if (node instanceof ConsoleElement) {
-                text = node.childNodes.map(child => compute(child as ConsoleNode)).join('');
-            } else {
-                text = '';
-            }
-            computing.delete(node);
-            map.set(node, text);
-            return text;
-        };
-        nodes.forEach(node => compute(node));
-        return map;
     }
 
     protected walkTuiNode(
@@ -264,7 +347,10 @@ export class TuiRenderer extends ConsoleRenderer {
             return;
         }
         const tag = (element.tagName || '').toLowerCase();
-        const text = this.tuiTextCache?.get(element) ?? this.collectText(element);
+        // Element text is only needed for inline/input tags; resolve it lazily
+        // instead of pre-walking the whole tree on every frame.
+        let resolvedElementText: string | undefined;
+        const text = (): string => resolvedElementText ??= this.collectText(element);
         const regionId = this.resolveRenderRegionId(element);
         const regionStart = regionId ? lines.length : -1;
         const interactive = this.hasPointerHandler(element) || element.focusable;
@@ -294,9 +380,9 @@ export class TuiRenderer extends ConsoleRenderer {
                 const plainLine = this.stripAnsi(lines[clickStart] || '');
                 const offset = renderedText ? plainLine.indexOf(renderedText) : -1;
                 if (offset >= 0) {
-                    targetX = getDisplayWidth(plainLine.slice(0, offset));
+                    targetX = this.measure(plainLine.slice(0, offset));
                     targetWidth = Math.max(
-                        getDisplayWidth(renderedText),
+                        this.measure(renderedText),
                         this.resolveDeclaredCellWidth(element) || 0
                     );
                 }
@@ -317,8 +403,8 @@ export class TuiRenderer extends ConsoleRenderer {
             case 'h2':
             case 'h3':
             case 'h4':
-                if (text.trim()) {
-                    lines.push(...this.renderInlineLines(element, { ...styleMap, 'font-weight': 'bold' }, width));
+                if (text().trim()) {
+                    lines.push(...this.renderInlineLines(element, this.mergeStyles(styleMap, { 'font-weight': 'bold' }), width));
                 }
                 this.collectNestedClickTargets(element, clickStart >= 0 ? clickStart : contentStartRow, lines.length, lines, width, clickTargets, visited);
                 finishClickTarget();
@@ -327,19 +413,19 @@ export class TuiRenderer extends ConsoleRenderer {
             case 'p':
             case 'label':
             case 'li':
-                if (text.trim()) {
+                if (text().trim()) {
                     const labelStyle = element.getAttribute('labelStyle');
                     const merged = labelStyle ? this.mergeStyles(styleMap, this.parseInlineStyle(labelStyle)) : styleMap;
                     const rendered = this.renderInlineLines(element, merged, width);
                     const align = String(merged['text-align'] || merged.textAlign || '').trim().toLowerCase();
                     const aligned = align === 'right' && width
                         ? rendered.map(line => {
-                            const pad = width - getDisplayWidth(this.stripAnsi(line));
+                            const pad = width - this.measure(this.stripAnsi(line));
                             return pad > 0 ? `${' '.repeat(pad)}${line}` : line;
                         })
                         : align === 'center' && width
                             ? rendered.map(line => {
-                                const pad = Math.floor((width - getDisplayWidth(this.stripAnsi(line))) / 2);
+                                const pad = Math.floor((width - this.measure(this.stripAnsi(line))) / 2);
                                 return pad > 0 ? `${' '.repeat(pad)}${line}` : line;
                             })
                             : rendered;
@@ -351,7 +437,7 @@ export class TuiRenderer extends ConsoleRenderer {
                 return;
             case 'span':
             case 'a':
-                if (text.trim()) {
+                if (text().trim()) {
                     const textStyle = element.getAttribute('textStyle');
                     const merged = textStyle ? this.mergeStyles(styleMap, this.parseInlineStyle(textStyle)) : styleMap;
                     lines.push(...this.renderInlineLines(element, merged, width));
@@ -361,7 +447,7 @@ export class TuiRenderer extends ConsoleRenderer {
                 finishRegion();
                 return;
             case 'button':
-                if (text.trim()) {
+                if (text().trim()) {
                     lines.push(this.applyAnsi(`[ ${this.renderInlineText(element, styleMap)} ]`, styleMap, width));
                 }
                 this.collectNestedClickTargets(element, clickStart >= 0 ? clickStart : contentStartRow, lines.length, lines, width, clickTargets, visited);
@@ -412,7 +498,7 @@ export class TuiRenderer extends ConsoleRenderer {
                         return;
                     }
                     for (const line of wrapped) {
-                        const pad = Math.max(0, width - getDisplayWidth(this.stripAnsi(line)));
+                        const pad = Math.max(0, width - this.measure(this.stripAnsi(line)));
                         lines.push(pad ? `${line}${this.applyAnsi(' '.repeat(pad), style, undefined, true)}` : line);
                     }
                 };
@@ -483,7 +569,7 @@ export class TuiRenderer extends ConsoleRenderer {
             }
             case 'input': {
                 const lineStart = lines.length;
-                const rawValue = element.getAttribute('value') || text || '';
+                const rawValue = element.getAttribute('value') || text() || '';
                 const value = (element.getAttribute('mask') || '').toLowerCase() === 'true' ? '•'.repeat(rawValue.length) : rawValue;
                 const prompt = element.getAttribute('prompt') || '';
                 const cursor = element.getAttribute('cursor') || ' ';
@@ -511,7 +597,7 @@ export class TuiRenderer extends ConsoleRenderer {
                     : '';
                 this.recordCursorTarget(element, cursorTargets, {
                     row: lineStart,
-                    column: getDisplayWidth(prompt) + getDisplayWidth(displayValue.slice(0, safeCursorPos))
+                    column: this.measure(prompt) + this.measure(displayValue.slice(0, safeCursorPos))
                 });
                 if (!focused || !showCursor) {
                     const valueText = displayValue
@@ -547,7 +633,7 @@ export class TuiRenderer extends ConsoleRenderer {
             }
             case 'textarea': {
                 const lineStart = lines.length;
-                const rawValue = element.getAttribute('value') || text || '';
+                const rawValue = element.getAttribute('value') || text() || '';
                 const value = (element.getAttribute('mask') || '').toLowerCase() === 'true' ? '•'.repeat(rawValue.length) : rawValue;
                 const prompt = element.getAttribute('prompt') || '';
                 const placeholder = element.getAttribute('placeholder') || '';
@@ -625,7 +711,7 @@ export class TuiRenderer extends ConsoleRenderer {
                     : 0;
                 const framed = indent && layoutWidth
                     ? framedLines.map(line => {
-                        const pad = Math.max(0, layoutWidth - indent - getDisplayWidth(this.stripAnsi(line)));
+                        const pad = Math.max(0, layoutWidth - indent - this.measure(this.stripAnsi(line)));
                         return `${' '.repeat(indent)}${line}${' '.repeat(pad)}`;
                     })
                     : framedLines;
@@ -724,10 +810,10 @@ export class TuiRenderer extends ConsoleRenderer {
                 // CJK terminals while measuring one; hosts can declare the real
                 // cell width so hover/click cover the whole glyph.
                 const declaredWidth = this.resolveDeclaredCellWidth(childElement);
-                const measuredWidth = offset >= 0 ? Math.max(1, getDisplayWidth(childText)) : 0;
+                const measuredWidth = offset >= 0 ? Math.max(1, this.measure(childText)) : 0;
                 clickTargets.push({
                     node: childElement,
-                    x: offset >= 0 ? getDisplayWidth(rowText.slice(0, offset)) : 0,
+                    x: offset >= 0 ? this.measure(rowText.slice(0, offset)) : 0,
                     y: startRow,
                     width: offset >= 0
                         ? Math.max(measuredWidth, declaredWidth || 0)
@@ -764,9 +850,15 @@ export class TuiRenderer extends ConsoleRenderer {
                 inherited[key] = styleMap[key];
             }
         });
-        Object.keys(styleMap).filter(key => key.startsWith('--')).forEach(key => {
-            inherited[key] = styleMap[key];
-        });
+        // Custom properties live on the prototype chain (mergeStyles no longer
+        // copies them into every element); collect child-first so overrides win.
+        for (let current: any = styleMap; current; current = Object.getPrototypeOf(current)) {
+            Object.keys(current).forEach(key => {
+                if (key.startsWith('--') && inherited[key] === undefined) {
+                    inherited[key] = current[key];
+                }
+            });
+        }
         return inherited;
     }
 
@@ -888,7 +980,7 @@ export class TuiRenderer extends ConsoleRenderer {
     }
 
     protected resolveMaxLineWidth(lines: string[]): number {
-        return lines.reduce((max, line) => Math.max(max, getDisplayWidth(this.stripAnsi(line))), 0);
+        return lines.reduce((max, line) => Math.max(max, this.measure(this.stripAnsi(line))), 0);
     }
 
     protected resolveBlockContentOffset(styleMap: Record<string, string>): { row: number; column: number } {
@@ -1084,7 +1176,7 @@ export class TuiRenderer extends ConsoleRenderer {
                 const availableWidth = Math.max(1, width - currentWidth);
                 const chunk = sliceByDisplayWidth(rest, availableWidth) || rest.slice(0, 1);
                 currentLine += this.applyAnsi(chunk, segment.styleMap, undefined, true);
-                currentWidth += getDisplayWidth(chunk);
+                currentWidth += this.measure(chunk);
                 rest = rest.slice(chunk.length);
                 if (rest && currentWidth >= width) {
                     flush();
@@ -1146,10 +1238,15 @@ export class TuiRenderer extends ConsoleRenderer {
     }
 
     protected mergeStyles(left: Record<string, string>, right: Record<string, string>): Record<string, string> {
-        const merged = { ...left, ...right };
+        // Inherit the parent style through the prototype instead of copying the
+        // full (theme-wide) custom-property set into every element. Reads still
+        // see every inherited declaration, while the own-key merge stays small.
+        const merged: Record<string, string> = Object.assign(Object.create(left || null), right);
         // Resolve compiled CSS custom properties (the host sets them on the
-        // root from the active theme; common components stay class-only).
-        for (const key of Object.keys(merged)) {
+        // root from the active theme; common components stay class-only). Only
+        // the element's own declarations can contain `var(...)`; inherited
+        // values were resolved when their owner was merged.
+        for (const key of Object.keys(right || {})) {
             merged[key] = this.resolveCssValue(merged[key], merged);
         }
         return merged;
@@ -1157,6 +1254,10 @@ export class TuiRenderer extends ConsoleRenderer {
 
     /** Apply the element's CSS animations at the renderer's current time. */
     protected applyCssAnimations(element: ConsoleElement, styleMap: Record<string, string>): void {
+        if (!styleMap.animation && !styleMap['animation-name']) {
+            this.animationStates.delete(element);
+            return;
+        }
         const specs = parseConsoleAnimations(styleMap);
         if (!specs.length) {
             this.animationStates.delete(element);
@@ -1222,17 +1323,32 @@ export class TuiRenderer extends ConsoleRenderer {
         const text = !inline && width && (styleMap.background || styleMap['background-color'])
             ? this.padVisible(value, width)
             : value;
+        const foregroundValue = styleMap.color;
+        const backgroundValue = styleMap['background-color'] || styleMap.background;
+        const weight = styleMap['font-weight'];
+        const fontStyleRaw = styleMap['font-style'];
+        const decorationRaw = styleMap['text-decoration'];
+        const cacheable = typeof text === 'string' && text.length <= 512;
+        const cacheKey = cacheable
+            ? `${width || 0}\u0000${inline ? 1 : 0}\u0000${foregroundValue || ''}\u0000${backgroundValue || ''}\u0000${weight || ''}\u0000${fontStyleRaw || ''}\u0000${decorationRaw || ''}\u0000${text}`
+            : '';
+        if (cacheable) {
+            const cached = ansiTextCache.get(cacheKey);
+            if (cached !== undefined) {
+                return cached;
+            }
+        }
         const codes: string[] = [];
-        const foreground = this.resolveColor(styleMap.color, false);
-        const background = this.resolveColor(styleMap['background-color'] || styleMap.background, true);
-        if (styleMap['font-weight'] === 'bold') {
+        const foreground = this.resolveColor(foregroundValue, false);
+        const background = this.resolveColor(backgroundValue, true);
+        if (weight === 'bold') {
             codes.push(ANSI_BOLD);
         }
-        const fontStyle = String(styleMap['font-style'] || '').trim().toLowerCase();
+        const fontStyle = String(fontStyleRaw || '').trim().toLowerCase();
         if (fontStyle === 'italic' || fontStyle === 'oblique') {
             codes.push(ANSI_ITALIC);
         }
-        const decoration = String(styleMap['text-decoration'] || '').trim().toLowerCase();
+        const decoration = String(decorationRaw || '').trim().toLowerCase();
         if (decoration.includes('underline')) {
             codes.push(ANSI_UNDERLINE);
         }
@@ -1245,12 +1361,16 @@ export class TuiRenderer extends ConsoleRenderer {
         if (background) {
             codes.push(background);
         }
-        if (!codes.length) {
-            return text;
+        const rendered = codes.length
+            ? `${codes.join('')}${text.split(ANSI_RESET).join(`${ANSI_RESET}${codes.join('')}`)}${ANSI_RESET}`
+            : text;
+        if (cacheable) {
+            if (ansiTextCache.size > ANSI_TEXT_CACHE_LIMIT) {
+                ansiTextCache.clear();
+            }
+            ansiTextCache.set(cacheKey, rendered);
         }
-        const prefix = codes.join('');
-        const continuedText = text.split(ANSI_RESET).join(`${ANSI_RESET}${prefix}`);
-        return `${prefix}${continuedText}${ANSI_RESET}`;
+        return rendered;
     }
 
     protected normalizeInlineWhitespace(value: string): string {
@@ -1261,6 +1381,11 @@ export class TuiRenderer extends ConsoleRenderer {
         if (!value) {
             return '';
         }
+        const cacheKey = `${background ? 'b' : 'f'}\u0000${value}`;
+        const cached = colorCodeCache.get(cacheKey);
+        if (cached !== undefined) {
+            return cached;
+        }
         const hex = this.extractHexColor(value);
         if (!hex) {
             return '';
@@ -1269,7 +1394,12 @@ export class TuiRenderer extends ConsoleRenderer {
         if (!rgb) {
             return '';
         }
-        return `\x1b[${background ? '48' : '38'};2;${rgb.r};${rgb.g};${rgb.b}m`;
+        const code = `\x1b[${background ? '48' : '38'};2;${rgb.r};${rgb.g};${rgb.b}m`;
+        if (colorCodeCache.size > 512) {
+            colorCodeCache.clear();
+        }
+        colorCodeCache.set(cacheKey, code);
+        return code;
     }
 
     protected resolveBoxPadding(value?: string): { top: number; right: number; bottom: number; left: number } {
@@ -1316,20 +1446,42 @@ export class TuiRenderer extends ConsoleRenderer {
     }
 
     protected stripAnsi(value: string): string {
-        return value.replace(/\x1b\[[0-9;]*m/g, '');
+        const cached = stripAnsiCache.get(value);
+        if (cached !== undefined) {
+            return cached;
+        }
+        const stripped = value.replace(/\x1b\[[0-9;]*m/g, '');
+        if (stripAnsiCache.size > ANSI_TEXT_CACHE_LIMIT) {
+            stripAnsiCache.clear();
+        }
+        stripAnsiCache.set(value, stripped);
+        return stripped;
+    }
+
+    protected measure(value: string): number {
+        const cached = displayWidthCache.get(value);
+        if (cached !== undefined) {
+            return cached;
+        }
+        const width = getDisplayWidth(value);
+        if (displayWidthCache.size > ANSI_TEXT_CACHE_LIMIT) {
+            displayWidthCache.clear();
+        }
+        displayWidthCache.set(value, width);
+        return width;
     }
 
     protected padVisible(value: string, width: number): string {
         const visible = this.stripAnsi(value);
-        if (getDisplayWidth(visible) > width) {
+        if (this.measure(visible) > width) {
             return sliceByDisplayWidth(visible, width);
         }
-        return `${value}${' '.repeat(width - getDisplayWidth(visible))}`;
+        return `${value}${' '.repeat(width - this.measure(visible))}`;
     }
 
     protected fitVisible(value: string, width: number): string {
         const visible = this.stripAnsi(value);
-        if (getDisplayWidth(visible) <= width) {
+        if (this.measure(visible) <= width) {
             return value;
         }
         return fitByDisplayWidth(visible, width);
@@ -1373,14 +1525,14 @@ export class TuiRenderer extends ConsoleRenderer {
                     const prefixValue = lineIndex === 0 ? prompt : continuationPrompt;
                     return {
                         cursorRow: lineIndex,
-                        cursorColumn: getDisplayWidth(prefixValue) + getDisplayWidth(lineValue.slice(0, safeCursorPos))
+                        cursorColumn: this.measure(prefixValue) + this.measure(lineValue.slice(0, safeCursorPos))
                     };
                 }
                 remainingCursor -= lineValue.length + 1;
             }
             return {
                 cursorRow: 0,
-                cursorColumn: getDisplayWidth(prompt)
+                cursorColumn: this.measure(prompt)
             };
         };
         const cursorPosition = resolveCursorPosition();

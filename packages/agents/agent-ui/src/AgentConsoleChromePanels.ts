@@ -274,7 +274,11 @@ export class AgentConsoleSelectPanelComponent {
     }
 
     get visibleOptionCount(): number {
-        return this.state.consoleOptions.selectVisibleOptions;
+        const configured = Number(this.state.consoleOptions.selectVisibleOptions) || 12;
+        // Short terminals cannot fit the card above the composer; window the
+        // options to the rows the overlay can actually show.
+        const maxRows = Number(this.state.maxOverlayVisibleLines) || 0;
+        return maxRows > 0 ? Math.max(3, Math.min(configured, maxRows)) : configured;
     }
 
     get accessibilityLabel(): string {

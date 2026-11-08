@@ -18,6 +18,17 @@ export abstract class AgentConsoleSessionArtifactsHost extends AgentConsoleKeyIn
     protected abstract loadCodingTasks(sessionId?: string, sessionIds?: string[]): Promise<any[]>;
     protected abstract refreshScheduledTasks(): Promise<void>;
 
+    /** A primary click outside the popup dismisses transient menu chrome. */
+    onTerminalBackgroundClick(): void {
+        if (this.state.selectMenu) {
+            void this.state.cancelSelectMenu();
+            return;
+        }
+        if (this.state.textOverlay) {
+            this.state.closeTextOverlay();
+        }
+    }
+
     protected async refreshTurnArtifacts(): Promise<void> {
         await Promise.allSettled([
             this.refreshTools(),

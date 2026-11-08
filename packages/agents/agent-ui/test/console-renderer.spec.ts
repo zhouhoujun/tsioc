@@ -931,6 +931,126 @@ export class AgentConsoleMessagesRendererTest {
         }
     }
 
+    @Test('an empty session docks the menu above the composer')
+    async emptySessionMenuDocksAboveComposer() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const consoleRef = tuiCtx.get(ComponentFactory).create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const state = consoleRef.instance.sessionState;
+            state.openSelectMenu('Security level', [
+                { label: 'Ask for approval', value: 'ask' },
+                { label: 'Full Access', value: 'full' }
+            ], 0, 'up/down move   enter confirm   esc close');
+            await settleDynamicMessages(consoleRef);
+            surface = new TuiTerminalSurface({
+                renderer: tuiCtx.get(TuiRenderer),
+                root: consoleRef.elementRef.nativeElement,
+                width: 100,
+                height: 30,
+                output: { write() { /* noop */ } }
+            });
+            surface.render();
+            const lines = surface.lastRenderedLines.map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
+            const titleRow = lines.findIndex(line => line.includes('Security level'));
+            const inputRow = lines.findIndex(line => line.includes('Ask code or files'));
+            expect(titleRow).toBeGreaterThan(0);
+            expect(inputRow).toBeGreaterThan(titleRow);
+            // The card keeps its title/top border and stays above the composer.
+            expect(lines.slice(Math.max(0, titleRow - 3), titleRow).some(line => line.includes('╭'))).toEqual(true);
+            expect(lines[inputRow - 1].trim()).toEqual('│');
+            expect(lines[inputRow - 2].trim().endsWith('╯')).toEqual(true);
+            expect(surface.clickTargets.some(target =>
+                /(?:^|\s)dialog-close(?:\s|$)/.test(String((target.node as any)?.getAttribute?.('class') || '')))).toEqual(true);
+        } finally {
+            surface?.destroy();
+            await tuiCtx.close();
+        }
+    }
+
+    @Test('clicking outside the menu dismisses it')
+    async clickOutsideMenuDismisses() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const consoleRef = tuiCtx.get(ComponentFactory).create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const state = consoleRef.instance.sessionState;
+            state.openSelectMenu('Security level', [
+                { label: 'Ask for approval', value: 'ask' },
+                { label: 'Full Access', value: 'full' }
+            ], 0, 'up/down move   enter confirm   esc close');
+            await settleDynamicMessages(consoleRef);
+            surface = new TuiTerminalSurface({
+                renderer: tuiCtx.get(TuiRenderer),
+                root: consoleRef.elementRef.nativeElement,
+                width: 100,
+                height: 30,
+                output: { write() { /* noop */ } },
+                onBackgroundClick: () => (consoleRef.instance as any).onTerminalBackgroundClick()
+            });
+            surface.render();
+            const lines = surface.lastRenderedLines.map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
+            const titleRow = lines.findIndex(line => line.includes('Security level'));
+            expect(titleRow).toBeGreaterThan(0);
+            // Primary click outside the popup columns (1-based terminal cells).
+            surface.dispatchMouse({ button: 0, x: 1, y: titleRow + 1, release: false });
+            surface.dispatchMouse({ button: 0, x: 1, y: titleRow + 1, release: true });
+            await settleDynamicMessages(consoleRef);
+            expect(state.selectMenu).toBeUndefined();
+        } finally {
+            surface?.destroy();
+            await tuiCtx.close();
+        }
+    }
+
+    @Test('menu navigation re-renders only the menu panel')
+    async menuNavigationReusesTranscript() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const consoleRef = tuiCtx.get(ComponentFactory).create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const state = consoleRef.instance.sessionState;
+            state.setMessages([
+                { id: 'u1', role: 'user', content: 'hello', createdAt: 1 } as any,
+                { id: 'a1', role: 'assistant', content: 'hi there', createdAt: 2 } as any
+            ]);
+            state.openSelectMenu('Theme', [
+                { label: 'dark', value: 'dark' },
+                { label: 'light', value: 'light' }
+            ], 0, 'enter apply');
+            await settleDynamicMessages(consoleRef);
+            const renderer = tuiCtx.get(TuiRenderer) as any;
+            const root: any = consoleRef.elementRef.nativeElement;
+            renderer.renderToTuiLayout(root, { width: 100 });
+            const menuCore = root.querySelector('.select-core');
+            expect(menuCore).toBeTruthy();
+            const rendered: string[] = [];
+            const original = renderer.renderSubtreeLayout.bind(renderer);
+            renderer.renderSubtreeLayout = (node: any, width?: number, inherited?: Record<string, string>) => {
+                rendered.push(String(node.getAttribute?.('renderRegion') || node.tagName || ''));
+                return original(node, width, inherited);
+            };
+            try {
+                renderer.renderToTuiLayout(root, { width: 100, dirty: menuCore });
+                renderer.renderToTuiLayout(root, { width: 100, dirty: menuCore });
+            } finally {
+                renderer.renderSubtreeLayout = original;
+            }
+            expect(rendered).toContain('menu');
+            expect(rendered).not.toContain('transcript');
+        } finally {
+            await tuiCtx.close();
+        }
+    }
+
     @Test('a native-scrollback dialog opens below the composer')
     async scrollbackDialogOpensBelowComposer() {
         const tuiCtx = await Application.run(AgentModule, {
