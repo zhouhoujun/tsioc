@@ -3209,3 +3209,4 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 真实 TUI（100×24，dark/light）：`╭─╮ │ 已复制 … ✕ │ ╰─╯` 右下角有边框/背景，文案左对齐、✕ 在右边；真实 Chrome：卡片 `Copied ✕`，宽度自适应，✕ 贴右边（卡片 102px，✕ 右缘距卡片 9px 内边距）。
   - 回归：common 49、console 149、agent-ui 2001 passing。
 - 修复 MCP stdio 客户端在子进程退出时的未捕获 EPIPE（gate 偶发 agent-tools 失败）：`StdioMcpClient.write` 现在通过 write 回调吞掉异步写错误并跳过已销毁/已结束的 stdin，避免 `notifications/initialized` 在进程刚死时把宿进程带崩；重连/退出处理仍负责 reject 未完成请求。agent-tools 582 passing（MCP stdio 3 用例）。
+- 选中文字不再影响 toast/alert 卡片背景（真实 TUI 定位）：TUI 的 toast 卡片是覆盖在转录区上的 chrome，但 `applyTextSelection` 会按源行反向高亮整行，把卡片背景一起染色。现在 `applyToastOverlay` 记录卡片占据的行/列（`toastOverlayBands`），选区只绘制卡片左右两侧的空白列，卡片区域保持原背景；新增回归用例（覆盖整行选区时，卡片列必须没有任何反向视频；旧实现失败）。

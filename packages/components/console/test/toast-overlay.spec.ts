@@ -4,6 +4,35 @@ import { TuiTerminalSurface } from '../src';
 
 const strip = (line: string) => line.replace(/\x1b\[[0-9;]*m/g, '');
 
+/** Columns painted with reverse video (the selection highlight). */
+function reversedColumns(line: string): number[] {
+    const columns: number[] = [];
+    let column = 0;
+    let reverse = false;
+    for (let index = 0; index < line.length;) {
+        const sgr = line.slice(index).match(/^\x1b\[([0-9;]*)m/);
+        if (sgr) {
+            for (const code of sgr[1].split(';').filter(Boolean).map(Number)) {
+                if (code === 0 || code === 27) reverse = false;
+                if (code === 7) reverse = true;
+            }
+            index += sgr[0].length;
+            continue;
+        }
+        const escape = line.slice(index).match(/^\x1b\[[0-9;?]*[A-Za-z]/);
+        if (escape) {
+            index += escape[0].length;
+            continue;
+        }
+        const char = String.fromCodePoint(line.codePointAt(index) as number);
+        const width = char === '✕' ? 2 : 1;
+        if (reverse) columns.push(column);
+        column += width;
+        index += char.length;
+    }
+    return columns;
+}
+
 @Suite('console toast overlay')
 export class ConsoleToastOverlayTest {
     @Test('toast rows float over the transcript and never move the footer')
@@ -46,6 +75,48 @@ export class ConsoleToastOverlayTest {
             expect(target?.y).toEqual(toastRow);
             // The card is slid to the right edge (one column here).
             expect(target?.x).toEqual(58);
+        } finally {
+            surface.destroy();
+        }
+    }
+
+    @Test('text selection does not repaint the toast card background')
+    async selectionSkipsToastCard() {
+        const toastLine = `${' '.repeat(50)}Copied ✕`;
+        const layout = {
+            lines: ['t1', 't2', 't3', 't4', 't5', toastLine, 'fixed footer'],
+            regions: [
+                { id: 'transcript', startRow: 0, endRow: 5 },
+                { id: 'toast', startRow: 5, endRow: 6 },
+                { id: 'footer', startRow: 6, endRow: 7 }
+            ],
+            cursorTargets: [],
+            clickTargets: []
+        };
+        const surface = new TuiTerminalSurface({
+            renderer: { renderToTuiLayout: () => layout } as any,
+            root: { addEventListener() { }, removeEventListener() { } } as any,
+            width: 60,
+            height: 5,
+            nativeScrollback: false,
+            scrollViewport: true,
+            output: { write: () => undefined },
+            scheduler: task => task()
+        });
+        try {
+            surface.render();
+            const toastRow = surface.lastRenderedLines.map(strip).findIndex(line => line.includes('Copied'));
+            expect(toastRow).toBeGreaterThanOrEqual(0);
+            // Drag-select across the toast row (the card is shifted to the right edge).
+            surface.dispatchMouse({ button: 0, x: 1, y: toastRow + 1, release: false } as any);
+            surface.dispatchMouse({ button: 32, x: 59, y: toastRow + 1, release: false } as any);
+            surface.dispatchMouse({ button: 0, x: 59, y: toastRow + 1, release: true } as any);
+            for (let index = 0; index < 10; index++) await Promise.resolve();
+            const line = surface.lastRenderedLines[toastRow];
+            const reversed = reversedColumns(line);
+            expect(reversed.length).toBeGreaterThan(0);
+            // The card starts at column 51 (59 - width 8); nothing inside is tinted.
+            expect(reversed.every(column => column < 51)).toBe(true);
         } finally {
             surface.destroy();
         }

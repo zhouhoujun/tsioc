@@ -1146,6 +1146,8 @@ export class TuiTerminalSurface {
     protected renderBatchPending = false;
     protected hoverTarget?: TerminalClickTarget;
     protected hoverPaintTarget?: TerminalClickTarget;
+    /** Toast card area: text selection must not repaint its background. */
+    protected toastOverlayBands?: Map<number, { start: number; end: number }>;
     protected hoverAlpha = 0;
     protected hoverClock?: AnimationClock;
     protected hoverFromAlpha = 0;
@@ -2164,7 +2166,19 @@ export class TuiTerminalSurface {
             if (to <= from) {
                 continue;
             }
-            lines[screenRow] = applyColumnReverse(lines[screenRow], from, to);
+            const band = this.toastOverlayBands?.get(screenRow);
+            if (!band || to <= band.start || from >= band.end) {
+                lines[screenRow] = applyColumnReverse(lines[screenRow], from, to);
+                continue;
+            }
+            // Selection is transcript chrome: never tint the toast card that
+            // floats over it. Highlight the free columns on either side.
+            if (from < band.start) {
+                lines[screenRow] = applyColumnReverse(lines[screenRow], from, Math.min(to, band.start));
+            }
+            if (to > band.end) {
+                lines[screenRow] = applyColumnReverse(lines[screenRow], Math.max(from, band.end), to);
+            }
         }
     }
 
@@ -2374,6 +2388,7 @@ export class TuiTerminalSurface {
         viewport: { lines: string[]; regions: TerminalRenderRegion[]; clickTargets: TerminalClickTarget[] },
         overlay?: { lines: string[]; clickTargets: TerminalClickTarget[] }
     ): void {
+        this.toastOverlayBands = undefined;
         if (!overlay || !overlay.lines.length) {
             return;
         }
@@ -2394,13 +2409,16 @@ export class TuiTerminalSurface {
             .map(region => region.startRow);
         const footerStart = footerRows.length ? Math.min(...footerRows) : lines.length;
         const start = Math.max(0, Math.min(footerStart - overlay.lines.length, lines.length - overlay.lines.length));
+        const bands = new Map<number, { start: number; end: number }>();
         overlay.lines.forEach((line, index) => {
             const row = start + index;
             if (row >= 0 && row < lines.length) {
                 const shiftedLine = shift ? `${' '.repeat(shift)}${line}` : line;
                 lines[row] = overlayStyledLine(lines[row] || '', shiftedLine, startColumn, endColumn);
+                bands.set(row, { start: startColumn, end: endColumn });
             }
         });
+        this.toastOverlayBands = bands;
         viewport.clickTargets = [
             ...(viewport.clickTargets || []),
             ...overlay.clickTargets.map(target => ({ ...target, x: target.x + shift, y: target.y + start }))
