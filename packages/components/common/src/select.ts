@@ -77,7 +77,8 @@ export class SelectComponent {
                 getDisplayWidth(`${index + 1}. ${option?.label ?? ''}`)
                 + (option?.description ? 2 + getDisplayWidth(String(option.description)) : 0))
         );
-        return Math.max(min, Math.min(max, longest + 8));
+        // Content budget includes the left/right rails and horizontal padding.
+        return Math.max(min, Math.min(max, longest + 12));
     }
 
     /** Windowed rows for renderers that paint real elements (browser). */

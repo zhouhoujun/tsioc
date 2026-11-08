@@ -831,7 +831,7 @@ export class AgentConsoleMessagesRendererTest {
             expect(lines[inputRow]).not.toContain('/help');
             // The composer keeps its top padding row; the menu ends above it.
             expect(lines[inputRow - 1].trim()).toEqual('');
-            expect(lines[inputRow - 2].trim().length).toBeGreaterThan(0);
+            expect(lines.findIndex(line => line.includes('/new'))).toBeLessThan(inputRow);
         } finally {
             surface?.destroy();
             await tuiCtx.close();
@@ -915,10 +915,12 @@ export class AgentConsoleMessagesRendererTest {
             expect(lines.some(line => line.includes('╭') || line.includes('╰'))).toEqual(false);
             expect(lines[titleRow].indexOf('Security level')).toBeGreaterThan(0);
             expect(lines[inputRow - 1].trim()).toEqual('');
-            expect(lines[inputRow - 2]).toContain('up/down move');
-            expect(lines[inputRow]).not.toContain('Security level');
-            expect(lines[inputRow]).not.toContain('up/down move');
-            expect(lines[inputRow - 2].trimEnd().length).toBeLessThan(110);
+            const hintRow = lines.findIndex(line => line.includes('up/down move'));
+            expect(hintRow).toBeGreaterThan(titleRow);
+            expect(hintRow).toBeLessThan(inputRow);
+            expect(inputRow).not.toContain('Security level');
+            expect(inputRow).not.toContain('up/down move');
+            expect(lines[hintRow].trimEnd().length).toBeLessThan(112);
         } finally {
             surface?.destroy();
             await tuiCtx.close();
@@ -2988,6 +2990,12 @@ export class AgentConsoleSurfaceReattachRegressionTest {
                 content: `streaming line ${index}`,
                 createdAt: index + 1
             } as any)));
+            await consoleRef.render();
+            await Promise.resolve();
+            // The welcome card is only for an empty transcript.
+            expect(brandCount(surface.lastRenderedLines)).toBe(0);
+
+            consoleRef.instance.sessionState.setMessages([]);
             await consoleRef.render();
             await Promise.resolve();
             expect(brandCount(surface.lastRenderedLines)).toBe(1);

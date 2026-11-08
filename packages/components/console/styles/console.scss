@@ -169,6 +169,7 @@ $idle: var(--console-idle, #6fa37a);
 .dialog-panel {
     background: $dialog-bg;
     color: $text;
+    border-left: 1px solid $accent;
     padding: 1 2;
 }
 .dialog-title {
@@ -193,12 +194,15 @@ $idle: var(--console-idle, #6fa37a);
 }
 .question-panel {
     background: $dialog-bg;
+    border-left: 1px solid $accent;
     padding: 1 2;
     max-width: 78ch;
 }
 .select-shell {
     background: $dialog-bg;
     color: $text;
+    border-left: 1px solid $border;
+    border-right: 1px solid $border;
     padding: 1 2;
 }
 .select-list .dialog-close {
@@ -210,9 +214,9 @@ $idle: var(--console-idle, #6fa37a);
 }
 /* A quiet selected band: colour alone was too easy to miss in long menus. */
 .select-option.is-selected {
-    color: $accent;
+    color: $dialog-bg;
     font-weight: bold;
-    background: var(--console-select-selected-bg, #1f2937);
+    background: $selected;
 }
 .tone-accent,
 .tone-link,
@@ -407,6 +411,7 @@ $idle: var(--console-idle, #6fa37a);
     color: var(--agent-theme-dialog-shell-color, #d6dee6);
     background: var(--agent-theme-dialog-shell-background, #161b22);
     background-color: var(--agent-theme-dialog-shell-background-color);
+    border-left: 1px solid var(--console-accent, #86a9d6);
     padding: 1 2;
     max-width: 78ch;
 }

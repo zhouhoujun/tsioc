@@ -3229,3 +3229,15 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - Web 卡片排除全局“面板无边框”重置（`index.html` 的 `.console-panel` 规则），并修正 flex 拉伸导致卡片占满 transcript 高度的问题；1280×900 与 390×844 均居中、不溢出。
   - 思考行收尾：单行长思考折叠时保留预览 + `…` + 耗时（此前单行截断会丢耗时）；预览基于可见文本（忽略零宽字符与纯耗时 token），推理内容为空时回退 `metadata.reasoningContent`。
   - 回归：components 148、components/common 49、components/html 129、components/console 153（新增 label 居中与品牌卡用例）、agent-ui 2007 通过；真实 PTY 100×30、60×24 验证品牌卡居中与 60 列不裁剪；真实 Chrome 1280×900、390×844 验证圆角卡片居中且无溢出。
+- TUI 弹窗样式再对齐 opencode，并收尾 logo/提示（真实 PTY 验收）：
+  - 选择菜单/对话框增加主题化左右竖轨（不再使用上下横线框），选中行改为 `--console-selected` 强调背景 + 反色文字；内容宽度补入轨道/内边距，`应用并保存` 等描述不再被截断。
+  - 修正 `SelectComponent` 的 content-fit 宽度预算（+12），保证竖轨、padding 与描述完整。
+  - 欢迎 Logo 仅在 `messages.length === 0` 时显示；有会话消息即隐藏。
+  - 移除消息列表下方的 `up/down move   pg jump ...` 提示行（用户明确要求删除）。
+  - 真实 PTY 100×30：新会话仅有居中 Logo，无提示行；发送消息后 Logo 消失；`/theme` 为带左右竖轨的浮动卡片、选中行强调、菜单底部在输入框 padding 之上。
+- TUI 弹窗/Logo 样式收尾（按用户反馈，仅样式与显示）：
+  - 选择菜单/对话框保留无上下横线框，增加左右主题化竖轨；选中行使用 `--console-selected` 强调背景 + 反色文字，宽度预算补入竖轨/padding，描述不再截断。
+  - Logo 仅在空转录时显示（`panels.welcome = messages.length === 0`）；消息列表下方的 `up/down move ...` 提示行移除，新会话不再出现该行。
+  - 真实 PTY 100×30：新会话只有居中 Logo、无提示；发消息后 Logo 消失；`/theme` 显示左右竖轨、选中强调、菜单底部在输入框 padding 之上。
+  - **tab 会话丢失排查**：非代码/数据库丢失；是真实 TUI 探针使用真实 workspace 时覆写了 `.tsdi-agent/settings.json` 的 `openSessionIds` 与 `timelineViewMode`。已恢复原来的 5 个打开会话（含“今天天气怎么样”），并确认 5 个会话消息数 27/12/4/5/8 完整；后续探针改用 workspace/HOME 副本。
+  - 回归：agent-ui 2007、components 148、components/common 49、components/html 129、components/console 153 通过；gate 26/27（仅 production-db-integrity 因用户当前 TUI 活动写入而失败）。

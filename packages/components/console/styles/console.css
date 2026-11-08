@@ -158,6 +158,7 @@
 .dialog-panel {
     background: var(--console-dialog-bg, #161b22);
     color: var(--console-text, #c9d1d9);
+    border-left: 1px solid var(--console-accent, #86a9d6);
     padding: 1 2;
 }
 .dialog-title {
@@ -181,12 +182,15 @@
 }
 .question-panel {
     background: var(--console-dialog-bg, #161b22);
+    border-left: 1px solid var(--console-accent, #86a9d6);
     padding: 1 2;
     max-width: 78ch;
 }
 .select-shell {
     background: var(--console-dialog-bg, #161b22);
     color: var(--console-text, #c9d1d9);
+    border-left: 1px solid var(--console-border, #30363d);
+    border-right: 1px solid var(--console-border, #30363d);
     padding: 1 2;
 }
 .select-list .dialog-close {
@@ -198,9 +202,9 @@
 }
 
 .select-option.is-selected {
-    color: var(--console-accent, #86a9d6);
+    color: var(--console-dialog-bg, #161b22);
     font-weight: bold;
-    background: var(--console-select-selected-bg, #1f2937);
+    background: var(--console-selected, #7fa6d4);
 }
 .tone-accent,
 .tone-link,
@@ -394,6 +398,7 @@
     color: var(--agent-theme-dialog-shell-color, #d6dee6);
     background: var(--agent-theme-dialog-shell-background, #161b22);
     background-color: var(--agent-theme-dialog-shell-background-color);
+    border-left: 1px solid var(--console-accent, #86a9d6);
     padding: 1 2;
     max-width: 78ch;
 }

@@ -802,10 +802,15 @@ export class TuiRenderer extends ConsoleRenderer {
         return (element.tagName || '').toLowerCase();
     }
 
-    protected resolveBorderEdges(styleMap: Record<string, string>): { box: boolean; left: boolean; bottom: boolean } {
+    protected resolveBorderEdges(styleMap: Record<string, string>): { box: boolean; left: boolean; right: boolean; bottom: boolean } {
         const box = !!styleMap.border;
         const bottomStyle = String(styleMap['border-bottom'] ?? styleMap.borderBottom ?? '').trim().toLowerCase();
-        return { box, left: box || !!(styleMap['border-left'] || styleMap.borderLeft), bottom: box && !/^(none|0|no)$/.test(bottomStyle) };
+        return {
+            box,
+            left: box || !!(styleMap['border-left'] || styleMap.borderLeft),
+            right: box || !!(styleMap['border-right'] || styleMap.borderRight),
+            bottom: box && !/^(none|0|no)$/.test(bottomStyle)
+        };
     }
 
     protected resolveBlockContentWidth(styleMap: Record<string, string>, width?: number): number | undefined {
@@ -819,7 +824,7 @@ export class TuiRenderer extends ConsoleRenderer {
         // Some terminals auto-wrap or retain that cell as a vertical shadow.
         const renderWidth = !border.box && hasBackground ? Math.max(1, width - 1) : width;
         // Reserved edge columns must mirror the painted border edges, or total width drifts from `width`.
-        const edgeColumns = border.box ? 2 : border.left ? 1 : 0;
+        const edgeColumns = border.box ? 2 : (border.left ? 1 : 0) + (border.right ? 1 : 0);
         return Math.max(4, renderWidth - edgeColumns - padding.left - padding.right);
     }
 
@@ -856,7 +861,7 @@ export class TuiRenderer extends ConsoleRenderer {
             const rightPad = this.applyAnsi(' '.repeat(Math.max(0, padding.right)), styleMap, undefined, true);
             const body = this.applyAnsi(this.padVisible(raw, innerWidth), styleMap, undefined, true);
             const leading = border.left ? this.applyAnsi('│', styleMap, undefined, true) : '';
-            const trailing = border.box ? this.applyAnsi('│', styleMap, undefined, true) : '';
+            const trailing = border.right ? this.applyAnsi('│', styleMap, undefined, true) : '';
             return `${leading}${leftPad}${body}${rightPad}${trailing}`;
         };
         const rounded = !!styleMap['border-radius'];
