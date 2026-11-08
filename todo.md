@@ -3210,3 +3210,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 回归：common 49、console 149、agent-ui 2001 passing。
 - 修复 MCP stdio 客户端在子进程退出时的未捕获 EPIPE（gate 偶发 agent-tools 失败）：`StdioMcpClient.write` 现在通过 write 回调吞掉异步写错误并跳过已销毁/已结束的 stdin，避免 `notifications/initialized` 在进程刚死时把宿进程带崩；重连/退出处理仍负责 reject 未完成请求。agent-tools 582 passing（MCP stdio 3 用例）。
 - 选中文字不再影响 toast/alert 卡片背景（真实 TUI 定位）：TUI 的 toast 卡片是覆盖在转录区上的 chrome，但 `applyTextSelection` 会按源行反向高亮整行，把卡片背景一起染色。现在 `applyToastOverlay` 记录卡片占据的行/列（`toastOverlayBands`），选区只绘制卡片左右两侧的空白列，卡片区域保持原背景；新增回归用例（覆盖整行选区时，卡片列必须没有任何反向视频；旧实现失败）。
+- TUI/Web 弹窗观感收尾（真实 PTY + 真实 Chrome 验收）：
+  - TUI 对话框 ✕ 不再独占一行：`foldDialogCloseRow` 把 `.dialog-close` 画进顶边框右上角，点击/hover 目标随字形移动，正文多回一行；`/theme`、`/model`、`/status`、审批卡片均生效。
+  - 阻塞式选择菜单改为内容自适应宽度（`SelectComponent.fitContent` / `dialog-w-*`）并居中；`/` 建议菜单仍保持输入区全宽。
+  - 审批卡片限制 `max-width: 78ch` 居中；当前请求行加 accent/粗体；三个决定项显示 `a`/`A`/`d` 键位（Web 隐藏键位字符）；提示行只列次级按键（↑↓/y/Esc）。
+  - 选择菜单选中行增加主题化背景带（`--console-select-selected-bg`，dark/light/solarized/high-contrast）。
+  - 修复选择菜单关闭/取消后浮层不消失（真实 TUI + Chrome 复现）：`AgentConsoleSelectPanelComponent` 的 `closeMenu`/`selectOption`/`onKeydown` 原先用箭头函数，绑定回调拿到的是原始实例，`state` 写入绕过响应式代理；改为普通方法后 `this` 是父组件代理，关闭即刻重绘。新增回归用例（旧实现失败）。
+  - 回归：components 148、components/common 49、components/html 129、components/console 151、agent-ui 2002 通过；`git diff --check` 通过；真实 PTY 100×30 验证选择框/浮层关闭、审批键位与批准；真实 Chrome 1280×900、390×844 验证深/浅主题选择卡、审批卡、`/status` 卡与关闭。

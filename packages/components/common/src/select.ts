@@ -1,5 +1,6 @@
 import { Attribute, Component } from '@tsdi/components';
 import { clampSelectIndex, resolveSelectWindow } from './input';
+import { getDisplayWidth } from './display-width';
 
 export interface SelectOption {
     label: string;
@@ -15,7 +16,7 @@ export interface SelectOption {
 @Component({
     selector: 'select-list',
     template: `
-    <div class="console-panel select-list" role="dialog" aria-label="{{accessibilityLabel}}">
+    <div class="console-panel select-list {{widthClass}}" role="dialog" aria-label="{{accessibilityLabel}}">
         <div class="select-shell">
             <label class="dialog-close" data-cell-width="2" @click="close">{{closeLabel}}</label>
             <select class="select-core"
@@ -51,9 +52,33 @@ export class SelectComponent {
     @Attribute() detailLines: string[] = [];
     @Attribute() accessibilityLabel = 'Selection menu';
     @Attribute() closeLabel = '✕';
+    /** Content-fit the blocking menu instead of spanning the terminal. */
+    @Attribute() fitContent = false;
+    @Attribute() maxWidth = 88;
+    @Attribute() minWidth = 28;
     @Attribute() selectAction?: (value: string) => void;
     @Attribute() closeAction?: () => void;
     @Attribute() keydownAction?: (event: KeyboardEvent) => void;
+
+    get widthClass(): string {
+        return this.fitContent ? `dialog-w-${this.resolveContentWidth()}` : '';
+    }
+
+    /** Fit blocking menus to their widest title/option; suggestions stay full width. */
+    protected resolveContentWidth(): number {
+        const max = Math.max(24, Math.min(88, Number(this.maxWidth) || 88));
+        const min = Math.max(24, Math.min(max, Number(this.minWidth) || 28));
+        const longest = Math.max(
+            0,
+            getDisplayWidth(String(this.title || '')),
+            getDisplayWidth(String(this.hint || '')),
+            getDisplayWidth(String(this.meta || '')),
+            ...(this.options || []).map((option, index) =>
+                getDisplayWidth(`${index + 1}. ${option?.label ?? ''}`)
+                + (option?.description ? 2 + getDisplayWidth(String(option.description)) : 0))
+        );
+        return Math.max(min, Math.min(max, longest + 8));
+    }
 
     /** Windowed rows for renderers that paint real elements (browser). */
     get visibleOptions(): Array<{ index: number; label: string; value: string; description: string; selected: boolean; className: string }> {

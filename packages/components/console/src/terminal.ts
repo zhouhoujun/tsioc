@@ -2380,6 +2380,61 @@ export class TuiTerminalSurface {
     }
 
     /**
+     * Fold a standalone close row into the dialog's top border.
+     *
+     * The shared shell renders `.dialog-close` as its own right-aligned row, so
+     * every TUI modal spent a full content row on a lone ✕. Painting the glyph
+     * into the frame gives the panel a proper top-right affordance and returns
+     * that row to the body. The ✕ click target moves with the glyph.
+     */
+    protected foldDialogCloseRow(lines: string[], targets: TerminalClickTarget[]): TerminalClickTarget[] {
+        if (lines.length < 2 || !targets.length) {
+            return targets;
+        }
+        const topPlain = stripTerminalAnsi(lines[0] || '');
+        if (!/^\s*[╭┌]/.test(topPlain)) {
+            return targets;
+        }
+        const closeTarget = targets.find(target => {
+            const className = String((target.node as any)?.getAttribute?.('class') || '');
+            return target.height === 1 && /(?:^|\s)dialog-close(?:\s|$)/.test(className);
+        });
+        if (!closeTarget) {
+            return targets;
+        }
+        const closeRow = closeTarget.y;
+        if (closeRow < 1 || closeRow >= lines.length) {
+            return targets;
+        }
+        const label = String((closeTarget.node as any)?.textContent || '').trim();
+        // The row is framed, so compare the inner content (strip the vertical
+        // borders) against the close glyph.
+        const closeText = stripTerminalAnsi(lines[closeRow] || '')
+            .replace(/^[\s│┃║|]+|[\s│┃║|]+$/g, '');
+        if (!label || closeText !== label) {
+            return targets;
+        }
+        // Keep the frame's top-right corner intact; the glyph sits one cell in
+        // from it with an empty cell on either side so the notch reads as a
+        // deliberate badge rather than a broken border.
+        const lineWidth = getDisplayWidth(topPlain);
+        const glyphWidth = Math.max(1, Math.floor(closeTarget.width) || 1);
+        if (closeTarget.x < 1 || closeTarget.x + glyphWidth + 1 > lineWidth - 1) {
+            return targets;
+        }
+        lines[0] = overlayStyledLine(
+            lines[0],
+            lines[closeRow],
+            closeTarget.x - 1,
+            closeTarget.x + glyphWidth + 1
+        );
+        lines.splice(closeRow, 1);
+        return targets.map(target => target === closeTarget
+            ? { ...target, y: 0 }
+            : target.y > closeRow ? { ...target, y: target.y - 1 } : target);
+    }
+
+    /**
      * Paint toast rows over the transcript, bottom-aligned above the footer and
      * only across the toast's own columns, so the conversation stays readable
      * behind and beside it and the layout never shifts.
@@ -2457,6 +2512,11 @@ export class TuiTerminalSurface {
                 dialogLines.pop();
             }
         }
+        const dialogClickTargets = dialogRegion
+            ? (layout.clickTargets || []).filter(target => target.y >= dialogRegion.startRow && target.y < dialogRegion.endRow)
+                .map(target => ({ ...target, y: target.y - dialogRegion.startRow }))
+            : [];
+        const foldedClickTargets = this.foldDialogCloseRow(dialogLines, dialogClickTargets);
         const dialogHeight = dialogLines.length;
         const dialogBounds = resolveStyledColumnBounds(dialogLines);
         const dialogStartColumn = dialogBounds?.start ?? 0;
@@ -2467,10 +2527,6 @@ export class TuiTerminalSurface {
         const dialogShift = dialogWidth > 0
             ? Math.max(0, Math.floor((width - dialogWidth) / 2) - dialogStartColumn)
             : 0;
-        const dialogClickTargets = dialogRegion
-            ? (layout.clickTargets || []).filter(target => target.y >= dialogRegion.startRow && target.y < dialogRegion.endRow)
-                .map(target => ({ ...target, y: target.y - dialogRegion.startRow }))
-            : [];
         let allLines = layout.lines || [];
         let allRegions = layout.regions || [];
         let baseCursorTargets = (layout.cursorTargets || []).slice();
@@ -2517,7 +2573,7 @@ export class TuiTerminalSurface {
                 lines.splice(insertRow, 0, ...shiftedLines);
                 const clickTargets = result.clickTargets
                     .map(target => target.y >= insertRow ? { ...target, y: target.y + dialogHeight } : target)
-                    .concat(dialogClickTargets.map(target => ({ ...target, x: target.x + dialogShift, y: insertRow + target.y })));
+                    .concat(foldedClickTargets.map(target => ({ ...target, x: target.x + dialogShift, y: insertRow + target.y })));
                 const cursorTargets = result.cursorTargets
                     .map(target => target.row >= insertRow ? { ...target, row: target.row + dialogHeight } : target);
                 const sourceRows = result.sourceRows
@@ -2569,7 +2625,7 @@ export class TuiTerminalSurface {
             });
             const clickTargets = result.clickTargets
                 .filter(target => !(target.y >= start && target.y < start + dialogHeight))
-                .concat(dialogClickTargets.map(target => ({ ...target, x: target.x + dialogShift, y: start + target.y })));
+                .concat(foldedClickTargets.map(target => ({ ...target, x: target.x + dialogShift, y: start + target.y })));
             const lastPromptRow = (() => {
                 for (let row = lines.length - 1; row >= 0; row--) {
                     if (stripTerminalAnsi(lines[row] || '').trimStart().startsWith('>')) {

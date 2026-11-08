@@ -417,6 +417,17 @@ body {
     background: var(--agent-web-hover);
 }
 
+#agent-console .console-approvals-panel .approval-item[data-selected="true"] {
+    background: var(--agent-web-hover);
+    color: var(--agent-web-strong);
+    font-weight: 600;
+}
+
+/* Keyboard glyphs are a TUI affordance; the browser buttons carry labels only. */
+#agent-console .console-approvals-panel .approval-key {
+    display: none;
+}
+
 #agent-console .console-approvals-panel .approval-detail {
     color: var(--agent-web-muted);
     font-size: 12px;
@@ -1429,6 +1440,7 @@ html[data-agent-theme="high-contrast"] #agent-console .markdown-code-token[data-
     --console-selected:#d8a86f;
     --console-panel-bg:transparent;
     --console-dialog-bg:#161b22;
+    --console-select-selected-bg:#202a36;
     --console-error:#cf9893;
     --console-notice:#cdb06a;
     --console-busy:#c2a05e;
@@ -1516,6 +1528,7 @@ html[data-agent-theme="high-contrast"] #agent-console .markdown-code-token[data-
     --console-selected:#bc4c00;
     --console-panel-bg:transparent;
     --console-dialog-bg:#ffffff;
+    --console-select-selected-bg:#eef2f6;
     --console-error:#a40e26;
     --console-notice:#9a6700;
     --console-busy:#9a6700;
@@ -1603,6 +1616,7 @@ html[data-agent-theme="high-contrast"] #agent-console .markdown-code-token[data-
     --console-selected:#cb4b16;
     --console-panel-bg:transparent;
     --console-dialog-bg:#002b36;
+    --console-select-selected-bg:#073642;
     --console-error:#cb4b16;
     --console-notice:#b58900;
     --console-busy:#b58900;
@@ -1690,6 +1704,7 @@ html[data-agent-theme="high-contrast"] #agent-console .markdown-code-token[data-
     --console-selected:#ff9900;
     --console-panel-bg:transparent;
     --console-dialog-bg:#000000;
+    --console-select-selected-bg:#002b3d;
     --console-error:#ff8080;
     --console-notice:#ffdd00;
     --console-busy:#ffdd00;

@@ -62,8 +62,13 @@ export class P313ApprovalQuestionUxTest {
         expect(panel.approvalsTitleLabel).toContain('Allow terminal?');
         expect(panel.selectedApprovalRequestLabel).toEqual('$ npm test');
         expect(panel.selectedApprovalDetailLabel).toContain('Reason: Shell execution requires approval.');
-        expect(panel.approvalActionsLabel).toContain('a Allow');
-        expect(panel.approvalActionsLabel).toContain('d Deny');
+        // Decisions are rendered as keyed option rows (a/A/d); the hint only
+        // lists the secondary keys instead of repeating each decision.
+        expect(panel.allowOnceLabel).toEqual('Allow once');
+        expect(panel.allowAlwaysLabel).toContain('Always allow');
+        expect(panel.denyLabel).toEqual('Deny');
+        expect(panel.approvalActionsLabel).toContain('↑↓ Move');
+        expect(panel.approvalActionsLabel).toContain('Esc Deny');
     }
 
     @Test('question dialog states it awaits the user and offers a custom answer')

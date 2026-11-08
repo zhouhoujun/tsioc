@@ -833,6 +833,47 @@ export class AgentConsoleMessagesRendererTest {
         }
     }
 
+    @Test('closing a select menu repaints it away immediately')
+    async selectMenuCloseRepaints() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const consoleRef = tuiCtx.get(ComponentFactory).create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const state = consoleRef.instance.sessionState;
+            state.openSelectMenu('Security level', [
+                { label: 'Ask for approval', value: 'ask' },
+                { label: 'Full Access', value: 'full' }
+            ], 0, 'up/down move   enter confirm   esc close');
+            await settleDynamicMessages(consoleRef);
+            surface = new TuiTerminalSurface({
+                renderer: tuiCtx.get(TuiRenderer),
+                root: consoleRef.elementRef.nativeElement,
+                width: 100,
+                height: 30,
+                output: { write() { /* noop */ } }
+            });
+            surface.render();
+            const close = surface.clickTargets.find(target =>
+                /(?:^|\s)dialog-close(?:\s|$)/.test(String((target.node as any)?.getAttribute?.('class') || '')));
+            expect(close).toBeTruthy();
+            // Click through the real pointer path (1-based terminal cells).
+            surface.dispatchMouse({ button: 0, x: close!.x + 1, y: close!.y + 1, release: false });
+            surface.dispatchMouse({ button: 0, x: close!.x + 1, y: close!.y + 1, release: true });
+            await settleDynamicMessages(consoleRef);
+            expect(state.selectMenu).toBeUndefined();
+            // State alone is not enough: the old arrow callbacks wrote the raw
+            // state, so the panel stayed on screen until an unrelated repaint.
+            const visible = surface.lastRenderedLines.some(line => line.includes('Security level'));
+            expect(visible).toEqual(false);
+        } finally {
+            surface?.destroy();
+            await tuiCtx.close();
+        }
+    }
+
     @Test('command dialogs dock above the composer as a full-width box')
     async commandDialogFloatsAboveComposer() {
         const tuiCtx = await Application.run(AgentModule, {
@@ -861,13 +902,21 @@ export class AgentConsoleMessagesRendererTest {
             await Promise.resolve();
             const lines = surface.lastRenderedLines.map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
             const titleRow = lines.findIndex(line => line.includes('Security level'));
-            const boxRow = lines.findIndex(line => line.includes('╭') && line.includes('╮'));
+            const boxRow = titleRow - 1;
             const inputRow = lines.findIndex(line => line.includes('Ask code or files'));
             expect(boxRow).toBeGreaterThan(0);
             expect(titleRow).toBeGreaterThan(boxRow);
             expect(inputRow).toBeGreaterThan(titleRow);
-            // The menu spans the composer and attaches to its top edge.
-            expect(lines[boxRow].startsWith('╭')).toEqual(true);
+            // Blocking menus fit their content and centre in the viewport
+            // instead of spanning the whole terminal. Other chrome can share
+            // the overlay row, so inspect the frame from its own corner.
+            const leading = lines[boxRow].indexOf('╭');
+            const frame = lines[boxRow].slice(leading).trimEnd();
+            expect(leading).toBeGreaterThan(0);
+            expect(frame.startsWith('╭')).toEqual(true);
+            expect(frame.endsWith('╮')).toEqual(true);
+            expect(frame.length).toBeLessThan(120);
+            expect(Math.abs(leading - Math.floor((120 - frame.length) / 2))).toBeLessThanOrEqual(1);
             expect(lines.some(line => line.includes('up/down move'))).toBe(true);
         } finally {
             surface?.destroy();
@@ -1899,7 +1948,7 @@ export class AgentConsoleTuiRendererTest {
             const layout = renderer.renderToTuiLayout(consoleRef.hostView.rootNodes, { width: 72 });
             // The status panel also prints "Approval required: terminal (...)", so
             // match the panel's own action hint to prove the panel is in the menu overlay.
-            const approvalRow = layout.lines.findIndex(line => line.includes('Allow') && line.includes('Deny'));
+            const approvalRow = layout.lines.findIndex(line => line.includes('Esc Deny'));
             expect(approvalRow).toBeGreaterThanOrEqual(0);
             expect(layout.regions.some(region => region.id === 'menu'
                 && approvalRow >= region.startRow && approvalRow < region.endRow)).toEqual(true);
@@ -1957,9 +2006,9 @@ export class AgentConsoleTuiRendererTest {
                 await settleDynamicMessages(consoleRef);
             };
 
-            await click('Allow once');
-            await click('Always allow (session)');
-            await click('Deny');
+            await click('a  Allow once');
+            await click('A  Always allow (session)');
+            await click('d  Deny');
             expect(resolved).toEqual([
                 { decision: 'approve', requestId: 'approval-1' },
                 { decision: 'deny', requestId: 'approval-1' }

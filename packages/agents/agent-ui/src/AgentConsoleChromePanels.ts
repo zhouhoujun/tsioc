@@ -205,6 +205,7 @@ export class AgentConsoleActivityPanelComponent {
             :hint="menuHintText"
             :meta="menuMetaText"
             :detailLines="menuDetailLines"
+            :fitContent="menuFitContent"
             :accessibilityLabel="accessibilityLabel"
             @selectAction="selectOption"
             @closeAction="closeMenu"
@@ -234,9 +235,12 @@ export class AgentConsoleSelectPanelComponent {
 
     get menuHintText(): string { const menu = this.menu; return !menu || isAgentConsoleSuggestionMenu(menu) ? '' : (menu.hint || ''); }
 
+    /** Blocking menus fit their content; suggestion menus stay composer-wide. */
+    get menuFitContent(): boolean { return !!this.menu && !isAgentConsoleSuggestionMenu(this.menu); }
+
     get menuMetaText(): string { const menu = this.menu; if (!menu || isAgentConsoleSuggestionMenu(menu)) return ''; const window = resolveConsoleSelectWindow(menu.options.length, menu.selectedIndex, this.visibleOptionCount); return window.count < menu.options.length ? `${window.start + 1}-${window.start + window.count}/${menu.options.length}` : ''; }
 
-    closeMenu = async (): Promise<void> => { await this.state.cancelSelectMenu(); };
+    async closeMenu(): Promise<void> { await this.state.cancelSelectMenu(); }
 
     get menuOptions(): Array<{ label: string; value: string; description?: string }> {
         return (this.menu?.options || []).map(option => ({
@@ -284,18 +288,18 @@ export class AgentConsoleSelectPanelComponent {
         await this.selectOption(option.value);
     }
 
-    selectOption = async (value: string): Promise<void> => {
+    async selectOption(value: string): Promise<void> {
         await (this.selectAction || this.state.confirmSelectMenu.bind(this.state))(value);
-    };
+    }
 
-    onKeydown = async (event: KeyboardEvent): Promise<void> => {
+    async onKeydown(event: KeyboardEvent): Promise<void> {
         if (!this.menu) {
             return;
         }
         if (this.state.focusLayers.handleSelectKey(event.key)) {
             event.preventDefault?.();
         }
-    };
+    }
 }
 
 @Component({

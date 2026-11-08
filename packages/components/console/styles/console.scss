@@ -208,9 +208,11 @@ $idle: var(--console-idle, #6fa37a);
     color: $meta;
     padding: 0 1ch;
 }
+/* A quiet selected band: colour alone was too easy to miss in long menus. */
 .select-option.is-selected {
     color: $accent;
     font-weight: bold;
+    background: var(--console-select-selected-bg, #1f2937);
 }
 .tone-accent,
 .tone-link,
@@ -399,6 +401,8 @@ $idle: var(--console-idle, #6fa37a);
 .console-status-panel[data-tone="idle"] .status-line {
     color: var(--agent-theme-status-idle-value-color, #6fa37a);
 }
+/* A full-terminal permission frame reads as a wall of text; keep it
+   content-sized and centered like the other modals. */
 .console-approvals-panel {
     color: var(--agent-theme-dialog-shell-color, #d6dee6);
     background: var(--agent-theme-input-shell-background, var(--agent-theme-dialog-shell-background, #161b22));
@@ -406,6 +410,7 @@ $idle: var(--console-idle, #6fa37a);
     padding: var(--agent-theme-dialog-shell-padding, 0 2);
     border: var(--agent-theme-dialog-shell-border, 1px solid #30363d);
     border-radius: var(--agent-theme-dialog-shell-border-radius, 1);
+    max-width: 78ch;
 }
 .approval-title {
     color: var(--agent-theme-tools-accent-color, #86a9d6);
@@ -417,6 +422,10 @@ $idle: var(--console-idle, #6fa37a);
 .approval-item,
 .approval-detail {
     color: var(--agent-theme-status-value-color, #c9d1d9);
+}
+.approval-item[data-selected="true"] {
+    color: var(--agent-theme-tools-accent-color, #86a9d6);
+    font-weight: bold;
 }
 .approval-option-once,
 .approval-option-always {
@@ -648,6 +657,7 @@ $idle: var(--console-idle, #6fa37a);
     --console-selected:#d8a86f;
     --console-panel-bg:transparent;
     --console-dialog-bg:#161b22;
+    --console-select-selected-bg:#202a36;
     --console-error:#cf9893;
     --console-notice:#cdb06a;
     --console-busy:#c2a05e;
@@ -736,6 +746,7 @@ $idle: var(--console-idle, #6fa37a);
     --console-selected:#bc4c00;
     --console-panel-bg:transparent;
     --console-dialog-bg:#ffffff;
+    --console-select-selected-bg:#eef2f6;
     --console-error:#a40e26;
     --console-notice:#9a6700;
     --console-busy:#9a6700;
@@ -824,6 +835,7 @@ $idle: var(--console-idle, #6fa37a);
     --console-selected:#cb4b16;
     --console-panel-bg:transparent;
     --console-dialog-bg:#002b36;
+    --console-select-selected-bg:#073642;
     --console-error:#cb4b16;
     --console-notice:#b58900;
     --console-busy:#b58900;
@@ -912,6 +924,7 @@ $idle: var(--console-idle, #6fa37a);
     --console-selected:#ff9900;
     --console-panel-bg:transparent;
     --console-dialog-bg:#000000;
+    --console-select-selected-bg:#002b3d;
     --console-error:#ff8080;
     --console-notice:#ffdd00;
     --console-busy:#ffdd00;

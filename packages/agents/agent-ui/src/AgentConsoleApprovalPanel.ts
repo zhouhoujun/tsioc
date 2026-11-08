@@ -20,12 +20,12 @@ import { AgentConsoleTheme, AgentConsoleThemeStyles, defaultAgentConsoleTheme } 
     <div class="console-panel console-approvals-panel" role="dialog" aria-label="{{accessibilityLabel}}"><label class="dialog-close" data-cell-width="2" @click="closeApproval">✕</label>
         <label class="approval-title">{{approvalsTitleLabel}}</label>
         <label class="approval-summary" v-show="approvalsSummaryLabel">{{approvalsSummaryLabel}}</label>
-        <label class="approval-item" v-for="item in approvalItems" @click="selectApproval(item.id)">{{item.label}}</label>
+        <label class="approval-item" data-selected="{{item.selected}}" v-for="item in approvalItems" @click="selectApproval(item.id)">{{item.label}}</label>
         <label class="approval-detail" v-for="line in selectedApprovalRequestLines">{{line}}</label>
         <label class="approval-detail" v-for="line in selectedApprovalDetailLines">{{line}}</label>
-        <label class="approval-option approval-option-once" @click="approveSelected">{{allowOnceLabel}}</label>
-        <label class="approval-option approval-option-always" @click="approveAlwaysSelected">{{allowAlwaysLabel}}</label>
-        <label class="approval-option approval-option-deny" @click="denySelected">{{denyLabel}}</label>
+        <label class="approval-option approval-option-once" @click="approveSelected"><span class="approval-key" aria-hidden="true">a  </span>{{allowOnceLabel}}</label>
+        <label class="approval-option approval-option-always" @click="approveAlwaysSelected"><span class="approval-key" aria-hidden="true">A  </span>{{allowAlwaysLabel}}</label>
+        <label class="approval-option approval-option-deny" @click="denySelected"><span class="approval-key" aria-hidden="true">d  </span>{{denyLabel}}</label>
         <label class="approval-actions" v-show="approvalActionsLabel">{{approvalActionsLabel}}</label>
     </div>
     `
@@ -84,7 +84,7 @@ export class AgentConsoleApprovalsPanelComponent {
         return this.activeThemeStyles.statusValue;
     }
 
-    get approvalItems(): Array<{ id: string; label: string }> {
+    get approvalItems(): Array<{ id: string; label: string; selected: boolean }> {
         if (!this.shouldShow) {
             return [];
         }
@@ -92,6 +92,7 @@ export class AgentConsoleApprovalsPanelComponent {
             const selected = this.state.selectedApprovalId === request.id;
             return {
                 id: request.id,
+                selected,
                 label: `${selected ? '›' : ' '} ${request.toolName} (${request.id.slice(0, 8)})`
             };
         });
@@ -163,7 +164,7 @@ export class AgentConsoleApprovalsPanelComponent {
         if (!this.shouldShow || !this.approvals.length) {
             return '';
         }
-        return this.translate('agent.approval.actions', undefined, 'a Allow   d Deny   A Always allow (session)   y Copy   ↑↓ Move   Esc Dismiss');
+        return this.translate('agent.approval.actions', undefined, '↑↓ Move   y Copy   Esc Deny');
     }
 
     get selectedApprovalRequestLabel(): string {

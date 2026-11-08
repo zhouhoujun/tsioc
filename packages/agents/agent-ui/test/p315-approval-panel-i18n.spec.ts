@@ -90,7 +90,7 @@ export class ApprovalPanelI18nTest {
         // `A` approves every gated tool for the session (verified in a real TUI:
         // a terminal allow also auto-approved a later write_file), so the hint
         // must say so instead of reading as a per-tool switch.
-        expect(panel.approvalActionsLabel).toBe('a Allow   d Deny   A Always allow (session)   y Copy   ↑↓ Move   Esc Dismiss');
+        expect(panel.approvalActionsLabel).toBe('↑↓ Move   y Copy   Esc Deny');
         expect(panel.approvalsTitleLabel).toBe('Approval required · Allow delete_file?');
         expect(panel.selectedApprovalDetailLabel).toContain('Reason: requires approval');
         expect(panel.accessibilityLabel).toBe('Approvals. 1 pending. Selected: delete_file.');
