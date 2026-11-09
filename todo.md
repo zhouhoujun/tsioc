@@ -3299,3 +3299,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - viewport 新增 host 声明的 `footerBottomMargin`（lifecycle `resolveTerminalFooterBottomMargin`），agent-ui 返回 1：meta 行下保留一行空白，不再贴终端底边；scrollback 仍走原生滚屏。
   - 阻塞式选择菜单/审批/pending question/modal prompt 打开时保持 `prompt` 光标模式，方向键导航不再把光标压进弹窗或下一行。
   - 回归：components/console 156、agents/agent-ui 2014、components 148、common 59、html 135；真实 PTY（100×30、80×24，空会话与长回答）验证 meta 下一行留白、弹窗仍位于输入框上方、光标停在 prompt 行。
+- Web（`serve`/`/web`）命令子菜单键盘修复：
+  - 阻塞式选择菜单打开时 `input-field` 保持 `focused`，不再把 textarea blur 到 `<body>`；上下键因此能到达 console 并驱动菜单，而不是回忆输入历史。
+  - 菜单打开期间方向键优先给菜单（`handleSelectKey`），可打印字符不再漏进草稿；建议菜单（`/`、`@`）仍保持输入过滤。
+  - 回归：html-console 输入面板新增“阻塞菜单箭头优先且保持焦点”断言（旧实现失败）；真实 Chrome/Playwright 验证 `/theme` 下/上移动与 Esc 关闭、`/settings` → Keybinds 子菜单下移。

@@ -198,18 +198,35 @@ export class HtmlConsoleTest {
         expect(inputField?.selectionEnd).toEqual('second command'.length);
     }
 
-    @Test('input panel keeps arrow history navigation when a non-suggestion menu is open')
-    async inputPanelNavigatesHistoryWithOtherMenuOpen() {
+    @Test('input panel gives arrows to an open non-suggestion menu ahead of history')
+    async inputPanelMenuWinsOverHistory() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         const inputPanel = ref.hostView.query(AgentConsoleInputPanelComponent) as ComponentRef<AgentConsoleInputPanelComponent>;
         const inputField = inputPanel.hostView.rootNodes[0].querySelector('.agent-input') as HTMLTextAreaElement | null;
         ref.instance.sessionState.inputHistoryController.push('previous command');
         ref.instance.sessionState.setInput('draft', 0);
-        ref.instance.sessionState.selectMenu = { title: 'Sessions', options: [] } as any;
+        ref.instance.sessionState.selectMenu = {
+            title: 'Sessions',
+            options: [
+                { label: 'first', value: 'first' },
+                { label: 'second', value: 'second' }
+            ],
+            selectedIndex: 1
+        } as any;
         let prevented = false;
         await inputPanel.instance.onKeydown({ key: 'ArrowUp', code: 'ArrowUp', target: inputField, preventDefault() { prevented = true; } } as any);
         expect(prevented).toEqual(true);
-        expect(ref.instance.sessionState.input).toEqual('previous command');
+        // The open menu owns the arrows: no history recall, selection moves.
+        expect(ref.instance.sessionState.input).toEqual('draft');
+        expect(ref.instance.sessionState.selectMenu?.selectedIndex).toEqual(0);
+        // The composer keeps DOM focus while the menu is open, otherwise the
+        // browser drops arrow keys on <body>.
+        expect(inputPanel.instance.inputFocused).toEqual(true);
+        // Printable keys do not leak into the draft behind a blocking menu.
+        let typed = false;
+        await inputPanel.instance.onKeydown({ key: 'x', code: 'KeyX', target: inputField, preventDefault() { typed = true; } } as any);
+        expect(typed).toEqual(true);
+        expect(ref.instance.sessionState.input).toEqual('draft');
     }
 
     @Test('input panel leaves arrow keys to an open suggestion menu')

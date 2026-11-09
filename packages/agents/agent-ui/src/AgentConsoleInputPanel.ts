@@ -122,7 +122,10 @@ export class AgentConsoleInputPanelComponent {
     }
 
     get inputFocused(): boolean {
-        return this.state?.inputFocused !== false;
+        // A select menu overlays the composer, but the textarea must keep DOM
+        // focus so arrows/Enter still reach the console. A blurred textarea
+        // would drop them on <body> and the menu could not be navigated.
+        return this.state?.inputFocused !== false || !!this.state?.selectMenu;
     }
 
     get shellStyle() {
@@ -275,8 +278,7 @@ export class AgentConsoleInputPanelComponent {
 
     async onKeydown(event: KeyboardEvent): Promise<void> {
         const key = String(event?.key || event?.code || '');
-        if ((key === 'ArrowUp' || key === 'ArrowDown')
-            && !(this.state?.selectMenu && isAgentConsoleSuggestionMenu(this.state.selectMenu))) {
+        if ((key === 'ArrowUp' || key === 'ArrowDown') && !this.state?.selectMenu) {
             const handled = this.state?.inputHistoryController.navigate(key === 'ArrowUp' ? -1 : 1);
             if (handled) {
                 this.syncTextareaState(event.target as HTMLTextAreaElement | null);
@@ -311,6 +313,15 @@ export class AgentConsoleInputPanelComponent {
                 return;
             }
             if (this.state.focusLayers.handleSelectKey(event.key)) {
+                event.preventDefault?.();
+                return;
+            }
+            // The blocking menu owns the keyboard; printable keys must not slip
+            // into the draft now that the textarea keeps DOM focus. Suggestion
+            // menus stay out of this branch because typing filters them.
+            if (!isAgentConsoleSuggestionMenu(this.state.selectMenu)
+                && !event.ctrlKey && !event.metaKey && !event.altKey
+                && key.length === 1) {
                 event.preventDefault?.();
                 return;
             }
