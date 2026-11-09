@@ -43,7 +43,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/archetype', description: 'switch session archetype: /archetype [build|plan|review|name]', group: 'core', args: [{ name: 'name' }] },
     { name: '/plan', description: 'toggle read-only plan mode (write tools denied)', group: 'core', args: [{ name: 'mode', type: 'enum', values: ['on', 'off', '1', '0', 'true', 'false'] }] },
 
-    { name: '/sessions', description: 'sessions', group: 'session' },
+    { name: '/sessions', description: 'browse or search sessions (type to filter)', group: 'session' },
     { name: '/session', description: 'focus or switch session: /session [<id>]', group: 'session', args: [{ name: 'id' }] },
     { name: '/new', description: 'start a new session: /new [<id>]', group: 'session', args: [{ name: 'id' }] },
     { name: '/resume', description: 'resume an existing or archived session', group: 'session' },

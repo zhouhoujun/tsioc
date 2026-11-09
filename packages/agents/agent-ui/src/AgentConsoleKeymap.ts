@@ -41,6 +41,8 @@ export const AGENT_CONSOLE_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalActi
     'ctrl+x u': 'undo',
     'ctrl+x r': 'redo',
     'ctrl+x l': 'sessions',
+    /** opencode-style direct picker: opens the searchable session list. */
+    'ctrl+o': 'sessions',
     'ctrl+x t': 'toggle-thinking',
     'ctrl+x shift+t': 'theme',
     'ctrl+x m': 'model',

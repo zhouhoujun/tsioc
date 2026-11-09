@@ -805,6 +805,13 @@ export class AgentConsoleWhichKeyTest {
         expect(keymap.effectiveBindings('global')['ctrl+alt+k']).toEqual('which-key-toggle');
     }
 
+    @Test('ctrl+o opens the searchable session picker like opencode')
+    ctrlOOpensSessions() {
+        const keymap = new AgentConsoleKeymap();
+        expect(keymap.resolve('ctrl+o', 'global')).toEqual('sessions');
+        expect(keymap.effectiveBindings('global')['ctrl+o']).toEqual('sessions');
+    }
+
     @Test('TUI Alt+Ctrl+K sequence decodes to ctrl+alt+k')
     tuiDecodesAltCtrlK() {
         const { component } = createKeymapConsoleParts();
