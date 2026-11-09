@@ -3280,3 +3280,4 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 回归：agents/agent-ui 2011、components/console 154、components/common 50、tsc、build:web、DOM/TUI gate、source-size、diff-check 通过。
 - toast/会话提示改造后全量 gate：agents/components/tsc/web/DOM/TUI/metrics/source-size/production DB 全部通过；`diff-check` 唯一失败来自工作区外部未提交的 `packages/oidc-auth/src/auth/OIDCService.ts` EOF 空行，不是本轮改动。
 - 真实 `survey-system` 构建：10 passing / 0 failing；toast 审批提示、CJK 换行、会话筛选标题均已复核。
+- Web 真实 `serve` 冒烟（127.0.0.1:3417，独立 root）：`/` 200、`/rpc session.list` 正常返回、静态资源可加载；health 受 token 保护返回 401 符合鉴权契约。
