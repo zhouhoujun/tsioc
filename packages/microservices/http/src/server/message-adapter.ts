@@ -268,14 +268,15 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
         const res = this._response;
         if (!res) return;
 
-        const hdrs = headers ?? this.getResponseHeaderNames().reduce((acc, name) => {
-            const v = this.getResponseHeader(name);
-            if (!isNil(v)) acc[name] = v;
-            return acc;
-        }, {} as Record<string, Header>);
-
-        for (const [name, value] of Object.entries(hdrs)) {
-            if (!isNil(value) && !res.headersSent) res.setHeader(name, value as any);
+        if (headers) {
+            for (const name of Object.keys(headers)) {
+                const value = headers[name];
+                if (!isNil(value) && !res.headersSent) res.setHeader(name, value as any);
+            }
+        } else if (!res.headersSent && this.responseHeaders.size) {
+            for (const [name, value] of this.responseHeaders) {
+                if (!isNil(value)) res.setHeader(name, value as any);
+            }
         }
 
         const ct = this.getResponseHeader('content-type') ?? this.context?.get(CONTENT_TYPE);
@@ -298,7 +299,8 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
         if (!res) return;
 
         this.sendHeaders();
-        const payload = !isNil(this.getBody()) ? this.getBody() : response === this ? undefined : response;
+        const body = this.getBody();
+        const payload = !isNil(body) ? body : response === this ? undefined : response;
 
         if (isNil(payload)) {
             if (isNil(this.status) && !res.headersSent) {

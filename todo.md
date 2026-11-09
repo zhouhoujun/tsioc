@@ -3286,3 +3286,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `/sessions` 描述改为 `browse or search sessions (type to filter)`；标题显示过滤值。
   - 真实 TUI 验证 `ctrl+o` 打开 158 条会话列表；回归 keymap 68、agent-ui 2012 passing。
 - `ctrl+o` 会话搜索入口后全量 gate：26 passed、1 skipped、0 failed（agents 10 包、components 4 包、tsc、web、DOM/TUI、metrics、diff-check、source-size、production DB）。
+- 微服务 HTTP 热路径优化（2026-11-09，真实 keep-alive HTTP 压测）：
+  - 请求入口：`HttpServer.handleRequest` 移除每请求 3 个 header 闭包分配，改为共享函数；URL 只扫描一次 `?`，query 解析改为无 `split/forEach` 的线性扫描，纯文本 key/value 跳过 `decodeURIComponent`；缓存 `HttpMessageAdapterFactory` DI 查询。
+  - 响应写出：`HttpMessageAdapter.sendHeaders` 直接遍历响应头 Map，去掉 `getResponseHeaderNames -> reduce -> Object.entries` 的中间数组/对象；`sendResponse` 只读取一次 body。
+  - 路由：`OptimizedRouter` 增加 method+url 的命中路由缓存（microservice 多 handler 数组同样缓存），`use/unuse` 失效；无路径参数的静态路由不再查询参数缓存。
+  - 结果链：`RouteHandler` 对同步普通返回值直接 `of(result)`，避免无意义的 `mergeMap`；Observable/Promise/ResultValue 仍保持原展平语义。
+  - handler 就绪：`ConfigableHandler.canHandle` 只 await 一次 `injector.ready`，后续请求不再产生每请求微任务（injector ready 为一次性 promise）。
+  - 实测：同一进程单核 `taskset -c 2`、keep-alive、并发 20、每轮 10000 请求、7 轮取稳定中位数；基线与优化后交替运行 3 组，稳定中位数为 4122/4234/5891 vs 4364/4582/6116 req/s（约 +3.8% ~ +8.2%，取保守结论约 5–8%；机器负载波动明显，未宣称更高收益）。
+  - 回归：core 130、microservices/service 45、http 36、client 72、transport 51、tcp 65、ws 88、oidc-auth 54 全部通过；core/service tsc 通过；`git diff --check` 通过。

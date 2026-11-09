@@ -13,6 +13,8 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
 
     private trieRouter: TrieRouter;
     private cache: Map<string, TrieRoute | null> = new Map();
+    private matchCache: Map<string, Route | null> = new Map();
+    private microMatchCache: Map<string, Route[] | null> = new Map();
     private params: Map<string, Map<string, Record<string, string>>> = new Map();
     private regExps: Map<RegExp, Route> = new Map();
     private regCache: Map<string, Route> = new Map();
@@ -51,6 +53,8 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     use(route: Route): this;
     use(route: Pattern, handler: RouteHanlder, callback?: (route: Route) => void): this;
     use(arg: Route | Pattern, handler?: RouteHanlder, callback?: (route: Route) => void): this {
+        this.matchCache.clear();
+        this.microMatchCache.clear();
         let route: Route;
         if (handler) {
             route = {
@@ -113,6 +117,8 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
 
     unuse(route: Route): this {
         this.trieRouter.remove(route);
+        this.matchCache.clear();
+        this.microMatchCache.clear();
         const keys: string[] = [];
         this.cache.forEach((v, k) => {
             if (v && v.has(route)) {
@@ -343,11 +349,20 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         }
 
         if (this.microservice) {
-            const routes = trieRoute.filter(req.method);
-            if (!routes.length) return;
+            const method = req.method || '*';
+            const matchKey = `${method}\u0000${url}`;
+            let routes = this.microMatchCache.get(matchKey);
+            if (routes === undefined) {
+                const found = trieRoute.filter(req.method);
+                routes = found.length ? found : null;
+                if (routes) {
+                    this.microMatchCache.set(matchKey, routes);
+                }
+            }
+            if (!routes?.length) return;
             if (routes.length == 1) {
                 const route = routes[0];
-                if (route) this.initPaths(req, route, url, parts, req.method || '*')
+                if (route) this.initPaths(req, route, url, parts, method)
                 return route;
             }
             if (routes.length > 1) {
@@ -356,7 +371,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
                 }
                 const handles = routes.map(route => {
                     return (input: ReadableLike<Incoming>, context?: RequestContext) => {
-                        this.initPaths(input, route, url, parts, req.method);
+                        this.initPaths(input, route, url, parts, method);
                         if (!route.handle) {
                             route.handle = this.parse(route)!;
                         }
@@ -370,13 +385,27 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             }
         }
 
-        const route = trieRoute.find(req.method);
-        if (route) this.initPaths(req, route, url, parts, req.method || '*')
-        return route;
+        const method = req.method || '*';
+        const matchKey = `${method}\u0000${url}`;
+        let route = this.matchCache.get(matchKey);
+        if (route === undefined) {
+            const found = trieRoute.find(req.method);
+            if (found) {
+                route = found;
+                this.matchCache.set(matchKey, route);
+            } else {
+                route = null;
+            }
+        }
+        if (route) this.initPaths(req, route, url, parts, method)
+        return route ?? undefined;
     }
 
 
     private initPaths(req: ReadableLike<Incoming>, route: Route, url: string, parts?: string[], method?: string) {
+        if (!route?.pathParams) {
+            return;
+        }
         const params = method ? this.params.get(url)?.get(method) : undefined;
 
         if (params) {
@@ -404,6 +433,8 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         this.regCache.clear();
         this.regExps.clear();
         this.cache.clear();
+        this.matchCache.clear();
+        this.microMatchCache.clear();
         this.params.clear();
         this.assets = [];
         this._routes = [];

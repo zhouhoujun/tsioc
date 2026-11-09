@@ -1,7 +1,7 @@
 import { Injector, Invocation, toObservable } from '@tsdi/ioc';
 import { ResultValue } from '@tsdi/core';
 import { MessageAdapter, RequestHandler, RequestContext, ReadableLike, Incoming, RestfulRequestAdapter, StatusMessageAdapter, REQUEST } from '@tsdi/common';
-import { catchError, mergeMap, Observable, throwError, timeout } from 'rxjs';
+import { catchError, isObservable, mergeMap, Observable, of, throwError, timeout } from 'rxjs';
 import { ApiRateLimiter } from '../interceptors/ratelimiter';
 import { ApiRateLimitOptions, ServiceOptions } from '../options';
 import { SERV_OPTIONS } from '../tokens';
@@ -56,11 +56,20 @@ export class RouteHandler implements RequestHandler {
             } as any)
             : this.invocation.invoke(this.propertyKey, context);
 
-        let stream = toObservable(result).pipe(
-            mergeMap(value => {
-                return toObservable(value instanceof ResultValue ? value.sendValue(context as any) : value);
-            })
-        );
+        let stream: Observable<any>;
+        if (result instanceof ResultValue) {
+            stream = toObservable(result).pipe(
+                mergeMap((value: any) => toObservable(value.sendValue(context as any)))
+            );
+        } else if (isObservable(result) || (result && typeof result.then === 'function')) {
+            stream = toObservable(result).pipe(
+                mergeMap((value: any) => value instanceof ResultValue
+                    ? toObservable(value.sendValue(context as any))
+                    : toObservable(value))
+            );
+        } else {
+            stream = of(result);
+        }
 
         // Apply timeout
         const timeoutMs = this.resolveTimeout();

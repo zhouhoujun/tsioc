@@ -20,6 +20,31 @@ type HttpRequestLike = http.IncomingMessage | http2.Http2ServerRequest;
 type HttpResponseLike = http.ServerResponse | http2.Http2ServerResponse;
 type HttpServerLike = http.Server | https.Server | http2.Http2Server | http2.Http2SecureServer;
 
+function readRequestHeader(this: HttpRequestMessage, name: string): string | undefined {
+    const headers = this.headers;
+    const value = headers?.[name.toLowerCase()] ?? headers?.[name as keyof typeof headers];
+    return Array.isArray(value) ? String(value[0]) : value == null ? undefined : String(value);
+}
+
+function hasRequestHeader(this: HttpRequestMessage, name: string): boolean {
+    return readRequestHeader.call(this, name) != null;
+}
+
+function requestHeaderNames(this: HttpRequestMessage): string[] {
+    return Object.keys(this.headers ?? {});
+}
+
+function decodeQueryPart(value: string): string {
+    if (value.indexOf('%') === -1) {
+        return value;
+    }
+    try {
+        return decodeURIComponent(value);
+    } catch {
+        return value;
+    }
+}
+
 @Injectable()
 export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, RequestContext> {
 
@@ -31,6 +56,7 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     private destroy$: Subject<void>;
     private activeConnections: Set<net.Socket> = new Set();
     private activeHttp2Sessions: Set<http2.ServerHttp2Session> = new Set();
+    private adapterFactory?: HttpMessageAdapterFactory;
 
     constructor(
         readonly handler: ServiceHandler<TReq, TRes, RequestContext>,
@@ -185,25 +211,24 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
     private handleRequest(req: HttpRequestLike, res: HttpResponseLike) {
         const rawUrl = this.getRequestUrl(req);
-        const url = this.getRequestPath(rawUrl);
+        const queryStart = rawUrl.indexOf('?');
+        const url = queryStart === -1 ? rawUrl : (rawUrl.slice(0, queryStart) || '/');
         const method = this.getRequestMethod(req);
         const request = req as HttpRequestMessage;
         request.rawRequest = req;
         request.rawUrl = rawUrl;
         request.url = url;
         request.body = null;
-        request.query = this.parseQuery(rawUrl);
-        request.getHeader = (name: string) => {
-            const value = req.headers?.[name.toLowerCase()] ?? req.headers?.[name as keyof typeof req.headers];
-            return Array.isArray(value) ? String(value[0]) : value == null ? undefined : String(value);
-        };
-        request.hasHeader = (name: string) => request.getHeader(name) != null;
-        request.getHeaderNames = () => Object.keys(req.headers ?? {});
+        request.query = this.parseQuery(rawUrl, queryStart);
+        request.getHeader = readRequestHeader;
+        request.hasHeader = hasRequestHeader;
+        request.getHeaderNames = requestHeaderNames;
         const context = createRequestContext(this.injector, [
             [REQUEST, request],
             [HTTP_RESPONSE, res],
         ]);
-        const adapter = this.injector.get(HttpMessageAdapterFactory).create({ request, response: res, context });
+        const factory = this.adapterFactory ?? (this.adapterFactory = this.injector.get(HttpMessageAdapterFactory));
+        const adapter = factory.create({ request, response: res, context });
         context.setMessageAdapter(adapter);
         context.set(HttpMessageAdapter, adapter);
         context.set(RestfulRequestAdapter, adapter);
@@ -270,22 +295,29 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         return req.url || '/';
     }
 
-    private getRequestPath(rawUrl: string): string {
-        return rawUrl.split('?', 1)[0] || '/';
-    }
-
-    private parseQuery(rawUrl: string): Record<string, string> {
-        const queryText = rawUrl.split('?', 2)[1];
+    private parseQuery(rawUrl: string, queryStart: number): Record<string, string> {
         const query: Record<string, string> = {};
-        if (!queryText) {
+        if (queryStart < 0) {
             return query;
         }
-        queryText.split('&').forEach(entry => {
-            if (!entry) return;
-            const [key, value = ''] = entry.split('=', 2);
-            if (!key) return;
-            query[decodeURIComponent(key)] = decodeURIComponent(value);
-        });
+        const length = rawUrl.length;
+        let index = queryStart + 1;
+        while (index < length) {
+            let end = rawUrl.indexOf('&', index);
+            if (end < 0) {
+                end = length;
+            }
+            if (end > index) {
+                const entry = rawUrl.slice(index, end);
+                const eq = entry.indexOf('=');
+                const key = eq < 0 ? entry : entry.slice(0, eq);
+                if (key) {
+                    const value = eq < 0 ? '' : entry.slice(eq + 1);
+                    query[decodeQueryPart(key)] = decodeQueryPart(value);
+                }
+            }
+            index = end + 1;
+        }
         return query;
     }
 

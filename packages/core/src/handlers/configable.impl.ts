@@ -24,6 +24,7 @@ export class ConfigableHandler<
     private chains: Map<AbstractType | string, InterceptorFn<TInput, TOutput, TContext> | null>;
 
     private _guards?: GuardLike[] | null;
+    private readyResolved = false;
 
     get ready() {
         return this.injector.ready;
@@ -123,7 +124,10 @@ export class ConfigableHandler<
     }
 
     protected async canHandle(input: TInput, context: TContext): Promise<boolean> {
-        if (this.onReady) await this.onReady();
+        if (!this.readyResolved && this.onReady) {
+            await this.onReady();
+            this.readyResolved = true;
+        }
 
         if (this._guards === undefined) {
             this._guards = this.getGuards() ?? null;
