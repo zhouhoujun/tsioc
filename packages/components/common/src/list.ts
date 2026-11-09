@@ -123,7 +123,15 @@ export class ListComponent {
     @Attribute() ariaLabel = 'List';
     @Attribute() loadPage?: ListLoader;
     @Attribute() selectAction?: (item: ListEntry) => void;
+    /** Load the first page when the component mounts empty. */
+    @Attribute() autoLoad = false;
     protected readonly pager = new ListPager<ListEntry>();
+
+    onInit(): void {
+        if (this.autoLoad && !this.items.length && this.loadPage) {
+            void this.loadMore();
+        }
+    }
 
     /** Called by a renderer/scroll adapter when the last row becomes visible. */
     onReachEnd(): void {

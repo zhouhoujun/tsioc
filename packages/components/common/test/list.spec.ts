@@ -50,6 +50,17 @@ export class ListTest {
         expect(failing.loading).toEqual(false);
     }
 
+    @Test('component can load its first page on mount')
+    async componentAutoLoadsFirstPage() {
+        const component = new ListComponent();
+        component.autoLoad = true;
+        component.loadPage = async () => ({ items: [item('a'), item('b')], hasMore: true });
+        component.onInit();
+        await new Promise(resolve => setTimeout(resolve, 0));
+        expect(component.items.map(entry => entry.id)).toEqual(['a', 'b']);
+        expect(component.hasMore).toEqual(true);
+    }
+
     @Test('component drives the same paging contract and selects rows')
     async componentPaging() {
         const component = new ListComponent();
