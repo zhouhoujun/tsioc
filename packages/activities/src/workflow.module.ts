@@ -1,6 +1,8 @@
 import { Module } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { ComponentsModule } from '@tsdi/components';
+import { BaseComponentsModule } from '@tsdi/components/common';
+import { FormsModule } from '@tsdi/components/forms';
 import { RunAspect } from './aop/RunAspect';
 import { ActivityInterceptorService, ActivityLogAspect, ActivityDebugService } from './aop';
 import { WorkflowService } from './services/workflow.service';
@@ -13,7 +15,20 @@ import {
     EmitActivity, WaitActivity, BatchActivity, MergeActivity, SplitActivity,
     CodeActivity, SubProcessActivity, HttpRequestActivity
 } from './activities';
-import { VisualWorkflowService, VisualWorkflowBuilder } from './visual';
+import {
+    VisualWorkflowService,
+    VisualWorkflowBuilder,
+    WorkflowNodeRegistry,
+    WorkflowDesignerI18nModule,
+    WorkflowToolbarComponent,
+    WorkflowPaletteComponent,
+    WorkflowCanvasComponent,
+    WorkflowInspectorComponent,
+    WorkflowRunHistoryComponent,
+    WorkflowRunLogComponent,
+    WorkflowLibraryComponent,
+    WorkflowDesignerComponent
+} from './visual';
 
 
 
@@ -25,7 +40,10 @@ import { VisualWorkflowService, VisualWorkflowBuilder } from './visual';
 @Module({
     imports: [
         AopModule,
-        ComponentsModule
+        ComponentsModule,
+        BaseComponentsModule,
+        FormsModule,
+        WorkflowDesignerI18nModule
     ],
     providers: [
         WorkflowService,
@@ -34,7 +52,8 @@ import { VisualWorkflowService, VisualWorkflowBuilder } from './visual';
         ActivityLogAspect,
         ActivityDebugService,
         VisualWorkflowService,
-        VisualWorkflowBuilder
+        VisualWorkflowBuilder,
+        WorkflowNodeRegistry
     ],
     declarations: [
         StartActivity,
@@ -68,11 +87,22 @@ import { VisualWorkflowService, VisualWorkflowBuilder } from './visual';
         SplitActivity,
         CodeActivity,
         SubProcessActivity,
-        HttpRequestActivity
+        HttpRequestActivity,
+        WorkflowToolbarComponent,
+        WorkflowPaletteComponent,
+        WorkflowCanvasComponent,
+        WorkflowInspectorComponent,
+        WorkflowRunHistoryComponent,
+        WorkflowRunLogComponent,
+        WorkflowLibraryComponent,
+        WorkflowDesignerComponent
     ],
     exports: [
         AopModule,
         ComponentsModule,
+        BaseComponentsModule,
+        FormsModule,
+        WorkflowDesignerI18nModule,
         StartActivity,
         EndActivity,
         ConfirmActivity,
@@ -107,6 +137,15 @@ import { VisualWorkflowService, VisualWorkflowBuilder } from './visual';
         HttpRequestActivity,
         VisualWorkflowService,
         VisualWorkflowBuilder,
+        WorkflowNodeRegistry,
+        WorkflowToolbarComponent,
+        WorkflowPaletteComponent,
+        WorkflowCanvasComponent,
+        WorkflowInspectorComponent,
+        WorkflowRunHistoryComponent,
+        WorkflowRunLogComponent,
+        WorkflowLibraryComponent,
+        WorkflowDesignerComponent,
         ActivityInterceptorService,
         ActivityLogAspect,
         ActivityDebugService

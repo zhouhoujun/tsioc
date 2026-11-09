@@ -1,0 +1,12 @@
+{
+    "extends": "../../../tsconfig.json",
+    "compilerOptions": {
+        "rootDir": "../../..",
+        "declaration": false,
+        "sourceMap": false,
+        "noEmitOnError": false,
+        "skipLibCheck": true,
+        "types": ["node"]
+    },
+    "files": ["main.ts"]
+}

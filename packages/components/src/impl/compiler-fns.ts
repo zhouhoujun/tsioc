@@ -37,6 +37,13 @@ function resolveNodeTagName(node: RElement): string {
     return ((node as any).localName || node.tagName || '') as string;
 }
 
+const XHTML_NAMESPACE = 'http://www.w3.org/1999/xhtml';
+
+function resolveNodeNamespace(node: RElement): string | undefined {
+    const namespace = (node as unknown as { namespaceURI?: string }).namespaceURI;
+    return namespace && namespace !== XHTML_NAMESPACE ? namespace : undefined;
+}
+
 const outputSubscriptions = new WeakMap<object, Map<string, Subscription>>();
 const outputSubscriptionCleanup = new WeakSet<object>();
 const compiledExpressionCache = new Map<string, CompiledExpression>();
@@ -163,6 +170,7 @@ export function compileElementToFactory(
     rendererOptions: RendererOptions
 ): Rendering<RElement> {
     const tagName = resolveNodeTagName(node);
+    const namespace = resolveNodeNamespace(node);
     const attrs = renderer.getAttributes(node);
     const bindings = node[BINDINGS] || [];
     const directives = node[DIRECTIVES] || [];
@@ -198,7 +206,7 @@ export function compileElementToFactory(
     // 返回元素工厂函数
     return (renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => {
         // 创建元素
-        const element = renderer.createElement(tagName);
+        const element = renderer.createElement(tagName, namespace);
         assignLocalRefs(element, attrs, injector);
         // Copy nodeType from original node to preserve ElementContainer flag (only for virtual DOM)
         try {
@@ -304,6 +312,7 @@ export function compileComponentToFactory(
             && !hasDelimiter(value, delimiter))
         .map(attr => compileAttributeToFactory(attr));
     const tagName = resolveNodeTagName(node);
+    const namespace = resolveNodeNamespace(node);
     const directives = node[DIRECTIVES] || [];
     const hostBindingCount = attrs.filter(({ name, value }) =>
         name.startsWith('@')
@@ -325,7 +334,7 @@ export function compileComponentToFactory(
 
     return (renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => {
         // 创建元素
-        const element = renderer.createElement(tagName);
+        const element = renderer.createElement(tagName, namespace);
         assignLocalRefs(element, attrs, injector);
         try {
             element.nodeType = node.nodeType;
@@ -415,6 +424,7 @@ export function compileTemplateToFactory(
 ): (renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => RElement | null {
     const compiledAttrs = attrs.map(attr => compileAttributeToFactory(attr));
     const tagName = resolveNodeTagName(node);
+    const namespace = resolveNodeNamespace(node);
     const childNodes = node.childNodes || [];
     const childFactories: Array<(renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => RNode | null> = [];
 
@@ -426,7 +436,7 @@ export function compileTemplateToFactory(
 
     return (renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => {
         // 创建元素
-        const element = renderer.createElement(tagName);
+        const element = renderer.createElement(tagName, namespace);
         assignLocalRefs(element, attrs, injector);
         try {
             element.nodeType = NodeType.Template;
@@ -896,10 +906,20 @@ export function bindingProperty(element: RNode, attrName: string, expr: string, 
     binding(element, (target: RNode, context: any, effect: ReactiveEffect<any>, injector: NodeInjector) => {
         if (injector.destroyed) return;
         const el = target as RElement;
-        if (!el.setProperty) return;
+        // `style`/`class` are owned by their dedicated directives. Native DOM
+        // elements do not expose the console renderer's `setProperty`, so fall
+        // back to the active Renderer for properties such as `value`,
+        // `checked`, `selected` and `disabled`.
+        if (propName === 'style' || propName === 'class') {
+            return;
+        }
         effect.run(() => {
             const attValue = evaluateExpression(expr, context, injector, delimiter);
-            el.setProperty!(propName, attValue);
+            if (typeof el.setProperty === 'function') {
+                el.setProperty(propName, attValue);
+            } else {
+                renderer.setProperty(el, propName, attValue);
+            }
         });
         return () => el.removeAttribute(propName);
     });
@@ -1207,7 +1227,7 @@ export function bindingDirective(node: RNode, dirDef: DirectiveDef, selectors: s
  */
 export function processConditionalBinding(el: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], renderer: Renderer, delimiter: RegExp): void {
     const parent = renderer.parentNode(el);
-    const container = createContainer(renderer, dirDef.selector);
+    const container = createContainer(renderer, dirDef.selector, parent ?? undefined);
     container[BINDINGS] = [];
 
     if (parent) {
@@ -1234,10 +1254,10 @@ export function processConditionalBinding(el: RNode, dirDef: DirectiveDef, selec
  * @param delimiter 分隔符正则表达式
  */
 export function processIterableBinding(el: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], renderer: Renderer, delimiter: RegExp): void {
-    const container = createContainer(renderer, dirDef.selector);
+    const parent = renderer.parentNode(el);
+    const container = createContainer(renderer, dirDef.selector, parent ?? undefined);
     container[BINDINGS] = [];
 
-    const parent = renderer.parentNode(el);
     if (parent) {
         renderer.insertBefore(parent, container, el);
         renderer.removeChild(parent, el);
@@ -1515,7 +1535,13 @@ function resolveScopeContext(target: any, prop: string): any {
  * @param text 文本内容
  * @returns 容器元素
  */
-export function createContainer(renderer: Renderer, text?: string): RElement {
+export function createContainer(renderer: Renderer, text?: string, parent?: RNode): RElement {
+     const namespace = (parent as unknown as { namespaceURI?: string })?.namespaceURI;
+     if (namespace === 'http://www.w3.org/2000/svg') {
+         const container = renderer.createElement('g', namespace);
+         renderer.setAttribute(container, 'data-v-container', '');
+         return container;
+     }
      const container = renderer.createElement('v-container');
      try {
          container.nodeType = NodeType.ElementContainer;

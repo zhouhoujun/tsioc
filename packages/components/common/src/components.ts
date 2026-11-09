@@ -21,6 +21,9 @@ import { StatusListComponent } from './status-list';
 import { MessageRowComponent } from './message-row';
 import { DetailPanelComponent } from './detail-panel';
 import { InputFieldComponent } from './input-field';
+import { WorkspaceLayoutComponent } from './workspace-layout';
+import { GridLayoutComponent, GridItemComponent } from './grid-layout';
+import { ThemeService } from './theme';
 
 interface ProjectionNode extends RNode {
     tagName?: string;
@@ -103,7 +106,8 @@ export class PanelComponent {
 }
 
 @Module({
-    declarations: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, AlertDialogComponent, ToastStackComponent, SelectComponent, ListPanelComponent, ListComponent, KeymapPanelComponent, StatusListComponent, MessageRowComponent, DetailPanelComponent, InputFieldComponent],
-    exports: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, AlertDialogComponent, ToastStackComponent, SelectComponent, ListPanelComponent, ListComponent, KeymapPanelComponent, StatusListComponent, MessageRowComponent, DetailPanelComponent, InputFieldComponent]
+    providers: [ThemeService],
+    declarations: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, AlertDialogComponent, ToastStackComponent, SelectComponent, ListPanelComponent, ListComponent, KeymapPanelComponent, StatusListComponent, MessageRowComponent, DetailPanelComponent, InputFieldComponent, WorkspaceLayoutComponent, GridLayoutComponent, GridItemComponent],
+    exports: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, AlertDialogComponent, ToastStackComponent, SelectComponent, ListPanelComponent, ListComponent, KeymapPanelComponent, StatusListComponent, MessageRowComponent, DetailPanelComponent, InputFieldComponent, WorkspaceLayoutComponent, GridLayoutComponent, GridItemComponent]
 })
 export class BaseComponentsModule {}

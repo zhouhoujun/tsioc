@@ -404,8 +404,185 @@ type VisualNodeType =
     | 'switch'     // Switch node
     | 'trycatch'   // Exception handling node
     | 'subprocess' // Sub-process node
+    | 'log'        // Log node
+    | 'http-request' // HTTP request node
+    | 'assign'     // Assign node
+    | 'transform'  // Data transform node
     | 'custom';    // Custom node
 ```
+
+## Visual Designer (drag & drop)
+
+The package ships a renderer-neutral designer built on `@tsdi/components`:
+
+```typescript
+import { Application } from '@tsdi/core';
+import { HtmlTemplateModule } from '@tsdi/components/html';
+import { WorkflowModule, WorkflowDesignerComponent } from '@tsdi/activities';
+
+const ctx = await Application.run(WorkflowDesignerComponent, {
+    deps: [HtmlTemplateModule, WorkflowModule]
+});
+```
+
+Features:
+
+- palette to drag generic node components onto the canvas (or click to add),
+- theme switching: light / dark / solarized / high-contrast via the toolbar and
+  shared `ThemeService`,
+- left/center/right/bottom `workspace-layout` with draggable ratios,
+  collapse/expand toggles and independent scrollbars for palette, canvas,
+  inspector and status/output,
+- SVG-native canvas: connection lines render through the components SVG
+  namespace support (not per-edge style positioning),
+- drag nodes with grid snapping, drag between output/input ports to create connections,
+- click an edge (widened hit path) to select it; `Delete` removes the selected node or connection,
+- inspector for node name/description/config fields driven by `WorkflowNodeRegistry`,
+- searchable palette: filter 35 registered node types by label, description or type,
+- inspector property editing uses `@tsdi/components/forms` validators (`required`,
+  `min`/`max`, `pattern`, JSON); invalid values show inline errors and are never
+  persisted to the node,
+- `code` fields are enhanced by the open-source CodeMirror editor through the
+  optional `@tsdi/activities/web` `WorkflowCodeEditorModule`; HTML hosts import
+  `codemirror.css` (the demo does this automatically),
+- undo/redo, zoom/pan, fit-to-view, auto layout, duplicate (`Ctrl+D`), JSON import/export,
+- Node-RED-style base components: inject, trigger, function, template, JSON,
+  CSV, change, statistics, merge, split, map/filter/sort/range/batch,
+  event-emit/event-wait, command, condition/switch, parallel/join, loop,
+  delay, log, HTTP request, try/catch, sub workflow, comment,
+- run history chips replay retained execution snapshots on the canvas,
+- execution log panel with per-node start/end events and durations,
+- workflow library: save, save-as-copy, open and delete definitions through
+  `WorkflowDefinitionStore` (localStorage in browsers, in-memory in Node/TUI,
+  HTTP/microservice via `HttpWorkflowDefinitionStore`),
+- `join` node waits for all parallel branches before continuing,
+- `error` ports route failures into recovery branches instead of aborting,
+- reusable `WorkflowRetryInterceptor` / `WorkflowTimeoutInterceptor` core
+  interceptors,
+- live execution path: node and edge states are painted from execution events,
+- stylesheet-based skin (`WORKFLOW_DESIGNER_CSS`) with `@tsdi/i18n` labels.
+
+The designer compiles the editable document into an immutable execution plan
+(`compileVisualWorkflow`) before running it; the plan exposes adjacency,
+reachability and entry information to hosts and tests without re-reading the
+graph on every step.
+
+### Generic node components
+
+```typescript
+import { WorkflowNodeRegistry } from '@tsdi/activities';
+
+const registry = new WorkflowNodeRegistry();
+registry.register({
+    type: 'custom',
+    label: 'Robot',
+    labelZh: '机器人',
+    category: 'action',
+    icon: 'R',
+    color: '#123456',
+    inputs: [{ id: 'in', name: 'in', type: 'input' }],
+    outputs: [{ id: 'out', name: 'out', type: 'output' }],
+    fields: [
+        { key: 'name', label: 'Name', labelZh: '名称', type: 'text' }
+    ]
+});
+```
+
+The same registry feeds the palette, inspector, validation and runtime. `activityType`
+lets a node plug an existing `Activity` class into the workflow.
+
+### Execution interceptors
+
+Generated node execution is bridged to the core interceptor pipeline through
+`VisualNodeActivityAdapter`:
+
+```typescript
+const service = injector.get(VisualWorkflowService);
+
+service.use({
+    intercept: async (input, next, context) => {
+        // input.node, input.context, input.state
+        return next.handle(input, context);
+    }
+});
+```
+
+The built-in `VisualExecutionPathInterceptor` records node start/end and streams
+events to the editor. User interceptors can add retry, timeout, auth, metrics or
+short-circuit a node. Branch/join/condition semantics stay in the execution
+kernel, not in interceptors.
+
+```typescript
+import {
+    WorkflowRetryInterceptor,
+    WorkflowTimeoutInterceptor
+} from '@tsdi/activities';
+
+service.use(new WorkflowRetryInterceptor({ retries: 2, delayMs: 200 }));
+service.use(new WorkflowTimeoutInterceptor({ timeoutMs: 5000 }));
+```
+
+### Persistence
+
+```typescript
+import {
+    HttpWorkflowDefinitionStore,
+    LocalStorageWorkflowDefinitionStore
+} from '@tsdi/activities';
+
+const store = new HttpWorkflowDefinitionStore({
+    baseUrl: 'http://localhost:3000/api',
+    token: '<token>'
+});
+await designer.saveTo(store);
+await designer.openFrom(store, 'workflow_demo');
+```
+
+The HTTP store expects `GET/PUT/DELETE /workflows[/:id]`; any gateway can back
+it. Errors are surfaced to the editor instead of silently losing definitions.
+
+### Error ports
+
+A `task`/`http-request` node that fails routes through its `error` output when
+that output is connected. The failure context exposes `error`, `errorMessage`,
+`failedNodeId` and `failedResult`, while the rest of the workflow can recover.
+
+### Checkpoints and resume
+
+```typescript
+let checkpoint;
+await service.execute(definition, context, {
+    onCheckpoint: snapshot => { checkpoint = snapshot; }
+});
+
+// Later / another process
+await service.execute(definition, context, {
+    resumeFrom: checkpoint
+});
+```
+
+Completed nodes are replayed on the visual path but are not executed again;
+pending nodes continue normally. Checkpoints are plain JSON snapshots, so they
+can be stored in a database, file or microservice.
+
+### Node-level policy
+
+Task and HTTP nodes expose inspector fields for:
+
+- `retry`
+- `retryDelay`
+- `timeout`
+
+They are enforced by the default `WorkflowNodePolicyInterceptor`; global
+`WorkflowRetryInterceptor` / `WorkflowTimeoutInterceptor` still work for
+cross-node policies.
+
+### Condition config
+
+Condition nodes support `field`, `operator` (`truthy`/`equals`/`not-equals`/`gt`/`lt`)
+and `value`; `config.condition` may be a boolean, a dotted path or a function.
+Task nodes read `context.actions[name]`, a function `config.execute`, a JSON
+`config.result`, or `config.fail` for failure-path demos.
 
 ## Custom Activity
 

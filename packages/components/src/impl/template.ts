@@ -24,7 +24,11 @@ function isStructuralContainer(node: RNode): boolean {
         return true;
     }
     const tagName = (node as RElement).tagName;
-    return typeof tagName === 'string' && tagName.toLowerCase() === 'v-container';
+    if (typeof tagName === 'string' && tagName.toLowerCase() === 'v-container') {
+        return true;
+    }
+    const getAttribute = (node as RElement).getAttribute;
+    return typeof getAttribute === 'function' && getAttribute.call(node, 'data-v-container') !== null;
 }
 
 
@@ -183,7 +187,11 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
      */
     private cloneElementWithAttributes(element: RElement, renderer: Renderer): RElement {
         const tagName = element.tagName
-        const clonedElement = renderer.createElement(tagName);
+        const namespace = (element as unknown as { namespaceURI?: string }).namespaceURI;
+        const clonedElement = renderer.createElement(
+            tagName,
+            namespace && namespace !== 'http://www.w3.org/1999/xhtml' ? namespace : undefined
+        );
         try {
             clonedElement.nodeType = element.nodeType;
         } catch {

@@ -40,6 +40,24 @@ class MyAttrDirective {}
 class IfDirective {}
 ```
 
+### SVG Templates
+
+Templates keep the SVG namespace when cloning nodes and when creating
+`v-for` / `v-if` anchors. SVG elements can use the same directives and bindings
+as HTML:
+
+```html
+<svg width="200" height="120">
+    <path v-for="edge in edges" v-bind="edge.attrs"></path>
+    <g v-if="draft">
+        <path v-bind="draft.attrs"></path>
+    </g>
+</svg>
+```
+
+Structural directives use an SVG `<g data-v-container>` anchor (instead of the
+HTML `<v-container>` anchor), so generated SVG nodes remain renderable.
+
 ### Custom Element Selector
 ```typescript
 @Directive({ selector: 'my-button' })
@@ -59,6 +77,67 @@ The `@Directive` decorator automatically exports to:
 - `CUSTOM_ELEMENTS` token: custom element directives
 
 Custom elements are compiled into templates via `CompilerOptions.customElements`.
+
+## Layout components
+
+### `workspace-layout`
+
+Left / center / right / bottom layout with draggable splitters and ratio-based
+sizes. Every pane has its own scroll container.
+
+```html
+<workspace-layout [leftRatio]="0.2" [rightRatio]="0.24" [bottomRatio]="0.26">
+  <workspace-left>Menu</workspace-left>
+  <workspace-center>Canvas</workspace-center>
+  <workspace-right>Inspector</workspace-right>
+  <workspace-bottom>Status / output</workspace-bottom>
+</workspace-layout>
+```
+
+- ratios keep the layout responsive on window resize
+- drag splitters to adjust proportions
+- collapse/expand left, right and bottom panes from the splitter buttons
+- `togglePane('left'|'right'|'bottom')`, `collapsePane`, `expandPane`,
+  `setCollapsed` and `isCollapsed` are available to hosts/tests
+- `leftCollapsed` / `rightCollapsed` / `bottomCollapsed` attributes provide
+  initial state
+- `resizePane('left'|'right'|'bottom', ratio)` is available to hosts/tests
+- install styles with `installWorkspaceLayoutStyles(document)`
+
+### `grid-layout`
+
+Generic CSS grid container with `v-for`-friendly projection:
+
+```html
+<grid-layout columns="3" gap="16" autoFit minItemWidth="220">
+  <grid-item span="2">Wide card</grid-item>
+  <grid-item>Card</grid-item>
+</grid-layout>
+```
+
+- `columns` accepts a count or any `grid-template-columns` value
+- `rows`, `gap`, `rowGap`, `columnGap`, `areas`, `flow`, `fill`
+- `grid-item` supports `span`, `rowSpan`, `start`, `end`, `area`
+- install styles with `installGridLayoutStyles(document)`
+
+### Themes
+
+`ThemeService` is renderer-neutral and available from `BaseComponentsModule`:
+
+```typescript
+import { ThemeService, applyThemeToDocument } from '@tsdi/components/common';
+
+const themes = new ThemeService();
+themes.setTheme('dark');
+themes.applyTo(document);
+
+// or directly:
+applyThemeToDocument(document, 'high-contrast');
+```
+
+Built-in themes: `light`, `dark`, `solarized`, `high-contrast`.
+The service mirrors the theme to `data-theme`, `data-agent-theme` and
+`data-workspace-theme` on the document root; renderers own the CSS variables.
 
 ## Exports
 

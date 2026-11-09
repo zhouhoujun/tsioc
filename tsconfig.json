@@ -26,6 +26,12 @@
         "packages/microservices/*",
         "packages/agents/*",
         "packages/*"
+      ],
+      "@tsdi/http-microservice": [
+        "packages/microservices/http"
+      ],
+      "@tsdi/http-microservice/*": [
+        "packages/microservices/http/*"
       ]
     },
     "lib": [
