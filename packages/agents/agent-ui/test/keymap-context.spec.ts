@@ -898,8 +898,7 @@ export class AgentConsoleWhichKeyTest {
         ]);
         expect(panel.bindingCount).toEqual('2');
         expect(panel.hintText).toContain('Esc');
-        expect((panel as any).shellStyle).toBeTruthy();
-        expect((panel as any).keyStyle).toBeTruthy();
+        expect(panel.titleText).toContain('Keymap');
     }
 
     @Test('hiding the overlay clears the bindings snapshot')

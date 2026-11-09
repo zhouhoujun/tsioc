@@ -10,6 +10,8 @@ export * from './toast';
 export * from './toast-stack';
 export * from './select';
 export * from './list-panel';
+export * from './keymap-panel';
+export * from './status-list';
 export * from './list';
 export * from './message-row';
 export * from './detail-panel';

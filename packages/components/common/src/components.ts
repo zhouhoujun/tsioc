@@ -16,6 +16,8 @@ import { ToastStackComponent } from './toast-stack';
 import { SelectComponent } from './select';
 import { ListPanelComponent } from './list-panel';
 import { ListComponent } from './list';
+import { KeymapPanelComponent } from './keymap-panel';
+import { StatusListComponent } from './status-list';
 import { MessageRowComponent } from './message-row';
 import { DetailPanelComponent } from './detail-panel';
 import { InputFieldComponent } from './input-field';
@@ -101,7 +103,7 @@ export class PanelComponent {
 }
 
 @Module({
-    declarations: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, AlertDialogComponent, ToastStackComponent, SelectComponent, ListPanelComponent, ListComponent, MessageRowComponent, DetailPanelComponent, InputFieldComponent],
-    exports: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, AlertDialogComponent, ToastStackComponent, SelectComponent, ListPanelComponent, ListComponent, MessageRowComponent, DetailPanelComponent, InputFieldComponent]
+    declarations: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, AlertDialogComponent, ToastStackComponent, SelectComponent, ListPanelComponent, ListComponent, KeymapPanelComponent, StatusListComponent, MessageRowComponent, DetailPanelComponent, InputFieldComponent],
+    exports: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, AlertDialogComponent, ToastStackComponent, SelectComponent, ListPanelComponent, ListComponent, KeymapPanelComponent, StatusListComponent, MessageRowComponent, DetailPanelComponent, InputFieldComponent]
 })
 export class BaseComponentsModule {}

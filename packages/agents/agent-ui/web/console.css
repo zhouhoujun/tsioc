@@ -212,27 +212,27 @@ body {
 #agent-console .activity-item[data-kind="error"] .activity-message { color: var(--agent-theme-status-error-value-color, #cf9893); }
 #agent-console .activity-item[data-kind="rollback"] .activity-kind { color: var(--agent-theme-status-notice-label-color, #d29922); }
 #agent-console .activity-item[data-kind="model"] .activity-message { color: var(--agent-theme-status-label-color, #6e7681); }
-#agent-console .console-which-key-panel,
-#agent-console .console-health-popover {
+#agent-console .console-keymap-panel,
+#agent-console .status-list {
     color: var(--agent-theme-select-shell-color, #d6dee6);
     background: var(--agent-theme-select-shell-background);
     background-color: var(--agent-theme-select-shell-background-color);
     padding: var(--agent-theme-select-shell-padding, 0 1ch);
 }
-#agent-console .which-key-title,
-#agent-console .which-key-hint,
-#agent-console .health-title,
-#agent-console .health-hint,
-#agent-console .which-key-action,
-#agent-console .health-detail { color: var(--agent-theme-select-hint-color, #6e7681); }
-#agent-console .which-key-group-header { color: var(--agent-theme-select-hint-color, #6e7681); font-weight: bold; }
-#agent-console .which-key-row,
-#agent-console .health-row { color: var(--agent-theme-select-option-color, #8b949e); }
-#agent-console .which-key-key,
-#agent-console .health-label { color: var(--agent-theme-select-option-active-color, #7fa6d4); font-weight: var(--agent-theme-select-option-active-font-weight, bold); }
-#agent-console .health-row[data-status="ok"] .health-status { color: var(--agent-theme-status-idle-value-color, #6fa37a); }
-#agent-console .health-row[data-status="warn"] .health-status { color: var(--agent-theme-status-notice-value-color, #cdb06a); }
-#agent-console .health-row[data-status="error"] .health-status { color: var(--agent-theme-status-error-value-color, #cf9893); }
+#agent-console .keymap-title,
+#agent-console .keymap-hint,
+#agent-console .status-list-title,
+#agent-console .status-list-hint,
+#agent-console .keymap-action,
+#agent-console .status-list-detail { color: var(--agent-theme-select-hint-color, #6e7681); }
+#agent-console .keymap-group-header { color: var(--agent-theme-select-hint-color, #6e7681); font-weight: bold; }
+#agent-console .keymap-row,
+#agent-console .status-list-row { color: var(--agent-theme-select-option-color, #8b949e); }
+#agent-console .keymap-key,
+#agent-console .status-list-label { color: var(--agent-theme-select-option-active-color, #7fa6d4); font-weight: var(--agent-theme-select-option-active-font-weight, bold); }
+#agent-console .status-list-row[data-status="ok"] .status-list-status { color: var(--agent-theme-status-idle-value-color, #6fa37a); }
+#agent-console .status-list-row[data-status="warn"] .status-list-status { color: var(--agent-theme-status-notice-value-color, #cdb06a); }
+#agent-console .status-list-row[data-status="error"] .status-list-status { color: var(--agent-theme-status-error-value-color, #cf9893); }
 
 #agent-console .console-status-panel {
     color: var(--agent-theme-status-shell-color, #c9d1d9);

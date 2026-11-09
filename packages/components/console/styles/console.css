@@ -348,41 +348,41 @@
 .activity-item[data-kind="model"] .activity-message {
     color: var(--agent-theme-status-label-color, #6e7681);
 }
-.console-which-key-panel,
-.console-health-popover {
+.console-keymap-panel,
+.status-list {
     color: var(--agent-theme-select-shell-color, #d6dee6);
     background: var(--agent-theme-select-shell-background);
     background-color: var(--agent-theme-select-shell-background-color);
     padding: var(--agent-theme-select-shell-padding, 0 1ch);
 }
-.which-key-title,
-.which-key-hint,
-.health-title,
-.health-hint,
-.which-key-action,
-.health-detail {
+.keymap-title,
+.keymap-hint,
+.status-list-title,
+.status-list-hint,
+.keymap-action,
+.status-list-detail {
     color: var(--agent-theme-select-hint-color, #6e7681);
 }
-.which-key-group-header {
+.keymap-group-header {
     color: var(--agent-theme-select-hint-color, #6e7681);
     font-weight: bold;
 }
-.which-key-row,
-.health-row {
+.keymap-row,
+.status-list-row {
     color: var(--agent-theme-select-option-color, #8b949e);
 }
-.which-key-key,
-.health-label {
+.keymap-key,
+.status-list-label {
     color: var(--agent-theme-select-option-active-color, #7fa6d4);
     font-weight: var(--agent-theme-select-option-active-font-weight, bold);
 }
-.health-row[data-status="ok"] .health-status {
+.status-list-row[data-status="ok"] .status-list-status {
     color: var(--agent-theme-status-idle-value-color, #6fa37a);
 }
-.health-row[data-status="warn"] .health-status {
+.status-list-row[data-status="warn"] .status-list-status {
     color: var(--agent-theme-status-notice-value-color, #cdb06a);
 }
-.health-row[data-status="error"] .health-status {
+.status-list-row[data-status="error"] .status-list-status {
     color: var(--agent-theme-status-error-value-color, #cf9893);
 }
 .console-status-panel {

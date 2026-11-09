@@ -1,5 +1,6 @@
 import { Attribute, Component, ReactiveEffect, reactive } from '@tsdi/components';
 import { formatCompactNumber } from '@tsdi/core';
+import { KeymapPanelComponent, StatusListComponent } from '@tsdi/components/common';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import { formatAgentUiLabel, formatAgentKeymapActionLabel, formatAgentPanelLabel as panelLabel, formatAgentPanelStatusLabel as panelStatusLabel } from './agent-ui.i18n';
@@ -312,26 +313,14 @@ export class AgentConsoleSelectPanelComponent {
 
 @Component({
     selector: 'agent-console-which-key-panel',
+    imports: [KeymapPanelComponent],
     template: `
-    <div class="console-panel console-which-key-panel">
-        <label class="which-key-title">{{titleText}}</label>
-        <template v-if="isGrouped">
-            <template v-for="group in groupedBindings">
-                <label class="which-key-group-header">{{group.label}}</label>
-                <label class="which-key-row" v-for="binding in group.items">
-                    <span class="which-key-key">{{binding.key}}</span>
-                    <span class="which-key-action"> {{binding.label || binding.action}}</span>
-                </label>
-            </template>
-        </template>
-        <template v-else>
-            <label class="which-key-row" v-for="binding in bindings">
-                <span class="which-key-key">{{binding.key}}</span>
-                <span class="which-key-action"> {{binding.label || binding.action}}</span>
-            </label>
-        </template>
-        <label class="which-key-hint">{{hintText}}</label>
-    </div>
+    <keymap-panel
+        :title="titleText"
+        :hint="hintText"
+        :grouped="isGrouped"
+        :items="bindings"
+        :groups="groupedBindings"></keymap-panel>
     `
 })
 export class AgentConsoleWhichKeyPanelComponent {
@@ -349,10 +338,6 @@ export class AgentConsoleWhichKeyPanelComponent {
         private state: AgentConsoleSessionState,
         @Optional() private translator?: TranslatorService
     ) {
-    }
-
-    get activeTheme(): AgentConsoleTheme {
-        return this.state?.theme || defaultAgentConsoleTheme;
     }
 
     get bindings(): Array<{ key: string; action: string; label: string }> {
@@ -396,48 +381,13 @@ export class AgentConsoleWhichKeyPanelComponent {
         hints.push(panelLabel(this.translator, 'keymap', 'filter', 'F filter'));
         return hints.join(' · ');
     }
-
-    get groupHeaderStyle() {
-        return styleTextToObject(this.activeTheme.selectHint);
-    }
-
-    get shellStyle() {
-        return styleTextToObject(this.activeTheme.selectShell);
-    }
-
-    get titleStyle() {
-        return styleTextToObject(this.activeTheme.selectHint);
-    }
-
-    get rowStyle() {
-        return styleTextToObject(this.activeTheme.selectOption);
-    }
-
-    get keyStyle() {
-        return styleTextToObject(this.activeTheme.selectOptionActive);
-    }
-
-    get actionStyle() {
-        return styleTextToObject(this.activeTheme.selectHint);
-    }
-
-    get hintStyle() {
-        return styleTextToObject(this.activeTheme.selectHint);
-    }
 }
 
 @Component({
     selector: 'agent-console-health-popover',
+    imports: [StatusListComponent],
     template: `
-    <div class="console-panel console-health-popover">
-        <label class="health-title">{{titleText}}</label>
-        <label class="health-row" data-status="{{item.status}}" v-for="item in items">
-            <span class="health-status">{{statusLabel(item.status)}}</span>
-            <span class="health-label"> {{item.label}}</span>
-            <span class="health-detail"> {{item.detail}}</span>
-        </label>
-        <label class="health-hint">{{hintText}}</label>
-    </div>
+    <status-list :title="titleText" :hint="hintText" :items="statusItems"></status-list>
     `
 })
 export class AgentConsoleHealthPopoverComponent {
@@ -447,12 +397,18 @@ export class AgentConsoleHealthPopoverComponent {
     ) {
     }
 
-    get activeTheme(): AgentConsoleTheme {
-        return this.state?.theme || defaultAgentConsoleTheme;
-    }
-
     get items(): AgentConsoleHealthItem[] {
         return this.state.healthItems;
+    }
+
+    get statusItems(): Array<{ id: string; label: string; status: string; statusLabel: string; detail?: string }> {
+        return this.items.map(item => ({
+            id: item.id,
+            label: item.label,
+            status: item.status,
+            statusLabel: this.statusLabel(item.status),
+            detail: item.detail
+        }));
     }
 
     get titleText(): string {
@@ -466,40 +422,5 @@ export class AgentConsoleHealthPopoverComponent {
     statusLabel(status: AgentConsoleHealthStatus): string {
         const key = status === 'ok' ? 'statusOk' : status === 'warn' ? 'statusWarn' : status === 'error' ? 'statusError' : 'statusUnknown';
         return panelLabel(this.translator, 'health', key, status);
-    }
-
-    statusStyle(status: AgentConsoleHealthStatus) {
-        const style = status === 'ok'
-            ? this.activeTheme.statusIdleValue
-            : status === 'warn'
-                ? this.activeTheme.statusNoticeValue
-                : status === 'error'
-                    ? this.activeTheme.statusErrorValue
-                    : this.activeTheme.statusValue;
-        return styleTextToObject(style);
-    }
-
-    get shellStyle() {
-        return styleTextToObject(this.activeTheme.selectShell);
-    }
-
-    get titleStyle() {
-        return styleTextToObject(this.activeTheme.selectHint);
-    }
-
-    get rowStyle() {
-        return styleTextToObject(this.activeTheme.selectOption);
-    }
-
-    get labelStyle() {
-        return styleTextToObject(this.activeTheme.selectOptionActive);
-    }
-
-    get detailStyle() {
-        return styleTextToObject(this.activeTheme.selectHint);
-    }
-
-    get hintStyle() {
-        return styleTextToObject(this.activeTheme.selectHint);
     }
 }

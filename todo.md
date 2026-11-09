@@ -3261,3 +3261,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 观察到真实 TUI 问题：长中文最终回答在终端最后一列遇到宽字符时，CJK 字符被提前消费后由终端裁掉，出现 `非法` 显示成 `法` 的文本丢失。
   - 修复 `TuiRenderer.wrapStyledSegmentLine`：当剩余列宽不足以容纳下一个宽字符且当前行已有内容时先换行，不再把宽字符塞进最后一列；新增宽度边界回归（旧实现 `aaaaaaaaa非` 超宽，新实现换行）。
   - 回归：components/console 154 passing、agents/agent-ui 2011 passing、DOM/TUI gate、metrics regression、build:web、tsc、source-size、diff-check 通过。
+- 通用功能组件继续下沉到 `@tsdi/components/common`：
+  - 新增 `KeymapPanelComponent`（selector `keymap-panel`）：标题/分组/单列表/快捷键行/提示的 renderer-neutral 外壳；agent-ui 只保留键位数据、分组规则和本地化。
+  - 新增 `StatusListComponent`（selector `status-list`）：语义状态行（ok/warn/error/unknown）、标题/详情/提示；agent-ui health popover 只保留状态数据和本地化。
+  - console 样式改由 `.keymap-*` / `.status-list-*` 提供，重新生成 `default-styles.generated.ts`。
+- 真实 TUI 复核：`ESC Ctrl-K` 打开 25 条 Keymap，分组/页码/提示正常；通用组件渲染无业务耦合。
+- 回归：components/common 43、components/console 154、agents/agent-ui 2011、tsc、DOM/TUI gate、build:web、source-size、diff-check 通过。
