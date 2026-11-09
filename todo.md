@@ -3257,3 +3257,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 面板级布局复用：单一起点的变更只重渲染对应 renderRegion 面板（菜单按键从约 900ms 降到 1-3ms/200 条消息），多起点/无起点/宽度或主题变化仍全量渲染。
   - TUI 鼠标点击弹窗外部立即关闭选择菜单/文本弹层（surface `onBackgroundClick` → lifecycle）。
   - 回归：agent-ui 2010、components 148、common 49、html 129、console 153；真实 PTY 验证空会话 `/theme`、`/` 菜单与点击关闭。
+- 真实 TUI 系统构建任务（`npm run chat -- --workspace /home/zhouyou/workspace/sleep-mlt`）：真实创建 `audit-system`（package.json、src/store.js、src/audit.js、test/audit.test.js），真实运行 `node --test audit-system/test/*.test.js`：9 passing / 0 failing；审批弹窗单次 `a`/`A` 可正常放行，写入/运行工具正常。
+  - 观察到真实 TUI 问题：长中文最终回答在终端最后一列遇到宽字符时，CJK 字符被提前消费后由终端裁掉，出现 `非法` 显示成 `法` 的文本丢失。
+  - 修复 `TuiRenderer.wrapStyledSegmentLine`：当剩余列宽不足以容纳下一个宽字符且当前行已有内容时先换行，不再把宽字符塞进最后一列；新增宽度边界回归（旧实现 `aaaaaaaaa非` 超宽，新实现换行）。
+  - 回归：components/console 154 passing、agents/agent-ui 2011 passing、DOM/TUI gate、metrics regression、build:web、tsc、source-size、diff-check 通过。

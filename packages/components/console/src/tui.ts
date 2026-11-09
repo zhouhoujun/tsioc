@@ -1174,7 +1174,17 @@ export class TuiRenderer extends ConsoleRenderer {
                     flush();
                 }
                 const availableWidth = Math.max(1, width - currentWidth);
-                const chunk = sliceByDisplayWidth(rest, availableWidth) || rest.slice(0, 1);
+                const firstChar = Array.from(rest)[0] || '';
+                const firstWidth = getDisplayWidth(firstChar);
+                let chunk = sliceByDisplayWidth(rest, availableWidth);
+                if (!chunk && firstWidth > availableWidth && currentWidth > indentColumns) {
+                    // A wide CJK glyph cannot start in the last column: move it
+                    // to the next row instead of consuming it where the terminal
+                    // would clip it.
+                    flush();
+                    continue;
+                }
+                chunk = chunk || rest.slice(0, Math.max(1, firstChar.length));
                 currentLine += this.applyAnsi(chunk, segment.styleMap, undefined, true);
                 currentWidth += this.measure(chunk);
                 rest = rest.slice(chunk.length);

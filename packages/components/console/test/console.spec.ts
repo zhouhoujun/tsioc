@@ -421,6 +421,18 @@ export class ConsoleRendererTest {
         expect(renderer.renderToLines(root)).toEqual(['Agent Console']);
     }
 
+    @Test('moves a wide CJK glyph to the next row instead of clipping it at the boundary')
+    wrapsWideGlyphAtBoundary() {
+        const renderer = new TuiRenderer();
+        const row = renderer.createElement('label') as ConsoleElement;
+        renderer.appendChild(row, renderer.createText(`${'a'.repeat(9)}非b`));
+        const lines = renderer.renderToTuiLines(row, { width: 10 })
+            .map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
+        expect(lines[0]).toEqual('aaaaaaaaa');
+        expect(lines[1]).toContain('非b');
+        lines.forEach(line => expect(getDisplayWidth(line)).toBeLessThanOrEqual(10));
+    }
+
     @Test('continuation indent aligns wrapped markdown list rows')
     continuationIndentAlignsWrappedRows() {
         const renderer = new TuiRenderer();

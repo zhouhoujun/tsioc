@@ -30,6 +30,24 @@ function approval(overrides: Record<string, any> = {}): any {
 
 @Suite('approval and question interaction UX (P313)')
 export class P313ApprovalQuestionUxTest {
+    @Test('an approval decision key never leaks into the composer draft')
+    async approvalDecisionKeyDoesNotLeakIntoInput() {
+        const state = makeState();
+        const resolved: Array<{ action: string; id: string }> = [];
+        state.resolveApprovalAction = async (action, id) => { resolved.push({ action, id }); };
+        state.upsertPendingApproval(approval({ id: 'approval-key' }));
+        state.requestApprovalAttention();
+        expect(state.input).toEqual('');
+        await state.processDecodedInput({ text: 'a' }, 'a', {
+            isClosed: false,
+            onExit: () => undefined,
+            hasActiveTextPrompt: false,
+            transcriptNavigationController: navigationFor(state)
+        });
+        expect(resolved).toEqual([{ action: 'approve', id: 'approval-key' }]);
+        expect(state.input).toEqual('');
+    }
+
     @Test('a new approval surfaces its prompt and moves focus off the composer')
     async approvalSurfacesPrompt() {
         const state = makeState();
