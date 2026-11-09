@@ -739,7 +739,12 @@ export class TuiRenderer extends ConsoleRenderer {
                         y: start + offset.row + target.y
                     });
                 });
-                if (hasOwnFrame && lines.length > start && this.stripAnsi(lines[lines.length - 1]).trim()) {
+                // Framed blocks get one trailing blank row so neighbouring
+                // cards do not touch. Blocks that own their own spacing (the
+                // composer shell, which is followed by its meta line) opt out.
+                const blockGap = element.getAttribute?.('blockGap') ?? element.getAttribute?.('data-block-gap');
+                if (String(blockGap || '').trim().toLowerCase() !== 'none'
+                    && hasOwnFrame && lines.length > start && this.stripAnsi(lines[lines.length - 1]).trim()) {
                     lines.push('');
                 }
                 finishClickTarget();

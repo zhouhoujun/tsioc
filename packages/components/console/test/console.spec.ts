@@ -228,6 +228,19 @@ class ConsolePanelTestComponent {
 }
 
 @Component({
+    selector: 'console-block-gap-test',
+    template: `
+    <div>
+        <section style="border: 1px solid #29543d;"><p>Default</p></section>
+        <section blockGap="none" style="border: 1px solid #29543d;"><p>Opt out</p></section>
+        <label>tail</label>
+    </div>
+    `
+})
+class ConsoleBlockGapTestComponent {
+}
+
+@Component({
     selector: 'console-bordered-wrap-test',
     template: `
     <section style="border: 1px solid #29543d;">
@@ -1050,6 +1063,32 @@ export class ConsoleRendererTest {
             expect(lines.some(line => line.includes('Panel'))).toBe(true);
             expect(lines.some(line => line.includes('Body'))).toBe(true);
             expect(lines.some(line => line.includes('\x1b['))).toBe(true);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('blockGap="none" opts a framed block out of the trailing spacer row')
+    async blockGapOptsOutOfTrailingSpacer() {
+        const ctx = await Application.run(ConsoleBlockGapTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(ConsoleBlockGapTestComponent) as ComponentRef<ConsoleBlockGapTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            const lines = renderer.renderToTuiLines(root, { width: 24 })
+                .map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
+            const defaults = lines.findIndex(line => line.includes('Default'));
+            const optOut = lines.findIndex(line => line.includes('Opt out'));
+            const tail = lines.findIndex(line => line.includes('tail'));
+            expect(defaults).toBeGreaterThanOrEqual(0);
+            expect(optOut).toBeGreaterThan(defaults);
+            expect(tail).toBeGreaterThan(optOut);
+            // The default framed block keeps one blank spacer row before the
+            // next block; the opted-out block is followed directly by the label.
+            expect(lines[optOut - 2].trim()).toEqual('');
+            expect(lines[tail - 1].trim().startsWith('└')).toEqual(true);
         } finally {
             await ctx.close();
         }
@@ -3106,6 +3145,52 @@ export class ConsoleRendererTest {
         expect(surface.lastRenderedLines).toHaveLength(14);
         expect(surface.lastRenderedLines[13]).toEqual('footer line');
         surface.destroy();
+    }
+
+    @Test('footer bottom margin keeps one blank row under the composer footer')
+    footerBottomMarginKeepsBlankRow() {
+        const lines = [
+            ...Array.from({ length: 30 }, (_value, index) => `line ${index + 1}`),
+            'input shell',
+            'meta line'
+        ];
+        const root = { addEventListener() {}, removeEventListener() {} } as any;
+        const makeSurface = (footerBottomMargin?: number) => new TuiTerminalSurface({
+            renderer: {
+                renderToTuiLayout: () => ({
+                    lines,
+                    regions: [
+                        { id: 'transcript', startRow: 0, endRow: 30 },
+                        { id: 'footer', startRow: 30, endRow: 32 }
+                    ]
+                })
+            },
+            root,
+            width: 80,
+            height: 10,
+            nativeScrollback: false,
+            scrollViewport: true,
+            scrollRegionId: 'transcript',
+            footerRegionId: 'footer',
+            footerBottomMargin,
+            output: { write() {} }
+        });
+
+        // Generic surfaces keep the old arithmetic: the footer ends on the last row.
+        const plain = makeSurface();
+        plain.render();
+        expect(plain.lastRenderedLines).toHaveLength(10);
+        expect(plain.lastRenderedLines[9]).toEqual('meta line');
+        plain.destroy();
+
+        // The agent console declares one row so the meta line is not glued to
+        // the terminal's bottom edge, matching the web console page margin.
+        const spaced = makeSurface(1);
+        spaced.render();
+        expect(spaced.lastRenderedLines).toHaveLength(10);
+        expect(spaced.lastRenderedLines[8]).toEqual('meta line');
+        expect(spaced.lastRenderedLines[9]).toEqual('');
+        spaced.destroy();
     }
 
     @Test('windows terminal rendered blocks locally')

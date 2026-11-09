@@ -1009,6 +1009,75 @@ export class AgentConsoleMessagesRendererTest {
         }
     }
 
+    @Test('composer meta sits under the input shell with one blank row below')
+    async composerMetaSpacing() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const consoleRef = tuiCtx.get(ComponentFactory).create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const state = consoleRef.instance.sessionState;
+            state.setMessages(Array.from({ length: 20 }, (_value, index) => ({
+                id: `m${index}`,
+                role: index % 2 ? 'assistant' : 'user',
+                content: `message ${index}`,
+                createdAt: index
+            })) as any);
+            await settleDynamicMessages(consoleRef);
+            surface = new TuiTerminalSurface({
+                renderer: tuiCtx.get(TuiRenderer),
+                root: consoleRef.elementRef.nativeElement,
+                width: 100,
+                height: 30,
+                output: { write() { /* noop */ } },
+                footerBottomMargin: () => consoleRef.instance.resolveTerminalFooterBottomMargin()
+            });
+            surface.render();
+            const lines = surface.lastRenderedLines.map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
+            const promptRow = lines.findIndex(line => line.includes('Ask code or files'));
+            const metaRow = lines.findIndex(line => line.includes('· 0 tokens'));
+            expect(promptRow).toBeGreaterThan(0);
+            // No blank row between the composer shell and its meta line; the
+            // shell's own bottom padding row stays directly above the meta.
+            expect(metaRow).toEqual(promptRow + 2);
+            expect(lines[metaRow - 1].trim()).toEqual('│');
+            // One blank row under the meta line keeps it off the terminal edge.
+            expect(lines).toHaveLength(30);
+            expect(metaRow).toEqual(28);
+            expect(lines[29]).toEqual('');
+        } finally {
+            surface?.destroy();
+            await tuiCtx.close();
+        }
+    }
+
+    @Test('keeps the draft caret on the prompt row while a blocking menu is open')
+    async blockingMenuKeepsCaretOnPromptRow() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const consoleRef = tuiCtx.get(ComponentFactory).create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const state = consoleRef.instance.sessionState;
+            expect(consoleRef.instance.resolveTerminalCursorMode()).toEqual('prompt');
+            state.openSelectMenu('Theme', [
+                { label: 'dark', value: 'dark' },
+                { label: 'light', value: 'light' }
+            ], 0, 'enter apply');
+            await settleDynamicMessages(consoleRef);
+            // A blocking menu must not drop the caret into the popup; the draft
+            // prompt row stays the cursor home.
+            expect(consoleRef.instance.resolveTerminalCursorMode()).toEqual('prompt');
+            state.setApprovalsFocused(true);
+            expect(consoleRef.instance.resolveTerminalCursorMode()).toEqual('prompt');
+        } finally {
+            await tuiCtx.close();
+        }
+    }
+
     @Test('menu navigation re-renders only the menu panel')
     async menuNavigationReusesTranscript() {
         const tuiCtx = await Application.run(AgentModule, {

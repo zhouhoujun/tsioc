@@ -64,6 +64,12 @@ export const DEFAULT_CONSOLE_SELECT_VISIBLE_OPTIONS = 12;
 export const DEFAULT_CONSOLE_SELECT_DETAIL_VISIBLE_LINES = 6;
 export const DEFAULT_CONSOLE_SELECT_HINT = '1-9 select   up/down move   enter confirm   q cancel';
 export const DEFAULT_CONSOLE_SELECT_CLOSE_HINT = 'up/down move   enter close   q close';
+/**
+ * Host-declared blank rows under the composer footer (the agent console keeps
+ * one so the meta line is not glued to the terminal's bottom edge, matching the
+ * web console's page margin). Generic surfaces default to none.
+ */
+const DEFAULT_FOOTER_BOTTOM_MARGIN_ROWS = 0;
 
 export interface SelectMenuOption {
     label: string;
@@ -273,6 +279,8 @@ export interface TuiTerminalSurfaceOptions {
     height?: number | (() => number);
     scrollRegionId?: string;
     footerRegionId?: string;
+    /** Blank rows kept under the footer so a composer meta line is not glued to the terminal edge. Defaults to 0. */
+    footerBottomMargin?: number | (() => number);
     placeCursor?: boolean | (() => boolean);
     cursorMode?: 'prompt' | 'bottom' | (() => 'prompt' | 'bottom');
     nativeScrollback?: boolean | (() => boolean);
@@ -363,6 +371,8 @@ export abstract class ConsoleTerminalSurfaceLifecycle {
     shouldUseAlternateScreen?(): boolean;
     shouldScrollViewport?(): boolean;
     resolveConsoleLayout?(): ConsoleTranscriptLayoutMode | undefined;
+    /** Blank rows kept under the composer footer (web console page margin). */
+    resolveTerminalFooterBottomMargin?(): number;
     /** Host toast hook after the user copies an app-managed text selection. */
     onTerminalTextCopied?(text: string): void;
     /** The viewport reached its oldest row; hosts may load an older transcript page. */
@@ -873,6 +883,7 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
             nativeScrollback: () => this.surfaceLayout ? this.surfaceLayout.nativeScrollback : lifecycle?.shouldUseNativeScrollback?.() === true,
             scrollViewport: () => this.surfaceLayout ? this.surfaceLayout.scrollViewport : lifecycle?.shouldScrollViewport?.() !== false,
             mouseTrackingEnabled: this.mouseTrackingEnabled,
+            footerBottomMargin: () => lifecycle?.resolveTerminalFooterBottomMargin?.() ?? 0,
             animationClock: this.injector.get(AnimationClock, null) || undefined,
             onTextCopied: text => lifecycle.onTerminalTextCopied?.(text),
             onViewportTop: () => lifecycle.onTerminalViewportTop?.(),
@@ -2526,6 +2537,7 @@ export class TuiTerminalSurface {
         const width = this.resolveWidth();
         const scrollRegionId = this.options.scrollRegionId || 'transcript';
         const footerRegionId = this.options.footerRegionId || 'footer';
+        const footerMargin = this.resolveFooterBottomMargin();
         // Dialogs are composited by mode: viewport floats them above the
         // composer, native scrollback appends them below the footer.
         const dialogRegion = height
@@ -2725,7 +2737,9 @@ export class TuiTerminalSurface {
                 // at the top and leave no room for a popup above the composer.
                 // Bottom-align it like the normal viewport path.
                 const footerStart = footerRegion ? Math.max(0, Math.min(allLines.length, footerRegion.startRow)) : allLines.length;
-                const fillerRows = height - allLines.length;
+                const footerRows = allLines.length - footerStart;
+                const fillerRows = Math.max(0, height - allLines.length
+                    - (footerRows > 0 ? footerMargin : 0));
                 if (footerStart < allLines.length && fillerRows > 0) {
                     const shift = (row: number): number => row >= footerStart ? row + fillerRows : row;
                     return composeDialogOverlay({
@@ -2752,7 +2766,8 @@ export class TuiTerminalSurface {
                     sourceRows: allLines.map((_line, index) => index)
                 });
             }
-            const start = allLines.length - height;
+            const start = Math.max(0, allLines.length - height
+                + (footerRegion && footerRegion.startRow < allLines.length ? footerMargin : 0));
             const mapRow = (row: number): number | undefined => row >= start ? row - start : undefined;
             this.maxScrollOffsetRows = this.isScrollViewportEnabled() ? start : 0;
             this.applyPendingViewportOffset();
@@ -2779,7 +2794,8 @@ export class TuiTerminalSurface {
         const prefix = allLines.slice(0, scrollRegion.startRow);
         const transcript = allLines.slice(scrollRegion.startRow, footerRegion.startRow);
         const footer = allLines.slice(footerRegion.startRow);
-        const availableRows = Math.max(0, height - prefix.length - footer.length);
+        const availableRows = Math.max(0, height - prefix.length - footer.length
+            - (footer.length ? footerMargin : 0));
         // A dialog is chrome, not transcript content. Keep the user's distance
         // from the latest row when only the overlay changes (opening/closing a
         // menu or a tall /web QR panel must not move the scrollbar).
@@ -2856,6 +2872,15 @@ export class TuiTerminalSurface {
             clickTargets,
             sourceRows
         });
+    }
+
+    protected resolveFooterBottomMargin(): number {
+        const configured = typeof this.options.footerBottomMargin === 'function'
+            ? this.options.footerBottomMargin()
+            : this.options.footerBottomMargin;
+        return typeof configured === 'number' && Number.isFinite(configured)
+            ? Math.max(0, Math.floor(configured))
+            : DEFAULT_FOOTER_BOTTOM_MARGIN_ROWS;
     }
 
     protected resolveHeight(): number | undefined {

@@ -1449,6 +1449,8 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
     shouldUseAlternateScreen(): boolean { return this.transcriptLayout.usesAlternateScreen; }
     shouldScrollViewport(): boolean { return !this.transcriptLayout.ownsHistoryScroll; }
     resolveConsoleLayout(): 'scrollback' | 'viewport' { return this.transcriptLayout.mode; }
+    /** Keep one blank row under the composer meta line, like the web console page margin. */
+    resolveTerminalFooterBottomMargin(): number { return 1; }
 
     getTerminalRenderedLines(): string[] {
         return this.surfaceAccessor?.getLastRenderedLines() || [];

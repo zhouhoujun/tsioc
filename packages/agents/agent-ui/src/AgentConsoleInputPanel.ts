@@ -71,7 +71,7 @@ export * from './AgentConsoleResourcePanels';
     imports: [InputFieldComponent],
     template: `
     <div class="console-panel console-input-panel">
-        <div class="input-shell">
+        <div class="input-shell" blockGap="none">
             <div class="input-entry">
                 <input-field :value="input" :prompt="inputPromptBase" :placeholder="inputPlaceholderLabel" :cursorPos="inputCursor" :focused="inputFocused" :continuationPrompt="'  '" :mask="inputSecret" @inputAction="onInput" @cursorAction="onCursorChange" @keydownAction="onKeydown"></input-field>
             </div>

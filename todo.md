@@ -3294,3 +3294,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - handler 就绪：`ConfigableHandler.canHandle` 只 await 一次 `injector.ready`，后续请求不再产生每请求微任务（injector ready 为一次性 promise）。
   - 实测：同一进程单核 `taskset -c 2`、keep-alive、并发 20、每轮 10000 请求、7 轮取稳定中位数；基线与优化后交替运行 3 组，稳定中位数为 4122/4234/5891 vs 4364/4582/6116 req/s（约 +3.8% ~ +8.2%，取保守结论约 5–8%；机器负载波动明显，未宣称更高收益）。
   - 回归：core 130、microservices/service 45、http 36、client 72、transport 51、tcp 65、ws 88、oidc-auth 54 全部通过；core/service tsc 通过；`git diff --check` 通过。
+- TUI composer 间距与弹窗光标修正（2026-11-09）：
+  - `.input-shell` 作为带边框块不再追加自动空行（新增通用 `blockGap="none"` 语义，TUI 遵守、浏览器忽略），状态栏/meta 与输入框间距回到设计值。
+  - viewport 新增 host 声明的 `footerBottomMargin`（lifecycle `resolveTerminalFooterBottomMargin`），agent-ui 返回 1：meta 行下保留一行空白，不再贴终端底边；scrollback 仍走原生滚屏。
+  - 阻塞式选择菜单/审批/pending question/modal prompt 打开时保持 `prompt` 光标模式，方向键导航不再把光标压进弹窗或下一行。
+  - 回归：components/console 156、agents/agent-ui 2014、components 148、common 59、html 135；真实 PTY（100×30、80×24，空会话与长回答）验证 meta 下一行留白、弹窗仍位于输入框上方、光标停在 prompt 行。

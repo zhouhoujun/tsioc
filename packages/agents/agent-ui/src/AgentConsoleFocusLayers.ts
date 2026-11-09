@@ -346,7 +346,7 @@ export abstract class AgentConsoleFocusLayers extends AgentConsoleFocusTranscrip
             || state.timelineEventInspectorOpen || this.hasMessageDetailFocus() || !!state.textOverlay || state.commandOutputsOpen;
     }
     shouldRenderTerminalCursor(): boolean { return this.state.inputFocused || this.isAnyFocusActive() || this.state.inputLocked || this.state.modalPromptActive; }
-    resolveTerminalCursorMode(): 'prompt' | 'bottom' { return this.isAnyFocusActive() || this.state.inputLocked || this.state.modalPromptActive ? 'bottom' : 'prompt'; }
+    resolveTerminalCursorMode(): 'prompt' | 'bottom' { return this.hasBlockingSelectMenu() || this.state.pendingQuestion || this.state.approvalsFocused || this.state.modalPromptActive || (!this.isAnyFocusActive() && !this.state.inputLocked) ? 'prompt' : 'bottom'; }
     shouldRouteDraftNavigation(hasActiveTextPrompt: boolean): boolean {
         const state = this.state;
         return !state.toolsFocused && !state.approvalsFocused && !state.reviewOpen && !this.hasBlockingSelectMenu()
