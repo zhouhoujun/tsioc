@@ -16,11 +16,13 @@ export interface UserProfile {
 
 export interface UserSession {
     sub: string;
+    username?: string;
     name?: string;
     email?: string;
     emailVerified?: boolean;
     picture?: string;
     provider: string;
+    roles?: string[];
     accessToken?: string;
     refreshToken?: string;
     idToken?: string;

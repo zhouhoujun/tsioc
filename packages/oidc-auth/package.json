@@ -36,10 +36,14 @@
     "@tsdi/core": "latest",
     "@tsdi/aop": "latest",
     "@tsdi/security": "latest",
+    "@tsdi/repository": "latest",
     "@tsdi/service": "latest",
+    "@tsdi/typeorm-adapter": "latest",
+    "@tsdi/platform-server": "latest",
     "@tsdi/http-microservice": "latest",
     "jsonwebtoken": "^9.0.0",
-    "cross-fetch": "^4.1.0"
+    "cross-fetch": "^4.1.0",
+    "typeorm": "^0.3.20"
   },
   "directories": {
     "lib": "dist",

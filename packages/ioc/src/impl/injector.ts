@@ -1031,6 +1031,12 @@ export function processInjectDeclarations(
     if (annotation.exports?.length) {
         const extedOption = (typeRef: ClassRef, option?: RegOption) => typeRef.getAnnotation<ModuleDef>().module ? option : ({ static: false, ...option, declaration: true });
         for (const d of annotation.exports) {
+            // Exported abstract classes are tokens whose concrete provider is
+            // already registered by the module. Re-registering the abstract
+            // type itself would shadow that provider with an unusable stub.
+            if (getDef(d as any)?.abstract) {
+                continue;
+            }
             const res = processInjectType(injector, d, dedupStack, true, extedOption);
             if (res) {
                 dps.push(res);

@@ -1,34 +1,41 @@
-import { Module, ModuleWithProviders, Provider } from '@tsdi/ioc';
-import { OIDCModule as SharedOIDCModule, OIDCOptions, OAuth2Module, JWTModule, provideOIDC as provideSecurityOIDC } from '@tsdi/security';
-import { OIDCService } from './OIDCService';
+import { isPlainObject, Module, ModuleWithProviders, Provider } from '@tsdi/ioc';
+import {
+    OIDCModule as SharedOIDCModule,
+    OIDCOptions,
+    OAuth2Module,
+    JWTModule,
+    provideOIDC as provideSecurityOIDC
+} from '@tsdi/security';
+import { TypeOrmModule, TypeormOptions } from '@tsdi/typeorm-adapter';
+import { ServerModule } from '@tsdi/platform-server';
+import { DataSourceOptions } from 'typeorm';
+import { OIDCService, OIDC_AUTH_MODULE_OPTIONS } from './OIDCService';
+import { OIDCAuthGuard } from './OIDCAuthGuard';
+import { InMemoryUserStore, UserStore } from './UserStore';
+import { TypeOrmUserStore } from './TypeOrmUserStore';
+import { AuthUserEntity } from '../models/AuthUser';
+import { OIDCAuthModuleOptions, OIDCPersistenceOptions } from './options';
 
-export interface OIDCAuthModuleOptions {
-    clientId: string;
-    clientSecret: string;
-    authorizationURL: string;
-    tokenURL: string;
-    profileURL: string;
-    callbackURL: string;
-    issuer: string;
-    jwksURI?: string;
-    scope?: string[];
-    sessionExpiresIn?: string;
-    sessionIssuer?: string;
-    prompt?: string;
-    loginHint?: string;
-}
+export type { OIDCAuthModuleOptions, OIDCJwtOptions, OIDCPersistenceOptions } from './options';
 
 @Module({
     imports: [
         JWTModule,
         OAuth2Module,
-        SharedOIDCModule
+        SharedOIDCModule,
+        ServerModule,
+        TypeOrmModule
     ],
     providers: [
-        OIDCService
+        OIDCService,
+        InMemoryUserStore,
+        { provide: UserStore, useExisting: InMemoryUserStore, asDefault: true },
+        OIDCAuthGuard
     ],
     exports: [
-        OIDCService
+        OIDCService,
+        OIDCAuthGuard,
+        UserStore
     ]
 })
 export class OIDCModule {
@@ -38,17 +45,54 @@ export class OIDCModule {
             providers: createOIDCAuthOptionProviders(options)
         };
     }
+
+    /**
+     * Enable TypeORM backed user storage for the auth service.
+     *
+     * ```ts
+     * imports: [
+     *   OIDCModule.withPersistence({
+     *     connection: { type: 'sqljs', synchronize: true, entities: [AuthUserEntity] },
+     *     auth: { clientId: '...', issuer: '...' }
+     *   })
+     * ]
+     * ```
+     */
+    static withPersistence(options: OIDCPersistenceOptions): ModuleWithProviders<OIDCModule> {
+        const connection = withAuthEntities(options.connection);
+        const authOptions: OIDCAuthModuleOptions = {
+            ...(options.auth ?? {})
+        };
+        if (options.allowRegistration !== undefined) {
+            authOptions.allowRegistration = options.allowRegistration;
+        }
+        const providers: Provider[] = [
+            ...TypeOrmModule.withConnection(connection).providers,
+            TypeOrmUserStore,
+            { provide: UserStore, useExisting: TypeOrmUserStore }
+        ];
+        if (options.auth || options.allowRegistration !== undefined) {
+            providers.push({
+                provide: OIDC_AUTH_MODULE_OPTIONS,
+                useValue: authOptions
+            });
+        }
+        return {
+            module: OIDCModule,
+            providers
+        };
+    }
 }
 
 function createSecurityOIDCOptions(options: OIDCAuthModuleOptions): OIDCOptions {
     return new OIDCOptions(
-        options.clientId,
-        options.clientSecret,
-        options.authorizationURL,
-        options.tokenURL,
-        options.profileURL,
-        options.callbackURL,
-        options.issuer,
+        options.clientId ?? '',
+        options.clientSecret ?? '',
+        options.authorizationURL ?? '',
+        options.tokenURL ?? '',
+        options.profileURL ?? '',
+        options.callbackURL ?? '',
+        options.issuer ?? '',
         options.jwksURI,
         options.scope,
         undefined,
@@ -67,16 +111,31 @@ function createOIDCAuthOptionProviders(options: OIDCAuthModuleOptions): Provider
     }
     return [
         {
-            provide: 'OIDC_AUTH_MODULE_OPTIONS',
+            provide: OIDC_AUTH_MODULE_OPTIONS,
             useValue: options
         }
     ];
+}
+
+function withAuthEntities(connection: OIDCPersistenceOptions['connection']): OIDCPersistenceOptions['connection'] {
+    if (!isPlainObject(connection) || 'provide' in connection || 'useValue' in connection || 'useClass' in connection) {
+        return connection;
+    }
+    const options = connection as TypeormOptions & DataSourceOptions;
+    const entities = (options.entities ?? []).filter(entity => entity !== AuthUserEntity);
+    return {
+        ...options,
+        entities: [...entities, AuthUserEntity]
+    } as OIDCPersistenceOptions['connection'];
 }
 
 export function provideOIDC(options: OIDCAuthModuleOptions): Provider[] {
     return [
         ...provideSecurityOIDC(createSecurityOIDCOptions(options)),
         OIDCService,
+        OIDCAuthGuard,
+        InMemoryUserStore,
+        { provide: UserStore, useExisting: InMemoryUserStore, asDefault: true },
         ...createOIDCAuthOptionProviders(options)
     ];
 }

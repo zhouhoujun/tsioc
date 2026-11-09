@@ -11,6 +11,14 @@ interface TokenResponse {
     token_type?: string;
 }
 
+function restoreEnv(name: string, value: string | undefined): void {
+    if (value === undefined) {
+        delete process.env[name];
+    } else {
+        process.env[name] = value;
+    }
+}
+
 class FaultyTokenStub {
     options?: any;
     code?: string;
@@ -208,8 +216,8 @@ export class OIDCServiceTest {
             const token = await service.createSessionToken(user);
             expect(token).toBe('signed-token-for-user-1');
         } finally {
-            process.env.OIDC_SESSION_EXPIRES_IN = originalExpires;
-            process.env.OIDC_SESSION_ISSUER = originalIssuer;
+            restoreEnv('OIDC_SESSION_EXPIRES_IN', originalExpires);
+            restoreEnv('OIDC_SESSION_ISSUER', originalIssuer);
         }
     }
 
@@ -288,8 +296,8 @@ export class OIDCServiceTest {
                 useValue: options
             });
         } finally {
-            process.env.OIDC_SESSION_EXPIRES_IN = originalExpires;
-            process.env.OIDC_SESSION_ISSUER = originalIssuer;
+            restoreEnv('OIDC_SESSION_EXPIRES_IN', originalExpires);
+            restoreEnv('OIDC_SESSION_ISSUER', originalIssuer);
         }
     }
 }
