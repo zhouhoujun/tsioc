@@ -435,7 +435,10 @@ Features:
   inspector and status/output,
 - SVG-native canvas: connection lines render through the components SVG
   namespace support (not per-edge style positioning),
-- drag nodes with grid snapping, drag between output/input ports to create connections,
+- drag nodes with grid snapping; connect from output or input ports, drop anywhere
+  on the target node body, or click one port then the other (click-to-connect);
+  valid ports and hovered nodes highlight while wiring, and `Esc` or an empty-canvas
+  click cancels the pending wire,
 - click an edge (widened hit path) to select it; `Delete` removes the selected node or connection,
 - inspector for node name/description/config fields driven by `WorkflowNodeRegistry`,
 - searchable palette: filter 35 registered node types by label, description or type,

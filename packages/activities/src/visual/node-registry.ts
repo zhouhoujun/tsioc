@@ -849,9 +849,15 @@ let generatedNodeSequence = 0;
 @Injectable()
 export class WorkflowNodeRegistry {
     protected readonly definitions = new Map<string, WorkflowNodeDefinition>();
+    protected _revision = 0;
 
     constructor() {
         BUILT_IN_WORKFLOW_NODES.forEach(def => this.register(def));
+    }
+
+    /** Monotonic change marker used by derived palette/inspector view caches. */
+    get revision(): number {
+        return this._revision;
     }
 
     register(definition: WorkflowNodeDefinition): this {
@@ -866,11 +872,16 @@ export class WorkflowNodeRegistry {
             defaultConfig: { ...(definition.defaultConfig || {}) }
         };
         this.definitions.set(definition.type, copy);
+        this._revision += 1;
         return this;
     }
 
     unregister(type: string): boolean {
-        return this.definitions.delete(type);
+        const removed = this.definitions.delete(type);
+        if (removed) {
+            this._revision += 1;
+        }
+        return removed;
     }
 
     has(type: string): boolean {

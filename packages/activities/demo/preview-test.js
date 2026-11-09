@@ -86,9 +86,12 @@ function startHttpDemo(port) {
         const before = await page.evaluate(() => {
             const edge = document.querySelector('.workflow-edge');
             const box = edge?.getBoundingClientRect();
+            const port = document.querySelector('.workflow-node-port');
+            const portHitSize = port ? parseFloat(getComputedStyle(port).width) : 0;
             const paneOverflow = ['.workspace-layout-left', '.workspace-layout-center', '.workspace-layout-right', '.workspace-layout-bottom']
                 .map(selector => getComputedStyle(document.querySelector(selector)).overflowY);
             return {
+                portHitSize,
                 nodes: document.querySelectorAll('.workflow-node').length,
                 edges: document.querySelectorAll('.workflow-edge').length,
                 palette: document.querySelectorAll('.workflow-palette-item').length,
@@ -99,6 +102,16 @@ function startHttpDemo(port) {
                 panesScrollable: paneOverflow.every(value => value === 'auto' || value === 'scroll')
             };
         });
+
+        // The Node-RED style application menu opens, lists grouped commands and
+        // closes again (Escape or an outside click are the shared menu behavior).
+        const menuTrigger = page.locator('.workflow-toolbar .menu-bar-trigger');
+        await menuTrigger.click();
+        const menuOpen = await page.locator('.workflow-toolbar .menu-bar-popup').isVisible();
+        const menuEntries = await page.locator('.workflow-toolbar .menu-bar-item').count();
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(80);
+        const menuClosed = !(await page.locator('.workflow-toolbar .menu-bar-popup').isVisible());
 
         // Palette search filters registered components without changing the registry.
         const paletteSearch = page.locator('.workflow-palette-search-input');
@@ -134,7 +147,8 @@ function startHttpDemo(port) {
         await page.locator('.workflow-inspector .CodeMirror').click();
         await page.keyboard.press('Control+A');
         await page.keyboard.type('return 42;');
-        await page.waitForTimeout(200);
+        // Code edits are debounced; wait past the quiet period (and then some).
+        await page.waitForTimeout(400);
         const codeApplied = await page.evaluate(() =>
             window.workflowDesigner.designer.nodes.find(node => node.id === 'function_1')?.config?.code === 'return 42;'
         );
@@ -268,9 +282,10 @@ function startHttpDemo(port) {
 
         await browser.close();
 
-        const result = { before, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, fitVisible, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, darkTheme, themeStored, themeAfterReload, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
+        const result = { before, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, fitVisible, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, darkTheme, themeStored, themeAfterReload, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
         console.log(JSON.stringify(result, null, 2));
-        if (errors.length || !before.edgeVisible || !before.panesScrollable
+        if (errors.length || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20
+            || !menuOpen || menuEntries < 5 || !menuClosed
             || paletteFiltered < 1 || paletteFiltered >= 35 || paletteRestored !== 35
             || !deleteDisabledBefore || !deleteEnabledAfter || localePreserved.count !== 8 || localePreserved.locale !== 'zh-CN' || !fitVisible
             || !codeEditor || !codeApplied || !formInvalid || !formValid || !resized || !collapsed || !restored

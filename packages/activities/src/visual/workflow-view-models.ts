@@ -219,7 +219,10 @@ export function buildWorkflowCanvasModel(
     if (designer.connectionDraft) {
         const source = designer.nodes.find(node => node.id === designer.connectionDraft!.sourceNodeId);
         const sourceGeo = source ? geometry.get(source.id) : undefined;
-        const sourcePort = sourceGeo?.outputs.find(port => port.id === designer.connectionDraft!.sourcePort);
+        const sourcePorts = designer.connectionDraft.sourceSide === 'input'
+            ? sourceGeo?.inputs
+            : sourceGeo?.outputs;
+        const sourcePort = sourcePorts?.find(port => port.id === designer.connectionDraft!.sourcePort);
         if (sourcePort) {
             draft = {
                 d: edgePath(sourcePort, { x: designer.connectionDraft.x, y: designer.connectionDraft.y }),
@@ -237,6 +240,8 @@ export function buildWorkflowCanvasModel(
         nodes: nodeViews,
         edges: edgeViews,
         draft,
+        connecting: !!designer.connectionDraft,
+        connectingSide: designer.connectionDraft?.sourceSide || 'output',
         width: Math.max(1200, maxX + 320),
         height: Math.max(720, maxY + 240),
         zoom: designer.zoom,

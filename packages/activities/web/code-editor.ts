@@ -110,6 +110,13 @@ export class WorkflowCodeMirrorDirective implements OnDestroy {
             const EventCtor = (element.ownerDocument as any)?.defaultView?.Event || Event;
             element.dispatchEvent(new EventCtor('input', { bubbles: true }));
         });
+        // The inspector debounces code commits so typing does not rebuild the
+        // whole designer on every keystroke. Blur is the explicit "commit now"
+        // signal (clicking Run/Save/the menu all blur CodeMirror first).
+        editor.on('blur', () => {
+            const EventCtor = (element.ownerDocument as any)?.defaultView?.Event || Event;
+            element.dispatchEvent(new EventCtor('blur'));
+        });
 
         const Observer = (element.ownerDocument as any)?.defaultView?.MutationObserver
             || (globalThis as any).MutationObserver;

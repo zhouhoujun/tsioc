@@ -692,11 +692,16 @@ export interface WorkflowSelection {
 
 /**
  * 设计器连接草稿
- * Connection draft while dragging from an output port.
+ * Connection draft while dragging from an input or output port.
  */
 export interface WorkflowConnectionDraft {
     sourceNodeId: string;
     sourcePort: string;
+    /**
+     * Port side the wire starts from. Output is the default so older callers
+     * keep their output-to-input semantics; input starts create a reverse wire.
+     */
+    sourceSide?: 'input' | 'output';
     x: number;
     y: number;
 }
@@ -781,6 +786,10 @@ export interface WorkflowCanvasModel {
         d: string;
         attrs: Record<string, string>;
     };
+    /** True while a wire is being dragged or waiting for a second click. */
+    connecting?: boolean;
+    /** Side the active wire starts from; the opposite ports are valid targets. */
+    connectingSide?: 'input' | 'output';
     width: number;
     height: number;
     zoom: number;

@@ -36,6 +36,19 @@ Save / Workflows / Open in the UI go through the real HTTP service.
 
 The demo starts on the approval workflow. It supports dragging nodes, connecting
 ports, running, replaying run history and opening the execution log.
+Connections can be dragged from either an input or an output port, released
+anywhere on the target node, or made by clicking one port and then the other;
+valid ports and target nodes highlight while a wire is active.
+
+The toolbar includes a Node-RED style application menu (the ☰ button on the
+right) with grouped Run / Edit / View / File commands, shortcut hints and the
+same actions as the inline buttons. The menu itself is the renderer-neutral
+`menu-bar` component from `@tsdi/components/common`, so other HTML, desktop and
+console hosts can reuse it with their own groups.
+
+Code fields in the inspector (for example the Function node's code) commit
+changes through a short debounce and flush immediately on blur. Typing therefore
+no longer rebuilds the whole workflow snapshot on every keystroke.
 
 ## Browser verification
 
@@ -49,6 +62,7 @@ npm run demo:test
 demo in headless Chromium, asserts:
 
 - 6 nodes / 6 edges / 35 palette components render
+- the application menu opens, lists grouped commands and closes with Escape
 - palette search filters components and restores the full list on clear
 - Delete/Duplicate stay disabled until a node or connection is selected
 - switching language preserves the edited document instead of reloading defaults
@@ -83,8 +97,12 @@ Example verified result:
     "status": "Idle",
     "edgeVisible": true,
     "edgeNamespace": "http://www.w3.org/2000/svg",
+    "portHitSize": 24,
     "panesScrollable": true
   },
+  "menuOpen": true,
+  "menuEntries": 15,
+  "menuClosed": true,
   "paletteFiltered": 1,
   "paletteRestored": 35,
   "deleteDisabledBefore": true,

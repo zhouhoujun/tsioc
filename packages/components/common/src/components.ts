@@ -9,6 +9,7 @@ import {
 } from '@tsdi/components';
 import { Module, Optional } from '@tsdi/ioc';
 import { TabBarComponent } from './tab-bar';
+import { MenuBarComponent } from './menu';
 import { MarkdownCodeComponent, MarkdownTableComponent } from './markdown';
 import { DialogComponent } from './dialog';
 import { AlertDialogComponent } from './alert-dialog';
@@ -107,7 +108,7 @@ export class PanelComponent {
 
 @Module({
     providers: [ThemeService],
-    declarations: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, AlertDialogComponent, ToastStackComponent, SelectComponent, ListPanelComponent, ListComponent, KeymapPanelComponent, StatusListComponent, MessageRowComponent, DetailPanelComponent, InputFieldComponent, WorkspaceLayoutComponent, GridLayoutComponent, GridItemComponent],
-    exports: [PanelComponent, TabBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, AlertDialogComponent, ToastStackComponent, SelectComponent, ListPanelComponent, ListComponent, KeymapPanelComponent, StatusListComponent, MessageRowComponent, DetailPanelComponent, InputFieldComponent, WorkspaceLayoutComponent, GridLayoutComponent, GridItemComponent]
+    declarations: [PanelComponent, TabBarComponent, MenuBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, AlertDialogComponent, ToastStackComponent, SelectComponent, ListPanelComponent, ListComponent, KeymapPanelComponent, StatusListComponent, MessageRowComponent, DetailPanelComponent, InputFieldComponent, WorkspaceLayoutComponent, GridLayoutComponent, GridItemComponent],
+    exports: [PanelComponent, TabBarComponent, MenuBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, AlertDialogComponent, ToastStackComponent, SelectComponent, ListPanelComponent, ListComponent, KeymapPanelComponent, StatusListComponent, MessageRowComponent, DetailPanelComponent, InputFieldComponent, WorkspaceLayoutComponent, GridLayoutComponent, GridItemComponent]
 })
 export class BaseComponentsModule {}

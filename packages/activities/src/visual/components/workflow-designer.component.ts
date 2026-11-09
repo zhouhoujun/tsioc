@@ -1,5 +1,5 @@
-import { Attribute, Component, ElementRef, ReactiveEffect, reactive } from '@tsdi/components';
-import { installWorkspaceLayoutStyles, markElementRefRaw } from '@tsdi/components/common';
+import { Attribute, Component, ElementRef, NoReactive, ReactiveEffect, reactive } from '@tsdi/components';
+import { installMenuBarStyles, installWorkspaceLayoutStyles, markElementRefRaw } from '@tsdi/components/common';
 import { applyThemeToDocument, isThemeName, ThemeName } from '@tsdi/components/common';
 import { DOCUMENT } from '@tsdi/common';
 import { Inject, Optional } from '@tsdi/ioc';
@@ -121,6 +121,37 @@ export class WorkflowDesignerComponent {
     jsonError = '';
     private pendingNodeType?: string;
 
+    /**
+     * Derived view models are cached by the exact designer state they were
+     * built from. Everything in this app shares one reactive binding cascade,
+     * so returning a fresh object on every pass feeds a self-sustaining loop
+     * (one pointer move currently re-runs every binding up to 20 times). A
+     * stable reference makes the follow-up component attribute assignment a
+     * no-op and settles the cascade after the first real change.
+     */
+    @NoReactive() private canvasModelCache?: { key: string; model: ReturnType<typeof buildWorkflowCanvasModel> };
+    @NoReactive() private toolbarModelCache?: { key: string; model: ReturnType<typeof buildWorkflowToolbarModel> };
+    @NoReactive() private inspectorModelCache?: {
+        nodeId: string;
+        name: string;
+        description: string;
+        type: string;
+        config: any;
+        execution: any;
+        locale: string;
+        revision: number;
+        model: ReturnType<typeof buildWorkflowInspectorModel>;
+    };
+    @NoReactive() private runHistoryCache?: {
+        history: any;
+        selected: string | undefined;
+        locale: string;
+        model: ReturnType<typeof buildWorkflowRunHistory>;
+    };
+    @NoReactive() private statusModelCache?: { key: string; model: ReturnType<typeof buildWorkflowStatusModel> };
+    @NoReactive() private paletteCache?: { key: string; groups: WorkflowPaletteGroup[] };
+    @NoReactive() private runLogsCache?: { execution: any; logs: any[] };
+
     constructor(
         @Optional() registry?: WorkflowNodeRegistry,
         @Optional() service?: VisualWorkflowService,
@@ -136,6 +167,7 @@ export class WorkflowDesignerComponent {
         // a Document through the proxy would wrap its DOM internals.
         installWorkflowDesignerStyles(document);
         installWorkspaceLayoutStyles(document);
+        installMenuBarStyles(document);
         applyThemeToDocument(document, this.themeName);
         const rawDesigner = new WorkflowDesigner({
             registry: this.registry,
@@ -199,31 +231,185 @@ export class WorkflowDesignerComponent {
     }
 
     get paletteGroups(): WorkflowPaletteGroup[] {
-        return buildWorkflowPalette(this.registry, this.localeValue, this.translator);
+        const key = `${this.localeValue}|${this.registry.revision}`;
+        const cache = this.paletteCache;
+        if (cache && cache.key === key) {
+            return cache.groups;
+        }
+        const groups = buildWorkflowPalette(this.registry, this.localeValue, this.translator);
+        this.paletteCache = { key, groups };
+        return groups;
     }
 
     get canvasModel() {
-        return buildWorkflowCanvasModel(this.designer, this.registry, this.localeValue, this.translator);
+        const key = this.canvasModelKey();
+        const cache = this.canvasModelCache;
+        if (cache && cache.key === key) {
+            return cache.model;
+        }
+        const model = buildWorkflowCanvasModel(this.designer, this.registry, this.localeValue, this.translator);
+        this.canvasModelCache = { key, model };
+        return model;
     }
 
     get inspectorModel() {
-        return buildWorkflowInspectorModel(this.designer, this.registry, this.localeValue, this.translator);
+        const node = this.designer.selectedNode;
+        const execution = this.designer.execution;
+        const locale = this.localeValue;
+        const revision = this.registry.revision;
+        const nodeId = node?.id || '';
+        const name = node?.name || '';
+        const description = node?.description || '';
+        const type = node?.type || '';
+        const config = node?.config;
+        const cache = this.inspectorModelCache;
+        if (cache && cache.nodeId === nodeId && cache.name === name && cache.description === description
+            && cache.type === type && cache.config === config
+            && cache.execution === execution && cache.locale === locale && cache.revision === revision) {
+            return cache.model;
+        }
+        const model = buildWorkflowInspectorModel(this.designer, this.registry, locale, this.translator);
+        this.inspectorModelCache = {
+            nodeId, name, description, type, config, execution, locale, revision, model
+        };
+        return model;
     }
 
     get toolbarModel() {
-        return buildWorkflowToolbarModel(this.designer, this.localeValue, this.translator);
+        const key = this.toolbarModelKey();
+        const cache = this.toolbarModelCache;
+        if (cache && cache.key === key) {
+            return cache.model;
+        }
+        const model = buildWorkflowToolbarModel(this.designer, this.localeValue, this.translator);
+        this.toolbarModelCache = { key, model };
+        return model;
     }
 
     get statusModel() {
-        return buildWorkflowStatusModel(this.designer, this.localeValue, this.translator);
+        const key = this.statusModelKey();
+        const cache = this.statusModelCache;
+        if (cache && cache.key === key) {
+            return cache.model;
+        }
+        const model = buildWorkflowStatusModel(this.designer, this.localeValue, this.translator);
+        this.statusModelCache = { key, model };
+        return model;
     }
 
     get runHistory() {
-        return buildWorkflowRunHistory(this.designer, this.localeValue, this.translator);
+        const history = this.designer.executionHistory;
+        const selected = this.designer.selectedExecutionId;
+        const locale = this.localeValue;
+        const cache = this.runHistoryCache;
+        if (cache && cache.history === history && cache.selected === selected && cache.locale === locale) {
+            return cache.model;
+        }
+        const model = buildWorkflowRunHistory(this.designer, locale, this.translator);
+        this.runHistoryCache = { history, selected, locale, model };
+        return model;
     }
 
     get runLogs() {
-        return this.designer.execution?.logs || [];
+        const execution = this.designer.execution;
+        const cache = this.runLogsCache;
+        if (cache && cache.execution === execution) {
+            return cache.logs;
+        }
+        const logs = execution?.logs || [];
+        this.runLogsCache = { execution, logs };
+        return logs;
+    }
+
+    /**
+     * Canvas model key intentionally projects only fields the canvas paints.
+     * It must include connector geometry/status and the draft, but not node
+     * config or execution payloads, so editing code does not rebuild the graph.
+     */
+    private canvasModelKey(): string {
+        const designer = this.designer;
+        const execution = designer.execution;
+        const parts: string[] = [
+            this.localeValue,
+            String(designer.zoom),
+            String(designer.pan?.x || 0),
+            String(designer.pan?.y || 0),
+            designer.selection?.nodeId || '',
+            designer.selection?.connectionId || '',
+            String(this.registry.revision)
+        ];
+        const draft = designer.connectionDraft;
+        parts.push(draft
+            ? `draft:${draft.sourceNodeId}:${draft.sourcePort}:${draft.sourceSide || 'output'}:${draft.x}:${draft.y}`
+            : '');
+        (designer.nodes || []).forEach(node => {
+            parts.push([
+                node.id,
+                node.name,
+                node.type,
+                node.description || '',
+                node.position?.x,
+                node.position?.y,
+                node.dimension?.width || '',
+                node.dimension?.height || '',
+                node.style?.icon || '',
+                node.style?.backgroundColor || '',
+                node.style?.textColor || '',
+                (node.inputs || []).map(port => `${port.id}:${port.label || ''}:${port.name || ''}:${port.type || ''}`).join(','),
+                (node.outputs || []).map(port => `${port.id}:${port.label || ''}:${port.name || ''}:${port.type || ''}`).join(','),
+                execution?.nodeStates?.[node.id]?.status || ''
+            ].join(':'));
+        });
+        (designer.connections || []).forEach(connection => {
+            parts.push([
+                connection.id,
+                connection.sourceNodeId,
+                connection.sourcePort,
+                connection.targetNodeId,
+                connection.targetPort,
+                connection.label || '',
+                execution?.edgeStates?.[connection.id]?.status || ''
+            ].join(':'));
+        });
+        return parts.join('|');
+    }
+
+    private toolbarModelKey(): string {
+        const designer = this.designer;
+        return [
+            this.localeValue,
+            designer.definition?.name || '',
+            designer.nodes?.length || 0,
+            designer.connections?.length || 0,
+            designer.selection?.nodeId || '',
+            designer.selection?.connectionId || '',
+            designer.canUndo ? 1 : 0,
+            designer.canRedo ? 1 : 0,
+            designer.canResume ? 1 : 0,
+            designer.running ? 1 : 0,
+            designer.zoom,
+            designer.execution?.status || ''
+        ].join('|');
+    }
+
+    private statusModelKey(): string {
+        const designer = this.designer;
+        const selected = designer.selectedNode;
+        return [
+            this.localeValue,
+            designer.message || '',
+            JSON.stringify(designer.messageParams || {}),
+            designer.error || '',
+            JSON.stringify(designer.errorParams || {}),
+            designer.running ? 1 : 0,
+            designer.nodes?.length || 0,
+            selected?.id || '',
+            selected?.name || '',
+            selected?.type || '',
+            String(this.registry.revision),
+            designer.zoom,
+            designer.execution?.status || ''
+        ].join('|');
     }
 
     readonly toolbarAction = (action: string): void => {
@@ -501,11 +687,43 @@ export class WorkflowDesignerComponent {
         self.libraryItems = await this.designer.listSaved(this.store);
     }
 
+    /**
+     * Finish a pending wire on a node body by choosing its first compatible
+     * port. This mirrors the forgiving drop targets of Node-RED style editors:
+     * users do not need pixel-perfect aim at the port dot.
+     */
+    private connectToNode(nodeId: string): void {
+        const draft = this.designer.connectionDraft;
+        if (!draft) {
+            return;
+        }
+        if (draft.sourceNodeId === nodeId) {
+            this.designer.cancelConnection();
+            return;
+        }
+        const node = this.designer.nodes.find(item => item.id === nodeId);
+        if (!node) {
+            this.designer.cancelConnection();
+            return;
+        }
+        const ports = draft.sourceSide === 'input' ? node.outputs : node.inputs;
+        if (!ports?.length) {
+            this.designer.cancelConnection();
+            return;
+        }
+        this.designer.completeConnection(nodeId, ports[0].id);
+    }
+
     readonly handleCanvas = (payload: WorkflowCanvasPointerPayload): void => {
         const designer = this.designer;
         switch (payload.type) {
             case 'background-down':
-                designer.clearSelection();
+                // Clicking empty canvas is the explicit "cancel wire" gesture.
+                if (designer.connectionDraft) {
+                    designer.cancelConnection();
+                } else {
+                    designer.clearSelection();
+                }
                 break;
             case 'pointer-move':
                 if (payload.world) {
@@ -526,16 +744,26 @@ export class WorkflowDesignerComponent {
             case 'pointer-leave':
                 if (designer.drag) {
                     designer.endNodeDrag();
+                } else if (designer.connectionDraft) {
+                    designer.cancelConnection();
                 }
                 break;
             case 'node-down':
-                if (payload.nodeId && payload.world) {
+                if (designer.connectionDraft && payload.nodeId) {
+                    // Clicking a target node while a wire is pending connects to
+                    // its first compatible port instead of starting a node drag.
+                    this.connectToNode(payload.nodeId);
+                } else if (payload.nodeId && payload.world) {
                     designer.beginNodeDrag(payload.nodeId, payload.world);
                 }
                 break;
             case 'node-up':
                 if (designer.drag) {
                     designer.endNodeDrag();
+                } else if (designer.connectionDraft && payload.nodeId) {
+                    // Releasing anywhere on the target node body is enough; the
+                    // user does not have to hit the small port dot.
+                    this.connectToNode(payload.nodeId);
                 }
                 break;
             case 'edge-click':
@@ -543,16 +771,39 @@ export class WorkflowDesignerComponent {
                     designer.selectConnection(payload.connectionId);
                 }
                 break;
-            case 'port-down':
-                if (payload.portType === 'output' && payload.nodeId && payload.portId && payload.world) {
-                    designer.beginConnection(payload.nodeId, payload.portId, payload.world);
+            case 'port-down': {
+                const side = payload.portType === 'input' ? 'input' : 'output';
+                if (!payload.nodeId || !payload.portId || !payload.world) {
+                    break;
                 }
+                const draft = designer.connectionDraft;
+                if (draft) {
+                    if ((draft.sourceSide || 'output') !== side) {
+                        // Second click on the opposite port completes immediately.
+                        designer.completeConnection(payload.nodeId, payload.portId);
+                        break;
+                    }
+                    designer.cancelConnection();
+                }
+                designer.beginConnection(payload.nodeId, payload.portId, payload.world, side);
                 break;
-            case 'port-up':
-                if (payload.portType === 'input' && payload.nodeId && payload.portId && designer.connectionDraft) {
+            }
+            case 'port-up': {
+                const draft = designer.connectionDraft;
+                if (!draft || !payload.nodeId || !payload.portId) {
+                    break;
+                }
+                const side = payload.portType === 'input' ? 'input' : 'output';
+                const sourceSide = draft.sourceSide || 'output';
+                if (side !== sourceSide) {
                     designer.completeConnection(payload.nodeId, payload.portId);
+                } else if (payload.nodeId !== draft.sourceNodeId || payload.portId !== draft.sourcePort) {
+                    // Dropping on another same-side port aborts the draft; a
+                    // click on the original port keeps it for click-to-connect.
+                    designer.cancelConnection();
                 }
                 break;
+            }
             case 'drop': {
                 const type = payload.nodeType || this.pendingNodeType;
                 this.pendingNodeType = undefined;
@@ -572,8 +823,10 @@ export class WorkflowDesignerComponent {
         }
     };
 
-    readonly inspectorChange = (key: string, value: any, type: string): void => {
-        const node = this.designer.selectedNode;
+    readonly inspectorChange = (key: string, value: any, type: string, nodeId?: string): void => {
+        const node = nodeId
+            ? this.designer.nodes.find(item => item.id === nodeId)
+            : this.designer.selectedNode;
         if (!node) {
             return;
         }

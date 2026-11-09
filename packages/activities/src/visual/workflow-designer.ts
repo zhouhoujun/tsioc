@@ -466,12 +466,24 @@ export class WorkflowDesigner {
         this.dragStartSnapshot = undefined;
     }
 
-    beginConnection(nodeId: string, sourcePort: string, world: NodePosition): boolean {
+    beginConnection(
+        nodeId: string,
+        sourcePort: string,
+        world: NodePosition,
+        sourceSide: 'input' | 'output' = 'output'
+    ): boolean {
         const node = this.definition.nodes.find(item => item.id === nodeId);
-        if (!node || !(node.outputs || []).some(port => port.id === sourcePort)) {
+        const ports = sourceSide === 'input' ? node?.inputs : node?.outputs;
+        if (!node || !(ports || []).some(port => port.id === sourcePort)) {
             return false;
         }
-        this.connectionDraft = { sourceNodeId: nodeId, sourcePort, x: world.x, y: world.y };
+        this.connectionDraft = {
+            sourceNodeId: nodeId,
+            sourcePort,
+            sourceSide,
+            x: world.x,
+            y: world.y
+        };
         this.setMessage('workflow.message.connectHint');
         return true;
     }
@@ -483,17 +495,26 @@ export class WorkflowDesigner {
         this.connectionDraft = { ...this.connectionDraft, x: world.x, y: world.y };
     }
 
-    completeConnection(targetNodeId: string, targetPort: string): NodeConnection | undefined {
-        if (!this.connectionDraft) {
+    completeConnection(targetNodeId: string, targetPort?: string): NodeConnection | undefined {
+        const draft = this.connectionDraft;
+        if (!draft) {
             return undefined;
         }
-        const { sourceNodeId, sourcePort } = this.connectionDraft;
         this.connectionDraft = undefined;
-        return this.addConnection(sourceNodeId, sourcePort, targetNodeId, targetPort);
+        // Starting from an input creates the same directed connection as an
+        // output-to-input drag; only the interaction direction is reversed.
+        if (draft.sourceSide === 'input') {
+            return this.addConnection(targetNodeId, targetPort, draft.sourceNodeId, draft.sourcePort);
+        }
+        return this.addConnection(draft.sourceNodeId, draft.sourcePort, targetNodeId, targetPort);
     }
 
     cancelConnection(): void {
+        const wasConnecting = !!this.connectionDraft;
         this.connectionDraft = undefined;
+        if (wasConnecting) {
+            this.setMessage('workflow.message.connectionCancelled');
+        }
     }
 
     // ---------------------------------------------------------------------

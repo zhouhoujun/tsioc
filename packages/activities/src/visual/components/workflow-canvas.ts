@@ -53,6 +53,8 @@ const EMPTY_CANVAS: WorkflowCanvasModel = {
     template: `
     <div class="workflow-canvas"
          tabindex="0"
+         data-connecting="{{model.connecting}}"
+         data-connecting-side="{{model.connectingSide}}"
          [style]="canvasStyle"
          @mousedown="backgroundDown($event)"
          @mousemove="pointerMove($event)"
@@ -153,7 +155,9 @@ export class WorkflowCanvasComponent {
             'data-port-side': side,
             title: port.label,
             'aria-label': port.label,
-            style: `left:${port.x - node.x - 6}px;top:${port.y - node.y - 6}px`
+            // The element is a larger invisible hit target; the visible dot is
+            // painted by CSS and centered on the exact wire endpoint.
+            style: `left:${port.x - node.x}px;top:${port.y - node.y}px`
         };
     }
 
@@ -215,6 +219,7 @@ export class WorkflowCanvasComponent {
         side: 'input' | 'output'
     ): void {
         this.stop(event);
+        event?.preventDefault?.();
         this.panStart = undefined;
         this.emit({
             type: 'port-down',

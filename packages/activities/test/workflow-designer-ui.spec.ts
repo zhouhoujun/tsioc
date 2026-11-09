@@ -299,6 +299,130 @@ describe('Workflow Designer UI', () => {
         expect(ref.instance.showLibrary).toBe(false);
     });
 
+    it('supports click-to-connect from an output port to an input port', async () => {
+        const outPort = root.querySelector('.workflow-node[data-node-id="task_2"] .workflow-node-port-output[data-port-id="out"]') as any;
+        const inPort = root.querySelector('.workflow-node[data-node-id="task_3"] .workflow-node-port-input[data-port-id="in"]') as any;
+        expect(outPort).toBeTruthy();
+        expect(inPort).toBeTruthy();
+        const MouseEventCtor = doc.defaultView.MouseEvent;
+
+        outPort.dispatchEvent(new MouseEventCtor('mousedown', { bubbles: true, clientX: 400, clientY: 300 }));
+        outPort.dispatchEvent(new MouseEventCtor('mouseup', { bubbles: true, clientX: 400, clientY: 300 }));
+        await flush();
+        expect(ref.instance.designer.connectionDraft).toBeTruthy();
+        expect(root.querySelector('.workflow-canvas').getAttribute('data-connecting')).toBe('true');
+
+        inPort.dispatchEvent(new MouseEventCtor('mousedown', { bubbles: true, clientX: 700, clientY: 400 }));
+        await flush();
+        expect(ref.instance.designer.connectionDraft).toBeUndefined();
+        expect(root.querySelector('.workflow-canvas').getAttribute('data-connecting')).toBe('false');
+        expect(ref.instance.designer.connections.some(connection =>
+            connection.sourceNodeId === 'task_2' && connection.targetNodeId === 'task_3'
+        )).toBe(true);
+    });
+
+    it('completes a wire when released anywhere on the target node', async () => {
+        const log = ref.instance.designer.addNode('log', { x: 1100, y: 620 })!;
+        await flush();
+        const outPort = root.querySelector('.workflow-node[data-node-id="task_2"] .workflow-node-port-output[data-port-id="out"]') as any;
+        const targetNode = root.querySelector(`.workflow-node[data-node-id="${log.id}"]`) as any;
+        expect(outPort).toBeTruthy();
+        expect(targetNode).toBeTruthy();
+        const MouseEventCtor = doc.defaultView.MouseEvent;
+
+        outPort.dispatchEvent(new MouseEventCtor('mousedown', { bubbles: true, clientX: 400, clientY: 300 }));
+        targetNode.dispatchEvent(new MouseEventCtor('mouseup', { bubbles: true, clientX: 900, clientY: 500 }));
+        await flush();
+        expect(ref.instance.designer.connectionDraft).toBeUndefined();
+        expect(ref.instance.designer.connections.some(connection =>
+            connection.sourceNodeId === 'task_2' && connection.targetNodeId === log.id
+        )).toBe(true);
+    });
+
+    it('reuses derived models so one change cannot feed a render cascade', async () => {
+        const canvas = ref.instance.canvasModel;
+        const toolbar = ref.instance.toolbarModel;
+        const status = ref.instance.statusModel;
+        expect(ref.instance.canvasModel).toBe(canvas);
+        expect(ref.instance.toolbarModel).toBe(toolbar);
+        expect(ref.instance.statusModel).toBe(status);
+
+        ref.instance.designer.panBy(12, 8);
+        await flush();
+        expect(ref.instance.canvasModel).not.toBe(canvas);
+        // Panning does not affect toolbar or status content.
+        expect(ref.instance.toolbarModel).toBe(toolbar);
+        expect(ref.instance.statusModel).toBe(status);
+        const panned = ref.instance.canvasModel;
+
+        ref.instance.designer.selectNode('task_1');
+        await flush();
+        const inspector = ref.instance.inspectorModel;
+        expect(ref.instance.inspectorModel).toBe(inspector);
+
+        const position = ref.instance.designer.nodes.find(node => node.id === 'task_1')!.position;
+        ref.instance.designer.moveNode('task_1', { x: position.x + 20, y: position.y + 10 });
+        await flush();
+        // Node position repaints the canvas but not the inspector/config panel.
+        expect(ref.instance.canvasModel).not.toBe(panned);
+        expect(ref.instance.inspectorModel).toBe(inspector);
+
+        ref.instance.designer.updateNodeConfig('task_1', { action: 'changed' });
+        await flush();
+        expect(ref.instance.inspectorModel).not.toBe(inspector);
+    });
+
+    it('opens the node-red style menu and dispatches toolbar actions', async () => {
+        const trigger = root.querySelector('.workflow-toolbar .menu-bar-trigger') as any;
+        expect(trigger).toBeTruthy();
+        const popup = root.querySelector('.workflow-toolbar .menu-bar-popup') as any;
+        expect(popup.hasAttribute('hidden')).toBe(true);
+
+        trigger.click();
+        await flush();
+        expect(popup.hasAttribute('hidden')).toBe(false);
+
+        const logs = root.querySelector('.workflow-toolbar [data-menu-id="toggle-logs"]') as any;
+        expect(logs).toBeTruthy();
+        logs.click();
+        await flush();
+        expect(ref.instance.showLogs).toBe(true);
+        expect(popup.hasAttribute('hidden')).toBe(true);
+    });
+
+    it('debounces code edits so typing does not rebuild the workflow per keystroke', async () => {
+        const node = ref.instance.designer.addNode('function', { x: 120, y: 120 });
+        expect(node).toBeTruthy();
+        const nodeId = node!.id;
+        const code = () => ref.instance.designer.nodes.find(item => item.id === nodeId)?.config?.code;
+        await flush();
+
+        const textarea = root.querySelector('.workflow-code-editor') as any;
+        expect(textarea).toBeTruthy();
+        expect(code()).toBe('return input;');
+
+        textarea.value = 'return 42;';
+        textarea.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        expect(code()).toBe('return input;');
+
+        textarea.value = 'return 43;';
+        textarea.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        expect(code()).toBe('return input;');
+
+        await waitFor(() => code() === 'return 43;', 1500);
+        expect(code()).toBe('return 43;');
+
+        // Blur commits immediately so Run/Save can never use stale code.
+        textarea.value = 'return 44;';
+        textarea.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        textarea.dispatchEvent(new (doc.defaultView as any).Event('blur'));
+        await flush();
+        expect(code()).toBe('return 44;');
+    });
+
     it('offers resume after a cancelled run and completes from the checkpoint', async () => {
         const first = await ref.instance.designer.run({
             context: { approved: true },

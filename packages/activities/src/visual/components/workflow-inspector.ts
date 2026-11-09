@@ -123,7 +123,8 @@ function snapshotSignature(model: WorkflowInspectorModel): string {
                     data-code-value="{{encodeCode(fieldValue(field))}}"
                     [value]="fieldValue(field)"
                     aria-invalid="{{errorFor(field.key) ? 'true' : 'false'}}"
-                    @input="changeField(field, $event)" rows="8"></textarea>
+                    @input="changeField(field, $event)"
+                    @blur="flushField(field)" rows="8"></textarea>
                 <div class="workflow-field-error" v-if="errorFor(field.key)">{{errorFor(field.key)}}</div>
                 <div class="workflow-field-hint" v-if="field.description && field.type !== 'boolean'">{{field.description}}</div>
             </div>
@@ -137,7 +138,13 @@ function snapshotSignature(model: WorkflowInspectorModel): string {
 })
 export class WorkflowInspectorComponent implements OnDestroy {
     @Attribute() locale = 'zh-CN';
-    @Attribute() changeAction?: (key: string, value: any, type: string) => void;
+    /**
+     * Code edits are committed after this quiet period. Pushing every CodeMirror
+     * keystroke into the designer would rebuild the full workflow snapshot and
+     * re-render the canvas/inspector, which makes large code fields feel laggy.
+     */
+    @Attribute() codeChangeDelay = 160;
+    @Attribute() changeAction?: (key: string, value: any, type: string, nodeId?: string) => void;
 
     protected _model: WorkflowInspectorModel = EMPTY_INSPECTOR;
     protected form?: FormGroup;
@@ -145,6 +152,8 @@ export class WorkflowInspectorComponent implements OnDestroy {
     protected modelSignature = '';
     protected validationErrors: Record<string, any> = {};
     protected destroyed = false;
+    protected pendingChange?: { key: string; value: any; type: string; nodeId: string };
+    protected pendingTimer?: any;
 
     constructor(
         @Optional() private forms?: FormBuilder,
@@ -166,6 +175,11 @@ export class WorkflowInspectorComponent implements OnDestroy {
         const signature = snapshotSignature(next);
         if (signature === this.modelSignature) {
             return;
+        }
+        // Commit a pending code edit before the inspector shows another node;
+        // the delayed callback must never write to the newly selected node.
+        if (this.pendingChange && this.pendingChange.nodeId !== next.nodeId) {
+            this.flushPendingChange();
         }
         this.modelSignature = signature;
         this._model = next;
@@ -250,6 +264,11 @@ export class WorkflowInspectorComponent implements OnDestroy {
         this.updateControl(field.key, value, field.type);
     }
 
+    /** Immediately commit a pending code edit (blur, node switch, destroy). */
+    flushField(_field?: WorkflowInspectorFieldView): void {
+        this.flushPendingChange();
+    }
+
     protected updateControl(key: string, value: any, type: string): void {
         const control = this.form?.get(key);
         if (control) {
@@ -259,9 +278,47 @@ export class WorkflowInspectorComponent implements OnDestroy {
             // Replace the snapshot so every field binding re-evaluates.
             this.validationErrors = { ...this.validationErrors, [key]: control.errors };
         }
-        if (!control || !control.errors) {
-            this.changeAction?.(key, value, type);
+        if (control && control.errors) {
+            return;
         }
+        if (type === 'code') {
+            this.queueChange(key, value, type);
+            return;
+        }
+        // Any non-code edit also closes the code edit burst so ordering stays
+        // intuitive (e.g. edit code, then immediately rename the node).
+        this.flushPendingChange();
+        this.changeAction?.(key, value, type, this.model?.nodeId);
+    }
+
+    protected queueChange(key: string, value: any, type: string): void {
+        if (this.pendingChange && this.pendingChange.key !== key) {
+            this.flushPendingChange();
+        }
+        this.pendingChange = {
+            key,
+            value,
+            type,
+            nodeId: this.model?.nodeId || ''
+        };
+        if (this.pendingTimer !== undefined) {
+            clearTimeout(this.pendingTimer);
+        }
+        const delay = Math.max(0, Number(this.codeChangeDelay) || 0);
+        this.pendingTimer = setTimeout(() => this.flushPendingChange(), delay);
+    }
+
+    protected flushPendingChange(): void {
+        if (this.pendingTimer !== undefined) {
+            clearTimeout(this.pendingTimer);
+            this.pendingTimer = undefined;
+        }
+        const pending = this.pendingChange;
+        this.pendingChange = undefined;
+        if (!pending) {
+            return;
+        }
+        this.changeAction?.(pending.key, pending.value, pending.type, pending.nodeId);
     }
 
     protected applyModel(model: WorkflowInspectorModel): void {
@@ -342,6 +399,7 @@ export class WorkflowInspectorComponent implements OnDestroy {
     }
 
     onDestroy(): void {
+        this.flushPendingChange();
         this.destroyed = true;
     }
 }

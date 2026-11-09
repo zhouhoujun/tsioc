@@ -121,6 +121,20 @@ describe('Visual Workflow Designer', () => {
             expect(designer.connectionDraft).toBeUndefined();
         });
 
+        it('supports reverse input-to-output gestures and node-body drops', () => {
+            const log = designer.addNode('log', { x: 900, y: 500 })!;
+            expect(designer.beginConnection(log.id, 'in', { x: 900, y: 500 }, 'input')).toBe(true);
+            const reverse = designer.completeConnection('task_2', 'out');
+            expect(reverse?.sourceNodeId).toBe('task_2');
+            expect(reverse?.targetNodeId).toBe(log.id);
+
+            const fallbackTarget = designer.addNode('log', { x: 1100, y: 620 })!;
+            designer.beginConnection('task_2', 'out', { x: 500, y: 300 });
+            const fallback = designer.completeConnection(fallbackTarget.id);
+            expect(fallback?.targetNodeId).toBe(fallbackTarget.id);
+            expect(fallback?.targetPort).toBe('in');
+        });
+
         it('removes dangling connections when a node is deleted', () => {
             const log = designer.addNode('log', { x: 900, y: 500 })!;
             designer.addConnection('task_2', 'out', log.id, 'in');

@@ -60,6 +60,14 @@ export const WORKFLOW_DESIGNER_CSS = `
     padding: 2px 8px;
 }
 
+.workflow-menu {
+    margin-left: auto;
+}
+
+.workflow-menu .menu-bar-trigger {
+    padding: 6px 7px;
+}
+
 .workflow-btn {
     border: 1px solid #cbd5e1;
     border-radius: 6px;
@@ -440,23 +448,60 @@ workflow-canvas {
 
 .workflow-node-port {
     position: absolute;
+    width: 24px;
+    height: 24px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    transform: translate(-50%, -50%);
+    box-sizing: border-box;
+    cursor: crosshair;
+    user-select: none;
+    touch-action: none;
+    z-index: 3;
+}
+
+/* Keep a 12px visual dot while the 24px element provides a forgiving hit area. */
+.workflow-node-port::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
     width: 12px;
     height: 12px;
+    transform: translate(-50%, -50%);
     border-radius: 50%;
     background: #ffffff;
     border: 2px solid #64748b;
     box-sizing: border-box;
-    cursor: crosshair;
-    z-index: 2;
+    transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
 }
 
-.workflow-node-port-output {
+.workflow-node-port-output::after {
     border-color: #2563eb;
 }
 
-.workflow-node-port:hover {
+.workflow-node-port:hover::after {
     background: #dbeafe;
-    transform: scale(1.15);
+    transform: translate(-50%, -50%) scale(1.18);
+}
+
+/* While a wire is active, make valid target ports obvious. */
+.workflow-canvas[data-connecting="true"],
+.workflow-canvas[data-connecting="true"] .workflow-node {
+    cursor: crosshair;
+}
+
+.workflow-canvas[data-connecting="true"][data-connecting-side="output"] .workflow-node-port-input::after,
+.workflow-canvas[data-connecting="true"][data-connecting-side="input"] .workflow-node-port-output::after {
+    background: #dcfce7;
+    border-color: #16a34a;
+    transform: translate(-50%, -50%) scale(1.25);
+}
+
+.workflow-canvas[data-connecting="true"] .workflow-node:hover {
+    border-color: #22c55e;
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.16), 0 8px 24px rgba(15, 23, 42, 0.16);
 }
 
 /* Edges */
@@ -1001,6 +1046,15 @@ workflow-canvas {
     --wf-theme-primary: #3b82f6;
     --wf-theme-primary-text: #ffffff;
     --wf-theme-danger: #f87171;
+    --menu-bar-surface: var(--wf-theme-surface);
+    --menu-bar-border: var(--wf-theme-border);
+    --menu-bar-text: var(--wf-theme-text);
+    --menu-bar-muted: var(--wf-theme-muted);
+    --menu-bar-hover: #1e293b;
+    --menu-bar-separator: var(--wf-theme-border);
+    --menu-bar-accent: #60a5fa;
+    --menu-bar-danger: var(--wf-theme-danger);
+    --menu-bar-shadow: rgba(0, 0, 0, 0.5);
 }
 
 .workflow-designer[data-theme="solarized"] {
@@ -1018,6 +1072,15 @@ workflow-canvas {
     --wf-theme-primary: #268bd2;
     --wf-theme-primary-text: #ffffff;
     --wf-theme-danger: #dc322f;
+    --menu-bar-surface: var(--wf-theme-surface);
+    --menu-bar-border: var(--wf-theme-border);
+    --menu-bar-text: var(--wf-theme-text);
+    --menu-bar-muted: var(--wf-theme-muted);
+    --menu-bar-hover: #0b4f5c;
+    --menu-bar-separator: var(--wf-theme-border);
+    --menu-bar-accent: #268bd2;
+    --menu-bar-danger: var(--wf-theme-danger);
+    --menu-bar-shadow: rgba(0, 0, 0, 0.5);
 }
 
 .workflow-designer[data-theme="high-contrast"] {
@@ -1035,6 +1098,15 @@ workflow-canvas {
     --wf-theme-primary: #ffff00;
     --wf-theme-primary-text: #000000;
     --wf-theme-danger: #ff5555;
+    --menu-bar-surface: #000000;
+    --menu-bar-border: #ffffff;
+    --menu-bar-text: #ffffff;
+    --menu-bar-muted: #ffffff;
+    --menu-bar-hover: #333333;
+    --menu-bar-separator: #ffffff;
+    --menu-bar-accent: #ffff00;
+    --menu-bar-danger: #ff5555;
+    --menu-bar-shadow: rgba(255, 255, 255, 0.25);
 }
 
 .workflow-designer[data-theme="dark"],
