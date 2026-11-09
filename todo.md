@@ -3269,3 +3269,4 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 回归：components/common 43、components/console 154、agents/agent-ui 2011、tsc、DOM/TUI gate、build:web、source-size、diff-check 通过。
 - common List 动态分页补齐首屏自动加载：`ListComponent.autoLoad` 在挂载且列表为空时自动调用 `loadPage`，后续由滚动边界 `onReachEnd()` 或 Load more 触发下一页；仍由 `ListPager` 统一 cursor/hasMore/loading/去重/并发保护。
 - 回归：components/common 50 passing；agent-ui `ListPager` 时间线分页路径保持 2011 passing。
+- 最新全量 gate（List autoLoad/时间线 ListPager 之后）：26 passed、1 skipped、0 failed；含 agents 10 包、components 4 包、全部 tsc、web build、DOM/TUI gate、metrics regression、source-size、diff-check、production-db-integrity。
