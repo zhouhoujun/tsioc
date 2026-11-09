@@ -3275,3 +3275,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 4 行以上仍保留可滚动 text overlay（toast 不适合承载长输出）；错误/命令输出正文继续进入 transcript，不重复当成 toast。
   - 新增回归：持久短提示也进入 toast 队列；现有 timed toast/长 overlay 行为保持；agent-ui 2011 passing。
 - TUI 会话选择器移除底部无意义操作说明行（`type to search ...`），筛选值直接显示在 `sessions N · i/N · <filter>` 标题中，不再占用 footer 行。
+- 真实 TUI 系统构建任务（09:xx，`npm run chat -- --workspace /home/zhouyou/workspace/sleep-mlt`）：创建 `survey-system`（store/survey/测试），真实 `node --test survey-system/test/*.test.js` 10 passing / 0 failing；审批 `A` 后工具链正常写入并运行。
+  - 真实交互复核：短提示（如 Always allow enabled）显示为右上角可关闭 toast，4s 自动消失且不重复占用状态行；会话选择器不再显示底部说明行；CJK 换行不丢字。
+  - 回归：agents/agent-ui 2011、components/console 154、components/common 50、tsc、build:web、DOM/TUI gate、source-size、diff-check 通过。
