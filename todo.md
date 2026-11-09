@@ -3285,3 +3285,4 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 新增 `ctrl+o` 直接打开可搜索会话选择器（与 opencode 的 Open session 快捷入口一致），保留 `ctrl+x l`。
   - `/sessions` 描述改为 `browse or search sessions (type to filter)`；标题显示过滤值。
   - 真实 TUI 验证 `ctrl+o` 打开 158 条会话列表；回归 keymap 68、agent-ui 2012 passing。
+- `ctrl+o` 会话搜索入口后全量 gate：26 passed、1 skipped、0 failed（agents 10 包、components 4 包、tsc、web、DOM/TUI、metrics、diff-check、source-size、production DB）。
