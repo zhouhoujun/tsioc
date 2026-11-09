@@ -133,7 +133,7 @@ export class AgentConsoleStatusPanelComponent {
     }
 
     // A text overlay repeats this text; keep the footer quiet while it is open.
-    get notice(): string { return this.state.textOverlay ? '' : this.state.notice; }
+    get notice(): string { return this.state.textOverlay || this.state.toasts?.length ? '' : this.state.notice; }
 
     get noticeLine(): string {
         return this.notice ? `note ${this.notice}` : '';

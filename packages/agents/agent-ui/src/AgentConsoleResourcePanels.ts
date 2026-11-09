@@ -6,7 +6,7 @@ import { formatAgentUiLabel, formatAgentKeymapActionLabel, formatAgentPanelLabel
 import { formatAgentConsoleInputBadges } from './AgentConsoleInputBadges';
 import { formatAgentMessageDetailSummary } from './AgentConsoleMessageDetailMeta';
 import { formatScheduledTaskDetailLines } from './AgentConsoleScheduledTaskFormat';
-import { formatSessionAge, formatSessionHint } from './AgentConsoleFormatters';
+import { formatSessionAge } from './AgentConsoleFormatters';
 import { formatReviewHeaderMeta, formatReviewSelectionMeta, formatReviewStatsMeta } from './AgentConsoleReviewPanelFormat';
 import { resolveMessageRowOffset } from './AgentConsoleTranscriptLayout';
 import { AgentMessage, basenameAgentPath, ScheduledAgentTask } from '@tsdi/agent';
@@ -69,7 +69,7 @@ export * from './AgentConsoleTaskPanels';
     selector: 'agent-console-sessions-panel',
     imports: [ListPanelComponent],
     template: `
-    <list-panel :header="sessionsSummaryLabel" :hint="sessionsHintLabel" :items="sessionItems" :showClose="false"></list-panel>
+    <list-panel :header="sessionsSummaryLabel" :items="sessionItems" :showClose="false"></list-panel>
     `
 })
 export class AgentConsoleSessionsPanelComponent {
@@ -163,14 +163,9 @@ export class AgentConsoleSessionsPanelComponent {
         if (!this.shouldShow) return '';
         if (!this.sessions.length) return panelLabel(this.translator, 'sessions', 'emptyFilter', 'no sessions match "{filter}"', { filter: this.state.navFilter.text || '' });
         const selectedIndex = Math.max(0, this.sessions.findIndex(item => item.id === this.state.selectedSessionId));
-        return panelLabel(this.translator, 'sessions', 'summary', 'sessions {total} · {index}/{total}', { total: this.sessions.length, index: selectedIndex + 1 });
-    }
-
-    get sessionsHintLabel(): string {
-        if (!this.shouldShow || !this.state.sessionsFocused) {
-            return '';
-        }
-        return formatSessionHint(this.state.consoleOptions.sessionHint, this.state.navFilter.text);
+        const filter = String(this.state.navFilter?.text || '').trim();
+        const summary = panelLabel(this.translator, 'sessions', 'summary', 'sessions {total} · {index}/{total}', { total: this.sessions.length, index: selectedIndex + 1 });
+        return filter ? `${summary} · ${filter}` : summary;
     }
 
     get shouldShow(): boolean {

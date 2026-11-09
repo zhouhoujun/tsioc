@@ -148,7 +148,8 @@ export class PanelI18nTest {
         });
         const panel = new AgentConsoleSessionsPanelComponent(base, zh);
         expect(panel.sessionsSummaryLabel).toEqual('没有匹配“zzz”的会话');
-        expect(panel.sessionsHintLabel).toContain('filter: zzz');
+        expect(panel.sessionsSummaryLabel).toContain('zzz');
+        expect((panel as any).sessionsHintLabel).toBeUndefined();
         expect(panel.sessionItems).toEqual([]);
     }
 

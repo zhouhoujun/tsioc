@@ -48,7 +48,12 @@ export function bindConsoleToasts(host: AgentConsoleToastHost): void {
     if (host.toastUnsubscribe) {
         return;
     }
-    host.toastUnsubscribe = host.toastService?.subscribe(entries => host.getState().setToasts(entries));
+    host.toastUnsubscribe = host.toastService?.subscribe(entries => {
+        host.getState().setToasts(entries);
+        if (!entries.length) {
+            host.getState().setNotice('');
+        }
+    });
 }
 
 export function disposeConsoleToasts(host: AgentConsoleToastHost): void {
@@ -81,16 +86,25 @@ export function notifyConsole(
     overlayTitle: () => string
 ): void {
     const lines = String(message || '').split('\n').filter(line => line.trim().length);
-    if (Number(duration) > 0 && lines.length <= 3) {
-        host.toastService?.show(message, { durationMs: Number(duration) });
+    if (lines.length <= 3) {
+        // Short prompt-level feedback always belongs to the shared toast queue.
+        // Keep the notice projection for non-TUI hosts and accessibility, but
+        // the TUI status rail hides it while a toast is visible.
+        const ms = Number(duration) > 0 ? Number(duration) : 4000;
+        host.toastService?.show(message, { durationMs: ms });
         host.getState().setToasts(host.toastService?.current || []);
+        if (!(Number(duration) > 0)) {
+            // Keep the notice projection for persistent callers/tests; the TUI
+            // hides it while the toast is visible.
+            host.getState().setNotice(message);
+            host.noticeExpiry ??= new AgentConsoleNoticeExpiry(() => host.getState().setNotice(''), host.animationClock);
+            host.noticeExpiry.schedule(ms);
+        }
         return;
     }
     host.getState().setNotice(message);
     host.noticeExpiry ??= new AgentConsoleNoticeExpiry(() => host.getState().setNotice(''), host.animationClock);
     host.noticeExpiry.schedule(duration);
-    if (lines.length > 3) {
-        host.getState().openTextOverlay(overlayTitle(), lines);
-        scheduleOverlayAutoClose(host, host.getState(), Number(duration) > 0 ? Number(duration) : NOTICE_OVERLAY_AUTO_CLOSE_MS);
-    }
+    host.getState().openTextOverlay(overlayTitle(), lines);
+    scheduleOverlayAutoClose(host, host.getState(), Number(duration) > 0 ? Number(duration) : NOTICE_OVERLAY_AUTO_CLOSE_MS);
 }

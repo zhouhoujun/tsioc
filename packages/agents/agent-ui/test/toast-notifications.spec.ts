@@ -52,14 +52,14 @@ export class ToastNotificationsTest {
         }
     }
 
-    @Test('persistent notices keep the status line')
+    @Test('persistent notices also surface through the toast queue')
     async persistentNoticesKeepTheStatusLine() {
         const component = createConsole(new RuntimeStub(), new SchedulerStub());
         await component.onInit();
         try {
             (component as any).notify('Unknown command: /zzz');
+            expect(component.sessionState.toasts.map(entry => entry.message)).toEqual(['Unknown command: /zzz']);
             expect(component.notice).toEqual('Unknown command: /zzz');
-            expect(component.sessionState.toasts).toEqual([]);
         } finally {
             component.onDestroy();
         }

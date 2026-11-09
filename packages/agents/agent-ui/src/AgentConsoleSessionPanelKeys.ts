@@ -21,7 +21,7 @@ export async function handleSessionsKeyView(
     }
     const filter = String(state.navFilter.text || '');
     const setFilter = (text: string) => {
-        state.navFilter = { ...state.navFilter, text: text || undefined };
+        state.setNavFilter({ ...state.navFilter, text: text || undefined });
         state.clampSessionSelectionToFilter();
     };
     if (normalized === 'esc' || normalized === 'escape') {

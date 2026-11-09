@@ -3270,3 +3270,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - common List 动态分页补齐首屏自动加载：`ListComponent.autoLoad` 在挂载且列表为空时自动调用 `loadPage`，后续由滚动边界 `onReachEnd()` 或 Load more 触发下一页；仍由 `ListPager` 统一 cursor/hasMore/loading/去重/并发保护。
 - 回归：components/common 50 passing；agent-ui `ListPager` 时间线分页路径保持 2011 passing。
 - 最新全量 gate（List autoLoad/时间线 ListPager 之后）：26 passed、1 skipped、0 failed；含 agents 10 包、components 4 包、全部 tsc、web build、DOM/TUI gate、metrics regression、source-size、diff-check、production-db-integrity。
+- 用户提示统一走 toast 服务（参考 opencode 的分层，而不是把所有 notify 盲替换）：
+  - 1–3 行即时提示统一进入共享 ToastService：短消息即使调用方未传 duration 也使用默认 4s；调用方的 notice 仅作为持久投影保留，TUI 在 toast 可见时隐藏状态行，避免同一事实出现两次。
+  - 4 行以上仍保留可滚动 text overlay（toast 不适合承载长输出）；错误/命令输出正文继续进入 transcript，不重复当成 toast。
+  - 新增回归：持久短提示也进入 toast 队列；现有 timed toast/长 overlay 行为保持；agent-ui 2011 passing。
+- TUI 会话选择器移除底部无意义操作说明行（`type to search ...`），筛选值直接显示在 `sessions N · i/N · <filter>` 标题中，不再占用 footer 行。
