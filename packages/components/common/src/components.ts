@@ -25,6 +25,7 @@ import { InputFieldComponent } from './input-field';
 import { WorkspaceLayoutComponent } from './workspace-layout';
 import { GridLayoutComponent, GridItemComponent } from './grid-layout';
 import { ThemeService } from './theme';
+import { DynamicFormComponent } from './dynamic-form';
 
 interface ProjectionNode extends RNode {
     tagName?: string;
@@ -108,7 +109,7 @@ export class PanelComponent {
 
 @Module({
     providers: [ThemeService],
-    declarations: [PanelComponent, TabBarComponent, MenuBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, AlertDialogComponent, ToastStackComponent, SelectComponent, ListPanelComponent, ListComponent, KeymapPanelComponent, StatusListComponent, MessageRowComponent, DetailPanelComponent, InputFieldComponent, WorkspaceLayoutComponent, GridLayoutComponent, GridItemComponent],
-    exports: [PanelComponent, TabBarComponent, MenuBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, AlertDialogComponent, ToastStackComponent, SelectComponent, ListPanelComponent, ListComponent, KeymapPanelComponent, StatusListComponent, MessageRowComponent, DetailPanelComponent, InputFieldComponent, WorkspaceLayoutComponent, GridLayoutComponent, GridItemComponent]
+    declarations: [PanelComponent, TabBarComponent, MenuBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, AlertDialogComponent, ToastStackComponent, SelectComponent, ListPanelComponent, ListComponent, KeymapPanelComponent, StatusListComponent, MessageRowComponent, DetailPanelComponent, InputFieldComponent, WorkspaceLayoutComponent, GridLayoutComponent, GridItemComponent, DynamicFormComponent],
+    exports: [PanelComponent, TabBarComponent, MenuBarComponent, MarkdownTableComponent, MarkdownCodeComponent, DialogComponent, AlertDialogComponent, ToastStackComponent, SelectComponent, ListPanelComponent, ListComponent, KeymapPanelComponent, StatusListComponent, MessageRowComponent, DetailPanelComponent, InputFieldComponent, WorkspaceLayoutComponent, GridLayoutComponent, GridItemComponent, DynamicFormComponent]
 })
 export class BaseComponentsModule {}

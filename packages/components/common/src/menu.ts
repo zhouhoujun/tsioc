@@ -16,6 +16,11 @@ export interface MenuBarItem {
     disabled?: boolean;
     checked?: boolean;
     danger?: boolean;
+    /**
+     * Nested entries rendered as a flyout submenu. Hosts use this for grouped
+     * choices such as themes without adding another application menu.
+     */
+    children?: MenuBarItem[];
 }
 
 /**
@@ -38,6 +43,7 @@ interface MenuBarEntryView {
     disabled: boolean;
     checked: boolean;
     className: string;
+    children: MenuBarEntryView[];
 }
 
 /**
@@ -69,7 +75,7 @@ interface MenuBarEntryView {
             <span class="menu-bar-caret" v-if="caret">{{caret}}</span>
         </button>
         <div class="menu-bar-popup" role="menu" v-show="open">
-            <div class="menu-bar-entry" v-for="entry in entries" data-menu-key="{{entry.key}}">
+            <div [class]="'menu-bar-entry' + (entry.children.length ? ' has-submenu' : '')" v-for="entry in entries" data-menu-key="{{entry.key}}">
                 <div class="menu-bar-separator" role="separator" v-if="entry.kind === 'separator'"></div>
                 <div class="menu-bar-group-title" v-if="entry.kind === 'title'">{{entry.label}}</div>
                 <button class="menu-bar-item {{entry.className}}" type="button" role="menuitem"
@@ -82,7 +88,22 @@ interface MenuBarEntryView {
                     <span class="menu-bar-item-label">{{entry.label}}</span>
                     <span class="menu-bar-item-shortcut" v-if="entry.shortcut">{{entry.shortcut}}</span>
                     <span class="menu-bar-item-check" v-if="entry.checked">✓</span>
+                    <span class="menu-bar-item-caret" v-if="entry.children.length">▸</span>
                 </button>
+                <div class="menu-bar-submenu" role="menu" v-if="entry.children.length">
+                    <button class="menu-bar-item" type="button" role="menuitem"
+                        v-for="child in entry.children"
+                        data-menu-id="{{child.id}}"
+                        [disabled]="child.disabled"
+                        [class]="child.className"
+                        aria-disabled="{{child.disabled}}"
+                        @click="choose(child.id, $event)">
+                        <span class="menu-bar-item-icon" v-if="child.icon">{{child.icon}}</span>
+                        <span class="menu-bar-item-label">{{child.label}}</span>
+                        <span class="menu-bar-item-shortcut" v-if="child.shortcut">{{child.shortcut}}</span>
+                        <span class="menu-bar-item-check" v-if="child.checked">✓</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>`
@@ -145,6 +166,18 @@ export class MenuBarComponent implements OnDestroy {
                 if (!item || !item.id) {
                     return;
                 }
+                const children = (item.children || [])
+                    .filter(child => child && child.id)
+                    .map((child, childIndex) => ({
+                        ...this.entry('item', `${groupIndex}-${itemIndex}-${childIndex}-${child.id}`),
+                        id: child.id,
+                        label: String(child.label || child.id),
+                        icon: String(child.icon || ''),
+                        shortcut: String(child.shortcut || ''),
+                        disabled: child.disabled === true,
+                        checked: child.checked === true,
+                        className: this.itemClass(child)
+                    }));
                 entries.push({
                     ...this.entry('item', `${groupIndex}-${itemIndex}-${item.id}`),
                     id: item.id,
@@ -153,7 +186,8 @@ export class MenuBarComponent implements OnDestroy {
                     shortcut: String(item.shortcut || ''),
                     disabled: item.disabled === true,
                     checked: item.checked === true,
-                    className: this.itemClass(item)
+                    className: this.itemClass(item, children.length > 0),
+                    children
                 });
             });
         });
@@ -181,6 +215,10 @@ export class MenuBarComponent implements OnDestroy {
             return;
         }
         event?.stopPropagation?.();
+        if (item.children?.length) {
+            // A submenu parent only opens its flyout; it is not actionable.
+            return;
+        }
         this.close();
         this.selectAction?.(id);
     }
@@ -189,13 +227,16 @@ export class MenuBarComponent implements OnDestroy {
         this.open = false;
     }
 
-    protected itemClass(item: MenuBarItem): string {
+    protected itemClass(item: MenuBarItem, hasChildren = false): string {
         const classes = [];
         if (item.danger) {
             classes.push('is-danger');
         }
         if (item.checked) {
             classes.push('is-checked');
+        }
+        if (hasChildren) {
+            classes.push('has-submenu');
         }
         return classes.join(' ');
     }
@@ -210,15 +251,24 @@ export class MenuBarComponent implements OnDestroy {
             shortcut: '',
             disabled: false,
             checked: false,
-            className: ''
+            className: '',
+            children: []
         };
     }
 
     protected findItem(id: string): MenuBarItem | undefined {
         for (const group of this.groups || []) {
-            const item = (group?.items || []).find(entry => entry?.id === id);
-            if (item) {
-                return item;
+            for (const item of group?.items || []) {
+                if (!item) {
+                    continue;
+                }
+                if (item.id === id) {
+                    return item;
+                }
+                const child = (item.children || []).find(entry => entry?.id === id);
+                if (child) {
+                    return child;
+                }
             }
         }
         return undefined;

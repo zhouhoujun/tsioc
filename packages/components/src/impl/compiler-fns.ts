@@ -7,7 +7,7 @@ import { NodeInjector } from '../refs/injector';
 import { Renderer } from '../renderer/Renderer';
 import { Bindings, NodeFactory } from '../refs/template';
 import { ReactiveEffect } from '../effect';
-import { reactive } from '../reactive';
+import { getReactiveProxy, reactive } from '../reactive';
 import { EventEmitter } from '../EventEmitter';
 import { Subscription } from 'rxjs';
 import { createTemplateRef } from './template';
@@ -1452,7 +1452,7 @@ export function parseEventExpression(expr: string, context: any, effect: Reactiv
         return effect.run(() => {
             const resolved = resolvePath(context, propPath);
             const handler = resolved.value;
-            return handler.bind(resolved.owner ?? context);
+            return handler.bind(resolveEventOwner(context, resolved, propPath.join('.')));
         });
     }
 
@@ -1465,6 +1465,7 @@ export function parseEventExpression(expr: string, context: any, effect: Reactiv
         if (typeof func !== 'function') {
             throw new Error(`Event handler ${funcPath} is not a function`);
         }
+        const owner = resolveEventOwner(context, resolved, funcPath);
 
         return (event: Event) => {
             // Arguments must be evaluated when the event fires: v-for reuses a
@@ -1478,9 +1479,63 @@ export function parseEventExpression(expr: string, context: any, effect: Reactiv
                 }
                 return arg;
             });
-            return func.apply(resolved.owner ?? context, resolvedArgs);
+            return func.apply(owner, resolvedArgs);
         };
     });
+}
+
+/**
+ * Embedded views (v-for/v-if) receive a scope object as their binding context.
+ * A component method reached through that scope must run with the component
+ * instance (reactive proxy) as `this`; otherwise internal writes land on the
+ * scope object and never trigger a re-render. Walk both the explicit template
+ * scope chain and the prototype chain introduced by v-for contexts.
+ */
+function resolveEventOwner(
+    context: any,
+    resolved: { owner: any; value: any },
+    funcPath: string
+): any {
+    const owner = resolved.owner ?? context;
+    const memberOf = (target: any): any => funcPath.split('.').reduce(
+        (value, key) => value == null ? undefined : value[key],
+        target
+    );
+    const candidates: any[] = [];
+    let current: any = context;
+    const seen = new Set<any>();
+    while (current && typeof current === 'object' && !seen.has(current)) {
+        seen.add(current);
+        const parent = current[TEMPLATE_SCOPE_PARENT];
+        if (!parent) break;
+        candidates.push(parent);
+        current = parent;
+    }
+    current = context && typeof context === 'object' ? Object.getPrototypeOf(context) : null;
+    while (current && current !== Object.prototype && !seen.has(current)) {
+        seen.add(current);
+        candidates.push(current);
+        current = Object.getPrototypeOf(current);
+    }
+    // Prefer the deepest matching candidate: nested v-for scopes inherit the
+    // component method through their prototypes, and the component instance is
+    // reached last (before its class prototype, which is skipped).
+    let resolvedCandidate: any;
+    for (const candidate of candidates) {
+        // A class prototype also owns the method; binding there would create a
+        // shared, non-reactive state. Instances do not own `constructor`.
+        if (Object.prototype.hasOwnProperty.call(candidate, 'constructor')) {
+            continue;
+        }
+        if (memberOf(candidate) === resolved.value) {
+            resolvedCandidate = candidate;
+        }
+    }
+    if (resolvedCandidate) {
+        return getReactiveProxy(resolvedCandidate) ?? resolvedCandidate;
+    }
+    // Item-local handlers (for example `item.action`) keep their owner.
+    return getReactiveProxy(owner) ?? owner;
 }
 
 function resolvePath(context: any, path: string[]): { owner: any; value: any } {

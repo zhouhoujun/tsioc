@@ -18,9 +18,8 @@ workspace-layout {
     height: 100%;
     min-height: 0;
     overflow: hidden;
-    --workspace-splitter: #e2e8f0;
-    --workspace-splitter-hover: #93c5fd;
-    --workspace-pane-bg: transparent;
+    /* Hosts/themes supply these custom properties. Fallbacks keep the
+       standalone layout usable without a theme. */
 }
 
 .workspace-layout-main {
@@ -35,7 +34,7 @@ workspace-layout {
     min-height: 0;
     overflow: auto;
     overscroll-behavior: contain;
-    background: var(--workspace-pane-bg);
+    background: var(--workspace-pane-bg, transparent);
 }
 
 .workspace-layout-left,
@@ -61,7 +60,7 @@ workspace-layout {
 .workspace-layout-bottom {
     flex: 0 0 auto;
     height: var(--workspace-bottom, 26%);
-    border-top: 1px solid var(--workspace-splitter);
+    border-top: 1px solid var(--workspace-splitter, #e2e8f0);
 }
 
 .workspace-layout-center,
@@ -95,7 +94,7 @@ workspace-layout {
 .workspace-splitter {
     position: relative;
     flex: 0 0 5px;
-    background: var(--workspace-splitter);
+    background: var(--workspace-splitter, #e2e8f0);
     transition: background 120ms ease;
     z-index: 5;
     overflow: visible;
@@ -112,7 +111,7 @@ workspace-layout {
 
 .workspace-splitter:hover,
 .workspace-splitter:active {
-    background: var(--workspace-splitter-hover);
+    background: var(--workspace-splitter-hover, #93c5fd);
 }
 
 .workspace-collapse {
@@ -124,19 +123,19 @@ workspace-layout {
     width: 16px;
     height: 26px;
     padding: 0;
-    border: 1px solid var(--workspace-splitter);
+    border: 1px solid var(--workspace-collapse-border, var(--workspace-splitter, #e2e8f0));
     border-radius: 4px;
-    background: #ffffff;
-    color: #475569;
+    background: var(--workspace-collapse-bg, #ffffff);
+    color: var(--workspace-collapse-color, #475569);
     font-size: 10px;
     line-height: 1;
     cursor: pointer;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+    box-shadow: var(--workspace-collapse-shadow, 0 1px 3px rgba(15, 23, 42, 0.12));
 }
 
 .workspace-collapse:hover {
-    border-color: var(--workspace-splitter-hover);
-    color: #2563eb;
+    border-color: var(--workspace-splitter-hover, #93c5fd);
+    color: var(--workspace-collapse-hover-color, #2563eb);
 }
 
 .workspace-collapse-left,

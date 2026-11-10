@@ -17,6 +17,16 @@ const groups: MenuBarGroup[] = [
         items: [
             { id: 'undo', label: 'Undo', shortcut: 'Ctrl+Z' }
         ]
+    },
+    {
+        items: [
+            {
+                id: 'theme', label: 'Theme', children: [
+                    { id: 'theme:light', label: 'Light', checked: true },
+                    { id: 'theme:dark', label: 'Dark' }
+                ]
+            }
+        ]
     }
 ];
 
@@ -67,6 +77,26 @@ export class MenuBarDomTest {
         await Promise.resolve();
         expect(selected).toEqual(['undo']);
         expect(popup.hasAttribute('hidden')).toBe(true);
+    }
+
+    @Test('renders a submenu and dispatches nested selections')
+    async selectsSubmenuItem() {
+        const selected: string[] = [];
+        const root = await this.render(selected);
+        root.querySelector('.menu-bar-trigger').click();
+        await Promise.resolve();
+
+        const submenu = root.querySelector('.menu-bar-submenu');
+        expect(submenu).toBeTruthy();
+        expect(root.querySelector('[data-menu-id="theme:dark"]')).toBeTruthy();
+
+        root.querySelector('[data-menu-id="theme"]').click();
+        await Promise.resolve();
+        expect(selected).toEqual([]);
+
+        root.querySelector('[data-menu-id="theme:dark"]').click();
+        await Promise.resolve();
+        expect(selected).toEqual(['theme:dark']);
     }
 
     @Test('disabled entries stay inert')

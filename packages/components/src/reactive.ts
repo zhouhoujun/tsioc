@@ -24,6 +24,10 @@ function hasReactiveFlag(target: any): boolean {
         && !!target[REACT_FlAG];
 }
 
+export function getReactiveProxy<T = any>(target: any): T | undefined {
+    return proxyCache.get(target);
+}
+
 export function isReactive(target: any): boolean {
     return hasReactiveFlag(target);
 }

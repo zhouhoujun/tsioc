@@ -203,7 +203,11 @@ export class VForDirective {
 
         // 合并外部上下文
         if (this._context) {
-            Object.assign(context, this._context);
+            // Keep the caller context on the prototype chain instead of copying
+            // its properties. Copying shadows reactive component state, so an
+            // event handler writing `this.count` would update the loop scope
+            // instead of the component.
+            Object.setPrototypeOf(context, this._context);
         }
 
         return context;

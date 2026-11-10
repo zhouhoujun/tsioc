@@ -78,6 +78,17 @@ The `@Directive` decorator automatically exports to:
 
 Custom elements are compiled into templates via `CompilerOptions.customElements`.
 
+## Build pipeline
+
+`@tsdi/compiler` drives the package build. The pipeline includes an
+`aop-compile` pass that scans `@Aspect` classes for pointcuts/advices and writes
+an AOP manifest, and it supports ES module output so browser hosts can
+tree-shake unused exports and drop Node-only renderer leaves.
+
+The browser designer build additionally minifies, code-splits lazy editors and
+enforces an initial-payload budget. See `packages/activities/designer/README.md`
+for the production build and verification commands.
+
 ## Layout components
 
 ### `workspace-layout`
@@ -103,6 +114,19 @@ sizes. Every pane has its own scroll container.
   initial state
 - `resizePane('left'|'right'|'bottom', ratio)` is available to hosts/tests
 - install styles with `installWorkspaceLayoutStyles(document)`
+- the layout is themeable through inherited custom properties:
+  `--workspace-splitter`, `--workspace-splitter-hover`, `--workspace-pane-bg`,
+  `--workspace-collapse-bg`, `--workspace-collapse-color`,
+  `--workspace-collapse-border`, `--workspace-collapse-hover-color` and
+  `--workspace-collapse-shadow`. Hosts set them on an ancestor theme scope; the
+  layout no longer overrides inherited values.
+
+### `menu-bar`
+
+Renderer-neutral application menu. Items can declare `checked`, `disabled`,
+`shortcut`, `danger` and one level of `children`; children render as a flyout
+submenu and receive their own ids through `selectAction`. Parent items with
+`children` are not actionable.
 
 ### `grid-layout`
 
@@ -119,6 +143,52 @@ Generic CSS grid container with `v-for`-friendly projection:
 - `rows`, `gap`, `rowGap`, `columnGap`, `areas`, `flow`, `fill`
 - `grid-item` supports `span`, `rowSpan`, `start`, `end`, `area`
 - install styles with `installGridLayoutStyles(document)`
+
+### `dynamic-form`
+
+JSON-configurable form with the shared `@tsdi/components/forms` validation
+engine. The schema is plain data, so it can come from a literal, a file or an
+HTTP response.
+
+```typescript
+const schema = {
+  fields: [
+    { key: 'name', type: 'text', label: 'Name', required: true },
+    { key: 'mode', type: 'radio', label: 'Mode', defaultValue: 'basic',
+      options: [{ label: 'Basic', value: 'basic' }, { label: 'Advanced', value: 'advanced' }] },
+    { key: 'target', type: 'text', label: 'Target',
+      visibleWhen: { key: 'mode', equals: 'advanced' } },
+    { key: 'retries', type: 'number', label: 'Retries', defaultValue: 1, min: 0, max: 5 },
+    { key: 'enabled', type: 'checkbox', label: 'Enabled', defaultValue: false }
+  ],
+  messages: { required: 'Required' },
+  submitLabel: 'Apply'
+};
+```
+
+```html
+<dynamic-form :schema="schema" :value="value"
+  :changeAction="onFieldChange" :submitAction="onSubmit">
+</dynamic-form>
+```
+
+- field types: text/password/email/url/tel/search/date/time/month/week/color,
+  number/range, textarea, json, code, checkbox/switch, select/radio, hidden
+- validation rules: `required`, `requiredTrue`, `email`, `url`, `min`, `max`,
+  `minLength`, `maxLength`, `pattern`, `json`, `number`, `integer` (rules can be
+  declared as `rules: ['required', { type: 'pattern', value: '^[A-Z]+$' }]` or
+  via field conveniences such as `required`, `min`, `max`, `pattern`)
+- `visibleWhen` supports `equals`, `notEquals`, `in`, `truthy` and `falsy`
+- `group` renders section headers; `defaultValue` enables per-field reset
+- `field.errorMessages` and the top-level `messages` localize validation text
+- `submit()`, `validate()`, `getValue()`, `setValue()`, `patchValue()`, `reset()`
+  and `resetField()` are available to hosts
+- JSON and code fields keep the value as text for editing; `getValue()` parses
+  JSON on submit and code fields expose `data-dynamic-code` / `data-code-suggestions`
+  so an HTML host can attach a code editor and workflow-aware completions (see
+  `@tsdi/activities/web` CodeMirror integration)
+- install base styles with `installDynamicFormStyles(document)`; hosts can set
+  `classPrefix` to reuse their own skin (the workflow inspector uses `workflow`)
 
 ### Themes
 
