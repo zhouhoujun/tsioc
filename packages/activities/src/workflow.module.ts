@@ -6,6 +6,8 @@ import { FormsModule } from '@tsdi/components/forms';
 import { RunAspect } from './aop/RunAspect';
 import { ActivityInterceptorService, ActivityLogAspect, ActivityDebugService } from './aop';
 import { WorkflowService } from './services/workflow.service';
+import { WorkflowServiceRegistry } from './plugins/service-registry';
+import { WorkflowPluginRegistry } from './plugins/plugin-registry';
 import {
     ConfirmActivity, DelayActivity, DoWhileActivity, EndActivity, IntervalActivity,
     InvokeActivity, ParallelActivity, SequenceActivity, StartActivity, ThrowActivity, TimerActivity,
@@ -53,7 +55,9 @@ import {
         ActivityDebugService,
         VisualWorkflowService,
         VisualWorkflowBuilder,
-        WorkflowNodeRegistry
+        WorkflowNodeRegistry,
+        WorkflowServiceRegistry,
+        WorkflowPluginRegistry
     ],
     declarations: [
         StartActivity,
@@ -138,6 +142,8 @@ import {
         VisualWorkflowService,
         VisualWorkflowBuilder,
         WorkflowNodeRegistry,
+        WorkflowServiceRegistry,
+        WorkflowPluginRegistry,
         WorkflowToolbarComponent,
         WorkflowPaletteComponent,
         WorkflowCanvasComponent,

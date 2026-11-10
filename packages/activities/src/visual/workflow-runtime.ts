@@ -10,6 +10,11 @@ export interface VisualNodeRuntimeHost {
      * Allow a subprocess node to execute another visual definition.
      */
     executeDefinition?(definition: VisualWorkflowDefinition, context: ActivityContext): Promise<ActivityResult>;
+    /**
+     * Execute a node supplied by an installed workflow plugin. Returning
+     * `undefined` means no plugin executor handles this node type.
+     */
+    executeNode?(node: IVisualWorkflowNode, context: ActivityContext): Promise<ActivityResult | undefined> | ActivityResult | undefined;
 }
 
 /**
@@ -371,6 +376,13 @@ export async function executeVisualNode(
 ): Promise<ActivityResult> {
     const config = node.config || {};
 
+    if (host?.executeNode) {
+        const pluginResult = await host.executeNode(node, context);
+        if (pluginResult) {
+            return pluginResult;
+        }
+    }
+
     const customActivity = createActivity(node);
     if (customActivity) {
         return customActivity.execute(context);
@@ -692,6 +704,13 @@ export async function executeVisualNode(
         default:
             if (config.execute && typeof config.execute === 'function') {
                 return { success: true, data: { nodeId: node.id, result: await config.execute(context) } };
+            }
+            if (node.requiresServer) {
+                return {
+                    success: false,
+                    error: new Error(`Node type "${node.type}" requires an installed workflow plugin on the execution host.`),
+                    data: { nodeId: node.id, type: node.type, pluginId: node.pluginId }
+                };
             }
             return {
                 success: true,

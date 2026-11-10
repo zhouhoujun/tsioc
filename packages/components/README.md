@@ -117,9 +117,11 @@ sizes. Every pane has its own scroll container.
 - the layout is themeable through inherited custom properties:
   `--workspace-splitter`, `--workspace-splitter-hover`, `--workspace-pane-bg`,
   `--workspace-collapse-bg`, `--workspace-collapse-color`,
-  `--workspace-collapse-border`, `--workspace-collapse-hover-color` and
-  `--workspace-collapse-shadow`. Hosts set them on an ancestor theme scope; the
-  layout no longer overrides inherited values.
+  `--workspace-collapse-border`, `--workspace-collapse-hover-color`,
+  `--workspace-collapse-shadow`, `--workspace-scrollbar-size`,
+  `--workspace-scrollbar-track`, `--workspace-scrollbar-thumb` and
+  `--workspace-scrollbar-thumb-hover`. Hosts set them on an ancestor theme
+  scope; the layout no longer overrides inherited values.
 
 ### `menu-bar`
 

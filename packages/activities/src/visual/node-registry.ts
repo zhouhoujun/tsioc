@@ -1035,7 +1035,9 @@ export class WorkflowNodeRegistry {
                 borderRadius: type === 'start' || type === 'end' ? 50 : 10,
                 icon: definition.icon
             },
-            activityType: definition.activityType
+            activityType: definition.activityType,
+            pluginId: definition.pluginId,
+            requiresServer: definition.requiresServer === true
         };
     }
 
@@ -1045,6 +1047,11 @@ export class WorkflowNodeRegistry {
      */
     activityType(type: string): Type<Activity> | undefined {
         return this.get(type)?.activityType;
+    }
+
+    /** Executor supplied by an installed workflow plugin. */
+    executor(type: string): WorkflowNodeDefinition['execute'] | undefined {
+        return this.get(type)?.execute;
     }
 
     protected nextId(type: string): string {

@@ -28,6 +28,7 @@ import {
     VisualNodeHandlerLike
 } from './visual-node-handler';
 import { WorkflowNodePolicyInterceptor } from './workflow-interceptors';
+import { WorkflowPluginRegistry } from '../plugins/plugin-registry';
 
 const DEFAULT_HISTORY_LIMIT = 30;
 const MAX_LOG_ENTRIES = 300;
@@ -89,7 +90,8 @@ export class VisualWorkflowService {
 
     constructor(
         private injector: Injector,
-        @Optional() registry?: WorkflowNodeRegistry
+        @Optional() registry?: WorkflowNodeRegistry,
+        @Optional() private plugins?: WorkflowPluginRegistry
     ) {
         this.registry = registry || new WorkflowNodeRegistry();
         const resolver = this.injector.get(InterceptorResolver, null);
@@ -142,6 +144,7 @@ export class VisualWorkflowService {
         const executionId = options.executionId
             || options.resumeFrom?.executionId
             || this.generateExecutionId();
+        const runtimeContext = this.withPluginServices(context);
         const state = options.resumeFrom
             ? this.createStateFromCheckpoint(definition, options.resumeFrom, executionId)
             : this.createState(definition, executionId);
@@ -160,7 +163,11 @@ export class VisualWorkflowService {
 
             const host: VisualNodeRuntimeHost = {
                 executeDefinition: (subDefinition, subContext) =>
-                    this.execute(subDefinition, subContext, { ...options, executionId: undefined })
+                    this.execute(subDefinition, subContext, { ...options, executionId: undefined }),
+                executeNode: async (node, nodeContext) => {
+                    const executor = this.registry.executor(node.type);
+                    return executor ? executor(node, nodeContext) : undefined;
+                }
             };
             const visited = new Set<string>();
             const replayed = new Set<string>();
@@ -171,7 +178,7 @@ export class VisualWorkflowService {
             const result = await this.executeFromNode(
                 startNode,
                 plan,
-                context,
+                runtimeContext,
                 state,
                 options,
                 host,
@@ -239,6 +246,19 @@ export class VisualWorkflowService {
                 }
             };
         }
+    }
+
+    /**
+     * Expose installed plugin services (and keep caller-provided services).
+     * Task/function nodes can resolve them from `context.services`.
+     */
+    private withPluginServices(context: ActivityContext): ActivityContext {
+        const installed = this.plugins?.serviceRegistry.toObject();
+        if (!installed || !Object.keys(installed).length) {
+            return context;
+        }
+        const own = (context as any)?.services || {};
+        return { ...context, services: { ...installed, ...own } } as ActivityContext;
     }
 
     private createState(definition: VisualWorkflowDefinition, executionId: string): WorkflowExecutionState {

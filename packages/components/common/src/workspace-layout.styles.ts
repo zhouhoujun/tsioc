@@ -37,6 +37,60 @@ workspace-layout {
     background: var(--workspace-pane-bg, transparent);
 }
 
+/* Themeable scrollbars for every layout scroll container. */
+.workspace-pane,
+.workspace-slot,
+.workspace-slot > workspace-left,
+.workspace-slot > workspace-center,
+.workspace-slot > workspace-right,
+.workspace-slot > workspace-bottom {
+    scrollbar-width: var(--workspace-scrollbar-width, thin);
+    scrollbar-color: var(--workspace-scrollbar-thumb, #cbd5e1) var(--workspace-scrollbar-track, transparent);
+}
+
+.workspace-pane::-webkit-scrollbar,
+.workspace-slot::-webkit-scrollbar,
+.workspace-slot > workspace-left::-webkit-scrollbar,
+.workspace-slot > workspace-center::-webkit-scrollbar,
+.workspace-slot > workspace-right::-webkit-scrollbar,
+.workspace-slot > workspace-bottom::-webkit-scrollbar {
+    width: var(--workspace-scrollbar-size, 10px);
+    height: var(--workspace-scrollbar-size, 10px);
+}
+
+.workspace-pane::-webkit-scrollbar-track,
+.workspace-slot::-webkit-scrollbar-track,
+.workspace-slot > workspace-left::-webkit-scrollbar-track,
+.workspace-slot > workspace-center::-webkit-scrollbar-track,
+.workspace-slot > workspace-right::-webkit-scrollbar-track,
+.workspace-slot > workspace-bottom::-webkit-scrollbar-track {
+    background: var(--workspace-scrollbar-track, transparent);
+}
+
+.workspace-pane::-webkit-scrollbar-thumb,
+.workspace-slot::-webkit-scrollbar-thumb,
+.workspace-slot > workspace-left::-webkit-scrollbar-thumb,
+.workspace-slot > workspace-center::-webkit-scrollbar-thumb,
+.workspace-slot > workspace-right::-webkit-scrollbar-thumb,
+.workspace-slot > workspace-bottom::-webkit-scrollbar-thumb {
+    background: var(--workspace-scrollbar-thumb, #cbd5e1);
+    border-radius: 999px;
+}
+
+.workspace-pane::-webkit-scrollbar-thumb:hover,
+.workspace-slot::-webkit-scrollbar-thumb:hover,
+.workspace-slot > workspace-left::-webkit-scrollbar-thumb:hover,
+.workspace-slot > workspace-center::-webkit-scrollbar-thumb:hover,
+.workspace-slot > workspace-right::-webkit-scrollbar-thumb:hover,
+.workspace-slot > workspace-bottom::-webkit-scrollbar-thumb:hover {
+    background: var(--workspace-scrollbar-thumb-hover, #94a3b8);
+}
+
+.workspace-pane::-webkit-scrollbar-corner,
+.workspace-slot::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
 .workspace-layout-left,
 .workspace-layout-right {
     flex-grow: 0;

@@ -1,4 +1,6 @@
 import { Module } from '@tsdi/ioc';
+import { WorkflowServiceRegistry } from './plugins/service-registry';
+import { WorkflowPluginRegistry } from './plugins/plugin-registry';
 import { AopModule } from '@tsdi/aop';
 import { ComponentsModule } from '@tsdi/components';
 import { BaseComponentsModule } from '@tsdi/components/common';
@@ -38,7 +40,9 @@ import {
     providers: [
         VisualWorkflowService,
         VisualWorkflowBuilder,
-        WorkflowNodeRegistry
+        WorkflowNodeRegistry,
+        WorkflowServiceRegistry,
+        WorkflowPluginRegistry
     ],
     declarations: [
         WorkflowToolbarComponent,
@@ -59,6 +63,8 @@ import {
         VisualWorkflowService,
         VisualWorkflowBuilder,
         WorkflowNodeRegistry,
+        WorkflowServiceRegistry,
+        WorkflowPluginRegistry,
         WorkflowToolbarComponent,
         WorkflowPaletteComponent,
         WorkflowCanvasComponent,

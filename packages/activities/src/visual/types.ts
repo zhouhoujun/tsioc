@@ -160,7 +160,8 @@ export type VisualNodeType =
     | 'comment'    // 画布注释节点
     | 'assign'     // 赋值节点
     | 'transform'  // 数据转换节点
-    | 'custom';    // 自定义节点
+    | 'custom'     // 自定义节点
+    | (string & {}); // plugin-contributed node type
 
 /**
  * 可视化工作流节点接口
@@ -222,6 +223,10 @@ export interface IVisualWorkflowNode {
      * Associated activity type
      */
     activityType?: Type<Activity>;
+    /** Plugin that installed this node, if any. */
+    pluginId?: string;
+    /** The node can only execute on a host that has installed its plugin. */
+    requiresServer?: boolean;
 }
 
 /**
@@ -676,6 +681,12 @@ export interface WorkflowNodeDefinition {
      * Associated activity type.
      */
     activityType?: Type<Activity>;
+    /** Plugin that installed this node, if any. */
+    pluginId?: string;
+    /** The node can only execute on a host that has installed its plugin. */
+    requiresServer?: boolean;
+    /** Executor supplied by a workflow plugin. */
+    execute?: (node: IVisualWorkflowNode, context: ActivityContext) => Promise<ActivityResult> | ActivityResult;
 }
 
 /**

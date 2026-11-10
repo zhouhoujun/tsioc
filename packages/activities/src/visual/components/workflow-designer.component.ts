@@ -1,5 +1,5 @@
 import { Attribute, Component, ElementRef, NoReactive, OnDestroy, ReactiveEffect, noReact, reactive } from '@tsdi/components';
-import { installDynamicFormStyles, installMenuBarStyles, installWorkspaceLayoutStyles, markElementRefRaw } from '@tsdi/components/common';
+import { installDynamicFormStyles, installMenuBarStyles, installWorkspaceLayoutStyles, markElementRefRaw, TabBarSource } from '@tsdi/components/common';
 import { applyThemeToDocument, isThemeName, ThemeName } from '@tsdi/components/common';
 import { DOCUMENT } from '@tsdi/common';
 import { Inject, Optional } from '@tsdi/ioc';
@@ -8,7 +8,7 @@ import { translateWorkflow } from '../i18n';
 import { ActivityContext } from '../../activities/Activity';
 import { WorkflowNodeRegistry } from '../node-registry';
 import { VisualWorkflowService } from '../VisualWorkflowService';
-import { createDefaultWorkflowDefinition, WorkflowDesigner } from '../workflow-designer';
+import { createBlankWorkflowDefinition, createDefaultWorkflowDefinition, WorkflowDesigner } from '../workflow-designer';
 import {
     NodePosition,
     VisualWorkflowDefinition,
@@ -32,6 +32,11 @@ import {
 import { WorkflowCanvasPointerPayload } from './workflow-canvas';
 import { installWorkflowDesignerStyles } from './workflow-designer.styles';
 
+interface WorkflowDocumentTab {
+    id: string;
+    designer: WorkflowDesigner;
+}
+
 /**
  * Root visual workflow designer.
  *
@@ -49,6 +54,7 @@ import { installWorkflowDesignerStyles } from './workflow-designer.styles';
     selector: 'workflow-designer',
     template: `
     <div class="workflow-designer" data-theme="{{themeName}}">
+        <tab-bar class="workflow-tabs" :source="workflowTabSource"></tab-bar>
         <workflow-toolbar :model="toolbarModel" :locale="locale" :action="toolbarAction"
             :theme="themeName"
             :themeChangeAction="themeSelectAction"></workflow-toolbar>
@@ -125,6 +131,13 @@ export class WorkflowDesignerComponent implements OnDestroy {
     /** Persist edits automatically after `autosaveDelay` ms of quiet. */
     @Attribute() autosave = false;
     @Attribute() autosaveDelay = 800;
+    /** Host hook invoked whenever the open document tabs change. */
+    @Attribute() tabChangeAction?: (state: { openIds: string[]; activeId?: string }) => void;
+    private workflowTabs: WorkflowDocumentTab[] = [];
+    private activeTabId = '';
+    private tabVersion = 0;
+    private tabSourceCache?: TabBarSource;
+    private reactiveEffect?: ReactiveEffect;
     saveState: 'saved' | 'dirty' | 'saving' | 'error' = 'saved';
     showShortcuts = false;
 
@@ -198,6 +211,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
         }
         this.registry = registry || new WorkflowNodeRegistry();
         this.service = service;
+        this.reactiveEffect = effect;
         // Install before the instance is wrapped by the reactive proxy: reading
         // a Document through the proxy would wrap its DOM internals.
         installWorkflowDesignerStyles(document);
@@ -215,6 +229,8 @@ export class WorkflowDesignerComponent implements OnDestroy {
         // root component. Every callback then writes through this proxy and
         // updates the canvas/inspector bindings.
         this.designer = effect ? reactive(rawDesigner, effect) : rawDesigner;
+        this.workflowTabs = [{ id: this.designer.definition.id, designer: this.designer }];
+        this.activeTabId = this.workflowTabs[0].id;
     }
 
     onInit(): void {
@@ -223,6 +239,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
         this.bindGlobalShortcuts();
         if (this.initialDefinition) {
             this.designer.load(this.initialDefinition);
+            this.syncActiveTabId();
         }
         if (this.autoRun) {
             void this.designer.run({ context: this.runContext });
@@ -248,6 +265,222 @@ export class WorkflowDesignerComponent implements OnDestroy {
 
     get themeSelectAction(): (theme: ThemeName) => void {
         return theme => this.setTheme(theme);
+    }
+
+    get workflowTabSource(): TabBarSource {
+        // Read the revision so tab changes invalidate template bindings. The
+        // source object itself must stay stable between changes; returning a
+        // new object on every read feeds the tab-bar loop and its parent effect.
+        this.tabVersion;
+        if (this.tabSourceCache) {
+            return this.tabSourceCache;
+        }
+        const labels = this.workflowTabs.map(tab => ({
+            id: tab.id,
+            label: tab.designer.definition.name || this.t('newWorkflow', 'New workflow'),
+            active: tab.id === this.activeTabId
+        }));
+        this.tabSourceCache = {
+            visible: true,
+            items: labels,
+            showCreate: true,
+            createLabel: '+',
+            select: id => { void this.activateWorkflowTab(id); },
+            close: id => { void this.closeWorkflowTab(id); },
+            create: () => { void this.createWorkflowTab(); }
+        };
+        return this.tabSourceCache;
+    }
+
+    get openWorkflowCount(): number {
+        this.tabVersion;
+        return this.workflowTabs.length;
+    }
+
+    /** Create a blank workflow in a new tab. */
+    async createWorkflowTab(): Promise<void> {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        await self.persistActiveTab();
+        const definition = createBlankWorkflowDefinition(
+            self.localeValue,
+            self.t('newWorkflow', 'New workflow')
+        );
+        definition.id = self.nextWorkflowId();
+        const tab = self.createTab(definition);
+        self.workflowTabs.push(tab);
+        self.setActiveTab(tab);
+        self.emitTabs();
+    }
+
+    /** Open a saved workflow in a new tab or activate its existing tab. */
+    async openWorkflowTab(id: string): Promise<boolean> {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        const existing = self.workflowTabs.find(tab => tab.id === id);
+        if (existing) {
+            await self.activateWorkflowTab(id);
+            return true;
+        }
+        try {
+            const definition = await self.store.get(id);
+            if (!definition) {
+                self.libraryError = `${self.t('notFound', 'Workflow not found')}: ${id}`;
+                return false;
+            }
+            await self.persistActiveTab();
+            const tab = self.createTab(definition);
+            self.workflowTabs.push(tab);
+            self.setActiveTab(tab);
+            self.emitTabs();
+            return true;
+        } catch (error) {
+            self.libraryError = (error as Error).message;
+            return false;
+        }
+    }
+
+    /** Restore the open tab set persisted by the host. */
+    async restoreWorkflowTabs(ids: string[], activeId?: string): Promise<boolean> {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        const loaded: WorkflowDocumentTab[] = [];
+        for (const id of Array.from(new Set(ids || []))) {
+            if (!id) {
+                continue;
+            }
+            try {
+                const definition = await self.store.get(id);
+                if (definition) {
+                    loaded.push(self.createTab(definition));
+                }
+            } catch {
+                // A deleted or unreachable document must not block the others.
+            }
+        }
+        if (!loaded.length) {
+            return false;
+        }
+        self.workflowTabs = loaded;
+        const active = loaded.find(tab => tab.id === activeId) || loaded[0];
+        self.setActiveTab(active);
+        self.emitTabs();
+        return true;
+    }
+
+    private createTab(definition: VisualWorkflowDefinition): WorkflowDocumentTab {
+        const raw = new WorkflowDesigner({
+            registry: this.registry,
+            service: this.service,
+            definition
+        });
+        const designer = this.reactiveEffect ? reactive(raw, this.reactiveEffect) : raw;
+        return { id: designer.definition.id, designer };
+    }
+
+    private nextWorkflowId(): string {
+        let id: string;
+        do {
+            id = `workflow_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+        } while (this.workflowTabs.some(tab => tab.id === id));
+        return id;
+    }
+
+    private setActiveTab(tab: WorkflowDocumentTab): void {
+        this.clearAutosaveTimer();
+        this.activeTabId = tab.id;
+        this.designer = tab.designer;
+        this.saveState = tab.designer.dirty ? 'dirty' : 'saved';
+        this.tabSourceCache = undefined;
+        this.tabVersion += 1;
+    }
+
+    private activeTab(): WorkflowDocumentTab | undefined {
+        return this.workflowTabs.find(tab => tab.id === this.activeTabId);
+    }
+
+    private async activateWorkflowTab(id: string): Promise<void> {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        const tab = self.workflowTabs.find(item => item.id === id);
+        if (!tab || tab.id === self.activeTabId) {
+            return;
+        }
+        await self.persistActiveTab();
+        self.setActiveTab(tab);
+        self.emitTabs();
+    }
+
+    private async closeWorkflowTab(id: string): Promise<void> {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        const index = self.workflowTabs.findIndex(tab => tab.id === id);
+        if (index < 0) {
+            return;
+        }
+        const [tab] = self.workflowTabs.splice(index, 1);
+        if (self.autosave && tab.designer.dirty) {
+            try {
+                await self.saveTab(tab);
+            } catch {
+                // Unsaved closure is discarded only after a failed autosave;
+                // the error is surfaced through the normal save state.
+            }
+        }
+        if (self.activeTabId === id) {
+            const next = self.workflowTabs[Math.min(index, self.workflowTabs.length - 1)];
+            if (next) {
+                self.setActiveTab(next);
+            } else {
+                await self.createWorkflowTab();
+            }
+        }
+        self.emitTabs();
+    }
+
+    private async persistActiveTab(): Promise<void> {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        const tab = self.activeTab();
+        if (self.autosave && tab?.designer.dirty) {
+            await self.saveTab(tab);
+        }
+    }
+
+    private async saveTab(tab: WorkflowDocumentTab): Promise<void> {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        await tab.designer.saveTo(self.store);
+        self.syncTabId(tab);
+        self.saveState = 'saved';
+    }
+
+    private syncActiveTabId(): void {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        const tab = self.activeTab();
+        if (!tab) {
+            return;
+        }
+        tab.id = self.designer.definition.id;
+        self.activeTabId = tab.id;
+        self.emitTabs();
+    }
+
+    private syncTabId(tab: WorkflowDocumentTab): void {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        const previousId = tab.id;
+        const nextId = tab.designer.definition.id;
+        if (previousId === nextId) {
+            return;
+        }
+        tab.id = nextId;
+        if (self.activeTabId === previousId) {
+            self.activeTabId = nextId;
+        }
+        self.emitTabs();
+    }
+
+    private emitTabs(): void {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.tabSourceCache = undefined;
+        self.tabVersion += 1;
+        self.tabChangeAction?.({
+            openIds: self.workflowTabs.map(tab => tab.id),
+            activeId: self.activeTabId
+        });
     }
 
     setTheme(theme: ThemeName): void {
@@ -917,6 +1150,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
         self.saveState = 'saving';
         try {
             await this.designer.saveTo(this.store);
+            self.syncActiveTabId();
             self.libraryError = '';
             self.saveState = 'saved';
             await self.refreshLibrary();
@@ -935,6 +1169,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
                 as: true,
                 name: `${this.designer.definition.name} copy`
             });
+            self.syncActiveTabId();
             self.libraryError = '';
             self.saveState = 'saved';
             await self.refreshLibrary();
@@ -946,24 +1181,40 @@ export class WorkflowDesignerComponent implements OnDestroy {
 
     readonly loadWorkflow = async (id: string): Promise<void> => {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        try {
-            const loaded = await this.designer.openFrom(this.store, id);
-            if (loaded) {
+        const existing = self.workflowTabs.find(tab => tab.id === id);
+        if (existing) {
+            try {
+                const definition = await self.store.get(id);
+                if (!definition) {
+                    self.libraryError = `${self.t('notFound', 'Workflow not found')}: ${id}`;
+                    return;
+                }
+                existing.designer.load(definition);
+                self.setActiveTab(existing);
+                self.syncActiveTabId();
                 self.clearAutosaveTimer();
-                self.saveState = 'saved';
                 self.libraryError = '';
                 self.showLibrary = false;
-            } else {
-                self.libraryError = this.designer.error;
+            } catch (error) {
+                self.libraryError = (error as Error).message;
             }
-        } catch (error) {
-            self.libraryError = (error as Error).message;
+            return;
+        }
+        const opened = await self.openWorkflowTab(id);
+        if (opened) {
+            self.clearAutosaveTimer();
+            self.saveState = self.designer.dirty ? 'dirty' : 'saved';
+            self.libraryError = '';
+            self.showLibrary = false;
         }
     };
 
     readonly deleteWorkflow = async (id: string): Promise<void> => {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
         try {
+            if (self.workflowTabs.some(tab => tab.id === id)) {
+                await self.closeWorkflowTab(id);
+            }
             await this.designer.removeSaved(this.store, id);
             await self.refreshLibrary();
         } catch (error) {

@@ -6,6 +6,7 @@ import { DOCUMENT } from '@tsdi/common';
 import { WorkflowModule } from '../src/workflow.module';
 import { WorkflowDesignerComponent } from '../src/visual/components/workflow-designer.component';
 import { InMemoryWorkflowDefinitionStore } from '../src/visual/workflow-store';
+import { createDefaultWorkflowDefinition } from '../src/visual/workflow-designer';
 
 async function flush(): Promise<void> {
     for (let index = 0; index < 4; index++) {
@@ -327,6 +328,54 @@ describe('Workflow Designer UI', () => {
         ref.instance.setTheme('light');
         await flush();
         expect(designer.getAttribute('data-theme')).toBe('light');
+    });
+
+    it('opens saved workflows as tabs and creates/closes documents from the tab bar', async () => {
+        const store = new InMemoryWorkflowDefinitionStore();
+        const first = createDefaultWorkflowDefinition(ref.instance.designer.registry, 'en');
+        first.id = 'flow-a';
+        first.name = 'Flow A';
+        const second = createDefaultWorkflowDefinition(ref.instance.designer.registry, 'en');
+        second.id = 'flow-b';
+        second.name = 'Flow B';
+        await store.save(first);
+        await store.save(second);
+        ref.instance.store = store;
+
+        const changes: Array<{ openIds: string[]; activeId?: string }> = [];
+        ref.instance.tabChangeAction = state => changes.push(state);
+
+        expect(await ref.instance.restoreWorkflowTabs(['flow-a', 'flow-b'], 'flow-b')).toBe(true);
+        await flush();
+        expect(ref.instance.openWorkflowCount).toBe(2);
+        expect(ref.instance.designer.definition.id).toBe('flow-b');
+        const tabs = Array.from(root.querySelectorAll('.workflow-tabs .tab')) as any[];
+        expect(tabs.length).toBe(2);
+        expect(tabs.map(tab => tab.textContent).join(' ')).toContain('Flow A');
+        expect(tabs.map(tab => tab.textContent).join(' ')).toContain('Flow B');
+        expect(tabs.find(tab => tab.getAttribute('aria-selected') === 'true')?.textContent).toContain('Flow B');
+        expect(root.querySelector('.workflow-tabs .tab-new')).toBeTruthy();
+
+        (tabs[0] as any).click();
+        await flush();
+        expect(ref.instance.designer.definition.id).toBe('flow-a');
+        expect(ref.instance.workflowTabSource.items.find(item => item.active)?.label).toBe('Flow A');
+
+        (root.querySelector('.workflow-tabs .tab-new') as any).click();
+        await flush();
+        expect(ref.instance.openWorkflowCount).toBe(3);
+        expect(ref.instance.designer.definition.id.startsWith('workflow_')).toBe(true);
+        expect(ref.instance.designer.nodes.length).toBe(0);
+        expect(ref.instance.designer.connections.length).toBe(0);
+        expect(root.querySelector('.workflow-canvas-empty')).toBeTruthy();
+
+        const activeTab = (Array.from(root.querySelectorAll('.workflow-tabs .tab')) as any[])
+            .find(tab => tab.getAttribute('aria-selected') === 'true') as any;
+        (activeTab.querySelector('.tab-close') as any).click();
+        await flush();
+        expect(ref.instance.openWorkflowCount).toBe(2);
+        expect(ref.instance.designer.definition.id).toBe('flow-b');
+        expect(changes.some(state => state.openIds.length === 2 && state.activeId === 'flow-b')).toBe(true);
     });
 
     it('opens the generated workflow JSON panel', async () => {

@@ -40,8 +40,51 @@ import {
 } from '../src/visual';
 import { VisualWorkflowService } from '../src/visual/VisualWorkflowService';
 import { WorkflowModule } from '../src/workflow.module';
+import { WorkflowPluginCatalog } from '../src/plugins/catalog';
+import { WorkflowPluginRegistry } from '../src/plugins/plugin-registry';
+import { WorkflowPlugin } from '../src/plugins/types';
+import { SqliteWorkflowDefinitionStore, isSqliteAvailable } from './SqliteWorkflowDefinitionStore';
 
 export const WORKFLOW_DEFINITION_STORE = token<WorkflowDefinitionStore>('WORKFLOW_DEFINITION_STORE');
+
+/** Plugin catalog API: installed plugins plus bundled/available manifests. */
+@Controller('/api/plugins')
+export class WorkflowPluginController {
+    constructor(
+        private plugins: WorkflowPluginRegistry,
+        private catalog: WorkflowPluginCatalog
+    ) { }
+
+    @Get('/')
+    list() {
+        return {
+            installed: this.plugins.list(),
+            available: this.catalog.list()
+        };
+    }
+
+    @Post('/:id/install')
+    async install(@RequestPath('id') id: string) {
+        const plugin = this.catalog.create(id);
+        if (!plugin) {
+            throw new NotFoundException(`Workflow plugin not found: ${id}`);
+        }
+        const installed = await this.plugins.install(plugin);
+        return {
+            installed,
+            plugin: this.plugins.list().find(item => item.id === id)
+        };
+    }
+
+    @Delete('/:id')
+    async remove(@RequestPath('id') id: string) {
+        const removed = await this.plugins.uninstall(id);
+        if (!removed) {
+            throw new NotFoundException(`Workflow plugin not installed: ${id}`);
+        }
+        return { removed: true };
+    }
+}
 
 /**
  * HTTP controller for visual workflows, using the framework's own
@@ -144,8 +187,24 @@ export interface WorkflowHttpServerOptions {
     host?: string;
     /** Static root (for example the built designer directory). */
     staticRoot?: string;
-    /** Store override; defaults to localStorage/in-memory. */
+    /** Store override; defaults to SQLite (`WORKFLOW_DB_FILE` or ~/.tsdi-agent/workflows.db). */
     store?: WorkflowDefinitionStore;
+    /** SQLite database path when `store` is not supplied. */
+    databaseFile?: string;
+    /** Programmatic plugins installed when the server starts. */
+    plugins?: WorkflowPlugin[];
+    /** Built-in plugin ids installed when the server starts (mqtt/redis/nats/coap). */
+    installPlugins?: string[];
+}
+
+function createServerWorkflowStore(options: WorkflowHttpServerOptions): WorkflowDefinitionStore {
+    if (options.store) {
+        return options.store;
+    }
+    if (options.databaseFile || isSqliteAvailable()) {
+        return new SqliteWorkflowDefinitionStore({ file: options.databaseFile });
+    }
+    return createDefaultWorkflowDefinitionStore();
 }
 
 /**
@@ -154,7 +213,7 @@ export interface WorkflowHttpServerOptions {
  * microservices in this repository.
  */
 export function createWorkflowHttpModule(options: WorkflowHttpServerOptions = {}): Type<any> {
-    const store = options.store || createDefaultWorkflowDefinitionStore();
+    const store = createServerWorkflowStore(options);
     const features: any[] = [
         provideService(
             useRouter(),
@@ -171,9 +230,10 @@ export function createWorkflowHttpModule(options: WorkflowHttpServerOptions = {}
 
     @Module({
         imports: [LoggerModule, WorkflowModule, ServerCommonModule],
-        declarations: [WorkflowHttpController],
+        declarations: [WorkflowHttpController, WorkflowPluginController],
         providers: [
             { provide: WORKFLOW_DEFINITION_STORE, useValue: store },
+            WorkflowPluginCatalog,
             ...features,
             // Register MIME providers after the transport feature. The feature
             // also imports MimeModule exports; re-registering here ensures the
@@ -190,7 +250,26 @@ export function createWorkflowHttpModule(options: WorkflowHttpServerOptions = {}
 }
 
 export async function startWorkflowHttpServer(options: WorkflowHttpServerOptions = {}) {
-    return Application.run(createWorkflowHttpModule(options));
+    const ctx = await Application.run(createWorkflowHttpModule(options));
+    const registry = ctx.get(WorkflowPluginRegistry, null);
+    if (registry) {
+        for (const plugin of options.plugins || []) {
+            await registry.install(plugin);
+        }
+        const configured = options.installPlugins
+            || String(process.env.WORKFLOW_PLUGINS || '')
+                .split(',')
+                .map(item => item.trim())
+                .filter(Boolean);
+        const catalog = new WorkflowPluginCatalog();
+        for (const id of configured) {
+            const plugin = catalog.create(id);
+            if (plugin) {
+                await registry.install(plugin);
+            }
+        }
+    }
+    return ctx;
 }
 
-export { InMemoryWorkflowDefinitionStore };
+export { InMemoryWorkflowDefinitionStore, SqliteWorkflowDefinitionStore };

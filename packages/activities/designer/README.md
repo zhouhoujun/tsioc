@@ -21,14 +21,17 @@ the full server-side Activity library.
   (`Ctrl+Space` or automatically after `.`),
 - the editor is isolated behind `@tsdi/activities/web`; Monaco can be substituted
   there if a host accepts its much larger lazy chunk,
+- tabbed workflow documents: open multiple saved workflows, `+` creates a blank
+  document, closing the active tab selects its neighbour, and the open-tab set
+  is restored from localStorage on startup,
 - workflow library, run history replay and execution log,
 - autosave with `Saved / Unsaved / Saving / Save failed` state plus manual save,
 - global shortcuts: `Ctrl+S` save, `Ctrl+O` library, `Ctrl+Enter` run,
   `Ctrl+Z/Y`, `Ctrl+D`, `Delete`, and `?` / `F1` shortcut sheet,
 - light, dark, solarized and high-contrast themes selectable from the
-  application menu's theme submenu; the workspace layout splitters, panes and
-  collapse handles follow the active theme, and theme/language persist across
-  reloads,
+  application menu's theme submenu; the workspace layout splitters, panes,
+  scrollbars, node borders/ports and collapse handles follow the active theme,
+  and theme/language persist across reloads,
 - localized English / Chinese UI.
 
 ## Build
@@ -71,7 +74,15 @@ npm run designer
 # custom port:
 npm run designer -- 8765
 # open http://127.0.0.1:8765/
+
+# persistent SQLite database and preinstalled protocol plugins
+WORKFLOW_DB_FILE=/var/lib/tsdi/workflows.db WORKFLOW_PLUGINS=mqtt,redis npm run designer
 ```
+
+The server defaults to SQLite (`$WORKFLOW_DB_FILE`, then
+`~/.tsdi-agent/workflows.db`). Plugin installations made through
+`/api/plugins` are runtime state; use `WORKFLOW_PLUGINS` or
+`startWorkflowHttpServer({ installPlugins })` to preinstall on every boot.
 
 Served by `@tsdi/service` + `useHttpTransport`:
 
@@ -104,6 +115,7 @@ the product shell in headless Chromium and checks:
 - Fit keeps every node in view,
 - panes, splitters, collapse controls, connection drag/click, edge selection,
 - save / run / logs / library through the HTTP API,
+- tabs persist across reload and `+` creates/closes documents,
 - theme persistence across reload,
 - no browser console errors.
 

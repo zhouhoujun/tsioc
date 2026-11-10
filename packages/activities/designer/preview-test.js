@@ -12,6 +12,7 @@ const { chromium } = require('playwright');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const net = require('net');
+const os = require('os');
 const path = require('path');
 
 const DESIGNER_DIR = __dirname;
@@ -66,6 +67,9 @@ function startDesignerServer(port) {
     if (!fs.existsSync(path.join(DESIGNER_DIR, 'main.js'))) {
         throw new Error('designer/main.js missing; run the designer build first');
     }
+    const dbDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-workflow-preview-'));
+    const previousDb = process.env.WORKFLOW_DB_FILE;
+    process.env.WORKFLOW_DB_FILE = path.join(dbDir, 'workflows.db');
     const port = await freePort();
     const base = `http://127.0.0.1:${port}`;
     const server = startDesignerServer(port);
@@ -381,6 +385,29 @@ function startDesignerServer(port) {
                 background: designer ? getComputedStyle(designer).backgroundColor : ''
             };
         });
+        const layoutTheme = await page.evaluate(() => {
+            const designer = document.querySelector('.workflow-designer');
+            const left = document.querySelector('workspace-left');
+            const canvas = document.querySelector('.workflow-canvas');
+            let lightBorders = 0;
+            for (const element of [designer, ...(designer ? designer.querySelectorAll('*') : [])]) {
+                if (!element) continue;
+                const style = getComputedStyle(element);
+                for (const side of ['Top', 'Right', 'Bottom', 'Left']) {
+                    const width = parseFloat(style[`border${side}Width`] || '0');
+                    const match = (style[`border${side}Color`] || '').match(/rgb\((\d+), (\d+), (\d+)\)/);
+                    if (width > 0 && match && +match[1] > 190 && +match[2] > 190 && +match[3] > 190) {
+                        lightBorders++;
+                    }
+                }
+            }
+            return {
+                scrollbar: designer ? getComputedStyle(designer).scrollbarColor : '',
+                leftScrollbar: left ? getComputedStyle(left).scrollbarColor : '',
+                canvasScrollbar: canvas ? getComputedStyle(canvas).scrollbarColor : '',
+                lightBorders
+            };
+        });
 
         // Show the dynamic-form inspector in the final screenshot (dark theme).
         await page.locator('.workflow-node[data-node-id="condition_1"]').click();
@@ -399,9 +426,47 @@ function startDesignerServer(port) {
             document.querySelector('.workflow-designer')?.getAttribute('data-theme')
         );
 
+        // Install a backend plugin and verify its nodes appear in the palette
+        // after the designer fetches /api/plugins on boot.
+        const pluginInstall = await (await fetch(`${base}/api/plugins/redis/install`, { method: 'POST' })).json();
+        await page.reload({ waitUntil: 'networkidle' });
+        await page.waitForSelector('.workflow-palette-item[data-node-type="redis-command"]', { timeout: 15000 });
+        const pluginNodeVisible = await page.locator('.workflow-palette-item[data-node-type="redis-command"]').count() > 0;
+        await fetch(`${base}/api/plugins/redis`, { method: 'DELETE' });
+
+        // Tabs: save a copy, open the original in a second tab, persist the set
+        // across a reload, then create/close a blank document from the tab bar.
+        await page.locator('.workflow-toolbar .workflow-btn', { hasText: 'Workflows' }).first().click();
+        await page.waitForSelector('.workflow-library-panel');
+        await page.locator('.workflow-library-panel .workflow-btn', { hasText: 'Save as copy' }).click();
+        await page.waitForTimeout(300);
+        const originalRow = page.locator('.workflow-library-row').filter({
+            has: page.locator('.workflow-library-row-name', { hasText: /^Approval workflow$/ })
+        }).first();
+        await originalRow.locator('.workflow-btn', { hasText: 'Open' }).click();
+        await page.waitForTimeout(300);
+        const tabCount = await page.locator('.workflow-tabs .tab').count();
+        const tabState = await page.evaluate(() => {
+            const raw = localStorage.getItem('workflow-designer-open-tabs');
+            try { return raw ? JSON.parse(raw) : undefined; } catch { return undefined; }
+        });
+
+        await page.reload({ waitUntil: 'networkidle' });
+        await page.waitForFunction(() => document.querySelectorAll('.workflow-tabs .tab').length === 2, { timeout: 15000 });
+        const restoredTabCount = await page.locator('.workflow-tabs .tab').count();
+        const restoredTabLabel = await page.locator('.workflow-tabs .tab[aria-selected="true"] .tab-label').textContent();
+        await page.locator('.workflow-tabs .tab-new').click();
+        await page.waitForTimeout(200);
+        const newTabCount = await page.locator('.workflow-tabs .tab').count();
+        const newTabNodeCount = await page.evaluate(() => window.workflowDesigner.designer.nodes.length);
+        const newTabEmptyHint = await page.locator('.workflow-canvas-empty').count() > 0;
+        await page.locator('.workflow-tabs .tab[aria-selected="true"] .tab-close').click();
+        await page.waitForTimeout(200);
+        const closedTabCount = await page.locator('.workflow-tabs .tab').count();
+
         await browser.close();
 
-        const result = { before, initialJsBytes, lazyEditorChunk, hintEnv, hintAction, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, themeStored, themeAfterReload, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
+        const result = { before, initialJsBytes, lazyEditorChunk, hintEnv, hintAction, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
         console.log(JSON.stringify(result, null, 2));
         if (errors.length || initialJsBytes > 640_000 || !lazyEditorChunk || !hintEnv || !hintAction || !shortcutsOpened || !shortcutsClosed
             || autosaveName !== 'Function Node' || autosaveCode !== 'return 42;' || !wheelZoom || !wheelPan || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20
@@ -418,7 +483,15 @@ function startDesignerServer(port) {
             || solarizedTheme.attribute !== 'solarized'
             || solarizedTheme.splitter === 'rgb(226, 232, 240)' || solarizedTheme.collapse === 'rgb(255, 255, 255)'
             || lightThemeRestored !== 'light' || darkTheme.attribute !== 'dark'
-            || themeStored !== 'dark' || themeAfterReload !== 'dark' || !inspectorRendered) {
+            || layoutTheme.lightBorders !== 0
+            || !layoutTheme.scrollbar.includes('rgb(51, 65, 85)')
+            || !layoutTheme.leftScrollbar.includes('rgb(51, 65, 85)')
+            || !layoutTheme.canvasScrollbar.includes('rgb(51, 65, 85)')
+            || themeStored !== 'dark' || themeAfterReload !== 'dark'
+            || !pluginInstall?.installed || !pluginNodeVisible || !inspectorRendered
+            || tabCount !== 2 || tabState?.openIds?.length !== 2
+            || restoredTabCount !== 2 || !String(restoredTabLabel || '').includes('Approval workflow')
+            || newTabCount !== 3 || newTabNodeCount !== 0 || !newTabEmptyHint || closedTabCount !== 2) {
             process.exitCode = 1;
         }
     } catch (error) {
@@ -429,5 +502,11 @@ function startDesignerServer(port) {
         process.exitCode = 1;
     } finally {
         server.kill('SIGTERM');
+        if (previousDb === undefined) {
+            delete process.env.WORKFLOW_DB_FILE;
+        } else {
+            process.env.WORKFLOW_DB_FILE = previousDb;
+        }
+        fs.rmSync(dbDir, { recursive: true, force: true });
     }
 })();

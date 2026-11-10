@@ -108,6 +108,30 @@ export function createDefaultWorkflowDefinition(
 }
 
 /**
+ * Blank document used by the tab bar's `+` action. Unlike the starter example
+ * it contains no nodes or connections, so the canvas shows the onboarding hint
+ * until the user adds the first node.
+ */
+export function createBlankWorkflowDefinition(
+    locale: WorkflowLocale = 'zh-CN',
+    name?: string
+): VisualWorkflowDefinition {
+    const now = new Date().toISOString();
+    return {
+        id: 'workflow_new',
+        name: name || (locale === 'zh-CN' ? '新建流程' : 'New workflow'),
+        description: '',
+        version: '1.0.0',
+        nodes: [],
+        connections: [],
+        metadata: {
+            createdAt: now,
+            updatedAt: now
+        }
+    };
+}
+
+/**
  * Renderer-neutral workflow designer model. It owns editing, validation,
  * connection drafting, undo/redo, serialization and live execution snapshots;
  * DOM/TUI/console components only project this state.

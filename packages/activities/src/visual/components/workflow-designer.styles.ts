@@ -26,11 +26,109 @@ export const WORKFLOW_DESIGNER_CSS = `
     --workspace-collapse-border: #e2e8f0;
     --workspace-collapse-hover-color: #2563eb;
     --workspace-collapse-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+    --workspace-scrollbar-size: 10px;
+    --workspace-scrollbar-track: transparent;
+    --workspace-scrollbar-thumb: #cbd5e1;
+    --workspace-scrollbar-thumb-hover: #94a3b8;
+    scrollbar-color: var(--workspace-scrollbar-thumb) var(--workspace-scrollbar-track);
+    scrollbar-width: thin;
+}
+
+/* The designer owns every scroll surface (layout panes, canvas, inspector,
+   run log and nested CodeMirror scrollers), so theme their scrollbars too. */
+.workflow-designer *::-webkit-scrollbar {
+    width: var(--workspace-scrollbar-size, 10px);
+    height: var(--workspace-scrollbar-size, 10px);
+}
+
+.workflow-designer *::-webkit-scrollbar-track {
+    background: var(--workspace-scrollbar-track, transparent);
+}
+
+.workflow-designer *::-webkit-scrollbar-thumb {
+    background: var(--workspace-scrollbar-thumb, #cbd5e1);
+    border-radius: 999px;
+}
+
+.workflow-designer *::-webkit-scrollbar-thumb:hover {
+    background: var(--workspace-scrollbar-thumb-hover, #94a3b8);
+}
+
+.workflow-designer *::-webkit-scrollbar-corner {
+    background: transparent;
 }
 
 .workflow-designer .is-hidden,
 .workflow-designer [hidden] {
     display: none !important;
+}
+
+/* Open workflow tabs */
+.workflow-tabs {
+    display: block;
+    padding: 0 8px;
+    background: var(--wf-theme-surface-alt, #f8fafc);
+    border-bottom: 1px solid var(--wf-theme-border, #e2e8f0);
+}
+
+.workflow-tabs .tab-bar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    min-height: 32px;
+    margin: 0;
+    padding: 6px 0 0;
+    overflow-x: auto;
+}
+
+.workflow-tabs .tab {
+    display: inline-flex;
+    align-items: center;
+    max-width: 220px;
+    padding: 6px 10px;
+    border: 1px solid transparent;
+    border-bottom: 0;
+    border-radius: 8px 8px 0 0;
+    color: var(--wf-theme-muted, #64748b);
+    font-size: 12px;
+    line-height: 1.2;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.workflow-tabs .tab:hover {
+    background: var(--wf-theme-surface, #ffffff);
+}
+
+.workflow-tabs .tab[aria-selected="true"] {
+    background: var(--wf-theme-surface, #ffffff);
+    border-color: var(--wf-theme-border, #e2e8f0);
+    color: var(--wf-theme-text, #0f172a);
+    font-weight: 600;
+}
+
+.workflow-tabs .tab-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.workflow-tabs .tab-close {
+    margin-left: 8px;
+    color: var(--wf-theme-muted, #64748b);
+    cursor: pointer;
+}
+
+.workflow-tabs .tab[aria-selected="true"] .tab-close:hover {
+    color: var(--wf-theme-danger, #dc2626);
+}
+
+.workflow-tabs .tab-new {
+    padding: 6px 8px;
+    color: var(--wf-theme-primary, #2563eb);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
 }
 
 .workflow-toolbar {
@@ -1325,6 +1423,8 @@ html[data-theme="high-contrast"] li.CodeMirror-hint-active {
     --menu-bar-accent: #60a5fa;
     --menu-bar-danger: var(--wf-theme-danger);
     --menu-bar-shadow: rgba(0, 0, 0, 0.5);
+    --workspace-scrollbar-thumb: #334155;
+    --workspace-scrollbar-thumb-hover: #60a5fa;
 }
 
 .workflow-designer[data-theme="solarized"] {
@@ -1351,6 +1451,8 @@ html[data-theme="high-contrast"] li.CodeMirror-hint-active {
     --menu-bar-accent: #268bd2;
     --menu-bar-danger: var(--wf-theme-danger);
     --menu-bar-shadow: rgba(0, 0, 0, 0.5);
+    --workspace-scrollbar-thumb: #586e75;
+    --workspace-scrollbar-thumb-hover: #268bd2;
 }
 
 .workflow-designer[data-theme="high-contrast"] {
@@ -1377,6 +1479,8 @@ html[data-theme="high-contrast"] li.CodeMirror-hint-active {
     --menu-bar-accent: #ffff00;
     --menu-bar-danger: #ff5555;
     --menu-bar-shadow: rgba(255, 255, 255, 0.25);
+    --workspace-scrollbar-thumb: #ffffff;
+    --workspace-scrollbar-thumb-hover: #ffff00;
 }
 
 .workflow-designer[data-theme="dark"],

@@ -33,6 +33,47 @@ async function boot(): Promise<void> {
     ref.instance.autosave = true;
     ref.instance.autosaveDelay = 600;
 
+    const tabsKey = 'workflow-designer-open-tabs';
+    ref.instance.tabChangeAction = state => {
+        try {
+            localStorage.setItem(tabsKey, JSON.stringify(state));
+        } catch {
+            // Private mode/quota failures must not break the editor.
+        }
+    };
+    let restoredTabs = false;
+    try {
+        const savedTabs = JSON.parse(localStorage.getItem(tabsKey) || 'null');
+        if (savedTabs?.openIds?.length) {
+            restoredTabs = await ref.instance.restoreWorkflowTabs(savedTabs.openIds, savedTabs.activeId);
+        }
+    } catch {
+        restoredTabs = false;
+    }
+    if (!restoredTabs) {
+        const tabs = ref.instance.workflowTabSource.items;
+        ref.instance.tabChangeAction?.({
+            openIds: tabs.map(tab => tab.id),
+            activeId: tabs.find(tab => tab.active)?.id
+        });
+    }
+
+    // Register palette/runtime definitions contributed by server-side plugins.
+    // Plugin execution happens on the server; the browser only needs metadata.
+    try {
+        const response = await fetch('/api/plugins');
+        if (response.ok) {
+            const catalog = await response.json();
+            for (const plugin of catalog?.installed || []) {
+                for (const node of plugin?.nodes || []) {
+                    ref.instance.designer.registry.register(node);
+                }
+            }
+        }
+    } catch {
+        // The standalone designer can run without the plugin API.
+    }
+
     const fitSoon = () => {
         const run = () => ref.instance.fitView();
         if (typeof requestAnimationFrame === 'function') {
@@ -49,7 +90,7 @@ async function boot(): Promise<void> {
         ref.instance.locale = next;
         // Only the untouched starter document needs re-localized default names;
         // switching language must never discard user edits.
-        if (!ref.instance.designer.dirty) {
+        if (!restoredTabs && ref.instance.openWorkflowCount === 1 && !ref.instance.designer.dirty) {
             ref.instance.designer.load(
                 createDefaultWorkflowDefinition(ref.instance.designer.registry, next)
             );

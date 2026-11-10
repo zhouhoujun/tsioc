@@ -431,12 +431,16 @@ UI and generic visual runtime without bundling the full server Activity library.
 
 Features:
 
+- opened workflows are independent document tabs; `+` creates a blank workflow,
+  each tab keeps its own canvas/selection/history, and the host can restore the
+  persisted open-tab set on startup,
 - palette to drag generic node components onto the canvas (or click to add),
-- theme switching: light / dark / solarized / high-contrast via the toolbar and
-  shared `ThemeService`,
+- theme switching: light / dark / solarized / high-contrast from the application
+  menu's `Theme` submenu (shared `ThemeService`); layout panes, borders,
+  scrollbars and node cards follow the active theme,
 - left/center/right/bottom `workspace-layout` with draggable ratios,
-  collapse/expand toggles and independent scrollbars for palette, canvas,
-  inspector and status/output,
+  collapse/expand toggles and independently themed scrollbars for palette,
+  canvas, inspector and status/output,
 - SVG-native canvas: connection lines render through the components SVG
   namespace support (not per-edge style positioning),
 - drag nodes with grid snapping; connect from output or input ports, drop anywhere
@@ -557,6 +561,70 @@ await designer.openFrom(store, 'approval');
 
 The HTTP store expects `GET/PUT/DELETE /workflows[/:id]`; any gateway can back
 it. Errors are surfaced to the editor instead of silently losing definitions.
+
+Node hosts default to SQLite through `SqliteWorkflowDefinitionStore`:
+
+```typescript
+import { startWorkflowHttpServer } from '@tsdi/activities/server';
+
+const ctx = await startWorkflowHttpServer({
+    port: 8765,
+    staticRoot: 'designer',
+    databaseFile: '/var/lib/tsdi/workflows.db'
+});
+```
+
+Defaults: `$WORKFLOW_DB_FILE`, then `~/.tsdi-agent/workflows.db`. Definitions
+are stored as JSON with indexed summary columns, so library queries stay fast.
+When Node's built-in `node:sqlite` is unavailable the server falls back to the
+in-memory store.
+
+### Workflow plugins
+
+`WorkflowPluginRegistry` installs custom nodes, services and lifecycle hooks:
+
+```typescript
+import { WorkflowPlugin } from '@tsdi/activities';
+
+const plugin: WorkflowPlugin = {
+    id: 'acme',
+    name: 'Acme connector',
+    services: { acme: new AcmeClient() },
+    nodes: [{
+        type: 'acme-call',
+        label: 'Acme call',
+        category: 'action',
+        icon: '◆',
+        color: '#0f766e',
+        inputs: [{ id: 'in', name: 'in', type: 'input', label: 'Input' }],
+        outputs: [{ id: 'out', name: 'out', type: 'output', label: 'Output' }],
+        execute: async (node, context) => ({
+            success: true,
+            data: { result: await context.services.acme.call(node.config) }
+        })
+    }]
+};
+```
+
+`startWorkflowHttpServer({ plugins: [plugin] })` installs it at bootstrap.
+The HTTP API also exposes the bundled catalog:
+
+```text
+GET    /api/plugins
+POST   /api/plugins/:id/install
+DELETE /api/plugins/:id
+```
+
+Bundled protocol plugins: `mqtt`, `redis`, `nats`, `coap`. Install them on
+demand (HTTP API or `WORKFLOW_PLUGINS=mqtt,redis npm run designer:serve`) so
+their optional client libraries are only loaded when used. Installed
+node manifests are returned to the designer, which adds them to its palette;
+plugin executors run on the server (browser nodes report a clear error when a
+plugin is not available locally).
+
+Plugin services are exposed to every node as `context.services` and are disposed
+on uninstall. Plugin nodes are marked `requiresServer` by default; set
+`requiresServer: false` for browser-compatible plugins.
 
 ### Error ports
 

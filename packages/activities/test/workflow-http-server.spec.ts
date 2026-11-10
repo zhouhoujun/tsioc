@@ -124,4 +124,31 @@ describe('Workflow HTTP microservice', () => {
         const after = await request(`${base}/api/workflows/http-demo`);
         expect(after.status).toBe(404);
     });
+
+    it('lists, installs and uninstalls workflow plugins', async () => {
+        const catalog = await request(`${base}/api/plugins`);
+        expect(catalog.status).toBe(200);
+        expect(catalog.body.installed).toEqual([]);
+        expect(catalog.body.available.map((item: any) => item.id).sort()).toEqual(['coap', 'mqtt', 'nats', 'redis']);
+
+        const install = await request(`${base}/api/plugins/redis/install`, { method: 'POST' });
+        expect(install.status).toBe(200);
+        expect(install.body.installed).toBe(true);
+        expect(install.body.plugin.id).toBe('redis');
+        expect(install.body.plugin.nodes.map((node: any) => node.type)).toContain('redis-command');
+
+        const installed = await request(`${base}/api/plugins`);
+        expect(installed.body.installed.map((item: any) => item.id)).toEqual(['redis']);
+
+        const again = await request(`${base}/api/plugins/redis/install`, { method: 'POST' });
+        expect(again.status).toBe(200);
+        expect(again.body.installed).toBe(false);
+
+        const remove = await request(`${base}/api/plugins/redis`, { method: 'DELETE' });
+        expect(remove.status).toBe(200);
+        expect(remove.body.removed).toBe(true);
+
+        const missing = await request(`${base}/api/plugins/redis`, { method: 'DELETE' });
+        expect(missing.status).toBe(404);
+    });
 });

@@ -39,5 +39,11 @@
     "url": "https://github.com/zhouhoujun/tsioc.git"
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme",
-  "dependencies": {}
+  "dependencies": {},
+  "optionalDependencies": {
+    "mqtt": "^4.3.8",
+    "ioredis": "^5.4.1",
+    "nats": "^2.28.2",
+    "coap": "^1.4.1"
+  }
 }
