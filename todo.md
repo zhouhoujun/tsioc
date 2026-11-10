@@ -3316,3 +3316,5 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - HTTP header 读取改为先按原 key 直接查（Node 请求头均为小写），仅大小写不一致时回退 `toLowerCase()`，避免每次读取分配小写字符串。
   - 验证：service 47、http 36、client 72、coap 25、grpc 17、mcp 33、swagger 10、tracing 30、transport 51、tcp 65、ws 88 passing；`tsc --noUnusedLocals` 全微服务 src 无命中；`git diff --check` 通过。
   - 环境限制：amqp/kafka/nats/redis 测试依赖本地 broker（5672/9092/4222/6379），本轮未启动 broker，连接被拒绝；gateway 单测 26 passing 但进程因既有 health probe 定时器不退出（与本轮改动无关）。
+- 修复 turn 完成后最终回答缓存不刷新：`messageItemsCache` 上下文缺少 `streaming`，running 状态缓存的最终行在完成后被复用，导致真实 TUI 偶尔缺少 `Worked for` 尾部；缓存现在包含 `streaming` 并新增回归。
+- 真实 TUI 复核：booking-system 最终回答重新加载后显示 `Worked for 3m 28s · done 09:13`。

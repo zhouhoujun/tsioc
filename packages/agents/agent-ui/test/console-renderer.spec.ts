@@ -533,6 +533,26 @@ export class AgentConsoleMessagesRendererTest {
 
     }
 
+    @Test('turn completion invalidates the cached running-state final message')
+    async turnCompletionRefreshesWorkedFooter() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setStatus('running');
+        ref.instance.sessionState.setMessages([
+            { id: 'u-worked', role: 'user', content: 'do the work', createdAt: 1_000 },
+            { id: 'a-worked', role: 'assistant', content: 'done', createdAt: 5_000, metadata: { finishReason: 'stop' } }
+        ] as any);
+        const panel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const runningItems = panel.instance.messageItems;
+        expect(runningItems.flatMap(item => item.lines.map(line => line.meta || '')).join('\n')).toContain('Worked for');
+
+        ref.instance.sessionState.setStatus('idle');
+        const idleItems = panel.instance.messageItems;
+        // streaming is part of the item context: completion must re-render the
+        // cached final item instead of reusing the running-state projection.
+        expect(idleItems).not.toBe(runningItems);
+        expect(idleItems.flatMap(item => item.lines.map(line => line.meta || '')).join('\n')).toContain('Worked for');
+    }
+
     @Test('failed tool event keeps one separator and a space before content')
     async failedToolEventSpacing() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;

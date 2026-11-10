@@ -177,6 +177,7 @@ export class AgentConsoleMessagesPanelComponent {
         const messagesFocused = this.state.messagesFocused;
         const consoleOptions = this.state.consoleOptions;
         const rawMode = this.state.rawMode;
+        const streaming = this.state.status === 'running' || this.state.status === 'reasoning';
         const showTimestamps = this.state.consoleOptions.showMessageTimestamps && this.state.showTimestamps;
         const showCriticalMarks = this.state.showCriticalMarks;
         const showToolOutput = this.state.showToolOutput;
@@ -192,10 +193,10 @@ export class AgentConsoleMessagesPanelComponent {
             theme: this.activeTheme,
             selectedMessageId: this.state.selectedMessageId,
             messagesFocused: this.state.messagesFocused,
-            streaming: this.state.status === 'running' || this.state.status === 'reasoning',
             statusLabels: this.state.consoleOptions.messageStatusLabels,
             statusSymbol: this.state.consoleOptions.messageStatusSymbol,
             rawMode,
+            streaming,
             showTimestamps,
             showCriticalMarks,
             showToolOutput,
@@ -214,6 +215,7 @@ export class AgentConsoleMessagesPanelComponent {
             && cached.statusSymbol === consoleOptions.messageStatusSymbol
             && cached.username === consoleOptions.username
             && cached.rawMode === rawMode
+            && cached.streaming === streaming
             && cached.showTimestamps === showTimestamps
             && cached.showCriticalMarks === showCriticalMarks
             && cached.showToolOutput === showToolOutput
@@ -259,6 +261,7 @@ export class AgentConsoleMessagesPanelComponent {
             statusSymbol: consoleOptions.messageStatusSymbol,
             username: consoleOptions.username,
             rawMode,
+            streaming,
             showTimestamps,
             showCriticalMarks,
             showToolOutput,

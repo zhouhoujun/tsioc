@@ -12,6 +12,7 @@ export const messageItemsCache = new WeakMap<object, {
     statusSymbol: AgentConsoleSessionState['consoleOptions']['messageStatusSymbol'];
     username: AgentConsoleSessionState['consoleOptions']['username'];
     rawMode: boolean;
+    streaming: boolean;
     showTimestamps: boolean;
     showCriticalMarks: boolean;
     showToolOutput: boolean;
