@@ -1,7 +1,6 @@
 import { Module, ModuleWithProviders, Provider, token } from '@tsdi/ioc';
 import { MetricsCollector } from './collector';
 import { MetricsRegistry } from './registry';
-import { MetricsController } from './metrics.controller';
 import { MetricsInterceptor } from './interceptors/metrics.interceptor';
 import { RequestCounter, ErrorCounter } from './counters';
 import { MemoryGauge } from './gauges';
@@ -23,18 +22,25 @@ export const METRICS_PROVIDERS: Provider[] = [
     ErrorCounter,
     MemoryGauge,
     LatencyHistogram,
-    MetricsInterceptor,
-    MetricsController
+    MetricsInterceptor
 ];
 
 /**
  * Metrics module.
  *
- * 指标监控模块，提供指标收集和 Prometheus 格式导出。
+ * 指标监控模块，提供指标收集和 Prometheus 格式导出。控制器需要在应用根模块声明：
+ *
+ * ```ts
+ * @Module({
+ *   imports: [MetricsModule],
+ *   declarations: [MetricsController],
+ *   providers: [provideService(useRouter(), useHttpTransport(...))]
+ * })
+ * ```
  */
 @Module({
     providers: METRICS_PROVIDERS,
-    exports: [MetricsController, MetricsRegistry]
+    exports: [MetricsRegistry]
 })
 export class MetricsModule {
     /**

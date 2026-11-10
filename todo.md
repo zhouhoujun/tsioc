@@ -3322,3 +3322,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `ApiRateLimiter` 的窗口清理定时器与 `GatewayLifecycle` 的 health probe 定时器统一 `unref()`：后台没有请求/服务时不再单独阻止进程退出，嵌入式运行时和测试套件可正常结束。
   - 修复后 gateway 套件 29 passing 且进程退出（此前 26 passing 后因 2 个 rate-limiter 10s interval 挂起）；service 套件 47 passing。
   - 回归：gateway 29、service 47；`git diff --check` 通过。
+- 微服务健康/指标端点完善（2026-11-10）：
+  - `HealthController` / `MetricsController` 的根路由由 `@Get()` 改为 `@Get('/')`；此前空路径不会注册到 trie，`/health`、`/metrics` 实际返回 404。
+  - `MemoryHealthIndicator` 的可选构造函数参数补 `@Optional()`，修复 DI 将 `options` 当作必填参数导致 `/health` 400。
+  - `HealthModule` / `MetricsModule` 不再在模块内声明控制器（模块导入发生在根 service providers 之前，会因 router 未注册而崩溃）；控制器需在应用根模块 `declarations` 中声明，模块仍提供 indicators/collector。
+  - `MemoryGauge` 指标采集定时器补 `unref()`，避免后台仅剩采集任务时阻塞进程退出。
+  - 新增真实 HTTP 回归：health `/health`、`/health/liveness`、`/health/readiness`；metrics `/metrics`、`/metrics/json`。
+  - 回归：health 18 passing、metrics 45 passing；两包 `tsc --noUnusedLocals` 无命中。

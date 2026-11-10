@@ -1,4 +1,4 @@
-import { Injectable } from '@tsdi/ioc';
+import { Injectable, Optional } from '@tsdi/ioc';
 import { HealthIndicator } from '../indicator';
 import { HealthResult } from '../health';
 
@@ -26,7 +26,7 @@ export class MemoryHealthIndicator extends HealthIndicator {
     private heapThreshold: number;
     private rssThreshold: number;
 
-    constructor(options?: MemoryHealthOptions) {
+    constructor(@Optional() options?: MemoryHealthOptions) {
         super();
         this.heapThreshold = options?.heapThreshold ?? 0.9; // 90% default
         this.rssThreshold = options?.rssThreshold ?? 0.9;

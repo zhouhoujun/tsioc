@@ -20,7 +20,7 @@ export class MetricsController {
      * get metrics in Prometheus format.
      * @returns Prometheus formatted metrics.
      */
-    @Get()
+    @Get('/')
     metrics(): string {
         const metrics = this.collector.getMetrics();
         return this.exporter.export(metrics);

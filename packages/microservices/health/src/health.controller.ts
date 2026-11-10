@@ -19,7 +19,7 @@ export class HealthController {
      * full health check.
      * @returns health report.
      */
-    @Get()
+    @Get('/')
     async check(): Promise<HealthReport> {
         const results: Record<string, HealthResult> = {};
 

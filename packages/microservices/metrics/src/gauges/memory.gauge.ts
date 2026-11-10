@@ -33,6 +33,9 @@ export class MemoryGauge implements OnDestroy {
     private startCollection(): void {
         this.updateMetrics();
         this.intervalId = setInterval(() => this.updateMetrics(), 10000); // Every 10 seconds
+        if (typeof (this.intervalId as any).unref === 'function') {
+            (this.intervalId as any).unref();
+        }
     }
 
     private updateMetrics(): void {

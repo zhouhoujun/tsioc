@@ -1,14 +1,12 @@
 import { Module, ModuleWithProviders, Type } from '@tsdi/ioc';
 import { HealthIndicator } from './indicator';
 import { HEALTH_INDICATORS } from './tokens';
-import { HealthController } from './health.controller';
 import { MemoryHealthIndicator } from './indicators/memory.indicator';
 
 /**
  * Health module providers.
  */
 export const HEALTH_PROVIDERS = [
-    HealthController,
     MemoryHealthIndicator,
     { provide: HEALTH_INDICATORS, useClass: MemoryHealthIndicator, multi: true }
 ];
@@ -16,11 +14,18 @@ export const HEALTH_PROVIDERS = [
 /**
  * Health module.
  *
- * 健康检查模块，提供健康检查端点和健康指示器系统。
+ * 健康检查模块，提供健康指示器系统。控制器需要在应用根模块声明：
+ *
+ * ```ts
+ * @Module({
+ *   imports: [HealthModule],
+ *   declarations: [HealthController],
+ *   providers: [provideService(useRouter(), useHttpTransport(...))]
+ * })
+ * ```
  */
 @Module({
-    providers: HEALTH_PROVIDERS,
-    exports: [HealthController]
+    providers: HEALTH_PROVIDERS
 })
 export class HealthModule {
     /**
