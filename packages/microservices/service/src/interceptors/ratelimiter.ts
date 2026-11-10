@@ -22,6 +22,10 @@ export class ApiRateLimiter {
         const windowMs = options.windowMs ?? 60000;
         // Periodic cleanup of expired windows
         this.cleanupTimer = setInterval(() => this.evictExpired(), windowMs);
+        // The cleanup timer must not keep a process alive on its own.
+        if (typeof (this.cleanupTimer as any).unref === 'function') {
+            (this.cleanupTimer as any).unref();
+        }
     }
 
     /**

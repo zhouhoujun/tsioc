@@ -106,6 +106,11 @@ export class GatewayLifecycle implements OnDestroy {
         this.healthTimer = setInterval(() => {
             this.probeRoutes().catch(() => undefined);
         }, interval);
+        // Do not keep the process alive when the only remaining work is an
+        // idle health probe (embedded runtimes and test suites).
+        if (typeof (this.healthTimer as any).unref === 'function') {
+            (this.healthTimer as any).unref();
+        }
     }
 
     private stopHealthProbe(): void {

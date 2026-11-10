@@ -3318,3 +3318,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 环境限制：amqp/kafka/nats/redis 测试依赖本地 broker（5672/9092/4222/6379），本轮未启动 broker，连接被拒绝；gateway 单测 26 passing 但进程因既有 health probe 定时器不退出（与本轮改动无关）。
 - 修复 turn 完成后最终回答缓存不刷新：`messageItemsCache` 上下文缺少 `streaming`，running 状态缓存的最终行在完成后被复用，导致真实 TUI 偶尔缺少 `Worked for` 尾部；缓存现在包含 `streaming` 并新增回归。
 - 真实 TUI 复核：booking-system 最终回答重新加载后显示 `Worked for 3m 28s · done 09:13`。
+- 微服务定时器收尾（2026-11-10）：
+  - `ApiRateLimiter` 的窗口清理定时器与 `GatewayLifecycle` 的 health probe 定时器统一 `unref()`：后台没有请求/服务时不再单独阻止进程退出，嵌入式运行时和测试套件可正常结束。
+  - 修复后 gateway 套件 29 passing 且进程退出（此前 26 passing 后因 2 个 rate-limiter 10s interval 挂起）；service 套件 47 passing。
+  - 回归：gateway 29、service 47；`git diff --check` 通过。
