@@ -3329,3 +3329,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `MemoryGauge` 指标采集定时器补 `unref()`，避免后台仅剩采集任务时阻塞进程退出。
   - 新增真实 HTTP 回归：health `/health`、`/health/liveness`、`/health/readiness`；metrics `/metrics`、`/metrics/json`。
   - 回归：health 18 passing、metrics 45 passing；两包 `tsc --noUnusedLocals` 无命中。
+- 微服务指标接入与导出清理（2026-11-10）：
+  - 新增 `useMetrics()` service feature：在 `provideService(...)` 中直接注册 MetricsRegistry/Collector/counters/gauges/histogram 与 `MetricsInterceptor`，无需手动把 interceptor 塞进 transport token；控制器仍在应用根模块声明。
+  - 新增真实 HTTP 回归：`/ping/` 请求后 `/metrics/json` 能读到 `http_requests_total`，证明 interceptor 已进入真实 transport 链。
+  - 删除 `http/src/server/interceptors/index.ts` 重复的 `send-response` 导出。
+  - 移除 `MetricsInterceptor` 中无操作的 `finalize` 分支与 import。
+  - 回归：metrics 46 passing（含 useMetrics 集成）、http 36 passing、health 18 passing；metrics `tsc --noUnusedLocals` 无命中。

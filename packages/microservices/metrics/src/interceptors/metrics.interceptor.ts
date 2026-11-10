@@ -1,7 +1,7 @@
 import { Injectable } from '@tsdi/ioc';
 import { RequestInterceptor, RequestContext, RequestHandler, Incoming, Outgoing, ReadableLike, WritableLike } from '@tsdi/common';
 import { Observable } from 'rxjs';
-import { finalize, tap, catchError } from 'rxjs/operators';
+import { catchError, tap } from 'rxjs/operators';
 import { RequestCounter } from '../counters/request.counter';
 import { ErrorCounter } from '../counters/error.counter';
 import { LatencyHistogram } from '../histograms/latency.histogram';
@@ -49,9 +49,6 @@ export class MetricsInterceptor implements RequestInterceptor<ReadableLike<Incom
                 this.latencyHistogram.recordLatency(method, path, status, duration);
 
                 throw err;
-            }),
-            finalize(() => {
-                // Additional cleanup if needed
             })
         );
     }

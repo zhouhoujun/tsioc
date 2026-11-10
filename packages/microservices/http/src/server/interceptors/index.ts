@@ -12,4 +12,3 @@ export * from './bodyparser';
 export * from './content';
 export * from './json';
 export * from './send-response';
-export * from './send-response';
