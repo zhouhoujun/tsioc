@@ -2510,11 +2510,15 @@ export class VmReviewTasksTest {
 
         await (component as any).handleCommand('/status');
 
-        expect(state.notice).toContain('st-1');
-        expect(state.notice).toContain('fast');
-        expect(state.notice).toContain('ON (read-only)');
-        expect(state.notice).toContain('sandbox workspace');
-        expect(state.notice).toContain('delegation explicit');
+        // The status panel is the single visible surface; the one-line summary
+        // stays in command output history instead of a duplicate toast/notice.
+        const summary = state.commandOutputs[0]?.text || '';
+        expect(summary).toContain('st-1');
+        expect(summary).toContain('fast');
+        expect(summary).toContain('ON (read-only)');
+        expect(summary).toContain('sandbox workspace');
+        expect(summary).toContain('delegation explicit');
+        expect(state.toasts).toEqual([]);
         expect(state.textOverlay?.title).toBe('status');
         expect(state.textOverlay?.lines).toContain('session: st-1');
         expect(state.textOverlay?.lines).toContain('model: fast');
@@ -2535,7 +2539,8 @@ export class VmReviewTasksTest {
 
         await (component as any).handleCommand('/status');
 
-        expect(state.notice).toContain('exchange d1 s2 dup3 u4');
+        expect(state.commandOutputs[0]?.text).toContain('exchange d1 s2 dup3 u4');
+        expect(state.toasts).toEqual([]);
         expect(state.textOverlay?.title).toBe('status');
         expect(state.textOverlay?.lines).toContain('exchange: dropped 1 · stale 2 · duplicate 3 · unauthorized 4');
     }

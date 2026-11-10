@@ -109,6 +109,10 @@ export async function restoreSettings(self: any): Promise<void> {
             const profileExists = !!persistedProfile && !!(self.options.model as any)?.profiles?.[persistedProfile];
             if (directProfile) {
                 if (applyPersistedModelProfile(self.options, persistedProfile)) {
+                    // The runtime holds its own options object; sync it before
+                    // `openSession` reads `app.state` (otherwise the restored
+                    // catalog model is overwritten by the runtime default).
+                    self.runtime?.updateModelOptions?.(self.options.model);
                     self.state.setModelProfile(persistedProfile);
                 } else {
                     self.state.setModelProfile('');

@@ -45,6 +45,11 @@ host.state.onReviewAnnotationsPersist = (cache: any) => host.saveReviewAnnotatio
         await host.restoreRawMode();
         await host.restoreModelStore();
         await host.restoreSettings();
+        // `openSession` re-reads the runtime's state (app.state) and would
+        // overwrite the profile restored above with the still-default runtime
+        // profile. Capture the persisted choice before that round-trip and
+        // re-apply it afterwards.
+        const persistedModelProfile = String(host.state.modelProfile || '').trim();
         host.state.setTranscriptFollowProvider(() => host.surfaceAccessor?.isViewportFollowing?.() ?? true);
         host.updateTerminalTitle();
         await host.resolveGitBranch();
@@ -62,7 +67,7 @@ host.state.onReviewAnnotationsPersist = (cache: any) => host.saveReviewAnnotatio
         // No explicit session means a fresh conversation. Resuming the state
         // default here replays the previous transcript on every console start.
         await host.openSession(explicitSessionId || (freshStartup ? undefined : host.state.sessionId) || undefined, { persistCurrentHistory: false, fresh: freshStartup, missing: missingResume }); if (freshStartup) { await host.bootstrapStateFromAppRpc(host.state.sessionId); }
-        const persistedProfileName = String(host.state.modelProfile || '').trim();
+        const persistedProfileName = persistedModelProfile;
         const directProfile = persistedProfileName.includes('/');
         const profileExists = !!persistedProfileName && !!(host.options.model as any)?.profiles?.[persistedProfileName];
         if ((host.options.model as any)?.explicitModel) {

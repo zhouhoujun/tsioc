@@ -167,6 +167,11 @@ export class TurnStreamNarrationTest {
 
         // Stream order: narration -> tool row -> final answer last.
         expect(host.state.messages[host.state.messages.length - 1].content).toBe('Now I understand the layout.');
+
+        // Live narration is interim even before the step records `toolCalls` or
+        // `finishReason`; otherwise it renders a premature worked/done footer.
+        const narration = host.state.messages.find(item => item.content === 'Let me inspect the project.');
+        expect(narration?.metadata?.preamble).toBe(true);
     }
 
     @Test('leaves no empty assistant row when a turn ends on a tool call')

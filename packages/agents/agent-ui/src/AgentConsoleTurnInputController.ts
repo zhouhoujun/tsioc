@@ -72,6 +72,7 @@ export interface AgentConsoleTurnInputHost {
     openSession(sessionId?: string, options?: { persistCurrentHistory?: boolean; fresh?: boolean }): Promise<void>;
     resolveMentionDisplayFiles(input: string): string[];
     refreshTurnArtifacts(): Promise<void>;
+    refreshSessions?(): Promise<void>;
     drainQueuedPrompts(sessionId: string): Promise<void>;
     translate?: (key: string, params?: Record<string, any>) => string | undefined;
 }
@@ -143,6 +144,9 @@ export async function submitMultilineDraftView(host: AgentConsoleTurnInputHost):
                 host.updateTerminalTitle();
         } finally {
             host.state.clearTurnEventScope(turnScope);
+            // The runtime titles the session at turn start; refresh so the top
+            // tab picks up the generated title without an unrelated /sessions.
+            void host.refreshSessions?.();
         }
     }
 
@@ -310,6 +314,7 @@ export async function submitView(host: AgentConsoleTurnInputHost): Promise<void>
                 host.state.setTasksCount(host.scheduler.getTasks().length);
             void host.refreshTurnArtifacts();
             host.state.clearTurnEventScope(turnScope);
+            void host.refreshSessions?.();
             void host.drainQueuedPrompts(turnSessionId);
         }
     }

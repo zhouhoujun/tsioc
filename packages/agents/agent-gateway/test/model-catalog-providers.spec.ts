@@ -121,6 +121,47 @@ export class ModelCatalogProvidersTest {
         expect(options.model.profiles.fast.model).toEqual('fast-model');
     }
 
+    @Test('a catalog model on the same endpoint keeps the configured credentials')
+    sameEndpointKeepsCredentials() {
+        const options: any = {
+            model: {
+                provider: 'openai-compatible',
+                model: 'deepseek-chat',
+                baseUrl: 'https://api.deepseek.com',
+                apiKey: 'sk-active',
+                apiKeyEnv: 'OPENAI_API_KEY',
+                headers: { 'x-trace': 'on' }
+            }
+        };
+        activateCatalogModel(options, 'deepseek', 'deepseek-flash');
+        expect(options.model.provider).toEqual('deepseek');
+        expect(options.model.model).toEqual('deepseek-flash');
+        expect(options.model.baseUrl).toEqual('https://api.deepseek.com');
+        // Same endpoint: the working key must survive the provider-id switch.
+        expect(options.model.apiKey).toEqual('sk-active');
+        expect(options.model.apiKeyEnv).toEqual('OPENAI_API_KEY');
+        expect(options.model.headers).toEqual({ 'x-trace': 'on' });
+    }
+
+    @Test('a real endpoint change clears the previous credentials')
+    differentEndpointClearsCredentials() {
+        const options: any = {
+            model: {
+                provider: 'openai-compatible',
+                model: 'proxy-model',
+                baseUrl: 'https://proxy.example/v1',
+                apiKey: 'sk-proxy',
+                headers: { 'x-proxy': '1' }
+            }
+        };
+        activateCatalogModel(options, 'deepseek', 'deepseek-flash');
+        expect(options.model.provider).toEqual('deepseek');
+        expect(options.model.baseUrl).toEqual('https://api.deepseek.com');
+        expect(options.model.apiKey).toBeUndefined();
+        expect(options.model.headers).toBeUndefined();
+        expect(options.model.apiKeyEnv).toEqual('DEEPSEEK_API_KEY');
+    }
+
     @Test('live catalog models activate with the selected provider connection')
     async activateLiveModel() {
         const options: any = {

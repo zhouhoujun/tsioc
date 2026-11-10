@@ -494,12 +494,12 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
         notifyConsole(this, message, duration, () => formatAgentPanelLabel(this.translator, 'overlay', 'noticeTitle', 'notice'));
     }
 
-    protected pushCommandOutput(command: string, text: string, kind?: AgentConsoleCommandOutputEntry['kind']): void {
+    protected pushCommandOutput(command: string, text: string, kind?: AgentConsoleCommandOutputEntry['kind'], options?: { notify?: boolean }): void {
         const outputId = this.state.pushCommandOutput(command, text, kind);
         if (outputId && this.pendingCommandRequestId) {
             this.state.commandExecutionController.linkOutput(this.pendingCommandRequestId, outputId);
         }
-        this.notify(text);
+        if (options?.notify !== false) this.notify(text);
     }
 
     protected notifyBusyState(message?: string): void {

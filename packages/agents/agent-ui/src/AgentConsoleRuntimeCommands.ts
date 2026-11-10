@@ -14,7 +14,7 @@ export interface AgentConsoleRuntimeHost {
     activeThemeName: string;
     notify(message: string): void;
     select(title: string, options: any[], index: number, hint?: string): Promise<string | undefined>;
-    pushCommandOutput(command: string, text: string, kind?: any): void;
+    pushCommandOutput(command: string, text: string, kind?: any, options?: { notify?: boolean }): void;
     applyTheme(name: string): Promise<boolean>;
     applyStatusline(fields: any[]): Promise<boolean>;
     applyTitleFields(fields: any[]): Promise<boolean>;
@@ -72,7 +72,10 @@ export async function runStatusCommand(host: AgentConsoleRuntimeHost): Promise<v
     const planModeText = planMode
         ? formatAgentUiNotice(host.translator, 'statusPlanModeOn')
         : formatAgentUiNotice(host.translator, 'statusPlanModeOff');
-    host.pushCommandOutput('/status', formatAgentUiNotice(host.translator, 'statusSummary', { session: sessionId, model, archetype, planMode: planModeText, sandbox: sandboxMode, delegation: delegationMode, exchange: exchangeText }));
+    // The overlay below is the one visible status surface. Recording the
+    // summary must not also open a toast: the toast floats over the panel and
+    // clips its right column (the summary duplicated the same facts).
+    host.pushCommandOutput('/status', formatAgentUiNotice(host.translator, 'statusSummary', { session: sessionId, model, archetype, planMode: planModeText, sandbox: sandboxMode, delegation: delegationMode, exchange: exchangeText }), 'result', { notify: false });
     state.openTextOverlay(formatAgentPanelLabel(host.translator, 'overlay', 'statusTitle', 'status'), [
         formatAgentUiNotice(host.translator, 'statusSessionLine', { id: sessionId }),
         formatAgentUiNotice(host.translator, 'statusModelLine', { model }),

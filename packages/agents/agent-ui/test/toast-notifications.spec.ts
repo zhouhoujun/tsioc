@@ -52,6 +52,25 @@ export class ToastNotificationsTest {
         }
     }
 
+    @Test('/status records output without duplicating it as a toast over the panel')
+    async statusOutputDoesNotBecomeToast() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub());
+        await component.onInit();
+        try {
+            // Exercise the production wrapper: it builds `runtimeHost(this)`,
+            // and that adapter must forward the `notify: false` option too.
+            await (component as any).runStatusCommand();
+            const state = component.sessionState;
+            // The scrollable overlay is the single visible status surface.
+            expect(state.textOverlay?.title).toBeTruthy();
+            expect(state.commandOutputs[0]?.command).toEqual('/status');
+            // A toast would float over the panel and clip its right column.
+            expect(state.toasts).toEqual([]);
+        } finally {
+            component.onDestroy();
+        }
+    }
+
     @Test('persistent notices also surface through the toast queue')
     async persistentNoticesKeepTheStatusLine() {
         const component = createConsole(new RuntimeStub(), new SchedulerStub());

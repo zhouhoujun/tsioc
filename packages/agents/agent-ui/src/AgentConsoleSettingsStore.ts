@@ -100,19 +100,30 @@ export function applyPersistedModelProfile(options: any, name?: string | null): 
         return true;
     }
     const known = defaultAgentProviderRegistry.get(provider);
-    options.model = known
-        ? {
+    if (known) {
+        // Keep the active endpoint's credentials when both ids address the
+        // same baseUrl (catalog `deepseek` vs an `openai-compatible` profile
+        // pointing at api.deepseek.com). Cleared only on a real endpoint change.
+        const sameEndpoint = !!model.baseUrl && !!known.baseUrl
+            && normalizeModelEndpoint(model.baseUrl) === normalizeModelEndpoint(known.baseUrl);
+        options.model = {
             ...model,
             provider,
             model: modelId,
             ...(known.baseUrl ? { baseUrl: known.baseUrl } : {}),
-            ...(known.apiKeyEnv ? { apiKeyEnv: known.apiKeyEnv } : {}),
-            apiKey: undefined,
-            headers: undefined,
+            ...(known.apiKeyEnv ? { apiKeyEnv: sameEndpoint && model.apiKeyEnv ? model.apiKeyEnv : known.apiKeyEnv } : {}),
+            apiKey: sameEndpoint ? (model.apiKey ?? undefined) : undefined,
+            headers: sameEndpoint ? (model.headers ?? undefined) : undefined,
             defaultProfile: undefined
-        }
-        : { ...model, provider, model: modelId, defaultProfile: undefined };
+        };
+    } else {
+        options.model = { ...model, provider, model: modelId, defaultProfile: undefined };
+    }
     return true;
+}
+
+function normalizeModelEndpoint(value?: string): string {
+    return String(value || '').trim().replace(/\/+$/, '').toLowerCase();
 }
 
 /** Validate persisted console settings; shared by the file store and the web RPC store. */

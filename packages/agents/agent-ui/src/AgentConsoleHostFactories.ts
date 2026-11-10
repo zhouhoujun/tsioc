@@ -34,7 +34,7 @@ export function runtimeHost(self: any): AgentConsoleRuntimeHost {
         activeThemeName: self.activeThemeName,
         notify: (message: string) => self.notify(message), translator: self.translator,
         select: (title: string, options: any[], index: number, hint?: string) => self.select(title, options, index, hint),
-        pushCommandOutput: (command: string, text: string, kind?: any) => self.pushCommandOutput(command, text, kind),
+        pushCommandOutput: (command: string, text: string, kind?: any, options?: any) => self.pushCommandOutput(command, text, kind, options),
         applyTheme: (name: string) => self.applyTheme(name),
         applyStatusline: (fields: any[]) => self.applyStatusline(fields as any),
         applyTitleFields: (fields: any[]) => self.applyTitleFields(fields as any),
@@ -124,7 +124,6 @@ export function terminalInputHost(self: any): AgentConsoleTerminalInputHost {
     };
 }
 export function turnInputHost(self: any): AgentConsoleTurnInputHost {
-    
     return {
         state: self.state,
         sessionService: self.sessionService,
@@ -166,6 +165,7 @@ export function turnInputHost(self: any): AgentConsoleTurnInputHost {
         openSession: (sessionId?: string, options?: { persistCurrentHistory?: boolean; fresh?: boolean }) => self.openSession(sessionId, options),
         resolveMentionDisplayFiles: (input: string) => self.resolveMentionDisplayFiles(input),
         refreshTurnArtifacts: () => self.refreshTurnArtifacts(),
+        refreshSessions: () => self.refreshSessions().catch(() => undefined),
         drainQueuedPrompts: (sessionId: string) => self.drainQueuedPrompts(sessionId),
         translate: self.translator ? (key: string, params?: Record<string, any>) => self.translator!.translate(key, params) : undefined
     };

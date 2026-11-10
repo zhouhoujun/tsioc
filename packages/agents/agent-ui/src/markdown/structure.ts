@@ -25,22 +25,57 @@ export function normalizeMarkdownStructure(content: string): string {
     return normalized.join('\n');
 }
 
+/**
+ * `1. ` is only an ordered-list marker when the dot is followed by
+ * whitespace and the digits are not part of a preceding token. Without both
+ * conditions, version numbers (`v24.21.0`) and decimals (`1.5`) were split
+ * into fake list items — a short answer containing two versions was broken
+ * after the leading `v`/`版本`.
+ */
+const ORDERED_ITEM_RE = /\d{1,3}\.\s+/g;
+
+function isOrderedItemAt(value: string, index: number): boolean {
+    return index === 0 || !/[\w.]/.test(value[index - 1]);
+}
+
+function findFirstOrderedItem(value: string): number {
+    ORDERED_ITEM_RE.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = ORDERED_ITEM_RE.exec(value))) {
+        if (isOrderedItemAt(value, match.index)) {
+            return match.index;
+        }
+    }
+    return -1;
+}
+
+function countOrderedItems(value: string): number {
+    ORDERED_ITEM_RE.lastIndex = 0;
+    let count = 0;
+    let match: RegExpExecArray | null;
+    while ((match = ORDERED_ITEM_RE.exec(value))) {
+        if (isOrderedItemAt(value, match.index)) {
+            count += 1;
+        }
+    }
+    return count;
+}
+
 function expandInlineStructuredText(sourceLine: string): string[] {
     const original = String(sourceLine || '');
     if (!original.trim()) {
         return [original];
     }
 
-    const numberedMatches = original.match(/\d+\.\s*/g) || [];
-    if (numberedMatches.length < 2) {
+    if (countOrderedItems(original) < 2) {
         return [original];
     }
 
     let line = original
-        .replace(/\s*[；;]\s*(?=\d+\.\s*)/g, '\n')
-        .replace(/\s*[，,]\s*(?=\d+\.\s*)/g, '\n');
+        .replace(/\s*[；;]\s*(?=\d{1,3}\.\s+)/g, '\n')
+        .replace(/\s*[，,]\s*(?=\d{1,3}\.\s+)/g, '\n');
 
-    const firstListIndex = line.search(/\d+\.\s*/);
+    const firstListIndex = findFirstOrderedItem(line);
     if (firstListIndex > 0) {
         const prefix = line.slice(0, firstListIndex).trimEnd();
         if (prefix.length && prefix.length <= 24 && !/[.!?。！？]$/.test(prefix)) {

@@ -44,16 +44,46 @@ export function resolveModelForProvider(options: AgentOptions | undefined, provi
     };
     const profile = Object.values(model.profiles || {}).find(entry => String(entry?.provider || '').trim() === id);
     if (profile) {
-        return { ...model, ...connection(profile, id) };
+        const picked = connection(profile, id);
+        // A provider change must not inherit the previous endpoint's secret.
+        // Fields the new profile does not define are explicitly cleared.
+        return {
+            ...model,
+            ...picked,
+            apiKey: picked.apiKey,
+            apiKeyEnv: picked.apiKeyEnv,
+            headers: picked.headers,
+            baseUrl: picked.baseUrl
+        };
     }
     const known = defaultAgentProviderRegistry.get(id);
     if (known) {
-        return {
-            ...model,
-            ...connection({ provider: known.id, model: known.models?.[0]?.id, baseUrl: known.baseUrl, apiKeyEnv: known.apiKeyEnv } as AgentModelConfig, known.id)
-        };
+        const resolved = connection({ provider: known.id, model: known.models?.[0]?.id, baseUrl: known.baseUrl, apiKeyEnv: known.apiKeyEnv } as AgentModelConfig, known.id);
+        // A built-in provider can point at the same endpoint the user already
+        // configured under another provider id (for example the catalog's
+        // `deepseek` group while the active provider is `openai-compatible`
+        // with baseUrl api.deepseek.com). Switching ids must not discard a
+        // working key when the endpoint is identical; only a real endpoint
+        // change clears credentials.
+        if (sameEndpoint(model.baseUrl, known.baseUrl)) {
+            return {
+                ...model,
+                ...resolved,
+                apiKey: model.apiKey ?? resolved.apiKey,
+                apiKeyEnv: model.apiKeyEnv ?? resolved.apiKeyEnv,
+                headers: model.headers ?? resolved.headers
+            };
+        }
+        return { ...model, ...resolved, apiKey: resolved.apiKey, headers: resolved.headers };
     }
     return { ...model, provider: id };
+}
+
+function sameEndpoint(left?: string, right?: string): boolean {
+    const normalize = (value?: string): string => String(value || '').trim().replace(/\/+$/, '').toLowerCase();
+    const a = normalize(left);
+    const b = normalize(right);
+    return !!a && !!b && a === b;
 }
 
 /** Apply a configured profile to the top-level runtime options (not only defaultProfile). */

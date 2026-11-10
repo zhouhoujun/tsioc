@@ -297,7 +297,7 @@ function sealStreamedNarration(
         createdAt: Date.now(),
         metadata: {
             ...(message.metadata || {}),
-            streaming: false
+            streaming: false, preamble: true // live narration has no finishReason/toolCalls yet
         }
     });
     host.state.setMessages(current, true);

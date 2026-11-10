@@ -71,6 +71,30 @@ export class AgentConsoleMarkdownRenderingTest {
         expect(text[0]).toContain('f');
     }
 
+    @Test('keeps version numbers and decimals on one line')
+    keepsVersionNumbersInline() {
+        const lines = renderAgentConsoleMarkdownLines(
+            '当前 Node 版本为 v24.21.0，npm 版本为 11.19.0，Node 内置的 node:test 可直接运行。',
+            { compactBlankLines: true, tableWidth: 118 }
+        );
+        const text = lines.map(line => flatten(line)).filter(Boolean);
+        expect(text.length).toEqual(1);
+        expect(text[0]).toContain('v24.21.0');
+        expect(text[0]).toContain('11.19.0');
+        expect(text[0]).toContain('node:test');
+    }
+
+    @Test('still splits an inline numbered plan into list lines')
+    splitsInlineNumberedPlan() {
+        const lines = renderAgentConsoleMarkdownLines(
+            '步骤：1. 读取配置；2. 运行测试；3. 报告结果',
+            { compactBlankLines: true, tableWidth: 118 }
+        );
+        const text = lines.map(line => flatten(line)).filter(Boolean);
+        expect(text.some(line => line.includes('步骤'))).toEqual(true);
+        expect(text.filter(line => /^[•]?\s*\d+\.\s/.test(line)).length).toEqual(3);
+    }
+
     @Test('renders syntax-highlighted code without an ASCII frame')
     rendersSyntaxHighlightedCodeFence() {
         const lines = renderAgentConsoleMarkdownLines([
