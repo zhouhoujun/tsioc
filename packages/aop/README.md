@@ -105,6 +105,31 @@ export class DebugLog {
 ```
 
 
+## Build-time precompilation
+
+`@tsdi/compiler` can lower `@Aspect` / `@Before` / `@Around` / ... into direct
+runtime metadata with `createDecoratorPrecompileTransformer`:
+
+```ts
+import * as ts from 'typescript';
+import { createDecoratorPrecompileTransformer } from '@tsdi/compiler';
+
+const program = ts.createProgram(fileNames, compilerOptions);
+program.emit(undefined, undefined, undefined, false, {
+    before: [createDecoratorPrecompileTransformer({
+        typeChecker: program.getTypeChecker()
+    })]
+});
+```
+
+The emitted code calls `registerPrecompiledAspect(aspectClass, metadata)`
+instead of executing AOP decorator factories. `AopProvider` registers those
+descriptors through the normal `Advisor`, and `@NonePointcut()` is lowered to
+`registerPrecompiledNoPointcut(class)`. Aspects imported from libraries are
+only activated when their module is part of the current injector, so an
+unregistered `LoggerModule` does not try to instantiate its debug aspect.
+
+
 ## Documentation
 Documentation is available on the
 * [@tsdi/ioc document](https://github.com/zhouhoujun/tsioc/tree/master/packages/ioc).

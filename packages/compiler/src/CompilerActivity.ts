@@ -21,6 +21,8 @@ export interface CompilerOptions {
     flatModuleOutFile?: string;
     inlineStyles?: boolean;
     inlineTemplate?: boolean;
+    aop?: boolean;
+    aopManifest?: string;
     outputStyle?: OutputStyle;
     tsconfig?: string;
     useTsconfig?: boolean;
@@ -42,6 +44,7 @@ export interface CompileResult {
         <sequence>
             <source-files [src]="src" (done)="onFiles($event)"></source-files>
             <component-parse [src]="src" (done)="onParsed($event)"></component-parse>
+            <aop-compile v-if="aop" [src]="src" [outDir]="outDir" [outFile]="aopManifest"></aop-compile>
             <annotation-compile [src]="src" [outDir]="outDir"></annotation-compile>
             <esbuild-build [src]="src" [outDir]="outDir" [outputStyle]="outputStyle" [target]="target"></esbuild-build>
             <declaration-generate [src]="src" [outDir]="outDir"></declaration-generate>
@@ -73,6 +76,13 @@ export class CompilerActivity extends SequenceActivity {
 
     @Attribute()
     sourcemap = true;
+
+    /** Emit the AOP aspect/advice manifest during compilation. */
+    @Attribute()
+    aop = true;
+
+    @Attribute()
+    aopManifest = 'aop-manifest.json';
 
     @Attribute()
     declaration = true;
@@ -128,7 +138,9 @@ export class CompilerActivity extends SequenceActivity {
             sourcemap: this.sourcemap,
             declaration: this.declaration,
             target: this.target,
-            module: this.format
+            module: this.format,
+            aop: this.aop,
+            aopManifest: this.aopManifest
         };
 
         const template = this.template || this.createDefaultTemplate();

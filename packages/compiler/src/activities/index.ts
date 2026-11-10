@@ -4,3 +4,5 @@ export * from './DeclarationGenerateActivity';
 export * from './ComponentParseActivity';
 export * from './MetadataGenerateActivity';
 export * from './AnnotationCompileActivity';
+export * from './AopCompileActivity';
+export * from './DecoratorPrecompileTransformer';

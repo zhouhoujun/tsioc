@@ -12,6 +12,7 @@ import { Injector, MethodType, Resolve } from '../injector';
 import { Invocation, InvocationFactory } from '../invocation';
 import { getDef, proxyTag, TypeDef } from './type.def';
 import { getType, isPrimitive } from './type';
+import { registerPrecompiledType } from './precompiled';
 import { ctorName, DecoratorFn, DecoratorType, DecorDefine, Decors, RunableDefine } from './define';
 import { RunContext } from '../handlers/contexts';
 
@@ -624,6 +625,11 @@ export function getClassRef<T = any>(type: AbstractType<T>): ClassRef<T> {
         }
         tyRef = new ClassRef(type, getDef(type), prRef);
         CLASS_REF_CACHE.set(type, tyRef);
+        try {
+            registerPrecompiledType(type);
+        } catch {
+            // Type names are best-effort for precompiled metadata resolution.
+        }
     }
     return tyRef;
 }

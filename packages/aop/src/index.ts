@@ -19,6 +19,7 @@ export * from './Proceeding';
 export * from './Advisor';
 
 export * from './aop.module';
+export * from './precompiled';
 
 
 // impl

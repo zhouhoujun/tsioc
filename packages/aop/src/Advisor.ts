@@ -15,6 +15,7 @@ export class Advisor implements OnDestroy {
     private advices: Map<AdviceTypes, Advicer[]>;
 
     private proceedings: AroundProceeding[];
+    private pendingActivator?: () => void;
     /**
      * aspects.
      */
@@ -100,8 +101,26 @@ export class Advisor implements OnDestroy {
         return this.aspects.find(r => r.type === type)
     }
 
+    /**
+     * Precompiled aspects are registered before module providers finish
+     * loading. Defer activation until advice matching starts, when the app
+     * graph is complete, and drop aspects that do not belong to it.
+     */
+    setPendingActivator(activator?: () => void): void {
+        this.pendingActivator = activator;
+    }
+
+    private activatePending(): void {
+        const activator = this.pendingActivator;
+        if (activator) {
+            this.pendingActivator = undefined;
+            activator();
+        }
+    }
+
 
     match(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions): boolean {
+        this.activatePending();
         if (!this.advices.size) return false;
         for (const r of this.advices.values()) {
             for (let i = 0, len = r.length; i < len; i++) {
@@ -119,6 +138,7 @@ export class Advisor implements OnDestroy {
 
 
     hasPointcut(instance: object, typeRef: ClassRef, withConstructor?: boolean): boolean {
+        this.activatePending();
         const className = typeRef?.className ?? getTypeName(instance);
         const names = Object.keys(instance);
         const decorators = typeRef?.getPropertyDescriptors();

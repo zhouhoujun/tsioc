@@ -108,6 +108,48 @@ const result = await activity.execute({});
 | `experimentalDecorators` | `boolean` | `true` | Enable experimental decorators |
 | `emitDecoratorMetadata` | `boolean` | `true` | Emit decorator metadata |
 
+## Decorator and AOP precompilation
+
+`createDecoratorPrecompileTransformer` moves decorator bookkeeping from runtime
+startup into the build:
+
+```typescript
+import * as ts from 'typescript';
+import { createDecoratorPrecompileTransformer } from '@tsdi/compiler';
+
+const program = ts.createProgram(fileNames, compilerOptions);
+const transformer = createDecoratorPrecompileTransformer({
+    typeChecker: program.getTypeChecker()
+});
+
+program.emit(undefined, undefined, undefined, false, {
+    before: [transformer]
+});
+```
+
+The emitted module:
+
+- replaces the TypeScript `__decorate` helper chain with one
+  `applyPrecompiledDecorators(Class, records)` call per class (compact tuple
+  records are used to keep bundles small);
+- writes the `design:type` / `design:paramtypes` / `design:returntype` metadata
+  required by IoC injection directly;
+- lowers `@Aspect`, `@Before`, `@Around`, `@AfterReturning`,
+  `@AfterThrowing`, `@After`, `@Pointcut` and `@Advice` into
+  `registerPrecompiledAspect(...)` calls. `AopProvider` then registers those
+  aspects through the normal advisor path without evaluating AOP decorator
+  factories. Aspects that do not belong to the application graph (for example
+  an imported library aspect whose module was not registered) are ignored.
+
+At runtime `@tsdi/ioc` resolves precompiled class-name references through
+`registerPrecompiledType` / `getPrecompiledType`, which are populated by
+`getClassRef`.
+
+Pass a `typeChecker` when possible: it lets the transformer emit `Object` for
+interfaces/type-only aliases and guard global types such as `Buffer`
+(`typeof Buffer !== 'undefined' ? Buffer : Object`), so the output is safe in
+browser bundles.
+
 ## ComponentCompileActivity
 
 Parse and compile TypeScript components with decorator support.

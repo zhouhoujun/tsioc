@@ -123,6 +123,14 @@ export class CompilerTemplateBuilder {
         );
     }
 
+    addAopCompile(directive?: ConditionalDirective): this {
+        return this.addActivity(
+            require('./activities/AopCompileActivity').AopCompileActivity,
+            { src: '{{options.src}}', outDir: '{{options.outDir}}', exclude: '{{options.exclude}}' },
+            directive
+        );
+    }
+
     addAnnotationCompile(directive?: ConditionalDirective): this {
         return this.addActivity(
             require('./activities/AnnotationCompileActivity').AnnotationCompileActivity,
@@ -206,7 +214,8 @@ export const CompilerDirectives = {
     ifNode: (ctx: CompilerTemplateContext) => ctx.options.platform === 'node',
     ifESM: (ctx: CompilerTemplateContext) => ctx.options.format === 'esm',
     ifCJS: (ctx: CompilerTemplateContext) => ctx.options.format === 'cjs',
-    ifHasComponents: (ctx: CompilerTemplateContext) => (ctx.files?.length ?? 0) > 0
+    ifHasComponents: (ctx: CompilerTemplateContext) => (ctx.files?.length ?? 0) > 0,
+    ifAop: (ctx: CompilerTemplateContext) => ctx.options.aop === true
 };
 
 export function createDefaultCompilerTemplate(name: string = 'Default Compiler'): CompilerTemplate {
@@ -215,6 +224,7 @@ export function createDefaultCompilerTemplate(name: string = 'Default Compiler')
         .description('Default compilation workflow with conditional steps')
         .addSourceFiles()
         .addComponentParse({ if: CompilerDirectives.ifHasComponents })
+        .addAopCompile({ if: CompilerDirectives.ifAop })
         .addAnnotationCompile()
         .addEsbuildBuild()
         .addDeclarationGenerate({ if: CompilerDirectives.ifDeclaration })
@@ -228,6 +238,7 @@ export function createProductionCompilerTemplate(): CompilerTemplate {
         .runtime({ mode: 'production', minify: true, bundle: true })
         .addSourceFiles()
         .addComponentParse({ if: CompilerDirectives.ifHasComponents })
+        .addAopCompile({ if: CompilerDirectives.ifAop })
         .addAnnotationCompile()
         .addEsbuildBuild({ if: CompilerDirectives.ifBundle })
         .addDeclarationGenerate({ if: CompilerDirectives.ifDeclaration })
@@ -241,6 +252,7 @@ export function createDevelopmentCompilerTemplate(): CompilerTemplate {
         .runtime({ mode: 'development', sourcemap: true })
         .addSourceFiles()
         .addComponentParse({ if: CompilerDirectives.ifHasComponents })
+        .addAopCompile({ if: CompilerDirectives.ifAop })
         .addAnnotationCompile()
         .addEsbuildBuild()
         .addDeclarationGenerate({ if: CompilerDirectives.ifDeclaration })

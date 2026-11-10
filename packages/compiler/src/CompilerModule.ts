@@ -7,7 +7,8 @@ import {
     EsbuildBuildActivity,
     DeclarationGenerateActivity,
     ComponentParseActivity,
-    MetadataGenerateActivity
+    MetadataGenerateActivity,
+    AopCompileActivity
 } from './activities';
 
 @Module({
@@ -21,7 +22,8 @@ import {
         EsbuildBuildActivity,
         DeclarationGenerateActivity,
         ComponentParseActivity,
-        MetadataGenerateActivity
+        MetadataGenerateActivity,
+        AopCompileActivity
     ],
     exports: [
         CompilerActivity,

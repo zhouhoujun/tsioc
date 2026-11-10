@@ -6,3 +6,4 @@ export * from './activities/MetadataGenerator';
 export * from './TsConfigReader';
 export * from './CompilerTemplate';
 export * from './CompilerTemplateExecutor';
+export * from './activities/DecoratorPrecompileTransformer';

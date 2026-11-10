@@ -20,6 +20,8 @@ export interface RuntimeEnvironment {
     minify?: boolean;
     sourcemap?: boolean;
     declaration?: boolean;
+    aop?: boolean;
+    aopManifest?: string;
 }
 
 export interface MergedCompilerOptions {
