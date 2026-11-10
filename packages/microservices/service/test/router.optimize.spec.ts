@@ -275,4 +275,44 @@ describe('optimized router', () => {
             error: done
         });
     });
+
+    it('bounds URL caches for high-cardinality dynamic routes', async () => {
+        const router = new OptimizedRouter(
+            createInjector(),
+            formatter,
+            '',
+            Transport.HTTP,
+            { maxCacheSize: 3 },
+            undefined,
+            false
+        );
+        router.use('/users/:id', (input: any) => of(input.url));
+
+        for (let i = 0; i < 20; i++) {
+            const request = { url: `/users/${i}`, method: 'GET' } as any;
+            const route = await router.getRoute(request, createRequestContext(createInjector()));
+            expect(route).toBeTruthy();
+            expect(request.paths).toEqual({ id: String(i) });
+        }
+
+        expect((router as any).cache.size).toBeLessThanOrEqual(3);
+        expect((router as any).params.size).toBeLessThanOrEqual(3);
+        expect((router as any).matchCache.size).toBeLessThanOrEqual(3);
+    });
+
+    it('revalidates cached misses after a route is registered later', async () => {
+        const router = createRouter();
+        const first = await router.getRoute(
+            { url: '/late', method: 'GET' } as any,
+            createRequestContext(createInjector())
+        );
+        expect(first).toBeUndefined();
+
+        router.use('/late', () => of('late'));
+        const second = await router.getRoute(
+            { url: '/late', method: 'GET' } as any,
+            createRequestContext(createInjector())
+        );
+        expect(second).toBeTruthy();
+    });
 });

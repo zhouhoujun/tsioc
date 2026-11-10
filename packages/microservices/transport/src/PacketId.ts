@@ -7,7 +7,6 @@ import { NumberAllocator } from 'number-allocator';
 export class PacketNumberIdGenerator implements PacketIdGenerator {
 
     private allocator?: NumberAllocator;
-    private last?: number;
 
     readonly idLenght = 2;
 
@@ -19,7 +18,6 @@ export class PacketNumberIdGenerator implements PacketIdGenerator {
         if (!id) {
             throw new Exception('alloc stream id failed');
         }
-        this.last = id;
         return id;
     }
 

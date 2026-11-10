@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { GatewayCacheOptions, GatewayCircuitBreakerOptions, GatewayMockOptions, GatewayOptions, GatewayRouteOptions, GatewaySensitiveFieldRule } from './gateway.options';
+import { GatewayCircuitBreakerOptions, GatewayMockOptions, GatewayOptions, GatewayRouteOptions, GatewaySensitiveFieldRule } from './gateway.options';
 import { ServiceEndpoint } from '@tsdi/discovery';
 
 interface CacheEntry {

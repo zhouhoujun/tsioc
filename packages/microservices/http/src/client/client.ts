@@ -1,7 +1,7 @@
 import { Injectable, isString, Context, Inject, promisify } from '@tsdi/ioc';
 import { Pattern, RequestInitOpts, UrlRequestOptions, Response, ResponseEvent, PatternFormatter } from '@tsdi/common';
 import { AbstractClient, ClientHandler } from '@tsdi/client';
-import { defer, Observable, switchMap } from 'rxjs';
+import { defer, Observable } from 'rxjs';
 import * as http2 from 'node:http2';
 import { HTTP_CLIENT_OPTIONS, HttpClientOptions } from './options';
 import { HttpRequest } from './request';

@@ -3,7 +3,6 @@ import { RequestContext, RequestHandler, RequestInterceptor, StatusMessageAdapte
 import { Observable, tap, catchError, throwError } from 'rxjs';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { HttpHandlerOutput, HttpRequestMessage } from '../http-context';
-import { HttpMessageAdapter } from '../message-adapter';
 
 @Injectable()
 export class HttpLoggerInterceptor implements RequestInterceptor<HttpRequestMessage, HttpHandlerOutput, RequestContext> {

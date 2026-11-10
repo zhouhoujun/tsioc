@@ -1,4 +1,4 @@
-import { Injectable, Exception } from '@tsdi/ioc';
+import { Injectable } from '@tsdi/ioc';
 import { RequestContext, RequestFilter, RestfulRequestAdapter } from '@tsdi/common';
 import { Observable, of, mergeMap, catchError, throwError } from 'rxjs';
 

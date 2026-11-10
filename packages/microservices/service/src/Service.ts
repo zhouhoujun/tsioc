@@ -3,9 +3,9 @@ import { ApplicationEvent, HandlerAppendService, Runner, Shutdown, isHandlerOpti
 import { RequestContext, RequestHandler, RequestInterceptorLike, RequestHandlerOptions, Transport } from '@tsdi/common';
 import { ServiceHandler } from './ServiceHandler';
 import { Observable } from 'rxjs';
-import { IRegistrationStrategy, REGISTRATION_STRATEGY } from './strategies/IRegistrationStrategy';
-import { IHealthCheckStrategy, HEALTH_CHECK_STRATEGY } from './strategies/IHealthCheckStrategy';
-import { IGracefulShutdownStrategy, GRACEFUL_SHUTDOWN_STRATEGY } from './strategies/IGracefulShutdownStrategy';
+import { REGISTRATION_STRATEGY } from './strategies/IRegistrationStrategy';
+import { HEALTH_CHECK_STRATEGY } from './strategies/IHealthCheckStrategy';
+import { GRACEFUL_SHUTDOWN_STRATEGY } from './strategies/IGracefulShutdownStrategy';
 
 
 /**

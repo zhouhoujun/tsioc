@@ -1,4 +1,4 @@
-import { asProvider, Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
+import { asProvider, Provider, getClassRef, Injector, importProvidersFrom } from '@tsdi/ioc';
 import { NotFoundException, RequestContext, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
 import { TcpServer } from './tcp-server';

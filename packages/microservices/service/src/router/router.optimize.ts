@@ -19,6 +19,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     private regExps: Map<RegExp, Route> = new Map();
     private regCache: Map<string, Route> = new Map();
     private assets: AssetRoute[] = [];
+    private readonly maxCacheSize: number;
 
     private _routes: Routes = [];
     get routes(): Routes {
@@ -45,6 +46,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             ...options
         };
         this.trieRouter = new TrieRouter(this.options);
+        this.maxCacheSize = Math.max(options?.maxCacheSize ?? 2048, 1);
         routes?.forEach(route => this.trieRouter.insert(route));
     }
 
@@ -53,6 +55,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     use(route: Route): this;
     use(route: Pattern, handler: RouteHanlder, callback?: (route: Route) => void): this;
     use(arg: Route | Pattern, handler?: RouteHanlder, callback?: (route: Route) => void): this {
+        this.cache.clear();
         this.matchCache.clear();
         this.microMatchCache.clear();
         let route: Route;
@@ -117,16 +120,11 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
 
     unuse(route: Route): this {
         this.trieRouter.remove(route);
+        this.cache.clear();
+        this.regCache.clear();
         this.matchCache.clear();
         this.microMatchCache.clear();
-        const keys: string[] = [];
-        this.cache.forEach((v, k) => {
-            if (v && v.has(route)) {
-                keys.push(k)
-            }
-        });
-        keys.forEach(k => this.cache.delete(k));
-
+        this.params.clear();
         return this
     }
 
@@ -315,10 +313,10 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         }
         let parts: string[] | undefined;
         let trieRoute = this.cache.get(url);
-        if (trieRoute == undefined) {
+        if (trieRoute === undefined) {
             parts = this.options.toParts(url);
             trieRoute = await this.trieRouter.match(parts);
-            this.cache.set(url, trieRoute || null);
+            this.setCache(this.cache, url, trieRoute || null);
         }
 
         if (!trieRoute) {
@@ -332,7 +330,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
                     }
                 }
                 if (route) {
-                    this.regCache.set(url, route);
+                    this.setCache(this.regCache, url, route);
                 }
             }
             if (route?.pathParams) {
@@ -356,7 +354,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
                 const found = trieRoute.filter(req.method);
                 routes = found.length ? found : null;
                 if (routes) {
-                    this.microMatchCache.set(matchKey, routes);
+                    this.setCache(this.microMatchCache, matchKey, routes);
                 }
             }
             if (!routes?.length) return;
@@ -392,7 +390,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             const found = trieRoute.find(req.method);
             if (found) {
                 route = found;
-                this.matchCache.set(matchKey, route);
+                this.setCache(this.matchCache, matchKey, route);
             } else {
                 route = null;
             }
@@ -421,11 +419,21 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             req.paths = params;
             let paths = this.params.get(url);
             if (!paths) {
+                if (this.params.size >= this.maxCacheSize) {
+                    this.params.clear();
+                }
                 paths = new Map();
                 this.params.set(url, paths);
             }
             if (method) paths.set(method, params);
         }
+    }
+
+    private setCache<K, V>(cache: Map<K, V>, key: K, value: V): void {
+        if (cache.size >= this.maxCacheSize) {
+            cache.clear();
+        }
+        cache.set(key, value);
     }
 
 

@@ -1,5 +1,5 @@
 import { Provider, getClassRef, Injector, importProvidersFrom } from '@tsdi/ioc';
-import { NotFoundException, RequestContext, RequestFilterLike, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
+import { RequestContext, RequestFilterLike, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
 import { CoapServer } from './coap-server';
 import { CoapServOptions, COAP_SERV_OPTIONS } from './options';

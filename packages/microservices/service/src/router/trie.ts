@@ -187,7 +187,14 @@ export interface TrieOptions {
     toParts: (path: string) => string[];
     equals: (r1: Route, r2: Route) => boolean;
     wlidcards: Wlidcard[];
-    microservice?: boolean
+    microservice?: boolean;
+    /**
+     * Maximum number of URL/route cache entries kept per cache.
+     * The cache is cleared when the limit is reached to bound long-running
+     * services that receive many distinct dynamic path values.
+     * Default 2048.
+     */
+    maxCacheSize?: number;
 }
 
 export class TrieRouter {

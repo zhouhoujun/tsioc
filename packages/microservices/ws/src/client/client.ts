@@ -1,4 +1,4 @@
-import { Injectable, isString, Context, Inject, promisify } from '@tsdi/ioc';
+import { Injectable, isString, Context, Inject } from '@tsdi/ioc';
 import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, ResponseEvent, Events, PatternFormatter } from '@tsdi/common';
 import { AbstractClient, ClientHandler } from '@tsdi/client';
 import { SOCKET as WS_SOCKET } from '../context';

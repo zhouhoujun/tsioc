@@ -1,8 +1,7 @@
 import { Injectable, isString, Context, Inject } from '@tsdi/ioc';
 import { Pattern, RequestInitOpts, UrlRequestOptions, ResponseEvent, PatternFormatter } from '@tsdi/common';
 import { AbstractClient, ClientHandler } from '@tsdi/client';
-import { InjectLog, Logger } from '@tsdi/logger';
-import { defer, Observable, switchMap } from 'rxjs';
+import { defer, Observable } from 'rxjs';
 import * as grpc from '@grpc/grpc-js';
 import { GRPC_CLIENT_OPTIONS, GrpcClientOptions } from './options';
 import { GrpcRequest } from './request';

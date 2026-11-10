@@ -1,5 +1,3 @@
-import { Type } from '@tsdi/ioc';
-
 /**
  * Service registration options, like Spring Cloud Eureka/Consul.
  * 服务注册选项，类似 Spring Cloud Eureka/Consul

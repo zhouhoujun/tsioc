@@ -1,4 +1,4 @@
-import { getTypeName, Inject, Injectable } from '@tsdi/ioc';
+import { Inject, Injectable } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {

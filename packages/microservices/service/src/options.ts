@@ -1,4 +1,4 @@
-import { InstanceOf, ProvdierOf, Provider, Token, token } from '@tsdi/ioc';
+import { InstanceOf, ProvdierOf, Provider, token } from '@tsdi/ioc';
 import { VaildatorLike } from '@tsdi/core';
 import {
     Incoming, Outgoing, PatternFormatter, RequestContext, TransferConfig,

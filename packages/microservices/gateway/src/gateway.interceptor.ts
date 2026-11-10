@@ -6,7 +6,7 @@ import { HttpMessageAdapter, HTTP_AUTH_RESULT, HTTP_RESPONSE, HttpRequestMessage
 import { ApiRateLimiter } from '@tsdi/service';
 import { Incoming, RequestContext, RequestHandler, RequestInterceptor, Transport, TransferSide } from '@tsdi/common';
 import { Observable, from, lastValueFrom } from 'rxjs';
-import { GATEWAY_OPTIONS, GatewayAccessControlOptions, GatewayAggregateSource, GatewayAuthorizeOptions, GatewayCanaryOptions, GatewayCacheOptions, GatewayForwardHeadersOptions, GatewayOptions, GatewayRouteOptions, GatewayRewriteOptions, GatewayWebhookOptions } from './gateway.options';
+import { GATEWAY_OPTIONS, GatewayAccessControlOptions, GatewayAggregateSource, GatewayCanaryOptions, GatewayCacheOptions, GatewayForwardHeadersOptions, GatewayOptions, GatewayRouteOptions, GatewayRewriteOptions, GatewayWebhookOptions } from './gateway.options';
 import { MetricsCollector } from '@tsdi/metrics';
 import { getClientToken } from '../../client/src/tokens';
 import { AbstractClient } from '../../client/src/AbstractClient';

@@ -1,9 +1,9 @@
-import { getTypeName, Inject, promisify, Injectable } from '@tsdi/ioc';
+import { getTypeName, Inject, Injectable } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { connect, StringCodec, NatsConnection, Subscription } from 'nats';
 import {
-    Events, createRequestContext, RequestContext, Transport, REQUEST
+    createRequestContext, RequestContext, Transport, REQUEST
 } from '@tsdi/common'
 import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';

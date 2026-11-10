@@ -1,9 +1,9 @@
-import { ArgumentException, ProvdierOf, Provider, StaticProvider, Type, isArray, isBoolean, isFunction, toProvider, toProviders, isPlainObject } from '@tsdi/ioc';
+import { ArgumentException, ProvdierOf, Provider, StaticProvider, isArray, isBoolean, isFunction, toProvider, toProviders, isPlainObject } from '@tsdi/ioc';
 import { GuardLike, MessageValueReader } from '@tsdi/core';
 import {
     matchTransport, TransportConfig, RequestInterceptorLike, TransferFilterFactory,
     LoggerInterceptor, ResponseStatusFormater,
-    RequestFilter, RequestFilterLike
+    RequestFilterLike
 } from '@tsdi/common';
 import {
     getServiceFiltersToken, getServiceGuardsToken, getServiceInterceptorsToken,
@@ -15,7 +15,7 @@ import {
     SERV_OPTIONS
 } from './tokens';
 
-import { AuthOptions, CookieOptions, CorsOptions, ExecptionLoggerOptions, FeatureInterceptorOptions, ServiceFeatureKind, ServiceFeature, ServiceLoggerOptions, SERVICE_EXECEPTION_LOGGER_OPTIONS, ServiceTransportFeature, ServiceConfig, ServiceFeatureOptions, ServiceOptions } from './options';
+import { AuthOptions, CookieOptions, CorsOptions, ExecptionLoggerOptions, FeatureInterceptorOptions, ServiceFeatureKind, ServiceFeature, ServiceLoggerOptions, SERVICE_EXECEPTION_LOGGER_OPTIONS, ServiceTransportFeature, ServiceConfig, ServiceFeatureOptions } from './options';
 import { RegistrationOptions, HealthOptions, GracefulShutdownOptions } from './features';
 import { AuthInterceptor, BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, ExecptionLogger, JsonInterceptor, SessionInterceptor } from './interceptors';
 import { composeMiddleware, convertToInterceptor, MiddlewareLike } from './middleware';

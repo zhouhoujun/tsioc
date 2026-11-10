@@ -1,4 +1,4 @@
-import { Injectable, isNil, isString, ArgumentException } from '@tsdi/ioc';
+import { Injectable, isNil, ArgumentException } from '@tsdi/ioc';
 import { Header, RestfulRequestAdapter, ContentType, BadRequestException, ForbiddenException, NotFoundException } from '@tsdi/common';
 import * as http from 'node:http';
 

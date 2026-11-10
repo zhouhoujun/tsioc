@@ -1,5 +1,5 @@
 import { createInjector, asProvider, Injector, Provider, isNil } from '@tsdi/ioc';
-import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, REQUEST, ResponseEventPacket } from '@tsdi/common';
+import { createRequestHandler, TransferSide, Transport, PatternFormatter, REQUEST, ResponseEventPacket } from '@tsdi/common';
 import { SOCKET, useBrokerClientTransfer } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
 import { ensureClientConnectedInterceptor } from '@tsdi/client/src/interceptors/connect';
@@ -234,15 +234,4 @@ function serializeRequest(request: any, payloadKey: 'body' | 'payload', requestI
         json[payloadKey] = nextPayload;
     }
     return json;
-}
-
-function normalizeTopicFromUrl(url?: string) {
-    if (!url) {
-        return undefined;
-    }
-    const [pathname, rawQuery] = String(url).split('?', 2);
-    if (rawQuery) {
-        return pathname.startsWith('/') ? pathname.slice(1).replace(/\//g, '.') : pathname;
-    }
-    return pathname.startsWith('/') ? pathname.slice(1).replace(/\//g, '.') : pathname;
 }

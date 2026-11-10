@@ -1,5 +1,5 @@
 import {
-    isArray, isString, lang, AbstractType, TypeOf, createDecorator, InjectFlags,
+    isArray, isString, lang, AbstractType, createDecorator, InjectFlags,
     ClassMethodDecorator, createParamDecorator, Exception, isMetadataObject,
     AnnotationMetadata, Handler, Type, ActionType, getTypeName, isNumber, isDefined,
     TokenOf

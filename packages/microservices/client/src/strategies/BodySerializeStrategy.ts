@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { RequestContext, IStream, ContentType } from '@tsdi/common';
+import { RequestContext, IStream } from '@tsdi/common';
 
 /**
  * Body serialize strategy interface.

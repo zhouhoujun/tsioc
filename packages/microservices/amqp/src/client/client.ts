@@ -3,7 +3,7 @@ import { Pattern, Events, RequestInitOpts, TopicRequestOptions, ResponseEvent, P
 import { AbstractClient, ClientHandler } from '@tsdi/client';
 import { SOCKET } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { defer, Observable, switchMap } from 'rxjs';
+import { defer, Observable } from 'rxjs';
 import * as amqp from 'amqplib';
 import { AMQP_CLIENT_OPTIONS, AmqpClientOptions } from './options';
 import { AmqpRequest } from './request';

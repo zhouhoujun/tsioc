@@ -140,10 +140,6 @@ export class DefaultTracer extends Tracer implements OnDestroy {
         return this._headerNames;
     }
 
-    private generateId(): string {
-        return Math.random().toString(36).substring(2, 16);
-    }
-
     startSpan(name: string, options: SpanOptions = {}): Span {
         if (!this.enabled || Math.random() > this.sampleRate) {
             // Return a no-op span

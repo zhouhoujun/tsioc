@@ -9,7 +9,7 @@ import { HttpRequestMessage, HTTP_RESPONSE } from './http-context';
 import { HttpMessageAdapter } from './message-adapter';
 import { HttpMessageAdapterFactory } from './message-adapter.factory';
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
-import { Subject, race, take, takeUntil } from 'rxjs';
+import { Subject, takeUntil } from 'rxjs';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import * as http2 from 'node:http2';
@@ -22,7 +22,16 @@ type HttpServerLike = http.Server | https.Server | http2.Http2Server | http2.Htt
 
 function readRequestHeader(this: HttpRequestMessage, name: string): string | undefined {
     const headers = this.headers;
-    const value = headers?.[name.toLowerCase()] ?? headers?.[name as keyof typeof headers];
+    if (!headers) {
+        return undefined;
+    }
+    let value = headers[name];
+    if (value === undefined) {
+        const lower = name.toLowerCase();
+        if (lower !== name) {
+            value = headers[lower];
+        }
+    }
     return Array.isArray(value) ? String(value[0]) : value == null ? undefined : String(value);
 }
 
@@ -213,7 +222,6 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         const rawUrl = this.getRequestUrl(req);
         const queryStart = rawUrl.indexOf('?');
         const url = queryStart === -1 ? rawUrl : (rawUrl.slice(0, queryStart) || '/');
-        const method = this.getRequestMethod(req);
         const request = req as HttpRequestMessage;
         request.rawRequest = req;
         request.rawUrl = rawUrl;
@@ -319,12 +327,5 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             index = end + 1;
         }
         return query;
-    }
-
-    private getRequestMethod(req: HttpRequestLike): string {
-        if ((req as http2.Http2ServerRequest).stream) {
-            return String((req as http2.Http2ServerRequest).headers[':method'] || req.method || 'GET');
-        }
-        return req.method || 'GET';
     }
 }

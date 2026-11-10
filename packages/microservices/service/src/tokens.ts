@@ -3,7 +3,7 @@ import { GuardLike } from '@tsdi/core';
 import { Transport, RequestInterceptorLike, RequestFilterLike } from '@tsdi/common';
 import { Router } from './router';
 import { MiddlewareLike } from './middleware';
-import { AuthOptions, CookieOptions, CorsOptions, ServiceConfig, ServiceOptions } from './options';
+import { AuthOptions, CorsOptions, ServiceConfig, ServiceOptions } from './options';
 import { GracefulShutdownOptions, HealthOptions, RegistrationOptions } from './features';
 
 

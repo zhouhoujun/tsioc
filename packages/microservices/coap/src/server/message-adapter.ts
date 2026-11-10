@@ -7,7 +7,6 @@ export class CoapMessageAdapter extends StatusMessageAdapter<Record<string, any>
     private responseHeaders = new Map<string, Header>();
     private responseStatus: any;
     private responseStatusMessage?: string;
-    private responseError: any;
 
     constructor(
         private incoming: Record<string, any>,

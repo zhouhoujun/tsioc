@@ -1,4 +1,4 @@
-import { token, Token } from '@tsdi/ioc';
+import { token } from '@tsdi/ioc';
 import { Transport, TransferSide } from '@tsdi/common';
 import { ClientOptions } from '@tsdi/client';
 import { ConnectionOptions } from 'node:tls';

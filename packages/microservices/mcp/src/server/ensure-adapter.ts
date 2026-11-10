@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { MessageAdapter, REQUEST, RequestContext, RequestFilter } from '@tsdi/common';
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
 import { McpMessageAdapterFactory } from './message-adapter.factory';
 import { MCP_RESPONSE } from './mcp-server';
 

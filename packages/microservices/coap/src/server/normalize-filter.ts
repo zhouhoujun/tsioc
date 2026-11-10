@@ -1,6 +1,6 @@
-import { Injectable, isNil } from '@tsdi/ioc';
+import { Injectable } from '@tsdi/ioc';
 import { MessageAdapter, REQUEST, RequestContext, RequestFilter } from '@tsdi/common';
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
 import * as coap from 'coap';
 import { CoapMessageAdapterFactory } from './message-adapter.factory';
 import { SOCKET, COAP_RESPONSE } from '../context';

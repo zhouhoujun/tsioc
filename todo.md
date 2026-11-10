@@ -3307,3 +3307,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 真实观察：上下文累计 token 增长到 ~283K 后仍能完成，但本轮耗时约 3m；`Update plan completed` 后最终答案缺少 `Worked for` 时长行，已记录为后续 harness/timeline 优化候选。
   - 已补充 `ctrl+o` 可搜索会话入口（opencode Open session 对齐），`/sessions` 标题保留 filter。
   - 回归：agent-ui 2012、keymap 68、tsc、build:web、DOM/TUI gate、source-size、diff-check 通过。
+- 微服务框架清理与热路径收尾（2026-11-10）：
+  - 删除无引用/空文件：`http/src/server/static-file.ts`（0 行）、`service/src/interceptors/sender.ts`（0 行）、`coap/src/server/message-reader.ts`（仅无引用转发）、`transport/src/interceptors/split_merge.ts`（整文件注释）。
+  - 删除全注释死测试：`tcp/test/ipc.spec.ts`、`swagger/test/repositories/UserRepository.ts`。
+  - 清理各协议包未使用 import/局部变量：amqp/client/coap/gateway/grpc/http/kafka/mcp/nats/redis/service/tcp/tracing/transport/ws；`tsc --noUnusedLocals`（逐包 `src`）已无命中。
+  - 移除 write-only 字段/私有死方法：`coap` message adapter `responseError`、`transport/PacketId.last`、`tracing/DefaultTracer.generateId`、`redis/client/factory.normalizeTopicFromUrl`、`http` 已不再使用的 `getRequestMethod`。
+  - 路由缓存补强：URL/trie/params/match/micro-match 缓存统一受 `TrieOptions.maxCacheSize`（默认 2048）约束，超限清空以避免长期运行服务的动态 URL 无限增长；`use/unuse` 统一失效缓存；新增高基数动态 URL 与延迟注册路由回归。
+  - HTTP header 读取改为先按原 key 直接查（Node 请求头均为小写），仅大小写不一致时回退 `toLowerCase()`，避免每次读取分配小写字符串。
+  - 验证：service 47、http 36、client 72、coap 25、grpc 17、mcp 33、swagger 10、tracing 30、transport 51、tcp 65、ws 88 passing；`tsc --noUnusedLocals` 全微服务 src 无命中；`git diff --check` 通过。
+  - 环境限制：amqp/kafka/nats/redis 测试依赖本地 broker（5672/9092/4222/6379），本轮未启动 broker，连接被拒绝；gateway 单测 26 passing 但进程因既有 health probe 定时器不退出（与本轮改动无关）。
