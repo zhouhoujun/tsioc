@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0f172a" />
     <link rel="icon" href="data:," />
-    <title>TSDI Workflow Designer Demo</title>
+    <title>TSDI Workflow Designer</title>
     <link rel="stylesheet" href="./codemirror.css" />
+    <link rel="stylesheet" href="./codemirror-hint.css" />
     <style>
         * { box-sizing: border-box; }
         html, body { height: 100%; margin: 0; }
@@ -16,7 +18,7 @@
             display: flex;
             flex-direction: column;
         }
-        .demo-header {
+        .designer-header {
             padding: 12px 18px;
             background: #111c33;
             border-bottom: 1px solid #1e293b;
@@ -25,22 +27,22 @@
             gap: 12px;
             flex-wrap: wrap;
         }
-        .demo-header h1 {
+        .designer-header h1 {
             margin: 0;
             font-size: 15px;
             color: #f8fafc;
         }
-        .demo-header p {
+        .designer-header p {
             margin: 0;
             font-size: 11px;
             color: #94a3b8;
         }
-        .demo-lang {
+        .designer-lang {
             margin-left: auto;
             display: flex;
             gap: 6px;
         }
-        .demo-lang button {
+        .designer-lang button {
             border: 1px solid #334155;
             border-radius: 6px;
             background: #0b1220;
@@ -49,7 +51,7 @@
             padding: 4px 9px;
             cursor: pointer;
         }
-        .demo-lang button:hover {
+        .designer-lang button:hover {
             border-color: #60a5fa;
             color: #ffffff;
         }
@@ -68,19 +70,24 @@
             display: block;
             height: 100%;
         }
+        noscript {
+            padding: 18px;
+            color: #fca5a5;
+        }
     </style>
 </head>
 <body>
-    <header class="demo-header">
+    <header class="designer-header">
         <h1>TSDI Workflow Designer</h1>
         <p>Drag nodes · connect ports · run and inspect path / history / logs</p>
-        <div class="demo-lang">
+        <div class="designer-lang">
             <button id="lang-en">EN</button>
             <button id="lang-zh">中文</button>
         </div>
     </header>
-    <div id="boot-status">Loading demo bundle…</div>
+    <div id="boot-status">Loading designer…</div>
+    <noscript>This designer requires JavaScript.</noscript>
     <div id="workflow-app"></div>
-    <script src="./main.js"></script>
+    <script type="module" src="./main.js"></script>
 </body>
 </html>

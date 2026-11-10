@@ -295,6 +295,17 @@ export class WorkflowDesigner {
         });
     }
 
+    /** Restore a node's config to the registry defaults. */
+    resetNodeConfig(nodeId: string): boolean {
+        const node = this.definition.nodes.find(item => item.id === nodeId);
+        if (!node) {
+            return false;
+        }
+        return this.updateNode(nodeId, {
+            config: this.registry.defaultConfig(node.type)
+        });
+    }
+
     renameNode(nodeId: string, name: string): boolean {
         return this.updateNode(nodeId, { name: String(name || '').trim() || nodeId });
     }

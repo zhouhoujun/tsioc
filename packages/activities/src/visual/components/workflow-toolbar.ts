@@ -1,9 +1,11 @@
 import { Attribute, Component, NoReactive } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { Translator } from '@tsdi/i18n';
-import { MenuBarGroup, isDarkTheme } from '@tsdi/components/common';
+import { MenuBarGroup, ThemeName, isThemeName } from '@tsdi/components/common';
 import { translateWorkflow } from '../i18n';
 import { WorkflowToolbarModel } from '../types';
+
+const THEME_OPTIONS: ThemeName[] = ['light', 'dark', 'solarized', 'high-contrast'];
 
 const EMPTY_TOOLBAR: WorkflowToolbarModel = {
     name: '',
@@ -44,7 +46,6 @@ const EMPTY_TOOLBAR: WorkflowToolbarModel = {
         <button class="workflow-btn" @click="autoLayout">{{layoutLabel}}</button>
         <button class="workflow-btn" [disabled]="!model.hasSelection" @click="duplicate">{{duplicateLabel}}</button>
         <button class="workflow-btn" @click="toggleLogs">{{logsLabel}}</button>
-        <button class="workflow-btn" @click="toggleTheme" [title]="themeLabel">{{themeActionLabel}}</button>
         <button class="workflow-btn" @click="save">{{saveLabel}}</button>
         <button class="workflow-btn" @click="openLibrary">{{libraryLabel}}</button>
         <button class="workflow-btn" @click="toggleJson">JSON</button>
@@ -57,7 +58,7 @@ export class WorkflowToolbarComponent {
     @Attribute() model: WorkflowToolbarModel = EMPTY_TOOLBAR;
     @Attribute() locale = 'zh-CN';
     @Attribute() theme = 'light';
-    @Attribute() toggleThemeAction?: () => void;
+    @Attribute() themeChangeAction?: (theme: ThemeName) => void;
     @Attribute() runAction?: () => void;
     @Attribute() resumeAction?: () => void;
     @Attribute() cancelAction?: () => void;
@@ -76,8 +77,8 @@ export class WorkflowToolbarComponent {
     @Attribute() toggleJsonAction?: () => void;
     @Attribute() action?: (name: string) => void;
 
-    /** Keep the menu source stable while the toolbar model is unchanged. */
-    @NoReactive() private menuCache?: { model: WorkflowToolbarModel; groups: MenuBarGroup[] };
+    /** Keep the menu source stable while its inputs are unchanged. */
+    @NoReactive() private menuCache?: { model: WorkflowToolbarModel; theme: string; locale: string; groups: MenuBarGroup[] };
 
     constructor(@Optional() private translator?: Translator) { }
 
@@ -105,13 +106,17 @@ export class WorkflowToolbarComponent {
     get layoutLabel(): string { return this.t('layout', 'Auto layout'); }
     get duplicateLabel(): string { return this.t('duplicate', 'Duplicate'); }
     get logsLabel(): string { return this.t('logs', 'Logs'); }
-    get themeLabel(): string { return this.t('theme', 'Toggle theme'); }
-    get themeActionLabel(): string {
-        return isDarkTheme(this.theme)
-            ? (this.isZh ? '亮色' : 'Light')
-            : (this.isZh ? '暗色' : 'Dark');
+
+    get themeMenuLabel(): string { return this.t('themeMenu', 'Theme'); }
+    get themeName(): ThemeName { return isThemeName(this.theme) ? this.theme : 'light'; }
+    themeOptionLabel(theme: ThemeName): string {
+        switch (theme) {
+            case 'dark': return this.t('themeDark', 'Dark');
+            case 'solarized': return this.t('themeSolarized', 'Solarized');
+            case 'high-contrast': return this.t('themeHighContrast', 'High contrast');
+            default: return this.t('themeLight', 'Light');
+        }
     }
-    get themeIcon(): string { return isDarkTheme(this.theme) ? '☀' : '☾'; }
     get saveLabel(): string { return this.t('save', 'Save'); }
     get libraryLabel(): string { return this.t('library', 'Workflows'); }
     get clearLabel(): string { return this.t('clear', 'Clear'); }
@@ -123,6 +128,7 @@ export class WorkflowToolbarComponent {
     }
 
     get menuLabel(): string { return this.t('menu', 'Menu'); }
+    get shortcutsLabel(): string { return this.t('shortcuts', 'Keyboard shortcuts'); }
     get jsonMenuLabel(): string { return this.t('jsonMenu', 'Import / Export JSON'); }
 
     /**
@@ -132,7 +138,7 @@ export class WorkflowToolbarComponent {
      */
     get menuGroups(): MenuBarGroup[] {
         const cache = this.menuCache;
-        if (cache && cache.model === this.model) {
+        if (cache && cache.model === this.model && cache.theme === this.theme && cache.locale === this.locale) {
             return cache.groups;
         }
         const groups = [
@@ -179,11 +185,25 @@ export class WorkflowToolbarComponent {
                     { id: 'reset-view', label: this.resetLabel },
                     { id: 'auto-layout', label: this.layoutLabel },
                     { id: 'toggle-logs', label: this.logsLabel },
-                    { id: 'toggle-theme', label: this.themeLabel }
+                    {
+                        id: 'theme',
+                        label: this.themeMenuLabel,
+                        icon: '◐',
+                        children: THEME_OPTIONS.map(theme => ({
+                            id: `theme:${theme}`,
+                            label: this.themeOptionLabel(theme),
+                            checked: this.themeName === theme
+                        }))
+                    }
+                ]
+            },
+            {
+                items: [
+                    { id: 'shortcuts', label: this.shortcutsLabel, shortcut: '?' }
                 ]
             }
         ];
-        this.menuCache = { model: this.model, groups };
+        this.menuCache = { model: this.model, theme: this.theme, locale: this.locale, groups };
         return groups;
     }
 
@@ -192,6 +212,13 @@ export class WorkflowToolbarComponent {
      * method would lose the component instance when invoked.
      */
     readonly menuSelect = (id: string): void => {
+        if (id.startsWith('theme:')) {
+            const theme = id.slice('theme:'.length);
+            if ((THEME_OPTIONS as string[]).includes(theme)) {
+                this.selectTheme(theme as ThemeName);
+            }
+            return;
+        }
         switch (id) {
             case 'run': this.run(); break;
             case 'resume': this.resume(); break;
@@ -204,7 +231,6 @@ export class WorkflowToolbarComponent {
             case 'reset-view': this.resetView(); break;
             case 'auto-layout': this.autoLayout(); break;
             case 'toggle-logs': this.toggleLogs(); break;
-            case 'toggle-theme': this.toggleTheme(); break;
             case 'save': this.save(); break;
             case 'open-library': this.openLibrary(); break;
             case 'toggle-json': this.toggleJson(); break;
@@ -248,8 +274,8 @@ export class WorkflowToolbarComponent {
     toggleLogs(): void {
         (this.toggleLogsAction || (() => this.action?.('toggle-logs')))();
     }
-    toggleTheme(): void {
-        (this.toggleThemeAction || (() => this.action?.('toggle-theme')))();
+    selectTheme(theme: ThemeName): void {
+        this.themeChangeAction?.(theme);
     }
     save(): void {
         (this.saveAction || (() => this.action?.('save')))();

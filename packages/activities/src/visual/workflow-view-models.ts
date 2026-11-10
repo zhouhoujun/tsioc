@@ -1,6 +1,7 @@
 import {
     IVisualWorkflowNode,
     NodeExecutionStatus,
+    WorkflowConfigFieldCondition,
     WorkflowCanvasEdgeView,
     WorkflowCanvasModel,
     WorkflowCanvasNodeView,
@@ -262,6 +263,37 @@ export function buildWorkflowPalette(
     return registry.palette(locale, translator);
 }
 
+function fieldConditionMatches(actual: any, condition: WorkflowConfigFieldCondition): boolean {
+    if (condition.equals !== undefined) {
+        return String(actual) === String(condition.equals);
+    }
+    if (condition.notEquals !== undefined) {
+        return String(actual) !== String(condition.notEquals);
+    }
+    if (condition.in) {
+        const allowed = condition.in.map(item => String(item));
+        return allowed.includes(String(actual));
+    }
+    if (condition.truthy !== undefined) {
+        return condition.truthy ? !!actual : !actual;
+    }
+    if (condition.falsy !== undefined) {
+        return condition.falsy ? !actual : !!actual;
+    }
+    return true;
+}
+
+function fieldResetValue(field: { type: string; defaultValue?: any }): any {
+    const value = field.defaultValue;
+    if (field.type === 'json') {
+        return typeof value === 'string' ? value : JSON.stringify(value ?? {}, null, 2);
+    }
+    if (field.type === 'boolean') {
+        return value === true;
+    }
+    return value === undefined || value === null ? '' : String(value);
+}
+
 export function buildWorkflowInspectorModel(
     designer: WorkflowDesigner,
     registry: WorkflowNodeRegistry,
@@ -287,10 +319,14 @@ export function buildWorkflowInspectorModel(
     const definition: WorkflowNodeDefinition | undefined = registry.get(node.type);
     const execution = designer.execution?.nodeStates?.[node.id];
     const status = (execution?.status as NodeExecutionStatus) || 'idle';
-    const fields: WorkflowInspectorFieldView[] = (definition?.fields || []).map(field => {
-        const value = node.config?.[field.key] !== undefined
+    const values: Record<string, any> = {};
+    (definition?.fields || []).forEach(field => {
+        values[field.key] = node.config?.[field.key] !== undefined
             ? node.config[field.key]
             : field.defaultValue;
+    });
+    const fields: WorkflowInspectorFieldView[] = (definition?.fields || []).map(field => {
+        const value = values[field.key];
         return {
             key: field.key,
             label: translateWorkflow(
@@ -314,13 +350,22 @@ export function buildWorkflowInspectorModel(
                 ),
                 value: option.value
             })),
-            placeholder: field.placeholder || '',
-            description: localize(locale, field.description || '', field.description),
+            placeholder: localize(locale, field.placeholder || '', field.placeholderZh),
+            description: localize(locale, field.description || '', field.descriptionZh),
+            group: localize(locale, field.group || '', field.groupZh),
+            visible: field.visibleWhen
+                ? fieldConditionMatches(values[field.visibleWhen.key], field.visibleWhen)
+                : true,
             min: field.min,
             max: field.max,
+            step: field.step,
+            rows: field.rows || (field.type === 'json' ? 4 : field.type === 'code' ? 8 : 3),
             required: field.required === true,
+            readonly: field.readonly === true,
             pattern: field.pattern,
-            language: field.language
+            language: field.language,
+            hasDefault: field.defaultValue !== undefined,
+            resetValue: fieldResetValue(field)
         };
     });
     let resultText = '';

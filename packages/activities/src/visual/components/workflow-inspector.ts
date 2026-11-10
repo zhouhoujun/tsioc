@@ -1,5 +1,5 @@
-import { Attribute, Component, OnDestroy, noReact } from '@tsdi/components';
-import { AbstractControl, FormBuilder, FormGroup, Validators } from '@tsdi/components/forms';
+import { Attribute, Component, OnDestroy, ViewChild } from '@tsdi/components';
+import { DynamicFormChange, DynamicFormComponent, DynamicFormField, DynamicFormSchema } from '@tsdi/components/common';
 import { Optional } from '@tsdi/ioc';
 import { Translator } from '@tsdi/i18n';
 import { translateWorkflow } from '../i18n';
@@ -18,32 +18,6 @@ const EMPTY_INSPECTOR: WorkflowInspectorModel = {
     resultText: '',
     errorText: ''
 };
-
-function jsonValidator(control: AbstractControl) {
-    const value = control.value;
-    if (value === undefined || value === null || String(value).trim() === '') {
-        return null;
-    }
-    try {
-        JSON.parse(String(value));
-        return null;
-    } catch {
-        return { json: true };
-    }
-}
-
-/** Keep form internals out of the component reactive proxy. */
-function markFormRaw(form: FormGroup): FormGroup {
-    try {
-        (form as any)[noReact] = true;
-        Object.values(form.controls).forEach(control => {
-            (control as any)[noReact] = true;
-        });
-    } catch {
-        // ignore
-    }
-    return form;
-}
 
 function snapshotSignature(model: WorkflowInspectorModel): string {
     if (!model.hasSelection) {
@@ -64,16 +38,20 @@ function snapshotSignature(model: WorkflowInspectorModel): string {
             field.type,
             field.value ?? null,
             field.displayValue,
-            field.checked ? 1 : 0
+            field.checked ? 1 : 0,
+            field.visible === false ? 0 : 1,
+            field.group || '',
+            field.placeholder || '',
+            field.description || '',
+            field.hasDefault ? 1 : 0
         ])
     ]);
 }
 
 /**
- * Renderer-neutral node inspector. Property editing is backed by
- * `@tsdi/components/forms` (`FormGroup` + validators), so invalid values never
- * reach the designer. Code fields can be enhanced by a host-provided code
- * editor directive (see `@tsdi/activities/web`).
+ * Node inspector. The property surface is provided by the shared
+ * `dynamic-form` component, so field rendering, conditional visibility,
+ * validation and reset all come from the JSON-configurable form layer.
  */
 @Component({
     selector: 'workflow-inspector',
@@ -84,50 +62,18 @@ function snapshotSignature(model: WorkflowInspectorModel): string {
         <div v-if="model.hasSelection">
             <div class="workflow-inspector-head">
                 <span class="workflow-inspector-type">{{model.typeLabel}}</span>
+                <span class="workflow-inspector-id" v-if="model.nodeId">{{model.nodeId}}</span>
                 <span class="workflow-inspector-status" v-if="model.statusLabel">{{model.statusLabel}}</span>
                 <span class="workflow-inspector-duration" v-if="model.durationLabel">{{model.durationLabel}}</span>
+                <span class="workflow-status-spacer"></span>
+                <button class="workflow-inspector-restore" v-if="model.fields.length" type="button"
+                    @click="restoreDefaults">{{restoreLabel}}</button>
             </div>
-            <div class="workflow-field">
-                <label class="workflow-field-label">{{nameLabel}}</label>
-                <input class="workflow-input workflow-inspector-name" [value]="valueFor('name', model.name)"
-                    aria-invalid="{{errorFor('name') ? 'true' : 'false'}}"
-                    @input="changeName($event)" />
-                <div class="workflow-field-error" v-if="errorFor('name')">{{errorFor('name')}}</div>
-            </div>
-            <div class="workflow-field">
-                <label class="workflow-field-label">{{descriptionLabel}}</label>
-                <input class="workflow-input workflow-inspector-description" [value]="valueFor('description', model.description)"
-                    @input="changeDescription($event)" />
-            </div>
-            <div class="workflow-field" v-for="field in model.fields">
-                <label class="workflow-field-label">{{field.label}}</label>
-                <input v-if="field.type === 'text'" class="workflow-input" [value]="fieldValue(field)"
-                    aria-invalid="{{errorFor(field.key) ? 'true' : 'false'}}"
-                    @input="changeField(field, $event)" />
-                <input v-if="field.type === 'number'" class="workflow-input" type="number" [value]="fieldValue(field)" [min]="field.min" [max]="field.max"
-                    aria-invalid="{{errorFor(field.key) ? 'true' : 'false'}}"
-                    @input="changeField(field, $event)" />
-                <label v-if="field.type === 'boolean'" class="workflow-checkbox-row">
-                    <input type="checkbox" [checked]="fieldChecked(field)" @change="changeField(field, $event)" />
-                    <span>{{field.description || field.label}}</span>
-                </label>
-                <select v-if="field.type === 'select'" class="workflow-select" [value]="fieldValue(field)" @change="changeField(field, $event)">
-                    <option v-for="option in field.options" [value]="option.value" [selected]="option.value === fieldValue(field)">{{option.label}}</option>
-                </select>
-                <textarea v-if="field.type === 'textarea'" class="workflow-textarea" [value]="fieldValue(field)" @input="changeField(field, $event)" rows="3"></textarea>
-                <textarea v-if="field.type === 'json'" class="workflow-textarea" [value]="fieldValue(field)"
-                    aria-invalid="{{errorFor(field.key) ? 'true' : 'false'}}"
-                    @input="changeField(field, $event)" rows="4"></textarea>
-                <textarea v-if="field.type === 'code'" class="workflow-textarea workflow-code-editor"
-                    workflow-code-editor="{{field.language || 'javascript'}}"
-                    data-code-value="{{encodeCode(fieldValue(field))}}"
-                    [value]="fieldValue(field)"
-                    aria-invalid="{{errorFor(field.key) ? 'true' : 'false'}}"
-                    @input="changeField(field, $event)"
-                    @blur="flushField(field)" rows="8"></textarea>
-                <div class="workflow-field-error" v-if="errorFor(field.key)">{{errorFor(field.key)}}</div>
-                <div class="workflow-field-hint" v-if="field.description && field.type !== 'boolean'">{{field.description}}</div>
-            </div>
+            <dynamic-form #nodeForm classPrefix="workflow" :schema="formSchema" :value="formValue"
+                :contextKey="model.nodeId" :messages="formMessages" :emptyLabel="noPropertiesLabel"
+                :resetFieldLabel="resetFieldLabel" :changeAction="formChange" :blurAction="formBlur">
+            </dynamic-form>
+            <div class="workflow-no-fields" v-if="!model.fields.length">{{noPropertiesLabel}}</div>
             <div class="workflow-result" v-if="model.resultText">
                 <div class="workflow-result-title">{{resultLabel}}</div>
                 <pre class="workflow-result-pre">{{model.resultText}}</pre>
@@ -145,22 +91,18 @@ export class WorkflowInspectorComponent implements OnDestroy {
      */
     @Attribute() codeChangeDelay = 160;
     @Attribute() changeAction?: (key: string, value: any, type: string, nodeId?: string) => void;
+    @Attribute() restoreAction?: () => void;
+    @Attribute() codeSuggestions: string[] = [];
+
+    @ViewChild('nodeForm', DynamicFormComponent) nodeForm?: DynamicFormComponent;
 
     protected _model: WorkflowInspectorModel = EMPTY_INSPECTOR;
-    protected form?: FormGroup;
-    protected formSignature = '';
     protected modelSignature = '';
-    protected validationErrors: Record<string, any> = {};
     protected destroyed = false;
     protected pendingChange?: { key: string; value: any; type: string; nodeId: string };
     protected pendingTimer?: any;
 
-    constructor(
-        @Optional() private forms?: FormBuilder,
-        @Optional() private translator?: Translator
-    ) {
-        this.forms = forms || new FormBuilder();
-    }
+    constructor(@Optional() private translator?: Translator) { }
 
     @Attribute()
     get model(): WorkflowInspectorModel {
@@ -168,10 +110,6 @@ export class WorkflowInspectorComponent implements OnDestroy {
     }
     set model(value: WorkflowInspectorModel) {
         const next = value || EMPTY_INSPECTOR;
-        // Model snapshots are rebuilt on every parent render. Writing an equal
-        // snapshot back into this component would re-trigger the render that
-        // produced it (the writer and reader share a reactive effect), so only
-        // accept a changed snapshot.
         const signature = snapshotSignature(next);
         if (signature === this.modelSignature) {
             return;
@@ -183,13 +121,6 @@ export class WorkflowInspectorComponent implements OnDestroy {
         }
         this.modelSignature = signature;
         this._model = next;
-        // Building the form inside the attribute binding would re-enter the
-        // parent render through shared reactive state; do it after the render.
-        Promise.resolve().then(() => {
-            if (!this.destroyed) {
-                this.applyModel(next);
-            }
-        });
     }
 
     get isZh(): boolean {
@@ -210,85 +141,160 @@ export class WorkflowInspectorComponent implements OnDestroy {
     get nameLabel(): string { return this.t('name', 'Name'); }
     get descriptionLabel(): string { return this.t('description', 'Description'); }
     get resultLabel(): string { return this.t('latestOutput', 'Latest output'); }
-    get requiredMessage(): string { return this.isZh ? '必填项' : 'Required'; }
-    get numberMessage(): string { return this.isZh ? '数值超出范围' : 'Number out of range'; }
-    get patternMessage(): string { return this.isZh ? '格式不正确' : 'Invalid format'; }
-    get jsonMessage(): string { return this.isZh ? 'JSON 格式不正确' : 'Invalid JSON'; }
+    get restoreLabel(): string { return this.t('restoreDefaults', 'Reset'); }
+    get resetFieldLabel(): string { return this.t('resetField', 'Reset to default'); }
+    get noPropertiesLabel(): string { return this.t('noProperties', 'This node has no editable properties.'); }
+    get namePlaceholder(): string { return this.t('namePlaceholder', 'Node name'); }
+    get descriptionPlaceholder(): string { return this.t('descriptionPlaceholder', 'Optional note for this node'); }
+    get requiredMessage(): string { return this.t('requiredMessage', this.isZh ? '必填项' : 'Required'); }
+    get numberMessage(): string { return this.t('numberMessage', this.isZh ? '数值超出范围' : 'Number out of range'); }
+    get patternMessage(): string { return this.t('patternMessage', this.isZh ? '格式不正确' : 'Invalid format'); }
+    get jsonMessage(): string { return this.t('jsonMessage', this.isZh ? 'JSON 格式不正确' : 'Invalid JSON'); }
+    get emailMessage(): string { return this.t('invalidEmail', this.isZh ? '邮箱格式不正确' : 'Invalid email address'); }
+    get urlMessage(): string { return this.t('invalidUrl', this.isZh ? 'URL 格式不正确' : 'Invalid URL'); }
+    get integerMessage(): string { return this.t('integerMessage', this.isZh ? '请输入整数' : 'Must be an integer'); }
 
-    encodeCode(value: string | undefined): string {
-        return encodeURIComponent(String(value ?? ''));
-    }
-
-    valueFor(key: string, fallback: any): any {
-        const control = this.form?.get(key);
-        if (!control) {
-            return fallback;
+    /** JSON schema handed to the shared dynamic form. */
+    get formSchema(): DynamicFormSchema {
+        const fields: DynamicFormField[] = [];
+        if (!this._model.hasSelection) {
+            return { fields };
         }
-        return control.value === undefined || control.value === null ? '' : control.value;
+        fields.push({
+            key: 'name',
+            type: 'text',
+            label: this.nameLabel,
+            placeholder: this.namePlaceholder,
+            required: true,
+            inputClass: 'workflow-inspector-name'
+        });
+        fields.push({
+            key: 'description',
+            type: 'text',
+            label: this.descriptionLabel,
+            placeholder: this.descriptionPlaceholder,
+            inputClass: 'workflow-inspector-description'
+        });
+        this._model.fields.forEach(field => {
+            fields.push({
+                key: field.key,
+                type: this.dynamicType(field),
+                label: field.label,
+                placeholder: field.placeholder,
+                description: field.description,
+                group: field.group,
+                options: field.options.map(option => ({ label: option.label, value: option.value })),
+                defaultValue: field.hasDefault ? field.resetValue : undefined,
+                rows: field.rows,
+                min: field.min,
+                max: field.max,
+                step: field.step,
+                required: field.required,
+                readonly: field.readonly,
+                pattern: field.pattern,
+                language: field.language,
+                suggestions: this.codeSuggestions,
+                hidden: field.visible === false
+            });
+        });
+        return { fields };
     }
 
-    fieldValue(field: WorkflowInspectorFieldView): any {
-        return this.valueFor(field.key, field.displayValue);
+    get formValue(): Record<string, any> {
+        const value: Record<string, any> = {
+            name: this._model.name,
+            description: this._model.description
+        };
+        this._model.fields.forEach(field => {
+            value[field.key] = field.type === 'boolean'
+                ? field.checked
+                : field.type === 'select'
+                    ? field.value
+                    : field.displayValue;
+        });
+        return value;
     }
 
-    fieldChecked(field: WorkflowInspectorFieldView): boolean {
-        const control = this.form?.get(field.key);
-        return control ? !!control.value : field.checked;
+    get formMessages(): Record<string, string> {
+        return {
+            required: this.requiredMessage,
+            requiredTrue: this.requiredMessage,
+            min: this.numberMessage,
+            max: this.numberMessage,
+            minlength: this.numberMessage,
+            maxlength: this.numberMessage,
+            pattern: this.patternMessage,
+            json: this.jsonMessage,
+            email: this.emailMessage,
+            url: this.urlMessage,
+            number: this.numberMessage,
+            integer: this.integerMessage
+        };
     }
 
-    errorFor(key: string): string {
-        const errors = this.validationErrors[key];
-        if (!errors) {
-            return '';
-        }
-        if (errors.required) return this.requiredMessage;
-        if (errors.json) return this.jsonMessage;
-        if (errors.pattern) return this.patternMessage;
-        if (errors.min || errors.max || errors.minlength || errors.maxlength) {
-            return this.numberMessage;
-        }
-        return '';
-    }
-
-    changeName(event: any): void {
-        this.updateControl('name', event?.target?.value ?? '', 'text');
-    }
-
-    changeDescription(event: any): void {
-        this.updateControl('description', event?.target?.value ?? '', 'text');
-    }
-
-    changeField(field: WorkflowInspectorFieldView, event: any): void {
-        const target = event?.target;
-        const value = field.type === 'boolean' ? !!target?.checked : target?.value;
-        this.updateControl(field.key, value, field.type);
-    }
-
-    /** Immediately commit a pending code edit (blur, node switch, destroy). */
-    flushField(_field?: WorkflowInspectorFieldView): void {
-        this.flushPendingChange();
-    }
-
-    protected updateControl(key: string, value: any, type: string): void {
-        const control = this.form?.get(key);
-        if (control) {
-            control.setValue(value);
-            control.markAsDirty();
-            control.markAsTouched();
-            // Replace the snapshot so every field binding re-evaluates.
-            this.validationErrors = { ...this.validationErrors, [key]: control.errors };
-        }
-        if (control && control.errors) {
+    readonly formChange = (change: DynamicFormChange): void => {
+        if (!change.valid) {
+            this.flushPendingChange();
             return;
         }
+        const type = this.changeType(change.field);
         if (type === 'code') {
-            this.queueChange(key, value, type);
+            this.queueChange(change.key, change.value, type);
             return;
         }
         // Any non-code edit also closes the code edit burst so ordering stays
         // intuitive (e.g. edit code, then immediately rename the node).
         this.flushPendingChange();
-        this.changeAction?.(key, value, type, this.model?.nodeId);
+        this.changeAction?.(change.key, change.value, type, this._model.nodeId);
+    };
+
+    readonly formBlur = (): void => {
+        this.flushPendingChange();
+    };
+
+    restoreDefaults(): void {
+        this.flushPendingChange();
+        this.nodeForm?.reset(false);
+        this.restoreAction?.();
+    }
+
+    protected dynamicType(field: WorkflowInspectorFieldView): DynamicFormField['type'] {
+        switch (field.type) {
+            case 'code':
+                return 'code';
+            case 'json':
+                return 'json';
+            case 'textarea':
+                return 'textarea';
+            case 'boolean':
+                return 'checkbox';
+            case 'select':
+                return 'radio';
+            case 'number':
+                return 'number';
+            default:
+                return 'text';
+        }
+    }
+
+    protected changeType(field: DynamicFormField): string {
+        switch (field.type) {
+            case 'checkbox':
+            case 'switch':
+                return 'boolean';
+            case 'radio':
+            case 'select':
+                return 'select';
+            case 'number':
+            case 'range':
+                return 'number';
+            case 'json':
+                return 'json';
+            case 'code':
+                return 'code';
+            default:
+                return 'text';
+        }
     }
 
     protected queueChange(key: string, value: any, type: string): void {
@@ -299,7 +305,7 @@ export class WorkflowInspectorComponent implements OnDestroy {
             key,
             value,
             type,
-            nodeId: this.model?.nodeId || ''
+            nodeId: this._model?.nodeId || ''
         };
         if (this.pendingTimer !== undefined) {
             clearTimeout(this.pendingTimer);
@@ -319,83 +325,6 @@ export class WorkflowInspectorComponent implements OnDestroy {
             return;
         }
         this.changeAction?.(pending.key, pending.value, pending.type, pending.nodeId);
-    }
-
-    protected applyModel(model: WorkflowInspectorModel): void {
-        if (!model.hasSelection) {
-            this.form = undefined;
-            this.formSignature = '';
-            this.validationErrors = {};
-            return;
-        }
-        const signature = [
-            model.nodeId,
-            ...model.fields.map(field => `${field.key}:${field.type}:${field.required ? 1 : 0}:${field.pattern || ''}`)
-        ].join('|');
-        if (this.form && this.formSignature === signature) {
-            this.syncForm(model);
-            this.refreshValidationErrors();
-            return;
-        }
-        const configs: Record<string, any> = {
-            name: [model.name, [Validators.required, Validators.minLength(1)]],
-            description: [model.description, []]
-        };
-        model.fields.forEach(field => {
-            const validators = [];
-            if (field.required) {
-                validators.push(Validators.required);
-            }
-            if (field.type === 'number') {
-                if (field.min !== undefined) validators.push(Validators.min(field.min));
-                if (field.max !== undefined) validators.push(Validators.max(field.max));
-            }
-            if (field.pattern) {
-                validators.push(Validators.pattern(field.pattern));
-            }
-            if (field.type === 'json') {
-                validators.push(jsonValidator);
-            }
-            configs[field.key] = [this.controlValue(field), validators];
-        });
-        this.form = markFormRaw((this.forms || new FormBuilder()).group(configs));
-        this.formSignature = signature;
-        this.refreshValidationErrors();
-    }
-
-    protected syncForm(model: WorkflowInspectorModel): void {
-        // Dirty controls hold the user's in-progress edit. Pushing the persisted
-        // model back into them would erase invalid input before the error shows.
-        const sync = (key: string, value: any): void => {
-            const control = this.form?.get(key);
-            if (!control || control.dirty || control.value === value) {
-                return;
-            }
-            control.setValue(value, { emitEvent: false });
-        };
-        sync('name', model.name);
-        sync('description', model.description);
-        model.fields.forEach(field => sync(field.key, this.controlValue(field)));
-    }
-
-    protected refreshValidationErrors(): void {
-        this.validationErrors = {};
-        if (!this.form) {
-            return;
-        }
-        Object.keys(this.form.controls).forEach(key => {
-            this.validationErrors[key] = this.form!.controls[key].errors;
-        });
-    }
-
-    protected controlValue(field: WorkflowInspectorFieldView): any {
-        if (field.type === 'boolean') {
-            return field.checked;
-        }
-        if (field.type === 'select') {
-            return field.value;
-        }
-        return field.displayValue;
     }
 
     onDestroy(): void {

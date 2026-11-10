@@ -2,11 +2,11 @@ import * as path from 'path';
 import { startWorkflowHttpServer } from '../server';
 
 /**
- * Run the demo through the framework's HTTP microservice:
- *   - static demo under /
+ * Run the product designer through the framework's HTTP microservice:
+ *   - static designer under /
  *   - workflows API under /api/workflows
  *
- *   npx ts-node -r tsconfig-paths/register demo/serve.ts [port]
+ *   npx ts-node -r tsconfig-paths/register designer/serve.ts [port]
  */
 (async () => {
     const port = Number(process.argv[2] || process.env.PORT || 8765);
@@ -15,8 +15,8 @@ import { startWorkflowHttpServer } from '../server';
         host: '127.0.0.1',
         staticRoot: path.resolve(__dirname)
     });
-    console.log(`Workflow HTTP demo: http://127.0.0.1:${port}/`);
-    console.log(`Workflows API:      http://127.0.0.1:${port}/api/workflows`);
+    console.log(`Workflow Designer: http://127.0.0.1:${port}/`);
+    console.log(`Workflows API:     http://127.0.0.1:${port}/api/workflows`);
 
     const shutdown = async () => {
         await ctx.close();

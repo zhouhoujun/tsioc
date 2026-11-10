@@ -1,5 +1,5 @@
-import { Attribute, Component, ElementRef, NoReactive, ReactiveEffect, reactive } from '@tsdi/components';
-import { installMenuBarStyles, installWorkspaceLayoutStyles, markElementRefRaw } from '@tsdi/components/common';
+import { Attribute, Component, ElementRef, NoReactive, OnDestroy, ReactiveEffect, noReact, reactive } from '@tsdi/components';
+import { installDynamicFormStyles, installMenuBarStyles, installWorkspaceLayoutStyles, markElementRefRaw } from '@tsdi/components/common';
 import { applyThemeToDocument, isThemeName, ThemeName } from '@tsdi/components/common';
 import { DOCUMENT } from '@tsdi/common';
 import { Inject, Optional } from '@tsdi/ioc';
@@ -31,6 +31,7 @@ import {
 } from '../workflow-store';
 import { WorkflowCanvasPointerPayload } from './workflow-canvas';
 import { installWorkflowDesignerStyles } from './workflow-designer.styles';
+
 /**
  * Root visual workflow designer.
  *
@@ -49,7 +50,8 @@ import { installWorkflowDesignerStyles } from './workflow-designer.styles';
     template: `
     <div class="workflow-designer" data-theme="{{themeName}}">
         <workflow-toolbar :model="toolbarModel" :locale="locale" :action="toolbarAction"
-            :theme="themeName" :toggleThemeAction="toggleTheme"></workflow-toolbar>
+            :theme="themeName"
+            :themeChangeAction="themeSelectAction"></workflow-toolbar>
         <workspace-layout class="workflow-workspace">
             <workspace-left>
                 <workflow-palette :groups="paletteGroups" :locale="locale"
@@ -61,7 +63,8 @@ import { installWorkflowDesignerStyles } from './workflow-designer.styles';
             </workspace-center>
             <workspace-right>
                 <workflow-inspector :model="inspectorModel" :locale="locale"
-                    :changeAction="inspectorChange"></workflow-inspector>
+                    :changeAction="inspectorChange" :restoreAction="inspectorRestore"
+                    :codeSuggestions="codeSuggestions"></workflow-inspector>
             </workspace-right>
             <workspace-bottom>
                 <workflow-run-history :items="runHistory" :locale="locale"
@@ -70,6 +73,7 @@ import { installWorkflowDesignerStyles } from './workflow-designer.styles';
                     <span class="workflow-status-message">{{statusModel.message}}</span>
                     <span class="workflow-status-error" v-if="statusModel.error">{{statusModel.error}}</span>
                     <span class="workflow-status-spacer"></span>
+                    <span class="workflow-save-state" [class]="saveStateClass">{{saveStateLabel}}</span>
                     <span class="workflow-status-selected">{{statusModel.selectedLabel}}</span>
                     <span>{{statusModel.nodeCount}} {{nodeWord}}</span>
                     <span>{{statusModel.executionLabel}}</span>
@@ -94,9 +98,21 @@ import { installWorkflowDesignerStyles } from './workflow-designer.styles';
             :saveAction="saveWorkflow" :saveAsAction="saveWorkflowAs"
             :openAction="loadWorkflow" :removeAction="deleteWorkflow"
             :closeAction="closeLibrary"></workflow-library>
+        <div class="workflow-shortcuts" v-if="showShortcuts" @click="closeShortcuts">
+            <div class="workflow-shortcuts-panel" @click="stopShortcutClick">
+                <div class="workflow-shortcuts-head">
+                    <span class="workflow-shortcuts-title">{{shortcutsLabel}}</span>
+                    <button class="workflow-btn" type="button" @click="closeShortcuts">{{closeLabel}}</button>
+                </div>
+                <div class="workflow-shortcuts-row" v-for="row in shortcutRows">
+                    <span>{{row.action}}</span>
+                    <kbd>{{row.keys}}</kbd>
+                </div>
+            </div>
+        </div>
     </div>`
 })
-export class WorkflowDesignerComponent {
+export class WorkflowDesignerComponent implements OnDestroy {
     @Attribute() locale = 'zh-CN';
     @Attribute() theme: ThemeName = 'light';
     /** Optional host hook to persist a user-selected theme. */
@@ -106,6 +122,11 @@ export class WorkflowDesignerComponent {
     @Attribute() runContext: ActivityContext = {};
     @Attribute() autoRun = false;
     @Attribute() store: WorkflowDefinitionStore = createDefaultWorkflowDefinitionStore();
+    /** Persist edits automatically after `autosaveDelay` ms of quiet. */
+    @Attribute() autosave = false;
+    @Attribute() autosaveDelay = 800;
+    saveState: 'saved' | 'dirty' | 'saving' | 'error' = 'saved';
+    showShortcuts = false;
 
     readonly registry: WorkflowNodeRegistry;
     private readonly service?: VisualWorkflowService;
@@ -120,6 +141,10 @@ export class WorkflowDesignerComponent {
     private selfRef?: any;
     jsonError = '';
     private pendingNodeType?: string;
+    @NoReactive() private autosaveTimer?: any;
+    @NoReactive() private autosaveInFlight = false;
+    @NoReactive() private keyHandler?: (event: any) => void;
+    @NoReactive() private documentRef?: any;
 
     /**
      * Derived view models are cached by the exact designer state they were
@@ -151,6 +176,7 @@ export class WorkflowDesignerComponent {
     @NoReactive() private statusModelCache?: { key: string; model: ReturnType<typeof buildWorkflowStatusModel> };
     @NoReactive() private paletteCache?: { key: string; groups: WorkflowPaletteGroup[] };
     @NoReactive() private runLogsCache?: { execution: any; logs: any[] };
+    @NoReactive() private codeSuggestionCache?: { key: string; values: string[] };
 
     constructor(
         @Optional() registry?: WorkflowNodeRegistry,
@@ -161,12 +187,22 @@ export class WorkflowDesignerComponent {
         @Optional() private elementRef?: ElementRef
     ) {
         markElementRefRaw(elementRef);
+        this.documentRef = document;
+        try {
+            if (document) {
+                (document as any)[noReact] = true;
+            }
+        } catch {
+            // Documents can reject expando properties; handlers still use the
+            // raw constructor reference rather than reading it through a proxy.
+        }
         this.registry = registry || new WorkflowNodeRegistry();
         this.service = service;
         // Install before the instance is wrapped by the reactive proxy: reading
         // a Document through the proxy would wrap its DOM internals.
         installWorkflowDesignerStyles(document);
         installWorkspaceLayoutStyles(document);
+        installDynamicFormStyles(document);
         installMenuBarStyles(document);
         applyThemeToDocument(document, this.themeName);
         const rawDesigner = new WorkflowDesigner({
@@ -183,12 +219,23 @@ export class WorkflowDesignerComponent {
 
     onInit(): void {
         this.selfRef = this;
+        this.saveState = this.designer.dirty ? 'dirty' : 'saved';
+        this.bindGlobalShortcuts();
         if (this.initialDefinition) {
             this.designer.load(this.initialDefinition);
         }
         if (this.autoRun) {
             void this.designer.run({ context: this.runContext });
         }
+    }
+
+    onDestroy(): void {
+        this.clearAutosaveTimer();
+        const doc = this.documentRef;
+        if (doc?.removeEventListener && this.keyHandler) {
+            doc.removeEventListener('keydown', this.keyHandler, true);
+        }
+        this.keyHandler = undefined;
     }
 
     get localeValue(): 'zh-CN' | 'en' {
@@ -199,9 +246,13 @@ export class WorkflowDesignerComponent {
         return isThemeName(this.theme) ? this.theme : 'light';
     }
 
+    get themeSelectAction(): (theme: ThemeName) => void {
+        return theme => this.setTheme(theme);
+    }
+
     setTheme(theme: ThemeName): void {
         this.theme = isThemeName(theme) ? theme : 'light';
-        const doc = (globalThis as { document?: Document }).document;
+        const doc = this.documentRef || (globalThis as { document?: Document }).document;
         applyThemeToDocument(doc, this.theme);
         this.themeChangeAction?.(this.themeName);
     }
@@ -228,6 +279,148 @@ export class WorkflowDesignerComponent {
 
     get closeLabel(): string {
         return this.t('close', 'Close');
+    }
+
+    get saveStateClass(): string {
+        return `workflow-save-state is-${this.saveState || 'saved'}`;
+    }
+
+    get saveStateLabel(): string {
+        switch (this.saveState) {
+            case 'saving':
+                return this.t('saveStateSaving', 'Saving…');
+            case 'dirty':
+                return this.t('saveStateDirty', 'Unsaved changes');
+            case 'error':
+                return this.t('saveStateError', 'Save failed');
+            default:
+                return this.t('saveStateSaved', 'Saved');
+        }
+    }
+
+    get shortcutsLabel(): string {
+        return this.t('shortcutsTitle', 'Keyboard shortcuts');
+    }
+
+    get shortcutRows(): Array<{ action: string; keys: string }> {
+        return [
+            { action: this.t('save', 'Save'), keys: 'Ctrl+S' },
+            { action: this.t('library', 'Workflows'), keys: 'Ctrl+O' },
+            { action: this.t('run', 'Run'), keys: 'Ctrl+Enter' },
+            { action: this.t('undo', 'Undo'), keys: 'Ctrl+Z' },
+            { action: this.t('redo', 'Redo'), keys: 'Ctrl+Y' },
+            { action: this.t('duplicate', 'Duplicate'), keys: 'Ctrl+D' },
+            { action: this.t('delete', 'Delete'), keys: 'Delete' },
+            { action: this.t('zoomPan', 'Zoom / pan'), keys: 'Ctrl+Wheel / Wheel' },
+            { action: this.t('shortcuts', 'Keyboard shortcuts'), keys: '?' }
+        ];
+    }
+
+    toggleShortcuts(): void {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.showShortcuts = !self.showShortcuts;
+    }
+
+    closeShortcuts(): void {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.showShortcuts = false;
+    }
+
+    stopShortcutClick(event: any): void {
+        event?.stopPropagation?.();
+    }
+
+    readonly clearAutosaveTimer = (): void => {
+        if (this.autosaveTimer !== undefined) {
+            clearTimeout(this.autosaveTimer);
+            this.autosaveTimer = undefined;
+        }
+    };
+
+    /** Mark the document dirty and schedule an autosave when enabled. */
+    readonly scheduleAutosave = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        if (!self.designer?.dirty) {
+            return;
+        }
+        if (self.saveState !== 'saving') {
+            self.saveState = 'dirty';
+        }
+        if (!self.autosave) {
+            return;
+        }
+        self.clearAutosaveTimer();
+        self.autosaveTimer = setTimeout(() => {
+            self.autosaveTimer = undefined;
+            void self.performAutosave();
+        }, Math.max(0, Number(self.autosaveDelay) || 0));
+    };
+
+    private async performAutosave(): Promise<void> {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        if (!self.autosave || !self.designer.dirty || self.autosaveInFlight) {
+            return;
+        }
+        self.autosaveInFlight = true;
+        self.saveState = 'saving';
+        try {
+            await self.designer.saveTo(self.store);
+            self.libraryError = '';
+            self.saveState = self.designer.dirty ? 'dirty' : 'saved';
+        } catch (error) {
+            self.saveState = 'error';
+            self.libraryError = (error as Error).message;
+        } finally {
+            self.autosaveInFlight = false;
+            if (self.designer.dirty) {
+                self.scheduleAutosave();
+            }
+        }
+    }
+
+    private bindGlobalShortcuts(): void {
+        const doc = this.documentRef;
+        if (!doc?.addEventListener || this.keyHandler) {
+            return;
+        }
+        this.keyHandler = (event: any) => this.handleGlobalKey(event);
+        doc.addEventListener('keydown', this.keyHandler, true);
+    }
+
+    private handleGlobalKey(event: any): void {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        const key = String(event?.key || '');
+        const meta = !!(event?.ctrlKey || event?.metaKey);
+        const target = event?.target;
+        const tag = String(target?.tagName || '').toLowerCase();
+        const editing = tag === 'input' || tag === 'textarea' || tag === 'select' || !!target?.isContentEditable;
+
+        if (meta && (key === 's' || key === 'S')) {
+            event.preventDefault();
+            void self.saveWorkflow();
+            return;
+        }
+        if (meta && (key === 'o' || key === 'O')) {
+            event.preventDefault();
+            void self.openLibrary();
+            return;
+        }
+        if (meta && key === 'Enter') {
+            event.preventDefault();
+            if (!self.designer.running && self.designer.nodes.length) {
+                self.toolbarAction('run');
+            }
+            return;
+        }
+        if (!editing && (key === '?' || key === 'F1')) {
+            event.preventDefault();
+            self.toggleShortcuts();
+            return;
+        }
+        if (key === 'Escape' && self.showShortcuts) {
+            event.preventDefault();
+            self.closeShortcuts();
+        }
     }
 
     get paletteGroups(): WorkflowPaletteGroup[] {
@@ -319,6 +512,69 @@ export class WorkflowDesignerComponent {
         const logs = execution?.logs || [];
         this.runLogsCache = { execution, logs };
         return logs;
+    }
+
+    /**
+     * Workflow-aware completion paths for the function code editor. Values are
+     * collected from node configs so `context.actions.<name>` and variable
+     * fields autocomplete against the current document.
+     */
+    get codeSuggestions(): string[] {
+        const key = this.designer.nodes.map(node => [
+            node.id,
+            node.type,
+            node.config?.action || '',
+            node.config?.field || '',
+            node.config?.target || '',
+            JSON.stringify(node.config?.values || ''),
+            JSON.stringify(node.config?.result || '')
+        ].join(':')).join('|');
+        const cache = this.codeSuggestionCache;
+        if (cache && cache.key === key) {
+            return cache.values;
+        }
+        const values = new Set<string>([
+            'context', 'input', 'msg', 'variables',
+            'context.variables', 'context.actions', 'context.state', 'context.event', 'context.events',
+            'input.variables', 'input.actions', 'input.state', 'input.data', 'input.value', 'input.result',
+            'msg.variables', 'msg.actions',
+            'return', 'const', 'let', 'var', 'if', 'else', 'for', 'while', 'try', 'catch', 'throw',
+            'await', 'async', 'function'
+        ]);
+        const add = (value: any): void => {
+            if (typeof value === 'string' && value.trim()) {
+                values.add(value.trim());
+            }
+        };
+        this.designer.nodes.forEach(node => {
+            const config = node.config || {};
+            if (typeof config.action === 'string') {
+                const action = config.action.replace(/^actions\./, '');
+                add(`context.actions.${action}`);
+                add(`input.actions.${action}`);
+            }
+            if (typeof config.field === 'string') {
+                add(config.field);
+                if (!config.field.includes('.')) {
+                    add(`variables.${config.field}`);
+                }
+            }
+            if (typeof config.target === 'string') {
+                add(config.target.includes('.') ? config.target : `variables.${config.target}`);
+            }
+            if (config.values && typeof config.values === 'object') {
+                Object.keys(config.values).forEach(name => add(`variables.${name}`));
+            }
+            if (config.result && typeof config.result === 'object') {
+                Object.keys(config.result).forEach(name => add(`input.${name}`));
+            }
+            if (typeof config.event === 'string') {
+                add(`context.events.${config.event}`);
+            }
+        });
+        const list = Array.from(values).slice(0, 240);
+        this.codeSuggestionCache = { key, values: list };
+        return list;
     }
 
     /**
@@ -451,9 +707,6 @@ export class WorkflowDesignerComponent {
             case 'toggle-logs':
                 self.showLogs = !self.showLogs;
                 break;
-            case 'toggle-theme':
-                self.toggleTheme();
-                break;
             case 'save':
                 void self.saveWorkflow();
                 break;
@@ -466,9 +719,13 @@ export class WorkflowDesignerComponent {
             case 'toggle-json':
                 self.toggleJson();
                 break;
+            case 'shortcuts':
+                self.toggleShortcuts();
+                break;
             default:
                 break;
         }
+        self.scheduleAutosave();
     };
 
     /** Fit every node into the visible canvas; falls back to 100%/origin. */
@@ -509,7 +766,9 @@ export class WorkflowDesignerComponent {
     };
 
     readonly addFromPalette = (item: WorkflowPaletteItem): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
         this.designer.addNode(item.type, this.nextAddPosition());
+        self.scheduleAutosave();
     };
 
     /**
@@ -547,6 +806,38 @@ export class WorkflowDesignerComponent {
             return undefined;
         }
         return { width: rect.width, height: rect.height };
+    }
+
+    private canvasRect(): { left: number; top: number; width: number; height: number } | undefined {
+        const host = this.elementRef?.nativeElement as any;
+        const canvas = host?.querySelector?.('.workflow-canvas') || host;
+        const rect = canvas?.getBoundingClientRect?.();
+        if (!rect || !(rect.width > 0) || !(rect.height > 0)) {
+            return undefined;
+        }
+        return { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+    }
+
+    private zoomAtPoint(payload: WorkflowCanvasPointerPayload, rect?: { left: number; top: number }): void {
+        const delta = Number(payload.deltaY) || 0;
+        if (!delta) {
+            return;
+        }
+        const designer = this.designer;
+        const before = designer.zoom || 1;
+        const factor = delta < 0 ? 1.1 : 0.9;
+        const zoom = Math.max(0.2, Math.min(2.5, before * factor));
+        const px = (Number(payload.clientX) || 0) - (rect?.left || 0);
+        const py = (Number(payload.clientY) || 0) - (rect?.top || 0);
+        const pan = designer.pan || { x: 0, y: 0 };
+        const worldX = (px - pan.x) / before;
+        const worldY = (py - pan.y) / before;
+        designer.setZoom(zoom);
+        const applied = designer.zoom || zoom;
+        designer.pan = {
+            x: Math.round(px - worldX * applied),
+            y: Math.round(py - worldY * applied)
+        };
     }
 
     private viewportBounds(): { left: number; top: number; right: number; bottom: number } | undefined {
@@ -600,13 +891,6 @@ export class WorkflowDesignerComponent {
         this.designer.selectExecution(executionId);
     };
 
-    readonly toggleTheme = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        const order: ThemeName[] = ['light', 'dark', 'solarized', 'high-contrast'];
-        const index = order.indexOf(self.themeName);
-        self.setTheme(order[(index + 1) % order.length]);
-    };
-
     readonly resumeWorkflow = async (): Promise<void> => {
         await this.designer.resume({ context: this.runContext });
     };
@@ -629,25 +913,33 @@ export class WorkflowDesignerComponent {
 
     readonly saveWorkflow = async (): Promise<void> => {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.clearAutosaveTimer();
+        self.saveState = 'saving';
         try {
             await this.designer.saveTo(this.store);
             self.libraryError = '';
+            self.saveState = 'saved';
             await self.refreshLibrary();
         } catch (error) {
+            self.saveState = 'error';
             self.libraryError = (error as Error).message;
         }
     };
 
     readonly saveWorkflowAs = async (): Promise<void> => {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.clearAutosaveTimer();
+        self.saveState = 'saving';
         try {
             await this.designer.saveTo(this.store, {
                 as: true,
                 name: `${this.designer.definition.name} copy`
             });
             self.libraryError = '';
+            self.saveState = 'saved';
             await self.refreshLibrary();
         } catch (error) {
+            self.saveState = 'error';
             self.libraryError = (error as Error).message;
         }
     };
@@ -657,6 +949,8 @@ export class WorkflowDesignerComponent {
         try {
             const loaded = await this.designer.openFrom(this.store, id);
             if (loaded) {
+                self.clearAutosaveTimer();
+                self.saveState = 'saved';
                 self.libraryError = '';
                 self.showLibrary = false;
             } else {
@@ -818,8 +1112,38 @@ export class WorkflowDesignerComponent {
             case 'key-down':
                 this.handleKey(payload);
                 break;
+            case 'wheel': {
+                const rect = this.canvasRect();
+                if (payload.ctrlKey || payload.metaKey) {
+                    this.zoomAtPoint(payload, rect);
+                } else {
+                    const shift = !!payload.shiftKey;
+                    const rawX = Number(payload.deltaX) || 0;
+                    const rawY = Number(payload.deltaY) || 0;
+                    const dx = shift && !rawX ? rawY : rawX;
+                    const dy = shift && !rawX ? 0 : rawY;
+                    designer.panBy(-dx, -dy);
+                }
+                break;
+            }
             default:
                 break;
+        }
+        if (payload.type === 'pointer-up'
+            || payload.type === 'node-up'
+            || payload.type === 'drop'
+            || payload.type === 'port-down'
+            || payload.type === 'port-up'
+            || payload.type === 'key-down') {
+            this.scheduleAutosave();
+        }
+    };
+
+    readonly inspectorRestore = (): void => {
+        const node = this.designer.selectedNode;
+        if (node) {
+            this.designer.resetNodeConfig(node.id);
+            this.scheduleAutosave();
         }
     };
 
@@ -832,10 +1156,12 @@ export class WorkflowDesignerComponent {
         }
         if (key === 'name') {
             this.designer.renameNode(node.id, String(value));
+            this.scheduleAutosave();
             return;
         }
         if (key === 'description') {
             this.designer.updateNode(node.id, { description: String(value) });
+            this.scheduleAutosave();
             return;
         }
         let parsed = value;
@@ -862,6 +1188,7 @@ export class WorkflowDesignerComponent {
             parsed = String(value ?? '');
         }
         this.designer.updateNodeConfig(node.id, { [key]: parsed });
+        this.scheduleAutosave();
     };
 
     toggleJson(): void {
@@ -877,6 +1204,7 @@ export class WorkflowDesignerComponent {
         if (loaded && this.designer.validate().valid) {
             this.jsonError = '';
             this.showJson = false;
+            this.scheduleAutosave();
         } else {
             this.jsonError = this.designer.error || 'Invalid workflow JSON';
         }

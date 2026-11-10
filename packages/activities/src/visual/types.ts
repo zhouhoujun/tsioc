@@ -570,6 +570,16 @@ export type WorkflowConfigFieldType =
  * 节点配置字段定义
  * Node config field definition.
  */
+export interface WorkflowConfigFieldCondition {
+    /** Field that controls this field's visibility. */
+    key: string;
+    equals?: any;
+    notEquals?: any;
+    in?: any[];
+    truthy?: boolean;
+    falsy?: boolean;
+}
+
 export interface WorkflowConfigField {
     key: string;
     label: string;
@@ -577,13 +587,23 @@ export interface WorkflowConfigField {
     type: WorkflowConfigFieldType;
     defaultValue?: any;
     placeholder?: string;
+    placeholderZh?: string;
     description?: string;
+    descriptionZh?: string;
     options?: Array<{ label: string; labelZh?: string; value: string }>;
     min?: number;
     max?: number;
+    step?: number;
+    rows?: number;
     required?: boolean;
+    readonly?: boolean;
     pattern?: string;
     language?: string;
+    /** Group header shown above this field in the inspector. */
+    group?: string;
+    groupZh?: string;
+    /** Only render the field when the referenced config value matches. */
+    visibleWhen?: WorkflowConfigFieldCondition;
 }
 
 /**
@@ -811,11 +831,19 @@ export interface WorkflowInspectorFieldView {
     options: Array<{ label: string; value: string }>;
     placeholder: string;
     description: string;
+    group: string;
+    visible: boolean;
     min?: number;
     max?: number;
+    step?: number;
+    rows: number;
     required: boolean;
+    readonly: boolean;
     pattern?: string;
     language?: string;
+    hasDefault: boolean;
+    /** Value written back when the field is reset (already formatted for the control). */
+    resetValue: any;
 }
 
 /**

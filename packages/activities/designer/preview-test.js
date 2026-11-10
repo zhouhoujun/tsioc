@@ -1,12 +1,12 @@
 /**
- * Real-browser verification for the workflow designer demo, served by the
- * framework's HTTP microservice (`demo/serve.ts`).
+ * Real-browser verification for the product workflow designer, served by the
+ * framework's HTTP microservice (`designer/serve.ts`).
  *
  * Usage:
- *   npx ts-node -r tsconfig-paths/register demo/build-demo.ts
- *   node demo/preview-test.js
+ *   npx ts-node -r tsconfig-paths/register designer/build.ts
+ *   node designer/preview-test.js
  *
- * Requires Playwright + a Chromium runtime. Writes demo/preview.png.
+ * Requires Playwright + a Chromium runtime. Writes designer/preview.png.
  */
 const { chromium } = require('playwright');
 const { spawn } = require('child_process');
@@ -14,8 +14,8 @@ const fs = require('fs');
 const net = require('net');
 const path = require('path');
 
-const DEMO_DIR = __dirname;
-const PACKAGE_DIR = path.resolve(DEMO_DIR, '..');
+const DESIGNER_DIR = __dirname;
+const PACKAGE_DIR = path.resolve(DESIGNER_DIR, '..');
 
 function freePort() {
     return new Promise((resolve, reject) => {
@@ -31,7 +31,7 @@ function freePort() {
 
 async function waitForServer(base) {
     const started = Date.now();
-    while (Date.now() - started < 30000) {
+    while (Date.now() - started < 60000) {
         try {
             const response = await fetch(`${base}/api/workflows`);
             if (response.ok) {
@@ -45,13 +45,13 @@ async function waitForServer(base) {
     throw new Error('workflow HTTP microservice did not start');
 }
 
-function startHttpDemo(port) {
+function startDesignerServer(port) {
     return spawn(
         process.execPath,
         [
             '-r', 'ts-node/register',
             '-r', 'tsconfig-paths/register',
-            path.join(DEMO_DIR, 'serve.ts'),
+            path.join(DESIGNER_DIR, 'serve.ts'),
             String(port)
         ],
         {
@@ -63,12 +63,12 @@ function startHttpDemo(port) {
 }
 
 (async () => {
-    if (!fs.existsSync(path.join(DEMO_DIR, 'main.js'))) {
-        throw new Error('demo/main.js missing; run the demo build first');
+    if (!fs.existsSync(path.join(DESIGNER_DIR, 'main.js'))) {
+        throw new Error('designer/main.js missing; run the designer build first');
     }
     const port = await freePort();
     const base = `http://127.0.0.1:${port}`;
-    const server = startHttpDemo(port);
+    const server = startDesignerServer(port);
     let serverOutput = '';
     server.stdout.on('data', chunk => { serverOutput += chunk.toString(); });
     server.stderr.on('data', chunk => { serverOutput += chunk.toString(); });
@@ -102,6 +102,12 @@ function startHttpDemo(port) {
                 panesScrollable: paneOverflow.every(value => value === 'auto' || value === 'scroll')
             };
         });
+        const initialJsBytes = await page.evaluate(() => performance.getEntriesByType('resource')
+            .filter(entry => /\.js($|\?)/.test(entry.name))
+            .reduce((sum, entry) => sum + (entry.encodedBodySize || entry.transferSize || 0), 0));
+        const initialJsUrls = await page.evaluate(() => performance.getEntriesByType('resource')
+            .filter(entry => /\.js($|\?)/.test(entry.name))
+            .map(entry => entry.name));
 
         // The Node-RED style application menu opens, lists grouped commands and
         // closes again (Escape or an outside click are the shared menu behavior).
@@ -112,6 +118,13 @@ function startHttpDemo(port) {
         await page.keyboard.press('Escape');
         await page.waitForTimeout(80);
         const menuClosed = !(await page.locator('.workflow-toolbar .menu-bar-popup').isVisible());
+
+        await page.keyboard.press('Shift+Slash');
+        await page.waitForSelector('.workflow-shortcuts-panel', { timeout: 3000 });
+        const shortcutsOpened = await page.locator('.workflow-shortcuts-panel').count() > 0;
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(100);
+        const shortcutsClosed = await page.locator('.workflow-shortcuts-panel').count() === 0;
 
         // Palette search filters registered components without changing the registry.
         const paletteSearch = page.locator('.workflow-palette-search-input');
@@ -132,6 +145,8 @@ function startHttpDemo(port) {
         await page.waitForSelector('.workflow-inspector .CodeMirror', { timeout: 5000 });
         const codeEditor = await page.locator('.workflow-inspector .CodeMirror').count() > 0;
         const codeText = await page.locator('.workflow-inspector .CodeMirror').textContent();
+        const lazyEditorChunk = await page.evaluate(loaded => performance.getEntriesByType('resource')
+            .some(entry => /\.js($|\?)/.test(entry.name) && !loaded.includes(entry.name)), initialJsUrls);
         const nameInput = page.locator('.workflow-inspector-name');
         await nameInput.fill('');
         await page.waitForTimeout(100);
@@ -143,14 +158,64 @@ function startHttpDemo(port) {
         );
         const deleteEnabledAfter = !(await deleteButton.isDisabled());
 
-        // Editing in the CodeMirror editor must persist to the node config.
+        // Workflow-aware completion: context/variables and configured actions.
         await page.locator('.workflow-inspector .CodeMirror').click();
+        await page.keyboard.press('Control+A');
+        await page.keyboard.type('context.');
+        await page.waitForTimeout(600);
+        const envHints = await page.locator('.CodeMirror-hint').allTextContents();
+        const hintEnv = envHints.includes('actions') || envHints.includes('variables');
+        await page.keyboard.press('Escape');
+        await page.keyboard.press('Control+A');
+        await page.keyboard.type('context.actions.');
+        await page.keyboard.press('Control+Space');
+        await page.waitForTimeout(400);
+        const actionHints = await page.locator('.CodeMirror-hint').allTextContents();
+        const hintAction = actionHints.includes('loadInput');
+        await page.keyboard.press('Escape');
+
+        // Editing in the CodeMirror editor must persist to the node config.
         await page.keyboard.press('Control+A');
         await page.keyboard.type('return 42;');
         // Code edits are debounced; wait past the quiet period (and then some).
         await page.waitForTimeout(400);
         const codeApplied = await page.evaluate(() =>
             window.workflowDesigner.designer.nodes.find(node => node.id === 'function_1')?.config?.code === 'return 42;'
+        );
+
+        // Autosave persists edits through the real HTTP store.
+        await page.waitForTimeout(1200);
+        const autosaved = await (await fetch(`${base}/api/workflows/workflow_demo`)).json();
+        const autosaveName = autosaved?.nodes?.find(node => node.id === 'function_1')?.name;
+        const autosaveCode = autosaved?.nodes?.find(node => node.id === 'function_1')?.config?.code;
+        const autosaveState = (await page.locator('.workflow-save-state').textContent() || '').trim();
+
+        // Property form: conditional fields, grouped sections, placeholders and reset.
+        await page.locator('.workflow-node[data-node-id="condition_1"]').click();
+        await page.waitForTimeout(150);
+        const optionCount = await page.locator('.workflow-field[data-field-key="operator"] .workflow-option').count();
+        const compareHidden = await page.locator('.workflow-field[data-field-key="value"]').count() === 0;
+        await page.locator('.workflow-field[data-field-key="operator"] [data-option-value="equals"]').click();
+        await page.waitForTimeout(150);
+        const compareVisible = await page.locator('.workflow-field[data-field-key="value"]').count() > 0;
+        await page.locator('.workflow-field[data-field-key="operator"] [data-option-value="truthy"]').click();
+        await page.waitForTimeout(150);
+        const compareHiddenAgain = await page.locator('.workflow-field[data-field-key="value"]').count() === 0;
+
+        await page.locator('.workflow-node[data-node-id="task_1"]').click();
+        await page.waitForTimeout(150);
+        const actionPlaceholder = await page.locator('.workflow-field[data-field-key="action"] input').getAttribute('placeholder');
+        const groupTitles = await page.locator('.workflow-field-group-title').allTextContents();
+        const retry = page.locator('.workflow-field[data-field-key="retry"] input');
+        await retry.fill('5');
+        await page.waitForTimeout(150);
+        const retrySet = await page.evaluate(() =>
+            window.workflowDesigner.designer.nodes.find(node => node.id === 'task_1')?.config?.retry === 5
+        );
+        await page.locator('.workflow-field[data-field-key="retry"] .workflow-field-reset').click();
+        await page.waitForTimeout(150);
+        const retryReset = await page.evaluate(() =>
+            window.workflowDesigner.designer.nodes.find(node => node.id === 'task_1')?.config?.retry === 0
         );
 
         // Connect a new Log node by dragging from task_2 output to its input.
@@ -203,6 +268,22 @@ function startHttpDemo(port) {
                     && box.top >= canvas.top - 1 && box.bottom <= canvas.bottom + 1;
             });
         });
+
+        // Ctrl+wheel zooms around the cursor; a plain wheel pans the canvas.
+        const zoomBefore = await page.evaluate(() => window.workflowDesigner.designer.zoom);
+        const canvasCenter = await page.locator('.workflow-canvas').boundingBox();
+        await page.mouse.move(canvasCenter.x + canvasCenter.width / 2, canvasCenter.y + canvasCenter.height / 2);
+        await page.keyboard.down('Control');
+        await page.mouse.wheel(0, -120);
+        await page.keyboard.up('Control');
+        await page.waitForTimeout(120);
+        const zoomAfter = await page.evaluate(() => window.workflowDesigner.designer.zoom);
+        const wheelZoom = zoomAfter > zoomBefore;
+        const panBefore = await page.evaluate(() => window.workflowDesigner.designer.pan.y);
+        await page.mouse.wheel(0, 120);
+        await page.waitForTimeout(120);
+        const panAfter = await page.evaluate(() => window.workflowDesigner.designer.pan.y);
+        const wheelPan = panAfter !== panBefore;
 
         // Drag the left splitter; ratio-based panes must resize.
         const leftBefore = await page.locator('.workspace-layout-left').evaluate(el => el.getBoundingClientRect().width);
@@ -259,8 +340,39 @@ function startHttpDemo(port) {
         await page.waitForSelector('.workflow-library-row', { timeout: 5000 });
         const libraryRows = await page.locator('.workflow-library-row').count();
 
-        // Theme switching (light -> dark).
-        await page.locator('.workflow-toolbar .workflow-btn[title="Toggle theme"]').click();
+        // Theme submenu lists every built-in theme and applies it to the layout.
+        await page.locator('.workflow-toolbar .menu-bar-trigger').click();
+        await page.locator('[data-menu-id="theme"]').hover();
+        await page.waitForTimeout(120);
+        const themeMenuItems = await page.locator('.menu-bar-submenu [data-menu-id^="theme:"]').count();
+        await page.locator('[data-menu-id="theme:solarized"]').click();
+        await page.waitForTimeout(220);
+        const solarizedTheme = await page.evaluate(() => {
+            const designer = document.querySelector('.workflow-designer');
+            const splitter = document.querySelector('.workspace-splitter');
+            const collapse = document.querySelector('.workspace-collapse');
+            return {
+                attribute: designer?.getAttribute('data-theme'),
+                splitter: splitter ? getComputedStyle(splitter).backgroundColor : '',
+                collapse: collapse ? getComputedStyle(collapse).backgroundColor : ''
+            };
+        });
+        await page.locator('.workflow-toolbar .menu-bar-trigger').click();
+        await page.locator('[data-menu-id="theme"]').hover();
+        await page.waitForTimeout(120);
+        const checkedTheme = ((await page.locator('.menu-bar-submenu [data-menu-id^="theme:"].is-checked').textContent()) || '').trim();
+        await page.locator('[data-menu-id="theme:light"]').click();
+        await page.waitForTimeout(220);
+        const lightThemeRestored = await page.evaluate(() =>
+            document.querySelector('.workflow-designer')?.getAttribute('data-theme')
+        );
+
+        // Theme switching is exposed only through the menu submenu.
+        const inlineThemeToggle = await page.locator('.workflow-toolbar [title="Toggle theme"]').count();
+        await page.locator('.workflow-toolbar .menu-bar-trigger').click();
+        await page.locator('[data-menu-id="theme"]').hover();
+        await page.waitForTimeout(120);
+        await page.locator('[data-menu-id="theme:dark"]').click();
         await page.waitForTimeout(120);
         const darkTheme = await page.evaluate(() => {
             const designer = document.querySelector('.workflow-designer');
@@ -270,10 +382,17 @@ function startHttpDemo(port) {
             };
         });
 
-        await page.screenshot({ path: path.join(DEMO_DIR, 'preview.png') });
+        // Show the dynamic-form inspector in the final screenshot (dark theme).
+        await page.locator('.workflow-node[data-node-id="condition_1"]').click();
+        await page.waitForTimeout(150);
+        await page.locator('.workflow-field[data-field-key="operator"] [data-option-value="equals"]').click();
+        await page.waitForTimeout(200);
+        const inspectorRendered = await page.locator('workflow-inspector dynamic-form').count() > 0;
+        await page.waitForTimeout(900);
+        await page.screenshot({ path: path.join(DESIGNER_DIR, 'preview.png') });
 
         // The demo persists the chosen theme; a reload restores it.
-        const themeStored = await page.evaluate(() => localStorage.getItem('workflow-demo-theme'));
+        const themeStored = await page.evaluate(() => localStorage.getItem('workflow-designer-theme'));
         await page.reload({ waitUntil: 'networkidle' });
         await page.waitForSelector('.workflow-designer[data-theme="dark"]', { timeout: 15000 });
         const themeAfterReload = await page.evaluate(() =>
@@ -282,15 +401,24 @@ function startHttpDemo(port) {
 
         await browser.close();
 
-        const result = { before, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, fitVisible, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, darkTheme, themeStored, themeAfterReload, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
+        const result = { before, initialJsBytes, lazyEditorChunk, hintEnv, hintAction, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, themeStored, themeAfterReload, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
         console.log(JSON.stringify(result, null, 2));
-        if (errors.length || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20
+        if (errors.length || initialJsBytes > 640_000 || !lazyEditorChunk || !hintEnv || !hintAction || !shortcutsOpened || !shortcutsClosed
+            || autosaveName !== 'Function Node' || autosaveCode !== 'return 42;' || !wheelZoom || !wheelPan || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20
             || !menuOpen || menuEntries < 5 || !menuClosed
             || paletteFiltered < 1 || paletteFiltered >= 35 || paletteRestored !== 35
             || !deleteDisabledBefore || !deleteEnabledAfter || localePreserved.count !== 8 || localePreserved.locale !== 'zh-CN' || !fitVisible
+            || optionCount !== 5 || !compareHidden || !compareVisible || !compareHiddenAgain
+            || actionPlaceholder !== 'actions.fetch' || !groupTitles.includes('Reliability')
+            || !retrySet || !retryReset
             || !codeEditor || !codeApplied || !formInvalid || !formValid || !resized || !collapsed || !restored
-            || connection.connections !== 7 || !edgeSelected || darkTheme.attribute !== 'dark'
-            || themeStored !== 'dark' || themeAfterReload !== 'dark') {
+            || connection.connections !== 7 || !edgeSelected
+            || inlineThemeToggle !== 0
+            || themeMenuItems !== 4 || !checkedTheme.includes('Solarized')
+            || solarizedTheme.attribute !== 'solarized'
+            || solarizedTheme.splitter === 'rgb(226, 232, 240)' || solarizedTheme.collapse === 'rgb(255, 255, 255)'
+            || lightThemeRestored !== 'light' || darkTheme.attribute !== 'dark'
+            || themeStored !== 'dark' || themeAfterReload !== 'dark' || !inspectorRendered) {
             process.exitCode = 1;
         }
     } catch (error) {

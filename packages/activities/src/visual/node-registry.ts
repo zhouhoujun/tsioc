@@ -112,12 +112,12 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('error', 'error', 'output', 'Error')
         ],
         fields: [
-            configField({ key: 'action', label: 'Action', labelZh: '动作', type: 'text', placeholder: 'actions.fetch', description: 'Name of a function in context.actions, or a mock result.' }),
-            configField({ key: 'result', label: 'Mock result', labelZh: '模拟结果', type: 'json', placeholder: '{ "ok": true }' }),
-            configField({ key: 'fail', label: 'Fail this step', labelZh: '使此步骤失败', type: 'boolean', defaultValue: false }),
-            configField({ key: 'retry', label: 'Retries', labelZh: '重试次数', type: 'number', defaultValue: 0, min: 0, max: 20 }),
-            configField({ key: 'retryDelay', label: 'Retry delay (ms)', labelZh: '重试间隔（毫秒）', type: 'number', defaultValue: 0, min: 0 }),
-            configField({ key: 'timeout', label: 'Timeout (ms)', labelZh: '超时（毫秒）', type: 'number', defaultValue: 0, min: 0 })
+            configField({ key: 'action', label: 'Action', labelZh: '动作', type: 'text', placeholder: 'actions.fetch', placeholderZh: 'actions.fetch', description: 'Function name in context.actions.', descriptionZh: 'context.actions 中的函数名。' }),
+            configField({ key: 'result', label: 'Mock result', labelZh: '模拟结果', type: 'json', placeholder: '{ "ok": true }', description: 'Returned directly when no action is set.', descriptionZh: '未配置动作时直接返回该结果。' }),
+            configField({ key: 'fail', label: 'Fail this step', labelZh: '使此步骤失败', type: 'boolean', defaultValue: false, group: 'Reliability', groupZh: '可靠性' }),
+            configField({ key: 'retry', label: 'Retries', labelZh: '重试次数', type: 'number', defaultValue: 0, min: 0, max: 20, step: 1, group: 'Reliability', groupZh: '可靠性', description: 'Automatic retries before the step fails.', descriptionZh: '步骤失败前的自动重试次数。' }),
+            configField({ key: 'retryDelay', label: 'Retry delay (ms)', labelZh: '重试间隔（毫秒）', type: 'number', defaultValue: 0, min: 0, step: 100, group: 'Reliability', groupZh: '可靠性' }),
+            configField({ key: 'timeout', label: 'Timeout (ms)', labelZh: '超时（毫秒）', type: 'number', defaultValue: 0, min: 0, step: 100, group: 'Reliability', groupZh: '可靠性' })
         ],
         defaultConfig: {}
     },
@@ -145,9 +145,11 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 defaultValue: 'return input;',
                 required: true,
                 language: 'javascript',
-                description: 'Trusted code. `context` is the workflow context, `input` is the previous result data.'
+                rows: 10,
+                description: 'Trusted code. `context` is the workflow context, `input` is the previous result data. Press Ctrl+Space for context and variable suggestions.',
+                descriptionZh: '受信任代码。`context` 是工作流上下文，`input` 是上一步结果。按 Ctrl+Space 获取上下文和变量提示。'
             }),
-            configField({ key: 'timeout', label: 'Timeout (ms)', labelZh: '超时（毫秒）', type: 'number', defaultValue: 0, min: 0 })
+            configField({ key: 'timeout', label: 'Timeout (ms)', labelZh: '超时（毫秒）', type: 'number', defaultValue: 0, min: 0, step: 100, group: 'Reliability', groupZh: '可靠性' })
         ],
         defaultConfig: { code: 'return input;' }
     },
@@ -167,7 +169,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('false', 'false', 'output', 'False')
         ],
         fields: [
-            configField({ key: 'field', label: 'Field', labelZh: '字段', type: 'text', placeholder: 'input.approved' }),
+            configField({ key: 'field', label: 'Field', labelZh: '字段', type: 'text', required: true, placeholder: 'input.approved', description: 'Path to the value to test.', descriptionZh: '要判断的值路径。' }),
             configField({
                 key: 'operator',
                 label: 'Operator',
@@ -182,7 +184,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     { label: 'less than', labelZh: '小于', value: 'lt' }
                 ]
             }),
-            configField({ key: 'value', label: 'Compare with', labelZh: '比较值', type: 'text' })
+            configField({ key: 'value', label: 'Compare with', labelZh: '比较值', type: 'text', placeholder: 'true', visibleWhen: { key: 'operator', notEquals: 'truthy' } })
         ],
         defaultConfig: { operator: 'truthy' }
     },
@@ -203,8 +205,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('error', 'error', 'output', 'Error')
         ],
         fields: [
-            configField({ key: 'field', label: 'Value field', labelZh: '取值字段', type: 'text', placeholder: 'input.type' }),
-            configField({ key: 'value', label: 'Expected value', labelZh: '期望值', type: 'text' })
+            configField({ key: 'field', label: 'Value field', labelZh: '取值字段', type: 'text', required: true, placeholder: 'input.type', description: 'Path to the value used for routing.', descriptionZh: '用于分支判断的取值路径。' }),
+            configField({ key: 'value', label: 'Expected value', labelZh: '期望值', type: 'text', required: true, placeholder: 'approved', description: 'Routes to the matched output when the value is equal.', descriptionZh: '值相等时路由到 Matched 输出。' })
         ],
         defaultConfig: {}
     },
@@ -252,8 +254,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('error', 'error', 'output', 'Error')
         ],
         fields: [
-            configField({ key: 'iterations', label: 'Iterations', labelZh: '迭代次数', type: 'number', defaultValue: 1, min: 0, max: 10000 }),
-            configField({ key: 'delay', label: 'Delay (ms)', labelZh: '延迟（毫秒）', type: 'number', defaultValue: 0, min: 0 })
+            configField({ key: 'iterations', label: 'Iterations', labelZh: '迭代次数', type: 'number', defaultValue: 1, min: 1, max: 10000, step: 1 }),
+            configField({ key: 'delay', label: 'Delay (ms)', labelZh: '延迟（毫秒）', type: 'number', defaultValue: 0, min: 0, step: 100, group: 'Options', groupZh: '选项' })
         ],
         defaultConfig: { iterations: 1 }
     },
@@ -270,8 +272,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Output')],
         fields: [
-            configField({ key: 'delay', label: 'Delay (ms)', labelZh: '延迟（毫秒）', type: 'number', defaultValue: 0, min: 0 }),
-            configField({ key: 'payload', label: 'Payload', labelZh: '数据', type: 'json', defaultValue: {} })
+            configField({ key: 'delay', label: 'Delay (ms)', labelZh: '延迟（毫秒）', type: 'number', defaultValue: 0, min: 0, step: 100 }),
+            configField({ key: 'payload', label: 'Payload', labelZh: '数据', type: 'json', defaultValue: {}, placeholder: '{ "key": "value" }' })
         ],
         defaultConfig: { delay: 0, payload: {} }
     },
@@ -288,7 +290,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Output')],
         fields: [
-            configField({ key: 'delay', label: 'Delay (ms)', labelZh: '延迟（毫秒）', type: 'number', defaultValue: 500, min: 0, max: 600000 })
+            configField({ key: 'delay', label: 'Delay (ms)', labelZh: '延迟（毫秒）', type: 'number', defaultValue: 500, min: 0, max: 600000, step: 100, description: 'Pause before continuing.', descriptionZh: '继续执行前的等待时间。' })
         ],
         defaultConfig: { delay: 500 }
     },
@@ -305,7 +307,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Output')],
         fields: [
-            configField({ key: 'message', label: 'Message', labelZh: '消息', type: 'text', defaultValue: 'Workflow step completed' }),
+            configField({ key: 'message', label: 'Message', labelZh: '消息', type: 'text', defaultValue: 'Workflow step completed', required: true, placeholder: 'Workflow step completed', description: 'Message written to the execution log.', descriptionZh: '写入执行日志的消息。' }),
             configField({
                 key: 'level',
                 label: 'Level',
@@ -337,20 +339,22 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('error', 'error', 'output', 'Error')
         ],
         fields: [
-            configField({ key: 'url', label: 'URL', labelZh: '地址', type: 'text', placeholder: 'https://api.example.com' }),
+            configField({ key: 'url', label: 'URL', labelZh: '地址', type: 'text', required: true, placeholder: 'https://api.example.com', group: 'Request', groupZh: '请求', description: 'Absolute endpoint or a path resolved by the host.', descriptionZh: '绝对地址或由宿主解析的路径。' }),
             configField({
                 key: 'method',
                 label: 'Method',
                 labelZh: '方法',
                 type: 'select',
                 defaultValue: 'GET',
-                options: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map(value => ({ label: value, value }))
+                options: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map(value => ({ label: value, value })),
+                group: 'Request',
+                groupZh: '请求'
             }),
-            configField({ key: 'headers', label: 'Headers', labelZh: '请求头', type: 'json' }),
-            configField({ key: 'body', label: 'Body', labelZh: '请求体', type: 'textarea' }),
-            configField({ key: 'retry', label: 'Retries', labelZh: '重试次数', type: 'number', defaultValue: 0, min: 0, max: 20 }),
-            configField({ key: 'retryDelay', label: 'Retry delay (ms)', labelZh: '重试间隔（毫秒）', type: 'number', defaultValue: 0, min: 0 }),
-            configField({ key: 'timeout', label: 'Timeout (ms)', labelZh: '超时（毫秒）', type: 'number', defaultValue: 0, min: 0 })
+            configField({ key: 'headers', label: 'Headers', labelZh: '请求头', type: 'json', rows: 3, placeholder: '{ "Content-Type": "application/json" }', group: 'Request', groupZh: '请求' }),
+            configField({ key: 'body', label: 'Body', labelZh: '请求体', type: 'textarea', rows: 4, placeholder: '{ "name": "demo" }', group: 'Request', groupZh: '请求', visibleWhen: { key: 'method', notEquals: 'GET' } }),
+            configField({ key: 'retry', label: 'Retries', labelZh: '重试次数', type: 'number', defaultValue: 0, min: 0, max: 20, step: 1, group: 'Reliability', groupZh: '可靠性' }),
+            configField({ key: 'retryDelay', label: 'Retry delay (ms)', labelZh: '重试间隔（毫秒）', type: 'number', defaultValue: 0, min: 0, step: 100, group: 'Reliability', groupZh: '可靠性' }),
+            configField({ key: 'timeout', label: 'Timeout (ms)', labelZh: '超时（毫秒）', type: 'number', defaultValue: 0, min: 0, step: 100, group: 'Reliability', groupZh: '可靠性' })
         ],
         defaultConfig: { method: 'GET' }
     },
@@ -384,7 +388,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Output')],
         fields: [
-            configField({ key: 'mapping', label: 'Mapping', labelZh: '映射', type: 'json', description: '{ "target": "input.source" }' }),
+            configField({ key: 'mapping', label: 'Mapping', labelZh: '映射', type: 'json', placeholder: '{ "target": "input.source" }', description: 'Map context paths into the new result.', descriptionZh: '将上下文路径映射到新的结果。' }),
             configField({ key: 'result', label: 'Fixed result', labelZh: '固定结果', type: 'json' })
         ],
         defaultConfig: {}
@@ -402,8 +406,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Output')],
         fields: [
-            configField({ key: 'template', label: 'Template', labelZh: '模板', type: 'textarea', defaultValue: '{{value}}', required: true, description: 'Use {{path.to.value}} placeholders.' }),
-            configField({ key: 'target', label: 'Target field', labelZh: '目标字段', type: 'text', defaultValue: 'message' })
+            configField({ key: 'template', label: 'Template', labelZh: '模板', type: 'textarea', defaultValue: '{{value}}', required: true, rows: 5, placeholder: 'Hello {{input.name}}', description: 'Use {{path.to.value}} placeholders.', descriptionZh: '使用 {{path.to.value}} 占位符。' }),
+            configField({ key: 'target', label: 'Target field', labelZh: '目标字段', type: 'text', defaultValue: 'message', placeholder: 'message', description: 'Context field that receives the rendered text.', descriptionZh: '接收渲染结果的上文字段。' })
         ],
         defaultConfig: { template: '{{value}}', target: 'message' }
     },
@@ -434,8 +438,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     { label: 'Stringify', labelZh: '序列化', value: 'stringify' }
                 ]
             }),
-            configField({ key: 'field', label: 'Field', labelZh: '字段', type: 'text', placeholder: 'value' }),
-            configField({ key: 'pretty', label: 'Pretty print', labelZh: '格式化输出', type: 'boolean', defaultValue: false })
+            configField({ key: 'field', label: 'Field', labelZh: '字段', type: 'text', placeholder: 'value', description: 'Path to the value to parse or stringify.', descriptionZh: '要解析或序列化的值路径。' }),
+            configField({ key: 'pretty', label: 'Pretty print', labelZh: '格式化输出', type: 'boolean', defaultValue: false, visibleWhen: { key: 'mode', equals: 'stringify' } })
         ],
         defaultConfig: { mode: 'parse' }
     },
@@ -466,9 +470,9 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     { label: 'Stringify', labelZh: '序列化', value: 'stringify' }
                 ]
             }),
-            configField({ key: 'field', label: 'Field', labelZh: '字段', type: 'text', placeholder: 'value' }),
-            configField({ key: 'delimiter', label: 'Delimiter', labelZh: '分隔符', type: 'text', defaultValue: ',' }),
-            configField({ key: 'header', label: 'First row is header', labelZh: '首行为表头', type: 'boolean', defaultValue: true })
+            configField({ key: 'field', label: 'Field', labelZh: '字段', type: 'text', placeholder: 'value', description: 'Path to the CSV text or array.', descriptionZh: 'CSV 文本或数组的路径。' }),
+            configField({ key: 'delimiter', label: 'Delimiter', labelZh: '分隔符', type: 'text', defaultValue: ',', placeholder: ',', description: 'Single character used between columns.', descriptionZh: '列之间的单字符分隔符。' }),
+            configField({ key: 'header', label: 'First row is header', labelZh: '首行为表头', type: 'boolean', defaultValue: true, visibleWhen: { key: 'mode', equals: 'parse' } })
         ],
         defaultConfig: { mode: 'parse', delimiter: ',', header: true }
     },
@@ -500,8 +504,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     { label: 'Append', labelZh: '追加', value: 'append' }
                 ]
             }),
-            configField({ key: 'field', label: 'Field', labelZh: '字段', type: 'text', required: true, placeholder: 'variables.name' }),
-            configField({ key: 'value', label: 'Value', labelZh: '值', type: 'json' })
+            configField({ key: 'field', label: 'Field', labelZh: '字段', type: 'text', required: true, placeholder: 'variables.name', description: 'Context path to modify.', descriptionZh: '要修改的上下文路径。' }),
+            configField({ key: 'value', label: 'Value', labelZh: '值', type: 'json', visibleWhen: { key: 'action', notEquals: 'delete' }, description: 'New value or item to append.', descriptionZh: '新值或要追加的内容。' })
         ],
         defaultConfig: { action: 'set' }
     },
@@ -518,8 +522,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Result')],
         fields: [
-            configField({ key: 'field', label: 'Array field', labelZh: '数组字段', type: 'text', placeholder: 'items' }),
-            configField({ key: 'path', label: 'Item path', labelZh: '元素路径', type: 'text' }),
+            configField({ key: 'field', label: 'Array field', labelZh: '数组字段', type: 'text', placeholder: 'items', description: 'Path to the array to aggregate.', descriptionZh: '要聚合的数组路径。' }),
+            configField({ key: 'path', label: 'Item path', labelZh: '元素路径', type: 'text', placeholder: 'value', description: 'Numeric property of each item.', descriptionZh: '每个元素的数值属性。' }),
             configField({
                 key: 'operation',
                 label: 'Operation',
@@ -551,7 +555,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Output')],
         fields: [
-            configField({ key: 'fields', label: 'Fields', labelZh: '字段', type: 'text', required: true, description: 'Comma-separated paths, e.g. first, second' }),
+            configField({ key: 'fields', label: 'Fields', labelZh: '字段', type: 'text', required: true, placeholder: 'first, second', description: 'Comma-separated paths, e.g. first, second', descriptionZh: '逗号分隔的路径，例如 first, second。' }),
             configField({
                 key: 'mode',
                 label: 'Mode',
@@ -580,8 +584,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Output')],
         fields: [
-            configField({ key: 'event', label: 'Event', labelZh: '事件', type: 'text', defaultValue: 'workflow.event', required: true }),
-            configField({ key: 'payload', label: 'Payload', labelZh: '数据', type: 'json' })
+            configField({ key: 'event', label: 'Event', labelZh: '事件', type: 'text', defaultValue: 'workflow.event', required: true, description: 'Event name to publish.', descriptionZh: '要发布的事件名。' }),
+            configField({ key: 'payload', label: 'Payload', labelZh: '数据', type: 'json', placeholder: '{ "key": "value" }', description: 'Optional event payload.', descriptionZh: '可选的事件数据。' })
         ],
         defaultConfig: { event: 'workflow.event' }
     },
@@ -601,8 +605,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('error', 'error', 'output', 'Timeout')
         ],
         fields: [
-            configField({ key: 'event', label: 'Event', labelZh: '事件', type: 'text', defaultValue: 'workflow.event', required: true }),
-            configField({ key: 'timeout', label: 'Timeout (ms)', labelZh: '超时（毫秒）', type: 'number', defaultValue: 30000, min: 0 })
+            configField({ key: 'event', label: 'Event', labelZh: '事件', type: 'text', defaultValue: 'workflow.event', required: true, description: 'Event name to wait for.', descriptionZh: '要等待的事件名。' }),
+            configField({ key: 'timeout', label: 'Timeout (ms)', labelZh: '超时（毫秒）', type: 'number', defaultValue: 30000, min: 0, step: 1000, group: 'Reliability', groupZh: '可靠性', description: 'Route to the timeout port after this delay.', descriptionZh: '超过该时间后进入超时端口。' })
         ],
         defaultConfig: { event: 'workflow.event', timeout: 30000 }
     },
@@ -623,8 +627,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         ],
         fields: [
             configField({ key: 'command', label: 'Command', labelZh: '命令', type: 'text', required: true, placeholder: 'context.exec' }),
-            configField({ key: 'args', label: 'Args', labelZh: '参数', type: 'json' }),
-            configField({ key: 'timeout', label: 'Timeout (ms)', labelZh: '超时（毫秒）', type: 'number', defaultValue: 0, min: 0 })
+            configField({ key: 'args', label: 'Args', labelZh: '参数', type: 'json', placeholder: '["--flag"]', description: 'Argument array passed to the command.', descriptionZh: '传给命令的参数数组。' }),
+            configField({ key: 'timeout', label: 'Timeout (ms)', labelZh: '超时（毫秒）', type: 'number', defaultValue: 0, min: 0, step: 100, group: 'Reliability', groupZh: '可靠性' })
         ],
         defaultConfig: {}
     },
@@ -641,8 +645,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Items')],
         fields: [
-            configField({ key: 'field', label: 'Field', labelZh: '字段', type: 'text', placeholder: 'items' }),
-            configField({ key: 'delimiter', label: 'Delimiter', labelZh: '分隔符', type: 'text', defaultValue: ',' })
+            configField({ key: 'field', label: 'Field', labelZh: '字段', type: 'text', placeholder: 'items', description: 'Text or array to split.', descriptionZh: '要拆分的文本或数组。' }),
+            configField({ key: 'delimiter', label: 'Delimiter', labelZh: '分隔符', type: 'text', defaultValue: ',', placeholder: ',', description: 'Separator used when splitting text.', descriptionZh: '拆分文本时使用的分隔符。' })
         ],
         defaultConfig: { delimiter: ',' }
     },
@@ -660,7 +664,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         outputs: [port('out', 'out', 'output', 'Items')],
         fields: [
             configField({ key: 'field', label: 'Array field', labelZh: '数组字段', type: 'text', placeholder: 'items' }),
-            configField({ key: 'path', label: 'Item path', labelZh: '元素路径', type: 'text', defaultValue: '', description: 'e.g. value or user.name' })
+            configField({ key: 'path', label: 'Item path', labelZh: '元素路径', type: 'text', defaultValue: '', placeholder: 'value', description: 'e.g. value or user.name', descriptionZh: '例如 value 或 user.name。' })
         ],
         defaultConfig: {}
     },
@@ -693,7 +697,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     { label: 'less than', labelZh: '小于', value: 'lt' }
                 ]
             }),
-            configField({ key: 'value', label: 'Compare with', labelZh: '比较值', type: 'text' })
+            configField({ key: 'value', label: 'Compare with', labelZh: '比较值', type: 'text', visibleWhen: { key: 'operator', notEquals: 'truthy' } })
         ],
         defaultConfig: { operator: 'truthy' }
     },
@@ -711,7 +715,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         outputs: [port('out', 'out', 'output', 'Items')],
         fields: [
             configField({ key: 'field', label: 'Array field', labelZh: '数组字段', type: 'text', placeholder: 'items' }),
-            configField({ key: 'path', label: 'Sort path', labelZh: '排序路径', type: 'text', placeholder: 'value' }),
+            configField({ key: 'path', label: 'Sort path', labelZh: '排序路径', type: 'text', placeholder: 'value', description: 'Property of each item used for ordering.', descriptionZh: '用于排序的元素属性。' }),
             configField({
                 key: 'order',
                 label: 'Order',
@@ -759,7 +763,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         outputs: [port('out', 'out', 'output', 'Batches')],
         fields: [
             configField({ key: 'field', label: 'Array field', labelZh: '数组字段', type: 'text', placeholder: 'items' }),
-            configField({ key: 'size', label: 'Batch size', labelZh: '批大小', type: 'number', defaultValue: 10, min: 1 })
+            configField({ key: 'size', label: 'Batch size', labelZh: '批大小', type: 'number', defaultValue: 10, min: 1, step: 1, description: 'Items per batch.', descriptionZh: '每批包含的元素数量。' })
         ],
         defaultConfig: { size: 10 }
     },
@@ -796,7 +800,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('error', 'error', 'output', 'Error')
         ],
         fields: [
-            configField({ key: 'workflow', label: 'Workflow JSON', labelZh: '工作流 JSON', type: 'json' })
+            configField({ key: 'workflow', label: 'Workflow JSON', labelZh: '工作流 JSON', type: 'json', required: true, rows: 8, description: 'Inline workflow definition to execute.', descriptionZh: '要执行的内联工作流定义。' })
         ],
         defaultConfig: {}
     },
@@ -813,7 +817,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [],
         outputs: [],
         fields: [
-            configField({ key: 'text', label: 'Text', labelZh: '文本', type: 'textarea', defaultValue: '' })
+            configField({ key: 'text', label: 'Text', labelZh: '文本', type: 'textarea', defaultValue: '', rows: 5, placeholder: 'Canvas note' })
         ],
         defaultConfig: { text: '' }
     },
@@ -833,13 +837,24 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('error', 'error', 'output', 'Error')
         ],
         fields: [
-            configField({ key: 'result', label: 'Result', labelZh: '结果', type: 'json' })
+            configField({ key: 'result', label: 'Result', labelZh: '结果', type: 'json', placeholder: '{ "ok": true }', description: 'Value returned by the custom node.', descriptionZh: '自定义节点返回的值。' })
         ],
         defaultConfig: {}
     }
 ];
 
 let generatedNodeSequence = 0;
+
+function cloneDefaultValue(value: any): any {
+    if (value === null || typeof value !== 'object') {
+        return value;
+    }
+    try {
+        return JSON.parse(JSON.stringify(value));
+    } catch {
+        return value;
+    }
+}
 
 /**
  * Registry of generic workflow node components. Hosts can register their own
@@ -890,6 +905,25 @@ export class WorkflowNodeRegistry {
 
     get(type: string): WorkflowNodeDefinition | undefined {
         return this.definitions.get(type);
+    }
+
+    /**
+     * Effective default config for a node type: `defaultConfig` plus every
+     * field `defaultValue`. Used by the inspector reset action so restoring a
+     * node matches what the property form shows as defaults.
+     */
+    defaultConfig(type: string): Record<string, any> {
+        const definition = this.get(type);
+        if (!definition) {
+            return {};
+        }
+        const config: Record<string, any> = { ...(definition.defaultConfig || {}) };
+        (definition.fields || []).forEach(field => {
+            if (field.defaultValue !== undefined && config[field.key] === undefined) {
+                config[field.key] = cloneDefaultValue(field.defaultValue);
+            }
+        });
+        return config;
     }
 
     list(): WorkflowNodeDefinition[] {

@@ -13,7 +13,8 @@ export type WorkflowCanvasPointerType =
     | 'port-down'
     | 'port-up'
     | 'drop'
-    | 'key-down';
+    | 'key-down'
+    | 'wheel';
 
 export interface WorkflowCanvasPointerPayload {
     type: WorkflowCanvasPointerType;
@@ -30,6 +31,8 @@ export interface WorkflowCanvasPointerPayload {
     shiftKey?: boolean;
     ctrlKey?: boolean;
     metaKey?: boolean;
+    deltaX?: number;
+    deltaY?: number;
 }
 
 const EMPTY_CANVAS: WorkflowCanvasModel = {
@@ -62,7 +65,9 @@ const EMPTY_CANVAS: WorkflowCanvasModel = {
          @mouseleave="pointerLeave($event)"
          @dragover="dragOver($event)"
          @drop="drop($event)"
-         @keydown="keyDown($event)">
+         @keydown="keyDown($event)"
+         @wheel="wheel($event)">
+        <div class="workflow-canvas-empty" v-if="!model.nodes.length">{{emptyHint}}</div>
         <div class="workflow-canvas-content" [style]="contentStyle">
             <svg class="workflow-canvas-edges" v-bind="svgAttrs">
                 <defs>
@@ -116,6 +121,12 @@ export class WorkflowCanvasComponent {
     private panStart?: { clientX: number; clientY: number };
 
     constructor(@Optional() protected elementRef?: ElementRef) { }
+
+    get emptyHint(): string {
+        return String(this.locale || '').toLowerCase().startsWith('zh')
+            ? '从左侧组件面板拖入节点，或点击组件添加'
+            : 'Drag a component from the palette, or click one to add it';
+    }
 
     /** Only layout variables live here; the visual skin comes from the stylesheet. */
     get canvasStyle(): Record<string, string> {
@@ -281,6 +292,22 @@ export class WorkflowCanvasComponent {
             shiftKey: !!event.shiftKey,
             ctrlKey: !!event.ctrlKey,
             metaKey: !!event.metaKey
+        });
+    }
+
+    wheel(event: any): void {
+        event?.preventDefault?.();
+        this.emit({
+            type: 'wheel',
+            event,
+            clientX: event?.clientX,
+            clientY: event?.clientY,
+            deltaX: event?.deltaX,
+            deltaY: event?.deltaY,
+            shiftKey: !!event.shiftKey,
+            ctrlKey: !!event.ctrlKey,
+            metaKey: !!event.metaKey,
+            world: this.worldFromEvent(event)
         });
     }
 

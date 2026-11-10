@@ -425,6 +425,10 @@ const ctx = await Application.run(WorkflowDesignerComponent, {
 });
 ```
 
+Browser products that only run registry-defined visual nodes can import
+`WorkflowDesignerModule` instead of `WorkflowModule`; it declares the designer
+UI and generic visual runtime without bundling the full server Activity library.
+
 Features:
 
 - palette to drag generic node components onto the canvas (or click to add),
@@ -442,17 +446,27 @@ Features:
 - click an edge (widened hit path) to select it; `Delete` removes the selected node or connection,
 - inspector for node name/description/config fields driven by `WorkflowNodeRegistry`,
 - searchable palette: filter 35 registered node types by label, description or type,
-- inspector property editing uses `@tsdi/components/forms` validators (`required`,
-  `min`/`max`, `pattern`, JSON); invalid values show inline errors and are never
-  persisted to the node,
+- inspector property editing is rendered by the shared JSON-configured
+  `dynamic-form` component (conditional fields, groups, per-field defaults and
+  reset); validation uses `@tsdi/components/forms` (`required`, `min`/`max`,
+  `pattern`, JSON) and invalid values are never persisted to the node,
 - `code` fields are enhanced by the open-source CodeMirror editor through the
-  optional `@tsdi/activities/web` `WorkflowCodeEditorModule`; HTML hosts import
-  `codemirror.css` (the demo does this automatically),
-- undo/redo, zoom/pan, fit-to-view, auto layout, duplicate (`Ctrl+D`), JSON import/export,
+  optional `@tsdi/activities/web` `WorkflowCodeEditorModule`: JavaScript syntax
+  highlighting, workflow-aware completions for `context` / `input` / `variables`
+  / configured action names (`Ctrl+Space` or automatically after `.`) and JS
+  keyword hints; HTML hosts import `codemirror.css` and `codemirror-hint.css`
+  (the `designer/` shell does this automatically). The editor is lazy-loaded, so
+  it stays out of the initial browser payload;
+- undo/redo, pointer pan, Ctrl+wheel zoom-at-cursor, fit-to-view, auto layout,
+  duplicate (`Ctrl+D`), JSON import/export,
 - Node-RED-style base components: inject, trigger, function, template, JSON,
   CSV, change, statistics, merge, split, map/filter/sort/range/batch,
   event-emit/event-wait, command, condition/switch, parallel/join, loop,
   delay, log, HTTP request, try/catch, sub workflow, comment,
+- opt-in autosave (`autosave`, `autosaveDelay`) with Saved / Unsaved / Saving /
+  Save failed state in the toolbar; manual save and autosave share the same store,
+- global keyboard shortcuts (`Ctrl+S` save, `Ctrl+O` library, `Ctrl+Enter` run,
+  `?`/`F1` shortcut sheet) and an empty-canvas onboarding hint,
 - run history chips replay retained execution snapshots on the canvas,
 - execution log panel with per-node start/end events and durations,
 - workflow library: save, save-as-copy, open and delete definitions through
@@ -538,7 +552,7 @@ const store = new HttpWorkflowDefinitionStore({
     token: '<token>'
 });
 await designer.saveTo(store);
-await designer.openFrom(store, 'workflow_demo');
+await designer.openFrom(store, 'approval');
 ```
 
 The HTTP store expects `GET/PUT/DELETE /workflows[/:id]`; any gateway can back

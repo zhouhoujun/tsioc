@@ -56,7 +56,7 @@ describe('Workflow HTTP microservice', () => {
             port,
             host: '127.0.0.1',
             store: new InMemoryWorkflowDefinitionStore(),
-            staticRoot: path.resolve(__dirname, '../demo')
+            staticRoot: path.resolve(__dirname, '../designer')
         }));
         await waitForServer(base);
     });
@@ -65,7 +65,7 @@ describe('Workflow HTTP microservice', () => {
         await ctx?.close();
     });
 
-    it('serves the static demo from the HTTP microservice', async () => {
+    it('serves the static designer from the HTTP microservice', async () => {
         const response = await fetch(`${base}/index.html`);
         expect(response.status).toBe(200);
         const text = await response.text();

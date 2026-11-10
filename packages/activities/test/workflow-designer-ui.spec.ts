@@ -121,6 +121,105 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelectorAll('.workflow-node').length).toBe(7);
     });
 
+    it('renders field placeholders, required markers and grouped sections', async () => {
+        ref.instance.designer.selectNode('task_1');
+        await flush();
+        expect(root.querySelector('workflow-inspector dynamic-form')).toBeTruthy();
+
+        const action = root.querySelector('.workflow-field[data-field-key="action"] input') as any;
+        expect(action.getAttribute('placeholder')).toBe('actions.fetch');
+        expect((root.querySelector('.workflow-field[data-field-key="action"] .workflow-field-hint') as any)?.textContent)
+            .toContain('context.actions');
+
+        const groupTitles = Array.from(root.querySelectorAll('.workflow-field-group-title')).map((item: any) => item.textContent);
+        expect(groupTitles).toContain('可靠性');
+
+        ref.instance.designer.addNode('function', { x: 40, y: 40 });
+        await flush();
+        ref.instance.designer.selectNode('function_1');
+        await flush();
+        expect(root.querySelector('.workflow-field[data-field-key="code"] .workflow-field-required')).toBeTruthy();
+    });
+
+    it('shows conditional fields based on the current operator', async () => {
+        ref.instance.designer.selectNode('condition_1');
+        await flush();
+        expect(root.querySelector('.workflow-field[data-field-key="operator"] .workflow-options')).toBeTruthy();
+        expect(root.querySelector('.workflow-field[data-field-key="value"]')).toBeFalsy();
+
+        const equals = root.querySelector('.workflow-field[data-field-key="operator"] [data-option-value="equals"] input') as any;
+        equals.checked = true;
+        equals.dispatchEvent(new (doc.defaultView as any).Event('change', { bubbles: true }));
+        await flush();
+        expect(root.querySelector('.workflow-field[data-field-key="value"]')).toBeTruthy();
+        expect(ref.instance.designer.nodes.find(node => node.id === 'condition_1')?.config?.operator).toBe('equals');
+
+        const truthy = root.querySelector('.workflow-field[data-field-key="operator"] [data-option-value="truthy"] input') as any;
+        truthy.checked = true;
+        truthy.dispatchEvent(new (doc.defaultView as any).Event('change', { bubbles: true }));
+        await flush();
+        expect(ref.instance.designer.nodes.find(node => node.id === 'condition_1')?.config?.operator).toBe('truthy');
+        expect(root.querySelector('.workflow-field[data-field-key="value"]')).toBeFalsy();
+    });
+
+    it('resets a single field and restores all node defaults', async () => {
+        ref.instance.designer.selectNode('task_1');
+        await flush();
+
+        const retry = root.querySelector('.workflow-field[data-field-key="retry"] input') as any;
+        retry.value = '7';
+        retry.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.config?.retry).toBe(7);
+
+        (root.querySelector('.workflow-field[data-field-key="retry"] .workflow-field-reset') as any).click();
+        await flush();
+        expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.config?.retry).toBe(0);
+
+        const action = root.querySelector('.workflow-field[data-field-key="action"] input') as any;
+        action.value = 'actions.custom';
+        action.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.config?.action).toBe('actions.custom');
+
+        (root.querySelector('.workflow-inspector-restore') as any).click();
+        await flush();
+        const config = ref.instance.designer.nodes.find(node => node.id === 'task_1')?.config || {};
+        expect(config.action).toBeUndefined();
+        expect(config.retry).toBe(0);
+        expect(config.fail).toBe(false);
+        expect((root.querySelector('.workflow-inspector-name') as any).value).toBe('读取输入');
+    });
+
+    it('shows an empty state for nodes without editable properties', async () => {
+        ref.instance.designer.selectNode('start_1');
+        await flush();
+        expect((root.querySelector('.workflow-no-fields') as any)?.textContent).toContain('没有可编辑属性');
+        expect(root.querySelector('.workflow-inspector-restore')).toBeFalsy();
+    });
+
+    it('refreshes property values when switching nodes of the same type', async () => {
+        const second = ref.instance.designer.addNode('task', { x: 40, y: 40 })!;
+        await flush();
+        let input = root.querySelector('.workflow-inspector-name') as any;
+        expect(input.value).toBe(second.name);
+
+        input.value = 'Second task';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        expect(ref.instance.designer.nodes.find(node => node.id === second.id)?.name).toBe('Second task');
+
+        ref.instance.designer.selectNode('task_1');
+        await flush();
+        input = root.querySelector('.workflow-inspector-name') as any;
+        expect(input.value).toBe('读取输入');
+
+        ref.instance.designer.selectNode(second.id);
+        await flush();
+        input = root.querySelector('.workflow-inspector-name') as any;
+        expect(input.value).toBe('Second task');
+    });
+
     it('places palette nodes without overlapping existing nodes', async () => {
         for (let index = 0; index < 4; index++) {
             (root.querySelector('.workflow-palette-item[data-node-type="log"]') as any).click();
@@ -167,17 +266,19 @@ describe('Workflow Designer UI', () => {
 
         input.value = '';
         input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await new Promise(r => setTimeout(r, 0));
         await waitFor(() => !!root.querySelector('.workflow-field-error'));
 
         expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name).toBe('读取输入');
-        expect(input.getAttribute('aria-invalid')).toBe('true');
+        const invalidInput = root.querySelector('.workflow-inspector-name') as any;
+        expect(invalidInput.getAttribute('aria-invalid')).toBe('true');
         expect(root.querySelector('.workflow-field-error')?.textContent).toContain('必填');
 
-        input.value = '校验后的名称';
-        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        invalidInput.value = '校验后的名称';
+        invalidInput.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
         await waitFor(() => ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name === '校验后的名称');
 
-        expect(input.getAttribute('aria-invalid')).toBe('false');
+        expect((root.querySelector('.workflow-inspector-name') as any).getAttribute('aria-invalid')).toBe('false');
         expect(root.querySelector('.workflow-field-error')).toBeFalsy();
     });
 
@@ -210,18 +311,20 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelector('.workflow-toolbar').textContent).toContain('nodes');
     });
 
-    it('switches visible themes from the toolbar', async () => {
+    it('switches visible themes from the menu selection API', async () => {
         const designer = root.matches?.('.workflow-designer') ? root : root.querySelector('.workflow-designer');
         expect(designer.getAttribute('data-theme')).toBe('light');
         ref.instance.setTheme('dark');
         await flush();
         expect(designer.getAttribute('data-theme')).toBe('dark');
         expect(ref.instance.themeName).toBe('dark');
-        ref.instance.toggleTheme();
+        ref.instance.setTheme('solarized');
         await flush();
         expect(designer.getAttribute('data-theme')).toBe('solarized');
-        ref.instance.toggleTheme();
-        ref.instance.toggleTheme();
+        ref.instance.setTheme('high-contrast');
+        await flush();
+        expect(designer.getAttribute('data-theme')).toBe('high-contrast');
+        ref.instance.setTheme('light');
         await flush();
         expect(designer.getAttribute('data-theme')).toBe('light');
     });
@@ -421,6 +524,70 @@ describe('Workflow Designer UI', () => {
         textarea.dispatchEvent(new (doc.defaultView as any).Event('blur'));
         await flush();
         expect(code()).toBe('return 44;');
+    });
+
+    it('offers workflow-aware code completion paths', async () => {
+        const suggestions = ref.instance.codeSuggestions;
+        expect(suggestions).toContain('context.actions.loadInput');
+        expect(suggestions).toContain('context.variables');
+        expect(suggestions).toContain('input');
+    });
+
+    it('autosaves edits through the configured store', async () => {
+        const store = new InMemoryWorkflowDefinitionStore();
+        ref.instance.store = store;
+        ref.instance.autosave = true;
+        ref.instance.autosaveDelay = 5;
+
+        ref.instance.designer.selectNode('task_1');
+        await flush();
+        const input = root.querySelector('.workflow-inspector-name') as any;
+        input.value = 'Autosaved task';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+
+        await waitFor(() => ref.instance.saveState === 'saved', 2000);
+        const saved = await store.get(ref.instance.designer.definition.id);
+        expect(saved?.nodes.find(node => node.id === 'task_1')?.name).toBe('Autosaved task');
+        expect(ref.instance.saveStateLabel).toContain('已保存');
+    });
+
+    it('opens keyboard shortcuts and saves with Ctrl+S', async () => {
+        const key = (value: string, options: any = {}) => doc.dispatchEvent(
+            new (doc.defaultView as any).KeyboardEvent('keydown', { key: value, bubbles: true, ...options })
+        );
+        key('?');
+        await flush();
+        expect(root.querySelector('.workflow-shortcuts-panel')).toBeTruthy();
+        key('Escape');
+        await flush();
+        expect(root.querySelector('.workflow-shortcuts-panel')).toBeFalsy();
+
+        const store = new InMemoryWorkflowDefinitionStore();
+        ref.instance.store = store;
+        ref.instance.designer.renameNode('task_1', 'Keyboard save');
+        key('s', { ctrlKey: true });
+        await new Promise(resolve => setTimeout(resolve, 30));
+        const saved = await store.get(ref.instance.designer.definition.id);
+        expect(saved?.nodes.find(node => node.id === 'task_1')?.name).toBe('Keyboard save');
+    });
+
+    it('zooms with Ctrl+wheel and pans with a plain wheel', async () => {
+        const zoomBefore = ref.instance.designer.zoom;
+        ref.instance.handleCanvas({ type: 'wheel', ctrlKey: true, deltaY: -120, clientX: 100, clientY: 100 });
+        await flush();
+        expect(ref.instance.designer.zoom).toBeGreaterThan(zoomBefore);
+
+        const panBefore = ref.instance.designer.pan.y;
+        ref.instance.handleCanvas({ type: 'wheel', deltaY: 120, clientX: 100, clientY: 100 });
+        await flush();
+        expect(ref.instance.designer.pan.y).not.toBe(panBefore);
+    });
+
+    it('shows an empty-canvas hint after clearing the graph', async () => {
+        ref.instance.designer.clear();
+        await flush();
+        expect((root.querySelector('.workflow-canvas-empty') as any)?.textContent).toContain('拖入节点');
     });
 
     it('offers resume after a cancelled run and completes from the checkpoint', async () => {

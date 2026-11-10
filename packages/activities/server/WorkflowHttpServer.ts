@@ -142,7 +142,7 @@ export class WorkflowHttpController {
 export interface WorkflowHttpServerOptions {
     port?: number;
     host?: string;
-    /** Static root (for example the built demo directory). */
+    /** Static root (for example the built designer directory). */
     staticRoot?: string;
     /** Store override; defaults to localStorage/in-memory. */
     store?: WorkflowDefinitionStore;
