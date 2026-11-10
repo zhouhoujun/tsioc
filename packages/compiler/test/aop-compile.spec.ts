@@ -2,6 +2,7 @@ import expect = require('expect');
 import * as fs from 'fs';
 import * as path from 'path';
 import { AopCompileActivity } from '../src/activities/AopCompileActivity';
+import { TsConfigReader } from '../src/TsConfigReader';
 
 describe('AOP compiler', () => {
     it('emits pointcuts and advices from @Aspect classes', async () => {
@@ -23,6 +24,15 @@ describe('AOP compiler', () => {
         const manifest = JSON.parse(fs.readFileSync(path.join(outDir, 'aop-manifest.json'), 'utf-8'));
         expect(manifest.aspects[0].className).toBe('SampleAspect');
         fs.rmSync(outDir, { recursive: true, force: true });
+    });
+
+    it('propagates AOP precompile options into the template runtime', () => {
+        const reader = new TsConfigReader(require('path').join(__dirname, '../tsconfig.json'));
+        const options = reader.mergeWithRuntime({ aop: true, aopManifest: 'custom-aop.json' });
+        expect(options.aop).toBe(true);
+        expect(options.aopManifest).toBe('custom-aop.json');
+        expect(reader.mergeWithRuntime({}).aop).toBe(true);
+        expect(reader.mergeWithRuntime({ aop: false }).aop).toBe(false);
     });
 
     it('rejects an advice without a pointcut in strict mode', async () => {

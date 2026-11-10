@@ -126,7 +126,12 @@ export class CompilerTemplateBuilder {
     addAopCompile(directive?: ConditionalDirective): this {
         return this.addActivity(
             require('./activities/AopCompileActivity').AopCompileActivity,
-            { src: '{{options.src}}', outDir: '{{options.outDir}}', exclude: '{{options.exclude}}' },
+            {
+                src: '{{options.src}}',
+                outDir: '{{options.outDir}}',
+                outFile: '{{options.aopManifest}}',
+                exclude: '{{options.exclude}}'
+            },
             directive
         );
     }

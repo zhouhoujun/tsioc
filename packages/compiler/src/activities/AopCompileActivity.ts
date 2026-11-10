@@ -93,7 +93,7 @@ export class AopCompileActivity extends Activity {
             };
             const outDir = path.isAbsolute(this.outDir) ? this.outDir : path.resolve(process.cwd(), this.outDir);
             fs.mkdirSync(outDir, { recursive: true });
-            const manifestFile = path.join(outDir, this.outFile);
+            const manifestFile = path.join(outDir, this.outFile || 'aop-manifest.json');
             fs.writeFileSync(manifestFile, JSON.stringify(manifest, null, 2), 'utf-8');
             const success = !this.strict || errors.length === 0;
             return {

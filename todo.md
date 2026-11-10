@@ -3335,3 +3335,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 删除 `http/src/server/interceptors/index.ts` 重复的 `send-response` 导出。
   - 移除 `MetricsInterceptor` 中无操作的 `finalize` 分支与 import。
   - 回归：metrics 46 passing（含 useMetrics 集成）、http 36 passing、health 18 passing；metrics `tsc --noUnusedLocals` 无命中。
+- 微服务 AOP 预编译支持审计（2026-11-10）：
+  - 审计范围：`packages/microservices/*` 共 23 个包，全部使用同一 `taskfile.ts -> CompilerModule` 编译路径；微服务源码当前没有 `@Aspect` / `@Before` 等 AOP 切面（AOP 主要由 security/repository/logger/activities 使用）。
+  - 发现缺陷：`CompilerActivity.aop` 默认 true，但 `TsConfigReader.mergeWithRuntime` 未把 `aop`/`aopManifest` 写入 `MergedCompilerOptions`，导致 `CompilerDirectives.ifAop` 永远为 false，`AopCompileActivity` 在默认模板中始终被跳过，`aop-manifest.json` 不会生成。
+  - 修复：合并 runtime 的 `aop`/`aopManifest`；默认模板的 `aop-compile` 传递 `outFile`；`AopCompileActivity` 对空 `outFile` 回退 `aop-manifest.json`。
+  - 结论：修复后微服务统一编译路径支持 AOP 预编译清单生成（`aop-manifest.json`）。`createDecoratorPrecompileTransformer` 仍是显式 API，未自动接入 esbuild/declaration 构建链，因此“装饰器/AOP 代码预编译转换”不是所有微服务 taskfile 自动启用；如需该转换需在自定义构建中传入 transformer。
+  - 新增回归：`compiler/test/compiler-aop-options.spec.ts`（aop 选项透传、模板执行/跳过、manifest 输出）；compiler 106 passing；compiler tsc、diff-check 通过。

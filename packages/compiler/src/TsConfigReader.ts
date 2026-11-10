@@ -33,6 +33,8 @@ export interface MergedCompilerOptions {
     bundle: boolean;
     minify: boolean;
     sourcemap: boolean;
+    aop: boolean;
+    aopManifest: string;
     declaration: boolean;
     declarationMap: boolean;
     sourceRoot?: string;
@@ -183,6 +185,8 @@ export class TsConfigReader {
             bundle: runtime.bundle ?? false,
             minify: runtime.minify ?? false,
             sourcemap: runtime.sourcemap ?? compilerOptions.sourceMap ?? true,
+            aop: runtime.aop ?? true,
+            aopManifest: runtime.aopManifest ?? 'aop-manifest.json',
             declaration: runtime.declaration ?? compilerOptions.declaration ?? true,
             declarationMap: compilerOptions.declarationMap ?? true,
             sourceRoot: compilerOptions.sourceRoot,
