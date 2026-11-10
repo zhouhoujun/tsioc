@@ -3303,3 +3303,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 阻塞式选择菜单打开时 `input-field` 保持 `focused`，不再把 textarea blur 到 `<body>`；上下键因此能到达 console 并驱动菜单，而不是回忆输入历史。
   - 菜单打开期间方向键优先给菜单（`handleSelectKey`），可打印字符不再漏进草稿；建议菜单（`/`、`@`）仍保持输入过滤。
   - 回归：html-console 输入面板新增“阻塞菜单箭头优先且保持焦点”断言（旧实现失败）；真实 Chrome/Playwright 验证 `/theme` 下/上移动与 Esc 关闭、`/settings` → Keybinds 子菜单下移。
+- 真实 TUI 系统构建任务（2026-11-10，`npm run chat -- --workspace /home/zhouyou/workspace/sleep-mlt`）：创建 `booking-system`（store/booking/测试），真实 `node --test booking-system/test/*.test.js` 11 passing / 0 failing；审批、写文件、命令、plan/todos、最终回答均正常。
+  - 真实观察：上下文累计 token 增长到 ~283K 后仍能完成，但本轮耗时约 3m；`Update plan completed` 后最终答案缺少 `Worked for` 时长行，已记录为后续 harness/timeline 优化候选。
+  - 已补充 `ctrl+o` 可搜索会话入口（opencode Open session 对齐），`/sessions` 标题保留 filter。
+  - 回归：agent-ui 2012、keymap 68、tsc、build:web、DOM/TUI gate、source-size、diff-check 通过。
