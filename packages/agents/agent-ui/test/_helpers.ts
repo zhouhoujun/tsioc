@@ -103,6 +103,10 @@ export class TestFileAdapter extends FileAdapter {
         await fs.promises.writeFile(target, content, encoding as BufferEncoding);
     }
 
+    async rename(from: string, to: string): Promise<void> {
+        await fs.promises.rename(from, to);
+    }
+
     async mkdir(target: string, options?: { recursive?: boolean }): Promise<void> {
         await fs.promises.mkdir(target, { recursive: options?.recursive ?? false });
     }
