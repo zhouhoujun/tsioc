@@ -4,6 +4,9 @@ import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from '@tsdi/activities';
 import * as globby from 'globby';
 import * as esbuild from 'esbuild';
+import * as ts from 'typescript';
+import { transpileAot } from './AotTransform';
+import { createAotEsbuildPlugin } from './AotEsbuildPlugin';
 
 export interface DiagnosticInfo {
     file: string;
@@ -88,6 +91,14 @@ export class EsbuildBuildActivity extends Activity {
     @Attribute()
     outputStyle?: OutputStyle;
 
+    /** Apply AOT decorator precompilation before esbuild emits JavaScript. */
+    @Attribute()
+    aot = false;
+
+    /** Lower decorators to precompiled metadata registrations. */
+    @Attribute()
+    designMetadata = true;
+
     async execute(context: ActivityContext): Promise<ActivityResult> {
         const startTime = Date.now();
 
@@ -170,7 +181,8 @@ export class EsbuildBuildActivity extends Activity {
             outdir: outDir,
             outExtension: { '.js': '.mjs' },
             metafile: true,
-            write: true
+            write: true,
+            plugins: this.aot ? [this.createAotPlugin()] : undefined
         };
 
         // For fesm (flattened), output as package name.mjs
@@ -239,22 +251,42 @@ export class EsbuildBuildActivity extends Activity {
 
     private async compileFile(sourceFile: { fileName: string; filePath: string; content: string; mtime: number }): Promise<BuildOutput> {
         const startTime = Date.now();
-        const outFile = path.join(this.outDir, sourceFile.fileName.replace(/\.ts$/, '.js'));
+        const outFile = this.outputPath(sourceFile.filePath);
+        fs.mkdirSync(path.dirname(outFile), { recursive: true });
 
         try {
-            const result = await esbuild.build({
-                entryPoints: [sourceFile.filePath],
-                outfile: outFile,
-                bundle: false,
-                format: this.format,
-                platform: this.platform,
-                target: this.target,
-                sourcemap: this.sourcemap,
-                minify: this.minify,
-                external: this.external,
-                define: this.define,
-                write: true
-            });
+            const result = await esbuild.build(this.aot
+                ? {
+                    stdin: {
+                        contents: this.aotContents(sourceFile.filePath, sourceFile.content),
+                        loader: 'js',
+                        resolveDir: path.dirname(sourceFile.filePath),
+                        sourcefile: sourceFile.filePath
+                    },
+                    outfile: outFile,
+                    bundle: false,
+                    format: this.format,
+                    platform: this.platform,
+                    target: this.target,
+                    sourcemap: this.sourcemap,
+                    minify: this.minify,
+                    external: this.external,
+                    define: this.define,
+                    write: true
+                }
+                : {
+                    entryPoints: [sourceFile.filePath],
+                    outfile: outFile,
+                    bundle: false,
+                    format: this.format,
+                    platform: this.platform,
+                    target: this.target,
+                    sourcemap: this.sourcemap,
+                    minify: this.minify,
+                    external: this.external,
+                    define: this.define,
+                    write: true
+                });
 
             const errors: DiagnosticInfo[] = result.errors.map((e: esbuild.Message) => ({
                 file: e.location?.file || sourceFile.filePath,
@@ -318,7 +350,8 @@ export class EsbuildBuildActivity extends Activity {
                 external: this.external,
                 define: this.define,
                 metafile: true,
-                write: true
+                write: true,
+                plugins: this.aot ? [this.createAotPlugin()] : undefined
             });
 
             const errors: DiagnosticInfo[] = result.errors.map((e: esbuild.Message) => ({
@@ -362,6 +395,35 @@ export class EsbuildBuildActivity extends Activity {
                 duration: Date.now() - startTime
             };
         }
+    }
+
+    private outputPath(filePath: string): string {
+        const relative = path.relative(process.cwd(), filePath).replace(/\\/g, '/');
+        // `src/**` is the package entry tree: emit it at the outDir root so
+        // `src/index.ts` -> `index.js`. Extra source roots (for example
+        // `wechat/**` in agent-channels) keep their directory structure.
+        const emitted = relative.startsWith('src/') ? relative.slice('src/'.length) : relative;
+        return path.join(this.outDir, emitted.replace(/\.tsx?$/, '.js'));
+    }
+
+    private aotModuleKind(): ts.ModuleKind {
+        return this.format === 'cjs' ? ts.ModuleKind.CommonJS : ts.ModuleKind.ESNext;
+    }
+
+    private aotContents(filePath: string, source: string): string {
+        return transpileAot(filePath, source, {
+            target: this.target,
+            module: this.aotModuleKind(),
+            designMetadata: this.designMetadata
+        });
+    }
+
+    private createAotPlugin(): esbuild.Plugin {
+        return createAotEsbuildPlugin({
+            target: this.target,
+            module: this.aotModuleKind(),
+            designMetadata: this.designMetadata
+        });
     }
 
     private async getPackageName(): Promise<string> {

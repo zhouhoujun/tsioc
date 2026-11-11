@@ -2,7 +2,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as zlib from 'zlib';
 import { execSync } from 'child_process';
-import * as ts from 'typescript';
 import { build, Plugin } from 'esbuild';
 
 /**
@@ -29,59 +28,22 @@ const SOURCE_MAP = process.env.SOURCE_MAP === '1';
 const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 640_000);
 const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 170_000);
 
-async function compileAop(): Promise<number> {
-    const { AopCompileActivity } = await import('@tsdi/compiler');
-    const activity = new AopCompileActivity();
-    const cwd = process.cwd();
-    process.chdir(PACKAGE_DIR);
-    try {
-        activity.src = 'src/**/*.ts';
-        activity.outDir = DESIGNER_DIR;
-        activity.outFile = 'aop-manifest.json';
-        activity.strict = true;
-        const result = await activity.execute({});
-        if (!result.success) {
-            throw result.error || new Error('AOP compilation failed');
-        }
-        return result.data?.aspects?.length || 0;
-    } finally {
-        process.chdir(cwd);
-    }
-}
-
 async function compile(): Promise<void> {
     fs.rmSync(TSC_OUT, { recursive: true, force: true });
-    const configPath = path.join(DESIGNER_DIR, 'tsconfig.app.json');
-    const configFile = ts.readConfigFile(configPath, ts.sys.readFile);
-    if (configFile.error) {
-        throw new Error(ts.flattenDiagnosticMessageText(configFile.error.messageText, '\n'));
-    }
-    const parsed = ts.parseJsonConfigFileContent(configFile.config, ts.sys, path.dirname(configPath));
-    const program = ts.createProgram(parsed.fileNames, {
-        ...parsed.options,
-        outDir: TSC_OUT,
-        declaration: false,
-        sourceMap: false,
-        noEmit: false,
-        noEmitOnError: false,
-        rootDir: parsed.options.rootDir || ROOT
+    const { emitAotProject } = await import('@tsdi/compiler');
+    const result = emitAotProject({
+        configPath: path.join(DESIGNER_DIR, 'tsconfig.app.json'),
+        emitAll: true,
+        compilerOptions: {
+            outDir: TSC_OUT,
+            declaration: false,
+            sourceMap: false,
+            noEmit: false,
+            noEmitOnError: false
+        },
+        throwOnError: true
     });
-    const { createDecoratorPrecompileTransformer } = await import(
-        '../../compiler/src/activities/DecoratorPrecompileTransformer'
-    );
-    // Precompile every framework/app decorator into one metadata call per class
-    // and lower AOP decorators into precompiled aspect registration.
-    const emitResult = program.emit(undefined, undefined, undefined, false, {
-        before: [createDecoratorPrecompileTransformer({ typeChecker: program.getTypeChecker() })]
-    });
-    const diagnostics = [
-        ...ts.getPreEmitDiagnostics(program),
-        ...emitResult.diagnostics
-    ].filter(diagnostic => diagnostic.category === ts.DiagnosticCategory.Error);
-    if (emitResult.emitSkipped || diagnostics.length) {
-        const host = { getCanonicalFileName: (file: string) => file, getCurrentDirectory: () => PACKAGE_DIR, getNewLine: () => '\n' };
-        throw new Error(ts.formatDiagnosticsWithColorAndContext(diagnostics, host as any));
-    }
+    console.log(`AOT precompiled ${result.outputFiles.length} module(s) via emitAotProject`);
     if (!fs.existsSync(BUNDLE_ENTRY)) {
         throw new Error(`TypeScript output missing designer entry: ${BUNDLE_ENTRY}`);
     }
@@ -216,9 +178,6 @@ function reportSizes(): void {
 async function main(): Promise<void> {
     fs.rmSync(path.join(DESIGNER_DIR, 'chunks'), { recursive: true, force: true });
     fs.rmSync(path.join(DESIGNER_DIR, 'main.js'), { force: true });
-
-    const aspectCount = await compileAop();
-    console.log(`designer AOP aspects compiled: ${aspectCount}`);
 
     await compile();
 

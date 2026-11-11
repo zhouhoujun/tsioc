@@ -3337,10 +3337,18 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 回归：metrics 46 passing（含 useMetrics 集成）、http 36 passing、health 18 passing；metrics `tsc --noUnusedLocals` 无命中。
 - 微服务 AOP 预编译支持审计（2026-11-10）：
   - 审计范围：`packages/microservices/*` 共 23 个包，全部使用同一 `taskfile.ts -> CompilerModule` 编译路径；微服务源码当前没有 `@Aspect` / `@Before` 等 AOP 切面（AOP 主要由 security/repository/logger/activities 使用）。
-  - 发现缺陷：`CompilerActivity.aop` 默认 true，但 `TsConfigReader.mergeWithRuntime` 未把 `aop`/`aopManifest` 写入 `MergedCompilerOptions`，导致 `CompilerDirectives.ifAop` 永远为 false，`AopCompileActivity` 在默认模板中始终被跳过，`aop-manifest.json` 不会生成。
+  - 发现缺陷：`CompilerActivity.aop` 默认 true，但 `TsConfigReader.mergeWithRuntime` 未把 `aop`/`aopManifest` 写入 `MergedCompilerOptions`，导致 `CompilerDirectives.ifAop` 永远为 false，`AopCompileActivity` 在默认模板中始终被跳过，`aot-manifest.json` 不会生成。
   - 修复：合并 runtime 的 `aop`/`aopManifest`；默认模板的 `aop-compile` 传递 `outFile`；`AopCompileActivity` 对空 `outFile` 回退 `aop-manifest.json`。
   - 结论：修复后微服务统一编译路径支持 AOP 预编译清单生成（`aop-manifest.json`）。`createDecoratorPrecompileTransformer` 仍是显式 API，未自动接入 esbuild/declaration 构建链，因此“装饰器/AOP 代码预编译转换”不是所有微服务 taskfile 自动启用；如需该转换需在自定义构建中传入 transformer。
   - 新增回归：`compiler/test/compiler-aop-options.spec.ts`（aop 选项透传、模板执行/跳过、manifest 输出）；compiler 106 passing；compiler tsc、diff-check 通过。
+- AOT 预编译统一接入（2026-11-10，取代上文“微服务 AOP 预编译支持审计”的结论）：
+  - AOT 命名统一：`AotTransformer` / `createAotTransformer`（旧 `DecoratorPrecompileTransformer` 仅保留 deprecated 别名）、`AotAspectCompileActivity` / `compileAotAspectManifest`；compiler 内不再保留 `aop` 命名或别名，AOT 清单固定为 `aot-manifest.json`，选项统一为 `aot`/`aotManifest`。
+  - 新增通用 AOT 入口：`emitAotProject`（tsconfig/rootNames + program.emit，支持声明、sourcemap、`emitAll` 浏览器整图输出）、`transpileAot`（单文件）、`createAotEsbuildPlugin`（esbuild 插件）、`AotCompileActivity`（编译器模板节点）。`createAotTransformer` 为统一名称，`createDecoratorPrecompileTransformer` 保留为 deprecated 别名；AOT 默认包含 `@Aspect`/`@Before` 等 AOP 修饰器 lowering。ioc 的预编译 kind 直接复用 `DecoratorType`/`Decors`，记录仍通过 `toDefine`/`ClassRef.storage` 进入既有 def 模型。
+  - 编译链：`runCompiler` 不再启动 activity workflow，而是直接 `emitAotProject` + 独立 `compileAopManifest`（`Workflow.run(CompilerModule)` 只 bootstrap、不会编译；`aot:false` 才惰性回退 `CompilerActivity`）；`aot` 默认 true，并贯穿 `RuntimeEnvironment`/`MergedCompilerOptions`/模板/esbuild 路径。默认模板在 AOT 时走 `AotCompileActivity`（一次 program emit 产出 JS + d.ts），不再生成 Annotation 的 `.ts` 副本；`aot:false` 保留原 esbuild+declaration 路径。
+  - 子项目：`packages/**/taskfile.ts` 全部迁移到 `runCompiler`；agent/agent-ui/channels/cli/gateway/providers/ssh/tools、components/*、microservices/* 等构建均输出 AOT 代码，无 `__decorate` 调用与装饰器语法残留。
+  - 浏览器项目：`activities/designer/build.ts`、`agents/agent-ui/build-web.ts`、desktop/vscode 统一复用共享 AOT（`emitAotProject`/`createAotEsbuildPlugin`）；web console 站点（`agent-ui/build-web.ts`）走共享 AOT：主图 1376 个模块、web-entry 353 个模块，worker 同样基于 AOT 输出；包默认 minify，产物由 10,381,948 降至约 5,102,140 字节；designer 构建通过（AOT 346 个模块，initial JS 582.6 KiB / gzip 149.9 KiB）。
+  - 体积示例（ioc，43 个 JS）：AOT 186,871 字节 vs 旧 esbuild 201,777 字节（约 -7.4%）。
+  - 验证：compiler 112 passing；ioc/core/common/annotations/aop/activities/components/logger/security/repository/platform-browser/platform-server/typeorm-adapter/i18n/cli 与 agent 全套、23 个 microservices 包均构建成功；`git diff --check` 通过。
 
 ## 2026-11-10 真实模拟：sleep-ml 空工作区系统构建 + 6 处真实差距（TUI / provider / harness）
 - 运行方式：`cd packages/agents/agent-cli && npm run chat -- chat --root /tmp/opencode/sim-root --workspace /home/zhouyou/workspace/sleep-ml`。使用独立 root/DB（遵守 §8），只从生产 root 复制 `settings.json`；真实 DeepSeek 模型驱动真实 TUI、工具与文件系统。

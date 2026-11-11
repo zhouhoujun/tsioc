@@ -123,13 +123,31 @@ export class CompilerTemplateBuilder {
         );
     }
 
-    addAopCompile(directive?: ConditionalDirective): this {
+    addAotAspectCompile(directive?: ConditionalDirective): this {
         return this.addActivity(
-            require('./activities/AopCompileActivity').AopCompileActivity,
+            require('./activities/AotAspectCompileActivity').AotAspectCompileActivity,
             {
                 src: '{{options.src}}',
                 outDir: '{{options.outDir}}',
-                outFile: '{{options.aopManifest}}',
+                outFile: '{{options.aotManifest}}',
+                exclude: '{{options.exclude}}'
+            },
+            directive
+        );
+    }
+
+    addAotCompile(directive?: ConditionalDirective): this {
+        return this.addActivity(
+            require('./activities/AotCompileActivity').AotCompileActivity,
+            {
+                src: '{{options.src}}',
+                outDir: '{{options.outDir}}',
+                target: '{{options.target}}',
+                format: '{{options.format}}',
+                platform: '{{options.platform}}',
+                declaration: '{{options.declaration}}',
+                sourcemap: '{{options.sourcemap}}',
+                tsconfig: '{{options.tsconfig}}',
                 exclude: '{{options.exclude}}'
             },
             directive
@@ -156,6 +174,7 @@ export class CompilerTemplateBuilder {
                 bundle: '{{options.bundle}}',
                 minify: '{{options.minify}}',
                 sourcemap: '{{options.sourcemap}}',
+                aot: '{{options.aot}}',
                 exclude: '{{options.exclude}}'
             },
             directive
@@ -220,7 +239,9 @@ export const CompilerDirectives = {
     ifESM: (ctx: CompilerTemplateContext) => ctx.options.format === 'esm',
     ifCJS: (ctx: CompilerTemplateContext) => ctx.options.format === 'cjs',
     ifHasComponents: (ctx: CompilerTemplateContext) => (ctx.files?.length ?? 0) > 0,
-    ifAop: (ctx: CompilerTemplateContext) => ctx.options.aop === true
+    ifAot: (ctx: CompilerTemplateContext) => ctx.options.aot === true,
+    ifNoAot: (ctx: CompilerTemplateContext) => ctx.options.aot !== true,
+    ifNoAotDeclaration: (ctx: CompilerTemplateContext) => ctx.options.aot !== true && ctx.options.declaration === true
 };
 
 export function createDefaultCompilerTemplate(name: string = 'Default Compiler'): CompilerTemplate {
@@ -229,10 +250,11 @@ export function createDefaultCompilerTemplate(name: string = 'Default Compiler')
         .description('Default compilation workflow with conditional steps')
         .addSourceFiles()
         .addComponentParse({ if: CompilerDirectives.ifHasComponents })
-        .addAopCompile({ if: CompilerDirectives.ifAop })
-        .addAnnotationCompile()
-        .addEsbuildBuild()
-        .addDeclarationGenerate({ if: CompilerDirectives.ifDeclaration })
+        .addAotAspectCompile({ if: CompilerDirectives.ifAot })
+        .addAotCompile({ if: CompilerDirectives.ifAot })
+        .addAnnotationCompile({ if: CompilerDirectives.ifNoAot })
+        .addEsbuildBuild({ if: CompilerDirectives.ifNoAot })
+        .addDeclarationGenerate({ if: CompilerDirectives.ifNoAotDeclaration })
         .build();
 }
 
@@ -243,8 +265,8 @@ export function createProductionCompilerTemplate(): CompilerTemplate {
         .runtime({ mode: 'production', minify: true, bundle: true })
         .addSourceFiles()
         .addComponentParse({ if: CompilerDirectives.ifHasComponents })
-        .addAopCompile({ if: CompilerDirectives.ifAop })
-        .addAnnotationCompile()
+        .addAotAspectCompile({ if: CompilerDirectives.ifAot })
+        .addAnnotationCompile({ if: CompilerDirectives.ifNoAot })
         .addEsbuildBuild({ if: CompilerDirectives.ifBundle })
         .addDeclarationGenerate({ if: CompilerDirectives.ifDeclaration })
         .build();
@@ -257,9 +279,10 @@ export function createDevelopmentCompilerTemplate(): CompilerTemplate {
         .runtime({ mode: 'development', sourcemap: true })
         .addSourceFiles()
         .addComponentParse({ if: CompilerDirectives.ifHasComponents })
-        .addAopCompile({ if: CompilerDirectives.ifAop })
-        .addAnnotationCompile()
-        .addEsbuildBuild()
-        .addDeclarationGenerate({ if: CompilerDirectives.ifDeclaration })
+        .addAotAspectCompile({ if: CompilerDirectives.ifAot })
+        .addAotCompile({ if: CompilerDirectives.ifAot })
+        .addAnnotationCompile({ if: CompilerDirectives.ifNoAot })
+        .addEsbuildBuild({ if: CompilerDirectives.ifNoAot })
+        .addDeclarationGenerate({ if: CompilerDirectives.ifNoAotDeclaration })
         .build();
 }

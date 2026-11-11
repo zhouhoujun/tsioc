@@ -20,8 +20,10 @@ export interface RuntimeEnvironment {
     minify?: boolean;
     sourcemap?: boolean;
     declaration?: boolean;
-    aop?: boolean;
-    aopManifest?: string;
+    aot?: boolean;
+    aotManifest?: string;
+    src?: string;
+    outDir?: string;
 }
 
 export interface MergedCompilerOptions {
@@ -33,8 +35,8 @@ export interface MergedCompilerOptions {
     bundle: boolean;
     minify: boolean;
     sourcemap: boolean;
-    aop: boolean;
-    aopManifest: string;
+    aot: boolean;
+    aotManifest: string;
     declaration: boolean;
     declarationMap: boolean;
     sourceRoot?: string;
@@ -173,8 +175,8 @@ export class TsConfigReader {
         );
 
         const platform = runtime.platform || 'node';
-        const src = this.getSrcPattern(config.include);
-        const outDir = compilerOptions.outDir || 'lib';
+        const src = runtime.src || this.getSrcPattern(config.include);
+        const outDir = runtime.outDir || compilerOptions.outDir || 'lib';
 
         return {
             src,
@@ -185,8 +187,8 @@ export class TsConfigReader {
             bundle: runtime.bundle ?? false,
             minify: runtime.minify ?? false,
             sourcemap: runtime.sourcemap ?? compilerOptions.sourceMap ?? true,
-            aop: runtime.aop ?? true,
-            aopManifest: runtime.aopManifest ?? 'aop-manifest.json',
+            aot: runtime.aot ?? true,
+            aotManifest: runtime.aotManifest ?? 'aot-manifest.json',
             declaration: runtime.declaration ?? compilerOptions.declaration ?? true,
             declarationMap: compilerOptions.declarationMap ?? true,
             sourceRoot: compilerOptions.sourceRoot,

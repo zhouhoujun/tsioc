@@ -1,6 +1,14 @@
-import { Workflow } from '@tsdi/activities';
-import { CompilerActivity, CompilerModule } from './src';
+import { runCompiler } from './src';
 
 if (process.cwd() === __dirname) {
-    Workflow.run(CompilerActivity);
+    runCompiler({
+        src: 'src/**/*.ts',
+        outDir: '../../dist/compiler',
+        target: 'es2020',
+        format: 'cjs',
+        platform: 'node',
+        declaration: true,
+        sourcemap: true,
+        aot: true
+    });
 }

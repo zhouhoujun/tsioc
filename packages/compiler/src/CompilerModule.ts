@@ -8,7 +8,8 @@ import {
     DeclarationGenerateActivity,
     ComponentParseActivity,
     MetadataGenerateActivity,
-    AopCompileActivity
+    AotAspectCompileActivity,
+    AotCompileActivity
 } from './activities';
 
 @Module({
@@ -23,7 +24,8 @@ import {
         DeclarationGenerateActivity,
         ComponentParseActivity,
         MetadataGenerateActivity,
-        AopCompileActivity
+        AotAspectCompileActivity,
+        AotCompileActivity
     ],
     exports: [
         CompilerActivity,
@@ -31,7 +33,8 @@ import {
         EsbuildBuildActivity,
         DeclarationGenerateActivity,
         ComponentParseActivity,
-        MetadataGenerateActivity
+        MetadataGenerateActivity,
+        AotCompileActivity
     ]
 })
 export class CompilerModule {}

@@ -1,7 +1,7 @@
 import { Type, isString, lang, Injectable, OnDestroy, Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Workflow, WorkflowModule, SequenceActivity, ParallelActivity } from '@tsdi/activities';
-import { CompilerModule, CompilerOptions } from '@tsdi/compiler';
+import { CompilerModule, CompilerOptions, runCompiler } from '@tsdi/compiler';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as globby from 'globby';
@@ -143,7 +143,7 @@ export class BuildRunner implements OnDestroy {
             bundle: false
         };
         
-        await Workflow.run(CompilerModule, options);
+        await runCompiler(options);
     }
     
     private async deploy(): Promise<void> {

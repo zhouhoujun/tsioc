@@ -108,17 +108,18 @@ const result = await activity.execute({});
 | `experimentalDecorators` | `boolean` | `true` | Enable experimental decorators |
 | `emitDecoratorMetadata` | `boolean` | `true` | Emit decorator metadata |
 
-## Decorator and AOP precompilation
+## AOT decorator precompilation
 
-`createDecoratorPrecompileTransformer` moves decorator bookkeeping from runtime
-startup into the build:
+AOT is enabled by default for every compiler build (`aot: true`). Decorators
+are collected and lowered at build time instead of running the TypeScript
+`__decorate` chain for every class/member at startup:
 
 ```typescript
 import * as ts from 'typescript';
-import { createDecoratorPrecompileTransformer } from '@tsdi/compiler';
+import { createAotTransformer } from '@tsdi/compiler';
 
 const program = ts.createProgram(fileNames, compilerOptions);
-const transformer = createDecoratorPrecompileTransformer({
+const transformer = createAotTransformer({
     typeChecker: program.getTypeChecker()
 });
 
@@ -126,6 +127,11 @@ program.emit(undefined, undefined, undefined, false, {
     before: [transformer]
 });
 ```
+
+Package taskfiles use `runCompiler({ ... })`, which applies the same transformer
+through esbuild. Browser bundles (`agent-ui/build-web.ts`, the designer bundle,
+desktop and VS Code builds) use `createAotEsbuildPlugin` / the transformer in
+their TypeScript emit, so the shipped code is precompiled as well.
 
 The emitted module:
 
@@ -137,9 +143,25 @@ The emitted module:
 - lowers `@Aspect`, `@Before`, `@Around`, `@AfterReturning`,
   `@AfterThrowing`, `@After`, `@Pointcut` and `@Advice` into
   `registerPrecompiledAspect(...)` calls. `AopProvider` then registers those
-  aspects through the normal advisor path without evaluating AOP decorator
+  aspects through the normal advisor path without evaluating aspect decorator
   factories. Aspects that do not belong to the application graph (for example
   an imported library aspect whose module was not registered) are ignored.
+
+`createAotTransformer` lives in `activities/AotTransformer.ts`;
+`createDecoratorPrecompileTransformer` / `DecoratorPrecompileTransformer.ts`
+remain as deprecated aliases.
+
+AOT records use the same `DecoratorType` / `Decors` definitions as the IoC
+runtime (`@tsdi/ioc` `metadata/define.ts`). `applyPrecompiledDecorators` still
+runs the recorded decorators through `toDefine` / `ClassRef.storage`, so the
+generated code participates in the existing `def` model (class/member/parameter
+defs, design metadata and dispatch handlers) instead of introducing a parallel
+metadata format.
+
+Package builds do not need the activity workflow: `runCompiler({ ... })` creates
+a TypeScript program, calls `emitAotProject` and (optionally) the standalone AOT
+aspect manifest pass (`aotAspects`, `aotManifest`). `CompilerActivity` remains available for callers that explicitly
+want the activity/template pipeline.
 
 At runtime `@tsdi/ioc` resolves precompiled class-name references through
 `registerPrecompiledType` / `getPrecompiledType`, which are populated by

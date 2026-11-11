@@ -1,8 +1,7 @@
-import { Workflow } from '@tsdi/activities';
-import { CompilerModule } from '@tsdi/compiler';
+import { runCompiler as runCompilerActivity } from '@tsdi/compiler';
 
 if (process.cwd() === __dirname) {
-    Workflow.run(CompilerModule, {
+    runCompilerActivity({
         baseURL: __dirname,
         src: 'src/**/*.ts',
         outDir: '../../dist/agent-gateway',

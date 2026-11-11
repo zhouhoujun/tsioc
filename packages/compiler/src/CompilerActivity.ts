@@ -8,7 +8,7 @@ import { CompilerTemplate, CompilerTemplateResult } from './CompilerTemplate';
 import { CompilerTemplateExecutor } from './CompilerTemplateExecutor';
 
 export interface CompilerOptions {
-    src?: string;
+    src?: string | string[];
     outDir?: string;
     target?: string;
     format?: 'cjs' | 'esm' | 'iife';
@@ -21,8 +21,9 @@ export interface CompilerOptions {
     flatModuleOutFile?: string;
     inlineStyles?: boolean;
     inlineTemplate?: boolean;
-    aop?: boolean;
-    aopManifest?: string;
+    /** AOT decorator precompilation (default true). */
+    aot?: boolean;
+    aotManifest?: string;
     outputStyle?: OutputStyle;
     tsconfig?: string;
     useTsconfig?: boolean;
@@ -44,7 +45,7 @@ export interface CompileResult {
         <sequence>
             <source-files [src]="src" (done)="onFiles($event)"></source-files>
             <component-parse [src]="src" (done)="onParsed($event)"></component-parse>
-            <aop-compile v-if="aop" [src]="src" [outDir]="outDir" [outFile]="aopManifest"></aop-compile>
+            <aot-aspect-compile v-if="aot" [src]="src" [outDir]="outDir" [outFile]="aotManifest"></aot-aspect-compile>
             <annotation-compile [src]="src" [outDir]="outDir"></annotation-compile>
             <esbuild-build [src]="src" [outDir]="outDir" [outputStyle]="outputStyle" [target]="target"></esbuild-build>
             <declaration-generate [src]="src" [outDir]="outDir"></declaration-generate>
@@ -54,7 +55,7 @@ export interface CompileResult {
 export class CompilerActivity extends SequenceActivity {
 
     @Attribute()
-    src = 'src/**/*.ts';
+    src: string | string[] = 'src/**/*.ts';
 
     @Attribute()
     outDir = 'lib';
@@ -77,12 +78,12 @@ export class CompilerActivity extends SequenceActivity {
     @Attribute()
     sourcemap = true;
 
-    /** Emit the AOP aspect/advice manifest during compilation. */
+    /** Lower decorators to precompiled metadata during compilation. */
     @Attribute()
-    aop = true;
+    aot = true;
 
     @Attribute()
-    aopManifest = 'aop-manifest.json';
+    aotManifest = 'aot-manifest.json';
 
     @Attribute()
     declaration = true;
@@ -139,8 +140,10 @@ export class CompilerActivity extends SequenceActivity {
             declaration: this.declaration,
             target: this.target,
             module: this.format,
-            aop: this.aop,
-            aopManifest: this.aopManifest
+            src: Array.isArray(this.src) ? `{${this.src.join(',')}}` : this.src,
+            outDir: this.outDir,
+            aot: this.aot,
+            aotManifest: this.aotManifest
         };
 
         const template = this.template || this.createDefaultTemplate();
@@ -209,6 +212,8 @@ export class CompilerActivity extends SequenceActivity {
         this.bundle = merged.bundle;
         this.minify = merged.minify;
         this.sourcemap = merged.sourcemap;
+        this.aot = merged.aot;
+        this.aotManifest = merged.aotManifest;
         this.declaration = merged.declaration;
         this.exclude = merged.exclude;
     }

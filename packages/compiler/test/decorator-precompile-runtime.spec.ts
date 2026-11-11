@@ -2,11 +2,11 @@ import expect = require('expect');
 import * as ts from 'typescript';
 import * as ioc from '@tsdi/ioc';
 import * as aop from '@tsdi/aop';
-import { createDecoratorPrecompileTransformer } from '../src/activities/DecoratorPrecompileTransformer';
+import { createAotTransformer } from '../src/activities/AotTransformer';
 
 function compileRuntime(source: string): any {
     const file = ts.createSourceFile('precompiled-fixture.ts', source, ts.ScriptTarget.ES2020, true);
-    const result = ts.transform(file, [createDecoratorPrecompileTransformer({ designMetadata: true })]);
+    const result = ts.transform(file, [createAotTransformer({ designMetadata: true })]);
     const printed = ts.createPrinter().printFile(result.transformed[0] as ts.SourceFile);
     result.dispose();
     const code = ts.transpileModule(printed, {

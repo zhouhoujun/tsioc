@@ -1,10 +1,10 @@
 import expect = require('expect');
 import * as ts from 'typescript';
-import { createDecoratorPrecompileTransformer } from '../src/activities/DecoratorPrecompileTransformer';
+import { createAotTransformer } from '../src/activities/AotTransformer';
 
 function transform(source: string): string {
     const file = ts.createSourceFile('fixture.ts', source, ts.ScriptTarget.ES2020, true);
-    const result = ts.transform(file, [createDecoratorPrecompileTransformer()]);
+    const result = ts.transform(file, [createAotTransformer()]);
     const printed = ts.createPrinter().printFile(result.transformed[0]);
     result.dispose();
     return printed;
@@ -24,7 +24,7 @@ class Service {
         expect(output).not.toContain('@Injectable');
         expect(output).not.toContain('@Autowired');
         expect(output).not.toContain('@Inject');
-        expect(output).toContain('__tsdi_applyDecorators');
+        expect(output).toContain('__aotDeco(');
         // Compact tuples: [decorator, kindIndex, propertyKey?, parameterIndex?].
         expect(output).toContain('[Injectable(), 0]');
         expect(output).toContain('Autowired(), 1, "value"');
@@ -85,8 +85,8 @@ import { NonePointcut } from '@tsdi/aop';
 class ReadOnly {}
 `);
         expect(output).not.toContain('@NonePointcut');
-        expect(output).toContain('__tsdi_noPointcut(ReadOnly)');
-        expect(output).toContain('registerPrecompiledNoPointcut as __tsdi_noPointcut');
+        expect(output).toContain('__aotNoPointcut(ReadOnly)');
+        expect(output).toContain('registerPrecompiledNoPointcut as __aotNoPointcut');
     });
 
     it('lowers AOP decorators to registerPrecompiledAspect', () => {
@@ -100,7 +100,7 @@ class LogAspect {
 `);
         expect(output).not.toContain('@Aspect');
         expect(output).not.toContain('@Before');
-        expect(output).toContain('__tsdi_registerAspect');
+        expect(output).toContain('__aotAspect');
         expect(output).toContain('adviceName: "Before"');
         expect(output).toContain('execution(*.run(..))');
         expect(output).toContain('propertyKey: "before"');

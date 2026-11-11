@@ -1,4 +1,5 @@
 import { AbstractType } from '../types';
+import { DecoratorType, Decors } from './define';
 
 /**
  * Small global index used by precompiled metadata. Build-time metadata stores
@@ -26,7 +27,7 @@ export function clearPrecompiledTypes(): void {
 }
 
 
-export type PrecompiledDecoratorKind = 'class' | 'property' | 'method' | 'parameter';
+export type PrecompiledDecoratorKind = DecoratorType;
 
 export interface PrecompiledDecoratorRecord {
     /** Evaluated decorator function (the value the decorator expression returns). */
@@ -56,7 +57,7 @@ export type CompactPrecompiledDecoratorRecord = [
     parameterIndex?: number
 ];
 
-const COMPACT_KINDS: PrecompiledDecoratorKind[] = ['class', 'property', 'method', 'parameter'];
+const COMPACT_KINDS: PrecompiledDecoratorKind[] = [Decors.CLASS, Decors.property, Decors.method, Decors.parameter];
 const PRECOMPILED_STATIC = 4;
 
 /**

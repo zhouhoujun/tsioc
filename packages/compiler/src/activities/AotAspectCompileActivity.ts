@@ -5,7 +5,7 @@ import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from '@tsdi/activities';
 import * as globby from 'globby';
 
-export type AopAdviceType =
+export type AotAdviceType =
     | 'Before'
     | 'After'
     | 'Around'
@@ -13,34 +13,34 @@ export type AopAdviceType =
     | 'AfterThrowing'
     | 'Advice';
 
-export interface AopAdviceInfo {
+export interface AotAdviceInfo {
     name: string;
-    type: AopAdviceType;
+    type: AotAdviceType;
     pointcut: string;
     joinPoint: boolean;
     line: number;
 }
 
-export interface AopAspectInfo {
+export interface AotAspectInfo {
     file: string;
     className: string;
     options: string;
     pointcuts: Array<{ name: string; pointcut: string; line: number }>;
-    advices: AopAdviceInfo[];
+    advices: AotAdviceInfo[];
 }
 
-export interface AopCompileDiagnostic {
+export interface AotAspectDiagnostic {
     file: string;
     line: number;
     message: string;
 }
 
-export interface AopCompileOptions {
+export interface AotAspectCompileOptions {
     outFile?: string;
     strict?: boolean;
 }
 
-const ADVICE_DECORATORS: AopAdviceType[] = [
+const ADVICE_DECORATORS: AotAdviceType[] = [
     'Before',
     'After',
     'Around',
@@ -50,24 +50,24 @@ const ADVICE_DECORATORS: AopAdviceType[] = [
 ];
 
 /**
- * Compile-time AOP metadata pass.
+ * Compile-time AOT aspect metadata pass.
  *
  * Scans source files for `@Aspect` classes and their pointcuts/advices, emits a
- * compact `aop-manifest.json` and validates advice declarations. Runtime advice
+ * compact `aot-manifest.json` and validates advice declarations. Runtime advice
  * registration still uses the decorators; this pass gives builds a stable,
  * inspectable aspect graph and catches broken pointcut declarations early.
  */
-@Directive({ selector: 'aop-compile' })
-export class AopCompileActivity extends Activity {
+@Directive({ selector: 'aot-aspect-compile' })
+export class AotAspectCompileActivity extends Activity {
 
     @Attribute()
-    src = 'src/**/*.ts';
+    src: string | string[] = 'src/**/*.ts';
 
     @Attribute()
     outDir = 'lib';
 
     @Attribute()
-    outFile = 'aop-manifest.json';
+    outFile = 'aot-manifest.json';
 
     @Attribute()
     strict = true;
@@ -78,10 +78,10 @@ export class AopCompileActivity extends Activity {
     async execute(_context: ActivityContext): Promise<ActivityResult> {
         const startTime = Date.now();
         try {
-            const patterns = [this.src, ...this.exclude.map(item => `!${item}`)];
+            const patterns = [...(Array.isArray(this.src) ? this.src : [this.src]), ...this.exclude.map(item => `!${item}`)];
             const files = await globby(patterns, { cwd: process.cwd() });
-            const aspects: AopAspectInfo[] = [];
-            const errors: AopCompileDiagnostic[] = [];
+            const aspects: AotAspectInfo[] = [];
+            const errors: AotAspectDiagnostic[] = [];
             for (const file of files) {
                 const content = fs.readFileSync(file, 'utf-8');
                 this.compileFile(file, content, aspects, errors);
@@ -93,8 +93,15 @@ export class AopCompileActivity extends Activity {
             };
             const outDir = path.isAbsolute(this.outDir) ? this.outDir : path.resolve(process.cwd(), this.outDir);
             fs.mkdirSync(outDir, { recursive: true });
-            const manifestFile = path.join(outDir, this.outFile || 'aop-manifest.json');
+            const manifestFile = path.join(outDir, this.outFile || 'aot-manifest.json');
             fs.writeFileSync(manifestFile, JSON.stringify(manifest, null, 2), 'utf-8');
+            // Remove pre-rename artifacts so mixed builds do not leave stale manifests.
+            for (const legacy of ['aop-manifest.json', 'aot-aspect-manifest.json']) {
+                const legacyManifest = path.join(outDir, legacy);
+                if (manifestFile !== legacyManifest && fs.existsSync(legacyManifest)) {
+                    fs.rmSync(legacyManifest, { force: true });
+                }
+            }
             const success = !this.strict || errors.length === 0;
             return {
                 success,
@@ -104,7 +111,7 @@ export class AopCompileActivity extends Activity {
                     errors,
                     duration: Date.now() - startTime
                 },
-                error: success ? undefined : new Error(`${errors.length} AOP compile error(s)`)
+                error: success ? undefined : new Error(`${errors.length} AOT aspect compile error(s)`)
             };
         } catch (error) {
             return {
@@ -117,8 +124,8 @@ export class AopCompileActivity extends Activity {
     protected compileFile(
         file: string,
         content: string,
-        aspects: AopAspectInfo[],
-        errors: AopCompileDiagnostic[]
+        aspects: AotAspectInfo[],
+        errors: AotAspectDiagnostic[]
     ): void {
         const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true);
         sourceFile.forEachChild(node => {
@@ -129,7 +136,7 @@ export class AopCompileActivity extends Activity {
             if (!aspectDecorator) {
                 return;
             }
-            const aspect: AopAspectInfo = {
+            const aspect: AotAspectInfo = {
                 file,
                 className: node.name.text,
                 options: this.decoratorArgument(aspectDecorator),
@@ -230,4 +237,27 @@ export class AopCompileActivity extends Activity {
     protected lineOf(sourceFile: ts.SourceFile, node: ts.Node): number {
         return sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
     }
+}
+
+
+/**
+ * Standalone AOT aspect manifest pass. Build scripts that are not driven by the
+ * activity workflow can call this directly.
+ */
+export function compileAotAspectManifest(options: {
+    src: string | string[];
+    outDir: string;
+    outFile?: string;
+    strict?: boolean;
+    exclude?: string[];
+}): Promise<ActivityResult> {
+    const activity = new AotAspectCompileActivity();
+    activity.src = options.src;
+    activity.outDir = options.outDir;
+    activity.outFile = options.outFile || 'aot-manifest.json';
+    activity.strict = options.strict !== false;
+    if (options.exclude) {
+        activity.exclude = options.exclude;
+    }
+    return activity.execute({} as ActivityContext);
 }

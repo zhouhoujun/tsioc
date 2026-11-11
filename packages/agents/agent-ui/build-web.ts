@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
-import { execSync } from 'child_process';
 import * as esbuild from 'esbuild';
+import { emitAotProject } from '../../compiler/src/AotCompiler';
 
 /**
  * Bundles the web console entry (src/web-console.ts) into a single browser
@@ -25,12 +25,31 @@ interface ResolveResult {
     namespace: string;
 }
 
+function emitProject(configPath: string, overrides: Record<string, unknown>, emitAll = false): void {
+    const result = emitAotProject({
+        configPath,
+        emitAll,
+        declaration: false,
+        sourceMap: false,
+        compilerOptions: {
+            emitDecoratorMetadata: false,
+            experimentalDecorators: true,
+            noEmitOnError: false,
+            ...overrides
+        },
+        throwOnError: true
+    });
+    console.log(`web console AOT precompiled ${result.outputFiles.length} module(s) (${path.basename(configPath)})`);
+}
+
 function compileWithTsc(): void {
     fs.rmSync(TSC_OUT, { recursive: true, force: true });
-    execSync(`npx tsc -p . --outDir ${TSC_OUT} --declaration false --sourceMap false`, {
-        cwd: PACKAGE_DIR,
-        stdio: 'pipe'
-    });
+    emitProject(path.join(PACKAGE_DIR, 'tsconfig.json'), {
+        outDir: TSC_OUT,
+        rootDir: path.join(ROOT, 'packages'),
+        declaration: false,
+        sourceMap: false
+    }, true);
     const webEntryJs = path.join(TSC_OUT, 'agents', 'agent', 'src', 'web-entry.js');
     if (!fs.existsSync(webEntryJs)) {
         const webEntryTs = path.join(ROOT, 'packages', 'agents', 'agent', 'src', 'web-entry.ts');
@@ -41,6 +60,7 @@ function compileWithTsc(): void {
             extends: rootTsconfig,
             compilerOptions: {
                 outDir: TSC_OUT,
+                rootDir: path.join(ROOT, 'packages'),
                 declaration: false,
                 sourceMap: false,
                 types: ['node'],
@@ -48,10 +68,7 @@ function compileWithTsc(): void {
             },
             files: [webEntryTs]
         }, null, 2));
-        execSync(`npx tsc -p ${webTsconfig}`, {
-            cwd: PACKAGE_DIR,
-            stdio: 'pipe'
-        });
+        emitProject(webTsconfig, { outDir: TSC_OUT, declaration: false, sourceMap: false }, true);
         if (!fs.existsSync(webEntryJs)) {
             throw new Error(`tsc failed to emit web-entry.js`);
         }
@@ -187,6 +204,8 @@ async function main(): Promise<void> {
         define: { global: 'globalThis' },
         sourcemap: true,
         legalComments: 'none',
+        // Ship a compact browser bundle; pass --dev for readable stack traces.
+        minify: !process.argv.includes('--dev'),
         plugins: [tscOutputAliasPlugin, nodeBuiltinStubPlugin, nodeOnlyThirdPartyStubPlugin],
         nodePaths: [path.join(ROOT, 'node_modules')],
         external: [

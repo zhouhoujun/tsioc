@@ -1,9 +1,8 @@
-import { Workflow } from '@tsdi/activities';
-import { CompilerModule } from '@tsdi/compiler';
+import { runCompiler as runCompilerActivity } from '@tsdi/compiler';
 import { copyBuiltinSkillAssets } from './skills/builtin-skills';
 
 if (process.cwd() === __dirname) {
-    Workflow.run(CompilerModule, {
+    runCompilerActivity({
         baseURL: __dirname,
         src: ['src/**/*.ts', 'files/**/*.ts', 'web/**/*.ts', 'browser/**/*.ts', 'sessions/**/*.ts', 'utility/**/*.ts', 'planning/**/*.ts', 'skills/**/*.ts', 'mcp/**/*.ts', 'memory/**/*.ts', 'http/**/*.ts', 'registry/**/*.ts', 'project/**/*.ts', 'process/**/*.ts', 'media/**/*.ts', 'scheduling/**/*.ts', 'terminal/**/*.ts'],
         outDir: '../../dist/agent-tools',
