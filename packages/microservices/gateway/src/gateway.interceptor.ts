@@ -395,44 +395,60 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
     }
 
     private async forwardMicroservice(route: ResolvedGatewayRoute, request: HttpRequestMessage, traceHeaders: Record<string, string>): Promise<GatewayForwardResult> {
-        const endpoint = await this.resolveMicroserviceEndpoint(route, request);
-        const client = this.resolveClient(route, endpoint);
-        const pattern = route.pattern ?? this.resolveGatewayPattern(route, request);
-        const payload = route.payload ? route.payload(request) : this.buildMicroservicePayload(request, route, traceHeaders);
-        if (endpoint) {
-            this.runtime.beginEndpointRequest(endpoint.id);
-        }
-        try {
-            const response = await lastValueFrom(client.send(pattern as any, {
-                payload,
-                timeout: route.timeout ?? 10_000
-            } as any));
-            const normalized = response && typeof response === 'object' && 'payload' in response
-                ? response.payload
-                : response;
-            return {
-                status: 200,
-                statusText: 'OK',
-                payload: normalized,
-                meta: {
-                    endpoint: endpoint?.address ?? endpoint?.id ?? route.clientName ?? Transport[route.transport ?? Transport.HTTP],
-                    outcome: 'upstream'
-                }
-            };
-        } finally {
+        const retries = Math.max(route.loadBalance?.retries ?? 0, 0);
+        const excluded = new Set<string>();
+        let lastError: any;
+        for (let attempt = 0; attempt <= retries; attempt++) {
+            const endpoint = await this.resolveMicroserviceEndpoint(route, request, excluded);
+            const client = this.resolveClient(route, endpoint);
+            const pattern = route.pattern ?? this.resolveGatewayPattern(route, request);
+            const payload = route.payload ? route.payload(request) : this.buildMicroservicePayload(request, route, traceHeaders);
             if (endpoint) {
-                this.runtime.endEndpointRequest(endpoint.id);
+                excluded.add(endpoint.id);
+                this.runtime.beginEndpointRequest(endpoint.id);
+            }
+            try {
+                const response = await lastValueFrom(client.send(pattern as any, {
+                    payload,
+                    timeout: route.timeout ?? 10_000
+                } as any));
+                const normalized = response && typeof response === 'object' && 'payload' in response
+                    ? response.payload
+                    : response;
+                return {
+                    status: 200,
+                    statusText: 'OK',
+                    payload: normalized,
+                    meta: {
+                        endpoint: endpoint?.address ?? endpoint?.id ?? route.clientName ?? Transport[route.transport ?? Transport.HTTP],
+                        outcome: 'upstream'
+                    }
+                };
+            } catch (error: any) {
+                lastError = error;
+                if (attempt >= retries) {
+                    throw error;
+                }
+            } finally {
+                if (endpoint) {
+                    this.runtime.endEndpointRequest(endpoint.id);
+                }
             }
         }
+        throw lastError ?? Object.assign(new Error(`Service '${route.service}' is unavailable`), {
+            statusCode: 503,
+            statusMessage: 'Service Unavailable'
+        });
     }
 
-    private async resolveMicroserviceEndpoint(route: ResolvedGatewayRoute, request: HttpRequestMessage): Promise<ServiceEndpoint | null> {
+    private async resolveMicroserviceEndpoint(route: ResolvedGatewayRoute, request: HttpRequestMessage, excluded?: Set<string>): Promise<ServiceEndpoint | null> {
         if (!this.discovery && !this.endpointResolver) {
             return null;
         }
         const endpoints = (await this.discoverEndpoints(route.service))
             .filter(endpoint => (endpoint.status ?? 'UP') !== 'DOWN')
-            .filter(endpoint => this.runtime.isEndpointAvailable(endpoint));
+            .filter(endpoint => this.runtime.isEndpointAvailable(endpoint))
+            .filter(endpoint => !excluded?.has(endpoint.id));;
         const candidates = this.filterCanaryEndpoints(route, endpoints);
         const pool = candidates.length > 0 ? candidates : endpoints;
         if (!pool.length) {

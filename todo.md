@@ -3412,3 +3412,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `GatewayOptions.discovery` 支持 `true`（内置 DiscoveryModule providers）或自定义 provider(s)；`useGateway` 与 `GatewayModule.withOptions` 自动装配 EndpointResolver。
   - 新增 `endpoint-resolver.spec.ts`（协议/版本/标签过滤、watch 失效、无 discovery 返回空）；gateway 自动发现装配回归。
   - 回归：discovery 60、gateway 34 passing；两包 tsc --noUnusedLocals 无命中。
+- Gateway 韧性增强（2026-11-11，P1）：
+  - Circuit breaker 支持 half-open：resetTimeout 到期后只放行一个探测请求（halfOpenInFlight），成功关闭、失败立即重新打开；避免半开状态被并发打满。
+  - 非 HTTP 微服务转发接入 `loadBalance.retries`：按 endpoint 排除失败节点并重试，每次按 discovery/负载均衡重新选择 endpoint/client。
+  - 回归：gateway 35 passing（新增 half-open 用例），discovery 60 passing；gateway/discovery tsc --noUnusedLocals 无命中。

@@ -10,6 +10,8 @@ interface CacheEntry {
 interface CircuitState {
     failures: number;
     openedAt?: number;
+    halfOpen?: boolean;
+    halfOpenInFlight?: boolean;
 }
 
 @Injectable()
@@ -80,7 +82,12 @@ export class GatewayRuntime {
         }
         const resetTimeout = options.resetTimeout ?? 30_000;
         if (Date.now() - state.openedAt >= resetTimeout) {
-            this.circuits.set(routeKey, { failures: 0 });
+            if (state.halfOpenInFlight) {
+                return false;
+            }
+            state.halfOpen = true;
+            state.halfOpenInFlight = true;
+            this.circuits.set(routeKey, state);
             return true;
         }
         return false;
@@ -92,15 +99,25 @@ export class GatewayRuntime {
         }
         const threshold = options.failureThreshold ?? 5;
         const current = this.circuits.get(routeKey) ?? { failures: 0 };
+        if (current.halfOpen) {
+            current.failures = threshold;
+            current.openedAt = Date.now();
+            current.halfOpen = false;
+            current.halfOpenInFlight = false;
+            this.circuits.set(routeKey, current);
+            return;
+        }
         current.failures += 1;
         if (current.failures >= threshold) {
             current.openedAt = Date.now();
+            current.halfOpen = false;
+            current.halfOpenInFlight = false;
         }
         this.circuits.set(routeKey, current);
     }
 
     recordSuccess(routeKey: string): void {
-        this.circuits.set(routeKey, { failures: 0 });
+        this.circuits.set(routeKey, { failures: 0, halfOpen: false, halfOpenInFlight: false });
     }
 
     evictEndpoint(endpoint: ServiceEndpoint, durationMs: number): void {

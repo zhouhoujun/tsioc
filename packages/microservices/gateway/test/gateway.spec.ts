@@ -89,6 +89,20 @@ describe('Gateway', () => {
         expect(String(sent.sentPayload.url)).toContain('/users/profile');
     });
 
+    it('supports circuit breaker half-open probing', async () => {
+        const runtime = new GatewayRuntime();
+        const options = { failureThreshold: 1, resetTimeout: 5 };
+        runtime.recordFailure('route', options);
+        expect(runtime.canPassCircuit('route', options)).toBe(false);
+
+        await new Promise(resolve => setTimeout(resolve, 10));
+        expect(runtime.canPassCircuit('route', options)).toBe(true);
+        expect(runtime.canPassCircuit('route', options)).toBe(false);
+
+        runtime.recordSuccess('route');
+        expect(runtime.canPassCircuit('route', options)).toBe(true);
+    });
+
     it('wires built-in discovery providers when discovery is enabled', () => {
         const feature = GatewayModule.withOptions({ routes: [], discovery: true });
         expect(feature.providers?.some((provider: any) => provider === InMemoryServiceDiscovery)).toBe(true);
