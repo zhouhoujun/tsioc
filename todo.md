@@ -3504,3 +3504,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 支持 `--port/--host/--prefix/--ui-root/--no-ui/--routes` 及对应环境变量；默认 `http://127.0.0.1:4318/admin/`。
   - `startGatewayAdminServer()` 可编程启动；嵌入真实 gateway 仍使用 `GatewayAdminModule` + `GatewayAdminController`。
   - 新增 standalone server 测试：state API、静态 UI、`--no-ui` 三种路径；admin 14 passing；编译产物 `main.js`/`server.js` 生成。
+- 管理台浏览器启动修复（2026-11-11）：
+  - 浏览器打不开的根因是 `build:web` 用 CommonJS emit 做 AOT，AOT 注入的 `__aotDeco` 只生成调用未生成 import，浏览器报 `ReferenceError: __aotDeco is not defined`。
+  - 新增 `tsconfig.web.json`（module ESNext + files: web/main.ts），`build-web` 改为使用该配置；产物改为 `main.js` + code-split chunks。
+  - 用 jsdom 实际加载构建产物验证：`.ga-shell` 渲染、状态 Ready、规则画布 4 节点、palette 38 项、无运行时错误。
+  - 独立服务根路径 `/` 现在 302 到 `/admin/`；index.html 增加脚本错误提示。
+  - admin 15 passing。

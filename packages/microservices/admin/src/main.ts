@@ -110,6 +110,7 @@ async function main(): Promise<void> {
     console.log(`Gateway admin API: ${base}/api/gateway-admin/state`);
     if (options.uiRoot !== false) {
         console.log(`Gateway admin UI:  ${base}${options.prefix}/`);
+        console.log(`Open in browser:   ${base}/`);
     }
 }
 

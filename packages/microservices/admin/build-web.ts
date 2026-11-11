@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as zlib from 'zlib';
 import { build, Plugin } from 'esbuild';
+import * as ts from 'typescript';
 
 /**
  * Build the visual microservice admin browser bundle.
@@ -23,11 +24,16 @@ async function compile(): Promise<void> {
     fs.rmSync(TSC_OUT, { recursive: true, force: true });
     const { emitAotProject } = await import('@tsdi/compiler');
     const result = emitAotProject({
-        configPath: path.join(PACKAGE_DIR, 'tsconfig.json'),
+        configPath: path.join(PACKAGE_DIR, 'tsconfig.web.json'),
         rootDir: ROOT,
         emitAll: true,
         compilerOptions: {
             outDir: TSC_OUT,
+            // The AOT transformer injects `applyPrecompiledDecorators` as an
+            // ESM import. CommonJS emit leaves the `__aotDeco` call unresolved
+            // in the browser bundle, so emit ES modules for the web build.
+            module: ts.ModuleKind.ESNext,
+            moduleResolution: ts.ModuleResolutionKind.NodeJs,
             declaration: false,
             sourceMap: false,
             noEmit: false,

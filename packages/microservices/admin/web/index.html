@@ -76,6 +76,23 @@
     <div id="boot-status">Starting microservice admin…</div>
     <noscript>This console requires JavaScript.</noscript>
     <div id="gateway-admin-app"></div>
+    <script>
+        (function () {
+            function fail(message) {
+                var status = document.getElementById('boot-status');
+                if (status) {
+                    status.textContent = '启动失败：' + message;
+                }
+            }
+            window.addEventListener('error', function (event) {
+                fail(event.message || 'script error');
+            });
+            window.addEventListener('unhandledrejection', function (event) {
+                var reason = event.reason;
+                fail(reason && (reason.message || reason) || 'unhandled rejection');
+            });
+        })();
+    </script>
     <script type="module" src="./main.js"></script>
 </body>
 </html>

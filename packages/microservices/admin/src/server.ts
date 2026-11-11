@@ -3,7 +3,7 @@ import * as path from 'node:path';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Module, Type } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
-import { provideService, useJson, useRouter } from '@tsdi/service';
+import { Controller, Get, RedirectResult, provideService, useJson, useRouter } from '@tsdi/service';
 import { useHttpTransport } from '@tsdi/http-microservice';
 import { GatewayRouteOptions, useGateway } from '@tsdi/gateway';
 import { InMemoryWorkflowDefinitionStore } from '@tsdi/activities';
@@ -27,6 +27,18 @@ export interface GatewayAdminServerOptions {
 export const DEFAULT_GATEWAY_ADMIN_PORT = 4318;
 export const DEFAULT_GATEWAY_ADMIN_HOST = '127.0.0.1';
 export const DEFAULT_GATEWAY_ADMIN_PREFIX = '/admin';
+
+function createRootRedirectController(prefix: string): Type<any> {
+    const location = prefix.endsWith('/') ? prefix : `${prefix}/`;
+    @Controller('/')
+    class GatewayAdminRootController {
+        @Get('/')
+        index() {
+            return new RedirectResult(location);
+        }
+    }
+    return GatewayAdminRootController;
+}
 
 /**
  * Resolve the built browser bundle directory.
@@ -75,10 +87,14 @@ export function createGatewayAdminServerModule(options: GatewayAdminServerOption
         listenOpts: { host, port },
         asDefault: true
     }));
+    const controllers: Type<any>[] = [GatewayAdminController];
+    if (uiRoot) {
+        controllers.push(createRootRedirectController(prefix));
+    }
 
     @Module({
         imports: [LoggerModule],
-        declarations: [GatewayAdminController],
+        declarations: controllers,
         providers: [
             { provide: GATEWAY_RULES_STORE, useClass: InMemoryWorkflowDefinitionStore },
             provideService(...features)

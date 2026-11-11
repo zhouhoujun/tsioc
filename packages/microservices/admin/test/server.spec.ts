@@ -52,6 +52,12 @@ describe('gateway admin standalone server', () => {
         expect(html).toContain('main.js');
     });
 
+    it('redirects the server root to the admin UI', async () => {
+        const response = await fetch(`${base}/`, { redirect: 'manual' });
+        expect(response.status).toBe(302);
+        expect(response.headers.get('location')).toBe('/admin/');
+    });
+
     it('serves the admin API without the UI when --no-ui is used', async () => {
         const port = await freePort();
         const apiOnly = await startGatewayAdminServer({
