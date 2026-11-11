@@ -3,7 +3,7 @@ import { runCompiler as runCompilerActivity } from '@tsdi/compiler';
 if (process.cwd() === __dirname) {
     runCompilerActivity({
         baseURL: __dirname,
-        src: 'src/**/*.ts',
+        src: ['src/**/*.ts', 'visual/**/*.ts'],
         outDir: '../../dist/activities',
         options: {
             target: 'es2020',

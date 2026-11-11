@@ -769,11 +769,110 @@ export interface GatewayHttpPoolOptions {
     bodyTimeout?: number;
 }
 
+/**
+ * A single condition in a visual gateway rule.
+ *
+ * Conditions are evaluated against the normalized inbound request and must
+ * all match (logical AND) for the rule action to run.
+ */
+export interface GatewayRuleConditionOptions {
+    /**
+     * request field to inspect.
+     */
+    field: 'path' | 'method' | 'host' | 'header' | 'query';
+    /**
+     * header/query parameter name. Required for `header`/`query`.
+     */
+    name?: string;
+    /**
+     * comparison operator. Default `equals`.
+     */
+    operator?: 'equals' | 'not-equals' | 'prefix' | 'not-prefix' | 'exists' | 'not-exists';
+    /**
+     * comparison value.
+     */
+    value?: string;
+}
+
+/**
+ * Action executed when all conditions of a gateway rule match.
+ */
+export interface GatewayRuleActionOptions {
+    /**
+     * route the request downstream or reject it at the gateway.
+     */
+    type: 'route' | 'deny';
+    /**
+     * inbound path used for prefix stripping/forwarding. Defaults to the
+     * first path condition of the rule, then `/`.
+     */
+    path?: string;
+    /**
+     * target service name in discovery.
+     */
+    service?: string;
+    transport?: Transport;
+    clientName?: string;
+    targetPath?: string;
+    pattern?: Pattern;
+    targetUrl?: string;
+    stripPrefix?: boolean;
+    headers?: Record<string, string>;
+    responseHeaders?: Record<string, string>;
+    timeout?: number;
+    rateLimit?: ApiRateLimitOptions | false;
+    bulkhead?: GatewayBulkheadOptions | false;
+    circuitBreaker?: GatewayCircuitBreakerOptions | false;
+    cache?: GatewayCacheOptions | false;
+    rewrite?: GatewayRewriteOptions;
+    accessControl?: GatewayAccessControlOptions;
+    auth?: HttpAuthOptions | false;
+    apiKey?: GatewayApiKeyOptions | false;
+    signature?: GatewaySignatureOptions | false;
+    authorize?: GatewayAuthorizeOptions | false;
+    mock?: GatewayMockOptions;
+    /**
+     * HTTP status for `deny` actions. Default 403.
+     */
+    status?: number;
+    /**
+     * error message for `deny` actions.
+     */
+    message?: string;
+    /**
+     * response body for `deny` actions. Defaults to `{ statusCode, message }`.
+     */
+    body?: any;
+}
+
+/**
+ * Visual/declarative gateway rule. Rules are evaluated in priority order before
+ * the static/dynamic route table.
+ */
+export interface GatewayRuleOptions {
+    id?: string;
+    name?: string;
+    enabled?: boolean;
+    /**
+     * lower values run first. Default 0.
+     */
+    priority?: number;
+    /**
+     * all conditions must match. An empty/omitted list matches every request.
+     */
+    when?: GatewayRuleConditionOptions[];
+    action: GatewayRuleActionOptions;
+}
+
 export interface GatewayOptions {
     /**
      * gateway route definitions.
      */
     routes: GatewayRouteOptions[];
+    /**
+     * ordered gateway rules evaluated before the route table.
+     */
+    rules?: GatewayRuleOptions[];
     /**
      * global gateway defaults.
      */

@@ -24,7 +24,7 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
             path = path.substring(1);
         }
         if (opts.prefix) {
-            const prefix = path.startsWith('/') ? opts.prefix.substring(1) : opts.prefix;
+            const prefix = opts.prefix.replace(/^\/+/, '');
             if (!path.startsWith(prefix)) return null;
             path = path.slice(prefix.length);
         }
@@ -47,7 +47,7 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
             throw new ForbiddenException();
         }
 
-        const file = await fileAdapter.find(path, opts);
+        const file = await fileAdapter.find(path, opts.prefix ? { ...opts, prefix: undefined } : opts);
         if (!file?.stats) {
             return null;
         }

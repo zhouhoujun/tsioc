@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0f172a" />
+    <link rel="icon" href="data:," />
+    <title>TSDI Microservice Admin</title>
+    <style>
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; }
+        body {
+            background: #0f172a;
+            color: #e2e8f0;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+        }
+        #boot-status { padding: 18px; color: #93c5fd; font-size: 13px; }
+        #gateway-admin-app { flex: 1; min-height: 0; }
+        #gateway-admin-app > gateway-admin { display: block; height: 100%; }
+        .ga-shell { display: flex; flex-direction: column; height: 100%; background: #f8fafc; color: #0f172a; }
+        .ga-header {
+            display: flex; align-items: center; gap: 20px;
+            padding: 12px 18px; background: #111c33; color: #e2e8f0;
+            border-bottom: 1px solid #1e293b;
+        }
+        .ga-header h1 { margin: 0; font-size: 15px; color: #f8fafc; }
+        .ga-header p { margin: 2px 0 0; font-size: 11px; color: #94a3b8; }
+        .ga-header-status { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+        .ga-status { font-size: 11px; color: #93c5fd; }
+        .ga-error { font-size: 11px; color: #fca5a5; max-width: 520px; text-align: right; }
+        .ga-header-actions { display: flex; gap: 6px; }
+        .ga-layout { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(320px, 38%) 1fr; gap: 1px; background: #cbd5e1; }
+        .ga-panel { background: #f8fafc; min-height: 0; display: flex; flex-direction: column; }
+        .ga-panel-head {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            padding: 10px 14px; border-bottom: 1px solid #e2e8f0; background: #ffffff;
+        }
+        .ga-panel-head h2 { margin: 0; font-size: 13px; }
+        .ga-muted { font-size: 11px; color: #64748b; }
+        .ga-actions { display: flex; gap: 6px; }
+        .ga-btn {
+            border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff;
+            color: #334155; font-size: 11px; padding: 5px 10px; cursor: pointer;
+        }
+        .ga-btn:hover { border-color: #60a5fa; color: #1d4ed8; }
+        .ga-btn-primary { background: #2563eb; border-color: #2563eb; color: #ffffff; }
+        .ga-btn-primary:hover { background: #1d4ed8; color: #ffffff; }
+        .ga-route-list { flex: 1; min-height: 0; overflow: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; }
+        .ga-empty { padding: 20px 14px; font-size: 12px; color: #64748b; }
+        .ga-route-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+        .ga-route-card-head { display: flex; align-items: center; gap: 6px; }
+        .ga-input-path { font-weight: 600; }
+        .ga-input {
+            width: 100%; border: 1px solid #cbd5e1; border-radius: 5px;
+            padding: 5px 7px; font-size: 11px; color: #0f172a; background: #ffffff;
+        }
+        .ga-input:focus { outline: none; border-color: #60a5fa; box-shadow: 0 0 0 2px rgba(96,165,250,.2); }
+        .ga-field { display: flex; flex-direction: column; gap: 3px; font-size: 10px; color: #475569; flex: 1; }
+        .ga-field-row { display: flex; gap: 8px; }
+        .ga-check { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #334155; }
+        .ga-icon-btn {
+            border: 1px solid #e2e8f0; border-radius: 5px; background: #ffffff;
+            color: #64748b; cursor: pointer; font-size: 11px; line-height: 1; padding: 5px 7px;
+        }
+        .ga-icon-btn:hover { border-color: #ef4444; color: #dc2626; }
+        .ga-rules-body { flex: 1; min-height: 0; position: relative; }
+        .ga-rules-body > workflow-designer { display: block; position: absolute; inset: 0; }
+        @media (max-width: 900px) {
+            .ga-layout { grid-template-columns: 1fr; grid-template-rows: minmax(240px, 40%) 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div id="boot-status">Starting microservice admin…</div>
+    <noscript>This console requires JavaScript.</noscript>
+    <div id="gateway-admin-app"></div>
+    <script type="module" src="./main.js"></script>
+</body>
+</html>

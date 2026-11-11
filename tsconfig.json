@@ -38,6 +38,12 @@
       ],
       "@tsdi/mcp-microservice/*": [
         "packages/microservices/mcp/*"
+      ],
+      "@tsdi/microservice-admin": [
+        "packages/microservices/admin"
+      ],
+      "@tsdi/microservice-admin/*": [
+        "packages/microservices/admin/*"
       ]
     },
     "lib": [

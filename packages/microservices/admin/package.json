@@ -1,0 +1,53 @@
+{
+  "name": "@tsdi/microservice-admin",
+  "version": "6.0.31",
+  "description": "Visual microservice management console for @tsdi gateway routes and rules, built with @tsdi/components/html and @tsdi/activities.",
+  "scripts": {
+    "build": "ts-node -r tsconfig-paths/register taskfile.ts",
+    "build:web": "ts-node -r tsconfig-paths/register build-web.ts",
+    "test": "ts-node -r tsconfig-paths/register unit.ts",
+    "test:coverage": "NODE_V8_COVERAGE=.nyc_output ts-node -r tsconfig-paths/register unit.ts -c"
+  },
+  "keywords": [
+    "microservice",
+    "gateway",
+    "admin",
+    "visual",
+    "workflow",
+    "tsdi"
+  ],
+  "author": "houjun",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/zhouhoujun/tsioc/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhouhoujun/tsioc.git"
+  },
+  "homepage": "https://github.com/zhouhoujun/tsioc#readme",
+  "dependencies": {
+    "@tsdi/activities": "6.0.31",
+    "@tsdi/common": "6.0.31",
+    "@tsdi/components": "6.0.0-beta7",
+    "@tsdi/components/common": "6.0.0-beta7",
+    "@tsdi/components/html": "6.0.0-beta7",
+    "@tsdi/core": "6.0.31",
+    "@tsdi/gateway": "6.0.31",
+    "@tsdi/ioc": "6.0.31",
+    "@tsdi/logger": "6.0.31",
+    "@tsdi/service": "6.0.31"
+  },
+  "devDependencies": {
+    "@tsdi/compiler": "6.0.31",
+    "@tsdi/unit": "6.0.31",
+    "esbuild": "^0.25.0",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.8.2"
+  },
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  }
+}

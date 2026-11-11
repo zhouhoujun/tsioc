@@ -6,7 +6,7 @@ import { HttpMessageAdapter, HTTP_AUTH_RESULT, HTTP_RESPONSE, HttpRequestMessage
 import { ApiRateLimiter } from '@tsdi/service';
 import { Incoming, RequestContext, RequestHandler, RequestInterceptor, Transport, TransferSide } from '@tsdi/common';
 import { Observable, from, lastValueFrom } from 'rxjs';
-import { GATEWAY_OPTIONS, GatewayAccessControlOptions, GatewayAggregateSource, GatewayCanaryOptions, GatewayCacheOptions, GatewayForwardHeadersOptions, GatewayOptions, GatewayRouteOptions, GatewayRewriteOptions, GatewayWebhookOptions } from './gateway.options';
+import { GATEWAY_OPTIONS, GatewayAccessControlOptions, GatewayAggregateSource, GatewayCanaryOptions, GatewayCacheOptions, GatewayForwardHeadersOptions, GatewayOptions, GatewayRouteOptions, GatewayRewriteOptions, GatewayRuleConditionOptions, GatewayRuleOptions, GatewayWebhookOptions } from './gateway.options';
 import { MetricsCollector } from '@tsdi/metrics';
 import { getClientToken } from '../../client/src/tokens';
 import { AbstractClient } from '../../client/src/AbstractClient';
@@ -150,11 +150,157 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
 
     intercept(input: Incoming, next: RequestHandler<any, any, RequestContext>, context: RequestContext): Observable<any> {
         const request = input as HttpRequestMessage;
+        const rule = this.matchRule(request);
+        if (rule) {
+            if (rule.action.type === 'deny') {
+                return from(this.denyByRule(rule, request, context));
+            }
+            return from(this.forward(this.resolveRoute(this.ruleToRoute(rule)), request, context));
+        }
         const route = this.matchRoute(request);
         if (!route) {
             return next.handle(input, context);
         }
         return from(this.forward(route, request, context));
+    }
+
+    private matchRule(request: HttpRequestMessage): GatewayRuleOptions | null {
+        const indexed = this.runtime.getRules(this.options.rules)
+            .map((rule, index) => ({ rule, index }))
+            .filter(item => item.rule?.enabled !== false)
+            .sort((a, b) => (a.rule.priority ?? 0) - (b.rule.priority ?? 0) || a.index - b.index);
+        for (const item of indexed) {
+            if (this.matchesRule(item.rule, request)) {
+                return item.rule;
+            }
+        }
+        return null;
+    }
+
+    private matchesRule(rule: GatewayRuleOptions, request: HttpRequestMessage): boolean {
+        const conditions = rule.when ?? [];
+        return conditions.every(condition => this.matchesRuleCondition(condition, request));
+    }
+
+    private matchesRuleCondition(condition: GatewayRuleConditionOptions, request: HttpRequestMessage): boolean {
+        const operator = condition.operator ?? 'equals';
+        let actual: string | undefined;
+        switch (condition.field) {
+            case 'path':
+                actual = this.normalizeRequestUrl(request.url ?? '/');
+                break;
+            case 'method':
+                actual = (request.method ?? 'GET').toUpperCase();
+                break;
+            case 'host':
+                actual = this.getRequestHost(request);
+                break;
+            case 'header':
+                actual = condition.name ? this.getHeaderValue(request, condition.name) : undefined;
+                break;
+            case 'query':
+                actual = condition.name ? this.getQueryValue(request.url ?? '/', condition.name) : undefined;
+                break;
+            default:
+                return false;
+        }
+        const expected = condition.value;
+        switch (operator) {
+            case 'exists':
+                return actual !== undefined && actual !== '';
+            case 'not-exists':
+                return actual === undefined || actual === '';
+            case 'prefix':
+                return expected != null && actual != null && actual.startsWith(expected);
+            case 'not-prefix':
+                return expected == null || actual == null || !actual.startsWith(expected);
+            case 'not-equals':
+                return actual !== expected;
+            case 'equals':
+            default:
+                return expected != null && actual === expected;
+        }
+    }
+
+    private getQueryValue(url: string, name: string): string | undefined {
+        const query = url.split('?')[1];
+        if (!query) {
+            return undefined;
+        }
+        for (const part of query.split('&')) {
+            if (!part) {
+                continue;
+            }
+            const [key, value = ''] = part.split('=');
+            if (decodeURIComponent(key) === name) {
+                return decodeURIComponent(value);
+            }
+        }
+        return undefined;
+    }
+
+    private ruleToRoute(rule: GatewayRuleOptions): GatewayRouteOptions {
+        const action = rule.action;
+        const pathCondition = (rule.when ?? []).find(condition => condition.field === 'path'
+            && (condition.operator === 'prefix' || condition.operator === 'equals')
+            && condition.value);
+        return {
+            path: action.path ?? pathCondition?.value ?? '/',
+            service: action.service ?? '',
+            transport: action.transport,
+            clientName: action.clientName,
+            targetPath: action.targetPath,
+            pattern: action.pattern,
+            targetUrl: action.targetUrl,
+            stripPrefix: action.stripPrefix,
+            headers: action.headers,
+            responseHeaders: action.responseHeaders,
+            timeout: action.timeout,
+            rateLimit: action.rateLimit,
+            bulkhead: action.bulkhead,
+            circuitBreaker: action.circuitBreaker,
+            cache: action.cache,
+            rewrite: action.rewrite,
+            accessControl: action.accessControl,
+            auth: action.auth,
+            apiKey: action.apiKey,
+            signature: action.signature,
+            authorize: action.authorize,
+            mock: action.mock,
+            enabled: true
+        };
+    }
+
+    private async denyByRule(rule: GatewayRuleOptions, request: HttpRequestMessage, context: RequestContext): Promise<any> {
+        const startedAt = Date.now();
+        const trace = this.startTrace(request);
+        try {
+            const status = rule.action.status ?? 403;
+            const message = rule.action.message ?? 'Forbidden';
+            const route = this.resolveRoute({
+                path: rule.action.path ?? '/',
+                service: rule.action.service ?? '',
+                responseHeaders: rule.action.responseHeaders,
+                enabled: true
+            });
+            const adapter = context.get(HttpMessageAdapter);
+            const response = context.get(HTTP_RESPONSE);
+            return this.sendResponse(route, request, context, {
+                status,
+                statusText: message,
+                payload: rule.action.body ?? { statusCode: status, message },
+                headers: rule.action.headers,
+                meta: {
+                    outcome: 'rejected',
+                    errorType: status === 401 ? 'unauthorized' : 'forbidden'
+                }
+            }, startedAt, adapter, response);
+        } catch (error) {
+            trace.error = error;
+            throw error;
+        } finally {
+            trace.finish(trace.error);
+        }
     }
 
     private matchRoute(request: HttpRequestMessage): ResolvedGatewayRoute | null {

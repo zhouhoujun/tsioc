@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { GatewayBulkheadOptions, GatewayCircuitBreakerOptions, GatewayMockOptions, GatewayOptions, GatewayRouteOptions, GatewaySensitiveFieldRule } from './gateway.options';
+import { GatewayBulkheadOptions, GatewayCircuitBreakerOptions, GatewayMockOptions, GatewayOptions, GatewayRouteOptions, GatewayRuleOptions, GatewaySensitiveFieldRule } from './gateway.options';
 import { ServiceEndpoint } from '@tsdi/discovery';
 
 interface CacheEntry {
@@ -77,6 +77,13 @@ export class GatewayRuntime {
             return this.dynamicOptions.routes;
         }
         return staticRoutes;
+    }
+
+    getRules(staticRules: GatewayRuleOptions[] = []): GatewayRuleOptions[] {
+        if (Array.isArray(this.dynamicOptions.rules)) {
+            return this.dynamicOptions.rules;
+        }
+        return staticRules;
     }
 
     getOption<K extends keyof GatewayOptions>(key: K, fallback: GatewayOptions[K]): GatewayOptions[K] {

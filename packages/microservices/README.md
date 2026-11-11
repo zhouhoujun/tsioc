@@ -54,6 +54,7 @@
 - 指标：`@tsdi/metrics`
 - Tracing：`@tsdi/tracing`
 - Swagger：`@tsdi/swagger`
+- 可视化管理：`@tsdi/microservice-admin`（activities 流程规则 + components/html UI）
 - Agent MCP 与微服务 MCP 桥接：`@tsdi/agent-tools/mcp` + `@tsdi/mcp-microservice`
 
 ### 近期已完成的通用化
@@ -155,6 +156,7 @@
   - Gateway 请求级 SERVER span（成功 OK / 失败 ERROR + recordError）
   - `gateway_errors_total` 错误计数指标
   - failover 指数退避 + jitter
+  - 可视化规则引擎：`GatewayOptions.rules` 按条件（path/method/host/header/query）在路由表前执行 route/deny 动作
 - 待补充：
   - 更细粒度背压策略
 
@@ -181,7 +183,11 @@
   - 共享 DTO + `@RequestBody` / `@RequestParam` 等参数装饰器
   - `@tsdi/core` pipes 做输入校验/转换
   - Swagger/OpenAPI 作为现有契约输出；gRPC 使用 proto 作为契约源
-- 待增强：从 schema 自动生成 DTO、OpenAPI/proto 双向同步、脚手架自定义 transport 模板
+- 可视化微服务管理：`@tsdi/microservice-admin`（`packages/microservices/admin`）
+  - `@tsdi/activities` 可视化流程配置 gateway rules（gateway-condition / gateway-route / gateway-deny）
+  - `@tsdi/components/html` 管理界面：实时路由表 + 规则画布
+  - `/api/gateway-admin` 读写并即时应用到 `GatewayRuntime`
+- 待增强：从 schema 自动生成 DTO、OpenAPI/proto 双向同步
 
 ---
 
@@ -341,7 +347,40 @@ useGateway({
 
 ---
 
-## 9. 脚手架
+## 9. 可视化管理
+
+`@tsdi/microservice-admin` 把 gateway 路由和规则变成可视化管理面：
+
+- **规则**：用 `@tsdi/activities` 的流程设计器配置
+  `gateway-condition` → `gateway-route` / `gateway-deny`，保存时编译成
+  `GatewayRuleOptions[]` 并即时应用到运行中的 gateway。
+- **UI**：基于 `@tsdi/components/html`，左侧编辑实时路由表，右侧是流程画布。
+- **API**：`/api/gateway-admin/state`、`/routes`、`/rules[/:id]`。
+
+```ts
+import { GatewayAdminController, GatewayAdminModule, useGatewayAdminUi } from '@tsdi/microservice-admin';
+
+@Module({
+    imports: [LoggerModule, GatewayAdminModule],
+    declarations: [GatewayAdminController],
+    providers: [
+        provideService(
+            useRouter(),
+            useJson(),
+            useGateway({ routes: [...] }),
+            useGatewayAdminUi({ root: path.join(__dirname, 'admin-ui'), prefix: '/admin' }),
+            useHttpTransport({ listenOpts: { port: 3000 }, asDefault: true })
+        )
+    ]
+})
+export class AppModule {}
+```
+
+构建 UI：`cd packages/microservices/admin && npm run build:web`。详细说明见该包 README。
+
+---
+
+## 10. 脚手架
 
 ```bash
 # HTTP 微服务
@@ -359,7 +398,7 @@ npm run build
 node ../../dist/orders/main.js
 ```
 
-## 10. Tracing
+## 11. Tracing
 
 ```ts
 import { TracingModule } from '@tsdi/tracing';
@@ -379,7 +418,7 @@ export class AppModule {}
 
 `withExporter` 可传 exporter class、exporter 实例，或一次传多个。未注册 exporter 时 span 仅保留在内存批次中。
 
-## 11. 选型建议
+## 12. 选型建议
 
 | 目标 | 建议 |
 |---|---|

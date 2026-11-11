@@ -3482,3 +3482,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - flush timer 支持 `flushIntervalMs`（0 关闭）并 `unref()`，不阻塞进程退出。
   - 新增 `tracing-di.spec.ts` 覆盖 options 注入、class/实例/多 exporter、timer 不阻塞；tracing 36 passing。
 - 微服务脚手架补充（2026-11-11）：`scaffold-microservice.mjs --kind transport` 生成自定义传输适配器骨架（options/request/server/client/server.factory/client.factory/module），使用通用 transport feature 工厂；生成的 service/gateway 模板改用 `@tsdi/http-microservice` 导入；三种模板 tsc 通过，transport 模板 AOT 构建通过。
+- 微服务可视化管理（2026-11-11）：
+  - Gateway 新增 `GatewayOptions.rules` 规则引擎：条件（path/method/host/header/query，equals/not-equals/prefix/not-prefix/exists/not-exists）在路由表前执行 route/deny，支持 priority、超时/限流/缓存/熔断/隔离舱等动作覆盖；gateway 45 passing。
+  - 新增 `@tsdi/microservice-admin`（packages/microservices/admin）：用 `@tsdi/activities` 流程设计器配置 rules，提供 gateway-condition / gateway-route / gateway-deny 节点与 workflow → GatewayRuleOptions 编译器。
+  - 基于 `@tsdi/components/html` 的管理 UI：实时路由表编辑 + 规则画布；`/api/gateway-admin` 的 state/routes/rules API 即时写入 `GatewayRuntime`。
+  - 新增 jsdom UI 回归、controller/compiler 测试；admin 11 passing；`npm run build` 与 `npm run build:web`（885.7 KiB / gzip 222.3 KiB）通过。
+- 静态资源前缀修复（2026-11-11）：`ContentSendAdapterImpl` 先剥离 URL prefix 后又把带 prefix 的 options 传给 `FileAdapter.find`，导致 `useStatics({ prefix })` 全部 404；现在 prefix 归一化并只剥离一次，admin UI 的 `/admin/index.html`、`/admin/main.js` 返回 200。http 36 passing。

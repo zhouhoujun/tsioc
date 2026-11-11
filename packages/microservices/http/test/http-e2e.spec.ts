@@ -154,6 +154,19 @@ class HttpStaticModule { }
 class HttpUseStaticsModule { }
 
 @Module({
+    imports: [LoggerModule],
+    declarations: [HttpTestController],
+    providers: [provideService(
+        useRouter(),
+        useStatics({ root: path.resolve(__dirname, 'fixtures'), prefix: '/assets' }),
+        useHttpTransport({
+            listenOpts: { port: PORTS.static + 12, host: '127.0.0.1' },
+            asDefault: true
+        }))]
+})
+class HttpUseStaticsPrefixModule { }
+
+@Module({
     baseURL: __dirname,
     imports: [LoggerModule],
     declarations: [HttpTestController],
@@ -564,6 +577,43 @@ describe('HTTP static/media support via useStatics()', () => {
         const response = await request('GET', '/hello.txt');
         expect(response.status).toBe(200);
         expect(response.body.toString('utf8')).toBe('hello static world\n');
+    });
+});
+
+describe('HTTP static/media support via useStatics() with a URL prefix', () => {
+    let ctx: ApplicationContext;
+
+    before(async () => {
+        ctx = await Application.run(HttpUseStaticsPrefixModule);
+    });
+    after(async () => {
+        await ctx.close();
+    });
+
+    function request(targetPath: string): Promise<{ status: number; body: Buffer }> {
+        return new Promise((resolve, reject) => {
+            const req = http.request({
+                host: '127.0.0.1',
+                port: PORTS.static + 12,
+                path: targetPath,
+                method: 'GET'
+            }, res => {
+                const chunks: Uint8Array[] = [];
+                res.on('data', chunk => chunks.push(Uint8Array.from(Buffer.from(chunk))));
+                res.on('end', () => resolve({ status: res.statusCode ?? 0, body: Buffer.concat(chunks) }));
+            });
+            req.on('error', reject);
+            req.end();
+        });
+    }
+
+    it('serves only files under the configured URL prefix', async () => {
+        const prefixed = await request('/assets/hello.txt');
+        expect(prefixed.status).toBe(200);
+        expect(prefixed.body.toString('utf8')).toBe('hello static world\n');
+
+        const outside = await request('/hello.txt');
+        expect(outside.status).toBe(404);
     });
 });
 

@@ -90,6 +90,134 @@ describe('Gateway', () => {
         expect(String(sent.sentPayload.url)).toContain('/users/profile');
     });
 
+    function createRuleContext() {
+        const sent: any = {};
+        const adapter = {
+            setStatus(code: number, message?: string) {
+                sent.status = code;
+                sent.statusMessage = message;
+                return this;
+            },
+            setHeader(name: string, value: string) {
+                (sent.headers ??= {})[name] = value;
+                return this;
+            },
+            setPayload(payload: any) {
+                sent.payload = payload;
+                return this;
+            },
+            sendResponse(payload: any) {
+                sent.sentPayload = payload;
+            }
+        };
+        const context = createContext(adapter);
+        (context as any).set(require('../../http/src/server').HttpMessageAdapter, adapter);
+        (context as any).set(require('../../http/src/server').HTTP_RESPONSE, sent);
+        return { sent, context };
+    }
+
+    function runInterceptor(interceptor: GatewayInterceptor, request: any, context: any): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            interceptor.intercept(request, { handle: () => of(null) } as any, context).subscribe({
+                next: () => resolve(),
+                error: reject,
+                complete: () => resolve()
+            });
+        });
+    }
+
+    it('rejects requests matched by a visual gateway rule', async () => {
+        const { sent, context } = createRuleContext();
+        const interceptor = new GatewayInterceptor({
+            routes: [],
+            rules: [{
+                id: 'block-admin',
+                when: [{ field: 'path', operator: 'prefix', value: '/admin' }],
+                action: { type: 'deny', status: 401, message: 'Unauthorized' }
+            }]
+        }, null as any, null as any, new GatewayRuntime(), null as any, null as any);
+
+        await runInterceptor(interceptor, {
+            url: '/admin/users',
+            method: 'GET',
+            headers: {},
+            socket: { remoteAddress: '127.0.0.1' }
+        } as any, context);
+
+        expect(sent.status).toBe(401);
+        expect(sent.sentPayload).toEqual({ statusCode: 401, message: 'Unauthorized' });
+    });
+
+    it('routes requests matched by visual rule conditions', async () => {
+        const { sent, context } = createRuleContext();
+        const interceptor = new GatewayInterceptor({
+            routes: [],
+            rules: [{
+                id: 'vip-route',
+                when: [
+                    { field: 'path', operator: 'prefix', value: '/api/users' },
+                    { field: 'method', operator: 'equals', value: 'GET' },
+                    { field: 'header', name: 'x-role', operator: 'equals', value: 'vip' },
+                    { field: 'query', name: 'region', operator: 'equals', value: 'cn' }
+                ],
+                action: {
+                    type: 'route',
+                    service: 'vip-service',
+                    targetUrl: 'http://vip.internal',
+                    stripPrefix: true,
+                    targetPath: '/users'
+                }
+            }]
+        }, null as any, null as any, new GatewayRuntime(), null as any, null as any);
+
+        let fetchedUrl = '';
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = (async (url: any) => {
+            fetchedUrl = String(url);
+            return {
+                status: 200,
+                statusText: 'OK',
+                headers: new Headers({ 'content-type': 'application/json' }),
+                async json() { return { ok: true }; },
+                async text() { return '{"ok":true}'; }
+            };
+        }) as any;
+        try {
+            await runInterceptor(interceptor, {
+                url: '/api/users/profile?region=cn',
+                method: 'GET',
+                headers: { 'x-role': 'vip' },
+                socket: { remoteAddress: '127.0.0.1' }
+            } as any, context);
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+
+        expect(sent.status).toBe(200);
+        expect(fetchedUrl).toBe('http://vip.internal/users/profile');
+    });
+
+    it('evaluates visual gateway rules by priority before the route table', async () => {
+        const { sent, context } = createRuleContext();
+        const interceptor = new GatewayInterceptor({
+            routes: [{ path: '/api', service: 'fallback', targetUrl: 'http://fallback' }],
+            rules: [
+                { when: [{ field: 'path', operator: 'prefix', value: '/api' }], priority: 10, action: { type: 'deny', status: 403, message: 'Later' } },
+                { when: [{ field: 'path', operator: 'prefix', value: '/api' }], priority: 1, action: { type: 'deny', status: 429, message: 'Earlier' } }
+            ]
+        }, null as any, null as any, new GatewayRuntime(), null as any, null as any);
+
+        await runInterceptor(interceptor, {
+            url: '/api/orders',
+            method: 'GET',
+            headers: {},
+            socket: { remoteAddress: '127.0.0.1' }
+        } as any, context);
+
+        expect(sent.status).toBe(429);
+        expect(sent.sentPayload.message).toBe('Earlier');
+    });
+
     it('supports circuit breaker half-open probing', async () => {
         const runtime = new GatewayRuntime();
         const options = { failureThreshold: 1, resetTimeout: 5 };
