@@ -275,6 +275,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         const excluded = new Set<string>();
         let lastError: any;
         let lastResult: GatewayForwardResult | undefined;
+        const routeKey = `${route.service}:${route.path}:${route.transport ?? Transport.HTTP}`;
 
         for (let attempt = 0; attempt < attempts; attempt++) {
             let target: { baseUrl: string; endpoint?: ServiceEndpoint };
@@ -299,17 +300,24 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
                 });
             }
             if (target.endpoint) {
+                if (!this.canPassEndpointCircuit(route, routeKey, target.endpoint)) {
+                    excluded.add(target.endpoint.id);
+                    continue;
+                }
                 excluded.add(target.endpoint.id);
                 this.runtime.beginEndpointRequest(target.endpoint.id);
             }
             try {
                 const result = await this.forwardHttpTarget(route, request, traceHeaders, target);
                 if (attempt < attempts - 1 && this.isRetryableStatus(route, result.status)) {
+                    this.recordEndpointFailure(route, routeKey, target.endpoint);
                     lastResult = result;
                     continue;
                 }
+                this.recordEndpointSuccess(route, routeKey, target.endpoint);
                 return result;
             } catch (error: any) {
+                this.recordEndpointFailure(route, routeKey, target.endpoint);
                 lastError = error;
                 if (attempt >= attempts - 1) {
                     throw error;
@@ -328,6 +336,29 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             statusCode: 503,
             statusMessage: 'Service Unavailable'
         });
+    }
+
+    private canPassEndpointCircuit(route: ResolvedGatewayRoute, routeKey: string, endpoint?: ServiceEndpoint): boolean {
+        if (!endpoint || !this.endpointCircuitEnabled(route)) {
+            return true;
+        }
+        return this.runtime.canPassCircuit(`${routeKey}:${endpoint.id}`, route.circuitBreaker);
+    }
+
+    private recordEndpointSuccess(route: ResolvedGatewayRoute, routeKey: string, endpoint?: ServiceEndpoint): void {
+        if (endpoint && this.endpointCircuitEnabled(route)) {
+            this.runtime.recordSuccess(`${routeKey}:${endpoint.id}`);
+        }
+    }
+
+    private recordEndpointFailure(route: ResolvedGatewayRoute, routeKey: string, endpoint?: ServiceEndpoint): void {
+        if (endpoint && this.endpointCircuitEnabled(route)) {
+            this.runtime.recordFailure(`${routeKey}:${endpoint.id}`, route.circuitBreaker);
+        }
+    }
+
+    private endpointCircuitEnabled(route: ResolvedGatewayRoute): boolean {
+        return !!route.circuitBreaker && route.circuitBreaker.perEndpoint !== false;
     }
 
     private async forwardHttpTarget(
@@ -403,9 +434,14 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
     private async forwardMicroservice(route: ResolvedGatewayRoute, request: HttpRequestMessage, traceHeaders: Record<string, string>): Promise<GatewayForwardResult> {
         const retries = Math.max(route.loadBalance?.retries ?? 0, 0);
         const excluded = new Set<string>();
+        const routeKey = `${route.service}:${route.path}:${route.transport ?? Transport.HTTP}`;
         let lastError: any;
         for (let attempt = 0; attempt <= retries; attempt++) {
             const endpoint = await this.resolveMicroserviceEndpoint(route, request, excluded);
+            if (endpoint && !this.canPassEndpointCircuit(route, routeKey, endpoint)) {
+                excluded.add(endpoint.id);
+                continue;
+            }
             const client = this.resolveClient(route, endpoint);
             const pattern = route.pattern ?? this.resolveGatewayPattern(route, request);
             const payload = route.payload ? route.payload(request) : this.buildMicroservicePayload(request, route, traceHeaders);
@@ -418,6 +454,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
                     payload,
                     timeout: route.timeout ?? 10_000
                 } as any));
+                this.recordEndpointSuccess(route, routeKey, endpoint ?? undefined);
                 const normalized = response && typeof response === 'object' && 'payload' in response
                     ? response.payload
                     : response;
@@ -431,6 +468,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
                     }
                 };
             } catch (error: any) {
+                this.recordEndpointFailure(route, routeKey, endpoint ?? undefined);
                 lastError = error;
                 if (attempt >= retries) {
                     throw error;

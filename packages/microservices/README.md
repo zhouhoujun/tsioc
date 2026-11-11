@@ -147,6 +147,7 @@
   - HTTP failover
   - 非 HTTP failover
   - Circuit Breaker half-open
+  - per-endpoint circuit breaker
   - 限流 / 限次 / 降频
   - Bulkhead 并发隔离 + 有界排队/超时
 - 待补充：

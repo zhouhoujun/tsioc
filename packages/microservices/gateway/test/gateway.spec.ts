@@ -140,7 +140,8 @@ describe('Gateway', () => {
             routes: [{
                 path: '/failover',
                 service: 'failover-service',
-                loadBalance: { strategy: 'round-robin', retries: 1 }
+                loadBalance: { strategy: 'round-robin', retries: 1 },
+                circuitBreaker: { failureThreshold: 1, resetTimeout: 60_000, perEndpoint: true }
             }]
         }, discovery as any, null as any, new GatewayRuntime(), null as any, { get: () => null } as any);
 
@@ -175,13 +176,25 @@ describe('Gateway', () => {
                     complete: () => resolve()
                 });
             });
+
+            expect(calls).toBe(2);
+            expect(sent.status).toBe(200);
+            expect(String(sent.sentPayload.url)).toContain('node-b.internal');
+
+            sent.headers = {};
+            await new Promise<void>((resolve, reject) => {
+                interceptor.intercept(request as any, { handle: () => of(null) } as any, context).subscribe({
+                    next: () => resolve(),
+                    error: reject,
+                    complete: () => resolve()
+                });
+            });
+
+            expect(calls).toBe(3);
+            expect(String(sent.sentPayload.url)).toContain('node-b.internal');
         } finally {
             globalThis.fetch = originalFetch;
         }
-
-        expect(calls).toBe(2);
-        expect(sent.status).toBe(200);
-        expect(String(sent.sentPayload.url)).toContain('node-b.internal');
     });
 
     it('applies route-level rate limit', async () => {

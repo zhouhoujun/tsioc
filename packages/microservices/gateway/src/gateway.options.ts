@@ -339,6 +339,11 @@ export interface GatewayCircuitBreakerOptions {
      */
     resetTimeout?: number;
     /**
+     * track breaker state separately for each discovered endpoint.
+     * Default true when an endpoint is available.
+     */
+    perEndpoint?: boolean;
+    /**
      * fallback response payload.
      */
     fallback?: any | ((request: any, error?: any) => any);
