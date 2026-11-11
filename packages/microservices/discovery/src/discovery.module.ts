@@ -5,6 +5,7 @@ import { LeastConnectionsEndpointSelector, RandomEndpointSelector, RoundRobinEnd
 import { EndpointSelector } from './registry';
 import { ServiceDiscoveryOptions } from './discovery';
 import { DISCOVERY_OPTIONS } from './tokens';
+import { DefaultEndpointResolver, EndpointResolver } from './endpoint-resolver';
 
 export { DISCOVERY_OPTIONS } from './tokens';
 
@@ -18,7 +19,9 @@ export const DISCOVERY_PROVIDERS: Provider[] = [
     RoundRobinEndpointSelector,
     WeightedEndpointSelector,
     LeastConnectionsEndpointSelector,
-    { provide: EndpointSelector, useClass: RoundRobinEndpointSelector }
+    { provide: EndpointSelector, useClass: RoundRobinEndpointSelector },
+    DefaultEndpointResolver,
+    { provide: EndpointResolver, useExisting: DefaultEndpointResolver }
 ];
 
 /**
@@ -28,7 +31,7 @@ export const DISCOVERY_PROVIDERS: Provider[] = [
  */
 @Module({
     providers: DISCOVERY_PROVIDERS,
-    exports: [InMemoryServiceDiscovery, RandomEndpointSelector, RoundRobinEndpointSelector, WeightedEndpointSelector, LeastConnectionsEndpointSelector]
+    exports: [InMemoryServiceDiscovery, RandomEndpointSelector, RoundRobinEndpointSelector, WeightedEndpointSelector, LeastConnectionsEndpointSelector, DefaultEndpointResolver, EndpointResolver]
 })
 export class DiscoveryModule {
     /**

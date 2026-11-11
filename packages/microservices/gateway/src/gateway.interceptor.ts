@@ -1,7 +1,7 @@
 import { Inject, Injectable, Injector, OnDestroy } from '@tsdi/ioc';
 import * as crypto from 'crypto';
 import * as zlib from 'zlib';
-import { ServiceDiscovery, ServiceEndpoint } from '@tsdi/discovery';
+import { ServiceDiscovery, ServiceEndpoint, EndpointResolver } from '@tsdi/discovery';
 import { HttpMessageAdapter, HTTP_AUTH_RESULT, HTTP_RESPONSE, HttpRequestMessage } from '../../http/src/server';
 import { ApiRateLimiter } from '@tsdi/service';
 import { Incoming, RequestContext, RequestHandler, RequestInterceptor, Transport, TransferSide } from '@tsdi/common';
@@ -72,7 +72,8 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         @Inject(GatewayRuntime, { nullable: true }) private runtime: GatewayRuntime = new GatewayRuntime(),
         @Inject(GatewayLifecycle, { nullable: true }) private lifecycle: GatewayLifecycle | null = null,
         @Inject(Tracer, { nullable: true }) tracerOrInjector: Tracer | Injector | null = null,
-        @Inject(Injector, { nullable: true }) injectorArg?: Injector
+        @Inject(Injector, { nullable: true }) injectorArg?: Injector,
+        @Inject(EndpointResolver, { nullable: true }) private endpointResolver: EndpointResolver | null = null
     ) {
         this.tracer = this.isTracer(tracerOrInjector) ? tracerOrInjector : null;
         this.injector = (injectorArg ?? (this.isInjector(tracerOrInjector) ? tracerOrInjector : null) ?? {
@@ -81,6 +82,9 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         this.authService = this.injector.get(HttpAuthService, null) ?? new HttpAuthService();
         this.signatureService = this.injector.get(HmacSignatureService, null) ?? new HmacSignatureService();
         this.logger = this.injector.get(Logger, null) ?? null;
+        if (this.endpointResolver && typeof (this.endpointResolver as any).resolve !== 'function') {
+            this.endpointResolver = null;
+        }
         this.loadBalancer = new GatewayLoadBalancer(this.runtime);
         this.lifecycle?.start();
     }
@@ -423,10 +427,10 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
     }
 
     private async resolveMicroserviceEndpoint(route: ResolvedGatewayRoute, request: HttpRequestMessage): Promise<ServiceEndpoint | null> {
-        if (!this.discovery) {
+        if (!this.discovery && !this.endpointResolver) {
             return null;
         }
-        const endpoints = (await this.discovery.discover(route.service))
+        const endpoints = (await this.discoverEndpoints(route.service))
             .filter(endpoint => (endpoint.status ?? 'UP') !== 'DOWN')
             .filter(endpoint => this.runtime.isEndpointAvailable(endpoint));
         const candidates = this.filterCanaryEndpoints(route, endpoints);
@@ -537,19 +541,29 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         return headers;
     }
 
+    private async discoverEndpoints(service: string): Promise<ServiceEndpoint[]> {
+        if (this.endpointResolver) {
+            return this.endpointResolver.resolve(service);
+        }
+        if (!this.discovery) {
+            return [];
+        }
+        return this.discovery.discover(service);
+    }
+
     private async resolveTarget(route: ResolvedGatewayRoute, request: HttpRequestMessage, excluded?: Set<string>): Promise<{ baseUrl: string; endpoint?: ServiceEndpoint }> {
         if (route.targetUrl) {
             return {
                 baseUrl: route.targetUrl
             };
         }
-        if (!this.discovery) {
+        if (!this.discovery && !this.endpointResolver) {
             throw Object.assign(new Error(`No gateway target url for service '${route.service}'`), {
                 statusCode: 502,
                 statusMessage: 'Bad Gateway'
             });
         }
-        const endpoints = (await this.discovery.discover(route.service))
+        const endpoints = (await this.discoverEndpoints(route.service))
             .filter(endpoint => (endpoint.status ?? 'UP') !== 'DOWN')
             .filter(endpoint => this.runtime.isEndpointAvailable(endpoint))
             .filter(endpoint => !excluded?.has(endpoint.id));

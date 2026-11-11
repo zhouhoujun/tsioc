@@ -3406,3 +3406,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 非 HTTP 微服务路由也接入 discovery + 同一负载均衡器；endpoint 的 `metadata.clientName` 可映射到已注册协议客户端，并在转发期间维护 least-connections 计数。
   - 新增 `test/load-balancer.spec.ts` 与 gateway failover 回归（首端点失败后自动切到 node-b）。
   - 回归：gateway 33 passing；gateway `tsc --noUnusedLocals` 无命中。
+- 微服务服务发现抽象与 Gateway 自动接入（2026-11-11，P0）：
+  - 新增 `EndpointResolver` / `DefaultEndpointResolver`（@tsdi/discovery）：按 protocol/version/tags/metadata/status 过滤 endpoint，带 TTL 缓存、并发合并、registry watch 自动失效；`DiscoveryModule` 默认提供 resolver。
+  - Gateway 改为优先消费 `EndpointResolver`，无法解析时回退 `ServiceDiscovery`；HTTP 与非 HTTP 路由共享解析结果。
+  - `GatewayOptions.discovery` 支持 `true`（内置 DiscoveryModule providers）或自定义 provider(s)；`useGateway` 与 `GatewayModule.withOptions` 自动装配 EndpointResolver。
+  - 新增 `endpoint-resolver.spec.ts`（协议/版本/标签过滤、watch 失效、无 discovery 返回空）；gateway 自动发现装配回归。
+  - 回归：discovery 60、gateway 34 passing；两包 tsc --noUnusedLocals 无命中。

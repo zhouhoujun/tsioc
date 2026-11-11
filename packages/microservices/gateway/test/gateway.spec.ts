@@ -6,7 +6,7 @@ import { createRequestContext, RequestContext, REQUEST, Transport, TransferSide 
 import { HmacSignatureService, JWTService } from '@tsdi/security';
 import { Logger } from '@tsdi/logger';
 import { InMemoryServiceDiscovery } from '../../discovery/src';
-import { ConfigurationManagerGatewayAdapter, GatewayInterceptor, GatewayLifecycle, GatewayRuntime } from '../src';
+import { ConfigurationManagerGatewayAdapter, GatewayInterceptor, GatewayLifecycle, GatewayModule, GatewayRuntime } from '../src';
 import { getClientToken } from '../../client/src/tokens';
 import { DefaultConfigurationManager } from '../../config/src';
 
@@ -87,6 +87,11 @@ describe('Gateway', () => {
         expect(sent.status).toBe(200);
         expect(sent.sentPayload.ok).toBe(true);
         expect(String(sent.sentPayload.url)).toContain('/users/profile');
+    });
+
+    it('wires built-in discovery providers when discovery is enabled', () => {
+        const feature = GatewayModule.withOptions({ routes: [], discovery: true });
+        expect(feature.providers?.some((provider: any) => provider === InMemoryServiceDiscovery)).toBe(true);
     });
 
     it('fails over to the next endpoint for retryable GET requests', async () => {

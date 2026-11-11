@@ -735,6 +735,14 @@ export interface GatewayOptions {
      */
     healthProbe?: GatewayHealthProbeOptions | false;
     /**
+     * Enable service discovery integration.
+     *
+     * - `true`: use built-in `DiscoveryModule` providers (in-memory registry).
+     * - provider(s): register a custom ServiceDiscovery implementation.
+     * - omitted: host application must provide ServiceDiscovery separately.
+     */
+    discovery?: boolean | Provider | Provider[];
+    /**
      * extra providers for gateway runtime.
      */
     providers?: Provider[];

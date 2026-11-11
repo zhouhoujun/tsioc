@@ -4,6 +4,7 @@ import { GatewayOptions, GATEWAY_OPTIONS } from './gateway.options';
 import { GatewayRuntime } from './gateway.runtime';
 import { GatewayLifecycle } from './gateway.lifecycle';
 import { ConfigurationManagerGatewayAdapter, GatewayConfigAdapter, GATEWAY_CONFIG_ADAPTER_OPTIONS } from './gateway.config-adapter';
+import { resolveGatewayDiscoveryProviders } from './provider';
 
 @Module({
     providers: [
@@ -20,6 +21,7 @@ export class GatewayModule {
         return {
             module: GatewayModule,
             providers: [
+                ...resolveGatewayDiscoveryProviders(options.discovery),
                 GatewayRuntime,
                 { provide: GATEWAY_CONFIG_ADAPTER_OPTIONS, useValue: options.configSync },
                 ConfigurationManagerGatewayAdapter,
