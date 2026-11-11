@@ -122,7 +122,7 @@ export function emitAotProject(options: AotProjectOptions = {}): AotProjectResul
     const outputFiles: string[] = [];
     const program = ts.createProgram({ rootNames, options: compilerOptions });
     const transformers: ts.CustomTransformers = {
-        before: [createAotTransformer({ typeChecker: program.getTypeChecker() })]
+        before: [createAotTransformer({ typeChecker: program.getTypeChecker(), moduleKind: compilerOptions.module })]
     };
 
     const emitResult = program.emit(undefined, (fileName, text, writeByteOrderMark, _onError, sourceFiles) => {

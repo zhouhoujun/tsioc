@@ -11,6 +11,12 @@ export interface AotPrecompileOptions {
     designMetadata?: boolean;
     /** Used to emit Object for interfaces/type-only aliases in design metadata. */
     typeChecker?: ts.TypeChecker;
+    /**
+     * Module kind of the current emit. CommonJS emit leaves synthetic import
+     * aliases unresolved, so the generated helper bindings use `require()` for
+     * CJS and real imports for ESM.
+     */
+    moduleKind?: ts.ModuleKind;
 }
 
 /** @deprecated Use {@link AotPrecompileOptions}. */
@@ -119,16 +125,14 @@ function valueTypeReference(name: string): ts.Expression {
         ? ts.factory.createImportDeclaration(
             undefined,
             ts.factory.createImportClause(false, ts.factory.createIdentifier(alias), undefined),
-            ts.factory.createStringLiteral(imported.module),
-            undefined
+            ts.factory.createStringLiteral(imported.module)
         )
         : ts.factory.createImportDeclaration(
             undefined,
             ts.factory.createImportClause(false, undefined, ts.factory.createNamedImports([
                 ts.factory.createImportSpecifier(false, ts.factory.createIdentifier(imported.imported), ts.factory.createIdentifier(alias))
             ])),
-            ts.factory.createStringLiteral(imported.module),
-            undefined
+            ts.factory.createStringLiteral(imported.module)
         );
     context.imports.push(specifier);
     return ts.factory.createIdentifier(alias);
@@ -592,32 +596,38 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
             }
 
             if (usesReflect) {
-                imports.push(factory.createImportDeclaration(undefined, undefined, factory.createStringLiteral('reflect-metadata'), undefined));
+                imports.push(factory.createImportDeclaration(undefined, undefined, factory.createStringLiteral('reflect-metadata')));
             }
-            if (usesIoc) {
+            const addHelperBinding = (local: string, moduleName: string, exported: string): void => {
+                if (options.moduleKind === ts.ModuleKind.CommonJS) {
+                    // `transpileModule`/isolated emit cannot link a synthetic
+                    // import alias to the generated call, so bind the helper
+                    // with a real require in CommonJS output.
+                    imports.push(factory.createVariableStatement(undefined, factory.createVariableDeclarationList([
+                        factory.createVariableDeclaration(local, undefined, undefined,
+                            factory.createPropertyAccessExpression(
+                                factory.createCallExpression(factory.createIdentifier('require'), undefined, [factory.createStringLiteral(moduleName)]),
+                                exported
+                            ))
+                    ], ts.NodeFlags.Const)));
+                    return;
+                }
                 imports.push(factory.createImportDeclaration(
                     undefined,
                     factory.createImportClause(false, undefined, factory.createNamedImports([
-                        factory.createImportSpecifier(false, factory.createIdentifier('applyPrecompiledDecorators'), factory.createIdentifier('__aotDeco'))
+                        factory.createImportSpecifier(false, factory.createIdentifier(exported), factory.createIdentifier(local))
                     ])),
-                    factory.createStringLiteral('@tsdi/ioc'),
-                    undefined
+                    factory.createStringLiteral(moduleName)
                 ));
+            };
+            if (usesIoc) {
+                addHelperBinding('__aotDeco', '@tsdi/ioc', 'applyPrecompiledDecorators');
             }
-            if (usesAspect || usesNoPointcut) {
-                const specifiers: ts.ImportSpecifier[] = [];
-                if (usesAspect) {
-                    specifiers.push(factory.createImportSpecifier(false, factory.createIdentifier('registerPrecompiledAspect'), factory.createIdentifier('__aotAspect')));
-                }
-                if (usesNoPointcut) {
-                    specifiers.push(factory.createImportSpecifier(false, factory.createIdentifier('registerPrecompiledNoPointcut'), factory.createIdentifier('__aotNoPointcut')));
-                }
-                imports.push(factory.createImportDeclaration(
-                    undefined,
-                    factory.createImportClause(false, undefined, factory.createNamedImports(specifiers)),
-                    factory.createStringLiteral('@tsdi/aop'),
-                    undefined
-                ));
+            if (usesAspect) {
+                addHelperBinding('__aotAspect', '@tsdi/aop', 'registerPrecompiledAspect');
+            }
+            if (usesNoPointcut) {
+                addHelperBinding('__aotNoPointcut', '@tsdi/aop', 'registerPrecompiledNoPointcut');
             }
             return factory.updateSourceFile(sourceFile, [...imports, ...statements]);
         };
