@@ -3450,3 +3450,19 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 错误响应增加 `x-gateway-error-type`；access log 增加 errorType；metrics 增加 error_type label（可通过 observability.metrics.includeErrorType 关闭）。
   - bulkhead/circuit 等非上游错误也进入统一日志与指标；fallback 路径保留分类 header。
   - 回归：gateway 38 passing（新增错误分类用例）。
+
+## 2026-11-11 设置写入并发损坏修复（touch 模式实测发现）
+- **现象**：真实 TUI 中快速切换 `Touch mode` 后立即 `/exit`，workspace `.tsdi-agent/settings.json` 末尾出现多余 `}`（`}}`），JSON 无法解析；下次启动 `load()` 捕获异常后回落默认设置，用户的 `modelProfile/lastSessionId` 等偏好有丢失风险。
+- **根因**：`persistSettings` 的 read-modify-write 未串行化；设置开关保存与退出快照保存并发，两者各自 `load` 旧内容再 `writeFile`。Node `writeFile` 对同一路径并发写不同长度时，短写可能留下长写的尾部字节（实测 `}}`）。`AgentConsoleSettingsStore.save` 也没有原子替换。
+- **修复**：
+  1. `AgentConsoleSettingsRuntime.persistSettings` 按 workspace 串行化 read-modify-write（Promise 队列），保证后一次保存读取到前一次的结果，两个 patch 都保留。
+  2. `FileAdapter` 新增可选 `rename?(from,to)`，`NodeFileAdapter` 实现 `fs.rename`；`AgentConsoleSettingsStore.save` 优先写 `<path>.tmp` 再原子 rename，失败时清理临时文件并抛出；不支持 rename 的宿主回退普通写入。
+  3. 真实损坏的 `sleep-ml/.tsdi-agent/settings.json` 已只读核对后修复为合法 JSON（移除多余 `}`，清除本轮 touchMode 测试值），未触碰生产 root。
+- **回归（先红后绿）**：`agent-ui/test/settings-persistence.spec.ts` 两条：
+  - 并发 `persistSettings({touchMode})` + `persistSettings({lastSessionId})`：旧实现 `Expected: 1 / Received: 2`（两次 save 并发），且最终丢失一个 patch；修复后两者合并。
+  - 原子写入：旧实现只有一次 write、无 rename；修复后严格 `write:.tmp` → `rename:.tmp->settings.json`。
+- **验证**：`agent-ui` 2027 passing（含新增 2 条）、`agent-ui` tsc 0、`source-size` OK、`git diff --check` 干净；全量门禁 **27/27 GATE-PASS，GATE_EXIT=0**。
+- Gateway failover 退避策略（2026-11-11，P1）：
+  - `loadBalance.retryBackoffMs` / `retryBackoffMaxMs` / `retryJitter`：retry 使用指数退避 + 抖动，默认 0 保持兼容。
+  - HTTP 与非 HTTP failover 均在重试前等待退避；新增 `resolveRetryBackoff` 纯函数与单测（默认关闭、指数上限、抖动区间）。
+  - 回归：gateway 41 passing。

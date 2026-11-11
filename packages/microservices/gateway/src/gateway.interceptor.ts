@@ -13,6 +13,7 @@ import { AbstractClient } from '../../client/src/AbstractClient';
 import { GatewayRuntime } from './gateway.runtime';
 import { GatewayLifecycle } from './gateway.lifecycle';
 import { GatewayLoadBalancer } from './load-balancer';
+import { resolveRetryBackoff } from './retry-policy';
 import { HttpAuthService, HttpAuthOptions, HmacSignatureService } from '@tsdi/security';
 import { Tracer } from '../../tracing/src/tracer';
 import { Logger } from '@tsdi/logger';
@@ -397,6 +398,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
                 if (attempt < attempts - 1 && this.isRetryableStatus(route, result.status)) {
                     this.recordEndpointFailure(route, routeKey, target.endpoint);
                     lastResult = result;
+                    await this.waitBeforeRetry(route, attempt);
                     continue;
                 }
                 this.recordEndpointSuccess(route, routeKey, target.endpoint);
@@ -407,6 +409,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
                 if (attempt >= attempts - 1) {
                     throw error;
                 }
+                await this.waitBeforeRetry(route, attempt);
             } finally {
                 if (target.endpoint) {
                     this.runtime.endEndpointRequest(target.endpoint.id);
@@ -517,6 +520,13 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         return allowed.includes(status);
     }
 
+    private async waitBeforeRetry(route: ResolvedGatewayRoute, attempt: number): Promise<void> {
+        const delay = resolveRetryBackoff(route.loadBalance, attempt);
+        if (delay > 0) {
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+
     private async forwardMicroservice(route: ResolvedGatewayRoute, request: HttpRequestMessage, traceHeaders: Record<string, string>): Promise<GatewayForwardResult> {
         const retries = Math.max(route.loadBalance?.retries ?? 0, 0);
         const excluded = new Set<string>();
@@ -559,6 +569,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
                 if (attempt >= retries) {
                     throw error;
                 }
+                await this.waitBeforeRetry(route, attempt);
             } finally {
                 if (endpoint) {
                     this.runtime.endEndpointRequest(endpoint.id);

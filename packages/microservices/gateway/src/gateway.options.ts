@@ -169,6 +169,18 @@ export interface GatewayLoadBalanceOptions {
      * HTTP methods eligible for failover. Default GET/HEAD/OPTIONS.
      */
     retryMethods?: string[];
+    /**
+     * base backoff before the first retry in milliseconds. Default 0.
+     */
+    retryBackoffMs?: number;
+    /**
+     * maximum exponential backoff in milliseconds. Default 5000.
+     */
+    retryBackoffMaxMs?: number;
+    /**
+     * add jitter to retry backoff. Default true when backoff is enabled.
+     */
+    retryJitter?: boolean;
 }
 
 export interface GatewayConfigSyncOptions {

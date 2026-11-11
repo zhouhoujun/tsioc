@@ -152,6 +152,7 @@
   - Bulkhead 并发隔离 + 有界排队/超时
   - HTTP 出站连接池（undici Agent，可配置连接数/keep-alive/超时）
   - 统一错误分类（`x-gateway-error-type`、access log、metrics label）
+  - failover 指数退避 + jitter
 - 待补充：
   - 更细粒度背压策略
 
@@ -237,7 +238,10 @@ loadBalance: {
     hashQuery?: string,
     retries?: number,
     retryOn?: number[],
-    retryMethods?: string[]
+    retryMethods?: string[],
+    retryBackoffMs?: number,
+    retryBackoffMaxMs?: number,
+    retryJitter?: boolean
 }
 ```
 
