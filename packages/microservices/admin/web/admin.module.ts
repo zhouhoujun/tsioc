@@ -1,15 +1,18 @@
 import { Module } from '@tsdi/ioc';
-import { WorkflowDesignerModule, WorkflowNodeRegistry } from '@tsdi/activities/visual';
+import { ComponentsModule } from '@tsdi/components';
 import { RouterModule, Routes } from '@tsdi/components/router';
 import { provideHttpClient, withFetch, withInterceptors, withNoXsrfProtection } from '@tsdi/common/http';
 import { GatewayAdminAuthGuard } from './auth.guard';
 import { adminUnauthorizedInterceptor, GatewayAdminHttp } from './http';
-import { registerGatewayRuleNodes } from '../src/rules';
 
 /**
  * Root route table (Angular `AppRoutingModule`). The root component is only a
  * `router-outlet`; protected pages are loaded dynamically from `admin.routes`
  * so the auth guard runs before any page component is created.
+ *
+ * The designer UI stays out of this module on purpose: `GatewayAdminComponent`
+ * declares `WorkflowDesignerModule` itself, so the designer (and the activity
+ * engine behind it) only loads with the lazy page chunk instead of the entry.
  */
 export const GATEWAY_ADMIN_ROOT_ROUTES: Routes = [
     {
@@ -21,17 +24,13 @@ export const GATEWAY_ADMIN_ROOT_ROUTES: Routes = [
 
 @Module({
     imports: [
-        WorkflowDesignerModule,
+        ComponentsModule,
         RouterModule.forRoot(GATEWAY_ADMIN_ROOT_ROUTES)
     ],
     providers: [
         ...provideHttpClient(withFetch(), withNoXsrfProtection(), withInterceptors([adminUnauthorizedInterceptor])),
         GatewayAdminHttp,
-        GatewayAdminAuthGuard,
-        {
-            provide: WorkflowNodeRegistry,
-            useFactory: () => registerGatewayRuleNodes(new WorkflowNodeRegistry())
-        }
+        GatewayAdminAuthGuard
     ]
 })
 export class GatewayAdminAppModule {}

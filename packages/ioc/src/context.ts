@@ -5,6 +5,19 @@ import { Provider } from './providers';
 import { Injector } from './injector';
 import { isArray } from './utils/chk';
 
+/**
+ * Brand identifying `RunContext` values. It lives in this leaf module so
+ * consumers can recognize runtime contexts without importing
+ * `handlers/contexts` (contexts -> injector -> metadata would otherwise form a
+ * circular dependency that breaks bundler evaluation order).
+ */
+export const RUN_CONTEXT: unique symbol = Symbol('RUN_CONTEXT');
+
+/** True when the value is a branded `RunContext`. */
+export function isRunContext(value: unknown): boolean {
+    return !!value && (value as { [RUN_CONTEXT]?: boolean })[RUN_CONTEXT] === true;
+}
+
 
 
 /**

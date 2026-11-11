@@ -1,7 +1,7 @@
 import { AbstractType } from '../types';
 import { Provider } from '../providers';
 import { PropertyMetadata, ParameterMetadata } from './meta';
-import { InvocationOptions, InvokeOptions } from '../context';
+import { InvocationOptions, InvokeOptions, isRunContext } from '../context';
 import { Token, TokenOf } from '../tokens';
 import { getResolver, ResolveInterceptorLike } from '../resolver';
 import { forIn, hasItem, assign, getParentType } from '../utils/lang';
@@ -14,7 +14,7 @@ import { getDef, proxyTag, TypeDef } from './type.def';
 import { getType, isPrimitive } from './type';
 import { registerPrecompiledType } from './precompiled';
 import { ctorName, DecoratorFn, DecoratorType, DecorDefine, Decors, RunableDefine } from './define';
-import { RunContext } from '../handlers/contexts';
+import type { RunContext } from '../handlers/contexts';
 
 
 /**
@@ -193,8 +193,8 @@ export class ClassRef<T = any> {
         let context: RunContext | undefined;
         if (isArray(argsOrContext)) {
             args = argsOrContext;
-        } else if (context instanceof RunContext) {
-            context = argsOrContext;
+        } else if (isRunContext(argsOrContext)) {
+            context = argsOrContext as RunContext;
         }
         const inst: any = instance ?? injector.resolve(type, context);
 

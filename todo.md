@@ -3565,3 +3565,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 通用 outlet/guard 测试统一放到 `packages/components/router/test`：守卫拒绝时不得实例化受保护组件、lazy 父路由守卫、leaf 路由切换替换组件。
   - 移除业务包中的通用路由测试（workflow-admin `guard.spec`、microservice admin `app-shell.spec`），业务包只保留路由/认证策略测试。
   - `RouterOutlet` 初始化不再从未执行守卫的构造快照激活受保护路由；`Router.navigated` 标记首个通过守卫的导航。
+- 修复 admin UI 启动 `Class extends value undefined`（2026-11-11）：
+  - 根因是 `@tsdi/ioc` 的循环依赖（handlers/contexts → injector → metadata/class → handlers/contexts）在 esbuild code splitting 下顺序错误，`IocContext extends DefaultContext` 先于父类执行。
+  - 用 `RUN_CONTEXT` brand + `isRunContext` 断开 `metadata/class` 对 `handlers/contexts` 的运行时依赖；`ClassRef.invoke` 正确识别传入的 RunContext。
+  - admin app module 不再在入口导入 designer（`GatewayAdminComponent` 自带 `WorkflowDesignerModule`），入口只保留 `ComponentsModule + RouterModule`，initial JS 631.6 KiB → 385.0 KiB；`loadComponent` 懒加载 designer 仍正常。

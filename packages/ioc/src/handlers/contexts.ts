@@ -3,7 +3,7 @@ import { getType } from '../metadata/type';
 import { InjectFlags, Token } from '../tokens';
 import { AbstractType, Type } from '../types';
 import { isNil } from '../utils/chk';
-import { Context, ContextToken } from '../context';
+import { Context, ContextToken, RUN_CONTEXT } from '../context';
 
 
 export class DefaultContext extends Context {
@@ -177,6 +177,9 @@ const RUN_FAILED = new ContextToken<(target: AbstractType, propertyKey: string) 
  * 当只需要运行时数据时，避免创建完整的 InvocationContext 实例。
  */
 export class RunContext extends DefaultContext {
+
+    /** Runtime brand; see {@link RUN_CONTEXT}. */
+    readonly [RUN_CONTEXT] = true;
 
     private _injector?: Injector;
 
