@@ -429,6 +429,9 @@ Browser products that only run registry-defined visual nodes can import
 `WorkflowDesignerModule` instead of `WorkflowModule`; it declares the designer
 UI and generic visual runtime without bundling the full server Activity library.
 
+A standalone administration shell (tabs, SQLite storage, plugins and optional
+OAuth2/OIDC login) lives in `packages/workflow-admin` / `@tsdi/workflow-admin`.
+
 Features:
 
 - opened workflows are independent document tabs; `+` creates a blank workflow,
@@ -459,7 +462,7 @@ Features:
   highlighting, workflow-aware completions for `context` / `input` / `variables`
   / configured action names (`Ctrl+Space` or automatically after `.`) and JS
   keyword hints; HTML hosts import `codemirror.css` and `codemirror-hint.css`
-  (the `designer/` shell does this automatically). The editor is lazy-loaded, so
+  (the `@tsdi/workflow-admin` shell does this automatically). The editor is lazy-loaded, so
   it stays out of the initial browser payload;
 - undo/redo, pointer pan, Ctrl+wheel zoom-at-cursor, fit-to-view, auto layout,
   duplicate (`Ctrl+D`), JSON import/export,
@@ -616,7 +619,7 @@ DELETE /api/plugins/:id
 ```
 
 Bundled protocol plugins: `mqtt`, `redis`, `nats`, `coap`. Install them on
-demand (HTTP API or `WORKFLOW_PLUGINS=mqtt,redis npm run designer:serve`) so
+demand (HTTP API or `WORKFLOW_PLUGINS=mqtt,redis npm --prefix packages/workflow-admin start`) so
 their optional client libraries are only loaded when used. Installed
 node manifests are returned to the designer, which adds them to its palette;
 plugin executors run on the server (browser nodes report a clear error when a

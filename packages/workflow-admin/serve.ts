@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { startWorkflowHttpServer } from '../server';
+import { startWorkflowAdminServer } from './src/server';
 
 /**
  * Run the product designer through the framework's HTTP microservice:
@@ -10,7 +10,7 @@ import { startWorkflowHttpServer } from '../server';
  */
 (async () => {
     const port = Number(process.argv[2] || process.env.PORT || 8765);
-    const ctx = await startWorkflowHttpServer({
+    const ctx = await startWorkflowAdminServer({
         port,
         host: '127.0.0.1',
         staticRoot: path.resolve(__dirname)

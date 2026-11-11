@@ -1,0 +1,42 @@
+{
+  "name": "@tsdi/workflow-admin",
+  "version": "6.0.31",
+  "description": "Standalone TSDI workflow administration console with OAuth2/OIDC login",
+  "scripts": {
+    "build": "ts-node -r tsconfig-paths/register build.ts",
+    "start": "npm run build && ts-node -r tsconfig-paths/register serve.ts",
+    "serve": "ts-node -r tsconfig-paths/register serve.ts",
+    "test": "npm run build && node preview-test.js",
+    "test:unit": "ts-node -r tsconfig-paths/register unit.ts"
+  },
+  "keywords": [
+    "tsdi",
+    "workflow",
+    "designer",
+    "admin",
+    "oauth2",
+    "oidc",
+    "authentication"
+  ],
+  "author": "houjun",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@tsdi/activities": "latest",
+    "@tsdi/common": "latest",
+    "@tsdi/components": "latest",
+    "@tsdi/components/html": "latest",
+    "@tsdi/core": "latest",
+    "@tsdi/ioc": "latest",
+    "@tsdi/logger": "latest",
+    "@tsdi/oidc-auth": "latest",
+    "@tsdi/security": "latest",
+    "@tsdi/service": "latest",
+    "@tsdi/typeorm-adapter": "latest",
+    "esbuild": "^0.20.0",
+    "typeorm": "^0.3.20",
+    "typescript": "^5.0.0"
+  },
+  "directories": {
+    "lib": "dist"
+  }
+}

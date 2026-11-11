@@ -4,10 +4,6 @@
   "description": "Type workflow frameworks, base on AOP, Ioc container, via @tsdi",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts",
-    "designer": "ts-node -r tsconfig-paths/register designer/build.ts && ts-node -r tsconfig-paths/register designer/serve.ts",
-    "designer:build": "ts-node -r tsconfig-paths/register designer/build.ts",
-    "designer:serve": "ts-node -r tsconfig-paths/register designer/serve.ts",
-    "designer:test": "npm run designer:build && node designer/preview-test.js",
     "test": "ts-node -r tsconfig-paths/register unit.ts",
     "test:coverage": "NODE_V8_COVERAGE=.nyc_output ts-node -r tsconfig-paths/register unit.ts -c"
   },

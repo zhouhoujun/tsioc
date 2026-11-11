@@ -25,6 +25,9 @@ import {
     RequestBody,
     RequestPath,
     provideService,
+    useCookie,
+    useGuards,
+    useJson,
     useRouter,
     useStatics
 } from '@tsdi/service';
@@ -195,6 +198,18 @@ export interface WorkflowHttpServerOptions {
     plugins?: WorkflowPlugin[];
     /** Built-in plugin ids installed when the server starts (mqtt/redis/nats/coap). */
     installPlugins?: string[];
+    /** Extra modules imported by the generated workflow module (auth, persistence, ...). */
+    imports?: any[];
+    /** Extra controllers/declarations (login, auth, ...). */
+    declarations?: any[];
+    /** Extra providers (auth config, guards, stores, ...). */
+    providers?: any[];
+    /** Global router/message guards (for example a session guard). */
+    guards?: any[];
+    /** Enable cookie parsing (auth sessions, ...). */
+    cookies?: boolean;
+    /** Enable JSON request/response handling. */
+    json?: boolean;
 }
 
 function createServerWorkflowStore(options: WorkflowHttpServerOptions): WorkflowDefinitionStore {
@@ -217,7 +232,10 @@ export function createWorkflowHttpModule(options: WorkflowHttpServerOptions = {}
     const features: any[] = [
         provideService(
             useRouter(),
+            ...(options.cookies ? [useCookie()] : []),
+            ...(options.guards?.length ? [useGuards(...options.guards)] : []),
             ...(options.staticRoot ? [useStatics({ root: options.staticRoot })] : []),
+            ...(options.json ? [useJson()] : []),
             useHttpTransport({
                 listenOpts: {
                     host: options.host || '127.0.0.1',
@@ -229,10 +247,11 @@ export function createWorkflowHttpModule(options: WorkflowHttpServerOptions = {}
     ];
 
     @Module({
-        imports: [LoggerModule, WorkflowModule, ServerCommonModule],
-        declarations: [WorkflowHttpController, WorkflowPluginController],
+        imports: [LoggerModule, WorkflowModule, ServerCommonModule, ...(options.imports || [])],
+        declarations: [WorkflowHttpController, WorkflowPluginController, ...(options.declarations || [])],
         providers: [
             { provide: WORKFLOW_DEFINITION_STORE, useValue: store },
+            ...(options.providers || []),
             WorkflowPluginCatalog,
             ...features,
             // Register MIME providers after the transport feature. The feature

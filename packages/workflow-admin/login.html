@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sign in · TSDI Workflow Admin</title>
+    <style>
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; }
+        body {
+            display: grid;
+            place-items: center;
+            background: radial-gradient(circle at 20% 10%, #1e3a5f, #0b1220 55%);
+            color: #e2e8f0;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        }
+        .login-card {
+            width: min(420px, calc(100vw - 32px));
+            padding: 28px;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            background: rgba(15, 23, 42, 0.92);
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+        }
+        h1 { margin: 0 0 6px; font-size: 20px; }
+        p { margin: 0 0 20px; color: #94a3b8; font-size: 12px; }
+        button, input {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            background: #0b1220;
+            color: #e2e8f0;
+            font-size: 13px;
+        }
+        button { cursor: pointer; margin-top: 10px; }
+        button.primary { background: #2563eb; border-color: #2563eb; color: #fff; font-weight: 600; }
+        button:hover { border-color: #60a5fa; }
+        label { display: block; margin: 12px 0 5px; color: #cbd5e1; font-size: 11px; }
+        .provider { margin-bottom: 18px; }
+        .divider { display: flex; align-items: center; gap: 10px; color: #64748b; font-size: 11px; margin: 18px 0; }
+        .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: #334155; }
+        .error { min-height: 18px; margin-top: 10px; color: #fca5a5; font-size: 12px; }
+        .hidden { display: none !important; }
+        .footer { margin-top: 18px; color: #64748b; font-size: 11px; text-align: center; }
+    </style>
+</head>
+<body>
+    <form class="login-card" id="login-card">
+        <h1>TSDI Workflow Admin</h1>
+        <p>Sign in to manage workflow definitions.</p>
+        <div id="provider-section" class="provider hidden">
+            <button type="button" class="primary" id="oauth-login">Continue with OAuth2 / OIDC</button>
+            <div class="divider">or</div>
+        </div>
+        <div id="local-section" class="hidden">
+            <label for="username">Username</label>
+            <input id="username" name="username" autocomplete="username" />
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" />
+            <button type="submit" class="primary" id="local-login">Sign in</button>
+            <div id="register-section" class="hidden">
+                <button type="button" id="register">Create local account</button>
+            </div>
+        </div>
+        <div class="error" id="error"></div>
+        <div class="footer">Workflow admin · protected by OAuth2 / OIDC</div>
+    </form>
+    <script>
+        (function () {
+            const params = new URLSearchParams(location.search);
+            const redirect = params.get('redirect') || '/';
+            const error = document.getElementById('error');
+            const providerSection = document.getElementById('provider-section');
+            const localSection = document.getElementById('local-section');
+            const registerSection = document.getElementById('register-section');
+            let config = {};
+
+            if (params.get('error')) {
+                error.textContent = 'Authentication failed. Please try again.';
+            }
+
+            async function loadConfig() {
+                try {
+                    const response = await fetch('/auth/config');
+                    config = await response.json();
+                } catch {
+                    error.textContent = 'The authentication service is unavailable.';
+                    return;
+                }
+                if (!config.enabled) {
+                    location.replace(redirect);
+                    return;
+                }
+                providerSection.classList.toggle('hidden', !config.provider && !config.loginUrl);
+                localSection.classList.toggle('hidden', !config.local);
+                registerSection.classList.toggle('hidden', !config.allowRegistration);
+            }
+
+            document.getElementById('oauth-login')?.addEventListener('click', async () => {
+                error.textContent = '';
+                if (config.loginUrl) {
+                    location.href = config.loginUrl;
+                    return;
+                }
+                try {
+                    const response = await fetch('/auth/login');
+                    const body = await response.json();
+                    if (!body.url) {
+                        error.textContent = body.error || 'OAuth2 login is unavailable.';
+                        return;
+                    }
+                    location.href = body.url;
+                } catch {
+                    error.textContent = 'OAuth2 login is unavailable.';
+                }
+            });
+
+            document.getElementById('login-card').addEventListener('submit', async event => {
+                event.preventDefault();
+                error.textContent = '';
+                try {
+                    const response = await fetch('/auth/login', {
+                        method: 'POST',
+                        headers: { 'content-type': 'application/json' },
+                        body: JSON.stringify({
+                            username: document.getElementById('username').value,
+                            password: document.getElementById('password').value
+                        })
+                    });
+                    const body = await response.json();
+                    if (!response.ok || body.authenticated === false) {
+                        error.textContent = body.error || 'Invalid username or password.';
+                        return;
+                    }
+                    location.replace(redirect);
+                } catch {
+                    error.textContent = 'Login failed.';
+                }
+            });
+
+            document.getElementById('register')?.addEventListener('click', async () => {
+                error.textContent = '';
+                try {
+                    const response = await fetch('/auth/register', {
+                        method: 'POST',
+                        headers: { 'content-type': 'application/json' },
+                        body: JSON.stringify({
+                            username: document.getElementById('username').value,
+                            password: document.getElementById('password').value
+                        })
+                    });
+                    const body = await response.json();
+                    if (!response.ok || body.authenticated === false) {
+                        error.textContent = body.error || 'Registration failed.';
+                        return;
+                    }
+                    location.replace(redirect);
+                } catch {
+                    error.textContent = 'Registration failed.';
+                }
+            });
+
+            loadConfig();
+        })();
+    </script>
+</body>
+</html>

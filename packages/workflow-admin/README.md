@@ -1,12 +1,13 @@
-# TSDI Workflow Designer
+# TSDI Workflow Admin
 
-Browser product shell for the visual workflow designer in `@tsdi/activities`.
-It runs on the framework's own HTTP microservice and is built with the
-framework's TypeScript/ESM pipeline.
+Standalone workflow administration console for `@tsdi/activities`. It packages
+the visual designer, multi-document tabs, workflow library, SQLite-backed
+storage and optional OAuth2/OIDC login in its own `packages/workflow-admin`
+application.
 
-The shell imports the package's visual designer entry so the browser build only
-pulls the visual runtime, shared component/form layers and the HTTP store — not
-the full server-side Activity library.
+The browser shell imports the visual designer entry only, so the initial bundle
+contains the visual runtime, shared components/forms and the HTTP store — not
+the server-side Activity library or protocol plugins.
 
 ## Features
 
@@ -37,47 +38,92 @@ the full server-side Activity library.
 ## Build
 
 ```bash
-cd packages/activities
-npm run designer:build
+cd packages/workflow-admin
+npm run build
 ```
 
 Pipeline:
 
-1. TypeScript emits the designer and every imported `@tsdi/*` package as ES
-   modules. The `createDecoratorPrecompileTransformer` pass:
-   - batches every class/member/parameter decorator into one
-     `applyPrecompiledDecorators` call per class instead of emitting the
-     `__decorate` helper chain,
-   - emits the equivalent `design:type` / `design:paramtypes` metadata itself,
-   - lowers `@Aspect` / `@Before` / `@Around` / ... into
-     `registerPrecompiledAspect`, so AOP aspects and advices are registered
-     without running AOP decorator factories at startup.
-2. The AOP compile pass scans `@Aspect` classes and writes
-   `designer/aop-manifest.json` (pointcuts, advices, JoinPoint parameters) for
-   diagnostics and tooling.
-3. esbuild tree-shakes, minifies, drops console/debugger output and emits
+1. `emitAotProject` compiles the admin entry and every imported `@tsdi/*`
+   package with the shared AOT transformer (decorator metadata and AOP lowering
+   are emitted at build time).
+2. esbuild tree-shakes, minifies, drops console/debugger output and emits
    `main.js` plus lazy chunks. CodeMirror and unused renderer branches are not
    part of the initial payload.
-4. The build reports initial JS / gzip size and fails when the budget
+3. The build reports initial JS / gzip size and fails when the budget
    (`DESIGNER_JS_BUDGET` = 640000 bytes, `DESIGNER_GZIP_BUDGET` = 170000 bytes)
-   is exceeded. The current product build is about 598 KiB initial
-   (151 KiB gzip) and 248 KiB lazy (82 KiB gzip).
+   is exceeded. The current build is about 599 KiB initial (154 KiB gzip) and
+   248 KiB lazy (82 KiB gzip).
 
-Use `SOURCE_MAP=1 npm run designer:build` for linked source maps, or
-`npm run designer:build -- --dev` for an unminified development bundle.
+Use `SOURCE_MAP=1 npm run build` for linked source maps, or
+`npm run build -- --dev` for an unminified development bundle.
 
 ## Run
 
 ```bash
-cd packages/activities
-npm run designer
+cd packages/workflow-admin
+npm start
 # custom port:
-npm run designer -- 8765
+npm run serve -- 8765
 # open http://127.0.0.1:8765/
 
 # persistent SQLite database and preinstalled protocol plugins
-WORKFLOW_DB_FILE=/var/lib/tsdi/workflows.db WORKFLOW_PLUGINS=mqtt,redis npm run designer
+WORKFLOW_DB_FILE=/var/lib/tsdi/workflows.db WORKFLOW_PLUGINS=mqtt,redis npm start
 ```
+
+## Authentication
+
+Authentication is disabled by default. Enable it with environment variables or
+the `auth` option passed to `startWorkflowAdminServer`.
+
+### OAuth2 / external OIDC provider
+
+```bash
+WORKFLOW_ADMIN_AUTH_ENABLED=true \
+WORKFLOW_ADMIN_OIDC_ISSUER=https://id.example.com \
+WORKFLOW_ADMIN_OIDC_CLIENT_ID=workflow-admin \
+WORKFLOW_ADMIN_OIDC_CLIENT_SECRET=... \
+WORKFLOW_ADMIN_OIDC_AUTHORIZATION_URL=https://id.example.com/oauth2/authorize \
+WORKFLOW_ADMIN_OIDC_TOKEN_URL=https://id.example.com/oauth2/token \
+WORKFLOW_ADMIN_OIDC_PROFILE_URL=https://id.example.com/oauth2/userinfo \
+WORKFLOW_ADMIN_OIDC_CALLBACK_URL=http://127.0.0.1:8765/auth/callback \
+npm start
+```
+
+`startOidcService` (env `WORKFLOW_ADMIN_OIDC_SERVICE`, default `true`) controls
+whether the admin mounts its own `/auth/*` login/callback/session endpoints.
+Set it to `false` to verify bearer/session tokens issued by a separate
+`@tsdi/oidc-auth` service sharing the same JWT secret/issuer; provide
+`WORKFLOW_ADMIN_LOGIN_URL` for the external login page.
+
+Local username/password login and registration are available through the same
+service (`WORKFLOW_ADMIN_ALLOW_REGISTRATION=true` to enable registration). The
+built-in local user store is in-memory; deploy `@tsdi/oidc-auth` as a separate
+service when local identities must survive restarts.
+
+Programmatic setup:
+
+```typescript
+import { startWorkflowAdminServer } from '@tsdi/workflow-admin';
+
+await startWorkflowAdminServer({
+    port: 8765,
+    auth: {
+        enabled: true,
+        startOidcService: true,
+        allowRegistration: true,
+        clientId: 'workflow-admin',
+        issuer: 'https://id.example.com',
+        authorizationURL: 'https://id.example.com/oauth2/authorize',
+        tokenURL: 'https://id.example.com/oauth2/token',
+        profileURL: 'https://id.example.com/oauth2/userinfo',
+        jwt: { secret: process.env.JWT_SECRET }
+    }
+});
+```
+
+`GET /auth/session` is used by the browser shell before boot. Unauthenticated
+API calls return `401`; the UI redirects to `login.html` and back after login.
 
 The server defaults to SQLite (`$WORKFLOW_DB_FILE`, then
 `~/.tsdi-agent/workflows.db`). Plugin installations made through
@@ -97,13 +143,15 @@ save, autosave, library open and delete all go through the real HTTP service.
 ## Verify
 
 ```bash
-cd packages/activities
-npm run designer:test
+cd packages/workflow-admin
+npm test
+# unit tests only:
+npm run test:unit
 # or after a build:
-node designer/preview-test.js
+node preview-test.js
 ```
 
-`preview-test.js` starts `designer/serve.ts` (the real HTTP microservice), runs
+`preview-test.js` starts `serve.ts` (the real HTTP microservice), runs
 the product shell in headless Chromium and checks:
 
 - initial JS payload stays under budget and the CodeMirror chunk loads lazily,
@@ -119,4 +167,4 @@ the product shell in headless Chromium and checks:
 - theme persistence across reload,
 - no browser console errors.
 
-It writes the screenshot to `designer/preview.png`.
+It writes the screenshot to `preview.png`.

@@ -19,10 +19,10 @@ import { build, Plugin } from 'esbuild';
  *   SOURCE_MAP=1 ... (linked source maps for debugging)
  */
 const DESIGNER_DIR = path.resolve(__dirname);
-const PACKAGE_DIR = path.resolve(DESIGNER_DIR, '..');
+const PACKAGE_DIR = DESIGNER_DIR;
 const ROOT = path.resolve(PACKAGE_DIR, '../..');
-const TSC_OUT = path.join(require('os').tmpdir(), 'tsdi-workflow-designer-tsc');
-const BUNDLE_ENTRY = path.join(TSC_OUT, 'packages', 'activities', 'designer', 'main.js');
+const TSC_OUT = path.join(require('os').tmpdir(), 'tsdi-workflow-admin-tsc');
+const BUNDLE_ENTRY = path.join(TSC_OUT, 'packages', 'workflow-admin', 'main.js');
 const DEV = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
 const SOURCE_MAP = process.env.SOURCE_MAP === '1';
 const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 640_000);
@@ -60,6 +60,7 @@ const tsdiAliasPlugin: Plugin = {
             }
             const specifier = args.path.slice('@tsdi/'.length);
             const candidates = [
+                path.join(TSC_OUT, 'packages', `${specifier}.js`),
                 path.join(TSC_OUT, 'packages', specifier, 'index.js'),
                 path.join(TSC_OUT, 'packages', 'components', specifier, 'index.js'),
                 path.join(TSC_OUT, 'packages', 'agents', specifier, 'index.js'),

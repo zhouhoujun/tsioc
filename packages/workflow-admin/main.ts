@@ -2,13 +2,34 @@ import { Application } from '@tsdi/core';
 import { ComponentRef } from '@tsdi/components';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { DOCUMENT } from '@tsdi/common';
-import { WorkflowDesignerComponent } from '../src/visual/components/workflow-designer.component';
-import { WorkflowDesignerModule } from '../src/workflow-designer.module';
-import { createDefaultWorkflowDefinition } from '../src/visual/workflow-designer';
-import { HttpWorkflowDefinitionStore } from '../src/visual/workflow-store';
+import { createDefaultWorkflowDefinition } from '@tsdi/activities/src/visual/workflow-designer';
+import { HttpWorkflowDefinitionStore } from '@tsdi/activities/src/visual/workflow-store';
+import { WorkflowDesignerComponent } from '@tsdi/activities/src/visual/components/workflow-designer.component';
+import { WorkflowDesignerModule } from '@tsdi/activities/src/workflow-designer.module';
 import { WorkflowCodeEditorModule } from '@tsdi/activities/web';
 
+async function ensureAuthenticated(): Promise<{ user?: any } | undefined> {
+    try {
+        const response = await fetch('/auth/session');
+        if (response.status === 401) {
+            const redirect = encodeURIComponent(location.pathname + location.search);
+            location.replace(`/login.html?redirect=${redirect}`);
+            return undefined;
+        }
+        const session = await response.json();
+        if (session?.authenticated === false) {
+            const redirect = encodeURIComponent(location.pathname + location.search);
+            location.replace(`/login.html?redirect=${redirect}`);
+            return undefined;
+        }
+        return session;
+    } catch {
+        return undefined;
+    }
+}
+
 async function boot(): Promise<void> {
+    const session = await ensureAuthenticated();
     const status = document.getElementById('boot-status');
     if (status) {
         status.textContent = 'Booting workflow designer…';
@@ -109,6 +130,17 @@ async function boot(): Promise<void> {
         ref.instance.setTheme(savedTheme);
     }
     ref.instance.themeChangeAction = theme => localStorage.setItem('workflow-designer-theme', theme);
+
+    const authUser = document.getElementById('auth-user');
+    const authName = document.getElementById('auth-name');
+    if (authUser && authName && session?.user) {
+        const user = session.user;
+        authName.textContent = user.displayName || user.username || user.email || 'User';
+        authUser.hidden = false;
+    }
+    document.getElementById('logout')?.addEventListener('click', () => {
+        location.href = '/auth/logout';
+    });
 
     if (status) {
         status.remove();

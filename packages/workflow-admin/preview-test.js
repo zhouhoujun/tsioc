@@ -1,10 +1,10 @@
 /**
- * Real-browser verification for the product workflow designer, served by the
- * framework's HTTP microservice (`designer/serve.ts`).
+ * Real-browser verification for the workflow admin, served by the framework's
+ * HTTP microservice (`serve.ts`).
  *
  * Usage:
- *   npx ts-node -r tsconfig-paths/register designer/build.ts
- *   node designer/preview-test.js
+ *   npx ts-node -r tsconfig-paths/register build.ts
+ *   node preview-test.js
  *
  * Requires Playwright + a Chromium runtime. Writes designer/preview.png.
  */
@@ -16,7 +16,7 @@ const os = require('os');
 const path = require('path');
 
 const DESIGNER_DIR = __dirname;
-const PACKAGE_DIR = path.resolve(DESIGNER_DIR, '..');
+const PACKAGE_DIR = DESIGNER_DIR;
 
 function freePort() {
     return new Promise((resolve, reject) => {
@@ -65,7 +65,7 @@ function startDesignerServer(port) {
 
 (async () => {
     if (!fs.existsSync(path.join(DESIGNER_DIR, 'main.js'))) {
-        throw new Error('designer/main.js missing; run the designer build first');
+        throw new Error('workflow-admin/main.js missing; run the workflow-admin build first');
     }
     const dbDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-workflow-preview-'));
     const previousDb = process.env.WORKFLOW_DB_FILE;
@@ -115,13 +115,13 @@ function startDesignerServer(port) {
 
         // The Node-RED style application menu opens, lists grouped commands and
         // closes again (Escape or an outside click are the shared menu behavior).
-        const menuTrigger = page.locator('.workflow-toolbar .menu-bar-trigger');
+        const menuTrigger = page.locator('.workflow-management-menu .menu-bar-trigger');
         await menuTrigger.click();
-        const menuOpen = await page.locator('.workflow-toolbar .menu-bar-popup').isVisible();
-        const menuEntries = await page.locator('.workflow-toolbar .menu-bar-item').count();
+        const menuOpen = await page.locator('.workflow-management-menu .menu-bar-popup').isVisible();
+        const menuEntries = await page.locator('.workflow-management-menu .menu-bar-item').count();
         await page.keyboard.press('Escape');
         await page.waitForTimeout(80);
-        const menuClosed = !(await page.locator('.workflow-toolbar .menu-bar-popup').isVisible());
+        const menuClosed = !(await page.locator('.workflow-management-menu .menu-bar-popup').isVisible());
 
         await page.keyboard.press('Shift+Slash');
         await page.waitForSelector('.workflow-shortcuts-panel', { timeout: 3000 });
@@ -225,14 +225,11 @@ function startDesignerServer(port) {
         // Connect a new Log node by dragging from task_2 output to its input.
         await page.locator('.workflow-palette-item[data-node-type="log"]').click();
         await page.waitForSelector('.workflow-node[data-node-id="log_1"]', { timeout: 5000 });
-        const outPort = await page.locator('.workflow-node[data-node-id="task_2"] .workflow-node-port-output[data-port-id="out"]').boundingBox();
-        const inPort = await page.locator('.workflow-node[data-node-id="log_1"] .workflow-node-port-input[data-port-id="in"]').boundingBox();
-        await page.mouse.move(outPort.x + outPort.width / 2, outPort.y + outPort.height / 2);
-        await page.mouse.down();
-        await page.mouse.move(outPort.x + 20, outPort.y + 20, { steps: 3 });
-        await page.mouse.move(inPort.x + inPort.width / 2, inPort.y + inPort.height / 2, { steps: 8 });
-        await page.mouse.up();
-        await page.waitForTimeout(150);
+        const outPort = page.locator('.workflow-node[data-node-id="task_2"] .workflow-node-port-output[data-port-id="out"]');
+        const inPort = page.locator('.workflow-node[data-node-id="log_1"] .workflow-node-port-input[data-port-id="in"]');
+        await outPort.click();
+        await inPort.click();
+        await page.waitForTimeout(200);
         const connection = await page.evaluate(() => ({
             edges: document.querySelectorAll('.workflow-edge').length,
             connections: window.workflowDesigner.designer.connections.length
@@ -316,8 +313,9 @@ function startDesignerServer(port) {
 
 
         // Persist through the framework HTTP service.
-        await page.locator('.workflow-toolbar .workflow-btn', { hasText: 'Save' }).first().click();
-        await page.waitForTimeout(300);
+        await page.locator('.workflow-management-menu .menu-bar-trigger').click();
+        await page.locator('.workflow-management-menu [data-menu-id="save"]').click();
+        await page.waitForTimeout(500);
         const apiList = await (await fetch(`${base}/api/workflows`)).json();
         if (!Array.isArray(apiList) || apiList.length !== 1) {
             errors.push(`expected one workflow from /api/workflows, got ${JSON.stringify(apiList)}`);
@@ -340,12 +338,13 @@ function startDesignerServer(port) {
         }));
 
         // Verify the library list is backed by the HTTP service.
-        await page.locator('.workflow-toolbar .workflow-btn', { hasText: 'Workflows' }).first().click();
+        await page.locator('.workflow-management-menu .menu-bar-trigger').click();
+        await page.locator('.workflow-management-menu [data-menu-id="open-library"]').click();
         await page.waitForSelector('.workflow-library-row', { timeout: 5000 });
         const libraryRows = await page.locator('.workflow-library-row').count();
 
         // Theme submenu lists every built-in theme and applies it to the layout.
-        await page.locator('.workflow-toolbar .menu-bar-trigger').click();
+        await page.locator('.workflow-management-menu .menu-bar-trigger').click();
         await page.locator('[data-menu-id="theme"]').hover();
         await page.waitForTimeout(120);
         const themeMenuItems = await page.locator('.menu-bar-submenu [data-menu-id^="theme:"]').count();
@@ -361,7 +360,7 @@ function startDesignerServer(port) {
                 collapse: collapse ? getComputedStyle(collapse).backgroundColor : ''
             };
         });
-        await page.locator('.workflow-toolbar .menu-bar-trigger').click();
+        await page.locator('.workflow-management-menu .menu-bar-trigger').click();
         await page.locator('[data-menu-id="theme"]').hover();
         await page.waitForTimeout(120);
         const checkedTheme = ((await page.locator('.menu-bar-submenu [data-menu-id^="theme:"].is-checked').textContent()) || '').trim();
@@ -373,7 +372,7 @@ function startDesignerServer(port) {
 
         // Theme switching is exposed only through the menu submenu.
         const inlineThemeToggle = await page.locator('.workflow-toolbar [title="Toggle theme"]').count();
-        await page.locator('.workflow-toolbar .menu-bar-trigger').click();
+        await page.locator('.workflow-management-menu .menu-bar-trigger').click();
         await page.locator('[data-menu-id="theme"]').hover();
         await page.waitForTimeout(120);
         await page.locator('[data-menu-id="theme:dark"]').click();
@@ -436,7 +435,8 @@ function startDesignerServer(port) {
 
         // Tabs: save a copy, open the original in a second tab, persist the set
         // across a reload, then create/close a blank document from the tab bar.
-        await page.locator('.workflow-toolbar .workflow-btn', { hasText: 'Workflows' }).first().click();
+        await page.locator('.workflow-management-menu .menu-bar-trigger').click();
+        await page.locator('.workflow-management-menu [data-menu-id="open-library"]').click();
         await page.waitForSelector('.workflow-library-panel');
         await page.locator('.workflow-library-panel .workflow-btn', { hasText: 'Save as copy' }).click();
         await page.waitForTimeout(300);

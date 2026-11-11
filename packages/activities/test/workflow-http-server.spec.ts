@@ -1,5 +1,7 @@
 import expect = require('expect');
+import * as fs from 'node:fs';
 import * as net from 'node:net';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { createWorkflowHttpModule } from '../server';
@@ -48,21 +50,27 @@ async function waitForServer(base: string): Promise<void> {
 describe('Workflow HTTP microservice', () => {
     let ctx: ApplicationContext | undefined;
     let base: string;
+    let staticRoot: string;
 
     before(async () => {
+        staticRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-workflow-static-'));
+        fs.writeFileSync(path.join(staticRoot, 'index.html'), '<!DOCTYPE html><title>TSDI Workflow Designer</title><div id="workflow-app"></div>');
         const port = await freePort();
         base = `http://127.0.0.1:${port}`;
         ctx = await Application.run(createWorkflowHttpModule({
             port,
             host: '127.0.0.1',
             store: new InMemoryWorkflowDefinitionStore(),
-            staticRoot: path.resolve(__dirname, '../designer')
+            staticRoot
         }));
         await waitForServer(base);
     });
 
     after(async () => {
         await ctx?.close();
+        if (staticRoot) {
+            fs.rmSync(staticRoot, { recursive: true, force: true });
+        }
     });
 
     it('serves the static designer from the HTTP microservice', async () => {

@@ -86,7 +86,7 @@ an AOP manifest, and it supports ES module output so browser hosts can
 tree-shake unused exports and drop Node-only renderer leaves.
 
 The browser designer build additionally minifies, code-splits lazy editors and
-enforces an initial-payload budget. See `packages/activities/designer/README.md`
+enforces an initial-payload budget. See `packages/workflow-admin/README.md`
 for the production build and verification commands.
 
 ## Layout components
