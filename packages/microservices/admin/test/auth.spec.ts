@@ -117,6 +117,19 @@ function createOidcFixture(): OidcFixture {
     return fixture;
 }
 
+describe('gateway admin auth configuration', () => {
+    it('fails fast when authentication is enabled without a session secret', () => {
+        expect(() => startGatewayAdminServer({
+            uiRoot: false,
+            auth: { mode: 'service', authServiceUrl: 'http://auth.internal:3000' }
+        })).toThrow('auth.sessionSecret');
+        expect(() => startGatewayAdminServer({
+            uiRoot: false,
+            auth: { mode: 'oidc', issuer: 'https://idp.example', clientId: 'id', clientSecret: 'secret' }
+        })).toThrow('auth.sessionSecret');
+    });
+});
+
 describe('gateway admin OIDC authentication', () => {
     let ctx: ApplicationContext | undefined;
     let base = '';

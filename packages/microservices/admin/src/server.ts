@@ -8,7 +8,7 @@ import { useHttpTransport } from '@tsdi/http-microservice';
 import { GatewayRouteOptions, useGateway } from '@tsdi/gateway';
 import { InMemoryWorkflowDefinitionStore } from '@tsdi/activities';
 import { GatewayAdminController, GATEWAY_RULES_STORE, useGatewayAdminUi } from './controller';
-import { GatewayAdminAuthOptions, useGatewayAdminAuth } from './auth';
+import { GatewayAdminAuthOptions, useGatewayAdminAuth, validateGatewayAdminAuth } from './auth';
 
 export interface GatewayAdminServerOptions {
     /** HTTP listen host. Default `127.0.0.1`. */
@@ -74,6 +74,7 @@ export function resolveGatewayAdminUiRoot(root?: string | false): string | undef
  * useful as a console/config service and for local preview.
  */
 export function createGatewayAdminServerModule(options: GatewayAdminServerOptions = {}): Type<any> {
+    validateGatewayAdminAuth(options.auth);
     const host = options.host ?? DEFAULT_GATEWAY_ADMIN_HOST;
     const port = options.port ?? DEFAULT_GATEWAY_ADMIN_PORT;
     const prefix = options.prefix ?? DEFAULT_GATEWAY_ADMIN_PREFIX;

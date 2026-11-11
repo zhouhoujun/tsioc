@@ -82,7 +82,7 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
                     : error instanceof NotFoundException
                         ? 404
                         : 500);
-        this.setStatus(status, error?.statusMessage ?? error?.message);
+        this.setStatus(status, this.sanitizeStatusMessage(error?.statusMessage));
         this.payload = null;
         return error;
     }
@@ -238,9 +238,23 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
     setStatus(code: any, message?: string): this {
         this.responseStatus = code;
         if (!isNil(message)) {
-            this.responseStatusMessage = message;
+            this.responseStatusMessage = this.sanitizeStatusMessage(message);
         }
         return this;
+    }
+
+    /**
+     * HTTP reason phrases must stay printable ASCII. Exception messages often
+     * contain newlines, JSON or CJK text; assigning those directly makes
+     * `writeHead` throw `ERR_INVALID_CHAR` and can produce an empty reply.
+     */
+    private sanitizeStatusMessage(value: any): string | undefined {
+        const text = String(value ?? '')
+            .replace(/[\r\n\t]+/g, ' ')
+            .replace(/[^\x20-\x7e]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+        return text ? text.slice(0, 160) : undefined;
     }
 
     get error(): any {
@@ -353,7 +367,7 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
                 ...(err?.details ? { details: err.details } : {})
             };
 
-        this.setStatus(status, err?.statusMessage);
+        this.setStatus(status, this.sanitizeStatusMessage(err?.statusMessage));
         this.setError(err);
         this.setPayload(body);
 

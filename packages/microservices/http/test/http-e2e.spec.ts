@@ -17,6 +17,11 @@ import expect = require('expect');
 class HttpTestController {
     @Get('/info') info() { return { status: 'ok' }; }
 
+    @Get('/multi-line-error')
+    multiLineError() {
+        throw new Error('first line\nsecond line');
+    }
+
     @Get('/download')
     download() {
         return new HttpFileResult(path.resolve(__dirname, 'fixtures/hello.txt'), {
@@ -532,6 +537,14 @@ describe('HTTP static/media support', () => {
     it('should reject path traversal', async () => {
         const response = await request('GET', '/%2e%2e/package.json');
         expect([400, 403, 404]).toContain(response.status);
+    });
+
+    it('returns a JSON error instead of an empty reply for multi-line exception messages', async () => {
+        const response = await request('GET', '/api/test/multi-line-error');
+        expect(response.status).toBe(500);
+        const body = JSON.parse(response.body.toString('utf8'));
+        expect(body.statusCode).toBe(500);
+        expect(body.message).toBe('Internal Server Error');
     });
 
     it('should parse multipart upload', async () => {

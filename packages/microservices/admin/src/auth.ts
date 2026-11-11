@@ -23,6 +23,24 @@ import { HttpRequestMessage } from '@tsdi/http-microservice';
 export const GATEWAY_ADMIN_AUTH_OPTIONS = token<GatewayAdminAuthOptions>('GATEWAY_ADMIN_AUTH_OPTIONS');
 export const GATEWAY_ADMIN_AUTH_USER = token<any>('GATEWAY_ADMIN_AUTH_USER');
 
+export function validateGatewayAdminAuth(options?: GatewayAdminAuthOptions | false): void {
+    if (!options || options.mode === 'none' || options.mode === undefined) {
+        return;
+    }
+    if (!options.sessionSecret) {
+        throw new Error('Gateway admin authentication requires auth.sessionSecret');
+    }
+    if (options.mode === 'oidc') {
+        const provider = options.provider && typeof options.provider === 'object' ? options.provider : undefined;
+        if ((!options.issuer && !provider?.issuer) || !options.clientId || !options.clientSecret) {
+            throw new Error('Gateway admin OIDC requires issuer, clientId and clientSecret');
+        }
+    }
+    if (options.mode === 'service' && !options.authServiceUrl && !options.loginUrl) {
+        throw new Error('Gateway admin service auth requires auth.authServiceUrl or auth.loginUrl');
+    }
+}
+
 export interface OidcProviderEndpoints {
     /** Provider issuer (used for ID token `iss` validation). */
     issuer?: string;

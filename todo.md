@@ -3525,3 +3525,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 完整接入 `admin.i18n.ts`：导航、概览、路由表、规则、编辑抽屉、设计器页头、登录页、状态/错误文案均可切换；规则设计器同步 locale/theme。
   - admin CSS 增加 dark 变量与组件覆盖；jsdom/构建产物验证 EN→中文、light→dark 切换无错误。
   - admin 26 passing；build/build:web 通过。
+- Admin `/api/gateway-admin/rules` 空响应修复（2026-11-11）：
+  - 根因一：启用了 `--auth service` 但缺少 `sessionSecret`，auth service 在依赖解析时失败，异常消息含换行/特殊字符，`sendError` 把原始 message 写入 HTTP statusMessage，Node 抛 `ERR_INVALID_CHAR`，浏览器得到空响应。
+  - HttpMessageAdapter 现在把 statusMessage 清洗为可打印 ASCII（换行/中文/JSON 会被替换/截断），500/400 错误始终返回 JSON 而不是空 reply；新增多行异常 e2e 回归，http-e2e 37 passing。
+  - 新增 `validateGatewayAdminAuth` 启动期校验：oidc 缺少 issuer/clientId/clientSecret/sessionSecret，或 service 缺少 sessionSecret/authServiceUrl(loginUrl) 时直接明确报错退出，不再等到请求时懒加载失败。
+  - admin 27 passing。
