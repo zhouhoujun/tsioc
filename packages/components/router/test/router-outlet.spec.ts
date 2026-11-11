@@ -33,6 +33,9 @@ class PageA {}
 @Component({ selector: 'test-page-b', template: '<p class="page-b">Page B</p>' })
 class PageB {}
 
+@Component({ selector: 'test-not-found', template: '<p class="not-found">404</p>' })
+class NotFoundPage {}
+
 @Component({
     selector: 'router-outlet-test-host',
     imports: [RouterOutlet, RouterLinkDirective, HomePage, UserPage, PageA, PageB],
@@ -54,6 +57,20 @@ class RouterShell implements OnInit {
         return this.router.navigateByUrl('/secure').then(() => undefined);
     }
 }
+
+@Component({
+    selector: 'test-layout',
+    imports: [RouterOutlet],
+    template: '<section class="layout"><header>Layout</header><router-outlet></router-outlet></section>'
+})
+class LayoutPage {}
+
+@Component({
+    selector: 'test-nested-host',
+    imports: [RouterOutlet, LayoutPage, PageA, PageB, NotFoundPage],
+    template: '<router-outlet></router-outlet>'
+})
+class NestedHost {}
 
 @Module({
     declarations: [HomePage, UserPage],
@@ -193,6 +210,115 @@ export class RouterOutletTest {
 
         expect(await this.ctx.get(Router).navigateByUrl('/b')).toBe(true);
         await flush();
+        expect(root.querySelector('.page-b')).toBeTruthy();
+        expect(root.querySelector('.page-a')).toBeNull();
+        dom.window.close();
+    }
+
+    @Test('routes unknown URLs to the wildcard NotFound component')
+    async wildcardNotFound() {
+        const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
+        this.ctx = await Application.run(NestedHost, {
+            deps: [
+                HtmlTemplateModule,
+                ComponentsModule,
+                RouterModule.forRoot([
+                    {
+                        path: '',
+                        component: LayoutPage,
+                        children: [
+                            { path: 'a', component: PageA },
+                            { path: 'b', component: PageB },
+                            { path: '**', component: NotFoundPage }
+                        ]
+                    }
+                ], '/a')
+            ],
+            providers: [{ provide: DOCUMENT, useValue: dom.window.document }]
+        });
+        const ref = this.ctx.runners.getRef(NestedHost) as ComponentRef<NestedHost>;
+        await ref.render();
+        await flush();
+        const root = ref.hostView.rootNodes[0] as Element;
+        expect(root.querySelector('.page-a')).toBeTruthy();
+
+        expect(await this.ctx.get(Router).navigateByUrl('/does/not/exist')).toBe(true);
+        await flush();
+        expect(root.querySelector('.layout')).toBeTruthy();
+        expect(root.querySelector('.not-found')).toBeTruthy();
+        expect(root.querySelector('.page-a')).toBeNull();
+
+        expect(await this.ctx.get(Router).navigateByUrl('/a')).toBe(true);
+        await flush();
+        expect(root.querySelector('.page-a')).toBeTruthy();
+        expect(root.querySelector('.not-found')).toBeNull();
+        dom.window.close();
+    }
+
+    @Test('falls through a lazy parent to the top-level wildcard route')
+    async topLevelWildcardAfterLazyRoutes() {
+        const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
+        this.ctx = await Application.run(NestedHost, {
+            deps: [
+                HtmlTemplateModule,
+                ComponentsModule,
+                RouterModule.forRoot([
+                    {
+                        path: '',
+                        loadChildren: async () => [{ path: 'a', component: PageA }]
+                    },
+                    { path: '**', component: NotFoundPage }
+                ], '/a')
+            ],
+            providers: [{ provide: DOCUMENT, useValue: dom.window.document }]
+        });
+        const ref = this.ctx.runners.getRef(NestedHost) as ComponentRef<NestedHost>;
+        await ref.render();
+        await flush();
+        const root = ref.hostView.rootNodes[0] as Element;
+        // Lazy child config is resolved by the first navigation.
+        expect(await this.ctx.get(Router).navigateByUrl('/a')).toBe(true);
+        await flush();
+        expect(root.querySelector('.page-a')).toBeTruthy();
+
+        expect(await this.ctx.get(Router).navigateByUrl('/missing')).toBe(true);
+        await flush();
+        expect(root.querySelector('.not-found')).toBeTruthy();
+        expect(root.querySelector('.page-a')).toBeNull();
+        dom.window.close();
+    }
+
+    @Test('renders child routes through the nested router outlet')
+    async nestedOutletRendersChildRoute() {
+        const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
+        this.ctx = await Application.run(NestedHost, {
+            deps: [
+                HtmlTemplateModule,
+                ComponentsModule,
+                RouterModule.forRoot([
+                    {
+                        path: '',
+                        component: LayoutPage,
+                        children: [
+                            { path: 'a', component: PageA },
+                            { path: 'b', component: PageB }
+                        ]
+                    }
+                ], '/a')
+            ],
+            providers: [{ provide: DOCUMENT, useValue: dom.window.document }]
+        });
+        const ref = this.ctx.runners.getRef(NestedHost) as ComponentRef<NestedHost>;
+        await ref.render();
+        await flush();
+        const root = ref.hostView.rootNodes[0] as Element;
+        console.log('NESTED-HTML', root.outerHTML.slice(0, 1200));
+        expect(root.querySelector('.layout')).toBeTruthy();
+        expect(root.querySelector('.page-a')).toBeTruthy();
+
+        expect(await this.ctx.get(Router).navigateByUrl('/b')).toBe(true);
+        await flush();
+        expect(root.querySelector('.layout')).toBeTruthy();
         expect(root.querySelector('.page-b')).toBeTruthy();
         expect(root.querySelector('.page-a')).toBeNull();
         dom.window.close();

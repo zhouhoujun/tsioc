@@ -4,6 +4,7 @@ import { RouterModule, Routes } from '@tsdi/components/router';
 import { provideHttpClient, withFetch, withInterceptors, withNoXsrfProtection } from '@tsdi/common/http';
 import { GatewayAdminAuthGuard } from './auth.guard';
 import { adminUnauthorizedInterceptor, GatewayAdminHttp } from './http';
+import { GatewayAdminState } from './admin.state';
 
 /**
  * Root route table (Angular `AppRoutingModule`). The root component is only a
@@ -30,7 +31,8 @@ export const GATEWAY_ADMIN_ROOT_ROUTES: Routes = [
     providers: [
         ...provideHttpClient(withFetch(), withNoXsrfProtection(), withInterceptors([adminUnauthorizedInterceptor])),
         GatewayAdminHttp,
-        GatewayAdminAuthGuard
+        GatewayAdminAuthGuard,
+        GatewayAdminState
     ]
 })
 export class GatewayAdminAppModule {}

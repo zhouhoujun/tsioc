@@ -3569,3 +3569,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 根因是 `@tsdi/ioc` 的循环依赖（handlers/contexts → injector → metadata/class → handlers/contexts）在 esbuild code splitting 下顺序错误，`IocContext extends DefaultContext` 先于父类执行。
   - 用 `RUN_CONTEXT` brand + `isRunContext` 断开 `metadata/class` 对 `handlers/contexts` 的运行时依赖；`ClassRef.invoke` 正确识别传入的 RunContext。
   - admin app module 不再在入口导入 designer（`GatewayAdminComponent` 自带 `WorkflowDesignerModule`），入口只保留 `ComponentsModule + RouterModule`，initial JS 631.6 KiB → 385.0 KiB；`loadComponent` 懒加载 designer 仍正常。
+- UI 框架路由：嵌套 outlet 与 NotFound（2026-11-11）：
+  - `RouterOutlet` 按嵌套深度（`ROUTE_OUTLET_DEPTH`）从当前活动路由树解析本层组件；子页面用布局组件内的 `<router-outlet>` 渲染，路由变化只替换子 outlet 内容。
+  - 通配 `**` 会渲染注册的 NotFound 组件；lazy 父路由子路由不匹配时正确回落到顶层 `**`。
+  - 覆盖嵌套 outlet、路由切换替换内容、嵌套/顶层 `**` NotFound；router 16 passing。
+  - microservice admin 改为 AppComponent(outlet) → 受保护 Layout(outlet) → dashboard/routes/rules/not-found 懒加载页面，共享状态放 `GatewayAdminState` 服务；`#/unknown` 显示 404 页面。

@@ -1,0 +1,507 @@
+import { noReact } from '@tsdi/components';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { MenuBarGroup, installMenuBarStyles } from '@tsdi/components/common';
+import { DOCUMENT } from '@tsdi/common';
+import { GatewayRouteOptions } from '@tsdi/gateway';
+import { Router, RouterEvent } from '@tsdi/components/router';
+import { AdminLocale, adminMessage } from './admin.i18n';
+import { AdminPage, redirectToAdminLogin } from './routing';
+import { GatewayAdminHttp } from './http';
+
+/** Structural document view used by the console (keeps decorator metadata DOM-free). */
+interface AdminDocumentLike {
+    defaultView?: Window | null;
+    documentElement?: { setAttribute(name: string, value: string): void } | null;
+}
+
+export interface GatewayAdminRuleCondition {
+    field?: string;
+    name?: string;
+    operator?: string;
+    value?: unknown;
+}
+
+export interface GatewayAdminRuleSummary {
+    id?: string;
+    name?: string;
+    priority?: number;
+    when?: GatewayAdminRuleCondition[];
+    action?: { type?: string };
+}
+
+export interface GatewayAdminApiState {
+    routes?: GatewayRouteOptions[];
+    rules?: GatewayAdminRuleSummary[];
+    services?: string[];
+    auth?: { enabled: boolean; mode: 'none' | 'oidc' | 'oauth2' | 'service' };
+}
+
+/**
+ * Shared console state (Angular service pattern).
+ *
+ * The routed layout and every child route page inject this service; the router
+ * outlet decides which page component renders, and pages never reach into the
+ * layout component instance.
+ */
+@Injectable()
+export class GatewayAdminState {
+    page: AdminPage = 'dashboard';
+    routes: GatewayRouteOptions[] = [];
+    services: string[] = [];
+    rules: GatewayAdminRuleSummary[] = [];
+    status = '';
+    locale: AdminLocale = 'en';
+    theme: 'light' | 'dark' = 'light';
+    error = '';
+    routeQuery = '';
+    routeEditorOpen = false;
+    editingRoute: GatewayRouteOptions = {} as GatewayRouteOptions;
+    editingIndex = -1;
+    authEnabled = false;
+    needsLogin = false;
+    /** Set by the routed layout; the rules page calls it to open the designer. */
+    openDesigner?: () => Promise<void>;
+
+    private loaded = false;
+    private selfRef?: GatewayAdminState;
+    private routerSub?: { unsubscribe(): void };
+
+    constructor(
+        @Optional() @Inject(DOCUMENT) private documentRef?: AdminDocumentLike,
+        @Optional() private router?: Router,
+        @Optional() private http?: GatewayAdminHttp
+    ) {
+        try {
+            if (documentRef) {
+                (documentRef as unknown as Record<PropertyKey, unknown>)[noReact] = true;
+            }
+        } catch {
+            // Documents can reject expando properties.
+        }
+        installMenuBarStyles(documentRef as unknown as Document | undefined);
+    }
+
+    init(): void {
+        this.selfRef = this;
+        try {
+            const locale = this.storage()?.getItem('tsdi-gateway-admin-locale');
+            if (locale === 'zh-CN' || locale === 'en') {
+                this.locale = locale;
+            } else if (String(globalThis.navigator?.language || '').toLowerCase().startsWith('zh')) {
+                this.locale = 'zh-CN';
+            }
+            const theme = this.storage()?.getItem('tsdi-gateway-admin-theme');
+            if (theme === 'dark' || theme === 'light') {
+                this.theme = theme;
+            }
+        } catch {
+            // Private mode/storage failures keep the defaults.
+        }
+        this.status = this.t('status.loading');
+        this.applyTheme();
+    }
+
+    async start(): Promise<void> {
+        if (this.loaded) {
+            return;
+        }
+        this.loaded = true;
+        this.applyTheme();
+        const win = this.documentRef?.defaultView;
+        if (this.router) {
+            const initialPage = this.router.data?.page as AdminPage | undefined;
+            if (initialPage) {
+                this.page = initialPage;
+            }
+            this.routerSub = this.router.events.subscribe(event => this.handleRouterEvent(event));
+            const initial = win?.location?.hash
+                ? String(win.location.hash).replace(/^#/, '')
+                : '/';
+            await this.router.navigateByUrl(initial || '/');
+        }
+        await this.reload();
+    }
+
+    destroy(): void {
+        this.routerSub?.unsubscribe();
+        this.routerSub = undefined;
+    }
+
+    t(key: string, params?: Record<string, unknown>): string {
+        return adminMessage(this.locale, key, params);
+    }
+
+    private storage(): Storage | undefined {
+        try {
+            return this.documentRef?.defaultView?.localStorage
+                ?? (globalThis as { localStorage?: Storage }).localStorage;
+        } catch {
+            return undefined;
+        }
+    }
+
+    private applyTheme(): void {
+        const doc = this.documentRef
+            ?? (globalThis as { document?: AdminDocumentLike }).document;
+        if (doc?.documentElement) {
+            doc.documentElement.setAttribute('data-theme', this.theme);
+        }
+    }
+
+    private globalMenuCache?: { locale: AdminLocale; theme: string; groups: MenuBarGroup[] };
+
+    get globalMenuGroups(): MenuBarGroup[] {
+        const cache = this.globalMenuCache;
+        if (cache && cache.locale === this.locale && cache.theme === this.theme) {
+            return cache.groups;
+        }
+        const groups: MenuBarGroup[] = [
+            {
+                items: [
+                    {
+                        id: 'menu:language',
+                        label: this.t('top.language'),
+                        icon: '🌐',
+                        children: [
+                            { id: 'language:en', label: 'English', checked: this.locale === 'en' },
+                            { id: 'language:zh-CN', label: '中文', checked: this.locale === 'zh-CN' }
+                        ]
+                    },
+                    {
+                        id: 'menu:theme',
+                        label: this.t('top.theme'),
+                        icon: '◐',
+                        children: [
+                            { id: 'theme:light', label: this.t('theme.light'), checked: this.theme === 'light' },
+                            { id: 'theme:dark', label: this.t('theme.dark'), checked: this.theme === 'dark' }
+                        ]
+                    }
+                ]
+            }
+        ];
+        this.globalMenuCache = { locale: this.locale, theme: this.theme, groups };
+        return groups;
+    }
+
+    readonly globalMenuSelect = (id: string): void => {
+        if (id === 'language:en' || id === 'language:zh-CN') {
+            this.setLocale(id.slice('language:'.length) as AdminLocale);
+            return;
+        }
+        if (id === 'theme:light' || id === 'theme:dark') {
+            this.setTheme(id.slice('theme:'.length) as 'light' | 'dark');
+        }
+    };
+
+    private setLocale(locale: AdminLocale): void {
+        const self = this.self();
+        if (self.locale === locale) {
+            return;
+        }
+        self.locale = locale;
+        self.globalMenuCache = undefined;
+        try {
+            self.storage()?.setItem('tsdi-gateway-admin-locale', locale);
+            (self.documentRef ?? (globalThis as { document?: AdminDocumentLike }).document)?.documentElement?.setAttribute('lang', locale);
+        } catch {
+            // ignore storage failures
+        }
+        if (self.loaded) {
+            void self.reload();
+        }
+    }
+
+    private setTheme(theme: 'light' | 'dark'): void {
+        const self = this.self();
+        self.theme = theme === 'dark' ? 'dark' : 'light';
+        self.applyTheme();
+        self.globalMenuCache = undefined;
+        try {
+            self.storage()?.setItem('tsdi-gateway-admin-theme', self.theme);
+        } catch {
+            // ignore storage failures
+        }
+    }
+
+    private self(): GatewayAdminState {
+        return (this.selfRef ?? this) as GatewayAdminState;
+    }
+
+    get pageTitle(): string {
+        switch (this.page) {
+            case 'routes': return this.t('page.routes.title');
+            case 'rules': return this.t('page.rules.title');
+            case 'not-found': return this.t('page.notFound.title');
+            default: return this.t('page.overview.title');
+        }
+    }
+
+    get pageSubtitle(): string {
+        switch (this.page) {
+            case 'routes': return this.t('page.routes.subtitle');
+            case 'rules': return this.t('page.rules.subtitle');
+            case 'not-found': return this.t('page.notFound.subtitle');
+            default: return this.t('page.overview.subtitle');
+        }
+    }
+
+    get enabledRoutes(): number {
+        return this.routes.filter(route => route.enabled !== false).length;
+    }
+
+    get filteredRoutes(): GatewayRouteOptions[] {
+        const query = String(this.routeQuery || '').trim().toLowerCase();
+        if (!query) {
+            return this.routes;
+        }
+        return this.routes.filter(route => [route.path, route.service, route.targetUrl, route.targetPath]
+            .some(value => String(value || '').toLowerCase().includes(query)));
+    }
+
+    get dashboardNavClass(): string {
+        return `ga-nav-item${this.page === 'dashboard' ? ' is-active' : ''}`;
+    }
+
+    get routesNavClass(): string {
+        return `ga-nav-item${this.page === 'routes' ? ' is-active' : ''}`;
+    }
+
+    get rulesNavClass(): string {
+        return `ga-nav-item${this.page === 'rules' ? ' is-active' : ''}`;
+    }
+
+    goDashboard(): void {
+        this.navigate('dashboard');
+    }
+
+    goRoutes(): void {
+        this.navigate('routes');
+    }
+
+    goRules(): void {
+        this.navigate('rules');
+    }
+
+    private navigate(page: AdminPage): void {
+        const self = this.self();
+        if (self.needsLogin) {
+            self.redirectToLogin();
+            return;
+        }
+        if (self.router) {
+            void self.router.navigateByUrl(`/${page}`);
+            return;
+        }
+        self.page = page;
+    }
+
+    private handleRouterEvent(event: RouterEvent): void {
+        const self = this.self();
+        if (event.type !== 'NavigationEnd' || !event.snapshot) {
+            return;
+        }
+        const page = (this.router?.data?.page || event.snapshot.data?.page) as AdminPage;
+        if (page) {
+            self.page = page;
+        }
+    }
+
+    private redirectToLogin(): void {
+        const win = this.documentRef?.defaultView ?? (globalThis as { window?: Window }).window;
+        redirectToAdminLogin(win ?? undefined);
+    }
+
+    searchRoutes(event: Event): void {
+        this.self().routeQuery = (event.target as HTMLInputElement).value;
+    }
+
+    conditionSummary(rule: GatewayAdminRuleSummary): string {
+        const when = rule?.when ?? [];
+        if (!when.length) {
+            return this.t('rules.matchesEvery');
+        }
+        return when.map(condition => [
+            condition.field,
+            condition.name ? `(${condition.name})` : '',
+            condition.operator || 'equals',
+            condition.value ?? ''
+        ].filter(Boolean).join(' ')).join(' · ');
+    }
+
+    routeMethods(route: GatewayRouteOptions): string {
+        return (route.methods ?? []).join(', ');
+    }
+
+    ruleActionType(rule: GatewayAdminRuleSummary): string {
+        return rule?.action?.type || 'route';
+    }
+
+    ruleActionLabel(rule: GatewayAdminRuleSummary): string {
+        return this.t(this.ruleActionType(rule) === 'deny' ? 'rule.deny' : 'rule.route');
+    }
+
+    ruleTone(rule: GatewayAdminRuleSummary): string {
+        return rule?.action?.type === 'deny' ? 'ga-status-dot is-danger' : 'ga-status-dot';
+    }
+
+    rulePriority(rule: GatewayAdminRuleSummary): number {
+        return rule?.priority ?? 0;
+    }
+
+    ruleConditionCount(rule: GatewayAdminRuleSummary): number {
+        return rule?.when?.length || 0;
+    }
+
+    async editRules(): Promise<void> {
+        if (this.openDesigner) {
+            await this.openDesigner();
+        }
+    }
+
+    async reload(): Promise<void> {
+        const self = this.self();
+        self.error = '';
+        try {
+            const response = await fetch('/api/gateway-admin/state');
+            if (response.status === 401) {
+                self.requireLogin();
+                return;
+            }
+            if (!response.ok) {
+                throw new Error(this.t('error.apiUnavailable', { status: response.status }));
+            }
+            const state = await response.json() as GatewayAdminApiState;
+            self.authEnabled = state.auth?.enabled === true;
+            self.needsLogin = false;
+            self.routes = (state.routes ?? []).map(route => ({ ...route }));
+            self.services = state.services ?? [];
+            self.rules = state.rules ?? [];
+            self.status = self.t('status.ready', { routes: self.routes.length, rules: self.rules.length });
+        } catch (error) {
+            self.status = self.t('status.offline');
+            self.error = (error as Error).message;
+        }
+    }
+
+    private requireLogin(): void {
+        const self = this.self();
+        self.needsLogin = true;
+        self.authEnabled = true;
+        self.status = self.t('status.signInRequired');
+        self.redirectToLogin();
+    }
+
+    async fetchState(): Promise<GatewayAdminApiState> {
+        if (!this.http) {
+            throw new Error('Gateway admin HTTP client is unavailable');
+        }
+        const response = await this.http.state();
+        if (response.status === 401) {
+            this.requireLogin();
+            return {};
+        }
+        if (!response.ok) {
+            throw new Error(this.t('error.apiUnavailable', { status: response.status }));
+        }
+        return response.body as GatewayAdminApiState;
+    }
+
+    addRoute(): void {
+        const self = this.self();
+        self.editingIndex = -1;
+        self.editingRoute = {
+            path: '/api/new',
+            service: 'my-service',
+            stripPrefix: true,
+            enabled: true
+        } as GatewayRouteOptions;
+        self.routeEditorOpen = true;
+    }
+
+    editRoute(route: GatewayRouteOptions): void {
+        const self = this.self();
+        self.editingIndex = self.routes.indexOf(route);
+        self.editingRoute = { ...route };
+        self.routeEditorOpen = true;
+    }
+
+    closeRouteEditor(): void {
+        const self = this.self();
+        self.routeEditorOpen = false;
+        self.editingRoute = {} as GatewayRouteOptions;
+        self.editingIndex = -1;
+    }
+
+    editRouteField(event: Event): void {
+        const self = this.self();
+        const target = event.target as HTMLInputElement;
+        const key = target.getAttribute('data-field') || '';
+        if (!key) {
+            return;
+        }
+        let value: string | number | boolean | string[] | undefined = target.checked;
+        if (key !== 'stripPrefix' && key !== 'enabled') {
+            value = target.value;
+        }
+        if (key === 'timeout') {
+            value = target.value ? Number(target.value) : undefined;
+        }
+        if (key === 'methods') {
+            value = String(target.value || '')
+                .split(',')
+                .map(item => item.trim().toUpperCase())
+                .filter(Boolean);
+        }
+        (self.editingRoute as unknown as Record<string, unknown>)[key] = value;
+        self.editingRoute = { ...self.editingRoute };
+    }
+
+    saveRouteEditor(): void {
+        const self = this.self();
+        const route = self.editingRoute;
+        if (!route.path || (!route.service && !route.targetUrl)) {
+            self.error = self.t('error.routeRequired');
+            return;
+        }
+        self.error = '';
+        if (self.editingIndex >= 0) {
+            const next = self.routes.slice();
+            next[self.editingIndex] = { ...route };
+            self.routes = next;
+        } else {
+            self.routes = [...self.routes, { ...route }];
+        }
+        self.closeRouteEditor();
+        self.status = self.t('status.routeStaged', { count: self.routes.length });
+    }
+
+    removeRoute(route: GatewayRouteOptions): void {
+        const self = this.self();
+        self.routes = self.routes.filter(item => item !== route);
+        self.status = self.t('status.routeRemoved', { count: self.routes.length });
+    }
+
+    async applyRoutes(): Promise<void> {
+        const self = this.self();
+        self.error = '';
+        try {
+            if (!self.http) {
+                throw new Error('Gateway admin HTTP client is unavailable');
+            }
+            const response = await self.http.updateRoutes(self.routes);
+            if (response.status === 401) {
+                self.requireLogin();
+                return;
+            }
+            if (!response.ok) {
+                throw new Error(self.t('error.applyRoutes', { status: response.status }));
+            }
+            const state = response.body as GatewayAdminApiState;
+            self.routes = (state.routes ?? []).map(route => ({ ...route }));
+            self.services = state.services ?? [];
+            self.status = self.t('status.routesApplied', { count: self.routes.length });
+        } catch (error) {
+            self.error = (error as Error).message;
+        }
+    }
+}

@@ -22,6 +22,10 @@ const MESSAGES: Record<AdminLocale, Record<string, string>> = {
         'page.routes.subtitle': 'Manage discovered and static gateway routes.',
         'page.rules.title': 'Rules',
         'page.rules.subtitle': 'Visual workflows compiled into gateway decisions.',
+        'page.notFound.title': 'Page not found',
+        'page.notFound.subtitle': 'No gateway admin page matches this URL.',
+        'notFound.desc': 'This route does not exist. It may have been moved, or the URL is mistyped.',
+        'notFound.back': 'Back to overview',
         'metric.routes': 'Routes',
         'metric.enabled': '{count} enabled',
         'metric.services': 'Services',
@@ -121,6 +125,10 @@ const MESSAGES: Record<AdminLocale, Record<string, string>> = {
         'page.routes.subtitle': '管理服务发现与静态网关路由。',
         'page.rules.title': '规则',
         'page.rules.subtitle': '将可视化流程编译为网关决策。',
+        'page.notFound.title': '页面不存在',
+        'page.notFound.subtitle': '没有与当前地址匹配的网关管理页面。',
+        'notFound.desc': '该路由不存在，可能已被移动或地址输入有误。',
+        'notFound.back': '返回概览',
         'metric.routes': '路由',
         'metric.enabled': '{count} 个启用',
         'metric.services': '服务',
@@ -201,7 +209,7 @@ const MESSAGES: Record<AdminLocale, Record<string, string>> = {
     }
 };
 
-export function adminMessage(locale: AdminLocale, key: string, params?: Record<string, any>): string {
+export function adminMessage(locale: AdminLocale, key: string, params?: Record<string, unknown>): string {
     const template = MESSAGES[locale]?.[key] ?? MESSAGES.en[key] ?? key;
     return params
         ? template.replace(/\{(\w+)\}/g, (_, name) => String(params[name] ?? `{${name}}`))

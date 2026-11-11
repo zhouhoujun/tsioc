@@ -1,4 +1,4 @@
-export type AdminPage = 'dashboard' | 'routes' | 'rules';
+export type AdminPage = 'dashboard' | 'routes' | 'rules' | 'not-found';
 
 export function parseAdminRoute(hash: string | undefined): AdminPage {
     const value = String(hash || '').replace(/^#\/?/, '').split(/[/?]/)[0];

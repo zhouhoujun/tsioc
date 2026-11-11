@@ -55,6 +55,18 @@ export interface NavigationExtras {
 export const ROUTES = token<Routes>('ROUTES');
 export const ROUTER_INITIAL_URL = token<string>('ROUTER_INITIAL_URL');
 
+/**
+ * The activated route snapshot owned by the outlet rendering this component
+ * subtree. A nested `router-outlet` reads it to render the child route.
+ */
+export const ACTIVATED_ROUTE = token<ActivatedRouteSnapshot | null>('ACTIVATED_ROUTE');
+
+/**
+ * Nesting depth of a `router-outlet`. The root outlet is depth 0; an outlet
+ * rendered inside the root route component is depth 1, and so on.
+ */
+export const ROUTE_OUTLET_DEPTH = token<number>('ROUTE_OUTLET_DEPTH');
+
 function normalizeUrl(url: string): string {
     const value = String(url || '/').trim();
     const hashless = value.split('#')[0];
