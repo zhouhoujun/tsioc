@@ -1,0 +1,1 @@
+import{j as r}from"./chunk-YO4XV7PI.js";import"./chunk-M2OH2HRV.js";import"./chunk-U6UJE3IR.js";function a(t,d){return{path:d,data:{page:t},canActivate:[r]}}var o=[{path:"",redirectTo:"/dashboard",pathMatch:"full"},a("dashboard","dashboard"),a("routes","routes"),a("rules","rules"),{path:"**",redirectTo:"/dashboard"}];export{o as GATEWAY_ADMIN_ROUTES};

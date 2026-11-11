@@ -82,6 +82,22 @@ export class RouterTest {
         expect(childrenLoaded).toBe(1);
     }
 
+    @Test('resolves lazy components nested under lazy children')
+    async nestedLazyComponents() {
+        class LazyChild {}
+        const router = new Router([
+            {
+                path: '',
+                loadChildren: async () => [{
+                    path: 'feature',
+                    loadComponent: async () => LazyChild
+                }]
+            }
+        ], '/');
+        expect(await router.navigateByUrl('/feature')).toBe(true);
+        expect(router.activeLeaf?.route.component).toBe(LazyChild);
+    }
+
     @Test('runs guards declared on a lazy parent route')
     async lazyParentGuard() {
         let allowed = false;

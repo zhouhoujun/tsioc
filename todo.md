@@ -3549,3 +3549,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 移除自定义语言按钮/主题 select，改为 `@tsdi/components/common` 的通用 `menu-bar` 组件；分组包含语言与主题，勾选当前项。
   - `globalMenuGroups` 缓存按 locale/theme 失效；语言切换重载页面文案，主题切换更新 `data-theme` 并持久化。
   - 安装共享 menu-bar 样式，admin UI 测试改为通过菜单项切换；admin 36 passing，build:web 通过。
+- Admin 登录守卫/HTTP 401 拦截（2026-11-11）：
+  - 新增 `/api/gateway-admin/session` 返回 `{authenticated,user,authEnabled}`，路由守卫检查当前登录用户；无用户直接跳转 `/admin/login.html?redirect=...`。
+  - `@tsdi/common/http` 注册 `adminUnauthorizedInterceptor`：任何管理 API 返回 401 立即跳转登录页（登录/callback 请求除外）。
+  - 修复 lazy 父路由守卫丢失、router-outlet 渲染 leaf route；admin 38 passing，components/router 8 passing，workflow-admin guard 与 401 拦截本地验证通过。

@@ -44,6 +44,15 @@ describe('gateway admin standalone server', () => {
         expect(state.services).toEqual(['demo-service']);
     });
 
+    it('reports the current session for the route guard', async () => {
+        const response = await fetch(`${base}/api/gateway-admin/session`);
+        expect(response.status).toBe(200);
+        const session = await response.json() as any;
+        expect(session.authenticated).toBe(true);
+        expect(session.authEnabled).toBe(false);
+        expect(session.user).toBeNull();
+    });
+
     it('serves the built browser UI under the configured prefix', async () => {
         const response = await fetch(`${base}/admin/index.html`);
         expect(response.status).toBe(200);

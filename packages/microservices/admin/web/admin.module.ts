@@ -1,9 +1,9 @@
 import { Module } from '@tsdi/ioc';
 import { WorkflowDesignerModule, WorkflowNodeRegistry } from '@tsdi/activities/visual';
 import { RouterModule } from '@tsdi/components/router';
-import { provideHttpClient, withFetch, withNoXsrfProtection } from '@tsdi/common/http';
+import { provideHttpClient, withFetch, withInterceptors, withNoXsrfProtection } from '@tsdi/common/http';
 import { GatewayAdminAuthGuard } from './auth.guard';
-import { GatewayAdminHttp } from './http';
+import { adminUnauthorizedInterceptor, GatewayAdminHttp } from './http';
 import { registerGatewayRuleNodes } from '../src/rules';
 import { GatewayAdminComponent } from './admin.component';
 
@@ -17,7 +17,7 @@ import { GatewayAdminComponent } from './admin.component';
     ],
     declarations: [GatewayAdminComponent],
     providers: [
-        ...provideHttpClient(withFetch(), withNoXsrfProtection()),
+        ...provideHttpClient(withFetch(), withNoXsrfProtection(), withInterceptors([adminUnauthorizedInterceptor])),
         GatewayAdminHttp,
         GatewayAdminAuthGuard,
         {

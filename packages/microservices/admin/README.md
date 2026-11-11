@@ -346,6 +346,10 @@ toolbar, palette, inspector and status bar follow the admin shell.
   `/admin/login.html?redirect=<current-url>` before the page renders.
 - `GatewayAdminHttp` wraps `@tsdi/common/http` (`provideHttpClient(withFetch())`)
   for state/routes/rules calls, including cookies and typed status handling.
+- A shared HTTP interceptor (`adminUnauthorizedInterceptor`) redirects to the
+  login page as soon as any admin API returns `401`, not only on navigation.
+- `GET /api/gateway-admin/session` returns `{ authenticated, user, authEnabled }`
+  and is what the route guard checks; a missing user redirects to login.
 - The login page links to `/admin/auth/login`, which starts OIDC, OAuth2 or the
   external auth-service login flow according to `auth.mode`.
 

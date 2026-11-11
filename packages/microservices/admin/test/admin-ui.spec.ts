@@ -22,11 +22,18 @@ async function waitFor(check: () => boolean, timeoutMs = 2500): Promise<void> {
 }
 
 function jsonResponse(body: any, status = 200): any {
+    const payload = new TextEncoder().encode(JSON.stringify(body));
     return {
         ok: status >= 200 && status < 300,
         status,
         url: 'http://localhost/',
         headers: new Headers({ 'content-type': 'application/json' }),
+        body: new ReadableStream({
+            start(controller) {
+                controller.enqueue(payload);
+                controller.close();
+            }
+        }),
         async json() { return body; },
         async text() { return JSON.stringify(body); }
     };
@@ -47,8 +54,11 @@ describe('Microservice admin UI', () => {
         (globalThis as any).fetch = async (url: string, init: any = {}) => {
             const path = String(url).replace(/^https?:\/\/[^/]+/, '');
             const method = String(init.method || 'GET').toUpperCase();
+            if (path === '/api/gateway-admin/session' && method === 'GET') {
+                return jsonResponse({ authenticated: true, user: null, authEnabled: false });
+            }
             if (path === '/api/gateway-admin/state' && method === 'GET') {
-                return jsonResponse({ routes, rules, services: ['users-service'] });
+                return jsonResponse({ routes, rules, services: ['users-service'], auth: { enabled: false, mode: 'none' } });
             }
             if (path === '/api/gateway-admin/rules' && method === 'GET') {
                 return jsonResponse([]);
@@ -125,7 +135,7 @@ describe('Microservice admin UI', () => {
         const win = root.ownerDocument.defaultView as any;
         win.location.hash = '#/rules';
         win.dispatchEvent(new win.HashChangeEvent('hashchange'));
-        await flush();
+        await waitFor(() => !!root.querySelector('.ga-page-rules'));
         expect(root.querySelector('.ga-page-rules')).toBeTruthy();
         expect(root.querySelector('.ga-edit-rules')).toBeTruthy();
 

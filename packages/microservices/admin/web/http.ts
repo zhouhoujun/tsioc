@@ -1,6 +1,18 @@
 import { Injectable } from '@tsdi/ioc';
 import { HttpClient } from '@tsdi/common/http';
-import { lastValueFrom } from 'rxjs';
+import { lastValueFrom, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { HttpInterceptorFn } from '@tsdi/common/http';
+import { redirectToAdminLogin } from './routing';
+
+/** Redirect to the login page whenever the admin API returns 401. */
+export const adminUnauthorizedInterceptor: HttpInterceptorFn = (request, next, context) =>
+    next(request, context).pipe(catchError(error => {
+        if (Number(error?.status) === 401) {
+            redirectToAdminLogin();
+        }
+        return throwError(() => error);
+    }));
 
 export interface AdminHttpResult<T = any> {
     ok: boolean;
@@ -21,6 +33,10 @@ export class GatewayAdminHttp {
 
     state(): Promise<AdminHttpResult<any>> {
         return this.request('GET', '/api/gateway-admin/state');
+    }
+
+    session(): Promise<AdminHttpResult<{ authenticated?: boolean; user?: any; authEnabled?: boolean }>> {
+        return this.request('GET', '/api/gateway-admin/session');
     }
 
     updateRoutes(routes: any[]): Promise<AdminHttpResult<any>> {

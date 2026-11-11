@@ -145,6 +145,7 @@ export class Router {
                 return false;
             }
             const snapshot = resolved.snapshot;
+            await this.resolveSnapshotLazy(snapshot);
             this.events.emit({ type: 'RoutesRecognized', url: target, previousUrl, snapshot });
             if (!await this.runGuards(snapshot)) {
                 this.events.emit({ type: 'NavigationCancel', url: target, previousUrl, snapshot });
@@ -166,6 +167,19 @@ export class Router {
         const current = normalizeUrl(this._url);
         const target = normalizeUrl(url);
         return exact ? current === target : current === target || current.startsWith(`${target}/`);
+    }
+
+    protected async resolveSnapshotLazy(snapshot: ActivatedRouteSnapshot): Promise<void> {
+        const route = snapshot.route;
+        if (!route.component && route.loadComponent) {
+            const loaded = await route.loadComponent();
+            route.component = (typeof loaded === 'function'
+                ? loaded
+                : (loaded as { component?: Type<any> } | undefined)?.component) as Type<any> | undefined;
+        }
+        for (const child of snapshot.children) {
+            await this.resolveSnapshotLazy(child);
+        }
     }
 
     protected async resolveUrl(url: string, redirects: number): Promise<RouteMatch | undefined> {

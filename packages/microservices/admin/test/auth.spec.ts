@@ -207,6 +207,15 @@ describe('gateway admin OIDC authentication', () => {
         expect(stateResponse.status).toBe(200);
         const body = await stateResponse.json() as any;
         expect(body.auth).toEqual({ enabled: true, mode: 'oidc' });
+
+        const sessionResponse = await fetch(`${base}/api/gateway-admin/session`, {
+            headers: { cookie: `tsdi_gateway_admin_session=${sessionCookie}` }
+        });
+        expect(sessionResponse.status).toBe(200);
+        const sessionBody = await sessionResponse.json() as any;
+        expect(sessionBody.authenticated).toBe(true);
+        expect(sessionBody.authEnabled).toBe(true);
+        expect(sessionBody.user?.email).toBe('admin@example.com');
     });
 
     it('rejects a tampered session cookie', async () => {

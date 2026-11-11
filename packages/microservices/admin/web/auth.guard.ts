@@ -16,8 +16,13 @@ export class GatewayAdminAuthGuard implements CanActivate {
     constructor(private http: GatewayAdminHttp) { }
 
     async canActivate(_route?: ActivatedRouteSnapshot): Promise<boolean> {
-        const response = await this.http.state();
-        if (response.status === 401) {
+        const response = await this.http.session();
+        const session = response.body;
+        if (response.status === 401 || !session?.authenticated) {
+            redirectToAdminLogin();
+            return false;
+        }
+        if (session.authEnabled && !session.user) {
             redirectToAdminLogin();
             return false;
         }

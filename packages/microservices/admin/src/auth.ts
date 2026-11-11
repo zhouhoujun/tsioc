@@ -753,6 +753,21 @@ export class GatewayAdminAuthInterceptor implements RequestInterceptor<HttpReque
             this.finishRedirect(context);
             return EMPTY;
         }
+        if (path === `${this.auth.apiPrefix}/session`) {
+            return from(this.auth.authenticate(context)).pipe(
+                mergeMap(user => {
+                    if (!user) {
+                        throw new UnauthorizedException('Sign in is required for the gateway admin', 401);
+                    }
+                    this.writeJson(context, 200, {
+                        authenticated: true,
+                        user,
+                        authEnabled: true
+                    });
+                    return EMPTY;
+                })
+            );
+        }
         if (!path.startsWith(this.auth.apiPrefix)) {
             return next.handle(input, context);
         }
@@ -769,6 +784,17 @@ export class GatewayAdminAuthInterceptor implements RequestInterceptor<HttpReque
     private finishRedirect(context: RequestContext): void {
         const adapter = context.get(RestfulRequestAdapter);
         adapter?.sendResponse('');
+    }
+
+    private writeJson(context: RequestContext, status: number, body: any): void {
+        const adapter = context.get(RestfulRequestAdapter) as any;
+        if (!adapter) {
+            return;
+        }
+        adapter.setStatus(status);
+        adapter.setHeader('content-type', 'application/json');
+        adapter.setPayload(body);
+        adapter.sendResponse(body);
     }
 }
 

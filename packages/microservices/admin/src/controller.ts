@@ -62,6 +62,21 @@ export class GatewayAdminController {
         return this.snapshot();
     }
 
+    /**
+     * Current browser session. The auth interceptor runs before this handler,
+     * so auth-enabled deployments only reach it with a valid session.
+     */
+    @Get('/session')
+    session(): { authenticated: boolean; user: any; authEnabled: boolean } {
+        // Auth-enabled deployments are answered by GatewayAdminAuthInterceptor
+        // before this handler; reaching it means authentication is disabled.
+        return {
+            authenticated: true,
+            user: null,
+            authEnabled: false
+        };
+    }
+
     @Put('/routes')
     updateRoutes(@RequestBody() body: { routes?: GatewayRouteOptions[] } | GatewayRouteOptions[]) {
         const routes = Array.isArray(body) ? body : body?.routes;
