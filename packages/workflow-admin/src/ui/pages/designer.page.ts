@@ -19,9 +19,7 @@ export class WorkflowAdminDesignerPageComponent implements AfterViewInit {
     constructor(
         private readonly http: HttpClient,
         private readonly router: Router
-    ) {
-        (window as any).__pageCount = ((window as any).__pageCount || 0) + 1;
-    }
+    ) { }
 
     async onAfterViewInit(): Promise<void> {
         const designer = this.designer;
@@ -106,7 +104,7 @@ export class WorkflowAdminDesignerPageComponent implements AfterViewInit {
         if (savedTheme) {
             designer.setTheme(savedTheme as any);
         }
-        designer.themeChangeAction = theme => localStorage.setItem('workflow-designer-theme', theme);
+        designer.themeChangeAction = theme => localStorage.setItem('workflow-designer-theme', String(theme));
 
         const authUser = document.getElementById('auth-user');
         const authName = document.getElementById('auth-name');
@@ -129,7 +127,6 @@ export class WorkflowAdminDesignerPageComponent implements AfterViewInit {
     }
 
     private syncRoute(id?: string): void {
-        return;
         if (typeof history === 'undefined' || typeof location === 'undefined') {
             return;
         }

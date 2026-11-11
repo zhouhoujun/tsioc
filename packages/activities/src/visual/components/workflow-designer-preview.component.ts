@@ -628,6 +628,14 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy {
             x: Math.round((viewport.width - contentWidth * applied) / 2 - minX * applied),
             y: Math.round((viewport.height - contentHeight * applied) / 2 - minY * applied)
         };
+        const host = this.elementRef?.nativeElement as any;
+        const document = (globalThis as { document?: Document }).document;
+        const canvas = host?.querySelector?.('.workflow-canvas')
+            || document?.querySelector?.('.workflow-canvas');
+        if (canvas) {
+            canvas.scrollLeft = 0;
+            canvas.scrollTop = 0;
+        }
     };
 
     readonly addFromPalette = (item: WorkflowPaletteItem): void => {
@@ -665,7 +673,10 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy {
 
     private canvasViewport(): { width: number; height: number } | undefined {
         const host = this.elementRef?.nativeElement as any;
-        const canvas = host?.querySelector?.('.workflow-canvas') || host;
+        const document = (globalThis as { document?: Document }).document;
+        const canvas = host?.querySelector?.('.workflow-canvas')
+            || document?.querySelector?.('.workflow-canvas')
+            || host;
         const rect = canvas?.getBoundingClientRect?.();
         if (!rect || !(rect.width > 0) || !(rect.height > 0)) {
             return undefined;

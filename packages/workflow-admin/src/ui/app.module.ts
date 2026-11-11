@@ -4,8 +4,8 @@ import { provideHttpClient, withFetch, withInterceptors, withNoXsrfProtection } 
 import { WorkflowDesignerModule } from '@tsdi/activities/src/workflow-designer.module';
 import { WorkflowCodeEditorModule } from '@tsdi/activities/web';
 import { WorkflowAdminAuthGuard, WORKFLOW_ADMIN_LOGIN_ROUTE } from './auth.guard';
+import { workflowAdminUnauthorizedInterceptor } from './http-interceptor';
 import { WORKFLOW_ADMIN_LOGIN_PATH, WORKFLOW_ADMIN_ROUTES } from './routes';
-import { workflowAdminUnauthorizedInterceptor } from './http';
 
 /**
  * Angular-style application module: router configuration, lazy feature

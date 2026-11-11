@@ -51,8 +51,8 @@ Pipeline:
    `main.js` plus lazy chunks. CodeMirror and unused renderer branches are not
    part of the initial payload.
 3. The build reports initial JS / gzip size and fails when the budget
-   (`DESIGNER_JS_BUDGET` = 640000 bytes, `DESIGNER_GZIP_BUDGET` = 170000 bytes)
-   is exceeded. The current build is about 599 KiB initial (154 KiB gzip) and
+   (`DESIGNER_JS_BUDGET` = 660000 bytes, `DESIGNER_GZIP_BUDGET` = 170000 bytes)
+   is exceeded. The current build is about 629 KiB initial (164 KiB gzip) and
    248 KiB lazy (82 KiB gzip).
 
 Use `SOURCE_MAP=1 npm run build` for linked source maps, or

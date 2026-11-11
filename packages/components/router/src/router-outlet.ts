@@ -10,6 +10,7 @@ import { Router } from './router';
 export class RouterOutlet implements OnInit, OnDestroy {
     protected componentRef?: ComponentRef<any>;
     protected activeComponent?: Type<any>;
+    protected activeUrl?: string;
     protected subscription?: { unsubscribe(): void };
 
     constructor(protected viewContainer: ViewContainerRef, protected router: Router) {}
@@ -28,22 +29,49 @@ export class RouterOutlet implements OnInit, OnDestroy {
         this.componentRef?.destroy();
         this.componentRef = undefined;
         this.activeComponent = undefined;
+        this.activeUrl = undefined;
+    }
+
+    /** Remove nodes left by previous outlet render passes. */
+    protected clearAnchor(): void {
+        const host = this.viewContainer?.element?.nativeElement as any;
+        if (!host || typeof host.removeChild !== 'function') {
+            return;
+        }
+        while (host.firstChild) {
+            host.removeChild(host.firstChild);
+        }
     }
 
     protected activate(): void {
-        if (typeof window !== 'undefined') (window as any).__outletActivations = ((window as any).__outletActivations || 0) + 1;
         let leaf = this.router.activeRoute;
         while (leaf?.children?.length) {
             leaf = leaf.children[leaf.children.length - 1];
         }
         const component = leaf?.route?.component;
+        const url = this.router.activeRoute?.url;
+        const host = this.viewContainer?.element?.nativeElement as any;
+        if (component && host?.getAttribute?.('data-route-url') === url) {
+            return;
+        }
+        if (component && host?.setAttribute) {
+            host.setAttribute('data-route-url', String(url || ''));
+        } else if (host?.removeAttribute) {
+            host.removeAttribute('data-route-url');
+        }
+        if (component && this.componentRef && this.activeComponent === component && this.activeUrl === url) {
+            return;
+        }
+        this.activeUrl = url;
         this.componentRef?.destroy();
         this.componentRef = undefined;
         if (!component) {
             this.activeComponent = undefined;
+            this.clearAnchor();
             this.viewContainer.clear();
             return;
         }
+        this.clearAnchor();
         this.viewContainer.clear();
         this.activeComponent = component;
         this.componentRef = this.viewContainer.createComponent(component, {

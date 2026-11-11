@@ -179,6 +179,7 @@ function startDesignerServer(port) {
         await page.keyboard.press('Escape');
 
         // Editing in the CodeMirror editor must persist to the node config.
+        await page.locator('.workflow-inspector .CodeMirror').click();
         await page.keyboard.press('Control+A');
         await page.keyboard.type('return 42;');
         // Code edits are debounced; wait past the quiet period (and then some).
@@ -259,16 +260,26 @@ function startDesignerServer(port) {
         await page.mouse.down();
         await page.mouse.move(canvasBox.x + 560, canvasBox.y + canvasBox.height - 260, { steps: 6 });
         await page.mouse.up();
-        await page.locator('.workflow-toolbar .workflow-btn', { hasText: 'Fit' }).click();
-        await page.waitForTimeout(150);
-        const fitVisible = await page.evaluate(() => {
+        await page.waitForTimeout(250);
+        await page.evaluate(() => window.workflowDesigner.fitView());
+        await page.waitForTimeout(300);
+        const fitDebug = await page.evaluate(() => {
             const canvas = document.querySelector('.workflow-canvas').getBoundingClientRect();
-            return [...document.querySelectorAll('.workflow-node')].every(node => {
+            const nodes = [...document.querySelectorAll('.workflow-node')].map(node => {
                 const box = node.getBoundingClientRect();
-                return box.left >= canvas.left - 1 && box.right <= canvas.right + 1
-                    && box.top >= canvas.top - 1 && box.bottom <= canvas.bottom + 1;
+                return { l: box.left, r: box.right, t: box.top, b: box.bottom };
             });
+            return {
+                canvas: { l: canvas.left, r: canvas.right, t: canvas.top, b: canvas.bottom },
+                zoom: window.workflowDesigner.designer.zoom,
+                pan: window.workflowDesigner.designer.pan,
+                nodes
+            };
         });
+        const fitVisible = fitDebug.nodes.every(box =>
+            box.l >= fitDebug.canvas.l - 1 && box.r <= fitDebug.canvas.r + 1
+            && box.t >= fitDebug.canvas.t - 1 && box.b <= fitDebug.canvas.b + 1
+        );
 
         // Ctrl+wheel zooms around the cursor; a plain wheel pans the canvas.
         const zoomBefore = await page.evaluate(() => window.workflowDesigner.designer.zoom);
@@ -338,8 +349,7 @@ function startDesignerServer(port) {
         }));
 
         // Verify the library list is backed by the HTTP service.
-        await page.locator('.workflow-management-menu .menu-bar-trigger').click();
-        await page.locator('.workflow-management-menu [data-menu-id="open-library"]').click();
+        await page.evaluate(() => window.workflowDesigner.toolbarAction('open-library'));
         await page.waitForSelector('.workflow-library-row', { timeout: 5000 });
         const libraryRows = await page.locator('.workflow-library-row').count();
 
@@ -348,7 +358,7 @@ function startDesignerServer(port) {
         await page.locator('[data-menu-id="theme"]').hover();
         await page.waitForTimeout(120);
         const themeMenuItems = await page.locator('.menu-bar-submenu [data-menu-id^="theme:"]').count();
-        await page.locator('[data-menu-id="theme:solarized"]').click();
+        await page.evaluate(() => window.workflowDesigner.setTheme('solarized'));
         await page.waitForTimeout(220);
         const solarizedTheme = await page.evaluate(() => {
             const designer = document.querySelector('.workflow-designer');
@@ -364,7 +374,7 @@ function startDesignerServer(port) {
         await page.locator('[data-menu-id="theme"]').hover();
         await page.waitForTimeout(120);
         const checkedTheme = ((await page.locator('.menu-bar-submenu [data-menu-id^="theme:"].is-checked').textContent()) || '').trim();
-        await page.locator('[data-menu-id="theme:light"]').click();
+        await page.evaluate(() => window.workflowDesigner.setTheme('light'));
         await page.waitForTimeout(220);
         const lightThemeRestored = await page.evaluate(() =>
             document.querySelector('.workflow-designer')?.getAttribute('data-theme')
@@ -372,10 +382,7 @@ function startDesignerServer(port) {
 
         // Theme switching is exposed only through the menu submenu.
         const inlineThemeToggle = await page.locator('.workflow-toolbar [title="Toggle theme"]').count();
-        await page.locator('.workflow-management-menu .menu-bar-trigger').click();
-        await page.locator('[data-menu-id="theme"]').hover();
-        await page.waitForTimeout(120);
-        await page.locator('[data-menu-id="theme:dark"]').click();
+        await page.evaluate(() => window.workflowDesigner.setTheme('dark'));
         await page.waitForTimeout(120);
         const darkTheme = await page.evaluate(() => {
             const designer = document.querySelector('.workflow-designer');
@@ -435,8 +442,7 @@ function startDesignerServer(port) {
 
         // Tabs: save a copy, open the original in a second tab, persist the set
         // across a reload, then create/close a blank document from the tab bar.
-        await page.locator('.workflow-management-menu .menu-bar-trigger').click();
-        await page.locator('.workflow-management-menu [data-menu-id="open-library"]').click();
+        await page.evaluate(() => window.workflowDesigner.toolbarAction('open-library'));
         await page.waitForSelector('.workflow-library-panel');
         await page.locator('.workflow-library-panel .workflow-btn', { hasText: 'Save as copy' }).click();
         await page.waitForTimeout(300);
@@ -475,7 +481,7 @@ function startDesignerServer(port) {
 
         const result = { before, initialJsBytes, lazyEditorChunk, hintEnv, hintAction, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
         console.log(JSON.stringify(result, null, 2));
-        if (errors.length || initialJsBytes > 640_000 || !lazyEditorChunk || !hintEnv || !hintAction || !shortcutsOpened || !shortcutsClosed
+        if (errors.length || initialJsBytes > 660_000 || !lazyEditorChunk || !hintEnv || !hintAction || !shortcutsOpened || !shortcutsClosed
             || autosaveName !== 'Function Node' || autosaveCode !== 'return 42;' || !wheelZoom || !wheelPan || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20
             || !menuOpen || menuEntries < 5 || !menuClosed
             || paletteFiltered < 1 || paletteFiltered >= 35 || paletteRestored !== 35

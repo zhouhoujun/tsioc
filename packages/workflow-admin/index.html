@@ -91,10 +91,50 @@
             background: #f8fafc;
             color: #0f172a;
         }
-        #workflow-app > workflow-designer {
+        #workflow-app > workflow-designer,
+        #workflow-app > workflow-admin-shell,
+        #workflow-app workflow-admin-shell,
+        #workflow-app workflow-admin-shell > router-outlet,
+        #workflow-app workflow-admin-designer,
+        #workflow-app workflow-designer {
             display: block;
             height: 100%;
+            min-height: 0;
         }
+        .wa-login {
+            height: 100%;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            background: radial-gradient(circle at 20% 10%, #1e3a5f, #0b1220 55%);
+        }
+        .wa-login-card {
+            width: min(420px, calc(100vw - 32px));
+            padding: 28px;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            background: rgba(15, 23, 42, 0.94);
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+        }
+        .wa-login-card h1 { margin: 0 0 6px; font-size: 20px; }
+        .wa-login-card p { margin: 0 0 20px; color: #94a3b8; font-size: 12px; }
+        .wa-login-card button,
+        .wa-login-card input {
+            width: 100%;
+            padding: 10px 12px;
+            margin-top: 10px;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            background: #0b1220;
+            color: #e2e8f0;
+            font-size: 13px;
+        }
+        .wa-login-card button { cursor: pointer; }
+        .wa-login-card button.wa-primary { background: #2563eb; border-color: #2563eb; color: #fff; font-weight: 600; }
+        .wa-login-card label { display: block; margin-top: 12px; color: #cbd5e1; font-size: 11px; }
+        .wa-divider { display: flex; align-items: center; gap: 10px; color: #64748b; font-size: 11px; margin: 18px 0; }
+        .wa-divider::before, .wa-divider::after { content: ""; flex: 1; height: 1px; background: #334155; }
+        .wa-error { min-height: 18px; margin-top: 10px; color: #fca5a5; font-size: 12px; }
         noscript {
             padding: 18px;
             color: #fca5a5;

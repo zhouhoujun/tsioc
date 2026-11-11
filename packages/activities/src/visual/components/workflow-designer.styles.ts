@@ -323,6 +323,19 @@ export const WORKFLOW_DESIGNER_CSS = `
     color: #dc2626;
 }
 
+workflow-designer-preview {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+}
+
+.workflow-designer > workflow-designer-preview {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
 .workflow-designer-preview {
     position: relative;
     display: flex;

@@ -23,15 +23,15 @@ export class WorkflowAdminAuthGuard implements CanActivate {
             return true;
         }
         try {
-            const session = await firstValue(this.http.get<{ authenticated?: boolean }>(
+            const session = await firstValue(this.http.get<{ authenticated?: boolean; user?: any }>(
                 '/auth/session',
                 { withCredentials: true }
             ));
             if (session?.authenticated === true || session?.user) {
                 return true;
             }
-        } catch (error) {
-            console.error('workflow-admin guard session check failed', error);
+        } catch {
+            // 401/network failures are treated as unauthenticated.
         }
         if (typeof location !== 'undefined') {
             const login = `#/${this.loginRoute}`;

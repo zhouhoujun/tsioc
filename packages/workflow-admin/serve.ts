@@ -1,5 +1,6 @@
 import * as path from 'path';
 import { startWorkflowAdminServer } from './src/server';
+import { resolveWorkflowAdminAuthOptions } from './src/auth/options';
 
 /**
  * Run the product designer through the framework's HTTP microservice:
@@ -17,6 +18,10 @@ import { startWorkflowAdminServer } from './src/server';
     });
     console.log(`Workflow Designer: http://127.0.0.1:${port}/`);
     console.log(`Workflows API:     http://127.0.0.1:${port}/api/workflows`);
+    const auth = resolveWorkflowAdminAuthOptions({}, { host: '127.0.0.1', port });
+    console.log(`Authentication:    ${auth.enabled
+        ? 'enabled (route guard redirects unauthenticated users)'
+        : 'disabled — the UI is open; set WORKFLOW_ADMIN_AUTH_ENABLED=true to enforce login'}`);
 
     const shutdown = async () => {
         await ctx.close();
