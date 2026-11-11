@@ -3556,3 +3556,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - Admin 菜单主题跟随（2026-11-11）：
   - 通用 `menu-bar` 在 admin 中补齐 `--menu-bar-*` 变量映射：trigger/popup/submenu 的 surface、border、text、hover、separator、accent、danger、shadow 跟随 light/dark theme，不再固定白底。
   - admin 主题切换仍通过 menu-bar 菜单项完成；build:web 通过。
+- Angular 风格根部路由（2026-11-11）：
+  - microservice admin 启动 `GatewayAdminAppComponent`（模板仅 `<router-outlet>`），浏览器 hash 与 `Router` 同步；由路由表动态解析页面组件。
+  - 根路由 `''` 挂 `GatewayAdminAuthGuard` 并 `loadChildren` 懒加载 `admin.routes`；每个页面用 `loadComponent` 注册 `GatewayAdminComponent`，守卫通过后 outlet 才创建页面组件，未登录不会渲染首页。
+  - 修复 `RouterOutlet` 使用 leaf 路由 url 标识渲染组件（父路由 url 相同会误判复用）。
+  - 新增 admin app-shell 集成测试（401 不创建页面组件 / 已认证通过 outlet 渲染），admin 40 passing，router 9 passing；workflow-admin 增加 shell 守卫回归测试。

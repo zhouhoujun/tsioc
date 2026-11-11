@@ -1,0 +1,1 @@
+import"./chunk-U6UJE3IR.js";var e=()=>import("./admin.component-X42IVWPB.js").then(a=>a.GatewayAdminComponent);function o(a,t){return{path:t,data:{page:a},loadComponent:e}}var r=[{path:"",redirectTo:"/dashboard",pathMatch:"full"},o("dashboard","dashboard"),o("routes","routes"),o("rules","rules"),{path:"**",redirectTo:"/dashboard"}];export{r as GATEWAY_ADMIN_ROUTES};

@@ -44,12 +44,9 @@ export class RouterOutlet implements OnInit, OnDestroy {
     }
 
     protected activate(): void {
-        let leaf = this.router.activeRoute;
-        while (leaf?.children?.length) {
-            leaf = leaf.children[leaf.children.length - 1];
-        }
+        const leaf = this.router.activeLeaf;
         const component = leaf?.route?.component;
-        const url = this.router.activeRoute?.url;
+        const url = leaf?.url;
         const host = this.viewContainer?.element?.nativeElement as any;
         if (component && host?.getAttribute?.('data-route-url') === url) {
             return;

@@ -6,6 +6,7 @@ import { DOCUMENT } from '@tsdi/common';
 import { GatewayRouteOptions } from '@tsdi/gateway';
 import {
     WorkflowDesigner,
+    WorkflowDesignerModule,
     WorkflowDefinitionSummary,
     WorkflowNodeRegistry,
     VisualWorkflowDefinition
@@ -36,6 +37,7 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
  */
 @Component({
     selector: 'gateway-admin',
+    imports: [WorkflowDesignerModule],
     template: `
     <div class="ga-shell">
         <aside class="ga-sidebar">

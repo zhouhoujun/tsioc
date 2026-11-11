@@ -43,7 +43,15 @@
         }
         #boot-status { padding: 18px; color: #1d4ed8; font-size: 13px; }
         #gateway-admin-app { height: 100%; }
-        #gateway-admin-app > gateway-admin { display: block; height: 100%; }
+        #gateway-admin-app > gateway-admin-app,
+        #gateway-admin-app gateway-admin-app,
+        #gateway-admin-app gateway-admin-app > router-outlet,
+        #gateway-admin-app > gateway-admin,
+        #gateway-admin-app gateway-admin-app gateway-admin {
+            display: block;
+            height: 100%;
+            min-height: 0;
+        }
 
         .ga-shell { display: flex; height: 100%; background: var(--ga-bg); }
         .ga-sidebar {

@@ -337,13 +337,19 @@ toolbar, palette, inspector and status bar follow the admin shell.
 
 ## Routing and HTTP
 
-- UI routes (`#/dashboard`, `#/routes`, `#/rules`) are resolved by
-  `@tsdi/components/router` (`RouterModule.forRoot(...)`), not ad-hoc parsing.
-- The route table is loaded lazily via `loadChildren` from `admin.routes` — the
-  route module is a separate browser chunk and is cached after the first
+- The browser entry (`web/main.ts`) bootstraps `GatewayAdminAppComponent`, an
+  Angular-style root component whose template is only `<router-outlet>`.
+  `web/admin.module.ts` registers the root routes; the app component keeps the
+  browser hash (`#/dashboard`, `#/routes`, `#/rules`) in sync with the router.
+- The protected route table is loaded lazily via `loadChildren` from
+  `admin.routes`; every page declares `loadComponent`, so the router resolves
+  and creates the registered page component only after navigation succeeds.
+  Lazy route modules are separate browser chunks and are cached after the first
   navigation.
-- `GatewayAdminAuthGuard` implements `CanActivate`; a `401` redirects to
-  `/admin/login.html?redirect=<current-url>` before the page renders.
+- `GatewayAdminAuthGuard` implements `CanActivate` on the authenticated parent
+  route. Because protected components are created by the outlet *after* guards
+  pass, an unauthenticated request never mounts the dashboard; a `401` redirects
+  to `/admin/login.html?redirect=<current-url>` first.
 - `GatewayAdminHttp` wraps `@tsdi/common/http` (`provideHttpClient(withFetch())`)
   for state/routes/rules calls, including cookies and typed status handling.
 - A shared HTTP interceptor (`adminUnauthorizedInterceptor`) redirects to the
