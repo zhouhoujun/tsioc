@@ -1,74 +1,43 @@
-import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
-import { createRequestHandler, TransferSide, Transport, PatternFormatter, Events } from '@tsdi/common';
+import { Injector, asProvider } from '@tsdi/ioc';
+import { Events, PatternFormatter, TransferSide, Transport } from '@tsdi/common';
 import { createSendMessageBackend, useJsonPacket } from '@tsdi/transport';
-import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
-import { ensureClientConnectedInterceptor } from '@tsdi/client/src/interceptors/connect';
+import { createClientTransportFeature, getClientBackendToken, wrapClientBackendWithTransfer, ClientTransportFeature } from '@tsdi/client';
 import { UDP_CLIENT_OPTIONS, UdpClientOptions } from './options';
 import { UdpClient } from './client';
 import { UdpMicroPatternFormatter } from '../pattern-formatter';
 
-function udpClientTransportFactory(option: Partial<UdpClientOptions>, asDefault?: boolean): ClientTransportFeature {
+export function udpClientTransportFactory(option: Partial<UdpClientOptions>, asDefault?: boolean): ClientTransportFeature {
     const config = {
         transport: Transport.UDP, side: TransferSide.client,
         formatter: option.microservice === false ? (option as any).formatter : ((option as any).formatter ?? UdpMicroPatternFormatter),
         ...option,
         features: { defaultTransfer: useJsonPacket({ eventName: Events.MESSAGE }), ...option.features },
     } as UdpClientOptions;
-    config.providers ??= [];
-    config.providers.push(
-        { provide: UDP_CLIENT_OPTIONS, useValue: config },
-    );
-    const clientToken = getClientToken(config);
-    const hanlderToken = getClientHandlerToken(config);
     const backendToken = getClientBackendToken(config);
-    const interceptorsToken = getClientInterceptorsToken(config);
-
-    const providers: Provider[] = [
-        { provide: CLIENT_CONFIGS, useValue: config, multi: true },
-        ...(config.formatter === UdpMicroPatternFormatter ? [UdpMicroPatternFormatter] : []),
-        asProvider({
+    const providers = config.formatter === UdpMicroPatternFormatter ? [UdpMicroPatternFormatter] : [];
+    const defaultProviders = config.formatter
+        ? [config.formatter === UdpMicroPatternFormatter
+            ? { provide: PatternFormatter, useExisting: UdpMicroPatternFormatter }
+            : {
+                provide: PatternFormatter,
+                useFactory: (injector: Injector) => injector.get(config.formatter!),
+                deps: [Injector]
+            }]
+        : [];
+    return createClientTransportFeature({
+        config,
+        asDefault,
+        optionToken: UDP_CLIENT_OPTIONS,
+        clientType: UdpClient,
+        providers,
+        backendProvider: asProvider({
             provide: backendToken,
             useFactory: (injector: Injector) => wrapClientBackendWithTransfer(injector, config, createSendMessageBackend(Events.MESSAGE)),
             deps: [Injector],
             multi: true
         }),
-        { provide: hanlderToken, useFactory: (injector: Injector) => createRequestHandler(injector, config), deps: [Injector] },
-        {
-            provide: clientToken,
-            useFactory: (injector: Injector) => {
-                const handler = injector.get(hanlderToken);
-                const childInjector = createInjector(injector, {
-                    providers: [
-                        { provide: UDP_CLIENT_OPTIONS, useValue: config },
-                        { provide: ClientHandler, useValue: handler },
-                        UdpClient
-                    ]
-                });
-                return childInjector.get(UdpClient);
-            },
-            deps: [Injector]
-        },
-        { provide: interceptorsToken, useValue: ensureClientConnectedInterceptor(config), multi: true, multiOrder: 0 }
-    ];
-
-    if (asDefault) {
-        providers.push({ provide: UdpClient, useExisting: clientToken });
-        if (config.formatter) {
-            if (config.formatter === UdpMicroPatternFormatter) {
-                providers.push({
-                    provide: PatternFormatter,
-                    useExisting: UdpMicroPatternFormatter
-                });
-            } else {
-                providers.push({
-                    provide: PatternFormatter,
-                    useFactory: (injector: Injector) => injector.get(config.formatter!),
-                    deps: [Injector]
-                });
-            }
-        }
-    }
-    return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;
+        defaultProviders
+    });
 }
 
 export function withUdpTransport(...options: Partial<UdpClientOptions>[]): ClientTransportFeature[] {

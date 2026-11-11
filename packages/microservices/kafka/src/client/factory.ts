@@ -1,8 +1,7 @@
-import { createInjector, asProvider, Injector, Provider, isNil } from '@tsdi/ioc';
-import { createRequestHandler, TransferSide, Transport, PatternFormatter, REQUEST, ResponseEventPacket } from '@tsdi/common';
+import { asProvider, Injector, Provider, isNil } from '@tsdi/ioc';
+import { TransferSide, Transport, PatternFormatter, REQUEST, ResponseEventPacket } from '@tsdi/common';
 import { SOCKET, useBrokerClientTransfer } from '@tsdi/transport';
-import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
-import { ensureClientConnectedInterceptor } from '@tsdi/client/src/interceptors/connect';
+import { createClientTransportFeature, getClientBackendToken, wrapClientBackendWithTransfer, ClientTransportFeature } from '@tsdi/client';
 import { KAFKA_CLIENT_OPTIONS, KafkaClientOptions } from './options';
 import { KafkaClient } from './client';
 import { KafkaPatternFormatter } from '../server';
@@ -53,49 +52,31 @@ function kafkaClientTransportFactory(option: Partial<KafkaClientOptions>, asDefa
         brokerCompatBrokers: option.brokerCompatBrokers ? [...option.brokerCompatBrokers] : undefined,
     } as KafkaClientOptions;
     config.formatter ??= KafkaPatternFormatter;
-    config.providers ??= [];
-    config.providers.push(
-        { provide: KAFKA_CLIENT_OPTIONS, useValue: config },
-    );
-    const clientToken = getClientToken(config);
-    const hanlderToken = getClientHandlerToken(config);
     const backendToken = getClientBackendToken(config);
-    const interceptorsToken = getClientInterceptorsToken(config);
-    const providers: Provider[] = [
-        { provide: CLIENT_CONFIGS, useValue: config, multi: true },
-        asProvider({ provide: backendToken, useFactory: (injector: Injector) => wrapClientBackendWithTransfer(injector, config, createKafkaClientBackend(config)), deps: [Injector], multi: true }),
-        { provide: hanlderToken, useFactory: (i: Injector) => createRequestHandler(i, config), deps: [Injector] },
-        {
-            provide: clientToken,
-            useFactory: (injector: Injector) => {
-                const handler = injector.get(hanlderToken);
-                const childInjector = createInjector(injector, {
-                    providers: [
-                        { provide: KAFKA_CLIENT_OPTIONS, useValue: config },
-                        { provide: ClientHandler, useValue: handler },
-                        KafkaClient
-                    ]
-                });
-                return childInjector.get(KafkaClient);
-            },
-            deps: [Injector]
-        },
-        { provide: interceptorsToken, useValue: ensureClientConnectedInterceptor(config), multi: true, multiOrder: 0 }
-    ];
-    if (asDefault) {
-        providers.push({ provide: KafkaClient, useExisting: clientToken });
-        if (config.formatter) {
-            if (config.formatter === KafkaPatternFormatter) {
-                providers.push(KafkaPatternFormatter);
-            }
-            providers.push({
-                provide: PatternFormatter,
-                useFactory: (injector: Injector) => injector.get(config.formatter!),
-                deps: [Injector]
-            });
+    const defaultProviders: Provider[] = [];
+    if (asDefault && config.formatter) {
+        if (config.formatter === KafkaPatternFormatter) {
+            defaultProviders.push(KafkaPatternFormatter);
         }
+        defaultProviders.push({
+            provide: PatternFormatter,
+            useFactory: (injector: Injector) => injector.get(config.formatter!),
+            deps: [Injector]
+        });
     }
-    return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;
+    return createClientTransportFeature({
+        config,
+        asDefault,
+        optionToken: KAFKA_CLIENT_OPTIONS,
+        clientType: KafkaClient,
+        backendProvider: asProvider({
+            provide: backendToken,
+            useFactory: (injector: Injector) => wrapClientBackendWithTransfer(injector, config, createKafkaClientBackend(config)),
+            deps: [Injector],
+            multi: true
+        }),
+        defaultProviders
+    });
 }
 
 export function withKafkaTransport(...options: Partial<KafkaClientOptions>[]): ClientTransportFeature[] {

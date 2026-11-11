@@ -1,49 +1,29 @@
-import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
-import { createRequestHandler, TransferSide, Transport } from '@tsdi/common';
+import { asProvider } from '@tsdi/ioc';
+import { TransferSide, Transport } from '@tsdi/common';
 import { useJsonPacket } from '@tsdi/transport';
-import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature } from '@tsdi/client';
-import { ensureClientConnectedInterceptor } from '@tsdi/client';
+import { createClientTransportFeature, getClientBackendToken, ClientTransportFeature } from '@tsdi/client';
 import { MCP_CLIENT_OPTIONS, McpClientOptions } from './options';
 import { McpClient } from './client';
 import { Observable } from 'rxjs';
 import * as http from 'node:http';
 
-function mcpClientTransportFactory(option: Partial<McpClientOptions>, asDefault?: boolean): ClientTransportFeature {
+export function mcpClientTransportFactory(option: Partial<McpClientOptions>, asDefault?: boolean): ClientTransportFeature {
     const config = {
         transport: Transport.MCP, side: TransferSide.client,
         ...option, features: { defaultTransfer: useJsonPacket(), ...option.features },
     } as McpClientOptions;
-    config.providers ??= [];
-    config.providers.push(
-        { provide: MCP_CLIENT_OPTIONS, useValue: config },
-    );
-    const clientToken = getClientToken(config);
-    const hanlderToken = getClientHandlerToken(config);
     const backendToken = getClientBackendToken(config);
-    const interceptorsToken = getClientInterceptorsToken(config);
-    const providers: Provider[] = [
-        { provide: CLIENT_CONFIGS, useValue: config, multi: true },
-        asProvider({ provide: backendToken, useFactory: () => createMcpClientBackend(config), multi: true }),
-        { provide: hanlderToken, useFactory: (i: Injector) => createRequestHandler(i, config), deps: [Injector] },
-        {
-            provide: clientToken,
-            useFactory: (injector: Injector) => {
-                const handler = injector.get(hanlderToken);
-                const childInjector = createInjector(injector, {
-                    providers: [
-                        { provide: MCP_CLIENT_OPTIONS, useValue: config },
-                        { provide: ClientHandler, useValue: handler },
-                        McpClient
-                    ]
-                });
-                return childInjector.get(McpClient);
-            },
-            deps: [Injector]
-        },
-        { provide: interceptorsToken, useValue: ensureClientConnectedInterceptor(config), multi: true, multiOrder: 0 }
-    ];
-    if (asDefault) providers.push({ provide: McpClient, useExisting: clientToken });
-    return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;
+    return createClientTransportFeature({
+        config,
+        asDefault,
+        optionToken: MCP_CLIENT_OPTIONS,
+        clientType: McpClient,
+        backendProvider: asProvider({
+            provide: backendToken,
+            useFactory: () => createMcpClientBackend(config),
+            multi: true
+        })
+    });
 }
 
 export function withMcpTransport(...options: Partial<McpClientOptions>[]): ClientTransportFeature[] {
@@ -101,10 +81,16 @@ function createMcpClientBackend(config: McpClientOptions) {
                         }
                         return;
                     }
-
                     const result = jsonRpcResponse.result;
                     if (req.observe === 'response') {
-                        observer.next({ ok: true, body: result, status: 200, statusCode: 200 });
+                        observer.next({
+                            ok: true,
+                            status: 200,
+                            statusCode: 200,
+                            statusMessage: 'OK',
+                            body: result,
+                            payload: result
+                        });
                     } else {
                         observer.next(result);
                     }
@@ -114,7 +100,6 @@ function createMcpClientBackend(config: McpClientOptions) {
                 }
             });
         });
-
         httpReq.on('error', (err) => observer.error(err));
         httpReq.write(jsonRpcBody);
         httpReq.end();

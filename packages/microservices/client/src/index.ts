@@ -6,5 +6,6 @@ export * from './interceptors/connect';
 export * from './ClientHandler';
 export * from './AbstractClient';
 export * from './provider';
+export * from './transport';
 export * from './pool';
 export * from './connection.pool';

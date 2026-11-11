@@ -1,8 +1,7 @@
-import { createInjector, asProvider, Injector, Provider, isNil } from '@tsdi/ioc';
-import { createRequestHandler, TransferSide, Transport, PatternFormatter, REQUEST, ResponseEventPacket } from '@tsdi/common'
+import { asProvider, Injector, Provider, isNil } from '@tsdi/ioc';
+import { TransferSide, Transport, PatternFormatter, REQUEST, ResponseEventPacket } from '@tsdi/common'
 import { SOCKET, useBrokerClientTransfer } from '@tsdi/transport';
-import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
-import { ensureClientConnectedInterceptor } from '@tsdi/client/src/interceptors/connect';
+import { createClientTransportFeature, getClientBackendToken, wrapClientBackendWithTransfer, ClientTransportFeature } from '@tsdi/client';
 import { AMQP_CLIENT_OPTIONS, AmqpClientOptions } from './options';
 import { AmqpClient } from './client';
 import { AmqpPatternFormatter } from '../server';
@@ -51,63 +50,31 @@ function amqpClientTransportFactory(option: Partial<AmqpClientOptions>, asDefaul
         },
     } as AmqpClientOptions;
     config.formatter ??= AmqpPatternFormatter;
-    config.providers ??= [];
-    config.providers.push(
-        { provide: AMQP_CLIENT_OPTIONS, useValue: config },
-    );
-    const clientToken = getClientToken(config);
-    const hanlderToken = getClientHandlerToken(config);
     const backendToken = getClientBackendToken(config);
-    const interceptorsToken = getClientInterceptorsToken(config);
-
-    const providers: Provider[] = [
-        { provide: CLIENT_CONFIGS, useValue: config, multi: true },
-        asProvider({
+    const defaultProviders: Provider[] = [];
+    if (asDefault && config.formatter) {
+        if (config.formatter === AmqpPatternFormatter) {
+            defaultProviders.push(AmqpPatternFormatter);
+        }
+        defaultProviders.push({
+            provide: PatternFormatter,
+            useFactory: (injector: Injector) => injector.get(config.formatter!),
+            deps: [Injector]
+        });
+    }
+    return createClientTransportFeature({
+        config,
+        asDefault,
+        optionToken: AMQP_CLIENT_OPTIONS,
+        clientType: AmqpClient,
+        backendProvider: asProvider({
             provide: backendToken,
             useFactory: (injector: Injector) => wrapClientBackendWithTransfer(injector, config, createAmqpClientBackend(config)),
             deps: [Injector],
             multi: true
         }),
-        {
-            provide: hanlderToken,
-            useFactory: (injector: Injector) => createRequestHandler(injector, config),
-            deps: [
-                Injector
-            ]
-        },
-        {
-            provide: clientToken,
-            useFactory: (injector: Injector) => {
-                const handler = injector.get(hanlderToken);
-                const childInjector = createInjector(injector, {
-                    providers: [
-                        { provide: AMQP_CLIENT_OPTIONS, useValue: config },
-                        { provide: ClientHandler, useValue: handler },
-                        AmqpClient
-                    ]
-                });
-                return childInjector.get(AmqpClient);
-            },
-            deps: [Injector]
-        },
-        { provide: interceptorsToken, useValue: ensureClientConnectedInterceptor(config), multi: true, multiOrder: 0 }
-    ];
-
-    if (asDefault) {
-        providers.push({
-            provide: AmqpClient,
-            useExisting: clientToken
-        });
-        if (config.formatter) {
-            providers.push({
-                provide: PatternFormatter,
-                useFactory: (injector: Injector) => injector.get(config.formatter!),
-                deps: [Injector]
-            });
-        }
-    }
-    return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;
-
+        defaultProviders
+    });
 }
 
 export function withAmqpTransport(...options: Partial<AmqpClientOptions>[]): ClientTransportFeature[] {

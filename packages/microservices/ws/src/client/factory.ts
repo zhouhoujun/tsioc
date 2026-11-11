@@ -1,13 +1,12 @@
-import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
-import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter } from '@tsdi/common';
+import { Injector, asProvider } from '@tsdi/ioc';
 import { createSendMessageBackend } from '@tsdi/transport';
-import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
-import { ensureClientConnectedInterceptor } from '@tsdi/client/src/interceptors/connect';
+import { PatternFormatter, defaultFormatter, Transport, TransferSide } from '@tsdi/common';
+import { createClientTransportFeature, getClientBackendToken, wrapClientBackendWithTransfer, ClientTransportFeature } from '@tsdi/client';
 import { WS_CLIENT_OPTIONS, WsClientOptions } from './options';
 import { WsClient } from './client';
 import { useWsPacket } from '../transfer';
 
-function wsClientTransportFactory(option: Partial<WsClientOptions>, asDefault?: boolean): ClientTransportFeature {
+export function wsClientTransportFactory(option: Partial<WsClientOptions>, asDefault?: boolean): ClientTransportFeature {
     const config = {
         transport: Transport.WS,
         side: TransferSide.client,
@@ -18,59 +17,21 @@ function wsClientTransportFactory(option: Partial<WsClientOptions>, asDefault?: 
         },
         connectOpts: option.connectOpts ? { ...option.connectOpts } : undefined,
     } as WsClientOptions;
-    config.providers ??= [];
-    config.providers.push(
-        { provide: WS_CLIENT_OPTIONS, useValue: config },
-    );
-    const clientToken = getClientToken(config);
-    const hanlderToken = getClientHandlerToken(config);
     const backendToken = getClientBackendToken(config);
-    const interceptorsToken = getClientInterceptorsToken(config);
-
-    const providers: Provider[] = [
-        { provide: CLIENT_CONFIGS, useValue: config, multi: true },
-        asProvider({
+    return createClientTransportFeature({
+        config,
+        asDefault,
+        optionToken: WS_CLIENT_OPTIONS,
+        clientType: WsClient,
+        backendProvider: asProvider({
             provide: backendToken,
             useFactory: (injector: Injector) => wrapClientBackendWithTransfer(injector, config, createSendMessageBackend()),
             deps: [Injector],
             multi: true
         }),
-        {
-            provide: hanlderToken,
-            useFactory: (injector: Injector) => {
-                return createRequestHandler(injector, config)
-            },
-            deps: [
-                Injector
-            ]
-        },
-        {
-            provide: clientToken,
-            useFactory: (injector: Injector) => {
-                const handler = injector.get(hanlderToken);
-                const childInjector = createInjector(injector, {
-                    providers: [
-                        { provide: WS_CLIENT_OPTIONS, useValue: config },
-                        { provide: ClientHandler, useValue: handler },
-                        { provide: PatternFormatter, useValue: defaultFormatter },
-                        WsClient
-                    ]
-                });
-                return childInjector.get(WsClient);
-            },
-            deps: [Injector]
-        },
-        { provide: interceptorsToken, useValue: ensureClientConnectedInterceptor(config), multi: true, multiOrder: 0 }
-    ];
-
-    if (asDefault) {
-        providers.push(
-            { provide: WsClient, useExisting: clientToken },
-            { provide: PatternFormatter, useValue: defaultFormatter }
-        )
-    }
-    return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;
-
+        childProviders: [{ provide: PatternFormatter, useValue: defaultFormatter }],
+        defaultProviders: [{ provide: PatternFormatter, useValue: defaultFormatter }]
+    });
 }
 
 export function withWsTransport(...options: Partial<WsClientOptions>[]): ClientTransportFeature[] {

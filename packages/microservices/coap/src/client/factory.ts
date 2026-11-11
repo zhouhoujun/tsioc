@@ -1,6 +1,6 @@
-import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
-import { createRequestHandler, TransferSide, Transport, PatternFormatter, REQUEST, defaultFormatter, useSimpleJson, parseQueryString, ErrorResponse, ResponseEventPacket } from '@tsdi/common';
-import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
+import { asProvider, Injector, Provider } from '@tsdi/ioc';
+import { TransferSide, Transport, PatternFormatter, REQUEST, defaultFormatter, useSimpleJson, parseQueryString, ErrorResponse, ResponseEventPacket } from '@tsdi/common';
+import { createClientTransportFeature, getClientBackendToken, wrapClientBackendWithTransfer, ClientTransportFeature } from '@tsdi/client';
 import { COAP_CLIENT_OPTIONS, CoapClientOptions } from './options';
 import { CoapClient } from './client';
 import { CoapCompatiblePatternFormatter, CoapPatternFormatter } from '../server/pattern';
@@ -20,62 +20,26 @@ function coapClientTransportFactory(option: Partial<CoapClientOptions>, asDefaul
             ...option.features
         },
     } as CoapClientOptions;
-    config.providers ??= [];
-    config.providers.push(
-        { provide: COAP_CLIENT_OPTIONS, useValue: config },
-    );
-    const clientToken = getClientToken(config);
-    const hanlderToken = getClientHandlerToken(config);
     const backendToken = getClientBackendToken(config);
-
-    const providers: Provider[] = [
-        { provide: CLIENT_CONFIGS, useValue: config, multi: true },
-        asProvider({
+    const defaultProviders: Provider[] = asDefault ? [{
+        provide: PatternFormatter,
+        useFactory: (injector: Injector) => injector.get(config.formatter!),
+        deps: [Injector]
+    }] : [];
+    return createClientTransportFeature({
+        config,
+        asDefault,
+        optionToken: COAP_CLIENT_OPTIONS,
+        clientType: CoapClient,
+        providers: [CoapPatternFormatter, CoapCompatiblePatternFormatter],
+        backendProvider: asProvider({
             provide: backendToken,
             useFactory: (injector: Injector) => wrapClientBackendWithTransfer(injector, config, createCoapClientBackend(config)),
             deps: [Injector],
             multi: true
         }),
-        {
-            provide: hanlderToken,
-            useFactory: (injector: Injector) => {
-                return createRequestHandler(injector, config)
-            },
-            deps: [
-                Injector
-            ]
-        },
-        {
-            provide: clientToken,
-            useFactory: (injector: Injector) => {
-                const handler = injector.get(hanlderToken);
-                const childInjector = createInjector(injector, {
-                    providers: [
-                        { provide: COAP_CLIENT_OPTIONS, useValue: config },
-                        { provide: ClientHandler, useValue: handler },
-                        CoapClient
-                    ]
-                });
-                return childInjector.get(CoapClient);
-            },
-            deps: [Injector]
-        }
-    ];
-
-    providers.push(CoapPatternFormatter, CoapCompatiblePatternFormatter);
-
-    if (asDefault) {
-        providers.push({
-            provide: CoapClient,
-            useExisting: clientToken
-        }, {
-            provide: PatternFormatter,
-            useFactory: (injector: Injector) => injector.get(config.formatter!),
-            deps: [Injector]
-        })
-    }
-    return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;
-
+        defaultProviders
+    });
 }
 
 export function withCoapTransport(...options: Partial<CoapClientOptions>[]): ClientTransportFeature[] {

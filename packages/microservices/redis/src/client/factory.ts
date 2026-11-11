@@ -1,8 +1,7 @@
-import { createInjector, asProvider, Injector, Provider, isNil } from '@tsdi/ioc';
-import { createRequestHandler, TransferSide, Transport, PatternFormatter, REQUEST, ResponseEventPacket } from '@tsdi/common';
+import { asProvider, Injector, Provider, isNil } from '@tsdi/ioc';
+import { TransferSide, Transport, PatternFormatter, REQUEST, ResponseEventPacket } from '@tsdi/common';
 import { SOCKET, useBrokerClientTransfer } from '@tsdi/transport';
-import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
-import { ensureClientConnectedInterceptor } from '@tsdi/client/src/interceptors/connect';
+import { createClientTransportFeature, getClientBackendToken, wrapClientBackendWithTransfer, ClientTransportFeature } from '@tsdi/client';
 import { REDIS_CLIENT_OPTIONS, RedisClientOptions } from './options';
 import { RedisClient } from './client';
 import { RedisPatternFormatter } from '../server';
@@ -56,66 +55,31 @@ function redisClientTransportFactory(option: Partial<RedisClientOptions>, asDefa
         connectOpts: option.connectOpts ? { ...option.connectOpts } : undefined,
     } as RedisClientOptions;
     config.formatter ??= RedisPatternFormatter;
-    config.providers ??= [];
-    config.providers.push(
-        { provide: REDIS_CLIENT_OPTIONS, useValue: config },
-    );
-    const clientToken = getClientToken(config);
-    const hanlderToken = getClientHandlerToken(config);
     const backendToken = getClientBackendToken(config);
-    const interceptorsToken = getClientInterceptorsToken(config);
-
-    const providers: Provider[] = [
-        { provide: CLIENT_CONFIGS, useValue: config, multi: true },
-        asProvider({
+    const defaultProviders: Provider[] = [];
+    if (asDefault && config.formatter) {
+        if (config.formatter === RedisPatternFormatter) {
+            defaultProviders.push(RedisPatternFormatter);
+        }
+        defaultProviders.push({
+            provide: PatternFormatter,
+            useFactory: (injector: Injector) => injector.get(config.formatter!),
+            deps: [Injector]
+        });
+    }
+    return createClientTransportFeature({
+        config,
+        asDefault,
+        optionToken: REDIS_CLIENT_OPTIONS,
+        clientType: RedisClient,
+        backendProvider: asProvider({
             provide: backendToken,
             useFactory: (injector: Injector) => wrapClientBackendWithTransfer(injector, config, createRedisClientBackend(config)),
             deps: [Injector],
             multi: true
         }),
-        {
-            provide: hanlderToken,
-            useFactory: (injector: Injector) => createRequestHandler(injector, config),
-            deps: [
-                Injector
-            ]
-        },
-        {
-            provide: clientToken,
-            useFactory: (injector: Injector) => {
-                const handler = injector.get(hanlderToken);
-                const childInjector = createInjector(injector, {
-                    providers: [
-                        { provide: REDIS_CLIENT_OPTIONS, useValue: config },
-                        { provide: ClientHandler, useValue: handler },
-                        RedisClient
-                    ]
-                });
-                return childInjector.get(RedisClient);
-            },
-            deps: [Injector]
-        },
-        { provide: interceptorsToken, useValue: ensureClientConnectedInterceptor(config), multi: true, multiOrder: 0 }
-    ];
-
-    if (asDefault) {
-        providers.push({
-            provide: RedisClient,
-            useExisting: clientToken
-        });
-        if (config.formatter) {
-            if (config.formatter === RedisPatternFormatter) {
-                providers.push(RedisPatternFormatter);
-            }
-            providers.push({
-                provide: PatternFormatter,
-                useFactory: (injector: Injector) => injector.get(config.formatter!),
-                deps: [Injector]
-            });
-        }
-    }
-    return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;
-
+        defaultProviders
+    });
 }
 
 export function withRedisTransport(...options: Partial<RedisClientOptions>[]): ClientTransportFeature[] {

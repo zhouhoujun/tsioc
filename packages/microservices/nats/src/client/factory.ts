@@ -1,8 +1,7 @@
-import { createInjector, asProvider, Injector, Provider, isNil } from '@tsdi/ioc';
-import { createRequestHandler, TransferSide, Transport, PatternFormatter, REQUEST, ResponseEventPacket } from '@tsdi/common';
+import { asProvider, Injector, Provider, isNil } from '@tsdi/ioc';
+import { TransferSide, Transport, PatternFormatter, REQUEST, ResponseEventPacket } from '@tsdi/common';
 import { SOCKET, useBrokerClientTransfer } from '@tsdi/transport';
-import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
-import { ensureClientConnectedInterceptor } from '@tsdi/client/src/interceptors/connect';
+import { createClientTransportFeature, getClientBackendToken, wrapClientBackendWithTransfer, ClientTransportFeature } from '@tsdi/client';
 import { NATS_CLIENT_OPTIONS, NatsClientOptions } from './options';
 import { NatsClient } from './client';
 import { NatsRequest } from './request';
@@ -55,63 +54,31 @@ function natsClientTransportFactory(option: Partial<NatsClientOptions>, asDefaul
         servers: option.servers ? [...option.servers] : undefined,
     } as NatsClientOptions;
     config.formatter ??= NatsPatternFormatter;
-    config.providers ??= [];
-    config.providers.push(
-        { provide: NATS_CLIENT_OPTIONS, useValue: config },
-    );
-    const clientToken = getClientToken(config);
-    const hanlderToken = getClientHandlerToken(config);
     const backendToken = getClientBackendToken(config);
-    const interceptorsToken = getClientInterceptorsToken(config);
-
-    const providers: Provider[] = [
-        { provide: CLIENT_CONFIGS, useValue: config, multi: true },
-        asProvider({
+    const defaultProviders: Provider[] = [];
+    if (asDefault && config.formatter) {
+        if (config.formatter === NatsPatternFormatter) {
+            defaultProviders.push(NatsPatternFormatter);
+        }
+        defaultProviders.push({
+            provide: PatternFormatter,
+            useFactory: (injector: Injector) => injector.get(config.formatter!),
+            deps: [Injector]
+        });
+    }
+    return createClientTransportFeature({
+        config,
+        asDefault,
+        optionToken: NATS_CLIENT_OPTIONS,
+        clientType: NatsClient,
+        backendProvider: asProvider({
             provide: backendToken,
             useFactory: (injector: Injector) => wrapClientBackendWithTransfer(injector, config, createNatsClientBackend(config)),
             deps: [Injector],
             multi: true
         }),
-        {
-            provide: hanlderToken,
-            useFactory: (injector: Injector) => createRequestHandler(injector, config),
-            deps: [
-                Injector
-            ]
-        },
-        {
-            provide: clientToken,
-            useFactory: (injector: Injector) => {
-                const handler = injector.get(hanlderToken);
-                const childInjector = createInjector(injector, {
-                    providers: [
-                        { provide: NATS_CLIENT_OPTIONS, useValue: config },
-                        { provide: ClientHandler, useValue: handler },
-                        NatsClient
-                    ]
-                });
-                return childInjector.get(NatsClient);
-            },
-            deps: [Injector]
-        },
-        { provide: interceptorsToken, useValue: ensureClientConnectedInterceptor(config), multi: true, multiOrder: 0 }
-    ];
-
-    if (asDefault) {
-        providers.push({
-            provide: NatsClient,
-            useExisting: clientToken
-        });
-        if (config.formatter) {
-            providers.push({
-                provide: PatternFormatter,
-                useFactory: (injector: Injector) => injector.get(config.formatter!),
-                deps: [Injector]
-            });
-        }
-    }
-    return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;
-
+        defaultProviders
+    });
 }
 
 export function withNatsTransport(...options: Partial<NatsClientOptions>[]): ClientTransportFeature[] {

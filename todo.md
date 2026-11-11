@@ -3376,3 +3376,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 新增真实 HTTP 回归 `mcp-agent-service.spec.ts`：initialize、tools/list、tools/call、resources/list、prompts/list 全链路通过，验证 agent MCP registry → microservice MCP → JSON-RPC 客户端。
   - 工具/依赖：root tsconfig 增加 `@tsdi/mcp-microservice` 路径；agent-tools 增加 `@tsdi/mcp-microservice` 依赖。
   - 回归：service 47、mcp 37、agent-tools mcp 12、ws 88、grpc 17、tcp 65、udp 54、coap 25 passing；amqp/kafka/mqtt/nats/redis 仅做 tsc --noUnusedLocals 静态检查（本机无 broker）。
+- 微服务客户端协议工厂通用化（2026-11-11）：
+  - 新增 `createClientTransportFeature`（@tsdi/client）：统一 config 注册、backend、handler、client 实例、连接 interceptor 与 asDefault formatter provider；协议包只需提供 config/clientType/backend。
+  - 已迁移协议客户端工厂：ws、grpc、tcp、udp、coap、mcp、amqp、kafka、nats、redis；共减少约 500 行重复代码。mqtt 客户端结构特殊，暂保留原实现。
+  - Docker broker 真实回归：amqp 55、kafka 73、nats 54、redis 73、mqtt 81 passing；coap 25、tcp 65、udp 54、ws 88、grpc 17、mcp 37、client 72 passing。
