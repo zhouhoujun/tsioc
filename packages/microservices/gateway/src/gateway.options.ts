@@ -378,6 +378,11 @@ export interface GatewayBulkheadOptions {
      * error message when the bulkhead is full.
      */
     message?: string;
+    /**
+     * apply an additional per-endpoint concurrency limit.
+     * Default false (route-level bulkhead only).
+     */
+    perEndpoint?: boolean;
 }
 
 export interface GatewayCacheOptions {

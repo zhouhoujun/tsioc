@@ -199,7 +199,9 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
 
     private async forward(route: ResolvedGatewayRoute, request: HttpRequestMessage, context: RequestContext): Promise<any> {
         const startedAt = Date.now();
-        const traceHeaders = this.ensureTraceHeaders(request);
+        const trace = this.startTrace(request);
+        const traceHeaders = trace.headers;
+        try {
         this.applyGlobalRateLimit(request, context);
         this.applyRateLimit(route, request, context);
         await this.authorize(route, request, context);
@@ -303,6 +305,12 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         } finally {
             releaseBulkhead();
         }
+        } catch (error) {
+            trace.error = error;
+            throw error;
+        } finally {
+            trace.finish(trace.error);
+        }
     }
 
     private async forwardAggregate(route: ResolvedGatewayRoute, request: HttpRequestMessage, traceHeaders: Record<string, string>): Promise<GatewayForwardResult> {
@@ -385,6 +393,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
                     statusMessage: 'Service Unavailable'
                 });
             }
+            let releaseEndpoint: () => void = () => undefined;
             if (target.endpoint) {
                 if (!this.canPassEndpointCircuit(route, routeKey, target.endpoint)) {
                     excluded.add(target.endpoint.id);
@@ -392,6 +401,17 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
                 }
                 excluded.add(target.endpoint.id);
                 this.runtime.beginEndpointRequest(target.endpoint.id);
+                try {
+                    releaseEndpoint = await this.acquireEndpointBulkhead(route, routeKey, target.endpoint);
+                } catch (error: any) {
+                    this.runtime.endEndpointRequest(target.endpoint.id);
+                    lastError = error;
+                    if (attempt >= attempts - 1) {
+                        throw error;
+                    }
+                    await this.waitBeforeRetry(route, attempt);
+                    continue;
+                }
             }
             try {
                 const result = await this.forwardHttpTarget(route, request, traceHeaders, target);
@@ -411,6 +431,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
                 }
                 await this.waitBeforeRetry(route, attempt);
             } finally {
+                releaseEndpoint();
                 if (target.endpoint) {
                     this.runtime.endEndpointRequest(target.endpoint.id);
                 }
@@ -447,6 +468,13 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
 
     private endpointCircuitEnabled(route: ResolvedGatewayRoute): boolean {
         return !!route.circuitBreaker && route.circuitBreaker.perEndpoint !== false;
+    }
+
+    private acquireEndpointBulkhead(route: ResolvedGatewayRoute, routeKey: string, endpoint?: ServiceEndpoint): Promise<() => void> {
+        if (!endpoint || !route.bulkhead || typeof route.bulkhead !== 'object' || route.bulkhead.perEndpoint !== true) {
+            return Promise.resolve(() => undefined);
+        }
+        return this.runtime.acquireBulkhead(`${routeKey}:bulkhead:${endpoint.id}`, route.bulkhead);
     }
 
     private async forwardHttpTarget(
@@ -545,6 +573,20 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
                 excluded.add(endpoint.id);
                 this.runtime.beginEndpointRequest(endpoint.id);
             }
+            let releaseEndpoint: () => void = () => undefined;
+            try {
+                releaseEndpoint = await this.acquireEndpointBulkhead(route, routeKey, endpoint ?? undefined);
+            } catch (error: any) {
+                if (endpoint) {
+                    this.runtime.endEndpointRequest(endpoint.id);
+                }
+                lastError = error;
+                if (attempt >= retries) {
+                    throw error;
+                }
+                await this.waitBeforeRetry(route, attempt);
+                continue;
+            }
             try {
                 const response = await lastValueFrom(client.send(pattern as any, {
                     payload,
@@ -571,6 +613,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
                 }
                 await this.waitBeforeRetry(route, attempt);
             } finally {
+                releaseEndpoint();
                 if (endpoint) {
                     this.runtime.endEndpointRequest(endpoint.id);
                 }
@@ -589,7 +632,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         const endpoints = (await this.discoverEndpoints(route.service))
             .filter(endpoint => (endpoint.status ?? 'UP') !== 'DOWN')
             .filter(endpoint => this.runtime.isEndpointAvailable(endpoint))
-            .filter(endpoint => !excluded?.has(endpoint.id));;
+            .filter(endpoint => !excluded?.has(endpoint.id));
         const candidates = this.filterCanaryEndpoints(route, endpoints);
         const pool = candidates.length > 0 ? candidates : endpoints;
         if (!pool.length) {
@@ -1333,7 +1376,11 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         }
     }
 
-    private ensureTraceHeaders(request: HttpRequestMessage): Record<string, string> {
+    private startTrace(request: HttpRequestMessage): {
+        headers: Record<string, string>;
+        error?: any;
+        finish(error?: any): void;
+    } {
         const carrier: Record<string, string> = {};
         const existingTrace = this.getHeaderValue(request, 'x-trace-id');
         const existingSpan = this.getHeaderValue(request, 'x-span-id');
@@ -1341,19 +1388,34 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             carrier['x-trace-id'] = existingTrace;
             carrier['x-span-id'] = existingSpan;
             carrier['x-request-id'] = this.getHeaderValue(request, 'x-request-id') ?? existingTrace;
-            return carrier;
+            return { headers: carrier, finish: () => undefined };
         }
+        let finish: (error?: any) => void = () => undefined;
         if (this.tracer) {
-            const span = this.tracer.startSpan(`gateway ${request.method ?? 'GET'} ${this.normalizeRequestUrl(request.url ?? '/')}`);
+            const span = this.tracer.startSpan(
+                `gateway ${request.method ?? 'GET'} ${this.normalizeRequestUrl(request.url ?? '/')}`,
+                { kind: 'SERVER' }
+            );
             this.tracer.injectContext(span.context(), carrier);
-            span.finish();
+            finish = (error?: any) => {
+                if (error) {
+                    span.setStatus('ERROR');
+                    span.recordError(error instanceof Error ? error : new Error(String(error?.message ?? error)));
+                } else {
+                    span.setStatus('OK');
+                }
+                span.finish();
+            };
         } else {
             carrier['x-trace-id'] = this.generateTraceId();
             carrier['x-span-id'] = this.generateTraceId().slice(0, 16);
         }
         const requestId = this.getHeaderValue(request, 'x-request-id') ?? carrier['x-trace-id'];
         carrier['x-request-id'] = requestId;
-        return carrier;
+        return {
+            headers: carrier,
+            finish
+        };
     }
 
     private recordGatewayError(
@@ -1387,6 +1449,9 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         const labels = this.buildMetricsLabels(route, request, status, meta);
         this.metrics.increment('gateway_requests_total', 1, labels);
         this.metrics.timing('gateway_request_duration_ms', duration, labels);
+        if (meta?.errorType) {
+            this.metrics.increment('gateway_errors_total', 1, labels);
+        }
     }
 
     private buildMetricsLabels(

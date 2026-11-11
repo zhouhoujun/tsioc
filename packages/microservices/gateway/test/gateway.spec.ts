@@ -9,6 +9,7 @@ import { InMemoryServiceDiscovery } from '../../discovery/src';
 import { ConfigurationManagerGatewayAdapter, GatewayInterceptor, GatewayLifecycle, GatewayModule, GatewayRuntime, classifyGatewayError } from '../src';
 import { getClientToken } from '../../client/src/tokens';
 import { DefaultConfigurationManager } from '../../config/src';
+import { DefaultTracer } from '../../tracing/src';
 
 describe('Gateway', () => {
     function createContext(adapter: any = {}, extra = new Map<any, any>()) {
@@ -140,6 +141,53 @@ describe('Gateway', () => {
         }, null as any, null as any, new GatewayRuntime(), null as any, { get: () => null } as any);
         expect((interceptor as any).httpFetch).toBeDefined();
         interceptor.onDestroy();
+    });
+
+    it('emits a completed SERVER span per gateway request', async () => {
+        const tracer = new DefaultTracer({ serviceName: 'gateway-test', propagateHeaders: true });
+        const spans: any[] = [];
+        tracer.addExporter({ export: async batch => { spans.push(...batch); } });
+        const sent: any = {};
+        const adapter = {
+            setStatus(code: number) { sent.status = code; return this; },
+            setHeader() { return this; },
+            setPayload(payload: any) { sent.payload = payload; return this; },
+            sendResponse(payload: any) { sent.sentPayload = payload; }
+        };
+        const context = createContext(adapter);
+        (context as any).set(require('../../http/src/server').HttpMessageAdapter, adapter);
+        (context as any).set(require('../../http/src/server').HTTP_RESPONSE, sent);
+        const interceptor = new GatewayInterceptor({
+            routes: [{ path: '/trace', service: 'trace-service', targetUrl: 'http://trace.internal' }]
+        }, null as any, null as any, new GatewayRuntime(), null as any, tracer as any);
+
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = (async () => ({
+            status: 200,
+            statusText: 'OK',
+            headers: new Headers({ 'content-type': 'application/json' }),
+            async json() { return { ok: true }; },
+            async text() { return '{"ok":true}'; }
+        })) as any;
+        try {
+            await new Promise<void>((resolve, reject) => {
+                interceptor.intercept({ url: '/trace', method: 'GET', headers: {}, socket: { remoteAddress: '127.0.0.1' } } as any,
+                    { handle: () => of(null) } as any, context).subscribe({
+                    next: () => resolve(),
+                    error: reject,
+                    complete: () => resolve()
+                });
+            });
+            await tracer.flush();
+        } finally {
+            globalThis.fetch = originalFetch;
+            await tracer.close();
+        }
+
+        const span = spans.find(item => item.kind === 'SERVER' && item.name.includes('/trace'));
+        expect(span).toBeDefined();
+        expect(span.status).toBe('OK');
+        expect(span.duration).toBeGreaterThanOrEqual(0);
     });
 
     it('fails over to the next endpoint for retryable GET requests', async () => {

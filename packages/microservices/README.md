@@ -149,17 +149,19 @@
   - Circuit Breaker half-open
   - per-endpoint circuit breaker
   - 限流 / 限次 / 降频
-  - Bulkhead 并发隔离 + 有界排队/超时
+  - Bulkhead 并发隔离 + 有界排队/超时 + per-endpoint 限流
   - HTTP 出站连接池（undici Agent，可配置连接数/keep-alive/超时）
   - 统一错误分类（`x-gateway-error-type`、access log、metrics label）
+  - Gateway 请求级 SERVER span（成功 OK / 失败 ERROR + recordError）
+  - `gateway_errors_total` 错误计数指标
   - failover 指数退避 + jitter
 - 待补充：
   - 更细粒度背压策略
 
 ### P2：统一 Resiliency + Observability
 
-- 统一超时、重试、熔断、隔离舱、背压
-- OpenTelemetry：
+- 已实现：统一超时、重试、熔断、隔离舱、背压基础能力；Gateway SERVER span 生命周期与错误分类指标
+- 待补充：OpenTelemetry：
   - trace parent propagation
   - span 命名与状态
   - 统一 metrics 标签

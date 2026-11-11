@@ -3466,3 +3466,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `loadBalance.retryBackoffMs` / `retryBackoffMaxMs` / `retryJitter`：retry 使用指数退避 + 抖动，默认 0 保持兼容。
   - HTTP 与非 HTTP failover 均在重试前等待退避；新增 `resolveRetryBackoff` 纯函数与单测（默认关闭、指数上限、抖动区间）。
   - 回归：gateway 41 passing。
+- Gateway P1/P2 收尾（2026-11-11）：
+  - Bulkhead 支持 per-endpoint 额外并发限制：HTTP/非 HTTP failover 每次尝试按 endpoint 获取槽位，失败自动跳到下一节点。
+  - Gateway 请求级 tracing：`startTrace` 创建 SERVER span，成功设置 OK、失败设置 ERROR + recordError，结束于 forward finally；已有 trace 头继续透传。
+  - metrics 新增 `gateway_errors_total`，复用 error_type 分类标签。
+  - 回归：gateway 42 passing；README 同步 P1/P2 状态。
