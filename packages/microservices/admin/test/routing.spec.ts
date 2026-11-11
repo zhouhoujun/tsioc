@@ -1,8 +1,24 @@
 import expect = require('expect');
+import { lastValueFrom, Observable, throwError } from 'rxjs';
 import { adminRouteHash, buildAdminLoginUrl, parseAdminRoute } from '../web/routing';
 import { GatewayAdminAuthGuard } from '../web/auth.guard';
-import { adminUnauthorizedInterceptor } from '../web/http';
-import { lastValueFrom, throwError } from 'rxjs';
+import { AdminHttpResult, GatewayAdminHttp, adminUnauthorizedInterceptor } from '../web/http';
+
+type SessionResult = AdminHttpResult<{ authenticated?: boolean; user?: unknown; authEnabled?: boolean }>;
+
+interface UnauthorizedRequest {
+    url: string;
+}
+
+type TestInterceptor = (
+    request: UnauthorizedRequest,
+    next: () => Observable<never>,
+    context: unknown
+) => Observable<unknown>;
+
+function createGuard(session: () => Promise<SessionResult>): GatewayAdminAuthGuard {
+    return new GatewayAdminAuthGuard({ session } as unknown as GatewayAdminHttp);
+}
 
 describe('gateway admin UI routing', () => {
     it('parses dashboard/routes/rules hashes', () => {
@@ -20,24 +36,27 @@ describe('gateway admin UI routing', () => {
     });
 
     it('rejects protected routes when the admin API returns 401', async () => {
-        const guard = new GatewayAdminAuthGuard({
-            session: async () => ({ ok: false, status: 401 })
-        } as any);
+        const guard = createGuard(async () => ({ ok: false, status: 401 }));
         expect(await guard.canActivate()).toBe(false);
 
-        const missingUser = new GatewayAdminAuthGuard({
-            session: async () => ({ ok: true, status: 200, body: { authenticated: true, authEnabled: true, user: null } })
-        } as any);
+        const missingUser = createGuard(async () => ({
+            ok: true,
+            status: 200,
+            body: { authenticated: true, authEnabled: true, user: null }
+        }));
         expect(await missingUser.canActivate()).toBe(false);
 
-        const allowed = new GatewayAdminAuthGuard({
-            session: async () => ({ ok: true, status: 200, body: { authenticated: true, authEnabled: false, user: null } })
-        } as any);
+        const allowed = createGuard(async () => ({
+            ok: true,
+            status: 200,
+            body: { authenticated: true, authEnabled: false, user: null }
+        }));
         expect(await allowed.canActivate()).toBe(true);
     });
 
     it('redirects to the login page from the HTTP 401 interceptor', async () => {
-        const original = (globalThis as any).window;
+        const globals = globalThis as unknown as { window?: { location?: Location } };
+        const original = globals.window;
         let target = '';
         const location = {
             href: 'http://localhost/admin/#/rules',
@@ -47,25 +66,26 @@ describe('gateway admin UI routing', () => {
             replace(url: string) { target = url; },
             assign(url: string) { target = url; }
         };
-        (globalThis as any).window = { location };
+        globals.window = { location: location as unknown as Location };
+        const interceptor = adminUnauthorizedInterceptor as unknown as TestInterceptor;
         try {
-            await lastValueFrom((adminUnauthorizedInterceptor as any)(
-                { url: '/api/gateway-admin/routes' } as any,
+            await lastValueFrom(interceptor(
+                { url: '/api/gateway-admin/routes' },
                 () => throwError(() => ({ status: 401 })),
-                {} as any
+                {}
             )).catch(() => undefined);
             expect(target).toContain('/admin/login.html?redirect=');
             expect(target).toContain('%23%2Frules');
 
             target = '';
-            await lastValueFrom((adminUnauthorizedInterceptor as any)(
-                { url: '/api/gateway-admin/routes' } as any,
+            await lastValueFrom(interceptor(
+                { url: '/api/gateway-admin/routes' },
                 () => throwError(() => ({ status: 500 })),
-                {} as any
+                {}
             )).catch(() => undefined);
             expect(target).toBe('');
         } finally {
-            (globalThis as any).window = original;
+            globals.window = original;
         }
     });
 
