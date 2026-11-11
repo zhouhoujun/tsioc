@@ -169,17 +169,18 @@
   - client error / server error / timeout / circuit open / rate limited
 - 健康检查与优雅关闭统一
 
-### P3：开发体验与 AOT
+### P3：开发体验与 AOT（基础完成）
 
-- 统一所有包的构建入口与 AOT 配置
-- 脚手架 / CLI：
-  - `create service`
-  - `create gateway`
-  - `create transport adapter`
+- 微服务包 `taskfile.ts` 统一使用 `@tsdi/compiler` 的 `runCompiler` AOT 构建入口。
+- 脚手架：
+  - `node scripts/scaffold-microservice.mjs <name>` 创建 HTTP 服务包
+  - `node scripts/scaffold-microservice.mjs <name> --kind gateway` 创建 Gateway 包
+  - 生成 package.json / tsconfig / taskfile / main / module / controller / README
 - 契约优先：
-  - 共享 DTO / schema
-  - OpenAPI / gRPC proto
-  - 校验与类型生成
+  - 共享 DTO + `@RequestBody` / `@RequestParam` 等参数装饰器
+  - `@tsdi/core` pipes 做输入校验/转换
+  - Swagger/OpenAPI 作为现有契约输出；gRPC 使用 proto 作为契约源
+- 待增强：从 schema 自动生成 DTO、OpenAPI/proto 双向同步、脚手架自定义 transport 模板
 
 ---
 
@@ -339,7 +340,25 @@ useGateway({
 
 ---
 
-## 9. 选型建议
+## 9. 脚手架
+
+```bash
+# HTTP 微服务
+node scripts/scaffold-microservice.mjs orders --port 3000
+
+# Gateway
+node scripts/scaffold-microservice.mjs edge --kind gateway --port 8080
+```
+
+生成后：
+
+```bash
+cd packages/microservices/orders
+npm run build
+node ../../dist/orders/main.js
+```
+
+## 10. 选型建议
 
 | 目标 | 建议 |
 |---|---|

@@ -3471,3 +3471,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - Gateway 请求级 tracing：`startTrace` 创建 SERVER span，成功设置 OK、失败设置 ERROR + recordError，结束于 forward finally；已有 trace 头继续透传。
   - metrics 新增 `gateway_errors_total`，复用 error_type 分类标签。
   - 回归：gateway 42 passing；README 同步 P1/P2 状态。
+- 微服务脚手架与 P3 收尾（2026-11-11）：
+  - 新增 `scripts/scaffold-microservice.mjs`：生成 HTTP 服务包或 Gateway 包（package.json、tsconfig、taskfile、main、module/controller、README）。
+  - 生成的 taskfile 使用 `runCompiler` AOT 入口；实测生成 service 包可 `npm run build` 产出 JS/d.ts/aot-manifest。
+  - README 补充脚手架用法、P3 AOT/契约优先现状与后续增强项。
+  - 验证：service/gateway 模板 tsc 通过，service 模板真实构建通过。
