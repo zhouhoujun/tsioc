@@ -14,7 +14,7 @@ async function flush(): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 0));
 }
 
-async function waitFor(check: () => boolean, timeoutMs = 2000): Promise<void> {
+async function waitFor(check: () => boolean, timeoutMs = 2500): Promise<void> {
     const started = Date.now();
     while (!check() && Date.now() - started < timeoutMs) {
         await flush();
@@ -52,8 +52,7 @@ describe('Microservice admin UI', () => {
                 return jsonResponse([]);
             }
             if (path === '/api/gateway-admin/routes' && method === 'PUT') {
-                const body = JSON.parse(init.body);
-                routes = body.routes;
+                routes = JSON.parse(init.body).routes;
                 return jsonResponse({ routes, rules, services: ['users-service'] });
             }
             if (path.startsWith('/api/gateway-admin/rules/') && method === 'PUT') {
@@ -84,7 +83,8 @@ describe('Microservice admin UI', () => {
         });
         ref = ctx.runners.getRef(GatewayAdminComponent) as ComponentRef<GatewayAdminComponent>;
         root = ref.hostView.rootNodes[0] as any;
-        await waitFor(() => root.querySelectorAll('.ga-route-card').length === 1);
+        await waitFor(() => root.querySelectorAll('.ga-nav-item').length === 3);
+        await waitFor(() => (root.querySelector('.ga-status')?.textContent || '').includes('Ready'));
     });
 
     afterEach(async () => {
@@ -92,34 +92,55 @@ describe('Microservice admin UI', () => {
         await ctx?.close();
     });
 
-    it('renders the route table and the activity-based rule designer', () => {
+    it('renders a dashboard and keeps the visual designer closed by default', () => {
         expect(root.matches('.ga-shell')).toBe(true);
-        expect(root.querySelectorAll('.ga-route-card').length).toBe(1);
-        expect((root.querySelector('.ga-routes .ga-input-path') as any).value).toBe('/api/users');
-        expect(root.querySelectorAll('.workflow-node').length).toBeGreaterThanOrEqual(4);
-        const gatewayNodes = root.querySelectorAll('.workflow-palette-item[data-node-type^="gateway-"]');
-        expect(gatewayNodes.length).toBe(3);
-        expect((root.querySelector('.ga-status') as any).textContent).toContain('Ready');
+        expect(root.querySelectorAll('.ga-nav-item').length).toBe(3);
+        expect(root.querySelectorAll('.ga-metric').length).toBe(4);
+        expect(root.querySelector('.ga-designer-page')).toBeFalsy();
+        expect(root.querySelector('.ga-status').textContent).toContain('Ready');
     });
 
-    it('adds routes and applies them through the admin API', async () => {
-        const buttons = root.querySelectorAll('.ga-routes .ga-actions .ga-btn');
-        (buttons[0] as any).click();
+    it('edits and applies routes through the route table and drawer', async () => {
+        (root.querySelector('.ga-nav-item:nth-child(2)') as any).click();
         await flush();
-        expect(root.querySelectorAll('.ga-route-card').length).toBe(2);
+        expect(root.querySelectorAll('.ga-route-row').length).toBe(1);
 
-        (buttons[1] as any).click();
-        await waitFor(() => ((root.querySelector('.ga-status') as any)?.textContent || '').includes('Routes applied'));
+        (root.querySelector('.ga-add-route') as any).click();
+        await flush();
+        expect(root.querySelector('.ga-route-editor, .ga-modal-card')).toBeTruthy();
+
+        const pathInput = root.querySelector('.ga-modal-card [data-field="path"]') as any;
+        const serviceInput = root.querySelector('.ga-modal-card [data-field="service"]') as any;
+        pathInput.value = '/api/orders';
+        pathInput.dispatchEvent(new (root.ownerDocument.defaultView as any).Event('input', { bubbles: true }));
+        serviceInput.value = 'orders-service';
+        serviceInput.dispatchEvent(new (root.ownerDocument.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        (root.querySelector('.ga-route-save') as any).click();
+        await flush();
+        expect(root.querySelectorAll('.ga-route-row').length).toBe(2);
+
+        (root.querySelector('.ga-apply-routes') as any).click();
+        await waitFor(() => (root.querySelector('.ga-status')?.textContent || '').includes('Routes applied'));
         expect(routes.length).toBe(2);
-        expect((root.querySelector('.ga-status') as any).textContent).toContain('Routes applied');
+        expect(routes[1].path).toBe('/api/orders');
     });
 
-    it('saves the visual workflow and applies compiled gateway rules', async () => {
-        (root.querySelector('.ga-rules .ga-actions .ga-btn-primary') as any).click();
-        await waitFor(() => ((root.querySelector('.ga-status') as any)?.textContent || '').includes('Rules applied'));
+    it('opens the activity designer only when configuring rules, then applies compiled rules', async () => {
+        (root.querySelector('.ga-nav-item:nth-child(3)') as any).click();
+        await flush();
+        expect(root.querySelector('.ga-designer-page')).toBeFalsy();
+
+        (root.querySelector('.ga-edit-rules') as any).click();
+        await waitFor(() => !!root.querySelector('.ga-designer-page'));
+        expect(root.querySelectorAll('.workflow-node').length).toBeGreaterThanOrEqual(4);
+        expect(root.querySelectorAll('.workflow-palette-item[data-node-type^="gateway-"]').length).toBe(3);
+
+        (root.querySelector('.ga-rules-apply') as any).click();
+        await waitFor(() => !root.querySelector('.ga-designer-page'));
         expect(rules.length).toBe(2);
         expect(rules[0].action.type).toBe('route');
         expect(rules[1].action.type).toBe('deny');
-        expect((root.querySelector('.ga-status') as any).textContent).toContain('Rules applied');
+        expect(root.querySelector('.ga-status').textContent).toContain('Rules applied');
     });
 });

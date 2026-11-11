@@ -63,6 +63,30 @@ export const WORKFLOW_DESIGNER_CSS = `
     display: none !important;
 }
 
+/* Global management bar: workflow tabs + host-level management menu */
+.workflow-global-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 8px;
+    background: var(--wf-theme-surface-alt, #f8fafc);
+    border-bottom: 1px solid var(--wf-theme-border, #e2e8f0);
+}
+
+.workflow-global-bar .workflow-tabs {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    border-bottom: 0;
+}
+
+.workflow-management-menu {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    padding-right: 2px;
+}
+
 /* Open workflow tabs */
 .workflow-tabs {
     display: block;
@@ -299,7 +323,23 @@ export const WORKFLOW_DESIGNER_CSS = `
     color: #dc2626;
 }
 
-.workflow-designer > workspace-layout {
+.workflow-designer-preview {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+}
+
+.workflow-designer > .workflow-designer-preview {
+    height: auto;
+    min-height: 0;
+    flex: 1;
+}
+
+.workflow-designer > workspace-layout,
+.workflow-designer-preview > workspace-layout {
     flex: 1 1 auto;
     min-height: 0;
 }

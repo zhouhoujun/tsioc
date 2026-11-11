@@ -525,16 +525,16 @@ describe('Workflow Designer UI', () => {
     });
 
     it('opens the node-red style menu and dispatches toolbar actions', async () => {
-        const trigger = root.querySelector('.workflow-toolbar .menu-bar-trigger') as any;
+        const trigger = root.querySelector('.workflow-global-bar .menu-bar-trigger') as any;
         expect(trigger).toBeTruthy();
-        const popup = root.querySelector('.workflow-toolbar .menu-bar-popup') as any;
+        const popup = root.querySelector('.workflow-global-bar .menu-bar-popup') as any;
         expect(popup.hasAttribute('hidden')).toBe(true);
 
         trigger.click();
         await flush();
         expect(popup.hasAttribute('hidden')).toBe(false);
 
-        const logs = root.querySelector('.workflow-toolbar [data-menu-id="toggle-logs"]') as any;
+        const logs = root.querySelector('.workflow-global-bar [data-menu-id="toggle-logs"]') as any;
         expect(logs).toBeTruthy();
         logs.click();
         await flush();

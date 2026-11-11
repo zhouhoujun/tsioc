@@ -29,7 +29,9 @@ import {
     WorkflowRunHistoryComponent,
     WorkflowRunLogComponent,
     WorkflowLibraryComponent,
-    WorkflowDesignerComponent
+    WorkflowDesignerComponent,
+    WorkflowDesignerPreviewComponent,
+    WorkflowManagementMenuComponent
 } from './visual';
 
 
@@ -99,6 +101,8 @@ import {
         WorkflowRunHistoryComponent,
         WorkflowRunLogComponent,
         WorkflowLibraryComponent,
+        WorkflowDesignerPreviewComponent,
+        WorkflowManagementMenuComponent,
         WorkflowDesignerComponent
     ],
     exports: [
@@ -151,6 +155,8 @@ import {
         WorkflowRunHistoryComponent,
         WorkflowRunLogComponent,
         WorkflowLibraryComponent,
+        WorkflowDesignerPreviewComponent,
+        WorkflowManagementMenuComponent,
         WorkflowDesignerComponent,
         ActivityInterceptorService,
         ActivityLogAspect,
