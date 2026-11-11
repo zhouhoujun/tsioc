@@ -1,4 +1,4 @@
-import { Injectable } from '@tsdi/ioc';
+import { Injectable, Optional } from '@tsdi/ioc';
 import { RequestInterceptor, RequestContext, RequestHandler, Incoming, Outgoing, ReadableLike, WritableLike } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
@@ -15,7 +15,7 @@ export class MetricsInterceptor implements RequestInterceptor<ReadableLike<Incom
     constructor(
         private requestCounter: RequestCounter,
         private errorCounter: ErrorCounter,
-        private latencyHistogram: LatencyHistogram
+        @Optional() private latencyHistogram?: LatencyHistogram
     ) {}
 
     intercept(input: ReadableLike<Incoming>, next: RequestHandler<ReadableLike<Incoming>, WritableLike<Outgoing>, RequestContext>, context: RequestContext): Observable<WritableLike<Outgoing>> {
@@ -36,7 +36,7 @@ export class MetricsInterceptor implements RequestInterceptor<ReadableLike<Incom
                 this.requestCounter.recordResponse(method, path, status);
 
                 // Record latency
-                this.latencyHistogram.recordLatency(method, path, status, duration);
+                this.latencyHistogram?.recordLatency(method, path, status, duration);
             }),
             catchError((err: Error) => {
                 const duration = Date.now() - start;
@@ -46,7 +46,7 @@ export class MetricsInterceptor implements RequestInterceptor<ReadableLike<Incom
                 this.errorCounter.recordException(method, path, err.name || 'Error');
 
                 // Record latency even for errors
-                this.latencyHistogram.recordLatency(method, path, status, duration);
+                this.latencyHistogram?.recordLatency(method, path, status, duration);
 
                 throw err;
             })

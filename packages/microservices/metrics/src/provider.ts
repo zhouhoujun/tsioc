@@ -6,8 +6,13 @@ import {
     ServiceFeatureKind
 } from '@tsdi/service';
 import { MetricsModuleOptions } from './metrics';
-import { METRICS_OPTIONS, METRICS_PROVIDERS } from './metrics.module';
+import { METRICS_OPTIONS } from './metrics.module';
 import { MetricsInterceptor } from './interceptors/metrics.interceptor';
+import { MetricsRegistry } from './registry';
+import { MetricsCollector } from './collector';
+import { MemoryGauge } from './gauges';
+import { LatencyHistogram } from './histograms';
+import { RequestCounter, ErrorCounter } from './counters';
 
 /**
  * Register metrics collection for a microservice transport.
@@ -15,7 +20,7 @@ import { MetricsInterceptor } from './interceptors/metrics.interceptor';
  * ```ts
  * provideService(
  *   useRouter(),
- *   useMetrics(),
+ *   useMetrics({ prefix: 'myapp', defaultLabels: { env: 'prod' } }),
  *   useHttpTransport({ listenOpts: { port: 3000 }, asDefault: true })
  * )
  * ```
@@ -24,19 +29,42 @@ import { MetricsInterceptor } from './interceptors/metrics.interceptor';
  * application root module; this feature only wires registry/collector and the
  * HTTP request interceptor.
  */
-export function useMetrics(options?: MetricsModuleOptions): ServiceFeatureFn<ServiceFeatureKind.Interceptors> {
+export function useMetrics(options: MetricsModuleOptions = {}): ServiceFeatureFn<ServiceFeatureKind.Interceptors> {
     return (config) => {
         const interceptorToken = getServiceInterceptorsToken(config);
+        const includeMemory = options.includeMemory !== false;
+        const includeLatency = options.includeLatency !== false;
         const providers: Provider[] = [
-            ...METRICS_PROVIDERS,
-            { provide: METRICS_OPTIONS, useValue: options ?? {} },
+            MetricsRegistry,
+            RequestCounter,
+            ErrorCounter,
+            { provide: METRICS_OPTIONS, useValue: options },
             {
-                provide: interceptorToken,
-                useExisting: MetricsInterceptor,
-                multi: true,
-                multiOrder: -800
-            } as any
+                provide: MetricsCollector,
+                useFactory: (registry: MetricsRegistry) => {
+                    if (options.prefix) {
+                        registry.setPrefix(options.prefix);
+                    }
+                    if (options.defaultLabels) {
+                        registry.setDefaultLabels(options.defaultLabels);
+                    }
+                    return registry;
+                },
+                deps: [MetricsRegistry]
+            }
         ];
+        if (includeMemory) {
+            providers.push(MemoryGauge);
+        }
+        if (includeLatency) {
+            providers.push(LatencyHistogram);
+        }
+        providers.push(MetricsInterceptor, {
+            provide: interceptorToken,
+            useExisting: MetricsInterceptor,
+            multi: true,
+            multiOrder: -800
+        } as any);
         return makeServiceFeature(ServiceFeatureKind.Interceptors, providers, config);
     };
 }

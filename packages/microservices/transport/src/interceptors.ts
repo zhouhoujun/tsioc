@@ -181,11 +181,28 @@ export function delimiterPacket(config: TransferConfig, options: TransferOptions
 
 
 export function delimiterUnpacket(config: TransferConfig, options: TransferOptions): RequestInterceptorFn {
-    const cache = {
+    const createCache = () => ({
         length: 0,
         contentLength: null,
         payload: null,
-    } as Packet;
+    } as Packet);
+    const caches = new WeakMap<object, Packet>();
+    const fallbackCache = createCache();
+    const getCache = (context: RequestContext): Packet => {
+        if (!context.has(SOCKET)) {
+            return fallbackCache;
+        }
+        const socket = context.get(SOCKET);
+        if (!socket || (typeof socket !== 'object' && typeof socket !== 'function')) {
+            return fallbackCache;
+        }
+        let cache = caches.get(socket as object);
+        if (!cache) {
+            cache = createCache();
+            caches.set(socket as object, cache);
+        }
+        return cache;
+    };
     const handle = options.size ? unpackSizeData : unpacketData;
     return config.side === TransferSide.client ? (req, next, context) => {
         const streamAdapter = context.get(StreamAdapter);
@@ -196,19 +213,19 @@ export function delimiterUnpacket(config: TransferConfig, options: TransferOptio
                         return of([res]);
                     }
                     if (Buffer.isBuffer(res)) {
-                        return handle(context, options, cache, res, streamAdapter);
+                        return handle(context, options, getCache(context), res, streamAdapter);
                     }
                     if (isString(res)) {
-                        return handle(context, options, cache, Buffer.from(res), streamAdapter);
+                        return handle(context, options, getCache(context), Buffer.from(res), streamAdapter);
                     }
                     return defer(() => streamAdapter.read(res as IDuplex))
-                        .pipe(mergeMap(buffer => handle(context, options, cache, buffer as Buffer, streamAdapter)));
+                        .pipe(mergeMap(buffer => handle(context, options, getCache(context), buffer as Buffer, streamAdapter)));
                 }),
                 mergeMap(pkgs => from(pkgs))
             )
     } : (req, next, context) => {
         const streamAdapter = context.get(StreamAdapter);
-        return defer(() => handle(context, options, cache, req, streamAdapter))
+        return defer(() => handle(context, options, getCache(context), req, streamAdapter))
             .pipe(
                 mergeMap(pkgs => from(pkgs)),
                 mergeMap(req => next(req, context))

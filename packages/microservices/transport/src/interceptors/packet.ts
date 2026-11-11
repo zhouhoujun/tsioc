@@ -6,7 +6,7 @@ import {
     RequestHandler, Packet
 } from '@tsdi/common';
 import { Observable, Subscriber, defer, filter, map, mergeMap, throwError } from 'rxjs';
-import { PACKET_DELIMITER, PACKET_IDLEN, PACKET_LIMIT, PACKET_MAXSIZE } from '../context';
+import { PACKET_DELIMITER, PACKET_IDLEN, PACKET_LIMIT, PACKET_MAXSIZE, SOCKET } from '../context';
 
 function getContentLength(message: any): number {
     const direct = message?.contentLength;
@@ -28,7 +28,7 @@ function getContentLength(message: any): number {
 @Injectable()
 export class PacketDeserializeInterceptor implements RequestInterceptor<string | Buffer | IReadable, IncomingMessage> {
 
-    protected channels: Map<string, Packet<IDuplex>>;
+    protected channels: Map<any, Packet<IDuplex>>;
 
     constructor() {
         this.channels = new Map();
@@ -41,7 +41,7 @@ export class PacketDeserializeInterceptor implements RequestInterceptor<string |
 
         return new Observable((subscriber: Subscriber<Packet<IDuplex>>) => {
 
-            const channel = '';//context.getProtocol()!;
+            const channel = context.has(SOCKET) ? context.get(SOCKET) : '';
 
             let cache = this.channels.get(channel);
             const packet = input as Buffer;
@@ -61,7 +61,7 @@ export class PacketDeserializeInterceptor implements RequestInterceptor<string |
         );
     }
 
-    protected handleData(context: RequestContext, channel: string, cache: Packet<IDuplex>, data: Buffer, subscriber: Subscriber<Packet<IDuplex>>, streamAdapter: StreamAdapter, bpipe: PipeTransform): void {
+    protected handleData(context: RequestContext, channel: any, cache: Packet<IDuplex>, data: Buffer, subscriber: Subscriber<Packet<IDuplex>>, streamAdapter: StreamAdapter, bpipe: PipeTransform): void {
         if (!isNumber(cache.length)) {
             cache.length = 0;
         }
@@ -134,7 +134,7 @@ export class PacketDeserializeInterceptor implements RequestInterceptor<string |
         }
     }
 
-    protected handleMessage(channel: string, cache: Packet<IDuplex>, subscriber: Subscriber<Packet<IDuplex>>, clear: boolean) {
+    protected handleMessage(channel: any, cache: Packet<IDuplex>, subscriber: Subscriber<Packet<IDuplex>>, clear: boolean) {
         const data = { ...cache };
         cache.payload?.end();
         cache.payload = null;

@@ -2,6 +2,7 @@ import * as http from 'node:http';
 import expect = require('expect');
 import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
+import { Transport } from '@tsdi/common';
 import { LoggerModule } from '@tsdi/logger';
 import { Controller, Get, provideService, useRouter } from '@tsdi/service';
 import { HttpServer, useHttpTransport } from '@tsdi/http';
@@ -21,7 +22,7 @@ class PingController {
     providers: [
         provideService(
             useRouter(),
-            useMetrics(),
+            useMetrics({ prefix: 'myapp', defaultLabels: { app: 'test' } }),
             useHttpTransport({ listenOpts: { port: 0, host: '127.0.0.1' }, asDefault: true })
         )
     ]
@@ -71,8 +72,18 @@ describe('useMetrics feature', () => {
 
         const metrics = await get(port, '/metrics/json');
         expect(metrics.status).toBe(200);
-        const requestMetric = metrics.body.metrics.find((metric: any) => metric.name === 'http_requests_total');
+        const requestMetric = metrics.body.metrics.find((metric: any) => metric.name === 'myapp_http_requests_total');
         expect(requestMetric).toBeTruthy();
         expect(requestMetric.value).toBeGreaterThanOrEqual(1);
+        expect(requestMetric.labels.app).toBe('test');
+    });
+
+    it('allows disabling memory and latency collectors', () => {
+        const feature = useMetrics({ includeMemory: false, includeLatency: false })(
+            { transport: Transport.HTTP, features: {} } as any
+        ) as any;
+        const providerNames = feature.providers.map((provider: any) => provider?.name ?? provider?.provide?.name);
+        expect(providerNames).not.toContain('MemoryGauge');
+        expect(providerNames).not.toContain('LatencyHistogram');
     });
 });

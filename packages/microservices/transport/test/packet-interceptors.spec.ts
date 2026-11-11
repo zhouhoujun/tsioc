@@ -11,7 +11,7 @@ import * as zlib from 'node:zlib';
 import { EventEmitter } from 'node:events';
 import { pipeline as nodePipeline } from 'node:stream';
 import { pipeline as promisePipeline } from 'node:stream/promises';
-import { PACKET_DELIMITER, PACKET_MAXSIZE, PACKET_LIMIT, PACKET_IDLEN } from '../src/context';
+import { PACKET_DELIMITER, PACKET_MAXSIZE, PACKET_LIMIT, PACKET_IDLEN, SOCKET } from '../src/context';
 
 function createTestStreamAdapter() {
     class TestStreamAdapter extends StreamAdapter {
@@ -273,6 +273,31 @@ describe('PacketDeserializeInterceptor', () => {
         const interceptor = new PacketDeserializeInterceptor();
         expect((interceptor as any).channels).toBeDefined();
         expect((interceptor as any).channels.size).toBe(0);
+    });
+
+    it('keeps deserialization caches isolated per socket', async () => {
+        const interceptor = new PacketDeserializeInterceptor();
+        const socketA = new EventEmitter();
+        const socketB = new EventEmitter();
+        const contextA = createMockContext();
+        const contextB = createMockContext();
+        contextA.set(SOCKET, socketA as any);
+        contextB.set(SOCKET, socketB as any);
+
+        const feed = async (context: RequestContext, data: Buffer) => {
+            try {
+                await lastValueFrom(interceptor.intercept(data, { handle: (input: any) => of(input) } as any, context));
+            } catch {
+                // incomplete packet completes without emitting
+            }
+        };
+
+        const packetA = makePacket('aaaa');
+        const packetB = makePacket('bbbb');
+        await feed(contextA, packetA.subarray(0, 3));
+        await feed(contextB, packetB.subarray(0, 3));
+
+        expect((interceptor as any).channels.size).toBe(2);
     });
 
     it('completes without emitting for zero content length packet', async () => {

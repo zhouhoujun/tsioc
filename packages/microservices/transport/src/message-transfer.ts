@@ -1,5 +1,5 @@
-import { catchError, defer, filter, map, mergeMap, of, throwError } from 'rxjs';
-import { ContextToken, Token, isNil } from '@tsdi/ioc';
+import { catchError, filter, from, map, mergeMap, of, throwError } from 'rxjs';
+import { ContextToken, Token, isNil, isPromise } from '@tsdi/ioc';
 import { ErrorResponse, MessageAdapter, MessageAdapterFactory, RequestContext, REQUEST, RequestInterceptorFn, StatusMessageAdapter, TransferConfig, TransferFilterFactory, TransferSide } from '@tsdi/common';
 
 export interface BrokerMessageTransferOptions<TInput = any, TRequest = any> {
@@ -104,7 +104,14 @@ export function useBrokerMessageTransfer<TInput = any, TRequest = any>(
             if (options.canHandle && !options.canHandle(input, context)) {
                 return next(input, context);
             }
-            return defer(() => Promise.resolve(options.normalize(input, context)) as Promise<any>).pipe(
+            let normalized: TRequest | Promise<TRequest>;
+            try {
+                normalized = options.normalize(input, context);
+            } catch (err) {
+                return throwError(() => err);
+            }
+            const normalized$ = isPromise(normalized) ? from(normalized) : of(normalized);
+            return normalized$.pipe(
                 mergeMap((requestData: any) => {
                     context.set(REQUEST, requestData);
                     let adapter: MessageAdapter<TRequest, any> | null = null;
