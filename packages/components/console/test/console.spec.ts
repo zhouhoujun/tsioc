@@ -1803,6 +1803,40 @@ export class ConsoleRendererTest {
         }
     }
 
+    @Test('touch mode long press selects text instead of scrolling')
+    async touchModeLongPressSelects() {
+        const ctx = await Application.run(ConsoleViewportTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const ref = ctx.runners.getRef(ConsoleViewportTestComponent) as ComponentRef<ConsoleViewportTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            surface = new TuiTerminalSurface({
+                renderer,
+                root: ref.hostView.rootNodes[0] as ConsoleElement,
+                width: 40,
+                height: 8,
+                output: { write() {} },
+                touchMode: true
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(surface.lastRenderedLines.some(line => line.includes('transcript 30'))).toBe(true);
+            expect(surface.dispatchMouse({ button: 0, x: 1, y: 2, release: false })).toBe(false);
+            // Hold past the long-press threshold, then drag: select, do not scroll.
+            await new Promise(resolve => setTimeout(resolve, 500));
+            expect(surface.dispatchMouse({ button: 32, x: 6, y: 5, release: false })).toBe(false);
+            await Promise.resolve();
+            expect(surface.lastRenderedLines.some(line => line.includes('transcript 30'))).toBe(true);
+            surface.dispatchMouse({ button: 0, x: 6, y: 5, release: true });
+        } finally {
+            surface?.destroy();
+            await ctx.close();
+        }
+    }
+
     @Test('refreshes tui click targets after the rendered tree shrinks')
     async refreshesTuiClickTargetsAfterRenderedTreeShrinks() {
         const ctx = await Application.run(ConsoleLoopTestComponent, {

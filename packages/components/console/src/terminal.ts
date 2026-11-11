@@ -1156,6 +1156,8 @@ export class TuiTerminalSurface {
     protected mousePress?: { x: number; y: number };
     /** Last touch-drag point; vertical touch drags scroll instead of selecting. */
     protected mouseDragPoint?: { x: number; y: number };
+    /** Touch press timestamp, used to turn a long press into text selection. */
+    protected touchPressAt?: number;
     protected lastPointerClick?: { x: number; y: number; at: number; count: number };
     protected suppressClickAfterMultiClick = false;
     /** Selecting text freezes sticky follow so streaming rows do not move under the pointer. */
@@ -1870,6 +1872,7 @@ export class TuiTerminalSurface {
             const pressed = this.mousePress;
             this.mousePress = undefined;
             this.mouseDragPoint = undefined;
+            this.touchPressAt = undefined;
             this.stopSelectionAutoScroll();
             if (this.suppressClickAfterMultiClick) {
                 this.suppressClickAfterMultiClick = false;
@@ -1894,9 +1897,12 @@ export class TuiTerminalSurface {
             if ((button & 32) !== 0
                 && (button & 0b11) === 0
                 && this.mousePress) {
-                // Touch: a vertical drag scrolls the transcript; horizontal
-                // drags keep the existing text-selection gesture.
-                if (this.resolveTouchMode() && this.mouseDragPoint && this.isTranscriptScreenRow(this.mousePress.y)) {
+                // Touch: a vertical drag scrolls the transcript; a long press
+                // turns the same drag into text selection (the touch equivalent
+                // of click-drag on a mouse). Horizontal drags always select.
+                const longPress = this.touchPressAt != null
+                    && Date.now() - this.touchPressAt >= TUI_TOUCH_LONG_PRESS_MS;
+                if (this.resolveTouchMode() && !longPress && this.mouseDragPoint && this.isTranscriptScreenRow(this.mousePress.y)) {
                     const dx = mouse.x - this.mouseDragPoint.x;
                     const dy = mouse.y - this.mouseDragPoint.y;
                     if (Math.abs(dy) > Math.abs(dx)) {
@@ -1918,11 +1924,13 @@ export class TuiTerminalSurface {
         if ((button & 0b11) !== 0) {
             this.mousePress = undefined;
             this.mouseDragPoint = undefined;
+            this.touchPressAt = undefined;
             return false;
         }
         const clickCount = this.updateClickCount(mouse);
         this.mousePress = { x: mouse.x, y: mouse.y };
         this.mouseDragPoint = { x: mouse.x, y: mouse.y };
+        this.touchPressAt = Date.now();
         if (clickCount === 2 || clickCount === 3) {
             this.suppressClickAfterMultiClick = true;
             if (clickCount === 2) {
@@ -3670,6 +3678,8 @@ function easeHoverProgress(progress: number, timing: string): number {
 }
 
 export const TUI_MOUSE_DRAG_THRESHOLD = 1;
+/** Hold this long before dragging to select text on a touch pointer. */
+export const TUI_TOUCH_LONG_PRESS_MS = 450;
 // How long the surface keeps mouse tracking disabled after a selection handoff
 // so a native click can terminate the selection before tracking is reclaimed.
 // In-flight drag-tail reports extend this window; keyboard input reclaims sooner.

@@ -3436,6 +3436,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **触摸模式（opt-in）**：新增 `ui.console.touchMode`（默认 off），可从 `/settings` → General → `Touch mode` 开关，持久化到 workspace `settings.json`；root `ui.console.touchMode` 也会在启动时合并。
   - tap/tap-release 仍走点击派发（tab、菜单、按钮、消息行）。
   - 单指纵向 drag 在 transcript 区域内滚动 viewport，不再误触文本选择；横向 drag 仍保留文本选择。
+  - 长按（≥450ms）后再拖动改为文本选择，提供触摸端的复制入口；短按拖动仍滚动。
   - 触摸模式关闭 hover 渐变绘制，减少滑动时的无效重绘。
   - `shouldEnableTerminalMouseTracking` 仍只在 viewport 布局启用鼠标跟踪；`scrollback`（native scrollback）不接收鼠标/触摸，属终端原生滚动边界。
 - **X10 鼠标协议 fallback**：`matchTerminalMouseAt` / `parseTerminalMouseEvent` 新增解析 `ESC[M Cb Cx Cy`；X10 release（button 3）归一化为 release，wheel/motion 位保留；`decodeAll` 批量路径与 split 读取均支持。终端不支持 SGR 时 tap 仍可用。
