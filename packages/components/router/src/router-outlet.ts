@@ -31,7 +31,11 @@ export class RouterOutlet implements OnInit, OnDestroy {
     }
 
     protected activate(): void {
-        const component = this.router.activeRoute?.route?.component;
+        let leaf = this.router.activeRoute;
+        while (leaf?.children?.length) {
+            leaf = leaf.children[leaf.children.length - 1];
+        }
+        const component = leaf?.route?.component;
         this.componentRef?.destroy();
         this.componentRef = undefined;
         if (!component) {

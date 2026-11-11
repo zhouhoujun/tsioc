@@ -114,6 +114,7 @@ export class Router {
 
     get url(): string { return this._url; }
     get activeRoute(): ActivatedRouteSnapshot | null { return this._activeRoute; }
+    get activeLeaf(): ActivatedRouteSnapshot | null { return this.leafRoute(); }
     get rootRoute(): ActivatedRouteSnapshot | null { return this._activeRoute; }
     get params(): Record<string, string> { return this.leafRoute()?.params || {}; }
     get data(): Record<string, any> { return this.leafRoute()?.data || {}; }
@@ -183,14 +184,29 @@ export class Router {
                 throw new Error(`Route '${route.path}' loadChildren must resolve to routes`);
             }
             route.children = routes;
-            return this.resolveUrl(url, redirects + 1);
+            const child = await this.resolveUrl(url, redirects + 1);
+            if (!child) {
+                return undefined;
+            }
+            // Keep the lazy parent in the snapshot so parent `canActivate`
+            // guards still run (Angular semantics). The outlet renders the leaf.
+            return {
+                consumed: match.consumed,
+                redirectTo: child.redirectTo,
+                resolvedUrl: child.resolvedUrl,
+                snapshot: {
+                    ...match.snapshot,
+                    children: [child.snapshot]
+                }
+            };
         }
         if (route.loadComponent && !route.component) {
             const loaded = await route.loadComponent();
-            route.component = typeof loaded === 'function'
+            const component = (typeof loaded === 'function'
                 ? loaded
-                : (loaded as { component?: Type<any> } | undefined)?.component;
-            if (!route.component) {
+                : (loaded as { component?: Type<any> } | undefined)?.component) as Type<any> | undefined;
+            route.component = component;
+            if (!component) {
                 throw new Error(`Route '${route.path}' loadComponent did not resolve a component`);
             }
         }

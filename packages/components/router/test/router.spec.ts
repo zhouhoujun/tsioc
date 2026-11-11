@@ -82,6 +82,24 @@ export class RouterTest {
         expect(childrenLoaded).toBe(1);
     }
 
+    @Test('runs guards declared on a lazy parent route')
+    async lazyParentGuard() {
+        let allowed = false;
+        let calls = 0;
+        const router = new Router([
+            {
+                path: '',
+                canActivate: [() => { calls++; return allowed; }],
+                loadChildren: async () => [{ path: 'dashboard', data: { page: 'dashboard' } }]
+            }
+        ], '/');
+        expect(await router.navigateByUrl('/dashboard')).toBe(false);
+        expect(calls).toBe(1);
+        allowed = true;
+        expect(await router.navigateByUrl('/dashboard')).toBe(true);
+        expect(router.activeRoute?.children[0]?.data.page).toBe('dashboard');
+    }
+
     @Test('serializes query params and fragment into the next url')
     async queryParams() {
         const router = new Router([{ path: 'search' }]);
