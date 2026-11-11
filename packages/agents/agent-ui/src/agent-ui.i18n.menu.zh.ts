@@ -204,6 +204,8 @@ export const AGENT_UI_MENU_ZH: Record<string, any> = {
         usernameDescription: '是否显示用户名标签',
         windowTitleLabel: '窗口标题：{state}',
         windowTitleDescription: '终端/文档标题同步',
+        touchLabel: '触摸模式：{state}',
+        touchDescription: '滑动滚动；点击仍然可点',
         stateOn: '开',
         stateOff: '关',
         stateShown: '显示',

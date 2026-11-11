@@ -295,6 +295,8 @@ export interface TuiTerminalSurfaceOptions {
     mouseHandoffReclaimMs?: number;
     /** Whether mouse tracking sequences may be written at all. Defaults to true; the runtime passes the lifecycle's `shouldEnableTerminalMouseTracking` value down. */
     mouseTrackingEnabled?: boolean;
+    /** Touch-friendly pointer mode: vertical drags scroll the transcript; taps still click. */
+    touchMode?: boolean | (() => boolean);
     /** Shared lifecycle clock for hover fades; without it hover highlight is applied instantly. */
     animationClock?: AnimationClock;
     /** Called after a text selection is copied, so hosts can show a toast. */
@@ -363,6 +365,7 @@ export abstract class ConsoleTerminalInputHandler {
 export abstract class ConsoleTerminalSurfaceLifecycle {
     abstract getTerminalRoot(): RNode | RNode[] | undefined;
     shouldEnableTerminalMouseTracking?(): boolean;
+    shouldUseTouchMode?(): boolean;
     shouldPlaceTerminalCursor?(): boolean;
     resolveTerminalCursorMode?(): 'prompt' | 'bottom';
     resolveTerminalCursorStyle?(): 'block' | 'underline' | 'bar';
@@ -889,6 +892,7 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
             nativeScrollback: () => this.surfaceLayout ? this.surfaceLayout.nativeScrollback : lifecycle?.shouldUseNativeScrollback?.() === true,
             scrollViewport: () => this.surfaceLayout ? this.surfaceLayout.scrollViewport : lifecycle?.shouldScrollViewport?.() !== false,
             mouseTrackingEnabled: this.mouseTrackingEnabled,
+            touchMode: () => lifecycle.shouldUseTouchMode?.() === true,
             footerBottomMargin: () => lifecycle?.resolveTerminalFooterBottomMargin?.() ?? 0,
             animationClock: this.injector.get(AnimationClock, null) || undefined,
             onTextCopied: text => lifecycle.onTerminalTextCopied?.(text),
@@ -1150,6 +1154,8 @@ export class TuiTerminalSurface {
     protected terminalRow = 0;
     protected clickTargetsCache: TerminalClickTarget[] = [];
     protected mousePress?: { x: number; y: number };
+    /** Last touch-drag point; vertical touch drags scroll instead of selecting. */
+    protected mouseDragPoint?: { x: number; y: number };
     protected lastPointerClick?: { x: number; y: number; at: number; count: number };
     protected suppressClickAfterMultiClick = false;
     /** Selecting text freezes sticky follow so streaming rows do not move under the pointer. */
@@ -1798,6 +1804,21 @@ export class TuiTerminalSurface {
         return true;
     }
 
+    protected resolveTouchMode(): boolean {
+        const value = this.options.touchMode;
+        return typeof value === 'function' ? value() === true : value === true;
+    }
+
+    /** Whether a screen row belongs to the scrollable transcript. */
+    protected isTranscriptScreenRow(y: number): boolean {
+        const range = this.resolveTranscriptScreenRange();
+        if (!range) {
+            return true;
+        }
+        const row = Math.floor((y || 1) - 1);
+        return row >= range.start && row < range.end;
+    }
+
     dispatchMouse(mouse?: SelectMenuMouseEvent): boolean {
         if (!mouse) {
             return false;
@@ -1809,6 +1830,10 @@ export class TuiTerminalSurface {
             return true;
         }
         if ((mouse.button & 32) !== 0 && (mouse.button & 3) === 3) {
+            // Touch pointers have no meaningful hover; skip the fade repaint.
+            if (this.resolveTouchMode()) {
+                return false;
+            }
             // Modern terminals with any-motion tracking report hover as
             // button 35. Highlight the clickable region under the pointer.
             const target = this.hitTest(mouse.x, mouse.y);
@@ -1844,6 +1869,7 @@ export class TuiTerminalSurface {
         if (mouse.release) {
             const pressed = this.mousePress;
             this.mousePress = undefined;
+            this.mouseDragPoint = undefined;
             this.stopSelectionAutoScroll();
             if (this.suppressClickAfterMultiClick) {
                 this.suppressClickAfterMultiClick = false;
@@ -1867,18 +1893,36 @@ export class TuiTerminalSurface {
         if ((button & 0b1100000) !== 0) {
             if ((button & 32) !== 0
                 && (button & 0b11) === 0
-                && this.mousePress
-                && this.isTuiMouseDrag(this.mousePress, mouse)) {
-                this.updateTextSelection(mouse);
+                && this.mousePress) {
+                // Touch: a vertical drag scrolls the transcript; horizontal
+                // drags keep the existing text-selection gesture.
+                if (this.resolveTouchMode() && this.mouseDragPoint && this.isTranscriptScreenRow(this.mousePress.y)) {
+                    const dx = mouse.x - this.mouseDragPoint.x;
+                    const dy = mouse.y - this.mouseDragPoint.y;
+                    if (Math.abs(dy) > Math.abs(dx)) {
+                        this.mouseDragPoint = { x: mouse.x, y: mouse.y };
+                        if (this.textSelection) {
+                            this.textSelection = undefined;
+                            this.resumeSelectionFollow();
+                        }
+                        this.scrollViewport(dy);
+                        return true;
+                    }
+                }
+                if (this.isTuiMouseDrag(this.mousePress, mouse)) {
+                    this.updateTextSelection(mouse);
+                }
             }
             return false;
         }
         if ((button & 0b11) !== 0) {
             this.mousePress = undefined;
+            this.mouseDragPoint = undefined;
             return false;
         }
         const clickCount = this.updateClickCount(mouse);
         this.mousePress = { x: mouse.x, y: mouse.y };
+        this.mouseDragPoint = { x: mouse.x, y: mouse.y };
         if (clickCount === 2 || clickCount === 3) {
             this.suppressClickAfterMultiClick = true;
             if (clickCount === 2) {
@@ -3348,30 +3392,61 @@ function isPartialTerminalInputSequence(text: string): boolean {
         || text === '\u001b['
         || text === '\u001bO'
         || /^\u001b\[[0-9;]*$/.test(text)
-        || /^\u001b\[<[\d;]*$/.test(text);
+        || /^\u001b\[<[\d;]*$/.test(text)
+        // X10 mouse: ESC[M followed by up to two of the three payload bytes.
+        || /^\u001b\[M[\s\S]{0,2}$/.test(text);
 }
 
 // A single read can carry several keys (key auto-repeat, fast typing, paste).
 // Each must be tokenized into its own result: `decode` only classifies a whole
 // buffer that is exactly one token, so a batch would otherwise degrade into
 // literal text (dropping the ESC and leaking `[A`) or silently lose navigation.
+function decodeX10MouseEvent(text: string, index: number): { sequence: string; event: SelectMenuMouseEvent } | undefined {
+    if (!text.startsWith('\u001b[M', index)) {
+        return undefined;
+    }
+    const payload = text.slice(index + 3, index + 6);
+    if (payload.length < 3) {
+        return undefined;
+    }
+    const cb = payload.charCodeAt(0) - 32;
+    const x = payload.charCodeAt(1) - 32;
+    const y = payload.charCodeAt(2) - 32;
+    if (cb < 0 || x < 0 || y < 0) {
+        return undefined;
+    }
+    const motion = (cb & 32) !== 0;
+    const wheel = (cb & 64) !== 0;
+    // X10 encodes release as button 3 with no motion/wheel bits.
+    const release = !motion && !wheel && (cb & 0b11) === 3;
+    return {
+        sequence: text.slice(index, index + 6),
+        event: {
+            button: release ? cb & ~0b11 : cb,
+            x,
+            y,
+            release
+        }
+    };
+}
+
 function matchTerminalMouseAt(text: string, index: number): { sequence: string; event: SelectMenuMouseEvent } | undefined {
     if (text[index] !== '\u001b') {
         return undefined;
     }
     const match = text.slice(index).match(/^\u001b\[<(\d+);(\d+);(\d+)([mM])/);
-    if (!match) {
-        return undefined;
+    if (match) {
+        return {
+            sequence: match[0],
+            event: {
+                button: parseInt(match[1], 10),
+                x: parseInt(match[2], 10),
+                y: parseInt(match[3], 10),
+                release: match[4] === 'm'
+            }
+        };
     }
-    return {
-        sequence: match[0],
-        event: {
-            button: parseInt(match[1], 10),
-            x: parseInt(match[2], 10),
-            y: parseInt(match[3], 10),
-            release: match[4] === 'm'
-        }
-    };
+    return decodeX10MouseEvent(text, index);
 }
 
 function readTerminalSequenceAt(text: string, index: number): { text: string; controlKey?: TerminalInputControlKey } | undefined {
@@ -5066,15 +5141,16 @@ export function findSelectMenuOptionIndexFromRenderedLines(
 export function parseTerminalMouseEvent(input: ConsoleTextChunk): SelectMenuMouseEvent | undefined {
     const text = decodeConsoleTextChunk(input);
     const match = text.match(/\x1b\[<(\d+);(\d+);(\d+)([mM])/);
-    if (!match) {
-        return undefined;
+    if (match) {
+        return {
+            button: parseInt(match[1], 10),
+            x: parseInt(match[2], 10),
+            y: parseInt(match[3], 10),
+            release: match[4] === 'm'
+        };
     }
-    return {
-        button: parseInt(match[1], 10),
-        x: parseInt(match[2], 10),
-        y: parseInt(match[3], 10),
-        release: match[4] === 'm'
-    };
+    const x10 = text.match(/\x1b\[M[\s\S]{3}/);
+    return x10 && x10.index != null ? decodeX10MouseEvent(text, x10.index)?.event : undefined;
 }
 
 export function formatClockTime(value?: number): string {

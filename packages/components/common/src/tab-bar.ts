@@ -38,7 +38,7 @@ export const TAB_BAR_SOURCE = token<TabBarSource>('TAB_BAR_SOURCE');
     template: `
     <p class="tab-bar" role="tablist" v-show="visible">
         <span class="tab" role="tab" aria-selected="{{tab.active}}" data-disabled="{{tab.disabled}}" v-for="tab in items" @click="select(tab.id, $event)">
-            <span class="tab-label" @click="select(tab.id, $event)">{{tab.label}}</span><span class="tab-close" role="button" v-if="tab.showClose !== false" data-cell-width="2" @click="closeTab(tab.id, $event)">{{closeLabel}}</span>
+            <span class="tab-label" @click="select(tab.id, $event)">{{tab.label}}</span><span class="tab-close" role="button" v-if="tab.showClose !== false" data-cell-width="3" @click="closeTab(tab.id, $event)">{{closeLabel}}</span>
         </span>
         <span class="tab-new" role="button" v-show="showCreate" @click="create">{{createLabel}}</span>
     </p>

@@ -3430,3 +3430,18 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - GatewayInterceptor 通过 undici Agent + undici.fetch 复用连接；未配置时继续使用运行时全局 fetch，测试 mock 不受影响。
   - `onDestroy` 关闭 dispatcher；Gateway E2E 使用 httpPool 真实访问上游。
   - 回归：gateway 37 passing；httpPool 初始化与 E2E 通过。
+
+## 2026-11-11 TUI 触摸支持：opt-in 触摸模式 + X10 鼠标协议
+- **结论**：终端 TUI 无法直接接收触摸事件，只能依赖终端模拟器把 tap/swipe 翻译成鼠标/滚轮事件。原有实现已支持 SGR (1006) 点击与滚轮滚动；本轮补齐触摸手势策略与旧鼠标协议兼容。
+- **触摸模式（opt-in）**：新增 `ui.console.touchMode`（默认 off），可从 `/settings` → General → `Touch mode` 开关，持久化到 workspace `settings.json`；root `ui.console.touchMode` 也会在启动时合并。
+  - tap/tap-release 仍走点击派发（tab、菜单、按钮、消息行）。
+  - 单指纵向 drag 在 transcript 区域内滚动 viewport，不再误触文本选择；横向 drag 仍保留文本选择。
+  - 触摸模式关闭 hover 渐变绘制，减少滑动时的无效重绘。
+  - `shouldEnableTerminalMouseTracking` 仍只在 viewport 布局启用鼠标跟踪；`scrollback`（native scrollback）不接收鼠标/触摸，属终端原生滚动边界。
+- **X10 鼠标协议 fallback**：`matchTerminalMouseAt` / `parseTerminalMouseEvent` 新增解析 `ESC[M Cb Cx Cy`；X10 release（button 3）归一化为 release，wheel/motion 位保留；`decodeAll` 批量路径与 split 读取均支持。终端不支持 SGR 时 tap 仍可用。
+- **命中区**：tab 关闭按钮 `data-cell-width` 从 2 提升到 3 个终端单元格，提升手指点击精度（视觉不变）。
+- **回归（先红后绿）**：
+  - `components/console` 新增 X10 decode 用例（press/release/wheel/split/batch）与 `touch mode scrolls on a vertical drag instead of selecting text`；禁用 X10 fallback 或 `touchMode:false` 时稳定失败。
+  - `agent-ui` 新增 `/settings` touch mode 开关与持久化用例；`i18n-locale-regression` notice 目录计数 617 → 620。
+- **验证**：`components/console` 158 passing、`components/common` 66 passing、`agent-ui` 2025 passing；`agent-ui` tsc 0；`source-size` OK；`git diff --check` 干净；`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 GATE-PASS，GATE_EXIT=0**。
+- **仍不支持（终端协议边界，非本轮缺陷）**：多指手势、pinch 缩放、惯性滚动、长按菜单、触摸压力；这些需终端模拟器或 web 控制台实现。手机/平板建议优先使用浏览器 web console（原生触摸滚动/缩放）。

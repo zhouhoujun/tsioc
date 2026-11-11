@@ -343,9 +343,8 @@ import { startProviderWizard, handleWizardEscape, cancelProviderWizard, resetPro
     `
 })
 export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost implements OnDestroy, ConsoleTerminalInputHandler, ConsoleTerminalSurfaceLifecycle {
-    shouldEnableTerminalMouseTracking(): boolean {
-        return !this.transcriptLayout.usesNativeScrollback;
-    }
+    shouldEnableTerminalMouseTracking(): boolean { return !this.transcriptLayout.usesNativeScrollback; }
+    shouldUseTouchMode(): boolean { return this.state.consoleOptions.touchMode === true; }
     protected static readonly DOCUMENT_MIME_TYPES: Record<string, string> = {
         '.pdf': 'application/pdf'
     };

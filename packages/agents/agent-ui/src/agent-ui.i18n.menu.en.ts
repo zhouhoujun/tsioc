@@ -204,6 +204,8 @@ export const AGENT_UI_MENU_EN: Record<string, any> = {
         usernameDescription: 'username label visibility',
         windowTitleLabel: 'Window title: {state}',
         windowTitleDescription: 'terminal/document title sync',
+        touchLabel: 'Touch mode: {state}',
+        touchDescription: 'swipe scrolls; taps still click',
         stateOn: 'on',
         stateOff: 'off',
         stateShown: 'shown',

@@ -376,6 +376,8 @@ export interface AgentConsoleOptions {
     showMessageTimestamps?: boolean;
     /** Platform-specific wording for expandable messages. */
     messageToggleInteraction?: 'click' | 'enter';
+    /** Touch-friendly pointer handling: taps still click, vertical drags scroll. */
+    touchMode?: boolean;
     workspace?: string;
     connectors?: Record<string, unknown>;
     authorizeConnector?: (appId: string) => boolean | Promise<boolean>;
@@ -437,6 +439,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     showStatusline: true,
     showMessageTimestamps: true,
     messageToggleInteraction: 'click',
+    touchMode: false,
     workspace: '',
     connectors: undefined as unknown as Record<string, unknown>,
     authorizeConnector: undefined as unknown as (appId: string) => boolean | Promise<boolean>,

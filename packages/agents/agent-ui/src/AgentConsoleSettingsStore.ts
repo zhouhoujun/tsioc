@@ -21,6 +21,7 @@ export interface AgentConsoleSettingsData {
     taskFilter?: 'all' | 'failed' | 'rollback' | 'lineage';
     taskLineageRootId?: string;
     planTodoFilter?: 'all' | 'active' | 'blocked' | 'failed';
+    touchMode?: boolean;
     modelProfile?: string;
     lastSessionId?: string;
     openSessionIds?: string[];
@@ -152,6 +153,7 @@ export function sanitizeAgentConsoleSettings(parsed: any): AgentConsoleSettingsD
         taskFilter: ['all', 'failed', 'rollback', 'lineage'].includes(parsed?.taskFilter) ? parsed.taskFilter : undefined,
         taskLineageRootId: typeof parsed?.taskLineageRootId === 'string' && parsed.taskLineageRootId.trim() ? parsed.taskLineageRootId.trim() : undefined,
         planTodoFilter: ['all', 'active', 'blocked', 'failed'].includes(parsed?.planTodoFilter) ? parsed.planTodoFilter : undefined,
+        touchMode: typeof parsed?.touchMode === 'boolean' ? parsed.touchMode : undefined,
         modelProfile: typeof parsed?.modelProfile === 'string' && parsed.modelProfile.trim() ? parsed.modelProfile.trim() : undefined,
         lastSessionId: typeof parsed?.lastSessionId === 'string' && parsed.lastSessionId.trim() ? parsed.lastSessionId.trim() : undefined,
         openSessionIds: sanitizeOpenSessionIds(parsed?.openSessionIds)
@@ -207,6 +209,7 @@ export class AgentConsoleSettingsStore {
             ...(data.taskFilter ? { taskFilter: data.taskFilter } : {}),
             ...(data.taskLineageRootId ? { taskLineageRootId: data.taskLineageRootId } : {}),
             ...(data.planTodoFilter ? { planTodoFilter: data.planTodoFilter } : {}),
+            ...(typeof data.touchMode === 'boolean' ? { touchMode: data.touchMode } : {}),
             ...(data.modelProfile ? { modelProfile: data.modelProfile } : {}),
             ...(data.lastSessionId ? { lastSessionId: data.lastSessionId } : {}),
             ...(data.openSessionIds?.length ? { openSessionIds: sanitizeOpenSessionIds(data.openSessionIds) } : {})

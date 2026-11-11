@@ -1,4 +1,6 @@
 import { settingsLabel } from './AgentConsoleDisplayCommands';
+import { openSettingsLanguage } from './AgentConsoleSettingsLanguage';
+import { toggleAgentConsoleTouchMode, touchModeSettingsOption } from './AgentConsoleTouchSettings';
 import { AGENT_CONSOLE_GLOBAL_ACTIONS } from './AgentConsoleKeymap';
 import { formatAgentUiLabel, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
@@ -113,7 +115,8 @@ export async function openSettingsGeneralTab(host: SettingsPanelHost): Promise<b
         { label: settingsLabel(host.translator, 'agent.menu.settings.timestampsLabel', 'Timestamps: {state}', { state: shownHidden(host.state.showTimestamps) }), value: 'timestamps', description: settingsLabel(host.translator, 'agent.menu.settings.timestampsDescription', 'message timestamp visibility') },
         { label: settingsLabel(host.translator, 'agent.menu.settings.toolOutputLabel', 'Tool output: {state}', { state: shownHidden(host.state.showToolOutput) }), value: 'tooloutput', description: settingsLabel(host.translator, 'agent.menu.settings.toolOutputDescription', 'tool output visibility in messages') },
         { label: settingsLabel(host.translator, 'agent.menu.settings.usernameLabel', 'Username: {state}', { state: shownHidden(host.state.showUsername) }), value: 'username', description: settingsLabel(host.translator, 'agent.menu.settings.usernameDescription', 'username label visibility') },
-        { label: settingsLabel(host.translator, 'agent.menu.settings.windowTitleLabel', 'Window title: {state}', { state: onOff(host.options.ui?.terminalTitle !== false) }), value: 'title', description: settingsLabel(host.translator, 'agent.menu.settings.windowTitleDescription', 'terminal/document title sync') }
+        { label: settingsLabel(host.translator, 'agent.menu.settings.windowTitleLabel', 'Window title: {state}', { state: onOff(host.options.ui?.terminalTitle !== false) }), value: 'title', description: settingsLabel(host.translator, 'agent.menu.settings.windowTitleDescription', 'terminal/document title sync') },
+        touchModeSettingsOption(host, onOff)
     ], 0, settingsLabel(host.translator, 'agent.hint.enterApplyClose', 'enter apply   esc close'));
     if (!option) return true;
     if (option === 'theme') {
@@ -155,6 +158,9 @@ export async function openSettingsGeneralTab(host: SettingsPanelHost): Promise<b
         host.notify(!enabled ? formatAgentUiNotice(host.translator, 'windowTitleSyncEnabled') : formatAgentUiNotice(host.translator, 'windowTitleSyncDisabled'));
         return true;
     }
+    if (option === 'touch') {
+        return toggleAgentConsoleTouchMode(host);
+    }
     if (option === 'timestamps') {
         return host.runDisplayCommand('');
     }
@@ -183,30 +189,7 @@ export async function openSettingsGeneralTab(host: SettingsPanelHost): Promise<b
     return true;
 }
 
-export async function openSettingsLanguage(host: SettingsPanelHost): Promise<boolean> {
-    const locales = host.translator?.availableLocales?.length
-        ? host.translator.availableLocales
-        : ['en', 'zh-CN'];
-    const current = host.translator?.currentLocale || 'en';
-    const selected = await host.select(settingsLabel(host.translator, 'agent.menu.settings.languageTitle', 'Settings · Language'), locales.map(locale => ({
-        label: `${locale === current ? '● ' : '  '}${locale}`,
-        value: locale,
-        description: locale === current
-            ? settingsLabel(host.translator, 'agent.menu.settings.languageCurrent', 'current language')
-            : settingsLabel(host.translator, 'agent.menu.settings.languageSwitch', 'switch and save')
-    })), Math.max(0, locales.indexOf(current)), settingsLabel(host.translator, 'agent.hint.enterApplyClose', 'enter apply   esc close'));
-    if (!selected) return true;
-    host.translator?.setLocale(selected);
-    host.state?.applyLocaleDefaults?.(selected);
-    try {
-        await host.persistSettings({ language: selected });
-    } catch (error: any) {
-        host.notify(error?.message || formatAgentUiNotice(host.translator, 'languageSwitchSaveFailed', { language: selected }));
-        return true;
-    }
-    host.notify(formatAgentUiNotice(host.translator, 'languageSet', { selected: selected }));
-    return true;
-}
+export { openSettingsLanguage };
 
 export async function openSettingsProvidersTab(host: SettingsPanelHost): Promise<boolean> {
     const option = await host.select(settingsLabel(host.translator, 'agent.menu.settings.providersTitle', 'Settings · Providers'), [

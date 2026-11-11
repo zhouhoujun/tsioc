@@ -1648,6 +1648,43 @@ export class ConsoleRendererTest {
         });
     }
 
+    @Test('decodes X10 mouse events so touch taps work without SGR support')
+    decodesX10MouseEvents() {
+        const decoder = new TerminalInputSequenceDecoder();
+        const x = String.fromCharCode(12 + 32);
+        const y = String.fromCharCode(7 + 32);
+        const press = `\u001b[M ${x}${y}`;
+        expect(decoder.decode(press)).toEqual({
+            text: press,
+            mouse: { button: 0, x: 12, y: 7, release: false },
+            partial: false
+        });
+        const release = `\u001b[M#${x}${y}`;
+        expect(decoder.decode(release)).toEqual({
+            text: release,
+            mouse: { button: 0, x: 12, y: 7, release: true },
+            partial: false
+        });
+        const wheel = `\u001b[M\u0060${x}${y}`;
+        expect(decoder.decode(wheel)).toEqual({
+            text: wheel,
+            mouse: { button: 64, x: 12, y: 7, release: false },
+            partial: false
+        });
+        // The payload may arrive in separate reads.
+        const split = new TerminalInputSequenceDecoder();
+        expect(split.decode('\u001b[M ')).toEqual({ text: '', partial: true });
+        expect(split.decode(`${x}${y}`)).toEqual({
+            text: `\u001b[M ${x}${y}`,
+            mouse: { button: 0, x: 12, y: 7, release: false },
+            partial: false
+        });
+        // Batched reads must also recognize the X10 sequence between text runs.
+        const batched = new TerminalInputSequenceDecoder();
+        const results = batched.decodeAll(`a${press}b`);
+        expect(results.some(result => result.mouse?.x === 12 && result.mouse?.y === 7)).toEqual(true);
+    }
+
     @Test('decodes terminal mouse motion events for drag detection')
     decodesTerminalMouseMotionEventsForDragDetection() {
         const decoder = new TerminalInputSequenceDecoder();
@@ -1727,6 +1764,38 @@ export class ConsoleRendererTest {
             expect(surface.dispatchMouse({ button: 65, x: 1, y: 1, release: false })).toBe(true);
             await Promise.resolve();
             expect(surface.lastRenderedLines.some(line => line.includes('transcript 30'))).toBe(true);
+        } finally {
+            surface?.destroy();
+            await ctx.close();
+        }
+    }
+
+    @Test('touch mode scrolls on a vertical drag instead of selecting text')
+    async touchModeDragScrolls() {
+        const ctx = await Application.run(ConsoleViewportTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const ref = ctx.runners.getRef(ConsoleViewportTestComponent) as ComponentRef<ConsoleViewportTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            surface = new TuiTerminalSurface({
+                renderer,
+                root: ref.hostView.rootNodes[0] as ConsoleElement,
+                width: 40,
+                height: 8,
+                output: { write() {} },
+                touchMode: true
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(surface.lastRenderedLines.some(line => line.includes('transcript 30'))).toBe(true);
+            expect(surface.dispatchMouse({ button: 0, x: 1, y: 2, release: false })).toBe(false);
+            expect(surface.dispatchMouse({ button: 32, x: 1, y: 5, release: false })).toBe(true);
+            await Promise.resolve();
+            expect(surface.lastRenderedLines.some(line => line.includes('transcript 30'))).toBe(false);
+            expect(surface.lastRenderedLines[surface.lastRenderedLines.length - 1]).toContain('fixed footer');
         } finally {
             surface?.destroy();
             await ctx.close();

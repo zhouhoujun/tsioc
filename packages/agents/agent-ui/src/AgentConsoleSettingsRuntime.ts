@@ -102,6 +102,15 @@ export async function restoreSettings(self: any): Promise<void> {
         } else if (typeof persisted.timelineMode === 'boolean') {
             self.state.setTimelineMode(persisted.timelineMode ? 'compact' : 'off');
         }
+        if (typeof persisted.touchMode === 'boolean') {
+            // Replace the options instance instead of mutating the shared
+            // default; the TUI surface reads touchMode live from this object.
+            self.state.consoleOptions = { ...self.state.consoleOptions, touchMode: persisted.touchMode };
+            self.options.ui = {
+                ...(self.options.ui || {}),
+                console: { ...(self.options.ui?.console || {}), touchMode: persisted.touchMode }
+            };
+        }
         applyPersistedLayout(self.state, persisted, () => self.surfaceAccessor?.restartRendering?.()); applyPersistedPreferences(self.options, persisted);
         if (!(self.options.model as any)?.explicitModel) {
             const persistedProfile = String(persisted.modelProfile || '').trim();
