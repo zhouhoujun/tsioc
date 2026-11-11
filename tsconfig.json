@@ -44,6 +44,12 @@
       ],
       "@tsdi/microservice-admin/*": [
         "packages/microservices/admin/*"
+      ],
+      "@tsdi/microservice-contract": [
+        "packages/microservices/contract"
+      ],
+      "@tsdi/microservice-contract/*": [
+        "packages/microservices/contract/*"
       ]
     },
     "lib": [

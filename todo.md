@@ -3488,3 +3488,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 基于 `@tsdi/components/html` 的管理 UI：实时路由表编辑 + 规则画布；`/api/gateway-admin` 的 state/routes/rules API 即时写入 `GatewayRuntime`。
   - 新增 jsdom UI 回归、controller/compiler 测试；admin 11 passing；`npm run build` 与 `npm run build:web`（885.7 KiB / gzip 222.3 KiB）通过。
 - 静态资源前缀修复（2026-11-11）：`ContentSendAdapterImpl` 先剥离 URL prefix 后又把带 prefix 的 options 传给 `FileAdapter.find`，导致 `useStatics({ prefix })` 全部 404；现在 prefix 归一化并只剥离一次，admin UI 的 `/admin/index.html`、`/admin/main.js` 返回 200。http 36 passing。
+- 契约优先生成（2026-11-11）：
+  - 新增 `@tsdi/microservice-contract`（packages/microservices/contract）：JSON manifest → TypeScript DTO（class/interface，可选 Swagger 装饰器）+ OpenAPI 3 + proto3 message/RPC。
+  - 支持模型引用、数组 items、内联 object/properties、enum、required、format、path 参数、错误响应、Empty 请求/响应。
+  - CLI `npm run generate -- <manifest> [--out] [--decorators] [--interface] [--proto-package] [--check]`，`--check` 可用于 CI 漂移检查。
+  - 9 passing；`npm run build` 与编译后 `cli.js` 实测生成 DTO/OpenAPI/proto。

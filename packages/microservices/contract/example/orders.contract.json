@@ -1,0 +1,64 @@
+{
+  "name": "orders",
+  "title": "Orders API",
+  "version": "1.0.0",
+  "description": "Orders microservice contract shared by HTTP and gRPC transports.",
+  "service": {
+    "name": "OrdersService",
+    "package": "shop.orders"
+  },
+  "models": {
+    "CreateOrder": {
+      "description": "Create order payload",
+      "fields": {
+        "id": { "type": "string", "required": true, "format": "uuid" },
+        "quantity": { "type": "integer", "required": true },
+        "status": { "type": "string", "enum": ["new", "paid"] },
+        "items": { "type": "array", "items": { "type": "OrderItem" } },
+        "note": { "type": "string", "description": "Optional customer note" }
+      }
+    },
+    "OrderItem": {
+      "fields": {
+        "sku": { "type": "string", "required": true },
+        "price": { "type": "number" }
+      }
+    },
+    "Order": {
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "status": { "type": "string", "enum": ["new", "paid"] },
+        "items": { "type": "array", "items": { "type": "OrderItem" } }
+      }
+    }
+  },
+  "routes": [
+    {
+      "method": "post",
+      "path": "/orders",
+      "operationId": "createOrder",
+      "summary": "Create an order",
+      "request": "CreateOrder",
+      "response": "Order",
+      "tags": ["orders"],
+      "errors": [400, 422]
+    },
+    {
+      "method": "get",
+      "path": "/orders/{id}",
+      "operationId": "getOrder",
+      "summary": "Get an order",
+      "response": "Order",
+      "tags": ["orders"],
+      "errors": [404]
+    },
+    {
+      "method": "delete",
+      "path": "/orders/{id}",
+      "operationId": "deleteOrder",
+      "summary": "Delete an order",
+      "tags": ["orders"],
+      "errors": [404]
+    }
+  ]
+}

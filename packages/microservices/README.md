@@ -55,6 +55,7 @@
 - Tracing：`@tsdi/tracing`
 - Swagger：`@tsdi/swagger`
 - 可视化管理：`@tsdi/microservice-admin`（activities 流程规则 + components/html UI）
+- 契约生成：`@tsdi/microservice-contract`（JSON manifest → DTO / OpenAPI / proto）
 - Agent MCP 与微服务 MCP 桥接：`@tsdi/agent-tools/mcp` + `@tsdi/mcp-microservice`
 
 ### 近期已完成的通用化
@@ -172,22 +173,24 @@
   - client error / server error / timeout / circuit open / rate limited
 - 健康检查与优雅关闭统一
 
-### P3：开发体验与 AOT（基础完成）
+### P3：开发体验与 AOT
 
 - 微服务包 `taskfile.ts` 统一使用 `@tsdi/compiler` 的 `runCompiler` AOT 构建入口。
 - 脚手架：
   - `node scripts/scaffold-microservice.mjs <name>` 创建 HTTP 服务包
   - `node scripts/scaffold-microservice.mjs <name> --kind gateway` 创建 Gateway 包
+  - `node scripts/scaffold-microservice.mjs <name> --kind transport` 创建自定义传输适配器骨架
   - 生成 package.json / tsconfig / taskfile / main / module / controller / README
 - 契约优先：
   - 共享 DTO + `@RequestBody` / `@RequestParam` 等参数装饰器
   - `@tsdi/core` pipes 做输入校验/转换
-  - Swagger/OpenAPI 作为现有契约输出；gRPC 使用 proto 作为契约源
+  - `@tsdi/microservice-contract`：一份 JSON manifest 生成 DTO / OpenAPI 3 / proto3（含 `--check` CI 漂移检查）
+  - Swagger/OpenAPI 作为 HTTP 契约输出；gRPC 使用生成的 proto 作为契约源
 - 可视化微服务管理：`@tsdi/microservice-admin`（`packages/microservices/admin`）
   - `@tsdi/activities` 可视化流程配置 gateway rules（gateway-condition / gateway-route / gateway-deny）
   - `@tsdi/components/html` 管理界面：实时路由表 + 规则画布
   - `/api/gateway-admin` 读写并即时应用到 `GatewayRuntime`
-- 待增强：从 schema 自动生成 DTO、OpenAPI/proto 双向同步
+- 待增强：反向从 OpenAPI/proto 导入 manifest（当前为 manifest → DTO/OpenAPI/proto 单向生成）
 
 ---
 
@@ -398,7 +401,27 @@ npm run build
 node ../../dist/orders/main.js
 ```
 
-## 11. Tracing
+## 11. 契约生成
+
+`@tsdi/microservice-contract`（`packages/microservices/contract`）用一份 JSON manifest 同时生成：
+
+- TypeScript DTO（class/interface，可选 Swagger 装饰器）
+- OpenAPI 3 文档
+- proto3 message + RPC service
+
+```bash
+cd packages/microservices/contract
+npx ts-node -r tsconfig-paths/register cli.ts example/orders.contract.json --out src/contract
+# CI: 有漂移时失败
+npx ts-node -r tsconfig-paths/register cli.ts example/orders.contract.json --out src/contract --check
+```
+
+字段支持 `string/number/integer/boolean/array/object` 和模型引用；数组必须有 `items`；
+对象可内联 `properties`。未知模型、重复路由/operationId 会在生成前报错。
+
+---
+
+## 12. Tracing
 
 ```ts
 import { TracingModule } from '@tsdi/tracing';
@@ -418,7 +441,7 @@ export class AppModule {}
 
 `withExporter` 可传 exporter class、exporter 实例，或一次传多个。未注册 exporter 时 span 仅保留在内存批次中。
 
-## 12. 选型建议
+## 13. 选型建议
 
 | 目标 | 建议 |
 |---|---|
