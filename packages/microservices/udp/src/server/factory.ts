@@ -1,15 +1,13 @@
-import { Provider, getClassRef, Injector, importProvidersFrom } from '@tsdi/ioc';
-import { NotFoundException, RequestContext, REQUEST, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
-import { of } from 'rxjs';
+import { importProvidersFrom } from '@tsdi/ioc';
+import { REQUEST, StatusMessageAdapter, Transport, TransferSide } from '@tsdi/common';
 import * as dgram from 'node:dgram';
 import { UdpServer } from './udp-server';
 import { UdpServOptions, UDP_SERV_OPTIONS } from './options';
-import { AuthInterceptor, MessageAuthInterceptor, ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
+import { createServiceTransportFeature, ServiceTransportFeature } from '@tsdi/service';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
-import { SOCKET } from '@tsdi/transport';
+import { SOCKET, useBrokerMessageTransfer } from '@tsdi/transport';
 import { UdpMessageAdapter } from './message-adapter';
 import { UdpMessageAdapterFactory } from './message-adapter.factory';
-import { useBrokerMessageTransfer } from '@tsdi/transport';
 import { UdpMicroPatternFormatter } from '../pattern-formatter';
 
 function isUdpSocket(socket: unknown): socket is dgram.Socket {
@@ -149,71 +147,18 @@ export function udpTransportFactory(option: Partial<UdpServOptions>, asDefault?:
         listenOpts: option.listenOpts ? { ...option.listenOpts } : undefined,
     } as UdpServOptions;
 
-    const serviceToken = getServiceToken(config);
-    const backendToken = getServiceBackendToken(config);
-    getServiceInterceptorsToken(config);
-    getServiceFiltersToken(config);
-    getServiceGuardsToken(config);
-
-    config.providers ??= [];
-    config.providers.push(
-        { provide: UDP_SERV_OPTIONS, useValue: config },
-    );
-    const authProviders: Provider[] = config.features.auth ? [{
-        provide: getServiceInterceptorsToken(config),
-        useExisting: MessageAuthInterceptor,
-        multi: true,
-        multiOrder: -300
-    } as Provider & { multiOrder: number }] : [];
-
-    const providers: Provider[] = [
-        importProvidersFrom(ServerCommonModule),
-        UdpMicroPatternFormatter,
-        UdpMessageAdapter,
-        UdpMessageAdapterFactory,
-        { provide: AuthInterceptor, useClass: MessageAuthInterceptor },
-        { provide: MessageAuthInterceptor, useExisting: AuthInterceptor },
-        ...authProviders,
-        {
-            provide: backendToken,
-            useValue: (_req: any, context: RequestContext): any => {
-                const adapter = context.get(StatusMessageAdapter);
-                const error = new NotFoundException('Not Found', 404);
-                if (adapter) {
-                    adapter.setStatus(error.statusCode, error.message)
-                        .setError(error)
-                        .setPayload({ statusCode: error.statusCode, statusMessage: error.message });
-                    return of(adapter);
-                }
-                return of(null);
-            },
-            multi: true
-        },
-        {
-            provide: serviceToken,
-            useFactory: (injector: Injector) => {
-                return getClassRef(UdpServer).createInvocation(injector, {
-                    providers: [
-                        { provide: UDP_SERV_OPTIONS, useValue: config },
-                        {
-                            provide: ServiceHandler,
-                            useFactory: (inj: Injector) => createRequestHandler(inj, config),
-                            deps: [Injector]
-                        }
-                    ]
-                });
-            },
-            deps: [Injector]
-        },
-        {
-            provide: REGISTER_MICRO_SERVICES,
-            useFactory: (service) => ({ service, bootstrap: config.bootstrap, microservice: config.microservice, asDefault }),
-            deps: [serviceToken],
-            multi: true
-        }
-    ];
-
-    return { kind: ServiceFeatureKind.Transport, config, providers };
+    return createServiceTransportFeature({
+        config,
+        asDefault,
+        optionToken: UDP_SERV_OPTIONS,
+        serverType: UdpServer,
+        providers: [
+            importProvidersFrom(ServerCommonModule),
+            UdpMicroPatternFormatter,
+            UdpMessageAdapter,
+            UdpMessageAdapterFactory
+        ]
+    });
 }
 
 export function useUdpTransport(...options: Partial<UdpServOptions>[]): ServiceTransportFeature[] {

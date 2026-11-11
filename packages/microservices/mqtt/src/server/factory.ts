@@ -1,9 +1,8 @@
-import { Provider, getClassRef, Injector, importProvidersFrom, ArgumentException } from '@tsdi/ioc';
-import { BadRequestException, ForbiddenException, NotFoundException, RequestContext, REQUEST, StatusMessageAdapter, createRequestHandler, Transport, TransferSide, normalize } from '@tsdi/common'
-import { of } from 'rxjs';
+import { importProvidersFrom, ArgumentException } from '@tsdi/ioc';
+import { BadRequestException, ForbiddenException, NotFoundException, REQUEST, StatusMessageAdapter, Transport, TransferSide, normalize } from '@tsdi/common'
 import { MqttServer } from './mqtt-server';
 import { MqttServOptions, MQTT_SERV_OPTIONS } from './options';
-import { AuthInterceptor, MessageAuthInterceptor, ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
+import { createServiceTransportFeature, ServiceTransportFeature } from '@tsdi/service';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { MqttMessageAdapter } from './message-adapter';
 import { MqttMessageAdapterFactory } from './message-adapter.factory';
@@ -127,83 +126,17 @@ export function mqttTransportFactory(option: Partial<MqttServOptions>, asDefault
         subscribeTopics: option.subscribeTopics ? [...option.subscribeTopics] : undefined,
     } as MqttServOptions;
 
-    const serviceToken = getServiceToken(config);
-    const backendToken = getServiceBackendToken(config);
-    getServiceInterceptorsToken(config);
-    getServiceFiltersToken(config);
-    getServiceGuardsToken(config);
-
-    config.providers ??= [];
-    config.providers.push(
-        { provide: MQTT_SERV_OPTIONS, useValue: config },
-    );
-    const authProviders: Provider[] = config.features.auth ? [{
-        provide: getServiceInterceptorsToken(config),
-        useExisting: MessageAuthInterceptor,
-        multi: true,
-        multiOrder: -300
-    } as Provider & { multiOrder: number }] : [];
-
-    const providers: Provider[] = [
-        importProvidersFrom(ServerCommonModule),
-        MqttMessageAdapter,
-        MqttMessageAdapterFactory,
-        { provide: AuthInterceptor, useClass: MessageAuthInterceptor },
-        { provide: MessageAuthInterceptor, useExisting: AuthInterceptor },
-        ...authProviders,
-        {
-            provide: backendToken,
-            useValue: (_req: any, context: RequestContext): any => {
-                const adapter = context.get(StatusMessageAdapter);
-                const error = new NotFoundException('Not Found', 404);
-                if (adapter) {
-                    adapter.setStatus(error.statusCode, error.message)
-                        .setError(error)
-                        .setPayload({ statusCode: error.statusCode, statusMessage: error.message });
-                    return of(adapter);
-                }
-                return of(null);
-            },
-            multi: true
-        },
-        {
-            provide: serviceToken,
-            useFactory: (injector: Injector) => {
-                return getClassRef(MqttServer).createInvocation(injector, {
-                    providers: [
-                        { provide: MQTT_SERV_OPTIONS, useValue: config },
-                        {
-                            provide: ServiceHandler,
-                            useFactory: (inj: Injector) => createRequestHandler(inj, config),
-                            deps: [Injector]
-                        }
-                    ]
-                });
-            },
-            deps: [Injector]
-        },
-        {
-            provide: REGISTER_MICRO_SERVICES,
-            useFactory: (service) => {
-                return {
-                    service,
-                    bootstrap: config.bootstrap,
-                    microservice: config.microservice,
-                    asDefault
-                }
-            },
-            deps: [
-                serviceToken
-            ],
-            multi: true
-        }
-    ];
-
-    return {
-        kind: ServiceFeatureKind.Transport,
+    return createServiceTransportFeature({
         config,
-        providers
-    };
+        asDefault,
+        optionToken: MQTT_SERV_OPTIONS,
+        serverType: MqttServer,
+        providers: [
+            importProvidersFrom(ServerCommonModule),
+            MqttMessageAdapter,
+            MqttMessageAdapterFactory
+        ]
+    });
 }
 
 export function useMqttTransport(...options: Partial<MqttServOptions>[]): ServiceTransportFeature[] {

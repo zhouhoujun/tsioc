@@ -184,6 +184,7 @@
     "@tsdi/agent": "6.0.31",
     "@tsdi/agent-ssh": "6.0.31",
     "@tsdi/ioc": "6.0.31",
+    "@tsdi/mcp-microservice": "6.0.31",
     "cross-fetch": "^4.1.0",
     "globby": "^11.0.0",
     "parse5": "^8.0.0"

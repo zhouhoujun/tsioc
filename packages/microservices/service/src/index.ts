@@ -11,6 +11,7 @@ export * from './ServiceHandler';
 export * from './Service';
 export * from './SetupMicroServices';
 export * from './provider';
+export * from './transport';
 
 
 export * from './RedirectResult';

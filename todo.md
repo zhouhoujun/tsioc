@@ -3368,3 +3368,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 传输解析缓存按连接隔离：`PacketDeserializeInterceptor` 由全局空 key 改为 `SOCKET` 对象 key；`delimiterUnpacket` 使用 `WeakMap<socket, Packet>`，避免多连接交错时共享半包缓存导致串包；新增“不同 socket 缓存隔离”回归。
   - `useMetrics(options)` 支持易用性/可扩展性选项：`prefix`、`defaultLabels` 应用到 registry；`includeMemory`/`includeLatency` 可裁剪采集器；`MetricsInterceptor` 的 latency 依赖改为可选；新增真实 HTTP 指标前缀/标签与 provider 裁剪回归。
   - 回归：transport 52、tcp 65、ws 88、http 36、metrics 47 passing；`git diff --check` 通过。
+- 微服务协议工厂通用化 + Agent MCP 服务桥（2026-11-11）：
+  - 新增 `createServiceTransportFeature`（@tsdi/service）：统一处理 option token、auth bridge、默认 404 backend、ServiceHandler 创建和 REGISTER_MICRO_SERVICES 注册；协议包只提供 config、serverType、消息适配器/格式化器。
+  - 已迁移全部非 HTTP 协议服务端工厂：ws、grpc、tcp、udp、coap、mcp、amqp、kafka、mqtt、nats、redis；累计减少约 550 行重复 provider 代码，新协议接入只需复用 helper。
+  - MCP 通用服务端：新增 `McpServerProvider` / `MCP_SERVER_PROVIDER` / `McpToolController`，提供标准 initialize、tools/list、tools/call、resources/list、prompts/list JSON-RPC 路由；任意工具源实现 provider 即可通过 MCP 暴露。
+  - Agent MCP 桥：`@tsdi/agent-tools/mcp` 新增 `AgentMcpServerProvider` / `provideAgentMcpServerProvider()`，把配置的 agent MCP clients 的 tools 列给标准 MCP 服务，并将 tools/call 转发回对应 server；工具重名自动加 serverId 别名。
+  - 新增真实 HTTP 回归 `mcp-agent-service.spec.ts`：initialize、tools/list、tools/call、resources/list、prompts/list 全链路通过，验证 agent MCP registry → microservice MCP → JSON-RPC 客户端。
+  - 工具/依赖：root tsconfig 增加 `@tsdi/mcp-microservice` 路径；agent-tools 增加 `@tsdi/mcp-microservice` 依赖。
+  - 回归：service 47、mcp 37、agent-tools mcp 12、ws 88、grpc 17、tcp 65、udp 54、coap 25 passing；amqp/kafka/mqtt/nats/redis 仅做 tsc --noUnusedLocals 静态检查（本机无 broker）。

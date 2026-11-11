@@ -10,3 +10,4 @@ export * from './McpListToolsTool';
 export * from './McpCallTool';
 export * from './code-mode-adapter';
 export * from './provider';
+export * from './server-provider';

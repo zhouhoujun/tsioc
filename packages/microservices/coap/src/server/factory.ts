@@ -1,10 +1,17 @@
-import { Provider, getClassRef, Injector, importProvidersFrom } from '@tsdi/ioc';
-import { RequestContext, RequestFilterLike, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
+import { importProvidersFrom } from '@tsdi/ioc';
+import { RequestContext, RequestFilterLike, StatusMessageAdapter, Transport, TransferSide } from '@tsdi/common';
 import { of } from 'rxjs';
 import { CoapServer } from './coap-server';
 import { CoapServOptions, COAP_SERV_OPTIONS } from './options';
 import { CoapCompatiblePatternFormatter, CoapPatternFormatter } from './pattern';
-import { AuthInterceptor, BodyParserInterceptor, ContentInterceptor, JsonInterceptor, MessageAuthInterceptor, ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
+import {
+    BodyParserInterceptor,
+    ContentInterceptor,
+    createServiceTransportFeature,
+    getServiceBackendToken,
+    JsonInterceptor,
+    ServiceTransportFeature
+} from '@tsdi/service';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { CoapBodyParserInterceptor, CoapContentInterceptor, CoapJsonInterceptor } from './interceptors';
 import { CoapMessageAdapter } from './message-adapter';
@@ -39,89 +46,41 @@ export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault
     } as CoapServOptions;
 
     config.features.interceptorsToken ??= COAP_SERV_INTERCEPTORS;
-    const serviceToken = getServiceToken(config);
     const backendToken = getServiceBackendToken(config);
-    getServiceInterceptorsToken(config);
-    getServiceFiltersToken(config);
-    getServiceGuardsToken(config);
-
-    config.providers ??= [];
-    config.providers.push(
-        { provide: COAP_SERV_OPTIONS, useValue: config },
-    );
-    const authProviders: Provider[] = config.features.auth ? [{
-        provide: getServiceInterceptorsToken(config),
-        useExisting: MessageAuthInterceptor,
-        multi: true,
-        multiOrder: -300
-    } as Provider & { multiOrder: number }] : [];
-
-    const providers: Provider[] = [
-        importProvidersFrom(ServerCommonModule),
-        CoapNormalizeAdapterFilter,
-        CoapTransportSenderFilter,
-        CoapMessageAdapter,
-        CoapMessageAdapterFactory,
-        CoapPatternFormatter,
-        CoapCompatiblePatternFormatter,
-        { provide: ContentInterceptor, useClass: CoapContentInterceptor },
-        { provide: JsonInterceptor, useClass: CoapJsonInterceptor },
-        { provide: BodyParserInterceptor, useClass: CoapBodyParserInterceptor },
-        { provide: AuthInterceptor, useClass: MessageAuthInterceptor },
-        { provide: MessageAuthInterceptor, useExisting: AuthInterceptor },
-        ...authProviders,
-        {
-            provide: backendToken,
-            useValue: (_req: any, context: RequestContext): any => {
-                const adapter = context.get(StatusMessageAdapter);
-                if (adapter) {
-                    adapter.setStatus('4.04', 'Not Found')
-                        .setError(new Error('Not Found'))
-                        .setPayload({ statusCode: '4.04', statusMessage: 'Not Found' });
-                    return of(adapter);
-                }
-                return of(null);
-            },
-            multi: true
+    const backendProvider = {
+        provide: backendToken,
+        useValue: (_req: any, context: RequestContext): any => {
+            const adapter = context.get(StatusMessageAdapter);
+            if (adapter) {
+                adapter.setStatus('4.04', 'Not Found')
+                    .setError(new Error('Not Found'))
+                    .setPayload({ statusCode: '4.04', statusMessage: 'Not Found' });
+                return of(adapter);
+            }
+            return of(null);
         },
-        {
-            provide: serviceToken,
-            useFactory: (injector: Injector) => {
-                return getClassRef(CoapServer).createInvocation(injector, {
-                    providers: [
-                        { provide: COAP_SERV_OPTIONS, useValue: config },
-                        {
-                            provide: ServiceHandler,
-                            useFactory: (inj: Injector) => createRequestHandler(inj, config),
-                            deps: [Injector]
-                        }
-                    ]
-                });
-            },
-            deps: [Injector]
-        },
-        {
-            provide: REGISTER_MICRO_SERVICES,
-            useFactory: (service) => {
-                return {
-                    service,
-                    bootstrap: config.bootstrap,
-                    microservice: config.microservice,
-                    asDefault
-                }
-            },
-            deps: [
-                serviceToken
-            ],
-            multi: true
-        }
-    ];
-
-    return {
-        kind: ServiceFeatureKind.Transport,
-        config,
-        providers
+        multi: true
     };
+
+    return createServiceTransportFeature({
+        config,
+        asDefault,
+        optionToken: COAP_SERV_OPTIONS,
+        serverType: CoapServer,
+        providers: [
+            importProvidersFrom(ServerCommonModule),
+            CoapNormalizeAdapterFilter,
+            CoapTransportSenderFilter,
+            CoapMessageAdapter,
+            CoapMessageAdapterFactory,
+            CoapPatternFormatter,
+            CoapCompatiblePatternFormatter,
+            { provide: ContentInterceptor, useClass: CoapContentInterceptor },
+            { provide: JsonInterceptor, useClass: CoapJsonInterceptor },
+            { provide: BodyParserInterceptor, useClass: CoapBodyParserInterceptor }
+        ],
+        backendProvider
+    });
 }
 
 export function useCoapTransport(...options: Partial<CoapServOptions>[]): ServiceTransportFeature[] {
