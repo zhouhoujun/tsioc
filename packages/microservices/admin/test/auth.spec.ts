@@ -286,3 +286,84 @@ describe('gateway admin auth via a separate oidc-auth service', () => {
         expect(location.searchParams.get('redirect')).toBe('/admin/rules');
     });
 });
+
+describe('gateway admin OAuth2 authentication', () => {
+    let ctx: ApplicationContext | undefined;
+    let base = '';
+
+    before(async () => {
+        const port = await freePort();
+        base = `http://127.0.0.1:${port}`;
+        const fetchImpl = (async (url: any) => {
+            const target = String(url);
+            if (target === 'https://oauth.example/token') {
+                return {
+                    ok: true,
+                    status: 200,
+                    async json() { return { access_token: 'oauth-access-token', token_type: 'Bearer' }; }
+                };
+            }
+            if (target === 'https://oauth.example/profile') {
+                return {
+                    ok: true,
+                    status: 200,
+                    async json() {
+                        return { id: 'oauth-1', email: 'oauth@example.com', name: 'OAuth User', roles: ['gateway-admins'] };
+                    }
+                };
+            }
+            return { ok: false, status: 404, async json() { return {}; } };
+        }) as any;
+        ctx = await startGatewayAdminServer({
+            host: '127.0.0.1',
+            port,
+            uiRoot: false,
+            auth: {
+                mode: 'oauth2',
+                authorizationURL: 'https://oauth.example/authorize',
+                tokenURL: 'https://oauth.example/token',
+                profileURL: 'https://oauth.example/profile',
+                clientId: 'gateway-admin',
+                clientSecret: 'oauth-secret',
+                redirectUri: `${base}/admin/oidc/callback`,
+                sessionSecret: 'oauth-session-secret',
+                allowedEmails: ['oauth@example.com'],
+                requiredRoles: ['gateway-admins'],
+                fetchImpl
+            }
+        });
+    });
+
+    after(async () => {
+        await ctx?.close();
+    });
+
+    it('runs the OAuth2 authorization-code flow without an ID token', async () => {
+        const unauthorized = await fetch(`${base}/api/gateway-admin/state`);
+        expect(unauthorized.status).toBe(401);
+
+        const login = await fetch(`${base}/admin/auth/login?redirect=/admin/`, { redirect: 'manual' });
+        expect(login.status).toBe(302);
+        const location = new URL(login.headers.get('location')!);
+        expect(location.origin + location.pathname).toBe('https://oauth.example/authorize');
+        expect(location.searchParams.get('code_challenge_method')).toBe('S256');
+        expect(location.searchParams.get('nonce')).toBeNull();
+        const stateToken = cookieHeader(login, 'tsdi_gateway_admin_state')!;
+        const state = decodeState(stateToken);
+
+        const callback = await fetch(`${base}/admin/oidc/callback?code=oauth-code&state=${encodeURIComponent(state.state)}`, {
+            redirect: 'manual',
+            headers: { cookie: `tsdi_gateway_admin_state=${stateToken}` }
+        });
+        expect(callback.status).toBe(302);
+        const session = cookieHeader(callback, 'tsdi_gateway_admin_session');
+        expect(session).toBeTruthy();
+
+        const stateResponse = await fetch(`${base}/api/gateway-admin/state`, {
+            headers: { cookie: `tsdi_gateway_admin_session=${session}` }
+        });
+        expect(stateResponse.status).toBe(200);
+        const body = await stateResponse.json() as any;
+        expect(body.auth).toEqual({ enabled: true, mode: 'oauth2' });
+    });
+});

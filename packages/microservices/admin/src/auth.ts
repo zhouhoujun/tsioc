@@ -36,6 +36,14 @@ export function validateGatewayAdminAuth(options?: GatewayAdminAuthOptions | fal
             throw new Error('Gateway admin OIDC requires issuer, clientId and clientSecret');
         }
     }
+    if (options.mode === 'oauth2') {
+        const provider = options.provider && typeof options.provider === 'object' ? options.provider : undefined;
+        if ((!options.authorizationURL && !provider?.authorizationEndpoint)
+            || (!options.tokenURL && !provider?.tokenEndpoint)
+            || !options.clientId || !options.clientSecret) {
+            throw new Error('Gateway admin OAuth2 requires authorizationURL, tokenURL, clientId and clientSecret');
+        }
+    }
     if (options.mode === 'service' && !options.authServiceUrl && !options.loginUrl) {
         throw new Error('Gateway admin service auth requires auth.authServiceUrl or auth.loginUrl');
     }
@@ -56,7 +64,7 @@ export interface GatewayAdminAuthOptions {
      * `none` keeps the local admin open. `oidc` enables authorization-code +
      * PKCE login and protects `/api/gateway-admin/*`.
      */
-    mode?: 'none' | 'oidc' | 'service';
+    mode?: 'none' | 'oidc' | 'oauth2' | 'service';
     /**
      * Configure the OIDC provider. `'oidc'` uses issuer discovery; an object
      * lets deployments point at explicit provider endpoints.
@@ -66,6 +74,14 @@ export interface GatewayAdminAuthOptions {
     issuer?: string;
     clientId?: string;
     clientSecret?: string;
+    /** OAuth2 authorization endpoint (mode=oauth2). */
+    authorizationURL?: string;
+    /** OAuth2 token endpoint (mode=oauth2). */
+    tokenURL?: string;
+    /** OAuth2 userinfo/profile endpoint (mode=oauth2). */
+    profileURL?: string;
+    /** Enable PKCE for OAuth2. Default true. */
+    pkce?: boolean;
     /** Default: `<public origin>/admin/oidc/callback`. */
     redirectUri?: string;
     /** Default: `openid profile email`. */
@@ -198,21 +214,19 @@ export class GatewayAdminAuthService {
     ) {
         this.options = options ?? { mode: 'none' };
         this.fetchImpl = this.options.fetchImpl ?? ((globalThis as any).fetch?.bind(globalThis));
-        if (this.enabled && !this.options.sessionSecret) {
-            throw new Error('Gateway admin OIDC requires auth.sessionSecret');
-        }
-        const provider = this.explicitProvider();
-        if (this.oidcEnabled && ((!this.options.issuer && !provider?.issuer) || !this.options.clientId || !this.options.clientSecret)) {
-            throw new Error('Gateway admin OIDC requires issuer, clientId and clientSecret');
-        }
+        validateGatewayAdminAuth(this.options);
     }
 
     get enabled(): boolean {
-        return this.options.mode === 'oidc' || this.options.mode === 'service';
+        return this.options.mode === 'oidc' || this.options.mode === 'oauth2' || this.options.mode === 'service';
     }
 
     get oidcEnabled(): boolean {
         return this.options.mode === 'oidc';
+    }
+
+    get oauth2Enabled(): boolean {
+        return this.options.mode === 'oauth2';
     }
 
     get serviceEnabled(): boolean {
@@ -266,6 +280,39 @@ export class GatewayAdminAuthService {
             adapter?.redirect(url.toString());
             return;
         }
+        if (this.oauth2Enabled) {
+            const endpoints = this.oauth2Endpoints();
+            const adapter = context.get(RestfulRequestAdapter);
+            const query = adapter?.query ?? {};
+            const state = randomValue();
+            const verifier = randomValue();
+            const returnTo = localReturnPath(query.redirect, this.options.defaultReturnTo ?? '/admin/');
+            this.setCookie(request, STATE_COOKIE, encodeSigned(this.options.sessionSecret!, {
+                state,
+                nonce: '',
+                verifier,
+                returnTo,
+                exp: Date.now() + STATE_TTL_SECONDS * 1000
+            }), {
+                path: this.callbackPath,
+                maxAge: STATE_TTL_SECONDS,
+                httpOnly: true,
+                sameSite: 'Lax',
+                secure: this.secure(request)
+            });
+            const url = new URL(endpoints.authorizationURL);
+            url.searchParams.set('response_type', 'code');
+            url.searchParams.set('client_id', this.options.clientId!);
+            url.searchParams.set('redirect_uri', this.resolveRedirectUri(request));
+            url.searchParams.set('scope', (this.options.scopes ?? ['profile', 'email']).join(' '));
+            url.searchParams.set('state', state);
+            if (this.options.pkce !== false) {
+                url.searchParams.set('code_challenge', sha256(verifier));
+                url.searchParams.set('code_challenge_method', 'S256');
+            }
+            adapter?.redirect(url.toString());
+            return;
+        }
         const discovery = await this.discovery();
         const state = randomValue();
         const nonce = randomValue();
@@ -300,6 +347,9 @@ export class GatewayAdminAuthService {
     }
 
     async callback(context: RequestContext): Promise<void> {
+        if (this.oauth2Enabled) {
+            return this.oauth2Callback(context);
+        }
         if (!this.oidcEnabled) {
             throw new UnauthorizedException('OIDC callback is not enabled');
         }
@@ -354,6 +404,87 @@ export class GatewayAdminAuthService {
             email: user.email,
             name: user.name || user.preferred_username || user.email,
             picture: user.picture,
+            groups: this.groupsOf(user),
+            exp: Date.now() + (this.options.sessionTtlMs ?? 8 * 60 * 60 * 1000)
+        };
+        this.setCookie(request, SESSION_COOKIE, encodeSigned(this.options.sessionSecret!, session), {
+            path: '/',
+            maxAge: Math.floor((this.options.sessionTtlMs ?? 8 * 60 * 60 * 1000) / 1000),
+            httpOnly: true,
+            sameSite: 'Lax',
+            secure: this.secure(request)
+        });
+        this.setCookie(request, STATE_COOKIE, '', {
+            path: this.callbackPath,
+            maxAge: 0,
+            httpOnly: true,
+            sameSite: 'Lax',
+            secure: this.secure(request)
+        });
+        adapter?.redirect(localReturnPath(stateCookie.returnTo, this.options.defaultReturnTo ?? '/admin/'));
+    }
+
+    private oauth2Endpoints(): { authorizationURL: string; tokenURL: string; profileURL?: string } {
+        const provider = this.explicitProvider();
+        const authorizationURL = this.options.authorizationURL || provider?.authorizationEndpoint;
+        const tokenURL = this.options.tokenURL || provider?.tokenEndpoint;
+        const profileURL = this.options.profileURL || provider?.userinfoEndpoint;
+        if (!authorizationURL || !tokenURL) {
+            throw new Error('Gateway admin OAuth2 endpoints are not configured');
+        }
+        return { authorizationURL, tokenURL, profileURL };
+    }
+
+    private async oauth2Callback(context: RequestContext): Promise<void> {
+        const request = context.get(REQUEST) as HttpRequestMessage;
+        const adapter = context.get(RestfulRequestAdapter);
+        const query = adapter?.query ?? {};
+        const stateCookie = decodeSigned<any>(this.options.sessionSecret!, this.getCookie(request, STATE_COOKIE));
+        if (!stateCookie || stateCookie.exp < Date.now() || stateCookie.state !== query.state) {
+            throw new UnauthorizedException('Invalid or expired OAuth2 state');
+        }
+        if (!query.code) {
+            throw new UnauthorizedException('Missing OAuth2 authorization code');
+        }
+        const endpoints = this.oauth2Endpoints();
+        const body = new URLSearchParams({
+            grant_type: 'authorization_code',
+            code: query.code,
+            client_id: this.options.clientId!,
+            client_secret: this.options.clientSecret!,
+            redirect_uri: this.resolveRedirectUri(request)
+        });
+        if (this.options.pkce !== false) {
+            body.set('code_verifier', stateCookie.verifier);
+        }
+        const tokenResponse = await this.fetchImpl(endpoints.tokenURL, {
+            method: 'POST',
+            headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
+            body: body.toString()
+        });
+        if (!tokenResponse.ok) {
+            throw new UnauthorizedException(`OAuth2 token exchange failed: HTTP ${tokenResponse.status}`);
+        }
+        const tokens = await tokenResponse.json() as any;
+        if (!tokens.access_token) {
+            throw new UnauthorizedException('OAuth2 token response has no access_token');
+        }
+        let user: any = {};
+        if (endpoints.profileURL) {
+            const profile = await this.fetchImpl(endpoints.profileURL, {
+                headers: { authorization: `Bearer ${tokens.access_token}`, accept: 'application/json' }
+            });
+            if (!profile.ok) {
+                throw new UnauthorizedException(`OAuth2 profile request failed: HTTP ${profile.status}`);
+            }
+            user = await profile.json() as any;
+        }
+        this.authorize(user);
+        const session: BrowserSession = {
+            sub: String(user.sub || user.id || user.username || ''),
+            email: user.email,
+            name: user.name || user.displayName || user.username || user.email,
+            picture: user.picture || user.avatar_url,
             groups: this.groupsOf(user),
             exp: Date.now() + (this.options.sessionTtlMs ?? 8 * 60 * 60 * 1000)
         };

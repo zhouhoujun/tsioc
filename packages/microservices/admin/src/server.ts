@@ -9,6 +9,7 @@ import { GatewayRouteOptions, useGateway } from '@tsdi/gateway';
 import { InMemoryWorkflowDefinitionStore } from '@tsdi/activities';
 import { GatewayAdminController, GATEWAY_RULES_STORE, useGatewayAdminUi } from './controller';
 import { GatewayAdminAuthOptions, useGatewayAdminAuth, validateGatewayAdminAuth } from './auth';
+import { GatewayAdminOidcServiceOptions } from './oidc-service';
 
 export interface GatewayAdminServerOptions {
     /** HTTP listen host. Default `127.0.0.1`. */
@@ -21,8 +22,10 @@ export interface GatewayAdminServerOptions {
     uiRoot?: string | false;
     /** Initial routes shown/applied by the console. Default empty. */
     routes?: GatewayRouteOptions[];
-    /** Optional OIDC login protection for the admin API/UI. */
+    /** Optional login protection for the admin API/UI. */
     auth?: GatewayAdminAuthOptions | false;
+    /** Optional child-process launch config for the separate oidc-auth service. */
+    oidcService?: GatewayAdminOidcServiceOptions;
     /** Application base directory used for module resolution. */
     baseURL?: string;
 }
@@ -85,7 +88,7 @@ export function createGatewayAdminServerModule(options: GatewayAdminServerOption
         useCookie(),
         useGateway({ routes: options.routes ?? [] })
     ];
-    if (options.auth && (options.auth.mode === 'oidc' || options.auth.mode === 'service')) {
+    if (options.auth && (options.auth.mode === 'oidc' || options.auth.mode === 'oauth2' || options.auth.mode === 'service')) {
         features.unshift(useGatewayAdminAuth(options.auth));
     }
     if (uiRoot) {

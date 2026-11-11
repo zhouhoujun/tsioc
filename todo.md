@@ -3530,3 +3530,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - HttpMessageAdapter 现在把 statusMessage 清洗为可打印 ASCII（换行/中文/JSON 会被替换/截断），500/400 错误始终返回 JSON 而不是空 reply；新增多行异常 e2e 回归，http-e2e 37 passing。
   - 新增 `validateGatewayAdminAuth` 启动期校验：oidc 缺少 issuer/clientId/clientSecret/sessionSecret，或 service 缺少 sessionSecret/authServiceUrl(loginUrl) 时直接明确报错退出，不再等到请求时懒加载失败。
   - admin 27 passing。
+- Admin OAuth2 与独立 OIDC 服务启动（2026-11-11）：
+  - `auth.mode` 增加 `oauth2`：authorization code + PKCE + token 交换 + profile/userinfo 拉取，支持 allowedEmails/Domains/Groups/Roles/Claims。
+  - 新增 `oidcService` 配置/CLI（`--oidc-service`、host/port/entry/env）：可拉起独立的 `packages/oidc-auth` 子进程，等待 discovery 就绪后再启动 admin，退出时停止子进程；也可手动独立启动。
+  - OAuth2 CLI/env：`--auth oauth2`、`GATEWAY_ADMIN_OAUTH2_*`；service 模式自动使用拉起服务的 URL。
+  - admin 30 passing（新增 OAuth2 流程与 launcher entry 测试），build/build:web 通过；实测 admin 4435 + 独立 oidc-auth 4436：auth discovery 200、未登录 admin API 401。

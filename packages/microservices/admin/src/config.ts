@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import { GatewayRouteOptions } from '@tsdi/gateway';
 import { GatewayAdminAuthOptions } from './auth';
 import { GatewayAdminServerOptions } from './server';
+import { GatewayAdminOidcServiceOptions } from './oidc-service';
 
 export interface GatewayAdminConfig {
     host?: string;
@@ -13,6 +14,8 @@ export interface GatewayAdminConfig {
     routes?: GatewayRouteOptions[] | { routes?: GatewayRouteOptions[] };
     /** `false` or `{ mode: 'none' }` disables authentication. */
     auth?: GatewayAdminAuthOptions | false;
+    /** Optionally launch the separate `@tsdi/oidc-auth` service. */
+    oidcService?: GatewayAdminOidcServiceOptions;
 }
 
 /**
@@ -38,7 +41,8 @@ export function loadGatewayAdminConfig(file: string): GatewayAdminServerOptions 
         prefix: config.prefix,
         uiRoot,
         routes,
-        auth: config.auth === false ? false : config.auth
+        auth: config.auth === false ? false : config.auth,
+        oidcService: config.oidcService
     };
 }
 
@@ -50,6 +54,9 @@ export function mergeGatewayAdminOptions(
     overrides: GatewayAdminServerOptions = {}
 ): GatewayAdminServerOptions {
     const merged: GatewayAdminServerOptions = { ...base, ...overrides };
+    if (base.oidcService && overrides.oidcService) {
+        merged.oidcService = { ...base.oidcService, ...overrides.oidcService };
+    }
     if (base.auth && overrides.auth) {
         const auth: GatewayAdminAuthOptions = { ...base.auth };
         Object.entries(overrides.auth).forEach(([key, value]) => {

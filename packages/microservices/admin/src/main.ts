@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import { GatewayRouteOptions } from '@tsdi/gateway';
 import { GatewayAdminAuthOptions } from './auth';
+import { GatewayAdminOidcServiceOptions, startGatewayAdminOidcService } from './oidc-service';
 import { loadGatewayAdminConfig, mergeGatewayAdminOptions } from './config';
 import {
     DEFAULT_GATEWAY_ADMIN_HOST,
@@ -18,7 +19,10 @@ interface CliInput {
     uiRoot?: string | false;
     routes?: GatewayRouteOptions[];
     routesFile?: string;
-    auth?: 'none' | 'oidc' | 'service';
+    auth?: 'none' | 'oidc' | 'oauth2' | 'service';
+    oidcService?: boolean;
+    oidcServicePort?: number;
+    oidcServiceHost?: string;
     help?: boolean;
 }
 
@@ -33,7 +37,10 @@ Options:
   --ui-root <dir>       built UI directory (default: nearest ./web)
   --no-ui               serve only the admin API
   --routes <file>       JSON file with a route array or { "routes": [...] }
-  --auth <none|oidc|service>  toggle login provider (env: GATEWAY_ADMIN_AUTH)
+  --auth <none|oidc|oauth2|service>  toggle login provider (env: GATEWAY_ADMIN_AUTH)
+  --oidc-service        start the separate packages/oidc-auth service
+  --oidc-service-port <number>  oidc-auth listen port (default: 3000)
+  --oidc-service-host <host>    oidc-auth listen host (default: 127.0.0.1)
   --help                show this help
 
 OIDC environment:
@@ -42,10 +49,20 @@ OIDC environment:
   GATEWAY_ADMIN_SESSION_SECRET / GATEWAY_ADMIN_ALLOWED_EMAILS
   GATEWAY_ADMIN_ALLOWED_DOMAINS / GATEWAY_ADMIN_GROUPS
 
+OAuth2 environment:
+  GATEWAY_ADMIN_OAUTH2_AUTHORIZATION_URL / GATEWAY_ADMIN_OAUTH2_TOKEN_URL
+  GATEWAY_ADMIN_OAUTH2_PROFILE_URL / GATEWAY_ADMIN_OAUTH2_CLIENT_ID
+  GATEWAY_ADMIN_OAUTH2_CLIENT_SECRET / GATEWAY_ADMIN_OAUTH2_REDIRECT_URI
+  GATEWAY_ADMIN_OAUTH2_SCOPES
+
 Separate auth service (mode=service):
   GATEWAY_ADMIN_AUTH_SERVICE_URL / GATEWAY_ADMIN_SESSION_ISSUER
   GATEWAY_ADMIN_LOGIN_URL / GATEWAY_ADMIN_LOGOUT_URL
   GATEWAY_ADMIN_REQUIRED_ROLES
+
+Separate oidc-auth process:
+  GATEWAY_ADMIN_OIDC_SERVICE_ENABLED / GATEWAY_ADMIN_OIDC_SERVICE_HOST
+  GATEWAY_ADMIN_OIDC_SERVICE_PORT / GATEWAY_ADMIN_OIDC_SERVICE_ENTRY
 
 General environment:
   GATEWAY_ADMIN_CONFIG / GATEWAY_ADMIN_PORT / GATEWAY_ADMIN_HOST
@@ -83,6 +100,24 @@ function oidcFromEnv(): GatewayAdminAuthOptions {
         scopes: splitList(process.env.GATEWAY_ADMIN_OIDC_SCOPES),
         sessionSecret: process.env.GATEWAY_ADMIN_SESSION_SECRET,
         sessionTtlMs: process.env.GATEWAY_ADMIN_SESSION_TTL_MS ? Number(process.env.GATEWAY_ADMIN_SESSION_TTL_MS) : undefined,
+        allowedEmails: splitList(process.env.GATEWAY_ADMIN_ALLOWED_EMAILS),
+        allowedDomains: splitList(process.env.GATEWAY_ADMIN_ALLOWED_DOMAINS),
+        requiredGroups: splitList(process.env.GATEWAY_ADMIN_GROUPS)
+    };
+}
+
+function oauth2FromEnv(): GatewayAdminAuthOptions {
+    return {
+        mode: 'oauth2',
+        authorizationURL: process.env.GATEWAY_ADMIN_OAUTH2_AUTHORIZATION_URL,
+        tokenURL: process.env.GATEWAY_ADMIN_OAUTH2_TOKEN_URL,
+        profileURL: process.env.GATEWAY_ADMIN_OAUTH2_PROFILE_URL,
+        clientId: process.env.GATEWAY_ADMIN_OAUTH2_CLIENT_ID,
+        clientSecret: process.env.GATEWAY_ADMIN_OAUTH2_CLIENT_SECRET,
+        redirectUri: process.env.GATEWAY_ADMIN_OAUTH2_REDIRECT_URI,
+        scopes: splitList(process.env.GATEWAY_ADMIN_OAUTH2_SCOPES),
+        sessionSecret: process.env.GATEWAY_ADMIN_SESSION_SECRET,
+        pkce: process.env.GATEWAY_ADMIN_OAUTH2_PKCE !== 'false',
         allowedEmails: splitList(process.env.GATEWAY_ADMIN_ALLOWED_EMAILS),
         allowedDomains: splitList(process.env.GATEWAY_ADMIN_ALLOWED_DOMAINS),
         requiredGroups: splitList(process.env.GATEWAY_ADMIN_GROUPS)
@@ -135,9 +170,18 @@ function parseArgs(argv: string[]): CliInput {
             case '--routes':
                 input.routesFile = argv[++index];
                 break;
+            case '--oidc-service':
+                input.oidcService = true;
+                break;
+            case '--oidc-service-port':
+                input.oidcServicePort = Number(argv[++index]);
+                break;
+            case '--oidc-service-host':
+                input.oidcServiceHost = argv[++index];
+                break;
             case '--auth': {
                 const mode = argv[++index];
-                if (mode !== 'none' && mode !== 'oidc' && mode !== 'service') {
+                if (mode !== 'none' && mode !== 'oidc' && mode !== 'oauth2' && mode !== 'service') {
                     throw new Error(`Invalid auth mode: ${mode}`);
                 }
                 input.auth = mode;
@@ -175,11 +219,26 @@ function resolveOptions(): GatewayAdminServerOptions {
     if (uiRoot !== undefined) overrides.uiRoot = uiRoot;
     if (routes !== undefined) overrides.routes = routes;
 
+    const oidcServiceEnabled = input.oidcService === true
+        || process.env.GATEWAY_ADMIN_OIDC_SERVICE_ENABLED === 'true';
+    if (oidcServiceEnabled) {
+        const oidcService: GatewayAdminOidcServiceOptions = {
+            enabled: true,
+            host: input.oidcServiceHost ?? process.env.GATEWAY_ADMIN_OIDC_SERVICE_HOST ?? '127.0.0.1',
+            port: input.oidcServicePort ?? (process.env.GATEWAY_ADMIN_OIDC_SERVICE_PORT ? Number(process.env.GATEWAY_ADMIN_OIDC_SERVICE_PORT) : 3000),
+            entry: process.env.GATEWAY_ADMIN_OIDC_SERVICE_ENTRY,
+            cwd: process.env.GATEWAY_ADMIN_OIDC_SERVICE_CWD
+        };
+        overrides.oidcService = oidcService;
+    }
+
     const authMode = input.auth ?? process.env.GATEWAY_ADMIN_AUTH;
     if (authMode === 'none') {
         overrides.auth = false;
     } else if (authMode === 'oidc') {
         overrides.auth = oidcFromEnv();
+    } else if (authMode === 'oauth2') {
+        overrides.auth = oauth2FromEnv();
     } else if (authMode === 'service') {
         overrides.auth = serviceFromEnv();
     }
@@ -196,7 +255,29 @@ function resolveOptions(): GatewayAdminServerOptions {
 
 async function main(): Promise<void> {
     const options = resolveOptions();
-    await startGatewayAdminServer(options);
+    let oidcService: Awaited<ReturnType<typeof startGatewayAdminOidcService>> | undefined;
+    if (options.oidcService?.enabled) {
+        oidcService = await startGatewayAdminOidcService(options.oidcService, options.auth);
+        if (options.auth && options.auth.mode === 'service' && !options.auth.authServiceUrl) {
+            options.auth.authServiceUrl = oidcService.url;
+        }
+        if (options.auth && options.auth.mode === 'service' && !options.auth.loginUrl) {
+            options.auth.loginUrl = `${oidcService.url}/auth/login`;
+        }
+        const shutdown = async () => {
+            await oidcService?.stop();
+            process.exit(0);
+        };
+        process.once('SIGINT', shutdown);
+        process.once('SIGTERM', shutdown);
+        process.once('exit', () => { void oidcService?.stop(); });
+    }
+    try {
+        await startGatewayAdminServer(options);
+    } catch (error) {
+        await oidcService?.stop();
+        throw error;
+    }
     const host = options.host === '0.0.0.0' ? '127.0.0.1' : options.host;
     const base = `http://${host}:${options.port}`;
     console.log(`Gateway admin API: ${base}/api/gateway-admin/state`);

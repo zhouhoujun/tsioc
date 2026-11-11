@@ -160,17 +160,48 @@ What is protected:
 |---|---|
 | `none` | No login; local/development use. |
 | `oidc` | Admin is an OIDC client of an external IdP (Keycloak, Entra, Auth0, ...). |
-| `service` | Admin accepts session/access JWTs issued by a **separate** `@tsdi/oidc-auth` service. Admin never starts that service. |
+| `oauth2` | Admin is an OAuth2 authorization-code client; userinfo is read from the profile endpoint (no ID token/JWKS). |
+| `service` | Admin accepts session/access JWTs issued by a **separate** `@tsdi/oidc-auth` service. |
 
 `service` mode verifies the `oidc_session` cookie (or `Authorization: Bearer`)
-with the shared `sessionSecret`/`sessionIssuer`, so the auth service must be
-deployed and started independently:
+with the shared `sessionSecret`/`sessionIssuer`. The `@tsdi/oidc-auth` service is
+a separate process. It can be started manually:
 
 ```bash
 # separate process, separate workspace/db
 cd packages/oidc-auth
 npm start
 ```
+
+or launched as a child of the admin process when explicitly enabled:
+
+```json
+{
+  "auth": {
+    "mode": "service",
+    "sessionSecret": "shared-secret",
+    "sessionIssuer": "tsioc-oidc-auth"
+  },
+  "oidcService": {
+    "enabled": true,
+    "host": "127.0.0.1",
+    "port": 3000,
+    "env": { "OIDC_DB_LOCATION": "./oidc-auth.sqlite" }
+  }
+}
+```
+
+```bash
+npm start -- --config gateway-admin.json
+# or
+GATEWAY_ADMIN_SESSION_SECRET=shared-secret \
+  npm start -- --auth service --oidc-service --oidc-service-port 3000
+```
+
+The launcher waits for
+`/auth/.well-known/openid-configuration` before starting the admin and stops the
+child process on admin exit. It launches the existing package; it does not embed
+the auth endpoints into the admin server.
 
 ```json
 {
@@ -211,6 +242,22 @@ auth: {
 }
 ```
 
+OAuth2 mode config:
+
+```ts
+auth: {
+    mode: 'oauth2',
+    authorizationURL: 'https://idp.example/oauth/authorize',
+    tokenURL: 'https://idp.example/oauth/token',
+    profileURL: 'https://idp.example/oauth/userinfo',
+    clientId: 'gateway-admin',
+    clientSecret: '...',
+    sessionSecret: '...',
+    scopes: ['profile', 'email'],
+    pkce: true
+}
+```
+
 OIDC uses discovery (`/.well-known/openid-configuration`) unless explicit
 endpoints are supplied, verifies the ID token
 signature via JWKS (issuer/audience/nonce/exp), then optionally checks
@@ -228,6 +275,16 @@ GATEWAY_ADMIN_OIDC_CLIENT_SECRET=... \
 GATEWAY_ADMIN_SESSION_SECRET=... \
 GATEWAY_ADMIN_OIDC_REDIRECT_URI=https://gateway.example.com/admin/oidc/callback \
 npm start -- --auth oidc
+
+# OAuth2
+GATEWAY_ADMIN_AUTH=oauth2 \
+GATEWAY_ADMIN_OAUTH2_AUTHORIZATION_URL=https://idp.example/oauth/authorize \
+GATEWAY_ADMIN_OAUTH2_TOKEN_URL=https://idp.example/oauth/token \
+GATEWAY_ADMIN_OAUTH2_PROFILE_URL=https://idp.example/oauth/userinfo \
+GATEWAY_ADMIN_OAUTH2_CLIENT_ID=gateway-admin \
+GATEWAY_ADMIN_OAUTH2_CLIENT_SECRET=... \
+GATEWAY_ADMIN_SESSION_SECRET=... \
+npm start -- --auth oauth2
 ```
 
 Or keep everything in a JSON config file (relative `uiRoot` resolves from the

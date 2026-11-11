@@ -23,7 +23,7 @@ export interface GatewayAdminState {
     dynamic: Partial<GatewayOptions>;
     auth: {
         enabled: boolean;
-        mode: 'none' | 'oidc' | 'service';
+        mode: 'none' | 'oidc' | 'oauth2' | 'service';
     };
 }
 
@@ -167,8 +167,8 @@ export class GatewayAdminController {
             services: uniqueServices(routes, rules),
             dynamic: this.runtime.getDynamicOptions(),
             auth: {
-                enabled: this.authOptions?.mode === 'oidc' || this.authOptions?.mode === 'service',
-                mode: this.authOptions?.mode === 'oidc' ? 'oidc' : this.authOptions?.mode === 'service' ? 'service' : 'none'
+                enabled: this.authOptions?.mode === 'oidc' || this.authOptions?.mode === 'oauth2' || this.authOptions?.mode === 'service',
+                mode: this.authOptions?.mode === 'oidc' ? 'oidc' : this.authOptions?.mode === 'oauth2' ? 'oauth2' : this.authOptions?.mode === 'service' ? 'service' : 'none'
             }
         };
     }

@@ -16,7 +16,7 @@ interface GatewayAdminState {
     routes?: GatewayRouteOptions[];
     rules?: any[];
     services?: string[];
-    auth?: { enabled: boolean; mode: 'none' | 'oidc' | 'service' };
+    auth?: { enabled: boolean; mode: 'none' | 'oidc' | 'oauth2' | 'service' };
 }
 
 type AdminPage = 'dashboard' | 'routes' | 'rules';
