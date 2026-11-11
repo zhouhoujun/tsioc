@@ -191,7 +191,8 @@ export class AgentConsoleSettingsStore {
         const directory = this.paths?.dotDirectory(workspace) || resolveAgentConsoleDirectory(this.fileAdapter, workspace);
         await this.fileAdapter.mkdir(directory, { recursive: true });
         const mode = data.timelineViewMode ?? (typeof data.timelineMode === 'boolean' ? (data.timelineMode ? 'compact' : 'off') : undefined);
-        await this.fileAdapter.writeText(this.path(workspace), JSON.stringify({
+        const path = this.path(workspace);
+        const payload = JSON.stringify({
             version: 2,
             ...(data.language ? { language: data.language } : {}),
             ...(typeof data.vimMode === 'boolean' ? { vimMode: data.vimMode } : {}),
@@ -213,7 +214,29 @@ export class AgentConsoleSettingsStore {
             ...(data.modelProfile ? { modelProfile: data.modelProfile } : {}),
             ...(data.lastSessionId ? { lastSessionId: data.lastSessionId } : {}),
             ...(data.openSessionIds?.length ? { openSessionIds: sanitizeOpenSessionIds(data.openSessionIds) } : {})
-        }, null, 2));
+        }, null, 2);
+        await this.writeAtomic(path, payload);
+    }
+
+    /**
+     * Replace the settings file via temp + rename when the adapter supports it.
+     * Two overlapping writes otherwise leave trailing bytes from the longer
+     * payload (observed as `}}` after toggling a setting and exiting quickly).
+     */
+    private async writeAtomic(path: string, payload: string): Promise<void> {
+        const adapter = this.fileAdapter!;
+        if (typeof adapter.rename !== 'function') {
+            await adapter.writeText(path, payload);
+            return;
+        }
+        const temporary = `${path}.tmp`;
+        await adapter.writeText(temporary, payload);
+        try {
+            await adapter.rename(temporary, path);
+        } catch (error) {
+            await adapter.remove(temporary, { force: true }).catch(() => undefined);
+            throw error;
+        }
     }
 
     private path(workspace: string): string {

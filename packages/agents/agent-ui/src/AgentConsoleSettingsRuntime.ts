@@ -155,8 +155,24 @@ export async function restoreSettings(self: any): Promise<void> {
         if (Array.isArray(persisted.openSessionIds)) { self.state.setOpenSessionIds(persisted.openSessionIds); }
     }
 
+const settingsPersistenceQueues = new Map<string, Promise<void>>();
+
 export async function persistSettings(self: any, patch: Partial<AgentConsoleSettingsData>): Promise<void> {
         const workspace = self.resolveHistoryWorkspace();
-        const current = await self.settingsStore?.load(workspace) || {};
-        await self.settingsStore?.save(workspace, { ...current, ...patch });
+        // Serialize read-modify-write per workspace: a rapid toggle followed by
+        // the exit snapshot must not overwrite the other change, and overlapping
+        // writes must not interleave in the settings file.
+        const previous = settingsPersistenceQueues.get(workspace) || Promise.resolve();
+        const next = previous.catch(() => undefined).then(async () => {
+            const current = await self.settingsStore?.load(workspace) || {};
+            await self.settingsStore?.save(workspace, { ...current, ...patch });
+        });
+        settingsPersistenceQueues.set(workspace, next);
+        try {
+            await next;
+        } finally {
+            if (settingsPersistenceQueues.get(workspace) === next) {
+                settingsPersistenceQueues.delete(workspace);
+            }
+        }
     }

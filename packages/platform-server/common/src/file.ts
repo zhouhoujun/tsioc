@@ -2,7 +2,7 @@ import { Injectable, isArray, isNil, isString, TypeException } from '@tsdi/ioc';
 import { BadRequestException, ENAMETOOLONG, ENOENT, ENOTDIR, FileAdapter, FileDirectoryEntry, FileStats, FindOptions, ForbiddenException, InternalServerException, IReadable, IStats, NotFoundException, Encodings } from '@tsdi/common';
 import { isAbsolute, resolve, join, normalize, extname, basename, parse, sep } from 'node:path';
 import { existsSync, createReadStream, Stats, readFileSync } from 'node:fs';
-import { stat, readFile, readdir, mkdir, rm, writeFile } from 'node:fs/promises';
+import { stat, readFile, readdir, mkdir, rm, writeFile, rename } from 'node:fs/promises';
 
 
 
@@ -158,6 +158,10 @@ export class NodeFileAdapter extends FileAdapter {
 
     async writeText(path: string, content: string, encoding?: Encodings): Promise<void> {
         await writeFile(path, content, encoding || 'utf-8');
+    }
+
+    async rename(from: string, to: string): Promise<void> {
+        await rename(from, to);
     }
 
     async mkdir(path: string, options?: { recursive?: boolean }): Promise<void> {

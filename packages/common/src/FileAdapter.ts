@@ -147,6 +147,12 @@ export abstract class FileAdapter {
     abstract mkdir(path: string, options?: { recursive?: boolean }): Promise<void>;
 
     /**
+     * Atomically replace a file when the host filesystem supports rename.
+     * Optional: callers must fall back to a plain write when absent.
+     */
+    rename?(from: string, to: string): Promise<void>;
+
+    /**
      * Remove a file or directory.
      * @param path target path.
      * @param options remove options.
