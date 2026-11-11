@@ -3481,3 +3481,4 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `withExporter` 支持 exporter class、实例和一次多个 exporter；无参数时回退 `ConsoleTraceExporter`。
   - flush timer 支持 `flushIntervalMs`（0 关闭）并 `unref()`，不阻塞进程退出。
   - 新增 `tracing-di.spec.ts` 覆盖 options 注入、class/实例/多 exporter、timer 不阻塞；tracing 36 passing。
+- 微服务脚手架补充（2026-11-11）：`scaffold-microservice.mjs --kind transport` 生成自定义传输适配器骨架（options/request/server/client/server.factory/client.factory/module），使用通用 transport feature 工厂；生成的 service/gateway 模板改用 `@tsdi/http-microservice` 导入；三种模板 tsc 通过，transport 模板 AOT 构建通过。
