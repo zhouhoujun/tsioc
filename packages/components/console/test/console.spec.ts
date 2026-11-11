@@ -1795,6 +1795,7 @@ export class ConsoleRendererTest {
             expect(surface.dispatchMouse({ button: 32, x: 1, y: 5, release: false })).toBe(true);
             await Promise.resolve();
             expect(surface.lastRenderedLines.some(line => line.includes('transcript 30'))).toBe(false);
+            expect(surface.lastRenderedLines.some(line => line.includes('transcript 23'))).toBe(true);
             expect(surface.lastRenderedLines[surface.lastRenderedLines.length - 1]).toContain('fixed footer');
         } finally {
             surface?.destroy();
