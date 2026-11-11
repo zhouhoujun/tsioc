@@ -6,6 +6,7 @@ import { DOCUMENT } from '@tsdi/common';
 import { DOMWindow, JSDOM } from 'jsdom';
 import { GatewayRouteOptions, GatewayRuleOptions } from '@tsdi/gateway';
 import { GatewayAdminAppComponent } from '../web/app.component';
+import { GatewayAdminBootstrapSession } from '../web/auth.guard';
 import { GatewayAdminAppModule } from '../web/admin.module';
 import { compileGatewayRules } from '../src/rules';
 
@@ -63,9 +64,6 @@ describe('Microservice admin UI', () => {
         globals.fetch = (async (input: RequestInfo | URL, init: RequestInit = {}) => {
             const path = String(input).replace(/^https?:\/\/[^/]+/, '');
             const method = String(init.method || 'GET').toUpperCase();
-            if (path === '/api/gateway-admin/session' && method === 'GET') {
-                return jsonResponse({ authenticated: true, user: null, authEnabled: false });
-            }
             if (path === '/api/gateway-admin/state' && method === 'GET') {
                 return jsonResponse({ routes, rules, services: ['users-service'], auth: { enabled: false, mode: 'none' } });
             }
@@ -101,6 +99,11 @@ describe('Microservice admin UI', () => {
         globals.location = win.location;
         globals.history = win.history;
         globals.document = win.document;
+        (win as unknown as { __TSDI_ADMIN_SESSION__?: GatewayAdminBootstrapSession }).__TSDI_ADMIN_SESSION__ = {
+            authenticated: true,
+            authEnabled: true,
+            user: { sub: 'admin', email: 'admin@example.com' }
+        };
 
         ctx = await Application.run(GatewayAdminAppComponent, {
             deps: [HtmlTemplateModule, GatewayAdminAppModule],

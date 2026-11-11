@@ -7,6 +7,7 @@ import { WorkflowModule } from '../src/workflow.module';
 import { WorkflowDesignerComponent } from '../src/visual/components/workflow-designer.component';
 import { InMemoryWorkflowDefinitionStore } from '../src/visual/workflow-store';
 import { createDefaultWorkflowDefinition } from '../src/visual/workflow-designer';
+import { WORKFLOW_ACTION_BUS } from '../src/visual/workflow-action-bus';
 
 async function flush(): Promise<void> {
     for (let index = 0; index < 4; index++) {
@@ -326,6 +327,26 @@ describe('Workflow Designer UI', () => {
         await flush();
         expect(designer.getAttribute('data-theme')).toBe('high-contrast');
         ref.instance.setTheme('light');
+        await flush();
+        expect(designer.getAttribute('data-theme')).toBe('light');
+    });
+
+    it('applies theme and language selected through the menu action bus', async () => {
+        const designer = root.matches?.('.workflow-designer') ? root : root.querySelector('.workflow-designer');
+        WORKFLOW_ACTION_BUS.emit('theme:dark');
+        await flush();
+        expect(designer.getAttribute('data-theme')).toBe('dark');
+        expect(ref.instance.themeName).toBe('dark');
+
+        WORKFLOW_ACTION_BUS.emit('theme:high-contrast');
+        await flush();
+        expect(designer.getAttribute('data-theme')).toBe('high-contrast');
+
+        WORKFLOW_ACTION_BUS.emit('language:en');
+        await flush();
+        expect(ref.instance.locale).toBe('en');
+
+        WORKFLOW_ACTION_BUS.emit('theme:light');
         await flush();
         expect(designer.getAttribute('data-theme')).toBe('light');
     });

@@ -354,16 +354,18 @@ toolbar, palette, inspector and status bar follow the admin shell.
   for state/routes/rules calls, including cookies and typed status handling.
 - A shared HTTP interceptor (`adminUnauthorizedInterceptor`) redirects to the
   login page as soon as any admin API returns `401`, not only on navigation.
-- `GET /api/gateway-admin/session` returns `{ authenticated, user, authEnabled }`
-  and is what the route guard checks. In `service` mode the token is exchanged
-  for user information through the auth service userinfo endpoint
-  (`<authServiceUrl>/auth/userinfo`, override with `auth.userInfoUrl`); the
-  result is cached briefly (30s).
-- When the token or the resolved user is missing, the session endpoint responds
-  `302` to `<prefix>/login.html?redirect=<return-url>` instead of a JSON `401`,
-  so an expired/missing OAuth session lands directly on the login page. Other
-  protected API calls still return `401`, which the HTTP interceptor maps to the
-  same login redirect.
+- Authentication is delegated to the unified auth service; the gateway does
+  **not** expose an auth/session API. In `service` mode the server exchanges the
+  OAuth token for user information through `<authServiceUrl>/auth/userinfo`
+  (override with `auth.userInfoUrl`) with a short 30s cache.
+- The admin server gates the HTML entry (`<prefix>/` and `<prefix>/index.html`):
+  a missing token or empty userinfo responds `302` to
+  `<prefix>/login.html?redirect=<return-url>`, so the SPA is never served to an
+  unauthenticated browser. When authorized, the resolved user is injected into
+  `index.html` as `window.__TSDI_ADMIN_SESSION__`, and the route guard reads
+  that bootstrapped session instead of calling an HTTP session endpoint.
+- Protected API calls still return `401` when the session expires; the HTTP
+  interceptor redirects to the same login page.
 - The login page links to `/admin/auth/login`, which starts OIDC, OAuth2 or the
   external auth-service login flow according to `auth.mode`.
 

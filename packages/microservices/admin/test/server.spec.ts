@@ -44,13 +44,9 @@ describe('gateway admin standalone server', () => {
         expect(state.services).toEqual(['demo-service']);
     });
 
-    it('reports the current session for the route guard', async () => {
+    it('does not expose an auth session endpoint', async () => {
         const response = await fetch(`${base}/api/gateway-admin/session`);
-        expect(response.status).toBe(200);
-        const session = await response.json() as any;
-        expect(session.authenticated).toBe(true);
-        expect(session.authEnabled).toBe(false);
-        expect(session.user).toBeNull();
+        expect(response.status).toBe(404);
     });
 
     it('serves the built browser UI under the configured prefix', async () => {
@@ -59,6 +55,8 @@ describe('gateway admin standalone server', () => {
         const html = await response.text();
         expect(html).toContain('gateway-admin-app');
         expect(html).toContain('main.js');
+        expect(html).toContain('__TSDI_ADMIN_SESSION__');
+        expect(html).toContain('"authEnabled":false');
     });
 
     it('serves the login page used by the route guard', async () => {

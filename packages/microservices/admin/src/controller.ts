@@ -62,21 +62,6 @@ export class GatewayAdminController {
         return this.snapshot();
     }
 
-    /**
-     * Current browser session. The auth interceptor runs before this handler,
-     * so auth-enabled deployments only reach it with a valid session.
-     */
-    @Get('/session')
-    session(): { authenticated: boolean; user: any; authEnabled: boolean } {
-        // Auth-enabled deployments are answered by GatewayAdminAuthInterceptor
-        // before this handler; reaching it means authentication is disabled.
-        return {
-            authenticated: true,
-            user: null,
-            authEnabled: false
-        };
-    }
-
     @Put('/routes')
     updateRoutes(@RequestBody() body: { routes?: GatewayRouteOptions[] } | GatewayRouteOptions[]) {
         const routes = Array.isArray(body) ? body : body?.routes;
@@ -216,6 +201,9 @@ export function useGatewayAdminUi(options: GatewayAdminUiOptions): ServiceFeatur
         prefix,
         // Serve the absolute `root` as-is; inheriting the app baseURL would
         // prepend it to the absolute path and break file resolution.
-        baseUrl: false
+        baseUrl: false,
+        // Run after the auth interceptor so the HTML entry can be gated /
+        // session-bootstrapped before static content is served.
+        multiOrder: 1000
     });
 }

@@ -88,13 +88,9 @@ export function createGatewayAdminServerModule(options: GatewayAdminServerOption
         useCookie(),
         useGateway({ routes: options.routes ?? [] })
     ];
-    if (options.auth && (options.auth.mode === 'oidc' || options.auth.mode === 'oauth2' || options.auth.mode === 'service')) {
-        features.unshift(useGatewayAdminAuth({
-            ...options.auth,
-            loginPageUrl: options.auth.loginPageUrl ?? `${prefix}/login.html`,
-            defaultReturnTo: options.auth.defaultReturnTo ?? `${prefix}/`
-        }));
-    }
+    const auth = options.auth && options.auth.mode && options.auth.mode !== 'none'
+        ? options.auth
+        : undefined;
     if (uiRoot) {
         features.push(useGatewayAdminUi({ root: uiRoot, prefix }));
     }
@@ -102,6 +98,19 @@ export function createGatewayAdminServerModule(options: GatewayAdminServerOption
         listenOpts: { host, port },
         asDefault: true
     }));
+    if (auth || uiRoot) {
+        // Register last: the interceptor list is ordered by `multiOrder`
+        // insertion index, so a negative order now lands before the static
+        // content interceptor and can gate the HTML entry.
+        const authOptions: GatewayAdminAuthOptions = {
+            ...(auth ?? { mode: 'none' }),
+            uiPrefix: auth?.uiPrefix ?? prefix,
+            uiIndexFile: auth?.uiIndexFile ?? (uiRoot ? path.join(uiRoot, 'index.html') : undefined),
+            loginPageUrl: auth?.loginPageUrl ?? `${prefix}/login.html`,
+            defaultReturnTo: auth?.defaultReturnTo ?? `${prefix}/`
+        };
+        features.push(useGatewayAdminAuth(authOptions));
+    }
     const controllers: Type<any>[] = [GatewayAdminController];
     if (uiRoot) {
         controllers.push(createRootRedirectController(prefix));

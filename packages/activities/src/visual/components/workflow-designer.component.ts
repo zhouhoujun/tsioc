@@ -190,8 +190,9 @@ export class WorkflowDesignerComponent implements OnDestroy {
     }
 
     readonly changeLocale = (locale: 'en' | 'zh-CN'): void => {
-        this.locale = locale;
-        this.localeChangeAction?.(locale);
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.locale = locale;
+        self.localeChangeAction?.(locale);
     };
 
     get toolbarModel(): WorkflowToolbarModel {
@@ -538,29 +539,30 @@ export class WorkflowDesignerComponent implements OnDestroy {
     }
 
     readonly toolbarAction = (action: string): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
         if (action.startsWith('language:')) {
             const locale = action.slice('language:'.length);
             if (locale === 'en' || locale === 'zh-CN') {
-                this.changeLocale(locale);
+                self.changeLocale(locale);
             }
             return;
         }
         if (action.startsWith('theme:')) {
             const theme = action.slice('theme:'.length);
             if (theme === 'light' || theme === 'dark' || theme === 'solarized' || theme === 'high-contrast') {
-                this.setTheme(theme);
+                self.setTheme(theme);
             }
             return;
         }
         if (action === 'save') {
-            void this.saveWorkflow();
+            void self.saveWorkflow();
             return;
         }
         if (action === 'open-library') {
-            void this.openLibrary();
+            void self.openLibrary();
             return;
         }
-        this.preview?.handleToolbarAction(action);
+        self.preview?.handleToolbarAction(action);
     };
 
     readonly previewHostAction = (action: string): void => {

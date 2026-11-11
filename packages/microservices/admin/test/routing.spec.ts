@@ -1,10 +1,8 @@
 import expect = require('expect');
 import { lastValueFrom, Observable, throwError } from 'rxjs';
 import { adminRouteHash, buildAdminLoginUrl, parseAdminRoute } from '../web/routing';
-import { GatewayAdminAuthGuard } from '../web/auth.guard';
-import { AdminHttpResult, GatewayAdminHttp, adminUnauthorizedInterceptor } from '../web/http';
-
-type SessionResult = AdminHttpResult<{ authenticated?: boolean; user?: unknown; authEnabled?: boolean }>;
+import { GatewayAdminAuthGuard, GatewayAdminBootstrapSession } from '../web/auth.guard';
+import { adminUnauthorizedInterceptor } from '../web/http';
 
 interface UnauthorizedRequest {
     url: string;
@@ -16,8 +14,16 @@ type TestInterceptor = (
     context: unknown
 ) => Observable<unknown>;
 
-function createGuard(session: () => Promise<SessionResult>): GatewayAdminAuthGuard {
-    return new GatewayAdminAuthGuard({ session } as unknown as GatewayAdminHttp);
+const globals = globalThis as unknown as { __TSDI_ADMIN_SESSION__?: GatewayAdminBootstrapSession };
+
+function withSession<T>(session: GatewayAdminBootstrapSession | undefined, run: () => T): T {
+    const original = globals.__TSDI_ADMIN_SESSION__;
+    globals.__TSDI_ADMIN_SESSION__ = session;
+    try {
+        return run();
+    } finally {
+        globals.__TSDI_ADMIN_SESSION__ = original;
+    }
 }
 
 describe('gateway admin UI routing', () => {
@@ -35,23 +41,12 @@ describe('gateway admin UI routing', () => {
         expect(adminRouteHash('rules')).toBe('#/rules');
     });
 
-    it('rejects protected routes when the admin API returns 401', async () => {
-        const guard = createGuard(async () => ({ ok: false, status: 401 }));
-        expect(await guard.canActivate()).toBe(false);
-
-        const missingUser = createGuard(async () => ({
-            ok: true,
-            status: 200,
-            body: { authenticated: true, authEnabled: true, user: null }
-        }));
-        expect(await missingUser.canActivate()).toBe(false);
-
-        const allowed = createGuard(async () => ({
-            ok: true,
-            status: 200,
-            body: { authenticated: true, authEnabled: false, user: null }
-        }));
-        expect(await allowed.canActivate()).toBe(true);
+    it('requires the server-bootstrapped session user', () => {
+        const guard = new GatewayAdminAuthGuard();
+        expect(withSession(undefined, () => guard.canActivate())).toBe(false);
+        expect(withSession({ authenticated: true, authEnabled: true, user: null }, () => guard.canActivate())).toBe(false);
+        expect(withSession({ authenticated: true, authEnabled: true, user: { email: 'admin@example.com' } }, () => guard.canActivate())).toBe(true);
+        expect(withSession({ authenticated: true, authEnabled: false, user: null }, () => guard.canActivate())).toBe(true);
     });
 
     it('redirects to the login page from the HTTP 401 interceptor', async () => {

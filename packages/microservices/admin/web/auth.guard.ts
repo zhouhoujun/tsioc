@@ -1,31 +1,42 @@
 import { Injectable } from '@tsdi/ioc';
-import { CanActivate, ActivatedRouteSnapshot } from '@tsdi/components/router';
-import { GatewayAdminHttp } from './http';
+import { CanActivate } from '@tsdi/components/router';
 import { redirectToAdminLogin } from './routing';
+
+/** Session object bootstrapped into the HTML by the admin server. */
+export interface GatewayAdminBootstrapSession {
+    authenticated?: boolean;
+    authEnabled?: boolean;
+    user?: unknown;
+}
+
+interface SessionScope {
+    __TSDI_ADMIN_SESSION__?: GatewayAdminBootstrapSession;
+    window?: SessionScope;
+}
 
 /**
  * Route guard for the admin UI.
  *
- * The browser shell renders before the auth API is called, so the guard probes
- * the admin state endpoint once per session. A `401` redirects to the login
- * page with a return URL; other failures leave the shell usable and let the
- * normal API error handling surface the problem.
+ * Authentication is owned by the unified auth service: the admin server only
+ * serves the SPA after resolving the OAuth token/user and injects that session
+ * into `index.html`. The guard therefore never calls an auth/session API; it
+ * just checks the injected session and redirects to the login page when it is
+ * missing or has no user. Expired sessions are caught by the HTTP 401
+ * interceptor on the next API call.
  */
 @Injectable()
 export class GatewayAdminAuthGuard implements CanActivate {
-    constructor(private http: GatewayAdminHttp) { }
-
-    async canActivate(_route?: ActivatedRouteSnapshot): Promise<boolean> {
-        const response = await this.http.session();
-        const session = response.body;
-        if (response.status === 401 || !session?.authenticated) {
-            redirectToAdminLogin();
-            return false;
+    canActivate(): boolean {
+        const session = readBootstrapSession();
+        if (session?.authenticated && (session.user || session.authEnabled === false)) {
+            return true;
         }
-        if (session.authEnabled && !session.user) {
-            redirectToAdminLogin();
-            return false;
-        }
-        return true;
+        redirectToAdminLogin();
+        return false;
     }
+}
+
+function readBootstrapSession(): GatewayAdminBootstrapSession | undefined {
+    const scope = globalThis as unknown as SessionScope;
+    return scope.window?.__TSDI_ADMIN_SESSION__ ?? scope.__TSDI_ADMIN_SESSION__;
 }

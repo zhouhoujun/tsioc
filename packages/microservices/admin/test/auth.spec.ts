@@ -154,7 +154,6 @@ describe('gateway admin OIDC authentication', () => {
         ctx = await startGatewayAdminServer({
             host: '127.0.0.1',
             port,
-            uiRoot: false,
             auth
         });
     });
@@ -207,15 +206,21 @@ describe('gateway admin OIDC authentication', () => {
         expect(stateResponse.status).toBe(200);
         const body = await stateResponse.json() as any;
         expect(body.auth).toEqual({ enabled: true, mode: 'oidc' });
+    });
 
-        const sessionResponse = await fetch(`${base}/api/gateway-admin/session`, {
+    it('protects the browser shell entry until a session exists', async () => {
+        const denied = await fetch(`${base}/admin/`, { redirect: 'manual' });
+        expect(denied.status).toBe(302);
+        expect(denied.headers.get('location')).toContain('/admin/login.html?redirect=');
+
+        const allowed = await fetch(`${base}/admin/`, {
             headers: { cookie: `tsdi_gateway_admin_session=${sessionCookie}` }
         });
-        expect(sessionResponse.status).toBe(200);
-        const sessionBody = await sessionResponse.json() as any;
-        expect(sessionBody.authenticated).toBe(true);
-        expect(sessionBody.authEnabled).toBe(true);
-        expect(sessionBody.user?.email).toBe('admin@example.com');
+        expect(allowed.status).toBe(200);
+        const html = await allowed.text();
+        expect(html).toContain('gateway-admin-app');
+        expect(html).toContain('__TSDI_ADMIN_SESSION__');
+        expect(html).toContain('admin@example.com');
     });
 
     it('rejects a tampered session cookie', async () => {
@@ -248,7 +253,6 @@ describe('gateway admin auth via a separate oidc-auth service', () => {
         ctx = await startGatewayAdminServer({
             host: '127.0.0.1',
             port,
-            uiRoot: false,
             auth: {
                 mode: 'service',
                 authServiceUrl: 'http://auth.internal:3000',
@@ -309,20 +313,18 @@ describe('gateway admin auth via a separate oidc-auth service', () => {
         expect(wrongIssuer.status).toBe(401);
     });
 
-    it('redirects a missing session to the browser login page', async () => {
-        const response = await fetch(`${base}/api/gateway-admin/session`, { redirect: 'manual' });
-        expect(response.status).toBe(302);
-        expect(response.headers.get('location')).toBe('/admin/login.html?redirect=%2Fadmin%2F');
-    });
+    it('protects the UI entry and injects the OAuth user', async () => {
+        const denied = await fetch(`${base}/admin/`, { redirect: 'manual' });
+        expect(denied.status).toBe(302);
+        expect(denied.headers.get('location')).toContain('/admin/login.html?redirect=');
 
-    it('resolves the session user from the OAuth userinfo endpoint', async () => {
-        const response = await fetch(`${base}/api/gateway-admin/session`, {
+        const allowed = await fetch(`${base}/admin/`, {
             headers: { cookie: `oidc_session=${token(['gateway-admins'])}` }
         });
-        expect(response.status).toBe(200);
-        const body = await response.json() as { authenticated: boolean; user?: { email?: string } };
-        expect(body.authenticated).toBe(true);
-        expect(body.user?.email).toBe('admin@example.com');
+        expect(allowed.status).toBe(200);
+        const html = await allowed.text();
+        expect(html).toContain('__TSDI_ADMIN_SESSION__');
+        expect(html).toContain('admin@example.com');
     });
 
     it('redirects login to the separate auth service', async () => {
@@ -364,7 +366,6 @@ describe('gateway admin OAuth2 authentication', () => {
         ctx = await startGatewayAdminServer({
             host: '127.0.0.1',
             port,
-            uiRoot: false,
             auth: {
                 mode: 'oauth2',
                 authorizationURL: 'https://oauth.example/authorize',
@@ -412,5 +413,18 @@ describe('gateway admin OAuth2 authentication', () => {
         expect(stateResponse.status).toBe(200);
         const body = await stateResponse.json() as any;
         expect(body.auth).toEqual({ enabled: true, mode: 'oauth2' });
+
+        const deniedUi = await fetch(`${base}/admin/`, { redirect: 'manual' });
+        expect(deniedUi.status).toBe(302);
+        expect(deniedUi.headers.get('location')).toContain('/admin/login.html?redirect=');
+
+        const allowedUi = await fetch(`${base}/admin/`, {
+            headers: { cookie: `tsdi_gateway_admin_session=${session}` }
+        });
+        expect(allowedUi.status).toBe(200);
+        const html = await allowedUi.text();
+        expect(html).toContain('gateway-admin-app');
+        expect(html).toContain('__TSDI_ADMIN_SESSION__');
+        expect(html).toContain('oauth@example.com');
     });
 });

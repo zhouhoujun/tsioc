@@ -1,4 +1,5 @@
 import * as crypto from 'node:crypto';
+import * as fs from 'node:fs';
 import { Observable, EMPTY, from } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
 import { Inject, Injectable, Optional, token } from '@tsdi/ioc';
@@ -107,6 +108,10 @@ export interface GatewayAdminAuthOptions {
     userInfoUrl?: string;
     /** Browser login page redirected to when the session has no token/user. */
     loginPageUrl?: string;
+    /** Static UI prefix whose HTML entry is protected (for example `/admin`). */
+    uiPrefix?: string;
+    /** Absolute path to the built `index.html`; the session is injected there. */
+    uiIndexFile?: string;
     /** External logout URL for `mode: 'service'`. Default `<authServiceUrl>/auth/logout`. */
     logoutUrl?: string;
     /** Required local roles for `mode: 'service'`. */
@@ -261,6 +266,39 @@ export class GatewayAdminAuthService {
 
     get defaultReturnTo(): string {
         return this.options.defaultReturnTo ?? '/admin/';
+    }
+
+    /** Render index.html with the session user injected for the browser guard. */
+    renderUiEntry(user: { sub?: string; email?: string; name?: string; groups?: string[] } | undefined): string | undefined {
+        const file = this.options.uiIndexFile;
+        if (!file) {
+            return undefined;
+        }
+        try {
+            const html = fs.readFileSync(file, 'utf8');
+            const session = {
+                authenticated: true,
+                authEnabled: this.enabled,
+                user: user
+                    ? { sub: user.sub, email: user.email, name: user.name, groups: user.groups }
+                    : null
+            };
+            const json = JSON.stringify(session).replace(/</g, '\\u003c');
+            const script = `<script>window.__TSDI_ADMIN_SESSION__=${json};</script>`;
+            return html.includes('</head>')
+                ? html.replace('</head>', `${script}</head>`)
+                : `${script}${html}`;
+        } catch {
+            return undefined;
+        }
+    }
+
+    /** HTML entry paths that require a session before the SPA is served. */
+    isUiEntry(path: string): boolean {
+        const prefix = `/${String(this.options.uiPrefix ?? '/admin').replace(/^\/+|\/+$/g, '')}`;
+        return path === prefix
+            || path === `${prefix}/`
+            || path === `${prefix}/index.html`;
     }
 
     get apiPrefix(): string {
@@ -836,10 +874,27 @@ export class GatewayAdminAuthInterceptor implements RequestInterceptor<HttpReque
         next: RequestHandler<HttpRequestMessage, any, RequestContext>,
         context: RequestContext
     ): Observable<any> {
+        const path = String(input.url || '').split('?')[0] || '/';
+        const method = String((input as { method?: string }).method || 'GET').toUpperCase();
+        if ((method === 'GET' || method === 'HEAD') && this.auth.isUiEntry(path)) {
+            if (!this.auth.enabled) {
+                return this.writeUiEntry(context, undefined)
+                    ? EMPTY
+                    : next.handle(input, context);
+            }
+            return from(this.auth.authenticate(context)).pipe(mergeMap(user => {
+                if (!user) {
+                    this.redirectToLogin(context);
+                    return EMPTY;
+                }
+                return this.writeUiEntry(context, user)
+                    ? EMPTY
+                    : next.handle(input, context);
+            }));
+        }
         if (!this.auth.enabled) {
             return next.handle(input, context);
         }
-        const path = String(input.url || '').split('?')[0] || '/';
         if (path === this.auth.loginPath) {
             return from(this.auth.login(context)).pipe(mergeMap(() => {
                 this.finishRedirect(context);
@@ -857,24 +912,6 @@ export class GatewayAdminAuthInterceptor implements RequestInterceptor<HttpReque
             this.finishRedirect(context);
             return EMPTY;
         }
-        if (path === `${this.auth.apiPrefix}/session`) {
-            return from(this.auth.authenticate(context)).pipe(
-                mergeMap(user => {
-                    if (!user) {
-                        // A browser is asking for the current session: send it to
-                        // the login page instead of returning a JSON 401 payload.
-                        this.redirectToLogin(context);
-                        return EMPTY;
-                    }
-                    this.writeJson(context, 200, {
-                        authenticated: true,
-                        user,
-                        authEnabled: true
-                    });
-                    return EMPTY;
-                })
-            );
-        }
         if (!path.startsWith(this.auth.apiPrefix)) {
             return next.handle(input, context);
         }
@@ -891,6 +928,23 @@ export class GatewayAdminAuthInterceptor implements RequestInterceptor<HttpReque
     private finishRedirect(context: RequestContext): void {
         const adapter = context.get(RestfulRequestAdapter);
         adapter?.sendResponse('');
+    }
+
+    /** Respond with the built index.html plus the bootstrapped session user. */
+    private writeUiEntry(context: RequestContext, user: { sub?: string; email?: string; name?: string; groups?: string[] } | undefined): boolean {
+        const html = this.auth.renderUiEntry(user);
+        if (html === undefined) {
+            return false;
+        }
+        const adapter = context.get(RestfulRequestAdapter);
+        if (!adapter) {
+            return false;
+        }
+        adapter.setStatus(200);
+        adapter.setHeader('content-type', 'text/html; charset=utf-8');
+        adapter.setPayload(html);
+        adapter.sendResponse(html);
+        return true;
     }
 
     /** Redirect a missing token/user to the browser login page. */

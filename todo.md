@@ -3578,3 +3578,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `mode: service` 用 token 调 `<authServiceUrl>/auth/userinfo`（可用 `userInfoUrl` 覆盖）解析用户，30s 缓存；token/用户为空返回 undefined。
   - `/api/gateway-admin/session` 在 token 或用户为空时直接 302 到 `<prefix>/login.html?redirect=...`；其他受保护 API 仍返回 401 由 HTTP 拦截器跳登录。
   - 自定义 prefix 自动推导登录页与默认回跳地址；新增 userinfo 与实际 302 回归测试。
+- 统一认证改造 + 主题修复（2026-11-11）：
+  - 移除 `/api/gateway-admin/session`（拦截器分支与 controller 路由）；认证交给统一认证服务。
+  - 服务端按统一认证 token 调 userinfo，token/用户为空时 HTML 入口 302 到 login.html；通过后把 session 注入 `window.__TSDI_ADMIN_SESSION__`，路由守卫只读注入值，不再调用 session API。
+  - 修复 workflow designer 通过 action bus 切换 theme/locale 不生效：toolbarAction/changeLocale 使用响应式 self 代理更新，新增 action-bus 主题/语言回归测试（activities 256 passing）。

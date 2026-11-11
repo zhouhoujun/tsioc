@@ -35,10 +35,6 @@ export class GatewayAdminHttp {
         return this.request('GET', '/api/gateway-admin/state');
     }
 
-    session(): Promise<AdminHttpResult<{ authenticated?: boolean; user?: any; authEnabled?: boolean }>> {
-        return this.request('GET', '/api/gateway-admin/session');
-    }
-
     updateRoutes(routes: any[]): Promise<AdminHttpResult<any>> {
         return this.request('PUT', '/api/gateway-admin/routes', { routes });
     }
