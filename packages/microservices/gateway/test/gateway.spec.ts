@@ -103,6 +103,18 @@ describe('Gateway', () => {
         expect(runtime.canPassCircuit('route', options)).toBe(true);
     });
 
+    it('queues bulkhead waiters and rejects when the queue is full', async () => {
+        const runtime = new GatewayRuntime();
+        const options = { maxConcurrent: 1, maxQueue: 1, queueTimeoutMs: 20 };
+        const release = await runtime.acquireBulkhead('route', options);
+        const queued = runtime.acquireBulkhead('route', options);
+
+        await expect(runtime.acquireBulkhead('route', options)).rejects.toThrow('bulkhead');
+        release();
+        const queuedRelease = await queued;
+        queuedRelease();
+    });
+
     it('wires built-in discovery providers when discovery is enabled', () => {
         const feature = GatewayModule.withOptions({ routes: [], discovery: true });
         expect(feature.providers?.some((provider: any) => provider === InMemoryServiceDiscovery)).toBe(true);

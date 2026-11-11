@@ -3416,3 +3416,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - Circuit breaker 支持 half-open：resetTimeout 到期后只放行一个探测请求（halfOpenInFlight），成功关闭、失败立即重新打开；避免半开状态被并发打满。
   - 非 HTTP 微服务转发接入 `loadBalance.retries`：按 endpoint 排除失败节点并重试，每次按 discovery/负载均衡重新选择 endpoint/client。
   - 回归：gateway 35 passing（新增 half-open 用例），discovery 60 passing；gateway/discovery tsc --noUnusedLocals 无命中。
+- Gateway Bulkhead 并发隔离（2026-11-11，P1）：
+  - `GatewayBulkheadOptions` 支持 maxConcurrent、maxQueue、queueTimeoutMs；路由/默认/gateway 全局均可配置。
+  - `GatewayRuntime.acquireBulkhead` 实现并发槽、有界队列、排队超时和幂等释放；队列满或超时返回 503。
+  - Gateway 在缓存命中后、熔断判断前获取 bulkhead，所有成功/失败/fallback 路径统一释放。
+  - 回归：gateway 36 passing（新增 bulkhead 排队/队列满用例）。

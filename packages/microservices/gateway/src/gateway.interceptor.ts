@@ -52,6 +52,7 @@ type ResolvedGatewayRoute = GatewayRouteOptions & {
     responseCache?: GatewayRouteOptions['responseCache'];
     authorize?: GatewayRouteOptions['authorize'];
     compression?: GatewayRouteOptions['compression'];
+    bulkhead?: GatewayRouteOptions['bulkhead'];
 };
 
 @Injectable()
@@ -160,7 +161,9 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             }
         }
 
-        const routeKey = `${route.service}:${route.path}:${route.transport ?? Transport.HTTP}`;
+        const releaseBulkhead = await this.runtime.acquireBulkhead(`${route.service}:${route.path}`, route.bulkhead);
+        try {
+            const routeKey = `${route.service}:${route.path}:${route.transport ?? Transport.HTTP}`;
         if (!this.runtime.canPassCircuit(routeKey, route.circuitBreaker)) {
             const fallback = this.resolveFallbackPayload(route, request, new Error('Circuit breaker is open'));
             if (!fallback) {
@@ -210,6 +213,9 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
                 canary: !!route.canary
             });
             throw error;
+        }
+        } finally {
+            releaseBulkhead();
         }
     }
 
@@ -897,7 +903,8 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             rewrite: route.rewrite ?? defaults.rewrite,
             canary: route.canary ?? defaults.canary,
             maskFields: route.maskFields ?? defaults.maskFields,
-            loadBalance: route.loadBalance ?? defaults.loadBalance
+            loadBalance: route.loadBalance ?? defaults.loadBalance,
+            bulkhead: route.bulkhead === false ? false : (route.bulkhead ?? this.runtime.getOption('bulkhead', this.options.bulkhead) ?? defaults.bulkhead)
         };
     }
 

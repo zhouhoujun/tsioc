@@ -148,10 +148,10 @@
   - 非 HTTP failover
   - Circuit Breaker half-open
   - 限流 / 限次 / 降频
+  - Bulkhead 并发隔离 + 有界排队/超时
 - 待补充：
   - 连接池
-  - 隔离舱 / bulkhead
-  - 背压 / 请求排队
+  - 更细粒度背压策略
   - 更细粒度错误分类与重试策略
 
 ### P2：统一 Resiliency + Observability

@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { GatewayCircuitBreakerOptions, GatewayMockOptions, GatewayOptions, GatewayRouteOptions, GatewaySensitiveFieldRule } from './gateway.options';
+import { GatewayBulkheadOptions, GatewayCircuitBreakerOptions, GatewayMockOptions, GatewayOptions, GatewayRouteOptions, GatewaySensitiveFieldRule } from './gateway.options';
 import { ServiceEndpoint } from '@tsdi/discovery';
 
 interface CacheEntry {
@@ -14,6 +14,17 @@ interface CircuitState {
     halfOpenInFlight?: boolean;
 }
 
+interface BulkheadEntry {
+    resolve: () => void;
+    reject: (error: Error) => void;
+    timer?: ReturnType<typeof setTimeout>;
+}
+
+interface BulkheadState {
+    active: number;
+    queue: BulkheadEntry[];
+}
+
 @Injectable()
 export class GatewayRuntime {
     private cache = new Map<string, CacheEntry>();
@@ -23,6 +34,7 @@ export class GatewayRuntime {
     private evictedEndpoints = new Map<string, number>();
     private nonces = new Map<string, number>();
     private activeRequests = new Map<string, number>();
+    private bulkheads = new Map<string, BulkheadState>();
 
     getCached(key: string): any | undefined {
         const entry = this.cache.get(key);
@@ -155,6 +167,74 @@ export class GatewayRuntime {
 
     getEndpointActiveRequests(endpointId: string): number {
         return this.activeRequests.get(endpointId) ?? 0;
+    }
+
+    /**
+     * Acquire a concurrency slot for a route.
+     * `maxConcurrent` is optional; when omitted the bulkhead is a no-op.
+     */
+    async acquireBulkhead(routeKey: string, options?: GatewayBulkheadOptions | false): Promise<() => void> {
+        if (!options) {
+            return () => undefined;
+        }
+        const maxConcurrent = options.maxConcurrent ?? Number.MAX_SAFE_INTEGER;
+        let state = this.bulkheads.get(routeKey);
+        if (!state) {
+            state = { active: 0, queue: [] };
+            this.bulkheads.set(routeKey, state);
+        }
+        const error = () => Object.assign(new Error(options.message ?? 'Gateway bulkhead is full'), {
+            statusCode: 503,
+            statusMessage: 'Service Unavailable'
+        });
+        if (state.active < maxConcurrent) {
+            state.active++;
+            return this.releaseBulkhead(routeKey, state);
+        }
+        if (state.queue.length >= Math.max(options.maxQueue ?? 0, 0)) {
+            throw error();
+        }
+        const timeoutMs = Math.max(options.queueTimeoutMs ?? 0, 0);
+        return new Promise<() => void>((resolve, reject) => {
+            const entry: BulkheadEntry = {
+                resolve: () => resolve(this.releaseBulkhead(routeKey, state!)),
+                reject
+            };
+            if (timeoutMs > 0) {
+                entry.timer = setTimeout(() => {
+                    const index = state!.queue.indexOf(entry);
+                    if (index >= 0) {
+                        state!.queue.splice(index, 1);
+                    }
+                    reject(error());
+                }, timeoutMs);
+                if (typeof (entry.timer as any).unref === 'function') {
+                    (entry.timer as any).unref();
+                }
+            }
+            state!.queue.push(entry);
+        });
+    }
+
+    private releaseBulkhead(routeKey: string, state: BulkheadState): () => void {
+        let released = false;
+        return () => {
+            if (released) {
+                return;
+            }
+            released = true;
+            state.active = Math.max(state.active - 1, 0);
+            const next = state.queue.shift();
+            if (next) {
+                if (next.timer) {
+                    clearTimeout(next.timer);
+                }
+                state.active++;
+                next.resolve();
+            } else if (state.active === 0) {
+                this.bulkheads.delete(routeKey);
+            }
+        };
     }
 
     rememberNonce(key: string, ttl: number): boolean {

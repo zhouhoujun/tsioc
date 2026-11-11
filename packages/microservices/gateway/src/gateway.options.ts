@@ -344,6 +344,25 @@ export interface GatewayCircuitBreakerOptions {
     fallback?: any | ((request: any, error?: any) => any);
 }
 
+export interface GatewayBulkheadOptions {
+    /**
+     * maximum concurrent in-flight requests. Omit for unlimited.
+     */
+    maxConcurrent?: number;
+    /**
+     * maximum queued requests while saturated. Default 0 (fail fast).
+     */
+    maxQueue?: number;
+    /**
+     * maximum time a queued request may wait in milliseconds. Default 0.
+     */
+    queueTimeoutMs?: number;
+    /**
+     * error message when the bulkhead is full.
+     */
+    message?: string;
+}
+
 export interface GatewayCacheOptions {
     /**
      * enable cache.
@@ -553,6 +572,10 @@ export interface GatewayRouteOptions {
      */
     circuitBreaker?: GatewayCircuitBreakerOptions | false;
     /**
+     * route concurrency bulkhead.
+     */
+    bulkhead?: GatewayBulkheadOptions | false;
+    /**
      * route cache.
      */
     cache?: GatewayCacheOptions | false;
@@ -687,6 +710,10 @@ export interface GatewayDefaults {
      * default load-balancing behavior.
      */
     loadBalance?: GatewayLoadBalanceOptions;
+    /**
+     * default concurrency bulkhead.
+     */
+    bulkhead?: GatewayBulkheadOptions | false;
 }
 
 export interface GatewayOptions {
@@ -726,6 +753,10 @@ export interface GatewayOptions {
      * gateway-wide claims-based authorization.
      */
     authorize?: GatewayAuthorizeOptions | false;
+    /**
+     * gateway-wide concurrency bulkhead.
+     */
+    bulkhead?: GatewayBulkheadOptions | false;
     /**
      * runtime config synchronization.
      */
