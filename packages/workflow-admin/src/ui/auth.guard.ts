@@ -18,21 +18,7 @@ export class WorkflowAdminAuthGuard implements CanActivate {
         @Inject(WORKFLOW_ADMIN_LOGIN_ROUTE) private readonly loginRoute: string
     ) { }
 
-    async canActivate(route: ActivatedRouteSnapshot): Promise<boolean> {
-        if (route.data?.public === true) {
-            return true;
-        }
-        try {
-            const session = await firstValue(this.http.get<{ authenticated?: boolean; user?: any }>(
-                '/auth/session',
-                { withCredentials: true }
-            ));
-            if (session?.authenticated === true || session?.user) {
-                return true;
-            }
-        } catch {
-            // 401/network failures are treated as unauthenticated.
-        }
+    private redirectToLogin(): boolean {
         if (typeof location !== 'undefined') {
             const login = `#/${this.loginRoute}`;
             if (location.hash !== login) {
@@ -40,5 +26,37 @@ export class WorkflowAdminAuthGuard implements CanActivate {
             }
         }
         return false;
+    }
+
+    async canActivate(route: ActivatedRouteSnapshot): Promise<boolean> {
+        if (route.data?.public === true) {
+            return true;
+        }
+        try {
+            const tokenResponse = await firstValue(this.http.get<{ token?: string; enabled?: boolean }>(
+                '/auth/token',
+                { withCredentials: true }
+            ));
+            if (tokenResponse?.enabled === false) {
+                return true;
+            }
+            const token = tokenResponse?.token || '';
+            if (!token) {
+                return this.redirectToLogin();
+            }
+            const userResponse = await firstValue(this.http.get<{ user?: any }>(
+                '/auth/userinfo',
+                {
+                    withCredentials: true,
+                    headers: { authorization: `Bearer ${token}` }
+                }
+            ));
+            if (userResponse?.user) {
+                return true;
+            }
+        } catch {
+            // Missing/invalid token or userinfo is treated as unauthenticated.
+        }
+        return this.redirectToLogin();
     }
 }

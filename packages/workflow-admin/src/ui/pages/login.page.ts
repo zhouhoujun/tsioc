@@ -16,20 +16,20 @@ interface LoginConfig {
     selector: 'workflow-admin-login',
     template: `
     <div class="wa-login">
-        <form class="wa-login-card" (submit)="submit($event)">
+        <form class="wa-login-card" @submit="submit($event)">
             <h1>TSDI Workflow Admin</h1>
             <p>Sign in to manage workflow definitions.</p>
-            <div class="wa-provider" *ngIf="config?.provider || config?.loginUrl">
-                <button type="button" class="wa-primary" (click)="oauthLogin()">Continue with OAuth2 / OIDC</button>
+            <div class="wa-provider" v-if="config?.provider || config?.loginUrl">
+                <button type="button" class="wa-primary" @click="oauthLogin()">Continue with OAuth2 / OIDC</button>
                 <div class="wa-divider">or</div>
             </div>
-            <div *ngIf="config?.local">
+            <div v-if="config?.local">
                 <label for="wa-username">Username</label>
-                <input id="wa-username" name="username" [(ngModel)]="username" autocomplete="username" />
+                <input id="wa-username" name="username" :value="username" @input="updateUsername($event)" autocomplete="username" />
                 <label for="wa-password">Password</label>
-                <input id="wa-password" name="password" type="password" [(ngModel)]="password" autocomplete="current-password" />
+                <input id="wa-password" name="password" type="password" :value="password" @input="updatePassword($event)" autocomplete="current-password" />
                 <button type="submit" class="wa-primary">Sign in</button>
-                <button type="button" *ngIf="config?.allowRegistration" (click)="register()">Create local account</button>
+                <button type="button" v-if="config?.allowRegistration" @click="register()">Create local account</button>
             </div>
             <div class="wa-error">{{error}}</div>
         </form>
@@ -53,6 +53,14 @@ export class WorkflowAdminLoginPageComponent implements OnInit {
         if (!this.config?.enabled) {
             await this.router.navigateByUrl(this.redirectTarget());
         }
+    }
+
+    updateUsername(event: any): void {
+        this.username = event?.target?.value ?? '';
+    }
+
+    updatePassword(event: any): void {
+        this.password = event?.target?.value ?? '';
     }
 
     async oauthLogin(): Promise<void> {

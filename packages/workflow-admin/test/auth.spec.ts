@@ -141,6 +141,18 @@ describe('workflow admin authentication', () => {
         });
         const cookie = `oidc_session=${token}`;
 
+        const tokenResponse = await request(`${base}/auth/token`, { headers: { cookie } });
+        expect(tokenResponse.body.token).toBe(token);
+
+        const userinfo = await request(`${base}/auth/userinfo`, {
+            headers: { authorization: `Bearer ${token}` }
+        });
+        expect(userinfo.status).toBe(200);
+        expect(userinfo.body.user.username).toBe('tester');
+
+        const missingUserinfo = await request(`${base}/auth/userinfo`);
+        expect(missingUserinfo.status).toBe(401);
+
         const session = await request(`${base}/auth/session`, { headers: { cookie } });
         expect(session.body.authenticated).toBe(true);
         expect(session.body.user.username).toBe('tester');

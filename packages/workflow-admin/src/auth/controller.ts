@@ -57,6 +57,27 @@ export class WorkflowAuthController {
         };
     }
 
+    @Get('/token')
+    token(@Inject(RestfulRequestAdapter) ctx: RestfulRequestAdapter) {
+        if (!this.options.enabled) {
+            return { token: '', enabled: false };
+        }
+        return { token: bearer(ctx) || cookiesOf(ctx).get('oidc_session') || '', enabled: true };
+    }
+
+    @Get('/userinfo')
+    async userinfo(@Inject(RestfulRequestAdapter) ctx: RestfulRequestAdapter) {
+        if (!this.options.enabled) {
+            return { user: null };
+        }
+        const user = await currentUser(this.oidc, adapterOf(ctx));
+        if (!user) {
+            status(ctx, 401);
+            return { user: null };
+        }
+        return { user };
+    }
+
     @Get('/session')
     async session(@Inject(RestfulRequestAdapter) ctx: RestfulRequestAdapter) {
         if (!this.options.enabled) {
