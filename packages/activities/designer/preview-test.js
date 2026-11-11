@@ -460,13 +460,20 @@ function startDesignerServer(port) {
         const newTabCount = await page.locator('.workflow-tabs .tab').count();
         const newTabNodeCount = await page.evaluate(() => window.workflowDesigner.designer.nodes.length);
         const newTabEmptyHint = await page.locator('.workflow-canvas-empty').count() > 0;
+        const newTabState = await page.evaluate(() => {
+            const raw = localStorage.getItem('workflow-designer-open-tabs');
+            return {
+                state: raw ? JSON.parse(raw) : undefined,
+                activeId: window.workflowDesigner.designer.definition.id
+            };
+        });
         await page.locator('.workflow-tabs .tab[aria-selected="true"] .tab-close').click();
         await page.waitForTimeout(200);
         const closedTabCount = await page.locator('.workflow-tabs .tab').count();
 
         await browser.close();
 
-        const result = { before, initialJsBytes, lazyEditorChunk, hintEnv, hintAction, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
+        const result = { before, initialJsBytes, lazyEditorChunk, hintEnv, hintAction, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
         console.log(JSON.stringify(result, null, 2));
         if (errors.length || initialJsBytes > 640_000 || !lazyEditorChunk || !hintEnv || !hintAction || !shortcutsOpened || !shortcutsClosed
             || autosaveName !== 'Function Node' || autosaveCode !== 'return 42;' || !wheelZoom || !wheelPan || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20
@@ -491,7 +498,10 @@ function startDesignerServer(port) {
             || !pluginInstall?.installed || !pluginNodeVisible || !inspectorRendered
             || tabCount !== 2 || tabState?.openIds?.length !== 2
             || restoredTabCount !== 2 || !String(restoredTabLabel || '').includes('Approval workflow')
-            || newTabCount !== 3 || newTabNodeCount !== 0 || !newTabEmptyHint || closedTabCount !== 2) {
+            || newTabCount !== 3 || newTabNodeCount !== 0 || !newTabEmptyHint
+            || newTabState?.state?.openIds?.length !== 2
+            || newTabState?.state?.openIds?.includes(newTabState.activeId)
+            || closedTabCount !== 2) {
             process.exitCode = 1;
         }
     } catch (error) {

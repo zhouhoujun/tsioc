@@ -35,6 +35,8 @@ import { installWorkflowDesignerStyles } from './workflow-designer.styles';
 interface WorkflowDocumentTab {
     id: string;
     designer: WorkflowDesigner;
+    /** Whether the document exists in the backing store. */
+    persisted: boolean;
 }
 
 /**
@@ -229,7 +231,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
         // root component. Every callback then writes through this proxy and
         // updates the canvas/inspector bindings.
         this.designer = effect ? reactive(rawDesigner, effect) : rawDesigner;
-        this.workflowTabs = [{ id: this.designer.definition.id, designer: this.designer }];
+        this.workflowTabs = [{ id: this.designer.definition.id, designer: this.designer, persisted: false }];
         this.activeTabId = this.workflowTabs[0].id;
     }
 
@@ -327,7 +329,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
                 return false;
             }
             await self.persistActiveTab();
-            const tab = self.createTab(definition);
+            const tab = self.createTab(definition, true);
             self.workflowTabs.push(tab);
             self.setActiveTab(tab);
             self.emitTabs();
@@ -342,14 +344,20 @@ export class WorkflowDesignerComponent implements OnDestroy {
     async restoreWorkflowTabs(ids: string[], activeId?: string): Promise<boolean> {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
         const loaded: WorkflowDocumentTab[] = [];
+        let available: Set<string>;
+        try {
+            available = new Set((await self.store.list()).map(item => item.id));
+        } catch {
+            available = new Set(ids || []);
+        }
         for (const id of Array.from(new Set(ids || []))) {
-            if (!id) {
+            if (!id || !available.has(id)) {
                 continue;
             }
             try {
                 const definition = await self.store.get(id);
                 if (definition) {
-                    loaded.push(self.createTab(definition));
+                    loaded.push(self.createTab(definition, true));
                 }
             } catch {
                 // A deleted or unreachable document must not block the others.
@@ -365,14 +373,14 @@ export class WorkflowDesignerComponent implements OnDestroy {
         return true;
     }
 
-    private createTab(definition: VisualWorkflowDefinition): WorkflowDocumentTab {
+    private createTab(definition: VisualWorkflowDefinition, persisted = false): WorkflowDocumentTab {
         const raw = new WorkflowDesigner({
             registry: this.registry,
             service: this.service,
             definition
         });
         const designer = this.reactiveEffect ? reactive(raw, this.reactiveEffect) : raw;
-        return { id: designer.definition.id, designer };
+        return { id: designer.definition.id, designer, persisted };
     }
 
     private nextWorkflowId(): string {
@@ -444,7 +452,9 @@ export class WorkflowDesignerComponent implements OnDestroy {
     private async saveTab(tab: WorkflowDocumentTab): Promise<void> {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
         await tab.designer.saveTo(self.store);
+        tab.persisted = true;
         self.syncTabId(tab);
+        self.emitTabs();
         self.saveState = 'saved';
     }
 
@@ -477,9 +487,11 @@ export class WorkflowDesignerComponent implements OnDestroy {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
         self.tabSourceCache = undefined;
         self.tabVersion += 1;
+        const persisted = self.workflowTabs.filter(tab => tab.persisted);
+        const active = self.activeTab();
         self.tabChangeAction?.({
-            openIds: self.workflowTabs.map(tab => tab.id),
-            activeId: self.activeTabId
+            openIds: persisted.map(tab => tab.id),
+            activeId: active?.persisted ? active.id : persisted[0]?.id
         });
     }
 
@@ -598,6 +610,11 @@ export class WorkflowDesignerComponent implements OnDestroy {
         self.saveState = 'saving';
         try {
             await self.designer.saveTo(self.store);
+            const active = self.activeTab();
+            if (active) {
+                active.persisted = true;
+            }
+            self.emitTabs();
             self.libraryError = '';
             self.saveState = self.designer.dirty ? 'dirty' : 'saved';
         } catch (error) {
@@ -1150,6 +1167,10 @@ export class WorkflowDesignerComponent implements OnDestroy {
         self.saveState = 'saving';
         try {
             await this.designer.saveTo(this.store);
+            const active = self.activeTab();
+            if (active) {
+                active.persisted = true;
+            }
             self.syncActiveTabId();
             self.libraryError = '';
             self.saveState = 'saved';
@@ -1169,6 +1190,10 @@ export class WorkflowDesignerComponent implements OnDestroy {
                 as: true,
                 name: `${this.designer.definition.name} copy`
             });
+            const active = self.activeTab();
+            if (active) {
+                active.persisted = true;
+            }
             self.syncActiveTabId();
             self.libraryError = '';
             self.saveState = 'saved';
