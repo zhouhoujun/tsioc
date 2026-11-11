@@ -15,10 +15,12 @@ export class ApiRateLimiter {
     private windows = new Map<string, WindowEntry>();
 
     private cleanupTimer: any;
+    private readonly maxKeys: number;
 
     constructor(
         private options: ApiRateLimitOptions
     ) {
+        this.maxKeys = Math.max(options.maxKeys ?? 10000, 1);
         const windowMs = options.windowMs ?? 60000;
         // Periodic cleanup of expired windows
         this.cleanupTimer = setInterval(() => this.evictExpired(), windowMs);
@@ -40,6 +42,12 @@ export class ApiRateLimiter {
 
         let entry = this.windows.get(key);
         if (!entry || now - entry.windowStart >= windowMs) {
+            if (!entry && this.windows.size >= this.maxKeys) {
+                const oldest = this.windows.keys().next().value;
+                if (oldest !== undefined) {
+                    this.windows.delete(oldest);
+                }
+            }
             entry = { count: 0, windowStart: now };
             this.windows.set(key, entry);
         }

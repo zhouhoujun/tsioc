@@ -91,4 +91,24 @@ describe('McpServer shutdown and startup guards', () => {
 
         await expect(server.onStart()).rejects.toMatchObject({ code: 'EPERM' });
     });
+
+    it('rejects JSON-RPC bodies larger than maxBodyBytes', async () => {
+        const server = createServer({ maxBodyBytes: 8 });
+        const req = new EventEmitter() as any;
+        req.method = 'POST';
+        req.destroy = () => undefined;
+        let status: number | undefined;
+        let body = '';
+        const res = {
+            writeHead(code: number) { status = code; return this; },
+            end(text?: string) { body = text ?? ''; return this; }
+        } as any;
+
+        (server as any).handleJsonRpc(req, res);
+        req.emit('data', Buffer.from('{"jsonrpc":"2.0"}'));
+        req.emit('end');
+
+        expect(status).toBe(413);
+        expect(body).toContain('exceeds');
+    });
 });

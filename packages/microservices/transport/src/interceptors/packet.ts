@@ -28,10 +28,12 @@ function getContentLength(message: any): number {
 @Injectable()
 export class PacketDeserializeInterceptor implements RequestInterceptor<string | Buffer | IReadable, IncomingMessage> {
 
-    protected channels: Map<any, Packet<IDuplex>>;
+    protected channels: WeakMap<object, Packet<IDuplex>>;
+    protected fallbackChannels: Map<string, Packet<IDuplex>>;
 
     constructor() {
-        this.channels = new Map();
+        this.channels = new WeakMap();
+        this.fallbackChannels = new Map();
     }
 
     intercept(input: string | Buffer | IReadable, next: RequestHandler<any, IncomingMessage>, context: RequestContext): Observable<IncomingMessage> {
@@ -41,16 +43,23 @@ export class PacketDeserializeInterceptor implements RequestInterceptor<string |
 
         return new Observable((subscriber: Subscriber<Packet<IDuplex>>) => {
 
-            const channel = context.has(SOCKET) ? context.get(SOCKET) : '';
+            const socket = context.has(SOCKET) ? context.get(SOCKET) : null;
+            const channel = socket && (typeof socket === 'object' || typeof socket === 'function') ? socket : '';
 
-            let cache = this.channels.get(channel);
+            let cache = channel && typeof channel === 'object'
+                ? this.channels.get(channel as object)
+                : this.fallbackChannels.get(String(channel));
             const packet = input as Buffer;
             if (!cache) {
                 cache = {} as Packet<IDuplex>;
                 cache.payload = null;
                 cache.length = 0;
                 cache.contentLength = null;
-                this.channels.set(channel, cache)
+                if (channel && typeof channel === 'object') {
+                    this.channels.set(channel as object, cache);
+                } else {
+                    this.fallbackChannels.set(String(channel), cache);
+                }
             }
             this.handleData(context, channel, cache, packet, subscriber, streamAdapter, pipe);
 
@@ -139,7 +148,11 @@ export class PacketDeserializeInterceptor implements RequestInterceptor<string |
         cache.payload?.end();
         cache.payload = null;
         if (clear) {
-            this.channels.delete(channel);
+            if (channel && typeof channel === 'object') {
+                this.channels.delete(channel);
+            } else {
+                this.fallbackChannels.delete(String(channel));
+            }
         } else {
             cache.contentLength = null;
             cache.length = 0;

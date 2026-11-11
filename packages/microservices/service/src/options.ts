@@ -219,6 +219,14 @@ export interface ApiRateLimitOptions {
      * 超过限流时的错误消息
      */
     message?: string;
+
+    /**
+     * Maximum number of tracked client keys. Oldest keys are evicted when the
+     * limit is reached, preventing unbounded memory growth from spoofed client
+     * identifiers. Default 10000.
+     * 最大跟踪 key 数量，超过后淘汰最旧 key，避免伪造客户端标识导致内存增长。
+     */
+    maxKeys?: number;
 }
 
 export interface ServiceFeatureOptions<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends ServiceHandlerOptions<TReq, TRes, TContext> {

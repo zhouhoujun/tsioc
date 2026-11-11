@@ -271,8 +271,8 @@ describe('PacketDeserializeInterceptor', () => {
 
     it('reuses cache across calls for same channel', () => {
         const interceptor = new PacketDeserializeInterceptor();
-        expect((interceptor as any).channels).toBeDefined();
-        expect((interceptor as any).channels.size).toBe(0);
+        expect((interceptor as any).channels).toBeInstanceOf(WeakMap);
+        expect((interceptor as any).fallbackChannels.size).toBe(0);
     });
 
     it('keeps deserialization caches isolated per socket', async () => {
@@ -297,7 +297,8 @@ describe('PacketDeserializeInterceptor', () => {
         await feed(contextA, packetA.subarray(0, 3));
         await feed(contextB, packetB.subarray(0, 3));
 
-        expect((interceptor as any).channels.size).toBe(2);
+        expect((interceptor as any).channels.has(socketA)).toBe(true);
+        expect((interceptor as any).channels.has(socketB)).toBe(true);
     });
 
     it('completes without emitting for zero content length packet', async () => {

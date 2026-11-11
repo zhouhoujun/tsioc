@@ -9,6 +9,10 @@ export interface McpServOptions extends ServiceOptions {
     listenOpts?: ListenOpts;
     serverOpts?: http.ServerOptions;
     path?: string;
+    /**
+     * Maximum JSON-RPC request body size in bytes. Default 16 MiB.
+     */
+    maxBodyBytes?: number;
 }
 
 export const MCP_SERV_OPTIONS = token<McpServOptions>('MCP_SERV_OPTIONS');

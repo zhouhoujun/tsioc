@@ -3390,3 +3390,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **回归（先红后绿）**：`session-tab-isolation.spec.ts` 新增 `a returning tab restores its own composer draft`，经真实 `AgentConsoleComponent` + `TuiTerminalSurface` + TuiRenderer，断言 `screen()` 实际出现 `draft-a` / `draft-b`，而不是只看 state。旧实现 `Expected: true / Received: false`；修复后 **7 passing**。
 - **验证**：`components/console` 156 passing、`agent-ui` 2024 passing、`agent-ui` `tsc --noEmit` 0 错误、`source-size` OK、`git diff --check` 干净；`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 GATE-PASS，GATE_EXIT=0**（`gate-regression` 首次超阈值，冷却复测通过；含真实 PTY、DOM/TUI gate、production-db-integrity）。
 - **开放观察（未定位/未改）**：本轮真实 tmux 会话中，部分鼠标点击会退化为把 SGR release 序列（`\e[<0;…m`）插入 composer，而不是触发 tab 点击；`+`/`✕` 点击在不同会话中时好时坏。已排除 `invalidateRenderCache`（该现象在改动前就出现），但未拿到 `mouseHandedOff`/输入解码器的确定性证据，未擅自修改鼠标协议。草稿恢复改用真实 component + surface 单测复验，不依赖鼠标。
+- 微服务健壮性加固（2026-11-11）：
+  - 传输半包缓存改为 `WeakMap<socket, Packet>`，无 socket 时回退有界 `fallbackChannels`；socket 关闭后缓存可被 GC，避免长连接异常断开时泄漏。
+  - `ApiRateLimiter` 增加 `maxKeys`（默认 10000）：超过上限淘汰最旧 key，防止伪造 `x-forwarded-for`/IP 造成窗口 Map 无限增长；新增限流、key 上限与 destroy 回归。
+  - MCP 服务器增加 `maxBodyBytes`（默认 16 MiB）：超限直接返回 413 并停止累积请求体，避免大 JSON-RPC body 打爆内存；新增超限回归。
+  - 回归：transport 52、service 50、mcp 38 passing；Docker broker 真实回归 amqp 55、kafka 73、nats 54、redis 73、mqtt 81；coap 25、tcp 65、udp 54、ws 88、grpc 17、client 72。

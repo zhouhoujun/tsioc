@@ -139,9 +139,29 @@ export class McpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
 
     private handleJsonRpc(req: http.IncomingMessage, res: http.ServerResponse) {
         const chunks: Buffer[] = [];
-        req.on('data', (chunk: Buffer) => chunks.push(chunk));
+        const maxBodyBytes = this.options.maxBodyBytes ?? 16 * 1024 * 1024;
+        let received = 0;
+        let rejected = false;
+        req.on('data', (chunk: Buffer) => {
+            if (rejected) {
+                return;
+            }
+            received += chunk.length;
+            if (received > maxBodyBytes) {
+                rejected = true;
+                chunks.length = 0;
+                res.writeHead(413, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(mcpError(-32600, `Request body exceeds ${maxBodyBytes} bytes`)));
+                req.destroy?.();
+                return;
+            }
+            chunks.push(chunk);
+        });
         req.on('end', () => {
-            const body = Buffer.concat(chunks).toString();
+            if (rejected) {
+                return;
+            }
+            const body = Buffer.concat(chunks, received).toString();
             let jsonRpcRequest: any;
             try { jsonRpcRequest = JSON.parse(body); } catch {
                 res.writeHead(400, { 'Content-Type': 'application/json' });
