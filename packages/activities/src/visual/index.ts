@@ -13,3 +13,4 @@ export * from './VisualNodeActivity';
 export * from './VisualWorkflowService';
 export * from './VisualWorkflowBuilder';
 export * from './components';
+export * from './workflow-action-bus';

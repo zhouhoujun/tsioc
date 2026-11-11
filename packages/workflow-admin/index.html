@@ -39,9 +39,19 @@
         }
         .designer-lang {
             margin-left: auto;
+            margin-right: 40px;
             display: flex;
             gap: 6px;
             align-items: center;
+        }
+        .workflow-management-menu {
+            position: fixed;
+            top: 8px;
+            right: 16px;
+            z-index: 80;
+        }
+        .workflow-management-menu .menu-bar-trigger {
+            min-height: 28px;
         }
         .designer-auth[hidden] {
             display: none !important;
@@ -146,8 +156,6 @@
         <h1>TSDI Workflow Admin</h1>
         <p>Drag nodes · connect ports · run and inspect path / history / logs</p>
         <div class="designer-lang">
-            <button id="lang-en">EN</button>
-            <button id="lang-zh">中文</button>
             <span class="designer-auth" id="auth-user" hidden>
                 <span id="auth-name"></span>
                 <button id="logout" type="button">Sign out</button>

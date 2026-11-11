@@ -1,5 +1,5 @@
 import { Component, ComponentRef, OnDestroy, OnInit } from '@tsdi/components';
-import { Router } from '@tsdi/components/router';
+import { Router, RouterOutlet } from '@tsdi/components/router';
 
 /**
  * Router shell. Keeps the browser hash in sync with `@tsdi/components/router`
@@ -7,6 +7,7 @@ import { Router } from '@tsdi/components/router';
  */
 @Component({
     selector: 'workflow-admin-shell',
+    imports: [RouterOutlet],
     template: '<router-outlet></router-outlet>'
 })
 export class WorkflowAdminShellComponent implements OnInit, OnDestroy {
@@ -21,10 +22,6 @@ export class WorkflowAdminShellComponent implements OnInit, OnDestroy {
                 this.syncHash();
             }
         });
-        const initial = typeof location === 'undefined'
-            ? '/'
-            : String(location.hash || '').replace(/^#/, '') || '/';
-        void this.router.navigateByUrl(initial);
         if (typeof window !== 'undefined') {
             this.hashHandler = () => {
                 const url = String(location.hash || '').replace(/^#/, '') || '/';
@@ -32,10 +29,10 @@ export class WorkflowAdminShellComponent implements OnInit, OnDestroy {
             };
             window.addEventListener('hashchange', this.hashHandler);
         }
-        const url = typeof location === 'undefined'
+        const initial = typeof location === 'undefined'
             ? '/'
             : String(location.hash || '').replace(/^#/, '') || '/';
-        await this.router.navigateByUrl(url);
+        await this.router.navigateByUrl(initial);
     }
 
     onDestroy(): void {

@@ -96,8 +96,7 @@ export class WorkflowAdminDesignerPageComponent implements AfterViewInit {
             localStorage.setItem('workflow-designer-locale', next);
         };
         applyLocale(locale === 'zh-CN' ? 'zh-CN' : 'en');
-        document.getElementById('lang-en')?.addEventListener('click', () => applyLocale('en'));
-        document.getElementById('lang-zh')?.addEventListener('click', () => applyLocale('zh-CN'));
+        designer.localeChangeAction = applyLocale;
 
         const savedTheme = localStorage.getItem('workflow-designer-theme')
             || localStorage.getItem('workflow-demo-theme');

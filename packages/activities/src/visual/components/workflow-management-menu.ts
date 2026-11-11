@@ -1,5 +1,6 @@
 import { Attribute, Component, NoReactive } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
+import { WORKFLOW_ACTION_BUS } from '../workflow-action-bus';
 import { MenuBarGroup, ThemeName, isThemeName } from '@tsdi/components/common';
 import { Translator } from '@tsdi/i18n';
 import { translateWorkflow } from '../i18n';
@@ -40,8 +41,11 @@ export class WorkflowManagementMenuComponent {
     @Attribute() theme: ThemeName = 'light';
     @Attribute() action?: (name: string) => void;
     @Attribute() themeChangeAction?: (theme: ThemeName) => void;
+    @Attribute() localeChangeAction?: (locale: 'en' | 'zh-CN') => void;
 
     @NoReactive() private cache?: { model: WorkflowToolbarModel; theme: string; locale: string; groups: MenuBarGroup[] };
+
+    private readonly actionBus = WORKFLOW_ACTION_BUS;
 
     constructor(@Optional() private translator?: Translator) { }
 
@@ -129,6 +133,15 @@ export class WorkflowManagementMenuComponent {
             },
             {
                 items: [
+                    {
+                        id: 'language',
+                        label: t('language', 'Language'),
+                        icon: '文',
+                        children: [
+                            { id: 'language:en', label: 'English', checked: !this.isZh },
+                            { id: 'language:zh-CN', label: '中文', checked: this.isZh }
+                        ]
+                    },
                     { id: 'shortcuts', label: t('shortcuts', 'Keyboard shortcuts'), shortcut: '?' }
                 ]
             }
@@ -147,13 +160,37 @@ export class WorkflowManagementMenuComponent {
     }
 
     readonly menuSelect = (id: string): void => {
-        if (id.startsWith('theme:')) {
-            const theme = id.slice('theme:'.length);
-            if ((THEME_OPTIONS as string[]).includes(theme)) {
-                this.themeChangeAction?.(theme as ThemeName);
+        (globalThis as any).__workflowMenuHandled = id;
+        if (id.startsWith('language:')) {
+            const locale = id.slice('language:'.length);
+            if (locale === 'en' || locale === 'zh-CN') {
+                if (!this.actionBus && this.localeChangeAction) {
+                    this.localeChangeAction(locale);
+                } else {
+                    this.dispatch(id);
+                }
             }
             return;
         }
-        this.action?.(id);
+        if (id.startsWith('theme:')) {
+            const theme = id.slice('theme:'.length);
+            if ((THEME_OPTIONS as string[]).includes(theme)) {
+                if (!this.actionBus && this.themeChangeAction) {
+                    this.themeChangeAction(theme as ThemeName);
+                } else {
+                    this.dispatch(id);
+                }
+            }
+            return;
+        }
+        this.dispatch(id);
     };
+
+    private dispatch(id: string): void {
+        if (this.actionBus) {
+            this.actionBus.emit(id);
+        } else {
+            this.action?.(id);
+        }
+    }
 }

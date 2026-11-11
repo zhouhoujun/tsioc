@@ -70,6 +70,7 @@ function startDesignerServer(port) {
     const dbDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-workflow-preview-'));
     const previousDb = process.env.WORKFLOW_DB_FILE;
     process.env.WORKFLOW_DB_FILE = path.join(dbDir, 'workflows.db');
+    process.env.WORKFLOW_ADMIN_AUTH_ENABLED = 'false';
     const port = await freePort();
     const base = `http://127.0.0.1:${port}`;
     const server = startDesignerServer(port);
@@ -153,10 +154,10 @@ function startDesignerServer(port) {
             .some(entry => /\.js($|\?)/.test(entry.name) && !loaded.includes(entry.name)), initialJsUrls);
         const nameInput = page.locator('.workflow-inspector-name');
         await nameInput.fill('');
-        await page.waitForTimeout(100);
+        await page.waitForTimeout(300);
         const formInvalid = await page.locator('.workflow-field-error').count() > 0;
         await nameInput.fill('Function Node');
-        await page.waitForTimeout(100);
+        await page.waitForTimeout(300);
         const formValid = await page.evaluate(() =>
             window.workflowDesigner.designer.nodes.find(node => node.id === 'function_1')?.name === 'Function Node'
         );
@@ -183,7 +184,7 @@ function startDesignerServer(port) {
         await page.keyboard.press('Control+A');
         await page.keyboard.type('return 42;');
         // Code edits are debounced; wait past the quiet period (and then some).
-        await page.waitForTimeout(400);
+        await page.waitForTimeout(600);
         const codeApplied = await page.evaluate(() =>
             window.workflowDesigner.designer.nodes.find(node => node.id === 'function_1')?.config?.code === 'return 42;'
         );
@@ -244,14 +245,20 @@ function startDesignerServer(port) {
         );
 
         // Switching language must not discard the edited document.
-        await page.locator('#lang-zh').click();
+        await page.locator('.workflow-management-menu .menu-bar-trigger').click();
+        await page.locator('[data-menu-id="language"]').hover();
+        await page.waitForTimeout(120);
+        await page.evaluate(() => document.querySelector('[data-menu-id="language:zh-CN"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
         await page.waitForTimeout(200);
         const localePreserved = await page.evaluate(() => ({
             count: window.workflowDesigner.designer.nodes.length,
             locale: window.workflowDesigner.locale,
             title: document.querySelector('.workflow-toolbar-title')?.textContent
         }));
-        await page.locator('#lang-en').click();
+        await page.locator('.workflow-management-menu .menu-bar-trigger').click();
+        await page.locator('[data-menu-id="language"]').hover();
+        await page.waitForTimeout(120);
+        await page.evaluate(() => document.querySelector('[data-menu-id="language:en"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
         await page.waitForTimeout(200);
 
         // Panning away and pressing Fit brings every node back into view.
@@ -523,6 +530,7 @@ function startDesignerServer(port) {
         } else {
             process.env.WORKFLOW_DB_FILE = previousDb;
         }
+        delete process.env.WORKFLOW_ADMIN_AUTH_ENABLED;
         fs.rmSync(dbDir, { recursive: true, force: true });
     }
 })();

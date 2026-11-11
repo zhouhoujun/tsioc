@@ -7,6 +7,7 @@ import { RunAspect } from './aop/RunAspect';
 import { ActivityInterceptorService, ActivityLogAspect, ActivityDebugService } from './aop';
 import { WorkflowService } from './services/workflow.service';
 import { WorkflowServiceRegistry } from './plugins/service-registry';
+import { WorkflowActionBus } from './visual/workflow-action-bus';
 import { WorkflowPluginRegistry } from './plugins/plugin-registry';
 import {
     ConfirmActivity, DelayActivity, DoWhileActivity, EndActivity, IntervalActivity,
@@ -59,6 +60,7 @@ import {
         VisualWorkflowBuilder,
         WorkflowNodeRegistry,
         WorkflowServiceRegistry,
+        WorkflowActionBus,
         WorkflowPluginRegistry
     ],
     declarations: [

@@ -37,7 +37,10 @@ export function resolveWorkflowAdminAuthOptions(
     defaults: { host?: string; port?: number } = {}
 ): WorkflowAdminAuthOptions {
     const env = process.env;
-    const enabled = options?.enabled ?? bool(env.WORKFLOW_ADMIN_AUTH_ENABLED ?? env.OIDC_AUTH_ENABLED);
+    const enabled = options?.enabled
+        ?? (env.WORKFLOW_ADMIN_AUTH_ENABLED === undefined
+            ? true
+            : bool(env.WORKFLOW_ADMIN_AUTH_ENABLED));
     const host = defaults.host || env.WORKFLOW_ADMIN_HOST || '127.0.0.1';
     const port = defaults.port ?? Number(env.WORKFLOW_ADMIN_PORT || env.PORT || 8765);
     const callbackURL = options?.callbackURL
@@ -60,7 +63,9 @@ export function resolveWorkflowAdminAuthOptions(
         jwksURI: options?.jwksURI || env.WORKFLOW_ADMIN_OIDC_JWKS_URI || env.OIDC_JWKS_URI,
         scope: options?.scope || list(env.WORKFLOW_ADMIN_OIDC_SCOPE || env.OIDC_SCOPE, ['openid', 'profile', 'email']),
         allowRegistration: options?.allowRegistration
-            ?? bool(env.WORKFLOW_ADMIN_ALLOW_REGISTRATION ?? env.OIDC_ALLOW_REGISTRATION),
+            ?? (env.WORKFLOW_ADMIN_ALLOW_REGISTRATION === undefined
+                ? !options?.clientId && !env.WORKFLOW_ADMIN_OIDC_CLIENT_ID && !env.OIDC_CLIENT_ID
+                : bool(env.WORKFLOW_ADMIN_ALLOW_REGISTRATION)),
         jwt: {
             secret: options?.jwt?.secret || env.WORKFLOW_ADMIN_JWT_SECRET || env.OIDC_SESSION_SECRET || env.JWT_SECRET,
             issuer: options?.jwt?.issuer || env.WORKFLOW_ADMIN_JWT_ISSUER || env.OIDC_SESSION_ISSUER,

@@ -1,5 +1,6 @@
 import { Module } from '@tsdi/ioc';
 import { WorkflowServiceRegistry } from './plugins/service-registry';
+import { WorkflowActionBus } from './visual/workflow-action-bus';
 import { WorkflowPluginRegistry } from './plugins/plugin-registry';
 import { AopModule } from '@tsdi/aop';
 import { ComponentsModule } from '@tsdi/components';
@@ -44,6 +45,7 @@ import {
         VisualWorkflowBuilder,
         WorkflowNodeRegistry,
         WorkflowServiceRegistry,
+        WorkflowActionBus,
         WorkflowPluginRegistry
     ],
     declarations: [

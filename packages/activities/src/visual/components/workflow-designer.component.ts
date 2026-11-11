@@ -16,6 +16,7 @@ import {
 } from '../workflow-store';
 import { installWorkflowDesignerStyles } from './workflow-designer.styles';
 import { WorkflowDesignerPreviewComponent } from './workflow-designer-preview.component';
+import { WORKFLOW_ACTION_BUS } from '../workflow-action-bus';
 
 interface WorkflowDocumentTab {
     id: string;
@@ -39,7 +40,8 @@ interface WorkflowDocumentTab {
         <div class="workflow-global-bar">
             <tab-bar class="workflow-tabs" :source="workflowTabSource"></tab-bar>
             <workflow-management-menu :model="toolbarModel" :locale="locale" :theme="themeName"
-                :action="toolbarAction" :themeChangeAction="themeSelectAction"></workflow-management-menu>
+                :action="toolbarAction" :themeChangeAction="themeSelectAction"
+                :localeChangeAction="changeLocale"></workflow-management-menu>
         </div>
         <workflow-designer-preview #preview
             :designer="designer"
@@ -64,6 +66,8 @@ export class WorkflowDesignerComponent implements OnDestroy {
     @Attribute() theme: ThemeName = 'light';
     /** Optional host hook to persist a user-selected theme. */
     @Attribute() themeChangeAction?: (theme: ThemeName) => void;
+    /** Optional host hook to switch the UI language. */
+    @Attribute() localeChangeAction?: (locale: 'en' | 'zh-CN') => void;
     @Attribute() designer!: WorkflowDesigner;
     @Attribute() initialDefinition?: VisualWorkflowDefinition | string;
     @Attribute() runContext: ActivityContext = {};
@@ -82,6 +86,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
     private tabVersion = 0;
     private tabSourceCache?: TabBarSource;
     private reactiveEffect?: ReactiveEffect;
+    private menuClickHandler?: (event: any) => void;
     saveState: 'saved' | 'dirty' | 'saving' | 'error' = 'saved';
     readonly previewHiddenActions = ['save', 'open-library'];
     showLibrary = false;
@@ -131,6 +136,23 @@ export class WorkflowDesignerComponent implements OnDestroy {
 
     onInit(): void {
         this.selfRef = this;
+        WORKFLOW_ACTION_BUS.subscribe((action: string) => this.toolbarAction(action));
+        const document = (globalThis as { document?: Document }).document;
+        if (document?.addEventListener) {
+            this.menuClickHandler = (event: any) => {
+                const target = event?.target?.closest?.('[data-menu-id]');
+                const id = target?.getAttribute?.('data-menu-id');
+                if (!id) {
+                    return;
+                }
+                setTimeout(() => {
+                    if ((globalThis as any).__workflowMenuHandled !== id) {
+                        this.toolbarAction(id);
+                    }
+                }, 0);
+            };
+            document.addEventListener('click', this.menuClickHandler, true);
+        }
         this.saveState = this.designer.dirty ? 'dirty' : 'saved';
         this.bindGlobalShortcuts();
         if (this.initialDefinition) {
@@ -144,6 +166,10 @@ export class WorkflowDesignerComponent implements OnDestroy {
 
     onDestroy(): void {
         this.clearAutosaveTimer();
+        const rootDocument = (globalThis as { document?: Document }).document;
+        if (this.menuClickHandler && rootDocument?.removeEventListener) {
+            rootDocument.removeEventListener('click', this.menuClickHandler, true);
+        }
         const doc = this.documentRef;
         if (doc?.removeEventListener && this.keyHandler) {
             doc.removeEventListener('keydown', this.keyHandler, true);
@@ -162,6 +188,11 @@ export class WorkflowDesignerComponent implements OnDestroy {
     get themeSelectAction(): (theme: ThemeName) => void {
         return theme => this.setTheme(theme);
     }
+
+    readonly changeLocale = (locale: 'en' | 'zh-CN'): void => {
+        this.locale = locale;
+        this.localeChangeAction?.(locale);
+    };
 
     get toolbarModel(): WorkflowToolbarModel {
         return this.preview?.toolbarModel as WorkflowToolbarModel;
@@ -507,6 +538,20 @@ export class WorkflowDesignerComponent implements OnDestroy {
     }
 
     readonly toolbarAction = (action: string): void => {
+        if (action.startsWith('language:')) {
+            const locale = action.slice('language:'.length);
+            if (locale === 'en' || locale === 'zh-CN') {
+                this.changeLocale(locale);
+            }
+            return;
+        }
+        if (action.startsWith('theme:')) {
+            const theme = action.slice('theme:'.length);
+            if (theme === 'light' || theme === 'dark' || theme === 'solarized' || theme === 'high-contrast') {
+                this.setTheme(theme);
+            }
+            return;
+        }
         if (action === 'save') {
             void this.saveWorkflow();
             return;

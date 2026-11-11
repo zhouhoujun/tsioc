@@ -73,7 +73,9 @@ WORKFLOW_DB_FILE=/var/lib/tsdi/workflows.db WORKFLOW_PLUGINS=mqtt,redis npm star
 
 ## Authentication
 
-Authentication is disabled by default. Enable it with environment variables or
+Authentication is enabled by default. Disable it with
+`WORKFLOW_ADMIN_AUTH_ENABLED=false` or `auth: { enabled: false }` when the admin
+runs behind another trusted gateway. Configure it with environment variables or
 the `auth` option passed to `startWorkflowAdminServer`.
 
 ### OAuth2 / external OIDC provider
