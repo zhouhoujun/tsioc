@@ -5,8 +5,8 @@
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts",
     "build:web": "ts-node -r tsconfig-paths/register build-web.ts",
-    "start": "ts-node -r tsconfig-paths/register src/main.ts",
-    "serve": "npm run start",
+    "start": "npm run build:web && ts-node -r tsconfig-paths/register serve.ts",
+    "serve": "ts-node -r tsconfig-paths/register serve.ts",
     "preview": "npm run build:web && node web/preview-test.js",
     "test": "ts-node -r tsconfig-paths/register unit.ts",
     "test:coverage": "NODE_V8_COVERAGE=.nyc_output ts-node -r tsconfig-paths/register unit.ts -c"

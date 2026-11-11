@@ -31,14 +31,17 @@ management/preview:
 ```bash
 cd packages/microservices/admin
 
-# default: http://127.0.0.1:4318/admin/
-npm start
+# build the browser bundle, then serve (default: http://127.0.0.1:4318/admin/)
+npm run start
+
+# serve without rebuilding the browser bundle
+npm run serve
 
 # custom host/port/prefix and seeded routes
-npm start -- --port 8080 --host 0.0.0.0 --prefix /admin --routes routes.json
+npm run start -- --port 8080 --host 0.0.0.0 --prefix /admin --routes routes.json
 
 # API only (no static UI)
-npm start -- --no-ui
+npm run start -- --no-ui
 ```
 
 `serve` is an alias for `start`.
@@ -170,7 +173,7 @@ a separate process. It can be started manually:
 ```bash
 # separate process, separate workspace/db
 cd packages/oidc-auth
-npm start
+npm run start
 ```
 
 or launched as a child of the admin process when explicitly enabled:
@@ -192,10 +195,10 @@ or launched as a child of the admin process when explicitly enabled:
 ```
 
 ```bash
-npm start -- --config gateway-admin.json
+npm run start -- --config gateway-admin.json
 # or
 GATEWAY_ADMIN_SESSION_SECRET=shared-secret \
-  npm start -- --auth service --oidc-service --oidc-service-port 3000
+  npm run start -- --auth service --oidc-service --oidc-service-port 3000
 ```
 
 The launcher waits for
@@ -274,7 +277,7 @@ GATEWAY_ADMIN_OIDC_CLIENT_ID=gateway-admin \
 GATEWAY_ADMIN_OIDC_CLIENT_SECRET=... \
 GATEWAY_ADMIN_SESSION_SECRET=... \
 GATEWAY_ADMIN_OIDC_REDIRECT_URI=https://gateway.example.com/admin/oidc/callback \
-npm start -- --auth oidc
+npm run start -- --auth oidc
 
 # OAuth2
 GATEWAY_ADMIN_AUTH=oauth2 \
@@ -284,7 +287,7 @@ GATEWAY_ADMIN_OAUTH2_PROFILE_URL=https://idp.example/oauth/userinfo \
 GATEWAY_ADMIN_OAUTH2_CLIENT_ID=gateway-admin \
 GATEWAY_ADMIN_OAUTH2_CLIENT_SECRET=... \
 GATEWAY_ADMIN_SESSION_SECRET=... \
-npm start -- --auth oauth2
+npm run start -- --auth oauth2
 ```
 
 Or keep everything in a JSON config file (relative `uiRoot` resolves from the
@@ -310,9 +313,9 @@ config directory):
 ```
 
 ```bash
-npm start -- --config gateway-admin.json
+npm run start -- --config gateway-admin.json
 # toggle auth off explicitly
-npm start -- --config gateway-admin.json --auth none
+npm run start -- --config gateway-admin.json --auth none
 ```
 
 Precedence: config file < environment variables < CLI flags. Set
@@ -364,7 +367,7 @@ restarts.
 ```bash
 npm run build       # server-side package (AOT, includes src/main.ts)
 npm run build:web   # browser bundle -> web/main.js + web/chunks
-npm start           # standalone service (ts-node, source checkout)
+npm run start       # standalone service (ts-node, source checkout)
 npm test            # compiler, controller, standalone server and jsdom UI
 ```
 

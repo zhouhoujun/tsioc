@@ -380,7 +380,7 @@ import { GatewayAdminController, GatewayAdminModule, useGatewayAdminUi } from '@
 export class AppModule {}
 ```
 
-启动独立管理台：`cd packages/microservices/admin && npm start`（默认 `http://127.0.0.1:4318/admin/`）。构建 UI：`npm run build:web`。详细说明见该包 README。
+启动独立管理台：`cd packages/microservices/admin && npm run start`（默认 `http://127.0.0.1:4318/admin/`）。构建 UI：`npm run build:web`。详细说明见该包 README。
 
 ---
 
