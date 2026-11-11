@@ -112,10 +112,16 @@ function modelMessages(ctx: ProtoContext, contract: MicroserviceContract): void 
     });
 }
 
+function normalizeRoutePath(value: string): string {
+    const input = String(value || '/');
+    const withSlash = input.startsWith('/') ? input : `/${input}`;
+    return withSlash.replace(/:([A-Za-z0-9_]+)/g, '{$1}');
+}
+
 function routeMethod(contract: MicroserviceContract, route: ContractRouteSchema, index: number): string[] {
     const request = route.request || 'Empty';
     const response = route.response || 'Empty';
-    const comment = `// HTTP ${String(route.method || 'GET').toUpperCase()} ${route.path}`;
+    const comment = `// HTTP ${String(route.method || 'GET').toUpperCase()} ${normalizeRoutePath(route.path)}`;
     return [`    ${comment}`, `    rpc ${operationName(route, index)} (${request}) returns (${response});`];
 }
 

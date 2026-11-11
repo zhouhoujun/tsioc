@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { generateContract, MicroserviceContract } from './index';
+import { generateContract, importOpenApi, importProto, MicroserviceContract } from './index';
 
 interface CliOptions {
     manifest: string;
@@ -12,6 +12,9 @@ interface CliOptions {
     dtoStyle?: 'class' | 'interface';
     protoPackage?: string;
     check: boolean;
+    fromOpenApi?: string;
+    fromProto?: string;
+    manifestOut?: string;
 }
 
 function usage(): void {
@@ -24,7 +27,10 @@ Options:
   --proto <file>     proto output path (default: <out>/<name>.proto)
   --decorators       add @ApiModelProperty decorators to DTO classes
   --interface        generate interfaces instead of classes
-  --proto-package    override the proto package
+  --proto-package <pkg>  override the proto package
+  --from-openapi <file>  import an OpenAPI 3 document into a manifest
+  --from-proto <file>    import a proto3 file into a manifest
+  --manifest <file>      imported manifest output (default: <name>.contract.json)
   --check            fail when generated files differ from disk
   --help             show this help
 `);
@@ -65,6 +71,15 @@ function parseArgs(argv: string[]): CliOptions {
             case '--proto-package':
                 options.protoPackage = argv[++index];
                 break;
+            case '--from-openapi':
+                options.fromOpenApi = argv[++index];
+                break;
+            case '--from-proto':
+                options.fromProto = argv[++index];
+                break;
+            case '--manifest':
+                options.manifestOut = argv[++index];
+                break;
             case '--check':
                 options.check = true;
                 break;
@@ -95,8 +110,25 @@ function writeOrCheck(file: string, content: string, check: boolean): boolean {
     return true;
 }
 
+function importManifest(options: CliOptions): void {
+    const source = options.fromOpenApi || options.fromProto!;
+    const content = fs.readFileSync(path.resolve(source), 'utf-8');
+    const contract = options.fromOpenApi
+        ? importOpenApi(JSON.parse(content))
+        : importProto(content);
+    const manifest = `${JSON.stringify(contract, null, 2)}\n`;
+    const target = path.resolve(options.manifestOut || options.manifest || `${contract.name}.contract.json`);
+    if (!writeOrCheck(target, manifest, options.check)) {
+        process.exit(1);
+    }
+}
+
 function main(): void {
     const options = parseArgs(process.argv.slice(2));
+    if (options.fromOpenApi || options.fromProto) {
+        importManifest(options);
+        return;
+    }
     if (!options.manifest) {
         usage();
         process.exit(1);

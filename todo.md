@@ -3494,3 +3494,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 支持模型引用、数组 items、内联 object/properties、enum、required、format、path 参数、错误响应、Empty 请求/响应。
   - CLI `npm run generate -- <manifest> [--out] [--decorators] [--interface] [--proto-package] [--check]`，`--check` 可用于 CI 漂移检查。
   - 9 passing；`npm run build` 与编译后 `cli.js` 实测生成 DTO/OpenAPI/proto。
+- 契约双向同步（2026-11-11）：
+  - `@tsdi/microservice-contract` 新增 `importOpenApi` / `importProto`：把 OpenAPI 3 / proto3 转回 contract manifest。
+  - OpenAPI 支持 components.schemas、$ref、array、enum、required、requestBody、2xx/错误响应；proto 支持 message、optional/repeated、标量/模型引用、enum 注释、unary rpc 与 HTTP method/path 注释。
+  - CLI 新增 `--from-openapi` / `--from-proto` / `--manifest`；生成器注释中的 `:id` 统一规范为 `{id}` 以便 round-trip。
+  - contract 11 passing，OpenAPI/proto → manifest 往返测试与 CLI 实测通过。

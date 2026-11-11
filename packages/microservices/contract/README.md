@@ -6,6 +6,9 @@ Contract-first generation for `@tsdi` microservices. One JSON manifest produces:
 - OpenAPI 3 document (schemas, paths, parameters, request/response bodies).
 - proto3 messages and a unary RPC service (HTTP method/path kept as comments).
 
+The reverse direction is supported too: import an existing OpenAPI 3 document or
+a proto3 file back into a contract manifest.
+
 The manifest is transport-neutral, so the same model drives HTTP/OpenAPI and
 gRPC/proto contracts without duplicating DTO definitions.
 
@@ -63,6 +66,10 @@ npm run generate -- example/orders.contract.json --out src/contract --decorators
 
 # CI drift check
 npm run generate -- example/orders.contract.json --out src/contract --check
+
+# Import an existing contract into a manifest
+npm run generate -- --from-openapi openapi.json --manifest contract.json
+npm run generate -- --from-proto orders.proto --manifest contract.json
 ```
 
 Options:
@@ -76,6 +83,9 @@ Options:
 | `--decorators` | add `@ApiModelProperty` decorators to DTO classes |
 | `--interface` | generate interfaces instead of classes |
 | `--proto-package <pkg>` | override the proto package |
+| `--from-openapi <file>` | import an OpenAPI 3 document into a manifest |
+| `--from-proto <file>` | import a proto3 file into a manifest |
+| `--manifest <file>` | imported manifest output (default `<name>.contract.json`) |
 | `--check` | fail when files on disk differ from generated output |
 
 ## Generated output
@@ -133,14 +143,27 @@ union/enum).
 ## Programmatic API
 
 ```ts
-import { generateContract, validateContract } from '@tsdi/microservice-contract';
+import {
+    generateContract,
+    importOpenApi,
+    importProto,
+    validateContract
+} from '@tsdi/microservice-contract';
 
 const errors = validateContract(manifest);
 const { dto, openapi, proto } = generateContract(manifest, {
     dtoStyle: 'class',
     decorators: true
 });
+
+const fromOpenApi = importOpenApi(openapiDocument, { name: 'orders' });
+const fromProto = importProto(protoText, { name: 'orders' });
 ```
+
+Import supports the subset emitted by this package (object schemas, `$ref`,
+arrays, enums, request/response bodies, unary RPCs and HTTP comments) plus
+common hand-written variants. Nested proto messages are imported as standalone
+models that reference each other.
 
 `generateContract` throws `ContractValidationError` with unknown types, missing
 array item schemas, duplicate routes or duplicate operation ids.
@@ -152,5 +175,5 @@ npm test
 ```
 
 Covers validation, DTO (classes/interfaces/decorators + TypeScript syntax),
-OpenAPI paths/schemas/parameters, proto messages/nested objects/repeated fields
-and the generated RPC service.
+OpenAPI paths/schemas/parameters, proto messages/nested objects/repeated fields,
+the generated RPC service, and OpenAPI/proto → manifest round-trips.

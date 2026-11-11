@@ -190,7 +190,7 @@
   - `@tsdi/activities` 可视化流程配置 gateway rules（gateway-condition / gateway-route / gateway-deny）
   - `@tsdi/components/html` 管理界面：实时路由表 + 规则画布
   - `/api/gateway-admin` 读写并即时应用到 `GatewayRuntime`
-- 待增强：反向从 OpenAPI/proto 导入 manifest（当前为 manifest → DTO/OpenAPI/proto 单向生成）
+- 双向同步：`importOpenApi` / `importProto` 可把已有 OpenAPI 3 / proto3 导入 manifest（支持本包生成子集与常见手写结构）
 
 ---
 
@@ -413,7 +413,11 @@ node ../../dist/orders/main.js
 cd packages/microservices/contract
 npx ts-node -r tsconfig-paths/register cli.ts example/orders.contract.json --out src/contract
 # CI: 有漂移时失败
-npx ts-node -r tsconfig-paths/register cli.ts example/orders.contract.json --out src/contract --check
+npm run generate -- example/orders.contract.json --out src/contract --check
+
+# 反向导入已有契约
+npm run generate -- --from-openapi openapi.json --manifest contract.json
+npm run generate -- --from-proto orders.proto --manifest contract.json
 ```
 
 字段支持 `string/number/integer/boolean/array/object` 和模型引用；数组必须有 `items`；

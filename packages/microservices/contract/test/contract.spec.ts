@@ -5,6 +5,8 @@ import {
     generateDto,
     generateOpenApi,
     generateProto,
+    importOpenApi,
+    importProto,
     MicroserviceContract,
     validateContract
 } from '../src';
@@ -163,5 +165,63 @@ describe('generateContract', () => {
         const contract = sampleContract();
         contract.routes!.push({ method: 'GET', path: '/x', response: 'Missing' });
         expect(() => generateContract(contract)).toThrow('Invalid microservice contract');
+    });
+});
+
+
+describe('OpenAPI import', () => {
+    it('round-trips generated OpenAPI back into a manifest', () => {
+        const original = sampleContract();
+        const imported = importOpenApi(generateOpenApi(original), { name: 'orders' });
+
+        expect(imported.name).toBe('orders');
+        expect(imported.title).toBe('Orders API');
+        expect(imported.version).toBe('1.2.0');
+        expect(imported.models.CreateOrder.fields.id).toEqual({
+            type: 'string',
+            required: true,
+            description: 'Client id',
+            format: 'uuid',
+            default: undefined
+        });
+        expect(imported.models.CreateOrder.fields.status.enum).toEqual(['new', 'paid']);
+        expect(imported.models.CreateOrder.fields.items).toEqual({
+            type: 'array',
+            items: { type: 'OrderItem' },
+            description: undefined
+        });
+        expect(imported.routes!.find(route => route.operationId === 'CreateOrder')!.request).toBe('CreateOrder');
+        expect(imported.routes!.find(route => route.operationId === 'CreateOrder')!.response).toBe('Order');
+        expect(imported.routes!.find(route => route.operationId === 'CreateOrder')!.errors).toEqual([400]);
+    });
+});
+
+describe('proto import', () => {
+    it('round-trips generated proto messages and RPCs', () => {
+        const original = sampleContract();
+        const imported = importProto(generateProto(original), { name: 'orders' });
+
+        expect(imported.name).toBe('orders');
+        expect(imported.service).toEqual({ name: 'OrdersService', package: 'shop.orders' });
+        expect(imported.models.CreateOrder.fields.id).toEqual({ type: 'string', required: true, description: 'Client id' });
+        expect(imported.models.CreateOrder.fields.quantity).toEqual({ type: 'integer', required: true });
+        expect(imported.models.CreateOrder.fields.status).toEqual({
+            type: 'string',
+            enum: ['new', 'paid'],
+            required: false
+        });
+        expect(imported.models.CreateOrder.fields.items).toEqual({
+            type: 'array',
+            items: { type: 'OrderItem' },
+            required: false
+        });
+        expect(imported.routes!.map(route => `${route.method} ${route.path} ${route.operationId}`)).toEqual([
+            'POST /orders CreateOrder',
+            'GET /orders/{id} GetOrder',
+            'DELETE /orders/{id} DeleteOrder'
+        ]);
+        expect(imported.routes![2].request).toBeUndefined();
+        expect(imported.routes![2].response).toBeUndefined();
+        expect(imported.routes![2].errors).toBeUndefined();
     });
 });
