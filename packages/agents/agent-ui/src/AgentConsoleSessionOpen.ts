@@ -35,6 +35,8 @@ export interface AgentConsoleSessionOpenHost {
     refreshTodoPlan(sessionId?: string): Promise<void>;
     loadCodingTasks(sessionId?: string, projectSessionIds?: string[]): Promise<any>;
     restoreInputHistory(): Promise<void>;
+    restoreStreamingTurn?(sessionId: string): void;
+    isSessionTurnRunning?(sessionId: string): boolean;
     restoreSessionModes(sessionId: string): Promise<void>;
 }
 
@@ -76,10 +78,8 @@ export async function openSession(
     sessionId?: string,
     options?: { persistCurrentHistory?: boolean; fresh?: boolean; missing?: boolean; scoped?: boolean }
 ): Promise<void> {
-    if (host.isTurnInProgress()) {
-        host.notifyBusyState(formatAgentUiNotice(host.translator, 'sessionSwitchBusy'));
-        return;
-    }
+    // Tabs are independent sessions: switching must never wait for another
+    // tab's turn. A background turn keeps streaming into its own state.
     if (!host.sessionService) {
         return;
     }
@@ -154,6 +154,9 @@ export async function openSession(
     host.state.closeMessageDetail();
     host.state.clearActivities();
     host.state.setLastError('');
+    const sessionRunning = host.isSessionTurnRunning?.(target.id)
+      ?? (host.state.activeTurnSessionId === target.id);
+    host.state.setStatus(sessionRunning ? 'running' : 'idle');
     host.updateTerminalTitle();
     host.state.setNotice(options?.missing === true
         ? formatAgentUiNotice(host.translator, 'sessionNotFound', { id: target.id })
@@ -192,6 +195,8 @@ export async function openSession(
     host.state.setGoalSummary(options?.fresh ? null : (page.goalSummary || null));
     host.state.messagesPageCursor = options?.fresh ? '' : (page.nextCursor || '');
     host.state.messagesHasMore = options?.fresh ? false : page.hasMore === true;
+    // Reattach the live partial answer when returning to a still-running turn.
+    host.restoreStreamingTurn?.(target.id);
     await host.restoreSessionModes(target.id);
 }
 

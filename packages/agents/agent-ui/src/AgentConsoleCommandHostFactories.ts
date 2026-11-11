@@ -4,7 +4,7 @@ import type { AgentConsoleRuntimeHost } from './AgentConsoleRuntimeCommands';
 import type { AgentConsoleSessionOpenHost } from './AgentConsoleSessionOpen';
 import { restoreSessionModes as restoreSessionModesView } from './AgentConsoleSessionOpen';
 import type { AgentConsoleCommandDispatchHost } from './AgentConsoleCommandDispatch';
-import type { AgentConsoleTurnStreamHost } from './AgentConsoleTurnStreamController';
+import { restoreStreamingTurnView, type AgentConsoleTurnStreamHost } from './AgentConsoleTurnStreamController';
 import type { AgentConsoleSessionContentLoaderHost } from './AgentConsoleSessionContentLoader';
 import type { TodoPlanCommandHost } from './AgentConsoleTodoPlanCommands';
 import type { AgentConsoleRpcCommandHost } from './AgentConsoleRpcCommands';
@@ -164,6 +164,8 @@ export function sessionOpenHost(self: any): AgentConsoleSessionOpenHost {
             refreshTodoPlan: (sessionId?: string) => self.refreshTodoPlan(sessionId),
             loadCodingTasks: (sessionId?: string, projectSessionIds?: string[]) => self.loadCodingTasks(sessionId, projectSessionIds),
             restoreInputHistory: () => self.restoreInputHistory(),
+            restoreStreamingTurn: (sessionId: string) => restoreStreamingTurnView(self.turnStreamHost(), self.turnRuntime.stateFor(sessionId)),
+            isSessionTurnRunning: (sessionId: string) => self.turnRuntime.isRunning(sessionId),
             restoreSessionModes: (sessionId: string) => restoreSessionModesView({ appRpc: self.appRpc, runtime: self.runtime, state: self.state, rpcRequestContext: () => self.rpcRequestContext() }, sessionId)
         };
     }

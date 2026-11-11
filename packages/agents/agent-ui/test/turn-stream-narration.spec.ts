@@ -5,6 +5,7 @@ import {
     AgentConsoleTurnStreamHost,
     AgentConsoleTurnStreamState,
     consumeStreamChunkView,
+    consumeStreamEventChunkView,
     runTurnStreamView
 } from '../src/AgentConsoleTurnStreamController';
 import { presentAgentConsoleSessionContent, projectAgentConsoleExecutionMainline } from '../src/AgentConsoleSessionContentPresenter';
@@ -190,6 +191,31 @@ export class TurnStreamNarrationTest {
         expect(toolRows(host).length).toBe(2);
         // No empty bubble may survive the placeholder being fully sealed away.
         expect(host.state.messages.every(item => String(item.content || '').trim().length > 0)).toBe(true);
+    }
+
+    @Test('a background turn buffers text without touching the active tab')
+    backgroundTurnDoesNotLeak() {
+        const host = createFakeHost();
+        const state = newStreamState();
+        state.turnSessionId = 'session-background';
+        const assistantMessage = startTurn(host);
+
+        consumeStreamChunkView(host, state, { type: 'text', content: 'hidden narration' }, assistantMessage);
+        consumeStreamChunkView(host, state, toolCall('tc-bg', 'Inspect directory'), assistantMessage);
+
+        expect(textRows(host)).toEqual(['']);
+        expect(toolRows(host)).toEqual([]);
+        expect(state.streamMessageText).toEqual('hidden narration');
+
+        // Event chunks (approval/tool rows) are buffered by session, too.
+        (host.state as any).activeTurnSessionId = 'session-background';
+        consumeStreamEventChunkView(host, {
+            type: 'event',
+            eventType: 'tool_call',
+            toolCallId: 'tc-bg-2',
+            content: 'background tool'
+        });
+        expect(toolRows(host)).toEqual([]);
     }
 
     @Test('reasoning row carries the model thought, not a canned phrase')

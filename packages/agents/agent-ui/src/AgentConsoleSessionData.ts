@@ -84,6 +84,8 @@ export class AgentConsoleSessionData {
     timelineEventDetailColumnScroll = 0;
     turnStartedAt = 0;
     status = 'idle';
+    /** Session whose turn is currently streaming; tabs switch without waiting. */
+    activeTurnSessionId = '';
     provider = '';
     model = '';
     modelProfile = '';

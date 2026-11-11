@@ -3582,3 +3582,32 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 移除 `/api/gateway-admin/session`（拦截器分支与 controller 路由）；认证交给统一认证服务。
   - 服务端按统一认证 token 调 userinfo，token/用户为空时 HTML 入口 302 到 login.html；通过后把 session 注入 `window.__TSDI_ADMIN_SESSION__`，路由守卫只读注入值，不再调用 session API。
   - 修复 workflow designer 通过 action bus 切换 theme/locale 不生效：toolbarAction/changeLocale 使用响应式 self 代理更新，新增 action-bus 主题/语言回归测试（activities 256 passing）。
+
+## 2026-11-11 `/web` 浏览器 `__aotDeco is not defined`（AOT CommonJS 绑定修复）
+- **现象**：`/web` 打开的浏览器控制台在类定义时抛 `Uncaught ReferenceError: __aotDeco is not defined`。
+- **根因**：AOT transformer 通过 synthetic import alias（`import { applyPrecompiledDecorators as __aotDeco }`）注入 helper；TypeScript 的 CommonJS 模块转换在 `transpileModule`/program emit 下不会把 synthetic alias 链接到调用点，生成的 CJS 仍调用裸 `__aotDeco`，而 `const ioc_N = require('@tsdi/ioc')` 只提供命名空间。Node 侧 dist 同样存在该问题，浏览器 `/web` 直接暴露。
+- **附带修复**：`AotTransformer` 中多处 `factory.createImportDeclaration` 仍使用 5 参旧签名，而当前 TypeScript 5.8 只接受 4 参；已统一改为 4 参，恢复 `tsc --noEmit` 通过。
+- **修复**：
+  1. `AotPrecompileOptions` 增加 `moduleKind`，`emitAotProject` / `transpileAot` 传入实际模块类型。
+  2. CommonJS 输出改为真实绑定：`const __aotDeco = require('@tsdi/ioc').applyPrecompiledDecorators;`；`__aotAspect` / `__aotNoPointcut` 同理从 `@tsdi/aop` 绑定。ESM 输出保持 import alias（esbuild 可解析）。
+- **回归（先红后绿）**：新增 `compiler/test/aot-commonjs-runtime.spec.ts`：
+  - 断言 CJS 输出包含 `const __aotDeco = require("@tsdi/ioc").applyPrecompiledDecorators;`；
+  - 用 `new Function` 实际执行 CJS 输出，断言模块加载不抛错；
+  - 移除绑定行后必须命中 `__aotDeco is not defined`，证明测试能捕获该回归。
+- **验证**：`compiler` **114 passing**、compiler `tsc --noEmit` 0 错误；`npm run build:web` 成功（1509 + 353 modules），产物 `web/dist/agent-console.js` 已无裸 `__aotDeco`；`source-size` OK、`git diff --check` 干净。
+
+## 2026-11-11 tab 是并行会话：任意切换不再等待（`__aotDeco` 修复同批）
+- **用户规则**：tab 是几个并行会话，可以随意切换，不会影响会话。原实现 `openSession` 在 `isTurnInProgress()` 时直接拒绝切换并提示 “Wait for the current turn to finish before switching sessions.”，与实际产品语义冲突。
+- **根因（两层）**：
+  1. `AgentConsoleSessionOpen.openSession` 用全局 `isTurnInProgress()` 门禁所有会话切换；`isTurnInProgress` 同时包含 `activeTurnRun` 与当前 state.status，一个 tab 运行会锁死所有 tab。
+  2. 旧实现只有一个 `turnStreamState`/`activeTurnRun`；若后台 turn 的 stream 直接写当前 state，会污染切换后的 tab。
+- **修复**：
+  1. 新增 `AgentConsoleTurnRuntimeRegistry`：按 session 保存 `AgentConsoleTurnStreamState` 与 in-flight run；`runTurnStream`/`clearStreamingMessageState`/`restoreStreamingTurn`/`activeTurnRun` 全部按 session 取用。
+  2. `isTurnInProgress` 只看当前 session（本 session 的 run 或 running/reasoning 状态）；`openSession` 移除 busy 拒绝，切换后按目标 session 是否有运行中 turn 设置状态。
+  3. 后台 turn 的 text/reasoning 只累计到该 session 的 stream state，不修改当前 tab 的 messages/status；tool/event 行由 runtime 持久化，切回后随会话加载；后台 turn 完成时不 finalize 当前 tab。
+  4. 切回仍在运行的 session 时 `restoreStreamingTurn` 重新挂载已累计的 partial answer；`setActiveTurnRun(sessionId, run)` 按 session 记录，支持两个 tab 同时跑 turn。
+- **回归**：
+  - `session-tab-isolation` 新增 `switching tabs is allowed while another turn is running`：A 运行中切到 B 不得出现 wait notice，B `isTurnInProgress=false`，切回 A 状态恢复 running。
+  - `turn-stream-narration` 新增 `a background turn buffers text without touching the active tab`：后台 text/event 不写入当前 messages，只累计 stream 文本。
+- **真实验证**：真实 TUI 中 A 运行 `sleep 30`，切到 B（无 waiting 提示），在 B 发起 “只回复 OK” 并成功返回；A 的 `sleep 30 && echo ADONE` 仍在后台完成（DB 最终 `ADONE`/exit 0）。切回 A 时状态与最终回答正确。
+- **验证**：`agent-ui` 全量 **2030 passing**、`tsc` 0、`source-size` OK、`git diff --check` 干净；全量门禁 **27/27 GATE-PASS，GATE_EXIT=0**。

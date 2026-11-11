@@ -8,7 +8,10 @@ import {
 } from './AgentConsoleStreamHelpers';
 import { AgentConsoleMessageState, findStreamingAssistantMessageIndex, replaceStreamingAssistantMessage } from './AgentConsoleMessageState';
 import { consumeStreamEventChunkView, normalizeUiEventStatus, qualifyTurnUiEventKey } from './AgentConsoleStreamEventProjection';
+import { bufferBackgroundTurnChunk, clearStreamingMessageState } from './AgentConsoleTurnBackground';
+import { appendReasoningText, resolveReasoningFallbackLabel, settleReasoningRow } from './AgentConsoleTurnReasoning';
 export { consumeStreamEventChunkView, normalizeUiEventStatus } from './AgentConsoleStreamEventProjection';
+export { clearStreamingMessageState } from './AgentConsoleTurnBackground';
 
 /**
  * Host surface required by the turn stream controller.
@@ -19,6 +22,7 @@ export interface AgentConsoleTurnStreamHost {
         sessionId: string;
         workspace: string;
         status: string;
+        activeTurnSessionId?: string;
         messages: AgentMessage[];
         setMessages(messages: AgentMessage[], ...rest: any[]): void;
         setTokenUsage(usage?: unknown): void;
@@ -47,6 +51,10 @@ export interface AgentConsoleTurnStreamHost {
  * Owned by the host component so it survives the per-chunk host objects.
  */
 export interface AgentConsoleTurnStreamState {
+    /** Session that owns the turn currently being streamed. */
+    turnSessionId?: string;
+    /** Assistant row tracked by the turn (used to re-attach after a tab switch). */
+    assistantMessage?: AgentMessage;
     streamMessageText: string;
     /**
      * Interim narrations already sealed into their own rows. Once this is > 0 the
@@ -67,44 +75,6 @@ export interface AgentConsoleTurnStreamState {
     reasoningPhase: string;
 }
 
-/** Upper bound on the thought text kept on a timeline row; the main line only
- * renders its first line, the remainder stays available to the inspector. */
-const REASONING_ROW_MAX_LENGTH = 4000;
-
-function appendReasoningText(current: unknown, delta: string): string {
-    const base = typeof current === 'string' ? current : '';
-    if (base.length >= REASONING_ROW_MAX_LENGTH) {
-        return base;
-    }
-    const next = base + delta;
-    return next.length > REASONING_ROW_MAX_LENGTH ? `${next.slice(0, REASONING_ROW_MAX_LENGTH)}\u2026` : next;
-}
-
-/** Localized placeholder for a reasoning phase that streamed no text. */
-function resolveReasoningFallbackLabel(host: AgentConsoleTurnStreamHost): string {
-    const translator = host.translator as { translate?: (key: string) => unknown } | undefined;
-    const translated = translator?.translate?.('agent.turn.reasoning');
-    return typeof translated === 'string' && translated.trim() ? translated : 'Reasoning';
-}
-
-/**
- * Settle the turn's thought row once the answer is in. A row left `running`
- * renders as an active step forever, so the accumulated thought is re-upserted
- * as a completed supporting summary (the main line then bounds it and the full
- * text stays reachable through the row detail).
- */
-function settleReasoningRow(host: AgentConsoleTurnStreamHost, state: AgentConsoleTurnStreamState): void {
-    const thought = typeof state.reasoningText === 'string' ? state.reasoningText.trim() : '';
-    if (!thought) {
-        return;
-    }
-    host.state.upsertUiEventMessage(host.state.qualifyUiEventKey('reasoning'), thought, {
-        eventType: 'reasoning',
-        label: 'think',
-        status: 'success'
-    });
-}
-
 /**
  * Normalize a stream event status into the UI status vocabulary.
  * Unknown/empty values fall back to `running`.
@@ -115,9 +85,13 @@ export function consumeStreamChunkView(
     chunk: any,
     assistantMessage: AgentMessage
 ): void {
+    if (state.turnSessionId && state.turnSessionId !== host.state.sessionId) {
+        bufferBackgroundTurnChunk(state, chunk);
+        return;
+    }
     host.state.setTokenUsage(chunk);
     if (chunk?.type === 'event') {
-        consumeStreamEventChunkView(host, chunk);
+        consumeStreamEventChunkView(host, chunk, state.turnSessionId);
         return;
     }
     if (chunk?.type === 'text' && chunk.content) {
@@ -259,6 +233,22 @@ export function flushStreamingAssistantMessage(
     host.state.setMessages(current, true);
 }
 
+/**
+ * Reattach the live partial answer after switching back to a session whose turn
+ * kept running in the background.
+ */
+export function restoreStreamingTurnView(host: AgentConsoleTurnStreamHost, state: AgentConsoleTurnStreamState): void {
+    if (!state.turnSessionId || state.turnSessionId !== host.state.sessionId) {
+        return;
+    }
+    const message = state.assistantMessage;
+    if (!message || !state.streamMessageText.trim()) {
+        return;
+    }
+    message.content = state.streamMessageText;
+    flushStreamingAssistantMessage(host, state, message);
+}
+
 function removeStreamingAssistantRow(state: AgentConsoleMessageState, message: AgentMessage): void {
     const current = state.messages.slice();
     const targetIndex = findStreamingAssistantMessageIndex(current, message);
@@ -330,13 +320,6 @@ function finalizeStreamingAssistantRow(
 /**
  * Resets the streaming scratch text after a turn stream ends (or on dispose).
  */
-export function clearStreamingMessageState(state: AgentConsoleTurnStreamState): void {
-    state.streamMessageText = '';
-    state.sealedNarrationCount = 0;
-    state.reasoningText = '';
-    state.reasoningPhase = '';
-}
-
 /**
  * Runs one turn against the stream-capable transport, projecting every chunk
  * into the message list. Falls back to the non-streaming turn execution when
@@ -350,6 +333,8 @@ export async function runTurnStreamView(
     message?: AgentTurnMessageInput,
     profile?: string
 ): Promise<void> {
+    state.turnSessionId = host.state.sessionId;
+    state.assistantMessage = assistantMessage;
     const stream = host.appRpc?.stream?.('run.turn_stream', {
         sessionId: host.state.sessionId,
         input: prompt,
@@ -365,13 +350,16 @@ export async function runTurnStreamView(
             }
             completed = true;
         } finally {
+            const active = state.turnSessionId === host.state.sessionId;
             if (completed) {
                 assistantMessage.metadata = {
                     ...(assistantMessage.metadata || {}),
                     streaming: false
                 };
-                finalizeStreamingAssistantRow(host, state, assistantMessage);
-                settleReasoningRow(host, state);
+                if (active) {
+                    finalizeStreamingAssistantRow(host, state, assistantMessage);
+                    settleReasoningRow(host, state);
+                }
             }
             clearStreamingMessageState(state);
         }
@@ -383,19 +371,22 @@ export async function runTurnStreamView(
         for await (const chunk of runtime.runStreamingTurn(host.state.sessionId, prompt, undefined, message, profile, undefined, host.state.workspace)) {
             consumeStreamChunkView(host, state, chunk, assistantMessage);
         }
-        settleReasoningRow(host, state);
         assistantMessage.metadata = {
             ...(assistantMessage.metadata || {}),
             streaming: false
         };
-        finalizeStreamingAssistantRow(host, state, assistantMessage);
+        if (state.turnSessionId === host.state.sessionId) {
+            settleReasoningRow(host, state);
+            finalizeStreamingAssistantRow(host, state, assistantMessage);
+        }
         return;
     }
 
     const result = await host.executeTurn(prompt, message, profile);
     if (result && typeof result === 'object' && 'message' in result) {
         assistantMessage.content = (result as { message: { content: string } }).message.content;
-        if (host.state.status === 'running' || host.state.status === 'reasoning') {
+        if (state.turnSessionId === host.state.sessionId
+            && (host.state.status === 'running' || host.state.status === 'reasoning')) {
             host.state.setStatus('idle');
             host.updateTerminalTitle();
         }

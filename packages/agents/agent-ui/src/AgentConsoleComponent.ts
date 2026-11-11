@@ -183,6 +183,7 @@ import {
 import { loadOlderSessionMessages } from './AgentConsoleSessionHistoryPaging';
 import { applyMissingSessionNotice, openSession as delegateOpenSession, restoreSessionModes as restoreSessionModesView, AgentConsoleSessionOpenHost } from './AgentConsoleSessionOpen';
 import { AgentConsoleSessionUiState, applyAgentConsoleSessionComposer } from './AgentConsoleSessionUiState';
+import { AgentConsoleTurnRuntimeRegistry } from './AgentConsoleTurnRuntimeRegistry';
 import { closeAgentConsoleSessionTab } from './AgentConsoleSessionTabClose';
 import { isAgentConsoleExactCommandToken, isAgentConsoleSuggestionMenu, resolveAgentConsoleMentionDisplayFiles } from './AgentConsoleSuggestions';
 import {
@@ -364,7 +365,7 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
     protected pendingCommandRequestId = '';
     protected sessionEpoch = 0;
     protected taskViewContextVersion = 0;
-    protected turnStreamState: AgentConsoleTurnStreamState = { streamMessageText: '', sealedNarrationCount: 0, reasoningText: '', reasoningPhase: '' };
+    protected readonly turnRuntime = new AgentConsoleTurnRuntimeRegistry();
     protected mentionCatalog: AgentConsoleMentionCatalogItem[] = [];
     protected globalKeyPending = '';
     protected keymapRecording?: { context: AgentConsoleKeymapContext; action: AgentConsoleGlobalAction };
@@ -373,7 +374,7 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
     protected freshSessionScoped = false;
     protected queuedPrompts = new Map<string, AgentConsoleQueuedPrompt[]>();
     protected drainingQueuedSessions = new Set<string>();
-    protected activeTurnRun?: Promise<void> | null = null;
+
     protected activeThemeName: AgentConsoleThemeName = 'dark';
     protected editTargetMessageId = '';
     protected editDraftBefore = '';
@@ -459,9 +460,7 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
 
     protected isCancelPromptValue(value?: string): boolean { return isCancelPromptValue(value); }
 
-    protected isTurnInProgress(): boolean {
-        return this.activeTurnRun != null || this.state.status === 'running' || this.state.status === 'reasoning';
-    }
+    protected isTurnInProgress(): boolean { return this.turnRuntime.isRunning(this.state.sessionId) || this.state.status === 'running' || this.state.status === 'reasoning'; }
 
     protected isQueueModeEnabled(): boolean {
         const mode = this.options.ui?.queueMode;
@@ -1386,15 +1385,15 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
         message?: AgentTurnMessageInput,
         profile?: string
     ): Promise<void> {
-        await runTurnStreamView(this.turnStreamHost(), this.turnStreamState, prompt, assistantMessage, message, profile);
+        await runTurnStreamView(this.turnStreamHost(), this.turnRuntime.stateFor(this.state.sessionId), prompt, assistantMessage, message, profile);
     }
 
     protected consumeStreamChunk(chunk: any, assistantMessage: AgentMessage): void {
-        consumeStreamChunkView(this.turnStreamHost(), this.turnStreamState, chunk, assistantMessage);
+        consumeStreamChunkView(this.turnStreamHost(), this.turnRuntime.stateFor(this.state.sessionId), chunk, assistantMessage);
     }
 
     protected consumeStreamEventChunk(chunk: any): void {
-        consumeStreamEventChunkView(this.turnStreamHost(), chunk);
+        consumeStreamEventChunkView(this.turnStreamHost(), chunk, this.state.activeTurnSessionId);
     }
 
     protected describeStreamEventContent(eventType: string, chunk: any): string {
@@ -1459,8 +1458,8 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
         return this.surfaceAccessor?.getLastRenderedText(stripAnsi) || '';
     }
 
-    protected clearStreamingMessageState(): void {
-        clearStreamingMessageState(this.turnStreamState);
+    protected clearStreamingMessageState(sessionId = this.state.sessionId): void {
+        clearStreamingMessageState(this.turnRuntime.stateFor(sessionId));
     }
 
     protected ensureMessageAtTail(messageId: string): void {

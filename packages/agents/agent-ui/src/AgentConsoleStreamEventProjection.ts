@@ -29,7 +29,13 @@ export function qualifyTurnUiEventKey(state: { qualifyUiEventKey(key: string): s
  * projects it into the message list, activities and timeline event rows.
  */
 
-export function consumeStreamEventChunkView(host: AgentConsoleTurnStreamHost, chunk: any): void {
+export function consumeStreamEventChunkView(host: AgentConsoleTurnStreamHost, chunk: any, turnSessionId?: string): void {
+    // Keep a background turn out of the tab the user switched to; its rows are
+    // persisted by the runtime and reloaded with that session.
+    const owner = turnSessionId || host.state.activeTurnSessionId;
+    if (owner && owner !== host.state.sessionId) {
+        return;
+    }
     const eventType = String(chunk?.eventType || 'state').trim() || 'state';
     if (eventType === 'approval_requested') {
         const toolName = String(chunk?.toolName || 'tool');

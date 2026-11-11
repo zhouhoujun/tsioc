@@ -20,6 +20,7 @@ export interface AgentConsoleTurnInputHost {
         input: string;
         sessionId: string;
         status: string;
+        activeTurnSessionId?: string;
         messages: AgentMessage[];
         pendingAttachments: AgentConsolePendingAttachment[];
         providerWizard?: { open?: boolean; phase?: string } | null;
@@ -45,7 +46,9 @@ export interface AgentConsoleTurnInputHost {
     editTargetMessageId: string;
     lastEditSessionMessageId: string;
     editDismissedAt: number;
-    activeTurnRun?: Promise<void> | null;
+    /** In-flight run for the current tab's own session (tabs run independently). */
+    getActiveTurnRun?(sessionId: string): Promise<void> | undefined;
+    setActiveTurnRun?(sessionId: string, run?: Promise<void> | null): void;
     sessionService?: {
         forkSession(sessionId: string, messageId?: string): Promise<string>;
         ensureSession(): Promise<{ id?: string } | undefined>;
@@ -57,7 +60,7 @@ export interface AgentConsoleTurnInputHost {
     buildTurnMessageInput(prompt: string, attachments: AgentConsolePendingAttachment[]): AgentTurnMessageInput | undefined;
     consumePendingTurnModelProfile(): string | undefined;
     persistInputHistory(): Promise<void>;
-    clearStreamingMessageState(): void;
+    clearStreamingMessageState(sessionId?: string): void;
     updateTerminalTitle(): void;
     runTurnStream(prompt: string, assistantMessage: AgentMessage, message?: AgentTurnMessageInput, profile?: string): Promise<void>;
     ensureMessageAtTail(messageId: string): void;
@@ -121,10 +124,13 @@ export async function submitMultilineDraftView(host: AgentConsoleTurnInputHost):
             host.state.pushActivity('turn', host.state.summarize(draft));
             host.state.setMessages([...baseMessages, userMsg, asstMsg]);
             host.updateTerminalTitle();
+        const turnSessionId = host.state.sessionId;
+        host.state.activeTurnSessionId = turnSessionId;
         try {
             await host.runTurnStream(prompt, asstMsg, turnMessage, profile);
-            host.clearStreamingMessageState();
-            host.ensureMessageAtTail(asstMsg.id);
+            host.clearStreamingMessageState(turnSessionId);
+            if (turnSessionId === host.state.sessionId) {
+                host.ensureMessageAtTail(asstMsg.id);
                 if (host.state.status === 'running' || host.state.status === 'reasoning') {
                     host.state.setStatus('idle');
                 }
@@ -132,17 +138,23 @@ export async function submitMultilineDraftView(host: AgentConsoleTurnInputHost):
                 // idle; the title still has to be refreshed or it keeps saying
                 // Working after the final answer.
                 host.updateTerminalTitle();
+            }
         } catch (error: any) {
             // `error.message` alone drops the ModelFailure remedy hint and leaks the
             // raw provider string, so route model failures through the presenter.
             const message = presentModelFailure(error, host.translate) ?? (error.message || 'Unknown');
-            host.clearStreamingMessageState();
+            host.clearStreamingMessageState(turnSessionId);
+            if (turnSessionId === host.state.sessionId) {
                 host.state.setStatus('error');
                 host.state.setLastError(message);
                 host.state.pushActivity('error', message);
                 host.state.appendAssistantErrorMessage(message);
                 host.updateTerminalTitle();
+            }
         } finally {
+            if (host.state.activeTurnSessionId === turnSessionId) {
+                host.state.activeTurnSessionId = '';
+            }
             host.state.clearTurnEventScope(turnScope);
             // The runtime titles the session at turn start; refresh so the top
             // tab picks up the generated title without an unrelated /sessions.
@@ -208,7 +220,8 @@ export async function submitView(host: AgentConsoleTurnInputHost): Promise<void>
                 // order so the old submit's finally (status reset) runs first.
                 steer = true;
                 await host.interruptTurn();
-                if (host.activeTurnRun) await host.activeTurnRun.catch(() => undefined);
+                const pending = host.getActiveTurnRun?.(host.state.sessionId);
+                if (pending) await pending.catch(() => undefined);
         } else if (host.isQueueModeEnabled()) {
             host.enqueuePrompt(value);
             return;
@@ -254,7 +267,7 @@ export async function submitView(host: AgentConsoleTurnInputHost): Promise<void>
         const attachments = host.state.pendingAttachments.slice();
         const turnMessage = host.buildTurnMessageInput(prompt, attachments);
         const profile = host.consumePendingTurnModelProfile();
-        host.clearStreamingMessageState();
+        host.clearStreamingMessageState(turnSessionId);
         const turnScope = host.state.beginTurnEventScope();
         const mentionFiles = host.resolveMentionDisplayFiles(value);
         const userMetadata: Record<string, any> = {};
@@ -290,29 +303,39 @@ export async function submitView(host: AgentConsoleTurnInputHost): Promise<void>
             host.state.resetTurnTokenUsage();
             host.updateTerminalTitle();
 
+        host.state.activeTurnSessionId = turnSessionId;
         try {
             const turnRun = host.runTurnStream(prompt, assistantMessage, turnMessage, profile);
-            host.activeTurnRun = turnRun;
+            host.setActiveTurnRun?.(turnSessionId, turnRun);
             await turnRun;
         } catch (error: any) {
             const message = withErrorStack(
                 presentModelFailure(error, host.translate) ?? (error?.message || String(error || 'Unknown error')),
                 error
             );
-            host.state.setStatus('error');
-            host.state.setLastError(message);
-            host.state.pushActivity('error', message);
-            host.state.appendAssistantErrorMessage(message);
-            host.updateTerminalTitle();
+            if (turnSessionId === host.state.sessionId) {
+                host.state.setStatus('error');
+                host.state.setLastError(message);
+                host.state.pushActivity('error', message);
+                host.state.appendAssistantErrorMessage(message);
+                host.updateTerminalTitle();
+            }
         } finally {
-            host.activeTurnRun = null;
-            host.ensureMessageAtTail(assistantMessage.id);
+            if (host.state.activeTurnSessionId === turnSessionId) {
+                host.state.activeTurnSessionId = '';
+            }
+            host.setActiveTurnRun?.(turnSessionId, null);
+            if (turnSessionId === host.state.sessionId) {
+                host.ensureMessageAtTail(assistantMessage.id);
                 if (host.state.status === 'running' || host.state.status === 'reasoning') {
                     host.state.setStatus('idle');
                 }
                 host.updateTerminalTitle();
                 host.state.setTasksCount(host.scheduler.getTasks().length);
-            void host.refreshTurnArtifacts();
+            }
+            if (turnSessionId === host.state.sessionId) {
+                void host.refreshTurnArtifacts();
+            }
             host.state.clearTurnEventScope(turnScope);
             void host.refreshSessions?.();
             void host.drainQueuedPrompts(turnSessionId);

@@ -127,6 +127,42 @@ export class AgentConsoleSessionTabIsolationTest {
         };
     }
 
+    @Test('switching tabs is allowed while another turn is running')
+    async switchDuringRunningTurn() {
+        const harness = await this.createHarness(this.baseService({
+            'session-a': [],
+            'session-b': []
+        }));
+        const { instance, state } = harness;
+        try {
+            state.setStatus('running');
+            state.activeTurnSessionId = 'session-a';
+            (instance as any).turnRuntime.setRun('session-a', Promise.resolve());
+            await (instance as any).openSession('session-b');
+            await settle();
+            // The old tab's turn keeps running; the switch must not wait or
+            // show the busy notice.
+            expect(state.sessionId).toEqual('session-b');
+            expect(state.notice || '').not.toContain('Wait for the current turn');
+            expect(state.status).toEqual('idle');
+            // The other tab is idle, so it can start its own turn in parallel.
+            expect((instance as any).isTurnInProgress()).toEqual(false);
+
+            await (instance as any).openSession('session-a');
+            await settle();
+            expect(state.sessionId).toEqual('session-a');
+            expect(state.status).toEqual('running');
+            expect((instance as any).isTurnInProgress()).toEqual(true);
+        } finally {
+            state.activeTurnSessionId = '';
+            (instance as any).turnRuntime.setRun('session-a', null);
+            state.setStatus('idle');
+            harness.surface.destroy();
+            (instance as any).sessionUiState.forget('session-a');
+            (instance as any).sessionUiState.forget('session-b');
+        }
+    }
+
     @Test('a returning tab restores its own composer draft')
     async returningTabRestoresComposerDraft() {
         const harness = await this.createHarness(this.baseService({
