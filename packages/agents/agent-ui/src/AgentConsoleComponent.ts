@@ -182,7 +182,7 @@ import {
 } from './AgentConsoleSessionContentLoader';
 import { loadOlderSessionMessages } from './AgentConsoleSessionHistoryPaging';
 import { applyMissingSessionNotice, openSession as delegateOpenSession, restoreSessionModes as restoreSessionModesView, AgentConsoleSessionOpenHost } from './AgentConsoleSessionOpen';
-import { AgentConsoleSessionUiState } from './AgentConsoleSessionUiState';
+import { AgentConsoleSessionUiState, applyAgentConsoleSessionComposer } from './AgentConsoleSessionUiState';
 import { closeAgentConsoleSessionTab } from './AgentConsoleSessionTabClose';
 import { isAgentConsoleExactCommandToken, isAgentConsoleSuggestionMenu, resolveAgentConsoleMentionDisplayFiles } from './AgentConsoleSuggestions';
 import {
@@ -555,7 +555,7 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
             () => delegateOpenSession(this.sessionOpenHost(), sessionId, options),
             () => this.state.sessionId,
             () => this.surfaceAccessor?.beginRenderBatch?.(),
-            () => this.surfaceAccessor?.endRenderBatch?.()
+            () => this.surfaceAccessor?.endRenderBatch?.(), applyAgentConsoleSessionComposer.bind(null, { state: this.state })
         );
     }
 

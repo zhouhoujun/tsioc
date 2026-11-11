@@ -410,6 +410,8 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     stopTerminal?(): void;
     /** Re-evaluate the transcript layout (fullscreen vs native scrollback) and repaint. */
     restartRendering?(): void;
+    /** Drop cached panel layouts and repaint (tab restore changed state outside a dirty origin). */
+    invalidateRenderCache?(): void;
     abstract getLastRenderedLines(): string[];
     abstract getLastRenderedText(stripAnsi: (value: string) => string): string;
     abstract getClickTargets(): TerminalClickTarget[];
@@ -615,6 +617,10 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
     stopTerminal(): void {
         this.stopRendering();
         this.inputLifecycle?.stop();
+    }
+
+    invalidateRenderCache(): void {
+        this.surface?.invalidateRenderCache();
     }
 
     startRendering(): void {
@@ -1213,6 +1219,13 @@ export class TuiTerminalSurface {
 
     get lastRenderedLines(): string[] {
         return this.renderedLines.slice();
+    }
+
+    /** Drop cached layouts and repaint (used after a tab restore changes state). */
+    invalidateRenderCache(): void {
+        const renderer = this.options.renderer as { clearLayoutCache?: () => void };
+        renderer.clearLayoutCache?.();
+        this.requestRender();
     }
 
     get clickTargets(): TerminalClickTarget[] {

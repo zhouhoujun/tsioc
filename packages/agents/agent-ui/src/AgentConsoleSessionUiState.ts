@@ -22,6 +22,24 @@ export interface AgentConsoleSessionUiStateHost {
 }
 
 /**
+ * Apply a restored tab draft through the console proxy. Raw `state.setInput()`
+ * writes do not trigger the other components' effects, so the composer kept the
+ * previous placeholder until an unrelated render.
+ */
+export function applyAgentConsoleSessionComposer(
+    host: { state: AgentConsoleSessionState },
+    input: string,
+    cursor: number,
+    attachments: AgentConsolePendingAttachment[]
+): void {
+    host.state.input = input;
+    host.state.inputCursor = cursor;
+    host.state.pendingAttachments = attachments;
+    host.state.refreshInputSuggestions();
+    host.state.syncDerivedInputFocus();
+}
+
+/**
  * Each session tab behaves like its own agent TUI: scroll position, composer
  * draft/attachments, message selection and detail view are saved when leaving a
  * tab and restored when returning to it. Server-backed data (messages, plan,
@@ -56,14 +74,20 @@ export class AgentConsoleSessionUiState {
     }
 
     /** Restore the incoming tab's UI state; a first visit starts empty/following. */
-    restore(sessionId: string): void {
+    restore(
+        sessionId: string,
+        applyComposer?: (input: string, cursor: number, attachments: AgentConsolePendingAttachment[]) => void
+    ): void {
         const id = String(sessionId || '').trim();
         if (!id) {
             return;
         }
         const { state, surfaceAccessor } = this.host();
         const saved = this.snapshots.get(id);
-        this.restoreComposer(state, saved);
+        this.restoreComposer(state, saved, applyComposer);
+        // The composer value is restored outside any DOM dirty origin; cached
+        // panel layouts would otherwise repaint the previous placeholder/value.
+        surfaceAccessor?.invalidateRenderCache?.();
         this.restoreMessageSelection(state, saved);
         this.restoreViewport(state, surfaceAccessor, id, saved);
     }
@@ -84,7 +108,8 @@ export class AgentConsoleSessionUiState {
         open: () => Promise<void>,
         currentSessionId: () => string,
         begin: () => void = () => undefined,
-        end: () => void = () => undefined
+        end: () => void = () => undefined,
+        applyComposer?: (input: string, cursor: number, attachments: AgentConsolePendingAttachment[]) => void
     ): Promise<void> {
         const previousSessionId = currentSessionId();
         this.capture(previousSessionId);
@@ -101,7 +126,7 @@ export class AgentConsoleSessionUiState {
             // jumping to the saved reading row.
             try {
                 if (previousSessionId && targetSessionId && targetSessionId !== previousSessionId) {
-                    this.restore(targetSessionId);
+                    this.restore(targetSessionId, applyComposer);
                 }
             } finally {
                 // A restore failure must never leave the surface's render batch
@@ -111,9 +136,23 @@ export class AgentConsoleSessionUiState {
         }
     }
 
-    protected restoreComposer(state: AgentConsoleSessionState, saved?: AgentConsoleSessionUiSnapshot): void {
-        state.setInput(saved ? saved.input : '', saved ? saved.inputCursor : 0);
-        state.setPendingAttachments(saved ? saved.attachments : []);
+    protected restoreComposer(
+        state: AgentConsoleSessionState,
+        saved: AgentConsoleSessionUiSnapshot | undefined,
+        applyComposer?: (input: string, cursor: number, attachments: AgentConsolePendingAttachment[]) => void
+    ): void {
+        const input = saved ? saved.input : '';
+        const cursor = saved ? saved.inputCursor : 0;
+        const attachments = saved ? saved.attachments : [];
+        if (applyComposer) {
+            // The console host applies these through its reactive proxy so the
+            // composer binding re-renders; raw state writes are invisible to
+            // other component effects.
+            applyComposer(input, cursor, attachments);
+            return;
+        }
+        state.setInput(input, cursor);
+        state.setPendingAttachments(attachments);
     }
 
     protected restoreMessageSelection(state: AgentConsoleSessionState, saved?: AgentConsoleSessionUiSnapshot): void {

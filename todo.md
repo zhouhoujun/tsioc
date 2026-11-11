@@ -3380,3 +3380,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 新增 `createClientTransportFeature`（@tsdi/client）：统一 config 注册、backend、handler、client 实例、连接 interceptor 与 asDefault formatter provider；协议包只需提供 config/clientType/backend。
   - 已迁移协议客户端工厂：ws、grpc、tcp、udp、coap、mcp、amqp、kafka、nats、redis；共减少约 500 行重复代码。mqtt 客户端结构特殊，暂保留原实现。
   - Docker broker 真实回归：amqp 55、kafka 73、nats 54、redis 73、mqtt 81 passing；coap 25、tcp 65、udp 54、ws 88、grpc 17、mcp 37、client 72 passing。
+
+## 2026-11-11 真实模拟续：tab 草稿恢复“只存不画”（响应式 + 渲染缓存）
+- **现象**：真实 TUI 中在 tab A 输入 `DRAFT-A`，切到 B 再切回 A，`state.input` 已是 `DRAFT-A`，但 composer 仍显示 `Ask code or files`；`/status` 等命令输出正常。`session-tab-isolation` 既有用例只断言了 `state.input`，因此没抓到。
+- **根因（两层）**：① `AgentConsoleSessionUiState.restoreComposer` 直接调用 raw `state.setInput()`，绕过组件响应式 proxy，输入面板组件的绑定不重跑；② 渲染层仍有 `panelLayoutCache` / `subtreeLayoutCache`，tab restore 的状态写入没有可靠 dirty origin，最终帧复用了 restore 前的 composer 面板。
+- **修复**：
+  1. 新增 `applyAgentConsoleSessionComposer`（`AgentConsoleSessionUiState.ts`）：由 `AgentConsoleComponent.openSession` 通过组件 proxy 赋值 `input` / `inputCursor` / `pendingAttachments`，并刷新 suggestions / derived focus；`switchSession` 接受可选 `applyComposer` 回调。
+  2. `TuiRenderer.clearLayoutCache()` + `TuiTerminalSurface.invalidateRenderCache()` + `ConsoleTerminalSurfaceAccessor.invalidateRenderCache?()`：tab restore 时清 panel/subtree 布局缓存并请求重绘，下一帧必须重算所有面板。
+- **回归（先红后绿）**：`session-tab-isolation.spec.ts` 新增 `a returning tab restores its own composer draft`，经真实 `AgentConsoleComponent` + `TuiTerminalSurface` + TuiRenderer，断言 `screen()` 实际出现 `draft-a` / `draft-b`，而不是只看 state。旧实现 `Expected: true / Received: false`；修复后 **7 passing**。
+- **验证**：`components/console` 156 passing、`agent-ui` 2024 passing、`agent-ui` `tsc --noEmit` 0 错误、`source-size` OK、`git diff --check` 干净；`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 GATE-PASS，GATE_EXIT=0**（`gate-regression` 首次超阈值，冷却复测通过；含真实 PTY、DOM/TUI gate、production-db-integrity）。
+- **开放观察（未定位/未改）**：本轮真实 tmux 会话中，部分鼠标点击会退化为把 SGR release 序列（`\e[<0;…m`）插入 composer，而不是触发 tab 点击；`+`/`✕` 点击在不同会话中时好时坏。已排除 `invalidateRenderCache`（该现象在改动前就出现），但未拿到 `mouseHandedOff`/输入解码器的确定性证据，未擅自修改鼠标协议。草稿恢复改用真实 component + surface 单测复验，不依赖鼠标。

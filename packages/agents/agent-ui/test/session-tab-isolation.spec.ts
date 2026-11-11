@@ -98,7 +98,8 @@ export class AgentConsoleSessionTabIsolationTest {
             scrollViewportToRow: (row: number) => surface.scrollViewportToRow(row),
             scrollViewportToOffset: (offset: number) => surface.scrollViewportToOffset(offset),
             queueViewportOffset: (offset: number) => surface.queueViewportOffset(offset),
-            scrollViewportToEdge: (edge: 'start' | 'end') => surface.scrollViewportToEdge(edge)
+            scrollViewportToEdge: (edge: 'start' | 'end') => surface.scrollViewportToEdge(edge),
+            invalidateRenderCache: () => surface.invalidateRenderCache()
         };
         return {
             ref, instance, state, surface, buffer,
@@ -124,6 +125,44 @@ export class AgentConsoleSessionTabIsolationTest {
                 { id: 'session-b', title: 'Beta', workspace: '/work', updatedAt: 1 }
             ]
         };
+    }
+
+    @Test('a returning tab restores its own composer draft')
+    async returningTabRestoresComposerDraft() {
+        const harness = await this.createHarness(this.baseService({
+            'session-a': [],
+            'session-b': []
+        }));
+        const { instance, state } = harness;
+        try {
+            state.setInput('draft-a', 7);
+            await (instance as any).openSession('session-b');
+            await settle();
+            harness.surface.render();
+            expect(state.input).toEqual('');
+            expect(harness.screen().some(line => line.includes('draft-a'))).toEqual(false);
+
+            state.setInput('draft-b', 7);
+            await (instance as any).openSession('session-a');
+            await settle();
+            harness.surface.render();
+            expect(state.input).toEqual('draft-a');
+            expect(state.inputCursor).toEqual(7);
+            // The restored draft must be painted, not only stored in state.
+            expect(harness.screen().some(line => line.includes('draft-a'))).toEqual(true);
+
+            await (instance as any).openSession('session-b');
+            await settle();
+            harness.surface.render();
+            expect(state.input).toEqual('draft-b');
+            expect(state.inputCursor).toEqual(7);
+            expect(harness.screen().some(line => line.includes('draft-b'))).toEqual(true);
+        } finally {
+            harness.surface.destroy();
+            (instance as any).sessionUiState.forget('session-a');
+            (instance as any).sessionUiState.forget('session-b');
+            state.setInput('', 0);
+        }
     }
 
     @Test('a returning tab queues its saved scroll row before the restore frame ends')

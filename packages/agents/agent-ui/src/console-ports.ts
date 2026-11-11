@@ -25,6 +25,8 @@ export interface AgentConsolePagerStatusCopy {
 export abstract class ConsoleTerminalSurfaceAccessor {
     /** Re-evaluate the transcript layout (fullscreen vs native scrollback) and repaint. */
     restartRendering?(): void;
+    /** Drop cached panel layouts and repaint (tab restore changed state outside a dirty origin). */
+    invalidateRenderCache?(): void;
     /** Coalesce intermediate renders (e.g. a session switch) into one final frame. */
     beginRenderBatch?(): void;
     endRenderBatch?(): void;

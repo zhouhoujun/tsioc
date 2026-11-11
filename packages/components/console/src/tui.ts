@@ -114,6 +114,17 @@ export class TuiRenderer extends ConsoleRenderer {
         this.panelLayoutCache.clear();
     }
 
+    /**
+     * Drop panel/subtree layouts after a state restore (tab switch) that changed
+     * content without a reliable dirty origin. The next frame must recompute even
+     * the panels whose subtree cache looked unchanged.
+     */
+    clearLayoutCache(): void {
+        this.subtreeLayoutCache.clear();
+        this.panelLayoutCache.clear();
+        this.subtreeLayoutWidth = undefined;
+    }
+
     /** Deterministic time source for tests and hosts that own the clock. */
     setAnimationTimeProvider(provider: () => number): void {
         this.animationNow = provider;
