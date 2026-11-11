@@ -355,7 +355,15 @@ toolbar, palette, inspector and status bar follow the admin shell.
 - A shared HTTP interceptor (`adminUnauthorizedInterceptor`) redirects to the
   login page as soon as any admin API returns `401`, not only on navigation.
 - `GET /api/gateway-admin/session` returns `{ authenticated, user, authEnabled }`
-  and is what the route guard checks; a missing user redirects to login.
+  and is what the route guard checks. In `service` mode the token is exchanged
+  for user information through the auth service userinfo endpoint
+  (`<authServiceUrl>/auth/userinfo`, override with `auth.userInfoUrl`); the
+  result is cached briefly (30s).
+- When the token or the resolved user is missing, the session endpoint responds
+  `302` to `<prefix>/login.html?redirect=<return-url>` instead of a JSON `401`,
+  so an expired/missing OAuth session lands directly on the login page. Other
+  protected API calls still return `401`, which the HTTP interceptor maps to the
+  same login redirect.
 - The login page links to `/admin/auth/login`, which starts OIDC, OAuth2 or the
   external auth-service login flow according to `auth.mode`.
 

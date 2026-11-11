@@ -254,7 +254,29 @@ describe('gateway admin auth via a separate oidc-auth service', () => {
                 authServiceUrl: 'http://auth.internal:3000',
                 sessionSecret: 'service-secret',
                 sessionIssuer: 'tsioc-oidc-auth',
-                requiredRoles: ['gateway-admins']
+                requiredRoles: ['gateway-admins'],
+                fetchImpl: async (input, init) => {
+                    const url = String(input);
+                    if (!url.endsWith('/auth/userinfo')) {
+                        return new Response(JSON.stringify({ error: 'not found' }), { status: 404 });
+                    }
+                    const header = new Headers(init?.headers as HeadersInit | undefined).get('authorization') || '';
+                    const token = header.replace(/^Bearer /, '');
+                    try {
+                        const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'));
+                        if (payload.iss !== 'tsioc-oidc-auth') {
+                            return new Response(JSON.stringify({ error: 'invalid issuer' }), { status: 401 });
+                        }
+                        return new Response(JSON.stringify({
+                            sub: payload.sub,
+                            email: payload.email,
+                            name: payload.name,
+                            roles: payload.roles
+                        }), { status: 200, headers: { 'content-type': 'application/json' } });
+                    } catch {
+                        return new Response(JSON.stringify({ error: 'invalid token' }), { status: 401 });
+                    }
+                }
             }
         });
     });
@@ -285,6 +307,22 @@ describe('gateway admin auth via a separate oidc-auth service', () => {
             headers: { cookie: `oidc_session=${token(['gateway-admins'], 'other-issuer')}` }
         });
         expect(wrongIssuer.status).toBe(401);
+    });
+
+    it('redirects a missing session to the browser login page', async () => {
+        const response = await fetch(`${base}/api/gateway-admin/session`, { redirect: 'manual' });
+        expect(response.status).toBe(302);
+        expect(response.headers.get('location')).toBe('/admin/login.html?redirect=%2Fadmin%2F');
+    });
+
+    it('resolves the session user from the OAuth userinfo endpoint', async () => {
+        const response = await fetch(`${base}/api/gateway-admin/session`, {
+            headers: { cookie: `oidc_session=${token(['gateway-admins'])}` }
+        });
+        expect(response.status).toBe(200);
+        const body = await response.json() as { authenticated: boolean; user?: { email?: string } };
+        expect(body.authenticated).toBe(true);
+        expect(body.user?.email).toBe('admin@example.com');
     });
 
     it('redirects login to the separate auth service', async () => {

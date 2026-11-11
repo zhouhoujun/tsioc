@@ -3574,3 +3574,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 通配 `**` 会渲染注册的 NotFound 组件；lazy 父路由子路由不匹配时正确回落到顶层 `**`。
   - 覆盖嵌套 outlet、路由切换替换内容、嵌套/顶层 `**` NotFound；router 16 passing。
   - microservice admin 改为 AppComponent(outlet) → 受保护 Layout(outlet) → dashboard/routes/rules/not-found 懒加载页面，共享状态放 `GatewayAdminState` 服务；`#/unknown` 显示 404 页面。
+- Admin session 走 OAuth userinfo（2026-11-11）：
+  - `mode: service` 用 token 调 `<authServiceUrl>/auth/userinfo`（可用 `userInfoUrl` 覆盖）解析用户，30s 缓存；token/用户为空返回 undefined。
+  - `/api/gateway-admin/session` 在 token 或用户为空时直接 302 到 `<prefix>/login.html?redirect=...`；其他受保护 API 仍返回 401 由 HTTP 拦截器跳登录。
+  - 自定义 prefix 自动推导登录页与默认回跳地址；新增 userinfo 与实际 302 回归测试。

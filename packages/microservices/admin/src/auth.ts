@@ -99,6 +99,14 @@ export interface GatewayAdminAuthOptions {
     sessionCookie?: string;
     /** External login URL for `mode: 'service'`. Default `<authServiceUrl>/auth/login`. */
     loginUrl?: string;
+    /**
+     * OAuth2/OIDC userinfo endpoint used by `mode: 'service'` to resolve the
+     * signed-in user from the access/session token. Defaults to
+     * `<authServiceUrl>/auth/userinfo`.
+     */
+    userInfoUrl?: string;
+    /** Browser login page redirected to when the session has no token/user. */
+    loginPageUrl?: string;
     /** External logout URL for `mode: 'service'`. Default `<authServiceUrl>/auth/logout`. */
     logoutUrl?: string;
     /** Required local roles for `mode: 'service'`. */
@@ -207,6 +215,8 @@ export class GatewayAdminAuthService {
     private discoveryCache?: { value: OidcDiscovery; expiresAt: number };
     private jwksCache?: { keys: any[]; expiresAt: number };
     private readonly fetchImpl: typeof fetch;
+    /** Short-lived userinfo cache; avoids one OAuth round-trip per API call. */
+    private readonly userInfoCache = new Map<string, { session: BrowserSession; expiresAt: number }>();
 
     constructor(
         @Optional() @Inject(GATEWAY_ADMIN_AUTH_OPTIONS) options?: GatewayAdminAuthOptions,
@@ -243,6 +253,14 @@ export class GatewayAdminAuthService {
 
     get logoutPath(): string {
         return this.options.logoutPath ?? '/admin/auth/logout';
+    }
+
+    get loginPageUrl(): string {
+        return this.options.loginPageUrl ?? '/admin/login.html';
+    }
+
+    get defaultReturnTo(): string {
+        return this.options.defaultReturnTo ?? '/admin/';
     }
 
     get apiPrefix(): string {
@@ -529,7 +547,48 @@ export class GatewayAdminAuthService {
         const cookieName = this.options.sessionCookie || 'oidc_session';
         const header = this.header(request, 'authorization');
         const token = header?.startsWith('Bearer ') ? header.slice(7).trim() : this.getCookie(request, cookieName);
-        if (!token || !this.jwt) {
+        if (!token) {
+            return undefined;
+        }
+        const userInfoUrl = this.serviceUserInfoUrl();
+        if (userInfoUrl) {
+            const cached = this.userInfoCache.get(token);
+            if (cached && cached.expiresAt > Date.now()) {
+                return cached.session;
+            }
+            const info = await this.fetchUserInfo(userInfoUrl, token);
+            if (!info) {
+                return undefined;
+            }
+            const user = {
+                sub: String(info.sub || info.email || ''),
+                email: typeof info.email === 'string' ? info.email : undefined,
+                name: typeof info.name === 'string' ? info.name : undefined,
+                roles: Array.isArray(info.roles) ? info.roles : [],
+                groups: Array.isArray(info.groups) ? info.groups : (Array.isArray(info.roles) ? info.roles : [])
+            };
+            try {
+                this.authorize(user);
+            } catch {
+                return undefined;
+            }
+            const session: BrowserSession = {
+                sub: user.sub,
+                email: user.email,
+                name: user.name,
+                groups: this.groupsOf(user),
+                exp: Date.now() + 60_000
+            };
+            if (this.userInfoCache.size > 200) {
+                const oldest = this.userInfoCache.keys().next().value;
+                if (oldest !== undefined) {
+                    this.userInfoCache.delete(oldest);
+                }
+            }
+            this.userInfoCache.set(token, { session, expiresAt: Date.now() + 30_000 });
+            return session;
+        }
+        if (!this.jwt) {
             return undefined;
         }
         try {
@@ -556,6 +615,51 @@ export class GatewayAdminAuthService {
                 name: user.name,
                 groups: this.groupsOf(user),
                 exp: Number(claims.exp ? claims.exp * 1000 : Date.now() + 60_000)
+            };
+        } catch {
+            return undefined;
+        }
+    }
+
+    /** Resolve the OAuth2/OIDC userinfo endpoint for service-mode tokens. */
+    private serviceUserInfoUrl(): string | undefined {
+        if (this.options.userInfoUrl) {
+            return this.options.userInfoUrl;
+        }
+        if (this.options.authServiceUrl) {
+            return `${this.options.authServiceUrl.replace(/\/+$/, '')}/auth/userinfo`;
+        }
+        if (this.options.loginUrl) {
+            try {
+                return new URL('/auth/userinfo', this.options.loginUrl).toString();
+            } catch {
+                return undefined;
+            }
+        }
+        return undefined;
+    }
+
+    private async fetchUserInfo(url: string, token: string): Promise<{ sub?: string; email?: string; name?: string; roles?: string[]; groups?: string[] } | undefined> {
+        try {
+            const response = await this.fetchImpl(url, {
+                headers: {
+                    authorization: `Bearer ${token}`,
+                    accept: 'application/json'
+                }
+            });
+            if (!response.ok) {
+                return undefined;
+            }
+            const body = await response.json() as Record<string, unknown>;
+            if (!body || body.error || (!body.sub && !body.email)) {
+                return undefined;
+            }
+            return {
+                sub: typeof body.sub === 'string' ? body.sub : undefined,
+                email: typeof body.email === 'string' ? body.email : undefined,
+                name: typeof body.name === 'string' ? body.name : undefined,
+                roles: Array.isArray(body.roles) ? body.roles.map(String) : undefined,
+                groups: Array.isArray(body.groups) ? body.groups.map(String) : undefined
             };
         } catch {
             return undefined;
@@ -757,7 +861,10 @@ export class GatewayAdminAuthInterceptor implements RequestInterceptor<HttpReque
             return from(this.auth.authenticate(context)).pipe(
                 mergeMap(user => {
                     if (!user) {
-                        throw new UnauthorizedException('Sign in is required for the gateway admin', 401);
+                        // A browser is asking for the current session: send it to
+                        // the login page instead of returning a JSON 401 payload.
+                        this.redirectToLogin(context);
+                        return EMPTY;
                     }
                     this.writeJson(context, 200, {
                         authenticated: true,
@@ -784,6 +891,19 @@ export class GatewayAdminAuthInterceptor implements RequestInterceptor<HttpReque
     private finishRedirect(context: RequestContext): void {
         const adapter = context.get(RestfulRequestAdapter);
         adapter?.sendResponse('');
+    }
+
+    /** Redirect a missing token/user to the browser login page. */
+    private redirectToLogin(context: RequestContext): void {
+        const adapter = context.get(RestfulRequestAdapter);
+        if (!adapter) {
+            return;
+        }
+        const redirect = encodeURIComponent(this.auth.defaultReturnTo);
+        adapter.setStatus(302);
+        adapter.setHeader('location', `${this.auth.loginPageUrl}?redirect=${redirect}`);
+        adapter.setPayload('');
+        adapter.sendResponse('');
     }
 
     private writeJson(context: RequestContext, status: number, body: any): void {

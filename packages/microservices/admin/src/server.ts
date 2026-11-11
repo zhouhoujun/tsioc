@@ -89,7 +89,11 @@ export function createGatewayAdminServerModule(options: GatewayAdminServerOption
         useGateway({ routes: options.routes ?? [] })
     ];
     if (options.auth && (options.auth.mode === 'oidc' || options.auth.mode === 'oauth2' || options.auth.mode === 'service')) {
-        features.unshift(useGatewayAdminAuth(options.auth));
+        features.unshift(useGatewayAdminAuth({
+            ...options.auth,
+            loginPageUrl: options.auth.loginPageUrl ?? `${prefix}/login.html`,
+            defaultReturnTo: options.auth.defaultReturnTo ?? `${prefix}/`
+        }));
     }
     if (uiRoot) {
         features.push(useGatewayAdminUi({ root: uiRoot, prefix }));
