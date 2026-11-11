@@ -20,5 +20,9 @@ export const WORKFLOW_ADMIN_ROUTES: Routes = [
         canActivate: [WorkflowAdminAuthGuard],
         loadChildren: () => import('./pages/designer.routes').then(module => module.WORKFLOW_DESIGNER_ROUTES)
     },
-    { path: '**', redirectTo: '/' }
+    {
+        path: '**',
+        data: { public: true, notFound: true },
+        loadComponent: () => import('./pages/not-found.page').then(module => module.WorkflowAdminNotFoundPageComponent)
+    }
 ];

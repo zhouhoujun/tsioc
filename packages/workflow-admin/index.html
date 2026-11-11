@@ -145,6 +145,41 @@
         .wa-divider { display: flex; align-items: center; gap: 10px; color: #64748b; font-size: 11px; margin: 18px 0; }
         .wa-divider::before, .wa-divider::after { content: ""; flex: 1; height: 1px; background: #334155; }
         .wa-error { min-height: 18px; margin-top: 10px; color: #fca5a5; font-size: 12px; }
+        .wa-not-found {
+            height: 100%;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            background: radial-gradient(circle at 20% 10%, #1e3a5f, #0b1220 55%);
+        }
+        .wa-not-found-card {
+            width: min(440px, calc(100vw - 32px));
+            padding: 30px;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            background: rgba(15, 23, 42, 0.94);
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+            text-align: center;
+        }
+        .wa-not-found-code { color: #60a5fa; font-size: 52px; font-weight: 800; line-height: 1; }
+        .wa-not-found-card h1 { margin: 14px 0 8px; font-size: 20px; }
+        .wa-not-found-card p { margin: 0; color: #94a3b8; font-size: 12px; }
+        .wa-not-found-actions { display: flex; gap: 8px; justify-content: center; margin-top: 22px; }
+        .wa-not-found-actions button {
+            padding: 9px 12px;
+            border: 1px solid #475569;
+            border-radius: 8px;
+            background: #0b1220;
+            color: #e2e8f0;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .wa-not-found-actions button.wa-primary {
+            border-color: #2563eb;
+            background: #2563eb;
+            color: #ffffff;
+            font-weight: 600;
+        }
         noscript {
             padding: 18px;
             color: #fca5a5;
