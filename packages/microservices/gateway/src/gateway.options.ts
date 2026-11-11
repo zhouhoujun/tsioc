@@ -147,7 +147,7 @@ export interface GatewayLoadBalanceOptions {
     /**
      * endpoint selection strategy.
      */
-    strategy?: 'random' | 'round-robin' | 'weighted' | 'consistent-hash';
+    strategy?: 'random' | 'round-robin' | 'weighted' | 'weighted-round-robin' | 'consistent-hash' | 'least-connections';
     /**
      * use a request header as consistent hash key.
      */
@@ -156,6 +156,19 @@ export interface GatewayLoadBalanceOptions {
      * use a query parameter as consistent hash key.
      */
     hashQuery?: string;
+    /**
+     * number of additional endpoints tried after a retryable upstream failure.
+     * Default 0 (no failover).
+     */
+    retries?: number;
+    /**
+     * HTTP status codes considered retryable. Default [502, 503, 504].
+     */
+    retryOn?: number[];
+    /**
+     * HTTP methods eligible for failover. Default GET/HEAD/OPTIONS.
+     */
+    retryMethods?: string[];
 }
 
 export interface GatewayConfigSyncOptions {

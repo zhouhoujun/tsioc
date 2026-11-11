@@ -12,6 +12,7 @@ import { getClientToken } from '../../client/src/tokens';
 import { AbstractClient } from '../../client/src/AbstractClient';
 import { GatewayRuntime } from './gateway.runtime';
 import { GatewayLifecycle } from './gateway.lifecycle';
+import { GatewayLoadBalancer } from './load-balancer';
 import { HttpAuthService, HttpAuthOptions, HmacSignatureService } from '@tsdi/security';
 import { Tracer } from '../../tracing/src/tracer';
 import { Logger } from '@tsdi/logger';
@@ -62,6 +63,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
     private logger: Logger | null;
     private tracer: Tracer | null;
     private injector: Injector;
+    private loadBalancer: GatewayLoadBalancer;
 
     constructor(
         @Inject(GATEWAY_OPTIONS) private options: GatewayOptions,
@@ -79,6 +81,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         this.authService = this.injector.get(HttpAuthService, null) ?? new HttpAuthService();
         this.signatureService = this.injector.get(HmacSignatureService, null) ?? new HmacSignatureService();
         this.logger = this.injector.get(Logger, null) ?? null;
+        this.loadBalancer = new GatewayLoadBalancer(this.runtime);
         this.lifecycle?.start();
     }
 
@@ -256,7 +259,73 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
     }
 
     private async forwardHttp(route: ResolvedGatewayRoute, request: HttpRequestMessage, traceHeaders: Record<string, string>): Promise<GatewayForwardResult> {
-        const target = await this.resolveTarget(route, request);
+        const retries = Math.max(route.loadBalance?.retries ?? 0, 0);
+        const canRetry = this.isRetryableMethod(route, request);
+        const attempts = canRetry ? retries + 1 : 1;
+        const excluded = new Set<string>();
+        let lastError: any;
+        let lastResult: GatewayForwardResult | undefined;
+
+        for (let attempt = 0; attempt < attempts; attempt++) {
+            let target: { baseUrl: string; endpoint?: ServiceEndpoint };
+            try {
+                target = await this.resolveTarget(route, request, excluded);
+            } catch (error) {
+                if (lastResult) {
+                    return lastResult;
+                }
+                throw error;
+            }
+            if (!target) {
+                if (lastResult) {
+                    return lastResult;
+                }
+                if (lastError) {
+                    throw lastError;
+                }
+                throw Object.assign(new Error(`Service '${route.service}' has no available endpoint`), {
+                    statusCode: 503,
+                    statusMessage: 'Service Unavailable'
+                });
+            }
+            if (target.endpoint) {
+                excluded.add(target.endpoint.id);
+                this.runtime.beginEndpointRequest(target.endpoint.id);
+            }
+            try {
+                const result = await this.forwardHttpTarget(route, request, traceHeaders, target);
+                if (attempt < attempts - 1 && this.isRetryableStatus(route, result.status)) {
+                    lastResult = result;
+                    continue;
+                }
+                return result;
+            } catch (error: any) {
+                lastError = error;
+                if (attempt >= attempts - 1) {
+                    throw error;
+                }
+            } finally {
+                if (target.endpoint) {
+                    this.runtime.endEndpointRequest(target.endpoint.id);
+                }
+            }
+        }
+
+        if (lastResult) {
+            return lastResult;
+        }
+        throw lastError ?? Object.assign(new Error(`Service '${route.service}' is unavailable`), {
+            statusCode: 503,
+            statusMessage: 'Service Unavailable'
+        });
+    }
+
+    private async forwardHttpTarget(
+        route: ResolvedGatewayRoute,
+        request: HttpRequestMessage,
+        traceHeaders: Record<string, string>,
+        target: { baseUrl: string; endpoint?: ServiceEndpoint }
+    ): Promise<GatewayForwardResult> {
         const baseUrl = target.baseUrl;
         const upstreamUrl = this.buildUpstreamUrl(baseUrl, route, request);
 
@@ -311,26 +380,62 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         }
     }
 
+    private isRetryableMethod(route: ResolvedGatewayRoute, request: HttpRequestMessage): boolean {
+        const methods = route.loadBalance?.retryMethods ?? ['GET', 'HEAD', 'OPTIONS'];
+        return methods.map(method => method.toUpperCase()).includes((request.method || 'GET').toUpperCase());
+    }
+
+    private isRetryableStatus(route: ResolvedGatewayRoute, status: number): boolean {
+        const allowed = route.loadBalance?.retryOn ?? [502, 503, 504];
+        return allowed.includes(status);
+    }
+
     private async forwardMicroservice(route: ResolvedGatewayRoute, request: HttpRequestMessage, traceHeaders: Record<string, string>): Promise<GatewayForwardResult> {
-        const client = this.resolveClient(route);
+        const endpoint = await this.resolveMicroserviceEndpoint(route, request);
+        const client = this.resolveClient(route, endpoint);
         const pattern = route.pattern ?? this.resolveGatewayPattern(route, request);
         const payload = route.payload ? route.payload(request) : this.buildMicroservicePayload(request, route, traceHeaders);
-        const response = await lastValueFrom(client.send(pattern as any, {
-            payload,
-            timeout: route.timeout ?? 10_000
-        } as any));
-        const normalized = response && typeof response === 'object' && 'payload' in response
-            ? response.payload
-            : response;
-        return {
-            status: 200,
-            statusText: 'OK',
-            payload: normalized,
-            meta: {
-                endpoint: route.clientName ?? Transport[route.transport ?? Transport.HTTP],
-                outcome: 'upstream'
+        if (endpoint) {
+            this.runtime.beginEndpointRequest(endpoint.id);
+        }
+        try {
+            const response = await lastValueFrom(client.send(pattern as any, {
+                payload,
+                timeout: route.timeout ?? 10_000
+            } as any));
+            const normalized = response && typeof response === 'object' && 'payload' in response
+                ? response.payload
+                : response;
+            return {
+                status: 200,
+                statusText: 'OK',
+                payload: normalized,
+                meta: {
+                    endpoint: endpoint?.address ?? endpoint?.id ?? route.clientName ?? Transport[route.transport ?? Transport.HTTP],
+                    outcome: 'upstream'
+                }
+            };
+        } finally {
+            if (endpoint) {
+                this.runtime.endEndpointRequest(endpoint.id);
             }
-        };
+        }
+    }
+
+    private async resolveMicroserviceEndpoint(route: ResolvedGatewayRoute, request: HttpRequestMessage): Promise<ServiceEndpoint | null> {
+        if (!this.discovery) {
+            return null;
+        }
+        const endpoints = (await this.discovery.discover(route.service))
+            .filter(endpoint => (endpoint.status ?? 'UP') !== 'DOWN')
+            .filter(endpoint => this.runtime.isEndpointAvailable(endpoint));
+        const candidates = this.filterCanaryEndpoints(route, endpoints);
+        const pool = candidates.length > 0 ? candidates : endpoints;
+        if (!pool.length) {
+            return null;
+        }
+        const hashKey = GatewayLoadBalancer.resolveHashKey(route as any, request, name => this.getHeaderValue(request, name));
+        return this.loadBalancer.select(route as any, pool, hashKey);
     }
 
     private sendResponse(
@@ -432,7 +537,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         return headers;
     }
 
-    private async resolveTarget(route: ResolvedGatewayRoute, request: HttpRequestMessage): Promise<{ baseUrl: string; endpoint?: ServiceEndpoint }> {
+    private async resolveTarget(route: ResolvedGatewayRoute, request: HttpRequestMessage, excluded?: Set<string>): Promise<{ baseUrl: string; endpoint?: ServiceEndpoint }> {
         if (route.targetUrl) {
             return {
                 baseUrl: route.targetUrl
@@ -446,10 +551,12 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         }
         const endpoints = (await this.discovery.discover(route.service))
             .filter(endpoint => (endpoint.status ?? 'UP') !== 'DOWN')
-            .filter(endpoint => this.runtime.isEndpointAvailable(endpoint));
+            .filter(endpoint => this.runtime.isEndpointAvailable(endpoint))
+            .filter(endpoint => !excluded?.has(endpoint.id));
         const candidates = this.filterCanaryEndpoints(route, endpoints);
         const pool = candidates.length > 0 ? candidates : endpoints;
-        const endpoint = this.selectEndpoint(route, request, pool);
+        const hashKey = GatewayLoadBalancer.resolveHashKey(route as any, request, name => this.getHeaderValue(request, name));
+        const endpoint = this.loadBalancer.select(route as any, pool, hashKey);
         if (!endpoint) {
             throw Object.assign(new Error(`Service '${route.service}' not found`), {
                 statusCode: 503,
@@ -469,59 +576,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         };
     }
 
-    private selectEndpoint(route: ResolvedGatewayRoute, request: HttpRequestMessage, endpoints: ServiceEndpoint[]): ServiceEndpoint | null {
-        if (!endpoints.length) {
-            return null;
-        }
-        const strategy = route.loadBalance?.strategy ?? 'round-robin';
-        if (strategy === 'random') {
-            return endpoints[Math.floor(Math.random() * endpoints.length)];
-        }
-        if (strategy === 'weighted') {
-            const total = endpoints.reduce((sum, ep) => sum + (ep.weight ?? route.weight ?? 1), 0);
-            let pointer = Math.random() * total;
-            for (const endpoint of endpoints) {
-                pointer -= endpoint.weight ?? route.weight ?? 1;
-                if (pointer <= 0) {
-                    return endpoint;
-                }
-            }
-            return endpoints[0];
-        }
-        if (strategy === 'consistent-hash') {
-            const hashKey = this.resolveHashKey(route, request);
-            const index = this.hashToIndex(hashKey, endpoints.length);
-            return endpoints[index];
-        }
-        const index = this.runtime.nextRoundIndex(`${route.service}:${route.path}`, endpoints.length);
-        return endpoints[index];
-    }
-
-    private resolveHashKey(route: ResolvedGatewayRoute, request: HttpRequestMessage): string {
-        const header = route.loadBalance?.hashHeader;
-        if (header) {
-            const value = this.getHeaderValue(request, header);
-            if (value) {
-                return value;
-            }
-        }
-        const queryKey = route.loadBalance?.hashQuery;
-        if (queryKey && request.query?.[queryKey]) {
-            return String(request.query[queryKey]);
-        }
-        return this.getClientIp(request) || request.url || route.path;
-    }
-
-    private hashToIndex(value: string, size: number): number {
-        let hash = 0;
-        for (let i = 0; i < value.length; i++) {
-            hash = ((hash << 5) - hash) + value.charCodeAt(i);
-            hash |= 0;
-        }
-        return Math.abs(hash) % Math.max(size, 1);
-    }
-
-    private resolveClient(route: ResolvedGatewayRoute): AbstractClient<any, any> {
+    private resolveClient(route: ResolvedGatewayRoute, endpoint?: ServiceEndpoint | null): AbstractClient<any, any> {
         const transport = route.transport;
         if (transport == null || transport === Transport.HTTP) {
             throw Object.assign(new Error(`Gateway route '${route.path}' requires non-HTTP transport to resolve a client`), {
@@ -529,11 +584,12 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
                 statusMessage: 'Gateway Misconfigured'
             });
         }
+        const endpointClientName = endpoint?.metadata?.clientName;
         const token = getClientToken({
             transport,
             side: TransferSide.client,
             microservice: true,
-            name: route.clientName,
+            name: endpointClientName ?? route.clientName,
             features: {}
         } as any);
         const client = this.injector.get(token, null);
@@ -843,7 +899,16 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             return true;
         }
         const base = this.getHeaderValue(request, 'x-request-id') ?? this.getClientIp(request) ?? request.url ?? '/';
-        return this.hashToIndex(base, 100) < Math.max(0, Math.min(100, canary.percentage));
+        return this.hashToPercent(base) < Math.max(0, Math.min(100, canary.percentage));
+    }
+
+    private hashToPercent(value: string): number {
+        let hash = 0;
+        for (let i = 0; i < value.length; i++) {
+            hash = ((hash << 5) - hash) + value.charCodeAt(i);
+            hash |= 0;
+        }
+        return Math.abs(hash) % 100;
     }
 
     private filterCanaryEndpoints(route: ResolvedGatewayRoute, endpoints: ServiceEndpoint[]): ServiceEndpoint[] {

@@ -89,6 +89,70 @@ describe('Gateway', () => {
         expect(String(sent.sentPayload.url)).toContain('/users/profile');
     });
 
+    it('fails over to the next endpoint for retryable GET requests', async () => {
+        const discovery = new InMemoryServiceDiscovery();
+        await discovery.register({ name: 'failover-service', id: 'node-a', address: 'http://node-a.internal' });
+        await discovery.register({ name: 'failover-service', id: 'node-b', address: 'http://node-b.internal' });
+
+        const sent: any = {};
+        const adapter = {
+            setStatus(code: number, message?: string) { sent.status = code; sent.statusMessage = message; return this; },
+            setHeader(name: string, value: string) { (sent.headers ??= {})[name] = value; return this; },
+            setPayload(payload: any) { sent.payload = payload; return this; },
+            sendResponse(payload: any) { sent.sentPayload = payload; }
+        };
+        const context = createContext(adapter);
+        (context as any).set(require('../../http/src/server').HttpMessageAdapter, adapter);
+        (context as any).set(require('../../http/src/server').HTTP_RESPONSE, sent);
+
+        const interceptor = new GatewayInterceptor({
+            routes: [{
+                path: '/failover',
+                service: 'failover-service',
+                loadBalance: { strategy: 'round-robin', retries: 1 }
+            }]
+        }, discovery as any, null as any, new GatewayRuntime(), null as any, { get: () => null } as any);
+
+        const originalFetch = globalThis.fetch;
+        let calls = 0;
+        globalThis.fetch = (async (url: any) => {
+            calls += 1;
+            if (calls === 1) {
+                throw new Error('node-a unavailable');
+            }
+            return {
+                status: 200,
+                statusText: 'OK',
+                headers: new Headers({ 'content-type': 'application/json' }),
+                async json() { return { ok: true, url }; },
+                async text() { return JSON.stringify({ ok: true, url }); }
+            } as any;
+        }) as any;
+
+        const request = {
+            url: '/failover',
+            method: 'GET',
+            headers: {},
+            socket: { remoteAddress: '127.0.0.1' }
+        };
+
+        try {
+            await new Promise<void>((resolve, reject) => {
+                interceptor.intercept(request as any, { handle: () => of(null) } as any, context).subscribe({
+                    next: () => resolve(),
+                    error: reject,
+                    complete: () => resolve()
+                });
+            });
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+
+        expect(calls).toBe(2);
+        expect(sent.status).toBe(200);
+        expect(String(sent.sentPayload.url)).toContain('node-b.internal');
+    });
+
     it('applies route-level rate limit', async () => {
         const discovery = new InMemoryServiceDiscovery();
         await discovery.register({

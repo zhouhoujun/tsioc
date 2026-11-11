@@ -3400,3 +3400,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `ApiRateLimiter` 统一按三维度校验：短窗口限流、长窗口配额、最小间隔降频；全部通过后才计数，避免被拒绝请求消耗配额；新增 `rejection()` 返回具体消息与 `Retry-After` 建议值。
   - gateway 路由级/全局限流与 service 路由级限流统一使用 `rejection()` 生成 429 消息和 `Retry-After`。
   - 回归：service 52、gateway 29 passing；新增 quota、throttle、限流+配额组合用例。
+- Gateway 专业负载均衡与多协议集成（2026-11-11）：
+  - 新增 `GatewayLoadBalancer`：支持 random、round-robin、smooth weighted round-robin、consistent-hash、least-connections；选择状态与 active 请求数放在 `GatewayRuntime`，多路由共享健康/连接状态。
+  - HTTP 路由支持 failover：`loadBalance.retries`、`retryOn`（默认 502/503/504）、`retryMethods`（默认 GET/HEAD/OPTIONS）；失败端点加入本次排除集合，按负载策略继续选择下一个端点。
+  - 非 HTTP 微服务路由也接入 discovery + 同一负载均衡器；endpoint 的 `metadata.clientName` 可映射到已注册协议客户端，并在转发期间维护 least-connections 计数。
+  - 新增 `test/load-balancer.spec.ts` 与 gateway failover 回归（首端点失败后自动切到 node-b）。
+  - 回归：gateway 33 passing；gateway `tsc --noUnusedLocals` 无命中。

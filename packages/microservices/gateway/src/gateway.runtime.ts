@@ -20,6 +20,7 @@ export class GatewayRuntime {
     private dynamicOptions: Partial<GatewayOptions> = {};
     private evictedEndpoints = new Map<string, number>();
     private nonces = new Map<string, number>();
+    private activeRequests = new Map<string, number>();
 
     getCached(key: string): any | undefined {
         const entry = this.cache.get(key);
@@ -120,6 +121,23 @@ export class GatewayRuntime {
 
     clearEndpointEviction(endpointId: string): void {
         this.evictedEndpoints.delete(endpointId);
+    }
+
+    beginEndpointRequest(endpointId: string): void {
+        this.activeRequests.set(endpointId, (this.activeRequests.get(endpointId) ?? 0) + 1);
+    }
+
+    endEndpointRequest(endpointId: string): void {
+        const current = this.activeRequests.get(endpointId) ?? 0;
+        if (current <= 1) {
+            this.activeRequests.delete(endpointId);
+        } else {
+            this.activeRequests.set(endpointId, current - 1);
+        }
+    }
+
+    getEndpointActiveRequests(endpointId: string): number {
+        return this.activeRequests.get(endpointId) ?? 0;
     }
 
     rememberNonce(key: string, ttl: number): boolean {
