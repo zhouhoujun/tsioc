@@ -3553,3 +3553,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 新增 `/api/gateway-admin/session` 返回 `{authenticated,user,authEnabled}`，路由守卫检查当前登录用户；无用户直接跳转 `/admin/login.html?redirect=...`。
   - `@tsdi/common/http` 注册 `adminUnauthorizedInterceptor`：任何管理 API 返回 401 立即跳转登录页（登录/callback 请求除外）。
   - 修复 lazy 父路由守卫丢失、router-outlet 渲染 leaf route；admin 38 passing，components/router 8 passing，workflow-admin guard 与 401 拦截本地验证通过。
+- Admin 菜单主题跟随（2026-11-11）：
+  - 通用 `menu-bar` 在 admin 中补齐 `--menu-bar-*` 变量映射：trigger/popup/submenu 的 surface、border、text、hover、separator、accent、danger、shadow 跟随 light/dark theme，不再固定白底。
+  - admin 主题切换仍通过 menu-bar 菜单项完成；build:web 通过。

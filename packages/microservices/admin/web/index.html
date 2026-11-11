@@ -83,7 +83,29 @@
         .ga-topbar-title h1 { margin: 0; font-size: 17px; font-weight: 650; letter-spacing: -.2px; }
         .ga-topbar-title span { display: block; margin-top: 2px; color: var(--ga-muted); font-size: 11px; }
         .ga-topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-        .ga-global-menu { display: inline-block; }
+        .ga-global-menu {
+            display: inline-block;
+            --menu-bar-surface: var(--ga-surface);
+            --menu-bar-border: var(--ga-border);
+            --menu-bar-text: var(--ga-text);
+            --menu-bar-muted: var(--ga-muted);
+            --menu-bar-hover: #f1f5f9;
+            --menu-bar-separator: var(--ga-border);
+            --menu-bar-accent: var(--ga-blue);
+            --menu-bar-danger: #b91c1c;
+            --menu-bar-shadow: rgba(15, 23, 42, .18);
+        }
+        :root[data-theme="dark"] .ga-global-menu {
+            --menu-bar-surface: #111827;
+            --menu-bar-border: #334155;
+            --menu-bar-text: #e5e7eb;
+            --menu-bar-muted: #94a3b8;
+            --menu-bar-hover: #0f172a;
+            --menu-bar-separator: #1f2937;
+            --menu-bar-accent: #93c5fd;
+            --menu-bar-danger: #fca5a5;
+            --menu-bar-shadow: rgba(0, 0, 0, .55);
+        }
         .ga-global-menu .menu-bar { position: relative; }
         .ga-status { color: #1d4ed8; font-size: 11px; background: var(--ga-blue-soft); padding: 4px 8px; border-radius: 999px; }
         .ga-error { color: #b91c1c; font-size: 11px; max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
