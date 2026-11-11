@@ -203,6 +203,36 @@ describe('Visual Workflow Designer', () => {
             expect((await local.listSaved(store)).length).toBe(0);
         });
 
+        it('keeps edits made while an async save is in flight', async () => {
+            const local = new WorkflowDesigner({ registry, service });
+            let release: (() => void) | undefined;
+            const pending = new Promise<void>(resolve => { release = resolve; });
+            const store = {
+                list: async () => [],
+                get: async () => undefined,
+                remove: async () => true,
+                clear: async () => { },
+                save: async (definition: any) => {
+                    await pending;
+                    return {
+                        id: definition.id,
+                        name: definition.name,
+                        description: definition.description,
+                        nodeCount: definition.nodes.length,
+                        connectionCount: definition.connections.length
+                    };
+                }
+            };
+
+            const saving = local.saveTo(store);
+            local.renameNode('task_1', 'Edited during save');
+            release!();
+            await saving;
+
+            expect(local.nodes.find(node => node.id === 'task_1')?.name).toBe('Edited during save');
+            expect(local.dirty).toBe(true);
+        });
+
         it('saves a copy with a new id', async () => {
             const local = new WorkflowDesigner({ registry, service });
             const store = new InMemoryWorkflowDefinitionStore();

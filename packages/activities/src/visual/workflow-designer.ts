@@ -747,10 +747,21 @@ export class WorkflowDesigner {
                 id: `workflow_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`
             };
         }
+        const savedSnapshot = JSON.stringify(definition);
         const summary = await store.save(definition);
-        this.definition = definition;
+        // Persisting is asynchronous and autosave can overlap user edits. Never
+        // clobber the document with the pre-request snapshot; only adopt it when
+        // the definition is unchanged, otherwise keep the newer edits dirty.
+        const current = this.definition;
+        const unchanged = current === definition || JSON.stringify(current) === savedSnapshot;
+        if (unchanged) {
+            this.definition = definition;
+        } else if (options.as) {
+            // Save-as must still switch the open document to its new id/name.
+            this.definition = { ...current, id: definition.id, name: definition.name };
+        }
         this.normalize();
-        this.dirty = false;
+        this.dirty = !unchanged;
         this.setMessage(options.as ? 'workflow.message.savedAs' : 'workflow.message.saved', {
             name: definition.name
         });
