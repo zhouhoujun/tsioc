@@ -1,6 +1,7 @@
-import { Injectable, OnDestroy } from '@tsdi/ioc';
+import { Inject, Injectable, OnDestroy } from '@tsdi/ioc';
 import { Span, SpanOptions, SpanStatus, SpanKind, SpanLog, TraceContext, TracingOptions } from './tracing';
 import { Tracer, TraceExporter } from './tracer';
+import { TRACE_EXPORTERS, TRACING_OPTIONS } from './tokens';
 
 /**
  * Default span implementation.
@@ -103,19 +104,25 @@ export class DefaultTracer extends Tracer implements OnDestroy {
     private flushTimer?: ReturnType<typeof setInterval>;
     private enabled: boolean;
     private sampleRate: number;
+    private flushIntervalMs: number;
 
-    constructor(options: TracingOptions = {}) {
+    constructor(
+        @Inject(TRACING_OPTIONS, { nullable: true }) options?: TracingOptions,
+        @Inject(TRACE_EXPORTERS, { nullable: true }) exporters?: TraceExporter[]
+    ) {
         super();
-        this._serviceName = options.serviceName ?? 'unknown';
-        this.enabled = options.enabled ?? true;
-        this.sampleRate = options.sampleRate ?? 1;
+        const opts = options ?? {};
+        this._serviceName = opts.serviceName ?? 'unknown';
+        this.enabled = opts.enabled ?? true;
+        this.sampleRate = opts.sampleRate ?? 1;
+        this.flushIntervalMs = opts.flushIntervalMs ?? 5000;
 
-        if (options.propagateHeaders) {
+        if (opts.propagateHeaders) {
             this._headerNames = {
-                traceId: options.headerNames?.traceId ?? 'x-trace-id',
-                spanId: options.headerNames?.spanId ?? 'x-span-id',
-                parentSpanId: options.headerNames?.parentSpanId ?? 'x-parent-span-id',
-                flags: options.headerNames?.flags ?? 'x-trace-flags'
+                traceId: opts.headerNames?.traceId ?? 'x-trace-id',
+                spanId: opts.headerNames?.spanId ?? 'x-span-id',
+                parentSpanId: opts.headerNames?.parentSpanId ?? 'x-parent-span-id',
+                flags: opts.headerNames?.flags ?? 'x-trace-flags'
             };
         } else {
             this._headerNames = {
@@ -126,8 +133,16 @@ export class DefaultTracer extends Tracer implements OnDestroy {
             };
         }
 
-        // Periodic flush
-        this.flushTimer = setInterval(() => this.flush(), 5000);
+        if (exporters?.length) {
+            this.exporters.push(...exporters);
+        }
+
+        // Periodic flush. Unref so tracing never keeps the process alive.
+        if (this.flushIntervalMs > 0) {
+            const timer = setInterval(() => this.flush(), this.flushIntervalMs) as any;
+            timer?.unref?.();
+            this.flushTimer = timer;
+        }
     }
 
     private _serviceName: string;

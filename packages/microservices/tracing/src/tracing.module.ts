@@ -1,14 +1,12 @@
-import { Module, ModuleWithProviders, Provider, token, Type } from '@tsdi/ioc';
-import { Tracer } from './tracer';
+import { Module, ModuleWithProviders, Provider, Type } from '@tsdi/ioc';
+import { Tracer, TraceExporter } from './tracer';
+import { TracingOptions } from './tracing';
 import { DefaultTracer } from './default.tracer';
 import { TracingInterceptor } from './interceptors/tracing.interceptor';
 import { ConsoleTraceExporter } from './exporters/console.exporter';
-import { TracingOptions } from './tracing';
+import { TRACE_EXPORTERS, TRACING_OPTIONS } from './tokens';
 
-/**
- * Tracing options token.
- */
-export const TRACING_OPTIONS = token<TracingOptions>('TRACING_OPTIONS');
+export { TRACE_EXPORTERS, TRACING_OPTIONS } from './tokens';
 
 /**
  * Tracing module providers.
@@ -38,20 +36,34 @@ export class TracingModule {
         return {
             module: TracingModule,
             providers: [
+                ...TRACING_PROVIDERS,
                 { provide: TRACING_OPTIONS, useValue: options }
             ]
         };
     }
 
     /**
-     * use custom exporter.
-     * @param exporter trace exporter.
+     * use one or more custom exporters.
+     *
+     * Accepts exporter classes (resolved by DI) or exporter instances.
+     *
+     * ```ts
+     * TracingModule.withExporter(JsonTraceExporter)
+     * TracingModule.withExporter(JsonTraceExporter, {
+     *     export: async spans => console.log(spans.length)
+     * })
+     * ```
      */
-    static withExporter(exporter: Type<ConsoleTraceExporter> = ConsoleTraceExporter): ModuleWithProviders<TracingModule> {
+    static withExporter(...exporters: Array<Type<TraceExporter> | TraceExporter>): ModuleWithProviders<TracingModule> {
         return {
             module: TracingModule,
             providers: [
-                exporter
+                ...TRACING_PROVIDERS,
+                ...(exporters.length ? exporters : [ConsoleTraceExporter]).map(exporter => (
+                    typeof exporter === 'function'
+                        ? { provide: TRACE_EXPORTERS, useClass: exporter as Type<TraceExporter>, multi: true }
+                        : { provide: TRACE_EXPORTERS, useValue: exporter, multi: true }
+                ))
             ]
         };
     }

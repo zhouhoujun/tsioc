@@ -3476,3 +3476,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 生成的 taskfile 使用 `runCompiler` AOT 入口；实测生成 service 包可 `npm run build` 产出 JS/d.ts/aot-manifest。
   - README 补充脚手架用法、P3 AOT/契约优先现状与后续增强项。
   - 验证：service/gateway 模板 tsc 通过，service 模板真实构建通过。
+- Tracing DI 收尾（2026-11-11）：
+  - `TracingModule.withOptions` / `withExporter` 注册的 options 与 exporter 真实注入 `DefaultTracer`。
+  - `withExporter` 支持 exporter class、实例和一次多个 exporter；无参数时回退 `ConsoleTraceExporter`。
+  - flush timer 支持 `flushIntervalMs`（0 关闭）并 `unref()`，不阻塞进程退出。
+  - 新增 `tracing-di.spec.ts` 覆盖 options 注入、class/实例/多 exporter、timer 不阻塞；tracing 36 passing。

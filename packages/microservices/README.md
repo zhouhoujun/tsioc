@@ -161,6 +161,7 @@
 ### P2：统一 Resiliency + Observability
 
 - 已实现：统一超时、重试、熔断、隔离舱、背压基础能力；Gateway SERVER span 生命周期与错误分类指标
+- Tracing DI：`TracingModule.withOptions(...)` 的 options 与 `TracingModule.withExporter(...)` 注册的 exporter 真实注入 `DefaultTracer`，支持 exporter class / 实例 / 多 exporter；flush timer 使用 `unref()`，不阻塞进程退出
 - 待补充：OpenTelemetry：
   - trace parent propagation
   - span 命名与状态
@@ -358,7 +359,27 @@ npm run build
 node ../../dist/orders/main.js
 ```
 
-## 10. 选型建议
+## 10. Tracing
+
+```ts
+import { TracingModule } from '@tsdi/tracing';
+
+@Module({
+    imports: [
+        TracingModule.withOptions({
+            serviceName: 'orders',
+            sampleRate: 0.1,
+            propagateHeaders: true
+        }),
+        TracingModule.withExporter(JsonTraceExporter)
+    ]
+})
+export class AppModule {}
+```
+
+`withExporter` 可传 exporter class、exporter 实例，或一次传多个。未注册 exporter 时 span 仅保留在内存批次中。
+
+## 11. 选型建议
 
 | 目标 | 建议 |
 |---|---|

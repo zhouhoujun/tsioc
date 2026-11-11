@@ -169,6 +169,12 @@ export interface TracingOptions {
      */
     propagateHeaders?: boolean;
     /**
+     * interval (ms) used to flush pending spans to exporters. Set to 0 to
+     * disable periodic flushing and only flush on close / batch threshold.
+     * default: 5000.
+     */
+    flushIntervalMs?: number;
+    /**
      * trace header names.
      */
     headerNames?: {
