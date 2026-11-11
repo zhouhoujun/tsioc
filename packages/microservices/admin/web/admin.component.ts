@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ReactiveEffect, noReact, reactive } from '@tsdi/components';
+import { AfterViewInit, Component, OnDestroy, ReactiveEffect, noReact, reactive } from '@tsdi/components';
 import { Inject, Optional } from '@tsdi/ioc';
 import { DOCUMENT } from '@tsdi/common';
 import { GatewayRouteOptions } from '@tsdi/gateway';
@@ -10,7 +10,10 @@ import {
 } from '@tsdi/activities/visual';
 import { createGatewayRuleWorkflow, registerGatewayRuleNodes } from '../src/rules';
 import { GatewayAdminRuleStore } from './rule-store';
+import { GatewayAdminHttp } from './http';
 import { AdminLocale, adminMessage } from './admin.i18n';
+import { AdminPage, adminRouteHash, parseAdminRoute, redirectToAdminLogin } from './routing';
+import { Router, RouterEvent } from '@tsdi/components/router';
 
 interface GatewayAdminState {
     routes?: GatewayRouteOptions[];
@@ -18,8 +21,6 @@ interface GatewayAdminState {
     services?: string[];
     auth?: { enabled: boolean; mode: 'none' | 'oidc' | 'oauth2' | 'service' };
 }
-
-type AdminPage = 'dashboard' | 'routes' | 'rules';
 
 const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save', 'open-library', 'clear', 'menu'];
 
@@ -325,7 +326,7 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
         </div>
     </div>`
 })
-export class GatewayAdminComponent implements AfterViewInit {
+export class GatewayAdminComponent implements AfterViewInit, OnDestroy {
     page: AdminPage = 'dashboard';
     routes: GatewayRouteOptions[] = [];
     services: string[] = [];
@@ -346,14 +347,19 @@ export class GatewayAdminComponent implements AfterViewInit {
     readonly registry: WorkflowNodeRegistry;
     readonly designer: WorkflowDesigner;
 
-    private store = new GatewayAdminRuleStore();
+    private store: GatewayAdminRuleStore;
     private loaded = false;
     private selfRef?: GatewayAdminComponent;
+    private hashHandler?: () => void;
+    private routerSub?: { unsubscribe(): void };
 
     constructor(
         @Optional() effect?: ReactiveEffect,
-        @Optional() @Inject(DOCUMENT) private documentRef?: any
+        @Optional() @Inject(DOCUMENT) private documentRef?: any,
+        @Optional() private router?: Router,
+        @Optional() private http?: GatewayAdminHttp
     ) {
+        this.store = new GatewayAdminRuleStore(this.http as GatewayAdminHttp);
         try {
             if (documentRef) {
                 (documentRef as any)[noReact] = true;
@@ -395,7 +401,29 @@ export class GatewayAdminComponent implements AfterViewInit {
         }
         this.loaded = true;
         this.applyTheme();
+        const win = this.documentRef?.defaultView;
+        if (win?.location) {
+            this.page = parseAdminRoute(win.location.hash);
+        }
+        if (this.router) {
+            this.routerSub = this.router.events.subscribe(event => this.handleRouterEvent(event));
+            if (win?.addEventListener) {
+                this.hashHandler = () => this.handleHashChange();
+                win.addEventListener('hashchange', this.hashHandler);
+            }
+            await this.router.navigateByUrl(`/${this.page}`);
+        }
         await this.reload();
+    }
+
+    onDestroy(): void {
+        const win = this.documentRef?.defaultView;
+        if (win?.removeEventListener && this.hashHandler) {
+            win.removeEventListener('hashchange', this.hashHandler);
+        }
+        this.hashHandler = undefined;
+        this.routerSub?.unsubscribe();
+        this.routerSub = undefined;
     }
 
     t(key: string, params?: Record<string, any>): string {
@@ -509,15 +537,71 @@ export class GatewayAdminComponent implements AfterViewInit {
     }
 
     goDashboard(): void {
-        this.self().page = 'dashboard';
+        this.navigate('dashboard');
     }
 
     goRoutes(): void {
-        this.self().page = 'routes';
+        this.navigate('routes');
     }
 
     goRules(): void {
-        this.self().page = 'rules';
+        this.navigate('rules');
+    }
+
+    private navigate(page: AdminPage): void {
+        const self = this.self();
+        if (self.needsLogin) {
+            self.redirectToLogin();
+            return;
+        }
+        if (self.router) {
+            void self.router.navigateByUrl(`/${page}`);
+            return;
+        }
+        self.page = page;
+    }
+
+    private handleHashChange(): void {
+        const self = this.self();
+        if (self.needsLogin) {
+            self.redirectToLogin();
+            return;
+        }
+        const win = self.documentRef?.defaultView;
+        const page = parseAdminRoute(win?.location?.hash);
+        if (page === self.page) {
+            return;
+        }
+        if (self.router) {
+            void self.router.navigateByUrl(`/${page}`);
+        } else {
+            self.page = page;
+        }
+    }
+
+    private handleRouterEvent(event: RouterEvent): void {
+        const self = this.self();
+        if (event.type !== 'NavigationEnd' || !event.snapshot) {
+            return;
+        }
+        const page = event.snapshot.data?.page as AdminPage;
+        if (page) {
+            self.page = page;
+        }
+        const win = self.documentRef?.defaultView;
+        try {
+            const hash = adminRouteHash(self.page);
+            if (win?.history?.replaceState && win.location?.hash !== hash) {
+                win.history.replaceState(null, '', hash);
+            }
+        } catch {
+            // Embedded hosts may block history updates; state remains local.
+        }
+    }
+
+    private redirectToLogin(): void {
+        const win = this.documentRef?.defaultView ?? (globalThis as { window?: Window }).window;
+        redirectToAdminLogin(win as any);
     }
 
     searchRoutes(event: Event): void {
@@ -591,10 +675,14 @@ export class GatewayAdminComponent implements AfterViewInit {
         self.needsLogin = true;
         self.authEnabled = true;
         self.status = self.t('status.signInRequired');
+        self.redirectToLogin();
     }
 
     private async fetchState(): Promise<GatewayAdminState> {
-        const response = await fetch('/api/gateway-admin/state');
+        if (!this.http) {
+            throw new Error('Gateway admin HTTP client is unavailable');
+        }
+        const response = await this.http.state();
         if (response.status === 401) {
             this.requireLogin();
             return {};
@@ -602,7 +690,7 @@ export class GatewayAdminComponent implements AfterViewInit {
         if (!response.ok) {
             throw new Error(this.t('error.apiUnavailable', { status: response.status }));
         }
-        return await response.json() as GatewayAdminState;
+        return response.body as GatewayAdminState;
     }
 
     addRoute(): void {
@@ -684,11 +772,10 @@ export class GatewayAdminComponent implements AfterViewInit {
         const self = this.self();
         self.error = '';
         try {
-            const response = await fetch('/api/gateway-admin/routes', {
-                method: 'PUT',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({ routes: self.routes })
-            });
+            if (!self.http) {
+                throw new Error('Gateway admin HTTP client is unavailable');
+            }
+            const response = await self.http.updateRoutes(self.routes);
             if (response.status === 401) {
                 self.requireLogin();
                 return;
@@ -696,7 +783,7 @@ export class GatewayAdminComponent implements AfterViewInit {
             if (!response.ok) {
                 throw new Error(self.t('error.applyRoutes', { status: response.status }));
             }
-            const state = await response.json() as GatewayAdminState;
+            const state = response.body as GatewayAdminState;
             self.routes = (state.routes ?? []).map(route => ({ ...route }));
             self.services = state.services ?? [];
             self.status = self.t('status.routesApplied', { count: self.routes.length });

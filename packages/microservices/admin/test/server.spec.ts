@@ -52,6 +52,14 @@ describe('gateway admin standalone server', () => {
         expect(html).toContain('main.js');
     });
 
+    it('serves the login page used by the route guard', async () => {
+        const response = await fetch(`${base}/admin/login.html`);
+        expect(response.status).toBe(200);
+        const html = await response.text();
+        expect(html).toContain('Sign in with SSO');
+        expect(html).toContain('/admin/auth/login');
+    });
+
     it('redirects the server root to the admin UI', async () => {
         const response = await fetch(`${base}/`, { redirect: 'manual' });
         expect(response.status).toBe(302);

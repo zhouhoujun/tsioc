@@ -3535,3 +3535,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 新增 `oidcService` 配置/CLI（`--oidc-service`、host/port/entry/env）：可拉起独立的 `packages/oidc-auth` 子进程，等待 discovery 就绪后再启动 admin，退出时停止子进程；也可手动独立启动。
   - OAuth2 CLI/env：`--auth oauth2`、`GATEWAY_ADMIN_OAUTH2_*`；service 模式自动使用拉起服务的 URL。
   - admin 30 passing（新增 OAuth2 流程与 launcher entry 测试），build/build:web 通过；实测 admin 4435 + 独立 oidc-auth 4436：auth discovery 200、未登录 admin API 401。
+- Admin 路由守卫与统一 HTTP（2026-11-11）：
+  - UI 改用 `@tsdi/components/router`：`RouterModule.forRoot` + `GatewayAdminAuthGuard`（CanActivate），路由 `#/dashboard`/`#/routes`/`#/rules` 不再手写解析；未登录 401 跳转 `/admin/login.html?redirect=...`。
+  - 新增 `login.html` 登录页（主题/中英文，SSO 按钮）。
+  - 新增 `GatewayAdminHttp`，所有 state/routes/rules 请求改走 `@tsdi/common/http`（`provideHttpClient(withFetch(), withNoXsrfProtection())`），rule store 也复用该客户端。
+  - admin 35 passing；build/build:web 通过。

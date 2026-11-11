@@ -35,13 +35,14 @@
     "@tsdi/components": "6.0.0-beta7",
     "@tsdi/components/common": "6.0.0-beta7",
     "@tsdi/components/html": "6.0.0-beta7",
+    "@tsdi/components/router": "6.0.0-beta7",
     "@tsdi/core": "6.0.31",
     "@tsdi/gateway": "6.0.31",
+    "@tsdi/http-microservice": "6.0.31",
     "@tsdi/ioc": "6.0.31",
     "@tsdi/logger": "6.0.31",
-    "@tsdi/service": "6.0.31",
     "@tsdi/security": "6.0.31",
-    "@tsdi/http-microservice": "6.0.31"
+    "@tsdi/service": "6.0.31"
   },
   "devDependencies": {
     "@tsdi/compiler": "6.0.31",

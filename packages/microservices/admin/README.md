@@ -335,6 +335,17 @@ The controls live in the top-right header and persist in `localStorage`:
 The embedded workflow designer receives the same `theme` and `locale`, so its
 toolbar, palette, inspector and status bar follow the admin shell.
 
+## Routing and HTTP
+
+- UI routes (`#/dashboard`, `#/routes`, `#/rules`) are resolved by
+  `@tsdi/components/router` (`RouterModule.forRoot(...)`), not ad-hoc parsing.
+- `GatewayAdminAuthGuard` implements `CanActivate`; a `401` redirects to
+  `/admin/login.html?redirect=<current-url>` before the page renders.
+- `GatewayAdminHttp` wraps `@tsdi/common/http` (`provideHttpClient(withFetch())`)
+  for state/routes/rules calls, including cookies and typed status handling.
+- The login page links to `/admin/auth/login`, which starts OIDC, OAuth2 or the
+  external auth-service login flow according to `auth.mode`.
+
 ## HTTP API
 
 | Method | Path | Description |

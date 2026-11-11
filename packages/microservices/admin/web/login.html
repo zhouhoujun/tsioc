@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0f172a" />
+    <link rel="icon" href="data:," />
+    <title>Sign in · Gateway Admin</title>
+    <script>
+        (function () {
+            try {
+                var theme = localStorage.getItem('tsdi-gateway-admin-theme');
+                document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
+            } catch (e) { /* storage may be unavailable */ }
+        })();
+    </script>
+    <style>
+        :root {
+            color-scheme: light;
+            --bg: #f1f5f9;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --muted: #64748b;
+            --blue: #2563eb;
+            --shadow: 0 24px 70px rgba(15, 23, 42, .14);
+        }
+        :root[data-theme="dark"] {
+            color-scheme: dark;
+            --bg: #0b1220;
+            --surface: #111827;
+            --border: #1f2937;
+            --text: #e5e7eb;
+            --muted: #94a3b8;
+            --blue: #60a5fa;
+            --shadow: 0 24px 70px rgba(0, 0, 0, .45);
+        }
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; }
+        body {
+            display: grid;
+            place-items: center;
+            background: radial-gradient(circle at 20% 10%, #1e3a5f, var(--bg) 55%);
+            color: var(--text);
+            font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        }
+        :root[data-theme="light"] body {
+            background: radial-gradient(circle at 20% 10%, #dbeafe, var(--bg) 55%);
+        }
+        .login-card {
+            width: min(420px, calc(100vw - 32px));
+            padding: 30px;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: var(--surface);
+            box-shadow: var(--shadow);
+        }
+        .brand {
+            width: 46px; height: 46px; margin-bottom: 16px; border-radius: 12px;
+            display: grid; place-items: center;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #fff;
+            font-weight: 800; font-size: 14px;
+        }
+        h1 { margin: 0 0 6px; font-size: 20px; }
+        p { margin: 0 0 22px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+        button {
+            width: 100%; padding: 11px 14px; border-radius: 9px; cursor: pointer;
+            border: 1px solid var(--blue); background: var(--blue); color: #fff;
+            font: inherit; font-size: 13px; font-weight: 600;
+        }
+        button:hover { filter: brightness(1.05); }
+        .error { min-height: 18px; margin-top: 12px; color: #dc2626; font-size: 12px; }
+        .footer { margin-top: 18px; color: var(--muted); font-size: 11px; text-align: center; }
+    </style>
+</head>
+<body>
+    <main class="login-card">
+        <div class="brand">TS</div>
+        <h1 id="title">Sign in to Gateway Admin</h1>
+        <p id="desc">The gateway management API is protected. Use your organization account to continue.</p>
+        <button id="sso" type="button">Sign in with SSO</button>
+        <div class="error" id="error"></div>
+        <div class="footer" id="footer">Gateway admin · OAuth2 / OIDC</div>
+    </main>
+    <script>
+        (function () {
+            var params = new URLSearchParams(location.search);
+            var redirect = params.get('redirect') || '/admin/';
+            if (!redirect.startsWith('/admin/') || redirect.startsWith('//')) {
+                redirect = '/admin/';
+            }
+            var zh = String(navigator.language || '').toLowerCase().startsWith('zh');
+            document.documentElement.lang = zh ? 'zh-CN' : 'en';
+            document.getElementById('title').textContent = zh ? '登录网关管理台' : 'Sign in to Gateway Admin';
+            document.getElementById('desc').textContent = zh
+                ? '网关管理 API 已启用保护，请使用组织账号继续。'
+                : 'The gateway management API is protected. Use your organization account to continue.';
+            document.getElementById('sso').textContent = zh ? '使用 SSO 登录' : 'Sign in with SSO';
+            document.getElementById('footer').textContent = zh ? '网关管理台 · OAuth2 / OIDC' : 'Gateway admin · OAuth2 / OIDC';
+            if (params.get('error')) {
+                document.getElementById('error').textContent = zh
+                    ? '登录失败，请重试。'
+                    : 'Authentication failed. Please try again.';
+            }
+            document.getElementById('sso').addEventListener('click', function () {
+                document.getElementById('error').textContent = '';
+                location.href = '/admin/auth/login?redirect=' + encodeURIComponent(redirect);
+            });
+        })();
+    </script>
+</body>
+</html>

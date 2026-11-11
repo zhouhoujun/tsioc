@@ -25,6 +25,8 @@ function jsonResponse(body: any, status = 200): any {
     return {
         ok: status >= 200 && status < 300,
         status,
+        url: 'http://localhost/',
+        headers: new Headers({ 'content-type': 'application/json' }),
         async json() { return body; },
         async text() { return JSON.stringify(body); }
     };
@@ -77,7 +79,7 @@ describe('Microservice admin UI', () => {
                 provide: DOCUMENT,
                 useFactory: () => {
                     const { JSDOM } = require('jsdom');
-                    return new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>').window.document;
+                    return new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>', { url: 'http://localhost/admin/' }).window.document;
                 }
             }]
         });
@@ -115,9 +117,24 @@ describe('Microservice admin UI', () => {
         expect(root.ownerDocument.documentElement.getAttribute('data-theme')).toBe('dark');
     });
 
+    it('guards hash routes and restores the page from the URL', async () => {
+        const win = root.ownerDocument.defaultView as any;
+        win.location.hash = '#/rules';
+        win.dispatchEvent(new win.HashChangeEvent('hashchange'));
+        await flush();
+        expect(root.querySelector('.ga-page-rules')).toBeTruthy();
+        expect(root.querySelector('.ga-edit-rules')).toBeTruthy();
+
+        win.location.hash = '#/routes';
+        win.dispatchEvent(new win.HashChangeEvent('hashchange'));
+        await flush();
+        expect(root.querySelector('.ga-page-routes')).toBeTruthy();
+    });
+
     it('edits and applies routes through the route table and drawer', async () => {
         (root.querySelector('.ga-nav-item:nth-child(2)') as any).click();
         await flush();
+        expect(root.ownerDocument.defaultView.location.hash).toBe('#/routes');
         expect(root.querySelectorAll('.ga-route-row').length).toBe(1);
 
         (root.querySelector('.ga-add-route') as any).click();
@@ -152,7 +169,7 @@ describe('Microservice admin UI', () => {
         expect(root.querySelectorAll('.workflow-palette-item[data-node-type^="gateway-"]').length).toBe(3);
 
         (root.querySelector('.ga-rules-apply') as any).click();
-        await waitFor(() => !root.querySelector('.ga-designer-page'));
+        await waitFor(() => (root.querySelector('.ga-status')?.textContent || '').includes('Rules applied'));
         expect(rules.length).toBe(2);
         expect(rules[0].action.type).toBe('route');
         expect(rules[1].action.type).toBe('deny');
