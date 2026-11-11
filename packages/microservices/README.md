@@ -150,8 +150,8 @@
   - per-endpoint circuit breaker
   - 限流 / 限次 / 降频
   - Bulkhead 并发隔离 + 有界排队/超时
+  - HTTP 出站连接池（undici Agent，可配置连接数/keep-alive/超时）
 - 待补充：
-  - 连接池
   - 更细粒度背压策略
   - 更细粒度错误分类与重试策略
 
@@ -258,7 +258,20 @@ rateLimit: {
 circuitBreaker: {
     failureThreshold: 5,
     resetTimeout: 30_000,
+    perEndpoint: true,
     fallback: { ok: false }
+}
+```
+
+### HTTP 出站连接池
+
+```ts
+httpPool: {
+    connections: 100,
+    pipelining: 1,
+    keepAliveTimeout: 5_000,
+    headersTimeout: 10_000,
+    bodyTimeout: 30_000
 }
 ```
 

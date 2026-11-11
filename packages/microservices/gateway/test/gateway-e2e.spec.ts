@@ -109,7 +109,8 @@ describe('Gateway E2E', () => {
                             })
                         }
                     }],
-                    rateLimit: false
+                    rateLimit: false,
+                    httpPool: { connections: 4, keepAliveTimeout: 1000 }
                 }),
                 useHttpTransport({
                     listenOpts: { port: GATEWAY_PORT, host: '127.0.0.1' },

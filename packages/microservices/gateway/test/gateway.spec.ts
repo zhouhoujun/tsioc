@@ -120,6 +120,15 @@ describe('Gateway', () => {
         expect(feature.providers?.some((provider: any) => provider === InMemoryServiceDiscovery)).toBe(true);
     });
 
+    it('initializes an outbound HTTP pool when configured', () => {
+        const interceptor = new GatewayInterceptor({
+            routes: [],
+            httpPool: { connections: 2, keepAliveTimeout: 1000 }
+        }, null as any, null as any, new GatewayRuntime(), null as any, { get: () => null } as any);
+        expect((interceptor as any).httpFetch).toBeDefined();
+        interceptor.onDestroy();
+    });
+
     it('fails over to the next endpoint for retryable GET requests', async () => {
         const discovery = new InMemoryServiceDiscovery();
         await discovery.register({ name: 'failover-service', id: 'node-a', address: 'http://node-a.internal' });

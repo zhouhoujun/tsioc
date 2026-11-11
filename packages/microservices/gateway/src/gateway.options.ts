@@ -721,6 +721,33 @@ export interface GatewayDefaults {
     bulkhead?: GatewayBulkheadOptions | false;
 }
 
+export interface GatewayHttpPoolOptions {
+    /**
+     * maximum concurrent connections per origin.
+     */
+    connections?: number;
+    /**
+     * HTTP pipelining factor.
+     */
+    pipelining?: number;
+    /**
+     * keep-alive timeout in milliseconds.
+     */
+    keepAliveTimeout?: number;
+    /**
+     * maximum keep-alive timeout accepted from upstream, milliseconds.
+     */
+    keepAliveMaxTimeout?: number;
+    /**
+     * response headers timeout in milliseconds.
+     */
+    headersTimeout?: number;
+    /**
+     * response body timeout in milliseconds.
+     */
+    bodyTimeout?: number;
+}
+
 export interface GatewayOptions {
     /**
      * gateway route definitions.
@@ -770,6 +797,10 @@ export interface GatewayOptions {
      * downstream health probing.
      */
     healthProbe?: GatewayHealthProbeOptions | false;
+    /**
+     * outbound HTTP connection pool. Omit to use the runtime global fetch.
+     */
+    httpPool?: GatewayHttpPoolOptions | false;
     /**
      * Enable service discovery integration.
      *

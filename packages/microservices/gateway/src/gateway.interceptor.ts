@@ -65,6 +65,8 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
     private tracer: Tracer | null;
     private injector: Injector;
     private loadBalancer: GatewayLoadBalancer;
+    private httpFetch?: typeof fetch;
+    private httpDispatcher?: { close?: () => Promise<void> | void };
 
     constructor(
         @Inject(GATEWAY_OPTIONS) private options: GatewayOptions,
@@ -87,6 +89,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             this.endpointResolver = null;
         }
         this.loadBalancer = new GatewayLoadBalancer(this.runtime);
+        this.setupHttpPool();
         this.lifecycle?.start();
     }
 
@@ -386,7 +389,8 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         }
 
         try {
-            const upstream = await fetch(upstreamUrl, init);
+            const fetchImpl = this.httpFetch ?? fetch;
+            const upstream = await fetchImpl(upstreamUrl, init);
             const contentType = upstream.headers.get('content-type') || '';
             const payload = contentType.includes('application/json')
                 ? await upstream.json()
@@ -1498,5 +1502,40 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             limiter.destroy();
         }
         this.limiters.clear();
+        try {
+            void this.httpDispatcher?.close?.();
+        } catch {
+            // best effort
+        }
+        this.httpDispatcher = undefined;
+        this.httpFetch = undefined;
+    }
+
+    private setupHttpPool(): void {
+        const pool = this.options.httpPool;
+        if (!pool) {
+            return;
+        }
+        try {
+            const undici = require('undici');
+            if (!undici?.Agent || !undici?.fetch) {
+                return;
+            }
+            this.httpDispatcher = new undici.Agent({
+                connections: pool.connections,
+                pipelining: pool.pipelining,
+                keepAliveTimeout: pool.keepAliveTimeout,
+                keepAliveMaxTimeout: pool.keepAliveMaxTimeout,
+                headersTimeout: pool.headersTimeout,
+                bodyTimeout: pool.bodyTimeout
+            });
+            this.httpFetch = ((url: any, init: any = {}) => undici.fetch(url, {
+                ...init,
+                dispatcher: this.httpDispatcher
+            })) as typeof fetch;
+        } catch {
+            this.httpDispatcher = undefined;
+            this.httpFetch = undefined;
+        }
     }
 }

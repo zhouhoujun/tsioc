@@ -3425,3 +3425,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `GatewayCircuitBreakerOptions.perEndpoint`（默认启用）为每个 discovered endpoint 维护独立熔断状态，避免单个坏节点拖垮整条路由。
   - HTTP / 非 HTTP failover 前检查 endpoint breaker；失败/成功分别记录 endpoint 状态；已打开节点自动跳过并继续选择其他 endpoint。
   - 回归：gateway 36 passing；failover 用例覆盖“node-a 熔断后后续请求只走 node-b”。
+- Gateway HTTP 出站连接池（2026-11-11，P1）：
+  - `GatewayHttpPoolOptions` 支持 connections、pipelining、keepAliveTimeout、keepAliveMaxTimeout、headersTimeout、bodyTimeout。
+  - GatewayInterceptor 通过 undici Agent + undici.fetch 复用连接；未配置时继续使用运行时全局 fetch，测试 mock 不受影响。
+  - `onDestroy` 关闭 dispatcher；Gateway E2E 使用 httpPool 真实访问上游。
+  - 回归：gateway 37 passing；httpPool 初始化与 E2E 通过。
