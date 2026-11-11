@@ -4,10 +4,23 @@ import { ApiRateLimitOptions } from '../options';
 interface WindowEntry {
     count: number;
     windowStart: number;
+    quotaCount: number;
+    quotaStart: number;
+    lastAt?: number;
+}
+
+export interface ApiRateLimitRejection {
+    message: string;
+    retryAfterMs: number;
 }
 
 /**
  * Fixed-window rate limiter for API routes.
+ *
+ * Supports three independent dimensions:
+ * - `limit` / `windowMs`: short-window rate limit.
+ * - `quota`: long-window request quota (e.g. daily/monthly caps).
+ * - `throttle`: minimum interval between accepted requests.
  *
  * @publicApi
  */
@@ -21,8 +34,7 @@ export class ApiRateLimiter {
         private options: ApiRateLimitOptions
     ) {
         this.maxKeys = Math.max(options.maxKeys ?? 10000, 1);
-        const windowMs = options.windowMs ?? 60000;
-        // Periodic cleanup of expired windows
+        const windowMs = Math.max(options.windowMs ?? 60000, options.quota?.windowMs ?? 60000, options.throttle?.minIntervalMs ?? 60000);
         this.cleanupTimer = setInterval(() => this.evictExpired(), windowMs);
         // The cleanup timer must not keep a process alive on its own.
         if (typeof (this.cleanupTimer as any).unref === 'function') {
@@ -31,45 +43,117 @@ export class ApiRateLimiter {
     }
 
     /**
-     * Check if a request is allowed within the rate limit window.
-     * Returns true if allowed, false if rate limited.
+     * Check if a request is allowed.
+     * Returns true only when every configured dimension allows it.
      */
     check(input: any, context: RequestContext): boolean {
         const key = this.resolveKey(input, context);
-        const limit = this.options.limit;
-        const windowMs = this.options.windowMs ?? 60000;
         const now = Date.now();
+        const entry = this.ensureEntry(key, now);
+        const windowMs = this.options.windowMs ?? 60000;
+        const limit = this.options.limit;
+        const quota = this.options.quota;
+        const throttle = this.options.throttle;
 
-        let entry = this.windows.get(key);
-        if (!entry || now - entry.windowStart >= windowMs) {
-            if (!entry && this.windows.size >= this.maxKeys) {
-                const oldest = this.windows.keys().next().value;
-                if (oldest !== undefined) {
-                    this.windows.delete(oldest);
-                }
+        if (limit != null) {
+            if (now - entry.windowStart >= windowMs) {
+                entry.windowStart = now;
+                entry.count = 0;
             }
-            entry = { count: 0, windowStart: now };
-            this.windows.set(key, entry);
+            if (entry.count >= limit) {
+                return false;
+            }
         }
 
-        entry.count++;
-        return entry.count <= limit;
+        if (quota) {
+            if (!entry.quotaStart || now - entry.quotaStart >= quota.windowMs) {
+                entry.quotaStart = now;
+                entry.quotaCount = 0;
+            }
+            if (entry.quotaCount >= quota.limit) {
+                return false;
+            }
+        }
+
+        if (throttle && entry.lastAt && now - entry.lastAt < throttle.minIntervalMs) {
+            return false;
+        }
+
+        if (limit != null) {
+            entry.count++;
+        }
+        if (quota) {
+            entry.quotaCount++;
+        }
+        if (throttle) {
+            entry.lastAt = now;
+        }
+        return true;
     }
 
     /**
-     * Get the remaining capacity for the current window.
+     * Get remaining capacity in the shortest active window.
      */
     remaining(input: any, context: RequestContext): number {
         const key = this.resolveKey(input, context);
-        const limit = this.options.limit;
-        const windowMs = this.options.windowMs ?? 60000;
         const now = Date.now();
-
-        let entry = this.windows.get(key);
-        if (!entry || now - entry.windowStart >= windowMs) {
-            return limit;
+        const entry = this.windows.get(key);
+        if (!entry) {
+            return this.options.limit ?? this.options.quota?.limit ?? 0;
         }
-        return Math.max(0, limit - entry.count);
+        const windowMs = this.options.windowMs ?? 60000;
+        let remaining: number | undefined;
+        if (this.options.limit != null) {
+            remaining = now - entry.windowStart >= windowMs
+                ? this.options.limit
+                : Math.max(0, this.options.limit - entry.count);
+        }
+        if (this.options.quota) {
+            const quotaRemaining = now - entry.quotaStart >= this.options.quota.windowMs
+                ? this.options.quota.limit
+                : Math.max(0, this.options.quota.limit - entry.quotaCount);
+            remaining = remaining == null ? quotaRemaining : Math.min(remaining, quotaRemaining);
+        }
+        return remaining ?? 0;
+    }
+
+    /**
+     * Describe why the last `check()` rejected the request.
+     */
+    rejection(input: any, context: RequestContext): ApiRateLimitRejection {
+        const key = this.resolveKey(input, context);
+        const now = Date.now();
+        const entry = this.windows.get(key);
+        const windowMs = this.options.windowMs ?? 60000;
+        const limit = this.options.limit;
+        const quota = this.options.quota;
+        const throttle = this.options.throttle;
+
+        if (throttle && entry?.lastAt) {
+            const wait = throttle.minIntervalMs - (now - entry.lastAt);
+            if (wait > 0) {
+                return {
+                    message: throttle.message ?? this.options.message ?? 'Too many requests',
+                    retryAfterMs: wait
+                };
+            }
+        }
+        if (quota && entry && entry.quotaCount >= quota.limit) {
+            return {
+                message: quota.message ?? this.options.message ?? 'Request quota exceeded',
+                retryAfterMs: Math.max(0, entry.quotaStart + quota.windowMs - now)
+            };
+        }
+        if (limit != null && entry) {
+            return {
+                message: this.options.message ?? 'Too many requests',
+                retryAfterMs: Math.max(0, entry.windowStart + windowMs - now)
+            };
+        }
+        return {
+            message: this.options.message ?? 'Too many requests',
+            retryAfterMs: windowMs
+        };
     }
 
     destroy(): void {
@@ -78,6 +162,26 @@ export class ApiRateLimiter {
             this.cleanupTimer = null;
         }
         this.windows.clear();
+    }
+
+    private ensureEntry(key: string, now: number): WindowEntry {
+        let entry = this.windows.get(key);
+        if (!entry) {
+            if (this.windows.size >= this.maxKeys) {
+                const oldest = this.windows.keys().next().value;
+                if (oldest !== undefined) {
+                    this.windows.delete(oldest);
+                }
+            }
+            entry = {
+                count: 0,
+                windowStart: now,
+                quotaCount: 0,
+                quotaStart: now
+            };
+            this.windows.set(key, entry);
+        }
+        return entry;
     }
 
     private resolveKey(input: any, context: RequestContext): string {
@@ -100,10 +204,14 @@ export class ApiRateLimiter {
     }
 
     private evictExpired(): void {
-        const windowMs = this.options.windowMs ?? 60000;
         const now = Date.now();
+        const windowMs = this.options.windowMs ?? 60000;
+        const quotaWindowMs = this.options.quota?.windowMs ?? windowMs;
         for (const [key, entry] of this.windows) {
-            if (now - entry.windowStart >= windowMs) {
+            const rateExpired = this.options.limit == null || now - entry.windowStart >= windowMs;
+            const quotaExpired = !this.options.quota || now - entry.quotaStart >= quotaWindowMs;
+            const throttleExpired = !this.options.throttle || !entry.lastAt || now - entry.lastAt >= this.options.throttle.minIntervalMs;
+            if (rateExpired && quotaExpired && throttleExpired) {
                 this.windows.delete(key);
             }
         }

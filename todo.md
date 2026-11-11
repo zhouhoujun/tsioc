@@ -3395,3 +3395,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `ApiRateLimiter` 增加 `maxKeys`（默认 10000）：超过上限淘汰最旧 key，防止伪造 `x-forwarded-for`/IP 造成窗口 Map 无限增长；新增限流、key 上限与 destroy 回归。
   - MCP 服务器增加 `maxBodyBytes`（默认 16 MiB）：超限直接返回 413 并停止累积请求体，避免大 JSON-RPC body 打爆内存；新增超限回归。
   - 回归：transport 52、service 50、mcp 38 passing；Docker broker 真实回归 amqp 55、kafka 73、nats 54、redis 73、mqtt 81；coap 25、tcp 65、udp 54、ws 88、grpc 17、client 72。
+- 微服务限流/限次/降频增强（2026-11-11）：
+  - `ApiRateLimitOptions` 扩展 `quota`（长周期限次，如每日/每月）与 `throttle`（两次成功请求最小间隔），`limit` 改为可选，可单独启用任一维度。
+  - `ApiRateLimiter` 统一按三维度校验：短窗口限流、长窗口配额、最小间隔降频；全部通过后才计数，避免被拒绝请求消耗配额；新增 `rejection()` 返回具体消息与 `Retry-After` 建议值。
+  - gateway 路由级/全局限流与 service 路由级限流统一使用 `rejection()` 生成 429 消息和 `Retry-After`。
+  - 回归：service 52、gateway 29 passing；新增 quota、throttle、限流+配额组合用例。

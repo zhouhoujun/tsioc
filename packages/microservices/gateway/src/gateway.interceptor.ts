@@ -596,10 +596,11 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             this.limiters.set(route.path, limiter);
         }
         if (!limiter.check(input, context)) {
-            throw Object.assign(new Error(rateLimit.message ?? 'Too many gateway requests'), {
+            const rejection = limiter.rejection(input, context);
+            throw Object.assign(new Error(rejection.message), {
                 statusCode: 429,
                 statusMessage: 'Too Many Requests',
-                headers: { 'Retry-After': String(Math.ceil((rateLimit.windowMs ?? 60000) / 1000)) }
+                headers: { 'Retry-After': String(Math.max(1, Math.ceil(rejection.retryAfterMs / 1000))) }
             });
         }
     }
@@ -613,10 +614,11 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             this.globalLimiter = new ApiRateLimiter(rateLimit);
         }
         if (!this.globalLimiter.check(input, context)) {
-            throw Object.assign(new Error(rateLimit.message ?? 'Too many gateway requests'), {
+            const rejection = this.globalLimiter.rejection(input, context);
+            throw Object.assign(new Error(rejection.message), {
                 statusCode: 429,
                 statusMessage: 'Too Many Requests',
-                headers: { 'Retry-After': String(Math.ceil((rateLimit.windowMs ?? 60000) / 1000)) }
+                headers: { 'Retry-After': String(Math.max(1, Math.ceil(rejection.retryAfterMs / 1000))) }
             });
         }
     }

@@ -189,6 +189,33 @@ export interface ExecptionLoggerOptions {
 
 export const SERVICE_EXECEPTION_LOGGER_OPTIONS = token<ExecptionLoggerOptions>('SERVICE_EXECEPTION_LOGGER_OPTIONS');
 
+export interface ApiQuotaOptions {
+    /**
+     * Maximum number of requests allowed in the quota window.
+     */
+    limit: number;
+    /**
+     * Quota window in milliseconds.
+     */
+    windowMs: number;
+    /**
+     * Error message when the quota is exceeded.
+     */
+    message?: string;
+}
+
+export interface ApiThrottleOptions {
+    /**
+     * Minimum interval between accepted requests in milliseconds.
+     * 两次成功请求之间的最小间隔（毫秒）。
+     */
+    minIntervalMs: number;
+    /**
+     * Error message when requests are too frequent.
+     */
+    message?: string;
+}
+
 /**
  * API rate limit options.
  * API 限流选项
@@ -196,9 +223,10 @@ export const SERVICE_EXECEPTION_LOGGER_OPTIONS = token<ExecptionLoggerOptions>('
 export interface ApiRateLimitOptions {
     /**
      * Maximum number of requests allowed within the window.
+     * Optional when only quota/throttle is configured.
      * 窗口期内最大请求数
      */
-    limit: number;
+    limit?: number;
 
     /**
      * Time window in milliseconds.
@@ -206,6 +234,18 @@ export interface ApiRateLimitOptions {
      * 限流时间窗口（毫秒），默认 60000（1 分钟）
      */
     windowMs?: number;
+
+    /**
+     * Longer-window request quota (e.g. daily/monthly caps).
+     * 长周期限次，例如每日/每月配额。
+     */
+    quota?: ApiQuotaOptions;
+
+    /**
+     * Throttle accepted requests to at most one per interval.
+     * 降频：限制两次成功请求的最小间隔。
+     */
+    throttle?: ApiThrottleOptions;
 
     /**
      * Custom key function to identify the client.

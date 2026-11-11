@@ -113,11 +113,11 @@ export class RouteHandler implements RequestHandler {
         }
 
         if (!limiter.check(input, context)) {
-            const message = rateLimitOpts.message ?? 'Too many requests';
-            const err = Object.assign(new Error(message), {
+            const rejection = limiter.rejection(input, context);
+            const err = Object.assign(new Error(rejection.message), {
                 statusCode: 429,
                 statusMessage: 'Too Many Requests',
-                headers: { 'Retry-After': String(Math.ceil((rateLimitOpts.windowMs ?? 60000) / 1000)) }
+                headers: { 'Retry-After': String(Math.max(1, Math.ceil(rejection.retryAfterMs / 1000))) }
             });
             throw err;
         }

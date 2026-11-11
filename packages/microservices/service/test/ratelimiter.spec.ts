@@ -28,6 +28,33 @@ describe('ApiRateLimiter', () => {
         limiter.destroy();
     });
 
+    it('enforces long-window quotas independently from rate limits', () => {
+        const limiter = new ApiRateLimiter({
+            limit: 100,
+            windowMs: 60_000,
+            quota: { limit: 2, windowMs: 60_000, message: 'quota exceeded' }
+        });
+        const context = createRequestContext(createInjector());
+        expect(limiter.check(input('10.0.0.2'), context)).toBe(true);
+        expect(limiter.check(input('10.0.0.2'), context)).toBe(true);
+        expect(limiter.check(input('10.0.0.2'), context)).toBe(false);
+        expect(limiter.rejection(input('10.0.0.2'), context).message).toBe('quota exceeded');
+        limiter.destroy();
+    });
+
+    it('throttles accepted requests by minimum interval', async () => {
+        const limiter = new ApiRateLimiter({
+            throttle: { minIntervalMs: 30, message: 'slow down' }
+        });
+        const context = createRequestContext(createInjector());
+        expect(limiter.check(input('10.0.0.3'), context)).toBe(true);
+        expect(limiter.check(input('10.0.0.3'), context)).toBe(false);
+        expect(limiter.rejection(input('10.0.0.3'), context).message).toBe('slow down');
+        await new Promise(resolve => setTimeout(resolve, 40));
+        expect(limiter.check(input('10.0.0.3'), context)).toBe(true);
+        limiter.destroy();
+    });
+
     it('does not keep the process alive after destroy', () => {
         const limiter = new ApiRateLimiter({ limit: 10, windowMs: 60_000 });
         limiter.destroy();
