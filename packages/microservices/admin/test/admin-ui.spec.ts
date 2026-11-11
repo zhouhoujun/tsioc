@@ -105,14 +105,18 @@ describe('Microservice admin UI', () => {
     it('switches language and theme globally', async () => {
         expect(root.querySelector('.ga-nav-item')?.textContent).toContain('Overview');
 
-        (root.querySelectorAll('.ga-seg-btn')[1] as any).click();
+        const menuTrigger = root.querySelector('.ga-global-menu .menu-bar-trigger') as any;
+        expect(menuTrigger).toBeTruthy();
+        menuTrigger.click();
+        await flush();
+        (root.querySelector('[data-menu-id="language:zh-CN"]') as any).click();
         await waitFor(() => (root.querySelector('.ga-nav-item')?.textContent || '').includes('概览'));
         expect(root.querySelector('.ga-nav-item')?.textContent).toContain('概览');
         expect(root.querySelector('.ga-topbar-title h1')?.textContent).toContain('概览');
 
-        const select = root.querySelector('.ga-theme-select') as any;
-        select.value = 'dark';
-        select.dispatchEvent(new (root.ownerDocument.defaultView as any).Event('change', { bubbles: true }));
+        (root.querySelector('.ga-global-menu .menu-bar-trigger') as any).click();
+        await flush();
+        (root.querySelector('[data-menu-id="theme:dark"]') as any).click();
         await flush();
         expect(root.ownerDocument.documentElement.getAttribute('data-theme')).toBe('dark');
     });

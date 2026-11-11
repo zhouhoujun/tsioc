@@ -13,22 +13,13 @@ import { redirectToAdminLogin } from './routing';
  */
 @Injectable()
 export class GatewayAdminAuthGuard implements CanActivate {
-    private authenticated?: boolean;
-
     constructor(private http: GatewayAdminHttp) { }
 
     async canActivate(_route?: ActivatedRouteSnapshot): Promise<boolean> {
-        if (this.authenticated === true) {
-            return true;
-        }
         const response = await this.http.state();
         if (response.status === 401) {
-            this.authenticated = false;
             redirectToAdminLogin();
             return false;
-        }
-        if (response.ok) {
-            this.authenticated = true;
         }
         return true;
     }

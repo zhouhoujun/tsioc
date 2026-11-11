@@ -1,5 +1,6 @@
 import expect = require('expect');
 import { adminRouteHash, buildAdminLoginUrl, parseAdminRoute } from '../web/routing';
+import { GatewayAdminAuthGuard } from '../web/auth.guard';
 
 describe('gateway admin UI routing', () => {
     it('parses dashboard/routes/rules hashes', () => {
@@ -14,6 +15,18 @@ describe('gateway admin UI routing', () => {
         expect(adminRouteHash('dashboard')).toBe('#/dashboard');
         expect(adminRouteHash('routes')).toBe('#/routes');
         expect(adminRouteHash('rules')).toBe('#/rules');
+    });
+
+    it('rejects protected routes when the admin API returns 401', async () => {
+        const guard = new GatewayAdminAuthGuard({
+            state: async () => ({ ok: false, status: 401 })
+        } as any);
+        expect(await guard.canActivate()).toBe(false);
+
+        const allowed = new GatewayAdminAuthGuard({
+            state: async () => ({ ok: true, status: 200, body: { auth: { enabled: false } } })
+        } as any);
+        expect(await allowed.canActivate()).toBe(true);
     });
 
     it('builds a safe login redirect for the route guard', () => {

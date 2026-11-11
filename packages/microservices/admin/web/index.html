@@ -83,18 +83,8 @@
         .ga-topbar-title h1 { margin: 0; font-size: 17px; font-weight: 650; letter-spacing: -.2px; }
         .ga-topbar-title span { display: block; margin-top: 2px; color: var(--ga-muted); font-size: 11px; }
         .ga-topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-        .ga-segments { display: inline-flex; border: 1px solid var(--ga-border); border-radius: 8px; overflow: hidden; background: var(--ga-surface); }
-        .ga-seg-btn {
-            border: 0; background: transparent; color: var(--ga-muted); font: inherit; font-size: 11px;
-            padding: 6px 9px; cursor: pointer;
-        }
-        .ga-seg-btn + .ga-seg-btn { border-left: 1px solid var(--ga-border); }
-        .ga-seg-btn:hover { color: var(--ga-blue); }
-        .ga-seg-btn.is-active { background: var(--ga-blue); color: #fff; }
-        .ga-theme-select {
-            border: 1px solid var(--ga-border); border-radius: 8px; background: var(--ga-surface);
-            color: var(--ga-text); font: inherit; font-size: 11px; padding: 7px 9px; cursor: pointer;
-        }
+        .ga-global-menu { display: inline-block; }
+        .ga-global-menu .menu-bar { position: relative; }
         .ga-status { color: #1d4ed8; font-size: 11px; background: var(--ga-blue-soft); padding: 4px 8px; border-radius: 999px; }
         .ga-error { color: #b91c1c; font-size: 11px; max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .ga-content { flex: 1; min-height: 0; overflow: auto; padding: 22px 24px 32px; }
@@ -261,8 +251,6 @@
         :root[data-theme="dark"] .ga-btn:hover { background: #0f172a; border-color: #60a5fa; color: #93c5fd; }
         :root[data-theme="dark"] .ga-btn-primary { background: #2563eb; border-color: #2563eb; color: #fff; }
         :root[data-theme="dark"] .ga-search,
-        :root[data-theme="dark"] .ga-theme-select,
-        :root[data-theme="dark"] .ga-segments,
         :root[data-theme="dark"] .ga-icon-btn { background: #111827; border-color: #334155; color: #e2e8f0; }
         :root[data-theme="dark"] .ga-search input { color: #e5e7eb; }
         :root[data-theme="dark"] .ga-field { color: #cbd5e1; }

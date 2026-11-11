@@ -11,7 +11,7 @@ surfaces:
 
 ## What it provides
 
-- Light/dark theme and EN/中文 language switch in the global top-right controls.
+- Light/dark theme and EN/中文 language switch in the global top-right `menu-bar` (shared @tsdi/components/common component).
 - Editable live gateway route table.
 - Visual rule editor with three contributed node types:
   - `gateway-condition` — match path / method / host / header / query.

@@ -3545,3 +3545,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - Admin 路由表改为 `loadChildren: () => import('./admin.routes')`，构建产物生成独立 `admin.routes-*.js` chunk；页面状态从 `Router.data` leaf 路由读取，避免 lazy 父路由 data 为空。
   - 路由守卫继续由 `GatewayAdminAuthGuard`（components/router CanActivate）执行；HTTP 统一 `@tsdi/common/http`。
   - components/router 7 passing；admin 35 passing；build/build:web 通过。
+- Admin 皮肤/多语言菜单统一（2026-11-11）：
+  - 移除自定义语言按钮/主题 select，改为 `@tsdi/components/common` 的通用 `menu-bar` 组件；分组包含语言与主题，勾选当前项。
+  - `globalMenuGroups` 缓存按 locale/theme 失效；语言切换重载页面文案，主题切换更新 `data-theme` 并持久化。
+  - 安装共享 menu-bar 样式，admin UI 测试改为通过菜单项切换；admin 36 passing，build:web 通过。

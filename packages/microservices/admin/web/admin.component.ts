@@ -1,5 +1,7 @@
 import { AfterViewInit, Component, OnDestroy, ReactiveEffect, noReact, reactive } from '@tsdi/components';
 import { Inject, Optional } from '@tsdi/ioc';
+import { MenuBarGroup } from '@tsdi/components/common';
+import { installMenuBarStyles } from '@tsdi/components/common';
 import { DOCUMENT } from '@tsdi/common';
 import { GatewayRouteOptions } from '@tsdi/gateway';
 import {
@@ -71,14 +73,9 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                 <div class="ga-topbar-right">
                     <span class="ga-status">{{status}}</span>
                     <span class="ga-error" v-if="error">{{error}}</span>
-                    <div class="ga-segments" role="group" [attr.aria-label]="t('top.language')">
-                        <button class="ga-seg-btn" [class]="englishButtonClass" type="button" @click="useEnglish">EN</button>
-                        <button class="ga-seg-btn" [class]="chineseButtonClass" type="button" @click="useChinese">中文</button>
-                    </div>
-                    <select class="ga-theme-select" [attr.aria-label]="t('top.theme')" [value]="theme" @change="changeTheme($event)">
-                        <option value="light">{{t('theme.light')}}</option>
-                        <option value="dark">{{t('theme.dark')}}</option>
-                    </select>
+                    <menu-bar class="ga-global-menu" icon="☰" label="" caret="▾"
+                        :triggerTitle="t('top.menu')" :groups="globalMenuGroups"
+                        :selectAction="globalMenuSelect"></menu-bar>
                     <button class="ga-btn" type="button" @click="reload">{{t('top.refresh')}}</button>
                 </div>
             </header>
@@ -367,6 +364,7 @@ export class GatewayAdminComponent implements AfterViewInit, OnDestroy {
         } catch {
             // Documents can reject expando properties.
         }
+        installMenuBarStyles(documentRef);
         this.registry = registerGatewayRuleNodes(new WorkflowNodeRegistry());
         const rawDesigner = new WorkflowDesigner({
             registry: this.registry,
@@ -446,21 +444,42 @@ export class GatewayAdminComponent implements AfterViewInit, OnDestroy {
         }
     }
 
-    get englishButtonClass(): string {
-        return `ga-seg-btn${this.locale === 'en' ? ' is-active' : ''}`;
+    private globalMenuCache?: { locale: AdminLocale; theme: string; groups: MenuBarGroup[] };
+
+    get globalMenuGroups(): MenuBarGroup[] {
+        const cache = this.globalMenuCache;
+        if (cache && cache.locale === this.locale && cache.theme === this.theme) {
+            return cache.groups;
+        }
+        const groups: MenuBarGroup[] = [
+            {
+                label: this.t('top.language'),
+                items: [
+                    { id: 'language:en', label: 'English', checked: this.locale === 'en' },
+                    { id: 'language:zh-CN', label: '中文', checked: this.locale === 'zh-CN' }
+                ]
+            },
+            {
+                label: this.t('top.theme'),
+                items: [
+                    { id: 'theme:light', label: this.t('theme.light'), checked: this.theme === 'light' },
+                    { id: 'theme:dark', label: this.t('theme.dark'), checked: this.theme === 'dark' }
+                ]
+            }
+        ];
+        this.globalMenuCache = { locale: this.locale, theme: this.theme, groups };
+        return groups;
     }
 
-    get chineseButtonClass(): string {
-        return `ga-seg-btn${this.locale === 'zh-CN' ? ' is-active' : ''}`;
-    }
-
-    useEnglish(): void {
-        this.setLocale('en');
-    }
-
-    useChinese(): void {
-        this.setLocale('zh-CN');
-    }
+    readonly globalMenuSelect = (id: string): void => {
+        if (id === 'language:en' || id === 'language:zh-CN') {
+            this.setLocale(id.slice('language:'.length) as AdminLocale);
+            return;
+        }
+        if (id === 'theme:light' || id === 'theme:dark') {
+            this.setTheme(id.slice('theme:'.length) as 'light' | 'dark');
+        }
+    };
 
     private setLocale(locale: AdminLocale): void {
         const self = this.self();
@@ -468,6 +487,7 @@ export class GatewayAdminComponent implements AfterViewInit, OnDestroy {
             return;
         }
         self.locale = locale;
+        self.globalMenuCache = undefined;
         try {
             self.storage()?.setItem('tsdi-gateway-admin-locale', locale);
             (self.documentRef ?? globalThis.document)?.documentElement?.setAttribute('lang', locale);
@@ -479,11 +499,11 @@ export class GatewayAdminComponent implements AfterViewInit, OnDestroy {
         }
     }
 
-    changeTheme(event: Event): void {
+    private setTheme(theme: 'light' | 'dark'): void {
         const self = this.self();
-        const value = (event.target as HTMLSelectElement).value;
-        self.theme = value === 'dark' ? 'dark' : 'light';
+        self.theme = theme === 'dark' ? 'dark' : 'light';
         self.applyTheme();
+        self.globalMenuCache = undefined;
         try {
             self.storage()?.setItem('tsdi-gateway-admin-theme', self.theme);
         } catch {
