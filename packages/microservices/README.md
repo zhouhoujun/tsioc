@@ -357,7 +357,7 @@ useGateway({
 - **规则**：用 `@tsdi/activities` 的流程设计器配置
   `gateway-condition` → `gateway-route` / `gateway-deny`，保存时编译成
   `GatewayRuleOptions[]` 并即时应用到运行中的 gateway。
-- **UI**：基于 `@tsdi/components/html`，左侧编辑实时路由表，右侧是流程画布。
+- **UI**：基于 `@tsdi/components/html`；Overview / Routes / Rules 管理台，支持 light/dark 主题与 EN/中文切换（右上角全局控件，持久化到 localStorage），流程设计器按需全屏打开。
 - **API**：`/api/gateway-admin/state`、`/routes`、`/rules[/:id]`。
 - **认证**：通过 JSON config / env / CLI 切换 `auth.mode`：`none`（本地）/ `oidc`（admin 作为外部 IdP 的 OIDC client）/ `service`（校验独立 `@tsdi/oidc-auth` 服务签发的 session/access JWT）。OIDC 认证服务独立启动，admin 不内嵌、不启动 provider；支持 allowedEmails/Domains/Groups/Roles/Claims。
 

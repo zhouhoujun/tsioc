@@ -3520,3 +3520,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - admin 不启动任何 OIDC provider；`auth.provider` 可配置 discovery issuer 或显式 endpoints；JSON config 支持 `auth: false` / `mode:none` 与完整 provider 配置。
   - `--config` 支持 host/port/prefix/uiRoot/routes/auth；优先级 config < env < CLI。
   - admin 25 passing（新增 OIDC、service session、config 合并），build/build:web 通过。
+- Gateway Admin 主题与多语言（2026-11-11）：
+  - 右上角全局控件支持 light/dark 主题与 EN/中文切换，localStorage 持久化；html data-theme/lang 在首屏脚本中恢复，避免闪烁。
+  - 完整接入 `admin.i18n.ts`：导航、概览、路由表、规则、编辑抽屉、设计器页头、登录页、状态/错误文案均可切换；规则设计器同步 locale/theme。
+  - admin CSS 增加 dark 变量与组件覆盖；jsdom/构建产物验证 EN→中文、light→dark 切换无错误。
+  - admin 26 passing；build/build:web 通过。

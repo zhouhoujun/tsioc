@@ -11,6 +11,7 @@ surfaces:
 
 ## What it provides
 
+- Light/dark theme and EN/中文 language switch in the global top-right controls.
 - Editable live gateway route table.
 - Visual rule editor with three contributed node types:
   - `gateway-condition` — match path / method / host / header / query.
@@ -262,6 +263,17 @@ Precedence: config file < environment variables < CLI flags. Set
 
 Logout clears the local session cookie. Provider-side single logout depends on
 the IdP's `end_session_endpoint` and is not invoked automatically.
+
+## Theme and language
+
+The admin ships with light/dark themes and English/Simplified Chinese UI copy.
+The controls live in the top-right header and persist in `localStorage`:
+
+- `tsdi-gateway-admin-theme`: `light` | `dark`
+- `tsdi-gateway-admin-locale`: `en` | `zh-CN`
+
+The embedded workflow designer receives the same `theme` and `locale`, so its
+toolbar, palette, inspector and status bar follow the admin shell.
 
 ## HTTP API
 

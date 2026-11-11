@@ -1,5 +1,6 @@
-import { AfterViewInit, Component, ReactiveEffect, reactive } from '@tsdi/components';
-import { Optional } from '@tsdi/ioc';
+import { AfterViewInit, Component, ReactiveEffect, noReact, reactive } from '@tsdi/components';
+import { Inject, Optional } from '@tsdi/ioc';
+import { DOCUMENT } from '@tsdi/common';
 import { GatewayRouteOptions } from '@tsdi/gateway';
 import {
     WorkflowDesigner,
@@ -9,6 +10,7 @@ import {
 } from '@tsdi/activities/visual';
 import { createGatewayRuleWorkflow, registerGatewayRuleNodes } from '../src/rules';
 import { GatewayAdminRuleStore } from './rule-store';
+import { AdminLocale, adminMessage } from './admin.i18n';
 
 interface GatewayAdminState {
     routes?: GatewayRouteOptions[];
@@ -37,25 +39,25 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
             <div class="ga-brand">
                 <div class="ga-brand-mark">TS</div>
                 <div>
-                    <strong>Gateway</strong>
-                    <span>Microservice control</span>
+                    {{t('brand.name')}}
+                    {{t('brand.subtitle')}}
                 </div>
             </div>
             <nav class="ga-nav">
                 <button class="ga-nav-item" [class]="dashboardNavClass" type="button" @click="goDashboard">
-                    <span class="ga-nav-icon">◫</span><span>Overview</span>
+                    <span class="ga-nav-icon">◫</span>{{t('nav.overview')}}
                 </button>
                 <button class="ga-nav-item" [class]="routesNavClass" type="button" @click="goRoutes">
-                    <span class="ga-nav-icon">⇄</span><span>Routes</span>
+                    <span class="ga-nav-icon">⇄</span>{{t('nav.routes')}}
                 </button>
                 <button class="ga-nav-item" [class]="rulesNavClass" type="button" @click="goRules">
-                    <span class="ga-nav-icon">⑂</span><span>Rules</span>
+                    <span class="ga-nav-icon">⑂</span>{{t('nav.rules')}}
                 </button>
             </nav>
             <div class="ga-sidebar-foot">
                 <span class="ga-env-dot"></span>
-                <span>{{authEnabled ? 'SSO protected' : 'Live gateway runtime'}}</span>
-                <a v-if="authEnabled" class="ga-signout" href="/admin/auth/logout">Sign out</a>
+                <span>{{authEnabled ? t('sidebar.sso') : t('sidebar.live')}}</span>
+                <a v-if="authEnabled" class="ga-signout" href="/admin/auth/logout">{{t('sidebar.signOut')}}</a>
             </div>
         </aside>
 
@@ -68,7 +70,15 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                 <div class="ga-topbar-right">
                     <span class="ga-status">{{status}}</span>
                     <span class="ga-error" v-if="error">{{error}}</span>
-                    <button class="ga-btn" type="button" @click="reload">Refresh</button>
+                    <div class="ga-segments" role="group" [attr.aria-label]="t('top.language')">
+                        <button class="ga-seg-btn" [class]="englishButtonClass" type="button" @click="useEnglish">EN</button>
+                        <button class="ga-seg-btn" [class]="chineseButtonClass" type="button" @click="useChinese">中文</button>
+                    </div>
+                    <select class="ga-theme-select" [attr.aria-label]="t('top.theme')" [value]="theme" @change="changeTheme($event)">
+                        <option value="light">{{t('theme.light')}}</option>
+                        <option value="dark">{{t('theme.dark')}}</option>
+                    </select>
+                    <button class="ga-btn" type="button" @click="reload">{{t('top.refresh')}}</button>
                 </div>
             </header>
 
@@ -76,33 +86,33 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                 <section class="ga-login" v-if="needsLogin">
                     <div class="ga-login-card">
                         <div class="ga-login-mark">TS</div>
-                        <h2>Sign in to Gateway Admin</h2>
-                        <p>The gateway management API is protected by OIDC. Use your organization account to continue.</p>
-                        <a class="ga-btn ga-btn-primary" href="/admin/auth/login?redirect=/admin/">Sign in with SSO</a>
+                        <h2>{{t('login.title')}}</h2>
+                        <p>{{t('login.desc')}}</p>
+                        <a class="ga-btn ga-btn-primary" href="/admin/auth/login?redirect=/admin/">{{t('login.button')}}</a>
                     </div>
                 </section>
 
                 <section class="ga-page" v-if="!needsLogin && page === 'dashboard'">
                     <div class="ga-metrics">
                         <article class="ga-metric">
-                            <span class="ga-metric-label">Routes</span>
+                            <span class="ga-metric-label">{{t('metric.routes')}}</span>
                             <strong>{{routes.length}}</strong>
-                            <span class="ga-metric-foot">{{enabledRoutes}} enabled</span>
+                            <span class="ga-metric-foot">{{t('metric.enabled', { count: enabledRoutes })}}</span>
                         </article>
                         <article class="ga-metric">
-                            <span class="ga-metric-label">Services</span>
+                            <span class="ga-metric-label">{{t('metric.services')}}</span>
                             <strong>{{services.length}}</strong>
-                            <span class="ga-metric-foot">discovery targets</span>
+                            <span class="ga-metric-foot">{{t('metric.discoveryTargets')}}</span>
                         </article>
                         <article class="ga-metric">
-                            <span class="ga-metric-label">Gateway rules</span>
+                            <span class="ga-metric-label">{{t('metric.rules')}}</span>
                             <strong>{{rules.length}}</strong>
-                            <span class="ga-metric-foot">compiled from visual workflows</span>
+                            <span class="ga-metric-foot">{{t('metric.compiled')}}</span>
                         </article>
                         <article class="ga-metric">
-                            <span class="ga-metric-label">Runtime</span>
-                            <strong class="ga-metric-ok">Healthy</strong>
-                            <span class="ga-metric-foot">local/admin service</span>
+                            <span class="ga-metric-label">{{t('metric.runtime')}}</span>
+                            <strong class="ga-metric-ok">{{t('metric.healthy')}}</strong>
+                            <span class="ga-metric-foot">{{t('metric.localAdmin')}}</span>
                         </article>
                     </div>
 
@@ -110,37 +120,37 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                         <article class="ga-card">
                             <div class="ga-card-head">
                                 <div>
-                                    <h2>Route table</h2>
-                                    <p>Traffic is matched in table order.</p>
+                                    <h2>{{t('card.routeTable')}}</h2>
+                                    <p>{{t('card.routeTableDesc')}}</p>
                                 </div>
-                                <button class="ga-btn" type="button" @click="goRoutes">Manage routes</button>
+                                <button class="ga-btn" type="button" @click="goRoutes">{{t('card.manageRoutes')}}</button>
                             </div>
                             <div class="ga-compact-list">
                                 <div class="ga-compact-row" v-for="route in routes.slice(0, 6)">
                                     <code>{{route.path}}</code>
-                                    <span>{{route.service || 'static upstream'}}</span>
-                                    <span class="ga-pill">{{routeMethods(route) || 'ANY'}}</span>
+                                    <span>{{route.service || t('table.staticUpstream')}}</span>
+                                    <span class="ga-pill">{{routeMethods(route) || t('common.any')}}</span>
                                 </div>
-                                <div class="ga-empty" v-if="!routes.length">No routes configured.</div>
+                                <div class="ga-empty" v-if="!routes.length">{{t('card.noRoutes')}}</div>
                             </div>
                         </article>
 
                         <article class="ga-card">
                             <div class="ga-card-head">
                                 <div>
-                                    <h2>Gateway rules</h2>
-                                    <p>Evaluated before the route table.</p>
+                                    <h2>{{t('card.rules')}}</h2>
+                                    <p>{{t('card.rulesDesc')}}</p>
                                 </div>
-                                <button class="ga-btn" type="button" @click="goRules">Manage rules</button>
+                                <button class="ga-btn" type="button" @click="goRules">{{t('card.manageRules')}}</button>
                             </div>
                             <div class="ga-compact-list">
                                 <div class="ga-compact-row" v-for="rule in rules.slice(0, 6)">
                                     <span class="ga-status-dot" [class]="ruleTone(rule)"></span>
                                     <code>{{rule.name || rule.id}}</code>
-                                    <span class="ga-pill">{{ruleActionType(rule)}}</span>
-                                    <span class="ga-muted">{{ruleConditionCount(rule)}} condition(s)</span>
+                                    <span class="ga-pill">{{ruleActionLabel(rule)}}</span>
+                                    <span class="ga-muted">{{t('card.conditions', { count: ruleConditionCount(rule) })}}</span>
                                 </div>
-                                <div class="ga-empty" v-if="!rules.length">No rules configured.</div>
+                                <div class="ga-empty" v-if="!rules.length">{{t('card.noRules')}}</div>
                             </div>
                         </article>
                     </div>
@@ -150,12 +160,12 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                     <div class="ga-page-actions">
                         <div class="ga-search">
                             <span>⌕</span>
-                            <input [value]="routeQuery" placeholder="Filter by path, service or upstream"
+                            <input [value]="routeQuery" placeholder="{{t('routes.filter')}}"
                                 @input="searchRoutes($event)" />
                         </div>
                         <div class="ga-actions">
-                            <button class="ga-btn ga-add-route" type="button" @click="addRoute">+ Add route</button>
-                            <button class="ga-btn ga-btn-primary ga-apply-routes" type="button" @click="applyRoutes">Apply changes</button>
+                            <button class="ga-btn ga-add-route" type="button" @click="addRoute">{{t('routes.add')}}</button>
+                            <button class="ga-btn ga-btn-primary ga-apply-routes" type="button" @click="applyRoutes">{{t('routes.apply')}}</button>
                         </div>
                     </div>
 
@@ -163,32 +173,32 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                         <table class="ga-route-table">
                             <thead>
                                 <tr>
-                                    <th>Path</th>
-                                    <th>Service</th>
-                                    <th>Upstream</th>
-                                    <th>Methods</th>
-                                    <th>Status</th>
+                                    <th>{{t('table.path')}}</th>
+                                    <th>{{t('table.service')}}</th>
+                                    <th>{{t('table.upstream')}}</th>
+                                    <th>{{t('table.methods')}}</th>
+                                    <th>{{t('table.status')}}</th>
                                     <th></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr class="ga-route-row" v-for="route in filteredRoutes">
                                     <td><code>{{route.path}}</code></td>
-                                    <td>{{route.service || '—'}}</td>
-                                    <td class="ga-cell-muted">{{route.targetUrl || route.targetPath || 'discovery'}}</td>
-                                    <td><span class="ga-pill">{{routeMethods(route) || 'ANY'}}</span></td>
+                                    <td>{{route.service || t('common.none')}}</td>
+                                    <td class="ga-cell-muted">{{route.targetUrl || route.targetPath || t('table.discovery')}}</td>
+                                    <td><span class="ga-pill">{{routeMethods(route) || t('common.any')}}</span></td>
                                     <td>
                                         <span class="ga-pill" [class]="route.enabled === false ? 'ga-pill is-off' : 'ga-pill is-on'">
-                                            {{route.enabled === false ? 'disabled' : 'enabled'}}
+                                            {{route.enabled === false ? t('status.disabled') : t('status.enabled')}}
                                         </span>
                                     </td>
                                     <td class="ga-cell-actions">
-                                        <button class="ga-link-btn" type="button" @click="editRoute(route)">Edit</button>
-                                        <button class="ga-link-btn is-danger" type="button" @click="removeRoute(route)">Remove</button>
+                                        <button class="ga-link-btn" type="button" @click="editRoute(route)">{{t('action.edit')}}</button>
+                                        <button class="ga-link-btn is-danger" type="button" @click="removeRoute(route)">{{t('action.remove')}}</button>
                                     </td>
                                 </tr>
                                 <tr v-if="!filteredRoutes.length">
-                                    <td colspan="6"><div class="ga-empty">No routes match this filter.</div></td>
+                                    <td colspan="6"><div class="ga-empty">{{t('routes.noneFiltered')}}</div></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -198,17 +208,17 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                 <section class="ga-page ga-page-rules" v-if="!needsLogin && page === 'rules'">
                     <div class="ga-page-actions">
                         <div>
-                            <h2 class="ga-section-title">Gateway rules</h2>
-                            <p class="ga-muted">Rules are stored as visual workflow documents and compiled into the live gateway runtime.</p>
+                            <h2 class="ga-section-title">{{t('rules.title')}}</h2>
+                            <p class="ga-muted">{{t('rules.desc')}}</p>
                         </div>
-                        <button class="ga-btn ga-btn-primary ga-edit-rules" type="button" @click="editRules">Configure rules</button>
+                        <button class="ga-btn ga-btn-primary ga-edit-rules" type="button" @click="editRules">{{t('rules.configure')}}</button>
                     </div>
 
                     <article class="ga-card">
                         <div class="ga-card-head">
                             <div>
-                                <h2>Compiled rule set</h2>
-                                <p>{{rules.length}} rule(s) · evaluated by priority before routes.</p>
+                                <h2>{{t('rules.compiled')}}</h2>
+                                <p>{{t('rules.count', { count: rules.length })}}</p>
                             </div>
                         </div>
                         <div class="ga-rule-list">
@@ -218,11 +228,11 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                                     <strong>{{rule.name || rule.id}}</strong>
                                     <span class="ga-muted">{{conditionSummary(rule)}}</span>
                                 </div>
-                                <span class="ga-pill" [class]="ruleActionType(rule) === 'deny' ? 'ga-pill is-danger' : 'ga-pill is-on'">{{ruleActionType(rule)}}</span>
-                                <span class="ga-pill">priority {{rulePriority(rule)}}</span>
+                                <span class="ga-pill" [class]="ruleActionType(rule) === 'deny' ? 'ga-pill is-danger' : 'ga-pill is-on'">{{ruleActionLabel(rule)}}</span>
+                                <span class="ga-pill">{{t('rules.priority', { value: rulePriority(rule) })}}</span>
                             </div>
                             <div class="ga-empty" v-if="!rules.length">
-                                No compiled rules yet. Open the visual designer to add conditions, route and deny actions.
+                                {{t('rules.empty')}}
                             </div>
                         </div>
                     </article>
@@ -234,39 +244,39 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
             <div class="ga-modal-card">
                 <header class="ga-modal-head">
                     <div>
-                        <h2>{{editingIndex >= 0 ? 'Edit route' : 'Add route'}}</h2>
-                        <p>Routes are matched in the order shown in the table.</p>
+                        <h2>{{editingIndex >= 0 ? t('editor.editTitle') : t('editor.addTitle')}}</h2>
+                        <p>{{t('editor.desc')}}</p>
                     </div>
                     <button class="ga-icon-btn" type="button" @click="closeRouteEditor">✕</button>
                 </header>
                 <div class="ga-form-grid">
                     <label class="ga-field">
-                        <span>Path</span>
+                        <span>{{t('editor.path')}}</span>
                         <input data-field="path" [value]="editingRoute.path" placeholder="/api/users"
                             @input="editRouteField($event)" />
                     </label>
                     <label class="ga-field">
-                        <span>Service</span>
+                        <span>{{t('editor.service')}}</span>
                         <input data-field="service" [value]="editingRoute.service" placeholder="users-service"
                             @input="editRouteField($event)" />
                     </label>
                     <label class="ga-field">
-                        <span>Target URL</span>
+                        <span>{{t('editor.targetUrl')}}</span>
                         <input data-field="targetUrl" [value]="editingRoute.targetUrl" placeholder="http://127.0.0.1:3001"
                             @input="editRouteField($event)" />
                     </label>
                     <label class="ga-field">
-                        <span>Target path</span>
+                        <span>{{t('editor.targetPath')}}</span>
                         <input data-field="targetPath" [value]="editingRoute.targetPath" placeholder="/users"
                             @input="editRouteField($event)" />
                     </label>
                     <label class="ga-field">
-                        <span>Methods</span>
+                        <span>{{t('editor.methods')}}</span>
                         <input data-field="methods" [value]="routeMethods(editingRoute)" placeholder="GET, POST"
                             @input="editRouteField($event)" />
                     </label>
                     <label class="ga-field">
-                        <span>Timeout (ms)</span>
+                        <span>{{t('editor.timeout')}}</span>
                         <input data-field="timeout" type="number" [value]="editingRoute.timeout"
                             @input="editRouteField($event)" />
                     </label>
@@ -275,17 +285,17 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                     <label class="ga-check">
                         <input type="checkbox" data-field="stripPrefix" [checked]="editingRoute.stripPrefix === true"
                             @change="editRouteField($event)" />
-                        <span>Strip inbound prefix</span>
+                        <span>{{t('editor.stripPrefix')}}</span>
                     </label>
                     <label class="ga-check">
                         <input type="checkbox" data-field="enabled" [checked]="editingRoute.enabled !== false"
                             @change="editRouteField($event)" />
-                        <span>Route enabled</span>
+                        <span>{{t('editor.enabled')}}</span>
                     </label>
                 </div>
                 <footer class="ga-modal-foot">
-                    <button class="ga-btn" type="button" @click="closeRouteEditor">Cancel</button>
-                    <button class="ga-btn ga-btn-primary ga-route-save" type="button" @click="saveRouteEditor">Save route</button>
+                    <button class="ga-btn" type="button" @click="closeRouteEditor">{{t('editor.cancel')}}</button>
+                    <button class="ga-btn ga-btn-primary ga-route-save" type="button" @click="saveRouteEditor">{{t('editor.save')}}</button>
                 </footer>
             </div>
         </div>
@@ -293,20 +303,20 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
         <div class="ga-designer-page" v-if="designerOpen">
             <header class="ga-designer-head">
                 <div>
-                    <h2>Visual rule designer</h2>
-                    <p>Conditions, route and deny actions compile to gateway rules. The designer is only opened while editing.</p>
+                    <h2>{{t('designer.title')}}</h2>
+                    <p>{{t('designer.desc')}}</p>
                 </div>
                 <div class="ga-actions">
-                    <button class="ga-btn ga-rules-cancel" type="button" @click="closeDesigner">Cancel</button>
-                    <button class="ga-btn ga-btn-primary ga-rules-apply" type="button" @click="applyRules">Apply rules</button>
+                    <button class="ga-btn ga-rules-cancel" type="button" @click="closeDesigner">{{t('editor.cancel')}}</button>
+                    <button class="ga-btn ga-btn-primary ga-rules-apply" type="button" @click="applyRules">{{t('designer.apply')}}</button>
                 </div>
             </header>
             <div class="ga-designer-body">
                 <workflow-designer-preview
                     :designer="designer"
                     :registry="registry"
-                    locale="zh-CN"
-                    theme="light"
+                    :locale="locale"
+                    :theme="theme"
                     :hiddenActions="designerHiddenActions"
                     :showRunHistory="false"
                     :showRunLogs="false"
@@ -320,7 +330,9 @@ export class GatewayAdminComponent implements AfterViewInit {
     routes: GatewayRouteOptions[] = [];
     services: string[] = [];
     rules: any[] = [];
-    status = 'Loading…';
+    status = '';
+    locale: AdminLocale = 'en';
+    theme: 'light' | 'dark' = 'light';
     error = '';
     routeQuery = '';
     routeEditorOpen = false;
@@ -338,7 +350,17 @@ export class GatewayAdminComponent implements AfterViewInit {
     private loaded = false;
     private selfRef?: GatewayAdminComponent;
 
-    constructor(@Optional() effect?: ReactiveEffect) {
+    constructor(
+        @Optional() effect?: ReactiveEffect,
+        @Optional() @Inject(DOCUMENT) private documentRef?: any
+    ) {
+        try {
+            if (documentRef) {
+                (documentRef as any)[noReact] = true;
+            }
+        } catch {
+            // Documents can reject expando properties.
+        }
         this.registry = registerGatewayRuleNodes(new WorkflowNodeRegistry());
         const rawDesigner = new WorkflowDesigner({
             registry: this.registry,
@@ -349,6 +371,22 @@ export class GatewayAdminComponent implements AfterViewInit {
 
     onInit(): void {
         this.selfRef = this;
+        try {
+            const locale = this.storage()?.getItem('tsdi-gateway-admin-locale');
+            if (locale === 'zh-CN' || locale === 'en') {
+                this.locale = locale;
+            } else if (String(globalThis.navigator?.language || '').toLowerCase().startsWith('zh')) {
+                this.locale = 'zh-CN';
+            }
+            const theme = this.storage()?.getItem('tsdi-gateway-admin-theme');
+            if (theme === 'dark' || theme === 'light') {
+                this.theme = theme;
+            }
+        } catch {
+            // Private mode/storage failures keep the defaults.
+        }
+        this.status = this.t('status.loading');
+        this.applyTheme();
     }
 
     async onAfterViewInit(): Promise<void> {
@@ -356,7 +394,73 @@ export class GatewayAdminComponent implements AfterViewInit {
             return;
         }
         this.loaded = true;
+        this.applyTheme();
         await this.reload();
+    }
+
+    t(key: string, params?: Record<string, any>): string {
+        return adminMessage(this.locale, key, params);
+    }
+
+    private storage(): Storage | undefined {
+        try {
+            return this.documentRef?.defaultView?.localStorage
+                ?? (globalThis as { localStorage?: Storage }).localStorage;
+        } catch {
+            return undefined;
+        }
+    }
+
+    private applyTheme(): void {
+        const doc = this.documentRef ?? (globalThis as { document?: Document }).document;
+        if (doc?.documentElement) {
+            doc.documentElement.setAttribute('data-theme', this.theme);
+        }
+    }
+
+    get englishButtonClass(): string {
+        return `ga-seg-btn${this.locale === 'en' ? ' is-active' : ''}`;
+    }
+
+    get chineseButtonClass(): string {
+        return `ga-seg-btn${this.locale === 'zh-CN' ? ' is-active' : ''}`;
+    }
+
+    useEnglish(): void {
+        this.setLocale('en');
+    }
+
+    useChinese(): void {
+        this.setLocale('zh-CN');
+    }
+
+    private setLocale(locale: AdminLocale): void {
+        const self = this.self();
+        if (self.locale === locale) {
+            return;
+        }
+        self.locale = locale;
+        try {
+            self.storage()?.setItem('tsdi-gateway-admin-locale', locale);
+            (self.documentRef ?? globalThis.document)?.documentElement?.setAttribute('lang', locale);
+        } catch {
+            // ignore storage failures
+        }
+        if (self.loaded) {
+            void self.reload();
+        }
+    }
+
+    changeTheme(event: Event): void {
+        const self = this.self();
+        const value = (event.target as HTMLSelectElement).value;
+        self.theme = value === 'dark' ? 'dark' : 'light';
+        self.applyTheme();
+        try {
+            self.storage()?.setItem('tsdi-gateway-admin-theme', self.theme);
+        } catch {
+            // ignore storage failures
+        }
     }
 
     private self(): GatewayAdminComponent {
@@ -365,17 +469,17 @@ export class GatewayAdminComponent implements AfterViewInit {
 
     get pageTitle(): string {
         switch (this.page) {
-            case 'routes': return 'Routes';
-            case 'rules': return 'Rules';
-            default: return 'Overview';
+            case 'routes': return this.t('page.routes.title');
+            case 'rules': return this.t('page.rules.title');
+            default: return this.t('page.overview.title');
         }
     }
 
     get pageSubtitle(): string {
         switch (this.page) {
-            case 'routes': return 'Manage discovered and static gateway routes.';
-            case 'rules': return 'Visual workflows compiled into gateway decisions.';
-            default: return 'Live operational view of the gateway runtime.';
+            case 'routes': return this.t('page.routes.subtitle');
+            case 'rules': return this.t('page.rules.subtitle');
+            default: return this.t('page.overview.subtitle');
         }
     }
 
@@ -423,7 +527,7 @@ export class GatewayAdminComponent implements AfterViewInit {
     conditionSummary(rule: any): string {
         const when = rule?.when ?? [];
         if (!when.length) {
-            return 'matches every request';
+            return this.t('rules.matchesEvery');
         }
         return when.map((condition: any) => [
             condition.field,
@@ -439,6 +543,10 @@ export class GatewayAdminComponent implements AfterViewInit {
 
     ruleActionType(rule: any): string {
         return rule?.action?.type || 'route';
+    }
+
+    ruleActionLabel(rule: any): string {
+        return this.t(this.ruleActionType(rule) === 'deny' ? 'rule.deny' : 'rule.route');
     }
 
     ruleTone(rule: any): string {
@@ -463,7 +571,7 @@ export class GatewayAdminComponent implements AfterViewInit {
                 return;
             }
             if (!response.ok) {
-                throw new Error(`Gateway admin API unavailable: HTTP ${response.status}`);
+                throw new Error(this.t('error.apiUnavailable', { status: response.status }));
             }
             const state = await response.json() as GatewayAdminState;
             self.authEnabled = state.auth?.enabled === true;
@@ -471,9 +579,9 @@ export class GatewayAdminComponent implements AfterViewInit {
             self.routes = (state.routes ?? []).map(route => ({ ...route }));
             self.services = state.services ?? [];
             self.rules = state.rules ?? [];
-            self.status = `Ready · ${self.routes.length} route(s) · ${self.rules.length} rule(s)`;
+            self.status = self.t('status.ready', { routes: self.routes.length, rules: self.rules.length });
         } catch (error) {
-            self.status = 'Offline';
+            self.status = self.t('status.offline');
             self.error = (error as Error).message;
         }
     }
@@ -482,7 +590,7 @@ export class GatewayAdminComponent implements AfterViewInit {
         const self = this.self();
         self.needsLogin = true;
         self.authEnabled = true;
-        self.status = 'Sign in required';
+        self.status = self.t('status.signInRequired');
     }
 
     private async fetchState(): Promise<GatewayAdminState> {
@@ -492,7 +600,7 @@ export class GatewayAdminComponent implements AfterViewInit {
             return {};
         }
         if (!response.ok) {
-            throw new Error(`Gateway admin API unavailable: HTTP ${response.status}`);
+            throw new Error(this.t('error.apiUnavailable', { status: response.status }));
         }
         return await response.json() as GatewayAdminState;
     }
@@ -551,7 +659,7 @@ export class GatewayAdminComponent implements AfterViewInit {
         const self = this.self();
         const route = self.editingRoute;
         if (!route.path || (!route.service && !route.targetUrl)) {
-            self.error = 'Route requires a path and either service or targetUrl.';
+            self.error = self.t('error.routeRequired');
             return;
         }
         self.error = '';
@@ -563,13 +671,13 @@ export class GatewayAdminComponent implements AfterViewInit {
             self.routes = [...self.routes, { ...route }];
         }
         self.closeRouteEditor();
-        self.status = `Route staged · ${self.routes.length} route(s). Apply changes to publish.`;
+        self.status = self.t('status.routeStaged', { count: self.routes.length });
     }
 
     removeRoute(route: GatewayRouteOptions): void {
         const self = this.self();
         self.routes = self.routes.filter(item => item !== route);
-        self.status = `Route removed locally · ${self.routes.length} route(s). Apply changes to publish.`;
+        self.status = self.t('status.routeRemoved', { count: self.routes.length });
     }
 
     async applyRoutes(): Promise<void> {
@@ -586,12 +694,12 @@ export class GatewayAdminComponent implements AfterViewInit {
                 return;
             }
             if (!response.ok) {
-                throw new Error(`Failed to apply routes: HTTP ${response.status}`);
+                throw new Error(self.t('error.applyRoutes', { status: response.status }));
             }
             const state = await response.json() as GatewayAdminState;
             self.routes = (state.routes ?? []).map(route => ({ ...route }));
             self.services = state.services ?? [];
-            self.status = `Routes applied · ${self.routes.length} route(s)`;
+            self.status = self.t('status.routesApplied', { count: self.routes.length });
         } catch (error) {
             self.error = (error as Error).message;
         }
@@ -624,7 +732,7 @@ export class GatewayAdminComponent implements AfterViewInit {
         try {
             const summary = await self.store.save(self.designer.definition);
             self.designerOpen = false;
-            self.status = `Rules applied · ${summary.nodeCount} node(s)`;
+            self.status = self.t('status.rulesApplied', { count: summary.nodeCount });
             const state = await self.fetchState();
             self.rules = state.rules ?? [];
             self.services = state.services ?? [];

@@ -6,8 +6,19 @@
     <meta name="theme-color" content="#0f172a" />
     <link rel="icon" href="data:," />
     <title>TSDI Gateway Admin</title>
+    <script>
+        (function () {
+            try {
+                var theme = localStorage.getItem('tsdi-gateway-admin-theme');
+                document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
+                var locale = localStorage.getItem('tsdi-gateway-admin-locale');
+                if (locale) document.documentElement.setAttribute('lang', locale);
+            } catch (e) { /* storage may be unavailable */ }
+        })();
+    </script>
     <style>
         :root {
+            color-scheme: light;
             --ga-sidebar: #0f172a;
             --ga-sidebar-soft: #1e293b;
             --ga-bg: #f1f5f9;
@@ -71,7 +82,19 @@
         }
         .ga-topbar-title h1 { margin: 0; font-size: 17px; font-weight: 650; letter-spacing: -.2px; }
         .ga-topbar-title span { display: block; margin-top: 2px; color: var(--ga-muted); font-size: 11px; }
-        .ga-topbar-right { display: flex; align-items: center; gap: 12px; }
+        .ga-topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .ga-segments { display: inline-flex; border: 1px solid var(--ga-border); border-radius: 8px; overflow: hidden; background: var(--ga-surface); }
+        .ga-seg-btn {
+            border: 0; background: transparent; color: var(--ga-muted); font: inherit; font-size: 11px;
+            padding: 6px 9px; cursor: pointer;
+        }
+        .ga-seg-btn + .ga-seg-btn { border-left: 1px solid var(--ga-border); }
+        .ga-seg-btn:hover { color: var(--ga-blue); }
+        .ga-seg-btn.is-active { background: var(--ga-blue); color: #fff; }
+        .ga-theme-select {
+            border: 1px solid var(--ga-border); border-radius: 8px; background: var(--ga-surface);
+            color: var(--ga-text); font: inherit; font-size: 11px; padding: 7px 9px; cursor: pointer;
+        }
         .ga-status { color: #1d4ed8; font-size: 11px; background: var(--ga-blue-soft); padding: 4px 8px; border-radius: 999px; }
         .ga-error { color: #b91c1c; font-size: 11px; max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .ga-content { flex: 1; min-height: 0; overflow: auto; padding: 22px 24px 32px; }
@@ -207,6 +230,49 @@
         .ga-designer-head p { margin: 2px 0 0; color: var(--ga-muted); font-size: 11px; }
         .ga-designer-body { flex: 1; min-height: 0; }
         .ga-designer-body > workflow-designer-preview { display: block; height: 100%; }
+
+        :root[data-theme="dark"] {
+            color-scheme: dark;
+            --ga-bg: #0b1220;
+            --ga-surface: #111827;
+            --ga-border: #1f2937;
+            --ga-text: #e5e7eb;
+            --ga-muted: #94a3b8;
+            --ga-blue: #60a5fa;
+            --ga-blue-soft: #172554;
+        }
+        :root[data-theme="dark"] body { background: var(--ga-bg); color: var(--ga-text); }
+        :root[data-theme="dark"] .ga-content { background: var(--ga-bg); }
+        :root[data-theme="dark"] .ga-card,
+        :root[data-theme="dark"] .ga-metric,
+        :root[data-theme="dark"] .ga-topbar,
+        :root[data-theme="dark"] .ga-modal-card,
+        :root[data-theme="dark"] .ga-login-card { background: #111827; border-color: #1f2937; color: #e5e7eb; }
+        :root[data-theme="dark"] .ga-route-table th { background: #0f172a; color: #94a3b8; border-color: #1f2937; }
+        :root[data-theme="dark"] .ga-route-table td { border-color: #1f2937; }
+        :root[data-theme="dark"] .ga-route-table tbody tr:hover { background: #0f172a; }
+        :root[data-theme="dark"] .ga-route-table code { background: #1f2937; color: #e5e7eb; }
+        :root[data-theme="dark"] .ga-compact-row,
+        :root[data-theme="dark"] .ga-rule-item { border-color: #1f2937; }
+        :root[data-theme="dark"] .ga-pill { background: #1f2937; color: #cbd5e1; }
+        :root[data-theme="dark"] .ga-pill.is-on { background: #052e16; color: #86efac; }
+        :root[data-theme="dark"] .ga-pill.is-danger { background: #450a0a; color: #fca5a5; }
+        :root[data-theme="dark"] .ga-btn { background: #111827; border-color: #334155; color: #e2e8f0; }
+        :root[data-theme="dark"] .ga-btn:hover { background: #0f172a; border-color: #60a5fa; color: #93c5fd; }
+        :root[data-theme="dark"] .ga-btn-primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+        :root[data-theme="dark"] .ga-search,
+        :root[data-theme="dark"] .ga-theme-select,
+        :root[data-theme="dark"] .ga-segments,
+        :root[data-theme="dark"] .ga-icon-btn { background: #111827; border-color: #334155; color: #e2e8f0; }
+        :root[data-theme="dark"] .ga-search input { color: #e5e7eb; }
+        :root[data-theme="dark"] .ga-field { color: #cbd5e1; }
+        :root[data-theme="dark"] .ga-field input { background: #0b1220; border-color: #334155; color: #e5e7eb; }
+        :root[data-theme="dark"] .ga-check { color: #cbd5e1; }
+        :root[data-theme="dark"] .ga-modal { background: rgba(2, 6, 23, .72); }
+        :root[data-theme="dark"] .ga-designer-page { background: #0b1220; }
+        :root[data-theme="dark"] .ga-designer-head { background: #111827; border-color: #1f2937; }
+        :root[data-theme="dark"] .ga-status { color: #93c5fd; }
+        :root[data-theme="dark"] .ga-error { color: #fca5a5; }
 
         @media (max-width: 1000px) {
             .ga-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
