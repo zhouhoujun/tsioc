@@ -39,7 +39,9 @@
     "@tsdi/gateway": "6.0.31",
     "@tsdi/ioc": "6.0.31",
     "@tsdi/logger": "6.0.31",
-    "@tsdi/service": "6.0.31"
+    "@tsdi/service": "6.0.31",
+    "@tsdi/security": "6.0.31",
+    "@tsdi/http-microservice": "6.0.31"
   },
   "devDependencies": {
     "@tsdi/compiler": "6.0.31",

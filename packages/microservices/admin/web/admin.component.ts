@@ -14,6 +14,7 @@ interface GatewayAdminState {
     routes?: GatewayRouteOptions[];
     rules?: any[];
     services?: string[];
+    auth?: { enabled: boolean; mode: 'none' | 'oidc' | 'service' };
 }
 
 type AdminPage = 'dashboard' | 'routes' | 'rules';
@@ -53,7 +54,8 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
             </nav>
             <div class="ga-sidebar-foot">
                 <span class="ga-env-dot"></span>
-                <span>Live gateway runtime</span>
+                <span>{{authEnabled ? 'SSO protected' : 'Live gateway runtime'}}</span>
+                <a v-if="authEnabled" class="ga-signout" href="/admin/auth/logout">Sign out</a>
             </div>
         </aside>
 
@@ -71,7 +73,16 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
             </header>
 
             <div class="ga-content">
-                <section class="ga-page" v-if="page === 'dashboard'">
+                <section class="ga-login" v-if="needsLogin">
+                    <div class="ga-login-card">
+                        <div class="ga-login-mark">TS</div>
+                        <h2>Sign in to Gateway Admin</h2>
+                        <p>The gateway management API is protected by OIDC. Use your organization account to continue.</p>
+                        <a class="ga-btn ga-btn-primary" href="/admin/auth/login?redirect=/admin/">Sign in with SSO</a>
+                    </div>
+                </section>
+
+                <section class="ga-page" v-if="!needsLogin && page === 'dashboard'">
                     <div class="ga-metrics">
                         <article class="ga-metric">
                             <span class="ga-metric-label">Routes</span>
@@ -135,7 +146,7 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                     </div>
                 </section>
 
-                <section class="ga-page ga-page-routes" v-if="page === 'routes'">
+                <section class="ga-page ga-page-routes" v-if="!needsLogin && page === 'routes'">
                     <div class="ga-page-actions">
                         <div class="ga-search">
                             <span>⌕</span>
@@ -184,7 +195,7 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                     </article>
                 </section>
 
-                <section class="ga-page ga-page-rules" v-if="page === 'rules'">
+                <section class="ga-page ga-page-rules" v-if="!needsLogin && page === 'rules'">
                     <div class="ga-page-actions">
                         <div>
                             <h2 class="ga-section-title">Gateway rules</h2>
@@ -317,6 +328,8 @@ export class GatewayAdminComponent implements AfterViewInit {
     editingIndex = -1;
     designerOpen = false;
     designerHiddenActions = DESIGNER_HIDDEN_ACTIONS;
+    authEnabled = false;
+    needsLogin = false;
 
     readonly registry: WorkflowNodeRegistry;
     readonly designer: WorkflowDesigner;
@@ -444,7 +457,17 @@ export class GatewayAdminComponent implements AfterViewInit {
         const self = this.self();
         self.error = '';
         try {
-            const state = await this.fetchState();
+            const response = await fetch('/api/gateway-admin/state');
+            if (response.status === 401) {
+                self.requireLogin();
+                return;
+            }
+            if (!response.ok) {
+                throw new Error(`Gateway admin API unavailable: HTTP ${response.status}`);
+            }
+            const state = await response.json() as GatewayAdminState;
+            self.authEnabled = state.auth?.enabled === true;
+            self.needsLogin = false;
             self.routes = (state.routes ?? []).map(route => ({ ...route }));
             self.services = state.services ?? [];
             self.rules = state.rules ?? [];
@@ -455,8 +478,19 @@ export class GatewayAdminComponent implements AfterViewInit {
         }
     }
 
+    private requireLogin(): void {
+        const self = this.self();
+        self.needsLogin = true;
+        self.authEnabled = true;
+        self.status = 'Sign in required';
+    }
+
     private async fetchState(): Promise<GatewayAdminState> {
         const response = await fetch('/api/gateway-admin/state');
+        if (response.status === 401) {
+            this.requireLogin();
+            return {};
+        }
         if (!response.ok) {
             throw new Error(`Gateway admin API unavailable: HTTP ${response.status}`);
         }
@@ -547,6 +581,10 @@ export class GatewayAdminComponent implements AfterViewInit {
                 headers: { 'content-type': 'application/json' },
                 body: JSON.stringify({ routes: self.routes })
             });
+            if (response.status === 401) {
+                self.requireLogin();
+                return;
+            }
             if (!response.ok) {
                 throw new Error(`Failed to apply routes: HTTP ${response.status}`);
             }

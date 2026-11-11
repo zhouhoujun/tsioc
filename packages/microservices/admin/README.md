@@ -119,6 +119,150 @@ export class AppModule {}
 `admin-ui` is the output of `npm run build:web` (`web/index.html`,
 `web/main.js`, `web/chunks/**`).
 
+## Authentication (OIDC)
+
+The admin API is open by default for local development. Production deployments
+should enable OIDC:
+
+```ts
+import { startGatewayAdminServer } from '@tsdi/microservice-admin';
+
+await startGatewayAdminServer({
+    port: 8080,
+    uiRoot: path.join(__dirname, 'admin-ui'),
+    auth: {
+        mode: 'oidc',
+        issuer: 'https://login.example.com',
+        clientId: 'gateway-admin',
+        clientSecret: process.env.OIDC_CLIENT_SECRET,
+        sessionSecret: process.env.GATEWAY_ADMIN_SESSION_SECRET,
+        redirectUri: 'https://gateway.example.com/admin/oidc/callback',
+        allowedDomains: ['example.com'],
+        requiredGroups: ['gateway-admins']
+    }
+});
+```
+
+What is protected:
+
+- `/api/gateway-admin/*` requires a valid signed session cookie and returns
+  `401` without one.
+- `/admin/*` stays loadable so the browser can render the sign-in page.
+- `/admin/auth/login`, `/admin/oidc/callback` and `/admin/auth/logout` implement
+  authorization-code + PKCE with state/nonce validation.
+- The UI shows a sign-in screen on `401` and a “Sign out” action when SSO is on.
+
+
+### Auth modes
+
+| `auth.mode` | Meaning |
+|---|---|
+| `none` | No login; local/development use. |
+| `oidc` | Admin is an OIDC client of an external IdP (Keycloak, Entra, Auth0, ...). |
+| `service` | Admin accepts session/access JWTs issued by a **separate** `@tsdi/oidc-auth` service. Admin never starts that service. |
+
+`service` mode verifies the `oidc_session` cookie (or `Authorization: Bearer`)
+with the shared `sessionSecret`/`sessionIssuer`, so the auth service must be
+deployed and started independently:
+
+```bash
+# separate process, separate workspace/db
+cd packages/oidc-auth
+npm start
+```
+
+```json
+{
+  "auth": {
+    "mode": "service",
+    "authServiceUrl": "http://127.0.0.1:3000",
+    "sessionSecret": "shared-with-oidc-auth",
+    "sessionIssuer": "tsioc-oidc-auth",
+    "loginUrl": "http://127.0.0.1:3000/auth/login",
+    "requiredRoles": ["gateway-admins"]
+  }
+}
+```
+
+In `service` mode the admin only mounts a login redirect to `loginUrl` and a
+logout redirect to `logoutUrl` (default `<authServiceUrl>/auth/logout`); it does
+not host authorization/token endpoints or manage users. `@tsdi/oidc-auth`
+exposes `/auth/login` as a JSON `{ url }` response, so point `loginUrl` at a
+small login page (or reverse-proxy route) that redirects to that URL; the local
+auth service and its database are started as a separate process.
+
+The provider is configurable. `provider: 'oidc'` (default) uses issuer discovery;
+an explicit endpoint object is also supported for non-standard providers:
+
+```ts
+auth: {
+    mode: 'oidc',
+    provider: {
+        issuer: 'https://idp.example',
+        authorizationEndpoint: 'https://idp.example/authorize',
+        tokenEndpoint: 'https://idp.example/token',
+        jwksUri: 'https://idp.example/jwks',
+        userinfoEndpoint: 'https://idp.example/userinfo'
+    },
+    clientId: 'gateway-admin',
+    clientSecret: '...',
+    sessionSecret: '...'
+}
+```
+
+OIDC uses discovery (`/.well-known/openid-configuration`) unless explicit
+endpoints are supplied, verifies the ID token
+signature via JWKS (issuer/audience/nonce/exp), then optionally checks
+`allowedEmails`, `allowedDomains`, `requiredGroups` and `requiredClaims`.
+The session is an HMAC-signed HttpOnly cookie; configure a stable
+`sessionSecret` so sessions survive restarts.
+
+CLI/environment:
+
+```bash
+GATEWAY_ADMIN_AUTH=oidc \
+GATEWAY_ADMIN_OIDC_ISSUER=https://login.example.com \
+GATEWAY_ADMIN_OIDC_CLIENT_ID=gateway-admin \
+GATEWAY_ADMIN_OIDC_CLIENT_SECRET=... \
+GATEWAY_ADMIN_SESSION_SECRET=... \
+GATEWAY_ADMIN_OIDC_REDIRECT_URI=https://gateway.example.com/admin/oidc/callback \
+npm start -- --auth oidc
+```
+
+Or keep everything in a JSON config file (relative `uiRoot` resolves from the
+config directory):
+
+```json
+{
+  "host": "0.0.0.0",
+  "port": 8080,
+  "prefix": "/admin",
+  "uiRoot": "./admin-ui",
+  "routes": [{ "path": "/api", "service": "backend-service" }],
+  "auth": {
+    "mode": "oidc",
+    "provider": "oidc",
+    "issuer": "https://login.example.com",
+    "clientId": "gateway-admin",
+    "clientSecret": "replace-me",
+    "sessionSecret": "replace-me",
+    "allowedDomains": ["example.com"]
+  }
+}
+```
+
+```bash
+npm start -- --config gateway-admin.json
+# toggle auth off explicitly
+npm start -- --config gateway-admin.json --auth none
+```
+
+Precedence: config file < environment variables < CLI flags. Set
+`"auth": false` (or `--auth none`) to keep the admin open without OIDC.
+
+Logout clears the local session cookie. Provider-side single logout depends on
+the IdP's `end_session_endpoint` and is not invoked automatically.
+
 ## HTTP API
 
 | Method | Path | Description |
@@ -168,6 +312,6 @@ the visual rules and verifies the live state.
 
 ## Security
 
-The admin API mutates the live gateway. Mount it behind authentication and do not
-expose `/api/gateway-admin` or the admin UI on a public interface without an
-authorization layer.
+The admin API mutates the live gateway. Keep OIDC enabled in production, restrict
+`allowedEmails`/`allowedDomains`/`requiredGroups`, and terminate TLS in front of
+the admin service so the session cookie is marked `Secure`.

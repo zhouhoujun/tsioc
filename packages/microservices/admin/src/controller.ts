@@ -8,6 +8,7 @@ import {
     WorkflowDefinitionStore
 } from '@tsdi/activities';
 import { compileGatewayRules } from './rules';
+import { GATEWAY_ADMIN_AUTH_OPTIONS, GatewayAdminAuthOptions } from './auth';
 
 /**
  * Store used for visual gateway rule documents. Defaults to an in-memory store;
@@ -20,6 +21,10 @@ export interface GatewayAdminState {
     rules: GatewayRuleOptions[];
     services: string[];
     dynamic: Partial<GatewayOptions>;
+    auth: {
+        enabled: boolean;
+        mode: 'none' | 'oidc' | 'service';
+    };
 }
 
 function uniqueServices(routes: GatewayRouteOptions[], rules: GatewayRuleOptions[]): string[] {
@@ -41,7 +46,8 @@ export class GatewayAdminController {
     constructor(
         private runtime: GatewayRuntime,
         @Inject(GATEWAY_OPTIONS, { nullable: true }) private options?: GatewayOptions,
-        @Inject(GATEWAY_RULES_STORE, { nullable: true }) private store?: WorkflowDefinitionStore
+        @Inject(GATEWAY_RULES_STORE, { nullable: true }) private store?: WorkflowDefinitionStore,
+        @Inject(GATEWAY_ADMIN_AUTH_OPTIONS, { nullable: true }) private authOptions?: GatewayAdminAuthOptions
     ) {
         this.store = store ?? new InMemoryWorkflowDefinitionStore();
     }
@@ -159,7 +165,11 @@ export class GatewayAdminController {
             routes,
             rules,
             services: uniqueServices(routes, rules),
-            dynamic: this.runtime.getDynamicOptions()
+            dynamic: this.runtime.getDynamicOptions(),
+            auth: {
+                enabled: this.authOptions?.mode === 'oidc' || this.authOptions?.mode === 'service',
+                mode: this.authOptions?.mode === 'oidc' ? 'oidc' : this.authOptions?.mode === 'service' ? 'service' : 'none'
+            }
         };
     }
 }

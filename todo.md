@@ -3510,3 +3510,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 用 jsdom 实际加载构建产物验证：`.ga-shell` 渲染、状态 Ready、规则画布 4 节点、palette 38 项、无运行时错误。
   - 独立服务根路径 `/` 现在 302 到 `/admin/`；index.html 增加脚本错误提示。
   - admin 15 passing。
+- Gateway Admin 专业 UI + 设计器拆分 + OIDC（2026-11-11）：
+  - activities 提取 `WorkflowDesignerPreviewComponent`（单文档设计工作区），完整多工作流设计器复用该组件；管理菜单迁移到全局右上角 `WorkflowManagementMenuComponent`，工具栏只保留设计操作。
+  - admin 重做为 Overview / Routes / Rules 三页管理台；路由表 + 抽屉编辑 + Apply，规则默认只展示编译结果，点击 Configure rules 才打开全屏 designer 页面。
+  - 新增可选 OIDC 登录：discovery + authorization code + PKCE + state/nonce + JWKS ID token 校验 + HMAC HttpOnly session cookie；支持 allowedEmails/Domains/Groups/Claims；API 未登录 401，UI 显示 SSO 登录页。
+  - admin 19 passing（含 OIDC 登录/回调/篡改 cookie 测试），activities 255 passing；admin 构建与 Web 构建通过。
+- Admin 认证服务拆分（2026-11-11）：
+  - `auth.mode` 扩展为 `none | oidc | service`：`oidc` 为外部 IdP client；`service` 校验独立 `@tsdi/oidc-auth` 服务签发的 `oidc_session`/Bearer JWT（共享 sessionSecret + sessionIssuer + requiredRoles）。
+  - admin 不启动任何 OIDC provider；`auth.provider` 可配置 discovery issuer 或显式 endpoints；JSON config 支持 `auth: false` / `mode:none` 与完整 provider 配置。
+  - `--config` 支持 host/port/prefix/uiRoot/routes/auth；优先级 config < env < CLI。
+  - admin 25 passing（新增 OIDC、service session、config 合并），build/build:web 通过。

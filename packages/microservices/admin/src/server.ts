@@ -3,11 +3,12 @@ import * as path from 'node:path';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Module, Type } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
-import { Controller, Get, RedirectResult, provideService, useJson, useRouter } from '@tsdi/service';
+import { Controller, Get, RedirectResult, provideService, useCookie, useJson, useRouter } from '@tsdi/service';
 import { useHttpTransport } from '@tsdi/http-microservice';
 import { GatewayRouteOptions, useGateway } from '@tsdi/gateway';
 import { InMemoryWorkflowDefinitionStore } from '@tsdi/activities';
 import { GatewayAdminController, GATEWAY_RULES_STORE, useGatewayAdminUi } from './controller';
+import { GatewayAdminAuthOptions, useGatewayAdminAuth } from './auth';
 
 export interface GatewayAdminServerOptions {
     /** HTTP listen host. Default `127.0.0.1`. */
@@ -20,6 +21,8 @@ export interface GatewayAdminServerOptions {
     uiRoot?: string | false;
     /** Initial routes shown/applied by the console. Default empty. */
     routes?: GatewayRouteOptions[];
+    /** Optional OIDC login protection for the admin API/UI. */
+    auth?: GatewayAdminAuthOptions | false;
     /** Application base directory used for module resolution. */
     baseURL?: string;
 }
@@ -78,8 +81,12 @@ export function createGatewayAdminServerModule(options: GatewayAdminServerOption
     const features: any[] = [
         useRouter(),
         useJson(),
+        useCookie(),
         useGateway({ routes: options.routes ?? [] })
     ];
+    if (options.auth && (options.auth.mode === 'oidc' || options.auth.mode === 'service')) {
+        features.unshift(useGatewayAdminAuth(options.auth));
+    }
     if (uiRoot) {
         features.push(useGatewayAdminUi({ root: uiRoot, prefix }));
     }
