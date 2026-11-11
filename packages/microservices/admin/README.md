@@ -22,6 +22,55 @@ surfaces:
   `GatewayRuntime` immediately.
 - Optional static UI feature (`useGatewayAdminUi`).
 
+## Start a standalone server
+
+The package is embeddable, but it also ships a standalone entry for local
+management/preview:
+
+```bash
+cd packages/microservices/admin
+
+# default: http://127.0.0.1:4318/admin/
+npm start
+
+# custom host/port/prefix and seeded routes
+npm start -- --port 8080 --host 0.0.0.0 --prefix /admin --routes routes.json
+
+# API only (no static UI)
+npm start -- --no-ui
+```
+
+`serve` is an alias for `start`.
+
+Environment variables:
+
+| Variable | Default |
+|---|---|
+| `GATEWAY_ADMIN_PORT` | `4318` |
+| `GATEWAY_ADMIN_HOST` | `127.0.0.1` |
+| `GATEWAY_ADMIN_PREFIX` | `/admin` |
+| `GATEWAY_ADMIN_UI_ROOT` | nearest `./web` with `index.html` |
+| `GATEWAY_ADMIN_ROUTES` | JSON routes file |
+
+Routes file format: a route array, or `{ "routes": [...] }`.
+
+Programmatic startup:
+
+```ts
+import { startGatewayAdminServer } from '@tsdi/microservice-admin';
+
+const ctx = await startGatewayAdminServer({
+    port: 8080,
+    prefix: '/admin',
+    uiRoot: path.join(__dirname, 'admin-ui'),
+    routes: [{ path: '/api', service: 'backend-service' }]
+});
+```
+
+> A standalone process owns its own `GatewayRuntime`. To apply changes to a
+> running gateway, declare `GatewayAdminController` in that gateway module (see
+> the next section) instead of using the standalone entry.
+
 ## Gateway integration
 
 ```ts
@@ -100,9 +149,17 @@ restarts.
 ## Build
 
 ```bash
-npm run build       # server-side package (AOT)
+npm run build       # server-side package (AOT, includes src/main.ts)
 npm run build:web   # browser bundle -> web/main.js + web/chunks
-npm test            # compiler, controller and jsdom UI regression
+npm start           # standalone service (ts-node, source checkout)
+npm test            # compiler, controller, standalone server and jsdom UI
+```
+
+For a compiled package with published `@tsdi` dependencies:
+
+```bash
+npm run build
+node ../../dist/microservice-admin/main.js --port 4318 --ui-root web
 ```
 
 `web/preview-test.js` is a real-browser check (Playwright + Chromium system

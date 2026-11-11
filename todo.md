@@ -3499,3 +3499,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - OpenAPI 支持 components.schemas、$ref、array、enum、required、requestBody、2xx/错误响应；proto 支持 message、optional/repeated、标量/模型引用、enum 注释、unary rpc 与 HTTP method/path 注释。
   - CLI 新增 `--from-openapi` / `--from-proto` / `--manifest`；生成器注释中的 `:id` 统一规范为 `{id}` 以便 round-trip。
   - contract 11 passing，OpenAPI/proto → manifest 往返测试与 CLI 实测通过。
+- 微服务管理台启动入口（2026-11-11）：
+  - `packages/microservices/admin` 新增 `src/main.ts` / `src/server.ts` 与 `npm start`、`npm run serve`、`npm run preview`。
+  - 支持 `--port/--host/--prefix/--ui-root/--no-ui/--routes` 及对应环境变量；默认 `http://127.0.0.1:4318/admin/`。
+  - `startGatewayAdminServer()` 可编程启动；嵌入真实 gateway 仍使用 `GatewayAdminModule` + `GatewayAdminController`。
+  - 新增 standalone server 测试：state API、静态 UI、`--no-ui` 三种路径；admin 14 passing；编译产物 `main.js`/`server.js` 生成。
