@@ -3445,3 +3445,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `agent-ui` 新增 `/settings` touch mode 开关与持久化用例；`i18n-locale-regression` notice 目录计数 617 → 620。
 - **验证**：`components/console` 158 passing、`components/common` 66 passing、`agent-ui` 2025 passing；`agent-ui` tsc 0；`source-size` OK；`git diff --check` 干净；`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 GATE-PASS，GATE_EXIT=0**。
 - **仍不支持（终端协议边界，非本轮缺陷）**：多指手势、pinch 缩放、惯性滚动、长按菜单、触摸压力；这些需终端模拟器或 web 控制台实现。手机/平板建议优先使用浏览器 web console（原生触摸滚动/缩放）。
+- Gateway 统一错误分类（2026-11-11，P1）：
+  - 新增 `GatewayErrorType` / `classifyGatewayError`：rate_limited、bulkhead_full、circuit_open、unauthorized、forbidden、validation、timeout、network、upstream、client、internal。
+  - 错误响应增加 `x-gateway-error-type`；access log 增加 errorType；metrics 增加 error_type label（可通过 observability.metrics.includeErrorType 关闭）。
+  - bulkhead/circuit 等非上游错误也进入统一日志与指标；fallback 路径保留分类 header。
+  - 回归：gateway 38 passing（新增错误分类用例）。

@@ -151,9 +151,9 @@
   - 限流 / 限次 / 降频
   - Bulkhead 并发隔离 + 有界排队/超时
   - HTTP 出站连接池（undici Agent，可配置连接数/keep-alive/超时）
+  - 统一错误分类（`x-gateway-error-type`、access log、metrics label）
 - 待补充：
   - 更细粒度背压策略
-  - 更细粒度错误分类与重试策略
 
 ### P2：统一 Resiliency + Observability
 
@@ -274,6 +274,19 @@ httpPool: {
     bodyTimeout: 30_000
 }
 ```
+
+### 错误分类
+
+Gateway 响应会带 `x-gateway-error-type`，access log 与 metrics 也会使用同一分类：
+
+- `rate_limited`
+- `bulkhead_full`
+- `circuit_open`
+- `unauthorized` / `forbidden`
+- `validation`
+- `timeout`
+- `network`
+- `upstream` / `client` / `internal`
 
 熔断器支持 half-open：超时后只放行一个探测请求，成功关闭、失败立即重新打开。
 

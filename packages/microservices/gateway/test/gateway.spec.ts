@@ -6,7 +6,7 @@ import { createRequestContext, RequestContext, REQUEST, Transport, TransferSide 
 import { HmacSignatureService, JWTService } from '@tsdi/security';
 import { Logger } from '@tsdi/logger';
 import { InMemoryServiceDiscovery } from '../../discovery/src';
-import { ConfigurationManagerGatewayAdapter, GatewayInterceptor, GatewayLifecycle, GatewayModule, GatewayRuntime } from '../src';
+import { ConfigurationManagerGatewayAdapter, GatewayInterceptor, GatewayLifecycle, GatewayModule, GatewayRuntime, classifyGatewayError } from '../src';
 import { getClientToken } from '../../client/src/tokens';
 import { DefaultConfigurationManager } from '../../config/src';
 
@@ -113,6 +113,19 @@ describe('Gateway', () => {
         release();
         const queuedRelease = await queued;
         queuedRelease();
+    });
+
+    it('classifies gateway errors for logs, metrics and response headers', () => {
+        expect(classifyGatewayError({ statusCode: 429 })).toBe('rate_limited');
+        expect(classifyGatewayError({ statusCode: 503, message: 'Gateway bulkhead is full' })).toBe('bulkhead_full');
+        expect(classifyGatewayError({ message: 'Circuit breaker is open' })).toBe('circuit_open');
+        expect(classifyGatewayError({ statusCode: 401 })).toBe('unauthorized');
+        expect(classifyGatewayError({ statusCode: 403 })).toBe('forbidden');
+        expect(classifyGatewayError({ statusCode: 422 })).toBe('validation');
+        expect(classifyGatewayError({ statusCode: 504 })).toBe('timeout');
+        expect(classifyGatewayError({ code: 'ECONNREFUSED' })).toBe('network');
+        expect(classifyGatewayError({ statusCode: 502 })).toBe('upstream');
+        expect(classifyGatewayError(new Error('boom'))).toBe('internal');
     });
 
     it('wires built-in discovery providers when discovery is enabled', () => {

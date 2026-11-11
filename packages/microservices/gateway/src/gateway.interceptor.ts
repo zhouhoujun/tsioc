@@ -30,6 +30,60 @@ interface GatewayForwardMeta {
     cacheStatus?: 'HIT' | 'MISS' | 'SKIP';
     outcome?: 'upstream' | 'aggregate' | 'cache' | 'mock' | 'fallback' | 'rejected' | 'error';
     canary?: boolean;
+    errorType?: GatewayErrorType;
+}
+
+/**
+ * Stable gateway error categories used by access logs, metrics and the
+ * `x-gateway-error-type` response header.
+ */
+export type GatewayErrorType =
+    | 'rate_limited'
+    | 'bulkhead_full'
+    | 'circuit_open'
+    | 'unauthorized'
+    | 'forbidden'
+    | 'validation'
+    | 'timeout'
+    | 'network'
+    | 'upstream'
+    | 'client'
+    | 'internal';
+
+export function classifyGatewayError(error: any): GatewayErrorType {
+    const status = error?.statusCode ?? error?.status;
+    const message = String(error?.message ?? '');
+    if (status === 429) {
+        return 'rate_limited';
+    }
+    if (status === 503 && /bulkhead/i.test(message)) {
+        return 'bulkhead_full';
+    }
+    if (/circuit breaker/i.test(message)) {
+        return 'circuit_open';
+    }
+    if (status === 401) {
+        return 'unauthorized';
+    }
+    if (status === 403) {
+        return 'forbidden';
+    }
+    if (status === 400 || status === 422) {
+        return 'validation';
+    }
+    if (status === 504 || error?.name === 'AbortError' || /timeout/i.test(message)) {
+        return 'timeout';
+    }
+    if (['ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'ECONNRESET'].includes(error?.code)) {
+        return 'network';
+    }
+    if (status >= 500) {
+        return 'upstream';
+    }
+    if (status >= 400) {
+        return 'client';
+    }
+    return 'internal';
 }
 
 type ResolvedGatewayRoute = GatewayRouteOptions & {
@@ -131,6 +185,17 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         return null;
     }
 
+    private tagGatewayError(error: any, adapter: any): GatewayErrorType {
+        const errorType = classifyGatewayError(error);
+        try {
+            error.errorType = errorType;
+        } catch {
+            // frozen error objects are still classified for logs/metrics
+        }
+        adapter?.setHeader?.('x-gateway-error-type', errorType);
+        return errorType;
+    }
+
     private async forward(route: ResolvedGatewayRoute, request: HttpRequestMessage, context: RequestContext): Promise<any> {
         const startedAt = Date.now();
         const traceHeaders = this.ensureTraceHeaders(request);
@@ -164,7 +229,19 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             }
         }
 
-        const releaseBulkhead = await this.runtime.acquireBulkhead(`${route.service}:${route.path}`, route.bulkhead);
+        let releaseBulkhead: () => void = () => undefined;
+        try {
+            releaseBulkhead = await this.runtime.acquireBulkhead(`${route.service}:${route.path}`, route.bulkhead);
+        } catch (error: any) {
+            const errorType = this.tagGatewayError(error, adapter);
+            this.recordGatewayError(route, request, startedAt, error, traceHeaders, {
+                cacheStatus: cacheKey ? 'MISS' : 'SKIP',
+                outcome: 'rejected',
+                canary: !!route.canary,
+                errorType
+            });
+            throw error;
+        }
         try {
             const routeKey = `${route.service}:${route.path}:${route.transport ?? Transport.HTTP}`;
         if (!this.runtime.canPassCircuit(routeKey, route.circuitBreaker)) {
@@ -174,13 +251,16 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
                     statusCode: 503,
                     statusMessage: 'Service Unavailable'
                 });
+                const errorType = this.tagGatewayError(error, adapter);
                 this.recordGatewayError(route, request, startedAt, error, traceHeaders, {
                     cacheStatus: cacheKey ? 'MISS' : 'SKIP',
                     outcome: 'rejected',
-                    canary: !!route.canary
+                    canary: !!route.canary,
+                    errorType
                 });
                 throw error;
             }
+            adapter?.setHeader?.('x-gateway-error-type', 'circuit_open');
             return this.sendResponse(route, request, context, fallback, startedAt, adapter, response);
         }
 
@@ -205,6 +285,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             return this.sendResponse(route, request, context, result, startedAt, adapter, response);
         } catch (error: any) {
             this.runtime.recordFailure(routeKey, route.circuitBreaker);
+            const errorType = this.tagGatewayError(error, adapter);
             const fallback = this.resolveFallbackPayload(route, request, error);
             if (fallback) {
                 await this.dispatchWebhook(route, request, fallback);
@@ -213,7 +294,8 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             this.recordGatewayError(route, request, startedAt, error, traceHeaders, {
                 cacheStatus: cacheKey ? 'MISS' : 'SKIP',
                 outcome: 'error',
-                canary: !!route.canary
+                canary: !!route.canary,
+                errorType
             });
             throw error;
         }
@@ -1317,6 +1399,9 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         if ((metricsOptions?.includeOutcome ?? true) && meta?.outcome) {
             labels.outcome = meta.outcome;
         }
+        if ((metricsOptions?.includeErrorType ?? true) && meta?.errorType) {
+            labels.error_type = meta.errorType;
+        }
         if ((metricsOptions?.includeCanary ?? true) && meta?.canary !== undefined) {
             labels.canary = String(meta.canary);
         }
@@ -1368,6 +1453,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             cache: meta?.cacheStatus,
             outcome: meta?.outcome,
             canary: meta?.canary,
+            errorType: meta?.errorType,
             traceId,
             requestId,
             query: options.includeQuery ? { ...(request.query ?? {}) } : undefined,

@@ -449,6 +449,10 @@ export interface GatewayMetricsOptions {
      * attach canary routing label. default true.
      */
     includeCanary?: boolean;
+    /**
+     * attach classified gateway error label. default true.
+     */
+    includeErrorType?: boolean;
 }
 
 export interface GatewayObservabilityOptions {
