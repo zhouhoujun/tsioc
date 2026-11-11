@@ -58,7 +58,7 @@ export class RouterOutletGuardTest {
         const ref = this.ctx.runners.getRef(GuardOutletHost) as ComponentRef<GuardOutletHost>;
         await ref.render();
         await flush();
-        const root = ref.hostView.rootNodes[0] as any;
+        const root = ref.hostView.rootNodes[0] as Element;
         const router = this.ctx.get(Router);
         expect(root.querySelector('.login')).toBeTruthy();
         expect(root.querySelector('.secure')).toBeFalsy();

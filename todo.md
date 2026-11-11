@@ -3561,3 +3561,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 根路由 `''` 挂 `GatewayAdminAuthGuard` 并 `loadChildren` 懒加载 `admin.routes`；每个页面用 `loadComponent` 注册 `GatewayAdminComponent`，守卫通过后 outlet 才创建页面组件，未登录不会渲染首页。
   - 修复 `RouterOutlet` 使用 leaf 路由 url 标识渲染组件（父路由 url 相同会误判复用）。
   - 新增 admin app-shell 集成测试（401 不创建页面组件 / 已认证通过 outlet 渲染），admin 40 passing，router 9 passing；workflow-admin 增加 shell 守卫回归测试。
+- 路由测试下沉（2026-11-11）：
+  - 通用 outlet/guard 测试统一放到 `packages/components/router/test`：守卫拒绝时不得实例化受保护组件、lazy 父路由守卫、leaf 路由切换替换组件。
+  - 移除业务包中的通用路由测试（workflow-admin `guard.spec`、microservice admin `app-shell.spec`），业务包只保留路由/认证策略测试。
+  - `RouterOutlet` 初始化不再从未执行守卫的构造快照激活受保护路由；`Router.navigated` 标记首个通过守卫的导航。

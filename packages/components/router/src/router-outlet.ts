@@ -1,6 +1,6 @@
 import { ComponentRef, Directive, OnDestroy, OnInit, ViewContainerRef } from '@tsdi/components';
 import { Injectable, Type } from '@tsdi/ioc';
-import { Router } from './router';
+import { ActivatedRouteSnapshot, Router } from './router';
 
 /** Renders the active route component into the nearest outlet. */
 @Directive({
@@ -21,7 +21,24 @@ export class RouterOutlet implements OnInit, OnDestroy {
                 this.activate();
             }
         });
-        this.activate();
+        // The router constructor pre-matches the initial URL without running
+        // guards. Do not activate a guarded route from that unguarded snapshot;
+        // wait for a NavigationEnd emitted after the guards pass.
+        if (this.router.navigated || !this.hasGuards(this.router.activeRoute)) {
+            this.activate();
+        }
+    }
+
+    /** True when the snapshot (or an ancestor) declares `canActivate` guards. */
+    protected hasGuards(snapshot: ActivatedRouteSnapshot | null): boolean {
+        if (!snapshot) {
+            return false;
+        }
+        if (snapshot.route?.canActivate?.length) {
+            return true;
+        }
+        return Array.isArray(snapshot.children)
+            && snapshot.children.some(child => this.hasGuards(child));
     }
 
     onDestroy(): void {

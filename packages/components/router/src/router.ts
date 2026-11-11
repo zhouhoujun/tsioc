@@ -97,6 +97,7 @@ export class Router {
     protected _url = '/';
     protected _activeRoute: ActivatedRouteSnapshot | null = null;
     protected _navigating = false;
+    protected _navigated = false;
 
     constructor(
         @Optional() @Inject(ROUTES) routes: Routes = [],
@@ -119,6 +120,8 @@ export class Router {
     get params(): Record<string, string> { return this.leafRoute()?.params || {}; }
     get data(): Record<string, any> { return this.leafRoute()?.data || {}; }
     get navigating(): boolean { return this._navigating; }
+    /** True after at least one navigation passed its guards and activated a route. */
+    get navigated(): boolean { return this._navigated; }
 
     resetConfig(routes: Routes = []): void {
         this.routes = Array.isArray(routes) ? routes : [];
@@ -153,6 +156,7 @@ export class Router {
             }
             this._url = resolved.resolvedUrl || displayUrl;
             this._activeRoute = snapshot;
+            this._navigated = true;
             this.events.emit({ type: 'NavigationEnd', url: target, previousUrl, snapshot });
             return true;
         } catch (error) {
