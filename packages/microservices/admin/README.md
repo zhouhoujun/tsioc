@@ -339,6 +339,9 @@ toolbar, palette, inspector and status bar follow the admin shell.
 
 - UI routes (`#/dashboard`, `#/routes`, `#/rules`) are resolved by
   `@tsdi/components/router` (`RouterModule.forRoot(...)`), not ad-hoc parsing.
+- The route table is loaded lazily via `loadChildren` from `admin.routes` — the
+  route module is a separate browser chunk and is cached after the first
+  navigation.
 - `GatewayAdminAuthGuard` implements `CanActivate`; a `401` redirects to
   `/admin/login.html?redirect=<current-url>` before the page renders.
 - `GatewayAdminHttp` wraps `@tsdi/common/http` (`provideHttpClient(withFetch())`)

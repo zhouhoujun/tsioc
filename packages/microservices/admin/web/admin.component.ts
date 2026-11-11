@@ -584,7 +584,7 @@ export class GatewayAdminComponent implements AfterViewInit, OnDestroy {
         if (event.type !== 'NavigationEnd' || !event.snapshot) {
             return;
         }
-        const page = event.snapshot.data?.page as AdminPage;
+        const page = (this.router?.data?.page || event.snapshot.data?.page) as AdminPage;
         if (page) {
             self.page = page;
         }

@@ -1,9 +1,17 @@
 import { EventEmitter } from '@tsdi/components';
 import { Inject, Injectable, Injector, Optional, token, Type } from '@tsdi/ioc';
 
+export type LoadedRoutes = Routes | { routes: Routes };
+export type LoadChildren = () => Promise<LoadedRoutes>;
+export type LoadComponent = () => Promise<Type<any> | { component: Type<any> }>;
+
 export interface Route {
     path: string;
     component?: Type<any>;
+    /** Lazy-load the route component (Angular-style `loadComponent`). */
+    loadComponent?: LoadComponent;
+    /** Lazy-load a child route module/config (Angular-style `loadChildren`). */
+    loadChildren?: LoadChildren;
     redirectTo?: string;
     pathMatch?: 'full' | 'prefix';
     children?: Routes;
@@ -160,12 +168,31 @@ export class Router {
     }
 
     protected async resolveUrl(url: string, redirects: number): Promise<RouteMatch | undefined> {
-        if (redirects > 10) {
+        if (redirects > 20) {
             throw new Error('Router redirect loop detected');
         }
-        const match = this.match(this.routes, splitUrl(url));
+        let match = this.match(this.routes, splitUrl(url));
         if (!match) {
             return undefined;
+        }
+        const route = match.snapshot.route;
+        if (route.loadChildren && !route.children?.length) {
+            const loaded = await route.loadChildren();
+            const routes = Array.isArray(loaded) ? loaded : loaded?.routes;
+            if (!Array.isArray(routes)) {
+                throw new Error(`Route '${route.path}' loadChildren must resolve to routes`);
+            }
+            route.children = routes;
+            return this.resolveUrl(url, redirects + 1);
+        }
+        if (route.loadComponent && !route.component) {
+            const loaded = await route.loadComponent();
+            route.component = typeof loaded === 'function'
+                ? loaded
+                : (loaded as { component?: Type<any> } | undefined)?.component;
+            if (!route.component) {
+                throw new Error(`Route '${route.path}' loadComponent did not resolve a component`);
+            }
         }
         if (match.redirectTo !== undefined) {
             const redirect = serializeUrl(match.redirectTo);
@@ -218,14 +245,29 @@ export class Router {
             if (!matched) {
                 continue;
             }
+            const url = normalizeUrl(`${parentUrl}/${routeSegments.map((segment, index) => segment.startsWith(':') ? segments[index] : segment).join('/')}`);
             const remaining = segments.slice(routeSegments.length);
             if (remaining.length && !route.children?.length) {
+                // Lazy child config: return the parent match so resolveUrl can
+                // load the children and then re-match the full URL.
+                if (route.loadChildren && route.pathMatch !== 'full') {
+                    return {
+                        consumed: routeSegments.length,
+                        snapshot: {
+                            url,
+                            path,
+                            params,
+                            data: { ...(route.data || {}) },
+                            route,
+                            children: []
+                        }
+                    };
+                }
                 continue;
             }
             if (route.pathMatch === 'full' && remaining.length) {
                 continue;
             }
-            const url = normalizeUrl(`${parentUrl}/${routeSegments.map((segment, index) => segment.startsWith(':') ? segments[index] : segment).join('/')}`);
             if (route.children?.length) {
                 const child = this.match(route.children, remaining, url);
                 if (child) {

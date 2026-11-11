@@ -3540,3 +3540,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 新增 `login.html` 登录页（主题/中英文，SSO 按钮）。
   - 新增 `GatewayAdminHttp`，所有 state/routes/rules 请求改走 `@tsdi/common/http`（`provideHttpClient(withFetch(), withNoXsrfProtection())`），rule store 也复用该客户端。
   - admin 35 passing；build/build:web 通过。
+- components/router 懒加载与 Admin 路由模块（2026-11-11）：
+  - `Route` 支持 `loadChildren`（route array 或 `{routes}`）与 `loadComponent`，按需加载并缓存，守卫在懒加载解析后执行；新增/保留 router lazy 测试。
+  - Admin 路由表改为 `loadChildren: () => import('./admin.routes')`，构建产物生成独立 `admin.routes-*.js` chunk；页面状态从 `Router.data` leaf 路由读取，避免 lazy 父路由 data 为空。
+  - 路由守卫继续由 `GatewayAdminAuthGuard`（components/router CanActivate）执行；HTTP 统一 `@tsdi/common/http`。
+  - components/router 7 passing；admin 35 passing；build/build:web 通过。

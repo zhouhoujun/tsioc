@@ -55,6 +55,33 @@ export class RouterTest {
         expect(router.url).toEqual('/secure');
     }
 
+    @Test('loads lazy components and child route modules')
+    async lazyRoutes() {
+        let componentLoaded = 0;
+        let childrenLoaded = 0;
+        class LazyPage {}
+        const router = new Router([
+            {
+                path: 'lazy',
+                loadComponent: async () => { componentLoaded++; return LazyPage; }
+            },
+            {
+                path: 'admin',
+                loadChildren: async () => {
+                    childrenLoaded++;
+                    return [{ path: 'reports', data: { page: 'reports' } }];
+                }
+            }
+        ], '/');
+        expect(await router.navigateByUrl('/lazy')).toBe(true);
+        expect(router.activeRoute?.route.component).toBe(LazyPage);
+        expect(await router.navigateByUrl('/lazy')).toBe(true);
+        expect(componentLoaded).toBe(1);
+        expect(await router.navigateByUrl('/admin/reports')).toBe(true);
+        expect(router.data.page).toBe('reports');
+        expect(childrenLoaded).toBe(1);
+    }
+
     @Test('serializes query params and fragment into the next url')
     async queryParams() {
         const router = new Router([{ path: 'search' }]);
