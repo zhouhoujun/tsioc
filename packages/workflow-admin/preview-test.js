@@ -124,6 +124,15 @@ function startDesignerServer(port) {
         await page.waitForTimeout(80);
         const menuClosed = !(await page.locator('.workflow-management-menu .menu-bar-popup').isVisible());
 
+        // Real pointer clicks inside the menu must reach the item: the
+        // document-level outside-press handler has to contain the menu root.
+        await menuTrigger.click();
+        await page.locator('[data-menu-id="toggle-json"]').click();
+        await page.waitForTimeout(150);
+        const menuItemClick = await page.locator('.workflow-json-panel').count() > 0;
+        await page.locator('.workflow-json-head .workflow-btn').first().click();
+        await page.waitForTimeout(100);
+
         await page.keyboard.press('Shift+Slash');
         await page.waitForSelector('.workflow-shortcuts-panel', { timeout: 3000 });
         const shortcutsOpened = await page.locator('.workflow-shortcuts-panel').count() > 0;
@@ -246,7 +255,9 @@ function startDesignerServer(port) {
 
         // Switching language must not discard the edited document.
         await page.locator('.workflow-management-menu .menu-bar-trigger').click();
-        await page.evaluate(() => document.querySelector('[data-menu-id="language:zh-CN"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+        await page.locator('[data-menu-id="language"]').click();
+        await page.waitForTimeout(120);
+        await page.locator('[data-menu-id="language:zh-CN"]').click();
         await page.waitForTimeout(200);
         const localePreserved = await page.evaluate(() => ({
             count: window.workflowDesigner.designer.nodes.length,
@@ -254,7 +265,9 @@ function startDesignerServer(port) {
             title: document.querySelector('.workflow-toolbar-title')?.textContent
         }));
         await page.locator('.workflow-management-menu .menu-bar-trigger').click();
-        await page.evaluate(() => document.querySelector('[data-menu-id="language:en"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+        await page.locator('[data-menu-id="language"]').click();
+        await page.waitForTimeout(120);
+        await page.locator('[data-menu-id="language:en"]').click();
         await page.waitForTimeout(200);
 
         // Panning away and pressing Fit brings every node back into view.
@@ -358,7 +371,9 @@ function startDesignerServer(port) {
 
         // Theme submenu lists every built-in theme and applies it to the layout.
         await page.locator('.workflow-management-menu .menu-bar-trigger').click();
-        const themeMenuItems = await page.locator('.menu-bar-popup [data-menu-id^="theme:"]').count();
+        await page.locator('[data-menu-id="theme"]').click();
+        await page.waitForTimeout(120);
+        const themeMenuItems = await page.locator('.menu-bar-submenu [data-menu-id^="theme:"]').count();
         await page.evaluate(() => window.workflowDesigner.setTheme('solarized'));
         await page.waitForTimeout(220);
         const solarizedTheme = await page.evaluate(() => {
@@ -371,8 +386,11 @@ function startDesignerServer(port) {
                 collapse: collapse ? getComputedStyle(collapse).backgroundColor : ''
             };
         });
+        await page.keyboard.press('Escape');
         await page.locator('.workflow-management-menu .menu-bar-trigger').click();
-        const checkedTheme = ((await page.locator('.menu-bar-popup [data-menu-id^="theme:"].is-checked').textContent()) || '').trim();
+        await page.locator('[data-menu-id="theme"]').click();
+        await page.waitForTimeout(120);
+        const checkedTheme = ((await page.locator('.menu-bar-submenu [data-menu-id^="theme:"].is-checked').textContent()) || '').trim();
         await page.evaluate(() => window.workflowDesigner.setTheme('light'));
         await page.waitForTimeout(220);
         const lightThemeRestored = await page.evaluate(() =>
@@ -484,11 +502,11 @@ function startDesignerServer(port) {
 
         await browser.close();
 
-        const result = { before, initialJsBytes, lazyEditorChunk, hintEnv, hintAction, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, notFoundPage, notFoundCode, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
+        const result = { before, initialJsBytes, menuItemClick, lazyEditorChunk, hintEnv, hintAction, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, notFoundPage, notFoundCode, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
         console.log(JSON.stringify(result, null, 2));
         if (errors.length || initialJsBytes > 660_000 || !lazyEditorChunk || !hintEnv || !hintAction || !shortcutsOpened || !shortcutsClosed
             || autosaveName !== 'Function Node' || autosaveCode !== 'return 42;' || !wheelZoom || !wheelPan || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20
-            || !menuOpen || menuEntries < 5 || !menuClosed
+            || !menuOpen || menuEntries < 5 || !menuClosed || !menuItemClick
             || paletteFiltered < 1 || paletteFiltered >= 35 || paletteRestored !== 35
             || !deleteDisabledBefore || !deleteEnabledAfter || localePreserved.count !== 8 || localePreserved.locale !== 'zh-CN' || !fitVisible
             || optionCount !== 5 || !compareHidden || !compareVisible || !compareHiddenAgain

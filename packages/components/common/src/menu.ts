@@ -1,4 +1,4 @@
-import { Attribute, Component, ElementRef, OnDestroy } from '@tsdi/components';
+import { AfterViewInit, Attribute, Component, ElementRef, OnDestroy, ViewChild } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from './raw-element';
 
@@ -62,7 +62,7 @@ interface MenuBarEntryView {
 @Component({
     selector: 'menu-bar',
     template: `
-    <div class="menu-bar menu-bar-align-{{align}}" data-open="{{openText}}" role="menubar">
+    <div #menuRoot class="menu-bar menu-bar-align-{{align}}" data-open="{{openText}}" role="menubar">
         <button class="menu-bar-trigger" type="button"
             aria-haspopup="menu"
             aria-label="{{triggerTitle || label}}"
@@ -108,7 +108,7 @@ interface MenuBarEntryView {
         </div>
     </div>`
 })
-export class MenuBarComponent implements OnDestroy {
+export class MenuBarComponent implements AfterViewInit, OnDestroy {
     @Attribute() groups: MenuBarGroup[] = [];
     @Attribute() label = 'Menu';
     @Attribute() icon = '☰';
@@ -126,8 +126,19 @@ export class MenuBarComponent implements OnDestroy {
     private pointerHandler?: (event: any) => void;
     private keyHandler?: (event: any) => void;
 
+    /**
+     * The component host's injected `ElementRef` can point at the outer host
+     * page in nested templates, so document click containment uses the menu's
+     * own root element captured from the view instead.
+     */
+    @ViewChild('menuRoot', ElementRef) menuRoot?: ElementRef;
+
     constructor(@Optional() protected elementRef?: ElementRef) {
         markElementRefRaw(elementRef);
+    }
+
+    onAfterViewInit(): void {
+        markElementRefRaw(this.menuRoot);
     }
 
     @Attribute()
@@ -335,6 +346,6 @@ export class MenuBarComponent implements OnDestroy {
     }
 
     protected get hostElement(): any {
-        return this.elementRef?.nativeElement as any;
+        return (this.menuRoot?.nativeElement || this.elementRef?.nativeElement) as any;
     }
 }

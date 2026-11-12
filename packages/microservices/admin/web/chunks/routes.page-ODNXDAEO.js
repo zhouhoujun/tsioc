@@ -1,4 +1,4 @@
-import{k as s}from"./chunk-Z2FTSXMV.js";import{a as e,la as a}from"./chunk-S6DD2NPD.js";import"./chunk-U6UJE3IR.js";var t=class{constructor(o){this.state=o}};Reflect.metadata("design:paramtypes",[s])(t);e(t,[[a({selector:"gateway-admin-routes",template:`
+import{k as s}from"./chunk-H4IOODJO.js";import{a as e,la as a}from"./chunk-PKHLXUYK.js";import"./chunk-U6UJE3IR.js";var t=class{constructor(o){this.state=o}};Reflect.metadata("design:paramtypes",[s])(t);e(t,[[a({selector:"gateway-admin-routes",template:`
     <section class="ga-page ga-page-routes">
         <div class="ga-page-actions">
             <div class="ga-search">
