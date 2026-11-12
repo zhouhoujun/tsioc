@@ -73,14 +73,16 @@ WORKFLOW_DB_FILE=/var/lib/tsdi/workflows.db WORKFLOW_PLUGINS=mqtt,redis npm star
 
 ## Authentication
 
-Authentication is disabled by default: the admin opens directly at `#/admin`
+Authentication is disabled by default: the admin opens directly at `#/workflows`
 with no login page. Enable it with `WORKFLOW_ADMIN_AUTH_ENABLED=true` or
 `auth: { enabled: true }`; when enabled, `/` routes to `#/login`, and after
-sign-in/registration the admin opens at `#/admin`. Unknown hashes render the
-NotFound page. Route guards are only attached when authentication is enabled;
-the disabled mode makes no `/auth/token` or `/auth/userinfo` probes.
-when the admin is exposed to other users. Configure it with environment
-variables or the `auth` option passed to `startWorkflowAdminServer`.
+sign-in/registration the admin opens at `#/workflows`. Unknown hashes render the
+NotFound page. Both the server and the browser honor the same `enabled` flag
+from `/auth/config`: when disabled, the API has no session guard and the browser
+omits route guards (no `/auth/token` or `/auth/userinfo` probes); when enabled,
+both the API guard and the route guards are active.
+Configure it with environment variables or the `auth` option passed to
+`startWorkflowAdminServer`.
 
 ### OAuth2 / external OIDC provider
 

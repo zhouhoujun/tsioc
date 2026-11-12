@@ -3647,3 +3647,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - JSDOM 直接 import ESM 产物：`errors []`（无 `ReferenceError`/`TypeError`）。
   - 真实 `tsdi-agent serve` + JSDOM 挂载（真实 RPC、非 stub）：`errors []`、`#agent-console` 渲染出 tab/输入框/审批弹窗，session 正常加载。
   - 全量 `RUN_PTY=1 bash scripts/agents-gate.sh`：**27/27 GATE-PASS，GATE_EXIT=0**（含 tsc-agent / tsc-agent-ui / tsc-agent-gateway / tsc-agent-tools、build-agent-ui-web、DOM/TUI、真实 PTY、production-db-integrity）。
+- 前后端认证开关一致（2026-11-12）：
+  - 后端 `auth.enabled=false` 时 `/api/*` 不挂 `WorkflowSessionGuard`，`/auth/config` 返回 enabled:false，token/userinfo 返回禁用态；`true` 时恢复 API 守卫。
+  - 前端 `main.ts` 读取同一 `/auth/config`，只有 enabled=true 才给 preview/admin 路由添加守卫；两种模式都落地 `#/admin`。
+  - 补充后端禁用态 token/userinfo/config 回归测试；workflow-admin 8 passing。

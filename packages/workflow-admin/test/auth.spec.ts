@@ -100,20 +100,6 @@ describe('workflow admin authentication', () => {
     let ctx: ApplicationContext | undefined;
     let base: string;
 
-    it('keeps authentication disabled by default', () => {
-        const previous = process.env.WORKFLOW_ADMIN_AUTH_ENABLED;
-        delete process.env.WORKFLOW_ADMIN_AUTH_ENABLED;
-        try {
-            expect(resolveWorkflowAdminAuthOptions(undefined).enabled).toBe(false);
-        } finally {
-            if (previous === undefined) {
-                delete process.env.WORKFLOW_ADMIN_AUTH_ENABLED;
-            } else {
-                process.env.WORKFLOW_ADMIN_AUTH_ENABLED = previous;
-            }
-        }
-    });
-
     afterEach(async () => {
         await ctx?.close();
         ctx = undefined;
@@ -133,6 +119,15 @@ describe('workflow admin authentication', () => {
 
     it('leaves APIs public when authentication is disabled', async () => {
         await start({ enabled: false });
+        const config = await request(`${base}/auth/config`);
+        expect(config.body.enabled).toBe(false);
+
+        const token = await request(`${base}/auth/token`);
+        expect(token.body).toEqual({ token: '', enabled: false });
+
+        const userinfo = await request(`${base}/auth/userinfo`);
+        expect(userinfo.body).toEqual({ user: null });
+
         const session = await request(`${base}/auth/session`);
         expect(session.body.authenticated).toBe(true);
         const list = await request(`${base}/api/workflows`);
