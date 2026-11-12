@@ -161,6 +161,7 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                     :registry="registry"
                     :locale="state.locale"
                     :theme="state.theme"
+                    :applyDocumentTheme="false"
                     :hiddenActions="designerHiddenActions"
                     :showRunHistory="false"
                     :showRunLogs="false"

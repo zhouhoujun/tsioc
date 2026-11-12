@@ -158,6 +158,28 @@ describe('Microservice admin UI', () => {
         expect(win.document.documentElement.getAttribute('data-theme')).toBe('dark');
     });
 
+    it('keeps the host theme after closing the embedded rules designer', async () => {
+        const menuTrigger = root.querySelector('.ga-global-menu .menu-bar-trigger') as HTMLElement;
+        menuTrigger.click();
+        await flush();
+        (root.querySelector('[data-menu-id="menu:theme"]') as HTMLElement).click();
+        await flush();
+        (root.querySelector('[data-menu-id="theme:dark"]') as HTMLElement).click();
+        await flush();
+        expect(win.document.documentElement.getAttribute('data-theme')).toBe('dark');
+
+        (root.querySelector('.ga-nav-item:nth-child(3)') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-page-rules'));
+        (root.querySelector('.ga-edit-rules') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-designer-page'));
+        expect(win.document.documentElement.getAttribute('data-theme')).toBe('dark');
+        expect(root.querySelector('workflow-designer-preview .workflow-designer')?.getAttribute('data-theme')).toBe('dark');
+
+        (root.querySelector('.ga-rules-cancel') as HTMLElement).click();
+        await waitFor(() => !root.querySelector('.ga-designer-page'));
+        expect(win.document.documentElement.getAttribute('data-theme')).toBe('dark');
+    });
+
     it('swaps the outlet content when the route changes', async () => {
         expect(root.querySelector('.ga-metric')).toBeTruthy();
 

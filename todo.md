@@ -3655,3 +3655,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - microservice admin 与 workflow 管理菜单恢复 Theme/Language 二级子菜单，子项显示 ✓。
   - 公共 menu-bar 子菜单支持点击展开/收起（is-open），保留 hover；点击子项后关闭并更新选中项。
   - admin UI 测试覆盖打开父菜单、子菜单展开、✓ 状态、切换主题/语言。
+- 修复规则设计器退出后主题被重置（2026-11-12）：
+  - `WorkflowDesignerPreviewComponent` 不再在构造器里 applyThemeToDocument（此时输入尚未绑定，会把 dark 覆盖成 light）；改为 afterViewInit 且支持 `applyDocumentTheme` 开关。
+  - microservice admin 嵌入设计器传 `:applyDocumentTheme="false"`，文档主题由 admin 管理；打开/关闭规则设计器保持 dark。
+  - 新增“打开规则设计器再退出后仍为 dark”回归测试；admin 42 passing。

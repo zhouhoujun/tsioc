@@ -1,4 +1,4 @@
-import { Attribute, Component, ElementRef, NoReactive, OnDestroy, noReact } from '@tsdi/components';
+import { AfterViewInit, Attribute, Component, ElementRef, NoReactive, OnDestroy, noReact } from '@tsdi/components';
 import { installDynamicFormStyles, installMenuBarStyles, installWorkspaceLayoutStyles, markElementRefRaw } from '@tsdi/components/common';
 import { applyThemeToDocument, isThemeName, ThemeName } from '@tsdi/components/common';
 import { DOCUMENT } from '@tsdi/common';
@@ -96,11 +96,16 @@ import { installWorkflowDesignerStyles } from './workflow-designer.styles';
         </div>
     </div>`
 })
-export class WorkflowDesignerPreviewComponent implements OnDestroy {
+export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewInit {
     @Attribute() designer!: WorkflowDesigner;
     @Attribute() registry!: WorkflowNodeRegistry;
     @Attribute() locale = 'zh-CN';
     @Attribute() theme: ThemeName = 'light';
+    /**
+     * Apply the designer theme to the whole document. Embedded hosts (for
+     * example the microservice admin) disable this so the host theme wins.
+     */
+    @Attribute() applyDocumentTheme = true;
     /** Optional host hook to persist a user-selected theme. */
     @Attribute() themeChangeAction?: (theme: ThemeName) => void;
     @Attribute() runContext: ActivityContext = {};
@@ -167,7 +172,15 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy {
         installWorkspaceLayoutStyles(document);
         installDynamicFormStyles(document);
         installMenuBarStyles(document);
-        applyThemeToDocument(document, this.themeName);
+        // Do not touch the document theme here: attribute bindings have not
+        // been applied yet, so a dark host theme would be reset to light.
+    }
+
+    onAfterViewInit(): void {
+        if (this.applyDocumentTheme !== false) {
+            const doc = this.documentRef || (globalThis as { document?: Document }).document;
+            applyThemeToDocument(doc, this.themeName);
+        }
     }
 
     onInit(): void {
@@ -198,8 +211,10 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy {
 
     setTheme(theme: ThemeName): void {
         this.theme = isThemeName(theme) ? theme : 'light';
-        const doc = this.documentRef || (globalThis as { document?: Document }).document;
-        applyThemeToDocument(doc, this.theme);
+        if (this.applyDocumentTheme !== false) {
+            const doc = this.documentRef || (globalThis as { document?: Document }).document;
+            applyThemeToDocument(doc, this.theme);
+        }
         this.themeChangeAction?.(this.themeName);
     }
 
