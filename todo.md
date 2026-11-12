@@ -3628,3 +3628,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 默认 `enabled=false`；认证关闭时 `/` 落到 `#/preview`（无登录页）。
   - 认证开启时 `/` 落到 `#/admin`，未登录由守卫跳 `#/login`；注册/登录后回 `#/admin`，刷新重新走 `/auth/token` + `/auth/userinfo`。
   - 通配路由 `#/does-not-exist` 渲染 404；初始 tab 同步不覆盖 `/admin`/`#/preview` 落地地址。
+- workflow-admin 认证关闭直接 /admin + 按配置挂守卫（2026-11-12）：
+  - 两种模式都落到 `#/admin`；认证关闭无登录页，认证开启未登录跳 `#/login`。
+  - 启动时读取 `/auth/config`，用 `createWorkflowAdminAppModule(authEnabled)` 生成路由表：仅认证开启时给 preview/admin 路由添加 `WorkflowAdminAuthGuard`；关闭时不再请求 `/auth/token`、`/auth/userinfo`。
+  - 注册/登录后回 `#/admin`；刷新重走 token→userinfo；`#/does-not-exist` 仍为 404。

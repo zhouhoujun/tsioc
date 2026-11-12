@@ -1,6 +1,6 @@
 import { Component, ComponentRef, OnDestroy, OnInit } from '@tsdi/components';
 import { Router, RouterOutlet } from '@tsdi/components/router';
-import { WORKFLOW_ADMIN_ADMIN_PATH, WORKFLOW_ADMIN_PREVIEW_PATH } from './routes';
+import { WORKFLOW_ADMIN_ADMIN_PATH } from './routes';
 
 /**
  * Router shell. Keeps the browser hash in sync with `@tsdi/components/router`
@@ -34,29 +34,12 @@ export class WorkflowAdminShellComponent implements OnInit, OnDestroy {
         const url = typeof location === 'undefined'
             ? '/'
             : String(location.hash || '').replace(/^#/, '') || '/';
-        await this.router.navigateByUrl(await this.resolveLanding(url));
-    }
-
-    /**
-     * `/` lands on the authenticated admin area when auth is enabled, and on
-     * the open preview area when authentication is disabled.
-     */
-    private async resolveLanding(url: string): Promise<string> {
-        if (url !== '/' && url !== '') {
-            return url;
-        }
-        try {
-            const response = await fetch('/auth/config', { credentials: 'same-origin' });
-            if (response.ok) {
-                const config = await response.json() as { enabled?: boolean };
-                return config?.enabled === false
-                    ? `/${WORKFLOW_ADMIN_PREVIEW_PATH}`
-                    : `/${WORKFLOW_ADMIN_ADMIN_PATH}`;
-            }
-        } catch {
-            // Fall back to the protected area; the guard redirects to login.
-        }
-        return `/${WORKFLOW_ADMIN_ADMIN_PATH}`;
+        // Both auth modes land on `/admin`: the guard lets it through when
+        // authentication is disabled and redirects to `#/login` when enabled.
+        const initial = url === '/' || url === ''
+            ? `/${WORKFLOW_ADMIN_ADMIN_PATH}`
+            : url;
+        await this.router.navigateByUrl(initial);
     }
 
     onDestroy(): void {

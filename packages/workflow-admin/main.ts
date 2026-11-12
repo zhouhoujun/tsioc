@@ -2,16 +2,31 @@ import { Application } from '@tsdi/core';
 import { ComponentRef, ComponentsModule } from '@tsdi/components';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { DOCUMENT } from '@tsdi/common';
-import { WorkflowAdminAppModule } from './src/ui/app.module';
+import { createWorkflowAdminAppModule } from './src/ui/app.module';
 import { WorkflowAdminShellComponent } from './src/ui/shell';
+
+async function loadAuthEnabled(): Promise<boolean> {
+    try {
+        const response = await fetch('/auth/config', { credentials: 'same-origin' });
+        if (!response.ok) {
+            return true;
+        }
+        const config = await response.json() as { enabled?: boolean };
+        return config?.enabled !== false;
+    } catch {
+        return true;
+    }
+}
 
 async function boot(): Promise<void> {
     const status = document.getElementById('boot-status');
     if (status) {
         status.textContent = 'Booting workflow admin…';
     }
+    const authEnabled = await loadAuthEnabled();
+    const AppModule = createWorkflowAdminAppModule(authEnabled);
     const ctx = await Application.run(WorkflowAdminShellComponent, {
-        deps: [HtmlTemplateModule, ComponentsModule, WorkflowAdminAppModule],
+        deps: [HtmlTemplateModule, ComponentsModule, AppModule],
         providers: [{ provide: DOCUMENT, useValue: document }]
     });
     const ref = ctx.runners.getRef(WorkflowAdminShellComponent) as ComponentRef<WorkflowAdminShellComponent>;
