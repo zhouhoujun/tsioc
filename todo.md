@@ -3651,3 +3651,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 后端 `auth.enabled=false` 时 `/api/*` 不挂 `WorkflowSessionGuard`，`/auth/config` 返回 enabled:false，token/userinfo 返回禁用态；`true` 时恢复 API 守卫。
   - 前端 `main.ts` 读取同一 `/auth/config`，只有 enabled=true 才给 preview/admin 路由添加守卫；两种模式都落地 `#/admin`。
   - 补充后端禁用态 token/userinfo/config 回归测试；workflow-admin 8 passing。
+- 菜单恢复子菜单 + 选择状态（2026-11-12）：
+  - microservice admin 与 workflow 管理菜单恢复 Theme/Language 二级子菜单，子项显示 ✓。
+  - 公共 menu-bar 子菜单支持点击展开/收起（is-open），保留 hover；点击子项后关闭并更新选中项。
+  - admin UI 测试覆盖打开父菜单、子菜单展开、✓ 状态、切换主题/语言。

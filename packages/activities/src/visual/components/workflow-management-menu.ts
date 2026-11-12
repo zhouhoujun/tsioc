@@ -118,27 +118,30 @@ export class WorkflowManagementMenuComponent {
                 items: [
                     { id: 'reset-view', label: t('fit', 'Fit') },
                     { id: 'auto-layout', label: t('layout', 'Auto layout') },
-                    { id: 'toggle-logs', label: t('logs', 'Logs') }
-                ]
-            },
-            {
-                // Flat theme choices stay clickable without hover-only flyouts.
-                label: t('themeMenu', 'Theme'),
-                items: THEME_OPTIONS.map(theme => ({
-                    id: `theme:${theme}`,
-                    label: this.themeOptionLabel(theme),
-                    checked: this.themeName === theme
-                }))
-            },
-            {
-                label: t('language', 'Language'),
-                items: [
-                    { id: 'language:en', label: 'English', checked: !this.isZh },
-                    { id: 'language:zh-CN', label: '中文', checked: this.isZh }
+                    { id: 'toggle-logs', label: t('logs', 'Logs') },
+                    {
+                        id: 'theme',
+                        label: t('themeMenu', 'Theme'),
+                        icon: '◐',
+                        children: THEME_OPTIONS.map(theme => ({
+                            id: `theme:${theme}`,
+                            label: this.themeOptionLabel(theme),
+                            checked: this.themeName === theme
+                        }))
+                    }
                 ]
             },
             {
                 items: [
+                    {
+                        id: 'language',
+                        label: t('language', 'Language'),
+                        icon: '文',
+                        children: [
+                            { id: 'language:en', label: 'English', checked: !this.isZh },
+                            { id: 'language:zh-CN', label: '中文', checked: this.isZh }
+                        ]
+                    },
                     { id: 'shortcuts', label: t('shortcuts', 'Keyboard shortcuts'), shortcut: '?' }
                 ]
             }

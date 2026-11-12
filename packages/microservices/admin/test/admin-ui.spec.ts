@@ -142,12 +142,16 @@ describe('Microservice admin UI', () => {
         expect(menuTrigger).toBeTruthy();
         menuTrigger.click();
         await flush();
+        (root.querySelector('[data-menu-id="menu:language"]') as HTMLElement).click();
+        await flush();
         (root.querySelector('[data-menu-id="language:zh-CN"]') as HTMLElement).click();
         await waitFor(() => (root.querySelector('.ga-nav-item')?.textContent || '').includes('概览'));
         expect(root.querySelector('.ga-nav-item')?.textContent).toContain('概览');
         expect(root.querySelector('.ga-topbar-title h1')?.textContent).toContain('概览');
 
         (root.querySelector('.ga-global-menu .menu-bar-trigger') as HTMLElement).click();
+        await flush();
+        (root.querySelector('[data-menu-id="menu:theme"]') as HTMLElement).click();
         await flush();
         (root.querySelector('[data-menu-id="theme:dark"]') as HTMLElement).click();
         await flush();

@@ -155,21 +155,27 @@ export class GatewayAdminState {
         if (cache && cache.locale === this.locale && cache.theme === this.theme) {
             return cache.groups;
         }
-        // Flat, clickable menu: no hover-only flyout submenus, so theme and
-        // language stay selectable on every platform.
         const groups: MenuBarGroup[] = [
             {
-                label: this.t('top.language'),
                 items: [
-                    { id: 'language:en', label: 'English', checked: this.locale === 'en' },
-                    { id: 'language:zh-CN', label: '中文', checked: this.locale === 'zh-CN' }
-                ]
-            },
-            {
-                label: this.t('top.theme'),
-                items: [
-                    { id: 'theme:light', label: this.t('theme.light'), checked: this.theme === 'light' },
-                    { id: 'theme:dark', label: this.t('theme.dark'), checked: this.theme === 'dark' }
+                    {
+                        id: 'menu:language',
+                        label: this.t('top.language'),
+                        icon: '🌐',
+                        children: [
+                            { id: 'language:en', label: 'English', checked: this.locale === 'en' },
+                            { id: 'language:zh-CN', label: '中文', checked: this.locale === 'zh-CN' }
+                        ]
+                    },
+                    {
+                        id: 'menu:theme',
+                        label: this.t('top.theme'),
+                        icon: '◐',
+                        children: [
+                            { id: 'theme:light', label: this.t('theme.light'), checked: this.theme === 'light' },
+                            { id: 'theme:dark', label: this.t('theme.dark'), checked: this.theme === 'dark' }
+                        ]
+                    }
                 ]
             }
         ];
