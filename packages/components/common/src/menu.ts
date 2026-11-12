@@ -90,7 +90,7 @@ interface MenuBarEntryView {
                     <span class="menu-bar-item-check" v-if="entry.checked">✓</span>
                     <span class="menu-bar-item-caret" v-if="entry.children.length">▸</span>
                 </button>
-                <div class="menu-bar-submenu" role="menu" v-if="entry.children.length">
+                <div [class]="'menu-bar-submenu' + (activeSubmenuKey === entry.id ? ' is-open' : '')" role="menu" v-if="entry.children.length">
                     <button class="menu-bar-item" type="button" role="menuitem"
                         v-for="child in entry.children"
                         data-menu-id="{{child.id}}"
@@ -120,6 +120,8 @@ export class MenuBarComponent implements OnDestroy {
     @Attribute() openChange?: (open: boolean) => void;
 
     private _open = false;
+    /** Id of the submenu parent currently expanded by click. */
+    activeSubmenuKey = '';
     private bound = false;
     private pointerHandler?: (event: any) => void;
     private keyHandler?: (event: any) => void;
@@ -207,6 +209,9 @@ export class MenuBarComponent implements OnDestroy {
             return;
         }
         this.open = !this._open;
+        if (!this._open) {
+            this.activeSubmenuKey = '';
+        }
     }
 
     choose(id: string, event?: Event): void {
@@ -216,7 +221,9 @@ export class MenuBarComponent implements OnDestroy {
         }
         event?.stopPropagation?.();
         if (item.children?.length) {
-            // A submenu parent only opens its flyout; it is not actionable.
+            // Click toggles the flyout; hover-only submenus are unusable on
+            // touch/keyboard and can vanish while crossing the 2px gap.
+            this.activeSubmenuKey = this.activeSubmenuKey === id ? '' : id;
             return;
         }
         this.close();
@@ -225,6 +232,7 @@ export class MenuBarComponent implements OnDestroy {
 
     close(): void {
         this.open = false;
+        this.activeSubmenuKey = '';
     }
 
     protected itemClass(item: MenuBarItem, hasChildren = false): string {

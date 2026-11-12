@@ -93,10 +93,19 @@ export class MenuBarDomTest {
         root.querySelector('[data-menu-id="theme"]').click();
         await Promise.resolve();
         expect(selected).toEqual([]);
+        expect((submenu as any).className).toContain('is-open');
 
+        // Clicking the parent again collapses the flyout.
+        root.querySelector('[data-menu-id="theme"]').click();
+        await Promise.resolve();
+        expect((submenu as any).className).not.toContain('is-open');
+
+        root.querySelector('[data-menu-id="theme"]').click();
+        await Promise.resolve();
         root.querySelector('[data-menu-id="theme:dark"]').click();
         await Promise.resolve();
         expect(selected).toEqual(['theme:dark']);
+        expect((submenu as any).className).not.toContain('is-open');
     }
 
     @Test('disabled entries stay inert')

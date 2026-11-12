@@ -3621,3 +3621,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 修复通配路由 snapshot 的 url：`**` 现在使用实际请求路径（不再返回父级 `/`），outlet 能正确从 Designer 切换到 404 页面。
   - workflow designer 的 `syncRoute` 在用户显式导航到其他路由时不再改写 hash，避免把 `#/does-not-exist` 拉回工作流页。
   - 新增注册→token→userinfo→刷新仍登录的端到端回归测试；验证 / 未登录→#/login、已登录刷新重走 token/userinfo、错误路由→404。
+- 公共 menu-bar 子菜单可点击（2026-11-12）：
+  - 公共 `MenuBarComponent` 子菜单从 hover-only 改为点击展开/收起（`is-open`），点击子项选中并关闭；解决触屏/键盘与鼠标跨间隙导致菜单看起来不可用的问题。
+  - 新增点击展开/收起/选中回归断言；components/common 66 passing。

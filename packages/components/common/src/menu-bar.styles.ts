@@ -110,7 +110,8 @@ menu-bar {
 }
 
 .menu-bar-entry.has-submenu:hover .menu-bar-submenu,
-.menu-bar-entry.has-submenu:focus-within .menu-bar-submenu {
+.menu-bar-entry.has-submenu:focus-within .menu-bar-submenu,
+.menu-bar-submenu.is-open {
     display: flex;
 }
 
