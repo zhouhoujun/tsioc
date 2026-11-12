@@ -1,0 +1,14 @@
+{
+    "extends": "../../../tsconfig.json",
+    "compilerOptions": {
+        "rootDir": "../../..",
+        "module": "ESNext",
+        "moduleResolution": "Node",
+        "declaration": false,
+        "sourceMap": false,
+        "noEmitOnError": false,
+        "skipLibCheck": true,
+        "types": ["node"]
+    },
+    "files": ["web/main.ts"]
+}

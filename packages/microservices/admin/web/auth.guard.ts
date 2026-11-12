@@ -28,7 +28,9 @@ interface SessionScope {
 export class GatewayAdminAuthGuard implements CanActivate {
     canActivate(): boolean {
         const session = readBootstrapSession();
-        if (session?.authenticated && (session.user || session.authEnabled === false)) {
+        const user = session?.user as { sub?: string; email?: string } | null | undefined;
+        const hasUser = !!user && (!!user.sub || !!user.email);
+        if (session?.authenticated && (hasUser || session.authEnabled === false)) {
             return true;
         }
         redirectToAdminLogin();

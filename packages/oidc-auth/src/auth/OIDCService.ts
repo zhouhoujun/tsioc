@@ -316,6 +316,9 @@ export class OIDCService {
             if (typ && typ !== 'session') {
                 return null;
             }
+            if (!await this.localUserExists(claims)) {
+                return null;
+            }
             return this.toSessionUserFromClaims(claims);
         } catch {
             return null;
@@ -329,6 +332,9 @@ export class OIDCService {
     async verifyAccessToken(token: string): Promise<OIDCVerifiedToken | null> {
         const claims = await this.verifyJwt(token);
         if (!claims?.sub || claims.typ !== 'access') {
+            return null;
+        }
+        if (!await this.localUserExists(claims)) {
             return null;
         }
         return {
@@ -350,11 +356,31 @@ export class OIDCService {
         if (typ && typ !== 'access' && typ !== 'session' && typ !== 'refresh') {
             return null;
         }
+        if (!await this.localUserExists(claims)) {
+            return null;
+        }
         return {
             claims: claims as OIDCVerifiedToken['claims'],
             user: this.toSessionUserFromClaims(claims),
             tokenType: (typ as OIDCVerifiedToken['tokenType']) ?? 'unknown'
         };
+    }
+
+    /**
+     * Local users must still exist in the user store. Tokens are not enough:
+     * after a restart or user removal an old signed token must stop granting
+     * access. External provider tokens are verified by their issuer instead.
+     */
+    private async localUserExists(claims: Record<string, any>): Promise<boolean> {
+        if (String(claims.provider ?? '') !== 'local') {
+            return true;
+        }
+        const store = this.userStore;
+        if (!store) {
+            return true;
+        }
+        const record = await store.findById(String(claims.sub ?? ''));
+        return !!record;
     }
 
     /**

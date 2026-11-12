@@ -2,13 +2,21 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as zlib from 'zlib';
 import { build, Plugin } from 'esbuild';
-import * as ts from 'typescript';
 
 /**
  * Build the visual microservice admin browser bundle.
  *
- * TypeScript is first emitted with `@tsdi/compiler` (AOT manifests included),
- * then esbuild bundles the `web/main.ts` entry and code-splits lazy chunks.
+ * Mirrors `packages/workflow-admin/build.ts`:
+ *   1. TypeScript emits every imported `@tsdi/*` package with ES modules so
+ *      esbuild can tree-shake unused exports.
+ *   2. esbuild bundles, minifies, drops debug output and code-splits the lazy
+ *      route/page chunks.
+ *   3. The initial-load size is measured and checked against a budget, and the
+ *      bundle metafile is written for inspection.
+ *
+ * Run from the package root:
+ *   npx ts-node -r tsconfig-paths/register build-web.ts
+ *   SOURCE_MAP=1 ... (linked source maps for debugging)
  */
 const PACKAGE_DIR = path.resolve(__dirname);
 const WEB_DIR = path.join(PACKAGE_DIR, 'web');
@@ -24,16 +32,10 @@ async function compile(): Promise<void> {
     fs.rmSync(TSC_OUT, { recursive: true, force: true });
     const { emitAotProject } = await import('@tsdi/compiler');
     const result = emitAotProject({
-        configPath: path.join(PACKAGE_DIR, 'tsconfig.web.json'),
-        rootDir: ROOT,
+        configPath: path.join(PACKAGE_DIR, 'tsconfig.app.json'),
         emitAll: true,
         compilerOptions: {
             outDir: TSC_OUT,
-            // The AOT transformer injects `applyPrecompiledDecorators` as an
-            // ESM import. CommonJS emit leaves the `__aotDeco` call unresolved
-            // in the browser bundle, so emit ES modules for the web build.
-            module: ts.ModuleKind.ESNext,
-            moduleResolution: ts.ModuleResolutionKind.NodeJs,
             declaration: false,
             sourceMap: false,
             noEmit: false,
@@ -41,7 +43,7 @@ async function compile(): Promise<void> {
         },
         throwOnError: true
     });
-    console.log(`AOT precompiled ${result.outputFiles.length} module(s)`);
+    console.log(`AOT precompiled ${result.outputFiles.length} module(s) via emitAotProject`);
     if (!fs.existsSync(BUNDLE_ENTRY)) {
         throw new Error(`TypeScript output missing admin entry: ${BUNDLE_ENTRY}`);
     }
@@ -51,14 +53,14 @@ const tsdiAliasPlugin: Plugin = {
     name: 'tsdi-tsc-output-alias',
     setup(build) {
         build.onResolve({ filter: /^@tsdi\// }, args => {
-            // Console/XML/JSON renderers are lazy branches in bootstrapComponent;
-            // the admin host always mounts HTML, so stub them for every import kind
-            // (TypeScript compiles `await import()` to a `require` inside `.then`).
-            if (/^@tsdi\/components\/(console|xml|json)$/.test(args.path)) {
+            // `bootstrapComponent` lazy-loads non-HTML renderers. The admin host
+            // always mounts HTML, so these dead branches stay out of the bundle.
+            if (args.kind === 'dynamic-import' && /^@tsdi\/components\/(console|xml|json)$/.test(args.path)) {
                 return { path: 'browser-stub', namespace: 'browser-stub' };
             }
             const specifier = args.path.slice('@tsdi/'.length);
             const candidates = [
+                path.join(TSC_OUT, 'packages', `${specifier}.js`),
                 path.join(TSC_OUT, 'packages', specifier, 'index.js'),
                 path.join(TSC_OUT, 'packages', 'components', specifier, 'index.js'),
                 path.join(TSC_OUT, 'packages', 'agents', specifier, 'index.js'),
@@ -86,6 +88,10 @@ const tsdiAliasPlugin: Plugin = {
     }
 };
 
+/**
+ * Browser leaf stubs. The admin injects the real document, so Node-only
+ * renderer leaves (jsdom, fs, ...) never run in the browser.
+ */
 const browserStubPlugin: Plugin = {
     name: 'browser-leaf-stubs',
     setup(build) {
@@ -94,10 +100,12 @@ const browserStubPlugin: Plugin = {
             path: 'browser-stub',
             namespace: 'browser-stub'
         }));
-        build.onResolve({ filter: /^@tsdi\/components\/(console|xml|json)$/ }, () => ({
-            path: 'browser-stub',
-            namespace: 'browser-stub'
-        }));
+        build.onResolve({ filter: /^@tsdi\/components\/(console|xml|json)$/ }, args => {
+            if (args.kind === 'dynamic-import') {
+                return { path: 'browser-stub', namespace: 'browser-stub' };
+            }
+            return null;
+        });
         build.onLoad({ filter: /.*/, namespace: 'browser-stub' }, () => ({
             contents: 'module.exports = {};',
             loader: 'js'
@@ -118,6 +126,9 @@ function initialFiles(mainFile: string): string[] {
         }
         files.push(file);
         const source = fs.readFileSync(file, 'utf-8');
+        // Esbuild emits `import{...}from"./chunks/x.js"` and bare
+        // `import"./chunks/y.js"` on the same line; dynamic imports use
+        // `import("./chunks/z.js")` and must not count as initial load.
         const patterns = [
             /\bfrom\s*["'](\.\/[^"']+)["']/g,
             /\bimport\s*["'](\.\/[^"']+)["']/g
@@ -138,7 +149,21 @@ function reportSizes(): void {
     const files = initialFiles(mainFile);
     const initialBytes = files.reduce((sum, file) => sum + fs.statSync(file).size, 0);
     const initialGzip = gzipBytes(files);
+    const chunkDir = path.join(WEB_DIR, 'chunks');
+    const lazy = fs.existsSync(chunkDir)
+        ? fs.readdirSync(chunkDir)
+            .filter(file => file.endsWith('.js'))
+            .map(file => path.join(chunkDir, file))
+            .filter(file => !files.includes(file))
+        : [];
+    const lazyBytes = lazy.reduce((sum, file) => sum + fs.statSync(file).size, 0);
+    const lazyGzip = gzipBytes(lazy);
+
     console.log(`admin initial JS: ${(initialBytes / 1024).toFixed(1)} KiB (gzip ${(initialGzip / 1024).toFixed(1)} KiB)`);
+    if (lazy.length) {
+        console.log(`admin lazy chunks: ${(lazyBytes / 1024).toFixed(1)} KiB (gzip ${(lazyGzip / 1024).toFixed(1)} KiB) in ${lazy.length} file(s)`);
+    }
+
     if (initialBytes > INITIAL_JS_BUDGET || initialGzip > INITIAL_GZIP_BUDGET) {
         console.error(
             `admin bundle budget exceeded: ${initialBytes} > ${INITIAL_JS_BUDGET} bytes or ` +
@@ -155,7 +180,7 @@ async function main(): Promise<void> {
 
     await compile();
 
-    await build({
+    const result = await build({
         entryPoints: [BUNDLE_ENTRY],
         outdir: WEB_DIR,
         entryNames: 'main',
@@ -182,6 +207,7 @@ async function main(): Promise<void> {
     if (!SOURCE_MAP && fs.existsSync(oldMap)) {
         fs.unlinkSync(oldMap);
     }
+    fs.writeFileSync(path.join(WEB_DIR, 'bundle-meta.json'), JSON.stringify(result.metafile, null, 2));
     reportSizes();
     console.log(`admin bundle written to ${path.join(WEB_DIR, 'main.js')}`);
 }

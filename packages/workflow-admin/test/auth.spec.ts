@@ -132,13 +132,14 @@ describe('workflow admin authentication', () => {
         expect(guard.canHandle({ url: '/api/workflows' }, { get: () => undefined } as any)).toBe(false);
         expect(guard.canHandle({ url: '/index.html' }, { get: () => undefined } as any)).toBe(true);
 
-        const token = await oidc.createSessionToken({
-            sub: 'test-user',
+        // Local tokens must reference a real user in the store.
+        const localUser = await oidc.createLocalUser({
             username: 'tester',
-            name: 'Tester',
-            provider: 'local',
+            password: 'tester-pass-123',
+            email: 'tester@example.com',
             roles: ['admin']
         });
+        const token = await oidc.createSessionToken(localUser);
         const cookie = `oidc_session=${token}`;
 
         const tokenResponse = await request(`${base}/auth/token`, { headers: { cookie } });

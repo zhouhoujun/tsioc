@@ -45,6 +45,7 @@ describe('gateway admin UI routing', () => {
         const guard = new GatewayAdminAuthGuard();
         expect(withSession(undefined, () => guard.canActivate())).toBe(false);
         expect(withSession({ authenticated: true, authEnabled: true, user: null }, () => guard.canActivate())).toBe(false);
+        expect(withSession({ authenticated: true, authEnabled: true, user: {} }, () => guard.canActivate())).toBe(false);
         expect(withSession({ authenticated: true, authEnabled: true, user: { email: 'admin@example.com' } }, () => guard.canActivate())).toBe(true);
         expect(withSession({ authenticated: true, authEnabled: false, user: null }, () => guard.canActivate())).toBe(true);
     });

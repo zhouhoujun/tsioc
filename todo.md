@@ -3613,3 +3613,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **验证**：`agent-ui` 全量 **2030 passing**、`tsc` 0、`source-size` OK、`git diff --check` 干净；全量门禁 **27/27 GATE-PASS，GATE_EXIT=0**。
 - Admin 静态资源防陈旧（2026-11-12）：
   - 注入的 index.html 带 `main.js?v=<mtime>` 且 `cache-control: no-store`；静态 `.html/.js/.css` 统一 no-store，避免重建后浏览器继续运行旧 bundle（表现为菜单/主题不生效）。
+- Admin 构建对齐 workflow-admin（2026-11-12）：
+  - `build-web.ts` 改用 `tsconfig.app.json` + `emitAopProject`（与 workflow-admin `build.ts` 相同的 AOT/esbuild 流程），输出 `bundle-meta.json` 并统计 lazy chunks。
+  - 菜单改为扁平可点击分组（语言/主题直接项），去掉 hover 飞出的二级菜单；workflow 管理菜单同步扁平化。
+  - 本地用户 token 校验必须能在 UserStore 找到 sub，令牌重启/删用户后不可继续访问；路由守卫要求注入的 user 至少有 sub 或 email。
