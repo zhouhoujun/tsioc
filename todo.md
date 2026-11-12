@@ -3624,3 +3624,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 公共 menu-bar 子菜单可点击（2026-11-12）：
   - 公共 `MenuBarComponent` 子菜单从 hover-only 改为点击展开/收起（`is-open`），点击子项选中并关闭；解决触屏/键盘与鼠标跨间隙导致菜单看起来不可用的问题。
   - 新增点击展开/收起/选中回归断言；components/common 66 passing。
+- workflow-admin 默认关闭认证与 preview/admin 路由（2026-11-12）：
+  - 默认 `enabled=false`；认证关闭时 `/` 落到 `#/preview`（无登录页）。
+  - 认证开启时 `/` 落到 `#/admin`，未登录由守卫跳 `#/login`；注册/登录后回 `#/admin`，刷新重新走 `/auth/token` + `/auth/userinfo`。
+  - 通配路由 `#/does-not-exist` 渲染 404；初始 tab 同步不覆盖 `/admin`/`#/preview` 落地地址。

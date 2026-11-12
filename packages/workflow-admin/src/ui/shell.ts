@@ -1,5 +1,6 @@
 import { Component, ComponentRef, OnDestroy, OnInit } from '@tsdi/components';
 import { Router, RouterOutlet } from '@tsdi/components/router';
+import { WORKFLOW_ADMIN_ADMIN_PATH, WORKFLOW_ADMIN_PREVIEW_PATH } from './routes';
 
 /**
  * Router shell. Keeps the browser hash in sync with `@tsdi/components/router`
@@ -23,16 +24,39 @@ export class WorkflowAdminShellComponent implements OnInit, OnDestroy {
             }
         });
         if (typeof window !== 'undefined') {
-            this.hashHandler = () => {
-                const url = String(location.hash || '').replace(/^#/, '') || '/';
-                void this.router.navigateByUrl(url);
-            };
+            this.hashHandler = () => { void this.navigateCurrent(); };
             window.addEventListener('hashchange', this.hashHandler);
         }
-        const initial = typeof location === 'undefined'
+        await this.navigateCurrent();
+    }
+
+    private async navigateCurrent(): Promise<void> {
+        const url = typeof location === 'undefined'
             ? '/'
             : String(location.hash || '').replace(/^#/, '') || '/';
-        await this.router.navigateByUrl(initial);
+        await this.router.navigateByUrl(await this.resolveLanding(url));
+    }
+
+    /**
+     * `/` lands on the authenticated admin area when auth is enabled, and on
+     * the open preview area when authentication is disabled.
+     */
+    private async resolveLanding(url: string): Promise<string> {
+        if (url !== '/' && url !== '') {
+            return url;
+        }
+        try {
+            const response = await fetch('/auth/config', { credentials: 'same-origin' });
+            if (response.ok) {
+                const config = await response.json() as { enabled?: boolean };
+                return config?.enabled === false
+                    ? `/${WORKFLOW_ADMIN_PREVIEW_PATH}`
+                    : `/${WORKFLOW_ADMIN_ADMIN_PATH}`;
+            }
+        } catch {
+            // Fall back to the protected area; the guard redirects to login.
+        }
+        return `/${WORKFLOW_ADMIN_ADMIN_PATH}`;
     }
 
     onDestroy(): void {

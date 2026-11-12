@@ -39,7 +39,7 @@ export function resolveWorkflowAdminAuthOptions(
     const env = process.env;
     const enabled = options?.enabled
         ?? (env.WORKFLOW_ADMIN_AUTH_ENABLED === undefined
-            ? true
+            ? false
             : bool(env.WORKFLOW_ADMIN_AUTH_ENABLED));
     const host = defaults.host || env.WORKFLOW_ADMIN_HOST || '127.0.0.1';
     const port = defaults.port ?? Number(env.WORKFLOW_ADMIN_PORT || env.PORT || 8765);

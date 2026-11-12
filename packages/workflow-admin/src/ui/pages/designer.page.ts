@@ -6,7 +6,12 @@ import { WorkflowDesignerModule } from '@tsdi/activities/src/workflow-designer.m
 import { createDefaultWorkflowDefinition } from '@tsdi/activities/src/visual/workflow-designer';
 import { HttpWorkflowDefinitionStore } from '@tsdi/activities/src/visual/workflow-store';
 import { firstValue } from '../http';
-import { WORKFLOW_ADMIN_WORKFLOW_PATH } from '../routes';
+import {
+    WORKFLOW_ADMIN_ADMIN_PATH,
+    WORKFLOW_ADMIN_PREVIEW_PATH,
+    WORKFLOW_ADMIN_WORKFLOW_PATH,
+    WORKFLOW_ADMIN_WORKFLOWS_PATH
+} from '../routes';
 
 @Component({
     selector: 'workflow-admin-designer',
@@ -31,8 +36,13 @@ export class WorkflowAdminDesignerPageComponent implements AfterViewInit {
         designer.autosaveDelay = 600;
 
         const tabsKey = 'workflow-designer-open-tabs';
+        // Keep the initial `#/workflows` landing URL stable; deep links are only
+        // written once the user actually switches/open documents.
+        let syncRouteEnabled = false;
         designer.tabChangeAction = state => {
-            this.syncRoute(state.activeId);
+            if (syncRouteEnabled) {
+                this.syncRoute(state.activeId);
+            }
             try {
                 localStorage.setItem(tabsKey, JSON.stringify(state));
             } catch {
@@ -71,8 +81,9 @@ export class WorkflowAdminDesignerPageComponent implements AfterViewInit {
         const routeId = this.router.params?.['id'];
         if (routeId) {
             await designer.loadWorkflow(routeId);
+            this.syncRoute(routeId);
         }
-        this.syncRoute(designer.designer.definition.id);
+        syncRouteEnabled = true;
 
         const fitSoon = () => {
             const run = () => designer.fitView();
@@ -132,12 +143,19 @@ export class WorkflowAdminDesignerPageComponent implements AfterViewInit {
         // A tab/route sync must not overwrite an explicit navigation to another
         // route (for example the NotFound page).
         const current = String(location.hash || '').replace(/^#/, '') || '/';
-        if (current !== '/' && !current.startsWith(`${WORKFLOW_ADMIN_WORKFLOW_PATH.split('/:')[0]}/`)) {
+        const previewBase = `/${WORKFLOW_ADMIN_PREVIEW_PATH}`;
+        const adminBase = `/${WORKFLOW_ADMIN_ADMIN_PATH}`;
+        const base = current === previewBase || current.startsWith(`${previewBase}/`)
+            ? previewBase
+            : current === adminBase || current.startsWith(`${adminBase}/`)
+                ? adminBase
+                : '';
+        if (!base) {
             return;
         }
         const hash = id
-            ? `#/${WORKFLOW_ADMIN_WORKFLOW_PATH.replace(':id', encodeURIComponent(id))}`
-            : '#/';
+            ? `#${base}/${WORKFLOW_ADMIN_WORKFLOW_PATH.replace(':id', encodeURIComponent(id))}`
+            : `#${base}/${WORKFLOW_ADMIN_WORKFLOWS_PATH}`;
         if (location.hash !== hash) {
             history.replaceState(null, '', hash);
         }

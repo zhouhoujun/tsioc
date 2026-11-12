@@ -6,7 +6,7 @@ import { OIDCService } from '@tsdi/oidc-auth';
 import { InMemoryWorkflowDefinitionStore } from '@tsdi/activities/src/visual/workflow-store';
 import { createWorkflowAdminModule } from '../src/server';
 import { WorkflowSessionGuard } from '../src/auth/session.guard';
-import { WorkflowAdminAuthOptions } from '../src/auth/options';
+import { WorkflowAdminAuthOptions, resolveWorkflowAdminAuthOptions } from '../src/auth/options';
 
 function freePort(): Promise<number> {
     return new Promise((resolve, reject) => {
@@ -80,9 +80,39 @@ async function waitForServer(base: string): Promise<void> {
     throw new Error('workflow admin HTTP microservice did not start');
 }
 
+describe('workflow admin auth defaults', () => {
+    it('disables authentication when no env/options enable it', () => {
+        const original = process.env.WORKFLOW_ADMIN_AUTH_ENABLED;
+        delete process.env.WORKFLOW_ADMIN_AUTH_ENABLED;
+        try {
+            expect(resolveWorkflowAdminAuthOptions({}).enabled).toBe(false);
+        } finally {
+            if (original === undefined) {
+                delete process.env.WORKFLOW_ADMIN_AUTH_ENABLED;
+            } else {
+                process.env.WORKFLOW_ADMIN_AUTH_ENABLED = original;
+            }
+        }
+    });
+});
+
 describe('workflow admin authentication', () => {
     let ctx: ApplicationContext | undefined;
     let base: string;
+
+    it('keeps authentication disabled by default', () => {
+        const previous = process.env.WORKFLOW_ADMIN_AUTH_ENABLED;
+        delete process.env.WORKFLOW_ADMIN_AUTH_ENABLED;
+        try {
+            expect(resolveWorkflowAdminAuthOptions(undefined).enabled).toBe(false);
+        } finally {
+            if (previous === undefined) {
+                delete process.env.WORKFLOW_ADMIN_AUTH_ENABLED;
+            } else {
+                process.env.WORKFLOW_ADMIN_AUTH_ENABLED = previous;
+            }
+        }
+    });
 
     afterEach(async () => {
         await ctx?.close();

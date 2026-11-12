@@ -73,10 +73,12 @@ WORKFLOW_DB_FILE=/var/lib/tsdi/workflows.db WORKFLOW_PLUGINS=mqtt,redis npm star
 
 ## Authentication
 
-Authentication is enabled by default. Disable it with
-`WORKFLOW_ADMIN_AUTH_ENABLED=false` or `auth: { enabled: false }` when the admin
-runs behind another trusted gateway. Configure it with environment variables or
-the `auth` option passed to `startWorkflowAdminServer`.
+Authentication is disabled by default: the admin opens directly at `#/preview`.
+Enable it with `WORKFLOW_ADMIN_AUTH_ENABLED=true` or `auth: { enabled: true }`;
+when enabled, `/` routes to `#/login`, and after sign-in/registration the admin
+opens at `#/admin`. Unknown hashes render the NotFound page.
+when the admin is exposed to other users. Configure it with environment
+variables or the `auth` option passed to `startWorkflowAdminServer`.
 
 ### OAuth2 / external OIDC provider
 
@@ -124,8 +126,10 @@ await startWorkflowAdminServer({
 });
 ```
 
-`GET /auth/session` is used by the browser shell before boot. Unauthenticated
-API calls return `401`; the UI redirects to `login.html` and back after login.
+`GET /auth/token` and `GET /auth/userinfo` back the browser route guard: the
+guard fetches the OAuth session token first, exchanges it for the current user
+profile, and redirects to `#/login` when either is empty. Unauthenticated API
+calls return `401`; the UI redirects to `#/login` and back after login.
 
 The server defaults to SQLite (`$WORKFLOW_DB_FILE`, then
 `~/.tsdi-agent/workflows.db`). Plugin installations made through
