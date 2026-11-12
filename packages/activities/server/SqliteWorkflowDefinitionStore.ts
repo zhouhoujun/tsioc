@@ -8,8 +8,29 @@ import {
     WorkflowDefinitionSummary
 } from '../src/visual/workflow-store';
 
-type SqliteModule = typeof import('node:sqlite');
-type SqliteDatabase = import('node:sqlite').DatabaseSync;
+/**
+ * Minimal local shape for the built-in `node:sqlite` module.
+ *
+ * `node:sqlite` is available at runtime from Node 22.5+, but the repository's
+ * `@types/node` version predates its declarations. Keeping the shape local lets
+ * ts-node compile the server on every supported Node version while the lazy
+ * `require` still falls back when the module is absent.
+ */
+interface SqliteStatement {
+    all(...params: any[]): any[];
+    get(...params: any[]): any;
+    run(...params: any[]): { changes: number | bigint };
+}
+
+interface SqliteDatabase {
+    prepare(sql: string): SqliteStatement;
+    exec(sql: string): void;
+    close(): void;
+}
+
+interface SqliteModule {
+    DatabaseSync: new (file: string) => SqliteDatabase;
+}
 
 let sqliteModule: SqliteModule | undefined;
 let sqliteChecked = false;
