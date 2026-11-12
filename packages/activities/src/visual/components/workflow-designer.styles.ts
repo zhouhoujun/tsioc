@@ -944,6 +944,9 @@ workflow-canvas {
 }
 
 .workflow-field-group-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin: 14px 0 6px;
     font-size: 10px;
     font-weight: 700;
@@ -952,11 +955,40 @@ workflow-canvas {
     color: #94a3b8;
 }
 
+.workflow-field-group-title::after {
+    content: '';
+    flex: 1 1 auto;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.18;
+}
+
 .workflow-inspector-no-fields,
 .workflow-no-fields {
     padding: 6px 0;
     font-size: 11px;
     color: #94a3b8;
+}
+
+.workflow-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.workflow-input-wrap.has-unit .workflow-input {
+    padding-right: 36px;
+}
+
+.workflow-input-unit {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 10px;
+    line-height: 1;
+    pointer-events: none;
 }
 
 .workflow-input,

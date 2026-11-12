@@ -117,8 +117,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             configField({ key: 'result', label: 'Mock result', labelZh: '模拟结果', type: 'json', placeholder: '{ "ok": true }', description: 'Returned directly when no action is set.', descriptionZh: '未配置动作时直接返回该结果。' }),
             configField({ key: 'fail', label: 'Fail this step', labelZh: '使此步骤失败', type: 'boolean', defaultValue: false, group: 'Reliability', groupZh: '可靠性' }),
             configField({ key: 'retry', label: 'Retries', labelZh: '重试次数', type: 'number', defaultValue: 0, min: 0, max: 20, step: 1, group: 'Reliability', groupZh: '可靠性', description: 'Automatic retries before the step fails.', descriptionZh: '步骤失败前的自动重试次数。' }),
-            configField({ key: 'retryDelay', label: 'Retry delay (ms)', labelZh: '重试间隔（毫秒）', type: 'number', defaultValue: 0, min: 0, step: 100, group: 'Reliability', groupZh: '可靠性' }),
-            configField({ key: 'timeout', label: 'Timeout (ms)', labelZh: '超时（毫秒）', type: 'number', defaultValue: 0, min: 0, step: 100, group: 'Reliability', groupZh: '可靠性' })
+            configField({ key: 'retryDelay', label: 'Retry delay', labelZh: '重试间隔', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', group: 'Reliability', groupZh: '可靠性' }),
+            configField({ key: 'timeout', label: 'Timeout', labelZh: '超时', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', group: 'Reliability', groupZh: '可靠性' })
         ],
         defaultConfig: {}
     },
@@ -150,7 +150,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 description: 'Trusted code. `context` is the workflow context, `input` is the previous result data. Press Ctrl+Space for context and variable suggestions.',
                 descriptionZh: '受信任代码。`context` 是工作流上下文，`input` 是上一步结果。按 Ctrl+Space 获取上下文和变量提示。'
             }),
-            configField({ key: 'timeout', label: 'Timeout (ms)', labelZh: '超时（毫秒）', type: 'number', defaultValue: 0, min: 0, step: 100, group: 'Reliability', groupZh: '可靠性' })
+            configField({ key: 'timeout', label: 'Timeout', labelZh: '超时', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', group: 'Reliability', groupZh: '可靠性' })
         ],
         defaultConfig: { code: 'return input;' }
     },
@@ -256,7 +256,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         ],
         fields: [
             configField({ key: 'iterations', label: 'Iterations', labelZh: '迭代次数', type: 'number', defaultValue: 1, min: 1, max: 10000, step: 1 }),
-            configField({ key: 'delay', label: 'Delay (ms)', labelZh: '延迟（毫秒）', type: 'number', defaultValue: 0, min: 0, step: 100, group: 'Options', groupZh: '选项' })
+            configField({ key: 'delay', label: 'Delay', labelZh: '延迟', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', group: 'Options', groupZh: '选项' })
         ],
         defaultConfig: { iterations: 1 }
     },
@@ -273,7 +273,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Output')],
         fields: [
-            configField({ key: 'delay', label: 'Delay (ms)', labelZh: '延迟（毫秒）', type: 'number', defaultValue: 0, min: 0, step: 100 }),
+            configField({ key: 'delay', label: 'Delay', labelZh: '延迟', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', description: 'Time to wait before emitting the payload.', descriptionZh: '发送数据前的等待时间。' }),
             configField({ key: 'payload', label: 'Payload', labelZh: '数据', type: 'json', defaultValue: {}, placeholder: '{ "key": "value" }' })
         ],
         defaultConfig: { delay: 0, payload: {} }
@@ -291,9 +291,24 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Output')],
         fields: [
-            configField({ key: 'delay', label: 'Delay (ms)', labelZh: '延迟（毫秒）', type: 'number', defaultValue: 500, min: 0, max: 600000, step: 100, description: 'Pause before continuing.', descriptionZh: '继续执行前的等待时间。' })
+            configField({
+                key: 'mode',
+                label: 'Mode',
+                labelZh: '模式',
+                type: 'select',
+                defaultValue: 'fixed',
+                options: [
+                    { label: 'Fixed delay', labelZh: '固定延迟', value: 'fixed' },
+                    { label: 'Random delay', labelZh: '随机延迟', value: 'random' }
+                ],
+                group: 'Delay',
+                groupZh: '延迟'
+            }),
+            configField({ key: 'delay', label: 'Delay', labelZh: '延迟', type: 'number', defaultValue: 500, min: 0, max: 600000, step: 100, unit: 'ms', group: 'Delay', groupZh: '延迟', visibleWhen: { key: 'mode', equals: 'fixed' }, description: 'Pause before continuing.', descriptionZh: '继续执行前的等待时间。' }),
+            configField({ key: 'randomMin', label: 'Minimum', labelZh: '最小值', type: 'number', defaultValue: 100, min: 0, max: 600000, step: 100, unit: 'ms', group: 'Delay', groupZh: '延迟', visibleWhen: { key: 'mode', equals: 'random' } }),
+            configField({ key: 'randomMax', label: 'Maximum', labelZh: '最大值', type: 'number', defaultValue: 500, min: 0, max: 600000, step: 100, unit: 'ms', group: 'Delay', groupZh: '延迟', visibleWhen: { key: 'mode', equals: 'random' } })
         ],
-        defaultConfig: { delay: 500 }
+        defaultConfig: { mode: 'fixed', delay: 500 }
     },
     {
         type: 'log',
@@ -310,6 +325,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         fields: [
             configField({ key: 'message', label: 'Message', labelZh: '消息', type: 'text', defaultValue: 'Workflow step completed', placeholder: 'Workflow step completed', description: 'Message written to the execution log when no field is set.', descriptionZh: '未设置字段时写入执行日志的消息。' }),
             configField({ key: 'field', label: 'Message property', labelZh: '消息属性', type: 'text', placeholder: 'value', description: 'Optional context path; logs that value instead of the fixed message.', descriptionZh: '可选的上下文路径，用该值代替固定消息写入日志。' }),
+            configField({ key: 'complete', label: 'Complete message', labelZh: '完整消息', type: 'boolean', defaultValue: false, description: 'Log the complete workflow context instead of one property.', descriptionZh: '记录完整工作流上下文，而不是单个属性。' }),
             configField({
                 key: 'level',
                 label: 'Level',
@@ -369,8 +385,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 groupZh: '请求'
             }),
             configField({ key: 'retry', label: 'Retries', labelZh: '重试次数', type: 'number', defaultValue: 0, min: 0, max: 20, step: 1, group: 'Reliability', groupZh: '可靠性' }),
-            configField({ key: 'retryDelay', label: 'Retry delay (ms)', labelZh: '重试间隔（毫秒）', type: 'number', defaultValue: 0, min: 0, step: 100, group: 'Reliability', groupZh: '可靠性' }),
-            configField({ key: 'timeout', label: 'Timeout (ms)', labelZh: '超时（毫秒）', type: 'number', defaultValue: 0, min: 0, step: 100, group: 'Reliability', groupZh: '可靠性' })
+            configField({ key: 'retryDelay', label: 'Retry delay', labelZh: '重试间隔', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', group: 'Reliability', groupZh: '可靠性' }),
+            configField({ key: 'timeout', label: 'Timeout', labelZh: '超时', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', group: 'Reliability', groupZh: '可靠性' })
         ],
         defaultConfig: { method: 'GET' }
     },
@@ -422,10 +438,36 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Output')],
         fields: [
-            configField({ key: 'template', label: 'Template', labelZh: '模板', type: 'textarea', defaultValue: '{{value}}', required: true, rows: 5, placeholder: 'Hello {{input.name}}', description: 'Use {{path.to.value}} placeholders.', descriptionZh: '使用 {{path.to.value}} 占位符。' }),
-            configField({ key: 'target', label: 'Target field', labelZh: '目标字段', type: 'text', defaultValue: 'message', placeholder: 'message', description: 'Context field that receives the rendered text.', descriptionZh: '接收渲染结果的上文字段。' })
+            configField({ key: 'template', label: 'Template', labelZh: '模板', type: 'textarea', defaultValue: '{{value}}', required: true, rows: 5, placeholder: 'Hello {{input.name}}', group: 'Template', groupZh: '模板', description: 'Use {{path.to.value}} placeholders.', descriptionZh: '使用 {{path.to.value}} 占位符。' }),
+            configField({
+                key: 'syntax',
+                label: 'Syntax',
+                labelZh: '语法',
+                type: 'select',
+                defaultValue: 'mustache',
+                options: [
+                    { label: 'Mustache', labelZh: 'Mustache', value: 'mustache' },
+                    { label: 'Plain text', labelZh: '纯文本', value: 'plain' }
+                ],
+                group: 'Template',
+                groupZh: '模板'
+            }),
+            configField({ key: 'target', label: 'Target field', labelZh: '目标字段', type: 'text', defaultValue: 'message', placeholder: 'message', group: 'Output', groupZh: '输出', description: 'Context field that receives the rendered text.', descriptionZh: '接收渲染结果的上文字段。' }),
+            configField({
+                key: 'output',
+                label: 'Output',
+                labelZh: '输出类型',
+                type: 'select',
+                defaultValue: 'text',
+                options: [
+                    { label: 'Text', labelZh: '文本', value: 'text' },
+                    { label: 'Parsed JSON', labelZh: 'JSON', value: 'json' }
+                ],
+                group: 'Output',
+                groupZh: '输出'
+            })
         ],
-        defaultConfig: { template: '{{value}}', target: 'message' }
+        defaultConfig: { template: '{{value}}', syntax: 'mustache', target: 'message', output: 'text' }
     },
     {
         type: 'json',
@@ -622,7 +664,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         ],
         fields: [
             configField({ key: 'event', label: 'Event', labelZh: '事件', type: 'text', defaultValue: 'workflow.event', required: true, description: 'Event name to wait for.', descriptionZh: '要等待的事件名。' }),
-            configField({ key: 'timeout', label: 'Timeout (ms)', labelZh: '超时（毫秒）', type: 'number', defaultValue: 30000, min: 0, step: 1000, group: 'Reliability', groupZh: '可靠性', description: 'Route to the timeout port after this delay.', descriptionZh: '超过该时间后进入超时端口。' })
+            configField({ key: 'timeout', label: 'Timeout', labelZh: '超时', type: 'number', defaultValue: 30000, min: 0, step: 1000, unit: 'ms', group: 'Reliability', groupZh: '可靠性', description: 'Route to the timeout port after this delay.', descriptionZh: '超过该时间后进入超时端口。' })
         ],
         defaultConfig: { event: 'workflow.event', timeout: 30000 }
     },
@@ -644,7 +686,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         fields: [
             configField({ key: 'command', label: 'Command', labelZh: '命令', type: 'text', required: true, placeholder: 'context.exec' }),
             configField({ key: 'args', label: 'Args', labelZh: '参数', type: 'json', placeholder: '["--flag"]', description: 'Argument array passed to the command.', descriptionZh: '传给命令的参数数组。' }),
-            configField({ key: 'timeout', label: 'Timeout (ms)', labelZh: '超时（毫秒）', type: 'number', defaultValue: 0, min: 0, step: 100, group: 'Reliability', groupZh: '可靠性' })
+            configField({ key: 'timeout', label: 'Timeout', labelZh: '超时', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', group: 'Reliability', groupZh: '可靠性' })
         ],
         defaultConfig: {}
     },

@@ -419,9 +419,15 @@ export async function executeVisualNode(
                 data: { nodeId: node.id, condition: resolveSwitchValue(node, context) }
             };
         case 'delay': {
-            const delay = Math.max(0, Number(config.delay ?? config.duration ?? 0) || 0);
+            const mode = String(config.mode || 'fixed');
+            let delay = Math.max(0, Number(config.delay ?? config.duration ?? 0) || 0);
+            if (mode === 'random') {
+                const min = Math.max(0, Number(config.randomMin) || 0);
+                const max = Math.max(min, Number(config.randomMax) || min);
+                delay = min + Math.random() * (max - min);
+            }
             await new Promise(resolve => setTimeout(resolve, delay));
-            return { success: true, data: { nodeId: node.id, delayed: delay } };
+            return { success: true, data: { nodeId: node.id, delayed: delay, mode } };
         }
         case 'loop': {
             const iterations = Math.max(0, Math.min(10000, Number(config.iterations ?? 1) || 0));
@@ -432,12 +438,21 @@ export async function executeVisualNode(
             const field = config.field === undefined || config.field === null
                 ? ''
                 : String(config.field).trim();
-            const value = field
-                ? resolveWorkflowValue(field, context)
-                : resolveWorkflowValue(config.message, context);
-            const message = value !== null && typeof value === 'object'
-                ? JSON.stringify(value)
-                : String(value ?? '');
+            const value = config.complete === true
+                ? { ...context }
+                : field
+                    ? resolveWorkflowValue(field, context)
+                    : resolveWorkflowValue(config.message, context);
+            let message: string;
+            if (value !== null && typeof value === 'object') {
+                try {
+                    message = JSON.stringify(value);
+                } catch {
+                    message = String(value);
+                }
+            } else {
+                message = String(value ?? '');
+            }
             const logger = (context as any).logger;
             if (logger && typeof logger[level] === 'function') {
                 logger[level](message);
@@ -486,9 +501,24 @@ export async function executeVisualNode(
             }
         }
         case 'template': {
-            const rendered = templateText(String(config.template ?? ''), context);
+            const template = String(config.template ?? '');
+            const syntax = String(config.syntax || 'mustache');
+            const rendered = syntax === 'plain' ? template : templateText(template, context);
+            const output = String(config.output || 'text');
+            let text: any = rendered;
+            if (output === 'json') {
+                try {
+                    text = rendered.trim() ? JSON.parse(rendered) : null;
+                } catch (error) {
+                    return {
+                        success: false,
+                        error: new Error(`Invalid JSON template output: ${(error as Error).message}`),
+                        data: { nodeId: node.id }
+                    };
+                }
+            }
             const target = String(config.target || 'message');
-            return { success: true, data: { nodeId: node.id, [target]: rendered, value: rendered } };
+            return { success: true, data: { nodeId: node.id, [target]: text, value: text } };
         }
         case 'json': {
             const source = resolveWorkflowValue(config.field || 'value', context);

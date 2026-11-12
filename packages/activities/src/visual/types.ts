@@ -833,6 +833,7 @@ export interface WorkflowInspectorFieldView {
     min?: number;
     max?: number;
     step?: number;
+    unit?: string;
     minLength?: number;
     maxLength?: number;
     rows: number;

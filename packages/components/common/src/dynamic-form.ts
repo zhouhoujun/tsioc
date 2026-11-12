@@ -90,20 +90,23 @@ let dynamicFormSequence = 0;
                             title="{{resetFieldLabel}}" aria-label="{{resetFieldLabel}}"
                             @click="resetField(field)">↺</button>
                     </div>
-                    <input v-if="isTextInput(field)" [class]="inputClass(field)" type="{{htmlType(field)}}"
-                        [value]="fieldValue(field)" [placeholder]="field.placeholder || ''"
-                        [readOnly]="field.readonly" [disabled]="field.disabled"
-                        [min]="field.min" [max]="field.max" [step]="field.step"
-                        aria-required="{{isRequired(field) ? 'true' : 'false'}}"
-                        aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
-                        @input="changeText(field, $event)" @blur="blurField(field)" />
-                    <input v-if="isNumberInput(field)" [class]="inputClass(field)" type="{{htmlType(field)}}"
-                        [value]="fieldValue(field)" [placeholder]="field.placeholder || ''"
-                        [readOnly]="field.readonly" [disabled]="field.disabled"
-                        [min]="field.min" [max]="field.max" [step]="field.step || 1"
-                        aria-required="{{isRequired(field) ? 'true' : 'false'}}"
-                        aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
-                        @input="changeText(field, $event)" @blur="blurField(field)" />
+                    <div [class]="inputWrapClass(field)" v-if="isTextInput(field) || isNumberInput(field)">
+                        <input v-if="isTextInput(field)" [class]="inputClass(field)" type="{{htmlType(field)}}"
+                            [value]="fieldValue(field)" [placeholder]="field.placeholder || ''"
+                            [readOnly]="field.readonly" [disabled]="field.disabled"
+                            [min]="field.min" [max]="field.max" [step]="field.step"
+                            aria-required="{{isRequired(field) ? 'true' : 'false'}}"
+                            aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
+                            @input="changeText(field, $event)" @blur="blurField(field)" />
+                        <input v-if="isNumberInput(field)" [class]="inputClass(field)" type="{{htmlType(field)}}"
+                            [value]="fieldValue(field)" [placeholder]="field.placeholder || ''"
+                            [readOnly]="field.readonly" [disabled]="field.disabled"
+                            [min]="field.min" [max]="field.max" [step]="field.step || 1"
+                            aria-required="{{isRequired(field) ? 'true' : 'false'}}"
+                            aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
+                            @input="changeText(field, $event)" @blur="blurField(field)" />
+                        <span [class]="inputUnitClass()" v-if="field.unit">{{field.unit}}</span>
+                    </div>
                     <label v-if="isBooleanInput(field)" [class]="checkboxRowClass()">
                         <input type="checkbox" [checked]="fieldChecked(field)"
                             [disabled]="field.disabled || field.readonly"
@@ -678,6 +681,10 @@ export class DynamicFormComponent implements OnDestroy {
     inputClass(field: DynamicFormField): string {
         return [ `${this.classPrefix}-input`, field.inputClass || '' ].filter(Boolean).join(' ');
     }
+    inputWrapClass(field: DynamicFormField): string {
+        return `${this.classPrefix}-input-wrap${field.unit ? ' has-unit' : ''}`;
+    }
+    inputUnitClass(): string { return `${this.classPrefix}-input-unit`; }
     textareaClass(field: DynamicFormField): string {
         return [ `${this.classPrefix}-textarea`, field.inputClass || '' ].filter(Boolean).join(' ');
     }

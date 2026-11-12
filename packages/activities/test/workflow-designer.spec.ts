@@ -32,6 +32,11 @@ describe('Visual Workflow Designer', () => {
             const url = registry.get('http-request')?.fields?.find(field => field.key === 'url');
             expect(url?.type).toBe('url');
             expect(url?.required).toBe(true);
+
+            const delayKeys = registry.get('delay')?.fields?.map(field => field.key);
+            expect(delayKeys).toEqual(['mode', 'delay', 'randomMin', 'randomMax']);
+            const templateKeys = registry.get('template')?.fields?.map(field => field.key);
+            expect(templateKeys).toEqual(['template', 'syntax', 'target', 'output']);
         });
 
         it('builds a node with cloned ports and config defaults', () => {

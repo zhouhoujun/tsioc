@@ -38,12 +38,23 @@ export const DYNAMIC_FORM_CSS = `
 }
 
 .df-field-group-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin: 12px 0 6px;
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--df-text-hint);
+}
+
+.df-field-group-title::after {
+    content: '';
+    flex: 1 1 auto;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.18;
 }
 
 .df-field {
@@ -83,6 +94,27 @@ export const DYNAMIC_FORM_CSS = `
 
 .df-field-reset:hover {
     color: var(--df-primary);
+}
+
+.df-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.df-input-wrap.has-unit .df-input {
+    padding-right: 36px;
+}
+
+.df-input-unit {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--df-text-hint);
+    font-size: 10px;
+    line-height: 1;
+    pointer-events: none;
 }
 
 .df-input,

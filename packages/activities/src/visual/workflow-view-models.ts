@@ -359,6 +359,7 @@ export function buildWorkflowInspectorModel(
             min: field.min,
             max: field.max,
             step: field.step,
+            unit: field.unit,
             minLength: field.minLength,
             maxLength: field.maxLength,
             rows: field.rows || (field.type === 'json' ? 4 : field.type === 'code' ? 8 : 3),

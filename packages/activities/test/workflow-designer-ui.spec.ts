@@ -318,6 +318,15 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelector('.workflow-field[data-field-key="url"] .workflow-field-error')).toBeFalsy();
     });
 
+    it('renders unit suffixes from node field metadata', async () => {
+        ref.instance.designer.selectNode('task_1');
+        await flush();
+        const unit = root.querySelector('.workflow-field[data-field-key="timeout"] .workflow-input-unit');
+        expect(unit?.textContent).toBe('ms');
+        expect(root.querySelector('.workflow-field[data-field-key="timeout"] .workflow-input-wrap')?.className)
+            .toContain('has-unit');
+    });
+
     it('shows execution state on nodes and edges after running', async () => {
         const result = await ref.instance.designer.run({ context: { approved: true } });
         expect(result.success).toBe(true);

@@ -81,6 +81,8 @@ export interface DynamicFormField {
     min?: number;
     max?: number;
     step?: number;
+    /** Optional suffix shown inside the control (for example `ms`, `s`, `%`). */
+    unit?: string;
     minLength?: number;
     maxLength?: number;
     pattern?: string;

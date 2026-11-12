@@ -113,6 +113,36 @@ describe('Workflow data & trigger nodes', () => {
         expect(inject?.result?.data?.value).toBe(1);
     });
 
+    it('uses a random delay when the delay node is configured for random mode', async () => {
+        const result = await service.execute(chain([
+            { type: 'delay', config: { mode: 'random', randomMin: 5, randomMax: 5 } }
+        ]), {});
+        expect(result.success).toBe(true);
+        expect(result.data?.executionState?.nodeStates.delay_0.result?.data?.delayed).toBe(5);
+        expect(result.data?.executionState?.nodeStates.delay_0.result?.data?.mode).toBe('random');
+    });
+
+    it('renders plain templates and parses JSON output', async () => {
+        const plain = await service.execute(chain([
+            { type: 'template', config: { template: 'Hello {{name}}', syntax: 'plain', target: 'message' } }
+        ]), { name: 'demo' });
+        expect(plain.data?.executionState?.nodeStates.template_0.result?.data?.message).toBe('Hello {{name}}');
+
+        const json = await service.execute(chain([
+            { type: 'template', config: { template: '{"ok":true}', syntax: 'plain', output: 'json', target: 'message' } }
+        ]), {});
+        expect(json.data?.executionState?.nodeStates.template_0.result?.data?.message).toEqual({ ok: true });
+    });
+
+    it('logs the complete context when requested', async () => {
+        const result = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: 42 } } },
+            { type: 'log', config: { complete: true } }
+        ]), {});
+        const message = result.data?.executionState?.nodeStates.log_1.result?.data?.message;
+        expect(String(message)).toContain('"value":42');
+    });
+
     it('logs a context property when one is configured', async () => {
         const result = await service.execute(chain([
             { type: 'inject', config: { payload: { value: 42 } } },
