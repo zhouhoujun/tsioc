@@ -36,6 +36,7 @@ export type { AgentToolDefinition } from './tools/AgentTool';
 export { ToolRegistry } from './tools/ToolRegistry';
 export { ToolApprovalManager } from './tools/ToolApprovalManager';
 export * from './memory/SessionStore';
+export * from './memory/session-message-paging';
 export * from './memory/MemoryStore';
 export type { TurnDiagnosticsStore } from './harness/TurnDiagnosticsStore';
 export type { ContextPreparationReport } from './context/AgentContextManager';

@@ -106,6 +106,7 @@ export * from './memory/MemoryEmbedder';
 export * from './memory/MemorySearchService';
 export * from './memory/ProjectMemoryService';
 export * from './memory/SessionStore';
+export * from './memory/session-message-paging';
 export * from './memory/SessionSummarizer';
 export * from './memory/ExperienceDistiller';
 export * from './memory/AgentMemoryRetriever';

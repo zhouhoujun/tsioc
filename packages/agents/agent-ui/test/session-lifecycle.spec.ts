@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleComponent, AgentConsoleEventBridge, AgentConsoleSessionService, AgentConsoleSessionState } from '../src';
-import { InMemoryCommandExecutionControl } from '@tsdi/agent';
+import { InMemoryCommandExecutionControl, paginateSessionMessages } from '@tsdi/agent';
 
 class RuntimeStub {
     messages: any[] = [];
@@ -153,6 +153,38 @@ export class SessionLifecycleCommandTest {
             { sessionId: 'active-1', limit: 50 },
             { sessionId: 'active-1', cursor: 'm3', before: true, limit: 50 }
         ]);
+    }
+
+    @Test('the in-process console pages through SessionStore instead of loading everything')
+    async inProcessConsolePagesThroughSessionStore() {
+        const all = [1, 2, 3, 4].map(index => ({
+            id: `m${index}`,
+            role: index % 2 ? 'user' : 'assistant',
+            content: `msg-${index}`,
+            createdAt: index
+        }));
+        let getCalls = 0;
+        const pageOptions: any[] = [];
+        const store = {
+            get: async () => { getCalls += 1; return { messages: all }; },
+            listMessagesPage: async (_sessionId: string, options: any) => {
+                pageOptions.push(options);
+                return paginateSessionMessages(all as any, options);
+            },
+            listSections: async () => [{ id: 'section-1', label: 'Section' }]
+        };
+        const service = new AgentConsoleSessionService(null, store as any, null);
+
+        const tail = await service.loadMessagesPage('s1', undefined, { limit: 2 });
+        expect(getCalls).toEqual(0);
+        expect(tail.messages.map(message => message.id)).toEqual(['m3', 'm4']);
+        expect(tail.hasMore).toEqual(true);
+        expect(tail.sections?.map(section => section.id)).toEqual(['section-1']);
+
+        const older = await service.loadMessagesPage('s1', undefined, { cursor: 'm3', before: true, limit: 2 });
+        expect(older.messages.map(message => message.id)).toEqual(['m1', 'm2']);
+        expect(older.hasMore).toEqual(false);
+        expect(pageOptions).toEqual([{ limit: 2 }, { cursor: 'm3', before: true, limit: 2 }]);
     }
 
     @Test('/resume lists archived sessions and resumes a selection')

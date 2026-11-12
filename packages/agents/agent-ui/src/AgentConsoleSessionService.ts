@@ -1,5 +1,10 @@
 import { Injectable, Inject, Optional } from '@tsdi/ioc';
 import { AGENT_CONSOLE_APP_RPC, AgentConsoleAppRpc, AgentMessage, AgentRuntime, AgentSessionSection, AgentSessionSectionInfo, TurnDiagnosticsStore, buildUsageSummary, collectMessageUsageRecords, collectTurnUsageRecords, deriveSectionInfos, normalizeAgentWorkspaceIdentity, SessionSearchMatch, SessionStore } from '@tsdi/agent';
+import {
+    AgentConsoleSessionMessagePage,
+    loadAgentConsoleAllMessages,
+    loadAgentConsoleSessionMessagePage
+} from './AgentConsoleSessionMessagePage';
 import { AgentConsoleSessionExportRpc } from './AgentConsoleSessionExportRpc';
 import { AgentConsoleSessionGrouping } from './AgentConsoleSessionGrouping';
 import { collectExportToolCalls, createExportResult, normalizeExportFormat, normalizeExportResult } from './AgentConsoleSessionExport';
@@ -218,54 +223,12 @@ export class AgentConsoleSessionService extends AgentConsoleSessionExportRpc {
         return [];
     }
 
-    async loadMessagesPage(sessionId: string, context?: any, options?: { cursor?: string; before?: boolean; limit?: number; }): Promise<{ messages: AgentMessage[]; sections?: AgentSessionSection[]; goalSummary?: any; nextCursor?: string; hasMore?: boolean; }> {
-        if (this.appRpc) {
-            const params: Record<string, any> = { sessionId };
-            if (options?.cursor) {
-                params.cursor = options.cursor;
-            }
-            if (options?.before) {
-                params.before = true;
-            }
-            if (options?.limit != null) {
-                params.limit = options.limit;
-            }
-            const page = await this.appRpc.request('session.messages', params, context);
-            if (page && typeof page === 'object' && Array.isArray(page.messages)) {
-                return {
-                    messages: page.messages,
-                    sections: Array.isArray(page.sections) ? page.sections : undefined,
-                    goalSummary: page.goalSummary,
-                    nextCursor: page.nextCursor,
-                    hasMore: !!page.hasMore
-                };
-            }
-            return { messages: Array.isArray(page) ? page : [] };
-        }
-        if (this.runtime) {
-            const messages = await this.runtime.getMessages(sessionId);
-            const state = typeof (this.runtime as any).getSessionState === 'function'
-                ? await (this.runtime as any).getSessionState(sessionId)
-                : undefined;
-            return {
-                messages,
-                sections: Array.isArray(state?.sections) ? state.sections : undefined,
-                goalSummary: await this.runtime?.getSessionGoal(sessionId)
-            };
-        }
-        if (this.sessionStore) {
-            const state = await this.sessionStore.get(sessionId);
-            return {
-                messages: Array.isArray(state.messages) ? state.messages : [],
-                sections: Array.isArray(state.sections) ? state.sections : undefined
-            };
-        }
-        return { messages: [] };
+    loadMessagesPage(sessionId: string, context?: any, options?: { cursor?: string; before?: boolean; limit?: number; }): Promise<AgentConsoleSessionMessagePage> {
+        return loadAgentConsoleSessionMessagePage({ appRpc: this.appRpc, sessionStore: this.sessionStore, runtime: this.runtime }, sessionId, context, options);
     }
 
-    async loadMessages(sessionId: string, context?: any): Promise<AgentMessage[]> {
-        const page = await this.loadMessagesPage(sessionId, context);
-        return page.messages;
+    loadMessages(sessionId: string, context?: any): Promise<AgentMessage[]> {
+        return loadAgentConsoleAllMessages({ appRpc: this.appRpc, sessionStore: this.sessionStore, runtime: this.runtime }, sessionId, context);
     }
 
     protected withCurrent(

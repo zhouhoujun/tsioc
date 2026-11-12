@@ -1,6 +1,12 @@
 import { Inject, Injectable } from '@tsdi/ioc';
 import { In } from 'typeorm';
 import { AgentSessionFact, AgentSessionProjectIndex, AgentSessionProjectMetadata, AgentSessionSection, AgentSessionSnapshotInfo, AgentThreadIndex, SessionSearchMatch, SessionSearchOptions, SessionStore, deriveThreadIndexes } from './SessionStore';
+import { readSessionMessagePage, toAgentMessageRow } from './TypeOrmSessionMessagePage';
+import {
+    SessionMessageInvalidCursor,
+    SessionMessagePage,
+    SessionMessagePageOptions
+} from './session-message-paging';
 import { AgentState } from '../runtime/AgentState';
 import { AgentMessage, normalizeAgentMessageParts } from '../runtime/AgentMessage';
 import { AgentUsageRecord } from '../runtime/UsageSummary';
@@ -80,18 +86,12 @@ export class TypeOrmSessionStore extends SessionStore {
             threadStatus: session.threadStatus ?? undefined,
             createdAt: Number(session.createdAt),
             updatedAt: Number(session.updatedAt),
-            messages: messages.map(message => ({
-                id: message.messageId,
-                role: message.role as AgentMessage['role'],
-                content: message.content,
-                parts: normalizeAgentMessageParts(message.parts),
-                name: message.name,
-                toolCallId: message.toolCallId,
-                sectionId: message.sectionId ?? undefined,
-                createdAt: Number(message.createdAt),
-                metadata: message.metadata ?? undefined
-            }))
+            messages: messages.map(message => toAgentMessageRow(message))
         };
+    }
+
+    listMessagesPage(sessionId: string, options?: SessionMessagePageOptions, invalidCursor?: SessionMessageInvalidCursor): Promise<SessionMessagePage> {
+        return readSessionMessagePage(this.adapter, sessionId, options, invalidCursor);
     }
 
     async has(sessionId: string): Promise<boolean> {

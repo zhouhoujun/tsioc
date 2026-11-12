@@ -2,6 +2,12 @@ import { AgentUsageRecord, collectMessageUsageRecords } from '../runtime/UsageSu
 import { Abstract } from '@tsdi/ioc';
 import { AgentMessage } from '../runtime/AgentMessage';
 import { AgentState } from '../runtime/AgentState';
+import {
+    paginateSessionMessages,
+    SessionMessageInvalidCursor,
+    SessionMessagePage,
+    SessionMessagePageOptions
+} from './session-message-paging';
 
 export type AgentSessionRole = 'main' | 'branch' | 'review' | 'worker' | string;
 
@@ -265,6 +271,21 @@ export abstract class SessionStore {
     abstract setOwner(sessionId: string, ownerPrincipalId?: string): Promise<void>;
     abstract setWorkspace(sessionId: string, workspace?: string): Promise<void>;
     abstract setProjectMetadata(sessionId: string, metadata: AgentSessionProjectMetadata): Promise<void>;
+
+    /**
+     * One transcript page, newest-first window or around a cursor.
+     *
+     * The default reads the whole transcript; database stores override it with
+     * a targeted query so opening a long session never loads every message.
+     */
+    async listMessagesPage(
+        sessionId: string,
+        options?: SessionMessagePageOptions,
+        invalidCursor?: SessionMessageInvalidCursor
+    ): Promise<SessionMessagePage> {
+        const state = await this.get(sessionId);
+        return paginateSessionMessages(state.messages || [], options, invalidCursor);
+    }
 
     /**
      * User prompts of the given sessions (input history).

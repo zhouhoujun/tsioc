@@ -8,7 +8,6 @@ import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
 import { readSessionToolPayload } from './session-tool-payload';
-import { paginateSessionMessages } from './session-messages';
 import { AppRpcError, AppRpcRequest, AppRpcRequestContext, AppRpcResponse, AppRpcTransportMessage } from '../contracts/AppRpc';
 import { summarizeUsageForSessions } from '../usage/UsageStats';
 import { AudioSessionHandler, AudioSessionState } from '../audio';
@@ -891,23 +890,27 @@ export class AppRpcServer {
     private async getSessionMessages(params: any, context: AppRpcRequestContext): Promise<any> {
         const sessionId = this.requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
-        const state = await this.sessions.get(sessionId);
-        const messages = Array.isArray(state.messages) ? state.messages : [];
-        const { page, hasMore } = paginateSessionMessages(messages, params, cursor => new AppRpcError(-32602, `Invalid params: cursor message '${cursor}' not found`));
-
-        const sections = Array.isArray(state.sections)
-            ? state.sections.map(section => ({ ...section }))
-            : [];
+        const page = await this.sessions.listMessagesPage(
+            sessionId,
+            {
+                limit: typeof params?.limit === 'number' ? params.limit : undefined,
+                cursor: typeof params?.cursor === 'string' ? params.cursor : undefined,
+                before: !!params?.before
+            },
+            cursor => new AppRpcError(-32602, `Invalid params: cursor message '${cursor}' not found`)
+        );
+        const sections = (await this.sessions.listSections(sessionId))
+            .map(section => ({ ...section }));
         const goalSummary = typeof (this.runtime as any).getSessionGoal === 'function'
             ? await (this.runtime as any).getSessionGoal(sessionId)
             : undefined;
         return {
             sessionId,
-            messages: page,
+            messages: page.messages,
             sections,
             goalSummary,
-            nextCursor: page.length ? page[page.length - 1].id : (typeof params?.cursor === 'string' ? params.cursor : undefined),
-            hasMore
+            nextCursor: page.nextCursor,
+            hasMore: page.hasMore
         };
     }
 

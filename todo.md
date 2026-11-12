@@ -3659,3 +3659,18 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `WorkflowDesignerPreviewComponent` 不再在构造器里 applyThemeToDocument（此时输入尚未绑定，会把 dark 覆盖成 light）；改为 afterViewInit 且支持 `applyDocumentTheme` 开关。
   - microservice admin 嵌入设计器传 `:applyDocumentTheme="false"`，文档主题由 admin 管理；打开/关闭规则设计器保持 dark。
   - 新增“打开规则设计器再退出后仍为 dark”回归测试；admin 42 passing。
+
+## 2026-11-12 时间线分页动态绘制：TUI/web 都只画一页，上翻继续取上一页
+- **现象/根因**：web（AppRpc）已有 `session.messages` 分页，但 TUI in-process 没有 `AGENT_CONSOLE_APP_RPC`，`AgentConsoleSessionService.loadMessagesPage` 走 `SessionStore.get()`，返回并绘制**整个会话**；gateway 的 `session.messages` 也先 `sessions.get()` 载入全部消息再切片。长历史会话因此一次性载入/绘制全部消息。
+- **传输层分页（真正按需读库）**：
+  - 新增 `@tsdi/agent` 的 `session-message-paging`：`paginateSessionMessages`（最新页 / cursor before / after，limit 1..500）为唯一分页语义。
+  - `SessionStore` 新增 `listMessagesPage(sessionId, options, invalidCursor?)` 默认实现（内存切片）；`TypeOrmSessionStore` 用 `sequence` + `take(limit+1)` 的定向查询覆盖（`TypeOrmSessionMessagePage`），不再反序列化整张消息表。
+  - `AppRpcServer.session.messages` 改用 `sessions.listMessagesPage` + `listSections`，不再 `sessions.get()` 全量读；未知 cursor 仍映射 `-32602`。
+  - `AgentConsoleSessionService.loadMessagesPage` 统一走 `AgentConsoleSessionMessagePage` helper：web 走 AppRpc、TUI 走 `listMessagesPage`、无 store 的宿主才读 runtime 并在返回前切片；`loadMessages`（内容搜索/导出）仍保留全量读取。
+- **通用 List 分页动态绘制**：
+  - `ListPager` 新增 `previousCursor` / `hasPrevious` / `loadPrevious`，prepend 去重与并发保护与 forward 一致。
+  - `ListComponent` 新增 `visibleItems`（一次最多绘制多少行）、`windowOffset`、`onReachStart()`、`loadPreviousPage`；只渲染当前窗口，上翻到窗口顶部先显示已加载的上一窗口，再按 cursor 取上一页并 prepend 后从新页开始绘制；下翻到窗口底部继续绘制已加载行/加载下一页。
+  - 组件仍然渲染 `items` 的窗口切片而非全部数据，时间线分页状态机与 List 共用 `ListPager`。
+- **回归**：新增 `agent/test/session-message-paging.spec.ts`（TypeORM 定向分页、before/after/未知 cursor、默认 store 契约）、`session-lifecycle` 新增 in-process SessionStore 分页用例（断言不调用 `get()`）；components/common 69 passing；agent 1050、agent-gateway 381、agent-ui 2031 passing。
+- **真实 TUI 验证**：隔离 root 中创建 120 条消息的 `big-session`，`chat --session big-session` 首屏只显示最新消息（`MESSAGE-120` 区域），连续 PageUp 到顶部后上一页（`MESSAGE-001` 起）被取回并绘制；无全量回填卡顿。
+- **验证**：`npm run build:web` 1131+355 modules 成功；`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 GATE-PASS，GATE_EXIT=0**；`source-size` OK（新增 TypeOrm 分页查询抽到 `TypeOrmSessionMessagePage`、console 分页 helper 抽到 `AgentConsoleSessionMessagePage`，`AgentConsoleSessionService` baseline 374 → 337）。
