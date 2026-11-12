@@ -4,7 +4,7 @@ import { provideHttpClient, withFetch, withInterceptors, withNoXsrfProtection } 
 import { WorkflowDesignerModule } from '@tsdi/activities/src/workflow-designer.module';
 import { WorkflowCodeEditorModule } from '@tsdi/activities/web';
 import { WorkflowAdminAuthGuard, WORKFLOW_ADMIN_LOGIN_ROUTE } from './auth.guard';
-import { workflowAdminUnauthorizedInterceptor } from './http-interceptor';
+import { createWorkflowAdminUnauthorizedInterceptor } from './http-interceptor';
 import { createWorkflowAdminRoutes, WORKFLOW_ADMIN_LOGIN_PATH } from './routes';
 
 /**
@@ -22,7 +22,9 @@ export function createWorkflowAdminAppModule(authEnabled: boolean) {
             RouterModule.forRoot(createWorkflowAdminRoutes(authEnabled))
         ],
         providers: [
-            ...provideHttpClient(withFetch(), withNoXsrfProtection(), withInterceptors([workflowAdminUnauthorizedInterceptor])),
+            ...provideHttpClient(withFetch(), withNoXsrfProtection(), withInterceptors([
+                createWorkflowAdminUnauthorizedInterceptor(authEnabled)
+            ])),
             WorkflowAdminAuthGuard,
             { provide: WORKFLOW_ADMIN_LOGIN_ROUTE, useValue: WORKFLOW_ADMIN_LOGIN_PATH }
         ]

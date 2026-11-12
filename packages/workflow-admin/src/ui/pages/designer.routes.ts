@@ -4,10 +4,9 @@ import { WORKFLOW_ADMIN_WORKFLOW_PATH, WORKFLOW_ADMIN_WORKFLOWS_PATH } from '../
 /** Lazy route module for the designer feature area. */
 export const WORKFLOW_DESIGNER_ROUTES: Routes = [
     {
-        // `/preview` and `/admin` are the canonical landing pages.
         path: '',
         pathMatch: 'full',
-        loadComponent: () => import('./designer.page').then(module => module.WorkflowAdminDesignerPageComponent)
+        redirectTo: WORKFLOW_ADMIN_WORKFLOWS_PATH
     },
     {
         path: WORKFLOW_ADMIN_WORKFLOWS_PATH,

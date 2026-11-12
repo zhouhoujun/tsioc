@@ -1,6 +1,5 @@
 import { Component, ComponentRef, OnDestroy, OnInit } from '@tsdi/components';
 import { Router, RouterOutlet } from '@tsdi/components/router';
-import { WORKFLOW_ADMIN_ADMIN_PATH } from './routes';
 
 /**
  * Router shell. Keeps the browser hash in sync with `@tsdi/components/router`
@@ -24,21 +23,17 @@ export class WorkflowAdminShellComponent implements OnInit, OnDestroy {
             }
         });
         if (typeof window !== 'undefined') {
-            this.hashHandler = () => { void this.navigateCurrent(); };
+            this.hashHandler = () => {
+                const url = String(location.hash || '').replace(/^#/, '') || '/';
+                void this.router.navigateByUrl(url);
+            };
             window.addEventListener('hashchange', this.hashHandler);
         }
-        await this.navigateCurrent();
-    }
-
-    private async navigateCurrent(): Promise<void> {
-        const url = typeof location === 'undefined'
+        const initial = typeof location === 'undefined'
             ? '/'
             : String(location.hash || '').replace(/^#/, '') || '/';
-        // Both auth modes land on `/admin`: the guard lets it through when
-        // authentication is disabled and redirects to `#/login` when enabled.
-        const initial = url === '/' || url === ''
-            ? `/${WORKFLOW_ADMIN_ADMIN_PATH}`
-            : url;
+        // `/` redirects to the canonical `workflows` landing inside the route
+        // table; the guard (when enabled) redirects to login instead.
         await this.router.navigateByUrl(initial);
     }
 

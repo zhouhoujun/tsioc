@@ -2,7 +2,7 @@ import { Component, OnInit } from '@tsdi/components';
 import { HttpClient } from '@tsdi/common/http';
 import { Router } from '@tsdi/components/router';
 import { firstValue } from '../http';
-import { WORKFLOW_ADMIN_ADMIN_PATH } from '../routes';
+import { WORKFLOW_ADMIN_WORKFLOWS_PATH } from '../routes';
 
 interface LoginConfig {
     enabled?: boolean;
@@ -52,7 +52,7 @@ export class WorkflowAdminLoginPageComponent implements OnInit {
             return;
         }
         if (!this.config?.enabled) {
-            await this.router.navigateByUrl(`/${WORKFLOW_ADMIN_ADMIN_PATH}`);
+            await this.router.navigateByUrl(`/${WORKFLOW_ADMIN_WORKFLOWS_PATH}`);
         }
     }
 
@@ -123,6 +123,6 @@ export class WorkflowAdminLoginPageComponent implements OnInit {
         }
         const hashQuery = String(location.hash || '').split('?')[1] || '';
         const params = new URLSearchParams(hashQuery || location.search.slice(1));
-        return params.get('redirect') || `/${WORKFLOW_ADMIN_ADMIN_PATH}`;
+        return params.get('redirect') || `/${WORKFLOW_ADMIN_WORKFLOWS_PATH}`;
     }
 }

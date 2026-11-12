@@ -246,8 +246,6 @@ function startDesignerServer(port) {
 
         // Switching language must not discard the edited document.
         await page.locator('.workflow-management-menu .menu-bar-trigger').click();
-        await page.locator('[data-menu-id="language"]').hover();
-        await page.waitForTimeout(120);
         await page.evaluate(() => document.querySelector('[data-menu-id="language:zh-CN"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
         await page.waitForTimeout(200);
         const localePreserved = await page.evaluate(() => ({
@@ -256,8 +254,6 @@ function startDesignerServer(port) {
             title: document.querySelector('.workflow-toolbar-title')?.textContent
         }));
         await page.locator('.workflow-management-menu .menu-bar-trigger').click();
-        await page.locator('[data-menu-id="language"]').hover();
-        await page.waitForTimeout(120);
         await page.evaluate(() => document.querySelector('[data-menu-id="language:en"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
         await page.waitForTimeout(200);
 
@@ -362,9 +358,7 @@ function startDesignerServer(port) {
 
         // Theme submenu lists every built-in theme and applies it to the layout.
         await page.locator('.workflow-management-menu .menu-bar-trigger').click();
-        await page.locator('[data-menu-id="theme"]').hover();
-        await page.waitForTimeout(120);
-        const themeMenuItems = await page.locator('.menu-bar-submenu [data-menu-id^="theme:"]').count();
+        const themeMenuItems = await page.locator('.menu-bar-popup [data-menu-id^="theme:"]').count();
         await page.evaluate(() => window.workflowDesigner.setTheme('solarized'));
         await page.waitForTimeout(220);
         const solarizedTheme = await page.evaluate(() => {
@@ -378,9 +372,7 @@ function startDesignerServer(port) {
             };
         });
         await page.locator('.workflow-management-menu .menu-bar-trigger').click();
-        await page.locator('[data-menu-id="theme"]').hover();
-        await page.waitForTimeout(120);
-        const checkedTheme = ((await page.locator('.menu-bar-submenu [data-menu-id^="theme:"].is-checked').textContent()) || '').trim();
+        const checkedTheme = ((await page.locator('.menu-bar-popup [data-menu-id^="theme:"].is-checked').textContent()) || '').trim();
         await page.evaluate(() => window.workflowDesigner.setTheme('light'));
         await page.waitForTimeout(220);
         const lightThemeRestored = await page.evaluate(() =>

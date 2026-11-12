@@ -6,12 +6,7 @@ import { WorkflowDesignerModule } from '@tsdi/activities/src/workflow-designer.m
 import { createDefaultWorkflowDefinition } from '@tsdi/activities/src/visual/workflow-designer';
 import { HttpWorkflowDefinitionStore } from '@tsdi/activities/src/visual/workflow-store';
 import { firstValue } from '../http';
-import {
-    WORKFLOW_ADMIN_ADMIN_PATH,
-    WORKFLOW_ADMIN_PREVIEW_PATH,
-    WORKFLOW_ADMIN_WORKFLOW_PATH,
-    WORKFLOW_ADMIN_WORKFLOWS_PATH
-} from '../routes';
+import { WORKFLOW_ADMIN_WORKFLOW_PATH, WORKFLOW_ADMIN_WORKFLOWS_PATH } from '../routes';
 
 @Component({
     selector: 'workflow-admin-designer',
@@ -143,19 +138,13 @@ export class WorkflowAdminDesignerPageComponent implements AfterViewInit {
         // A tab/route sync must not overwrite an explicit navigation to another
         // route (for example the NotFound page).
         const current = String(location.hash || '').replace(/^#/, '') || '/';
-        const previewBase = `/${WORKFLOW_ADMIN_PREVIEW_PATH}`;
-        const adminBase = `/${WORKFLOW_ADMIN_ADMIN_PATH}`;
-        const base = current === previewBase || current.startsWith(`${previewBase}/`)
-            ? previewBase
-            : current === adminBase || current.startsWith(`${adminBase}/`)
-                ? adminBase
-                : '';
-        if (!base) {
+        const base = `/${WORKFLOW_ADMIN_WORKFLOWS_PATH}`;
+        if (current !== '/' && current !== base && !current.startsWith(`${base}/`)) {
             return;
         }
         const hash = id
-            ? `#${base}/${WORKFLOW_ADMIN_WORKFLOW_PATH.replace(':id', encodeURIComponent(id))}`
-            : `#${base}/${WORKFLOW_ADMIN_WORKFLOWS_PATH}`;
+            ? `#/${WORKFLOW_ADMIN_WORKFLOW_PATH.replace(':id', encodeURIComponent(id))}`
+            : `#${base}`;
         if (location.hash !== hash) {
             history.replaceState(null, '', hash);
         }
