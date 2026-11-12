@@ -3617,3 +3617,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `build-web.ts` 改用 `tsconfig.app.json` + `emitAopProject`（与 workflow-admin `build.ts` 相同的 AOT/esbuild 流程），输出 `bundle-meta.json` 并统计 lazy chunks。
   - 菜单改为扁平可点击分组（语言/主题直接项），去掉 hover 飞出的二级菜单；workflow 管理菜单同步扁平化。
   - 本地用户 token 校验必须能在 UserStore 找到 sub，令牌重启/删用户后不可继续访问；路由守卫要求注入的 user 至少有 sub 或 email。
+- 路由 NotFound 修复 + 登录回归（2026-11-12）：
+  - 修复通配路由 snapshot 的 url：`**` 现在使用实际请求路径（不再返回父级 `/`），outlet 能正确从 Designer 切换到 404 页面。
+  - workflow designer 的 `syncRoute` 在用户显式导航到其他路由时不再改写 hash，避免把 `#/does-not-exist` 拉回工作流页。
+  - 新增注册→token→userinfo→刷新仍登录的端到端回归测试；验证 / 未登录→#/login、已登录刷新重走 token/userinfo、错误路由→404。

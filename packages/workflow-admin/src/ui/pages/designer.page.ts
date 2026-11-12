@@ -129,6 +129,12 @@ export class WorkflowAdminDesignerPageComponent implements AfterViewInit {
         if (typeof history === 'undefined' || typeof location === 'undefined') {
             return;
         }
+        // A tab/route sync must not overwrite an explicit navigation to another
+        // route (for example the NotFound page).
+        const current = String(location.hash || '').replace(/^#/, '') || '/';
+        if (current !== '/' && !current.startsWith(`${WORKFLOW_ADMIN_WORKFLOW_PATH.split('/:')[0]}/`)) {
+            return;
+        }
         const hash = id
             ? `#/${WORKFLOW_ADMIN_WORKFLOW_PATH.replace(':id', encodeURIComponent(id))}`
             : '#/';

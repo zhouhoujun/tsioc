@@ -25,6 +25,7 @@ export class RouterTest {
 
         expect(await router.navigateByUrl('/does/not/exist')).toBe(true);
         expect(router.data.page).toEqual('missing');
+        expect(router.activeLeaf?.url).toEqual('/does/not/exist');
     }
 
     @Test('follows redirects and emits navigation events')

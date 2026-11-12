@@ -162,6 +162,52 @@ describe('workflow admin authentication', () => {
         expect(authorized.status).toBe(200);
     });
 
+    it('registers, resolves token+userinfo and keeps the session after a refresh', async () => {
+        await start({
+            enabled: true,
+            startOidcService: true,
+            allowRegistration: true,
+            jwt: { secret: 'workflow-admin-refresh-secret' }
+        });
+
+        const register = await fetch(`${base}/auth/register`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ username: 'fresh-user', password: 'fresh-pass-123' })
+        });
+        expect(register.status).toBe(200);
+        const setCookie = register.headers.get('set-cookie') || '';
+        const cookie = setCookie.match(/oidc_session=([^;]+)/)?.[1];
+        expect(cookie).toBeTruthy();
+
+        const token = await fetch(`${base}/auth/token`, { headers: { cookie: `oidc_session=${cookie}` } });
+        expect(token.status).toBe(200);
+        const tokenBody = await token.json() as { token?: string; enabled?: boolean };
+        expect(tokenBody.enabled).toBe(true);
+        expect(tokenBody.token).toBeTruthy();
+
+        const userinfo = await fetch(`${base}/auth/userinfo`, {
+            headers: { authorization: `Bearer ${tokenBody.token}` }
+        });
+        expect(userinfo.status).toBe(200);
+        const userBody = await userinfo.json() as { user?: { username?: string } };
+        expect(userBody.user?.username).toBe('fresh-user');
+
+        const api = await fetch(`${base}/api/workflows`, { headers: { cookie: `oidc_session=${cookie}` } });
+        expect(api.status).toBe(200);
+
+        // Simulate a browser refresh: the same session cookie must resolve the
+        // token and userinfo again (not just once at registration time).
+        const refreshedToken = await fetch(`${base}/auth/token`, { headers: { cookie: `oidc_session=${cookie}` } });
+        const refreshedBody = await refreshedToken.json() as { token?: string };
+        const refreshedUser = await fetch(`${base}/auth/userinfo`, {
+            headers: { authorization: `Bearer ${refreshedBody.token}` }
+        });
+        expect(refreshedUser.status).toBe(200);
+        const refreshedUserBody = await refreshedUser.json() as { user?: { username?: string } };
+        expect(refreshedUserBody.user?.username).toBe('fresh-user');
+    });
+
     it('verifies bearer tokens from an external OIDC service', async () => {
         await start({
             enabled: true,

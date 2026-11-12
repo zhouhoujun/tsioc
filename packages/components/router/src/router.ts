@@ -259,7 +259,7 @@ export class Router {
             }
             const path = route.path;
             if (path === '**') {
-                const url = parentUrl || '/';
+                const url = normalizeUrl(`${parentUrl}/${segments.join('/')}`);
                 return {
                     consumed: segments.length,
                     snapshot: {
