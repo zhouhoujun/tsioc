@@ -720,6 +720,30 @@ export async function executeVisualNode(
 }
 
 /**
+ * Structural validation for persisted drafts.
+ *
+ * Incomplete documents (no start node, empty canvas, unfinished connections)
+ * are valid drafts: the editor autosaves them and validates runnability when
+ * the user actually runs the workflow.
+ */
+export function validateVisualWorkflowDraft(definition: VisualWorkflowDefinition): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
+    if (!definition?.id) {
+        errors.push('Workflow ID is required');
+    }
+    if (!definition?.name) {
+        errors.push('Workflow name is required');
+    }
+    if (!Array.isArray(definition?.nodes)) {
+        errors.push('Workflow nodes must be an array');
+    }
+    if (!Array.isArray(definition?.connections)) {
+        errors.push('Workflow connections must be an array');
+    }
+    return { valid: errors.length === 0, errors };
+}
+
+/**
  * Pure validation used by both the editor and the execution service.
  */
 export function validateVisualWorkflow(definition: VisualWorkflowDefinition): { valid: boolean; errors: string[] } {

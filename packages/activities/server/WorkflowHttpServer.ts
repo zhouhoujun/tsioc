@@ -39,7 +39,7 @@ import {
     WorkflowDefinitionStore,
     InMemoryWorkflowDefinitionStore,
     createDefaultWorkflowDefinitionStore,
-    validateVisualWorkflow
+    validateVisualWorkflowDraft
 } from '../src/visual';
 import { VisualWorkflowService } from '../src/visual/VisualWorkflowService';
 import { WorkflowModule } from '../src/workflow.module';
@@ -120,7 +120,9 @@ export class WorkflowHttpController {
             throw new BadRequestException('Workflow definition body is required');
         }
         const definition: VisualWorkflowDefinition = { ...body, id };
-        const validation = validateVisualWorkflow(definition);
+        // Drafts (empty canvas, no start node yet, half-built graph) must be
+        // savable; run-time validation happens in the execution service.
+        const validation = validateVisualWorkflowDraft(definition);
         if (!validation.valid) {
             throw new BadRequestException(validation.errors.join('; '));
         }

@@ -133,6 +133,47 @@ describe('Workflow HTTP microservice', () => {
         expect(after.status).toBe(404);
     });
 
+    it('saves incomplete drafts without requiring a start node', async () => {
+        const draft = {
+            id: 'draft-demo',
+            name: 'Draft',
+            nodes: [
+                { id: 'task_1', name: 'Task', type: 'task' as const, position: { x: 0, y: 0 } }
+            ],
+            connections: []
+        };
+        const put = await request(`${base}/api/workflows/draft-demo`, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(draft)
+        });
+        expect(put.status).toBe(200);
+
+        const get = await request(`${base}/api/workflows/draft-demo`);
+        expect(get.status).toBe(200);
+        expect(get.body.nodes.length).toBe(1);
+
+        const blank = { id: 'blank-demo', name: 'Blank', nodes: [], connections: [] };
+        const blankPut = await request(`${base}/api/workflows/blank-demo`, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(blank)
+        });
+        expect(blankPut.status).toBe(200);
+
+        const blankRun = await request(`${base}/api/workflows/blank-demo/run`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ context: {} })
+        });
+        expect(blankRun.status).toBe(200);
+        expect(blankRun.body.success).toBe(false);
+        expect(String(blankRun.body.error || '')).toContain('node');
+
+        await request(`${base}/api/workflows/draft-demo`, { method: 'DELETE' });
+        await request(`${base}/api/workflows/blank-demo`, { method: 'DELETE' });
+    });
+
     it('lists, installs and uninstalls workflow plugins', async () => {
         const catalog = await request(`${base}/api/plugins`);
         expect(catalog.status).toBe(200);
