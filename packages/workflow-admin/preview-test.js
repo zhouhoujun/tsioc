@@ -494,6 +494,32 @@ function startDesignerServer(port) {
         await page.waitForTimeout(200);
         const closedTabCount = await page.locator('.workflow-tabs .tab').count();
 
+        // Dragging from the palette must place the node under the cursor, even
+        // after panning and zooming the canvas.
+        const dropTarget = { x: 360, y: 240 };
+        await page.locator('.workflow-palette-item[data-node-type="delay"]').dragTo(
+            page.locator('.workflow-canvas'),
+            { targetPosition: dropTarget }
+        );
+        await page.waitForTimeout(300);
+        const paletteDrop = await page.evaluate(target => {
+            const node = window.workflowDesigner.designer.nodes.find(item => item.type === 'delay');
+            if (!node) {
+                return { placed: false };
+            }
+            const element = document.querySelector(`.workflow-node[data-node-id="${node.id}"]`);
+            const rect = element?.getBoundingClientRect();
+            const canvas = document.querySelector('.workflow-canvas')?.getBoundingClientRect();
+            if (!rect || !canvas) {
+                return { placed: false };
+            }
+            return {
+                placed: true,
+                dx: Math.round(rect.x - canvas.x + rect.width / 2 - target.x),
+                dy: Math.round(rect.y - canvas.y + rect.height / 2 - target.y)
+            };
+        }, dropTarget);
+
         // Unknown routes render the lazy NotFound page.
         await page.evaluate(() => { location.hash = '#/route-that-does-not-exist'; });
         await page.waitForSelector('.wa-not-found', { timeout: 5000 });
@@ -502,11 +528,12 @@ function startDesignerServer(port) {
 
         await browser.close();
 
-        const result = { before, initialJsBytes, menuItemClick, lazyEditorChunk, hintEnv, hintAction, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, notFoundPage, notFoundCode, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
+        const result = { before, initialJsBytes, menuItemClick, paletteDrop, lazyEditorChunk, hintEnv, hintAction, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, notFoundPage, notFoundCode, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
         console.log(JSON.stringify(result, null, 2));
         if (errors.length || initialJsBytes > 660_000 || !lazyEditorChunk || !hintEnv || !hintAction || !shortcutsOpened || !shortcutsClosed
             || autosaveName !== 'Function Node' || autosaveCode !== 'return 42;' || !wheelZoom || !wheelPan || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20
             || !menuOpen || menuEntries < 5 || !menuClosed || !menuItemClick
+            || !paletteDrop?.placed || Math.abs(paletteDrop.dx) > 10 || Math.abs(paletteDrop.dy) > 10
             || paletteFiltered < 1 || paletteFiltered >= 35 || paletteRestored !== 35
             || !deleteDisabledBefore || !deleteEnabledAfter || localePreserved.count !== 8 || localePreserved.locale !== 'zh-CN' || !fitVisible
             || optionCount !== 5 || !compareHidden || !compareVisible || !compareHiddenAgain

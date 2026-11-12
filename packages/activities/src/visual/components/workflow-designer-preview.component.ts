@@ -701,7 +701,10 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
 
     private canvasRect(): { left: number; top: number; width: number; height: number } | undefined {
         const host = this.elementRef?.nativeElement as any;
-        const canvas = host?.querySelector?.('.workflow-canvas') || host;
+        const document = (globalThis as { document?: Document }).document;
+        const canvas = host?.querySelector?.('.workflow-canvas')
+            || document?.querySelector?.('.workflow-canvas')
+            || host;
         const rect = canvas?.getBoundingClientRect?.();
         if (!rect || !(rect.width > 0) || !(rect.height > 0)) {
             return undefined;
@@ -768,8 +771,12 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         return preferred;
     }
 
-    readonly paletteDragStart = (_event: any, item: WorkflowPaletteItem): void => {
+    readonly paletteDragStart = (event: any, item: WorkflowPaletteItem): void => {
         this.pendingNodeType = item.type;
+        if (event?.dataTransfer) {
+            event.dataTransfer.setData('application/x-tsdi-workflow-node', item.type);
+            event.dataTransfer.effectAllowed = 'copy';
+        }
         this.designer.message = 'workflow.message.dropHint';
         this.designer.messageParams = { name: item.label };
     };
@@ -907,9 +914,18 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                 const type = payload.nodeType || this.pendingNodeType;
                 this.pendingNodeType = undefined;
                 if (type && payload.world) {
+                    const definition = this.registry.get(type as any);
+                    const frame = definition
+                        ? workflowNodeFrame({
+                            type: definition.type,
+                            position: { x: 0, y: 0 },
+                            inputs: definition.inputs || [],
+                            outputs: definition.outputs || []
+                        } as any)
+                        : { width: 184, height: 64 };
                     designer.addNode(type as any, {
-                        x: Math.round(payload.world.x - 92),
-                        y: Math.round(payload.world.y - 32)
+                        x: Math.round(payload.world.x - frame.width / 2),
+                        y: Math.round(payload.world.y - frame.height / 2)
                     });
                 }
                 break;

@@ -1,5 +1,6 @@
-import { Attribute, Component, ElementRef } from '@tsdi/components';
+import { AfterViewInit, Attribute, Component, ElementRef, ViewChild } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
+import { markElementRefRaw } from '@tsdi/components/common';
 import { WorkflowCanvasModel, WorkflowCanvasNodeView, WorkflowCanvasPortView } from '../types';
 
 export type WorkflowCanvasPointerType =
@@ -54,7 +55,7 @@ const EMPTY_CANVAS: WorkflowCanvasModel = {
 @Component({
     selector: 'workflow-canvas',
     template: `
-    <div class="workflow-canvas"
+    <div #canvasRoot class="workflow-canvas"
          tabindex="0"
          data-connecting="{{model.connecting}}"
          data-connecting-side="{{model.connectingSide}}"
@@ -112,7 +113,7 @@ const EMPTY_CANVAS: WorkflowCanvasModel = {
         </div>
     </div>`
 })
-export class WorkflowCanvasComponent {
+export class WorkflowCanvasComponent implements AfterViewInit {
     @Attribute() model: WorkflowCanvasModel = EMPTY_CANVAS;
     @Attribute() locale = 'zh-CN';
     @Attribute() pointerAction?: (payload: WorkflowCanvasPointerPayload) => void;
@@ -120,7 +121,17 @@ export class WorkflowCanvasComponent {
 
     private panStart?: { clientX: number; clientY: number };
 
+    /**
+     * Injected ElementRef can point at the outer host page in nested templates,
+     * so coordinate math uses the canvas root captured from this view.
+     */
+    @ViewChild('canvasRoot', ElementRef) canvasRoot?: ElementRef;
+
     constructor(@Optional() protected elementRef?: ElementRef) { }
+
+    onAfterViewInit(): void {
+        markElementRefRaw(this.canvasRoot);
+    }
 
     get emptyHint(): string {
         return String(this.locale || '').toLowerCase().startsWith('zh')
@@ -314,8 +325,11 @@ export class WorkflowCanvasComponent {
     worldFromEvent(event: any): { x: number; y: number } {
         const zoom = this.model.zoom || 1;
         const pan = this.model.pan || { x: 0, y: 0 };
-        const element = this.elementRef?.nativeElement as any;
-        const scroller = element?.querySelector?.('.workflow-canvas') || element;
+        const document = (globalThis as { document?: Document }).document;
+        const scroller = this.canvasRoot?.nativeElement
+            || (this.elementRef?.nativeElement as any)?.querySelector?.('.workflow-canvas')
+            || document?.querySelector?.('.workflow-canvas')
+            || (this.elementRef?.nativeElement as any);
         const rect = scroller?.getBoundingClientRect?.() || { left: 0, top: 0 };
         const clientX = Number(event?.clientX);
         const clientY = Number(event?.clientY);
