@@ -204,6 +204,13 @@ export function useGatewayAdminUi(options: GatewayAdminUiOptions): ServiceFeatur
         baseUrl: false,
         // Run after the auth interceptor so the HTML entry can be gated /
         // session-bootstrapped before static content is served.
-        multiOrder: 1000
+        multiOrder: 1000,
+        // Local admin assets change on every build; never let a browser keep
+        // an older bundle graph after a rebuild.
+        setHeaders: (adapter: { setHeader(name: string, value: string): void }, file: string) => {
+            if (/\.(?:html|js|css)$/i.test(file)) {
+                adapter.setHeader('cache-control', 'no-store');
+            }
+        }
     });
 }

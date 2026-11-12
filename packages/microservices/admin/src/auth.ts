@@ -1,5 +1,6 @@
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { Observable, EMPTY, from } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
 import { Inject, Injectable, Optional, token } from '@tsdi/ioc';
@@ -275,7 +276,15 @@ export class GatewayAdminAuthService {
             return undefined;
         }
         try {
-            const html = fs.readFileSync(file, 'utf8');
+            let html = fs.readFileSync(file, 'utf8');
+            const mainFile = path.join(path.dirname(file), 'main.js');
+            let version = '';
+            try {
+                version = fs.statSync(mainFile).mtimeMs.toString(36);
+            } catch {
+                version = fs.statSync(file).mtimeMs.toString(36);
+            }
+            html = html.replace(/(src=["']\.\/main\.js)(["'])/, `$1?v=${version}$2`);
             const session = {
                 authenticated: true,
                 authEnabled: this.enabled,
@@ -942,6 +951,7 @@ export class GatewayAdminAuthInterceptor implements RequestInterceptor<HttpReque
         }
         adapter.setStatus(200);
         adapter.setHeader('content-type', 'text/html; charset=utf-8');
+        adapter.setHeader('cache-control', 'no-store');
         adapter.setPayload(html);
         adapter.sendResponse(html);
         return true;

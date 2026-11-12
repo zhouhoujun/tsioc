@@ -3611,3 +3611,5 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `turn-stream-narration` 新增 `a background turn buffers text without touching the active tab`：后台 text/event 不写入当前 messages，只累计 stream 文本。
 - **真实验证**：真实 TUI 中 A 运行 `sleep 30`，切到 B（无 waiting 提示），在 B 发起 “只回复 OK” 并成功返回；A 的 `sleep 30 && echo ADONE` 仍在后台完成（DB 最终 `ADONE`/exit 0）。切回 A 时状态与最终回答正确。
 - **验证**：`agent-ui` 全量 **2030 passing**、`tsc` 0、`source-size` OK、`git diff --check` 干净；全量门禁 **27/27 GATE-PASS，GATE_EXIT=0**。
+- Admin 静态资源防陈旧（2026-11-12）：
+  - 注入的 index.html 带 `main.js?v=<mtime>` 且 `cache-control: no-store`；静态 `.html/.js/.css` 统一 no-store，避免重建后浏览器继续运行旧 bundle（表现为菜单/主题不生效）。
