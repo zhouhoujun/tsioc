@@ -4,7 +4,7 @@ import {
     VisualWorkflowDefinition
 } from './types';
 import {
-    findWorkflowStartNode,
+    findWorkflowEntryNodes,
     outgoingConnections,
     validateVisualWorkflow
 } from './workflow-runtime';
@@ -17,7 +17,10 @@ import {
  */
 export interface CompiledWorkflow {
     definition: VisualWorkflowDefinition;
+    /** First entry, kept for single-root layouts and existing callers. */
     entry?: IVisualWorkflowNode;
+    /** All Node-RED style entry points (start/inject/orphan roots). */
+    entries: IVisualWorkflowNode[];
     nodes: Map<string, IVisualWorkflowNode>;
     outgoing: Map<string, NodeConnection[]>;
     incoming: Map<string, NodeConnection[]>;
@@ -46,20 +49,19 @@ export function compileVisualWorkflow(definition: VisualWorkflowDefinition): Com
         incoming.get(connection.targetNodeId)?.push(connection);
     }
 
-    const entry = findWorkflowStartNode(definition);
+    const entries = findWorkflowEntryNodes(definition);
+    const entry = entries[0];
     const order: string[] = [];
     const reachable = new Set<string>();
-    if (entry) {
-        const queue: string[] = [entry.id];
-        reachable.add(entry.id);
-        while (queue.length) {
-            const id = queue.shift()!;
-            order.push(id);
-            for (const connection of outgoing.get(id) || []) {
-                if (!reachable.has(connection.targetNodeId) && nodes.has(connection.targetNodeId)) {
-                    reachable.add(connection.targetNodeId);
-                    queue.push(connection.targetNodeId);
-                }
+    const queue: string[] = entries.map(item => item.id);
+    queue.forEach(id => reachable.add(id));
+    while (queue.length) {
+        const id = queue.shift()!;
+        order.push(id);
+        for (const connection of outgoing.get(id) || []) {
+            if (!reachable.has(connection.targetNodeId) && nodes.has(connection.targetNodeId)) {
+                reachable.add(connection.targetNodeId);
+                queue.push(connection.targetNodeId);
             }
         }
     }
@@ -72,6 +74,7 @@ export function compileVisualWorkflow(definition: VisualWorkflowDefinition): Com
     return {
         definition,
         entry,
+        entries,
         nodes,
         outgoing,
         incoming,
@@ -100,7 +103,7 @@ export function layoutVisualWorkflow(
     const depth = new Map<string, number>();
     const layers: string[][] = [];
 
-    const roots = plan.entry ? [plan.entry.id] : [];
+    const roots = (plan.entries.length ? plan.entries : plan.entry ? [plan.entry] : []).map(item => item.id);
     const queue = [...roots];
     roots.forEach(id => depth.set(id, 0));
     while (queue.length) {

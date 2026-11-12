@@ -180,22 +180,24 @@ describe('Visual Workflow Engine', () => {
             expect(result.errors).toContain('Workflow must have at least one node');
         });
 
-        it('should detect missing start node', () => {
+        it('allows Node-RED style flows without start or end nodes', () => {
             const workflow: VisualWorkflowDefinition = {
                 id: 'test',
                 name: 'Test',
-                nodes: [{
-                    id: 'task_1',
-                    name: 'Task',
-                    type: 'task',
-                    position: { x: 0, y: 0 }
-                }],
-                connections: []
+                nodes: [
+                    { id: 'inject_1', name: 'Inject', type: 'inject', position: { x: 0, y: 0 } },
+                    { id: 'function_1', name: 'Function', type: 'function', position: { x: 200, y: 0 } }
+                ],
+                connections: [{
+                    id: 'c1',
+                    sourceNodeId: 'inject_1',
+                    sourcePort: 'out',
+                    targetNodeId: 'function_1',
+                    targetPort: 'in'
+                }]
             };
 
-            const result = workflowService.validate(workflow);
-            expect(result.valid).toBe(false);
-            expect(result.errors.some(e => e.includes('start node'))).toBe(true);
+            expect(workflowService.validate(workflow).valid).toBe(true);
         });
 
         it('should detect duplicate node ids', () => {

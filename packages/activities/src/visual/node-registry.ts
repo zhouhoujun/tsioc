@@ -92,7 +92,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [],
         outputs: [port('out', 'out', 'output', 'Payload')],
         fields: [
-            configField({ key: 'payload', label: 'Payload', labelZh: '数据', type: 'json', defaultValue: {} })
+            configField({ key: 'payload', label: 'Payload', labelZh: '数据', type: 'json', defaultValue: {} }),
+            configField({ key: 'topic', label: 'Topic', labelZh: '主题', type: 'text', placeholder: 'optional topic', description: 'Optional message topic, like a Node-RED inject node.', descriptionZh: '可选的消息主题，与 Node-RED inject 节点一致。' })
         ],
         defaultConfig: { payload: {} }
     },

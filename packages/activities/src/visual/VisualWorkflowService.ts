@@ -156,9 +156,11 @@ export class VisualWorkflowService {
 
         try {
             const plan = compileVisualWorkflow(definition);
-            const startNode = plan.entry;
-            if (!startNode) {
-                throw new Error('No start node found in workflow');
+            const entryNodes = plan.entries.length
+                ? plan.entries
+                : plan.entry ? [plan.entry] : [];
+            if (!entryNodes.length) {
+                throw new Error('No entry node found in workflow');
             }
 
             const host: VisualNodeRuntimeHost = {
@@ -175,18 +177,24 @@ export class VisualWorkflowService {
                 this.injector,
                 this.nodeInterceptors()
             );
-            const result = await this.executeFromNode(
-                startNode,
-                plan,
-                runtimeContext,
-                state,
-                options,
-                host,
-                visited,
-                nodeHandler,
-                !!options.resumeFrom,
-                replayed
-            );
+            let result: ActivityResult = { success: true };
+            for (const entryNode of entryNodes) {
+                result = await this.executeFromNode(
+                    entryNode,
+                    plan,
+                    runtimeContext,
+                    state,
+                    options,
+                    host,
+                    visited,
+                    nodeHandler,
+                    !!options.resumeFrom,
+                    replayed
+                );
+                if (!result.success) {
+                    break;
+                }
+            }
 
             if (state.status === 'cancelled' || this.isCancelled(state)) {
                 state.status = 'cancelled';

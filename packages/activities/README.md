@@ -393,8 +393,8 @@ fs.writeFileSync('workflow.json', json);
 
 ```typescript
 type VisualNodeType = 
-    | 'start'      // Start node
-    | 'end'        // End node
+    | 'start'      // Optional explicit start point
+    | 'end'        // Optional explicit end point
     | 'task'       // Task node
     | 'condition'  // Condition node
     | 'parallel'   // Parallel node
@@ -489,7 +489,9 @@ Features:
 The designer compiles the editable document into an immutable execution plan
 (`compileVisualWorkflow`) before running it; the plan exposes adjacency,
 reachability and entry information to hosts and tests without re-reading the
-graph on every step.
+graph on every step. Like Node-RED, `start`/`end` nodes are optional helpers:
+every explicit `start`/`inject` node and every node without an incoming
+connection is an entry, and multiple entries run in sequence.
 
 ### Generic node components
 

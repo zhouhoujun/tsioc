@@ -166,6 +166,7 @@ describe('Visual Workflow Designer', () => {
             const plan = compileVisualWorkflow(local.definition);
             expect(plan.valid).toBe(true);
             expect(plan.entry?.id).toBe('start_1');
+            expect(plan.entries.map(node => node.id)).toEqual(['start_1']);
             expect(plan.nodes.size).toBe(6);
             expect(plan.outgoing.get('condition_1')?.map(edge => edge.sourcePort)).toEqual(['true', 'false']);
             expect(plan.incoming.get('end_1')?.length).toBe(2);

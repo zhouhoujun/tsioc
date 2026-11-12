@@ -104,6 +104,40 @@ describe('Workflow data & trigger nodes', () => {
         expect(service.validate(definition).valid).toBe(true);
     });
 
+    it('carries the inject topic like a Node-RED inject node', async () => {
+        const result = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: 1 }, topic: 'demo/topic' } }
+        ]), {});
+        const inject = result.data?.executionState?.nodeStates.inject_0;
+        expect(inject?.result?.data?.topic).toBe('demo/topic');
+        expect(inject?.result?.data?.value).toBe(1);
+    });
+
+    it('runs a plain action node without start or end nodes', async () => {
+        const result = await service.execute(chain([
+            { type: 'task', config: { result: { ok: true } } }
+        ]), {});
+        expect(result.success).toBe(true);
+        expect(result.data?.executionState?.nodeStates.task_0.status).toBe('success');
+    });
+
+    it('runs every disconnected entry node', async () => {
+        const definition: VisualWorkflowDefinition = {
+            id: 'multi-entry',
+            name: 'Multiple entries',
+            nodes: [
+                registry.createNode('task', { x: 0, y: 0 }, { id: 'left', config: { result: { side: 'left' } } }),
+                registry.createNode('task', { x: 0, y: 120 }, { id: 'right', config: { result: { side: 'right' } } })
+            ],
+            connections: []
+        };
+        const result = await service.execute(definition, {});
+        const states = result.data?.executionState?.nodeStates || {};
+        expect(result.success).toBe(true);
+        expect(states.left.status).toBe('success');
+        expect(states.right.status).toBe('success');
+    });
+
     it('parses CSV and computes statistics', async () => {
         const csvResult = await service.execute(chain([
             { type: 'inject', config: { payload: { text: 'name,age\nA,10\nB,20' } } },

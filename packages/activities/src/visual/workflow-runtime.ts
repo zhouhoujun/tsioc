@@ -427,10 +427,14 @@ export async function executeVisualNode(
             return runHttp(node, context);
         case 'inject': {
             const payload = coerceJson(config.payload ?? {});
+            const topic = config.topic === undefined || config.topic === null
+                ? ''
+                : String(config.topic);
+            const base = topic ? { topic } : {};
             if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
-                return { success: true, data: { ...payload, nodeId: node.id } };
+                return { success: true, data: { ...base, ...payload, nodeId: node.id } };
             }
-            return { success: true, data: { nodeId: node.id, payload } };
+            return { success: true, data: { nodeId: node.id, ...base, payload } };
         }
         case 'trigger': {
             const delay = Math.max(0, Number(config.delay) || 0);
@@ -773,13 +777,8 @@ export function validateVisualWorkflow(definition: VisualWorkflowDefinition): { 
         errors.push(`Duplicate node IDs found: ${[...new Set(duplicateIds)].join(', ')}`);
     }
 
-    const startNodes = definition.nodes.filter(node => node.type === 'start');
-    const injectNodes = definition.nodes.filter(node => node.type === 'inject');
-    if (startNodes.length === 0 && injectNodes.length === 0) {
-        errors.push('Workflow must have at least one start node');
-    } else if (startNodes.length > 1) {
-        errors.push('Workflow should have only one start node');
-    }
+    // Start/end nodes are optional Node-RED style helpers. Any trigger or
+    // orphan node can be an entry point, so no start-node requirement here.
 
     for (const connection of definition.connections || []) {
         if (!nodeIds.has(connection.sourceNodeId)) {
@@ -838,18 +837,29 @@ export function hasCycle(definition: VisualWorkflowDefinition): boolean {
     return false;
 }
 
+/**
+ * Node-RED style entry points: explicit `start`/`inject` triggers first, then
+ * every node without an incoming connection. Start/end nodes are optional;
+ * any trigger or orphan node can begin a flow, and several entries can run in
+ * sequence.
+ */
+export function findWorkflowEntryNodes(definition: VisualWorkflowDefinition): IVisualWorkflowNode[] {
+    const nodes = definition?.nodes || [];
+    const incoming = new Set((definition?.connections || []).map(connection => connection.targetNodeId));
+    const entries: IVisualWorkflowNode[] = [];
+    const push = (node: IVisualWorkflowNode) => {
+        if (!entries.includes(node)) {
+            entries.push(node);
+        }
+    };
+    nodes.filter(node => node.type === 'start').forEach(push);
+    nodes.filter(node => node.type === 'inject').forEach(push);
+    nodes.filter(node => !incoming.has(node.id)).forEach(push);
+    return entries;
+}
+
 export function findWorkflowStartNode(definition: VisualWorkflowDefinition): IVisualWorkflowNode | undefined {
-    const explicit = (definition.nodes || []).find(node => node.type === 'start');
-    if (explicit) {
-        return explicit;
-    }
-    const inject = (definition.nodes || []).find(node => node.type === 'inject');
-    if (inject) {
-        return inject;
-    }
-    return (definition.nodes || []).find(node =>
-        !(definition.connections || []).some(connection => connection.targetNodeId === node.id)
-    );
+    return findWorkflowEntryNodes(definition)[0];
 }
 
 export function outgoingConnections(
