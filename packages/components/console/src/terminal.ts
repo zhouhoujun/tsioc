@@ -2926,7 +2926,9 @@ export class TuiTerminalSurface {
         // Extract/reinsert may change the transcript or viewport row count, so
         // the equality guard alone would drop the reading row and let sticky
         // follow snap the transcript to the bottom.
-        const chromeFrame = !!dialogRegion || this.viewportChromeActive;
+        // A disappearing transcript row without new messages is chrome
+        // (an overlay opening hides a panel/brand row); keep the reading row.
+        const chromeFrame = !!dialogRegion || this.viewportChromeActive || transcript.length < previousContentRows;
         this.viewportChromeActive = !!dialogRegion;
         if (previousContentRows === transcript.length || chromeFrame) {
             this.scrollBox.scrollTo(this.scrollBox.maxTop - previousOffset);

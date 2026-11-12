@@ -3258,6 +3258,56 @@ export class ConsoleRendererTest {
         surface.destroy();
     }
 
+    @Test('a chrome row disappearing before an overlay keeps the reading row')
+    viewportChromeShrinkBeforeOverlayKeepsReadingDistance() {
+        const root = { addEventListener() {}, removeEventListener() {} } as any;
+        let transcriptRows = 100;
+        let dialogOpen = false;
+        const renderLayout = () => {
+            const transcript = Array.from({ length: transcriptRows }, (_value, index) => `line ${index + 1}`);
+            const dialogLines = dialogOpen ? ['DIALOG-1', 'DIALOG-2', 'DIALOG-3', 'DIALOG-4'] : [];
+            const lines = [...transcript, ...dialogLines, 'status', 'input', 'meta'];
+            const footerStart = transcript.length + dialogLines.length;
+            return {
+                lines,
+                regions: [
+                    { id: 'transcript', startRow: 0, endRow: transcript.length },
+                    ...(dialogOpen ? [{ id: 'dialog', startRow: transcript.length, endRow: transcript.length + dialogLines.length }] : []),
+                    { id: 'footer', startRow: footerStart, endRow: lines.length }
+                ]
+            };
+        };
+        const surface = new TuiTerminalSurface({
+            renderer: { renderToTuiLayout: () => renderLayout() },
+            root,
+            width: 80,
+            height: 24,
+            nativeScrollback: false,
+            scrollViewport: true,
+            scrollRegionId: 'transcript',
+            footerRegionId: 'footer',
+            output: { write() {} }
+        });
+        surface.render();
+        expect(surface.scrollViewport(1)).toEqual(true);
+        surface.render();
+        expect(surface.viewportScrollOffset).toEqual(1);
+
+        // The overlay command first hides a chrome row; the next frame adds the
+        // dialog. Neither frame may snap the transcript to the bottom.
+        transcriptRows = 99;
+        surface.render();
+        expect(surface.viewportScrollOffset).toEqual(1);
+        expect(surface.viewportFollowing).toEqual(false);
+
+        dialogOpen = true;
+        transcriptRows = 98;
+        surface.render();
+        expect(surface.viewportScrollOffset).toEqual(1);
+        expect(surface.viewportFollowing).toEqual(false);
+        surface.destroy();
+    }
+
     @Test('viewport scrolls to an absolute rendered row so the target stays visible')
     viewportScrollsToAbsoluteRow() {
         const lines = Array.from({ length: 200 }, (_value, index) => `line ${index + 1}`);

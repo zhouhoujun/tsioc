@@ -3731,3 +3731,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **微服务 admin**：`admin.state` 改从 `@tsdi/components/common/menu-bar` 取 `MenuBarGroup/installMenuBarStyles`；菜单组件由 activities 的 `MenuBarModule` 提供。`tsc --noEmit` OK、**42 passing**、`build:web` 成功（chunk 名已更新）。
 - **工作流 admin**：依赖的 activities 模块已接入 `MenuBarModule` / `DynamicFormModule` / `WorkspaceLayoutModule` / `TabBarModule`；`tsc --noEmit` OK、**11 passing**、`build` 成功（designer bundle + chunk 已更新）。
 - **activities**：`tsc --noEmit` OK、全量 **269 passing**（含 workflow designer 59）。
+
+## 2026-11-12 浏览器 dialog 透明遮罩 / TUI `/web` 上翻跳底（修复）
+- **浏览器 dialog**：`[renderregion="dialog"]` 的 fixed 容器只有透明层，没有遮罩；补 `rgba(7,12,20,.55)` scrim + `backdrop-filter: blur(2px)`，并显式给 dialog 内 `.console-panel` 设置主题面板背景，避免继承 `background: transparent !important` 看起来完全透明。
+- **TUI `/web` 上翻跳底**：`/web` 打开 overlay 前会先隐藏一行 chrome（transcript 160→159），下一帧才出现 `dialog` region；旧逻辑只在 `dialogRegion` 已存在时按 chrome 帧保留阅读行，首帧因内容长度变化被 `scrollBox` 归到底部。修复：`transcript.length < previousContentRows` 也视为 chrome 帧，保留距底 offset；再打开 dialog 时继续保留。
+- **回归**：`components-console` 新增 `a chrome row disappearing before an overlay keeps the reading row`（逐帧 shrink→dialog，offset 保持 1）；真实组件探针 `/web` 在 scroll 1/3/10、18/24 行终端下 after=before，`following=false`。
+- **验证**：components-console 117、components-html、agent-ui 全绿；tsc-agent-ui 0；build:web 成功；source-size/diff-check OK。

@@ -485,6 +485,9 @@ body {
     justify-content: center;
     padding: 24px;
     pointer-events: none;
+    /* A real modal scrim: without it the overlay reads as fully transparent. */
+    background: rgba(7, 12, 20, 0.55);
+    backdrop-filter: blur(2px);
 }
 
 #agent-console .agent-console > [renderregion="dialog"] > .console-panel {
@@ -492,6 +495,11 @@ body {
     margin: 0;
     max-height: min(80vh, 720px);
     overflow: auto;
+}
+
+#agent-console [renderregion="dialog"] .console-panel {
+    background-color: var(--agent-web-panel) !important;
+    color: var(--agent-web-text);
 }
 
 #agent-console agent-console-select-panel .select-core {
