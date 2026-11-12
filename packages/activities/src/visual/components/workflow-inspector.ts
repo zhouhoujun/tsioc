@@ -195,7 +195,7 @@ export class WorkflowInspectorComponent implements OnDestroy {
                 readonly: field.readonly,
                 disabled: field.disabled,
                 pattern: field.pattern,
-                rules: field.rules as any,
+                rules: field.rules,
                 errorMessages: field.errorMessages,
                 inputClass: field.inputClass,
                 fieldClass: field.fieldClass,
@@ -266,36 +266,15 @@ export class WorkflowInspectorComponent implements OnDestroy {
     }
 
     protected dynamicType(field: WorkflowInspectorFieldView): DynamicFormField['type'] {
-        switch (field.type) {
-            case 'code':
-                return 'code';
-            case 'json':
-                return 'json';
-            case 'textarea':
-                return 'textarea';
-            case 'boolean':
-                return 'checkbox';
-            case 'select':
-                return 'radio';
-            case 'number':
-                return 'number';
-            case 'email':
-                return 'email';
-            case 'url':
-                return 'url';
-            case 'password':
-                return 'password';
-            case 'radio':
-                return 'radio';
-            case 'date':
-                return 'date';
-            case 'time':
-                return 'time';
-            case 'color':
-                return 'color';
-            default:
-                return 'text';
+        // Most node field types are already shared dynamic-form types; only
+        // the two domain aliases need mapping.
+        if (field.type === 'boolean') {
+            return 'checkbox';
         }
+        if (field.type === 'select') {
+            return 'radio';
+        }
+        return field.type as DynamicFormField['type'];
     }
 
     protected changeType(field: DynamicFormField): string {

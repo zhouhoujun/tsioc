@@ -1,4 +1,12 @@
 import { Type } from '@tsdi/ioc';
+import type {
+    DynamicFormCondition,
+    DynamicFormField,
+    DynamicFormFieldType,
+    DynamicFormOption,
+    DynamicFormRule,
+    DynamicFormRuleType
+} from '@tsdi/components/common';
 import { Activity, ActivityContext, ActivityResult } from '../activities/Activity';
 
 /**
@@ -560,86 +568,28 @@ export interface WorkflowExecutionOptions {
 
 /**
  * 节点配置字段类型
- * Node config field type used by the visual inspector.
+ * Node config field type; the shared dynamic form owns the canonical schema.
  */
-export type WorkflowConfigFieldType =
-    | 'text'
-    | 'textarea'
-    | 'number'
-    | 'boolean'
-    | 'select'
-    | 'radio'
-    | 'json'
-    | 'code'
-    | 'email'
-    | 'url'
-    | 'password'
-    | 'date'
-    | 'time'
-    | 'color';
+export type WorkflowConfigFieldType = DynamicFormFieldType | 'boolean';
 
 /** Validation rule rendered by the shared dynamic form. */
-export type WorkflowConfigRuleType =
-    | 'required'
-    | 'requiredTrue'
-    | 'email'
-    | 'url'
-    | 'min'
-    | 'max'
-    | 'minLength'
-    | 'maxLength'
-    | 'pattern'
-    | 'json'
-    | 'number'
-    | 'integer';
-
-export interface WorkflowConfigRule {
-    type: WorkflowConfigRuleType;
-    value?: any;
-    message?: string;
-}
+export type WorkflowConfigRuleType = DynamicFormRuleType;
+export type WorkflowConfigRule = DynamicFormRule;
+export type WorkflowConfigFieldCondition = DynamicFormCondition;
 
 /**
  * 节点配置字段定义
  * Node config field definition.
  */
-export interface WorkflowConfigFieldCondition {
-    /** Field that controls this field's visibility. */
-    key: string;
-    equals?: any;
-    notEquals?: any;
-    in?: any[];
-    truthy?: boolean;
-    falsy?: boolean;
-}
-
-export interface WorkflowConfigField {
-    key: string;
+export interface WorkflowConfigField extends Omit<DynamicFormField, 'type' | 'label' | 'options' | 'visibleWhen' | 'rules'> {
+    type: WorkflowConfigFieldType;
     label: string;
     labelZh?: string;
-    type: WorkflowConfigFieldType;
-    defaultValue?: any;
-    placeholder?: string;
     placeholderZh?: string;
-    description?: string;
     descriptionZh?: string;
-    options?: Array<{ label: string; labelZh?: string; value: string }>;
-    min?: number;
-    max?: number;
-    step?: number;
-    minLength?: number;
-    maxLength?: number;
-    rows?: number;
-    required?: boolean;
-    readonly?: boolean;
-    disabled?: boolean;
-    pattern?: string;
+    /** Localized option labels; values flow to the dynamic form unchanged. */
+    options?: Array<DynamicFormOption & { labelZh?: string }>;
     rules?: Array<WorkflowConfigRule | WorkflowConfigRuleType>;
-    /** Per-field validation messages keyed by rule name. */
-    errorMessages?: Record<string, string>;
-    inputClass?: string;
-    fieldClass?: string;
-    language?: string;
     /** Group header shown above this field in the inspector. */
     group?: string;
     groupZh?: string;
