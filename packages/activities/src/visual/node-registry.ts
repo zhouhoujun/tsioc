@@ -93,7 +93,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         outputs: [port('out', 'out', 'output', 'Payload')],
         fields: [
             configField({ key: 'payload', label: 'Payload', labelZh: '数据', type: 'json', defaultValue: {} }),
-            configField({ key: 'topic', label: 'Topic', labelZh: '主题', type: 'text', placeholder: 'optional topic', description: 'Optional message topic, like a Node-RED inject node.', descriptionZh: '可选的消息主题，与 Node-RED inject 节点一致。' })
+            configField({ key: 'topic', label: 'Topic', labelZh: '主题', type: 'text', maxLength: 200, placeholder: 'optional topic', description: 'Optional message topic carried with the payload.', descriptionZh: '随数据一起传递的可选消息主题。' })
         ],
         defaultConfig: { payload: {} }
     },
@@ -113,7 +113,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('error', 'error', 'output', 'Error')
         ],
         fields: [
-            configField({ key: 'action', label: 'Action', labelZh: '动作', type: 'text', placeholder: 'actions.fetch', placeholderZh: 'actions.fetch', description: 'Function name in context.actions.', descriptionZh: 'context.actions 中的函数名。' }),
+            configField({ key: 'action', label: 'Action', labelZh: '动作', type: 'text', placeholder: 'actions.fetch', placeholderZh: 'actions.fetch', pattern: '^[A-Za-z_$][A-Za-z0-9_$]*(\\.[A-Za-z_$][A-Za-z0-9_$]*)*$', description: 'Function name in context.actions.', descriptionZh: 'context.actions 中的函数名。' }),
             configField({ key: 'result', label: 'Mock result', labelZh: '模拟结果', type: 'json', placeholder: '{ "ok": true }', description: 'Returned directly when no action is set.', descriptionZh: '未配置动作时直接返回该结果。' }),
             configField({ key: 'fail', label: 'Fail this step', labelZh: '使此步骤失败', type: 'boolean', defaultValue: false, group: 'Reliability', groupZh: '可靠性' }),
             configField({ key: 'retry', label: 'Retries', labelZh: '重试次数', type: 'number', defaultValue: 0, min: 0, max: 20, step: 1, group: 'Reliability', groupZh: '可靠性', description: 'Automatic retries before the step fails.', descriptionZh: '步骤失败前的自动重试次数。' }),
@@ -308,7 +308,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Output')],
         fields: [
-            configField({ key: 'message', label: 'Message', labelZh: '消息', type: 'text', defaultValue: 'Workflow step completed', required: true, placeholder: 'Workflow step completed', description: 'Message written to the execution log.', descriptionZh: '写入执行日志的消息。' }),
+            configField({ key: 'message', label: 'Message', labelZh: '消息', type: 'text', defaultValue: 'Workflow step completed', placeholder: 'Workflow step completed', description: 'Message written to the execution log when no field is set.', descriptionZh: '未设置字段时写入执行日志的消息。' }),
+            configField({ key: 'field', label: 'Message property', labelZh: '消息属性', type: 'text', placeholder: 'value', description: 'Optional context path; logs that value instead of the fixed message.', descriptionZh: '可选的上下文路径，用该值代替固定消息写入日志。' }),
             configField({
                 key: 'level',
                 label: 'Level',
@@ -340,7 +341,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('error', 'error', 'output', 'Error')
         ],
         fields: [
-            configField({ key: 'url', label: 'URL', labelZh: '地址', type: 'text', required: true, placeholder: 'https://api.example.com', group: 'Request', groupZh: '请求', description: 'Absolute endpoint or a path resolved by the host.', descriptionZh: '绝对地址或由宿主解析的路径。' }),
+            configField({ key: 'url', label: 'URL', labelZh: '地址', type: 'url', required: true, placeholder: 'https://api.example.com', group: 'Request', groupZh: '请求', description: 'Absolute endpoint or a path resolved by the host.', descriptionZh: '绝对地址或由宿主解析的路径。' }),
             configField({
                 key: 'method',
                 label: 'Method',
@@ -353,6 +354,20 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             }),
             configField({ key: 'headers', label: 'Headers', labelZh: '请求头', type: 'json', rows: 3, placeholder: '{ "Content-Type": "application/json" }', group: 'Request', groupZh: '请求' }),
             configField({ key: 'body', label: 'Body', labelZh: '请求体', type: 'textarea', rows: 4, placeholder: '{ "name": "demo" }', group: 'Request', groupZh: '请求', visibleWhen: { key: 'method', notEquals: 'GET' } }),
+            configField({
+                key: 'responseType',
+                label: 'Response',
+                labelZh: '响应解析',
+                type: 'select',
+                defaultValue: 'auto',
+                options: [
+                    { label: 'Auto (JSON when possible)', labelZh: '自动（能解析则 JSON）', value: 'auto' },
+                    { label: 'Parsed JSON', labelZh: '解析为 JSON', value: 'json' },
+                    { label: 'UTF-8 text', labelZh: '文本', value: 'text' }
+                ],
+                group: 'Request',
+                groupZh: '请求'
+            }),
             configField({ key: 'retry', label: 'Retries', labelZh: '重试次数', type: 'number', defaultValue: 0, min: 0, max: 20, step: 1, group: 'Reliability', groupZh: '可靠性' }),
             configField({ key: 'retryDelay', label: 'Retry delay (ms)', labelZh: '重试间隔（毫秒）', type: 'number', defaultValue: 0, min: 0, step: 100, group: 'Reliability', groupZh: '可靠性' }),
             configField({ key: 'timeout', label: 'Timeout (ms)', labelZh: '超时（毫秒）', type: 'number', defaultValue: 0, min: 0, step: 100, group: 'Reliability', groupZh: '可靠性' })

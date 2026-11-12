@@ -509,13 +509,18 @@ registry.register({
     inputs: [{ id: 'in', name: 'in', type: 'input' }],
     outputs: [{ id: 'out', name: 'out', type: 'output' }],
     fields: [
-        { key: 'name', label: 'Name', labelZh: '名称', type: 'text' }
+        { key: 'endpoint', label: 'Endpoint', labelZh: '地址', type: 'url', required: true },
+        { key: 'name', label: 'Name', labelZh: '名称', type: 'text', maxLength: 80 }
     ]
 });
 ```
 
-The same registry feeds the palette, inspector, validation and runtime. `activityType`
-lets a node plug an existing `Activity` class into the workflow.
+Field metadata is the node-provided dynamic form schema: `type`, `options`,
+`rows`, `min`/`max`, `minLength`/`maxLength`, `pattern`, `rules`,
+`errorMessages`, `visibleWhen`, `group` and `inputClass` are rendered and
+validated by the shared dynamic form. The same registry feeds the palette,
+inspector, validation and runtime. `activityType` lets a node plug an existing
+`Activity` class into the workflow.
 
 ### Execution interceptors
 

@@ -284,6 +284,40 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelector('.workflow-field-error')).toBeFalsy();
     });
 
+    it('builds node config validation into the dynamic form', async () => {
+        const node = ref.instance.designer.addNode('http-request', { x: 40, y: 40 })!;
+        await flush();
+        ref.instance.designer.selectNode(node.id);
+        await flush();
+
+        const urlInput = root.querySelector('.workflow-field[data-field-key="url"] input') as any;
+        expect(urlInput.type).toBe('url');
+        expect(root.querySelector('.workflow-field[data-field-key="url"] .workflow-field-required')).toBeTruthy();
+
+        urlInput.value = '';
+        urlInput.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await new Promise(r => setTimeout(r, 0));
+        await waitFor(() => !!root.querySelector('.workflow-field[data-field-key="url"] .workflow-field-error'));
+        expect(root.querySelector('.workflow-field[data-field-key="url"] .workflow-field-error')?.textContent).toContain('必填');
+
+        const invalid = root.querySelector('.workflow-field[data-field-key="url"] input') as any;
+        invalid.value = 'not a url';
+        invalid.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await new Promise(r => setTimeout(r, 0));
+        await waitFor(() => {
+            const error = root.querySelector('.workflow-field[data-field-key="url"] .workflow-field-error')?.textContent || '';
+            return error.length > 0 && !error.includes('必填');
+        });
+
+        const valid = root.querySelector('.workflow-field[data-field-key="url"] input') as any;
+        valid.value = 'https://example.com/api';
+        valid.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await waitFor(() =>
+            ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.url === 'https://example.com/api'
+        );
+        expect(root.querySelector('.workflow-field[data-field-key="url"] .workflow-field-error')).toBeFalsy();
+    });
+
     it('shows execution state on nodes and edges after running', async () => {
         const result = await ref.instance.designer.run({ context: { approved: true } });
         expect(result.success).toBe(true);

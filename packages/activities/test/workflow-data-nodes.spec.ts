@@ -104,13 +104,40 @@ describe('Workflow data & trigger nodes', () => {
         expect(service.validate(definition).valid).toBe(true);
     });
 
-    it('carries the inject topic like a Node-RED inject node', async () => {
+    it('carries the configured inject topic', async () => {
         const result = await service.execute(chain([
             { type: 'inject', config: { payload: { value: 1 }, topic: 'demo/topic' } }
         ]), {});
         const inject = result.data?.executionState?.nodeStates.inject_0;
         expect(inject?.result?.data?.topic).toBe('demo/topic');
         expect(inject?.result?.data?.value).toBe(1);
+    });
+
+    it('logs a context property when one is configured', async () => {
+        const result = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: 42 } } },
+            { type: 'log', config: { field: 'value' } }
+        ]), {});
+        expect(result.success).toBe(true);
+        expect(result.data?.executionState?.nodeStates.log_1.result?.data?.message).toBe('42');
+    });
+
+    it('parses HTTP responses as auto, JSON or text', async () => {
+        const url = 'data:application/json,%7B%22ok%22%3Atrue%7D';
+        const auto = await service.execute(chain([
+            { type: 'http-request', config: { url, responseType: 'auto' } }
+        ]), {});
+        expect(auto.data?.executionState?.nodeStates['http-request_0'].result?.data?.body).toEqual({ ok: true });
+
+        const text = await service.execute(chain([
+            { type: 'http-request', config: { url, responseType: 'text' } }
+        ]), {});
+        expect(text.data?.executionState?.nodeStates['http-request_0'].result?.data?.body).toBe('{"ok":true}');
+
+        const invalid = await service.execute(chain([
+            { type: 'http-request', config: { url: 'data:text/plain,not-json', responseType: 'json' } }
+        ]), {});
+        expect(invalid.success).toBe(false);
     });
 
     it('runs a plain action node without start or end nodes', async () => {

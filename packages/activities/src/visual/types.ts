@@ -568,8 +568,36 @@ export type WorkflowConfigFieldType =
     | 'number'
     | 'boolean'
     | 'select'
+    | 'radio'
     | 'json'
-    | 'code';
+    | 'code'
+    | 'email'
+    | 'url'
+    | 'password'
+    | 'date'
+    | 'time'
+    | 'color';
+
+/** Validation rule rendered by the shared dynamic form. */
+export type WorkflowConfigRuleType =
+    | 'required'
+    | 'requiredTrue'
+    | 'email'
+    | 'url'
+    | 'min'
+    | 'max'
+    | 'minLength'
+    | 'maxLength'
+    | 'pattern'
+    | 'json'
+    | 'number'
+    | 'integer';
+
+export interface WorkflowConfigRule {
+    type: WorkflowConfigRuleType;
+    value?: any;
+    message?: string;
+}
 
 /**
  * 节点配置字段定义
@@ -599,10 +627,18 @@ export interface WorkflowConfigField {
     min?: number;
     max?: number;
     step?: number;
+    minLength?: number;
+    maxLength?: number;
     rows?: number;
     required?: boolean;
     readonly?: boolean;
+    disabled?: boolean;
     pattern?: string;
+    rules?: Array<WorkflowConfigRule | WorkflowConfigRuleType>;
+    /** Per-field validation messages keyed by rule name. */
+    errorMessages?: Record<string, string>;
+    inputClass?: string;
+    fieldClass?: string;
     language?: string;
     /** Group header shown above this field in the inspector. */
     group?: string;
@@ -847,10 +883,17 @@ export interface WorkflowInspectorFieldView {
     min?: number;
     max?: number;
     step?: number;
+    minLength?: number;
+    maxLength?: number;
     rows: number;
     required: boolean;
     readonly: boolean;
+    disabled?: boolean;
     pattern?: string;
+    rules?: Array<WorkflowConfigRule | WorkflowConfigRuleType>;
+    errorMessages?: Record<string, string>;
+    inputClass?: string;
+    fieldClass?: string;
     language?: string;
     hasDefault: boolean;
     /** Value written back when the field is reset (already formatted for the control). */

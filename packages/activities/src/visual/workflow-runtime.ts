@@ -323,7 +323,10 @@ async function runTask(node: IVisualWorkflowNode, context: ActivityContext): Pro
 
 async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Promise<ActivityResult> {
     const config = node.config || {};
-    const url = resolveWorkflowValue(config.url, context);
+    const resolvedUrl = resolveWorkflowValue(config.url, context);
+    const rawUrl = typeof config.url === 'string' ? config.url.trim() : '';
+    // Literal endpoints must not be mistaken for dotted context paths.
+    const url = resolvedUrl || (/^[a-z][a-z0-9+.-]*:/i.test(rawUrl) ? rawUrl : resolvedUrl);
     if (!url) {
         return {
             success: true,
@@ -345,11 +348,21 @@ async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Pro
             body: config.body === undefined || config.body === '' ? undefined : String(config.body)
         });
         const text = await response.text();
+        const responseType = String(config.responseType || 'auto');
         let body: any = text;
-        try {
-            body = text ? JSON.parse(text) : null;
-        } catch {
-            body = text;
+        if (responseType !== 'text') {
+            try {
+                body = text ? JSON.parse(text) : null;
+            } catch (error) {
+                if (responseType === 'json') {
+                    return {
+                        success: false,
+                        error: new Error(`Invalid JSON response: ${(error as Error).message}`),
+                        data: { nodeId: node.id, status: response.status }
+                    };
+                }
+                body = text;
+            }
         }
         return {
             success: response.ok,
@@ -416,7 +429,15 @@ export async function executeVisualNode(
         }
         case 'log': {
             const level = String(config.level || 'info');
-            const message = resolveWorkflowValue(config.message, context);
+            const field = config.field === undefined || config.field === null
+                ? ''
+                : String(config.field).trim();
+            const value = field
+                ? resolveWorkflowValue(field, context)
+                : resolveWorkflowValue(config.message, context);
+            const message = value !== null && typeof value === 'object'
+                ? JSON.stringify(value)
+                : String(value ?? '');
             const logger = (context as any).logger;
             if (logger && typeof logger[level] === 'function') {
                 logger[level](message);

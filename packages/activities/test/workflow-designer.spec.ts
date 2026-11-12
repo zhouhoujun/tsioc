@@ -28,6 +28,10 @@ describe('Visual Workflow Designer', () => {
             ['start', 'end', 'inject', 'task', 'function', 'template', 'json', 'csv', 'change', 'statistics', 'merge', 'event-emit', 'event-wait', 'command', 'split', 'map', 'filter', 'sort', 'range', 'batch', 'trigger', 'comment', 'condition', 'delay', 'log', 'http-request', 'assign', 'transform', 'switch', 'parallel', 'join', 'loop', 'trycatch', 'subprocess', 'custom']
                 .forEach(type => expect(types).toContain(type));
             expect(registry.palette('zh-CN').length).toBeGreaterThan(0);
+
+            const url = registry.get('http-request')?.fields?.find(field => field.key === 'url');
+            expect(url?.type).toBe('url');
+            expect(url?.required).toBe(true);
         });
 
         it('builds a node with cloned ports and config defaults', () => {

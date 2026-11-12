@@ -189,9 +189,16 @@ export class WorkflowInspectorComponent implements OnDestroy {
                 min: field.min,
                 max: field.max,
                 step: field.step,
+                minLength: field.minLength,
+                maxLength: field.maxLength,
                 required: field.required,
                 readonly: field.readonly,
+                disabled: field.disabled,
                 pattern: field.pattern,
+                rules: field.rules as any,
+                errorMessages: field.errorMessages,
+                inputClass: field.inputClass,
+                fieldClass: field.fieldClass,
                 language: field.language,
                 suggestions: this.codeSuggestions,
                 hidden: field.visible === false
@@ -272,6 +279,20 @@ export class WorkflowInspectorComponent implements OnDestroy {
                 return 'radio';
             case 'number':
                 return 'number';
+            case 'email':
+                return 'email';
+            case 'url':
+                return 'url';
+            case 'password':
+                return 'password';
+            case 'radio':
+                return 'radio';
+            case 'date':
+                return 'date';
+            case 'time':
+                return 'time';
+            case 'color':
+                return 'color';
             default:
                 return 'text';
         }
