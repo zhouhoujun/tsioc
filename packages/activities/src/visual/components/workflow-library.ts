@@ -74,7 +74,7 @@ export class WorkflowLibraryComponent {
             this.translator,
             this.isZh ? 'zh-CN' : 'en',
             'workflow.ui.nodeCount',
-            this.isZh ? `${item.nodeCount} 个节点` : `${item.nodeCount} nodes`,
+            `${item.nodeCount} nodes`,
             { count: item.nodeCount }
         );
     }

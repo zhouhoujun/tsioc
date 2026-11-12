@@ -59,22 +59,22 @@ export function createDefaultWorkflowDefinition(
     const make = (type: IVisualWorkflowNode['type'], id: string, name: string, x: number, y: number, config?: Record<string, any>) =>
         registry.createNode(type, { x, y }, { id, name, config });
 
-    const start = make('start', 'start_1', t('start', locale === 'zh-CN' ? '开始' : 'Start'), 80, 220);
-    const fetch = make('task', 'task_1', t('loadInput', locale === 'zh-CN' ? '读取输入' : 'Load input'), 330, 220, {
+    const start = make('start', 'start_1', t('start', 'Start'), 80, 220);
+    const fetch = make('task', 'task_1', t('loadInput', 'Load input'), 330, 220, {
         action: 'loadInput',
         result: { approved: true }
     });
-    const condition = make('condition', 'condition_1', t('approved', locale === 'zh-CN' ? '是否通过' : 'Approved?'), 590, 220, {
+    const condition = make('condition', 'condition_1', t('approved', 'Approved?'), 590, 220, {
         field: 'approved',
         operator: 'truthy'
     });
-    const approve = make('task', 'task_2', t('approve', locale === 'zh-CN' ? '通过处理' : 'Approve'), 850, 120, {
+    const approve = make('task', 'task_2', t('approve', 'Approve'), 850, 120, {
         result: { approved: true }
     });
-    const reject = make('task', 'task_3', t('reject', locale === 'zh-CN' ? '拒绝处理' : 'Reject'), 850, 320, {
+    const reject = make('task', 'task_3', t('reject', 'Reject'), 850, 320, {
         result: { approved: false }
     });
-    const end = make('end', 'end_1', t('end', locale === 'zh-CN' ? '结束' : 'End'), 1110, 220);
+    const end = make('end', 'end_1', t('end', 'End'), 1110, 220);
 
     const connection = (id: string, source: string, sourcePort: string, target: string): NodeConnection => ({
         id,
@@ -86,10 +86,8 @@ export function createDefaultWorkflowDefinition(
 
     return {
         id: 'workflow_demo',
-        name: t('name', locale === 'zh-CN' ? '审批流程示例' : 'Approval workflow'),
-        description: t('description', locale === 'zh-CN'
-            ? '拖拽节点、连接端口并运行，实时查看执行路径。'
-            : 'Drag nodes, connect ports, run it, and inspect the live path.'),
+        name: t('name', 'Approval workflow'),
+        description: t('description', 'Drag nodes, connect ports, run it, and inspect the live path.'),
         version: '1.0.0',
         nodes: [start, fetch, condition, approve, reject, end],
         connections: [
@@ -119,7 +117,7 @@ export function createBlankWorkflowDefinition(
     const now = new Date().toISOString();
     return {
         id: 'workflow_new',
-        name: name || (locale === 'zh-CN' ? '新建流程' : 'New workflow'),
+        name: name || 'New workflow',
         description: '',
         version: '1.0.0',
         nodes: [],

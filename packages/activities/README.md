@@ -515,6 +515,12 @@ registry.register({
 });
 ```
 
+Localized copy for node labels, descriptions, fields, placeholders, groups and options
+is resolved through `@tsdi/i18n` (`workflow.node.*`, `workflow.field.*`,
+`workflow.fieldPlaceholder.*`, `workflow.fieldDescription.*`,
+`workflow.group.*`, `workflow.option.*`). Node definitions only carry English
+fallbacks; the catalogs live in `src/visual/i18n.nodes.ts`.
+
 Field metadata is the node-provided dynamic form schema: `type`, `options`,
 `rows`, `min`/`max`, `minLength`/`maxLength`, `pattern`, `rules`,
 `errorMessages`, `visibleWhen`, `group` and `inputClass` are rendered and

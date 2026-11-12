@@ -83,10 +83,10 @@ class MqttService {
 
 function commonFields() {
     return [
-        pluginField({ key: 'url', label: 'Broker URL', labelZh: 'Broker 地址', type: 'text', defaultValue: 'mqtt://localhost:1883', required: true }),
-        pluginField({ key: 'topic', label: 'Topic', labelZh: '主题', type: 'text', required: true }),
-        pluginField({ key: 'qos', label: 'QoS', labelZh: 'QoS', type: 'number', defaultValue: 0, min: 0, max: 2, step: 1 }),
-        pluginField({ key: 'timeout', label: 'Timeout (ms)', labelZh: '超时（毫秒）', type: 'number', defaultValue: 30000, min: 0, step: 1000, group: 'Reliability', groupZh: '可靠性' })
+        pluginField({ key: 'url', label: 'Broker URL', type: 'text', defaultValue: 'mqtt://localhost:1883', required: true }),
+        pluginField({ key: 'topic', label: 'Topic', type: 'text', required: true }),
+        pluginField({ key: 'qos', label: 'QoS', type: 'number', defaultValue: 0, min: 0, max: 2, step: 1 }),
+        pluginField({ key: 'timeout', label: 'Timeout (ms)', type: 'number', defaultValue: 30000, min: 0, step: 1000, group: 'Reliability',})
     ];
 }
 
@@ -104,9 +104,7 @@ export function createMqttPlugin(): WorkflowPlugin {
         nodes: [{
             type: 'mqtt-publish',
             label: 'MQTT publish',
-            labelZh: 'MQTT 发布',
             description: 'Publish a message to an MQTT topic',
-            descriptionZh: '向 MQTT 主题发布消息',
             category: 'action',
             icon: '↗',
             color: '#7c3aed',
@@ -115,8 +113,8 @@ export function createMqttPlugin(): WorkflowPlugin {
             outputs: [pluginPort('out', 'out', 'output', 'Output'), pluginPort('error', 'error', 'output', 'Error')],
             fields: [
                 ...commonFields(),
-                pluginField({ key: 'payload', label: 'Payload', labelZh: '消息内容', type: 'json', defaultValue: {} }),
-                pluginField({ key: 'retain', label: 'Retain', labelZh: '保留消息', type: 'boolean', defaultValue: false })
+                pluginField({ key: 'payload', label: 'Payload', type: 'json', defaultValue: {} }),
+                pluginField({ key: 'retain', label: 'Retain', type: 'boolean', defaultValue: false })
             ],
             defaultConfig: { url: 'mqtt://localhost:1883', qos: 0, retain: false, payload: {} },
             execute: async (node: IVisualWorkflowNode, context: ActivityContext): Promise<ActivityResult> => {
@@ -138,9 +136,7 @@ export function createMqttPlugin(): WorkflowPlugin {
         }, {
             type: 'mqtt-wait',
             label: 'MQTT wait',
-            labelZh: 'MQTT 等待',
             description: 'Wait for the next message on an MQTT topic',
-            descriptionZh: '等待 MQTT 主题的下一条消息',
             category: 'action',
             icon: '↘',
             color: '#7c3aed',

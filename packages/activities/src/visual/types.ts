@@ -584,15 +584,11 @@ export type WorkflowConfigFieldCondition = DynamicFormCondition;
 export interface WorkflowConfigField extends Omit<DynamicFormField, 'type' | 'label' | 'options' | 'visibleWhen' | 'rules'> {
     type: WorkflowConfigFieldType;
     label: string;
-    labelZh?: string;
-    placeholderZh?: string;
-    descriptionZh?: string;
     /** Localized option labels; values flow to the dynamic form unchanged. */
-    options?: Array<DynamicFormOption & { labelZh?: string }>;
+    options?: DynamicFormOption[];
     rules?: Array<WorkflowConfigRule | WorkflowConfigRuleType>;
     /** Group header shown above this field in the inspector. */
     group?: string;
-    groupZh?: string;
     /** Only render the field when the referenced config value matches. */
     visibleWhen?: WorkflowConfigFieldCondition;
 }
@@ -618,9 +614,7 @@ export interface WorkflowNodeDefinition {
      * Display label.
      */
     label: string;
-    labelZh?: string;
     description?: string;
-    descriptionZh?: string;
     /**
      * 分类
      * Palette category.

@@ -1,12 +1,13 @@
 import { Module } from '@tsdi/ioc';
 import { I18nModule, TranslationBundle, Translator } from '@tsdi/i18n';
+import { WORKFLOW_NODE_TRANSLATIONS } from './i18n.nodes';
 
 /**
  * Translation bundles for the visual workflow designer. Keys are grouped under
  * `workflow.*` so applications can merge or override a single string without
  * replacing the whole bundle.
  */
-export const WORKFLOW_DESIGNER_TRANSLATIONS: Record<string, TranslationBundle> = {
+const BASE_WORKFLOW_TRANSLATIONS: Record<string, TranslationBundle> = {
     en: {
         locale: 'en',
         messages: {
@@ -65,6 +66,8 @@ export const WORKFLOW_DESIGNER_TRANSLATIONS: Record<string, TranslationBundle> =
                     close: 'Close',
                     logs: 'Logs',
                     logTitle: 'Execution log',
+                    runHistory: 'Runs',
+                    canvasEmpty: 'Drag a component from the palette, or click one to add it',
                     menu: 'Menu',
                     jsonMenu: 'Import / Export JSON',
                     themeMenu: 'Theme',
@@ -172,21 +175,21 @@ export const WORKFLOW_DESIGNER_TRANSLATIONS: Record<string, TranslationBundle> =
                         result: 'Mock result',
                         fail: 'Fail this step',
                         retry: 'Retries',
-                        retryDelay: 'Retry delay (ms)',
-                        timeout: 'Timeout (ms)'
+                        retryDelay: 'Retry delay',
+                        timeout: 'Timeout'
                     },
-                    inject: { payload: 'Payload' },
-                    trigger: { delay: 'Delay (ms)', payload: 'Payload' },
-                    function: { code: 'Code', timeout: 'Timeout (ms)' },
-                    template: { template: 'Template', target: 'Target field' },
+                    inject: { payload: 'Payload', topic: 'Topic' },
+                    trigger: { delay: 'Delay', payload: 'Payload' },
+                    function: { code: 'Code', timeout: 'Timeout' },
+                    template: { template: 'Template', syntax: 'Syntax', target: 'Target field', output: 'Output' },
                     json: { mode: 'Mode', field: 'Field', pretty: 'Pretty print' },
                     csv: { mode: 'Mode', field: 'Field', delimiter: 'Delimiter', header: 'First row is header' },
                     change: { action: 'Action', field: 'Field', value: 'Value' },
                     statistics: { field: 'Array field', path: 'Item path', operation: 'Operation', resultField: 'Result field' },
                     merge: { fields: 'Fields', mode: 'Mode', resultField: 'Result field' },
                     'event-emit': { event: 'Event', payload: 'Payload' },
-                    'event-wait': { event: 'Event', timeout: 'Timeout (ms)' },
-                    command: { command: 'Command', args: 'Args', timeout: 'Timeout (ms)' },
+                    'event-wait': { event: 'Event', timeout: 'Timeout' },
+                    command: { command: 'Command', args: 'Args', timeout: 'Timeout' },
                     split: { field: 'Field', delimiter: 'Delimiter' },
                     map: { field: 'Array field', path: 'Item path' },
                     filter: { field: 'Array field', path: 'Item path', operator: 'Operator', value: 'Compare with' },
@@ -201,22 +204,23 @@ export const WORKFLOW_DESIGNER_TRANSLATIONS: Record<string, TranslationBundle> =
                     },
                     switch: {
                         field: 'Value field',
-                        value: 'Expected value'
+                        value: 'Value'
                     },
                     loop: {
                         iterations: 'Iterations',
-                        delay: 'Delay (ms)'
+                        delay: 'Delay'
                     },
-                    delay: { delay: 'Delay (ms)' },
-                    log: { message: 'Message', level: 'Level' },
+                    delay: { mode: 'Mode', delay: 'Delay', randomMin: 'Minimum', randomMax: 'Maximum' },
+                    log: { message: 'Message', field: 'Message property', complete: 'Complete message', level: 'Level' },
                     'http-request': {
                         url: 'URL',
                         method: 'Method',
                         headers: 'Headers',
                         body: 'Body',
                         retry: 'Retries',
-                        retryDelay: 'Retry delay (ms)',
-                        timeout: 'Timeout (ms)'
+                        retryDelay: 'Retry delay',
+                        timeout: 'Timeout',
+                        responseType: 'Response'
                     },
                     assign: { values: 'Values' },
                     transform: { mapping: 'Mapping', result: 'Fixed result' },
@@ -242,7 +246,16 @@ export const WORKFLOW_DESIGNER_TRANSLATIONS: Record<string, TranslationBundle> =
                     min: 'Min',
                     max: 'Max',
                     object: 'Object merge',
-                    array: 'Array concat'
+                    array: 'Array concat',
+                    fixed: 'Fixed delay',
+                    random: 'Random delay',
+                    mustache: 'Mustache',
+                    plain: 'Plain text',
+                    text: 'Text',
+                    auto: 'Auto',
+                    info: 'Info',
+                    warn: 'Warning',
+                    error: 'Error'
                 },
                 log: {
                     info: 'INFO',
@@ -321,6 +334,8 @@ export const WORKFLOW_DESIGNER_TRANSLATIONS: Record<string, TranslationBundle> =
                     close: '关闭',
                     logs: '日志',
                     logTitle: '执行日志',
+                    runHistory: '运行历史',
+                    canvasEmpty: '从左侧组件面板拖入节点，或点击组件添加',
                     menu: '菜单',
                     jsonMenu: '导入 / 导出 JSON',
                     themeMenu: '主题',
@@ -428,21 +443,21 @@ export const WORKFLOW_DESIGNER_TRANSLATIONS: Record<string, TranslationBundle> =
                         result: '模拟结果',
                         fail: '使此步骤失败',
                         retry: '重试次数',
-                        retryDelay: '重试间隔（毫秒）',
-                        timeout: '超时（毫秒）'
+                        retryDelay: '重试间隔',
+                        timeout: '超时'
                     },
-                    inject: { payload: '数据' },
-                    trigger: { delay: '延迟（毫秒）', payload: '数据' },
-                    function: { code: '代码', timeout: '超时（毫秒）' },
-                    template: { template: '模板', target: '目标字段' },
+                    inject: { payload: '数据', topic: '主题' },
+                    trigger: { delay: '延迟', payload: '数据' },
+                    function: { code: '代码', timeout: '超时' },
+                    template: { template: '模板', syntax: '语法', target: '目标字段', output: '输出类型' },
                     json: { mode: '模式', field: '字段', pretty: '格式化输出' },
                     csv: { mode: '模式', field: '字段', delimiter: '分隔符', header: '首行为表头' },
                     change: { action: '操作', field: '字段', value: '值' },
                     statistics: { field: '数组字段', path: '元素路径', operation: '操作', resultField: '结果字段' },
                     merge: { fields: '字段', mode: '模式', resultField: '结果字段' },
                     'event-emit': { event: '事件', payload: '数据' },
-                    'event-wait': { event: '事件', timeout: '超时（毫秒）' },
-                    command: { command: '命令', args: '参数', timeout: '超时（毫秒）' },
+                    'event-wait': { event: '事件', timeout: '超时' },
+                    command: { command: '命令', args: '参数', timeout: '超时' },
                     split: { field: '字段', delimiter: '分隔符' },
                     map: { field: '数组字段', path: '元素路径' },
                     filter: { field: '数组字段', path: '元素路径', operator: '运算符', value: '比较值' },
@@ -457,22 +472,23 @@ export const WORKFLOW_DESIGNER_TRANSLATIONS: Record<string, TranslationBundle> =
                     },
                     switch: {
                         field: '取值字段',
-                        value: '期望值'
+                        value: '值'
                     },
                     loop: {
                         iterations: '迭代次数',
-                        delay: '延迟（毫秒）'
+                        delay: '延迟'
                     },
-                    delay: { delay: '延迟（毫秒）' },
-                    log: { message: '消息', level: '级别' },
+                    delay: { mode: '模式', delay: '延迟', randomMin: '最小值', randomMax: '最大值' },
+                    log: { message: '消息', field: '消息属性', complete: '完整消息', level: '级别' },
                     'http-request': {
                         url: '地址',
                         method: '方法',
                         headers: '请求头',
                         body: '请求体',
                         retry: '重试次数',
-                        retryDelay: '重试间隔（毫秒）',
-                        timeout: '超时（毫秒）'
+                        retryDelay: '重试间隔',
+                        timeout: '超时',
+                        responseType: '响应解析'
                     },
                     assign: { values: '值' },
                     transform: { mapping: '映射', result: '固定结果' },
@@ -498,7 +514,16 @@ export const WORKFLOW_DESIGNER_TRANSLATIONS: Record<string, TranslationBundle> =
                     min: '最小',
                     max: '最大',
                     object: '对象合并',
-                    array: '数组拼接'
+                    array: '数组拼接',
+                    fixed: '固定延迟',
+                    random: '随机延迟',
+                    mustache: 'Mustache',
+                    plain: '纯文本',
+                    text: '文本',
+                    auto: '自动',
+                    info: '信息',
+                    warn: '告警',
+                    error: '错误'
                 },
                 log: {
                     info: '信息',
@@ -520,6 +545,27 @@ export const WORKFLOW_DESIGNER_TRANSLATIONS: Record<string, TranslationBundle> =
         }
     }
 };
+
+/**
+ * Merge the generated node/field/group/option catalog into each locale bundle.
+ * Node definitions only carry English fallbacks; all localized copy comes from
+ * the `@tsdi/i18n` bundles.
+ */
+export const WORKFLOW_DESIGNER_TRANSLATIONS: Record<string, TranslationBundle> = Object.fromEntries(
+    Object.entries(BASE_WORKFLOW_TRANSLATIONS).map(([locale, bundle]) => {
+        const workflow = ((bundle.messages as any)?.workflow || {}) as Record<string, any>;
+        return [locale, {
+            ...bundle,
+            messages: {
+                ...(bundle.messages as any),
+                workflow: {
+                    ...workflow,
+                    ...(WORKFLOW_NODE_TRANSLATIONS[locale] || {})
+                }
+            }
+        } as TranslationBundle];
+    })
+);
 
 /**
  * Drop-in i18n module for the workflow designer. Import it when your app does

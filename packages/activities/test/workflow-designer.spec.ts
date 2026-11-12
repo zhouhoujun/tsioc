@@ -54,7 +54,6 @@ describe('Visual Workflow Designer', () => {
             registry.register({
                 type: 'custom',
                 label: 'Robot',
-                labelZh: '机器人',
                 category: 'action',
                 icon: 'R',
                 color: '#123456',
@@ -64,7 +63,7 @@ describe('Visual Workflow Designer', () => {
             });
             const node = registry.createNode('custom', { x: 1, y: 2 }, { name: 'Move' });
             expect(node.name).toBe('Move');
-            expect(registry.nodeLabel('custom', 'zh-CN')).toBe('机器人');
+            expect(registry.nodeLabel('custom', 'zh-CN')).toBe('Robot');
         });
     });
 

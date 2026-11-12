@@ -146,13 +146,13 @@ export class WorkflowInspectorComponent implements OnDestroy {
     get noPropertiesLabel(): string { return this.t('noProperties', 'This node has no editable properties.'); }
     get namePlaceholder(): string { return this.t('namePlaceholder', 'Node name'); }
     get descriptionPlaceholder(): string { return this.t('descriptionPlaceholder', 'Optional note for this node'); }
-    get requiredMessage(): string { return this.t('requiredMessage', this.isZh ? '必填项' : 'Required'); }
-    get numberMessage(): string { return this.t('numberMessage', this.isZh ? '数值超出范围' : 'Number out of range'); }
-    get patternMessage(): string { return this.t('patternMessage', this.isZh ? '格式不正确' : 'Invalid format'); }
-    get jsonMessage(): string { return this.t('jsonMessage', this.isZh ? 'JSON 格式不正确' : 'Invalid JSON'); }
-    get emailMessage(): string { return this.t('invalidEmail', this.isZh ? '邮箱格式不正确' : 'Invalid email address'); }
-    get urlMessage(): string { return this.t('invalidUrl', this.isZh ? 'URL 格式不正确' : 'Invalid URL'); }
-    get integerMessage(): string { return this.t('integerMessage', this.isZh ? '请输入整数' : 'Must be an integer'); }
+    get requiredMessage(): string { return this.t('requiredMessage', 'Required'); }
+    get numberMessage(): string { return this.t('numberMessage', 'Number out of range'); }
+    get patternMessage(): string { return this.t('patternMessage', 'Invalid format'); }
+    get jsonMessage(): string { return this.t('jsonMessage', 'Invalid JSON'); }
+    get emailMessage(): string { return this.t('invalidEmail', 'Invalid email address'); }
+    get urlMessage(): string { return this.t('invalidUrl', 'Invalid URL'); }
+    get integerMessage(): string { return this.t('integerMessage', 'Must be an integer'); }
 
     /** JSON schema handed to the shared dynamic form. */
     get formSchema(): DynamicFormSchema {

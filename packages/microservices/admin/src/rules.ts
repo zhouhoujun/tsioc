@@ -96,9 +96,7 @@ export const GATEWAY_RULE_NODES: WorkflowNodeDefinition[] = [
     {
         type: GATEWAY_RULE_NODE_TYPES.route as VisualNodeType,
         label: 'Gateway route',
-        labelZh: '网关路由',
         description: 'Forward matching requests to a microservice or static upstream',
-        descriptionZh: '把匹配的请求转发到微服务或固定上游',
         category: 'action',
         icon: '⇥',
         color: '#2563eb',
@@ -106,28 +104,26 @@ export const GATEWAY_RULE_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Next')],
         fields: [
-            { key: 'path', label: 'Inbound path', labelZh: '入口路径', type: 'text', placeholder: '/api/users', description: 'Defaults to the path condition value.', descriptionZh: '默认取路径条件值。' },
-            { key: 'service', label: 'Service', labelZh: '服务名', type: 'text', placeholder: 'users-service', required: true },
-            { key: 'targetUrl', label: 'Target URL', labelZh: '上游地址', type: 'text', placeholder: 'http://127.0.0.1:3001' },
-            { key: 'targetPath', label: 'Target path', labelZh: '上游路径', type: 'text', placeholder: '/users' },
-            { key: 'stripPrefix', label: 'Strip prefix', labelZh: '去掉入口前缀', type: 'boolean', defaultValue: false },
-            { key: 'timeout', label: 'Timeout (ms)', labelZh: '超时（毫秒）', type: 'number', min: 0, step: 100 },
-            { key: 'priority', label: 'Priority', labelZh: '优先级', type: 'number', defaultValue: 0, description: 'Lower runs first.', descriptionZh: '数值越小越先执行。' },
-            { key: 'headers', label: 'Request headers', labelZh: '请求头', type: 'json', placeholder: '{ "x-gateway": "1" }' },
-            { key: 'responseHeaders', label: 'Response headers', labelZh: '响应头', type: 'json', placeholder: '{ "x-served-by": "gateway" }' },
-            { key: 'rateLimit', label: 'Rate limit', labelZh: '限流', type: 'json', placeholder: '{ "limit": 100, "windowMs": 60000 }' },
-            { key: 'cache', label: 'Cache', labelZh: '缓存', type: 'json', placeholder: '{ "enabled": true, "ttl": 30000 }' },
-            { key: 'circuitBreaker', label: 'Circuit breaker', labelZh: '熔断', type: 'json', placeholder: '{ "failureThreshold": 5 }' },
-            { key: 'bulkhead', label: 'Bulkhead', labelZh: '隔离舱', type: 'json', placeholder: '{ "maxConcurrent": 20 }' }
+            { key: 'path', label: 'Inbound path', type: 'text', placeholder: '/api/users', description: 'Defaults to the path condition value.',},
+            { key: 'service', label: 'Service', type: 'text', placeholder: 'users-service', required: true },
+            { key: 'targetUrl', label: 'Target URL', type: 'text', placeholder: 'http://127.0.0.1:3001' },
+            { key: 'targetPath', label: 'Target path', type: 'text', placeholder: '/users' },
+            { key: 'stripPrefix', label: 'Strip prefix', type: 'boolean', defaultValue: false },
+            { key: 'timeout', label: 'Timeout (ms)', type: 'number', min: 0, step: 100 },
+            { key: 'priority', label: 'Priority', type: 'number', defaultValue: 0, description: 'Lower runs first.',},
+            { key: 'headers', label: 'Request headers', type: 'json', placeholder: '{ "x-gateway": "1" }' },
+            { key: 'responseHeaders', label: 'Response headers', type: 'json', placeholder: '{ "x-served-by": "gateway" }' },
+            { key: 'rateLimit', label: 'Rate limit', type: 'json', placeholder: '{ "limit": 100, "windowMs": 60000 }' },
+            { key: 'cache', label: 'Cache', type: 'json', placeholder: '{ "enabled": true, "ttl": 30000 }' },
+            { key: 'circuitBreaker', label: 'Circuit breaker', type: 'json', placeholder: '{ "failureThreshold": 5 }' },
+            { key: 'bulkhead', label: 'Bulkhead', type: 'json', placeholder: '{ "maxConcurrent": 20 }' }
         ],
         defaultConfig: { stripPrefix: false }
     },
     {
         type: GATEWAY_RULE_NODE_TYPES.condition as VisualNodeType,
         label: 'Gateway condition',
-        labelZh: '网关条件',
         description: 'Match path, method, host, header or query values',
-        descriptionZh: '匹配路径、方法、主机、请求头或查询参数',
         category: 'flow',
         icon: '?',
         color: '#d97706',
@@ -141,43 +137,39 @@ export const GATEWAY_RULE_NODES: WorkflowNodeDefinition[] = [
             {
                 key: 'field',
                 label: 'Field',
-                labelZh: '字段',
                 type: 'select',
                 defaultValue: 'path',
                 options: [
-                    { label: 'Path', labelZh: '路径', value: 'path' },
-                    { label: 'Method', labelZh: '方法', value: 'method' },
-                    { label: 'Host', labelZh: '主机', value: 'host' },
-                    { label: 'Header', labelZh: '请求头', value: 'header' },
-                    { label: 'Query', labelZh: '查询参数', value: 'query' }
+                    { label: 'Path', value: 'path' },
+                    { label: 'Method', value: 'method' },
+                    { label: 'Host', value: 'host' },
+                    { label: 'Header', value: 'header' },
+                    { label: 'Query', value: 'query' }
                 ]
             },
-            { key: 'name', label: 'Header / query name', labelZh: '请求头/参数名', type: 'text', placeholder: 'x-role' },
+            { key: 'name', label: 'Header / query name', type: 'text', placeholder: 'x-role' },
             {
                 key: 'operator',
                 label: 'Operator',
-                labelZh: '运算符',
                 type: 'select',
                 defaultValue: 'equals',
                 options: [
-                    { label: 'equals', labelZh: '等于', value: 'equals' },
-                    { label: 'not equals', labelZh: '不等于', value: 'not-equals' },
-                    { label: 'prefix', labelZh: '前缀', value: 'prefix' },
-                    { label: 'not prefix', labelZh: '非前缀', value: 'not-prefix' },
-                    { label: 'exists', labelZh: '存在', value: 'exists' },
-                    { label: 'not exists', labelZh: '不存在', value: 'not-exists' }
+                    { label: 'equals', value: 'equals' },
+                    { label: 'not equals', value: 'not-equals' },
+                    { label: 'prefix', value: 'prefix' },
+                    { label: 'not prefix', value: 'not-prefix' },
+                    { label: 'exists', value: 'exists' },
+                    { label: 'not exists', value: 'not-exists' }
                 ]
             },
-            { key: 'value', label: 'Value', labelZh: '比较值', type: 'text', placeholder: '/api/users' }
+            { key: 'value', label: 'Value', type: 'text', placeholder: '/api/users' }
         ],
         defaultConfig: { field: 'path', operator: 'equals' }
     },
     {
         type: GATEWAY_RULE_NODE_TYPES.deny as VisualNodeType,
         label: 'Gateway deny',
-        labelZh: '网关拒绝',
         description: 'Reject matching requests at the gateway',
-        descriptionZh: '在网关直接拒绝匹配的请求',
         category: 'flow',
         icon: '⊘',
         color: '#dc2626',
@@ -185,10 +177,10 @@ export const GATEWAY_RULE_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [],
         fields: [
-            { key: 'status', label: 'Status', labelZh: '状态码', type: 'number', defaultValue: 403, min: 100, max: 599 },
-            { key: 'message', label: 'Message', labelZh: '消息', type: 'text', defaultValue: 'Forbidden' },
-            { key: 'priority', label: 'Priority', labelZh: '优先级', type: 'number', defaultValue: 0, description: 'Lower runs first.', descriptionZh: '数值越小越先执行。' },
-            { key: 'body', label: 'Body', labelZh: '响应体', type: 'json', placeholder: '{ "error": "forbidden" }' }
+            { key: 'status', label: 'Status', type: 'number', defaultValue: 403, min: 100, max: 599 },
+            { key: 'message', label: 'Message', type: 'text', defaultValue: 'Forbidden' },
+            { key: 'priority', label: 'Priority', type: 'number', defaultValue: 0, description: 'Lower runs first.',},
+            { key: 'body', label: 'Body', type: 'json', placeholder: '{ "error": "forbidden" }' }
         ],
         defaultConfig: { status: 403, message: 'Forbidden' }
     }

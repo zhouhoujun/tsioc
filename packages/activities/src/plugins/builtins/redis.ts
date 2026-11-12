@@ -61,9 +61,7 @@ export function createRedisPlugin(): WorkflowPlugin {
         nodes: [{
             type: 'redis-command',
             label: 'Redis command',
-            labelZh: 'Redis 命令',
             description: 'Run a Redis command and return its result',
-            descriptionZh: '执行 Redis 命令并返回结果',
             category: 'action',
             icon: '⌘',
             color: '#dc2626',
@@ -71,9 +69,9 @@ export function createRedisPlugin(): WorkflowPlugin {
             inputs: [pluginPort('in', 'in', 'input', 'Input')],
             outputs: [pluginPort('out', 'out', 'output', 'Result'), pluginPort('error', 'error', 'output', 'Error')],
             fields: [
-                pluginField({ key: 'url', label: 'Redis URL', labelZh: 'Redis 地址', type: 'text', defaultValue: 'redis://127.0.0.1:6379', required: true }),
-                pluginField({ key: 'command', label: 'Command', labelZh: '命令', type: 'text', defaultValue: 'GET', required: true }),
-                pluginField({ key: 'args', label: 'Arguments', labelZh: '参数', type: 'json', defaultValue: [], description: 'JSON array of command arguments.', descriptionZh: '命令参数的 JSON 数组。' })
+                pluginField({ key: 'url', label: 'Redis URL', type: 'text', defaultValue: 'redis://127.0.0.1:6379', required: true }),
+                pluginField({ key: 'command', label: 'Command', type: 'text', defaultValue: 'GET', required: true }),
+                pluginField({ key: 'args', label: 'Arguments', type: 'json', defaultValue: [], description: 'JSON array of command arguments.',})
             ],
             defaultConfig: { url: 'redis://127.0.0.1:6379', command: 'GET', args: [] },
             execute: async (node: IVisualWorkflowNode, context: ActivityContext): Promise<ActivityResult> => {
@@ -94,9 +92,7 @@ export function createRedisPlugin(): WorkflowPlugin {
         }, {
             type: 'redis-publish',
             label: 'Redis publish',
-            labelZh: 'Redis 发布',
             description: 'Publish a message to a Redis channel',
-            descriptionZh: '向 Redis 频道发布消息',
             category: 'action',
             icon: '↗',
             color: '#dc2626',
@@ -104,9 +100,9 @@ export function createRedisPlugin(): WorkflowPlugin {
             inputs: [pluginPort('in', 'in', 'input', 'Input')],
             outputs: [pluginPort('out', 'out', 'output', 'Output'), pluginPort('error', 'error', 'output', 'Error')],
             fields: [
-                pluginField({ key: 'url', label: 'Redis URL', labelZh: 'Redis 地址', type: 'text', defaultValue: 'redis://127.0.0.1:6379', required: true }),
-                pluginField({ key: 'channel', label: 'Channel', labelZh: '频道', type: 'text', required: true }),
-                pluginField({ key: 'message', label: 'Message', labelZh: '消息', type: 'json', defaultValue: {} })
+                pluginField({ key: 'url', label: 'Redis URL', type: 'text', defaultValue: 'redis://127.0.0.1:6379', required: true }),
+                pluginField({ key: 'channel', label: 'Channel', type: 'text', required: true }),
+                pluginField({ key: 'message', label: 'Message', type: 'json', defaultValue: {} })
             ],
             defaultConfig: { url: 'redis://127.0.0.1:6379', message: {} },
             execute: async (node: IVisualWorkflowNode, context: ActivityContext): Promise<ActivityResult> => {

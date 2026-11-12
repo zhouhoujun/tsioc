@@ -62,7 +62,7 @@ export class WorkflowPaletteComponent {
             this.translator,
             this.isZh ? 'zh-CN' : 'en',
             'workflow.ui.searchNodes',
-            this.isZh ? '搜索节点…' : 'Search nodes…'
+            'Search nodes…'
         );
     }
 
@@ -71,7 +71,7 @@ export class WorkflowPaletteComponent {
             this.translator,
             this.isZh ? 'zh-CN' : 'en',
             'workflow.ui.noMatches',
-            this.isZh ? '没有匹配的节点' : 'No matching nodes'
+            'No matching nodes'
         );
     }
 

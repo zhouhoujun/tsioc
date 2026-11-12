@@ -1,6 +1,8 @@
 import { AfterViewInit, Attribute, Component, ElementRef, ViewChild } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '@tsdi/components/common';
+import { Translator } from '@tsdi/i18n';
+import { translateWorkflow } from '../i18n';
 import { WorkflowCanvasModel, WorkflowCanvasNodeView, WorkflowCanvasPortView } from '../types';
 
 export type WorkflowCanvasPointerType =
@@ -127,16 +129,23 @@ export class WorkflowCanvasComponent implements AfterViewInit {
      */
     @ViewChild('canvasRoot', ElementRef) canvasRoot?: ElementRef;
 
-    constructor(@Optional() protected elementRef?: ElementRef) { }
+    constructor(
+        @Optional() protected elementRef?: ElementRef,
+        @Optional() private readonly translator?: Translator
+    ) { }
 
     onAfterViewInit(): void {
         markElementRefRaw(this.canvasRoot);
     }
 
     get emptyHint(): string {
-        return String(this.locale || '').toLowerCase().startsWith('zh')
-            ? '从左侧组件面板拖入节点，或点击组件添加'
-            : 'Drag a component from the palette, or click one to add it';
+        const locale = String(this.locale || '').toLowerCase().startsWith('zh') ? 'zh-CN' : 'en';
+        return translateWorkflow(
+            this.translator,
+            locale,
+            'workflow.ui.canvasEmpty',
+            'Drag a component from the palette, or click one to add it'
+        );
     }
 
     /** Only layout variables live here; the visual skin comes from the stylesheet. */

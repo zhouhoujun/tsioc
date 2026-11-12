@@ -1,5 +1,8 @@
 import { Attribute, Component } from '@tsdi/components';
+import { Optional } from '@tsdi/ioc';
+import { Translator } from '@tsdi/i18n';
 import { WorkflowRunHistoryItem } from '../types';
+import { translateWorkflow } from '../i18n';
 
 /**
  * Horizontal run-history strip. Each chip replays a retained execution
@@ -28,12 +31,14 @@ export class WorkflowRunHistoryComponent {
     @Attribute() locale = 'zh-CN';
     @Attribute() selectAction?: (executionId: string) => void;
 
+    constructor(@Optional() private readonly translator?: Translator) { }
+
     get isZh(): boolean {
         return String(this.locale || '').toLowerCase().startsWith('zh');
     }
 
     get title(): string {
-        return this.isZh ? '运行历史' : 'Runs';
+        return translateWorkflow(this.translator, this.isZh ? 'zh-CN' : 'en', 'workflow.ui.runHistory', 'Runs');
     }
 
     chipClass(item: WorkflowRunHistoryItem): Record<string, boolean> {

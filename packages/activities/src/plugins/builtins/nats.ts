@@ -46,10 +46,10 @@ function createNatsService() {
 
 function commonFields() {
     return [
-        pluginField({ key: 'servers', label: 'NATS servers', labelZh: 'NATS 服务地址', type: 'text', defaultValue: 'nats://localhost:4222', required: true }),
-        pluginField({ key: 'subject', label: 'Subject', labelZh: '主题', type: 'text', required: true }),
-        pluginField({ key: 'payload', label: 'Payload', labelZh: '消息内容', type: 'json', defaultValue: {} }),
-        pluginField({ key: 'timeout', label: 'Timeout (ms)', labelZh: '超时（毫秒）', type: 'number', defaultValue: 30000, min: 0, step: 1000, group: 'Reliability', groupZh: '可靠性' })
+        pluginField({ key: 'servers', label: 'NATS servers', type: 'text', defaultValue: 'nats://localhost:4222', required: true }),
+        pluginField({ key: 'subject', label: 'Subject', type: 'text', required: true }),
+        pluginField({ key: 'payload', label: 'Payload', type: 'json', defaultValue: {} }),
+        pluginField({ key: 'timeout', label: 'Timeout (ms)', type: 'number', defaultValue: 30000, min: 0, step: 1000, group: 'Reliability',})
     ];
 }
 
@@ -63,9 +63,7 @@ export function createNatsPlugin(): WorkflowPlugin {
         nodes: [{
             type: 'nats-publish',
             label: 'NATS publish',
-            labelZh: 'NATS 发布',
             description: 'Publish a message to a NATS subject',
-            descriptionZh: '向 NATS 主题发布消息',
             category: 'action',
             icon: '↗',
             color: '#0ea5e9',
@@ -91,9 +89,7 @@ export function createNatsPlugin(): WorkflowPlugin {
         }, {
             type: 'nats-request',
             label: 'NATS request',
-            labelZh: 'NATS 请求',
             description: 'Send a NATS request and wait for a reply',
-            descriptionZh: '发送 NATS 请求并等待回复',
             category: 'action',
             icon: '↔',
             color: '#0ea5e9',

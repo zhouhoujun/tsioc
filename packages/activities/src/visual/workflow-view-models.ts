@@ -24,23 +24,26 @@ export const WORKFLOW_NODE_HEADER_HEIGHT = 34;
 export const WORKFLOW_PORT_SPACING = 20;
 export const WORKFLOW_PORT_START = 48;
 
-const STATUS_LABELS: Record<NodeExecutionStatus, { en: string; zh: string }> = {
-    idle: { en: '', zh: '' },
-    pending: { en: 'Pending', zh: '等待' },
-    running: { en: 'Running', zh: '运行中' },
-    success: { en: 'Done', zh: '成功' },
-    failed: { en: 'Failed', zh: '失败' },
-    skipped: { en: 'Skipped', zh: '跳过' },
-    cancelled: { en: 'Cancelled', zh: '已取消' }
+const STATUS_LABELS: Record<NodeExecutionStatus, string> = {
+    idle: 'Idle',
+    pending: 'Pending',
+    running: 'Running',
+    success: 'Done',
+    failed: 'Failed',
+    skipped: 'Skipped',
+    cancelled: 'Cancelled'
 };
 
+function groupSlug(group: string): string {
+    return String(group).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+}
+
 export function nodeStatusLabel(status: NodeExecutionStatus, locale: WorkflowLocale, translator?: Translator): string {
-    const label = STATUS_LABELS[status] || STATUS_LABELS.idle;
     return translateWorkflow(
         translator,
         locale,
         `workflow.status.${status}`,
-        localize(locale, label.en, label.zh)
+        STATUS_LABELS[status] || STATUS_LABELS.idle
     );
 }
 
@@ -50,20 +53,19 @@ function executionStatusLabel(
     translator?: Translator
 ): string {
     const key = status || 'idle';
-    const fallback: Record<string, { en: string; zh: string }> = {
-        running: { en: 'Running', zh: '运行中' },
-        completed: { en: 'Completed', zh: '已完成' },
-        failed: { en: 'Failed', zh: '失败' },
-        cancelled: { en: 'Cancelled', zh: '已取消' },
-        pending: { en: 'Pending', zh: '等待' },
-        idle: { en: 'Idle', zh: '空闲' }
+    const fallback: Record<string, string> = {
+        running: 'Running',
+        completed: 'Completed',
+        failed: 'Failed',
+        cancelled: 'Cancelled',
+        pending: 'Pending',
+        idle: 'Idle'
     };
-    const label = fallback[key] || fallback.idle;
     return translateWorkflow(
         translator,
         locale,
         `workflow.status.${key}`,
-        localize(locale, label.en, label.zh)
+        fallback[key] || fallback.idle
     );
 }
 
@@ -333,7 +335,7 @@ export function buildWorkflowInspectorModel(
                 translator,
                 locale,
                 `workflow.field.${node.type}.${field.key}`,
-                localize(locale, field.label, field.labelZh)
+                field.label
             ),
             type: field.type,
             value,
@@ -346,13 +348,25 @@ export function buildWorkflowInspectorModel(
                     translator,
                     locale,
                     `workflow.option.${option.value}`,
-                    localize(locale, option.label, option.labelZh)
+                    option.label
                 ),
                 value: option.value
             })),
-            placeholder: localize(locale, field.placeholder || '', field.placeholderZh),
-            description: localize(locale, field.description || '', field.descriptionZh),
-            group: localize(locale, field.group || '', field.groupZh),
+            placeholder: translateWorkflow(
+                translator,
+                locale,
+                `workflow.fieldPlaceholder.${node.type}.${field.key}`,
+                field.placeholder || ''
+            ),
+            description: translateWorkflow(
+                translator,
+                locale,
+                `workflow.fieldDescription.${node.type}.${field.key}`,
+                field.description || ''
+            ),
+            group: field.group
+                ? translateWorkflow(translator, locale, `workflow.group.${groupSlug(field.group)}`, field.group)
+                : '',
             visible: field.visibleWhen
                 ? fieldConditionMatches(values[field.visibleWhen.key], field.visibleWhen)
                 : true,
@@ -435,8 +449,7 @@ export function buildWorkflowStatusModel(
         nodeCount: designer.nodes.length,
         selectedLabel: selected
             ? `${selected.name} · ${typeLabel}`
-            : translateWorkflow(translator, locale, 'workflow.ui.noSelection',
-                localize(locale, 'No node selected', '未选择节点')),
+            : translateWorkflow(translator, locale, 'workflow.ui.noSelection', 'No node selected'),
         zoomLabel: `${Math.round(designer.zoom * 100)}%`,
         executionLabel: executionStatusLabel(execution?.status, locale, translator)
     };

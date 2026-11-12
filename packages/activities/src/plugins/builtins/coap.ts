@@ -66,9 +66,7 @@ export function createCoapPlugin(): WorkflowPlugin {
         nodes: [{
             type: 'coap-request',
             label: 'CoAP request',
-            labelZh: 'CoAP 请求',
             description: 'Send a CoAP request and return the response payload',
-            descriptionZh: '发送 CoAP 请求并返回响应内容',
             category: 'action',
             icon: '⇄',
             color: '#0f766e',
@@ -76,19 +74,18 @@ export function createCoapPlugin(): WorkflowPlugin {
             inputs: [pluginPort('in', 'in', 'input', 'Input')],
             outputs: [pluginPort('out', 'out', 'output', 'Response'), pluginPort('error', 'error', 'output', 'Error')],
             fields: [
-                pluginField({ key: 'host', label: 'Host', labelZh: '主机', type: 'text', defaultValue: '127.0.0.1', required: true }),
-                pluginField({ key: 'port', label: 'Port', labelZh: '端口', type: 'number', defaultValue: 5683, min: 1, max: 65535, step: 1 }),
+                pluginField({ key: 'host', label: 'Host', type: 'text', defaultValue: '127.0.0.1', required: true }),
+                pluginField({ key: 'port', label: 'Port', type: 'number', defaultValue: 5683, min: 1, max: 65535, step: 1 }),
                 pluginField({
                     key: 'method',
                     label: 'Method',
-                    labelZh: '方法',
                     type: 'select',
                     defaultValue: 'GET',
                     options: ['GET', 'POST', 'PUT', 'DELETE'].map(value => ({ label: value, value }))
                 }),
-                pluginField({ key: 'path', label: 'Path', labelZh: '路径', type: 'text', defaultValue: '/' }),
-                pluginField({ key: 'payload', label: 'Payload', labelZh: '请求内容', type: 'json', defaultValue: {} }),
-                pluginField({ key: 'timeout', label: 'Timeout (ms)', labelZh: '超时（毫秒）', type: 'number', defaultValue: 30000, min: 0, step: 1000, group: 'Reliability', groupZh: '可靠性' })
+                pluginField({ key: 'path', label: 'Path', type: 'text', defaultValue: '/' }),
+                pluginField({ key: 'payload', label: 'Payload', type: 'json', defaultValue: {} }),
+                pluginField({ key: 'timeout', label: 'Timeout (ms)', type: 'number', defaultValue: 30000, min: 0, step: 1000, group: 'Reliability',})
             ],
             defaultConfig: { host: '127.0.0.1', port: 5683, method: 'GET', path: '/', payload: {}, timeout: 30000 },
             execute: async (node: IVisualWorkflowNode, context: ActivityContext): Promise<ActivityResult> => {

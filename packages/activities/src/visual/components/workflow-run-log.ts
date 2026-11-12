@@ -43,7 +43,7 @@ export class WorkflowRunLogComponent {
             this.translator,
             this.isZh ? 'zh-CN' : 'en',
             'workflow.ui.logTitle',
-            this.isZh ? '执行日志' : 'Execution log'
+            'Execution log'
         );
     }
 
@@ -52,16 +52,16 @@ export class WorkflowRunLogComponent {
             this.translator,
             this.isZh ? 'zh-CN' : 'en',
             'workflow.ui.close',
-            this.isZh ? '关闭' : 'Close'
+            'Close'
         );
     }
 
     levelLabel(level: WorkflowExecutionLogEntry['level']): string {
         const fallback: Record<string, string> = {
-            info: this.isZh ? '信息' : 'INFO',
-            success: this.isZh ? '成功' : 'OK',
-            warning: this.isZh ? '告警' : 'WARN',
-            error: this.isZh ? '错误' : 'ERROR'
+            info: 'INFO',
+            success: 'OK',
+            warning: 'WARN',
+            error: 'ERROR'
         };
         return translateWorkflow(
             this.translator,
