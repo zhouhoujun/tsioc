@@ -445,6 +445,99 @@ describe('Workflow Designer UI', () => {
         expect(changes.some(state => state.openIds.length === 2 && state.activeId === 'flow-b')).toBe(true);
     });
 
+    it('renames the active workflow from the menu action and updates its tab', async () => {
+        ref.instance.toolbarAction('rename');
+        await flush();
+        expect(root.querySelector('.workflow-rename')).toBeTruthy();
+        const input = root.querySelector('.workflow-rename-input') as any;
+        expect(input.value).toBe(ref.instance.designer.definition.name);
+
+        input.value = '   ';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        (root.querySelector('.workflow-rename .workflow-btn-primary') as any).click();
+        await flush();
+        expect(root.querySelector('.workflow-rename-error')?.textContent).toContain('名称');
+        expect(root.querySelector('.workflow-rename')).toBeTruthy();
+
+        input.value = 'Renamed Flow';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        (root.querySelector('.workflow-rename .workflow-btn-primary') as any).click();
+        await flush();
+        expect(ref.instance.designer.definition.name).toBe('Renamed Flow');
+        expect(ref.instance.designer.dirty).toBe(true);
+        expect(root.querySelector('.workflow-rename')).toBeFalsy();
+        expect(ref.instance.workflowTabSource.items[0].label).toBe('Renamed Flow');
+        expect(root.querySelector('.workflow-tabs .tab')?.textContent).toContain('Renamed Flow');
+
+        ref.instance.toolbarAction('rename');
+        await flush();
+        (root.querySelector('.workflow-rename .workflow-rename-close') as any).click();
+        await flush();
+        expect(root.querySelector('.workflow-rename')).toBeFalsy();
+        expect(ref.instance.designer.definition.name).toBe('Renamed Flow');
+    });
+
+    it('themes the rename dialog from the designer theme tokens', async () => {
+        ref.instance.toolbarAction('rename');
+        await flush();
+        const panel = root.querySelector('.workflow-rename-panel') as any;
+        expect(panel).toBeTruthy();
+
+        const css = doc.getElementById('tsdi-workflow-designer-styles').textContent;
+        // The dialog must not keep the light-only literals it was born with:
+        // surface/border/text/input/focus/error all come from theme tokens.
+        expect(css).toMatch(/\.workflow-rename-panel\s*{[^}]*var\(--wf-theme-surface/);
+        expect(css).toMatch(/\.workflow-rename-panel\s*{[^}]*var\(--wf-theme-border/);
+        expect(css).toMatch(/\.workflow-rename-title\s*{[^}]*var\(--wf-theme-text/);
+        expect(css).toMatch(/\.workflow-rename-input\s*{[^}]*var\(--wf-theme-input/);
+        expect(css).toMatch(/\.workflow-rename-input\s*{[^}]*var\(--wf-theme-text/);
+        expect(css).toMatch(/\.workflow-rename-input:focus\s*{[^}]*var\(--wf-theme-focus-ring/);
+        expect(css).toMatch(/\.workflow-rename-error\s*{[^}]*var\(--wf-theme-danger/);
+        // Every non-light theme overrides the dialog surface/scrim tokens.
+        ['dark', 'solarized', 'high-contrast'].forEach(theme => {
+            expect(css).toMatch(
+                new RegExp(`\\[data-theme="${theme}"\\]\\s*{[^}]*--wf-theme-overlay`));
+            expect(css).toMatch(
+                new RegExp(`\\[data-theme="${theme}"\\]\\s*{[^}]*--wf-theme-shadow`));
+        });
+    });
+
+    it('renders a uniform shared icon on every toolbar action', () => {
+        const toolbar = root.querySelector('.workflow-toolbar');
+        const run = toolbar.querySelector('.workflow-btn-primary') as any;
+        const runIcon = run.querySelector('icon.workflow-btn-icon') as any;
+        expect(runIcon).toBeTruthy();
+        expect(runIcon.getAttribute('data-icon')).toBe('run');
+        expect(runIcon.querySelector('svg').getAttribute('viewBox')).toBe('0 0 16 16');
+        expect(run.textContent).toContain('运行');
+        const iconButtons = Array.from(toolbar.querySelectorAll('.workflow-btn')) as any[];
+        expect(iconButtons.filter(button => button.querySelector('icon.workflow-btn-icon')).length)
+            .toBe(iconButtons.length);
+        const viewBoxes = iconButtons.map(button =>
+            button.querySelector('icon.workflow-btn-icon svg').getAttribute('viewBox'));
+        expect(Array.from(new Set(viewBoxes))).toEqual(['0 0 16 16']);
+        // The shared stylesheet gives every icon the same rendered size.
+        expect(doc.getElementById('tsdi-workflow-designer-styles').textContent)
+            .toContain('.workflow-btn-icon');
+        expect(doc.getElementById('tsdi-workflow-designer-styles').textContent)
+            .toContain('width: 13px');
+        expect(doc.getElementById('tsdi-icon-styles')).toBeTruthy();
+    });
+
+    it('renders node and palette icons through the shared icon directive', () => {
+        const paletteIcon = root.querySelector('.workflow-palette-item[data-node-type="task"] .workflow-palette-icon icon') as any;
+        expect(paletteIcon).toBeTruthy();
+        expect(paletteIcon.getAttribute('data-icon')).toBe('task');
+        expect(paletteIcon.querySelector('svg')).toBeTruthy();
+
+        const nodeIcon = root.querySelector('.workflow-node[data-node-type="start"] .workflow-node-icon icon') as any;
+        expect(nodeIcon).toBeTruthy();
+        expect(nodeIcon.getAttribute('data-icon')).toBe('start');
+        expect(nodeIcon.querySelector('svg path').getAttribute('fill')).toBe('currentColor');
+    });
+
     it('opens the generated workflow JSON panel', async () => {
         ref.instance.toggleJson();
         await flush();

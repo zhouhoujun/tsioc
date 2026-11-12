@@ -10,27 +10,9 @@ import { noReact, ReactiveEffect } from '../effect';
 import { Renderer } from '../renderer/Renderer';
 import { createEmbeddedViewRef } from './view';
 import { isReactive, reactive } from '../reactive';
+import { isStructuralContainer } from './structural-container';
 
 export const TEMPLATE_SCOPE_PARENT = Symbol('__template_scope_parent');
-
-
-/**
- * 判断节点是否为结构指令容器锚点（v-container）。
- * ElementContainer 标志在真实 DOM（jsdom）克隆时因只读 nodeType 丢失，
- * 因此同时用 tagName 兜底。
- */
-function isStructuralContainer(node: RNode): boolean {
-    if (node.nodeType & NodeType.ElementContainer) {
-        return true;
-    }
-    const tagName = (node as RElement).tagName;
-    if (typeof tagName === 'string' && tagName.toLowerCase() === 'v-container') {
-        return true;
-    }
-    const getAttribute = (node as RElement).getAttribute;
-    return typeof getAttribute === 'function' && getAttribute.call(node, 'data-v-container') !== null;
-}
-
 
 /**
  * Template ref implement.

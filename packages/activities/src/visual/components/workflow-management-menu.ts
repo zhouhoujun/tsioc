@@ -37,7 +37,7 @@ const EMPTY_MODEL: WorkflowToolbarModel = {
     selector: 'workflow-management-menu',
     template: `
     <div class="workflow-management-menu" data-theme="{{themeName}}">
-        <menu-bar icon="☰" label="" caret="▾" :triggerTitle="menuLabel"
+        <menu-bar icon="menu" label="" caret="caret-down" :triggerTitle="menuLabel"
             :groups="menuGroups" :selectAction="menuSelect"></menu-bar>
     </div>`
 })
@@ -85,6 +85,7 @@ export class WorkflowManagementMenuComponent {
             {
                 items: [
                     { id: 'save', label: t('save', 'Save'), shortcut: 'Ctrl+S' },
+                    { id: 'rename', label: t('rename', 'Rename workflow'), icon: 'rename' },
                     { id: 'open-library', label: t('library', 'Workflows') },
                     { id: 'toggle-json', label: t('jsonMenu', 'Import / Export JSON') }
                 ]
@@ -94,19 +95,19 @@ export class WorkflowManagementMenuComponent {
                     {
                         id: 'run',
                         label: t('run', 'Run'),
-                        icon: '▶',
+                        icon: 'run',
                         disabled: model.running || !model.nodeCount
                     },
                     {
                         id: 'resume',
                         label: t('resume', 'Resume'),
-                        icon: '⏵',
+                        icon: 'resume',
                         disabled: !model.canResume
                     },
                     {
                         id: 'cancel',
                         label: t('stop', 'Stop'),
-                        icon: '■',
+                        icon: 'stop',
                         disabled: !model.running
                     }
                 ]
@@ -128,7 +129,7 @@ export class WorkflowManagementMenuComponent {
                     {
                         id: 'theme',
                         label: t('themeMenu', 'Theme'),
-                        icon: '◐',
+                        icon: 'theme',
                         children: THEME_OPTIONS.map(theme => ({
                             id: `theme:${theme}`,
                             label: this.themeOptionLabel(theme),
@@ -142,7 +143,7 @@ export class WorkflowManagementMenuComponent {
                     {
                         id: 'language',
                         label: t('language', 'Language'),
-                        icon: '文',
+                        icon: 'language',
                         children: [
                             { id: 'language:en', label: 'English', checked: !this.isZh },
                             { id: 'language:zh-CN', label: '中文', checked: this.isZh }

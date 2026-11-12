@@ -30,6 +30,9 @@ export const WORKFLOW_DESIGNER_CSS = `
     --workspace-scrollbar-track: transparent;
     --workspace-scrollbar-thumb: #cbd5e1;
     --workspace-scrollbar-thumb-hover: #94a3b8;
+    --wf-theme-shadow: rgba(15, 23, 42, 0.28);
+    --wf-theme-overlay: rgba(15, 23, 42, 0.42);
+    --wf-theme-focus-ring: rgba(37, 99, 235, 0.15);
     scrollbar-color: var(--workspace-scrollbar-thumb) var(--workspace-scrollbar-track);
     scrollbar-width: thin;
 }
@@ -227,7 +230,8 @@ export const WORKFLOW_DESIGNER_CSS = `
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(15, 23, 42, 0.42);
+    background: var(--wf-theme-overlay, rgba(15, 23, 42, 0.42));
+    color: var(--wf-theme-text, #0f172a);
     padding: 24px;
 }
 
@@ -280,6 +284,83 @@ export const WORKFLOW_DESIGNER_CSS = `
     white-space: nowrap;
 }
 
+/* Rename workflow dialog */
+.workflow-rename {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--wf-theme-overlay, rgba(15, 23, 42, 0.42));
+    color: var(--wf-theme-text, #0f172a);
+    padding: 24px;
+}
+
+.workflow-rename-panel {
+    width: min(380px, 100%);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--wf-theme-surface, #ffffff);
+    border: 1px solid var(--wf-theme-border, #e2e8f0);
+    border-radius: 12px;
+    padding: 14px 16px;
+    color: var(--wf-theme-text, #0f172a);
+    box-shadow: 0 24px 60px var(--wf-theme-shadow, rgba(15, 23, 42, 0.28));
+}
+
+.workflow-rename-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.workflow-rename-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--wf-theme-text, #0f172a);
+}
+
+.workflow-rename-close {
+    padding: 2px 7px;
+    line-height: 1;
+}
+
+.workflow-rename-input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--wf-theme-border, #cbd5e1);
+    border-radius: 6px;
+    padding: 7px 9px;
+    background: var(--wf-theme-input, #ffffff);
+    color: var(--wf-theme-text, #0f172a);
+    font-size: 12px;
+}
+
+.workflow-rename-input::placeholder {
+    color: var(--wf-theme-muted, #94a3b8);
+}
+
+.workflow-rename-input:focus {
+    outline: none;
+    border-color: var(--wf-theme-primary, #2563eb);
+    box-shadow: 0 0 0 3px var(--wf-theme-focus-ring, rgba(37, 99, 235, 0.15));
+}
+
+.workflow-rename-error {
+    font-size: 11px;
+    color: var(--wf-theme-danger, #dc2626);
+}
+
+.workflow-rename-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
 .workflow-menu {
     margin-left: auto;
 }
@@ -306,6 +387,20 @@ export const WORKFLOW_DESIGNER_CSS = `
 .workflow-btn:disabled {
     opacity: 0.45;
     cursor: not-allowed;
+}
+
+.workflow-btn-icon {
+    display: inline-block;
+    width: 13px;
+    height: 13px;
+    margin-right: 5px;
+    flex: none;
+    overflow: visible;
+    vertical-align: -2px;
+}
+
+.workflow-btn-icon-only {
+    margin-right: 0;
 }
 
 .workflow-btn-primary {
@@ -665,6 +760,12 @@ workflow-canvas {
 }
 
 .workflow-node-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 14px;
+    height: 14px;
     font-size: 13px;
     line-height: 1;
 }
@@ -1524,6 +1625,9 @@ html[data-theme="high-contrast"] li.CodeMirror-hint-active {
     --menu-bar-shadow: rgba(0, 0, 0, 0.5);
     --workspace-scrollbar-thumb: #334155;
     --workspace-scrollbar-thumb-hover: #60a5fa;
+    --wf-theme-overlay: rgba(0, 0, 0, 0.62);
+    --wf-theme-shadow: rgba(0, 0, 0, 0.55);
+    --wf-theme-focus-ring: rgba(59, 130, 246, 0.25);
 }
 
 .workflow-designer[data-theme="solarized"] {
@@ -1552,6 +1656,9 @@ html[data-theme="high-contrast"] li.CodeMirror-hint-active {
     --menu-bar-shadow: rgba(0, 0, 0, 0.5);
     --workspace-scrollbar-thumb: #586e75;
     --workspace-scrollbar-thumb-hover: #268bd2;
+    --wf-theme-overlay: rgba(0, 0, 0, 0.62);
+    --wf-theme-shadow: rgba(0, 0, 0, 0.55);
+    --wf-theme-focus-ring: rgba(38, 139, 210, 0.28);
 }
 
 .workflow-designer[data-theme="high-contrast"] {
@@ -1580,6 +1687,9 @@ html[data-theme="high-contrast"] li.CodeMirror-hint-active {
     --menu-bar-shadow: rgba(255, 255, 255, 0.25);
     --workspace-scrollbar-thumb: #ffffff;
     --workspace-scrollbar-thumb-hover: #ffff00;
+    --wf-theme-overlay: rgba(0, 0, 0, 0.82);
+    --wf-theme-shadow: rgba(255, 255, 255, 0.3);
+    --wf-theme-focus-ring: rgba(255, 255, 0, 0.35);
 }
 
 .workflow-designer[data-theme="dark"],

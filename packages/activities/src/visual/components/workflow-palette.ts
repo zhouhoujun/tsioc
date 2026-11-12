@@ -34,7 +34,7 @@ import { WorkflowPaletteGroup, WorkflowPaletteItem } from '../types';
                  data-node-type="{{entry.type}}"
                  @click="add(entry)"
                  @dragstart="dragStart($event, entry)">
-                <span class="workflow-palette-icon" data-node-type="{{entry.type}}">{{entry.icon}}</span>
+                <span class="workflow-palette-icon" data-node-type="{{entry.type}}"><icon [name]="entry.type" [glyph]="entry.icon" size="sm"></icon></span>
                 <span class="workflow-palette-text">
                     <span class="workflow-palette-label">{{entry.label}}</span>
                     <span class="workflow-palette-desc">{{entry.description}}</span>

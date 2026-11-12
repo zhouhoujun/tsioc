@@ -97,6 +97,32 @@ export class HtmlDynamicFormTest {
         expect(code.className).toContain('df-code-editor');
     }
 
+    @Test('renders fields as direct children of the grid and neutralizes structural anchors')
+    async rendersFieldsAsDirectGridChildren() {
+        // `v-for`/`v-if` anchors must not sit between the grid and its fields:
+        // `.df-field.is-full { grid-column: 1 / -1 }` only spans when the field
+        // is a direct grid item. Regression guard for DOM hosts where the
+        // ElementContainer flag is lost (nodeType is read-only).
+        const grids = Array.from(this.root.querySelectorAll('.df-fields')) as any[];
+        expect(grids.length).toBeGreaterThan(0);
+        grids.forEach(grid => {
+            const fields = Array.from(grid.children).filter((child: any) => child.classList?.contains('df-field')) as any[];
+            expect(fields.length).toBeGreaterThan(0);
+            fields.forEach(field => {
+                expect(field.parentElement).toBe(grid);
+            });
+        });
+
+        const anchors = Array.from(this.root.querySelectorAll('v-container')) as any[];
+        expect(anchors.length).toBeGreaterThan(0);
+        const anchorStyle = this.doc.getElementById('tsdi-structural-container-styles');
+        expect(anchorStyle).toBeTruthy();
+        expect(anchorStyle.textContent).toContain('v-container { display: contents; }');
+        anchors.forEach(anchor => {
+            expect(anchor.getAttribute('style')).toBeFalsy();
+        });
+    }
+
     @Test('validates fields and toggles conditional visibility')
     async validatesAndTogglesVisibility() {
         const name = this.root.querySelector('.df-field[data-field-key="name"] input') as any;

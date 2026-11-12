@@ -333,6 +333,17 @@ export class WorkflowDesigner {
         return this.updateNode(nodeId, { name: String(name || '').trim() || nodeId });
     }
 
+    /** Rename the open workflow document (the id stays stable). */
+    renameWorkflow(name: string): boolean {
+        const next = String(name ?? '').trim();
+        if (!next || next === this.definition.name) {
+            return false;
+        }
+        this.commit(current => ({ ...current, name: next }));
+        this.setMessage('workflow.message.renamed', { name: next });
+        return true;
+    }
+
     setSelection(selection: WorkflowSelection): void {
         this.selection = { ...selection };
         this.clearError();

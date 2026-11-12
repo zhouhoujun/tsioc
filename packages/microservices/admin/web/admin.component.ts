@@ -63,7 +63,7 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                 <div class="ga-topbar-right">
                     <span class="ga-status">{{state.status}}</span>
                     <span class="ga-error" v-if="state.error">{{state.error}}</span>
-                    <menu-bar class="ga-global-menu" icon="☰" label="" caret="▾"
+                    <menu-bar class="ga-global-menu" icon="menu" label="" caret="caret-down"
                         :triggerTitle="state.t('top.menu')" :groups="state.globalMenuGroups"
                         :selectAction="state.globalMenuSelect"></menu-bar>
                     <button class="ga-btn" type="button" @click="state.reload">{{state.t('top.refresh')}}</button>

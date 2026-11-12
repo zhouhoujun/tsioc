@@ -1,4 +1,4 @@
-import{m as s}from"./chunk-FFCFSRQC.js";import{a,ma as e}from"./chunk-VRX3PVZ5.js";import"./chunk-U6UJE3IR.js";var t=class{constructor(l){this.state=l}};Reflect.metadata("design:paramtypes",[s])(t);a(t,[[e({selector:"gateway-admin-rules",template:`
+import{n as s}from"./chunk-P2CAQ4IW.js";import{a,na as e}from"./chunk-SPMG5PJO.js";import"./chunk-U6UJE3IR.js";var t=class{constructor(l){this.state=l}};Reflect.metadata("design:paramtypes",[s])(t);a(t,[[e({selector:"gateway-admin-rules",template:`
     <section class="ga-page ga-page-rules">
         <div class="ga-page-actions">
             <div>

@@ -31,23 +31,23 @@ const EMPTY_TOOLBAR: WorkflowToolbarModel = {
         <span class="workflow-toolbar-meta">{{nodeLabel}} · {{connectionLabel}}</span>
         <span class="workflow-toolbar-status">{{model.statusLabel}}</span>
         <span class="workflow-status-spacer"></span>
-        <button v-if="visible('run')" class="workflow-btn workflow-btn-primary" [disabled]="model.running || !model.nodeCount" @click="run">{{runLabel}}</button>
-        <button v-if="visible('resume')" class="workflow-btn" [disabled]="!model.canResume" @click="resume">{{resumeLabel}}</button>
-        <button v-if="visible('cancel')" class="workflow-btn" [disabled]="!model.running" @click="cancel">{{stopLabel}}</button>
-        <button v-if="visible('undo')" class="workflow-btn" [disabled]="!model.canUndo" @click="undo">{{undoLabel}}</button>
-        <button v-if="visible('redo')" class="workflow-btn" [disabled]="!model.canRedo" @click="redo">{{redoLabel}}</button>
-        <button v-if="visible('delete')" class="workflow-btn workflow-btn-danger" [disabled]="!model.hasSelection" @click="remove">{{deleteLabel}}</button>
-        <button v-if="visible('zoom')" class="workflow-btn" @click="zoomOut">−</button>
+        <button v-if="visible('run')" class="workflow-btn workflow-btn-primary" [disabled]="model.running || !model.nodeCount" @click="run"><icon class="workflow-btn-icon" name="run" size="sm"></icon>{{runLabel}}</button>
+        <button v-if="visible('resume')" class="workflow-btn" [disabled]="!model.canResume" @click="resume"><icon class="workflow-btn-icon" name="resume" size="sm"></icon>{{resumeLabel}}</button>
+        <button v-if="visible('cancel')" class="workflow-btn" [disabled]="!model.running" @click="cancel"><icon class="workflow-btn-icon" name="stop" size="sm"></icon>{{stopLabel}}</button>
+        <button v-if="visible('undo')" class="workflow-btn" [disabled]="!model.canUndo" @click="undo"><icon class="workflow-btn-icon" name="undo" size="sm"></icon>{{undoLabel}}</button>
+        <button v-if="visible('redo')" class="workflow-btn" [disabled]="!model.canRedo" @click="redo"><icon class="workflow-btn-icon" name="redo" size="sm"></icon>{{redoLabel}}</button>
+        <button v-if="visible('delete')" class="workflow-btn workflow-btn-danger" [disabled]="!model.hasSelection" @click="remove"><icon class="workflow-btn-icon" name="delete" size="sm"></icon>{{deleteLabel}}</button>
+        <button v-if="visible('zoom')" class="workflow-btn" [title]="zoomOutLabel" [aria-label]="zoomOutLabel" @click="zoomOut"><icon class="workflow-btn-icon workflow-btn-icon-only" name="minus" size="sm"></icon></button>
         <span v-if="visible('zoom')" class="workflow-toolbar-zoom">{{model.zoomLabel}}</span>
-        <button v-if="visible('zoom')" class="workflow-btn" @click="zoomIn">+</button>
-        <button v-if="visible('reset-view')" class="workflow-btn" @click="resetView">{{resetLabel}}</button>
-        <button v-if="visible('auto-layout')" class="workflow-btn" @click="autoLayout">{{layoutLabel}}</button>
-        <button v-if="visible('duplicate')" class="workflow-btn" [disabled]="!model.hasSelection" @click="duplicate">{{duplicateLabel}}</button>
-        <button v-if="visible('toggle-logs')" class="workflow-btn" @click="toggleLogs">{{logsLabel}}</button>
-        <button v-if="visible('save')" class="workflow-btn" @click="save">{{saveLabel}}</button>
-        <button v-if="visible('open-library')" class="workflow-btn" @click="openLibrary">{{libraryLabel}}</button>
-        <button v-if="visible('toggle-json')" class="workflow-btn" @click="toggleJson">JSON</button>
-        <button v-if="visible('clear')" class="workflow-btn" [disabled]="!model.nodeCount" @click="clear">{{clearLabel}}</button>
+        <button v-if="visible('zoom')" class="workflow-btn" [title]="zoomInLabel" [aria-label]="zoomInLabel" @click="zoomIn"><icon class="workflow-btn-icon workflow-btn-icon-only" name="plus" size="sm"></icon></button>
+        <button v-if="visible('reset-view')" class="workflow-btn" @click="resetView"><icon class="workflow-btn-icon" name="fit" size="sm"></icon>{{resetLabel}}</button>
+        <button v-if="visible('auto-layout')" class="workflow-btn" @click="autoLayout"><icon class="workflow-btn-icon" name="layout" size="sm"></icon>{{layoutLabel}}</button>
+        <button v-if="visible('duplicate')" class="workflow-btn" [disabled]="!model.hasSelection" @click="duplicate"><icon class="workflow-btn-icon" name="duplicate" size="sm"></icon>{{duplicateLabel}}</button>
+        <button v-if="visible('toggle-logs')" class="workflow-btn" @click="toggleLogs"><icon class="workflow-btn-icon" name="logs" size="sm"></icon>{{logsLabel}}</button>
+        <button v-if="visible('save')" class="workflow-btn" @click="save"><icon class="workflow-btn-icon" name="save" size="sm"></icon>{{saveLabel}}</button>
+        <button v-if="visible('open-library')" class="workflow-btn" @click="openLibrary"><icon class="workflow-btn-icon" name="library" size="sm"></icon>{{libraryLabel}}</button>
+        <button v-if="visible('toggle-json')" class="workflow-btn" @click="toggleJson"><icon class="workflow-btn-icon" name="json" size="sm"></icon>JSON</button>
+        <button v-if="visible('clear')" class="workflow-btn" [disabled]="!model.nodeCount" @click="clear"><icon class="workflow-btn-icon" name="clear" size="sm"></icon>{{clearLabel}}</button>
     </div>`
 })
 export class WorkflowToolbarComponent {
@@ -105,6 +105,8 @@ export class WorkflowToolbarComponent {
     get layoutLabel(): string { return this.t('layout', 'Auto layout'); }
     get duplicateLabel(): string { return this.t('duplicate', 'Duplicate'); }
     get logsLabel(): string { return this.t('logs', 'Logs'); }
+    get zoomInLabel(): string { return this.t('zoomIn', 'Zoom in'); }
+    get zoomOutLabel(): string { return this.t('zoomOut', 'Zoom out'); }
 
     get saveLabel(): string { return this.t('save', 'Save'); }
     get libraryLabel(): string { return this.t('library', 'Workflows'); }

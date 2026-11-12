@@ -94,7 +94,7 @@ const EMPTY_CANVAS: WorkflowCanvasModel = {
                      @mousedown="nodeDown($event, node)"
                      @mouseup="nodeUp($event, node)">
                     <div class="workflow-node-header">
-                        <span class="workflow-node-icon">{{node.icon}}</span>
+                        <span class="workflow-node-icon"><icon [name]="node.type" [glyph]="node.icon" size="sm"></icon></span>
                         <span class="workflow-node-title">{{node.name}}</span>
                         <span class="workflow-node-status" v-if="node.statusLabel">{{node.statusLabel}}</span>
                     </div>

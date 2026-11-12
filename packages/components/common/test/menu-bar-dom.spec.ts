@@ -5,6 +5,7 @@ import { DOCUMENT } from '@tsdi/common';
 import { Before, Suite, Test } from '@tsdi/unit';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { MenuBarComponent, MenuBarGroup } from '../menu-bar';
+import { IconModule } from '../icon';
 
 const groups: MenuBarGroup[] = [
     {
@@ -38,7 +39,7 @@ export class MenuBarDomTest {
     @Before()
     async init() {
         this.ctx = await Application.run(MenuBarComponent, {
-            deps: [HtmlTemplateModule, ComponentsModule],
+            deps: [HtmlTemplateModule, ComponentsModule, IconModule],
             providers: [
                 { provide: MenuBarComponent, useClass: MenuBarComponent },
                 {

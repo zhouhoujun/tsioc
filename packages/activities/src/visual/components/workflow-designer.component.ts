@@ -60,6 +60,23 @@ interface WorkflowDocumentTab {
             :saveAction="saveWorkflow" :saveAsAction="saveWorkflowAs"
             :openAction="loadWorkflow" :removeAction="deleteWorkflow"
             :closeAction="closeLibrary"></workflow-library>
+        <div class="workflow-rename" v-if="showRename">
+            <div class="workflow-rename-panel">
+                <div class="workflow-rename-head">
+                    <span class="workflow-rename-title">{{renameTitle}}</span>
+                    <button class="workflow-btn workflow-rename-close" type="button"
+                        [aria-label]="cancelLabel" [title]="cancelLabel" @click="cancelRename"><icon name="close" size="sm"></icon></button>
+                </div>
+                <input class="workflow-rename-input" type="text" [value]="renameValue"
+                    placeholder="{{renamePlaceholder}}" aria-label="{{renameTitle}}"
+                    @input="renameInput" @keydown="renameKey" />
+                <div class="workflow-rename-error" v-if="renameError">{{renameError}}</div>
+                <div class="workflow-rename-actions">
+                    <button class="workflow-btn" type="button" @click="cancelRename">{{cancelLabel}}</button>
+                    <button class="workflow-btn workflow-btn-primary" type="button" @click="commitRename">{{renameConfirmLabel}}</button>
+                </div>
+            </div>
+        </div>
     </div>`
 })
 export class WorkflowDesignerComponent implements OnDestroy {
@@ -91,6 +108,9 @@ export class WorkflowDesignerComponent implements OnDestroy {
     saveState: 'saved' | 'dirty' | 'saving' | 'error' = 'saved';
     readonly previewHiddenActions = ['save', 'open-library'];
     showLibrary = false;
+    showRename = false;
+    renameValue = '';
+    renameError = '';
     libraryError = '';
     libraryItems: WorkflowDefinitionSummary[] = [];
     /** Set in onInit to the reactive component proxy (arrow callbacks capture the raw instance). */
@@ -437,6 +457,11 @@ export class WorkflowDesignerComponent implements OnDestroy {
         return this.localeValue === 'zh-CN';
     }
 
+    get renameTitle(): string { return this.t('renameTitle', 'Rename workflow'); }
+    get renamePlaceholder(): string { return this.t('renamePlaceholder', 'Workflow name'); }
+    get renameConfirmLabel(): string { return this.t('renameConfirm', 'Rename'); }
+    get cancelLabel(): string { return this.t('cancel', 'Cancel'); }
+
     private t(key: string, fallback: string): string {
         return translateWorkflow(this.translator, this.localeValue, `workflow.ui.${key}`, fallback);
     }
@@ -555,6 +580,10 @@ export class WorkflowDesignerComponent implements OnDestroy {
             }
             return;
         }
+        if (action === 'rename') {
+            self.openRename();
+            return;
+        }
         if (action === 'save') {
             void self.saveWorkflow();
             return;
@@ -602,6 +631,60 @@ export class WorkflowDesignerComponent implements OnDestroy {
             self.libraryError = (error as Error).message;
         }
         self.showLibrary = true;
+    };
+
+    /** Open the rename overlay for the active workflow document. */
+    readonly openRename = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.renameValue = self.designer?.definition?.name || '';
+        self.renameError = '';
+        self.showRename = true;
+    };
+
+    readonly renameInput = (event: any): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.renameValue = String(event?.target?.value ?? '');
+        self.renameError = '';
+    };
+
+    readonly renameKey = (event: any): void => {
+        const key = String(event?.key || '');
+        if (key === 'Enter') {
+            event?.preventDefault?.();
+            this.commitRename();
+            return;
+        }
+        if (key === 'Escape') {
+            event?.preventDefault?.();
+            this.cancelRename();
+        }
+    };
+
+    readonly cancelRename = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.showRename = false;
+        self.renameError = '';
+    };
+
+    readonly commitRename = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        const name = String(self.renameValue || '').trim();
+        if (!name) {
+            self.renameError = self.t('renameEmpty', 'Enter a workflow name');
+            return;
+        }
+        const tab = self.activeTab();
+        if (!tab) {
+            self.showRename = false;
+            return;
+        }
+        tab.designer.renameWorkflow(name);
+        self.showRename = false;
+        self.renameError = '';
+        // The tab label and toolbar title derive from the definition name, so
+        // rebuild the cached tab source and let autosave persist the rename.
+        self.emitTabs();
+        self.scheduleAutosave();
     };
 
     readonly saveWorkflow = async (): Promise<void> => {

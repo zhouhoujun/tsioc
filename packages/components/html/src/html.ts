@@ -32,6 +32,33 @@ export class HtmlRenderer implements Renderer {
             });
             this.document = dom.window.document;
         }
+        this.installStructuralAnchorStyles();
+    }
+
+    /**
+     * Structural directives (`v-for`/`v-if`/`v-switch`) are anchored on a
+     * `<v-container>` element. Embedded views are inserted as its siblings, so
+     * the anchor itself must not generate a box; otherwise it consumes a
+     * grid/flex slot and shifts the rendered children (dynamic-form fields used
+     * to lose their full-width span this way). Keep this in the DOM renderer so
+     * no per-element inline styles are needed.
+     */
+    private installStructuralAnchorStyles(): void {
+        const doc = this.document as Document & {
+            getElementById?: (id: string) => Element | null;
+            createElement?: (name: string) => HTMLElement;
+        };
+        if (!doc?.head || typeof doc.createElement !== 'function') {
+            return;
+        }
+        const id = 'tsdi-structural-container-styles';
+        if (doc.getElementById?.(id)) {
+            return;
+        }
+        const style = doc.createElement('style');
+        style.setAttribute('id', id);
+        style.textContent = 'v-container { display: contents; }';
+        doc.head.appendChild(style);
     }
 
     createComment(value: string): RComment {

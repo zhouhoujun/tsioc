@@ -7,9 +7,10 @@ import { Renderer } from '../renderer/Renderer';
 import { TemplateCompiler } from '../template/compiler';
 import { TemplateRef } from '../refs/template';
 import { Factoriable } from '../refs/directive';
-import { NodeType, RNode } from '../renderer/Node';
+import { RNode } from '../renderer/Node';
 import { NodeInjector } from '../refs/injector';
 import { noReact, ReactiveEffect } from '../effect';
+import { isStructuralContainer } from './structural-container';
 
 /**
  * View container ref implement.
@@ -33,7 +34,11 @@ class ViewContainerRefImpl implements ViewContainerRef {
     private _isElementContainer?: boolean;
     protected get isElementContainer(): boolean {
         if (this._isElementContainer === undefined) {
-            this._isElementContainer = ((this.element.nativeElement as RNode).nodeType & NodeType.ElementContainer) === NodeType.ElementContainer;
+            // `ElementContainer` is only assignable on virtual nodes; real DOM
+            // elements keep their read-only nodeType. Fall back to the anchor's
+            // tag/attribute so DOM views are inserted as siblings of the anchor
+            // (matching the virtual renderers) instead of being nested inside it.
+            this._isElementContainer = isStructuralContainer(this.element.nativeElement as RNode);
         }
         return this._isElementContainer;
     }

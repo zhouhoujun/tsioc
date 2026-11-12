@@ -56,7 +56,7 @@ interface MenuBarEntryView {
  *
  * Usage:
  * ```html
- * <menu-bar icon="☰" label="Menu" [groups]="groups" [selectAction]="select"></menu-bar>
+ * <menu-bar icon="menu" label="Menu" [groups]="groups" [selectAction]="select"></menu-bar>
  * ```
  */
 @Component({
@@ -70,9 +70,9 @@ interface MenuBarEntryView {
             [title]="triggerTitle || label"
             [disabled]="disabled"
             @click="toggle">
-            <span class="menu-bar-glyph" v-if="icon">{{icon}}</span>
+            <span class="menu-bar-glyph" v-if="icon"><icon [name]="icon" [glyph]="icon" size="sm"></icon></span>
             <span class="menu-bar-label" v-if="label">{{label}}</span>
-            <span class="menu-bar-caret" v-if="caret">{{caret}}</span>
+            <span class="menu-bar-caret" v-if="caret"><icon [name]="caret" [glyph]="caret" size="xs"></icon></span>
         </button>
         <div class="menu-bar-popup" role="menu" v-show="open">
             <div [class]="'menu-bar-entry' + (entry.children.length ? ' has-submenu' : '')" v-for="entry in entries" data-menu-key="{{entry.key}}">
@@ -84,11 +84,11 @@ interface MenuBarEntryView {
                     [disabled]="entry.disabled"
                     aria-disabled="{{entry.disabled}}"
                     @click="choose(entry.id, $event)">
-                    <span class="menu-bar-item-icon" v-if="entry.icon">{{entry.icon}}</span>
+                    <span class="menu-bar-item-icon" v-if="entry.icon"><icon [name]="entry.icon" [glyph]="entry.icon" size="sm"></icon></span>
                     <span class="menu-bar-item-label">{{entry.label}}</span>
                     <span class="menu-bar-item-shortcut" v-if="entry.shortcut">{{entry.shortcut}}</span>
-                    <span class="menu-bar-item-check" v-if="entry.checked">✓</span>
-                    <span class="menu-bar-item-caret" v-if="entry.children.length">▸</span>
+                    <span class="menu-bar-item-check" v-if="entry.checked"><icon name="check" size="xs"></icon></span>
+                    <span class="menu-bar-item-caret" v-if="entry.children.length"><icon name="caret-right" size="xs"></icon></span>
                 </button>
                 <div [class]="'menu-bar-submenu' + (activeSubmenuKey === entry.id ? ' is-open' : '')" role="menu" v-if="entry.children.length">
                     <button class="menu-bar-item" type="button" role="menuitem"
@@ -98,10 +98,10 @@ interface MenuBarEntryView {
                         [class]="child.className"
                         aria-disabled="{{child.disabled}}"
                         @click="choose(child.id, $event)">
-                        <span class="menu-bar-item-icon" v-if="child.icon">{{child.icon}}</span>
+                        <span class="menu-bar-item-icon" v-if="child.icon"><icon [name]="child.icon" [glyph]="child.icon" size="sm"></icon></span>
                         <span class="menu-bar-item-label">{{child.label}}</span>
                         <span class="menu-bar-item-shortcut" v-if="child.shortcut">{{child.shortcut}}</span>
-                        <span class="menu-bar-item-check" v-if="child.checked">✓</span>
+                        <span class="menu-bar-item-check" v-if="child.checked"><icon name="check" size="xs"></icon></span>
                     </button>
                 </div>
             </div>
@@ -111,7 +111,7 @@ interface MenuBarEntryView {
 export class MenuBarComponent implements AfterViewInit, OnDestroy {
     @Attribute() groups: MenuBarGroup[] = [];
     @Attribute() label = 'Menu';
-    @Attribute() icon = '☰';
+    @Attribute() icon = 'menu';
     @Attribute() caret = '▾';
     @Attribute() align: 'left' | 'right' = 'right';
     @Attribute() triggerTitle = '';

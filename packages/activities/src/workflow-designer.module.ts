@@ -7,6 +7,7 @@ import { ComponentsModule } from '@tsdi/components';
 import { BaseComponentsModule } from '@tsdi/components/common';
 import { TabBarModule } from '@tsdi/components/common/tab-bar';
 import { MenuBarModule } from '@tsdi/components/common/menu-bar';
+import { IconModule } from '@tsdi/components/common/icon';
 import { DynamicFormModule } from '@tsdi/components/common/dynamic-form';
 import { WorkspaceLayoutModule } from '@tsdi/components/common/layout';
 import { FormsModule } from '@tsdi/components/forms';
@@ -43,6 +44,7 @@ import {
         BaseComponentsModule,
         TabBarModule,
         MenuBarModule,
+        IconModule,
         DynamicFormModule,
         WorkspaceLayoutModule,
         FormsModule,
@@ -74,6 +76,7 @@ import {
         BaseComponentsModule,
         TabBarModule,
         MenuBarModule,
+        IconModule,
         DynamicFormModule,
         WorkspaceLayoutModule,
         FormsModule,
