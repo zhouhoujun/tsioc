@@ -1,5 +1,6 @@
 import { Attribute, Component, ElementRef, NoReactive, OnDestroy, ReactiveEffect, ViewChild, noReact, reactive } from '@tsdi/components';
-import { applyThemeToDocument, isThemeName, TabBarSource, ThemeName } from '@tsdi/components/common';
+import { applyThemeToDocument, isThemeName, ThemeName } from '@tsdi/components/common';
+import { TabBarSource } from '@tsdi/components/common/tab-bar';
 import { DOCUMENT } from '@tsdi/common';
 import { Inject, Optional } from '@tsdi/ioc';
 import { Translator } from '@tsdi/i18n';

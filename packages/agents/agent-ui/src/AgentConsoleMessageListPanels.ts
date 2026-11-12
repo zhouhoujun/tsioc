@@ -1,4 +1,5 @@
 import { Attribute, Component, ReactiveEffect, reactive } from '@tsdi/components';
+import { DialogComponent } from '@tsdi/components/common/dialog';
 import { formatCompactNumber } from '@tsdi/core';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
@@ -55,17 +56,22 @@ import { AgentConsoleStatuslineField } from './AgentConsoleStatusline';
 import { DEFAULT_TIMELINE_LABELS, resolveTimelineWindowLedger, TimelineWindowMode } from './AgentConsoleTimelineWindow';
 import {
     buildBrandBlock as buildTerminalBrandBlock,
-    DialogComponent,
-    DetailPanelComponent,
-    InputFieldComponent,
-    ListPanelComponent,
-    MessageRowComponent,
-    SelectComponent,
     resolveEnterAction as resolveConsoleEnterAction,
     resolveListWindow as resolveConsoleListWindow,
-    resolveSelectWindow as resolveConsoleSelectWindow
+    resolveSelectWindow as resolveConsoleSelectWindow,
 } from '@tsdi/components/common';
-import { messageItemsCache } from './AgentConsoleMessageCache';
+import {
+    PanelComponent,
+} from '@tsdi/components/common/panel';
+import {
+    ListComponent,
+} from '@tsdi/components/common/list';
+import {
+    SelectComponent,
+} from '@tsdi/components/common/select';
+import { messageItemsCache, rememberSessionMessageItems, sessionMessageItemsEntry } from './AgentConsoleMessageCache';
+import { InputFieldComponent } from './AgentConsoleInputField';
+import { MessageRowComponent } from './AgentConsoleMessageRow';
 
 /** Stable, proxy-independent render key for one message plus its predecessor. */
 function messageRenderSignature(message: any): string {
@@ -186,7 +192,10 @@ export class AgentConsoleMessagesPanelComponent {
         const timelineViewMode = this.state.timelineViewMode;
         const messageDetailOpen = this.state.messageDetailOpen;
         const collapsedTurns = this.state.timelineCollapsedTurns;
-        const cached = messageItemsCache.get(this);
+        const sessionId = String(this.state.sessionId || '').trim();
+        // Hide/show tab switch: reuse this session's projection even though the
+        // panel last painted a different tab.
+        const cached = sessionMessageItemsEntry(this, sessionId, messageItemsCache.get(this));
 
         const context = {
             rendererRegistry: this.messageRendererRegistry,
@@ -251,7 +260,8 @@ export class AgentConsoleMessagesPanelComponent {
                 return item;
             })
             : renderAgentConsoleMessageItems(this.visibleMessages as any, context);
-        messageItemsCache.set(this, {
+        const entry = {
+            sessionId,
             messages,
             slotKeys,
             selectedMessageId,
@@ -271,7 +281,9 @@ export class AgentConsoleMessagesPanelComponent {
             messageDetailOpen, markdownContentWidth: this.state.markdownContentWidth,
             collapsedTurns,
             items
-        });
+        };
+        messageItemsCache.set(this, entry);
+        rememberSessionMessageItems(this, entry);
         return items;
     }
 
@@ -366,12 +378,12 @@ export class AgentConsoleMessagesPanelComponent {
 
 @Component({
     selector: 'agent-console-message-detail-panel',
-    imports: [DetailPanelComponent],
+    imports: [PanelComponent],
     template: `
-    <detail-panel :summary="detailSummaryLabel" :hint="detailHintLabel" :items="detailItems"></detail-panel>
+    <panel :summary="detailSummaryLabel" :hint="detailHintLabel" :items="detailItems"></panel>
     `
 })
-export class AgentConsoleMessageDetailPanelComponent {
+export class AgentConsoleMessagePanelComponent {
     constructor(private state: AgentConsoleSessionState, @Optional() private translator?: TranslatorService) {
     }
 

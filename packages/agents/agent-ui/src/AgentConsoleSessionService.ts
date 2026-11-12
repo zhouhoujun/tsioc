@@ -1,10 +1,16 @@
 import { Injectable, Inject, Optional } from '@tsdi/ioc';
-import { AGENT_CONSOLE_APP_RPC, AgentConsoleAppRpc, AgentMessage, AgentRuntime, AgentSessionSection, AgentSessionSectionInfo, TurnDiagnosticsStore, buildUsageSummary, collectMessageUsageRecords, collectTurnUsageRecords, deriveSectionInfos, normalizeAgentWorkspaceIdentity, SessionSearchMatch, SessionStore } from '@tsdi/agent';
+import { AGENT_CONSOLE_APP_RPC, AgentConsoleAppRpc, AgentMessage, AgentRuntime, AgentSessionSectionInfo, TurnDiagnosticsStore, buildUsageSummary, collectMessageUsageRecords, collectTurnUsageRecords, normalizeAgentWorkspaceIdentity, SessionSearchMatch, SessionStore } from '@tsdi/agent';
 import {
     AgentConsoleSessionMessagePage,
     loadAgentConsoleAllMessages,
     loadAgentConsoleSessionMessagePage
 } from './AgentConsoleSessionMessagePage';
+import {
+    AgentConsoleSessionFactsStore,
+    agentConsoleSessionChoiceFrom,
+    loadAgentConsoleSessionFacts,
+    mapAgentConsoleSessionChoice
+} from './AgentConsoleSessionChoiceProjection';
 import { AgentConsoleSessionExportRpc } from './AgentConsoleSessionExportRpc';
 import { AgentConsoleSessionGrouping } from './AgentConsoleSessionGrouping';
 import { collectExportToolCalls, createExportResult, normalizeExportFormat, normalizeExportResult } from './AgentConsoleSessionExport';
@@ -109,46 +115,36 @@ export class AgentConsoleSessionService extends AgentConsoleSessionExportRpc {
         }
         const resolvedId = String(sessionId || '').trim() || this.createSessionId();
         if (this.sessionStore) {
+            // Metadata only: creating/opening a tab must not deserialize the
+            // transcript just to learn its workspace/archived flag.
+            const facts = await loadAgentConsoleSessionFacts(this.sessionStore as AgentConsoleSessionFactsStore, [resolvedId]);
+            const fact = facts?.get(resolvedId);
+            if (fact) {
+                return agentConsoleSessionChoiceFrom(resolvedId, fact);
+            }
             const state = await this.sessionStore.get(resolvedId);
-            return this.toChoice(state.sessionId, state);
+            return agentConsoleSessionChoiceFrom(state.sessionId, state);
         }
         return { id: resolvedId };
-    }
-
-    protected mapSessionChoice(item: any): AgentConsoleSessionChoice {
-        return {
-            id: String(item?.id || ''),
-            createdAt: item?.createdAt,
-            lastActiveAt: item?.lastActiveAt,
-            messageCount: item?.messageCount,
-            summary: item?.summary,
-            title: item?.title,
-            pinned: !!item?.pinned,
-            archived: !!item?.archived,
-            workspace: item?.workspace,
-            projectKey: item?.projectKey,
-            projectId: item?.projectId,
-            primaryThreadId: item?.primaryThreadId,
-            originThreadId: item?.originThreadId,
-            sessionRole: item?.sessionRole,
-            rootRequest: item?.rootRequest,
-            focusSummary: item?.focusSummary,
-            threadStatus: item?.threadStatus,
-            sections: Array.isArray(item?.sections) ? item.sections : undefined
-        };
     }
 
     async listSessions(currentSessionId?: string, context?: any, options?: { includeArchived?: boolean }): Promise<AgentConsoleSessionChoice[]> {
         if (this.appRpc) {
             const sessions = await this.appRpc.request('session.list', options?.includeArchived ? { includeArchived: true } : undefined, context);
             const items = Array.isArray(sessions)
-                ? sessions.map(item => this.mapSessionChoice(item)).filter(item => !!item.id)
+                ? sessions.map(item => mapAgentConsoleSessionChoice(item)).filter(item => !!item.id)
                 : [];
             return this.withCurrent(this.sortSessionChoices(items), currentSessionId);
         }
         if (this.sessionStore) {
             const ids = await this.sessionStore.listSessionIds();
-            const sessions = await Promise.all(ids.map(async id => this.toChoice(id, await this.sessionStore!.get(id))));
+            const facts = await loadAgentConsoleSessionFacts(this.sessionStore as AgentConsoleSessionFactsStore, ids);
+            const sessions = await Promise.all(ids.map(async id => {
+                const fact = facts?.get(id);
+                return fact
+                    ? agentConsoleSessionChoiceFrom(id, fact)
+                    : agentConsoleSessionChoiceFrom(id, await this.sessionStore!.get(id));
+            }));
             return this.withCurrent(this.sortSessionChoices(options?.includeArchived ? sessions : sessions.filter(item => !item.archived)), currentSessionId);
         }
         return currentSessionId ? [{ id: currentSessionId, current: true }] : [];
@@ -170,7 +166,7 @@ export class AgentConsoleSessionService extends AgentConsoleSessionExportRpc {
                     sessionCount: Number(project?.sessionCount || 0),
                     lastActiveAt: Number(project?.lastActiveAt || 0),
                     sessions: Array.isArray(project?.sessions)
-                        ? this.sortSessionChoices(project.sessions.map((item: any) => this.mapSessionChoice(item)).filter((item: AgentConsoleSessionChoice) => !!item.id))
+                        ? this.sortSessionChoices(project.sessions.map((item: any) => mapAgentConsoleSessionChoice(item)).filter((item: AgentConsoleSessionChoice) => !!item.id))
                         : []
                 }))
                 : [];
@@ -206,7 +202,7 @@ export class AgentConsoleSessionService extends AgentConsoleSessionExportRpc {
                     lastActiveAt: Number(thread?.lastActiveAt || 0),
                     sections: Array.isArray(thread?.sections) ? thread.sections : undefined,
                     sessions: Array.isArray(thread?.sessions)
-                        ? this.sortSessionChoices(thread.sessions.map((item: any) => this.mapSessionChoice(item)).filter((item: AgentConsoleSessionChoice) => !!item.id))
+                        ? this.sortSessionChoices(thread.sessions.map((item: any) => mapAgentConsoleSessionChoice(item)).filter((item: AgentConsoleSessionChoice) => !!item.id))
                         : []
                 }))
                 : [];
@@ -240,49 +236,6 @@ export class AgentConsoleSessionService extends AgentConsoleSessionExportRpc {
             ...item,
             current: !!currentId && item.id === currentId
         }));
-    }
-
-    protected toChoice(sessionId: string, state?: {
-        createdAt?: number;
-        updatedAt?: number;
-        messages?: AgentMessage[];
-        summary?: string;
-        title?: string;
-        pinned?: boolean;
-        archived?: boolean;
-        workspace?: string;
-        projectKey?: string;
-        projectId?: string;
-        primaryThreadId?: string;
-        originThreadId?: string;
-        sessionRole?: string;
-        rootRequest?: string;
-        focusSummary?: string;
-        threadStatus?: string;
-        sections?: AgentSessionSection[];
-    }): AgentConsoleSessionChoice {
-        return {
-            id: sessionId,
-            createdAt: state?.createdAt,
-            lastActiveAt: state?.updatedAt ?? state?.createdAt,
-            messageCount: state?.messages?.length || 0,
-            summary: state?.summary,
-            title: state?.title,
-            pinned: !!state?.pinned,
-            archived: !!state?.archived,
-            workspace: state?.workspace,
-            projectKey: state?.projectKey,
-            projectId: state?.projectId,
-            primaryThreadId: state?.primaryThreadId,
-            originThreadId: state?.originThreadId,
-            sessionRole: state?.sessionRole,
-            rootRequest: state?.rootRequest,
-            focusSummary: state?.focusSummary,
-            threadStatus: state?.threadStatus,
-            sections: Array.isArray(state?.sections)
-                ? deriveSectionInfos(state.sections, state?.messages)
-                : undefined
-        };
     }
 
     protected normalizeExportResult(sessionId: string, format: AgentSessionExportFormat, result: any): AgentSessionExportResult {

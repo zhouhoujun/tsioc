@@ -2,7 +2,14 @@ import expect = require('expect');
 import { After, Before, Suite, Test } from '@tsdi/unit';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Component, ComponentRef, ComponentsModule, ViewChild } from '@tsdi/components';
-import { BaseComponentsModule, GridLayoutComponent, installGridLayoutStyles } from '@tsdi/components/common';
+import {
+    BaseComponentsModule,
+} from '@tsdi/components/common';
+import {
+    GridLayoutComponent,
+    GridLayoutModule,
+    installGridLayoutStyles,
+} from '@tsdi/components/common/grid';
 import { DOCUMENT } from '@tsdi/common';
 import { HtmlTemplateModule } from '../src';
 
@@ -29,7 +36,7 @@ export class GridLayoutSpec {
         const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>');
         installGridLayoutStyles(dom.window.document);
         this.ctx = await Application.run(GridLayoutTestComponent, {
-            deps: [HtmlTemplateModule, ComponentsModule, BaseComponentsModule],
+            deps: [HtmlTemplateModule, ComponentsModule, BaseComponentsModule, GridLayoutModule],
             providers: [{ provide: DOCUMENT, useValue: dom.window.document }]
         });
     }

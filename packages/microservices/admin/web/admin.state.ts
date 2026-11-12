@@ -1,6 +1,9 @@
 import { noReact } from '@tsdi/components';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { MenuBarGroup, installMenuBarStyles } from '@tsdi/components/common';
+import {
+    MenuBarGroup,
+    installMenuBarStyles,
+} from '@tsdi/components/common/menu-bar';
 import { DOCUMENT } from '@tsdi/common';
 import { GatewayRouteOptions } from '@tsdi/gateway';
 import { Router, RouterEvent } from '@tsdi/components/router';

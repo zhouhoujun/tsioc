@@ -1,4 +1,6 @@
+import type { AgentMessage, AgentSessionSection } from '@tsdi/agent';
 import type { AgentConsolePendingAttachment, AgentConsoleSessionState } from './AgentConsoleSessionState';
+import type { AgentConsolePlanTodoItem } from './AgentConsoleStateTypes';
 import type { ConsoleTerminalSurfaceAccessor } from './console-ports';
 
 /** Everything a session tab owns in the TUI, captured when leaving it. */
@@ -14,6 +16,22 @@ export interface AgentConsoleSessionUiSnapshot {
     messagesFocused: boolean;
     messageDetailOpen: boolean;
     messageDetailScroll: number;
+    /**
+     * Cached transcript/projection for hide/show tab switching. Restoring this
+     * makes a revisit paint the tab's own view immediately instead of blanking
+     * and rebuilding it while the server refresh is in flight.
+     */
+    messages?: AgentMessage[];
+    sections?: AgentSessionSection[];
+    goalSummary?: any;
+    messagesPageCursor?: string;
+    messagesHasMore?: boolean;
+    planTodos?: AgentConsolePlanTodoItem[];
+    planTodoSourceSessionId?: string;
+    planScope?: 'project' | 'thread' | '';
+    pendingApprovals?: any[];
+    status?: string;
+    workspace?: string;
 }
 
 export interface AgentConsoleSessionUiStateHost {
@@ -69,7 +87,18 @@ export class AgentConsoleSessionUiState {
             selectedMessageId: state.selectedMessageId,
             messagesFocused: state.messagesFocused,
             messageDetailOpen: state.messageDetailOpen,
-            messageDetailScroll: state.messageDetailScroll
+            messageDetailScroll: state.messageDetailScroll,
+            messages: state.messages,
+            sections: state.sections,
+            goalSummary: state.goalSummary,
+            messagesPageCursor: state.messagesPageCursor,
+            messagesHasMore: state.messagesHasMore,
+            planTodos: (state.planTodos || []).slice(),
+            planTodoSourceSessionId: state.planTodoSourceSessionId,
+            planScope: state.planScope,
+            pendingApprovals: (state.pendingApprovals || []).slice(),
+            status: state.status,
+            workspace: state.workspace
         });
     }
 
@@ -105,17 +134,27 @@ export class AgentConsoleSessionUiState {
      * tab's own UI state after its first frame has rendered.
      */
     async switchSession(
-        open: () => Promise<void>,
+        open: (cached?: AgentConsoleSessionUiSnapshot) => Promise<void>,
         currentSessionId: () => string,
         begin: () => void = () => undefined,
         end: () => void = () => undefined,
-        applyComposer?: (input: string, cursor: number, attachments: AgentConsolePendingAttachment[]) => void
+        applyComposer?: (input: string, cursor: number, attachments: AgentConsolePendingAttachment[]) => void,
+        targetSessionId?: string
     ): Promise<void> {
         const previousSessionId = currentSessionId();
         this.capture(previousSessionId);
+        const targetId = String(targetSessionId || '').trim();
+        const cached = targetId ? this.snapshots.get(targetId) : undefined;
+        if (cached?.messages) {
+            // Hide/show semantics: paint the target tab's cached view before
+            // awaiting the background refresh. The refresh only replaces rows
+            // that actually changed, so revisiting a tab does not blank and
+            // rebuild the transcript.
+            this.applyCachedView(targetId, cached, applyComposer);
+        }
         begin();
         try {
-            await open();
+            await open(cached);
         } finally {
             const targetSessionId = currentSessionId();
             // Startup (no previous tab) must not restore: the session-open path
@@ -134,6 +173,28 @@ export class AgentConsoleSessionUiState {
                 end();
             }
         }
+    }
+
+    /** Apply a cached tab view synchronously (before any network round-trip). */
+    protected applyCachedView(
+        sessionId: string,
+        saved: AgentConsoleSessionUiSnapshot,
+        applyComposer?: (input: string, cursor: number, attachments: AgentConsolePendingAttachment[]) => void
+    ): void {
+        const { state } = this.host();
+        state.configure({ sessionId, workspace: saved.workspace || state.workspace });
+        state.setMessages(saved.messages || []);
+        state.setSections((saved.sections || []).slice());
+        state.setGoalSummary(saved.goalSummary || null);
+        state.messagesPageCursor = saved.messagesPageCursor || '';
+        state.messagesHasMore = saved.messagesHasMore === true;
+        state.setPlanTodos((saved.planTodos || []).slice(), saved.planTodoSourceSessionId, saved.planScope || undefined);
+        state.setPendingApprovals((saved.pendingApprovals || []).slice());
+        if (saved.status) {
+            state.setStatus(saved.status);
+        }
+        this.restoreComposer(state, saved, applyComposer);
+        this.restoreMessageSelection(state, saved);
     }
 
     protected restoreComposer(

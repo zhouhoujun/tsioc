@@ -30,6 +30,10 @@ export interface AgentConsoleSessionMessageHost {
  * database query) instead of loading the whole session. The web console pages
  * through the gateway RPC. Only the runtime fallback (ad-hoc hosts) reads the
  * in-memory transcript, and it still slices before returning.
+ *
+ * The store is checked before the runtime on purpose: `runtime.getMessages()`
+ * loads the entire transcript from the same store, so preferring it would make
+ * every tab switch O(session length) even though only one page is painted.
  */
 export async function loadAgentConsoleSessionMessagePage(
     host: AgentConsoleSessionMessageHost,
@@ -60,6 +64,20 @@ export async function loadAgentConsoleSessionMessagePage(
         }
         return { messages: Array.isArray(page) ? page : [] };
     }
+    if (host.sessionStore && typeof host.sessionStore.listMessagesPage === 'function') {
+        const page = await host.sessionStore.listMessagesPage(sessionId, options);
+        const sections = await host.sessionStore.listSections(sessionId).catch(() => undefined);
+        const goalSummary = typeof (host.runtime as any)?.getSessionGoal === 'function'
+            ? await host.runtime!.getSessionGoal(sessionId)
+            : undefined;
+        return {
+            messages: page.messages,
+            sections,
+            goalSummary,
+            nextCursor: page.nextCursor,
+            hasMore: page.hasMore
+        };
+    }
     if (host.runtime) {
         const raw = await host.runtime.getMessages(sessionId);
         const page = paginateSessionMessages(raw, options);
@@ -75,11 +93,11 @@ export async function loadAgentConsoleSessionMessagePage(
         };
     }
     if (host.sessionStore) {
-        const page = await host.sessionStore.listMessagesPage(sessionId, options);
-        const sections = await host.sessionStore.listSections(sessionId).catch(() => undefined);
+        const state = await host.sessionStore.get(sessionId);
+        const page = paginateSessionMessages(Array.isArray(state.messages) ? state.messages : [], options);
         return {
             messages: page.messages,
-            sections,
+            sections: Array.isArray(state.sections) ? state.sections : undefined,
             nextCursor: page.nextCursor,
             hasMore: page.hasMore
         };

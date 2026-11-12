@@ -1,4 +1,5 @@
 import { Attribute, Component, ReactiveEffect, reactive } from '@tsdi/components';
+import { DialogComponent } from '@tsdi/components/common/dialog';
 import { formatCompactNumber } from '@tsdi/core';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
@@ -52,16 +53,20 @@ import { AgentConsoleStatuslineField } from './AgentConsoleStatusline';
 import { DEFAULT_TIMELINE_LABELS, resolveTimelineWindowLedger, TimelineWindowMode } from './AgentConsoleTimelineWindow';
 import {
     buildBrandBlock as buildTerminalBrandBlock,
-    DialogComponent,
-    DetailPanelComponent,
-    InputFieldComponent,
-    ListPanelComponent,
-    MessageRowComponent,
-    SelectComponent,
     resolveEnterAction as resolveConsoleEnterAction,
     resolveListWindow as resolveConsoleListWindow,
-    resolveSelectWindow as resolveConsoleSelectWindow
+    resolveSelectWindow as resolveConsoleSelectWindow,
 } from '@tsdi/components/common';
+import {
+    PanelComponent,
+} from '@tsdi/components/common/panel';
+import {
+    ListComponent,
+} from '@tsdi/components/common/list';
+import { SelectComponent } from '@tsdi/components/common/select';
+import { InputFieldComponent } from './AgentConsoleInputField';
+import { MessageRowComponent } from './AgentConsoleMessageRow';
+
 export * from './AgentConsoleMessagePanels';
 export * from './AgentConsoleOverlayPanels';
 export * from './AgentConsoleTaskPanels';

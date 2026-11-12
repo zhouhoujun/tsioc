@@ -1,5 +1,8 @@
 import { Component } from '@tsdi/components';
-import { MarkdownCodeComponent, MarkdownTableComponent } from '@tsdi/components/common';
+import {
+    MarkdownCodeComponent,
+    MarkdownTableComponent,
+} from '@tsdi/components/common/markdown';
 import type { AgentConsoleMarkdownToken, AgentConsoleRenderedLine } from '@tsdi/agent-ui';
 import { AgentConsoleMarkdownComponent, AgentConsoleRoutedTokensComponent } from '@tsdi/agent-ui';
 

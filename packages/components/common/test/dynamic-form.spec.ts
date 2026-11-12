@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { DynamicFormComponent } from '../src/dynamic-form';
-import { buildDynamicValidators, dynamicFormMessage } from '../src/dynamic-form.validation';
+import { DynamicFormComponent } from '../dynamic-form';
+import { buildDynamicValidators, dynamicFormMessage } from '../dynamic-form';
 
 async function flush(): Promise<void> {
     for (let index = 0; index < 4; index++) {

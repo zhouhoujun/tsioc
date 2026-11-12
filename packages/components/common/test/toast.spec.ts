@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { ToastService } from '../src';
+import { ToastService } from '../toast';
 
 @Suite('common toast service')
 export class ToastServiceTest {

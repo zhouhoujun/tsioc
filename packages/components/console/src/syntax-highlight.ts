@@ -3,7 +3,7 @@ import {
     SyntaxState,
     normalizeCodeLanguage,
     tokenizeCodeLine
-} from '@tsdi/components/common';
+} from '@tsdi/components/common/syntax';
 
 /**
  * Terminal palette for one tokenized source line.

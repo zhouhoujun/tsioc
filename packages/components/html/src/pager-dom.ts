@@ -1,4 +1,4 @@
-import { PagerViewLine } from '@tsdi/components/common';
+import { PagerViewLine } from '@tsdi/components/common/pager';
 
 const HIGHLIGHT_CLASS: Record<string, string> = {
     match: 'pager-match',

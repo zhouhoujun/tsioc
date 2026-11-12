@@ -225,6 +225,8 @@ export const agentUiChinese: TranslationBundle = {
                 collapseEnter: '按 Enter 收起',
                 copyCode: '复制',
                 copiedCode: '已复制',
+                newBelow: '↓ {count} 条新消息',
+                jumpToBottom: '跳转底部',
                 followUpOnlyTerms: AGENT_UI_ZH_CN_FOLLOW_UP_ONLY_TERMS
             },
             session: {

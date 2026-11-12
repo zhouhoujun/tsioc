@@ -3674,3 +3674,60 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **回归**：新增 `agent/test/session-message-paging.spec.ts`（TypeORM 定向分页、before/after/未知 cursor、默认 store 契约）、`session-lifecycle` 新增 in-process SessionStore 分页用例（断言不调用 `get()`）；components/common 69 passing；agent 1050、agent-gateway 381、agent-ui 2031 passing。
 - **真实 TUI 验证**：隔离 root 中创建 120 条消息的 `big-session`，`chat --session big-session` 首屏只显示最新消息（`MESSAGE-120` 区域），连续 PageUp 到顶部后上一页（`MESSAGE-001` 起）被取回并绘制；无全量回填卡顿。
 - **验证**：`npm run build:web` 1131+355 modules 成功；`RUN_PTY=1 bash scripts/agents-gate.sh` → **27/27 GATE-PASS，GATE_EXIT=0**；`source-size` OK（新增 TypeOrm 分页查询抽到 `TypeOrmSessionMessagePage`、console 分页 helper 抽到 `AgentConsoleSessionMessagePage`，`AgentConsoleSessionService` baseline 374 → 337）。
+
+## 2026-11-12 tab 切换慢的根因：不在 List 绘制，而在切换仍全量读 transcript（已修复）
+- **用户反馈**：会话已改为 List 分页动态绘制，但 tab 切换反而比修改前卡顿。先实测再动手（isolated sqljs：33 sessions，3×2000 + 30×50 messages，instrumented `openSession`）。
+- **实测基线**：切换 **844ms/次** —— `refreshSessions`/`listProjectSessions` 约 520ms（`listSessions` 对每个 session 调 `get()` 全量读 transcript）、`ensureSession` ≈125ms（同样为元数据全量读）、`loadMessagesPage` ≈110ms（仍走 `runtime.getMessages()` 全量读）。对照：`store.listMessagesPage(limit 50)` 8.8ms vs `store.get` 61.6ms；`store.listSessionFacts()` 8.4ms vs `listSessions` 385ms。
+- **根因 1**：`loadAgentConsoleSessionMessagePage` 的 transport 顺序是 appRpc → **runtime** → sessionStore，TUI 注入了 runtime，因此每一页仍 `runtime.getMessages()` 全量读会话（与注释「TUI 走 listMessagesPage」相反）。
+- **根因 2**：TUI 的 `listSessions` 为拿 `messageCount`/sections 对每个 session `get()`；`ensureSession` 也为元数据全量读。会话越多、transcript 越大，tab 切换越慢 —— List 分页只限制了“画多少行”，没有减少“切 tab 读多少数据”。
+- **修复**：
+  - `loadAgentConsoleSessionMessagePage` 改为 **store 优先**（`listMessagesPage` 定向查询 + `listSections`；`goalSummary` 仍取 runtime），runtime 只作为无 store 宿主的回退。
+  - `listSessions`/`ensureSession` 改用 `SessionStore.listSessionFacts`（一条 metadata + aggregate count 查询，按 400 分块避免 SQLite 参数上限），不再为列表/打开加载任意 transcript；无 `listSessionFacts` 的 store 仍回退 `get()`。
+  - choice 映射抽到 `AgentConsoleSessionChoiceProjection.ts`（`mapAgentConsoleSessionChoice` / `agentConsoleSessionChoiceFrom` / `loadAgentConsoleSessionFacts`），`AgentConsoleSessionService` 维持 baseline 337 行。
+- **回归**：`session-lifecycle` 新增「runtime 存在时仍走 store 分页」与「列表/打开走轻量 facts 且不调用 get」；两例在旧实现上实测 **15 passing / 2 failed**（分别走 runtime 全量读、逐 session `get()`），修复后 17 passing。定向 spec 通过；agent-ui 全量 **2033 passing**；tsc 0 错误；`source-size: OK`。
+- **复测**：`listSessions` 386→13ms、`loadMessagesPage` 58→7ms、`ensureSession` ≈125→4ms、`openSession` **844→370ms/次**（同一 benchmark；剩余为组件渲染/其他固定查询）。
+- **结论**：List/分页本身没有让切换变慢；慢的是切换路径上的全量 transcript 读取。分页只减少绘制行数，必须同时让 list/open/page 走轻量查询，tab 切换才真正变快。
+
+## 2026-11-12 TUI 上滚后缺跳底按钮 / 菜单盖住输入框（已修复）
+- **反馈 1**：向上滚动会话后，TUI 没有“跳转底部”按钮。原先只有 web 的 `DomTranscriptFollower` 有浮动的 new-messages 按钮；TUI viewport 只记录滚动偏移，没有可见、可点击的返回入口。
+- **修复 1**：
+  - `TuiTerminalSurface` 新增 `viewportNotice` / `onViewportResume`：只要 viewport 偏离底部（`scrollOffsetRows > 0`）且无菜单/对话框，就在最后一条可见 transcript 行右侧浮出反色按钮，不占布局行、不压缩时间线。
+  - 按钮支持鼠标点击与 hover（any-motion 命中后立即变粗高亮），点击滚到最新行并恢复 follow；`components/console` 的 lifecycle 新增 `resolveViewportNotice` / `onTerminalViewportResume`，agent-ui 提供本地化文案（`↓ N 条新消息 · 跳转底部`，无新消息时 `↓ 跳转底部`）并在恢复后清零 `messagesNewCount`。
+  - 回归：`components/console` 新增 `floating jump-to-bottom affordance resumes following on click`（浮出、hover、点击、follow/offset、消失）；agent-ui 新增 `the viewport jump-to-bottom affordance shows new rows and resumes following`（真实组件文案 + new count + 点击恢复）；console 160 passing、agent-ui 2034 passing。
+- **反馈 2**：输入 `/xxx` 时弹出菜单遮住输入框，看不到输入文字。
+- **根因**：`resolveViewportLayout` 提取 `menu`/`dialog` region 时，`allLines` 按 region 的**完整高度**移除，但后续 regions / cursor / click targets 只按**去掉尾部空白后的绘制高度**回移；两者相差 1 行，footer/input region 因此整体下移 1 行。旧的输入锚点是靠扫描 `>` 提示符补偿的，提示符被主题/多行/包装变化时就会失准，菜单落到 prompt 行上。空会话把 footer 底对齐的分支还有第二个边界问题：把刚好结束在 footer 起点的 header region 也拉长为整段 filler，导致 `headerRows` 暴涨、弹窗被裁成 0 行。
+- **修复 2**：
+  - `dialog`/`menu` 提取后，后续 regions/cursor/click targets 统一按 `dialogRegionHeight`（region 完整高度）回移。
+  - footer 底对齐分支只平移 start/end 真正落在 footer 内的 region，不再拉伸结束于边界的 tab/header region。
+  - `.input-shell` 新增 `renderRegion="input"`；菜单锚点优先使用 input region 的 top（输入框面板边缘），`>` 扫描仅作为无 region 宿主/旧布局的 fallback，保证菜单底边永远在输入面板之上。
+  - Web：`web/console.css` 为 `[renderregion="menu"|"dialog"]` host 增加 `flex: 0 1 auto; min-height: 0; overflow: hidden`，内层 panel `max-height: 100%`，超高建议列表内部滚动而不是溢出覆盖输入框。
+  - 回归：`console-renderer` 的 slash suggestion / command dialog / empty-session menu 三例恢复通过（修复前实测分别失败）；console 160 passing、agent-ui 2034 passing、`build:web` 成功、tsc 0、source-size OK。
+
+## 2026-11-12 common 复杂组件按子目录拆分导出 + 通用 tabs/tab-bar
+- **约定**：`@tsdi/components/common` 根 index/BaseComponentsModule 只保留最基础组件；复杂组件各自放在子目录并独立导出（对齐 `@tsdi/common/http` 的目录形态）：
+  - `@tsdi/components/common/tabs` → `tabs/index.ts` + `src/`（`TabsComponent` + `TabsModule`）
+  - `@tsdi/components/common/tab-bar` → `tab-bar/index.ts` + `src/`（`TabBarComponent` + `TabBarModule`、`TAB_BAR_SOURCE`/类型）
+  - `@tsdi/components/common/dialog` → `dialog/`（`DialogComponent` + `DialogModule`）
+  - `@tsdi/components/common/alert` → `alert/`（`AlertDialogComponent` + `AlertModule`）
+  - `@tsdi/components/common/toast` → `toast/`（`ToastService`、`ToastStackComponent` + `ToastModule`）
+  - 根 `src/index.ts` / `BaseComponentsModule` 已移除以上组件；`taskfile.ts` 把子目录纳入编译。
+- **tabs 与 tab-bar 是两个组件**：`tab-bar` 只负责 strip（数据源 `TabBarSource`/`TAB_BAR_SOURCE`）；`tabs` 是带 pane 的容器（`TabsComponent`/`TabsSource`），pane 默认保持挂载，切换只切换 `display`。`tabs` 内部组合 `tab-bar` 作为条，但两个 subpath 互不 re-export，模块也分开。
+- **tabs 通用能力**：`<tabs :source>` + 投影 `<tab-pane data-tab-id>`；`stripOnly` 供只需要条形的宿主（console header）；`activate(id)` 只改 active id 并转发 source.select；`syncVisibility()` 隐藏非活动 pane、保留节点与 DOM/组件树（不销毁重绘）。DOM 回归：`keeps both panes mounted and hides only the inactive one`；纯逻辑回归 3 例。
+- **接入**：agent-ui 顶部会话条改为 `<tabs renderRegion="header" strip-only>`（`TabsModule`），`AgentConsoleSessionTabsSource` 从 tab-bar subpath 取 `TabBarSource/TabItem`；活动工作流设计器的 `TabBarModule` 同步接入。浏览器 dialog 仍由 `DialogModule` 提供。
+- **验证**：`components`、`components-common`（73 passing）、`components-console`、`components-html`、`agent-ui` 全绿；`tsc-agent-ui` 0 错误；`build:web` 成功；source-size/diff-check OK；activities workflow-designer 59 passing。
+- **仍未做（需明确）**：agent-ui 的会话 transcript 仍是单 pane + 每会话 view/rendered-item 缓存，尚未为每个会话物理挂载独立 transcript pane；通用 `tabs` 已具备挂载 pane 的能力，可继续把 `AgentConsoleSessionState` 拆成 per-session pane 状态后再接入。
+
+## 2026-11-12 common 收敛重复组件（list/list-panel 合并、复杂组件子目录化）
+- **审计**：`ListComponent` 生产无调用（只有自身单测），生产实际使用 `ListPager`（时间线分页）+ `ListPanelComponent`（工具/任务/审批/问题/输出等面板）。两者行渲染与 item 类型重复。
+- **合并**：把 `ListPanelComponent` 的面板能力（header/title/context/meta/contextLines/detailLines/hint/secondaryHint/empty/showClose/closeLabel/panelClass/ariaLabel/listLabel/activeOptionId/closeAction/selectValueAction）并入唯一的 `ListComponent`；保留分页/窗口（`ListPager`、`loadPage/loadPreviousPage/visibleItems/windowOffset/hasPrevious/atWindowEnd`）。`selectAction(item)` 与 `selectValueAction(value)` 并存：前者给对象选择，后者给问题选项等值选择。
+- **删除重复**：移除 `@tsdi/components/common/list-panel` 子目录/模块；agent-ui 所有 `<list-panel>` 改为 `<list>`，`ListPanelModule` 改为 `ListModule`；问题菜单改用 `@selectValueAction`。
+- **不合并的组件**：`panel` 是可折叠的投影容器；`detail-panel` 是只读、带行号的 detail 视图；`status-list` 是状态 key/value 行。三者职责不同，仅共享 `console-panel` 视觉 chrome，不强行合并。
+- **目录收敛**：`grid-layout` → `@tsdi/components/common/grid`，`workspace-layout` → `@tsdi/components/common/layout`；其余复杂组件（menu-bar/markdown/select/list/keymap-panel/status-list/detail-panel/dynamic-form）均改为独立子目录 + module 导出。
+- **验证**：components-common 73、components/html 140、console、agent-ui 全绿；tsc-agent-ui 0；source-size/diff-check OK；build:web 成功；agents gate 10/10 PASS。
+
+## 2026-11-12 common 继续拆分引用 + 两个 admin 回归
+- **拆分引用**：`ScrollBox`/`PagerBox`/`PagerView` 合并到 `@tsdi/components/common/pager`（不再有 scroll-box/pager-box 多个子路径）；`syntax-tokens` → `@tsdi/components/common/syntax`；`PanelComponent` 吸收原 `detail-panel`（`@tsdi/components/common/panel`，保留可折叠投影 + summary/meta/selection/hint/行号 items）；`message-row`、`input-field`、`input-history`、`text`、`css-variables` 因只有 agent-ui 使用，已迁入 `agents/agent-ui/src`，不再从 common 根导出。
+- common 根 index 现在只剩真正通用的：`input`、`BaseComponentsModule`/ThemeService、`display-width`、`raw-element`、`theme`；其余复杂组件/工具各自 subpath。
+- **微服务 admin**：`admin.state` 改从 `@tsdi/components/common/menu-bar` 取 `MenuBarGroup/installMenuBarStyles`；菜单组件由 activities 的 `MenuBarModule` 提供。`tsc --noEmit` OK、**42 passing**、`build:web` 成功（chunk 名已更新）。
+- **工作流 admin**：依赖的 activities 模块已接入 `MenuBarModule` / `DynamicFormModule` / `WorkspaceLayoutModule` / `TabBarModule`；`tsc --noEmit` OK、**11 passing**、`build` 成功（designer bundle + chunk 已更新）。
+- **activities**：`tsc --noEmit` OK、全量 **269 passing**（含 workflow designer 59）。

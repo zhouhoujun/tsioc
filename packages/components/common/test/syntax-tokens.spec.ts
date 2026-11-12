@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { normalizeCodeLanguage, tokenizeCodeLine } from '../src';
+import { normalizeCodeLanguage, tokenizeCodeLine } from '../syntax';
 
 @Suite('common syntax tokens')
 export class SyntaxTokensTest {

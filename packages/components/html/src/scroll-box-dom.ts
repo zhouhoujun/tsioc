@@ -1,4 +1,4 @@
-import { ScrollBox, ScrollBoxOptions } from '@tsdi/components/common';
+import { ScrollBox, ScrollBoxOptions } from '@tsdi/components/common/pager';
 
 /** Minimal scrollable-element shape (satisfied by HTMLElement and by test doubles). */
 export interface ScrollableElementLike {

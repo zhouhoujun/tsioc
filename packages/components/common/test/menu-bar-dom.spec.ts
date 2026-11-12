@@ -4,7 +4,7 @@ import { ComponentRef, ComponentsModule } from '@tsdi/components';
 import { DOCUMENT } from '@tsdi/common';
 import { Before, Suite, Test } from '@tsdi/unit';
 import { HtmlTemplateModule } from '@tsdi/components/html';
-import { MenuBarComponent, MenuBarGroup } from '../src';
+import { MenuBarComponent, MenuBarGroup } from '../menu-bar';
 
 const groups: MenuBarGroup[] = [
     {

@@ -1,5 +1,10 @@
 import { Attribute, Component, OnDestroy, ViewChild } from '@tsdi/components';
-import { DynamicFormChange, DynamicFormComponent, DynamicFormField, DynamicFormSchema } from '@tsdi/components/common';
+import {
+    DynamicFormChange,
+    DynamicFormComponent,
+    DynamicFormField,
+    DynamicFormSchema,
+} from '@tsdi/components/common/dynamic-form';
 import { Optional } from '@tsdi/ioc';
 import { Translator } from '@tsdi/i18n';
 import { translateWorkflow } from '../i18n';

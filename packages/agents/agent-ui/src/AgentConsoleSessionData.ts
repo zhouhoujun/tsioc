@@ -1,4 +1,4 @@
-import type { ToastEntry } from '@tsdi/components/common';
+import type { ToastEntry } from '@tsdi/components/common/toast';
 import type { AgentMessage, AgentSessionSection, ScheduledAgentTask, NavTree, NavFilter, NavSelection, HarnessProjection, AgentConsoleCommandExecution } from '@tsdi/agent';
 import type { BackgroundTaskRecord } from '@tsdi/agent-tools';
 import type { ConsoleInputMode } from './AgentConsoleVim';

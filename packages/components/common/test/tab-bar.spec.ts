@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { TabBarComponent, TabBarSource } from '../src';
+import { TabBarComponent, TabBarSource } from '../tab-bar';
 
 @Suite('common tab bar')
 export class TabBarComponentTest {

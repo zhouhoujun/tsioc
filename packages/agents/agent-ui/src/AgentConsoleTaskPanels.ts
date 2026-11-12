@@ -1,4 +1,5 @@
 import { Attribute, Component, ReactiveEffect, reactive } from '@tsdi/components';
+import { DialogComponent } from '@tsdi/components/common/dialog';
 import { formatCompactNumber } from '@tsdi/core';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
@@ -53,23 +54,22 @@ import { AgentConsoleStatuslineField } from './AgentConsoleStatusline';
 import { DEFAULT_TIMELINE_LABELS, resolveTimelineWindowLedger, TimelineWindowMode } from './AgentConsoleTimelineWindow';
 import {
     buildBrandBlock as buildTerminalBrandBlock,
-    DialogComponent,
-    DetailPanelComponent,
-    InputFieldComponent,
-    ListPanelComponent,
-    MessageRowComponent,
-    SelectComponent,
     resolveEnterAction as resolveConsoleEnterAction,
     resolveListWindow as resolveConsoleListWindow,
-    resolveSelectWindow as resolveConsoleSelectWindow
+    resolveSelectWindow as resolveConsoleSelectWindow,
 } from '@tsdi/components/common';
+import { PanelComponent } from '@tsdi/components/common/panel';
+import { ListComponent } from '@tsdi/components/common/list';
+import { SelectComponent } from '@tsdi/components/common/select';
+import { InputFieldComponent } from './AgentConsoleInputField';
+import { MessageRowComponent } from './AgentConsoleMessageRow';
 export * from './AgentConsoleMessagePanels';
 export * from './AgentConsoleOverlayPanels';
 @Component({
     selector: 'agent-console-tasks-panel',
-    imports: [ListPanelComponent],
+    imports: [ListComponent],
     template: `
-    <list-panel :header="tasksSummaryLabel" :contextLines="backgroundTaskFeedLines" :hint="tasksHintLabel" :items="taskDisplayItems" :detailLines="selectedTaskDetailLines" :ariaLabel="accessibilityLabel" :showClose="false"></list-panel>
+    <list :header="tasksSummaryLabel" :contextLines="backgroundTaskFeedLines" :hint="tasksHintLabel" :items="taskDisplayItems" :detailLines="selectedTaskDetailLines" :ariaLabel="accessibilityLabel" :showClose="false"></list>
     `
 })
 export class AgentConsoleTasksPanelComponent extends AgentConsoleTaskPanelDetailHost {

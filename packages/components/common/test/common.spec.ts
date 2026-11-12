@@ -1,13 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
-    DetailPanelComponent,
-    DialogComponent,
-    InputFieldComponent,
-    ListPanelComponent,
-    MessageRowComponent,
-    SelectComponent,
-    fillTemplate,
     formatIndexedOptionLabel,
     nextWordEnd,
     previousWordStart,
@@ -15,8 +8,11 @@ import {
     resolveSelectWindow,
     shouldSkipHistoryEntry,
     shouldSubmitTextInputChunk,
-    truncateByDisplayWidth
 } from '../src';
+import { PanelComponent } from '../panel';
+import { ListComponent } from '../list';
+import { SelectComponent } from '../select';
+import { DialogComponent } from '../dialog';
 
 @Suite('common component utilities')
 export class ComponentUtilitiesTest {
@@ -25,20 +21,6 @@ export class ComponentUtilitiesTest {
         expect(resolveSelectWindow(10, 8, 4)).toEqual({ start: 6, count: 4 });
     }
 
-
-    @Test('fills placeholder templates without touching unknown keys')
-    fillTemplate() {
-        expect(fillTemplate('{count} files in {name}', { count: 2, name: 'src' })).toEqual('2 files in src');
-        expect(fillTemplate('{count} / {missing}', { count: 1 })).toEqual('1 / {missing}');
-    }
-
-    @Test('truncates by display width with an ellipsis')
-    truncateText() {
-        expect(truncateByDisplayWidth('hello', 10)).toEqual('hello');
-        expect(truncateByDisplayWidth('hello world', 8)).toEqual('hello w…');
-        expect(truncateByDisplayWidth('你好世界', 5)).toEqual('你好…');
-        expect(truncateByDisplayWidth('hello', 0)).toEqual('');
-    }
 
     @Test('formats indexed labels')
     indexedLabel() {
@@ -208,11 +190,11 @@ export class ComponentUtilitiesTest {
 
     @Test('list panel forwards row selection and close')
     listPanelEvents() {
-        const panel = new ListPanelComponent();
+        const panel = new ListComponent();
         panel.items = [{ id: 'row-1', label: 'one', selected: 'true' }];
         let selected = '';
         let closed = 0;
-        panel.selectAction = value => { selected = value; };
+        panel.selectValueAction = value => { selected = value; };
         panel.closeAction = () => { closed += 1; };
         panel.selectItem(panel.items[0]);
         panel.close();
@@ -220,21 +202,9 @@ export class ComponentUtilitiesTest {
         expect(closed).toEqual(1);
     }
 
-    @Test('message row forwards toggle action and keeps token text')
-    messageRowToggle() {
-        const row = new MessageRowComponent();
-        row.tokens = [{ text: 'hello' }, { text: ' world' }];
-        row.toggleContent = '…';
-        let toggled = 0;
-        row.toggleAction = () => { toggled += 1; };
-        row.toggle();
-        expect(toggled).toEqual(1);
-        expect(row.tokens.map(token => token.text).join('')).toEqual('hello world');
-    }
-
     @Test('detail panel keeps numbered rows and summary')
     detailPanelRows() {
-        const panel = new DetailPanelComponent();
+        const panel = new PanelComponent();
         panel.summary = 'summary';
         panel.items = [
             { lineNumber: '  1| ', text: 'first' },
@@ -242,24 +212,5 @@ export class ComponentUtilitiesTest {
         ];
         expect(panel.summary).toEqual('summary');
         expect(panel.items.map(item => `${item.lineNumber}${item.text}`)).toEqual(['  1| first', '  2| second']);
-    }
-
-    @Test('input field forwards editing events')
-    inputFieldEvents() {
-        const field = new InputFieldComponent();
-        field.value = 'draft';
-        let input = 0;
-        let cursor = 0;
-        let key = '';
-        field.inputAction = () => { input += 1; };
-        field.cursorAction = () => { cursor += 1; };
-        field.keydownAction = event => { key = event.key; };
-        field.emitInput({} as Event);
-        field.emitCursor({} as Event);
-        field.emitKeydown({ key: 'Enter' } as KeyboardEvent);
-        expect(field.value).toEqual('draft');
-        expect(input).toEqual(1);
-        expect(cursor).toEqual(1);
-        expect(key).toEqual('Enter');
     }
 }

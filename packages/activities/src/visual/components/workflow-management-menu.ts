@@ -1,7 +1,13 @@
 import { Attribute, Component, NoReactive } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { WORKFLOW_ACTION_BUS } from '../workflow-action-bus';
-import { MenuBarGroup, ThemeName, isThemeName } from '@tsdi/components/common';
+import {
+    ThemeName,
+    isThemeName,
+} from '@tsdi/components/common';
+import {
+    MenuBarGroup,
+} from '@tsdi/components/common/menu-bar';
 import { Translator } from '@tsdi/i18n';
 import { translateWorkflow } from '../i18n';
 import { WorkflowToolbarModel } from '../types';

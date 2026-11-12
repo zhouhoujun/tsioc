@@ -1,4 +1,4 @@
-import { SyntaxState } from '@tsdi/components/common';
+import { SyntaxState } from '@tsdi/components/common/syntax';
 import { renderMarkdownBlockLine } from './blocks';
 import { renderCodeLineTokens, resetSyntaxState } from './code';
 import { AgentConsoleMarkdownLine, AgentConsoleMarkdownRenderOptions, AgentConsoleMarkdownToken, DEFAULT_MARKDOWN_TABLE_WIDTH } from './model';

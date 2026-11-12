@@ -18,6 +18,26 @@ export abstract class AgentConsoleSessionArtifactsHost extends AgentConsoleKeyIn
     protected abstract loadCodingTasks(sessionId?: string, sessionIds?: string[]): Promise<any[]>;
     protected abstract refreshScheduledTasks(): Promise<void>;
 
+    /**
+     * Floating "back to latest" affordance in the TUI viewport. The surface
+     * owns the scroll position; this only supplies the localized label/count.
+     */
+    resolveViewportNotice(): string {
+        const count = Math.max(0, Math.floor(Number(this.state.messagesNewCount) || 0));
+        const jump = this.translator?.translate('agent.message.jumpToBottom') || 'Jump to bottom';
+        if (count <= 0) {
+            return `↓ ${jump}`;
+        }
+        const newBelow = this.translator?.translate('agent.message.newBelow', { count }) || `↓ ${count} new`;
+        return `${newBelow} · ${jump}`;
+    }
+    onTerminalViewportResume(): void {
+        this.state.syncTranscriptFollowing();
+        if (this.state.transcriptFollowing) {
+            this.state.messagesNewCount = 0;
+        }
+    }
+
     /** A primary click outside the popup dismisses transient menu chrome. */
     onTerminalBackgroundClick(): void {
         if (this.state.selectMenu) {

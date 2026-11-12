@@ -1,4 +1,4 @@
-import type { ToastEntry } from '@tsdi/components/common';
+import type { ToastEntry } from '@tsdi/components/common/toast';
 import type { CommandOutputStore } from './AgentConsoleCommandOutputHistory';
 import type { AgentConsoleCommandOutputEntry } from './AgentConsoleSessionState';
 import { AgentConsoleSessionTranscriptHost } from './AgentConsoleSessionTranscriptHost';

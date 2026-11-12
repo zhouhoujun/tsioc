@@ -1,7 +1,9 @@
 import { Attribute, Component } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
-import { DetailPanelComponent } from '@tsdi/components/common';
+import {
+    PanelComponent,
+} from '@tsdi/components/common/panel';
 import { AgentConsoleReviewWorker, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from './AgentConsoleTheme';
 import { formatAgentPanelLabel as panelLabel } from './agent-ui.i18n';
@@ -9,12 +11,12 @@ import { formatReviewHeaderMeta, formatReviewSelectionMeta, formatReviewStatsMet
 
 @Component({
     selector: 'agent-console-timeline-event-detail-panel',
-    imports: [DetailPanelComponent],
+    imports: [PanelComponent],
     template: `
-    <detail-panel :summary="summaryLabel" :hint="hintLabel" :items="detailItems" :styles="panelStyles"></detail-panel>
+    <panel :summary="summaryLabel" :hint="hintLabel" :items="detailItems" :styles="panelStyles"></panel>
     `
 })
-export class AgentConsoleTimelineEventDetailPanelComponent {
+export class AgentConsoleTimelineEventPanelComponent {
     constructor(private state: AgentConsoleSessionState) {
     }
 
@@ -335,9 +337,9 @@ export class AgentConsoleReviewPanelComponent {
 
 @Component({
     selector: 'agent-console-git-snapshot-panel',
-    imports: [DetailPanelComponent],
+    imports: [PanelComponent],
     template: `
-    <detail-panel :summary="gitSnapshotSummaryLabel" :meta="gitSnapshotStatsLabel" :hint="gitSnapshotHintLabel" :items="detailItems" :styles="panelStyles"></detail-panel>
+    <panel :summary="gitSnapshotSummaryLabel" :meta="gitSnapshotStatsLabel" :hint="gitSnapshotHintLabel" :items="detailItems" :styles="panelStyles"></panel>
     `
 })
 export class AgentConsoleGitSnapshotPanelComponent {

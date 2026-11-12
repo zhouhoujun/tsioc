@@ -4,7 +4,7 @@ import { ComponentRef, ComponentsModule } from '@tsdi/components';
 import { DOCUMENT } from '@tsdi/common';
 import { Before, Suite, Test } from '@tsdi/unit';
 import { HtmlTemplateModule } from '@tsdi/components/html';
-import { TabBarComponent, TabBarSource } from '../src';
+import { TabBarComponent, TabBarSource } from '../tab-bar';
 
 const source: TabBarSource = {
     visible: true,

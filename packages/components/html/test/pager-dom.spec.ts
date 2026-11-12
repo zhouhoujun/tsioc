@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { JSDOM } from 'jsdom';
-import { PagerBox, composePagerViewLines } from '@tsdi/components/common';
+import { PagerBox, composePagerViewLines } from '@tsdi/components/common/pager';
 import { renderPagerView } from '../src/pager-dom';
 
 @Suite('dom pager view')

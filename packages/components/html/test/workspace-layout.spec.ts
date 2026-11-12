@@ -2,7 +2,14 @@ import expect = require('expect');
 import { After, Before, Suite, Test } from '@tsdi/unit';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Component, ComponentRef, ComponentsModule, ViewChild } from '@tsdi/components';
-import { BaseComponentsModule, WorkspaceLayoutComponent, installWorkspaceLayoutStyles } from '@tsdi/components/common';
+import {
+    BaseComponentsModule,
+} from '@tsdi/components/common';
+import {
+    WorkspaceLayoutComponent,
+    WorkspaceLayoutModule,
+    installWorkspaceLayoutStyles,
+} from '@tsdi/components/common/layout';
 import { DOCUMENT } from '@tsdi/common';
 import { HtmlTemplateModule } from '../src';
 
@@ -32,7 +39,7 @@ export class WorkspaceLayoutSpec {
         this.doc = dom.window.document;
         installWorkspaceLayoutStyles(this.doc);
         this.ctx = await Application.run(WorkspaceLayoutTestComponent, {
-            deps: [HtmlTemplateModule, ComponentsModule, BaseComponentsModule],
+            deps: [HtmlTemplateModule, ComponentsModule, BaseComponentsModule, WorkspaceLayoutModule],
             providers: [{ provide: DOCUMENT, useValue: this.doc }]
         });
     }

@@ -109,6 +109,8 @@ export const agentUiEnglish: TranslationBundle = {
                 collapseEnter: 'Press Enter to collapse',
                 copyCode: 'Copy',
                 copiedCode: 'Copied',
+                newBelow: '↓ {count} new',
+                jumpToBottom: 'Jump to bottom',
                 followUpOnlyTerms: AGENT_UI_EN_FOLLOW_UP_ONLY_TERMS
             },
             session: {

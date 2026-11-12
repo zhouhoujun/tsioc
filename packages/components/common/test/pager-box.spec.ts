@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { PagerBox } from '../src/pager-box';
-import { composePagerViewLines, pagerStatusText } from '../src/pager-view';
+import { PagerBox } from '../pager';
+import { composePagerViewLines, pagerStatusText } from '../pager';
 
 function linesFrom(builder: (index: number) => string, count: number): string[] {
     return Array.from({ length: count }, (_value, index) => builder(index));

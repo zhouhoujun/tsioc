@@ -3,13 +3,14 @@ import { Before, Suite, Test, After } from '@tsdi/unit';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Component, ComponentRef, ComponentsModule } from '@tsdi/components';
 import { BaseComponentsModule } from '@tsdi/components/common';
+import { DynamicFormModule } from '@tsdi/components/common/dynamic-form';
 import { DOCUMENT } from '@tsdi/common';
 import { HtmlTemplateModule } from '../src';
-import { DynamicFormChange } from '../../common/src/dynamic-form.types';
+import { DynamicFormChange } from '@tsdi/components/common/dynamic-form';
 
 @Component({
     selector: 'dynamic-form-host',
-    imports: [BaseComponentsModule],
+    imports: [BaseComponentsModule, DynamicFormModule],
     template: `
     <div class="host">
         <dynamic-form :schema="schema" :value="value" :messages="messages"
@@ -63,7 +64,7 @@ export class HtmlDynamicFormTest {
     @Before()
     async init() {
         this.ctx = await Application.run(DynamicFormHostComponent, {
-            deps: [HtmlTemplateModule, ComponentsModule, BaseComponentsModule],
+            deps: [HtmlTemplateModule, ComponentsModule, BaseComponentsModule, DynamicFormModule],
             providers: [{
                 provide: DOCUMENT,
                 useFactory: () => {

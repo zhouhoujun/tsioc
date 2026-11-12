@@ -187,6 +187,80 @@ export class SessionLifecycleCommandTest {
         expect(pageOptions).toEqual([{ limit: 2 }, { cursor: 'm3', before: true, limit: 2 }]);
     }
 
+    @Test('the in-process console pages the store even when a runtime is injected')
+    async inProcessConsolePrefersThePagedStoreOverTheRuntime() {
+        const all = [1, 2, 3, 4].map(index => ({
+            id: `m${index}`,
+            role: 'assistant',
+            content: `msg-${index}`,
+            createdAt: index
+        }));
+        const calls: string[] = [];
+        const store = {
+            get: async () => { calls.push('store.get'); return { messages: all }; },
+            listMessagesPage: async (_sessionId: string, options: any) => {
+                calls.push(`page:${JSON.stringify(options)}`);
+                return paginateSessionMessages(all as any, options);
+            },
+            listSections: async () => [{ id: 'section-1', label: 'Section' }]
+        };
+        const runtime = {
+            getMessages: async () => { calls.push('runtime.getMessages'); return all; },
+            getSessionGoal: async () => ({ goal: 'paged' })
+        };
+        const service = new AgentConsoleSessionService(null, store as any, runtime as any);
+
+        const page = await service.loadMessagesPage('s1', undefined, { limit: 2 });
+        expect(calls).toEqual(['page:{"limit":2}']);
+        expect(page.messages.map(message => message.id)).toEqual(['m3', 'm4']);
+        expect(page.hasMore).toEqual(true);
+        expect(page.sections?.map(section => section.id)).toEqual(['section-1']);
+        expect(page.goalSummary).toEqual({ goal: 'paged' });
+    }
+
+    @Test('listing and opening sessions use lightweight facts instead of every transcript')
+    async sessionListAndOpenUseLightweightFacts() {
+        const facts = [
+            {
+                sessionId: 's1',
+                messageCount: 2000,
+                sectionMessageCounts: { 'section-1': 2000 },
+                sections: [{ id: 'section-1', label: 'Section', createdAt: 1 }],
+                workspace: '/work',
+                createdAt: 1,
+                updatedAt: 2
+            },
+            {
+                sessionId: 's2',
+                messageCount: 1,
+                workspace: '/work',
+                createdAt: 2,
+                updatedAt: 1
+            }
+        ];
+        const calls: string[] = [];
+        const store = {
+            get: async () => { calls.push('get'); throw new Error('listing must not load transcripts'); },
+            listSessionIds: async () => ['s1', 's2'],
+            listSessionFacts: async (ids?: readonly string[]) => {
+                calls.push(`facts:${ids ? ids.join(',') : '*'}`);
+                return ids ? facts.filter(fact => ids.includes(fact.sessionId)) : facts;
+            }
+        };
+        const service = new AgentConsoleSessionService(null, store as any, null);
+
+        const sessions = await service.listSessions('s1');
+        expect(sessions.map(session => session.id)).toEqual(['s1', 's2']);
+        expect(sessions[0].messageCount).toEqual(2000);
+        expect(sessions[0].sections).toEqual([{ id: 'section-1', label: 'Section', messageCount: 2000 }]);
+
+        const opened = await service.ensureSession('s1');
+        expect(opened.id).toEqual('s1');
+        expect(opened.workspace).toEqual('/work');
+        expect(opened.messageCount).toEqual(2000);
+        expect(calls).toEqual(['facts:s1,s2', 'facts:s1']);
+    }
+
     @Test('/resume lists archived sessions and resumes a selection')
     async resumeIncludesArchived() {
         const { state, component, rpc } = createLifecycleConsole();

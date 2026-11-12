@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { InMemoryCommandExecutionControl } from '@tsdi/agent';
-import { TabBarComponent } from '@tsdi/components/common';
+import { TabBarComponent } from '@tsdi/components/common/tab-bar';
 import { AgentConsoleSessionState } from '../src';
 import { AgentConsoleSessionTabsSource } from '../src/AgentConsoleSessionTabsSource';
 

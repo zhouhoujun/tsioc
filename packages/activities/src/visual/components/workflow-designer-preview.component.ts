@@ -1,5 +1,16 @@
 import { AfterViewInit, Attribute, Component, ElementRef, NoReactive, OnDestroy, noReact } from '@tsdi/components';
-import { installDynamicFormStyles, installMenuBarStyles, installWorkspaceLayoutStyles, markElementRefRaw } from '@tsdi/components/common';
+import {
+    markElementRefRaw,
+} from '@tsdi/components/common';
+import {
+    installDynamicFormStyles,
+} from '@tsdi/components/common/dynamic-form';
+import {
+    installMenuBarStyles,
+} from '@tsdi/components/common/menu-bar';
+import {
+    installWorkspaceLayoutStyles,
+} from '@tsdi/components/common/layout';
 import { applyThemeToDocument, isThemeName, ThemeName } from '@tsdi/components/common';
 import { DOCUMENT } from '@tsdi/common';
 import { Inject, Optional } from '@tsdi/ioc';

@@ -38,7 +38,7 @@ import {
 } from '../src';
 import { Application } from '@tsdi/core';
 import { Component, ComponentRef, ComponentsModule } from '@tsdi/components';
-import { PanelComponent } from '@tsdi/components/common';
+import { PanelComponent } from '@tsdi/components/common/panel';
 
 @Component({
     selector: 'console-test',
@@ -3119,6 +3119,53 @@ export class ConsoleRendererTest {
         surface.destroy();
     }
 
+    @Test('opening and closing a dialog keeps the reader scroll distance')
+    viewportChromeKeepsReadingDistance() {
+        const root = { addEventListener() {}, removeEventListener() {} } as any;
+        let dialogOpen = false;
+        const renderLayout = () => {
+            const transcript = Array.from({ length: dialogOpen ? 98 : 100 }, (_value, index) => `line ${index + 1}`);
+            const dialogLines = dialogOpen ? ['DIALOG-1', 'DIALOG-2', 'DIALOG-3', 'DIALOG-4'] : [];
+            const lines = [...transcript, ...dialogLines, 'status', 'input', 'meta'];
+            const dialogStart = transcript.length;
+            const footerStart = transcript.length + dialogLines.length;
+            return {
+                lines,
+                regions: [
+                    { id: 'transcript', startRow: 0, endRow: transcript.length },
+                    ...(dialogOpen ? [{ id: 'dialog', startRow: dialogStart, endRow: dialogStart + dialogLines.length }] : []),
+                    { id: 'footer', startRow: footerStart, endRow: lines.length }
+                ]
+            };
+        };
+        const surface = new TuiTerminalSurface({
+            renderer: { renderToTuiLayout: () => renderLayout() },
+            root,
+            width: 80,
+            height: 24,
+            nativeScrollback: false,
+            scrollViewport: true,
+            scrollRegionId: 'transcript',
+            footerRegionId: 'footer',
+            output: { write() {} }
+        });
+        surface.render();
+        expect(surface.scrollViewport(5)).toEqual(true);
+        surface.render();
+        expect(surface.viewportScrollOffset).toEqual(5);
+
+        dialogOpen = true;
+        surface.render();
+        expect(surface.viewportScrollOffset).toEqual(5);
+        expect(surface.viewportFollowing).toEqual(false);
+
+        dialogOpen = false;
+        surface.render();
+        expect(surface.viewportScrollOffset).toEqual(5);
+        expect(surface.viewportFollowing).toEqual(false);
+        surface.destroy();
+    }
+
     @Test('requests an older transcript page at the top and preserves the reading row on prepend')
     viewportPaginationPreservesReadingRow() {
         let lines = Array.from({ length: 100 }, (_value, index) => `line ${index + 1}`);
@@ -3160,6 +3207,54 @@ export class ConsoleRendererTest {
 
         surface.scrollViewport(1000);
         expect(topRequests).toBeGreaterThan(0);
+        surface.destroy();
+    }
+
+    @Test('floating jump-to-bottom affordance resumes following on click')
+    viewportNoticeResumesFollowing() {
+        const lines = Array.from({ length: 100 }, (_value, index) => `line ${index + 1}`);
+        let resumed = 0;
+        const root = { addEventListener() {}, removeEventListener() {} } as any;
+        const surface = new TuiTerminalSurface({
+            renderer: {
+                renderToTuiLayout: () => ({
+                    lines,
+                    regions: [
+                        { id: 'transcript', startRow: 0, endRow: lines.length },
+                        { id: 'footer', startRow: lines.length, endRow: lines.length }
+                    ]
+                })
+            },
+            root,
+            width: 80,
+            height: 20,
+            nativeScrollback: false,
+            scrollViewport: true,
+            scrollRegionId: 'transcript',
+            footerRegionId: 'footer',
+            output: { write() {} },
+            viewportNotice: () => '↓ 3 new · Jump to bottom',
+            onViewportResume: () => { resumed += 1; }
+        });
+        surface.render();
+        expect(surface.lastRenderedLines.some(line => line.includes('Jump to bottom'))).toEqual(false);
+        expect(surface.scrollViewport(5)).toEqual(true);
+        surface.render();
+        expect(surface.lastRenderedLines.some(line => line.includes('Jump to bottom'))).toEqual(true);
+
+        const bounds = (surface as any).viewportNoticeBounds as { row: number; start: number; end: number };
+        expect(bounds).toBeTruthy();
+        // Whole-affordance hover feedback on any-motion pointer events.
+        surface.dispatchMouse({ button: 35, x: bounds.start + 2, y: bounds.row + 1 } as any);
+        expect((surface as any).viewportNoticeHover).toEqual(true);
+
+        surface.dispatchMouse({ button: 0, x: bounds.start + 2, y: bounds.row + 1, release: false } as any);
+        surface.dispatchMouse({ button: 0, x: bounds.start + 2, y: bounds.row + 1, release: true } as any);
+        expect(resumed).toEqual(1);
+        expect(surface.viewportFollowing).toEqual(true);
+        expect(surface.viewportScrollOffset).toEqual(0);
+        surface.render();
+        expect(surface.lastRenderedLines.some(line => line.includes('Jump to bottom'))).toEqual(false);
         surface.destroy();
     }
 

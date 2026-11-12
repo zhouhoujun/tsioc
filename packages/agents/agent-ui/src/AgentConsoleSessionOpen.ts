@@ -3,6 +3,8 @@ import type { AgentConsoleSessionService } from './AgentConsoleSessionService';
 import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import type { AgentConsoleSessionPage } from './AgentConsoleSessionContentLoader';
 import { resetSessionMessagePager } from './AgentConsoleSessionHistoryPaging';
+import type { AgentConsoleSessionUiSnapshot } from './AgentConsoleSessionUiState';
+import { sameAgentConsoleMessages } from './AgentConsoleMessageEquality';
 import { AgentUiTranslator, formatAgentUiNotice } from './agent-ui.i18n';
 
 export interface AgentConsoleSessionOpenHost {
@@ -76,7 +78,7 @@ export async function applyMissingSessionNotice(host: AgentConsoleSessionOpenHos
 export async function openSession(
     host: AgentConsoleSessionOpenHost,
     sessionId?: string,
-    options?: { persistCurrentHistory?: boolean; fresh?: boolean; missing?: boolean; scoped?: boolean }
+    options?: { persistCurrentHistory?: boolean; fresh?: boolean; missing?: boolean; scoped?: boolean; cached?: AgentConsoleSessionUiSnapshot }
 ): Promise<void> {
     // Tabs are independent sessions: switching must never wait for another
     // tab's turn. A background turn keeps streaming into its own state.
@@ -124,18 +126,22 @@ export async function openSession(
     if (nextWorkspace) {
         host.state.setWorkspace(nextWorkspace);
     }
-    // Tab isolation: the incoming tab owns the transcript. Drop the outgoing
-    // session's rows (and its new-message counter) immediately, before any
-    // awaited reload, so a slow page load can never render session A under
-    // session B's tab. The saved per-tab state is restored after the load.
-    host.state.setMessages([]);
-    host.state.setSections([]);
-    host.state.setGoalSummary(null);
-    host.state.messagesPageCursor = '';
-    host.state.messagesHasMore = false;
+    // Tab isolation: the incoming tab owns the transcript. A first visit drops
+    // the outgoing session's rows before any awaited reload, so a slow page
+    // load can never render session A under session B's tab. Revisiting a tab
+    // already shows its cached view (hide/show); the background refresh below
+    // only replaces rows that actually changed.
+    const cachedView = options?.cached?.messages ? options.cached : undefined;
+    if (!cachedView) {
+        host.state.setMessages([]);
+        host.state.setSections([]);
+        host.state.setGoalSummary(null);
+        host.state.messagesPageCursor = '';
+        host.state.messagesHasMore = false;
+    }
     host.state.messagesPageLoading = false;
     resetSessionMessagePager(host.state);
-    host.state.messagesNewCount = 0;
+    host.state.messagesNewCount = cachedView ? host.state.messagesNewCount : 0;
     host.state.setQueuedPromptCount((host.queuedPrompts.get(target.id) || []).length);
     host.transcriptNavigationController.setFocused(false);
     host.state.setSessionsFocused(false);
@@ -145,9 +151,11 @@ export async function openSession(
     host.state.setApprovalsFocused(false);
     host.state.setTasksFocused(false);
     host.state.setJobsFocused(false);
-    host.state.setPendingApprovals([]);
+    if (!cachedView) {
+        host.state.setPendingApprovals([]);
+        host.state.clearPlanTodos();
+    }
     host.state.clearReview();
-    host.state.clearPlanTodos();
     host.state.setPendingQuestion(null);
     host.state.clearToolActivity();
     host.state.setContextPreparation(null);
@@ -190,9 +198,16 @@ export async function openSession(
     // A fresh startup must never render a transcript returned by stale
     // host/app state. Explicit resume and interactive session switching
     // continue to load their persisted page normally.
-    host.state.setMessages(options?.fresh ? [] : page.messages);
-    host.state.setSections(options?.fresh ? [] : page.sections);
-    host.state.setGoalSummary(options?.fresh ? null : (page.goalSummary || null));
+    if (cachedView && !options?.fresh && sameAgentConsoleMessages(host.state.messages, page.messages)) {
+        // Identical refresh: keep the cached array so the shared rendered-item
+        // cache still matches after a hide/show switch.
+        host.state.setSections(page.sections);
+        host.state.setGoalSummary(page.goalSummary || null);
+    } else {
+        host.state.setMessages(options?.fresh ? [] : page.messages);
+        host.state.setSections(options?.fresh ? [] : page.sections);
+        host.state.setGoalSummary(options?.fresh ? null : (page.goalSummary || null));
+    }
     host.state.messagesPageCursor = options?.fresh ? '' : (page.nextCursor || '');
     host.state.messagesHasMore = options?.fresh ? false : page.hasMore === true;
     // Reattach the live partial answer when returning to a still-running turn.

@@ -3,4 +3,4 @@ export {
     InputHistoryController as AgentConsoleInputHistoryController,
     InputHistoryStatePort as AgentConsoleInputHistoryStatePort,
     DefaultInputHistoryController as DefaultAgentConsoleInputHistoryController
-} from '@tsdi/components/common';
+} from './AgentConsoleInputHistoryController';

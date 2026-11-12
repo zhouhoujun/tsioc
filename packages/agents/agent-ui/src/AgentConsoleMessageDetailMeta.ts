@@ -11,7 +11,7 @@ export interface AgentConsoleMessageDetailState {
 /**
  * Header of the message inspector: `消息 1/2 用户  |  行 1-1 / 1  |  列 1/16`.
  *
- * Extracted from `AgentConsoleMessageDetailPanelComponent` (source-size
+ * Extracted from `AgentConsoleMessagePanelComponent` (source-size
  * ratchet) and localized: the role word and chrome are UI copy, the indexes and
  * line/column counters stay numbers.
  */

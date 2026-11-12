@@ -2,6 +2,10 @@ import { Module } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { ComponentsModule } from '@tsdi/components';
 import { BaseComponentsModule } from '@tsdi/components/common';
+import { TabBarModule } from '@tsdi/components/common/tab-bar';
+import { MenuBarModule } from '@tsdi/components/common/menu-bar';
+import { DynamicFormModule } from '@tsdi/components/common/dynamic-form';
+import { WorkspaceLayoutModule } from '@tsdi/components/common/layout';
 import { FormsModule } from '@tsdi/components/forms';
 import { RunAspect } from './aop/RunAspect';
 import { ActivityInterceptorService, ActivityLogAspect, ActivityDebugService } from './aop';
@@ -47,6 +51,10 @@ import {
         AopModule,
         ComponentsModule,
         BaseComponentsModule,
+        TabBarModule,
+        MenuBarModule,
+        DynamicFormModule,
+        WorkspaceLayoutModule,
         FormsModule,
         WorkflowDesignerI18nModule
     ],
@@ -111,6 +119,10 @@ import {
         AopModule,
         ComponentsModule,
         BaseComponentsModule,
+        TabBarModule,
+        MenuBarModule,
+        DynamicFormModule,
+        WorkspaceLayoutModule,
         FormsModule,
         WorkflowDesignerI18nModule,
         StartActivity,

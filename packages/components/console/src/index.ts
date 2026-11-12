@@ -6,7 +6,5 @@ export * from './input';
 export * from './stylesheet';
 export * from './animation';
 export * from './terminal';
-export {
-    BaseComponentsModule,
-    PanelComponent
-} from '@tsdi/components/common';
+export { BaseComponentsModule } from '@tsdi/components/common';
+export { PanelComponent } from '@tsdi/components/common/panel';

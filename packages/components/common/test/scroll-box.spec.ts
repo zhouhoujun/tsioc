@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { ScrollBox } from '../src/scroll-box';
+import { ScrollBox } from '../pager';
 
 @Suite('console scroll box')
 export class ConsoleScrollBoxTest {

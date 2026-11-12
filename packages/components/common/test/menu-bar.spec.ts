@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { MenuBarComponent, MenuBarGroup } from '../src';
+import { MenuBarComponent, MenuBarGroup } from '../menu-bar';
 
 const groups: MenuBarGroup[] = [
     {

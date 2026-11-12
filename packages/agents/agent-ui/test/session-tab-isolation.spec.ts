@@ -163,6 +163,56 @@ export class AgentConsoleSessionTabIsolationTest {
         }
     }
 
+    @Test('a returning tab paints its cached view while the refresh is in flight')
+    async returningTabPaintsCachedViewImmediately() {
+        const aMessages = messages('alpha', 40);
+        const bMessages = messages('beta', 34);
+        let releaseA: (page: any) => void = () => undefined;
+        let aLoads = 0;
+        const harness = await this.createHarness({
+            ...this.baseService({ 'session-b': bMessages }),
+            loadMessagesPage: (sessionId: string) => {
+                if (sessionId === 'session-a') {
+                    aLoads += 1;
+                    if (aLoads > 1) {
+                        return new Promise(resolve => { releaseA = page => resolve(page); });
+                    }
+                    return Promise.resolve({ messages: aMessages, hasMore: false });
+                }
+                return Promise.resolve({ messages: bMessages, hasMore: false });
+            }
+        });
+        try {
+            await harness.instance.openSession('session-a');
+            await settle();
+            harness.surface.render();
+            expect(harness.state.messages.length).toEqual(aMessages.length);
+
+            await harness.instance.openSession('session-b');
+            await settle();
+            harness.surface.render();
+            expect(harness.state.messages.every((m: any) => String(m.id).startsWith('beta'))).toEqual(true);
+
+            const switching = harness.instance.openSession('session-a');
+            for (let index = 0; index < 32 && aLoads < 2; index++) {
+                await Promise.resolve();
+            }
+            // Hide/show: the cached transcript is painted before the page
+            // request resolves, instead of blanking the tab while loading.
+            expect(harness.state.messages.length).toEqual(aMessages.length);
+            expect(harness.state.messages.every((m: any) => String(m.id).startsWith('alpha'))).toEqual(true);
+            harness.surface.render();
+            expect(harness.screen().some(line => line.includes('alpha message'))).toEqual(true);
+
+            releaseA({ messages: aMessages, hasMore: false });
+            await switching;
+            await settle();
+            expect(harness.state.messages.length).toEqual(aMessages.length);
+        } finally {
+            harness.surface.destroy();
+        }
+    }
+
     @Test('a returning tab restores its own composer draft')
     async returningTabRestoresComposerDraft() {
         const harness = await this.createHarness(this.baseService({

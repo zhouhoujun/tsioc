@@ -1,5 +1,5 @@
 import type { AnimationClock } from '@tsdi/components';
-import { ToastService } from '@tsdi/components/common';
+import { ToastService } from '@tsdi/components/common/toast';
 import { AgentConsoleNoticeExpiry } from './AgentConsoleNoticeExpiry';
 import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
 

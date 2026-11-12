@@ -4,7 +4,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { Component, ComponentRef, ComponentsModule } from '@tsdi/components';
 import { DOCUMENT } from '@tsdi/common';
 import { HtmlTemplateModule } from '@tsdi/components/html';
-import { PanelComponent } from '@tsdi/components/common';
+import { PanelComponent } from '@tsdi/components/common/panel';
 import { AgentModule } from '@tsdi/agent';
 import {
     AgentConsoleActivityPanelComponent,

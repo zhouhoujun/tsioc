@@ -5,8 +5,8 @@ import type {
     DynamicFormFieldType,
     DynamicFormOption,
     DynamicFormRule,
-    DynamicFormRuleType
-} from '@tsdi/components/common';
+    DynamicFormRuleType,
+} from '@tsdi/components/common/dynamic-form';
 import { Activity, ActivityContext, ActivityResult } from '../activities/Activity';
 
 /**

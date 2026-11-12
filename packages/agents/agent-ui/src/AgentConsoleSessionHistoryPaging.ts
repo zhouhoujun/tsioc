@@ -4,7 +4,10 @@ import { normalizeLoadedMessages } from './AgentConsoleMessageNormalization';
 import { mergeMessagesPageInState } from './AgentConsoleMessageState';
 import { AGENT_CONSOLE_SESSION_PAGE_SIZE } from './AgentConsoleSessionContentLoader';
 import type { AgentUiTranslator } from './agent-ui.i18n';
-import { ListPager, ListPage } from '@tsdi/components/common';
+import {
+    ListPager,
+    ListPage,
+} from '@tsdi/components/common/list';
 
 export interface AgentConsoleSessionHistoryPagingHost {
     state: AgentConsoleSessionState;

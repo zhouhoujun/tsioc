@@ -1,6 +1,7 @@
 import { Injectable, Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
-import { getDisplayWidth, TabBarSource, TabItem } from '@tsdi/components/common';
+import { getDisplayWidth } from '@tsdi/components/common';
+import { TabBarSource, TabItem } from '@tsdi/components/common/tab-bar';
 import { AgentConsoleSessionState, AgentConsoleSessionItem } from './AgentConsoleSessionState';
 import { resolveSessionProjectKey } from './AgentConsoleProjectProjection';
 import { formatAgentUiLabel } from './agent-ui.i18n';

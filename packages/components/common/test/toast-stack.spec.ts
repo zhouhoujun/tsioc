@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { ToastEntry } from '../src';
-import { ToastStackComponent } from '../src/toast-stack';
+import { ToastEntry } from '../toast';
+import { ToastStackComponent } from '../toast';
 
 const entry = (id: string, message: string, tone: ToastEntry['tone'] = 'info'): ToastEntry => ({
     id,

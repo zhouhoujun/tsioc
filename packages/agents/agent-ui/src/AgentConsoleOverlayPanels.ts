@@ -1,4 +1,5 @@
 import { Attribute, Component } from '@tsdi/components';
+import { DialogComponent } from '@tsdi/components/common/dialog';
 import { formatCompactNumber } from '@tsdi/core';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
@@ -52,16 +53,20 @@ import { AgentConsoleStatuslineField } from './AgentConsoleStatusline';
 import { DEFAULT_TIMELINE_LABELS, resolveTimelineWindowLedger, TimelineWindowMode } from './AgentConsoleTimelineWindow';
 import {
     buildBrandBlock as buildTerminalBrandBlock,
-    DialogComponent,
-    DetailPanelComponent,
-    InputFieldComponent,
-    ListPanelComponent,
-    MessageRowComponent,
-    SelectComponent,
     resolveEnterAction as resolveConsoleEnterAction,
     resolveListWindow as resolveConsoleListWindow,
-    resolveSelectWindow as resolveConsoleSelectWindow
+    resolveSelectWindow as resolveConsoleSelectWindow,
 } from '@tsdi/components/common';
+import {
+    PanelComponent,
+} from '@tsdi/components/common/panel';
+import {
+    ListComponent,
+} from '@tsdi/components/common/list';
+import { SelectComponent } from '@tsdi/components/common/select';
+import { InputFieldComponent } from './AgentConsoleInputField';
+import { MessageRowComponent } from './AgentConsoleMessageRow';
+
 export * from './AgentConsoleMessagePanels';
 @Component({
     selector: 'agent-console-text-overlay-panel',
@@ -125,9 +130,9 @@ export class AgentConsoleTextOverlayPanelComponent {
 
 @Component({
     selector: 'agent-console-outputs-panel',
-    imports: [ListPanelComponent],
+    imports: [ListComponent],
     template: `
-    <list-panel :header="panelTitle" :meta="filterLabel" :items="entryItems" :empty="emptyLabel" :hint="hintLabel" :showClose="false" :ariaLabel="accessibilityLabel" :listLabel="'Command output history'" :activeOptionId="activeOptionId"></list-panel>
+    <list :header="panelTitle" :meta="filterLabel" :items="entryItems" :empty="emptyLabel" :hint="hintLabel" :showClose="false" :ariaLabel="accessibilityLabel" :listLabel="'Command output history'" :activeOptionId="activeOptionId"></list>
     `
 })
 export class AgentConsoleCommandOutputsPanelComponent {
@@ -221,9 +226,9 @@ export class AgentConsoleCommandOutputsPanelComponent {
 
 @Component({
     selector: 'agent-console-pending-question-panel',
-    imports: [ListPanelComponent],
+    imports: [ListComponent],
     template: `
-    <list-panel panelClass="question-panel" :header="pendingQuestionHeader" :title="pendingQuestionTitle" :context="pendingQuestionContext" :meta="pendingQuestionExpiryHint" :hint="pendingQuestionSelectionHint" :secondaryHint="pendingQuestionCustomHint" :items="pendingQuestionOptionItems" :showClose="true" :closeLabel="'✕'" :ariaLabel="accessibilityLabel" :listLabel="'Question options'" :activeOptionId="activeOptionId" @closeAction="closeQuestion" @selectAction="onPendingQuestionOptionClick"></list-panel>
+    <list panelClass="question-panel" :header="pendingQuestionHeader" :title="pendingQuestionTitle" :context="pendingQuestionContext" :meta="pendingQuestionExpiryHint" :hint="pendingQuestionSelectionHint" :secondaryHint="pendingQuestionCustomHint" :items="pendingQuestionOptionItems" :showClose="true" :closeLabel="'✕'" :ariaLabel="accessibilityLabel" :listLabel="'Question options'" :activeOptionId="activeOptionId" @closeAction="closeQuestion" @selectValueAction="onPendingQuestionOptionClick"></list>
     `
 })
 export class AgentConsolePendingQuestionPanelComponent {

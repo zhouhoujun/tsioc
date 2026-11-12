@@ -14,7 +14,7 @@ import { Abstract, Inject, Injectable, Injector, Optional, Provider, token } fro
 import { getDisplayWidth, sliceByDisplayWidth } from './display-width';
 import { noReact, RNode, Renderer, AnimationClock } from '@tsdi/components';
 import { ConsoleElement, ConsoleNode } from './console';
-import { composePagerViewLines, PagerBox, PagerStatusCopy, ScrollBox } from '@tsdi/components/common';
+import { composePagerViewLines, PagerBox, PagerStatusCopy, ScrollBox } from '@tsdi/components/common/pager';
 
 const CHAT_COMMANDS = ['/help', '/tools', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/copy', '/quit', '/exit'];
 
@@ -303,6 +303,13 @@ export interface TuiTerminalSurfaceOptions {
     onTextCopied?: (text: string) => void;
     /** The user reached the oldest rendered transcript row (load an older page). */
     onViewportTop?: () => void;
+    /**
+     * Localized label for the floating "back to latest" affordance shown while
+     * the user has scrolled the viewport up. Return `undefined` to hide it.
+     */
+    viewportNotice?: () => string | undefined;
+    /** The user activated the floating affordance; following resumed. */
+    onViewportResume?: () => void;
     /** A primary click landed outside the open overlay (menu/dialog). */
     onBackgroundClick?: () => void;
 }
@@ -380,6 +387,10 @@ export abstract class ConsoleTerminalSurfaceLifecycle {
     onTerminalTextCopied?(text: string): void;
     /** The viewport reached its oldest row; hosts may load an older transcript page. */
     onTerminalViewportTop?(): void;
+    /** Localized label for the floating "back to latest" affordance (TUI viewport). */
+    resolveViewportNotice?(): string | undefined;
+    /** The user resumed following the latest row via the floating affordance. */
+    onTerminalViewportResume?(): void;
     /** A primary click landed outside the open overlay; dismiss non-blocking chrome. */
     onTerminalBackgroundClick?(): void;
 }
@@ -897,6 +908,8 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
             animationClock: this.injector.get(AnimationClock, null) || undefined,
             onTextCopied: text => lifecycle.onTerminalTextCopied?.(text),
             onViewportTop: () => lifecycle.onTerminalViewportTop?.(),
+            viewportNotice: () => lifecycle.resolveViewportNotice?.(),
+            onViewportResume: () => lifecycle.onTerminalViewportResume?.(),
             onBackgroundClick: () => lifecycle.onTerminalBackgroundClick?.()
         });
         this.surface.render();
@@ -1209,6 +1222,11 @@ export class TuiTerminalSurface {
     protected pendingViewportOffset?: number;
     /** The next layout prepends an older transcript page above the current rows. */
     protected viewportPrependPending = false;
+    /** Painted column bounds of the floating "back to latest" affordance. */
+    protected viewportNoticeBounds?: { row: number; start: number; end: number };
+    protected viewportNoticeHover = false;
+    /** An overlay (menu/dialog) owned the previous frame; keep the reading row. */
+    protected viewportChromeActive = false;
     protected lastAvailableRows = 0;
     protected readonly scrollBox = new ScrollBox();
     protected pagerBox?: PagerBox;
@@ -1838,7 +1856,9 @@ export class TuiTerminalSurface {
             }
             // Modern terminals with any-motion tracking report hover as
             // button 35. Highlight the clickable region under the pointer.
-            const target = this.hitTest(mouse.x, mouse.y);
+            const overNotice = this.hitViewportNotice(mouse.x, mouse.y);
+            this.setViewportNoticeHover(overNotice);
+            const target = overNotice ? undefined : this.hitTest(mouse.x, mouse.y);
             if (this.setHoverTarget(target)) {
                 this.requestRender();
             }
@@ -1884,6 +1904,10 @@ export class TuiTerminalSurface {
             if (pressed && this.isTuiMouseDrag(pressed, mouse)) {
                 return false;
             }
+            if (this.hitViewportNotice(mouse.x, mouse.y)) {
+                this.resumeViewportFollow();
+                return true;
+            }
             if (this.isClickOutsideOverlay(mouse.x, mouse.y)) {
                 this.options.onBackgroundClick?.();
             }
@@ -1926,6 +1950,14 @@ export class TuiTerminalSurface {
             this.mouseDragPoint = undefined;
             this.touchPressAt = undefined;
             return false;
+        }
+        if (this.hitViewportNotice(mouse.x, mouse.y)) {
+            // The click is handled on release; do not start a text selection
+            // from the affordance row.
+            this.mousePress = { x: mouse.x, y: mouse.y };
+            this.mouseDragPoint = { x: mouse.x, y: mouse.y };
+            this.touchPressAt = Date.now();
+            return true;
         }
         const clickCount = this.updateClickCount(mouse);
         this.mousePress = { x: mouse.x, y: mouse.y };
@@ -2595,6 +2627,7 @@ export class TuiTerminalSurface {
         sourceRows?: Array<number | undefined>;
     } {
         this.viewportTranscriptRange = undefined;
+        this.viewportNoticeBounds = undefined;
         const nativeScrollback = typeof this.options.nativeScrollback === 'function'
             ? this.options.nativeScrollback()
             : this.options.nativeScrollback === true;
@@ -2625,6 +2658,17 @@ export class TuiTerminalSurface {
             : [];
         const foldedClickTargets = this.foldDialogCloseRow(dialogLines, dialogClickTargets);
         const dialogHeight = dialogLines.length;
+        // The full region may carry a trailing blank row that the menu core
+        // renders as composer spacing. Extraction removes every region row, so
+        // following regions/cursor/click targets must shift by that full
+        // height; using the trimmed paint height left the footer one row lower
+        // and could put a popup over the composer's prompt row.
+        const dialogRegionHeight = dialogRegion ? dialogRegion.endRow - dialogRegion.startRow : 0;
+        // Menus carry a trailing composer-spacing row; their extraction removes
+        // it and following regions must shift by the full region height.
+        // Dialogs keep the established trimmed-height shift so their overlay
+        // never animates the transcript's scroll position.
+        const dialogShiftHeight = dialogIsMenu ? dialogRegionHeight : dialogHeight;
         const dialogBounds = resolveStyledColumnBounds(dialogLines);
         const dialogStartColumn = dialogBounds?.start ?? 0;
         const dialogEndColumn = dialogBounds?.end ?? 0;
@@ -2646,14 +2690,14 @@ export class TuiTerminalSurface {
             allRegions = allRegions
                 .filter(region => region !== dialogRegion)
                 .map(region => region.startRow >= dialogRegion.endRow
-                    ? { ...region, startRow: region.startRow - dialogHeight, endRow: region.endRow - dialogHeight }
+                    ? { ...region, startRow: region.startRow - dialogShiftHeight, endRow: region.endRow - dialogShiftHeight }
                     : region);
             baseCursorTargets = baseCursorTargets
                 .filter(target => !(target.row >= dialogRegion.startRow && target.row < dialogRegion.endRow))
-                .map(target => target.row >= dialogRegion.endRow ? { ...target, row: target.row - dialogHeight } : target);
+                .map(target => target.row >= dialogRegion.endRow ? { ...target, row: target.row - dialogShiftHeight } : target);
             baseClickTargets = baseClickTargets
                 .filter(target => !(target.y >= dialogRegion.startRow && target.y < dialogRegion.endRow))
-                .map(target => target.y >= dialogRegion.endRow ? { ...target, y: target.y - dialogHeight } : target);
+                .map(target => target.y >= dialogRegion.endRow ? { ...target, y: target.y - dialogShiftHeight } : target);
         }
         const fitViewportHeight = (lines: string[]): string[] => {
             if (nativeScrollback || !height) {
@@ -2693,10 +2737,18 @@ export class TuiTerminalSurface {
             // whole footer. Both anchor by the bottom edge.
             const footerStart = footerRegions.length ? Math.min(...footerRegions.map(region => region.startRow)) : height;
             const composerStart = footerRegions.length ? Math.max(...footerRegions.map(region => region.startRow)) : height;
+            // The composer shell is an explicit `input` region, so the popup
+            // anchors to the panel edge instead of guessing the prompt glyph.
+            // A wrapped/multiline composer, a themed prompt or extra padding
+            // must never make the menu spill over the text being typed.
+            const inputRegion = (result.regions || []).find(region => region.id === 'input');
+            const inputTop = inputRegion
+                ? Math.max(0, Math.min(result.lines.length, inputRegion.startRow))
+                : -1;
             // A menu ends on the row above the prompt text, leaving the whole
             // composer (including its padding) visible.
             let promptRow = -1;
-            for (let row = Math.max(0, composerStart - 2); row < Math.min(composerStart + 3, result.lines.length); row++) {
+            for (let row = Math.max(0, (inputTop >= 0 ? inputTop : composerStart) - 2); row < Math.min(composerStart + 3, result.lines.length); row++) {
                 const text = stripTerminalAnsi(result.lines[row] || '')
                     .trimStart()
                     .replace(/^[│┃║]\s*/, '');
@@ -2706,7 +2758,7 @@ export class TuiTerminalSurface {
                 }
             }
             const anchorRow = dialogIsMenu
-                ? (promptRow > 0 ? promptRow - 1 : composerStart)
+                ? (inputTop >= 0 ? inputTop : (promptRow > 0 ? promptRow - 1 : composerStart))
                 : footerStart;
             // Never draw over the header (session tabs): on very short terminals
             // clamping to 0 corrupted the strip while the dialog was open.
@@ -2815,8 +2867,10 @@ export class TuiTerminalSurface {
                         ],
                         regions: allRegions.map(region => ({
                             id: region.id,
-                            startRow: shift(region.startRow),
-                            endRow: shift(region.endRow)
+                            // A region that merely ends on the footer boundary
+                            // (session tabs) must not be stretched by filler.
+                            startRow: region.startRow >= footerStart ? region.startRow + fillerRows : region.startRow,
+                            endRow: region.endRow > footerStart ? region.endRow + fillerRows : region.endRow
                         })),
                         cursorTargets: baseCursorTargets.map(target => ({ ...target, row: shift(target.row) })),
                         clickTargets: baseClickTargets.map(target => ({ ...target, y: shift(target.y) })),
@@ -2868,7 +2922,13 @@ export class TuiTerminalSurface {
         const previousOffset = this.scrollBox.maxTop - this.scrollBox.top;
         const previousContentRows = this.scrollBox.contentHeight;
         this.scrollBox.setMetrics(transcript.length, this.isScrollViewportEnabled() ? availableRows : transcript.length);
-        if (previousContentRows === transcript.length) {
+        // Opening/closing a popup is chrome, not new conversation content.
+        // Extract/reinsert may change the transcript or viewport row count, so
+        // the equality guard alone would drop the reading row and let sticky
+        // follow snap the transcript to the bottom.
+        const chromeFrame = !!dialogRegion || this.viewportChromeActive;
+        this.viewportChromeActive = !!dialogRegion;
+        if (previousContentRows === transcript.length || chromeFrame) {
             this.scrollBox.scrollTo(this.scrollBox.maxTop - previousOffset);
         }
         if (this.viewportPrependPending) {
@@ -2930,13 +2990,79 @@ export class TuiTerminalSurface {
             ...visibleTranscript.map((_line, index) => scrollRegion.startRow + start + index),
             ...footer.map((_line, index) => footerRegion.startRow + index)
         ];
+        const viewportLines = [...prefix, ...Array.from({ length: fillerRows }, () => ''), ...visibleTranscript, ...footer];
+        // The floating "back to latest" affordance is chrome: it is painted
+        // over the last visible transcript row and never consumes a layout row.
+        // A dialog/menu already owns the overlay band, so it hides then.
+        if (!dialogRegion && availableRows > 0 && visibleTranscript.length) {
+            const noticeRow = prefix.length + fillerRows + visibleTranscript.length - 1;
+            this.paintViewportNotice(viewportLines, width, noticeRow);
+        }
         return composeDialogOverlay({
-            lines: [...prefix, ...Array.from({ length: fillerRows }, () => ''), ...visibleTranscript, ...footer],
+            lines: viewportLines,
             regions,
             cursorTargets,
             clickTargets,
             sourceRows
         });
+    }
+
+    /**
+     * Paint the localized "back to latest" affordance at the right edge of the
+     * last visible transcript row. The surface owns scroll state, so the click
+     * can resume following without a host round-trip; the host supplies only
+     * the localized label/count.
+     */
+    protected paintViewportNotice(lines: string[], width: number, row: number): void {
+        if (this.scrollOffsetRows <= 0 || row < 0 || row >= lines.length || width <= 2) {
+            return;
+        }
+        const label = String(this.options.viewportNotice?.() || '').trim();
+        if (!label) {
+            return;
+        }
+        const text = ` ${label} `;
+        const fitted = getDisplayWidth(text) > width - 2 ? sliceByDisplayWidth(text, Math.max(1, width - 2)) : text;
+        const textWidth = getDisplayWidth(fitted);
+        if (textWidth <= 0) {
+            return;
+        }
+        const start = Math.max(0, width - textWidth - 1);
+        const end = Math.min(width, start + textWidth);
+        const style = this.viewportNoticeHover ? '\x1b[1m\x1b[7m' : '\x1b[7m';
+        const overlay = `${' '.repeat(start)}${style}${fitted}\x1b[0m`;
+        lines[row] = overlayStyledLine(lines[row] || '', overlay, start, end);
+        this.viewportNoticeBounds = { row, start, end };
+    }
+
+    /** Whether a 1-based terminal pointer cell is inside the affordance. */
+    protected hitViewportNotice(x: number, y: number): boolean {
+        const bounds = this.viewportNoticeBounds;
+        if (!bounds) {
+            return false;
+        }
+        const row = Math.max(0, Math.floor((y || 1) - 1) - this.getTerminalRootStartRow());
+        const column = Math.max(0, Math.floor((x || 1) - 1));
+        return row === bounds.row && column >= bounds.start && column < bounds.end;
+    }
+
+    protected setViewportNoticeHover(hover: boolean): boolean {
+        if (this.viewportNoticeHover === hover) {
+            return false;
+        }
+        this.viewportNoticeHover = hover;
+        this.requestRender();
+        return true;
+    }
+
+    /** Resume following the latest row after the affordance was activated. */
+    protected resumeViewportFollow(): void {
+        this.scrollBox.scrollToEdge('end');
+        this.scrollOffsetRows = this.scrollBox.maxTop - this.scrollBox.top;
+        this.viewportNoticeBounds = undefined;
+        this.viewportNoticeHover = false;
+        this.options.onViewportResume?.();
+        this.requestRender();
     }
 
     protected resolveFooterBottomMargin(): number {

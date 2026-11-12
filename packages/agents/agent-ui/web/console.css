@@ -473,6 +473,27 @@ body {
 
 /* Select menus: the console renderer paints the `<select>` JSON payload; the
    browser gets real rows from the same window instead of an empty control. */
+/* Dialogs and menus are different surfaces. A dialog is a modal overlay
+   centred over the console canvas; a menu stays anchored above the composer
+   as a composer-attached floating panel. */
+#agent-console .agent-console > [renderregion="dialog"] {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    pointer-events: none;
+}
+
+#agent-console .agent-console > [renderregion="dialog"] > .console-panel {
+    pointer-events: auto;
+    margin: 0;
+    max-height: min(80vh, 720px);
+    overflow: auto;
+}
+
 #agent-console agent-console-select-panel .select-core {
     display: none !important;
 }

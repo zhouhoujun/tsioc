@@ -11,7 +11,7 @@ import {
     AgentConsoleApprovalsPanelComponent,
     AgentConsoleComponent,
     AgentConsoleInputPanelComponent,
-    AgentConsoleMessageDetailPanelComponent,
+    AgentConsoleMessagePanelComponent,
     AgentConsoleMessagesPanelComponent,
     AgentConsolePendingQuestionPanelComponent,
     AgentConsoleReviewPanelComponent,
@@ -861,6 +861,62 @@ export class AgentConsoleMessagesRendererTest {
         }
     }
 
+    @Test('the viewport jump-to-bottom affordance shows new rows and resumes following')
+    async viewportJumpAffordanceResumesFollowing() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const consoleRef = tuiCtx.get(ComponentFactory).create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const instance: any = consoleRef.instance;
+            const state = instance.sessionState;
+            state.setMessages(Array.from({ length: 60 }, (_value, index) => ({
+                id: `m${index}`,
+                role: index % 2 ? 'assistant' : 'user',
+                content: `message ${index} ${'x'.repeat(40)}`,
+                createdAt: index
+            })) as any);
+            await settleDynamicMessages(consoleRef);
+            surface = new TuiTerminalSurface({
+                renderer: tuiCtx.get(TuiRenderer),
+                root: consoleRef.elementRef.nativeElement,
+                width: 90,
+                height: 24,
+                nativeScrollback: false,
+                scrollViewport: true,
+                scrollRegionId: 'transcript',
+                footerRegionId: 'footer',
+                output: { write() { /* noop */ } },
+                viewportNotice: () => instance.resolveViewportNotice(),
+                onViewportResume: () => instance.onTerminalViewportResume()
+            });
+            surface.render();
+            const plain = (line: string): string => line.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, '');
+            expect(surface.lastRenderedLines.some(line => plain(line).includes('Jump to bottom') || plain(line).includes('跳转底部'))).toEqual(false);
+
+            expect(surface.scrollViewport(6)).toEqual(true);
+            state.messagesNewCount = 3;
+            surface.render();
+            const noticeLine = surface.lastRenderedLines.map(plain).find(line => line.includes('Jump to bottom') || line.includes('跳转底部'));
+            expect(noticeLine).toBeTruthy();
+            expect(noticeLine).toContain('3');
+
+            const bounds = (surface as any).viewportNoticeBounds as { row: number; start: number; end: number };
+            expect(bounds).toBeTruthy();
+            surface.dispatchMouse({ button: 0, x: bounds.start + 2, y: bounds.row + 1, release: false } as any);
+            surface.dispatchMouse({ button: 0, x: bounds.start + 2, y: bounds.row + 1, release: true } as any);
+            await settleDynamicMessages(consoleRef);
+            expect(surface.viewportFollowing).toEqual(true);
+            expect(surface.viewportScrollOffset).toEqual(0);
+            expect(state.messagesNewCount).toEqual(0);
+        } finally {
+            surface?.destroy();
+            await tuiCtx.close();
+        }
+    }
+
     @Test('closing a select menu repaints it away immediately')
     async selectMenuCloseRepaints() {
         const tuiCtx = await Application.run(AgentModule, {
@@ -1650,7 +1706,7 @@ export class AgentConsoleOperationalPanelsRendererTest {
         await ref.render();
         await Promise.resolve();
 
-        const detailPanel = ref.hostView.query(AgentConsoleMessageDetailPanelComponent) as ComponentRef<AgentConsoleMessageDetailPanelComponent> | null;
+        const detailPanel = ref.hostView.query(AgentConsoleMessagePanelComponent) as ComponentRef<AgentConsoleMessagePanelComponent> | null;
         const detailLines = detailPanel?.instance.detailLines || [];
 
         expect(detailPanel).toBeTruthy();

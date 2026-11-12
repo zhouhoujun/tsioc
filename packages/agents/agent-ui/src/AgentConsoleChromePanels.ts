@@ -1,6 +1,12 @@
 import { Attribute, Component, ReactiveEffect, reactive } from '@tsdi/components';
+import { DialogComponent } from '@tsdi/components/common/dialog';
 import { formatCompactNumber } from '@tsdi/core';
-import { KeymapPanelComponent, StatusListComponent } from '@tsdi/components/common';
+import {
+    KeymapPanelComponent,
+} from '@tsdi/components/common/keymap';
+import {
+    StatusListComponent,
+} from '@tsdi/components/common/status-list';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import { formatAgentUiLabel, formatAgentKeymapActionLabel, formatAgentPanelLabel as panelLabel, formatAgentPanelStatusLabel as panelStatusLabel } from './agent-ui.i18n';
@@ -53,16 +59,20 @@ import { AgentConsoleStatuslineField } from './AgentConsoleStatusline';
 import { DEFAULT_TIMELINE_LABELS, resolveTimelineWindowLedger, TimelineWindowMode } from './AgentConsoleTimelineWindow';
 import {
     buildBrandBlock as buildTerminalBrandBlock,
-    DialogComponent,
-    DetailPanelComponent,
-    InputFieldComponent,
-    ListPanelComponent,
-    MessageRowComponent,
-    SelectComponent,
     resolveEnterAction as resolveConsoleEnterAction,
     resolveListWindow as resolveConsoleListWindow,
-    resolveSelectWindow as resolveConsoleSelectWindow
+    resolveSelectWindow as resolveConsoleSelectWindow,
 } from '@tsdi/components/common';
+import {
+    PanelComponent,
+} from '@tsdi/components/common/panel';
+import {
+    ListComponent,
+} from '@tsdi/components/common/list';
+import { SelectComponent } from '@tsdi/components/common/select';
+import { InputFieldComponent } from './AgentConsoleInputField';
+import { MessageRowComponent } from './AgentConsoleMessageRow';
+
 export * from './AgentConsoleMessagePanels';
 @Component({
     selector: 'agent-console-activity-panel',

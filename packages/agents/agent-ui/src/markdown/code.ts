@@ -1,4 +1,4 @@
-import { SyntaxState, tokenizeCodeLine } from '@tsdi/components/common';
+import { SyntaxState, tokenizeCodeLine } from '@tsdi/components/common/syntax';
 import type { AgentConsoleMarkdownToken, AgentConsoleMarkdownTone } from './model';
 
 /**

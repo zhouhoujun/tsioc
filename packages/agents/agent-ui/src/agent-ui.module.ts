@@ -1,7 +1,18 @@
 import { Module } from '@tsdi/ioc';
 import { TransformModule } from '@tsdi/core';
 import { ComponentsModule } from '@tsdi/components';
-import { BaseComponentsModule, TAB_BAR_SOURCE, ToastService } from '@tsdi/components/common';
+import { BaseComponentsModule } from '@tsdi/components/common';
+import { ToastModule, ToastService } from '@tsdi/components/common/toast';
+import { TAB_BAR_SOURCE, TabBarModule } from '@tsdi/components/common/tab-bar';
+import { TabsModule } from '@tsdi/components/common/tabs';
+import { DialogModule } from '@tsdi/components/common/dialog';
+import { SelectModule } from '@tsdi/components/common/select';
+import { ListModule } from '@tsdi/components/common/list';
+import { PanelModule } from '@tsdi/components/common/panel';
+import { KeymapPanelModule } from '@tsdi/components/common/keymap';
+import { StatusListModule } from '@tsdi/components/common/status-list';
+import { MarkdownModule } from '@tsdi/components/common/markdown';
+
 import { AgentModule } from '@tsdi/agent';
 import { I18nModule, I18N_PROVIDERS } from '@tsdi/i18n';
 import { getGlobalProcess } from './global-process';
@@ -46,7 +57,9 @@ import {
     , AgentConsoleUserRenderer
 } from './AgentConsoleMessageRenderers';
 import { AgentConsoleComponent } from './AgentConsoleComponent';
-import { CssVariablesDirective } from '@tsdi/components/common';
+import { CssVariablesDirective } from './AgentConsoleCssVariables';
+import { MessageRowComponent } from './AgentConsoleMessageRow';
+import { InputFieldComponent } from './AgentConsoleInputField';
 import {
     AgentConsoleActivityPanelComponent,
     AgentConsoleBrandPanelComponent,
@@ -54,7 +67,7 @@ import {
     AgentConsoleInputPanelComponent,
     AgentConsoleAssistantMessageItemComponent,
     AgentConsoleApprovalsPanelComponent,
-    AgentConsoleMessageDetailPanelComponent,
+    AgentConsoleMessagePanelComponent,
     AgentConsoleMessageLineComponent,
     AgentConsoleMessagesPanelComponent,
     AgentConsoleErrorMessageItemComponent,
@@ -75,7 +88,7 @@ import {
     AgentConsoleWorkingPanelComponent
 } from './AgentConsolePanels';
 import {
-    AgentConsoleTimelineEventDetailPanelComponent,
+    AgentConsoleTimelineEventPanelComponent,
     AgentConsoleReviewPanelComponent,
     AgentConsoleGitSnapshotPanelComponent
 } from './AgentConsoleDetailPanels';
@@ -92,6 +105,16 @@ import { AGENT_CONSOLE_MARKDOWN_COMPONENT } from './AgentConsoleMessageComponent
     imports: [
         ComponentsModule,
         BaseComponentsModule,
+        TabBarModule,
+        TabsModule,
+        DialogModule,
+        ToastModule,
+        SelectModule,
+        ListModule,
+        PanelModule,
+        KeymapPanelModule,
+        StatusListModule,
+        MarkdownModule,
         TransformModule,
         AgentModule,
         I18nModule.withLocales({
@@ -104,6 +127,8 @@ import { AGENT_CONSOLE_MARKDOWN_COMPONENT } from './AgentConsoleMessageComponent
     ],
     declarations: [
         AgentConsoleComponent,
+        MessageRowComponent,
+        InputFieldComponent,
         CssVariablesDirective,
         AgentConsoleBrandPanelComponent,
         AgentConsoleCommandOutputsPanelComponent,
@@ -138,8 +163,8 @@ import { AGENT_CONSOLE_MARKDOWN_COMPONENT } from './AgentConsoleMessageComponent
         AgentConsoleErrorMessageItemComponent,
             AgentConsoleSystemMessageItemComponent,
         AgentConsoleMessagesPanelComponent,
-        AgentConsoleMessageDetailPanelComponent,
-        AgentConsoleTimelineEventDetailPanelComponent,
+        AgentConsoleMessagePanelComponent,
+        AgentConsoleTimelineEventPanelComponent,
         AgentConsoleReviewPanelComponent,
         AgentConsoleGitSnapshotPanelComponent,
         AgentConsoleActivityPanelComponent,
@@ -208,6 +233,8 @@ import { AGENT_CONSOLE_MARKDOWN_COMPONENT } from './AgentConsoleMessageComponent
     ],
     exports: [
         AgentConsoleComponent,
+        MessageRowComponent,
+        InputFieldComponent,
         AgentConsoleBrandPanelComponent,
         AgentConsoleCommandOutputsPanelComponent,
         AgentConsoleStatusPanelComponent,
@@ -228,8 +255,8 @@ import { AGENT_CONSOLE_MARKDOWN_COMPONENT } from './AgentConsoleMessageComponent
         AgentConsoleErrorMessageItemComponent,
             AgentConsoleSystemMessageItemComponent,
         AgentConsoleMessagesPanelComponent,
-        AgentConsoleMessageDetailPanelComponent,
-        AgentConsoleTimelineEventDetailPanelComponent,
+        AgentConsoleMessagePanelComponent,
+        AgentConsoleTimelineEventPanelComponent,
         AgentConsoleReviewPanelComponent,
         AgentConsoleGitSnapshotPanelComponent,
         AgentConsoleActivityPanelComponent,

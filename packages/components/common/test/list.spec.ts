@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { ListComponent, ListEntry, ListPager } from '../src';
+import { ListComponent, ListEntry, ListPager } from '../list';
 
 interface Item extends ListEntry {
     id: string;

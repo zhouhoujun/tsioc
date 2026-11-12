@@ -1,7 +1,7 @@
 import { ApplicationContext, formatCompactNumber } from '@tsdi/core';
 import { bootstrapConsole, disposeConsole } from './AgentConsoleBootstrap';
 import { AgentConsoleSessionArtifactsHost } from './AgentConsoleSessionArtifactsHost';
-import { ToastService } from '@tsdi/components/common';
+import { ToastService } from '@tsdi/components/common/toast';
 import { bindConsoleToasts, dismissConsoleToast, disposeConsoleToasts, ensureConsoleToasts, notifyConsole } from './AgentConsoleToasts';
 import { AgentConsoleNoticeExpiry } from './AgentConsoleNoticeExpiry';
 import { AgentConsoleQueuedPrompt, drainQueuedPrompts, enqueuePrompt, queueDraft } from './AgentConsoleQueuedPrompts';
@@ -316,7 +316,7 @@ import { startProviderWizard, handleWizardEscape, cancelProviderWizard, resetPro
     selector: 'agent-console',
     template: `
     <div class="agent-console" data-theme="{{themeName}}">
-        <tab-bar renderRegion="header"></tab-bar>
+        <tabs renderRegion="header" strip-only></tabs>
         <agent-console-brand-panel renderRegion="transcript" v-show="panels.welcome && !panels.messageDetail && !panels.select && !panels.textOverlay && !panels.pendingQuestion"></agent-console-brand-panel>
         <agent-console-messages-panel renderRegion="transcript" v-show="!panels.messageDetail"></agent-console-messages-panel>
         <agent-console-message-detail-panel renderRegion="transcript" v-if="panels.messageDetail"></agent-console-message-detail-panel>
@@ -550,10 +550,11 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
 
     protected async openSession(sessionId?: string, options?: { persistCurrentHistory?: boolean; fresh?: boolean; missing?: boolean; scoped?: boolean }): Promise<void> {
         syncMarkdownWidthFromSurface(this.state, this.surfaceAccessor, this.destroyed); return this.sessionUiState.switchSession(
-            () => delegateOpenSession(this.sessionOpenHost(), sessionId, options),
+            cached => delegateOpenSession(this.sessionOpenHost(), sessionId, { ...options, cached }),
             () => this.state.sessionId,
             () => this.surfaceAccessor?.beginRenderBatch?.(),
-            () => this.surfaceAccessor?.endRenderBatch?.(), applyAgentConsoleSessionComposer.bind(null, { state: this.state })
+            () => this.surfaceAccessor?.endRenderBatch?.(), applyAgentConsoleSessionComposer.bind(null, { state: this.state }),
+            String(sessionId || '').trim() || undefined
         );
     }
 
