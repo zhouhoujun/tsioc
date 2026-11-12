@@ -28,6 +28,7 @@ interface TypeEmitContext {
     imports: ts.Statement[];
     aliases: Map<string, string>;
     sequence: { value: number };
+    moduleKind?: ts.ModuleKind;
 }
 let activeTypeContext: TypeEmitContext | undefined;
 
@@ -109,11 +110,32 @@ function valueTypeReference(name: string): ts.Expression {
             ? ts.factory.createIdentifier(name)
             : globalValueReference(name);
     }
-    if (!imported.typeOnly) {
-        // The import is already a value import; the transformed expression
-        // keeps it alive during emit, so reuse it instead of adding an alias.
-        return ts.factory.createIdentifier(name);
+    if (context.moduleKind === ts.ModuleKind.CommonJS) {
+        // CommonJS emit has no local binding for a named import, and synthetic
+        // metadata identifiers are not linked to the original import symbol.
+        // Bind the module namespace with a real require and qualify the access.
+        const key = `ns:${imported.module}`;
+        let alias = context.aliases.get(key);
+        if (!alias) {
+            alias = `__tsdi_ns_${context.sequence.value++}`;
+            context.aliases.set(key, alias);
+            context.imports.push(ts.factory.createVariableStatement(undefined, ts.factory.createVariableDeclarationList([
+                ts.factory.createVariableDeclaration(
+                    alias,
+                    undefined,
+                    undefined,
+                    ts.factory.createCallExpression(ts.factory.createIdentifier('require'), undefined, [ts.factory.createStringLiteral(imported.module)])
+                )
+            ], ts.NodeFlags.Const)));
+        }
+        return ts.factory.createPropertyAccessExpression(
+            ts.factory.createIdentifier(alias),
+            imported.imported === 'default' ? 'default' : imported.imported
+        );
     }
+    // Always create a value alias for metadata references. The original import
+    // may be erased by TypeScript's import elision when the class is only used
+    // in type position; the synthetic metadata still needs a runtime binding.
     const cacheKey = `${imported.module}:${imported.imported}`;
     const cached = context.aliases.get(cacheKey);
     if (cached) {
@@ -432,7 +454,7 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
         return (sourceFile: ts.SourceFile): ts.SourceFile => {
             const imports: ts.Statement[] = [];
             const statements: ts.Statement[] = [];
-            activeTypeContext = { sourceFile, imports, aliases: new Map(), sequence: { value: 0 } };
+            activeTypeContext = { sourceFile, imports, aliases: new Map(), sequence: { value: 0 }, moduleKind: options.moduleKind };
             let usesIoc = false;
             let usesAspect = false;
             let usesNoPointcut = false;

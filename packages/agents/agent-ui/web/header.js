@@ -183,6 +183,7 @@
         window.__TSDI_AGENT_WEB__ = config;
         renderHeader(config).then(function () {
             var script = document.createElement('script');
+            script.type = 'module';
             script.src = './dist/agent-console.js';
             document.body.appendChild(script);
         });

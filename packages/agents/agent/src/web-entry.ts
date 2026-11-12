@@ -50,6 +50,8 @@ export {
     collectTurnUsageRecords
 } from './runtime/UsageSummary';
 export * from './memory/nav';
+export * from './memory/background-task-store';
+export { TypeOrmBackgroundTaskStore } from './memory/TypeOrmBackgroundTaskStore';
 export * from './memory/timeline-projection';
 export * from './memory/ProjectMemoryService';
 export * from './ui/CommandExecution';

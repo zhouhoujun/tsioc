@@ -7,12 +7,12 @@ import { emitAotProject } from '../../compiler/src/AotCompiler';
  * Bundles the web console entry (src/web-console.ts) into a single browser
  * script (web/dist/agent-console.js).
  *
- * Two-stage pipeline:
- * 1. `tsc` compiles the monorepo sources with `experimentalDecorators` +
- *    `emitDecoratorMetadata` so TypeORM entity decorators receive runtime
- *    design:type metadata (esbuild cannot emit decorator metadata).
- * 2. `esbuild` bundles the compiled output, aliasing @tsdi/* to the tsc
- *    output directory and stubbing node-only modules.
+ * Two-stage pipeline (same shape as packages/workflow-admin):
+ * 1. `emitAotProject` precompiles the reachable graph as **ES modules**.
+ *    AOT's synthetic helper/type imports cannot be linked by CommonJS emit,
+ *    and ESM lets esbuild tree-shake renderer/service dead branches.
+ * 2. `esbuild` bundles the ESM output, aliasing @tsdi/* to the tsc output
+ *    directory and stubbing node-only modules.
  */
 
 const ROOT = path.resolve(__dirname, '../../..');
@@ -44,7 +44,7 @@ function emitProject(configPath: string, overrides: Record<string, unknown>, emi
 
 function compileWithTsc(): void {
     fs.rmSync(TSC_OUT, { recursive: true, force: true });
-    emitProject(path.join(PACKAGE_DIR, 'tsconfig.json'), {
+    emitProject(path.join(PACKAGE_DIR, 'tsconfig.web.json'), {
         outDir: TSC_OUT,
         rootDir: path.join(ROOT, 'packages'),
         declaration: false,
@@ -54,7 +54,7 @@ function compileWithTsc(): void {
     if (!fs.existsSync(webEntryJs)) {
         const webEntryTs = path.join(ROOT, 'packages', 'agents', 'agent', 'src', 'web-entry.ts');
         const webTsconfig = path.join(TSC_OUT, 'web-entry.tsconfig.json');
-        const rootTsconfig = path.join(ROOT, 'tsconfig.json');
+        const rootTsconfig = path.join(PACKAGE_DIR, 'tsconfig.web.json');
         fs.mkdirSync(TSC_OUT, { recursive: true });
         fs.writeFileSync(webTsconfig, JSON.stringify({
             extends: rootTsconfig,
@@ -183,6 +183,11 @@ const nodeOnlyThirdPartyStubPlugin: esbuild.Plugin = {
         build.onResolve({ filter: stubRegex }, (): ResolveResult => {
             return { path: 'node-only-third-party-stub', namespace: 'node-only-third-party-stub' };
         });
+        // TypeORM's browser MongoDB driver re-exports BSON without a binding;
+        // the console only uses sql.js, so the driver is dead code here.
+        build.onResolve({ filter: /bson(\.typings)?(\.js)?$/i }, (): ResolveResult => {
+            return { path: 'node-only-third-party-stub', namespace: 'node-only-third-party-stub' };
+        });
         build.onLoad({ filter: /.*/, namespace: 'node-only-third-party-stub' }, (): esbuild.OnLoadResult => {
             return {
                 contents: 'module.exports = {};',
@@ -198,7 +203,7 @@ async function main(): Promise<void> {
     fs.mkdirSync(distDir, { recursive: true });
     const sharedBuildOptions: esbuild.BuildOptions = {
         bundle: true,
-        format: 'iife',
+        format: 'esm',
         platform: 'browser',
         target: 'es2020',
         define: { global: 'globalThis' },
@@ -206,7 +211,7 @@ async function main(): Promise<void> {
         legalComments: 'none',
         // Ship a compact browser bundle; pass --dev for readable stack traces.
         minify: !process.argv.includes('--dev'),
-        plugins: [tscOutputAliasPlugin, nodeBuiltinStubPlugin, nodeOnlyThirdPartyStubPlugin],
+        plugins: [nodeOnlyThirdPartyStubPlugin, tscOutputAliasPlugin, nodeBuiltinStubPlugin],
         nodePaths: [path.join(ROOT, 'node_modules')],
         external: [
             'jsdom',

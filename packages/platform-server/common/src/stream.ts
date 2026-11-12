@@ -6,8 +6,12 @@ import { Stream, Writable, WritableOptions, Readable, Duplex, PassThrough, Trans
 import * as rstm from 'readable-stream'
 import { pipeline as pmPipeline } from 'stream/promises';
 import * as zlib from 'node:zlib';
-import * as FormData from 'form-data';
-import * as rawBody from 'raw-body';
+import * as FormDataModule from 'form-data';
+import * as rawBodyModule from 'raw-body';
+
+// CJS exposes these as the module itself; ESM interop wraps them as default.
+const FormData = ((FormDataModule as any).default ?? FormDataModule) as typeof import('form-data');
+const rawBody = ((rawBodyModule as any).default ?? rawBodyModule) as typeof import('raw-body');
 import { JsonStreamStringify } from './stringify';
 
 

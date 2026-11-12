@@ -14,23 +14,28 @@ export class AotCommonJsRuntimeTest {
     @Test('emitted CommonJS defines the decorator helper before use')
     decoratorHelperIsDefined() {
         const source = `
-import { Injectable, Inject } from '@tsdi/ioc';
+import { Injectable, Inject, Injector } from '@tsdi/ioc';
 @Injectable()
 export class DemoService {
-    constructor(@Inject('DEMO') private readonly value: string) {}
+    constructor(@Inject('DEMO') private readonly value: string, private readonly injector: Injector) {}
 }
 `;
         const output = transpileAot('demo.ts', source, { module: ts.ModuleKind.CommonJS });
         expect(output).toContain('const __aotDeco = require("@tsdi/ioc").applyPrecompiledDecorators;');
         expect(output).toContain('__aotDeco(DemoService,');
+        // Imported classes used by design:paramtypes must be qualified by a real
+        // module binding; a bare identifier is undefined at runtime.
+        expect(output).toMatch(/Reflect\.metadata\("design:paramtypes", \[String, __tsdi_ns_\d+\.Injector\]\)/);
     }
 
     @Test('emitted CommonJS module loads without a ReferenceError')
     decoratorHelperRunsAtRuntime() {
         const source = `
-import { Injectable } from '@tsdi/ioc';
+import { Injectable, Injector } from '@tsdi/ioc';
 @Injectable()
-export class DemoService {}
+export class DemoService {
+    constructor(private readonly injector: Injector) {}
+}
 `;
         const output = transpileAot('demo.ts', source, { module: ts.ModuleKind.CommonJS });
         const module = { exports: {} as Record<string, any> };

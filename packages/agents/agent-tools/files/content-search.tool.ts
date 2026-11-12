@@ -2,7 +2,9 @@ import * as path from 'path';
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { promises as fs } from 'fs';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import globby = require('globby');
+import * as globbyModule from 'globby';
+
+const globby = ((globbyModule as any).default ?? globbyModule) as typeof import('globby');
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspaceSubdir, toRelativeWorkspacePath } from './path-policy';

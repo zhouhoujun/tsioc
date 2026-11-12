@@ -3632,3 +3632,18 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 两种模式都落到 `#/admin`；认证关闭无登录页，认证开启未登录跳 `#/login`。
   - 启动时读取 `/auth/config`，用 `createWorkflowAdminAppModule(authEnabled)` 生成路由表：仅认证开启时给 preview/admin 路由添加 `WorkflowAdminAuthGuard`；关闭时不再请求 `/auth/token`、`/auth/userinfo`。
   - 注册/登录后回 `#/admin`；刷新重走 token→userinfo；`#/does-not-exist` 仍为 404。
+
+## 2026-11-12 `/web` 浏览器 AOT/ESM 构建对齐 workflow-admin（`cOe is not a function` 等）
+- **现象**：`/web` 页面报 `__aotDeco is not defined`，修复 CJS 绑定后又出现 `cOe is not a function`；其它 web 包正常，只有 agent-ui 浏览器包异常。
+- **根因**：agent-ui `build-web.ts` 用 CommonJS 的 `tsconfig.json` 做 AOT 预编译，再交给 esbuild。AOT 合成出的是 ESM 形状的 helper/命名空间引用，CJS emit 只能在部分场景用 `require(...)` 兜底（已提交的 `53bf58ed0`），但 metadata 的 `design:type` 引用仍会因 TS import elision 留下裸标识符（例如 `TemplateRef`），压缩后表现为运行时 `xxx is not a function` / `is not defined`。
+- **修复（与 `packages/workflow-admin` 同一流程）**：
+  1. 新增 `tsconfig.web.json`：仅 `web/browser-entry.ts` 为入口、`module: ESNext`、`moduleResolution: Node`、`esModuleInterop`，AOT 全程产出 ESM，esbuild 再以 `format: 'esm'` 打包并 tree-shake 渲染器死分支。
+  2. `web/header.js` 以 `<script type="module">` 加载 `dist/agent-console.js`。
+  3. `AotTransformer` metadata 类型引用策略按 `moduleKind` 分流：CJS 用真实 `require` 命名空间绑定，ESM 始终为类型引用创建值别名（避免 import elision 留下裸标识符）；同时修复 metadata 类型名限定与 helper 绑定。
+  4. 跨包 CJS/ESM 互操作：`globby`/`form-data`/`raw-body`/`browser-process-hrtime` 改为命名空间导入 + `.default ?? module` 取实际导出（CJS `tsc` 与 ESM web 程序共用同一源码）；`ioc` 预先导出 precompiled helper 并把 `Decors` 类型改为 type-only，解除初始化环。
+  5. esbuild 插件顺序调整为先 stub node-only 第三方模块（含 TypeORM browser MongoDB 的 `BSON` 空 re-export），再走 `@tsdi/*` AOT 输出别名；`agent` 的 `web-entry.ts` 补齐 `background-task-store` 导出。
+- **验证**：
+  - `npm run build:web`：1128 + 353 modules，bundle 3.9 MB，无 ERROR。
+  - JSDOM 直接 import ESM 产物：`errors []`（无 `ReferenceError`/`TypeError`）。
+  - 真实 `tsdi-agent serve` + JSDOM 挂载（真实 RPC、非 stub）：`errors []`、`#agent-console` 渲染出 tab/输入框/审批弹窗，session 正常加载。
+  - 全量 `RUN_PTY=1 bash scripts/agents-gate.sh`：**27/27 GATE-PASS，GATE_EXIT=0**（含 tsc-agent / tsc-agent-ui / tsc-agent-gateway / tsc-agent-tools、build-agent-ui-web、DOM/TUI、真实 PTY、production-db-integrity）。

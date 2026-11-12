@@ -1,3 +1,6 @@
+// Precompiled helpers must be exported before modules that call them during
+// their own initialization (injector.ts calls __aotDeco at class definition).
+export * from './metadata/precompiled';
 export * from './exception';
 export * from './types';
 export * from './tokens';
@@ -23,7 +26,6 @@ export * from './metadata/meta';
 export * from './metadata/type';
 export * from './metadata/define';
 export * from './metadata/class';
-export * from './metadata/precompiled';
 export * from './metadata/type.def';
 export * from './metadata/fac';
 export * from './metadata/decor';

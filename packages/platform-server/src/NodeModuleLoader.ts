@@ -1,7 +1,9 @@
 import { Modules, isString } from '@tsdi/ioc';
 import { DefaultModuleLoader, ModuleLoader } from '@tsdi/core';
 import { runMainPath, toAbsolutePath } from './toAbsolute';
-import * as globby from 'globby';
+import * as globbyModule from 'globby';
+
+const globby = ((globbyModule as any).default ?? globbyModule) as typeof import('globby');
 
 
 /**
@@ -21,8 +23,8 @@ export class NodeModuleLoader extends DefaultModuleLoader implements ModuleLoade
         }
         basePath = basePath || runMainPath();
 
-        return globby(files, { cwd: basePath }).then(mflies => {
-            return Promise.all(mflies.map(fp => {
+        return globby(files, { cwd: basePath }).then((mflies: string[]) => {
+            return Promise.all(mflies.map((fp: string) => {
                 return import(toAbsolutePath(basePath!, isString(fp) ? fp : (fp as { path: string }).path))
             }))
         })

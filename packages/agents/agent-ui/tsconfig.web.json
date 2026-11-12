@@ -1,0 +1,16 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "../../..",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "declaration": false,
+    "sourceMap": false,
+    "noEmitOnError": false,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "files": ["web/browser-entry.ts"]
+}

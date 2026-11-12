@@ -1,6 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import globby = require('globby');
+import * as globbyModule from 'globby';
+
+const globby = ((globbyModule as any).default ?? globbyModule) as typeof import('globby');
 import { AgentSkillDefinition, AgentSkillToolRef, AgentSkillMetadata } from './types';
 import { boundedMap } from './bounded-map';
 
