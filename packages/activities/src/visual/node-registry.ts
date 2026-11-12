@@ -196,6 +196,30 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         defaultConfig: {}
     },
     {
+        type: 'junction',
+        label: 'Junction',
+        description: 'Route wires without changing the message',
+        category: 'flow',
+        icon: '•',
+        color: '#64748b',
+        textColor: '#ffffff',
+        inputs: [port('in', 'in', 'input', 'Input')],
+        outputs: [port('out', 'out', 'output', 'Output')],
+        defaultConfig: {}
+    },
+    {
+        type: 'sequence',
+        label: 'Sequence',
+        description: 'Keep steps in a strict order',
+        category: 'flow',
+        icon: '≡',
+        color: '#475569',
+        textColor: '#ffffff',
+        inputs: [port('in', 'in', 'input', 'Input')],
+        outputs: [port('out', 'out', 'output', 'Output')],
+        defaultConfig: {}
+    },
+    {
         type: 'parallel',
         label: 'Parallel',
         description: 'Run all outgoing branches concurrently',
@@ -308,6 +332,34 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             })
         ],
         defaultConfig: { message: 'Workflow step completed', level: 'info' }
+    },
+    {
+        type: 'debug',
+        label: 'Debug',
+        description: 'Inspect a message property or the complete message',
+        category: 'action',
+        icon: '◉',
+        color: '#0284c7',
+        textColor: '#ffffff',
+        inputs: [port('in', 'in', 'input', 'Input')],
+        outputs: [],
+        fields: [
+            configField({ key: 'field', label: 'Output property', type: 'text', pattern: VALUE_PATH_PATTERN, placeholder: 'payload', description: 'Context path to print instead of the complete message.' }),
+            configField({ key: 'complete', label: 'Complete message', type: 'boolean', defaultValue: false, description: 'Print the complete workflow context.' }),
+            configField({
+                key: 'level',
+                label: 'Level',
+                type: 'select',
+                defaultValue: 'info',
+                options: [
+                    { label: 'info', value: 'info' },
+                    { label: 'warn', value: 'warn' },
+                    { label: 'error', value: 'error' }
+                ]
+            }),
+            configField({ key: 'console', label: 'Also print to console', type: 'boolean', defaultValue: false, description: 'Mirror the message to the host console.' })
+        ],
+        defaultConfig: { level: 'info', complete: false, console: false }
     },
     {
         type: 'http-request',

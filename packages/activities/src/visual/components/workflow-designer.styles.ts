@@ -900,8 +900,22 @@ workflow-canvas {
     border-color: #93c5fd;
 }
 
-.workflow-field {
+.workflow-field-group {
     margin-bottom: 10px;
+}
+
+.workflow-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 10px;
+}
+
+.workflow-field {
+    min-width: 0;
+}
+
+.workflow-field.is-full {
+    grid-column: 1 / -1;
 }
 
 .workflow-field-label-row {

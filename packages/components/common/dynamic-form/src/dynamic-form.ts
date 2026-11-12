@@ -83,6 +83,7 @@ let dynamicFormSequence = 0;
             <div [class]="noFieldsClass()" v-if="!visibleGroups.length">{{emptyLabel}}</div>
             <div [class]="groupClass()" v-for="group in visibleGroups">
                 <div [class]="groupTitleClass()" v-if="group.label">{{group.label}}</div>
+                <div [class]="groupFieldsClass()">
                 <div [class]="fieldClass(field)" v-for="field in group.fields" data-field-key="{{field.key}}">
                     <div [class]="labelRowClass()" v-if="field.type !== 'hidden'">
                         <label [class]="labelClass()">{{fieldLabel(field)}}<span [class]="requiredClass()" v-if="isRequired(field)">*</span></label>
@@ -143,6 +144,7 @@ let dynamicFormSequence = 0;
                     <input v-if="field.type === 'hidden'" type="hidden" [value]="fieldValue(field)" />
                     <div [class]="errorClass()" v-if="errorFor(field)">{{errorFor(field)}}</div>
                     <div [class]="hintClass()" v-if="field.description && !isBooleanInput(field)">{{field.description}}</div>
+                </div>
                 </div>
             </div>
             <div [class]="actionsClass()" v-if="showActions">
@@ -669,10 +671,16 @@ export class DynamicFormComponent implements OnDestroy {
     formClass(): string { return `${this.classPrefix}-form dynamic-form`; }
     schemaErrorClass(): string { return `${this.classPrefix}-schema-error`; }
     groupClass(): string { return `${this.classPrefix}-field-group`; }
+    groupFieldsClass(): string { return `${this.classPrefix}-fields`; }
     groupTitleClass(): string { return `${this.classPrefix}-field-group-title`; }
     noFieldsClass(): string { return `${this.classPrefix}-no-fields`; }
     fieldClass(field: DynamicFormField): string {
-        return [ `${this.classPrefix}-field`, field.fieldClass || '' ].filter(Boolean).join(' ');
+        const span = field.span || (['number', 'date', 'time', 'checkbox', 'switch'].includes(field.type) ? 'half' : 'full');
+        return [
+            `${this.classPrefix}-field`,
+            span === 'half' ? 'is-half' : 'is-full',
+            field.fieldClass || ''
+        ].filter(Boolean).join(' ');
     }
     labelRowClass(): string { return `${this.classPrefix}-field-label-row`; }
     labelClass(): string { return `${this.classPrefix}-field-label`; }

@@ -187,6 +187,18 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "gateway-deny": {
                 "label": "Gateway deny",
                 "description": "Reject matching requests at the gateway"
+            },
+            "debug": {
+                "label": "Debug",
+                "description": "Inspect a message property or the complete message"
+            },
+            "junction": {
+                "label": "Junction",
+                "description": "Route wires without changing the message"
+            },
+            "sequence": {
+                "label": "Sequence",
+                "description": "Keep steps in a strict order"
             }
         },
         "field": {
@@ -410,6 +422,12 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "message": "Message",
                 "priority": "Priority",
                 "body": "Body"
+            },
+            "debug": {
+                "field": "Output property",
+                "complete": "Complete message",
+                "level": "Level",
+                "console": "Also print to console"
             }
         },
         "fieldPlaceholder": {
@@ -532,6 +550,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "gateway-deny": {
                 "body": "{ \"error\": \"forbidden\" }"
+            },
+            "debug": {
+                "field": "payload"
             }
         },
         "fieldDescription": {
@@ -648,6 +669,11 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "gateway-condition": {},
             "gateway-deny": {
                 "priority": "Lower runs first."
+            },
+            "debug": {
+                "field": "Context path to print instead of the complete message.",
+                "complete": "Print the complete workflow context.",
+                "console": "Mirror the message to the host console."
             }
         },
         "group": {
@@ -885,6 +911,18 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "gateway-deny": {
                 "label": "网关拒绝",
                 "description": "在网关直接拒绝匹配的请求"
+            },
+            "debug": {
+                "label": "调试",
+                "description": "查看消息属性或完整消息"
+            },
+            "junction": {
+                "label": "汇合",
+                "description": "仅汇合连线，不改变消息"
+            },
+            "sequence": {
+                "label": "顺序",
+                "description": "按严格顺序执行步骤"
             }
         },
         "field": {
@@ -1108,6 +1146,12 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "message": "消息",
                 "priority": "优先级",
                 "body": "响应体"
+            },
+            "debug": {
+                "field": "输出属性",
+                "complete": "完整消息",
+                "level": "级别",
+                "console": "同时输出到控制台"
             }
         },
         "fieldPlaceholder": {
@@ -1157,7 +1201,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "coap-request": {},
             "gateway-route": {},
             "gateway-condition": {},
-            "gateway-deny": {}
+            "gateway-deny": {},
+            "debug": {
+                "field": "payload"
+            }
         },
         "fieldDescription": {
             "start": {},
@@ -1273,6 +1320,11 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "gateway-condition": {},
             "gateway-deny": {
                 "priority": "数值越小越先执行。"
+            },
+            "debug": {
+                "field": "打印的上下文属性路径；留空时打印完整消息。",
+                "complete": "打印完整工作流上下文。",
+                "console": "同时输出到宿主控制台。"
             }
         },
         "group": {

@@ -15,6 +15,7 @@ import {
 } from './types';
 import { WorkflowNodeRegistry, WorkflowLocale } from './node-registry';
 import { hasCycle, validateVisualWorkflow } from './workflow-runtime';
+import { validateWorkflowConfigs } from './workflow-config-validation';
 import { compileVisualWorkflow, CompiledWorkflow, layoutVisualWorkflow } from './workflow-compiler';
 import { VisualWorkflowService } from './VisualWorkflowService';
 import {
@@ -788,7 +789,11 @@ export class WorkflowDesigner {
     }
 
     validate(): { valid: boolean; errors: string[] } {
-        return validateVisualWorkflow(this.definition);
+        const graph = validateVisualWorkflow(this.definition);
+        const configIssues = validateWorkflowConfigs(this.definition, this.registry)
+            .map(issue => `${issue.nodeName} · ${issue.label}: ${issue.message}`);
+        const errors = [...graph.errors, ...configIssues];
+        return { valid: errors.length === 0, errors };
     }
 
     markSaved(): void {

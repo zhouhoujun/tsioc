@@ -195,6 +195,7 @@ export class WorkflowInspectorComponent implements OnDestroy {
                 max: field.max,
                 step: field.step,
                 unit: field.unit,
+                span: field.span,
                 minLength: field.minLength,
                 maxLength: field.maxLength,
                 required: field.required,

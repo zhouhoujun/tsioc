@@ -57,8 +57,22 @@ export const DYNAMIC_FORM_CSS = `
     opacity: 0.18;
 }
 
+.df-field-group {
+    margin-bottom: 10px;
+}
+
+.df-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 10px;
+}
+
 .df-field {
-    margin-bottom: 9px;
+    min-width: 0;
+}
+
+.df-field.is-full {
+    grid-column: 1 / -1;
 }
 
 .df-field-label-row {

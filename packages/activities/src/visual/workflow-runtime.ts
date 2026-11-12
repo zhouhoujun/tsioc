@@ -433,7 +433,8 @@ export async function executeVisualNode(
             const iterations = Math.max(0, Math.min(10000, Number(config.iterations ?? 1) || 0));
             return { success: true, data: { nodeId: node.id, iterations } };
         }
-        case 'log': {
+        case 'log':
+        case 'debug': {
             const level = String(config.level || 'info');
             const field = config.field === undefined || config.field === null
                 ? ''
@@ -456,6 +457,10 @@ export async function executeVisualNode(
             const logger = (context as any).logger;
             if (logger && typeof logger[level] === 'function') {
                 logger[level](message);
+            }
+            if (node.type === 'debug' && config.console === true && typeof console !== 'undefined') {
+                const write = (console as any)[level] || console.log;
+                write.call(console, message);
             }
             return { success: true, data: { nodeId: node.id, level, message } };
         }
@@ -737,6 +742,9 @@ export async function executeVisualNode(
             }
             return { success: true, data: { nodeId: node.id, result: context } };
         }
+        case 'junction':
+        case 'sequence':
+            return { success: true, data: { nodeId: node.id } };
         case 'parallel':
             return { success: true, data: { nodeId: node.id, parallel: true } };
         case 'join':

@@ -170,6 +170,20 @@ describe('Workflow data & trigger nodes', () => {
         expect(invalid.success).toBe(false);
     });
 
+    it('runs generic junction, sequence and debug nodes', async () => {
+        const result = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: 7 } } },
+            { type: 'junction' },
+            { type: 'sequence' },
+            { type: 'debug', config: { field: 'value' } }
+        ]), {});
+        const states = result.data?.executionState?.nodeStates || {};
+        expect(result.success).toBe(true);
+        expect(states.junction_1.status).toBe('success');
+        expect(states.sequence_2.status).toBe('success');
+        expect(states.debug_3.result?.data?.message).toBe('7');
+    });
+
     it('runs a plain action node without start or end nodes', async () => {
         const result = await service.execute(chain([
             { type: 'task', config: { result: { ok: true } } }

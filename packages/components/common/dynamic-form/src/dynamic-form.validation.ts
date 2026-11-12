@@ -1,5 +1,5 @@
 import { AbstractControl, ValidatorFn, Validators } from '@tsdi/components/forms';
-import { DynamicFormField, DynamicFormRule, DynamicFormRuleType } from './dynamic-form.types';
+import { DynamicFormField, DynamicFormRule, DynamicFormRuleType, DynamicFormSchema } from './dynamic-form.types';
 
 export type DynamicFormErrorMap = Record<string, any> | null;
 
@@ -186,4 +186,44 @@ export function dynamicFormMessage(
         }
     }
     return '';
+}
+
+
+export interface DynamicFormValidationIssue {
+    key: string;
+    errors: Record<string, any>;
+    message: string;
+}
+
+/**
+ * Validate plain form values against a schema without rendering it. This is the
+ * shared entry point for hosts that need to validate node configuration before
+ * saving or running a workflow.
+ */
+export function validateDynamicFormValues(
+    schema: DynamicFormSchema | DynamicFormField[],
+    values: Record<string, any> = {},
+    messages?: Record<string, string>
+): { valid: boolean; issues: DynamicFormValidationIssue[] } {
+    const fields = Array.isArray(schema) ? schema : (schema?.fields || []);
+    const issues: DynamicFormValidationIssue[] = [];
+    for (const field of fields) {
+        const control = { value: values?.[field.key] } as AbstractControl;
+        const built = buildDynamicValidators(field);
+        const errors: Record<string, any> = {};
+        for (const validator of built.validators) {
+            const result = validator(control);
+            if (result) {
+                Object.assign(errors, result);
+            }
+        }
+        if (Object.keys(errors).length) {
+            issues.push({
+                key: field.key,
+                errors,
+                message: dynamicFormMessage(field, errors, built.messages, messages)
+            });
+        }
+    }
+    return { valid: issues.length === 0, issues };
 }

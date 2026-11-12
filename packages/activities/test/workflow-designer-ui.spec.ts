@@ -52,7 +52,7 @@ describe('Workflow Designer UI', () => {
 
     it('renders palette, canvas, edges, inspector and status bar', () => {
         expect(root.matches('.workflow-designer')).toBe(true);
-        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(35);
+        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(38);
         expect(root.querySelectorAll('.workflow-node').length).toBe(6);
         expect(root.querySelectorAll('.workflow-edge').length).toBe(6);
         expect(root.querySelector('.workflow-inspector')).toBeTruthy();
@@ -78,14 +78,14 @@ describe('Workflow Designer UI', () => {
     it('filters palette components by search query', async () => {
         const input = root.querySelector('.workflow-palette-search-input') as any;
         expect(input).toBeTruthy();
-        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(35);
+        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(38);
 
         input.value = 'http';
         input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
         await flush();
         const filtered = Array.from(root.querySelectorAll('.workflow-palette-item')) as any[];
         expect(filtered.length).toBeGreaterThan(0);
-        expect(filtered.length).toBeLessThan(35);
+        expect(filtered.length).toBeLessThan(38);
         expect(filtered.every(item => {
             const text = `${item.getAttribute('data-node-type')} ${item.textContent}`.toLowerCase();
             return text.includes('http');
@@ -99,7 +99,7 @@ describe('Workflow Designer UI', () => {
 
         input.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
         await flush();
-        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(35);
+        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(38);
     });
 
     it('disables selection actions until something is selected', async () => {
@@ -325,6 +325,9 @@ describe('Workflow Designer UI', () => {
         expect(unit?.textContent).toBe('ms');
         expect(root.querySelector('.workflow-field[data-field-key="timeout"] .workflow-input-wrap')?.className)
             .toContain('has-unit');
+        expect(root.querySelector('.workflow-fields')).toBeTruthy();
+        expect(root.querySelector('.workflow-field[data-field-key="timeout"]')?.className).toContain('is-half');
+        expect(root.querySelector('.workflow-field[data-field-key="action"]')?.className).toContain('is-full');
     });
 
     it('shows execution state on nodes and edges after running', async () => {

@@ -25,7 +25,7 @@ describe('Visual Workflow Designer', () => {
     describe('Generic node registry', () => {
         it('registers built-in generic node components', () => {
             const types = registry.list().map(item => item.type);
-            ['start', 'end', 'inject', 'task', 'function', 'template', 'json', 'csv', 'change', 'statistics', 'merge', 'event-emit', 'event-wait', 'command', 'split', 'map', 'filter', 'sort', 'range', 'batch', 'trigger', 'comment', 'condition', 'delay', 'log', 'http-request', 'assign', 'transform', 'switch', 'parallel', 'join', 'loop', 'trycatch', 'subprocess', 'custom']
+            ['start', 'end', 'inject', 'task', 'function', 'template', 'json', 'csv', 'change', 'statistics', 'merge', 'event-emit', 'event-wait', 'command', 'split', 'map', 'filter', 'sort', 'range', 'batch', 'trigger', 'comment', 'condition', 'delay', 'log', 'debug', 'junction', 'sequence', 'http-request', 'assign', 'transform', 'switch', 'parallel', 'join', 'loop', 'trycatch', 'subprocess', 'custom']
                 .forEach(type => expect(types).toContain(type));
             expect(registry.palette('zh-CN').length).toBeGreaterThan(0);
 
@@ -240,6 +240,20 @@ describe('Visual Workflow Designer', () => {
 
             expect(local.nodes.find(node => node.id === 'task_1')?.name).toBe('Edited during save');
             expect(local.dirty).toBe(true);
+        });
+
+        it('validates required node configuration before running', async () => {
+            const local = new WorkflowDesigner({ registry, service });
+            const node = local.addNode('function', { x: 40, y: 40 })!;
+            local.updateNodeConfig(node.id, { code: '' });
+
+            const validation = local.validate();
+            expect(validation.valid).toBe(false);
+            expect(validation.errors.some(error => error.includes('Code'))).toBe(true);
+
+            const result = await local.run({});
+            expect(result.success).toBe(false);
+            expect(String(result.error?.message || '')).toContain('Code');
         });
 
         it('saves a copy with a new id', async () => {

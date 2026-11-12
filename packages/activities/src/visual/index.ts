@@ -2,6 +2,7 @@ export * from './types';
 export * from './i18n';
 export * from './node-registry';
 export * from './workflow-runtime';
+export * from './workflow-config-validation';
 export * from './workflow-compiler';
 export * from './workflow-store';
 export * from './VisualNodeActivityAdapter';

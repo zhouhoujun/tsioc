@@ -146,6 +146,8 @@ export type VisualNodeType =
     | 'trycatch'   // 异常处理节点
     | 'subprocess' // 子流程节点
     | 'log'        // 日志节点
+    | 'debug'      // 调试输出节点
+    | 'junction'   // 连线汇合节点
     | 'http-request' // HTTP 请求节点
     | 'inject'     // 注入/手动触发节点
     | 'function'   // 函数节点
@@ -828,6 +830,7 @@ export interface WorkflowInspectorFieldView {
     max?: number;
     step?: number;
     unit?: string;
+    span?: 'full' | 'half';
     minLength?: number;
     maxLength?: number;
     rows: number;

@@ -83,6 +83,8 @@ export interface DynamicFormField {
     step?: number;
     /** Optional suffix shown inside the control (for example `ms`, `s`, `%`). */
     unit?: string;
+    /** Grid width inside its section; short controls default to half width. */
+    span?: 'full' | 'half';
     minLength?: number;
     maxLength?: number;
     pattern?: string;
