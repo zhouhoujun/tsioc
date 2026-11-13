@@ -532,6 +532,35 @@ export class VisualWorkflowService {
             return result;
         }
 
+        // Try/catch nodes guard their downstream branch: a failure anywhere in
+        // the guarded chain is routed to the `error` port instead of aborting
+        // the workflow.
+        if (node.type === 'trycatch') {
+            const guardedResult = await this.executeGuardedNode(
+                node,
+                plan,
+                context,
+                result,
+                state,
+                options,
+                host,
+                visited,
+                nodeHandler,
+                resume,
+                replayed
+            );
+            // The guarded branch settles after the node itself ran, so replace
+            // the recorded result with the outcome of the whole guarded chain.
+            state.nodeResults.set(node.id, guardedResult);
+            const record = state.nodeStates?.get(node.id);
+            if (record) {
+                record.result = guardedResult;
+                record.status = guardedResult.success ? 'success' : 'failed';
+                record.error = guardedResult.error?.message;
+            }
+            return guardedResult;
+        }
+
         const nextConnections = this.selectNextConnections(node, plan, context, result);
         const selectedIds = new Set(nextConnections.map(connection => connection.id));
         for (const connection of plan.outgoing.get(node.id) || []) {
@@ -588,6 +617,112 @@ export class VisualWorkflowService {
         }
 
         return result;
+    }
+
+    private async executeGuardedNode(
+        node: IVisualWorkflowNode,
+        plan: CompiledWorkflow,
+        context: ActivityContext,
+        result: ActivityResult,
+        state: WorkflowExecutionState,
+        options: WorkflowExecutionOptions,
+        host: VisualNodeRuntimeHost,
+        visited: Set<string>,
+        nodeHandler: VisualNodeHandlerLike,
+        resume: boolean,
+        replayed: Set<string>
+    ): Promise<ActivityResult> {
+        const outgoing = plan.outgoing.get(node.id) || [];
+        const guardedEdges = outgoing.filter(connection => connection.sourcePort !== 'error');
+        const recoveryEdges = outgoing.filter(connection => connection.sourcePort === 'error');
+        let failure: ActivityResult | undefined;
+        let failedNodeId: string | undefined;
+        let lastResult: ActivityResult = result;
+
+        for (const connection of guardedEdges) {
+            const nextNode = plan.nodes.get(connection.targetNodeId);
+            if (!nextNode) {
+                continue;
+            }
+            this.markEdgeTraversed(state, connection, options);
+            try {
+                const nextResult = await this.executeFromNode(
+                    nextNode,
+                    plan,
+                    this.mergeContext(context, result, connection),
+                    state,
+                    options,
+                    host,
+                    visited,
+                    nodeHandler,
+                    resume,
+                    replayed
+                );
+                if (!nextResult.success) {
+                    failure = nextResult;
+                    failedNodeId = nextNode.id;
+                    break;
+                }
+                lastResult = nextResult;
+            } catch (error) {
+                failure = { success: false, error: error as Error };
+                failedNodeId = nextNode.id;
+                break;
+            }
+        }
+
+        if (!failure) {
+            recoveryEdges.forEach(connection => this.markEdgeSkipped(state, connection.id, options));
+            return lastResult;
+        }
+
+        // Remaining guarded edges never ran; mark them skipped so the designer
+        // shows an accurate execution path.
+        guardedEdges.forEach(connection => this.markEdgeSkipped(state, connection.id, options));
+
+        const errorContext: ActivityContext = {
+            ...context,
+            error: failure.error,
+            errorMessage: failure.error?.message,
+            failedNodeId,
+            failedResult: failure
+        };
+        for (const connection of recoveryEdges) {
+            const nextNode = plan.nodes.get(connection.targetNodeId);
+            if (!nextNode) {
+                continue;
+            }
+            this.markEdgeTraversed(state, connection, options);
+            try {
+                const recovered = await this.executeFromNode(
+                    nextNode,
+                    plan,
+                    errorContext,
+                    state,
+                    options,
+                    host,
+                    visited,
+                    nodeHandler,
+                    resume,
+                    replayed
+                );
+                if (!recovered.success) {
+                    return recovered;
+                }
+            } catch (error) {
+                return { success: false, error: error as Error };
+            }
+        }
+        return {
+            success: true,
+            data: {
+                nodeId: node.id,
+                guarded: true,
+                recovered: true,
+                failedNodeId,
+                error: failure.error?.message
+            }
+        };
     }
 
     private mergeContext(

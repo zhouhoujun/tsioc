@@ -117,6 +117,73 @@ describe('Visual Workflow Execution Path', () => {
         expect(snapshot?.nodeStates.task_1.status).toBe('success');
     });
 
+    it('routes guarded branch failures to the try/catch recovery port', async () => {
+        const nodes = [
+            registry.createNode('start', { x: 0, y: 0 }, { id: 'start_g' }),
+            registry.createNode('trycatch', { x: 200, y: 0 }, { id: 'guard' }),
+            registry.createNode('task', { x: 400, y: -80 }, { id: 'failing', config: { fail: true } }),
+            registry.createNode('task', { x: 400, y: 80 }, { id: 'recover', config: { result: { recovered: true } } }),
+            registry.createNode('end', { x: 600, y: -80 }, { id: 'end_ok' }),
+            registry.createNode('end', { x: 600, y: 80 }, { id: 'end_catch' })
+        ];
+        const edge = (id: string, source: string, sourcePort: string, target: string) => ({
+            id, sourceNodeId: source, sourcePort, targetNodeId: target, targetPort: 'in'
+        });
+        const definition = {
+            id: 'trycatch-failure',
+            name: 'Try catch failure',
+            nodes,
+            connections: [
+                edge('g1', 'start_g', 'out', 'guard'),
+                edge('g2', 'guard', 'out', 'failing'),
+                edge('g3', 'failing', 'out', 'end_ok'),
+                edge('g4', 'guard', 'error', 'recover'),
+                edge('g5', 'recover', 'out', 'end_catch')
+            ]
+        };
+        const result = await service.execute(definition, {});
+        const snapshot = result.data?.executionState;
+        expect(result.success).toBe(true);
+        expect(snapshot.nodeStates.failing.status).toBe('failed');
+        expect(snapshot.nodeStates.end_ok.status).toBe('skipped');
+        expect(snapshot.nodeStates.recover.status).toBe('success');
+        expect(snapshot.nodeStates.end_catch.status).toBe('success');
+        expect(snapshot.nodeStates.guard.result?.data?.recovered).toBe(true);
+        expect(snapshot.nodeStates.guard.result?.data?.failedNodeId).toBe('failing');
+        expect(snapshot.edgeStates.g4.status).toBe('traversed');
+        expect(snapshot.edgeStates.g3.status).toBe('skipped');
+    });
+
+    it('skips the recovery branch when the guarded branch succeeds', async () => {
+        const nodes = [
+            registry.createNode('start', { x: 0, y: 0 }, { id: 'start_gs' }),
+            registry.createNode('trycatch', { x: 200, y: 0 }, { id: 'guard_ok' }),
+            registry.createNode('task', { x: 400, y: -80 }, { id: 'healthy', config: { result: { ok: true } } }),
+            registry.createNode('task', { x: 400, y: 80 }, { id: 'unused', config: { result: { recovered: true } } }),
+            registry.createNode('end', { x: 600, y: 0 }, { id: 'end_guard_ok' })
+        ];
+        const edge = (id: string, source: string, sourcePort: string, target: string) => ({
+            id, sourceNodeId: source, sourcePort, targetNodeId: target, targetPort: 'in'
+        });
+        const definition = {
+            id: 'trycatch-success',
+            name: 'Try catch success',
+            nodes,
+            connections: [
+                edge('h1', 'start_gs', 'out', 'guard_ok'),
+                edge('h2', 'guard_ok', 'out', 'healthy'),
+                edge('h3', 'healthy', 'out', 'end_guard_ok'),
+                edge('h4', 'guard_ok', 'error', 'unused')
+            ]
+        };
+        const result = await service.execute(definition, {});
+        const snapshot = result.data?.executionState;
+        expect(result.success).toBe(true);
+        expect(snapshot.nodeStates.healthy.status).toBe('success');
+        expect(snapshot.nodeStates.unused.status).toBe('skipped');
+        expect(snapshot.edgeStates.h4.status).toBe('skipped');
+    });
+
     it('cancels a running workflow and reports cancelled nodes', async () => {
         const definition = {
             id: 'cancel-test',
