@@ -21,6 +21,10 @@ export interface WorkflowExecutionStore {
     list(workflowId?: string, limit?: number): Promise<WorkflowExecutionSnapshot[]>;
     /** Keep only the newest `keep` snapshots for one workflow. */
     prune(workflowId: string, keep: number): Promise<void>;
+    /** Drop the history of a deleted workflow. */
+    removeWorkflow(workflowId: string): Promise<void>;
+    /** Drop all execution history. */
+    clear(): Promise<void>;
     close?(): void;
 }
 
@@ -65,7 +69,15 @@ export class InMemoryWorkflowExecutionStore implements WorkflowExecutionStore {
         history.slice(limit).forEach(item => this.snapshots.delete(item.executionId));
     }
 
-    clear(): void {
+    async removeWorkflow(workflowId: string): Promise<void> {
+        for (const [executionId, snapshot] of this.snapshots) {
+            if (snapshot.workflowId === workflowId) {
+                this.snapshots.delete(executionId);
+            }
+        }
+    }
+
+    async clear(): Promise<void> {
         this.snapshots.clear();
     }
 }
@@ -159,6 +171,14 @@ export class SqliteWorkflowExecutionStore implements WorkflowExecutionStore {
                 )
             `)
             .run(workflowId, workflowId, limit);
+    }
+
+    async removeWorkflow(workflowId: string): Promise<void> {
+        this.database().prepare('DELETE FROM workflow_executions WHERE workflow_id = ?').run(workflowId);
+    }
+
+    async clear(): Promise<void> {
+        this.database().prepare('DELETE FROM workflow_executions').run();
     }
 
     close(): void {

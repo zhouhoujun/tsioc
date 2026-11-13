@@ -699,6 +699,7 @@ to the same database file when SQLite is available, otherwise an in-memory store
 is used. Pass `executionStore` / `executionHistoryLimit` (default 200 snapshots
 per workflow) to `startWorkflowHttpServer` to override them. Only the
 `workflow_executions` table is created; existing definitions are never rewritten.
+Deleting a workflow (or clearing the library) removes its execution history too.
 
 ### Inject triggers and scheduling
 

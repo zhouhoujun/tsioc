@@ -348,6 +348,7 @@ describe('Workflow HTTP microservice', () => {
         expect(missingCancel.status).toBe(404);
 
         await request(`${base}/api/workflows/execution-demo`, { method: 'DELETE' });
+        expect((await executionStore.list('execution-demo')).length).toBe(0);
     });
 
     it('lists, installs and uninstalls workflow plugins', async () => {

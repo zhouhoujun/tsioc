@@ -148,12 +148,14 @@ export class WorkflowHttpController {
         if (!removed) {
             throw new NotFoundException(`Workflow not found: ${id}`);
         }
+        await this.history.removeWorkflow(id);
         return { removed: true };
     }
 
     @Delete('/')
     async clear() {
         await this.store.clear();
+        await this.history.clear();
         return { cleared: true };
     }
 

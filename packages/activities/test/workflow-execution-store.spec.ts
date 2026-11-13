@@ -43,14 +43,20 @@ describe('Workflow execution store', () => {
         expect((await store.get('e3'))?.workflowId).toBe('b');
         expect(await store.get('missing')).toBeUndefined();
 
-        await store.prune('a', 1);
-        expect((await store.list('a')).map(item => item.executionId)).toEqual(['e2']);
-        expect((await store.list('b')).length).toBe(1);
-
         // Callers must not mutate stored snapshots through the returned value.
         const copy = await store.get('e2');
         copy!.status = 'failed';
         expect((await store.get('e2'))?.status).toBe('completed');
+
+        await store.prune('a', 1);
+        expect((await store.list('a')).map(item => item.executionId)).toEqual(['e2']);
+        expect((await store.list('b')).length).toBe(1);
+
+        await store.removeWorkflow('a');
+        expect((await store.list('a')).length).toBe(0);
+        expect((await store.list('b')).length).toBe(1);
+        await store.clear();
+        expect((await store.list()).length).toBe(0);
     });
 
     (isSqliteAvailable() ? it : it.skip)('persists snapshots beside workflow definitions', async () => {
