@@ -23,6 +23,15 @@ interface CircuitState {
     halfOpenInFlight?: boolean;
 }
 
+interface RouteStats {
+    requests: number;
+    errors: number;
+    totalMs: number;
+    buckets: number[];
+}
+
+const ROUTE_LATENCY_BUCKETS = [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000];
+
 interface BulkheadEntry {
     resolve: () => void;
     reject: (error: Error) => void;
@@ -59,12 +68,22 @@ export interface GatewayBulkheadSnapshot {
     adaptive?: boolean;
 }
 
+export interface GatewayRouteSnapshot {
+    key: string;
+    requests: number;
+    errors: number;
+    avgMs: number;
+    p95Ms: number;
+    p99Ms: number;
+}
+
 export interface GatewayRuntimeSnapshot {
     cacheEntries: number;
     activeRequests: number;
     evictedEndpoints: number;
     circuits: GatewayCircuitSnapshot[];
     bulkheads: GatewayBulkheadSnapshot[];
+    routes: GatewayRouteSnapshot[];
 }
 
 @Injectable()
@@ -77,6 +96,7 @@ export class GatewayRuntime {
     private nonces = new Map<string, number>();
     private activeRequests = new Map<string, number>();
     private bulkheads = new Map<string, BulkheadState>();
+    private routeStats = new Map<string, RouteStats>();
 
     constructor(
         @Optional() @Inject(GatewayStateStore) private readonly store?: GatewayStateStore | null,
@@ -107,6 +127,14 @@ export class GatewayRuntime {
                     failures: state.failures,
                     open: !!state.openedAt
                 })),
+            routes: Array.from(this.routeStats.entries()).map(([key, stats]) => ({
+                key,
+                requests: stats.requests,
+                errors: stats.errors,
+                avgMs: stats.requests ? Math.round(stats.totalMs / stats.requests) : 0,
+                p95Ms: percentile(stats, 0.95),
+                p99Ms: percentile(stats, 0.99)
+            })),
             bulkheads: Array.from(this.bulkheads.entries()).map(([key, state]) => ({
                 key,
                 active: state.active,
@@ -310,6 +338,21 @@ export class GatewayRuntime {
             return;
         }
         this.circuits.set(routeKey, state);
+    }
+
+    recordRouteOutcome(routeKey: string, status: number, durationMs: number): void {
+        let stats = this.routeStats.get(routeKey);
+        if (!stats) {
+            stats = { requests: 0, errors: 0, totalMs: 0, buckets: new Array(ROUTE_LATENCY_BUCKETS.length).fill(0) };
+            this.routeStats.set(routeKey, stats);
+        }
+        stats.requests += 1;
+        stats.totalMs += Math.max(0, durationMs);
+        if (status >= 500) {
+            stats.errors += 1;
+        }
+        const index = ROUTE_LATENCY_BUCKETS.findIndex(bound => durationMs <= bound);
+        stats.buckets[index >= 0 ? index : ROUTE_LATENCY_BUCKETS.length - 1] += 1;
     }
 
     evictEndpoint(endpoint: ServiceEndpoint, durationMs: number): void {
@@ -551,4 +594,19 @@ function estimatePayloadSize(value: any): number {
 
 function circuitTtl(options: GatewayCircuitBreakerOptions): number {
     return Math.max(options.resetTimeout ?? 30_000, 60_000);
+}
+
+function percentile(stats: RouteStats, ratio: number): number {
+    if (!stats.requests) {
+        return 0;
+    }
+    const target = Math.ceil(stats.requests * ratio);
+    let cumulative = 0;
+    for (let index = 0; index < stats.buckets.length; index++) {
+        cumulative += stats.buckets[index];
+        if (cumulative >= target) {
+            return ROUTE_LATENCY_BUCKETS[index];
+        }
+    }
+    return ROUTE_LATENCY_BUCKETS[ROUTE_LATENCY_BUCKETS.length - 1];
 }

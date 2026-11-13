@@ -429,6 +429,20 @@ describe('Gateway', () => {
         }
     });
 
+    it('tracks per-route request/error/latency SLOs', async () => {
+        const runtime = new GatewayRuntime();
+        runtime.recordRouteOutcome('users:/api/users:2', 200, 10);
+        runtime.recordRouteOutcome('users:/api/users:2', 500, 100);
+        runtime.recordRouteOutcome('users:/api/users:2', 200, 20);
+
+        const route = (await runtime.snapshot()).routes.find(item => item.key === 'users:/api/users:2');
+        expect(route?.requests).toBe(3);
+        expect(route?.errors).toBe(1);
+        expect(route?.avgMs).toBe(43);
+        expect(route?.p95Ms).toBeGreaterThanOrEqual(100);
+        expect(route?.p99Ms).toBeGreaterThanOrEqual(100);
+    });
+
     it('supports circuit breaker half-open probing', async () => {
         const runtime = new GatewayRuntime();
         const options = { failureThreshold: 1, resetTimeout: 5 };

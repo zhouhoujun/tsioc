@@ -214,6 +214,12 @@
 - Client 新增 `bidiStream(pattern, values[])`，写完后 end，响应按 data/end/error 输出。
 - gRPC unary / server-stream / client-stream / bidi 全部可运行。
 
+第三十四批（路由 SLO）：
+
+- Runtime 记录每路由 requests/errors/totalMs/延迟桶。
+- Diagnostics 输出 `routes: [{requests, errors, avgMs, p95Ms, p99Ms}]`。
+- 成功响应与错误路径统一记账；配置变更时清空旧路由统计。
+
 
 ---
 

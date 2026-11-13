@@ -3917,3 +3917,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - gRPC bidi streaming（Chat）。
   - AsyncIterable 入站 + Observable 出站。
   - 回归：grpc 23。
+- 微服务框架第三十四批（2026-11-13）：
+  - Gateway 路由级 SLO：requests/errors/avg/p95/p99。
+  - Diagnostics 输出 routes；配置变更清理。
+  - 回归：gateway 80。
