@@ -1,4 +1,5 @@
 import type { AgentMessage, AgentSessionSection } from '@tsdi/agent';
+import { batchReactiveUpdates } from '@tsdi/components';
 import type { AgentConsolePendingAttachment, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import type { AgentConsolePlanTodoItem } from './AgentConsoleStateTypes';
 import type { ConsoleTerminalSurfaceAccessor } from './console-ports';
@@ -65,8 +66,24 @@ export function applyAgentConsoleSessionComposer(
  */
 export class AgentConsoleSessionUiState {
     protected readonly snapshots = new Map<string, AgentConsoleSessionUiSnapshot>();
+    /** State proxy captured from the owning component method (reactive writes). */
+    protected boundState?: AgentConsoleSessionState;
 
     constructor(protected readonly host: () => AgentConsoleSessionUiStateHost) {
+    }
+
+    /**
+     * Bind the owning component's reactive state proxy. Field-initializer host
+     * lambdas capture the raw constructor instance, so writes through them do
+     * not notify other components; component methods must bind the proxy first.
+     */
+    bindState(state: AgentConsoleSessionState): void {
+        this.boundState = state;
+    }
+
+    protected resolveHost(): AgentConsoleSessionUiStateHost {
+        const host = this.host();
+        return this.boundState ? { ...host, state: this.boundState } : host;
     }
 
     /** Save the outgoing tab's UI state (no-op for an empty session id). */
@@ -75,7 +92,7 @@ export class AgentConsoleSessionUiState {
         if (!id) {
             return;
         }
-        const { state, surfaceAccessor } = this.host();
+        const { state, surfaceAccessor } = this.resolveHost();
         const offset = surfaceAccessor?.getViewportScrollOffset?.();
         this.snapshots.set(id, {
             scrollOffset: typeof offset === 'number' && Number.isFinite(offset) ? Math.max(0, Math.floor(offset)) : 0,
@@ -111,7 +128,7 @@ export class AgentConsoleSessionUiState {
         if (!id) {
             return;
         }
-        const { state, surfaceAccessor } = this.host();
+        const { state, surfaceAccessor } = this.resolveHost();
         const saved = this.snapshots.get(id);
         this.restoreComposer(state, saved, applyComposer);
         // The composer value is restored outside any DOM dirty origin; cached
@@ -176,7 +193,7 @@ export class AgentConsoleSessionUiState {
             // jumping to the saved reading row.
             try {
                 if (previousSessionId && targetSessionId && targetSessionId !== previousSessionId) {
-                    this.restore(targetSessionId, applyComposer);
+                    batchReactiveUpdates(() => this.restore(targetSessionId, applyComposer));
                 }
             } finally {
                 // A restore failure must never leave the surface's render batch
@@ -194,20 +211,22 @@ export class AgentConsoleSessionUiState {
         saved: AgentConsoleSessionUiSnapshot,
         applyComposer?: (input: string, cursor: number, attachments: AgentConsolePendingAttachment[]) => void
     ): void {
-        const { state } = this.host();
-        state.configure({ sessionId, workspace: saved.workspace || state.workspace });
-        state.setMessages(saved.messages || []);
-        state.setSections((saved.sections || []).slice());
-        state.setGoalSummary(saved.goalSummary || null);
-        state.messagesPageCursor = saved.messagesPageCursor || '';
-        state.messagesHasMore = saved.messagesHasMore === true;
-        state.setPlanTodos((saved.planTodos || []).slice(), saved.planTodoSourceSessionId, saved.planScope || undefined);
-        state.setPendingApprovals((saved.pendingApprovals || []).slice());
-        if (saved.status) {
-            state.setStatus(saved.status);
-        }
-        this.restoreComposer(state, saved, applyComposer);
-        this.restoreMessageSelection(state, saved);
+        const { state } = this.resolveHost();
+        batchReactiveUpdates(() => {
+            state.configure({ sessionId, workspace: saved.workspace || state.workspace });
+            state.setMessages(saved.messages || []);
+            state.setSections((saved.sections || []).slice());
+            state.setGoalSummary(saved.goalSummary || null);
+            state.messagesPageCursor = saved.messagesPageCursor || '';
+            state.messagesHasMore = saved.messagesHasMore === true;
+            state.setPlanTodos((saved.planTodos || []).slice(), saved.planTodoSourceSessionId, saved.planScope || undefined);
+            state.setPendingApprovals((saved.pendingApprovals || []).slice());
+            if (saved.status) {
+                state.setStatus(saved.status);
+            }
+            this.restoreComposer(state, saved, applyComposer);
+            this.restoreMessageSelection(state, saved);
+        });
     }
 
     protected restoreComposer(

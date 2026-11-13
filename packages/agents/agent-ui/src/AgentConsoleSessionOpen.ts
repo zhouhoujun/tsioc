@@ -78,7 +78,7 @@ export async function applyMissingSessionNotice(host: AgentConsoleSessionOpenHos
 export async function openSession(
     host: AgentConsoleSessionOpenHost,
     sessionId?: string,
-    options?: { persistCurrentHistory?: boolean; fresh?: boolean; missing?: boolean; scoped?: boolean; cached?: AgentConsoleSessionUiSnapshot }
+    options?: { persistCurrentHistory?: boolean; fresh?: boolean; missing?: boolean; scoped?: boolean; cached?: AgentConsoleSessionUiSnapshot; background?: boolean }
 ): Promise<void> {
     // Tabs are independent sessions: switching must never wait for another
     // tab's turn. A background turn keeps streaming into its own state.
@@ -86,14 +86,25 @@ export async function openSession(
         return;
     }
     const requestId = ++host.openSessionRequestId;
-    if (options?.persistCurrentHistory !== false) {
+    const requestedId = String(sessionId || '').trim();
+    const cachedView = options?.cached?.messages && !options?.fresh ? options.cached : undefined;
+    const fastCached = !!cachedView && !!requestedId;
+    if (!fastCached && options?.persistCurrentHistory !== false) {
         await host.persistInputHistory();
         if (requestId !== host.openSessionRequestId) {
             return;
         }
     }
-    const requestedId = String(sessionId || '').trim();
-    const target = await host.sessionService.ensureSession(sessionId);
+    // A cached tab paints from its snapshot immediately; session metadata is
+    // already in the snapshot, so no ensure/metadata round-trip is needed.
+    const target = fastCached
+        ? {
+            id: requestedId,
+            archived: false,
+            workspace: cachedView!.workspace,
+            lastActiveAt: 0
+        } as any
+        : await host.sessionService.ensureSession(sessionId);
     if (requestId !== host.openSessionRequestId) {
         return;
     }
@@ -113,6 +124,25 @@ export async function openSession(
         || options?.scoped === true
         || !requestedId;
     host.freshSessionScoped = freshScope;
+    if (fastCached && cachedView && host.state.sessionId === target.id) {
+        // The cached view has already been applied by the tab transaction.
+        // Touch only fields that actually changed: every proxy write triggers
+        // the whole console's bindings, which made a switch O(number of
+        // resets) on long transcripts.
+        const sessionRunning = host.isSessionTurnRunning?.(target.id)
+          ?? (host.state.activeTurnSessionId === target.id);
+        const nextStatus = sessionRunning ? 'running' : 'idle';
+        if (host.state.status !== nextStatus) {
+            host.state.setStatus(nextStatus);
+        }
+        host.restoreStreamingTurn?.(target.id);
+        const projectSessionIds = freshScope ? [target.id] : host.resolveProjectSessionIdsFor(target.id);
+        if (options?.background) {
+            scheduleOpenedSessionRefresh(host, target.id, requestId, options, cachedView, projectSessionIds, 120);
+            return;
+        }
+        return scheduleOpenedSessionRefresh(host, target.id, requestId, options, cachedView, projectSessionIds);
+    }
     const configuredWorkspace = String(host.startupWorkspace || host.state.workspace || (host.options.ui?.console as any)?.workspace || '').trim();
     const nextWorkspace = requestId === 1 && configuredWorkspace
         ? configuredWorkspace
@@ -131,7 +161,6 @@ export async function openSession(
     // load can never render session A under session B's tab. Revisiting a tab
     // already shows its cached view (hide/show); the background refresh below
     // only replaces rows that actually changed.
-    const cachedView = options?.cached?.messages ? options.cached : undefined;
     if (!cachedView) {
         host.state.setMessages([]);
         host.state.setSections([]);
@@ -198,9 +227,23 @@ export async function openSession(
     // A fresh startup must never render a transcript returned by stale
     // host/app state. Explicit resume and interactive session switching
     // continue to load their persisted page normally.
-    // A cached tab may have older pages prepended by scrolling up. Merge the
-    // newest page into that transcript instead of replacing it, otherwise the
-    // refresh drops history the user already loaded.
+    applyOpenedSessionPage(host, page, options, cachedView);
+    // Reattach the live partial answer when returning to a still-running turn.
+    host.restoreStreamingTurn?.(target.id);
+    await host.restoreSessionModes(target.id);
+}
+
+/**
+ * Merge a loaded page into the live transcript. A cached tab may have older
+ * pages prepended by scrolling up, so replace/append only changed rows and keep
+ * the existing older-page cursor instead of dropping history.
+ */
+function applyOpenedSessionPage(
+    host: AgentConsoleSessionOpenHost,
+    page: AgentConsoleSessionPage,
+    options: { fresh?: boolean } | undefined,
+    cachedView: AgentConsoleSessionUiSnapshot | undefined
+): void {
     const cachedHadOlderPages = !!cachedView && !options?.fresh
         && host.state.messages.length > page.messages.length;
     if (cachedView && !options?.fresh) {
@@ -219,8 +262,6 @@ export async function openSession(
         host.state.setSections(options?.fresh ? [] : page.sections);
         host.state.setGoalSummary(options?.fresh ? null : (page.goalSummary || null));
     }
-    // Older paging keeps its own cursor when the cache already includes pages
-    // beyond the newest window; otherwise adopt the refreshed page cursor.
     const nextCursor = options?.fresh
         ? ''
         : (cachedHadOlderPages ? host.state.messagesPageCursor : (page.nextCursor || ''));
@@ -233,9 +274,58 @@ export async function openSession(
     if (host.state.messagesHasMore !== nextHasMore) {
         host.state.messagesHasMore = nextHasMore;
     }
-    // Reattach the live partial answer when returning to a still-running turn.
-    host.restoreStreamingTurn?.(target.id);
-    await host.restoreSessionModes(target.id);
+}
+
+/**
+ * Defer the expensive part of opening a cached tab: session list refresh,
+ * tools/approvals/plan/coding-task reads and the transcript page. The cached
+ * frame is already painted, so these updates must not block the switch.
+ */
+function scheduleOpenedSessionRefresh(
+    host: AgentConsoleSessionOpenHost,
+    sessionId: string,
+    requestId: number,
+    options: { fresh?: boolean } | undefined,
+    cachedView: AgentConsoleSessionUiSnapshot,
+    projectSessionIds: string[],
+    delayMs = 0
+): Promise<void> {
+    const stale = (): boolean => requestId !== host.openSessionRequestId || host.state.sessionId !== sessionId;
+    const run = async (): Promise<void> => {
+        try {
+            if (stale()) {
+                return;
+            }
+            await host.refreshSessions(sessionId);
+            if (stale()) {
+                return;
+            }
+            const [page] = await Promise.all([
+                host.loadSessionPage(sessionId),
+                host.refreshTools(sessionId),
+                host.refreshPendingApprovals(sessionId),
+                host.refreshTodoPlan(sessionId),
+                host.loadCodingTasks(sessionId, projectSessionIds),
+                host.restoreInputHistory()
+            ]);
+            if (stale()) {
+                return;
+            }
+            applyOpenedSessionPage(host, page, options, cachedView);
+            host.restoreStreamingTurn?.(sessionId);
+            await host.restoreSessionModes(sessionId);
+        } catch {
+            // best effort: the cached frame is already usable
+        }
+    };
+    if (delayMs > 0 && typeof setTimeout === 'function') {
+        setTimeout(() => { void run(); }, delayMs).unref?.();
+        return Promise.resolve();
+    }
+    // Start on the next microtask: the cached frame's render microtasks are
+    // already queued, so the switch paints first; waiting for a macrotask would
+    // also delay callers that legitimately await the refresh.
+    return Promise.resolve().then(() => run());
 }
 
 /** Restore per-session plan mode from the runtime/app RPC (best effort). */

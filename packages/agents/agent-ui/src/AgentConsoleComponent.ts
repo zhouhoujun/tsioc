@@ -548,8 +548,9 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
 
     protected readonly sessionUiState = new AgentConsoleSessionUiState(() => ({ state: this.state, surfaceAccessor: this.surfaceAccessor }));
 
-    protected async openSession(sessionId?: string, options?: { persistCurrentHistory?: boolean; fresh?: boolean; missing?: boolean; scoped?: boolean }): Promise<void> {
-        syncMarkdownWidthFromSurface(this.state, this.surfaceAccessor, this.destroyed); return this.sessionUiState.switchSession(
+    protected async openSession(sessionId?: string, options?: { persistCurrentHistory?: boolean; fresh?: boolean; missing?: boolean; scoped?: boolean; background?: boolean }): Promise<void> {
+        syncMarkdownWidthFromSurface(this.state, this.surfaceAccessor, this.destroyed); this.sessionUiState.bindState(this.state);
+        return this.sessionUiState.switchSession(
             cached => delegateOpenSession(this.sessionOpenHost(), sessionId, { ...options, cached }),
             () => this.state.sessionId,
             () => this.surfaceAccessor?.beginRenderBatch?.(),

@@ -3981,3 +3981,14 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第五十一批（2026-11-13）：
   - service/client extraFeatures 扩展点（支持 useTracing 等可选包组合）。
   - 回归：service 63、client 84。
+
+## 2026-11-13 tab 切换热点定位与优化（缓存/批量/增量）
+- **实测热点**（TUI 组件 + 50 条长消息，缓存命中）：
+  - 旧路径每次缓存切换 ~0.6–1.6s，根因不是 DB，而是 `applyCachedView` 的多次 state 写入逐个触发整棵 console 的响应式绑定重跑；同时 `sessionUiState` 的 host 闭包捕获了**原始 state 实例**（字段初始化时），写入不经过 proxy，导致面板 DOM 不更新（表现为切回 tab 白屏/旧内容）。
+  - 首访 b 仍有一次完整加载；返回 a/b 缓存切换现已降到 **5–25ms + 4–8ms 绘制**（典型缓存命中；首次/冷路径仍加载）。
+- **修复**：
+  - `sessionUiState.bindState(this.state)`：在组件方法里绑定响应式 state proxy，缓存视图写入会通知消息面板等绑定。
+  - 新增 `batchReactiveUpdates`（`@tsdi/components`）：多字段事务写入只跑一次 effect；`applyCachedView` 与 `restore` 都用它包裹。
+  - 缓存 tab 快速路径：不再执行整套 openSession 重置（configure/清空/标题/输入等），只更新真正变化的 status 并立即返回；后台 120ms 后再刷新 sessions/tools/approvals/todo/coding/history/page，快速连点通过 requestId 取消过期任务。
+  - 每会话 messageItems 缓存改为内容比较（proxy 数组 identity 不再导致 miss），选择/焦点变化只重渲染前后两行，避免 50 条消息整表重建；刷新页按 id 增量合并，保留已加载旧页与分页 cursor。
+- **仍待优化**：返回**初始启动会话**时响应式首帧仍明显慢于其它 tab（实测 ~1.3s，其它 ~20ms），已定位到缓存视图应用后的 effect flush；需继续把该会话的差异状态（疑似启动期命令/计划投影）拆出批量事务。agent-ui 全量测试目前约 4min（测试内真实 JSDOM/响应式渲染 + 首访加载），后续可把 tab 测试改用 background 路径与轻量渲染。

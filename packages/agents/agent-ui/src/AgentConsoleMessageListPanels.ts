@@ -70,6 +70,7 @@ import {
     SelectComponent,
 } from '@tsdi/components/common/select';
 import { messageItemsCache, rememberSessionMessageItems, sessionMessageItemsEntry } from './AgentConsoleMessageCache';
+import { sameAgentConsoleMessages } from './AgentConsoleMessageEquality';
 import { InputFieldComponent } from './AgentConsoleInputField';
 import { MessageRowComponent } from './AgentConsoleMessageRow';
 
@@ -217,8 +218,6 @@ export class AgentConsoleMessagesPanelComponent {
             messageDetailOpen, messageDetailVisibleLines: this.state.messageDetailVisibleLines, markdownContentWidth: this.state.markdownContentWidth
         };
         const sameContext = !!cached
-            && cached.selectedMessageId === selectedMessageId
-            && cached.messagesFocused === messagesFocused
             && cached.theme === theme
             && cached.statusLabels === consoleOptions.messageStatusLabels
             && cached.statusSymbol === consoleOptions.messageStatusSymbol
@@ -233,10 +232,55 @@ export class AgentConsoleMessagesPanelComponent {
             && cached.timelineViewMode === timelineViewMode
             && cached.messageDetailOpen === messageDetailOpen && cached.markdownContentWidth === this.state.markdownContentWidth
             && cached.collapsedTurns === collapsedTurns;
-        if (cached && sameContext && cached.messages === messages) {
+        // The reactive proxy can hand back a different array identity for the
+        // same restored transcript; compare content for the per-session cache.
+        const sameMessages = !!cached && sameAgentConsoleMessages(cached.messages as any, messages as any);
+        const sameSelection = !!cached
+            && cached.selectedMessageId === selectedMessageId
+            && cached.messagesFocused === messagesFocused;
+        if (cached && sameContext && sameSelection && sameMessages) {
             return cached.items;
         }
-
+        if (cached && sameContext && sameMessages) {
+            // Selection/focus changed but the transcript did not: re-render only
+            // the previous and next selected rows, keeping every other parsed
+            // item. Rebuilding all 50 messages here was the tab-switch stall.
+            const source = deriveTimelineDurations(this.visibleMessages as any);
+            const previousSelected = String(cached.selectedMessageId || '');
+            const nextSelected = String(selectedMessageId || '');
+            const items = cached.items.map((item, index) => {
+                const messageId = String(item.lines.find(line => line.messageId)?.messageId || source[index]?.id || '');
+                return messageId === previousSelected || messageId === nextSelected
+                    ? renderAgentConsoleMessageItem(source[index] as any, context)
+                    : item;
+            });
+            const entry = {
+                sessionId,
+                messages,
+                slotKeys: cached.slotKeys,
+                selectedMessageId,
+                messagesFocused,
+                theme,
+                statusLabels: consoleOptions.messageStatusLabels,
+                statusSymbol: consoleOptions.messageStatusSymbol,
+                username: consoleOptions.username,
+                rawMode,
+                streaming,
+                showTimestamps,
+                showCriticalMarks,
+                showToolOutput,
+                showUsername,
+                timelineMode,
+                timelineViewMode,
+                messageDetailOpen,
+                markdownContentWidth: this.state.markdownContentWidth,
+                collapsedTurns,
+                items
+            };
+            messageItemsCache.set(this, entry);
+            rememberSessionMessageItems(this, entry);
+            return items;
+        }
         // Streaming replaces only the moving message. Reuse already rendered
         // items whose content and predecessor are unchanged instead of
         // re-parsing the whole transcript for every token.

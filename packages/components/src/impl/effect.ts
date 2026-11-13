@@ -8,6 +8,29 @@ import { ReactiveEffect, noReact } from '../effect';
  */
 const MAX_REENTRANCY_PASSES = 20;
 
+let reactiveBatchDepth = 0;
+const batchedEffects = new Set<DefaultReactiveEffect>();
+
+/**
+ * Coalesce reactive writes into one effect pass. Every trigger inside `fn`
+ * queues its dependent effect functions; at the end each effect runs once.
+ * This is for full-view swaps (tab switches) that assign many state fields in
+ * one transaction; ordinary writes keep the existing synchronous semantics.
+ */
+export function batchReactiveUpdates<T>(fn: () => T): T {
+    reactiveBatchDepth += 1;
+    try {
+        return fn();
+    } finally {
+        reactiveBatchDepth -= 1;
+        if (reactiveBatchDepth === 0 && batchedEffects.size) {
+            const effects = Array.from(batchedEffects);
+            batchedEffects.clear();
+            effects.forEach(effect => effect.flushBatchedEffects());
+        }
+    }
+}
+
 export class DefaultReactiveEffect implements ReactiveEffect {
     
     private depsMap = new WeakMap<any, Map<string | symbol, Set<Function>>>();
@@ -55,6 +78,11 @@ export class DefaultReactiveEffect implements ReactiveEffect {
 
         const deps = targetMap.get(key);
         if (deps) {
+            if (reactiveBatchDepth > 0 && !isLifecycleHook) {
+                deps.forEach(effectFn => this.pendingEffects.add(effectFn));
+                batchedEffects.add(this);
+                return;
+            }
             // 如果是生命周期钩子变化，立即执行
             // 必须经由 run() 执行，以便重跑期间 activeEffects 生效，
             // 使重跑过程中首次读取的依赖也能被 track 收集。
@@ -82,6 +110,13 @@ export class DefaultReactiveEffect implements ReactiveEffect {
             if (this.runningDepth === 0 && !this.flushing && this.pendingEffects.size > 0) {
                 this.flushPendingEffects();
             }
+        }
+    }
+
+    /** Flush effects queued by {@link batchReactiveUpdates}. */
+    flushBatchedEffects(): void {
+        if (!this.flushing && this.pendingEffects.size > 0) {
+            this.flushPendingEffects();
         }
     }
 
