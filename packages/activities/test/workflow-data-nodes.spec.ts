@@ -184,6 +184,35 @@ describe('Workflow data & trigger nodes', () => {
         expect(states.debug_3.result?.data?.message).toBe('7');
     });
 
+    it('runs generic link, HTML and XML nodes', async () => {
+        const link = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: 1 } } },
+            { type: 'link', config: { links: 'left, right' } }
+        ]), {});
+        expect(link.data?.executionState?.nodeStates.link_1.result?.data?.links).toEqual(['left', 'right']);
+
+        const htmlText = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: '<p>Hello <a href="https://example.com">X</a></p>' } } },
+            { type: 'html', config: { field: 'value', mode: 'text' } }
+        ]), {});
+        expect(htmlText.data?.executionState?.nodeStates.html_1.result?.data?.value).toBe('Hello X');
+
+        const htmlLinks = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: '<a href="https://example.com">X</a>' } } },
+            { type: 'html', config: { field: 'value', mode: 'links' } }
+        ]), {});
+        expect(htmlLinks.data?.executionState?.nodeStates.html_1.result?.data?.value).toEqual(['https://example.com']);
+
+        const xml = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: '<root><item id="1">A</item><item id="2">B</item></root>' } } },
+            { type: 'xml', config: { field: 'value', mode: 'parse' } }
+        ]), {});
+        const parsed = xml.data?.executionState?.nodeStates.xml_1.result?.data?.value;
+        expect(parsed.root.item.length).toBe(2);
+        expect(parsed.root.item[0]['@attrs'].id).toBe('1');
+        expect(parsed.root.item[0]['#text']).toBe('A');
+    });
+
     it('runs a plain action node without start or end nodes', async () => {
         const result = await service.execute(chain([
             { type: 'task', config: { result: { ok: true } } }

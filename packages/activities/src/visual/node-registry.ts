@@ -196,6 +196,74 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         defaultConfig: {}
     },
     {
+        type: 'link',
+        label: 'Link',
+        description: 'Connect distant wire segments by name',
+        category: 'flow',
+        icon: '⇢',
+        color: '#0d9488',
+        textColor: '#ffffff',
+        inputs: [port('in', 'in', 'input', 'Input')],
+        outputs: [port('out', 'out', 'output', 'Output')],
+        fields: [
+            configField({ key: 'links', label: 'Links', type: 'text', placeholder: 'flow-a, flow-b', description: 'Comma separated link names for documentation.' })
+        ],
+        defaultConfig: {}
+    },
+    {
+        type: 'html',
+        label: 'HTML',
+        description: 'Extract text or links from HTML',
+        category: 'data',
+        icon: 'H',
+        color: '#ea580c',
+        textColor: '#ffffff',
+        inputs: [port('in', 'in', 'input', 'Input')],
+        outputs: [port('out', 'out', 'output', 'Output'), port('error', 'error', 'output', 'Error')],
+        fields: [
+            configField({ key: 'field', label: 'HTML field', type: 'text', defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value' }),
+            configField({
+                key: 'mode',
+                label: 'Output',
+                type: 'select',
+                defaultValue: 'text',
+                options: [
+                    { label: 'Text', value: 'text' },
+                    { label: 'Links', value: 'links' }
+                ]
+            }),
+            configField({ key: 'target', label: 'Target field', type: 'text', defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value' })
+        ],
+        defaultConfig: { field: 'value', mode: 'text', target: 'value' }
+    },
+    {
+        type: 'xml',
+        label: 'XML',
+        description: 'Parse or stringify XML',
+        category: 'data',
+        icon: 'X',
+        color: '#dc2626',
+        textColor: '#ffffff',
+        inputs: [port('in', 'in', 'input', 'Input')],
+        outputs: [port('out', 'out', 'output', 'Output'), port('error', 'error', 'output', 'Error')],
+        fields: [
+            configField({
+                key: 'mode',
+                label: 'Mode',
+                type: 'select',
+                defaultValue: 'parse',
+                options: [
+                    { label: 'Parse', value: 'parse' },
+                    { label: 'Stringify', value: 'stringify' }
+                ]
+            }),
+            configField({ key: 'field', label: 'XML field', type: 'text', defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value' }),
+            configField({ key: 'target', label: 'Target field', type: 'text', defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value' }),
+            configField({ key: 'pretty', label: 'Pretty print', type: 'boolean', defaultValue: false, visibleWhen: { key: 'mode', equals: 'stringify' } })
+        ],
+        defaultConfig: { mode: 'parse', field: 'value', target: 'value' }
+    },
+    {
         type: 'junction',
         label: 'Junction',
         description: 'Route wires without changing the message',

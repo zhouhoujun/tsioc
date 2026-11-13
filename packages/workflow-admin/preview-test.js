@@ -533,7 +533,7 @@ function startDesignerServer(port) {
             || autosaveName !== 'Function Node' || autosaveCode !== 'return 42;' || !wheelZoom || !wheelPan || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20
             || !menuOpen || menuEntries < 5 || !menuClosed || !menuItemClick
             || !paletteDrop?.placed || Math.abs(paletteDrop.dx) > 10 || Math.abs(paletteDrop.dy) > 10
-            || paletteFiltered < 1 || paletteFiltered >= 38 || paletteRestored !== 38
+            || paletteFiltered < 1 || paletteFiltered >= 41 || paletteRestored !== 41
             || !deleteDisabledBefore || !deleteEnabledAfter || localePreserved.count !== 8 || localePreserved.locale !== 'zh-CN' || !fitVisible
             || optionCount !== 5 || !compareHidden || !compareVisible || !compareHiddenAgain
             || actionPlaceholder !== 'actions.fetch' || !groupTitles.includes('Reliability')

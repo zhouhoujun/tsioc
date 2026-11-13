@@ -199,6 +199,18 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "sequence": {
                 "label": "Sequence",
                 "description": "Keep steps in a strict order"
+            },
+            "link": {
+                "label": "Link",
+                "description": "Connect distant wire segments by name"
+            },
+            "html": {
+                "label": "HTML",
+                "description": "Extract text or links from HTML"
+            },
+            "xml": {
+                "label": "XML",
+                "description": "Parse or stringify XML"
             }
         },
         "field": {
@@ -428,6 +440,20 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "complete": "Complete message",
                 "level": "Level",
                 "console": "Also print to console"
+            },
+            "link": {
+                "links": "Links"
+            },
+            "html": {
+                "field": "HTML field",
+                "mode": "Output",
+                "target": "Target field"
+            },
+            "xml": {
+                "mode": "Mode",
+                "field": "XML field",
+                "target": "Target field",
+                "pretty": "Pretty print"
             }
         },
         "fieldPlaceholder": {
@@ -553,6 +579,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "debug": {
                 "field": "payload"
+            },
+            "html": {
+                "field": "value",
+                "target": "value"
+            },
+            "xml": {
+                "field": "value",
+                "target": "value"
             }
         },
         "fieldDescription": {
@@ -727,7 +761,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "prefix": "prefix",
             "not-prefix": "not prefix",
             "exists": "exists",
-            "not-exists": "not exists"
+            "not-exists": "not exists",
+            "links": "Links"
         }
     },
     "zh-CN": {
@@ -923,6 +958,18 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "sequence": {
                 "label": "顺序",
                 "description": "按严格顺序执行步骤"
+            },
+            "link": {
+                "label": "连线",
+                "description": "按名称连接画布上的远程连线"
+            },
+            "html": {
+                "label": "HTML",
+                "description": "从 HTML 中提取文本或链接"
+            },
+            "xml": {
+                "label": "XML",
+                "description": "解析或序列化 XML"
             }
         },
         "field": {
@@ -1152,6 +1199,20 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "complete": "完整消息",
                 "level": "级别",
                 "console": "同时输出到控制台"
+            },
+            "link": {
+                "links": "连线名称"
+            },
+            "html": {
+                "field": "HTML 字段",
+                "mode": "输出",
+                "target": "目标字段"
+            },
+            "xml": {
+                "mode": "模式",
+                "field": "XML 字段",
+                "target": "目标字段",
+                "pretty": "格式化输出"
             }
         },
         "fieldPlaceholder": {
@@ -1204,6 +1265,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "gateway-deny": {},
             "debug": {
                 "field": "payload"
+            },
+            "html": {
+                "field": "value",
+                "target": "value"
+            },
+            "xml": {
+                "field": "value",
+                "target": "value"
             }
         },
         "fieldDescription": {
@@ -1370,7 +1439,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "prefix": "前缀",
             "not-prefix": "非前缀",
             "exists": "存在",
-            "not-exists": "不存在"
+            "not-exists": "不存在",
+            "links": "链接"
         }
     }
 };

@@ -321,6 +321,116 @@ async function runTask(node: IVisualWorkflowNode, context: ActivityContext): Pro
     return { success: true, data: { nodeId: node.id, config } };
 }
 
+
+function decodeXmlEntities(text: string): string {
+    return text
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&apos;/g, "'")
+        .replace(/&amp;/g, '&');
+}
+
+function parseXmlDocument(text: string): any {
+    const root: any = {};
+    const stack: any[] = [root];
+    const tagPattern = /<([^>]+)>/g;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = tagPattern.exec(text))) {
+        const between = text.slice(lastIndex, match.index).trim();
+        if (between) {
+            const current = stack[stack.length - 1];
+            current['#text'] = current['#text']
+                ? `${current['#text']} ${decodeXmlEntities(between)}`
+                : decodeXmlEntities(between);
+        }
+        let tag = match[1].trim();
+        lastIndex = tagPattern.lastIndex;
+        if (tag.startsWith('?') || tag.startsWith('!')) {
+            continue;
+        }
+        if (tag.startsWith('/')) {
+            if (stack.length > 1) {
+                stack.pop();
+            }
+            continue;
+        }
+        const selfClosing = tag.endsWith('/');
+        if (selfClosing) {
+            tag = tag.slice(0, -1).trim();
+        }
+        const name = (tag.match(/^([^\s/]+)/) || [])[1] || tag;
+        const attrs: Record<string, string> = {};
+        const attrPattern = /([^\s=]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
+        let attr: RegExpExecArray | null;
+        while ((attr = attrPattern.exec(tag))) {
+            attrs[attr[1]] = decodeXmlEntities(attr[2] ?? attr[3] ?? '');
+        }
+        const node: any = Object.keys(attrs).length ? { '@attrs': attrs } : {};
+        const parent = stack[stack.length - 1];
+        if (parent[name] === undefined) {
+            parent[name] = node;
+        } else if (Array.isArray(parent[name])) {
+            parent[name].push(node);
+        } else {
+            parent[name] = [parent[name], node];
+        }
+        if (!selfClosing) {
+            stack.push(node);
+        }
+    }
+    return root;
+}
+
+function serializeXmlValue(name: string, value: any, pretty: boolean, depth = 0): string {
+    const indent = pretty ? '  '.repeat(depth) : '';
+    const newline = pretty ? '\n' : '';
+    if (Array.isArray(value)) {
+        return value.map(item => serializeXmlValue(name, item, pretty, depth)).join(newline);
+    }
+    if (value === null || value === undefined || typeof value !== 'object') {
+        return `${indent}<${name}>${String(value ?? '')}</${name}>${newline}`;
+    }
+    const attrs = value['@attrs'] as Record<string, string> | undefined;
+    const attrText = attrs
+        ? Object.entries(attrs).map(([key, val]) => ` ${key}="${String(val).replace(/"/g, '&quot;')}"`).join('')
+        : '';
+    const text = value['#text'] === undefined ? '' : String(value['#text']);
+    const children = Object.entries(value)
+        .filter(([key]) => key !== '@attrs' && key !== '#text')
+        .map(([key, child]) => serializeXmlValue(key, child, pretty, depth + 1))
+        .join('');
+    if (!text && !children) {
+        return `${indent}<${name}${attrText}/>${newline}`;
+    }
+    return `${indent}<${name}${attrText}>${newline}${children}${text ? indent + (pretty ? '  ' : '') + text + newline : ''}${indent}</${name}>${newline}`;
+}
+
+function stripHtml(text: string): string {
+    return decodeXmlEntities(
+        text
+            .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+            .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+    );
+}
+
+function htmlLinks(text: string): string[] {
+    const links: string[] = [];
+    const pattern = /(?:href|src)\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(text))) {
+        const value = decodeXmlEntities(match[1] ?? match[2] ?? '');
+        if (value && !links.includes(value)) {
+            links.push(value);
+        }
+    }
+    return links;
+}
+
 async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Promise<ActivityResult> {
     const config = node.config || {};
     const resolvedUrl = resolveWorkflowValue(config.url, context);
@@ -745,6 +855,38 @@ export async function executeVisualNode(
         case 'junction':
         case 'sequence':
             return { success: true, data: { nodeId: node.id } };
+        case 'link':
+            return {
+                success: true,
+                data: {
+                    nodeId: node.id,
+                    links: String(config.links || '').split(',').map(item => item.trim()).filter(Boolean)
+                }
+            };
+        case 'html': {
+            const source = String(resolveWorkflowValue(config.field || 'value', context) ?? '');
+            const mode = String(config.mode || 'text');
+            const value = mode === 'links' ? htmlLinks(source) : stripHtml(source);
+            const target = String(config.target || 'value');
+            return { success: true, data: { nodeId: node.id, [target]: value, value } };
+        }
+        case 'xml': {
+            const source = resolveWorkflowValue(config.field || 'value', context);
+            const mode = String(config.mode || 'parse');
+            const target = String(config.target || 'value');
+            try {
+                if (mode === 'stringify') {
+                    const value = typeof source === 'string' ? JSON.parse(source) : source;
+                    const name = Object.keys(value || {})[0] || 'root';
+                    const xml = serializeXmlValue(name, value?.[name], config.pretty === true).trim();
+                    return { success: true, data: { nodeId: node.id, [target]: xml, value: xml } };
+                }
+                const value = parseXmlDocument(String(source ?? ''));
+                return { success: true, data: { nodeId: node.id, [target]: value, value } };
+            } catch (error) {
+                return { success: false, error: error as Error, data: { nodeId: node.id } };
+            }
+        }
         case 'parallel':
             return { success: true, data: { nodeId: node.id, parallel: true } };
         case 'join':

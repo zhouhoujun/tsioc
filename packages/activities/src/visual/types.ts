@@ -148,6 +148,9 @@ export type VisualNodeType =
     | 'log'        // 日志节点
     | 'debug'      // 调试输出节点
     | 'junction'   // 连线汇合节点
+    | 'link'       // 连线连接节点
+    | 'html'       // HTML 解析节点
+    | 'xml'        // XML 解析节点
     | 'http-request' // HTTP 请求节点
     | 'inject'     // 注入/手动触发节点
     | 'function'   // 函数节点
