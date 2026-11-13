@@ -1,7 +1,7 @@
 import { Injectable, isString, Context, Inject } from '@tsdi/ioc';
 import { defaultFormatter, Pattern, RequestInitOpts, UrlRequestOptions, ResponseEvent, PatternFormatter } from '@tsdi/common';
 import { AbstractClient, ClientHandler } from '@tsdi/client';
-import { defer, Observable } from 'rxjs';
+import { defer, mergeMap, Observable } from 'rxjs';
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import { GRPC_CLIENT_OPTIONS, GrpcClientOptions } from './options';
@@ -23,6 +23,51 @@ export class GrpcClient extends AbstractClient<GrpcRequest<any>, ResponseEvent<a
      */
     getConnection(): grpc.Client | undefined {
         return this.connection;
+    }
+
+    /**
+     * Invoke a server-streaming RPC. Each emitted value is delivered as it
+     * arrives from the server.
+     */
+    serverStream<T = any>(
+        pattern: Pattern,
+        options: { body?: any; payload?: any; headers?: Record<string, string>; timeout?: number } = {}
+    ): Observable<T> {
+        return defer(() => this.connect()).pipe(
+            mergeMap((connection: any) => new Observable<T>(observer => {
+                const method = resolveStreamMethod(pattern);
+                const fn = connection?.[method];
+                if (typeof fn !== 'function') {
+                    observer.error(new Error(`gRPC server-stream method '${method}' is not defined by the loaded proto`));
+                    return;
+                }
+                const metadata = new grpc.Metadata();
+                for (const [key, value] of Object.entries(options.headers ?? {})) {
+                    if (value != null) {
+                        metadata.set(key, String(value));
+                    }
+                }
+                const payload = options.body ?? options.payload ?? {};
+                const timeout = Number(options.timeout ?? this.options.deadlineMs ?? 0);
+                const callOptions = timeout > 0 ? { deadline: Date.now() + timeout } : undefined;
+                const call = callOptions
+                    ? fn.call(connection, payload, metadata, callOptions)
+                    : fn.call(connection, payload, metadata);
+                call.on('data', (value: T) => observer.next(value));
+                call.on('error', (err: any) => observer.error(Object.assign(
+                    new Error(err?.details ?? err?.message ?? 'gRPC stream failed'),
+                    { code: err?.code, statusCode: err?.code }
+                )));
+                call.on('end', () => observer.complete());
+                return () => {
+                    try {
+                        call.cancel?.();
+                    } catch {
+                        // best effort
+                    }
+                };
+            }))
+        );
     }
 
     protected connect(): Observable<grpc.Client> {
@@ -96,4 +141,13 @@ export class GrpcClient extends AbstractClient<GrpcRequest<any>, ResponseEvent<a
         const cs = connection.getChannel().getConnectivityState(false);
         return cs === grpc.connectivityState.READY || cs === grpc.connectivityState.IDLE;
     }
+}
+
+function resolveStreamMethod(pattern: Pattern): string {
+    if (pattern && typeof pattern === 'object' && !(pattern instanceof RegExp) && typeof (pattern as any).method === 'string') {
+        return (pattern as any).method;
+    }
+    const raw = String(pattern ?? '');
+    const index = raw.lastIndexOf('/');
+    return index >= 0 ? raw.slice(index + 1) : raw;
 }

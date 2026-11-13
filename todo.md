@@ -3897,3 +3897,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - Gateway E2E 装配 ServiceDiscovery + EndpointResolver。
   - 无 targetUrl 路由通过注册中心发现 endpoint 并转发。
   - 回归：gateway 77。
+- 微服务框架第二十九批（2026-11-13）：
+  - gRPC server streaming：逐条 write/end/cancel。
+  - GrpcClient.serverStream + deadline/metadata。
+  - 回归：grpc 21。

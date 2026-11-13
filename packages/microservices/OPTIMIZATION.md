@@ -185,6 +185,12 @@
 - E2E 中 Gateway 同时装配 `ServiceDiscovery` + `DefaultEndpointResolver`。
 - 新增无 `targetUrl` 的路由，运行时注册 endpoint，通过 resolver 发现并转发到真实 upstream。
 
+第二十九批（gRPC server streaming）：
+
+- Server 支持 `returns (stream T)`：订阅 handler Observable，逐条 `call.write`，完成 `call.end`。
+- Client 新增 `serverStream(pattern, options)`，按 data/end/error 事件输出 Observable。
+- 支持 deadline/metadata；客户端流/双向流仍明确报错。
+
 
 ---
 

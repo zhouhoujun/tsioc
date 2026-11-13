@@ -6,7 +6,7 @@ import { LoggerModule } from '@tsdi/logger';
 import { Controller, Handle, Payload, provideService, useRouter } from '@tsdi/service';
 import { REQUEST, Transport } from '@tsdi/common';
 import { provideClient } from '@tsdi/client';
-import { lastValueFrom } from 'rxjs';
+import { lastValueFrom, Observable, toArray } from 'rxjs';
 import { GrpcServer } from '../src/server/grpc-server';
 import { useGrpcTransport } from '../src/server/factory';
 import { GrpcClient } from '../src/client/client';
@@ -16,6 +16,22 @@ const PROTO_PATH = path.resolve(__dirname, 'fixtures/greeter.proto');
 
 @Controller('/grpc')
 class GreeterController {
+    @Handle('/grpc.test.Greeter/Watch', Transport.gRPC)
+    watch(@Payload('name') name: string) {
+        return new Observable<any>(subscriber => {
+            let index = 0;
+            const timer = setInterval(() => {
+                index += 1;
+                subscriber.next({ message: `${name}-${index}` });
+                if (index >= 2) {
+                    clearInterval(timer);
+                    subscriber.complete();
+                }
+            }, 5);
+            return () => clearInterval(timer);
+        });
+    }
+
     @Handle('/grpc.test.Greeter/SayHello', Transport.gRPC)
     sayHello(@Payload('name') name: string, @Inject(REQUEST) request: any) {
         if (name === 'slow') {
@@ -90,6 +106,16 @@ describe('gRPC unary RPC', () => {
             { body: { name: 'World' } } as any
         ));
         expect(result).toEqual({ message: 'hello World' });
+    });
+
+    it('streams multiple server responses', async () => {
+        const client = clientCtx.get(GrpcClient);
+        const values = await lastValueFrom(
+            client.serverStream<any>({ service: 'Greeter', method: 'Watch' } as any, {
+                body: { name: 'tick' }
+            }).pipe(toArray())
+        );
+        expect(values.map(value => value.message)).toEqual(['tick-1', 'tick-2']);
     });
 
     it('propagates metadata to the handler', async () => {

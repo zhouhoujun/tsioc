@@ -4,6 +4,7 @@ package grpc.test;
 
 service Greeter {
   rpc SayHello (HelloRequest) returns (HelloReply);
+  rpc Watch (HelloRequest) returns (stream HelloReply);
 }
 
 message HelloRequest {
