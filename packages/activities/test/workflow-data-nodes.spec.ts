@@ -242,6 +242,44 @@ describe('Workflow data & trigger nodes', () => {
         expect(captured.init.headers.Authorization).toBe(`Basic ${Buffer.from('user:pass').toString('base64')}`);
     });
 
+    it('scales numbers between ranges', async () => {
+        const result = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: 50 } } },
+            { type: 'scale', config: { field: 'value', inMin: 0, inMax: 100, outMin: 0, outMax: 1 } }
+        ]), {});
+        expect(result.data?.executionState?.nodeStates.scale_1.result?.data?.value).toBe(0.5);
+
+        const clamped = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: 150 } } },
+            { type: 'scale', config: { field: 'value', inMin: 0, inMax: 100, outMin: 0, outMax: 10, round: true } }
+        ]), {});
+        expect(clamped.data?.executionState?.nodeStates.scale_1.result?.data?.value).toBe(10);
+    });
+
+    it('honours XML attribute/text options and CSV columns', async () => {
+        const xml = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: '<root><item id="1">A</item></root>' } } },
+            { type: 'xml', config: { field: 'value', mode: 'parse', attributes: false, text: false } }
+        ]), {});
+        const parsed = xml.data?.executionState?.nodeStates.xml_1.result?.data?.value;
+        expect(parsed.root.item['@attrs']).toBeUndefined();
+        expect(parsed.root.item['#text']).toBeUndefined();
+
+        const csv = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: 'name,age\nA,10\nB,20' } } },
+            { type: 'csv', config: { field: 'value', mode: 'parse', header: true, columns: 'name' } }
+        ]), {});
+        expect(csv.data?.executionState?.nodeStates.csv_1.result?.data?.value).toEqual([{ name: 'A' }, { name: 'B' }]);
+    });
+
+    it('extracts HTML attributes', async () => {
+        const result = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: '<a href="https://a">A</a><a href="https://b">B</a>' } } },
+            { type: 'html', config: { field: 'value', mode: 'attribute', attribute: 'href' } }
+        ]), {});
+        expect(result.data?.executionState?.nodeStates.html_1.result?.data?.value).toEqual(['https://a', 'https://b']);
+    });
+
     it('applies multiple change rules in order', async () => {
         const result = await service.execute(chain([
             { type: 'change', config: { rules: [

@@ -151,6 +151,7 @@ export type VisualNodeType =
     | 'link'       // 连线连接节点
     | 'html'       // HTML 解析节点
     | 'xml'        // XML 解析节点
+    | 'scale'      // 数值区间映射节点
     | 'http-request' // HTTP 请求节点
     | 'inject'     // 注入/手动触发节点
     | 'function'   // 函数节点

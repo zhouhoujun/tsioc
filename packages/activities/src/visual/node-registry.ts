@@ -211,6 +211,28 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         defaultConfig: {}
     },
     {
+        type: 'scale',
+        label: 'Scale',
+        description: 'Map a number from one range to another',
+        category: 'data',
+        icon: '⇔',
+        color: '#7c3aed',
+        textColor: '#ffffff',
+        inputs: [port('in', 'in', 'input', 'Input')],
+        outputs: [port('out', 'out', 'output', 'Output'), port('error', 'error', 'output', 'Error')],
+        fields: [
+            configField({ key: 'field', label: 'Value path', type: 'text', defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value', description: 'Context path of the number to map.' }),
+            configField({ key: 'inMin', label: 'Input minimum', type: 'number', defaultValue: 0, group: 'Input range' }),
+            configField({ key: 'inMax', label: 'Input maximum', type: 'number', defaultValue: 100, group: 'Input range' }),
+            configField({ key: 'outMin', label: 'Output minimum', type: 'number', defaultValue: 0, group: 'Output range' }),
+            configField({ key: 'outMax', label: 'Output maximum', type: 'number', defaultValue: 1, group: 'Output range' }),
+            configField({ key: 'clamp', label: 'Clamp to range', type: 'boolean', defaultValue: true, group: 'Options' }),
+            configField({ key: 'round', label: 'Round result', type: 'boolean', defaultValue: false, group: 'Options' }),
+            configField({ key: 'target', label: 'Write result to', type: 'text', defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value', description: 'Context field that receives the mapped value.' })
+        ],
+        defaultConfig: { field: 'value', inMin: 0, inMax: 100, outMin: 0, outMax: 1, clamp: true, round: false, target: 'value' }
+    },
+    {
         type: 'html',
         label: 'HTML',
         description: 'Extract text or links from HTML',
@@ -230,9 +252,11 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 defaultValue: 'text',
                 options: [
                     { label: 'Text', value: 'text' },
-                    { label: 'Links', value: 'links' }
+                    { label: 'Links', value: 'links' },
+                    { label: 'Attribute', value: 'attribute' }
                 ]
             }),
+            configField({ key: 'attribute', label: 'Attribute name', type: 'text', placeholder: 'href', pattern: '^[A-Za-z_:][A-Za-z0-9_:.-]*$', visibleWhen: { key: 'mode', equals: 'attribute' } }),
             configField({ key: 'target', label: 'Target field', type: 'text', defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value' })
         ],
         defaultConfig: { field: 'value', mode: 'text', target: 'value' }
@@ -260,9 +284,11 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             }),
             configField({ key: 'field', label: 'XML field', type: 'text', defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value' }),
             configField({ key: 'target', label: 'Target field', type: 'text', defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value' }),
-            configField({ key: 'pretty', label: 'Pretty print', type: 'boolean', defaultValue: false, visibleWhen: { key: 'mode', equals: 'stringify' } })
+            configField({ key: 'attributes', label: 'Include attributes', type: 'boolean', defaultValue: true, group: 'Options', description: 'Include XML attributes as @attrs in the parsed result.', visibleWhen: { key: 'mode', equals: 'parse' } }),
+            configField({ key: 'text', label: 'Include text', type: 'boolean', defaultValue: true, group: 'Options', description: 'Include element text as #text in the parsed result.', visibleWhen: { key: 'mode', equals: 'parse' } }),
+            configField({ key: 'pretty', label: 'Pretty print', type: 'boolean', defaultValue: false, group: 'Options', visibleWhen: { key: 'mode', equals: 'stringify' } })
         ],
-        defaultConfig: { mode: 'parse', field: 'value', target: 'value' }
+        defaultConfig: { mode: 'parse', field: 'value', target: 'value', attributes: true, text: true }
     },
     {
         type: 'junction',
@@ -594,7 +620,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             }),
             configField({ key: 'field', label: 'Field', type: 'text', placeholder: 'value', description: 'Path to the CSV text or array.',}),
             configField({ key: 'delimiter', label: 'Delimiter', type: 'text', defaultValue: ',', placeholder: ',', description: 'Single character used between columns.',}),
-            configField({ key: 'header', label: 'First row is header', type: 'boolean', defaultValue: true, visibleWhen: { key: 'mode', equals: 'parse' } })
+            configField({ key: 'header', label: 'First row is header', type: 'boolean', defaultValue: true, visibleWhen: { key: 'mode', equals: 'parse' } }),
+            configField({ key: 'columns', label: 'Columns', type: 'text', placeholder: 'name, age', group: 'Options', description: 'Optional comma-separated columns to keep when parsing or stringifying.' })
         ],
         defaultConfig: { mode: 'parse', delimiter: ',', header: true }
     },

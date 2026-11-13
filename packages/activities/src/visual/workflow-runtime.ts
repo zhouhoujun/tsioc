@@ -407,6 +407,39 @@ function serializeXmlValue(name: string, value: any, pretty: boolean, depth = 0)
     return `${indent}<${name}${attrText}>${newline}${children}${text ? indent + (pretty ? '  ' : '') + text + newline : ''}${indent}</${name}>${newline}`;
 }
 
+function pruneXmlValue(value: any, attributes: boolean, text: boolean): any {
+    if (Array.isArray(value)) {
+        return value.map(item => pruneXmlValue(item, attributes, text));
+    }
+    if (!value || typeof value !== 'object') {
+        return value;
+    }
+    const next: Record<string, any> = {};
+    Object.entries(value).forEach(([key, child]) => {
+        if (key === '@attrs' && !attributes) {
+            return;
+        }
+        if (key === '#text' && !text) {
+            return;
+        }
+        next[key] = pruneXmlValue(child, attributes, text);
+    });
+    return next;
+}
+
+function htmlAttributes(text: string, attribute: string): string[] {
+    const values: string[] = [];
+    const pattern = new RegExp(`\\b${attribute}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`, 'gi');
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(text))) {
+        const value = decodeXmlEntities(match[1] ?? match[2] ?? '');
+        if (value && !values.includes(value)) {
+            values.push(value);
+        }
+    }
+    return values;
+}
+
 function stripHtml(text: string): string {
     return decodeXmlEntities(
         text
@@ -681,11 +714,18 @@ export async function executeVisualNode(
             const source = resolveWorkflowValue(config.field || 'value', context);
             const delimiter = String(config.delimiter ?? ',');
             try {
+                const columns = String(config.columns || '').split(',').map(item => item.trim()).filter(Boolean);
                 if (String(config.mode || 'parse') === 'stringify') {
-                    const value = stringifyCsv(source, delimiter);
+                    const rows = columns.length && Array.isArray(source)
+                        ? source.map(item => Object.fromEntries(columns.map(column => [column, item?.[column]])))
+                        : source;
+                    const value = stringifyCsv(rows, delimiter);
                     return { success: true, data: { nodeId: node.id, value } };
                 }
-                const value = parseCsv(String(source ?? ''), delimiter, config.header !== false);
+                let value = parseCsv(String(source ?? ''), delimiter, config.header !== false);
+                if (columns.length) {
+                    value = (value as any[]).map((row: any) => Object.fromEntries(columns.map(column => [column, row?.[column]])));
+                }
                 return { success: true, data: { nodeId: node.id, value, items: value, count: value.length } };
             } catch (error) {
                 return { success: false, error: error as Error, data: { nodeId: node.id } };
@@ -908,6 +948,28 @@ export async function executeVisualNode(
                     links: String(config.links || '').split(',').map(item => item.trim()).filter(Boolean)
                 }
             };
+        case 'scale': {
+            const input = Number(resolveWorkflowValue(config.field || 'value', context));
+            if (!Number.isFinite(input)) {
+                return { success: false, error: new Error('Scale input is not a number'), data: { nodeId: node.id } };
+            }
+            const inMin = Number(config.inMin ?? 0);
+            const inMax = Number(config.inMax ?? 100);
+            const outMin = Number(config.outMin ?? 0);
+            const outMax = Number(config.outMax ?? 1);
+            const span = inMax - inMin;
+            let scaled = span === 0 ? outMin : outMin + ((input - inMin) / span) * (outMax - outMin);
+            if (config.clamp !== false) {
+                const low = Math.min(outMin, outMax);
+                const high = Math.max(outMin, outMax);
+                scaled = Math.min(high, Math.max(low, scaled));
+            }
+            if (config.round === true) {
+                scaled = Math.round(scaled);
+            }
+            const target = String(config.target || 'value');
+            return { success: true, data: { nodeId: node.id, [target]: scaled, value: scaled } };
+        }
         case 'html': {
             const source = String(resolveWorkflowValue(config.field || 'value', context) ?? '');
             const mode = String(config.mode || 'text');
@@ -921,7 +983,15 @@ export async function executeVisualNode(
                 }
             }
             const content = tag ? segments : [source];
-            const values = content.map(part => mode === 'links' ? htmlLinks(part) : stripHtml(part));
+            const values = content.map(part => {
+                if (mode === 'links') {
+                    return htmlLinks(part);
+                }
+                if (mode === 'attribute') {
+                    return htmlAttributes(part, String(config.attribute || 'href'));
+                }
+                return stripHtml(part);
+            });
             const value = tag
                 ? (values.length <= 1 ? (values[0] || (mode === 'links' ? [] : '')) : values)
                 : values[0];
@@ -939,7 +1009,11 @@ export async function executeVisualNode(
                     const xml = serializeXmlValue(name, value?.[name], config.pretty === true).trim();
                     return { success: true, data: { nodeId: node.id, [target]: xml, value: xml } };
                 }
-                const value = parseXmlDocument(String(source ?? ''));
+                const value = pruneXmlValue(
+                    parseXmlDocument(String(source ?? '')),
+                    config.attributes !== false,
+                    config.text !== false
+                );
                 return { success: true, data: { nodeId: node.id, [target]: value, value } };
             } catch (error) {
                 return { success: false, error: error as Error, data: { nodeId: node.id } };

@@ -211,6 +211,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "xml": {
                 "label": "XML",
                 "description": "Parse or stringify XML documents"
+            },
+            "scale": {
+                "label": "Scale",
+                "description": "Map a number from one range to another"
             }
         },
         "field": {
@@ -300,7 +304,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "mode": "Mode",
                 "field": "Value path",
                 "delimiter": "Delimiter",
-                "header": "First row is header"
+                "header": "First row is header",
+                "columns": "Columns"
             },
             "change": {
                 "action": "Action",
@@ -458,13 +463,26 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "HTML path",
                 "mode": "Output",
                 "target": "Write result to",
-                "tag": "Tag"
+                "tag": "Tag",
+                "attribute": "Attribute name"
             },
             "xml": {
                 "mode": "Mode",
                 "field": "XML path",
                 "target": "Write result to",
-                "pretty": "Pretty print"
+                "pretty": "Pretty print",
+                "attributes": "Include attributes",
+                "text": "Include text"
+            },
+            "scale": {
+                "field": "Value path",
+                "inMin": "Input minimum",
+                "inMax": "Input maximum",
+                "outMin": "Output minimum",
+                "outMax": "Output maximum",
+                "clamp": "Clamp to range",
+                "round": "Round result",
+                "target": "Write result to"
             }
         },
         "fieldPlaceholder": {
@@ -520,7 +538,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "csv": {
                 "field": "value",
-                "delimiter": ","
+                "delimiter": ",",
+                "columns": "name, age"
             },
             "change": {
                 "field": "variables.name",
@@ -607,7 +626,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "html": {
                 "field": "body",
                 "target": "value",
-                "tag": "h1"
+                "tag": "h1",
+                "attribute": "href"
             },
             "xml": {
                 "field": "value",
@@ -615,6 +635,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "link": {
                 "links": "flow-a, flow-b"
+            },
+            "scale": {
+                "field": "value",
+                "target": "value"
             }
         },
         "fieldDescription": {
@@ -704,7 +728,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "context path to CSV text or an array",
                 "delimiter": "single character between columns",
                 "mode": "parse CSV text or stringify an array",
-                "header": "treat the first row as column names"
+                "header": "treat the first row as column names",
+                "columns": "Optional comma-separated columns to keep when parsing or stringifying."
             },
             "change": {
                 "field": "context path to modify, for example variables.name",
@@ -806,13 +831,26 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "context path containing HTML text",
                 "mode": "text strips markup; links collects href and src values",
                 "target": "context field that receives the extracted value",
-                "tag": "only extract content from this tag; leave empty for the whole document"
+                "tag": "only extract content from this tag; leave empty for the whole document",
+                "attribute": "Attribute to collect when output is Attribute, for example href or src."
             },
             "xml": {
                 "mode": "parse XML text or serialize an object back to XML",
                 "field": "context path containing XML text or an object",
                 "target": "context field that receives the result",
-                "pretty": "indent serialized XML"
+                "pretty": "indent serialized XML",
+                "attributes": "Include XML attributes as @attrs in the parsed result.",
+                "text": "Include element text as #text in the parsed result."
+            },
+            "scale": {
+                "field": "context path of the number to map",
+                "inMin": "minimum of the input range",
+                "inMax": "maximum of the input range",
+                "outMin": "minimum of the output range",
+                "outMax": "maximum of the output range",
+                "clamp": "keep the result inside the output range",
+                "round": "round the result to an integer",
+                "target": "field that receives the mapped value"
             }
         },
         "group": {
@@ -823,7 +861,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "template": "Template",
             "output": "Output",
             "payload": "Payload",
-            "authentication": "Authentication"
+            "authentication": "Authentication",
+            "input-range": "Input range",
+            "output-range": "Output range"
         },
         "option": {
             "truthy": "is truthy",
@@ -877,7 +917,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "basic": "Basic",
             "milliseconds": "Milliseconds",
             "seconds": "Seconds",
-            "minutes": "Minutes"
+            "minutes": "Minutes",
+            "attribute": "Attribute"
         }
     },
     "zh-CN": {
@@ -1085,6 +1126,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "xml": {
                 "label": "XML",
                 "description": "解析或序列化 XML 文档"
+            },
+            "scale": {
+                "label": "区间映射",
+                "description": "将数值从一个区间映射到另一个区间"
             }
         },
         "field": {
@@ -1174,7 +1219,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "mode": "模式",
                 "field": "取值路径",
                 "delimiter": "分隔符",
-                "header": "首行为表头"
+                "header": "首行为表头",
+                "columns": "列"
             },
             "change": {
                 "action": "操作",
@@ -1332,13 +1378,26 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "HTML 路径",
                 "mode": "输出",
                 "target": "结果写入字段",
-                "tag": "标签"
+                "tag": "标签",
+                "attribute": "属性名"
             },
             "xml": {
                 "mode": "模式",
                 "field": "XML 路径",
                 "target": "结果写入字段",
-                "pretty": "格式化输出"
+                "pretty": "格式化输出",
+                "attributes": "包含属性",
+                "text": "包含文本"
+            },
+            "scale": {
+                "field": "取值路径",
+                "inMin": "输入最小值",
+                "inMax": "输入最大值",
+                "outMin": "输出最小值",
+                "outMax": "输出最大值",
+                "clamp": "限制在区间内",
+                "round": "取整",
+                "target": "结果写入字段"
             }
         },
         "fieldPlaceholder": {
@@ -1394,7 +1453,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "csv": {
                 "field": "value",
-                "delimiter": ","
+                "delimiter": ",",
+                "columns": "name, age"
             },
             "change": {
                 "field": "variables.name",
@@ -1461,7 +1521,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "html": {
                 "field": "body",
                 "target": "value",
-                "tag": "h1"
+                "tag": "h1",
+                "attribute": "href"
             },
             "xml": {
                 "field": "value",
@@ -1469,6 +1530,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "link": {
                 "links": "flow-a, flow-b"
+            },
+            "scale": {
+                "field": "value",
+                "target": "value"
             }
         },
         "fieldDescription": {
@@ -1558,7 +1623,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "CSV 文本或数组的上下文路径。",
                 "delimiter": "列之间的单字符分隔符。",
                 "mode": "解析 CSV 文本，或把数组序列化为 CSV。",
-                "header": "解析时把首行作为字段名。"
+                "header": "解析时把首行作为字段名。",
+                "columns": "可选：解析或序列化时保留的列，逗号分隔。"
             },
             "change": {
                 "field": "要修改的上下文路径。",
@@ -1660,13 +1726,26 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "包含 HTML 文本的上下文路径。",
                 "mode": "文本：去除标签；链接：收集 href/src。",
                 "target": "接收提取结果的上下文字段。",
-                "tag": "只提取该 HTML 标签内的内容，留空则处理整个文档。"
+                "tag": "只提取该 HTML 标签内的内容，留空则处理整个文档。",
+                "attribute": "输出为属性时收集的属性名，例如 href 或 src。"
             },
             "xml": {
                 "mode": "解析 XML 文本，或把对象序列化为 XML。",
                 "field": "包含 XML 或对象的上下文路径。",
                 "target": "接收解析或序列化结果的上下文字段。",
-                "pretty": "序列化时使用缩进。"
+                "pretty": "序列化时使用缩进。",
+                "attributes": "解析结果中包含 XML 属性（@attrs）。",
+                "text": "解析结果中包含元素文本（#text）。"
+            },
+            "scale": {
+                "field": "要映射的数值路径。",
+                "inMin": "输入区间的最小值。",
+                "inMax": "输入区间的最大值。",
+                "outMin": "输出区间的最小值。",
+                "outMax": "输出区间的最大值。",
+                "clamp": "把结果限制在输出区间内。",
+                "round": "把结果四舍五入为整数。",
+                "target": "接收映射结果的字段。"
             }
         },
         "group": {
@@ -1677,7 +1756,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "template": "模板",
             "output": "输出",
             "payload": "数据",
-            "authentication": "认证"
+            "authentication": "认证",
+            "input-range": "输入范围",
+            "output-range": "输出范围"
         },
         "option": {
             "truthy": "为真",
@@ -1723,7 +1804,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "basic": "Basic",
             "milliseconds": "毫秒",
             "seconds": "秒",
-            "minutes": "分钟"
+            "minutes": "分钟",
+            "attribute": "属性"
         }
     }
 };
