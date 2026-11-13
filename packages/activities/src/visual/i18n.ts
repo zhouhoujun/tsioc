@@ -17,6 +17,7 @@ const BASE_WORKFLOW_TRANSLATIONS: Record<string, TranslationBundle> = {
                     flow: 'Flow control',
                     action: 'Actions',
                     data: 'Data',
+                    storage: 'Storage',
                     error: 'Error handling',
                     advanced: 'Advanced'
                 },
@@ -304,6 +305,7 @@ const BASE_WORKFLOW_TRANSLATIONS: Record<string, TranslationBundle> = {
                     flow: '流程控制',
                     action: '执行动作',
                     data: '数据处理',
+                    storage: '存储',
                     error: '异常处理',
                     advanced: '高级'
                 },

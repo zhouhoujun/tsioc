@@ -20,6 +20,7 @@ export const WORKFLOW_CATEGORY_LABELS: Record<WorkflowNodeCategory, string> = {
     flow: 'Flow control',
     action: 'Actions',
     data: 'Data',
+    storage: 'Storage',
     error: 'Error handling',
     advanced: 'Advanced'
 };

@@ -609,7 +609,7 @@ export interface WorkflowConfigField extends Omit<DynamicFormField, 'type' | 'la
  * 节点分类
  * Node palette category.
  */
-export type WorkflowNodeCategory = 'trigger' | 'flow' | 'action' | 'data' | 'error' | 'advanced';
+export type WorkflowNodeCategory = 'trigger' | 'flow' | 'action' | 'data' | 'storage' | 'error' | 'advanced';
 
 /**
  * 通用流程节点定义（可视化组件库）

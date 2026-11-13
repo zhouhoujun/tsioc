@@ -5,6 +5,7 @@ import { createNatsPlugin } from './builtins/nats';
 import { createRedisPlugin } from './builtins/redis';
 import { createTcpPlugin } from './builtins/tcp';
 import { createUdpPlugin } from './builtins/udp';
+import { createFilePlugin } from './builtins/file';
 import { createWebSocketPlugin } from './builtins/websocket';
 import { toWorkflowPluginManifest, WorkflowPlugin, WorkflowPluginManifest } from './types';
 
@@ -15,7 +16,8 @@ const BUILT_IN_FACTORIES: Record<string, () => WorkflowPlugin> = {
     coap: createCoapPlugin,
     tcp: createTcpPlugin,
     udp: createUdpPlugin,
-    websocket: createWebSocketPlugin
+    websocket: createWebSocketPlugin,
+    file: createFilePlugin
 };
 
 /** Plugin ids bundled with @tsdi/activities. */

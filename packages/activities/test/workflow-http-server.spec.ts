@@ -178,7 +178,7 @@ describe('Workflow HTTP microservice', () => {
         const catalog = await request(`${base}/api/plugins`);
         expect(catalog.status).toBe(200);
         expect(catalog.body.installed).toEqual([]);
-        expect(catalog.body.available.map((item: any) => item.id).sort()).toEqual(['coap', 'mqtt', 'nats', 'redis', 'tcp', 'udp', 'websocket']);
+        expect(catalog.body.available.map((item: any) => item.id).sort()).toEqual(['coap', 'file', 'mqtt', 'nats', 'redis', 'tcp', 'udp', 'websocket']);
 
         const install = await request(`${base}/api/plugins/redis/install`, { method: 'POST' });
         expect(install.status).toBe(200);

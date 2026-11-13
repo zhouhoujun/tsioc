@@ -7,6 +7,10 @@ import { WorkflowPluginRegistry } from '../src/plugins/plugin-registry';
 import { WorkflowServiceRegistry } from '../src/plugins/service-registry';
 import { WorkflowPlugin } from '../src/plugins/types';
 import { createBuiltInWorkflowPlugin, listBuiltInWorkflowPlugins } from '../src/plugins/catalog';
+import { createFilePlugin } from '../src/plugins/builtins/file';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 
 function createPlugin(disposed: { value: boolean }): WorkflowPlugin {
     return {
@@ -92,7 +96,7 @@ describe('workflow plugins', () => {
 
     it('exposes the bundled mqtt/redis/nats/coap catalog as manifests', () => {
         const manifests = listBuiltInWorkflowPlugins();
-        expect(manifests.map(item => item.id).sort()).toEqual(['coap', 'mqtt', 'nats', 'redis', 'tcp', 'udp', 'websocket']);
+        expect(manifests.map(item => item.id).sort()).toEqual(['coap', 'file', 'mqtt', 'nats', 'redis', 'tcp', 'udp', 'websocket']);
         expect(manifests.every(item => item.nodes.length > 0)).toBe(true);
         expect(JSON.stringify(manifests)).not.toContain('execute');
         expect(createBuiltInWorkflowPlugin('mqtt')?.nodes?.map(node => node.type)).toContain('mqtt-publish');
@@ -102,7 +106,23 @@ describe('workflow plugins', () => {
         expect(createBuiltInWorkflowPlugin('tcp')?.nodes?.map(node => node.type)).toContain('tcp-request');
         expect(createBuiltInWorkflowPlugin('udp')?.nodes?.map(node => node.type)).toContain('udp-request');
         expect(createBuiltInWorkflowPlugin('websocket')?.nodes?.map(node => node.type)).toContain('websocket-request');
+        expect(createBuiltInWorkflowPlugin('file')?.nodes?.map(node => node.type)).toContain('file-read');
         expect(createBuiltInWorkflowPlugin('missing')).toBeUndefined();
+    });
+
+    it('reads and writes files with the file plugin', async () => {
+        const plugin = createFilePlugin();
+        const write = plugin.nodes!.find(node => node.type === 'file-write')!;
+        const read = plugin.nodes!.find(node => node.type === 'file-read')!;
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-file-plugin-'));
+        const file = path.join(dir, 'demo.txt');
+
+        const written = await write.execute!({ id: 'write_1', type: 'file-write', config: { path: file, content: 'hello' } } as any, {});
+        expect(written.success).toBe(true);
+        const readResult = await read.execute!({ id: 'read_1', type: 'file-read', config: { path: file } } as any, {});
+        expect(readResult.success).toBe(true);
+        expect(readResult.data?.content).toBe('hello');
+        fs.rmSync(dir, { recursive: true, force: true });
     });
 
     it('fails plugin nodes clearly when the host has no plugin executor', async () => {

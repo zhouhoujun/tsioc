@@ -243,6 +243,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "udp-request": {
                 "label": "UDP request",
                 "description": "Send a UDP datagram and optionally wait for a reply"
+            },
+            "file-read": {
+                "label": "File read",
+                "description": "Read a file from the workflow host"
+            },
+            "file-write": {
+                "label": "File write",
+                "description": "Write or append a file on the workflow host"
             }
         },
         "field": {
@@ -565,6 +573,18 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "payload": "Payload",
                 "waitForReply": "Wait for reply",
                 "timeout": "Timeout"
+            },
+            "file-read": {
+                "path": "File path",
+                "encoding": "Encoding",
+                "output": "Write result to"
+            },
+            "file-write": {
+                "path": "File path",
+                "encoding": "Encoding",
+                "content": "Content",
+                "append": "Append",
+                "createDirs": "Create parent folders"
             }
         },
         "fieldPlaceholder": {
@@ -750,7 +770,11 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "udp-request": {
                 "host": "127.0.0.1",
                 "port": "9000"
-            }
+            },
+            "file-read": {
+                "output": "content"
+            },
+            "file-write": {}
         },
         "fieldDescription": {
             "start": {},
@@ -1015,6 +1039,18 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "payload": "text payload to send",
                 "waitForReply": "wait for a server reply",
                 "timeout": "maximum wait time for the reply"
+            },
+            "file-read": {
+                "path": "path relative to the host working directory",
+                "encoding": "file encoding",
+                "output": "context field that receives the file content"
+            },
+            "file-write": {
+                "path": "path relative to the host working directory",
+                "encoding": "file encoding",
+                "content": "text written to the file",
+                "append": "append instead of overwrite",
+                "createDirs": "create parent folders before writing"
             }
         },
         "group": {
@@ -1091,7 +1127,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "manual": "Manual / once",
             "interval": "Interval",
             "event": "Event",
-            "cron": "Cron schedule"
+            "cron": "Cron schedule",
+            "utf8": "UTF-8",
+            "base64": "Base64",
+            "hex": "Hex"
         }
     },
     "zh-CN": {
@@ -1331,6 +1370,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "udp-request": {
                 "label": "UDP 请求",
                 "description": "发送 UDP 数据报并可等待回复"
+            },
+            "file-read": {
+                "label": "读取文件",
+                "description": "读取工作流宿主上的文件"
+            },
+            "file-write": {
+                "label": "写入文件",
+                "description": "写入或追加工作流宿主上的文件"
             }
         },
         "field": {
@@ -1653,6 +1700,18 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "payload": "数据",
                 "waitForReply": "等待回复",
                 "timeout": "超时"
+            },
+            "file-read": {
+                "path": "文件路径",
+                "encoding": "编码",
+                "output": "结果写入字段"
+            },
+            "file-write": {
+                "path": "文件路径",
+                "encoding": "编码",
+                "content": "内容",
+                "append": "追加",
+                "createDirs": "创建父目录"
             }
         },
         "fieldPlaceholder": {
@@ -1818,7 +1877,11 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "udp-request": {
                 "host": "127.0.0.1",
                 "port": "9000"
-            }
+            },
+            "file-read": {
+                "output": "content"
+            },
+            "file-write": {}
         },
         "fieldDescription": {
             "start": {},
@@ -2083,6 +2146,18 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "payload": "发送的文本数据。",
                 "waitForReply": "是否等待服务器返回数据。",
                 "timeout": "等待回复的最长时间。"
+            },
+            "file-read": {
+                "path": "相对于宿主工作目录的文件路径。",
+                "encoding": "文件读写编码。",
+                "output": "接收文件内容的上下文字段。"
+            },
+            "file-write": {
+                "path": "相对于宿主工作目录的文件路径。",
+                "encoding": "文件读写编码。",
+                "content": "写入文件的文本。",
+                "append": "追加到现有文件而不是覆盖。",
+                "createDirs": "写入前自动创建父目录。"
             }
         },
         "group": {
@@ -2151,7 +2226,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "manual": "手动 / 一次",
             "interval": "周期",
             "event": "事件",
-            "cron": "Cron 定时"
+            "cron": "Cron 定时",
+            "utf8": "UTF-8",
+            "base64": "Base64",
+            "hex": "Hex"
         }
     }
 };
