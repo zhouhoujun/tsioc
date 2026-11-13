@@ -171,6 +171,7 @@ export class VisualWorkflowService {
         this.checkpoint(options, state);
 
         const timeoutMs = Math.max(0, Number(options.timeout) || 0);
+        const deadline = timeoutMs > 0 ? (state.startTime || Date.now()) + timeoutMs : 0;
         let timeoutTimer: any;
         if (timeoutMs > 0) {
             timeoutTimer = setTimeout(() => {
@@ -193,7 +194,13 @@ export class VisualWorkflowService {
 
             const host: VisualNodeRuntimeHost = {
                 executeDefinition: (subDefinition, subContext) =>
-                    this.execute(subDefinition, subContext, { ...options, executionId: undefined }),
+                    this.execute(subDefinition, subContext, {
+                        ...options,
+                        executionId: undefined,
+                        // Sub-workflows share the remaining budget instead of
+                        // restarting a full timeout for every iteration.
+                        timeout: deadline > 0 ? Math.max(1, deadline - Date.now()) : undefined
+                    }),
                 executeNode: async (node, nodeContext) => {
                     const executor = this.registry.executor(node.type);
                     return executor ? executor(node, nodeContext) : undefined;

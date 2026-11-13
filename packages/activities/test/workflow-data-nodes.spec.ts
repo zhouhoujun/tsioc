@@ -203,6 +203,23 @@ describe('Workflow data & trigger nodes', () => {
         expect(result.data?.executionState?.nodeStates.loop_0.result?.data?.count).toBe(3);
     });
 
+    it('stops a loop when a sub-workflow fails', async () => {
+        const child: VisualWorkflowDefinition = {
+            id: 'loop-child-failing',
+            name: 'Loop child failing',
+            nodes: [
+                registry.createNode('task', { x: 0, y: 0 }, { id: 'child_fail', config: { fail: true } })
+            ],
+            connections: []
+        };
+        const result = await service.execute(chain([
+            { type: 'loop', config: { workflow: 'workflows.child', iterations: 5 } }
+        ]), { workflows: { child } });
+        expect(result.success).toBe(false);
+        expect(result.data?.executionState?.nodeStates.loop_0.result?.data?.count).toBe(1);
+        expect(String(result.data?.executionState?.nodeStates.loop_0.result?.error || '')).toContain('failed');
+    });
+
     it('runs complete, catch and status lifecycle nodes', async () => {
         const successState: any = {};
         const success: VisualWorkflowDefinition = {

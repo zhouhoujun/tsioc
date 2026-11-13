@@ -682,7 +682,15 @@ export async function executeVisualNode(
                         return { success: false, error: new Error('Workflow cancelled'), data: { nodeId: node.id, iterations: index } };
                     }
                 }
-                results.push(await host.executeDefinition(definition as VisualWorkflowDefinition, context));
+                const child = await host.executeDefinition(definition as VisualWorkflowDefinition, context);
+                results.push(child);
+                if (!child.success) {
+                    return {
+                        success: false,
+                        error: child.error || new Error('Loop sub-workflow failed'),
+                        data: { nodeId: node.id, iterations: index + 1, results, count: results.length }
+                    };
+                }
             }
             return { success: true, data: { nodeId: node.id, iterations, results, count: results.length } };
         }

@@ -788,7 +788,9 @@ await service.execute(definition, context, { timeout: 30_000 });
 `timeout` is a whole-run budget in milliseconds. When it expires no further
 nodes are scheduled, in-flight built-in `delay` / `trigger` / loop waits stop
 early, and the run finishes as `cancelled` with a `Workflow timed out after
-Nms` error. The HTTP run endpoint accepts the same value in its body:
+Nms` error. Nested `loop` / sub-workflow executions inherit the remaining
+budget instead of restarting a full timeout, and a failing sub-workflow stops
+the loop immediately. The HTTP run endpoint accepts the same value in its body:
 
 ```json
 { "context": {}, "timeout": 30000 }

@@ -304,6 +304,32 @@ describe('Visual Workflow Execution Path', () => {
         expect(elapsed).toBeLessThan(400);
     });
 
+    it('shares the remaining time budget with sub-workflows', async () => {
+        const child = {
+            id: 'slow-child',
+            name: 'Slow child',
+            nodes: [
+                registry.createNode('delay', { x: 0, y: 0 }, { id: 'child_delay', config: { delay: 400 } })
+            ],
+            connections: []
+        };
+        const definition = {
+            id: 'nested-timeout',
+            name: 'Nested timeout',
+            nodes: [
+                registry.createNode('loop', { x: 0, y: 0 }, { id: 'loop_n', config: { workflow: 'workflows.child', iterations: 5 } })
+            ],
+            connections: []
+        };
+        const started = Date.now();
+        const result = await service.execute(definition, { workflows: { child } }, { timeout: 80 });
+        const elapsed = Date.now() - started;
+        expect(result.success).toBe(false);
+        expect(result.data?.status).toBe('cancelled');
+        expect(String(result.error?.message || '')).toContain('timed out');
+        expect(elapsed).toBeLessThan(600);
+    });
+
     it('exposes execution state to the designer while running', async () => {
         const result = await designer.run({ context: { approved: true } });
         expect(result.success).toBe(true);
