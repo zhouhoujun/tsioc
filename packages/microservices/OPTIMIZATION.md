@@ -286,6 +286,11 @@
 - `npm run publish:prepare <pkg>` 可准备单包发布目录。
 - gateway 实测 dry-run 通过（25 files，197.6 kB unpacked）。
 
+第四十七批（gRPC 取消传播）：
+
+- 新增 Forever server-stream 用例：客户端 unsubscribe → 服务端 `cancelled` → handler teardown。
+- 验证 Observable teardown 只执行一次，且不残留 interval。
+
 
 ---
 

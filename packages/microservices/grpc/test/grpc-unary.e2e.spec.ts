@@ -16,6 +16,8 @@ const PROTO_PATH = path.resolve(__dirname, 'fixtures/greeter.proto');
 
 @Controller('/grpc')
 class GreeterController {
+    static cancelled = 0;
+
     @Handle('/grpc.test.Greeter/Watch', Transport.gRPC)
     watch(@Payload('name') name: string) {
         return new Observable<any>(subscriber => {
@@ -47,6 +49,17 @@ class GreeterController {
                 }
                 subscriber.complete();
             })().catch(error => subscriber.error(error));
+        });
+    }
+
+    @Handle('/grpc.test.Greeter/Forever', Transport.gRPC)
+    forever() {
+        return new Observable<any>(subscriber => {
+            const timer = setInterval(() => subscriber.next({ message: 'tick' }), 10);
+            return () => {
+                clearInterval(timer);
+                GreeterController.cancelled += 1;
+            };
         });
     }
 
@@ -154,6 +167,19 @@ describe('gRPC unary RPC', () => {
             ).pipe(toArray())
         );
         expect(values.map(value => value.message)).toEqual(['x', 'y']);
+    });
+
+    it('propagates client cancellation to the server handler teardown', async () => {
+        const client = clientCtx.get(GrpcClient);
+        const before = GreeterController.cancelled;
+        const subscription = client.serverStream<any>(
+            { service: 'Greeter', method: 'Forever' } as any,
+            { body: { name: 'cancel' } }
+        ).subscribe(() => undefined);
+        await new Promise(resolve => setTimeout(resolve, 30));
+        subscription.unsubscribe();
+        await new Promise(resolve => setTimeout(resolve, 50));
+        expect(GreeterController.cancelled).toBeGreaterThan(before);
     });
 
     it('propagates metadata to the handler', async () => {
