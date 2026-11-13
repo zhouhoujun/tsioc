@@ -3971,3 +3971,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第四十八批（2026-11-13）：
   - Admin 路由编辑器 SLO 阈值字段 + 校验。
   - 回归：admin 58；web 已重建。
+- 微服务框架第四十九批（2026-11-13）：
+  - 真实 Redis 双 Gateway E2E（跨副本限流/缓存）。
+  - 回归：gateway 82（Redis 87）。
