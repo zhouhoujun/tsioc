@@ -256,6 +256,15 @@ describe('Visual Workflow Designer', () => {
             expect(String(result.error?.message || '')).toContain('Code');
         });
 
+        it('validates nested list rule fields', async () => {
+            const local = new WorkflowDesigner({ registry, service });
+            const node = local.addNode('change', { x: 40, y: 40 })!;
+            local.updateNodeConfig(node.id, { rules: [{ action: 'set', field: '', value: 1 }] });
+            const validation = local.validate();
+            expect(validation.valid).toBe(false);
+            expect(validation.errors.some(error => error.includes('Field'))).toBe(true);
+        });
+
         it('saves a copy with a new id', async () => {
             const local = new WorkflowDesigner({ registry, service });
             const store = new InMemoryWorkflowDefinitionStore();
