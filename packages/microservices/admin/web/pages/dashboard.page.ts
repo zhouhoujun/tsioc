@@ -91,6 +91,25 @@ import { GatewayAdminState } from '../admin.state';
             <article class="ga-card">
                 <div class="ga-card-head">
                     <div>
+                        <h2>{{state.t('card.routeSlo')}}</h2>
+                        <p>{{state.t('card.routeSloDesc')}}</p>
+                    </div>
+                </div>
+                <div class="ga-compact-list">
+                    <div class="ga-compact-row ga-slo-row" v-for="row in state.routeSloRows">
+                        <code>{{row.key}}</code>
+                        <span class="ga-muted">{{state.t('slo.requests', { count: row.requests })}}</span>
+                        <span class="ga-status-spacer"></span>
+                        <span class="ga-pill" v-if="row.errors">{{state.t('slo.errors', { count: row.errors })}}</span>
+                        <span class="ga-pill">{{state.t('slo.p95', { ms: row.p95Ms })}}</span>
+                    </div>
+                    <div class="ga-empty" v-if="!state.routeSloRows.length">{{state.t('slo.empty')}}</div>
+                </div>
+            </article>
+
+            <article class="ga-card">
+                <div class="ga-card-head">
+                    <div>
                         <h2>{{state.t('card.policies')}}</h2>
                         <p>{{state.t('card.policiesDesc')}}</p>
                     </div>

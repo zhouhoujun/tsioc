@@ -220,6 +220,11 @@
 - Diagnostics 输出 `routes: [{requests, errors, avgMs, p95Ms, p99Ms}]`。
 - 成功响应与错误路径统一记账；配置变更时清空旧路由统计。
 
+第三十五批（Admin 路由 SLO）：
+
+- Overview 新增 Route SLO 卡片，展示 Top 5 路由 requests/errors/p95。
+- 与 diagnostics.routes 数据源一致，无流量时显示空状态。
+
 
 ---
 

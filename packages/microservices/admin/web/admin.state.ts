@@ -442,6 +442,12 @@ export class GatewayAdminState {
         return this.diagnostics?.circuits?.filter(circuit => circuit.open).length ?? 0;
     }
 
+    get routeSloRows() {
+        return [...(this.diagnostics?.routes ?? [])]
+            .sort((a, b) => b.requests - a.requests)
+            .slice(0, 5);
+    }
+
     get bulkheadActive(): number {
         return (this.diagnostics?.bulkheads ?? []).reduce((sum, item) => sum + (item.active ?? 0), 0);
     }

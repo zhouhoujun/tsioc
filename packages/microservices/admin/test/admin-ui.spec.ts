@@ -147,7 +147,8 @@ describe('Microservice admin UI', () => {
                     activeRequests: 3,
                     evictedEndpoints: 0,
                     circuits: [{ key: 'a', failures: 0, open: false }, { key: 'b', failures: 2, open: true }],
-                    bulkheads: [{ key: 'route:bulkhead', active: 2, queued: 1, limit: 4, adaptive: true }]
+                    bulkheads: [{ key: 'route:bulkhead', active: 2, queued: 1, limit: 4, adaptive: true }],
+                    routes: [{ key: 'users-service:/api/users:2', requests: 5, errors: 1, avgMs: 12, p95Ms: 50, p99Ms: 80 }]
                 });
             }
             if (path === '/api/gateway-admin/rules' && method === 'GET') {
@@ -276,6 +277,10 @@ describe('Microservice admin UI', () => {
         expect(runtimeRows.some(text => text.includes('Bulkhead active') && text.includes('2'))).toBe(true);
         expect(runtimeRows.some(text => text.includes('Bulkhead queued') && text.includes('1'))).toBe(true);
         expect(runtimeRows.some(text => text.includes('Adaptive bulkheads') && text.includes('1'))).toBe(true);
+        expect(root.querySelectorAll('.ga-slo-row').length).toBe(1);
+        expect(root.querySelector('.ga-slo-row')?.textContent).toContain('users-service:/api/users:2');
+        expect(root.querySelector('.ga-slo-row')?.textContent).toContain('5');
+        expect(root.querySelector('.ga-slo-row')?.textContent).toContain('p95 50ms');
     });
 
     it('switches language and theme globally', async () => {

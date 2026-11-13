@@ -3921,3 +3921,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - Gateway 路由级 SLO：requests/errors/avg/p95/p99。
   - Diagnostics 输出 routes；配置变更清理。
   - 回归：gateway 80。
+- 微服务框架第三十五批（2026-11-13）：
+  - Admin Overview Route SLO 卡片（Top5 requests/errors/p95）。
+  - 回归：admin 57；web 已重建。

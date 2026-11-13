@@ -1,4 +1,4 @@
-import{n as e}from"./chunk-AQ4AC6EF.js";import{a as s,na as t}from"./chunk-5SKR3XXL.js";import"./chunk-U6UJE3IR.js";var a=class{constructor(c){this.state=c}};Reflect.metadata("design:paramtypes",[e])(a);s(a,[[t({selector:"gateway-admin-dashboard",template:`
+import{n as e}from"./chunk-3CVLA56H.js";import{a as s,na as t}from"./chunk-5SKR3XXL.js";import"./chunk-U6UJE3IR.js";var a=class{constructor(c){this.state=c}};Reflect.metadata("design:paramtypes",[e])(a);s(a,[[t({selector:"gateway-admin-dashboard",template:`
     <section class="ga-page">
         <div class="ga-metrics">
             <article class="ga-metric">
@@ -79,6 +79,25 @@ import{n as e}from"./chunk-AQ4AC6EF.js";import{a as s,na as t}from"./chunk-5SKR3
                         <span class="ga-status-spacer"></span>
                         <span class="ga-pill">{{state.adaptiveBulkheadCount}}</span>
                     </div>
+                </div>
+            </article>
+
+            <article class="ga-card">
+                <div class="ga-card-head">
+                    <div>
+                        <h2>{{state.t('card.routeSlo')}}</h2>
+                        <p>{{state.t('card.routeSloDesc')}}</p>
+                    </div>
+                </div>
+                <div class="ga-compact-list">
+                    <div class="ga-compact-row ga-slo-row" v-for="row in state.routeSloRows">
+                        <code>{{row.key}}</code>
+                        <span class="ga-muted">{{state.t('slo.requests', { count: row.requests })}}</span>
+                        <span class="ga-status-spacer"></span>
+                        <span class="ga-pill" v-if="row.errors">{{state.t('slo.errors', { count: row.errors })}}</span>
+                        <span class="ga-pill">{{state.t('slo.p95', { ms: row.p95Ms })}}</span>
+                    </div>
+                    <div class="ga-empty" v-if="!state.routeSloRows.length">{{state.t('slo.empty')}}</div>
                 </div>
             </article>
 
