@@ -442,6 +442,18 @@ export class GatewayAdminState {
         return this.diagnostics?.circuits?.filter(circuit => circuit.open).length ?? 0;
     }
 
+    get recentSloAlerts() {
+        return (this.diagnostics?.alerts ?? []).slice(0, 5);
+    }
+
+    formatAlertTime(timestamp: number): string {
+        try {
+            return new Date(timestamp).toISOString().slice(11, 19);
+        } catch {
+            return '';
+        }
+    }
+
     get routeSloRows() {
         return [...(this.diagnostics?.routes ?? [])]
             .sort((a, b) => b.requests - a.requests)

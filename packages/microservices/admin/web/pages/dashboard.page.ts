@@ -111,6 +111,25 @@ import { GatewayAdminState } from '../admin.state';
             <article class="ga-card">
                 <div class="ga-card-head">
                     <div>
+                        <h2>{{state.t('card.sloAlerts')}}</h2>
+                        <p>{{state.t('card.sloAlertsDesc')}}</p>
+                    </div>
+                </div>
+                <div class="ga-compact-list">
+                    <div class="ga-compact-row ga-slo-alert-row" v-for="alert in state.recentSloAlerts">
+                        <span class="ga-muted">{{state.formatAlertTime(alert.timestamp)}}</span>
+                        <code>{{alert.key}}</code>
+                        <span class="ga-status-spacer"></span>
+                        <span class="ga-pill is-danger">{{state.t('slo.errorRate', { value: (alert.errorRate * 100).toFixed(1) })}}</span>
+                        <span class="ga-pill">{{state.t('slo.p95', { ms: alert.p95Ms })}}</span>
+                    </div>
+                    <div class="ga-empty" v-if="!state.recentSloAlerts.length">{{state.t('slo.noAlerts')}}</div>
+                </div>
+            </article>
+
+            <article class="ga-card">
+                <div class="ga-card-head">
+                    <div>
                         <h2>{{state.t('card.policies')}}</h2>
                         <p>{{state.t('card.policiesDesc')}}</p>
                     </div>

@@ -3974,3 +3974,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第四十九批（2026-11-13）：
   - 真实 Redis 双 Gateway E2E（跨副本限流/缓存）。
   - 回归：gateway 82（Redis 87）。
+- 微服务框架第五十批（2026-11-13）：
+  - SLO 告警历史（runtime + diagnostics.alerts）。
+  - Admin SLO Alerts 卡片。
+  - 回归：gateway 82、admin 58；web 已重建。

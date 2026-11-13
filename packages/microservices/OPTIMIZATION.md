@@ -296,6 +296,11 @@
 - 路由编辑器新增 SLO 错误率/ p95 阈值字段。
 - 前端校验 0-1、>0，保存后进入 staged route 并可在详情 JSON 查看。
 
+第五十批（SLO 告警历史）：
+
+- Runtime 保留最近 20 条 SLO 告警（route/时间/errorRate/p95/阈值），每条路由保留 10 条。
+- Diagnostics 输出 alerts；Admin 新增 SLO Alerts 卡片。
+
 第四十九批（真实 Redis 多 Gateway）：
 
 - 两个真实 Gateway 进程共享同一 Redis prefix。

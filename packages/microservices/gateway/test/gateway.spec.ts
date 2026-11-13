@@ -444,6 +444,10 @@ describe('Gateway', () => {
         expect(first?.errorRate).toBe(0.5);
         expect(first?.alert).toBe(true);
         expect(first?.violations).toBe(1);
+        expect(first?.alerts.length).toBe(1);
+        const snapshot = await runtime.snapshot();
+        expect(snapshot.alerts[0].key).toBe('slo:/x:2');
+        expect(snapshot.alerts[0].errorRate).toBe(0.5);
         expect(events.filter(event => event.name === 'gateway_slo_violations_total').length).toBe(1);
 
         runtime.recordRouteOutcome('slo:/x:2', 200, 10, slo);

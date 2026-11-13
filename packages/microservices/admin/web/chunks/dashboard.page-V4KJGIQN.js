@@ -1,4 +1,4 @@
-import{n as e}from"./chunk-ML3BYMUM.js";import{a as s,na as t}from"./chunk-FBKL2VCR.js";import"./chunk-U6UJE3IR.js";var a=class{constructor(c){this.state=c}};Reflect.metadata("design:paramtypes",[e])(a);s(a,[[t({selector:"gateway-admin-dashboard",template:`
+import{n as e}from"./chunk-RKKWND3U.js";import{a as s,na as t}from"./chunk-FBKL2VCR.js";import"./chunk-U6UJE3IR.js";var a=class{constructor(c){this.state=c}};Reflect.metadata("design:paramtypes",[e])(a);s(a,[[t({selector:"gateway-admin-dashboard",template:`
     <section class="ga-page">
         <div class="ga-metrics">
             <article class="ga-metric">
@@ -99,6 +99,25 @@ import{n as e}from"./chunk-ML3BYMUM.js";import{a as s,na as t}from"./chunk-FBKL2
                         <span class="ga-pill">{{state.t('slo.p95', { ms: row.p95Ms })}}</span>
                     </div>
                     <div class="ga-empty" v-if="!state.routeSloRows.length">{{state.t('slo.empty')}}</div>
+                </div>
+            </article>
+
+            <article class="ga-card">
+                <div class="ga-card-head">
+                    <div>
+                        <h2>{{state.t('card.sloAlerts')}}</h2>
+                        <p>{{state.t('card.sloAlertsDesc')}}</p>
+                    </div>
+                </div>
+                <div class="ga-compact-list">
+                    <div class="ga-compact-row ga-slo-alert-row" v-for="alert in state.recentSloAlerts">
+                        <span class="ga-muted">{{state.formatAlertTime(alert.timestamp)}}</span>
+                        <code>{{alert.key}}</code>
+                        <span class="ga-status-spacer"></span>
+                        <span class="ga-pill is-danger">{{state.t('slo.errorRate', { value: (alert.errorRate * 100).toFixed(1) })}}</span>
+                        <span class="ga-pill">{{state.t('slo.p95', { ms: alert.p95Ms })}}</span>
+                    </div>
+                    <div class="ga-empty" v-if="!state.recentSloAlerts.length">{{state.t('slo.noAlerts')}}</div>
                 </div>
             </article>
 

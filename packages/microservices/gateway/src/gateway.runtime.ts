@@ -33,6 +33,7 @@ interface RouteStats {
     p95ThresholdMs?: number;
     alert: boolean;
     violations: number;
+    alerts: GatewaySloAlert[];
 }
 
 const ROUTE_LATENCY_BUCKETS = [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000];
@@ -73,6 +74,15 @@ export interface GatewayBulkheadSnapshot {
     adaptive?: boolean;
 }
 
+export interface GatewaySloAlert {
+    key: string;
+    timestamp: number;
+    errorRate: number;
+    p95Ms: number;
+    errorRateThreshold?: number;
+    p95ThresholdMs?: number;
+}
+
 export interface GatewayRouteSnapshot {
     key: string;
     requests: number;
@@ -92,6 +102,7 @@ export interface GatewayRuntimeSnapshot {
     circuits: GatewayCircuitSnapshot[];
     bulkheads: GatewayBulkheadSnapshot[];
     routes: GatewayRouteSnapshot[];
+    alerts: GatewaySloAlert[];
 }
 
 @Injectable()
@@ -105,6 +116,7 @@ export class GatewayRuntime {
     private activeRequests = new Map<string, number>();
     private bulkheads = new Map<string, BulkheadState>();
     private routeStats = new Map<string, RouteStats>();
+    private sloAlerts: GatewaySloAlert[] = [];
 
     constructor(
         @Optional() @Inject(GatewayStateStore) private readonly store?: GatewayStateStore | null,
@@ -135,6 +147,7 @@ export class GatewayRuntime {
                     failures: state.failures,
                     open: !!state.openedAt
                 })),
+            alerts: this.sloAlerts.slice().reverse(),
             routes: Array.from(this.routeStats.entries()).map(([key, stats]) => ({
                 key,
                 requests: stats.requests,
@@ -144,7 +157,8 @@ export class GatewayRuntime {
                 p95Ms: percentile(stats, 0.95),
                 p99Ms: percentile(stats, 0.99),
                 alert: stats.alert,
-                violations: stats.violations
+                violations: stats.violations,
+                alerts: stats.alerts.slice()
             })),
             bulkheads: Array.from(this.bulkheads.entries()).map(([key, state]) => ({
                 key,
@@ -360,7 +374,8 @@ export class GatewayRuntime {
                 totalMs: 0,
                 buckets: new Array(ROUTE_LATENCY_BUCKETS.length).fill(0),
                 alert: false,
-                violations: 0
+                violations: 0,
+                alerts: []
             };
             this.routeStats.set(routeKey, stats);
         }
@@ -379,6 +394,22 @@ export class GatewayRuntime {
             || (stats.p95ThresholdMs != null && percentile(stats, 0.95) > stats.p95ThresholdMs);
         if (alert && !stats.alert) {
             stats.violations += 1;
+            const entry: GatewaySloAlert = {
+                key: routeKey,
+                timestamp: Date.now(),
+                errorRate,
+                p95Ms: percentile(stats, 0.95),
+                errorRateThreshold: stats.errorRateThreshold,
+                p95ThresholdMs: stats.p95ThresholdMs
+            };
+            stats.alerts.push(entry);
+            if (stats.alerts.length > 10) {
+                stats.alerts.shift();
+            }
+            this.sloAlerts.push(entry);
+            if (this.sloAlerts.length > 20) {
+                this.sloAlerts.shift();
+            }
             this.metrics?.increment('gateway_slo_violations_total', 1, { key: routeKey });
         }
         stats.alert = alert;
