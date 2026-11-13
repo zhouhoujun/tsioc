@@ -80,6 +80,42 @@ describe('Workflow Definition Store', () => {
         expect(calls[2].init.headers['content-type']).toBe('application/json');
     });
 
+    it('loads persisted execution history over HTTP', async () => {
+        const calls: Array<{ url: string; init: any }> = [];
+        const snapshot = {
+            executionId: 'e1',
+            workflowId: 'a',
+            status: 'completed',
+            startTime: 100,
+            endTime: 120,
+            nodeStates: {},
+            edgeStates: {},
+            activeNodeIds: [],
+            logs: []
+        };
+        const fetchImpl = async (url: string, init: any) => {
+            calls.push({ url, init });
+            if (url.includes('/executions?workflowId=a&limit=5')) {
+                return response(200, [snapshot]);
+            }
+            if (url.endsWith('/executions/e1')) {
+                return response(200, snapshot);
+            }
+            return response(404);
+        };
+        const store = new HttpWorkflowDefinitionStore({
+            baseUrl: 'http://gateway/api',
+            fetchImpl: fetchImpl as any
+        });
+
+        const history = await store.listExecutions('a', 5);
+        expect(history[0].executionId).toBe('e1');
+        expect((await store.getExecution('e1'))?.workflowId).toBe('a');
+        expect(await store.getExecution('missing')).toBeUndefined();
+        expect(calls[0].url).toBe('http://gateway/api/executions?workflowId=a&limit=5');
+        expect(calls[1].url).toBe('http://gateway/api/executions/e1');
+    });
+
     it('throws on non-404 HTTP errors', async () => {
         const store = new HttpWorkflowDefinitionStore({
             baseUrl: 'http://gateway',

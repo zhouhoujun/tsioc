@@ -396,6 +396,39 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelector('.workflow-node-menu')).toBeFalsy();
     });
 
+    it('loads persisted run history when opening a saved workflow', async () => {
+        const store = new InMemoryWorkflowDefinitionStore();
+        const saved = createDefaultWorkflowDefinition(ref.instance.designer.registry, 'en');
+        saved.id = 'history-flow';
+        saved.name = 'History flow';
+        await store.save(saved);
+        const snapshot = {
+            executionId: 'exec_history_1',
+            workflowId: 'history-flow',
+            status: 'completed',
+            startTime: Date.now() - 5000,
+            endTime: Date.now() - 4800,
+            nodeStates: {},
+            edgeStates: {},
+            activeNodeIds: [],
+            logs: []
+        };
+        (store as any).listExecutions = async (workflowId: string) =>
+            workflowId === 'history-flow' ? [snapshot] : [];
+        ref.instance.store = store;
+
+        expect(await ref.instance.openWorkflowTab('history-flow')).toBe(true);
+        await waitFor(() => ref.instance.designer.executionHistory.length === 1);
+
+        expect(ref.instance.designer.executionHistory[0].executionId).toBe('exec_history_1');
+        const chip = root.querySelector('.workflow-run-chip[data-execution-id="exec_history_1"]') as any;
+        expect(chip).toBeTruthy();
+
+        chip.click();
+        await flush();
+        expect(ref.instance.designer.selectedExecutionId).toBe('exec_history_1');
+    });
+
     it('validates inspector input through the forms module before applying it', async () => {
         ref.instance.designer.selectNode('task_1');
         await flush();

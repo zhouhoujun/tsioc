@@ -1,5 +1,5 @@
 import { noReact } from '@tsdi/components';
-import { VisualWorkflowDefinition } from './types';
+import { VisualWorkflowDefinition, WorkflowExecutionSnapshot } from './types';
 
 /**
  * Summary row for the workflow library.
@@ -24,6 +24,12 @@ export interface WorkflowDefinitionStore {
     save(definition: VisualWorkflowDefinition): Promise<WorkflowDefinitionSummary>;
     remove(id: string): Promise<boolean>;
     clear(): Promise<void>;
+    /**
+     * Optional persisted run history. Hosts without execution persistence can
+     * omit these methods; the editor then only shows the current session.
+     */
+    listExecutions?(workflowId: string, limit?: number): Promise<WorkflowExecutionSnapshot[]>;
+    getExecution?(executionId: string): Promise<WorkflowExecutionSnapshot | undefined>;
 }
 
 export interface WorkflowStoreSaveOptions {
@@ -261,6 +267,23 @@ export class HttpWorkflowDefinitionStore implements WorkflowDefinitionStore {
         if (!result.ok) {
             throw new Error(`Failed to clear workflows: HTTP ${result.status}`);
         }
+    }
+
+    async listExecutions(workflowId: string, limit = 20): Promise<WorkflowExecutionSnapshot[]> {
+        const query = `workflowId=${encodeURIComponent(workflowId)}&limit=${Math.max(1, limit)}`;
+        const result = await this.request(`executions?${query}`, { method: 'GET' });
+        if (!result.ok || !Array.isArray(result.body)) {
+            return [];
+        }
+        return result.body as WorkflowExecutionSnapshot[];
+    }
+
+    async getExecution(executionId: string): Promise<WorkflowExecutionSnapshot | undefined> {
+        const result = await this.request(`executions/${encodeURIComponent(executionId)}`, { method: 'GET' });
+        if (result.status === 404) {
+            return undefined;
+        }
+        return result.ok ? result.body as WorkflowExecutionSnapshot : undefined;
     }
 
     protected async request(path: string, init: RequestInit): Promise<HttpResult> {

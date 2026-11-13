@@ -331,7 +331,29 @@ export class WorkflowDesignerComponent implements OnDestroy {
             definition
         });
         const designer = this.reactiveEffect ? reactive(raw, this.reactiveEffect) : raw;
+        if (persisted) {
+            void this.loadExecutionHistory(designer);
+        }
         return { id: designer.definition.id, designer, persisted };
+    }
+
+    /**
+     * Load persisted runs for an opened document. History is optional: hosts
+     * without an execution store keep the current-session run chips only.
+     */
+    private async loadExecutionHistory(designer: WorkflowDesigner): Promise<void> {
+        const store = this.store;
+        if (typeof store?.listExecutions !== 'function') {
+            return;
+        }
+        try {
+            const history = await store.listExecutions(designer.definition.id, 20);
+            if (history?.length) {
+                designer.setExecutionHistory(history);
+            }
+        } catch {
+            // Execution history is diagnostic only; never block opening a document.
+        }
     }
 
     private nextWorkflowId(): string {

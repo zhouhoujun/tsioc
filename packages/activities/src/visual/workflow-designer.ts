@@ -703,6 +703,13 @@ export class WorkflowDesigner {
         return true;
     }
 
+    /** Replace the run history, for example with snapshots loaded from a host. */
+    setExecutionHistory(snapshots: WorkflowExecutionSnapshot[]): void {
+        this.executionHistory = (snapshots || []).filter(item => !!item?.executionId).slice(0, 20);
+        this.selectedExecutionId = undefined;
+        this.execution = undefined;
+    }
+
     clearExecutionHistory(): void {
         this.executionHistory = [];
         this.selectedExecutionId = undefined;
