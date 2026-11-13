@@ -126,6 +126,12 @@
 - 请求 headers 映射为 gRPC metadata，服务端 `MessageAuthInterceptor`/`@Inject(REQUEST)` 可读取。
 - 新增 metadata 传播与 deadline exceeded（code 4）E2E。
 
+第十九批（故障注入与 soak）：
+
+- Gateway E2E：慢 upstream + route timeout → 504。
+- Gateway E2E：50 并发请求全部 200，无挂起。
+- HTTP E2E 重新启用并验证：`withTimeout` 客户端超时、服务端 route timeout 504、路由限流 200/429。
+
 
 ---
 

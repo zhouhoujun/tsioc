@@ -45,6 +45,11 @@ class UpstreamController {
         return { count: ++this.counter };
     }
 
+    @Get('/slow')
+    slow() {
+        return new Promise(resolve => setTimeout(() => resolve({ slow: true }), 200));
+    }
+
     @Get('/fail')
     fail() {
         throw new Error('upstream boom');
@@ -179,6 +184,13 @@ describe('Gateway E2E', () => {
                         rewrite: { path: () => '/counter' },
                         cache: { enabled: true, ttl: 60_000, allowAuth: true }
                     }, {
+                        path: '/gateway/slow',
+                        service: 'users-service',
+                        targetUrl: `http://127.0.0.1:${UPSTREAM_PORT}`,
+                        targetPath: '/users',
+                        rewrite: { path: () => '/slow' },
+                        timeout: 50
+                    }, {
                         path: '/gateway/udp',
                         service: 'udp-service',
                         transport: Transport.UDP,
@@ -286,6 +298,20 @@ describe('Gateway E2E', () => {
         expect(body.proxyAuthorization).toBeUndefined();
         expect(body.proto).toBe('http');
         expect(String(body.host)).toContain('127.0.0.1');
+    });
+
+    it('returns 504 when the upstream exceeds the route timeout', async () => {
+        const response = await request('/gateway/slow');
+        expect(response.status).toBe(504);
+    });
+
+    it('soaks concurrent requests without failures or hangs', async () => {
+        const responses = await Promise.all(
+            Array.from({ length: 50 }, () => request('/gateway/users/profile'))
+        );
+        expect(responses.length).toBe(50);
+        expect(responses.every(response => response.status === 200)).toBe(true);
+        expect(responses.every(response => JSON.parse(response.body).ok === true)).toBe(true);
     });
 
     it('streams SSE events through the gateway before the upstream finishes', async () => {

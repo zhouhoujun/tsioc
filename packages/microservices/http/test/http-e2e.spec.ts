@@ -944,119 +944,119 @@ describe('HTTP error handling', () => {
     });
 });
 
-// describe('HTTP client timeout via withTimeout()', () => {
-//     let ctx: ApplicationContext;
-//     let client: HttpClient;
+describe('HTTP client timeout via withTimeout()', () => {
+    let ctx: ApplicationContext;
+    let client: HttpClient;
 
-//     before(async () => {
-//         ctx = await Application.run(TimeoutModule);
-//         client = ctx.get(HttpClient);
-//     });
-//     after(async () => { if (ctx) await ctx.close(); });
+    before(async () => {
+        ctx = await Application.run(TimeoutModule);
+        client = ctx.get(HttpClient);
+    });
+    after(async () => { if (ctx) await ctx.close(); });
 
-//     it('should timeout on slow response', async () => {
-//         const result: any = await lastValueFrom(
-//             client.get('/slow/delayed', { observe: 'response' as any })
-//                 .pipe(catchError(err => of({ error: err })))
-//         );
-//         expect(result.error).toBeDefined();
-//     });
-// });
+    it('should timeout on slow response', async () => {
+        const result: any = await lastValueFrom(
+            client.get('/slow/delayed', { observe: 'response' as any })
+                .pipe(catchError(err => of({ error: err })))
+        );
+        expect(result.error).toBeDefined();
+    });
+});
 
-// describe('HTTP client timeout via withTimeout() alias replacement', () => {
-//     let ctx: ApplicationContext;
-//     let client: HttpClient;
+describe('HTTP client timeout via withTimeout() alias replacement', () => {
+    let ctx: ApplicationContext;
+    let client: HttpClient;
 
-//     before(async () => {
-//         ctx = await Application.run(FeatTimeoutModule);
-//         client = ctx.get(HttpClient);
-//     });
-//     after(async () => { if (ctx) await ctx.close(); });
+    before(async () => {
+        ctx = await Application.run(FeatTimeoutModule);
+        client = ctx.get(HttpClient);
+    });
+    after(async () => { if (ctx) await ctx.close(); });
 
-//     it('should timeout on slow response', async () => {
-//         const result: any = await lastValueFrom(
-//             client.get('/slow/delayed', { observe: 'response' as any })
-//                 .pipe(catchError(err => of({ error: err })))
-//         );
-//         expect(result.error).toBeDefined();
-//     });
-// });
+    it('should timeout on slow response', async () => {
+        const result: any = await lastValueFrom(
+            client.get('/slow/delayed', { observe: 'response' as any })
+                .pipe(catchError(err => of({ error: err })))
+        );
+        expect(result.error).toBeDefined();
+    });
+});
 
-// describe('HTTP service route timeout', () => {
-//     let ctx: ApplicationContext;
+describe('HTTP service route timeout', () => {
+    let ctx: ApplicationContext;
 
-//     before(async () => {
-//         ctx = await Application.run(RouteTimeoutModule);
-//     });
-//     after(async () => {
-//         await ctx?.close(); 
-//     });
+    before(async () => {
+        ctx = await Application.run(RouteTimeoutModule);
+    });
+    after(async () => {
+        await ctx?.close(); 
+    });
 
-//     function request(method: string, targetPath: string): Promise<{ status: number; body: string }> {
-//         return new Promise((resolve, reject) => {
-//             const req = http.request({
-//                 host: '127.0.0.1',
-//                 port: ROUTE_TIMEOUT_PORT,
-//                 path: targetPath,
-//                 method,
-//                 headers: { accept: 'application/json' }
-//             }, res => {
-//                 let body = '';
-//                 res.setEncoding('utf8');
-//                 res.on('data', chunk => body += chunk);
-//                 res.on('end', () => resolve({ status: res.statusCode ?? 0, body }));
-//             });
-//             req.on('error', reject);
-//             req.end();
-//         });
-//     }
+    function request(method: string, targetPath: string): Promise<{ status: number; body: string }> {
+        return new Promise((resolve, reject) => {
+            const req = http.request({
+                host: '127.0.0.1',
+                port: ROUTE_TIMEOUT_PORT,
+                path: targetPath,
+                method,
+                headers: { accept: 'application/json' }
+            }, res => {
+                let body = '';
+                res.setEncoding('utf8');
+                res.on('data', chunk => body += chunk);
+                res.on('end', () => resolve({ status: res.statusCode ?? 0, body }));
+            });
+            req.on('error', reject);
+            req.end();
+        });
+    }
 
-//     it('should return timeout on slow route with route-level timeout', async () => {
-//         const response = await request('GET', '/slow/very-slow');
-//         expect(response.status).toBe(504);
-//         const parsed = JSON.parse(response.body);
-//         expect(parsed.message).toContain('timeout');
-//     });
-// });
+    it('should return timeout on slow route with route-level timeout', async () => {
+        const response = await request('GET', '/slow/very-slow');
+        expect(response.status).toBe(504);
+        const parsed = JSON.parse(response.body);
+        expect(parsed.message).toContain('timeout');
+    });
+});
 
-// describe('HTTP service rate limit', () => {
-//     let ctx: ApplicationContext;
+describe('HTTP service rate limit', () => {
+    let ctx: ApplicationContext;
 
-//     before(async () => {
-//         ctx = await Application.run(RateLimitModule);
-//     });
-//     after(async () => {
-//         await ctx?.close();
-//     });
+    before(async () => {
+        ctx = await Application.run(RateLimitModule);
+    });
+    after(async () => {
+        await ctx?.close();
+    });
 
-//     function request(method: string, targetPath: string, body?: string): Promise<{ status: number; body: string }> {
-//         return new Promise((resolve, reject) => {
-//             const req = http.request({
-//                 host: '127.0.0.1',
-//                 port: RATE_PORT,
-//                 path: targetPath,
-//                 method,
-//                 headers: { 'content-type': 'application/json', 'accept': 'application/json' }
-//             }, res => {
-//                 let b = '';
-//                 res.setEncoding('utf8');
-//                 res.on('data', chunk => b += chunk);
-//                 res.on('end', () => resolve({ status: res.statusCode ?? 0, body: b }));
-//             });
-//             req.on('error', reject);
-//             if (body) req.write(body);
-//             req.end();
-//         });
-//     }
+    function request(method: string, targetPath: string, body?: string): Promise<{ status: number; body: string }> {
+        return new Promise((resolve, reject) => {
+            const req = http.request({
+                host: '127.0.0.1',
+                port: RATE_PORT,
+                path: targetPath,
+                method,
+                headers: { 'content-type': 'application/json', 'accept': 'application/json' }
+            }, res => {
+                let b = '';
+                res.setEncoding('utf8');
+                res.on('data', chunk => b += chunk);
+                res.on('end', () => resolve({ status: res.statusCode ?? 0, body: b }));
+            });
+            req.on('error', reject);
+            if (body) req.write(body);
+            req.end();
+        });
+    }
 
-//     it('should allow first request and reject second request within window', async () => {
-//         const first = await request('POST', '/slow/submit-rate-limited', JSON.stringify({ test: true }));
-//         expect(first.status).toBe(200);
+    it('should allow first request and reject second request within window', async () => {
+        const first = await request('POST', '/slow/submit-rate-limited', JSON.stringify({ test: true }));
+        expect(first.status).toBe(200);
 
-//         const second = await request('POST', '/slow/submit-rate-limited', JSON.stringify({ test: true }));
-//         expect(second.status).toBe(429);
-//     });
-// });
+        const second = await request('POST', '/slow/submit-rate-limited', JSON.stringify({ test: true }));
+        expect(second.status).toBe(429);
+    });
+});
 
 describe('HTTP pipe parameter conversion', () => {
     let ctx: ApplicationContext;

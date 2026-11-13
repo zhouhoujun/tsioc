@@ -3857,3 +3857,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - gRPC client deadlineMs + 每请求 timeout → grpc deadline。
   - metadata 传播（authorization 等）+ deadline exceeded E2E。
   - 回归：grpc 20。
+- 微服务框架第十九批（2026-11-13）：
+  - Gateway 慢 upstream 超时 504 + 50 并发 soak。
+  - HTTP E2E 重新启用客户端 withTimeout、route timeout、route rate limit。
+  - 回归：gateway 74、http 195。
