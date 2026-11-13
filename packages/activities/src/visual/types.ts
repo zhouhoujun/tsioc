@@ -893,6 +893,8 @@ export interface WorkflowInspectorModel {
     description: string;
     /** Node is kept on the canvas but skipped during execution. */
     disabled: boolean;
+    /** Relative webhook endpoint for `http-in` nodes. */
+    webhookUrl: string;
     icon: string;
     color: string;
     typeLabel: string;

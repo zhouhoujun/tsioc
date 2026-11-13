@@ -1033,6 +1033,32 @@ workflow-canvas {
     line-height: 1.45;
 }
 
+.workflow-inspector-webhook {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin: 2px 0 10px;
+    padding: 6px 8px;
+    border: 1px solid #d1fae5;
+    border-radius: 6px;
+    background: #ecfdf5;
+}
+
+.workflow-inspector-webhook-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #047857;
+}
+
+.workflow-inspector-webhook-url {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    color: #065f46;
+    overflow-wrap: anywhere;
+}
+
 .workflow-field-label-row {
     display: flex;
     align-items: center;
@@ -1991,6 +2017,22 @@ html[data-theme="high-contrast"] li.CodeMirror-hint-active {
 .workflow-designer[data-theme="solarized"] .workflow-list-remove,
 .workflow-designer[data-theme="high-contrast"] .workflow-list-remove {
     color: var(--wf-theme-muted);
+}
+
+.workflow-designer[data-theme="dark"] .workflow-inspector-webhook,
+.workflow-designer[data-theme="solarized"] .workflow-inspector-webhook,
+.workflow-designer[data-theme="high-contrast"] .workflow-inspector-webhook {
+    background: var(--wf-theme-surface);
+    border-color: var(--wf-theme-border);
+}
+
+.workflow-designer[data-theme="dark"] .workflow-inspector-webhook-label,
+.workflow-designer[data-theme="solarized"] .workflow-inspector-webhook-label,
+.workflow-designer[data-theme="high-contrast"] .workflow-inspector-webhook-label,
+.workflow-designer[data-theme="dark"] .workflow-inspector-webhook-url,
+.workflow-designer[data-theme="solarized"] .workflow-inspector-webhook-url,
+.workflow-designer[data-theme="high-contrast"] .workflow-inspector-webhook-url {
+    color: var(--wf-theme-text, #e2e8f0);
 }
 
 .workflow-designer[data-theme="dark"] .workflow-list-row,

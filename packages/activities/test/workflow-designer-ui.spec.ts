@@ -303,6 +303,23 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelector('.workflow-node[data-node-id="task_1"]')?.classList.contains('is-disabled')).toBe(false);
     });
 
+    it('shows the webhook URL for HTTP in nodes', async () => {
+        const node = ref.instance.designer.addNode('http-in', { x: 40, y: 40 })!;
+        ref.instance.designer.updateNodeConfig(node.id, { path: '/orders' });
+        ref.instance.designer.selectNode(node.id);
+        await flush();
+
+        const url = root.querySelector('.workflow-inspector-webhook-url') as any;
+        expect(url?.textContent).toContain('/api/workflows/');
+        expect(url?.textContent).toContain('/hook/orders');
+        const label = root.querySelector('.workflow-inspector-webhook-label') as any;
+        expect(label?.textContent).toContain('Webhook');
+
+        ref.instance.designer.selectNode('task_1');
+        await flush();
+        expect(root.querySelector('.workflow-inspector-webhook')).toBeFalsy();
+    });
+
     it('validates inspector input through the forms module before applying it', async () => {
         ref.instance.designer.selectNode('task_1');
         await flush();

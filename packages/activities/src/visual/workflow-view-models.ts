@@ -313,6 +313,7 @@ export function buildWorkflowInspectorModel(
             name: '',
             description: '',
             disabled: false,
+            webhookUrl: '',
             icon: '',
             color: '',
             typeLabel: '',
@@ -424,12 +425,21 @@ export function buildWorkflowInspectorModel(
         }
     }
     const duration = execution?.durationMs || 0;
+    let webhookUrl = '';
+    if (node.type === 'http-in') {
+        const configured = String(node.config?.path || '').trim();
+        const suffix = configured
+            ? (configured.startsWith('/') ? configured : `/${configured}`)
+            : '';
+        webhookUrl = `/api/workflows/${designer.definition.id}/hook${suffix}`;
+    }
     return {
         hasSelection: true,
         nodeId: node.id,
         name: node.name,
         description: node.description || '',
         disabled: node.disabled === true,
+        webhookUrl,
         icon: node.style?.icon || definition?.icon || '◆',
         color: node.style?.backgroundColor || definition?.color || '#64748b',
         typeLabel: registry.nodeLabel(node.type, locale, translator),

@@ -16,6 +16,7 @@ const EMPTY_INSPECTOR: WorkflowInspectorModel = {
     name: '',
     description: '',
     disabled: false,
+    webhookUrl: '',
     icon: '',
     color: '',
     typeLabel: '',
@@ -37,6 +38,7 @@ function snapshotSignature(model: WorkflowInspectorModel): string {
         model.name,
         model.description,
         model.disabled ? 1 : 0,
+        model.webhookUrl,
         model.icon,
         model.color,
         model.typeLabel,
@@ -82,6 +84,10 @@ function snapshotSignature(model: WorkflowInspectorModel): string {
                     @click="restoreDefaults">{{restoreLabel}}</button>
             </div>
             <div class="workflow-inspector-description" v-if="model.typeDescription">{{model.typeDescription}}</div>
+            <div class="workflow-inspector-webhook" v-if="model.webhookUrl">
+                <span class="workflow-inspector-webhook-label">{{webhookLabel}}</span>
+                <code class="workflow-inspector-webhook-url">{{model.webhookUrl}}</code>
+            </div>
             <dynamic-form #nodeForm classPrefix="workflow" :schema="formSchema" :value="formValue"
                 :contextKey="model.nodeId" :messages="formMessages" :emptyLabel="noPropertiesLabel"
                 :resetFieldLabel="resetFieldLabel" :changeAction="formChange" :blurAction="formBlur">
@@ -157,6 +163,7 @@ export class WorkflowInspectorComponent implements OnDestroy {
     get iconLabel(): string { return this.t('icon', 'Icon'); }
     get colorLabel(): string { return this.t('color', 'Color'); }
     get enabledLabel(): string { return this.t('enabled', 'Enabled'); }
+    get webhookLabel(): string { return this.t('webhookUrl', 'Webhook URL'); }
     get resultLabel(): string { return this.t('latestOutput', 'Latest output'); }
     get restoreLabel(): string { return this.t('restoreDefaults', 'Reset'); }
     get resetFieldLabel(): string { return this.t('resetField', 'Reset to default'); }

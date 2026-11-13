@@ -479,7 +479,8 @@ GET  /api/workflows/:id/hook?path=/orders   # query fallback
 
 - `http-in` filters by method (`ANY` by default) and path; when no request
   reached the execution (for example a manual run), its branch is skipped
-  instead of running with an empty message.
+  instead of running with an empty message. The inspector shows the resulting
+  webhook URL for the selected node.
 - `http-response` sets the returned status code, headers and body path.
 - Without an `http-response` node the endpoint returns a JSON run summary with
   status `200` on success and `500` on failure.
