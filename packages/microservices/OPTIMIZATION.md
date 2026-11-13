@@ -274,6 +274,12 @@
 - 新增 `configureContractValidation(mode)` / `getContractValidationMode()`。
 - 默认 none，可按环境/启动配置全局开启 request/response/both；单 client 仍可覆盖。
 
+第四十五批（Tracing 装配 + OTLP + 真实 Redis）：
+
+- 新增 `useTracing(options, exporters...)` service feature（interceptor multiOrder -850），无需手工装配 `TracingModule`。
+- 新增 `OtlpHttpTraceExporter`：OTLP/HTTP JSON spans（resource/kind/status/attributes/events/时间戳）。
+- 使用运行中的 Redis 补真实集成测试：缓存/熔断/nonce/固定窗口跨 store 实例、GatewayRuntime 共享状态。
+
 
 ---
 

@@ -35,7 +35,8 @@
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
     "@tsdi/common": "6.0.31",
-    "@tsdi/ioc": "6.0.31"
+    "@tsdi/ioc": "6.0.31",
+    "@tsdi/service": "6.0.31"
   },
   "directories": {
     "lib": "lib"
