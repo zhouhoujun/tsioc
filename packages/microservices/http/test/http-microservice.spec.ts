@@ -6,7 +6,7 @@ import {
 import { HttpMessageAdapter } from '../src/server/message-adapter';
 import { HTTP_AUTH_OPTIONS } from '../src/server/interceptors/auth';
 import { withHttpTransport, HTTP_CLIENT_OPTIONS, HttpClientOptions } from '../src/client';
-import { BodySerializeStrategy, ServiceError, CLIENT_SELECTED_ENDPOINT, getClientBackendToken, TimeoutStrategy } from '@tsdi/client';
+import { BodySerializeStrategy, ServiceError, CLIENT_SELECTED_ENDPOINT, getClientBackendToken, TimeoutStrategy, requestTimeoutInterceptor, withTimeout } from '@tsdi/client';
 import { ContractHttpError } from '@tsdi/microservice-contract';
 import { FileAdapter, MessageAdapter, MimeAdapter, MimeTypes, RestfulRequestAdapter, StreamAdapter, Transport, TransferSide } from '@tsdi/common';
 import { parseMultipartBody } from '../src/server/multipart';
@@ -413,6 +413,34 @@ describe('HTTP Microservice', () => {
             const transport = createHttpContractTransport(client);
             await expect(transport.request({ method: 'GET', path: '/users/1' }))
                 .rejects.toBeInstanceOf(ContractHttpError);
+        });
+    });
+
+    describe('withTimeout feature', () => {
+        it('applies withTimeout without requiring HttpModule', async () => {
+            const feature = withHttpTransport({ url: 'http://localhost:3000' })[0];
+            const timeoutFeature = (withTimeout(20) as any)(feature.config);
+            const timeoutProviders = (Array.isArray(timeoutFeature) ? timeoutFeature : [timeoutFeature])
+                .flatMap((item: any) => item.providers ?? []);
+            const injector = createInjector([
+                ...feature.providers,
+                ...timeoutProviders
+            ] as any);
+            const context = createRequestContext(injector);
+            let error: any;
+            try {
+                await lastValueFrom(requestTimeoutInterceptor(20)(
+                    {},
+                    () => new (require('rxjs').Observable)(() => undefined),
+                    context
+                ));
+            } catch (err) {
+                error = err;
+            }
+            expect(error).toBeTruthy();
+            expect(error.ok).toBe(false);
+            expect(error.status).toBe(500);
+            expect(String(error.body?.message ?? error.body)).toContain('Timeout');
         });
     });
 

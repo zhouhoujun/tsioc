@@ -114,6 +114,12 @@
 - 失败/恢复重置与 `getLastError(service)` 诊断。
 - Gateway health probe 增加 in-flight guard，且单个服务发现失败不阻断其它服务探测。
 
+第十七批（独立 client feature 完整性）：
+
+- `withHttpTransport` 自身注册 `BodySerializeStrategy`、`TimeoutStrategy`、`ResponseFactory`（此前只有 `HttpModule` 提供）。
+- 不引入 `HttpModule` 也能使用 `withTimeout`、body serializer 和统一超时/错误响应。
+- 新增独立 transport 的 timeout 回归测试。
+
 
 ---
 

@@ -3849,3 +3849,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **分页增量绘制**：缓存 tab 的后台刷新不再用“最新一页”整体替换。新增 `mergeAgentConsoleMessages`：按 id 更新重叠行、追加新行、保留已加载的旧页；已有旧页时保留旧分页 cursor/hasMore，避免切回 tab 后滚动丢历史。纯函数回归 4 例。
 - **缓存 tab 首帧**：`switchSession` 对缓存命中先应用视图并让 reactive/surface 微任务画出该帧，再发起后台刷新；缓存切换不再开启整段 refresh 的 render batch，避免刷新期间输入/页签反馈被冻结。
 - **验证**：components-common/console/html、agent-ui 全绿；tsc-agent-ui 0；build:web 成功；source-size/diff-check OK。
+- 微服务框架第十七批（2026-11-13）：
+  - withHttpTransport 自带 BodySerializeStrategy/TimeoutStrategy/ResponseFactory。
+  - 独立 transport 支持 withTimeout 与统一超时响应。
+  - 回归：http 191。

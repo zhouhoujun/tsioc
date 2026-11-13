@@ -1,6 +1,6 @@
 import { asProvider, createInjector, Injector, Provider } from '@tsdi/ioc';
 import { createRequestHandler, TransferSide, Transport, ContentType } from '@tsdi/common';
-import { CLIENT_CONFIGS, BodySerializeStrategy, ClientEndpoint, ClientFeatureKind, ClientHandler, ClientTransportFeature, ServiceError, CLIENT_SELECTED_ENDPOINT, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature } from '@tsdi/client';
+import { CLIENT_CONFIGS, BodySerializeStrategy, ClientEndpoint, ClientFeatureKind, ClientHandler, ClientTransportFeature, ServiceError, TimeoutStrategy, CLIENT_SELECTED_ENDPOINT, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature } from '@tsdi/client';
 import { ensureClientConnectedInterceptor } from '@tsdi/client';
 import { HTTP_CLIENT_OPTIONS, HttpClientOptions } from './options';
 import { HttpClient } from './client';
@@ -8,6 +8,10 @@ import * as http from 'node:http';
 import * as https from 'node:https';
 import * as http2 from 'node:http2';
 import { Observable } from 'rxjs';
+import { ResponseFactory } from '@tsdi/common';
+import { HttpBodySerializeStrategy } from './strategies/HttpBodySerializeStrategy';
+import { HttpTimeoutStrategy } from './strategies/HttpTimeoutStrategy';
+import { HttpResponseEventFactory } from './response.factory';
 
 function httpClientTransportFactory(option: Partial<HttpClientOptions>, asDefault?: boolean): ClientTransportFeature {
     const config = {
@@ -31,6 +35,10 @@ function httpClientTransportFactory(option: Partial<HttpClientOptions>, asDefaul
     const interceptorsToken = getClientInterceptorsToken(config);
     const providers: Provider[] = [
         { provide: CLIENT_CONFIGS, useValue: config, multi: true },
+        { provide: BodySerializeStrategy, useClass: HttpBodySerializeStrategy },
+        { provide: TimeoutStrategy, useClass: HttpTimeoutStrategy },
+        HttpResponseEventFactory,
+        { provide: ResponseFactory, useExisting: HttpResponseEventFactory },
         asProvider({ provide: backendToken, useFactory: () => createHttpBackend(config), multi: true }),
         { provide: hanlderToken, useFactory: (i: Injector) => createRequestHandler(i, config), deps: [Injector] },
         {
