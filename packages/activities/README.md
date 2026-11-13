@@ -408,7 +408,7 @@ type VisualNodeType =
     | 'sequence'     // Explicit ordering helper
     | 'link'         // Named wire documentation
     | 'delay'        // Delay node
-    | 'trigger'      // Emit a payload after an optional delay
+    | 'trigger'      // Emit a payload, optionally a second one after a delay
     | 'loop'         // Repeat a referenced sub-workflow
     | 'trycatch'     // Guard a branch and route failures to the error port
     | 'subprocess'   // Sub-process node
@@ -520,7 +520,7 @@ Features:
 - undo/redo, pointer pan, Ctrl+wheel zoom-at-cursor, fit-to-view, auto layout,
   duplicate (`Ctrl+D`), JSON import/export,
 - Node-RED-style base components: inject (manual / interval / cron / event), debug,
-  trigger, function, template, JSON, CSV, XML, HTML, YAML, RBE, combine,
+  trigger (first + optional second message), function, template, JSON, CSV, XML, HTML, YAML, RBE, combine,
   change, statistics, merge, split/map/filter/sort/range/batch/scale,
   event-emit/event-wait, command, condition/switch/router, parallel/join,
   loop (sub-workflow repeat), delay, log, HTTP request, complete/catch/status,
@@ -534,6 +534,8 @@ Features:
 - workflow library: save, save-as-copy, open and delete definitions through
   `WorkflowDefinitionStore` (localStorage in browsers, in-memory in Node/TUI,
   HTTP/microservice via `HttpWorkflowDefinitionStore`),
+- `trigger` waits its delay, sends the first payload, and can send a second
+  payload after `secondDelay`; the downstream branch runs once per message,
 - `join` node waits for all parallel branches, then exposes their results as
   an array or a merged object (`resultField`), skipping empty branches by default,
 - `trycatch` guards its downstream branch: any failure is routed to the `error`

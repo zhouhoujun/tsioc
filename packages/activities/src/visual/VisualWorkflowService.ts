@@ -31,6 +31,21 @@ import {
 import { WorkflowNodePolicyInterceptor } from './workflow-interceptors';
 import { WorkflowPluginRegistry } from '../plugins/plugin-registry';
 
+function delay(ms: number): Promise<void> {
+    return ms > 0 ? new Promise(resolve => setTimeout(resolve, ms)) : Promise.resolve();
+}
+
+function parseConfigJson(value: any): any {
+    if (typeof value !== 'string') {
+        return value;
+    }
+    try {
+        return JSON.parse(value);
+    } catch {
+        return value;
+    }
+}
+
 const DEFAULT_HISTORY_LIMIT = 30;
 const MAX_LOG_ENTRIES = 300;
 
@@ -424,7 +439,8 @@ export class VisualWorkflowService {
         visited: Set<string>,
         nodeHandler: VisualNodeHandlerLike,
         resume = false,
-        replayed: Set<string> = new Set<string>()
+        replayed: Set<string> = new Set<string>(),
+        rerun = false
     ): Promise<ActivityResult> {
         if (state.status === 'cancelled' || this.isCancelled(state)) {
             state.status = 'cancelled';
@@ -449,7 +465,7 @@ export class VisualWorkflowService {
             replayed.add(node.id);
             visited.add(node.id);
             result = this.existingNodeResult(node.id, record!, state);
-        } else if (settled) {
+        } else if (settled && !rerun) {
             visited.add(node.id);
             return this.existingNodeResult(node.id, record!, state);
         } else {
@@ -520,7 +536,8 @@ export class VisualWorkflowService {
                     visited,
                     nodeHandler,
                     resume,
-                    replayed
+                    replayed,
+                    rerun
                 );
                 if (!nextResult.success) {
                     return nextResult;
@@ -547,7 +564,8 @@ export class VisualWorkflowService {
                 visited,
                 nodeHandler,
                 resume,
-                replayed
+                replayed,
+                rerun
             );
             // The guarded branch settles after the node itself ran, so replace
             // the recorded result with the outcome of the whole guarded chain.
@@ -561,6 +579,53 @@ export class VisualWorkflowService {
             return guardedResult;
         }
 
+        // Trigger nodes can emit a second payload after a delay; each emission
+        // runs the downstream branch again with its own message.
+        if (node.type === 'trigger' && node.config?.emitSecond === true) {
+            return this.executeTriggerEmissions(
+                node,
+                plan,
+                context,
+                result,
+                state,
+                options,
+                host,
+                nodeHandler,
+                resume,
+                replayed
+            );
+        }
+
+        return this.traverseOutgoing(
+            node,
+            plan,
+            context,
+            result,
+            state,
+            options,
+            host,
+            visited,
+            nodeHandler,
+            resume,
+            replayed,
+            rerun
+        );
+    }
+
+    private async traverseOutgoing(
+        node: IVisualWorkflowNode,
+        plan: CompiledWorkflow,
+        context: ActivityContext,
+        result: ActivityResult,
+        state: WorkflowExecutionState,
+        options: WorkflowExecutionOptions,
+        host: VisualNodeRuntimeHost,
+        visited: Set<string>,
+        nodeHandler: VisualNodeHandlerLike,
+        resume: boolean,
+        replayed: Set<string>,
+        rerun = false
+    ): Promise<ActivityResult> {
         const nextConnections = this.selectNextConnections(node, plan, context, result);
         const selectedIds = new Set(nextConnections.map(connection => connection.id));
         for (const connection of plan.outgoing.get(node.id) || []) {
@@ -586,7 +651,8 @@ export class VisualWorkflowService {
                     visited,
                     nodeHandler,
                     resume,
-                    replayed
+                    replayed,
+                    rerun
                 );
             }));
             const failed = results.find(item => !item.success);
@@ -609,7 +675,8 @@ export class VisualWorkflowService {
                 visited,
                 nodeHandler,
                 resume,
-                replayed
+                replayed,
+                rerun
             );
             if (!nextResult.success) {
                 return nextResult;
@@ -617,6 +684,86 @@ export class VisualWorkflowService {
         }
 
         return result;
+    }
+
+    /**
+     * Resolve the configured second-trigger payload the same way the runtime
+     * resolves the first one: objects are merged into the message, scalars are
+     * exposed as `payload`.
+     */
+    private triggerEmissionResult(
+        node: IVisualWorkflowNode,
+        payload: any,
+        emission: number
+    ): ActivityResult {
+        if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+            return {
+                success: true,
+                data: { ...payload, nodeId: node.id, triggered: true, emission }
+            };
+        }
+        return {
+            success: true,
+            data: { nodeId: node.id, triggered: true, payload, emission }
+        };
+    }
+
+    private async executeTriggerEmissions(
+        node: IVisualWorkflowNode,
+        plan: CompiledWorkflow,
+        context: ActivityContext,
+        result: ActivityResult,
+        state: WorkflowExecutionState,
+        options: WorkflowExecutionOptions,
+        host: VisualNodeRuntimeHost,
+        nodeHandler: VisualNodeHandlerLike,
+        resume: boolean,
+        replayed: Set<string>
+    ): Promise<ActivityResult> {
+        const config = node.config || {};
+        const emissions: Array<{ result: ActivityResult; delay: number }> = [
+            {
+                result: this.triggerEmissionResult(node, { ...(result.data || {}) }, 1),
+                delay: 0
+            }
+        ];
+        emissions.push({
+            result: this.triggerEmissionResult(node, parseConfigJson(config.secondPayload ?? {}), 2),
+            delay: Math.max(0, Number(config.secondDelay) || 0)
+        });
+
+        let lastResult: ActivityResult = result;
+        for (let index = 0; index < emissions.length; index++) {
+            const emission = emissions[index];
+            if (emission.delay > 0) {
+                await delay(emission.delay);
+            }
+            if (state.status === 'cancelled' || this.isCancelled(state)) {
+                state.status = 'cancelled';
+                return { success: false, error: new Error('Workflow cancelled') };
+            }
+            // Every emission is a fresh message: nodes on the branch run again
+            // instead of being treated as already visited.
+            const passVisited = new Set<string>([node.id]);
+            lastResult = await this.traverseOutgoing(
+                node,
+                plan,
+                context,
+                emission.result,
+                state,
+                options,
+                host,
+                passVisited,
+                nodeHandler,
+                resume,
+                replayed,
+                index > 0
+            );
+            if (!lastResult.success) {
+                return lastResult;
+            }
+        }
+        return lastResult;
     }
 
     private async executeGuardedNode(
@@ -630,7 +777,8 @@ export class VisualWorkflowService {
         visited: Set<string>,
         nodeHandler: VisualNodeHandlerLike,
         resume: boolean,
-        replayed: Set<string>
+        replayed: Set<string>,
+        rerun = false
     ): Promise<ActivityResult> {
         const outgoing = plan.outgoing.get(node.id) || [];
         const guardedEdges = outgoing.filter(connection => connection.sourcePort !== 'error');
@@ -656,7 +804,8 @@ export class VisualWorkflowService {
                     visited,
                     nodeHandler,
                     resume,
-                    replayed
+                    replayed,
+                    rerun
                 );
                 if (!nextResult.success) {
                     failure = nextResult;
@@ -704,7 +853,8 @@ export class VisualWorkflowService {
                     visited,
                     nodeHandler,
                     resume,
-                    replayed
+                    replayed,
+                    rerun
                 );
                 if (!recovered.success) {
                     return recovered;
@@ -827,9 +977,8 @@ export class VisualWorkflowService {
             status: 'idle',
             count: 0
         };
-        if (record.status === 'traversed') {
-            return;
-        }
+        // Repeat emissions traverse the same edge again, so the count grows
+        // while a single pass only marks each connection once.
         record.status = 'traversed';
         record.traversedAt = Date.now();
         record.count = (record.count || 0) + 1;

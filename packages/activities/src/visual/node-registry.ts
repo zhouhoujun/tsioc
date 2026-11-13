@@ -635,9 +635,12 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         outputs: [port('out', 'out', 'output', 'Output')],
         fields: [
             configField({ key: 'delay', label: 'Delay', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', description: 'Time to wait before emitting the payload.',}),
-            configField({ key: 'payload', label: 'Payload', type: 'json', defaultValue: {}, placeholder: '{ "key": "value" }' })
+            configField({ key: 'payload', label: 'Payload', type: 'json', defaultValue: {}, placeholder: '{ "key": "value" }' }),
+            configField({ key: 'emitSecond', label: 'Send a second message', type: 'boolean', defaultValue: false, description: 'Emit another payload after the first one reached the branch.',}),
+            configField({ key: 'secondDelay', label: 'Second delay', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', visibleWhen: { key: 'emitSecond', equals: true }, description: 'Time to wait after the first message before emitting the second.',}),
+            configField({ key: 'secondPayload', label: 'Second payload', type: 'json', defaultValue: {}, placeholder: '{ "done": true }', visibleWhen: { key: 'emitSecond', equals: true } })
         ],
-        defaultConfig: { delay: 0, payload: {} }
+        defaultConfig: { delay: 0, payload: {}, emitSecond: false, secondDelay: 0, secondPayload: {} }
     },
     {
         type: 'delay',

@@ -478,6 +478,27 @@ describe('Workflow data & trigger nodes', () => {
         ]);
     });
 
+    it('emits a second trigger message and runs the branch again', async () => {
+        const messages: Array<{ step: any; emission: number }> = [];
+        const result = await service.execute(chain([
+            { type: 'inject', config: { payload: {} } },
+            { type: 'trigger', config: { delay: 0, payload: { step: 1 }, emitSecond: true, secondDelay: 5, secondPayload: { step: 2 } } },
+            { type: 'task', config: { action: 'record' } }
+        ]), {
+            actions: {
+                record: (ctx: any) => {
+                    messages.push({ step: ctx.step, emission: ctx.emission });
+                    return ctx.step;
+                }
+            }
+        });
+        expect(result.success).toBe(true);
+        expect(messages).toEqual([{ step: 1, emission: 1 }, { step: 2, emission: 2 }]);
+        const snapshot = result.data?.executionState;
+        expect(snapshot.edgeStates.c1.count).toBe(2);
+        expect(snapshot.nodeStates.task_2.result?.data?.result).toBe(2);
+    });
+
     it('fails HTTP requests without a URL instead of skipping them', async () => {
         const result = await service.execute(chain([
             { type: 'inject', config: { payload: {} } },

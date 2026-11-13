@@ -324,7 +324,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "trigger": {
                 "delay": "Delay",
-                "payload": "Payload (JSON)"
+                "payload": "Payload (JSON)",
+                "emitSecond": "Send a second message",
+                "secondDelay": "Second delay",
+                "secondPayload": "Second payload"
             },
             "delay": {
                 "mode": "Mode",
@@ -667,7 +670,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "workflow": "workflows.child"
             },
             "trigger": {
-                "payload": "{ \"ok\": true }"
+                "payload": "{ \"ok\": true }",
+                "secondPayload": "{ \"done\": true }"
             },
             "delay": {},
             "log": {
@@ -893,7 +897,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "trigger": {
                 "delay": "time to wait before emitting the payload",
-                "payload": "JSON emitted when the trigger fires"
+                "payload": "JSON emitted when the trigger fires",
+                "emitSecond": "Emit another payload after the first one reached the branch.",
+                "secondDelay": "Time to wait after the first message before emitting the second.",
+                "secondPayload": "Payload merged into the second message."
             },
             "delay": {
                 "delay": "pause duration before the next node",
@@ -1547,7 +1554,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "trigger": {
                 "delay": "延迟",
-                "payload": "数据（JSON）"
+                "payload": "数据（JSON）",
+                "emitSecond": "发送第二条消息",
+                "secondDelay": "第二次延迟",
+                "secondPayload": "第二条消息内容"
             },
             "delay": {
                 "mode": "模式",
@@ -1890,7 +1900,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "workflow": "workflows.child"
             },
             "trigger": {
-                "payload": "{ \"ok\": true }"
+                "payload": "{ \"ok\": true }",
+                "secondPayload": "{ \"done\": true }"
             },
             "delay": {},
             "log": {
@@ -2100,7 +2111,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "trigger": {
                 "delay": "发送数据前的等待时间。",
-                "payload": "触发时输出的 JSON 数据。"
+                "payload": "触发时输出的 JSON 数据。",
+                "emitSecond": "第一条消息到达分支后再发送一条消息。",
+                "secondDelay": "第一条消息发送后等待多久再发送第二条。",
+                "secondPayload": "合并到第二条消息中的数据。"
             },
             "delay": {
                 "delay": "进入下一个节点前的等待时间。",
