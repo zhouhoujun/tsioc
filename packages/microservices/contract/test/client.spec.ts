@@ -4,6 +4,8 @@ import {
     ContractHttpError,
     ContractRequestError,
     ContractValidator,
+    configureContractValidation,
+    getContractValidationMode,
     ContractTransport,
     createContractClient,
     createFetchContractTransport,
@@ -74,6 +76,22 @@ describe('contract client', () => {
 
         await expect(api.getUser({ id: '1' }))
             .rejects.toThrow(/Invalid response for getUser/);
+    });
+
+    it('supports a global validation switch with per-client override', async () => {
+        configureContractValidation('both');
+        expect(getContractValidationMode()).toBe('both');
+        const transport: ContractTransport = { request: async () => ({ id: '1' }) as any };
+
+        const validating = createContractClient<UserApi>(sampleContract(), transport);
+        await expect(validating.getUser({ id: '1' })).rejects.toThrow(/Invalid response/);
+
+        const overridden = createContractClient<UserApi>(sampleContract(), transport, { validate: 'none' });
+        await expect(overridden.getUser({ id: '1' })).resolves.toEqual({ id: '1' });
+
+        configureContractValidation('none');
+        const lax = createContractClient<UserApi>(sampleContract(), transport);
+        await expect(lax.getUser({ id: '1' })).resolves.toEqual({ id: '1' });
     });
 
     it('reuses compiled validators across repeated calls', () => {

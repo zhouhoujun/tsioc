@@ -3953,3 +3953,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - Gateway SLO 阈值（errorRate/p95）与 violations 指标。
   - Admin Route SLO 告警标记。
   - 回归：gateway 82、admin 57；web 已重建。
+- 微服务框架第四十四批（2026-11-13）：
+  - Contract 全局校验开关 + 单 client 覆盖。
+  - 回归：contract 18。

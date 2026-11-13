@@ -269,6 +269,11 @@
 - 路由统计输出 errorRate/alert/violations，阈值跨越时 `gateway_slo_violations_total` +1。
 - Admin Route SLO 行显示 SLO 告警标记。
 
+第四十四批（contract 全局校验）：
+
+- 新增 `configureContractValidation(mode)` / `getContractValidationMode()`。
+- 默认 none，可按环境/启动配置全局开启 request/response/both；单 client 仍可覆盖。
+
 
 ---
 

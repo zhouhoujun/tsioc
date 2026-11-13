@@ -29,6 +29,21 @@ export interface ContractCallOptions<TBody = any> {
 
 export type ContractValidationMode = 'none' | 'request' | 'response' | 'both';
 
+let defaultValidationMode: ContractValidationMode = 'none';
+
+/**
+ * Configure the default runtime validation mode for contract clients.
+ *
+ * Individual clients can still override it with `{ validate }`.
+ */
+export function configureContractValidation(mode: ContractValidationMode): void {
+    defaultValidationMode = mode;
+}
+
+export function getContractValidationMode(): ContractValidationMode {
+    return defaultValidationMode;
+}
+
 export interface ContractClientOptions {
     /**
      * Validate request/response payloads against the contract. Default `none`.
@@ -85,6 +100,7 @@ export function createContractClient<T extends object>(
         routes.set(contractOperationName(route), route);
     }
     const validator = new ContractValidator(contract.models);
+    const validationMode = options.validate ?? defaultValidationMode;
     const cache = new Map<string, (...args: any[]) => Promise<any>>();
     return new Proxy({} as T, {
         get: (_target, property) => {
@@ -101,7 +117,7 @@ export function createContractClient<T extends object>(
                     return undefined;
                 }
                 method = async (args: Record<string, any> = {}, callOptions: ContractCallOptions = {}) =>
-                    invokeRoute(contract, route, transport, args, callOptions, options, validator);
+                    invokeRoute(contract, route, transport, args, callOptions, validationMode, validator);
                 cache.set(property, method);
             }
             return method;
@@ -115,7 +131,7 @@ async function invokeRoute(
     transport: ContractTransport,
     args: Record<string, any>,
     callOptions: ContractCallOptions,
-    options: ContractClientOptions,
+    validationMode: ContractValidationMode,
     validator: ContractValidator
 ): Promise<any> {
     const operation = contractOperationName(route);
@@ -136,7 +152,7 @@ async function invokeRoute(
             ? (args.body ?? args.payload ?? withoutKeys(args, Object.keys(pathParams)))
             : undefined);
 
-    if (options.validate === 'request' || options.validate === 'both') {
+    if (validationMode === 'request' || validationMode === 'both') {
         const errors = body !== undefined && route.request
             ? validator.validate(body, { type: route.request })
             : [];
@@ -153,7 +169,7 @@ async function invokeRoute(
         headers: callOptions.headers
     });
 
-    if (options.validate === 'response' || options.validate === 'both') {
+    if (validationMode === 'response' || validationMode === 'both') {
         const errors = route.response
             ? validator.validate(result, { type: route.response })
             : [];
