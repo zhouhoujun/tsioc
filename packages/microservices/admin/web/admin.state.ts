@@ -708,7 +708,29 @@ export class GatewayAdminState {
     };
 
     diffFields(diff: GatewayConfigDiff | undefined, kind: 'routes' | 'rules', key: string): string {
-        return diff?.[kind]?.changedFields?.[key]?.join(', ') ?? '';
+        const fields = diff?.[kind]?.changedFields?.[key];
+        if (!fields?.length) {
+            return '';
+        }
+        const values = diff?.[kind]?.changedValues?.[key] ?? {};
+        return fields.map(field => {
+            const change = values[field];
+            if (!change) {
+                return field;
+            }
+            return `${field}: ${this.formatDiffValue(change.before)} → ${this.formatDiffValue(change.after)}`;
+        }).join(', ');
+    }
+
+    private formatDiffValue(value: any): string {
+        if (value === undefined) {
+            return 'undefined';
+        }
+        if (value === null) {
+            return 'null';
+        }
+        const text = typeof value === 'string' ? value : JSON.stringify(value);
+        return text.length > 60 ? `${text.slice(0, 60)}…` : text;
     }
 
     diffSummary(entry: GatewayAdminConfigEntry): string {

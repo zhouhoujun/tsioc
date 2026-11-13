@@ -14,12 +14,14 @@ export interface GatewayConfigDiff {
         removed: string[];
         changed: string[];
         changedFields?: Record<string, string[]>;
+        changedValues?: Record<string, Record<string, { before: any; after: any }>>;
     };
     rules: {
         added: string[];
         removed: string[];
         changed: string[];
         changedFields?: Record<string, string[]>;
+        changedValues?: Record<string, Record<string, { before: any; after: any }>>;
     };
     options: string[];
 }
@@ -390,12 +392,14 @@ function compareMap<T>(current: Map<string, T>, next: Map<string, T>) {
     const removed: string[] = [];
     const changed: string[] = [];
     const changedFields: Record<string, string[]> = {};
+    const changedValues: Record<string, Record<string, { before: any; after: any }>> = {};
     next.forEach((value, key) => {
         if (!current.has(key)) {
             added.push(key);
         } else if (JSON.stringify(current.get(key)) !== JSON.stringify(value)) {
             changed.push(key);
             changedFields[key] = fieldDiff(current.get(key), value);
+            changedValues[key] = fieldValues(current.get(key), value);
         }
     });
     current.forEach((_value, key) => {
@@ -403,7 +407,20 @@ function compareMap<T>(current: Map<string, T>, next: Map<string, T>) {
             removed.push(key);
         }
     });
-    return { added, removed, changed, changedFields };
+    return { added, removed, changed, changedFields, changedValues };
+}
+
+function fieldValues(current: any, next: any): Record<string, { before: any; after: any }> {
+    if (!current || !next || typeof current !== 'object' || typeof next !== 'object') {
+        return {};
+    }
+    const values: Record<string, { before: any; after: any }> = {};
+    for (const key of new Set([...Object.keys(current), ...Object.keys(next)])) {
+        if (JSON.stringify(current[key]) !== JSON.stringify(next[key])) {
+            values[key] = { before: current[key], after: next[key] };
+        }
+    }
+    return values;
 }
 
 function fieldDiff(current: any, next: any): string[] {

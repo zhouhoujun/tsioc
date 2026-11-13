@@ -139,6 +139,10 @@ describe('GatewayConfigService', () => {
 
         expect(result.diff.routes.changed).toContain('/a:s');
         expect(result.diff.routes.changedFields?.['/a:s']).toEqual(['enabled', 'timeout']);
+        expect(result.diff.routes.changedValues?.['/a:s']).toEqual({
+            enabled: { before: undefined, after: false },
+            timeout: { before: undefined, after: 100 }
+        });
     });
 
     it('tracks option changes in the diff', () => {

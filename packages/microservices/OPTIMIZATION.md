@@ -225,6 +225,11 @@
 - Overview 新增 Route SLO 卡片，展示 Top 5 路由 requests/errors/p95。
 - 与 diagnostics.routes 数据源一致，无流量时显示空状态。
 
+第三十六批（diff old/new）：
+
+- `GatewayConfigDiff.routes/rules.changedValues` 记录字段 before/after。
+- Admin diff 展示 `enabled: true → false`，长值截断。
+
 
 ---
 

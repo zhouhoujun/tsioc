@@ -108,7 +108,8 @@ describe('Microservice admin UI', () => {
                         added: ['/api/new:users-service'],
                         removed: [],
                         changed: ['/api/users:users-service'],
-                        changedFields: { '/api/users:users-service': ['enabled'] }
+                        changedFields: { '/api/users:users-service': ['enabled'] },
+                        changedValues: { '/api/users:users-service': { enabled: { before: true, after: false } } }
                     },
                     rules: { added: [], removed: [], changed: [] },
                     options: []
@@ -498,7 +499,7 @@ describe('Microservice admin UI', () => {
         const diff = root.querySelector('.ga-config-diff')?.textContent || '';
         expect(diff).toContain('/api/new:users-service');
         expect(diff).toContain('/api/users:users-service');
-        expect(diff).toContain('enabled');
+        expect(diff).toContain('enabled: true → false');
         expect(diff).toContain('Pending changes');
         (root.querySelector('.ga-config-diff .ga-icon-btn') as HTMLElement).click();
         await waitFor(() => !root.querySelector('.ga-config-diff'));
