@@ -3901,3 +3901,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - gRPC server streaming：逐条 write/end/cancel。
   - GrpcClient.serverStream + deadline/metadata。
   - 回归：grpc 21。
+- 微服务框架第三十批（2026-11-13）：
+  - 双 Gateway 实例共享 InMemoryGatewayStateStore。
+  - 跨实例限流 429 + 缓存 HIT E2E。
+  - 回归：gateway 78。

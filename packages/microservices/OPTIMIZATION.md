@@ -191,6 +191,12 @@
 - Client 新增 `serverStream(pattern, options)`，按 data/end/error 事件输出 Observable。
 - 支持 deadline/metadata；客户端流/双向流仍明确报错。
 
+第三十批（共享 Store 双实例 E2E）：
+
+- 两个独立 Gateway 进程共享 `InMemoryGatewayStateStore`。
+- 验证固定窗口限流跨实例生效（A/B 共 2 次，第 3 次 429）。
+- 验证响应缓存跨实例命中（A 写入，B 返回 `x-gateway-cache: HIT`）。
+
 
 ---
 

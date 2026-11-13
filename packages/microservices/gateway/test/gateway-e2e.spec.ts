@@ -7,7 +7,7 @@ import { Inject } from '@tsdi/ioc';
 import { Readable } from 'node:stream';
 import { useHttpTransport } from '../../http/src/server';
 import { DefaultEndpointResolver, EndpointResolver, InMemoryServiceDiscovery, ServiceDiscovery } from '../../discovery/src';
-import { GatewayConfigService, useGateway } from '../src';
+import { GatewayConfigService, InMemoryGatewayStateStore, useGateway } from '../src';
 import expect = require('expect');
 import * as http from 'node:http';
 import { withUdpTransport } from '../../udp/src/client';
@@ -18,6 +18,8 @@ const PORT_SEED = Number(process.env.TSIO_TEST_GATEWAY_PORT_SEED ?? (process.pid
 const UPSTREAM_PORT = 26000 + (PORT_SEED * 10);
 const GATEWAY_PORT = UPSTREAM_PORT + 1;
 const UDP_PORT = UPSTREAM_PORT + 2;
+const SHARED_A_PORT = GATEWAY_PORT + 10;
+const SHARED_B_PORT = GATEWAY_PORT + 11;
 
 @Controller('/users')
 class UpstreamController {
@@ -244,11 +246,11 @@ describe('Gateway E2E', () => {
         if (upstreamCtx) await upstreamCtx.close();
     });
 
-    function request(path: string, headers: Record<string, string> = {}): Promise<{ status: number; body: string; headers: http.IncomingHttpHeaders }> {
+    function requestOn(port: number, path: string, headers: Record<string, string> = {}): Promise<{ status: number; body: string; headers: http.IncomingHttpHeaders }> {
         return new Promise((resolve, reject) => {
             const req = http.request({
                 host: '127.0.0.1',
-                port: GATEWAY_PORT,
+                port,
                 path,
                 method: 'GET',
                 headers: { accept: 'application/json', ...headers }
@@ -261,6 +263,10 @@ describe('Gateway E2E', () => {
             req.on('error', reject);
             req.end();
         });
+    }
+
+    function request(path: string, headers: Record<string, string> = {}) {
+        return requestOn(GATEWAY_PORT, path, headers);
     }
 
     function post(path: string, body: any): Promise<{ status: number; body: string }> {
@@ -407,6 +413,59 @@ describe('Gateway E2E', () => {
         expect(bodyResponse.status).toBe(200);
         expect(JSON.parse(bodyResponse.body)).toMatchObject({ protocol: 'udp', echoed: 'world' });
     });
+    it('shares rate limits and cache across gateway instances', async () => {
+        const store = new InMemoryGatewayStateStore();
+        const createApp = (port: number) => {
+            @Module({
+                imports: [LoggerModule],
+                providers: [
+                    provideService(
+                        useRouter(),
+                        useGateway({
+                            routes: [{
+                                path: '/shared',
+                                service: 'users-service',
+                                targetUrl: `http://127.0.0.1:${UPSTREAM_PORT}`,
+                                targetPath: '/users',
+                                rewrite: { path: () => '/profile' },
+                                rateLimit: { limit: 2, windowMs: 60_000 }
+                            }, {
+                                path: '/shared-cache',
+                                service: 'users-service',
+                                targetUrl: `http://127.0.0.1:${UPSTREAM_PORT}`,
+                                targetPath: '/users',
+                                rewrite: { path: () => '/counter' },
+                                cache: { enabled: true, ttl: 60_000 }
+                            }],
+                            rateLimit: false,
+                            stateStore: store
+                        }),
+                        useHttpTransport({ listenOpts: { port, host: '127.0.0.1' }, asDefault: true })
+                    )
+                ]
+            })
+            class SharedGatewayModule { }
+            return SharedGatewayModule;
+        };
+
+        const first = await Application.run(createApp(SHARED_A_PORT));
+        const second = await Application.run(createApp(SHARED_B_PORT));
+        try {
+            expect((await requestOn(SHARED_A_PORT, '/shared')).status).toBe(200);
+            expect((await requestOn(SHARED_B_PORT, '/shared')).status).toBe(200);
+            expect((await requestOn(SHARED_A_PORT, '/shared')).status).toBe(429);
+
+            const cachedOnA = await requestOn(SHARED_A_PORT, '/shared-cache');
+            const cachedOnB = await requestOn(SHARED_B_PORT, '/shared-cache');
+            expect(cachedOnA.status).toBe(200);
+            expect(cachedOnB.headers['x-gateway-cache']).toBe('HIT');
+            expect(JSON.parse(cachedOnB.body).count).toBe(JSON.parse(cachedOnA.body).count);
+        } finally {
+            await first.close();
+            await second.close();
+        }
+    });
+
     it('applies a hot config update and rolls it back', async () => {
         const config = gatewayCtx.get(GatewayConfigService);
         const route = {
