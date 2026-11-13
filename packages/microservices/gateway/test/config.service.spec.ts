@@ -130,6 +130,17 @@ describe('GatewayConfigService', () => {
         expect(service.getHistory()[0].source).toBe('rollback:1');
     });
 
+    it('reports changed fields for modified routes', () => {
+        const { service } = create();
+        service.apply({ routes: [{ path: '/a', service: 's' }] });
+        const result = service.apply({
+            routes: [{ path: '/a', service: 's', enabled: false, timeout: 100 }]
+        }, { mergeRoutes: true });
+
+        expect(result.diff.routes.changed).toContain('/a:s');
+        expect(result.diff.routes.changedFields?.['/a:s']).toEqual(['enabled', 'timeout']);
+    });
+
     it('tracks option changes in the diff', () => {
         const { service } = create();
         const result = service.apply({ routeMatching: 'legacy' });

@@ -3905,3 +3905,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 双 Gateway 实例共享 InMemoryGatewayStateStore。
   - 跨实例限流 429 + 缓存 HIT E2E。
   - 回归：gateway 78。
+- 微服务框架第三十一批（2026-11-13）：
+  - GatewayConfigDiff 增加 changedFields。
+  - Admin diff 展示字段级变化。
+  - 回归：gateway 79、admin 57；web 已重建。

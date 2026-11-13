@@ -701,6 +701,10 @@ export class GatewayAdminState {
         self.status = self.t('status.routesReset');
     };
 
+    diffFields(diff: GatewayConfigDiff | undefined, kind: 'routes' | 'rules', key: string): string {
+        return diff?.[kind]?.changedFields?.[key]?.join(', ') ?? '';
+    }
+
     diffSummary(entry: GatewayAdminConfigEntry): string {
         const diff = entry.diff;
         const count = diff

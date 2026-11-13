@@ -197,6 +197,11 @@
 - 验证固定窗口限流跨实例生效（A/B 共 2 次，第 3 次 429）。
 - 验证响应缓存跨实例命中（A 写入，B 返回 `x-gateway-cache: HIT`）。
 
+第三十一批（字段级 config diff）：
+
+- `GatewayConfigDiff.routes/rules.changedFields` 记录变化字段（top-level key）。
+- Admin dry-run/history diff 展示 `~ route · enabled, timeout`。
+
 
 ---
 

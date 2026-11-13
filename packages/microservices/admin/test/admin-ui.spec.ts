@@ -90,7 +90,12 @@ describe('Microservice admin UI', () => {
                     timestamp: '2026-11-13T00:00:00.000Z',
                     source: 'admin',
                     diff: {
-                        routes: { added: ['/api/new:users-service'], removed: [], changed: [] },
+                        routes: {
+                            added: ['/api/new:users-service'],
+                            removed: [],
+                            changed: ['/api/users:users-service'],
+                            changedFields: { '/api/users:users-service': ['enabled'] }
+                        },
                         rules: { added: [], removed: [], changed: [] },
                         options: []
                     }
@@ -99,7 +104,12 @@ describe('Microservice admin UI', () => {
             if (path === '/api/gateway-admin/config/apply' && method === 'POST') {
                 const body = JSON.parse(String(init.body));
                 const diff = {
-                    routes: { added: ['/api/new:users-service'], removed: [], changed: [] },
+                    routes: {
+                        added: ['/api/new:users-service'],
+                        removed: [],
+                        changed: ['/api/users:users-service'],
+                        changedFields: { '/api/users:users-service': ['enabled'] }
+                    },
                     rules: { added: [], removed: [], changed: [] },
                     options: []
                 };
@@ -482,6 +492,8 @@ describe('Microservice admin UI', () => {
         await waitFor(() => !!root.querySelector('.ga-config-diff'));
         const diff = root.querySelector('.ga-config-diff')?.textContent || '';
         expect(diff).toContain('/api/new:users-service');
+        expect(diff).toContain('/api/users:users-service');
+        expect(diff).toContain('enabled');
         expect(diff).toContain('Pending changes');
         (root.querySelector('.ga-config-diff .ga-icon-btn') as HTMLElement).click();
         await waitFor(() => !root.querySelector('.ga-config-diff'));
@@ -490,7 +502,7 @@ describe('Microservice admin UI', () => {
         await waitFor(() => !!root.querySelector('.ga-config-history-row'));
         const row = root.querySelector('.ga-config-history-row');
         expect(row?.textContent).toContain('v1');
-        expect(row?.textContent).toContain('1 change');
+        expect(row?.textContent).toContain('2 change');
         (root.querySelector('.ga-rollback-config') as HTMLElement).click();
         await waitFor(() => (root.querySelector('.ga-status')?.textContent || '').includes('rolled back'));
         expect(root.querySelector('.ga-status')?.textContent).toContain('rolled back');

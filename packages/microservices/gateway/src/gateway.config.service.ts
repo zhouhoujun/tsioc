@@ -13,11 +13,13 @@ export interface GatewayConfigDiff {
         added: string[];
         removed: string[];
         changed: string[];
+        changedFields?: Record<string, string[]>;
     };
     rules: {
         added: string[];
         removed: string[];
         changed: string[];
+        changedFields?: Record<string, string[]>;
     };
     options: string[];
 }
@@ -387,11 +389,13 @@ function compareMap<T>(current: Map<string, T>, next: Map<string, T>) {
     const added: string[] = [];
     const removed: string[] = [];
     const changed: string[] = [];
+    const changedFields: Record<string, string[]> = {};
     next.forEach((value, key) => {
         if (!current.has(key)) {
             added.push(key);
         } else if (JSON.stringify(current.get(key)) !== JSON.stringify(value)) {
             changed.push(key);
+            changedFields[key] = fieldDiff(current.get(key), value);
         }
     });
     current.forEach((_value, key) => {
@@ -399,5 +403,19 @@ function compareMap<T>(current: Map<string, T>, next: Map<string, T>) {
             removed.push(key);
         }
     });
-    return { added, removed, changed };
+    return { added, removed, changed, changedFields };
+}
+
+function fieldDiff(current: any, next: any): string[] {
+    if (!current || !next || typeof current !== 'object' || typeof next !== 'object') {
+        return [];
+    }
+    const keys = new Set([...Object.keys(current), ...Object.keys(next)]);
+    const fields: string[] = [];
+    for (const key of keys) {
+        if (JSON.stringify(current[key]) !== JSON.stringify(next[key])) {
+            fields.push(key);
+        }
+    }
+    return fields.sort();
 }
