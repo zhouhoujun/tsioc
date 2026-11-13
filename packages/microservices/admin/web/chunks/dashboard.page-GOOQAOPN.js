@@ -1,4 +1,4 @@
-import{n as e}from"./chunk-LKRIKBGI.js";import{a as s,na as t}from"./chunk-5SKR3XXL.js";import"./chunk-U6UJE3IR.js";var a=class{constructor(c){this.state=c}};Reflect.metadata("design:paramtypes",[e])(a);s(a,[[t({selector:"gateway-admin-dashboard",template:`
+import{n as e}from"./chunk-DZFFQQZL.js";import{a as s,na as t}from"./chunk-5SKR3XXL.js";import"./chunk-U6UJE3IR.js";var a=class{constructor(c){this.state=c}};Reflect.metadata("design:paramtypes",[e])(a);s(a,[[t({selector:"gateway-admin-dashboard",template:`
     <section class="ga-page">
         <div class="ga-metrics">
             <article class="ga-metric">
@@ -63,6 +63,21 @@ import{n as e}from"./chunk-LKRIKBGI.js";import{a as s,na as t}from"./chunk-5SKR3
                         <span>{{state.t('runtime.openCircuits')}}</span>
                         <span class="ga-status-spacer"></span>
                         <span class="ga-pill">{{state.openCircuitCount}}</span>
+                    </div>
+                    <div class="ga-compact-row ga-runtime-row">
+                        <span>{{state.t('runtime.bulkheadActive')}}</span>
+                        <span class="ga-status-spacer"></span>
+                        <span class="ga-pill">{{state.bulkheadActive}}</span>
+                    </div>
+                    <div class="ga-compact-row ga-runtime-row">
+                        <span>{{state.t('runtime.bulkheadQueued')}}</span>
+                        <span class="ga-status-spacer"></span>
+                        <span class="ga-pill">{{state.bulkheadQueued}}</span>
+                    </div>
+                    <div class="ga-compact-row ga-runtime-row">
+                        <span>{{state.t('runtime.adaptiveBulkheads')}}</span>
+                        <span class="ga-status-spacer"></span>
+                        <span class="ga-pill">{{state.adaptiveBulkheadCount}}</span>
                     </div>
                 </div>
             </article>

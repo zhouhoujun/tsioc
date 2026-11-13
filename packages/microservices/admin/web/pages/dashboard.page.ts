@@ -70,6 +70,21 @@ import { GatewayAdminState } from '../admin.state';
                         <span class="ga-status-spacer"></span>
                         <span class="ga-pill">{{state.openCircuitCount}}</span>
                     </div>
+                    <div class="ga-compact-row ga-runtime-row">
+                        <span>{{state.t('runtime.bulkheadActive')}}</span>
+                        <span class="ga-status-spacer"></span>
+                        <span class="ga-pill">{{state.bulkheadActive}}</span>
+                    </div>
+                    <div class="ga-compact-row ga-runtime-row">
+                        <span>{{state.t('runtime.bulkheadQueued')}}</span>
+                        <span class="ga-status-spacer"></span>
+                        <span class="ga-pill">{{state.bulkheadQueued}}</span>
+                    </div>
+                    <div class="ga-compact-row ga-runtime-row">
+                        <span>{{state.t('runtime.adaptiveBulkheads')}}</span>
+                        <span class="ga-status-spacer"></span>
+                        <span class="ga-pill">{{state.adaptiveBulkheadCount}}</span>
+                    </div>
                 </div>
             </article>
 

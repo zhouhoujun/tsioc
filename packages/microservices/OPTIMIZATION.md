@@ -174,6 +174,12 @@
 - 队列满/排队超时按 AIMD 收缩 limit（x0.8，至少 min）。
 - 连续 3 次低占用释放后 limit +1（不超过 maxConcurrent），在压力下保持稳定。
 
+第二十七批（Admin 舱壁视图）：
+
+- Diagnostics 增加 bulkhead adaptive 标记。
+- Overview Runtime 卡片展示 Bulkhead active / queued / adaptive 数量。
+- 生产 bundle 更新。
+
 
 ---
 

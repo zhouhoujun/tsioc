@@ -3889,3 +3889,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - Adaptive bulkhead（AIMD）：initialConcurrent/minConcurrent/adaptive。
   - 饱和收缩、低占用增长；snapshot limit 可观测。
   - 回归：gateway 76。
+- 微服务框架第二十七批（2026-11-13）：
+  - Diagnostics bulkhead adaptive 标记。
+  - Admin Runtime 卡片展示舱壁 active/queued/adaptive。
+  - 回归：admin 57；web 已重建。

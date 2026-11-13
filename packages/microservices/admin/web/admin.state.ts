@@ -442,6 +442,18 @@ export class GatewayAdminState {
         return this.diagnostics?.circuits?.filter(circuit => circuit.open).length ?? 0;
     }
 
+    get bulkheadActive(): number {
+        return (this.diagnostics?.bulkheads ?? []).reduce((sum, item) => sum + (item.active ?? 0), 0);
+    }
+
+    get bulkheadQueued(): number {
+        return (this.diagnostics?.bulkheads ?? []).reduce((sum, item) => sum + (item.queued ?? 0), 0);
+    }
+
+    get adaptiveBulkheadCount(): number {
+        return (this.diagnostics?.bulkheads ?? []).filter(item => item.adaptive === true).length;
+    }
+
     async loadServices(): Promise<void> {
         const self = this.selfRef ?? this;
         if (!self.http) {

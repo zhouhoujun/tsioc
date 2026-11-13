@@ -56,6 +56,7 @@ export interface GatewayBulkheadSnapshot {
     maxQueue?: number;
     rejected?: number;
     timeouts?: number;
+    adaptive?: boolean;
 }
 
 export interface GatewayRuntimeSnapshot {
@@ -113,7 +114,8 @@ export class GatewayRuntime {
                 limit: state.limit,
                 maxQueue: state.maxQueue,
                 rejected: state.rejected,
-                timeouts: state.timeouts
+                timeouts: state.timeouts,
+                adaptive: state.adaptive
             }))
         };
     }
