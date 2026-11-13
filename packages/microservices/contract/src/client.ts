@@ -84,6 +84,7 @@ export function createContractClient<T extends object>(
     for (const route of contract.routes ?? []) {
         routes.set(contractOperationName(route), route);
     }
+    const validator = new ContractValidator(contract.models);
     const cache = new Map<string, (...args: any[]) => Promise<any>>();
     return new Proxy({} as T, {
         get: (_target, property) => {
@@ -100,7 +101,7 @@ export function createContractClient<T extends object>(
                     return undefined;
                 }
                 method = async (args: Record<string, any> = {}, callOptions: ContractCallOptions = {}) =>
-                    invokeRoute(contract, route, transport, args, callOptions, options);
+                    invokeRoute(contract, route, transport, args, callOptions, options, validator);
                 cache.set(property, method);
             }
             return method;
@@ -114,7 +115,8 @@ async function invokeRoute(
     transport: ContractTransport,
     args: Record<string, any>,
     callOptions: ContractCallOptions,
-    options: ContractClientOptions
+    options: ContractClientOptions,
+    validator: ContractValidator
 ): Promise<any> {
     const operation = contractOperationName(route);
     const pathParams: Record<string, any> = {};
@@ -136,7 +138,7 @@ async function invokeRoute(
 
     if (options.validate === 'request' || options.validate === 'both') {
         const errors = body !== undefined && route.request
-            ? validateContractValue(body, { type: route.request }, contract.models)
+            ? validator.validate(body, { type: route.request })
             : [];
         if (errors.length) {
             throw new ContractRequestError(`Invalid request for ${operation}: ${errors.join('; ')}`, operation, errors);
@@ -153,7 +155,7 @@ async function invokeRoute(
 
     if (options.validate === 'response' || options.validate === 'both') {
         const errors = route.response
-            ? validateContractValue(result, { type: route.response }, contract.models)
+            ? validator.validate(result, { type: route.response })
             : [];
         if (errors.length) {
             throw new ContractRequestError(`Invalid response for ${operation}: ${errors.join('; ')}`, operation, errors);
@@ -162,61 +164,91 @@ async function invokeRoute(
     return result;
 }
 
+type ContractValueValidator = (value: any, path: string) => string[];
+
 /**
- * Validate a value against a contract field schema.
+ * Compiled contract validator. Field schemas are compiled once per client
+ * instance; repeated calls reuse the cached validator closures.
  */
-export function validateContractValue(
-    value: any,
-    schema: ContractFieldSchema,
-    models: Record<string, ContractModelSchema>,
-    path = 'value'
-): string[] {
-    if (schema.type === 'string' && typeof value !== 'string') {
-        return [`${path} must be a string`];
+export class ContractValidator {
+    private readonly cache = new WeakMap<object, ContractValueValidator>();
+    private readonly modelCache = new Map<string, ContractValueValidator>();
+
+    constructor(private readonly models: Record<string, ContractModelSchema>) { }
+
+    validate(value: any, schema: ContractFieldSchema, path = 'value'): string[] {
+        return this.compile(schema)(value, path);
     }
-    if (schema.type === 'number' && typeof value !== 'number') {
-        return [`${path} must be a number`];
-    }
-    if (schema.type === 'integer' && !Number.isInteger(value)) {
-        return [`${path} must be an integer`];
-    }
-    if (schema.type === 'boolean' && typeof value !== 'boolean') {
-        return [`${path} must be a boolean`];
-    }
-    if (schema.enum && !schema.enum.includes(value)) {
-        return [`${path} must be one of ${schema.enum.join(', ')}`];
-    }
-    if (schema.type === 'array') {
-        if (!Array.isArray(value)) {
-            return [`${path} must be an array`];
+
+    private compile(schema: ContractFieldSchema): ContractValueValidator {
+        const cached = this.cache.get(schema);
+        if (cached) {
+            return cached;
         }
-        return value.flatMap((item, index) =>
-            schema.items ? validateContractValue(item, schema.items, models, `${path}[${index}]`) : []);
-    }
-    if (schema.type === 'object') {
-        if (!value || typeof value !== 'object' || Array.isArray(value)) {
-            return [`${path} must be an object`];
-        }
-        if (!schema.properties) {
+        const validator: ContractValueValidator = (value, path) => {
+            if (schema.type === 'string' && typeof value !== 'string') {
+                return [`${path} must be a string`];
+            }
+            if (schema.type === 'number' && typeof value !== 'number') {
+                return [`${path} must be a number`];
+            }
+            if (schema.type === 'integer' && !Number.isInteger(value)) {
+                return [`${path} must be an integer`];
+            }
+            if (schema.type === 'boolean' && typeof value !== 'boolean') {
+                return [`${path} must be a boolean`];
+            }
+            if (schema.enum && !schema.enum.includes(value)) {
+                return [`${path} must be one of ${schema.enum.join(', ')}`];
+            }
+            if (schema.type === 'array') {
+                if (!Array.isArray(value)) {
+                    return [`${path} must be an array`];
+                }
+                if (!schema.items) {
+                    return [];
+                }
+                const item = this.compile(schema.items);
+                return value.flatMap((entry, index) => item(entry, `${path}[${index}]`));
+            }
+            if (schema.type === 'object') {
+                if (!value || typeof value !== 'object' || Array.isArray(value)) {
+                    return [`${path} must be an object`];
+                }
+                if (!schema.properties) {
+                    return [];
+                }
+                return validateCompiledFields(value, { fields: schema.properties }, path, this);
+            }
+            const model = this.models[schema.type];
+            if (model) {
+                if (!value || typeof value !== 'object' || Array.isArray(value)) {
+                    return [`${path} must be ${schema.type}`];
+                }
+                return this.compileModel(schema.type, model)(value, path);
+            }
             return [];
-        }
-        return validateFields(value, { fields: schema.properties }, models, path);
+        };
+        this.cache.set(schema, validator);
+        return validator;
     }
-    const model = models[schema.type];
-    if (model) {
-        if (!value || typeof value !== 'object' || Array.isArray(value)) {
-            return [`${path} must be ${schema.type}`];
+
+    private compileModel(name: string, model: ContractModelSchema): ContractValueValidator {
+        const cached = this.modelCache.get(name);
+        if (cached) {
+            return cached;
         }
-        return validateFields(value, model, models, path);
+        const compiled = (value: any, path: string) => validateCompiledFields(value, model, path, this);
+        this.modelCache.set(name, compiled);
+        return compiled;
     }
-    return [];
 }
 
-function validateFields(
+function validateCompiledFields(
     value: Record<string, any>,
     schema: ContractModelSchema,
-    models: Record<string, ContractModelSchema>,
-    path: string
+    path: string,
+    validator: ContractValidator
 ): string[] {
     const errors: string[] = [];
     for (const [name, field] of Object.entries(schema.fields)) {
@@ -227,9 +259,23 @@ function validateFields(
             }
             continue;
         }
-        errors.push(...validateContractValue(value[name], field, models, fieldPath));
+        errors.push(...validator.validate(value[name], field, fieldPath));
     }
     return errors;
+}
+
+/**
+ * Validate a value against a contract field schema.
+ *
+ * Convenience wrapper; hot paths should reuse a `ContractValidator` instance.
+ */
+export function validateContractValue(
+    value: any,
+    schema: ContractFieldSchema,
+    models: Record<string, ContractModelSchema>,
+    path = 'value'
+): string[] {
+    return new ContractValidator(models).validate(value, schema, path);
 }
 
 function withoutKeys(value: Record<string, any>, keys: string[]): Record<string, any> {

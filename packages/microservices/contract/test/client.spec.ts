@@ -3,6 +3,7 @@ import {
     ContractCallRequest,
     ContractHttpError,
     ContractRequestError,
+    ContractValidator,
     ContractTransport,
     createContractClient,
     createFetchContractTransport,
@@ -73,6 +74,16 @@ describe('contract client', () => {
 
         await expect(api.getUser({ id: '1' }))
             .rejects.toThrow(/Invalid response for getUser/);
+    });
+
+    it('reuses compiled validators across repeated calls', () => {
+        const contract = sampleContract();
+        const validator = new ContractValidator(contract.models);
+        const schema = { type: 'User' } as const;
+        expect(validator.validate({ id: '1', name: 'Ada' }, schema)).toEqual([]);
+        expect(validator.validate({ id: '1' }, schema)).toEqual(['value.name is required']);
+        expect(validator.validate({ id: '1', name: 'Ada' }, schema)).toEqual([]);
+        expect(validator.validate({ id: '1', name: 2 as any }, schema)).toEqual(['value.name must be a string']);
     });
 
     it('throws for missing path parameters', async () => {

@@ -236,6 +236,12 @@
 - 新增 `scripts/verify-package-publish.mjs`：npm pack 校验入口文件、无 test 泄漏、metadata 完整。
 - 接入 `agents-gate.sh` 的 `package-publish` stage；admin/contract 补 root `index.ts`。
 
+第三十八批（contract 校验缓存）：
+
+- 新增 `ContractValidator`：schema 编译一次并 WeakMap 缓存，重复调用复用闭包。
+- `createContractClient` 每个实例复用一个 validator；request/response 校验不再每次重建。
+- `validateContractValue` 保留为便捷包装。
+
 
 ---
 

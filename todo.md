@@ -3931,3 +3931,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - microservices 包 files 白名单；admin/contract root index.ts。
   - verify-package-publish.mjs + gate package-publish stage。
   - 回归：package-deps / package-publish 通过。
+- 微服务框架第三十八批（2026-11-13）：
+  - ContractValidator 编译缓存（schema WeakMap + model cache）。
+  - typed client 复用 validator；便捷函数保留。
+  - 回归：contract 17。
