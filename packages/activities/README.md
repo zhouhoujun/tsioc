@@ -682,9 +682,20 @@ are stored as JSON with indexed summary columns, so library queries stay fast.
 When Node's built-in `node:sqlite` is unavailable the server falls back to the
 in-memory store.
 
+The same server exposes execution inspection and cancellation:
+
+```text
+GET  /api/executions[?workflowId=...]   # recent snapshots, newest first
+GET  /api/executions/:executionId       # one snapshot
+POST /api/executions/:executionId/cancel
+```
+
+Snapshots use the same serializable shape the designer replays, so external
+dashboards can render node/edge state without loading the workflow definition.
+
 ### Inject triggers and scheduling
 
-Inject nodes support `manual`, `interval` and `event` triggering. The editor runs
+Inject nodes support `manual`, `interval`, `cron` and `event` triggering. The editor runs
 one cycle by default; hosts can schedule interval/once triggers through the
 service:
 

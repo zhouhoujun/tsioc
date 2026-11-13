@@ -24,6 +24,7 @@ import {
     Post,
     Put,
     RequestBody,
+    RequestParam,
     RequestPath,
     provideService,
     useCookie,
@@ -42,7 +43,7 @@ import {
     createDefaultWorkflowDefinitionStore,
     validateVisualWorkflowDraft
 } from '../src/visual';
-import { VisualWorkflowService } from '../src/visual/VisualWorkflowService';
+import { toWorkflowExecutionSnapshot, VisualWorkflowService } from '../src/visual/VisualWorkflowService';
 import { WorkflowModule } from '../src/workflow.module';
 import { WorkflowPluginCatalog } from '../src/plugins/catalog';
 import { WorkflowPluginRegistry } from '../src/plugins/plugin-registry';
@@ -285,6 +286,46 @@ export class WorkflowHttpController {
     }
 }
 
+/**
+ * Execution inspection API: list recent runs, read one snapshot, and cancel a
+ * running execution. Snapshots are the same serializable shape the designer
+ * replays on the canvas.
+ */
+@Controller('/api/executions')
+export class WorkflowExecutionController {
+    constructor(private execution: VisualWorkflowService) { }
+
+    @Get('/')
+    list(@RequestParam('workflowId') workflowId?: string) {
+        return this.execution.getExecutions()
+            .filter(state => !workflowId || state.workflowId === workflowId)
+            .sort((a, b) => (b.startTime || 0) - (a.startTime || 0))
+            .map(state => toWorkflowExecutionSnapshot(state));
+    }
+
+    @Get('/:id')
+    get(@RequestPath('id') id: string) {
+        const snapshot = this.execution.getExecutionSnapshot(id);
+        if (!snapshot) {
+            throw new NotFoundException(`Execution not found: ${id}`);
+        }
+        return snapshot;
+    }
+
+    @Post('/:id/cancel')
+    async cancel(@RequestPath('id') id: string) {
+        const state = this.execution.getExecution(id);
+        if (!state) {
+            throw new NotFoundException(`Execution not found: ${id}`);
+        }
+        if (state.status !== 'running') {
+            return { cancelled: false, status: state.status };
+        }
+        await this.execution.cancelExecution(id);
+        return { cancelled: true, status: 'cancelled' };
+    }
+}
+
 export interface WorkflowHttpServerOptions {
     port?: number;
     host?: string;
@@ -348,7 +389,12 @@ export function createWorkflowHttpModule(options: WorkflowHttpServerOptions = {}
 
     @Module({
         imports: [LoggerModule, WorkflowModule, ServerCommonModule, ...(options.imports || [])],
-        declarations: [WorkflowHttpController, WorkflowPluginController, ...(options.declarations || [])],
+        declarations: [
+            WorkflowHttpController,
+            WorkflowPluginController,
+            WorkflowExecutionController,
+            ...(options.declarations || [])
+        ],
         providers: [
             { provide: WORKFLOW_DEFINITION_STORE, useValue: store },
             ...(options.providers || []),

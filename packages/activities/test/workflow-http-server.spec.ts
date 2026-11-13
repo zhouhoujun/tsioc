@@ -282,6 +282,66 @@ describe('Workflow HTTP microservice', () => {
         await request(`${base}/api/workflows/timeout-demo`, { method: 'DELETE' });
     });
 
+    it('inspects and cancels executions through the HTTP API', async () => {
+        const definition = {
+            id: 'execution-demo',
+            name: 'Execution demo',
+            nodes: [
+                { id: 'start_e', name: 'Start', type: 'start' as const, position: { x: 0, y: 0 } },
+                { id: 'delay_e', name: 'Wait', type: 'delay' as const, position: { x: 200, y: 0 }, config: { delay: 400 } }
+            ],
+            connections: [{
+                id: 'e1', sourceNodeId: 'start_e', sourcePort: 'out', targetNodeId: 'delay_e', targetPort: 'in'
+            }]
+        };
+        const put = await request(`${base}/api/workflows/execution-demo`, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(definition)
+        });
+        expect(put.status).toBe(200);
+
+        const runPromise = fetch(`${base}/api/workflows/execution-demo/run`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ context: {} })
+        });
+
+        let executionId = '';
+        for (let attempt = 0; attempt < 80 && !executionId; attempt++) {
+            const list = await request(`${base}/api/executions?workflowId=execution-demo`);
+            expect(list.status).toBe(200);
+            if (list.body.length) {
+                executionId = list.body[0].executionId;
+            } else {
+                await new Promise(resolve => setTimeout(resolve, 20));
+            }
+        }
+        expect(executionId).toBeTruthy();
+
+        const detail = await request(`${base}/api/executions/${executionId}`);
+        expect(detail.status).toBe(200);
+        expect(detail.body.executionId).toBe(executionId);
+        expect(detail.body.workflowId).toBe('execution-demo');
+
+        const cancel = await request(`${base}/api/executions/${executionId}/cancel`, { method: 'POST' });
+        expect(cancel.status).toBe(200);
+        expect(cancel.body.cancelled).toBe(true);
+
+        const runBody = await (await runPromise).json();
+        expect(runBody.status).toBe('cancelled');
+
+        const again = await request(`${base}/api/executions/${executionId}/cancel`, { method: 'POST' });
+        expect(again.body.cancelled).toBe(false);
+
+        const missing = await request(`${base}/api/executions/missing`);
+        expect(missing.status).toBe(404);
+        const missingCancel = await request(`${base}/api/executions/missing/cancel`, { method: 'POST' });
+        expect(missingCancel.status).toBe(404);
+
+        await request(`${base}/api/workflows/execution-demo`, { method: 'DELETE' });
+    });
+
     it('lists, installs and uninstalls workflow plugins', async () => {
         const catalog = await request(`${base}/api/plugins`);
         expect(catalog.status).toBe(200);
