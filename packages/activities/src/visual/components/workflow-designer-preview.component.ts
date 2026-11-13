@@ -51,6 +51,7 @@ import { installWorkflowDesignerStyles } from './workflow-designer.styles';
     <div class="workflow-designer-preview workflow-designer" data-theme="{{themeName}}">
         <workflow-toolbar :model="toolbarModel" :locale="locale" :action="handleToolbarAction"
             :theme="themeName" :themeChangeAction="themeSelectAction"
+            :scheduleToggleAction="toggleSchedule"
             :hiddenActions="hiddenActions"></workflow-toolbar>
         <workspace-layout class="workflow-workspace">
             <workspace-left>
@@ -163,6 +164,8 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     @NoReactive() private paletteCache?: { key: string; groups: WorkflowPaletteGroup[] };
     @NoReactive() private runLogsCache?: { execution: any; logs: any[] };
     @NoReactive() private codeSuggestionCache?: { key: string; values: string[] };
+    scheduling = false;
+    @NoReactive() private scheduleHandle?: { stop(): void };
 
     constructor(
         @Optional() @Inject(DOCUMENT) document?: any,
@@ -205,7 +208,9 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     }
 
     onDestroy(): void {
-        // The host owns the designer and its store; the preview only owns DOM.
+        this.scheduleHandle?.stop();
+        this.scheduleHandle = undefined;
+        this.scheduling = false;
     }
 
     get localeValue(): 'zh-CN' | 'en' {
@@ -361,7 +366,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         if (cache && cache.key === key) {
             return cache.model;
         }
-        const model = buildWorkflowToolbarModel(this.designer, this.localeValue, this.translator);
+        const model = { ...buildWorkflowToolbarModel(this.designer, this.localeValue, this.translator), scheduling: this.scheduling };
         this.toolbarModelCache = { key, model };
         return model;
     }
@@ -530,6 +535,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             designer.canRedo ? 1 : 0,
             designer.canResume ? 1 : 0,
             designer.running ? 1 : 0,
+            this.scheduling ? 1 : 0,
             designer.zoom,
             designer.execution?.status || ''
         ].join('|');
@@ -559,9 +565,45 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         this.autosaveAction?.();
     };
 
+    readonly toggleSchedule = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        if (self.scheduleHandle) {
+            self.scheduleHandle.stop();
+            self.scheduleHandle = undefined;
+            self.scheduling = false;
+            self.notifyChange();
+            return;
+        }
+        const service = self.designer.service;
+        if (!service) {
+            self.designer.error = 'Scheduling is not available in this host';
+            self.notifyChange();
+            return;
+        }
+        self.scheduling = true;
+        self.scheduleHandle = service.startSchedule(self.designer.definition, {
+            context: self.runContext,
+            onResult: result => {
+                const execution = result.data?.executionState;
+                if (execution) {
+                    self.designer.execution = execution;
+                }
+                self.notifyChange();
+            },
+            onError: error => {
+                self.designer.error = error.message;
+                self.notifyChange();
+            }
+        });
+        self.notifyChange();
+    };
+
     readonly handleToolbarAction = (action: string): void => {
         const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
         switch (action) {
+            case 'schedule':
+                self.toggleSchedule();
+                break;
             case 'run':
                 void this.designer.run({ context: this.runContext });
                 break;

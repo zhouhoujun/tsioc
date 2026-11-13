@@ -438,6 +438,51 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         defaultConfig: { rules: [] }
     },
     {
+        type: 'complete',
+        label: 'Complete',
+        description: 'Run after matching nodes complete successfully',
+        category: 'error',
+        icon: '✓',
+        color: '#16a34a',
+        textColor: '#ffffff',
+        inputs: [],
+        outputs: [port('out', 'out', 'output', 'Output')],
+        fields: [
+            configField({ key: 'scope', label: 'Scope', type: 'text', placeholder: 'node id or type', description: 'Only run when this node id or type succeeded. Leave empty for any completion.' })
+        ],
+        defaultConfig: {}
+    },
+    {
+        type: 'catch',
+        label: 'Catch',
+        description: 'Run when a matching node fails',
+        category: 'error',
+        icon: '!',
+        color: '#dc2626',
+        textColor: '#ffffff',
+        inputs: [],
+        outputs: [port('out', 'out', 'output', 'Output')],
+        fields: [
+            configField({ key: 'scope', label: 'Scope', type: 'text', placeholder: 'node id or type', description: 'Only run when this node id or type failed. Leave empty for any failure.' })
+        ],
+        defaultConfig: {}
+    },
+    {
+        type: 'status',
+        label: 'Status',
+        description: 'Run after the workflow finishes',
+        category: 'error',
+        icon: 'i',
+        color: '#0ea5e9',
+        textColor: '#ffffff',
+        inputs: [],
+        outputs: [port('out', 'out', 'output', 'Output')],
+        fields: [
+            configField({ key: 'scope', label: 'Scope', type: 'text', placeholder: 'node id or type', description: 'Optional node id or type used to filter the status event.' })
+        ],
+        defaultConfig: {}
+    },
+    {
         type: 'parallel',
         label: 'Parallel',
         description: 'Run all outgoing branches concurrently',

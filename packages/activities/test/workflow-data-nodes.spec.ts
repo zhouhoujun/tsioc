@@ -184,6 +184,50 @@ describe('Workflow data & trigger nodes', () => {
         expect(states.debug_3.result?.data?.message).toBe('7');
     });
 
+    it('runs complete, catch and status lifecycle nodes', async () => {
+        const successState: any = {};
+        const success: VisualWorkflowDefinition = {
+            id: 'complete-demo',
+            name: 'Complete demo',
+            nodes: [
+                registry.createNode('inject', { x: 0, y: 0 }, { id: 'inject_1', config: { payload: { ok: true } } }),
+                registry.createNode('task', { x: 200, y: 0 }, { id: 'task_1', config: { result: { ok: true } } }),
+                registry.createNode('complete', { x: 0, y: 160 }, { id: 'complete_1', config: { scope: 'task_1' } }),
+                registry.createNode('function', { x: 200, y: 160 }, { id: 'complete_fn', config: { code: 'context.state.complete = true; return {};' } }),
+                registry.createNode('status', { x: 0, y: 320 }, { id: 'status_1' }),
+                registry.createNode('function', { x: 200, y: 320 }, { id: 'status_fn', config: { code: 'context.state.status = context.workflowStatus; return {};' } })
+            ],
+            connections: [
+                { id: 'c1', sourceNodeId: 'inject_1', sourcePort: 'out', targetNodeId: 'task_1', targetPort: 'in' },
+                { id: 'c2', sourceNodeId: 'complete_1', sourcePort: 'out', targetNodeId: 'complete_fn', targetPort: 'in' },
+                { id: 'c3', sourceNodeId: 'status_1', sourcePort: 'out', targetNodeId: 'status_fn', targetPort: 'in' }
+            ]
+        };
+        const successResult = await service.execute(success, { state: successState });
+        expect(successResult.success).toBe(true);
+        expect(successState.complete).toBe(true);
+        expect(successState.status).toBe('completed');
+
+        const failState: any = {};
+        const failure: VisualWorkflowDefinition = {
+            id: 'catch-demo',
+            name: 'Catch demo',
+            nodes: [
+                registry.createNode('inject', { x: 0, y: 0 }, { id: 'inject_1', config: { payload: {} } }),
+                registry.createNode('task', { x: 200, y: 0 }, { id: 'task_1', config: { fail: true } }),
+                registry.createNode('catch', { x: 0, y: 160 }, { id: 'catch_1', config: { scope: 'task_1' } }),
+                registry.createNode('function', { x: 200, y: 160 }, { id: 'catch_fn', config: { code: 'context.state.caught = true; return {};' } })
+            ],
+            connections: [
+                { id: 'c1', sourceNodeId: 'inject_1', sourcePort: 'out', targetNodeId: 'task_1', targetPort: 'in' },
+                { id: 'c2', sourceNodeId: 'catch_1', sourcePort: 'out', targetNodeId: 'catch_fn', targetPort: 'in' }
+            ]
+        };
+        const failureResult = await service.execute(failure, { state: failState });
+        expect(failureResult.success).toBe(false);
+        expect(failState.caught).toBe(true);
+    });
+
     it('supports event-triggered injection', async () => {
         const result = await service.execute(chain([
             { type: 'inject', config: { trigger: 'event', event: 'order.created', timeout: 1 } }

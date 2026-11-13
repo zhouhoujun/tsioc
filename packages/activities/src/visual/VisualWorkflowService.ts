@@ -197,6 +197,63 @@ export class VisualWorkflowService {
                 }
             }
 
+            // Lifecycle nodes observe the completed/failed workflow rather than
+            // being regular entries. Run them before the final status is stored.
+            const lifecycle = [...plan.nodes.values()].filter(node =>
+                node.type === 'complete' || node.type === 'catch' || node.type === 'status'
+            );
+            for (const node of lifecycle) {
+                if (visited.has(node.id)) {
+                    continue;
+                }
+                const type = node.type;
+                if (type === 'complete' && !result.success) {
+                    continue;
+                }
+                if (type === 'catch' && result.success) {
+                    continue;
+                }
+                const scope = String(node.config?.scope || '').trim();
+                if (scope) {
+                    const matched = [...(state.nodeStates?.values() || [])].some(record => {
+                        const recordType = plan.nodes.get(record.nodeId)?.type;
+                        if (record.nodeId !== scope && recordType !== scope) {
+                            return false;
+                        }
+                        return type === 'catch'
+                            ? record.status === 'failed'
+                            : type === 'complete'
+                                ? record.status === 'success'
+                                : record.status === 'success' || record.status === 'failed';
+                    });
+                    if (!matched) {
+                        continue;
+                    }
+                }
+                const lifecycleContext = {
+                    ...runtimeContext,
+                    workflowStatus: result.success ? 'completed' : 'failed',
+                    workflowError: result.error?.message,
+                    workflowResult: result
+                };
+                const lifecycleResult = await this.executeFromNode(
+                    node,
+                    plan,
+                    lifecycleContext,
+                    state,
+                    options,
+                    host,
+                    visited,
+                    nodeHandler,
+                    !!options.resumeFrom,
+                    replayed
+                );
+                if (!lifecycleResult.success && type === 'catch') {
+                    // Catch branches are best effort; the original failure stands.
+                    continue;
+                }
+            }
+
             if (state.status === 'cancelled' || this.isCancelled(state)) {
                 state.status = 'cancelled';
                 this.finishPendingNodes(state, 'skipped');

@@ -20,6 +20,13 @@ export const ICON_LIBRARY: Record<string, IconDefinition> = {
         filled: true,
         paths: ['M4.8 3.2 12.2 8l-7.4 4.8z']
     },
+    schedule: {
+        glyph: '⏱',
+        paths: [
+            'M8 2.5a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11z',
+            'M8 4.8V8l2.2 1.3'
+        ]
+    },
     resume: {
         glyph: '↻',
         paths: [

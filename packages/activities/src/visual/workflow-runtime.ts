@@ -1285,9 +1285,10 @@ export function findWorkflowEntryNodes(definition: VisualWorkflowDefinition): IV
             entries.push(node);
         }
     };
+    const lifecycle = new Set(['complete', 'catch', 'status']);
     nodes.filter(node => node.type === 'start').forEach(push);
     nodes.filter(node => node.type === 'inject').forEach(push);
-    nodes.filter(node => !incoming.has(node.id)).forEach(push);
+    nodes.filter(node => !lifecycle.has(node.type) && !incoming.has(node.id)).forEach(push);
     return entries;
 }
 

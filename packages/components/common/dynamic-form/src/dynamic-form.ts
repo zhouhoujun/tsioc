@@ -694,6 +694,10 @@ export class DynamicFormComponent implements OnDestroy {
     keyValueKeyClass(): string { return `${this.classPrefix}-input ${this.classPrefix}-keyvalue-key`; }
     keyValueValueClass(): string { return `${this.classPrefix}-input ${this.classPrefix}-keyvalue-value`; }
 
+    isJsonInput(field: DynamicFormField): boolean {
+        return field.type === 'json';
+    }
+
     isListInput(field: DynamicFormField): boolean {
         return field.type === 'list';
     }

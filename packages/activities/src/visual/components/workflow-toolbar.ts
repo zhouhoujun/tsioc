@@ -14,6 +14,7 @@ const EMPTY_TOOLBAR: WorkflowToolbarModel = {
     canRedo: false,
     canResume: false,
     running: false,
+    scheduling: false,
     zoomLabel: '100%',
     statusLabel: ''
 };
@@ -31,6 +32,7 @@ const EMPTY_TOOLBAR: WorkflowToolbarModel = {
         <span class="workflow-toolbar-meta">{{nodeLabel}} · {{connectionLabel}}</span>
         <span class="workflow-toolbar-status">{{model.statusLabel}}</span>
         <span class="workflow-status-spacer"></span>
+        <button v-if="visible('schedule')" class="workflow-btn" [class.is-active]="model.scheduling" @click="toggleSchedule"><icon class="workflow-btn-icon" name="schedule" size="sm"></icon>{{model.scheduling ? stopScheduleLabel : scheduleLabel}}</button>
         <button v-if="visible('run')" class="workflow-btn workflow-btn-primary" [disabled]="model.running || !model.nodeCount" @click="run"><icon class="workflow-btn-icon" name="run" size="sm"></icon>{{runLabel}}</button>
         <button v-if="visible('resume')" class="workflow-btn" [disabled]="!model.canResume" @click="resume"><icon class="workflow-btn-icon" name="resume" size="sm"></icon>{{resumeLabel}}</button>
         <button v-if="visible('cancel')" class="workflow-btn" [disabled]="!model.running" @click="cancel"><icon class="workflow-btn-icon" name="stop" size="sm"></icon>{{stopLabel}}</button>
@@ -56,6 +58,7 @@ export class WorkflowToolbarComponent {
     @Attribute() theme = 'light';
     @Attribute() themeChangeAction?: (theme: ThemeName) => void;
     @Attribute() runAction?: () => void;
+    @Attribute() scheduleToggleAction?: () => void;
     @Attribute() resumeAction?: () => void;
     @Attribute() cancelAction?: () => void;
     @Attribute() undoAction?: () => void;
@@ -96,6 +99,8 @@ export class WorkflowToolbarComponent {
     }
 
     get runLabel(): string { return this.t('run', 'Run'); }
+    get scheduleLabel(): string { return this.t('schedule', 'Schedule'); }
+    get stopScheduleLabel(): string { return this.t('stopSchedule', 'Stop schedule'); }
     get resumeLabel(): string { return this.t('resume', 'Resume'); }
     get stopLabel(): string { return this.t('stop', 'Stop'); }
     get undoLabel(): string { return this.t('undo', 'Undo'); }
@@ -120,6 +125,10 @@ export class WorkflowToolbarComponent {
 
     run(): void {
         (this.runAction || (() => this.action?.('run')))();
+    }
+
+    toggleSchedule(): void {
+        (this.scheduleToggleAction || (() => this.action?.('schedule')))();
     }
     resume(): void {
         (this.resumeAction || (() => this.action?.('resume')))();

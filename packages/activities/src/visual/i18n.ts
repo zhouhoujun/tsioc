@@ -32,6 +32,8 @@ const BASE_WORKFLOW_TRANSLATIONS: Record<string, TranslationBundle> = {
                 },
                 ui: {
                     run: 'Run',
+                    schedule: 'Schedule',
+                    stopSchedule: 'Stop schedule',
                     resume: 'Resume',
                     stop: 'Stop',
                     undo: 'Undo',
@@ -317,6 +319,8 @@ const BASE_WORKFLOW_TRANSLATIONS: Record<string, TranslationBundle> = {
                 },
                 ui: {
                     run: '运行',
+                    schedule: '定时运行',
+                    stopSchedule: '停止定时',
                     resume: '继续运行',
                     stop: '停止',
                     undo: '撤销',

@@ -219,6 +219,18 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "router": {
                 "label": "Router",
                 "description": "Route to one of four outputs using ordered rules"
+            },
+            "complete": {
+                "label": "Complete",
+                "description": "Run after matching nodes complete successfully"
+            },
+            "catch": {
+                "label": "Catch",
+                "description": "Run when a matching node fails"
+            },
+            "status": {
+                "label": "Status",
+                "description": "Run after the workflow finishes"
             }
         },
         "field": {
@@ -508,6 +520,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "rules": "Rules",
                 "operator": "Operator",
                 "value": "Compare to"
+            },
+            "complete": {
+                "scope": "Scope"
+            },
+            "catch": {
+                "scope": "Scope"
+            },
+            "status": {
+                "scope": "Scope"
             }
         },
         "fieldPlaceholder": {
@@ -672,6 +693,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "router": {
                 "field": "result.status"
+            },
+            "complete": {
+                "scope": "node id or type"
+            },
+            "catch": {
+                "scope": "node id or type"
+            },
+            "status": {
+                "scope": "node id or type"
             }
         },
         "fieldDescription": {
@@ -904,6 +934,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "rules": "Rules are checked from top to bottom; the first match selects the numbered output.",
                 "operator": "Comparison used by this rule.",
                 "value": "Value used by the selected operator."
+            },
+            "complete": {
+                "scope": "Only run for this node id or type. Leave empty to match anything."
+            },
+            "catch": {
+                "scope": "Only run for this node id or type. Leave empty to match anything."
+            },
+            "status": {
+                "scope": "Only run for this node id or type. Leave empty to match anything."
             }
         },
         "group": {
@@ -1195,6 +1234,18 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "router": {
                 "label": "规则路由",
                 "description": "按顺序匹配规则并选择四个输出之一"
+            },
+            "complete": {
+                "label": "完成事件",
+                "description": "匹配节点成功完成后运行"
+            },
+            "catch": {
+                "label": "异常事件",
+                "description": "匹配节点失败时运行"
+            },
+            "status": {
+                "label": "状态事件",
+                "description": "工作流结束后运行"
             }
         },
         "field": {
@@ -1484,6 +1535,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "rules": "规则",
                 "operator": "运算符",
                 "value": "比较值"
+            },
+            "complete": {
+                "scope": "范围"
+            },
+            "catch": {
+                "scope": "范围"
+            },
+            "status": {
+                "scope": "范围"
             }
         },
         "fieldPlaceholder": {
@@ -1628,6 +1688,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "router": {
                 "field": "result.status"
+            },
+            "complete": {
+                "scope": "节点 ID 或类型"
+            },
+            "catch": {
+                "scope": "节点 ID 或类型"
+            },
+            "status": {
+                "scope": "节点 ID 或类型"
             }
         },
         "fieldDescription": {
@@ -1860,6 +1929,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "rules": "从上到下依次匹配，第一条命中的规则选择对应编号输出。",
                 "operator": "该规则使用的比较方式。",
                 "value": "当前运算符使用的比较值。"
+            },
+            "complete": {
+                "scope": "仅在该节点 ID 或类型匹配时运行；留空表示任意节点。"
+            },
+            "catch": {
+                "scope": "仅在该节点 ID 或类型匹配时运行；留空表示任意节点。"
+            },
+            "status": {
+                "scope": "仅在该节点 ID 或类型匹配时运行；留空表示任意节点。"
             }
         },
         "group": {

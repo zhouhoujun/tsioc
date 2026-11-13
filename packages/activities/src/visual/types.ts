@@ -153,6 +153,9 @@ export type VisualNodeType =
     | 'xml'        // XML 解析节点
     | 'scale'      // 数值区间映射节点
     | 'router'     // 多规则路由节点
+    | 'complete'   // 完成事件节点
+    | 'catch'      // 异常事件节点
+    | 'status'     // 状态事件节点
     | 'http-request' // HTTP 请求节点
     | 'inject'     // 注入/手动触发节点
     | 'function'   // 函数节点
@@ -896,6 +899,8 @@ export interface WorkflowToolbarModel {
     canRedo: boolean;
     canResume: boolean;
     running: boolean;
+    /** Interval/once scheduler is active. */
+    scheduling?: boolean;
     zoomLabel: string;
     statusLabel: string;
 }
