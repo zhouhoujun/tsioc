@@ -301,6 +301,12 @@
 - Runtime 保留最近 20 条 SLO 告警（route/时间/errorRate/p95/阈值），每条路由保留 10 条。
 - Diagnostics 输出 alerts；Admin 新增 SLO Alerts 卡片。
 
+第五十一批（可选 feature 组合）：
+
+- `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。
+- `useFeatures({ extraFeatures: [useTracing(...)] })` 可在不引入 service→tracing 循环依赖的情况下组合可选能力。
+- 函数/数组/对象 feature 均支持。
+
 第四十九批（真实 Redis 多 Gateway）：
 
 - 两个真实 Gateway 进程共享同一 Redis prefix。

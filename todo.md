@@ -3978,3 +3978,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - SLO 告警历史（runtime + diagnostics.alerts）。
   - Admin SLO Alerts 卡片。
   - 回归：gateway 82、admin 58；web 已重建。
+- 微服务框架第五十一批（2026-11-13）：
+  - service/client extraFeatures 扩展点（支持 useTracing 等可选包组合）。
+  - 回归：service 63、client 84。

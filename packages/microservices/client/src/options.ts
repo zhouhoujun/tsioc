@@ -59,6 +59,11 @@ export interface ClientFeatureOptions<TReq = any, TRes = any, TContext extends R
      * timeout
      */
     timeout?: number;
+    /**
+     * additional features composed by the caller, keeping optional packages
+     * out of @tsdi/client.
+     */
+    extraFeatures?: ClientFeatureLike<ClientFeatureKind>[];
     defaultTransfer?: TransferFilterFactory;
     transfers?: TransferFilterFactory[];
     transferFiltersToken?: Token<any[]>;

@@ -124,6 +124,12 @@ describe('client provider', () => {
         expect(kinds).not.toContain(ClientFeatureKind.Retry);
     });
 
+    it('includes caller provided extra features', () => {
+        const config = createConfig();
+        const features = withFeatures({ extraFeatures: [withTimeout(25)] } as any)(config) as any[];
+        expect(features.some((feature: any) => feature.kind === ClientFeatureKind.Interceptors)).toBe(true);
+    });
+
     it('uses explicit empty options when retry and circuit breaker are enabled', () => {
         const config = createConfig();
         const features = withFeatures({ retry: {}, circuitBreaker: {} })(config) as any[];

@@ -15,7 +15,7 @@ import {
     SERV_OPTIONS
 } from './tokens';
 
-import { AuthOptions, CookieOptions, CorsOptions, ExecptionLoggerOptions, FeatureInterceptorOptions, ServiceFeatureKind, ServiceFeature, ServiceLoggerOptions, SERVICE_EXECEPTION_LOGGER_OPTIONS, ServiceTransportFeature, ServiceConfig, ServiceFeatureOptions } from './options';
+import { AuthOptions, CookieOptions, CorsOptions, ExecptionLoggerOptions, FeatureInterceptorOptions, ServiceFeatureKind, ServiceFeature, ServiceFeatureFn, ServiceFeatureLike, ServiceLoggerOptions, SERVICE_EXECEPTION_LOGGER_OPTIONS, ServiceTransportFeature, ServiceConfig, ServiceFeatureOptions } from './options';
 import { RegistrationOptions, HealthOptions, GracefulShutdownOptions } from './features';
 import { AuthInterceptor, BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, ExecptionLogger, JsonInterceptor, SessionInterceptor } from './interceptors';
 import { composeMiddleware, convertToInterceptor, MiddlewareLike } from './middleware';
@@ -29,11 +29,6 @@ import { HEALTH_CHECK_STRATEGY } from './strategies/IHealthCheckStrategy';
 import { GRACEFUL_SHUTDOWN_STRATEGY } from './strategies/IGracefulShutdownStrategy';
 
 
-
-
-export type ServiceFeatureFn<Kind extends Exclude<ServiceFeatureKind, ServiceFeatureKind.Transport>> = (config: ServiceConfig) => ServiceFeature<Kind> | ServiceFeature<Kind>[];
-
-export type ServiceFeatureLike<Kind extends ServiceFeatureKind> = ServiceFeature<Kind> | ServiceFeature<Kind>[] | ServiceFeatureFn<Exclude<ServiceFeatureKind, ServiceFeatureKind.Transport>> | ServiceFeatureFn<Exclude<ServiceFeatureKind, ServiceFeatureKind.Transport>>[];
 
 
 /**
@@ -213,6 +208,11 @@ export function useFeatures(options?: ServiceFeatureOptions): ServiceFeatureFn<E
         }
         if (opts.gracefulShutdown) {
             features.push(useGracefulShutdown(opts.gracefulShutdown)(config));
+        }
+        if (opts.extraFeatures?.length) {
+            for (const extra of opts.extraFeatures) {
+                features.push(isFunction(extra) ? extra(config) : extra);
+            }
         }
 
         return features.flatMap(r => r);

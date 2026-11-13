@@ -269,6 +269,10 @@ export interface ApiRateLimitOptions {
     maxKeys?: number;
 }
 
+export type ServiceFeatureFn<Kind extends Exclude<ServiceFeatureKind, ServiceFeatureKind.Transport>> = (config: ServiceConfig) => ServiceFeature<Kind> | ServiceFeature<Kind>[];
+
+export type ServiceFeatureLike<Kind extends ServiceFeatureKind> = ServiceFeature<Kind> | ServiceFeature<Kind>[] | ServiceFeatureFn<Exclude<ServiceFeatureKind, ServiceFeatureKind.Transport>> | ServiceFeatureFn<Exclude<ServiceFeatureKind, ServiceFeatureKind.Transport>>[];
+
 export interface ServiceFeatureOptions<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends ServiceHandlerOptions<TReq, TRes, TContext> {
     timeout?: number;
     rateLimit?: boolean | ApiRateLimitOptions;
@@ -292,6 +296,11 @@ export interface ServiceFeatureOptions<TReq = any, TRes = any, TContext extends 
     messageReaderFactory?: any;
     messagerReaderFactory?: any;
     defaultTransfer?: TransferFilterFactory;
+    /**
+     * additional features composed by the caller (for example
+     * `useTracing()`), keeping optional packages out of @tsdi/service.
+     */
+    extraFeatures?: ServiceFeatureLike<ServiceFeatureKind>[];
 }
 
 /**

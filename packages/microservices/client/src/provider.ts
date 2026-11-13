@@ -414,6 +414,11 @@ export function withFeatures(options?: ClientFeatureOptions): ClientFeatureFn<Ex
         }
 
         features.push(withTransfers(...(isArray(opts.transfers) ? opts.transfers : []))(config));
+        if (opts.extraFeatures?.length) {
+            for (const extra of opts.extraFeatures) {
+                features.push(isFunction(extra) ? extra(config) : extra);
+            }
+        }
 
         return features;
     }

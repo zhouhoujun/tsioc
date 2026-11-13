@@ -273,6 +273,12 @@ describe('service provider', () => {
         expect(feature.providers.filter((provider: any) => provider.multi).length).toBe(2);
     });
 
+    it('includes caller provided extra features', () => {
+        const config = createConfig();
+        const combined = useFeatures({ extraFeatures: [useJson()] } as any)(config) as any[];
+        expect(combined.some(feature => feature.kind === ServiceFeatureKind.Json)).toBe(true);
+    });
+
     it('drops feature providers declared for another transport', () => {
         const httpMarker = { provide: 'HTTP_ONLY', useValue: 'http' };
         const tcpMarker = { provide: 'TCP_ONLY', useValue: 'tcp' };
