@@ -180,6 +180,11 @@
 - Overview Runtime 卡片展示 Bulkhead active / queued / adaptive 数量。
 - 生产 bundle 更新。
 
+第二十八批（Gateway + Discovery 集成）：
+
+- E2E 中 Gateway 同时装配 `ServiceDiscovery` + `DefaultEndpointResolver`。
+- 新增无 `targetUrl` 的路由，运行时注册 endpoint，通过 resolver 发现并转发到真实 upstream。
+
 
 ---
 

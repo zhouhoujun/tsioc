@@ -6,7 +6,7 @@ import { REQUEST, RestfulRequestAdapter, Transport } from '@tsdi/common';
 import { Inject } from '@tsdi/ioc';
 import { Readable } from 'node:stream';
 import { useHttpTransport } from '../../http/src/server';
-import { InMemoryServiceDiscovery } from '../../discovery/src';
+import { DefaultEndpointResolver, EndpointResolver, InMemoryServiceDiscovery, ServiceDiscovery } from '../../discovery/src';
 import { GatewayConfigService, useGateway } from '../src';
 import expect = require('expect');
 import * as http from 'node:http';
@@ -130,6 +130,9 @@ describe('Gateway E2E', () => {
         imports: [LoggerModule],
         providers: [
             InMemoryServiceDiscovery,
+            { provide: ServiceDiscovery, useExisting: InMemoryServiceDiscovery },
+            DefaultEndpointResolver,
+            { provide: EndpointResolver, useExisting: DefaultEndpointResolver },
             provideClient(
                 withTimeout(),
                 withUdpTransport({
@@ -154,6 +157,11 @@ describe('Gateway E2E', () => {
                         stripPrefix: true,
                         targetPath: '/users/profile',
                         rateLimit: { limit: 1, windowMs: 10_000 }
+                    }, {
+                        path: '/gateway/discovered',
+                        service: 'users-service',
+                        stripPrefix: true,
+                        targetPath: '/users'
                     }, {
                         path: '/gateway/sse',
                         service: 'users-service',
@@ -221,6 +229,13 @@ describe('Gateway E2E', () => {
         upstreamCtx = await Application.run(UpstreamModule);
         udpCtx = await Application.run(UdpModule);
         gatewayCtx = await Application.run(GatewayModule);
+        const discovery = gatewayCtx.get(ServiceDiscovery);
+        await discovery.register({
+            name: 'users-service',
+            address: `127.0.0.1:${UPSTREAM_PORT}`,
+            protocol: 'http',
+            port: UPSTREAM_PORT
+        });
     });
 
     after(async () => {
@@ -298,6 +313,12 @@ describe('Gateway E2E', () => {
         expect(body.proxyAuthorization).toBeUndefined();
         expect(body.proto).toBe('http');
         expect(String(body.host)).toContain('127.0.0.1');
+    });
+
+    it('resolves a route through discovery and EndpointResolver', async () => {
+        const response = await request('/gateway/discovered/profile');
+        expect(response.status).toBe(200);
+        expect(JSON.parse(response.body)).toEqual({ service: 'users', ok: true });
     });
 
     it('returns 504 when the upstream exceeds the route timeout', async () => {

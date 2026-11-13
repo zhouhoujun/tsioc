@@ -3893,3 +3893,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - Diagnostics bulkhead adaptive 标记。
   - Admin Runtime 卡片展示舱壁 active/queued/adaptive。
   - 回归：admin 57；web 已重建。
+- 微服务框架第二十八批（2026-11-13）：
+  - Gateway E2E 装配 ServiceDiscovery + EndpointResolver。
+  - 无 targetUrl 路由通过注册中心发现 endpoint 并转发。
+  - 回归：gateway 77。
