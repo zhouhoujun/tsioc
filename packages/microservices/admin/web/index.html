@@ -152,6 +152,13 @@
         }
         .ga-search span { color: #94a3b8; font-size: 15px; }
         .ga-search input { flex: 1; border: 0; background: transparent; padding: 9px 0; font: inherit; outline: none; color: var(--ga-text); }
+        .ga-filter-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .ga-route-filter {
+            padding: 9px 10px; border: 1px solid var(--ga-border); border-radius: 8px;
+            background: var(--ga-surface); color: var(--ga-text); font: inherit; font-size: 12px; cursor: pointer;
+        }
+        .ga-route-filter:focus { outline: none; border-color: var(--ga-blue); }
+        .ga-service-endpoints { color: var(--ga-muted); font-size: 11px; }
         .ga-btn {
             display: inline-flex; align-items: center; justify-content: center; gap: 6px;
             border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #334155;

@@ -3758,3 +3758,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 路由详情支持切换 JSON 编辑，复用路径/service/URL/timeout/methods/重复校验，可编辑限流、熔断、缓存、灰度等高级策略。
   - 已编译规则支持查看 JSON 详情（条件/动作）。
   - admin 51 passing；生产 bundle 验证 Runtime、JSON 编辑、规则详情。
+- Gateway admin 服务发现/筛选/规则复制（2026-11-13）：
+  - GET /api/gateway-admin/services 返回服务 endpoint（address/status/weight/version），Overview 服务行展示节点地址。
+  - 路由表支持 all/enabled/disabled 状态筛选，与文本搜索组合生效。
+  - 规则流程支持从列表复制（读取定义 → 新 id/name 保存 → 刷新列表）。
+  - admin 54 passing；生产 bundle 验证 endpoint、筛选、复制。

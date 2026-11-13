@@ -40,7 +40,7 @@ import { GatewayAdminState } from '../admin.state';
                 <div class="ga-compact-list">
                     <div class="ga-compact-row ga-service-row" v-for="service in state.serviceSummaries">
                         <code>{{service.name}}</code>
-                        <span class="ga-status-spacer"></span>
+                        <span class="ga-service-endpoints">{{state.endpointSummary(service.name) || state.t('card.noEndpoints')}}</span>
                         <span class="ga-pill is-on">{{service.enabled}}/{{service.routes}}</span>
                     </div>
                     <div class="ga-empty" v-if="!state.serviceSummaries.length">{{state.t('card.noServices')}}</div>

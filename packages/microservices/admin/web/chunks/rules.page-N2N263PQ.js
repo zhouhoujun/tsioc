@@ -1,4 +1,4 @@
-import{n as s}from"./chunk-TBV7WHO4.js";import{a as e,na as a}from"./chunk-SPMG5PJO.js";import"./chunk-U6UJE3IR.js";var t=class{constructor(l){this.state=l}};Reflect.metadata("design:paramtypes",[s])(t);e(t,[[a({selector:"gateway-admin-rules",template:`
+import{n as s}from"./chunk-4ZLLAW4Y.js";import{a as e,na as a}from"./chunk-SPMG5PJO.js";import"./chunk-U6UJE3IR.js";var t=class{constructor(l){this.state=l}};Reflect.metadata("design:paramtypes",[s])(t);e(t,[[a({selector:"gateway-admin-rules",template:`
     <section class="ga-page ga-page-rules">
         <div class="ga-page-actions">
             <div>
@@ -26,6 +26,7 @@ import{n as s}from"./chunk-TBV7WHO4.js";import{a as e,na as a}from"./chunk-SPMG5
                         <span class="ga-muted">{{state.t('rules.workflowMeta', { nodes: workflow.nodeCount || 0, id: workflow.id })}}</span>
                     </div>
                     <button class="ga-link-btn" type="button" @click="state.editRules(workflow.id)">{{state.t('rules.open')}}</button>
+                    <button class="ga-link-btn ga-duplicate-rule-workflow" type="button" @click="state.duplicateRuleWorkflow(workflow.id)">{{state.t('rules.duplicate')}}</button>
                     <button class="ga-link-btn ga-apply-rule-workflow" type="button" @click="state.applyRuleWorkflow(workflow.id)">{{state.t('rules.apply')}}</button>
                     <button class="ga-link-btn is-danger" type="button" @click="state.deleteRuleWorkflow(workflow.id)">{{state.t('action.remove')}}</button>
                 </div>

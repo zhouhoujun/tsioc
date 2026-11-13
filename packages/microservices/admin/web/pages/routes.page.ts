@@ -7,10 +7,17 @@ import { GatewayAdminState } from '../admin.state';
     template: `
     <section class="ga-page ga-page-routes">
         <div class="ga-page-actions">
-            <div class="ga-search">
-                <span>⌕</span>
-                <input [value]="state.routeQuery" placeholder="{{state.t('routes.filter')}}"
-                    @input="state.searchRoutes($event)" />
+            <div class="ga-filter-bar">
+                <div class="ga-search">
+                    <span>⌕</span>
+                    <input [value]="state.routeQuery" placeholder="{{state.t('routes.filter')}}"
+                        @input="state.searchRoutes($event)" />
+                </div>
+                <select class="ga-route-filter" [value]="state.routeFilter" @change="state.setRouteFilter($event)">
+                    <option value="all">{{state.t('routes.filterAll', { count: state.routes.length })}}</option>
+                    <option value="enabled">{{state.t('routes.filterEnabled')}}</option>
+                    <option value="disabled">{{state.t('routes.filterDisabled')}}</option>
+                </select>
             </div>
             <div class="ga-actions">
                 <span class="ga-dirty" v-if="state.routesDirty">{{state.t('routes.unsaved')}}</span>

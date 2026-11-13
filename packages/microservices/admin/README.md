@@ -358,7 +358,9 @@ toolbar, palette, inspector and status bar follow the admin shell.
 - The rules page lists saved visual rule workflows and lets operators create a
   new workflow, reopen, apply or delete one; applying a rule workflow compiles
   it and updates the live gateway.
-- The overview dashboard summarizes discovered services, staged routes and
+- The overview dashboard lists discovered services with their endpoints
+  (address/status) from `GET /api/gateway-admin/services`, summarizes staged
+  routes and
   gateway policy usage, plus the active authentication mode.
 - The route table can export/import route JSON, reset to the static gateway
   configuration, and open a read-only detail view with the effective route JSON.

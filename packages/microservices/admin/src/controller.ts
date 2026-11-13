@@ -7,6 +7,7 @@ import {
     VisualWorkflowDefinition,
     WorkflowDefinitionStore
 } from '@tsdi/activities';
+import { ServiceDiscovery } from '@tsdi/discovery';
 import { compileGatewayRules } from './rules';
 import { GATEWAY_ADMIN_AUTH_OPTIONS, GatewayAdminAuthOptions } from './auth';
 
@@ -48,7 +49,8 @@ export class GatewayAdminController {
         @Inject(GATEWAY_OPTIONS, { nullable: true }) private options?: GatewayOptions,
         @Inject(GATEWAY_RULES_STORE, { nullable: true }) private store?: WorkflowDefinitionStore,
         @Inject(GATEWAY_ADMIN_AUTH_OPTIONS, { nullable: true }) private authOptions?: GatewayAdminAuthOptions,
-        @Inject(GatewayInterceptor, { nullable: true }) private gateway?: GatewayInterceptor
+        @Inject(GatewayInterceptor, { nullable: true }) private gateway?: GatewayInterceptor,
+        @Inject(ServiceDiscovery, { nullable: true }) private discovery?: ServiceDiscovery
     ) {
         this.store = store ?? new InMemoryWorkflowDefinitionStore();
     }
@@ -61,6 +63,33 @@ export class GatewayAdminController {
     @Get('/state')
     getState(): GatewayAdminState {
         return this.snapshot();
+    }
+
+    /** Discovered services and their endpoints for the admin overview. */
+    @Get('/services')
+    async serviceDetails() {
+        const routes = this.runtime.getRoutes(this.options?.routes ?? []);
+        const rules = this.runtime.getRules(this.options?.rules ?? []);
+        const names = uniqueServices(routes, rules);
+        if (!this.discovery) {
+            return names.map(name => ({ name, endpoints: [] }));
+        }
+        return Promise.all(names.map(async name => {
+            const endpoints = await this.discovery!.discover(name).catch(() => []);
+            return {
+                name,
+                endpoints: endpoints.map(endpoint => ({
+                    id: endpoint.id,
+                    address: endpoint.address,
+                    protocol: endpoint.protocol,
+                    port: endpoint.port,
+                    status: endpoint.status,
+                    weight: endpoint.weight,
+                    version: endpoint.version,
+                    tags: endpoint.tags
+                }))
+            };
+        }));
     }
 
     /** Runtime counters for the admin overview. */

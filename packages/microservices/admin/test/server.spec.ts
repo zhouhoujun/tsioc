@@ -44,6 +44,15 @@ describe('gateway admin standalone server', () => {
         expect(state.services).toEqual(['demo-service']);
     });
 
+    it('lists discovered service endpoints for the overview', async () => {
+        const response = await fetch(`${base}/api/gateway-admin/services`);
+        expect(response.status).toBe(200);
+        const body = await response.json() as Array<{ name: string; endpoints: unknown[] }>;
+        expect(body.map(item => item.name)).toContain('demo-service');
+        const demo = body.find(item => item.name === 'demo-service');
+        expect(demo?.endpoints).toEqual([]);
+    });
+
     it('exposes runtime diagnostics for the overview', async () => {
         const response = await fetch(`${base}/api/gateway-admin/diagnostics`);
         expect(response.status).toBe(200);

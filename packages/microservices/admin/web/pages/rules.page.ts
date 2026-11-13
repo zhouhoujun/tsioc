@@ -32,6 +32,7 @@ import { GatewayAdminState } from '../admin.state';
                         <span class="ga-muted">{{state.t('rules.workflowMeta', { nodes: workflow.nodeCount || 0, id: workflow.id })}}</span>
                     </div>
                     <button class="ga-link-btn" type="button" @click="state.editRules(workflow.id)">{{state.t('rules.open')}}</button>
+                    <button class="ga-link-btn ga-duplicate-rule-workflow" type="button" @click="state.duplicateRuleWorkflow(workflow.id)">{{state.t('rules.duplicate')}}</button>
                     <button class="ga-link-btn ga-apply-rule-workflow" type="button" @click="state.applyRuleWorkflow(workflow.id)">{{state.t('rules.apply')}}</button>
                     <button class="ga-link-btn is-danger" type="button" @click="state.deleteRuleWorkflow(workflow.id)">{{state.t('action.remove')}}</button>
                 </div>

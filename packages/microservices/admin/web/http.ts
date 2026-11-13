@@ -40,6 +40,22 @@ export class GatewayAdminHttp {
         return this.request('GET', '/api/gateway-admin/diagnostics');
     }
 
+    services(): Promise<AdminHttpResult<Array<{
+        name: string;
+        endpoints: Array<{
+            id: string;
+            address: string;
+            protocol?: string;
+            port?: number;
+            status?: string;
+            weight?: number;
+            version?: string;
+            tags?: string[];
+        }>;
+    }>>> {
+        return this.request('GET', '/api/gateway-admin/services');
+    }
+
     updateRoutes(routes: any[]): Promise<AdminHttpResult<any>> {
         return this.request('PUT', '/api/gateway-admin/routes', { routes });
     }

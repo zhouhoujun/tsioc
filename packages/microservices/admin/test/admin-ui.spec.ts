@@ -79,6 +79,15 @@ describe('Microservice admin UI', () => {
             if (path === '/api/gateway-admin/state' && method === 'GET') {
                 return jsonResponse({ routes, rules, services: ['users-service'], auth: { enabled: false, mode: 'none' } });
             }
+            if (path === '/api/gateway-admin/services' && method === 'GET') {
+                return jsonResponse([{
+                    name: 'users-service',
+                    endpoints: [
+                        { id: 'users-1', address: '10.0.0.11:8080', status: 'UP', weight: 10 },
+                        { id: 'users-2', address: '10.0.0.12:8080', status: 'DOWN', weight: 0 }
+                    ]
+                }]);
+            }
             if (path === '/api/gateway-admin/diagnostics' && method === 'GET') {
                 return jsonResponse({
                     cacheEntries: 4,
@@ -191,14 +200,16 @@ describe('Microservice admin UI', () => {
         await ctx?.close();
     });
 
-    it('renders the routed dashboard inside the layout outlet', () => {
+    it('renders the routed dashboard inside the layout outlet', async () => {
         expect(root.querySelector('.ga-shell')).toBeTruthy();
         expect(root.querySelectorAll('.ga-nav-item').length).toBe(3);
         expect(root.querySelectorAll('.ga-metric').length).toBe(4);
         expect(root.querySelector('.ga-designer-page')).toBeFalsy();
         expect(root.querySelector('.ga-status')?.textContent).toContain('Ready');
         expect(win.location.hash).toBe('#/dashboard');
+        await waitFor(() => (root.querySelector('.ga-service-endpoints')?.textContent || '').includes('10.0.0.11'));
         expect(root.querySelector('.ga-service-row')?.textContent).toContain('users-service');
+        expect(root.querySelector('.ga-service-endpoints')?.textContent).toContain('10.0.0.11:8080');
         expect(root.querySelectorAll('.ga-policy-row').length).toBeGreaterThan(0);
         expect(root.querySelectorAll('.ga-runtime-row').length).toBe(3);
         expect(root.querySelector('.ga-runtime-row')?.textContent).toContain('3');
@@ -375,6 +386,39 @@ describe('Microservice admin UI', () => {
         expect(firstRow().textContent).toContain('/api/users-copy');
     });
 
+    it('filters staged routes by enabled state', async () => {
+        (root.querySelector('.ga-nav-item:nth-child(2)') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-page-routes'));
+
+        const duplicate = Array.from(root.querySelectorAll('.ga-route-row')[0].querySelectorAll('.ga-link-btn'))
+            .find(button => button.textContent?.includes('Duplicate')) as HTMLElement;
+        duplicate.click();
+        await flush();
+        expect(root.querySelectorAll('.ga-route-row').length).toBe(2);
+
+        (root.querySelectorAll('.ga-route-row')[0].querySelector('.ga-pill-button') as HTMLElement).click();
+        await flush();
+
+        const filter = root.querySelector('.ga-route-filter') as HTMLSelectElement;
+        expect(filter).toBeTruthy();
+        filter.value = 'disabled';
+        filter.dispatchEvent(new win.Event('change', { bubbles: true }));
+        await flush();
+        expect(root.querySelectorAll('.ga-route-row').length).toBe(1);
+        expect(root.querySelector('.ga-route-row')?.textContent).toContain('disabled');
+
+        filter.value = 'enabled';
+        filter.dispatchEvent(new win.Event('change', { bubbles: true }));
+        await flush();
+        expect(root.querySelectorAll('.ga-route-row').length).toBe(1);
+        expect(root.querySelector('.ga-route-row')?.textContent).toContain('enabled');
+
+        filter.value = 'all';
+        filter.dispatchEvent(new win.Event('change', { bubbles: true }));
+        await flush();
+        expect(root.querySelectorAll('.ga-route-row').length).toBe(2);
+    });
+
     it('previews rule and route matches from the routes page', async () => {
         (root.querySelector('.ga-nav-item:nth-child(2)') as HTMLElement).click();
         await waitFor(() => !!root.querySelector('.ga-page-routes'));
@@ -464,6 +508,23 @@ describe('Microservice admin UI', () => {
         await waitFor(() => root.querySelectorAll('.ga-route-row').length === 1);
         expect(routes.length).toBe(1);
         expect(root.querySelector('.ga-route-row')?.textContent).toContain('/api/users');
+    });
+
+    it('duplicates a saved rule workflow from the list', async () => {
+        (root.querySelector('.ga-nav-item:nth-child(3)') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-page-rules'));
+        (root.querySelector('.ga-edit-rules') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-designer-page'));
+        (root.querySelector('.ga-rules-apply') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-workflow-row'));
+
+        const before = root.querySelectorAll('.ga-workflow-row').length;
+        (root.querySelector('.ga-duplicate-rule-workflow') as HTMLElement).click();
+        await waitFor(() => root.querySelectorAll('.ga-workflow-row').length === before + 1);
+        const rows = Array.from(root.querySelectorAll('.ga-workflow-row'));
+        expect(rows.length).toBe(before + 1);
+        expect(rows[rows.length - 1].textContent).toContain('copy');
+        expect(root.querySelector('.ga-status')?.textContent).toContain('duplicated');
     });
 
     it('lists saved rule workflows and allows reopening and deleting them', async () => {

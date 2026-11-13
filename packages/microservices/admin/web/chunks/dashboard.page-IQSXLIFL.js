@@ -1,4 +1,4 @@
-import{n as e}from"./chunk-TBV7WHO4.js";import{a as s,na as t}from"./chunk-SPMG5PJO.js";import"./chunk-U6UJE3IR.js";var a=class{constructor(c){this.state=c}};Reflect.metadata("design:paramtypes",[e])(a);s(a,[[t({selector:"gateway-admin-dashboard",template:`
+import{n as e}from"./chunk-4ZLLAW4Y.js";import{a as s,na as t}from"./chunk-SPMG5PJO.js";import"./chunk-U6UJE3IR.js";var a=class{constructor(c){this.state=c}};Reflect.metadata("design:paramtypes",[e])(a);s(a,[[t({selector:"gateway-admin-dashboard",template:`
     <section class="ga-page">
         <div class="ga-metrics">
             <article class="ga-metric">
@@ -34,7 +34,7 @@ import{n as e}from"./chunk-TBV7WHO4.js";import{a as s,na as t}from"./chunk-SPMG5
                 <div class="ga-compact-list">
                     <div class="ga-compact-row ga-service-row" v-for="service in state.serviceSummaries">
                         <code>{{service.name}}</code>
-                        <span class="ga-status-spacer"></span>
+                        <span class="ga-service-endpoints">{{state.endpointSummary(service.name) || state.t('card.noEndpoints')}}</span>
                         <span class="ga-pill is-on">{{service.enabled}}/{{service.routes}}</span>
                     </div>
                     <div class="ga-empty" v-if="!state.serviceSummaries.length">{{state.t('card.noServices')}}</div>

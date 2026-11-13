@@ -47,6 +47,22 @@ export interface GatewayAdminServiceSummary {
     enabled: number;
 }
 
+export interface GatewayAdminServiceEndpoint {
+    id: string;
+    address: string;
+    protocol?: string;
+    port?: number;
+    status?: string;
+    weight?: number;
+    version?: string;
+    tags?: string[];
+}
+
+export interface GatewayAdminServiceDetail {
+    name: string;
+    endpoints: GatewayAdminServiceEndpoint[];
+}
+
 /**
  * Shared console state (Angular service pattern).
  *
@@ -65,6 +81,7 @@ export class GatewayAdminState {
     theme: 'light' | 'dark' = 'light';
     error = '';
     routeQuery = '';
+    routeFilter: 'all' | 'enabled' | 'disabled' = 'all';
     routeEditorOpen = false;
     editingRoute: GatewayRouteOptions = {} as GatewayRouteOptions;
     editingIndex = -1;
@@ -90,6 +107,7 @@ export class GatewayAdminState {
     importText = '';
     importError = '';
     diagnostics?: GatewayRuntimeSnapshot;
+    serviceDetails: GatewayAdminServiceDetail[] = [];
     authEnabled = false;
     needsLogin = false;
     /** Set by the routed layout; the rules page calls it to open the designer. */
@@ -284,11 +302,31 @@ export class GatewayAdminState {
 
     get filteredRoutes(): GatewayRouteOptions[] {
         const query = String(this.routeQuery || '').trim().toLowerCase();
-        if (!query) {
-            return this.routes;
+        let list = this.routes;
+        if (this.routeFilter === 'enabled') {
+            list = list.filter(route => route.enabled !== false);
+        } else if (this.routeFilter === 'disabled') {
+            list = list.filter(route => route.enabled === false);
         }
-        return this.routes.filter(route => [route.path, route.service, route.targetUrl, route.targetPath]
+        if (!query) {
+            return list;
+        }
+        return list.filter(route => [route.path, route.service, route.targetUrl, route.targetPath]
             .some(value => String(value || '').toLowerCase().includes(query)));
+    }
+
+    readonly setRouteFilter = (event: Event): void => {
+        const self = this.selfRef ?? this;
+        const value = String((event.target as HTMLSelectElement).value);
+        self.routeFilter = value === 'enabled' || value === 'disabled' ? value : 'all';
+    };
+
+    endpointsFor(name: string): GatewayAdminServiceEndpoint[] {
+        return this.serviceDetails.find(service => service.name === name)?.endpoints ?? [];
+    }
+
+    endpointSummary(name: string): string {
+        return this.endpointsFor(name).map(endpoint => endpoint.address).join(', ');
     }
 
     get dashboardNavClass(): string {
@@ -387,6 +425,17 @@ export class GatewayAdminState {
 
     get openCircuitCount(): number {
         return this.diagnostics?.circuits?.filter(circuit => circuit.open).length ?? 0;
+    }
+
+    async loadServices(): Promise<void> {
+        const self = this.selfRef ?? this;
+        if (!self.http) {
+            return;
+        }
+        const response = await self.http.services();
+        if (response.ok) {
+            self.serviceDetails = Array.isArray(response.body) ? response.body : [];
+        }
     }
 
     async loadDiagnostics(): Promise<void> {
@@ -683,6 +732,31 @@ export class GatewayAdminState {
         }
     };
 
+    readonly duplicateRuleWorkflow = async (id: string): Promise<void> => {
+        const self = this.selfRef ?? this;
+        if (!self.http || !id) {
+            return;
+        }
+        const response = await self.http.getRule(id);
+        if (!response.ok) {
+            self.error = self.t('error.apiUnavailable', { status: response.status });
+            return;
+        }
+        const original = response.body as { id?: string; name?: string };
+        const nextId = `${original.id || id}_copy_${Date.now().toString(36)}`;
+        const saved = await self.http.saveRule({
+            ...(response.body as Record<string, unknown>),
+            id: nextId,
+            name: `${original.name || original.id || id} copy`
+        });
+        if (!saved.ok) {
+            self.error = self.t('error.apiUnavailable', { status: saved.status });
+            return;
+        }
+        await self.loadRuleWorkflows();
+        self.status = self.t('status.ruleDuplicated', { id: nextId });
+    };
+
     readonly applyRuleWorkflow = async (id: string): Promise<void> => {
         const self = this.selfRef ?? this;
         if (!self.http || !id) {
@@ -862,6 +936,7 @@ export class GatewayAdminState {
             self.routesDirty = false;
             void self.loadRuleWorkflows();
             void self.loadDiagnostics();
+            void self.loadServices();
             self.status = self.t('status.ready', { routes: self.routes.length, rules: self.rules.length });
         } catch (error) {
             self.status = self.t('status.offline');

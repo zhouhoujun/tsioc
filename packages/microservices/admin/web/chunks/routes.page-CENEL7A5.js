@@ -1,10 +1,17 @@
-import{n as s}from"./chunk-TBV7WHO4.js";import{a,na as e}from"./chunk-SPMG5PJO.js";import"./chunk-U6UJE3IR.js";var t=class{constructor(o){this.state=o}};Reflect.metadata("design:paramtypes",[s])(t);a(t,[[e({selector:"gateway-admin-routes",template:`
+import{n as s}from"./chunk-4ZLLAW4Y.js";import{a as e,na as a}from"./chunk-SPMG5PJO.js";import"./chunk-U6UJE3IR.js";var t=class{constructor(o){this.state=o}};Reflect.metadata("design:paramtypes",[s])(t);e(t,[[a({selector:"gateway-admin-routes",template:`
     <section class="ga-page ga-page-routes">
         <div class="ga-page-actions">
-            <div class="ga-search">
-                <span>\u2315</span>
-                <input [value]="state.routeQuery" placeholder="{{state.t('routes.filter')}}"
-                    @input="state.searchRoutes($event)" />
+            <div class="ga-filter-bar">
+                <div class="ga-search">
+                    <span>\u2315</span>
+                    <input [value]="state.routeQuery" placeholder="{{state.t('routes.filter')}}"
+                        @input="state.searchRoutes($event)" />
+                </div>
+                <select class="ga-route-filter" [value]="state.routeFilter" @change="state.setRouteFilter($event)">
+                    <option value="all">{{state.t('routes.filterAll', { count: state.routes.length })}}</option>
+                    <option value="enabled">{{state.t('routes.filterEnabled')}}</option>
+                    <option value="disabled">{{state.t('routes.filterDisabled')}}</option>
+                </select>
             </div>
             <div class="ga-actions">
                 <span class="ga-dirty" v-if="state.routesDirty">{{state.t('routes.unsaved')}}</span>
