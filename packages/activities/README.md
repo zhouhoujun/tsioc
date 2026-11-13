@@ -466,10 +466,12 @@ Features:
   it stays out of the initial browser payload;
 - undo/redo, pointer pan, Ctrl+wheel zoom-at-cursor, fit-to-view, auto layout,
   duplicate (`Ctrl+D`), JSON import/export,
-- Node-RED-style base components: inject, trigger, function, template, JSON,
-  CSV, change, statistics, merge, split, map/filter/sort/range/batch,
-  event-emit/event-wait, command, condition/switch, parallel/join, loop,
-  delay, log, HTTP request, try/catch, sub workflow, comment,
+- Node-RED-style base components: inject (manual / interval / event), debug,
+  trigger, function, template, JSON, CSV, XML, HTML, change, statistics,
+  merge, split/map/filter/sort/range/batch/scale, event-emit/event-wait,
+  command, condition/switch/router, parallel/join, loop (sub-workflow repeat),
+  delay, log, HTTP request, complete/catch/status, link/junction/sequence,
+  try/catch, sub workflow, comment,
 - opt-in autosave (`autosave`, `autosaveDelay`) with Saved / Unsaved / Saving /
   Save failed state in the toolbar; manual save and autosave share the same store,
 - global keyboard shortcuts (`Ctrl+S` save, `Ctrl+O` library, `Ctrl+Enter` run,
@@ -595,6 +597,32 @@ are stored as JSON with indexed summary columns, so library queries stay fast.
 When Node's built-in `node:sqlite` is unavailable the server falls back to the
 in-memory store.
 
+### Inject triggers and scheduling
+
+Inject nodes support `manual`, `interval` and `event` triggering. The editor runs
+one cycle by default; hosts can schedule interval/once triggers through the
+service:
+
+```typescript
+const handle = service.startSchedule(definition, {
+    context: {},
+    onResult: result => console.log(result.success)
+});
+// later
+handle.stop();
+```
+
+`interval` uses `interval` + `intervalUnit` + `repeatCount` (0 runs until
+stopped). `event` injection waits on the host event bus (`context.eventBus` or
+`context.waitEvent`) before emitting the configured payload.
+
+### Property forms
+
+Node settings are rendered by the shared dynamic form. Object-valued JSON fields
+default to key/value rows with an explicit JSON toggle; lists (rules, arguments,
+columns) use add/remove rows. Field metadata supplies labels, hints, units,
+conditional visibility and validation rules.
+
 ### Workflow plugins
 
 `WorkflowPluginRegistry` installs custom nodes, services and lifecycle hooks:
@@ -631,7 +659,7 @@ POST   /api/plugins/:id/install
 DELETE /api/plugins/:id
 ```
 
-Bundled protocol plugins: `mqtt`, `redis`, `nats`, `coap`. Install them on
+Bundled protocol plugins: `mqtt`, `redis`, `nats`, `coap`, `websocket`, `tcp`, `udp`. Install them on
 demand (HTTP API or `WORKFLOW_PLUGINS=mqtt,redis npm --prefix packages/workflow-admin start`) so
 their optional client libraries are only loaded when used. Installed
 node manifests are returned to the designer, which adds them to its palette;
