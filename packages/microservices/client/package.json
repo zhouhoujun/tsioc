@@ -39,7 +39,9 @@
     "@tsdi/common": "6.0.31",
     "@tsdi/core": "6.0.31",
     "@tsdi/discovery": "6.0.31",
-    "@tsdi/ioc": "6.0.31"
+    "@tsdi/ioc": "6.0.31",
+    "@tsdi/metrics": "6.0.31",
+    "@tsdi/tracing": "6.0.31"
   },
   "directories": {
     "lib": "lib",

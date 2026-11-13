@@ -84,6 +84,12 @@
 - 统一 `@tsdi/http` 为真实包名 `@tsdi/http-microservice`。
 - 新增 `scripts/check-package-deps.mjs` 并接入 `agents-gate.sh` 的 `package-deps` stage，阻止 monorepo-only 依赖再次出现。
 
+第十一批（客户端观测）：
+
+- `AbstractClient` 自动记录 `client_requests_total`、`client_request_duration_ms`、`client_errors_total`（error_type）。
+- 客户端请求创建 CLIENT span，注入 W3C traceparent 到出站 headers；失败记录 span error。
+- 路径按数字/UUID 归一化，避免客户端指标高基数。
+
 
 ---
 
