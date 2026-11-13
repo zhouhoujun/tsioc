@@ -3737,3 +3737,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **TUI `/web` 上翻跳底**：`/web` 打开 overlay 前会先隐藏一行 chrome（transcript 160→159），下一帧才出现 `dialog` region；旧逻辑只在 `dialogRegion` 已存在时按 chrome 帧保留阅读行，首帧因内容长度变化被 `scrollBox` 归到底部。修复：`transcript.length < previousContentRows` 也视为 chrome 帧，保留距底 offset；再打开 dialog 时继续保留。
 - **回归**：`components-console` 新增 `a chrome row disappearing before an overlay keeps the reading row`（逐帧 shrink→dialog，offset 保持 1）；真实组件探针 `/web` 在 scroll 1/3/10、18/24 行终端下 after=before，`following=false`。
 - **验证**：components-console 117、components-html、agent-ui 全绿；tsc-agent-ui 0；build:web 成功；source-size/diff-check OK。
+- 节点属性与动态表单增强（2026-11-13）：
+  - common dynamic-form 增加 color/regex/minItems/maxItems 校验；节点外观新增 Icon/Color（颜色十六进制校验、图标长度限制），写入 node.style。
+  - 修复 change 节点多规则执行时把上一规则返回值当上下文的问题；列表字段变更按数组写回 config。
+  - 动态表单列表/分组样式与节点设置继续完善；activities 280 passing，common 75 passing。

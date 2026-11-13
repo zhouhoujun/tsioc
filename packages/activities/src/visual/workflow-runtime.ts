@@ -670,16 +670,33 @@ export async function executeVisualNode(
         }
         case 'change': {
             try {
-                const value = coerceJson(config.value);
-                const changed = changeContextValue(
-                    context,
-                    config.field,
-                    String(config.action || 'set'),
-                    value
-                );
+                const rules = Array.isArray(config.rules) && config.rules.length
+                    ? config.rules
+                    : [{ action: config.action, field: config.field, value: config.value }];
+                const applied: string[] = [];
+                for (const rule of rules) {
+                    if (!rule?.field) {
+                        continue;
+                    }
+                    // Mutate the context in place so later rules keep operating
+                    // on the whole message instead of the previous value.
+                    changeContextValue(
+                        context,
+                        rule.field,
+                        String(rule.action || 'set'),
+                        coerceJson(rule.value)
+                    );
+                    applied.push(rule.field);
+                }
                 return {
                     success: true,
-                    data: { nodeId: node.id, field: config.field, value: changed, changed: true }
+                    data: {
+                        nodeId: node.id,
+                        field: rules[0]?.field,
+                        value: context,
+                        changed: applied.length > 0,
+                        rules: applied
+                    }
                 };
             } catch (error) {
                 return { success: false, error: error as Error, data: { nodeId: node.id } };

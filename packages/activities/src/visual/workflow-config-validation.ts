@@ -74,6 +74,38 @@ export function validateWorkflowConfigs(
                 message: issue.message
             });
         }
+        for (const field of fields) {
+            if (!field.itemFields?.length) {
+                continue;
+            }
+            const items = Array.isArray(values[field.key]) ? values[field.key] : [];
+            if (field.required && !items.length) {
+                issues.push({
+                    nodeId: node.id,
+                    nodeName: node.name || node.id,
+                    fieldKey: field.key,
+                    label: field.label || field.key,
+                    message: 'Required'
+                });
+                continue;
+            }
+            (items as any[]).forEach((item: any, index: number) => {
+                const visible = field.itemFields!.filter(child =>
+                    !child.visibleWhen || conditionMatches(item?.[child.visibleWhen.key], child.visibleWhen)
+                );
+                const nested = validateDynamicFormValues(visible, item || {});
+                for (const issue of nested.issues) {
+                    const childLabel = visible.find(child => child.key === issue.key)?.label || issue.key;
+                    issues.push({
+                        nodeId: node.id,
+                        nodeName: node.name || node.id,
+                        fieldKey: `${field.key}[${index}].${issue.key}`,
+                        label: `${field.label || field.key} ${index + 1} · ${childLabel}`,
+                        message: issue.message
+                    });
+                }
+            });
+        }
     }
     return issues;
 }

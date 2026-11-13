@@ -28,7 +28,8 @@ export type DynamicFormFieldType =
     | 'month'
     | 'week'
     | 'color'
-    | 'hidden';
+    | 'hidden'
+    | 'list';
 
 export interface DynamicFormOption {
     label: string;
@@ -48,7 +49,11 @@ export type DynamicFormRuleType =
     | 'pattern'
     | 'json'
     | 'number'
-    | 'integer';
+    | 'integer'
+    | 'color'
+    | 'regex'
+    | 'minItems'
+    | 'maxItems';
 
 export interface DynamicFormRule {
     type: DynamicFormRuleType;
@@ -85,6 +90,12 @@ export interface DynamicFormField {
     unit?: string;
     /** Grid width inside its section; short controls default to half width. */
     span?: 'full' | 'half';
+    /** Item schema for list/array fields. */
+    itemFields?: DynamicFormField[];
+    addLabel?: string;
+    removeLabel?: string;
+    minItems?: number;
+    maxItems?: number;
     minLength?: number;
     maxLength?: number;
     pattern?: string;

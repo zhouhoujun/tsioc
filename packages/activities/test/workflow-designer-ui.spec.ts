@@ -260,6 +260,26 @@ describe('Workflow Designer UI', () => {
         expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name).toBe('重命名任务');
     });
 
+    it('edits node icon and color through the inspector appearance section', async () => {
+        ref.instance.designer.selectNode('task_1');
+        await flush();
+
+        const icon = root.querySelector('.workflow-inspector-icon') as HTMLInputElement;
+        const color = root.querySelector('.workflow-inspector-color') as HTMLInputElement;
+        expect(icon).toBeTruthy();
+        expect(color).toBeTruthy();
+
+        icon.value = '★';
+        icon.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        color.value = '#112233';
+        color.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+
+        const node = ref.instance.designer.nodes.find(item => item.id === 'task_1');
+        expect(node?.style?.icon).toBe('★');
+        expect(node?.style?.backgroundColor).toBe('#112233');
+    });
+
     it('validates inspector input through the forms module before applying it', async () => {
         ref.instance.designer.selectNode('task_1');
         await flush();
@@ -316,6 +336,25 @@ describe('Workflow Designer UI', () => {
             ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.url === 'https://example.com/api'
         );
         expect(root.querySelector('.workflow-field[data-field-key="url"] .workflow-field-error')).toBeFalsy();
+    });
+
+    it('edits list fields declared by node metadata', async () => {
+        const node = ref.instance.designer.addNode('change', { x: 40, y: 40 })!;
+        await flush();
+        ref.instance.designer.selectNode(node.id);
+        await flush();
+
+        expect(root.querySelector('.workflow-field[data-field-key="rules"] .workflow-list')).toBeTruthy();
+        (root.querySelector('.workflow-field[data-field-key="rules"] .workflow-list-add') as any).click();
+        await flush();
+        expect(root.querySelectorAll('.workflow-field[data-field-key="rules"] .workflow-list-row').length).toBe(1);
+
+        const field = root.querySelector('.workflow-field[data-field-key="rules"] .workflow-list-row [data-field-key="field"] input') as any;
+        expect(field).toBeTruthy();
+        field.value = 'variables.name';
+        field.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        expect(ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.rules?.[0]?.field).toBe('variables.name');
     });
 
     it('renders unit suffixes from node field metadata', async () => {

@@ -1,6 +1,7 @@
 import {
     IVisualWorkflowNode,
     NodeExecutionStatus,
+    WorkflowConfigField,
     WorkflowConfigFieldCondition,
     WorkflowCanvasEdgeView,
     WorkflowCanvasModel,
@@ -309,6 +310,8 @@ export function buildWorkflowInspectorModel(
             nodeId: '',
             name: '',
             description: '',
+            icon: '',
+            color: '',
             typeLabel: '',
             status: 'idle',
             statusLabel: '',
@@ -327,8 +330,8 @@ export function buildWorkflowInspectorModel(
             ? node.config[field.key]
             : field.defaultValue;
     });
-    const fields: WorkflowInspectorFieldView[] = (definition?.fields || []).map(field => {
-        const value = values[field.key];
+    const mapField = (field: WorkflowConfigField, nested = false): WorkflowInspectorFieldView => {
+        const value = nested ? undefined : values[field.key];
         return {
             key: field.key,
             label: translateWorkflow(
@@ -367,9 +370,9 @@ export function buildWorkflowInspectorModel(
             group: field.group
                 ? translateWorkflow(translator, locale, `workflow.group.${groupSlug(field.group)}`, field.group)
                 : '',
-            visible: field.visibleWhen
-                ? fieldConditionMatches(values[field.visibleWhen.key], field.visibleWhen)
-                : true,
+            visible: nested || !field.visibleWhen
+                ? true
+                : fieldConditionMatches(values[field.visibleWhen.key], field.visibleWhen),
             min: field.min,
             max: field.max,
             step: field.step,
@@ -387,10 +390,27 @@ export function buildWorkflowInspectorModel(
             inputClass: field.inputClass,
             fieldClass: field.fieldClass,
             language: field.language,
+            itemFields: field.itemFields?.map(child => mapField(child, true)),
+            addLabel: translateWorkflow(
+                translator,
+                locale,
+                'workflow.ui.addItem',
+                field.addLabel || 'Add'
+            ),
+            removeLabel: translateWorkflow(
+                translator,
+                locale,
+                'workflow.ui.removeItem',
+                field.removeLabel || 'Remove'
+            ),
+            minItems: field.minItems,
+            maxItems: field.maxItems,
+            visibleWhen: field.visibleWhen,
             hasDefault: field.defaultValue !== undefined,
             resetValue: fieldResetValue(field)
         };
-    });
+    };
+    const fields = (definition?.fields || []).map(field => mapField(field));
     let resultText = '';
     if (execution?.result?.data !== undefined) {
         try {
@@ -405,6 +425,8 @@ export function buildWorkflowInspectorModel(
         nodeId: node.id,
         name: node.name,
         description: node.description || '',
+        icon: node.style?.icon || definition?.icon || '◆',
+        color: node.style?.backgroundColor || definition?.color || '#64748b',
         typeLabel: registry.nodeLabel(node.type, locale, translator),
         status,
         statusLabel: nodeStatusLabel(status, locale, translator),

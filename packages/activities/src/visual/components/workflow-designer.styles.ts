@@ -2012,6 +2012,65 @@ html[data-theme="high-contrast"] li.CodeMirror-hint-active {
 .workflow-designer[data-theme="high-contrast"] .workspace-collapse:hover {
     color: var(--wf-theme-primary);
 }
+
+.workflow-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.workflow-list-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 8px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.workflow-list-fields {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 8px;
+    min-width: 0;
+}
+
+.workflow-list-field {
+    min-width: 0;
+}
+
+.workflow-list-remove {
+    flex: 0 0 auto;
+    border: 0;
+    background: transparent;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 4px;
+}
+
+.workflow-list-remove:hover {
+    color: #dc2626;
+}
+
+.workflow-list-add {
+    align-self: flex-start;
+    border: 1px dashed #cbd5e1;
+    border-radius: 6px;
+    background: transparent;
+    color: #2563eb;
+    font-size: 11px;
+    padding: 4px 8px;
+    cursor: pointer;
+}
+
+.workflow-list-add:hover {
+    border-color: #2563eb;
+    background: #eff6ff;
+}
+
 `;
 
 /**

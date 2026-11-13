@@ -184,6 +184,18 @@ describe('Workflow data & trigger nodes', () => {
         expect(states.debug_3.result?.data?.message).toBe('7');
     });
 
+    it('applies multiple change rules in order', async () => {
+        const result = await service.execute(chain([
+            { type: 'change', config: { rules: [
+                { action: 'set', field: 'variables.name', value: 'Ada' },
+                { action: 'append', field: 'variables.tags', value: 'admin' }
+            ] } }
+        ]), {});
+        const state = result.data?.executionState?.nodeStates.change_0;
+        expect(result.success).toBe(true);
+        expect(state?.result?.data?.rules).toEqual(['variables.name', 'variables.tags']);
+    });
+
     it('runs generic link, HTML and XML nodes', async () => {
         const link = await service.execute(chain([
             { type: 'inject', config: { payload: { value: 1 } } },

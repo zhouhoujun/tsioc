@@ -980,7 +980,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     };
 
     readonly inspectorChange = (key: string, value: any, type: string, nodeId?: string): void => {
-        const node = nodeId
+                const node = nodeId
             ? this.designer.nodes.find(item => item.id === nodeId)
             : this.designer.selectedNode;
         if (!node) {
@@ -993,6 +993,31 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         }
         if (key === 'description') {
             this.designer.updateNode(node.id, { description: String(value) });
+            this.notifyChange();
+            return;
+        }
+        if (key === 'icon' || key === 'color') {
+            const style = { ...(node.style || {}) };
+            const next = String(value ?? '').trim();
+            if (key === 'icon') {
+                if (next) {
+                    style.icon = next;
+                } else {
+                    delete style.icon;
+                }
+            } else if (next) {
+                style.backgroundColor = next;
+            } else {
+                delete style.backgroundColor;
+            }
+            this.designer.updateNode(node.id, { style });
+            this.notifyChange();
+            return;
+        }
+        if (type === 'list') {
+            this.designer.updateNodeConfig(node.id, {
+                [key]: Array.isArray(value) ? value : []
+            });
             this.notifyChange();
             return;
         }
@@ -1016,6 +1041,8 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             }
         } else if (type === 'boolean') {
             parsed = !!value;
+        } else if (type === 'list') {
+            parsed = Array.isArray(value) ? value : [];
         } else {
             parsed = String(value ?? '');
         }

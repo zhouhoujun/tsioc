@@ -2,6 +2,7 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { DynamicFormComponent } from '../dynamic-form';
 import { buildDynamicValidators, dynamicFormMessage } from '../dynamic-form';
+import { FormControl } from '@tsdi/components/forms';
 
 async function flush(): Promise<void> {
     for (let index = 0; index < 4; index++) {
@@ -54,6 +55,23 @@ export class DynamicFormTest {
             config: { ok: true },
             enabled: true
         });
+    }
+
+    @Test('validates colors, regular expressions and list item counts')
+    validateExtraRules() {
+        const errors = (field: any, value: any): any[] => {
+            const control = new FormControl(value);
+            return buildDynamicValidators(field).validators
+                .map(validator => validator(control))
+                .filter(Boolean);
+        };
+
+        expect(errors({ key: 'color', type: 'color' }, '#2563eb')).toEqual([]);
+        expect(errors({ key: 'color', type: 'color' }, 'blue')).toEqual([{ color: true }]);
+        expect(errors({ key: 'pattern', type: 'text', rules: [{ type: 'regex' }] }, '^[a-z]+$')).toEqual([]);
+        expect(errors({ key: 'pattern', type: 'text', rules: [{ type: 'regex' }] }, '[')).toEqual([{ regex: true }]);
+        expect(errors({ key: 'items', type: 'list', minItems: 2 }, ['a'])).toEqual([{ minItems: { required: 2, actual: 1 } }]);
+        expect(errors({ key: 'items', type: 'list', maxItems: 1 }, ['a', 'b'])).toEqual([{ maxItems: { required: 1, actual: 2 } }]);
     }
 
     @Test('applies validation messages from rules, fields and the form config')

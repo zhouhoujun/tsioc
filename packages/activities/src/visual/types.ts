@@ -586,12 +586,14 @@ export type WorkflowConfigFieldCondition = DynamicFormCondition;
  * 节点配置字段定义
  * Node config field definition.
  */
-export interface WorkflowConfigField extends Omit<DynamicFormField, 'type' | 'label' | 'options' | 'visibleWhen' | 'rules'> {
+export interface WorkflowConfigField extends Omit<DynamicFormField, 'type' | 'label' | 'options' | 'visibleWhen' | 'rules' | 'itemFields'> {
     type: WorkflowConfigFieldType;
     label: string;
     /** Localized option labels; values flow to the dynamic form unchanged. */
     options?: DynamicFormOption[];
     rules?: Array<WorkflowConfigRule | WorkflowConfigRuleType>;
+    /** Nested item schema for list fields. */
+    itemFields?: WorkflowConfigField[];
     /** Group header shown above this field in the inspector. */
     group?: string;
     /** Only render the field when the referenced config value matches. */
@@ -843,6 +845,12 @@ export interface WorkflowInspectorFieldView {
     pattern?: string;
     rules?: Array<WorkflowConfigRule | WorkflowConfigRuleType>;
     errorMessages?: Record<string, string>;
+    itemFields?: WorkflowInspectorFieldView[];
+    addLabel?: string;
+    removeLabel?: string;
+    minItems?: number;
+    maxItems?: number;
+    visibleWhen?: WorkflowConfigFieldCondition;
     inputClass?: string;
     fieldClass?: string;
     language?: string;
@@ -860,6 +868,8 @@ export interface WorkflowInspectorModel {
     nodeId: string;
     name: string;
     description: string;
+    icon: string;
+    color: string;
     typeLabel: string;
     status: NodeExecutionStatus;
     statusLabel: string;

@@ -262,6 +262,65 @@ export const DYNAMIC_FORM_CSS = `
 .df-btn-primary:hover {
     background: #1d4ed8;
 }
+
+.df-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.df-list-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 8px;
+    border: 1px dashed var(--df-border);
+    border-radius: 8px;
+    background: var(--df-bg);
+}
+
+.df-list-fields {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 8px;
+    min-width: 0;
+}
+
+.df-list-field {
+    min-width: 0;
+}
+
+.df-list-remove {
+    flex: 0 0 auto;
+    border: 0;
+    background: transparent;
+    color: var(--df-text-hint);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 4px;
+}
+
+.df-list-remove:hover {
+    color: var(--df-danger);
+}
+
+.df-list-add {
+    align-self: flex-start;
+    border: 1px dashed var(--df-border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--df-primary);
+    font-size: 11px;
+    padding: 4px 8px;
+    cursor: pointer;
+}
+
+.df-list-add:hover {
+    border-color: var(--df-primary);
+    background: var(--df-primary-soft);
+}
+
 `;
 
 export function installDynamicFormStyles(doc?: Document | null): void {

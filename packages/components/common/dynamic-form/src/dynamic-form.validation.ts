@@ -21,7 +21,11 @@ export const DEFAULT_DYNAMIC_FORM_MESSAGES: Record<string, string> = {
     pattern: 'Invalid format',
     json: 'Invalid JSON',
     number: 'Must be a number',
-    integer: 'Must be an integer'
+    integer: 'Must be an integer',
+    color: 'Use a hex color such as #2563eb',
+    regex: 'Invalid regular expression',
+    minItems: 'Too few items',
+    maxItems: 'Too many items'
 };
 
 function isEmpty(value: any): boolean {
@@ -38,6 +42,43 @@ function integerValidator(control: AbstractControl): DynamicFormErrorMap {
     }
     const value = Number(control.value);
     return Number.isFinite(value) && Math.floor(value) === value ? null : { integer: true };
+}
+
+function colorValidator(control: AbstractControl): DynamicFormErrorMap {
+    if (isEmpty(control.value)) {
+        return null;
+    }
+    return /^#(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(String(control.value))
+        ? null
+        : { color: true };
+}
+
+function regexValidator(control: AbstractControl): DynamicFormErrorMap {
+    if (isEmpty(control.value)) {
+        return null;
+    }
+    try {
+        new RegExp(String(control.value));
+        return null;
+    } catch {
+        return { regex: true };
+    }
+}
+
+function itemsValidator(kind: 'minItems' | 'maxItems', limit: number): ValidatorFn {
+    return (control: AbstractControl): DynamicFormErrorMap => {
+        if (!Array.isArray(control.value)) {
+            return null;
+        }
+        const count = control.value.length;
+        if (kind === 'minItems' && count < limit) {
+            return { minItems: { required: limit, actual: count } };
+        }
+        if (kind === 'maxItems' && count > limit) {
+            return { maxItems: { required: limit, actual: count } };
+        }
+        return null;
+    };
 }
 
 function urlValidator(control: AbstractControl): DynamicFormErrorMap {
@@ -91,6 +132,9 @@ function normalizedRules(field: DynamicFormField): DynamicFormRule[] {
     if (field.type === 'json') {
         push({ type: 'json' });
     }
+    if (field.type === 'color') {
+        push({ type: 'color' });
+    }
     if (field.min !== undefined) {
         push({ type: 'min', value: field.min });
     }
@@ -105,6 +149,12 @@ function normalizedRules(field: DynamicFormField): DynamicFormRule[] {
     }
     if (field.pattern) {
         push({ type: 'pattern', value: field.pattern });
+    }
+    if (field.minItems !== undefined) {
+        push({ type: 'minItems', value: field.minItems });
+    }
+    if (field.maxItems !== undefined) {
+        push({ type: 'maxItems', value: field.maxItems });
     }
     return rules;
 }
@@ -135,6 +185,14 @@ function validatorFor(rule: DynamicFormRule): ValidatorFn | undefined {
             }
         case 'json':
             return jsonValidator;
+        case 'color':
+            return colorValidator;
+        case 'regex':
+            return regexValidator;
+        case 'minItems':
+            return itemsValidator('minItems', Number(rule.value));
+        case 'maxItems':
+            return itemsValidator('maxItems', Number(rule.value));
         case 'number':
             return numberValidator;
         case 'integer':

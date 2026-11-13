@@ -15,6 +15,8 @@ const EMPTY_INSPECTOR: WorkflowInspectorModel = {
     nodeId: '',
     name: '',
     description: '',
+    icon: '',
+    color: '',
     typeLabel: '',
     status: 'idle',
     statusLabel: '',
@@ -32,6 +34,8 @@ function snapshotSignature(model: WorkflowInspectorModel): string {
         model.nodeId,
         model.name,
         model.description,
+        model.icon,
+        model.color,
         model.typeLabel,
         model.status,
         model.statusLabel,
@@ -145,6 +149,9 @@ export class WorkflowInspectorComponent implements OnDestroy {
     get emptyLabel(): string { return this.t('inspectorEmpty', 'Select a node on the canvas to edit its properties.'); }
     get nameLabel(): string { return this.t('name', 'Name'); }
     get descriptionLabel(): string { return this.t('description', 'Description'); }
+    get appearanceLabel(): string { return this.t('appearance', 'Appearance'); }
+    get iconLabel(): string { return this.t('icon', 'Icon'); }
+    get colorLabel(): string { return this.t('color', 'Color'); }
     get resultLabel(): string { return this.t('latestOutput', 'Latest output'); }
     get restoreLabel(): string { return this.t('restoreDefaults', 'Reset'); }
     get resetFieldLabel(): string { return this.t('resetField', 'Reset to default'); }
@@ -181,44 +188,74 @@ export class WorkflowInspectorComponent implements OnDestroy {
             placeholder: this.descriptionPlaceholder,
             inputClass: 'workflow-inspector-description'
         });
+        fields.push({
+            key: 'icon',
+            type: 'text',
+            label: this.iconLabel,
+            group: this.appearanceLabel,
+            maxLength: 4,
+            defaultValue: '◆',
+            placeholder: '◆',
+            inputClass: 'workflow-inspector-icon'
+        });
+        fields.push({
+            key: 'color',
+            type: 'color',
+            label: this.colorLabel,
+            group: this.appearanceLabel,
+            defaultValue: '#64748b',
+            inputClass: 'workflow-inspector-color'
+        });
         this._model.fields.forEach(field => {
-            fields.push({
-                key: field.key,
-                type: this.dynamicType(field),
-                label: field.label,
-                placeholder: field.placeholder,
-                description: field.description,
-                group: field.group,
-                options: field.options.map(option => ({ label: option.label, value: option.value })),
-                defaultValue: field.hasDefault ? field.resetValue : undefined,
-                rows: field.rows,
-                min: field.min,
-                max: field.max,
-                step: field.step,
-                unit: field.unit,
-                span: field.span,
-                minLength: field.minLength,
-                maxLength: field.maxLength,
-                required: field.required,
-                readonly: field.readonly,
-                disabled: field.disabled,
-                pattern: field.pattern,
-                rules: field.rules,
-                errorMessages: field.errorMessages,
-                inputClass: field.inputClass,
-                fieldClass: field.fieldClass,
-                language: field.language,
-                suggestions: this.codeSuggestions,
-                hidden: field.visible === false
-            });
+            fields.push(this.toDynamicField(field));
         });
         return { fields, defaultGroupLabel };
+    }
+
+    protected toDynamicField(field: WorkflowInspectorFieldView): DynamicFormField {
+        return {
+            key: field.key,
+            type: this.dynamicType(field),
+            label: field.label,
+            placeholder: field.placeholder,
+            description: field.description,
+            group: field.group,
+            options: field.options.map(option => ({ label: option.label, value: option.value })),
+            defaultValue: field.hasDefault ? field.resetValue : undefined,
+            rows: field.rows,
+            min: field.min,
+            max: field.max,
+            step: field.step,
+            unit: field.unit,
+            span: field.span,
+            minLength: field.minLength,
+            maxLength: field.maxLength,
+            required: field.required,
+            readonly: field.readonly,
+            disabled: field.disabled,
+            pattern: field.pattern,
+            rules: field.rules,
+            errorMessages: field.errorMessages,
+            itemFields: field.itemFields?.map(child => this.toDynamicField(child)),
+            addLabel: field.addLabel,
+            removeLabel: field.removeLabel,
+            minItems: field.minItems,
+            maxItems: field.maxItems,
+            visibleWhen: field.visibleWhen,
+            inputClass: field.inputClass,
+            fieldClass: field.fieldClass,
+            language: field.language,
+            suggestions: this.codeSuggestions,
+            hidden: field.visible === false
+        };
     }
 
     get formValue(): Record<string, any> {
         const value: Record<string, any> = {
             name: this._model.name,
-            description: this._model.description
+            description: this._model.description,
+            icon: this._model.icon,
+            color: this._model.color
         };
         this._model.fields.forEach(field => {
             value[field.key] = field.type === 'boolean'
@@ -248,7 +285,7 @@ export class WorkflowInspectorComponent implements OnDestroy {
     }
 
     readonly formChange = (change: DynamicFormChange): void => {
-        if (!change.valid) {
+                if (!change.valid) {
             this.flushPendingChange();
             return;
         }
@@ -298,6 +335,10 @@ export class WorkflowInspectorComponent implements OnDestroy {
                 return 'number';
             case 'json':
                 return 'json';
+            case 'list':
+                return 'list';
+            case 'list':
+                return 'list';
             case 'code':
                 return 'code';
             default:

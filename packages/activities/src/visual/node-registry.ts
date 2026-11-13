@@ -611,20 +611,28 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         ],
         fields: [
             configField({
-                key: 'action',
-                label: 'Action',
-                type: 'select',
-                defaultValue: 'set',
-                options: [
-                    { label: 'Set', value: 'set' },
-                    { label: 'Delete', value: 'delete' },
-                    { label: 'Append', value: 'append' }
+                key: 'rules',
+                label: 'Rules',
+                type: 'list',
+                addLabel: '+ Add rule',
+                itemFields: [
+                    configField({
+                        key: 'action',
+                        label: 'Action',
+                        type: 'select',
+                        defaultValue: 'set',
+                        options: [
+                            { label: 'Set', value: 'set' },
+                            { label: 'Delete', value: 'delete' },
+                            { label: 'Append', value: 'append' }
+                        ]
+                    }),
+                    configField({ key: 'field', label: 'Field', type: 'text', required: true, pattern: VALUE_PATH_PATTERN, placeholder: 'variables.name', description: 'Context path to modify.' }),
+                    configField({ key: 'value', label: 'Value', type: 'json', visibleWhen: { key: 'action', notEquals: 'delete' }, description: 'New value or item to append.' })
                 ]
-            }),
-            configField({ key: 'field', label: 'Field', type: 'text', required: true, pattern: VALUE_PATH_PATTERN, placeholder: 'variables.name', description: 'Context path to modify.',}),
-            configField({ key: 'value', label: 'Value', type: 'json', visibleWhen: { key: 'action', notEquals: 'delete' }, description: 'New value or item to append.',})
+            })
         ],
-        defaultConfig: { action: 'set' }
+        defaultConfig: { rules: [] }
     },
     {
         type: 'statistics',

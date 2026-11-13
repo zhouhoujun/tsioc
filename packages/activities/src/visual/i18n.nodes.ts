@@ -300,7 +300,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "change": {
                 "action": "Action",
                 "field": "Field",
-                "value": "Value"
+                "value": "Value",
+                "rules": "Rules"
             },
             "statistics": {
                 "field": "Array field",
@@ -1059,7 +1060,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "change": {
                 "action": "操作",
                 "field": "字段",
-                "value": "值"
+                "value": "值",
+                "rules": "规则"
             },
             "statistics": {
                 "field": "数组字段",

@@ -141,6 +141,45 @@ let dynamicFormSequence = 0;
                         aria-required="{{isRequired(field) ? 'true' : 'false'}}"
                         aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
                         @input="changeText(field, $event)" @blur="blurField(field)"></textarea>
+                    <div v-if="isListInput(field)" [class]="listClass()">
+                        <div [class]="listRowClass()" v-for="(item, index) in listItems(field)">
+                            <div [class]="listFieldsClass()">
+                                <div v-for="child in field.itemFields" v-if="isListItemVisible(child, item)">
+                                    <div [class]="listItemFieldClass(child)" data-field-key="{{child.key}}">
+                                        <label [class]="labelClass()">{{fieldLabel(child)}}<span [class]="requiredClass()" v-if="isRequired(child)">*</span></label>
+                                        <input v-if="isTextInput(child) || isNumberInput(child)" [class]="inputClass(child)"
+                                            type="{{htmlType(child)}}"
+                                            [value]="listItemValue(item, child)"
+                                            [placeholder]="child.placeholder || ''"
+                                            [min]="child.min" [max]="child.max" [step]="child.step"
+                                            @input="changeListItem(field, listIndex(field, item), child, $event)" />
+                                        <textarea v-if="isTextareaInput(child)" [class]="textareaClass(child)"
+                                            [value]="listItemValue(item, child)"
+                                            [rows]="child.rows || 2"
+                                            [placeholder]="child.placeholder || ''"
+                                            @input="changeListItem(field, listIndex(field, item), child, $event)"></textarea>
+                                        <label v-if="isBooleanInput(child)" [class]="checkboxRowClass()">
+                                            <input type="checkbox" [checked]="listItemChecked(item, child)"
+                                                @change="changeListItem(field, listIndex(field, item), child, $event)" />
+                                        </label>
+                                        <div v-if="isOptionInput(child)" [class]="optionsClass()">
+                                            <label v-for="option in child.options" data-option-value="{{option.value}}"
+                                                [class]="optionClass(child, listItemValue(item, child))">
+                                                <input type="radio" name="{{formId}}-{{field.key}}-{{index}}-{{child.key}}"
+                                                    [value]="option.value"
+                                                    [checked]="sameOptionValue(option.value, listItemValue(item, child))"
+                                                    @change="changeListItemOption(field, listIndex(field, item), child, option.value)" />
+                                                <span>{{option.label}}</span>
+                                            </label>
+                                        </div>
+                                        <div [class]="errorClass()" v-if="listItemError(child, item)">{{listItemError(child, item)}}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button [class]="listRemoveClass()" type="button" @click="removeListItem(field, listIndex(field, item))">{{field.removeLabel || '✕'}}</button>
+                        </div>
+                        <button [class]="listAddClass()" type="button" @click="addListItem(field)">{{field.addLabel || '+ Add'}}</button>
+                    </div>
                     <input v-if="field.type === 'hidden'" type="hidden" [value]="fieldValue(field)" />
                     <div [class]="errorClass()" v-if="errorFor(field)">{{errorFor(field)}}</div>
                     <div [class]="hintClass()" v-if="field.description && !isBooleanInput(field)">{{field.description}}</div>
@@ -407,7 +446,7 @@ export class DynamicFormComponent implements OnDestroy {
 
     protected updateValue(field: DynamicFormField, raw: any): void {
         const control = this.form?.get(field.key);
-        if (!control) {
+                if (!control) {
             return;
         }
         control.setValue(this.coerceValue(field, raw));
@@ -425,6 +464,98 @@ export class DynamicFormComponent implements OnDestroy {
         this.changeAction?.(change);
         this.validityAction?.(!!this.form?.valid, this.form?.errors || null);
     }
+
+    isListInput(field: DynamicFormField): boolean {
+        return field.type === 'list';
+    }
+
+    listIndex(field: DynamicFormField, item: any): number {
+        const index = this.listItems(field).indexOf(item);
+        return index < 0 ? 0 : index;
+    }
+
+    listItems(field: DynamicFormField): any[] {
+        const value = this.fieldValue(field);
+        return Array.isArray(value) ? value : [];
+    }
+
+    listItemValue(item: any, child: DynamicFormField): any {
+        const value = item?.[child.key];
+        return this.fieldDisplayValue(child, value === undefined ? child.defaultValue : value);
+    }
+
+    listItemChecked(item: any, child: DynamicFormField): boolean {
+        return item?.[child.key] === true;
+    }
+
+    isListItemVisible(child: DynamicFormField, item: any): boolean {
+        const condition = child.visibleWhen;
+        if (!condition) {
+            return true;
+        }
+        const value = item?.[condition.key];
+        if (condition.equals !== undefined) return String(value) === String(condition.equals);
+        if (condition.notEquals !== undefined) return String(value) !== String(condition.notEquals);
+        if (condition.in) return condition.in.map(entry => String(entry)).includes(String(value));
+        if (condition.truthy !== undefined) return condition.truthy ? !!value : !value;
+        if (condition.falsy !== undefined) return condition.falsy ? !value : !!value;
+        return true;
+    }
+
+    listItemError(child: DynamicFormField, item: any): string {
+        const value = this.listItemValue(item, child);
+        const empty = value === undefined || value === null || value === '';
+        if (child.required && empty) {
+            return this.messages?.required || child.errorMessages?.required || 'Required';
+        }
+        return '';
+    }
+
+    protected updateList(field: DynamicFormField, items: any[]): void {
+                const list = [...items];
+        const key = field.key;
+        this._value = { ...(this._value || {}), [key]: list };
+        this.valueSignature = JSON.stringify(this._value);
+        this.updateValue(field, list);
+    }
+
+    addListItem(field: DynamicFormField): void {
+        const items = this.listItems(field).map(item => ({ ...item }));
+        const next: Record<string, any> = {};
+        (field.itemFields || []).forEach(child => {
+            next[child.key] = child.defaultValue !== undefined ? child.defaultValue : (child.type === 'checkbox' || child.type === 'switch' ? false : '');
+        });
+        items.push(next);
+        this.updateList(field, items);
+    }
+
+    removeListItem(field: DynamicFormField, index: number): void {
+        const items = this.listItems(field).map(item => ({ ...item }));
+        items.splice(index, 1);
+        this.updateList(field, items);
+    }
+
+    changeListItem(field: DynamicFormField, index: number, child: DynamicFormField, event: any): void {
+                const items = this.listItems(field).map(item => ({ ...item }));
+        const raw = child.type === 'checkbox' || child.type === 'switch'
+            ? !!event?.target?.checked
+            : event?.target?.value;
+        items[index] = { ...(items[index] || {}), [child.key]: this.coerceValue(child, raw) };
+        this.updateList(field, items);
+    }
+
+    changeListItemOption(field: DynamicFormField, index: number, child: DynamicFormField, value: any): void {
+        const items = this.listItems(field).map(item => ({ ...item }));
+        items[index] = { ...(items[index] || {}), [child.key]: value };
+        this.updateList(field, items);
+    }
+
+    listClass(): string { return `${this.classPrefix}-list`; }
+    listRowClass(): string { return `${this.classPrefix}-list-row`; }
+    listFieldsClass(): string { return `${this.classPrefix}-list-fields`; }
+    listItemFieldClass(_child: DynamicFormField): string { return `${this.classPrefix}-list-field`; }
+    listAddClass(): string { return `${this.classPrefix}-list-add`; }
+    listRemoveClass(): string { return `${this.classPrefix}-list-remove`; }
 
     changeText(field: DynamicFormField, event: any): void {
         this.updateValue(field, event?.target?.value);
