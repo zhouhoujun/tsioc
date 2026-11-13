@@ -92,13 +92,16 @@ describe('workflow plugins', () => {
 
     it('exposes the bundled mqtt/redis/nats/coap catalog as manifests', () => {
         const manifests = listBuiltInWorkflowPlugins();
-        expect(manifests.map(item => item.id).sort()).toEqual(['coap', 'mqtt', 'nats', 'redis']);
+        expect(manifests.map(item => item.id).sort()).toEqual(['coap', 'mqtt', 'nats', 'redis', 'tcp', 'udp', 'websocket']);
         expect(manifests.every(item => item.nodes.length > 0)).toBe(true);
         expect(JSON.stringify(manifests)).not.toContain('execute');
         expect(createBuiltInWorkflowPlugin('mqtt')?.nodes?.map(node => node.type)).toContain('mqtt-publish');
         expect(createBuiltInWorkflowPlugin('redis')?.nodes?.map(node => node.type)).toContain('redis-command');
         expect(createBuiltInWorkflowPlugin('nats')?.nodes?.map(node => node.type)).toContain('nats-request');
         expect(createBuiltInWorkflowPlugin('coap')?.nodes?.map(node => node.type)).toContain('coap-request');
+        expect(createBuiltInWorkflowPlugin('tcp')?.nodes?.map(node => node.type)).toContain('tcp-request');
+        expect(createBuiltInWorkflowPlugin('udp')?.nodes?.map(node => node.type)).toContain('udp-request');
+        expect(createBuiltInWorkflowPlugin('websocket')?.nodes?.map(node => node.type)).toContain('websocket-request');
         expect(createBuiltInWorkflowPlugin('missing')).toBeUndefined();
     });
 

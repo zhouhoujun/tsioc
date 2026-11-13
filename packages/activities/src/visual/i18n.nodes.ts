@@ -231,6 +231,18 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "status": {
                 "label": "Status",
                 "description": "Run after the workflow finishes"
+            },
+            "websocket-request": {
+                "label": "WebSocket request",
+                "description": "Send a WebSocket message and optionally wait for the reply"
+            },
+            "tcp-request": {
+                "label": "TCP request",
+                "description": "Connect to a TCP server, send data and optionally wait for a reply"
+            },
+            "udp-request": {
+                "label": "UDP request",
+                "description": "Send a UDP datagram and optionally wait for a reply"
             }
         },
         "field": {
@@ -530,6 +542,28 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "status": {
                 "scope": "Scope"
+            },
+            "websocket-request": {
+                "url": "URL",
+                "headers": "Headers",
+                "message": "Message fields",
+                "payload": "Payload",
+                "waitForReply": "Wait for reply",
+                "timeout": "Timeout"
+            },
+            "tcp-request": {
+                "host": "Host",
+                "port": "Port",
+                "payload": "Payload",
+                "waitForReply": "Wait for reply",
+                "timeout": "Timeout"
+            },
+            "udp-request": {
+                "host": "Host",
+                "port": "Port",
+                "payload": "Payload",
+                "waitForReply": "Wait for reply",
+                "timeout": "Timeout"
             }
         },
         "fieldPlaceholder": {
@@ -705,6 +739,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "status": {
                 "scope": "node id or type"
+            },
+            "websocket-request": {},
+            "tcp-request": {
+                "host": "127.0.0.1",
+                "port": "9000"
+            },
+            "udp-request": {
+                "host": "127.0.0.1",
+                "port": "9000"
             }
         },
         "fieldDescription": {
@@ -947,6 +990,28 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "status": {
                 "scope": "Only run for this node id or type. Leave empty to match anything."
+            },
+            "websocket-request": {
+                "url": "WebSocket endpoint, e.g. wss://example.com/socket",
+                "headers": "Connection headers, edited as key/value rows",
+                "message": "JSON message to send",
+                "payload": "text payload to send",
+                "waitForReply": "wait for a server reply",
+                "timeout": "maximum wait time for the reply"
+            },
+            "tcp-request": {
+                "host": "server host",
+                "port": "server port",
+                "payload": "text payload to send",
+                "waitForReply": "wait for a server reply",
+                "timeout": "maximum wait time for the reply"
+            },
+            "udp-request": {
+                "host": "server host",
+                "port": "server port",
+                "payload": "text payload to send",
+                "waitForReply": "wait for a server reply",
+                "timeout": "maximum wait time for the reply"
             }
         },
         "group": {
@@ -1250,6 +1315,18 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "status": {
                 "label": "状态事件",
                 "description": "工作流结束后运行"
+            },
+            "websocket-request": {
+                "label": "WebSocket 请求",
+                "description": "发送 WebSocket 消息并可等待回复"
+            },
+            "tcp-request": {
+                "label": "TCP 请求",
+                "description": "连接 TCP 服务器，发送数据并可等待回复"
+            },
+            "udp-request": {
+                "label": "UDP 请求",
+                "description": "发送 UDP 数据报并可等待回复"
             }
         },
         "field": {
@@ -1549,6 +1626,28 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "status": {
                 "scope": "范围"
+            },
+            "websocket-request": {
+                "url": "地址",
+                "headers": "请求头",
+                "message": "消息字段",
+                "payload": "数据",
+                "waitForReply": "等待回复",
+                "timeout": "超时"
+            },
+            "tcp-request": {
+                "host": "主机",
+                "port": "端口",
+                "payload": "数据",
+                "waitForReply": "等待回复",
+                "timeout": "超时"
+            },
+            "udp-request": {
+                "host": "主机",
+                "port": "端口",
+                "payload": "数据",
+                "waitForReply": "等待回复",
+                "timeout": "超时"
             }
         },
         "fieldPlaceholder": {
@@ -1704,6 +1803,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "status": {
                 "scope": "节点 ID 或类型"
+            },
+            "websocket-request": {},
+            "tcp-request": {
+                "host": "127.0.0.1",
+                "port": "9000"
+            },
+            "udp-request": {
+                "host": "127.0.0.1",
+                "port": "9000"
             }
         },
         "fieldDescription": {
@@ -1946,6 +2054,28 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "status": {
                 "scope": "仅在该节点 ID 或类型匹配时运行；留空表示任意节点。"
+            },
+            "websocket-request": {
+                "url": "WebSocket 地址，例如 wss://example.com/socket。",
+                "headers": "连接请求头，键值行编辑。",
+                "message": "发送的 JSON 消息。",
+                "payload": "发送的文本数据。",
+                "waitForReply": "是否等待服务器返回数据。",
+                "timeout": "等待回复的最长时间。"
+            },
+            "tcp-request": {
+                "host": "服务器地址。",
+                "port": "服务器端口。",
+                "payload": "发送的文本数据。",
+                "waitForReply": "是否等待服务器返回数据。",
+                "timeout": "等待回复的最长时间。"
+            },
+            "udp-request": {
+                "host": "服务器地址。",
+                "port": "服务器端口。",
+                "payload": "发送的文本数据。",
+                "waitForReply": "是否等待服务器返回数据。",
+                "timeout": "等待回复的最长时间。"
             }
         },
         "group": {
