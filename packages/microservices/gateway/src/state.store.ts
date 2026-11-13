@@ -34,6 +34,10 @@ export abstract class GatewayStateStore {
     abstract setCircuit(key: string, record: GatewayCircuitRecord, ttlMs: number): Promise<void>;
     abstract deleteCircuit(key: string): Promise<void>;
     abstract useNonce(key: string, ttlMs: number): Promise<boolean>;
+    /**
+     * Atomically increment a fixed-window counter.
+     */
+    abstract increment(key: string, windowMs: number): Promise<{ count: number; resetAt: number }>;
     abstract stats(): Promise<GatewayStateStoreStats>;
     abstract close(): Promise<void>;
 }
@@ -52,6 +56,7 @@ export class InMemoryGatewayStateStore extends GatewayStateStore implements OnDe
     private cache = new Map<string, Timed<GatewayCacheRecord>>();
     private circuits = new Map<string, Timed<GatewayCircuitRecord>>();
     private nonces = new Map<string, number>();
+    private counters = new Map<string, { count: number; resetAt: number }>();
 
     async getCache(key: string): Promise<GatewayCacheRecord | undefined> {
         const entry = this.cache.get(key);
@@ -99,6 +104,18 @@ export class InMemoryGatewayStateStore extends GatewayStateStore implements OnDe
         return true;
     }
 
+    async increment(key: string, windowMs: number): Promise<{ count: number; resetAt: number }> {
+        const now = Date.now();
+        const entry = this.counters.get(key);
+        if (!entry || entry.resetAt <= now) {
+            const next = { count: 1, resetAt: now + windowMs };
+            this.counters.set(key, next);
+            return { ...next };
+        }
+        entry.count += 1;
+        return { ...entry };
+    }
+
     async stats(): Promise<GatewayStateStoreStats> {
         const now = Date.now();
         return {
@@ -117,6 +134,7 @@ export class InMemoryGatewayStateStore extends GatewayStateStore implements OnDe
         this.cache.clear();
         this.circuits.clear();
         this.nonces.clear();
+        this.counters.clear();
     }
 
     onDestroy(): void {
@@ -130,6 +148,7 @@ export interface RedisLike {
     set(key: string, value: string, ...args: any[]): Promise<any>;
     del(...keys: string[]): Promise<number>;
     scan(cursor: string, ...args: any[]): Promise<[string, string[]]>;
+    eval(script: string, numberOfKeys: number, ...args: any[]): Promise<any>;
 }
 
 export interface RedisGatewayStateStoreOptions {
@@ -193,6 +212,21 @@ export class RedisGatewayStateStore extends GatewayStateStore implements OnDestr
             'NX'
         );
         return result === 'OK';
+    }
+
+    async increment(key: string, windowMs: number): Promise<{ count: number; resetAt: number }> {
+        const script = `
+local current = redis.call('INCR', KEYS[1])
+if current == 1 then
+  redis.call('PEXPIRE', KEYS[1], ARGV[1])
+end
+local ttl = redis.call('PTTL', KEYS[1])
+return {current, ttl}
+`;
+        const result = await this.client.eval(script, 1, this.key('rate', key), Math.max(1, windowMs));
+        const count = Number(Array.isArray(result) ? result[0] : result) || 0;
+        const ttl = Number(Array.isArray(result) ? result[1] : windowMs) || windowMs;
+        return { count, resetAt: Date.now() + Math.max(0, ttl) };
     }
 
     async stats(): Promise<GatewayStateStoreStats> {

@@ -3825,3 +3825,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - GatewayRuntime 支持共享 store；跨实例缓存/熔断/重放保护。
   - GatewayOptions.stateStore + createRedisGatewayStateStore（懒加载 ioredis）。
   - 回归：gateway 70、admin 57。
+- 微服务框架第十三批（2026-11-13）：
+  - GatewayStateStore 增加原子固定窗口 increment。
+  - Gateway 路由/全局限流在共享 store 下走 Redis Lua，quota/throttle 回退本地。
+  - 回归：gateway 71。

@@ -4,6 +4,7 @@ import { InMemoryGatewayStateStore, RedisGatewayStateStore, RedisLike } from '..
 
 class FakeRedis implements RedisLike {
     private readonly data = new Map<string, { value: string; expireAt: number }>();
+    private readonly counters = new Map<string, { count: number; resetAt: number }>();
 
     async get(key: string): Promise<string | null> {
         const entry = this.data.get(key);
@@ -41,6 +42,19 @@ class FakeRedis implements RedisLike {
         return removed;
     }
 
+    async eval(_script: string, _numberOfKeys: number, ...args: any[]): Promise<any> {
+        const key = String(args[0]);
+        const windowMs = Number(args[1]);
+        const now = Date.now();
+        let entry = this.counters.get(key);
+        if (!entry || entry.resetAt <= now) {
+            entry = { count: 0, resetAt: now + windowMs };
+        }
+        entry.count += 1;
+        this.counters.set(key, entry);
+        return [entry.count, entry.resetAt - now];
+    }
+
     async scan(_cursor: string, ...args: any[]): Promise<[string, string[]]> {
         const pattern = String(args[1] ?? '*').replace(/\*$/, '');
         return ['0', Array.from(this.data.keys()).filter(key => key.startsWith(pattern))];
@@ -62,6 +76,9 @@ describe('GatewayStateStore', () => {
 
         expect(await first.rememberNonce('nonce', 5_000)).toBe(true);
         expect(await second.rememberNonce('nonce', 5_000)).toBe(false);
+
+        expect((await first.incrementRateLimit('rate', 5_000))?.count).toBe(1);
+        expect((await second.incrementRateLimit('rate', 5_000))?.count).toBe(2);
 
         const stats = await second.snapshot();
         expect(stats.cacheEntries).toBe(1);
@@ -88,6 +105,9 @@ describe('GatewayStateStore', () => {
 
         expect(await store.useNonce('nonce', 5_000)).toBe(true);
         expect(await store.useNonce('nonce', 5_000)).toBe(false);
+
+        expect((await store.increment('rate', 5_000)).count).toBe(1);
+        expect((await store.increment('rate', 5_000)).count).toBe(2);
 
         const stats = await store.stats();
         expect(stats.cacheEntries).toBe(1);

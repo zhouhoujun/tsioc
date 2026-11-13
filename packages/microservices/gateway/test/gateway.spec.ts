@@ -7,7 +7,7 @@ import { createRequestContext, RequestContext, REQUEST, Transport, TransferSide 
 import { HmacSignatureService, JWTService } from '@tsdi/security';
 import { Logger } from '@tsdi/logger';
 import { InMemoryServiceDiscovery } from '../../discovery/src';
-import { ConfigurationManagerGatewayAdapter, GatewayInterceptor, GatewayLifecycle, GatewayModule, GatewayRuntime, classifyGatewayError } from '../src';
+import { ConfigurationManagerGatewayAdapter, GatewayInterceptor, GatewayLifecycle, GatewayModule, GatewayRuntime, InMemoryGatewayStateStore, classifyGatewayError } from '../src';
 import { getClientToken } from '../../client/src/tokens';
 import { DefaultConfigurationManager } from '../../config/src';
 import { DefaultTracer } from '../../tracing/src';
@@ -830,6 +830,60 @@ describe('Gateway', () => {
         expect(capturedOptions.payload.headers['x-gateway']).toBe('core');
         expect(sent.headers['x-gateway-response']).toBe('1');
         expect(sent.sentPayload).toEqual({ ok: true });
+    });
+
+    it('shares fixed-window rate limits through the state store', async () => {
+        const runtime = new GatewayRuntime(new InMemoryGatewayStateStore());
+        const adapter = {
+            setStatus() { return this; },
+            setHeader() { return this; },
+            setPayload() { return this; },
+            sendResponse() { return; }
+        };
+        const context = createContext(adapter);
+        (context as any).set(require('../../http/src/server').HttpMessageAdapter, adapter);
+        (context as any).set(require('../../http/src/server').HTTP_RESPONSE, {});
+
+        const interceptor = new GatewayInterceptor({
+            routes: [{
+                path: '/shared-limited',
+                service: 'users-service',
+                targetUrl: 'http://users.internal',
+                rateLimit: { limit: 1, windowMs: 60_000 }
+            }]
+        }, null as any, null as any, runtime, null as any, { get: () => null } as any);
+
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = (async () => ({
+            status: 200,
+            statusText: 'OK',
+            headers: new Headers({ 'content-type': 'application/json' }),
+            async json() { return { ok: true }; },
+            async text() { return '{"ok":true}'; }
+        })) as any;
+
+        const request = {
+            url: '/shared-limited',
+            method: 'GET',
+            headers: {},
+            socket: { remoteAddress: '127.0.0.1' }
+        };
+        const run = () => new Promise<any>((resolve) => {
+            interceptor.intercept(request as any, { handle: () => of(null) } as any, context).subscribe({
+                next: () => resolve(undefined),
+                error: (err) => resolve(err),
+                complete: () => resolve(undefined)
+            });
+        });
+
+        try {
+            expect(await run()).toBeUndefined();
+            const error = await run();
+            expect(error?.statusCode).toBe(429);
+            expect(error?.headers?.['Retry-After']).toBeDefined();
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
     });
 
     it('applies global gateway rate limit before route forwarding', async () => {

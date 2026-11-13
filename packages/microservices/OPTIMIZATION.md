@@ -96,7 +96,8 @@
 - `InMemoryGatewayStateStore`（显式装配/测试）与 `RedisGatewayStateStore`（多副本，PX TTL + `SET NX PX` 原子 nonce）。
 - GatewayRuntime 支持注入 store：跨实例共享缓存/熔断/重放保护；未注入时保持原有进程内行为。
 - `GatewayOptions.stateStore` 可直接传 store 实例；`createRedisGatewayStateStore(url)` 懒加载 ioredis。
-- 限流/舱壁仍为进程内状态（限流器带 quota/throttle 语义，后续单独迁移）。
+- 限流：固定窗口 `limit + windowMs` 在注入 store 时走共享原子计数（Redis Lua INCR/PEXPIRE）；quota/throttle 仍回退本地 `ApiRateLimiter`。
+- 舱壁仍为进程内状态（并发隔离天然按实例）。
 
 
 ---

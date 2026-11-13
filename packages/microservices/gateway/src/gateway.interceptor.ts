@@ -516,8 +516,8 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         const trace = this.startTrace(request);
         const traceHeaders = trace.headers;
         try {
-        this.applyGlobalRateLimit(request, context);
-        this.applyRateLimit(route, request, context);
+        await this.applyGlobalRateLimit(request, context);
+        await this.applyRateLimit(route, request, context);
         await this.authorize(route, request, context);
         this.validateApiKey(route, request);
         await this.validateSignature(route, request);
@@ -1278,10 +1278,20 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         return route.transport == null || route.transport === Transport.HTTP;
     }
 
-    private applyRateLimit(route: ResolvedGatewayRoute, input: any, context: RequestContext): void {
+    private async applyRateLimit(route: ResolvedGatewayRoute, input: any, context: RequestContext): Promise<void> {
         const defaultRateLimit = this.runtime.getOption('rateLimit', this.options.rateLimit);
         const rateLimit = route.rateLimit === false ? false : (route.rateLimit ?? defaultRateLimit);
         if (!rateLimit) {
+            return;
+        }
+        if (this.useSharedRateLimit(rateLimit)) {
+            const decision = await this.runtime.incrementRateLimit(
+                `${route.path}:${this.getClientIp(input)}`,
+                rateLimit.windowMs!
+            );
+            if (decision && decision.count > rateLimit.limit!) {
+                throw rateLimitError(decision.resetAt - Date.now());
+            }
             return;
         }
         let limiter = this.limiters.get(route.path);
@@ -1291,17 +1301,23 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         }
         if (!limiter.check(input, context)) {
             const rejection = limiter.rejection(input, context);
-            throw Object.assign(new Error(rejection.message), {
-                statusCode: 429,
-                statusMessage: 'Too Many Requests',
-                headers: { 'Retry-After': String(Math.max(1, Math.ceil(rejection.retryAfterMs / 1000))) }
-            });
+            throw rateLimitError(rejection.retryAfterMs, rejection.message);
         }
     }
 
-    private applyGlobalRateLimit(input: any, context: RequestContext): void {
+    private async applyGlobalRateLimit(input: any, context: RequestContext): Promise<void> {
         const rateLimit = this.runtime.getOption('globalRateLimit', this.options.globalRateLimit);
         if (!rateLimit) {
+            return;
+        }
+        if (this.useSharedRateLimit(rateLimit)) {
+            const decision = await this.runtime.incrementRateLimit(
+                `global:${this.getClientIp(input)}`,
+                rateLimit.windowMs!
+            );
+            if (decision && decision.count > rateLimit.limit!) {
+                throw rateLimitError(decision.resetAt - Date.now());
+            }
             return;
         }
         if (!this.globalLimiter) {
@@ -1309,12 +1325,17 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         }
         if (!this.globalLimiter.check(input, context)) {
             const rejection = this.globalLimiter.rejection(input, context);
-            throw Object.assign(new Error(rejection.message), {
-                statusCode: 429,
-                statusMessage: 'Too Many Requests',
-                headers: { 'Retry-After': String(Math.max(1, Math.ceil(rejection.retryAfterMs / 1000))) }
-            });
+            throw rateLimitError(rejection.retryAfterMs, rejection.message);
         }
+    }
+
+    private useSharedRateLimit(options: any): boolean {
+        return this.runtime.hasSharedState()
+            && typeof options === 'object'
+            && Number.isFinite(options.limit)
+            && Number.isFinite(options.windowMs)
+            && !options.quota
+            && !options.throttle;
     }
 
     private async authorize(route: ResolvedGatewayRoute, request: HttpRequestMessage, context: RequestContext): Promise<void> {
@@ -2145,4 +2166,12 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             this.httpFetch = undefined;
         }
     }
+}
+
+function rateLimitError(retryAfterMs: number, message = 'Rate limit exceeded'): Error {
+    return Object.assign(new Error(message), {
+        statusCode: 429,
+        statusMessage: 'Too Many Requests',
+        headers: { 'Retry-After': String(Math.max(1, Math.ceil(Math.max(0, retryAfterMs) / 1000))) }
+    });
 }

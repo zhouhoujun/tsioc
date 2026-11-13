@@ -397,6 +397,14 @@ export class GatewayRuntime {
         };
     }
 
+    hasSharedState(): boolean {
+        return !!this.stateStore;
+    }
+
+    async incrementRateLimit(key: string, windowMs: number): Promise<{ count: number; resetAt: number } | undefined> {
+        return this.stateStore ? this.stateStore.increment(key, windowMs) : undefined;
+    }
+
     async rememberNonce(key: string, ttl: number): Promise<boolean> {
         if (this.stateStore) {
             return this.stateStore.useNonce(key, ttl);
