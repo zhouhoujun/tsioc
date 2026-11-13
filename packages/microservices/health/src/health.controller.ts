@@ -1,8 +1,9 @@
-import { Inject } from '@tsdi/ioc';
+import { Inject, Optional } from '@tsdi/ioc';
 import { Controller, Get } from '@tsdi/service';
+import { StatusMessageAdapter } from '@tsdi/common';
 import { HealthIndicator } from './indicator';
-import { HealthReport, HealthResult } from './health';
-import { HEALTH_INDICATORS } from './tokens';
+import { HealthOptions, HealthReport, HealthResult } from './health';
+import { HEALTH_INDICATORS, HEALTH_OPTIONS } from './tokens';
 
 /**
  * Health check controller.
@@ -12,7 +13,8 @@ import { HEALTH_INDICATORS } from './tokens';
 @Controller('/health')
 export class HealthController {
     constructor(
-        @Inject(HEALTH_INDICATORS) private indicators: HealthIndicator[]
+        @Inject(HEALTH_INDICATORS) private indicators: HealthIndicator[],
+        @Optional() @Inject(HEALTH_OPTIONS) private options?: HealthOptions
     ) {}
 
     /**
@@ -20,31 +22,25 @@ export class HealthController {
      * @returns health report.
      */
     @Get('/')
-    async check(): Promise<HealthReport> {
-        const results: Record<string, HealthResult> = {};
-
-        for (const indicator of this.indicators) {
-            try {
-                results[indicator.name] = await indicator.check();
-            } catch (err) {
-                results[indicator.name] = {
-                    status: 'DOWN',
-                    error: err instanceof Error ? err.message : String(err)
-                };
-            }
-        }
-
+    async check(
+        @Optional() @Inject(StatusMessageAdapter) adapter?: StatusMessageAdapter
+    ): Promise<HealthReport> {
+        const results = await this.checkAll();
         const allUp = Object.values(results).every(r => r.status === 'UP');
-        return {
+        const report: HealthReport = {
             status: allUp ? 'UP' : 'DOWN',
             timestamp: new Date().toISOString(),
             components: results
         };
+        this.applyStatus(adapter, report.status);
+        return this.redact(report);
     }
 
     /**
      * liveness probe for Kubernetes.
-     * 用于检测服务是否存活。
+     *
+     * Liveness only answers "is the process alive"; it intentionally does not
+     * run dependency checks and always returns 200 while the process serves.
      * @returns simple UP status.
      */
     @Get('/liveness')
@@ -54,11 +50,76 @@ export class HealthController {
 
     /**
      * readiness probe for Kubernetes.
-     * 用于检测服务是否准备好接收请求。
+     *
+     * Returns 503 when any indicator is DOWN so load balancers stop routing to
+     * this instance.
      * @returns health report.
      */
     @Get('/readiness')
-    async readiness(): Promise<HealthReport> {
-        return this.check();
+    async readiness(
+        @Optional() @Inject(StatusMessageAdapter) adapter?: StatusMessageAdapter
+    ): Promise<HealthReport> {
+        return this.check(adapter);
+    }
+
+    private async checkAll(): Promise<Record<string, HealthResult>> {
+        const indicators = this.indicators ?? [];
+        const pairs = await Promise.all(indicators.map(async indicator => {
+            const result = await this.invokeWithTimeout(indicator);
+            return [indicator.name, result] as const;
+        }));
+        return Object.fromEntries(pairs);
+    }
+
+    private async invokeWithTimeout(indicator: HealthIndicator): Promise<HealthResult> {
+        const timeoutMs = this.options?.timeout;
+        if (!timeoutMs || timeoutMs <= 0) {
+            return this.invokeIndicator(indicator);
+        }
+        let timer: any;
+        try {
+            return await Promise.race([
+                this.invokeIndicator(indicator),
+                new Promise<HealthResult>(resolve => {
+                    timer = setTimeout(
+                        () => resolve({ status: 'DOWN', error: `timeout after ${timeoutMs}ms` }),
+                        timeoutMs
+                    );
+                    timer?.unref?.();
+                })
+            ]);
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+
+    private async invokeIndicator(indicator: HealthIndicator): Promise<HealthResult> {
+        try {
+            return await indicator.check();
+        } catch (err) {
+            return {
+                status: 'DOWN',
+                error: err instanceof Error ? err.message : String(err)
+            };
+        }
+    }
+
+    private redact(report: HealthReport): HealthReport {
+        if (this.options?.includeDetails !== false) {
+            return report;
+        }
+        const components: Record<string, HealthResult> = {};
+        for (const [name, result] of Object.entries(report.components)) {
+            components[name] = { status: result.status, error: result.error };
+        }
+        return { ...report, components };
+    }
+
+    private applyStatus(adapter: StatusMessageAdapter | undefined, status: string): void {
+        try {
+            adapter?.setStatus?.(status === 'DOWN' ? 503 : 200);
+        } catch {
+            // Adapters without an HTTP status (e.g. brokers) are ignored.
+        }
     }
 }

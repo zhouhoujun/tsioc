@@ -341,7 +341,12 @@ export function withTransfers(
     return (config) => {
         const filterToken = getClientTransferFiltersToken(config);
         const providers: Provider[] = [];
-        const resolvedSelectors = selectors.length ? selectors : (config.features.defaultTransfer ? [config.features.defaultTransfer] : []);
+        // Keep the transport's default transfer in front of custom selectors;
+        // dropping it removes response writing / packet framing entirely.
+        const defaultTransfer = config.features.defaultTransfer;
+        const resolvedSelectors = selectors.length
+            ? (defaultTransfer && !selectors.includes(defaultTransfer) ? [defaultTransfer, ...selectors] : selectors)
+            : (defaultTransfer ? [defaultTransfer] : []);
         resolvedSelectors.forEach((fac) => {
             const result = fac(config) as any;
             const filters = result && !isArray(result) && result.filters ? result.filters : (isArray(result) ? result : [result]);

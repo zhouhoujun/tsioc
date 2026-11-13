@@ -1,4 +1,5 @@
 export * from './options';
+export * from './errors';
 export * from './strategies';
 export * from './tokens';
 export * from './interceptors';

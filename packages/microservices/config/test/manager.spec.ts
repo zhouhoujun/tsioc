@@ -96,6 +96,42 @@ describe('DefaultConfigurationManager', () => {
         expect(mgr.get('db.port')).toBe(5432);
     });
 
+    it('keeps defaults as the lowest priority layer after load', async () => {
+        const mgr = new DefaultConfigurationManager({ defaults: { app: { name: 'svc' } } });
+        mgr.addSource(new TestConfigSource({ app: { port: 8080 } }, 10, 'src'));
+        await mgr.load();
+        expect(mgr.get('app.name')).toBe('svc');
+        expect(mgr.get('app.port')).toBe(8080);
+    });
+
+    it('replaces arrays instead of merging their indexes', async () => {
+        const mgr = new DefaultConfigurationManager();
+        mgr.addSource(new TestConfigSource({ list: [1, 2], nested: { a: 1 } }, 10, 'high'));
+        mgr.addSource(new TestConfigSource({ list: [9, 9, 9], nested: { b: 2 } }, 5, 'low'));
+        await mgr.load();
+        expect(mgr.get('list')).toEqual([1, 2]);
+        expect(mgr.get('nested')).toEqual({ a: 1, b: 2 });
+    });
+
+    it('registers a source watcher only once across refreshes', async () => {
+        let watchers = 0;
+        const source: ConfigSource = {
+            type: 'memory',
+            name: 'watched',
+            priority: 0,
+            enabled: true,
+            optional: false,
+            load: async () => ({ watched: true }),
+            watch: () => { watchers++; }
+        };
+        const mgr = new DefaultConfigurationManager();
+        mgr.addSource(source);
+        await mgr.load();
+        await mgr.load();
+        await mgr.refresh();
+        expect(watchers).toBe(1);
+    });
+
     it('watch calls callback on change', (done) => {
         const mgr = new DefaultConfigurationManager();
         mgr.watch('mykey', (change) => {

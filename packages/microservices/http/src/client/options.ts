@@ -13,6 +13,16 @@ export interface HttpClientOptions extends ClientOptions {
     authority?: string;
     connectOpts?: ClientSessionOptions | SecureClientSessionOptions;
     requestOptions?: ClientSessionRequestOptions;
+    /**
+     * Throw a `ServiceError` when the response status is outside the accepted
+     * range. Defaults to `true`; set to `false` to receive non-2xx bodies as
+     * regular values (the previous behavior).
+     */
+    throwOnError?: boolean;
+    /**
+     * Custom status predicate; when provided it replaces the 2xx check.
+     */
+    validateStatus?: (status: number) => boolean;
 }
 
 export const HTTP_CLIENT_OPTIONS = token<HttpClientOptions>('HTTP_CLIENT_OPTIONS');

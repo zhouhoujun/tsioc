@@ -413,9 +413,15 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         const routes = this.runtime.getRoutes(this.options.routes)
             .filter(route => route.enabled !== false)
             .map(route => this.resolveRoute(route));
+        const mode = this.runtime.getOption('routeMatching', this.options.routeMatching) ?? 'segment';
 
+        let best: ResolvedGatewayRoute | null = null;
+        let bestScore = -1;
         for (const route of routes) {
-            if (!url.startsWith(route.path)) {
+            const match = mode === 'legacy'
+                ? (url.startsWith(route.path) ? { params: {} } : null)
+                : this.matchRoutePath(route.path, url);
+            if (!match) {
                 continue;
             }
             if (route.methods?.length && !route.methods.map(m => m.toUpperCase()).includes(method)) {
@@ -430,9 +436,67 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             if (!this.matchCanary(route.canary, request)) {
                 continue;
             }
-            return route;
+            if (mode === 'legacy') {
+                return route;
+            }
+            const score = this.routeSpecificity(route.path);
+            if (score > bestScore) {
+                best = route;
+                bestScore = score;
+            }
         }
-        return null;
+        return best;
+    }
+
+    /**
+     * Segment-aware prefix match. A route path is a prefix of the request path
+     * (so `/api/users` still matches `/api/users/profile`) but must align on
+     * segment boundaries (so it does not match `/api/users2`). `:name` captures
+     * one segment and a trailing `*` matches the remainder.
+     */
+    private matchRoutePath(pattern: string, url: string): { params: Record<string, string> } | null {
+        const normalized = this.normalizeRequestUrl(pattern || '/');
+        if (normalized === '/' || normalized === '/*') {
+            return { params: {} };
+        }
+        const patternSegments = normalized.split('/').filter(Boolean);
+        const urlSegments = url.split('/').filter(Boolean);
+        const params: Record<string, string> = {};
+        for (let index = 0; index < patternSegments.length; index++) {
+            const segment = patternSegments[index];
+            if (segment === '*') {
+                return { params };
+            }
+            const actual = urlSegments[index];
+            if (actual === undefined) {
+                return null;
+            }
+            if (segment.startsWith(':')) {
+                params[segment.slice(1)] = actual;
+                continue;
+            }
+            if (segment !== actual) {
+                return null;
+            }
+        }
+        return { params };
+    }
+
+    /**
+     * Higher is more specific: static segments beat parameters, longer paths
+     * beat shorter ones.
+     */
+    private routeSpecificity(pattern: string): number {
+        const normalized = this.normalizeRequestUrl(pattern || '/');
+        return normalized.split('/').filter(Boolean).reduce((score, segment) => {
+            if (segment === '*') {
+                return score + 1;
+            }
+            if (segment.startsWith(':')) {
+                return score + 10;
+            }
+            return score + 100 + segment.length;
+        }, 0);
     }
 
     private tagGatewayError(error: any, adapter: any): GatewayErrorType {
@@ -523,18 +587,31 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
                     ? await this.forwardHttp(route, request, traceHeaders)
                     : await this.forwardMicroservice(route, request, traceHeaders);
 
-            this.runtime.recordSuccess(routeKey);
+            const upstreamFailed = this.isFailureStatus(route, result.status);
+            if (upstreamFailed) {
+                this.runtime.recordFailure(routeKey, route.circuitBreaker);
+            } else {
+                this.runtime.recordSuccess(routeKey);
+            }
             const cache = this.getCacheOptions(route);
-            if (cacheKey && this.shouldCache(route, result)) {
+            if (cacheKey && !upstreamFailed && this.shouldCache(route, result)) {
                 this.runtime.setCached(cacheKey, result, cache?.ttl ?? 60_000);
             }
             result.meta = {
                 ...(result.meta ?? {}),
                 cacheStatus: cacheKey ? 'MISS' : 'SKIP',
-                canary: !!route.canary
+                canary: !!route.canary,
+                ...(upstreamFailed ? { outcome: 'error' as const, errorType: 'upstream' as const } : {})
             };
             await this.dispatchWebhook(route, request, result);
-            return this.sendResponse(route, request, context, result, startedAt, adapter, response);
+            const upstreamError = upstreamFailed
+                ? Object.assign(new Error(`Upstream responded with ${result.status}`), {
+                    statusCode: result.status,
+                    statusMessage: result.statusText,
+                    expose: true
+                })
+                : undefined;
+            return this.sendResponse(route, request, context, result, startedAt, adapter, response, upstreamError);
         } catch (error: any) {
             this.runtime.recordFailure(routeKey, route.circuitBreaker);
             const errorType = this.tagGatewayError(error, adapter);
@@ -664,11 +741,16 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             }
             try {
                 const result = await this.forwardHttpTarget(route, request, traceHeaders, target);
-                if (attempt < attempts - 1 && this.isRetryableStatus(route, result.status)) {
+                const failed = this.isFailureStatus(route, result.status);
+                if (attempt < attempts - 1 && failed && this.isRetryableStatus(route, result.status)) {
                     this.recordEndpointFailure(route, routeKey, target.endpoint);
                     lastResult = result;
                     await this.waitBeforeRetry(route, attempt);
                     continue;
+                }
+                if (failed) {
+                    this.recordEndpointFailure(route, routeKey, target.endpoint);
+                    return result;
                 }
                 this.recordEndpointSuccess(route, routeKey, target.endpoint);
                 return result;
@@ -797,6 +879,20 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         return allowed.includes(status);
     }
 
+    /**
+     * Upstream status codes that count as failures for circuit breaking and
+     * error metrics. A route may override the default (5xx + 429).
+     */
+    private isFailureStatus(route: ResolvedGatewayRoute, status: number): boolean {
+        const configured = route.circuitBreaker && typeof route.circuitBreaker === 'object'
+            ? route.circuitBreaker.failureStatuses
+            : undefined;
+        if (configured?.length) {
+            return configured.includes(status);
+        }
+        return status >= 500 || status === 429;
+    }
+
     private async waitBeforeRetry(route: ResolvedGatewayRoute, attempt: number): Promise<void> {
         const delay = resolveRetryBackoff(route.loadBalance, attempt);
         if (delay > 0) {
@@ -898,7 +994,8 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         result: GatewayForwardResult,
         startedAt: number,
         adapter: any,
-        response: any
+        response: any,
+        error?: any
     ): any {
         const rewritten = this.applyResponseCaching(route, request, this.rewriteResponse(route, request, result));
         const maskedPayload = this.runtime.maskPayload(rewritten.payload, route.maskFields);
@@ -921,7 +1018,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         adapter?.setStatus(compressed.status, compressed.statusText);
         const duration = Date.now() - startedAt;
         this.recordGatewayMetrics(route, request, compressed.status, duration, compressed.meta);
-        this.recordAccessLog(route, request, compressed.status, duration, compressed.meta);
+        this.recordAccessLog(route, request, compressed.status, duration, compressed.meta, error);
 
         if (adapter) {
             adapter.setPayload(payload);

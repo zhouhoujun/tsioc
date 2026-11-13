@@ -1,6 +1,6 @@
 import { Module, ModuleWithProviders, Type } from '@tsdi/ioc';
 import { HealthIndicator } from './indicator';
-import { HEALTH_INDICATORS } from './tokens';
+import { HEALTH_INDICATORS, HEALTH_OPTIONS } from './tokens';
 import { MemoryHealthIndicator } from './indicators/memory.indicator';
 
 /**
@@ -53,8 +53,19 @@ export class HealthModule {
     static withOptions(options: {
         indicators?: (Type<HealthIndicator> | HealthIndicator)[];
         includeMemory?: boolean;
+        /**
+         * timeout in milliseconds for each indicator.
+         */
+        timeout?: number;
+        /**
+         * include indicator details in the report. Default true.
+         */
+        includeDetails?: boolean;
     }): ModuleWithProviders<HealthModule> {
-        const providers: any[] = [];
+        const providers: any[] = [{
+            provide: HEALTH_OPTIONS,
+            useValue: { timeout: options.timeout, includeDetails: options.includeDetails }
+        }];
 
         if (options.indicators) {
             for (const indicator of options.indicators) {

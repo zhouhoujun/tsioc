@@ -6,16 +6,17 @@ import {
 import { HttpMessageAdapter } from '../src/server/message-adapter';
 import { HTTP_AUTH_OPTIONS } from '../src/server/interceptors/auth';
 import { withHttpTransport, HTTP_CLIENT_OPTIONS, HttpClientOptions } from '../src/client';
-import { BodySerializeStrategy, getClientBackendToken, TimeoutStrategy } from '@tsdi/client';
-import { FileAdapter, MimeAdapter, MimeTypes, RestfulRequestAdapter, StreamAdapter, Transport, TransferSide } from '@tsdi/common';
+import { BodySerializeStrategy, ServiceError, getClientBackendToken, TimeoutStrategy } from '@tsdi/client';
+import { FileAdapter, MessageAdapter, MimeAdapter, MimeTypes, RestfulRequestAdapter, StreamAdapter, Transport, TransferSide } from '@tsdi/common';
 import { parseMultipartBody } from '../src/server/multipart';
-import { BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SessionInterceptor, SERVICE_STATICS_OPTIONS } from '@tsdi/service';
+import { BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SERVICE_JSON_OPTIONS, SERVICE_STATICS_OPTIONS, SessionInterceptor } from '@tsdi/service';
 import { createRequestContext, REQUEST, RESPONSE } from '@tsdi/common';
 import { createInjector, importProvidersFrom } from '@tsdi/ioc';
 import { HttpClient } from '../src/client/client';
 import { HttpRequest } from '../src/client/request';
 import { HttpCookieInterceptor } from '../src/server/interceptors/cookie';
 import { HttpContentInterceptor } from '../src/server/interceptors/content';
+import { HttpJsonInterceptor } from '../src/server/interceptors/json';
 import { HttpModule } from '../src/http.module';
 import { HttpBodySerializeStrategy } from '../src/client/strategies/HttpBodySerializeStrategy';
 import { HttpTimeoutStrategy } from '../src/client/strategies/HttpTimeoutStrategy';
@@ -184,6 +185,68 @@ describe('HTTP Microservice', () => {
                 expect(result).toEqual({ ok: true });
                 expect(writtenBody).toBe('{"hello":"world"}');
                 expect(writtenHeaders['content-type']).toBe('application/json');
+            } finally {
+                (http as any).request = originalRequest;
+            }
+        });
+
+        it('throws a ServiceError for non-2xx responses and supports opt-out', async () => {
+            const feature = withHttpTransport({ url: 'http://localhost:3000' })[0];
+            const injector = createInjector([importProvidersFrom(HttpModule), ...feature.providers] as any);
+            const [backend] = injector.get(getClientBackendToken(feature.config)) as unknown as Array<(req: any, context: any) => any>;
+            const context = {
+                get(token: any) {
+                    if (token === HttpClient) {
+                        return undefined;
+                    }
+                    return injector.has(token) ? injector.get(token) : undefined;
+                },
+                has(token: any) {
+                    return token === HttpClient || injector.has(token);
+                }
+            } as any;
+
+            const originalRequest = http.request;
+            const mockResponse = (statusCode: number, statusMessage: string, body: string) => {
+                (http as any).request = () => {
+                    const reqEmitter = new EventEmitter() as any;
+                    reqEmitter.end = () => {
+                        const resEmitter = new EventEmitter() as any;
+                        resEmitter.statusCode = statusCode;
+                        resEmitter.statusMessage = statusMessage;
+                        resEmitter.headers = { 'content-type': 'application/json' };
+                        reqEmitter.emit('response', resEmitter);
+                        resEmitter.emit('data', Buffer.from(body, 'utf8'));
+                        resEmitter.emit('end');
+                    };
+                    reqEmitter.destroy = () => undefined;
+                    return reqEmitter;
+                };
+            };
+
+            try {
+                mockResponse(404, 'Not Found', '{"message":"missing"}');
+                const request = new HttpRequest('/missing', null, { method: 'GET' });
+                let error: any;
+                try {
+                    await lastValueFrom(backend(request, context));
+                } catch (err) {
+                    error = err;
+                }
+                expect(error).toBeInstanceOf(ServiceError);
+                expect(error.code).toBe('upstream');
+                expect(error.status).toBe(404);
+                expect(error.body).toEqual({ message: 'missing' });
+
+                mockResponse(500, 'Internal Server Error', '{"message":"boom"}');
+                const optOut = new HttpRequest('/broken', null, { method: 'GET' });
+                (optOut as any).throwOnError = false;
+                const body = await lastValueFrom(backend(optOut, context));
+                expect(body).toEqual({ message: 'boom' });
+
+                mockResponse(201, 'Created', '{"ok":true}');
+                const created = await lastValueFrom(backend(new HttpRequest('/created', null, { method: 'POST' }), context));
+                expect(created).toEqual({ ok: true });
             } finally {
                 (http as any).request = originalRequest;
             }
@@ -646,6 +709,88 @@ describe('HTTP Microservice', () => {
             expect(adapter.payload.toString('utf8')).toBe('body');
         });
     });
+
+    describe('HttpJsonInterceptor', () => {
+        it('applies useJson options to the response serializer', async () => {
+            const injector = createInjector([
+                { provide: SERVICE_JSON_OPTIONS, useValue: { pretty: true, spaces: 4 } },
+                HttpJsonInterceptor
+            ]);
+            const interceptor = injector.get(HttpJsonInterceptor);
+            const adapter = {
+                getBody: () => null,
+                getResponseHeader: () => 'application/json',
+                accepts: () => true
+            };
+            const streamAdapter = {
+                isStream: () => false,
+                isJson: () => true
+            };
+            const context = {
+                get: (tk: any) => tk === MessageAdapter ? adapter : tk === StreamAdapter ? streamAdapter : undefined,
+                set: () => undefined
+            } as any;
+
+            const result = await lastValueFrom(interceptor.intercept(
+                { query: {} } as any,
+                { handle: () => of({ a: 1 }) } as any,
+                context
+            ));
+            expect(result).toContain('\n    "a"');
+        });
+    });
+
+        it('signs cookies and verifies them with configured keys', async () => {
+            const interceptor = new HttpCookieInterceptor({ keys: ['secret'], signed: true, secure: true } as any);
+            const injector = createInjector();
+            let serialized = '';
+            const createResponse = () => {
+                const headerStore = new Map<string, any>();
+                return {
+                    getHeader(name: string) { return headerStore.get(name.toLowerCase()); },
+                    setHeader(name: string, value: any) { headerStore.set(name.toLowerCase(), value); }
+                } as any;
+            };
+            const run = async (cookieHeader: string) => {
+                const request = {
+                    headers: { cookie: cookieHeader },
+                    query: {},
+                    getHeader(name: string) { return name === 'cookie' ? cookieHeader : undefined; },
+                    hasHeader(name: string) { return name === 'cookie'; },
+                    getHeaderNames() { return ['cookie']; }
+                } as any;
+                const response = createResponse();
+                const context = createRequestContext(injector, [
+                    [REQUEST, request],
+                    [RESPONSE, response],
+                    [HTTP_RESPONSE, response]
+                ]);
+                let cookies: any;
+                await new Promise<void>((resolve, reject) => {
+                    interceptor.intercept(request, {
+                        handle: (_input: any, ctx: any) => {
+                            cookies = ctx.get(HTTP_COOKIES);
+                            resolve();
+                            return of(null);
+                        }
+                    } as any, context).subscribe({ error: reject });
+                });
+                return { cookies, response };
+            };
+
+            const first = await run('');
+            first.cookies.set('sid', 'abc');
+            serialized = (first.response.getHeader('set-cookie') as string[])[0];
+            expect(serialized).toContain('Secure');
+            expect(serialized).toContain('sid=s%3Aabc.');
+
+            const value = serialized.slice(serialized.indexOf('sid=') + 4, serialized.indexOf(';'));
+            const verified = await run(`sid=${value}`);
+            expect(verified.cookies.get('sid')).toBe('abc');
+
+            const tampered = await run(`sid=${value.slice(0, -2)}xx`);
+            expect(tampered.cookies.get('sid')).toBe('');
+        });
 
     describe('HttpContextUtil', () => {
         it('should resolve proxy ip list, forwarded protocol, vary header and writable state', () => {

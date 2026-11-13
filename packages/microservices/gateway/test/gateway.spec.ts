@@ -218,6 +218,68 @@ describe('Gateway', () => {
         expect(sent.sentPayload.message).toBe('Earlier');
     });
 
+    it('matches route paths on segment boundaries and prefers the most specific route', async () => {
+        const runtime = new GatewayRuntime();
+        const sent: any = {};
+        const adapter = {
+            setStatus(code: number, message?: string) { sent.status = code; sent.statusMessage = message; return this; },
+            setHeader(name: string, value: string) { (sent.headers ??= {})[name] = value; return this; },
+            setPayload(payload: any) { sent.payload = payload; return this; },
+            sendResponse(payload: any) { sent.sentPayload = payload; }
+        };
+        const context = createContext(adapter);
+        (context as any).set(require('../../http/src/server').HttpMessageAdapter, adapter);
+        (context as any).set(require('../../http/src/server').HTTP_RESPONSE, sent);
+
+        const calls: string[] = [];
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = (async (url: any) => {
+            calls.push(String(url));
+            return {
+                status: 200,
+                statusText: 'OK',
+                headers: new Headers({ 'content-type': 'application/json' }),
+                async json() { return { url: String(url) }; },
+                async text() { return JSON.stringify({ url: String(url) }); }
+            };
+        }) as any;
+
+        const run = async (interceptor: GatewayInterceptor, url: string) => {
+            let nextCalled = 0;
+            await new Promise<void>((resolve, reject) => {
+                interceptor.intercept({ url, method: 'GET', headers: {}, socket: { remoteAddress: '127.0.0.1' } } as any, {
+                    handle: () => { nextCalled++; return of(null); }
+                } as any, context).subscribe({ next: () => undefined, error: reject, complete: () => resolve() });
+            });
+            return nextCalled;
+        };
+
+        try {
+            const single = new GatewayInterceptor({
+                routes: [{ path: '/api/users', service: 'users', targetUrl: 'http://users.internal' }]
+            }, null as any, null as any, runtime, null as any, { get: () => null } as any);
+
+            const unmatched = await run(single, '/api/users2');
+            expect(unmatched).toBe(1);
+            expect(calls.length).toBe(0);
+
+            await run(single, '/api/users/profile');
+            expect(calls[0]).toContain('http://users.internal/profile');
+
+            const nested = new GatewayInterceptor({
+                routes: [
+                    { path: '/api', service: 'general', targetUrl: 'http://general.internal' },
+                    { path: '/api/users', service: 'users', targetUrl: 'http://users.internal' }
+                ]
+            }, null as any, null as any, runtime, null as any, { get: () => null } as any);
+            await run(nested, '/api/users/1');
+            expect(calls[1]).toContain('http://users.internal/1');
+            expect(calls[1]).not.toContain('general.internal');
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+    });
+
     it('supports circuit breaker half-open probing', async () => {
         const runtime = new GatewayRuntime();
         const options = { failureThreshold: 1, resetTimeout: 5 };
@@ -822,6 +884,89 @@ describe('Gateway', () => {
 
         expect(error).toBeDefined();
         expect(error.statusCode).toBe(403);
+    });
+
+    it('counts upstream 5xx responses as circuit and error failures', async () => {
+        const runtime = new GatewayRuntime();
+        const circuitBreaker = { failureThreshold: 1, resetTimeout: 60_000 };
+        const interceptor = new GatewayInterceptor({
+            routes: [{
+                path: '/flaky',
+                service: 'flaky-service',
+                targetUrl: 'http://flaky.internal',
+                circuitBreaker
+            }]
+        }, null as any, null as any, runtime, null as any, { get: () => null } as any);
+
+        const sent: any = { calls: 0 };
+        const adapter = {
+            setStatus(code: number, message?: string) {
+                sent.status = code;
+                sent.statusMessage = message;
+                return this;
+            },
+            setHeader(name: string, value: string) {
+                (sent.headers ??= {})[name] = value;
+                return this;
+            },
+            setPayload(payload: any) {
+                sent.payload = payload;
+                return this;
+            },
+            sendResponse(payload: any) {
+                sent.sentPayload = payload;
+            }
+        };
+        const context = createContext(adapter);
+        (context as any).set(require('../../http/src/server').HttpMessageAdapter, adapter);
+        (context as any).set(require('../../http/src/server').HTTP_RESPONSE, sent);
+
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = (async () => {
+            sent.calls++;
+            return {
+                status: 500,
+                statusText: 'Internal Server Error',
+                headers: new Headers({ 'content-type': 'application/json' }),
+                async json() { return { message: 'boom' }; },
+                async text() { return '{"message":"boom"}'; }
+            };
+        }) as any;
+
+        const request = {
+            url: '/flaky',
+            method: 'GET',
+            headers: {},
+            socket: { remoteAddress: '127.0.0.1' }
+        };
+
+        try {
+            await new Promise<void>((resolve, reject) => {
+                interceptor.intercept(request as any, { handle: () => of(null) } as any, context).subscribe({
+                    next: () => resolve(),
+                    error: reject,
+                    complete: () => resolve()
+                });
+            });
+
+            expect(sent.status).toBe(500);
+            expect(sent.sentPayload).toEqual({ message: 'boom' });
+            expect(runtime.canPassCircuit('flaky-service:/flaky:2', circuitBreaker)).toBe(false);
+
+            sent.status = undefined;
+            let circuitError: any;
+            await new Promise<void>((resolve) => {
+                interceptor.intercept(request as any, { handle: () => of(null) } as any, context).subscribe({
+                    next: () => resolve(),
+                    error: (err) => { circuitError = err; resolve(); },
+                    complete: () => resolve()
+                });
+            });
+            expect(circuitError?.statusCode).toBe(503);
+            expect(sent.calls).toBe(1);
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
     });
 
     it('supports cache and avoids duplicate upstream calls', async () => {

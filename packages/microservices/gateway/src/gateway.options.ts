@@ -356,6 +356,11 @@ export interface GatewayCircuitBreakerOptions {
      */
     perEndpoint?: boolean;
     /**
+     * upstream status codes counted as failures (open the breaker).
+     * Defaults to every 5xx and 429.
+     */
+    failureStatuses?: number[];
+    /**
      * fallback response payload.
      */
     fallback?: any | ((request: any, error?: any) => any);
@@ -873,6 +878,15 @@ export interface GatewayOptions {
      * ordered gateway rules evaluated before the route table.
      */
     rules?: GatewayRuleOptions[];
+    /**
+     * route path matching strategy.
+     *
+     * - `segment` (default): segment-aware prefix match with `:param` support,
+     *   so `/api/users` no longer matches `/api/users2`, and the most specific
+     *   route wins.
+     * - `legacy`: previous raw `startsWith` behavior.
+     */
+    routeMatching?: 'segment' | 'legacy';
     /**
      * global gateway defaults.
      */

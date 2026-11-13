@@ -1,6 +1,7 @@
-import { Abstract, hasOwn, Injectable, Nullable } from '@tsdi/ioc';
+import { Abstract, hasOwn, Inject, Injectable, Optional } from '@tsdi/ioc';
 import { CONTENT_TYPE, MessageAdapter, RequestContext, RequestHandler, RequestInterceptor, ContentType, ReadableLike, Incoming, StreamAdapter } from '@tsdi/common';
 import { Observable, map } from 'rxjs';
+import { SERVICE_JSON_OPTIONS } from '@tsdi/service';
 
 
 @Abstract()
@@ -17,7 +18,7 @@ export class HttpJsonInterceptor implements RequestInterceptor<ReadableLike<Inco
     private pretty: boolean;
     private spaces: number;
     private paramName: string;
-    constructor(@Nullable() option: JsonOptions) {
+    constructor(@Optional() @Inject(SERVICE_JSON_OPTIONS) option: JsonOptions) {
 
         this.pretty = option?.pretty ?? true;
         this.spaces = option?.spaces ?? 2;

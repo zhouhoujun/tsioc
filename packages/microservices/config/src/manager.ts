@@ -1,5 +1,6 @@
-import { Abstract, Injectable, OnDestroy } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, OnDestroy, Optional } from '@tsdi/ioc';
 import { ConfigSource, ConfigOptions, ConfigChange, ConfigChangeCallback, ConfigValueOptions } from './config';
+import { CONFIG_OPTIONS, CONFIG_SOURCES } from './tokens';
 
 /**
  * Configuration manager abstract interface.
@@ -95,19 +96,25 @@ export abstract class ConfigurationManager implements OnDestroy {
 export class DefaultConfigurationManager extends ConfigurationManager {
     private sources: ConfigSource[] = [];
     private config: Record<string, any> = {};
+    private defaults: Record<string, any> = {};
     private watchers: Map<string, Set<ConfigChangeCallback>> = new Map();
     private refreshTimer?: ReturnType<typeof setInterval>;
+    private watchedSources = new Set<ConfigSource>();
 
-    constructor(options: ConfigOptions = {}) {
+    constructor(
+        @Optional() @Inject(CONFIG_OPTIONS) options: ConfigOptions = {},
+        @Optional() @Inject(CONFIG_SOURCES) extraSources: ConfigSource[] = []
+    ) {
         super();
         if (options.defaults) {
+            this.defaults = { ...options.defaults };
             this.config = { ...options.defaults };
         }
-        if (options.sources) {
-            options.sources.forEach(source => this.addSource(source));
-        }
+        const sources = [...(options.sources ?? []), ...(extraSources ?? [])];
+        sources.forEach(source => this.addSource(source));
         if (options.refreshInterval) {
             this.refreshTimer = setInterval(() => this.refresh(), options.refreshInterval * 1000);
+            (this.refreshTimer as any)?.unref?.();
         }
     }
 
@@ -183,8 +190,9 @@ export class DefaultConfigurationManager extends ConfigurationManager {
                 const config = await source.load();
                 loadedConfigs.push(config);
 
-                // Setup watching if supported
-                if (source.watch) {
+                // Setup watching once per source (load() is called on refresh).
+                if (source.watch && !this.watchedSources.has(source)) {
+                    this.watchedSources.add(source);
                     source.watch((change) => {
                         this.handleSourceChange(source.name, change);
                     });
@@ -196,8 +204,8 @@ export class DefaultConfigurationManager extends ConfigurationManager {
             }
         }
 
-        // Merge configs by priority
-        this.config = {};
+        // Merge configs by priority; defaults are the lowest-priority layer.
+        this.config = { ...this.defaults };
         for (const config of loadedConfigs.reverse()) {
             this.config = this.mergeDeep(this.config, config);
         }
@@ -215,6 +223,7 @@ export class DefaultConfigurationManager extends ConfigurationManager {
         }
 
         this.sources = [];
+        this.watchedSources.clear();
         this.config = {};
         this.watchers.clear();
     }
@@ -252,10 +261,14 @@ export class DefaultConfigurationManager extends ConfigurationManager {
         const result = { ...target };
 
         for (const key of Object.keys(source)) {
-            if (source[key] instanceof Object && key in target && target[key] instanceof Object) {
-                result[key] = this.mergeDeep(target[key], source[key]);
+            const value = source[key];
+            if (Array.isArray(value)) {
+                // Arrays are atomic values: replace instead of merging indexes.
+                result[key] = value;
+            } else if (value instanceof Object && key in target && target[key] instanceof Object && !Array.isArray(target[key])) {
+                result[key] = this.mergeDeep(target[key], value);
             } else {
-                result[key] = source[key];
+                result[key] = value;
             }
         }
 

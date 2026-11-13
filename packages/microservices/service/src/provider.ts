@@ -354,7 +354,12 @@ export function useTransfers(...selectors: TransferFilterFactory[]): ServiceFeat
     return (config) => {
         const filterToken = getServiceFiltersToken(config);
         const providers: Provider[] = [];
-        const resolvedSelectors = selectors.length ? selectors : (config.features.defaultTransfer ? [config.features.defaultTransfer] : []);
+        // Keep the transport's default transfer in front of custom selectors;
+        // dropping it removes response writing / packet framing entirely.
+        const defaultTransfer = config.features.defaultTransfer;
+        const resolvedSelectors = selectors.length
+            ? (defaultTransfer && !selectors.includes(defaultTransfer) ? [defaultTransfer, ...selectors] : selectors)
+            : (defaultTransfer ? [defaultTransfer] : []);
         resolvedSelectors.forEach((fac) => {
             const result = fac(config) as any;
             const filters = result && !isArray(result) && result.filters ? result.filters : (isArray(result) ? result : [result]);
@@ -585,9 +590,12 @@ export function useCors(options?: CorsOptions): ServiceFeatureFn<ServiceFeatureK
 
 export function useAuth(options?: boolean | AuthOptions): ServiceFeatureFn<ServiceFeatureKind.Interceptors> {
     return (config) => {
-        const resolved = options === false ? {
-            featureOptions: {} as Omit<AuthOptions, 'interceptor' | 'multiOrder'>
-        } : resolveFeatureOptions(isBoolean(options) ? undefined : options);
+        if (options === false) {
+            // Explicitly disabled: do not register an interceptor that would
+            // otherwise reject every request with "no strategy configured".
+            return makeServiceFeature(ServiceFeatureKind.Interceptors, [], config);
+        }
+        const resolved = resolveFeatureOptions(isBoolean(options) ? undefined : options);
         return makeServiceFeature(
             ServiceFeatureKind.Interceptors,
             [

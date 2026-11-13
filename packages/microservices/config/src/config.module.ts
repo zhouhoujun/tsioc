@@ -1,13 +1,9 @@
-import { Module, ModuleWithProviders, Provider, token } from '@tsdi/ioc';
+import { Module, ModuleWithProviders, Provider } from '@tsdi/ioc';
 import { ConfigurationManager } from './manager';
 import { DefaultConfigurationManager } from './manager';
-import { EnvConfigSource, MemoryConfigSource } from './sources';
+import { EnvConfigSource, JsonFileConfigSource, MemoryConfigSource } from './sources';
 import { ConfigOptions } from './config';
-
-/**
- * Config options token.
- */
-export const CONFIG_OPTIONS = token<ConfigOptions>('CONFIG_OPTIONS');
+import { CONFIG_OPTIONS, CONFIG_SOURCES } from './tokens';
 
 /**
  * Config module providers.
@@ -51,8 +47,9 @@ export class ConfigModule {
             module: ConfigModule,
             providers: [
                 {
-                    provide: EnvConfigSource,
-                    useFactory: () => new EnvConfigSource({ prefix })
+                    provide: CONFIG_SOURCES,
+                    useValue: new EnvConfigSource({ prefix }),
+                    multi: true
                 }
             ]
         };
@@ -64,16 +61,13 @@ export class ConfigModule {
      * @param priority source priority.
      */
     static withFile(filePath: string, priority?: number): ModuleWithProviders<ConfigModule> {
-        // Dynamic import will be handled at runtime
         return {
             module: ConfigModule,
             providers: [
                 {
-                    provide: 'JsonFileConfigSource',
-                    useFactory: async () => {
-                        const { JsonFileConfigSource } = await import('./sources/env.source');
-                        return new JsonFileConfigSource(filePath, priority);
-                    }
+                    provide: CONFIG_SOURCES,
+                    useValue: new JsonFileConfigSource(filePath, priority),
+                    multi: true
                 }
             ]
         };

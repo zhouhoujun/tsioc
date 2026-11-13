@@ -34,6 +34,7 @@ import {
     useRouter,
     useSession,
     useStatics,
+    useTransfers,
 } from '../src';
 
 const createConfig = () => ({
@@ -233,6 +234,21 @@ describe('service provider', () => {
         expect(interceptorProvider.multiOrder).toBe(123);
         expect(combined.some(feature => feature.kind === ServiceFeatureKind.Cors)).toBe(true);
         expect(combined.flatMap(feature => feature.providers).some((provider: any) => provider.provide === SERVICE_CORS_OPTIONS && provider.useValue.origin === 'https://example.com')).toBe(true);
+    });
+
+    it('does not register an auth interceptor when auth is explicitly disabled', () => {
+        const feature = useAuth(false)(createConfig()) as any;
+        expect(feature.providers).toEqual([]);
+    });
+
+    it('keeps the transport default transfer when custom transfer selectors are provided', () => {
+        const config = createConfig();
+        config.features.defaultTransfer = () => [{ provide: 'DEFAULT_TRANSFER', useValue: 1 } as any];
+        const feature = useTransfers(() => [{ provide: 'CUSTOM_TRANSFER', useValue: 2 } as any])(config) as any;
+
+        expect(feature.providers.some((provider: any) => provider.useValue === 1)).toBe(true);
+        expect(feature.providers.some((provider: any) => provider.useValue === 2)).toBe(true);
+        expect(feature.providers.filter((provider: any) => provider.multi).length).toBe(2);
     });
 
     it('drops feature providers declared for another transport', () => {

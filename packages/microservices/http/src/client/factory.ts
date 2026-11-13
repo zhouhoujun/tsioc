@@ -1,6 +1,6 @@
 import { asProvider, createInjector, Injector, Provider } from '@tsdi/ioc';
 import { createRequestHandler, TransferSide, Transport, ContentType } from '@tsdi/common';
-import { CLIENT_CONFIGS, BodySerializeStrategy, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature } from '@tsdi/client';
+import { CLIENT_CONFIGS, BodySerializeStrategy, ClientFeatureKind, ClientHandler, ClientTransportFeature, ServiceError, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature } from '@tsdi/client';
 import { ensureClientConnectedInterceptor } from '@tsdi/client/src/interceptors/connect';
 import { HTTP_CLIENT_OPTIONS, HttpClientOptions } from './options';
 import { HttpClient } from './client';
@@ -72,6 +72,7 @@ function createHttpBackend(config: HttpClientOptions) {
             }
         }
         const finish = (statusCode: number, statusMessage: string, responseHeaders: Record<string, any>, responseBody: any) => {
+            const ok = statusCode >= 200 && statusCode < 300;
             const response = {
                 url: target.toString(),
                 headers: responseHeaders,
@@ -79,10 +80,21 @@ function createHttpBackend(config: HttpClientOptions) {
                 status: statusCode,
                 statusMessage,
                 statusText: statusMessage,
-                ok: statusCode >= 200 && statusCode < 300,
+                ok,
                 body: responseBody,
                 payload: responseBody,
             };
+            const throwOnError = (req as any).throwOnError ?? config.throwOnError;
+            const validateStatus = (req as any).validateStatus ?? config.validateStatus;
+            const accepted = validateStatus ? !!validateStatus(statusCode) : ok;
+            if (throwOnError !== false && !accepted) {
+                observer.error(new ServiceError(
+                    `HTTP ${statusCode}${statusMessage ? ` ${statusMessage}` : ''} for ${req.method ?? 'GET'} ${target.toString()}`,
+                    'upstream',
+                    { status: statusCode, statusMessage, body: responseBody, headers: responseHeaders, url: target.toString(), response }
+                ));
+                return;
+            }
             observer.next(req.observe === 'response' ? response : responseBody);
             observer.complete();
         };
@@ -123,7 +135,7 @@ function createHttpBackend(config: HttpClientOptions) {
         if (config.authority) {
             const session = client?.getSession();
             if (!session) {
-                observer.error(new Error('HTTP/2 session is not connected'));
+                observer.error(new ServiceError('HTTP/2 session is not connected', 'transport', { url: target.toString() }));
                 return;
             }
             const path = `${target.pathname}${target.search}` || '/';

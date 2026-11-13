@@ -27,6 +27,35 @@ function get(port: number, path: string): Promise<{ status: number; body: any }>
 }
 
 @Module({
+    imports: [
+        LoggerModule,
+        HealthModule.withOptions({
+            includeMemory: false,
+            timeout: 30,
+            includeDetails: false,
+            indicators: [
+                {
+                    name: 'stuck',
+                    check: () => new Promise(() => undefined) as any
+                },
+                {
+                    name: 'cache',
+                    check: async () => ({ status: 'UP', details: { secret: 'hidden' } })
+                }
+            ]
+        })
+    ],
+    declarations: [HealthController],
+    providers: [
+        provideService(
+            useRouter(),
+            useHttpTransport({ listenOpts: { port: 0, host: '127.0.0.1' }, asDefault: true })
+        )
+    ]
+})
+class HealthDownApp { }
+
+@Module({
     imports: [LoggerModule, HealthModule],
     declarations: [HealthController],
     providers: [
@@ -69,5 +98,42 @@ describe('Health endpoints', () => {
         const readiness = await get(port, '/health/readiness');
         expect(readiness.status).toBe(200);
         expect(readiness.body.status).toBe('UP');
+    });
+});
+
+describe('Health endpoints when a dependency is down', () => {
+    let ctx: ApplicationContext;
+    let port: number;
+
+    before(async () => {
+        ctx = await Application.run(HealthDownApp);
+        const ref = ctx.runners.getRef(HttpServer as any) as { instance: { server: http.Server } };
+        const address = ref.instance.server.address();
+        if (!address || typeof address === 'string') {
+            throw new Error('Unable to resolve bound port');
+        }
+        port = address.port;
+    });
+
+    after(async () => {
+        await ctx?.close();
+    });
+
+    it('returns 503 for readiness and full health while liveness stays 200', async () => {
+        const health = await get(port, '/health');
+        expect(health.status).toBe(503);
+        expect(health.body.status).toBe('DOWN');
+        expect(health.body.components.stuck.status).toBe('DOWN');
+        expect(health.body.components.stuck.error).toContain('timeout after 30ms');
+        expect(health.body.components.cache.status).toBe('UP');
+        expect(health.body.components.cache.details).toBeUndefined();
+
+        const readiness = await get(port, '/health/readiness');
+        expect(readiness.status).toBe(503);
+        expect(readiness.body.status).toBe('DOWN');
+
+        const liveness = await get(port, '/health/liveness');
+        expect(liveness.status).toBe(200);
+        expect(liveness.body).toEqual({ status: 'UP' });
     });
 });
