@@ -3935,3 +3935,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - ContractValidator 编译缓存（schema WeakMap + model cache）。
   - typed client 复用 validator；便捷函数保留。
   - 回归：contract 17。
+- 微服务框架第三十九批（2026-11-13）：
+  - Config diff 递归展开 rateLimit/cache 等嵌套策略字段。
+  - changedValues 使用点路径（rateLimit.limit）。
+  - 回归：gateway 81。

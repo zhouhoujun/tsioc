@@ -242,6 +242,11 @@
 - `createContractClient` 每个实例复用一个 validator；request/response 校验不再每次重建。
 - `validateContractValue` 保留为便捷包装。
 
+第三十九批（策略字段 diff）：
+
+- route/rule 字段差异递归展开（最多 3 层），数组保持原子比较。
+- `rateLimit.limit`、`cache.enabled` 等策略字段可单独展示 before/after。
+
 
 ---
 

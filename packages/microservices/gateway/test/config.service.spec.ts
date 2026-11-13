@@ -145,6 +145,33 @@ describe('GatewayConfigService', () => {
         });
     });
 
+    it('flattens nested policy changes in the diff', () => {
+        const { service } = create();
+        service.apply({
+            routes: [{
+                path: '/nested',
+                service: 's',
+                rateLimit: { limit: 1, windowMs: 1000 },
+                cache: { enabled: true }
+            }]
+        });
+        const result = service.apply({
+            routes: [{
+                path: '/nested',
+                service: 's',
+                rateLimit: { limit: 5, windowMs: 1000 },
+                cache: { enabled: false }
+            }]
+        }, { mergeRoutes: true });
+
+        expect(result.diff.routes.changedFields?.['/nested:s']).toContain('rateLimit.limit');
+        expect(result.diff.routes.changedFields?.['/nested:s']).toContain('cache.enabled');
+        expect(result.diff.routes.changedValues?.['/nested:s']?.['rateLimit.limit']).toEqual({
+            before: 1,
+            after: 5
+        });
+    });
+
     it('tracks option changes in the diff', () => {
         const { service } = create();
         const result = service.apply({ routeMatching: 'legacy' });

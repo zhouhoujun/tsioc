@@ -411,28 +411,42 @@ function compareMap<T>(current: Map<string, T>, next: Map<string, T>) {
 }
 
 function fieldValues(current: any, next: any): Record<string, { before: any; after: any }> {
-    if (!current || !next || typeof current !== 'object' || typeof next !== 'object') {
-        return {};
-    }
-    const values: Record<string, { before: any; after: any }> = {};
-    for (const key of new Set([...Object.keys(current), ...Object.keys(next)])) {
-        if (JSON.stringify(current[key]) !== JSON.stringify(next[key])) {
-            values[key] = { before: current[key], after: next[key] };
-        }
-    }
-    return values;
+    return collectFieldChanges(current, next).reduce((values, change) => {
+        values[change.path] = { before: change.before, after: change.after };
+        return values;
+    }, {} as Record<string, { before: any; after: any }>);
 }
 
 function fieldDiff(current: any, next: any): string[] {
+    return collectFieldChanges(current, next).map(change => change.path);
+}
+
+interface FieldChange {
+    path: string;
+    before: any;
+    after: any;
+}
+
+function collectFieldChanges(current: any, next: any, prefix = '', depth = 0): FieldChange[] {
     if (!current || !next || typeof current !== 'object' || typeof next !== 'object') {
         return [];
     }
-    const keys = new Set([...Object.keys(current), ...Object.keys(next)]);
-    const fields: string[] = [];
-    for (const key of keys) {
-        if (JSON.stringify(current[key]) !== JSON.stringify(next[key])) {
-            fields.push(key);
+    const changes: FieldChange[] = [];
+    for (const key of new Set([...Object.keys(current), ...Object.keys(next)])) {
+        const path = prefix ? `${prefix}.${key}` : key;
+        const before = current[key];
+        const after = next[key];
+        if (isPlainRecord(before) && isPlainRecord(after) && depth < 3) {
+            changes.push(...collectFieldChanges(before, after, path, depth + 1));
+            continue;
+        }
+        if (JSON.stringify(before) !== JSON.stringify(after)) {
+            changes.push({ path, before, after });
         }
     }
-    return fields.sort();
+    return changes.sort((a, b) => a.path.localeCompare(b.path));
+}
+
+function isPlainRecord(value: any): boolean {
+    return !!value && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date);
 }
