@@ -1,10 +1,10 @@
 import expect = require('expect');
 import * as path from 'node:path';
-import { Module } from '@tsdi/ioc';
+import { Inject, Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { Controller, Handle, Payload, provideService, useRouter } from '@tsdi/service';
-import { Transport } from '@tsdi/common';
+import { REQUEST, Transport } from '@tsdi/common';
 import { provideClient } from '@tsdi/client';
 import { lastValueFrom } from 'rxjs';
 import { GrpcServer } from '../src/server/grpc-server';
@@ -17,7 +17,13 @@ const PROTO_PATH = path.resolve(__dirname, 'fixtures/greeter.proto');
 @Controller('/grpc')
 class GreeterController {
     @Handle('/grpc.test.Greeter/SayHello', Transport.gRPC)
-    sayHello(@Payload('name') name: string) {
+    sayHello(@Payload('name') name: string, @Inject(REQUEST) request: any) {
+        if (name === 'slow') {
+            return new Promise(resolve => setTimeout(() => resolve({ message: 'slow' }), 200));
+        }
+        if (name === 'headers') {
+            return { message: request?.headers?.authorization ?? '' };
+        }
         return { message: `hello ${name ?? 'world'}` };
     }
 }
@@ -84,5 +90,28 @@ describe('gRPC unary RPC', () => {
             { body: { name: 'World' } } as any
         ));
         expect(result).toEqual({ message: 'hello World' });
+    });
+
+    it('propagates metadata to the handler', async () => {
+        const client = clientCtx.get(GrpcClient);
+        const result = await lastValueFrom(client.send(
+            { service: 'Greeter', method: 'SayHello' } as any,
+            { body: { name: 'headers' }, headers: { authorization: 'Bearer abc' } } as any
+        )) as any;
+        expect(result.message).toBe('Bearer abc');
+    });
+
+    it('honors the request deadline', async () => {
+        const client = clientCtx.get(GrpcClient);
+        let error: any;
+        try {
+            await lastValueFrom(client.send(
+                { service: 'Greeter', method: 'SayHello' } as any,
+                { body: { name: 'slow' }, timeout: 20 } as any
+            ));
+        } catch (err) {
+            error = err;
+        }
+        expect(error?.code).toBe(4);
     });
 });

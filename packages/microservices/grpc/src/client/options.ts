@@ -12,6 +12,11 @@ export interface GrpcClientOptions extends ClientOptions {
     protoPath?: string;
     packageName?: string;
     serviceName?: string;
+    /**
+     * default unary deadline in milliseconds. Requests may override with
+     * `timeout`.
+     */
+    deadlineMs?: number;
 }
 
 export const GRPC_CLIENT_OPTIONS = token<GrpcClientOptions>('GRPC_CLIENT_OPTIONS');

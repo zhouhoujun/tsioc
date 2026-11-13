@@ -3853,3 +3853,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - withHttpTransport 自带 BodySerializeStrategy/TimeoutStrategy/ResponseFactory。
   - 独立 transport 支持 withTimeout 与统一超时响应。
   - 回归：http 191。
+- 微服务框架第十八批（2026-11-13）：
+  - gRPC client deadlineMs + 每请求 timeout → grpc deadline。
+  - metadata 传播（authorization 等）+ deadline exceeded E2E。
+  - 回归：grpc 20。

@@ -42,7 +42,9 @@ function createGrpcBackend(_config: GrpcClientOptions) {
             }
         }
         const payload = req?.body ?? req?.payload ?? {};
-        const call = fn.call(connection, payload, metadata, (err: any, response: any) => {
+        const timeout = Number(req?.timeout ?? req?.deadline ?? _config.deadlineMs ?? 0);
+        const callOptions = timeout > 0 ? { deadline: Date.now() + timeout } : undefined;
+        const callback = (err: any, response: any) => {
             if (err) {
                 const error = Object.assign(new Error(err.details ?? err.message ?? 'gRPC call failed'), {
                     code: err.code,
@@ -55,7 +57,10 @@ function createGrpcBackend(_config: GrpcClientOptions) {
                 ? { status: 0, statusCode: 0, ok: true, body: response, payload: response, headers: {} }
                 : response);
             observer.complete();
-        });
+        };
+        const call = callOptions
+            ? fn.call(connection, payload, metadata, callOptions, callback)
+            : fn.call(connection, payload, metadata, callback);
         return () => {
             try {
                 call?.cancel?.();

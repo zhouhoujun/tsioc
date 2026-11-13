@@ -120,6 +120,12 @@
 - 不引入 `HttpModule` 也能使用 `withTimeout`、body serializer 和统一超时/错误响应。
 - 新增独立 transport 的 timeout 回归测试。
 
+第十八批（gRPC deadline/metadata）：
+
+- Client 支持 `deadlineMs` 默认值与每请求 `timeout`，通过 grpc-js 4-arg unary call 设置 deadline。
+- 请求 headers 映射为 gRPC metadata，服务端 `MessageAuthInterceptor`/`@Inject(REQUEST)` 可读取。
+- 新增 metadata 传播与 deadline exceeded（code 4）E2E。
+
 
 ---
 
