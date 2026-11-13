@@ -1973,6 +1973,55 @@ html[data-theme="high-contrast"] li.CodeMirror-hint-active {
     color: var(--wf-theme-text);
 }
 
+.workflow-designer[data-theme="dark"] .workflow-inspector-description,
+.workflow-designer[data-theme="solarized"] .workflow-inspector-description,
+.workflow-designer[data-theme="high-contrast"] .workflow-inspector-description,
+.workflow-designer[data-theme="dark"] .workflow-field-hint,
+.workflow-designer[data-theme="solarized"] .workflow-field-hint,
+.workflow-designer[data-theme="high-contrast"] .workflow-field-hint,
+.workflow-designer[data-theme="dark"] .workflow-input-unit,
+.workflow-designer[data-theme="solarized"] .workflow-input-unit,
+.workflow-designer[data-theme="high-contrast"] .workflow-input-unit,
+.workflow-designer[data-theme="dark"] .workflow-list-remove,
+.workflow-designer[data-theme="solarized"] .workflow-list-remove,
+.workflow-designer[data-theme="high-contrast"] .workflow-list-remove {
+    color: var(--wf-theme-muted);
+}
+
+.workflow-designer[data-theme="dark"] .workflow-field-group,
+.workflow-designer[data-theme="solarized"] .workflow-field-group,
+.workflow-designer[data-theme="high-contrast"] .workflow-field-group {
+    background: var(--wf-theme-surface-alt);
+    border-color: var(--wf-theme-border);
+}
+
+.workflow-designer[data-theme="dark"] .workflow-list-row,
+.workflow-designer[data-theme="solarized"] .workflow-list-row,
+.workflow-designer[data-theme="high-contrast"] .workflow-list-row {
+    background: var(--wf-theme-surface);
+    border-color: var(--wf-theme-border);
+}
+
+.workflow-designer[data-theme="dark"] .workflow-list-add,
+.workflow-designer[data-theme="solarized"] .workflow-list-add,
+.workflow-designer[data-theme="high-contrast"] .workflow-list-add {
+    background: transparent;
+    border-color: var(--wf-theme-border);
+    color: var(--wf-theme-primary);
+}
+
+.workflow-designer[data-theme="dark"] .workflow-list-add:hover,
+.workflow-designer[data-theme="solarized"] .workflow-list-add:hover,
+.workflow-designer[data-theme="high-contrast"] .workflow-list-add:hover {
+    background: rgba(59, 130, 246, 0.18);
+}
+
+.workflow-designer[data-theme="dark"] .workflow-field-error,
+.workflow-designer[data-theme="solarized"] .workflow-field-error,
+.workflow-designer[data-theme="high-contrast"] .workflow-field-error {
+    color: var(--wf-theme-danger);
+}
+
 .workflow-designer[data-theme="dark"] .workflow-canvas,
 .workflow-designer[data-theme="solarized"] .workflow-canvas,
 .workflow-designer[data-theme="high-contrast"] .workflow-canvas {

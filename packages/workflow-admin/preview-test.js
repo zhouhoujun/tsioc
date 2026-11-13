@@ -437,6 +437,16 @@ function startDesignerServer(port) {
         await page.waitForTimeout(150);
         await page.locator('.workflow-field[data-field-key="operator"] [data-option-value="equals"]').click();
         const inspectorRendered = await page.locator('workflow-inspector dynamic-form').count() > 0;
+        const inspectorTheme = await page.evaluate(() => {
+            const group = document.querySelector('.workflow-inspector .workflow-field-group');
+            const label = document.querySelector('.workflow-inspector .workflow-field-label');
+            const input = document.querySelector('.workflow-inspector .workflow-input');
+            return {
+                group: group ? getComputedStyle(group).backgroundColor : '',
+                label: label ? getComputedStyle(label).color : '',
+                input: input ? getComputedStyle(input).backgroundColor : ''
+            };
+        });
         await page.waitForTimeout(900);
         await page.screenshot({ path: path.join(DESIGNER_DIR, 'preview.png') });
 
@@ -527,7 +537,7 @@ function startDesignerServer(port) {
 
         await browser.close();
 
-        const result = { before, initialJsBytes, menuItemClick, paletteDrop, lazyEditorChunk, hintEnv, hintAction, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, notFoundPage, notFoundCode, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
+        const result = { before, initialJsBytes, menuItemClick, paletteDrop, inspectorTheme, lazyEditorChunk, hintEnv, hintAction, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, notFoundPage, notFoundCode, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
         console.log(JSON.stringify(result, null, 2));
         if (errors.length || initialJsBytes > 690_000 || !lazyEditorChunk || !hintEnv || !hintAction || !shortcutsOpened || !shortcutsClosed
             || autosaveName !== 'Function Node' || autosaveCode !== 'return 42;' || !wheelZoom || !wheelPan || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20
@@ -550,6 +560,8 @@ function startDesignerServer(port) {
             || !layoutTheme.leftScrollbar.includes('rgb(51, 65, 85)')
             || !layoutTheme.canvasScrollbar.includes('rgb(51, 65, 85)')
             || themeStored !== 'dark' || themeAfterReload !== 'dark'
+            || inspectorTheme.group === 'rgb(248, 250, 252)' || inspectorTheme.group === 'rgb(255, 255, 255)'
+            || inspectorTheme.label === 'rgb(71, 85, 105)' || inspectorTheme.input === 'rgb(255, 255, 255)'
             || !pluginInstall?.installed || !pluginNodeVisible || !notFoundPage || notFoundCode !== '404' || !inspectorRendered
             || tabCount !== 2 || tabState?.openIds?.length !== 2
             || restoredTabCount !== 2 || !String(restoredTabLabel || '').includes('Approval workflow')
