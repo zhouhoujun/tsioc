@@ -660,7 +660,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "value": "done"
             },
             "parallel": {},
-            "join": {},
+            "join": {
+                "resultField": "joined"
+            },
             "loop": {
                 "workflow": "workflows.child"
             },
@@ -823,6 +825,17 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "command": "/usr/bin/node",
                 "cwd": "./",
                 "env": "KEY"
+            },
+            "combine": {
+                "fields": "first, second"
+            },
+            "yaml": {
+                "field": "value",
+                "target": "value"
+            },
+            "rbe": {
+                "field": "items",
+                "path": "value"
             }
         },
         "fieldDescription": {
@@ -1210,7 +1223,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "hex": "Hex",
             "change": "On any change",
             "merge": "Merged object",
-            "concat": "Array concat"
+            "concat": "Array concat",
+            "ms": "ms",
+            "s": "s",
+            "value": "On value change"
         }
     },
     "zh-CN": {
@@ -1867,7 +1883,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "value": "done"
             },
             "parallel": {},
-            "join": {},
+            "join": {
+                "resultField": "joined"
+            },
             "loop": {
                 "workflow": "workflows.child"
             },
@@ -1949,8 +1967,12 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "trycatch": {},
             "subprocess": {},
-            "comment": {},
-            "custom": {},
+            "comment": {
+                "text": "Canvas note"
+            },
+            "custom": {
+                "result": "{ \"ok\": true }"
+            },
             "mqtt-publish": {},
             "mqtt-wait": {},
             "redis-command": {},
@@ -2010,6 +2032,17 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "command": "/usr/bin/node",
                 "cwd": "./",
                 "env": "KEY"
+            },
+            "combine": {
+                "fields": "first, second"
+            },
+            "yaml": {
+                "field": "value",
+                "target": "value"
+            },
+            "rbe": {
+                "field": "items",
+                "path": "value"
             }
         },
         "fieldDescription": {
@@ -2389,7 +2422,18 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "hex": "Hex",
             "change": "任意变化",
             "merge": "合并对象",
-            "concat": "数组拼接"
+            "concat": "数组拼接",
+            "ms": "毫秒",
+            "s": "秒",
+            "value": "按值变化",
+            "info": "信息",
+            "warn": "告警",
+            "error": "错误",
+            "GET": "GET",
+            "POST": "POST",
+            "PUT": "PUT",
+            "PATCH": "PATCH",
+            "DELETE": "DELETE"
         }
     }
 };
