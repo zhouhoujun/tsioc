@@ -195,6 +195,29 @@ export class RuntimeMousePipelineReproTest {
         expect(surface.getLastRenderedLines()[0]).toContain('\x1b[48;2;');
     }
 
+    @Test('hovering the tab close turns its glyph red')
+    async sessionTabCloseHoverRed() {
+        const ref = this.ctx.get(ApplicationRunners).getRef(AgentConsoleComponent)!;
+        const state: any = ref.instance.sessionState;
+        state.sessionTabsAction = { select: () => undefined, create: () => undefined, close: () => undefined };
+        state.setSessions([
+            { id: 'session-a', current: true, title: 'Alpha', workspace: '/work/a' },
+            { id: 'session-b', current: false, title: 'Beta', workspace: '/work/a' }
+        ]);
+        await this.settle();
+        const surface = this.ctx.get(ConsoleTerminalSurfaceAccessor)!;
+        const close = surface.getClickTargets().find((entry: any) =>
+            String((entry.node as any)?.getAttribute?.('class') || '').includes('tab-close'));
+        expect(close).toBeDefined();
+        // Default: muted like the workflow tabs.
+        expect(surface.getLastRenderedLines()[0]).toContain('\x1b[38;2;110;118;129m');
+        surface.dispatchMouse?.({ x: close!.x + 1, y: close!.y + 1, button: 35, release: false });
+        await new Promise(resolve => setTimeout(resolve, 250));
+        await Promise.resolve();
+        // Hover: the shared animation recolours the glyph to the theme error red.
+        expect(surface.getLastRenderedLines()[0]).toContain('\x1b[38;2;207;152;147m');
+    }
+
     @Test('ConsoleTerminalInputController decodes and forwards real SGR stdin chunks')
     async controllerForwardsSgrChunks() {
         const decoder = new TerminalInputSequenceDecoder();

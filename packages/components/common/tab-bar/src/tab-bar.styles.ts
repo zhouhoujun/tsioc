@@ -101,10 +101,12 @@ tab-bar {
     font-size: 12px;
     line-height: 1;
     cursor: pointer;
-    transition: color 120ms ease, background-color 120ms ease;
+    transition: color 120ms ease, background-color 120ms ease, opacity 120ms ease;
 }
 
-.tab[aria-selected="true"] .tab-close:hover {
+/* The close glyph turns red on hover for every tab (the active one and the
+   hover-revealed affordance on the others), like the workflow tabs. */
+.tab-close:hover {
     background: var(--tab-hover, #f1f5f9);
     color: var(--tab-danger, #dc2626);
 }

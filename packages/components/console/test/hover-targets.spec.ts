@@ -52,6 +52,33 @@ export class ConsoleHoverTargetsTest {
         }
     }
 
+    @Test('a stylesheet :hover foreground recolours the hovered glyph')
+    async hoverForegroundRecolors() {
+        const renderer = new TuiRenderer();
+        renderer.setStyleSheet('.close { color: #6e7681; } .close:hover { color: #cf9893; }');
+        const root = renderer.createElement('div');
+        const close = hoverableRow(renderer, '✕', { class: 'close' });
+        renderer.appendChild(root, close);
+        const surface = new TuiTerminalSurface({ renderer, root, width: 20, output: { write() { } } });
+        const settle = async () => {
+            for (let index = 0; index < 8; index += 1) {
+                await Promise.resolve();
+            }
+        };
+        try {
+            await settle();
+            const before = (surface.lastRenderedLines || []).find(line => line.includes('✕')) || '';
+            expect(before).toContain('38;2;110;118;129');
+            hover(surface, 1, 1);
+            await settle();
+            const after = (surface.lastRenderedLines || []).find(line => line.includes('✕')) || '';
+            // Workflow tab behaviour: muted ✕ turns red while hovered.
+            expect(after).toContain('38;2;207;152;147');
+        } finally {
+            surface.destroy();
+        }
+    }
+
     @Test('hovering a non-expandable row paints no background')
     nonExpandableRowStaysFlat() {
         const renderer = new TuiRenderer();

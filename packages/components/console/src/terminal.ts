@@ -1200,6 +1200,8 @@ export class TuiTerminalSurface {
     protected hoverTiming = 'ease';
     protected hoverBackgroundFrom: [number, number, number] = [16, 22, 29];
     protected hoverBackgroundTo?: [number, number, number];
+    /** Hovered glyph colour (from the stylesheet's `:hover` color). */
+    protected hoverTextColor?: [number, number, number];
     protected readonly handleHoverAnimation = (): void => {
         const duration = Math.max(1, this.hoverDurationMs);
         const progress = Math.min(1, Math.max(0, (Date.now() - this.hoverStartedAt) / duration));
@@ -2032,6 +2034,7 @@ export class TuiTerminalSurface {
         this.hoverDurationMs = 160;
         this.hoverTiming = 'ease';
         this.hoverBackgroundTo = undefined;
+        this.hoverTextColor = undefined;
         const styles = this.options.renderer.resolveHoverStyle?.(element);
         if (!styles) {
             return;
@@ -2052,6 +2055,10 @@ export class TuiTerminalSurface {
         const background = parseHoverColor(styles['background-color'] || styles.background);
         if (background) {
             this.hoverBackgroundTo = background;
+        }
+        const foreground = parseHoverColor(styles.color || styles['foreground-color']);
+        if (foreground) {
+            this.hoverTextColor = foreground;
         }
     }
 
@@ -2355,6 +2362,8 @@ export class TuiTerminalSurface {
         const to = this.hoverBackgroundTo || [48, 62, 78];
         const from = this.hoverBackgroundFrom;
         const background = `\x1b[48;2;${mix(from[0], to[0])};${mix(from[1], to[1])};${mix(from[2], to[2])}m`;
+        const text = this.hoverTextColor;
+        const foreground = text ? `\x1b[38;2;${text[0]};${text[1]};${text[2]}m` : '';
         for (let offset = 0; offset < Math.max(1, target.height); offset++) {
             const row = target.y + offset;
             if (row < 0 || row >= lines.length) {
@@ -2372,11 +2381,17 @@ export class TuiTerminalSurface {
             if (middle) {
                 // Inner style segments often end with SGR reset and selected
                 // tabs carry their own background; drop those so the fade owns
-                // the whole hovered region.
+                // the whole hovered region. A hover foreground replaces the
+                // glyph colour (tab close turns red) while keeping its shape.
+                // Only a hover text colour replaces glyph colours; a plain
+                // hover must keep syntax/tab-label foregrounds untouched.
+                const pattern = text
+                    ? /\x1b\[(?:0|39|49|3[0-7]|9[0-7]|4[0-7]|38;(?:5;\d+|2;\d+;\d+;\d+)|48;(?:5;\d+|2;\d+;\d+;\d+))m/g
+                    : /\x1b\[(?:0|49|4[0-7]|48;(?:5;\d+|2;\d+;\d+;\d+))m/g;
                 const painted = middle
-                    .replace(/\x1b\[(?:0|49|4[0-7]|48;(?:5;\d+|2;\d+;\d+;\d+))m/g, match =>
-                        match === '\x1b[0m' ? `\x1b[0m${background}` : '');
-                lines[row] = `${before}${background}${painted}\x1b[0m${after}`;
+                    .replace(pattern, match =>
+                        match === '\x1b[0m' ? `\x1b[0m${foreground}${background}` : '');
+                lines[row] = `${before}${foreground}${background}${painted}\x1b[0m${after}`;
             }
         }
     }

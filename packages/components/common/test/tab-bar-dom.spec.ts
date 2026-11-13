@@ -45,6 +45,31 @@ export class TabBarDomTest {
         });
     }
 
+    @Test('hover-mode close affords are rendered for DOM hover reveal')
+    async hoverCloseMode() {
+        const ref = this.ctx.runners.getRef(TabBarComponent) as ComponentRef<TabBarComponent>;
+        const closed: string[] = [];
+        ref.instance.source = {
+            ...source,
+            items: [
+                { id: 'a', label: ' Alpha ', active: true, showClose: true },
+                { id: 'b', label: ' Beta ', active: false, showClose: 'hover' }
+            ],
+            close: id => closed.push(id)
+        };
+        await ref.render();
+        await Promise.resolve();
+        const root = ref.hostView.rootNodes[0] as any;
+        const closes = Array.from(root.querySelectorAll('.tab-close')) as any[];
+        expect(closes.length).toEqual(2);
+        expect(closes[0].getAttribute('data-close-mode')).toEqual('always');
+        expect(closes[1].getAttribute('data-close-mode')).toEqual('hover');
+        // A revealed hover affordance closes its own tab.
+        closes[1].click();
+        await Promise.resolve();
+        expect(closed).toEqual(['b']);
+    }
+
     @Test('the shared tab skin is installed once in the document head')
     async installsSharedSkin() {
         const ref = this.ctx.runners.getRef(TabBarComponent) as ComponentRef<TabBarComponent>;

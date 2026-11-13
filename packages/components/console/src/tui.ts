@@ -1332,7 +1332,25 @@ export class TuiRenderer extends ConsoleRenderer {
     resolveHoverStyle(element: ConsoleElement): Record<string, string> {
         const base = resolveConsoleStyleSheet(element, this.styleSheetRules);
         const hover = resolveConsoleStyleSheet(element, this.styleSheetRules, true);
-        return this.mergeStyles(base, hover);
+        const styles = this.mergeStyles(base, hover);
+        // Theme colours live as custom properties on ancestors. Resolve them so
+        // the surface can animate a hover foreground (a tab close turning red).
+        const variables: Record<string, string> = {};
+        for (let node: any = element; node; node = node.parentNode) {
+            if (!(node instanceof ConsoleElement)) {
+                continue;
+            }
+            const map = this.getStyleMap(node);
+            Object.keys(map).forEach(key => {
+                if (key.startsWith('--') && variables[key] === undefined) {
+                    variables[key] = map[key];
+                }
+            });
+        }
+        if (styles.color) {
+            styles.color = this.resolveCssValue(styles.color, { ...variables, ...styles });
+        }
+        return styles;
     }
 
     protected resolveClassStyle(classNames: string): Record<string, string> {

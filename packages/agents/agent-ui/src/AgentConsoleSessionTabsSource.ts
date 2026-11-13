@@ -60,7 +60,9 @@ export class AgentConsoleSessionTabsSource implements TabBarSource {
                 id: session.id,
                 label: ` ${this.tabTitle(session)} `,
                 active,
-                showClose: active
+                // Browsers reveal the close affordance on hover (like every
+                // other tab strip); the terminal keeps it on the active tab.
+                showClose: (active ? true : (this.state.tabCloseOnHover ? 'hover' : false)) as TabItem['showClose']
             };
         });
         return this.windowItems(items);

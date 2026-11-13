@@ -526,6 +526,9 @@
 }
 .tab-close {
     padding: 0 0 0 1ch;
+    color: var(--console-meta, #6e7681);
+}
+.tab-close:hover {
     color: var(--console-error, #cf9893);
 }
 .tab-new {

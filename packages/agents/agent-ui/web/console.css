@@ -82,6 +82,19 @@ body {
     font-family: var(--agent-web-sans);
 }
 
+/* Browsers reveal a tab's close affordance on hover (the active tab keeps it
+   visible). The width stays reserved so hovering does not shift the strip. */
+#agent-console tab-bar .tab-close[data-close-mode="hover"] {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#agent-console tab-bar .tab:hover .tab-close[data-close-mode="hover"],
+#agent-console tab-bar .tab:focus-within .tab-close[data-close-mode="hover"] {
+    opacity: 1;
+    pointer-events: auto;
+}
+
 #agent-console .web-code-head button,
 #agent-console .dialog-close {
     display: block;

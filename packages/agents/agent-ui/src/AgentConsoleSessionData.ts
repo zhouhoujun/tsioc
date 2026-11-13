@@ -49,6 +49,8 @@ export class AgentConsoleSessionData {
     maxOverlayVisibleLines = 0;
     /** Terminal columns for the session tab strip; 0 on hosts that scroll it (web). */
     tabStripColumns = 0;
+    /** DOM hosts reveal a tab's close affordance on hover; terminals keep it active-only. */
+    tabCloseOnHover = false;
     sessionId = 'console';
     input = '';
     inputSecret = false;

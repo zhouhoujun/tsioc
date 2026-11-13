@@ -544,6 +544,9 @@ $idle: var(--console-idle, #6fa37a);
 }
 .tab-close {
     padding: 0 0 0 1ch;
+    color: $meta;
+}
+.tab-close:hover {
     color: $error;
 }
 .tab-new {

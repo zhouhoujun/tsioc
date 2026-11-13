@@ -38,10 +38,10 @@ export class SessionTabsTest {
             expect(bar).toContain('Beta');
             expect(bar).toContain('+');
             expect(bar).toContain('✕');
-            // The close affordance is red (danger), matching the workflow-admin
-            // tab strip; keep it distinct from the tab label colour.
+            // The close affordance is muted by default (workflow tab style);
+            // hovering it turns it red through the shared hover animation.
             const closeColor = String(bar).match(/\x1b\[38;2;(\d+);(\d+);(\d+)m[^\x1b]*✕/);
-            expect(closeColor?.slice(1).join(',')).toEqual('207,152,147');
+            expect(closeColor?.slice(1).join(',')).toEqual('110,118,129');
             // One space after ✕ (plus the next tab's leading label space):
             // the close affordance must not leave a gap before the next tab.
             const plainBar = String(bar).replace(/\x1b\[[0-9;]*m/g, '');
@@ -105,6 +105,29 @@ export class SessionTabsTest {
             expect(close!.width).toBeGreaterThanOrEqual(2);
             expect(close!.x + close!.width).toBeLessThanOrEqual(beta!.x);
             surface.destroy();
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('DOM hosts reveal close affordances on hover while terminals keep active-only')
+    async hoverCloseAffordances() {
+        const ctx = await Application.run(AgentModule, { deps: [AgentUiModule, TuiTemplateModule, ComponentsModule] });
+        try {
+            const ref = ctx.get(ComponentFactory).create(AgentConsoleComponent, { injector: ctx });
+            await ref.render();
+            const state: any = ref.instance.sessionState;
+            state.setSessions([
+                { id: 'session-a', current: true, title: 'Alpha' },
+                { id: 'session-b', current: false, title: 'Beta' }
+            ]);
+            const tabs = ref.hostView.query(TabsComponent) as any;
+            // Terminal default: only the active tab carries a close affordance.
+            expect(tabs.instance.items.map((tab: any) => tab.showClose)).toEqual([true, false]);
+            // Browser host: inactive tabs reserve a hover-revealed affordance.
+            state.tabCloseOnHover = true;
+            for (let index = 0; index < 16; index++) await Promise.resolve();
+            expect(tabs.instance.items.map((tab: any) => tab.showClose)).toEqual([true, 'hover']);
         } finally {
             await ctx.close();
         }

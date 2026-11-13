@@ -361,6 +361,8 @@ export async function mountAgentWebConsole(
         workspace: config.workspace || state.workspace || ''
     });
     state.pairAction = () => requestWebPairing(baseUrl, config.token, config.fetchImpl);
+    // Browsers have a pointer: reveal each tab's close affordance on hover.
+    state.tabCloseOnHover = true;
 
     const bridge = new AgentConsoleRemoteEventBridge(state, {
         baseUrl,
