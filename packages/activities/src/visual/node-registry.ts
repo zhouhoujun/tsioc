@@ -222,6 +222,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         outputs: [port('out', 'out', 'output', 'Output'), port('error', 'error', 'output', 'Error')],
         fields: [
             configField({ key: 'field', label: 'HTML field', type: 'text', defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value' }),
+            configField({ key: 'tag', label: 'Tag', type: 'text', pattern: '^[A-Za-z][A-Za-z0-9-]*$', placeholder: 'h1', group: 'Options', description: 'Only extract content from this HTML tag. Leave empty for the whole document.' }),
             configField({
                 key: 'mode',
                 label: 'Output',
@@ -412,6 +413,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [],
         fields: [
+            configField({ key: 'active', label: 'Enabled', type: 'boolean', defaultValue: true, group: 'Options', description: 'Turn off to keep the node but skip its output.' }),
             configField({ key: 'field', label: 'Output property', type: 'text', pattern: VALUE_PATH_PATTERN, placeholder: 'payload', description: 'Context path to print instead of the complete message.' }),
             configField({ key: 'complete', label: 'Complete message', type: 'boolean', defaultValue: false, description: 'Print the complete workflow context.' }),
             configField({

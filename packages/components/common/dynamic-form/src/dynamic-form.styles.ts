@@ -38,15 +38,14 @@ export const DYNAMIC_FORM_CSS = `
 }
 
 .df-field-group-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 12px 0 6px;
-    font-size: 10px;
+    margin: 14px 0 8px;
+    padding: 2px 0 2px 8px;
+    border-left: 3px solid var(--df-border);
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: var(--df-text-hint);
+    color: #475569;
 }
 
 

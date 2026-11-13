@@ -218,7 +218,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "end": {},
             "inject": {
                 "payload": "Payload (JSON)",
-                "topic": "Topic"
+                "topic": "Topic",
+                "payloadType": "Payload type"
             },
             "task": {
                 "action": "Action name",
@@ -255,7 +256,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "mode": "Mode",
                 "delay": "Delay",
                 "randomMin": "Minimum",
-                "randomMax": "Maximum"
+                "randomMax": "Maximum",
+                "unit": "Unit"
             },
             "log": {
                 "message": "Static message",
@@ -271,7 +273,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "responseType": "Response handling",
                 "retry": "Retries",
                 "retryDelay": "Retry delay",
-                "timeout": "Timeout"
+                "timeout": "Timeout",
+                "authType": "Authentication",
+                "username": "Username",
+                "password": "Password"
             },
             "assign": {
                 "values": "Values (JSON)"
@@ -353,7 +358,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "batch": {
                 "field": "Array path",
-                "size": "Batch size"
+                "size": "Batch size",
+                "overlap": "Overlap"
             },
             "trycatch": {
                 "timeout": "Timeout"
@@ -442,7 +448,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "Value path",
                 "complete": "Complete message",
                 "level": "Level",
-                "console": "Also print to console"
+                "console": "Also print to console",
+                "active": "Enabled"
             },
             "link": {
                 "links": "Link names"
@@ -450,7 +457,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "html": {
                 "field": "HTML path",
                 "mode": "Output",
-                "target": "Write result to"
+                "target": "Write result to",
+                "tag": "Tag"
             },
             "xml": {
                 "mode": "Mode",
@@ -556,7 +564,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "range": {},
             "batch": {
-                "field": "items"
+                "field": "items",
+                "overlap": "0"
             },
             "trycatch": {},
             "subprocess": {},
@@ -597,7 +606,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "html": {
                 "field": "body",
-                "target": "value"
+                "target": "value",
+                "tag": "h1"
             },
             "xml": {
                 "field": "value",
@@ -612,7 +622,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "end": {},
             "inject": {
                 "topic": "optional label carried with the payload",
-                "payload": "JSON merged into the flow context"
+                "payload": "Value sent by the trigger. JSON is merged into the context; primitives are sent as-is.",
+                "payloadType": "choose the value type; JSON merges into the context, primitives are sent as-is"
             },
             "task": {
                 "action": "name of a function in context.actions; leave empty to return the result below",
@@ -649,7 +660,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "delay": "pause duration before the next node",
                 "mode": "fixed waits a set time; random picks a value in the range",
                 "randomMin": "minimum random delay",
-                "randomMax": "maximum random delay"
+                "randomMax": "maximum random delay",
+                "unit": "unit used by the delay values"
             },
             "log": {
                 "message": "text written when no value path is set",
@@ -665,7 +677,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "responseType": "auto parses JSON when possible; text keeps raw text; JSON fails on invalid JSON",
                 "retry": "automatic retries after a failed request",
                 "retryDelay": "wait time between retries",
-                "timeout": "maximum wait time for the request"
+                "timeout": "maximum wait time for the request",
+                "authType": "choose whether to send a Basic authorization header",
+                "username": "Basic authentication user name",
+                "password": "Basic authentication password"
             },
             "assign": {
                 "values": "JSON object merged into flow variables"
@@ -747,7 +762,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "batch": {
                 "size": "number of items per batch",
-                "field": "array path to split into batches"
+                "field": "array path to split into batches",
+                "overlap": "items repeated at the start of the next batch; 0 disables overlap"
             },
             "trycatch": {
                 "timeout": "route to the timeout port after this delay"
@@ -780,7 +796,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "context path to inspect",
                 "complete": "print the complete workflow context",
                 "console": "also write to the host console for development",
-                "level": "output level: info, warn or error"
+                "level": "output level: info, warn or error",
+                "active": "turn off to keep the node but skip its output"
             },
             "link": {
                 "links": "optional comma-separated names for remote wires"
@@ -788,7 +805,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "html": {
                 "field": "context path containing HTML text",
                 "mode": "text strips markup; links collects href and src values",
-                "target": "context field that receives the extracted value"
+                "target": "context field that receives the extracted value",
+                "tag": "only extract content from this tag; leave empty for the whole document"
             },
             "xml": {
                 "mode": "parse XML text or serialize an object back to XML",
@@ -803,7 +821,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "delay": "Delay",
             "request": "Request",
             "template": "Template",
-            "output": "Output"
+            "output": "Output",
+            "payload": "Payload",
+            "authentication": "Authentication"
         },
         "option": {
             "truthy": "is truthy",
@@ -849,7 +869,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "not-prefix": "not prefix",
             "exists": "exists",
             "not-exists": "not exists",
-            "links": "Links"
+            "links": "Links",
+            "string": "String",
+            "number": "Number",
+            "boolean": "Boolean",
+            "none": "None",
+            "basic": "Basic",
+            "milliseconds": "Milliseconds",
+            "seconds": "Seconds",
+            "minutes": "Minutes"
         }
     },
     "zh-CN": {
@@ -1064,7 +1092,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "end": {},
             "inject": {
                 "payload": "数据（JSON）",
-                "topic": "主题"
+                "topic": "主题",
+                "payloadType": "数据类型"
             },
             "task": {
                 "action": "动作名称",
@@ -1101,7 +1130,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "mode": "模式",
                 "delay": "延迟",
                 "randomMin": "最小值",
-                "randomMax": "最大值"
+                "randomMax": "最大值",
+                "unit": "单位"
             },
             "log": {
                 "message": "固定消息",
@@ -1117,7 +1147,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "responseType": "响应处理",
                 "retry": "重试次数",
                 "retryDelay": "重试间隔",
-                "timeout": "超时"
+                "timeout": "超时",
+                "authType": "认证",
+                "username": "用户名",
+                "password": "密码"
             },
             "assign": {
                 "values": "值（JSON）"
@@ -1199,7 +1232,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "batch": {
                 "field": "数组路径",
-                "size": "批大小"
+                "size": "批大小",
+                "overlap": "重叠数量"
             },
             "trycatch": {
                 "timeout": "超时"
@@ -1288,7 +1322,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "取值路径",
                 "complete": "完整消息",
                 "level": "级别",
-                "console": "同时输出到控制台"
+                "console": "同时输出到控制台",
+                "active": "启用"
             },
             "link": {
                 "links": "连线名称"
@@ -1296,7 +1331,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "html": {
                 "field": "HTML 路径",
                 "mode": "输出",
-                "target": "结果写入字段"
+                "target": "结果写入字段",
+                "tag": "标签"
             },
             "xml": {
                 "mode": "模式",
@@ -1402,7 +1438,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "range": {},
             "batch": {
-                "field": "items"
+                "field": "items",
+                "overlap": "0"
             },
             "trycatch": {},
             "subprocess": {},
@@ -1423,7 +1460,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "html": {
                 "field": "body",
-                "target": "value"
+                "target": "value",
+                "tag": "h1"
             },
             "xml": {
                 "field": "value",
@@ -1438,7 +1476,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "end": {},
             "inject": {
                 "topic": "随数据一起传递的可选标签。",
-                "payload": "合并到流程上下文的 JSON 数据。"
+                "payload": "触发器发送的值；JSON 会合并到上下文，其他类型按原值发送。",
+                "payloadType": "选择数据的类型；JSON 会合并到上下文，其他类型按原值发送。"
             },
             "task": {
                 "action": "context.actions 中的函数名，留空则返回“结果”中的值。",
@@ -1475,7 +1514,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "delay": "进入下一个节点前的等待时间。",
                 "mode": "固定延迟或区间内随机延迟。",
                 "randomMin": "随机延迟的最小时间。",
-                "randomMax": "随机延迟的最大时间。"
+                "randomMax": "随机延迟的最大时间。",
+                "unit": "延迟时间的单位。"
             },
             "log": {
                 "message": "未设置取值路径时写入的文本。",
@@ -1491,7 +1531,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "responseType": "自动：能解析则返回 JSON；文本：保留原文；JSON：解析失败时报错。",
                 "retry": "请求失败后的自动重试次数。",
                 "retryDelay": "两次重试之间的等待时间。",
-                "timeout": "请求的最长等待时间。"
+                "timeout": "请求的最长等待时间。",
+                "authType": "选择是否发送 Basic 认证头。",
+                "username": "Basic 认证用户名。",
+                "password": "Basic 认证密码。"
             },
             "assign": {
                 "values": "合并到流程变量的 JSON 对象。"
@@ -1573,7 +1616,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "batch": {
                 "size": "每批包含的元素数量。",
-                "field": "要分批的数组路径。"
+                "field": "要分批的数组路径。",
+                "overlap": "下一批开头重复上一批末尾的元素数量，0 表示不重叠。"
             },
             "trycatch": {
                 "timeout": "超过该时间后进入超时端口。"
@@ -1606,7 +1650,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "要查看的上下文路径。",
                 "complete": "输出完整流程上下文。",
                 "console": "同时写入宿主控制台，便于开发调试。",
-                "level": "输出级别：info、warn 或 error。"
+                "level": "输出级别：info、warn 或 error。",
+                "active": "关闭后保留节点但不再输出。"
             },
             "link": {
                 "links": "用于识别远程连线的可选名称，逗号分隔。"
@@ -1614,7 +1659,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "html": {
                 "field": "包含 HTML 文本的上下文路径。",
                 "mode": "文本：去除标签；链接：收集 href/src。",
-                "target": "接收提取结果的上下文字段。"
+                "target": "接收提取结果的上下文字段。",
+                "tag": "只提取该 HTML 标签内的内容，留空则处理整个文档。"
             },
             "xml": {
                 "mode": "解析 XML 文本，或把对象序列化为 XML。",
@@ -1629,7 +1675,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "delay": "延迟",
             "request": "请求",
             "template": "模板",
-            "output": "输出"
+            "output": "输出",
+            "payload": "数据",
+            "authentication": "认证"
         },
         "option": {
             "truthy": "为真",
@@ -1667,7 +1715,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "not-prefix": "非前缀",
             "exists": "存在",
             "not-exists": "不存在",
-            "links": "链接"
+            "links": "链接",
+            "string": "字符串",
+            "number": "数字",
+            "boolean": "布尔",
+            "none": "无",
+            "basic": "Basic",
+            "milliseconds": "毫秒",
+            "seconds": "秒",
+            "minutes": "分钟"
         }
     }
 };

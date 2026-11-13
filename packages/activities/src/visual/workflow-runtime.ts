@@ -452,9 +452,17 @@ async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Pro
         };
     }
     try {
+        const headers: Record<string, any> = coerceJson(config.headers) || {};
+        if (String(config.authType || 'none') === 'basic' && config.username) {
+            const raw = `${config.username}:${config.password || ''}`;
+            const encoded = typeof btoa === 'function'
+                ? btoa(raw)
+                : (globalThis as any).Buffer?.from(raw).toString('base64') || '';
+            headers.Authorization = `Basic ${encoded}`;
+        }
         const response = await fetchImpl(String(url), {
             method: String(config.method || 'GET').toUpperCase(),
-            headers: coerceJson(config.headers) || undefined,
+            headers: Object.keys(headers).length ? headers : undefined,
             body: config.body === undefined || config.body === '' ? undefined : String(config.body)
         });
         const text = await response.text();
@@ -530,10 +538,12 @@ export async function executeVisualNode(
             };
         case 'delay': {
             const mode = String(config.mode || 'fixed');
-            let delay = Math.max(0, Number(config.delay ?? config.duration ?? 0) || 0);
+            const unit = String(config.unit || 'ms');
+            const factor = unit === 's' ? 1000 : unit === 'min' ? 60000 : 1;
+            let delay = Math.max(0, Number(config.delay ?? config.duration ?? 0) || 0) * factor;
             if (mode === 'random') {
-                const min = Math.max(0, Number(config.randomMin) || 0);
-                const max = Math.max(min, Number(config.randomMax) || min);
+                const min = Math.max(0, Number(config.randomMin) || 0) * factor;
+                const max = Math.max(min, (Number(config.randomMax) || 0) * factor || min);
                 delay = min + Math.random() * (max - min);
             }
             await new Promise(resolve => setTimeout(resolve, delay));
@@ -545,6 +555,9 @@ export async function executeVisualNode(
         }
         case 'log':
         case 'debug': {
+            if (node.type === 'debug' && config.active === false) {
+                return { success: true, data: { nodeId: node.id, skipped: true } };
+            }
             const level = String(config.level || 'info');
             const field = config.field === undefined || config.field === null
                 ? ''
@@ -577,7 +590,17 @@ export async function executeVisualNode(
         case 'http-request':
             return runHttp(node, context);
         case 'inject': {
-            const payload = coerceJson(config.payload ?? {});
+            const payloadType = String(config.payloadType || 'json');
+            let payload: any;
+            if (payloadType === 'string') {
+                payload = config.payload === undefined || config.payload === null ? '' : String(config.payload);
+            } else if (payloadType === 'number') {
+                payload = Number(config.payload);
+            } else if (payloadType === 'boolean') {
+                payload = config.payload === true || config.payload === 'true' || config.payload === 1 || config.payload === '1';
+            } else {
+                payload = coerceJson(config.payload ?? {});
+            }
             const topic = config.topic === undefined || config.topic === null
                 ? ''
                 : String(config.topic);
@@ -841,8 +864,13 @@ export async function executeVisualNode(
         case 'batch': {
             const items = arrayFrom(context, config.field);
             const size = Math.max(1, Number(config.size) || 10);
+            const overlap = Math.max(0, Math.min(size - 1, Number(config.overlap) || 0));
+            const step = Math.max(1, size - overlap);
             const batches: any[][] = [];
-            for (let index = 0; index < items.length; index += size) {
+            for (let index = 0; index < items.length; index += step) {
+                if (overlap > 0 && items.length - index <= overlap) {
+                    break;
+                }
                 batches.push(items.slice(index, index + size));
             }
             return { success: true, data: { nodeId: node.id, items: batches, count: batches.length } };
@@ -883,7 +911,20 @@ export async function executeVisualNode(
         case 'html': {
             const source = String(resolveWorkflowValue(config.field || 'value', context) ?? '');
             const mode = String(config.mode || 'text');
-            const value = mode === 'links' ? htmlLinks(source) : stripHtml(source);
+            const tag = String(config.tag || '').trim();
+            let segments: string[] = [];
+            if (tag) {
+                const pattern = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, 'gi');
+                let match: RegExpExecArray | null;
+                while ((match = pattern.exec(source))) {
+                    segments.push(match[1]);
+                }
+            }
+            const content = tag ? segments : [source];
+            const values = content.map(part => mode === 'links' ? htmlLinks(part) : stripHtml(part));
+            const value = tag
+                ? (values.length <= 1 ? (values[0] || (mode === 'links' ? [] : '')) : values)
+                : values[0];
             const target = String(config.target || 'value');
             return { success: true, data: { nodeId: node.id, [target]: value, value } };
         }

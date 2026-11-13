@@ -1070,15 +1070,14 @@ workflow-canvas {
 }
 
 .workflow-field-group-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 14px 0 6px;
-    font-size: 10px;
+    margin: 16px 0 8px;
+    padding: 2px 0 2px 8px;
+    border-left: 3px solid #cbd5e1;
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: #94a3b8;
+    color: #475569;
 }
 
 
@@ -1962,6 +1961,12 @@ html[data-theme="high-contrast"] li.CodeMirror-hint-active {
     background: var(--wf-theme-input);
     border-color: var(--wf-theme-border);
     color: var(--wf-theme-text);
+}
+
+.workflow-designer[data-theme="dark"] .workflow-field-group-title,
+.workflow-designer[data-theme="solarized"] .workflow-field-group-title,
+.workflow-designer[data-theme="high-contrast"] .workflow-field-group-title {
+    border-left-color: var(--wf-theme-border);
 }
 
 .workflow-designer[data-theme="dark"] .workflow-inspector-description,

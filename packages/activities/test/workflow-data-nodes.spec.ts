@@ -184,6 +184,64 @@ describe('Workflow data & trigger nodes', () => {
         expect(states.debug_3.result?.data?.message).toBe('7');
     });
 
+    it('supports typed inject payloads and disabled debug output', async () => {
+        const text = await service.execute(chain([
+            { type: 'inject', config: { payloadType: 'string', payload: 'hello' } }
+        ]), {});
+        expect(text.data?.executionState?.nodeStates.inject_0.result?.data?.payload).toBe('hello');
+
+        const number = await service.execute(chain([
+            { type: 'inject', config: { payloadType: 'number', payload: '42' } }
+        ]), {});
+        expect(number.data?.executionState?.nodeStates.inject_0.result?.data?.payload).toBe(42);
+
+        const debug = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: 1 } } },
+            { type: 'debug', config: { active: false } }
+        ]), {});
+        expect(debug.data?.executionState?.nodeStates.debug_1.result?.data?.skipped).toBe(true);
+    });
+
+    it('supports delay units and overlapping batches', async () => {
+        const delay = await service.execute(chain([
+            { type: 'delay', config: { mode: 'random', unit: 's', randomMin: 0.01, randomMax: 0.01 } }
+        ]), {});
+        expect(delay.data?.executionState?.nodeStates.delay_0.result?.data?.delayed).toBe(10);
+
+        const batch = await service.execute(chain([
+            { type: 'inject', config: { payload: { items: [1, 2, 3, 4, 5] } } },
+            { type: 'batch', config: { field: 'items', size: 3, overlap: 1 } }
+        ]), {});
+        expect(batch.data?.executionState?.nodeStates.batch_1.result?.data?.items).toEqual([
+            [1, 2, 3],
+            [3, 4, 5]
+        ]);
+    });
+
+    it('extracts HTML by tag and sends Basic auth headers', async () => {
+        const html = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: '<h1>A</h1><h1>B</h1>' } } },
+            { type: 'html', config: { field: 'value', mode: 'text', tag: 'h1' } }
+        ]), {});
+        expect(html.data?.executionState?.nodeStates.html_1.result?.data?.value).toEqual(['A', 'B']);
+
+        const original = (globalThis as any).fetch;
+        let captured: any;
+        (globalThis as any).fetch = async (url: string, init: any) => {
+            captured = { url, init };
+            return new Response('{"ok":true}', { status: 200, headers: { 'content-type': 'application/json' } });
+        };
+        try {
+            const request = await service.execute(chain([
+                { type: 'http-request', config: { url: 'https://example.com/api', authType: 'basic', username: 'user', password: 'pass' } }
+            ]), {});
+            expect(request.success).toBe(true);
+        } finally {
+            (globalThis as any).fetch = original;
+        }
+        expect(captured.init.headers.Authorization).toBe(`Basic ${Buffer.from('user:pass').toString('base64')}`);
+    });
+
     it('applies multiple change rules in order', async () => {
         const result = await service.execute(chain([
             { type: 'change', config: { rules: [
