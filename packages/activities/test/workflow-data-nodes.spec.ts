@@ -468,6 +468,14 @@ describe('Workflow data & trigger nodes', () => {
         expect(filtered.data?.executionState?.nodeStates.rbe_1.result?.data?.items).toEqual([
             { v: 1 }, { v: 2 }, { v: 1 }
         ]);
+
+        const anyChange = await service.execute(chain([
+            { type: 'inject', config: { payload: { items: [{ v: 1, x: 'a' }, { v: 1, x: 'b' }, { v: 1, x: 'b' }, { v: 2, x: 'c' }] } } },
+            { type: 'rbe', config: { field: 'items', path: 'v', mode: 'change' } }
+        ]), {});
+        expect(anyChange.data?.executionState?.nodeStates.rbe_1.result?.data?.items).toEqual([
+            { v: 1, x: 'a' }, { v: 1, x: 'b' }, { v: 2, x: 'c' }
+        ]);
     });
 
     it('scales numbers between ranges', async () => {

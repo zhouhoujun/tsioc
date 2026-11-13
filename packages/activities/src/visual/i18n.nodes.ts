@@ -42,7 +42,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "join": {
                 "label": "Join",
-                "description": "Wait for all incoming branches"
+                "description": "Wait for all incoming branches and merge their results"
             },
             "loop": {
                 "label": "Loop",
@@ -312,7 +312,11 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "operator": "Operator"
             },
             "parallel": {},
-            "join": {},
+            "join": {
+                "mode": "Mode",
+                "resultField": "Result field",
+                "ignoreEmpty": "Skip empty branches"
+            },
             "loop": {
                 "iterations": "Iterations",
                 "delay": "Delay",
@@ -864,7 +868,11 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "operator": "Comparison used by this rule."
             },
             "parallel": {},
-            "join": {},
+            "join": {
+                "mode": "Collect branch results as an array or merge their data objects.",
+                "resultField": "Context field that receives the joined value.",
+                "ignoreEmpty": "Leave branches without result data out of the joined value."
+            },
             "loop": {
                 "iterations": "Number of times to run the sub-workflow.",
                 "delay": "Wait between sub-workflow runs.",
@@ -1167,7 +1175,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "min": "Min",
             "max": "Max",
             "object": "Object merge",
-            "array": "Array concat",
+            "array": "Branch results array",
             "asc": "Ascending",
             "desc": "Descending",
             "path": "Path",
@@ -1201,7 +1209,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "base64": "Base64",
             "hex": "Hex",
             "change": "On any change",
-            "merge": "Object merge",
+            "merge": "Merged object",
             "concat": "Array concat"
         }
     },
@@ -1241,7 +1249,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "join": {
                 "label": "汇聚",
-                "description": "等待所有输入分支完成"
+                "description": "等待所有入分支并合并其结果"
             },
             "loop": {
                 "label": "循环",
@@ -1511,7 +1519,11 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "operator": "运算符"
             },
             "parallel": {},
-            "join": {},
+            "join": {
+                "mode": "模式",
+                "resultField": "结果字段",
+                "ignoreEmpty": "跳过空分支"
+            },
             "loop": {
                 "iterations": "迭代次数",
                 "delay": "延迟",
@@ -2043,7 +2055,11 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "operator": "该规则使用的比较方式。"
             },
             "parallel": {},
-            "join": {},
+            "join": {
+                "mode": "把分支结果收集为数组，或合并各分支的数据对象。",
+                "resultField": "接收合并结果的上下文字段。",
+                "ignoreEmpty": "不把没有结果数据的分支计入合并结果。"
+            },
             "loop": {
                 "iterations": "子工作流执行次数。",
                 "delay": "两次子流程执行之间的等待时间。",
@@ -2338,7 +2354,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "min": "最小",
             "max": "最大",
             "object": "对象合并",
-            "array": "数组拼接",
+            "array": "分支结果数组",
             "asc": "升序",
             "desc": "降序",
             "path": "路径",
@@ -2372,7 +2388,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "base64": "Base64",
             "hex": "Hex",
             "change": "任意变化",
-            "merge": "对象合并",
+            "merge": "合并对象",
             "concat": "数组拼接"
         }
     }

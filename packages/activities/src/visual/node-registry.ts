@@ -438,7 +438,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         outputs: [port('out', 'out', 'output', 'Items')],
         fields: [
             configField({ key: 'field', label: 'Array path', type: 'text', placeholder: 'items', description: 'Context path to the array to filter.' }),
-            configField({ key: 'path', label: 'Item path', type: 'text', placeholder: 'value', description: 'Property compared between consecutive items.' }),
+            configField({ key: 'path', label: 'Item path', type: 'text', placeholder: 'value', description: 'Property compared between consecutive items.', visibleWhen: { key: 'mode', equals: 'value' } }),
             configField({
                 key: 'mode',
                 label: 'Report',
@@ -580,14 +580,28 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
     {
         type: 'join',
         label: 'Join',
-        description: 'Wait for all incoming branches before continuing',
+        description: 'Wait for all incoming branches and merge their results',
         category: 'flow',
         icon: '⊙',
         color: '#0ea5e9',
         textColor: '#ffffff',
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Output')],
-        defaultConfig: {}
+        fields: [
+            configField({
+                key: 'mode',
+                label: 'Mode',
+                type: 'select',
+                defaultValue: 'array',
+                options: [
+                    { label: 'Branch results array', value: 'array' },
+                    { label: 'Merged object', value: 'merge' }
+                ]
+            }),
+            configField({ key: 'resultField', label: 'Result field', type: 'text', defaultValue: 'joined', placeholder: 'joined' }),
+            configField({ key: 'ignoreEmpty', label: 'Skip empty branches', type: 'boolean', defaultValue: true })
+        ],
+        defaultConfig: { mode: 'array', resultField: 'joined', ignoreEmpty: true }
     },
     {
         type: 'loop',

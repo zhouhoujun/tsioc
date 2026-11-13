@@ -469,6 +469,16 @@ export class VisualWorkflowService {
                 host,
                 state,
                 options,
+                extras: node.type === 'join'
+                    ? {
+                        incoming: (plan.incoming.get(node.id) || []).map(connection => ({
+                            connectionId: connection.id,
+                            sourcePort: connection.sourcePort,
+                            nodeId: connection.sourceNodeId,
+                            result: state.nodeResults.get(connection.sourceNodeId)
+                        }))
+                    }
+                    : undefined,
                 emit: partial => this.emit(options, state, partial)
             });
             this.checkpoint(options, state);

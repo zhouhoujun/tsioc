@@ -6,6 +6,19 @@ import {
     VisualWorkflowDefinition
 } from './types';
 
+/**
+ * Extra execution data the engine resolves before a node runs. Branch node
+ * results are attached for join-style nodes so they can merge their inputs.
+ */
+export interface VisualNodeExecutionExtras {
+    incoming?: Array<{
+        connectionId: string;
+        sourcePort?: string;
+        nodeId: string;
+        result?: ActivityResult;
+    }>;
+}
+
 export interface VisualNodeRuntimeHost {
     /**
      * Allow a subprocess node to execute another visual definition.
@@ -578,7 +591,8 @@ async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Pro
 export async function executeVisualNode(
     node: IVisualWorkflowNode,
     context: ActivityContext,
-    host?: VisualNodeRuntimeHost
+    host?: VisualNodeRuntimeHost,
+    extras?: VisualNodeExecutionExtras
 ): Promise<ActivityResult> {
     const config = node.config || {};
 
@@ -1025,12 +1039,13 @@ export async function executeVisualNode(
         }
         case 'rbe': {
             const items = arrayFrom(context, config.field);
+            const path = String(config.path || '').trim();
+            const wholeItem = String(config.mode || 'value') === 'change' || !path;
             const filtered: any[] = [];
             let previous: string | undefined;
             let hasPrevious = false;
             for (const item of items) {
-                const value = resolveFrom(item, config.path);
-                const key = JSON.stringify(value);
+                const key = JSON.stringify(wholeItem ? item : resolveFrom(item, path));
                 if (!hasPrevious || key !== previous) {
                     filtered.push(item);
                     previous = key;
@@ -1182,8 +1197,24 @@ export async function executeVisualNode(
         }
         case 'parallel':
             return { success: true, data: { nodeId: node.id, parallel: true } };
-        case 'join':
-            return { success: true, data: { nodeId: node.id, joined: true } };
+        case 'join': {
+            const incoming = extras?.incoming || [];
+            const ignoreEmpty = config.ignoreEmpty !== false;
+            const values = incoming
+                .filter(input => !ignoreEmpty || (input.result?.data !== undefined && input.result?.data !== null))
+                .map(input => input.result?.data);
+            const target = String(config.resultField || 'joined');
+            const value = String(config.mode || 'array') === 'merge'
+                ? values.reduce((merged: Record<string, any>, item) =>
+                    item && typeof item === 'object' && !Array.isArray(item)
+                        ? { ...merged, ...item }
+                        : merged, {})
+                : values;
+            return {
+                success: true,
+                data: { nodeId: node.id, joined: true, branches: values.length, results: values, [target]: value }
+            };
+        }
         case 'trycatch':
             return { success: true, data: { nodeId: node.id, guarded: true } };
         case 'subprocess': {

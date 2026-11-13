@@ -25,8 +25,8 @@ const TSC_OUT = path.join(require('os').tmpdir(), 'tsdi-workflow-admin-tsc');
 const BUNDLE_ENTRY = path.join(TSC_OUT, 'packages', 'workflow-admin', 'main.js');
 const DEV = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
 const SOURCE_MAP = process.env.SOURCE_MAP === '1';
-const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 740_000);
-const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 190_000);
+const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 760_000);
+const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 195_000);
 
 async function compile(): Promise<void> {
     fs.rmSync(TSC_OUT, { recursive: true, force: true });

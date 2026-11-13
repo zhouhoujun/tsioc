@@ -233,6 +233,43 @@ describe('Visual Workflow Execution Path', () => {
         );
         expect(snapshot.edgeStates.e4.count).toBe(1);
         expect(snapshot.edgeStates.e5.count).toBe(1);
+        const joined = snapshot.nodeStates.join_p.result?.data?.joined as any[];
+        expect(Array.isArray(joined)).toBe(true);
+        expect(joined.length).toBe(2);
+        expect(joined.map(item => item.nodeId).sort()).toEqual(['delay_a', 'delay_b']);
+        expect(snapshot.nodeStates.join_p.result?.data?.branches).toBe(2);
+    });
+
+    it('merges join branch objects when the join mode is merge', async () => {
+        const nodes = [
+            registry.createNode('start', { x: 0, y: 0 }, { id: 'start_m' }),
+            registry.createNode('parallel', { x: 200, y: 0 }, { id: 'parallel_m' }),
+            registry.createNode('task', { x: 400, y: -80 }, { id: 'task_left', config: { result: { left: 1 } } }),
+            registry.createNode('task', { x: 400, y: 80 }, { id: 'task_right', config: { result: { right: 2 } } }),
+            registry.createNode('join', { x: 600, y: 0 }, { id: 'join_m', config: { mode: 'merge', resultField: 'merged' } }),
+            registry.createNode('end', { x: 800, y: 0 }, { id: 'end_m' })
+        ];
+        const edge = (id: string, source: string, target: string) => ({
+            id, sourceNodeId: source, sourcePort: 'out', targetNodeId: target, targetPort: 'in'
+        });
+        const definition = {
+            id: 'join-merge-test',
+            name: 'Join merge test',
+            nodes,
+            connections: [
+                edge('m1', 'start_m', 'parallel_m'),
+                edge('m2', 'parallel_m', 'task_left'),
+                edge('m3', 'parallel_m', 'task_right'),
+                edge('m4', 'task_left', 'join_m'),
+                edge('m5', 'task_right', 'join_m'),
+                edge('m6', 'join_m', 'end_m')
+            ]
+        };
+        const result = await service.execute(definition, {});
+        expect(result.success).toBe(true);
+        const merged = result.data?.executionState?.nodeStates.join_m.result?.data?.merged;
+        expect(merged.left).toBe(1);
+        expect(merged.right).toBe(2);
     });
 
     it('resumes from a saved checkpoint without re-running completed nodes', async () => {

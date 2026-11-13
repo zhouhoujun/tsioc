@@ -9,7 +9,7 @@ import {
     WorkflowExecutionState
 } from './types';
 import { VisualNodeActivityAdapter } from './VisualNodeActivityAdapter';
-import { executeVisualNode, VisualNodeRuntimeHost } from './workflow-runtime';
+import { executeVisualNode, VisualNodeExecutionExtras, VisualNodeRuntimeHost } from './workflow-runtime';
 
 /**
  * Input of the visual node handler chain. It carries both the node and the
@@ -20,6 +20,8 @@ export interface VisualNodeExecutionInput {
     node: IVisualWorkflowNode;
     context: ActivityContext;
     host?: VisualNodeRuntimeHost;
+    /** Engine-resolved inputs such as the incoming branch results for a join. */
+    extras?: VisualNodeExecutionExtras;
     state: WorkflowExecutionState;
     options: WorkflowExecutionOptions;
     emit: (partial: {
@@ -52,7 +54,7 @@ export class VisualNodeHandler extends ConfigableHandler<VisualNodeExecutionInpu
 
     protected getBackend(): HandlerFn<VisualNodeExecutionInput, any> {
         return (input: VisualNodeExecutionInput) =>
-            executeVisualNode(input.node, input.context, input.host);
+            executeVisualNode(input.node, input.context, input.host, input.extras);
     }
 
     handleNode(input: VisualNodeExecutionInput): Promise<ActivityResult> {
@@ -89,7 +91,7 @@ export function createVisualNodeHandler(
     }
     const handler = new InterceptingHandler<VisualNodeExecutionInput, any>(
         (input: VisualNodeExecutionInput) =>
-            executeVisualNode(input.node, input.context, input.host),
+            executeVisualNode(input.node, input.context, input.host, input.extras),
         () => interceptors
     );
     return {
