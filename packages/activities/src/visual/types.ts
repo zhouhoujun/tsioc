@@ -584,6 +584,13 @@ export interface WorkflowExecutionOptions {
      * Resume from a checkpoint; completed nodes are replayed, not re-executed.
      */
     resumeFrom?: WorkflowExecutionSnapshot;
+    /**
+     * 整次执行的时间预算（毫秒）。超时后停止继续调度节点，
+     * 正在等待的内置 delay/trigger 会尽快结束。
+     * Whole-run time budget in milliseconds. On timeout no new nodes are
+     * scheduled and in-flight delay/trigger waits stop early.
+     */
+    timeout?: number;
 }
 
 /**

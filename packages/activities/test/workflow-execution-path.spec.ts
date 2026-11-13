@@ -237,6 +237,32 @@ describe('Visual Workflow Execution Path', () => {
         expect(result.data?.executionState.status).toBe('cancelled');
     });
 
+    it('stops a workflow that exceeds its time budget', async () => {
+        const definition = {
+            id: 'timeout-test',
+            name: 'Timeout test',
+            nodes: [
+                registry.createNode('start', { x: 0, y: 0 }, { id: 'start_t' }),
+                registry.createNode('delay', { x: 200, y: 0 }, { id: 'delay_t', config: { delay: 500 } }),
+                registry.createNode('end', { x: 400, y: 0 }, { id: 'end_t' })
+            ],
+            connections: [
+                { id: 't1', sourceNodeId: 'start_t', sourcePort: 'out', targetNodeId: 'delay_t', targetPort: 'in' },
+                { id: 't2', sourceNodeId: 'delay_t', sourcePort: 'out', targetNodeId: 'end_t', targetPort: 'in' }
+            ]
+        };
+        const started = Date.now();
+        const result = await service.execute(definition, {}, { timeout: 60 });
+        const elapsed = Date.now() - started;
+        expect(result.success).toBe(false);
+        expect(result.data?.status).toBe('cancelled');
+        expect(result.data?.executionState.status).toBe('cancelled');
+        expect(String(result.error?.message || '')).toContain('timed out');
+        expect(result.data?.executionState.nodeStates.delay_t.status).toBe('cancelled');
+        expect(result.data?.executionState.nodeStates.end_t.status).toBe('skipped');
+        expect(elapsed).toBeLessThan(400);
+    });
+
     it('exposes execution state to the designer while running', async () => {
         const result = await designer.run({ context: { approved: true } });
         expect(result.success).toBe(true);

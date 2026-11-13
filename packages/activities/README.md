@@ -777,6 +777,21 @@ Completed nodes are replayed on the visual path but are not executed again;
 pending nodes continue normally. Checkpoints are plain JSON snapshots, so they
 can be stored in a database, file or microservice.
 
+### Execution timeout
+
+```typescript
+await service.execute(definition, context, { timeout: 30_000 });
+```
+
+`timeout` is a whole-run budget in milliseconds. When it expires no further
+nodes are scheduled, in-flight built-in `delay` / `trigger` / loop waits stop
+early, and the run finishes as `cancelled` with a `Workflow timed out after
+Nms` error. The HTTP run endpoint accepts the same value in its body:
+
+```json
+{ "context": {}, "timeout": 30000 }
+```
+
 ### Node-level policy
 
 Task and HTTP nodes expose inspector fields for:

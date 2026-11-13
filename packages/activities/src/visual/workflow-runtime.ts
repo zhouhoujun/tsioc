@@ -6,11 +6,34 @@ import {
     VisualWorkflowDefinition
 } from './types';
 
+async function pause(ms: number, cancelled?: () => boolean): Promise<boolean> {
+    const total = Math.max(0, ms);
+    if (!cancelled) {
+        if (total > 0) {
+            await new Promise(resolve => setTimeout(resolve, total));
+        }
+        return true;
+    }
+    const step = 50;
+    let remaining = total;
+    while (remaining > 0) {
+        if (cancelled()) {
+            return false;
+        }
+        const slice = Math.min(step, remaining);
+        await new Promise(resolve => setTimeout(resolve, slice));
+        remaining -= slice;
+    }
+    return !cancelled();
+}
+
 /**
  * Extra execution data the engine resolves before a node runs. Branch node
  * results are attached for join-style nodes so they can merge their inputs.
  */
 export interface VisualNodeExecutionExtras {
+    /** True once the run has been cancelled or timed out. */
+    cancelled?: () => boolean;
     incoming?: Array<{
         connectionId: string;
         sourcePort?: string;
@@ -631,7 +654,9 @@ export async function executeVisualNode(
                 const max = Math.max(min, (Number(config.randomMax) || 0) * factor || min);
                 delay = min + Math.random() * (max - min);
             }
-            await new Promise(resolve => setTimeout(resolve, delay));
+            if (!(await pause(delay, extras?.cancelled))) {
+                return { success: false, error: new Error('Workflow cancelled'), data: { nodeId: node.id } };
+            }
             return { success: true, data: { nodeId: node.id, delayed: delay, mode } };
         }
         case 'loop': {
@@ -653,7 +678,9 @@ export async function executeVisualNode(
             const results: ActivityResult[] = [];
             for (let index = 0; index < iterations; index++) {
                 if (index > 0 && Number(config.delay) > 0) {
-                    await new Promise(resolve => setTimeout(resolve, Number(config.delay)));
+                    if (!(await pause(Number(config.delay), extras?.cancelled))) {
+                        return { success: false, error: new Error('Workflow cancelled'), data: { nodeId: node.id, iterations: index } };
+                    }
                 }
                 results.push(await host.executeDefinition(definition as VisualWorkflowDefinition, context));
             }
@@ -796,7 +823,9 @@ export async function executeVisualNode(
         }
         case 'trigger': {
             const delay = Math.max(0, Number(config.delay) || 0);
-            await new Promise(resolve => setTimeout(resolve, delay));
+            if (!(await pause(delay, extras?.cancelled))) {
+                return { success: false, error: new Error('Workflow cancelled'), data: { nodeId: node.id } };
+            }
             const payload = coerceJson(config.payload ?? {});
             if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
                 return { success: true, data: { ...payload, nodeId: node.id, triggered: true } };

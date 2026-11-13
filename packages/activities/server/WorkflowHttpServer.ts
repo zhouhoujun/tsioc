@@ -149,13 +149,16 @@ export class WorkflowHttpController {
     @Post('/:id/run')
     async run(
         @RequestPath('id') id: string,
-        @RequestBody() body: { context?: Record<string, any> } = {}
+        @RequestBody() body: { context?: Record<string, any>; timeout?: number } = {}
     ) {
         const definition = await this.store.get(id);
         if (!definition) {
             throw new NotFoundException(`Workflow not found: ${id}`);
         }
-        const result = await this.execution.execute(definition, body?.context || {});
+        const timeout = Math.max(0, Number(body?.timeout) || 0);
+        const result = await this.execution.execute(definition, body?.context || {}, {
+            timeout: timeout || undefined
+        });
         return this.serializeResult(result);
     }
 

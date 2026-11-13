@@ -248,6 +248,40 @@ describe('Workflow HTTP microservice', () => {
         await request(`${base}/api/workflows/blank-demo`, { method: 'DELETE' });
     });
 
+    it('applies a run timeout to HTTP executions', async () => {
+        const definition = {
+            id: 'timeout-demo',
+            name: 'Timeout demo',
+            nodes: [
+                { id: 'start_t', name: 'Start', type: 'start' as const, position: { x: 0, y: 0 } },
+                { id: 'delay_t', name: 'Wait', type: 'delay' as const, position: { x: 200, y: 0 }, config: { delay: 500 } },
+                { id: 'end_t', name: 'End', type: 'end' as const, position: { x: 400, y: 0 } }
+            ],
+            connections: [
+                { id: 't1', sourceNodeId: 'start_t', sourcePort: 'out', targetNodeId: 'delay_t', targetPort: 'in' },
+                { id: 't2', sourceNodeId: 'delay_t', sourcePort: 'out', targetNodeId: 'end_t', targetPort: 'in' }
+            ]
+        };
+        const put = await request(`${base}/api/workflows/timeout-demo`, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(definition)
+        });
+        expect(put.status).toBe(200);
+
+        const run = await request(`${base}/api/workflows/timeout-demo/run`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ context: {}, timeout: 60 })
+        });
+        expect(run.status).toBe(200);
+        expect(run.body.success).toBe(false);
+        expect(run.body.status).toBe('cancelled');
+        expect(String(run.body.error || '')).toContain('timed out');
+
+        await request(`${base}/api/workflows/timeout-demo`, { method: 'DELETE' });
+    });
+
     it('lists, installs and uninstalls workflow plugins', async () => {
         const catalog = await request(`${base}/api/plugins`);
         expect(catalog.status).toBe(200);

@@ -170,6 +170,18 @@ export class VisualWorkflowService {
         this.emit(options, state, { type: 'workflow-start', status: 'running' });
         this.checkpoint(options, state);
 
+        const timeoutMs = Math.max(0, Number(options.timeout) || 0);
+        let timeoutTimer: any;
+        if (timeoutMs > 0) {
+            timeoutTimer = setTimeout(() => {
+                if (state.status === 'running') {
+                    state.status = 'cancelled';
+                    state.error = new Error(`Workflow timed out after ${timeoutMs}ms`);
+                }
+            }, timeoutMs);
+            (timeoutTimer as { unref?: () => void })?.unref?.();
+        }
+
         try {
             const plan = compileVisualWorkflow(definition);
             const entryNodes = plan.entries.length
@@ -301,7 +313,9 @@ export class VisualWorkflowService {
                     executionState: snapshot,
                     ...(result.data || {})
                 },
-                error: result.error || state.error
+                error: state.status === 'cancelled'
+                    ? (state.error || result.error)
+                    : (result.error || state.error)
             };
         } catch (error) {
             state.status = 'failed';
@@ -326,6 +340,10 @@ export class VisualWorkflowService {
                     executionState: toWorkflowExecutionSnapshot(state)
                 }
             };
+        } finally {
+            if (timeoutTimer) {
+                clearTimeout(timeoutTimer);
+            }
         }
     }
 
@@ -503,19 +521,34 @@ export class VisualWorkflowService {
                 host,
                 state,
                 options,
-                extras: node.type === 'join'
-                    ? {
-                        incoming: (plan.incoming.get(node.id) || []).map(connection => ({
+                extras: {
+                    cancelled: () => state.status === 'cancelled' || this.isCancelled(state),
+                    incoming: node.type === 'join'
+                        ? (plan.incoming.get(node.id) || []).map(connection => ({
                             connectionId: connection.id,
                             sourcePort: connection.sourcePort,
                             nodeId: connection.sourceNodeId,
                             result: state.nodeResults.get(connection.sourceNodeId)
                         }))
-                    }
-                    : undefined,
+                        : undefined
+                },
                 emit: partial => this.emit(options, state, partial)
             });
             this.checkpoint(options, state);
+        }
+
+        if (String(state.status) === 'cancelled' || this.isCancelled(state)) {
+            state.status = 'cancelled';
+            const cancelledRecord = state.nodeStates?.get(node.id);
+            if (cancelledRecord) {
+                cancelledRecord.status = 'cancelled';
+                cancelledRecord.error = state.error?.message || result.error?.message;
+            }
+            return {
+                success: false,
+                error: state.error || new Error('Workflow cancelled'),
+                data: { nodeId: node.id }
+            };
         }
 
         if (!result.success) {
