@@ -1,5 +1,6 @@
-import { Injectable } from '@tsdi/ioc';
-import { MetricValue, MetricOptions } from './metrics';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { MetricValue, MetricOptions, MetricsModuleOptions } from './metrics';
+import { METRICS_OPTIONS } from './tokens';
 import { MetricsCollector } from './collector';
 
 interface HistogramBucketData {
@@ -26,6 +27,38 @@ export class MetricsRegistry extends MetricsCollector {
     private descriptions: Map<string, string> = new Map();
     private prefix: string = '';
     private defaultLabels: Record<string, string> = {};
+    private buckets: number[] = [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000];
+    private maxSeriesPerMetric = 1000;
+    private droppedSeries = 0;
+
+    constructor(@Optional() @Inject(METRICS_OPTIONS) options?: MetricsModuleOptions) {
+        super();
+        if (options?.prefix) {
+            this.prefix = options.prefix;
+        }
+        if (options?.defaultLabels) {
+            this.defaultLabels = options.defaultLabels;
+        }
+        if (options?.latencyBuckets?.length) {
+            this.setBuckets(options.latencyBuckets);
+        }
+        if (options?.maxSeriesPerMetric != null) {
+            this.maxSeriesPerMetric = Math.max(1, options.maxSeriesPerMetric);
+        }
+    }
+
+    setBuckets(buckets: number[]): void {
+        this.buckets = [...new Set(buckets.filter(value => Number.isFinite(value) && value > 0))]
+            .sort((a, b) => a - b);
+    }
+
+    setMaxSeriesPerMetric(max: number): void {
+        this.maxSeriesPerMetric = Math.max(1, max);
+    }
+
+    getDroppedSeries(): number {
+        return this.droppedSeries;
+    }
 
     setPrefix(prefix: string): void {
         this.prefix = prefix;
@@ -60,8 +93,12 @@ export class MetricsRegistry extends MetricsCollector {
             this.counters.set(fullName, new Map());
         }
         const key = this.getLabelsKey(labels);
-        const current = this.counters.get(fullName)!.get(key) || 0;
-        this.counters.get(fullName)!.set(key, current + value);
+        const values = this.counters.get(fullName)!;
+        if (!values.has(key) && !this.reserveSeries(values)) {
+            return;
+        }
+        const current = values.get(key) || 0;
+        values.set(key, current + value);
     }
 
     decrement(name: string, value = 1, labels?: Record<string, string>): void {
@@ -74,20 +111,27 @@ export class MetricsRegistry extends MetricsCollector {
             this.gauges.set(fullName, new Map());
         }
         const key = this.getLabelsKey(labels);
-        this.gauges.get(fullName)!.set(key, value);
+        const values = this.gauges.get(fullName)!;
+        if (!values.has(key) && !this.reserveSeries(values)) {
+            return;
+        }
+        values.set(key, value);
     }
 
     histogram(name: string, value: number, labels?: Record<string, string>): void {
         const fullName = this.getFullName(name);
         if (!this.histograms.has(fullName)) {
             this.histograms.set(fullName, {
-                buckets: [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000],
+                buckets: this.buckets.slice(),
                 values: new Map()
             });
         }
         const key = this.getLabelsKey(labels);
         const hist = this.histograms.get(fullName)!;
         if (!hist.values.has(key)) {
+            if (!this.reserveSeries(hist.values)) {
+                return;
+            }
             hist.values.set(key, { counts: new Array(hist.buckets.length + 1).fill(0), sum: 0, count: 0 });
         }
         const data = hist.values.get(key)!;
@@ -177,6 +221,14 @@ export class MetricsRegistry extends MetricsCollector {
         }
 
         return result;
+    }
+
+    private reserveSeries(values: Map<string, any>): boolean {
+        if (values.size < this.maxSeriesPerMetric) {
+            return true;
+        }
+        this.droppedSeries += 1;
+        return false;
     }
 
     private parseLabelsKey(key: string): Record<string, string> {

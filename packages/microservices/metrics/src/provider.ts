@@ -6,7 +6,7 @@ import {
     ServiceFeatureKind
 } from '@tsdi/service';
 import { MetricsModuleOptions } from './metrics';
-import { METRICS_OPTIONS } from './metrics.module';
+import { METRICS_OPTIONS } from './tokens';
 import { MetricsInterceptor } from './interceptors/metrics.interceptor';
 import { MetricsRegistry } from './registry';
 import { MetricsCollector } from './collector';
@@ -47,6 +47,12 @@ export function useMetrics(options: MetricsModuleOptions = {}): ServiceFeatureFn
                     }
                     if (options.defaultLabels) {
                         registry.setDefaultLabels(options.defaultLabels);
+                    }
+                    if (options.latencyBuckets?.length) {
+                        registry.setBuckets(options.latencyBuckets);
+                    }
+                    if (options.maxSeriesPerMetric != null) {
+                        registry.setMaxSeriesPerMetric(options.maxSeriesPerMetric);
                     }
                     return registry;
                 },

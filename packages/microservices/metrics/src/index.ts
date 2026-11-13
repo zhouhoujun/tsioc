@@ -9,4 +9,4 @@ export * from './histograms';
 export * from './metrics.controller';
 export * from './metrics.module';
 export * from './provider';
-export { METRICS_OPTIONS } from './metrics.module';
+export * from './tokens';

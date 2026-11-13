@@ -1,10 +1,11 @@
 import { MetricValue } from '../metrics';
+import { MetricsExporter } from './exporter';
 
 /**
  * Prometheus format exporter.
  * 将指标导出为 Prometheus 文本格式。
  */
-export class PrometheusExporter {
+export class PrometheusExporter implements MetricsExporter {
     /**
      * export metrics to Prometheus format.
      * @param metrics metric values.
@@ -35,7 +36,7 @@ export class PrometheusExporter {
             }
         }
 
-        return lines.join('\n');
+        return lines.length ? `${lines.join('\n')}\n` : '';
     }
 
     private getPrometheusType(type: string): string {

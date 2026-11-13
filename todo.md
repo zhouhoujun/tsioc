@@ -3791,3 +3791,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第五批（2026-11-13）：
   - 真实 Gateway E2E：header 卫生、SSE 流式、5xx 熔断、认证缓存隔离、配置热更/回滚。
   - 回归：gateway 67。
+- 微服务框架第六批（2026-11-13）：
+  - MetricsRegistry：延迟 buckets 可配置、每指标标签序列上限 + dropped 诊断。
+  - MetricsModule.withOptions 真正生效（prefix/defaultLabels/buckets/maxSeries）。
+  - metrics interceptor 路由模板 + 数字/UUID 归一化 + 去 query，降低基数。
+  - /metrics content-type 规范；MetricsExporter 抽象 + OTLP/HTTP JSON 导出器（counter/gauge/histogram）。
+  - 回归：metrics 54。

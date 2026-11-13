@@ -1,4 +1,4 @@
-import { Module, ModuleWithProviders, Provider, token } from '@tsdi/ioc';
+import { Module, ModuleWithProviders, Provider } from '@tsdi/ioc';
 import { MetricsCollector } from './collector';
 import { MetricsRegistry } from './registry';
 import { MetricsInterceptor } from './interceptors/metrics.interceptor';
@@ -6,11 +6,9 @@ import { RequestCounter, ErrorCounter } from './counters';
 import { MemoryGauge } from './gauges';
 import { LatencyHistogram } from './histograms';
 import { MetricsModuleOptions } from './metrics';
+import { METRICS_OPTIONS } from './tokens';
 
-/**
- * Metrics module options token.
- */
-export const METRICS_OPTIONS = token<MetricsModuleOptions>('METRICS_OPTIONS');
+export { METRICS_OPTIONS } from './tokens';
 
 /**
  * Metrics module providers.

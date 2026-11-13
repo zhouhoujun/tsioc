@@ -22,7 +22,7 @@ export class MetricsInterceptor implements RequestInterceptor<ReadableLike<Incom
         const start = Date.now();
         const request = input as any;
         const method = request?.method || 'UNKNOWN';
-        const path = request?.pattern || request?.url || '/';
+        const path = normalizeMetricPath(request);
 
         // Record request
         this.requestCounter.recordRequest(method, path);
@@ -52,4 +52,27 @@ export class MetricsInterceptor implements RequestInterceptor<ReadableLike<Incom
             })
         );
     }
+}
+
+/**
+ * Convert a request into a bounded-cardinality metric path:
+ * - prefer the matched route pattern (already templated)
+ * - strip the query string
+ * - replace numeric/UUID path segments with `:id`
+ */
+export function normalizeMetricPath(request: any): string {
+    const pattern = request?.pattern;
+    const raw = typeof pattern === 'string'
+        ? pattern
+        : (pattern && typeof pattern === 'object' && typeof pattern.path === 'string'
+            ? pattern.path
+            : request?.url);
+    let path = String(raw ?? '/').split('?')[0];
+    path = path.replace(/\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?=\/|$)/gi, '/:id');
+    path = path.replace(/\/\d+(?=\/|$)/g, '/:id');
+    path = path.replace(/\/{2,}/g, '/');
+    if (!path.startsWith('/')) {
+        path = `/${path}`;
+    }
+    return path.length > 200 ? `${path.slice(0, 200)}…` : path;
 }

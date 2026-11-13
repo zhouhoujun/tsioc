@@ -1,4 +1,5 @@
-import { MetricsRegistry, MetricsCollector, MetricValue, PrometheusExporter, MetricsModule, RequestCounter, ErrorCounter, LatencyHistogram } from '../src';
+import { MetricsRegistry, MetricsCollector, MetricValue, PrometheusExporter, MetricsModule, METRICS_PROVIDERS, RequestCounter, ErrorCounter, LatencyHistogram } from '../src';
+import { createInjector } from '@tsdi/ioc';
 import expect = require('expect');
 
 describe('Metrics Module Test', () => {
@@ -191,6 +192,29 @@ describe('Metrics Module Test', () => {
             const result = MetricsModule.withOptions({ prefix: 'myapp' });
             expect(result.module).toBe(MetricsModule);
             expect(result.providers).toBeDefined();
+        });
+
+        it('applies withOptions to the injected registry', () => {
+            const result = MetricsModule.withOptions({
+                prefix: 'myapp',
+                defaultLabels: { env: 'test' },
+                latencyBuckets: [10, 100],
+                maxSeriesPerMetric: 2
+            });
+            const injector = createInjector([
+                ...METRICS_PROVIDERS,
+                ...(result.providers ?? [])
+            ] as any);
+            const registry = injector.get(MetricsRegistry);
+            registry.increment('requests', 1);
+            const metric = registry.getMetrics().find(item => item.name === 'myapp_requests');
+            expect(metric?.labels?.env).toBe('test');
+
+            registry.histogram('latency', 50);
+            const bucket100 = registry.getMetrics().find(item => item.name === 'myapp_latency_bucket' && item.labels?.le === '100');
+            const bucket25 = registry.getMetrics().find(item => item.name === 'myapp_latency_bucket' && item.labels?.le === '25');
+            expect(bucket100?.value).toBe(1);
+            expect(bucket25).toBeUndefined();
         });
     });
 });

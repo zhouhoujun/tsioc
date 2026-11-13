@@ -34,6 +34,26 @@ describe('MetricsInterceptor', () => {
         });
     });
 
+    it('normalizes high-cardinality paths before recording labels', async () => {
+        const reg = new MetricsRegistry();
+        const interceptor = new MetricsInterceptor(
+            new RequestCounter(reg),
+            new ErrorCounter(reg),
+            new LatencyHistogram(reg)
+        );
+        const next: RequestHandler<any, any, any> = {
+            handle: () => of({ statusCode: 200 })
+        };
+        await lastValueFrom(interceptor.intercept({
+            method: 'GET',
+            url: '/users/123/orders/550e8400-e29b-41d4-a716-446655440000?token=secret'
+        }, next, {} as any));
+
+        const metric = reg.getMetrics().find(m => m.name === 'http_requests_total');
+        expect(metric?.labels?.path).toBe('/users/:id/orders/:id');
+        expect(metric?.labels?.path).not.toContain('secret');
+    });
+
     it('records error on thrown exception', (done) => {
         const reg = new MetricsRegistry();
         const reqCounter = new RequestCounter(reg);

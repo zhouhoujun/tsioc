@@ -50,6 +50,13 @@
 - 真实 upstream + 真实 gateway 进程验证：header 卫生、SSE 首块提前到达、5xx 熔断、认证缓存隔离、配置热更/回滚。
 - 发现并记录：undici 会自动补 `connection: keep-alive`，hop-by-hop 验证使用 `proxy-authorization` 等客户端头。
 
+第六批（指标治理）：
+
+- `MetricsRegistry` 支持 `latencyBuckets`、`maxSeriesPerMetric`；超出上限的标签序列被丢弃并可用 `getDroppedSeries()` 诊断。
+- `MetricsModule.withOptions` 的 prefix/defaultLabels/buckets/maxSeries 真正注入 registry（此前只有 `useMetrics` 生效）。
+- Metrics interceptor 使用路由模板并归一化数字/UUID 段，移除 query，避免原始 URL 高基数。
+- `/metrics` 返回 Prometheus 规范 content-type；新增 `MetricsExporter` 抽象与 OTLP/HTTP JSON 导出器（counter/gauge/histogram）。
+
 
 ---
 

@@ -1,5 +1,6 @@
 import { Controller, Get } from '@tsdi/service';
-import { Injectable } from '@tsdi/ioc';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { RestfulRequestAdapter } from '@tsdi/common';
 import { MetricsCollector } from './collector';
 import { PrometheusExporter } from './exporters/prometheus';
 
@@ -21,7 +22,8 @@ export class MetricsController {
      * @returns Prometheus formatted metrics.
      */
     @Get('/')
-    metrics(): string {
+    metrics(@Optional() @Inject(RestfulRequestAdapter) adapter?: RestfulRequestAdapter): string {
+        adapter?.setHeader('content-type', 'text/plain; version=0.0.4; charset=utf-8');
         const metrics = this.collector.getMetrics();
         return this.exporter.export(metrics);
     }

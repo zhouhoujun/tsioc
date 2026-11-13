@@ -109,4 +109,9 @@ export interface MetricsModuleOptions {
      * metrics endpoint path.
      */
     endpoint?: string;
+    /**
+     * maximum number of label series kept per metric name. New series beyond
+     * this limit are dropped to bound memory/cardinality.
+     */
+    maxSeriesPerMetric?: number;
 }

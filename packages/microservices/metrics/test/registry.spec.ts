@@ -77,6 +77,30 @@ describe('MetricsRegistry', () => {
         expect(reg.getMetrics().length).toBe(0);
     });
 
+    it('supports custom latency buckets', () => {
+        const registry = new MetricsRegistry();
+        registry.setBuckets([10, 100]);
+        registry.histogram('custom_histogram', 50);
+        const metrics = registry.getMetrics();
+        const bucket10 = metrics.find(m => m.name === 'custom_histogram_bucket' && m.labels?.le === '10');
+        const bucket100 = metrics.find(m => m.name === 'custom_histogram_bucket' && m.labels?.le === '100');
+        expect(bucket10?.value).toBe(0);
+        expect(bucket100?.value).toBe(1);
+        expect(metrics.some(m => m.name === 'custom_histogram_bucket' && m.labels?.le === '25')).toBe(false);
+    });
+
+    it('bounds label cardinality per metric', () => {
+        const registry = new MetricsRegistry();
+        registry.setMaxSeriesPerMetric(1);
+        registry.increment('bounded_counter', 1, { path: '/a' });
+        registry.increment('bounded_counter', 1, { path: '/b' });
+        registry.increment('bounded_counter', 1, { path: '/a' });
+        const series = registry.getMetrics().filter(m => m.name === 'bounded_counter');
+        expect(series.length).toBe(1);
+        expect(series[0].value).toBe(2);
+        expect(registry.getDroppedSeries()).toBe(1);
+    });
+
     it('prefix affects metric names', () => {
         const reg = new MetricsRegistry();
         reg.setPrefix('myapp');

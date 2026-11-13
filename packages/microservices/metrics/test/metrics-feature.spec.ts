@@ -29,7 +29,7 @@ class PingController {
 })
 class MetricsInterceptorApp { }
 
-function get(port: number, path: string): Promise<{ status: number; body: any }> {
+function get(port: number, path: string): Promise<{ status: number; body: any; headers: http.IncomingHttpHeaders }> {
     return new Promise((resolve, reject) => {
         http.get({ host: '127.0.0.1', port, path }, (res) => {
             let text = '';
@@ -42,7 +42,7 @@ function get(port: number, path: string): Promise<{ status: number; body: any }>
                 } catch {
                     body = text;
                 }
-                resolve({ status: res.statusCode ?? 0, body });
+                resolve({ status: res.statusCode ?? 0, body, headers: res.headers });
             });
         }).on('error', reject);
     });
@@ -76,6 +76,12 @@ describe('useMetrics feature', () => {
         expect(requestMetric).toBeTruthy();
         expect(requestMetric.value).toBeGreaterThanOrEqual(1);
         expect(requestMetric.labels.app).toBe('test');
+
+        const prometheus = await get(port, '/metrics');
+        expect(prometheus.status).toBe(200);
+        expect(String(prometheus.headers['content-type'])).toContain('text/plain');
+        expect(String(prometheus.headers['content-type'])).toContain('version=0.0.4');
+        expect(String(prometheus.body)).toContain('myapp_http_requests_total');
     });
 
     it('allows disabling memory and latency collectors', () => {
