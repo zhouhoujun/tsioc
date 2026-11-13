@@ -1,5 +1,7 @@
 import { Abstract } from '@tsdi/ioc';
+import { RequestContext } from '@tsdi/common';
 import { Observable } from 'rxjs';
+import { ClientEndpoint } from '../options';
 
 /**
  * Client discovery strategy.
@@ -11,7 +13,7 @@ export abstract class ClientDiscoveryStrategy {
      * Discover service instances.
      * 发现服务实例
      */
-    abstract discover(): Promise<any> | Observable<any>;
+    abstract discover(input?: any, context?: RequestContext): ClientEndpoint[] | void | Promise<ClientEndpoint[] | void> | Observable<ClientEndpoint[] | void>;
 
     /**
      * Shutdown discovery.

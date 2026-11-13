@@ -147,7 +147,7 @@ function buildStrategyFeatureProviders<TOptions, TStrategy>(
     strategyToken: any,
     optionsToken: any,
     interceptor: RequestInterceptorLike,
-    defaultFactory: new (options: TOptions) => TStrategy,
+    defaultFactory: new (options: TOptions, injector?: Injector) => TStrategy,
     input?: TOptions | ProvdierOf<RequestInterceptorLike>
 ): Provider[] {
     const interceptorToken = getClientInterceptorsToken(config);
@@ -157,7 +157,7 @@ function buildStrategyFeatureProviders<TOptions, TStrategy>(
     const options = normalizeFeatureOptions<TOptions>(input as TOptions | undefined);
     return [
         { provide: optionsToken, useValue: options },
-        { provide: strategyToken, useFactory: (opts: TOptions) => new defaultFactory(opts), deps: [optionsToken] },
+        { provide: strategyToken, useFactory: (injector: Injector, opts: TOptions) => new defaultFactory(opts, injector), deps: [Injector, optionsToken] },
         { provide: interceptorToken, useValue: interceptor, multi: true }
     ];
 }

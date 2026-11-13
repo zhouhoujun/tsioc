@@ -1,7 +1,7 @@
 import { getToken, Token } from '@tsdi/ioc';
 import { GuardLike } from '@tsdi/core';
 import { Transport, RequestInterceptor, RequestInterceptorLike, RequestHandler, RequestHandlerLike, RequestFilterLike } from '@tsdi/common';
-import { ClientConfig } from './options';
+import { ClientConfig, ClientEndpoint } from './options';
 import { AbstractClient } from './AbstractClient';
 
 function toMicroName(microservice?: boolean, name?: string) {
@@ -55,3 +55,13 @@ export function getClientBackendToken(config: ClientConfig): Token<RequestHandle
 export function getClientToken(config: ClientConfig): Token<AbstractClient<any, any>> {
     return getToken<AbstractClient<any, any>>(`${Transport[config.transport].toUpperCase()}_MICRO_CLIENT`, toMicroName(config.microservice, config.name));
 }
+
+/**
+ * Endpoints discovered for the current request.
+ */
+export const CLIENT_DISCOVERED_ENDPOINTS = getToken<ClientEndpoint[]>('CLIENT_DISCOVERED_ENDPOINTS');
+
+/**
+ * Endpoint selected by the load balancer for the current request.
+ */
+export const CLIENT_SELECTED_ENDPOINT = getToken<ClientEndpoint>('CLIENT_SELECTED_ENDPOINT');

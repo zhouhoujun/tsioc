@@ -210,6 +210,16 @@ describe('Discovery Module Test', () => {
             expect(selector.select(single)?.id).toBe('1');
             expect(selector.select(single)?.id).toBe('1');
         });
+
+        it('keeps an independent cursor per service', () => {
+            const a = [{ id: 'a1', name: 'a', address: 'a1' }, { id: 'a2', name: 'a', address: 'a2' }];
+            const b = [{ id: 'b1', name: 'b', address: 'b1' }, { id: 'b2', name: 'b', address: 'b2' }];
+
+            expect(selector.select(a)?.id).toBe('a1');
+            expect(selector.select(b)?.id).toBe('b1');
+            expect(selector.select(a)?.id).toBe('a2');
+            expect(selector.select(b)?.id).toBe('b2');
+        });
     });
 
     describe('WeightedEndpointSelector', () => {
@@ -246,6 +256,21 @@ describe('Discovery Module Test', () => {
             const noWeightsSelector = new WeightedEndpointSelector();
             const selected = noWeightsSelector.select(endpoints);
             expect(selected).not.toBeNull();
+        });
+
+        it('uses ServiceEndpoint.weight when no explicit weights are configured', () => {
+            const originalRandom = Math.random;
+            Math.random = () => 0.1;
+            try {
+                const weighted = new WeightedEndpointSelector();
+                const selected = weighted.select([
+                    { id: '1', name: 'test', address: 'host1', weight: 1 },
+                    { id: '2', name: 'test', address: 'host2', weight: 100 }
+                ]);
+                expect(selected?.id).toBe('2');
+            } finally {
+                Math.random = originalRandom;
+            }
         });
     });
 

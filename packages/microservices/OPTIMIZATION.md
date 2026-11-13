@@ -3,6 +3,25 @@
 > 基线：`7.tui`（2026-11）。行号基于当前工作区，若后续改动请以符号名为准。
 > 本文只做设计，不改变现有行为；所有"建议"均标注了改动点与验收标准。
 
+## 执行进度（2026-11-13）
+
+已完成并落到测试的 P0 批次：
+
+- `matchTransport` 修复（协议过滤）。
+- `multiOrder` 改为稳定优先级排序（越小越外层，同值按注册顺序）。
+- 路由级 `filters → guards → interceptors` 真正执行（返回 403）。
+- 客户端统一 `ServiceError`（`code/status/body`），HTTP 非 2xx 默认抛错，支持 `throwOnError:false`。
+- Gateway 上游 5xx/429 计入熔断与 `gateway_errors_total`，新增 `circuitBreaker.failureStatuses`。
+- Gateway 路由改为 segment-aware 前缀匹配 + 最长/最具体优先，新增 `routeMatching: 'legacy'` 兼容开关。
+- `/health` DOWN 返回 503，indicator 并行 + `timeout` + `includeDetails`。
+- `ConfigModule.withOptions/withEnv/withFile` 真正生效；默认值分层、数组替换、watch 去重。
+- `useJson` / `useCookie` 选项接线；signed cookie（HMAC + keys）；`useAuth(false)` 不再注册空策略。
+- `useTransfers` 保留 transport 默认 transfer。
+- HTTP client 透传 `requestOpts`；`HttpServOptions.timeout` 映射到 `requestTimeout`。
+- 客户端 discovery + load balance 真正可用：`EndpointResolver` 解析 → endpoint 写入请求上下文 → HTTP backend 改写目标地址；RR/random/weighted/least 策略。
+- Discovery selector：每服务独立 RR、使用 `endpoint.weight`、`healthCheck` 不再复活 DOWN / 不再刷新 TTL。
+
+
 ---
 
 ## 0. 结论摘要（先看这里）

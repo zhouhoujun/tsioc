@@ -3763,3 +3763,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 路由表支持 all/enabled/disabled 状态筛选，与文本搜索组合生效。
   - 规则流程支持从列表复制（读取定义 → 新 id/name 保存 → 刷新列表）。
   - admin 54 passing；生产 bundle 验证 endpoint、筛选、复制。
+- 微服务框架 P0/P1 首批执行（2026-11-13）：
+  - 修复 matchTransport、multiOrder 稳定排序、路由级 guard/interceptor/filter 执行。
+  - 客户端 ServiceError 统一、HTTP 非 2xx 抛错（可 opt-out）；HTTP requestOpts/server timeout 接线。
+  - Gateway 5xx/429 计入熔断与错误指标；segment-aware 路由匹配 + legacy 开关。
+  - Health 503 + indicator 超时/并集/详情裁剪；ConfigModule withOptions/withEnv/withFile 生效。
+  - useJson/useCookie 选项接线（signed cookie）、useAuth(false) 修复、useTransfers 保留默认 transfer。
+  - 客户端 discovery/load balance 真正可用（EndpointResolver + 上下文 endpoint + HTTP 目标改写）；selector 修复。
+  - 回归：ioc 254、service 61、http 186、client 76、gateway 47、config 75、health 19、discovery 63、admin 54。

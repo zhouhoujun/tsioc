@@ -1,17 +1,39 @@
+import { Injector } from '@tsdi/ioc';
 import { Observable, of, retry, timer } from 'rxjs';
-import { CircuitBreakerOptions, DiscoveryOptions, LoadBalanceOptions, RetryOptions } from '../options';
+import { EndpointResolver } from '@tsdi/discovery';
+import { CircuitBreakerOptions, ClientEndpoint, DiscoveryOptions, LoadBalanceOptions, LoadBalanceStrategy, RetryOptions } from '../options';
 import { CircuitBreakerStrategy } from './CircuitBreakerStrategy';
 import { ClientDiscoveryStrategy } from './ClientDiscoveryStrategy';
 import { ClientLoadBalanceStrategy } from './LoadBalanceStrategy';
 import { RetryStrategy } from './RetryStrategy';
 
 export class DefaultClientDiscoveryStrategy extends ClientDiscoveryStrategy {
-    constructor(readonly options: DiscoveryOptions = {}) {
+    constructor(
+        readonly options: DiscoveryOptions = {},
+        private readonly injector?: Injector
+    ) {
         super();
     }
 
-    discover(): Promise<void> | Observable<void> {
-        return Promise.resolve();
+    async discover(input?: any): Promise<ClientEndpoint[] | void> {
+        const service = this.options.serviceName
+            ?? input?.service
+            ?? input?.pattern?.service
+            ?? input?.pattern;
+        if (!service || typeof service !== 'string') {
+            return;
+        }
+        const resolver = this.injector?.get(EndpointResolver, null);
+        if (!resolver) {
+            return;
+        }
+        const endpoints = await resolver.resolve(service, {
+            protocol: this.options.protocol,
+            version: this.options.version,
+            tags: this.options.tags,
+            status: this.options.status ?? 'UP'
+        });
+        return endpoints;
     }
 
     onShutdown(): Promise<void> {
@@ -20,12 +42,64 @@ export class DefaultClientDiscoveryStrategy extends ClientDiscoveryStrategy {
 }
 
 export class DefaultClientLoadBalanceStrategy extends ClientLoadBalanceStrategy {
-    constructor(readonly options: LoadBalanceOptions = {}) {
+    private cursor = 0;
+    private currentWeights = new Map<string, number>();
+
+    constructor(
+        readonly options: LoadBalanceOptions = {},
+        private readonly injector?: Injector
+    ) {
         super();
     }
 
-    chooseServer(): Promise<void> | Observable<void> {
-        return Promise.resolve();
+    chooseServer(endpoints?: ClientEndpoint[]): ClientEndpoint | void {
+        if (!endpoints?.length) {
+            return;
+        }
+        switch (this.options.strategy ?? LoadBalanceStrategy.RoundRobin) {
+            case LoadBalanceStrategy.Random:
+                return endpoints[Math.floor(Math.random() * endpoints.length)];
+            case LoadBalanceStrategy.WeightedRoundRobin:
+                return this.smoothWeighted(endpoints);
+            case LoadBalanceStrategy.LeastConnections:
+                // Selection counts approximate in-flight pressure; callers may
+                // add a selector for exact release semantics.
+                return this.leastSelected(endpoints);
+            default:
+                return endpoints[this.cursor++ % endpoints.length];
+        }
+    }
+
+    private smoothWeighted(endpoints: ClientEndpoint[]): ClientEndpoint {
+        let total = 0;
+        let selected: ClientEndpoint = endpoints[0];
+        let selectedWeight = -Infinity;
+        for (const endpoint of endpoints) {
+            const weight = Math.max(1, endpoint.weight ?? 1);
+            total += weight;
+            const current = (this.currentWeights.get(endpoint.id) ?? 0) + weight;
+            this.currentWeights.set(endpoint.id, current);
+            if (current > selectedWeight) {
+                selectedWeight = current;
+                selected = endpoint;
+            }
+        }
+        this.currentWeights.set(selected.id, (this.currentWeights.get(selected.id) ?? 0) - total);
+        return selected;
+    }
+
+    private leastSelected(endpoints: ClientEndpoint[]): ClientEndpoint {
+        let selected = endpoints[0];
+        let min = Infinity;
+        for (const endpoint of endpoints) {
+            const count = this.currentWeights.get(endpoint.id) ?? 0;
+            if (count < min) {
+                min = count;
+                selected = endpoint;
+            }
+        }
+        this.currentWeights.set(selected.id, (this.currentWeights.get(selected.id) ?? 0) + 1);
+        return selected;
     }
 }
 

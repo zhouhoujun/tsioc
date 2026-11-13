@@ -1,6 +1,6 @@
 import { asProvider, createInjector, Injector, Provider } from '@tsdi/ioc';
 import { createRequestHandler, TransferSide, Transport, ContentType } from '@tsdi/common';
-import { CLIENT_CONFIGS, BodySerializeStrategy, ClientFeatureKind, ClientHandler, ClientTransportFeature, ServiceError, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature } from '@tsdi/client';
+import { CLIENT_CONFIGS, BodySerializeStrategy, ClientEndpoint, ClientFeatureKind, ClientHandler, ClientTransportFeature, ServiceError, CLIENT_SELECTED_ENDPOINT, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature } from '@tsdi/client';
 import { ensureClientConnectedInterceptor } from '@tsdi/client/src/interceptors/connect';
 import { HTTP_CLIENT_OPTIONS, HttpClientOptions } from './options';
 import { HttpClient } from './client';
@@ -53,12 +53,27 @@ export function withHttpTransport(...options: Partial<HttpClientOptions>[]): Cli
     return options.map((o, i) => httpClientTransportFactory(o, o.asDefault ?? (i === 0)));
 }
 
+function endpointBaseUrl(endpoint?: ClientEndpoint): string | undefined {
+    if (!endpoint?.address) {
+        return undefined;
+    }
+    if (/^https?:\/\//i.test(endpoint.address)) {
+        return endpoint.address.replace(/\/$/, '');
+    }
+    const protocol = endpoint.protocol ?? 'http';
+    const hasPort = /:\d+$/.test(endpoint.address);
+    return `${protocol}://${endpoint.address}${!hasPort && endpoint.port ? `:${endpoint.port}` : ''}`;
+}
+
 function createHttpBackend(config: HttpClientOptions) {
     return (req: any, context: any) => new Observable<any>((observer: any) => {
         const client = context.get(HttpClient) as HttpClient | undefined;
         const rawBody = req.body ?? req.payload ?? null;
         const url = req.getUrlWithParams?.() ?? req.url;
-        const baseUrl = config.authority ?? config.url ?? 'http://127.0.0.1';
+        const selected = context.has?.(CLIENT_SELECTED_ENDPOINT)
+            ? context.get(CLIENT_SELECTED_ENDPOINT) as ClientEndpoint
+            : undefined;
+        const baseUrl = endpointBaseUrl(selected) ?? config.authority ?? config.url ?? 'http://127.0.0.1';
         const target = new URL(url, baseUrl);
         const bodySerializeStrategy = context.has(BodySerializeStrategy) ? context.get(BodySerializeStrategy) as BodySerializeStrategy : null;
         const body = rawBody != null && bodySerializeStrategy?.canHandle(rawBody)
@@ -164,6 +179,7 @@ function createHttpBackend(config: HttpClientOptions) {
         }
 
         const requestOptions: http.RequestOptions = {
+            ...(config.requestOpts ?? {}),
             method: req.method,
             headers,
         };

@@ -16,6 +16,7 @@ import {
     retryInterceptor
 } from '../src/interceptors/features';
 import { requestTimeoutInterceptor } from '../src/interceptors/timeout';
+import { CLIENT_DISCOVERED_ENDPOINTS, CLIENT_SELECTED_ENDPOINT } from '../src/tokens';
 import { Observable } from 'rxjs';
 
 @Injectable()
@@ -131,6 +132,29 @@ describe('client feature interceptors', () => {
 
         expect(strategy.called).toBe(1);
         expect(nextCalled).toBe(1);
+    });
+
+    it('stores discovered endpoints and the selected endpoint in the context', async () => {
+        const endpoint = { id: 'e1', name: 'users', address: '10.0.0.1:8080', status: 'UP' as const };
+        class EndpointDiscovery extends ClientDiscoveryStrategy {
+            discover() { return [endpoint]; }
+            onShutdown() { return Promise.resolve(); }
+        }
+        class PickFirst extends ClientLoadBalanceStrategy {
+            chooseServer(endpoints?: any[]) { return endpoints?.[0]; }
+        }
+        const injector = createInjector([
+            { provide: ClientDiscoveryStrategy, useClass: EndpointDiscovery },
+            { provide: ClientLoadBalanceStrategy, useClass: PickFirst }
+        ] as any);
+        const context = createRequestContext(injector);
+        const next = () => of('ok');
+
+        await lastValueFrom(discoverInterceptor({}, next as any, context));
+        expect(context.get(CLIENT_DISCOVERED_ENDPOINTS)).toEqual([endpoint]);
+
+        await lastValueFrom(loadBalanceInterceptor({}, next as any, context));
+        expect(context.get(CLIENT_SELECTED_ENDPOINT)).toEqual(endpoint);
     });
 
     it('records circuit breaker success and failure', async () => {

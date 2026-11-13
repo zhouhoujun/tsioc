@@ -142,14 +142,23 @@ describe('InMemoryServiceDiscovery', () => {
         expect(result).toBeNull();
     });
 
-    it('healthCheck marks endpoint as UP', async () => {
+    it('healthCheck reports DOWN endpoints without reviving them', async () => {
         const d = createDiscovery();
         const ep = await d.register(sampleInfo());
         ep.status = 'DOWN';
         const ok = await d.healthCheck(ep);
-        expect(ok).toBe(true);
-        const refreshed = await d.discoverOne('my-service');
-        expect(refreshed!.status).toBe('UP');
+        expect(ok).toBe(false);
+        const refreshed = (await d.query({ name: 'my-service' }))[0];
+        expect(refreshed.status).toBe('DOWN');
+    });
+
+    it('healthCheck observes TTL expiry instead of extending it', async () => {
+        const d = createDiscovery();
+        const ep = await d.register(sampleInfo({ ttl: 5 }));
+        await new Promise(resolve => setTimeout(resolve, 15));
+        expect(await d.healthCheck(ep)).toBe(false);
+        const refreshed = (await d.query({ name: 'my-service' }))[0];
+        expect(refreshed.status).toBe('DOWN');
     });
 
     it('shutdown clears all data', async () => {

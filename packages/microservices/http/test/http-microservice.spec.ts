@@ -6,7 +6,7 @@ import {
 import { HttpMessageAdapter } from '../src/server/message-adapter';
 import { HTTP_AUTH_OPTIONS } from '../src/server/interceptors/auth';
 import { withHttpTransport, HTTP_CLIENT_OPTIONS, HttpClientOptions } from '../src/client';
-import { BodySerializeStrategy, ServiceError, getClientBackendToken, TimeoutStrategy } from '@tsdi/client';
+import { BodySerializeStrategy, ServiceError, CLIENT_SELECTED_ENDPOINT, getClientBackendToken, TimeoutStrategy } from '@tsdi/client';
 import { FileAdapter, MessageAdapter, MimeAdapter, MimeTypes, RestfulRequestAdapter, StreamAdapter, Transport, TransferSide } from '@tsdi/common';
 import { parseMultipartBody } from '../src/server/multipart';
 import { BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SERVICE_JSON_OPTIONS, SERVICE_STATICS_OPTIONS, SessionInterceptor } from '@tsdi/service';
@@ -247,6 +247,87 @@ describe('HTTP Microservice', () => {
                 mockResponse(201, 'Created', '{"ok":true}');
                 const created = await lastValueFrom(backend(new HttpRequest('/created', null, { method: 'POST' }), context));
                 expect(created).toEqual({ ok: true });
+            } finally {
+                (http as any).request = originalRequest;
+            }
+        });
+
+        it('passes requestOpts to the underlying http request', async () => {
+            const feature = withHttpTransport({ url: 'http://localhost:3000', requestOpts: { family: 4 } })[0];
+            const injector = createInjector([importProvidersFrom(HttpModule), ...feature.providers] as any);
+            const [backend] = injector.get(getClientBackendToken(feature.config)) as unknown as Array<(req: any, context: any) => any>;
+            const context = {
+                get(token: any) {
+                    return token === HttpClient ? undefined : (injector.has(token) ? injector.get(token) : undefined);
+                },
+                has(token: any) {
+                    return token === HttpClient || injector.has(token);
+                }
+            } as any;
+
+            const originalRequest = http.request;
+            let captured: http.RequestOptions | undefined;
+            (http as any).request = (_target: URL, options: http.RequestOptions) => {
+                captured = options;
+                const reqEmitter = new EventEmitter() as any;
+                reqEmitter.end = () => {
+                    const resEmitter = new EventEmitter() as any;
+                    resEmitter.statusCode = 200;
+                    resEmitter.statusMessage = 'OK';
+                    resEmitter.headers = { 'content-type': 'application/json' };
+                    reqEmitter.emit('response', resEmitter);
+                    resEmitter.emit('data', Buffer.from('{}', 'utf8'));
+                    resEmitter.emit('end');
+                };
+                reqEmitter.destroy = () => undefined;
+                return reqEmitter;
+            };
+
+            try {
+                await lastValueFrom(backend(new HttpRequest('/opts', null, { method: 'GET' }), context));
+                expect(captured?.family).toBe(4);
+            } finally {
+                (http as any).request = originalRequest;
+            }
+        });
+
+        it('rewrites the request target to the load balanced endpoint', async () => {
+            const feature = withHttpTransport({ url: 'http://localhost:3000' })[0];
+            const injector = createInjector([importProvidersFrom(HttpModule), ...feature.providers] as any);
+            const [backend] = injector.get(getClientBackendToken(feature.config)) as unknown as Array<(req: any, context: any) => any>;
+            const endpoint = { id: 'e1', name: 'users', address: '10.9.9.9:7777', protocol: 'http' };
+            const context = {
+                get(token: any) {
+                    if (token === HttpClient) return undefined;
+                    if (token === CLIENT_SELECTED_ENDPOINT) return endpoint;
+                    return injector.has(token) ? injector.get(token) : undefined;
+                },
+                has(token: any) {
+                    return token === HttpClient || token === CLIENT_SELECTED_ENDPOINT || injector.has(token);
+                }
+            } as any;
+
+            const originalRequest = http.request;
+            let requested = '';
+            (http as any).request = (target: URL) => {
+                requested = target.toString();
+                const reqEmitter = new EventEmitter() as any;
+                reqEmitter.end = () => {
+                    const resEmitter = new EventEmitter() as any;
+                    resEmitter.statusCode = 200;
+                    resEmitter.statusMessage = 'OK';
+                    resEmitter.headers = { 'content-type': 'application/json' };
+                    reqEmitter.emit('response', resEmitter);
+                    resEmitter.emit('data', Buffer.from('{}', 'utf8'));
+                    resEmitter.emit('end');
+                };
+                reqEmitter.destroy = () => undefined;
+                return reqEmitter;
+            };
+
+            try {
+                await lastValueFrom(backend(new HttpRequest('/profile', null, { method: 'GET' }), context));
+                expect(requested).toBe('http://10.9.9.9:7777/profile');
             } finally {
                 (http as any).request = originalRequest;
             }

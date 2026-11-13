@@ -128,12 +128,16 @@ export class InMemoryServiceDiscovery extends ServiceDiscovery implements OnDest
 
     async healthCheck(endpoint: ServiceEndpoint): Promise<boolean> {
         const stored = this.services.get(endpoint.id);
-        if (stored) {
-            stored.status = 'UP';
-            stored.updatedAt = Date.now();
-            return true;
+        if (!stored) {
+            return false;
         }
-        return false;
+        // Do not refresh `updatedAt` here: a probe must observe TTL expiry
+        // instead of silently extending the endpoint lifetime.
+        if (this.isExpired(stored)) {
+            this.markEndpointDown(stored);
+            return false;
+        }
+        return stored.status !== 'DOWN';
     }
 
     async update(id: string, patch: Partial<ServiceEndpoint>): Promise<ServiceEndpoint | null> {

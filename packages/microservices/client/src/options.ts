@@ -132,6 +132,22 @@ export interface DiscoveryOptions {
      * 心跳间隔（毫秒）
      */
     heartbeatInterval?: number;
+    /**
+     * required endpoint protocol.
+     */
+    protocol?: string | string[];
+    /**
+     * required endpoint version.
+     */
+    version?: string;
+    /**
+     * required endpoint tags.
+     */
+    tags?: string[];
+    /**
+     * required endpoint status. Defaults to UP.
+     */
+    status?: 'UP' | 'DOWN' | 'UNKNOWN';
 }
 
 /**
@@ -250,4 +266,22 @@ export interface RetryOptions {
 export interface ClientOptions<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends ClientConfig<TReq, TRes, TContext> {
     messageReaderFactory?: any;
     transportFeature?: (options: ClientOptions<TReq, TRes, TContext>, asDefault?: boolean) => ClientTransportFeature;
+}
+
+/**
+ * Minimal endpoint shape shared with `@tsdi/discovery` (structurally
+ * compatible). Kept here so the client package does not need to import the
+ * discovery implementation for its public types.
+ */
+export interface ClientEndpoint {
+    id: string;
+    name: string;
+    address: string;
+    protocol?: string;
+    port?: number;
+    status?: 'UP' | 'DOWN' | 'UNKNOWN';
+    weight?: number;
+    version?: string;
+    tags?: string[];
+    metadata?: Record<string, any>;
 }

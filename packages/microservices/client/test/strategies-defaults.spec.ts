@@ -1,4 +1,6 @@
 import expect = require('expect');
+import { createInjector } from '@tsdi/ioc';
+import { EndpointResolver } from '@tsdi/discovery';
 import { DefaultClientDiscoveryStrategy, DefaultClientLoadBalanceStrategy, DefaultCircuitBreakerStrategy, DefaultRetryStrategy } from '../src/strategies/defaults';
 
 describe('DefaultClientDiscoveryStrategy', () => {
@@ -17,18 +19,63 @@ describe('DefaultClientDiscoveryStrategy', () => {
         const strategy = new DefaultClientDiscoveryStrategy(options);
         expect(strategy.options).toBe(options);
     });
+
+    it('resolves endpoints through EndpointResolver when a service is configured', async () => {
+        const endpoint = { id: '1', name: 'users', address: '10.0.0.1:8080', status: 'UP' as const };
+        const calls: any[] = [];
+        const injector = createInjector([{
+            provide: EndpointResolver,
+            useValue: {
+                resolve: async (service: string, options: any) => {
+                    calls.push({ service, options });
+                    return [endpoint];
+                }
+            }
+        }]);
+        const strategy = new DefaultClientDiscoveryStrategy({ serviceName: 'users', tags: ['api'] }, injector);
+
+        await expect(strategy.discover()).resolves.toEqual([endpoint]);
+        expect(calls[0].service).toBe('users');
+        expect(calls[0].options.status).toBe('UP');
+        expect(calls[0].options.tags).toEqual(['api']);
+    });
 });
 
 describe('DefaultClientLoadBalanceStrategy', () => {
-    it('chooseServer returns resolved promise', async () => {
+    it('chooseServer returns undefined without endpoints', () => {
         const strategy = new DefaultClientLoadBalanceStrategy();
-        await expect(strategy.chooseServer()).resolves.toBeUndefined();
+        expect(strategy.chooseServer()).toBeUndefined();
     });
 
     it('stores options', () => {
         const options = { cacheTtl: 3000 };
         const strategy = new DefaultClientLoadBalanceStrategy(options);
         expect(strategy.options).toBe(options);
+    });
+
+    it('round-robins across endpoints by default', () => {
+        const strategy = new DefaultClientLoadBalanceStrategy();
+        const endpoints = [
+            { id: '1', name: 'svc', address: 'a' },
+            { id: '2', name: 'svc', address: 'b' }
+        ];
+        expect(strategy.chooseServer(endpoints)?.id).toBe('1');
+        expect(strategy.chooseServer(endpoints)?.id).toBe('2');
+        expect(strategy.chooseServer(endpoints)?.id).toBe('1');
+    });
+
+    it('uses endpoint weight for weighted round-robin', () => {
+        const strategy = new DefaultClientLoadBalanceStrategy({ strategy: 2 });
+        const endpoints = [
+            { id: '1', name: 'svc', address: 'a', weight: 1 },
+            { id: '2', name: 'svc', address: 'b', weight: 9 }
+        ];
+        const counts: Record<string, number> = { '1': 0, '2': 0 };
+        for (let i = 0; i < 10; i++) {
+            const picked = strategy.chooseServer(endpoints)!;
+            counts[picked.id]++;
+        }
+        expect(counts['2']).toBeGreaterThan(counts['1']);
     });
 });
 

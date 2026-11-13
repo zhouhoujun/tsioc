@@ -127,6 +127,7 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         }
 
         const server = this.server;
+        this.applyServerTimeouts(server);
         server.on('request', (req: HttpRequestLike, res: HttpResponseLike) => {
             this.handleRequest(req, res);
         });
@@ -195,6 +196,24 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         this.activeConnections.clear();
         this.activeHttp2Sessions.clear();
         this.server = null;
+    }
+
+    /**
+     * Apply `HttpServOptions.timeout` to the underlying server. This bounds the
+     * whole request (headers + body + handler) instead of only route handlers.
+     */
+    private applyServerTimeouts(server: HttpServerLike): void {
+        const timeout = this.options.timeout;
+        if (!timeout || timeout <= 0) {
+            return;
+        }
+        const target = server as unknown as { requestTimeout?: number; headersTimeout?: number };
+        if ('requestTimeout' in target) {
+            target.requestTimeout = timeout;
+        }
+        if ('headersTimeout' in target) {
+            target.headersTimeout = Math.min(timeout, 60_000);
+        }
     }
 
     private createServer(): HttpServerLike {
