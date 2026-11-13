@@ -3885,3 +3885,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - createRegistryContractTransport（EndpointResolver → endpoint → HttpClient contract call）。
   - 无 endpoint 503；支持 protocol/selector。
   - 回归：http 197；package-deps 通过。
+- 微服务框架第二十六批（2026-11-13）：
+  - Adaptive bulkhead（AIMD）：initialConcurrent/minConcurrent/adaptive。
+  - 饱和收缩、低占用增长；snapshot limit 可观测。
+  - 回归：gateway 76。

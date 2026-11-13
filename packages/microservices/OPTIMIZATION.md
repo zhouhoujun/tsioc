@@ -168,6 +168,12 @@
 - 新增 `createRegistryContractTransport`：EndpointResolver 解析 service → endpoint baseUrl → HttpClient contract call。
 - 保留 HttpClient 的 retry/timeout/metrics/tracing；无 endpoint 返回 ContractHttpError(503)。
 
+第二十六批（自适应并发）：
+
+- Bulkhead 新增 `adaptive` / `initialConcurrent` / `minConcurrent`。
+- 队列满/排队超时按 AIMD 收缩 limit（x0.8，至少 min）。
+- 连续 3 次低占用释放后 limit +1（不超过 maxConcurrent），在压力下保持稳定。
+
 
 ---
 

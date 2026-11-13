@@ -33,9 +33,13 @@ interface BulkheadState {
     active: number;
     queue: BulkheadEntry[];
     limit: number;
+    maxLimit: number;
+    minLimit: number;
+    adaptive: boolean;
     maxQueue: number;
     rejected: number;
     timeouts: number;
+    successStreak: number;
 }
 
 export interface GatewayCircuitSnapshot {
@@ -353,25 +357,42 @@ export class GatewayRuntime {
         }
         const maxConcurrent = options.maxConcurrent ?? Number.MAX_SAFE_INTEGER;
         const maxQueue = Math.max(options.maxQueue ?? 0, 0);
+        const initial = Math.max(1, options.initialConcurrent ?? maxConcurrent);
+        const minLimit = Math.max(1, options.minConcurrent ?? 1);
         let state = this.bulkheads.get(routeKey);
         if (!state) {
-            state = { active: 0, queue: [], limit: maxConcurrent, maxQueue, rejected: 0, timeouts: 0 };
+            state = {
+                active: 0,
+                queue: [],
+                limit: Math.min(initial, maxConcurrent),
+                maxLimit: maxConcurrent,
+                minLimit,
+                adaptive: options.adaptive === true,
+                maxQueue,
+                rejected: 0,
+                timeouts: 0,
+                successStreak: 0
+            };
             this.bulkheads.set(routeKey, state);
         } else {
-            state.limit = maxConcurrent;
+            state.adaptive = options.adaptive === true;
+            state.maxLimit = maxConcurrent;
+            state.minLimit = minLimit;
             state.maxQueue = maxQueue;
+            state.limit = Math.min(Math.max(state.limit, minLimit), maxConcurrent);
         }
         const error = () => Object.assign(new Error(options.message ?? 'Gateway bulkhead is full'), {
             statusCode: 503,
             statusMessage: 'Service Unavailable'
         });
-        if (state.active < maxConcurrent) {
+        if (state.active < state.limit) {
             state.active++;
             this.emitBulkheadMetrics(routeKey, state);
             return this.releaseBulkhead(routeKey, state);
         }
         if (state.queue.length >= maxQueue) {
             state.rejected += 1;
+            this.shrinkBulkhead(state);
             this.metrics?.increment('gateway_bulkhead_rejected_total', 1, { key: routeKey });
             this.emitBulkheadMetrics(routeKey, state);
             throw error();
@@ -389,6 +410,7 @@ export class GatewayRuntime {
                         state!.queue.splice(index, 1);
                     }
                     state!.timeouts += 1;
+                    this.shrinkBulkhead(state!);
                     this.metrics?.increment('gateway_bulkhead_timeout_total', 1, { key: routeKey });
                     this.emitBulkheadMetrics(routeKey, state!);
                     reject(error());
@@ -417,12 +439,36 @@ export class GatewayRuntime {
                 }
                 state.active++;
                 next.resolve();
-            } else if (state.active === 0) {
+            } else if (state.active === 0 && !state.adaptive) {
                 this.emitBulkheadMetrics(routeKey, state);
                 this.bulkheads.delete(routeKey);
             }
+            this.growBulkhead(state);
             this.emitBulkheadMetrics(routeKey, state);
         };
+    }
+
+    private shrinkBulkhead(state: BulkheadState): void {
+        if (!state.adaptive) {
+            return;
+        }
+        state.successStreak = 0;
+        state.limit = Math.max(state.minLimit, Math.floor(state.limit * 0.8) || state.limit - 1);
+    }
+
+    private growBulkhead(state: BulkheadState): void {
+        if (!state.adaptive || state.queue.length) {
+            return;
+        }
+        if (state.active <= Math.floor(state.limit / 2)) {
+            state.successStreak += 1;
+            if (state.successStreak >= 3 && state.limit < state.maxLimit) {
+                state.limit += 1;
+                state.successStreak = 0;
+            }
+        } else {
+            state.successStreak = 0;
+        }
     }
 
     private emitBulkheadMetrics(key: string, state: BulkheadState): void {

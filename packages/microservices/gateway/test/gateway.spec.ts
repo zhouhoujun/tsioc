@@ -484,6 +484,29 @@ describe('Gateway', () => {
         queuedRelease();
     });
 
+    it('adapts bulkhead concurrency with AIMD', async () => {
+        const runtime = new GatewayRuntime();
+        const options = {
+            maxConcurrent: 4,
+            initialConcurrent: 2,
+            minConcurrent: 1,
+            adaptive: true,
+            maxQueue: 0
+        };
+        const first = await runtime.acquireBulkhead('adaptive', options);
+        const second = await runtime.acquireBulkhead('adaptive', options);
+        await expect(runtime.acquireBulkhead('adaptive', options)).rejects.toThrow('bulkhead');
+        expect((await runtime.snapshot()).bulkheads.find(item => item.key === 'adaptive')?.limit).toBe(1);
+
+        first();
+        second();
+        for (let i = 0; i < 3; i++) {
+            const release = await runtime.acquireBulkhead('adaptive', options);
+            release();
+        }
+        expect((await runtime.snapshot()).bulkheads.find(item => item.key === 'adaptive')?.limit).toBe(2);
+    });
+
     it('records bulkhead timeouts and metrics', async () => {
         const events: any[] = [];
         const metrics: any = {

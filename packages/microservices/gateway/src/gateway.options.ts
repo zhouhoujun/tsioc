@@ -388,6 +388,19 @@ export interface GatewayBulkheadOptions {
      * Default false (route-level bulkhead only).
      */
     perEndpoint?: boolean;
+    /**
+     * adapt the concurrency limit at runtime (AIMD): shrink on saturation,
+     * grow after a short run of idle successes.
+     */
+    adaptive?: boolean;
+    /**
+     * initial concurrency when adaptive is enabled. Default maxConcurrent.
+     */
+    initialConcurrent?: number;
+    /**
+     * minimum concurrency when adaptive is enabled. Default 1.
+     */
+    minConcurrent?: number;
 }
 
 export interface GatewayCacheOptions {
