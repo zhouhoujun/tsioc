@@ -280,6 +280,12 @@
 - 新增 `OtlpHttpTraceExporter`：OTLP/HTTP JSON spans（resource/kind/status/attributes/events/时间戳）。
 - 使用运行中的 Redis 补真实集成测试：缓存/熔断/nonce/固定窗口跨 store 实例、GatewayRuntime 共享状态。
 
+第四十六批（发布 dry-run）：
+
+- 新增 `scripts/publish-dry-run.mjs` 与 `npm run publish:dry-run`：逐包 build → dist manifest → pack → `npm publish --dry-run`。
+- `npm run publish:prepare <pkg>` 可准备单包发布目录。
+- gateway 实测 dry-run 通过（25 files，197.6 kB unpacked）。
+
 
 ---
 

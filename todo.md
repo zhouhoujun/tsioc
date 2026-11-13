@@ -3961,3 +3961,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - OtlpHttpTraceExporter（OTLP JSON spans）。
   - 真实 Redis GatewayStateStore 集成测试（缓存/熔断/nonce/限流窗口）。
   - 回归：tracing 44、gateway 82（Redis 86）。
+- 微服务框架第四十六批（2026-11-13）：
+  - publish-dry-run（build → dist → pack → npm publish --dry-run）。
+  - root scripts publish:prepare / publish:dry-run。
+  - gateway dry-run 实测通过。
