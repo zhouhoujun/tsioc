@@ -3945,3 +3945,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第四十一批（2026-11-13）：
   - Consul/Nacos/Eureka 5xx 故障注入测试。
   - 回归：discovery 81。
+- 微服务框架第四十二批（2026-11-13）：
+  - gRPC server/client 流写入 backpressure（write false + drain）。
+  - writeStreamValues 单元测试。
+  - 回归：grpc 25。

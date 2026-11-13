@@ -7,6 +7,43 @@ import * as protoLoader from '@grpc/proto-loader';
 import { GRPC_CLIENT_OPTIONS, GrpcClientOptions } from './options';
 import { GrpcRequest } from './request';
 
+/**
+ * Write values respecting gRPC `write()` backpressure. When the call returns
+ * false, remaining values wait for the next `drain` event.
+ */
+export function writeStreamValues(
+    call: { write(value: any): boolean; on(event: 'drain', callback: () => void): any; end(): void },
+    values: any[],
+    end = true
+): void {
+    const queue = [...(values ?? [])];
+    let draining = false;
+    let ended = false;
+    const flush = () => {
+        if (ended) {
+            return;
+        }
+        while (queue.length) {
+            if (!call.write(queue.shift())) {
+                draining = true;
+                return;
+            }
+        }
+        draining = false;
+        if (end) {
+            ended = true;
+            call.end();
+        }
+    };
+    call.on('drain', () => {
+        if (draining) {
+            draining = false;
+            flush();
+        }
+    });
+    flush();
+}
+
 @Injectable()
 export class GrpcClient extends AbstractClient<GrpcRequest<any>, ResponseEvent<any>, UrlRequestOptions> {
 
@@ -59,10 +96,7 @@ export class GrpcClient extends AbstractClient<GrpcRequest<any>, ResponseEvent<a
                     { code: err?.code, statusCode: err?.code }
                 )));
                 call.on('end', () => observer.complete());
-                for (const value of values ?? []) {
-                    call.write(value);
-                }
-                call.end();
+                writeStreamValues(call, values ?? []);
                 return () => {
                     try {
                         call.cancel?.();

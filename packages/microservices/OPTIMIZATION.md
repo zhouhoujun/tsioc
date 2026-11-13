@@ -257,6 +257,12 @@
 - Consul/Nacos/Eureka 适配器新增 5xx 故障测试。
 - 错误保留 registry、状态码和 body，EndpointResolver 可在上层做 stale-cache/退避降级。
 
+第四十二批（gRPC 流背压）：
+
+- Server stream/bidi 使用有界写入队列，尊重 `call.write()` 的 false 与 `drain`。
+- Client `clientStream`/`bidiStream` 使用 `writeStreamValues`，避免大消息一次性写爆缓冲区。
+- 新增背压单元测试（false → drain → 继续写 → end）。
+
 
 ---
 

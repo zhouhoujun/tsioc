@@ -8,6 +8,72 @@ import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import { GrpcServOptions, GRPC_SERV_OPTIONS, GRPC_BIND_INTERCEPTORS, GRPC_BIND_FILTERS, GRPC_BIND_GUARDS } from './options';
 
+interface StreamWriterCall {
+    write(value: any): boolean;
+    on(event: 'drain', callback: () => void): any;
+    end(): void;
+}
+
+function createStreamWriter(call: StreamWriterCall) {
+    const pending: any[] = [];
+    let draining = false;
+    let ended = false;
+    let closed = false;
+
+    const flush = () => {
+        if (closed) {
+            return;
+        }
+        while (pending.length) {
+            const value = pending.shift();
+            if (!call.write(value)) {
+                draining = true;
+                return;
+            }
+        }
+        draining = false;
+        if (ended) {
+            closed = true;
+            call.end();
+        }
+    };
+
+    call.on('drain', () => {
+        draining = false;
+        flush();
+    });
+
+    return {
+        write(value: any) {
+            if (closed || ended) {
+                return;
+            }
+            if (draining) {
+                pending.push(value);
+                return;
+            }
+            if (!call.write(value)) {
+                draining = true;
+            }
+        },
+        end() {
+            if (closed) {
+                return;
+            }
+            ended = true;
+            if (!draining) {
+                closed = true;
+                call.end();
+            }
+        },
+        abort() {
+            closed = true;
+            ended = true;
+            pending.length = 0;
+        }
+    };
+}
+
 @Injectable()
 export class GrpcServer<TReq = any, TRes = any> extends Service<TReq, TRes, RequestContext> {
 
@@ -191,15 +257,13 @@ export class GrpcServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
                 context.onDestroy();
             }
         };
+        const writer = createStreamWriter(call as any);
         const subscription = (this.handler.handle(request as any, context) as any).subscribe({
             next: (value: any) => {
-                try {
-                    call.write(value ?? {});
-                } catch {
-                    // client disconnected
-                }
+                writer.write(value ?? {});
             },
             error: (error: any) => {
+                writer.abort();
                 cleanup();
                 try {
                     call.destroy({ code: mapGrpcStatus(error), message: error?.message ?? 'gRPC handler failed' } as any);
@@ -208,15 +272,12 @@ export class GrpcServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
                 }
             },
             complete: () => {
+                writer.end();
                 cleanup();
-                try {
-                    call.end();
-                } catch {
-                    // best effort
-                }
             }
         });
         call.on('cancelled', () => {
+            writer.abort();
             subscription?.unsubscribe?.();
             cleanup();
         });
@@ -282,15 +343,13 @@ export class GrpcServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
                 context.onDestroy();
             }
         };
+        const writer = createStreamWriter(call as any);
         const subscription = (this.handler.handle(request as any, context) as any).subscribe({
             next: (value: any) => {
-                try {
-                    call.write(value ?? {});
-                } catch {
-                    // client disconnected
-                }
+                writer.write(value ?? {});
             },
             error: (error: any) => {
+                writer.abort();
                 cleanup();
                 try {
                     call.destroy({
@@ -302,15 +361,12 @@ export class GrpcServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
                 }
             },
             complete: () => {
+                writer.end();
                 cleanup();
-                try {
-                    call.end();
-                } catch {
-                    // best effort
-                }
             }
         });
         call.on('cancelled', () => {
+            writer.abort();
             subscription?.unsubscribe?.();
             cleanup();
         });
