@@ -5,7 +5,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { Transport } from '@tsdi/common';
 import { LoggerModule } from '@tsdi/logger';
 import { Controller, Get, provideService, useRouter } from '@tsdi/service';
-import { HttpServer, useHttpTransport } from '@tsdi/http';
+import { HttpServer, useHttpTransport } from '@tsdi/http-microservice';
 import { MetricsController, useMetrics } from '../src';
 
 @Controller('/ping')

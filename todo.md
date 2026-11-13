@@ -3811,3 +3811,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - gRPC client 使用 proto service client + 原生 unary backend，移除 socket framing。
   - protoPath/packageName/serviceName 生效；无 protoPath 保持仅启动兼容。
   - 回归：grpc 18、service 62、http 188。
+- 微服务框架第十批（2026-11-13）：
+  - 25 个 microservices 包补齐 @tsdi/* dependencies。
+  - 清理 gateway/http/mqtt 跨包 src 深引用与 @tsdi/http 别名。
+  - 新增 check-package-deps.mjs + agents-gate package-deps stage。
+  - 回归：gateway 67、http 188、swagger 10、health 19、metrics 54、mqtt 81。

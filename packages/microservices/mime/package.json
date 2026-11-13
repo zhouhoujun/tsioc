@@ -36,8 +36,10 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
-    "jsonwebtoken": "^9.0.2",
-    "@types/jsonwebtoken": "^9.0.9"
+    "@tsdi/common": "6.0.31",
+    "@tsdi/ioc": "6.0.31",
+    "@types/jsonwebtoken": "^9.0.9",
+    "jsonwebtoken": "^9.0.2"
   },
   "directories": {
     "lib": "lib",

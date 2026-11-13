@@ -4,7 +4,7 @@ import { createRequestContext } from '@tsdi/common';
 import { MqttClient } from '../src/client/client';
 import { MqttRequest } from '../src/client/request';
 import { SOCKET } from '@tsdi/transport';
-import * as mqtt from 'mqtt';
+import mqtt = require('mqtt');
 import { Events } from '@tsdi/common';
 import { EventEmitter } from 'events';
 

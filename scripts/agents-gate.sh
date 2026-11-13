@@ -208,6 +208,18 @@ run_source_size() {
     fi
 }
 
+# run_package_deps
+run_package_deps() {
+    local id="package-deps" label="microservice package dependencies"
+    local log="$LOG_DIR/$id.log"
+    if node "$ROOT_DIR/scripts/check-package-deps.mjs" >"$log" 2>&1; then
+        stage_pass "$id" "$label"
+    else
+        stage_fail "$id" "$label"
+        cat "$log" >&2
+    fi
+}
+
 # run_diff_check
 run_diff_check() {
     local log="$LOG_DIR/diff-check.log"
@@ -259,6 +271,7 @@ run_stage() {
         gate-regression)  run_gate_regression ;;
         pty-acceptance)   run_pty pty-acceptance 'PTY acceptance (real terminal)' ;;
         source-size)      run_source_size ;;
+        package-deps)     run_package_deps ;;
         diff-check)       run_diff_check ;;
         *)
             echo "[GATE-UNKNOWN] $1" >&2
@@ -272,7 +285,7 @@ ALL_STAGES="agent agent-channels agent-cli agent-gateway agent-providers
             components components-common components-console components-html
             tsc-agent tsc-agent-ui tsc-agent-gateway tsc-agent-tools
             build-agent-ui-web dom-gate tui-gate gate-regression
-            pty-acceptance diff-check source-size"
+            pty-acceptance diff-check source-size package-deps"
 
 if [ "$#" -gt 0 ]; then
     STAGES="$*"

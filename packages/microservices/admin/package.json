@@ -32,12 +32,12 @@
   "dependencies": {
     "@tsdi/activities": "6.0.31",
     "@tsdi/common": "6.0.31",
-    "@tsdi/discovery": "6.0.31",
     "@tsdi/components": "6.0.0-beta7",
     "@tsdi/components/common": "6.0.0-beta7",
     "@tsdi/components/html": "6.0.0-beta7",
     "@tsdi/components/router": "6.0.0-beta7",
     "@tsdi/core": "6.0.31",
+    "@tsdi/discovery": "6.0.31",
     "@tsdi/gateway": "6.0.31",
     "@tsdi/http-microservice": "6.0.31",
     "@tsdi/ioc": "6.0.31",

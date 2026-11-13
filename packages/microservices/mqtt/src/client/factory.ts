@@ -2,7 +2,7 @@ import { createInjector, asProvider, Injector, Provider, isNil } from '@tsdi/ioc
 import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, REQUEST, Events, ResponseEventPacket } from '@tsdi/common'
 import { SOCKET, useBrokerClientTransfer } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
-import { ensureClientConnectedInterceptor } from '@tsdi/client/src/interceptors/connect';
+import { ensureClientConnectedInterceptor } from '@tsdi/client';
 import { MQTT_CLIENT_OPTIONS, MqttClientOptions } from './options';
 import { MqttClient } from './client';
 import { MqttRequest } from './request';

@@ -77,6 +77,13 @@
 - 支持 `protoPath` / `packageName` / `serviceName`，无 protoPath 时保持旧的“仅启动”兼容行为。
 - 新增真实 server/client unary RPC E2E。
 
+第十批（包依赖与发布收口）：
+
+- 所有 microservices 包的 `@tsdi/*` source imports 补齐到 `dependencies`（25 个包）。
+- 移除跨包 `src/` 深引用：gateway → barrel（http-microservice/client/tracing）、http/mqtt → `@tsdi/client`。
+- 统一 `@tsdi/http` 为真实包名 `@tsdi/http-microservice`。
+- 新增 `scripts/check-package-deps.mjs` 并接入 `agents-gate.sh` 的 `package-deps` stage，阻止 monorepo-only 依赖再次出现。
+
 
 ---
 

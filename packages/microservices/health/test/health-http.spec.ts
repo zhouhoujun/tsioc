@@ -4,7 +4,7 @@ import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { provideService, useRouter } from '@tsdi/service';
-import { HttpServer, useHttpTransport } from '@tsdi/http';
+import { HttpServer, useHttpTransport } from '@tsdi/http-microservice';
 import { HealthModule, HealthController } from '../src';
 
 function get(port: number, path: string): Promise<{ status: number; body: any }> {

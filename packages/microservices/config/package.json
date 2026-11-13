@@ -33,7 +33,9 @@
     "url": "https://github.com/zhouhoujun/tsioc.git"
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
-  "dependencies": {},
+  "dependencies": {
+    "@tsdi/ioc": "6.0.31"
+  },
   "directories": {
     "lib": "lib"
   },

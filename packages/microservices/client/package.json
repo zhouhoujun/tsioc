@@ -36,7 +36,10 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
-    "@tsdi/discovery": "6.0.31"
+    "@tsdi/common": "6.0.31",
+    "@tsdi/core": "6.0.31",
+    "@tsdi/discovery": "6.0.31",
+    "@tsdi/ioc": "6.0.31"
   },
   "directories": {
     "lib": "lib",

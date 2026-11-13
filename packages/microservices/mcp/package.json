@@ -8,16 +8,45 @@
     "test:coverage": "NODE_V8_COVERAGE=.nyc_output ts-node -r tsconfig-paths/register unit.ts -c"
   },
   "keywords": [
-    "microservice", "mcp", "model-context-protocol", "transport", "server",
-    "IoC", "AOP", "tsdi", "@tsdi", "tsioc", "ioc",
-    "type", "container", "dependency", "injection"
+    "microservice",
+    "mcp",
+    "model-context-protocol",
+    "transport",
+    "server",
+    "IoC",
+    "AOP",
+    "tsdi",
+    "@tsdi",
+    "tsioc",
+    "ioc",
+    "type",
+    "container",
+    "dependency",
+    "injection"
   ],
   "author": "houjun",
   "license": "Apache-2.0",
-  "bugs": { "url": "https://github.com/zhouhoujun/tsioc/issues" },
-  "repository": { "type": "git", "url": "https://github.com/zhouhoujun/tsioc.git" },
+  "bugs": {
+    "url": "https://github.com/zhouhoujun/tsioc/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhouhoujun/tsioc.git"
+  },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
-  "dependencies": {},
-  "directories": { "lib": "dist", "test": "test" },
+  "dependencies": {
+    "@tsdi/client": "6.0.31",
+    "@tsdi/common": "6.0.31",
+    "@tsdi/core": "6.0.31",
+    "@tsdi/ioc": "6.0.31",
+    "@tsdi/logger": "6.0.31",
+    "@tsdi/platform-server": "6.0.31",
+    "@tsdi/service": "6.0.31",
+    "@tsdi/transport": "6.0.31"
+  },
+  "directories": {
+    "lib": "dist",
+    "test": "test"
+  },
   "devDependencies": {}
 }

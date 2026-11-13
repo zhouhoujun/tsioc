@@ -2,7 +2,7 @@ import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { Controller, Get, provideService, useJson, useRouter } from '@tsdi/service';
-import { useHttpTransport } from '@tsdi/http';
+import { useHttpTransport } from '@tsdi/http-microservice';
 import { provideSwagger } from '../src';
 import { Transport } from '@tsdi/common';
 import * as http from 'node:http';

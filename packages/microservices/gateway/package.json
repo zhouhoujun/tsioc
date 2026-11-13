@@ -27,7 +27,17 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
+    "@tsdi/client": "6.0.31",
+    "@tsdi/common": "6.0.31",
+    "@tsdi/config": "6.0.31",
     "@tsdi/discovery": "6.0.31",
+    "@tsdi/http-microservice": "6.0.31",
+    "@tsdi/ioc": "6.0.31",
+    "@tsdi/logger": "6.0.31",
+    "@tsdi/metrics": "6.0.31",
+    "@tsdi/security": "6.0.31",
+    "@tsdi/service": "6.0.31",
+    "@tsdi/tracing": "6.0.31",
     "undici": "^7.24.6"
   },
   "directories": {

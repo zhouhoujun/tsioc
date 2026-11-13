@@ -33,7 +33,15 @@
     "url": "https://github.com/zhouhoujun/tsioc.git"
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
-  "dependencies": {},
+  "dependencies": {
+    "@tsdi/client": "6.0.31",
+    "@tsdi/common": "6.0.31",
+    "@tsdi/core": "6.0.31",
+    "@tsdi/ioc": "6.0.31",
+    "@tsdi/logger": "6.0.31",
+    "@tsdi/platform-server": "6.0.31",
+    "@tsdi/service": "6.0.31"
+  },
   "directories": {
     "lib": "dist",
     "test": "test"

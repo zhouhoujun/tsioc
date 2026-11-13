@@ -4,7 +4,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, joinPath, ContentType, CONTENT_TYPE, Transport } from '@tsdi/common';
 import { RouteMappingMetadata, Router, getRouter, SetupServices } from '@tsdi/service';
 import { DBPropertyMetadata, MissingModelFieldException } from '@tsdi/repository';
-import { HTTP_SERV_OPTIONS, HttpServer } from '@tsdi/http';
+import { HTTP_SERV_OPTIONS, HttpServer } from '@tsdi/http-microservice';
 import { getAbsoluteFSPath } from 'swagger-ui-dist';
 import { SWAGGER_SETUP_OPTIONS, SWAGGER_DOCUMENT, OpenAPIObject, SwaggerOptions, SwaggerUiOptions, SwaggerSetupOptions } from './swagger.config';
 import { ApiModelPropertyMetadata, ApiParamMetadata } from './metadata';

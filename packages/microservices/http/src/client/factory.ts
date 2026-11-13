@@ -1,7 +1,7 @@
 import { asProvider, createInjector, Injector, Provider } from '@tsdi/ioc';
 import { createRequestHandler, TransferSide, Transport, ContentType } from '@tsdi/common';
 import { CLIENT_CONFIGS, BodySerializeStrategy, ClientEndpoint, ClientFeatureKind, ClientHandler, ClientTransportFeature, ServiceError, CLIENT_SELECTED_ENDPOINT, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature } from '@tsdi/client';
-import { ensureClientConnectedInterceptor } from '@tsdi/client/src/interceptors/connect';
+import { ensureClientConnectedInterceptor } from '@tsdi/client';
 import { HTTP_CLIENT_OPTIONS, HttpClientOptions } from './options';
 import { HttpClient } from './client';
 import * as http from 'node:http';
