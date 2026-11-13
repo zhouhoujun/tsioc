@@ -659,6 +659,15 @@ workflow-canvas {
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
 }
 
+.workflow-node.is-disabled {
+    opacity: 0.55;
+    border-style: dashed;
+}
+
+.workflow-node.is-disabled .workflow-node-title {
+    text-decoration: line-through;
+}
+
 .workflow-node[data-status="pending"] { --wf-status: #94a3b8; }
 .workflow-node[data-status="running"] {
     --wf-status: #2563eb;

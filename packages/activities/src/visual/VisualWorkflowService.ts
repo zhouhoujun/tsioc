@@ -450,6 +450,24 @@ export class VisualWorkflowService {
             return state.nodeResults.get(node.id) || { success: true, data: { nodeId: node.id, skipped: true } };
         }
 
+        if (node.disabled === true) {
+            visited.add(node.id);
+            const disabledResult: ActivityResult = {
+                success: true,
+                data: { nodeId: node.id, skipped: true, disabled: true }
+            };
+            const disabledRecord = state.nodeStates?.get(node.id);
+            if (disabledRecord) {
+                disabledRecord.status = 'skipped';
+                disabledRecord.finishedAt = Date.now();
+                disabledRecord.result = disabledResult;
+            }
+            state.nodeResults.set(node.id, disabledResult);
+            (plan.outgoing.get(node.id) || [])
+                .forEach(connection => this.markEdgeSkipped(state, connection.id, options));
+            return disabledResult;
+        }
+
         const record = state.nodeStates?.get(node.id);
         const settled = record
             && (record.status === 'success' || record.status === 'failed'

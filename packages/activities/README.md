@@ -523,6 +523,9 @@ Features:
   valid ports and hovered nodes highlight while wiring, and `Esc` or an empty-canvas
   click cancels the pending wire,
 - click an edge (widened hit path) to select it; `Delete` removes the selected node or connection,
+- `Enabled` in the inspector disables a node without deleting it: the node and
+  its wiring stay on the canvas (dimmed, struck-through title) but the run
+  skips it and stops that branch,
 - inspector for node name/description/config fields driven by `WorkflowNodeRegistry`,
 - searchable palette: filter 51 registered node types by label, description or type,
 - inspector property editing is rendered by the shared JSON-configured

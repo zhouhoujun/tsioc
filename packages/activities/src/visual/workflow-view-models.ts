@@ -116,7 +116,8 @@ function nodeAttrs(view: Omit<WorkflowCanvasNodeView, 'attrs'>): Record<string, 
     return {
         class: [
             'workflow-node',
-            view.selected ? 'is-selected' : ''
+            view.selected ? 'is-selected' : '',
+            view.disabled ? 'is-disabled' : ''
         ].filter(Boolean).join(' '),
         'data-node-id': view.id,
         'data-node-type': view.type,
@@ -166,6 +167,7 @@ export function buildWorkflowCanvasModel(
             color: node.style?.backgroundColor || registry.get(node.type)?.color || '#64748b',
             textColor: node.style?.textColor || registry.get(node.type)?.textColor || '#ffffff',
             selected: designer.selection.nodeId === node.id,
+            disabled: node.disabled === true,
             status,
             statusLabel: nodeStatusLabel(status, locale, translator),
             inputs: geo.inputs,
@@ -310,6 +312,7 @@ export function buildWorkflowInspectorModel(
             nodeId: '',
             name: '',
             description: '',
+            disabled: false,
             icon: '',
             color: '',
             typeLabel: '',
@@ -426,6 +429,7 @@ export function buildWorkflowInspectorModel(
         nodeId: node.id,
         name: node.name,
         description: node.description || '',
+        disabled: node.disabled === true,
         icon: node.style?.icon || definition?.icon || '◆',
         color: node.style?.backgroundColor || definition?.color || '#64748b',
         typeLabel: registry.nodeLabel(node.type, locale, translator),

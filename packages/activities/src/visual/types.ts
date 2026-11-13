@@ -222,6 +222,11 @@ export interface IVisualWorkflowNode {
      */
     description?: string;
     /**
+     * 禁用节点：保留位置与连线，但运行时不执行，分支停止。
+     * Disabled nodes keep their position/wiring but are skipped at run time.
+     */
+    disabled?: boolean;
+    /**
      * 输入端口
      * Input ports
      */
@@ -765,6 +770,7 @@ export interface WorkflowCanvasNodeView {
     color: string;
     textColor: string;
     selected: boolean;
+    disabled: boolean;
     status: NodeExecutionStatus;
     statusLabel: string;
     inputs: WorkflowCanvasPortView[];
@@ -878,6 +884,8 @@ export interface WorkflowInspectorModel {
     nodeId: string;
     name: string;
     description: string;
+    /** Node is kept on the canvas but skipped during execution. */
+    disabled: boolean;
     icon: string;
     color: string;
     typeLabel: string;

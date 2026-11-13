@@ -15,6 +15,7 @@ const EMPTY_INSPECTOR: WorkflowInspectorModel = {
     nodeId: '',
     name: '',
     description: '',
+    disabled: false,
     icon: '',
     color: '',
     typeLabel: '',
@@ -35,6 +36,7 @@ function snapshotSignature(model: WorkflowInspectorModel): string {
         model.nodeId,
         model.name,
         model.description,
+        model.disabled ? 1 : 0,
         model.icon,
         model.color,
         model.typeLabel,
@@ -154,6 +156,7 @@ export class WorkflowInspectorComponent implements OnDestroy {
     get appearanceLabel(): string { return this.t('appearance', 'Appearance'); }
     get iconLabel(): string { return this.t('icon', 'Icon'); }
     get colorLabel(): string { return this.t('color', 'Color'); }
+    get enabledLabel(): string { return this.t('enabled', 'Enabled'); }
     get resultLabel(): string { return this.t('latestOutput', 'Latest output'); }
     get restoreLabel(): string { return this.t('restoreDefaults', 'Reset'); }
     get resetFieldLabel(): string { return this.t('resetField', 'Reset to default'); }
@@ -189,6 +192,12 @@ export class WorkflowInspectorComponent implements OnDestroy {
             label: this.descriptionLabel,
             placeholder: this.descriptionPlaceholder,
             inputClass: 'workflow-inspector-description'
+        });
+        fields.push({
+            key: 'enabled',
+            type: 'checkbox',
+            label: this.enabledLabel,
+            defaultValue: true
         });
         fields.push({
             key: 'icon',
@@ -261,6 +270,7 @@ export class WorkflowInspectorComponent implements OnDestroy {
         const value: Record<string, any> = {
             name: this._model.name,
             description: this._model.description,
+            enabled: !this._model.disabled,
             icon: this._model.icon,
             color: this._model.color
         };

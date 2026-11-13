@@ -149,6 +149,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         description: string;
         type: string;
         config: any;
+        disabled: boolean;
         execution: any;
         locale: string;
         revision: number;
@@ -347,15 +348,16 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         const description = node?.description || '';
         const type = node?.type || '';
         const config = node?.config;
+        const disabled = !!node?.disabled;
         const cache = this.inspectorModelCache;
         if (cache && cache.nodeId === nodeId && cache.name === name && cache.description === description
-            && cache.type === type && cache.config === config
+            && cache.type === type && cache.config === config && cache.disabled === disabled
             && cache.execution === execution && cache.locale === locale && cache.revision === revision) {
             return cache.model;
         }
         const model = buildWorkflowInspectorModel(this.designer, this.registry, locale, this.translator);
         this.inspectorModelCache = {
-            nodeId, name, description, type, config, execution, locale, revision, model
+            nodeId, name, description, type, config, disabled, execution, locale, revision, model
         };
         return model;
     }
@@ -502,6 +504,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                 node.dimension?.height || '',
                 node.style?.icon || '',
                 node.style?.backgroundColor || '',
+                node.disabled ? '1' : '0',
                 node.style?.textColor || '',
                 (node.inputs || []).map(port => `${port.id}:${port.label || ''}:${port.name || ''}:${port.type || ''}`).join(','),
                 (node.outputs || []).map(port => `${port.id}:${port.label || ''}:${port.name || ''}:${port.type || ''}`).join(','),
@@ -1035,6 +1038,11 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         }
         if (key === 'description') {
             this.designer.updateNode(node.id, { description: String(value) });
+            this.notifyChange();
+            return;
+        }
+        if (key === 'enabled') {
+            this.designer.updateNode(node.id, { disabled: value === false });
             this.notifyChange();
             return;
         }

@@ -117,6 +117,31 @@ describe('Visual Workflow Execution Path', () => {
         expect(snapshot?.nodeStates.task_1.status).toBe('success');
     });
 
+    it('skips disabled nodes and their downstream branch', async () => {
+        const nodes = [
+            registry.createNode('start', { x: 0, y: 0 }, { id: 'start_dis' }),
+            registry.createNode('task', { x: 200, y: 0 }, { id: 'disabled_task', config: { result: { ran: true } } }),
+            registry.createNode('end', { x: 400, y: 0 }, { id: 'end_dis' })
+        ];
+        nodes[1].disabled = true;
+        const definition = {
+            id: 'disabled-node',
+            name: 'Disabled node',
+            nodes,
+            connections: [
+                { id: 'd1', sourceNodeId: 'start_dis', sourcePort: 'out', targetNodeId: 'disabled_task', targetPort: 'in' },
+                { id: 'd2', sourceNodeId: 'disabled_task', sourcePort: 'out', targetNodeId: 'end_dis', targetPort: 'in' }
+            ]
+        };
+        const result = await service.execute(definition, {});
+        const snapshot = result.data?.executionState;
+        expect(result.success).toBe(true);
+        expect(snapshot.nodeStates.disabled_task.status).toBe('skipped');
+        expect(snapshot.nodeStates.disabled_task.result?.data?.disabled).toBe(true);
+        expect(snapshot.nodeStates.end_dis.status).toBe('skipped');
+        expect(snapshot.edgeStates.d2.status).toBe('skipped');
+    });
+
     it('routes guarded branch failures to the try/catch recovery port', async () => {
         const nodes = [
             registry.createNode('start', { x: 0, y: 0 }, { id: 'start_g' }),

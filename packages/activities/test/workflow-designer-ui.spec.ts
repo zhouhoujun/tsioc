@@ -280,6 +280,29 @@ describe('Workflow Designer UI', () => {
         expect(node?.style?.backgroundColor).toBe('#112233');
     });
 
+    it('disables a node from the inspector and marks it on the canvas', async () => {
+        ref.instance.designer.selectNode('task_1');
+        await flush();
+
+        let enabled = root.querySelector('.workflow-field[data-field-key="enabled"] input') as any;
+        expect(enabled.checked).toBe(true);
+        enabled.checked = false;
+        enabled.dispatchEvent(new (doc.defaultView as any).Event('change', { bubbles: true }));
+        await flush();
+
+        expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.disabled).toBe(true);
+        expect(root.querySelector('.workflow-node[data-node-id="task_1"]')?.classList.contains('is-disabled')).toBe(true);
+
+        enabled = root.querySelector('.workflow-field[data-field-key="enabled"] input') as any;
+        expect(enabled.checked).toBe(false);
+        enabled.checked = true;
+        enabled.dispatchEvent(new (doc.defaultView as any).Event('change', { bubbles: true }));
+        await flush();
+
+        expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.disabled).toBe(false);
+        expect(root.querySelector('.workflow-node[data-node-id="task_1"]')?.classList.contains('is-disabled')).toBe(false);
+    });
+
     it('validates inspector input through the forms module before applying it', async () => {
         ref.instance.designer.selectNode('task_1');
         await flush();
