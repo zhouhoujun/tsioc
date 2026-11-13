@@ -3829,3 +3829,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - GatewayStateStore 增加原子固定窗口 increment。
   - Gateway 路由/全局限流在共享 store 下走 Redis Lua，quota/throttle 回退本地。
   - 回归：gateway 71。
+- 微服务框架第十四批（2026-11-13）：
+  - createContractClient + operationId 映射、path/query/body 约定、请求/响应校验。
+  - createFetchContractTransport（baseUrl/headers/timeout/错误）。
+  - generateClient + CLI --client 生成 typed interface/factory。
+  - 回归：contract 16。

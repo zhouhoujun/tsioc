@@ -99,6 +99,13 @@
 - 限流：固定窗口 `limit + windowMs` 在注入 store 时走共享原子计数（Redis Lua INCR/PEXPIRE）；quota/throttle 仍回退本地 `ApiRateLimiter`。
 - 舱壁仍为进程内状态（并发隔离天然按实例）。
 
+第十四批（契约驱动客户端）：
+
+- 新增 `createContractClient`（operationId → 方法映射、path/query/body 约定）。
+- 新增 `validateContractValue`，支持 request/response 运行期校验。
+- 新增 `createFetchContractTransport`（baseUrl/headers/timeout/非 2xx 错误）。
+- 新增 `generateClient` + CLI `--client`，生成类型化接口与工厂。
+
 
 ---
 

@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { generateContract, importOpenApi, importProto, MicroserviceContract } from './index';
+import { generateClient, generateContract, importOpenApi, importProto, MicroserviceContract } from './index';
 
 interface CliOptions {
     manifest: string;
@@ -8,6 +8,7 @@ interface CliOptions {
     dto?: string;
     openapi?: string;
     proto?: string;
+    client?: string;
     decorators?: boolean;
     dtoStyle?: 'class' | 'interface';
     protoPackage?: string;
@@ -25,6 +26,7 @@ Options:
   --dto <file>       DTO output path (default: <out>/dto.ts)
   --openapi <file>   OpenAPI output path (default: <out>/openapi.json)
   --proto <file>     proto output path (default: <out>/<name>.proto)
+  --client <file>    typed client output path (default: <out>/client.ts)
   --decorators       add @ApiModelProperty decorators to DTO classes
   --interface        generate interfaces instead of classes
   --proto-package <pkg>  override the proto package
@@ -61,6 +63,9 @@ function parseArgs(argv: string[]): CliOptions {
                 break;
             case '--proto':
                 options.proto = argv[++index];
+                break;
+            case '--client':
+                options.client = argv[++index];
                 break;
             case '--decorators':
                 options.decorators = true;
@@ -144,12 +149,17 @@ function main(): void {
     const dtoFile = options.dto ?? path.join(outDir, 'dto.ts');
     const openapiFile = options.openapi ?? path.join(outDir, 'openapi.json');
     const protoFile = options.proto ?? path.join(outDir, `${contract.name}.proto`);
+    const clientFile = options.client;
     const openapi = `${JSON.stringify(generated.openapi, null, 2)}\n`;
-    const ok = [
+    const results = [
         writeOrCheck(dtoFile, generated.dto, options.check),
         writeOrCheck(openapiFile, openapi, options.check),
         writeOrCheck(protoFile, generated.proto, options.check)
-    ].every(Boolean);
+    ];
+    if (clientFile) {
+        results.push(writeOrCheck(clientFile, generateClient(contract), options.check));
+    }
+    const ok = results.every(Boolean);
     if (!ok) {
         process.exit(1);
     }

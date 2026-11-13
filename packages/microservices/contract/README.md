@@ -168,6 +168,31 @@ models that reference each other.
 `generateContract` throws `ContractValidationError` with unknown types, missing
 array item schemas, duplicate routes or duplicate operation ids.
 
+## Typed clients (alpha)
+
+```ts
+import { createContractClient, createFetchContractTransport } from '@tsdi/microservice-contract';
+
+interface UsersApi {
+    getUser(args: { id: string }): Promise<User>;
+    createUser(options?: { body: CreateUser }): Promise<User>;
+}
+
+const api = createContractClient<UsersApi>(
+    manifest,
+    createFetchContractTransport({ baseUrl: 'http://localhost:3000' }),
+    { validate: 'both' }
+);
+
+await api.getUser({ id: '42' });
+```
+
+- `operationId` (or a method+path derived name) becomes the client method.
+- Path params are replaced from the first argument; remaining args become query
+  (GET/HEAD) or body (other methods).
+- `validate: 'request' | 'response' | 'both'` checks contract models at runtime.
+- `--client <file>` emits a typed interface + factory via `generateClient`.
+
 ## Tests
 
 ```bash
