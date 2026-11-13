@@ -3939,3 +3939,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - Config diff 递归展开 rateLimit/cache 等嵌套策略字段。
   - changedValues 使用点路径（rateLimit.limit）。
   - 回归：gateway 81。
+- 微服务框架第四十批（2026-11-13）：
+  - prepare-package-publish.mjs：build → dist package.json → pack 校验。
+  - gateway 发布产物实测通过（index.js/index.d.ts/tarball）。

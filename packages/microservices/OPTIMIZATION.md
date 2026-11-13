@@ -247,6 +247,11 @@
 - route/rule 字段差异递归展开（最多 3 层），数组保持原子比较。
 - `rateLimit.limit`、`cache.enabled` 等策略字段可单独展示 before/after。
 
+第四十批（发布流程）：
+
+- 新增 `scripts/prepare-package-publish.mjs <package-dir>`：构建 → 生成 dist package.json（main/types/files）→ README → `npm pack` 校验。
+- 已用 gateway 实测：`packages/dist/gateway` 产出 `index.js/index.d.ts` 与可发布 tarball。
+
 
 ---
 
