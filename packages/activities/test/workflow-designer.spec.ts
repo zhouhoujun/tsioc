@@ -25,7 +25,7 @@ describe('Visual Workflow Designer', () => {
     describe('Generic node registry', () => {
         it('registers built-in generic node components', () => {
             const types = registry.list().map(item => item.type);
-            ['start', 'end', 'inject', 'task', 'function', 'template', 'json', 'csv', 'change', 'statistics', 'merge', 'event-emit', 'event-wait', 'command', 'split', 'map', 'filter', 'sort', 'range', 'batch', 'trigger', 'comment', 'condition', 'delay', 'log', 'debug', 'junction', 'sequence', 'link', 'html', 'xml', 'scale', 'yaml', 'rbe', 'router', 'complete', 'catch', 'status', 'http-request', 'assign', 'transform', 'switch', 'parallel', 'join', 'loop', 'trycatch', 'subprocess', 'custom']
+            ['start', 'end', 'inject', 'task', 'function', 'template', 'json', 'csv', 'change', 'statistics', 'merge', 'event-emit', 'event-wait', 'command', 'split', 'map', 'filter', 'sort', 'range', 'batch', 'trigger', 'comment', 'condition', 'delay', 'log', 'debug', 'junction', 'sequence', 'link', 'html', 'xml', 'scale', 'yaml', 'rbe', 'combine', 'router', 'complete', 'catch', 'status', 'http-request', 'assign', 'transform', 'switch', 'parallel', 'join', 'loop', 'trycatch', 'subprocess', 'custom']
                 .forEach(type => expect(types).toContain(type));
             expect(registry.palette('zh-CN').length).toBeGreaterThan(0);
 

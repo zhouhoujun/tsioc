@@ -6,6 +6,7 @@ import { createRedisPlugin } from './builtins/redis';
 import { createTcpPlugin } from './builtins/tcp';
 import { createUdpPlugin } from './builtins/udp';
 import { createFilePlugin } from './builtins/file';
+import { createExecPlugin } from './builtins/exec';
 import { createWebSocketPlugin } from './builtins/websocket';
 import { toWorkflowPluginManifest, WorkflowPlugin, WorkflowPluginManifest } from './types';
 
@@ -17,7 +18,8 @@ const BUILT_IN_FACTORIES: Record<string, () => WorkflowPlugin> = {
     tcp: createTcpPlugin,
     udp: createUdpPlugin,
     websocket: createWebSocketPlugin,
-    file: createFilePlugin
+    file: createFilePlugin,
+    exec: createExecPlugin
 };
 
 /** Plugin ids bundled with @tsdi/activities. */

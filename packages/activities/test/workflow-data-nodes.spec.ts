@@ -426,6 +426,26 @@ describe('Workflow data & trigger nodes', () => {
         expect(result.data?.executionState?.nodeStates.function_0.result?.data?.seen).toBe(true);
     });
 
+    it('combines multiple context values', async () => {
+        const merged = await service.execute(chain([
+            { type: 'inject', config: { payload: { a: { x: 1 }, b: { y: 2 } } } },
+            { type: 'combine', config: { fields: 'a, b', mode: 'merge' } }
+        ]), {});
+        expect(merged.data?.executionState?.nodeStates.combine_1.result?.data?.value).toEqual({ x: 1, y: 2 });
+
+        const concat = await service.execute(chain([
+            { type: 'inject', config: { payload: { a: [1, 2], b: [3] } } },
+            { type: 'combine', config: { fields: 'a, b', mode: 'concat' } }
+        ]), {});
+        expect(concat.data?.executionState?.nodeStates.combine_1.result?.data?.value).toEqual([1, 2, 3]);
+
+        const text = await service.execute(chain([
+            { type: 'inject', config: { payload: { a: 'hello', b: 'world' } } },
+            { type: 'combine', config: { fields: 'a, b', mode: 'text', separator: ' ' } }
+        ]), {});
+        expect(text.data?.executionState?.nodeStates.combine_1.result?.data?.value).toBe('hello world');
+    });
+
     it('parses and stringifies YAML and filters RBE changes', async () => {
         const parsed = await service.execute(chain([
             { type: 'inject', config: { payload: { value: 'name: Ada\nitems:\n  - 1\n  - 2' } } },

@@ -259,6 +259,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "rbe": {
                 "label": "RBE",
                 "description": "Keep array items only when the value changes"
+            },
+            "combine": {
+                "label": "Combine",
+                "description": "Combine several context values into one result"
+            },
+            "exec": {
+                "label": "Exec",
+                "description": "Run a host command and capture stdout/stderr"
             }
         },
         "field": {
@@ -603,6 +611,20 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "Array path",
                 "path": "Item path",
                 "mode": "Report"
+            },
+            "combine": {
+                "fields": "Fields",
+                "mode": "Mode",
+                "separator": "Separator",
+                "resultField": "Result field"
+            },
+            "exec": {
+                "command": "Command",
+                "args": "Arguments",
+                "cwd": "Working directory",
+                "env": "Environment",
+                "timeout": "Timeout",
+                "output": "Write stdout to"
             }
         },
         "fieldPlaceholder": {
@@ -792,7 +814,12 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "file-read": {
                 "output": "content"
             },
-            "file-write": {}
+            "file-write": {},
+            "exec": {
+                "command": "/usr/bin/node",
+                "cwd": "./",
+                "env": "KEY"
+            }
         },
         "fieldDescription": {
             "start": {},
@@ -1079,6 +1106,20 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "Context path to the array to filter.",
                 "path": "Property compared between consecutive items.",
                 "mode": "Keep the first item and each change of the compared value."
+            },
+            "combine": {
+                "fields": "Comma-separated context paths to combine.",
+                "mode": "Object merge, array concat or text join.",
+                "separator": "Text placed between joined values.",
+                "resultField": "Context field that receives the combined value."
+            },
+            "exec": {
+                "command": "Executable to run on the workflow host.",
+                "args": "Arguments passed to the executable, one row per argument.",
+                "cwd": "Directory the command runs in. Defaults to the host working directory.",
+                "env": "Extra environment variables merged into the host environment.",
+                "timeout": "Kill the command after this many milliseconds. 0 waits indefinitely.",
+                "output": "Context field that receives the standard output."
             }
         },
         "group": {
@@ -1159,7 +1200,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "utf8": "UTF-8",
             "base64": "Base64",
             "hex": "Hex",
-            "change": "On any change"
+            "change": "On any change",
+            "merge": "Object merge",
+            "concat": "Array concat"
         }
     },
     "zh-CN": {
@@ -1415,6 +1458,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "rbe": {
                 "label": "RBE",
                 "description": "仅在值变化时保留数组元素"
+            },
+            "combine": {
+                "label": "合并组合",
+                "description": "将多个上下文值组合为一个结果"
+            },
+            "exec": {
+                "label": "执行命令",
+                "description": "运行宿主命令并捕获标准输出/错误"
             }
         },
         "field": {
@@ -1759,6 +1810,20 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "数组路径",
                 "path": "元素路径",
                 "mode": "上报方式"
+            },
+            "combine": {
+                "fields": "字段",
+                "mode": "模式",
+                "separator": "分隔符",
+                "resultField": "结果字段"
+            },
+            "exec": {
+                "command": "命令",
+                "args": "参数",
+                "cwd": "工作目录",
+                "env": "环境变量",
+                "timeout": "超时",
+                "output": "标准输出写入字段"
             }
         },
         "fieldPlaceholder": {
@@ -1928,7 +1993,12 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "file-read": {
                 "output": "content"
             },
-            "file-write": {}
+            "file-write": {},
+            "exec": {
+                "command": "/usr/bin/node",
+                "cwd": "./",
+                "env": "KEY"
+            }
         },
         "fieldDescription": {
             "start": {},
@@ -2215,6 +2285,20 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "要过滤的数组路径。",
                 "path": "相邻元素之间比较的属性。",
                 "mode": "保留第一个元素以及比较值发生变化的元素。"
+            },
+            "combine": {
+                "fields": "要组合的上下文路径，逗号分隔。",
+                "mode": "对象合并、数组拼接或文本连接。",
+                "separator": "文本连接时使用的分隔符。",
+                "resultField": "接收组合结果的上下文字段。"
+            },
+            "exec": {
+                "command": "在工作流宿主上运行的可执行文件。",
+                "args": "传给可执行文件的参数，每行一个。",
+                "cwd": "命令运行时的工作目录，默认使用宿主工作目录。",
+                "env": "合并到宿主环境中的额外环境变量。",
+                "timeout": "超过该毫秒数后终止命令；0 表示一直等待。",
+                "output": "接收标准输出的上下文字段。"
             }
         },
         "group": {
@@ -2287,7 +2371,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "utf8": "UTF-8",
             "base64": "Base64",
             "hex": "Hex",
-            "change": "任意变化"
+            "change": "任意变化",
+            "merge": "对象合并",
+            "concat": "数组拼接"
         }
     }
 };

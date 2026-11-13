@@ -373,6 +373,34 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         defaultConfig: { mode: 'parse', field: 'value', target: 'value', attributes: true, text: true }
     },
     {
+        type: 'combine',
+        label: 'Combine',
+        description: 'Combine several context values into one result',
+        category: 'data',
+        icon: '⋈',
+        color: '#0891b2',
+        textColor: '#ffffff',
+        inputs: [port('in', 'in', 'input', 'Input')],
+        outputs: [port('out', 'out', 'output', 'Output'), port('error', 'error', 'output', 'Error')],
+        fields: [
+            configField({ key: 'fields', label: 'Fields', type: 'text', required: true, placeholder: 'first, second', description: 'Comma-separated context paths to combine.' }),
+            configField({
+                key: 'mode',
+                label: 'Mode',
+                type: 'select',
+                defaultValue: 'merge',
+                options: [
+                    { label: 'Object merge', value: 'merge' },
+                    { label: 'Array concat', value: 'concat' },
+                    { label: 'Text join', value: 'text' }
+                ]
+            }),
+            configField({ key: 'separator', label: 'Separator', type: 'text', defaultValue: ', ', visibleWhen: { key: 'mode', equals: 'text' } }),
+            configField({ key: 'resultField', label: 'Result field', type: 'text', defaultValue: 'value' })
+        ],
+        defaultConfig: { mode: 'merge', resultField: 'value' }
+    },
+    {
         type: 'yaml',
         label: 'YAML',
         description: 'Parse or stringify YAML',

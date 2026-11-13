@@ -6,3 +6,4 @@ export * from './tcp';
 export * from './udp';
 export * from './websocket';
 export * from './file';
+export * from './exec';

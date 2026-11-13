@@ -8,6 +8,7 @@ import { WorkflowServiceRegistry } from '../src/plugins/service-registry';
 import { WorkflowPlugin } from '../src/plugins/types';
 import { createBuiltInWorkflowPlugin, listBuiltInWorkflowPlugins } from '../src/plugins/catalog';
 import { createFilePlugin } from '../src/plugins/builtins/file';
+import { createExecPlugin } from '../src/plugins/builtins/exec';
 import { createTcpPlugin } from '../src/plugins/builtins/tcp';
 import { createUdpPlugin } from '../src/plugins/builtins/udp';
 import { createWebSocketPlugin } from '../src/plugins/builtins/websocket';
@@ -102,7 +103,7 @@ describe('workflow plugins', () => {
 
     it('exposes the bundled mqtt/redis/nats/coap catalog as manifests', () => {
         const manifests = listBuiltInWorkflowPlugins();
-        expect(manifests.map(item => item.id).sort()).toEqual(['coap', 'file', 'mqtt', 'nats', 'redis', 'tcp', 'udp', 'websocket']);
+        expect(manifests.map(item => item.id).sort()).toEqual(['coap', 'exec', 'file', 'mqtt', 'nats', 'redis', 'tcp', 'udp', 'websocket']);
         expect(manifests.every(item => item.nodes.length > 0)).toBe(true);
         expect(JSON.stringify(manifests)).not.toContain('execute');
         expect(createBuiltInWorkflowPlugin('mqtt')?.nodes?.map(node => node.type)).toContain('mqtt-publish');
@@ -175,6 +176,37 @@ describe('workflow plugins', () => {
         } finally {
             await new Promise<void>(resolve => wsServer.close(() => resolve()));
         }
+    });
+
+    it('runs host commands with the exec plugin', async () => {
+        const plugin = createExecPlugin();
+        const node = plugin.nodes!.find(item => item.type === 'exec')!;
+        const result = await node.execute!({
+            id: 'exec_1',
+            type: 'exec',
+            config: {
+                command: process.execPath,
+                args: [{ value: '-e' }, { value: 'process.stdout.write("exec-ok")' }],
+                timeout: 10000,
+                output: 'stdout'
+            }
+        } as any, {});
+        expect(result.success).toBe(true);
+        expect(result.data?.stdout).toBe('exec-ok');
+        expect(result.data?.code).toBe(0);
+
+        const failing = await node.execute!({
+            id: 'exec_2',
+            type: 'exec',
+            config: {
+                command: process.execPath,
+                args: ['-e', 'process.stderr.write("boom"); process.exit(2)'],
+                timeout: 10000
+            }
+        } as any, {});
+        expect(failing.success).toBe(false);
+        expect(failing.error?.message).toContain('code 2');
+        expect(failing.data?.stderr).toContain('boom');
     });
 
     it('fails plugin nodes clearly when the host has no plugin executor', async () => {

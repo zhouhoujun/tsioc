@@ -999,6 +999,30 @@ export async function executeVisualNode(
             }
             return { success: true, data: { nodeId: node.id, items, count: items.length } };
         }
+        case 'combine': {
+            const fields = String(config.fields || '').split(',').map(item => item.trim()).filter(Boolean);
+            if (!fields.length) {
+                return { success: false, error: new Error('Combine requires at least one field'), data: { nodeId: node.id } };
+            }
+            const values = fields.map(field => resolveWorkflowValue(field, context));
+            const mode = String(config.mode || 'merge');
+            let result: any;
+            if (mode === 'concat') {
+                result = values.reduce((acc: any[], value) => acc.concat(Array.isArray(value) ? value : [value]), []);
+            } else if (mode === 'text') {
+                const separator = String(config.separator ?? ', ');
+                result = values
+                    .map(value => value !== null && typeof value === 'object' ? JSON.stringify(value) : String(value ?? ''))
+                    .join(separator);
+            } else {
+                result = values.reduce((acc: Record<string, any>, value) =>
+                    value && typeof value === 'object' && !Array.isArray(value)
+                        ? { ...acc, ...value }
+                        : acc, {});
+            }
+            const target = String(config.resultField || 'value');
+            return { success: true, data: { nodeId: node.id, [target]: result, value: result } };
+        }
         case 'rbe': {
             const items = arrayFrom(context, config.field);
             const filtered: any[] = [];
