@@ -989,7 +989,7 @@ describe('HTTP service route timeout', () => {
         ctx = await Application.run(RouteTimeoutModule);
     });
     after(async () => {
-        await ctx?.close(); 
+        await ctx?.close();
     });
 
     function request(method: string, targetPath: string): Promise<{ status: number; body: string }> {
@@ -1066,7 +1066,7 @@ describe('HTTP pipe parameter conversion', () => {
     });
 
     after(async () => {
-        await ctx?.close(); 
+        await ctx?.close();
     });
 
     function request(method: string, targetPath: string): Promise<{ status: number; body: string }> {
