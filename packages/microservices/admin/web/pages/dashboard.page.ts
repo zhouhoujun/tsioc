@@ -33,6 +33,51 @@ import { GatewayAdminState } from '../admin.state';
             <article class="ga-card">
                 <div class="ga-card-head">
                     <div>
+                        <h2>{{state.t('card.services')}}</h2>
+                        <p>{{state.t('card.servicesDesc')}}</p>
+                    </div>
+                </div>
+                <div class="ga-compact-list">
+                    <div class="ga-compact-row ga-service-row" v-for="service in state.serviceSummaries">
+                        <code>{{service.name}}</code>
+                        <span class="ga-status-spacer"></span>
+                        <span class="ga-pill is-on">{{service.enabled}}/{{service.routes}}</span>
+                    </div>
+                    <div class="ga-empty" v-if="!state.serviceSummaries.length">{{state.t('card.noServices')}}</div>
+                </div>
+            </article>
+
+            <article class="ga-card">
+                <div class="ga-card-head">
+                    <div>
+                        <h2>{{state.t('card.policies')}}</h2>
+                        <p>{{state.t('card.policiesDesc')}}</p>
+                    </div>
+                </div>
+                <div class="ga-compact-list">
+                    <div class="ga-compact-row ga-policy-row" v-for="policy in state.policyRows">
+                        <span>{{policy.label}}</span>
+                        <span class="ga-status-spacer"></span>
+                        <span class="ga-pill">{{policy.value}}</span>
+                    </div>
+                    <div class="ga-compact-row ga-policy-row">
+                        <span>{{state.t('runtime.auth')}}</span>
+                        <span class="ga-status-spacer"></span>
+                        <span class="ga-pill">{{state.authModeLabel}}</span>
+                    </div>
+                    <div class="ga-compact-row ga-policy-row">
+                        <span>{{state.t('runtime.dynamicRoutes')}}</span>
+                        <span class="ga-status-spacer"></span>
+                        <span class="ga-pill">{{state.dynamicRoutes ? state.t('common.yes') : state.t('common.no')}}</span>
+                    </div>
+                </div>
+            </article>
+        </div>
+
+        <div class="ga-dashboard-grid">
+            <article class="ga-card">
+                <div class="ga-card-head">
+                    <div>
                         <h2>{{state.t('card.routeTable')}}</h2>
                         <p>{{state.t('card.routeTableDesc')}}</p>
                     </div>

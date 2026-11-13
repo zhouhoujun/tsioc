@@ -15,6 +15,9 @@ import { GatewayAdminState } from '../admin.state';
             <div class="ga-actions">
                 <span class="ga-dirty" v-if="state.routesDirty">{{state.t('routes.unsaved')}}</span>
                 <span class="ga-synced" v-else>{{state.t('routes.synced')}}</span>
+                <button class="ga-btn ga-import-routes" type="button" @click="state.openImport">{{state.t('routes.import')}}</button>
+                <button class="ga-btn ga-export-routes" type="button" @click="state.exportRoutes">{{state.t('routes.export')}}</button>
+                <button class="ga-btn ga-reset-routes" type="button" @click="state.resetRoutes">{{state.t('routes.reset')}}</button>
                 <button class="ga-btn ga-add-route" type="button" @click="state.addRoute">{{state.t('routes.add')}}</button>
                 <button class="ga-btn ga-btn-primary ga-apply-routes" type="button" @click="state.applyRoutes">{{state.t('routes.apply')}}</button>
             </div>
@@ -87,6 +90,7 @@ import { GatewayAdminState } from '../admin.state';
                             </button>
                         </td>
                         <td class="ga-cell-actions">
+                            <button class="ga-link-btn ga-view-route" type="button" @click="state.openRouteDetail(route)">{{state.t('action.view')}}</button>
                             <button class="ga-link-btn" type="button" @click="state.moveRoute(route, -1)">{{state.t('action.moveUp')}}</button>
                             <button class="ga-link-btn" type="button" @click="state.moveRoute(route, 1)">{{state.t('action.moveDown')}}</button>
                             <button class="ga-link-btn" type="button" @click="state.duplicateRoute(route)">{{state.t('action.duplicate')}}</button>

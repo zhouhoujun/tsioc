@@ -3749,3 +3749,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - GatewayInterceptor 暴露 previewMatch：按 method/path/host/headers 预览命中规则或路由，不转发请求；新增 POST /api/gateway-admin/match。
   - 路由页新增匹配测试卡片（方法/路径/测试结果）；规则页支持新建规则流程、直接应用已保存流程。
   - admin 48 passing，gateway 45 passing；生产 bundle 验证匹配卡片与新建流程入口。
+- Gateway admin 概览与路由工具（2026-11-13）：
+  - Overview 增加服务汇总、策略用量（auth/限流/熔断/缓存/mock/灰度）、认证模式与动态路由状态。
+  - 路由页支持导出 JSON、导入路由数组、恢复静态配置、查看路由详情（生效配置 JSON）。
+  - admin 49 passing；生产 bundle 验证概览、详情、导入/重置。

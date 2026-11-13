@@ -150,6 +150,42 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
             </div>
         </div>
 
+        <div class="ga-modal" v-if="state.routeDetail">
+            <div class="ga-modal-card ga-detail-card">
+                <header class="ga-modal-head">
+                    <div>
+                        <h2>{{state.routeDetail.path}}</h2>
+                        <p>{{state.t('detail.desc')}}</p>
+                    </div>
+                    <button class="ga-icon-btn" type="button" @click="state.closeRouteDetail">✕</button>
+                </header>
+                <pre class="ga-json">{{state.routeDetailJson}}</pre>
+                <footer class="ga-modal-foot">
+                    <button class="ga-btn" type="button" @click="state.closeRouteDetail">{{state.t('common.close')}}</button>
+                </footer>
+            </div>
+        </div>
+
+        <div class="ga-modal" v-if="state.importOpen">
+            <div class="ga-modal-card">
+                <header class="ga-modal-head">
+                    <div>
+                        <h2>{{state.t('import.title')}}</h2>
+                        <p>{{state.t('import.desc')}}</p>
+                    </div>
+                    <button class="ga-icon-btn" type="button" @click="state.closeImport">✕</button>
+                </header>
+                <textarea class="ga-import-textarea" [value]="state.importText"
+                    placeholder='[{ "path": "/api/users", "service": "users-service" }]'
+                    @input="state.setImportText($event)"></textarea>
+                <div class="ga-field-error" v-if="state.importError">{{state.importError}}</div>
+                <footer class="ga-modal-foot">
+                    <button class="ga-btn" type="button" @click="state.closeImport">{{state.t('editor.cancel')}}</button>
+                    <button class="ga-btn ga-btn-primary ga-import-apply" type="button" @click="state.importRoutes">{{state.t('import.apply')}}</button>
+                </footer>
+            </div>
+        </div>
+
         <div class="ga-designer-page" v-if="designerOpen">
             <header class="ga-designer-head">
                 <div>

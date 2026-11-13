@@ -40,6 +40,10 @@ export class GatewayAdminHttp {
         return this.request('PUT', '/api/gateway-admin/routes', { routes });
     }
 
+    resetRoutes(): Promise<AdminHttpResult<any>> {
+        return this.request('DELETE', '/api/gateway-admin/routes');
+    }
+
     match(method: string, path: string): Promise<AdminHttpResult<GatewayMatchPreview>> {
         return this.request('POST', '/api/gateway-admin/match', { method, path });
     }

@@ -51,12 +51,14 @@ describe('Microservice admin UI', () => {
     let originalHistory: History | undefined;
     let originalDocument: Document | undefined;
     let routes: GatewayRouteOptions[];
+    let staticRoutes: GatewayRouteOptions[];
     let rules: GatewayRuleOptions[];
     let ruleWorkflows: Array<{ id: string; name: string; nodeCount: number }>;
     let definitions: Record<string, Record<string, unknown>>;
 
     beforeEach(async () => {
         routes = [{ path: '/api/users', service: 'users-service' }];
+        staticRoutes = routes.map(route => ({ ...route }));
         rules = [];
         ruleWorkflows = [];
         definitions = {};
@@ -88,6 +90,10 @@ describe('Microservice admin UI', () => {
             }
             if (path === '/api/gateway-admin/routes' && method === 'PUT') {
                 routes = JSON.parse(String(init.body)).routes;
+                return jsonResponse({ routes, rules, services: ['users-service'] });
+            }
+            if (path === '/api/gateway-admin/routes' && method === 'DELETE') {
+                routes = staticRoutes.map(route => ({ ...route }));
                 return jsonResponse({ routes, rules, services: ['users-service'] });
             }
             if (path === '/api/gateway-admin/match' && method === 'POST') {
@@ -177,6 +183,8 @@ describe('Microservice admin UI', () => {
         expect(root.querySelector('.ga-designer-page')).toBeFalsy();
         expect(root.querySelector('.ga-status')?.textContent).toContain('Ready');
         expect(win.location.hash).toBe('#/dashboard');
+        expect(root.querySelector('.ga-service-row')?.textContent).toContain('users-service');
+        expect(root.querySelectorAll('.ga-policy-row').length).toBeGreaterThan(0);
     });
 
     it('switches language and theme globally', async () => {
@@ -388,6 +396,33 @@ describe('Microservice admin UI', () => {
         (root.querySelector('.ga-apply-rule-workflow') as HTMLElement).click();
         await waitFor(() => (root.querySelector('.ga-status')?.textContent || '').includes('Rules applied'));
         expect(root.querySelectorAll('.ga-workflow-row').length).toBeGreaterThan(0);
+    });
+
+    it('views, imports and resets routes from the route toolbar', async () => {
+        (root.querySelector('.ga-nav-item:nth-child(2)') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-page-routes'));
+
+        (root.querySelector('.ga-view-route') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-detail-card'));
+        expect(root.querySelector('.ga-json')?.textContent).toContain('/api/users');
+        (root.querySelector('.ga-detail-card .ga-icon-btn') as HTMLElement).click();
+        await waitFor(() => !root.querySelector('.ga-detail-card'));
+
+        (root.querySelector('.ga-import-routes') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-import-textarea'));
+        const textarea = root.querySelector('.ga-import-textarea') as HTMLTextAreaElement;
+        textarea.value = JSON.stringify([
+            { path: '/api/users', service: 'users-service' },
+            { path: '/api/orders', service: 'orders-service' }
+        ]);
+        textarea.dispatchEvent(new win.Event('input', { bubbles: true }));
+        (root.querySelector('.ga-import-apply') as HTMLElement).click();
+        await waitFor(() => root.querySelectorAll('.ga-route-row').length === 2);
+
+        (root.querySelector('.ga-reset-routes') as HTMLElement).click();
+        await waitFor(() => root.querySelectorAll('.ga-route-row').length === 1);
+        expect(routes.length).toBe(1);
+        expect(root.querySelector('.ga-route-row')?.textContent).toContain('/api/users');
     });
 
     it('lists saved rule workflows and allows reopening and deleting them', async () => {

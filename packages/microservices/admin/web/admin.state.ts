@@ -37,7 +37,14 @@ export interface GatewayAdminApiState {
     routes?: GatewayRouteOptions[];
     rules?: GatewayAdminRuleSummary[];
     services?: string[];
+    dynamic?: { routes?: unknown[]; rules?: unknown[] };
     auth?: { enabled: boolean; mode: 'none' | 'oidc' | 'oauth2' | 'service' };
+}
+
+export interface GatewayAdminServiceSummary {
+    name: string;
+    routes: number;
+    enabled: number;
 }
 
 /**
@@ -70,6 +77,13 @@ export class GatewayAdminState {
     matchPath = '/api';
     matchResult?: GatewayMatchPreview;
     matchLoading = false;
+    authMode: 'none' | 'oidc' | 'oauth2' | 'service' = 'none';
+    dynamicRoutes = false;
+    dynamicRules = false;
+    routeDetail?: GatewayRouteOptions;
+    importOpen = false;
+    importText = '';
+    importError = '';
     authEnabled = false;
     needsLogin = false;
     /** Set by the routed layout; the rules page calls it to open the designer. */
@@ -365,6 +379,161 @@ export class GatewayAdminState {
         return rule?.when?.length || 0;
     }
 
+    get routeDetailJson(): string {
+        if (!this.routeDetail) {
+            return '';
+        }
+        return JSON.stringify(this.routeDetail, null, 2);
+    }
+
+    get serviceSummaries(): GatewayAdminServiceSummary[] {
+        const byService = new Map<string, GatewayAdminServiceSummary>();
+        this.routes.forEach(route => {
+            const name = String(route.service || '').trim();
+            if (!name) {
+                return;
+            }
+            const entry = byService.get(name) ?? { name, routes: 0, enabled: 0 };
+            entry.routes += 1;
+            if (route.enabled !== false) {
+                entry.enabled += 1;
+            }
+            byService.set(name, entry);
+        });
+        return Array.from(byService.values()).sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    get policyCounts(): { auth: number; rateLimit: number; circuitBreaker: number; cache: number; mock: number; canary: number } {
+        return this.routes.reduce((counts, route) => {
+            if (route.auth) counts.auth += 1;
+            if (route.rateLimit !== undefined && route.rateLimit !== false) counts.rateLimit += 1;
+            if (route.circuitBreaker) counts.circuitBreaker += 1;
+            if (route.cache) counts.cache += 1;
+            if (route.mock) counts.mock += 1;
+            if (route.canary) counts.canary += 1;
+            return counts;
+        }, { auth: 0, rateLimit: 0, circuitBreaker: 0, cache: 0, mock: 0, canary: 0 });
+    }
+
+    get policyRows(): Array<{ key: string; label: string; value: number }> {
+        const counts = this.policyCounts;
+        return [
+            { key: 'auth', label: this.t('policy.auth'), value: counts.auth },
+            { key: 'rateLimit', label: this.t('policy.rateLimit'), value: counts.rateLimit },
+            { key: 'circuitBreaker', label: this.t('policy.circuitBreaker'), value: counts.circuitBreaker },
+            { key: 'cache', label: this.t('policy.cache'), value: counts.cache },
+            { key: 'mock', label: this.t('policy.mock'), value: counts.mock },
+            { key: 'canary', label: this.t('policy.canary'), value: counts.canary }
+        ];
+    }
+
+    get authModeLabel(): string {
+        switch (this.authMode) {
+            case 'oidc': return this.t('auth.oidc');
+            case 'oauth2': return this.t('auth.oauth2');
+            case 'service': return this.t('auth.service');
+            default: return this.t('auth.none');
+        }
+    }
+
+    readonly openRouteDetail = (route: GatewayRouteOptions): void => {
+        (this.selfRef ?? this).routeDetail = { ...route };
+    };
+
+    readonly closeRouteDetail = (): void => {
+        (this.selfRef ?? this).routeDetail = undefined;
+    };
+
+    readonly openImport = (): void => {
+        const self = this.selfRef ?? this;
+        self.importOpen = true;
+        self.importError = '';
+    };
+
+    readonly closeImport = (): void => {
+        const self = this.selfRef ?? this;
+        self.importOpen = false;
+        self.importText = '';
+        self.importError = '';
+    };
+
+    readonly setImportText = (event: Event): void => {
+        const self = this.selfRef ?? this;
+        self.importText = (event.target as HTMLTextAreaElement).value;
+    };
+
+    readonly exportRoutes = (): void => {
+        const self = this.selfRef ?? this;
+        const data = JSON.stringify(self.routes, null, 2);
+        const doc = (self.documentRef ?? (globalThis as { document?: Document }).document) as Document | undefined;
+        const createUrl = typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function';
+        if (!doc || !createUrl || typeof Blob === 'undefined') {
+            self.importText = data;
+            self.importOpen = true;
+            return;
+        }
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = doc.createElement('a');
+        link.href = url;
+        link.download = 'gateway-routes.json';
+        link.click();
+        URL.revokeObjectURL(url);
+        self.status = self.t('status.routesExported');
+    };
+
+    readonly importRoutes = (): void => {
+        const self = this.selfRef ?? this;
+        const text = String(self.importText || '').trim();
+        let parsed: unknown;
+        try {
+            parsed = JSON.parse(text);
+        } catch {
+            self.importError = self.t('import.invalidJson');
+            return;
+        }
+        const list = Array.isArray(parsed)
+            ? parsed
+            : (parsed && typeof parsed === 'object' && Array.isArray((parsed as { routes?: unknown[] }).routes)
+                ? (parsed as { routes: unknown[] }).routes
+                : undefined);
+        if (!Array.isArray(list)) {
+            self.importError = self.t('import.invalidShape');
+            return;
+        }
+        const invalid = list.find(route => {
+            const entry = route as GatewayRouteOptions;
+            return !entry || typeof entry.path !== 'string' || !entry.path.startsWith('/')
+                || (!entry.service && !entry.targetUrl);
+        });
+        if (invalid) {
+            self.importError = self.t('import.invalidRoute');
+            return;
+        }
+        self.routes = list.map(route => ({ ...(route as GatewayRouteOptions) }));
+        self.routesDirty = true;
+        self.closeImport();
+        self.status = self.t('status.routesImported', { count: self.routes.length });
+    };
+
+    readonly resetRoutes = async (): Promise<void> => {
+        const self = this.selfRef ?? this;
+        if (!self.http) {
+            return;
+        }
+        const response = await self.http.resetRoutes();
+        if (response.status === 401) {
+            self.requireLogin();
+            return;
+        }
+        if (!response.ok) {
+            self.error = self.t('error.resetRoutes', { status: response.status });
+            return;
+        }
+        await self.reload();
+        self.status = self.t('status.routesReset');
+    };
+
     readonly editRules = async (id?: string): Promise<void> => {
         const self = this.selfRef ?? this;
         if (id) {
@@ -590,6 +759,9 @@ export class GatewayAdminState {
             }
             const state = await response.json() as GatewayAdminApiState;
             self.authEnabled = state.auth?.enabled === true;
+            self.authMode = state.auth?.mode ?? 'none';
+            self.dynamicRoutes = Array.isArray(state.dynamic?.routes) && state.dynamic.routes.length > 0;
+            self.dynamicRules = Array.isArray(state.dynamic?.rules) && state.dynamic.rules.length > 0;
             self.needsLogin = false;
             self.routes = (state.routes ?? []).map(route => ({ ...route }));
             self.services = state.services ?? [];
