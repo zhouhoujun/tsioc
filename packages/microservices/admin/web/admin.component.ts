@@ -98,31 +98,37 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                         <span>{{state.t('editor.path')}}</span>
                         <input data-field="path" [value]="state.editingRoute.path" placeholder="/api/users"
                             @input="state.editRouteField($event)" />
+                        <div class="ga-field-error" v-if="state.routeErrors.path">{{state.routeErrors.path}}</div>
                     </label>
                     <label class="ga-field">
                         <span>{{state.t('editor.service')}}</span>
                         <input data-field="service" [value]="state.editingRoute.service" placeholder="users-service"
                             @input="state.editRouteField($event)" />
+                        <div class="ga-field-error" v-if="state.routeErrors.service">{{state.routeErrors.service}}</div>
                     </label>
                     <label class="ga-field">
                         <span>{{state.t('editor.targetUrl')}}</span>
                         <input data-field="targetUrl" [value]="state.editingRoute.targetUrl" placeholder="http://127.0.0.1:3001"
                             @input="state.editRouteField($event)" />
+                        <div class="ga-field-error" v-if="state.routeErrors.targetUrl">{{state.routeErrors.targetUrl}}</div>
                     </label>
                     <label class="ga-field">
                         <span>{{state.t('editor.targetPath')}}</span>
                         <input data-field="targetPath" [value]="state.editingRoute.targetPath" placeholder="/users"
                             @input="state.editRouteField($event)" />
+                        <div class="ga-field-error" v-if="state.routeErrors.targetPath">{{state.routeErrors.targetPath}}</div>
                     </label>
                     <label class="ga-field">
                         <span>{{state.t('editor.methods')}}</span>
                         <input data-field="methods" [value]="state.routeMethods(state.editingRoute)" placeholder="GET, POST"
                             @input="state.editRouteField($event)" />
+                        <div class="ga-field-error" v-if="state.routeErrors.methods">{{state.routeErrors.methods}}</div>
                     </label>
                     <label class="ga-field">
                         <span>{{state.t('editor.timeout')}}</span>
                         <input data-field="timeout" type="number" [value]="state.editingRoute.timeout"
                             @input="state.editRouteField($event)" />
+                        <div class="ga-field-error" v-if="state.routeErrors.timeout">{{state.routeErrors.timeout}}</div>
                     </label>
                 </div>
                 <div class="ga-form-row">
@@ -213,10 +219,12 @@ export class GatewayAdminComponent implements OnInit, AfterViewInit, OnDestroy {
 
     private async loadRuleDocument(): Promise<void> {
         const summaries = await this.store.list().catch(() => [] as WorkflowDefinitionSummary[]);
+        const id = this.state.ruleWorkflowId || summaries[0]?.id || '';
         let definition: VisualWorkflowDefinition | undefined;
-        if (summaries.length) {
-            definition = await this.store.get(summaries[0].id);
+        if (id) {
+            definition = await this.store.get(id);
         }
+        this.state.ruleWorkflowId = id;
         this.designer.load(definition ?? createGatewayRuleWorkflow('zh-CN'));
     }
 
@@ -229,6 +237,8 @@ export class GatewayAdminComponent implements OnInit, AfterViewInit, OnDestroy {
         try {
             const summary = await this.store.save(this.designer.definition);
             this.designerOpen = false;
+            this.state.ruleWorkflowId = this.designer.definition.id;
+            await this.state.loadRuleWorkflows();
             this.state.status = this.state.t('status.rulesApplied', { count: summary.nodeCount });
             const state = await this.state.fetchState();
             this.state.rules = state.rules ?? [];

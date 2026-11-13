@@ -1,4 +1,4 @@
-import{n as s}from"./chunk-P2CAQ4IW.js";import{a,na as e}from"./chunk-SPMG5PJO.js";import"./chunk-U6UJE3IR.js";var t=class{constructor(l){this.state=l}};Reflect.metadata("design:paramtypes",[s])(t);a(t,[[e({selector:"gateway-admin-rules",template:`
+import{n as e}from"./chunk-U5AAXKCR.js";import{a as s,na as a}from"./chunk-SPMG5PJO.js";import"./chunk-U6UJE3IR.js";var t=class{constructor(l){this.state=l}};Reflect.metadata("design:paramtypes",[e])(t);s(t,[[a({selector:"gateway-admin-rules",template:`
     <section class="ga-page ga-page-rules">
         <div class="ga-page-actions">
             <div>
@@ -7,6 +7,29 @@ import{n as s}from"./chunk-P2CAQ4IW.js";import{a,na as e}from"./chunk-SPMG5PJO.j
             </div>
             <button class="ga-btn ga-btn-primary ga-edit-rules" type="button" @click="state.editRules">{{state.t('rules.configure')}}</button>
         </div>
+
+        <article class="ga-card">
+            <div class="ga-card-head">
+                <div>
+                    <h2>{{state.t('rules.workflows')}}</h2>
+                    <p>{{state.t('rules.workflowsDesc')}}</p>
+                </div>
+            </div>
+            <div class="ga-workflow-list">
+                <div class="ga-workflow-row" v-for="workflow in state.ruleWorkflows"
+                    [class]="'ga-workflow-row' + (state.ruleWorkflowId === workflow.id ? ' is-active' : '')">
+                    <div class="ga-rule-main">
+                        <strong>{{workflow.name || workflow.id}}</strong>
+                        <span class="ga-muted">{{state.t('rules.workflowMeta', { nodes: workflow.nodeCount || 0, id: workflow.id })}}</span>
+                    </div>
+                    <button class="ga-link-btn" type="button" @click="state.editRules(workflow.id)">{{state.t('rules.open')}}</button>
+                    <button class="ga-link-btn is-danger" type="button" @click="state.deleteRuleWorkflow(workflow.id)">{{state.t('action.remove')}}</button>
+                </div>
+                <div class="ga-empty" v-if="!state.ruleWorkflows.length">
+                    {{state.t('rules.noWorkflows')}}
+                </div>
+            </div>
+        </article>
 
         <article class="ga-card">
             <div class="ga-card-head">

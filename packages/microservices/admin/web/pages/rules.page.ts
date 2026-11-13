@@ -17,6 +17,29 @@ import { GatewayAdminState } from '../admin.state';
         <article class="ga-card">
             <div class="ga-card-head">
                 <div>
+                    <h2>{{state.t('rules.workflows')}}</h2>
+                    <p>{{state.t('rules.workflowsDesc')}}</p>
+                </div>
+            </div>
+            <div class="ga-workflow-list">
+                <div class="ga-workflow-row" v-for="workflow in state.ruleWorkflows"
+                    [class]="'ga-workflow-row' + (state.ruleWorkflowId === workflow.id ? ' is-active' : '')">
+                    <div class="ga-rule-main">
+                        <strong>{{workflow.name || workflow.id}}</strong>
+                        <span class="ga-muted">{{state.t('rules.workflowMeta', { nodes: workflow.nodeCount || 0, id: workflow.id })}}</span>
+                    </div>
+                    <button class="ga-link-btn" type="button" @click="state.editRules(workflow.id)">{{state.t('rules.open')}}</button>
+                    <button class="ga-link-btn is-danger" type="button" @click="state.deleteRuleWorkflow(workflow.id)">{{state.t('action.remove')}}</button>
+                </div>
+                <div class="ga-empty" v-if="!state.ruleWorkflows.length">
+                    {{state.t('rules.noWorkflows')}}
+                </div>
+            </div>
+        </article>
+
+        <article class="ga-card">
+            <div class="ga-card-head">
+                <div>
                     <h2>{{state.t('rules.compiled')}}</h2>
                     <p>{{state.t('rules.count', { count: state.rules.length })}}</p>
                 </div>

@@ -52,10 +52,14 @@ describe('Microservice admin UI', () => {
     let originalDocument: Document | undefined;
     let routes: GatewayRouteOptions[];
     let rules: GatewayRuleOptions[];
+    let ruleWorkflows: Array<{ id: string; name: string; nodeCount: number }>;
+    let definitions: Record<string, Record<string, unknown>>;
 
     beforeEach(async () => {
         routes = [{ path: '/api/users', service: 'users-service' }];
         rules = [];
+        ruleWorkflows = [];
+        definitions = {};
         originalFetch = globals.fetch;
         originalWindow = globals.window;
         originalLocation = globals.location;
@@ -68,7 +72,19 @@ describe('Microservice admin UI', () => {
                 return jsonResponse({ routes, rules, services: ['users-service'], auth: { enabled: false, mode: 'none' } });
             }
             if (path === '/api/gateway-admin/rules' && method === 'GET') {
-                return jsonResponse([]);
+                return jsonResponse(ruleWorkflows);
+            }
+            if (path.startsWith('/api/gateway-admin/rules/') && method === 'GET') {
+                const id = decodeURIComponent(path.slice('/api/gateway-admin/rules/'.length));
+                return definitions[id]
+                    ? jsonResponse(definitions[id])
+                    : jsonResponse({ message: 'not found' }, 404);
+            }
+            if (path.startsWith('/api/gateway-admin/rules/') && method === 'DELETE') {
+                const id = decodeURIComponent(path.slice('/api/gateway-admin/rules/'.length));
+                delete definitions[id];
+                ruleWorkflows = ruleWorkflows.filter(item => item.id !== id);
+                return jsonResponse({ removed: true });
             }
             if (path === '/api/gateway-admin/routes' && method === 'PUT') {
                 routes = JSON.parse(String(init.body)).routes;
@@ -81,11 +97,15 @@ describe('Microservice admin UI', () => {
                     return jsonResponse({ message: compiled.errors.join('; ') }, 400);
                 }
                 rules = compiled.rules;
-                return jsonResponse({
-                    summary: { id: definition.id, name: definition.name, nodeCount: definition.nodes.length },
-                    definition,
-                    rules
-                });
+                definitions[definition.id] = definition;
+                const summary = { id: definition.id, name: definition.name, nodeCount: definition.nodes.length };
+                const existing = ruleWorkflows.findIndex(item => item.id === definition.id);
+                if (existing >= 0) {
+                    ruleWorkflows[existing] = summary;
+                } else {
+                    ruleWorkflows.push(summary);
+                }
+                return jsonResponse({ summary, definition, rules });
             }
             return jsonResponse({ message: 'not found' }, 404);
         }) as typeof fetch;
@@ -248,5 +268,89 @@ describe('Microservice admin UI', () => {
         await waitFor(() => (root.querySelector('.ga-status')?.textContent || '').includes('Rules applied'));
         expect(rules.length).toBe(2);
         expect(root.querySelector('.ga-status')?.textContent).toContain('Rules applied');
+    });
+
+    it('validates route paths and duplicate routes before staging', async () => {
+        (root.querySelector('.ga-nav-item:nth-child(2)') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-page-routes'));
+
+        (root.querySelector('.ga-add-route') as HTMLElement).click();
+        await flush();
+        const pathInput = root.querySelector('.ga-modal-card [data-field="path"]') as HTMLInputElement;
+        pathInput.value = 'api/bad';
+        pathInput.dispatchEvent(new win.Event('input', { bubbles: true }));
+        (root.querySelector('.ga-route-save') as HTMLElement).click();
+        await flush();
+        expect(root.querySelector('.ga-field-error')?.textContent).toContain('/');
+        expect(root.querySelectorAll('.ga-route-row').length).toBe(1);
+
+        pathInput.value = '/api/bad';
+        pathInput.dispatchEvent(new win.Event('input', { bubbles: true }));
+        (root.querySelector('.ga-route-save') as HTMLElement).click();
+        await flush();
+        expect(root.querySelectorAll('.ga-route-row').length).toBe(2);
+
+        // A second route with the same path/methods is rejected.
+        (root.querySelector('.ga-add-route') as HTMLElement).click();
+        await flush();
+        const duplicatePath = root.querySelector('.ga-modal-card [data-field="path"]') as HTMLInputElement;
+        duplicatePath.value = '/api/bad';
+        duplicatePath.dispatchEvent(new win.Event('input', { bubbles: true }));
+        (root.querySelector('.ga-route-save') as HTMLElement).click();
+        await flush();
+        expect(root.querySelector('.ga-field-error')?.textContent).toContain('already exists');
+        expect(root.querySelectorAll('.ga-route-row').length).toBe(2);
+    });
+
+    it('toggles, duplicates and reorders staged routes', async () => {
+        (root.querySelector('.ga-nav-item:nth-child(2)') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-page-routes'));
+
+        const firstRow = () => root.querySelectorAll('.ga-route-row')[0];
+        (firstRow().querySelector('.ga-pill-button') as HTMLElement).click();
+        await flush();
+        expect(firstRow().querySelector('.ga-pill-button')?.textContent).toContain('disabled');
+        expect(root.querySelector('.ga-dirty')).toBeTruthy();
+
+        const duplicate = Array.from(firstRow().querySelectorAll('.ga-link-btn'))
+            .find(button => button.textContent?.includes('Duplicate')) as HTMLElement;
+        duplicate.click();
+        await flush();
+        expect(root.querySelectorAll('.ga-route-row').length).toBe(2);
+        expect(root.querySelectorAll('.ga-route-row')[1].textContent).toContain('/api/users-copy');
+
+        const moveDown = Array.from(firstRow().querySelectorAll('.ga-link-btn'))
+            .find(button => button.textContent?.includes('Move down')) as HTMLElement;
+        moveDown.click();
+        await flush();
+        expect(firstRow().textContent).toContain('/api/users-copy');
+    });
+
+    it('lists saved rule workflows and allows reopening and deleting them', async () => {
+        (root.querySelector('.ga-nav-item:nth-child(3)') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-page-rules'));
+
+        (root.querySelector('.ga-edit-rules') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-designer-page'));
+        (root.querySelector('.ga-rules-apply') as HTMLElement).click();
+        await waitFor(() => (root.querySelector('.ga-status')?.textContent || '').includes('Rules applied'));
+        await waitFor(() => !!root.querySelector('.ga-workflow-row'));
+
+        const row = root.querySelector('.ga-workflow-row') as HTMLElement;
+        expect(row.textContent).toContain('nodes');
+
+        const open = Array.from(row.querySelectorAll('.ga-link-btn'))
+            .find(button => button.textContent?.includes('Open')) as HTMLElement;
+        open.click();
+        await waitFor(() => !!root.querySelector('.ga-designer-page'));
+        (root.querySelector('.ga-rules-cancel') as HTMLElement).click();
+        await waitFor(() => !root.querySelector('.ga-designer-page'));
+
+        const current = root.querySelector('.ga-workflow-row') as HTMLElement;
+        const remove = Array.from(current.querySelectorAll('.ga-link-btn'))
+            .find(button => button.textContent?.includes('Remove')) as HTMLElement;
+        remove.click();
+        await waitFor(() => !root.querySelector('.ga-workflow-row'));
+        expect(root.querySelectorAll('.ga-workflow-row').length).toBe(0);
     });
 });

@@ -3741,3 +3741,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - common dynamic-form 增加 color/regex/minItems/maxItems 校验；节点外观新增 Icon/Color（颜色十六进制校验、图标长度限制），写入 node.style。
   - 修复 change 节点多规则执行时把上一规则返回值当上下文的问题；列表字段变更按数组写回 config。
   - 动态表单列表/分组样式与节点设置继续完善；activities 280 passing，common 75 passing。
+- Gateway admin 管理完善（2026-11-13）：
+  - 路由表支持行内启停、上移/下移、复制、未应用更改提示；保存前校验路径格式、service/目标地址、URL scheme、超时范围、HTTP 方法与重复 path+methods。
+  - 规则页新增规则流程列表，可打开/删除已保存的可视化规则流程；应用后刷新列表并同步实时规则。
+  - admin 45 passing（新增校验、启停/复制/排序、规则流程打开/删除测试）。

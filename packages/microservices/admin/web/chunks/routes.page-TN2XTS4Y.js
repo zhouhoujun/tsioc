@@ -1,4 +1,4 @@
-import{n as s}from"./chunk-P2CAQ4IW.js";import{a as e,na as a}from"./chunk-SPMG5PJO.js";import"./chunk-U6UJE3IR.js";var t=class{constructor(o){this.state=o}};Reflect.metadata("design:paramtypes",[s])(t);e(t,[[a({selector:"gateway-admin-routes",template:`
+import{n as s}from"./chunk-U5AAXKCR.js";import{a as e,na as a}from"./chunk-SPMG5PJO.js";import"./chunk-U6UJE3IR.js";var t=class{constructor(o){this.state=o}};Reflect.metadata("design:paramtypes",[s])(t);e(t,[[a({selector:"gateway-admin-routes",template:`
     <section class="ga-page ga-page-routes">
         <div class="ga-page-actions">
             <div class="ga-search">
@@ -7,6 +7,8 @@ import{n as s}from"./chunk-P2CAQ4IW.js";import{a as e,na as a}from"./chunk-SPMG5
                     @input="state.searchRoutes($event)" />
             </div>
             <div class="ga-actions">
+                <span class="ga-dirty" v-if="state.routesDirty">{{state.t('routes.unsaved')}}</span>
+                <span class="ga-synced" v-else>{{state.t('routes.synced')}}</span>
                 <button class="ga-btn ga-add-route" type="button" @click="state.addRoute">{{state.t('routes.add')}}</button>
                 <button class="ga-btn ga-btn-primary ga-apply-routes" type="button" @click="state.applyRoutes">{{state.t('routes.apply')}}</button>
             </div>
@@ -31,11 +33,16 @@ import{n as s}from"./chunk-P2CAQ4IW.js";import{a as e,na as a}from"./chunk-SPMG5
                         <td class="ga-cell-muted">{{route.targetUrl || route.targetPath || state.t('table.discovery')}}</td>
                         <td><span class="ga-pill">{{state.routeMethods(route) || state.t('common.any')}}</span></td>
                         <td>
-                            <span class="ga-pill" [class]="route.enabled === false ? 'ga-pill is-off' : 'ga-pill is-on'">
+                            <button class="ga-pill ga-pill-button" type="button"
+                                [class]="route.enabled === false ? 'ga-pill is-off' : 'ga-pill is-on'"
+                                @click="state.toggleRoute(route)">
                                 {{route.enabled === false ? state.t('status.disabled') : state.t('status.enabled')}}
-                            </span>
+                            </button>
                         </td>
                         <td class="ga-cell-actions">
+                            <button class="ga-link-btn" type="button" @click="state.moveRoute(route, -1)">{{state.t('action.moveUp')}}</button>
+                            <button class="ga-link-btn" type="button" @click="state.moveRoute(route, 1)">{{state.t('action.moveDown')}}</button>
+                            <button class="ga-link-btn" type="button" @click="state.duplicateRoute(route)">{{state.t('action.duplicate')}}</button>
                             <button class="ga-link-btn" type="button" @click="state.editRoute(route)">{{state.t('action.edit')}}</button>
                             <button class="ga-link-btn is-danger" type="button" @click="state.removeRoute(route)">{{state.t('action.remove')}}</button>
                         </td>

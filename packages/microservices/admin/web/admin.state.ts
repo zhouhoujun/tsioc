@@ -6,6 +6,7 @@ import {
 } from '@tsdi/components/common/menu-bar';
 import { DOCUMENT } from '@tsdi/common';
 import { GatewayRouteOptions } from '@tsdi/gateway';
+import { WorkflowDefinitionSummary } from '@tsdi/activities/visual';
 import { Router, RouterEvent } from '@tsdi/components/router';
 import { AdminLocale, adminMessage } from './admin.i18n';
 import { AdminPage, redirectToAdminLogin } from './routing';
@@ -60,6 +61,10 @@ export class GatewayAdminState {
     routeEditorOpen = false;
     editingRoute: GatewayRouteOptions = {} as GatewayRouteOptions;
     editingIndex = -1;
+    routeErrors: Record<string, string> = {};
+    routesDirty = false;
+    ruleWorkflows: WorkflowDefinitionSummary[] = [];
+    ruleWorkflowId = '';
     authEnabled = false;
     needsLogin = false;
     /** Set by the routed layout; the rules page calls it to open the designer. */
@@ -355,10 +360,152 @@ export class GatewayAdminState {
         return rule?.when?.length || 0;
     }
 
-    async editRules(): Promise<void> {
-        if (this.openDesigner) {
-            await this.openDesigner();
+    readonly editRules = async (id?: string): Promise<void> => {
+        const self = this.selfRef ?? this;
+        if (id) {
+            self.ruleWorkflowId = id;
         }
+        if (self.openDesigner) {
+            await self.openDesigner();
+        }
+    };
+
+    async loadRuleWorkflows(): Promise<void> {
+        const self = this.self();
+        if (!self.http) {
+            self.ruleWorkflows = [];
+            return;
+        }
+        const response = await self.http.listRules();
+        if (!response.ok) {
+            return;
+        }
+        const body = response.body;
+        self.ruleWorkflows = Array.isArray(body)
+            ? body
+            : Array.isArray(body?.items) ? body.items : [];
+    }
+
+    readonly deleteRuleWorkflow = async (id: string): Promise<void> => {
+        const self = this.selfRef ?? this;
+        if (!self.http || !id) {
+            return;
+        }
+        const response = await self.http.removeRule(id);
+        if (!response.ok && response.status !== 404) {
+            self.error = self.t('error.ruleDelete', { status: response.status });
+            return;
+        }
+        if (self.ruleWorkflowId === id) {
+            self.ruleWorkflowId = '';
+        }
+        await self.reload();
+        self.status = self.t('status.ruleDeleted', { id });
+    };
+
+    // Event handlers used inside `v-for` rows are arrow properties: the
+    // template binds `this` to the row scope, so they must capture the service.
+    readonly toggleRoute = (route: GatewayRouteOptions): void => {
+        const self = this.selfRef ?? this;
+        self.routes = self.routes.map(item => item === route
+            ? { ...item, enabled: item.enabled === false }
+            : item);
+        self.routesDirty = true;
+        self.status = self.t('status.routeToggled', {
+            path: route.path,
+            state: route.enabled === false ? self.t('status.enabled') : self.t('status.disabled')
+        });
+    };
+
+    readonly moveRoute = (route: GatewayRouteOptions, delta: number): void => {
+        const self = this.selfRef ?? this;
+        const index = self.routes.indexOf(route);
+        const target = index + delta;
+        if (index < 0 || target < 0 || target >= self.routes.length) {
+            return;
+        }
+        const next = self.routes.slice();
+        [next[index], next[target]] = [next[target], next[index]];
+        self.routes = next;
+        self.routesDirty = true;
+        self.status = self.t('status.routeMoved', { path: route.path });
+    };
+
+    readonly duplicateRoute = (route: GatewayRouteOptions): void => {
+        const self = this.selfRef ?? this;
+        const base = String(route.path || '/');
+        const paths = new Set(self.routes.map(item => String(item.path)));
+        let path = `${base}-copy`;
+        let counter = 2;
+        while (paths.has(path)) {
+            path = `${base}-copy-${counter++}`;
+        }
+        const copy = { ...route, path };
+        const index = self.routes.indexOf(route);
+        const next = self.routes.slice();
+        next.splice(index + 1, 0, copy);
+        self.routes = next;
+        self.routesDirty = true;
+        self.status = self.t('status.routeDuplicated', { path });
+    };
+
+    private routeMethodsKey(route: GatewayRouteOptions): string {
+        const methods = (route.methods ?? [])
+            .map(method => String(method).trim().toUpperCase())
+            .filter(Boolean);
+        return (methods.length ? Array.from(new Set(methods)).sort() : ['ANY']).join(',');
+    }
+
+    validateEditingRoute(): boolean {
+        const self = this.self();
+        const route = self.editingRoute;
+        const errors: Record<string, string> = {};
+        const path = String(route.path || '').trim();
+        if (!path) {
+            errors.path = self.t('validation.pathRequired');
+        } else if (!path.startsWith('/')) {
+            errors.path = self.t('validation.pathSlash');
+        } else if (/\s/.test(path)) {
+            errors.path = self.t('validation.pathSpace');
+        }
+
+        if (!route.service && !route.targetUrl) {
+            errors.service = self.t('validation.serviceRequired');
+        }
+        if (route.targetUrl && !/^(https?:\/\/|\/)/i.test(String(route.targetUrl))) {
+            errors.targetUrl = self.t('validation.url');
+        }
+        if (route.targetPath && !String(route.targetPath).startsWith('/')) {
+            errors.targetPath = self.t('validation.pathSlash');
+        }
+        if (route.timeout !== undefined && route.timeout !== null) {
+            const timeout = Number(route.timeout);
+            if (!Number.isFinite(timeout) || timeout < 0 || timeout > 600000) {
+                errors.timeout = self.t('validation.timeout');
+            }
+        }
+        const allowed = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS', 'ANY'];
+        const methods = (route.methods ?? []).map(method => String(method).trim().toUpperCase()).filter(Boolean);
+        if (methods.some(method => !allowed.includes(method))) {
+            errors.methods = self.t('validation.methods');
+        }
+        const methodKey = self.routeMethodsKey(route);
+        const duplicate = self.routes.some((item, index) =>
+            index !== self.editingIndex
+            && String(item.path || '').trim() === path
+            && self.routeMethodsKey(item) === methodKey);
+        if (duplicate) {
+            errors.path = self.t('validation.duplicate');
+        }
+
+        self.routeErrors = errors;
+        const first = Object.values(errors)[0];
+        if (first) {
+            self.error = first;
+            return false;
+        }
+        self.error = '';
+        return true;
     }
 
     async reload(): Promise<void> {
@@ -379,6 +526,8 @@ export class GatewayAdminState {
             self.routes = (state.routes ?? []).map(route => ({ ...route }));
             self.services = state.services ?? [];
             self.rules = state.rules ?? [];
+            self.routesDirty = false;
+            void self.loadRuleWorkflows();
             self.status = self.t('status.ready', { routes: self.routes.length, rules: self.rules.length });
         } catch (error) {
             self.status = self.t('status.offline');
@@ -421,18 +570,19 @@ export class GatewayAdminState {
         self.routeEditorOpen = true;
     }
 
-    editRoute(route: GatewayRouteOptions): void {
-        const self = this.self();
+    readonly editRoute = (route: GatewayRouteOptions): void => {
+        const self = this.selfRef ?? this;
         self.editingIndex = self.routes.indexOf(route);
         self.editingRoute = { ...route };
         self.routeEditorOpen = true;
-    }
+    };
 
     closeRouteEditor(): void {
         const self = this.self();
         self.routeEditorOpen = false;
         self.editingRoute = {} as GatewayRouteOptions;
         self.editingIndex = -1;
+        self.routeErrors = {};
     }
 
     editRouteField(event: Event): void {
@@ -457,15 +607,19 @@ export class GatewayAdminState {
         }
         (self.editingRoute as unknown as Record<string, unknown>)[key] = value;
         self.editingRoute = { ...self.editingRoute };
+        if (self.routeErrors[key]) {
+            const next = { ...self.routeErrors };
+            delete next[key];
+            self.routeErrors = next;
+        }
     }
 
     saveRouteEditor(): void {
         const self = this.self();
-        const route = self.editingRoute;
-        if (!route.path || (!route.service && !route.targetUrl)) {
-            self.error = self.t('error.routeRequired');
+        if (!self.validateEditingRoute()) {
             return;
         }
+        const route = self.editingRoute;
         self.error = '';
         if (self.editingIndex >= 0) {
             const next = self.routes.slice();
@@ -475,14 +629,16 @@ export class GatewayAdminState {
             self.routes = [...self.routes, { ...route }];
         }
         self.closeRouteEditor();
+        self.routesDirty = true;
         self.status = self.t('status.routeStaged', { count: self.routes.length });
     }
 
-    removeRoute(route: GatewayRouteOptions): void {
-        const self = this.self();
+    readonly removeRoute = (route: GatewayRouteOptions): void => {
+        const self = this.selfRef ?? this;
         self.routes = self.routes.filter(item => item !== route);
+        self.routesDirty = true;
         self.status = self.t('status.routeRemoved', { count: self.routes.length });
-    }
+    };
 
     async applyRoutes(): Promise<void> {
         const self = this.self();
@@ -502,6 +658,7 @@ export class GatewayAdminState {
             const state = response.body as GatewayAdminApiState;
             self.routes = (state.routes ?? []).map(route => ({ ...route }));
             self.services = state.services ?? [];
+            self.routesDirty = false;
             self.status = self.t('status.routesApplied', { count: self.routes.length });
         } catch (error) {
             self.error = (error as Error).message;

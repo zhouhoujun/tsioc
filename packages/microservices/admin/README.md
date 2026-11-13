@@ -350,6 +350,13 @@ toolbar, palette, inspector and status bar follow the admin shell.
   route. Because protected components are created by the outlet *after* guards
   pass, an unauthenticated request never mounts the dashboard; a `401` redirects
   to `/admin/login.html?redirect=<current-url>` first.
+- The route table supports inline enable/disable, ordering (move up/down),
+  duplicate and edit actions. Edits are staged locally (with an unsaved
+  indicator) and validated before applying: path format, service/target
+  requirement, target URL scheme, timeout range, HTTP methods and duplicate
+  path+method combinations.
+- The rules page lists saved visual rule workflows and lets operators reopen or
+  delete one; applying a rule workflow compiles it and updates the live gateway.
 - `GatewayAdminHttp` wraps `@tsdi/common/http` (`provideHttpClient(withFetch())`)
   for state/routes/rules calls, including cookies and typed status handling.
 - A shared HTTP interceptor (`adminUnauthorizedInterceptor`) redirects to the
