@@ -549,6 +549,14 @@ export class VisualWorkflowService {
             return result;
         }
 
+        // HTTP entry nodes only start their branch when a matching webhook
+        // request reached the execution context.
+        if (node.type === 'http-in' && result.data?.matched !== true) {
+            (plan.outgoing.get(node.id) || [])
+                .forEach(connection => this.markEdgeSkipped(state, connection.id, options));
+            return result;
+        }
+
         // Try/catch nodes guard their downstream branch: a failure anywhere in
         // the guarded chain is routed to the `error` port instead of aborting
         // the workflow.

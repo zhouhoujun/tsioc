@@ -267,6 +267,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "exec": {
                 "label": "Exec",
                 "description": "Run a host command and capture stdout/stderr"
+            },
+            "http-in": {
+                "label": "HTTP in",
+                "description": "Start the flow from an HTTP webhook request"
+            },
+            "http-response": {
+                "label": "HTTP response",
+                "description": "Send the HTTP response for a webhook request"
             }
         },
         "field": {
@@ -632,6 +640,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "env": "Environment",
                 "timeout": "Timeout",
                 "output": "Write stdout to"
+            },
+            "http-in": {
+                "method": "Method",
+                "path": "Path"
+            },
+            "http-response": {
+                "statusCode": "Status code",
+                "headers": "Headers",
+                "body": "Body path"
             }
         },
         "fieldPlaceholder": {
@@ -840,6 +857,13 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "rbe": {
                 "field": "items",
                 "path": "value"
+            },
+            "http-in": {
+                "path": "/orders"
+            },
+            "http-response": {
+                "headers": "{ \"x-flow\": \"done\" }",
+                "body": "payload"
             }
         },
         "fieldDescription": {
@@ -1148,6 +1172,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "env": "Extra environment variables merged into the host environment.",
                 "timeout": "Kill the command after this many milliseconds. 0 waits indefinitely.",
                 "output": "Context field that receives the standard output."
+            },
+            "http-in": {
+                "method": "HTTP method that triggers this branch.",
+                "path": "Request path this node serves. Leave empty to accept any path."
+            },
+            "http-response": {
+                "statusCode": "HTTP status code returned to the caller.",
+                "headers": "Response headers as a JSON object.",
+                "body": "Context path used as the response body."
             }
         },
         "group": {
@@ -1233,7 +1266,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "concat": "Array concat",
             "ms": "ms",
             "s": "s",
-            "value": "On value change"
+            "value": "On value change",
+            "ANY": "Any method"
         }
     },
     "zh-CN": {
@@ -1497,6 +1531,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "exec": {
                 "label": "执行命令",
                 "description": "运行宿主命令并捕获标准输出/错误"
+            },
+            "http-in": {
+                "label": "HTTP 入口",
+                "description": "从 HTTP webhook 请求启动流程"
+            },
+            "http-response": {
+                "label": "HTTP 响应",
+                "description": "为 webhook 请求发送 HTTP 响应"
             }
         },
         "field": {
@@ -1862,6 +1904,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "env": "环境变量",
                 "timeout": "超时",
                 "output": "标准输出写入字段"
+            },
+            "http-in": {
+                "method": "方法",
+                "path": "路径"
+            },
+            "http-response": {
+                "statusCode": "状态码",
+                "headers": "响应头",
+                "body": "响应体路径"
             }
         },
         "fieldPlaceholder": {
@@ -2054,6 +2105,13 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "rbe": {
                 "field": "items",
                 "path": "value"
+            },
+            "http-in": {
+                "path": "/orders"
+            },
+            "http-response": {
+                "headers": "{ \"x-flow\": \"done\" }",
+                "body": "payload"
             }
         },
         "fieldDescription": {
@@ -2362,6 +2420,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "env": "合并到宿主环境中的额外环境变量。",
                 "timeout": "超过该毫秒数后终止命令；0 表示一直等待。",
                 "output": "接收标准输出的上下文字段。"
+            },
+            "http-in": {
+                "method": "触发该分支的 HTTP 方法。",
+                "path": "该节点处理的请求路径，留空表示接受任意路径。"
+            },
+            "http-response": {
+                "statusCode": "返回给调用方的 HTTP 状态码。",
+                "headers": "JSON 对象形式的响应头。",
+                "body": "作为响应体返回的上下文路径。"
             }
         },
         "group": {
@@ -2447,7 +2514,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "POST": "POST",
             "PUT": "PUT",
             "PATCH": "PATCH",
-            "DELETE": "DELETE"
+            "DELETE": "DELETE",
+            "ANY": "任意方法"
         }
     }
 };

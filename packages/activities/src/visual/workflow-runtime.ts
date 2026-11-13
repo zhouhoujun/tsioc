@@ -734,6 +734,66 @@ export async function executeVisualNode(
             }
             return { success: true, data: { nodeId: node.id, ...base, payload } };
         }
+        case 'http-in': {
+            const request = (context as any).request;
+            if (!request) {
+                return {
+                    success: true,
+                    data: { nodeId: node.id, matched: false, waiting: true, reason: 'No HTTP request' }
+                };
+            }
+            const method = String(config.method || 'ANY').toUpperCase();
+            const requestMethod = String(request.method || 'GET').toUpperCase();
+            const filterPath = String(config.path || '').trim();
+            const requestPath = String(request.path || '');
+            const matched = (method === 'ANY' || method === requestMethod)
+                && (!filterPath
+                    || requestPath === filterPath
+                    || requestPath.startsWith(`${filterPath.replace(/\/$/, '')}/`));
+            if (!matched) {
+                return {
+                    success: true,
+                    data: {
+                        nodeId: node.id,
+                        matched: false,
+                        reason: `Request ${requestMethod} ${requestPath} did not match ${method} ${filterPath || '*'}`
+                    }
+                };
+            }
+            return {
+                success: true,
+                data: {
+                    nodeId: node.id,
+                    matched: true,
+                    request,
+                    method: requestMethod,
+                    path: requestPath,
+                    query: request.query || {},
+                    headers: request.headers || {},
+                    body: request.body,
+                    payload: request.body
+                }
+            };
+        }
+        case 'http-response': {
+            const sink = (context as any).response;
+            if (!sink || typeof sink !== 'object') {
+                return {
+                    success: true,
+                    data: { nodeId: node.id, skipped: true, reason: 'No HTTP response sink' }
+                };
+            }
+            const bodyPath = String(config.body ?? 'payload');
+            const body = bodyPath ? resolveWorkflowValue(bodyPath, context) : undefined;
+            const statusCode = Math.max(100, Math.min(599, Number(config.statusCode) || 200));
+            sink.statusCode = statusCode;
+            sink.headers = coerceJson(config.headers) || {};
+            sink.body = body;
+            return {
+                success: true,
+                data: { nodeId: node.id, responded: true, statusCode }
+            };
+        }
         case 'trigger': {
             const delay = Math.max(0, Number(config.delay) || 0);
             await new Promise(resolve => setTimeout(resolve, delay));

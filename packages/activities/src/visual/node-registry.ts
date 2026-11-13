@@ -624,6 +624,52 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         defaultConfig: { iterations: 1 }
     },
     {
+        type: 'http-in',
+        label: 'HTTP in',
+        description: 'Start the flow from an HTTP webhook request',
+        category: 'trigger',
+        icon: '⇥',
+        color: '#059669',
+        textColor: '#ffffff',
+        inputs: [],
+        outputs: [port('out', 'out', 'output', 'Request')],
+        fields: [
+            configField({
+                key: 'method',
+                label: 'Method',
+                type: 'select',
+                defaultValue: 'ANY',
+                options: [
+                    { label: 'Any method', value: 'ANY' },
+                    { label: 'GET', value: 'GET' },
+                    { label: 'POST', value: 'POST' },
+                    { label: 'PUT', value: 'PUT' },
+                    { label: 'PATCH', value: 'PATCH' },
+                    { label: 'DELETE', value: 'DELETE' }
+                ]
+            }),
+            configField({ key: 'path', label: 'Path', type: 'text', placeholder: '/orders', description: 'Request path this node serves. Leave empty to accept any path.', pattern: '^$|^\/[^\s]*$' })
+        ],
+        defaultConfig: { method: 'ANY', path: '' }
+    },
+    {
+        type: 'http-response',
+        label: 'HTTP response',
+        description: 'Send the HTTP response for a webhook request',
+        category: 'action',
+        icon: '⇤',
+        color: '#0284c7',
+        textColor: '#ffffff',
+        inputs: [port('in', 'in', 'input', 'Input')],
+        outputs: [],
+        fields: [
+            configField({ key: 'statusCode', label: 'Status code', type: 'number', defaultValue: 200, min: 100, max: 599, step: 1 }),
+            configField({ key: 'headers', label: 'Headers', type: 'json', defaultValue: {}, placeholder: '{ "x-flow": "done" }' }),
+            configField({ key: 'body', label: 'Body path', type: 'text', defaultValue: 'payload', placeholder: 'payload', description: 'Context path used as the response body.' })
+        ],
+        defaultConfig: { statusCode: 200, headers: {}, body: 'payload' }
+    },
+    {
         type: 'trigger',
         label: 'Trigger',
         description: 'Emit a payload after an optional delay',

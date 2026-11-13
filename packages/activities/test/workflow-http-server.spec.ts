@@ -133,6 +133,71 @@ describe('Workflow HTTP microservice', () => {
         expect(after.status).toBe(404);
     });
 
+    it('runs workflows from real webhook requests', async () => {
+        const definition = {
+            id: 'webhook-demo',
+            name: 'Webhook demo',
+            nodes: [
+                {
+                    id: 'in_1', name: 'Orders', type: 'http-in' as const, position: { x: 0, y: 0 },
+                    config: { method: 'POST', path: '/orders' }
+                },
+                {
+                    id: 'res_1', name: 'Respond', type: 'http-response' as const, position: { x: 200, y: 0 },
+                    config: { statusCode: 201, headers: { 'x-flow': 'yes' }, body: 'payload' }
+                }
+            ],
+            connections: [{
+                id: 'w1',
+                sourceNodeId: 'in_1',
+                sourcePort: 'out',
+                targetNodeId: 'res_1',
+                targetPort: 'in'
+            }]
+        };
+        const put = await request(`${base}/api/workflows/webhook-demo`, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(definition)
+        });
+        expect(put.status).toBe(200);
+
+        const matched = await fetch(`${base}/api/workflows/webhook-demo/hook?path=/orders`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ hello: 'world' })
+        });
+        expect(matched.status).toBe(201);
+        expect(matched.headers.get('x-flow')).toBe('yes');
+        expect(await matched.json()).toEqual({ hello: 'world' });
+
+        const wrongPath = await request(`${base}/api/workflows/webhook-demo/hook?path=/invoices`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ hello: 'world' })
+        });
+        expect(wrongPath.status).toBe(200);
+        expect(wrongPath.body.success).toBe(true);
+        expect(wrongPath.body.executionId).toBeTruthy();
+
+        const wrongMethod = await request(`${base}/api/workflows/webhook-demo/hook?path=/orders`);
+        expect(wrongMethod.status).toBe(200);
+        expect(wrongMethod.body.success).toBe(true);
+
+        const run = await request(`${base}/api/workflows/webhook-demo/run`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ context: {} })
+        });
+        expect(run.status).toBe(200);
+        expect(run.body.success).toBe(true);
+        expect(run.body.executionState.nodeStates.in_1.result?.data?.matched).toBe(false);
+        expect(run.body.executionState.nodeStates.res_1.status).toBe('skipped');
+
+        const removed = await request(`${base}/api/workflows/webhook-demo`, { method: 'DELETE' });
+        expect(removed.status).toBe(200);
+    });
+
     it('saves incomplete drafts without requiring a start node', async () => {
         const draft = {
             id: 'draft-demo',

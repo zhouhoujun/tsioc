@@ -418,6 +418,8 @@ type VisualNodeType =
     | 'log'          // Log node
     | 'debug'        // Inspect a property or the complete message
     | 'http-request' // HTTP request node
+    | 'http-in'      // Start a flow from a webhook request
+    | 'http-response' // Shape the webhook status, headers and body
     | 'json'         // JSON parse/stringify
     | 'csv'          // CSV parse/stringify
     | 'xml'          // XML parse/stringify
@@ -464,6 +466,23 @@ import { createFilePlugin, createExecPlugin } from '@tsdi/activities';
 Plugin nodes report a clear error when the host does not install their
 executor, so the same workflow definition stays valid in the browser editor.
 
+### HTTP webhooks
+
+`http-in` and `http-response` expose a workflow as a real HTTP endpoint
+through the workflow server:
+
+```text
+POST /api/workflows/:id/hook?path=/orders
+GET  /api/workflows/:id/hook?path=/orders
+```
+
+- `http-in` filters by method (`ANY` by default) and path; when no request
+  reached the execution (for example a manual run), its branch is skipped
+  instead of running with an empty message.
+- `http-response` sets the returned status code, headers and body path.
+- Without an `http-response` node the endpoint returns a JSON run summary with
+  status `200` on success and `500` on failure.
+
 ## Visual Designer (drag & drop)
 
 The package ships a renderer-neutral designer built on `@tsdi/components`:
@@ -505,7 +524,7 @@ Features:
   click cancels the pending wire,
 - click an edge (widened hit path) to select it; `Delete` removes the selected node or connection,
 - inspector for node name/description/config fields driven by `WorkflowNodeRegistry`,
-- searchable palette: filter 49 registered node types by label, description or type,
+- searchable palette: filter 51 registered node types by label, description or type,
 - inspector property editing is rendered by the shared JSON-configured
   `dynamic-form` component (conditional fields, groups, per-field defaults and
   reset); validation uses `@tsdi/components/forms` (`required`, `min`/`max`,

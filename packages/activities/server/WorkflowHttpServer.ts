@@ -14,7 +14,8 @@ import {
 } from '@tsdi/mime';
 import {
     BadRequestException,
-    NotFoundException
+    NotFoundException,
+    StatusMessageAdapter
 } from '@tsdi/common';
 import {
     Controller,
@@ -156,6 +157,61 @@ export class WorkflowHttpController {
         }
         const result = await this.execution.execute(definition, body?.context || {});
         return this.serializeResult(result);
+    }
+
+    /**
+     * Webhook entry: run a workflow from a real HTTP request. `http-in` nodes
+     * match the request method/path (`?path=/orders`) and `http-response`
+     * nodes shape the status, headers and body returned to the caller.
+     */
+    @Post('/:id/hook')
+    hookPost(@RequestPath('id') id: string, adapter: StatusMessageAdapter) {
+        return this.runHook(id, adapter);
+    }
+
+    @Get('/:id/hook')
+    hookGet(@RequestPath('id') id: string, adapter: StatusMessageAdapter) {
+        return this.runHook(id, adapter);
+    }
+
+    private async runHook(id: string, adapter: StatusMessageAdapter) {
+        const definition = await this.store.get(id);
+        if (!definition) {
+            throw new NotFoundException(`Workflow not found: ${id}`);
+        }
+        const request = (adapter as any).request || {};
+        const query = (adapter.read('query') as Record<string, any>) || {};
+        const headers = (adapter.read('headers') as Record<string, any>) || {};
+        const method = String(request.method || 'POST').toUpperCase();
+        const requestedPath = typeof query.path === 'string' && query.path ? query.path : '/hook';
+        const response: { statusCode?: number; headers?: Record<string, any>; body?: any } = {};
+        const result = await this.execution.execute(definition, {
+            request: {
+                method,
+                path: requestedPath,
+                query,
+                headers,
+                body: adapter.read('body')
+            },
+            response
+        } as any);
+
+        const status = Number(response.statusCode) || (result.success ? 200 : 500);
+        adapter.setStatus(status);
+        Object.entries(response.headers || {}).forEach(([name, value]) => {
+            if (value !== undefined && value !== null) {
+                adapter.setHeader(name, value as any);
+            }
+        });
+        if (response.body !== undefined) {
+            return response.body;
+        }
+        return {
+            success: result.success,
+            status: result.data?.status,
+            executionId: result.data?.executionId,
+            error: result.error?.message
+        };
     }
 
     @Post('/:id/resume')
