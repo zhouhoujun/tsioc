@@ -31,3 +31,52 @@ export function sameAgentConsoleMessages(left: AgentMessage[], right: AgentMessa
     }
     return true;
 }
+
+function sameAgentConsoleMessage(left: any, right: any): boolean {
+    if (left === right) {
+        return true;
+    }
+    return String(left?.id || '') === String(right?.id || '')
+        && String(left?.role || '') === String(right?.role || '')
+        && String(left?.content || '') === String(right?.content || '')
+        && Number(left?.createdAt || 0) === Number(right?.createdAt || 0)
+        && String(left?.sectionId || '') === String(right?.sectionId || '')
+        && String(left?.toolCallId || '') === String(right?.toolCallId || '')
+        && (left?.parts ? JSON.stringify(left.parts) : '') === (right?.parts ? JSON.stringify(right.parts) : '')
+        && (left?.metadata ? JSON.stringify(left.metadata) : '') === (right?.metadata ? JSON.stringify(right.metadata) : '');
+}
+
+/**
+ * Incremental transcript merge for a background refresh of the newest page.
+ *
+ * The cached transcript may already contain older pages loaded by scrolling
+ * up. A refresh must update the overlapping newest rows and append newly
+ * arrived rows instead of replacing the whole list (which would drop history).
+ */
+export function mergeAgentConsoleMessages(cached: AgentMessage[], page: AgentMessage[]): AgentMessage[] {
+    if (cached === page || !cached.length) {
+        return page;
+    }
+    if (!page.length) {
+        return cached;
+    }
+    const indexById = new Map<string, number>();
+    cached.forEach((message, index) => indexById.set(String(message?.id || ''), index));
+    let changed = false;
+    const merged = cached.slice();
+    for (const message of page) {
+        const id = String(message?.id || '');
+        const index = indexById.get(id);
+        if (index === undefined || index < 0) {
+            indexById.set(id, merged.length);
+            merged.push(message);
+            changed = true;
+            continue;
+        }
+        if (!sameAgentConsoleMessage(merged[index], message)) {
+            merged[index] = message;
+            changed = true;
+        }
+    }
+    return changed ? merged : cached;
+}

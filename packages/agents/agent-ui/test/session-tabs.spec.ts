@@ -2,7 +2,7 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
 import { ComponentFactory, ComponentsModule } from '@tsdi/components';
-import { TuiRenderer, TuiTemplateModule } from '@tsdi/components/console';
+import { TuiRenderer, TuiTerminalSurface, TuiTemplateModule } from '@tsdi/components/console';
 import { AgentModule } from '@tsdi/agent';
 import { AgentConsoleComponent, AgentUiModule } from '../src';
 import { TabsComponent } from '@tsdi/components/common/tabs';
@@ -57,6 +57,45 @@ export class SessionTabsTest {
             state.setConsoleOptions({ messageLayout: 'scrollback' });
             await Promise.resolve();
             expect(tabs.instance.visible).toEqual(false);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('the active close affordance reserves cells before the next tab')
+    async closeDoesNotOverlapNextTab() {
+        const ctx = await Application.run(AgentModule, { deps: [AgentUiModule, TuiTemplateModule, ComponentsModule] });
+        try {
+            const ref = ctx.get(ComponentFactory).create(AgentConsoleComponent, { injector: ctx });
+            await ref.render();
+            const state: any = ref.instance.sessionState;
+            state.setSessions([
+                { id: 'session-a', current: true, title: 'Alpha', workspace: '/work' },
+                { id: 'session-b', current: false, title: 'Beta', workspace: '/work' }
+            ]);
+            state.setOpenSessionIds(['session-a', 'session-b']);
+            for (let index = 0; index < 32; index++) await Promise.resolve();
+            const surface = new TuiTerminalSurface({
+                renderer: ctx.get(TuiRenderer),
+                root: ref.elementRef.nativeElement,
+                width: 80,
+                height: 24,
+                nativeScrollback: false,
+                scrollViewport: true,
+                scrollRegionId: 'transcript',
+                footerRegionId: 'footer',
+                output: { write() { /* noop */ } }
+            });
+            surface.render();
+            const targets = surface.clickTargets.filter(target => target.y === 0);
+            const close = targets.find(target => String((target.node as any)?.getAttribute?.('class') || '') === 'tab-close');
+            const beta = targets.find(target => String((target.node as any)?.getAttribute?.('class') || '') === 'tab'
+                && String((target.node as any)?.textContent || '').includes('Beta'));
+            expect(close).toBeTruthy();
+            expect(beta).toBeTruthy();
+            expect(close!.width).toBeGreaterThanOrEqual(3);
+            expect(close!.x + close!.width).toBeLessThanOrEqual(beta!.x);
+            surface.destroy();
         } finally {
             await ctx.close();
         }

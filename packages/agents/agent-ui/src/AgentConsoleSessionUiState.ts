@@ -145,14 +145,25 @@ export class AgentConsoleSessionUiState {
         this.capture(previousSessionId);
         const targetId = String(targetSessionId || '').trim();
         const cached = targetId ? this.snapshots.get(targetId) : undefined;
+        const showingCached = !!cached?.messages;
         if (cached?.messages) {
             // Hide/show semantics: paint the target tab's cached view before
-            // awaiting the background refresh. The refresh only replaces rows
-            // that actually changed, so revisiting a tab does not blank and
-            // rebuild the transcript.
+            // awaiting the background refresh. Let the reactive bindings and
+            // the surface microtask run so the cached frame is visible before
+            // any slow refresh query; the refresh only replaces rows that
+            // actually changed, so revisiting a tab does not blank and rebuild
+            // the transcript.
             this.applyCachedView(targetId, cached, applyComposer);
+            for (let turn = 0; turn < 4; turn += 1) {
+                await Promise.resolve();
+            }
         }
-        begin();
+        // A cached switch is a no-op paint until the refresh lands; keeping a
+        // render batch open would freeze typing and tab feedback for the whole
+        // refresh. Only first visits coalesce their empty->loaded transition.
+        if (!showingCached) {
+            begin();
+        }
         try {
             await open(cached);
         } finally {
@@ -170,7 +181,9 @@ export class AgentConsoleSessionUiState {
             } finally {
                 // A restore failure must never leave the surface's render batch
                 // open; that would freeze every later session update.
-                end();
+                if (!showingCached) {
+                    end();
+                }
             }
         }
     }

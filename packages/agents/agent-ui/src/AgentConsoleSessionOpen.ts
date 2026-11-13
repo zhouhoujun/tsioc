@@ -4,7 +4,7 @@ import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import type { AgentConsoleSessionPage } from './AgentConsoleSessionContentLoader';
 import { resetSessionMessagePager } from './AgentConsoleSessionHistoryPaging';
 import type { AgentConsoleSessionUiSnapshot } from './AgentConsoleSessionUiState';
-import { sameAgentConsoleMessages } from './AgentConsoleMessageEquality';
+import { mergeAgentConsoleMessages } from './AgentConsoleMessageEquality';
 import { AgentUiTranslator, formatAgentUiNotice } from './agent-ui.i18n';
 
 export interface AgentConsoleSessionOpenHost {
@@ -198,18 +198,41 @@ export async function openSession(
     // A fresh startup must never render a transcript returned by stale
     // host/app state. Explicit resume and interactive session switching
     // continue to load their persisted page normally.
-    if (cachedView && !options?.fresh && sameAgentConsoleMessages(host.state.messages, page.messages)) {
-        // Identical refresh: keep the cached array so the shared rendered-item
-        // cache still matches after a hide/show switch.
-        host.state.setSections(page.sections);
-        host.state.setGoalSummary(page.goalSummary || null);
+    // A cached tab may have older pages prepended by scrolling up. Merge the
+    // newest page into that transcript instead of replacing it, otherwise the
+    // refresh drops history the user already loaded.
+    const cachedHadOlderPages = !!cachedView && !options?.fresh
+        && host.state.messages.length > page.messages.length;
+    if (cachedView && !options?.fresh) {
+        const merged = mergeAgentConsoleMessages(host.state.messages, page.messages);
+        if (merged !== host.state.messages) {
+            host.state.setMessages(merged);
+        }
+        if (JSON.stringify(host.state.sections || []) !== JSON.stringify(page.sections || [])) {
+            host.state.setSections(page.sections);
+        }
+        if (JSON.stringify(host.state.goalSummary || null) !== JSON.stringify(page.goalSummary || null)) {
+            host.state.setGoalSummary(page.goalSummary || null);
+        }
     } else {
         host.state.setMessages(options?.fresh ? [] : page.messages);
         host.state.setSections(options?.fresh ? [] : page.sections);
         host.state.setGoalSummary(options?.fresh ? null : (page.goalSummary || null));
     }
-    host.state.messagesPageCursor = options?.fresh ? '' : (page.nextCursor || '');
-    host.state.messagesHasMore = options?.fresh ? false : page.hasMore === true;
+    // Older paging keeps its own cursor when the cache already includes pages
+    // beyond the newest window; otherwise adopt the refreshed page cursor.
+    const nextCursor = options?.fresh
+        ? ''
+        : (cachedHadOlderPages ? host.state.messagesPageCursor : (page.nextCursor || ''));
+    const nextHasMore = options?.fresh
+        ? false
+        : (cachedHadOlderPages ? host.state.messagesHasMore : page.hasMore === true);
+    if (host.state.messagesPageCursor !== nextCursor) {
+        host.state.messagesPageCursor = nextCursor;
+    }
+    if (host.state.messagesHasMore !== nextHasMore) {
+        host.state.messagesHasMore = nextHasMore;
+    }
     // Reattach the live partial answer when returning to a still-running turn.
     host.restoreStreamingTurn?.(target.id);
     await host.restoreSessionModes(target.id);

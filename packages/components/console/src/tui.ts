@@ -1093,9 +1093,21 @@ export class TuiRenderer extends ConsoleRenderer {
             const value = element.getAttribute('value') || this.collectText(element) || '';
             return this.applyAnsi(value, styleMap);
         }
-        return element.childNodes
+        const content = element.childNodes
             .map(child => this.renderInlineText(child as ConsoleNode, styleMap))
             .join('');
+        // Hosts declare real terminal cell widths for ambiguous glyphs (tab and
+        // dialog close ✕). Reserve that width in layout too, otherwise the
+        // glyph paints over the next inline label even though the click target
+        // was widened.
+        const declaredWidth = this.resolveDeclaredCellWidth(element);
+        if (declaredWidth > 0) {
+            const measured = this.measure(this.stripAnsi(content));
+            if (measured < declaredWidth) {
+                return `${content}${this.applyAnsi(' '.repeat(declaredWidth - measured), styleMap, undefined, true)}`;
+            }
+        }
+        return content;
     }
 
     protected collectInlineSegmentLines(current: ConsoleNode, inherited: Record<string, string>): TuiStyledSegment[][] {
@@ -1143,6 +1155,15 @@ export class TuiRenderer extends ConsoleRenderer {
             if (value) {
                 lines[lines.length - 1].push({ text: value, styleMap });
             }
+            return;
+        }
+        const declaredWidth = this.resolveDeclaredCellWidth(element);
+        if (declaredWidth > 0) {
+            // Inline layout must reserve the declared terminal cells; the
+            // click target alone is not enough (a double-width ✕ otherwise
+            // paints over the next tab label).
+            const rendered = this.renderInlineText(element, inherited);
+            lines[lines.length - 1].push({ text: this.stripAnsi(rendered), styleMap });
             return;
         }
         element.childNodes.forEach(child => this.appendInlineSegments(child as ConsoleNode, styleMap, lines));

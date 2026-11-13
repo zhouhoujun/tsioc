@@ -62,7 +62,7 @@ body {
     display: flex;
     flex-wrap: nowrap;
     align-items: center;
-    gap: 2px;
+    gap: 0;
     padding: 10px 0 12px;
     overflow-x: auto;
     scrollbar-width: none;
@@ -79,7 +79,9 @@ body {
     min-height: 28px;
     border: 1px solid transparent;
     border-radius: 7px;
-    padding: 3px 6px;
+    /* Tab labels carry their own terminal-style padding spaces, matching the
+       console strip instead of adding a second horizontal inset. */
+    padding: 3px 0;
     font-family: var(--agent-web-sans);
     font-size: 12.5px;
     line-height: 1.4;
@@ -118,10 +120,10 @@ body {
     justify-content: center;
     opacity: 0.5;
     font-size: 11px;
-    min-width: 16px;
+    min-width: 2ch;
     min-height: 16px;
-    padding: 2px 4px;
-    margin-left: 2px;
+    padding: 2px 0 2px 1ch;
+    margin-left: 0;
     border-radius: 4px;
     line-height: 1;
 }

@@ -3842,3 +3842,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - EndpointResolver 注册中心故障 stale-cache 降级 + 指数退避 + getLastError。
   - Gateway health probe 防重入、按服务隔离失败。
   - 回归：discovery 65、gateway 72。
+
+## 2026-11-13 tab 关闭按钮重叠 / tab-bar web-console 差异 / 分页增量合并
+- **console tab 关闭按钮重叠**：`data-cell-width="3"` 只扩大了点击目标，TUI 内联布局仍按测量宽度（`✕` 在 CJK 终端可能画 2 格、测量 1 格）推进，导致 `✕` 覆盖下一个 tab。`tui.ts` 现在对声明 `data-cell-width` 的内联元素在布局中也补齐到该宽度；tab 关闭按钮点击目标 x=7/w=3、下一个 tab x=10，不再重叠。
+- **web/console tab-bar 对齐**：web tab 条去掉额外 `gap` 与水平 inset（label 自带终端风格空格），`.tab-close` 改为 `padding-left:1ch + min-width:2ch`，与 console 的 1ch + 2 格 ✕ 语义一致。
+- **分页增量绘制**：缓存 tab 的后台刷新不再用“最新一页”整体替换。新增 `mergeAgentConsoleMessages`：按 id 更新重叠行、追加新行、保留已加载的旧页；已有旧页时保留旧分页 cursor/hasMore，避免切回 tab 后滚动丢历史。纯函数回归 4 例。
+- **缓存 tab 首帧**：`switchSession` 对缓存命中先应用视图并让 reactive/surface 微任务画出该帧，再发起后台刷新；缓存切换不再开启整段 refresh 的 render batch，避免刷新期间输入/页签反馈被冻结。
+- **验证**：components-common/console/html、agent-ui 全绿；tsc-agent-ui 0；build:web 成功；source-size/diff-check OK。
