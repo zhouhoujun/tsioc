@@ -3869,3 +3869,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - KubernetesServiceDiscovery：EndpointSlice 发现/Service 列表/query/watch/healthCheck。
   - useKubernetesDiscovery；注册只读（K8s 控制器管理 lifecycle）。
   - 回归：discovery 72。
+- 微服务框架第二十二批（2026-11-13）：
+  - NacosServiceDiscovery（register/deregister/discover/getServices/watch/healthCheck）。
+  - 登录 token、namespace/group、metadata/tags/weight 映射；useNacosDiscovery。
+  - 回归：discovery 75。

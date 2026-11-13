@@ -4,6 +4,7 @@ export * from './selector';
 export * from './memory.discovery';
 export * from './consul.discovery';
 export * from './kubernetes.discovery';
+export * from './nacos.discovery';
 export * from './endpoint-resolver';
 export * from './discovery.module';
 export { DISCOVERY_OPTIONS } from './tokens';

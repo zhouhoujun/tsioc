@@ -145,6 +145,12 @@
 - 支持 namespace、bearer token、labelSelector、注入 fetch；工作负载注册为只读（由 K8s 控制器管理）。
 - `useKubernetesDiscovery(options)` 可直接接入 Gateway discovery。
 
+第二十二批（Nacos 注册中心）：
+
+- 新增 `NacosServiceDiscovery`：v1 instance 注册/下线、实例列表发现、服务列表、query/healthCheck/watch。
+- 支持 namespace/group、username/password 登录 token、accessToken、metadata/tags/weight 映射。
+- `useNacosDiscovery(options)` 可直接接入 Gateway discovery。
+
 
 ---
 
