@@ -7,6 +7,7 @@ export interface GrpcServOptions extends ServiceOptions {
     transport: Transport.gRPC;
     providers?: Provider[];
     url?: string;
+    host?: string;
     port?: number;
     credentials?: ServerCredentials;
     protoPath?: string;

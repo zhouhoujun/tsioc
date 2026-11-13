@@ -30,8 +30,8 @@ describe('gRPC Microservice', () => {
                 ((feature.config as any).providers || []).some((p: any) => p.provide === GRPC_SERV_OPTIONS);
             expect(has).toBe(true);
         });
-        it('should use json packet transfer by default', () => {
-            expect(grpcTransportFactory({ port: 50051 }).config.features?.defaultTransfer).toBeDefined();
+        it('uses the native gRPC backend instead of json packet framing', () => {
+            expect(grpcTransportFactory({ port: 50051 }).config.features?.defaultTransfer).toBeUndefined();
         });
         it('should register auth interceptor provider when auth is enabled', () => {
             const feature = grpcTransportFactory({
@@ -53,8 +53,8 @@ describe('gRPC Microservice', () => {
     });
 
     describe('withGrpcTransport', () => {
-        it('should use json packet transfer by default', () => {
-            expect(withGrpcTransport({ url: 'localhost:50051' })[0].config.features?.defaultTransfer).toBeDefined();
+        it('uses the native gRPC backend instead of json packet framing', () => {
+            expect(withGrpcTransport({ url: 'localhost:50051' })[0].config.features?.defaultTransfer).toBeUndefined();
         });
     });
 

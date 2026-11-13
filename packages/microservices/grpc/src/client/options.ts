@@ -9,6 +9,9 @@ export interface GrpcClientOptions extends ClientOptions {
     microservice?: boolean;
     url?: string;
     credentials?: ChannelCredentials;
+    protoPath?: string;
+    packageName?: string;
+    serviceName?: string;
 }
 
 export const GRPC_CLIENT_OPTIONS = token<GrpcClientOptions>('GRPC_CLIENT_OPTIONS');

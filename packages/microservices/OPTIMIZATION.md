@@ -70,6 +70,13 @@
 - `createClientTransportFeature` / HTTP client factory 挂载 `config.transportFeature`。
 - `provideServiceFromDi` / `provideClientFromDi` 不再依赖测试里手工构造的 config，可直接从真实 transport feature 重建服务/客户端。
 
+第九批（gRPC 收口）：
+
+- Server 使用 `@grpc/proto-loader` 加载 proto，按 `serviceName` 注册 unary handler；方法通过 `@Handle('/pkg.Service/Method', Transport.gRPC)` 路由。
+- Client 使用 proto 生成 service client；backend 直接发起 unary RPC，不再依赖 socket/json packet framing。
+- 支持 `protoPath` / `packageName` / `serviceName`，无 protoPath 时保持旧的“仅启动”兼容行为。
+- 新增真实 server/client unary RPC E2E。
+
 
 ---
 

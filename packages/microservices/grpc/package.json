@@ -17,7 +17,10 @@
   "bugs": { "url": "https://github.com/zhouhoujun/tsioc/issues" },
   "repository": { "type": "git", "url": "https://github.com/zhouhoujun/tsioc.git" },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
-  "dependencies": {},
+  "dependencies": {
+    "@grpc/grpc-js": "^1.12.2",
+    "@grpc/proto-loader": "^0.6.13"
+  },
   "directories": { "lib": "dist", "test": "test" },
   "devDependencies": {}
 }

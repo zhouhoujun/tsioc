@@ -4,14 +4,13 @@ import { of } from 'rxjs';
 import { GrpcServer } from './grpc-server';
 import { GrpcServOptions, GRPC_SERV_OPTIONS } from './options';
 import { createServiceTransportFeature, getServiceBackendToken, ServiceTransportFeature } from '@tsdi/service';
-import { useJsonPacket } from '@tsdi/transport';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 
 export function grpcTransportFactory(option: Partial<GrpcServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
         transport: Transport.gRPC, side: TransferSide.server, microservice: true,
         ...option,
-        features: { defaultTransfer: useJsonPacket(), ...option.features },
+        features: { ...option.features },
     } as GrpcServOptions;
 
     const backendToken = getServiceBackendToken(config);

@@ -3806,3 +3806,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - transport factory 注册 SERVICE_CONFIGS 并挂载 transportFeature（service/client、HTTP 专用工厂）。
   - provideServiceFromDi / provideClientFromDi 可从真实 transport feature 重建，不再依赖手工 config。
   - 回归：service 62、client 81、http 188。
+- 微服务框架第九批（2026-11-13）：
+  - gRPC server 加载 proto 并注册 unary handler；@Handle('/pkg.Service/Method', Transport.gRPC)。
+  - gRPC client 使用 proto service client + 原生 unary backend，移除 socket framing。
+  - protoPath/packageName/serviceName 生效；无 protoPath 保持仅启动兼容。
+  - 回归：grpc 18、service 62、http 188。
