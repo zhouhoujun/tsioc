@@ -1,5 +1,7 @@
 import { lastValueFrom } from 'rxjs';
 import { ContractCallRequest, ContractHttpError, ContractTransport } from '@tsdi/microservice-contract';
+import { EndpointResolver, EndpointSelector } from '@tsdi/discovery';
+import { ServiceEndpoint } from '@tsdi/discovery';
 import { HttpClient } from './client';
 import { HttpRequest } from './request';
 
@@ -53,4 +55,51 @@ function joinUrl(base: string | undefined, path: string): string {
     const normalizedBase = base.replace(/\/$/, '');
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
     return `${normalizedBase}${normalizedPath}`;
+}
+
+export interface RegistryContractTransportOptions {
+    /** required endpoint protocol, e.g. `http`. */
+    protocol?: string | string[];
+    /** optional load-balancing selector; defaults to the first UP endpoint. */
+    selector?: EndpointSelector;
+}
+
+/**
+ * Resolve a service through `EndpointResolver` and call it with `HttpClient`.
+ *
+ * This keeps the client retry/timeout/metrics/tracing pipeline while allowing
+ * the contract client to use a registry instead of a fixed base URL.
+ */
+export function createRegistryContractTransport(
+    client: HttpClient,
+    resolver: EndpointResolver,
+    service: string,
+    options: RegistryContractTransportOptions = {}
+): ContractTransport {
+    return {
+        async request<T = any>(request: ContractCallRequest): Promise<T> {
+            const endpoints = await resolver.resolve(service, {
+                protocol: options.protocol,
+                status: 'UP'
+            });
+            if (!endpoints.length) {
+                throw new ContractHttpError(`No available endpoint for service '${service}'`, 503);
+            }
+            const endpoint = options.selector
+                ? options.selector.select(endpoints) ?? endpoints[0]
+                : endpoints[0];
+            return createHttpContractTransport(client, {
+                baseUrl: endpointBaseUrl(endpoint)
+            }).request<T>(request);
+        }
+    };
+}
+
+function endpointBaseUrl(endpoint: ServiceEndpoint): string {
+    if (/^https?:\/\//i.test(endpoint.address)) {
+        return endpoint.address.replace(/\/$/, '');
+    }
+    const protocol = endpoint.protocol ?? 'http';
+    const hasPort = /:\d+$/.test(endpoint.address);
+    return `${protocol}://${endpoint.address}${!hasPort && endpoint.port ? `:${endpoint.port}` : ''}`;
 }

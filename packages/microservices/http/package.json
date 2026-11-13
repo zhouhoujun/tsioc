@@ -39,6 +39,7 @@
     "@tsdi/client": "6.0.31",
     "@tsdi/common": "6.0.31",
     "@tsdi/core": "6.0.31",
+    "@tsdi/discovery": "6.0.31",
     "@tsdi/ioc": "6.0.31",
     "@tsdi/logger": "6.0.31",
     "@tsdi/microservice-contract": "6.0.31",

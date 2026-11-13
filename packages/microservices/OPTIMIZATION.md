@@ -163,6 +163,11 @@
 - Runtime 输出 `gateway_bulkhead_active/queued/limit` gauge 与 rejected/timeout 计数。
 - 队列等待超时与快速拒绝分别计数，便于容量规划。
 
+第二十五批（contract + registry）：
+
+- 新增 `createRegistryContractTransport`：EndpointResolver 解析 service → endpoint baseUrl → HttpClient contract call。
+- 保留 HttpClient 的 retry/timeout/metrics/tracing；无 endpoint 返回 ContractHttpError(503)。
+
 
 ---
 

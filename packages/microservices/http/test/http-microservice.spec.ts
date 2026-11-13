@@ -14,7 +14,7 @@ import { BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInter
 import { createRequestContext, REQUEST, RESPONSE } from '@tsdi/common';
 import { createInjector, importProvidersFrom } from '@tsdi/ioc';
 import { HttpClient } from '../src/client/client';
-import { createHttpContractTransport } from '../src/client/contract-transport';
+import { createHttpContractTransport, createRegistryContractTransport } from '../src/client/contract-transport';
 import { HttpRequest } from '../src/client/request';
 import { HttpCookieInterceptor } from '../src/server/interceptors/cookie';
 import { HttpContentInterceptor } from '../src/server/interceptors/content';
@@ -413,6 +413,37 @@ describe('HTTP Microservice', () => {
             const transport = createHttpContractTransport(client);
             await expect(transport.request({ method: 'GET', path: '/users/1' }))
                 .rejects.toBeInstanceOf(ContractHttpError);
+        });
+    });
+    describe('createRegistryContractTransport', () => {
+
+        it('resolves the service endpoint from a registry', async () => {
+            const calls: any[] = [];
+            const client = {
+                send(request: any) {
+                    calls.push(request);
+                    return of({ status: 200, ok: true, body: { id: '1' } });
+                }
+            } as any;
+            const resolver = {
+                resolve: async (service: string, options: any) => {
+                    expect(service).toBe('users');
+                    expect(options.status).toBe('UP');
+                    return [{ id: 'u1', name: 'users', address: '10.0.0.1', port: 8080, protocol: 'http', status: 'UP' }];
+                }
+            } as any;
+            const transport = createRegistryContractTransport(client, resolver, 'users');
+
+            await transport.request({ method: 'GET', path: '/users/1' });
+            expect(calls[0].url).toBe('http://10.0.0.1:8080/users/1');
+        });
+
+        it('fails with 503 when the registry has no endpoint', async () => {
+            const client = { send: () => of({ status: 200, body: {} }) } as any;
+            const resolver = { resolve: async () => [] } as any;
+            const transport = createRegistryContractTransport(client, resolver, 'missing');
+            await expect(transport.request({ method: 'GET', path: '/x' }))
+                .rejects.toMatchObject({ status: 503 });
         });
     });
 

@@ -3881,3 +3881,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 舱壁 snapshot 增加 limit/maxQueue/rejected/timeouts。
   - gateway_bulkhead_active/queued/limit + rejected/timeout 指标。
   - 回归：gateway 75。
+- 微服务框架第二十五批（2026-11-13）：
+  - createRegistryContractTransport（EndpointResolver → endpoint → HttpClient contract call）。
+  - 无 endpoint 503；支持 protocol/selector。
+  - 回归：http 197；package-deps 通过。
