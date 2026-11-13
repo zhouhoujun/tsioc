@@ -12,6 +12,7 @@ export type WorkflowCanvasPointerType =
     | 'pointer-leave'
     | 'node-down'
     | 'node-up'
+    | 'node-context'
     | 'edge-click'
     | 'port-down'
     | 'port-up'
@@ -92,7 +93,8 @@ const EMPTY_CANVAS: WorkflowCanvasModel = {
                 <div v-for="node in model.nodes"
                      v-bind="node.attrs"
                      @mousedown="nodeDown($event, node)"
-                     @mouseup="nodeUp($event, node)">
+                     @mouseup="nodeUp($event, node)"
+                     @contextmenu="nodeContext($event, node)">
                     <div class="workflow-node-header">
                         <span class="workflow-node-icon"><icon [name]="node.type" [glyph]="node.icon" size="sm"></icon></span>
                         <span class="workflow-node-title">{{node.name}}</span>
@@ -231,6 +233,19 @@ export class WorkflowCanvasComponent implements AfterViewInit {
     nodeUp(event: any, node: WorkflowCanvasNodeView): void {
         this.stop(event);
         this.emit({ type: 'node-up', event, nodeId: node.id, world: this.worldFromEvent(event) });
+    }
+
+    nodeContext(event: any, node: WorkflowCanvasNodeView): void {
+        this.stop(event);
+        event?.preventDefault?.();
+        this.panStart = undefined;
+        this.emit({
+            type: 'node-context',
+            event,
+            nodeId: node.id,
+            clientX: Number(event?.clientX) || 0,
+            clientY: Number(event?.clientY) || 0
+        });
     }
 
     edgeClick(event: any, edge: { id: string }): void {

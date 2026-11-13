@@ -223,6 +223,70 @@ export const WORKFLOW_DESIGNER_CSS = `
     background: #fef2f2;
 }
 
+.workflow-node-menu-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 69;
+}
+
+.workflow-node-menu {
+    position: fixed;
+    z-index: 70;
+    min-width: 160px;
+    padding: 4px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.workflow-node-menu-item {
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #334155;
+    font-size: 12px;
+    text-align: left;
+    padding: 6px 10px;
+    cursor: pointer;
+}
+
+.workflow-node-menu-item:hover {
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+.workflow-node-menu-item.is-danger {
+    color: #b91c1c;
+}
+
+.workflow-node-menu-item.is-danger:hover {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.workflow-designer[data-theme="dark"] .workflow-node-menu,
+.workflow-designer[data-theme="solarized"] .workflow-node-menu,
+.workflow-designer[data-theme="high-contrast"] .workflow-node-menu {
+    background: var(--wf-theme-surface, #0b1220);
+    border-color: var(--wf-theme-border, #1e293b);
+}
+
+.workflow-designer[data-theme="dark"] .workflow-node-menu-item,
+.workflow-designer[data-theme="solarized"] .workflow-node-menu-item,
+.workflow-designer[data-theme="high-contrast"] .workflow-node-menu-item {
+    color: var(--wf-theme-text, #e2e8f0);
+}
+
+.workflow-designer[data-theme="dark"] .workflow-node-menu-item.is-danger,
+.workflow-designer[data-theme="solarized"] .workflow-node-menu-item.is-danger,
+.workflow-designer[data-theme="high-contrast"] .workflow-node-menu-item.is-danger {
+    color: #fca5a5;
+}
+
 .workflow-shortcuts {
     position: absolute;
     inset: 0;

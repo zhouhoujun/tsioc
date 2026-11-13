@@ -320,6 +320,51 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelector('.workflow-inspector-webhook')).toBeFalsy();
     });
 
+    it('opens a node context menu for enable, duplicate and delete', async () => {
+        const openMenu = async () => {
+            const canvasNode = root.querySelector('.workflow-node[data-node-id="task_1"]') as any;
+            canvasNode.dispatchEvent(new (doc.defaultView as any).MouseEvent('contextmenu', {
+                bubbles: true,
+                cancelable: true,
+                clientX: 160,
+                clientY: 120
+            }));
+            await flush();
+        };
+
+        await openMenu();
+        expect(root.querySelector('.workflow-node-menu')).toBeTruthy();
+        let items = root.querySelectorAll('.workflow-node-menu-item');
+        expect(items.length).toBe(3);
+        expect((items[0] as any).textContent).toContain('禁用节点');
+
+        (items[0] as any).click();
+        await flush();
+        expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.disabled).toBe(true);
+        expect(root.querySelector('.workflow-node-menu')).toBeFalsy();
+
+        await openMenu();
+        items = root.querySelectorAll('.workflow-node-menu-item');
+        expect((items[0] as any).textContent).toContain('启用节点');
+        (items[0] as any).click();
+        await flush();
+        expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.disabled).toBe(false);
+
+        const beforeDuplicate = ref.instance.designer.nodes.length;
+        await openMenu();
+        (root.querySelectorAll('.workflow-node-menu-item')[1] as any).click();
+        await flush();
+        expect(ref.instance.designer.nodes.length).toBe(beforeDuplicate + 1);
+
+        await openMenu();
+        const opened = root.querySelectorAll('.workflow-node-menu-item')[2] as any;
+        opened.click();
+        await flush();
+        expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')).toBeFalsy();
+        expect(root.querySelector('.workflow-node-menu')).toBeFalsy();
+
+    });
+
     it('validates inspector input through the forms module before applying it', async () => {
         ref.instance.designer.selectNode('task_1');
         await flush();

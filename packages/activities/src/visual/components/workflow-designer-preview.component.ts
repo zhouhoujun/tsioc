@@ -84,6 +84,13 @@ import { installWorkflowDesignerStyles } from './workflow-designer.styles';
                     :closeAction="closeLogs"></workflow-run-log>
             </workspace-bottom>
         </workspace-layout>
+        <div class="workflow-node-menu-backdrop" v-if="showNodeMenu" @mousedown="closeNodeMenu"
+            @contextmenu="closeNodeMenu"></div>
+        <div class="workflow-node-menu" v-if="showNodeMenu" [style]="nodeMenuStyle">
+            <button type="button" class="workflow-node-menu-item" @click="toggleMenuNode">{{nodeMenuToggleLabel}}</button>
+            <button type="button" class="workflow-node-menu-item" @click="duplicateMenuNode">{{duplicateLabel}}</button>
+            <button type="button" class="workflow-node-menu-item is-danger" @click="deleteMenuNode">{{deleteLabel}}</button>
+        </div>
         <div class="workflow-json-panel" v-if="showJson">
             <div class="workflow-json-head">
                 <span class="workflow-json-title">{{jsonTitle}}</span>
@@ -133,6 +140,10 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     /** Notify the host that the designer is dirty / an edit happened. */
     @Attribute() autosaveAction?: () => void;
     showShortcuts = false;
+    showNodeMenu = false;
+    nodeMenuId = '';
+    nodeMenuX = 0;
+    nodeMenuY = 0;
     showJson = false;
     showLogs = false;
     jsonText = '';
@@ -258,6 +269,63 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     get closeLabel(): string {
         return this.t('close', 'Close');
     }
+
+    get duplicateLabel(): string {
+        return this.t('duplicate', 'Duplicate');
+    }
+
+    get deleteLabel(): string {
+        return this.t('delete', 'Delete');
+    }
+
+    get nodeMenuToggleLabel(): string {
+        const node = this.designer?.nodes.find(item => item.id === this.nodeMenuId);
+        return node?.disabled
+            ? this.t('enableNode', 'Enable node')
+            : this.t('disableNode', 'Disable node');
+    }
+
+    get nodeMenuStyle(): string {
+        return `left:${this.nodeMenuX}px;top:${this.nodeMenuY}px`;
+    }
+
+    readonly closeNodeMenu = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        self.showNodeMenu = false;
+        self.notifyChange();
+    };
+
+    readonly toggleMenuNode = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        const node = self.designer?.nodes.find(item => item.id === self.nodeMenuId);
+        if (!node) {
+            self.showNodeMenu = false;
+            return;
+        }
+        self.designer.updateNode(node.id, { disabled: node.disabled !== true });
+        self.showNodeMenu = false;
+        self.notifyChange();
+    };
+
+    readonly duplicateMenuNode = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        if (self.nodeMenuId) {
+            self.designer.selectNode(self.nodeMenuId);
+            self.designer.duplicateSelection();
+        }
+        self.showNodeMenu = false;
+        self.notifyChange();
+    };
+
+    readonly deleteMenuNode = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        if (self.nodeMenuId) {
+            self.designer.selectNode(self.nodeMenuId);
+            self.designer.deleteSelection();
+        }
+        self.showNodeMenu = false;
+        self.notifyChange();
+    };
 
     get saveStateClass(): string {
         return `workflow-save-state is-${this.saveState || 'saved'}`;
@@ -877,7 +945,11 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     }
 
     readonly handleCanvas = (payload: WorkflowCanvasPointerPayload): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
         const designer = this.designer;
+        if (self.showNodeMenu && payload.type !== 'node-context') {
+            self.showNodeMenu = false;
+        }
         switch (payload.type) {
             case 'background-down':
                 // Clicking empty canvas is the explicit "cancel wire" gesture.
@@ -926,6 +998,16 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                     // Releasing anywhere on the target node body is enough; the
                     // user does not have to hit the small port dot.
                     this.connectToNode(payload.nodeId);
+                }
+                break;
+            case 'node-context':
+                if (payload.nodeId) {
+                    designer.selectNode(payload.nodeId);
+                    self.showNodeMenu = true;
+                    self.nodeMenuId = payload.nodeId;
+                    self.nodeMenuX = payload.clientX || 0;
+                    self.nodeMenuY = payload.clientY || 0;
+                    self.notifyChange();
                 }
                 break;
             case 'edge-click':
