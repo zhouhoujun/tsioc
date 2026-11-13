@@ -138,16 +138,6 @@ export function evaluateCondition(node: IVisualWorkflowNode | undefined, context
     return true;
 }
 
-export function resolveSwitchValue(node: IVisualWorkflowNode | undefined, context: ActivityContext): any {
-    const config = node?.config || {};
-    if (config.field !== undefined) {
-        return resolveWorkflowValue(config.field, context);
-    }
-    if (config.value !== undefined) {
-        return resolveWorkflowValue(config.value, context);
-    }
-    return undefined;
-}
 
 function coerceJson(value: any): any {
     if (typeof value !== 'string') {
@@ -630,7 +620,28 @@ export async function executeVisualNode(
         }
         case 'loop': {
             const iterations = Math.max(0, Math.min(10000, Number(config.iterations ?? 1) || 0));
-            return { success: true, data: { nodeId: node.id, iterations } };
+            let definition = resolveWorkflowValue(config.workflow, context);
+            if (!definition) {
+                definition = coerceJson(config.workflow);
+            }
+            if (typeof definition === 'string') {
+                definition = (context as any).workflows?.[definition] || (context as any)[definition];
+            }
+            if (!definition || !host?.executeDefinition) {
+                return {
+                    success: false,
+                    error: new Error('Loop requires a sub-workflow source'),
+                    data: { nodeId: node.id, iterations }
+                };
+            }
+            const results: ActivityResult[] = [];
+            for (let index = 0; index < iterations; index++) {
+                if (index > 0 && Number(config.delay) > 0) {
+                    await new Promise(resolve => setTimeout(resolve, Number(config.delay)));
+                }
+                results.push(await host.executeDefinition(definition as VisualWorkflowDefinition, context));
+            }
+            return { success: true, data: { nodeId: node.id, iterations, results, count: results.length } };
         }
         case 'log':
         case 'debug': {
@@ -1123,7 +1134,10 @@ export async function executeVisualNode(
         case 'trycatch':
             return { success: true, data: { nodeId: node.id, guarded: true } };
         case 'subprocess': {
-            let definition = coerceJson(config.workflow);
+            let definition = resolveWorkflowValue(config.workflow, context);
+            if (!definition) {
+                definition = coerceJson(config.workflow);
+            }
             if (typeof definition === 'string') {
                 definition = (context as any).workflows?.[definition] || (context as any)[definition];
             }

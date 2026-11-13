@@ -46,7 +46,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "loop": {
                 "label": "Loop",
-                "description": "Repeat downstream work"
+                "description": "Run a sub-workflow repeatedly"
             },
             "trigger": {
                 "label": "Trigger",
@@ -278,7 +278,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "join": {},
             "loop": {
                 "iterations": "Iterations",
-                "delay": "Delay"
+                "delay": "Delay",
+                "workflow": "Sub-workflow source"
             },
             "trigger": {
                 "delay": "Delay",
@@ -560,7 +561,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "parallel": {},
             "join": {},
-            "loop": {},
+            "loop": {
+                "workflow": "workflows.child"
+            },
             "trigger": {
                 "payload": "{ \"ok\": true }"
             },
@@ -748,8 +751,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "parallel": {},
             "join": {},
             "loop": {
-                "iterations": "number of times downstream steps run",
-                "delay": "wait time between iterations"
+                "iterations": "Number of times to run the sub-workflow.",
+                "delay": "Wait between sub-workflow runs.",
+                "workflow": "Context path that holds the workflow definition to repeat."
             },
             "trigger": {
                 "delay": "time to wait before emitting the payload",
@@ -1061,7 +1065,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "loop": {
                 "label": "循环",
-                "description": "重复执行下游步骤"
+                "description": "重复执行子工作流"
             },
             "trigger": {
                 "label": "触发",
@@ -1293,7 +1297,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "join": {},
             "loop": {
                 "iterations": "迭代次数",
-                "delay": "延迟"
+                "delay": "延迟",
+                "workflow": "子流程来源"
             },
             "trigger": {
                 "delay": "延迟",
@@ -1575,7 +1580,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "parallel": {},
             "join": {},
-            "loop": {},
+            "loop": {
+                "workflow": "workflows.child"
+            },
             "trigger": {
                 "payload": "{ \"ok\": true }"
             },
@@ -1743,8 +1750,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "parallel": {},
             "join": {},
             "loop": {
-                "iterations": "重复执行下游步骤的次数。",
-                "delay": "每次迭代之间的等待时间。"
+                "iterations": "子工作流执行次数。",
+                "delay": "两次子流程执行之间的等待时间。",
+                "workflow": "保存要重复执行的工作流定义的上下文路径。"
             },
             "trigger": {
                 "delay": "发送数据前的等待时间。",

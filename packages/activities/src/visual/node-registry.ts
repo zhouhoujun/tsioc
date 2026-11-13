@@ -509,7 +509,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
     {
         type: 'loop',
         label: 'Loop',
-        description: 'Repeat the node body',
+        description: 'Run a sub-workflow repeatedly',
         category: 'flow',
         icon: '↻',
         color: '#b45309',
@@ -520,8 +520,9 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('error', 'error', 'output', 'Error')
         ],
         fields: [
+            configField({ key: 'workflow', label: 'Sub-workflow source', type: 'text', placeholder: 'workflows.child', description: 'Context path that holds the workflow definition to repeat.' }),
             configField({ key: 'iterations', label: 'Iterations', type: 'number', defaultValue: 1, min: 1, max: 10000, step: 1 }),
-            configField({ key: 'delay', label: 'Delay', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', group: 'Options',})
+            configField({ key: 'delay', label: 'Delay between runs', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', group: 'Options' })
         ],
         defaultConfig: { iterations: 1 }
     },

@@ -184,6 +184,24 @@ describe('Workflow data & trigger nodes', () => {
         expect(states.debug_3.result?.data?.message).toBe('7');
     });
 
+    it('runs a sub-workflow repeatedly with the loop node', async () => {
+        const state = { count: 0 };
+        const child: VisualWorkflowDefinition = {
+            id: 'loop-child',
+            name: 'Loop child',
+            nodes: [
+                registry.createNode('function', { x: 0, y: 0 }, { id: 'child_fn', config: { code: 'context.state.count += 1; return {};' } })
+            ],
+            connections: []
+        };
+        const result = await service.execute(chain([
+            { type: 'loop', config: { workflow: 'workflows.child', iterations: 3 } }
+        ]), { state, workflows: { child } });
+        expect(result.success).toBe(true);
+        expect(state.count).toBe(3);
+        expect(result.data?.executionState?.nodeStates.loop_0.result?.data?.count).toBe(3);
+    });
+
     it('runs complete, catch and status lifecycle nodes', async () => {
         const successState: any = {};
         const success: VisualWorkflowDefinition = {
