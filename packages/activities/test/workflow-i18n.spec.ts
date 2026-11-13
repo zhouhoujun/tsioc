@@ -1,5 +1,6 @@
 import expect = require('expect');
 import { WORKFLOW_NODE_TRANSLATIONS } from '../src/visual/i18n.nodes';
+import { WORKFLOW_DESIGNER_TRANSLATIONS } from '../src/visual/i18n';
 import { WorkflowNodeRegistry } from '../src/visual/node-registry';
 
 function groupSlug(group: string): string {
@@ -62,6 +63,19 @@ describe('Workflow designer translations', () => {
             }
         }
         expect(missing).toEqual([]);
+    });
+
+    it('translates palette categories and inspector copy', () => {
+        for (const locale of locales) {
+            const messages = (WORKFLOW_DESIGNER_TRANSLATIONS[locale]?.messages as any)?.workflow;
+            expect(messages).toBeTruthy();
+            for (const category of registry.categories()) {
+                expect(messages.category?.[category]).toBeTruthy();
+            }
+            for (const key of ['inspectorTitle', 'enabled', 'webhookUrl', 'name', 'run', 'save']) {
+                expect(messages.ui?.[key]).toBeTruthy();
+            }
+        }
     });
 
     it('translates plugin node settings', () => {
