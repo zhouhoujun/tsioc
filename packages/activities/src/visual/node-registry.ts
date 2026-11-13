@@ -680,6 +680,40 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         defaultConfig: { statusCode: 200, headers: {}, body: 'payload' }
     },
     {
+        type: 'tcp-in',
+        label: 'TCP in',
+        description: 'Start the flow from a TCP message',
+        category: 'trigger',
+        icon: '⇄',
+        color: '#0f766e',
+        textColor: '#ffffff',
+        inputs: [],
+        outputs: [port('out', 'out', 'output', 'Message')],
+        fields: [
+            configField({ key: 'host', label: 'Host', type: 'text', defaultValue: '0.0.0.0', placeholder: '0.0.0.0' }),
+            configField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 0, min: 0, max: 65535, step: 1 }),
+            configField({ key: 'reply', label: 'Reply with result', type: 'boolean', defaultValue: false })
+        ],
+        defaultConfig: { host: '0.0.0.0', port: 0, reply: false }
+    },
+    {
+        type: 'udp-in',
+        label: 'UDP in',
+        description: 'Start the flow from a UDP datagram',
+        category: 'trigger',
+        icon: '⇆',
+        color: '#0d9488',
+        textColor: '#ffffff',
+        inputs: [],
+        outputs: [port('out', 'out', 'output', 'Message')],
+        fields: [
+            configField({ key: 'host', label: 'Host', type: 'text', defaultValue: '0.0.0.0', placeholder: '0.0.0.0' }),
+            configField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 0, min: 0, max: 65535, step: 1 }),
+            configField({ key: 'reply', label: 'Reply with result', type: 'boolean', defaultValue: false })
+        ],
+        defaultConfig: { host: '0.0.0.0', port: 0, reply: false }
+    },
+    {
         type: 'trigger',
         label: 'Trigger',
         description: 'Emit a payload after an optional delay',

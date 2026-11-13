@@ -419,6 +419,8 @@ type VisualNodeType =
     | 'debug'        // Inspect a property or the complete message
     | 'http-request' // HTTP request node
     | 'http-in'      // Start a flow from a webhook request
+    | 'tcp-in'       // Start a flow from a TCP message
+    | 'udp-in'       // Start a flow from a UDP datagram
     | 'http-response' // Shape the webhook status, headers and body
     | 'json'         // JSON parse/stringify
     | 'csv'          // CSV parse/stringify
@@ -465,6 +467,33 @@ import { createFilePlugin, createExecPlugin } from '@tsdi/activities';
 
 Plugin nodes report a clear error when the host does not install their
 executor, so the same workflow definition stays valid in the browser editor.
+
+### TCP / UDP inbound listeners
+
+Server hosts can run long-lived listeners and start one workflow run per
+message. Each `tcp-in` / `udp-in` node declares its own host/port; `0` selects a
+free port and the handle reports the bound ports.
+
+```typescript
+import { WorkflowInboundRunner } from '@tsdi/activities/server';
+
+const runner = new WorkflowInboundRunner(service);
+const handle = await runner.start(definition, {
+    context: { env: 'prod' },
+    execution: { timeout: 30_000 },
+    onResult: (result, message) => console.log(message.transport, result.success)
+});
+// later
+await handle.stop();
+```
+
+- The message is exposed as `context.inbound` and as the `payload` output of the
+  matching node.
+- `Reply with result` sends the latest node output back to the sender (JSON for
+  objects, echoed text otherwise).
+- Other inbound nodes in the same workflow skip their branches, so one document
+  can host several listeners.
+- Listeners are server-only; browsers and the TUI keep using HTTP entries.
 
 ### HTTP webhooks
 
@@ -529,7 +558,7 @@ Features:
   without deleting it: the node and its wiring stay on the canvas (dimmed,
   struck-through title) but the run skips it and stops that branch,
 - inspector for node name/description/config fields driven by `WorkflowNodeRegistry`,
-- searchable palette: filter 51 registered node types by label, description or type,
+- searchable palette: filter 53 registered node types by label, description or type,
 - inspector property editing is rendered by the shared JSON-configured
   `dynamic-form` component (conditional fields, groups, per-field defaults and
   reset); validation uses `@tsdi/components/forms` (`required`, `min`/`max`,

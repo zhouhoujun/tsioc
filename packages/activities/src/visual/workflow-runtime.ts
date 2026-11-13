@@ -810,6 +810,34 @@ export async function executeVisualNode(
                 }
             };
         }
+        case 'tcp-in':
+        case 'udp-in': {
+            const inbound = (context as any).inbound;
+            const transport = node.type === 'tcp-in' ? 'tcp' : 'udp';
+            if (!inbound) {
+                return {
+                    success: true,
+                    data: { nodeId: node.id, matched: false, waiting: true, reason: 'No inbound message' }
+                };
+            }
+            if (inbound.nodeId !== node.id || String(inbound.transport || '') !== transport) {
+                return {
+                    success: true,
+                    data: { nodeId: node.id, matched: false, reason: 'Inbound message belongs to another listener' }
+                };
+            }
+            return {
+                success: true,
+                data: {
+                    nodeId: node.id,
+                    matched: true,
+                    transport,
+                    payload: inbound.payload ?? inbound.data,
+                    data: inbound.data,
+                    remote: inbound.remote
+                }
+            };
+        }
         case 'http-response': {
             const sink = (context as any).response;
             if (!sink || typeof sink !== 'object') {

@@ -275,6 +275,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "http-response": {
                 "label": "HTTP response",
                 "description": "Send the HTTP response for a webhook request"
+            },
+            "tcp-in": {
+                "label": "TCP in",
+                "description": "Start the flow from a TCP message"
+            },
+            "udp-in": {
+                "label": "UDP in",
+                "description": "Start the flow from a UDP datagram"
             }
         },
         "field": {
@@ -650,6 +658,16 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "statusCode": "Status code",
                 "headers": "Headers",
                 "body": "Body path"
+            },
+            "tcp-in": {
+                "host": "Host",
+                "port": "Port",
+                "reply": "Reply with result"
+            },
+            "udp-in": {
+                "host": "Host",
+                "port": "Port",
+                "reply": "Reply with result"
             }
         },
         "fieldPlaceholder": {
@@ -865,6 +883,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "http-response": {
                 "headers": "{ \"x-flow\": \"done\" }",
                 "body": "payload"
+            },
+            "tcp-in": {
+                "host": "0.0.0.0",
+                "port": "3000"
+            },
+            "udp-in": {
+                "host": "0.0.0.0",
+                "port": "3000"
             }
         },
         "fieldDescription": {
@@ -1183,6 +1209,16 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "statusCode": "HTTP status code returned to the caller.",
                 "headers": "Response headers as a JSON object.",
                 "body": "Context path used as the response body."
+            },
+            "tcp-in": {
+                "host": "Interface to listen on. Use 0.0.0.0 for all interfaces.",
+                "port": "Port to listen on. 0 selects a free port.",
+                "reply": "Send the final node result back to the sender."
+            },
+            "udp-in": {
+                "host": "Interface to listen on. Use 0.0.0.0 for all interfaces.",
+                "port": "Port to listen on. 0 selects a free port.",
+                "reply": "Send the final node result back to the sender."
             }
         },
         "group": {
@@ -1543,6 +1579,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "http-response": {
                 "label": "HTTP 响应",
                 "description": "为 webhook 请求发送 HTTP 响应"
+            },
+            "tcp-in": {
+                "label": "TCP 入口",
+                "description": "从 TCP 消息启动流程"
+            },
+            "udp-in": {
+                "label": "UDP 入口",
+                "description": "从 UDP 数据报启动流程"
             }
         },
         "field": {
@@ -1918,6 +1962,16 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "statusCode": "状态码",
                 "headers": "响应头",
                 "body": "响应体路径"
+            },
+            "tcp-in": {
+                "host": "主机",
+                "port": "端口",
+                "reply": "回复执行结果"
+            },
+            "udp-in": {
+                "host": "主机",
+                "port": "端口",
+                "reply": "回复执行结果"
             }
         },
         "fieldPlaceholder": {
@@ -2117,6 +2171,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "http-response": {
                 "headers": "{ \"x-flow\": \"done\" }",
                 "body": "payload"
+            },
+            "tcp-in": {
+                "host": "0.0.0.0",
+                "port": "3000"
+            },
+            "udp-in": {
+                "host": "0.0.0.0",
+                "port": "3000"
             }
         },
         "fieldDescription": {
@@ -2435,6 +2497,16 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "statusCode": "返回给调用方的 HTTP 状态码。",
                 "headers": "JSON 对象形式的响应头。",
                 "body": "作为响应体返回的上下文路径。"
+            },
+            "tcp-in": {
+                "host": "监听网卡地址，0.0.0.0 表示所有网卡。",
+                "port": "监听端口，0 表示自动选择空闲端口。",
+                "reply": "把最终节点结果回写给发送方。"
+            },
+            "udp-in": {
+                "host": "监听网卡地址，0.0.0.0 表示所有网卡。",
+                "port": "监听端口，0 表示自动选择空闲端口。",
+                "reply": "把最终节点结果回写给发送方。"
             }
         },
         "group": {
