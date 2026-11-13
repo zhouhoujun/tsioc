@@ -26,6 +26,55 @@ export class GrpcClient extends AbstractClient<GrpcRequest<any>, ResponseEvent<a
     }
 
     /**
+     * Invoke a bidirectional-streaming RPC. `values` are written in order and
+     * response messages are emitted as they arrive.
+     */
+    bidiStream<T = any>(
+        pattern: Pattern,
+        values: any[],
+        options: { headers?: Record<string, string>; timeout?: number } = {}
+    ): Observable<T> {
+        return defer(() => this.connect()).pipe(
+            mergeMap((connection: any) => new Observable<T>(observer => {
+                const method = resolveStreamMethod(pattern);
+                const fn = connection?.[method];
+                if (typeof fn !== 'function') {
+                    observer.error(new Error(`gRPC bidi method '${method}' is not defined by the loaded proto`));
+                    return;
+                }
+                const metadata = new grpc.Metadata();
+                for (const [key, value] of Object.entries(options.headers ?? {})) {
+                    if (value != null) {
+                        metadata.set(key, String(value));
+                    }
+                }
+                const timeout = Number(options.timeout ?? this.options.deadlineMs ?? 0);
+                const callOptions = timeout > 0 ? { deadline: Date.now() + timeout } : undefined;
+                const call = callOptions
+                    ? fn.call(connection, metadata, callOptions)
+                    : fn.call(connection, metadata);
+                call.on('data', (value: T) => observer.next(value));
+                call.on('error', (err: any) => observer.error(Object.assign(
+                    new Error(err?.details ?? err?.message ?? 'gRPC bidi stream failed'),
+                    { code: err?.code, statusCode: err?.code }
+                )));
+                call.on('end', () => observer.complete());
+                for (const value of values ?? []) {
+                    call.write(value);
+                }
+                call.end();
+                return () => {
+                    try {
+                        call.cancel?.();
+                    } catch {
+                        // best effort
+                    }
+                };
+            }))
+        );
+    }
+
+    /**
      * Invoke a client-streaming RPC with an array of request messages.
      */
     clientStream<T = any>(

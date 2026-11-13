@@ -3913,3 +3913,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - gRPC client streaming（Upload）。
   - GrpcClient.clientStream；bidi 仍不支持。
   - 回归：grpc 22。
+- 微服务框架第三十三批（2026-11-13）：
+  - gRPC bidi streaming（Chat）。
+  - AsyncIterable 入站 + Observable 出站。
+  - 回归：grpc 23。

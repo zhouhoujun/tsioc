@@ -48,9 +48,9 @@ export class GrpcServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             for (const methodName of Object.keys(service.service)) {
                 const definition = service.service[methodName];
                 if (definition.requestStream && definition.responseStream) {
-                    throw new Error(`gRPC bidi-streaming method ${methodName} is not supported yet`);
-                }
-                if (definition.requestStream) {
+                    handlers[methodName] = (call: grpc.ServerDuplexStream<any, any>) =>
+                        this.handleBidiStream(service.serviceName, methodName, call);
+                } else if (definition.requestStream) {
                     handlers[methodName] = (call: grpc.ServerReadableStream<any, any>, callback: grpc.sendUnaryData<any>) =>
                         this.handleClientStream(service.serviceName, methodName, call, callback);
                 } else if (definition.responseStream) {
@@ -134,6 +134,92 @@ export class GrpcServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         }
         this.serviceName = found.key;
         return { service: found.value.service, serviceName: found.key };
+    }
+
+    private handleBidiStream(
+        serviceName: string,
+        methodName: string,
+        call: grpc.ServerDuplexStream<any, any>
+    ): void {
+        const queue: any[] = [];
+        let ended = false;
+        let wake: (() => void) | undefined;
+        const notify = () => {
+            const current = wake;
+            wake = undefined;
+            current?.();
+        };
+        call.on('data', (chunk: any) => {
+            queue.push(chunk);
+            notify();
+        });
+        call.on('end', () => {
+            ended = true;
+            notify();
+        });
+        call.on('error', () => undefined);
+
+        const stream = {
+            async *[Symbol.asyncIterator]() {
+                while (true) {
+                    if (queue.length) {
+                        yield queue.shift();
+                        continue;
+                    }
+                    if (ended) {
+                        return;
+                    }
+                    await new Promise<void>(resolve => { wake = resolve; });
+                }
+            }
+        };
+        const request = {
+            pattern: `/${this.options.packageName ? `${this.options.packageName}.` : ''}${serviceName}/${methodName}`,
+            service: serviceName,
+            method: methodName,
+            url: `/${this.options.packageName ? `${this.options.packageName}.` : ''}${serviceName}/${methodName}`,
+            headers: metadataToObject(call.metadata),
+            body: { stream },
+            payload: { stream }
+        };
+        const context = createRequestContext(this.injector);
+        context.setPayload(request);
+        let cleaned = false;
+        const cleanup = () => {
+            if (!cleaned) {
+                cleaned = true;
+                context.onDestroy();
+            }
+        };
+        const subscription = (this.handler.handle(request as any, context) as any).subscribe({
+            next: (value: any) => {
+                try {
+                    call.write(value ?? {});
+                } catch {
+                    // client disconnected
+                }
+            },
+            error: (error: any) => {
+                cleanup();
+                try {
+                    call.destroy({ code: mapGrpcStatus(error), message: error?.message ?? 'gRPC handler failed' } as any);
+                } catch {
+                    // best effort
+                }
+            },
+            complete: () => {
+                cleanup();
+                try {
+                    call.end();
+                } catch {
+                    // best effort
+                }
+            }
+        });
+        call.on('cancelled', () => {
+            subscription?.unsubscribe?.();
+            cleanup();
+        });
     }
 
     private handleClientStream(

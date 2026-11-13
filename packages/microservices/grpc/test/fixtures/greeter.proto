@@ -6,6 +6,7 @@ service Greeter {
   rpc SayHello (HelloRequest) returns (HelloReply);
   rpc Watch (HelloRequest) returns (stream HelloReply);
   rpc Upload (stream HelloRequest) returns (HelloReply);
+  rpc Chat (stream HelloRequest) returns (stream HelloReply);
 }
 
 message HelloRequest {

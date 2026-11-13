@@ -38,6 +38,18 @@ class GreeterController {
         return { message: items.map((item: any) => item?.name).join(',') };
     }
 
+    @Handle('/grpc.test.Greeter/Chat', Transport.gRPC)
+    chat(@Payload('stream') stream: AsyncIterable<any>) {
+        return new Observable<any>(subscriber => {
+            (async () => {
+                for await (const item of stream) {
+                    subscriber.next({ message: item?.name });
+                }
+                subscriber.complete();
+            })().catch(error => subscriber.error(error));
+        });
+    }
+
     @Handle('/grpc.test.Greeter/SayHello', Transport.gRPC)
     sayHello(@Payload('name') name: string, @Inject(REQUEST) request: any) {
         if (name === 'slow') {
@@ -131,6 +143,17 @@ describe('gRPC unary RPC', () => {
             [{ name: 'a' }, { name: 'b' }, { name: 'c' }]
         ));
         expect(result).toEqual({ message: 'a,b,c' });
+    });
+
+    it('echoes messages through bidirectional streaming', async () => {
+        const client = clientCtx.get(GrpcClient);
+        const values = await lastValueFrom(
+            client.bidiStream<any>(
+                { service: 'Greeter', method: 'Chat' } as any,
+                [{ name: 'x' }, { name: 'y' }]
+            ).pipe(toArray())
+        );
+        expect(values.map(value => value.message)).toEqual(['x', 'y']);
     });
 
     it('propagates metadata to the handler', async () => {

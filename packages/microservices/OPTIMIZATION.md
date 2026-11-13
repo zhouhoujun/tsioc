@@ -208,6 +208,12 @@
 - Client 新增 `clientStream(pattern, values[])`，逐条 write 后 end，回调返回单响应。
 - bidi 仍明确报错。
 
+第三十三批（gRPC bidi streaming）：
+
+- Server 支持双向流：把入站 data 转成 AsyncIterable，handler 返回 Observable 后逐条写回。
+- Client 新增 `bidiStream(pattern, values[])`，写完后 end，响应按 data/end/error 输出。
+- gRPC unary / server-stream / client-stream / bidi 全部可运行。
+
 
 ---
 
