@@ -478,6 +478,17 @@ describe('Workflow data & trigger nodes', () => {
         ]);
     });
 
+    it('fails HTTP requests without a URL instead of skipping them', async () => {
+        const result = await service.execute(chain([
+            { type: 'inject', config: { payload: {} } },
+            { type: 'http-request', config: {} }
+        ]), {});
+        const node = result.data?.executionState?.nodeStates['http-request_1'];
+        expect(result.success).toBe(false);
+        expect(node.status).toBe('failed');
+        expect(node.result?.error).toContain('URL is required');
+    });
+
     it('scales numbers between ranges', async () => {
         const result = await service.execute(chain([
             { type: 'inject', config: { payload: { value: 50 } } },

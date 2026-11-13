@@ -527,8 +527,9 @@ async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Pro
     const url = resolvedUrl || (/^[a-z][a-z0-9+.-]*:/i.test(rawUrl) ? rawUrl : resolvedUrl);
     if (!url) {
         return {
-            success: true,
-            data: { nodeId: node.id, skipped: true, reason: 'No URL configured' }
+            success: false,
+            error: new Error('HTTP request URL is required. Set the URL field or point it at a context value.'),
+            data: { nodeId: node.id }
         };
     }
     const fetchImpl = (globalThis as any).fetch;
