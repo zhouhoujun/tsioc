@@ -165,6 +165,7 @@ export class WorkflowInspectorComponent implements OnDestroy {
         if (!this._model.hasSelection) {
             return { fields };
         }
+        const defaultGroupLabel = this.t('properties', 'Properties');
         fields.push({
             key: 'name',
             type: 'text',
@@ -211,7 +212,7 @@ export class WorkflowInspectorComponent implements OnDestroy {
                 hidden: field.visible === false
             });
         });
-        return { fields };
+        return { fields, defaultGroupLabel };
     }
 
     get formValue(): Record<string, any> {

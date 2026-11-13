@@ -110,6 +110,8 @@ export interface DynamicFormField {
 
 export interface DynamicFormSchema {
     fields: DynamicFormField[];
+    /** Title used for fields that do not declare a group. */
+    defaultGroupLabel?: string;
     messages?: Record<string, string>;
     submitLabel?: string;
     resetLabel?: string;

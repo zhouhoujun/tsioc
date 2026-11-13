@@ -1003,6 +1003,14 @@ workflow-canvas {
 
 .workflow-field-group {
     margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f8fafc;
+}
+
+.workflow-field-group .workflow-field-group-title {
+    margin-top: 0;
 }
 
 .workflow-fields {

@@ -286,7 +286,7 @@ export class DynamicFormComponent implements OnDestroy {
             if (field.hidden || field.type === 'hidden' || !this.isVisible(field)) {
                 return;
             }
-            const label = field.group || '';
+            const label = field.group || this._schema?.defaultGroupLabel || '';
             let position = index[label];
             if (position === undefined) {
                 position = groups.length;
@@ -675,7 +675,7 @@ export class DynamicFormComponent implements OnDestroy {
     groupTitleClass(): string { return `${this.classPrefix}-field-group-title`; }
     noFieldsClass(): string { return `${this.classPrefix}-no-fields`; }
     fieldClass(field: DynamicFormField): string {
-        const span = field.span || (['number', 'date', 'time', 'checkbox', 'switch'].includes(field.type) ? 'half' : 'full');
+        const span = field.span || (['number', 'date', 'time'].includes(field.type) ? 'half' : 'full');
         return [
             `${this.classPrefix}-field`,
             span === 'half' ? 'is-half' : 'is-full',

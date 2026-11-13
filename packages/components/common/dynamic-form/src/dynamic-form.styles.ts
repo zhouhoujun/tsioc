@@ -59,6 +59,14 @@ export const DYNAMIC_FORM_CSS = `
 
 .df-field-group {
     margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid var(--df-border);
+    border-radius: 8px;
+    background: var(--df-bg-alt);
+}
+
+.df-field-group-title {
+    margin-top: 0;
 }
 
 .df-fields {
