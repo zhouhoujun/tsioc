@@ -339,8 +339,6 @@ export class WorkflowInspectorComponent implements OnDestroy {
                 return 'json';
             case 'list':
                 return 'list';
-            case 'list':
-                return 'list';
             case 'code':
                 return 'code';
             default:
