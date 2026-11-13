@@ -88,10 +88,54 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [],
         outputs: [port('out', 'out', 'output', 'Payload')],
         fields: [
-            configField({ key: 'payload', label: 'Payload', type: 'json', defaultValue: {} }),
-            configField({ key: 'topic', label: 'Topic', type: 'text', maxLength: 200, placeholder: 'optional topic', description: 'Optional message topic carried with the payload.',})
+            configField({
+                key: 'trigger',
+                label: 'Trigger',
+                type: 'select',
+                defaultValue: 'manual',
+                options: [
+                    { label: 'Manual / once', value: 'manual' },
+                    { label: 'Interval', value: 'interval' },
+                    { label: 'Event', value: 'event' }
+                ],
+                group: 'Trigger'
+            }),
+            configField({ key: 'onceDelay', label: 'Delay before first injection', type: 'number', defaultValue: 0, min: 0, step: 0.1, unit: 's', group: 'Trigger', visibleWhen: { key: 'trigger', notEquals: 'event' } }),
+            configField({ key: 'interval', label: 'Interval', type: 'number', defaultValue: 1, min: 0, step: 1, group: 'Trigger', visibleWhen: { key: 'trigger', equals: 'interval' } }),
+            configField({
+                key: 'intervalUnit',
+                label: 'Interval unit',
+                type: 'select',
+                defaultValue: 's',
+                options: [
+                    { label: 'Milliseconds', value: 'ms' },
+                    { label: 'Seconds', value: 's' },
+                    { label: 'Minutes', value: 'min' }
+                ],
+                group: 'Trigger',
+                visibleWhen: { key: 'trigger', equals: 'interval' }
+            }),
+            configField({ key: 'repeatCount', label: 'Repeat count', type: 'number', defaultValue: 1, min: 0, step: 1, group: 'Trigger', visibleWhen: { key: 'trigger', equals: 'interval' }, description: 'How many times the interval trigger runs. 0 means until stopped.' }),
+            configField({ key: 'event', label: 'Event name', type: 'text', placeholder: 'order.created', pattern: '^[A-Za-z_$][A-Za-z0-9_$.:-]*$', group: 'Trigger', visibleWhen: { key: 'trigger', equals: 'event' } }),
+            configField({ key: 'timeout', label: 'Wait timeout', type: 'number', defaultValue: 30, min: 0, step: 1, unit: 's', group: 'Trigger', visibleWhen: { key: 'trigger', equals: 'event' } }),
+            configField({
+                key: 'payloadType',
+                label: 'Payload type',
+                type: 'select',
+                defaultValue: 'json',
+                options: [
+                    { label: 'JSON', value: 'json' },
+                    { label: 'String', value: 'string' },
+                    { label: 'Number', value: 'number' },
+                    { label: 'Boolean', value: 'boolean' }
+                ],
+                group: 'Payload'
+            }),
+            configField({ key: 'payload', label: 'Payload fields', type: 'json', defaultValue: {}, group: 'Payload', visibleWhen: { key: 'payloadType', equals: 'json' } }),
+            configField({ key: 'payloadValue', label: 'Payload value', type: 'text', group: 'Payload', visibleWhen: { key: 'payloadType', notEquals: 'json' } }),
+            configField({ key: 'topic', label: 'Topic', type: 'text', maxLength: 200, placeholder: 'orders.created', group: 'Payload' })
         ],
-        defaultConfig: { payload: {} }
+        defaultConfig: { trigger: 'manual', payloadType: 'json', payload: {}, onceDelay: 0, interval: 1, intervalUnit: 's', repeatCount: 1 }
     },
     {
         type: 'task',
@@ -169,8 +213,11 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     { label: 'is truthy', value: 'truthy' },
                     { label: 'equals', value: 'equals' },
                     { label: 'not equals', value: 'not-equals' },
+                    { label: 'contains', value: 'contains' },
                     { label: 'greater than', value: 'gt' },
-                    { label: 'less than', value: 'lt' }
+                    { label: 'greater or equal', value: 'gte' },
+                    { label: 'less than', value: 'lt' },
+                    { label: 'less or equal', value: 'lte' }
                 ]
             }),
             configField({ key: 'value', label: 'Compare with', type: 'text', placeholder: 'true', visibleWhen: { key: 'operator', notEquals: 'truthy' } })
@@ -180,21 +227,73 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
     {
         type: 'switch',
         label: 'Switch',
-        description: 'Route by a context value',
+        description: 'Route to one of four outputs using ordered rules',
         category: 'flow',
         icon: '⇉',
         color: '#f97316',
         textColor: '#ffffff',
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [
-            port('out', 'out', 'output', 'Matched'),
+            port('route-1', 'route-1', 'output', '1'),
+            port('route-2', 'route-2', 'output', '2'),
+            port('route-3', 'route-3', 'output', '3'),
+            port('route-4', 'route-4', 'output', '4'),
             port('default', 'default', 'output', 'Default'),
             port('error', 'error', 'output', 'Error')
         ],
         fields: [
-            configField({ key: 'field', label: 'Value field', type: 'text', required: true, pattern: VALUE_PATH_PATTERN, placeholder: 'input.type', description: 'Path to the value used for routing.',}),
-            configField({ key: 'value', label: 'Value', type: 'text', placeholder: 'approved', description: 'Literal value used when no value field is configured.',})
+            configField({ key: 'field', label: 'Value path', type: 'text', required: true, pattern: VALUE_PATH_PATTERN, placeholder: 'result.status', description: 'Context value compared against each rule.' }),
+            configField({
+                key: 'rules',
+                label: 'Rules',
+                type: 'list',
+                addLabel: '+ Add rule',
+                itemFields: [
+                    configField({
+                        key: 'operator',
+                        label: 'Operator',
+                        type: 'select',
+                        defaultValue: 'equals',
+                        options: [
+                            { label: 'equals', value: 'equals' },
+                            { label: 'not equals', value: 'not-equals' },
+                            { label: 'contains', value: 'contains' },
+                            { label: 'matches regex', value: 'regex' },
+                            { label: 'greater than', value: 'gt' },
+                            { label: 'greater or equal', value: 'gte' },
+                            { label: 'less than', value: 'lt' },
+                            { label: 'less or equal', value: 'lte' },
+                            { label: 'is truthy', value: 'truthy' }
+                        ]
+                    }),
+                    configField({ key: 'value', label: 'Compare to', type: 'text', visibleWhen: { key: 'operator', notEquals: 'truthy' } })
+                ]
+            })
         ],
+        defaultConfig: { rules: [] }
+    },
+    {
+        type: 'junction',
+        label: 'Junction',
+        description: 'Route wires without changing the message',
+        category: 'flow',
+        icon: '•',
+        color: '#64748b',
+        textColor: '#ffffff',
+        inputs: [port('in', 'in', 'input', 'Input')],
+        outputs: [port('out', 'out', 'output', 'Output')],
+        defaultConfig: {}
+    },
+    {
+        type: 'sequence',
+        label: 'Sequence',
+        description: 'Keep steps in a strict order',
+        category: 'flow',
+        icon: '≡',
+        color: '#475569',
+        textColor: '#ffffff',
+        inputs: [port('in', 'in', 'input', 'Input')],
+        outputs: [port('out', 'out', 'output', 'Output')],
         defaultConfig: {}
     },
     {
@@ -211,28 +310,6 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             configField({ key: 'links', label: 'Links', type: 'text', placeholder: 'flow-a, flow-b', description: 'Comma separated link names for documentation.' })
         ],
         defaultConfig: {}
-    },
-    {
-        type: 'scale',
-        label: 'Scale',
-        description: 'Map a number from one range to another',
-        category: 'data',
-        icon: '⇔',
-        color: '#7c3aed',
-        textColor: '#ffffff',
-        inputs: [port('in', 'in', 'input', 'Input')],
-        outputs: [port('out', 'out', 'output', 'Output'), port('error', 'error', 'output', 'Error')],
-        fields: [
-            configField({ key: 'field', label: 'Value path', type: 'text', defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value', description: 'Context path of the number to map.' }),
-            configField({ key: 'inMin', label: 'Input minimum', type: 'number', defaultValue: 0, group: 'Input range' }),
-            configField({ key: 'inMax', label: 'Input maximum', type: 'number', defaultValue: 100, group: 'Input range' }),
-            configField({ key: 'outMin', label: 'Output minimum', type: 'number', defaultValue: 0, group: 'Output range' }),
-            configField({ key: 'outMax', label: 'Output maximum', type: 'number', defaultValue: 1, group: 'Output range' }),
-            configField({ key: 'clamp', label: 'Clamp to range', type: 'boolean', defaultValue: true, group: 'Options' }),
-            configField({ key: 'round', label: 'Round result', type: 'boolean', defaultValue: false, group: 'Options' }),
-            configField({ key: 'target', label: 'Write result to', type: 'text', defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value', description: 'Context field that receives the mapped value.' })
-        ],
-        defaultConfig: { field: 'value', inMin: 0, inMax: 100, outMin: 0, outMax: 1, clamp: true, round: false, target: 'value' }
     },
     {
         type: 'html',
@@ -293,28 +370,26 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         defaultConfig: { mode: 'parse', field: 'value', target: 'value', attributes: true, text: true }
     },
     {
-        type: 'junction',
-        label: 'Junction',
-        description: 'Route wires without changing the message',
-        category: 'flow',
-        icon: '•',
-        color: '#64748b',
+        type: 'scale',
+        label: 'Scale',
+        description: 'Map a number from one range to another',
+        category: 'data',
+        icon: '⇔',
+        color: '#7c3aed',
         textColor: '#ffffff',
         inputs: [port('in', 'in', 'input', 'Input')],
-        outputs: [port('out', 'out', 'output', 'Output')],
-        defaultConfig: {}
-    },
-    {
-        type: 'sequence',
-        label: 'Sequence',
-        description: 'Keep steps in a strict order',
-        category: 'flow',
-        icon: '≡',
-        color: '#475569',
-        textColor: '#ffffff',
-        inputs: [port('in', 'in', 'input', 'Input')],
-        outputs: [port('out', 'out', 'output', 'Output')],
-        defaultConfig: {}
+        outputs: [port('out', 'out', 'output', 'Output'), port('error', 'error', 'output', 'Error')],
+        fields: [
+            configField({ key: 'field', label: 'Value path', type: 'text', defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value', description: 'Context path of the number to map.' }),
+            configField({ key: 'inMin', label: 'Input minimum', type: 'number', defaultValue: 0, group: 'Input range' }),
+            configField({ key: 'inMax', label: 'Input maximum', type: 'number', defaultValue: 100, group: 'Input range' }),
+            configField({ key: 'outMin', label: 'Output minimum', type: 'number', defaultValue: 0, group: 'Output range' }),
+            configField({ key: 'outMax', label: 'Output maximum', type: 'number', defaultValue: 1, group: 'Output range' }),
+            configField({ key: 'clamp', label: 'Clamp to range', type: 'boolean', defaultValue: true, group: 'Options' }),
+            configField({ key: 'round', label: 'Round result', type: 'boolean', defaultValue: false, group: 'Options' }),
+            configField({ key: 'target', label: 'Write result to', type: 'text', defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value', description: 'Context field that receives the mapped value.' })
+        ],
+        defaultConfig: { field: 'value', inMin: 0, inMax: 100, outMin: 0, outMax: 1, clamp: true, round: false, target: 'value' }
     },
     {
         type: 'router',
@@ -876,8 +951,11 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     { label: 'is truthy', value: 'truthy' },
                     { label: 'equals', value: 'equals' },
                     { label: 'not equals', value: 'not-equals' },
+                    { label: 'contains', value: 'contains' },
                     { label: 'greater than', value: 'gt' },
-                    { label: 'less than', value: 'lt' }
+                    { label: 'greater or equal', value: 'gte' },
+                    { label: 'less than', value: 'lt' },
+                    { label: 'less or equal', value: 'lte' }
                 ]
             }),
             configField({ key: 'value', label: 'Compare with', type: 'text', visibleWhen: { key: 'operator', notEquals: 'truthy' } })
@@ -906,9 +984,10 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     { label: 'Ascending', value: 'asc' },
                     { label: 'Descending', value: 'desc' }
                 ]
-            })
+            }),
+            configField({ key: 'numeric', label: 'Numeric compare', type: 'boolean', defaultValue: false, group: 'Options', description: 'Compare values as numbers instead of text.' })
         ],
-        defaultConfig: { order: 'asc' }
+        defaultConfig: { order: 'asc', numeric: false }
     },
     {
         type: 'range',

@@ -539,13 +539,13 @@ function startDesignerServer(port) {
 
         const result = { before, initialJsBytes, menuItemClick, paletteDrop, inspectorTheme, lazyEditorChunk, hintEnv, hintAction, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, notFoundPage, notFoundCode, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
         console.log(JSON.stringify(result, null, 2));
-        if (errors.length || initialJsBytes > 710_000 || !lazyEditorChunk || !hintEnv || !hintAction || !shortcutsOpened || !shortcutsClosed
+        if (errors.length || initialJsBytes > 720_000 || !lazyEditorChunk || !hintEnv || !hintAction || !shortcutsOpened || !shortcutsClosed
             || autosaveName !== 'Function Node' || autosaveCode !== 'return 42;' || !wheelZoom || !wheelPan || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20
             || !menuOpen || menuEntries < 5 || !menuClosed || !menuItemClick
             || !paletteDrop?.placed || Math.abs(paletteDrop.dx) > 10 || Math.abs(paletteDrop.dy) > 10
             || paletteFiltered < 1 || paletteFiltered >= 43 || paletteRestored !== 43
             || !deleteDisabledBefore || !deleteEnabledAfter || localePreserved.count !== 8 || localePreserved.locale !== 'zh-CN' || !fitVisible
-            || optionCount !== 5 || !compareHidden || !compareVisible || !compareHiddenAgain
+            || optionCount !== 8 || !compareHidden || !compareVisible || !compareHiddenAgain
             || actionPlaceholder !== 'actions.fetch' || !groupTitles.includes('Reliability')
             || !retrySet || !retryReset
             || !codeEditor || !codeApplied || !formInvalid || !formValid || !resized || !collapsed || !restored

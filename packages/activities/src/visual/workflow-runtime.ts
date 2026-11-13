@@ -81,8 +81,12 @@ function matchRouterRule(actual: any, operator: string, expected: any): boolean 
             }
         case 'gt':
             return Number(actual) > Number(expected);
+        case 'gte':
+            return Number(actual) >= Number(expected);
         case 'lt':
             return Number(actual) < Number(expected);
+        case 'lte':
+            return Number(actual) <= Number(expected);
         case 'truthy':
             return !!actual;
         default:
@@ -493,6 +497,24 @@ function htmlLinks(text: string): string[] {
     return links;
 }
 
+async function waitForWorkflowEvent(context: ActivityContext, event: string, timeoutMs: number): Promise<any> {
+    const bus = (context as any).eventBus || (context as any).events;
+    if (bus && typeof bus.wait === 'function') {
+        return bus.wait(event, timeoutMs);
+    }
+    if (typeof (context as any).waitEvent === 'function') {
+        const waiting = Promise.resolve((context as any).waitEvent(event));
+        if (!timeoutMs) {
+            return waiting;
+        }
+        return Promise.race([
+            waiting,
+            new Promise(resolve => setTimeout(() => resolve(undefined), timeoutMs))
+        ]);
+    }
+    throw new Error(`Event injection requires an event bus for "${event}"`);
+}
+
 async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Promise<ActivityResult> {
     const config = node.config || {};
     const resolvedUrl = resolveWorkflowValue(config.url, context);
@@ -593,11 +615,6 @@ export async function executeVisualNode(
                 success: true,
                 data: { nodeId: node.id, condition: evaluateCondition(node, context) }
             };
-        case 'switch':
-            return {
-                success: true,
-                data: { nodeId: node.id, condition: resolveSwitchValue(node, context) }
-            };
         case 'delay': {
             const mode = String(config.mode || 'fixed');
             const unit = String(config.unit || 'ms');
@@ -652,16 +669,34 @@ export async function executeVisualNode(
         case 'http-request':
             return runHttp(node, context);
         case 'inject': {
+            const trigger = String(config.trigger || 'manual');
+            const onceDelay = Math.max(0, Number(config.onceDelay) || 0) * 1000;
+            if (onceDelay) {
+                await new Promise(resolve => setTimeout(resolve, onceDelay));
+            }
             const payloadType = String(config.payloadType || 'json');
             let payload: any;
             if (payloadType === 'string') {
-                payload = config.payload === undefined || config.payload === null ? '' : String(config.payload);
+                const text = config.payloadValue === undefined ? config.payload : config.payloadValue;
+                payload = text === undefined || text === null ? '' : String(text);
             } else if (payloadType === 'number') {
-                payload = Number(config.payload);
+                payload = Number(config.payloadValue === undefined ? config.payload : config.payloadValue);
             } else if (payloadType === 'boolean') {
-                payload = config.payload === true || config.payload === 'true' || config.payload === 1 || config.payload === '1';
+                const bool = config.payloadValue === undefined ? config.payload : config.payloadValue;
+                payload = bool === true || bool === 'true' || bool === 1 || bool === '1';
             } else {
                 payload = coerceJson(config.payload ?? {});
+            }
+            if (trigger === 'event') {
+                const event = String(config.event || '').trim();
+                if (!event) {
+                    return { success: false, error: new Error('Event injection requires an event name'), data: { nodeId: node.id } };
+                }
+                const timeoutMs = Math.max(0, Number(config.timeout) || 0) * 1000;
+                const eventValue = await waitForWorkflowEvent(context, event, timeoutMs);
+                if (eventValue !== undefined) {
+                    payload = eventValue;
+                }
             }
             const topic = config.topic === undefined || config.topic === null
                 ? ''
@@ -881,7 +916,10 @@ export async function executeVisualNode(
         }
         case 'command': {
             const command = String(config.command || '');
-            const args = coerceJson(config.args);
+            const rawArgs = config.args;
+            const args = Array.isArray(rawArgs)
+                ? rawArgs.map(item => item && typeof item === 'object' && 'value' in item ? item.value : item)
+                : coerceJson(rawArgs);
             const executor = (context as any).exec
                 || (context as any).runCommand
                 || (context as any).commands?.[command];
@@ -925,9 +963,13 @@ export async function executeVisualNode(
         case 'sort': {
             const items = arrayFrom(context, config.field).slice();
             const direction = String(config.order || 'asc') === 'desc' ? -1 : 1;
+            const numeric = config.numeric === true;
             items.sort((a, b) => {
                 const av = resolveFrom(a, config.path);
                 const bv = resolveFrom(b, config.path);
+                if (numeric) {
+                    return (Number(av) - Number(bv)) * direction;
+                }
                 if (typeof av === 'number' && typeof bv === 'number') {
                     return (av - bv) * direction;
                 }
@@ -984,6 +1026,7 @@ export async function executeVisualNode(
         case 'junction':
         case 'sequence':
             return { success: true, data: { nodeId: node.id } };
+        case 'switch':
         case 'router': {
             const actual = resolveWorkflowValue(config.field, context);
             const rules = Array.isArray(config.rules) ? config.rules : [];
@@ -1080,7 +1123,10 @@ export async function executeVisualNode(
         case 'trycatch':
             return { success: true, data: { nodeId: node.id, guarded: true } };
         case 'subprocess': {
-            const definition = coerceJson(config.workflow);
+            let definition = coerceJson(config.workflow);
+            if (typeof definition === 'string') {
+                definition = (context as any).workflows?.[definition] || (context as any)[definition];
+            }
             if (definition && host?.executeDefinition) {
                 const result = await host.executeDefinition(definition as VisualWorkflowDefinition, context);
                 return {

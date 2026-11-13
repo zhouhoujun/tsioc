@@ -18,7 +18,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "inject": {
                 "label": "Inject",
-                "description": "Start a flow with a fixed payload"
+                "description": "Start a flow manually, on an interval, or on an event"
             },
             "task": {
                 "label": "Task",
@@ -34,7 +34,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "switch": {
                 "label": "Switch",
-                "description": "Route to the output matching a value"
+                "description": "Route to one of four outputs using ordered rules"
             },
             "parallel": {
                 "label": "Parallel",
@@ -225,9 +225,17 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "start": {},
             "end": {},
             "inject": {
-                "payload": "Payload (JSON)",
+                "payload": "Payload fields",
                 "topic": "Topic",
-                "payloadType": "Payload type"
+                "payloadType": "Payload type",
+                "trigger": "Trigger",
+                "onceDelay": "Delay before first injection",
+                "interval": "Interval",
+                "intervalUnit": "Interval unit",
+                "repeatCount": "Repeat count",
+                "event": "Event name",
+                "timeout": "Wait timeout",
+                "payloadValue": "Payload value"
             },
             "task": {
                 "action": "Action name",
@@ -250,7 +258,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "switch": {
                 "field": "Value path",
-                "value": "Fallback value"
+                "value": "Compare to",
+                "rules": "Rules",
+                "operator": "Operator"
             },
             "parallel": {},
             "join": {},
@@ -340,12 +350,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "command": {
                 "command": "Command",
-                "args": "Arguments (JSON)",
-                "timeout": "Timeout"
+                "args": "Arguments",
+                "timeout": "Timeout",
+                "value": "Argument"
             },
             "split": {
                 "field": "Value path",
-                "delimiter": "Delimiter"
+                "delimiter": "Delimiter",
+                "mode": "Mode"
             },
             "map": {
                 "field": "Array path",
@@ -360,7 +372,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "sort": {
                 "field": "Array path",
                 "path": "Item path",
-                "order": "Order"
+                "order": "Order",
+                "numeric": "Numeric compare"
             },
             "range": {
                 "from": "From",
@@ -376,7 +389,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "Timeout"
             },
             "subprocess": {
-                "workflow": "Workflow JSON"
+                "workflow": "Sub-workflow source"
             },
             "comment": {
                 "text": "Text"
@@ -502,7 +515,12 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "end": {},
             "inject": {
                 "topic": "orders.created",
-                "payload": "{ \"value\": 1 }"
+                "payload": "{ \"value\": 1 }",
+                "onceDelay": "0",
+                "interval": "1",
+                "repeatCount": "1",
+                "event": "order.created",
+                "timeout": "30"
             },
             "task": {
                 "action": "actions.fetch",
@@ -660,9 +678,17 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "start": {},
             "end": {},
             "inject": {
-                "topic": "optional label carried with the payload",
-                "payload": "Value sent by the trigger. JSON is merged into the context; primitives are sent as-is.",
-                "payloadType": "choose the value type; JSON merges into the context, primitives are sent as-is"
+                "topic": "optional topic carried with the payload",
+                "payload": "edit injected object fields as key/value rows",
+                "payloadType": "choose the value type; JSON merges into the context",
+                "trigger": "choose manual, interval or event triggering",
+                "onceDelay": "wait before the first injection",
+                "interval": "time between injections",
+                "intervalUnit": "unit used by the interval",
+                "repeatCount": "number of runs; 0 runs until stopped",
+                "event": "event that triggers the injection",
+                "timeout": "maximum time to wait for the event",
+                "payloadValue": "string, number or boolean value to inject"
             },
             "task": {
                 "action": "name of a function in context.actions; leave empty to return the result below",
@@ -684,8 +710,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "value": "value used by the selected operator"
             },
             "switch": {
-                "field": "value used to choose an output port",
-                "value": "used when no value path is set"
+                "field": "Context value compared against each rule.",
+                "value": "Value used by the selected operator.",
+                "rules": "Rules are checked from top to bottom; the first match selects the numbered output.",
+                "operator": "Comparison used by this rule."
             },
             "parallel": {},
             "join": {},
@@ -774,13 +802,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "maximum time to wait for the event"
             },
             "command": {
-                "args": "JSON array passed to the command",
+                "args": "Ordered arguments passed to the command.",
                 "command": "host command or function name",
                 "timeout": "maximum execution time for the command"
             },
             "split": {
                 "field": "text or array path to split",
-                "delimiter": "separator used when splitting text"
+                "delimiter": "separator used when splitting text",
+                "mode": "Auto detects arrays and text, or force one mode."
             },
             "map": {
                 "path": "property of each item to map",
@@ -795,7 +824,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "sort": {
                 "path": "item property used for sorting",
                 "field": "array path to sort",
-                "order": "ascending or descending"
+                "order": "ascending or descending",
+                "numeric": "Compare values as numbers instead of text."
             },
             "range": {
                 "from": "inclusive start value",
@@ -811,7 +841,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "route to the timeout port after this delay"
             },
             "subprocess": {
-                "workflow": "workflow definition to execute"
+                "workflow": "Context path that holds the workflow definition to run."
             },
             "comment": {},
             "custom": {
@@ -886,7 +916,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "payload": "Payload",
             "authentication": "Authentication",
             "input-range": "Input range",
-            "output-range": "Output range"
+            "output-range": "Output range",
+            "trigger": "Trigger"
         },
         "option": {
             "truthy": "is truthy",
@@ -904,8 +935,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "PUT": "PUT",
             "PATCH": "PATCH",
             "DELETE": "DELETE",
-            "auto": "Auto (JSON when possible)",
-            "json": "Parsed JSON",
+            "auto": "Auto",
+            "json": "JSON",
             "text": "Text",
             "mustache": "Mustache",
             "plain": "Plain text",
@@ -943,7 +974,12 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "minutes": "Minutes",
             "attribute": "Attribute",
             "contains": "contains",
-            "regex": "matches regex"
+            "regex": "matches regex",
+            "gte": "greater or equal",
+            "lte": "less or equal",
+            "manual": "Manual / once",
+            "interval": "Interval",
+            "event": "Event"
         }
     },
     "zh-CN": {
@@ -958,7 +994,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "inject": {
                 "label": "注入",
-                "description": "以固定数据启动流程"
+                "description": "手动、定时或事件触发流程"
             },
             "task": {
                 "label": "任务",
@@ -974,7 +1010,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "switch": {
                 "label": "多路分支",
-                "description": "按值路由到匹配的输出"
+                "description": "按顺序匹配规则并选择四个输出之一"
             },
             "parallel": {
                 "label": "并行",
@@ -1165,9 +1201,17 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "start": {},
             "end": {},
             "inject": {
-                "payload": "数据（JSON）",
+                "payload": "数据字段",
                 "topic": "主题",
-                "payloadType": "数据类型"
+                "payloadType": "数据类型",
+                "trigger": "触发方式",
+                "onceDelay": "首次延迟",
+                "interval": "间隔",
+                "intervalUnit": "间隔单位",
+                "repeatCount": "重复次数",
+                "event": "事件名称",
+                "timeout": "等待超时",
+                "payloadValue": "数据值"
             },
             "task": {
                 "action": "动作名称",
@@ -1190,7 +1234,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "switch": {
                 "field": "取值路径",
-                "value": "默认值"
+                "value": "比较值",
+                "rules": "规则",
+                "operator": "运算符"
             },
             "parallel": {},
             "join": {},
@@ -1280,12 +1326,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "command": {
                 "command": "命令",
-                "args": "参数（JSON）",
-                "timeout": "超时"
+                "args": "参数",
+                "timeout": "超时",
+                "value": "参数"
             },
             "split": {
                 "field": "取值路径",
-                "delimiter": "分隔符"
+                "delimiter": "分隔符",
+                "mode": "模式"
             },
             "map": {
                 "field": "数组路径",
@@ -1300,7 +1348,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "sort": {
                 "field": "数组路径",
                 "path": "元素路径",
-                "order": "顺序"
+                "order": "顺序",
+                "numeric": "数值比较"
             },
             "range": {
                 "from": "起始",
@@ -1316,7 +1365,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "超时"
             },
             "subprocess": {
-                "workflow": "工作流 JSON"
+                "workflow": "子流程来源"
             },
             "comment": {
                 "text": "文本"
@@ -1442,7 +1491,12 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "end": {},
             "inject": {
                 "payload": "{ \"value\": 1 }",
-                "topic": "orders.created"
+                "topic": "orders.created",
+                "onceDelay": "0",
+                "interval": "1",
+                "repeatCount": "1",
+                "event": "order.created",
+                "timeout": "30"
             },
             "task": {
                 "action": "actions.fetch",
@@ -1580,9 +1634,17 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "start": {},
             "end": {},
             "inject": {
-                "topic": "随数据一起传递的可选标签。",
-                "payload": "触发器发送的值；JSON 会合并到上下文，其他类型按原值发送。",
-                "payloadType": "选择数据的类型；JSON 会合并到上下文，其他类型按原值发送。"
+                "topic": "随数据一起传递的可选主题。",
+                "payload": "以键值行编辑要注入的对象。",
+                "payloadType": "选择数据的类型；JSON 合并到上下文，其他类型按原值发送。",
+                "trigger": "选择手动、周期或事件触发。",
+                "onceDelay": "第一次注入前的等待时间。",
+                "interval": "两次注入之间的时间。",
+                "intervalUnit": "间隔时间单位。",
+                "repeatCount": "运行次数；0 表示持续运行直到停止。",
+                "event": "触发注入的事件名称。",
+                "timeout": "等待事件的最长时间。",
+                "payloadValue": "要注入的字符串、数字或布尔值。"
             },
             "task": {
                 "action": "context.actions 中的函数名，留空则返回“结果”中的值。",
@@ -1604,8 +1666,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "value": "当前运算符使用的比较值。"
             },
             "switch": {
-                "field": "用于选择输出端口的上下文路径。",
-                "value": "未设置取值路径时使用的字面值。"
+                "field": "与每条规则比较的上下文值。",
+                "value": "当前运算符使用的比较值。",
+                "rules": "从上到下依次匹配，第一条命中的规则选择对应编号输出。",
+                "operator": "该规则使用的比较方式。"
             },
             "parallel": {},
             "join": {},
@@ -1694,13 +1758,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "等待事件的最长时间。"
             },
             "command": {
-                "args": "传给命令的 JSON 数组。",
+                "args": "按顺序传给命令的参数。",
                 "command": "宿主注册的命令或函数名。",
                 "timeout": "命令的最长执行时间。"
             },
             "split": {
                 "field": "要拆分的文本或数组路径。",
-                "delimiter": "拆分文本时使用的分隔符。"
+                "delimiter": "拆分文本时使用的分隔符。",
+                "mode": "自动识别数组或文本，也可强制指定。"
             },
             "map": {
                 "path": "每个元素中要映射的属性。",
@@ -1715,7 +1780,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "sort": {
                 "path": "用于排序的元素属性。",
                 "field": "要排序的数组路径。",
-                "order": "升序或降序。"
+                "order": "升序或降序。",
+                "numeric": "按数值而不是文本比较。"
             },
             "range": {
                 "from": "区间起始值（包含）。",
@@ -1731,7 +1797,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "超过该时间后进入超时端口。"
             },
             "subprocess": {
-                "workflow": "要执行的工作流定义。"
+                "workflow": "保存工作流定义的上下文路径。"
             },
             "comment": {},
             "custom": {
@@ -1806,7 +1872,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "payload": "数据",
             "authentication": "认证",
             "input-range": "输入范围",
-            "output-range": "输出范围"
+            "output-range": "输出范围",
+            "trigger": "触发"
         },
         "option": {
             "truthy": "为真",
@@ -1816,7 +1883,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "lt": "小于",
             "fixed": "固定延迟",
             "random": "随机延迟",
-            "auto": "自动（能解析则 JSON）",
+            "auto": "自动",
             "json": "JSON",
             "text": "文本",
             "mustache": "Mustache",
@@ -1855,7 +1922,12 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "minutes": "分钟",
             "attribute": "属性",
             "contains": "包含",
-            "regex": "匹配正则"
+            "regex": "匹配正则",
+            "gte": "大于等于",
+            "lte": "小于等于",
+            "manual": "手动 / 一次",
+            "interval": "周期",
+            "event": "事件"
         }
     }
 };

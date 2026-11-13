@@ -184,6 +184,36 @@ describe('Workflow data & trigger nodes', () => {
         expect(states.debug_3.result?.data?.message).toBe('7');
     });
 
+    it('supports event-triggered injection', async () => {
+        const result = await service.execute(chain([
+            { type: 'inject', config: { trigger: 'event', event: 'order.created', timeout: 1 } }
+        ]), {
+            eventBus: {
+                wait: async (event: string) => event === 'order.created' ? { value: 42 } : undefined
+            }
+        });
+        expect(result.success).toBe(true);
+        expect(result.data?.executionState?.nodeStates.inject_0.result?.data?.value).toBe(42);
+    });
+
+    it('schedules interval injection until stopped', async () => {
+        const state = { count: 0 };
+        const context: any = { state };
+        const definition = chain([
+            { type: 'inject', config: { trigger: 'interval', interval: 5, intervalUnit: 'ms', repeatCount: 2 } },
+            { type: 'function', config: { code: 'context.state.count += 1; return {};' } }
+        ]);
+        const results: any[] = [];
+        const handle = service.startSchedule(definition, {
+            context,
+            onResult: result => results.push(result)
+        });
+        await new Promise(resolve => setTimeout(resolve, 150));
+        handle.stop();
+        expect(results.length).toBe(2);
+        expect(state.count).toBe(2);
+    });
+
     it('supports typed inject payloads and disabled debug output', async () => {
         const text = await service.execute(chain([
             { type: 'inject', config: { payloadType: 'string', payload: 'hello' } }
@@ -266,6 +296,45 @@ describe('Workflow data & trigger nodes', () => {
         expect(states.router_1.result?.data?.route).toBe(2);
         expect(states.task_ok.status).toBe('success');
         expect(states.task_fallback.status).toBe('skipped');
+    });
+
+    it('routes switch rules to numbered outputs', async () => {
+        const definition: VisualWorkflowDefinition = {
+            id: 'switch-demo',
+            name: 'Switch demo',
+            nodes: [
+                registry.createNode('inject', { x: 0, y: 0 }, { id: 'inject_1', config: { payload: { level: 7 } } }),
+                registry.createNode('switch', { x: 200, y: 0 }, { id: 'switch_1', config: { field: 'level', rules: [
+                    { operator: 'gt', value: '10' },
+                    { operator: 'gte', value: '5' }
+                ] } }),
+                registry.createNode('task', { x: 400, y: -60 }, { id: 'task_match', config: { result: { matched: true } } }),
+                registry.createNode('task', { x: 400, y: 120 }, { id: 'task_default', config: { result: { fallback: true } } })
+            ],
+            connections: [
+                { id: 'c1', sourceNodeId: 'inject_1', sourcePort: 'out', targetNodeId: 'switch_1', targetPort: 'in' },
+                { id: 'c2', sourceNodeId: 'switch_1', sourcePort: 'route-2', targetNodeId: 'task_match', targetPort: 'in' },
+                { id: 'c3', sourceNodeId: 'switch_1', sourcePort: 'default', targetNodeId: 'task_default', targetPort: 'in' }
+            ]
+        };
+        const result = await service.execute(definition, {});
+        const states = result.data?.executionState?.nodeStates || {};
+        expect(states.switch_1.result?.data?.route).toBe(2);
+        expect(states.task_match.status).toBe('success');
+    });
+
+    it('passes ordered command arguments', async () => {
+        let received: any;
+        const result = await service.execute(chain([
+            { type: 'command', config: { command: 'demo', args: [{ value: '--flag' }, { value: 'value' }] } }
+        ]), {
+            exec: async (_command: string, args: any[]) => {
+                received = args;
+                return { ok: true };
+            }
+        });
+        expect(result.success).toBe(true);
+        expect(received).toEqual(['--flag', 'value']);
     });
 
     it('runs function initialize and finalize code', async () => {

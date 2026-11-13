@@ -20,6 +20,7 @@ import {
     VisualNodeRuntimeHost
 } from './workflow-runtime';
 import { compileVisualWorkflow, CompiledWorkflow } from './workflow-compiler';
+import { WorkflowScheduleHandle, WorkflowScheduleOptions, WorkflowScheduler } from './workflow-scheduler';
 import { VisualNodeActivityAdapter } from './VisualNodeActivityAdapter';
 import {
     createVisualNodeHandler,
@@ -796,6 +797,14 @@ export class VisualWorkflowService {
 
     getExecutions(): WorkflowExecutionState[] {
         return Array.from(this.executions.values());
+    }
+
+    /**
+     * Start interval/once inject triggers. Call `stop()` on the returned handle
+     * when the host is done (page/tab/window teardown).
+     */
+    startSchedule(definition: VisualWorkflowDefinition, options: WorkflowScheduleOptions = {}): WorkflowScheduleHandle {
+        return new WorkflowScheduler(this).start(definition as any, options);
     }
 
     async cancelExecution(executionId: string): Promise<void> {
