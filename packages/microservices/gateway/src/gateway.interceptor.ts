@@ -1,6 +1,7 @@
 import { Inject, Injectable, Injector, OnDestroy } from '@tsdi/ioc';
 import * as crypto from 'crypto';
 import * as zlib from 'zlib';
+import { Readable } from 'node:stream';
 import { ServiceDiscovery, ServiceEndpoint, EndpointResolver } from '@tsdi/discovery';
 import { HttpMessageAdapter, HTTP_AUTH_RESULT, HTTP_RESPONSE, HttpRequestMessage } from '../../http/src/server';
 import { ApiRateLimiter } from '@tsdi/service';
@@ -32,6 +33,7 @@ interface GatewayForwardMeta {
     outcome?: 'upstream' | 'aggregate' | 'cache' | 'mock' | 'fallback' | 'rejected' | 'error';
     canary?: boolean;
     errorType?: GatewayErrorType;
+    streaming?: boolean;
 }
 
 /**
@@ -522,6 +524,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         this.validateSignature(route, request);
         this.enforceAuthorization(route, request);
         this.enforceAccessControl(route, request);
+        this.enforceBodyLimit(route, request);
 
         const adapter = context.get(HttpMessageAdapter);
         const response = context.get(HTTP_RESPONSE);
@@ -594,7 +597,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
                 this.runtime.recordSuccess(routeKey);
             }
             const cache = this.getCacheOptions(route);
-            if (cacheKey && !upstreamFailed && this.shouldCache(route, result)) {
+            if (cacheKey && !upstreamFailed && result.meta?.streaming !== true && this.shouldCache(route, result)) {
                 this.runtime.setCached(cacheKey, result, cache?.ttl ?? 60_000);
             }
             result.meta = {
@@ -603,7 +606,9 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
                 canary: !!route.canary,
                 ...(upstreamFailed ? { outcome: 'error' as const, errorType: 'upstream' as const } : {})
             };
-            await this.dispatchWebhook(route, request, result);
+            if (result.meta?.streaming !== true) {
+                await this.dispatchWebhook(route, request, result);
+            }
             const upstreamError = upstreamFailed
                 ? Object.assign(new Error(`Upstream responded with ${result.status}`), {
                     statusCode: result.status,
@@ -819,38 +824,62 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
 
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), route.timeout ?? 10_000);
+        const headers = this.buildHeaders(route, request, traceHeaders);
+        const body = this.resolveRequestBody(route, request);
         const init: RequestInit = {
             method: request.method,
-            headers: this.buildHeaders(route, request, traceHeaders),
+            headers,
             signal: controller.signal
         };
 
-        const body = this.resolveRequestBody(route, request);
         if (request.method && !['GET', 'HEAD'].includes(request.method.toUpperCase()) && body != null) {
-            init.body = typeof body === 'string' || Buffer.isBuffer(body)
+            const serialized = typeof body === 'string' || Buffer.isBuffer(body)
                 ? body as any
                 : JSON.stringify(body);
+            init.body = serialized;
+            headers['content-length'] = String(Buffer.isBuffer(serialized)
+                ? serialized.length
+                : Buffer.byteLength(String(serialized)));
         }
 
         try {
             const fetchImpl = this.httpFetch ?? fetch;
             const upstream = await fetchImpl(upstreamUrl, init);
             const contentType = upstream.headers.get('content-type') || '';
+            const headersOut: Record<string, string> = {};
+            upstream.headers.forEach((value, key) => {
+                const lower = key.toLowerCase();
+                if (lower !== 'transfer-encoding' && lower !== 'content-length') {
+                    headersOut[key] = value;
+                }
+            });
+
+            const streaming = route.stream === true || contentType.includes('text/event-stream');
+            if (streaming && upstream.body) {
+                return {
+                    status: upstream.status,
+                    statusText: upstream.statusText,
+                    payload: Readable.fromWeb(upstream.body as any),
+                    headers: headersOut,
+                    meta: {
+                        endpoint: target.endpoint?.address ?? baseUrl,
+                        outcome: 'upstream',
+                        streaming: true
+                    }
+                };
+            }
+
             const payload = contentType.includes('application/json')
                 ? await upstream.json()
                 : await upstream.text();
-
-            const headers: Record<string, string> = {};
-            upstream.headers.forEach((value, key) => {
-                if (key.toLowerCase() !== 'transfer-encoding') {
-                    headers[key] = value;
-                }
-            });
+            if (headersOut['content-length'] == null && !contentType.includes('text/event-stream')) {
+                // length is recomputed by the HTTP adapter / Node for buffered bodies.
+            }
             return {
                 status: upstream.status,
                 statusText: upstream.statusText,
                 payload,
-                headers,
+                headers: headersOut,
                 meta: {
                     endpoint: target.endpoint?.address ?? baseUrl,
                     outcome: 'upstream'
@@ -997,12 +1026,16 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         response: any,
         error?: any
     ): any {
-        const rewritten = this.applyResponseCaching(route, request, this.rewriteResponse(route, request, result));
-        const maskedPayload = this.runtime.maskPayload(rewritten.payload, route.maskFields);
-        const compressed = this.applyCompression(route, request, {
-            ...rewritten,
-            payload: maskedPayload
-        });
+        const streaming = result.meta?.streaming === true;
+        const rewritten = streaming
+            ? result
+            : this.applyResponseCaching(route, request, this.rewriteResponse(route, request, result));
+        const maskedPayload = streaming
+            ? rewritten.payload
+            : this.runtime.maskPayload(rewritten.payload, route.maskFields);
+        const compressed = streaming
+            ? { ...rewritten, payload: maskedPayload }
+            : this.applyCompression(route, request, { ...rewritten, payload: maskedPayload });
         const payload = compressed.payload;
 
         if (compressed.headers) {
@@ -1057,14 +1090,38 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         return queryString ? `${path}?${queryString}` : path;
     }
 
+    private enforceBodyLimit(route: ResolvedGatewayRoute, request: HttpRequestMessage): void {
+        const max = route.maxBodyBytes ?? 0;
+        if (!max || max <= 0 || request.body == null) {
+            return;
+        }
+        const size = Buffer.isBuffer(request.body)
+            ? request.body.length
+            : typeof request.body === 'string'
+                ? Buffer.byteLength(request.body)
+                : undefined;
+        if (size != null && size > max) {
+            throw Object.assign(new Error(`Request body exceeds ${max} bytes`), {
+                statusCode: 413,
+                statusMessage: 'Payload Too Large',
+                expose: true
+            });
+        }
+    }
+
     private buildHeaders(route: ResolvedGatewayRoute, request: HttpRequestMessage, traceHeaders?: Record<string, string>): Record<string, string> {
         const headers: Record<string, string> = {};
         const forwardHeaders = route.forwardHeaders;
         const enabled = forwardHeaders?.enabled ?? true;
         const excluded = new Set((forwardHeaders?.exclude ?? []).map(h => h.toLowerCase()));
+        const hopByHop = new Set([
+            'connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization',
+            'te', 'trailer', 'transfer-encoding', 'upgrade', 'host', 'content-length'
+        ]);
         if (enabled) {
             Object.entries(request.headers ?? {}).forEach(([key, value]) => {
-                if (excluded.has(key.toLowerCase())) {
+                const lower = key.toLowerCase();
+                if (excluded.has(lower) || hopByHop.has(lower)) {
                     return;
                 }
                 if (Array.isArray(value)) {
@@ -1083,6 +1140,17 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         }
         if (proxy && !headers['x-forwarded-method'] && request.method) {
             headers['x-forwarded-method'] = request.method;
+        }
+        if (proxy) {
+            const encrypted = !!(request.socket as any)?.encrypted
+                || String(this.getHeaderValue(request, 'x-forwarded-proto') ?? '').split(',')[0].trim() === 'https';
+            if (!headers['x-forwarded-proto']) {
+                headers['x-forwarded-proto'] = encrypted ? 'https' : 'http';
+            }
+            const host = this.getRequestHost(request);
+            if (host && !headers['x-forwarded-host']) {
+                headers['x-forwarded-host'] = host;
+            }
         }
         return headers;
     }

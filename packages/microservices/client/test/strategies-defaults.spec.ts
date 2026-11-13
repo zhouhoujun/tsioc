@@ -1,5 +1,6 @@
 import expect = require('expect');
 import { createInjector } from '@tsdi/ioc';
+import { lastValueFrom } from 'rxjs';
 import { EndpointResolver } from '@tsdi/discovery';
 import { DefaultClientDiscoveryStrategy, DefaultClientLoadBalanceStrategy, DefaultCircuitBreakerStrategy, DefaultRetryStrategy } from '../src/strategies/defaults';
 
@@ -168,5 +169,44 @@ describe('DefaultRetryStrategy', () => {
         const options = { maxAttempts: 5, waitDuration: 200 };
         const strategy = new DefaultRetryStrategy(options);
         expect(strategy.options).toBe(options);
+    });
+
+    function failingSource(counter: { calls: number }, error: any = new Error('fail')) {
+        const { Observable } = require('rxjs');
+        return new Observable((sub: any) => {
+            counter.calls++;
+            sub.error(error);
+        });
+    }
+
+    it('does not retry a method outside retryOnMethods', async () => {
+        const strategy = new DefaultRetryStrategy({ maxAttempts: 3, retryOnMethods: ['GET'] });
+        const counter = { calls: 0 };
+        await expect(lastValueFrom(strategy.retry(failingSource(counter), { method: 'POST' }))).rejects.toThrow('fail');
+        expect(counter.calls).toBe(1);
+    });
+
+    it('does not retry a status outside retryOnStatuses', async () => {
+        const strategy = new DefaultRetryStrategy({ maxAttempts: 3, retryOnStatuses: [503] });
+        const counter = { calls: 0 };
+        const error = Object.assign(new Error('bad request'), { status: 400 });
+        await expect(lastValueFrom(strategy.retry(failingSource(counter, error)))).rejects.toThrow('bad request');
+        expect(counter.calls).toBe(1);
+    });
+
+    it('stops retrying when maxElapsed would be exceeded', async () => {
+        const strategy = new DefaultRetryStrategy({ maxAttempts: 5, waitDuration: 50, maxElapsed: 20 });
+        const counter = { calls: 0 };
+        const startedAt = Date.now();
+        await expect(lastValueFrom(strategy.retry(failingSource(counter)))).rejects.toThrow('fail');
+        expect(counter.calls).toBe(1);
+        expect(Date.now() - startedAt).toBeLessThan(40);
+    });
+
+    it('enforces the retry budget across calls', async () => {
+        const strategy = new DefaultRetryStrategy({ maxAttempts: 5, retryBudget: { max: 1, windowMs: 10_000 } });
+        const counter = { calls: 0 };
+        await expect(lastValueFrom(strategy.retry(failingSource(counter)))).rejects.toThrow('fail');
+        expect(counter.calls).toBe(2);
     });
 });

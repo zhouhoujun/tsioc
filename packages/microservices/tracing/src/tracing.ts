@@ -43,9 +43,9 @@ export interface SpanOptions {
      */
     kind?: SpanKind;
     /**
-     * parent span.
+     * parent span or extracted remote trace context.
      */
-    parent?: Span;
+    parent?: Span | TraceContext;
     /**
      * start timestamp.
      */

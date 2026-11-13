@@ -332,6 +332,52 @@ describe('HTTP Microservice', () => {
                 (http as any).request = originalRequest;
             }
         });
+
+        it('creates a keep-alive agent from pool options', async () => {
+            const feature = withHttpTransport({ url: 'http://localhost:3000', pool: { max: 2, idleTimeout: 5000 } })[0];
+            const injector = createInjector([importProvidersFrom(HttpModule), ...feature.providers] as any);
+            const [backend] = injector.get(getClientBackendToken(feature.config)) as unknown as Array<(req: any, context: any) => any>;
+            let registered: any;
+            const fakeClient = { useAgent: (agent: any) => { registered = agent; return agent; } };
+            const context = {
+                get(token: any) {
+                    if (token === HttpClient) return fakeClient;
+                    return injector.has(token) ? injector.get(token) : undefined;
+                },
+                has(token: any) {
+                    return token === HttpClient || injector.has(token);
+                }
+            } as any;
+
+            const originalRequest = http.request;
+            let captured: http.RequestOptions | undefined;
+            (http as any).request = (_target: URL, options: http.RequestOptions) => {
+                captured = options;
+                const reqEmitter = new EventEmitter() as any;
+                reqEmitter.end = () => {
+                    const resEmitter = new EventEmitter() as any;
+                    resEmitter.statusCode = 200;
+                    resEmitter.statusMessage = 'OK';
+                    resEmitter.headers = { 'content-type': 'application/json' };
+                    reqEmitter.emit('response', resEmitter);
+                    resEmitter.emit('data', Buffer.from('{}', 'utf8'));
+                    resEmitter.emit('end');
+                };
+                reqEmitter.destroy = () => undefined;
+                return reqEmitter;
+            };
+
+            try {
+                await lastValueFrom(backend(new HttpRequest('/pool', null, { method: 'GET' }), context));
+                const agent = captured?.agent as http.Agent;
+                expect(agent).toBeInstanceOf(http.Agent);
+                expect(agent.keepAlive).toBe(true);
+                expect(agent.maxSockets).toBe(2);
+                expect(registered).toBe(agent);
+            } finally {
+                (http as any).request = originalRequest;
+            }
+        });
     });
 
     describe('httpTransportFactory', () => {

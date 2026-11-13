@@ -1,4 +1,6 @@
 import { Inject, Injectable, OnDestroy } from '@tsdi/ioc';
+import { AsyncLocalStorage } from 'node:async_hooks';
+import * as crypto from 'node:crypto';
 import { Span, SpanOptions, SpanStatus, SpanKind, SpanLog, TraceContext, TracingOptions } from './tracing';
 import { Tracer, TraceExporter } from './tracer';
 import { TRACE_EXPORTERS, TRACING_OPTIONS } from './tokens';
@@ -13,6 +15,7 @@ export class DefaultSpan implements Span {
     name: string;
     kind: SpanKind;
     status: SpanStatus = 'UNSET';
+    flags = 1;
     startTime: number;
     endTime?: number;
     duration?: number;
@@ -20,20 +23,23 @@ export class DefaultSpan implements Span {
     logs: SpanLog[] = [];
     private finished = false;
     private tracer: DefaultTracer;
+    private readonly previousSpan: Span | null;
 
     constructor(tracer: DefaultTracer, name: string, options: SpanOptions = {}) {
         this.tracer = tracer;
-        this.spanId = this.generateId();
-        this.traceId = options.parent?.traceId ?? this.generateId();
-        this.parentSpanId = options.parent?.spanId ?? options.parent?.parentSpanId;
+        this.spanId = DefaultSpan.generateId(8);
+        this.traceId = options.parent?.traceId ?? DefaultSpan.generateId(16);
+        this.parentSpanId = options.parent?.spanId;
+        this.flags = (options.parent as TraceContext | undefined)?.flags ?? 1;
         this.name = name;
         this.kind = options.kind ?? 'INTERNAL';
         this.startTime = options.startTime ?? Date.now();
         this.attributes = options.attributes ?? {};
+        this.previousSpan = tracer.getCurrentSpan();
     }
 
-    private generateId(): string {
-        return Math.random().toString(36).substring(2, 16);
+    private static generateId(bytes: number): string {
+        return crypto.randomBytes(bytes).toString('hex');
     }
 
     setName(name: string): void {
@@ -80,6 +86,7 @@ export class DefaultSpan implements Span {
             this.endTime = Date.now();
             this.duration = this.endTime - this.startTime;
             this.tracer.onSpanFinished(this);
+            this.tracer.restoreCurrentSpan(this, this.previousSpan);
         }
     }
 
@@ -88,7 +95,7 @@ export class DefaultSpan implements Span {
             traceId: this.traceId,
             spanId: this.spanId,
             parentSpanId: this.parentSpanId,
-            flags: 1 // sampled
+            flags: this.flags
         };
     }
 }
@@ -98,7 +105,7 @@ export class DefaultSpan implements Span {
  */
 @Injectable()
 export class DefaultTracer extends Tracer implements OnDestroy {
-    private currentSpan: Span | null = null;
+    private readonly storage = new AsyncLocalStorage<Span | null>();
     private pendingSpans: Span[] = [];
     private exporters: TraceExporter[] = [];
     private flushTimer?: ReturnType<typeof setInterval>;
@@ -156,7 +163,10 @@ export class DefaultTracer extends Tracer implements OnDestroy {
     }
 
     startSpan(name: string, options: SpanOptions = {}): Span {
-        if (!this.enabled || Math.random() > this.sampleRate) {
+        const parentFlags = options.parent && typeof options.parent === 'object' && 'flags' in options.parent
+            ? (options.parent as TraceContext).flags
+            : undefined;
+        if (!this.enabled || parentFlags === 0 || (parentFlags == null && Math.random() > this.sampleRate)) {
             // Return a no-op span
             const noopSpan: Span = {
                 spanId: '',
@@ -183,21 +193,43 @@ export class DefaultTracer extends Tracer implements OnDestroy {
 
         const span = new DefaultSpan(this, name, {
             ...options,
-            parent: options.parent ?? (this.currentSpan as Span | undefined)
+            parent: options.parent ?? this.getCurrentSpan() ?? undefined
         });
         this.setCurrentSpan(span);
         return span;
     }
 
     getCurrentSpan(): Span | null {
-        return this.currentSpan;
+        return this.storage.getStore() ?? null;
     }
 
     setCurrentSpan(span: Span): void {
-        this.currentSpan = span;
+        this.storage.enterWith(span);
+    }
+
+    /**
+     * Restore the span that was active before `span` finished. Called by
+     * `DefaultSpan.finish()` so nested/concurrent requests keep the right
+     * parent.
+     */
+    restoreCurrentSpan(finished: Span, previous: Span | null): void {
+        if (this.getCurrentSpan() === finished) {
+            this.storage.enterWith(previous);
+        }
     }
 
     extractContext(carrier: Record<string, string>): TraceContext | null {
+        const traceparent = carrier['traceparent'];
+        if (traceparent) {
+            const parsed = /^([0-9a-f]{2})-([0-9a-f]{32})-([0-9a-f]{16})-([0-9a-f]{2})$/i.exec(traceparent.trim());
+            if (parsed && parsed[1] !== 'ff') {
+                return {
+                    traceId: parsed[2].toLowerCase(),
+                    spanId: parsed[3].toLowerCase(),
+                    flags: parseInt(parsed[4], 16)
+                };
+            }
+        }
         const traceId = carrier[this._headerNames.traceId];
         const spanId = carrier[this._headerNames.spanId];
         const parentSpanId = carrier[this._headerNames.parentSpanId];
@@ -215,6 +247,10 @@ export class DefaultTracer extends Tracer implements OnDestroy {
     }
 
     injectContext(context: TraceContext, carrier: Record<string, string>): void {
+        if (context.traceId && context.spanId) {
+            const flags = (context.flags ?? 1).toString(16).padStart(2, '0');
+            carrier.traceparent = `00-${context.traceId}-${context.spanId}-${flags}`;
+        }
         carrier[this._headerNames.traceId] = context.traceId;
         carrier[this._headerNames.spanId] = context.spanId;
         if (context.parentSpanId) {

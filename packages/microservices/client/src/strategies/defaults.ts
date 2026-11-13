@@ -1,5 +1,5 @@
 import { Injector } from '@tsdi/ioc';
-import { Observable, of, retry, timer } from 'rxjs';
+import { defer, Observable, of, retry, throwError, timer } from 'rxjs';
 import { EndpointResolver } from '@tsdi/discovery';
 import { CircuitBreakerOptions, ClientEndpoint, DiscoveryOptions, LoadBalanceOptions, LoadBalanceStrategy, RetryOptions } from '../options';
 import { CircuitBreakerStrategy } from './CircuitBreakerStrategy';
@@ -152,29 +152,70 @@ export class DefaultCircuitBreakerStrategy extends CircuitBreakerStrategy {
 }
 
 export class DefaultRetryStrategy extends RetryStrategy {
+    private retryTimestamps: number[] = [];
+
     constructor(readonly options: RetryOptions = {}) {
         super();
     }
 
-    retry<T>(source: Observable<T>): Observable<T> {
+    retry<T>(source: Observable<T>, input?: any): Observable<T> {
         const maxAttempts = Math.max(1, this.options.maxAttempts ?? 3);
         if (maxAttempts <= 1) {
             return source;
         }
-        return source.pipe(
-            retry({
-                count: maxAttempts - 1,
-                delay: (error, retryCount) => {
-                    if (this.options.retryOnExceptions?.length &&
-                        !this.options.retryOnExceptions.some(type => error instanceof type)) {
-                        throw error;
+        const method = String(input?.method ?? '').toUpperCase();
+        const methods = this.options.retryOnMethods?.map(item => item.toUpperCase());
+        if (methods?.length && method && !methods.includes(method)) {
+            return source;
+        }
+        return defer(() => {
+            const startedAt = Date.now();
+            return source.pipe(
+                retry({
+                    count: maxAttempts - 1,
+                    delay: (error, retryCount) => {
+                        if (this.options.retryOnExceptions?.length &&
+                            !this.options.retryOnExceptions.some(type => error instanceof type)) {
+                            return throwError(() => error);
+                        }
+                        const status = error?.status ?? error?.statusCode;
+                        if (this.options.retryOnStatuses?.length && status != null &&
+                            !this.options.retryOnStatuses.includes(status)) {
+                            return throwError(() => error);
+                        }
+                        if (!this.consumeBudget()) {
+                            return throwError(() => error);
+                        }
+                        const multiplier = Math.max(1, this.options.backoffMultiplier ?? 1);
+                        const waitDuration = this.options.waitDuration ?? 0;
+                        let delayMs = waitDuration * Math.max(1, Math.pow(multiplier, retryCount - 1));
+                        const jitter = this.options.jitter ?? (multiplier > 1 && delayMs > 0);
+                        if (jitter && delayMs > 0) {
+                            delayMs = Math.max(0, Math.round(delayMs * (0.5 + Math.random() * 0.5)));
+                        }
+                        const maxElapsed = this.options.maxElapsed;
+                        if (maxElapsed != null && Date.now() - startedAt + delayMs >= maxElapsed) {
+                            return throwError(() => error);
+                        }
+                        return delayMs > 0 ? timer(delayMs) : of(null);
                     }
-                    const multiplier = Math.max(1, this.options.backoffMultiplier ?? 1);
-                    const waitDuration = this.options.waitDuration ?? 0;
-                    const delayMs = waitDuration * Math.max(1, Math.pow(multiplier, retryCount - 1));
-                    return delayMs > 0 ? timer(delayMs) : of(null);
-                }
-            })
-        );
+                })
+            );
+        });
+    }
+
+    private consumeBudget(now = Date.now()): boolean {
+        const budget = this.options.retryBudget;
+        if (!budget) {
+            return true;
+        }
+        const max = Math.max(1, budget.max ?? 100);
+        const windowMs = Math.max(1, budget.windowMs ?? 10_000);
+        this.retryTimestamps = this.retryTimestamps.filter(timestamp => now - timestamp < windowMs);
+        if (this.retryTimestamps.length >= max) {
+            return false;
+        }
+        this.retryTimestamps.push(now);
+        return true;
     }
 }

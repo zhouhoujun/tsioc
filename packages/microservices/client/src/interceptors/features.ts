@@ -80,5 +80,5 @@ export const circuitBreakerInterceptor: RequestInterceptorFn = (input: any, next
 export const retryInterceptor: RequestInterceptorFn = (input: any, next: RequestHandlerFn, context: RequestContext) => {
     const strategy = getStrategy<RetryStrategy>(context, RetryStrategy);
     const stream = defer(() => next(input, context));
-    return strategy ? strategy.retry(stream) : stream;
+    return strategy ? strategy.retry(stream, input) : stream;
 };

@@ -1,5 +1,6 @@
 import expect = require('expect');
 import * as zlib from 'zlib';
+import { Readable } from 'node:stream';
 import { of } from 'rxjs';
 import { createInjector } from '@tsdi/ioc';
 import { createRequestContext, RequestContext, REQUEST, Transport, TransferSide } from '@tsdi/common';
@@ -275,6 +276,154 @@ describe('Gateway', () => {
             await run(nested, '/api/users/1');
             expect(calls[1]).toContain('http://users.internal/1');
             expect(calls[1]).not.toContain('general.internal');
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+    });
+
+    it('streams SSE responses instead of buffering them', async () => {
+        const interceptor = new GatewayInterceptor({
+            routes: [{
+                path: '/events',
+                service: 'sse-service',
+                targetUrl: 'http://sse.internal',
+                stream: true
+            }]
+        }, null as any, null as any, new GatewayRuntime(), null as any, { get: () => null } as any);
+
+        const sent: any = {};
+        const adapter = {
+            setStatus(code: number) { sent.status = code; return this; },
+            setHeader(name: string, value: string) { (sent.headers ??= {})[name] = value; return this; },
+            setPayload(payload: any) { sent.payload = payload; return this; },
+            sendResponse(payload: any) { sent.sentPayload = payload; }
+        };
+        const context = createContext(adapter);
+        (context as any).set(require('../../http/src/server').HttpMessageAdapter, adapter);
+        (context as any).set(require('../../http/src/server').HTTP_RESPONSE, sent);
+
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = (async () => ({
+            status: 200,
+            statusText: 'OK',
+            headers: new Headers({ 'content-type': 'text/event-stream' }),
+            body: Readable.toWeb(Readable.from(['data: 1\n\n', 'data: 2\n\n']))
+        })) as any;
+
+        try {
+            await new Promise<void>((resolve, reject) => {
+                interceptor.intercept({ url: '/events', method: 'GET', headers: {}, socket: { remoteAddress: '127.0.0.1' } } as any, { handle: () => of(null) } as any, context).subscribe({
+                    next: () => undefined,
+                    error: reject,
+                    complete: () => resolve()
+                });
+            });
+
+            expect(sent.status).toBe(200);
+            expect(sent.payload).toBeInstanceOf(Readable);
+            const chunks: Buffer[] = [];
+            for await (const chunk of sent.payload) {
+                chunks.push(Buffer.from(chunk));
+            }
+            expect(Buffer.concat(chunks).toString('utf8')).toBe('data: 1\n\ndata: 2\n\n');
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+    });
+
+    it('strips hop-by-hop headers and sets forwarded headers and body length', async () => {
+        const interceptor = new GatewayInterceptor({
+            routes: [{
+                path: '/api/echo',
+                service: 'echo-service',
+                targetUrl: 'http://echo.internal'
+            }]
+        }, null as any, null as any, new GatewayRuntime(), null as any, { get: () => null } as any);
+
+        const sent: any = {};
+        const adapter = {
+            setStatus(code: number) { sent.status = code; return this; },
+            setHeader(name: string, value: string) { (sent.headers ??= {})[name] = value; return this; },
+            setPayload(payload: any) { sent.payload = payload; return this; },
+            sendResponse(payload: any) { sent.sentPayload = payload; }
+        };
+        const context = createContext(adapter);
+        (context as any).set(require('../../http/src/server').HttpMessageAdapter, adapter);
+        (context as any).set(require('../../http/src/server').HTTP_RESPONSE, sent);
+
+        const originalFetch = globalThis.fetch;
+        let captured: any;
+        globalThis.fetch = (async (_url: any, init: any) => {
+            captured = init;
+            return {
+                status: 200,
+                statusText: 'OK',
+                headers: new Headers({ 'content-type': 'application/json' }),
+                async json() { return { ok: true }; }
+            };
+        }) as any;
+
+        try {
+            await new Promise<void>((resolve, reject) => {
+                interceptor.intercept({
+                    url: '/api/echo',
+                    method: 'POST',
+                    body: 'hello',
+                    headers: { host: 'example.com', connection: 'keep-alive', 'content-length': '99', 'x-test': '1' },
+                    socket: { remoteAddress: '127.0.0.1' }
+                } as any, { handle: () => of(null) } as any, context).subscribe({
+                    next: () => resolve(),
+                    error: reject,
+                    complete: () => resolve()
+                });
+            });
+
+            expect(captured.headers.host).toBeUndefined();
+            expect(captured.headers.connection).toBeUndefined();
+            expect(captured.headers['x-test']).toBe('1');
+            expect(captured.headers['content-length']).toBe('5');
+            expect(captured.headers['x-forwarded-proto']).toBe('http');
+            expect(captured.headers['x-forwarded-host']).toBe('example.com');
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+    });
+
+    it('rejects requests above the configured body size limit', async () => {
+        const interceptor = new GatewayInterceptor({
+            routes: [{
+                path: '/limited',
+                service: 'limited-service',
+                targetUrl: 'http://limited.internal',
+                maxBodyBytes: 4
+            }]
+        }, null as any, null as any, new GatewayRuntime(), null as any, { get: () => null } as any);
+
+        const context = createContext({});
+        const originalFetch = globalThis.fetch;
+        let called = false;
+        globalThis.fetch = (async () => {
+            called = true;
+            throw new Error('should not forward');
+        }) as any;
+
+        try {
+            let error: any;
+            await new Promise<void>((resolve) => {
+                interceptor.intercept({
+                    url: '/limited',
+                    method: 'POST',
+                    body: '12345',
+                    headers: {},
+                    socket: { remoteAddress: '127.0.0.1' }
+                } as any, { handle: () => of(null) } as any, context).subscribe({
+                    next: () => resolve(),
+                    error: (err) => { error = err; resolve(); },
+                    complete: () => resolve()
+                });
+            });
+            expect(error?.statusCode).toBe(413);
+            expect(called).toBe(false);
         } finally {
             globalThis.fetch = originalFetch;
         }

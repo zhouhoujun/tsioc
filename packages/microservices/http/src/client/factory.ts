@@ -65,6 +65,20 @@ function endpointBaseUrl(endpoint?: ClientEndpoint): string | undefined {
     return `${protocol}://${endpoint.address}${!hasPort && endpoint.port ? `:${endpoint.port}` : ''}`;
 }
 
+function createAgentInstance<T extends http.Agent | https.Agent>(
+    Agent: new (options: http.AgentOptions) => T,
+    pool: NonNullable<HttpClientOptions['pool']>
+): T {
+    const max = Math.max(1, pool.max ?? 10);
+    return new Agent({
+        keepAlive: true,
+        maxSockets: max,
+        maxFreeSockets: max,
+        timeout: pool.idleTimeout ?? 30_000,
+        scheduling: 'lifo'
+    });
+}
+
 function createHttpBackend(config: HttpClientOptions) {
     return (req: any, context: any) => new Observable<any>((observer: any) => {
         const client = context.get(HttpClient) as HttpClient | undefined;
@@ -147,6 +161,26 @@ function createHttpBackend(config: HttpClientOptions) {
             stream.end(JSON.stringify(body));
         };
 
+        let httpAgent: http.Agent | undefined;
+        let httpsAgent: https.Agent | undefined;
+        const createAgent = (protocol: string) => {
+            if (!config.pool) {
+                return undefined;
+            }
+            if (protocol === 'https:') {
+                if (!httpsAgent) {
+                    httpsAgent = createAgentInstance(https.Agent, config.pool);
+                    (client as HttpClient | undefined)?.useAgent?.(httpsAgent);
+                }
+                return httpsAgent;
+            }
+            if (!httpAgent) {
+                httpAgent = createAgentInstance(http.Agent, config.pool);
+                (client as HttpClient | undefined)?.useAgent?.(httpAgent);
+            }
+            return httpAgent;
+        };
+
         if (config.authority) {
             const session = client?.getSession();
             if (!session) {
@@ -178,10 +212,12 @@ function createHttpBackend(config: HttpClientOptions) {
             return () => stream.destroy();
         }
 
+        const agent = config.requestOpts?.agent ?? createAgent(target.protocol);
         const requestOptions: http.RequestOptions = {
             ...(config.requestOpts ?? {}),
             method: req.method,
             headers,
+            agent,
         };
         const request = target.protocol === 'https:' ? https.request(target, requestOptions) : http.request(target, requestOptions);
         const chunks: Uint8Array[] = [];

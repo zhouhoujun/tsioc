@@ -2,6 +2,8 @@ import { Injectable, isString, Context, Inject, promisify } from '@tsdi/ioc';
 import { Pattern, RequestInitOpts, UrlRequestOptions, Response, ResponseEvent, PatternFormatter } from '@tsdi/common';
 import { AbstractClient, ClientHandler } from '@tsdi/client';
 import { defer, Observable } from 'rxjs';
+import * as http from 'node:http';
+import * as https from 'node:https';
 import * as http2 from 'node:http2';
 import { HTTP_CLIENT_OPTIONS, HttpClientOptions } from './options';
 import { HttpRequest } from './request';
@@ -10,6 +12,7 @@ import { HttpRequest } from './request';
 export class HttpClient extends AbstractClient<HttpRequest<any>, ResponseEvent<any>, UrlRequestOptions> {
 
     private session?: http2.ClientHttp2Session;
+    private readonly agents = new Set<http.Agent | https.Agent>();
 
     constructor(
         readonly handler: ClientHandler<HttpRequest<any>, ResponseEvent<any>>,
@@ -18,6 +21,14 @@ export class HttpClient extends AbstractClient<HttpRequest<any>, ResponseEvent<a
 
     getSession(): http2.ClientHttp2Session | undefined {
         return this.session;
+    }
+
+    /**
+     * Register a keep-alive agent so it can be destroyed on client shutdown.
+     */
+    useAgent<T extends http.Agent | https.Agent>(agent: T): T {
+        this.agents.add(agent);
+        return agent;
     }
 
     protected connect(): Observable<any> {
@@ -70,6 +81,14 @@ export class HttpClient extends AbstractClient<HttpRequest<any>, ResponseEvent<a
     }
 
     protected async onShutdown(): Promise<void> {
+        for (const agent of this.agents) {
+            try {
+                agent.destroy();
+            } catch {
+                // ignore agent destroy errors during shutdown
+            }
+        }
+        this.agents.clear();
         if (!this.session) return;
         const session = this.session;
         this.session = undefined;

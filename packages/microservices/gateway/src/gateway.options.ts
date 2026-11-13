@@ -619,6 +619,15 @@ export interface GatewayRouteOptions {
      */
     responseCache?: GatewayResponseCacheOptions;
     /**
+     * stream the upstream response instead of buffering it. Automatically
+     * enabled for `text/event-stream` responses.
+     */
+    stream?: boolean;
+    /**
+     * maximum request body size in bytes. 0 disables the check.
+     */
+    maxBodyBytes?: number;
+    /**
      * response compression.
      */
     compression?: GatewayCompressionOptions;

@@ -157,6 +157,60 @@ describe('Tracing Module Test', () => {
             expect(carrier['x-trace-id']).toBe('trace123');
             expect(carrier['x-span-id']).toBe('span456');
             expect(carrier['x-parent-span-id']).toBe('parent789');
+            expect(carrier.traceparent).toBe('00-trace123-span456-01');
+        });
+
+        it('extracts W3C traceparent context', () => {
+            const traceId = 'a'.repeat(32);
+            const spanId = 'b'.repeat(16);
+            const context = tracer.extractContext({
+                traceparent: `00-${traceId}-${spanId}-01`
+            });
+            expect(context?.traceId).toBe(traceId);
+            expect(context?.spanId).toBe(spanId);
+            expect(context?.flags).toBe(1);
+        });
+
+        it('ignores invalid traceparent and falls back to legacy headers', () => {
+            const context = tracer.extractContext({
+                traceparent: 'invalid',
+                'x-trace-id': 'legacy-trace',
+                'x-span-id': 'legacy-span'
+            });
+            expect(context?.traceId).toBe('legacy-trace');
+            expect(context?.spanId).toBe('legacy-span');
+        });
+
+        it('restores the previous span when a nested span finishes', () => {
+            const root = tracer.startSpan('root');
+            const child = tracer.startSpan('child');
+            expect(child.parentSpanId).toBe(root.spanId);
+            expect(tracer.getCurrentSpan()).toBe(child);
+            child.finish();
+            expect(tracer.getCurrentSpan()).toBe(root);
+            root.finish();
+            expect(tracer.getCurrentSpan()).toBeNull();
+        });
+
+        it('keeps parentage correct under concurrent async work', async () => {
+            const run = (name: string) => new Promise<{ root: Span; child: Span }>(resolve => {
+                const root = tracer.startSpan(name);
+                setTimeout(() => {
+                    const child = tracer.startSpan(`${name}-child`);
+                    resolve({ root, child });
+                }, 0);
+            });
+            const [first, second] = await Promise.all([run('a'), run('b')]);
+
+            expect(first.child.parentSpanId).toBe(first.root.spanId);
+            expect(first.child.traceId).toBe(first.root.traceId);
+            expect(second.child.parentSpanId).toBe(second.root.spanId);
+            expect(second.child.traceId).toBe(second.root.traceId);
+
+            first.child.finish();
+            first.root.finish();
+            second.child.finish();
+            second.root.finish();
         });
 
         it('should add exporter', () => {

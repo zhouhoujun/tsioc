@@ -261,6 +261,33 @@ export interface RetryOptions {
      * 指数退避乘数
      */
     backoffMultiplier?: number;
+    /**
+     * maximum total time (ms) spent retrying. Once exceeded, the last error is
+     * returned instead of scheduling another attempt.
+     */
+    maxElapsed?: number;
+    /**
+     * add decorrelated jitter to the backoff delay. Defaults to true when
+     * exponential backoff is enabled.
+     */
+    jitter?: boolean;
+    /**
+     * HTTP methods eligible for retry. Omit to allow every method.
+     */
+    retryOnMethods?: string[];
+    /**
+     * upstream status codes eligible for retry. Omit to retry every failure.
+     */
+    retryOnStatuses?: number[];
+    /**
+     * retry budget shared by one strategy instance.
+     */
+    retryBudget?: {
+        /** maximum retries inside the window. Default 100. */
+        max?: number;
+        /** rolling window in milliseconds. Default 10s. */
+        windowMs?: number;
+    };
 }
 
 export interface ClientOptions<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends ClientConfig<TReq, TRes, TContext> {

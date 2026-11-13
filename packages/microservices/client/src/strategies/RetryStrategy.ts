@@ -11,5 +11,5 @@ export abstract class RetryStrategy {
      * Apply retry to the observable.
      * 对 observable 应用重试
      */
-    abstract retry<T>(source: Observable<T>): Observable<T>;
+    abstract retry<T>(source: Observable<T>, input?: any): Observable<T>;
 }

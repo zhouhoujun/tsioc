@@ -21,6 +21,14 @@
 - 客户端 discovery + load balance 真正可用：`EndpointResolver` 解析 → endpoint 写入请求上下文 → HTTP backend 改写目标地址；RR/random/weighted/least 策略。
 - Discovery selector：每服务独立 RR、使用 `endpoint.weight`、`healthCheck` 不再复活 DOWN / 不再刷新 TTL。
 
+第二批（客户端韧性 / 流式 / 追踪）：
+
+- HTTP keep-alive Agent 由 `ClientConfig.pool` 驱动（maxSockets/idleTimeout），并在 client shutdown 时销毁。
+- Retry：`maxElapsed`、jitter、`retryOnMethods`、`retryOnStatuses`、`retryBudget`（滚动窗口），interceptor 传入 request 以判定幂等。
+- Gateway 流式转发：`route.stream` 与 `text/event-stream` 自动走 `Readable.fromWeb`，跳过缓存/改写/压缩/webhook。
+- Gateway header 卫生：剥离 hop-by-hop、修正 `content-length`、补 `x-forwarded-proto/host`；新增 `maxBodyBytes`（413）。
+- Tracing：`AsyncLocalStorage` 隔离并发 span，finish 恢复父 span；W3C `traceparent` 解析/注入，保留旧 `x-trace-*`。
+
 
 ---
 

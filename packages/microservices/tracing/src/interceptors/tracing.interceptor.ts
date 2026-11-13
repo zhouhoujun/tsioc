@@ -33,19 +33,7 @@ export class TracingInterceptor implements RequestInterceptor<ReadableLike<Incom
         // Start span
         const span = this.tracer.startSpan(`${method} ${path}`, {
             kind: 'SERVER',
-            parent: extractedContext ? {
-                spanId: extractedContext.spanId,
-                traceId: extractedContext.traceId,
-                parentSpanId: extractedContext.parentSpanId,
-                context: () => extractedContext,
-                // Mock span methods for parent context
-                setName: () => {},
-                setStatus: () => {},
-                setAttribute: () => {},
-                log: () => {},
-                recordError: () => {},
-                finish: () => {}
-            } as any as Span : undefined,
+            parent: extractedContext ?? undefined,
             attributes: {
                 'http.method': method,
                 'http.url': path,

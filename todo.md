@@ -3771,3 +3771,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - useJson/useCookie 选项接线（signed cookie）、useAuth(false) 修复、useTransfers 保留默认 transfer。
   - 客户端 discovery/load balance 真正可用（EndpointResolver + 上下文 endpoint + HTTP 目标改写）；selector 修复。
   - 回归：ioc 254、service 61、http 186、client 76、gateway 47、config 75、health 19、discovery 63、admin 54。
+- 微服务框架第二批（2026-11-13）：
+  - HTTP keep-alive Agent（ClientConfig.pool）与 shutdown 销毁；requestOpts/agent 保留。
+  - Retry maxElapsed/jitter/retryOnMethods/retryOnStatuses/retryBudget；interceptor 传入 request。
+  - Gateway 流式转发（route.stream / SSE），跳过缓存/改写/压缩/webhook。
+  - Gateway header 卫生 + content-length 修正 + x-forwarded-proto/host + maxBodyBytes(413)。
+  - Tracing AsyncLocalStorage 并发隔离 + W3C traceparent，保留旧 x-trace-*。
+  - 回归：client 80、http 187、gateway 50、tracing 40。
