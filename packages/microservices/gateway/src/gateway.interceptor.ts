@@ -530,16 +530,18 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         const response = context.get(HTTP_RESPONSE);
         const cacheKey = this.resolveCacheKey(route, request);
         if (cacheKey) {
-            const cached = this.runtime.getCached(cacheKey);
+            const cached = this.runtime.getCachedEntry(cacheKey);
             if (cached) {
+                const age = Math.max(0, Math.floor((Date.now() - cached.storedAt) / 1000));
                 return this.sendResponse(route, request, context, {
-                    ...cached,
+                    ...cached.value,
                     headers: {
-                        ...(cached.headers ?? {}),
-                        'x-gateway-cache': 'HIT'
+                        ...(cached.value.headers ?? {}),
+                        'x-gateway-cache': 'HIT',
+                        'age': String(age)
                     },
                     meta: {
-                        ...(cached.meta ?? {}),
+                        ...(cached.value.meta ?? {}),
                         cacheStatus: 'HIT',
                         outcome: 'cache',
                         canary: !!route.canary
@@ -598,7 +600,10 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             }
             const cache = this.getCacheOptions(route);
             if (cacheKey && !upstreamFailed && result.meta?.streaming !== true && this.shouldCache(route, result)) {
-                this.runtime.setCached(cacheKey, result, cache?.ttl ?? 60_000);
+                this.runtime.setCached(cacheKey, result, cache?.ttl ?? 60_000, {
+                    maxEntries: cache?.maxEntries,
+                    maxBytes: cache?.maxBytes
+                });
             }
             result.meta = {
                 ...(result.meta ?? {}),
@@ -1690,7 +1695,15 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
 
     private shouldCache(route: ResolvedGatewayRoute, result: GatewayForwardResult): boolean {
         const cache = this.getCacheOptions(route);
-        return !!cache?.enabled && result.status >= 200 && result.status < 300;
+        if (!cache?.enabled || result.status < 200 || result.status >= 300) {
+            return false;
+        }
+        const headers = result.headers ?? {};
+        if (headers['set-cookie'] || headers['Set-Cookie']) {
+            return false;
+        }
+        const cacheControl = String(headers['cache-control'] ?? headers['Cache-Control'] ?? '').toLowerCase();
+        return !cacheControl.includes('no-store') && !cacheControl.includes('private');
     }
 
     private resolveCacheKey(route: ResolvedGatewayRoute, request: HttpRequestMessage): string | null {
@@ -1701,7 +1714,20 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         if (cache.key) {
             return cache.key(request, route);
         }
-        return `${route.path}:${request.method ?? 'GET'}:${request.url ?? '/'}`;
+        const authorization = this.getHeaderValue(request, 'authorization');
+        const cookie = this.getHeaderValue(request, 'cookie');
+        if (!cache.allowAuth && (authorization || cookie)) {
+            return null;
+        }
+        const parts = [`${route.path}:${request.method ?? 'GET'}:${request.url ?? '/'}`];
+        const vary = (cache.vary ?? []).map(name => name.toLowerCase()).sort();
+        for (const name of vary) {
+            parts.push(`${name}=${this.getHeaderValue(request, name) ?? ''}`);
+        }
+        if (cache.allowAuth && authorization) {
+            parts.push(`auth=${crypto.createHash('sha1').update(String(authorization)).digest('hex')}`);
+        }
+        return parts.join('|');
     }
 
     private resolveFallbackPayload(route: ResolvedGatewayRoute, request: HttpRequestMessage, error?: any): GatewayForwardResult | null {

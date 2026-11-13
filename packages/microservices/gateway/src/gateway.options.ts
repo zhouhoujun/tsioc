@@ -403,6 +403,23 @@ export interface GatewayCacheOptions {
      * cache key builder.
      */
     key?: (request: any, route: GatewayRouteOptions) => string;
+    /**
+     * request headers that participate in the cache key.
+     */
+    vary?: string[];
+    /**
+     * cache responses for requests carrying Authorization/Cookie. Default false
+     * so per-user responses are never shared across callers.
+     */
+    allowAuth?: boolean;
+    /**
+     * maximum number of cached responses.
+     */
+    maxEntries?: number;
+    /**
+     * approximate maximum total payload size in bytes.
+     */
+    maxBytes?: number;
 }
 
 export interface GatewayResponseCacheOptions {

@@ -38,6 +38,13 @@
 - `GatewayLifecycle` 的远程配置改为走事务 apply：非法配置只记录审计，不替换在线表。
 - Admin 新增 `GET /config`、`GET /config/history`、`POST /config/apply`、`POST /config/rollback`；`PUT /routes` 与规则 apply 统一走事务服务。
 
+第四批（Gateway 缓存正确性）：
+
+- 默认不缓存携带 `Authorization`/`Cookie` 的请求；`cache.allowAuth` 开启后按凭据哈希隔离。
+- 支持 `cache.vary` 参与 key；`cache.maxEntries` / `cache.maxBytes` 有界 LRU（刷新命中顺序、过期清理）。
+- 命中返回 `x-gateway-cache: HIT` 与 `Age`；带 `set-cookie`、`no-store`、`private` 的响应不缓存。
+- 配置 apply 时按 diff 失效缓存/轮询/熔断状态。
+
 
 ---
 

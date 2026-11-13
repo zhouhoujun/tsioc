@@ -4,7 +4,14 @@ import { ServiceEndpoint } from '@tsdi/discovery';
 
 interface CacheEntry {
     expireAt: number;
+    storedAt: number;
+    size: number;
     value: any;
+}
+
+export interface GatewayCacheLimits {
+    maxEntries?: number;
+    maxBytes?: number;
 }
 
 interface CircuitState {
@@ -77,6 +84,10 @@ export class GatewayRuntime {
     }
 
     getCached(key: string): any | undefined {
+        return this.getCachedEntry(key)?.value;
+    }
+
+    getCachedEntry(key: string): { value: any; storedAt: number; size: number } | undefined {
         const entry = this.cache.get(key);
         if (!entry) {
             return undefined;
@@ -85,14 +96,60 @@ export class GatewayRuntime {
             this.cache.delete(key);
             return undefined;
         }
-        return entry.value;
+        // Refresh LRU recency.
+        this.cache.delete(key);
+        this.cache.set(key, entry);
+        return { value: entry.value, storedAt: entry.storedAt, size: entry.size };
     }
 
-    setCached(key: string, value: any, ttl: number): void {
+    setCached(key: string, value: any, ttl: number, limits: GatewayCacheLimits = {}): void {
+        const now = Date.now();
+        this.pruneExpiredCache(now);
+        this.cache.delete(key);
         this.cache.set(key, {
             value,
-            expireAt: Date.now() + ttl
+            expireAt: now + ttl,
+            storedAt: now,
+            size: estimatePayloadSize(value)
         });
+        this.enforceCacheLimits(limits);
+    }
+
+    private pruneExpiredCache(now = Date.now()): void {
+        for (const [key, entry] of this.cache) {
+            if (entry.expireAt <= now) {
+                this.cache.delete(key);
+            }
+        }
+    }
+
+    private enforceCacheLimits(limits: GatewayCacheLimits): void {
+        const maxEntries = limits.maxEntries ?? 0;
+        const maxBytes = limits.maxBytes ?? 0;
+        while (maxEntries > 0 && this.cache.size > maxEntries) {
+            this.deleteOldestCacheEntry();
+        }
+        if (maxBytes > 0) {
+            let total = 0;
+            for (const entry of this.cache.values()) {
+                total += entry.size;
+            }
+            while (total > maxBytes && this.cache.size > 0) {
+                const oldest = this.cache.keys().next().value as string | undefined;
+                if (oldest === undefined) {
+                    break;
+                }
+                total -= this.cache.get(oldest)?.size ?? 0;
+                this.cache.delete(oldest);
+            }
+        }
+    }
+
+    private deleteOldestCacheEntry(): void {
+        const oldest = this.cache.keys().next().value as string | undefined;
+        if (oldest !== undefined) {
+            this.cache.delete(oldest);
+        }
     }
 
     nextRoundIndex(key: string, size: number): number {
@@ -334,5 +391,19 @@ export class GatewayRuntime {
             }
         }
         return cloned;
+    }
+}
+
+function estimatePayloadSize(value: any): number {
+    try {
+        if (typeof value === 'string') {
+            return Buffer.byteLength(value);
+        }
+        if (Buffer.isBuffer(value)) {
+            return value.length;
+        }
+        return Buffer.byteLength(JSON.stringify(value));
+    } catch {
+        return 0;
     }
 }

@@ -1189,6 +1189,144 @@ describe('Gateway', () => {
         expect(sent.headers['x-gateway-cache']).toBe('HIT');
     });
 
+    it('does not share cached responses across authenticated callers by default', async () => {
+        const runtime = new GatewayRuntime();
+        const create = (allowAuth: boolean) => new GatewayInterceptor({
+            routes: [{
+                path: '/secure-cache',
+                service: 'secure-cache',
+                targetUrl: 'http://secure.internal',
+                cache: { enabled: true, ttl: 60_000, allowAuth }
+            }]
+        }, null as any, null as any, runtime, null as any, { get: () => null } as any);
+
+        const sent: any = {};
+        const adapter = {
+            setStatus(code: number) { sent.status = code; return this; },
+            setHeader(name: string, value: string) { (sent.headers ??= {})[name] = value; return this; },
+            setPayload(payload: any) { sent.payload = payload; return this; },
+            sendResponse(payload: any) { sent.sentPayload = payload; }
+        };
+        const context = createContext(adapter);
+        (context as any).set(require('../../http/src/server').HttpMessageAdapter, adapter);
+        (context as any).set(require('../../http/src/server').HTTP_RESPONSE, sent);
+
+        let calls = 0;
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = (async () => {
+            calls++;
+            return {
+                status: 200,
+                statusText: 'OK',
+                headers: new Headers({ 'content-type': 'application/json' }),
+                async json() { return { calls }; },
+                async text() { return JSON.stringify({ calls }); }
+            } as any;
+        }) as any;
+
+        const run = async (interceptor: GatewayInterceptor, authorization: string) => {
+            await new Promise<void>((resolve, reject) => {
+                interceptor.intercept({
+                    url: '/secure-cache',
+                    method: 'GET',
+                    headers: { authorization },
+                    query: {},
+                    socket: { remoteAddress: '127.0.0.1' }
+                } as any, { handle: () => of(null) } as any, context).subscribe({
+                    next: () => resolve(),
+                    error: reject,
+                    complete: () => resolve()
+                });
+            });
+        };
+
+        try {
+            const isolated = create(true);
+            await run(isolated, 'Bearer a');
+            await run(isolated, 'Bearer b');
+            await run(isolated, 'Bearer a');
+            expect(calls).toBe(2);
+
+            calls = 0;
+            runtime.invalidateConfigCaches();
+            const shared = create(false);
+            await run(shared, 'Bearer a');
+            await run(shared, 'Bearer b');
+            await run(shared, 'Bearer a');
+            expect(calls).toBe(3);
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+    });
+
+    it('keys the cache by vary headers and caps the number of entries', async () => {
+        const runtime = new GatewayRuntime();
+        const interceptor = new GatewayInterceptor({
+            routes: [{
+                path: '/vary-cache',
+                service: 'vary-cache',
+                targetUrl: 'http://vary.internal',
+                cache: { enabled: true, ttl: 60_000, vary: ['accept-language'], maxEntries: 2 }
+            }]
+        }, null as any, null as any, runtime, null as any, { get: () => null } as any);
+
+        const sent: any = {};
+        const adapter = {
+            setStatus(code: number) { sent.status = code; return this; },
+            setHeader(name: string, value: string) { (sent.headers ??= {})[name] = value; return this; },
+            setPayload(payload: any) { sent.payload = payload; return this; },
+            sendResponse(payload: any) { sent.sentPayload = payload; }
+        };
+        const context = createContext(adapter);
+        (context as any).set(require('../../http/src/server').HttpMessageAdapter, adapter);
+        (context as any).set(require('../../http/src/server').HTTP_RESPONSE, sent);
+
+        let calls = 0;
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = (async () => {
+            calls++;
+            return {
+                status: 200,
+                statusText: 'OK',
+                headers: new Headers({ 'content-type': 'application/json' }),
+                async json() { return { calls }; },
+                async text() { return JSON.stringify({ calls }); }
+            } as any;
+        }) as any;
+
+        const run = async (language: string) => {
+            await new Promise<void>((resolve, reject) => {
+                interceptor.intercept({
+                    url: '/vary-cache',
+                    method: 'GET',
+                    headers: { 'accept-language': language },
+                    query: {},
+                    socket: { remoteAddress: '127.0.0.1' }
+                } as any, { handle: () => of(null) } as any, context).subscribe({
+                    next: () => resolve(),
+                    error: reject,
+                    complete: () => resolve()
+                });
+            });
+        };
+
+        try {
+            await run('en');
+            await run('fr');
+            expect(calls).toBe(2);
+            await run('en');
+            expect(calls).toBe(2);
+            expect(sent.headers['x-gateway-cache']).toBe('HIT');
+            expect(sent.headers.age).toBeDefined();
+
+            await run('de');
+            expect(calls).toBe(3);
+            expect(runtime.snapshot().cacheEntries).toBeLessThanOrEqual(2);
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+    });
+
     it('supports circuit breaker fallback and route mock on upstream failure', async () => {
         const interceptor = new GatewayInterceptor({
             routes: [{

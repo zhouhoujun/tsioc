@@ -3783,3 +3783,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - GatewayLifecycle 远程配置走事务 apply，非法配置不替换在线表。
   - Admin config API：GET /config、/config/history、POST /config/apply、/config/rollback；PUT /routes 与规则 apply 统一事务。
   - 回归：gateway 60、admin 56。
+- 微服务框架第四批（2026-11-13）：
+  - Gateway 缓存默认跳过 Authorization/Cookie；allowAuth 按凭据哈希隔离。
+  - cache.vary 参与 key；maxEntries/maxBytes 有界 LRU + 过期清理；命中返回 Age。
+  - set-cookie/no-store/private 响应不缓存；配置 apply 按 diff 失效缓存。
+  - 回归：gateway 62。
