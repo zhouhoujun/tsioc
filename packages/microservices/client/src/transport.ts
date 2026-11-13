@@ -64,6 +64,17 @@ export function createClientTransportFeature<TConfig extends ClientConfig>(
     const handlerToken = getClientHandlerToken(config);
     const interceptorsToken = getClientInterceptorsToken(config);
 
+    // Expose this config to `provideClientFromDi`.
+    (config as any).transportFeature = (next: ClientConfig, defaultFlag?: boolean) => createClientTransportFeature({
+        ...options,
+        config: {
+            ...config,
+            ...next,
+            features: { ...config.features, ...(next?.features ?? {}) }
+        } as TConfig,
+        asDefault: defaultFlag ?? options.asDefault
+    });
+
     const providers: Provider[] = [
         ...(options.providers ?? []),
         { provide: CLIENT_CONFIGS, useValue: config, multi: true },

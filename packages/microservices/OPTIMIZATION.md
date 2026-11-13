@@ -64,6 +64,12 @@
 - `History` 列出最近版本与 diff 摘要，可一键 rollback；回滚后刷新状态栏。
 - 生产 bundle 实测 v1 版本、diff 弹窗、历史回滚。
 
+第八批（DI 驱动启动收口）：
+
+- `createServiceTransportFeature` / HTTP transport factory 注册 `SERVICE_CONFIGS` 并挂载 `config.transportFeature`。
+- `createClientTransportFeature` / HTTP client factory 挂载 `config.transportFeature`。
+- `provideServiceFromDi` / `provideClientFromDi` 不再依赖测试里手工构造的 config，可直接从真实 transport feature 重建服务/客户端。
+
 
 ---
 

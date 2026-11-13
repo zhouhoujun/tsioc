@@ -9,7 +9,7 @@ import { withHttpTransport, HTTP_CLIENT_OPTIONS, HttpClientOptions } from '../sr
 import { BodySerializeStrategy, ServiceError, CLIENT_SELECTED_ENDPOINT, getClientBackendToken, TimeoutStrategy } from '@tsdi/client';
 import { FileAdapter, MessageAdapter, MimeAdapter, MimeTypes, RestfulRequestAdapter, StreamAdapter, Transport, TransferSide } from '@tsdi/common';
 import { parseMultipartBody } from '../src/server/multipart';
-import { BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SERVICE_JSON_OPTIONS, SERVICE_STATICS_OPTIONS, SessionInterceptor } from '@tsdi/service';
+import { BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SERVICE_CONFIGS, SERVICE_JSON_OPTIONS, SERVICE_STATICS_OPTIONS, SessionInterceptor, getServiceToken, provideServiceFromDi } from '@tsdi/service';
 import { createRequestContext, REQUEST, RESPONSE } from '@tsdi/common';
 import { createInjector, importProvidersFrom } from '@tsdi/ioc';
 import { HttpClient } from '../src/client/client';
@@ -429,6 +429,18 @@ describe('HTTP Microservice', () => {
             expect(features).toHaveLength(2);
             expect(features[0].config.transport).toBe(Transport.HTTP);
             expect(features[1].config.transport).toBe(Transport.HTTP);
+        });
+
+        it('exposes the transport config for DI-driven bootstrap', () => {
+            const feature = useHttpTransport({ listenOpts: { port: 0, host: '127.0.0.1' } })[0];
+            expect(feature.providers.some((provider: any) => provider.provide === SERVICE_CONFIGS)).toBe(true);
+            expect(typeof (feature.config as any).transportFeature).toBe('function');
+
+            const [provider] = provideServiceFromDi({ transport: Transport.HTTP } as any) as any[];
+            const providers = provider.provider({
+                get: (token: any) => token === SERVICE_CONFIGS ? [feature.config] : []
+            }) as any[];
+            expect(providers.some((item: any) => item.provide === getServiceToken(feature.config))).toBe(true);
         });
 
         it('should mark single transport as default when not specified', () => {

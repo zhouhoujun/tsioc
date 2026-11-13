@@ -21,6 +21,7 @@ import {
 import { AbstractClient } from '../src/AbstractClient';
 import { ensureClientConnectedInterceptor } from '../src/interceptors/connect';
 import { getClientToken } from '../src/tokens';
+import { createClientTransportFeature } from '../src/transport';
 import { ClientFeatureKind } from '../src/options';
 import { getClientInterceptorsToken } from '../src/tokens';
 import {
@@ -269,6 +270,33 @@ describe('client provider', () => {
     it('throws when provideClientFromDi cannot find matching config', () => {
         const [provider] = provideClientFromDi({ transport: Transport.TCP, name: 'missing' } as any) as any[];
         expect(() => provider.provider({ get: () => [] })).toThrow(/messings 1 microservice client configure, ailas with name missing/);
+    });
+
+    it('builds a client from a real transport feature via provideClientFromDi', () => {
+        class DummyClient extends AbstractClient<any, any> {
+            protected get handler(): any { return null; }
+            protected buildRequest(): any { return null; }
+            protected initContext(): void { /* noop */ }
+            protected onShutdown(): Promise<void> { return Promise.resolve(); }
+        }
+        const config = {
+            transport: Transport.HTTP,
+            side: TransferSide.client,
+            features: {}
+        } as any;
+        const feature = createClientTransportFeature({
+            config,
+            optionToken: 'HTTP_CLIENT_TRANSPORT_OPTIONS' as any,
+            clientType: DummyClient as any,
+            backendProvider: { provide: 'DUMMY_BACKEND', useValue: () => ({}) }
+        });
+        const injector = createInjector([
+            ...feature.providers,
+            ...provideClientFromDi({ transport: Transport.HTTP } as any)
+        ] as any);
+
+        expect(injector.has(getClientToken(config))).toBe(true);
+        expect((injector.get(CLIENT_CONFIGS) as any[]).length).toBeGreaterThanOrEqual(1);
     });
 
     it('throws when provideClientFromDi finds config without transportFeature', () => {

@@ -14,6 +14,8 @@ import {
     ROUTERS,
     SERV_OPTIONS,
     ServiceFeatureKind,
+    createServiceTransportFeature,
+    getServiceToken,
     SERVICE_AUTH_OPTIONS,
     SERVICE_BODY_PARSER_OPTIONS,
     SERVICE_CONFIGS,
@@ -107,6 +109,26 @@ describe('service provider', () => {
 
         expect(providers.some((item: any) => item.provide === 'di-transport-provider' && item.useValue === true)).toBe(true);
         expect(providers.length).toBeGreaterThan(1);
+    });
+
+    it('builds a service from a real transport feature via provideServiceFromDi', () => {
+        const config = createConfig();
+        class DummyServer { }
+        const feature = createServiceTransportFeature({
+            config,
+            optionToken: 'HTTP_TRANSPORT_OPTIONS' as any,
+            serverType: DummyServer as any,
+            backendProvider: { provide: 'DUMMY_BACKEND', useValue: () => null }
+        });
+        expect(feature.providers.some((provider: any) => provider.provide === SERVICE_CONFIGS)).toBe(true);
+        expect(typeof (config as any).transportFeature).toBe('function');
+
+        const [provider] = provideServiceFromDi({ transport: Transport.HTTP } as any) as any[];
+        const providers = provider.provider({
+            get: (token: any) => token === SERVICE_CONFIGS ? [config] : []
+        }) as any[];
+        expect(providers.length).toBeGreaterThan(1);
+        expect(providers.some((item: any) => item.provide === getServiceToken(config))).toBe(true);
     });
 
     it('throws when service config found via DI does not include transportFeature', () => {

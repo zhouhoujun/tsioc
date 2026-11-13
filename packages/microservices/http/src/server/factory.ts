@@ -17,7 +17,7 @@ import { Cors } from './interceptors';
 import { HttpTransportSenderFilter } from './interceptors/send-response';
 import { HttpMessageAdapter } from './message-adapter';
 import { HttpMessageAdapterFactory } from './message-adapter.factory';
-import { AuthInterceptor, BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SERVICE_STATICS_OPTIONS, SessionInterceptor } from '@tsdi/service';
+import { AuthInterceptor, BodyParserInterceptor, SERVICE_CONFIGS, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SERVICE_STATICS_OPTIONS, SessionInterceptor } from '@tsdi/service';
 
 const useHttpTransfer = () => () => ({
     filters: [HttpTransportSenderFilter as unknown as RequestFilterLike]
@@ -46,7 +46,13 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
     config.providers = option.providers ? [...option.providers] : [];
     config.providers.push(
         { provide: HTTP_SERV_OPTIONS, useValue: config },
+        { provide: SERVICE_CONFIGS, useValue: config, multi: true }
     );
+    (config as any).transportFeature = (next: HttpServOptions, defaultFlag?: boolean) => httpTransportFactory({
+        ...config,
+        ...next,
+        features: { ...config.features, ...(next?.features ?? {}) }
+    }, defaultFlag ?? asDefault);
 
     const providers: Provider[] = [
         ...config.providers,

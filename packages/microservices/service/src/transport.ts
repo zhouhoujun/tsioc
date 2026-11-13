@@ -5,6 +5,7 @@ import { ServiceConfig, ServiceFeatureKind, ServiceTransportFeature } from './op
 import { ServiceHandler } from './ServiceHandler';
 import { MicroService } from './Service';
 import {
+    SERVICE_CONFIGS,
     getServiceBackendToken,
     getServiceFiltersToken,
     getServiceGuardsToken,
@@ -96,8 +97,21 @@ export function createServiceTransportFeature<TConfig extends ServiceConfig>(
         } as Provider & { multiOrder: number }]
         : [];
 
+    // Expose this config to the DI-driven bootstrap path (`provideServiceFromDi`)
+    // and let it rebuild the same transport feature from a resolved config.
+    (config as any).transportFeature = (next: ServiceConfig, defaultFlag?: boolean) => createServiceTransportFeature({
+        ...options,
+        config: {
+            ...config,
+            ...next,
+            features: { ...config.features, ...(next?.features ?? {}) }
+        } as TConfig,
+        asDefault: defaultFlag ?? options.asDefault
+    });
+
     const providers: Provider[] = [
         ...(options.providers ?? []),
+        { provide: SERVICE_CONFIGS, useValue: config, multi: true } as any,
         { provide: AuthInterceptor, useClass: MessageAuthInterceptor },
         { provide: MessageAuthInterceptor, useExisting: AuthInterceptor },
         ...authProviders,

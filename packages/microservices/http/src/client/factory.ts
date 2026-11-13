@@ -20,6 +20,11 @@ function httpClientTransportFactory(option: Partial<HttpClientOptions>, asDefaul
     config.providers.push(
         { provide: HTTP_CLIENT_OPTIONS, useValue: config },
     );
+    (config as any).transportFeature = (next: HttpClientOptions, defaultFlag?: boolean) => httpClientTransportFactory({
+        ...config,
+        ...next,
+        features: { ...config.features, ...(next?.features ?? {}) }
+    }, defaultFlag ?? asDefault);
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);
     const backendToken = getClientBackendToken(config);

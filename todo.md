@@ -3802,3 +3802,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - Preview 调用 config dry-run 并展示 routes/rules/options diff。
   - History 列出历史版本 + diff 摘要，支持 rollback。
   - 回归：admin 57；生产 bundle 实测版本/diff/回滚。
+- 微服务框架第八批（2026-11-13）：
+  - transport factory 注册 SERVICE_CONFIGS 并挂载 transportFeature（service/client、HTTP 专用工厂）。
+  - provideServiceFromDi / provideClientFromDi 可从真实 transport feature 重建，不再依赖手工 config。
+  - 回归：service 62、client 81、http 188。
