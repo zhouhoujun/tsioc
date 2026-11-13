@@ -157,6 +157,12 @@
 - 支持 UP/DOWN 状态、metadata/tags/version/port 映射、可配置续约与心跳间隔。
 - `useEurekaDiscovery(options)` 可直接接入 Gateway discovery。
 
+第二十四批（舱壁可观测性）：
+
+- `GatewayBulkheadSnapshot` 增加 limit/maxQueue/rejected/timeouts。
+- Runtime 输出 `gateway_bulkhead_active/queued/limit` gauge 与 rejected/timeout 计数。
+- 队列等待超时与快速拒绝分别计数，便于容量规划。
+
 
 ---
 

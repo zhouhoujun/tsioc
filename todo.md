@@ -3877,3 +3877,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - EurekaServiceDiscovery（register/heartbeat/deregister/discover/getServices/watch）。
   - useEurekaDiscovery；状态/metadata/tags/version 映射。
   - 回归：discovery 78。
+- 微服务框架第二十四批（2026-11-13）：
+  - 舱壁 snapshot 增加 limit/maxQueue/rejected/timeouts。
+  - gateway_bulkhead_active/queued/limit + rejected/timeout 指标。
+  - 回归：gateway 75。

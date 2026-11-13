@@ -2,6 +2,7 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { GatewayBulkheadOptions, GatewayCircuitBreakerOptions, GatewayMockOptions, GatewayOptions, GatewayRouteOptions, GatewayRuleOptions, GatewaySensitiveFieldRule } from './gateway.options';
 import { ServiceEndpoint } from '@tsdi/discovery';
 import { GatewayCircuitRecord, GatewayStateStore } from './state.store';
+import { MetricsCollector } from '@tsdi/metrics';
 
 interface CacheEntry {
     expireAt: number;
@@ -31,6 +32,10 @@ interface BulkheadEntry {
 interface BulkheadState {
     active: number;
     queue: BulkheadEntry[];
+    limit: number;
+    maxQueue: number;
+    rejected: number;
+    timeouts: number;
 }
 
 export interface GatewayCircuitSnapshot {
@@ -43,6 +48,10 @@ export interface GatewayBulkheadSnapshot {
     key: string;
     active: number;
     queued: number;
+    limit?: number;
+    maxQueue?: number;
+    rejected?: number;
+    timeouts?: number;
 }
 
 export interface GatewayRuntimeSnapshot {
@@ -65,7 +74,8 @@ export class GatewayRuntime {
     private bulkheads = new Map<string, BulkheadState>();
 
     constructor(
-        @Optional() @Inject(GatewayStateStore) private readonly store?: GatewayStateStore | null
+        @Optional() @Inject(GatewayStateStore) private readonly store?: GatewayStateStore | null,
+        @Optional() @Inject(MetricsCollector) private readonly metrics?: MetricsCollector | null
     ) { }
 
     private get stateStore(): GatewayStateStore | undefined {
@@ -95,7 +105,11 @@ export class GatewayRuntime {
             bulkheads: Array.from(this.bulkheads.entries()).map(([key, state]) => ({
                 key,
                 active: state.active,
-                queued: state.queue.length
+                queued: state.queue.length,
+                limit: state.limit,
+                maxQueue: state.maxQueue,
+                rejected: state.rejected,
+                timeouts: state.timeouts
             }))
         };
     }
@@ -338,10 +352,14 @@ export class GatewayRuntime {
             return () => undefined;
         }
         const maxConcurrent = options.maxConcurrent ?? Number.MAX_SAFE_INTEGER;
+        const maxQueue = Math.max(options.maxQueue ?? 0, 0);
         let state = this.bulkheads.get(routeKey);
         if (!state) {
-            state = { active: 0, queue: [] };
+            state = { active: 0, queue: [], limit: maxConcurrent, maxQueue, rejected: 0, timeouts: 0 };
             this.bulkheads.set(routeKey, state);
+        } else {
+            state.limit = maxConcurrent;
+            state.maxQueue = maxQueue;
         }
         const error = () => Object.assign(new Error(options.message ?? 'Gateway bulkhead is full'), {
             statusCode: 503,
@@ -349,9 +367,13 @@ export class GatewayRuntime {
         });
         if (state.active < maxConcurrent) {
             state.active++;
+            this.emitBulkheadMetrics(routeKey, state);
             return this.releaseBulkhead(routeKey, state);
         }
-        if (state.queue.length >= Math.max(options.maxQueue ?? 0, 0)) {
+        if (state.queue.length >= maxQueue) {
+            state.rejected += 1;
+            this.metrics?.increment('gateway_bulkhead_rejected_total', 1, { key: routeKey });
+            this.emitBulkheadMetrics(routeKey, state);
             throw error();
         }
         const timeoutMs = Math.max(options.queueTimeoutMs ?? 0, 0);
@@ -366,6 +388,9 @@ export class GatewayRuntime {
                     if (index >= 0) {
                         state!.queue.splice(index, 1);
                     }
+                    state!.timeouts += 1;
+                    this.metrics?.increment('gateway_bulkhead_timeout_total', 1, { key: routeKey });
+                    this.emitBulkheadMetrics(routeKey, state!);
                     reject(error());
                 }, timeoutMs);
                 if (typeof (entry.timer as any).unref === 'function') {
@@ -373,6 +398,7 @@ export class GatewayRuntime {
                 }
             }
             state!.queue.push(entry);
+            this.emitBulkheadMetrics(routeKey, state!);
         });
     }
 
@@ -392,9 +418,20 @@ export class GatewayRuntime {
                 state.active++;
                 next.resolve();
             } else if (state.active === 0) {
+                this.emitBulkheadMetrics(routeKey, state);
                 this.bulkheads.delete(routeKey);
             }
+            this.emitBulkheadMetrics(routeKey, state);
         };
+    }
+
+    private emitBulkheadMetrics(key: string, state: BulkheadState): void {
+        if (!this.metrics) {
+            return;
+        }
+        this.metrics.gauge('gateway_bulkhead_active', state.active, { key });
+        this.metrics.gauge('gateway_bulkhead_queued', state.queue.length, { key });
+        this.metrics.gauge('gateway_bulkhead_limit', state.limit, { key });
     }
 
     hasSharedState(): boolean {

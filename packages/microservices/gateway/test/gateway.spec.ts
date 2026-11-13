@@ -475,9 +475,32 @@ describe('Gateway', () => {
         const queued = runtime.acquireBulkhead('route', options);
 
         await expect(runtime.acquireBulkhead('route', options)).rejects.toThrow('bulkhead');
+        const snapshot = (await runtime.snapshot()).bulkheads.find(item => item.key === 'route');
+        expect(snapshot?.queued).toBe(1);
+        expect(snapshot?.limit).toBe(1);
+        expect(snapshot?.rejected).toBe(1);
         release();
         const queuedRelease = await queued;
         queuedRelease();
+    });
+
+    it('records bulkhead timeouts and metrics', async () => {
+        const events: any[] = [];
+        const metrics: any = {
+            gauge: (name: string, value: number, labels: any) => events.push({ type: 'gauge', name, value, labels }),
+            increment: (name: string, value: number, labels: any) => events.push({ type: 'increment', name, value, labels })
+        };
+        const runtime = new GatewayRuntime(null as any, metrics);
+        const options = { maxConcurrent: 1, maxQueue: 1, queueTimeoutMs: 5 };
+        const release = await runtime.acquireBulkhead('route-metrics', options);
+        const queued = runtime.acquireBulkhead('route-metrics', options);
+
+        await expect(queued).rejects.toThrow('bulkhead');
+        const snapshot = (await runtime.snapshot()).bulkheads.find(item => item.key === 'route-metrics');
+        expect(snapshot?.timeouts).toBe(1);
+        expect(events.some(event => event.name === 'gateway_bulkhead_timeout_total')).toBe(true);
+        expect(events.some(event => event.name === 'gateway_bulkhead_queued' && event.value === 1)).toBe(true);
+        release();
     });
 
     it('classifies gateway errors for logs, metrics and response headers', () => {
