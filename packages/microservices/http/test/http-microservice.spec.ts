@@ -7,12 +7,14 @@ import { HttpMessageAdapter } from '../src/server/message-adapter';
 import { HTTP_AUTH_OPTIONS } from '../src/server/interceptors/auth';
 import { withHttpTransport, HTTP_CLIENT_OPTIONS, HttpClientOptions } from '../src/client';
 import { BodySerializeStrategy, ServiceError, CLIENT_SELECTED_ENDPOINT, getClientBackendToken, TimeoutStrategy } from '@tsdi/client';
+import { ContractHttpError } from '@tsdi/microservice-contract';
 import { FileAdapter, MessageAdapter, MimeAdapter, MimeTypes, RestfulRequestAdapter, StreamAdapter, Transport, TransferSide } from '@tsdi/common';
 import { parseMultipartBody } from '../src/server/multipart';
 import { BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SERVICE_CONFIGS, SERVICE_JSON_OPTIONS, SERVICE_STATICS_OPTIONS, SessionInterceptor, getServiceToken, provideServiceFromDi } from '@tsdi/service';
 import { createRequestContext, REQUEST, RESPONSE } from '@tsdi/common';
 import { createInjector, importProvidersFrom } from '@tsdi/ioc';
 import { HttpClient } from '../src/client/client';
+import { createHttpContractTransport } from '../src/client/contract-transport';
 import { HttpRequest } from '../src/client/request';
 import { HttpCookieInterceptor } from '../src/server/interceptors/cookie';
 import { HttpContentInterceptor } from '../src/server/interceptors/content';
@@ -377,6 +379,40 @@ describe('HTTP Microservice', () => {
             } finally {
                 (http as any).request = originalRequest;
             }
+        });
+    });
+
+    describe('createHttpContractTransport', () => {
+        it('reuses HttpClient for contract calls', async () => {
+            const calls: any[] = [];
+            const client = {
+                send(request: any) {
+                    calls.push(request);
+                    return of({ status: 200, ok: true, body: { id: '1' } });
+                }
+            } as any;
+            const transport = createHttpContractTransport(client, { baseUrl: 'http://users.test' });
+
+            const result = await transport.request({
+                method: 'GET',
+                path: '/users/1',
+                query: { verbose: true }
+            });
+            expect(result).toEqual({ id: '1' });
+            expect(calls[0].url).toBe('http://users.test/users/1');
+            expect(calls[0].method).toBe('GET');
+            expect(calls[0].params.toString()).toContain('verbose=true');
+        });
+
+        it('maps non-2xx responses to ContractHttpError', async () => {
+            const client = {
+                send() {
+                    return of({ status: 404, ok: false, body: { message: 'missing' } });
+                }
+            } as any;
+            const transport = createHttpContractTransport(client);
+            await expect(transport.request({ method: 'GET', path: '/users/1' }))
+                .rejects.toBeInstanceOf(ContractHttpError);
         });
     });
 

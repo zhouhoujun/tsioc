@@ -41,6 +41,7 @@
     "@tsdi/core": "6.0.31",
     "@tsdi/ioc": "6.0.31",
     "@tsdi/logger": "6.0.31",
+    "@tsdi/microservice-contract": "6.0.31",
     "@tsdi/mime": "6.0.31",
     "@tsdi/platform-server": "6.0.31",
     "@tsdi/security": "6.0.31",

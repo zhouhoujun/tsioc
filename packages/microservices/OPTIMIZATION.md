@@ -105,6 +105,8 @@
 - 新增 `validateContractValue`，支持 request/response 运行期校验。
 - 新增 `createFetchContractTransport`（baseUrl/headers/timeout/非 2xx 错误）。
 - 新增 `generateClient` + CLI `--client`，生成类型化接口与工厂。
+- `createHttpContractTransport`：contract client 复用 `HttpClient` 的 discovery/LB/retry/circuit/metrics/tracing。
+- contract 包新增 root `index.ts`，修复 package 级别 `@tsdi/microservice-contract` 解析。
 
 
 ---

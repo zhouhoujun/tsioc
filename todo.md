@@ -3834,3 +3834,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - createFetchContractTransport（baseUrl/headers/timeout/错误）。
   - generateClient + CLI --client 生成 typed interface/factory。
   - 回归：contract 16。
+- 微服务框架第十五批（2026-11-13）：
+  - createHttpContractTransport：contract client 复用 HttpClient 完整治理链。
+  - contract 包补 root index.ts，修复包级导入。
+  - 回归：http 190、contract 16。

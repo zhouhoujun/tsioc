@@ -193,6 +193,20 @@ await api.getUser({ id: '42' });
 - `validate: 'request' | 'response' | 'both'` checks contract models at runtime.
 - `--client <file>` emits a typed interface + factory via `generateClient`.
 
+### Reuse `HttpClient`
+
+```ts
+import { createHttpContractTransport } from '@tsdi/http-microservice';
+
+const transport = createHttpContractTransport(httpClient, {
+    baseUrl: 'http://users:3000'
+});
+const api = createContractClient<UsersApi>(manifest, transport);
+```
+
+This keeps discovery, load balancing, retry, circuit breaker, metrics and
+tracing from the normal client pipeline.
+
 ## Tests
 
 ```bash
