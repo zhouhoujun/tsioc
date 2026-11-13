@@ -68,6 +68,93 @@ describe('gateway admin standalone server', () => {
         expect(Array.isArray(body.bulkheads)).toBe(true);
     });
 
+    it('applies gateway config transactionally with versioning and dry-run', async () => {
+        const current = await (await fetch(`${base}/api/gateway-admin/config`)).json() as { version: number };
+        const dryRun = await fetch(`${base}/api/gateway-admin/config/apply`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                dryRun: true,
+                routes: [{ path: '/api/orders', service: 'orders-service' }]
+            })
+        });
+        expect(dryRun.status).toBe(200);
+        const preview = await dryRun.json() as { applied: boolean; version: number; diff: { routes: { added: string[] } } };
+        expect(preview.applied).toBe(false);
+        expect(preview.version).toBe(current.version);
+        expect(preview.diff.routes.added).toContain('/api/orders:orders-service');
+
+        const applied = await fetch(`${base}/api/gateway-admin/config/apply`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                expectedVersion: current.version,
+                routes: [{ path: '/api/orders', service: 'orders-service' }]
+            })
+        });
+        expect(applied.status).toBe(200);
+        const result = await applied.json() as { applied: boolean; version: number };
+        expect(result.applied).toBe(true);
+        expect(result.version).toBe(current.version + 1);
+
+        const state = await (await fetch(`${base}/api/gateway-admin/state`)).json() as { routes: Array<{ path: string }> };
+        expect(state.routes.map(route => route.path)).toContain('/api/orders');
+
+        const conflict = await fetch(`${base}/api/gateway-admin/config/apply`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                expectedVersion: current.version,
+                routes: [{ path: '/api/stale', service: 'stale-service' }]
+            })
+        });
+        expect(conflict.status).toBe(409);
+
+        const invalid = await fetch(`${base}/api/gateway-admin/config/apply`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ routes: [{ path: 'bad', service: 's' }] })
+        });
+        expect(invalid.status).toBe(400);
+
+        await fetch(`${base}/api/gateway-admin/routes`, { method: 'DELETE' });
+    });
+
+    it('rolls back gateway config to a historical version', async () => {
+        const first = await (await fetch(`${base}/api/gateway-admin/config`)).json() as { version: number };
+        await fetch(`${base}/api/gateway-admin/config/apply`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                expectedVersion: first.version,
+                routes: [{ path: '/api/rollback-a', service: 'a' }]
+            })
+        });
+        await fetch(`${base}/api/gateway-admin/config/apply`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ routes: [{ path: '/api/rollback-b', service: 'b' }] })
+        });
+
+        const rollback = await fetch(`${base}/api/gateway-admin/config/rollback`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ version: first.version + 1 })
+        });
+        expect(rollback.status).toBe(200);
+        const result = await rollback.json() as { version: number };
+        expect(result.version).toBe(first.version + 3);
+
+        const state = await (await fetch(`${base}/api/gateway-admin/state`)).json() as { routes: Array<{ path: string }> };
+        expect(state.routes.map(route => route.path)).toContain('/api/rollback-a');
+        expect(state.routes.map(route => route.path)).not.toContain('/api/rollback-b');
+
+        const history = await (await fetch(`${base}/api/gateway-admin/config/history`)).json() as Array<{ version: number }>;
+        expect(history[0].version).toBe(result.version);
+
+        await fetch(`${base}/api/gateway-admin/routes`, { method: 'DELETE' });
+    });
+
     it('previews which route matches a request', async () => {
         const response = await fetch(`${base}/api/gateway-admin/match`, {
             method: 'POST',

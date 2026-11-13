@@ -108,6 +108,17 @@ export class GatewayRuntime {
         this.dynamicOptions = options ?? {};
     }
 
+    /**
+     * Drop derived state that is keyed by route/rule configuration. Called
+     * after a transactional config apply so stale entries cannot leak into the
+     * new table.
+     */
+    invalidateConfigCaches(): void {
+        this.cache.clear();
+        this.rounds.clear();
+        this.circuits.clear();
+    }
+
     getDynamicOptions(): Partial<GatewayOptions> {
         return this.dynamicOptions;
     }

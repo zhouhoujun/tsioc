@@ -29,6 +29,15 @@
 - Gateway header 卫生：剥离 hop-by-hop、修正 `content-length`、补 `x-forwarded-proto/host`；新增 `maxBodyBytes`（413）。
 - Tracing：`AsyncLocalStorage` 隔离并发 span，finish 恢复父 span；W3C `traceparent` 解析/注入，保留旧 `x-trace-*`。
 
+第三批（Gateway 配置事务化）：
+
+- 新增 `GatewayConfigService`：validation → diff → single atomic swap → version bump → audit/history。
+- 支持 `expectedVersion` 乐观锁（409）、`dryRun`、`mergeRoutes`、`routes:null` 删除、最近 20 个版本回滚。
+- 校验覆盖 path/service/targetUrl/timeout/methods/重复路由、规则 id/when/action/priority。
+- 配置变更按 diff 失效响应缓存/轮询/熔断状态；规则-only 变更不清路由缓存。
+- `GatewayLifecycle` 的远程配置改为走事务 apply：非法配置只记录审计，不替换在线表。
+- Admin 新增 `GET /config`、`GET /config/history`、`POST /config/apply`、`POST /config/rollback`；`PUT /routes` 与规则 apply 统一走事务服务。
+
 
 ---
 

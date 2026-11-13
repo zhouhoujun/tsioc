@@ -5,6 +5,7 @@ import { GatewayInterceptor } from './gateway.interceptor';
 import { GatewayOptions, GATEWAY_OPTIONS } from './gateway.options';
 import { GatewayRuntime } from './gateway.runtime';
 import { GatewayLifecycle } from './gateway.lifecycle';
+import { GatewayConfigService } from './gateway.config.service';
 import { ConfigurationManagerGatewayAdapter, GatewayConfigAdapter, GATEWAY_CONFIG_ADAPTER_OPTIONS } from './gateway.config-adapter';
 
 export function useGateway(options: GatewayOptions): ServiceFeatureFn<ServiceFeatureKind.Interceptors> {
@@ -19,6 +20,7 @@ export function useGateway(options: GatewayOptions): ServiceFeatureFn<ServiceFea
             { provide: GatewayConfigAdapter, useExisting: ConfigurationManagerGatewayAdapter },
             GatewayRuntime,
             GatewayLifecycle,
+            GatewayConfigService,
             GatewayInterceptor,
             {
                 provide: interceptorToken,

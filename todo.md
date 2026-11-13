@@ -3778,3 +3778,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - Gateway header 卫生 + content-length 修正 + x-forwarded-proto/host + maxBodyBytes(413)。
   - Tracing AsyncLocalStorage 并发隔离 + W3C traceparent，保留旧 x-trace-*。
   - 回归：client 80、http 187、gateway 50、tracing 40。
+- 微服务框架第三批（2026-11-13）：
+  - GatewayConfigService：校验 + diff + 原子 apply + version/409 + dryRun + mergeRoutes + 回滚/审计。
+  - GatewayLifecycle 远程配置走事务 apply，非法配置不替换在线表。
+  - Admin config API：GET /config、/config/history、POST /config/apply、/config/rollback；PUT /routes 与规则 apply 统一事务。
+  - 回归：gateway 60、admin 56。

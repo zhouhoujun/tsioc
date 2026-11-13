@@ -4,6 +4,8 @@ import { ConfigurationManager, ConfigChange } from '@tsdi/config';
 import { GATEWAY_OPTIONS, GatewayOptions, GatewayRouteOptions } from './gateway.options';
 import { GatewayRuntime } from './gateway.runtime';
 import { GatewayConfigAdapter } from './gateway.config-adapter';
+import { GatewayConfigService } from './gateway.config.service';
+import { Logger } from '@tsdi/logger';
 
 @Injectable()
 export class GatewayLifecycle implements OnDestroy {
@@ -17,7 +19,9 @@ export class GatewayLifecycle implements OnDestroy {
         @Inject(GatewayRuntime) private runtime: GatewayRuntime,
         @Inject(ConfigurationManager, { nullable: true }) private configManager: ConfigurationManager | null,
         @Inject(GatewayConfigAdapter, { nullable: true }) private configAdapter: GatewayConfigAdapter | null,
-        @Inject(ServiceDiscovery, { nullable: true }) private discovery: ServiceDiscovery | null
+        @Inject(ServiceDiscovery, { nullable: true }) private discovery: ServiceDiscovery | null,
+        @Inject(GatewayConfigService, { nullable: true }) private configService?: GatewayConfigService | null,
+        @Inject(Logger, { nullable: true }) private logger?: Logger | null
     ) {
         this.configWatcher = (change) => this.applyConfigChange(change.newValue);
     }
@@ -77,6 +81,21 @@ export class GatewayLifecycle implements OnDestroy {
         }
         const replaceRoutes = this.options.configSync === false ? true : (this.options.configSync?.replaceRoutes ?? true);
         const patch = nextValue as Partial<GatewayOptions>;
+        if (this.configService) {
+            try {
+                this.configService.apply(patch, {
+                    source: 'config-sync',
+                    mergeRoutes: !replaceRoutes
+                });
+            } catch (error) {
+                // Invalid remote config must never replace the live table.
+                this.logger?.error?.('gateway.config.rejected', {
+                    error: (error as Error)?.message,
+                    source: 'config-sync'
+                });
+            }
+            return;
+        }
         const merged: Partial<GatewayOptions> = {
             ...patch
         };

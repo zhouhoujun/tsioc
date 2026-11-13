@@ -1,7 +1,7 @@
 import { Inject, Injectable, token } from '@tsdi/ioc';
 import { BadRequestException, NotFoundException } from '@tsdi/common';
 import { Controller, Delete, Get, Post, Put, RequestBody, RequestPath, ServiceFeatureFn, ServiceFeatureKind, useStatics } from '@tsdi/service';
-import { GatewayInterceptor, GatewayMatchPreviewRequest, GatewayOptions, GatewayRouteOptions, GatewayRuleOptions, GatewayRuntime, GATEWAY_OPTIONS } from '@tsdi/gateway';
+import { GatewayConfigService, GatewayInterceptor, GatewayMatchPreviewRequest, GatewayOptions, GatewayRouteOptions, GatewayRuleOptions, GatewayRuntime, GATEWAY_OPTIONS } from '@tsdi/gateway';
 import {
     InMemoryWorkflowDefinitionStore,
     VisualWorkflowDefinition,
@@ -22,6 +22,7 @@ export interface GatewayAdminState {
     rules: GatewayRuleOptions[];
     services: string[];
     dynamic: Partial<GatewayOptions>;
+    version?: number;
     auth: {
         enabled: boolean;
         mode: 'none' | 'oidc' | 'oauth2' | 'service';
@@ -50,7 +51,8 @@ export class GatewayAdminController {
         @Inject(GATEWAY_RULES_STORE, { nullable: true }) private store?: WorkflowDefinitionStore,
         @Inject(GATEWAY_ADMIN_AUTH_OPTIONS, { nullable: true }) private authOptions?: GatewayAdminAuthOptions,
         @Inject(GatewayInterceptor, { nullable: true }) private gateway?: GatewayInterceptor,
-        @Inject(ServiceDiscovery, { nullable: true }) private discovery?: ServiceDiscovery
+        @Inject(ServiceDiscovery, { nullable: true }) private discovery?: ServiceDiscovery,
+        @Inject(GatewayConfigService, { nullable: true }) private configService?: GatewayConfigService
     ) {
         this.store = store ?? new InMemoryWorkflowDefinitionStore();
     }
@@ -99,16 +101,78 @@ export class GatewayAdminController {
     }
 
     @Put('/routes')
-    updateRoutes(@RequestBody() body: { routes?: GatewayRouteOptions[] } | GatewayRouteOptions[]) {
+    updateRoutes(@RequestBody() body: { routes?: GatewayRouteOptions[]; expectedVersion?: number; mergeRoutes?: boolean } | GatewayRouteOptions[]) {
         const routes = Array.isArray(body) ? body : body?.routes;
         if (!Array.isArray(routes)) {
             throw new BadRequestException('routes array is required');
         }
-        this.runtime.setDynamicOptions({
-            ...this.runtime.getDynamicOptions(),
-            routes
-        });
+        if (this.configService) {
+            this.configService.apply({ routes }, {
+                expectedVersion: Array.isArray(body) ? undefined : body?.expectedVersion,
+                mergeRoutes: Array.isArray(body) ? false : body?.mergeRoutes === true,
+                source: 'admin'
+            });
+        } else {
+            this.runtime.setDynamicOptions({
+                ...this.runtime.getDynamicOptions(),
+                routes
+            });
+        }
         return this.snapshot();
+    }
+
+    /** Current transactional config version and dynamic options. */
+    @Get('/config')
+    getConfig() {
+        return {
+            version: this.configService?.getVersion() ?? 0,
+            options: this.runtime.getDynamicOptions()
+        };
+    }
+
+    /** Recent config versions and their diffs. */
+    @Get('/config/history')
+    getConfigHistory() {
+        return this.configService?.getHistory() ?? [];
+    }
+
+    /** Validate/apply a config patch. `dryRun` returns the diff only. */
+    @Post('/config/apply')
+    applyConfig(@RequestBody() body: {
+        routes?: GatewayRouteOptions[];
+        rules?: GatewayRuleOptions[];
+        expectedVersion?: number;
+        dryRun?: boolean;
+        mergeRoutes?: boolean;
+    }) {
+        if (!body || typeof body !== 'object') {
+            throw new BadRequestException('config patch body is required');
+        }
+        if (!this.configService) {
+            throw new BadRequestException('Transactional gateway config is unavailable in this process');
+        }
+        const { expectedVersion, dryRun, mergeRoutes, ...patch } = body;
+        return this.configService.apply(patch, {
+            expectedVersion,
+            dryRun,
+            mergeRoutes,
+            source: 'admin'
+        });
+    }
+
+    /** Roll back to a historical version as a new version. */
+    @Post('/config/rollback')
+    rollbackConfig(@RequestBody() body: { version: number; expectedVersion?: number }) {
+        if (!body || typeof body.version !== 'number') {
+            throw new BadRequestException('version is required');
+        }
+        if (!this.configService) {
+            throw new BadRequestException('Transactional gateway config is unavailable in this process');
+        }
+        return this.configService.rollback(body.version, {
+            expectedVersion: body.expectedVersion,
+            source: 'admin'
+        });
     }
 
     /** Preview which rule/route matches a request (does not forward it). */
@@ -128,9 +192,13 @@ export class GatewayAdminController {
 
     @Delete('/routes')
     resetRoutes() {
-        const dynamic = { ...this.runtime.getDynamicOptions() };
-        delete dynamic.routes;
-        this.runtime.setDynamicOptions(dynamic);
+        if (this.configService) {
+            this.configService.apply({ routes: null } as any, { source: 'admin' });
+        } else {
+            const dynamic = { ...this.runtime.getDynamicOptions() };
+            delete dynamic.routes;
+            this.runtime.setDynamicOptions(dynamic);
+        }
         return this.snapshot();
     }
 
@@ -203,6 +271,10 @@ export class GatewayAdminController {
     }
 
     private applyRules(rules: GatewayRuleOptions[]): void {
+        if (this.configService) {
+            this.configService.apply({ rules }, { source: 'admin:rules' });
+            return;
+        }
         this.runtime.setDynamicOptions({
             ...this.runtime.getDynamicOptions(),
             rules
@@ -217,6 +289,7 @@ export class GatewayAdminController {
             rules,
             services: uniqueServices(routes, rules),
             dynamic: this.runtime.getDynamicOptions(),
+            version: this.configService?.getVersion() ?? 0,
             auth: {
                 enabled: this.authOptions?.mode === 'oidc' || this.authOptions?.mode === 'oauth2' || this.authOptions?.mode === 'service',
                 mode: this.authOptions?.mode === 'oidc' ? 'oidc' : this.authOptions?.mode === 'oauth2' ? 'oauth2' : this.authOptions?.mode === 'service' ? 'service' : 'none'
