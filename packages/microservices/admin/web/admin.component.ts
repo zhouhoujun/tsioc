@@ -218,6 +218,14 @@ export class GatewayAdminComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     private async loadRuleDocument(): Promise<void> {
+        if (this.state.creatingRuleWorkflow) {
+            this.state.creatingRuleWorkflow = false;
+            const definition = createGatewayRuleWorkflow('zh-CN');
+            definition.id = `gateway_rules_${Date.now().toString(36)}`;
+            this.state.ruleWorkflowId = definition.id;
+            this.designer.load(definition);
+            return;
+        }
         const summaries = await this.store.list().catch(() => [] as WorkflowDefinitionSummary[]);
         const id = this.state.ruleWorkflowId || summaries[0]?.id || '';
         let definition: VisualWorkflowDefinition | undefined;

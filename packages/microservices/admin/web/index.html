@@ -203,6 +203,16 @@
         .ga-login-card p { margin: 0 0 20px; color: var(--ga-muted); font-size: 12px; line-height: 1.6; }
         .ga-login-card .ga-btn { text-decoration: none; padding: 10px 18px; }
 
+        .ga-match-form { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 18px 6px; }
+        .ga-match-method, .ga-match-path {
+            border: 1px solid var(--ga-border); border-radius: 8px;
+            background: var(--ga-surface); color: var(--ga-text);
+            padding: 8px 10px; font: inherit; font-size: 12px;
+        }
+        .ga-match-path { flex: 1 1 220px; }
+        .ga-match-result { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 8px 18px 16px; }
+        .ga-match-detail { display: flex; flex-wrap: wrap; gap: 14px; flex: 1 1 100%; color: var(--ga-muted); font-size: 12px; }
+        .ga-match-detail strong { color: var(--ga-text); font-weight: 600; margin-right: 4px; }
         .ga-dirty { color: #b45309; font-size: 11px; }
         .ga-synced { color: var(--ga-muted); font-size: 11px; }
         .ga-field-error { margin-top: 4px; color: #dc2626; font-size: 11px; }

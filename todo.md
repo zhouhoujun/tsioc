@@ -3745,3 +3745,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 路由表支持行内启停、上移/下移、复制、未应用更改提示；保存前校验路径格式、service/目标地址、URL scheme、超时范围、HTTP 方法与重复 path+methods。
   - 规则页新增规则流程列表，可打开/删除已保存的可视化规则流程；应用后刷新列表并同步实时规则。
   - admin 45 passing（新增校验、启停/复制/排序、规则流程打开/删除测试）。
+- Gateway admin 路由匹配测试与规则流程操作（2026-11-13）：
+  - GatewayInterceptor 暴露 previewMatch：按 method/path/host/headers 预览命中规则或路由，不转发请求；新增 POST /api/gateway-admin/match。
+  - 路由页新增匹配测试卡片（方法/路径/测试结果）；规则页支持新建规则流程、直接应用已保存流程。
+  - admin 48 passing，gateway 45 passing；生产 bundle 验证匹配卡片与新建流程入口。

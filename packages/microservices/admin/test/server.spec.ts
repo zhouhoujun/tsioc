@@ -44,6 +44,22 @@ describe('gateway admin standalone server', () => {
         expect(state.services).toEqual(['demo-service']);
     });
 
+    it('previews which route matches a request', async () => {
+        const response = await fetch(`${base}/api/gateway-admin/match`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ method: 'GET', path: '/api/demo/users' })
+        });
+        expect(response.status).toBe(200);
+        const match = await response.json() as {
+            matchedBy: string;
+            route?: { path?: string; service?: string };
+        };
+        expect(match.matchedBy).toBe('route');
+        expect(match.route?.path).toBe('/api/demo');
+        expect(match.route?.service).toBe('demo-service');
+    });
+
     it('does not expose an auth session endpoint', async () => {
         const response = await fetch(`${base}/api/gateway-admin/session`);
         expect(response.status).toBe(404);

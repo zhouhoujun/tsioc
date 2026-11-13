@@ -110,6 +110,51 @@ type ResolvedGatewayRoute = GatewayRouteOptions & {
     bulkhead?: GatewayRouteOptions['bulkhead'];
 };
 
+/** Request used by the admin console to preview gateway matching. */
+export interface GatewayMatchPreviewRequest {
+    method?: string;
+    path?: string;
+    host?: string;
+    headers?: Record<string, string>;
+}
+
+export interface GatewayRouteMatchPreview {
+    path: string;
+    service?: string;
+    targetUrl?: string;
+    targetPath?: string;
+    methods?: string[];
+    transport?: string;
+    stripPrefix?: boolean;
+    enabled?: boolean;
+    hasAuth?: boolean;
+    hasRateLimit?: boolean;
+    hasCircuitBreaker?: boolean;
+    hasCache?: boolean;
+}
+
+export interface GatewayRuleMatchPreview {
+    id?: string;
+    name?: string;
+    priority?: number;
+    enabled?: boolean;
+    when?: GatewayRuleConditionOptions[];
+    action?: {
+        type?: string;
+        path?: string;
+        service?: string;
+        status?: number;
+        message?: string;
+    };
+}
+
+export interface GatewayMatchPreview {
+    matchedBy: 'rule' | 'route' | 'none';
+    request: { method: string; path: string };
+    route?: GatewayRouteMatchPreview;
+    rule?: GatewayRuleMatchPreview;
+}
+
 @Injectable()
 export class GatewayInterceptor implements RequestInterceptor<any, any, RequestContext>, OnDestroy {
     private limiters = new Map<string, ApiRateLimiter>();
@@ -162,6 +207,64 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             return next.handle(input, context);
         }
         return from(this.forward(route, request, context));
+    }
+
+    /**
+     * Preview which rule/route would handle a request without forwarding it.
+     * Used by the gateway admin console to explain the live routing decision.
+     */
+    previewMatch(input: GatewayMatchPreviewRequest = {}): GatewayMatchPreview {
+        const method = String(input.method || 'GET').toUpperCase();
+        const path = String(input.path || '/');
+        const request = {
+            url: path,
+            method,
+            headers: input.headers || {},
+            ...(input.host ? { host: input.host } : {})
+        } as HttpRequestMessage;
+        const rule = this.matchRule(request);
+        if (rule) {
+            return {
+                matchedBy: 'rule',
+                request: { method, path },
+                rule: {
+                    id: rule.id,
+                    name: rule.name,
+                    priority: rule.priority,
+                    enabled: rule.enabled,
+                    when: rule.when,
+                    action: {
+                        type: rule.action?.type,
+                        path: rule.action?.path,
+                        service: rule.action?.service,
+                        status: rule.action?.status,
+                        message: rule.action?.message
+                    }
+                }
+            };
+        }
+        const route = this.matchRoute(request);
+        if (route) {
+            return {
+                matchedBy: 'route',
+                request: { method, path },
+                route: {
+                    path: route.path,
+                    service: route.service,
+                    targetUrl: route.targetUrl,
+                    targetPath: route.targetPath,
+                    methods: route.methods,
+                    transport: route.transport ? String(route.transport) : undefined,
+                    stripPrefix: route.stripPrefix,
+                    enabled: route.enabled !== false,
+                    hasAuth: !!route.auth,
+                    hasRateLimit: route.rateLimit !== undefined && route.rateLimit !== false,
+                    hasCircuitBreaker: !!route.circuitBreaker,
+                    hasCache: !!route.cache
+                }
+            };
+        }
+        return { matchedBy: 'none', request: { method, path } };
     }
 
     private matchRule(request: HttpRequestMessage): GatewayRuleOptions | null {

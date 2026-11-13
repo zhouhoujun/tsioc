@@ -5,7 +5,7 @@ import {
     installMenuBarStyles,
 } from '@tsdi/components/common/menu-bar';
 import { DOCUMENT } from '@tsdi/common';
-import { GatewayRouteOptions } from '@tsdi/gateway';
+import { GatewayMatchPreview, GatewayRouteOptions } from '@tsdi/gateway';
 import { WorkflowDefinitionSummary } from '@tsdi/activities/visual';
 import { Router, RouterEvent } from '@tsdi/components/router';
 import { AdminLocale, adminMessage } from './admin.i18n';
@@ -65,6 +65,11 @@ export class GatewayAdminState {
     routesDirty = false;
     ruleWorkflows: WorkflowDefinitionSummary[] = [];
     ruleWorkflowId = '';
+    creatingRuleWorkflow = false;
+    matchMethod = 'GET';
+    matchPath = '/api';
+    matchResult?: GatewayMatchPreview;
+    matchLoading = false;
     authEnabled = false;
     needsLogin = false;
     /** Set by the routed layout; the rules page calls it to open the designer. */
@@ -368,6 +373,69 @@ export class GatewayAdminState {
         if (self.openDesigner) {
             await self.openDesigner();
         }
+    };
+
+    readonly setMatchMethod = (event: Event): void => {
+        const self = this.selfRef ?? this;
+        self.matchMethod = String((event.target as HTMLSelectElement).value || 'GET').toUpperCase();
+    };
+
+    readonly setMatchPath = (event: Event): void => {
+        const self = this.selfRef ?? this;
+        self.matchPath = (event.target as HTMLInputElement).value;
+    };
+
+    readonly testMatch = async (): Promise<void> => {
+        const self = this.selfRef ?? this;
+        const path = String(self.matchPath || '').trim();
+        if (!path.startsWith('/')) {
+            self.error = self.t('validation.pathSlash');
+            return;
+        }
+        if (!self.http) {
+            return;
+        }
+        self.matchLoading = true;
+        try {
+            const response = await self.http.match(self.matchMethod, path);
+            if (response.status === 401) {
+                self.requireLogin();
+                return;
+            }
+            if (!response.ok) {
+                self.error = self.t('error.apiUnavailable', { status: response.status });
+                self.matchResult = undefined;
+                return;
+            }
+            self.matchResult = response.body;
+            self.error = '';
+        } finally {
+            self.matchLoading = false;
+        }
+    };
+
+    readonly newRuleWorkflow = (): void => {
+        const self = this.selfRef ?? this;
+        self.creatingRuleWorkflow = true;
+        self.ruleWorkflowId = '';
+        if (self.openDesigner) {
+            void self.openDesigner();
+        }
+    };
+
+    readonly applyRuleWorkflow = async (id: string): Promise<void> => {
+        const self = this.selfRef ?? this;
+        if (!self.http || !id) {
+            return;
+        }
+        const response = await self.http.applyRule(id);
+        if (!response.ok) {
+            self.error = self.t('error.ruleApply', { status: response.status });
+            return;
+        }
+        await self.reload();
+        self.ruleWorkflowId = id;
+        self.status = self.t('status.rulesApplied', { count: response.body?.rules?.length ?? 0 });
     };
 
     async loadRuleWorkflows(): Promise<void> {

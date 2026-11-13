@@ -1,4 +1,4 @@
-import{n as s}from"./chunk-U5AAXKCR.js";import{a as e,na as a}from"./chunk-SPMG5PJO.js";import"./chunk-U6UJE3IR.js";var t=class{constructor(o){this.state=o}};Reflect.metadata("design:paramtypes",[s])(t);e(t,[[a({selector:"gateway-admin-routes",template:`
+import{n as s}from"./chunk-NWVUANFD.js";import{a,na as e}from"./chunk-SPMG5PJO.js";import"./chunk-U6UJE3IR.js";var t=class{constructor(o){this.state=o}};Reflect.metadata("design:paramtypes",[s])(t);a(t,[[e({selector:"gateway-admin-routes",template:`
     <section class="ga-page ga-page-routes">
         <div class="ga-page-actions">
             <div class="ga-search">
@@ -13,6 +13,47 @@ import{n as s}from"./chunk-U5AAXKCR.js";import{a as e,na as a}from"./chunk-SPMG5
                 <button class="ga-btn ga-btn-primary ga-apply-routes" type="button" @click="state.applyRoutes">{{state.t('routes.apply')}}</button>
             </div>
         </div>
+
+        <article class="ga-card ga-match-card">
+            <div class="ga-card-head">
+                <div>
+                    <h2>{{state.t('match.title')}}</h2>
+                    <p>{{state.t('match.desc')}}</p>
+                </div>
+                <span class="ga-muted" v-if="state.matchLoading">{{state.t('match.running')}}</span>
+            </div>
+            <div class="ga-match-form">
+                <select class="ga-match-method" [value]="state.matchMethod" @change="state.setMatchMethod($event)">
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                    <option value="PUT">PUT</option>
+                    <option value="PATCH">PATCH</option>
+                    <option value="DELETE">DELETE</option>
+                    <option value="HEAD">HEAD</option>
+                    <option value="OPTIONS">OPTIONS</option>
+                </select>
+                <input class="ga-match-path" [value]="state.matchPath" placeholder="/api/users"
+                    @input="state.setMatchPath($event)" />
+                <button class="ga-btn ga-btn-primary ga-match-run" type="button" @click="state.testMatch">{{state.t('match.run')}}</button>
+            </div>
+            <div class="ga-match-result" v-if="state.matchResult">
+                <span class="ga-pill" [class]="state.matchResult.matchedBy === 'none' ? 'ga-pill is-off' : 'ga-pill is-on'">
+                    {{state.matchResult.matchedBy === 'rule' ? state.t('match.rule') : state.matchResult.matchedBy === 'route' ? state.t('match.route') : state.t('match.none')}}
+                </span>
+                <div class="ga-match-detail" v-if="state.matchResult.route">
+                    <span><strong>{{state.t('table.path')}}</strong> {{state.matchResult.route.path}}</span>
+                    <span><strong>{{state.t('table.service')}}</strong> {{state.matchResult.route.service || state.t('common.none')}}</span>
+                    <span><strong>{{state.t('table.upstream')}}</strong> {{state.matchResult.route.targetUrl || state.matchResult.route.targetPath || state.t('table.discovery')}}</span>
+                    <span><strong>{{state.t('table.methods')}}</strong> {{state.matchResult.route.methods?.join(', ') || state.t('common.any')}}</span>
+                </div>
+                <div class="ga-match-detail" v-if="state.matchResult.rule">
+                    <span><strong>{{state.t('match.ruleName')}}</strong> {{state.matchResult.rule.name || state.matchResult.rule.id}}</span>
+                    <span><strong>{{state.t('match.action')}}</strong> {{state.matchResult.rule.action?.type || state.t('common.none')}}</span>
+                    <span><strong>{{state.t('match.conditions')}}</strong> {{state.conditionSummary(state.matchResult.rule)}}</span>
+                </div>
+                <div class="ga-muted" v-if="state.matchResult.matchedBy === 'none'">{{state.t('match.noneDesc')}}</div>
+            </div>
+        </article>
 
         <article class="ga-card ga-table-card">
             <table class="ga-route-table">

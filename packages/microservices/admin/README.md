@@ -355,8 +355,12 @@ toolbar, palette, inspector and status bar follow the admin shell.
   indicator) and validated before applying: path format, service/target
   requirement, target URL scheme, timeout range, HTTP methods and duplicate
   path+method combinations.
-- The rules page lists saved visual rule workflows and lets operators reopen or
-  delete one; applying a rule workflow compiles it and updates the live gateway.
+- The rules page lists saved visual rule workflows and lets operators create a
+  new workflow, reopen, apply or delete one; applying a rule workflow compiles
+  it and updates the live gateway.
+- The routes page includes a route matcher: enter a method and path to preview
+  which rule or route the live gateway would select, including target service,
+  upstream and method filters, without forwarding the request.
 - `GatewayAdminHttp` wraps `@tsdi/common/http` (`provideHttpClient(withFetch())`)
   for state/routes/rules calls, including cookies and typed status handling.
 - A shared HTTP interceptor (`adminUnauthorizedInterceptor`) redirects to the

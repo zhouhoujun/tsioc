@@ -1,5 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { HttpClient } from '@tsdi/common/http';
+import { GatewayMatchPreview } from '@tsdi/gateway';
 import { lastValueFrom, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { HttpInterceptorFn } from '@tsdi/common/http';
@@ -39,6 +40,10 @@ export class GatewayAdminHttp {
         return this.request('PUT', '/api/gateway-admin/routes', { routes });
     }
 
+    match(method: string, path: string): Promise<AdminHttpResult<GatewayMatchPreview>> {
+        return this.request('POST', '/api/gateway-admin/match', { method, path });
+    }
+
     listRules(): Promise<AdminHttpResult<any>> {
         return this.request('GET', '/api/gateway-admin/rules');
     }
@@ -53,6 +58,10 @@ export class GatewayAdminHttp {
 
     removeRule(id: string): Promise<AdminHttpResult<any>> {
         return this.request('DELETE', `/api/gateway-admin/rules/${encodeURIComponent(id)}`);
+    }
+
+    applyRule(id: string): Promise<AdminHttpResult<any>> {
+        return this.request('POST', `/api/gateway-admin/rules/${encodeURIComponent(id)}/apply`);
     }
 
     async request<T = any>(method: string, url: string, body?: any): Promise<AdminHttpResult<T>> {

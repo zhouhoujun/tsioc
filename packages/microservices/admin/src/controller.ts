@@ -1,7 +1,7 @@
 import { Inject, Injectable, token } from '@tsdi/ioc';
 import { BadRequestException, NotFoundException } from '@tsdi/common';
 import { Controller, Delete, Get, Post, Put, RequestBody, RequestPath, ServiceFeatureFn, ServiceFeatureKind, useStatics } from '@tsdi/service';
-import { GatewayOptions, GatewayRouteOptions, GatewayRuleOptions, GatewayRuntime, GATEWAY_OPTIONS } from '@tsdi/gateway';
+import { GatewayInterceptor, GatewayMatchPreviewRequest, GatewayOptions, GatewayRouteOptions, GatewayRuleOptions, GatewayRuntime, GATEWAY_OPTIONS } from '@tsdi/gateway';
 import {
     InMemoryWorkflowDefinitionStore,
     VisualWorkflowDefinition,
@@ -47,7 +47,8 @@ export class GatewayAdminController {
         private runtime: GatewayRuntime,
         @Inject(GATEWAY_OPTIONS, { nullable: true }) private options?: GatewayOptions,
         @Inject(GATEWAY_RULES_STORE, { nullable: true }) private store?: WorkflowDefinitionStore,
-        @Inject(GATEWAY_ADMIN_AUTH_OPTIONS, { nullable: true }) private authOptions?: GatewayAdminAuthOptions
+        @Inject(GATEWAY_ADMIN_AUTH_OPTIONS, { nullable: true }) private authOptions?: GatewayAdminAuthOptions,
+        @Inject(GatewayInterceptor, { nullable: true }) private gateway?: GatewayInterceptor
     ) {
         this.store = store ?? new InMemoryWorkflowDefinitionStore();
     }
@@ -73,6 +74,21 @@ export class GatewayAdminController {
             routes
         });
         return this.snapshot();
+    }
+
+    /** Preview which rule/route matches a request (does not forward it). */
+    @Post('/match')
+    match(@RequestBody() body: GatewayMatchPreviewRequest) {
+        const request = {
+            method: String(body?.method || 'GET').toUpperCase(),
+            path: String(body?.path || '/'),
+            host: body?.host,
+            headers: body?.headers
+        };
+        if (!this.gateway) {
+            throw new BadRequestException('Gateway matching is unavailable in this process');
+        }
+        return this.gateway.previewMatch(request);
     }
 
     @Delete('/routes')

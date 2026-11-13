@@ -90,6 +90,30 @@ describe('Microservice admin UI', () => {
                 routes = JSON.parse(String(init.body)).routes;
                 return jsonResponse({ routes, rules, services: ['users-service'] });
             }
+            if (path === '/api/gateway-admin/match' && method === 'POST') {
+                const body = JSON.parse(String(init.body));
+                if (String(body.path).startsWith('/blocked')) {
+                    return jsonResponse({
+                        matchedBy: 'rule',
+                        request: body,
+                        rule: {
+                            id: 'deny-rule',
+                            name: 'Blocked paths',
+                            priority: 0,
+                            when: [{ field: 'path', operator: 'prefix', value: '/blocked' }],
+                            action: { type: 'deny', status: 403 }
+                        }
+                    });
+                }
+                return jsonResponse({
+                    matchedBy: 'route',
+                    request: body,
+                    route: { path: '/api/users', service: 'users-service', methods: ['GET'] }
+                });
+            }
+            if (path.startsWith('/api/gateway-admin/rules/') && path.endsWith('/apply') && method === 'POST') {
+                return jsonResponse({ rules });
+            }
             if (path.startsWith('/api/gateway-admin/rules/') && method === 'PUT') {
                 const definition = JSON.parse(String(init.body));
                 const compiled = compileGatewayRules(definition);
@@ -324,6 +348,46 @@ describe('Microservice admin UI', () => {
         moveDown.click();
         await flush();
         expect(firstRow().textContent).toContain('/api/users-copy');
+    });
+
+    it('previews rule and route matches from the routes page', async () => {
+        (root.querySelector('.ga-nav-item:nth-child(2)') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-page-routes'));
+
+        const pathInput = root.querySelector('.ga-match-path') as HTMLInputElement;
+        pathInput.value = '/api/users/42';
+        pathInput.dispatchEvent(new win.Event('input', { bubbles: true }));
+        (root.querySelector('.ga-match-run') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-match-result'));
+        expect(root.querySelector('.ga-match-result')?.textContent).toContain('Matched route');
+        expect(root.querySelector('.ga-match-result')?.textContent).toContain('users-service');
+
+        pathInput.value = '/blocked/path';
+        pathInput.dispatchEvent(new win.Event('input', { bubbles: true }));
+        (root.querySelector('.ga-match-run') as HTMLElement).click();
+        await waitFor(() => (root.querySelector('.ga-match-result')?.textContent || '').includes('Matched rule'));
+        expect(root.querySelector('.ga-match-result')?.textContent).toContain('Blocked paths');
+    });
+
+    it('creates a new rule workflow and applies a saved workflow from the list', async () => {
+        (root.querySelector('.ga-nav-item:nth-child(3)') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-page-rules'));
+
+        (root.querySelector('.ga-new-rules') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-designer-page'));
+        expect(root.querySelectorAll('.workflow-node').length).toBeGreaterThanOrEqual(2);
+        (root.querySelector('.ga-rules-cancel') as HTMLElement).click();
+        await waitFor(() => !root.querySelector('.ga-designer-page'));
+
+        (root.querySelector('.ga-edit-rules') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-designer-page'));
+        (root.querySelector('.ga-rules-apply') as HTMLElement).click();
+        await waitFor(() => (root.querySelector('.ga-status')?.textContent || '').includes('Rules applied'));
+        await waitFor(() => !!root.querySelector('.ga-workflow-row'));
+
+        (root.querySelector('.ga-apply-rule-workflow') as HTMLElement).click();
+        await waitFor(() => (root.querySelector('.ga-status')?.textContent || '').includes('Rules applied'));
+        expect(root.querySelectorAll('.ga-workflow-row').length).toBeGreaterThan(0);
     });
 
     it('lists saved rule workflows and allows reopening and deleting them', async () => {

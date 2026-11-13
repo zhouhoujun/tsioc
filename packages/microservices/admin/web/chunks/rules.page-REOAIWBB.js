@@ -1,11 +1,14 @@
-import{n as e}from"./chunk-U5AAXKCR.js";import{a as s,na as a}from"./chunk-SPMG5PJO.js";import"./chunk-U6UJE3IR.js";var t=class{constructor(l){this.state=l}};Reflect.metadata("design:paramtypes",[e])(t);s(t,[[a({selector:"gateway-admin-rules",template:`
+import{n as e}from"./chunk-NWVUANFD.js";import{a,na as s}from"./chunk-SPMG5PJO.js";import"./chunk-U6UJE3IR.js";var t=class{constructor(l){this.state=l}};Reflect.metadata("design:paramtypes",[e])(t);a(t,[[s({selector:"gateway-admin-rules",template:`
     <section class="ga-page ga-page-rules">
         <div class="ga-page-actions">
             <div>
                 <h2 class="ga-section-title">{{state.t('rules.title')}}</h2>
                 <p class="ga-muted">{{state.t('rules.desc')}}</p>
             </div>
-            <button class="ga-btn ga-btn-primary ga-edit-rules" type="button" @click="state.editRules">{{state.t('rules.configure')}}</button>
+            <div class="ga-actions">
+                <button class="ga-btn ga-new-rules" type="button" @click="state.newRuleWorkflow">{{state.t('rules.new')}}</button>
+                <button class="ga-btn ga-btn-primary ga-edit-rules" type="button" @click="state.editRules">{{state.t('rules.configure')}}</button>
+            </div>
         </div>
 
         <article class="ga-card">
@@ -23,6 +26,7 @@ import{n as e}from"./chunk-U5AAXKCR.js";import{a as s,na as a}from"./chunk-SPMG5
                         <span class="ga-muted">{{state.t('rules.workflowMeta', { nodes: workflow.nodeCount || 0, id: workflow.id })}}</span>
                     </div>
                     <button class="ga-link-btn" type="button" @click="state.editRules(workflow.id)">{{state.t('rules.open')}}</button>
+                    <button class="ga-link-btn ga-apply-rule-workflow" type="button" @click="state.applyRuleWorkflow(workflow.id)">{{state.t('rules.apply')}}</button>
                     <button class="ga-link-btn is-danger" type="button" @click="state.deleteRuleWorkflow(workflow.id)">{{state.t('action.remove')}}</button>
                 </div>
                 <div class="ga-empty" v-if="!state.ruleWorkflows.length">
