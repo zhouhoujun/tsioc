@@ -2772,10 +2772,16 @@ export class TuiTerminalSurface {
                 ? shiftedLines.slice(0, availableRows)
                 : shiftedLines;
             const visibleHeight = visibleLines.length;
-            const start = Math.max(
-                headerRows,
-                Math.min(anchorRow - visibleHeight, Math.max(headerRows, height - visibleHeight))
-            );
+            // Menus stay attached to the composer. Dialogs are free-standing
+            // chrome and open centered in the window area above the composer
+            // (the header/tab strip stays visible, the input never moves).
+            const centeredStart = headerRows + Math.floor(Math.max(0, availableRows - visibleHeight) / 2);
+            const start = dialogIsMenu
+                ? Math.max(
+                    headerRows,
+                    Math.min(anchorRow - visibleHeight, Math.max(headerRows, height - visibleHeight))
+                )
+                : Math.max(headerRows, Math.min(centeredStart, anchorRow - visibleHeight));
             const lines = result.lines.slice();
             while (lines.length < height) {
                 lines.push('');

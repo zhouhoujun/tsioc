@@ -29,6 +29,25 @@ export class CommandExecutionI18nTest {
         expect(row?.content).not.toContain(' failed');
     }
 
+    @Test('a command echo is appended after the final answer instead of shifting it')
+    async echoFollowsFinalAnswer() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        state.setMessages([
+            { id: 'u1', role: 'user', content: 'hello', createdAt: 1 },
+            { id: 'a-partial', role: 'assistant', content: 'working', createdAt: 2, metadata: { streaming: true } },
+            { id: 'a-final', role: 'assistant', content: 'final answer', createdAt: 3 }
+        ] as any);
+        const requestId = state.commandExecutionController.begin('/web', '');
+        state.commandExecutionController.complete(requestId, 'succeeded');
+        const ids = state.displayMessages.map(message => message.id);
+        // A new interaction starts with the command: it must not be inserted
+        // between the request and its final answer (that shifted every row and
+        // moved the viewport right before the dialog opened).
+        expect(ids[ids.length - 1]).toContain('__command_execution_');
+        expect(ids.indexOf('a-final')).toBeLessThan(ids.length - 1);
+        expect(ids.indexOf('u1')).toBeLessThan(ids.indexOf('a-final'));
+    }
+
     @Test('without a translator the English status word is kept')
     async fallbackRow() {
         const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());

@@ -1,5 +1,7 @@
-import { Attribute, Component } from '@tsdi/components';
+import { AfterViewInit, Attribute, Component, ElementRef } from '@tsdi/components';
 import { Inject, Optional, token } from '@tsdi/ioc';
+import { markElementRefRaw } from '../../src/raw-element';
+import { installTabBarStyles } from './tab-bar.styles';
 
 /** A renderer-neutral tab entry: the host owns meaning, the tab bar only paints it. */
 export interface TabItem {
@@ -38,17 +40,27 @@ export const TAB_BAR_SOURCE = token<TabBarSource>('TAB_BAR_SOURCE');
     template: `
     <p class="tab-bar" role="tablist" v-show="visible">
         <span class="tab" role="tab" aria-selected="{{tab.active}}" data-disabled="{{tab.disabled}}" v-for="tab in items" @click="select(tab.id, $event)">
-            <span class="tab-label" @click="select(tab.id, $event)">{{tab.label}}</span><span class="tab-close" role="button" v-if="tab.showClose !== false" data-cell-width="3" @click="closeTab(tab.id, $event)">{{closeLabel}}</span>
+            <span class="tab-label" @click="select(tab.id, $event)">{{tab.label}}</span><span class="tab-close" role="button" v-if="tab.showClose !== false" data-cell-width="2" @click="closeTab(tab.id, $event)">{{closeLabel}}</span>
         </span>
         <span class="tab-new" role="button" v-show="showCreate" @click="create">{{createLabel}}</span>
     </p>
     `
 })
-export class TabBarComponent {
+export class TabBarComponent implements AfterViewInit {
     /** Direct source wins over the injected one (hosts without a provider). */
     @Attribute() source?: TabBarSource;
 
-    constructor(@Optional() @Inject(TAB_BAR_SOURCE) private injectedSource?: TabBarSource) {
+    constructor(
+        @Optional() protected elementRef?: ElementRef,
+        @Optional() @Inject(TAB_BAR_SOURCE) private injectedSource?: TabBarSource
+    ) {
+        markElementRefRaw(elementRef);
+    }
+
+    onAfterViewInit(): void {
+        // The common strip owns its skin: every DOM host (workflow tabs,
+        // admin, web console) gets the same look without installing it.
+        installTabBarStyles((this.elementRef?.nativeElement as { ownerDocument?: Document } | undefined)?.ownerDocument);
     }
 
     protected get activeSource(): TabBarSource | undefined {

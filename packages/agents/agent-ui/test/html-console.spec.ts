@@ -229,6 +229,37 @@ export class HtmlConsoleTest {
         expect(ref.instance.sessionState.input).toEqual('draft');
     }
 
+    @Test('a text dialog keeps composer focus, closes on Escape and swallows typing')
+    async textDialogEscapeCloses() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        const inputPanel = ref.hostView.query(AgentConsoleInputPanelComponent) as ComponentRef<AgentConsoleInputPanelComponent>;
+        const inputField = inputPanel.hostView.rootNodes[0].querySelector('.agent-input') as HTMLTextAreaElement | null;
+        ref.instance.sessionState.openTextOverlay('pairing', ['https://example.test/?pair=abc']);
+        await settleDynamicMessages();
+        expect(ref.instance.sessionState.textOverlay).toBeTruthy();
+        // Without DOM focus the browser drops Escape on <body>.
+        expect(inputPanel.instance.inputFocused).toEqual(true);
+        let prevented = false;
+        await inputPanel.instance.onKeydown({ key: 'Escape', code: 'Escape', target: inputField, preventDefault() { prevented = true; } } as any);
+        expect(prevented).toEqual(true);
+        expect(ref.instance.sessionState.textOverlay).toEqual(null);
+        // Reopen: printable keys are modal-blocked, the draft stays untouched.
+        ref.instance.sessionState.setInput('draft', 5);
+        ref.instance.sessionState.openTextOverlay('pairing', ['line']);
+        await settleDynamicMessages();
+        let typed = false;
+        await inputPanel.instance.onKeydown({ key: 'x', code: 'KeyX', target: inputField, preventDefault() { typed = true; } } as any);
+        expect(typed).toEqual(true);
+        expect(ref.instance.sessionState.input).toEqual('draft');
+        // The visible close affordance is wired to the overlay action.
+        const close = (ref.hostView.rootNodes[0] as any)
+            .querySelector('agent-console-text-overlay-panel .dialog-close') as HTMLElement | null;
+        expect(!!close).toEqual(true);
+        close!.dispatchEvent(new (close!.ownerDocument.defaultView as any).MouseEvent('click', { bubbles: true }));
+        await settleDynamicMessages();
+        expect(ref.instance.sessionState.textOverlay).toEqual(null);
+    }
+
     @Test('input panel leaves arrow keys to an open suggestion menu')
     async inputPanelLeavesArrowsToSuggestionMenu() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;

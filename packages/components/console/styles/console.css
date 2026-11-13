@@ -526,7 +526,7 @@
 }
 .tab-close {
     padding: 0 0 0 1ch;
-    color: var(--console-text, #c9d1d9);
+    color: var(--console-error, #cf9893);
 }
 .tab-new {
     color: var(--console-accent, #86a9d6);

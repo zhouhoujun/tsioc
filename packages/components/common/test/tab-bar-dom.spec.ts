@@ -45,6 +45,22 @@ export class TabBarDomTest {
         });
     }
 
+    @Test('the shared tab skin is installed once in the document head')
+    async installsSharedSkin() {
+        const ref = this.ctx.runners.getRef(TabBarComponent) as ComponentRef<TabBarComponent>;
+        await ref.render();
+        await Promise.resolve();
+        const doc = this.ctx.get(DOCUMENT) as Document;
+        const style = doc.getElementById('tsdi-tab-bar-styles');
+        expect(!!style).toEqual(true);
+        const css = style?.textContent || '';
+        expect(css).toContain('.tab-close');
+        expect(css).toContain('.tab-new:hover');
+        // The + keeps the workflow hover animation (fade + scale).
+        expect(css).toContain('transform: scale(1.08)');
+        expect(css).toContain('transition: background-color');
+    }
+
     @Test('clicking the close affordance closes without selecting the tab')
     async closeDoesNotSelect() {
         const ref = this.ctx.runners.getRef(TabBarComponent) as ComponentRef<TabBarComponent>;

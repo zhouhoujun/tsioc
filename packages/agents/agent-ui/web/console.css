@@ -57,98 +57,29 @@ body {
     max-width: 980px;
 }
 
-/* Session tabs read as selectable chips rather than terminal text. */
-#agent-console tab-bar .tab-bar {
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: center;
-    gap: 0;
-    padding: 10px 0 12px;
-    overflow-x: auto;
-    scrollbar-width: none;
+/* Session tabs render the shared `<tab-bar>` and use its default skin (the
+   same one as the workflow tabs). Only the palette is mapped here; spacing,
+   radius, close-button and hover behaviour live in the component stylesheet. */
+#agent-console tab-bar {
+    --tab-strip-background: transparent;
+    --tab-surface: var(--agent-web-panel-raised);
+    --tab-border: var(--agent-web-border);
+    --tab-text: var(--agent-web-strong);
+    --tab-muted: var(--agent-web-muted);
+    --tab-hover: var(--agent-web-hover);
+    --tab-accent: var(--agent-web-accent);
+    --tab-danger: var(--agent-web-danger);
 }
 
-#agent-console tab-bar .tab-bar::-webkit-scrollbar {
-    display: none;
-}
-
+/* Tab labels carry the terminal strip's own padding spaces, so trim the
+   component's horizontal padding to keep the same visual width. */
 #agent-console tab-bar .tab {
-    display: inline-flex;
-    flex: 0 0 auto;
-    align-items: center;
-    min-height: 28px;
-    border: 1px solid transparent;
-    border-radius: 7px;
-    /* Tab labels carry their own terminal-style padding spaces, matching the
-       console strip instead of adding a second horizontal inset. */
-    padding: 3px 0;
+    padding: 6px 4px;
     font-family: var(--agent-web-sans);
-    font-size: 12.5px;
-    line-height: 1.4;
-    cursor: pointer;
-    transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
-}
-
-#agent-console tab-bar .tab-label {
-    white-space: pre;
-}
-
-#agent-console tab-bar .tab[aria-selected="true"] {
-    background: transparent !important;
-    border-color: transparent;
-    color: var(--agent-web-strong) !important;
-    font-weight: 600;
-}
-
-#agent-console tab-bar .tab:not([aria-selected="true"]) {
-    color: var(--agent-web-muted) !important;
-}
-
-#agent-console tab-bar .tab[data-disabled="true"] {
-    color: var(--agent-web-muted) !important;
-    cursor: default;
-    opacity: 0.7;
-}
-
-#agent-console tab-bar .tab[data-disabled="true"]:hover {
-    background: transparent;
-}
-
-#agent-console tab-bar .tab-close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0.5;
-    font-size: 11px;
-    min-width: 2ch;
-    min-height: 16px;
-    padding: 2px 0 2px 1ch;
-    margin-left: 0;
-    border-radius: 4px;
-    line-height: 1;
-}
-
-#agent-console tab-bar .tab-close:hover {
-    opacity: 1;
-    background: var(--agent-web-hover, rgba(255, 255, 255, 0.08));
 }
 
 #agent-console tab-bar .tab-new {
-    display: inline-flex;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: center;
-    min-width: 20px;
-    height: 28px;
-    margin-left: 2px;
-    padding: 0 6px;
-    border: 1px solid transparent;
-    border-radius: 7px;
-    color: var(--agent-web-muted) !important;
     font-family: var(--agent-web-sans);
-    font-size: 15px;
-    line-height: 1;
-    white-space: pre;
 }
 
 #agent-console .web-code-head button,
@@ -499,6 +430,20 @@ body {
     overflow: auto;
 }
 
+/* The dialog/menu panel is wrapped in the component host element, so the
+   direct-child `pointer-events: auto` above never reaches it. Without this
+   the whole card is click-through and its ✕ cannot be pressed. */
+#agent-console [renderregion="dialog"] .console-panel,
+#agent-console [renderregion="menu"] .console-panel {
+    pointer-events: auto;
+}
+
+#agent-console [renderregion="dialog"] .dialog-close,
+#agent-console [renderregion="menu"] .dialog-close {
+    pointer-events: auto;
+    cursor: pointer;
+}
+
 #agent-console [renderregion="dialog"] .console-panel {
     background-color: var(--agent-web-panel) !important;
     color: var(--agent-web-text);
@@ -586,26 +531,6 @@ body {
 
 #agent-console .console-new-messages {
     transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, opacity 120ms ease;
-}
-
-#agent-console tab-bar .tab[aria-selected="false"]:hover {
-    background: var(--agent-web-hover);
-}
-
-#agent-console tab-bar .tab[aria-selected="true"]:hover {
-    background: var(--agent-web-hover);
-    border-color: transparent;
-}
-
-#agent-console tab-bar .tab-close:hover {
-    opacity: 1;
-    background: var(--agent-web-hover);
-}
-
-#agent-console tab-bar .tab-new:hover {
-    background: var(--agent-web-hover);
-    border-color: transparent;
-    color: var(--agent-web-accent) !important;
 }
 
 #agent-console .web-code-head button:hover {
@@ -1255,18 +1180,6 @@ html[data-agent-theme="light"] #agent-console textarea.agent-input {
 
 html[data-agent-theme="light"] #agent-console .console-input-panel .input-meta {
     color: #57606a;
-}
-
-/* Text-first tabs in every theme: no chip background/border on the active tab. */
-html[data-agent-theme="light"] #agent-console tab-bar .tab[aria-selected="true"] {
-    background: transparent !important;
-    border-color: transparent;
-    color: #24292f !important;
-    font-weight: 600;
-}
-
-html[data-agent-theme="light"] #agent-console tab-bar .tab-new {
-    border-color: transparent;
 }
 
 html[data-agent-theme="light"] #agent-console .markdown-table,

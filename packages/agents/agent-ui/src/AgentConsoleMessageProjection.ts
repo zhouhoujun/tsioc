@@ -74,7 +74,6 @@ function buildDisplayMessages(state: AgentConsoleSessionState): AgentMessage[] {
         if (state.fileChangeMessage) {
             filtered.push(state.fileChangeMessage);
         }
-        filtered.push(...state.commandExecutionMessages);
         if (state.timelineMode) {
             const active = state.planTodos.find(todo => todo.status === 'in_progress')
                 || state.planTodos.find(todo => todo.status === 'pending');
@@ -106,9 +105,15 @@ function buildDisplayMessages(state: AgentConsoleSessionState): AgentMessage[] {
                 } as AgentMessage);
             }
         }
-        return projectAgentConsoleExecutionMainline(projectAgentConsoleDiagnosticMainline(
+        const projected = projectAgentConsoleExecutionMainline(projectAgentConsoleDiagnosticMainline(
             projectAgentConsoleDecisionMainline(projectAgentConsoleArtifactMainline(filtered))
         ));
+        // A command echo starts a new interaction. Appending it after the
+        // projected turn keeps the final answer (and every existing row) in
+        // place; inserting it mid-list rebuilt the async message rows, which
+        // briefly emptied the transcript and moved the viewport.
+        projected.push(...state.commandExecutionMessages);
+        return projected;
     }
 
 export function resolveTimelineSessionStartTime(state: AgentConsoleSessionState): number {

@@ -127,10 +127,16 @@ export class AgentConsoleInputPanelComponent {
     }
 
     get inputFocused(): boolean {
-        // A select menu overlays the composer, but the textarea must keep DOM
-        // focus so arrows/Enter still reach the console. A blurred textarea
-        // would drop them on <body> and the menu could not be navigated.
-        return this.state?.inputFocused !== false || !!this.state?.selectMenu;
+        // Modal overlays (menus, dialogs, questions, approvals, wizard prompts)
+        // cover the composer, but the textarea must keep DOM focus so keys
+        // still reach the console. A blurred textarea drops them on <body>:
+        // menus cannot be navigated and Escape cannot close a dialog. Plain
+        // transcript focus must not keep the composer focused (arrows belong
+        // to message navigation, not history).
+        const state = this.state;
+        const modalFocus = !!(state?.selectMenu || state?.textOverlay
+            || state?.pendingQuestion || state?.approvalsFocused || state?.modalPromptActive);
+        return state?.inputFocused !== false || modalFocus;
     }
 
     get shellStyle() {
@@ -283,6 +289,24 @@ export class AgentConsoleInputPanelComponent {
 
     async onKeydown(event: KeyboardEvent): Promise<void> {
         const key = String(event?.key || event?.code || '');
+        // A text overlay owns its keys: Escape closes it, arrows/pages scroll
+        // it and printable keys never leak into the draft behind it.
+        if (this.state?.textOverlay) {
+            if (this.isEscapeKey(event)) {
+                event.preventDefault?.();
+                this.state.closeTextOverlay();
+                return;
+            }
+            const normalized = key.toLowerCase().replace(/^arrow/, '');
+            if (await this.state.focusLayers.handleTextOverlayKey(normalized, { setFocused() { /* no-op */ } } as any)) {
+                event.preventDefault?.();
+                return;
+            }
+            if (!event.ctrlKey && !event.metaKey && !event.altKey && key.length === 1) {
+                event.preventDefault?.();
+                return;
+            }
+        }
         if ((key === 'ArrowUp' || key === 'ArrowDown') && !this.state?.selectMenu) {
             const handled = this.state?.inputHistoryController.navigate(key === 'ArrowUp' ? -1 : 1);
             if (handled) {
@@ -330,6 +354,22 @@ export class AgentConsoleInputPanelComponent {
                 event.preventDefault?.();
                 return;
             }
+        }
+        // Overlay dialogs (text overlay, pending question, approvals) own
+        // Escape in the browser too; the focus stack dismisses the top layer.
+        if (this.isEscapeKey(event) && this.state?.focusLayers?.isAnyFocusActive?.()) {
+            event.preventDefault?.();
+            await this.state.focusLayers.handleEscape({ setFocused() { /* no-op */ } } as any);
+            return;
+        }
+        // A modal dialog is not a text field: printable keys must not leak into
+        // the draft behind it (pending questions keep the composer editable for
+        // custom answers, handled above).
+        if ((this.state?.textOverlay || this.state?.approvalsFocused)
+            && !event.ctrlKey && !event.metaKey && !event.altKey
+            && key.length === 1) {
+            event.preventDefault?.();
+            return;
         }
         if (this.state?.vimMode) {
             if (this.state.inputMode === 'insert' && this.isEscapeKey(event)) {

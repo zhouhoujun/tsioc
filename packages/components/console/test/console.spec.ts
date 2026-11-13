@@ -3166,6 +3166,60 @@ export class ConsoleRendererTest {
         surface.destroy();
     }
 
+    @Test('a dialog opens centered between the header and composer; menus stay attached')
+    dialogCentersAboveComposer() {
+        const root = { addEventListener() {}, removeEventListener() {} } as any;
+        const render = (overlayId: 'dialog' | 'menu') => {
+            const transcript = Array.from({ length: 100 }, (_value, index) => `line ${index + 1}`);
+            const overlay = ['OVERLAY-1', 'OVERLAY-2', 'OVERLAY-3', 'OVERLAY-4'];
+            const lines = ['tab strip', ...transcript, ...overlay, 'status', 'input', 'meta'];
+            const overlayStart = 1 + transcript.length;
+            return {
+                lines,
+                regions: [
+                    { id: 'header', startRow: 0, endRow: 1 },
+                    { id: 'transcript', startRow: 1, endRow: overlayStart },
+                    { id: overlayId, startRow: overlayStart, endRow: overlayStart + overlay.length },
+                    { id: 'footer', startRow: overlayStart + overlay.length, endRow: lines.length }
+                ]
+            };
+        };
+        const dialogSurface = new TuiTerminalSurface({
+            renderer: { renderToTuiLayout: () => render('dialog') },
+            root,
+            width: 80,
+            height: 24,
+            nativeScrollback: false,
+            scrollViewport: true,
+            scrollRegionId: 'transcript',
+            footerRegionId: 'footer',
+            output: { write() {} }
+        });
+        dialogSurface.render();
+        const dialogTop = dialogSurface.lastRenderedLines.findIndex(line => line.includes('OVERLAY-1'));
+        // Content area = rows 1..20 (footer starts after row 20); a four-row
+        // dialog leaves eight rows above and below.
+        expect(dialogTop).toEqual(9);
+        dialogSurface.destroy();
+
+        const menuSurface = new TuiTerminalSurface({
+            renderer: { renderToTuiLayout: () => render('menu') },
+            root,
+            width: 80,
+            height: 24,
+            nativeScrollback: false,
+            scrollViewport: true,
+            scrollRegionId: 'transcript',
+            footerRegionId: 'footer',
+            output: { write() {} }
+        });
+        menuSurface.render();
+        const menuTop = menuSurface.lastRenderedLines.findIndex(line => line.includes('OVERLAY-1'));
+        // Menus stay glued to the composer's top edge instead of floating.
+        expect(menuTop).toBeGreaterThan(dialogTop);
+        menuSurface.destroy();
+    }
+
     @Test('requests an older transcript page at the top and preserves the reading row on prepend')
     viewportPaginationPreservesReadingRow() {
         let lines = Array.from({ length: 100 }, (_value, index) => `line ${index + 1}`);

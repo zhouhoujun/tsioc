@@ -38,6 +38,14 @@ export class SessionTabsTest {
             expect(bar).toContain('Beta');
             expect(bar).toContain('+');
             expect(bar).toContain('✕');
+            // The close affordance is red (danger), matching the workflow-admin
+            // tab strip; keep it distinct from the tab label colour.
+            const closeColor = String(bar).match(/\x1b\[38;2;(\d+);(\d+);(\d+)m[^\x1b]*✕/);
+            expect(closeColor?.slice(1).join(',')).toEqual('207,152,147');
+            // One space after ✕ (plus the next tab's leading label space):
+            // the close affordance must not leave a gap before the next tab.
+            const plainBar = String(bar).replace(/\x1b\[[0-9;]*m/g, '');
+            expect(plainBar).toContain('Alpha ✕  Beta');
             // Selected and inactive tabs must not share the same foreground
             // colour: the TUI stylesheet cannot parse `:not(...)`, so inactive
             // tabs are matched by `aria-selected="false"` instead.
@@ -93,7 +101,8 @@ export class SessionTabsTest {
                 && String((target.node as any)?.textContent || '').includes('Beta'));
             expect(close).toBeTruthy();
             expect(beta).toBeTruthy();
-            expect(close!.width).toBeGreaterThanOrEqual(3);
+            // ✕ plus one reserved cell (wide enough for a CJK-width glyph).
+            expect(close!.width).toBeGreaterThanOrEqual(2);
             expect(close!.x + close!.width).toBeLessThanOrEqual(beta!.x);
             surface.destroy();
         } finally {
