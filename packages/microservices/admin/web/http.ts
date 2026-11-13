@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { HttpClient } from '@tsdi/common/http';
-import { GatewayMatchPreview, GatewayRuntimeSnapshot } from '@tsdi/gateway';
+import { GatewayConfigApplyResult, GatewayConfigDiff, GatewayConfigHistoryEntry, GatewayMatchPreview, GatewayRuntimeSnapshot } from '@tsdi/gateway';
 import { lastValueFrom, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { HttpInterceptorFn } from '@tsdi/common/http';
@@ -56,8 +56,24 @@ export class GatewayAdminHttp {
         return this.request('GET', '/api/gateway-admin/services');
     }
 
-    updateRoutes(routes: any[]): Promise<AdminHttpResult<any>> {
-        return this.request('PUT', '/api/gateway-admin/routes', { routes });
+    updateRoutes(routes: any[], expectedVersion?: number): Promise<AdminHttpResult<any>> {
+        return this.request('PUT', '/api/gateway-admin/routes', { routes, expectedVersion });
+    }
+
+    config(): Promise<AdminHttpResult<{ version: number; options: any }>> {
+        return this.request('GET', '/api/gateway-admin/config');
+    }
+
+    configHistory(): Promise<AdminHttpResult<GatewayConfigHistoryEntry[]>> {
+        return this.request('GET', '/api/gateway-admin/config/history');
+    }
+
+    applyConfig(patch: any): Promise<AdminHttpResult<GatewayConfigApplyResult>> {
+        return this.request('POST', '/api/gateway-admin/config/apply', patch);
+    }
+
+    rollbackConfig(version: number, expectedVersion?: number): Promise<AdminHttpResult<GatewayConfigApplyResult>> {
+        return this.request('POST', '/api/gateway-admin/config/rollback', { version, expectedVersion });
     }
 
     resetRoutes(): Promise<AdminHttpResult<any>> {

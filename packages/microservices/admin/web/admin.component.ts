@@ -194,6 +194,67 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
             </div>
         </div>
 
+        <div class="ga-modal" v-if="state.configDiffOpen">
+            <div class="ga-modal-card ga-config-diff">
+                <header class="ga-modal-head">
+                    <div>
+                        <h2>{{state.t('config.diffTitle', { version: state.configVersion + 1 })}}</h2>
+                        <p>{{state.t('config.diffDesc')}}</p>
+                    </div>
+                    <button class="ga-icon-btn" type="button" @click="state.closeConfigDiff">✕</button>
+                </header>
+                <div class="ga-diff-grid">
+                    <div class="ga-diff-col">
+                        <h3>{{state.t('config.routes')}}</h3>
+                        <code v-for="item in state.configDiff?.routes.added">{{state.t('config.addedPrefix')}}{{item}}</code>
+                        <code v-for="item in state.configDiff?.routes.changed">{{state.t('config.changedPrefix')}}{{item}}</code>
+                        <code v-for="item in state.configDiff?.routes.removed">{{state.t('config.removedPrefix')}}{{item}}</code>
+                        <span class="ga-muted" v-if="!state.configDiff?.routes.added.length && !state.configDiff?.routes.changed.length && !state.configDiff?.routes.removed.length">{{state.t('config.noChanges')}}</span>
+                    </div>
+                    <div class="ga-diff-col">
+                        <h3>{{state.t('config.rules')}}</h3>
+                        <code v-for="item in state.configDiff?.rules.added">{{state.t('config.addedPrefix')}}{{item}}</code>
+                        <code v-for="item in state.configDiff?.rules.changed">{{state.t('config.changedPrefix')}}{{item}}</code>
+                        <code v-for="item in state.configDiff?.rules.removed">{{state.t('config.removedPrefix')}}{{item}}</code>
+                        <span class="ga-muted" v-if="!state.configDiff?.rules.added.length && !state.configDiff?.rules.changed.length && !state.configDiff?.rules.removed.length">{{state.t('config.noChanges')}}</span>
+                    </div>
+                    <div class="ga-diff-col">
+                        <h3>{{state.t('config.options')}}</h3>
+                        <code v-for="item in state.configDiff?.options">{{item}}</code>
+                        <span class="ga-muted" v-if="!state.configDiff?.options.length">{{state.t('config.noChanges')}}</span>
+                    </div>
+                </div>
+                <footer class="ga-modal-foot">
+                    <button class="ga-btn" type="button" @click="state.closeConfigDiff">{{state.t('common.close')}}</button>
+                </footer>
+            </div>
+        </div>
+
+        <div class="ga-modal" v-if="state.configHistoryOpen">
+            <div class="ga-modal-card ga-config-history">
+                <header class="ga-modal-head">
+                    <div>
+                        <h2>{{state.t('config.historyTitle')}}</h2>
+                        <p>{{state.t('config.historyDesc')}}</p>
+                    </div>
+                    <button class="ga-icon-btn" type="button" @click="state.closeConfigHistory">✕</button>
+                </header>
+                <div class="ga-compact-list">
+                    <div class="ga-compact-row ga-config-history-row" v-for="entry in state.configHistory">
+                        <strong>v{{entry.version}}</strong>
+                        <span class="ga-muted">{{entry.timestamp}}<template v-if="entry.source"> · {{entry.source}}</template></span>
+                        <span class="ga-status-spacer"></span>
+                        <span class="ga-pill">{{state.diffSummary(entry)}}</span>
+                        <button class="ga-link-btn ga-rollback-config" type="button" @click="state.rollbackConfig(entry.version)">{{state.t('config.rollback')}}</button>
+                    </div>
+                    <div class="ga-empty" v-if="!state.configHistory.length">{{state.t('config.noHistory')}}</div>
+                </div>
+                <footer class="ga-modal-foot">
+                    <button class="ga-btn" type="button" @click="state.closeConfigHistory">{{state.t('common.close')}}</button>
+                </footer>
+            </div>
+        </div>
+
         <div class="ga-modal" v-if="state.importOpen">
             <div class="ga-modal-card">
                 <header class="ga-modal-head">

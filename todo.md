@@ -3797,3 +3797,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - metrics interceptor 路由模板 + 数字/UUID 归一化 + 去 query，降低基数。
   - /metrics content-type 规范；MetricsExporter 抽象 + OTLP/HTTP JSON 导出器（counter/gauge/histogram）。
   - 回归：metrics 54。
+- 微服务框架第七批（2026-11-13）：
+  - Admin 路由页显示 config version；Apply 使用 expectedVersion（409 提示）。
+  - Preview 调用 config dry-run 并展示 routes/rules/options diff。
+  - History 列出历史版本 + diff 摘要，支持 rollback。
+  - 回归：admin 57；生产 bundle 实测版本/diff/回滚。

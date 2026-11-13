@@ -57,6 +57,13 @@
 - Metrics interceptor 使用路由模板并归一化数字/UUID 段，移除 query，避免原始 URL 高基数。
 - `/metrics` 返回 Prometheus 规范 content-type；新增 `MetricsExporter` 抽象与 OTLP/HTTP JSON 导出器（counter/gauge/histogram）。
 
+第七批（Admin 配置 UI）：
+
+- 路由页显示 `v{version}`；Apply 携带 `expectedVersion`，冲突显示可操作错误。
+- `Preview` 调用 `POST /config/apply {dryRun:true}`，弹窗展示 routes/rules/options diff。
+- `History` 列出最近版本与 diff 摘要，可一键 rollback；回滚后刷新状态栏。
+- 生产 bundle 实测 v1 版本、diff 弹窗、历史回滚。
+
 
 ---
 

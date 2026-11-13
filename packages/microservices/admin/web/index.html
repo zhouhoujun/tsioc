@@ -159,6 +159,20 @@
         }
         .ga-route-filter:focus { outline: none; border-color: var(--ga-blue); }
         .ga-service-endpoints { color: var(--ga-muted); font-size: 11px; }
+        .ga-config-version { font-variant-numeric: tabular-nums; }
+        .ga-diff-grid {
+            display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px; padding: 12px 18px; max-height: 50vh; overflow: auto;
+        }
+        .ga-diff-col h3 {
+            margin: 0 0 6px; font-size: 10px; text-transform: uppercase;
+            letter-spacing: .55px; color: var(--ga-muted);
+        }
+        .ga-diff-col code {
+            display: block; padding: 2px 0; color: #1e293b; font-size: 11px;
+            word-break: break-all; white-space: normal;
+        }
+        .ga-config-history-row .ga-muted { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .ga-btn {
             display: inline-flex; align-items: center; justify-content: center; gap: 6px;
             border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #334155;

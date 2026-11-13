@@ -5,7 +5,7 @@ import {
     installMenuBarStyles,
 } from '@tsdi/components/common/menu-bar';
 import { DOCUMENT } from '@tsdi/common';
-import { GatewayMatchPreview, GatewayRouteOptions, GatewayRuntimeSnapshot } from '@tsdi/gateway';
+import { GatewayConfigDiff, GatewayConfigHistoryEntry, GatewayMatchPreview, GatewayRouteOptions, GatewayRuntimeSnapshot } from '@tsdi/gateway';
 import { WorkflowDefinitionSummary } from '@tsdi/activities/visual';
 import { Router, RouterEvent } from '@tsdi/components/router';
 import { AdminLocale, adminMessage } from './admin.i18n';
@@ -38,7 +38,16 @@ export interface GatewayAdminApiState {
     rules?: GatewayAdminRuleSummary[];
     services?: string[];
     dynamic?: { routes?: unknown[]; rules?: unknown[] };
+    version?: number;
     auth?: { enabled: boolean; mode: 'none' | 'oidc' | 'oauth2' | 'service' };
+}
+
+export interface GatewayAdminConfigEntry {
+    version: number;
+    timestamp: string;
+    source?: string;
+    actor?: string;
+    diff?: GatewayConfigDiff;
 }
 
 export interface GatewayAdminServiceSummary {
@@ -108,6 +117,12 @@ export class GatewayAdminState {
     importError = '';
     diagnostics?: GatewayRuntimeSnapshot;
     serviceDetails: GatewayAdminServiceDetail[] = [];
+    configVersion = 0;
+    configHistory: GatewayAdminConfigEntry[] = [];
+    configHistoryOpen = false;
+    configDiff?: GatewayConfigDiff;
+    configDiffOpen = false;
+    configLoading = false;
     authEnabled = false;
     needsLogin = false;
     /** Set by the routed layout; the rules page calls it to open the designer. */
@@ -674,6 +689,113 @@ export class GatewayAdminState {
         self.status = self.t('status.routesReset');
     };
 
+    diffSummary(entry: GatewayAdminConfigEntry): string {
+        const diff = entry.diff;
+        const count = diff
+            ? diff.routes.added.length + diff.routes.removed.length + diff.routes.changed.length
+                + diff.rules.added.length + diff.rules.removed.length + diff.rules.changed.length
+                + diff.options.length
+            : 0;
+        return this.t('config.diffSummary', { count });
+    }
+
+    async loadConfig(): Promise<void> {
+        const self = this.selfRef ?? this;
+        if (!self.http) {
+            return;
+        }
+        const response = await self.http.config();
+        if (response.ok) {
+            self.configVersion = response.body?.version ?? 0;
+        }
+    }
+
+    readonly previewConfigChanges = async (): Promise<void> => {
+        const self = this.selfRef ?? this;
+        if (!self.http) {
+            return;
+        }
+        self.configLoading = true;
+        try {
+            const response = await self.http.applyConfig({ routes: self.routes, dryRun: true });
+            if (response.status === 401) {
+                self.requireLogin();
+                return;
+            }
+            if (!response.ok) {
+                self.error = self.t('error.previewConfig', { status: response.status });
+                return;
+            }
+            self.configDiff = response.body?.diff;
+            self.configDiffOpen = true;
+        } finally {
+            self.configLoading = false;
+        }
+    };
+
+    readonly closeConfigDiff = (): void => {
+        const self = this.selfRef ?? this;
+        self.configDiffOpen = false;
+        self.configDiff = undefined;
+    };
+
+    readonly openConfigHistory = async (): Promise<void> => {
+        const self = this.selfRef ?? this;
+        if (!self.http) {
+            return;
+        }
+        self.configLoading = true;
+        try {
+            const response = await self.http.configHistory();
+            if (response.status === 401) {
+                self.requireLogin();
+                return;
+            }
+            if (!response.ok) {
+                self.error = self.t('error.configHistory', { status: response.status });
+                return;
+            }
+            self.configHistory = Array.isArray(response.body) ? response.body : [];
+            self.configHistoryOpen = true;
+        } finally {
+            self.configLoading = false;
+        }
+    };
+
+    readonly closeConfigHistory = (): void => {
+        const self = this.selfRef ?? this;
+        self.configHistoryOpen = false;
+    };
+
+    readonly rollbackConfig = async (version: number): Promise<void> => {
+        const self = this.selfRef ?? this;
+        if (!self.http || !version) {
+            return;
+        }
+        self.configLoading = true;
+        try {
+            const response = await self.http.rollbackConfig(version, self.configVersion);
+            if (response.status === 401) {
+                self.requireLogin();
+                return;
+            }
+            if (response.status === 409) {
+                self.error = self.t('error.configConflict');
+                return;
+            }
+            if (!response.ok) {
+                self.error = self.t('error.rollbackConfig', { status: response.status });
+                return;
+            }
+            self.configVersion = response.body?.version ?? self.configVersion;
+            self.configHistoryOpen = false;
+            await self.reload();
+            self.status = self.t('status.configRolledBack', { version });
+        } finally {
+            self.configLoading = false;
+        }
+    };
+
     readonly editRules = async (id?: string): Promise<void> => {
         const self = this.selfRef ?? this;
         if (id) {
@@ -934,6 +1056,7 @@ export class GatewayAdminState {
             self.services = state.services ?? [];
             self.rules = state.rules ?? [];
             self.routesDirty = false;
+            self.configVersion = state.version ?? 0;
             void self.loadRuleWorkflows();
             void self.loadDiagnostics();
             void self.loadServices();
@@ -1056,10 +1179,13 @@ export class GatewayAdminState {
             if (!self.http) {
                 throw new Error('Gateway admin HTTP client is unavailable');
             }
-            const response = await self.http.updateRoutes(self.routes);
+            const response = await self.http.updateRoutes(self.routes, self.configVersion);
             if (response.status === 401) {
                 self.requireLogin();
                 return;
+            }
+            if (response.status === 409) {
+                throw new Error(self.t('error.configConflict'));
             }
             if (!response.ok) {
                 throw new Error(self.t('error.applyRoutes', { status: response.status }));
@@ -1067,6 +1193,7 @@ export class GatewayAdminState {
             const state = response.body as GatewayAdminApiState;
             self.routes = (state.routes ?? []).map(route => ({ ...route }));
             self.services = state.services ?? [];
+            self.configVersion = state.version ?? self.configVersion;
             self.routesDirty = false;
             self.status = self.t('status.routesApplied', { count: self.routes.length });
         } catch (error) {

@@ -55,6 +55,7 @@ describe('Microservice admin UI', () => {
     let rules: GatewayRuleOptions[];
     let ruleWorkflows: Array<{ id: string; name: string; nodeCount: number }>;
     let definitions: Record<string, Record<string, unknown>>;
+    let configVersion: number;
 
     beforeEach(async () => {
         routes = [{ path: '/api/users', service: 'users-service' }];
@@ -68,6 +69,7 @@ describe('Microservice admin UI', () => {
         }];
         ruleWorkflows = [];
         definitions = {};
+        configVersion = 1;
         originalFetch = globals.fetch;
         originalWindow = globals.window;
         originalLocation = globals.location;
@@ -77,7 +79,48 @@ describe('Microservice admin UI', () => {
             const path = String(input).replace(/^https?:\/\/[^/]+/, '');
             const method = String(init.method || 'GET').toUpperCase();
             if (path === '/api/gateway-admin/state' && method === 'GET') {
-                return jsonResponse({ routes, rules, services: ['users-service'], auth: { enabled: false, mode: 'none' } });
+                return jsonResponse({ routes, rules, services: ['users-service'], version: configVersion, auth: { enabled: false, mode: 'none' } });
+            }
+            if (path === '/api/gateway-admin/config' && method === 'GET') {
+                return jsonResponse({ version: configVersion, options: {} });
+            }
+            if (path === '/api/gateway-admin/config/history' && method === 'GET') {
+                return jsonResponse([{
+                    version: 1,
+                    timestamp: '2026-11-13T00:00:00.000Z',
+                    source: 'admin',
+                    diff: {
+                        routes: { added: ['/api/new:users-service'], removed: [], changed: [] },
+                        rules: { added: [], removed: [], changed: [] },
+                        options: []
+                    }
+                }]);
+            }
+            if (path === '/api/gateway-admin/config/apply' && method === 'POST') {
+                const body = JSON.parse(String(init.body));
+                const diff = {
+                    routes: { added: ['/api/new:users-service'], removed: [], changed: [] },
+                    rules: { added: [], removed: [], changed: [] },
+                    options: []
+                };
+                if (body.dryRun) {
+                    return jsonResponse({ version: configVersion, applied: false, dryRun: true, diff, warnings: [] });
+                }
+                if (Array.isArray(body.routes)) {
+                    routes = body.routes;
+                }
+                configVersion++;
+                return jsonResponse({ version: configVersion, applied: true, dryRun: false, diff, warnings: [] });
+            }
+            if (path === '/api/gateway-admin/config/rollback' && method === 'POST') {
+                configVersion++;
+                return jsonResponse({
+                    version: configVersion,
+                    applied: true,
+                    dryRun: false,
+                    diff: { routes: { added: [], removed: [], changed: [] }, rules: { added: [], removed: [], changed: [] }, options: [] },
+                    warnings: []
+                });
             }
             if (path === '/api/gateway-admin/services' && method === 'GET') {
                 return jsonResponse([{
@@ -113,12 +156,18 @@ describe('Microservice admin UI', () => {
                 return jsonResponse({ removed: true });
             }
             if (path === '/api/gateway-admin/routes' && method === 'PUT') {
-                routes = JSON.parse(String(init.body)).routes;
-                return jsonResponse({ routes, rules, services: ['users-service'] });
+                const body = JSON.parse(String(init.body));
+                if (body.expectedVersion != null && body.expectedVersion !== configVersion) {
+                    return jsonResponse({ message: 'conflict' }, 409);
+                }
+                routes = body.routes;
+                configVersion++;
+                return jsonResponse({ routes, rules, services: ['users-service'], version: configVersion });
             }
             if (path === '/api/gateway-admin/routes' && method === 'DELETE') {
                 routes = staticRoutes.map(route => ({ ...route }));
-                return jsonResponse({ routes, rules, services: ['users-service'] });
+                configVersion++;
+                return jsonResponse({ routes, rules, services: ['users-service'], version: configVersion });
             }
             if (path === '/api/gateway-admin/match' && method === 'POST') {
                 const body = JSON.parse(String(init.body));
@@ -417,6 +466,31 @@ describe('Microservice admin UI', () => {
         filter.dispatchEvent(new win.Event('change', { bubbles: true }));
         await flush();
         expect(root.querySelectorAll('.ga-route-row').length).toBe(2);
+    });
+
+    it('previews config changes and rolls back to a history version', async () => {
+        (root.querySelector('.ga-nav-item:nth-child(2)') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-page-routes'));
+
+        expect(root.querySelector('.ga-config-version')?.textContent).toContain('v1');
+
+        (root.querySelector('.ga-preview-config') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-config-diff'));
+        const diff = root.querySelector('.ga-config-diff')?.textContent || '';
+        expect(diff).toContain('/api/new:users-service');
+        expect(diff).toContain('Pending changes');
+        (root.querySelector('.ga-config-diff .ga-icon-btn') as HTMLElement).click();
+        await waitFor(() => !root.querySelector('.ga-config-diff'));
+
+        (root.querySelector('.ga-config-history') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-config-history-row'));
+        const row = root.querySelector('.ga-config-history-row');
+        expect(row?.textContent).toContain('v1');
+        expect(row?.textContent).toContain('1 change');
+        (root.querySelector('.ga-rollback-config') as HTMLElement).click();
+        await waitFor(() => (root.querySelector('.ga-status')?.textContent || '').includes('rolled back'));
+        expect(root.querySelector('.ga-status')?.textContent).toContain('rolled back');
+        expect(root.querySelector('.ga-config-history-row')).toBeFalsy();
     });
 
     it('previews rule and route matches from the routes page', async () => {

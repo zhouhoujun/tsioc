@@ -22,6 +22,9 @@ import { GatewayAdminState } from '../admin.state';
             <div class="ga-actions">
                 <span class="ga-dirty" v-if="state.routesDirty">{{state.t('routes.unsaved')}}</span>
                 <span class="ga-synced" v-else>{{state.t('routes.synced')}}</span>
+                <span class="ga-pill ga-config-version">{{state.t('config.version', { version: state.configVersion })}}</span>
+                <button class="ga-btn ga-preview-config" type="button" @click="state.previewConfigChanges">{{state.t('config.preview')}}</button>
+                <button class="ga-btn ga-config-history" type="button" @click="state.openConfigHistory">{{state.t('config.history')}}</button>
                 <button class="ga-btn ga-import-routes" type="button" @click="state.openImport">{{state.t('routes.import')}}</button>
                 <button class="ga-btn ga-export-routes" type="button" @click="state.exportRoutes">{{state.t('routes.export')}}</button>
                 <button class="ga-btn ga-reset-routes" type="button" @click="state.resetRoutes">{{state.t('routes.reset')}}</button>
