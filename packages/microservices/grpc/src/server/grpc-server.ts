@@ -47,10 +47,13 @@ export class GrpcServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             const handlers: grpc.UntypedServiceImplementation = {};
             for (const methodName of Object.keys(service.service)) {
                 const definition = service.service[methodName];
-                if (definition.requestStream) {
-                    throw new Error(`gRPC client-streaming method ${methodName} is not supported yet`);
+                if (definition.requestStream && definition.responseStream) {
+                    throw new Error(`gRPC bidi-streaming method ${methodName} is not supported yet`);
                 }
-                if (definition.responseStream) {
+                if (definition.requestStream) {
+                    handlers[methodName] = (call: grpc.ServerReadableStream<any, any>, callback: grpc.sendUnaryData<any>) =>
+                        this.handleClientStream(service.serviceName, methodName, call, callback);
+                } else if (definition.responseStream) {
                     handlers[methodName] = (call: grpc.ServerWritableStream<any, any>) =>
                         this.handleServerStream(service.serviceName, methodName, call);
                 } else {
@@ -131,6 +134,43 @@ export class GrpcServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         }
         this.serviceName = found.key;
         return { service: found.value.service, serviceName: found.key };
+    }
+
+    private handleClientStream(
+        serviceName: string,
+        methodName: string,
+        call: grpc.ServerReadableStream<any, any>,
+        callback: grpc.sendUnaryData<any>
+    ): void {
+        const chunks: any[] = [];
+        call.on('data', (chunk: any) => chunks.push(chunk));
+        call.on('error', () => undefined);
+        call.on('end', async () => {
+            const payload = chunks.length === 1 ? chunks[0] : chunks;
+            const request = {
+                pattern: `/${this.options.packageName ? `${this.options.packageName}.` : ''}${serviceName}/${methodName}`,
+                service: serviceName,
+                method: methodName,
+                url: `/${this.options.packageName ? `${this.options.packageName}.` : ''}${serviceName}/${methodName}`,
+                headers: metadataToObject(call.metadata),
+                body: payload,
+                payload
+            };
+            const context = createRequestContext(this.injector);
+            context.setPayload(request);
+            try {
+                const result = await lastValueFrom(this.handler.handle(request as any, context) as any);
+                callback(null, result ?? {});
+            } catch (error: any) {
+                this.logger?.error?.('gRPC handler error', error?.stack ?? error);
+                callback({
+                    code: mapGrpcStatus(error),
+                    message: error?.message ?? 'gRPC handler failed'
+                } as any);
+            } finally {
+                context.onDestroy();
+            }
+        });
     }
 
     private handleServerStream(

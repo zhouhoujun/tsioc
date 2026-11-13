@@ -26,6 +26,59 @@ export class GrpcClient extends AbstractClient<GrpcRequest<any>, ResponseEvent<a
     }
 
     /**
+     * Invoke a client-streaming RPC with an array of request messages.
+     */
+    clientStream<T = any>(
+        pattern: Pattern,
+        values: any[],
+        options: { headers?: Record<string, string>; timeout?: number } = {}
+    ): Observable<T> {
+        return defer(() => this.connect()).pipe(
+            mergeMap((connection: any) => new Observable<T>(observer => {
+                const method = resolveStreamMethod(pattern);
+                const fn = connection?.[method];
+                if (typeof fn !== 'function') {
+                    observer.error(new Error(`gRPC client-stream method '${method}' is not defined by the loaded proto`));
+                    return;
+                }
+                const metadata = new grpc.Metadata();
+                for (const [key, value] of Object.entries(options.headers ?? {})) {
+                    if (value != null) {
+                        metadata.set(key, String(value));
+                    }
+                }
+                const timeout = Number(options.timeout ?? this.options.deadlineMs ?? 0);
+                const callOptions = timeout > 0 ? { deadline: Date.now() + timeout } : undefined;
+                const callback = (err: any, response: T) => {
+                    if (err) {
+                        observer.error(Object.assign(
+                            new Error(err?.details ?? err?.message ?? 'gRPC client stream failed'),
+                            { code: err?.code, statusCode: err?.code }
+                        ));
+                        return;
+                    }
+                    observer.next(response);
+                    observer.complete();
+                };
+                const call = callOptions
+                    ? fn.call(connection, metadata, callOptions, callback)
+                    : fn.call(connection, metadata, callback);
+                for (const value of values ?? []) {
+                    call.write(value);
+                }
+                call.end();
+                return () => {
+                    try {
+                        call.cancel?.();
+                    } catch {
+                        // best effort
+                    }
+                };
+            }))
+        );
+    }
+
+    /**
      * Invoke a server-streaming RPC. Each emitted value is delivered as it
      * arrives from the server.
      */

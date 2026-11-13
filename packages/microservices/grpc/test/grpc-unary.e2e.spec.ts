@@ -32,6 +32,12 @@ class GreeterController {
         });
     }
 
+    @Handle('/grpc.test.Greeter/Upload', Transport.gRPC)
+    upload(@Payload() payload: any) {
+        const items = Array.isArray(payload) ? payload : [payload];
+        return { message: items.map((item: any) => item?.name).join(',') };
+    }
+
     @Handle('/grpc.test.Greeter/SayHello', Transport.gRPC)
     sayHello(@Payload('name') name: string, @Inject(REQUEST) request: any) {
         if (name === 'slow') {
@@ -116,6 +122,15 @@ describe('gRPC unary RPC', () => {
             }).pipe(toArray())
         );
         expect(values.map(value => value.message)).toEqual(['tick-1', 'tick-2']);
+    });
+
+    it('collects multiple client-stream messages', async () => {
+        const client = clientCtx.get(GrpcClient);
+        const result = await lastValueFrom(client.clientStream<any>(
+            { service: 'Greeter', method: 'Upload' } as any,
+            [{ name: 'a' }, { name: 'b' }, { name: 'c' }]
+        ));
+        expect(result).toEqual({ message: 'a,b,c' });
     });
 
     it('propagates metadata to the handler', async () => {

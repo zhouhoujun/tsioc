@@ -202,6 +202,12 @@
 - `GatewayConfigDiff.routes/rules.changedFields` 记录变化字段（top-level key）。
 - Admin dry-run/history diff 展示 `~ route · enabled, timeout`。
 
+第三十二批（gRPC client streaming）：
+
+- Server 支持 `rpc Upload (stream Req) returns (Res)`：收集 data 后调用一次 handler。
+- Client 新增 `clientStream(pattern, values[])`，逐条 write 后 end，回调返回单响应。
+- bidi 仍明确报错。
+
 
 ---
 

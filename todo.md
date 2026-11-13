@@ -3909,3 +3909,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - GatewayConfigDiff 增加 changedFields。
   - Admin diff 展示字段级变化。
   - 回归：gateway 79、admin 57；web 已重建。
+- 微服务框架第三十二批（2026-11-13）：
+  - gRPC client streaming（Upload）。
+  - GrpcClient.clientStream；bidi 仍不支持。
+  - 回归：grpc 22。
