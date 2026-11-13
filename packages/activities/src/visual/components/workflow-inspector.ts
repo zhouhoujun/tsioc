@@ -18,6 +18,7 @@ const EMPTY_INSPECTOR: WorkflowInspectorModel = {
     icon: '',
     color: '',
     typeLabel: '',
+    typeDescription: '',
     status: 'idle',
     statusLabel: '',
     durationLabel: '',
@@ -78,6 +79,7 @@ function snapshotSignature(model: WorkflowInspectorModel): string {
                 <button class="workflow-inspector-restore" v-if="model.fields.length" type="button"
                     @click="restoreDefaults">{{restoreLabel}}</button>
             </div>
+            <div class="workflow-inspector-description" v-if="model.typeDescription">{{model.typeDescription}}</div>
             <dynamic-form #nodeForm classPrefix="workflow" :schema="formSchema" :value="formValue"
                 :contextKey="model.nodeId" :messages="formMessages" :emptyLabel="noPropertiesLabel"
                 :resetFieldLabel="resetFieldLabel" :changeAction="formChange" :blurAction="formBlur">

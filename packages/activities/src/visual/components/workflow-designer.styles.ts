@@ -1027,6 +1027,13 @@ workflow-canvas {
     grid-column: 1 / -1;
 }
 
+.workflow-inspector-description {
+    margin: 2px 0 10px;
+    color: #64748b;
+    font-size: 11px;
+    line-height: 1.45;
+}
+
 .workflow-field-label-row {
     display: flex;
     align-items: center;

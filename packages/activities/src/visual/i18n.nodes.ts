@@ -10,15 +10,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
         "node": {
             "start": {
                 "label": "Start",
-                "description": "Entry point of the workflow"
+                "description": "Optional explicit entry point"
             },
             "end": {
                 "label": "End",
-                "description": "Finish the workflow"
+                "description": "Optional explicit end point"
             },
             "inject": {
                 "label": "Inject",
-                "description": "Start with a fixed payload"
+                "description": "Start a flow with a fixed payload"
             },
             "task": {
                 "label": "Task",
@@ -26,15 +26,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "function": {
                 "label": "Function",
-                "description": "Run trusted JavaScript against the workflow context"
+                "description": "Transform the message with JavaScript"
             },
             "condition": {
                 "label": "Condition",
-                "description": "Branch on a context field"
+                "description": "Branch on a value from the flow context"
             },
             "switch": {
                 "label": "Switch",
-                "description": "Route by a context value"
+                "description": "Route to the output matching a value"
             },
             "parallel": {
                 "label": "Parallel",
@@ -42,87 +42,87 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "join": {
                 "label": "Join",
-                "description": "Wait for all incoming branches before continuing"
+                "description": "Wait for all incoming branches"
             },
             "loop": {
                 "label": "Loop",
-                "description": "Repeat the node body"
+                "description": "Repeat downstream work"
             },
             "trigger": {
                 "label": "Trigger",
-                "description": "Emit a payload after an optional delay"
+                "description": "Emit a payload after a delay"
             },
             "delay": {
                 "label": "Delay",
-                "description": "Wait before continuing"
+                "description": "Pause for a fixed or random time"
             },
             "log": {
                 "label": "Log",
-                "description": "Record a message"
+                "description": "Write a message or value to the execution log"
             },
             "http-request": {
                 "label": "HTTP request",
-                "description": "Call an HTTP endpoint"
+                "description": "Call an HTTP endpoint and read the response"
             },
             "assign": {
                 "label": "Assign",
-                "description": "Merge values into workflow variables"
+                "description": "Merge values into flow variables"
             },
             "transform": {
                 "label": "Transform",
-                "description": "Map the previous result"
+                "description": "Map the previous result into a new shape"
             },
             "template": {
                 "label": "Template",
-                "description": "Render a message template"
+                "description": "Render text from context values"
             },
             "json": {
                 "label": "JSON",
-                "description": "Parse or stringify JSON"
+                "description": "Parse or stringify JSON values"
             },
             "csv": {
                 "label": "CSV",
-                "description": "Parse or stringify CSV"
+                "description": "Parse or stringify CSV text"
             },
             "change": {
                 "label": "Change",
-                "description": "Set, delete or append a context field"
+                "description": "Set, delete or append context fields"
             },
             "statistics": {
                 "label": "Statistics",
-                "description": "Aggregate an array (count/sum/avg/min/max)"
+                "description": "Aggregate an array into a number"
             },
             "merge": {
                 "label": "Merge",
-                "description": "Merge objects or concatenate arrays"
+                "description": "Combine fields or arrays"
             },
             "event-emit": {
                 "label": "Emit event",
-                "description": "Emit an event through the workflow event bus"
+                "description": "Publish an event to the host"
             },
             "event-wait": {
                 "label": "Wait event",
-                "description": "Wait for a workflow event"
+                "description": "Wait for an event from the host"
             },
             "command": {
                 "label": "Command",
-                "description": "Run a host-provided command executor"
+                "description": "Run a host command or function"
             },
             "split": {
                 "label": "Split",
-                "description": "Split a string or array into items"
+                "description": "Split text or an array into items"
             },
             "map": {
                 "label": "Map",
-                "description": "Map each array item"
+                "description": "Map each item to a new value"
             },
             "filter": {
                 "label": "Filter",
-                "description": "Keep array items that match a condition"
+                "description": "Keep items matching a condition"
             },
             "sort": {
                 "label": "Sort",
-                "description": "Sort an array by a field"
+                "description": "Sort items by a field"
             },
             "range": {
                 "label": "Range",
@@ -130,7 +130,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "batch": {
                 "label": "Batch",
-                "description": "Split an array into chunks"
+                "description": "Group items into batches"
             },
             "trycatch": {
                 "label": "Try / catch",
@@ -138,7 +138,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "subprocess": {
                 "label": "Sub workflow",
-                "description": "Execute another workflow"
+                "description": "Run another workflow"
             },
             "comment": {
                 "label": "Comment",
@@ -190,15 +190,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "debug": {
                 "label": "Debug",
-                "description": "Inspect a message property or the complete message"
+                "description": "Inspect a value or the complete message"
             },
             "junction": {
                 "label": "Junction",
-                "description": "Route wires without changing the message"
+                "description": "Merge wires without changing the message"
             },
             "sequence": {
                 "label": "Sequence",
-                "description": "Keep steps in a strict order"
+                "description": "Keep downstream steps in order"
             },
             "link": {
                 "label": "Link",
@@ -210,36 +210,36 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "xml": {
                 "label": "XML",
-                "description": "Parse or stringify XML"
+                "description": "Parse or stringify XML documents"
             }
         },
         "field": {
             "start": {},
             "end": {},
             "inject": {
-                "payload": "Payload",
+                "payload": "Payload (JSON)",
                 "topic": "Topic"
             },
             "task": {
-                "action": "Action",
-                "result": "Mock result",
-                "fail": "Fail this step",
+                "action": "Action name",
+                "result": "Result when no action",
+                "fail": "Mark as failed",
                 "retry": "Retries",
                 "retryDelay": "Retry delay",
                 "timeout": "Timeout"
             },
             "function": {
-                "code": "Code",
+                "code": "JavaScript code",
                 "timeout": "Timeout"
             },
             "condition": {
-                "field": "Field",
+                "field": "Value path",
                 "operator": "Operator",
-                "value": "Compare with"
+                "value": "Compare to"
             },
             "switch": {
-                "field": "Value field",
-                "value": "Value"
+                "field": "Value path",
+                "value": "Fallback value"
             },
             "parallel": {},
             "join": {},
@@ -249,7 +249,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "trigger": {
                 "delay": "Delay",
-                "payload": "Payload"
+                "payload": "Payload (JSON)"
             },
             "delay": {
                 "mode": "Mode",
@@ -258,53 +258,53 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "randomMax": "Maximum"
             },
             "log": {
-                "message": "Message",
-                "field": "Message property",
-                "complete": "Complete message",
+                "message": "Static message",
+                "field": "Value path",
+                "complete": "Log full context",
                 "level": "Level"
             },
             "http-request": {
-                "url": "URL",
+                "url": "Request URL",
                 "method": "Method",
-                "headers": "Headers",
+                "headers": "Headers (JSON)",
                 "body": "Body",
-                "responseType": "Response",
+                "responseType": "Response handling",
                 "retry": "Retries",
                 "retryDelay": "Retry delay",
                 "timeout": "Timeout"
             },
             "assign": {
-                "values": "Values"
+                "values": "Values (JSON)"
             },
             "transform": {
-                "mapping": "Mapping",
-                "result": "Fixed result"
+                "mapping": "Mapping (JSON)",
+                "result": "Fixed result (JSON)"
             },
             "template": {
                 "template": "Template",
                 "syntax": "Syntax",
-                "target": "Target field",
-                "output": "Output"
+                "target": "Write result to",
+                "output": "Output type"
             },
             "json": {
                 "mode": "Mode",
-                "field": "Field",
+                "field": "Value path",
                 "pretty": "Pretty print"
             },
             "csv": {
                 "mode": "Mode",
-                "field": "Field",
+                "field": "Value path",
                 "delimiter": "Delimiter",
                 "header": "First row is header"
             },
             "change": {
                 "action": "Action",
-                "field": "Field",
+                "field": "Field path",
                 "value": "Value",
                 "rules": "Rules"
             },
             "statistics": {
-                "field": "Array field",
+                "field": "Array path",
                 "path": "Item path",
                 "operation": "Operation",
                 "resultField": "Result field"
@@ -315,35 +315,35 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "resultField": "Result field"
             },
             "event-emit": {
-                "event": "Event",
-                "payload": "Payload"
+                "event": "Event name",
+                "payload": "Payload (JSON)"
             },
             "event-wait": {
-                "event": "Event",
+                "event": "Event name",
                 "timeout": "Timeout"
             },
             "command": {
                 "command": "Command",
-                "args": "Args",
+                "args": "Arguments (JSON)",
                 "timeout": "Timeout"
             },
             "split": {
-                "field": "Field",
+                "field": "Value path",
                 "delimiter": "Delimiter"
             },
             "map": {
-                "field": "Array field",
+                "field": "Array path",
                 "path": "Item path"
             },
             "filter": {
-                "field": "Array field",
+                "field": "Array path",
                 "path": "Item path",
                 "operator": "Operator",
-                "value": "Compare with"
+                "value": "Compare to"
             },
             "sort": {
-                "field": "Array field",
-                "path": "Sort path",
+                "field": "Array path",
+                "path": "Item path",
                 "order": "Order"
             },
             "range": {
@@ -352,10 +352,12 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "step": "Step"
             },
             "batch": {
-                "field": "Array field",
+                "field": "Array path",
                 "size": "Batch size"
             },
-            "trycatch": {},
+            "trycatch": {
+                "timeout": "Timeout"
+            },
             "subprocess": {
                 "workflow": "Workflow JSON"
             },
@@ -437,23 +439,23 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "body": "Body"
             },
             "debug": {
-                "field": "Output property",
+                "field": "Value path",
                 "complete": "Complete message",
                 "level": "Level",
                 "console": "Also print to console"
             },
             "link": {
-                "links": "Links"
+                "links": "Link names"
             },
             "html": {
-                "field": "HTML field",
+                "field": "HTML path",
                 "mode": "Output",
-                "target": "Target field"
+                "target": "Write result to"
             },
             "xml": {
                 "mode": "Mode",
-                "field": "XML field",
-                "target": "Target field",
+                "field": "XML path",
+                "target": "Write result to",
                 "pretty": "Pretty print"
             }
         },
@@ -461,43 +463,48 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "start": {},
             "end": {},
             "inject": {
-                "topic": "optional topic"
+                "topic": "orders.created",
+                "payload": "{ \"value\": 1 }"
             },
             "task": {
                 "action": "actions.fetch",
                 "result": "{ \"ok\": true }"
             },
-            "function": {},
+            "function": {
+                "code": "return { ok: true };"
+            },
             "condition": {
-                "field": "input.approved",
+                "field": "approved",
                 "value": "true"
             },
             "switch": {
-                "field": "input.type",
-                "value": "approved"
+                "field": "result.status",
+                "value": "done"
             },
             "parallel": {},
             "join": {},
             "loop": {},
             "trigger": {
-                "payload": "{ \"key\": \"value\" }"
+                "payload": "{ \"ok\": true }"
             },
             "delay": {},
             "log": {
-                "message": "Workflow step completed",
-                "field": "value"
+                "message": "Flow step completed",
+                "field": "result.value"
             },
             "http-request": {
-                "url": "https://api.example.com",
-                "headers": "{ \"Content-Type\": \"application/json\" }",
+                "url": "https://api.example.com/items",
+                "headers": "{ \"Accept\": \"application/json\" }",
                 "body": "{ \"name\": \"demo\" }"
             },
-            "assign": {},
+            "assign": {
+                "values": "{ \"count\": 1 }"
+            },
             "transform": {
-                "mapping": "{ \"target\": \"input.source\" }"
+                "mapping": "{ \"name\": \"input.name\" }"
             },
             "template": {
-                "template": "Hello {{input.name}}",
+                "template": "Hello {{name}}",
                 "target": "message"
             },
             "json": {
@@ -508,19 +515,25 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "delimiter": ","
             },
             "change": {
-                "field": "variables.name"
+                "field": "variables.name",
+                "value": "\"workflow\""
             },
             "statistics": {
                 "field": "items",
-                "path": "value"
+                "path": "value",
+                "resultField": "value"
             },
             "merge": {
-                "fields": "first, second"
+                "fields": "a, b",
+                "resultField": "value"
             },
             "event-emit": {
-                "payload": "{ \"key\": \"value\" }"
+                "payload": "{ \"id\": 1 }",
+                "event": "order.created"
             },
-            "event-wait": {},
+            "event-wait": {
+                "event": "order.created"
+            },
             "command": {
                 "command": "context.exec",
                 "args": "[\"--flag\"]"
@@ -534,7 +547,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "path": "value"
             },
             "filter": {
-                "field": "items"
+                "field": "items",
+                "path": "value"
             },
             "sort": {
                 "field": "items",
@@ -582,107 +596,164 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "payload"
             },
             "html": {
-                "field": "value",
+                "field": "body",
                 "target": "value"
             },
             "xml": {
                 "field": "value",
                 "target": "value"
+            },
+            "link": {
+                "links": "flow-a, flow-b"
             }
         },
         "fieldDescription": {
             "start": {},
             "end": {},
             "inject": {
-                "topic": "Optional message topic carried with the payload."
+                "topic": "optional label carried with the payload",
+                "payload": "JSON merged into the flow context"
             },
             "task": {
-                "action": "Function name in context.actions.",
-                "result": "Returned directly when no action is set.",
-                "retry": "Automatic retries before the step fails."
+                "action": "name of a function in context.actions; leave empty to return the result below",
+                "result": "JSON returned when no action is set",
+                "retry": "automatic retries before the step fails",
+                "fail": "force this step to fail so error branches can run",
+                "retryDelay": "wait time between retries",
+                "timeout": "maximum time for this step; 0 means no limit"
             },
             "function": {
-                "code": "Trusted code. `context` is the workflow context, `input` is the previous result data. Press Ctrl+Space for context and variable suggestions."
+                "code": "return the next message; context and input expose the flow context",
+                "timeout": "maximum time for this step; 0 means no limit"
             },
             "condition": {
-                "field": "Path to the value to test."
+                "field": "context path to test, for example approved or user.role",
+                "operator": "comparison used to choose the true or false output",
+                "value": "value used by the selected operator"
             },
             "switch": {
-                "field": "Path to the value used for routing.",
-                "value": "Literal value used when no value field is configured."
+                "field": "value used to choose an output port",
+                "value": "used when no value path is set"
             },
             "parallel": {},
             "join": {},
-            "loop": {},
+            "loop": {
+                "iterations": "number of times downstream steps run",
+                "delay": "wait time between iterations"
+            },
             "trigger": {
-                "delay": "Time to wait before emitting the payload."
+                "delay": "time to wait before emitting the payload",
+                "payload": "JSON emitted when the trigger fires"
             },
             "delay": {
-                "delay": "Pause before continuing."
+                "delay": "pause duration before the next node",
+                "mode": "fixed waits a set time; random picks a value in the range",
+                "randomMin": "minimum random delay",
+                "randomMax": "maximum random delay"
             },
             "log": {
-                "message": "Message written to the execution log when no field is set.",
-                "field": "Optional context path; logs that value instead of the fixed message.",
-                "complete": "Log the complete workflow context instead of one property."
+                "message": "text written when no value path is set",
+                "field": "context path to log, for example result.value",
+                "complete": "write the complete flow context",
+                "level": "log level: info, warn or error"
             },
             "http-request": {
-                "url": "Absolute endpoint or a path resolved by the host."
+                "url": "absolute endpoint or a host path starting with /",
+                "method": "HTTP request method",
+                "headers": "JSON object of request headers",
+                "body": "request body for POST, PUT or PATCH",
+                "responseType": "auto parses JSON when possible; text keeps raw text; JSON fails on invalid JSON",
+                "retry": "automatic retries after a failed request",
+                "retryDelay": "wait time between retries",
+                "timeout": "maximum wait time for the request"
             },
-            "assign": {},
+            "assign": {
+                "values": "JSON object merged into flow variables"
+            },
             "transform": {
-                "mapping": "Map context paths into the new result."
+                "mapping": "target field to context path mapping",
+                "result": "fixed JSON result"
             },
             "template": {
-                "template": "Use {{path.to.value}} placeholders.",
-                "target": "Context field that receives the rendered text."
+                "template": "text with placeholders such as {{name}} or {{user.email}}",
+                "target": "context field that receives the rendered value",
+                "syntax": "Mustache replaces placeholders; plain text is used as-is",
+                "output": "text keeps a string; JSON parses the rendered text"
             },
             "json": {
-                "field": "Path to the value to parse or stringify."
+                "field": "context path to parse or stringify",
+                "mode": "parse JSON text or stringify a value",
+                "pretty": "indent the serialized JSON"
             },
             "csv": {
-                "field": "Path to the CSV text or array.",
-                "delimiter": "Single character used between columns."
+                "field": "context path to CSV text or an array",
+                "delimiter": "single character between columns",
+                "mode": "parse CSV text or stringify an array",
+                "header": "treat the first row as column names"
             },
             "change": {
-                "field": "Context path to modify.",
-                "value": "New value or item to append."
+                "field": "context path to modify, for example variables.name",
+                "value": "new value; JSON is supported",
+                "rules": "rules run in order, one change per row",
+                "action": "Set replaces, Delete removes, Append adds to a list or string"
             },
             "statistics": {
-                "field": "Path to the array to aggregate.",
-                "path": "Numeric property of each item."
+                "field": "context path to the array to aggregate",
+                "path": "property of each item used for the calculation",
+                "operation": "count, sum, average, min or max",
+                "resultField": "field that receives the result"
             },
             "merge": {
-                "fields": "Comma-separated paths, e.g. first, second"
+                "fields": "comma-separated context fields to merge",
+                "mode": "object merge or array concat",
+                "resultField": "field that receives the result"
             },
             "event-emit": {
-                "event": "Event name to publish.",
-                "payload": "Optional event payload."
+                "event": "event name shared by emitters and waiters",
+                "payload": "JSON data sent with the event"
             },
             "event-wait": {
-                "event": "Event name to wait for.",
-                "timeout": "Route to the timeout port after this delay."
+                "event": "event name to wait for",
+                "timeout": "maximum time to wait for the event"
             },
             "command": {
-                "args": "Argument array passed to the command."
+                "args": "JSON array passed to the command",
+                "command": "host command or function name",
+                "timeout": "maximum execution time for the command"
             },
             "split": {
-                "field": "Text or array to split.",
-                "delimiter": "Separator used when splitting text."
+                "field": "text or array path to split",
+                "delimiter": "separator used when splitting text"
             },
             "map": {
-                "path": "e.g. value or user.name"
+                "path": "property of each item to map",
+                "field": "array path to iterate"
             },
-            "filter": {},
+            "filter": {
+                "field": "array path to filter",
+                "path": "item property used for comparison",
+                "operator": "comparison operator",
+                "value": "value used for comparison"
+            },
             "sort": {
-                "path": "Property of each item used for ordering."
+                "path": "item property used for sorting",
+                "field": "array path to sort",
+                "order": "ascending or descending"
             },
-            "range": {},
+            "range": {
+                "from": "inclusive start value",
+                "to": "exclusive end value",
+                "step": "amount added on each step"
+            },
             "batch": {
-                "size": "Items per batch."
+                "size": "number of items per batch",
+                "field": "array path to split into batches"
             },
-            "trycatch": {},
+            "trycatch": {
+                "timeout": "route to the timeout port after this delay"
+            },
             "subprocess": {
-                "workflow": "Inline workflow definition to execute."
+                "workflow": "workflow definition to execute"
             },
             "comment": {},
             "custom": {
@@ -706,9 +777,24 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "priority": "Lower runs first."
             },
             "debug": {
-                "field": "Context path to print instead of the complete message.",
-                "complete": "Print the complete workflow context.",
-                "console": "Mirror the message to the host console."
+                "field": "context path to inspect",
+                "complete": "print the complete workflow context",
+                "console": "also write to the host console for development",
+                "level": "output level: info, warn or error"
+            },
+            "link": {
+                "links": "optional comma-separated names for remote wires"
+            },
+            "html": {
+                "field": "context path containing HTML text",
+                "mode": "text strips markup; links collects href and src values",
+                "target": "context field that receives the extracted value"
+            },
+            "xml": {
+                "mode": "parse XML text or serialize an object back to XML",
+                "field": "context path containing XML text or an object",
+                "target": "context field that receives the result",
+                "pretty": "indent serialized XML"
             }
         },
         "group": {
@@ -770,15 +856,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
         "node": {
             "start": {
                 "label": "开始",
-                "description": "工作流入口"
+                "description": "可选的显式入口"
             },
             "end": {
                 "label": "结束",
-                "description": "结束工作流"
+                "description": "可选的显式结束点"
             },
             "inject": {
                 "label": "注入",
-                "description": "以固定数据触发流程"
+                "description": "以固定数据启动流程"
             },
             "task": {
                 "label": "任务",
@@ -786,15 +872,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "function": {
                 "label": "函数",
-                "description": "对工作流上下文执行受信任的 JavaScript"
+                "description": "使用 JavaScript 处理消息"
             },
             "condition": {
                 "label": "条件",
-                "description": "根据上下文分支"
+                "description": "根据流程上下文的值分支"
             },
             "switch": {
                 "label": "多路分支",
-                "description": "按上下文值选择分支"
+                "description": "按值路由到匹配的输出"
             },
             "parallel": {
                 "label": "并行",
@@ -802,39 +888,39 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "join": {
                 "label": "汇聚",
-                "description": "等待所有输入分支完成后再继续"
+                "description": "等待所有输入分支完成"
             },
             "loop": {
                 "label": "循环",
-                "description": "重复执行节点体"
+                "description": "重复执行下游步骤"
             },
             "trigger": {
                 "label": "触发",
-                "description": "延迟后输出一次数据"
+                "description": "延迟后输出数据"
             },
             "delay": {
                 "label": "延迟",
-                "description": "等待后继续"
+                "description": "按固定或随机时间暂停"
             },
             "log": {
                 "label": "日志",
-                "description": "记录一条消息"
+                "description": "将消息或值写入执行日志"
             },
             "http-request": {
                 "label": "HTTP 请求",
-                "description": "调用 HTTP 接口"
+                "description": "调用 HTTP 接口并读取响应"
             },
             "assign": {
                 "label": "赋值",
-                "description": "将值合并到工作流变量"
+                "description": "将值合并到流程变量"
             },
             "transform": {
                 "label": "转换",
-                "description": "映射上一步结果"
+                "description": "将上一步结果映射为新结构"
             },
             "template": {
                 "label": "模板",
-                "description": "渲染消息模板"
+                "description": "根据上下文值渲染文本"
             },
             "json": {
                 "label": "JSON",
@@ -842,7 +928,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "csv": {
                 "label": "CSV",
-                "description": "解析或序列化 CSV"
+                "description": "解析或序列化 CSV 文本"
             },
             "change": {
                 "label": "修改属性",
@@ -850,39 +936,39 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "statistics": {
                 "label": "统计",
-                "description": "聚合数组（计数/求和/平均/最小/最大）"
+                "description": "将数组聚合为数值"
             },
             "merge": {
                 "label": "合并",
-                "description": "合并对象或拼接数组"
+                "description": "合并字段或数组"
             },
             "event-emit": {
                 "label": "发送事件",
-                "description": "通过工作流事件总线发送事件"
+                "description": "向宿主发布事件"
             },
             "event-wait": {
                 "label": "等待事件",
-                "description": "等待工作流事件"
+                "description": "等待宿主事件"
             },
             "command": {
                 "label": "命令",
-                "description": "调用宿主提供的命令执行器"
+                "description": "执行宿主命令或函数"
             },
             "split": {
                 "label": "拆分",
-                "description": "将字符串或数组拆分为元素"
+                "description": "拆分文本或数组"
             },
             "map": {
                 "label": "映射",
-                "description": "映射数组中的每个元素"
+                "description": "将每个元素映射为新值"
             },
             "filter": {
                 "label": "过滤",
-                "description": "保留满足条件的数组元素"
+                "description": "保留符合条件的元素"
             },
             "sort": {
                 "label": "排序",
-                "description": "按字段排序数组"
+                "description": "按字段排序"
             },
             "range": {
                 "label": "区间",
@@ -890,7 +976,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "batch": {
                 "label": "批处理",
-                "description": "将数组拆分为批次"
+                "description": "将元素分批"
             },
             "trycatch": {
                 "label": "异常捕获",
@@ -902,7 +988,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "comment": {
                 "label": "注释",
-                "description": "画布注释，不参与执行"
+                "description": "画布注释，不执行"
             },
             "custom": {
                 "label": "自定义",
@@ -954,11 +1040,11 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "junction": {
                 "label": "汇合",
-                "description": "仅汇合连线，不改变消息"
+                "description": "汇合连线，不改变消息"
             },
             "sequence": {
                 "label": "顺序",
-                "description": "按严格顺序执行步骤"
+                "description": "保持下游步骤顺序执行"
             },
             "link": {
                 "label": "连线",
@@ -966,40 +1052,40 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "html": {
                 "label": "HTML",
-                "description": "从 HTML 中提取文本或链接"
+                "description": "从 HTML 提取文本或链接"
             },
             "xml": {
                 "label": "XML",
-                "description": "解析或序列化 XML"
+                "description": "解析或序列化 XML 文档"
             }
         },
         "field": {
             "start": {},
             "end": {},
             "inject": {
-                "payload": "数据",
+                "payload": "数据（JSON）",
                 "topic": "主题"
             },
             "task": {
-                "action": "动作",
-                "result": "模拟结果",
-                "fail": "使此步骤失败",
+                "action": "动作名称",
+                "result": "无动作时的结果",
+                "fail": "标记失败",
                 "retry": "重试次数",
                 "retryDelay": "重试间隔",
                 "timeout": "超时"
             },
             "function": {
-                "code": "代码",
+                "code": "JavaScript 代码",
                 "timeout": "超时"
             },
             "condition": {
-                "field": "字段",
+                "field": "取值路径",
                 "operator": "运算符",
                 "value": "比较值"
             },
             "switch": {
-                "field": "取值字段",
-                "value": "值"
+                "field": "取值路径",
+                "value": "默认值"
             },
             "parallel": {},
             "join": {},
@@ -1009,7 +1095,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "trigger": {
                 "delay": "延迟",
-                "payload": "数据"
+                "payload": "数据（JSON）"
             },
             "delay": {
                 "mode": "模式",
@@ -1018,53 +1104,53 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "randomMax": "最大值"
             },
             "log": {
-                "message": "消息",
-                "field": "消息属性",
-                "complete": "完整消息",
+                "message": "固定消息",
+                "field": "取值路径",
+                "complete": "记录完整上下文",
                 "level": "级别"
             },
             "http-request": {
-                "url": "地址",
+                "url": "请求地址",
                 "method": "方法",
-                "headers": "请求头",
+                "headers": "请求头（JSON）",
                 "body": "请求体",
-                "responseType": "响应解析",
+                "responseType": "响应处理",
                 "retry": "重试次数",
                 "retryDelay": "重试间隔",
                 "timeout": "超时"
             },
             "assign": {
-                "values": "值"
+                "values": "值（JSON）"
             },
             "transform": {
-                "mapping": "映射",
-                "result": "固定结果"
+                "mapping": "映射（JSON）",
+                "result": "固定结果（JSON）"
             },
             "template": {
                 "template": "模板",
                 "syntax": "语法",
-                "target": "目标字段",
+                "target": "结果写入字段",
                 "output": "输出类型"
             },
             "json": {
                 "mode": "模式",
-                "field": "字段",
+                "field": "取值路径",
                 "pretty": "格式化输出"
             },
             "csv": {
                 "mode": "模式",
-                "field": "字段",
+                "field": "取值路径",
                 "delimiter": "分隔符",
                 "header": "首行为表头"
             },
             "change": {
                 "action": "操作",
-                "field": "字段",
+                "field": "字段路径",
                 "value": "值",
                 "rules": "规则"
             },
             "statistics": {
-                "field": "数组字段",
+                "field": "数组路径",
                 "path": "元素路径",
                 "operation": "操作",
                 "resultField": "结果字段"
@@ -1075,35 +1161,35 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "resultField": "结果字段"
             },
             "event-emit": {
-                "event": "事件",
-                "payload": "数据"
+                "event": "事件名称",
+                "payload": "数据（JSON）"
             },
             "event-wait": {
-                "event": "事件",
+                "event": "事件名称",
                 "timeout": "超时"
             },
             "command": {
                 "command": "命令",
-                "args": "参数",
+                "args": "参数（JSON）",
                 "timeout": "超时"
             },
             "split": {
-                "field": "字段",
+                "field": "取值路径",
                 "delimiter": "分隔符"
             },
             "map": {
-                "field": "数组字段",
+                "field": "数组路径",
                 "path": "元素路径"
             },
             "filter": {
-                "field": "数组字段",
+                "field": "数组路径",
                 "path": "元素路径",
                 "operator": "运算符",
                 "value": "比较值"
             },
             "sort": {
-                "field": "数组字段",
-                "path": "排序路径",
+                "field": "数组路径",
+                "path": "元素路径",
                 "order": "顺序"
             },
             "range": {
@@ -1112,10 +1198,12 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "step": "步长"
             },
             "batch": {
-                "field": "数组字段",
+                "field": "数组路径",
                 "size": "批大小"
             },
-            "trycatch": {},
+            "trycatch": {
+                "timeout": "超时"
+            },
             "subprocess": {
                 "workflow": "工作流 JSON"
             },
@@ -1197,7 +1285,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "body": "响应体"
             },
             "debug": {
-                "field": "输出属性",
+                "field": "取值路径",
                 "complete": "完整消息",
                 "level": "级别",
                 "console": "同时输出到控制台"
@@ -1206,51 +1294,116 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "links": "连线名称"
             },
             "html": {
-                "field": "HTML 字段",
+                "field": "HTML 路径",
                 "mode": "输出",
-                "target": "目标字段"
+                "target": "结果写入字段"
             },
             "xml": {
                 "mode": "模式",
-                "field": "XML 字段",
-                "target": "目标字段",
+                "field": "XML 路径",
+                "target": "结果写入字段",
                 "pretty": "格式化输出"
             }
         },
         "fieldPlaceholder": {
             "start": {},
             "end": {},
-            "inject": {},
-            "task": {
-                "action": "actions.fetch"
+            "inject": {
+                "payload": "{ \"value\": 1 }",
+                "topic": "orders.created"
             },
-            "function": {},
-            "condition": {},
-            "switch": {},
+            "task": {
+                "action": "actions.fetch",
+                "result": "{ \"ok\": true }"
+            },
+            "function": {
+                "code": "return { ok: true };"
+            },
+            "condition": {
+                "field": "approved",
+                "value": "true"
+            },
+            "switch": {
+                "field": "result.status",
+                "value": "done"
+            },
             "parallel": {},
             "join": {},
             "loop": {},
-            "trigger": {},
+            "trigger": {
+                "payload": "{ \"ok\": true }"
+            },
             "delay": {},
-            "log": {},
-            "http-request": {},
-            "assign": {},
-            "transform": {},
-            "template": {},
-            "json": {},
-            "csv": {},
-            "change": {},
-            "statistics": {},
-            "merge": {},
-            "event-emit": {},
-            "event-wait": {},
-            "command": {},
-            "split": {},
-            "map": {},
-            "filter": {},
-            "sort": {},
+            "log": {
+                "message": "Flow step completed",
+                "field": "result.value"
+            },
+            "http-request": {
+                "url": "https://api.example.com/items",
+                "headers": "{ \"Accept\": \"application/json\" }",
+                "body": "{ \"name\": \"demo\" }"
+            },
+            "assign": {
+                "values": "{ \"count\": 1 }"
+            },
+            "transform": {
+                "mapping": "{ \"name\": \"input.name\" }"
+            },
+            "template": {
+                "template": "Hello {{name}}",
+                "target": "message"
+            },
+            "json": {
+                "field": "value"
+            },
+            "csv": {
+                "field": "value",
+                "delimiter": ","
+            },
+            "change": {
+                "field": "variables.name",
+                "value": "\"workflow\""
+            },
+            "statistics": {
+                "field": "items",
+                "path": "value",
+                "resultField": "value"
+            },
+            "merge": {
+                "fields": "a, b",
+                "resultField": "value"
+            },
+            "event-emit": {
+                "event": "order.created",
+                "payload": "{ \"id\": 1 }"
+            },
+            "event-wait": {
+                "event": "order.created"
+            },
+            "command": {
+                "command": "context.exec",
+                "args": "[\"--flag\"]"
+            },
+            "split": {
+                "field": "items",
+                "delimiter": ","
+            },
+            "map": {
+                "field": "items",
+                "path": "value"
+            },
+            "filter": {
+                "field": "items",
+                "path": "value"
+            },
+            "sort": {
+                "field": "items",
+                "path": "value"
+            },
             "range": {},
-            "batch": {},
+            "batch": {
+                "field": "items"
+            },
             "trycatch": {},
             "subprocess": {},
             "comment": {},
@@ -1269,107 +1422,164 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "payload"
             },
             "html": {
-                "field": "value",
+                "field": "body",
                 "target": "value"
             },
             "xml": {
                 "field": "value",
                 "target": "value"
+            },
+            "link": {
+                "links": "flow-a, flow-b"
             }
         },
         "fieldDescription": {
             "start": {},
             "end": {},
             "inject": {
-                "topic": "随数据一起传递的可选消息主题。"
+                "topic": "随数据一起传递的可选标签。",
+                "payload": "合并到流程上下文的 JSON 数据。"
             },
             "task": {
-                "action": "context.actions 中的函数名。",
-                "result": "未配置动作时直接返回该结果。",
-                "retry": "步骤失败前的自动重试次数。"
+                "action": "context.actions 中的函数名，留空则返回“结果”中的值。",
+                "result": "未设置动作时直接返回的 JSON。",
+                "retry": "失败前的自动重试次数。",
+                "fail": "强制此步骤失败，便于测试异常分支。",
+                "retryDelay": "两次重试之间的等待时间。",
+                "timeout": "此步骤的最长执行时间，0 表示不限制。"
             },
             "function": {
-                "code": "受信任代码。`context` 是工作流上下文，`input` 是上一步结果。按 Ctrl+Space 获取上下文和变量提示。"
+                "code": "返回下一步消息。context 与 input 都是流程上下文。",
+                "timeout": "此步骤的最长执行时间，0 表示不限制。"
             },
             "condition": {
-                "field": "要判断的值路径。"
+                "field": "要判断的上下文路径，例如 approved 或 user.role。",
+                "operator": "选择判断方式，决定进入 true 还是 false 分支。",
+                "value": "当前运算符使用的比较值。"
             },
             "switch": {
-                "field": "用于分支判断的取值路径。",
-                "value": "未设置取值字段时使用的字面值。"
+                "field": "用于选择输出端口的上下文路径。",
+                "value": "未设置取值路径时使用的字面值。"
             },
             "parallel": {},
             "join": {},
-            "loop": {},
+            "loop": {
+                "iterations": "重复执行下游步骤的次数。",
+                "delay": "每次迭代之间的等待时间。"
+            },
             "trigger": {
-                "delay": "发送数据前的等待时间。"
+                "delay": "发送数据前的等待时间。",
+                "payload": "触发时输出的 JSON 数据。"
             },
             "delay": {
-                "delay": "继续执行前的等待时间。"
+                "delay": "进入下一个节点前的等待时间。",
+                "mode": "固定延迟或区间内随机延迟。",
+                "randomMin": "随机延迟的最小时间。",
+                "randomMax": "随机延迟的最大时间。"
             },
             "log": {
-                "message": "未设置字段时写入执行日志的消息。",
-                "field": "可选的上下文路径，用该值代替固定消息写入日志。",
-                "complete": "记录完整工作流上下文，而不是单个属性。"
+                "message": "未设置取值路径时写入的文本。",
+                "field": "要记录的上下文路径。",
+                "complete": "记录整个流程上下文而不是单个值。",
+                "level": "日志级别：info、warn 或 error。"
             },
             "http-request": {
-                "url": "绝对地址或由宿主解析的路径。"
+                "url": "绝对地址，或以 / 开头的宿主路径。",
+                "method": "HTTP 请求方法。",
+                "headers": "JSON 对象形式的请求头。",
+                "body": "POST/PUT/PATCH 的请求体。",
+                "responseType": "自动：能解析则返回 JSON；文本：保留原文；JSON：解析失败时报错。",
+                "retry": "请求失败后的自动重试次数。",
+                "retryDelay": "两次重试之间的等待时间。",
+                "timeout": "请求的最长等待时间。"
             },
-            "assign": {},
+            "assign": {
+                "values": "合并到流程变量的 JSON 对象。"
+            },
             "transform": {
-                "mapping": "将上下文路径映射到新的结果。"
+                "mapping": "目标字段到上下文路径的映射。",
+                "result": "直接返回的 JSON 结果。"
             },
             "template": {
-                "template": "使用 {{path.to.value}} 占位符。",
-                "target": "接收渲染结果的上文字段。"
+                "template": "使用 {{name}} 或 {{user.email}} 读取上下文值。",
+                "target": "接收渲染结果的上下文字段。",
+                "syntax": "Mustache 替换 {{...}} 占位符；纯文本原样输出。",
+                "output": "文本保留字符串；JSON 会解析渲染结果。"
             },
             "json": {
-                "field": "要解析或序列化的值路径。"
+                "field": "要解析或序列化的上下文路径。",
+                "mode": "解析 JSON 文本，或把值序列化为 JSON。",
+                "pretty": "使用缩进输出 JSON。"
             },
             "csv": {
-                "field": "CSV 文本或数组的路径。",
-                "delimiter": "列之间的单字符分隔符。"
+                "field": "CSV 文本或数组的上下文路径。",
+                "delimiter": "列之间的单字符分隔符。",
+                "mode": "解析 CSV 文本，或把数组序列化为 CSV。",
+                "header": "解析时把首行作为字段名。"
             },
             "change": {
                 "field": "要修改的上下文路径。",
-                "value": "新值或要追加的内容。"
+                "value": "新值，支持 JSON。",
+                "rules": "按顺序执行，每行修改一个字段。",
+                "action": "Set 替换，Delete 删除，Append 追加到列表或字符串。"
             },
             "statistics": {
-                "field": "要聚合的数组路径。",
-                "path": "每个元素的数值属性。"
+                "field": "要聚合的数组的上下文路径。",
+                "path": "数组元素中用于计算的属性。",
+                "operation": "计数、求和、平均、最小或最大。",
+                "resultField": "接收统计结果的字段。"
             },
             "merge": {
-                "fields": "逗号分隔的路径，例如 first, second。"
+                "fields": "要合并的上下文字段，逗号分隔。",
+                "mode": "对象合并或数组拼接。",
+                "resultField": "接收合并结果的字段。"
             },
             "event-emit": {
-                "event": "要发布的事件名。",
-                "payload": "可选的事件数据。"
+                "event": "事件名称，发送与等待端需一致。",
+                "payload": "随事件发送的 JSON 数据。"
             },
             "event-wait": {
-                "event": "要等待的事件名。",
-                "timeout": "超过该时间后进入超时端口。"
+                "event": "等待的事件名称。",
+                "timeout": "等待事件的最长时间。"
             },
             "command": {
-                "args": "传给命令的参数数组。"
+                "args": "传给命令的 JSON 数组。",
+                "command": "宿主注册的命令或函数名。",
+                "timeout": "命令的最长执行时间。"
             },
             "split": {
-                "field": "要拆分的文本或数组。",
+                "field": "要拆分的文本或数组路径。",
                 "delimiter": "拆分文本时使用的分隔符。"
             },
             "map": {
-                "path": "例如 value 或 user.name。"
+                "path": "每个元素中要映射的属性。",
+                "field": "要遍历的数组路径。"
             },
-            "filter": {},
+            "filter": {
+                "field": "要过滤的数组路径。",
+                "path": "用于比较的元素属性。",
+                "operator": "比较方式。",
+                "value": "比较使用的值。"
+            },
             "sort": {
-                "path": "用于排序的元素属性。"
+                "path": "用于排序的元素属性。",
+                "field": "要排序的数组路径。",
+                "order": "升序或降序。"
             },
-            "range": {},
+            "range": {
+                "from": "区间起始值（包含）。",
+                "to": "区间结束值（不包含）。",
+                "step": "每次增加的数量。"
+            },
             "batch": {
-                "size": "每批包含的元素数量。"
+                "size": "每批包含的元素数量。",
+                "field": "要分批的数组路径。"
             },
-            "trycatch": {},
+            "trycatch": {
+                "timeout": "超过该时间后进入超时端口。"
+            },
             "subprocess": {
-                "workflow": "要执行的内联工作流定义。"
+                "workflow": "要执行的工作流定义。"
             },
             "comment": {},
             "custom": {
@@ -1393,9 +1603,24 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "priority": "数值越小越先执行。"
             },
             "debug": {
-                "field": "打印的上下文属性路径；留空时打印完整消息。",
-                "complete": "打印完整工作流上下文。",
-                "console": "同时输出到宿主控制台。"
+                "field": "要查看的上下文路径。",
+                "complete": "输出完整流程上下文。",
+                "console": "同时写入宿主控制台，便于开发调试。",
+                "level": "输出级别：info、warn 或 error。"
+            },
+            "link": {
+                "links": "用于识别远程连线的可选名称，逗号分隔。"
+            },
+            "html": {
+                "field": "包含 HTML 文本的上下文路径。",
+                "mode": "文本：去除标签；链接：收集 href/src。",
+                "target": "接收提取结果的上下文字段。"
+            },
+            "xml": {
+                "mode": "解析 XML 文本，或把对象序列化为 XML。",
+                "field": "包含 XML 或对象的上下文路径。",
+                "target": "接收解析或序列化结果的上下文字段。",
+                "pretty": "序列化时使用缩进。"
             }
         },
         "group": {

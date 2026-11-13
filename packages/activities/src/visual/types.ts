@@ -871,6 +871,8 @@ export interface WorkflowInspectorModel {
     icon: string;
     color: string;
     typeLabel: string;
+    /** Short explanation of what the selected node type does. */
+    typeDescription: string;
     status: NodeExecutionStatus;
     statusLabel: string;
     durationLabel: string;
