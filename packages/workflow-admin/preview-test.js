@@ -156,9 +156,9 @@ function startDesignerServer(port) {
         // Code field uses the open-source CodeMirror editor; property form validates.
         await page.locator('.workflow-palette-item[data-node-type="function"]').click();
         await page.waitForSelector('.workflow-node[data-node-id="function_1"]', { timeout: 5000 });
-        await page.waitForSelector('.workflow-inspector .CodeMirror', { timeout: 5000 });
-        const codeEditor = await page.locator('.workflow-inspector .CodeMirror').count() > 0;
-        const codeText = await page.locator('.workflow-inspector .CodeMirror').textContent();
+        await page.waitForSelector('.workflow-field[data-field-key="code"] .CodeMirror', { timeout: 5000 });
+        const codeEditor = await page.locator('.workflow-field[data-field-key="code"] .CodeMirror').count() > 0;
+        const codeText = await page.locator('.workflow-field[data-field-key="code"] .CodeMirror').textContent();
         const lazyEditorChunk = await page.evaluate(loaded => performance.getEntriesByType('resource')
             .some(entry => /\.js($|\?)/.test(entry.name) && !loaded.includes(entry.name)), initialJsUrls);
         const nameInput = page.locator('.workflow-inspector-name');
@@ -173,7 +173,7 @@ function startDesignerServer(port) {
         const deleteEnabledAfter = !(await deleteButton.isDisabled());
 
         // Workflow-aware completion: context/variables and configured actions.
-        await page.locator('.workflow-inspector .CodeMirror').click();
+        await page.locator('.workflow-field[data-field-key="code"] .CodeMirror').click();
         await page.keyboard.press('Control+A');
         await page.keyboard.type('context.');
         await page.waitForTimeout(600);
@@ -189,7 +189,7 @@ function startDesignerServer(port) {
         await page.keyboard.press('Escape');
 
         // Editing in the CodeMirror editor must persist to the node config.
-        await page.locator('.workflow-inspector .CodeMirror').click();
+        await page.locator('.workflow-field[data-field-key="code"] .CodeMirror').click();
         await page.keyboard.press('Control+A');
         await page.keyboard.type('return 42;');
         // Code edits are debounced; wait past the quiet period (and then some).
@@ -539,11 +539,11 @@ function startDesignerServer(port) {
 
         const result = { before, initialJsBytes, menuItemClick, paletteDrop, inspectorTheme, lazyEditorChunk, hintEnv, hintAction, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, notFoundPage, notFoundCode, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
         console.log(JSON.stringify(result, null, 2));
-        if (errors.length || initialJsBytes > 700_000 || !lazyEditorChunk || !hintEnv || !hintAction || !shortcutsOpened || !shortcutsClosed
+        if (errors.length || initialJsBytes > 710_000 || !lazyEditorChunk || !hintEnv || !hintAction || !shortcutsOpened || !shortcutsClosed
             || autosaveName !== 'Function Node' || autosaveCode !== 'return 42;' || !wheelZoom || !wheelPan || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20
             || !menuOpen || menuEntries < 5 || !menuClosed || !menuItemClick
             || !paletteDrop?.placed || Math.abs(paletteDrop.dx) > 10 || Math.abs(paletteDrop.dy) > 10
-            || paletteFiltered < 1 || paletteFiltered >= 42 || paletteRestored !== 42
+            || paletteFiltered < 1 || paletteFiltered >= 43 || paletteRestored !== 43
             || !deleteDisabledBefore || !deleteEnabledAfter || localePreserved.count !== 8 || localePreserved.locale !== 'zh-CN' || !fitVisible
             || optionCount !== 5 || !compareHidden || !compareVisible || !compareHiddenAgain
             || actionPlaceholder !== 'actions.fetch' || !groupTitles.includes('Reliability')

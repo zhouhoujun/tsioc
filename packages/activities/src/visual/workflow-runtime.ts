@@ -61,6 +61,35 @@ export function resolveWorkflowValue(source: any, context: ActivityContext): any
     return value;
 }
 
+function matchRouterRule(actual: any, operator: string, expected: any): boolean {
+    switch (operator) {
+        case 'equals':
+            // eslint-disable-next-line eqeqeq
+            return actual == expected;
+        case 'not-equals':
+            // eslint-disable-next-line eqeqeq
+            return actual != expected;
+        case 'contains':
+            return Array.isArray(actual)
+                ? actual.some(item => String(item) === String(expected))
+                : String(actual ?? '').includes(String(expected ?? ''));
+        case 'regex':
+            try {
+                return new RegExp(String(expected ?? '')).test(String(actual ?? ''));
+            } catch {
+                return false;
+            }
+        case 'gt':
+            return Number(actual) > Number(expected);
+        case 'lt':
+            return Number(actual) < Number(expected);
+        case 'truthy':
+            return !!actual;
+        default:
+            return false;
+    }
+}
+
 function compareValues(actual: any, operator: string, expected: any): boolean {
     switch (operator) {
         case 'equals':
@@ -655,14 +684,29 @@ export async function executeVisualNode(
         case 'function': {
             try {
                 const source = String(config.code || 'return input;');
-                // Trusted-code node: same trust level as a Node-RED function node.
-                const fn = new Function(
-                    'context',
-                    'input',
-                    'msg',
-                    `"use strict"; return (async () => { ${source}\n })();`
-                ) as (ctx: any, input: any, msg: any) => Promise<any>;
-                const value = await fn(context, context, { ...context });
+                const run = async (code: string) => {
+                    // Trusted-code node: same trust level as a Node-RED function node.
+                    const fn = new Function(
+                        'context',
+                        'input',
+                        'msg',
+                        `"use strict"; return (async () => { ${code}\n })();`
+                    ) as (ctx: any, input: any, msg: any) => Promise<any>;
+                    return fn(context, context, { ...context });
+                };
+                if (String(config.initialize || '').trim()) {
+                    const initial = await run(String(config.initialize));
+                    if (initial && typeof initial === 'object' && !Array.isArray(initial)) {
+                        Object.assign(context, initial);
+                    }
+                }
+                const value = await run(source);
+                if (String(config.finalize || '').trim()) {
+                    const finalized = await run(String(config.finalize));
+                    if (finalized && typeof finalized === 'object' && !Array.isArray(finalized)) {
+                        Object.assign(context, finalized);
+                    }
+                }
                 if (value && typeof value === 'object' && !Array.isArray(value)) {
                     return { success: true, data: { ...value, nodeId: node.id } };
                 }
@@ -940,6 +984,16 @@ export async function executeVisualNode(
         case 'junction':
         case 'sequence':
             return { success: true, data: { nodeId: node.id } };
+        case 'router': {
+            const actual = resolveWorkflowValue(config.field, context);
+            const rules = Array.isArray(config.rules) ? config.rules : [];
+            for (let index = 0; index < rules.length && index < 4; index++) {
+                if (matchRouterRule(actual, String(rules[index]?.operator || 'equals'), rules[index]?.value)) {
+                    return { success: true, data: { nodeId: node.id, route: index + 1, value: actual } };
+                }
+            }
+            return { success: true, data: { nodeId: node.id, route: 0, value: actual } };
+        }
         case 'link':
             return {
                 success: true,

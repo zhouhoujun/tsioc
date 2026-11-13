@@ -29,7 +29,8 @@ export type DynamicFormFieldType =
     | 'week'
     | 'color'
     | 'hidden'
-    | 'list';
+    | 'list'
+    | 'keyvalue';
 
 export interface DynamicFormOption {
     label: string;
@@ -96,6 +97,10 @@ export interface DynamicFormField {
     removeLabel?: string;
     minItems?: number;
     maxItems?: number;
+    /** Value editor used by key/value fields. */
+    valueType?: 'text' | 'number' | 'boolean';
+    keyPlaceholder?: string;
+    valuePlaceholder?: string;
     minLength?: number;
     maxLength?: number;
     pattern?: string;
@@ -123,6 +128,9 @@ export interface DynamicFormSchema {
     fields: DynamicFormField[];
     /** Title used for fields that do not declare a group. */
     defaultGroupLabel?: string;
+    /** Labels for switching JSON fields between key/value rows and raw JSON. */
+    jsonFieldsLabel?: string;
+    jsonTextLabel?: string;
     messages?: Record<string, string>;
     submitLabel?: string;
     resetLabel?: string;

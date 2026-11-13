@@ -163,6 +163,23 @@ export class HtmlDynamicFormTest {
         expect(this.ref.instance.lastChange?.value).toBe(1);
     }
 
+    @Test('edits JSON objects as key/value rows')
+    async editsJsonRows() {
+        const field = this.root.querySelector('.df-field[data-field-key="body"]') as any;
+        expect(field.querySelectorAll('.df-keyvalue-row').length).toBe(1);
+        const valueInput = field.querySelector('.df-keyvalue-value') as any;
+        expect(valueInput.value).toBe('true');
+        valueInput.value = 'false';
+        valueInput.dispatchEvent(new (this.doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        expect(this.ref.instance.lastChange?.value).toEqual({ ok: false });
+
+        (field.querySelector('.df-field-mode') as any).click();
+        await flush();
+        expect((this.root.querySelector('.df-field[data-field-key="body"] textarea') as any)?.value)
+            .toContain('"ok": false');
+    }
+
     @Test('accepts a JSON string schema and reports invalid JSON')
     async parsesJsonSchema() {
         this.ref.instance.schema = JSON.stringify({ fields: [{ key: 'plain', type: 'text', label: 'Plain' }] });

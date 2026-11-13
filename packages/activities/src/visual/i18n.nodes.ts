@@ -215,6 +215,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "scale": {
                 "label": "Scale",
                 "description": "Map a number from one range to another"
+            },
+            "router": {
+                "label": "Router",
+                "description": "Route to one of four outputs using ordered rules"
             }
         },
         "field": {
@@ -235,7 +239,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "function": {
                 "code": "JavaScript code",
-                "timeout": "Timeout"
+                "timeout": "Timeout",
+                "initialize": "Initialize code",
+                "finalize": "Finalize code"
             },
             "condition": {
                 "field": "Value path",
@@ -483,6 +489,12 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "clamp": "Clamp to range",
                 "round": "Round result",
                 "target": "Write result to"
+            },
+            "router": {
+                "field": "Value path",
+                "rules": "Rules",
+                "operator": "Operator",
+                "value": "Compare to"
             }
         },
         "fieldPlaceholder": {
@@ -639,6 +651,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "scale": {
                 "field": "value",
                 "target": "value"
+            },
+            "router": {
+                "field": "result.status"
             }
         },
         "fieldDescription": {
@@ -659,7 +674,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "function": {
                 "code": "return the next message; context and input expose the flow context",
-                "timeout": "maximum time for this step; 0 means no limit"
+                "timeout": "maximum time for this step; 0 means no limit",
+                "initialize": "Optional code that runs before the main function. Returned objects are merged into the context.",
+                "finalize": "Optional code that runs after the main function for cleanup or metrics."
             },
             "condition": {
                 "field": "context path to test, for example approved or user.role",
@@ -851,6 +868,12 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "clamp": "keep the result inside the output range",
                 "round": "round the result to an integer",
                 "target": "field that receives the mapped value"
+            },
+            "router": {
+                "field": "Context value compared against each rule.",
+                "rules": "Rules are checked from top to bottom; the first match selects the numbered output.",
+                "operator": "Comparison used by this rule.",
+                "value": "Value used by the selected operator."
             }
         },
         "group": {
@@ -918,7 +941,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "milliseconds": "Milliseconds",
             "seconds": "Seconds",
             "minutes": "Minutes",
-            "attribute": "Attribute"
+            "attribute": "Attribute",
+            "contains": "contains",
+            "regex": "matches regex"
         }
     },
     "zh-CN": {
@@ -1130,6 +1155,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "scale": {
                 "label": "区间映射",
                 "description": "将数值从一个区间映射到另一个区间"
+            },
+            "router": {
+                "label": "规则路由",
+                "description": "按顺序匹配规则并选择四个输出之一"
             }
         },
         "field": {
@@ -1150,7 +1179,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "function": {
                 "code": "JavaScript 代码",
-                "timeout": "超时"
+                "timeout": "超时",
+                "initialize": "初始化代码",
+                "finalize": "收尾代码"
             },
             "condition": {
                 "field": "取值路径",
@@ -1398,6 +1429,12 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "clamp": "限制在区间内",
                 "round": "取整",
                 "target": "结果写入字段"
+            },
+            "router": {
+                "field": "取值路径",
+                "rules": "规则",
+                "operator": "运算符",
+                "value": "比较值"
             }
         },
         "fieldPlaceholder": {
@@ -1534,6 +1571,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "scale": {
                 "field": "value",
                 "target": "value"
+            },
+            "router": {
+                "field": "result.status"
             }
         },
         "fieldDescription": {
@@ -1554,7 +1594,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "function": {
                 "code": "返回下一步消息。context 与 input 都是流程上下文。",
-                "timeout": "此步骤的最长执行时间，0 表示不限制。"
+                "timeout": "此步骤的最长执行时间，0 表示不限制。",
+                "initialize": "可选：在主函数前执行，返回的对象会合并到上下文。",
+                "finalize": "可选：在主函数后执行，用于清理或指标。"
             },
             "condition": {
                 "field": "要判断的上下文路径，例如 approved 或 user.role。",
@@ -1746,6 +1788,12 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "clamp": "把结果限制在输出区间内。",
                 "round": "把结果四舍五入为整数。",
                 "target": "接收映射结果的字段。"
+            },
+            "router": {
+                "field": "与每条规则比较的上下文值。",
+                "rules": "从上到下依次匹配，第一条命中的规则选择对应编号输出。",
+                "operator": "该规则使用的比较方式。",
+                "value": "当前运算符使用的比较值。"
             }
         },
         "group": {
@@ -1805,7 +1853,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "milliseconds": "毫秒",
             "seconds": "秒",
             "minutes": "分钟",
-            "attribute": "属性"
+            "attribute": "属性",
+            "contains": "包含",
+            "regex": "匹配正则"
         }
     }
 };

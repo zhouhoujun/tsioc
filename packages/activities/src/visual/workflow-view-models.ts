@@ -289,7 +289,7 @@ function fieldConditionMatches(actual: any, condition: WorkflowConfigFieldCondit
 function fieldResetValue(field: { type: string; defaultValue?: any }): any {
     const value = field.defaultValue;
     if (field.type === 'json') {
-        return typeof value === 'string' ? value : JSON.stringify(value ?? {}, null, 2);
+        return value ?? {};
     }
     if (field.type === 'boolean') {
         return value === true;

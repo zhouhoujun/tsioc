@@ -139,6 +139,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 language: 'javascript',
                 rows: 10,
                 description: 'Trusted code. `context` is the workflow context, `input` is the previous result data. Press Ctrl+Space for context and variable suggestions.',}),
+            configField({ key: 'initialize', label: 'Initialize code', type: 'code', language: 'javascript', rows: 5, group: 'Options', description: 'Optional code that runs before the main function. Returned objects are merged into the context.' }),
+            configField({ key: 'finalize', label: 'Finalize code', type: 'code', language: 'javascript', rows: 5, group: 'Options', description: 'Optional code that runs after the main function for cleanup or metrics.' }),
             configField({ key: 'timeout', label: 'Timeout', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', group: 'Reliability',})
         ],
         defaultConfig: { code: 'return input;' }
@@ -313,6 +315,52 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Output')],
         defaultConfig: {}
+    },
+    {
+        type: 'router',
+        label: 'Router',
+        description: 'Route to one of four outputs using ordered rules',
+        category: 'flow',
+        icon: '⇶',
+        color: '#d97706',
+        textColor: '#ffffff',
+        inputs: [port('in', 'in', 'input', 'Input')],
+        outputs: [
+            port('route-1', 'route-1', 'output', '1'),
+            port('route-2', 'route-2', 'output', '2'),
+            port('route-3', 'route-3', 'output', '3'),
+            port('route-4', 'route-4', 'output', '4'),
+            port('default', 'default', 'output', 'Default'),
+            port('error', 'error', 'output', 'Error')
+        ],
+        fields: [
+            configField({ key: 'field', label: 'Value path', type: 'text', required: true, pattern: VALUE_PATH_PATTERN, placeholder: 'result.status', description: 'Context value compared against each rule.' }),
+            configField({
+                key: 'rules',
+                label: 'Rules',
+                type: 'list',
+                addLabel: '+ Add rule',
+                itemFields: [
+                    configField({
+                        key: 'operator',
+                        label: 'Operator',
+                        type: 'select',
+                        defaultValue: 'equals',
+                        options: [
+                            { label: 'equals', value: 'equals' },
+                            { label: 'not equals', value: 'not-equals' },
+                            { label: 'contains', value: 'contains' },
+                            { label: 'matches regex', value: 'regex' },
+                            { label: 'greater than', value: 'gt' },
+                            { label: 'less than', value: 'lt' },
+                            { label: 'is truthy', value: 'truthy' }
+                        ]
+                    }),
+                    configField({ key: 'value', label: 'Compare to', type: 'text', visibleWhen: { key: 'operator', notEquals: 'truthy' } })
+                ]
+            })
+        ],
+        defaultConfig: { rules: [] }
     },
     {
         type: 'parallel',

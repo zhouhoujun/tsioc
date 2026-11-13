@@ -310,6 +310,40 @@ export const DYNAMIC_FORM_CSS = `
     background: var(--df-primary-soft);
 }
 
+
+.df-keyvalue {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.df-keyvalue-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    gap: 6px;
+    align-items: center;
+}
+
+
+.df-field-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.df-field-mode {
+    border: 0;
+    background: transparent;
+    color: var(--df-text-hint);
+    font-size: 10px;
+    cursor: pointer;
+    padding: 0 2px;
+}
+
+.df-field-mode:hover {
+    color: var(--df-primary);
+}
+
 `;
 
 export function installDynamicFormStyles(doc?: Document | null): void {

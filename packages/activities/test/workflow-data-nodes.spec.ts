@@ -242,6 +242,44 @@ describe('Workflow data & trigger nodes', () => {
         expect(captured.init.headers.Authorization).toBe(`Basic ${Buffer.from('user:pass').toString('base64')}`);
     });
 
+    it('routes to numbered outputs with ordered rules', async () => {
+        const definition: VisualWorkflowDefinition = {
+            id: 'router-demo',
+            name: 'Router demo',
+            nodes: [
+                registry.createNode('inject', { x: 0, y: 0 }, { id: 'inject_1', config: { payload: { status: 'ok' } } }),
+                registry.createNode('router', { x: 200, y: 0 }, { id: 'router_1', config: { field: 'status', rules: [
+                    { operator: 'equals', value: 'bad' },
+                    { operator: 'equals', value: 'ok' }
+                ] } }),
+                registry.createNode('task', { x: 400, y: -60 }, { id: 'task_ok', config: { result: { routed: true } } }),
+                registry.createNode('task', { x: 400, y: 120 }, { id: 'task_fallback', config: { result: { fallback: true } } })
+            ],
+            connections: [
+                { id: 'c1', sourceNodeId: 'inject_1', sourcePort: 'out', targetNodeId: 'router_1', targetPort: 'in' },
+                { id: 'c2', sourceNodeId: 'router_1', sourcePort: 'route-2', targetNodeId: 'task_ok', targetPort: 'in' },
+                { id: 'c3', sourceNodeId: 'router_1', sourcePort: 'default', targetNodeId: 'task_fallback', targetPort: 'in' }
+            ]
+        };
+        const result = await service.execute(definition, {});
+        const states = result.data?.executionState?.nodeStates || {};
+        expect(states.router_1.result?.data?.route).toBe(2);
+        expect(states.task_ok.status).toBe('success');
+        expect(states.task_fallback.status).toBe('skipped');
+    });
+
+    it('runs function initialize and finalize code', async () => {
+        const result = await service.execute(chain([
+            { type: 'function', config: {
+                initialize: 'return { ready: true };',
+                code: 'return { seen: input.ready };',
+                finalize: 'context.finalized = true;'
+            } }
+        ]), {});
+        expect(result.success).toBe(true);
+        expect(result.data?.executionState?.nodeStates.function_0.result?.data?.seen).toBe(true);
+    });
+
     it('scales numbers between ranges', async () => {
         const result = await service.execute(chain([
             { type: 'inject', config: { payload: { value: 50 } } },

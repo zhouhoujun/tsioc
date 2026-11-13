@@ -211,7 +211,12 @@ export class WorkflowInspectorComponent implements OnDestroy {
         this._model.fields.forEach(field => {
             fields.push(this.toDynamicField(field));
         });
-        return { fields, defaultGroupLabel };
+        return {
+            fields,
+            defaultGroupLabel,
+            jsonFieldsLabel: this.t('fields', 'Fields'),
+            jsonTextLabel: this.t('json', 'JSON')
+        };
     }
 
     protected toDynamicField(field: WorkflowInspectorFieldView): DynamicFormField {
@@ -264,7 +269,9 @@ export class WorkflowInspectorComponent implements OnDestroy {
                 ? field.checked
                 : field.type === 'select'
                     ? field.value
-                    : field.displayValue;
+                    : field.type === 'json'
+                        ? field.value
+                        : field.displayValue;
         });
         return value;
     }

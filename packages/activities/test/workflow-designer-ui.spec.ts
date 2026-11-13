@@ -52,7 +52,7 @@ describe('Workflow Designer UI', () => {
 
     it('renders palette, canvas, edges, inspector and status bar', () => {
         expect(root.matches('.workflow-designer')).toBe(true);
-        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(42);
+        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(43);
         expect(root.querySelectorAll('.workflow-node').length).toBe(6);
         expect(root.querySelectorAll('.workflow-edge').length).toBe(6);
         expect(root.querySelector('.workflow-inspector')).toBeTruthy();
@@ -78,14 +78,14 @@ describe('Workflow Designer UI', () => {
     it('filters palette components by search query', async () => {
         const input = root.querySelector('.workflow-palette-search-input') as any;
         expect(input).toBeTruthy();
-        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(42);
+        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(43);
 
         input.value = 'http';
         input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
         await flush();
         const filtered = Array.from(root.querySelectorAll('.workflow-palette-item')) as any[];
         expect(filtered.length).toBeGreaterThan(0);
-        expect(filtered.length).toBeLessThan(42);
+        expect(filtered.length).toBeLessThan(43);
         expect(filtered.every(item => {
             const text = `${item.getAttribute('data-node-type')} ${item.textContent}`.toLowerCase();
             return text.includes('http');
@@ -99,7 +99,7 @@ describe('Workflow Designer UI', () => {
 
         input.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
         await flush();
-        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(42);
+        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(43);
     });
 
     it('disables selection actions until something is selected', async () => {
@@ -368,6 +368,23 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelector('.workflow-field[data-field-key="timeout"]')?.className).toContain('is-full');
         expect(root.querySelector('.workflow-field[data-field-key="action"]')?.className).toContain('is-full');
     });
+
+    it('edits JSON node config through key/value rows', async () => {
+        ref.instance.designer.selectNode('task_1');
+        await flush();
+        const field = root.querySelector('.workflow-field[data-field-key="result"]') as any;
+        expect(field.querySelectorAll('.workflow-keyvalue-row').length).toBe(1);
+        const valueInput = field.querySelector('.workflow-keyvalue-value') as any;
+        valueInput.value = 'false';
+        valueInput.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.config?.result).toEqual({ approved: false });
+
+        (field.querySelector('.workflow-field-mode') as any).click();
+        await flush();
+        expect(root.querySelector('.workflow-field[data-field-key="result"] textarea')).toBeTruthy();
+    });
+
 
     it('shows execution state on nodes and edges after running', async () => {
         const result = await ref.instance.designer.run({ context: { approved: true } });

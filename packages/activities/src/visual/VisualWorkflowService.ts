@@ -559,6 +559,24 @@ export class VisualWorkflowService {
             return [];
         }
 
+        const explicitPort = result.data?.port;
+        if (typeof explicitPort === 'string' && explicitPort) {
+            const matched = outgoing.filter(connection => connection.sourcePort === explicitPort);
+            if (matched.length) {
+                return matched;
+            }
+        }
+
+        const route = result.data?.route;
+        if (typeof route === 'number') {
+            const port = route > 0 ? `route-${route}` : 'default';
+            const matched = outgoing.filter(connection => connection.sourcePort === port);
+            if (matched.length) {
+                return matched;
+            }
+            return outgoing.filter(connection => connection.sourcePort === 'default');
+        }
+
         if (node.type === 'condition') {
             const selectedPort = result.data?.condition ? 'true' : 'false';
             const matched = outgoing.filter(connection => connection.sourcePort === selectedPort);

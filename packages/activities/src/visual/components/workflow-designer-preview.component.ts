@@ -1023,7 +1023,9 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         }
         let parsed = value;
         if (type === 'json') {
-            if (String(value ?? '').trim() === '') {
+            if (value && typeof value === 'object') {
+                parsed = value;
+            } else if (String(value ?? '').trim() === '') {
                 parsed = undefined;
             } else {
                 try {

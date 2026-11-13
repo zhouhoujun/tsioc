@@ -2116,6 +2116,40 @@ html[data-theme="high-contrast"] li.CodeMirror-hint-active {
     background: #eff6ff;
 }
 
+
+.workflow-keyvalue {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.workflow-keyvalue-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    gap: 6px;
+    align-items: center;
+}
+
+
+.workflow-field-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.workflow-field-mode {
+    border: 0;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 10px;
+    cursor: pointer;
+    padding: 0 2px;
+}
+
+.workflow-field-mode:hover {
+    color: #2563eb;
+}
+
 `;
 
 /**
