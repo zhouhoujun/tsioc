@@ -171,6 +171,15 @@ describe('Workflow HTTP microservice', () => {
         expect(matched.headers.get('x-flow')).toBe('yes');
         expect(await matched.json()).toEqual({ hello: 'world' });
 
+        const restful = await fetch(`${base}/api/workflows/webhook-demo/hook/orders/42`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ order: 42 })
+        });
+        expect(restful.status).toBe(201);
+        expect(restful.headers.get('x-flow')).toBe('yes');
+        expect(await restful.json()).toEqual({ order: 42 });
+
         const wrongPath = await request(`${base}/api/workflows/webhook-demo/hook?path=/invoices`, {
             method: 'POST',
             headers: { 'content-type': 'application/json' },

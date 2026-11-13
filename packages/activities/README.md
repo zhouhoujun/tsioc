@@ -472,8 +472,9 @@ executor, so the same workflow definition stays valid in the browser editor.
 through the workflow server:
 
 ```text
-POST /api/workflows/:id/hook?path=/orders
-GET  /api/workflows/:id/hook?path=/orders
+POST /api/workflows/:id/hook/orders
+POST /api/workflows/:id/hook/orders/42
+GET  /api/workflows/:id/hook?path=/orders   # query fallback
 ```
 
 - `http-in` filters by method (`ANY` by default) and path; when no request

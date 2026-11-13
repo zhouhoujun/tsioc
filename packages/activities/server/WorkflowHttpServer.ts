@@ -174,7 +174,45 @@ export class WorkflowHttpController {
         return this.runHook(id, adapter);
     }
 
-    private async runHook(id: string, adapter: StatusMessageAdapter) {
+    @Post('/:id/hook/:path')
+    hookPostPath(
+        @RequestPath('id') id: string,
+        @RequestPath('path') path: string,
+        adapter: StatusMessageAdapter
+    ) {
+        return this.runHook(id, adapter, `/${path}`);
+    }
+
+    @Get('/:id/hook/:path')
+    hookGetPath(
+        @RequestPath('id') id: string,
+        @RequestPath('path') path: string,
+        adapter: StatusMessageAdapter
+    ) {
+        return this.runHook(id, adapter, `/${path}`);
+    }
+
+    @Post('/:id/hook/:path/:sub')
+    hookPostSubPath(
+        @RequestPath('id') id: string,
+        @RequestPath('path') path: string,
+        @RequestPath('sub') sub: string,
+        adapter: StatusMessageAdapter
+    ) {
+        return this.runHook(id, adapter, `/${path}/${sub}`);
+    }
+
+    @Get('/:id/hook/:path/:sub')
+    hookGetSubPath(
+        @RequestPath('id') id: string,
+        @RequestPath('path') path: string,
+        @RequestPath('sub') sub: string,
+        adapter: StatusMessageAdapter
+    ) {
+        return this.runHook(id, adapter, `/${path}/${sub}`);
+    }
+
+    private async runHook(id: string, adapter: StatusMessageAdapter, pathOverride?: string) {
         const definition = await this.store.get(id);
         if (!definition) {
             throw new NotFoundException(`Workflow not found: ${id}`);
@@ -183,7 +221,8 @@ export class WorkflowHttpController {
         const query = (adapter.read('query') as Record<string, any>) || {};
         const headers = (adapter.read('headers') as Record<string, any>) || {};
         const method = String(request.method || 'POST').toUpperCase();
-        const requestedPath = typeof query.path === 'string' && query.path ? query.path : '/hook';
+        const queryPath = typeof query.path === 'string' && query.path ? query.path : '';
+        const requestedPath = pathOverride || queryPath || '/hook';
         const response: { statusCode?: number; headers?: Record<string, any>; body?: any } = {};
         const result = await this.execution.execute(definition, {
             request: {
