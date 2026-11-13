@@ -3838,3 +3838,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - createHttpContractTransport：contract client 复用 HttpClient 完整治理链。
   - contract 包补 root index.ts，修复包级导入。
   - 回归：http 190、contract 16。
+- 微服务框架第十六批（2026-11-13）：
+  - EndpointResolver 注册中心故障 stale-cache 降级 + 指数退避 + getLastError。
+  - Gateway health probe 防重入、按服务隔离失败。
+  - 回归：discovery 65、gateway 72。

@@ -10,6 +10,7 @@ import { Logger } from '@tsdi/logger';
 @Injectable()
 export class GatewayLifecycle implements OnDestroy {
     private healthTimer?: ReturnType<typeof setInterval>;
+    private probing = false;
     private readonly configWatcher: (change: ConfigChange) => void;
     private watchingKey?: string;
     private started = false;
@@ -140,32 +141,41 @@ export class GatewayLifecycle implements OnDestroy {
     }
 
     private async probeRoutes(): Promise<void> {
-        if (!this.discovery) {
+        if (!this.discovery || this.probing) {
             return;
         }
         const probe = this.options.healthProbe;
         if (!probe) {
             return;
         }
-        const routes = this.runtime.getRoutes(this.options.routes);
-        const services = Array.from(new Set(routes.map(route => route.service)));
-        for (const service of services) {
-            const endpoints = await this.discovery.discover(service);
-            for (const endpoint of endpoints) {
-                if (probe.httpOnly !== false && endpoint.protocol && !/^https?$/i.test(endpoint.protocol)) {
-                    continue;
-                }
+        this.probing = true;
+        try {
+            const routes = this.runtime.getRoutes(this.options.routes);
+            const services = Array.from(new Set(routes.map(route => route.service)));
+            for (const service of services) {
                 try {
-                    const healthy = await this.discovery.healthCheck(endpoint);
-                    if (healthy) {
-                        this.runtime.clearEndpointEviction(endpoint.id);
-                    } else {
-                        this.runtime.evictEndpoint(endpoint, probe.evictFor ?? intervalToEvict(probe.interval));
+                    const endpoints = await this.discovery.discover(service);
+                    for (const endpoint of endpoints) {
+                        if (probe.httpOnly !== false && endpoint.protocol && !/^https?$/i.test(endpoint.protocol)) {
+                            continue;
+                        }
+                        try {
+                            const healthy = await this.discovery.healthCheck(endpoint);
+                            if (healthy) {
+                                this.runtime.clearEndpointEviction(endpoint.id);
+                            } else {
+                                this.runtime.evictEndpoint(endpoint, probe.evictFor ?? intervalToEvict(probe.interval));
+                            }
+                        } catch {
+                            this.runtime.evictEndpoint(endpoint, probe.evictFor ?? intervalToEvict(probe.interval));
+                        }
                     }
                 } catch {
-                    this.runtime.evictEndpoint(endpoint, probe.evictFor ?? intervalToEvict(probe.interval));
+                    // One unavailable service must not abort probes for others.
                 }
             }
+        } finally {
+            this.probing = false;
         }
     }
 }

@@ -108,6 +108,12 @@
 - `createHttpContractTransport`：contract client 复用 `HttpClient` 的 discovery/LB/retry/circuit/metrics/tracing。
 - contract 包新增 root `index.ts`，修复 package 级别 `@tsdi/microservice-contract` 解析。
 
+第十六批（发现/探测韧性）：
+
+- `EndpointResolver` 注册中心失败时返回最后缓存（stale）并进入指数退避；无缓存返回空集而不是抛错。
+- 失败/恢复重置与 `getLastError(service)` 诊断。
+- Gateway health probe 增加 in-flight guard，且单个服务发现失败不阻断其它服务探测。
+
 
 ---
 

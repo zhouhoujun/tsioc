@@ -40,6 +40,8 @@ export class DefaultEndpointResolver extends EndpointResolver implements OnDestr
     private readonly cache = new Map<string, EndpointCacheEntry>();
     private readonly pending = new Map<string, Promise<ServiceEndpoint[]>>();
     private readonly watchers = new Map<string, ServiceWatchCallback>();
+    private readonly failures = new Map<string, { until: number; attempts: number }>();
+    private readonly lastErrors = new Map<string, Error>();
 
     constructor(
         @Inject(ServiceDiscovery, { nullable: true }) private readonly discovery: ServiceDiscovery | null,
@@ -55,12 +57,18 @@ export class DefaultEndpointResolver extends EndpointResolver implements OnDestr
         this.ensureWatch(service);
         const key = this.cacheKey(service, options);
         const now = Date.now();
-        if (!options.force) {
-            const cached = this.cache.get(key);
-            if (cached && cached.expireAt > now) {
-                return cached.endpoints.slice();
-            }
+        const cached = this.cache.get(key);
+        if (!options.force && cached && cached.expireAt > now) {
+            return cached.endpoints.slice();
         }
+
+        // Registry outage: serve the last known endpoints and avoid hammering
+        // the failing registry until the backoff expires.
+        const failure = this.failures.get(service);
+        if (!options.force && failure && failure.until > now) {
+            return (cached ?? this.findCached(service))?.endpoints.slice() ?? [];
+        }
+
         let request = this.pending.get(key);
         if (!request) {
             request = this.discovery.discover(service)
@@ -73,7 +81,14 @@ export class DefaultEndpointResolver extends EndpointResolver implements OnDestr
                             expireAt: Date.now() + ttl
                         });
                     }
+                    this.failures.delete(service);
+                    this.lastErrors.delete(service);
                     return endpoints;
+                })
+                .catch(error => {
+                    this.noteFailure(service, error);
+                    const fallback = cached ?? this.findCached(service);
+                    return fallback?.endpoints.slice() ?? [];
                 })
                 .finally(() => this.pending.delete(key));
             this.pending.set(key, request);
@@ -84,6 +99,8 @@ export class DefaultEndpointResolver extends EndpointResolver implements OnDestr
     invalidate(service?: string): void {
         if (!service) {
             this.cache.clear();
+            this.failures.clear();
+            this.lastErrors.clear();
             return;
         }
         const prefix = `${service}|`;
@@ -92,6 +109,15 @@ export class DefaultEndpointResolver extends EndpointResolver implements OnDestr
                 this.cache.delete(key);
             }
         }
+        this.failures.delete(service);
+        this.lastErrors.delete(service);
+    }
+
+    /**
+     * Last registry error observed for a service (diagnostics only).
+     */
+    getLastError(service: string): Error | undefined {
+        return this.lastErrors.get(service);
     }
 
     onDestroy(): void {
@@ -105,6 +131,8 @@ export class DefaultEndpointResolver extends EndpointResolver implements OnDestr
         this.watchers.clear();
         this.cache.clear();
         this.pending.clear();
+        this.failures.clear();
+        this.lastErrors.clear();
     }
 
     private filter(endpoints: ServiceEndpoint[], options: EndpointResolveOptions): ServiceEndpoint[] {
@@ -136,6 +164,24 @@ export class DefaultEndpointResolver extends EndpointResolver implements OnDestr
             }
             return true;
         });
+    }
+
+    private findCached(service: string): EndpointCacheEntry | undefined {
+        const prefix = `${service}|`;
+        for (const [key, entry] of this.cache) {
+            if (key.startsWith(prefix)) {
+                return entry;
+            }
+        }
+        return undefined;
+    }
+
+    private noteFailure(service: string, error: unknown): void {
+        const attempts = (this.failures.get(service)?.attempts ?? 0) + 1;
+        const base = Math.max(100, (this.options?.retryInterval ?? 1) * 1000);
+        const backoff = Math.min(30_000, base * Math.pow(2, Math.min(attempts - 1, 5)));
+        this.failures.set(service, { until: Date.now() + backoff, attempts });
+        this.lastErrors.set(service, error instanceof Error ? error : new Error(String(error)));
     }
 
     private cacheKey(service: string, options: EndpointResolveOptions): string {

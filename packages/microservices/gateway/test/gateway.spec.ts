@@ -443,6 +443,31 @@ describe('Gateway', () => {
         expect(await runtime.canPassCircuit('route', options)).toBe(true);
     });
 
+    it('does not overlap health probe runs', async () => {
+        let resolveDiscover: (value: any[]) => void = () => undefined;
+        let discoverCalls = 0;
+        const discovery = {
+            discover: () => {
+                discoverCalls += 1;
+                return new Promise(resolve => { resolveDiscover = resolve; });
+            },
+            healthCheck: async () => true
+        } as any;
+        const lifecycle = new GatewayLifecycle({
+            routes: [{ path: '/probe', service: 'probe-service' }],
+            healthProbe: { enabled: true, interval: 1_000 }
+        } as any, new GatewayRuntime(), null as any, null as any, discovery);
+
+        const first = (lifecycle as any).probeRoutes();
+        const second = (lifecycle as any).probeRoutes();
+        await second;
+        expect(discoverCalls).toBe(1);
+
+        resolveDiscover([]);
+        await first;
+        lifecycle.onDestroy();
+    });
+
     it('queues bulkhead waiters and rejects when the queue is full', async () => {
         const runtime = new GatewayRuntime();
         const options = { maxConcurrent: 1, maxQueue: 1, queueTimeoutMs: 20 };
