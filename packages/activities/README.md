@@ -392,24 +392,77 @@ fs.writeFileSync('workflow.json', json);
 ### Node Types
 
 ```typescript
-type VisualNodeType = 
-    | 'start'      // Optional explicit start point
-    | 'end'        // Optional explicit end point
-    | 'task'       // Task node
-    | 'condition'  // Condition node
-    | 'parallel'   // Parallel node
-    | 'sequence'   // Sequence node
-    | 'delay'      // Delay node
-    | 'loop'       // Loop node
-    | 'switch'     // Switch node
-    | 'trycatch'   // Exception handling node
-    | 'subprocess' // Sub-process node
-    | 'log'        // Log node
+type VisualNodeType =
+    | 'start'        // Optional explicit start point
+    | 'end'          // Optional explicit end point
+    | 'inject'       // Manual, interval, cron or event trigger
+    | 'task'         // Task node
+    | 'function'     // JavaScript transform with initialize/finalize
+    | 'template'     // Mustache/plain text template
+    | 'condition'    // Condition node
+    | 'switch'       // Four ordered rules plus a default output
+    | 'router'       // Rule-based routing with named ports
+    | 'parallel'     // Parallel node
+    | 'join'         // Wait for branches and merge their results
+    | 'junction'     // Wire pass-through
+    | 'sequence'     // Explicit ordering helper
+    | 'link'         // Named wire documentation
+    | 'delay'        // Delay node
+    | 'trigger'      // Emit a payload after an optional delay
+    | 'loop'         // Repeat a referenced sub-workflow
+    | 'trycatch'     // Guard a branch and route failures to the error port
+    | 'subprocess'   // Sub-process node
+    | 'complete'     // Lifecycle hook after a successful run
+    | 'catch'        // Lifecycle hook after a failed run
+    | 'status'       // Lifecycle hook on status changes
+    | 'log'          // Log node
+    | 'debug'        // Inspect a property or the complete message
     | 'http-request' // HTTP request node
-    | 'assign'     // Assign node
-    | 'transform'  // Data transform node
-    | 'custom';    // Custom node
+    | 'json'         // JSON parse/stringify
+    | 'csv'          // CSV parse/stringify
+    | 'xml'          // XML parse/stringify
+    | 'html'         // HTML text/attribute extraction
+    | 'yaml'         // YAML parse/stringify
+    | 'rbe'          // Report only value changes in an array
+    | 'combine'      // Merge, concat or join several values
+    | 'change'       // Set/delete/append context fields
+    | 'statistics'   // Count/sum/avg/min/max
+    | 'merge'        // Merge data
+    | 'split'        // Split text/arrays
+    | 'map'          // Map array items
+    | 'filter'       // Filter array items
+    | 'sort'         // Sort array items (numeric/lexical)
+    | 'range'        // Generate a number range
+    | 'batch'        // Batch items with overlap
+    | 'scale'        // Map numbers between ranges
+    | 'event-emit'   // Emit a workflow event
+    | 'event-wait'   // Wait for a workflow event
+    | 'command'      // Run a host command through the context executor
+    | 'assign'       // Assign node
+    | 'transform'    // Data transform node
+    | 'comment'      // Canvas note, never executed
+    | 'custom';      // Custom node
 ```
+
+### Scheduling and host plugins
+
+`inject` supports four trigger sources: `manual`, `interval`, `cron` and
+`event`. Cron uses five fields (`minute hour day month weekday`) with `*`,
+`*/n`, `a-b`, `a-b/n` and comma lists. A workflow started from the toolbar can
+keep interval/cron injections running via `WorkflowScheduler` (`Schedule` /
+`Stop schedule` actions).
+
+Server-side plugins add host capabilities that browsers cannot provide:
+
+```typescript
+import { createFilePlugin, createExecPlugin } from '@tsdi/activities';
+
+// file read/write: path, encoding, append, createDirs
+// exec: command, args list, cwd, env, timeout, captured stdout/stderr
+```
+
+Plugin nodes report a clear error when the host does not install their
+executor, so the same workflow definition stays valid in the browser editor.
 
 ## Visual Designer (drag & drop)
 
@@ -452,7 +505,7 @@ Features:
   click cancels the pending wire,
 - click an edge (widened hit path) to select it; `Delete` removes the selected node or connection,
 - inspector for node name/description/config fields driven by `WorkflowNodeRegistry`,
-- searchable palette: filter 35 registered node types by label, description or type,
+- searchable palette: filter 49 registered node types by label, description or type,
 - inspector property editing is rendered by the shared JSON-configured
   `dynamic-form` component (conditional fields, groups, per-field defaults and
   reset); validation uses `@tsdi/components/forms` (`required`, `min`/`max`,
@@ -466,12 +519,12 @@ Features:
   it stays out of the initial browser payload;
 - undo/redo, pointer pan, Ctrl+wheel zoom-at-cursor, fit-to-view, auto layout,
   duplicate (`Ctrl+D`), JSON import/export,
-- Node-RED-style base components: inject (manual / interval / event), debug,
-  trigger, function, template, JSON, CSV, XML, HTML, change, statistics,
-  merge, split/map/filter/sort/range/batch/scale, event-emit/event-wait,
-  command, condition/switch/router, parallel/join, loop (sub-workflow repeat),
-  delay, log, HTTP request, complete/catch/status, link/junction/sequence,
-  try/catch, sub workflow, comment,
+- Node-RED-style base components: inject (manual / interval / cron / event), debug,
+  trigger, function, template, JSON, CSV, XML, HTML, YAML, RBE, combine,
+  change, statistics, merge, split/map/filter/sort/range/batch/scale,
+  event-emit/event-wait, command, condition/switch/router, parallel/join,
+  loop (sub-workflow repeat), delay, log, HTTP request, complete/catch/status,
+  link/junction/sequence, try/catch, sub workflow, comment,
 - opt-in autosave (`autosave`, `autosaveDelay`) with Saved / Unsaved / Saving /
   Save failed state in the toolbar; manual save and autosave share the same store,
 - global keyboard shortcuts (`Ctrl+S` save, `Ctrl+O` library, `Ctrl+Enter` run,
@@ -481,7 +534,11 @@ Features:
 - workflow library: save, save-as-copy, open and delete definitions through
   `WorkflowDefinitionStore` (localStorage in browsers, in-memory in Node/TUI,
   HTTP/microservice via `HttpWorkflowDefinitionStore`),
-- `join` node waits for all parallel branches before continuing,
+- `join` node waits for all parallel branches, then exposes their results as
+  an array or a merged object (`resultField`), skipping empty branches by default,
+- `trycatch` guards its downstream branch: any failure is routed to the `error`
+  port with `error`, `errorMessage`, `failedNodeId` and `failedResult` context,
+  while the recovery branch is skipped when the guarded chain succeeds,
 - `error` ports route failures into recovery branches instead of aborting,
 - reusable `WorkflowRetryInterceptor` / `WorkflowTimeoutInterceptor` core
   interceptors,
@@ -659,7 +716,8 @@ POST   /api/plugins/:id/install
 DELETE /api/plugins/:id
 ```
 
-Bundled protocol plugins: `mqtt`, `redis`, `nats`, `coap`, `websocket`, `tcp`, `udp`. Install them on
+Bundled protocol plugins: `mqtt`, `redis`, `nats`, `coap`, `websocket`, `tcp`, `udp`, plus the
+server-side `file` (read/write) and `exec` (run host commands) plugins. Install them on
 demand (HTTP API or `WORKFLOW_PLUGINS=mqtt,redis npm --prefix packages/workflow-admin start`) so
 their optional client libraries are only loaded when used. Installed
 node manifests are returned to the designer, which adds them to its palette;
