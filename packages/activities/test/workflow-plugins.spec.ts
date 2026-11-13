@@ -8,6 +8,12 @@ import { WorkflowServiceRegistry } from '../src/plugins/service-registry';
 import { WorkflowPlugin } from '../src/plugins/types';
 import { createBuiltInWorkflowPlugin, listBuiltInWorkflowPlugins } from '../src/plugins/catalog';
 import { createFilePlugin } from '../src/plugins/builtins/file';
+import { createTcpPlugin } from '../src/plugins/builtins/tcp';
+import { createUdpPlugin } from '../src/plugins/builtins/udp';
+import { createWebSocketPlugin } from '../src/plugins/builtins/websocket';
+import * as net from 'node:net';
+import * as dgram from 'node:dgram';
+import { WebSocketServer } from 'ws';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -123,6 +129,52 @@ describe('workflow plugins', () => {
         expect(readResult.success).toBe(true);
         expect(readResult.data?.content).toBe('hello');
         fs.rmSync(dir, { recursive: true, force: true });
+    });
+
+    it('runs TCP, UDP and WebSocket request plugins', async () => {
+        const tcpServer = net.createServer(socket => {
+            socket.on('data', data => socket.end(`echo:${data.toString()}`));
+        });
+        await new Promise<void>(resolve => tcpServer.listen(0, '127.0.0.1', () => resolve()));
+        const tcpPort = (tcpServer.address() as net.AddressInfo).port;
+        try {
+            const tcp = createTcpPlugin().nodes!.find(node => node.type === 'tcp-request')!;
+            const tcpResult = await tcp.execute!({ id: 'tcp_1', type: 'tcp-request', config: { host: '127.0.0.1', port: tcpPort, payload: 'hi', waitForReply: true, timeout: 2000 } } as any, {});
+            expect(tcpResult.success).toBe(true);
+            expect(tcpResult.data?.reply).toBe('echo:hi');
+        } finally {
+            tcpServer.close();
+        }
+
+        const udpServer = dgram.createSocket('udp4');
+        udpServer.on('message', (message, remote) => {
+            udpServer.send(`echo:${message.toString()}`, remote.port, remote.address);
+        });
+        await new Promise<void>(resolve => udpServer.bind(0, '127.0.0.1', () => resolve()));
+        const udpPort = (udpServer.address() as any).port;
+        try {
+            const udp = createUdpPlugin().nodes!.find(node => node.type === 'udp-request')!;
+            const udpResult = await udp.execute!({ id: 'udp_1', type: 'udp-request', config: { host: '127.0.0.1', port: udpPort, payload: 'hi', waitForReply: true, timeout: 2000 } } as any, {});
+            expect(udpResult.success).toBe(true);
+            expect(udpResult.data?.reply).toBe('echo:hi');
+        } finally {
+            udpServer.close();
+        }
+
+        const wsServer = new WebSocketServer({ host: '127.0.0.1', port: 0 });
+        await new Promise<void>(resolve => wsServer.once('listening', () => resolve()));
+        const wsPort = (wsServer.address() as any).port;
+        wsServer.on('connection', socket => {
+            socket.on('message', message => socket.send(`echo:${message.toString()}`));
+        });
+        try {
+            const websocket = createWebSocketPlugin().nodes!.find(node => node.type === 'websocket-request')!;
+            const wsResult = await websocket.execute!({ id: 'ws_1', type: 'websocket-request', config: { url: `ws://127.0.0.1:${wsPort}`, message: 'hi', waitForReply: true, timeout: 2000 } } as any, {});
+            expect(wsResult.success).toBe(true);
+            expect(wsResult.data?.reply).toBe('echo:hi');
+        } finally {
+            await new Promise<void>(resolve => wsServer.close(() => resolve()));
+        }
     });
 
     it('fails plugin nodes clearly when the host has no plugin executor', async () => {

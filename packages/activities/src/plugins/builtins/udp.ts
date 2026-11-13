@@ -40,9 +40,9 @@ export function createUdpPlugin(): WorkflowPlugin {
                         socket.once('error', (error: Error) => reject(error));
                     });
                     const timeout = Math.max(0, Number(config.timeout) || 0);
-                    let reply: any;
+                    let waiting: Promise<any> | undefined;
                     if (config.waitForReply === true) {
-                        reply = await new Promise((resolve, reject) => {
+                        waiting = new Promise((resolve, reject) => {
                             const timer = timeout > 0
                                 ? setTimeout(() => reject(new Error(`UDP reply timed out after ${timeout}ms`)), timeout)
                                 : undefined;
@@ -68,6 +68,7 @@ export function createUdpPlugin(): WorkflowPlugin {
                             (error?: Error) => error ? reject(error) : resolve()
                         );
                     });
+                    const reply = waiting ? await waiting : undefined;
                     socket.close();
                     return { success: true, data: { nodeId: node.id, reply } };
                 } catch (error) {
