@@ -118,7 +118,7 @@ export interface TransportConfig {
 
 
 export function matchTransport(source: TransportConfig, target: TransportConfig): boolean {
-    return source.transport === source.transport
+    return source.transport === target.transport
         && (source.name ? source.name === target.name : true)
         && (source.microservice !== undefined ? source.microservice === target.microservice : true)
 }

@@ -810,6 +810,30 @@ export function processProviders(injector: Injector, providers: Provider[] | und
     return eachProvider(providers, p => processProvider(injector, p));
 }
 
+const MULTI_ORDER = Symbol('MULTI_ORDER');
+const DEFAULT_MULTI_ORDER = Number.MAX_SAFE_INTEGER;
+
+/**
+ * Insert a multi provider record keeping `multiOrder` ascending (lower order is
+ * resolved first / outermost). Records without an order keep registration order
+ * and are placed last.
+ */
+function insertMultiRecord(list: any[], record: any, order: number) {
+    let low = 0;
+    let high = list.length;
+    while (low < high) {
+        const mid = (low + high) >>> 1;
+        const midOrder = list[mid]?.[MULTI_ORDER] ?? DEFAULT_MULTI_ORDER;
+        // `<=` keeps registration order stable for equal priorities.
+        if (midOrder <= order) {
+            low = mid + 1;
+        } else {
+            high = mid;
+        }
+    }
+    list.splice(low, 0, record);
+}
+
 function processProvider(injector: Injector, provider: StaticProvider | DynamicProvider): void | Promise<void> {
 
     const token = isFunction(provider) ? provider : (provider as Provide<any>).provide;
@@ -824,11 +848,9 @@ function processProvider(injector: Injector, provider: StaticProvider | DynamicP
             }
             if (multiPdr.multi) {
                 const multiOrder = (provider as MutilProvider).multiOrder;
-                if (isNumber(multiOrder)) {
-                    multiPdr.multi.splice(multiOrder, 0, record)
-                } else {
-                    multiPdr.multi.push(record)
-                }
+                const order = isNumber(multiOrder) && Number.isFinite(multiOrder) ? multiOrder : DEFAULT_MULTI_ORDER;
+                (record as any)[MULTI_ORDER] = order;
+                insertMultiRecord(multiPdr.multi, record, order);
             }
         } else {
             const asDefault = !isFunction(provider) && (provider as ProviderExts).asDefault;

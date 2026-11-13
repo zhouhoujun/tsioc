@@ -12,6 +12,7 @@ import {
     provideService,
     provideServiceFromDi,
     ROUTERS,
+    SERV_OPTIONS,
     ServiceFeatureKind,
     SERVICE_AUTH_OPTIONS,
     SERVICE_BODY_PARSER_OPTIONS,
@@ -232,5 +233,41 @@ describe('service provider', () => {
         expect(interceptorProvider.multiOrder).toBe(123);
         expect(combined.some(feature => feature.kind === ServiceFeatureKind.Cors)).toBe(true);
         expect(combined.flatMap(feature => feature.providers).some((provider: any) => provider.provide === SERVICE_CORS_OPTIONS && provider.useValue.origin === 'https://example.com')).toBe(true);
+    });
+
+    it('drops feature providers declared for another transport', () => {
+        const httpMarker = { provide: 'HTTP_ONLY', useValue: 'http' };
+        const tcpMarker = { provide: 'TCP_ONLY', useValue: 'tcp' };
+        const httpTransport = {
+            kind: ServiceFeatureKind.Transport,
+            config: { transport: Transport.HTTP, side: TransferSide.server, features: {} },
+            providers: []
+        } as any;
+        const tcpTransport = {
+            kind: ServiceFeatureKind.Transport,
+            config: { transport: Transport.TCP, side: TransferSide.server, features: {} },
+            providers: []
+        } as any;
+        const providers = provideService(
+            {
+                kind: ServiceFeatureKind.Interceptors,
+                config: { transport: Transport.HTTP, side: TransferSide.server },
+                providers: [httpMarker]
+            } as any,
+            {
+                kind: ServiceFeatureKind.Interceptors,
+                config: { transport: Transport.TCP, side: TransferSide.server },
+                providers: [tcpMarker]
+            } as any,
+            httpTransport,
+            tcpTransport
+        ) as any[];
+
+        expect(providers.filter(provider => provider.provide === 'HTTP_ONLY').length).toBe(1);
+        expect(providers.filter(provider => provider.provide === 'TCP_ONLY').length).toBe(1);
+        const optionsProviders = providers.filter(provider => provider.provide === SERV_OPTIONS);
+        expect(optionsProviders.length).toBe(2);
+        expect(optionsProviders.some(provider => provider.useValue?.transport === Transport.HTTP)).toBe(true);
+        expect(optionsProviders.some(provider => provider.useValue?.transport === Transport.TCP)).toBe(true);
     });
 });

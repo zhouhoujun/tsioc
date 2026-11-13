@@ -20,7 +20,7 @@ import { HttpModule } from '../src/http.module';
 import { HttpBodySerializeStrategy } from '../src/client/strategies/HttpBodySerializeStrategy';
 import { HttpTimeoutStrategy } from '../src/client/strategies/HttpTimeoutStrategy';
 import { lastValueFrom, of } from 'rxjs';
-import * as http from 'node:http';
+import http = require('node:http');
 import * as http2 from 'node:http2';
 import { EventEmitter } from 'node:events';
 import expect = require('expect');
