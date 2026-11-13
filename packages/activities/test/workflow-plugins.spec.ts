@@ -178,6 +178,27 @@ describe('workflow plugins', () => {
         }
     });
 
+    it('registers exec settings in the palette and inspector metadata', async () => {
+        const registry = new WorkflowNodeRegistry();
+        const plugins = new WorkflowPluginRegistry(registry, new WorkflowServiceRegistry());
+        await plugins.install(createExecPlugin());
+
+        const exec = registry.get('exec');
+        expect(exec?.category).toBe('action');
+        expect(exec?.fields?.find(field => field.key === 'command')?.required).toBe(true);
+        expect(exec?.fields?.find(field => field.key === 'args')?.type).toBe('list');
+        expect(exec?.fields?.find(field => field.key === 'env')?.type).toBe('keyvalue');
+        const timeout = exec?.fields?.find(field => field.key === 'timeout');
+        expect(timeout?.unit).toBe('ms');
+        expect(timeout?.group).toBe('Reliability');
+
+        const palette = registry.palette('en');
+        const action = palette.find(group => group.id === 'action');
+        expect(action?.items.map(item => item.type)).toContain('exec');
+        const execItem = action?.items.find(item => item.type === 'exec');
+        expect(execItem?.description).toContain('host command');
+    });
+
     it('runs host commands with the exec plugin', async () => {
         const plugin = createExecPlugin();
         const node = plugin.nodes!.find(item => item.type === 'exec')!;
