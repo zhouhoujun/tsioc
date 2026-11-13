@@ -1199,6 +1199,7 @@ export async function executeVisualNode(
                 success: true,
                 data: {
                     nodeId: node.id,
+                    mode: String(config.mode || 'out'),
                     links: String(config.links || '').split(',').map(item => item.trim()).filter(Boolean)
                 }
             };
@@ -1474,9 +1475,15 @@ export function findWorkflowEntryNodes(definition: VisualWorkflowDefinition): IV
         }
     };
     const lifecycle = new Set(['complete', 'catch', 'status']);
+    // Link-in nodes are reached through their matching link-out nodes (or not
+    // at all); they must never start a flow on their own.
+    const isLinkIn = (node: IVisualWorkflowNode) =>
+        node.type === 'link' && String(node.config?.mode || 'out') === 'in';
     nodes.filter(node => node.type === 'start').forEach(push);
     nodes.filter(node => node.type === 'inject').forEach(push);
-    nodes.filter(node => !lifecycle.has(node.type) && !incoming.has(node.id)).forEach(push);
+    nodes.filter(node =>
+        !lifecycle.has(node.type) && !incoming.has(node.id) && !isLinkIn(node)
+    ).forEach(push);
     return entries;
 }
 

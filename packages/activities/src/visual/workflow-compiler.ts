@@ -49,6 +49,42 @@ export function compileVisualWorkflow(definition: VisualWorkflowDefinition): Com
         incoming.get(connection.targetNodeId)?.push(connection);
     }
 
+    // Link nodes share a name instead of a wire. Compile matching link-out /
+    // link-in pairs into synthetic edges so execution follows the same plan as
+    // ordinary connections.
+    const linkNames = (node: IVisualWorkflowNode): string[] =>
+        String(node.config?.links || '')
+            .split(',')
+            .map(item => item.trim())
+            .filter(Boolean);
+    const linkOuts = [...nodes.values()].filter(node =>
+        node.type === 'link' && String(node.config?.mode || 'out') !== 'in'
+    );
+    const linkIns = [...nodes.values()].filter(node =>
+        node.type === 'link' && String(node.config?.mode) === 'in'
+    );
+    for (const source of linkOuts) {
+        const names = new Set(linkNames(source));
+        if (!names.size) {
+            continue;
+        }
+        for (const target of linkIns) {
+            if (!linkNames(target).some(name => names.has(name))) {
+                continue;
+            }
+            const connection: NodeConnection = {
+                id: `link:${source.id}->${target.id}`,
+                sourceNodeId: source.id,
+                sourcePort: 'out',
+                targetNodeId: target.id,
+                targetPort: 'in'
+            };
+            edges.push(connection);
+            outgoing.get(source.id)?.push(connection);
+            incoming.get(target.id)?.push(connection);
+        }
+    }
+
     const entries = findWorkflowEntryNodes(definition);
     const entry = entries[0];
     const order: string[] = [];

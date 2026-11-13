@@ -202,7 +202,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "link": {
                 "label": "Link",
-                "description": "Connect distant wire segments by name"
+                "description": "Jump to matching link nodes by name"
             },
             "html": {
                 "label": "HTML",
@@ -541,7 +541,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "active": "Enabled"
             },
             "link": {
-                "links": "Link names"
+                "mode": "Mode",
+                "links": "Links"
             },
             "html": {
                 "field": "HTML path",
@@ -1073,7 +1074,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "active": "turn off to keep the node but skip its output"
             },
             "link": {
-                "links": "optional comma-separated names for remote wires"
+                "mode": "Send from this node (link out) or receive from matching names (link in).",
+                "links": "Comma separated names shared by link-out and link-in nodes."
             },
             "html": {
                 "field": "context path containing HTML text",
@@ -1267,7 +1269,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "ms": "ms",
             "s": "s",
             "value": "On value change",
-            "ANY": "Any method"
+            "ANY": "Any method",
+            "out": "Link out",
+            "in": "Link in"
         }
     },
     "zh-CN": {
@@ -1465,8 +1469,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "description": "保持下游步骤顺序执行"
             },
             "link": {
-                "label": "连线",
-                "description": "按名称连接画布上的远程连线"
+                "label": "链接",
+                "description": "按名称跳转到匹配的链接节点"
             },
             "html": {
                 "label": "HTML",
@@ -1805,7 +1809,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "active": "启用"
             },
             "link": {
-                "links": "连线名称"
+                "mode": "模式",
+                "links": "链接名"
             },
             "html": {
                 "field": "HTML 路径",
@@ -2321,7 +2326,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "active": "关闭后保留节点但不再输出。"
             },
             "link": {
-                "links": "用于识别远程连线的可选名称，逗号分隔。"
+                "mode": "从该节点发送（link out），或接收匹配名称的消息（link in）。",
+                "links": "link out 与 link in 共享的链接名，逗号分隔。"
             },
             "html": {
                 "field": "包含 HTML 文本的上下文路径。",
@@ -2515,7 +2521,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "PUT": "PUT",
             "PATCH": "PATCH",
             "DELETE": "DELETE",
-            "ANY": "任意方法"
+            "ANY": "任意方法",
+            "out": "Link out",
+            "in": "Link in"
         }
     }
 };

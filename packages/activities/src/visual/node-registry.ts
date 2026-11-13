@@ -302,7 +302,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
     {
         type: 'link',
         label: 'Link',
-        description: 'Connect distant wire segments by name',
+        description: 'Jump to matching link nodes by name',
         category: 'flow',
         icon: '⇢',
         color: '#0d9488',
@@ -310,9 +310,19 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Output')],
         fields: [
-            configField({ key: 'links', label: 'Links', type: 'text', placeholder: 'flow-a, flow-b', description: 'Comma separated link names for documentation.' })
+            configField({
+                key: 'mode',
+                label: 'Mode',
+                type: 'select',
+                defaultValue: 'out',
+                options: [
+                    { label: 'Link out', value: 'out' },
+                    { label: 'Link in', value: 'in' }
+                ]
+            }),
+            configField({ key: 'links', label: 'Links', type: 'text', placeholder: 'flow-a, flow-b', description: 'Comma separated names shared by link-out and link-in nodes.' })
         ],
-        defaultConfig: {}
+        defaultConfig: { mode: 'out' }
     },
     {
         type: 'html',

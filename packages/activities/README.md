@@ -406,7 +406,7 @@ type VisualNodeType =
     | 'join'         // Wait for branches and merge their results
     | 'junction'     // Wire pass-through
     | 'sequence'     // Explicit ordering helper
-    | 'link'         // Named wire documentation
+    | 'link'         // Jump to matching link nodes by name
     | 'delay'        // Delay node
     | 'trigger'      // Emit a payload, optionally a second one after a delay
     | 'loop'         // Repeat a referenced sub-workflow
@@ -559,6 +559,8 @@ Features:
   HTTP/microservice via `HttpWorkflowDefinitionStore`),
 - `trigger` waits its delay, sends the first payload, and can send a second
   payload after `secondDelay`; the downstream branch runs once per message,
+- `link` nodes connect distant wire segments: a `link out` named `shared`
+  reaches every matching `link in` node, which then continues its own branch,
 - `join` node waits for all parallel branches, then exposes their results as
   an array or a merged object (`resultField`), skipping empty branches by default,
 - `trycatch` guards its downstream branch: any failure is routed to the `error`

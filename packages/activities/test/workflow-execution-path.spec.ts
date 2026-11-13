@@ -6,6 +6,7 @@ import { WorkflowDesigner } from '../src/visual/workflow-designer';
 import { VisualWorkflowService } from '../src/visual/VisualWorkflowService';
 import { WorkflowExecutionEvent } from '../src/visual/types';
 import { VisualNodeActivityAdapter } from '../src/visual/VisualNodeActivityAdapter';
+import { compileVisualWorkflow } from '../src/visual/workflow-compiler';
 
 describe('Visual Workflow Execution Path', () => {
     let injector: Injector;
@@ -115,6 +116,46 @@ describe('Visual Workflow Execution Path', () => {
         expect(state?.status).toBe('completed');
         const snapshot = service.getExecutionSnapshot(executionId);
         expect(snapshot?.nodeStates.task_1.status).toBe('success');
+    });
+
+    it('routes link-out messages to matching link-in nodes', async () => {
+        const nodes = [
+            registry.createNode('start', { x: 0, y: 0 }, { id: 'start_link' }),
+            registry.createNode('link', { x: 200, y: 0 }, { id: 'link_out', config: { mode: 'out', links: 'shared' } }),
+            registry.createNode('link', { x: 400, y: 0 }, { id: 'link_in', config: { mode: 'in', links: 'shared' } }),
+            registry.createNode('task', { x: 600, y: 0 }, { id: 'link_task', config: { result: { reached: true } } }),
+            registry.createNode('end', { x: 800, y: 0 }, { id: 'link_end' }),
+            registry.createNode('link', { x: 400, y: 120 }, { id: 'link_in_unmatched', config: { mode: 'in', links: 'other' } }),
+            registry.createNode('task', { x: 600, y: 120 }, { id: 'unmatched_task', config: { result: { reached: false } } })
+        ];
+        const edge = (id: string, source: string, target: string) => ({
+            id, sourceNodeId: source, sourcePort: 'out', targetNodeId: target, targetPort: 'in'
+        });
+        const definition = {
+            id: 'link-test',
+            name: 'Link test',
+            nodes,
+            connections: [
+                edge('l1', 'start_link', 'link_out'),
+                edge('l2', 'link_in', 'link_task'),
+                edge('l3', 'link_task', 'link_end'),
+                edge('l4', 'link_in_unmatched', 'unmatched_task')
+            ]
+        };
+
+        const plan = compileVisualWorkflow(definition);
+        expect(plan.entries.map(item => item.id)).not.toContain('link_in');
+        expect(plan.outgoing.get('link_out')?.some(connection => connection.targetNodeId === 'link_in')).toBe(true);
+        expect(plan.outgoing.get('link_out')?.some(connection => connection.targetNodeId === 'link_in_unmatched')).toBe(false);
+
+        const result = await service.execute(definition, {});
+        const snapshot = result.data?.executionState;
+        expect(result.success).toBe(true);
+        expect(snapshot.nodeStates.link_out.status).toBe('success');
+        expect(snapshot.nodeStates.link_in.status).toBe('success');
+        expect(snapshot.nodeStates.link_task.result?.data?.reached).toBe(true);
+        expect(snapshot.nodeStates.link_end.status).toBe('success');
+        expect(snapshot.nodeStates.unmatched_task.status).toBe('skipped');
     });
 
     it('skips disabled nodes and their downstream branch', async () => {
