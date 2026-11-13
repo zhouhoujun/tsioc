@@ -1002,29 +1002,19 @@ workflow-canvas {
 }
 
 .workflow-field-group {
-    margin-bottom: 10px;
-    padding: 10px;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    background: #f8fafc;
+    margin-bottom: 12px;
 }
 
 .workflow-field-group .workflow-field-group-title {
-    margin-top: 0;
+    margin: 10px 0 6px;
 }
 
 .workflow-fields {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px 10px;
+    display: block;
 }
 
 .workflow-field {
-    min-width: 0;
-}
-
-.workflow-field.is-full {
-    grid-column: 1 / -1;
+    margin-bottom: 10px;
 }
 
 .workflow-inspector-description {
@@ -1044,7 +1034,7 @@ workflow-canvas {
 
 .workflow-field-label {
     display: block;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
     color: #475569;
     margin-bottom: 3px;
@@ -1060,6 +1050,7 @@ workflow-canvas {
 }
 
 .workflow-field-reset {
+    opacity: 0;
     border: 0;
     background: transparent;
     color: #94a3b8;
@@ -1067,6 +1058,11 @@ workflow-canvas {
     line-height: 1;
     padding: 0 2px;
     cursor: pointer;
+}
+
+.workflow-field:hover .workflow-field-reset,
+.workflow-field:focus-within .workflow-field-reset {
+    opacity: 1;
 }
 
 .workflow-field-reset:hover {
@@ -1085,13 +1081,7 @@ workflow-canvas {
     color: #94a3b8;
 }
 
-.workflow-field-group-title::after {
-    content: '';
-    flex: 1 1 auto;
-    height: 1px;
-    background: currentColor;
-    opacity: 0.18;
-}
+
 
 .workflow-inspector-no-fields,
 .workflow-no-fields {
@@ -1185,9 +1175,10 @@ workflow-canvas {
 }
 
 .workflow-field-hint {
-    font-size: 10px;
-    color: #94a3b8;
-    margin-top: 2px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #64748b;
+    margin-top: 3px;
 }
 
 .workflow-field-error {
@@ -1986,13 +1977,6 @@ html[data-theme="high-contrast"] li.CodeMirror-hint-active {
 .workflow-designer[data-theme="solarized"] .workflow-list-remove,
 .workflow-designer[data-theme="high-contrast"] .workflow-list-remove {
     color: var(--wf-theme-muted);
-}
-
-.workflow-designer[data-theme="dark"] .workflow-field-group,
-.workflow-designer[data-theme="solarized"] .workflow-field-group,
-.workflow-designer[data-theme="high-contrast"] .workflow-field-group {
-    background: var(--wf-theme-surface-alt);
-    border-color: var(--wf-theme-border);
 }
 
 .workflow-designer[data-theme="dark"] .workflow-list-row,

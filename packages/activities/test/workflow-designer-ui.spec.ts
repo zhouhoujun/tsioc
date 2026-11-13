@@ -365,7 +365,7 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelector('.workflow-field[data-field-key="timeout"] .workflow-input-wrap')?.className)
             .toContain('has-unit');
         expect(root.querySelector('.workflow-fields')).toBeTruthy();
-        expect(root.querySelector('.workflow-field[data-field-key="timeout"]')?.className).toContain('is-half');
+        expect(root.querySelector('.workflow-field[data-field-key="timeout"]')?.className).toContain('is-full');
         expect(root.querySelector('.workflow-field[data-field-key="action"]')?.className).toContain('is-full');
     });
 

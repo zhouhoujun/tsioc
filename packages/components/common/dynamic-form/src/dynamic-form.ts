@@ -806,7 +806,7 @@ export class DynamicFormComponent implements OnDestroy {
     groupTitleClass(): string { return `${this.classPrefix}-field-group-title`; }
     noFieldsClass(): string { return `${this.classPrefix}-no-fields`; }
     fieldClass(field: DynamicFormField): string {
-        const span = field.span || (['number', 'date', 'time'].includes(field.type) ? 'half' : 'full');
+        const span = field.span || 'full';
         return [
             `${this.classPrefix}-field`,
             span === 'half' ? 'is-half' : 'is-full',

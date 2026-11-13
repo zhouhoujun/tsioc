@@ -49,38 +49,22 @@ export const DYNAMIC_FORM_CSS = `
     color: var(--df-text-hint);
 }
 
-.df-field-group-title::after {
-    content: '';
-    flex: 1 1 auto;
-    height: 1px;
-    background: currentColor;
-    opacity: 0.18;
-}
+
 
 .df-field-group {
-    margin-bottom: 10px;
-    padding: 10px;
-    border: 1px solid var(--df-border);
-    border-radius: 8px;
-    background: var(--df-bg-alt);
+    margin-bottom: 12px;
 }
 
 .df-field-group-title {
-    margin-top: 0;
+    margin: 10px 0 6px;
 }
 
 .df-fields {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px 10px;
+    display: block;
 }
 
 .df-field {
-    min-width: 0;
-}
-
-.df-field.is-full {
-    grid-column: 1 / -1;
+    margin-bottom: 10px;
 }
 
 .df-field-label-row {
@@ -93,7 +77,7 @@ export const DYNAMIC_FORM_CSS = `
 
 .df-field-label {
     display: block;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
     color: #475569;
     margin: 0;
@@ -105,6 +89,7 @@ export const DYNAMIC_FORM_CSS = `
 }
 
 .df-field-reset {
+    opacity: 0;
     border: 0;
     background: transparent;
     color: var(--df-text-hint);
@@ -112,6 +97,11 @@ export const DYNAMIC_FORM_CSS = `
     line-height: 1;
     padding: 0 2px;
     cursor: pointer;
+}
+
+.df-field:hover .df-field-reset,
+.df-field:focus-within .df-field-reset {
+    opacity: 1;
 }
 
 .df-field-reset:hover {
