@@ -3942,3 +3942,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第四十批（2026-11-13）：
   - prepare-package-publish.mjs：build → dist package.json → pack 校验。
   - gateway 发布产物实测通过（index.js/index.d.ts/tarball）。
+- 微服务框架第四十一批（2026-11-13）：
+  - Consul/Nacos/Eureka 5xx 故障注入测试。
+  - 回归：discovery 81。

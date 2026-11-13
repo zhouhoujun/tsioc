@@ -9,6 +9,7 @@ describe('NacosServiceDiscovery', () => {
     let registrations: URLSearchParams[] = [];
     let deregistrations: URLSearchParams[] = [];
     let loginCalls = 0;
+    let failing = false;
 
     before(async () => {
         server = http.createServer((req, res) => {
@@ -30,6 +31,11 @@ describe('NacosServiceDiscovery', () => {
                 return;
             }
             if (url.pathname === '/nacos/v1/ns/instance/list') {
+                if (failing) {
+                    res.statusCode = 500;
+                    res.end('{"error":"boom"}');
+                    return;
+                }
                 res.end(JSON.stringify({ hosts }));
                 return;
             }
@@ -68,6 +74,7 @@ describe('NacosServiceDiscovery', () => {
         registrations = [];
         deregistrations = [];
         loginCalls = 0;
+        failing = false;
     });
 
     function create(options: any = {}) {
@@ -124,6 +131,13 @@ describe('NacosServiceDiscovery', () => {
         expect(await discovery.healthCheck(endpoints[0])).toBe(true);
         const services = await discovery.getServices();
         expect(services[0].name).toBe('greeter');
+        discovery.onDestroy();
+    });
+
+    it('surfaces registry 5xx errors', async () => {
+        const discovery = create({ accessToken: 'direct-token' });
+        failing = true;
+        await expect(discovery.discover('greeter')).rejects.toThrow(/Nacos request failed: 500/);
         discovery.onDestroy();
     });
 

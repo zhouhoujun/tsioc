@@ -9,6 +9,7 @@ describe('EurekaServiceDiscovery', () => {
     let registrations: any[] = [];
     let renewals = 0;
     let deregistrations: string[] = [];
+    let failing = false;
 
     before(async () => {
         server = http.createServer((req, res) => {
@@ -37,6 +38,11 @@ describe('EurekaServiceDiscovery', () => {
                 return;
             }
             if (url.pathname === '/eureka/apps/GREETER') {
+                if (failing) {
+                    res.statusCode = 500;
+                    res.end('{"error":"boom"}');
+                    return;
+                }
                 res.end(JSON.stringify({ application: { name: 'GREETER', instance: instances } }));
                 return;
             }
@@ -80,6 +86,7 @@ describe('EurekaServiceDiscovery', () => {
         registrations = [];
         renewals = 0;
         deregistrations = [];
+        failing = false;
     });
 
     function create(options: any = {}) {
@@ -132,6 +139,13 @@ describe('EurekaServiceDiscovery', () => {
 
         const services = await discovery.getServices();
         expect(services[0]).toMatchObject({ name: 'greeter', address: '10.0.0.1:8080' });
+        discovery.onDestroy();
+    });
+
+    it('surfaces registry 5xx errors', async () => {
+        const discovery = create();
+        failing = true;
+        await expect(discovery.discover('greeter')).rejects.toThrow(/Eureka request failed: 500/);
         discovery.onDestroy();
     });
 

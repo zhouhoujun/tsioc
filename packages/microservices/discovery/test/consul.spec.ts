@@ -9,6 +9,7 @@ describe('ConsulServiceDiscovery', () => {
     let registrations: any[];
     let deregistrations: string[];
     let lastToken: string | undefined;
+    let failing = false;
 
     before(async () => {
         server = http.createServer((req, res) => {
@@ -39,6 +40,11 @@ describe('ConsulServiceDiscovery', () => {
                 return;
             }
             if (target.pathname === '/v1/health/service/greeter') {
+                if (failing) {
+                    res.statusCode = 500;
+                    res.end('{"error":"boom"}');
+                    return;
+                }
                 reply(health);
                 return;
             }
@@ -71,6 +77,7 @@ describe('ConsulServiceDiscovery', () => {
         registrations = [];
         deregistrations = [];
         lastToken = undefined;
+        failing = false;
     });
 
     function create(options: any = {}) {
@@ -122,6 +129,13 @@ describe('ConsulServiceDiscovery', () => {
 
         const services = await discovery.getServices();
         expect(services[0]).toMatchObject({ name: 'greeter', port: 8080 });
+        discovery.onDestroy();
+    });
+
+    it('surfaces registry 5xx errors', async () => {
+        const discovery = create();
+        failing = true;
+        await expect(discovery.discover('greeter')).rejects.toThrow(/Consul request failed: 500/);
         discovery.onDestroy();
     });
 

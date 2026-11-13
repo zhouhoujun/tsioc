@@ -252,6 +252,11 @@
 - 新增 `scripts/prepare-package-publish.mjs <package-dir>`：构建 → 生成 dist package.json（main/types/files）→ README → `npm pack` 校验。
 - 已用 gateway 实测：`packages/dist/gateway` 产出 `index.js/index.d.ts` 与可发布 tarball。
 
+第四十一批（注册中心故障注入）：
+
+- Consul/Nacos/Eureka 适配器新增 5xx 故障测试。
+- 错误保留 registry、状态码和 body，EndpointResolver 可在上层做 stale-cache/退避降级。
+
 
 ---
 
