@@ -16,19 +16,19 @@ import {
  * ts-node compile the server on every supported Node version while the lazy
  * `require` still falls back when the module is absent.
  */
-interface SqliteStatement {
+export interface SqliteStatement {
     all(...params: any[]): any[];
     get(...params: any[]): any;
     run(...params: any[]): { changes: number | bigint };
 }
 
-interface SqliteDatabase {
+export interface SqliteDatabase {
     prepare(sql: string): SqliteStatement;
     exec(sql: string): void;
     close(): void;
 }
 
-interface SqliteModule {
+export interface SqliteModule {
     DatabaseSync: new (file: string) => SqliteDatabase;
 }
 
@@ -52,6 +52,24 @@ function loadSqlite(): SqliteModule | undefined {
 
 export function isSqliteAvailable(): boolean {
     return !!loadSqlite()?.DatabaseSync;
+}
+
+/**
+ * Open a SQLite connection without creating any schema. Callers own their
+ * tables and must use `CREATE TABLE IF NOT EXISTS` so existing databases are
+ * never rewritten.
+ */
+export function createSqliteDatabase(file: string): SqliteDatabase {
+    const sqlite = loadSqlite();
+    if (!sqlite?.DatabaseSync) {
+        throw new Error('SQLite is not available in this Node runtime; use the in-memory store or upgrade Node.');
+    }
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    const db = new sqlite.DatabaseSync(file);
+    // Definitions and execution history share the file; wait instead of
+    // failing when the other connection is mid-write.
+    db.exec('PRAGMA busy_timeout = 5000');
+    return db;
 }
 
 export function defaultWorkflowDatabaseFile(): string {
@@ -186,12 +204,10 @@ export class SqliteWorkflowDefinitionStore implements WorkflowDefinitionStore {
         if (this.db) {
             return this.db;
         }
-        const sqlite = loadSqlite();
-        if (!sqlite?.DatabaseSync) {
+        if (!isSqliteAvailable()) {
             throw new Error('SQLite is not available in this Node runtime; use InMemoryWorkflowDefinitionStore or upgrade Node.');
         }
-        fs.mkdirSync(path.dirname(this.file), { recursive: true });
-        const db = new sqlite.DatabaseSync(this.file);
+        const db = createSqliteDatabase(this.file);
         db.exec(`
             CREATE TABLE IF NOT EXISTS workflows (
                 id TEXT PRIMARY KEY,

@@ -39,6 +39,7 @@ import { ServerCommonModule } from '@tsdi/platform-server/common';
 import {
     VisualWorkflowDefinition,
     WorkflowDefinitionStore,
+    WorkflowExecutionSnapshot,
     InMemoryWorkflowDefinitionStore,
     createDefaultWorkflowDefinitionStore,
     validateVisualWorkflowDraft
@@ -49,8 +50,15 @@ import { WorkflowPluginCatalog } from '../src/plugins/catalog';
 import { WorkflowPluginRegistry } from '../src/plugins/plugin-registry';
 import { WorkflowPlugin } from '../src/plugins/types';
 import { SqliteWorkflowDefinitionStore, isSqliteAvailable } from './SqliteWorkflowDefinitionStore';
+import {
+    InMemoryWorkflowExecutionStore,
+    SqliteWorkflowExecutionStore,
+    WorkflowExecutionStore
+} from './WorkflowExecutionStore';
 
 export const WORKFLOW_DEFINITION_STORE = token<WorkflowDefinitionStore>('WORKFLOW_DEFINITION_STORE');
+export const WORKFLOW_EXECUTION_STORE = token<WorkflowExecutionStore>('WORKFLOW_EXECUTION_STORE');
+export const WORKFLOW_EXECUTION_LIMIT = token<number>('WORKFLOW_EXECUTION_LIMIT');
 
 /** Plugin catalog API: installed plugins plus bundled/available manifests. */
 @Controller('/api/plugins')
@@ -99,6 +107,8 @@ export class WorkflowPluginController {
 export class WorkflowHttpController {
     constructor(
         @Inject(WORKFLOW_DEFINITION_STORE) private store: WorkflowDefinitionStore,
+        @Inject(WORKFLOW_EXECUTION_STORE) private history: WorkflowExecutionStore,
+        @Inject(WORKFLOW_EXECUTION_LIMIT) private historyLimit: number,
         private execution: VisualWorkflowService
     ) { }
 
@@ -160,6 +170,7 @@ export class WorkflowHttpController {
         const result = await this.execution.execute(definition, body?.context || {}, {
             timeout: timeout || undefined
         });
+        await this.persist(result);
         return this.serializeResult(result);
     }
 
@@ -238,6 +249,7 @@ export class WorkflowHttpController {
             },
             response
         } as any);
+        await this.persist(result);
 
         const status = Number(response.statusCode) || (result.success ? 200 : 500);
         adapter.setStatus(status);
@@ -272,7 +284,21 @@ export class WorkflowHttpController {
         const result = await this.execution.execute(definition, body?.context || {}, {
             resumeFrom: body.checkpoint
         });
+        await this.persist(result);
         return this.serializeResult(result);
+    }
+
+    private async persist(result: Awaited<ReturnType<VisualWorkflowService['execute']>>): Promise<void> {
+        const snapshot = result.data?.executionState as WorkflowExecutionSnapshot | undefined;
+        if (!snapshot?.executionId) {
+            return;
+        }
+        try {
+            await this.history.save(snapshot);
+            await this.history.prune(snapshot.workflowId, Math.max(1, Number(this.historyLimit) || 200));
+        } catch {
+            // History persistence must never fail the workflow response.
+        }
     }
 
     private serializeResult(result: Awaited<ReturnType<VisualWorkflowService['execute']>>) {
@@ -293,19 +319,33 @@ export class WorkflowHttpController {
  */
 @Controller('/api/executions')
 export class WorkflowExecutionController {
-    constructor(private execution: VisualWorkflowService) { }
+    constructor(
+        private execution: VisualWorkflowService,
+        @Inject(WORKFLOW_EXECUTION_STORE) private history: WorkflowExecutionStore
+    ) { }
 
     @Get('/')
-    list(@RequestParam('workflowId') workflowId?: string) {
-        return this.execution.getExecutions()
+    async list(
+        @RequestParam('workflowId', { nullable: true }) workflowId?: string,
+        @RequestParam('limit', { nullable: true }) limit?: string
+    ) {
+        const size = Math.max(1, Number(limit) || 50);
+        const merged = new Map<string, WorkflowExecutionSnapshot>();
+        (await this.history.list(workflowId, size)).forEach(item => merged.set(item.executionId, item));
+        // In-flight runs are not persisted yet, so live snapshots win.
+        this.execution.getExecutions()
             .filter(state => !workflowId || state.workflowId === workflowId)
+            .map(state => toWorkflowExecutionSnapshot(state))
+            .forEach(item => merged.set(item.executionId, item));
+        return Array.from(merged.values())
             .sort((a, b) => (b.startTime || 0) - (a.startTime || 0))
-            .map(state => toWorkflowExecutionSnapshot(state));
+            .slice(0, size);
     }
 
     @Get('/:id')
-    get(@RequestPath('id') id: string) {
-        const snapshot = this.execution.getExecutionSnapshot(id);
+    async get(@RequestPath('id') id: string) {
+        const snapshot = this.execution.getExecutionSnapshot(id)
+            || await this.history.get(id);
         if (!snapshot) {
             throw new NotFoundException(`Execution not found: ${id}`);
         }
@@ -315,14 +355,18 @@ export class WorkflowExecutionController {
     @Post('/:id/cancel')
     async cancel(@RequestPath('id') id: string) {
         const state = this.execution.getExecution(id);
-        if (!state) {
+        if (state) {
+            if (state.status !== 'running') {
+                return { cancelled: false, status: state.status };
+            }
+            await this.execution.cancelExecution(id);
+            return { cancelled: true, status: 'cancelled' };
+        }
+        const stored = await this.history.get(id);
+        if (!stored) {
             throw new NotFoundException(`Execution not found: ${id}`);
         }
-        if (state.status !== 'running') {
-            return { cancelled: false, status: state.status };
-        }
-        await this.execution.cancelExecution(id);
-        return { cancelled: true, status: 'cancelled' };
+        return { cancelled: false, status: stored.status };
     }
 }
 
@@ -333,6 +377,10 @@ export interface WorkflowHttpServerOptions {
     staticRoot?: string;
     /** Store override; defaults to SQLite (`WORKFLOW_DB_FILE` or ~/.tsdi-agent/workflows.db). */
     store?: WorkflowDefinitionStore;
+    /** Execution history store; defaults to SQLite next to the definition store. */
+    executionStore?: WorkflowExecutionStore;
+    /** Snapshots kept per workflow (default 200). */
+    executionHistoryLimit?: number;
     /** SQLite database path when `store` is not supplied. */
     databaseFile?: string;
     /** Programmatic plugins installed when the server starts. */
@@ -353,6 +401,22 @@ export interface WorkflowHttpServerOptions {
     json?: boolean;
 }
 
+function createServerExecutionStore(options: WorkflowHttpServerOptions): WorkflowExecutionStore {
+    if (options.executionStore) {
+        return options.executionStore;
+    }
+    if (options.store instanceof SqliteWorkflowDefinitionStore) {
+        return new SqliteWorkflowExecutionStore({ file: options.store.databaseFile });
+    }
+    if (options.store) {
+        return new InMemoryWorkflowExecutionStore();
+    }
+    if (options.databaseFile || isSqliteAvailable()) {
+        return new SqliteWorkflowExecutionStore({ file: options.databaseFile });
+    }
+    return new InMemoryWorkflowExecutionStore();
+}
+
 function createServerWorkflowStore(options: WorkflowHttpServerOptions): WorkflowDefinitionStore {
     if (options.store) {
         return options.store;
@@ -370,6 +434,7 @@ function createServerWorkflowStore(options: WorkflowHttpServerOptions): Workflow
  */
 export function createWorkflowHttpModule(options: WorkflowHttpServerOptions = {}): Type<any> {
     const store = createServerWorkflowStore(options);
+    const executionStore = createServerExecutionStore(options);
     const features: any[] = [
         provideService(
             useRouter(),
@@ -397,6 +462,8 @@ export function createWorkflowHttpModule(options: WorkflowHttpServerOptions = {}
         ],
         providers: [
             { provide: WORKFLOW_DEFINITION_STORE, useValue: store },
+            { provide: WORKFLOW_EXECUTION_STORE, useValue: executionStore },
+            { provide: WORKFLOW_EXECUTION_LIMIT, useValue: options.executionHistoryLimit ?? 200 },
             ...(options.providers || []),
             WorkflowPluginCatalog,
             ...features,

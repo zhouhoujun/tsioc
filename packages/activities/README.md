@@ -694,6 +694,12 @@ POST /api/executions/:executionId/cancel
 Snapshots use the same serializable shape the designer replays, so external
 dashboards can render node/edge state without loading the workflow definition.
 
+Finished runs are persisted automatically: `SqliteWorkflowExecutionStore` writes
+to the same database file when SQLite is available, otherwise an in-memory store
+is used. Pass `executionStore` / `executionHistoryLimit` (default 200 snapshots
+per workflow) to `startWorkflowHttpServer` to override them. Only the
+`workflow_executions` table is created; existing definitions are never rewritten.
+
 ### Inject triggers and scheduling
 
 Inject nodes support `manual`, `interval`, `cron` and `event` triggering. The editor runs

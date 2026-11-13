@@ -6,6 +6,7 @@ import * as path from 'node:path';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { createWorkflowHttpModule } from '../server';
 import { InMemoryWorkflowDefinitionStore } from '../src/visual/workflow-store';
+import { InMemoryWorkflowExecutionStore } from '../server/WorkflowExecutionStore';
 
 function freePort(): Promise<number> {
     return new Promise((resolve, reject) => {
@@ -51,16 +52,19 @@ describe('Workflow HTTP microservice', () => {
     let ctx: ApplicationContext | undefined;
     let base: string;
     let staticRoot: string;
+    let executionStore: InMemoryWorkflowExecutionStore;
 
     before(async () => {
         staticRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-workflow-static-'));
         fs.writeFileSync(path.join(staticRoot, 'index.html'), '<!DOCTYPE html><title>TSDI Workflow Designer</title><div id="workflow-app"></div>');
         const port = await freePort();
         base = `http://127.0.0.1:${port}`;
+        executionStore = new InMemoryWorkflowExecutionStore();
         ctx = await Application.run(createWorkflowHttpModule({
             port,
             host: '127.0.0.1',
             store: new InMemoryWorkflowDefinitionStore(),
+            executionStore,
             staticRoot
         }));
         await waitForServer(base);
@@ -330,6 +334,10 @@ describe('Workflow HTTP microservice', () => {
 
         const runBody = await (await runPromise).json();
         expect(runBody.status).toBe('cancelled');
+
+        const persisted = await executionStore.get(executionId);
+        expect(persisted?.workflowId).toBe('execution-demo');
+        expect(persisted?.status).toBe('cancelled');
 
         const again = await request(`${base}/api/executions/${executionId}/cancel`, { method: 'POST' });
         expect(again.body.cancelled).toBe(false);
