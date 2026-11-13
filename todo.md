@@ -3873,3 +3873,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - NacosServiceDiscovery（register/deregister/discover/getServices/watch/healthCheck）。
   - 登录 token、namespace/group、metadata/tags/weight 映射；useNacosDiscovery。
   - 回归：discovery 75。
+- 微服务框架第二十三批（2026-11-13）：
+  - EurekaServiceDiscovery（register/heartbeat/deregister/discover/getServices/watch）。
+  - useEurekaDiscovery；状态/metadata/tags/version 映射。
+  - 回归：discovery 78。

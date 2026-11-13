@@ -151,6 +151,12 @@
 - 支持 namespace/group、username/password 登录 token、accessToken、metadata/tags/weight 映射。
 - `useNacosDiscovery(options)` 可直接接入 Gateway discovery。
 
+第二十三批（Eureka 注册中心）：
+
+- 新增 `EurekaServiceDiscovery`：注册/心跳续约/下线、应用实例发现、应用列表、query/healthCheck/watch。
+- 支持 UP/DOWN 状态、metadata/tags/version/port 映射、可配置续约与心跳间隔。
+- `useEurekaDiscovery(options)` 可直接接入 Gateway discovery。
+
 
 ---
 
