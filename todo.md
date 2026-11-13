@@ -3968,3 +3968,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第四十七批（2026-11-13）：
   - gRPC 客户端取消传播到服务端 handler teardown。
   - 回归：grpc 26。
+- 微服务框架第四十八批（2026-11-13）：
+  - Admin 路由编辑器 SLO 阈值字段 + 校验。
+  - 回归：admin 58；web 已重建。

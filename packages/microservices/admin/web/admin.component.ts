@@ -130,6 +130,19 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                             @input="state.editRouteField($event)" />
                         <div class="ga-field-error" v-if="state.routeErrors.timeout">{{state.routeErrors.timeout}}</div>
                     </label>
+                    <label class="ga-field">
+                        <span>{{state.t('editor.sloErrorRate')}}</span>
+                        <input data-slo="errorRateThreshold" type="number" step="0.01" min="0" max="1"
+                            [value]="state.editingRoute.slo?.errorRateThreshold"
+                            @input="state.editRouteSlo($event, 'errorRateThreshold')" />
+                    </label>
+                    <label class="ga-field">
+                        <span>{{state.t('editor.sloP95')}}</span>
+                        <input data-slo="p95ThresholdMs" type="number" min="1"
+                            [value]="state.editingRoute.slo?.p95ThresholdMs"
+                            @input="state.editRouteSlo($event, 'p95ThresholdMs')" />
+                        <div class="ga-field-error" v-if="state.routeErrors.slo">{{state.routeErrors.slo}}</div>
+                    </label>
                 </div>
                 <div class="ga-form-row">
                     <label class="ga-check">

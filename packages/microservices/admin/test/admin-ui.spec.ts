@@ -489,6 +489,33 @@ describe('Microservice admin UI', () => {
         expect(root.querySelectorAll('.ga-route-row').length).toBe(2);
     });
 
+    it('edits route SLO thresholds from the route editor', async () => {
+        (root.querySelector('.ga-nav-item:nth-child(2)') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-page-routes'));
+
+        const edit = Array.from(root.querySelectorAll('.ga-route-row .ga-link-btn'))
+            .find(button => button.textContent?.includes('Edit')) as HTMLElement;
+        edit.click();
+        await waitFor(() => !!root.querySelector('.ga-route-save'));
+
+        const errorRate = root.querySelector('[data-slo="errorRateThreshold"]') as HTMLInputElement;
+        errorRate.value = '0.1';
+        errorRate.dispatchEvent(new win.Event('input', { bubbles: true }));
+        const p95 = root.querySelector('[data-slo="p95ThresholdMs"]') as HTMLInputElement;
+        p95.value = '250';
+        p95.dispatchEvent(new win.Event('input', { bubbles: true }));
+        (root.querySelector('.ga-route-save') as HTMLElement).click();
+        await waitFor(() => !root.querySelector('.ga-route-save'));
+
+        (root.querySelector('.ga-view-route') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-detail-card'));
+        const json = root.querySelector('.ga-json')?.textContent || '';
+        expect(json).toContain('"errorRateThreshold": 0.1');
+        expect(json).toContain('"p95ThresholdMs": 250');
+        (root.querySelector('.ga-detail-card .ga-icon-btn') as HTMLElement).click();
+        await waitFor(() => !root.querySelector('.ga-detail-card'));
+    });
+
     it('previews config changes and rolls back to a history version', async () => {
         (root.querySelector('.ga-nav-item:nth-child(2)') as HTMLElement).click();
         await waitFor(() => !!root.querySelector('.ga-page-routes'));

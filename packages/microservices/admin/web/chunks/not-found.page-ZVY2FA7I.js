@@ -1,4 +1,4 @@
-import{n as e}from"./chunk-ZEQIHSEY.js";import{a,na as o}from"./chunk-5SKR3XXL.js";import"./chunk-U6UJE3IR.js";var t=class{constructor(s){this.state=s}};Reflect.metadata("design:paramtypes",[e])(t);a(t,[[o({selector:"gateway-admin-not-found",template:`
+import{n as e}from"./chunk-ML3BYMUM.js";import{a,na as o}from"./chunk-FBKL2VCR.js";import"./chunk-U6UJE3IR.js";var t=class{constructor(s){this.state=s}};Reflect.metadata("design:paramtypes",[e])(t);a(t,[[o({selector:"gateway-admin-not-found",template:`
     <section class="ga-page ga-page-not-found">
         <article class="ga-card">
             <div class="ga-not-found">

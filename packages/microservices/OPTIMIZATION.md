@@ -291,6 +291,11 @@
 - 新增 Forever server-stream 用例：客户端 unsubscribe → 服务端 `cancelled` → handler teardown。
 - 验证 Observable teardown 只执行一次，且不残留 interval。
 
+第四十八批（Admin SLO 编辑）：
+
+- 路由编辑器新增 SLO 错误率/ p95 阈值字段。
+- 前端校验 0-1、>0，保存后进入 staged route 并可在详情 JSON 查看。
+
 
 ---
 

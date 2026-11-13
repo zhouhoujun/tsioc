@@ -1062,6 +1062,15 @@ export class GatewayAdminState {
         if (duplicate) {
             errors.path = this.t('validation.duplicate');
         }
+        if (route.slo) {
+            const errorRate = route.slo.errorRateThreshold;
+            const p95 = route.slo.p95ThresholdMs;
+            if (errorRate != null && (!Number.isFinite(Number(errorRate)) || Number(errorRate) < 0 || Number(errorRate) > 1)) {
+                errors.slo = this.t('validation.sloErrorRate');
+            } else if (p95 != null && (!Number.isFinite(Number(p95)) || Number(p95) <= 0)) {
+                errors.slo = this.t('validation.sloP95');
+            }
+        }
         return errors;
     }
 
@@ -1159,6 +1168,24 @@ export class GatewayAdminState {
         self.editingRoute = {} as GatewayRouteOptions;
         self.editingIndex = -1;
         self.routeErrors = {};
+    }
+
+    editRouteSlo(event: Event, field: 'errorRateThreshold' | 'p95ThresholdMs'): void {
+        const self = this.self();
+        const value = (event.target as HTMLInputElement).value.trim();
+        const slo: Record<string, number> = { ...(self.editingRoute.slo as any ?? {}) };
+        if (!value) {
+            delete slo[field];
+        } else {
+            const numeric = Number(value);
+            if (Number.isFinite(numeric)) {
+                slo[field] = numeric;
+            }
+        }
+        self.editingRoute = {
+            ...self.editingRoute,
+            slo: Object.keys(slo).length ? slo as any : undefined
+        };
     }
 
     editRouteField(event: Event): void {
