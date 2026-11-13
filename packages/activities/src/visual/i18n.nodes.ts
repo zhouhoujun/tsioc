@@ -283,6 +283,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "udp-in": {
                 "label": "UDP in",
                 "description": "Start the flow from a UDP datagram"
+            },
+            "websocket-in": {
+                "label": "WebSocket in",
+                "description": "Start the flow from a WebSocket message"
             }
         },
         "field": {
@@ -668,6 +672,12 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "host": "Host",
                 "port": "Port",
                 "reply": "Reply with result"
+            },
+            "websocket-in": {
+                "host": "Host",
+                "port": "Port",
+                "path": "Path",
+                "reply": "Reply with result"
             }
         },
         "fieldPlaceholder": {
@@ -891,6 +901,11 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "udp-in": {
                 "host": "0.0.0.0",
                 "port": "3000"
+            },
+            "websocket-in": {
+                "host": "0.0.0.0",
+                "port": "3000",
+                "path": "/ws"
             }
         },
         "fieldDescription": {
@@ -1219,6 +1234,12 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "host": "Interface to listen on. Use 0.0.0.0 for all interfaces.",
                 "port": "Port to listen on. 0 selects a free port.",
                 "reply": "Send the final node result back to the sender."
+            },
+            "websocket-in": {
+                "host": "Interface to listen on. Use 0.0.0.0 for all interfaces.",
+                "port": "Port to listen on. 0 selects a free port.",
+                "path": "Optional WebSocket upgrade path such as /ws.",
+                "reply": "Send the final node result back to the client."
             }
         },
         "group": {
@@ -1587,6 +1608,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "udp-in": {
                 "label": "UDP 入口",
                 "description": "从 UDP 数据报启动流程"
+            },
+            "websocket-in": {
+                "label": "WebSocket 入口",
+                "description": "从 WebSocket 消息启动流程"
             }
         },
         "field": {
@@ -1972,6 +1997,12 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "host": "主机",
                 "port": "端口",
                 "reply": "回复执行结果"
+            },
+            "websocket-in": {
+                "host": "主机",
+                "port": "端口",
+                "path": "路径",
+                "reply": "回复执行结果"
             }
         },
         "fieldPlaceholder": {
@@ -2179,6 +2210,11 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "udp-in": {
                 "host": "0.0.0.0",
                 "port": "3000"
+            },
+            "websocket-in": {
+                "host": "0.0.0.0",
+                "port": "3000",
+                "path": "/ws"
             }
         },
         "fieldDescription": {
@@ -2507,6 +2543,12 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "host": "监听网卡地址，0.0.0.0 表示所有网卡。",
                 "port": "监听端口，0 表示自动选择空闲端口。",
                 "reply": "把最终节点结果回写给发送方。"
+            },
+            "websocket-in": {
+                "host": "监听网卡地址，0.0.0.0 表示所有网卡。",
+                "port": "监听端口，0 表示自动选择空闲端口。",
+                "path": "可选的 WebSocket 升级路径，例如 /ws。",
+                "reply": "把最终节点结果回写给客户端。"
             }
         },
         "group": {

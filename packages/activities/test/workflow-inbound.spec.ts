@@ -1,6 +1,7 @@
 import expect = require('expect');
 import * as dgram from 'node:dgram';
 import * as net from 'node:net';
+import { WebSocket } from 'ws';
 import { createInjector, Injector, InjectUtil } from '@tsdi/ioc';
 import { WorkflowModule } from '../src/workflow.module';
 import { WorkflowNodeRegistry } from '../src/visual/node-registry';
@@ -38,7 +39,7 @@ describe('Workflow inbound runner', () => {
         runner = new WorkflowInboundRunner(service);
     });
 
-    function definition(type: 'tcp-in' | 'udp-in'): VisualWorkflowDefinition {
+    function definition(type: 'tcp-in' | 'udp-in' | 'websocket-in'): VisualWorkflowDefinition {
         return {
             id: `${type}-workflow`,
             name: `${type} workflow`,
@@ -119,6 +120,35 @@ describe('Workflow inbound runner', () => {
             expect(payloads).toEqual([{ count: 2 }]);
             const parsed = JSON.parse(reply);
             expect(parsed.result.echo).toEqual({ count: 2 });
+        } finally {
+            client.close();
+            await handle.stop();
+        }
+        expect(handle.running).toBe(false);
+    });
+
+    it('runs a workflow for every WebSocket message and replies with the result', async () => {
+        const payloads: any[] = [];
+        const handle = await runner.start(definition('websocket-in'), {
+            context: {
+                actions: {
+                    echo: (ctx: any) => {
+                        payloads.push(ctx.payload);
+                        return { echo: ctx.payload };
+                    }
+                }
+            }
+        });
+        const client = new WebSocket(`ws://127.0.0.1:${handle.ports[0]}`);
+        try {
+            const reply = await withTimeout(new Promise<string>((resolve, reject) => {
+                client.once('open', () => client.send('hello'));
+                client.once('message', data => resolve(data.toString()));
+                client.once('error', reject);
+            }));
+            expect(payloads).toEqual(['hello']);
+            const parsed = JSON.parse(reply);
+            expect(parsed.result.echo).toBe('hello');
         } finally {
             client.close();
             await handle.stop();

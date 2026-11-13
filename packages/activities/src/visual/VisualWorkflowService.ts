@@ -609,7 +609,7 @@ export class VisualWorkflowService {
 
         // Inbound entry nodes only start their branch when a matching request
         // or message reached the execution context.
-        if ((node.type === 'http-in' || node.type === 'tcp-in' || node.type === 'udp-in')
+        if ((node.type === 'http-in' || node.type === 'tcp-in' || node.type === 'udp-in' || node.type === 'websocket-in')
             && result.data?.matched !== true) {
             (plan.outgoing.get(node.id) || [])
                 .forEach(connection => this.markEdgeSkipped(state, connection.id, options));

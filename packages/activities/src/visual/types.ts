@@ -159,6 +159,7 @@ export type VisualNodeType =
     | 'http-response' // HTTP 响应节点
     | 'tcp-in'      // TCP 入站监听节点
     | 'udp-in'      // UDP 入站监听节点
+    | 'websocket-in' // WebSocket 入站监听节点
     | 'router'     // 多规则路由节点
     | 'complete'   // 完成事件节点
     | 'catch'      // 异常事件节点

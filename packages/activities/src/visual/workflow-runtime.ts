@@ -811,9 +811,14 @@ export async function executeVisualNode(
             };
         }
         case 'tcp-in':
-        case 'udp-in': {
+        case 'udp-in':
+        case 'websocket-in': {
             const inbound = (context as any).inbound;
-            const transport = node.type === 'tcp-in' ? 'tcp' : 'udp';
+            const transport = node.type === 'tcp-in'
+                ? 'tcp'
+                : node.type === 'udp-in'
+                    ? 'udp'
+                    : 'websocket';
             if (!inbound) {
                 return {
                     success: true,

@@ -421,6 +421,7 @@ type VisualNodeType =
     | 'http-in'      // Start a flow from a webhook request
     | 'tcp-in'       // Start a flow from a TCP message
     | 'udp-in'       // Start a flow from a UDP datagram
+    | 'websocket-in' // Start a flow from a WebSocket message
     | 'http-response' // Shape the webhook status, headers and body
     | 'json'         // JSON parse/stringify
     | 'csv'          // CSV parse/stringify
@@ -468,11 +469,13 @@ import { createFilePlugin, createExecPlugin } from '@tsdi/activities';
 Plugin nodes report a clear error when the host does not install their
 executor, so the same workflow definition stays valid in the browser editor.
 
-### TCP / UDP inbound listeners
+### TCP / UDP / WebSocket inbound listeners
 
 Server hosts can run long-lived listeners and start one workflow run per
-message. Each `tcp-in` / `udp-in` node declares its own host/port; `0` selects a
-free port and the handle reports the bound ports.
+message. Each `tcp-in` / `udp-in` / `websocket-in` node declares its own
+host/port (WebSocket also accepts an upgrade `path`); `0` selects a free port and
+the handle reports the bound ports. WebSocket listeners load the optional `ws`
+package on demand.
 
 ```typescript
 import { WorkflowInboundRunner } from '@tsdi/activities/server';
@@ -558,7 +561,7 @@ Features:
   without deleting it: the node and its wiring stay on the canvas (dimmed,
   struck-through title) but the run skips it and stops that branch,
 - inspector for node name/description/config fields driven by `WorkflowNodeRegistry`,
-- searchable palette: filter 53 registered node types by label, description or type,
+- searchable palette: filter 54 registered node types by label, description or type,
 - inspector property editing is rendered by the shared JSON-configured
   `dynamic-form` component (conditional fields, groups, per-field defaults and
   reset); validation uses `@tsdi/components/forms` (`required`, `min`/`max`,

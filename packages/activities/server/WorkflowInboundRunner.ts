@@ -7,7 +7,7 @@ import { VisualWorkflowService } from '../src/visual/VisualWorkflowService';
 /** Message delivered to a `tcp-in` / `udp-in` node through `context.inbound`. */
 export interface WorkflowInboundMessage {
     nodeId: string;
-    transport: 'tcp' | 'udp';
+    transport: 'tcp' | 'udp' | 'websocket';
     data: string;
     remote?: { address?: string; port?: number };
 }
@@ -100,7 +100,7 @@ export class WorkflowInboundRunner {
 
         const dispatch = async (
             nodeId: string,
-            transport: 'tcp' | 'udp',
+            transport: 'tcp' | 'udp' | 'websocket',
             data: string,
             remote: WorkflowInboundMessage['remote'],
             reply: ((payload: string) => void) | undefined
@@ -135,7 +135,7 @@ export class WorkflowInboundRunner {
         };
 
         const inboundNodes = (definition.nodes || []).filter(node =>
-            node.type === 'tcp-in' || node.type === 'udp-in'
+            node.type === 'tcp-in' || node.type === 'udp-in' || node.type === 'websocket-in'
         );
 
         for (const node of inboundNodes) {
@@ -172,6 +172,85 @@ export class WorkflowInboundRunner {
                         close: () => new Promise(resolve => server.close(() => resolve()))
                     });
                 } catch (error) {
+                    await this.stopListeners(listeners, sockets);
+                    throw error;
+                }
+            } else if (node.type === 'websocket-in') {
+                let WebSocketServer: any;
+                try {
+                    const module: any = await import('ws');
+                    WebSocketServer = module.WebSocketServer || module.default?.WebSocketServer;
+                } catch {
+                    WebSocketServer = undefined;
+                }
+                if (!WebSocketServer) {
+                    await this.stopListeners(listeners, sockets);
+                    throw new Error('WebSocket inbound requires the optional "ws" package.');
+                }
+                const path = String(config.path || '');
+                const server = new WebSocketServer({ host, port, path: path || undefined });
+                const clients = new Set<any>();
+                server.on('connection', (socket: any) => {
+                    clients.add(socket);
+                    socket.on('close', () => clients.delete(socket));
+                    socket.on('error', () => clients.delete(socket));
+                    socket.on('message', (chunk: any) => {
+                        const remote = typeof socket._socket?.remoteAddress === 'string'
+                            ? { address: socket._socket.remoteAddress, port: socket._socket.remotePort }
+                            : undefined;
+                        void dispatch(
+                            node.id,
+                            'websocket',
+                            chunk?.toString ? chunk.toString('utf8') : String(chunk ?? ''),
+                            remote,
+                            shouldReply ? payload => {
+                                try {
+                                    socket.send(payload);
+                                } catch (error) {
+                                    options.onError?.(error as Error);
+                                }
+                            } : undefined
+                        );
+                    });
+                });
+                try {
+                    const bound = await new Promise<number>((resolve, reject) => {
+                        const onError = (error: Error) => reject(error);
+                        server.once('error', onError);
+                        server.once('listening', () => {
+                            server.off('error', onError);
+                            const address = server.address();
+                            resolve(typeof address === 'object' && address ? address.port : port);
+                        });
+                    });
+                    ports.push(bound);
+                    listeners.push({
+                        port: bound,
+                        close: () => new Promise(resolve => {
+                            clients.forEach(client => {
+                                try {
+                                    client.terminate?.();
+                                } catch {
+                                    // already closed
+                                }
+                            });
+                            clients.clear();
+                            server.close(() => resolve());
+                        })
+                    });
+                } catch (error) {
+                    clients.forEach(client => {
+                        try {
+                            client.terminate?.();
+                        } catch {
+                            // already closed
+                        }
+                    });
+                    try {
+                        server.close();
+                    } catch {
+                        // already closed
+                    }
                     await this.stopListeners(listeners, sockets);
                     throw error;
                 }

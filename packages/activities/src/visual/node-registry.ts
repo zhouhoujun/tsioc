@@ -714,6 +714,24 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         defaultConfig: { host: '0.0.0.0', port: 0, reply: false }
     },
     {
+        type: 'websocket-in',
+        label: 'WebSocket in',
+        description: 'Start the flow from a WebSocket message',
+        category: 'trigger',
+        icon: '⌁',
+        color: '#0ea5e9',
+        textColor: '#ffffff',
+        inputs: [],
+        outputs: [port('out', 'out', 'output', 'Message')],
+        fields: [
+            configField({ key: 'host', label: 'Host', type: 'text', defaultValue: '0.0.0.0', placeholder: '0.0.0.0' }),
+            configField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 0, min: 0, max: 65535, step: 1 }),
+            configField({ key: 'path', label: 'Path', type: 'text', placeholder: '/ws', pattern: '^$|^\/[^\s]*$' }),
+            configField({ key: 'reply', label: 'Reply with result', type: 'boolean', defaultValue: false })
+        ],
+        defaultConfig: { host: '0.0.0.0', port: 0, path: '', reply: false }
+    },
+    {
         type: 'trigger',
         label: 'Trigger',
         description: 'Emit a payload after an optional delay',
