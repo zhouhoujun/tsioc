@@ -3753,3 +3753,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - Overview 增加服务汇总、策略用量（auth/限流/熔断/缓存/mock/灰度）、认证模式与动态路由状态。
   - 路由页支持导出 JSON、导入路由数组、恢复静态配置、查看路由详情（生效配置 JSON）。
   - admin 49 passing；生产 bundle 验证概览、详情、导入/重置。
+- Gateway admin 运行诊断与高级编辑（2026-11-13）：
+  - GatewayRuntime.snapshot + GET /api/gateway-admin/diagnostics：缓存/活跃请求/熔断/舱壁计数；Overview 增加 Runtime 卡片。
+  - 路由详情支持切换 JSON 编辑，复用路径/service/URL/timeout/methods/重复校验，可编辑限流、熔断、缓存、灰度等高级策略。
+  - 已编译规则支持查看 JSON 详情（条件/动作）。
+  - admin 51 passing；生产 bundle 验证 Runtime、JSON 编辑、规则详情。

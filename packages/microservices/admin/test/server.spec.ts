@@ -44,6 +44,21 @@ describe('gateway admin standalone server', () => {
         expect(state.services).toEqual(['demo-service']);
     });
 
+    it('exposes runtime diagnostics for the overview', async () => {
+        const response = await fetch(`${base}/api/gateway-admin/diagnostics`);
+        expect(response.status).toBe(200);
+        const body = await response.json() as {
+            cacheEntries: number;
+            activeRequests: number;
+            circuits: unknown[];
+            bulkheads: unknown[];
+        };
+        expect(body.cacheEntries).toBe(0);
+        expect(body.activeRequests).toBe(0);
+        expect(Array.isArray(body.circuits)).toBe(true);
+        expect(Array.isArray(body.bulkheads)).toBe(true);
+    });
+
     it('previews which route matches a request', async () => {
         const response = await fetch(`${base}/api/gateway-admin/match`, {
             method: 'POST',

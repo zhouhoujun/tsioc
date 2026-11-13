@@ -5,7 +5,7 @@ import {
     installMenuBarStyles,
 } from '@tsdi/components/common/menu-bar';
 import { DOCUMENT } from '@tsdi/common';
-import { GatewayMatchPreview, GatewayRouteOptions } from '@tsdi/gateway';
+import { GatewayMatchPreview, GatewayRouteOptions, GatewayRuntimeSnapshot } from '@tsdi/gateway';
 import { WorkflowDefinitionSummary } from '@tsdi/activities/visual';
 import { Router, RouterEvent } from '@tsdi/components/router';
 import { AdminLocale, adminMessage } from './admin.i18n';
@@ -81,9 +81,15 @@ export class GatewayAdminState {
     dynamicRoutes = false;
     dynamicRules = false;
     routeDetail?: GatewayRouteOptions;
+    routeDetailIndex = -1;
+    routeJsonOpen = false;
+    routeJsonText = '';
+    routeJsonError = '';
+    ruleDetail?: GatewayAdminRuleSummary;
     importOpen = false;
     importText = '';
     importError = '';
+    diagnostics?: GatewayRuntimeSnapshot;
     authEnabled = false;
     needsLogin = false;
     /** Set by the routed layout; the rules page calls it to open the designer. */
@@ -379,6 +385,21 @@ export class GatewayAdminState {
         return rule?.when?.length || 0;
     }
 
+    get openCircuitCount(): number {
+        return this.diagnostics?.circuits?.filter(circuit => circuit.open).length ?? 0;
+    }
+
+    async loadDiagnostics(): Promise<void> {
+        const self = this.selfRef ?? this;
+        if (!self.http) {
+            return;
+        }
+        const response = await self.http.diagnostics();
+        if (response.ok) {
+            self.diagnostics = response.body;
+        }
+    }
+
     get routeDetailJson(): string {
         if (!this.routeDetail) {
             return '';
@@ -437,12 +458,82 @@ export class GatewayAdminState {
     }
 
     readonly openRouteDetail = (route: GatewayRouteOptions): void => {
-        (this.selfRef ?? this).routeDetail = { ...route };
+        const self = this.selfRef ?? this;
+        self.routeDetail = { ...route };
+        self.routeDetailIndex = self.routes.indexOf(route);
+        self.routeJsonOpen = false;
+        self.routeJsonError = '';
     };
 
     readonly closeRouteDetail = (): void => {
-        (this.selfRef ?? this).routeDetail = undefined;
+        const self = this.selfRef ?? this;
+        self.routeDetail = undefined;
+        self.routeDetailIndex = -1;
+        self.routeJsonOpen = false;
+        self.routeJsonText = '';
+        self.routeJsonError = '';
     };
+
+    readonly editRouteDetailJson = (): void => {
+        const self = this.selfRef ?? this;
+        self.routeJsonText = JSON.stringify(self.routeDetail ?? {}, null, 2);
+        self.routeJsonOpen = true;
+        self.routeJsonError = '';
+    };
+
+    readonly cancelRouteDetailJson = (): void => {
+        const self = this.selfRef ?? this;
+        self.routeJsonOpen = false;
+        self.routeJsonError = '';
+    };
+
+    readonly setRouteJson = (event: Event): void => {
+        const self = this.selfRef ?? this;
+        self.routeJsonText = (event.target as HTMLTextAreaElement).value;
+    };
+
+    readonly saveRouteDetailJson = (): void => {
+        const self = this.selfRef ?? this;
+        let parsed: unknown;
+        try {
+            parsed = JSON.parse(self.routeJsonText);
+        } catch {
+            self.routeJsonError = self.t('import.invalidJson');
+            return;
+        }
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            self.routeJsonError = self.t('import.invalidRoute');
+            return;
+        }
+        const route = parsed as GatewayRouteOptions;
+        const errors = self.validateRoute(route, self.routeDetailIndex);
+        const first = Object.values(errors)[0];
+        if (first) {
+            self.routeJsonError = first;
+            return;
+        }
+        if (self.routeDetailIndex < 0 || self.routeDetailIndex >= self.routes.length) {
+            return;
+        }
+        const next = self.routes.slice();
+        next[self.routeDetailIndex] = { ...route };
+        self.routes = next;
+        self.routesDirty = true;
+        self.closeRouteDetail();
+        self.status = self.t('status.routeStaged', { count: self.routes.length });
+    };
+
+    readonly openRuleDetail = (rule: GatewayAdminRuleSummary): void => {
+        (this.selfRef ?? this).ruleDetail = { ...rule };
+    };
+
+    readonly closeRuleDetail = (): void => {
+        (this.selfRef ?? this).ruleDetail = undefined;
+    };
+
+    get ruleDetailJson(): string {
+        return this.ruleDetail ? JSON.stringify(this.ruleDetail, null, 2) : '';
+    }
 
     readonly openImport = (): void => {
         const self = this.selfRef ?? this;
@@ -693,48 +784,50 @@ export class GatewayAdminState {
         return (methods.length ? Array.from(new Set(methods)).sort() : ['ANY']).join(',');
     }
 
-    validateEditingRoute(): boolean {
-        const self = this.self();
-        const route = self.editingRoute;
+    validateRoute(route: GatewayRouteOptions, index = -1): Record<string, string> {
         const errors: Record<string, string> = {};
         const path = String(route.path || '').trim();
         if (!path) {
-            errors.path = self.t('validation.pathRequired');
+            errors.path = this.t('validation.pathRequired');
         } else if (!path.startsWith('/')) {
-            errors.path = self.t('validation.pathSlash');
+            errors.path = this.t('validation.pathSlash');
         } else if (/\s/.test(path)) {
-            errors.path = self.t('validation.pathSpace');
+            errors.path = this.t('validation.pathSpace');
         }
-
         if (!route.service && !route.targetUrl) {
-            errors.service = self.t('validation.serviceRequired');
+            errors.service = this.t('validation.serviceRequired');
         }
         if (route.targetUrl && !/^(https?:\/\/|\/)/i.test(String(route.targetUrl))) {
-            errors.targetUrl = self.t('validation.url');
+            errors.targetUrl = this.t('validation.url');
         }
         if (route.targetPath && !String(route.targetPath).startsWith('/')) {
-            errors.targetPath = self.t('validation.pathSlash');
+            errors.targetPath = this.t('validation.pathSlash');
         }
         if (route.timeout !== undefined && route.timeout !== null) {
             const timeout = Number(route.timeout);
             if (!Number.isFinite(timeout) || timeout < 0 || timeout > 600000) {
-                errors.timeout = self.t('validation.timeout');
+                errors.timeout = this.t('validation.timeout');
             }
         }
         const allowed = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS', 'ANY'];
         const methods = (route.methods ?? []).map(method => String(method).trim().toUpperCase()).filter(Boolean);
         if (methods.some(method => !allowed.includes(method))) {
-            errors.methods = self.t('validation.methods');
+            errors.methods = this.t('validation.methods');
         }
-        const methodKey = self.routeMethodsKey(route);
-        const duplicate = self.routes.some((item, index) =>
-            index !== self.editingIndex
+        const methodKey = this.routeMethodsKey(route);
+        const duplicate = this.routes.some((item, itemIndex) =>
+            itemIndex !== index
             && String(item.path || '').trim() === path
-            && self.routeMethodsKey(item) === methodKey);
+            && this.routeMethodsKey(item) === methodKey);
         if (duplicate) {
-            errors.path = self.t('validation.duplicate');
+            errors.path = this.t('validation.duplicate');
         }
+        return errors;
+    }
 
+    validateEditingRoute(): boolean {
+        const self = this.self();
+        const errors = self.validateRoute(self.editingRoute, self.editingIndex);
         self.routeErrors = errors;
         const first = Object.values(errors)[0];
         if (first) {
@@ -768,6 +861,7 @@ export class GatewayAdminState {
             self.rules = state.rules ?? [];
             self.routesDirty = false;
             void self.loadRuleWorkflows();
+            void self.loadDiagnostics();
             self.status = self.t('status.ready', { routes: self.routes.length, rules: self.rules.length });
         } catch (error) {
             self.status = self.t('status.offline');

@@ -159,9 +159,37 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                     </div>
                     <button class="ga-icon-btn" type="button" @click="state.closeRouteDetail">✕</button>
                 </header>
-                <pre class="ga-json">{{state.routeDetailJson}}</pre>
+                <div v-if="state.routeJsonOpen">
+                    <textarea class="ga-import-textarea" [value]="state.routeJsonText"
+                        @input="state.setRouteJson($event)"></textarea>
+                    <div class="ga-field-error" v-if="state.routeJsonError">{{state.routeJsonError}}</div>
+                    <footer class="ga-modal-foot">
+                        <button class="ga-btn" type="button" @click="state.cancelRouteDetailJson">{{state.t('editor.cancel')}}</button>
+                        <button class="ga-btn ga-btn-primary ga-route-json-save" type="button" @click="state.saveRouteDetailJson">{{state.t('editor.save')}}</button>
+                    </footer>
+                </div>
+                <div v-else>
+                    <pre class="ga-json">{{state.routeDetailJson}}</pre>
+                    <footer class="ga-modal-foot">
+                        <button class="ga-btn" type="button" @click="state.closeRouteDetail">{{state.t('common.close')}}</button>
+                        <button class="ga-btn ga-btn-primary ga-route-json-edit" type="button" @click="state.editRouteDetailJson">{{state.t('detail.editJson')}}</button>
+                    </footer>
+                </div>
+            </div>
+        </div>
+
+        <div class="ga-modal" v-if="state.ruleDetail">
+            <div class="ga-modal-card ga-detail-card">
+                <header class="ga-modal-head">
+                    <div>
+                        <h2>{{state.ruleDetail.name || state.ruleDetail.id}}</h2>
+                        <p>{{state.t('detail.ruleDesc')}}</p>
+                    </div>
+                    <button class="ga-icon-btn" type="button" @click="state.closeRuleDetail">✕</button>
+                </header>
+                <pre class="ga-json">{{state.ruleDetailJson}}</pre>
                 <footer class="ga-modal-foot">
-                    <button class="ga-btn" type="button" @click="state.closeRouteDetail">{{state.t('common.close')}}</button>
+                    <button class="ga-btn" type="button" @click="state.closeRuleDetail">{{state.t('common.close')}}</button>
                 </footer>
             </div>
         </div>

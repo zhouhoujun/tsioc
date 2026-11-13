@@ -25,6 +25,26 @@ interface BulkheadState {
     queue: BulkheadEntry[];
 }
 
+export interface GatewayCircuitSnapshot {
+    key: string;
+    failures: number;
+    open: boolean;
+}
+
+export interface GatewayBulkheadSnapshot {
+    key: string;
+    active: number;
+    queued: number;
+}
+
+export interface GatewayRuntimeSnapshot {
+    cacheEntries: number;
+    activeRequests: number;
+    evictedEndpoints: number;
+    circuits: GatewayCircuitSnapshot[];
+    bulkheads: GatewayBulkheadSnapshot[];
+}
+
 @Injectable()
 export class GatewayRuntime {
     private cache = new Map<string, CacheEntry>();
@@ -35,6 +55,26 @@ export class GatewayRuntime {
     private nonces = new Map<string, number>();
     private activeRequests = new Map<string, number>();
     private bulkheads = new Map<string, BulkheadState>();
+
+    /** Lightweight runtime diagnostics for the admin console. */
+    snapshot(): GatewayRuntimeSnapshot {
+        const now = Date.now();
+        return {
+            cacheEntries: Array.from(this.cache.values()).filter(entry => entry.expireAt > now).length,
+            activeRequests: this.activeRequests.size,
+            evictedEndpoints: this.evictedEndpoints.size,
+            circuits: Array.from(this.circuits.entries()).map(([key, state]) => ({
+                key,
+                failures: state.failures,
+                open: !!state.openedAt
+            })),
+            bulkheads: Array.from(this.bulkheads.entries()).map(([key, state]) => ({
+                key,
+                active: state.active,
+                queued: state.queue.length
+            }))
+        };
+    }
 
     getCached(key: string): any | undefined {
         const entry = this.cache.get(key);

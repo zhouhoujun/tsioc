@@ -57,6 +57,7 @@ import { GatewayAdminState } from '../admin.state';
                     </div>
                     <span class="ga-pill" [class]="state.ruleActionType(rule) === 'deny' ? 'ga-pill is-danger' : 'ga-pill is-on'">{{state.ruleActionLabel(rule)}}</span>
                     <span class="ga-pill">{{state.t('rules.priority', { value: state.rulePriority(rule) })}}</span>
+                    <button class="ga-link-btn ga-view-rule" type="button" @click="state.openRuleDetail(rule)">{{state.t('action.view')}}</button>
                 </div>
                 <div class="ga-empty" v-if="!state.rules.length">
                     {{state.t('rules.empty')}}

@@ -50,6 +50,32 @@ import { GatewayAdminState } from '../admin.state';
             <article class="ga-card">
                 <div class="ga-card-head">
                     <div>
+                        <h2>{{state.t('card.runtimeStatus')}}</h2>
+                        <p>{{state.t('card.runtimeStatusDesc')}}</p>
+                    </div>
+                </div>
+                <div class="ga-compact-list">
+                    <div class="ga-compact-row ga-runtime-row">
+                        <span>{{state.t('runtime.activeRequests')}}</span>
+                        <span class="ga-status-spacer"></span>
+                        <span class="ga-pill">{{state.diagnostics?.activeRequests ?? 0}}</span>
+                    </div>
+                    <div class="ga-compact-row ga-runtime-row">
+                        <span>{{state.t('runtime.cacheEntries')}}</span>
+                        <span class="ga-status-spacer"></span>
+                        <span class="ga-pill">{{state.diagnostics?.cacheEntries ?? 0}}</span>
+                    </div>
+                    <div class="ga-compact-row ga-runtime-row">
+                        <span>{{state.t('runtime.openCircuits')}}</span>
+                        <span class="ga-status-spacer"></span>
+                        <span class="ga-pill">{{state.openCircuitCount}}</span>
+                    </div>
+                </div>
+            </article>
+
+            <article class="ga-card">
+                <div class="ga-card-head">
+                    <div>
                         <h2>{{state.t('card.policies')}}</h2>
                         <p>{{state.t('card.policiesDesc')}}</p>
                     </div>

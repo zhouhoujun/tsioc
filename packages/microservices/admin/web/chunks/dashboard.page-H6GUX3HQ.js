@@ -1,4 +1,4 @@
-import{n as e}from"./chunk-WVJJRSRJ.js";import{a as s,na as t}from"./chunk-SPMG5PJO.js";import"./chunk-U6UJE3IR.js";var a=class{constructor(c){this.state=c}};Reflect.metadata("design:paramtypes",[e])(a);s(a,[[t({selector:"gateway-admin-dashboard",template:`
+import{n as e}from"./chunk-TBV7WHO4.js";import{a as s,na as t}from"./chunk-SPMG5PJO.js";import"./chunk-U6UJE3IR.js";var a=class{constructor(c){this.state=c}};Reflect.metadata("design:paramtypes",[e])(a);s(a,[[t({selector:"gateway-admin-dashboard",template:`
     <section class="ga-page">
         <div class="ga-metrics">
             <article class="ga-metric">
@@ -38,6 +38,32 @@ import{n as e}from"./chunk-WVJJRSRJ.js";import{a as s,na as t}from"./chunk-SPMG5
                         <span class="ga-pill is-on">{{service.enabled}}/{{service.routes}}</span>
                     </div>
                     <div class="ga-empty" v-if="!state.serviceSummaries.length">{{state.t('card.noServices')}}</div>
+                </div>
+            </article>
+
+            <article class="ga-card">
+                <div class="ga-card-head">
+                    <div>
+                        <h2>{{state.t('card.runtimeStatus')}}</h2>
+                        <p>{{state.t('card.runtimeStatusDesc')}}</p>
+                    </div>
+                </div>
+                <div class="ga-compact-list">
+                    <div class="ga-compact-row ga-runtime-row">
+                        <span>{{state.t('runtime.activeRequests')}}</span>
+                        <span class="ga-status-spacer"></span>
+                        <span class="ga-pill">{{state.diagnostics?.activeRequests ?? 0}}</span>
+                    </div>
+                    <div class="ga-compact-row ga-runtime-row">
+                        <span>{{state.t('runtime.cacheEntries')}}</span>
+                        <span class="ga-status-spacer"></span>
+                        <span class="ga-pill">{{state.diagnostics?.cacheEntries ?? 0}}</span>
+                    </div>
+                    <div class="ga-compact-row ga-runtime-row">
+                        <span>{{state.t('runtime.openCircuits')}}</span>
+                        <span class="ga-status-spacer"></span>
+                        <span class="ga-pill">{{state.openCircuitCount}}</span>
+                    </div>
                 </div>
             </article>
 

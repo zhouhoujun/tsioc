@@ -1,4 +1,4 @@
-import{n as e}from"./chunk-WVJJRSRJ.js";import{a,na as s}from"./chunk-SPMG5PJO.js";import"./chunk-U6UJE3IR.js";var t=class{constructor(l){this.state=l}};Reflect.metadata("design:paramtypes",[e])(t);a(t,[[s({selector:"gateway-admin-rules",template:`
+import{n as s}from"./chunk-TBV7WHO4.js";import{a as e,na as a}from"./chunk-SPMG5PJO.js";import"./chunk-U6UJE3IR.js";var t=class{constructor(l){this.state=l}};Reflect.metadata("design:paramtypes",[s])(t);e(t,[[a({selector:"gateway-admin-rules",template:`
     <section class="ga-page ga-page-rules">
         <div class="ga-page-actions">
             <div>
@@ -51,6 +51,7 @@ import{n as e}from"./chunk-WVJJRSRJ.js";import{a,na as s}from"./chunk-SPMG5PJO.j
                     </div>
                     <span class="ga-pill" [class]="state.ruleActionType(rule) === 'deny' ? 'ga-pill is-danger' : 'ga-pill is-on'">{{state.ruleActionLabel(rule)}}</span>
                     <span class="ga-pill">{{state.t('rules.priority', { value: state.rulePriority(rule) })}}</span>
+                    <button class="ga-link-btn ga-view-rule" type="button" @click="state.openRuleDetail(rule)">{{state.t('action.view')}}</button>
                 </div>
                 <div class="ga-empty" v-if="!state.rules.length">
                     {{state.t('rules.empty')}}

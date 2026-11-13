@@ -59,7 +59,13 @@ describe('Microservice admin UI', () => {
     beforeEach(async () => {
         routes = [{ path: '/api/users', service: 'users-service' }];
         staticRoutes = routes.map(route => ({ ...route }));
-        rules = [];
+        rules = [{
+            id: 'seeded-rule',
+            name: 'Seeded rule',
+            priority: 1,
+            when: [{ field: 'path', operator: 'prefix', value: '/admin' }],
+            action: { type: 'deny', status: 403 }
+        }];
         ruleWorkflows = [];
         definitions = {};
         originalFetch = globals.fetch;
@@ -72,6 +78,15 @@ describe('Microservice admin UI', () => {
             const method = String(init.method || 'GET').toUpperCase();
             if (path === '/api/gateway-admin/state' && method === 'GET') {
                 return jsonResponse({ routes, rules, services: ['users-service'], auth: { enabled: false, mode: 'none' } });
+            }
+            if (path === '/api/gateway-admin/diagnostics' && method === 'GET') {
+                return jsonResponse({
+                    cacheEntries: 4,
+                    activeRequests: 3,
+                    evictedEndpoints: 0,
+                    circuits: [{ key: 'a', failures: 0, open: false }, { key: 'b', failures: 2, open: true }],
+                    bulkheads: []
+                });
             }
             if (path === '/api/gateway-admin/rules' && method === 'GET') {
                 return jsonResponse(ruleWorkflows);
@@ -185,6 +200,8 @@ describe('Microservice admin UI', () => {
         expect(win.location.hash).toBe('#/dashboard');
         expect(root.querySelector('.ga-service-row')?.textContent).toContain('users-service');
         expect(root.querySelectorAll('.ga-policy-row').length).toBeGreaterThan(0);
+        expect(root.querySelectorAll('.ga-runtime-row').length).toBe(3);
+        expect(root.querySelector('.ga-runtime-row')?.textContent).toContain('3');
     });
 
     it('switches language and theme globally', async () => {
@@ -377,6 +394,18 @@ describe('Microservice admin UI', () => {
         expect(root.querySelector('.ga-match-result')?.textContent).toContain('Blocked paths');
     });
 
+    it('opens a compiled rule detail with its conditions and action', async () => {
+        (root.querySelector('.ga-nav-item:nth-child(3)') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-page-rules'));
+        (root.querySelector('.ga-view-rule') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-rule-detail, .ga-detail-card'));
+        const detail = root.querySelector('.ga-detail-card')?.textContent || '';
+        expect(detail).toContain('Seeded rule');
+        expect(detail).toContain('deny');
+        (root.querySelector('.ga-detail-card .ga-icon-btn') as HTMLElement).click();
+        await waitFor(() => !root.querySelector('.ga-detail-card'));
+    });
+
     it('creates a new rule workflow and applies a saved workflow from the list', async () => {
         (root.querySelector('.ga-nav-item:nth-child(3)') as HTMLElement).click();
         await waitFor(() => !!root.querySelector('.ga-page-rules'));
@@ -405,8 +434,20 @@ describe('Microservice admin UI', () => {
         (root.querySelector('.ga-view-route') as HTMLElement).click();
         await waitFor(() => !!root.querySelector('.ga-detail-card'));
         expect(root.querySelector('.ga-json')?.textContent).toContain('/api/users');
-        (root.querySelector('.ga-detail-card .ga-icon-btn') as HTMLElement).click();
+        (root.querySelector('.ga-route-json-edit') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-route-json-save'));
+        const jsonTextarea = root.querySelector('.ga-detail-card .ga-import-textarea') as HTMLTextAreaElement;
+        jsonTextarea.value = JSON.stringify({ path: '/api/users/edited', service: 'users-service', rateLimit: { limit: 5, windowMs: 1000 } });
+        jsonTextarea.dispatchEvent(new win.Event('input', { bubbles: true }));
+        (root.querySelector('.ga-route-json-save') as HTMLElement).click();
         await waitFor(() => !root.querySelector('.ga-detail-card'));
+        require('fs').writeFileSync('/tmp/route-json-debug.json', JSON.stringify({
+            detail: !!root.querySelector('.ga-detail-card'),
+            rows: root.querySelectorAll('.ga-route-row').length,
+            html: root.querySelector('.ga-page-routes')?.innerHTML.slice(0, 600)
+        }));
+        expect(root.querySelector('.ga-route-row')?.textContent).toContain('/api/users/edited');
+        expect(root.querySelector('.ga-dirty')).toBeTruthy();
 
         (root.querySelector('.ga-import-routes') as HTMLElement).click();
         await waitFor(() => !!root.querySelector('.ga-import-textarea'));

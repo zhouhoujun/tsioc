@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { HttpClient } from '@tsdi/common/http';
-import { GatewayMatchPreview } from '@tsdi/gateway';
+import { GatewayMatchPreview, GatewayRuntimeSnapshot } from '@tsdi/gateway';
 import { lastValueFrom, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { HttpInterceptorFn } from '@tsdi/common/http';
@@ -34,6 +34,10 @@ export class GatewayAdminHttp {
 
     state(): Promise<AdminHttpResult<any>> {
         return this.request('GET', '/api/gateway-admin/state');
+    }
+
+    diagnostics(): Promise<AdminHttpResult<GatewayRuntimeSnapshot>> {
+        return this.request('GET', '/api/gateway-admin/diagnostics');
     }
 
     updateRoutes(routes: any[]): Promise<AdminHttpResult<any>> {

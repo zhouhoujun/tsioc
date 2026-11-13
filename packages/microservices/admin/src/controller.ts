@@ -63,6 +63,12 @@ export class GatewayAdminController {
         return this.snapshot();
     }
 
+    /** Runtime counters for the admin overview. */
+    @Get('/diagnostics')
+    diagnostics() {
+        return this.runtime.snapshot();
+    }
+
     @Put('/routes')
     updateRoutes(@RequestBody() body: { routes?: GatewayRouteOptions[] } | GatewayRouteOptions[]) {
         const routes = Array.isArray(body) ? body : body?.routes;
