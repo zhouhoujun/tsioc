@@ -132,6 +132,12 @@
 - Gateway E2E：50 并发请求全部 200，无挂起。
 - HTTP E2E 重新启用并验证：`withTimeout` 客户端超时、服务端 route timeout 504、路由限流 200/429。
 
+第二十批（Consul 注册中心）：
+
+- 新增 `ConsulServiceDiscovery`：agent register/deregister、health 发现、query、getServices、healthCheck。
+- 支持 ACL token、datacenter、health check 注册、watch 短轮询与快照去重。
+- `useConsulDiscovery({url, token, ...})` 可直接传给 `useGateway({discovery})`。
+
 
 ---
 

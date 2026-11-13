@@ -3861,3 +3861,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - Gateway 慢 upstream 超时 504 + 50 并发 soak。
   - HTTP E2E 重新启用客户端 withTimeout、route timeout、route rate limit。
   - 回归：gateway 74、http 195。
+- 微服务框架第二十批（2026-11-13）：
+  - ConsulServiceDiscovery（register/deregister/discover/query/watch/healthCheck）。
+  - useConsulDiscovery providers，可直接接入 Gateway discovery。
+  - 回归：discovery 68。
