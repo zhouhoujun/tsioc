@@ -1099,7 +1099,13 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             ? request.body.length
             : typeof request.body === 'string'
                 ? Buffer.byteLength(request.body)
-                : undefined;
+                : (() => {
+                    try {
+                        return Buffer.byteLength(JSON.stringify(request.body));
+                    } catch {
+                        return undefined;
+                    }
+                })();
         if (size != null && size > max) {
             throw Object.assign(new Error(`Request body exceeds ${max} bytes`), {
                 statusCode: 413,

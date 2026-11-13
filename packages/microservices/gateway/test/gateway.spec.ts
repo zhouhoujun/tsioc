@@ -413,7 +413,7 @@ describe('Gateway', () => {
                 interceptor.intercept({
                     url: '/limited',
                     method: 'POST',
-                    body: '12345',
+                    body: { value: '12345' },
                     headers: {},
                     socket: { remoteAddress: '127.0.0.1' }
                 } as any, { handle: () => of(null) } as any, context).subscribe({
