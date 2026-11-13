@@ -48,5 +48,10 @@
     "lib": "dist",
     "test": "test"
   },
-  "devDependencies": {}
+  "devDependencies": {},
+  "files": [
+    "index.ts",
+    "src",
+    "README.md"
+  ]
 }

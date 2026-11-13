@@ -230,6 +230,12 @@
 - `GatewayConfigDiff.routes/rules.changedValues` 记录字段 before/after。
 - Admin diff 展示 `enabled: true → false`，长值截断。
 
+第三十七批（发布 payload）：
+
+- 25 个 microservices 包新增 `files` 白名单，只发布 index/src/README。
+- 新增 `scripts/verify-package-publish.mjs`：npm pack 校验入口文件、无 test 泄漏、metadata 完整。
+- 接入 `agents-gate.sh` 的 `package-publish` stage；admin/contract 补 root `index.ts`。
+
 
 ---
 

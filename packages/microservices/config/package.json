@@ -39,5 +39,10 @@
   "directories": {
     "lib": "lib"
   },
-  "devDependencies": {}
+  "devDependencies": {},
+  "files": [
+    "index.ts",
+    "src",
+    "README.md"
+  ]
 }

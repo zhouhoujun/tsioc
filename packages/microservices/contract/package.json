@@ -41,5 +41,10 @@
   "directories": {
     "lib": "lib",
     "test": "test"
-  }
+  },
+  "files": [
+    "index.ts",
+    "src",
+    "README.md"
+  ]
 }

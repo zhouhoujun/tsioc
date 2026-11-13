@@ -220,6 +220,18 @@ run_package_deps() {
     fi
 }
 
+# run_package_publish
+run_package_publish() {
+    local id="package-publish" label="microservice package publish payload"
+    local log="$LOG_DIR/$id.log"
+    if node "$ROOT_DIR/scripts/verify-package-publish.mjs" >"$log" 2>&1; then
+        stage_pass "$id" "$label"
+    else
+        stage_fail "$id" "$label"
+        cat "$log" >&2
+    fi
+}
+
 # run_diff_check
 run_diff_check() {
     local log="$LOG_DIR/diff-check.log"
@@ -272,6 +284,7 @@ run_stage() {
         pty-acceptance)   run_pty pty-acceptance 'PTY acceptance (real terminal)' ;;
         source-size)      run_source_size ;;
         package-deps)     run_package_deps ;;
+        package-publish)  run_package_publish ;;
         diff-check)       run_diff_check ;;
         *)
             echo "[GATE-UNKNOWN] $1" >&2
@@ -285,7 +298,7 @@ ALL_STAGES="agent agent-channels agent-cli agent-gateway agent-providers
             components components-common components-console components-html
             tsc-agent tsc-agent-ui tsc-agent-gateway tsc-agent-tools
             build-agent-ui-web dom-gate tui-gate gate-regression
-            pty-acceptance diff-check source-size package-deps"
+            pty-acceptance diff-check source-size package-deps package-publish"
 
 if [ "$#" -gt 0 ]; then
     STAGES="$*"
