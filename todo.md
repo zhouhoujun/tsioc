@@ -3865,3 +3865,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - ConsulServiceDiscovery（register/deregister/discover/query/watch/healthCheck）。
   - useConsulDiscovery providers，可直接接入 Gateway discovery。
   - 回归：discovery 68。
+- 微服务框架第二十一批（2026-11-13）：
+  - KubernetesServiceDiscovery：EndpointSlice 发现/Service 列表/query/watch/healthCheck。
+  - useKubernetesDiscovery；注册只读（K8s 控制器管理 lifecycle）。
+  - 回归：discovery 72。

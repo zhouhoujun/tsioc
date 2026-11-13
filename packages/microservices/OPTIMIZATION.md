@@ -138,6 +138,13 @@
 - 支持 ACL token、datacenter、health check 注册、watch 短轮询与快照去重。
 - `useConsulDiscovery({url, token, ...})` 可直接传给 `useGateway({discovery})`。
 
+第二十一批（Kubernetes 注册中心）：
+
+- 新增 `KubernetesServiceDiscovery`：EndpointSlice 发现、Service 列表、query/healthCheck/watch 轮询。
+- 只读取 ready 的 EndpointSlice 地址，忽略 not-ready/terminating。
+- 支持 namespace、bearer token、labelSelector、注入 fetch；工作负载注册为只读（由 K8s 控制器管理）。
+- `useKubernetesDiscovery(options)` 可直接接入 Gateway discovery。
+
 
 ---
 
