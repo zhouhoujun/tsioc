@@ -101,6 +101,7 @@ import { GatewayAdminState } from '../admin.state';
                         <span class="ga-muted">{{state.t('slo.requests', { count: row.requests })}}</span>
                         <span class="ga-status-spacer"></span>
                         <span class="ga-pill" v-if="row.errors">{{state.t('slo.errors', { count: row.errors })}}</span>
+                        <span class="ga-pill is-danger" v-if="row.alert">{{state.t('slo.alert')}}</span>
                         <span class="ga-pill">{{state.t('slo.p95', { ms: row.p95Ms })}}</span>
                     </div>
                     <div class="ga-empty" v-if="!state.routeSloRows.length">{{state.t('slo.empty')}}</div>

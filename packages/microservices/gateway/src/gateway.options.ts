@@ -366,6 +366,13 @@ export interface GatewayCircuitBreakerOptions {
     fallback?: any | ((request: any, error?: any) => any);
 }
 
+export interface GatewaySloOptions {
+    /** alert when errors / requests exceeds this ratio (0-1). */
+    errorRateThreshold?: number;
+    /** alert when p95 latency exceeds this value in milliseconds. */
+    p95ThresholdMs?: number;
+}
+
 export interface GatewayBulkheadOptions {
     /**
      * maximum concurrent in-flight requests. Omit for unlimited.
@@ -649,6 +656,10 @@ export interface GatewayRouteOptions {
      */
     responseCache?: GatewayResponseCacheOptions;
     /**
+     * per-route SLO alert thresholds.
+     */
+    slo?: GatewaySloOptions;
+    /**
      * stream the upstream response instead of buffering it. Automatically
      * enabled for `text/event-stream` responses.
      */
@@ -917,6 +928,10 @@ export interface GatewayOptions {
      * ordered gateway rules evaluated before the route table.
      */
     rules?: GatewayRuleOptions[];
+    /**
+     * default SLO alert thresholds for routes without explicit `slo`.
+     */
+    slo?: GatewaySloOptions;
     /**
      * shared state store for cache/circuit/nonce (multi-replica).
      */

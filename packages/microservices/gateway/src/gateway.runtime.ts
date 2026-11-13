@@ -2,6 +2,7 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { GatewayBulkheadOptions, GatewayCircuitBreakerOptions, GatewayMockOptions, GatewayOptions, GatewayRouteOptions, GatewayRuleOptions, GatewaySensitiveFieldRule } from './gateway.options';
 import { ServiceEndpoint } from '@tsdi/discovery';
 import { GatewayCircuitRecord, GatewayStateStore } from './state.store';
+import { GatewaySloOptions } from './gateway.options';
 import { MetricsCollector } from '@tsdi/metrics';
 
 interface CacheEntry {
@@ -28,6 +29,10 @@ interface RouteStats {
     errors: number;
     totalMs: number;
     buckets: number[];
+    errorRateThreshold?: number;
+    p95ThresholdMs?: number;
+    alert: boolean;
+    violations: number;
 }
 
 const ROUTE_LATENCY_BUCKETS = [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000];
@@ -72,9 +77,12 @@ export interface GatewayRouteSnapshot {
     key: string;
     requests: number;
     errors: number;
+    errorRate: number;
     avgMs: number;
     p95Ms: number;
     p99Ms: number;
+    alert: boolean;
+    violations: number;
 }
 
 export interface GatewayRuntimeSnapshot {
@@ -131,9 +139,12 @@ export class GatewayRuntime {
                 key,
                 requests: stats.requests,
                 errors: stats.errors,
+                errorRate: stats.requests ? stats.errors / stats.requests : 0,
                 avgMs: stats.requests ? Math.round(stats.totalMs / stats.requests) : 0,
                 p95Ms: percentile(stats, 0.95),
-                p99Ms: percentile(stats, 0.99)
+                p99Ms: percentile(stats, 0.99),
+                alert: stats.alert,
+                violations: stats.violations
             })),
             bulkheads: Array.from(this.bulkheads.entries()).map(([key, state]) => ({
                 key,
@@ -340,12 +351,21 @@ export class GatewayRuntime {
         this.circuits.set(routeKey, state);
     }
 
-    recordRouteOutcome(routeKey: string, status: number, durationMs: number): void {
+    recordRouteOutcome(routeKey: string, status: number, durationMs: number, slo?: GatewaySloOptions): void {
         let stats = this.routeStats.get(routeKey);
         if (!stats) {
-            stats = { requests: 0, errors: 0, totalMs: 0, buckets: new Array(ROUTE_LATENCY_BUCKETS.length).fill(0) };
+            stats = {
+                requests: 0,
+                errors: 0,
+                totalMs: 0,
+                buckets: new Array(ROUTE_LATENCY_BUCKETS.length).fill(0),
+                alert: false,
+                violations: 0
+            };
             this.routeStats.set(routeKey, stats);
         }
+        stats.errorRateThreshold = slo?.errorRateThreshold;
+        stats.p95ThresholdMs = slo?.p95ThresholdMs;
         stats.requests += 1;
         stats.totalMs += Math.max(0, durationMs);
         if (status >= 500) {
@@ -353,6 +373,15 @@ export class GatewayRuntime {
         }
         const index = ROUTE_LATENCY_BUCKETS.findIndex(bound => durationMs <= bound);
         stats.buckets[index >= 0 ? index : ROUTE_LATENCY_BUCKETS.length - 1] += 1;
+
+        const errorRate = stats.requests ? stats.errors / stats.requests : 0;
+        const alert = (stats.errorRateThreshold != null && errorRate > stats.errorRateThreshold)
+            || (stats.p95ThresholdMs != null && percentile(stats, 0.95) > stats.p95ThresholdMs);
+        if (alert && !stats.alert) {
+            stats.violations += 1;
+            this.metrics?.increment('gateway_slo_violations_total', 1, { key: routeKey });
+        }
+        stats.alert = alert;
     }
 
     evictEndpoint(endpoint: ServiceEndpoint, durationMs: number): void {

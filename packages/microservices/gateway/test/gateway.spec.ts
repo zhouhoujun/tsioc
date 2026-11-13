@@ -429,6 +429,27 @@ describe('Gateway', () => {
         }
     });
 
+    it('raises SLO alerts when error rate or p95 crosses thresholds', async () => {
+        const events: any[] = [];
+        const metrics: any = {
+            increment: (name: string, value: number, labels: any) => events.push({ name, value, labels }),
+            gauge: () => undefined
+        };
+        const runtime = new GatewayRuntime(null as any, metrics);
+        const slo = { errorRateThreshold: 0.2, p95ThresholdMs: 50 };
+        runtime.recordRouteOutcome('slo:/x:2', 200, 10, slo);
+        runtime.recordRouteOutcome('slo:/x:2', 500, 100, slo);
+
+        const first = (await runtime.snapshot()).routes.find(item => item.key === 'slo:/x:2');
+        expect(first?.errorRate).toBe(0.5);
+        expect(first?.alert).toBe(true);
+        expect(first?.violations).toBe(1);
+        expect(events.filter(event => event.name === 'gateway_slo_violations_total').length).toBe(1);
+
+        runtime.recordRouteOutcome('slo:/x:2', 200, 10, slo);
+        expect((await runtime.snapshot()).routes[0].violations).toBe(1);
+    });
+
     it('tracks per-route request/error/latency SLOs', async () => {
         const runtime = new GatewayRuntime();
         runtime.recordRouteOutcome('users:/api/users:2', 200, 10);

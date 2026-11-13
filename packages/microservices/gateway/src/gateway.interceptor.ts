@@ -1057,7 +1057,8 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         this.runtime.recordRouteOutcome(
             `${route.service}:${route.path}:${route.transport ?? Transport.HTTP}`,
             compressed.status,
-            duration
+            duration,
+            route.slo ?? this.options.slo
         );
         this.recordGatewayMetrics(route, request, compressed.status, duration, compressed.meta);
         this.recordAccessLog(route, request, compressed.status, duration, compressed.meta, error);
@@ -1902,7 +1903,8 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         this.runtime.recordRouteOutcome(
             `${route.service}:${route.path}:${route.transport ?? Transport.HTTP}`,
             status,
-            duration
+            duration,
+            route.slo ?? this.options.slo
         );
         this.recordGatewayMetrics(route, request, status, duration, meta);
         this.recordAccessLog(route, request, status, duration, meta, error, traceHeaders);

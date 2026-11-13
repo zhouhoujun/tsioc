@@ -3949,3 +3949,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - gRPC server/client 流写入 backpressure（write false + drain）。
   - writeStreamValues 单元测试。
   - 回归：grpc 25。
+- 微服务框架第四十三批（2026-11-13）：
+  - Gateway SLO 阈值（errorRate/p95）与 violations 指标。
+  - Admin Route SLO 告警标记。
+  - 回归：gateway 82、admin 57；web 已重建。

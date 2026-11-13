@@ -263,6 +263,12 @@
 - Client `clientStream`/`bidiStream` 使用 `writeStreamValues`，避免大消息一次性写爆缓冲区。
 - 新增背压单元测试（false → drain → 继续写 → end）。
 
+第四十三批（SLO 告警）：
+
+- Route/options 新增 `slo: {errorRateThreshold, p95ThresholdMs}`。
+- 路由统计输出 errorRate/alert/violations，阈值跨越时 `gateway_slo_violations_total` +1。
+- Admin Route SLO 行显示 SLO 告警标记。
+
 
 ---
 
