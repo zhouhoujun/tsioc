@@ -905,6 +905,10 @@ export interface GatewayOptions {
      */
     rules?: GatewayRuleOptions[];
     /**
+     * shared state store for cache/circuit/nonce (multi-replica).
+     */
+    stateStore?: any;
+    /**
      * route path matching strategy.
      *
      * - `segment` (default): segment-aware prefix match with `:param` support,

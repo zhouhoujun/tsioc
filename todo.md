@@ -3820,3 +3820,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - AbstractClient 客户端指标（requests/duration/errors + error_type）与路径归一化。
   - 客户端 CLIENT span + traceparent 注入。
   - 回归：client 83；package-deps 通过。
+- 微服务框架第十二批（2026-11-13）：
+  - GatewayStateStore SPI（cache/circuit/nonce）+ InMemory/Redis 实现。
+  - GatewayRuntime 支持共享 store；跨实例缓存/熔断/重放保护。
+  - GatewayOptions.stateStore + createRedisGatewayStateStore（懒加载 ioredis）。
+  - 回归：gateway 70、admin 57。

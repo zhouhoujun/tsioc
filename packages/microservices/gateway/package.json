@@ -38,6 +38,7 @@
     "@tsdi/security": "6.0.31",
     "@tsdi/service": "6.0.31",
     "@tsdi/tracing": "6.0.31",
+    "ioredis": "^5.4.1",
     "undici": "^7.24.6"
   },
   "directories": {

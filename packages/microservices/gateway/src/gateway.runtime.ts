@@ -1,6 +1,7 @@
-import { Injectable } from '@tsdi/ioc';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { GatewayBulkheadOptions, GatewayCircuitBreakerOptions, GatewayMockOptions, GatewayOptions, GatewayRouteOptions, GatewayRuleOptions, GatewaySensitiveFieldRule } from './gateway.options';
 import { ServiceEndpoint } from '@tsdi/discovery';
+import { GatewayCircuitRecord, GatewayStateStore } from './state.store';
 
 interface CacheEntry {
     expireAt: number;
@@ -63,18 +64,34 @@ export class GatewayRuntime {
     private activeRequests = new Map<string, number>();
     private bulkheads = new Map<string, BulkheadState>();
 
+    constructor(
+        @Optional() @Inject(GatewayStateStore) private readonly store?: GatewayStateStore | null
+    ) { }
+
+    private get stateStore(): GatewayStateStore | undefined {
+        const store = this.store as any;
+        return store && typeof store.getCircuit === 'function' && typeof store.setCircuit === 'function'
+            ? store as GatewayStateStore
+            : undefined;
+    }
+
     /** Lightweight runtime diagnostics for the admin console. */
-    snapshot(): GatewayRuntimeSnapshot {
+    async snapshot(): Promise<GatewayRuntimeSnapshot> {
         const now = Date.now();
+        const shared = this.stateStore ? await this.stateStore.stats() : undefined;
         return {
-            cacheEntries: Array.from(this.cache.values()).filter(entry => entry.expireAt > now).length,
+            cacheEntries: shared
+                ? shared.cacheEntries
+                : Array.from(this.cache.values()).filter(entry => entry.expireAt > now).length,
             activeRequests: this.activeRequests.size,
             evictedEndpoints: this.evictedEndpoints.size,
-            circuits: Array.from(this.circuits.entries()).map(([key, state]) => ({
-                key,
-                failures: state.failures,
-                open: !!state.openedAt
-            })),
+            circuits: shared
+                ? shared.circuits
+                : Array.from(this.circuits.entries()).map(([key, state]) => ({
+                    key,
+                    failures: state.failures,
+                    open: !!state.openedAt
+                })),
             bulkheads: Array.from(this.bulkheads.entries()).map(([key, state]) => ({
                 key,
                 active: state.active,
@@ -83,11 +100,15 @@ export class GatewayRuntime {
         };
     }
 
-    getCached(key: string): any | undefined {
-        return this.getCachedEntry(key)?.value;
+    async getCached(key: string): Promise<any | undefined> {
+        return (await this.getCachedEntry(key))?.value;
     }
 
-    getCachedEntry(key: string): { value: any; storedAt: number; size: number } | undefined {
+    async getCachedEntry(key: string): Promise<{ value: any; storedAt: number; size: number } | undefined> {
+        if (this.stateStore) {
+            const shared = await this.stateStore.getCache(key);
+            return shared ? { value: shared.value, storedAt: shared.storedAt, size: shared.size } : undefined;
+        }
         const entry = this.cache.get(key);
         if (!entry) {
             return undefined;
@@ -102,16 +123,25 @@ export class GatewayRuntime {
         return { value: entry.value, storedAt: entry.storedAt, size: entry.size };
     }
 
-    setCached(key: string, value: any, ttl: number, limits: GatewayCacheLimits = {}): void {
+    async setCached(key: string, value: any, ttl: number, limits: GatewayCacheLimits = {}): Promise<void> {
         const now = Date.now();
-        this.pruneExpiredCache(now);
-        this.cache.delete(key);
-        this.cache.set(key, {
+        const record = {
             value,
             expireAt: now + ttl,
             storedAt: now,
             size: estimatePayloadSize(value)
-        });
+        };
+        if (this.stateStore) {
+            await this.stateStore.setCache(key, {
+                value,
+                storedAt: record.storedAt,
+                size: record.size
+            }, ttl);
+            return;
+        }
+        this.pruneExpiredCache(now);
+        this.cache.delete(key);
+        this.cache.set(key, record);
         this.enforceCacheLimits(limits);
     }
 
@@ -174,6 +204,9 @@ export class GatewayRuntime {
         this.cache.clear();
         this.rounds.clear();
         this.circuits.clear();
+        if (this.stateStore) {
+            void this.stateStore.clearCache().catch(() => undefined);
+        }
     }
 
     getDynamicOptions(): Partial<GatewayOptions> {
@@ -199,11 +232,11 @@ export class GatewayRuntime {
         return (value === undefined ? fallback : value) as GatewayOptions[K];
     }
 
-    canPassCircuit(routeKey: string, options?: GatewayCircuitBreakerOptions | false): boolean {
+    async canPassCircuit(routeKey: string, options?: GatewayCircuitBreakerOptions | false): Promise<boolean> {
         if (!options) {
             return true;
         }
-        const state = this.circuits.get(routeKey);
+        const state = await this.getCircuit(routeKey);
         if (!state?.openedAt) {
             return true;
         }
@@ -214,24 +247,24 @@ export class GatewayRuntime {
             }
             state.halfOpen = true;
             state.halfOpenInFlight = true;
-            this.circuits.set(routeKey, state);
+            await this.setCircuit(routeKey, state, circuitTtl(options));
             return true;
         }
         return false;
     }
 
-    recordFailure(routeKey: string, options?: GatewayCircuitBreakerOptions | false): void {
+    async recordFailure(routeKey: string, options?: GatewayCircuitBreakerOptions | false): Promise<void> {
         if (!options) {
             return;
         }
         const threshold = options.failureThreshold ?? 5;
-        const current = this.circuits.get(routeKey) ?? { failures: 0 };
+        const current = (await this.getCircuit(routeKey)) ?? { failures: 0 };
         if (current.halfOpen) {
             current.failures = threshold;
             current.openedAt = Date.now();
             current.halfOpen = false;
             current.halfOpenInFlight = false;
-            this.circuits.set(routeKey, current);
+            await this.setCircuit(routeKey, current, circuitTtl(options));
             return;
         }
         current.failures += 1;
@@ -240,11 +273,23 @@ export class GatewayRuntime {
             current.halfOpen = false;
             current.halfOpenInFlight = false;
         }
-        this.circuits.set(routeKey, current);
+        await this.setCircuit(routeKey, current, circuitTtl(options));
     }
 
-    recordSuccess(routeKey: string): void {
-        this.circuits.set(routeKey, { failures: 0, halfOpen: false, halfOpenInFlight: false });
+    async recordSuccess(routeKey: string): Promise<void> {
+        await this.setCircuit(routeKey, { failures: 0, halfOpen: false, halfOpenInFlight: false }, 60_000);
+    }
+
+    private async getCircuit(routeKey: string): Promise<GatewayCircuitRecord | undefined> {
+        return this.stateStore ? this.stateStore.getCircuit(routeKey) : this.circuits.get(routeKey);
+    }
+
+    private async setCircuit(routeKey: string, state: GatewayCircuitRecord, ttlMs: number): Promise<void> {
+        if (this.stateStore) {
+            await this.stateStore.setCircuit(routeKey, state, ttlMs);
+            return;
+        }
+        this.circuits.set(routeKey, state);
     }
 
     evictEndpoint(endpoint: ServiceEndpoint, durationMs: number): void {
@@ -352,7 +397,10 @@ export class GatewayRuntime {
         };
     }
 
-    rememberNonce(key: string, ttl: number): boolean {
+    async rememberNonce(key: string, ttl: number): Promise<boolean> {
+        if (this.stateStore) {
+            return this.stateStore.useNonce(key, ttl);
+        }
         const expireAt = this.nonces.get(key);
         if (expireAt && expireAt > Date.now()) {
             return false;
@@ -406,4 +454,8 @@ function estimatePayloadSize(value: any): number {
     } catch {
         return 0;
     }
+}
+
+function circuitTtl(options: GatewayCircuitBreakerOptions): number {
+    return Math.max(options.resetTimeout ?? 30_000, 60_000);
 }

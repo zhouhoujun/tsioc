@@ -4,6 +4,7 @@ import { GatewayOptions, GATEWAY_OPTIONS } from './gateway.options';
 import { GatewayRuntime } from './gateway.runtime';
 import { GatewayLifecycle } from './gateway.lifecycle';
 import { GatewayConfigService } from './gateway.config.service';
+import { GatewayStateStore } from './state.store';
 import { ConfigurationManagerGatewayAdapter, GatewayConfigAdapter, GATEWAY_CONFIG_ADAPTER_OPTIONS } from './gateway.config-adapter';
 import { resolveGatewayDiscoveryProviders } from './provider';
 
@@ -25,6 +26,7 @@ export class GatewayModule {
             providers: [
                 ...resolveGatewayDiscoveryProviders(options.discovery),
                 GatewayRuntime,
+                ...(options.stateStore ? [{ provide: GatewayStateStore, useValue: options.stateStore }] : []),
                 { provide: GATEWAY_CONFIG_ADAPTER_OPTIONS, useValue: options.configSync },
                 ConfigurationManagerGatewayAdapter,
                 { provide: GatewayConfigAdapter, useExisting: ConfigurationManagerGatewayAdapter },

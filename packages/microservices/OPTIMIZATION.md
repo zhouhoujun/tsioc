@@ -90,6 +90,14 @@
 - 客户端请求创建 CLIENT span，注入 W3C traceparent 到出站 headers；失败记录 span error。
 - 路径按数字/UUID 归一化，避免客户端指标高基数。
 
+第十二批（Gateway 共享状态）：
+
+- 新增 `GatewayStateStore` SPI：缓存、熔断状态、HMAC nonce。
+- `InMemoryGatewayStateStore`（显式装配/测试）与 `RedisGatewayStateStore`（多副本，PX TTL + `SET NX PX` 原子 nonce）。
+- GatewayRuntime 支持注入 store：跨实例共享缓存/熔断/重放保护；未注入时保持原有进程内行为。
+- `GatewayOptions.stateStore` 可直接传 store 实例；`createRedisGatewayStateStore(url)` 懒加载 ioredis。
+- 限流/舱壁仍为进程内状态（限流器带 quota/throttle 语义，后续单独迁移）。
+
 
 ---
 

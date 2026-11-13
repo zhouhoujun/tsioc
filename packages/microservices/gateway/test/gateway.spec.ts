@@ -432,15 +432,15 @@ describe('Gateway', () => {
     it('supports circuit breaker half-open probing', async () => {
         const runtime = new GatewayRuntime();
         const options = { failureThreshold: 1, resetTimeout: 5 };
-        runtime.recordFailure('route', options);
-        expect(runtime.canPassCircuit('route', options)).toBe(false);
+        await runtime.recordFailure('route', options);
+        expect(await runtime.canPassCircuit('route', options)).toBe(false);
 
         await new Promise(resolve => setTimeout(resolve, 10));
-        expect(runtime.canPassCircuit('route', options)).toBe(true);
-        expect(runtime.canPassCircuit('route', options)).toBe(false);
+        expect(await runtime.canPassCircuit('route', options)).toBe(true);
+        expect(await runtime.canPassCircuit('route', options)).toBe(false);
 
-        runtime.recordSuccess('route');
-        expect(runtime.canPassCircuit('route', options)).toBe(true);
+        await runtime.recordSuccess('route');
+        expect(await runtime.canPassCircuit('route', options)).toBe(true);
     });
 
     it('queues bulkhead waiters and rejects when the queue is full', async () => {
@@ -1100,7 +1100,7 @@ describe('Gateway', () => {
 
             expect(sent.status).toBe(500);
             expect(sent.sentPayload).toEqual({ message: 'boom' });
-            expect(runtime.canPassCircuit('flaky-service:/flaky:2', circuitBreaker)).toBe(false);
+            expect(await runtime.canPassCircuit('flaky-service:/flaky:2', circuitBreaker)).toBe(false);
 
             sent.status = undefined;
             let circuitError: any;
@@ -1321,7 +1321,7 @@ describe('Gateway', () => {
 
             await run('de');
             expect(calls).toBe(3);
-            expect(runtime.snapshot().cacheEntries).toBeLessThanOrEqual(2);
+            expect((await runtime.snapshot()).cacheEntries).toBeLessThanOrEqual(2);
         } finally {
             globalThis.fetch = originalFetch;
         }

@@ -520,7 +520,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         this.applyRateLimit(route, request, context);
         await this.authorize(route, request, context);
         this.validateApiKey(route, request);
-        this.validateSignature(route, request);
+        await this.validateSignature(route, request);
         this.enforceAuthorization(route, request);
         this.enforceAccessControl(route, request);
         this.enforceBodyLimit(route, request);
@@ -529,7 +529,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         const response = context.get(HTTP_RESPONSE);
         const cacheKey = this.resolveCacheKey(route, request);
         if (cacheKey) {
-            const cached = this.runtime.getCachedEntry(cacheKey);
+            const cached = await this.runtime.getCachedEntry(cacheKey);
             if (cached) {
                 const age = Math.max(0, Math.floor((Date.now() - cached.storedAt) / 1000));
                 return this.sendResponse(route, request, context, {
@@ -564,7 +564,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         }
         try {
             const routeKey = `${route.service}:${route.path}:${route.transport ?? Transport.HTTP}`;
-        if (!this.runtime.canPassCircuit(routeKey, route.circuitBreaker)) {
+        if (!(await this.runtime.canPassCircuit(routeKey, route.circuitBreaker))) {
             const fallback = this.resolveFallbackPayload(route, request, new Error('Circuit breaker is open'));
             if (!fallback) {
                 const error = Object.assign(new Error('Circuit breaker is open'), {
@@ -593,13 +593,13 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
 
             const upstreamFailed = this.isFailureStatus(route, result.status);
             if (upstreamFailed) {
-                this.runtime.recordFailure(routeKey, route.circuitBreaker);
+                await this.runtime.recordFailure(routeKey, route.circuitBreaker);
             } else {
-                this.runtime.recordSuccess(routeKey);
+                await this.runtime.recordSuccess(routeKey);
             }
             const cache = this.getCacheOptions(route);
             if (cacheKey && !upstreamFailed && result.meta?.streaming !== true && this.shouldCache(route, result)) {
-                this.runtime.setCached(cacheKey, result, cache?.ttl ?? 60_000, {
+                await this.runtime.setCached(cacheKey, result, cache?.ttl ?? 60_000, {
                     maxEntries: cache?.maxEntries,
                     maxBytes: cache?.maxBytes
                 });
@@ -622,7 +622,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
                 : undefined;
             return this.sendResponse(route, request, context, result, startedAt, adapter, response, upstreamError);
         } catch (error: any) {
-            this.runtime.recordFailure(routeKey, route.circuitBreaker);
+            await this.runtime.recordFailure(routeKey, route.circuitBreaker);
             const errorType = this.tagGatewayError(error, adapter);
             const fallback = this.resolveFallbackPayload(route, request, error);
             if (fallback) {
@@ -730,7 +730,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             }
             let releaseEndpoint: () => void = () => undefined;
             if (target.endpoint) {
-                if (!this.canPassEndpointCircuit(route, routeKey, target.endpoint)) {
+                if (!(await this.canPassEndpointCircuit(route, routeKey, target.endpoint))) {
                     excluded.add(target.endpoint.id);
                     continue;
                 }
@@ -752,19 +752,19 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
                 const result = await this.forwardHttpTarget(route, request, traceHeaders, target);
                 const failed = this.isFailureStatus(route, result.status);
                 if (attempt < attempts - 1 && failed && this.isRetryableStatus(route, result.status)) {
-                    this.recordEndpointFailure(route, routeKey, target.endpoint);
+                    await this.recordEndpointFailure(route, routeKey, target.endpoint);
                     lastResult = result;
                     await this.waitBeforeRetry(route, attempt);
                     continue;
                 }
                 if (failed) {
-                    this.recordEndpointFailure(route, routeKey, target.endpoint);
+                    await this.recordEndpointFailure(route, routeKey, target.endpoint);
                     return result;
                 }
-                this.recordEndpointSuccess(route, routeKey, target.endpoint);
+                await this.recordEndpointSuccess(route, routeKey, target.endpoint);
                 return result;
             } catch (error: any) {
-                this.recordEndpointFailure(route, routeKey, target.endpoint);
+                await this.recordEndpointFailure(route, routeKey, target.endpoint);
                 lastError = error;
                 if (attempt >= attempts - 1) {
                     throw error;
@@ -787,22 +787,22 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         });
     }
 
-    private canPassEndpointCircuit(route: ResolvedGatewayRoute, routeKey: string, endpoint?: ServiceEndpoint): boolean {
+    private async canPassEndpointCircuit(route: ResolvedGatewayRoute, routeKey: string, endpoint?: ServiceEndpoint): Promise<boolean> {
         if (!endpoint || !this.endpointCircuitEnabled(route)) {
             return true;
         }
         return this.runtime.canPassCircuit(`${routeKey}:${endpoint.id}`, route.circuitBreaker);
     }
 
-    private recordEndpointSuccess(route: ResolvedGatewayRoute, routeKey: string, endpoint?: ServiceEndpoint): void {
+    private async recordEndpointSuccess(route: ResolvedGatewayRoute, routeKey: string, endpoint?: ServiceEndpoint): Promise<void> {
         if (endpoint && this.endpointCircuitEnabled(route)) {
-            this.runtime.recordSuccess(`${routeKey}:${endpoint.id}`);
+            await this.runtime.recordSuccess(`${routeKey}:${endpoint.id}`);
         }
     }
 
-    private recordEndpointFailure(route: ResolvedGatewayRoute, routeKey: string, endpoint?: ServiceEndpoint): void {
+    private async recordEndpointFailure(route: ResolvedGatewayRoute, routeKey: string, endpoint?: ServiceEndpoint): Promise<void> {
         if (endpoint && this.endpointCircuitEnabled(route)) {
-            this.runtime.recordFailure(`${routeKey}:${endpoint.id}`, route.circuitBreaker);
+            await this.runtime.recordFailure(`${routeKey}:${endpoint.id}`, route.circuitBreaker);
         }
     }
 
@@ -940,7 +940,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         let lastError: any;
         for (let attempt = 0; attempt <= retries; attempt++) {
             const endpoint = await this.resolveMicroserviceEndpoint(route, request, excluded);
-            if (endpoint && !this.canPassEndpointCircuit(route, routeKey, endpoint)) {
+            if (endpoint && !(await this.canPassEndpointCircuit(route, routeKey, endpoint))) {
                 excluded.add(endpoint.id);
                 continue;
             }
@@ -970,7 +970,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
                     payload,
                     timeout: route.timeout ?? 10_000
                 } as any));
-                this.recordEndpointSuccess(route, routeKey, endpoint ?? undefined);
+                await this.recordEndpointSuccess(route, routeKey, endpoint ?? undefined);
                 const normalized = response && typeof response === 'object' && 'payload' in response
                     ? response.payload
                     : response;
@@ -984,7 +984,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
                     }
                 };
             } catch (error: any) {
-                this.recordEndpointFailure(route, routeKey, endpoint ?? undefined);
+                await this.recordEndpointFailure(route, routeKey, endpoint ?? undefined);
                 lastError = error;
                 if (attempt >= retries) {
                     throw error;
@@ -1373,7 +1373,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         }
     }
 
-    private validateSignature(route: ResolvedGatewayRoute, request: HttpRequestMessage): void {
+    private async validateSignature(route: ResolvedGatewayRoute, request: HttpRequestMessage): Promise<void> {
         const options = route.signature;
         if (!options) {
             return;
@@ -1399,7 +1399,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             });
         }
         if (options.preventReplay && nonce) {
-            const accepted = this.runtime.rememberNonce(`${route.path}:${nonce}`, maxSkew);
+            const accepted = await this.runtime.rememberNonce(`${route.path}:${nonce}`, maxSkew);
             if (!accepted) {
                 throw Object.assign(new Error('Gateway signature replay detected'), {
                     statusCode: 409,
