@@ -373,6 +373,58 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         defaultConfig: { mode: 'parse', field: 'value', target: 'value', attributes: true, text: true }
     },
     {
+        type: 'yaml',
+        label: 'YAML',
+        description: 'Parse or stringify YAML',
+        category: 'data',
+        icon: 'Y',
+        color: '#ca8a04',
+        textColor: '#111827',
+        inputs: [port('in', 'in', 'input', 'Input')],
+        outputs: [port('out', 'out', 'output', 'Output'), port('error', 'error', 'output', 'Error')],
+        fields: [
+            configField({
+                key: 'mode',
+                label: 'Mode',
+                type: 'select',
+                defaultValue: 'parse',
+                options: [
+                    { label: 'Parse', value: 'parse' },
+                    { label: 'Stringify', value: 'stringify' }
+                ]
+            }),
+            configField({ key: 'field', label: 'Value path', type: 'text', defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value' }),
+            configField({ key: 'target', label: 'Write result to', type: 'text', defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value' })
+        ],
+        defaultConfig: { mode: 'parse', field: 'value', target: 'value' }
+    },
+    {
+        type: 'rbe',
+        label: 'RBE',
+        description: 'Keep array items only when the value changes',
+        category: 'data',
+        icon: '≠',
+        color: '#f59e0b',
+        textColor: '#111827',
+        inputs: [port('in', 'in', 'input', 'Input')],
+        outputs: [port('out', 'out', 'output', 'Items')],
+        fields: [
+            configField({ key: 'field', label: 'Array path', type: 'text', placeholder: 'items', description: 'Context path to the array to filter.' }),
+            configField({ key: 'path', label: 'Item path', type: 'text', placeholder: 'value', description: 'Property compared between consecutive items.' }),
+            configField({
+                key: 'mode',
+                label: 'Report',
+                type: 'select',
+                defaultValue: 'value',
+                options: [
+                    { label: 'On value change', value: 'value' },
+                    { label: 'On any change', value: 'change' }
+                ]
+            })
+        ],
+        defaultConfig: { mode: 'value' }
+    },
+    {
         type: 'scale',
         label: 'Scale',
         description: 'Map a number from one range to another',

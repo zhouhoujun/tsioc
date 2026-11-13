@@ -1,3 +1,4 @@
+import { parseYaml, stringifyYaml } from './workflow-yaml';
 import { Activity, ActivityContext, ActivityResult } from '../activities/Activity';
 import {
     IVisualWorkflowNode,
@@ -998,6 +999,22 @@ export async function executeVisualNode(
             }
             return { success: true, data: { nodeId: node.id, items, count: items.length } };
         }
+        case 'rbe': {
+            const items = arrayFrom(context, config.field);
+            const filtered: any[] = [];
+            let previous: string | undefined;
+            let hasPrevious = false;
+            for (const item of items) {
+                const value = resolveFrom(item, config.path);
+                const key = JSON.stringify(value);
+                if (!hasPrevious || key !== previous) {
+                    filtered.push(item);
+                    previous = key;
+                    hasPrevious = true;
+                }
+            }
+            return { success: true, data: { nodeId: node.id, items: filtered, count: filtered.length } };
+        }
         case 'batch': {
             const items = arrayFrom(context, config.field);
             const size = Math.max(1, Number(config.size) || 10);
@@ -1105,6 +1122,18 @@ export async function executeVisualNode(
                 : values[0];
             const target = String(config.target || 'value');
             return { success: true, data: { nodeId: node.id, [target]: value, value } };
+        }
+        case 'yaml': {
+            const source = resolveWorkflowValue(config.field || 'value', context);
+            const target = String(config.target || 'value');
+            try {
+                const value = String(config.mode || 'parse') === 'stringify'
+                    ? stringifyYaml(source)
+                    : parseYaml(String(source ?? ''));
+                return { success: true, data: { nodeId: node.id, [target]: value, value } };
+            } catch (error) {
+                return { success: false, error: error as Error, data: { nodeId: node.id } };
+            }
         }
         case 'xml': {
             const source = resolveWorkflowValue(config.field || 'value', context);

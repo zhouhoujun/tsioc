@@ -152,6 +152,8 @@ export type VisualNodeType =
     | 'html'       // HTML 解析节点
     | 'xml'        // XML 解析节点
     | 'scale'      // 数值区间映射节点
+    | 'yaml'       // YAML 解析节点
+    | 'rbe'        // 连续重复过滤节点
     | 'router'     // 多规则路由节点
     | 'complete'   // 完成事件节点
     | 'catch'      // 异常事件节点

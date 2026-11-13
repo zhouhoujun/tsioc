@@ -251,6 +251,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "file-write": {
                 "label": "File write",
                 "description": "Write or append a file on the workflow host"
+            },
+            "yaml": {
+                "label": "YAML",
+                "description": "Parse or stringify YAML"
+            },
+            "rbe": {
+                "label": "RBE",
+                "description": "Keep array items only when the value changes"
             }
         },
         "field": {
@@ -585,6 +593,16 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "content": "Content",
                 "append": "Append",
                 "createDirs": "Create parent folders"
+            },
+            "yaml": {
+                "mode": "Mode",
+                "field": "Value path",
+                "target": "Write result to"
+            },
+            "rbe": {
+                "field": "Array path",
+                "path": "Item path",
+                "mode": "Report"
             }
         },
         "fieldPlaceholder": {
@@ -1051,6 +1069,16 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "content": "text written to the file",
                 "append": "append instead of overwrite",
                 "createDirs": "create parent folders before writing"
+            },
+            "yaml": {
+                "mode": "Parse YAML text or stringify a value.",
+                "field": "Context path containing YAML text or an object.",
+                "target": "Context field that receives the result."
+            },
+            "rbe": {
+                "field": "Context path to the array to filter.",
+                "path": "Property compared between consecutive items.",
+                "mode": "Keep the first item and each change of the compared value."
             }
         },
         "group": {
@@ -1130,7 +1158,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "cron": "Cron schedule",
             "utf8": "UTF-8",
             "base64": "Base64",
-            "hex": "Hex"
+            "hex": "Hex",
+            "change": "On any change"
         }
     },
     "zh-CN": {
@@ -1378,6 +1407,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "file-write": {
                 "label": "写入文件",
                 "description": "写入或追加工作流宿主上的文件"
+            },
+            "yaml": {
+                "label": "YAML",
+                "description": "解析或序列化 YAML"
+            },
+            "rbe": {
+                "label": "RBE",
+                "description": "仅在值变化时保留数组元素"
             }
         },
         "field": {
@@ -1712,6 +1749,16 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "content": "内容",
                 "append": "追加",
                 "createDirs": "创建父目录"
+            },
+            "yaml": {
+                "mode": "模式",
+                "field": "取值路径",
+                "target": "结果写入字段"
+            },
+            "rbe": {
+                "field": "数组路径",
+                "path": "元素路径",
+                "mode": "上报方式"
             }
         },
         "fieldPlaceholder": {
@@ -2158,6 +2205,16 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "content": "写入文件的文本。",
                 "append": "追加到现有文件而不是覆盖。",
                 "createDirs": "写入前自动创建父目录。"
+            },
+            "yaml": {
+                "mode": "解析 YAML 文本，或把值序列化为 YAML。",
+                "field": "包含 YAML 文本或对象的上下文路径。",
+                "target": "接收结果的上下文字段。"
+            },
+            "rbe": {
+                "field": "要过滤的数组路径。",
+                "path": "相邻元素之间比较的属性。",
+                "mode": "保留第一个元素以及比较值发生变化的元素。"
             }
         },
         "group": {
@@ -2229,7 +2286,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "cron": "Cron 定时",
             "utf8": "UTF-8",
             "base64": "Base64",
-            "hex": "Hex"
+            "hex": "Hex",
+            "change": "任意变化"
         }
     }
 };

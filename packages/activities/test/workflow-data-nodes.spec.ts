@@ -426,6 +426,30 @@ describe('Workflow data & trigger nodes', () => {
         expect(result.data?.executionState?.nodeStates.function_0.result?.data?.seen).toBe(true);
     });
 
+    it('parses and stringifies YAML and filters RBE changes', async () => {
+        const parsed = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: 'name: Ada\nitems:\n  - 1\n  - 2' } } },
+            { type: 'yaml', config: { field: 'value', mode: 'parse' } }
+        ]), {});
+        const yamlValue = parsed.data?.executionState?.nodeStates.yaml_1.result?.data?.value;
+        expect(yamlValue.name).toBe('Ada');
+        expect(yamlValue.items).toEqual([1, 2]);
+
+        const stringified = await service.execute(chain([
+            { type: 'inject', config: { payload: { data: { ok: true, count: 2 } } } },
+            { type: 'yaml', config: { field: 'data', mode: 'stringify', target: 'text' } }
+        ]), {});
+        expect(String(stringified.data?.executionState?.nodeStates.yaml_1.result?.data?.text)).toContain('ok: true');
+
+        const filtered = await service.execute(chain([
+            { type: 'inject', config: { payload: { items: [{ v: 1 }, { v: 1 }, { v: 2 }, { v: 2 }, { v: 1 }] } } },
+            { type: 'rbe', config: { field: 'items', path: 'v' } }
+        ]), {});
+        expect(filtered.data?.executionState?.nodeStates.rbe_1.result?.data?.items).toEqual([
+            { v: 1 }, { v: 2 }, { v: 1 }
+        ]);
+    });
+
     it('scales numbers between ranges', async () => {
         const result = await service.execute(chain([
             { type: 'inject', config: { payload: { value: 50 } } },
