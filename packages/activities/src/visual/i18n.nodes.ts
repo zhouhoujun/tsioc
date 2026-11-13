@@ -18,7 +18,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "inject": {
                 "label": "Inject",
-                "description": "Start a flow manually, on an interval, or on an event"
+                "description": "Start a flow manually, on an interval, cron schedule, or event"
             },
             "task": {
                 "label": "Task",
@@ -259,7 +259,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "repeatCount": "Repeat count",
                 "event": "Event name",
                 "timeout": "Wait timeout",
-                "payloadValue": "Payload value"
+                "payloadValue": "Payload value",
+                "cron": "Cron expression"
             },
             "task": {
                 "action": "Action name",
@@ -576,7 +577,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "interval": "1",
                 "repeatCount": "1",
                 "event": "order.created",
-                "timeout": "30"
+                "timeout": "30",
+                "cron": "0 9 * * 1-5"
             },
             "task": {
                 "action": "actions.fetch",
@@ -764,7 +766,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "repeatCount": "number of runs; 0 runs until stopped",
                 "event": "event that triggers the injection",
                 "timeout": "maximum time to wait for the event",
-                "payloadValue": "string, number or boolean value to inject"
+                "payloadValue": "string, number or boolean value to inject",
+                "cron": "Five fields: minute hour day month weekday."
             },
             "task": {
                 "action": "name of a function in context.actions; leave empty to return the result below",
@@ -1087,7 +1090,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "lte": "less or equal",
             "manual": "Manual / once",
             "interval": "Interval",
-            "event": "Event"
+            "event": "Event",
+            "cron": "Cron schedule"
         }
     },
     "zh-CN": {
@@ -1102,7 +1106,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "inject": {
                 "label": "注入",
-                "description": "手动、定时或事件触发流程"
+                "description": "手动、周期、Cron 或事件触发流程"
             },
             "task": {
                 "label": "任务",
@@ -1343,7 +1347,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "repeatCount": "重复次数",
                 "event": "事件名称",
                 "timeout": "等待超时",
-                "payloadValue": "数据值"
+                "payloadValue": "数据值",
+                "cron": "Cron 表达式"
             },
             "task": {
                 "action": "动作名称",
@@ -1660,7 +1665,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "interval": "1",
                 "repeatCount": "1",
                 "event": "order.created",
-                "timeout": "30"
+                "timeout": "30",
+                "cron": "0 9 * * 1-5"
             },
             "task": {
                 "action": "actions.fetch",
@@ -1828,7 +1834,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "repeatCount": "运行次数；0 表示持续运行直到停止。",
                 "event": "触发注入的事件名称。",
                 "timeout": "等待事件的最长时间。",
-                "payloadValue": "要注入的字符串、数字或布尔值。"
+                "payloadValue": "要注入的字符串、数字或布尔值。",
+                "cron": "五个字段：分 时 日 月 周。"
             },
             "task": {
                 "action": "context.actions 中的函数名，留空则返回“结果”中的值。",
@@ -2143,7 +2150,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "lte": "小于等于",
             "manual": "手动 / 一次",
             "interval": "周期",
-            "event": "事件"
+            "event": "事件",
+            "cron": "Cron 定时"
         }
     }
 };

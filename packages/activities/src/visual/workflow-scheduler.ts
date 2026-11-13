@@ -1,6 +1,7 @@
 import type { ActivityContext, ActivityResult } from '../activities/Activity';
 import type { VisualWorkflowDefinition, WorkflowExecutionOptions } from './types';
 import type { VisualWorkflowService } from './VisualWorkflowService';
+import { nextCronTime } from './workflow-cron';
 
 export interface WorkflowScheduleOptions {
     context?: ActivityContext;
@@ -15,10 +16,11 @@ export interface WorkflowScheduleHandle {
 }
 
 interface TriggerPlan {
-    mode: 'once' | 'interval';
+    mode: 'once' | 'interval' | 'cron';
     delayMs: number;
     intervalMs: number;
     repeatCount: number;
+    cron?: string;
 }
 
 function unitFactor(unit: string): number {
@@ -62,7 +64,7 @@ export class WorkflowScheduler {
 
         const trigger = definition.nodes.find(node => {
             const mode = String(node.config?.trigger || 'manual');
-            return node.type === 'inject' && (mode === 'interval' || mode === 'once');
+            return node.type === 'inject' && (mode === 'interval' || mode === 'once' || mode === 'cron');
         });
 
         if (!trigger) {
@@ -81,10 +83,11 @@ export class WorkflowScheduler {
         const intervalMs = Math.max(1, (Number(config.interval) || 1) * unitFactor(String(config.intervalUnit || 's')));
         const repeatCount = Math.max(0, Number(config.repeatCount) || 0);
         const plan: TriggerPlan = {
-            mode: mode === 'interval' ? 'interval' : 'once',
+            mode: mode === 'interval' ? 'interval' : mode === 'cron' ? 'cron' : 'once',
             delayMs,
             intervalMs,
-            repeatCount
+            repeatCount,
+            cron: String(config.cron || '').trim()
         };
 
         const finish = (): void => {
@@ -114,8 +117,47 @@ export class WorkflowScheduler {
             timers.add(timer);
         };
 
+        const scheduleCron = (): void => {
+            if (stopped) {
+                return;
+            }
+            let next: Date | undefined;
+            try {
+                next = nextCronTime(plan.cron || '');
+            } catch (error) {
+                stopped = true;
+                options.onError?.(error as Error);
+                return;
+            }
+            if (!next) {
+                stopped = true;
+                options.onError?.(new Error('Cron expression never fires'));
+                return;
+            }
+            const wait = Math.max(0, next.getTime() - Date.now());
+            const capped = Math.min(wait, 2_147_483_647);
+            const timer = setTimeout(() => {
+                if (stopped) {
+                    return;
+                }
+                if (capped < wait) {
+                    scheduleCron();
+                    return;
+                }
+                runs += 1;
+                void runOnce();
+                finish();
+                if (!stopped) {
+                    scheduleCron();
+                }
+            }, capped);
+            timers.add(timer);
+        };
+
         if (plan.mode === 'interval') {
             scheduleInterval();
+        } else if (plan.mode === 'cron') {
+            scheduleCron();
         } else {
             const timer = setTimeout(() => {
                 runs += 1;

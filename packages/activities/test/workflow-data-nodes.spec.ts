@@ -4,6 +4,7 @@ import { WorkflowModule } from '../src/workflow.module';
 import { WorkflowNodeRegistry } from '../src/visual/node-registry';
 import { VisualWorkflowService } from '../src/visual/VisualWorkflowService';
 import { VisualWorkflowDefinition } from '../src/visual/types';
+import { nextCronTime, parseCron } from '../src/visual/workflow-cron';
 
 describe('Workflow data & trigger nodes', () => {
     let injector: Injector;
@@ -244,6 +245,20 @@ describe('Workflow data & trigger nodes', () => {
         const failureResult = await service.execute(failure, { state: failState });
         expect(failureResult.success).toBe(false);
         expect(failState.caught).toBe(true);
+    });
+
+    it('computes cron schedules for inject triggers', () => {
+        const quarter = nextCronTime('*/15 * * * *', new Date(2026, 0, 1, 0, 7));
+        expect(quarter?.getHours()).toBe(0);
+        expect(quarter?.getMinutes()).toBe(15);
+
+        const weekday = nextCronTime('0 9 * * 1-5', new Date(2026, 0, 2, 10, 0));
+        expect(weekday?.getDay()).toBe(1);
+        expect(weekday?.getHours()).toBe(9);
+        expect(weekday?.getMinutes()).toBe(0);
+
+        expect(parseCron('0 9 * * 1-5').hours.has(9)).toBe(true);
+        expect(() => parseCron('broken')).toThrow();
     });
 
     it('supports event-triggered injection', async () => {

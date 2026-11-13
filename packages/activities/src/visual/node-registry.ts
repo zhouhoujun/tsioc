@@ -96,6 +96,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 options: [
                     { label: 'Manual / once', value: 'manual' },
                     { label: 'Interval', value: 'interval' },
+                    { label: 'Cron schedule', value: 'cron' },
                     { label: 'Event', value: 'event' }
                 ],
                 group: 'Trigger'
@@ -116,6 +117,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 visibleWhen: { key: 'trigger', equals: 'interval' }
             }),
             configField({ key: 'repeatCount', label: 'Repeat count', type: 'number', defaultValue: 1, min: 0, step: 1, group: 'Trigger', visibleWhen: { key: 'trigger', equals: 'interval' }, description: 'How many times the interval trigger runs. 0 means until stopped.' }),
+            configField({ key: 'cron', label: 'Cron expression', type: 'text', placeholder: '0 9 * * 1-5', group: 'Trigger', visibleWhen: { key: 'trigger', equals: 'cron' }, pattern: '^\\s*\\S+(\\s+\\S+){4}\\s*$', description: 'Five fields: minute hour day month weekday.' }),
             configField({ key: 'event', label: 'Event name', type: 'text', placeholder: 'order.created', pattern: '^[A-Za-z_$][A-Za-z0-9_$.:-]*$', group: 'Trigger', visibleWhen: { key: 'trigger', equals: 'event' } }),
             configField({ key: 'timeout', label: 'Wait timeout', type: 'number', defaultValue: 30, min: 0, step: 1, unit: 's', group: 'Trigger', visibleWhen: { key: 'trigger', equals: 'event' } }),
             configField({
