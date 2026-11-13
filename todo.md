@@ -3788,3 +3788,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - cache.vary 参与 key；maxEntries/maxBytes 有界 LRU + 过期清理；命中返回 Age。
   - set-cookie/no-store/private 响应不缓存；配置 apply 按 diff 失效缓存。
   - 回归：gateway 62。
+- 微服务框架第五批（2026-11-13）：
+  - 真实 Gateway E2E：header 卫生、SSE 流式、5xx 熔断、认证缓存隔离、配置热更/回滚。
+  - 回归：gateway 67。

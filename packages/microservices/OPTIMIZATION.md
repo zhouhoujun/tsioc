@@ -45,6 +45,11 @@
 - 命中返回 `x-gateway-cache: HIT` 与 `Age`；带 `set-cookie`、`no-store`、`private` 的响应不缓存。
 - 配置 apply 时按 diff 失效缓存/轮询/熔断状态。
 
+第五批（真实 Gateway E2E）：
+
+- 真实 upstream + 真实 gateway 进程验证：header 卫生、SSE 首块提前到达、5xx 熔断、认证缓存隔离、配置热更/回滚。
+- 发现并记录：undici 会自动补 `connection: keep-alive`，hop-by-hop 验证使用 `proxy-authorization` 等客户端头。
+
 
 ---
 
