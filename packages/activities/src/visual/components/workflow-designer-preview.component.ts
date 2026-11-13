@@ -364,6 +364,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             { action: this.t('undo', 'Undo'), keys: 'Ctrl+Z' },
             { action: this.t('redo', 'Redo'), keys: 'Ctrl+Y' },
             { action: this.t('duplicate', 'Duplicate'), keys: 'Ctrl+D' },
+            { action: this.t('toggleNode', 'Enable/disable node'), keys: 'Ctrl+E' },
             { action: this.t('delete', 'Delete'), keys: 'Delete' },
             { action: this.t('zoomPan', 'Zoom / pan'), keys: 'Ctrl+Wheel / Wheel' },
             { action: this.t('shortcuts', 'Keyboard shortcuts'), keys: '?' }
@@ -1210,8 +1211,20 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             return;
         }
         if (key === 'Escape') {
+            if (this.showNodeMenu) {
+                this.closeNodeMenu();
+                return;
+            }
             this.designer.cancelConnection();
             this.designer.endNodeDrag();
+            return;
+        }
+        if ((payload.ctrlKey || payload.metaKey) && (key === 'e' || key === 'E')) {
+            const node = this.designer.selectedNode;
+            if (node) {
+                this.designer.updateNode(node.id, { disabled: node.disabled !== true });
+                this.notifyChange();
+            }
             return;
         }
         if ((payload.ctrlKey || payload.metaKey) && (key === 'z' || key === 'Z')) {

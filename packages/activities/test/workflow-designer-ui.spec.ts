@@ -365,6 +365,37 @@ describe('Workflow Designer UI', () => {
 
     });
 
+    it('toggles node state with Ctrl+E and closes the context menu with Escape', async () => {
+        const canvas = root.querySelector('.workflow-canvas') as any;
+        ref.instance.designer.selectNode('task_1');
+        await flush();
+
+        canvas.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', {
+            key: 'e', ctrlKey: true, bubbles: true
+        }));
+        await flush();
+        expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.disabled).toBe(true);
+
+        canvas.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', {
+            key: 'e', ctrlKey: true, bubbles: true
+        }));
+        await flush();
+        expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.disabled).toBe(false);
+
+        const canvasNode = root.querySelector('.workflow-node[data-node-id="task_1"]') as any;
+        canvasNode.dispatchEvent(new (doc.defaultView as any).MouseEvent('contextmenu', {
+            bubbles: true, cancelable: true, clientX: 120, clientY: 90
+        }));
+        await flush();
+        expect(root.querySelector('.workflow-node-menu')).toBeTruthy();
+
+        canvas.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', {
+            key: 'Escape', bubbles: true
+        }));
+        await flush();
+        expect(root.querySelector('.workflow-node-menu')).toBeFalsy();
+    });
+
     it('validates inspector input through the forms module before applying it', async () => {
         ref.instance.designer.selectNode('task_1');
         await flush();

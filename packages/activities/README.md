@@ -552,7 +552,8 @@ Features:
 - opt-in autosave (`autosave`, `autosaveDelay`) with Saved / Unsaved / Saving /
   Save failed state in the toolbar; manual save and autosave share the same store,
 - global keyboard shortcuts (`Ctrl+S` save, `Ctrl+O` library, `Ctrl+Enter` run,
-  `?`/`F1` shortcut sheet) and an empty-canvas onboarding hint,
+  `Ctrl+D` duplicate, `Ctrl+E` enable/disable, `?`/`F1` shortcut sheet) and an
+  empty-canvas onboarding hint,
 - run history chips replay retained execution snapshots on the canvas,
 - execution log panel with per-node start/end events and durations,
 - workflow library: save, save-as-copy, open and delete definitions through
