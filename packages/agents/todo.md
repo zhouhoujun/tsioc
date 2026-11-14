@@ -218,7 +218,8 @@
 - ✅ CLI `tsdi-agent worktree create|list|remove`（`--workspace`、`--force`）。
 - ✅ `AgentRuntime.setSessionWorkspace`：切换 session 的 workspace（worktree 隔离前置能力）。
 - ✅ CLI `worktree merge <name>` + `WorktreeManager.merge`（--no-ff）。
-- 待办：TUI `/worktree` 命令、keep/remove 交互收尾、冲突提示与回滚。
+- ✅ TUI `/worktree [create] <name> | list | merge <name> | remove <name> [--force]`：host port 调 WorktreeManager，create 后 `setSessionWorkspace` 并更新 state.workspace；冲突/失败保留 worktree 并提示。
+- 待办：keep/remove 交互收尾、merge 冲突的专门恢复流程。
 
 #### S8 — 架构拆分与启动/测试性能
 

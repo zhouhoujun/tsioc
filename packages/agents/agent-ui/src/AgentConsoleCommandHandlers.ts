@@ -6,7 +6,6 @@
  * receiving a minimal structural context (`CommandHandlerContext`).
  * The component retains thin delegation via `buildCommandContext()`.
  */
-
 import type {
     AgentConsoleApprovalRequest,
     AgentConsoleCommandOutputEntry,
@@ -29,8 +28,8 @@ import { handleApprovals, handleApproveDeny, handleCancel, handleClear, handleCo
 import { runMultilineCommand, runSendCommand } from './AgentConsoleMultilineCommands';
 import { handleProjects, handleSearch, handleSections, handleThreads, handleThreadplan } from './AgentConsoleSessionCommands';
 import { handleReview } from './AgentConsoleReviewCommands';
+import { runWorktreeCommand } from './AgentConsoleWorktreeCommands';
 import { handleCompact, handleCompactions, handleDelegation, handleDiagnostics, handleHarness, handleQuality } from './AgentConsoleDiagnosticsCommands';
-
 // ── Command handler type ─────────────────────────────────────────────────────
 
 export type CommandHandler = (
@@ -126,6 +125,7 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/cd': async (ctx, args, meta) => { await ctx.runCdCommand(canonicalArgsOf(meta, args)); return true; },
     '/pwd': handlePwd,
     '/goal': (ctx, args, meta) => ctx.runGoalCommand(canonicalArgsOf(meta, args)).then(() => true),
+    '/worktree': (ctx, args) => runWorktreeCommand(ctx, args),
     '/undo': (ctx, args) => guardDelegateNoArgs(ctx, args, { command: '/undo', matches: [] }, () => ctx.runUndoCommand().then(() => true)),
     '/redo': (ctx, args) => guardDelegateNoArgs(ctx, args, { command: '/redo', matches: [] }, () => ctx.runRedoCommand().then(() => true)),
     '/export': (ctx, args, meta) => ctx.runExportCommand(canonicalArgsOf(meta, args)),

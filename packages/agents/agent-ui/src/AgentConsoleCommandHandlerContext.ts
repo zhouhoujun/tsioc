@@ -36,6 +36,7 @@ export interface CommandHandlerContext {
         readonly planTodos: any[];
         readonly reviewFileSections: any[];
         readonly reviewOpen: boolean;
+        readonly worktreeCommand?: (request: import('./AgentConsoleWorktreeCommands').AgentConsoleWorktreeRequest) => Promise<import('./AgentConsoleWorktreeCommands').AgentConsoleWorktreeResult>;
         readonly restartAction?: (sessionId: string) => void;
         readonly pairAction?: () => Promise<{ url?: string; urls?: string[]; qr?: string; code?: string; expiresAt?: number } | null>;
         readonly reviewFileAnnotations: Record<string, any>;
@@ -242,6 +243,7 @@ export function buildCommandHandlerState(state: AgentConsoleSessionState): Comma
         get reviewFileSections() { return state.reviewFileSections; },
         get reviewFileAnnotations() { return state.reviewFileAnnotations; },
         get reviewOpen() { return state.reviewOpen; },
+        get worktreeCommand() { return state.worktreeCommand; },
         get restartAction() { return state.restartAction; },
         get pairAction() { return state.pairAction; },
         get consoleOptions() { return state.consoleOptions; },

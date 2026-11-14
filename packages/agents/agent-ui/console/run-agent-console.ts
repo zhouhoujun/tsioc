@@ -4,7 +4,8 @@
  * This module owns the TUI orchestration that was previously in agent-cli.
  * agent-cli now calls these functions directly.
  */
-import { mergeAgentOptions, resolveAgentRenderPolicy, AgentHookCommandExecutor, AGENT_CONSOLE_APP_RPC } from '@tsdi/agent';
+import { mergeAgentOptions, resolveAgentRenderPolicy, AgentHookCommandExecutor, AGENT_CONSOLE_APP_RPC, AgentRuntime } from '@tsdi/agent';
+import { WorktreeManager } from '@tsdi/agent-tools';
 import { FileAdapter } from '@tsdi/common';
 import { TuiConsoleModule, ConsoleTerminalSurfaceLifecycle } from '@tsdi/components/console';
 import {
@@ -210,6 +211,34 @@ export async function runAgentConsole(
         } catch {
             // A host without a restart hook simply keeps `/restart` unavailable.
         }
+    }
+
+    try {
+        const bootstrapped = resolveBootstrappedConsole(ctx)?.sessionState
+            ?? (ctx?.get ? ctx.get(AgentConsoleSessionState) : undefined);
+        const runtime = ctx?.get ? ctx.get(AgentRuntime) : undefined;
+        if (bootstrapped && runtime) {
+            const manager = new WorktreeManager(bootstrapped.workspace);
+            bootstrapped.worktreeCommand = async (request: { action: 'create' | 'list' | 'merge' | 'remove'; name?: string; force?: boolean }) => {
+                if (request.action === 'list') {
+                    return { action: 'list' as const, items: await manager.list() };
+                }
+                if (request.action === 'merge') {
+                    await manager.merge(request.name!);
+                    return { action: 'merge' as const };
+                }
+                if (request.action === 'remove') {
+                    await manager.remove(request.name!, request.force === true);
+                    return { action: 'remove' as const };
+                }
+                const created = await manager.create(request.name!);
+                await runtime.setSessionWorkspace(bootstrapped.sessionId, created.path);
+                bootstrapped.workspace = created.path;
+                return { action: 'create' as const, path: created.path, branch: created.branch };
+            };
+        }
+    } catch {
+        // A host without worktree support keeps `/worktree` unavailable.
     }
 
     if (extras.persistCommandOutput) {
