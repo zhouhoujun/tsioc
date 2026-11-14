@@ -17,6 +17,7 @@ import { QuestionStore } from './QuestionStore';
 import { describeToolCompletedEvent, describeToolInvocationEvent } from './tool-event-content';
 import { toAppRpcError } from './rpcError';
 import { normalizeDelegationModeValue, normalizeSandboxMode } from './session-mode';
+import { buildExportFileName, collectExportToolCalls, resolveExportContentType, resolveExportFormat, serializeSessionExport } from './session-export';
 import { ToolInvokeHost, invokeToolWithWorkspaceTrust } from './tool-invoke';
 import { ApprovalRequestedChunkFields, buildApprovalRequestedChunk } from './approval-chunk';
 import { SessionAggregationDeps, getTodoPlan, getTodoPlans, listCodingTasks } from './session-aggregation';
@@ -1134,9 +1135,9 @@ export class AppRpcServer {
         const sessionId = this.requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const state = await this.sessions.get(sessionId);
-        const format = this.resolveExportFormat(params?.format);
+        const format = resolveExportFormat(params?.format);
         const messages = Array.isArray(state.messages) ? state.messages.slice() : await this.runtime.getMessages(sessionId);
-        const toolCalls = this.collectExportToolCalls(messages);
+        const toolCalls = collectExportToolCalls(messages);
         const exportedAt = Date.now();
         const session = {
             id: sessionId,
@@ -1158,9 +1159,9 @@ export class AppRpcServer {
             sessionId,
             format,
             exportedAt,
-            fileName: this.buildExportFileName(sessionId, exportedAt, format),
-            contentType: this.resolveExportContentType(format),
-            content: this.serializeSessionExport(format, exportedAt, session, messages, toolCalls),
+            fileName: buildExportFileName(sessionId, exportedAt, format),
+            contentType: resolveExportContentType(format),
+            content: serializeSessionExport(format, exportedAt, session, messages, toolCalls),
             session,
             messages,
             toolCalls
@@ -3401,77 +3402,6 @@ export class AppRpcServer {
         const value = JSON.stringify(conclusions);
         await this.runtime.putMemory(sessionId, key, value, 'session');
         return { ok: true, key };
-    }
-
-    private resolveExportFormat(format?: unknown): 'json' | 'jsonl' {
-        return String(format || '').trim().toLowerCase() === 'jsonl'
-            ? 'jsonl'
-            : 'json';
-    }
-
-    private buildExportFileName(sessionId: string, exportedAt: number, format: 'json' | 'jsonl'): string {
-        const ext = format === 'jsonl' ? 'jsonl' : 'json';
-        const stamp = new Date(exportedAt).toISOString().replace(/[:.]/g, '-');
-        const safeSessionId = String(sessionId || 'session').replace(/[^a-zA-Z0-9._-]+/g, '-');
-        return `agent-session-${safeSessionId}-${stamp}.${ext}`;
-    }
-
-    private resolveExportContentType(format: 'json' | 'jsonl'): string {
-        return format === 'jsonl'
-            ? 'application/x-ndjson; charset=utf-8'
-            : 'application/json; charset=utf-8';
-    }
-
-    private serializeSessionExport(
-        format: 'json' | 'jsonl',
-        exportedAt: number,
-        session: Record<string, any>,
-        messages: AgentMessage[],
-        toolCalls: Array<Record<string, any>>
-    ): string {
-        if (format === 'jsonl') {
-            const lines = [
-                JSON.stringify({ type: 'session', exportedAt, session }),
-                ...messages.map(message => JSON.stringify({ type: 'message', message })),
-                ...toolCalls.map(toolCall => JSON.stringify({ type: 'tool_call', toolCall }))
-            ];
-            return `${lines.join('\n')}\n`;
-        }
-        return JSON.stringify({
-            type: 'session_export',
-            format,
-            exportedAt,
-            session,
-            messages,
-            toolCalls
-        }, null, 2);
-    }
-
-    private collectExportToolCalls(messages: AgentMessage[]): Array<Record<string, any>> {
-        const records: Array<Record<string, any>> = [];
-        for (const message of messages || []) {
-            const toolCalls = Array.isArray(message?.metadata?.toolCalls)
-                ? message.metadata.toolCalls
-                : [];
-            for (const toolCall of toolCalls) {
-                if (!toolCall || typeof toolCall !== 'object') {
-                    continue;
-                }
-                const id = typeof toolCall.id === 'string' ? toolCall.id : '';
-                const name = typeof toolCall.name === 'string' ? toolCall.name : '';
-                if (!id && !name) {
-                    continue;
-                }
-                records.push({
-                    id: id || null,
-                    name: name || null,
-                    input: toolCall.input ?? null,
-                    messageId: message.id,
-                    createdAt: message.createdAt
-                });
-            }
-        }
-        return records;
     }
 
     private requireSessionId(params: any): string {
