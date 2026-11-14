@@ -11,6 +11,8 @@ export interface CodeExecutionRequest {
     timeoutMs?: number;
     workspace?: string;
     workdir?: string;
+    /** Effective OS sandbox mode inherited from the owning session. */
+    sandboxMode?: import('@tsdi/agent').SandboxMode;
     /**
      * Aborted when the owning turn is cancelled (user interrupt) so the run
      * stops promptly instead of waiting out its timeout. Adapters should stop
@@ -26,4 +28,6 @@ export interface CodeExecutionResult {
     error?: string;
     cwd?: string;
     workspace?: string;
+    /** True when an OS sandbox (bwrap/sandbox-exec) wrapped the execution. */
+    sandboxApplied?: boolean;
 }

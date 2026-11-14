@@ -275,7 +275,8 @@ export class ToolExecutionCoordinator {
             request.sessionId,
             request.principalId,
             request.workspace,
-            request.signal
+            request.signal,
+            request.sandboxMode
         );
         return this.raceInvocation(request, invokePromise, timeoutMs);
     }
@@ -317,7 +318,8 @@ export class ToolExecutionCoordinator {
             request.sessionId,
             request.principalId,
             request.workspace,
-            request.signal
+            request.signal,
+            request.sandboxMode
         );
         return this.raceInvocation(request, invokePromise, timeoutMs);
     }

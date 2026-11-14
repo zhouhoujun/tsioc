@@ -7,6 +7,7 @@ import { CANCELLED_MESSAGE, runChildProcess } from '@tsdi/agent';
 import { assertSandboxCommand, buildSandboxEnv, resolveSandboxPolicy } from '../src/sandbox-policy';
 import { resolveWorkspacePath } from '../files/path-policy';
 import { CodeExecutionAdapter, CodeExecutionRequest, CodeExecutionResult } from './types';
+import { buildSandboxedNodeRunnerSource, hasNodePermissionFlag, wrapSandboxedCommand } from './sandbox-runner';
 
 const DEFAULT_TIMEOUT_MS = 30000;
 const MAX_OUTPUT_CHARS = 256 * 1024;
@@ -27,10 +28,14 @@ export class LocalCodeExecutionAdapter extends CodeExecutionAdapter {
         const timeoutMs = typeof request.timeoutMs === 'number' && request.timeoutMs > 0 ? request.timeoutMs : DEFAULT_TIMEOUT_MS;
         const { cwd, workspace } = await this.resolveWorkingDirectory(request);
         const normalized = request.language.trim().toLowerCase();
+        const sandboxMode = request.sandboxMode;
         if (this.isJavaScriptLanguage(normalized) || this.isTypeScriptLanguage(normalized)) {
             assertSandboxCommand('node', policy, 'execute_code');
             const code = this.isTypeScriptLanguage(normalized) ? this.transpileTypeScript(request.code) : request.code;
             const env = buildSandboxEnv(process.env, policy);
+            if (sandboxMode && sandboxMode !== 'off') {
+                return this.runScriptSandboxed(code, cwd, workspace, env, timeoutMs, sandboxMode, request.signal);
+            }
             return this.runScriptInWorker(code, cwd, workspace, env, timeoutMs, request.signal);
         }
 
@@ -39,7 +44,8 @@ export class LocalCodeExecutionAdapter extends CodeExecutionAdapter {
         assertSandboxCommand(commandLine, policy, 'execute_code');
         const env = buildSandboxEnv(process.env, policy);
         const spawnArgs = [...runtime.baseArgs, request.code];
-        return this.run(commandLine, runtime.command, spawnArgs, cwd, workspace, env, timeoutMs, request.signal);
+        const wrapped = await wrapSandboxedCommand(sandboxMode, workspace, runtime.command, spawnArgs);
+        return this.run(commandLine, wrapped.command, wrapped.args, cwd, workspace, env, timeoutMs, request.signal, wrapped.applied);
     }
 
     private async resolveRuntime(language: string): Promise<RuntimeSpec> {
@@ -116,7 +122,8 @@ export class LocalCodeExecutionAdapter extends CodeExecutionAdapter {
         workspace: string,
         env: NodeJS.ProcessEnv,
         timeoutMs: number,
-        signal?: AbortSignal
+        signal: AbortSignal | undefined,
+        sandboxApplied: boolean
     ): Promise<CodeExecutionResult> {
         const outcome = await runChildProcess({
             command,
@@ -138,7 +145,7 @@ export class LocalCodeExecutionAdapter extends CodeExecutionAdapter {
                     stderr: outcome.stderr ? `${outcome.stderr}\n${note}` : note,
                     exitCode: 124,
                     error: `Timed out after ${timeoutMs} ms.`
-                });
+                }, sandboxApplied);
             }
             case 'error': {
                 const message = outcome.error.code === 'ENOENT'
@@ -149,7 +156,7 @@ export class LocalCodeExecutionAdapter extends CodeExecutionAdapter {
                     stderr: outcome.stderr ? `${outcome.stderr}\n${message}` : message,
                     exitCode: 1,
                     error: message
-                });
+                }, sandboxApplied);
             }
             default: {
                 const trimmedStdout = outcome.stdout.trimEnd();
@@ -160,21 +167,100 @@ export class LocalCodeExecutionAdapter extends CodeExecutionAdapter {
                     stderr: trimmedStderr,
                     exitCode,
                     error: exitCode === 0 ? undefined : (trimmedStderr || `execute_code exited with code ${exitCode}.`)
-                });
+                }, sandboxApplied);
             }
         }
     }
 
     /** Mirrors the result shaping (tail-capped output) of every run path. */
-    private result(cwd: string, workspace: string, result: Partial<CodeExecutionResult> & { exitCode: number }): CodeExecutionResult {
+    private result(cwd: string, workspace: string, result: Partial<CodeExecutionResult> & { exitCode: number }, sandboxApplied = false): CodeExecutionResult {
         return {
             stdout: (result.stdout ?? '').slice(-MAX_OUTPUT_CHARS),
             stderr: (result.stderr ?? '').slice(-MAX_OUTPUT_CHARS),
             exitCode: result.exitCode,
             error: result.error,
             cwd,
-            workspace
+            workspace,
+            sandboxApplied
         };
+    }
+
+    /** Run a JS/TS snippet in a sandboxed Node child (workspace mode). */
+    private async runScriptSandboxed(
+        code: string,
+        cwd: string,
+        workspace: string,
+        env: NodeJS.ProcessEnv,
+        timeoutMs: number,
+        mode: import('@tsdi/agent').SandboxMode,
+        signal?: AbortSignal
+    ): Promise<CodeExecutionResult> {
+        const dir = await fs.mkdtemp(path.join(workspace, '.tsdi-execute-'));
+        try {
+            const runnerPath = path.join(dir, 'runner.cjs');
+            const codePath = path.join(dir, 'code.js');
+            const resultPath = path.join(dir, 'result.json');
+            await fs.writeFile(runnerPath, buildSandboxedNodeRunnerSource(), 'utf8');
+            await fs.writeFile(codePath, code, 'utf8');
+            const nodeArgs: string[] = [];
+            if (hasNodePermissionFlag()) {
+                nodeArgs.push('--permission', `--allow-fs-read=${workspace}`, `--allow-fs-write=${workspace}`);
+            }
+            nodeArgs.push(runnerPath, codePath, resultPath, cwd);
+            const wrapped = await wrapSandboxedCommand(mode, workspace, process.execPath, nodeArgs);
+            const outcome = await runChildProcess({
+                command: wrapped.command,
+                args: wrapped.args,
+                cwd,
+                env,
+                shell: false,
+                stdin: '',
+                timeoutMs,
+                signal
+            });
+            if (outcome.kind === 'cancelled') {
+                throw new Error(CANCELLED_MESSAGE);
+            }
+            const note = wrapped.applied ? '' : `[sandbox] ${wrapped.reason ?? 'OS sandbox not applied'}\n`;
+            if (outcome.kind === 'timeout') {
+                const timeoutNote = `execute_code command timed out after ${timeoutMs} ms.`;
+                return this.result(cwd, workspace, {
+                    stdout: '',
+                    stderr: `${note}${outcome.stderr ? `${outcome.stderr}\n` : ''}${timeoutNote}`,
+                    exitCode: 124,
+                    error: `Timed out after ${timeoutMs} ms.`
+                }, wrapped.applied);
+            }
+            if (outcome.kind === 'error') {
+                const message = outcome.error.code === 'ENOENT'
+                    ? `node is not available in PATH for execute_code.`
+                    : outcome.error.message;
+                return this.result(cwd, workspace, {
+                    stdout: '',
+                    stderr: `${note}${outcome.stderr ? `${outcome.stderr}\n` : ''}${message}`,
+                    exitCode: 1,
+                    error: message
+                }, wrapped.applied);
+            }
+            let payload: Partial<CodeExecutionResult> & { exitCode: number };
+            try {
+                payload = JSON.parse(await fs.readFile(resultPath, 'utf8'));
+            } catch {
+                const exitCode = outcome.exitCode ?? 0;
+                payload = {
+                    stdout: outcome.stdout,
+                    stderr: `${note}${outcome.stderr}`,
+                    exitCode,
+                    error: exitCode === 0 ? undefined : (outcome.stderr || `execute_code exited with code ${exitCode}.`)
+                };
+            }
+            if (note && payload.stderr) {
+                payload.stderr = `${note}${payload.stderr}`;
+            }
+            return this.result(cwd, workspace, payload, wrapped.applied);
+        } finally {
+            await fs.rm(dir, { recursive: true, force: true }).catch(() => undefined);
+        }
     }
 
     private async runScriptInWorker(

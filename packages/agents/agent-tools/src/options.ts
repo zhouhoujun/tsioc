@@ -459,7 +459,13 @@ export const defaultAgentToolsOptions: AgentToolsOptions = {
         enabled: true,
         maxCommandLength: 4000,
         inheritEnv: true,
-        blockedEnv: []
+        // Secrets never flow into execute_code/terminal children by default.
+        blockedEnv: [
+            'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'DEEPSEEK_API_KEY',
+            'GEMINI_API_KEY', 'GOOGLE_API_KEY', 'OPENROUTER_API_KEY',
+            'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY',
+            'GITHUB_TOKEN', 'GH_TOKEN', 'NPM_TOKEN'
+        ]
     },
     weather: {
         timeoutMs: 15000,

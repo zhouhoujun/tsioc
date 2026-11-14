@@ -152,6 +152,66 @@
 - **验收**：真实 provider 下 `/connect` 校验失败不写 settings、成功后可 `/model` 选到服务返回的模型与 effort；settings.json 不再被整体覆盖；无写死模型 id；zh/EN 文案；DOM/TUI 双端 + 回归。
 - **参考**：`~/workspace/opencode/packages/opencode/src/cli/cmd/tui/component/dialog-model.tsx`、`dialog-provider.tsx`、`dialog-variant.tsx`、`packages/opencode/src/provider/provider.ts`（`variants`）、`packages/opencode/src/cli/cmd/providers.ts`。
 
+### S 系列 — 安全、可观测性与生态对齐（2026-11，进行中）
+
+> 对照 opencode 2.3（后台子代理、custom agents、worktree、ACP、Code Mode）、Claude Code 2026（sandbox runtime、hooks、subagents、OTEL、跨会话消息）与 Codex CLI 2026（workspace-write 默认、app-server、`--worktree`、execpolicy、hook trust）。批次独立验收，每批补真实边界回归（AppRpc 流 / DOM / PTY）。
+
+#### S0 — 安全默认 + 外部内容信任边界（已完成 ✅）
+
+- 默认 sandbox 改为 `workspace`；`full` 才关闭。effective mode 由 session override → policy chain → workspace 解析，并真正传入 `ToolExecutionCoordinator`（此前只装饰 receipt，未到 executor）。
+- 新增 `TrustBoundarySection` 系统提示 + `<untrusted-tool-output>` fencing；web/http/browser/MCP/ai_cli 等外部输出在进入模型 transcript 前统一包裹，闭合标签会转义。
+- 证据：agent 1054、agent-tools 582、agent-cli 133、agent-ui security 9；source-size OK；`bb6312a85` 已提交，gate 复验后推送。
+
+#### S1 — `execute_code` 隔离（已完成 ✅）
+
+- `AgentToolContext` / `ToolRegistry.invoke` 增加可选 `sandboxMode`，由 runtime effective mode 注入；`ExecuteCodeTool` 透传到 adapter。
+- `LocalCodeExecutionAdapter` 新增 `sandboxMode` / `sandboxApplied`：
+  - `off` 保留现有 worker 兼容路径；
+  - `workspace` / `network-block` 的 JS/TS 改为临时脚本 + Node 子进程，经 `bwrap`/`sandbox-exec` 包装；Node 22+ 额外 `--permission --allow-fs-read/write=<workspace>` 禁止 child_process/worker 与 workspace 外 fs；
+  - Python/Bash 命令同样经统一 wrapper；
+  - 环境变量统一走 `buildSandboxEnv`，默认屏蔽常见 API key/token/secret；无沙箱时返回 `sandboxApplied=false` 并在 stderr 说明。
+- 修复共享探测：`probeSandboxExecTool` 由 `sh -lc` 改为 `sh -c`（登录 shell 的坏 profile 曾让 bwrap 探测稳定失败）；bwrap 先挂 `--tmpfs /tmp` 再绑 workspace，避免 `/tmp` 下的 workspace 被 tmpfs 遮盖。
+- 证据：agent 1054、agent-tools 586；新增 `code-execution-sandbox.spec.ts`（越界写拒绝、正常执行、secret 屏蔽、mode 透传）；`source-size` OK。
+
+#### S2 — Hook 类型扩展 + hook trust
+
+- `AgentHookDefinition.type`：`command | http | mcp | prompt | subagent`；`beforeTool` 支持 `deny`/`input` 重写。
+- 新增 executor registry、timeout/abort、脱敏；`hooks.trusted.json` 记录来源哈希，未 trust 的项目 hook 不执行；CLI `hooks trust`。
+- 验收：五类 hook 边界测试；未 trust 被拒绝且提示可操作；hook 超时/取消不阻断 turn。
+
+#### S3 — 沙箱升级审批
+
+- 识别 `EROFS`/`EACCES`/`proxy_required`/sandbox 退出码，发起一次性 approval（once / turn / deny）。
+- 批准后仅对本次命令放宽（workspace 外写或网络），写 audit；TUI/web/gateway 共用事件与 i18n。
+- 验收：默认沙箱拒绝 → 审批 → 成功；拒绝后 turn 继续；真实 PTY + web 断言。
+
+#### S4 — OTEL + 轨迹级 Eval
+
+- `AgentTelemetry` 抽象 + Noop 默认；存在 `@opentelemetry/api` 时自动接入；turn/model/tool/compaction span。
+- `EvalRun.metrics`：turns、toolCalls、failures、retries、duration、tokens、cache、filesChanged；`eval compare` 对 baseline 做阈值回归。
+- 验收：fake tracer 断言层级/属性；无 OTEL 零行为变化；suite 可对比且回归失败可诊断。
+
+#### S5 — 命名子代理（对齐 opencode custom agents / Claude subagents）
+
+- `SpawnAgentInput` 增加 `agent`（archetype/subagent 定义）、`skills`（预载完整 skill prompt）、`permissions`（allow/deny）；`NestedAgentRunRequest` 透传。
+- `LightweightAgentRunner` 对子会话应用 archetype、预载 skills、合并工具过滤；内置 `explore`（只读）/`plan`/`review`/`general`。
+- 验收：`explore` 不能写；skills 完整进入子代理 system prompt；并行/后台不回归。
+
+#### S6 — ACP Server（对齐 opencode/Claude/Codex 编辑器集成）
+
+- 新增 `AcpServer` + `tsdi-agent acp`：JSON-RPC over stdio，`initialize`/`session/new`/`prompt`/`cancel`/`load`/`session/update`，权限映射现有 approval。
+- 验收：fake transport 完整会话；Zed 兼容握手；与 TUI/gateway 共用 runtime 与审批事件。
+
+#### S7 — 会话级 `/worktree`（对齐 opencode `run -w` / Codex `--worktree`）
+
+- 复用 coding_task worktree helpers，新增 `WorktreeManager`；`/worktree [name]` 创建/切换，结束提示 merge/keep/remove。
+- 验收：主工作区隔离、冲突提示、回滚；真实 git 仓库测试。
+
+#### S8 — 架构拆分与启动/测试性能
+
+- 按 turn-loop / model-request / tool-orchestration / verification / compaction / hooks 拆 `DefaultAgentRuntime`；按路由拆 `AppRpcServer`；同提交下调 baseline。
+- 工具/技能/MCP 懒加载；TUI 首屏目标 < 2s；agent-ui 测试分片，目标 < 8min。
+
 ### 遗留观察（收尾时必须确认）
 
 - 视窗模式 layout 持久化与 alternate-screen 退出语义需持续由真实 PTY 覆盖（归入 U5）；`/close` 退出后命令窗口提示与历史保留需一并复验。

@@ -50,6 +50,7 @@ export class ExecuteCodeTool implements AgentTool {
             timeoutMs: typeof input?.timeoutMs === 'number' && input.timeoutMs > 0 ? input.timeoutMs : 30000,
             workspace: context.workspace,
             workdir: typeof input?.workdir === 'string' ? input.workdir : undefined,
+            sandboxMode: context?.sandboxMode,
             signal: context?.signal
         });
         return {
@@ -59,7 +60,8 @@ export class ExecuteCodeTool implements AgentTool {
             exitCode: result.exitCode,
             error: result.error,
             cwd: result.cwd,
-            workspace: result.workspace
+            workspace: result.workspace,
+            sandboxApplied: result.sandboxApplied
         };
     }
 

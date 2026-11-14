@@ -1,12 +1,15 @@
 import { MemoryStore } from '../memory/MemoryStore';
 import { SandboxPolicy } from '../harness/SandboxExecutor';
 import { FileSnapshot } from '../harness/FileSnapshotStore';
+import { SandboxMode } from '../harness/sandbox-exec';
 
 export interface AgentToolContext {
     sessionId: string;
     memory: MemoryStore;
     principalId?: string;
     workspace?: string;
+    /** Effective OS sandbox mode for this session (default workspace). */
+    sandboxMode?: SandboxMode;
     /**
      * Aborted when the owning turn is cancelled (user interrupt). Long-running
      * tools observe it to stop promptly instead of blocking the turn.

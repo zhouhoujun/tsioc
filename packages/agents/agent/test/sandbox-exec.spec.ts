@@ -101,8 +101,11 @@ export class SandboxExecWrapperTest {
         expect(wrapped?.args).toEqual([
             '--unshare-pid', '--unshare-ipc', '--unshare-uts',
             '--ro-bind', '/', '/',
+            // /tmp must be mounted before the workspace bind so a workspace
+            // under /tmp is not hidden by the private tmpfs.
+            '--tmpfs', '/tmp',
             '--bind', '/proj', '/proj', '--chdir', '/proj',
-            '--dev', '/dev', '--proc', '/proc', '--tmpfs', '/tmp',
+            '--dev', '/dev', '--proc', '/proc',
             '--', 'npm', 'test'
         ]);
         expect(wrapped?.args).not.toContain('--unshare-net');

@@ -121,10 +121,10 @@ export async function probeSandboxExecTool(name: string, runtime?: SandboxRuntim
         loadSandboxSpawnModule().then(({ spawn }) => {
             try {
                 const check = shellFamily === 'cmd' && name === 'wsl-bwrap'
-                    ? { command: 'wsl.exe', args: ['--exec', 'sh', '-lc', 'command -v bwrap'] }
+                    ? { command: 'wsl.exe', args: ['--exec', 'sh', '-c', 'command -v bwrap'] }
                     : shellFamily === 'cmd'
                     ? { command: 'cmd.exe', args: ['/d', '/s', '/c', `where ${name === 'windows-native' ? 'tsdi-agent-sandbox.exe' : name}`] }
-                    : { command: 'sh', args: ['-lc', `command -v ${name}`] };
+                    : { command: 'sh', args: ['-c', `command -v ${name}`] };
                 const child = spawn(check.command, check.args, {
                     stdio: ['ignore', 'pipe', 'ignore']
                 });
@@ -225,10 +225,13 @@ export function buildSandboxExecCommand(
                 bwrapArgs.push('--unshare-pid', '--unshare-ipc', '--unshare-uts');
             }
             bwrapArgs.push('--ro-bind', '/', '/');
+            // Mount the private /tmp before binding the workspace: a workspace
+            // under /tmp would otherwise be hidden by the tmpfs and chdir fails.
+            bwrapArgs.push('--tmpfs', '/tmp');
             if (workspace) {
                 bwrapArgs.push('--bind', workspace, workspace, '--chdir', workspace);
             }
-            bwrapArgs.push('--dev', '/dev', '--proc', '/proc', '--tmpfs', '/tmp');
+            bwrapArgs.push('--dev', '/dev', '--proc', '/proc');
             return { command: 'bwrap', args: [...bwrapArgs, '--', command, ...args] };
         }
         case 'unshare': {
