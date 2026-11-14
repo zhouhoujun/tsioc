@@ -23,6 +23,25 @@ const WEB_DIR = path.join(PACKAGE_DIR, 'web');
 const ROOT = path.resolve(PACKAGE_DIR, '../../..');
 const TSC_OUT = path.join(require('os').tmpdir(), 'tsdi-microservice-admin-tsc');
 const BUNDLE_ENTRY = path.join(TSC_OUT, 'packages', 'microservices', 'admin', 'web', 'main.js');
+const { minifyInlineCode } = require(path.join(ROOT, 'scripts', 'minify-inline-templates.js'));
+
+const inlineMinifyPlugin: Plugin = {
+    name: 'inline-template-minify',
+    setup(build) {
+        // AOT output keeps HTML templates and `*_CSS` strings verbatim; esbuild
+        // only minifies the surrounding JavaScript, so minify these literals
+        // before bundling (see scripts/minify-inline-templates.js).
+        build.onLoad({ filter: /\.js$/ }, async args => {
+            if (!args.path.startsWith(TSC_OUT)) {
+                return null;
+            }
+            const source = await fs.promises.readFile(args.path, 'utf-8');
+            const minified = await minifyInlineCode(source);
+            return minified === source ? null : { contents: minified, loader: 'js' };
+        });
+    }
+};
+
 const DEV = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
 const SOURCE_MAP = process.env.SOURCE_MAP === '1';
 const INITIAL_JS_BUDGET = Number(process.env.ADMIN_JS_BUDGET || 1_000_000);
@@ -113,6 +132,7 @@ const browserStubPlugin: Plugin = {
     }
 };
 
+
 function gzipBytes(files: string[]): number {
     const buffers = files.filter(file => fs.existsSync(file)).map(file => fs.readFileSync(file));
     return zlib.gzipSync(Buffer.concat(buffers)).length;
@@ -197,7 +217,7 @@ async function main(): Promise<void> {
         drop: DEV ? [] : ['console', 'debugger'],
         logLevel: 'info',
         nodePaths: [path.join(ROOT, 'node_modules')],
-        plugins: [tsdiAliasPlugin, browserStubPlugin],
+        plugins: [tsdiAliasPlugin, browserStubPlugin, inlineMinifyPlugin],
         define: {
             'process.env.NODE_ENV': DEV ? '"development"' : '"production"'
         },
@@ -208,6 +228,8 @@ async function main(): Promise<void> {
         fs.unlinkSync(oldMap);
     }
     fs.writeFileSync(path.join(WEB_DIR, 'bundle-meta.json'), JSON.stringify(result.metafile, null, 2));
+    // CodeMirror 6 injects its editor and tooltip styles at runtime; the
+    // workflow module only lazy-loads the editor code.
     reportSizes();
     console.log(`admin bundle written to ${path.join(WEB_DIR, 'main.js')}`);
 }

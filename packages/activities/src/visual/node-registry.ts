@@ -186,8 +186,6 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 language: 'javascript',
                 rows: 10,
                 description: 'Trusted code. `context` is the workflow context, `input` is the previous result data. Press Ctrl+Space for context and variable suggestions.',}),
-            configField({ key: 'initialize', label: 'Initialize code', type: 'code', language: 'javascript', rows: 5, group: 'Options', description: 'Optional code that runs before the main function. Returned objects are merged into the context.' }),
-            configField({ key: 'finalize', label: 'Finalize code', type: 'code', language: 'javascript', rows: 5, group: 'Options', description: 'Optional code that runs after the main function for cleanup or metrics.' }),
             configField({ key: 'timeout', label: 'Timeout', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', group: 'Reliability',})
         ],
         defaultConfig: { code: 'return input;' }

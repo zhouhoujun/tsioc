@@ -8,6 +8,7 @@ import {
     VisualWorkflowDefinition
 } from '@tsdi/activities/visual';
 import { RouterOutlet } from '@tsdi/components/router';
+import { WorkflowCodeEditorModule } from '@tsdi/activities/web';
 import { createGatewayRuleWorkflow, registerGatewayRuleNodes } from '../src/rules';
 import { GatewayAdminRuleStore } from './rule-store';
 import { GatewayAdminHttp } from './http';
@@ -25,7 +26,9 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
  */
 @Component({
     selector: 'gateway-admin',
-    imports: [WorkflowDesignerModule, RouterOutlet],
+    // The designer only emits a plain textarea for code fields; this module
+    // upgrades them to the same CodeMirror editor the product designer uses.
+    imports: [WorkflowDesignerModule, WorkflowCodeEditorModule, RouterOutlet],
     template: `
     <div class="ga-shell">
         <aside class="ga-sidebar">
@@ -38,13 +41,13 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
             </div>
             <nav class="ga-nav">
                 <button class="ga-nav-item" [class]="state.dashboardNavClass" type="button" @click="state.goDashboard">
-                    <span class="ga-nav-icon">◫</span>{{state.t('nav.overview')}}
+                    <icon class="ga-nav-icon" name="layout" size="sm"></icon>{{state.t('nav.overview')}}
                 </button>
                 <button class="ga-nav-item" [class]="state.routesNavClass" type="button" @click="state.goRoutes">
-                    <span class="ga-nav-icon">⇄</span>{{state.t('nav.routes')}}
+                    <icon class="ga-nav-icon" name="http-request" size="sm"></icon>{{state.t('nav.routes')}}
                 </button>
                 <button class="ga-nav-item" [class]="state.rulesNavClass" type="button" @click="state.goRules">
-                    <span class="ga-nav-icon">⑂</span>{{state.t('nav.rules')}}
+                    <icon class="ga-nav-icon" name="parallel" size="sm"></icon>{{state.t('nav.rules')}}
                 </button>
             </nav>
             <div class="ga-sidebar-foot">
@@ -66,7 +69,7 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                     <menu-bar class="ga-global-menu" icon="menu" label="" caret="caret-down"
                         :triggerTitle="state.t('top.menu')" :groups="state.globalMenuGroups"
                         :selectAction="state.globalMenuSelect"></menu-bar>
-                    <button class="ga-btn" type="button" @click="state.reload">{{state.t('top.refresh')}}</button>
+                    <button class="ga-btn" type="button" @click="state.reload"><icon name="refresh" size="xs"></icon>{{state.t('top.refresh')}}</button>
                 </div>
             </header>
 
@@ -76,7 +79,7 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                         <div class="ga-login-mark">TS</div>
                         <h2>{{state.t('login.title')}}</h2>
                         <p>{{state.t('login.desc')}}</p>
-                        <a class="ga-btn ga-btn-primary" href="/admin/auth/login?redirect=/admin/">{{state.t('login.button')}}</a>
+                        <a class="ga-btn ga-btn-primary" href="/admin/auth/login?redirect=/admin/"><icon name="login" size="xs"></icon>{{state.t('login.button')}}</a>
                     </div>
                 </section>
 
@@ -91,7 +94,7 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                         <h2>{{state.editingIndex >= 0 ? state.t('editor.editTitle') : state.t('editor.addTitle')}}</h2>
                         <p>{{state.t('editor.desc')}}</p>
                     </div>
-                    <button class="ga-icon-btn" type="button" @click="state.closeRouteEditor">✕</button>
+                    <button class="ga-icon-btn" type="button" title="{{state.t('common.close')}}" aria-label="{{state.t('common.close')}}" @click="state.closeRouteEditor"><icon name="close" size="xs"></icon></button>
                 </header>
                 <div class="ga-form-grid">
                     <label class="ga-field">
@@ -157,8 +160,8 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                     </label>
                 </div>
                 <footer class="ga-modal-foot">
-                    <button class="ga-btn" type="button" @click="state.closeRouteEditor">{{state.t('editor.cancel')}}</button>
-                    <button class="ga-btn ga-btn-primary ga-route-save" type="button" @click="state.saveRouteEditor">{{state.t('editor.save')}}</button>
+                    <button class="ga-btn" type="button" @click="state.closeRouteEditor"><icon name="close" size="xs"></icon>{{state.t('editor.cancel')}}</button>
+                    <button class="ga-btn ga-btn-primary ga-route-save" type="button" @click="state.saveRouteEditor"><icon name="save" size="xs"></icon>{{state.t('editor.save')}}</button>
                 </footer>
             </div>
         </div>
@@ -170,22 +173,22 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                         <h2>{{state.routeDetail.path}}</h2>
                         <p>{{state.t('detail.desc')}}</p>
                     </div>
-                    <button class="ga-icon-btn" type="button" @click="state.closeRouteDetail">✕</button>
+                    <button class="ga-icon-btn" type="button" title="{{state.t('common.close')}}" aria-label="{{state.t('common.close')}}" @click="state.closeRouteDetail"><icon name="close" size="xs"></icon></button>
                 </header>
                 <div v-if="state.routeJsonOpen">
                     <textarea class="ga-import-textarea" [value]="state.routeJsonText"
                         @input="state.setRouteJson($event)"></textarea>
                     <div class="ga-field-error" v-if="state.routeJsonError">{{state.routeJsonError}}</div>
                     <footer class="ga-modal-foot">
-                        <button class="ga-btn" type="button" @click="state.cancelRouteDetailJson">{{state.t('editor.cancel')}}</button>
-                        <button class="ga-btn ga-btn-primary ga-route-json-save" type="button" @click="state.saveRouteDetailJson">{{state.t('editor.save')}}</button>
+                        <button class="ga-btn" type="button" @click="state.cancelRouteDetailJson"><icon name="close" size="xs"></icon>{{state.t('editor.cancel')}}</button>
+                        <button class="ga-btn ga-btn-primary ga-route-json-save" type="button" @click="state.saveRouteDetailJson"><icon name="save" size="xs"></icon>{{state.t('editor.save')}}</button>
                     </footer>
                 </div>
                 <div v-else>
                     <pre class="ga-json">{{state.routeDetailJson}}</pre>
                     <footer class="ga-modal-foot">
-                        <button class="ga-btn" type="button" @click="state.closeRouteDetail">{{state.t('common.close')}}</button>
-                        <button class="ga-btn ga-btn-primary ga-route-json-edit" type="button" @click="state.editRouteDetailJson">{{state.t('detail.editJson')}}</button>
+                        <button class="ga-btn" type="button" @click="state.closeRouteDetail"><icon name="close" size="xs"></icon>{{state.t('common.close')}}</button>
+                        <button class="ga-btn ga-btn-primary ga-route-json-edit" type="button" @click="state.editRouteDetailJson"><icon name="rename" size="xs"></icon>{{state.t('detail.editJson')}}</button>
                     </footer>
                 </div>
             </div>
@@ -198,11 +201,11 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                         <h2>{{state.ruleDetail.name || state.ruleDetail.id}}</h2>
                         <p>{{state.t('detail.ruleDesc')}}</p>
                     </div>
-                    <button class="ga-icon-btn" type="button" @click="state.closeRuleDetail">✕</button>
+                    <button class="ga-icon-btn" type="button" title="{{state.t('common.close')}}" aria-label="{{state.t('common.close')}}" @click="state.closeRuleDetail"><icon name="close" size="xs"></icon></button>
                 </header>
                 <pre class="ga-json">{{state.ruleDetailJson}}</pre>
                 <footer class="ga-modal-foot">
-                    <button class="ga-btn" type="button" @click="state.closeRuleDetail">{{state.t('common.close')}}</button>
+                    <button class="ga-btn" type="button" @click="state.closeRuleDetail"><icon name="close" size="xs"></icon>{{state.t('common.close')}}</button>
                 </footer>
             </div>
         </div>
@@ -214,7 +217,7 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                         <h2>{{state.t('config.diffTitle', { version: state.configVersion + 1 })}}</h2>
                         <p>{{state.t('config.diffDesc')}}</p>
                     </div>
-                    <button class="ga-icon-btn" type="button" @click="state.closeConfigDiff">✕</button>
+                    <button class="ga-icon-btn" type="button" title="{{state.t('common.close')}}" aria-label="{{state.t('common.close')}}" @click="state.closeConfigDiff"><icon name="close" size="xs"></icon></button>
                 </header>
                 <div class="ga-diff-grid">
                     <div class="ga-diff-col">
@@ -238,7 +241,7 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                     </div>
                 </div>
                 <footer class="ga-modal-foot">
-                    <button class="ga-btn" type="button" @click="state.closeConfigDiff">{{state.t('common.close')}}</button>
+                    <button class="ga-btn" type="button" @click="state.closeConfigDiff"><icon name="close" size="xs"></icon>{{state.t('common.close')}}</button>
                 </footer>
             </div>
         </div>
@@ -250,7 +253,7 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                         <h2>{{state.t('config.historyTitle')}}</h2>
                         <p>{{state.t('config.historyDesc')}}</p>
                     </div>
-                    <button class="ga-icon-btn" type="button" @click="state.closeConfigHistory">✕</button>
+                    <button class="ga-icon-btn" type="button" title="{{state.t('common.close')}}" aria-label="{{state.t('common.close')}}" @click="state.closeConfigHistory"><icon name="close" size="xs"></icon></button>
                 </header>
                 <div class="ga-compact-list">
                     <div class="ga-compact-row ga-config-history-row" v-for="entry in state.configHistory">
@@ -258,12 +261,12 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                         <span class="ga-muted">{{entry.timestamp}}<template v-if="entry.source"> · {{entry.source}}</template></span>
                         <span class="ga-status-spacer"></span>
                         <span class="ga-pill">{{state.diffSummary(entry)}}</span>
-                        <button class="ga-link-btn ga-rollback-config" type="button" @click="state.rollbackConfig(entry.version)">{{state.t('config.rollback')}}</button>
+                        <button class="ga-link-btn ga-rollback-config" type="button" @click="state.rollbackConfig(entry.version)"><icon name="undo" size="xs"></icon>{{state.t('config.rollback')}}</button>
                     </div>
                     <div class="ga-empty" v-if="!state.configHistory.length">{{state.t('config.noHistory')}}</div>
                 </div>
                 <footer class="ga-modal-foot">
-                    <button class="ga-btn" type="button" @click="state.closeConfigHistory">{{state.t('common.close')}}</button>
+                    <button class="ga-btn" type="button" @click="state.closeConfigHistory"><icon name="close" size="xs"></icon>{{state.t('common.close')}}</button>
                 </footer>
             </div>
         </div>
@@ -275,15 +278,15 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                         <h2>{{state.t('import.title')}}</h2>
                         <p>{{state.t('import.desc')}}</p>
                     </div>
-                    <button class="ga-icon-btn" type="button" @click="state.closeImport">✕</button>
+                    <button class="ga-icon-btn" type="button" title="{{state.t('common.close')}}" aria-label="{{state.t('common.close')}}" @click="state.closeImport"><icon name="close" size="xs"></icon></button>
                 </header>
                 <textarea class="ga-import-textarea" [value]="state.importText"
                     placeholder='[{ "path": "/api/users", "service": "users-service" }]'
                     @input="state.setImportText($event)"></textarea>
                 <div class="ga-field-error" v-if="state.importError">{{state.importError}}</div>
                 <footer class="ga-modal-foot">
-                    <button class="ga-btn" type="button" @click="state.closeImport">{{state.t('editor.cancel')}}</button>
-                    <button class="ga-btn ga-btn-primary ga-import-apply" type="button" @click="state.importRoutes">{{state.t('import.apply')}}</button>
+                    <button class="ga-btn" type="button" @click="state.closeImport"><icon name="close" size="xs"></icon>{{state.t('editor.cancel')}}</button>
+                    <button class="ga-btn ga-btn-primary ga-import-apply" type="button" @click="state.importRoutes"><icon name="check" size="xs"></icon>{{state.t('import.apply')}}</button>
                 </footer>
             </div>
         </div>
@@ -295,8 +298,8 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
                     <p>{{state.t('designer.desc')}}</p>
                 </div>
                 <div class="ga-actions">
-                    <button class="ga-btn ga-rules-cancel" type="button" @click="closeDesigner">{{state.t('editor.cancel')}}</button>
-                    <button class="ga-btn ga-btn-primary ga-rules-apply" type="button" @click="applyRules">{{state.t('designer.apply')}}</button>
+                    <button class="ga-btn ga-rules-cancel" type="button" @click="closeDesigner"><icon name="close" size="xs"></icon>{{state.t('editor.cancel')}}</button>
+                    <button class="ga-btn ga-btn-primary ga-rules-apply" type="button" @click="applyRules"><icon name="check" size="xs"></icon>{{state.t('designer.apply')}}</button>
                 </div>
             </header>
             <div class="ga-designer-body">
@@ -365,7 +368,8 @@ export class GatewayAdminComponent implements OnInit, AfterViewInit, OnDestroy {
             return;
         }
         const summaries = await this.store.list().catch(() => [] as WorkflowDefinitionSummary[]);
-        const id = this.state.ruleWorkflowId || summaries[0]?.id || '';
+        const active = typeof this.state.ruleWorkflowId === 'string' ? this.state.ruleWorkflowId : '';
+        const id = active || summaries[0]?.id || '';
         let definition: VisualWorkflowDefinition | undefined;
         if (id) {
             definition = await this.store.get(id);

@@ -54,6 +54,54 @@ export class ConsoleDialogLayoutTest {
         }
     }
 
+    @Test('native scrollback composites the dialog over the visible window and restores it on close')
+    scrollbackOverlayRestoresRows() {
+        const transcript = Array.from({ length: 30 }, (_value, index) => `t${index + 1}`);
+        const footer = ['status', '> input', 'meta'];
+        const dialog = ['╭dialog──────────╮', 'Security level', 'opt one', 'opt two', '╰────────────────╯'];
+        let lines = [...transcript, ...dialog, ...footer];
+        let regions = [
+            { id: 'transcript', startRow: 0, endRow: transcript.length },
+            { id: 'dialog', startRow: transcript.length, endRow: transcript.length + dialog.length },
+            { id: 'footer', startRow: transcript.length + dialog.length, endRow: lines.length }
+        ];
+        const surface = new TuiTerminalSurface({
+            renderer: { renderToTuiLayout: () => ({ lines, regions, cursorTargets: [], clickTargets: [] }) } as any,
+            root: { addEventListener() { }, removeEventListener() { } } as any,
+            width: 40,
+            height: 10,
+            nativeScrollback: true,
+            output: { write: () => undefined },
+            scheduler: task => task()
+        });
+        try {
+            surface.render();
+            const rendered = surface.lastRenderedLines.map(strip);
+            // The popup is an overlay: the stream keeps its own row count and
+            // the dialog floats inside the visible window above the composer.
+            expect(rendered.length).toEqual(transcript.length + footer.length);
+            const boxRow = rendered.findIndex(line => line.includes('Security level'));
+            const inputRow = rendered.findIndex(line => line.includes('> input'));
+            expect(boxRow).toBeGreaterThanOrEqual(transcript.length + footer.length - 10);
+            expect(inputRow).toBeGreaterThan(boxRow);
+
+            // Closing the dialog repaints the transcript rows it covered.
+            lines = [...transcript, ...footer];
+            regions = [
+                { id: 'transcript', startRow: 0, endRow: transcript.length },
+                { id: 'footer', startRow: transcript.length, endRow: lines.length }
+            ];
+            surface.render();
+            const restored = surface.lastRenderedLines.map(strip);
+            expect(restored.some(line => line.includes('Security level'))).toEqual(false);
+            expect(restored.length).toEqual(transcript.length + footer.length);
+            expect(restored[0]).toEqual('t1');
+            expect(restored[transcript.length - 1]).toEqual('t30');
+        } finally {
+            surface.destroy();
+        }
+    }
+
     @Test('a dialog taller than the space above the composer never overwrites the header')
     async keepsHeaderVisible() {
         const dialog = ['╭dialog────────────╮', ...Array.from({ length: 6 }, (_value, index) => `d${index + 1}`), '╰──────────────────╯'];

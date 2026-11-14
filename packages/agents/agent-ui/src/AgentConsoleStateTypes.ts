@@ -360,7 +360,6 @@ export interface AgentConsoleOptions {
     approvalsHint?: string;
     reviewDetailHint?: string;
     messageDetailHint?: string;
-    messageDetailClosedHint?: string;
     selectHint?: string;
     selectCloseHint?: string;
     suggestionsHint?: string;
@@ -425,7 +424,6 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     approvalsHint: AGENT_CONSOLE_OVERLAY_HINTS.approvals,
     reviewDetailHint: ', . group   [ ] file   { } hunk jump   f fold hunk   s side-by-side   a additions   u all   p prev lineage   n next lineage   r retry   up/down scroll   left/right pan   pg jump   y copy   / command mode (approve|reject|summary|approve-all|clear-all)   esc',
     messageDetailHint: 'up/down scroll   left/right pan   pg jump   y copy   esc',
-    messageDetailClosedHint: 'enter to open',
     selectHint: AGENT_CONSOLE_OVERLAY_HINTS.select,
     selectCloseHint: 'up/down move   enter close   q close',
     suggestionsHint: AGENT_CONSOLE_SUGGESTIONS_HINT,
@@ -512,7 +510,6 @@ export const ZH_CONSOLE_HINTS = {
     toolsHint: '上/下 移动   pg 跳转   回车 激活   y 复制   esc',
     toolRunsHint: '上/下 移动   pg 跳转   y 复制   esc',
     messageDetailHint: '上/下 滚动   左/右 平移   pg 跳转   y 复制   esc',
-    messageDetailClosedHint: '回车 打开',
     selectCloseHint: '上/下 移动   回车 关闭   q 关闭',
     reviewDetailHint: ', . 分组   [ ] 文件   { } hunk 跳转   f 折叠   s 并排   a 新增   u 全部   p 上一条   n 下一条   r 重试   上/下 滚动   左/右 平移   pg 跳转   y 复制   / 命令模式（approve|reject|summary|approve-all|clear-all）   esc'
 };

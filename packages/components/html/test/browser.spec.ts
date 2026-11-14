@@ -15,6 +15,7 @@ import { HtmlTemplateModule } from '../src';
       <p class="counter">Count: {{count}}</p>
       <button class="increment-btn">Increment</button>
       <input class="text-input" [value]="inputValue" (input)="onInput($event)"/>
+      <input class="optional-input" [value]="optionalValue"/>
       <p class="input-value">Input: {{inputValue}}</p>
     </div>
   `
@@ -23,6 +24,7 @@ export class BrowserTestComponent {
   title = 'Browser Test';
   count = 0;
   inputValue = 'initial';
+  optionalValue: string | undefined = undefined;
 
   increment() {
     this.count++;
@@ -113,6 +115,25 @@ export class HtmlBrowserTest {
     
     expect(compRef.instance.inputValue).toEqual('changed');
     expect(valueP?.textContent).toEqual('Input: changed');
+  }
+
+  @Test('should render undefined value bindings as empty inputs')
+  async testUndefinedValueBinding() {
+    const compRef = this.ctx.runners.getRef(BrowserTestComponent) as ComponentRef<BrowserTestComponent>;
+    const root = compRef.hostView.rootNodes[0] as any;
+    const input = root.querySelector('.optional-input') as HTMLInputElement;
+
+    // Regression: `input.value = undefined` stringifies to "undefined", so an
+    // empty optional field painted that text until the user typed over it.
+    expect(input.value).toEqual('');
+
+    compRef.instance.optionalValue = 'filled';
+    await Promise.resolve();
+    expect(input.value).toEqual('filled');
+
+    compRef.instance.optionalValue = undefined;
+    await Promise.resolve();
+    expect(input.value).toEqual('');
   }
 
   @After()

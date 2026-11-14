@@ -232,13 +232,6 @@ export const AGENT_UI_PANEL_CORE_EN: Record<string, any> = {
         statusError: 'error',
         statusUnknown: 'unknown'
     },
-    messageDetail: {
-        summary: 'message {index}/{messages} {role}  |  lines {start}-{end} / {lines}  |  col {column}/{columns}',
-        roleUser: 'user',
-        roleAssistant: 'assistant',
-        roleTool: 'tool',
-        roleSystem: 'system'
-    },
     input: {
         planNudge: 'Planning intent detected · use /plan',
         planBadge: 'plan',

@@ -1,0 +1,196 @@
+import expect = require('expect');
+import {
+    buildWorkflowCanvasModel,
+    buildWorkflowCanvasViewport,
+} from '../src/visual/workflow-view-models';
+import {
+    createDefaultWorkflowDefinition,
+    WorkflowDesigner,
+} from '../src/visual/workflow-designer';
+import { WorkflowNodeRegistry } from '../src/visual/node-registry';
+
+/**
+ * Canvas projection must stay incremental: a pan/zoom or an unrelated edit may
+ * not replace every node/edge view object, otherwise the renderer replays the
+ * whole graph (icons included) on each pointer event.
+ */
+describe('Workflow canvas incremental view model', () => {
+    function createDesigner(): { designer: WorkflowDesigner; registry: WorkflowNodeRegistry } {
+        const registry = new WorkflowNodeRegistry();
+        const designer = new WorkflowDesigner({
+            registry,
+            definition: createDefaultWorkflowDefinition(registry, 'en')
+        });
+        return { designer, registry };
+    }
+
+    it('reuses every node and edge view while panning or zooming', () => {
+        const { designer, registry } = createDesigner();
+        const first = buildWorkflowCanvasModel(designer, registry, 'en');
+
+        designer.panBy(24, -12);
+        const panned = buildWorkflowCanvasModel(designer, registry, 'en', undefined, first);
+        expect(panned).not.toBe(first);
+        expect(panned.pan).not.toEqual(first.pan);
+        expect(panned.nodes).toEqual(first.nodes);
+        expect(panned.edges).toEqual(first.edges);
+        panned.nodes.forEach((node, index) => expect(node).toBe(first.nodes[index]));
+        panned.edges.forEach((edge, index) => expect(edge).toBe(first.edges[index]));
+
+        designer.setZoom(1.25);
+        const zoomed = buildWorkflowCanvasModel(designer, registry, 'en', undefined, panned);
+        expect(zoomed.zoom).toBe(1.25);
+        zoomed.nodes.forEach((node, index) => expect(node).toBe(first.nodes[index]));
+        zoomed.edges.forEach((edge, index) => expect(edge).toBe(first.edges[index]));
+    });
+
+    it('rebuilds only the moved node and its connected edges', () => {
+        const { designer, registry } = createDesigner();
+        const first = buildWorkflowCanvasModel(designer, registry, 'en');
+
+        const position = designer.nodes.find(node => node.id === 'task_1')!.position;
+        designer.moveNode('task_1', { x: position.x + 40, y: position.y + 20 });
+        const moved = buildWorkflowCanvasModel(designer, registry, 'en', undefined, first);
+
+        const nodeById = (model: typeof first, id: string) => model.nodes.find(node => node.id === id);
+        expect(nodeById(moved, 'task_1')).not.toBe(nodeById(first, 'task_1'));
+        expect(nodeById(moved, 'task_1')!.x).toBe(position.x + 40);
+        expect(nodeById(moved, 'start_1')).toBe(nodeById(first, 'start_1'));
+        expect(nodeById(moved, 'condition_1')).toBe(nodeById(first, 'condition_1'));
+
+        const edgeById = (model: typeof first, id: string) => model.edges.find(edge => edge.id === id);
+        // conn_1/conn_2 touch task_1; the rest of the graph keeps its views.
+        expect(edgeById(moved, 'conn_1')).not.toBe(edgeById(first, 'conn_1'));
+        expect(edgeById(moved, 'conn_2')).not.toBe(edgeById(first, 'conn_2'));
+        expect(edgeById(moved, 'conn_3')).toBe(edgeById(first, 'conn_3'));
+        expect(edgeById(moved, 'conn_6')).toBe(edgeById(first, 'conn_6'));
+    });
+
+    it('reuses node views for config and description edits that do not paint', () => {
+        const { designer, registry } = createDesigner();
+        const first = buildWorkflowCanvasModel(designer, registry, 'en');
+
+        designer.updateNodeConfig('task_1', { action: 'changed' });
+        const configChanged = buildWorkflowCanvasModel(designer, registry, 'en', undefined, first);
+        configChanged.nodes.forEach((node, index) => expect(node).toBe(first.nodes[index]));
+
+        designer.updateNode('task_1', { description: 'Visible description' });
+        const described = buildWorkflowCanvasModel(designer, registry, 'en', undefined, configChanged);
+        expect(described.nodes.find(node => node.id === 'task_1')!.description).toBe('Visible description');
+        expect(described.nodes.find(node => node.id === 'task_1')).not.toBe(first.nodes.find(node => node.id === 'task_1'));
+        expect(described.nodes.find(node => node.id === 'start_1')).toBe(first.nodes.find(node => node.id === 'start_1'));
+    });
+
+    it('rebuilds selected nodes so selection chrome updates without touching the rest', () => {
+        const { designer, registry } = createDesigner();
+        const first = buildWorkflowCanvasModel(designer, registry, 'en');
+
+        designer.selectNode('task_2');
+        const selected = buildWorkflowCanvasModel(designer, registry, 'en', undefined, first);
+        expect(selected.nodes.find(node => node.id === 'task_2')!.selected).toBe(true);
+        expect(selected.nodes.find(node => node.id === 'task_2')).not.toBe(first.nodes.find(node => node.id === 'task_2'));
+        expect(selected.nodes.find(node => node.id === 'start_1')).toBe(first.nodes.find(node => node.id === 'start_1'));
+        // Selecting a node does not select (or repaint) any edge.
+        selected.edges.forEach((edge, index) => expect(edge).toBe(first.edges[index]));
+    });
+
+    it('projects registry ports for definitions loaded without them', () => {
+        // Regression: normalize() used to mutate the assigned definition in
+        // place, so identity-keyed model caches kept the pre-normalization
+        // projection and nodes rendered without ports.
+        const { designer, registry } = createDesigner();
+        const before = designer.definition;
+        expect(designer.load({
+            id: 'loaded-workflow',
+            name: 'Loaded workflow',
+            nodes: [{
+                id: 'only_task',
+                type: 'task',
+                name: 'Only task',
+                position: { x: 40, y: 40 },
+                config: {}
+            } as any],
+            connections: []
+        })).toBe(true);
+        expect(designer.definition).not.toBe(before);
+
+        const model = buildWorkflowCanvasModel(designer, registry, 'en');
+        expect(model.nodes.length).toBe(1);
+        expect(model.nodes[0].inputs.length).toBeGreaterThan(0);
+        expect(model.nodes[0].outputs.length).toBeGreaterThan(0);
+        // The corrected projection stays incremental afterwards.
+        const again = buildWorkflowCanvasModel(designer, registry, 'en', undefined, model);
+        expect(again.nodes[0]).toBe(model.nodes[0]);
+    });
+
+    it('reuses the whole projection for viewport-only changes', () => {
+        const { designer, registry } = createDesigner();
+        const first = buildWorkflowCanvasModel(designer, registry, 'en');
+
+        designer.panBy(48, -16);
+        designer.setZoom(1.4);
+        const viewport = buildWorkflowCanvasViewport(first, designer);
+
+        expect(viewport).not.toBe(first);
+        // Same arrays: no node/edge re-projection at all during pan/zoom.
+        expect(viewport.nodes).toBe(first.nodes);
+        expect(viewport.edges).toBe(first.edges);
+        expect(viewport.width).toBe(first.width);
+        expect(viewport.height).toBe(first.height);
+        expect(viewport.pan).toEqual(designer.pan);
+        expect(viewport.zoom).toBe(1.4);
+        expect(viewport.gridStyle['--wf-grid-size']).toBe(`${24 * 1.4}px`);
+        expect(viewport.gridStyle['--wf-grid-x']).toBe(`${designer.pan.x}px`);
+        expect(viewport.gridStyle['--wf-grid-y']).toBe(`${designer.pan.y}px`);
+        expect(viewport.draft).toBeUndefined();
+        expect(viewport.connecting).toBe(false);
+    });
+
+    it('reprojects the wire draft from reused node ports while dragging', () => {
+        const { designer, registry } = createDesigner();
+        const first = buildWorkflowCanvasModel(designer, registry, 'en');
+        const output = designer.nodes.find(node => node.id === 'task_1')!.outputs![0];
+
+        expect(designer.beginConnection('task_1', output.id, { x: 240, y: 160 })).toBe(true);
+        const dragging = buildWorkflowCanvasViewport(first, designer);
+        expect(dragging.nodes).toBe(first.nodes);
+        expect(dragging.edges).toBe(first.edges);
+        expect(dragging.connecting).toBe(true);
+        expect(dragging.connectingSide).toBe('output');
+        expect(dragging.draft?.d).toBeTruthy();
+        expect(dragging.draft?.attrs.class).toBe('workflow-edge workflow-edge-draft');
+
+        designer.updateConnectionDraft({ x: 360, y: 220 });
+        const moved = buildWorkflowCanvasViewport(dragging, designer);
+        expect(moved.nodes).toBe(first.nodes);
+        expect(moved.draft?.d).not.toBe(dragging.draft?.d);
+    });
+
+    it('keeps viewport reuse O(1) in node count', () => {
+        const { designer, registry } = createDesigner();
+        const nodes = Array.from({ length: 300 }, (_, index) => ({
+            id: `n${index}`,
+            type: 'task' as const,
+            name: `Task ${index}`,
+            position: { x: (index % 20) * 260, y: Math.floor(index / 20) * 160 },
+            config: { action: 'loadInput', result: { index } }
+        }));
+        expect(designer.load({
+            id: 'bulk',
+            name: 'Bulk',
+            nodes: nodes as any,
+            connections: []
+        })).toBe(true);
+
+        const first = buildWorkflowCanvasModel(designer, registry, 'en');
+        designer.panBy(12, 8);
+        const start = Date.now();
+        for (let index = 0; index < 50; index++) {
+            buildWorkflowCanvasViewport(first, designer);
+        }
+        const elapsed = Date.now() - start;
+        // The old implementation rebuilt a 300-entry key and re-projected every
+        // node per frame (>1s/frame in the browser). Reuse must stay negligible.
+        expect(elapsed).toBeLessThan(250);
+    });
+});

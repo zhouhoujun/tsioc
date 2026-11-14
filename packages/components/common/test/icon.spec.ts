@@ -12,13 +12,14 @@ import {
 
 @Suite('common icon library')
 export class IconLibraryTest {
-    @Test('registers every workflow toolbar, menu and node icon')
+    @Test('registers every workflow and admin chrome icon')
     registersWorkflowIcons() {
         const required = [
             'run', 'resume', 'stop', 'undo', 'redo', 'delete', 'minus', 'plus',
             'fit', 'layout', 'duplicate', 'logs', 'save', 'library', 'json', 'clear',
             'rename', 'close', 'menu', 'caret-down', 'caret-right', 'check',
-            'theme', 'language',
+            'theme', 'language', 'refresh', 'history', 'import', 'export', 'eye',
+            'arrow-up', 'arrow-down', 'login',
             'start', 'end', 'inject', 'task', 'function', 'condition', 'switch',
             'junction', 'sequence', 'parallel', 'join', 'loop', 'trigger', 'delay',
             'log', 'debug', 'http-request', 'assign', 'transform', 'template',

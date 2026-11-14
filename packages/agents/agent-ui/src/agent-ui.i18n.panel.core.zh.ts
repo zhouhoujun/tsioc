@@ -232,13 +232,6 @@ export const AGENT_UI_PANEL_CORE_ZH: Record<string, any> = {
         statusError: '异常',
         statusUnknown: '未知'
     },
-    messageDetail: {
-        summary: '消息 {index}/{messages} {role}  |  行 {start}-{end} / {lines}  |  列 {column}/{columns}',
-        roleUser: '用户',
-        roleAssistant: '助手',
-        roleTool: '工具',
-        roleSystem: '系统'
-    },
     input: {
         planNudge: '检测到规划意图 · 使用 /plan',
         planBadge: '计划',

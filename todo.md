@@ -3992,3 +3992,190 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 缓存 tab 快速路径：不再执行整套 openSession 重置（configure/清空/标题/输入等），只更新真正变化的 status 并立即返回；后台 120ms 后再刷新 sessions/tools/approvals/todo/coding/history/page，快速连点通过 requestId 取消过期任务。
   - 每会话 messageItems 缓存改为内容比较（proxy 数组 identity 不再导致 miss），选择/焦点变化只重渲染前后两行，避免 50 条消息整表重建；刷新页按 id 增量合并，保留已加载旧页与分页 cursor。
 - **仍待优化**：返回**初始启动会话**时响应式首帧仍明显慢于其它 tab（实测 ~1.3s，其它 ~20ms），已定位到缓存视图应用后的 effect flush；需继续把该会话的差异状态（疑似启动期命令/计划投影）拆出批量事务。agent-ui 全量测试目前约 4min（测试内真实 JSDOM/响应式渲染 + 首访加载），后续可把 tab 测试改用 background 路径与轻量渲染。
+## 2026-11-13 tab 关闭按钮改为红色（对齐 workflow-admin 页签）
+- TUI：`components/console/styles/console.scss` 的 `.tab-close` 由正文色改为主题错误色（`$error`），暗色 `#cf9893`、亮色 `#a40e26`；`console.css` 与 `default-styles.generated.ts` 重新生成。
+- Web：`web/console.css` 的 `#agent-console tab-bar .tab-close` 使用 `--agent-web-danger`（dark/light/solarized/high-contrast 均为对应红色），opacity 0.5 → 0.75，hover 时 1。
+- 回归：`session-tabs.spec.ts` 断言 TUI `✕` ANSI 颜色为 207,152,147（旧实现为正文色，稳定失败）；真实 PTY 110x30 首屏 `新会话 ✕   +` 的 `✕` 为红色；真实 Chrome 计算样式各主题均为红色。
+
+## 2026-11-13 workflow designer 预览性能（从渲染层定位）
+- **真实浏览器基线**（headless Chrome 1440×900，300 节点/285 边，rAF 帧间隔 + CDP profile）：
+  - PAN ~1116ms/帧、ZOOM ~1896ms/帧、DRAG ~523ms/帧；CDP 采样中 `canvasModelKey` 占 ~4.7s/5 事件。
+  - 6 节点 demo 每次滚轮/拖拽产生数百次 DOM mutation（canvas 380–760、menu 最高 1240）。
+- **根因（按影响排序）**：
+  1. `canvasModelKey()` 每次读取都拼接 O(nodes) 字符串（300 节点 ≈1s/帧），且边投影用 `nodes.find` 造成 O(E×N)。
+  2. 整图 view 对象每次重建，`v-for` 无法复用、整图重渲染；`v-bind`/`style` 无条件重写全部属性/声明，制造无意义 mutation。
+  3. 网格通过 `--wf-grid-*` 自定义属性写在 canvas 根节点：自定义属性会继承，300 节点时每帧触发整棵子树 style recalc（CDP `Document::recalcStyle` 25ms/帧）；网格背景又和节点同一个 paint layer，改根背景会重绘整图。
+  4. `WorkflowDesigner.normalize()` 原地改 `definition.nodes/connections`：identity 缓存的视图模型无法感知，加载工作流后节点 ports 不渲染，直到下一次交互才出现（真实 bug），并伴随一次全量 port 重建（100 节点 ≈1.1s）。
+- **修复**：
+  - 视图模型增量投影：节点/边按绘制字段签名复用（symbol 标记，避免 reactive proxy 使 WeakMap 失效）；边几何改为 O(1) Map 查找。
+  - `canvasModel` 缓存改为 O(1) identity 比较（definition/nodes/connections/selection/execution/draft/locale/revision）；只有 pan/zoom/wire-drag 时走 `buildWorkflowCanvasViewport` 复用 nodes/edges 数组。
+  - 基础层 DOM 去重：`StyleDirective` 差量写声明、`VBindDirective` 差量写属性、插值属性与文本绑定相等跳过；`MenuBarComponent.entries`/`WorkflowManagementMenuComponent.menuGroups` 按字段缓存。
+  - 网格独立成 `.workflow-canvas-grid` 层，使用非继承的 `background-size/background-position`：既不触发节点 style recalc，也不重绘节点层。
+  - `normalize()` 改为返回新 definition/nodes/connections（一次性赋值），canvas 缓存同时校验 nodes/connections identity。
+- **修复后实测**（同机同分辨率）：
+  - 300 节点：PAN 16.7ms/帧（60fps）、ZOOM 17–33ms/帧、DRAG ~33ms/帧；修复前 1116/1896/523ms。
+  - 6 节点 demo mutation：PAN canvas 20；ZOOM canvas 40 + toolbar 70；DRAG canvas 28；SELECT canvas 4 + inspector 27；TYPE-DESC canvas 4（修复前 canvas 328–760、menu 122–1240）。
+  - 工作流加载后 ports 立即渲染（300 节点 900 ports），首次选择节点不再重建 DOM（修复前 100 节点首击 ≈1.1s 全量重建）。
+- **验证**：activities 342、components 150、components/common 75、components/html 142、components/console 162；`tsc --noEmit`（activities/components）0；`check-source-size.mjs` OK；`git diff --check` OK；真实 Chrome 无 console error。
+- **仍未处理**：首次选中节点时 inspector/dynamic-form 首帧约 80–240ms（6 节点），主要是表单模板克隆与响应式 get 热路径；这是独立于画布交互的下一步优化点。
+
+## 2026-11-13 workflow designer 选中节点首帧（inspector 表单）
+- **定位**（真实 Chrome，6 节点 demo，CDP CPU profile + Trace）：
+  - 选中节点 ≈145–513ms（含一次 long task）。其中 `set schema` ≈26ms（JSON 签名 + normalize + `applySchema` 20ms）、`syncValues` ≈23ms、`get` 热路径 ≈32–41ms，其余为样式/布局/绘制（program）与 GC。
+  - 每次渲染 inspector 的 `formSchema/formValue` getter 都新建对象；`dynamic-form.set schema` 每次都要 normalize + JSON.stringify 比对；`visibleGroups` 每次读取都新建分组数组/对象，导致模板 `v-for` 重新收集。
+  - `beginNodeDrag` 在 mousedown 时就 `JSON.stringify(整个文档)` 生成 undo 快照，普通点击也付这份成本；再次点击已选中的节点还会重复写 selection 触发全量绑定。
+- **修复**：
+  - `dynamic-form.set schema` 增加原始对象 identity 短路（同一 schema 对象不再 normalize/签名）。
+  - inspector 的 `formSchema/formValue/formMessages` 按 **model 实例身份**（+ locale + suggestions 身份）缓存；`visibleGroups` 按 `_schema` 身份 + `valueVersion` 缓存。缓存读取路径仍读取被追踪字段，保证绑定订阅不丢。
+  - 注意：`set model` 先写签名再写 `_model`，按签名做缓存键会在中间态用旧 model 填充缓存（实测导致 3 个 UI 测试失败：条件字段不出现、切换同类节点值不刷新）；必须按 model 身份做键。
+  - 拖拽 undo 快照改为第一次真实移动时才 `snapshot()`；已选中节点重复 mousedown 不再重写 selection。
+- **修复后**：稳定状态下交替选中不同节点，long task 60–120ms（JS 部分只剩 `get` ≈32ms，`set schema`/`applySchema` 从 profile 消失）；背景点击/重复点击已选节点 ≈25–30ms；改名、拖拽、Ctrl+Z 均正常。
+- **验证**：activities 345、components 150、components/common 75、components/html 142、components/console 162；新增回归：无移动的 mousedown 不产生 undo 历史、已选中节点不重建 selection、加载后 ports 立即渲染、视窗变化下 inspector 表单实例保持；`git diff --check` OK。
+- **门禁说明**：`node scripts/check-source-size.mjs` 目前报 `agents/agent-ui/src/AgentConsoleMessageRenderers.ts` 184 行 > 基线 183，该文件属于工作区中其他人未提交的 tab 相关改动，本次未改动。
+
+## 2026-11-13 内嵌 admin 设计器 Function 代码编辑 + PointerEvent 请求
+- **现象**：`packages/microservices/admin` 的规则设计器里 Function 节点只有原生 textarea，没有 workflow-admin 里的 CodeMirror 代码编辑器；同时服务端日志出现 `Gateway rule workflow not found: %5Bobject%20PointerEvent%5D`。
+- **根因**：
+  - CodeMirror 是渐进增强模块 `WorkflowCodeEditorModule`（`@tsdi/activities/web`），只有 workflow-admin 的 module 声明了它；admin 的 `GatewayAdminComponent` 只声明了 `WorkflowDesignerModule`。
+  - 规则页 “Configure” 按钮写成 `@click="state.editRules"`（无括号），handler 的可选参数 `id?: string` 直接收到 PointerEvent，被当作 workflow id 写入 `ruleWorkflowId`，随后 GET `/rules/[object%20PointerEvent]`。
+- **修复**：admin 组件声明 `WorkflowCodeEditorModule`（CodeMirror 仍按需懒加载）；按钮改为 `state.editRules()`；`editRules` 只接受字符串 id，`loadRuleDocument` 拒绝非字符串的 `ruleWorkflowId`。
+- **验证**：真实 Chrome 中 admin 设计器 Function 节点出现 CodeMirror（可见、可编辑，输入写回 config）；Configure 不再发出 PointerEvent 请求；admin 60 passing（新增 2 个回归：CodeMirror 增强、点击事件不得作为 workflow id）。
+
+## 2026-11-13 大图编辑（300 节点）输入性能
+- **定位**（CDP profile，300 节点，inspector 输入 6 次按键）：
+  - `snapshot()` 每次 commit 都 `JSON.stringify` 整个文档（~10ms/键）；
+  - `codeSuggestions` 每次渲染重算 O(nodes) 字符串（~17ms/6 键）；
+  - `canvasModel` 全量重投影 300 节点（签名/几何/端口，~33ms/键）；
+  - `v-for` 每次为所有行新建 context 并逐键 `Object.assign`（~23ms/键，含 GC）。
+- **修复**：
+  - 历史栈改存不可变 definition 对象（编辑本身已是结构共享的不可变替换），undo/redo 不再序列化/解析；拖拽快照同样惰性保存对象。
+  - canvas 投影增加节点/边的 **输入身份快路**（node/connection 对象、执行状态、选中、locale、registry revision、端点 port 对象），单节点编辑只重算该节点及相关边。
+  - `codeSuggestions` 按节点对象身份缓存贡献值，只有变化的节点重算；无变化时直接复用数组。
+  - `VForDirective` 复用未变化行的 reactive context，跳过重复的 `Object.assign`；外部 context/itemNames 变化时强制重建。
+- **修复后**（同机 1440×900）：300 节点输入 p50 50ms / p95 66ms（此前 p50 66–83 / p95 83–150）；PAN p50 16.7ms；profile 中 `snapshot`、`codeSuggestions`、`canvasModel` 重投影已消失，剩余主要是浏览器绘制与响应式 `get`。
+- **验证**：activities 345、components 150、components/common 75、components/html 142、components/console 162、microservices/admin 60；真实 Chrome 改名/拖拽/Ctrl+Z/Ctrl+Shift+Z、Function CodeMirror 输入均正常；`check-source-size` OK；`git diff --check` OK。
+
+## 2026-11-13 Function 节点代码编辑器迁移到 Monaco（CodeMirror 全部移除）
+- **需求**：Function 流程节点只需要一个可编辑的代码编辑器（Monaco，VS Code 编辑器），不要 initialize/finalize “开始/结尾代码”，并且彻底删除 CodeMirror（避免后续误引用）。
+- **改动**：
+  - `packages/activities/web/code-editor.ts` 重写为 Monaco 渐进增强：从宿主静态资源 `<page>/vs/loader.js` 懒加载 AMD 版 Monaco（`monaco-editor@0.52.2/min/vs`），支持 JS 语法解析/高亮、括号匹配、工作流补全；`readOnly: false`，宿主未提供 `vs` 资源或环境无 Worker（JSDOM）时保留原生可编辑 textarea。
+  - 修复 Monaco 集成问题：AMD `paths.vs` 不能带尾斜杠（否则 worker 解析成 `vs//...` → `/v/vs/...` 404）；显式设置 `MonacoEnvironment.getWorkerUrl`；把 DOM host / MutationObserver / Monaco disposable 标记 `noReact`，避免被响应式 Proxy 包裹后 `dispose/observe` 抛 `Illegal invocation`。
+  - Function 节点字段只保留 `code`（+ 名称/描述/启用/图标/颜色/超时），删除 `initialize`/`finalize`；运行时仍兼容已保存文档里的旧配置。
+  - 删除 CodeMirror 全家：`codemirror`/`@types/codemirror` 依赖、指令回退实现、`.CodeMirror*`/`.CodeMirror-hints` 样式、构建期 `codemirror.css`/`codemirror-hint.css` 拷贝与 index.html 引用、README 说明；两个宿主构建改为拷贝 Monaco `vs` 静态资源（gitignore）。
+  - 管理端（microservices admin）设计器同样声明 `WorkflowCodeEditorModule`；`@click="state.editRules"` 的 PointerEvent 误传一并修复（见上一条）。
+- **实测（真实 Chrome）**：
+  - workflow-admin 与 microservices admin 的 Function 节点均显示可编辑 Monaco（`.monaco-editor` 可见、语法 token、输入写回 config），无 `.CodeMirror`、无缺失资源、无 console 错误；切换节点后编辑器可销毁重建。
+  - workflow-admin lazy JS 从 255 KiB 降到 **7.7 KiB**；admin lazy chunks 从 727 KiB 降到 **478 KiB**（CodeMirror chunk 清除），Monaco 以 14MB 静态 `vs/` 资源按需加载，不进初始包。
+- **验证**：activities 346、microservices/admin 60、workflow-designer UI 53；`tsc --noEmit`（activities/admin）0；`check-source-size` OK；`git diff --check` OK；两端真实浏览器验证通过；验证后已停止 8765/4318 服务，端口空闲。
+
+## 2026-11-13 Monaco 资源拷贝构建失败（ENOENT …/vs/basic-languages/scheme）
+- **现象**：workflow-admin `npm run build` 在 `fs.cpSync(monaco min/vs → packages/workflow-admin/vs)` 报
+  `ENOENT …/vs/basic-languages/scheme`。原因是直接往正在使用的目标目录递归拷贝：并发的构建/开发服务器会 `rm`/重建同一个 `vs/`，`cpSync` 在目录被删除的瞬间抛 ENOENT（Node `cpSync` 递归拷贝不稳定）。
+- **修复**：两个宿主构建统一改为 `copyMonacoAssets()`：先复制到唯一的临时目录（`vs.tmp-<pid>-<time>`），再通过 backup+rename **原子替换** `vs/`（不出现目标缺失窗口）；并发构建互相覆盖时保留已有的完整副本；资源缺失只降级为可编辑 textarea，不再让整个构建失败。
+- **验证**：单次构建成功；4 个并发拷贝实测全部成功且最终 `vs/loader.js` 完整；workflow-admin/admin 构建后 8765、4318 真实 Chrome 均加载可编辑 Monaco，无 404/console 错误。
+
+## 2026-11-13 回退 Monaco → CodeMirror（体积过大）
+- **原因**：Monaco 需要约 14MB 静态 AMD 资源（两个宿主各一份），用户确认“还是太大了”，要求还原回之前的代码编辑器。
+- **回退内容**：
+  - 恢复 `packages/activities/web/code-editor.ts` 与 `web/index.ts` 的 CodeMirror 实现（Head 版本），移除 Monaco loader/主题/worker 相关代码；
+  - 依赖：卸载 `monaco-editor`，恢复 `codemirror@^5.65.16` 与 `@types/codemirror`；
+  - 构建：移除 Monaco `vs/` 资产拷贝（含临时/备份目录与 gitignore 项），恢复 `codemirror.css` / `codemirror-hint.css` 拷贝与 index.html 引用；
+  - 样式：移除 `.workflow-monaco-editor`，恢复 `.CodeMirror*` / `.CodeMirror-hints` 及暗色/高对比主题规则；
+  - 测试/文档：管理端测试恢复 `.CodeMirror` 断言，README 恢复 CodeMirror 说明；删除两个宿主下的 14MB `vs/` 目录。
+- **保留**：Function 节点仅一个 `code` 编辑器（无 initialize/finalize）、PointerEvent 修复、以及此前全部画布/选择/输入性能优化。
+- **实测**：workflow-admin（8765）与 admin（4318）Function 代码字段均为可见可编辑 CodeMirror，无 Monaco、无缺失资源、无 console 错误；暗色主题下编辑器背景 = `--wf-theme-input`（rgb(11,18,32)）；输入写回 config。
+- **验证**：activities workflow-designer UI 53、microservices/admin 60；`tsc --noEmit` 0；`check-source-size` OK；`git diff --check` OK；验证后 8765/4318 已停止，端口空闲。
+
+## 2026-11-14 AOT web 构建压缩模板与样式
+- **问题**：esbuild 只压缩 JS，AOT 产物里的 `template: \`...\`` 与 `*_CSS` 样式字符串原样保留；拷贝的 CodeMirror CSS 也是未压缩文件，初始/懒加载包体积偏大。
+- **实现**：
+  - 新增 `scripts/minify-inline-templates.js`（acorn 解析 AOT 产物 + `html-minifier-terser` + esbuild CSS minifier）：
+    - `template:` 字符串 → HTML 压缩（`conservativeCollapse` 保留必要空格，`ignoreCustomFragments` 保护 `{{...}}` 插值，跳过含 `${}` 的模板）；
+    - `*_CSS` / `style(s)` 字符串 → esbuild CSS 压缩；
+    - 通过 esbuild `onLoad` 插件只处理 `TSC_OUT` 下的 AOT JS 模块。
+  - workflow-admin 与 microservices admin 的构建均接入该插件；拷贝的 `codemirror.css` / `codemirror-hint.css` / `codemirror-lint.css` 改为先压缩再写入。
+- **实测**：workflow-admin initial 751.8→**727.9 KiB**（gzip 192.6→**190.3 KiB**），lazy 379.5→379.1 KiB；admin initial 358.5→**356.1 KiB**，lazy 852.2→**819.1 KiB**；designer CSS（64KB→53KB）与模板已内联压缩到 chunk 中，CodeMirror CSS 压缩为单行（5972 字节）。
+- **验证**：真实 Chrome 两个宿主页面渲染正常（palette 54、toolbar/status 文案、rules 页面、设计器样式安装成功、无 console 错误）；activities 350、microservices/admin 60 仍通过；`check-source-size` OK；`git diff --check` OK；验证后 8765/4318 已停止。
+
+## 2026-11-14 Function 代码编辑器：自动补全与语法提示
+- **自动补全**：CodeMirror `inputRead` 现在对普通标识符也会触发（140ms 防抖），不再只在 `.` 或 Ctrl+Space 时弹出；`context.` / `context.variables.` 等成员补全立即弹出，补全项包含关键字、运行时绑定（context/input/msg、context.inbound/services/state/events/workflowStatus/eventBus/waitEvent）以及 runContext 环境变量（`context.<key>`、`context.variables.<name>`）。
+- **语法提示**：编辑器下方常驻提示行 `Ctrl+Space: context · input · msg · variables`；输入出现语法错误时变为红色 `⚠ Unexpected token (行:列)`，同时在 gutter 显示错误标记；初始值也会 lint（加载的流程里有坏代码无需先编辑即可看到）。
+- **lint 实现**：acorn 以 `(async () => { ... })` 包装解析（与运行时的 Function 包装一致），位置回写到原文；CodeMirror lint addon + acorn 均按需懒加载；lint CSS/提示行样式已接入两个宿主。
+- **验证**：真实 Chrome（8765 / 4318）输入 `con` 自动弹出补全；`return (;` 出现红色行内标记、gutter 标记与 `⚠ Unexpected token (1:9)` 状态行；改为 `return input;` 后恢复提示行；无 console 错误。activities UI 54、microservices/admin 60 通过；`check-source-size` OK、`git diff --check` OK；验证后服务已停止。
+
+## 2026-11-14 自动补全质量修正与插件说明
+- **已修正的瑕疵**：
+  - 字符串 / 注释 / 正则内部不再弹补全（`getTokenAt` 判断 token 类型）；
+  - 失焦或已存在补全弹窗时取消/跳过排队中的弹窗（不再延迟弹到别的输入框）；
+  - 支持可选链成员补全：`context?.` / `context?.variables`；
+  - 补全顺序按“工作流绑定/变量 → JS 通用名称 → 关键字”组织（show-hint 最终按字母排序）；
+  - 初始代码自动 lint，语法错误同时显示在 gutter 与编辑器下方状态行。
+- **当前使用的插件**（CodeMirror 5 官方 addon，全部懒加载）：
+  - `show-hint`：补全弹窗 UI / 键盘交互；
+  - `javascript-hint`：JS 关键字与作用域内标识符；
+  - `lint` + acorn：语法错误标记与提示；
+  - `closebrackets` / `matchbrackets`：括号补全与匹配。
+- **可选升级**：`tern`（CodeMirror tern addon + tern）可做类型推断/成员文档，但体积约 1MB 且需要为 `context`/`input` 提供类型定义；CodeMirror 6 的 `@codemirror/autocomplete` 支持模糊匹配与文档，但需要重写编辑器；Monaco 体积过大已排除。当前保留轻量方案。
+- **验证**：真实 Chrome 两个宿主：`con` 自动弹补全、字符串/注释内不弹、`context?.` 弹成员、语法错误提示正常；activities UI 54、microservices/admin 60 通过；`check-source-size`/`git diff --check` OK；服务已停止。
+
+## 2026-11-14 TUI 消息详情瘦身、两种布局 overlay 与表单 select 化
+- **消息详情**：详情面板只保留行号/正文（`<panel :items="detailItems">`），移除顶部摘要（`message 1/1 assistant | lines …`）与底部提示（`up/down scroll …`）；删除已无生产调用的 `AgentConsoleMessageDetailMeta.ts`、`messageDetail` i18n 段与 `messageDetailClosedHint` 选项；时间线事件 inspector 的提示文案保留。
+- **两种布局都使用 overlay 对话框**：`components/console/src/terminal.ts` 的 native scrollback 分支不再把对话框插进流里，改为在当前可见窗口（最后 `height` 行）上合成覆盖层；关闭时恢复被覆盖的转录行，流长度不变。AGENTS.md 同步为“viewport 与 scrollback 都贴输入框上方浮动，scrollback 只绘制在可见窗口内”。
+- **回归**：`components/console/test/dialog-header.spec.ts` 新增 scrollback overlay 覆盖/恢复用例；`agents/agent-ui/test/console-renderer.spec.ts` 用 40 条长转录验证对话框浮在输入框上方、关闭后流长度不变。
+- **表单选择字段改用原生 select**：`dynamic-form` 新增 `isSelectInput`/`selectClass`/`changeSelect`/`optionValue`，`select` 类型渲染 `<select><option>`（含 list 子字段 `changeListItemSelect`），`radio` 仅在显式声明时保留；`optionValue` 把 DOM 字符串回映射到 schema option，保留数字/布尔类型。`dynamic-form.styles.ts` 增加 `.df-select`（复用 input 皮肤/焦点/非法态）。
+- **工作流 inspector**：`dynamicType()` 不再把 `select` 映射成 `radio`，节点元数据里的选择字段（含 `rules` 列表内的 `action`/`operator`）直接使用 `.workflow-select` 原生下拉。
+- **验证**：components 150、components/common 78、components/html 143、components/console 165、activities 349、agent-ui 2049；`tsc --noEmit`（activities/agent-ui/components）0；`check-source-size` OK；`git diff --check` OK。
+
+## 2026-11-14 代码编辑器：语言感知的语法提示与错误校验
+- **问题定位**：`data-dynamic-code` 同时用于 Function 的 JavaScript 代码和 JSON 字段的原始 JSON 文本，但编辑器对所有语言都用 `findFunctionSyntaxError`（acorn 异步函数体）校验，导致合法 JSON 被误报语法错误；非 JS 字段还会弹出 JavaScript 关键字补全。
+- **语言分流**：新增 `normalizeLanguage`（javascript/json/xml/html/htmlmixed/css/shell）；`modeFor`、模式加载、lint、hint 全部按语言选择。
+- **错误校验插件（CodeMirror lint addon）**：
+  - JavaScript/TypeScript：继续用 acorn 按运行时 `(async () => { ... })()` 语法校验，错误位置映射回用户文本；
+  - JSON：改用 `JSON.parse` 做真正的 JSON 校验，V8 无位置时用 acorn 表达式解析定位，提示消息去掉 "in JSON at position…" 等冗余尾部；
+  - XML/HTML/CSS/shell：不挂 JS linter（避免误报），仅保留语法高亮与补全。
+- **语法提示插件**：
+  - JS 保留 `show-hint` + `javascript-hint` + 工作流感知补全（`context.`、`context.variables.`、`context.actions.` 等，输入即弹、Ctrl+Space 手动触发）；
+  - 非 JS 模式加载 `anyword-hint`，Ctrl+Space 使用编辑器内单词补全（已验证 JSON 中 `"app` 可补出 `approved`）；
+  - 状态行文案按语言区分并接入 `workflow.code.hint/jsonHint/anywordHint` i18n（en/zh-CN）。
+- **验证**：
+  - 真实 Chrome（workflow-admin 8765 同款构建）：JS 高亮 token、`context.` 补全（actions/variables）、`return (;` 显示 `⚠ Unexpected token (1:9)` + gutter 标记 + 状态行、修复后恢复提示行；JSON 字段 `{"approved": true}` 不再误报、`{"approved": }` 正确报错、JSON 高亮与 anyword 补全正常；无 console 错误；
+  - 真实 Chrome（microservices/admin 嵌入 designer）：CodeMirror 正常增强、lint/补全/状态行正常、inspector `select` 正常；
+  - `workflow-code-editor.spec` 新增 JSON 校验用例（4 passing）；activities 351、microservices/admin 63 通过；`tsc --noEmit` 0；`check-source-size`/`git diff --check` OK。
+
+## 2026-11-14 代码编辑器：语义级检查（体积实测后选型）
+- **体积实测（minified / gzip）**：
+  - JSHint 浏览器包（`import { JSHINT } from 'jshint'`，esbuild bundle+minify）：**589.4 KB / 207.7 KB gzip**；即使使用 `dist/jshint.js` 也约 532 KB / 189 KB gzip。作为 lazy chunk 也会让编辑器懒加载体积从 120 KB→约 328 KB gzip，未采用。
+  - ESLint `Linter`：直接浏览器打包失败（依赖 `fs`/`module`/`os`/`url` 等 Node 内置），`eslint-linter-browserify` 包解压 13.6 MB，未采用。
+  - `acorn`：122.2 KB / 35.0 KB gzip（此前已作为 lazy chunk 使用）。
+  - `eslint-scope@8.4.0`：**32.8 KB / 9.2 KB gzip**（独立打包）；与 acorn 同 bundle 时增量约 33 KB / 9 KB gzip。采用。
+  - `acorn-walk`：7.3 KB / 2.0 KB gzip（未使用，改用自写 AST 遍历）。
+- **实现**：`code-editor.ts` 新增 `analyzeFunctionCode` / `analyzeJsonCode`：
+  - JS：acorn AST + eslint-scope 作用域分析，报告未定义变量、未使用局部变量、const 重新赋值（error）、return/throw/break/continue 后的不可达代码；`context`/`input`/`msg` 与浏览器/Node 全局白名单避免误报。
+  - JSON：`JSON.parse` 语法校验 + acorn AST 检查重复对象键（warning）。
+  - 所有诊断进入 CodeMirror lint（`severity: error/warning`），状态行显示 `⚠`/`△` + 位置 + `(+N)`；文案接入 `workflow.code.undefinedName/unusedName/constAssign/unreachable/duplicateKey`（en/zh-CN）。
+- **体积结果**：designer initial 733.5→**739.2 KiB**（gzip 191.8→**193.9 KiB**）；lazy 380.0→**411.6 KiB**（gzip 120.1→**129.2 KiB**，+9.1 KiB gzip）。未引入 JSHint 的 +208 KB gzip。
+- **验证**：真实 Chrome（workflow-admin）`missing` 未定义、`unused` 未使用、const 重赋值均出现状态行与 gutter 标记；JSON 重复键出现 `△` 警告；合法代码恢复提示行；`workflow-code-editor.spec` 6 passing；activities 353、microservices/admin 63；`tsc --noEmit` 0；`git diff --check` OK。
+
+## 2026-11-14 代码编辑器迁移 CodeMirror 6
+- **迁移范围**：`packages/activities/web/code-editor.ts` 从 CM5 全量替换为 CM6；保留 `WorkflowCodeMirrorDirective` 入口、`data-dynamic-code` / `data-code-value` / `data-code-suggestions` 契约、动态加载与现有语义检查（`analyzeFunctionCode` / `analyzeJsonCode`）。
+- **依赖**：新增 `@codemirror/{view,state,commands,language,autocomplete,lint,search,lang-javascript,lang-json,lang-html,lang-xml,lang-css,legacy-modes}` + `@lezer/highlight`；移除 CM5 `codemirror@5`、`@types/codemirror` 及 build 里的 CodeMirror CSS 拷贝/`<link>`。
+- **功能**：
+  - `basicSetup` 等价能力改为显式扩展（history、search、fold、bracket、active-line、multiple selection、lint keymap）；
+  - 补全：`scopeCompletionSource` 注入 `context/input/msg` 建议树，`javascript()` 提供本地变量/关键字/snippet；JSON 使用 `jsonLanguage` + `completeAnyWord`；
+  - 补全交互：`defaultKeymap:false`，**Enter 始终换行，Tab 接受补全**（避免 Enter 误插补全）；Ctrl+Space 手动触发；
+  - 诊断：`setDiagnostics` + `lintGutter`，保留 `⚠/△` 状态行、语义检查（未定义/未使用/const 重赋值/不可达/JSON 重复键）；
+  - 主题：`EditorView.theme` + `HighlightStyle` 使用 `--wf-code-*` 变量，覆盖 light/dark/solarized/high-contrast；稳定 token 类名 `wf-code-keyword` 等便于测试；
+  - 语言按需动态导入（JS/JSON/HTML/XML/CSS/shell），未使用的语言只留在独立 lazy chunk。
+- **体积（workflow-admin）**：initial 739.2→**743.8 KiB**（gzip 193.9→**195.2 KiB**，预算 780 KB 内）；全部 lazy chunk 411.6→**767.5 KiB**（gzip 129.2→**257.4 KiB**，含所有语言包，实际只加载当前字段语言）。microservices/admin：initial **357.3 KiB**（gzip 103.9），lazy **1224.4 KiB**（gzip 366.1）。
+- **验证**：
+  - 真实 Chrome：`context.`/`context.actions.` 补全、Enter 换行、Tab 接受、Ctrl+F 搜索面板、JS/JSON 高亮、lint 标记、语义警告/const 错误、JSON 重复键、编辑写回全都正常；无 console 错误；
+  - CM6 下 `.cm-editor` / `.cm-lint-marker-error` / `.cm-lintRange-error` / `.wf-code-*` 选择器已更新到 preview 与 admin/activities 测试；
+  - activities 353、microservices/admin 63、components 150、common 78、html 144、console 167；`tsc --noEmit` 0；`check-source-size`/`git diff --check` OK。
+
+## 2026-11-14 深色主题画布点阵降噪
+- **问题**：`.workflow-canvas-grid` 使用固定 `#cbd5e1` 点阵，深色主题下与 `#0b1220` 背景对比过强；同时 `.workflow-canvas` 还叠加了一层主题网格背景，形成双重点阵。
+- **修正**：
+  - 网格层改用 `var(--wf-theme-grid, #cbd5e1)`；
+  - 深色 `--wf-theme-grid` 改为 `rgba(148, 163, 184, 0.18)`，solarized 改为 `rgba(147, 161, 161, 0.18)`，high-contrast 改为 `rgba(255, 255, 255, 0.28)`；
+  - 移除 `.workflow-canvas` 在深色主题中的 `background-image` 网格，只保留 `background-color`，避免双层点阵。
+- **验证**：真实 Chrome 深色主题 computed style：`.workflow-canvas-grid` 为 `rgba(148, 163, 184, 0.18)`，`.workflow-canvas` 为 `background-image: none`；workflow-admin preview EXIT 0，无 console 错误。

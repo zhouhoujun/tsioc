@@ -57,6 +57,32 @@ export class DynamicFormTest {
         });
     }
 
+    @Test('maps native select values back to the schema option types')
+    async mapsSelectOptionTypes() {
+        const form = createForm({
+            fields: [
+                { key: 'unit', type: 'select', options: [
+                    { label: 'Milliseconds', value: 'ms' },
+                    { label: 'Seconds', value: 's' }
+                ] },
+                { key: 'size', type: 'select', options: [
+                    { label: 'One', value: 1 },
+                    { label: 'Two', value: 2 }
+                ] }
+            ]
+        }, { unit: 'ms', size: 1 });
+        await flush();
+
+        form.changeSelect(form.schema.fields[0], { target: { value: 's' } });
+        form.changeSelect(form.schema.fields[1], { target: { value: '2' } });
+        await flush();
+
+        const result = form.validate();
+        expect(result.valid).toBe(true);
+        expect(result.value.unit).toBe('s');
+        expect(result.value.size).toBe(2);
+    }
+
     @Test('validates colors, regular expressions and list item counts')
     validateExtraRules() {
         const errors = (field: any, value: any): any[] => {

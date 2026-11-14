@@ -75,6 +75,35 @@ describe('Workflow Designer UI', () => {
         expect(node.getAttribute('class')).toContain('workflow-node');
     });
 
+    it('pans the grid without restyling the node tree', async () => {
+        const canvas = root.querySelector('.workflow-canvas') as any;
+        const grid = root.querySelector('.workflow-canvas-grid') as any;
+        expect(grid).toBeTruthy();
+        // The grid lives on its own layer: restyling the canvas root background
+        // would repaint the whole node subtree, and inherited `--wf-grid-*`
+        // custom properties would recalc style for every node on each frame.
+        expect(canvas.getAttribute('style') || '').not.toContain('--wf-grid');
+        expect(canvas.getAttribute('style') || '').not.toContain('background');
+        const before = grid.getAttribute('style') || '';
+        expect(before).toContain('background-size');
+        expect(before).toContain('background-position');
+
+        canvas.dispatchEvent(new (doc.defaultView as any).WheelEvent('wheel', {
+            bubbles: true,
+            cancelable: true,
+            deltaY: 24,
+            clientX: 10,
+            clientY: 10
+        }));
+        await flush();
+
+        expect(grid.getAttribute('style') || '').not.toBe(before);
+        expect(grid.getAttribute('style') || '').toContain('background-position');
+        // The node subtree must not be touched by a viewport-only pan.
+        const node = root.querySelector('.workflow-node') as any;
+        expect(node.getAttribute('style') || '').toContain('left:');
+    });
+
     it('filters palette components by search query', async () => {
         const input = root.querySelector('.workflow-palette-search-input') as any;
         expect(input).toBeTruthy();
@@ -123,6 +152,36 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelectorAll('.workflow-node').length).toBe(7);
     });
 
+    it('renders registry ports for a workflow loaded after mount', async () => {
+        // Regression: normalization used to mutate the assigned definition in
+        // place, so view-model caches keyed on definition identity kept serving
+        // the pre-normalization projection. Nodes then rendered without ports
+        // until the next interaction recreated the canvas model.
+        const loaded = ref.instance.designer.load({
+            id: 'loaded-workflow',
+            name: 'Loaded workflow',
+            nodes: [{
+                id: 'only_task',
+                type: 'task',
+                name: 'Only task',
+                position: { x: 40, y: 40 },
+                config: {}
+            } as any],
+            connections: []
+        });
+        expect(loaded).toBe(true);
+        await flush();
+        await flush();
+
+        const node = ref.instance.designer.nodes[0];
+        expect(node.inputs?.length).toBeGreaterThan(0);
+        expect(node.outputs?.length).toBeGreaterThan(0);
+
+        const rendered = root.querySelectorAll('.workflow-node') as any[];
+        expect(rendered.length).toBe(1);
+        expect(rendered[0].querySelectorAll('.workflow-node-port').length).toBeGreaterThan(0);
+    });
+
     it('renders field placeholders, required markers and grouped sections', async () => {
         ref.instance.designer.selectNode('task_1');
         await flush();
@@ -146,18 +205,21 @@ describe('Workflow Designer UI', () => {
     it('shows conditional fields based on the current operator', async () => {
         ref.instance.designer.selectNode('condition_1');
         await flush();
-        expect(root.querySelector('.workflow-field[data-field-key="operator"] .workflow-options')).toBeTruthy();
+        const operator = root.querySelector('.workflow-field[data-field-key="operator"] select.workflow-select') as any;
+        expect(operator).toBeTruthy();
+        expect(operator.value).toBe('truthy');
+        expect(operator.querySelectorAll('option').length).toBe(8);
         expect(root.querySelector('.workflow-field[data-field-key="value"]')).toBeFalsy();
 
-        const equals = root.querySelector('.workflow-field[data-field-key="operator"] [data-option-value="equals"] input') as any;
-        equals.checked = true;
-        equals.dispatchEvent(new (doc.defaultView as any).Event('change', { bubbles: true }));
+        operator.value = 'equals';
+        operator.dispatchEvent(new (doc.defaultView as any).Event('change', { bubbles: true }));
         await flush();
         expect(root.querySelector('.workflow-field[data-field-key="value"]')).toBeTruthy();
         expect(ref.instance.designer.nodes.find(node => node.id === 'condition_1')?.config?.operator).toBe('equals');
 
-        const truthy = root.querySelector('.workflow-field[data-field-key="operator"] [data-option-value="truthy"] input') as any;
-        truthy.checked = true;
+        const truthy = root.querySelector('.workflow-field[data-field-key="operator"] select.workflow-select') as any;
+        expect(truthy.value).toBe('equals');
+        truthy.value = 'truthy';
         truthy.dispatchEvent(new (doc.defaultView as any).Event('change', { bubbles: true }));
         await flush();
         expect(ref.instance.designer.nodes.find(node => node.id === 'condition_1')?.config?.operator).toBe('truthy');
@@ -200,6 +262,30 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelector('.workflow-inspector-restore')).toBeFalsy();
     });
 
+    it('suggests runtime bindings and host environment variables to function code', async () => {
+        const preview = ref.instance.preview!;
+        preview.runContext = {
+            variables: { orderId: 'A-1', total: 3 },
+            services: {},
+            featureFlag: true
+        };
+        await flush();
+        const suggestions = preview.codeSuggestions;
+        // Runtime bindings available to the async function body.
+        expect(suggestions).toContain('context');
+        expect(suggestions).toContain('input');
+        expect(suggestions).toContain('msg');
+        expect(suggestions).toContain('context.inbound');
+        expect(suggestions).toContain('context.services');
+        expect(suggestions).toContain('context.workflowStatus');
+        expect(suggestions).toContain('process.env');
+        // Host environment (runContext) variables complete under context.
+        expect(suggestions).toContain('context.featureFlag');
+        expect(suggestions).toContain('context.variables.orderId');
+        expect(suggestions).toContain('context.variables.total');
+        expect(suggestions).toContain('input.variables.orderId');
+    });
+
     it('refreshes property values when switching nodes of the same type', async () => {
         const second = ref.instance.designer.addNode('task', { x: 40, y: 40 })!;
         await flush();
@@ -220,6 +306,23 @@ describe('Workflow Designer UI', () => {
         await flush();
         input = root.querySelector('.workflow-inspector-name') as any;
         expect(input.value).toBe('Second task');
+    });
+
+    it('keeps inspector edits mounted across viewport-only renders', async () => {
+        ref.instance.designer.selectNode('task_1');
+        await flush();
+        const input = root.querySelector('.workflow-inspector-name') as any;
+        expect(input).toBeTruthy();
+        input.value = 'Edited while panning';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name).toBe('Edited while panning');
+
+        ref.instance.designer.panBy(24, 12);
+        await flush();
+        const after = root.querySelector('.workflow-inspector-name') as any;
+        expect(after).toBe(input);
+        expect(after.value).toBe('Edited while panning');
     });
 
     it('places palette nodes without overlapping existing nodes', async () => {
@@ -504,6 +607,15 @@ describe('Workflow Designer UI', () => {
         field.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
         await flush();
         expect(ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.rules?.[0]?.field).toBe('variables.name');
+
+        const action = root.querySelector('.workflow-field[data-field-key="rules"] .workflow-list-row [data-field-key="action"] select.workflow-select') as any;
+        expect(action).toBeTruthy();
+        expect(action.value).toBe('set');
+        expect(action.querySelectorAll('option').length).toBe(3);
+        action.value = 'append';
+        action.dispatchEvent(new (doc.defaultView as any).Event('change', { bubbles: true }));
+        await flush();
+        expect(ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.rules?.[0]?.action).toBe('append');
     });
 
     it('renders unit suffixes from node field metadata', async () => {
@@ -917,6 +1029,10 @@ describe('Workflow Designer UI', () => {
         const textarea = root.querySelector('.workflow-code-editor') as any;
         expect(textarea).toBeTruthy();
         expect(code()).toBe('return input;');
+        // Function exposes a single code editor (no initialize/finalize hooks).
+        expect(root.querySelectorAll('.workflow-field[data-field-key="code"] .workflow-code-editor').length).toBe(1);
+        expect(root.querySelector('.workflow-field[data-field-key="initialize"]')).toBeFalsy();
+        expect(root.querySelector('.workflow-field[data-field-key="finalize"]')).toBeFalsy();
 
         textarea.value = 'return 42;';
         textarea.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));

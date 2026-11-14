@@ -5,7 +5,6 @@ import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import { formatAgentUiLabel, formatAgentKeymapActionLabel, formatAgentPanelLabel as panelLabel, formatAgentPanelStatusLabel as panelStatusLabel } from './agent-ui.i18n';
 import { formatAgentConsoleInputBadges } from './AgentConsoleInputBadges';
-import { formatAgentMessageDetailSummary } from './AgentConsoleMessageDetailMeta';
 import { formatScheduledTaskDetailLines } from './AgentConsoleScheduledTaskFormat';
 import { formatSessionAge, formatSessionHint } from './AgentConsoleFormatters';
 import { formatReviewHeaderMeta, formatReviewSelectionMeta, formatReviewStatsMeta } from './AgentConsoleReviewPanelFormat';

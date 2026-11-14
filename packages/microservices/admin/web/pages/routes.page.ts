@@ -23,13 +23,13 @@ import { GatewayAdminState } from '../admin.state';
                 <span class="ga-dirty" v-if="state.routesDirty">{{state.t('routes.unsaved')}}</span>
                 <span class="ga-synced" v-else>{{state.t('routes.synced')}}</span>
                 <span class="ga-pill ga-config-version">{{state.t('config.version', { version: state.configVersion })}}</span>
-                <button class="ga-btn ga-preview-config" type="button" @click="state.previewConfigChanges">{{state.t('config.preview')}}</button>
-                <button class="ga-btn ga-config-history" type="button" @click="state.openConfigHistory">{{state.t('config.history')}}</button>
-                <button class="ga-btn ga-import-routes" type="button" @click="state.openImport">{{state.t('routes.import')}}</button>
-                <button class="ga-btn ga-export-routes" type="button" @click="state.exportRoutes">{{state.t('routes.export')}}</button>
-                <button class="ga-btn ga-reset-routes" type="button" @click="state.resetRoutes">{{state.t('routes.reset')}}</button>
-                <button class="ga-btn ga-add-route" type="button" @click="state.addRoute">{{state.t('routes.add')}}</button>
-                <button class="ga-btn ga-btn-primary ga-apply-routes" type="button" @click="state.applyRoutes">{{state.t('routes.apply')}}</button>
+                <button class="ga-btn ga-preview-config" type="button" @click="state.previewConfigChanges"><icon name="eye" size="xs"></icon>{{state.t('config.preview')}}</button>
+                <button class="ga-btn ga-config-history" type="button" @click="state.openConfigHistory"><icon name="history" size="xs"></icon>{{state.t('config.history')}}</button>
+                <button class="ga-btn ga-import-routes" type="button" @click="state.openImport"><icon name="import" size="xs"></icon>{{state.t('routes.import')}}</button>
+                <button class="ga-btn ga-export-routes" type="button" @click="state.exportRoutes"><icon name="export" size="xs"></icon>{{state.t('routes.export')}}</button>
+                <button class="ga-btn ga-reset-routes" type="button" @click="state.resetRoutes"><icon name="undo" size="xs"></icon>{{state.t('routes.reset')}}</button>
+                <button class="ga-btn ga-add-route" type="button" @click="state.addRoute"><icon name="plus" size="xs"></icon>{{state.t('routes.add')}}</button>
+                <button class="ga-btn ga-btn-primary ga-apply-routes" type="button" @click="state.applyRoutes"><icon name="check" size="xs"></icon>{{state.t('routes.apply')}}</button>
             </div>
         </div>
 
@@ -53,7 +53,7 @@ import { GatewayAdminState } from '../admin.state';
                 </select>
                 <input class="ga-match-path" [value]="state.matchPath" placeholder="/api/users"
                     @input="state.setMatchPath($event)" />
-                <button class="ga-btn ga-btn-primary ga-match-run" type="button" @click="state.testMatch">{{state.t('match.run')}}</button>
+                <button class="ga-btn ga-btn-primary ga-match-run" type="button" @click="state.testMatch"><icon name="run" size="xs"></icon>{{state.t('match.run')}}</button>
             </div>
             <div class="ga-match-result" v-if="state.matchResult">
                 <span class="ga-pill" [class]="state.matchResult.matchedBy === 'none' ? 'ga-pill is-off' : 'ga-pill is-on'">
@@ -96,16 +96,16 @@ import { GatewayAdminState } from '../admin.state';
                             <button class="ga-pill ga-pill-button" type="button"
                                 [class]="route.enabled === false ? 'ga-pill is-off' : 'ga-pill is-on'"
                                 @click="state.toggleRoute(route)">
-                                {{route.enabled === false ? state.t('status.disabled') : state.t('status.enabled')}}
+                                <icon [name]="route.enabled === false ? 'minus' : 'check'" size="xs"></icon>{{route.enabled === false ? state.t('status.disabled') : state.t('status.enabled')}}
                             </button>
                         </td>
                         <td class="ga-cell-actions">
-                            <button class="ga-link-btn ga-view-route" type="button" @click="state.openRouteDetail(route)">{{state.t('action.view')}}</button>
-                            <button class="ga-link-btn" type="button" @click="state.moveRoute(route, -1)">{{state.t('action.moveUp')}}</button>
-                            <button class="ga-link-btn" type="button" @click="state.moveRoute(route, 1)">{{state.t('action.moveDown')}}</button>
-                            <button class="ga-link-btn" type="button" @click="state.duplicateRoute(route)">{{state.t('action.duplicate')}}</button>
-                            <button class="ga-link-btn" type="button" @click="state.editRoute(route)">{{state.t('action.edit')}}</button>
-                            <button class="ga-link-btn is-danger" type="button" @click="state.removeRoute(route)">{{state.t('action.remove')}}</button>
+                            <button class="ga-link-btn ga-view-route" type="button" @click="state.openRouteDetail(route)"><icon name="eye" size="xs"></icon>{{state.t('action.view')}}</button>
+                            <button class="ga-link-btn" type="button" @click="state.moveRoute(route, -1)"><icon name="arrow-up" size="xs"></icon>{{state.t('action.moveUp')}}</button>
+                            <button class="ga-link-btn" type="button" @click="state.moveRoute(route, 1)"><icon name="arrow-down" size="xs"></icon>{{state.t('action.moveDown')}}</button>
+                            <button class="ga-link-btn" type="button" @click="state.duplicateRoute(route)"><icon name="duplicate" size="xs"></icon>{{state.t('action.duplicate')}}</button>
+                            <button class="ga-link-btn" type="button" @click="state.editRoute(route)"><icon name="rename" size="xs"></icon>{{state.t('action.edit')}}</button>
+                            <button class="ga-link-btn is-danger" type="button" @click="state.removeRoute(route)"><icon name="delete" size="xs"></icon>{{state.t('action.remove')}}</button>
                         </td>
                     </tr>
                     <tr v-if="!state.filteredRoutes.length">

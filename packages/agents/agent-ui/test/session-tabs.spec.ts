@@ -42,22 +42,17 @@ export class SessionTabsTest {
             // hovering it turns it red through the shared hover animation.
             const closeColor = String(bar).match(/\x1b\[38;2;(\d+);(\d+);(\d+)m[^\x1b]*✕/);
             expect(closeColor?.slice(1).join(',')).toEqual('110,118,129');
-            // Every tab reserves a close cell; the terminal surface paints an
-            // inactive one only while its tab is hovered.
+            // Every tab reserves and paints a close affordance (the web strip
+            // reveals it on hover; the terminal has no hover-reveal).
             const plainBar = String(bar).replace(/\x1b\[[0-9;]*m/g, '');
             expect(plainBar).toContain('Alpha ✕');
             expect(plainBar).toContain('Beta ✕');
             expect(plainBar).toContain(' + ');
-            // Selected and inactive tabs must not share the same foreground
-            // colour: the TUI stylesheet cannot parse `:not(...)`, so inactive
-            // tabs are matched by `aria-selected="false"` instead.
-            const colorOf = (label: string): string => {
-                const match = new RegExp(`\\x1b\\[38;2;(\\d+);(\\d+);(\\d+)m${label}`).exec(String(bar));
-                return match ? `${match[1]},${match[2]},${match[3]}` : '';
-            };
-            expect(colorOf(' Alpha ')).not.toEqual('');
-            expect(colorOf(' Beta ')).not.toEqual('');
-            expect(colorOf(' Alpha ')).not.toEqual(colorOf(' Beta '));
+            // The active tab is a raised surface like /web (background + bold),
+            // while inactive tabs stay muted and share no active foreground.
+            expect(String(bar)).toContain('\x1b[48;2;27;33;40m');
+            expect(String(bar)).toContain('\x1b[38;2;201;209;217m');
+            expect(String(bar)).toContain('\x1b[38;2;110;118;129m');
             tabs.instance.select('session-b');
             tabs.instance.create();
             tabs.instance.close('session-b');
@@ -107,30 +102,6 @@ export class SessionTabsTest {
             expect(close!.width).toBeGreaterThanOrEqual(2);
             expect(close!.x + close!.width).toBeLessThanOrEqual(beta!.x);
             surface.destroy();
-        } finally {
-            await ctx.close();
-        }
-    }
-
-    @Test('all tabs reserve the close affordance like /web (opt-out for active-only hosts)')
-    async hoverCloseAffordances() {
-        const ctx = await Application.run(AgentModule, { deps: [AgentUiModule, TuiTemplateModule, ComponentsModule] });
-        try {
-            const ref = ctx.get(ComponentFactory).create(AgentConsoleComponent, { injector: ctx });
-            await ref.render();
-            const state: any = ref.instance.sessionState;
-            state.setSessions([
-                { id: 'session-a', current: true, title: 'Alpha' },
-                { id: 'session-b', current: false, title: 'Beta' }
-            ]);
-            const tabs = ref.hostView.query(TabsComponent) as any;
-            // Default: every tab reserves the close affordance; DOM hosts
-            // reveal it in CSS and the terminal surface reveals it on hover.
-            expect(tabs.instance.items.map((tab: any) => tab.showClose)).toEqual([true, 'hover']);
-            // Hosts that want active-only can opt out.
-            state.tabCloseOnHover = false;
-            for (let index = 0; index < 16; index++) await Promise.resolve();
-            expect(tabs.instance.items.map((tab: any) => tab.showClose)).toEqual([true, false]);
         } finally {
             await ctx.close();
         }
@@ -208,6 +179,30 @@ export class SessionTabsTest {
             } finally {
                 surface.destroy();
             }
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('all tabs reserve the close affordance like /web (opt-out for active-only hosts)')
+    async hoverCloseAffordances() {
+        const ctx = await Application.run(AgentModule, { deps: [AgentUiModule, TuiTemplateModule, ComponentsModule] });
+        try {
+            const ref = ctx.get(ComponentFactory).create(AgentConsoleComponent, { injector: ctx });
+            await ref.render();
+            const state: any = ref.instance.sessionState;
+            state.setSessions([
+                { id: 'session-a', current: true, title: 'Alpha' },
+                { id: 'session-b', current: false, title: 'Beta' }
+            ]);
+            const tabs = ref.hostView.query(TabsComponent) as any;
+            // Default: every tab reserves the close affordance (web on hover,
+            // terminal paints it directly).
+            expect(tabs.instance.items.map((tab: any) => tab.showClose)).toEqual([true, 'hover']);
+            // Hosts that want the old active-only behaviour can opt out.
+            state.tabCloseOnHover = false;
+            for (let index = 0; index < 16; index++) await Promise.resolve();
+            expect(tabs.instance.items.map((tab: any) => tab.showClose)).toEqual([true, false]);
         } finally {
             await ctx.close();
         }

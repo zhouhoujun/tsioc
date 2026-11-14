@@ -4,6 +4,7 @@ import {
     MenuBarGroup,
     installMenuBarStyles,
 } from '@tsdi/components/common/menu-bar';
+import { installTabBarStyles } from '@tsdi/components/common/tab-bar';
 import { DOCUMENT } from '@tsdi/common';
 import { GatewayConfigDiff, GatewayConfigHistoryEntry, GatewayMatchPreview, GatewayRouteOptions, GatewayRuntimeSnapshot } from '@tsdi/gateway';
 import { WorkflowDefinitionSummary } from '@tsdi/activities/visual';
@@ -145,6 +146,7 @@ export class GatewayAdminState {
             // Documents can reject expando properties.
         }
         installMenuBarStyles(documentRef as unknown as Document | undefined);
+        installTabBarStyles(documentRef as unknown as Document | undefined);
     }
 
     init(): void {
@@ -854,8 +856,12 @@ export class GatewayAdminState {
 
     readonly editRules = async (id?: string): Promise<void> => {
         const self = this.selfRef ?? this;
-        if (id) {
-            self.ruleWorkflowId = id;
+        // Bindings without an explicit call receive the DOM event. Only a real
+        // workflow id may select a document; an event here used to become the
+        // requested URL (`/rules/[object PointerEvent]`).
+        const workflowId = typeof id === 'string' ? id.trim() : '';
+        if (workflowId) {
+            self.ruleWorkflowId = workflowId;
         }
         if (self.openDesigner) {
             await self.openDesigner();

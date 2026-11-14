@@ -1,4 +1,4 @@
-import { Attribute, Component, OnDestroy, ViewChild } from '@tsdi/components';
+import { Attribute, Component, NoReactive, OnDestroy, ViewChild } from '@tsdi/components';
 import {
     DynamicFormChange,
     DynamicFormComponent,
@@ -121,6 +121,21 @@ export class WorkflowInspectorComponent implements OnDestroy {
     protected pendingChange?: { key: string; value: any; type: string; nodeId: string };
     protected pendingTimer?: any;
 
+    /**
+     * The form inputs are derived from the inspector model. They must keep a
+     * stable identity across renders: building a fresh schema object made
+     * `dynamic-form` re-normalize and re-sign its schema on every render after
+     * a selection, which dominated the click latency.
+     */
+    @NoReactive() private formSchemaCache?: {
+        model: WorkflowInspectorModel;
+        locale: string;
+        suggestions: string[];
+        schema: DynamicFormSchema;
+    };
+    @NoReactive() private formValueCache?: { model: WorkflowInspectorModel; value: Record<string, any> };
+    @NoReactive() private formMessagesCache?: { locale: string; messages: Record<string, string> };
+
     constructor(@Optional() private translator?: Translator) { }
 
     @Attribute()
@@ -180,6 +195,20 @@ export class WorkflowInspectorComponent implements OnDestroy {
 
     /** JSON schema handed to the shared dynamic form. */
     get formSchema(): DynamicFormSchema {
+        const model = this._model;
+        const cache = this.formSchemaCache;
+        // Key on the model instance, not on the signature field: `set model`
+        // updates the signature before the model itself, so a signature-keyed
+        // cache could be filled from the previous model during that window.
+        if (cache && cache.model === model && cache.locale === this.locale && cache.suggestions === this.codeSuggestions) {
+            return cache.schema;
+        }
+        const schema = this.buildFormSchema();
+        this.formSchemaCache = { model, locale: this.locale, suggestions: this.codeSuggestions, schema };
+        return schema;
+    }
+
+    private buildFormSchema(): DynamicFormSchema {
         const fields: DynamicFormField[] = [];
         if (!this._model.hasSelection) {
             return { fields };
@@ -274,6 +303,17 @@ export class WorkflowInspectorComponent implements OnDestroy {
     }
 
     get formValue(): Record<string, any> {
+        const model = this._model;
+        const cache = this.formValueCache;
+        if (cache && cache.model === model) {
+            return cache.value;
+        }
+        const value = this.buildFormValue();
+        this.formValueCache = { model, value };
+        return value;
+    }
+
+    private buildFormValue(): Record<string, any> {
         const value: Record<string, any> = {
             name: this._model.name,
             description: this._model.description,
@@ -294,7 +334,11 @@ export class WorkflowInspectorComponent implements OnDestroy {
     }
 
     get formMessages(): Record<string, string> {
-        return {
+        const cache = this.formMessagesCache;
+        if (cache && cache.locale === this.locale) {
+            return cache.messages;
+        }
+        const messages: Record<string, string> = {
             required: this.requiredMessage,
             requiredTrue: this.requiredMessage,
             min: this.numberMessage,
@@ -308,6 +352,8 @@ export class WorkflowInspectorComponent implements OnDestroy {
             number: this.numberMessage,
             integer: this.integerMessage
         };
+        this.formMessagesCache = { locale: this.locale, messages };
+        return messages;
     }
 
     readonly formChange = (change: DynamicFormChange): void => {
@@ -338,12 +384,10 @@ export class WorkflowInspectorComponent implements OnDestroy {
 
     protected dynamicType(field: WorkflowInspectorFieldView): DynamicFormField['type'] {
         // Most node field types are already shared dynamic-form types; only
-        // the two domain aliases need mapping.
+        // the boolean alias needs mapping. Choice fields render as a native
+        // `<select>` instead of a radio group.
         if (field.type === 'boolean') {
             return 'checkbox';
-        }
-        if (field.type === 'select') {
-            return 'radio';
         }
         return field.type as DynamicFormField['type'];
     }

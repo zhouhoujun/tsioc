@@ -518,10 +518,23 @@
 
     white-space: nowrap;
 }
+
+
+
+.tab {
+    color: var(--console-meta, #6e7681);
+    padding: 0;
+}
 .tab[aria-selected="true"] {
     color: var(--console-text, #c9d1d9);
+    background: var(--console-tab-active-bg, var(--console-input-bg, #1b2128));
+    background-color: var(--console-tab-active-bg, var(--console-input-bg, #1b2128));
+    font-weight: bold;
 }
 .tab[aria-selected="false"] {
+    color: var(--console-meta, #6e7681);
+}
+.tab[data-disabled="true"] {
     color: var(--console-meta, #6e7681);
 }
 .tab-close {
@@ -530,10 +543,14 @@
 }
 .tab-close:hover {
     color: var(--console-error, #cf9893);
+    background-color: var(--console-hover-bg, #303e4f);
 }
 .tab-new {
     color: var(--console-accent, #86a9d6);
     font-weight: bold;
+}
+.tab-new:hover {
+    background-color: var(--console-hover-bg, #303e4f);
 }
 .console-toast-stack {
     padding: 0 1ch;

@@ -326,6 +326,13 @@ export class HtmlRenderer implements Renderer {
     }
 
     setProperty(el: RNode, name: string, value: any): void {
+        // Form controls stringify `undefined`, so a missing bound value used to
+        // paint the literal text "undefined" into an empty input/textarea. The
+        // console renderer already normalizes nullish values to `''`; mirror it
+        // for `value` so DOM and TUI hosts agree on empty form fields.
+        if (name === 'value' && value == null) {
+            value = '';
+        }
         (el as unknown as any)[name] = value;
     }
 

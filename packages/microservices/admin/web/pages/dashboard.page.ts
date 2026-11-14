@@ -161,7 +161,7 @@ import { GatewayAdminState } from '../admin.state';
                         <h2>{{state.t('card.routeTable')}}</h2>
                         <p>{{state.t('card.routeTableDesc')}}</p>
                     </div>
-                    <button class="ga-btn" type="button" @click="state.goRoutes">{{state.t('card.manageRoutes')}}</button>
+                    <button class="ga-btn" type="button" @click="state.goRoutes"><icon name="http-request" size="xs"></icon>{{state.t('card.manageRoutes')}}</button>
                 </div>
                 <div class="ga-compact-list">
                     <div class="ga-compact-row" v-for="route in state.routes.slice(0, 6)">
@@ -179,7 +179,7 @@ import { GatewayAdminState } from '../admin.state';
                         <h2>{{state.t('card.rules')}}</h2>
                         <p>{{state.t('card.rulesDesc')}}</p>
                     </div>
-                    <button class="ga-btn" type="button" @click="state.goRules">{{state.t('card.manageRules')}}</button>
+                    <button class="ga-btn" type="button" @click="state.goRules"><icon name="parallel" size="xs"></icon>{{state.t('card.manageRules')}}</button>
                 </div>
                 <div class="ga-compact-list">
                     <div class="ga-compact-row" v-for="rule in state.rules.slice(0, 6)">

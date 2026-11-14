@@ -1,1 +1,4 @@
 web/bundle-meta.json
+web/codemirror.css
+web/codemirror-hint.css
+web/codemirror-lint.css

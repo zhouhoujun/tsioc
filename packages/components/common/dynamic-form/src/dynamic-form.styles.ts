@@ -129,6 +129,7 @@ export const DYNAMIC_FORM_CSS = `
 }
 
 .df-input,
+.df-select,
 .df-textarea {
     width: 100%;
     box-sizing: border-box;
@@ -142,6 +143,7 @@ export const DYNAMIC_FORM_CSS = `
 }
 
 .df-input:focus,
+.df-select:focus,
 .df-textarea:focus {
     border-color: var(--df-border-strong);
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.14);
@@ -210,6 +212,7 @@ export const DYNAMIC_FORM_CSS = `
 }
 
 .df-input[aria-invalid="true"],
+.df-select[aria-invalid="true"],
 .df-textarea[aria-invalid="true"] {
     border-color: var(--df-danger);
     background: var(--df-danger-soft);

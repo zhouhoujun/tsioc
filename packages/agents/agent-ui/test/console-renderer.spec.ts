@@ -968,7 +968,12 @@ export class AgentConsoleMessagesRendererTest {
             const consoleRef = tuiCtx.get(ComponentFactory).create(AgentConsoleComponent, { injector: tuiCtx });
             await consoleRef.render();
             const state = consoleRef.instance.sessionState;
-            state.setMessages([{ id: 'u1', role: 'user', content: 'hello', createdAt: 1 } as any]);
+            state.setMessages(Array.from({ length: 40 }, (_value, index) => ({
+                id: `u${index + 1}`,
+                role: index % 2 === 0 ? 'user' : 'assistant',
+                content: `message ${index + 1}`,
+                createdAt: index + 1
+            })) as any);
             state.openSelectMenu('Security level', [
                 { label: 'Ask for approval', value: 'ask' },
                 { label: 'Full Access', value: 'full' }
@@ -1196,8 +1201,8 @@ export class AgentConsoleMessagesRendererTest {
         }
     }
 
-    @Test('a native-scrollback dialog opens below the composer')
-    async scrollbackDialogOpensBelowComposer() {
+    @Test('a native-scrollback dialog floats above the composer without consuming transcript rows')
+    async scrollbackDialogFloatsAboveComposer() {
         const tuiCtx = await Application.run(AgentModule, {
             deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
         });
@@ -1206,7 +1211,12 @@ export class AgentConsoleMessagesRendererTest {
             const consoleRef = tuiCtx.get(ComponentFactory).create(AgentConsoleComponent, { injector: tuiCtx });
             await consoleRef.render();
             const state = consoleRef.instance.sessionState;
-            state.setMessages([{ id: 'u1', role: 'user', content: 'hello', createdAt: 1 } as any]);
+            state.setMessages(Array.from({ length: 40 }, (_value, index) => ({
+                id: `u${index + 1}`,
+                role: index % 2 === 0 ? 'user' : 'assistant',
+                content: `message ${index + 1}`,
+                createdAt: index + 1
+            })) as any);
             state.openSelectMenu('Security level', [
                 { label: 'Ask for approval', value: 'ask' },
                 { label: 'Full Access', value: 'full' }
@@ -1226,7 +1236,24 @@ export class AgentConsoleMessagesRendererTest {
             const lines = surface.lastRenderedLines.map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
             const boxRow = lines.findIndex(line => line.includes('Security level'));
             const inputRow = lines.findIndex(line => line.includes('Ask code or files'));
-            expect(boxRow).toBeGreaterThan(inputRow);
+            // Both layouts composite dialogs as overlays: the popup sits above
+            // the composer and never inserts extra rows into the stream.
+            expect(boxRow).toBeGreaterThanOrEqual(0);
+            expect(inputRow).toBeGreaterThan(boxRow);
+            // The transcript is longer than the screen, so the overlay must be
+            // painted inside the visible window rather than at the stream top.
+            expect(boxRow).toBeGreaterThanOrEqual(lines.length - 30);
+            expect(lines.some(line => line.includes('message 40'))).toEqual(true);
+
+            // Closing repaints the rows the popup covered without changing the
+            // stream length (no transient transcript rows were added/removed).
+            state.closeSelectMenu();
+            await settleDynamicMessages(consoleRef);
+            surface.render();
+            const closed = surface.lastRenderedLines.map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
+            expect(closed.length).toEqual(lines.length);
+            expect(closed.some(line => line.includes('Security level'))).toEqual(false);
+            expect(closed.some(line => line.includes('message 40'))).toEqual(true);
         } finally {
             surface?.destroy();
             await tuiCtx.close();

@@ -50,6 +50,16 @@ describe('Visual Workflow Designer', () => {
             expect(another.outputs?.[0].id).toBe('true');
         });
 
+        it('exposes only the main code editor on function nodes', () => {
+            // The Function node intentionally has a single code editor; the old
+            // initialize/finalize code hooks were removed from the inspector.
+            const definition = registry.get('function');
+            expect(definition?.fields?.filter(field => field.type === 'code').map(field => field.key))
+                .toEqual(['code']);
+            expect(definition?.fields?.some(field => field.key === 'initialize')).toBe(false);
+            expect(definition?.fields?.some(field => field.key === 'finalize')).toBe(false);
+        });
+
         it('supports custom node definitions with palette metadata', () => {
             registry.register({
                 type: 'custom',
@@ -104,6 +114,27 @@ describe('Visual Workflow Designer', () => {
             expect(moved).toEqual({ x: original.x + 50, y: original.y + 30 });
             designer.undo();
             expect(designer.nodes.find(node => node.id === 'task_1')!.position).toEqual(original);
+        });
+
+        it('treats mousedown without movement as a selection, not an undoable edit', () => {
+            const original = designer.nodes.find(node => node.id === 'task_2')!.position;
+            designer.selectNode('task_1');
+            const canUndoBefore = designer.canUndo;
+            // The undo snapshot is captured lazily on the first real move, so a
+            // plain click must not serialize the document or push history.
+            expect(designer.beginNodeDrag('task_2', { x: original.x + 4, y: original.y + 4 })).toBe(true);
+            expect(designer.selection.nodeId).toBe('task_2');
+            expect(designer.endNodeDrag()).toBe(false);
+            expect(designer.canUndo).toBe(canUndoBefore);
+            expect(designer.nodes.find(node => node.id === 'task_2')!.position).toEqual(original);
+        });
+
+        it('does not rebuild selection state when the dragged node is already selected', () => {
+            designer.selectNode('task_1');
+            const selection = designer.selection;
+            expect(designer.beginNodeDrag('task_1', { x: 10, y: 10 })).toBe(true);
+            expect(designer.selection).toBe(selection);
+            designer.endNodeDrag();
         });
 
         it('connects ports and rejects self-links', () => {

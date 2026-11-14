@@ -56,6 +56,7 @@ describe('Microservice admin UI', () => {
     let ruleWorkflows: Array<{ id: string; name: string; nodeCount: number }>;
     let definitions: Record<string, Record<string, unknown>>;
     let configVersion: number;
+    let requests: string[];
 
     beforeEach(async () => {
         routes = [{ path: '/api/users', service: 'users-service' }];
@@ -70,6 +71,7 @@ describe('Microservice admin UI', () => {
         ruleWorkflows = [];
         definitions = {};
         configVersion = 1;
+        requests = [];
         originalFetch = globals.fetch;
         originalWindow = globals.window;
         originalLocation = globals.location;
@@ -77,6 +79,7 @@ describe('Microservice admin UI', () => {
         originalDocument = globals.document;
         globals.fetch = (async (input: RequestInfo | URL, init: RequestInit = {}) => {
             const path = String(input).replace(/^https?:\/\/[^/]+/, '');
+            requests.push(path);
             const method = String(init.method || 'GET').toUpperCase();
             if (path === '/api/gateway-admin/state' && method === 'GET') {
                 return jsonResponse({ routes, rules, services: ['users-service'], version: configVersion, auth: { enabled: false, mode: 'none' } });
@@ -235,6 +238,29 @@ describe('Microservice admin UI', () => {
         globals.location = win.location;
         globals.history = win.history;
         globals.document = win.document;
+        // CodeMirror 6 uses these DOM constructors as globals. jsdom provides
+        // MutationObserver/getComputedStyle but not the observer interfaces.
+        const browserGlobals = globals as unknown as Record<string, any>;
+        browserGlobals.MutationObserver = browserGlobals.MutationObserver || win.MutationObserver;
+        browserGlobals.getComputedStyle = browserGlobals.getComputedStyle || win.getComputedStyle.bind(win);
+        browserGlobals.DOMRect = browserGlobals.DOMRect || (win as any).DOMRect;
+        browserGlobals.ResizeObserver = browserGlobals.ResizeObserver || class {
+            observe(): void { /* no-op for jsdom */ }
+            unobserve(): void { /* no-op for jsdom */ }
+            disconnect(): void { /* no-op for jsdom */ }
+        };
+        // CodeMirror's async measure loop reads `window` from timers; jsdom
+        // restores the global between tests, so keep the loop deterministic.
+        win.requestAnimationFrame = () => 0;
+        win.cancelAnimationFrame = () => { /* no-op for jsdom */ };
+        browserGlobals.requestAnimationFrame = () => 0;
+        browserGlobals.cancelAnimationFrame = () => { /* no-op for jsdom */ };
+        browserGlobals.IntersectionObserver = browserGlobals.IntersectionObserver || class {
+            observe(): void { /* no-op for jsdom */ }
+            unobserve(): void { /* no-op for jsdom */ }
+            disconnect(): void { /* no-op for jsdom */ }
+            takeRecords(): any[] { return []; }
+        };
         (win as unknown as { __TSDI_ADMIN_SESSION__?: GatewayAdminBootstrapSession }).__TSDI_ADMIN_SESSION__ = {
             authenticated: true,
             authEnabled: true,
@@ -254,12 +280,15 @@ describe('Microservice admin UI', () => {
     });
 
     afterEach(async () => {
+        // Destroy the editor while the jsdom globals are still installed:
+        // CodeMirror's DOM observer dispatches cleanup transactions on destroy.
+        await ctx?.close();
+        await flush();
         globals.fetch = originalFetch;
         globals.window = originalWindow;
         globals.location = originalLocation;
         globals.history = originalHistory;
         globals.document = originalDocument;
-        await ctx?.close();
     });
 
     it('renders the routed dashboard inside the layout outlet', async () => {
@@ -287,6 +316,85 @@ describe('Microservice admin UI', () => {
         expect(root.querySelectorAll('.ga-slo-alert-row').length).toBe(1);
         expect(root.querySelector('.ga-slo-alert-row')?.textContent).toContain('users-service:/api/users:2');
         expect(root.querySelector('.ga-slo-alert-row')?.textContent).toContain('20.0%');
+    });
+
+    it('renders a vector icon inside every sidebar navigation button', async () => {
+        await waitFor(() => root.querySelectorAll('.ga-nav-item icon .tsdi-icon-svg path').length >= 3);
+        const navItems = Array.from(root.querySelectorAll('.ga-nav-item')) as HTMLElement[];
+        expect(navItems.length).toBe(3);
+        expect(navItems.map(item => item.querySelector('icon')?.getAttribute('data-icon'))).toEqual([
+            'layout',
+            'http-request',
+            'parallel'
+        ]);
+        navItems.forEach(item => {
+            expect(item.querySelector('icon .tsdi-icon-svg path')).toBeTruthy();
+            expect((item.textContent || '').trim().length).toBeGreaterThan(0);
+        });
+    });
+
+    it('renders a vector icon inside every admin action button', async () => {
+        const hasIcon = (button: Element | null) => !!button?.querySelector('icon .tsdi-icon-svg path');
+
+        const topbarButtons = Array.from(root.querySelectorAll('.ga-topbar .ga-btn'));
+        expect(topbarButtons.length).toBe(1);
+        topbarButtons.forEach(button => expect(hasIcon(button)).toBe(true));
+
+        const dashboardButtons = Array.from(root.querySelectorAll('.ga-card-head .ga-btn'));
+        expect(dashboardButtons.length).toBe(2);
+        dashboardButtons.forEach(button => expect(hasIcon(button)).toBe(true));
+
+        (root.querySelector('.ga-nav-item:nth-child(2)') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-page-routes'));
+
+        const toolbarButtons = Array.from(root.querySelectorAll('.ga-page-actions .ga-btn'));
+        expect(toolbarButtons.length).toBe(7);
+        toolbarButtons.forEach(button => expect(hasIcon(button)).toBe(true));
+        expect(hasIcon(root.querySelector('.ga-match-run'))).toBe(true);
+
+        const rowLinks = Array.from(root.querySelectorAll('.ga-route-row .ga-link-btn'));
+        expect(rowLinks.length).toBe(6);
+        rowLinks.forEach(button => expect(hasIcon(button)).toBe(true));
+        expect(hasIcon(root.querySelector('.ga-route-row .ga-pill-button'))).toBe(true);
+
+        (root.querySelector('.ga-add-route') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-modal .ga-icon-btn'));
+        expect(hasIcon(root.querySelector('.ga-modal .ga-icon-btn'))).toBe(true);
+        const editorFooters = Array.from(root.querySelectorAll('.ga-modal-foot .ga-btn'));
+        expect(editorFooters.length).toBe(2);
+        editorFooters.forEach(button => expect(hasIcon(button)).toBe(true));
+        (root.querySelector('.ga-modal .ga-icon-btn') as HTMLElement).click();
+        await waitFor(() => !root.querySelector('.ga-modal'));
+
+        (root.querySelector('.ga-nav-item:nth-child(3)') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-page-rules'));
+        const rulesButtons = Array.from(root.querySelectorAll('.ga-page-rules .ga-page-actions .ga-btn'));
+        expect(rulesButtons.length).toBe(2);
+        rulesButtons.forEach(button => expect(hasIcon(button)).toBe(true));
+        const ruleLinks = Array.from(root.querySelectorAll('.ga-rule-item .ga-link-btn'));
+        expect(ruleLinks.length).toBe(1);
+        ruleLinks.forEach(button => expect(hasIcon(button)).toBe(true));
+
+        (root.querySelector('.ga-nav-item:nth-child(1)') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-metric'));
+    });
+
+    it('renders empty optional route fields instead of the literal undefined', async () => {
+        (root.querySelector('.ga-nav-item:nth-child(2)') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-page-routes'));
+
+        (root.querySelector('.ga-add-route') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('[data-field="targetUrl"]'));
+
+        const targetUrl = root.querySelector('[data-field="targetUrl"]') as HTMLInputElement;
+        const targetPath = root.querySelector('[data-field="targetPath"]') as HTMLInputElement;
+        expect(targetUrl.value).toBe('');
+        expect(targetPath.value).toBe('');
+        expect(targetUrl.getAttribute('value')).not.toBe('undefined');
+        expect(targetPath.getAttribute('value')).not.toBe('undefined');
+
+        (root.querySelector('.ga-modal .ga-icon-btn') as HTMLElement).click();
+        await waitFor(() => !root.querySelector('.ga-modal'));
     });
 
     it('switches language and theme globally', async () => {
@@ -332,6 +440,47 @@ describe('Microservice admin UI', () => {
         (root.querySelector('.ga-rules-cancel') as HTMLElement).click();
         await waitFor(() => !root.querySelector('.ga-designer-page'));
         expect(win.document.documentElement.getAttribute('data-theme')).toBe('dark');
+    });
+
+    it('enhances function code fields with the shared code editor', async () => {
+        (root.querySelector('.ga-nav-item:nth-child(3)') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-page-rules'));
+        (root.querySelector('.ga-edit-rules') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-designer-page'));
+
+        const item = Array.from(root.querySelectorAll('.workflow-palette-item'))
+            .find(el => el.getAttribute('data-node-type') === 'function') as HTMLElement;
+        expect(item).toBeTruthy();
+        item.click();
+        await waitFor(() => !!root.querySelector('.workflow-field[data-field-key="code"]'));
+
+        const field = root.querySelector('.workflow-field[data-field-key="code"]') as HTMLElement;
+        expect(field).toBeTruthy();
+        // The designer renderer only emits a plain textarea; the host must
+        // declare WorkflowCodeEditorModule so code fields become CodeMirror
+        // editors like the standalone product designer.
+        await waitFor(() => !!field.querySelector('.cm-editor'));
+        expect(field.querySelector('.cm-editor')).toBeTruthy();
+    });
+
+    it('opens the rules designer without treating the click event as a workflow id', async () => {
+        (root.querySelector('.ga-nav-item:nth-child(3)') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-page-rules'));
+
+        // Regression: the "Configure" button binds a handler that takes an
+        // optional workflow id. Without an explicit call the event was passed as
+        // the id, so the admin requested /rules/[object PointerEvent].
+        (root.querySelector('.ga-edit-rules') as HTMLElement).click();
+        await waitFor(() => !!root.querySelector('.ga-designer-page'));
+
+        const state = (ref.instance as any).state;
+        if (state) {
+            expect(typeof state.ruleWorkflowId).toBe('string');
+        }
+        expect(requests.some(path => /PointerEvent|%5Bobject/i.test(path))).toBe(false);
+        expect(root.querySelector('.ga-rules-cancel')).toBeTruthy();
+        (root.querySelector('.ga-rules-cancel') as HTMLElement).click();
+        await waitFor(() => !root.querySelector('.ga-designer-page'));
     });
 
     it('swaps the outlet content when the route changes', async () => {

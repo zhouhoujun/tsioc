@@ -62,7 +62,6 @@ const EMPTY_CANVAS: WorkflowCanvasModel = {
          tabindex="0"
          data-connecting="{{model.connecting}}"
          data-connecting-side="{{model.connectingSide}}"
-         [style]="canvasStyle"
          @mousedown="backgroundDown($event)"
          @mousemove="pointerMove($event)"
          @mouseup="pointerUp($event)"
@@ -71,6 +70,7 @@ const EMPTY_CANVAS: WorkflowCanvasModel = {
          @drop="drop($event)"
          @keydown="keyDown($event)"
          @wheel="wheel($event)">
+        <div class="workflow-canvas-grid" [style]="canvasStyle"></div>
         <div class="workflow-canvas-empty" v-if="!model.nodes.length">{{emptyHint}}</div>
         <div class="workflow-canvas-content" [style]="contentStyle">
             <svg class="workflow-canvas-edges" v-bind="svgAttrs">
@@ -150,12 +150,20 @@ export class WorkflowCanvasComponent implements AfterViewInit {
         );
     }
 
-    /** Only layout variables live here; the visual skin comes from the stylesheet. */
+    /**
+     * Grid layout for the dedicated grid layer.
+     *
+     * Two constraints keep pan/zoom cheap: the grid must live on its own paint
+     * layer (changing the canvas root's background repaints the whole node
+     * subtree), and it must use non-inherited properties. Writing
+     * `--wf-grid-*` custom properties on an ancestor of the nodes invalidated
+     * style for every node (300 nodes ≈ 25ms/frame).
+     */
     get canvasStyle(): Record<string, string> {
+        const size = `${24 * (this.model.zoom || 1)}px`;
         return {
-            '--wf-grid-size': `${24 * (this.model.zoom || 1)}px`,
-            '--wf-grid-x': `${this.model.pan?.x || 0}px`,
-            '--wf-grid-y': `${this.model.pan?.y || 0}px`
+            'background-size': `${size} ${size}`,
+            'background-position': `${this.model.pan?.x || 0}px ${this.model.pan?.y || 0}px`
         };
     }
 

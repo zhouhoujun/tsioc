@@ -5,3 +5,4 @@ bundle-meta.json
 aop-manifest.json
 codemirror.css
 codemirror-hint.css
+codemirror-lint.css

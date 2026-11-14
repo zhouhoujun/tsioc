@@ -118,7 +118,17 @@ let dynamicFormSequence = 0;
                             @change="changeBoolean(field, $event)" />
                         <span v-if="field.description">{{field.description}}</span>
                     </label>
-                    <div v-if="isOptionInput(field)" [class]="optionsClass()" role="radiogroup"
+                    <select v-if="isSelectInput(field)" [class]="selectClass(field)"
+                        [value]="fieldValue(field)"
+                        [disabled]="field.disabled || field.readonly"
+                        aria-required="{{isRequired(field) ? 'true' : 'false'}}"
+                        aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
+                        @change="changeSelect(field, $event)">
+                        <option v-for="option in field.options" [value]="option.value"
+                            [selected]="sameOptionValue(option.value, fieldValue(field))"
+                            [disabled]="option.disabled">{{option.label}}</option>
+                    </select>
+                    <div v-if="isRadioInput(field)" [class]="optionsClass()" role="radiogroup"
                         aria-required="{{isRequired(field) ? 'true' : 'false'}}">
                         <label v-for="option in field.options" data-option-value="{{option.value}}"
                             [class]="optionClass(field, option)">
@@ -185,7 +195,15 @@ let dynamicFormSequence = 0;
                                             <input type="checkbox" [checked]="listItemChecked(item, child)"
                                                 @change="changeListItem(field, listIndex(field, item), child, $event)" />
                                         </label>
-                                        <div v-if="isOptionInput(child)" [class]="optionsClass()">
+                                        <select v-if="isSelectInput(child)" [class]="selectClass(child)"
+                                            [value]="listItemValue(item, child)"
+                                            [disabled]="child.disabled || child.readonly"
+                                            @change="changeListItemSelect(field, listIndex(field, item), child, $event)">
+                                            <option v-for="option in child.options" [value]="option.value"
+                                                [selected]="sameOptionValue(option.value, listItemValue(item, child))"
+                                                [disabled]="option.disabled">{{option.label}}</option>
+                                        </select>
+                                        <div v-if="isRadioInput(child)" [class]="optionsClass()">
                                             <label v-for="option in child.options" data-option-value="{{option.value}}"
                                                 [class]="optionClass(child, listItemValue(item, child))">
                                                 <input type="radio" name="{{formId}}-{{field.key}}-{{index}}-{{child.key}}"
@@ -250,6 +268,7 @@ export class DynamicFormComponent implements OnDestroy {
     @Attribute() validityAction?: (valid: boolean, errors: Record<string, any> | null) => void;
 
     protected _schema: DynamicFormSchema = { fields: [] };
+    protected _rawSchema?: any;
     protected _value: Record<string, any> = {};
     protected _contextKey = '';
     protected form?: FormGroup;
@@ -264,11 +283,19 @@ export class DynamicFormComponent implements OnDestroy {
     protected destroyed = false;
     protected syncQueued = false;
     protected syncMode: 'none' | 'soft' | 'force' = 'none';
+    protected visibleGroupsCache?: { schema: DynamicFormSchema; version: number; groups: Array<{ label: string; fields: DynamicFormField[] }> };
     protected readonly formId = `dynamic-form-${++dynamicFormSequence}`;
     protected jsonRawFields: Record<string, boolean> = {};
 
     @Attribute()
     set schema(value: DynamicFormSchema | string | any) {
+        // Hosts that derive their schema from a model pass the same object until
+        // the model changes; re-normalizing and re-stringifying it on every
+        // render made selection feel slow (the signature covers fresh objects).
+        if (value === this._rawSchema) {
+            return;
+        }
+        this._rawSchema = value;
         let next: DynamicFormSchema;
         let error = '';
         try {
@@ -360,8 +387,14 @@ export class DynamicFormComponent implements OnDestroy {
 
     /** Visible fields grouped under their section headers. */
     get visibleGroups(): Array<{ label: string; fields: DynamicFormField[] }> {
-        // Value-dependent visibility and select state must repaint on every edit.
-        void this.valueVersion;
+        // Read the tracked inputs on every call so bindings keep their
+        // subscriptions even when the cache hits.
+        const schema = this._schema;
+        const version = this.valueVersion;
+        const cache = this.visibleGroupsCache;
+        if (cache && cache.schema === schema && cache.version === version) {
+            return cache.groups;
+        }
         const groups: Array<{ label: string; fields: DynamicFormField[] }> = [];
         const index: Record<string, number> = {};
         this.schemaFields().forEach(field => {
@@ -377,6 +410,7 @@ export class DynamicFormComponent implements OnDestroy {
             }
             groups[position].fields.push(field);
         });
+        this.visibleGroupsCache = { schema, version, groups };
         return groups;
     }
 
@@ -783,6 +817,10 @@ export class DynamicFormComponent implements OnDestroy {
         this.updateList(field, items);
     }
 
+    changeListItemSelect(field: DynamicFormField, index: number, child: DynamicFormField, event: any): void {
+        this.changeListItemOption(field, index, child, this.optionValue(child, event?.target?.value));
+    }
+
     listClass(): string { return `${this.classPrefix}-list`; }
     listRowClass(): string { return `${this.classPrefix}-list-row`; }
     listFieldsClass(): string { return `${this.classPrefix}-list-fields`; }
@@ -800,6 +838,19 @@ export class DynamicFormComponent implements OnDestroy {
 
     chooseOption(field: DynamicFormField, value: any): void {
         this.updateValue(field, value);
+    }
+
+    /**
+     * Native `<select>` reports the option value as a string. Map it back to the
+     * schema option so numeric/boolean option values keep their original type.
+     */
+    optionValue(field: DynamicFormField, raw: any): any {
+        const match = (field.options || []).find(option => this.sameOptionValue(option.value, raw));
+        return match ? match.value : raw;
+    }
+
+    changeSelect(field: DynamicFormField, event: any): void {
+        this.updateValue(field, this.optionValue(field, event?.target?.value));
     }
 
     blurField(field: DynamicFormField): void {
@@ -1016,8 +1067,17 @@ export class DynamicFormComponent implements OnDestroy {
         return field.type === 'checkbox' || field.type === 'switch';
     }
 
+    isSelectInput(field: DynamicFormField): boolean {
+        return field.type === 'select';
+    }
+
+    isRadioInput(field: DynamicFormField): boolean {
+        return field.type === 'radio';
+    }
+
+    /** @deprecated use `isSelectInput`/`isRadioInput`; kept for host templates. */
     isOptionInput(field: DynamicFormField): boolean {
-        return field.type === 'select' || field.type === 'radio';
+        return this.isSelectInput(field) || this.isRadioInput(field);
     }
 
     isTextareaInput(field: DynamicFormField): boolean {
@@ -1052,6 +1112,9 @@ export class DynamicFormComponent implements OnDestroy {
     resetClass(): string { return `${this.classPrefix}-field-reset`; }
     inputClass(field: DynamicFormField): string {
         return [ `${this.classPrefix}-input`, field.inputClass || '' ].filter(Boolean).join(' ');
+    }
+    selectClass(field: DynamicFormField): string {
+        return [ `${this.classPrefix}-select`, field.inputClass || '' ].filter(Boolean).join(' ');
     }
     inputWrapClass(field: DynamicFormField): string {
         return `${this.classPrefix}-input-wrap${field.unit ? ' has-unit' : ''}`;

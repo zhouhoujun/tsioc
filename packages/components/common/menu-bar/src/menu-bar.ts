@@ -1,4 +1,4 @@
-import { AfterViewInit, Attribute, Component, ElementRef, OnDestroy, ViewChild } from '@tsdi/components';
+import { AfterViewInit, Attribute, Component, ElementRef, NoReactive, OnDestroy, ViewChild } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 
@@ -125,6 +125,12 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
     private bound = false;
     private pointerHandler?: (event: any) => void;
     private keyHandler?: (event: any) => void;
+    /**
+     * `groups` is usually rebuilt only when host data changes. The flattened
+     * entry list is cached per groups instance so an unrelated parent rerender
+     * does not recreate every menu row.
+     */
+    @NoReactive() private entriesCache?: { groups: MenuBarGroup[]; entries: MenuBarEntryView[] };
 
     /**
      * The component host's injected `ElementRef` can point at the outer host
@@ -161,6 +167,10 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
     /** Flat render list derived from groups; keeps the template free of nested loops. */
     get entries(): MenuBarEntryView[] {
         const groups = Array.isArray(this.groups) ? this.groups : [];
+        const cache = this.entriesCache;
+        if (cache && cache.groups === groups) {
+            return cache.entries;
+        }
         const entries: MenuBarEntryView[] = [];
         groups.forEach((group, groupIndex) => {
             if (!group) {
@@ -204,6 +214,7 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
                 });
             });
         });
+        this.entriesCache = { groups, entries };
         return entries;
     }
 

@@ -49,7 +49,7 @@ export class WorkflowManagementMenuComponent {
     @Attribute() themeChangeAction?: (theme: ThemeName) => void;
     @Attribute() localeChangeAction?: (locale: 'en' | 'zh-CN') => void;
 
-    @NoReactive() private cache?: { model: WorkflowToolbarModel; theme: string; locale: string; groups: MenuBarGroup[] };
+    @NoReactive() private cache?: { key: string; groups: MenuBarGroup[] };
 
     private readonly actionBus = WORKFLOW_ACTION_BUS;
 
@@ -76,8 +76,20 @@ export class WorkflowManagementMenuComponent {
 
     get menuGroups(): MenuBarGroup[] {
         const model = this.model || EMPTY_MODEL;
+        // Only these fields change the menu; panning/zooming or renaming a node
+        // rebuilds the toolbar model but must not recreate every menu row.
+        const key = [
+            this.theme,
+            this.locale,
+            model.running ? 1 : 0,
+            model.canResume ? 1 : 0,
+            model.canUndo ? 1 : 0,
+            model.canRedo ? 1 : 0,
+            model.hasSelection ? 1 : 0,
+            model.nodeCount
+        ].join('|');
         const cache = this.cache;
-        if (cache && cache.model === model && cache.theme === this.theme && cache.locale === this.locale) {
+        if (cache && cache.key === key) {
             return cache.groups;
         }
         const t = (key: string, fallback: string) => this.t(key, fallback);
@@ -153,7 +165,7 @@ export class WorkflowManagementMenuComponent {
                 ]
             }
         ];
-        this.cache = { model, theme: this.theme, locale: this.locale, groups };
+        this.cache = { key, groups };
         return groups;
     }
 

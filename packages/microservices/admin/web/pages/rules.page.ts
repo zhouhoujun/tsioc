@@ -12,8 +12,8 @@ import { GatewayAdminState } from '../admin.state';
                 <p class="ga-muted">{{state.t('rules.desc')}}</p>
             </div>
             <div class="ga-actions">
-                <button class="ga-btn ga-new-rules" type="button" @click="state.newRuleWorkflow">{{state.t('rules.new')}}</button>
-                <button class="ga-btn ga-btn-primary ga-edit-rules" type="button" @click="state.editRules">{{state.t('rules.configure')}}</button>
+                <button class="ga-btn ga-new-rules" type="button" @click="state.newRuleWorkflow"><icon name="plus" size="xs"></icon>{{state.t('rules.new')}}</button>
+                <button class="ga-btn ga-btn-primary ga-edit-rules" type="button" @click="state.editRules()"><icon name="parallel" size="xs"></icon>{{state.t('rules.configure')}}</button>
             </div>
         </div>
 
@@ -31,10 +31,10 @@ import { GatewayAdminState } from '../admin.state';
                         <strong>{{workflow.name || workflow.id}}</strong>
                         <span class="ga-muted">{{state.t('rules.workflowMeta', { nodes: workflow.nodeCount || 0, id: workflow.id })}}</span>
                     </div>
-                    <button class="ga-link-btn" type="button" @click="state.editRules(workflow.id)">{{state.t('rules.open')}}</button>
-                    <button class="ga-link-btn ga-duplicate-rule-workflow" type="button" @click="state.duplicateRuleWorkflow(workflow.id)">{{state.t('rules.duplicate')}}</button>
-                    <button class="ga-link-btn ga-apply-rule-workflow" type="button" @click="state.applyRuleWorkflow(workflow.id)">{{state.t('rules.apply')}}</button>
-                    <button class="ga-link-btn is-danger" type="button" @click="state.deleteRuleWorkflow(workflow.id)">{{state.t('action.remove')}}</button>
+                    <button class="ga-link-btn" type="button" @click="state.editRules(workflow.id)"><icon name="rename" size="xs"></icon>{{state.t('rules.open')}}</button>
+                    <button class="ga-link-btn ga-duplicate-rule-workflow" type="button" @click="state.duplicateRuleWorkflow(workflow.id)"><icon name="duplicate" size="xs"></icon>{{state.t('rules.duplicate')}}</button>
+                    <button class="ga-link-btn ga-apply-rule-workflow" type="button" @click="state.applyRuleWorkflow(workflow.id)"><icon name="check" size="xs"></icon>{{state.t('rules.apply')}}</button>
+                    <button class="ga-link-btn is-danger" type="button" @click="state.deleteRuleWorkflow(workflow.id)"><icon name="delete" size="xs"></icon>{{state.t('action.remove')}}</button>
                 </div>
                 <div class="ga-empty" v-if="!state.ruleWorkflows.length">
                     {{state.t('rules.noWorkflows')}}
@@ -58,7 +58,7 @@ import { GatewayAdminState } from '../admin.state';
                     </div>
                     <span class="ga-pill" [class]="state.ruleActionType(rule) === 'deny' ? 'ga-pill is-danger' : 'ga-pill is-on'">{{state.ruleActionLabel(rule)}}</span>
                     <span class="ga-pill">{{state.t('rules.priority', { value: state.rulePriority(rule) })}}</span>
-                    <button class="ga-link-btn ga-view-rule" type="button" @click="state.openRuleDetail(rule)">{{state.t('action.view')}}</button>
+                    <button class="ga-link-btn ga-view-rule" type="button" @click="state.openRuleDetail(rule)"><icon name="eye" size="xs"></icon>{{state.t('action.view')}}</button>
                 </div>
                 <div class="ga-empty" v-if="!state.rules.length">
                     {{state.t('rules.empty')}}

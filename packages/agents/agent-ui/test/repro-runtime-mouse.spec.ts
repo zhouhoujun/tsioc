@@ -162,11 +162,20 @@ export class RuntimeMousePipelineReproTest {
         await this.settle();
         const closes = surface.getClickTargets()
             .filter((entry: any) => String((entry.node as any)?.getAttribute?.('class') || '').includes('tab-close'));
-        expect(closes.length).toEqual(1);
+        // Both tabs reserve the close affordance (web-style strip).
+        expect(closes.length).toEqual(2);
+        const betaClose = closes.find((entry: any) => {
+            let node: any = entry.node;
+            while (node && !String(node.getAttribute?.('class') || '').split(/\s+/).includes('tab')) {
+                node = node.parentNode;
+            }
+            return String(node?.textContent || '').includes('Beta');
+        });
+        expect(betaClose).toBeTruthy();
         // The ✕ glyph is East Asian ambiguous: CJK terminals paint two cells,
         // so the hover/click target must cover both (host declares the width).
-        expect(closes[0].width).toBeGreaterThanOrEqual(2);
-        await click(closes[0]);
+        expect(betaClose!.width).toBeGreaterThanOrEqual(2);
+        await click(betaClose);
 
         expect(selected).toEqual(['session-b', 'session-a', 'session-b']);
         expect(closed).toEqual(['session-b']);

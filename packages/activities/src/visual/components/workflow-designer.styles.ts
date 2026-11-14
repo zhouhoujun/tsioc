@@ -38,7 +38,7 @@ export const WORKFLOW_DESIGNER_CSS = `
 }
 
 /* The designer owns every scroll surface (layout panes, canvas, inspector,
-   run log and nested CodeMirror scrollers), so theme their scrollbars too. */
+   run log and nested editor scrollers), so theme their scrollbars too. */
 .workflow-designer *::-webkit-scrollbar {
     width: var(--workspace-scrollbar-size, 10px);
     height: var(--workspace-scrollbar-size, 10px);
@@ -90,12 +90,22 @@ export const WORKFLOW_DESIGNER_CSS = `
     padding-right: 2px;
 }
 
-/* Open workflow tabs */
+/* Open workflow tabs. The shared tab-bar component supplies the same skin in
+   every host; this block keeps the workflow palette (and works even when a
+   prebuilt host has not loaded the component stylesheet yet). */
 .workflow-tabs {
     display: block;
     padding: 0 8px;
     background: var(--wf-theme-surface-alt, #f8fafc);
     border-bottom: 1px solid var(--wf-theme-border, #e2e8f0);
+    --tab-strip-background: transparent;
+    --tab-surface: var(--wf-theme-surface, #ffffff);
+    --tab-border: var(--wf-theme-border, #e2e8f0);
+    --tab-text: var(--wf-theme-text, #0f172a);
+    --tab-muted: var(--wf-theme-muted, #64748b);
+    --tab-hover: var(--wf-theme-surface, #ffffff);
+    --tab-accent: var(--wf-theme-primary, #2563eb);
+    --tab-danger: var(--wf-theme-danger, #dc2626);
 }
 
 .workflow-tabs .tab-bar {
@@ -106,6 +116,7 @@ export const WORKFLOW_DESIGNER_CSS = `
     margin: 0;
     padding: 6px 0 0;
     overflow-x: auto;
+    border-bottom: 0;
 }
 
 .workflow-tabs .tab {
@@ -657,10 +668,21 @@ workflow-canvas {
     min-width: 0;
     outline: none;
     background-color: #f8fafc;
-    background-image: radial-gradient(circle, #cbd5e1 1px, transparent 1px);
-    background-size: var(--wf-grid-size, 24px) var(--wf-grid-size, 24px);
-    background-position: var(--wf-grid-x, 0) var(--wf-grid-y, 0);
     cursor: grab;
+}
+
+/*
+ * The grid is its own paint layer. Repainting the canvas root background would
+ * repaint every node on each pan frame, and CSS custom properties for the grid
+ * on an ancestor of the nodes would recalc style for the whole graph.
+ */
+.workflow-canvas-grid {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: radial-gradient(circle, var(--wf-theme-grid, #cbd5e1) 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-position: 0 0;
 }
 
 .workflow-canvas:focus-visible {
@@ -1312,93 +1334,61 @@ workflow-canvas {
     min-height: 150px;
 }
 
-.workflow-inspector .CodeMirror {
-    height: auto;
-    min-height: 150px;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
+/* Syntax feedback under the code editor (in addition to gutter markers). */
+.workflow-code-status {
+    min-height: 14px;
+    margin-top: 4px;
+    font-size: 10px;
+    line-height: 1.4;
+    color: var(--wf-theme-muted, #64748b);
+}
+
+.workflow-code-status.is-error {
+    color: var(--wf-theme-danger, #dc2626);
+}
+
+.workflow-code-status.is-warning {
+    color: #b45309;
+}
+
+.workflow-designer[data-theme="dark"] .workflow-code-status.is-warning,
+.workflow-designer[data-theme="solarized"] .workflow-code-status.is-warning,
+.workflow-designer[data-theme="high-contrast"] .workflow-code-status.is-warning {
+    color: #fbbf24;
+}
+
+.workflow-code-editor-host {
+    width: 100%;
+}
+
+.workflow-code-editor-host .cm-editor {
+    width: 100%;
+}
+
+.workflow-code-editor-host .cm-editor.cm-focused {
+    outline: none;
+    border-color: var(--wf-code-accent, #2563eb);
+}
+
+.workflow-code-editor-host .cm-scroller {
+    max-height: 460px;
+}
+
+.workflow-code-editor-host .cm-content {
+    min-height: 136px;
+}
+
+.workflow-code-editor-host .cm-tooltip-autocomplete {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 11px;
-    background: #ffffff;
-    color: #0f172a;
 }
 
-.workflow-inspector .CodeMirror-scroll {
-    min-height: 150px;
+.workflow-code-editor-host .cm-tooltip-autocomplete > ul {
+    max-height: 220px;
 }
 
-.workflow-inspector .CodeMirror-gutters {
-    background: #f8fafc;
-    border-right: 1px solid #e2e8f0;
-}
-
-.workflow-inspector .CodeMirror-linenumber {
-    color: #94a3b8;
-}
-
-.workflow-inspector .CodeMirror-cursor {
-    border-left-color: #0f172a;
-}
-
-.CodeMirror-hints {
-    z-index: 120;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    background: #ffffff;
-    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.2);
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 11px;
-}
-
-.CodeMirror-hint {
-    padding: 4px 8px;
-    color: #334155;
-}
-
-li.CodeMirror-hint-active {
-    background: #2563eb;
-    color: #ffffff;
-}
-
-html[data-theme="dark"] .CodeMirror-hints,
-html[data-theme="solarized"] .CodeMirror-hints,
-html[data-theme="high-contrast"] .CodeMirror-hints {
-    background: var(--wf-theme-surface);
-    border-color: var(--wf-theme-border);
-}
-
-html[data-theme="dark"] .CodeMirror-hint,
-html[data-theme="solarized"] .CodeMirror-hint,
-html[data-theme="high-contrast"] .CodeMirror-hint {
-    color: var(--wf-theme-text);
-}
-
-html[data-theme="dark"] li.CodeMirror-hint-active,
-html[data-theme="solarized"] li.CodeMirror-hint-active,
-html[data-theme="high-contrast"] li.CodeMirror-hint-active {
-    background: var(--wf-theme-primary);
-    color: var(--wf-theme-primary-text, #ffffff);
-}
-
-.workflow-designer[data-theme="dark"] .workflow-inspector .CodeMirror,
-.workflow-designer[data-theme="solarized"] .workflow-inspector .CodeMirror,
-.workflow-designer[data-theme="high-contrast"] .workflow-inspector .CodeMirror {
-    background: var(--wf-theme-input);
-    color: var(--wf-theme-text);
-    border-color: var(--wf-theme-border);
-}
-
-.workflow-designer[data-theme="dark"] .workflow-inspector .CodeMirror-gutters,
-.workflow-designer[data-theme="solarized"] .workflow-inspector .CodeMirror-gutters,
-.workflow-designer[data-theme="high-contrast"] .workflow-inspector .CodeMirror-gutters {
-    background: var(--wf-theme-surface-alt);
-    border-right-color: var(--wf-theme-border);
-}
-
-.workflow-designer[data-theme="dark"] .workflow-inspector .CodeMirror-cursor,
-.workflow-designer[data-theme="solarized"] .workflow-inspector .CodeMirror-cursor,
-.workflow-designer[data-theme="high-contrast"] .workflow-inspector .CodeMirror-cursor {
-    border-left-color: var(--wf-theme-text);
+.workflow-code-editor-host .cm-tooltip-autocomplete > ul > li {
+    padding: 3px 8px;
 }
 
 .workflow-result {
@@ -1712,7 +1702,7 @@ html[data-theme="high-contrast"] li.CodeMirror-hint-active {
     --wf-theme-muted: #94a3b8;
     --wf-theme-input: #0b1220;
     --wf-theme-canvas: #0b1220;
-    --wf-theme-grid: #334155;
+    --wf-theme-grid: rgba(148, 163, 184, 0.18);
     --wf-theme-splitter: #334155;
     --wf-theme-splitter-hover: #60a5fa;
     --wf-theme-primary: #3b82f6;
@@ -1743,7 +1733,7 @@ html[data-theme="high-contrast"] li.CodeMirror-hint-active {
     --wf-theme-muted: #839496;
     --wf-theme-input: #002b36;
     --wf-theme-canvas: #002b36;
-    --wf-theme-grid: #586e75;
+    --wf-theme-grid: rgba(147, 161, 161, 0.18);
     --wf-theme-splitter: #586e75;
     --wf-theme-splitter-hover: #268bd2;
     --wf-theme-primary: #268bd2;
@@ -1774,7 +1764,7 @@ html[data-theme="high-contrast"] li.CodeMirror-hint-active {
     --wf-theme-muted: #ffffff;
     --wf-theme-input: #000000;
     --wf-theme-canvas: #000000;
-    --wf-theme-grid: #444444;
+    --wf-theme-grid: rgba(255, 255, 255, 0.28);
     --wf-theme-splitter: #ffffff;
     --wf-theme-splitter-hover: #ffff00;
     --wf-theme-primary: #ffff00;
@@ -1794,6 +1784,81 @@ html[data-theme="high-contrast"] li.CodeMirror-hint-active {
     --wf-theme-overlay: rgba(0, 0, 0, 0.82);
     --wf-theme-shadow: rgba(255, 255, 255, 0.3);
     --wf-theme-focus-ring: rgba(255, 255, 0, 0.35);
+}
+
+.workflow-designer[data-theme="dark"] {
+    --wf-code-bg: #0b1220;
+    --wf-code-gutter: #0f172a;
+    --wf-code-text: #e2e8f0;
+    --wf-code-muted: #94a3b8;
+    --wf-code-border: #1e293b;
+    --wf-code-active-line: rgba(59, 130, 246, 0.12);
+    --wf-code-active-gutter: rgba(59, 130, 246, 0.18);
+    --wf-code-selection: rgba(59, 130, 246, 0.35);
+    --wf-code-caret: #e2e8f0;
+    --wf-code-tooltip-bg: #111827;
+    --wf-code-accent: #3b82f6;
+    --wf-code-keyword: #c084fc;
+    --wf-code-property: #93c5fd;
+    --wf-code-function: #67e8f9;
+    --wf-code-type: #5eead4;
+    --wf-code-string: #fca5a5;
+    --wf-code-number: #5eead4;
+    --wf-code-comment: #64748b;
+    --wf-code-operator: #cbd5e1;
+    --wf-code-meta: #94a3b8;
+    --wf-code-danger: #f87171;
+    --wf-code-warning: #fbbf24;
+}
+
+.workflow-designer[data-theme="solarized"] {
+    --wf-code-bg: #002b36;
+    --wf-code-gutter: #073642;
+    --wf-code-text: #93a1a1;
+    --wf-code-muted: #839496;
+    --wf-code-border: #586e75;
+    --wf-code-active-line: rgba(38, 139, 210, 0.16);
+    --wf-code-active-gutter: rgba(38, 139, 210, 0.24);
+    --wf-code-selection: rgba(38, 139, 210, 0.4);
+    --wf-code-caret: #93a1a1;
+    --wf-code-tooltip-bg: #073642;
+    --wf-code-accent: #268bd2;
+    --wf-code-keyword: #859900;
+    --wf-code-property: #268bd2;
+    --wf-code-function: #2aa198;
+    --wf-code-type: #b58900;
+    --wf-code-string: #2aa198;
+    --wf-code-number: #d33682;
+    --wf-code-comment: #586e75;
+    --wf-code-operator: #93a1a1;
+    --wf-code-meta: #839496;
+    --wf-code-danger: #dc322f;
+    --wf-code-warning: #b58900;
+}
+
+.workflow-designer[data-theme="high-contrast"] {
+    --wf-code-bg: #000000;
+    --wf-code-gutter: #000000;
+    --wf-code-text: #ffffff;
+    --wf-code-muted: #ffffff;
+    --wf-code-border: #ffffff;
+    --wf-code-active-line: rgba(255, 255, 0, 0.12);
+    --wf-code-active-gutter: rgba(255, 255, 0, 0.2);
+    --wf-code-selection: rgba(255, 255, 0, 0.35);
+    --wf-code-caret: #ffff00;
+    --wf-code-tooltip-bg: #000000;
+    --wf-code-accent: #ffff00;
+    --wf-code-keyword: #ffff00;
+    --wf-code-property: #00ffff;
+    --wf-code-function: #00ffff;
+    --wf-code-type: #00ff00;
+    --wf-code-string: #00ff00;
+    --wf-code-number: #ff00ff;
+    --wf-code-comment: #cccccc;
+    --wf-code-operator: #ffffff;
+    --wf-code-meta: #cccccc;
+    --wf-code-danger: #ff5555;
+    --wf-code-warning: #ffff00;
 }
 
 .workflow-designer[data-theme="dark"],
@@ -2062,6 +2127,13 @@ html[data-theme="high-contrast"] li.CodeMirror-hint-active {
     color: var(--wf-theme-text);
 }
 
+.workflow-designer[data-theme="dark"] .workflow-select,
+.workflow-designer[data-theme="solarized"] .workflow-select,
+.workflow-designer[data-theme="high-contrast"] .workflow-select {
+    /* Keep the native dropdown arrow and popup readable on dark surfaces. */
+    color-scheme: dark;
+}
+
 .workflow-designer[data-theme="dark"] .workflow-field-group-title,
 .workflow-designer[data-theme="solarized"] .workflow-field-group-title,
 .workflow-designer[data-theme="high-contrast"] .workflow-field-group-title {
@@ -2130,7 +2202,6 @@ html[data-theme="high-contrast"] li.CodeMirror-hint-active {
 .workflow-designer[data-theme="solarized"] .workflow-canvas,
 .workflow-designer[data-theme="high-contrast"] .workflow-canvas {
     background-color: var(--wf-theme-canvas);
-    background-image: radial-gradient(circle, var(--wf-theme-grid) 1px, transparent 1px);
 }
 
 .workflow-designer[data-theme="dark"] .workflow-node,

@@ -158,16 +158,21 @@ export class WorkflowDesigner {
     readonly registry: WorkflowNodeRegistry;
     readonly service?: VisualWorkflowService;
 
-    private undoStack: string[] = [];
-    private redoStack: string[] = [];
-    private dragStartSnapshot?: string;
+    /**
+     * History stores immutable definition objects instead of serialized JSON.
+     * Node/connection edits already replace only the objects they touch, so
+     * pushing the current definition is O(1); serializing the whole document on
+     * every keystroke cost ~10ms at 300 nodes.
+     */
+    private undoStack: VisualWorkflowDefinition[] = [];
+    private redoStack: VisualWorkflowDefinition[] = [];
+    private dragStartSnapshot?: VisualWorkflowDefinition;
     private activeExecutionId?: string;
 
     constructor(options: WorkflowDesignerOptions = {}) {
         this.registry = options.registry || new WorkflowNodeRegistry();
         this.service = options.service;
-        this.definition = options.definition || createDefaultWorkflowDefinition(this.registry);
-        this.normalize();
+        this.definition = this.normalize(options.definition || createDefaultWorkflowDefinition(this.registry));
     }
 
     get nodes(): IVisualWorkflowNode[] {
@@ -458,7 +463,11 @@ export class WorkflowDesigner {
         if (!node) {
             return false;
         }
-        this.selection = { nodeId };
+        // Re-selecting the same node must not broadcast a redundant state write
+        // (it reruns every bound view for no visible change).
+        if (this.selection.nodeId !== nodeId || this.selection.connectionId) {
+            this.selection = { nodeId };
+        }
         this.drag = {
             nodeId,
             startX: node.position.x,
@@ -467,7 +476,9 @@ export class WorkflowDesigner {
             offsetY: world.y - node.position.y,
             moved: false
         };
-        this.dragStartSnapshot = this.snapshot();
+        // The undo snapshot is only needed once the node actually moves; a plain
+        // click used to serialize the whole document on mousedown.
+        this.dragStartSnapshot = undefined;
         return true;
     }
 
@@ -481,6 +492,9 @@ export class WorkflowDesigner {
         if (snapped.x === this.definition.nodes.find(node => node.id === this.drag!.nodeId)?.position.x
             && snapped.y === this.definition.nodes.find(node => node.id === this.drag!.nodeId)?.position.y) {
             return;
+        }
+        if (!this.dragStartSnapshot) {
+            this.dragStartSnapshot = this.definition;
         }
         this.drag.moved = true;
         this.applyDefinition({
@@ -505,7 +519,7 @@ export class WorkflowDesigner {
 
     cancelNodeDrag(): void {
         if (this.drag && this.dragStartSnapshot && this.drag.moved) {
-            this.applyDefinition(JSON.parse(this.dragStartSnapshot));
+            this.applyDefinition(this.dragStartSnapshot);
         }
         this.drag = undefined;
         this.dragStartSnapshot = undefined;
@@ -595,12 +609,12 @@ export class WorkflowDesigner {
     }
 
     undo(): boolean {
-        const snapshot = this.undoStack.pop();
-        if (!snapshot) {
+        const previous = this.undoStack.pop();
+        if (!previous) {
             return false;
         }
-        this.redoStack.push(this.snapshot());
-        this.applyDefinition(JSON.parse(snapshot));
+        this.redoStack.push(this.definition);
+        this.applyDefinition(previous);
         this.pruneSelection();
         this.dirty = true;
         this.setMessage('workflow.message.undo');
@@ -608,12 +622,12 @@ export class WorkflowDesigner {
     }
 
     redo(): boolean {
-        const snapshot = this.redoStack.pop();
-        if (!snapshot) {
+        const next = this.redoStack.pop();
+        if (!next) {
             return false;
         }
-        this.undoStack.push(this.snapshot());
-        this.applyDefinition(JSON.parse(snapshot));
+        this.undoStack.push(this.definition);
+        this.applyDefinition(next);
         this.pruneSelection();
         this.dirty = true;
         this.setMessage('workflow.message.redo');
@@ -733,11 +747,10 @@ export class WorkflowDesigner {
             this.undoStack = [];
             this.redoStack = [];
         } else {
-            this.pushHistory(this.snapshot());
+            this.pushHistory(this.definition);
             this.redoStack = [];
         }
-        this.definition = parsed;
-        this.normalize();
+        this.definition = this.normalize(parsed);
         this.selection = {};
         this.execution = undefined;
         this.checkpoint = undefined;
@@ -777,7 +790,7 @@ export class WorkflowDesigner {
             // Save-as must still switch the open document to its new id/name.
             this.definition = { ...current, id: definition.id, name: definition.name };
         }
-        this.normalize();
+        this.definition = this.normalize(this.definition);
         this.dirty = !unchanged;
         this.setMessage(options.as ? 'workflow.message.savedAs' : 'workflow.message.saved', {
             name: definition.name
@@ -912,14 +925,17 @@ export class WorkflowDesigner {
     // Internal helpers
     // ---------------------------------------------------------------------
 
-    private normalize(): void {
-        if (!this.definition.id) {
-            this.definition.id = nowId('workflow');
-        }
-        if (!this.definition.name) {
-            this.definition.name = 'Unnamed Workflow';
-        }
-        this.definition.nodes = (this.definition.nodes || []).map(node => {
+    /**
+     * Normalize a definition into a fully populated, immutable document.
+     *
+     * Returns a new object (and new node/connection arrays) instead of mutating
+     * the assigned definition in place: view models key their caches on
+     * definition identity, so in-place normalization left stale projections
+     * (for example nodes rendered without their registry ports until the next
+     * interaction).
+     */
+    private normalize(definition: VisualWorkflowDefinition): VisualWorkflowDefinition {
+        const nodes = (definition.nodes || []).map(node => {
             const registered = this.registry.get(node.type);
             const fallback = registered?.defaultConfig;
             return {
@@ -936,15 +952,22 @@ export class WorkflowDesigner {
                 }
             };
         });
-        this.definition.connections = (this.definition.connections || []).map(connection => ({
+        const connections = (definition.connections || []).map(connection => ({
             ...connection,
             sourcePort: connection.sourcePort || 'out',
             targetPort: connection.targetPort || 'in'
         }));
+        return {
+            ...definition,
+            id: definition.id || nowId('workflow'),
+            name: definition.name || 'Unnamed Workflow',
+            nodes,
+            connections
+        };
     }
 
     private commit(mutator: (definition: VisualWorkflowDefinition) => VisualWorkflowDefinition): void {
-        this.pushHistory(this.snapshot());
+        this.pushHistory(this.definition);
         this.redoStack = [];
         this.applyDefinition(mutator(this.definition));
         this.dirty = true;
@@ -957,15 +980,11 @@ export class WorkflowDesigner {
         };
     }
 
-    private pushHistory(snapshot: string): void {
-        this.undoStack.push(snapshot);
+    private pushHistory(definition: VisualWorkflowDefinition): void {
+        this.undoStack.push(definition);
         if (this.undoStack.length > HISTORY_LIMIT) {
             this.undoStack.shift();
         }
-    }
-
-    private snapshot(): string {
-        return JSON.stringify(this.definition);
     }
 
     private recordExecution(snapshot: WorkflowExecutionSnapshot): void {

@@ -5,7 +5,6 @@ import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import { formatAgentUiLabel, formatAgentKeymapActionLabel, formatAgentPanelLabel as panelLabel, formatAgentPanelStatusLabel as panelStatusLabel } from './agent-ui.i18n';
 import { formatAgentConsoleInputBadges } from './AgentConsoleInputBadges';
-import { formatAgentMessageDetailSummary } from './AgentConsoleMessageDetailMeta';
 import { formatScheduledTaskDetailLines } from './AgentConsoleScheduledTaskFormat';
 import { formatSessionAge, formatSessionHint } from './AgentConsoleFormatters';
 import { formatReviewHeaderMeta, formatReviewSelectionMeta, formatReviewStatsMeta } from './AgentConsoleReviewPanelFormat';
@@ -424,11 +423,11 @@ export class AgentConsoleMessagesPanelComponent {
     selector: 'agent-console-message-detail-panel',
     imports: [PanelComponent],
     template: `
-    <panel :summary="detailSummaryLabel" :hint="detailHintLabel" :items="detailItems"></panel>
+    <panel :items="detailItems"></panel>
     `
 })
 export class AgentConsoleMessagePanelComponent {
-    constructor(private state: AgentConsoleSessionState, @Optional() private translator?: TranslatorService) {
+    constructor(private state: AgentConsoleSessionState) {
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -492,28 +491,6 @@ export class AgentConsoleMessagePanelComponent {
                 contentClass: line?.tone && line.tone !== 'default' ? `tone-${line.tone}` : ''
             };
         });
-    }
-
-    get detailSummaryLabel(): string {
-        if (!this.shouldShow || !this.selectedMessage) {
-            return '';
-        }
-        return formatAgentMessageDetailSummary(
-            this.state,
-            this.selectedMessage,
-            this.contentLines.length,
-            this.visibleLines.length,
-            this.translator
-        );
-    }
-
-    get detailHintLabel(): string {
-        if (!this.shouldShow || !this.selectedMessage) {
-            return '';
-        }
-        return this.state.messageDetailOpen
-            ? this.state.consoleOptions.messageDetailHint
-            : this.state.consoleOptions.messageDetailClosedHint;
     }
 
     get detailIndexes(): number[] { return Array.from({ length: this.state.messageDetailVisibleLines }, (_value, index) => index); }

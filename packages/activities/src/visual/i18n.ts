@@ -120,6 +120,16 @@ const BASE_WORKFLOW_TRANSLATIONS: Record<string, TranslationBundle> = {
                     noSelection: 'No node selected',
                     canvas: 'Workflow canvas'
                 },
+                code: {
+                    hint: 'Ctrl+Space: suggest · Tab: accept · Enter: newline',
+                    jsonHint: 'JSON · Ctrl+Space: suggest · Tab: accept · Enter: newline',
+                    anywordHint: 'Ctrl+Space: suggest · Tab: accept · Enter: newline',
+                    undefinedName: '"{name}" is not defined.',
+                    unusedName: '"{name}" is defined but never used.',
+                    constAssign: 'Cannot assign to constant "{name}".',
+                    unreachable: 'Unreachable code.',
+                    duplicateKey: 'Duplicate key "{key}".'
+                },
                 message: {
                     renamed: 'Renamed to "{name}"',
                     added: 'Added {name}',
@@ -412,6 +422,16 @@ const BASE_WORKFLOW_TRANSLATIONS: Record<string, TranslationBundle> = {
                     nodeCount: '{count} 个节点',
                     noSelection: '未选择节点',
                     canvas: '工作流画布'
+                },
+                code: {
+                    hint: 'Ctrl+Space：补全 · Tab：接受 · Enter：换行',
+                    jsonHint: 'JSON · Ctrl+Space：补全 · Tab：接受 · Enter：换行',
+                    anywordHint: 'Ctrl+Space：补全 · Tab：接受 · Enter：换行',
+                    undefinedName: '“{name}”未定义。',
+                    unusedName: '“{name}”已定义但从未使用。',
+                    constAssign: '不能给常量“{name}”重新赋值。',
+                    unreachable: '不可达代码。',
+                    duplicateKey: '重复的键“{key}”。'
                 },
                 message: {
                     renamed: '已重命名为「{name}」',

@@ -2858,23 +2858,12 @@ export class TuiTerminalSurface {
             }
             const footerRegions = result.regions.filter(region => region.id === footerRegionId);
             const shiftedLines = dialogLines.map(line => dialogShift ? `${' '.repeat(dialogShift)}${line}` : line);
-            // Native scrollback cannot composite: drop the menu below the
-            // composer so it opens downward, away from the transcript.
-            if (nativeScrollback) {
-                const footerEnd = Math.max(0, ...footerRegions.map(region => region.endRow));
-                const insertRow = footerEnd > 0 ? Math.min(result.lines.length, footerEnd) : result.lines.length;
-                const lines = result.lines.slice();
-                lines.splice(insertRow, 0, ...shiftedLines);
-                const clickTargets = result.clickTargets
-                    .map(target => target.y >= insertRow ? { ...target, y: target.y + dialogHeight } : target)
-                    .concat(foldedClickTargets.map(target => ({ ...target, x: target.x + dialogShift, y: insertRow + target.y })));
-                const cursorTargets = result.cursorTargets
-                    .map(target => target.row >= insertRow ? { ...target, row: target.row + dialogHeight } : target);
-                const sourceRows = result.sourceRows
-                    ? [...result.sourceRows.slice(0, insertRow), ...Array.from({ length: dialogHeight }, () => undefined as number | undefined), ...result.sourceRows.slice(insertRow)]
-                    : undefined;
-                return { lines, regions: result.regions, cursorTargets, clickTargets, sourceRows };
-            }
+            // Both layouts composite popups as floating overlays. Native
+            // scrollback still renders the whole stream, so its overlay anchors
+            // to the visible screen window (the last terminal rows) instead of
+            // consuming transcript rows below the composer.
+            const visibleTop = nativeScrollback ? Math.max(0, result.lines.length - height) : 0;
+            const visibleBottom = nativeScrollback ? result.lines.length : height;
             // Select menus sit directly on the composer's top edge so the
             // panel looks attached to the input; other dialogs stay above the
             // whole footer. Both anchor by the bottom edge.
@@ -2907,10 +2896,13 @@ export class TuiTerminalSurface {
             // clamping to 0 corrupted the strip while the dialog was open.
             const headerRegion = (result.regions || []).find(region => region.id === 'header');
             const headerRows = headerRegion ? Math.max(0, headerRegion.endRow) : 0;
+            // Never draw above the visible window (scrollback history is
+            // already written) or over the header when it is on screen.
+            const topBoundary = Math.max(visibleTop, headerRows);
             // A popup must never cover the composer: if it is taller than the
             // space above the input, keep its title/top rows and clip the
             // bottom instead of spilling into the input box.
-            const availableRows = Math.max(0, Math.min(height, anchorRow) - headerRows);
+            const availableRows = Math.max(0, Math.min(visibleBottom, anchorRow) - topBoundary);
             const visibleLines = shiftedLines.length > availableRows
                 ? shiftedLines.slice(0, availableRows)
                 : shiftedLines;
@@ -2918,13 +2910,13 @@ export class TuiTerminalSurface {
             // Menus stay attached to the composer. Dialogs are free-standing
             // chrome and open centered in the window area above the composer
             // (the header/tab strip stays visible, the input never moves).
-            const centeredStart = headerRows + Math.floor(Math.max(0, availableRows - visibleHeight) / 2);
+            const centeredStart = topBoundary + Math.floor(Math.max(0, availableRows - visibleHeight) / 2);
             const start = dialogIsMenu
                 ? Math.max(
-                    headerRows,
-                    Math.min(anchorRow - visibleHeight, Math.max(headerRows, height - visibleHeight))
+                    topBoundary,
+                    Math.min(anchorRow - visibleHeight, Math.max(topBoundary, visibleBottom - visibleHeight))
                 )
-                : Math.max(headerRows, Math.min(centeredStart, anchorRow - visibleHeight));
+                : Math.max(topBoundary, Math.min(centeredStart, anchorRow - visibleHeight));
             const lines = result.lines.slice();
             while (lines.length < height) {
                 lines.push('');
@@ -2932,7 +2924,7 @@ export class TuiTerminalSurface {
             const overlayBands = new Map<number, { start: number; end: number }>();
             visibleLines.forEach((line, index) => {
                 const row = start + index;
-                if (row >= height) {
+                if (row < 0 || row >= lines.length) {
                     return;
                 }
                 const base = lines[row] || '';

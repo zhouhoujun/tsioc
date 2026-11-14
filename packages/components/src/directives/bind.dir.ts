@@ -17,6 +17,13 @@ import { Attribute } from '../decorators/atteribute';
     priority: 3
 })
 export class VBindDirective {
+    /**
+     * Values written by this binding. Diffing avoids rewriting every attribute
+     * (and therefore every DOM mutation) when a host rerenders with an equal
+     * attribute object.
+     */
+    private applied = new Map<string, string>();
+
     constructor(
         private elementRef: ElementRef,
         private renderer: Renderer
@@ -31,9 +38,21 @@ export class VBindDirective {
         }
 
         if (typeof value === 'object') {
+            const next = new Map<string, string>();
             Object.entries(value).forEach(([key, val]) => {
-                this.renderer.setAttribute(el, key, String(val));
+                next.set(key, String(val));
             });
+            this.applied.forEach((_, key) => {
+                if (!next.has(key)) {
+                    this.renderer.removeAttribute(el, key);
+                }
+            });
+            next.forEach((val, key) => {
+                if (this.applied.get(key) !== val) {
+                    this.renderer.setAttribute(el, key, val);
+                }
+            });
+            this.applied = next;
         }
     }
 }

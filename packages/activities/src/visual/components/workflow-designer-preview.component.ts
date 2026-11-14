@@ -8,6 +8,7 @@ import {
 import {
     installMenuBarStyles,
 } from '@tsdi/components/common/menu-bar';
+import { installTabBarStyles } from '@tsdi/components/common/tab-bar';
 import {
     installWorkspaceLayoutStyles,
 } from '@tsdi/components/common/layout';
@@ -27,6 +28,7 @@ import {
 } from '../types';
 import {
     buildWorkflowCanvasModel,
+    buildWorkflowCanvasViewport,
     buildWorkflowInspectorModel,
     buildWorkflowPalette,
     buildWorkflowRunHistory,
@@ -152,7 +154,21 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     private pendingNodeType?: string;
     @NoReactive() private documentRef?: any;
 
-    @NoReactive() private canvasModelCache?: { key: string; model: ReturnType<typeof buildWorkflowCanvasModel> };
+    @NoReactive() private canvasModelCache?: {
+        definition: any;
+        nodes: any;
+        connections: any;
+        selectionNode: string;
+        selectionConnection: string;
+        execution: any;
+        draft: any;
+        zoom: number;
+        panX: number;
+        panY: number;
+        locale: string;
+        revision: number;
+        model: ReturnType<typeof buildWorkflowCanvasModel>;
+    };
     @NoReactive() private toolbarModelCache?: { key: string; model: ReturnType<typeof buildWorkflowToolbarModel> };
     @NoReactive() private inspectorModelCache?: {
         nodeId: string;
@@ -175,7 +191,12 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     @NoReactive() private statusModelCache?: { key: string; model: ReturnType<typeof buildWorkflowStatusModel> };
     @NoReactive() private paletteCache?: { key: string; groups: WorkflowPaletteGroup[] };
     @NoReactive() private runLogsCache?: { execution: any; logs: any[] };
-    @NoReactive() private codeSuggestionCache?: { key: string; values: string[] };
+    @NoReactive() private codeSuggestionCache?: {
+        nodes: any[];
+        runContext: any;
+        contributions: Map<any, string[]>;
+        values: string[];
+    };
     scheduling = false;
     @NoReactive() private scheduleHandle?: { stop(): void };
 
@@ -198,6 +219,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         installWorkspaceLayoutStyles(document);
         installDynamicFormStyles(document);
         installMenuBarStyles(document);
+        installTabBarStyles(document);
         // Do not touch the document theme here: attribute bindings have not
         // been applied yet, so a dark host theme would be reset to light.
     }
@@ -397,13 +419,68 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     }
 
     get canvasModel() {
-        const key = this.canvasModelKey();
+        const designer = this.designer;
+        const definition = designer.definition;
+        const nodes = definition?.nodes;
+        const connections = definition?.connections;
+        const selection = designer.selection;
+        const selectionNode = selection?.nodeId || '';
+        const selectionConnection = selection?.connectionId || '';
+        const execution = designer.execution;
+        const draft = designer.connectionDraft;
+        const zoom = designer.zoom;
+        const panX = designer.pan?.x || 0;
+        const panY = designer.pan?.y || 0;
+        const locale = this.localeValue;
+        const revision = this.registry.revision;
         const cache = this.canvasModelCache;
-        if (cache && cache.key === key) {
+        // O(1) cache check: document edits replace `definition`, and selection/
+        // execution/draft are replaced immutably. Scanning every node here made
+        // pan/zoom O(nodes) on large workflows (300 nodes ≈ 1s per frame).
+        if (cache
+            && cache.definition === definition
+            && cache.nodes === nodes
+            && cache.connections === connections
+            && cache.selectionNode === selectionNode
+            && cache.selectionConnection === selectionConnection
+            && cache.execution === execution
+            && cache.draft === draft
+            && cache.zoom === zoom
+            && cache.panX === panX
+            && cache.panY === panY
+            && cache.locale === locale
+            && cache.revision === revision) {
             return cache.model;
         }
-        const model = buildWorkflowCanvasModel(this.designer, this.registry, this.localeValue, this.translator);
-        this.canvasModelCache = { key, model };
+        // Pan, zoom and wire dragging only move the viewport: keep the existing
+        // node/edge projections instead of re-projecting the whole graph.
+        const projectionUnchanged = !!cache
+            && cache.definition === definition
+            && cache.nodes === nodes
+            && cache.connections === connections
+            && cache.selectionNode === selectionNode
+            && cache.selectionConnection === selectionConnection
+            && cache.execution === execution
+            && cache.locale === locale
+            && cache.revision === revision;
+        const model = projectionUnchanged && cache
+            ? buildWorkflowCanvasViewport(cache.model, designer)
+            : buildWorkflowCanvasModel(designer, this.registry, locale, this.translator, cache?.model);
+        this.canvasModelCache = {
+            definition,
+            nodes,
+            connections,
+            selectionNode,
+            selectionConnection,
+            execution,
+            draft,
+            zoom,
+            panX,
+            panY,
+            locale,
+            revision,
+            model
+        };
         return model;
     }
 
@@ -483,115 +560,119 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
      * fields autocomplete against the current document.
      */
     get codeSuggestions(): string[] {
-        const key = this.designer.nodes.map(node => [
-            node.id,
-            node.type,
-            node.config?.action || '',
-            node.config?.field || '',
-            node.config?.target || '',
-            JSON.stringify(node.config?.values || ''),
-            JSON.stringify(node.config?.result || '')
-        ].join(':')).join('|');
+        const nodes = this.designer.nodes;
+        const runContext = this.runContext;
         const cache = this.codeSuggestionCache;
-        if (cache && cache.key === key) {
+        // `nodes` is a fresh array per document edit but the node objects
+        // themselves are immutable, so per-node contributions can be reused.
+        // The previous implementation re-serialized every node's config on each
+        // keystroke (O(nodes) string work for a one-node change).
+        if (cache && cache.nodes === nodes && cache.runContext === runContext) {
             return cache.values;
         }
-        const values = new Set<string>([
-            'context', 'input', 'msg', 'variables',
-            'context.variables', 'context.actions', 'context.state', 'context.event', 'context.events',
-            'input.variables', 'input.actions', 'input.state', 'input.data', 'input.value', 'input.result',
-            'msg.variables', 'msg.actions',
-            'return', 'const', 'let', 'var', 'if', 'else', 'for', 'while', 'try', 'catch', 'throw',
-            'await', 'async', 'function'
-        ]);
-        const add = (value: any): void => {
-            if (typeof value === 'string' && value.trim()) {
-                values.add(value.trim());
+        const base = this.environmentCodeSuggestions();
+        const contributions = new Map<any, string[]>();
+        const values = new Set<string>(base);
+        let recomputed = false;
+        for (const node of nodes) {
+            let contribution = cache?.contributions.get(node);
+            if (!contribution) {
+                contribution = this.nodeCodeSuggestions(node);
+                recomputed = true;
             }
-        };
-        this.designer.nodes.forEach(node => {
-            const config = node.config || {};
-            if (typeof config.action === 'string') {
-                const action = config.action.replace(/^actions\./, '');
-                add(`context.actions.${action}`);
-                add(`input.actions.${action}`);
-            }
-            if (typeof config.field === 'string') {
-                add(config.field);
-                if (!config.field.includes('.')) {
-                    add(`variables.${config.field}`);
-                }
-            }
-            if (typeof config.target === 'string') {
-                add(config.target.includes('.') ? config.target : `variables.${config.target}`);
-            }
-            if (config.values && typeof config.values === 'object') {
-                Object.keys(config.values).forEach(name => add(`variables.${name}`));
-            }
-            if (config.result && typeof config.result === 'object') {
-                Object.keys(config.result).forEach(name => add(`input.${name}`));
-            }
-            if (typeof config.event === 'string') {
-                add(`context.events.${config.event}`);
-            }
-        });
-        const list = Array.from(values).slice(0, 240);
-        this.codeSuggestionCache = { key, values: list };
+            contributions.set(node, contribution);
+            contribution.forEach(value => values.add(value));
+        }
+        if (cache && !recomputed && cache.runContext === runContext) {
+            // Every node was reused; the union is unchanged.
+            this.codeSuggestionCache = { nodes, runContext, contributions, values: cache.values };
+            return cache.values;
+        }
+        const list = Array.from(values).slice(0, 320);
+        this.codeSuggestionCache = { nodes, runContext, contributions, values: list };
         return list;
     }
 
     /**
-     * Canvas model key intentionally projects only fields the canvas paints.
-     * It must include connector geometry/status and the draft, but not node
-     * config or execution payloads, so editing code does not rebuild the graph.
+     * Runtime bindings and host environment variables available to function
+     * code. `context` is the workflow context; hosts pass extra data through
+     * `runContext` (for example `variables`, `services`, `inbound` or custom
+     * keys), and those names complete as `context.<key>` and
+     * `context.variables.<name>`.
      */
-    private canvasModelKey(): string {
-        const designer = this.designer;
-        const execution = designer.execution;
-        const parts: string[] = [
-            this.localeValue,
-            String(designer.zoom),
-            String(designer.pan?.x || 0),
-            String(designer.pan?.y || 0),
-            designer.selection?.nodeId || '',
-            designer.selection?.connectionId || '',
-            String(this.registry.revision)
+    private environmentCodeSuggestions(): string[] {
+        const values: string[] = [
+            'context', 'input', 'msg', 'variables',
+            'context.variables', 'context.actions', 'context.state', 'context.event', 'context.events',
+            'context.inbound', 'context.services', 'context.workflowStatus', 'context.eventBus', 'context.waitEvent',
+            'input.variables', 'input.actions', 'input.state', 'input.data', 'input.value', 'input.result',
+            'msg.variables', 'msg.actions', 'msg.inbound',
+            'process.env',
+            'return', 'const', 'let', 'var', 'if', 'else', 'for', 'while', 'try', 'catch', 'throw',
+            'await', 'async', 'function'
         ];
-        const draft = designer.connectionDraft;
-        parts.push(draft
-            ? `draft:${draft.sourceNodeId}:${draft.sourcePort}:${draft.sourceSide || 'output'}:${draft.x}:${draft.y}`
-            : '');
-        (designer.nodes || []).forEach(node => {
-            parts.push([
-                node.id,
-                node.name,
-                node.type,
-                node.description || '',
-                node.position?.x,
-                node.position?.y,
-                node.dimension?.width || '',
-                node.dimension?.height || '',
-                node.style?.icon || '',
-                node.style?.backgroundColor || '',
-                node.disabled ? '1' : '0',
-                node.style?.textColor || '',
-                (node.inputs || []).map(port => `${port.id}:${port.label || ''}:${port.name || ''}:${port.type || ''}`).join(','),
-                (node.outputs || []).map(port => `${port.id}:${port.label || ''}:${port.name || ''}:${port.type || ''}`).join(','),
-                execution?.nodeStates?.[node.id]?.status || ''
-            ].join(':'));
+        const environment = (this.runContext || {}) as Record<string, any>;
+        const add = (value: any): void => {
+            if (typeof value === 'string' && value.trim()) {
+                values.push(value.trim());
+            }
+        };
+        Object.keys(environment).forEach(key => {
+            if (typeof environment[key] === 'function') {
+                return;
+            }
+            add(`context.${key}`);
         });
-        (designer.connections || []).forEach(connection => {
-            parts.push([
-                connection.id,
-                connection.sourceNodeId,
-                connection.sourcePort,
-                connection.targetNodeId,
-                connection.targetPort,
-                connection.label || '',
-                execution?.edgeStates?.[connection.id]?.status || ''
-            ].join(':'));
-        });
-        return parts.join('|');
+        const variables = environment.variables;
+        if (variables && typeof variables === 'object' && !Array.isArray(variables)) {
+            Object.keys(variables).forEach(name => {
+                add(`context.variables.${name}`);
+                add(`input.variables.${name}`);
+            });
+        }
+        return values;
+    }
+
+    private nodeCodeSuggestions(node: { config?: Record<string, any> }): string[] {
+        const values: string[] = [];
+        const add = (value: any): void => {
+            if (typeof value === 'string' && value.trim()) {
+                values.push(value.trim());
+            }
+        };
+        const config = node.config || {};
+        if (typeof config.action === 'string') {
+            const action = config.action.replace(/^actions\./, '');
+            add(`context.actions.${action}`);
+            add(`input.actions.${action}`);
+        }
+        if (typeof config.field === 'string') {
+            add(config.field);
+            if (!config.field.includes('.')) {
+                add(`variables.${config.field}`);
+                add(`context.variables.${config.field}`);
+            }
+        }
+        if (typeof config.target === 'string') {
+            add(config.target.includes('.') ? config.target : `variables.${config.target}`);
+            if (!config.target.includes('.')) {
+                add(`context.variables.${config.target}`);
+            }
+        }
+        if (config.values && typeof config.values === 'object') {
+            Object.keys(config.values).forEach(name => {
+                add(`variables.${name}`);
+                add(`context.variables.${name}`);
+                add(`input.variables.${name}`);
+            });
+        }
+        if (config.result && typeof config.result === 'object') {
+            Object.keys(config.result).forEach(name => add(`input.${name}`));
+        }
+        if (typeof config.event === 'string') {
+            add(`context.events.${config.event}`);
+        }
+        return values;
     }
 
     private toolbarModelKey(): string {

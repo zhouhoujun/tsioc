@@ -26,6 +26,11 @@ class DynamicFormHostComponent {
                 { label: 'Basic', value: 'basic' },
                 { label: 'Advanced', value: 'advanced' }
             ] },
+            { key: 'channel', type: 'select', label: 'Channel', defaultValue: 'email', options: [
+                { label: 'Email', value: 'email' },
+                { label: 'SMS', value: 'sms' },
+                { label: 'Push', value: 'push' }
+            ] },
             { key: 'target', type: 'text', label: 'Target', visibleWhen: { key: 'mode', equals: 'advanced' } },
             { key: 'retries', type: 'number', label: 'Retries', defaultValue: 1, min: 0, max: 5 },
             { key: 'body', type: 'json', label: 'Body', defaultValue: { ok: true } },
@@ -147,6 +152,26 @@ export class HtmlDynamicFormTest {
         await flush();
         expect(this.ref.instance.lastChange?.key).toBe('target');
         expect(this.ref.instance.lastChange?.field.type).toBe('text');
+    }
+
+    @Test('renders select fields as a native dropdown and reports the chosen option')
+    async rendersSelect() {
+        const select = this.root.querySelector('.df-field[data-field-key="channel"] select.df-select') as any;
+        expect(select).toBeTruthy();
+        expect(select.value).toBe('email');
+        expect(select.querySelectorAll('option').length).toBe(3);
+        expect(select.querySelector('option[value="email"]')?.selected).toBe(true);
+        expect(select.querySelector('option[value="sms"]')?.selected).toBe(false);
+
+        select.value = 'sms';
+        select.dispatchEvent(new (this.doc.defaultView as any).Event('change', { bubbles: true }));
+        await flush();
+        expect(this.ref.instance.lastChange?.key).toBe('channel');
+        expect(this.ref.instance.lastChange?.value).toBe('sms');
+
+        const updated = this.root.querySelector('.df-field[data-field-key="channel"] select') as any;
+        expect(updated.value).toBe('sms');
+        expect(updated.querySelector('option[value="sms"]')?.selected).toBe(true);
     }
 
     @Test('resets a field to its configured default')

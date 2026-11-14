@@ -11,7 +11,7 @@ import { GatewayAdminState } from '../admin.state';
                 <div class="ga-not-found-code">404</div>
                 <h2 class="ga-section-title">{{state.t('page.notFound.title')}}</h2>
                 <p class="ga-muted">{{state.t('notFound.desc')}}</p>
-                <button class="ga-btn ga-btn-primary" type="button" @click="state.goDashboard">{{state.t('notFound.back')}}</button>
+                <button class="ga-btn ga-btn-primary" type="button" @click="state.goDashboard"><icon name="arrow-up" size="xs" stroke-width="2"></icon>{{state.t('notFound.back')}}</button>
             </div>
         </article>
     </section>`

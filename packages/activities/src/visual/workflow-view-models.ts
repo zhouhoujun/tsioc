@@ -135,61 +135,192 @@ function nodeAttrs(view: Omit<WorkflowCanvasNodeView, 'attrs'>): Record<string, 
 }
 
 /**
- * Project the designer state into a canvas render model. The model is a fresh
- * plain object on every change so child components can update through their own
- * reactive attributes without sharing a mutable graph.
+ * Signature per rendered canvas view. The model is rebuilt on every designer
+ * change, but reusing the same view object for unchanged nodes/edges keeps
+ * `v-for` from re-rendering the whole graph (drag, pan, selection, one field).
+ *
+ * The signature lives on the view under a symbol instead of a WeakMap: host
+ * components read cached models through reactive proxies, so a WeakMap lookup
+ * with the proxied view would miss and silently rebuild the whole graph.
+ */
+const VIEW_SIGNATURE = Symbol('workflowCanvasViewSignature');
+type SignedView = { [VIEW_SIGNATURE]?: string };
+
+function viewSignature(view: unknown): string | undefined {
+    return view ? (view as SignedView)[VIEW_SIGNATURE] : undefined;
+}
+
+function markView(view: object, signature: string): void {
+    (view as SignedView)[VIEW_SIGNATURE] = signature;
+}
+
+/**
+ * Projection inputs per view. Node/connection objects are replaced immutably on
+ * every edit, so identity checks let the projection skip building per-field
+ * signatures for the whole graph when a single node changed (typing in the
+ * inspector otherwise re-signed all 300 nodes on every keystroke).
+ */
+const VIEW_INPUTS = Symbol('workflowCanvasViewInputs');
+type NodeViewInputs = {
+    node: any;
+    status: string;
+    selected: boolean;
+    locale: string;
+    revision: number;
+};
+type EdgeViewInputs = {
+    connection: any;
+    status: string;
+    selected: boolean;
+    sourcePort: WorkflowCanvasPortView | undefined;
+    targetPort: WorkflowCanvasPortView | undefined;
+    locale: string;
+    revision: number;
+};
+type InputsHolder = {
+    [VIEW_INPUTS]?: NodeViewInputs | EdgeViewInputs;
+};
+
+function viewInputsOf<T extends NodeViewInputs | EdgeViewInputs>(view: unknown): T | undefined {
+    return view ? (view as InputsHolder)[VIEW_INPUTS] as T : undefined;
+}
+
+function markInputs(view: object, inputs: NodeViewInputs | EdgeViewInputs): void {
+    (view as InputsHolder)[VIEW_INPUTS] = inputs;
+}
+
+function portSignature(ports: WorkflowCanvasPortView[]): string {
+    return ports.map(port => `${port.id}:${port.label}:${port.type || ''}:${port.x}:${port.y}`).join(',');
+}
+
+/**
+ * Project the designer state into a canvas render model.
+ *
+ * `previous` enables incremental projection: nodes/edges whose painted fields
+ * did not change keep their existing view object. Pan/zoom and inspector edits
+ * therefore stop rebuilding the whole node list, while the returned model is
+ * still a fresh wrapper so viewport bindings update normally.
  */
 export function buildWorkflowCanvasModel(
     designer: WorkflowDesigner,
     registry: WorkflowNodeRegistry,
     locale: WorkflowLocale = 'zh-CN',
-    translator?: Translator
+    translator?: Translator,
+    previous?: WorkflowCanvasModel
 ): WorkflowCanvasModel {
     const nodeViews: WorkflowCanvasNodeView[] = [];
     const geometry = new Map<string, ReturnType<typeof nodeGeometry>>();
     const execution = designer.execution;
+    const selection = designer.selection;
+    const previousNodes = previous
+        ? new Map(previous.nodes.map(view => [view.id, view]))
+        : undefined;
 
     for (const node of designer.nodes) {
+        const status = (execution?.nodeStates?.[node.id]?.status as NodeExecutionStatus) || 'idle';
+        const selected = selection?.nodeId === node.id;
+        const prior = previousNodes?.get(node.id);
+        const inputs = prior ? viewInputsOf<NodeViewInputs>(prior) : undefined;
+        if (inputs
+            && prior
+            && inputs.node === node
+            && inputs.status === status
+            && inputs.selected === selected
+            && inputs.locale === locale
+            && inputs.revision === registry.revision) {
+            nodeViews.push(prior);
+            geometry.set(node.id, {
+                width: prior.width,
+                height: prior.height,
+                inputs: prior.inputs,
+                outputs: prior.outputs
+            });
+            continue;
+        }
         const geo = nodeGeometry(node);
         geometry.set(node.id, geo);
-        const status = (execution?.nodeStates?.[node.id]?.status as NodeExecutionStatus) || 'idle';
+        const typeLabel = registry.nodeLabel(node.type, locale, translator);
+        const description = node.description || registry.nodeDescription(node.type, locale, translator);
+        const icon = node.style?.icon || registry.get(node.type)?.icon || '◆';
+        const color = node.style?.backgroundColor || registry.get(node.type)?.color || '#64748b';
+        const textColor = node.style?.textColor || registry.get(node.type)?.textColor || '#ffffff';
+        const disabled = node.disabled === true;
+        const statusLabel = nodeStatusLabel(status, locale, translator);
+        const signature = [
+            node.id, node.name, node.type, typeLabel, description,
+            node.position.x, node.position.y, geo.width, geo.height,
+            icon, color, textColor, selected ? 1 : 0, disabled ? 1 : 0,
+            status, statusLabel,
+            portSignature(geo.inputs), portSignature(geo.outputs)
+        ].join('\u0001');
+        if (prior && viewSignature(prior) === signature) {
+            nodeViews.push(prior);
+            continue;
+        }
         const view: Omit<WorkflowCanvasNodeView, 'attrs'> = {
             id: node.id,
             name: node.name,
             type: node.type,
-            typeLabel: registry.nodeLabel(node.type, locale, translator),
-            description: node.description || registry.nodeDescription(node.type, locale, translator),
+            typeLabel,
+            description,
             x: node.position.x,
             y: node.position.y,
             width: geo.width,
             height: geo.height,
-            icon: node.style?.icon || registry.get(node.type)?.icon || '◆',
-            color: node.style?.backgroundColor || registry.get(node.type)?.color || '#64748b',
-            textColor: node.style?.textColor || registry.get(node.type)?.textColor || '#ffffff',
-            selected: designer.selection.nodeId === node.id,
-            disabled: node.disabled === true,
+            icon,
+            color,
+            textColor,
+            selected,
+            disabled,
             status,
-            statusLabel: nodeStatusLabel(status, locale, translator),
+            statusLabel,
             inputs: geo.inputs,
             outputs: geo.outputs
         };
-        nodeViews.push({ ...view, attrs: nodeAttrs(view) });
+        const next = { ...view, attrs: nodeAttrs(view) };
+        markView(next, signature);
+        markInputs(next, { node, status, selected, locale, revision: registry.revision });
+        nodeViews.push(next);
     }
 
+    const previousEdges = previous
+        ? new Map(previous.edges.map(view => [view.id, view]))
+        : undefined;
     const edgeViews: WorkflowCanvasEdgeView[] = designer.connections.map(connection => {
-        const source = designer.nodes.find(node => node.id === connection.sourceNodeId);
-        const target = designer.nodes.find(node => node.id === connection.targetNodeId);
-        const sourceGeo = source ? geometry.get(source.id) : undefined;
-        const targetGeo = target ? geometry.get(target.id) : undefined;
+        const sourceGeo = geometry.get(connection.sourceNodeId);
+        const targetGeo = geometry.get(connection.targetNodeId);
         const sourcePort = sourceGeo?.outputs.find(port => port.id === connection.sourcePort) || sourceGeo?.outputs[0];
         const targetPort = targetGeo?.inputs.find(port => port.id === connection.targetPort) || targetGeo?.inputs[0];
         const status = execution?.edgeStates?.[connection.id]?.status || 'idle';
-        const selected = designer.selection.connectionId === connection.id;
+        const selected = selection?.connectionId === connection.id;
+        const priorEdge = previousEdges?.get(connection.id);
+        if (priorEdge) {
+            const inputs = viewInputsOf<EdgeViewInputs>(priorEdge);
+            if (inputs
+                && inputs.connection === connection
+                && inputs.status === status
+                && inputs.selected === selected
+                && inputs.sourcePort === sourcePort
+                && inputs.targetPort === targetPort
+                && inputs.locale === locale
+                && inputs.revision === registry.revision) {
+                return priorEdge;
+            }
+        }
+        const label = connection.label || '';
         const d = sourcePort && targetPort
             ? edgePath(sourcePort, targetPort)
             : 'M 0 0';
         const midX = sourcePort && targetPort ? (sourcePort.x + targetPort.x) / 2 : 0;
         const midY = sourcePort && targetPort ? (sourcePort.y + targetPort.y) / 2 : 0;
+        const signature = [
+            connection.id, connection.sourceNodeId, connection.targetNodeId,
+            connection.sourcePort, connection.targetPort, label,
+            d, status, selected ? 1 : 0, midX, midY
+        ].join('\u0001');
+        if (priorEdge && viewSignature(priorEdge) === signature) {
+            return priorEdge;
+        }
         const attrs: Record<string, string> = {
             class: `workflow-edge workflow-edge-${status}${selected ? ' is-selected' : ''}`,
             'data-edge-id': connection.id,
@@ -197,13 +328,13 @@ export function buildWorkflowCanvasModel(
             d,
             'marker-end': `url(#wf-arrow-${status})`
         };
-        return {
+        const view: WorkflowCanvasEdgeView = {
             id: connection.id,
             sourceNodeId: connection.sourceNodeId,
             targetNodeId: connection.targetNodeId,
             sourcePort: connection.sourcePort,
             targetPort: connection.targetPort,
-            label: connection.label || '',
+            label,
             d,
             status,
             selected,
@@ -219,27 +350,20 @@ export function buildWorkflowCanvasModel(
                 class: 'workflow-edge-label'
             }
         };
+        markView(view, signature);
+        markInputs(view, {
+            connection,
+            status,
+            selected,
+            sourcePort,
+            targetPort,
+            locale,
+            revision: registry.revision
+        });
+        return view;
     });
 
-    let draft: WorkflowCanvasModel['draft'];
-    if (designer.connectionDraft) {
-        const source = designer.nodes.find(node => node.id === designer.connectionDraft!.sourceNodeId);
-        const sourceGeo = source ? geometry.get(source.id) : undefined;
-        const sourcePorts = designer.connectionDraft.sourceSide === 'input'
-            ? sourceGeo?.inputs
-            : sourceGeo?.outputs;
-        const sourcePort = sourcePorts?.find(port => port.id === designer.connectionDraft!.sourcePort);
-        if (sourcePort) {
-            draft = {
-                d: edgePath(sourcePort, { x: designer.connectionDraft.x, y: designer.connectionDraft.y }),
-                attrs: {
-                    class: 'workflow-edge workflow-edge-draft',
-                    'pointer-events': 'none'
-                }
-            };
-        }
-    }
-
+    const draft = buildCanvasDraft(designer, nodeId => geometry.get(nodeId));
     const maxX = nodeViews.reduce((value, node) => Math.max(value, node.x + node.width), 0);
     const maxY = nodeViews.reduce((value, node) => Math.max(value, node.y + node.height), 0);
     return {
@@ -252,11 +376,64 @@ export function buildWorkflowCanvasModel(
         height: Math.max(720, maxY + 240),
         zoom: designer.zoom,
         pan: { ...designer.pan },
-        gridStyle: {
-            '--wf-grid-size': `${24 * designer.zoom}px`,
-            '--wf-grid-x': `${designer.pan.x}px`,
-            '--wf-grid-y': `${designer.pan.y}px`
+        gridStyle: canvasGridStyle(designer)
+    };
+}
+
+/**
+ * Refresh only the viewport-dependent parts of a canvas model.
+ *
+ * Pan, zoom and wire dragging do not change node/edge projections, so callers
+ * can keep the previous node and edge arrays instead of re-projecting every
+ * node on each pointer event.
+ */
+export function buildWorkflowCanvasViewport(
+    previous: WorkflowCanvasModel,
+    designer: WorkflowDesigner
+): WorkflowCanvasModel {
+    return {
+        nodes: previous.nodes,
+        edges: previous.edges,
+        // Only wire dragging needs a source node lookup; pan/zoom stays O(1).
+        draft: buildCanvasDraft(designer, nodeId => previous.nodes.find(node => node.id === nodeId)),
+        connecting: !!designer.connectionDraft,
+        connectingSide: designer.connectionDraft?.sourceSide || 'output',
+        width: previous.width,
+        height: previous.height,
+        zoom: designer.zoom,
+        pan: { ...designer.pan },
+        gridStyle: canvasGridStyle(designer)
+    };
+}
+
+function buildCanvasDraft(
+    designer: WorkflowDesigner,
+    portsOf: (nodeId: string) => { inputs?: WorkflowCanvasPortView[]; outputs?: WorkflowCanvasPortView[] } | undefined
+): WorkflowCanvasModel['draft'] {
+    const draft = designer.connectionDraft;
+    if (!draft) {
+        return undefined;
+    }
+    const source = portsOf(draft.sourceNodeId);
+    const sourcePorts = draft.sourceSide === 'input' ? source?.inputs : source?.outputs;
+    const sourcePort = sourcePorts?.find(port => port.id === draft.sourcePort);
+    if (!sourcePort) {
+        return undefined;
+    }
+    return {
+        d: edgePath(sourcePort, { x: draft.x, y: draft.y }),
+        attrs: {
+            class: 'workflow-edge workflow-edge-draft',
+            'pointer-events': 'none'
         }
+    };
+}
+
+function canvasGridStyle(designer: WorkflowDesigner): Record<string, string> {
+    return {
+        '--wf-grid-size': `${24 * designer.zoom}px`,
+        '--wf-grid-x': `${designer.pan.x}px`,
+        '--wf-grid-y': `${designer.pan.y}px`
     };
 }
 

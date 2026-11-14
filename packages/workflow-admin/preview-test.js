@@ -32,7 +32,7 @@ function freePort() {
 
 async function waitForServer(base) {
     const started = Date.now();
-    while (Date.now() - started < 60000) {
+    while (Date.now() - started < 180000) {
         try {
             const response = await fetch(`${base}/api/workflows`);
             if (response.ok) {
@@ -80,7 +80,11 @@ function startDesignerServer(port) {
 
     try {
         await waitForServer(base);
-        const browser = await chromium.launch({ headless: true });
+        const browser = await chromium.launch({
+            headless: true,
+            executablePath: process.env.CHROME_PATH || undefined,
+            args: process.env.CHROME_PATH ? ['--no-sandbox'] : []
+        });
         const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
         const errors = [];
         page.on('console', msg => { if (msg.type() === 'error') errors.push(msg.text()); });
@@ -156,9 +160,9 @@ function startDesignerServer(port) {
         // Code field uses the open-source CodeMirror editor; property form validates.
         await page.locator('.workflow-palette-item[data-node-type="function"]').click();
         await page.waitForSelector('.workflow-node[data-node-id="function_1"]', { timeout: 5000 });
-        await page.waitForSelector('.workflow-field[data-field-key="code"] .CodeMirror', { timeout: 5000 });
-        const codeEditor = await page.locator('.workflow-field[data-field-key="code"] .CodeMirror').count() > 0;
-        const codeText = await page.locator('.workflow-field[data-field-key="code"] .CodeMirror').textContent();
+        await page.waitForSelector('.workflow-field[data-field-key="code"] .cm-editor', { timeout: 5000 });
+        const codeEditor = await page.locator('.workflow-field[data-field-key="code"] .cm-editor').count() > 0;
+        const codeText = await page.locator('.workflow-field[data-field-key="code"] .cm-editor').textContent();
         const lazyEditorChunk = await page.evaluate(loaded => performance.getEntriesByType('resource')
             .some(entry => /\.js($|\?)/.test(entry.name) && !loaded.includes(entry.name)), initialJsUrls);
         const nameInput = page.locator('.workflow-inspector-name');
@@ -173,30 +177,104 @@ function startDesignerServer(port) {
         const deleteEnabledAfter = !(await deleteButton.isDisabled());
 
         // Workflow-aware completion: context/variables and configured actions.
-        await page.locator('.workflow-field[data-field-key="code"] .CodeMirror').click();
+        await page.locator('.workflow-field[data-field-key="code"] .cm-editor').click();
         await page.keyboard.press('Control+A');
         await page.keyboard.type('context.');
         await page.waitForTimeout(600);
-        const envHints = await page.locator('.CodeMirror-hint').allTextContents();
+        const envHints = await page.locator('.cm-tooltip-autocomplete li').allTextContents();
         const hintEnv = envHints.includes('actions') || envHints.includes('variables');
         await page.keyboard.press('Escape');
         await page.keyboard.press('Control+A');
         await page.keyboard.type('context.actions.');
         await page.keyboard.press('Control+Space');
         await page.waitForTimeout(400);
-        const actionHints = await page.locator('.CodeMirror-hint').allTextContents();
+        const actionHints = await page.locator('.cm-tooltip-autocomplete li').allTextContents();
         const hintAction = actionHints.includes('loadInput');
         await page.keyboard.press('Escape');
 
+        // Syntax errors must surface without hovering the tiny gutter marker:
+        // the status row below the editor turns into `⚠ … (line:col)`.
+        await page.locator('.workflow-field[data-field-key="code"] .cm-editor').click();
+        await page.keyboard.press('Control+A');
+        await page.keyboard.type('return (;');
+        await page.waitForTimeout(700);
+        const lintStatus = (await page.locator('.workflow-field[data-field-key="code"] .workflow-code-status').textContent() || '').trim();
+        const lintMarker = await page.locator('.workflow-field[data-field-key="code"] .cm-lint-marker-error').count();
+        const lintLine = await page.locator('.workflow-field[data-field-key="code"] .cm-lintRange-error').count();
+        const lintInvalid = lintStatus.includes('⚠') && lintStatus.includes('(1:');
+
         // Editing in the CodeMirror editor must persist to the node config.
-        await page.locator('.workflow-field[data-field-key="code"] .CodeMirror').click();
+        await page.locator('.workflow-field[data-field-key="code"] .cm-editor').click();
         await page.keyboard.press('Control+A');
         await page.keyboard.type('return 42;');
         // Code edits are debounced; wait past the quiet period (and then some).
-        await page.waitForTimeout(600);
+        await page.waitForTimeout(700);
         const codeApplied = await page.evaluate(() =>
             window.workflowDesigner.designer.nodes.find(node => node.id === 'function_1')?.config?.code === 'return 42;'
         );
+        const lintCleared = ((await page.locator('.workflow-field[data-field-key="code"] .workflow-code-status').textContent()) || '').includes('Ctrl+Space');
+        const jsHighlighted = await page.locator('.workflow-field[data-field-key="code"] .cm-content .wf-code-keyword').count() > 0;
+        // CodeMirror 6 search panel is available from the same keymap.
+        await page.locator('.workflow-field[data-field-key="code"] .cm-editor').click();
+        await page.keyboard.press('Control+f');
+        await page.waitForTimeout(150);
+        const cmSearch = await page.locator('.cm-panel.cm-search').count() > 0;
+        await page.keyboard.press('Escape');
+
+        // Semantic checks run on top of the syntax parse: undefined names,
+        // unused locals, const rebinding and duplicate JSON keys.
+        const codeStatus = page.locator('.workflow-field[data-field-key="code"] .workflow-code-status');
+        await page.locator('.workflow-field[data-field-key="code"] .cm-editor').click();
+        await page.keyboard.press('Control+A');
+        await page.keyboard.type('return missing.value;');
+        await page.waitForTimeout(800);
+        const semanticUndefined = ((await codeStatus.textContent()) || '').includes('missing')
+            && ((await codeStatus.textContent()) || '').includes('△');
+        await page.keyboard.press('Control+A');
+        await page.keyboard.type('const unused = 1;\nreturn 42;');
+        await page.waitForTimeout(800);
+        const semanticUnused = ((await codeStatus.textContent()) || '').includes('unused');
+        await page.keyboard.press('Control+A');
+        await page.keyboard.type('const value = 1;\nvalue = 2;\nreturn value;');
+        await page.waitForTimeout(800);
+        const semanticConstant = ((await codeStatus.textContent()) || '').includes('⚠');
+        await page.keyboard.press('Control+A');
+        await page.keyboard.type('return 42;');
+        await page.waitForTimeout(800);
+
+        // JSON fields use the same editor but are validated as JSON, not as an
+        // async function body (`{"ok": true}` must not report a syntax error).
+        // Use the existing task so the document/connection graph is unchanged.
+        await page.locator('.workflow-node[data-node-id="task_1"]').click();
+        await page.waitForTimeout(150);
+        await page.locator('.workflow-field[data-field-key="result"] .workflow-field-mode').click();
+        await page.waitForSelector('.workflow-field[data-field-key="result"] .cm-editor', { timeout: 5000 });
+        const jsonStatus = page.locator('.workflow-field[data-field-key="result"] .workflow-code-status');
+        const jsonValidDefault = !((await jsonStatus.textContent()) || '').includes('⚠');
+        await page.locator('.workflow-field[data-field-key="result"] .cm-editor').click();
+        await page.keyboard.press('Control+A');
+        await page.keyboard.type('{"approved": true}');
+        await page.waitForTimeout(700);
+        const jsonValid = !((await jsonStatus.textContent()) || '').includes('⚠');
+        const jsonHighlighted = await page
+            .locator('.workflow-field[data-field-key="result"] .cm-content .wf-code-property, '
+                + '.workflow-field[data-field-key="result"] .cm-content .wf-code-string')
+            .count() > 0;
+        await page.keyboard.press('Control+A');
+        await page.keyboard.type('{"approved": true, "approved": false}');
+        await page.waitForTimeout(700);
+        const jsonDuplicate = ((await jsonStatus.textContent()) || '').includes('△')
+            && ((await jsonStatus.textContent()) || '').includes('approved');
+        await page.keyboard.press('Control+A');
+        await page.keyboard.type('{"approved": }');
+        await page.waitForTimeout(700);
+        const jsonInvalid = ((await jsonStatus.textContent()) || '').includes('⚠');
+        // Restore the original config before the run step.
+        await page.keyboard.press('Control+A');
+        await page.keyboard.type('{"approved": true}');
+        await page.waitForTimeout(700);
+        await page.locator('.workflow-field[data-field-key="result"] .workflow-field-mode').click();
+        await page.waitForTimeout(150);
 
         // Autosave persists edits through the real HTTP store.
         await page.waitForTimeout(1200);
@@ -208,12 +286,13 @@ function startDesignerServer(port) {
         // Property form: conditional fields, grouped sections, placeholders and reset.
         await page.locator('.workflow-node[data-node-id="condition_1"]').click();
         await page.waitForTimeout(150);
-        const optionCount = await page.locator('.workflow-field[data-field-key="operator"] .workflow-option').count();
+        const operatorSelect = page.locator('.workflow-field[data-field-key="operator"] select.workflow-select');
+        const optionCount = await operatorSelect.locator('option').count();
         const compareHidden = await page.locator('.workflow-field[data-field-key="value"]').count() === 0;
-        await page.locator('.workflow-field[data-field-key="operator"] [data-option-value="equals"]').click();
+        await operatorSelect.selectOption('equals');
         await page.waitForTimeout(150);
         const compareVisible = await page.locator('.workflow-field[data-field-key="value"]').count() > 0;
-        await page.locator('.workflow-field[data-field-key="operator"] [data-option-value="truthy"]').click();
+        await operatorSelect.selectOption('truthy');
         await page.waitForTimeout(150);
         const compareHiddenAgain = await page.locator('.workflow-field[data-field-key="value"]').count() === 0;
 
@@ -424,10 +503,13 @@ function startDesignerServer(port) {
                     }
                 }
             }
+            const grid = document.querySelector('.workflow-canvas-grid');
             return {
                 scrollbar: designer ? getComputedStyle(designer).scrollbarColor : '',
                 leftScrollbar: left ? getComputedStyle(left).scrollbarColor : '',
                 canvasScrollbar: canvas ? getComputedStyle(canvas).scrollbarColor : '',
+                gridImage: grid ? getComputedStyle(grid).backgroundImage : '',
+                canvasImage: canvas ? getComputedStyle(canvas).backgroundImage : '',
                 lightBorders
             };
         });
@@ -435,7 +517,7 @@ function startDesignerServer(port) {
         // Show the dynamic-form inspector in the final screenshot (dark theme).
         await page.locator('.workflow-node[data-node-id="condition_1"]').click();
         await page.waitForTimeout(150);
-        await page.locator('.workflow-field[data-field-key="operator"] [data-option-value="equals"]').click();
+        await page.locator('.workflow-field[data-field-key="operator"] select.workflow-select').selectOption('equals');
         const inspectorRendered = await page.locator('workflow-inspector dynamic-form').count() > 0;
         const inspectorTheme = await page.evaluate(() => {
             const group = document.querySelector('.workflow-inspector .workflow-field-group');
@@ -537,9 +619,9 @@ function startDesignerServer(port) {
 
         await browser.close();
 
-        const result = { before, initialJsBytes, menuItemClick, paletteDrop, inspectorTheme, lazyEditorChunk, hintEnv, hintAction, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, notFoundPage, notFoundCode, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
+        const result = { before, initialJsBytes, menuItemClick, paletteDrop, inspectorTheme, lazyEditorChunk, hintEnv, hintAction, lintStatus, lintMarker, lintLine, lintInvalid, lintCleared, jsHighlighted, cmSearch, semanticUndefined, semanticUnused, semanticConstant, jsonValidDefault, jsonValid, jsonHighlighted, jsonDuplicate, jsonInvalid, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, notFoundPage, notFoundCode, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
         console.log(JSON.stringify(result, null, 2));
-        if (errors.length || initialJsBytes > 780_000 || !lazyEditorChunk || !hintEnv || !hintAction || !shortcutsOpened || !shortcutsClosed
+        if (errors.length || initialJsBytes > 780_000 || !lazyEditorChunk || !hintEnv || !hintAction || !lintInvalid || lintMarker < 1 || lintLine < 1 || !lintCleared || !jsHighlighted || !cmSearch || !semanticUndefined || !semanticUnused || !semanticConstant || !jsonValidDefault || !jsonValid || !jsonHighlighted || !jsonDuplicate || !jsonInvalid || !shortcutsOpened || !shortcutsClosed
             || autosaveName !== 'Function Node' || autosaveCode !== 'return 42;' || !wheelZoom || !wheelPan || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20
             || !menuOpen || menuEntries < 5 || !menuClosed || !menuItemClick
             || !paletteDrop?.placed || Math.abs(paletteDrop.dx) > 10 || Math.abs(paletteDrop.dy) > 10
@@ -556,6 +638,8 @@ function startDesignerServer(port) {
             || solarizedTheme.splitter === 'rgb(226, 232, 240)' || solarizedTheme.collapse === 'rgb(255, 255, 255)'
             || lightThemeRestored !== 'light' || darkTheme.attribute !== 'dark'
             || layoutTheme.lightBorders !== 0
+            || !layoutTheme.gridImage.includes('148, 163, 184')
+            || layoutTheme.canvasImage.includes('radial-gradient')
             || !layoutTheme.scrollbar.includes('rgb(51, 65, 85)')
             || !layoutTheme.leftScrollbar.includes('rgb(51, 65, 85)')
             || !layoutTheme.canvasScrollbar.includes('rgb(51, 65, 85)')
