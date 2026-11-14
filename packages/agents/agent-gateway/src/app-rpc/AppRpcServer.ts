@@ -19,6 +19,7 @@ import { toAppRpcError } from './rpcError';
 import { normalizeDelegationModeValue, normalizeSandboxMode } from './session-mode';
 import { buildExportFileName, collectExportToolCalls, resolveExportContentType, resolveExportFormat, serializeSessionExport } from './session-export';
 import { createErrorResponse, parseTurnMessage } from './request-helpers';
+import { resolveHistoryPrincipalId, resolveHistoryPrincipalIds, resolveModelProfile } from './model-profile';
 import { CONSOLE_INPUT_HISTORY_KEY, createConsoleInputHistoryRecordId, listConsoleInputHistoryRecords, mergeConsoleInputHistoryEntries, normalizeInputHistoryEntries, parseInputHistoryEntries } from './input-history';
 import { ToolInvokeHost, invokeToolWithWorkspaceTrust } from './tool-invoke';
 import { ApprovalRequestedChunkFields, buildApprovalRequestedChunk } from './approval-chunk';
@@ -595,7 +596,7 @@ export class AppRpcServer {
         // MemoryCommandOutputStore and persist history that survives session restarts
         // and cross-session access.
         const workspace = state.workspace || this.resolveWorkspace();
-        const principalId = this.resolveHistoryPrincipalId(context);
+        const principalId = resolveHistoryPrincipalId(context);
         const sessionRecordId = this.createCommandOutputRecordId(workspace, principalId, requested);
         // Store the recordId on the session state so downstream consumers can create
         // a matching store; the gateway also retains it in case it needs to persist
@@ -668,7 +669,7 @@ export class AppRpcServer {
             title: this.options.ui?.title || defaultAgentOptions.ui?.title || '',
             provider: this.options.model?.provider || '',
             model: this.options.model?.model || '',
-            modelProfile: this.resolveModelProfile(),
+            modelProfile: resolveModelProfile(this.options.model),
             createdAt: state.createdAt,
             updatedAt: state.updatedAt
         };
@@ -685,7 +686,7 @@ export class AppRpcServer {
 
     private async getInputHistory(params: any, context: AppRpcRequestContext): Promise<string[]> {
         const workspace = this.resolveHistoryRequestWorkspace(params);
-        const principalIds = this.resolveHistoryPrincipalIds(context);
+        const principalIds = resolveHistoryPrincipalIds(context);
         const records = listConsoleInputHistoryRecords(await this.memory.getAll(undefined), workspace, principalIds);
         const cached = records.map(record => parseInputHistoryEntries(record.value));
         const sessionEntries = await this.listWorkspaceUserInputHistory(workspace, principalIds);
@@ -718,13 +719,13 @@ export class AppRpcServer {
             await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
             this.sessionHandler.track(sessionId);
         }
-        const principalId = this.resolveHistoryPrincipalId(context);
+        const principalId = resolveHistoryPrincipalId(context);
         const entries = normalizeInputHistoryEntries(params?.entries);
         // One record per workspace/principal: per-session records grew with the
         // workspace (105 records / 1.6 MB) and slowed every plan lookup.
         const records = await this.memory.getAll(undefined);
         // `local-system` also adopts legacy `anonymous` records.
-        const previous = listConsoleInputHistoryRecords(records, workspace, this.resolveHistoryPrincipalIds(context));
+        const previous = listConsoleInputHistoryRecords(records, workspace, resolveHistoryPrincipalIds(context));
         const merged = mergeConsoleInputHistoryEntries([
             entries,
             ...previous.map(record => parseInputHistoryEntries(record.value))
@@ -759,7 +760,7 @@ export class AppRpcServer {
 
     private createCommandOutputStore(params: any, context: AppRpcRequestContext, sessionId: string): MemoryCommandOutputStore {
         const workspace = this.resolveHistoryRequestWorkspace(params);
-        const principalId = this.resolveHistoryPrincipalId(context);
+        const principalId = resolveHistoryPrincipalId(context);
         return new MemoryCommandOutputStore(this.memory, this.createCommandOutputRecordId(workspace, principalId, sessionId), undefined, this.options.policy);
     }
 
@@ -3431,31 +3432,5 @@ export class AppRpcServer {
         }
         throw new AppRpcError(-32602, `Invalid params: ${field} must be a non-empty string`);
     }
-
-    private resolveModelProfile(): string {
-        const model = this.options.model;
-        if (model?.defaultProfile === 'strong') {
-            return 'strong';
-        }
-        if (model?.defaultProfile === 'flash' || model?.defaultProfile === 'fast') {
-            return 'flash';
-        }
-        if (model?.thinkingBudget || model?.reasoning) {
-            return 'strong';
-        }
-        return '';
-    }
-
-    private resolveHistoryPrincipalId(context: AppRpcRequestContext): string {
-        return String(context?.principalId || '').trim() || 'anonymous';
-    }
-
-    private resolveHistoryPrincipalIds(context: AppRpcRequestContext): string[] {
-        const principalId = this.resolveHistoryPrincipalId(context);
-        return principalId === 'local-system'
-            ? [principalId, 'anonymous']
-            : [principalId];
-    }
-
 
 }
