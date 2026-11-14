@@ -28,3 +28,28 @@ export function createErrorResponse(id: string | number | null | undefined, erro
         }
     };
 }
+
+export function requireString(value: unknown, field: string): string {
+    if (typeof value !== 'string' || !value.trim()) {
+        throw new AppRpcError(-32602, `Invalid params: ${field} must be a non-empty string`);
+    }
+    return value.trim();
+}
+
+export function requireSessionId(params: any): string {
+    return requireString(params?.sessionId, 'sessionId');
+}
+
+export function optionalSessionId(params: any): string | undefined {
+    return typeof params?.sessionId === 'string' && params.sessionId.trim() ? params.sessionId.trim() : undefined;
+}
+
+export function requireTurnInput(value: unknown, message: AgentTurnMessageInput | undefined, field: string): string {
+    if (typeof value === 'string' && value.trim()) {
+        return value.trim();
+    }
+    if (message?.parts?.length) {
+        return typeof value === 'string' ? value.trim() : '';
+    }
+    throw new AppRpcError(-32602, `Invalid params: ${field} must be a non-empty string`);
+}

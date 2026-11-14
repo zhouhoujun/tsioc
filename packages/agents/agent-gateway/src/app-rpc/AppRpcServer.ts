@@ -18,7 +18,7 @@ import { describeToolCompletedEvent, describeToolInvocationEvent } from './tool-
 import { toAppRpcError } from './rpcError';
 import { normalizeDelegationModeValue, normalizeSandboxMode } from './session-mode';
 import { buildExportFileName, collectExportToolCalls, resolveExportContentType, resolveExportFormat, serializeSessionExport } from './session-export';
-import { createErrorResponse, parseTurnMessage } from './request-helpers';
+import { createErrorResponse, optionalSessionId, parseTurnMessage, requireSessionId, requireString, requireTurnInput } from './request-helpers';
 import { resolveHistoryPrincipalId, resolveHistoryPrincipalIds, resolveModelProfile } from './model-profile';
 import { CONSOLE_INPUT_HISTORY_KEY, createConsoleInputHistoryRecordId, listConsoleInputHistoryRecords, mergeConsoleInputHistoryEntries, normalizeInputHistoryEntries, parseInputHistoryEntries } from './input-history';
 import { ToolInvokeHost, invokeToolWithWorkspaceTrust } from './tool-invoke';
@@ -326,7 +326,7 @@ export class AppRpcServer {
                 return this.clearCommandOutput(params, context);
             case 'session.create':
                 return this.createSession(params, context);
-            case 'session.exists': return { sessionId: params?.sessionId, exists: await this.sessions.has(this.requireSessionId(params)) };
+            case 'session.exists': return { sessionId: params?.sessionId, exists: await this.sessions.has(requireSessionId(params)) };
             case 'session.fork':
                 return this.forkSession(params, context);
             case 'session.list':
@@ -343,7 +343,7 @@ export class AppRpcServer {
             case 'session.search':
                 return this.searchSessions(params, context);
             case 'session.delete':
-                return this.deleteSession(this.requireSessionId(params), context);
+                return this.deleteSession(requireSessionId(params), context);
             case 'session.export':
                 return this.exportSession(params, context);
             case 'session.plan_mode.set':
@@ -441,7 +441,7 @@ export class AppRpcServer {
             case 'approval.reject':
                 return this.decideApproval(params, context, false);
             case 'tools.list':
-                return this.tools.getToolDefinitions(this.optionalSessionId(params));
+                return this.tools.getToolDefinitions(optionalSessionId(params));
             case 'tools.activate':
                 return this.activateTool(params, context);
             case 'tools.invoke':
@@ -464,7 +464,7 @@ export class AppRpcServer {
             case 'project_memory.remove':
                 return this.removeProjectMemory(params, context);
             case 'events.history':
-                return this.getEventHistory(this.requireSessionId(params), context);
+                return this.getEventHistory(requireSessionId(params), context);
             case 'timeline.query':
                 return this.queryTimeline(params, context);
             case 'timeline.replay':
@@ -613,30 +613,30 @@ export class AppRpcServer {
     }
 
     private async createGoal(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
         return this.runtime.createGoal({
-            title: this.requireString(params?.title, 'goal title'),
-            objective: this.requireString(params?.objective, 'goal objective'),
+            title: requireString(params?.title, 'goal title'),
+            objective: requireString(params?.objective, 'goal objective'),
             successCriteria: Array.isArray(params?.successCriteria) ? params.successCriteria.map(String) : []
         }, sessionId);
     }
 
     private async getGoal(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         return params?.goalId ? this.runtime.getGoal(String(params.goalId)) : this.runtime.getSessionGoal(sessionId);
     }
 
     private async linkGoal(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
         await this.runtime.linkSessionGoal(sessionId, params?.goalId ? String(params.goalId) : undefined);
         return { linked: true, sessionId, goalId: params?.goalId };
     }
 
     private async updateGoalStatus(params: any, context: AppRpcRequestContext, status: 'active' | 'completed'): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const linked = await this.runtime.getSessionGoal(sessionId);
         const goalId = String(params?.goalId || linked?.id || '').trim();
@@ -645,7 +645,7 @@ export class AppRpcServer {
     }
 
     private async forkSession(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sourceId = this.requireSessionId(params);
+        const sourceId = requireSessionId(params);
         await this.ensureSessionAccess(sourceId, context);
         const state = await this.sessions.fork(sourceId, params?.messageId, params?.forkSessionId);
         await this.owners.create(state.sessionId, context.principalId);
@@ -714,7 +714,7 @@ export class AppRpcServer {
 
     private async putInputHistory(params: any, context: AppRpcRequestContext): Promise<{ workspace: string; entries: string[] }> {
         const workspace = this.resolveHistoryRequestWorkspace(params);
-        const sessionId = this.optionalSessionId(params);
+        const sessionId = optionalSessionId(params);
         if (sessionId) {
             await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
             this.sessionHandler.track(sessionId);
@@ -769,7 +769,7 @@ export class AppRpcServer {
     }
 
     private async listCommandOutput(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const store = this.createCommandOutputStore(params, context, sessionId);
         const query: CommandOutputQuery = {
@@ -787,12 +787,12 @@ export class AppRpcServer {
     }
 
     private async appendCommandOutput(params: any, context: AppRpcRequestContext): Promise<{ id: string }> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
         const raw = params?.entry;
         if (!raw || typeof raw !== 'object') throw new AppRpcError(-32602, 'command_output.append: entry is required');
-        const id = this.requireString(raw.id, 'entry.id');
-        const command = this.requireString(raw.command, 'entry.command');
+        const id = requireString(raw.id, 'entry.id');
+        const command = requireString(raw.command, 'entry.command');
         const entry: AgentConsoleCommandOutputHistoryEntry = this.redactCommandOutputEntry({
             id,
             command,
@@ -811,16 +811,16 @@ export class AppRpcServer {
     }
 
     private async getCommandOutput(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
-        const id = this.requireString(params?.id, 'id');
+        const id = requireString(params?.id, 'id');
         const store = this.createCommandOutputStore(params, context, sessionId);
         const entry = await store.get(id, sessionId);
         return entry ? this.redactCommandOutputEntry(entry) : null;
     }
 
     private async clearCommandOutput(params: any, context: AppRpcRequestContext): Promise<{ removed: number }> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const store = this.createCommandOutputStore(params, context, sessionId);
         const removed = await store.clear(sessionId, { all: params?.all === true });
@@ -828,9 +828,9 @@ export class AppRpcServer {
     }
 
     private async replayCommandOutput(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
-        const id = this.requireString(params?.id, 'id');
+        const id = requireString(params?.id, 'id');
         const store = this.createCommandOutputStore(params, context, sessionId);
         const entry = await store.get(id, sessionId);
         if (!entry || !String(entry.command || '').trim()) {
@@ -892,7 +892,7 @@ export class AppRpcServer {
     }
 
     private async getSessionMessages(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const page = await this.sessions.listMessagesPage(
             sessionId,
@@ -919,16 +919,16 @@ export class AppRpcServer {
     }
 
     private async listSessionSections(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         return this.sessions.listSections(sessionId);
     }
 
     private async createSessionSection(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
         this.sessionHandler.track(sessionId);
-        const label = this.requireString(params?.label, 'section label');
+        const label = requireString(params?.label, 'section label');
         const beforeId = typeof params?.beforeId === 'string' && params.beforeId.trim()
             ? params.beforeId.trim()
             : undefined;
@@ -937,18 +937,18 @@ export class AppRpcServer {
     }
 
     private async renameSessionSection(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
-        const sectionId = this.requireString(params?.sectionId, 'sectionId');
-        const label = this.requireString(params?.label, 'section label');
+        const sectionId = requireString(params?.sectionId, 'sectionId');
+        const label = requireString(params?.label, 'section label');
         await this.sessions.renameSection(sessionId, sectionId, label);
         return { updated: true, sessionId, sectionId, label };
     }
 
     private async moveSessionSection(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
-        const sectionId = this.requireString(params?.sectionId, 'sectionId');
+        const sectionId = requireString(params?.sectionId, 'sectionId');
         const beforeId = typeof params?.beforeId === 'string' && params.beforeId.trim()
             ? params.beforeId.trim()
             : undefined;
@@ -957,15 +957,15 @@ export class AppRpcServer {
     }
 
     private async deleteSessionSection(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
-        const sectionId = this.requireString(params?.sectionId, 'sectionId');
+        const sectionId = requireString(params?.sectionId, 'sectionId');
         await this.sessions.deleteSection(sessionId, sectionId);
         return { deleted: true, sessionId, sectionId };
     }
 
     private async searchSessions(params: any, context: AppRpcRequestContext): Promise<any> {
-        const query = this.requireString(params?.query, 'session.search query');
+        const query = requireString(params?.query, 'session.search query');
         const requestedLimit = typeof params?.limit === 'number' && params.limit > 0 ? Math.floor(params.limit) : undefined;
         const limit = requestedLimit ? Math.min(requestedLimit, 100) : undefined;
         const results = await this.runtime.searchSessions(query, { limit });
@@ -986,7 +986,7 @@ export class AppRpcServer {
     }
 
     private async setSessionTitle(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const title = typeof params?.title === 'string' ? params.title : undefined;
         await this.sessions.setTitle(sessionId, title);
@@ -994,7 +994,7 @@ export class AppRpcServer {
     }
 
     private async setSessionPinned(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const pinned = !!params?.pinned;
         await this.sessions.setPinned(sessionId, pinned);
@@ -1002,7 +1002,7 @@ export class AppRpcServer {
     }
 
     private async setSessionArchived(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const archived = !!params?.archived;
         await this.sessions.setArchived(sessionId, archived);
@@ -1010,7 +1010,7 @@ export class AppRpcServer {
     }
 
     private async createSessionShare(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         if (!this.shares) {
             throw new AppRpcError(-32603, 'Session sharing is not available in this gateway.');
@@ -1040,13 +1040,13 @@ export class AppRpcServer {
     }
 
     private async listSessionShares(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         return this.shares?.listBySession(sessionId) || [];
     }
 
     private async createSessionSnapshot(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const label = typeof params?.label === 'string' ? params.label : undefined;
         const snapshotId = await this.sessions.snapshot(sessionId, label);
@@ -1054,13 +1054,13 @@ export class AppRpcServer {
     }
 
     private async listSessionSnapshots(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         return this.sessions.listSnapshots(sessionId);
     }
 
     private async restoreSessionSnapshot(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const snapshotId = String(params?.snapshotId || '').trim();
         if (!snapshotId) {
@@ -1071,7 +1071,7 @@ export class AppRpcServer {
     }
 
     private async deleteSessionSnapshot(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const snapshotId = String(params?.snapshotId || '').trim();
         if (!snapshotId) {
@@ -1082,7 +1082,7 @@ export class AppRpcServer {
     }
 
     private async createGitStepSnapshot(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const state = await this.sessions.get(sessionId);
         const workspace = String(state.workspace || '').trim();
@@ -1098,13 +1098,13 @@ export class AppRpcServer {
     }
 
     private async listGitStepSnapshots(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         return await this.runtime.listGitStepSnapshots(sessionId);
     }
 
     private async diffGitStepSnapshot(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const ref = String(params?.ref || params?.snapshotId || params?.messageId || '').trim();
         if (!ref) {
@@ -1118,7 +1118,7 @@ export class AppRpcServer {
     }
 
     private async revertGitStepSnapshot(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const messageId = String(params?.messageId || params?.ref || '').trim();
         if (!messageId) {
@@ -1128,13 +1128,13 @@ export class AppRpcServer {
     }
 
     private async unrevertGitStepSnapshot(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         return this.runtime.unrevertGitStepSnapshot(sessionId);
     }
 
     private async exportSession(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const state = await this.sessions.get(sessionId);
         const format = resolveExportFormat(params?.format);
@@ -1171,7 +1171,7 @@ export class AppRpcServer {
     }
 
     private async setSessionPlanMode(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const enabled = params?.enabled === true;
         this.runtime.setPlanMode(sessionId, enabled);
@@ -1179,13 +1179,13 @@ export class AppRpcServer {
     }
 
     private async getSessionPlanMode(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         return { sessionId, enabled: this.runtime.isPlanMode(sessionId) };
     }
 
     private async setSessionArchetype(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const archetype = params?.archetype ? String(params.archetype) : undefined;
         this.runtime.setSessionArchetype(sessionId, archetype);
@@ -1193,7 +1193,7 @@ export class AppRpcServer {
     }
 
     private async getSessionArchetype(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         return {
             sessionId,
@@ -1203,7 +1203,7 @@ export class AppRpcServer {
     }
 
     private async setSessionSandboxMode(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const mode = normalizeSandboxMode(params?.mode);
         this.runtime.setSessionSandboxMode(sessionId, mode);
@@ -1211,13 +1211,13 @@ export class AppRpcServer {
     }
 
     private async getSessionSandboxMode(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         return { sessionId, mode: this.runtime.getSessionSandboxMode(sessionId) ?? 'default' };
     }
 
     private async setSessionDelegationMode(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const mode = normalizeDelegationModeValue(params?.mode);
         this.runtime.setSessionDelegationMode(sessionId, mode);
@@ -1225,19 +1225,19 @@ export class AppRpcServer {
     }
 
     private async getSessionDelegationMode(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         return { sessionId, mode: this.runtime.getSessionDelegationMode(sessionId) };
     }
 
     private async undoFile(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         return this.runtime.undoFileChange(sessionId);
     }
 
     private async redoFile(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         return this.runtime.redoFileChange(sessionId);
     }
@@ -1276,7 +1276,7 @@ export class AppRpcServer {
 
     private async runTurn(params: any, context: AppRpcRequestContext): Promise<any> {
         const message = parseTurnMessage(params?.message);
-        const input = this.requireTurnInput(params?.input, message, 'run.turn input');
+        const input = requireTurnInput(params?.input, message, 'run.turn input');
         const profile = this.optionalProfile(params?.profile);
         const agent = this.optionalAgent(params?.agent);
         const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
@@ -1295,7 +1295,7 @@ export class AppRpcServer {
     }
 
     private async answerQuestion(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const questionId = String(params?.questionId || '').trim();
         if (!questionId) throw new AppRpcError(-32602, 'questionId is required');
@@ -1327,7 +1327,7 @@ export class AppRpcServer {
     }
 
     private async listQuestionResponses(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         if (this.questionStore) {
             return this.questionStore.list(sessionId).map(item => this.toQuestionView(item));
@@ -1352,7 +1352,7 @@ export class AppRpcServer {
     }
 
     private async compactSession(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const reason = typeof params?.reason === 'string' && params.reason.trim()
             ? params.reason.trim()
@@ -1361,7 +1361,7 @@ export class AppRpcServer {
     }
 
     private async cancelTurn(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         if (!await this.sessions.has(sessionId)) {
             // Idempotent cancel: there is nothing to cancel for an unknown session.
             return { sessionId, cancelled: false, compensated: 0, toolCallIds: [] };
@@ -1484,7 +1484,7 @@ export class AppRpcServer {
         if (!this.approvalManager) {
             return { sessionId: null, requests: [] };
         }
-        const sessionId = this.optionalSessionId(params);
+        const sessionId = optionalSessionId(params);
         if (sessionId) {
             await this.ensureSessionAccess(sessionId, context);
         }
@@ -1505,7 +1505,7 @@ export class AppRpcServer {
     }
 
     private async decideApproval(params: any, context: AppRpcRequestContext, approve: boolean): Promise<any> {
-        const requestId = this.requireString(params?.requestId ?? params?.id, 'requestId');
+        const requestId = requireString(params?.requestId ?? params?.id, 'requestId');
         if (!this.approvalManager) {
             throw new AppRpcError(-32004, 'Approval is not configured');
         }
@@ -1527,7 +1527,7 @@ export class AppRpcServer {
 
     private async *streamTurn(request: AppRpcRequest, context: AppRpcRequestContext): AsyncGenerator<AppRpcTransportMessage, void, void> {        const params = request.params ?? {};
         const message = parseTurnMessage(params?.message);
-        const input = this.requireTurnInput(params?.input, message, 'run.turn_stream input');
+        const input = requireTurnInput(params?.input, message, 'run.turn_stream input');
         const profile = this.optionalProfile(params?.profile);
         const agent = this.optionalAgent(params?.agent);
         const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
@@ -1831,8 +1831,8 @@ export class AppRpcServer {
     }
 
     private async activateTool(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
-        const name = this.requireString(params?.name, 'tools.activate name');
+        const sessionId = requireSessionId(params);
+        const name = requireString(params?.name, 'tools.activate name');
         await this.ensureSessionAccess(sessionId, context);
         const activated = await this.tools.activateTool(sessionId, name);
         return { sessionId, name, activated };
@@ -1859,12 +1859,12 @@ export class AppRpcServer {
             .sort((left, right) => left.name.localeCompare(right.name));
     }
     private async activateModelProfile(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.optionalSessionId(params);
+        const sessionId = optionalSessionId(params);
         if (sessionId) {
             await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
             this.sessionHandler.track(sessionId);
         }
-        const name = this.requireString(params?.name, 'model.activate name');
+        const name = requireString(params?.name, 'model.activate name');
         const reasoningEffort = typeof params?.reasoningEffort === 'string' ? params.reasoningEffort : undefined;
         if (reasoningEffort !== undefined && reasoningEffort !== 'low' && reasoningEffort !== 'medium' && reasoningEffort !== 'high' && reasoningEffort !== 'max') {
             throw new AppRpcError(-32602, `Invalid params: reasoningEffort must be 'low', 'medium', 'high' or 'max'`);
@@ -1900,9 +1900,9 @@ export class AppRpcServer {
     }
 
     private addModelProvider(params: any): any {
-        const name = this.requireString(params?.name, 'model.add name')
+        const name = requireString(params?.name, 'model.add name')
             .toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
-        const baseUrl = this.requireString(params?.baseUrl, 'model.add baseUrl').replace(/\/+$/, '');
+        const baseUrl = requireString(params?.baseUrl, 'model.add baseUrl').replace(/\/+$/, '');
         const providerId = params?.provider ? String(params.provider).trim() : 'openai-compatible';
         const provider = providerId === 'custom-openai' ? 'openai-compatible'
             : providerId === 'custom-anthropic' ? 'anthropic'
@@ -1963,7 +1963,7 @@ export class AppRpcServer {
     }
 
     private async testProvider(params: any, _context: AppRpcRequestContext): Promise<any> {
-        const baseUrl = this.requireString(params?.baseUrl, 'provider.test baseUrl').replace(/\/+$/, '');
+        const baseUrl = requireString(params?.baseUrl, 'provider.test baseUrl').replace(/\/+$/, '');
         if (!/^https?:\/\//i.test(baseUrl)) {
             throw new AppRpcError(-32602, 'Invalid params: an http(s) baseUrl is required');
         }
@@ -2015,7 +2015,7 @@ export class AppRpcServer {
     }
 
     private async listMemory(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.optionalSessionId(params);
+        const sessionId = optionalSessionId(params);
         if (sessionId) {
             await this.ensureSessionAccess(sessionId, context);
             return this.memory.getAll(sessionId);
@@ -2029,16 +2029,16 @@ export class AppRpcServer {
     }
 
     private async putMemory(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
-        const key = this.requireString(params?.key, 'memory.put key');
-        const value = this.requireString(params?.value, 'memory.put value');
+        const sessionId = requireSessionId(params);
+        const key = requireString(params?.key, 'memory.put key');
+        const value = requireString(params?.value, 'memory.put value');
         await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
         return this.runtime.putMemory(sessionId, key, value, 'session');
     }
 
     private async searchMemory(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
-        const query = this.requireString(params?.query, 'memory.search query');
+        const sessionId = requireSessionId(params);
+        const query = requireString(params?.query, 'memory.search query');
         await this.ensureSessionAccess(sessionId, context);
         return this.runtime.searchMemory(sessionId, query);
     }
@@ -2053,8 +2053,8 @@ export class AppRpcServer {
         if (!this.projectMemory) throw new AppRpcError(-32601, 'Project memory is unavailable');
         return this.projectMemory.add({
             projectId,
-            key: this.requireString(params?.key, 'project_memory.add key'),
-            value: this.requireString(params?.value, 'project_memory.add value'),
+            key: requireString(params?.key, 'project_memory.add key'),
+            value: requireString(params?.value, 'project_memory.add value'),
             ttlMs: params?.ttlMs == null ? undefined : Number(params.ttlMs),
             conflict: params?.conflict
         });
@@ -2063,11 +2063,11 @@ export class AppRpcServer {
     private async removeProjectMemory(params: any, context: AppRpcRequestContext): Promise<any> {
         const projectId = await this.resolveProjectMemoryId(params, context);
         if (!this.projectMemory) return { removed: 0 };
-        return { removed: await this.projectMemory.remove(projectId, this.requireString(params?.target, 'project_memory.remove target')) };
+        return { removed: await this.projectMemory.remove(projectId, requireString(params?.target, 'project_memory.remove target')) };
     }
 
     private async resolveProjectMemoryId(params: any, context: AppRpcRequestContext): Promise<string> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const state = await this.sessions.get(sessionId);
         const projectId = String(state.projectId || state.workspace || '').trim();
@@ -2081,7 +2081,7 @@ export class AppRpcServer {
     }
 
     private async queryTimeline(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         if (!this.timeline) {
             return { sessionId, entries: [], hasMore: false };
@@ -2098,7 +2098,7 @@ export class AppRpcServer {
     }
 
     private async replayTimeline(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         if (!this.timeline) {
             return { sessionId, events: [] };
@@ -2110,7 +2110,7 @@ export class AppRpcServer {
     }
 
     private async queryCommandExchange(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureExchangeSessionAccess(sessionId, context);
         if (!this.commandExchange) {
             return { sessionId, records: [], hasMore: false };
@@ -2129,7 +2129,7 @@ export class AppRpcServer {
     }
 
     private async replayCommandExchange(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureExchangeSessionAccess(sessionId, context);
         if (!this.commandExchange) {
             return { sessionId, records: [] };
@@ -2141,7 +2141,7 @@ export class AppRpcServer {
     }
 
     private async appendCommandExchange(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureExchangeSessionAccess(sessionId, context, { createIfMissing: true });
         if (!this.commandExchange) {
             throw new AppRpcError(-32603, 'command_exchange.append: command exchange store not configured');
@@ -2181,7 +2181,7 @@ export class AppRpcServer {
     }
 
     private async listAudit(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const toolName = typeof params?.toolName === 'string' && params.toolName.trim() ? params.toolName.trim() : undefined;
         const status = typeof params?.status === 'string' && params.status.trim() ? params.status.trim() : undefined;
@@ -2345,7 +2345,7 @@ export class AppRpcServer {
         if (!this.compactionHistory) {
             return { records: [] };
         }
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const levelRaw = typeof params?.level === 'string' && params.level.trim()
             ? params.level.trim()
@@ -2442,7 +2442,7 @@ export class AppRpcServer {
         if (!this.turnDiagnostics) {
             return { records: [] };
         }
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const limitRaw = Number(params?.limit);
         const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(0, Math.floor(limitRaw)), 200) : 200;
@@ -2527,7 +2527,7 @@ export class AppRpcServer {
     }
 
     private async startAudioSession(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         if (!this.audio) {
             return { sessionId, ok: false, error: 'audio unavailable: missing streaming STT and TTS adapters' };
@@ -2545,7 +2545,7 @@ export class AppRpcServer {
     }
 
     private async feedAudioChunk(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const state = this.audioStatesBySession.get(sessionId);
         if (!state) {
@@ -2557,7 +2557,7 @@ export class AppRpcServer {
     }
 
     private async endAudioSession(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const state = this.audioStatesBySession.get(sessionId);
         if (!state) {
@@ -2599,7 +2599,7 @@ export class AppRpcServer {
     }
 
     private async cancelAudioSession(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const state = this.audioStatesBySession.get(sessionId);
         if (state) {
@@ -2643,7 +2643,7 @@ export class AppRpcServer {
     }
 
     private async listRejectedActions(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         if (!this.turnDiagnostics) {
             return { actions: [] };
@@ -2666,7 +2666,7 @@ export class AppRpcServer {
     }
 
     private async retryRejectedAction(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const evidenceId = String(params?.evidenceId || '').trim();
         const toolName = String(params?.toolName || '').trim();
@@ -2790,7 +2790,7 @@ export class AppRpcServer {
         if (!this.delegation) {
             return { tree: null };
         }
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const status = this.parseDelegationStatus(params?.status);
         const depthRaw = Number(params?.depth);
@@ -2806,7 +2806,7 @@ export class AppRpcServer {
         if (!this.delegation) {
             return { lineage: [] };
         }
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const limitRaw = Number(params?.limit);
         const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(Math.floor(limitRaw), 200) : undefined;
@@ -2821,7 +2821,7 @@ export class AppRpcServer {
         if (!this.delegation) {
             return { children: [] };
         }
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const status = this.parseDelegationStatus(params?.status);
         const limitRaw = Number(params?.limit);
@@ -2903,7 +2903,7 @@ export class AppRpcServer {
     }
 
     private async reviewDiff(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const base = typeof params?.base === 'string' && params.base.trim() ? params.base.trim() : 'HEAD';
         const input: Record<string, any> = { base };
@@ -2962,7 +2962,7 @@ export class AppRpcServer {
     }
 
     private async getReviewRun(params: any, context: AppRpcRequestContext): Promise<any> {
-        const id = this.requireString(params?.id, 'review.get id');
+        const id = requireString(params?.id, 'review.get id');
         const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
             ? params.sessionId.trim()
             : undefined;
@@ -2980,7 +2980,7 @@ export class AppRpcServer {
     }
 
     private async saveReviewRun(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         if (!this.reviewFindings) {
             throw new AppRpcError(-32603, 'ReviewFindingsStore is not available');
@@ -3029,7 +3029,7 @@ export class AppRpcServer {
     private aggregationDeps(context: AppRpcRequestContext): SessionAggregationDeps {
         return {
             authorize: sessionId => this.ensureSessionAccess(sessionId, context),
-            requireSessionId: params => this.requireSessionId(params),
+            requireSessionId: params => requireSessionId(params),
             readTodoPlan: async sessionId => {
                 // Pass the workspace explicitly: `LocalToolRegistry.invoke`
                 // otherwise loads the whole session just to resolve it, and the
@@ -3045,8 +3045,8 @@ export class AppRpcServer {
     }
 
     private async getCodingTask(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
-        const taskId = this.requireString(params?.taskId ?? params?.task_id, 'taskId');
+        const sessionId = requireSessionId(params);
+        const taskId = requireString(params?.taskId ?? params?.task_id, 'taskId');
         await this.ensureSessionAccess(sessionId, context);
         const output = await this.invokeCodingTask(sessionId, { action: 'get', task_id: taskId }, context);
         return {
@@ -3056,8 +3056,8 @@ export class AppRpcServer {
     }
 
     private async getCodingTaskDiff(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
-        const taskId = this.requireString(params?.taskId ?? params?.task_id, 'taskId');
+        const sessionId = requireSessionId(params);
+        const taskId = requireString(params?.taskId ?? params?.task_id, 'taskId');
         await this.ensureSessionAccess(sessionId, context);
         const output = await this.invokeCodingTask(sessionId, { action: 'get', task_id: taskId }, context);
         const task = output?.task;
@@ -3071,8 +3071,8 @@ export class AppRpcServer {
     }
 
     private async rollbackCodingTask(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
-        const taskId = this.requireString(params?.taskId ?? params?.task_id, 'taskId');
+        const sessionId = requireSessionId(params);
+        const taskId = requireString(params?.taskId ?? params?.task_id, 'taskId');
         await this.ensureSessionAccess(sessionId, context);
         const output = await this.invokeCodingTask(sessionId, { action: 'rollback', task_id: taskId }, context);
         return {
@@ -3084,8 +3084,8 @@ export class AppRpcServer {
     }
 
     private async cancelCodingTask(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
-        const taskId = this.requireString(params?.taskId ?? params?.task_id, 'taskId');
+        const sessionId = requireSessionId(params);
+        const taskId = requireString(params?.taskId ?? params?.task_id, 'taskId');
         await this.ensureSessionAccess(sessionId, context);
         const output = await this.invokeCodingTask(sessionId, { action: 'cancel', task_id: taskId }, context);
         return {
@@ -3097,8 +3097,8 @@ export class AppRpcServer {
     }
 
     private async retryFailedCodingTask(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.requireSessionId(params);
-        const taskId = this.requireString(params?.taskId ?? params?.task_id, 'taskId');
+        const sessionId = requireSessionId(params);
+        const taskId = requireString(params?.taskId ?? params?.task_id, 'taskId');
         await this.ensureSessionAccess(sessionId, context);
         const output = await this.invokeCodingTask(sessionId, { action: 'retry_failed', task_id: taskId }, context);
         return {
@@ -3110,7 +3110,7 @@ export class AppRpcServer {
     }
 
     private async listBackgroundTasks(params: any, context: AppRpcRequestContext): Promise<any> {
-        const sessionId = this.optionalSessionId(params);
+        const sessionId = optionalSessionId(params);
         const delegationRoot = typeof params?.delegationRoot === 'string' && params.delegationRoot.trim()
             ? params.delegationRoot.trim()
             : undefined;
@@ -3154,7 +3154,7 @@ export class AppRpcServer {
     }
 
     private async getBackgroundTask(params: any, context: AppRpcRequestContext): Promise<any> {
-        const taskId = this.requireString(params?.taskId ?? params?.task_id, 'taskId');
+        const taskId = requireString(params?.taskId ?? params?.task_id, 'taskId');
         if (!this.backgroundTaskStore) {
             throw new AppRpcError(-32004, `Background task "${taskId}" was not found.`);
         }
@@ -3319,7 +3319,7 @@ export class AppRpcServer {
     }
 
     private async saveReviewAnnotations(params: any, context: AppRpcRequestContext): Promise<{ ok: boolean }> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const cache = params?.cache;
         if (cache === undefined || cache === null) {
@@ -3332,7 +3332,7 @@ export class AppRpcServer {
     }
 
     private async loadReviewAnnotations(params: any, context: AppRpcRequestContext): Promise<Record<string, Record<string, any>> | null> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         const records = await this.memory.getAll(sessionId);
         const cacheKey = this.resolveReviewAnnotationsCacheKey(params) || sessionId;
@@ -3373,28 +3373,28 @@ export class AppRpcServer {
     }
 
     private async setReviewGate(params: any, context: AppRpcRequestContext): Promise<{ ok: boolean; taskId: string }> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
-        const taskId = this.requireString(params?.taskId, 'taskId');
+        const taskId = requireString(params?.taskId, 'taskId');
         this.runtime.setReviewGate(sessionId, taskId);
         return { ok: true, taskId };
     }
 
     private async clearReviewGate(params: any, context: AppRpcRequestContext): Promise<{ ok: boolean }> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         this.runtime.clearReviewGate(sessionId);
         return { ok: true };
     }
 
     private async getReviewGateStatus(params: any, context: AppRpcRequestContext): Promise<{ active: boolean; taskId?: string }> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         return this.runtime.getReviewGateStatus(sessionId);
     }
 
     private async writeReviewConclusions(params: any, context: AppRpcRequestContext): Promise<{ ok: boolean; key: string }> {
-        const sessionId = this.requireSessionId(params);
+        const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
         const conclusions = params?.conclusions;
         if (!conclusions || typeof conclusions !== 'object') {
@@ -3404,33 +3404,6 @@ export class AppRpcServer {
         const value = JSON.stringify(conclusions);
         await this.runtime.putMemory(sessionId, key, value, 'session');
         return { ok: true, key };
-    }
-
-    private requireSessionId(params: any): string {
-        return this.requireString(params?.sessionId, 'sessionId');
-    }
-
-    private optionalSessionId(params: any): string | undefined {
-        return typeof params?.sessionId === 'string' && params.sessionId.trim()
-            ? params.sessionId.trim()
-            : undefined;
-    }
-
-    private requireString(value: unknown, field: string): string {
-        if (typeof value !== 'string' || !value.trim()) {
-            throw new AppRpcError(-32602, `Invalid params: ${field} must be a non-empty string`);
-        }
-        return value.trim();
-    }
-
-    private requireTurnInput(value: unknown, message: AgentTurnMessageInput | undefined, field: string): string {
-        if (typeof value === 'string' && value.trim()) {
-            return value.trim();
-        }
-        if (message?.parts?.length) {
-            return typeof value === 'string' ? value.trim() : '';
-        }
-        throw new AppRpcError(-32602, `Invalid params: ${field} must be a non-empty string`);
     }
 
 }
