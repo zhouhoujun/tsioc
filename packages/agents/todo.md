@@ -179,7 +179,7 @@
 - ✅ `requireTrust`：未显式 `trusted: true` 的 command/http hook 在 `requireTrust` 模式下被过滤。
 - ✅ `beforeTool` function hook 可返回 `{ action: 'deny' }`，工具被跳过并留下可诊断的工具错误结果；`input` 重写保持。
 - ✅ `hooks.trusted.json`：按 stage + hook 定义（去掉 `trusted` 字段）计算 sha256；manifest 存在时自动 `requireTrust`，编辑 hooks.json 即失效；CLI `tsdi-agent hooks trust [--root]` 生成 manifest。
-- 待办：`mcp`/`prompt`/`subagent` 类型。
+- ✅ `mcp`/`prompt`/`subagent` 类型：通过 `AgentHookTransportExecutor` 端口由宿主注入执行器（保持核心 browser-safe），结果支持 `action: deny` 与 transcript 输出；内置 MCP/模型/子代理执行器由后续宿主集成接入。
 - 验收：五类 hook 边界测试；未 trust 被拒绝且提示可操作；hook 超时/取消不阻断 turn。
 
 #### S3 — 沙箱升级审批

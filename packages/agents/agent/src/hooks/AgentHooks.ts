@@ -2,7 +2,9 @@ import { Abstract, Injectable } from '@tsdi/ioc';
 
 export type AgentLifecycleHookStage = 'beforeTurn' | 'afterTurn' | 'beforeTool' | 'afterTool' | 'onApproval' | 'beforeCompaction' | 'afterCompaction';
 
-export type AgentHookTransport = 'command' | 'http';
+import { AgentHookTransportExecutor } from './AgentHookTransport';
+
+export type AgentHookTransport = 'command' | 'http' | 'mcp' | 'prompt' | 'subagent';
 
 export interface AgentHookDefinition {
     name?: string;
@@ -20,6 +22,14 @@ export interface AgentHookDefinition {
     headers?: Record<string, string>;
     /** When `requireTrust` is enabled, only hooks explicitly trusted run. */
     trusted?: boolean;
+    /** `type: 'mcp'`: tool name exposed by an MCP server. */
+    tool?: string;
+    /** `type: 'mcp'`: optional server id. */
+    server?: string;
+    /** `type: 'prompt'`: judge/instruction sent to the host model. */
+    prompt?: string;
+    /** `type: 'subagent'`: named worker definition. */
+    agent?: string;
 }
 
 /**
@@ -51,6 +61,8 @@ export interface AgentHooksOptions {
     requireTrust?: boolean;
     /** Injectable fetch for HTTP hooks (defaults to the host global). */
     fetch?: typeof fetch;
+    /** Host-provided executors for mcp/prompt/subagent transports. */
+    executors?: AgentHookTransportExecutor[];
     beforeTurn?: AgentHookDefinition | AgentHookDefinition[];
     afterTurn?: AgentHookDefinition | AgentHookDefinition[];
     beforeTool?: AgentHookDefinition | AgentHookDefinition[];
@@ -154,12 +166,14 @@ export class NoopAgentHookCommandExecutor extends AgentHookCommandExecutor {
 
 export class AgentHookManager {
     private readonly functionHooks: Partial<Record<AgentLifecycleHookStage, AgentFunctionHookDefinition[]>>;
+    private readonly transportExecutors: AgentHookTransportExecutor[];
 
     constructor(
         private readonly hooks: AgentHooksOptions | undefined,
         private readonly executor?: AgentHookCommandExecutor | null
     ) {
         this.functionHooks = this.collectFunctionHooks(this.hooks?.functions);
+        this.transportExecutors = this.hooks?.executors ?? [];
     }
 
     hasHooks(stage?: AgentLifecycleHookStage): boolean {
@@ -190,6 +204,32 @@ export class AgentHookManager {
             }
         }
         const stageHooks = this.normalizeStageHooks(stage);
+        for (const hook of stageHooks.filter(item => item.type === 'mcp' || item.type === 'prompt' || item.type === 'subagent')) {
+            const transport = this.transportExecutors.find(item => item.type === hook.type);
+            if (!transport) {
+                continue;
+            }
+            const result = await transport.execute({ type: hook.type as 'mcp' | 'prompt' | 'subagent', stage, hook, context, signal });
+            const stdout = String(result.stdout || '').trim();
+            if (stdout) {
+                entries.push({
+                    stage,
+                    name: hook.name ?? hook.agent ?? hook.tool ?? hook.type ?? 'hook',
+                    content: this.wrapOutput(stage, hook.name ?? hook.agent ?? hook.tool ?? hook.type ?? 'hook', stdout),
+                    exitCode: typeof result.exitCode === 'number' ? result.exitCode : 0,
+                    durationMs: typeof result.durationMs === 'number' ? result.durationMs : 0,
+                    stderr: String(result.stderr || '').trim() || undefined
+                });
+            }
+            results.push({
+                exitCode: typeof result.exitCode === 'number' ? result.exitCode : 0,
+                stdout,
+                stderr: String(result.stderr || ''),
+                durationMs: typeof result.durationMs === 'number' ? result.durationMs : 0,
+                ...(result.error ? { error: result.error } : {}),
+                ...(result.action ? { action: result.action } : {})
+            });
+        }
         for (const hook of stageHooks.filter(item => item.type === 'http')) {
             const entry = await this.runHttpHook(stage, hook, context, signal);
             if (entry) {
@@ -330,13 +370,24 @@ export class AgentHookManager {
         if (!hook || typeof hook !== 'object') {
             return null;
         }
-        const type = hook.type === 'http' ? 'http' : 'command';
+        const type = hook.type === 'http' || hook.type === 'mcp' || hook.type === 'prompt' || hook.type === 'subagent'
+            ? hook.type
+            : 'command';
         const command = String(hook.command || '').trim();
         const url = String(hook.url || '').trim();
         if (type === 'command' && !command) {
             return null;
         }
         if (type === 'http' && !/^https?:\/\//i.test(url)) {
+            return null;
+        }
+        if (type === 'mcp' && !String(hook.tool || '').trim()) {
+            return null;
+        }
+        if (type === 'prompt' && !String(hook.prompt || '').trim()) {
+            return null;
+        }
+        if (type === 'subagent' && !String(hook.agent || hook.prompt || '').trim()) {
             return null;
         }
         if (this.hooks?.requireTrust && hook.trusted !== true) {
@@ -368,7 +419,11 @@ export class AgentHookManager {
                 return env;
             }, {} as Record<string, string>) : undefined,
             timeoutMs: typeof hook.timeoutMs === 'number' && Number.isFinite(hook.timeoutMs) ? hook.timeoutMs : undefined,
-            trusted: hook.trusted === true ? true : undefined
+            trusted: hook.trusted === true ? true : undefined,
+            ...(hook.tool ? { tool: String(hook.tool).trim() } : {}),
+            ...(hook.server ? { server: String(hook.server).trim() } : {}),
+            ...(hook.prompt ? { prompt: String(hook.prompt) } : {}),
+            ...(hook.agent ? { agent: String(hook.agent).trim() } : {})
         };
     }
 

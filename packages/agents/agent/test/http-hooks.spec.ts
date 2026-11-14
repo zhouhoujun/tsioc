@@ -2,6 +2,7 @@ import expect = require('expect');
 import * as http from 'http';
 import { Suite, Test } from '@tsdi/unit';
 import { AgentHookManager } from '../src/hooks/AgentHooks';
+import { AgentHookTransportExecutor } from '../src/hooks/AgentHookTransport';
 
 // Capture the host fetch before other suites replace the global with stubs.
 const nativeFetch = globalThis.fetch;
@@ -67,6 +68,26 @@ export class HttpHooksTest {
         const output = await manager.run('afterTool', { ...CONTEXT, stage: 'afterTool' });
         expect(output.entries.length).toEqual(1);
         expect(output.entries[0].exitCode).toEqual(1);
+    }
+
+    @Test('host transport executors serve prompt/mcp/subagent hooks')
+    async transportExecutorRuns() {
+        const calls: string[] = [];
+        class PromptTransport extends AgentHookTransportExecutor {
+            readonly type = 'prompt' as const;
+            async execute(request: any): Promise<any> {
+                calls.push(`${request.stage}:${request.hook.prompt}`);
+                return { stdout: 'allowed', exitCode: 0, durationMs: 1 };
+            }
+        }
+        const manager = new AgentHookManager({
+            executors: [new PromptTransport()],
+            beforeTool: { type: 'prompt', prompt: 'is this safe?', trusted: true }
+        });
+        const output = await manager.run('beforeTool', CONTEXT);
+        expect(calls).toEqual(['beforeTool:is this safe?']);
+        expect(output.entries[0].content).toContain('allowed');
+        expect(output.results[0].exitCode).toEqual(0);
     }
 
     @Test('requireTrust filters untrusted http and command hooks')
