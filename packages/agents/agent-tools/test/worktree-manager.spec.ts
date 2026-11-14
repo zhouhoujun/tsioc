@@ -36,6 +36,11 @@ export class WorktreeManagerTest {
             expect(list.some(item => item.path === created.path)).toEqual(true);
             expect(list.some(item => item.branch === 'tsdi/feature-a')).toEqual(true);
 
+            await git(created.path, ['add', '.']);
+            await git(created.path, ['commit', '-m', 'feature']);
+            await manager.merge('feature-a');
+            expect(fs.existsSync(path.join(workspace, 'feature.txt'))).toEqual(true);
+
             await manager.remove('feature-a', true);
             expect(fs.existsSync(created.path)).toEqual(false);
         } finally {

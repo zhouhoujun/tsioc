@@ -3,7 +3,7 @@ import type { Command } from 'commander';
 import { WorktreeManager } from '@tsdi/agent-tools';
 
 export interface AgentWorktreeOptions {
-    action?: 'create' | 'list' | 'remove';
+    action?: 'create' | 'list' | 'remove' | 'merge';
     name?: string;
     workspace?: string;
     force?: boolean;
@@ -26,6 +26,14 @@ export async function runAgentWorktree(options: AgentWorktreeOptions = {}): Prom
             for (const item of items) {
                 console.log(`${item.path}${item.branch ? `  [${item.branch}]` : ''}`);
             }
+            return;
+        }
+        case 'merge': {
+            if (!options.name) {
+                throw new Error('worktree merge requires a name.');
+            }
+            await manager.merge(options.name);
+            console.log(`Merged worktree ${options.name}.`);
             return;
         }
         case 'remove': {
@@ -63,6 +71,12 @@ export function registerWorktreeCli(program: Command): void {
         .option('--workspace <dir>', 'Git workspace. Defaults to cwd.')
         .action(async (options: any) => {
             await runAgentWorktree({ action: 'list', workspace: options.workspace });
+        });
+    worktree
+        .command('merge <name>')
+        .option('--workspace <dir>', 'Git workspace. Defaults to cwd.')
+        .action(async (name: string, options: any) => {
+            await runAgentWorktree({ action: 'merge', name, workspace: options.workspace });
         });
     worktree
         .command('remove <name>')

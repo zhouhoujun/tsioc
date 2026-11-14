@@ -74,6 +74,19 @@ export class WorktreeManager {
         return items;
     }
 
+    /** Merge a managed worktree branch back into the current/base branch. */
+    async merge(name: string, targetBranch?: string): Promise<void> {
+        const safe = String(name || '').trim().replace(/[^\w./-]+/g, '-');
+        if (!safe) {
+            throw new Error('Worktree name must contain at least one safe character.');
+        }
+        const branch = safe.startsWith('tsdi/') ? safe : `tsdi/${safe}`;
+        const result = await this.git(['merge', '--no-ff', branch, ...(targetBranch ? [targetBranch] : [])]);
+        if (!result.ok) {
+            throw new Error(`Unable to merge worktree '${name}': ${result.stderr.trim() || result.stdout.trim()}`);
+        }
+    }
+
     async remove(nameOrPath: string, force = false): Promise<void> {
         const target = path.isAbsolute(nameOrPath)
             ? nameOrPath
