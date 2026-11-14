@@ -16,6 +16,7 @@ import { CloudTaskQueue } from '../cloud/CloudTaskQueue';
 import { QuestionStore } from './QuestionStore';
 import { describeToolCompletedEvent, describeToolInvocationEvent } from './tool-event-content';
 import { toAppRpcError } from './rpcError';
+import { normalizeDelegationModeValue, normalizeSandboxMode } from './session-mode';
 import { ToolInvokeHost, invokeToolWithWorkspaceTrust } from './tool-invoke';
 import { ApprovalRequestedChunkFields, buildApprovalRequestedChunk } from './approval-chunk';
 import { SessionAggregationDeps, getTodoPlan, getTodoPlans, listCodingTasks } from './session-aggregation';
@@ -1201,7 +1202,7 @@ export class AppRpcServer {
     private async setSessionSandboxMode(params: any, context: AppRpcRequestContext): Promise<any> {
         const sessionId = this.requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
-        const mode = this.normalizeSandboxMode(params?.mode);
+        const mode = normalizeSandboxMode(params?.mode);
         this.runtime.setSessionSandboxMode(sessionId, mode);
         return { sessionId, mode: mode ?? 'default' };
     }
@@ -1215,7 +1216,7 @@ export class AppRpcServer {
     private async setSessionDelegationMode(params: any, context: AppRpcRequestContext): Promise<any> {
         const sessionId = this.requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
-        const mode = this.normalizeDelegationModeValue(params?.mode);
+        const mode = normalizeDelegationModeValue(params?.mode);
         this.runtime.setSessionDelegationMode(sessionId, mode);
         return { sessionId, mode: mode ?? this.runtime.getSessionDelegationMode(sessionId) };
     }
@@ -3406,27 +3407,6 @@ export class AppRpcServer {
         return String(format || '').trim().toLowerCase() === 'jsonl'
             ? 'jsonl'
             : 'json';
-    }
-
-    private normalizeSandboxMode(value: unknown): import('@tsdi/agent').SandboxMode | undefined {
-        if (value == null || value === '' || value === 'default') {
-            return undefined;
-        }
-        if (value === 'off' || value === 'workspace' || value === 'network-block') {
-            return value;
-        }
-        throw new AppRpcError(-32602, 'Invalid session.sandbox_mode mode');
-    }
-
-    private normalizeDelegationModeValue(value: unknown): import('@tsdi/agent').AgentDelegationMode | undefined {
-        if (value == null || value === '' || value === 'default' || value === 'explicit') {
-            return undefined;
-        }
-        const mode = normalizeDelegationMode(value);
-        if (mode) {
-            return mode;
-        }
-        throw new AppRpcError(-32602, 'Invalid session.delegation_mode mode');
     }
 
     private buildExportFileName(sessionId: string, exportedAt: number, format: 'json' | 'jsonl'): string {

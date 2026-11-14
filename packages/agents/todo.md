@@ -240,7 +240,7 @@
 
 #### S8 — 架构拆分与启动/测试性能（进行中）
 
-- ✅ 抽出 `harness/tool-receipt.ts`、`harness/turn-metrics.ts`、`runtime/recovery-requests.ts`、`runtime/approval-resolution.ts`；`DefaultAgentRuntime` 降至约 3442 行，为 ACP/IO 端口留出预算。
+- ✅ 抽出 `harness/tool-receipt.ts`、`harness/turn-metrics.ts`、`runtime/recovery-requests.ts`、`runtime/approval-resolution.ts`；`AppRpcServer` 的 session mode 校验抽到 `app-rpc/session-mode.ts`；`DefaultAgentRuntime` 约 3442 行，`AppRpcServer` 降至约 3622 行。
 
 - 按 turn-loop / model-request / tool-orchestration / verification / compaction / hooks 拆 `DefaultAgentRuntime`；按路由拆 `AppRpcServer`；同提交下调 baseline。
 - 工具/技能/MCP 懒加载；TUI 首屏目标 < 2s；agent-ui 测试分片，目标 < 8min。
