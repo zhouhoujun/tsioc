@@ -6,7 +6,7 @@ export interface AcpServerTransport {
 }
 
 export interface AcpServerOptions {
-    runtime: Pick<AgentRuntime, 'runTurn' | 'cancelTurn'>;
+    runtime: Pick<AgentRuntime, 'runTurn' | 'cancelTurn'> & { getMessages?(sessionId: string): Promise<any[]> };
     serverName?: string;
     serverVersion?: string;
 }
@@ -109,6 +109,16 @@ export class AcpServer {
                     update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text } }
                 });
                 return { stopReason: 'end_turn' };
+            }
+            case 'session/load': {
+                const sessionId = String(params?.sessionId || '');
+                if (!sessionId) {
+                    throw new Error('session/load requires sessionId.');
+                }
+                const messages = this.options.runtime.getMessages
+                    ? await this.options.runtime.getMessages(sessionId)
+                    : [];
+                return { sessionId, messages };
             }
             case 'session/cancel': {
                 const sessionId = String(params?.sessionId || '');

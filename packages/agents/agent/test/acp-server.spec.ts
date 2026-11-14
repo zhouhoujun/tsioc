@@ -35,6 +35,28 @@ export class AcpServerTest {
         expect(update.params.update.content.text).toEqual('echo:hello');
     }
 
+    @Test('loads an existing session transcript')
+    async loadSession() {
+        const writes: any[] = [];
+        let listener: ((chunk: string) => void) | undefined;
+        new AcpServer({
+            read: (cb: (chunk: string) => void) => { listener = cb; },
+            write: (payload: string) => { writes.push(JSON.parse(payload)); }
+        }, {
+            runtime: {
+                runTurn: async () => ({}),
+                cancelTurn: async () => ({}),
+                getMessages: async () => [{ role: 'user', content: 'hi' }]
+            } as any
+        });
+        listener!(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }) + '\n');
+        for (let index = 0; index < 8; index++) await Promise.resolve();
+        listener!(JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'session/load', params: { sessionId: 's1' } }) + '\n');
+        for (let index = 0; index < 8; index++) await Promise.resolve();
+        const loaded = writes.find(item => item.id === 2);
+        expect(loaded.result.messages[0].content).toEqual('hi');
+    }
+
     @Test('unknown methods return a JSON-RPC error instead of crashing')
     async unknownMethod() {
         const writes: any[] = [];
