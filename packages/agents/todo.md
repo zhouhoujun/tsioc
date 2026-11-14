@@ -227,7 +227,7 @@
 - ✅ `AcpAgentIoPort`：create → wait → output → release，Abort 时 kill；`tsdi-agent acp` 注入并在 server 就绪后 attach；无客户端回退本地 shell。
 - ✅ `read_file` 通过 `AgentIoPort.readTextFile` 走 ACP `fs/read_text_file`（本地仍用流式读取）。
 - ✅ `write_file` 通过 `AgentIoPort.writeTextFile` 走 ACP `fs/write_text_file`（本地行为不变）。
-- 待办：Zed 兼容握手回归；真实 PTY 复验。
+- ✅ Zed 风格 initialize/new/prompt/update/cancel 回归；真实 Zed/PTY 复验仍待外部编辑器环境。
 
 #### S7 — 会话级 `/worktree`（部分完成）
 

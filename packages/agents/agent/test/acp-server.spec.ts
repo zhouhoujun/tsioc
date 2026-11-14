@@ -74,6 +74,44 @@ export class AcpServerTest {
         expect(writes.map(item => item.method)).toEqual(['fs/read_text_file', 'session/request_permission']);
     }
 
+    @Test('completes a Zed-style initialize/new/prompt/update handshake')
+    async zedHandshake() {
+        const writes: any[] = [];
+        let listener: ((chunk: string) => void) | undefined;
+        const server = new AcpServer({
+            read: (cb: (chunk: string) => void) => { listener = cb; },
+            write: (payload: string) => { writes.push(JSON.parse(payload)); }
+        }, {
+            runtime: {
+                runTurn: async (_id: string, prompt: string) => ({ message: { content: `answer:${prompt}` } }),
+                cancelTurn: async () => ({}),
+                setSessionArchetype: () => undefined,
+                setSessionModelProfile: () => undefined,
+                getMessages: async () => []
+            } as any
+        });
+        const request = async (id: number, method: string, params: any) => {
+            listener!(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n');
+            for (let index = 0; index < 10; index++) await Promise.resolve();
+            return writes.find(item => item.id === id);
+        };
+        const init = await request(1, 'initialize', { protocolVersion: 1, clientCapabilities: { fs: { readTextFile: true } } });
+        expect(init.result.agentInfo.name).toEqual('tsdi-agent');
+        expect(init.result.agentCapabilities.promptCapabilities.image).toEqual(false);
+        const session = await request(2, 'session/new', { cwd: '/ws', mcpServers: [] });
+        expect(session.result.sessionId).toContain('acp-');
+        await request(3, 'session/set_mode', { sessionId: session.result.sessionId, modeId: 'plan' });
+        const prompt = await request(4, 'session/prompt', {
+            sessionId: session.result.sessionId,
+            prompt: [{ type: 'text', text: 'hello' }]
+        });
+        expect(prompt.result.stopReason).toEqual('end_turn');
+        expect(writes.some(item => item.method === 'session/update'
+            && item.params.update.content.text === 'answer:hello')).toEqual(true);
+        const cancelled = await request(5, 'session/cancel', { sessionId: session.result.sessionId });
+        expect(cancelled.result).toEqual({});
+    }
+
     @Test('applies ACP mode and model changes to the runtime')
     async setModeAndModel() {
         const calls: string[] = [];
