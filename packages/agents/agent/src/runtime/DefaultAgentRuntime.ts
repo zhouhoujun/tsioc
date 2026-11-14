@@ -1380,6 +1380,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         if (!modified) {
             return;
         }
+        this.telemetry?.startSpan('agent.compaction', { level: report.level, strategy: report.strategy }).end('ok');
         const record: CompactionHistoryRecord = {
             id: this.uuid.generate(),
             sessionId,

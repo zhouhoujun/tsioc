@@ -1131,6 +1131,37 @@ export class RuntimeLoopTest {
         expect(messages[3].role).toEqual('assistant');
     }
 
+    @Test('emits a compaction telemetry span')
+    async compactionTelemetrySpan() {
+        const spans: Array<{ name: string; status?: string }> = [];
+        const telemetry = {
+            startSpan: (name: string) => {
+                const span: any = { name };
+                spans.push(span);
+                span.end = (status: string) => { span.status = status; };
+                return span;
+            }
+        };
+        const { runtime } = await createRuntime(
+            new EchoModelAdapter(),
+            new EmptyToolRegistry(),
+            undefined,
+            undefined,
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            [{ provide: AGENT_TELEMETRY, useValue: telemetry }]
+        );
+        (runtime as any).compactionHistoryStore = { append: async () => undefined };
+        await (runtime as any).recordCompactionHistory('c1', {
+            strategy: 'compacted', compactionTriggered: true, level: 'light', summaryInserted: true,
+            beforeMessageCount: 10, afterMessageCount: 4, beforeTokens: 1000, afterTokens: 400,
+            compactedMessageCount: 6, preservedAnchorCount: 2, recentMessageCount: 3,
+            prunedMessageCount: 0, toolMessagesCompacted: 1, compressionRatio: 60,
+            cumulativeTokenSavings: 600, replayed: false
+        });
+        expect(spans.some(span => span.name === 'agent.compaction' && span.status === 'ok')).toEqual(true);
+    }
+
     @Test('emits a telemetry span per tool invocation')
     async toolTelemetrySpan() {
         const spans: Array<{ name: string; status?: string }> = [];
