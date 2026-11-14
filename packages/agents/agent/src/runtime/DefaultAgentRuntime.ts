@@ -44,6 +44,7 @@ import { RateLimitManager } from '../harness/RateLimitManager';
 import { OutputGuard } from '../harness/OutputGuard';
 import { decorateToolSandboxReceipt, resolveSessionToolSandboxState } from '../harness/ToolSandboxPolicy';
 import { createToolBaseReceipt } from '../harness/tool-receipt';
+import { buildEmptyResponseRetryRequest, buildFollowUpRecoveryRequest, buildToolErrorRecoveryRequest, findLatestFollowUpContextUserMessage } from './recovery-requests';
 import { computeTurnFalsifyRate } from '../harness/turn-metrics';
 import { effectiveSandboxMode } from '../harness/sandbox-mode';
 import { requestSandboxEscalation } from '../harness/sandbox-escalation';
@@ -132,9 +133,6 @@ interface ToolCompensationEntry {
     captured: unknown;
 }
 
-const EMPTY_RESPONSE_RETRY_SYSTEM_PROMPT = 'Your previous reply was empty. Use the existing conversation context and provide a non-empty helpful answer. If the latest user message already answers a prior clarification, continue the original task directly and call tools if needed. If you still need information, ask one concise follow-up question.';
-const FOLLOW_UP_EMPTY_RESPONSE_RECOVERY_SYSTEM_PROMPT = 'The latest user message already contains follow-up context answering a prior clarification. Continue the original task directly using that follow-up context. Provide a non-empty response, and call tools if needed. Do not repeat the same clarification question.';
-const TOOL_ERROR_RECOVERY_SYSTEM_PROMPT = 'A tool call in your previous step failed. Read the tool error below, correct the arguments and continue the task. Stay inside the workspace root: prefer workspace-relative paths and never invent absolute paths outside it. Do not end the turn after a single recoverable tool error; only stop when the failure is genuinely unrecoverable, and then explain why briefly.';
 const EMPTY_RESPONSE_RETRY_BACKOFF_MS = 150;
 const LOOP_RECOVERY_SYSTEM_PROMPT = 'You are repeating the same tool calls without making progress. Change strategy: try a different tool, different arguments, or break the work into smaller steps. If you cannot make progress, state clearly that you are blocked and explain why instead of repeating the same calls.';
 
@@ -1105,7 +1103,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 }
                 await this.sleep(EMPTY_RESPONSE_RETRY_BACKOFF_MS * emptyResponseRetryCount);
                 response = await this.completeModelRequest(
-                    this.prepareModelRequest(sessionId, this.buildEmptyResponseRetryRequest(request), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
+                    this.prepareModelRequest(sessionId, buildEmptyResponseRetryRequest(request, (role, content) => this.createMessage(role, content)), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
                 );
                 await this.recordTokenUsage(sessionId, response);
                 await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, response));
@@ -1115,7 +1113,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                     turnContext.diagnostics.followUpRecoveryCount++;
                 }
                 response = await this.completeModelRequest(
-                    this.prepareModelRequest(sessionId, this.buildFollowUpRecoveryRequest(request), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
+                    this.prepareModelRequest(sessionId, buildFollowUpRecoveryRequest(request, (role, content) => this.createMessage(role, content)), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
                 );
                 await this.recordTokenUsage(sessionId, response);
                 await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, response));
@@ -1197,7 +1195,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 await this.sleep(EMPTY_RESPONSE_RETRY_BACKOFF_MS * emptyResponseRetryCount);
                 response = yield* this.collectStreamingResponse(
                     sessionId,
-                    this.prepareModelRequest(sessionId, this.buildEmptyResponseRetryRequest(request), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
+                    this.prepareModelRequest(sessionId, buildEmptyResponseRetryRequest(request, (role, content) => this.createMessage(role, content)), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
                 );
                 await this.recordTokenUsage(sessionId, response);
             }
@@ -1207,7 +1205,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 }
                 response = yield* this.collectStreamingResponse(
                     sessionId,
-                    this.prepareModelRequest(sessionId, this.buildFollowUpRecoveryRequest(request), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
+                    this.prepareModelRequest(sessionId, buildFollowUpRecoveryRequest(request, (role, content) => this.createMessage(role, content)), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
                 );
                 await this.recordTokenUsage(sessionId, response);
             }
@@ -1216,7 +1214,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 if (toolError) {
                     response = yield* this.collectStreamingResponse(
                         sessionId,
-                        this.prepareModelRequest(sessionId, this.buildToolErrorRecoveryRequest(request, toolError), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
+                        this.prepareModelRequest(sessionId, buildToolErrorRecoveryRequest(request, toolError, (role, content) => this.createMessage(role, content)), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
                     );
                     await this.recordTokenUsage(sessionId, response);
                 }
@@ -1973,19 +1971,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
             '',
             'Continue the original task directly using the follow-up answer above.'
         ].join('\n');
-    }
-
-    private findLatestFollowUpContextUserMessage(messages: AgentMessage[]): AgentMessage | undefined {
-        for (let index = messages.length - 1; index >= 0; index--) {
-            const message = messages[index];
-            if (message?.role !== 'user') {
-                continue;
-            }
-            if (String(message.content || '').includes('[Follow-up Context]')) {
-                return message;
-            }
-        }
-        return undefined;
     }
 
     protected sessionToolFilters = new Map<string, Set<string>>();
@@ -3082,45 +3067,9 @@ let sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
         return !response.toolCalls?.length && !String(response.message ?? '').trim();
     }
 
-    private buildEmptyResponseRetryRequest(request: ModelRequest): ModelRequest {
-        return {
-            ...request,
-            messages: [
-                this.createMessage('system', EMPTY_RESPONSE_RETRY_SYSTEM_PROMPT),
-                ...request.messages
-            ]
-        };
-    }
-
     private shouldRecoverEmptyFollowUpResponse(request: ModelRequest, response: ModelResponse): boolean {
         return this.shouldRetryEmptyResponse(response)
-            && !!this.findLatestFollowUpContextUserMessage(request.messages);
-    }
-
-    private buildFollowUpRecoveryRequest(request: ModelRequest): ModelRequest {
-        const latestFollowUpUser = this.findLatestFollowUpContextUserMessage(request.messages);
-        if (!latestFollowUpUser) {
-            return this.buildEmptyResponseRetryRequest(request);
-        }
-        const systemMessages = request.messages.filter(message => message.role === 'system');
-        return {
-            ...request,
-            messages: [
-                ...systemMessages,
-                this.createMessage('system', FOLLOW_UP_EMPTY_RESPONSE_RECOVERY_SYSTEM_PROMPT),
-                { ...latestFollowUpUser }
-            ]
-        };
-    }
-
-    private buildToolErrorRecoveryRequest(request: ModelRequest, toolError: string): ModelRequest {
-        return {
-            ...request,
-            messages: [
-                this.createMessage('system', `${TOOL_ERROR_RECOVERY_SYSTEM_PROMPT}\n\nTool error: ${toolError}`),
-                ...request.messages
-            ]
-        };
+            && !!findLatestFollowUpContextUserMessage(request.messages);
     }
 
     private async resolveAssistantResponseText(sessionId: string, response: ModelResponse): Promise<string> {        const explicitMessage = String(response.message ?? '');
