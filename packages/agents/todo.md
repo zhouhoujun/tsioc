@@ -199,7 +199,8 @@
 - ✅ `model.complete` span（model 属性、ok/error）；非流式主路径。
 - ✅ `agent.compaction` span（level/strategy、ok）；压缩历史写入时发出。
 - ✅ `model.stream` span（model 属性、ok/error，finally 语义）。
-- 待办：`eval run`。
+- ✅ `tsdi-agent eval run --task <id> --issue <text> [--verify <cmd>] [--json]`：调用 EvalRunner 执行并持久化报告。
+- 待办：无（S4b 完成）。
 - 验收：fake tracer 断言层级/属性；无 OTEL 零行为变化；suite 可对比且回归失败可诊断。
 
 #### S5 — 命名子代理（已完成 ✅）
