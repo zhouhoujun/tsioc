@@ -1039,6 +1039,15 @@ export class DefaultAgentRuntime extends AgentRuntime {
         this.turnAbortScopes.throwIfCancelled(sessionId);
     }
 
+    /** Complete with a model span; streaming keeps its own chunk-level path. */
+    protected completeModelRequest(request: ModelRequest): Promise<ModelResponse> {
+        const span = this.telemetry?.startSpan('model.complete', { model: request.model });
+        return this.modelAdapter.complete(request).then(
+            response => { span?.end('ok'); return response; },
+            error => { span?.end('error', { error: error instanceof Error ? error.message : String(error) }); throw error; }
+        );
+    }
+
     protected prepareModelRequest(sessionId: string, request: ModelRequest, profile?: string, falsifyRate?: number, reasoning?: boolean): ModelRequest {
         this.throwIfTurnCancelled(sessionId);
         request.signal = this.turnAbortScopes.signal(sessionId);
@@ -1082,7 +1091,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 request = recoveredRequest;
             }
             const falsifyRate = computeTurnFalsifyRate(turnContext.evidenceLedger);
-            let response = await this.modelAdapter.complete(this.prepareModelRequest(sessionId, request, turnContext.profile, falsifyRate, turnContext.agent?.reasoning));
+            let response = await this.completeModelRequest(this.prepareModelRequest(sessionId, request, turnContext.profile, falsifyRate, turnContext.agent?.reasoning));
             await this.recordTokenUsage(sessionId, response);
             await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, response));
             if (emptyResponseRetryCount < EMPTY_RESPONSE_MAX_RETRIES && this.shouldRetryEmptyResponse(response)) {
@@ -1091,7 +1100,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                     turnContext.diagnostics.emptyResponseRetryCount++;
                 }
                 await this.sleep(EMPTY_RESPONSE_RETRY_BACKOFF_MS * emptyResponseRetryCount);
-                response = await this.modelAdapter.complete(
+                response = await this.completeModelRequest(
                     this.prepareModelRequest(sessionId, this.buildEmptyResponseRetryRequest(request), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
                 );
                 await this.recordTokenUsage(sessionId, response);
@@ -1101,7 +1110,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 if (turnContext.diagnostics) {
                     turnContext.diagnostics.followUpRecoveryCount++;
                 }
-                response = await this.modelAdapter.complete(
+                response = await this.completeModelRequest(
                     this.prepareModelRequest(sessionId, this.buildFollowUpRecoveryRequest(request), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
                 );
                 await this.recordTokenUsage(sessionId, response);
@@ -1130,7 +1139,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }
             await this.sessions.append(sessionId, this.createMessage('user', MAX_TOOL_ROUNDS_PROMPT));
             const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
-            const finalResponse = await this.modelAdapter.complete(
+            const finalResponse = await this.completeModelRequest(
                 this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, computeTurnFalsifyRate(turnContext.evidenceLedger), turnContext.agent?.reasoning)
             );
             await this.recordTokenUsage(sessionId, finalResponse);
@@ -1739,7 +1748,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         await this.sessions.append(sessionId, this.buildTerminationWrapUpMessage(termination));
         try {
             const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
-            const finalResponse = await this.modelAdapter.complete(
+            const finalResponse = await this.completeModelRequest(
                 this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, computeTurnFalsifyRate(turnContext.evidenceLedger), turnContext.agent?.reasoning)
             );
             await this.recordTokenUsage(sessionId, finalResponse);

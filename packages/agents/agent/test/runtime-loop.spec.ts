@@ -1154,6 +1154,7 @@ export class RuntimeLoopTest {
         await runtime.runTurn('telemetry-1', 'hello');
         expect(spans.some(span => span.name === 'tool.echo' && span.status === 'ok')).toEqual(true);
         expect(spans.some(span => span.name === 'agent.turn' && span.status === 'ok')).toEqual(true);
+        expect(spans.some(span => span.name === 'model.complete' && span.status === 'ok')).toEqual(true);
     }
 
     @Test('switches a session workspace for worktree isolation')
