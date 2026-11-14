@@ -173,10 +173,11 @@
 - 修复共享探测：`probeSandboxExecTool` 由 `sh -lc` 改为 `sh -c`（登录 shell 的坏 profile 曾让 bwrap 探测稳定失败）；bwrap 先挂 `--tmpfs /tmp` 再绑 workspace，避免 `/tmp` 下的 workspace 被 tmpfs 遮盖。
 - 证据：agent 1054、agent-tools 586；新增 `code-execution-sandbox.spec.ts`（越界写拒绝、正常执行、secret 屏蔽、mode 透传）；`source-size` OK。
 
-#### S2 — Hook 类型扩展 + hook trust
+#### S2 — Hook 类型扩展 + hook trust（进行中）
 
-- `AgentHookDefinition.type`：`command | http | mcp | prompt | subagent`；`beforeTool` 支持 `deny`/`input` 重写。
-- 新增 executor registry、timeout/abort、脱敏；`hooks.trusted.json` 记录来源哈希，未 trust 的项目 hook 不执行；CLI `hooks trust`。
+- ✅ `type: 'http'`：POST/GET、headers、timeout/abort、失败不抛穿 turn；输出进入 hook transcript。
+- ✅ `requireTrust`：未显式 `trusted: true` 的 command/http hook 在 `requireTrust` 模式下被过滤。
+- 待办：`mcp`/`prompt`/`subagent` 类型；`hooks.trusted.json` 来源哈希与 CLI `hooks trust`；`beforeTool` 的 `deny` 语义与 `input` 重写回归。
 - 验收：五类 hook 边界测试；未 trust 被拒绝且提示可操作；hook 超时/取消不阻断 turn。
 
 #### S3 — 沙箱升级审批

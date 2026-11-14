@@ -2,13 +2,24 @@ import { Abstract, Injectable } from '@tsdi/ioc';
 
 export type AgentLifecycleHookStage = 'beforeTurn' | 'afterTurn' | 'beforeTool' | 'afterTool' | 'onApproval' | 'beforeCompaction' | 'afterCompaction';
 
+export type AgentHookTransport = 'command' | 'http';
+
 export interface AgentHookDefinition {
     name?: string;
-    command: string;
+    /** Where the hook runs. Defaults to the existing shell command transport. */
+    type?: AgentHookTransport;
+    /** Shell command (required for `type: 'command'`). */
+    command?: string;
     args?: string[];
     cwd?: string;
     env?: Record<string, string>;
     timeoutMs?: number;
+    /** HTTP hook endpoint (required for `type: 'http'`). */
+    url?: string;
+    method?: 'GET' | 'POST';
+    headers?: Record<string, string>;
+    /** When `requireTrust` is enabled, only hooks explicitly trusted run. */
+    trusted?: boolean;
 }
 
 /**
@@ -36,6 +47,10 @@ export interface AgentFunctionHooksOptions {
 }
 
 export interface AgentHooksOptions {
+    /** Deny project hooks unless they are explicitly marked `trusted`. */
+    requireTrust?: boolean;
+    /** Injectable fetch for HTTP hooks (defaults to the host global). */
+    fetch?: typeof fetch;
     beforeTurn?: AgentHookDefinition | AgentHookDefinition[];
     afterTurn?: AgentHookDefinition | AgentHookDefinition[];
     beforeTool?: AgentHookDefinition | AgentHookDefinition[];
@@ -155,7 +170,7 @@ export class AgentHookManager {
     describe(): Array<{ stage: AgentLifecycleHookStage; commands: string[]; functions: string[] }> {
         return this.stages().map(stage => ({
             stage,
-            commands: this.normalizeStageHooks(stage).map(hook => hook.command),
+            commands: this.normalizeStageHooks(stage).map(hook => hook.url ?? hook.command ?? ''),
             functions: this.normalizeFunctionStageHooks(stage).map(hook => hook.name ?? 'function')
         }));
     }
@@ -172,10 +187,17 @@ export class AgentHookManager {
                 entries.push(entry);
             }
         }
+        const stageHooks = this.normalizeStageHooks(stage);
+        for (const hook of stageHooks.filter(item => item.type === 'http')) {
+            const entry = await this.runHttpHook(stage, hook, context, signal);
+            if (entry) {
+                entries.push(entry);
+            }
+        }
         if (!this.executor?.isSupported()) {
             return { entries, results };
         }
-        for (const hook of this.normalizeStageHooks(stage)) {
+        for (const hook of stageHooks.filter(item => item.type !== 'http')) {
             const entry = await this.runHook(stage, hook, context, signal);
             if (entry) {
                 entries.push(entry);
@@ -305,13 +327,34 @@ export class AgentHookManager {
         if (!hook || typeof hook !== 'object') {
             return null;
         }
+        const type = hook.type === 'http' ? 'http' : 'command';
         const command = String(hook.command || '').trim();
-        if (!command) {
+        const url = String(hook.url || '').trim();
+        if (type === 'command' && !command) {
+            return null;
+        }
+        if (type === 'http' && !/^https?:\/\//i.test(url)) {
+            return null;
+        }
+        if (this.hooks?.requireTrust && hook.trusted !== true) {
             return null;
         }
         return {
             name: String(hook.name || '').trim() || undefined,
-            command,
+            type,
+            ...(command ? { command } : {}),
+            ...(type === 'http' ? {
+                url,
+                method: hook.method === 'GET' ? 'GET' as const : 'POST' as const,
+                headers: hook.headers && typeof hook.headers === 'object'
+                    ? Object.entries(hook.headers).reduce((headers, [key, value]) => {
+                        if (value != null) {
+                            headers[String(key)] = String(value);
+                        }
+                        return headers;
+                    }, {} as Record<string, string>)
+                    : undefined
+            } : {}),
             args: Array.isArray(hook.args) ? hook.args.map(arg => String(arg)) : [],
             cwd: String(hook.cwd || '').trim() || undefined,
             env: hook.env && typeof hook.env === 'object' ? Object.entries(hook.env).reduce((env, [key, value]) => {
@@ -321,8 +364,76 @@ export class AgentHookManager {
                 env[String(key)] = String(value);
                 return env;
             }, {} as Record<string, string>) : undefined,
-            timeoutMs: typeof hook.timeoutMs === 'number' && Number.isFinite(hook.timeoutMs) ? hook.timeoutMs : undefined
+            timeoutMs: typeof hook.timeoutMs === 'number' && Number.isFinite(hook.timeoutMs) ? hook.timeoutMs : undefined,
+            trusted: hook.trusted === true ? true : undefined
         };
+    }
+
+    private async runHttpHook(
+        stage: AgentLifecycleHookStage,
+        hook: AgentHookDefinition,
+        context: AgentHookContext,
+        signal?: AbortSignal
+    ): Promise<AgentHookTranscriptEntry | null> {
+        const startedAt = Date.now();
+        const controller = new AbortController();
+        const onAbort = () => controller.abort();
+        signal?.addEventListener('abort', onAbort, { once: true });
+        const timer = hook.timeoutMs && hook.timeoutMs > 0
+            ? setTimeout(() => controller.abort(), hook.timeoutMs)
+            : undefined;
+        const fetchImpl = this.hooks?.fetch ?? globalThis.fetch;
+        if (!fetchImpl) {
+            return {
+                stage,
+                name: hook.name ?? hook.url ?? 'http',
+                content: this.wrapOutput(stage, hook.name ?? hook.url ?? 'http', ''),
+                exitCode: 1,
+                durationMs: Math.max(0, Date.now() - startedAt),
+                stderr: 'fetch is not available in this environment.'
+            };
+        }
+        try {
+            const response = await fetchImpl(hook.url!, {
+                method: hook.method ?? 'POST',
+                headers: {
+                    'content-type': 'application/json',
+                    ...(hook.headers ?? {})
+                },
+                body: hook.method === 'GET' ? undefined : this.safeStringify({ stage, context, timestamp: Date.now() }),
+                signal: controller.signal
+            });
+            const body = await response.text();
+            if (!body.trim()) {
+                return null;
+            }
+            return {
+                stage,
+                name: hook.name ?? hook.url ?? 'http',
+                content: this.wrapOutput(stage, hook.name ?? hook.url ?? 'http', body),
+                exitCode: response.ok ? 0 : 1,
+                durationMs: Math.max(0, Date.now() - startedAt),
+                stderr: response.ok ? undefined : `HTTP ${response.status}`
+            };
+        } catch (error) {
+            if (error instanceof Error && error.name === 'AbortError' && signal?.aborted) {
+                return null;
+            }
+            const message = error instanceof Error ? error.message : String(error);
+            return {
+                stage,
+                name: hook.name ?? hook.url ?? 'http',
+                content: this.wrapOutput(stage, hook.name ?? hook.url ?? 'http', ''),
+                exitCode: 1,
+                durationMs: Math.max(0, Date.now() - startedAt),
+                stderr: message
+            };
+        } finally {
+            if (timer) {
+                clearTimeout(timer);
+            }
+            signal?.removeEventListener('abort', onAbort);
+        }
     }
 
     private async runHook(
@@ -334,11 +445,12 @@ export class AgentHookManager {
         if (!this.executor?.isSupported()) {
             return null;
         }
+        const command = hook.command ?? '';
         const payload = this.safeStringify({
             stage,
             hook: {
-                name: hook.name ?? hook.command,
-                command: hook.command,
+                name: hook.name ?? command,
+                command,
                 args: hook.args ?? []
             },
             context,
@@ -346,7 +458,7 @@ export class AgentHookManager {
         });
         try {
             const result = await this.executor.execute({
-                command: hook.command,
+                command,
                 args: hook.args ?? [],
                 stdin: payload,
                 context,
@@ -361,8 +473,8 @@ export class AgentHookManager {
             }
             return {
                 stage,
-                name: hook.name ?? hook.command,
-                content: this.wrapOutput(stage, hook.name ?? hook.command, stdout),
+                name: hook.name ?? command,
+                content: this.wrapOutput(stage, hook.name ?? command, stdout),
                 exitCode: result.exitCode,
                 durationMs: result.durationMs,
                 stderr: String(result.stderr || '').trim() || undefined
@@ -370,8 +482,8 @@ export class AgentHookManager {
         } catch (error) {
             return {
                 stage,
-                name: hook.name ?? hook.command,
-                content: this.wrapOutput(stage, hook.name ?? hook.command, ''),
+                name: hook.name ?? command,
+                content: this.wrapOutput(stage, hook.name ?? command, ''),
                 exitCode: 1,
                 durationMs: 0,
                 stderr: error instanceof Error ? error.message : String(error)
@@ -382,7 +494,7 @@ export class AgentHookManager {
     private buildEnvironment(stage: AgentLifecycleHookStage, hook: AgentHookDefinition, context: AgentHookContext): Record<string, string> {
         return {
             TSDI_AGENT_HOOK_STAGE: stage,
-            TSDI_AGENT_HOOK_NAME: hook.name ?? hook.command,
+            TSDI_AGENT_HOOK_NAME: hook.name ?? hook.command ?? '',
             TSDI_AGENT_SESSION_ID: context.sessionId,
             ...(context.principalId ? { TSDI_AGENT_PRINCIPAL_ID: context.principalId } : {}),
             ...(context.workspace ? { TSDI_AGENT_WORKSPACE: context.workspace } : {}),
