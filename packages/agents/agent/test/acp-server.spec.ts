@@ -35,6 +35,26 @@ export class AcpServerTest {
         expect(update.params.update.content.text).toEqual('echo:hello');
     }
 
+    @Test('maps terminal requests to the ACP client')
+    async terminalRequests() {
+        const writes: any[] = [];
+        let listener: ((chunk: string) => void) | undefined;
+        const server = new AcpServer({
+            read: (cb: (chunk: string) => void) => { listener = cb; },
+            write: (payload: string) => { writes.push(JSON.parse(payload)); }
+        }, { runtime: {} as any });
+        const respond = async (promise: Promise<any>, result: any) => {
+            for (let index = 0; index < 8; index++) await Promise.resolve();
+            const request = writes[writes.length - 1];
+            listener!(JSON.stringify({ jsonrpc: '2.0', id: request.id, result }) + '\n');
+            return promise;
+        };
+        expect(await respond(server.createTerminal({ sessionId: 's1', command: 'ls' }), { terminalId: 't1' })).toEqual({ terminalId: 't1' });
+        expect(await respond(server.terminalOutput({ sessionId: 's1', terminalId: 't1' }), { output: 'a' })).toEqual({ output: 'a' });
+        expect(await respond(server.killTerminal({ sessionId: 's1', terminalId: 't1' }), {})).toEqual({});
+        expect(writes.map(item => item.method)).toEqual(['terminal/create', 'terminal/output', 'terminal/kill']);
+    }
+
     @Test('issues client requests for fs access and permissions')
     async clientRequests() {
         const writes: any[] = [];

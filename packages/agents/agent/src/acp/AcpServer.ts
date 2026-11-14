@@ -188,6 +188,26 @@ export class AcpServer {
         return this.requestClient('session/request_permission', params);
     }
 
+    createTerminal(params: any): Promise<any> {
+        return this.requestClient('terminal/create', params);
+    }
+
+    terminalOutput(params: { sessionId: string; terminalId: string }): Promise<any> {
+        return this.requestClient('terminal/output', params);
+    }
+
+    waitForTerminalExit(params: { sessionId: string; terminalId: string }): Promise<any> {
+        return this.requestClient('terminal/wait_for_exit', params);
+    }
+
+    killTerminal(params: { sessionId: string; terminalId: string }): Promise<any> {
+        return this.requestClient('terminal/kill', params);
+    }
+
+    releaseTerminal(params: { sessionId: string; terminalId: string }): Promise<any> {
+        return this.requestClient('terminal/release', params);
+    }
+
     readTextFile(params: { sessionId: string; path: string; line?: number; limit?: number }): Promise<any> {
         return this.requestClient('fs/read_text_file', params);
     }
