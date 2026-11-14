@@ -42,10 +42,12 @@ export class SessionTabsTest {
             // hovering it turns it red through the shared hover animation.
             const closeColor = String(bar).match(/\x1b\[38;2;(\d+);(\d+);(\d+)m[^\x1b]*✕/);
             expect(closeColor?.slice(1).join(',')).toEqual('110,118,129');
-            // One space after ✕ (plus the next tab's leading label space):
-            // the close affordance must not leave a gap before the next tab.
+            // Every tab reserves a close cell; the terminal surface paints an
+            // inactive one only while its tab is hovered.
             const plainBar = String(bar).replace(/\x1b\[[0-9;]*m/g, '');
-            expect(plainBar).toContain('Alpha ✕  Beta');
+            expect(plainBar).toContain('Alpha ✕');
+            expect(plainBar).toContain('Beta ✕');
+            expect(plainBar).toContain(' + ');
             // Selected and inactive tabs must not share the same foreground
             // colour: the TUI stylesheet cannot parse `:not(...)`, so inactive
             // tabs are matched by `aria-selected="false"` instead.
@@ -110,7 +112,7 @@ export class SessionTabsTest {
         }
     }
 
-    @Test('DOM hosts reveal close affordances on hover while terminals keep active-only')
+    @Test('all tabs reserve the close affordance like /web (opt-out for active-only hosts)')
     async hoverCloseAffordances() {
         const ctx = await Application.run(AgentModule, { deps: [AgentUiModule, TuiTemplateModule, ComponentsModule] });
         try {
@@ -122,12 +124,81 @@ export class SessionTabsTest {
                 { id: 'session-b', current: false, title: 'Beta' }
             ]);
             const tabs = ref.hostView.query(TabsComponent) as any;
-            // Terminal default: only the active tab carries a close affordance.
-            expect(tabs.instance.items.map((tab: any) => tab.showClose)).toEqual([true, false]);
-            // Browser host: inactive tabs reserve a hover-revealed affordance.
-            state.tabCloseOnHover = true;
-            for (let index = 0; index < 16; index++) await Promise.resolve();
+            // Default: every tab reserves the close affordance; DOM hosts
+            // reveal it in CSS and the terminal surface reveals it on hover.
             expect(tabs.instance.items.map((tab: any) => tab.showClose)).toEqual([true, 'hover']);
+            // Hosts that want active-only can opt out.
+            state.tabCloseOnHover = false;
+            for (let index = 0; index < 16; index++) await Promise.resolve();
+            expect(tabs.instance.items.map((tab: any) => tab.showClose)).toEqual([true, false]);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('terminal tabs hide an inactive close until that tab is hovered')
+    async hoverRevealsInactiveClose() {
+        const ctx = await Application.run(AgentModule, { deps: [AgentUiModule, TuiTemplateModule, ComponentsModule] });
+        try {
+            const ref = ctx.get(ComponentFactory).create(AgentConsoleComponent, { injector: ctx });
+            await ref.render();
+            const state: any = ref.instance.sessionState;
+            state.setSessions([
+                { id: 'session-a', current: true, title: 'Alpha', workspace: '/work' },
+                { id: 'session-b', current: false, title: 'Beta', workspace: '/work' }
+            ]);
+            state.setOpenSessionIds(['session-a', 'session-b']);
+            for (let index = 0; index < 32; index++) await Promise.resolve();
+            const surface = new TuiTerminalSurface({
+                renderer: ctx.get(TuiRenderer),
+                root: ref.elementRef.nativeElement,
+                width: 80,
+                height: 24,
+                nativeScrollback: false,
+                scrollViewport: true,
+                scrollRegionId: 'transcript',
+                footerRegionId: 'footer',
+                output: { write() { /* noop */ } }
+            });
+            try {
+                surface.render();
+                const row = () => String((surface.lastRenderedLines || [])[0] || '');
+                const closes = () => (row().match(/✕/g) || []).length;
+                const targets = () => (surface.clickTargets || []).filter(target => target.y === 0);
+                const byClass = (value: string) => targets().find(target =>
+                    String((target.node as any)?.getAttribute?.('class') || '') === value);
+                const closeFor = (title: string) => targets().find(target =>
+                    String((target.node as any)?.getAttribute?.('class') || '') === 'tab-close'
+                    && String((target.node as any)?.parentNode?.textContent || '').includes(title));
+                // The active tab keeps its close; the inactive one stays blank
+                // even though its cells are reserved.
+                expect(closes()).toEqual(1);
+                const betaLabel = targets().find(target =>
+                    String((target.node as any)?.getAttribute?.('class') || '') === 'tab-label'
+                    && String((target.node as any)?.textContent || '').includes('Beta'));
+                expect(betaLabel).toBeTruthy();
+                const betaClose = closeFor('Beta');
+                expect(betaClose).toBeTruthy();
+                const plus = byClass('tab-new');
+                expect(plus).toBeTruthy();
+                const plusX = plus!.x;
+                // Hovering any cell of the tab reveals its close without moving
+                // the following affordances.
+                surface.dispatchMouse({ x: betaLabel!.x + 2, y: betaLabel!.y + 1, button: 35, release: false } as any);
+                surface.render();
+                expect(closes()).toEqual(2);
+                expect(byClass('tab-new')!.x).toEqual(plusX);
+                // Hovering the revealed glyph recolours it red.
+                surface.dispatchMouse({ x: betaClose!.x + 2, y: betaClose!.y + 1, button: 35, release: false } as any);
+                surface.render();
+                expect(row()).toContain('\x1b[38;2;207;152;147m');
+                // Leaving the strip hides the inactive affordance again.
+                surface.dispatchMouse({ x: 79, y: 1, button: 35, release: false } as any);
+                surface.render();
+                expect(closes()).toEqual(1);
+            } finally {
+                surface.destroy();
+            }
         } finally {
             await ctx.close();
         }

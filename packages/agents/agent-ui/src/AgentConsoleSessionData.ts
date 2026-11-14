@@ -49,8 +49,9 @@ export class AgentConsoleSessionData {
     maxOverlayVisibleLines = 0;
     /** Terminal columns for the session tab strip; 0 on hosts that scroll it (web). */
     tabStripColumns = 0;
-    /** DOM hosts reveal a tab's close affordance on hover; terminals keep it active-only. */
-    tabCloseOnHover = false;
+    /** All tabs reserve a close affordance and reveal it while the tab is
+     *  hovered (DOM through CSS, the TUI surface at paint time). */
+    tabCloseOnHover = true;
     sessionId = 'console';
     input = '';
     inputSecret = false;

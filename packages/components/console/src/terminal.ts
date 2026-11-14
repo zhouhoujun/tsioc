@@ -1461,6 +1461,7 @@ export class TuiTerminalSurface {
         const baseLines = lines.slice();
         this.viewportSourceRows = viewport.sourceRows || [];
         this.applyTextSelection(lines);
+        this.applyHoverReveal(lines, viewport.clickTargets);
         this.applyHoverHighlight(lines);
         this.syncAnimationClock();
         const rowBands = mergeTerminalRowBands(this.lastOverlayBands, viewport.overlayBands);
@@ -1547,6 +1548,7 @@ export class TuiTerminalSurface {
         }
         const lines = frame.baseLines.slice();
         this.applyTextSelection(lines);
+        this.applyHoverReveal(lines);
         this.applyHoverHighlight(lines);
         const result = renderPrimaryTerminalScreen({
             state: this.renderState,
@@ -2348,6 +2350,67 @@ export class TuiTerminalSurface {
         this.resolveOutput()?.write(buildOsc52ClipboardSequence(text));
         this.options.onTextCopied?.(text);
         return true;
+    }
+
+    /**
+     * `data-hover-reveal` bands reserve their cells but stay blank until the
+     * pointer enters the nearest pointer affordance above them (the tab that
+     * owns a close glyph). DOM hosts do this in CSS; a terminal only knows the
+     * hovered node at paint time, so the reserved cells are painted blank and
+     * the layout never shifts when the affordance appears.
+     */
+    protected applyHoverReveal(lines: string[], targets: TerminalClickTarget[] = this.clickTargetsCache): void {
+        const hovered = this.hoverTarget?.node;
+        for (const target of targets) {
+            const node = target.node as ConsoleElement | undefined;
+            if (!node || typeof node.getAttribute !== 'function') {
+                continue;
+            }
+            if (String(node.getAttribute('data-hover-reveal')) !== 'true') {
+                continue;
+            }
+            if (this.isHoverRevealActive(node, hovered, targets)) {
+                continue;
+            }
+            const row = Math.trunc(target.y);
+            const line = lines[row];
+            if (!line) {
+                continue;
+            }
+            const from = Math.max(0, target.x);
+            const start = snapColumnToGlyph(line, from, 'start');
+            const end = snapColumnToGlyph(line, from + Math.max(1, target.width), 'end');
+            if (end <= start) {
+                continue;
+            }
+            const middle = sliceStyledColumns(line, start, end);
+            const blank = ' '.repeat(Math.max(1, getDisplayWidth(stripTerminalAnsi(middle))));
+            lines[row] = `${sliceStyledColumns(line, 0, start)}${blank}${sliceStyledColumns(line, end, Number.MAX_SAFE_INTEGER)}`;
+        }
+    }
+
+    protected isHoverRevealActive(node: ConsoleElement, hovered: ConsoleNode | undefined, targets: TerminalClickTarget[]): boolean {
+        if (!hovered) {
+            return false;
+        }
+        if (hovered === node) {
+            return true;
+        }
+        // Reveal while the pointer is inside the owning pointer affordance;
+        // a nested label and the close glyph itself are the same group.
+        let group: ConsoleNode | null = node.parentNode;
+        while (group && !targets.some(target => target.node === group)) {
+            group = group.parentNode;
+        }
+        if (!group) {
+            return false;
+        }
+        for (let current: ConsoleNode | null = hovered; current; current = current.parentNode) {
+            if (current === group) {
+                return true;
+            }
+        }
+        return false;
     }
 
     protected applyHoverHighlight(lines: string[]): void {

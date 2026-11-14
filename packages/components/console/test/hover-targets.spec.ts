@@ -79,6 +79,64 @@ export class ConsoleHoverTargetsTest {
         }
     }
 
+    @Test('a hover-reveal band stays blank until its pointer group is hovered')
+    async hoverRevealBand() {
+        const renderer = new TuiRenderer();
+        const root = renderer.createElement('div');
+        const tab = renderer.createElement('span') as ConsoleElement;
+        tab.setAttribute('class', 'tab');
+        tab.addEventListener('click', () => undefined);
+        const label = renderer.createElement('span') as ConsoleElement;
+        label.setAttribute('class', 'tab-label');
+        label.addEventListener('click', () => undefined);
+        renderer.appendChild(label, renderer.createText(' Beta '));
+        const close = renderer.createElement('span') as ConsoleElement;
+        close.setAttribute('class', 'tab-close');
+        close.setAttribute('data-hover-reveal', 'true');
+        close.setAttribute('data-cell-width', '2');
+        close.addEventListener('click', () => undefined);
+        renderer.appendChild(close, renderer.createText('✕'));
+        renderer.appendChild(tab, label);
+        renderer.appendChild(tab, close);
+        const create = renderer.createElement('span') as ConsoleElement;
+        create.setAttribute('class', 'tab-new');
+        create.addEventListener('click', () => undefined);
+        renderer.appendChild(create, renderer.createText(' + '));
+        renderer.appendChild(root, tab);
+        renderer.appendChild(root, create);
+        const surface = new TuiTerminalSurface({ renderer, root, width: 30, output: { write() { } } });
+        const settle = async () => {
+            for (let index = 0; index < 8; index += 1) {
+                await Promise.resolve();
+            }
+        };
+        const line = () => String((surface.lastRenderedLines || [])[0] || '');
+        const targetOf = (className: string) => surface.clickTargets.find(entry =>
+            String((entry.node as any)?.getAttribute?.('class') || '') === className);
+        try {
+            await settle();
+            // Reserved but not painted: the tab layout already accounts for it.
+            expect(line()).toContain('Beta');
+            expect(line()).not.toContain('✕');
+            const labelTarget = targetOf('tab-label');
+            const createTarget = targetOf('tab-new');
+            expect(labelTarget).toBeDefined();
+            expect(createTarget).toBeDefined();
+            const createX = createTarget!.x;
+            hover(surface, labelTarget!.x + 2, labelTarget!.y + 1);
+            await settle();
+            // The pointer inside the owning tab reveals the glyph; the next
+            // affordance keeps its column (no layout shift).
+            expect(line()).toContain('✕');
+            expect(targetOf('tab-new')!.x).toEqual(createX);
+            hover(surface, 20, 2);
+            await settle();
+            expect(line()).not.toContain('✕');
+        } finally {
+            surface.destroy();
+        }
+    }
+
     @Test('hovering a non-expandable row paints no background')
     nonExpandableRowStaysFlat() {
         const renderer = new TuiRenderer();

@@ -10,8 +10,8 @@ export interface TabItem {
     /** Semantic selection state; renderers may use it for accessibility and skinning. */
     active?: boolean;
     /** Whether this tab shows its close affordance (defaults to true).
-     *  `'hover'` reserves the affordance but DOM hosts reveal it only while
-     *  the tab is hovered (terminal hosts keep it hidden). */
+     *  `'hover'` reserves the cells and reveals the glyph only while its tab
+     *  is hovered; DOM hosts use CSS, terminal hosts paint it at hover time. */
     showClose?: boolean | 'hover';
     /** Non-interactive marker (e.g. the `…` overflow indicator). */
     disabled?: boolean;
@@ -42,7 +42,7 @@ export const TAB_BAR_SOURCE = token<TabBarSource>('TAB_BAR_SOURCE');
     template: `
     <p class="tab-bar" role="tablist" v-show="visible">
         <span class="tab" role="tab" aria-selected="{{tab.active}}" data-disabled="{{tab.disabled}}" v-for="tab in items" @click="select(tab.id, $event)">
-            <span class="tab-label" @click="select(tab.id, $event)">{{tab.label}}</span><span class="tab-close" role="button" v-if="tab.showClose !== false" data-close-mode="{{tab.showClose === 'hover' ? 'hover' : 'always'}}" data-cell-width="2" @click="closeTab(tab.id, $event)">{{closeLabel}}</span>
+            <span class="tab-label" @click="select(tab.id, $event)">{{tab.label}}</span><span class="tab-close" role="button" v-if="tab.showClose !== false" data-close-mode="{{tab.showClose === 'hover' ? 'hover' : 'always'}}" data-hover-reveal="{{tab.showClose === 'hover'}}" data-cell-width="2" @click="closeTab(tab.id, $event)">{{closeLabel}}</span>
         </span>
         <span class="tab-new" role="button" v-show="showCreate" @click="create">{{createLabel}}</span>
     </p>
