@@ -44,6 +44,7 @@ import { RateLimitManager } from '../harness/RateLimitManager';
 import { OutputGuard } from '../harness/OutputGuard';
 import { decorateToolSandboxReceipt, resolveSessionToolSandboxState } from '../harness/ToolSandboxPolicy';
 import { createToolBaseReceipt } from '../harness/tool-receipt';
+import { resolveRuntimeApprovalManager } from './approval-resolution';
 import { buildEmptyResponseRetryRequest, buildFollowUpRecoveryRequest, buildToolErrorRecoveryRequest, findLatestFollowUpContextUserMessage } from './recovery-requests';
 import { computeTurnFalsifyRate } from '../harness/turn-metrics';
 import { effectiveSandboxMode } from '../harness/sandbox-mode';
@@ -3273,29 +3274,15 @@ let sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
     }
 
     private resolveApprovalManager(approvalManager?: ApprovalManager): ApprovalManager | undefined {
-        if (approvalManager?.isConfigured()) {
-            return approvalManager;
-        }
-        const required = this.resolveApprovalRequired().value;
-        const options = resolveApprovalPolicyOptions(this.options, this.resolveApprovalAutoReview().value);
-        if (!required.length) {
-            return undefined;
-        }
-        const strategy = new DefaultApprovalStrategy(required);
-        // Reuse the injected instance so hosts (REST/RPC/UI) share one queue.
-        if (approvalManager instanceof ToolApprovalManager) {
-            approvalManager.configure(strategy, options);
-            return approvalManager;
-        }
-        return new ToolApprovalManager(
-            this.app,
-            this.uuid,
-            strategy,
-            options,
-            undefined,
-            undefined,
-            this.clock
-        );
+        return resolveRuntimeApprovalManager({
+            approvalManager,
+            required: this.resolveApprovalRequired().value,
+            autoReview: this.resolveApprovalAutoReview().value,
+            options: this.options,
+            app: this.app,
+            uuid: this.uuid,
+            clock: this.clock
+        });
     }
 
     private async maybeSummarize(sessionId: string, evidence?: ToolEvidenceEntry[]): Promise<void> {
