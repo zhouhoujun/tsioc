@@ -10,6 +10,7 @@ import { readFileSnapshot } from './snapshot';
 import { renderUnifiedDiff } from './simple-diff';
 import { runFormatter } from './formatter';
 import { collectLspDiagnostics } from '../lsp/lsp-feedback';
+import { AGENT_IO_PORT, AgentIoPort } from '../src/io-port';
 
 @Injectable()
 export class WriteFileTool implements AgentTool {
@@ -39,7 +40,8 @@ export class WriteFileTool implements AgentTool {
 
     constructor(
         @Optional() @Inject(AGENT_TOOLS_OPTIONS, { defaultValue: null })
-        private options?: AgentToolsOptions
+        private options?: AgentToolsOptions,
+        @Optional() @Inject(AGENT_IO_PORT) private io?: AgentIoPort
     ) {
     }
 
@@ -67,6 +69,18 @@ export class WriteFileTool implements AgentTool {
             && !hasFileBeenRead(context?.sessionId ?? '', relativePath)
             && !hasFileBeenWritten(context?.sessionId ?? '', relativePath)) {
             throw new Error(`Refusing to overwrite '${relativePath}' before reading it. Call read_file on '${relativePath}' first, then retry the write.`);
+        }
+        if (this.io?.remote && this.io.writeTextFile) {
+            await this.io.writeTextFile({ sessionId: context?.sessionId, path: absolutePath, content });
+            if (policy.requireReadBeforeWrite) {
+                recordFileWrite(context?.sessionId ?? '', relativePath);
+            }
+            return {
+                path: relativePath,
+                bytesWritten: Buffer.byteLength(content, 'utf8'),
+                created: false,
+                overwritten: true
+            };
         }
         await fs.mkdir(path.dirname(absolutePath), { recursive: true });
         const previous = existed ? await fs.readFile(absolutePath, 'utf8') : null;

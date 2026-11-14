@@ -1,4 +1,4 @@
-import { AgentIoCommandRequest, AgentIoCommandResult, AgentIoPort, AgentIoReadRequest, AgentIoReadResult, LocalAgentIoPort } from '@tsdi/agent-tools';
+import { AgentIoCommandRequest, AgentIoCommandResult, AgentIoPort, AgentIoReadRequest, AgentIoReadResult, AgentIoWriteRequest, LocalAgentIoPort } from '@tsdi/agent-tools';
 import type { AcpServer } from '@tsdi/agent';
 import { CANCELLED_MESSAGE } from '@tsdi/agent';
 
@@ -10,6 +10,17 @@ export class AcpAgentIoPort extends AgentIoPort {
 
     attach(server: AcpServer): void {
         this.server = server;
+    }
+
+    async writeTextFile(request: AgentIoWriteRequest): Promise<void> {
+        if (!this.server) {
+            throw new Error('ACP file IO requires an attached client.');
+        }
+        await this.server.writeTextFile({
+            sessionId: request.sessionId || 'acp',
+            path: request.path,
+            content: request.content
+        });
     }
 
     async readTextFile(request: AgentIoReadRequest): Promise<AgentIoReadResult> {

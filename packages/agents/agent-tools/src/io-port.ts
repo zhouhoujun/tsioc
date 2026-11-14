@@ -31,12 +31,19 @@ export interface AgentIoReadResult {
     totalLines?: number;
 }
 
+export interface AgentIoWriteRequest {
+    sessionId?: string;
+    path: string;
+    content: string;
+}
+
 @Abstract()
 export abstract class AgentIoPort {
     /** True when IO is served by a remote/client host (ACP). */
     readonly remote?: boolean;
     abstract runCommand(request: AgentIoCommandRequest): Promise<AgentIoCommandResult>;
     readTextFile?(request: AgentIoReadRequest): Promise<AgentIoReadResult>;
+    writeTextFile?(request: AgentIoWriteRequest): Promise<void>;
 }
 
 export const AGENT_IO_PORT = token<AgentIoPort>('AGENT_IO_PORT');

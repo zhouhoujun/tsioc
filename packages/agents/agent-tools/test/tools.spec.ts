@@ -1130,6 +1130,20 @@ export class AgentToolsPackageTest {
         expect(overwritten.diff).toContain('+hello world');
     }
 
+    @Test('write_file uses a remote IO port when available')
+    async writeFileUsesRemoteIo() {
+        let seen: any;
+        const tool = new WriteFileTool({ file: { rootDir: process.cwd() } } as any, {
+            remote: true,
+            runCommand: async () => ({ stdout: '', stderr: '', exitCode: 0 }),
+            writeTextFile: async (request: any) => { seen = request; }
+        } as any);
+        const result = await tool.invoke({ path: 'README.md', content: 'remote' }, createSessionContext({ sessionId: 'io-write' }));
+        expect(seen.content).toEqual('remote');
+        expect(result.bytesWritten).toEqual(6);
+        expect(result.path).toEqual('README.md');
+    }
+
     @Test('read_file uses a remote IO port when available')
     async readFileUsesRemoteIo() {
         const tool = new ReadFileTool({ file: { rootDir: process.cwd() } } as any, {

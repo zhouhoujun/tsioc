@@ -21,6 +21,15 @@ export class AcpIoTest {
         expect(calls).toEqual(['create:ls', 'wait', 'output', 'release']);
     }
 
+    @Test('writes text files through the ACP client')
+    async writesTextFile() {
+        let seen: any;
+        const io = new AcpAgentIoPort();
+        io.attach({ writeTextFile: async (params: any) => { seen = params; } } as any);
+        await io.writeTextFile({ sessionId: 's1', path: '/ws/a.ts', content: 'x' });
+        expect(seen).toEqual({ sessionId: 's1', path: '/ws/a.ts', content: 'x' });
+    }
+
     @Test('reads text files through the ACP client')
     async readsTextFile() {
         const io = new AcpAgentIoPort();
