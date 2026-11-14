@@ -1,6 +1,7 @@
 export * from './options';
 export * from './AgentLimits';
 export * from './acp/AcpClient';
+export * from './acp/AcpServer';
 export * from './archetype/AgentArchetype';
 export * from './tokens';
 export * from './provider';

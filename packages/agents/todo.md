@@ -202,9 +202,10 @@
 - 内置 `explore`/`plan`/`review` 继续由 archetype 提供只读/工具门禁。
 - 证据：新增 spawn 透传回归；agent-tools 587 passing；`source-size` OK。
 
-#### S6 — ACP Server（对齐 opencode/Claude/Codex 编辑器集成）
+#### S6 — ACP Server（部分完成）
 
-- 新增 `AcpServer` + `tsdi-agent acp`：JSON-RPC over stdio，`initialize`/`session/new`/`prompt`/`cancel`/`load`/`session/update`，权限映射现有 approval。
+- ✅ 协议核心 `AcpServer`：newline-delimited JSON-RPC；`initialize` / `session/new` / `session/prompt` / `session/cancel` / `session/update`；未知方法返回 -32000；transport 与 runtime 解耦。
+- 待办：`tsdi-agent acp` stdio 适配、`session/load`、permission/fs/terminal 方法映射、Zed 兼容回归。
 - 验收：fake transport 完整会话；Zed 兼容握手；与 TUI/gateway 共用 runtime 与审批事件。
 
 #### S7 — 会话级 `/worktree`（对齐 opencode `run -w` / Codex `--worktree`）
