@@ -35,6 +35,25 @@ export class AcpServerTest {
         expect(update.params.update.content.text).toEqual('echo:hello');
     }
 
+    @Test('issues client requests for fs access and permissions')
+    async clientRequests() {
+        const writes: any[] = [];
+        let listener: ((chunk: string) => void) | undefined;
+        const server = new AcpServer({
+            read: (cb: (chunk: string) => void) => { listener = cb; },
+            write: (payload: string) => { writes.push(JSON.parse(payload)); }
+        }, { runtime: {} as any });
+        const respond = async (promise: Promise<any>, result: any) => {
+            for (let index = 0; index < 8; index++) await Promise.resolve();
+            const request = writes[writes.length - 1];
+            listener!(JSON.stringify({ jsonrpc: '2.0', id: request.id, result }) + '\n');
+            return promise;
+        };
+        expect(await respond(server.readTextFile({ sessionId: 's1', path: 'a.ts' }), { content: 'file' })).toEqual({ content: 'file' });
+        expect(await respond(server.requestPermission({ sessionId: 's1' }), { outcome: 'allow' })).toEqual({ outcome: 'allow' });
+        expect(writes.map(item => item.method)).toEqual(['fs/read_text_file', 'session/request_permission']);
+    }
+
     @Test('applies ACP mode and model changes to the runtime')
     async setModeAndModel() {
         const calls: string[] = [];

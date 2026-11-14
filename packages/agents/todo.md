@@ -207,7 +207,8 @@
 - ✅ 协议核心 `AcpServer`：newline-delimited JSON-RPC；`initialize` / `session/new` / `session/prompt` / `session/cancel` / `session/load` / `session/update`；未知方法返回 -32000；transport 与 runtime 解耦。
 - ✅ `tsdi-agent acp [--root] [--workspace] [--session]` stdio 适配；进程保持到 stdin 关闭。
 - ✅ `session/set_mode` / `session/set_model` 映射到 session archetype / model profile。
-- 待办：`session/request_permission`、`fs/read_text_file`/`fs/write_text_file`、terminal 方法映射、Zed 兼容回归。
+- ✅ 客户端请求：`session/request_permission`、`fs/read_text_file`、`fs/write_text_file`（JSON-RPC 双向请求/响应、超时）。
+- 待办：terminal 方法映射、工具审批与 fs 请求的运行时接线、Zed 兼容回归。
 - 验收：fake transport 完整会话；Zed 兼容握手；与 TUI/gateway 共用 runtime 与审批事件。
 
 #### S7 — 会话级 `/worktree`（对齐 opencode `run -w` / Codex `--worktree`）

@@ -27,6 +27,8 @@ export class AcpServer {
     private buffer = '';
     private initialized = false;
     private sessionCounter = 0;
+    private nextRequestId = 1000;
+    private pending = new Map<number, { resolve: (value: any) => void; reject: (error: Error) => void }>();
 
     constructor(
         private readonly transport: AcpServerTransport,
@@ -53,6 +55,18 @@ export class AcpServer {
         try {
             message = JSON.parse(line);
         } catch {
+            return;
+        }
+        if (message && typeof message.id === 'number' && typeof message.method !== 'string') {
+            const pending = this.pending.get(message.id);
+            if (pending) {
+                this.pending.delete(message.id);
+                if ((message as any).error) {
+                    pending.reject(new Error(String((message as any).error.message || 'ACP client request failed')));
+                } else {
+                    pending.resolve((message as any).result);
+                }
+            }
             return;
         }
         if (!message || typeof message.method !== 'string') {
@@ -152,6 +166,34 @@ export class AcpServer {
 
     async notify(method: string, params: any): Promise<void> {
         await this.send({ jsonrpc: '2.0', method, params });
+    }
+
+    /** Send a JSON-RPC request to the connected client and await its reply. */
+    async requestClient(method: string, params: any, timeoutMs = 30000): Promise<any> {
+        const id = ++this.nextRequestId;
+        return new Promise((resolve, reject) => {
+            const timer = setTimeout(() => {
+                this.pending.delete(id);
+                reject(new Error(`ACP client request timed out: ${method}`));
+            }, timeoutMs);
+            this.pending.set(id, {
+                resolve: value => { clearTimeout(timer); resolve(value); },
+                reject: error => { clearTimeout(timer); reject(error); }
+            });
+            void this.send({ jsonrpc: '2.0', id, method, params });
+        });
+    }
+
+    requestPermission(params: any): Promise<any> {
+        return this.requestClient('session/request_permission', params);
+    }
+
+    readTextFile(params: { sessionId: string; path: string; line?: number; limit?: number }): Promise<any> {
+        return this.requestClient('fs/read_text_file', params);
+    }
+
+    writeTextFile(params: { sessionId: string; path: string; content: string }): Promise<any> {
+        return this.requestClient('fs/write_text_file', params);
     }
 
     private textFromPrompt(prompt: unknown): string {
