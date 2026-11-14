@@ -25,7 +25,7 @@ import { AgentSessionProjectMetadata, SessionSearchMatch, SessionSearchOptions, 
 import { MemoryStore, AgentMemoryRecord } from '../memory/MemoryStore';
 import { SessionSummarizer } from '../memory/SessionSummarizer';
 import { AgentSummaryAgent } from '../memory/AgentSummaryAgent';
-import { AGENT_OPTIONS, AGENT_WORKSPACE_TRUST, AgentWorkspaceTrustResolver } from '../tokens';
+import { AGENT_OPTIONS, AGENT_TELEMETRY, AGENT_WORKSPACE_TRUST, AgentWorkspaceTrustResolver } from '../tokens';
 import { resolveAgentSandboxPolicy, AgentOptions, AgentPolicyResolution, DEFAULT_APPROVAL_REQUIRED_RULES, defaultAgentOptions } from '../options';
 import { resolveApprovalPolicyOptions } from './approval-policy';
 import { ExperienceDistiller } from '../memory/ExperienceDistiller';
@@ -199,7 +199,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         @Optional() @Inject(AgentSummaryAgent) protected summaryAgent?: AgentSummaryAgent,
         @Optional() protected goalStore?: GoalStore,
         @Optional() @Inject(AGENT_CLOCK, { defaultValue: null }) protected clock?: AgentClock,
-        @Optional() @Inject(AGENT_WORKSPACE_TRUST, { defaultValue: null }) protected workspaceTrust?: AgentWorkspaceTrustResolver | null
+        @Optional() @Inject(AGENT_WORKSPACE_TRUST, { defaultValue: null }) protected workspaceTrust?: AgentWorkspaceTrustResolver | null,
+        @Optional() @Inject(AGENT_TELEMETRY) protected telemetry?: import('../harness/AgentTelemetry').AgentTelemetry
     ) {
         super();
         this.tokenBudgetTracker = new TokenBudgetTracker(this.options.tokenBudget);
@@ -222,7 +223,11 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 new RateLimitManager(this.clock),
                 new OutputGuard(),
                 this.app,
-                this.uuid
+                this.uuid,
+                undefined,
+                undefined,
+                undefined,
+                this.telemetry
             );
         }
         this.hookManager = new AgentHookManager(this.options.hooks, this.hookExecutor);
@@ -261,6 +266,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
     ): Promise<AgentTurnResult> {
         const release = await this.acquireSessionTurnLock(sessionId);
         this.turnAbortScopes.begin(sessionId);
+        const span = this.telemetry?.startSpan('agent.turn', { sessionId, profile });
+        let outcome: 'ok' | 'error' = 'error';
         try {
             await this.ensureSessionWorkspace(sessionId);
             const handler = typeof (this.app as any)?.get === 'function'
@@ -270,10 +277,15 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 } | null
                 : null;
             if (!handler) {
-                return await this.processTurn({ sessionId, input, principalId, message, profile, agent, workspace });
+                const result = await this.processTurn({ sessionId, input, principalId, message, profile, agent, workspace });
+                outcome = 'ok';
+                return result;
             }
-            return await handler.handle({ sessionId, input, principalId, message, profile, agent }, createRunContext(handler.injector ?? this.app));
+            const result = await handler.handle({ sessionId, input, principalId, message, profile, agent }, createRunContext(handler.injector ?? this.app));
+            outcome = 'ok';
+            return result;
         } finally {
+            span?.end(outcome);
             this.turnAbortScopes.end(sessionId);
             release();
         }

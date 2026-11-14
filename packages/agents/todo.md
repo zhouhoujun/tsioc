@@ -194,7 +194,8 @@
 - ✅ `compareEvalMetrics(baseline, current, thresholds)`：工具失败率、耗时、token 回归阈值与可诊断原因。
 - ✅ `AgentTelemetry` 抽象 + `NoopAgentTelemetry`；tool 执行 span（name/tool/sessionId、ok/error/cached）经 DI 注入，OTEL 宿主可替换实现。
 - ✅ `OpenTelemetryAgentTelemetry` 桥接宿主 tracer（无 `@opentelemetry/api` 硬依赖），映射 attributes/status/error/end。
-- 待办：turn/model/compaction span 接入；CLI `eval run/compare` 命令。
+- ✅ `agent.turn` span：sessionId/profile 属性、ok/error 状态（runtime 注入 telemetry）。
+- 待办：model/compaction span；CLI `eval run/compare` 命令。
 - 验收：fake tracer 断言层级/属性；无 OTEL 零行为变化；suite 可对比且回归失败可诊断。
 
 #### S5 — 命名子代理（已完成 ✅）
