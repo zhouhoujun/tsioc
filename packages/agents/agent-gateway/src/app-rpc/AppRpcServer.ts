@@ -3406,4 +3406,8 @@ export class AppRpcServer {
         return { ok: true, key };
     }
 
+    private requireSessionId(params: any): string { return requireSessionId(params); }
+
+    private requireString(value: unknown, field: string): string { return requireString(value, field); }
+
 }
