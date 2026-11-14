@@ -177,7 +177,8 @@
 
 - ✅ `type: 'http'`：POST/GET、headers、timeout/abort、失败不抛穿 turn；输出进入 hook transcript。
 - ✅ `requireTrust`：未显式 `trusted: true` 的 command/http hook 在 `requireTrust` 模式下被过滤。
-- 待办：`mcp`/`prompt`/`subagent` 类型；`hooks.trusted.json` 来源哈希与 CLI `hooks trust`；`beforeTool` 的 `deny` 语义与 `input` 重写回归。
+- ✅ `beforeTool` function hook 可返回 `{ action: 'deny' }`，工具被跳过并留下可诊断的工具错误结果；`input` 重写保持。
+- 待办：`mcp`/`prompt`/`subagent` 类型；`hooks.trusted.json` 来源哈希与 CLI `hooks trust`（当前 `trusted` 由 hook 定义显式声明）。
 - 验收：五类 hook 边界测试；未 trust 被拒绝且提示可操作；hook 超时/取消不阻断 turn。
 
 #### S3 — 沙箱升级审批

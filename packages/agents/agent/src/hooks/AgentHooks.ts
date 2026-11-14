@@ -111,6 +111,8 @@ export interface AgentHookExecutionResult {
     cancelled?: boolean;
     /** beforeTool only: replacement tool input applied before execution. */
     input?: any;
+    /** beforeTool only: a hook may veto the call (`deny`) or allow it. */
+    action?: 'allow' | 'deny';
 }
 
 export interface AgentHookTranscriptEntry {
@@ -275,7 +277,8 @@ export class AgentHookManager {
                 stderr: String(result?.stderr ?? ''),
                 durationMs,
                 ...(result?.error ? { error: result.error } : {}),
-                ...(result?.input !== undefined ? { input: result.input } : {})
+                ...(result?.input !== undefined ? { input: result.input } : {}),
+                ...(result?.action === 'deny' || result?.action === 'allow' ? { action: result.action } : {})
             };
         } catch (error) {
             return {

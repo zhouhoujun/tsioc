@@ -42,7 +42,7 @@ import { ToolExecutionCoordinator } from '../harness/ToolExecutionCoordinator';
 import { ToolSchemaValidator } from '../harness/ToolSchemaValidator';
 import { RateLimitManager } from '../harness/RateLimitManager';
 import { OutputGuard } from '../harness/OutputGuard';
-import { resolveSessionToolSandboxState, ToolSandboxState } from '../harness/ToolSandboxPolicy';
+import { decorateToolSandboxReceipt, resolveSessionToolSandboxState } from '../harness/ToolSandboxPolicy';
 import { effectiveSandboxMode } from '../harness/sandbox-mode';
 import { CompactionHistoryRecord, CompactionHistoryStore } from '../harness/CompactionHistoryStore';
 import { TurnDiagnosticsRecord, TurnDiagnosticsStore } from '../harness/TurnDiagnosticsStore';
@@ -2726,7 +2726,7 @@ const sandboxState = resolveSessionToolSandboxState(
             !!this.toolExecutionCoordinator?.isSandboxExecutionSupported(),
             sessionId ? effectiveSandboxMode(this.sessionSandboxModes.get(sessionId), this.options) : undefined
         );
-let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
+let sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
 
         let trustApprovedForCall = false;
         if (this.workspaceTrust && turnContext.workspace && isWorkspaceMutatingTool(definition)
@@ -2805,12 +2805,22 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
             toolDefinition: definition,
             executionMode
         });
+        const deniedByHook = beforeToolHookResults.find(result => result.action === 'deny');
+        if (deniedByHook) {
+            const reason = `Tool "${toolCall.name}" was denied by a beforeTool hook.`;
+            return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
+                ...sandboxReceipt,
+                status: 'skipped',
+                durationMs: 0,
+                error: reason
+            }, reason, { sessionId, reason });
+        }
         const rewrittenToolInput = beforeToolHookResults.find(result => result.input !== undefined)?.input;
         if (rewrittenToolInput !== undefined) {
             toolCallInput = this.cloneToolInput(rewrittenToolInput);
             inputSummary = this.summarizeToolInput(toolCall.name, toolCallInput);
             baseReceipt = this.createBaseReceipt(toolCall, executionMode, inputSummary);
-            sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
+            sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
         }
 
         await this.app.publishEvent(new AgentToolInvokedEvent(this, sessionId, toolCall.name, toolCallInput, sandboxReceipt));
@@ -3225,19 +3235,6 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
             executionMode,
             status: 'running',
             inputSummary
-        };
-    }
-
-    private decorateReceiptWithSandbox(
-        receipt: AgentToolExecutionReceipt,
-        sandboxState: ToolSandboxState
-    ): AgentToolExecutionReceipt {
-        return {
-            ...receipt,
-            sandboxCapability: sandboxState.capability,
-            sandboxPolicy: sandboxState.policy ?? null,
-            sandboxSupported: sandboxState.supported,
-            sandboxApplied: sandboxState.applied
         };
     }
 

@@ -155,6 +155,17 @@ export function resolveSessionToolSandboxState(
     return { ...state, policy: { ...state.policy, osSandbox: sessionMode } };
 }
 
+/** Attach the resolved sandbox policy metadata to a tool execution receipt. */
+export function decorateToolSandboxReceipt<T extends object>(receipt: T, sandboxState: ToolSandboxState): T {
+    return {
+        ...receipt,
+        sandboxCapability: sandboxState.capability,
+        sandboxPolicy: sandboxState.policy ?? null,
+        sandboxSupported: sandboxState.supported,
+        sandboxApplied: sandboxState.applied
+    };
+}
+
 export interface ToolSandboxState {
     capability?: AgentToolSandboxCapability;
     policy?: SandboxPolicy | null;

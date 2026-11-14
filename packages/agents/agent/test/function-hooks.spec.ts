@@ -110,6 +110,24 @@ async function createRuntime(
 
 @Suite('Agent function hooks')
 export class AgentFunctionHooksTest {
+    @Test('a beforeTool deny function hook skips the tool and returns an error result')
+    async beforeToolDenySkipsTool() {
+        const model = new RewriteModelAdapter();
+        const registry = new RecordingToolRegistry();
+        const { runtime } = await createRuntime(model, registry, {
+            hooks: {
+                functions: {
+                    beforeTool: { handler: () => ({ action: 'deny' as const, error: 'blocked by policy' }) }
+                }
+            }
+        });
+        await runtime.runTurn('deny-1', 'run the tool');
+        expect(registry.invoked).toEqual([]);
+        const messages = await runtime.getMessages('deny-1');
+        expect(messages.some(message => message.role === 'tool'
+            && message.content.includes('denied by a beforeTool hook'))).toEqual(true);
+    }
+
     @Test('static beforeTool function hook rewrites the tool input before execution')
     async staticBeforeToolFunctionHookRewritesInput() {
         const model = new RewriteModelAdapter();
