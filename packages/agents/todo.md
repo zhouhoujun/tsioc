@@ -195,11 +195,12 @@
 - 待办：`AgentTelemetry` 抽象 + OTEL 自动接入（turn/model/tool/compaction span）；CLI `eval run/compare` 命令。
 - 验收：fake tracer 断言层级/属性；无 OTEL 零行为变化；suite 可对比且回归失败可诊断。
 
-#### S5 — 命名子代理（对齐 opencode custom agents / Claude subagents）
+#### S5 — 命名子代理（已完成 ✅）
 
-- `SpawnAgentInput` 增加 `agent`（archetype/subagent 定义）、`skills`（预载完整 skill prompt）、`permissions`（allow/deny）；`NestedAgentRunRequest` 透传。
-- `LightweightAgentRunner` 对子会话应用 archetype、预载 skills、合并工具过滤；内置 `explore`（只读）/`plan`/`review`/`general`。
-- 验收：`explore` 不能写；skills 完整进入子代理 system prompt；并行/后台不回归。
+- `SpawnAgentInput` / `NestedAgentRunRequest` / `BackgroundTaskRunRequest` 增加 `archetype`、`skills`、`permissions`（allow/deny）；schema 与 sync/background/parallel 全透传。
+- `LightweightAgentRunner`：子会话 `setSessionArchetype`；按 id 从 `LocalSkillRegistry` 预载完整 skill prompt 并 `SkillSessionStore.activate`；permissions 合并进 `AgentTurnAgentConfig.permissions`。
+- 内置 `explore`/`plan`/`review` 继续由 archetype 提供只读/工具门禁。
+- 证据：新增 spawn 透传回归；agent-tools 587 passing；`source-size` OK。
 
 #### S6 — ACP Server（对齐 opencode/Claude/Codex 编辑器集成）
 

@@ -3556,6 +3556,24 @@ export class AgentToolsPackageTest {
         expect(error?.message).toContain('not allowed by sandbox policy');
     }
 
+    @Test('spawn agent forwards archetype, skills and worker permissions')
+    async spawnAgentForwardsWorkerOptions() {
+        let seen: SpawnAgentInput | undefined;
+        const tool = new SpawnAgentTool(new MockAdapter(async (request: SpawnAgentInput) => {
+            seen = request;
+            return { output: 'done', sessionId: 'spawn-2' };
+        }));
+        await tool.invoke({
+            goal: 'explore',
+            archetype: 'explore',
+            skills: ['api-conventions'],
+            permissions: { allow: ['read_file'], deny: ['terminal'] }
+        }, createSessionContext());
+        expect(seen?.archetype).toEqual('explore');
+        expect(seen?.skills).toEqual(['api-conventions']);
+        expect(seen?.permissions).toEqual({ allow: ['read_file'], deny: ['terminal'] });
+    }
+
     @Test('spawn agent requires adapter and requests delegation')
     async spawnAgentRequiresAdapterAndRequestsDelegation() {
         let adapter: Error | undefined;

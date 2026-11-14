@@ -30,6 +30,12 @@ export interface SpawnAgentInput {
     concurrency?: number;
     /** P42: sensitive values injected into the sub-agent prompt, never persisted. */
     secrets?: Record<string, string>;
+    /** Named session archetype/subagent definition (e.g. explore, plan, review). */
+    archetype?: string;
+    /** Skills preloaded (activated) for the sub-agent session. */
+    skills?: string[];
+    /** Per-tool permission overrides for this worker turn. */
+    permissions?: { allow?: string[]; deny?: string[] };
     /**
      * P88: run the sub-agent in the background (fire-and-collect). The tool
      * returns immediately with a task id; completion is reported through
@@ -97,6 +103,16 @@ export class SpawnAgentTool implements AgentTool {
                 additionalProperties: { type: 'string' },
                 description: 'Sensitive key/value pairs injected into the sub-agent prompt. Never persisted to delegation metadata or logs.'
             },
+            archetype: { type: 'string', description: 'Named subagent/archetype definition (explore, plan, review, or a custom name).' },
+            skills: { type: 'array', items: { type: 'string' }, description: 'Skills to preload for the worker session.' },
+            permissions: {
+                type: 'object',
+                properties: {
+                    allow: { type: 'array', items: { type: 'string' } },
+                    deny: { type: 'array', items: { type: 'string' } }
+                },
+                description: 'Per-tool permission overrides for the worker.'
+            },
             background: {
                 type: 'boolean',
                 description: 'Run the sub-agent in the background (fire-and-collect). Returns immediately with a task id; completion is reported through gateway events.'
@@ -124,6 +140,14 @@ export class SpawnAgentTool implements AgentTool {
             profile: typeof input?.profile === 'string' && input.profile.trim() ? input.profile.trim() : undefined,
             reasoning: typeof input?.reasoning === 'boolean' ? input.reasoning : undefined,
             secrets: this.requireSecrets(input?.secrets),
+            archetype: typeof input?.archetype === 'string' && input.archetype.trim() ? input.archetype.trim() : undefined,
+            skills: Array.isArray(input?.skills) ? input.skills.filter((item: any) => typeof item === 'string' && item.trim()) : undefined,
+            permissions: input?.permissions && typeof input.permissions === 'object'
+                ? {
+                    allow: Array.isArray(input.permissions.allow) ? input.permissions.allow.filter((item: any) => typeof item === 'string') : undefined,
+                    deny: Array.isArray(input.permissions.deny) ? input.permissions.deny.filter((item: any) => typeof item === 'string') : undefined
+                }
+                : undefined,
             background: input?.background === true
         });
         return {

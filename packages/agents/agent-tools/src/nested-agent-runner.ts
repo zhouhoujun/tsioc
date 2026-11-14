@@ -33,6 +33,9 @@ export interface NestedAgentRunRequest {
     concurrency?: number;
     /** P42: sensitive values injected into the worker prompt, never persisted. */
     secrets?: Record<string, string>;
+    archetype?: string;
+    skills?: string[];
+    permissions?: { allow?: string[]; deny?: string[] };
 }
 
 export interface DelegatedAgentReport {
@@ -237,7 +240,10 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
             workerClass: 'spawn_agent',
             profile: input.profile,
             reasoning: input.reasoning,
-            secrets: input.secrets
+            secrets: input.secrets,
+            archetype: input.archetype,
+            skills: input.skills,
+            permissions: input.permissions
         });
         return this.toSpawnAgentResult(result, sessionId);
     }
@@ -259,7 +265,10 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
             workerClass: 'spawn_agent',
             profile: input.profile,
             reasoning: input.reasoning,
-            secrets: input.secrets
+            secrets: input.secrets,
+            archetype: input.archetype,
+            skills: input.skills,
+            permissions: input.permissions
         }, input.sessionId ?? 'system');
         return {
             output: `Background task '${task.id}' started. Use the task id to poll status or collect results when it completes.`,
@@ -284,7 +293,10 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
             workerClass: 'spawn_agent',
             profile: input.profile,
             reasoning: input.reasoning,
-            secrets: input.secrets
+            secrets: input.secrets,
+            archetype: input.archetype,
+            skills: input.skills,
+            permissions: input.permissions
         }));
         if (inputs[0]?.concurrency) {
             for (const req of requests) {

@@ -2,6 +2,8 @@ import { INJECTOR, Inject, Injectable, Injector, Optional } from '@tsdi/ioc';
 import { AgentRuntime, IMPORTED_MESSAGE_METADATA_KEY, SessionStore } from '@tsdi/agent';
 import { UuidGenerator } from '@tsdi/core';
 import { AGENT_TOOLS_OPTIONS } from './tokens';
+import { SkillSessionStore } from '../skills/SkillSessionStore';
+import { LocalSkillRegistry } from '../skills/LocalSkillRegistry';
 import { AgentToolsOptions } from './options';
 import {
     appendSecrets,
@@ -97,16 +99,40 @@ export class LightweightAgentRunner extends NestedAgentRunner {
         const cipher = cipherKey ? createDelegationCipher(cipherKey) : undefined;
         const hasModelOverrides = request.reasoning !== undefined || request.temperature !== undefined
             || request.maxTokens !== undefined || request.model !== undefined;
-        const agentConfig = hasModelOverrides
+        const permissions = request.permissions
+            ? {
+                ...Object.fromEntries((request.permissions.allow ?? []).map(name => [name, 'allow'])),
+                ...Object.fromEntries((request.permissions.deny ?? []).map(name => [name, 'deny']))
+            } as Record<string, 'allow' | 'deny'>
+            : undefined;
+        const agentConfig = hasModelOverrides || permissions
             ? {
                 ...(request.reasoning !== undefined ? { reasoning: request.reasoning } : {}),
                 ...(request.temperature !== undefined ? { temperature: request.temperature } : {}),
                 ...(request.maxTokens !== undefined ? { maxTokens: request.maxTokens } : {}),
-                ...(request.model !== undefined ? { model: request.model } : {})
+                ...(request.model !== undefined ? { model: request.model } : {}),
+                ...(permissions ? { permissions } : {})
             }
             : undefined;
-        const basePrompt = request.systemPrompt
-            ? `## Instructions\n${request.systemPrompt}\n\n## Task\n${request.prompt}`
+        const skillStore = this.injector?.get(SkillSessionStore) ?? null;
+        const skillRegistry = this.injector?.get(LocalSkillRegistry) ?? null;
+        const preloadedSkills = (request.skills ?? [])
+            .map(id => skillRegistry?.get(id))
+            .filter((skill): skill is NonNullable<typeof skill> => !!skill)
+            .map(skill => `### ${skill.title}\n${skill.promptFull ?? skill.summary}`)
+            .join('\n\n');
+        for (const id of request.skills ?? []) {
+            skillStore?.activate(sessionId, id);
+        }
+        if (request.archetype) {
+            (runtime as any).setSessionArchetype?.(sessionId, request.archetype);
+        }
+        const basePrompt = request.systemPrompt || preloadedSkills
+            ? [
+                request.systemPrompt ? `## Instructions\n${request.systemPrompt}` : '',
+                preloadedSkills ? `## Preloaded Skills\n${preloadedSkills}` : '',
+                `## Task\n${request.prompt}`
+            ].filter(Boolean).join('\n\n')
             : request.prompt;
         const prompt = appendSecrets(basePrompt, request.secrets);
 

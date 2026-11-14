@@ -38,6 +38,9 @@ export interface BackgroundTaskRunRequest {
     reasoning?: boolean;
     concurrency?: number;
     secrets?: Record<string, string>;
+    archetype?: string;
+    skills?: string[];
+    permissions?: { allow?: string[]; deny?: string[] };
 }
 
 export interface BackgroundTaskRunResult {
