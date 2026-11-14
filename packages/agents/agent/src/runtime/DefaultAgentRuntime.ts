@@ -43,6 +43,7 @@ import { ToolSchemaValidator } from '../harness/ToolSchemaValidator';
 import { RateLimitManager } from '../harness/RateLimitManager';
 import { OutputGuard } from '../harness/OutputGuard';
 import { decorateToolSandboxReceipt, resolveSessionToolSandboxState } from '../harness/ToolSandboxPolicy';
+import { createToolBaseReceipt } from '../harness/tool-receipt';
 import { effectiveSandboxMode } from '../harness/sandbox-mode';
 import { requestSandboxEscalation } from '../harness/sandbox-escalation';
 import { CompactionHistoryRecord, CompactionHistoryStore } from '../harness/CompactionHistoryStore';
@@ -2645,7 +2646,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     ): Promise<ToolInvocationResult> {
         let toolCallInput = this.cloneToolInput(toolCall.input);
         let inputSummary = this.summarizeToolInput(toolCall.name, toolCallInput);
-        let baseReceipt = this.createBaseReceipt(toolCall, executionMode, inputSummary);
+        let baseReceipt = createToolBaseReceipt(this.uuid.generate(), toolCall, executionMode, inputSummary);
         const callableToolNames = new Set(callableTools.map(tool => tool.name));
         if (!callableToolNames.has(toolCall.name)) {
             const reason = `Tool "${toolCall.name}" is not available for this turn. Activate or expose it before invoking.`;
@@ -2822,7 +2823,7 @@ let sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
         if (rewrittenToolInput !== undefined) {
             toolCallInput = this.cloneToolInput(rewrittenToolInput);
             inputSummary = this.summarizeToolInput(toolCall.name, toolCallInput);
-            baseReceipt = this.createBaseReceipt(toolCall, executionMode, inputSummary);
+            baseReceipt = createToolBaseReceipt(this.uuid.generate(), toolCall, executionMode, inputSummary);
             sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
         }
 
@@ -3225,21 +3226,6 @@ let sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
                 }
             ));
         }
-    }
-
-    private createBaseReceipt(
-        toolCall: { id: string; name: string },
-        executionMode: 'sequential' | 'parallel',
-        inputSummary?: string
-    ): AgentToolExecutionReceipt {
-        return {
-            receiptId: this.uuid.generate(),
-            toolCallId: toolCall.id,
-            toolName: toolCall.name,
-            executionMode,
-            status: 'running',
-            inputSummary
-        };
     }
 
     private createFailedToolInvocationResult(
