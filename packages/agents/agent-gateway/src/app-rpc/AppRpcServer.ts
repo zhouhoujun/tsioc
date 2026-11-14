@@ -18,6 +18,7 @@ import { describeToolCompletedEvent, describeToolInvocationEvent } from './tool-
 import { toAppRpcError } from './rpcError';
 import { normalizeDelegationModeValue, normalizeSandboxMode } from './session-mode';
 import { buildExportFileName, collectExportToolCalls, resolveExportContentType, resolveExportFormat, serializeSessionExport } from './session-export';
+import { createErrorResponse, parseTurnMessage } from './request-helpers';
 import { CONSOLE_INPUT_HISTORY_KEY, createConsoleInputHistoryRecordId, listConsoleInputHistoryRecords, mergeConsoleInputHistoryEntries, normalizeInputHistoryEntries, parseInputHistoryEntries } from './input-history';
 import { ToolInvokeHost, invokeToolWithWorkspaceTrust } from './tool-invoke';
 import { ApprovalRequestedChunkFields, buildApprovalRequestedChunk } from './approval-chunk';
@@ -128,7 +129,7 @@ export class AppRpcServer {
         const requestMeta = normalizeAgentRpcRequestMeta(request?.meta);
         const requestContext = { ...context, requestMeta };
         if (!request || request.jsonrpc !== '2.0' || typeof request.method !== 'string' || !request.method.trim()) {
-            yield this.createErrorResponse(request?.id, new AppRpcError(-32600, 'Invalid Request'));
+            yield createErrorResponse(request?.id, new AppRpcError(-32600, 'Invalid Request'));
             return;
         }
         if (request.method.trim() !== 'run.turn_stream') {
@@ -147,7 +148,7 @@ export class AppRpcServer {
             if (request.id === undefined) {
                 return;
             }
-            const response = this.createErrorResponse(request.id, error instanceof AppRpcError ? error : toAppRpcError(error));
+            const response = createErrorResponse(request.id, error instanceof AppRpcError ? error : toAppRpcError(error));
             yield requestMeta ? { ...response, meta: requestMeta } : response;
         }
     }
@@ -1273,7 +1274,7 @@ export class AppRpcServer {
     }
 
     private async runTurn(params: any, context: AppRpcRequestContext): Promise<any> {
-        const message = this.parseTurnMessage(params?.message);
+        const message = parseTurnMessage(params?.message);
         const input = this.requireTurnInput(params?.input, message, 'run.turn input');
         const profile = this.optionalProfile(params?.profile);
         const agent = this.optionalAgent(params?.agent);
@@ -1524,7 +1525,7 @@ export class AppRpcServer {
     }
 
     private async *streamTurn(request: AppRpcRequest, context: AppRpcRequestContext): AsyncGenerator<AppRpcTransportMessage, void, void> {        const params = request.params ?? {};
-        const message = this.parseTurnMessage(params?.message);
+        const message = parseTurnMessage(params?.message);
         const input = this.requireTurnInput(params?.input, message, 'run.turn_stream input');
         const profile = this.optionalProfile(params?.profile);
         const agent = this.optionalAgent(params?.agent);
@@ -3431,22 +3432,6 @@ export class AppRpcServer {
         throw new AppRpcError(-32602, `Invalid params: ${field} must be a non-empty string`);
     }
 
-    private parseTurnMessage(value: unknown): AgentTurnMessageInput | undefined {
-        if (!value || typeof value !== 'object' || Array.isArray(value)) {
-            return undefined;
-        }
-        const input = value as Record<string, any>;
-        const content = typeof input.content === 'string' ? input.content : undefined;
-        const parts = normalizeAgentMessageParts(input.parts);
-        const metadata = input.metadata && typeof input.metadata === 'object' && !Array.isArray(input.metadata)
-            ? input.metadata as Record<string, any>
-            : undefined;
-        if (!content && !parts?.length && !metadata) {
-            return undefined;
-        }
-        return { content, parts, metadata };
-    }
-
     private resolveModelProfile(): string {
         const model = this.options.model;
         if (model?.defaultProfile === 'strong') {
@@ -3472,15 +3457,5 @@ export class AppRpcServer {
             : [principalId];
     }
 
-    private createErrorResponse(id: string | number | null | undefined, error: AppRpcError): AppRpcResponse {
-        return {
-            jsonrpc: '2.0',
-            id: id ?? null,
-            error: {
-                code: error.code,
-                message: error.message,
-                data: error.data
-            }
-        };
-    }
+
 }
