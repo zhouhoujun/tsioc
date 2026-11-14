@@ -93,6 +93,8 @@ export * from './harness/TokenBudgetTracker';
 export * from './harness/RedactionFilter';
 export * from './harness/ToolSandboxPolicy';
 export * from './harness/TrustBoundary';
+export * from './harness/AgentTelemetry';
+export * from './harness/OpenTelemetryTelemetry';
 export * from './hooks/AgentHooks';
 export * from './prompt/SystemPromptBuilder';
 export * from './prompt/PromptSection';
