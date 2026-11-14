@@ -18,6 +18,7 @@ import { describeToolCompletedEvent, describeToolInvocationEvent } from './tool-
 import { toAppRpcError } from './rpcError';
 import { normalizeDelegationModeValue, normalizeSandboxMode } from './session-mode';
 import { buildExportFileName, collectExportToolCalls, resolveExportContentType, resolveExportFormat, serializeSessionExport } from './session-export';
+import { CONSOLE_INPUT_HISTORY_KEY, createConsoleInputHistoryRecordId, listConsoleInputHistoryRecords, mergeConsoleInputHistoryEntries, normalizeInputHistoryEntries, parseInputHistoryEntries } from './input-history';
 import { ToolInvokeHost, invokeToolWithWorkspaceTrust } from './tool-invoke';
 import { ApprovalRequestedChunkFields, buildApprovalRequestedChunk } from './approval-chunk';
 import { SessionAggregationDeps, getTodoPlan, getTodoPlans, listCodingTasks } from './session-aggregation';
@@ -25,7 +26,6 @@ import { applyConsoleUiSettings, readConsoleStore, readConsoleUiSettings, writeC
 
 @Injectable()
 export class AppRpcServer {
-    protected static readonly CONSOLE_INPUT_HISTORY_KEY = 'agent-ui.console.input-history';
     protected static readonly REVIEW_ANNOTATIONS_CACHE_KEY = 'agent-ui.review.annotations-cache';
 
     constructor(
@@ -685,10 +685,10 @@ export class AppRpcServer {
     private async getInputHistory(params: any, context: AppRpcRequestContext): Promise<string[]> {
         const workspace = this.resolveHistoryRequestWorkspace(params);
         const principalIds = this.resolveHistoryPrincipalIds(context);
-        const records = this.listConsoleInputHistoryRecords(await this.memory.getAll(undefined), workspace, principalIds);
-        const cached = records.map(record => this.parseInputHistoryEntries(record.value));
+        const records = listConsoleInputHistoryRecords(await this.memory.getAll(undefined), workspace, principalIds);
+        const cached = records.map(record => parseInputHistoryEntries(record.value));
         const sessionEntries = await this.listWorkspaceUserInputHistory(workspace, principalIds);
-        return this.mergeConsoleInputHistoryEntries([...cached, sessionEntries]);
+        return mergeConsoleInputHistoryEntries([...cached, sessionEntries]);
     }
 
     private async listWorkspaceUserInputHistory(workspace: string, principalIds: string[]): Promise<string[]> {
@@ -718,17 +718,17 @@ export class AppRpcServer {
             this.sessionHandler.track(sessionId);
         }
         const principalId = this.resolveHistoryPrincipalId(context);
-        const entries = this.normalizeInputHistoryEntries(params?.entries);
+        const entries = normalizeInputHistoryEntries(params?.entries);
         // One record per workspace/principal: per-session records grew with the
         // workspace (105 records / 1.6 MB) and slowed every plan lookup.
         const records = await this.memory.getAll(undefined);
         // `local-system` also adopts legacy `anonymous` records.
-        const previous = this.listConsoleInputHistoryRecords(records, workspace, this.resolveHistoryPrincipalIds(context));
-        const merged = this.mergeConsoleInputHistoryEntries([
+        const previous = listConsoleInputHistoryRecords(records, workspace, this.resolveHistoryPrincipalIds(context));
+        const merged = mergeConsoleInputHistoryEntries([
             entries,
-            ...previous.map(record => this.parseInputHistoryEntries(record.value))
+            ...previous.map(record => parseInputHistoryEntries(record.value))
         ]);
-        const id = this.createConsoleInputHistoryRecordId(workspace, principalId);
+        const id = createConsoleInputHistoryRecordId(workspace, principalId);
         // Absorb legacy per-session records.
         for (const record of previous) {
             if (record?.id && record.id !== id) await this.memory.delete(record.id, undefined, 'global');
@@ -736,7 +736,7 @@ export class AppRpcServer {
         await this.memory.delete(id, undefined, 'global');
         await this.memory.put({
             id,
-            key: AppRpcServer.CONSOLE_INPUT_HISTORY_KEY,
+            key: CONSOLE_INPUT_HISTORY_KEY,
             value: JSON.stringify(merged),
             scope: 'global',
             namespace: 'agent-ui',
@@ -3470,73 +3470,6 @@ export class AppRpcServer {
         return principalId === 'local-system'
             ? [principalId, 'anonymous']
             : [principalId];
-    }
-
-    private createConsoleInputHistoryRecordId(workspace: string, principalId: string, sessionId?: string): string {
-        return `agent-ui:console-input-history:${encodeURIComponent(principalId)}:${encodeURIComponent(workspace)}:${encodeURIComponent(String(sessionId || '').trim() || 'default')}`;
-    }
-
-    private listConsoleInputHistoryRecords(records: any[], workspace: string, principalIds: string[]): any[] {
-        const allowedPrincipals = new Set((principalIds || []).map(id => String(id || '').trim()).filter(Boolean));
-        return (records || [])
-            .filter(record => record?.scope === 'global'
-                && record?.key === AppRpcServer.CONSOLE_INPUT_HISTORY_KEY
-                && record?.metadata?.workspace === workspace
-                && allowedPrincipals.has(String(record?.metadata?.principalId || '').trim()))
-            .map((record, index) => ({ record, index }))
-            .sort((left, right) => {
-                const timeDelta = (right.record?.updatedAt || right.record?.createdAt || 0) - (left.record?.updatedAt || left.record?.createdAt || 0);
-                return timeDelta !== 0 ? timeDelta : right.index - left.index;
-            })
-            .map(entry => entry.record);
-    }
-
-    private mergeConsoleInputHistoryEntries(groups: any[]): string[] {
-        const merged: string[] = [];
-        const seen = new Set<string>();
-        for (const group of groups) {
-            for (const entry of this.normalizeInputHistoryEntries(group)) {
-                if (!seen.has(entry)) {
-                    seen.add(entry);
-                    merged.push(entry);
-                }
-                if (merged.length >= 200) {
-                    return merged;
-                }
-            }
-        }
-        return merged;
-    }
-
-    private parseInputHistoryEntries(value: unknown): any[] {
-        if (Array.isArray(value)) {
-            return value;
-        }
-        if (typeof value !== 'string') {
-            return Array.isArray((value as any)?.entries) ? (value as any).entries : [];
-        }
-        try {
-            const parsed = JSON.parse(value);
-            return Array.isArray(parsed)
-                ? parsed
-                : Array.isArray(parsed?.entries)
-                    ? parsed.entries
-                    : [];
-        } catch {
-            return [];
-        }
-    }
-
-    private normalizeInputHistoryEntries(value: unknown): string[] {
-        const entries: any[] = Array.isArray(value)
-            ? value
-            : Array.isArray((value as any)?.entries)
-                ? (value as any).entries
-                : [];
-        return Array.from(new Set(entries
-            .map((entry: any) => String(entry || '').trim())
-            .filter(entry => !!entry && !entry.startsWith('/'))))
-            .slice(0, 200);
     }
 
     private createErrorResponse(id: string | number | null | undefined, error: AppRpcError): AppRpcResponse {
