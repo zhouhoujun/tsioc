@@ -1130,6 +1130,23 @@ export class AgentToolsPackageTest {
         expect(overwritten.diff).toContain('+hello world');
     }
 
+    @Test('read_file uses a remote IO port when available')
+    async readFileUsesRemoteIo() {
+        const tool = new ReadFileTool({ file: { rootDir: process.cwd() } } as any, {
+            remote: true,
+            runCommand: async () => ({ stdout: '', stderr: '', exitCode: 0 }),
+            readTextFile: async (request: any) => {
+                expect(request.line).toEqual(2);
+                expect(request.limit).toEqual(3);
+                return { content: 'two\nthree', truncated: true };
+            }
+        } as any);
+        const result = await tool.invoke({ path: 'README.md', offset: 2, limit: 3 }, createSessionContext({ sessionId: 'io-read' }));
+        expect(result.content).toEqual('2: two\n3: three');
+        expect(result.truncated).toEqual(true);
+        expect(result.nextOffset).toEqual(4);
+    }
+
     @Test('read_file reports a missing path with a friendly, actionable error')
     async readFileReportsMissingPathFriendly() {
         const workspace = await this.createWorkspace();

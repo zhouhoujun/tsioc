@@ -21,6 +21,17 @@ export class AcpIoTest {
         expect(calls).toEqual(['create:ls', 'wait', 'output', 'release']);
     }
 
+    @Test('reads text files through the ACP client')
+    async readsTextFile() {
+        const io = new AcpAgentIoPort();
+        io.attach({
+            readTextFile: async (params: any) => ({ content: `file:${params.path}`, truncated: true })
+        } as any);
+        const result = await io.readTextFile({ sessionId: 's1', path: '/ws/a.ts', line: 1, limit: 5 });
+        expect(result.content).toEqual('file:/ws/a.ts');
+        expect(result.truncated).toEqual(true);
+    }
+
     @Test('falls back to the local shell when no ACP client is attached')
     async localFallback() {
         const io = new AcpAgentIoPort();

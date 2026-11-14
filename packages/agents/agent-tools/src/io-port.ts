@@ -18,9 +18,25 @@ export interface AgentIoCommandResult {
 }
 
 /** Host-provided process execution used by tools (local shell or ACP terminal). */
+export interface AgentIoReadRequest {
+    sessionId?: string;
+    path: string;
+    line?: number;
+    limit?: number;
+}
+
+export interface AgentIoReadResult {
+    content: string;
+    truncated?: boolean;
+    totalLines?: number;
+}
+
 @Abstract()
 export abstract class AgentIoPort {
+    /** True when IO is served by a remote/client host (ACP). */
+    readonly remote?: boolean;
     abstract runCommand(request: AgentIoCommandRequest): Promise<AgentIoCommandResult>;
+    readTextFile?(request: AgentIoReadRequest): Promise<AgentIoReadResult>;
 }
 
 export const AGENT_IO_PORT = token<AgentIoPort>('AGENT_IO_PORT');

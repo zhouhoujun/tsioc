@@ -225,7 +225,8 @@
 
 - ✅ `AgentIoPort` + `AGENT_IO_PORT` token + `LocalAgentIoPort`；`TerminalTool` 通过端口执行命令。
 - ✅ `AcpAgentIoPort`：create → wait → output → release，Abort 时 kill；`tsdi-agent acp` 注入并在 server 就绪后 attach；无客户端回退本地 shell。
-- 待办：`read_file` / `write_file` 走 ACP `fs/*`；Zed 兼容回归；真实 PTY 不回归。
+- ✅ `read_file` 通过 `AgentIoPort.readTextFile` 走 ACP `fs/read_text_file`（本地仍用流式读取）。
+- 待办：`write_file` 走 ACP `fs/write_text_file`；Zed 兼容回归；真实 PTY 不回归。
 
 #### S7 — 会话级 `/worktree`（部分完成）
 

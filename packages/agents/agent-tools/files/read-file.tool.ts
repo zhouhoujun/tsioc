@@ -5,6 +5,7 @@ import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath, toRelativeWorkspacePath } from './path-policy';
 import { recordFileRead } from './file-access-registry';
+import { AGENT_IO_PORT, AgentIoPort } from '../src/io-port';
 
 const MAX_LINE_LENGTH = 2000;
 
@@ -39,7 +40,8 @@ export class ReadFileTool implements AgentTool {
 
     constructor(
         @Optional() @Inject(AGENT_TOOLS_OPTIONS, { defaultValue: null })
-        private options?: AgentToolsOptions
+        private options?: AgentToolsOptions,
+        @Optional() @Inject(AGENT_IO_PORT) private io?: AgentIoPort
     ) {
     }
 
@@ -55,13 +57,15 @@ export class ReadFileTool implements AgentTool {
         // readLineRange still bounds the returned size (opencode-style).
         const ceiling = Math.max(policy.maxReadLines, policy.maxReadLinesLimit);
         const effectiveLimit = limit > 0 ? Math.min(limit, ceiling) : policy.maxReadLines;
-        const range = await this.readLineRange(absolutePath, offset, effectiveLimit, policy.maxReadBytes)
-            .catch((error: any) => {
-                if (error?.code === 'EISDIR') {
-                    throw new Error(`Path '${requestedPath}' is a directory; use list_dir to inspect its entries.`);
-                }
-                throw error;
-            });
+        const range = this.io?.remote && this.io.readTextFile
+            ? await this.io.readTextFile({ sessionId: context?.sessionId, path: absolutePath, line: offset, limit: effectiveLimit })
+            : await this.readLineRange(absolutePath, offset, effectiveLimit, policy.maxReadBytes)
+                .catch((error: any) => {
+                    if (error?.code === 'EISDIR') {
+                        throw new Error(`Path '${requestedPath}' is a directory; use list_dir to inspect its entries.`);
+                    }
+                    throw error;
+                });
         const content = range.content
             ? range.content.split('\n').map((line, index) => `${offset + index}: ${line}`).join('\n')
             : '';
@@ -74,7 +78,7 @@ export class ReadFileTool implements AgentTool {
             content,
             truncated: range.truncated,
             offset,
-            ...(range.truncated ? { nextOffset: offset + range.lineCount } : {}),
+            ...(range.truncated ? { nextOffset: offset + ((range as any).lineCount ?? range.content.split('\n').length) } : {}),
             ...(range.totalLines != null ? { totalLines: range.totalLines } : {})
         };
     }
