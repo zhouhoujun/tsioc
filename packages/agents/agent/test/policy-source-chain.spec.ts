@@ -347,7 +347,7 @@ export class AgentPolicySourceChainTest {
     sandboxLegacyAliasEqualToDefault() {
         const options: AgentOptions = {
             ...defaultAgentOptions,
-            sandbox: { mode: 'off' }
+            sandbox: { mode: 'workspace' }
         };
         expect(resolveAgentSandboxPolicy(options)).toEqual({ value: { ...DEFAULT_SANDBOX_POLICY }, source: 'default' });
     }
@@ -373,6 +373,12 @@ export class AgentPolicySourceChainTest {
             )
         };
         expect(resolveAgentSandboxPolicy(options)).toEqual({ value: { mode: 'off', proxy: { http: 'http://proxy.local:8080' } }, source: 'request' });
+    }
+
+    @Test('sandbox defaults to workspace writes (secure by default)')
+    defaultSandboxWorkspace() {
+        expect(DEFAULT_SANDBOX_POLICY.mode).toEqual('workspace');
+        expect(resolveAgentSandboxPolicy(undefined)).toEqual({ value: { ...DEFAULT_SANDBOX_POLICY }, source: 'default' });
     }
 
     @Test('default layer: render resolves schema defaults with source default')

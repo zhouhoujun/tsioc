@@ -26,7 +26,7 @@ import { MemoryStore, AgentMemoryRecord } from '../memory/MemoryStore';
 import { SessionSummarizer } from '../memory/SessionSummarizer';
 import { AgentSummaryAgent } from '../memory/AgentSummaryAgent';
 import { AGENT_OPTIONS, AGENT_WORKSPACE_TRUST, AgentWorkspaceTrustResolver } from '../tokens';
-import { AgentOptions, AgentPolicyResolution, DEFAULT_APPROVAL_REQUIRED_RULES, defaultAgentOptions } from '../options';
+import { resolveAgentSandboxPolicy, AgentOptions, AgentPolicyResolution, DEFAULT_APPROVAL_REQUIRED_RULES, defaultAgentOptions } from '../options';
 import { resolveApprovalPolicyOptions } from './approval-policy';
 import { ExperienceDistiller } from '../memory/ExperienceDistiller';
 import { SystemPromptBuilder } from '../prompt/SystemPromptBuilder';
@@ -42,7 +42,8 @@ import { ToolExecutionCoordinator } from '../harness/ToolExecutionCoordinator';
 import { ToolSchemaValidator } from '../harness/ToolSchemaValidator';
 import { RateLimitManager } from '../harness/RateLimitManager';
 import { OutputGuard } from '../harness/OutputGuard';
-import { resolveToolSandboxState, ToolSandboxState } from '../harness/ToolSandboxPolicy';
+import { resolveSessionToolSandboxState, ToolSandboxState } from '../harness/ToolSandboxPolicy';
+import { effectiveSandboxMode } from '../harness/sandbox-mode';
 import { CompactionHistoryRecord, CompactionHistoryStore } from '../harness/CompactionHistoryStore';
 import { TurnDiagnosticsRecord, TurnDiagnosticsStore } from '../harness/TurnDiagnosticsStore';
 import { EvidenceLedger, ToolEvidenceEntry } from '../harness/EvidenceLedger';
@@ -52,6 +53,7 @@ import { VerifyCommandRunner, DEFAULT_VERIFY_TIMEOUT_MS, recordVerifyCommandEvid
 import { FalsificationAttempt, ResolvedRepairHint, buildAttemptSignature, buildExplorationGuidancePrompt, buildRepairPrompt, collectResolvedRepairHints } from '../harness/RepairExploration';
 import { DelegationEdgeStatus, DelegationGraphStore } from '../harness/DelegationGraphStore';
 import { TokenBudgetScopeState, TokenBudgetTracker } from '../harness/TokenBudgetTracker';
+import { fenceToolOutputIfUntrusted } from '../harness/TrustBoundary';
 import { AgentDelegationMode, DEFAULT_DELEGATION_MODE, buildDelegationModeHint, buildDelegationQualityNote, normalizeDelegationMode } from './DelegationMode';
 import { dirnameAgentPath } from '../AgentWorkspacePath';
 import { RepeatReadOnlyCallCache } from './tool-repeat-cache';
@@ -2718,7 +2720,12 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }, activationError.message);
         }
 
-const sandboxState = this.resolveToolSandboxState(definition, turnContext.workspace, sessionId);
+const sandboxState = resolveSessionToolSandboxState(
+            definition,
+            turnContext.workspace,
+            !!this.toolExecutionCoordinator?.isSandboxExecutionSupported(),
+            sessionId ? effectiveSandboxMode(this.sessionSandboxModes.get(sessionId), this.options) : undefined
+        );
 let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
 
         let trustApprovedForCall = false;
@@ -2858,7 +2865,8 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
                 executionMode,
                 inputSummary,
                 baseReceipt: sandboxReceipt,
-                repeatCache: turnContext.readOnlyResults ??= new RepeatReadOnlyCallCache()
+                repeatCache: turnContext.readOnlyResults ??= new RepeatReadOnlyCallCache(),
+                sandboxMode: effectiveSandboxMode(this.sessionSandboxModes.get(sessionId), this.options)
             });
             if (outcome.redactedOutput !== undefined) {
                 loopDetector.record(toolCall.name, toolCallInput, outcome.redactedOutput);
@@ -3003,9 +3011,15 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
     }
 
     private async finalizeToolInvocation(sessionId: string, result: ToolInvocationResult): Promise<void> {
+        // External content (web/MCP/browser) is data, not instructions.
+        const content = fenceToolOutputIfUntrusted(
+            !result.error ? this.toolRegistry?.getTool?.(result.toolCall.name) : undefined,
+            result.toolCall.name,
+            result.content
+        );
         await this.sessions.append(sessionId, this.createMessage(
             'tool',
-            result.content,
+            content,
             result.toolCall.name,
             result.toolCall.id,
             result.metadata
@@ -3211,22 +3225,6 @@ let sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
             executionMode,
             status: 'running',
             inputSummary
-        };
-    }
-
-    private resolveToolSandboxState(definition: AgentToolDefinition, workspace?: string, sessionId?: string): ToolSandboxState {
-        const supported = !!this.toolExecutionCoordinator?.isSandboxExecutionSupported();
-        const state = resolveToolSandboxState(definition, workspace, supported);
-        const mode = sessionId ? this.getSessionSandboxMode(sessionId) : undefined;
-        if (!mode || !state.policy) {
-            return state;
-        }
-        return {
-            ...state,
-            policy: {
-                ...state.policy,
-                osSandbox: mode
-            }
         };
     }
 

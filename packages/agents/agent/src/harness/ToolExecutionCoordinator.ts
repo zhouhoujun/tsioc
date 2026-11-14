@@ -9,6 +9,7 @@ import { AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolCompletedEven
 import { summarizeToolDisplayText } from '../tools/ToolSummary';
 import { AuditSink, AgentAuditRecord } from './AuditSink';
 import { SandboxExecutor, SandboxPolicy } from './SandboxExecutor';
+import { SandboxMode } from './sandbox-exec';
 import { CANCELLED_MESSAGE } from './cancellation';
 import { RepeatReadOnlyCallCache } from '../runtime/tool-repeat-cache';
 import { isWorkspaceMutatingTool } from '../project/workspace-trust';
@@ -28,6 +29,8 @@ export interface ToolExecutionRequest {
     baseReceipt?: AgentToolExecutionReceipt;
     /** Turn-scoped cache for identical read-only calls (see RepeatReadOnlyCallCache). */
     repeatCache?: RepeatReadOnlyCallCache;
+    /** Effective OS sandbox mode for this session (default workspace). */
+    sandboxMode?: SandboxMode;
 }
 
 export interface ToolExecutionOutcome {
@@ -286,11 +289,21 @@ export class ToolExecutionCoordinator {
     }
 
     private resolveSandboxState(request: ToolExecutionRequest) {
-        return resolveToolSandboxState(
+        const state = resolveToolSandboxState(
             request.definition,
             request.workspace,
             this.isSandboxExecutionSupported()
         );
+        if (!request.sandboxMode || !state.policy) {
+            return state;
+        }
+        // The runtime owns the effective mode (session override, policy chain,
+        // or the secure workspace default). Without this merge the mode only
+        // decorated receipts and never reached the executor.
+        return {
+            ...state,
+            policy: { ...state.policy, osSandbox: request.sandboxMode }
+        };
     }
 
     private async invokeInSandbox(

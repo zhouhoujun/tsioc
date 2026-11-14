@@ -135,7 +135,7 @@ export interface AgentBootstrapTurnOptions {
 }
 
 export interface AgentSandboxOptions {
-    /** OS-level sandbox mode for process-executing tools (default: 'off'). */
+    /** OS-level sandbox mode for process-executing tools (default: 'workspace'). */
     mode?: import('./harness/sandbox-exec').SandboxMode;
     /**
      * A3: when `mode` is 'network-block', commands that reference one of these
@@ -490,7 +490,7 @@ export function resolveAgentRetryPolicy(options: Pick<AgentOptions, 'policy'>): 
 
 /** A7: schema-default OS sandbox settings (surfaced as the policy fallback; source of truth for the executor's default effective mode). */
 export const DEFAULT_SANDBOX_POLICY: AgentSandboxOptions = {
-    mode: 'off'
+    mode: 'workspace'
 };
 
 /** A7: resolved OS sandbox policy with observable source; policy `sandbox` wins over the legacy `AgentOptions.sandbox`, then `DEFAULT_SANDBOX_POLICY`. A legacy sandbox identical to the schema default is reported as 'default'. */

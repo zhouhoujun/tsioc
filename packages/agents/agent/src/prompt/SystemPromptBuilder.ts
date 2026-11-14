@@ -84,6 +84,7 @@ export class SystemPromptBuilder {
 
 export { PromptSection, PromptSectionContext } from './PromptSection';
 export { IdentitySection, IdentityConfig } from './sections/IdentitySection';
+export { TrustBoundarySection } from './sections/TrustBoundarySection';
 export { ToolsSection } from './sections/ToolsSection';
 export { DateTimeSection } from './sections/DateTimeSection';
 export { MemorySection } from './sections/MemorySection';

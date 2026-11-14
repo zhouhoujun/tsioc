@@ -1,5 +1,6 @@
 import { AgentToolDefinition, AgentToolExecutionHints, AgentToolSandboxCapability } from '../tools/AgentTool';
 import { SandboxPolicy, createSandboxPolicy, restrictedSandboxPolicy } from './SandboxExecutor';
+import { SandboxMode } from './sandbox-exec';
 
 const DEFAULT_DENIED_ENV_VARS = [
     'AWS_SECRET',
@@ -138,6 +139,20 @@ export function resolveToolExecutionHints(
         sandboxCapability: capability ?? existing?.sandboxCapability,
         sandbox: existing?.sandbox ?? defaultSandbox ?? undefined
     };
+}
+
+/** Apply a session's effective OS sandbox mode to a resolved tool policy. */
+export function resolveSessionToolSandboxState(
+    definition: AgentToolDefinition,
+    workspace: string | undefined,
+    supported: boolean,
+    sessionMode?: SandboxMode
+): ToolSandboxState {
+    const state = resolveToolSandboxState(definition, workspace, supported);
+    if (!sessionMode || !state.policy) {
+        return state;
+    }
+    return { ...state, policy: { ...state.policy, osSandbox: sessionMode } };
 }
 
 export interface ToolSandboxState {
