@@ -35,6 +35,27 @@ export class AcpServerTest {
         expect(update.params.update.content.text).toEqual('echo:hello');
     }
 
+    @Test('applies ACP mode and model changes to the runtime')
+    async setModeAndModel() {
+        const calls: string[] = [];
+        let listener: ((chunk: string) => void) | undefined;
+        new AcpServer({
+            read: (cb: (chunk: string) => void) => { listener = cb; },
+            write: () => undefined
+        }, {
+            runtime: {
+                runTurn: async () => ({}),
+                cancelTurn: async () => ({}),
+                setSessionArchetype: (id: string, mode: string) => calls.push(`mode:${id}:${mode}`),
+                setSessionModelProfile: (id: string, model: string) => calls.push(`model:${id}:${model}`)
+            } as any
+        });
+        listener!(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'session/set_mode', params: { sessionId: 's1', modeId: 'plan' } }) + '\n');
+        listener!(JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'session/set_model', params: { sessionId: 's1', modelId: 'strong' } }) + '\n');
+        for (let index = 0; index < 12; index++) await Promise.resolve();
+        expect(calls).toEqual(['mode:s1:plan', 'model:s1:strong']);
+    }
+
     @Test('loads an existing session transcript')
     async loadSession() {
         const writes: any[] = [];

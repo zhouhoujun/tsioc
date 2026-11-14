@@ -6,7 +6,7 @@ export interface AcpServerTransport {
 }
 
 export interface AcpServerOptions {
-    runtime: Pick<AgentRuntime, 'runTurn' | 'cancelTurn'> & { getMessages?(sessionId: string): Promise<any[]> };
+    runtime: Pick<AgentRuntime, 'runTurn' | 'cancelTurn'> & { getMessages?(sessionId: string): Promise<any[]>; setSessionArchetype?(sessionId: string, archetype: string | null | undefined): void; setSessionModelProfile?(sessionId: string, profile: string): void };
     serverName?: string;
     serverVersion?: string;
 }
@@ -119,6 +119,24 @@ export class AcpServer {
                     ? await this.options.runtime.getMessages(sessionId)
                     : [];
                 return { sessionId, messages };
+            }
+            case 'session/set_mode': {
+                const sessionId = String(params?.sessionId || '');
+                const modeId = String(params?.modeId || '');
+                if (!sessionId || !modeId) {
+                    throw new Error('session/set_mode requires sessionId and modeId.');
+                }
+                this.options.runtime.setSessionArchetype?.(sessionId, modeId);
+                return { sessionId, modeId };
+            }
+            case 'session/set_model': {
+                const sessionId = String(params?.sessionId || '');
+                const modelId = String(params?.modelId || '');
+                if (!sessionId || !modelId) {
+                    throw new Error('session/set_model requires sessionId and modelId.');
+                }
+                this.options.runtime.setSessionModelProfile?.(sessionId, modelId);
+                return { sessionId, modelId };
             }
             case 'session/cancel': {
                 const sessionId = String(params?.sessionId || '');
