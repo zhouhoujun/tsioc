@@ -221,6 +221,13 @@
 - 待办：fs/terminal 工具路径改走 ACP client 请求、Zed 兼容回归。
 - 验收：fake transport 完整会话；Zed 兼容握手；与 TUI/gateway 共用 runtime 与审批事件。
 
+#### S6f2 — fs/terminal ACP IO 端口（待做）
+
+- 在 `agent-tools` 定义 renderer-neutral `AgentIoPort`：`readTextFile` / `writeTextFile` / `createTerminal` / `terminalOutput` / `waitForExit` / `killTerminal` / `releaseTerminal`。
+- 默认 `LocalAgentIoPort` 复用现有 fs/terminal 实现；`tsdi-agent acp` 注入 `AcpAgentIoPort`，转发到 `AcpServer` 的 client 请求。
+- `read_file` / `write_file` / `terminal` 通过端口执行，保留路径守卫、截断、超时与取消。
+- 回归：fake ACP client 读取/写入文件、创建/轮询/终止 terminal；Zed 兼容握手；真实 PTY 不回归。
+
 #### S7 — 会话级 `/worktree`（部分完成）
 
 - ✅ `WorktreeManager`：在 `<workspace>/.tsdi-worktrees` 下创建 managed branch/worktree、porcelain 列表、force remove；真实 git 往返回归。
