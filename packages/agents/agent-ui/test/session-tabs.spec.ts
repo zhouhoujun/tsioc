@@ -188,9 +188,18 @@ export class SessionTabsTest {
                 surface.render();
                 expect(closes()).toEqual(2);
                 expect(byClass('tab-new')!.x).toEqual(plusX);
-                // Hovering the revealed glyph recolours it red.
+                // The tab (label + ✕) is one hover unit: a single background
+                // fade owned by `.tab`, not separate label/button animations.
+                const paint = (surface as any).hoverPaintTarget;
+                expect(String(paint?.node?.getAttribute?.('class'))).toEqual('tab');
+                expect(paint.width).toBeLessThan(40);
+                const paintNode = paint.node;
+                // Hovering the revealed glyph keeps the same background unit
+                // and only recolours the nested glyph red.
                 surface.dispatchMouse({ x: betaClose!.x + 2, y: betaClose!.y + 1, button: 35, release: false } as any);
                 surface.render();
+                expect((surface as any).hoverPaintTarget.node).toBe(paintNode);
+                expect(String((surface as any).hoverTextTarget?.node?.getAttribute?.('class'))).toEqual('tab-close');
                 expect(row()).toContain('\x1b[38;2;207;152;147m');
                 // Leaving the strip hides the inactive affordance again.
                 surface.dispatchMouse({ x: 79, y: 1, button: 35, release: false } as any);

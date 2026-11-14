@@ -267,6 +267,8 @@ export interface TuiTerminalSurfaceRenderer {
     };
     /** CSS-resolved hover styles for the element under the pointer. */
     resolveHoverStyle?(element: ConsoleElement): Record<string, string>;
+    /** Colour declared only by the element's `:hover` rules (empty if none). */
+    resolveHoverColor?(element: ConsoleElement): string;
     /** Whether CSS animations still need clock ticks. */
     hasRunningAnimations?(): boolean;
 }
@@ -1188,7 +1190,10 @@ export class TuiTerminalSurface {
     protected renderBatchDepth = 0;
     protected renderBatchPending = false;
     protected hoverTarget?: TerminalClickTarget;
+    /** Background hover unit (a tab paints its label and close as one band). */
     protected hoverPaintTarget?: TerminalClickTarget;
+    /** Nested band that takes a `:hover` foreground (the close glyph turning red). */
+    protected hoverTextTarget?: TerminalClickTarget;
     /** Toast card area: text selection must not repaint its background. */
     protected toastOverlayBands?: Map<number, { start: number; end: number }>;
     protected hoverAlpha = 0;
@@ -2007,22 +2012,23 @@ export class TuiTerminalSurface {
             && current.y === target.y && current.height === target.height
             && target.x <= current.x + current.width + 1
             && current.x <= target.x + target.width + 1;
-        if (target) {
-            this.configureHoverAnimation(target);
+        const paintTarget = target ? this.resolveHoverGroupTarget(target) : undefined;
+        if (target && paintTarget) {
+            this.configureHoverAnimation(paintTarget, target);
         }
         this.hoverTarget = target;
         this.hoverFromAlpha = this.hoverAlpha;
         this.hoverToAlpha = target ? 1 : 0;
         this.hoverStartedAt = Date.now();
-        if (target) {
-            this.hoverPaintTarget = target;
+        if (target && paintTarget) {
+            this.hoverPaintTarget = paintTarget;
             if (!continuous) {
                 this.hoverAlpha = 0;
                 this.hoverFromAlpha = 0;
             }
         }
         if (!this.options.animationClock) {
-            this.hoverPaintTarget = target;
+            this.hoverPaintTarget = paintTarget;
             this.hoverAlpha = target ? 1 : 0;
             return true;
         }
@@ -2030,13 +2036,53 @@ export class TuiTerminalSurface {
         return true;
     }
 
+    /**
+     * A `data-hover-group` element (a tab) owns one background fade for all of
+     * its cells, so moving from the label to the close never restarts a second
+     * hover animation. Nested glyphs may still declare their own `:hover`
+     * foreground (the close turning red).
+     */
+    protected resolveHoverGroupTarget(target: TerminalClickTarget): TerminalClickTarget {
+        for (let node: ConsoleNode | null = target.node; node; node = node.parentNode) {
+            if (!(node instanceof ConsoleElement) || String(node.getAttribute('data-hover-group')) !== 'true') {
+                continue;
+            }
+            // A block container's own click target spans the whole row; derive
+            // the hover band from its inline affordances so the fade covers
+            // exactly the tab (label + close), not the rest of the strip.
+            const members = this.clickTargetsCache.filter(item =>
+                item.node !== node
+                && item.y === target.y
+                && item.height === target.height
+                && this.isNodeWithin(item.node, node));
+            if (!members.length) {
+                return target;
+            }
+            const start = Math.min(target.x, ...members.map(item => item.x));
+            const end = Math.max(target.x + Math.max(1, target.width),
+                ...members.map(item => item.x + Math.max(1, item.width)));
+            return { ...target, node, x: start, width: Math.max(1, end - start) };
+        }
+        return target;
+    }
+
+    protected isNodeWithin(node: ConsoleNode | undefined, ancestor: ConsoleNode): boolean {
+        for (let current: ConsoleNode | null = node || null; current; current = current.parentNode) {
+            if (current === ancestor) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Read hover duration/colour from the same CSS the renderers consume. */
-    protected configureHoverAnimation(target: TerminalClickTarget): void {
-        const element = target.node as ConsoleElement;
+    protected configureHoverAnimation(paintTarget: TerminalClickTarget, textTarget: TerminalClickTarget = paintTarget): void {
+        const element = paintTarget.node as ConsoleElement;
         this.hoverDurationMs = 160;
         this.hoverTiming = 'ease';
         this.hoverBackgroundTo = undefined;
         this.hoverTextColor = undefined;
+        this.hoverTextTarget = undefined;
         const styles = this.options.renderer.resolveHoverStyle?.(element);
         if (!styles) {
             return;
@@ -2058,9 +2104,12 @@ export class TuiTerminalSurface {
         if (background) {
             this.hoverBackgroundTo = background;
         }
-        const foreground = parseHoverColor(styles.color || styles['foreground-color']);
+        // Only a `:hover` declaration recolours glyphs; base colours would make
+        // a plain tab hover repaint its label with the muted active colour.
+        const foreground = parseHoverColor(this.options.renderer.resolveHoverColor?.(textTarget.node as ConsoleElement));
         if (foreground) {
             this.hoverTextColor = foreground;
+            this.hoverTextTarget = textTarget;
         }
     }
 
@@ -2419,13 +2468,28 @@ export class TuiTerminalSurface {
         if (!target || alpha <= 0.01) {
             return;
         }
+        // One background fade for the whole hover unit (the tab), then an
+        // optional foreground pass for the nested glyph (the close turning
+        // red) so the two never animate as separate controls.
+        this.paintHoverBand(lines, target, alpha, this.hoverTextTarget === target ? this.hoverTextColor : undefined);
+        if (this.hoverTextTarget && this.hoverTextTarget !== target && this.hoverTextColor) {
+            this.paintHoverBand(lines, this.hoverTextTarget, alpha, this.hoverTextColor, true);
+        }
+    }
+
+    protected paintHoverBand(
+        lines: string[],
+        target: TerminalClickTarget,
+        alpha: number,
+        text?: [number, number, number],
+        keepBackground = false
+    ): void {
         // Fade a neutral background instead of a hard reverse-video flip so
         // tab and close-button hover read as a transition.
         const mix = (from: number, to: number) => Math.round(from + (to - from) * alpha);
         const to = this.hoverBackgroundTo || [48, 62, 78];
         const from = this.hoverBackgroundFrom;
         const background = `\x1b[48;2;${mix(from[0], to[0])};${mix(from[1], to[1])};${mix(from[2], to[2])}m`;
-        const text = this.hoverTextColor;
         const foreground = text ? `\x1b[38;2;${text[0]};${text[1]};${text[2]}m` : '';
         for (let offset = 0; offset < Math.max(1, target.height); offset++) {
             const row = target.y + offset;
@@ -2454,7 +2518,8 @@ export class TuiTerminalSurface {
                 const painted = middle
                     .replace(pattern, match =>
                         match === '\x1b[0m' ? `\x1b[0m${foreground}${background}` : '');
-                lines[row] = `${before}${foreground}${background}${painted}\x1b[0m${after}`;
+                const tail = keepBackground ? background : '';
+                lines[row] = `${before}${foreground}${background}${painted}\x1b[0m${tail}${after}`;
             }
         }
     }

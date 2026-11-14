@@ -30,7 +30,7 @@ import {
     resolveConsoleSelectWindow
 } from './input';
 import { provideConsoleTerminalLifecycle, TerminalClickTarget } from './terminal';
-import { ConsoleStyleRule, parseConsoleStyleSheet, resolveConsoleStyleSheet } from './stylesheet';
+import { ConsoleStyleRule, parseConsoleStyleSheet, resolveConsoleHoverStyle, resolveConsoleStyleSheet } from './stylesheet';
 import { ConsoleAnimationSpec, parseConsoleAnimations, parseConsoleKeyframes, resolveConsoleAnimationFrame } from './animation';
 import { DEFAULT_CONSOLE_STYLESHEET } from './default-styles.generated';
 import { BaseComponentsModule } from '@tsdi/components/common';
@@ -1335,6 +1335,29 @@ export class TuiRenderer extends ConsoleRenderer {
         const styles = this.mergeStyles(base, hover);
         // Theme colours live as custom properties on ancestors. Resolve them so
         // the surface can animate a hover foreground (a tab close turning red).
+        const variables = this.collectStyleVariables(element);
+        if (styles.color) {
+            styles.color = this.resolveCssValue(styles.color, { ...variables, ...styles });
+        }
+        return styles;
+    }
+
+    /**
+     * Colour declared only by the element's `:hover` rules. A base colour is
+     * not a hover effect and must not recolour glyphs when the pointer moves
+     * over a tab.
+     */
+    resolveHoverColor(element: ConsoleElement): string {
+        const hovered = resolveConsoleHoverStyle(element, this.styleSheetRules);
+        const color = hovered.color || hovered['foreground-color'];
+        if (!color) {
+            return '';
+        }
+        return this.resolveCssValue(color, { ...this.collectStyleVariables(element), ...this.resolveHoverStyle(element) });
+    }
+
+    /** Custom properties declared on the element or any ancestor (child wins). */
+    protected collectStyleVariables(element: ConsoleElement): Record<string, string> {
         const variables: Record<string, string> = {};
         for (let node: any = element; node; node = node.parentNode) {
             if (!(node instanceof ConsoleElement)) {
@@ -1347,10 +1370,7 @@ export class TuiRenderer extends ConsoleRenderer {
                 }
             });
         }
-        if (styles.color) {
-            styles.color = this.resolveCssValue(styles.color, { ...variables, ...styles });
-        }
-        return styles;
+        return variables;
     }
 
     protected resolveClassStyle(classNames: string): Record<string, string> {

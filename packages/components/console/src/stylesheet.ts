@@ -66,6 +66,60 @@ export function parseConsoleStyleSheet(css: string): ConsoleStyleRule[] {
 }
 
 const styleCache = new WeakMap<ConsoleStyleRule[], Map<string, Record<string, string>>>();
+const hoverStyleCache = new WeakMap<ConsoleStyleRule[], Map<string, Record<string, string>>>();
+
+/**
+ * Declarations a stylesheet only applies while the pointer hovers the element
+ * (the `:hover` rules alone, without the element's base style). Terminal
+ * surfaces use this for the hover foreground without recolouring base text.
+ */
+export function resolveConsoleHoverStyle(
+    element: { tagName?: string; getAttribute?: (name: string) => string | null },
+    rules: ConsoleStyleRule[]
+): Record<string, string> {
+    const tag = String(element?.tagName || '').toLowerCase();
+    const className = String(element?.getAttribute?.('class') || '').trim();
+    const attributeEntries: string[] = [];
+    for (const name of ['role', 'aria-selected', 'aria-label', 'data-theme', 'data-hover', 'data-template-kind', 'data-semantic-kind', 'data-status', 'data-selected', 'data-tone', 'data-code', 'data-table', 'data-kind']) {
+        const value = element?.getAttribute?.(name);
+        if (value != null) {
+            attributeEntries.push(`${name}=${String(value)}`);
+        }
+    }
+    const cacheKey = `${tag}\u0000${className}\u0000${attributeEntries.join('\u0001')}`;
+    let bucket = hoverStyleCache.get(rules);
+    if (!bucket) {
+        bucket = new Map<string, Record<string, string>>();
+        hoverStyleCache.set(rules, bucket);
+    }
+    const cached = bucket.get(cacheKey);
+    if (cached) {
+        return cached;
+    }
+    const classes = new Set(className.split(/\s+/).filter(Boolean));
+    const attributes = new Map<string, string>();
+    for (const entry of attributeEntries) {
+        const index = entry.indexOf('=');
+        attributes.set(entry.slice(0, index), entry.slice(index + 1));
+    }
+    const matched: ConsoleStyleRule[] = [];
+    for (const rule of rules) {
+        const parsed = rule.parsed || (rule.parsed = parseSelector(rule.selector));
+        if (parsed?.hover && selectorMatches(parsed, tag, classes, attributes, true)) {
+            matched.push(rule);
+        }
+    }
+    matched.sort((left, right) => left.specificity - right.specificity || left.order - right.order);
+    const declarations: Record<string, string> = {};
+    for (const rule of matched) {
+        Object.assign(declarations, rule.declarations);
+    }
+    if (bucket.size > 4096) {
+        bucket.clear();
+    }
+    bucket.set(cacheKey, declarations);
+    return declarations;
+}
 
 export function resolveConsoleStyleSheet(
     element: { tagName?: string; getAttribute?: (name: string) => string | null },

@@ -1,6 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { ConsoleElement, TuiRenderer, TuiTerminalSurface } from '../src';
+import { DEFAULT_CONSOLE_STYLESHEET } from '../src/default-styles.generated';
 
 function hoverableRow(renderer: TuiRenderer, text: string, attributes: Record<string, string> = {}): ConsoleElement {
     const label = renderer.createElement('label') as ConsoleElement;
@@ -132,6 +133,78 @@ export class ConsoleHoverTargetsTest {
             hover(surface, 20, 2);
             await settle();
             expect(line()).not.toContain('✕');
+        } finally {
+            surface.destroy();
+        }
+    }
+
+    @Test('a hover group fades once and only its nested glyph recolours')
+    async hoverGroupSingleFade() {
+        const renderer = new TuiRenderer();
+        // Keep the console defaults (inline spans) and only adjust the tab skin.
+        renderer.setStyleSheet(DEFAULT_CONSOLE_STYLESHEET + [
+            '.tab { color: #6e7681; transition: background-color 140ms ease; }',
+            '.tab:hover { background-color: #303e4f; }',
+            '.tab-close { color: #6e7681; }',
+            '.tab-close:hover { color: #cf9893; background-color: #303e4f; }'
+        ].join('\n'));
+        const root = renderer.createElement('div');
+        const tab = renderer.createElement('span') as ConsoleElement;
+        tab.setAttribute('class', 'tab');
+        tab.setAttribute('data-hover-group', 'true');
+        tab.addEventListener('click', () => undefined);
+        const label = renderer.createElement('span') as ConsoleElement;
+        label.setAttribute('class', 'tab-label');
+        label.addEventListener('click', () => undefined);
+        renderer.appendChild(label, renderer.createText(' Beta '));
+        const close = renderer.createElement('span') as ConsoleElement;
+        close.setAttribute('class', 'tab-close');
+        close.setAttribute('data-hover-reveal', 'true');
+        close.setAttribute('data-cell-width', '2');
+        close.addEventListener('click', () => undefined);
+        renderer.appendChild(close, renderer.createText('✕'));
+        renderer.appendChild(tab, label);
+        renderer.appendChild(tab, close);
+        // Real tab strips are inline content inside `.tab-bar`; keep that shape
+        // so the tab's own target is text-measured, not a full-row block.
+        const bar = renderer.createElement('p') as ConsoleElement;
+        bar.setAttribute('class', 'tab-bar');
+        renderer.appendChild(bar, tab);
+        renderer.appendChild(root, bar);
+        const surface = new TuiTerminalSurface({ renderer, root, width: 30, output: { write() { } } });
+        const settle = async () => {
+            for (let index = 0; index < 8; index += 1) {
+                await Promise.resolve();
+            }
+        };
+        const targetOf = (className: string) => surface.clickTargets.find(entry =>
+            String((entry.node as any)?.getAttribute?.('class') || '') === className);
+        try {
+            await settle();
+            const labelTarget = targetOf('tab-label');
+            const closeTarget = targetOf('tab-close');
+            expect(labelTarget).toBeDefined();
+            expect(closeTarget).toBeDefined();
+            hover(surface, labelTarget!.x + 2, labelTarget!.y + 1);
+            await settle();
+            // The whole tab is one hover unit: the label and the revealed ✕
+            // share the same background band, owned by the tab.
+            const line = (surface.lastRenderedLines || []).find(value => value.includes('Beta')) || '';
+            const background = '\x1b[48;2;48;62;79m';
+            expect(line.lastIndexOf(background, line.indexOf('Beta'))).toBeGreaterThanOrEqual(0);
+            expect(line.lastIndexOf(background, line.indexOf('✕'))).toBeGreaterThanOrEqual(0);
+            expect(String(((surface as any).hoverPaintTarget?.node as any)?.getAttribute?.('class'))).toEqual('tab');
+            const paintNode = (surface as any).hoverPaintTarget.node;
+            // The fade covers the label + ✕ cells, not the rest of the row.
+            expect((surface as any).hoverPaintTarget.width)
+                .toEqual((closeTarget!.x + closeTarget!.width) - labelTarget!.x);
+            // Moving onto the ✕ keeps the same background unit (no second
+            // animation) and only recolours the nested glyph red.
+            hover(surface, closeTarget!.x + 2, closeTarget!.y + 1);
+            await settle();
+            expect((surface as any).hoverPaintTarget.node).toBe(paintNode);
+            expect(String(((surface as any).hoverTextTarget?.node as any)?.getAttribute?.('class'))).toEqual('tab-close');
+            expect((surface.lastRenderedLines || []).join('\n')).toContain('38;2;207;152;147');
         } finally {
             surface.destroy();
         }
