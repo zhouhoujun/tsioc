@@ -4,6 +4,8 @@ import { AgentRuntime } from '@tsdi/agent';
 import { mergeAgentOptions } from '@tsdi/agent';
 import { runAgentApplication } from './run-command';
 import { AcpApprovalManager } from './acp-approval';
+import { AcpAgentIoPort } from './acp-io';
+import { AGENT_IO_PORT } from '@tsdi/agent-tools';
 import { ApprovalManager } from '@tsdi/agent';
 
 export interface AgentAcpOptions {
@@ -18,9 +20,10 @@ export interface AgentAcpOptions {
  */
 export async function runAgentAcp(options: AgentAcpOptions = {}): Promise<void> {
     const approval = new AcpApprovalManager();
+    const io = new AcpAgentIoPort();
     const ctx = await runAgentApplication(options as any, mergeAgentOptions({
         workspace: options.workspace
-    }), [{ provide: ApprovalManager, useValue: approval }]);
+    }), [{ provide: ApprovalManager, useValue: approval }, { provide: AGENT_IO_PORT, useValue: io }]);
     const runtime = ctx.get(AgentRuntime);
     const server = new AcpServer({
         read: listener => {
@@ -30,6 +33,7 @@ export async function runAgentAcp(options: AgentAcpOptions = {}): Promise<void> 
         write: payload => { process.stdout.write(payload); }
     }, { runtime, serverName: 'tsdi-agent', serverVersion: '6.0.31' });
     approval.attach(server);
+    io.attach(server);
     await new Promise<void>(resolve => {
         process.stdin.on('end', () => resolve());
         process.stdin.resume();

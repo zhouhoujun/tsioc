@@ -3505,6 +3505,20 @@ export class AgentToolsPackageTest {
         expect(buildSandboxEnv({ PATH: '/bin', SAFE_TOKEN: 'secret', HOME: '/tmp' }, policy)).toEqual({ PATH: '/bin' });
     }
 
+    @Test('terminal tool delegates to the injected IO port')
+    async terminalUsesIoPort() {
+        const calls: string[] = [];
+        const tool = new TerminalTool({ file: { rootDir: process.cwd() } } as any, {
+            runCommand: async (request: any) => {
+                calls.push(`${request.command}:${request.sessionId}`);
+                return { stdout: 'via-port', stderr: '', exitCode: 0 };
+            }
+        } as any);
+        const result = await tool.invoke({ command: 'echo hi' }, createSessionContext({ sessionId: 'io-session' }));
+        expect(result.stdout).toEqual('via-port');
+        expect(calls).toEqual(['echo hi:io-session']);
+    }
+
     @Test('terminal tool applies shared sandbox command and env policy')
     async terminalToolAppliesSharedSandboxPolicy() {
         const workspace = await this.createWorkspace();

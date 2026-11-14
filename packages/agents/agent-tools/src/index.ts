@@ -60,3 +60,5 @@ export * from '../security';
 export * from '../audio';
 export * from '../capture';
 export * from '../ai-cli';
+
+export * from './io-port';

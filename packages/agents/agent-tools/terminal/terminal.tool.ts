@@ -5,6 +5,7 @@ import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { resolveFilePolicy, resolveWorkspacePath } from '../files/path-policy';
 import { assertSandboxCommand, buildSandboxEnv, resolveSandboxPolicy } from '../src/sandbox-policy';
+import { AGENT_IO_PORT, AgentIoCommandResult, AgentIoPort } from '../src/io-port';
 
 const DEFAULT_TIMEOUT_MS = 180000;
 const DEFAULT_MAX_TIMEOUT_MS = 600000;
@@ -33,7 +34,8 @@ export class TerminalTool implements AgentTool {
 
     constructor(
         @Optional() @Inject(AGENT_TOOLS_OPTIONS, { defaultValue: null })
-        private options?: AgentToolsOptions
+        private options?: AgentToolsOptions,
+        @Optional() @Inject(AGENT_IO_PORT) private io?: AgentIoPort
     ) {
     }
 
@@ -42,7 +44,7 @@ export class TerminalTool implements AgentTool {
         assertSandboxCommand(command, resolveSandboxPolicy(this.options), this.name);
         const timeoutMs = this.resolveTimeout(input?.timeoutMs);
         const cwd = await this.resolveCwd(input?.workdir, context);
-        const result = await this.exec(command, cwd, timeoutMs, context?.signal);
+        const result = await this.exec(command, cwd, timeoutMs, context?.signal, context?.sessionId);
         return {
             ...result,
             cwd
@@ -81,31 +83,37 @@ export class TerminalTool implements AgentTool {
         return cwd;
     }
 
-    private async exec(command: string, cwd: string, timeoutMs: number, signal?: AbortSignal): Promise<{ stdout: string; stderr: string; exitCode: number; timedOut: boolean; }> {
+    private async exec(command: string, cwd: string, timeoutMs: number, signal?: AbortSignal, sessionId?: string): Promise<AgentIoCommandResult> {
         // A turn cancelled before the command even started must not spawn it.
         if (signal?.aborted) {
             throw new Error(CANCELLED_MESSAGE);
         }
-        const outcome = await runChildProcess({
-            command,
-            cwd,
-            shell: true,
-            env: buildSandboxEnv(process.env, resolveSandboxPolicy(this.options)),
-            timeoutMs,
-            signal
-        });
-        switch (outcome.kind) {
+        const outcome = this.io
+            ? await this.io.runCommand({ command, cwd, timeoutMs, signal, sessionId })
+            : await runChildProcess({
+                command,
+                cwd,
+                shell: true,
+                env: buildSandboxEnv(process.env, resolveSandboxPolicy(this.options)),
+                timeoutMs,
+                signal
+            });
+        if (this.io) {
+            return outcome as AgentIoCommandResult;
+        }
+        const childOutcome = outcome as any;
+        switch (childOutcome.kind) {
             case 'cancelled':
                 throw new Error(CANCELLED_MESSAGE);
             case 'timeout':
-                return { stdout: outcome.stdout.trim(), stderr: outcome.stderr.trim(), exitCode: 124, timedOut: true };
+                return { stdout: childOutcome.stdout.trim(), stderr: childOutcome.stderr.trim(), exitCode: 124, timedOut: true };
             case 'error':
-                throw outcome.error;
+                throw childOutcome.error;
             default:
                 return {
-                    stdout: outcome.stdout.trim(),
-                    stderr: outcome.stderr.trim(),
-                    exitCode: outcome.exitCode ?? 0,
+                    stdout: childOutcome.stdout.trim(),
+                    stderr: childOutcome.stderr.trim(),
+                    exitCode: childOutcome.exitCode ?? 0,
                     timedOut: false
                 };
         }

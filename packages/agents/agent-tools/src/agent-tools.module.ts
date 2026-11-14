@@ -4,6 +4,7 @@ import { AgentModule } from '@tsdi/agent';
 import { SshConnectionManager } from '@tsdi/agent-ssh';
 import { AGENT_TOOLS_OPTIONS } from './tokens';
 import { AgentToolsOptions, defaultAgentToolsOptions, mergeAgentToolsOptions } from './options';
+import { AGENT_IO_PORT, LocalAgentIoPort } from './io-port';
 import {
     DefaultBackupAdapter,
     DefaultKnowledgeAdapter,
@@ -124,6 +125,8 @@ function provideCodingTaskToolFactory() {
     imports: [AgentModule],
     providers: [
         { provide: AGENT_TOOLS_OPTIONS, useValue: defaultAgentToolsOptions, asDefault: true },
+        LocalAgentIoPort,
+        { provide: AGENT_IO_PORT, useExisting: LocalAgentIoPort, asDefault: true },
         ReadFileTool,
         WriteFileTool,
         EditFileTool,
