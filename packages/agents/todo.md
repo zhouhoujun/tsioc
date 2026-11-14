@@ -212,10 +212,10 @@
 - 待办：工具审批与 fs/terminal 请求的运行时接线、Zed 兼容回归。
 - 验收：fake transport 完整会话；Zed 兼容握手；与 TUI/gateway 共用 runtime 与审批事件。
 
-#### S7 — 会话级 `/worktree`（对齐 opencode `run -w` / Codex `--worktree`）
+#### S7 — 会话级 `/worktree`（部分完成）
 
-- 复用 coding_task worktree helpers，新增 `WorktreeManager`；`/worktree [name]` 创建/切换，结束提示 merge/keep/remove。
-- 验收：主工作区隔离、冲突提示、回滚；真实 git 仓库测试。
+- ✅ `WorktreeManager`：在 `<workspace>/.tsdi-worktrees` 下创建 managed branch/worktree、porcelain 列表、force remove；真实 git 往返回归。
+- 待办：`/worktree` 命令与 session cwd 切换、merge/keep/remove 收尾流程、冲突提示与回滚。
 
 #### S8 — 架构拆分与启动/测试性能
 
