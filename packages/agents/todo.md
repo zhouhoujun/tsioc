@@ -227,7 +227,7 @@
 
 #### S8 — 架构拆分与启动/测试性能（进行中）
 
-- ✅ 抽出 `harness/tool-receipt.ts`（`DefaultAgentRuntime` 3520→3504 区间内回落，为后续 span 留出 ratchet 空间）。
+- ✅ 抽出 `harness/tool-receipt.ts` 与 `harness/turn-metrics.ts`；`DefaultAgentRuntime` 持续回落，为 turn/model span 留出 ratchet 空间。
 
 - 按 turn-loop / model-request / tool-orchestration / verification / compaction / hooks 拆 `DefaultAgentRuntime`；按路由拆 `AppRpcServer`；同提交下调 baseline。
 - 工具/技能/MCP 懒加载；TUI 首屏目标 < 2s；agent-ui 测试分片，目标 < 8min。

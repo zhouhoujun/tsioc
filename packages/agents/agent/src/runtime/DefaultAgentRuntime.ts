@@ -44,6 +44,7 @@ import { RateLimitManager } from '../harness/RateLimitManager';
 import { OutputGuard } from '../harness/OutputGuard';
 import { decorateToolSandboxReceipt, resolveSessionToolSandboxState } from '../harness/ToolSandboxPolicy';
 import { createToolBaseReceipt } from '../harness/tool-receipt';
+import { computeTurnFalsifyRate } from '../harness/turn-metrics';
 import { effectiveSandboxMode } from '../harness/sandbox-mode';
 import { requestSandboxEscalation } from '../harness/sandbox-escalation';
 import { CompactionHistoryRecord, CompactionHistoryStore } from '../harness/CompactionHistoryStore';
@@ -1054,18 +1055,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return request;
     }
 
-    protected computeTurnFalsifyRate(turnContext: TurnExecutionContext): number | undefined {
-        const ledger = turnContext?.evidenceLedger;
-        if (!ledger || ledger.size === 0) {
-            return undefined;
-        }
-        const measured = ledger.entriesFrom(0).filter(entry => entry.status !== 'skipped');
-        if (measured.length === 0) {
-            return undefined;
-        }
-        return measured.filter(entry => entry.falsified === true).length / measured.length;
-    }
-
     private async completeTurn(sessionId: string, query: string, currentUserMessageId: string, turnContext: TurnExecutionContext): Promise<AgentTurnResult> {
         const loopDetector = new ToolLoopDetector();
         loopDetector.reset();
@@ -1092,7 +1081,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             if (recoveredRequest) {
                 request = recoveredRequest;
             }
-            const falsifyRate = this.computeTurnFalsifyRate(turnContext);
+            const falsifyRate = computeTurnFalsifyRate(turnContext.evidenceLedger);
             let response = await this.modelAdapter.complete(this.prepareModelRequest(sessionId, request, turnContext.profile, falsifyRate, turnContext.agent?.reasoning));
             await this.recordTokenUsage(sessionId, response);
             await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, response));
@@ -1142,7 +1131,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             await this.sessions.append(sessionId, this.createMessage('user', MAX_TOOL_ROUNDS_PROMPT));
             const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
             const finalResponse = await this.modelAdapter.complete(
-                this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, this.computeTurnFalsifyRate(turnContext), turnContext.agent?.reasoning)
+                this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, computeTurnFalsifyRate(turnContext.evidenceLedger), turnContext.agent?.reasoning)
             );
             await this.recordTokenUsage(sessionId, finalResponse);
             await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, finalResponse));
@@ -1181,7 +1170,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             if (recoveredRequest) {
                 request = recoveredRequest;
             }
-            const falsifyRate = this.computeTurnFalsifyRate(turnContext);
+            const falsifyRate = computeTurnFalsifyRate(turnContext.evidenceLedger);
             let response = yield* this.collectStreamingResponse(
                 sessionId,
                 this.prepareModelRequest(sessionId, request, turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
@@ -1244,7 +1233,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
             const finalResponse = yield* this.collectStreamingResponse(
                 sessionId,
-                this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, this.computeTurnFalsifyRate(turnContext), turnContext.agent?.reasoning)
+                this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, computeTurnFalsifyRate(turnContext.evidenceLedger), turnContext.agent?.reasoning)
             );
             await this.recordTokenUsage(sessionId, finalResponse);
             const finalMessage = await this.createAssistantMessageFromResponse(sessionId, finalResponse);
@@ -1751,7 +1740,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         try {
             const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
             const finalResponse = await this.modelAdapter.complete(
-                this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, this.computeTurnFalsifyRate(turnContext), turnContext.agent?.reasoning)
+                this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, computeTurnFalsifyRate(turnContext.evidenceLedger), turnContext.agent?.reasoning)
             );
             await this.recordTokenUsage(sessionId, finalResponse);
             await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, finalResponse));
@@ -1777,7 +1766,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
             const finalResponse = yield* this.collectStreamingResponse(
                 sessionId,
-                this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, this.computeTurnFalsifyRate(turnContext), turnContext.agent?.reasoning)
+                this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, computeTurnFalsifyRate(turnContext.evidenceLedger), turnContext.agent?.reasoning)
             );
             await this.recordTokenUsage(sessionId, finalResponse);
             const text = String(finalResponse.message ?? '').trim();
