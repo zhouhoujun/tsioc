@@ -188,10 +188,11 @@
 - 审批走现有 `ApprovalManager`（TUI/web/gateway 共用事件、i18n 与 audit）；拒绝时保留原始可操作错误，turn 继续。
 - 证据：新增 `sandbox-escalation.spec.ts`（拒绝识别、force approval、拒绝/非沙箱失败不弹）；agent 1061 passing。
 
-#### S4 — OTEL + 轨迹级 Eval
+#### S4 — OTEL + 轨迹级 Eval（部分完成）
 
-- `AgentTelemetry` 抽象 + Noop 默认；存在 `@opentelemetry/api` 时自动接入；turn/model/tool/compaction span。
-- `EvalRun.metrics`：turns、toolCalls、failures、retries、duration、tokens、cache、filesChanged；`eval compare` 对 baseline 做阈值回归。
+- ✅ `EvalRun.metrics`：user/assistant messages、turns、toolCalls、toolFailures、duration、prompt/completion/total tokens；从持久 transcript 收集，失败不影响任务。
+- ✅ `compareEvalMetrics(baseline, current, thresholds)`：工具失败率、耗时、token 回归阈值与可诊断原因。
+- 待办：`AgentTelemetry` 抽象 + OTEL 自动接入（turn/model/tool/compaction span）；CLI `eval run/compare` 命令。
 - 验收：fake tracer 断言层级/属性；无 OTEL 零行为变化；suite 可对比且回归失败可诊断。
 
 #### S5 — 命名子代理（对齐 opencode custom agents / Claude subagents）
