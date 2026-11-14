@@ -11,6 +11,7 @@ import { runAgentImport } from './import-command';
 import { runAgentHarnessAudit, runAgentHarnessProfileCurrent, runAgentHarnessProfileDiff, runAgentHarnessProfileList } from './harness-command';
 import { registerHooksCli } from './hooks-command';
 import { registerAcpCli } from './acp-command';
+import { registerWorktreeCli } from './worktree-command';
 import { generateAgentCompletionScript, resolveCompletionShell } from './completion';
 import { runAgentUpdate } from './update';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
@@ -22,7 +23,7 @@ import { runAgentCloudAction } from './cloud-command';
 const configReader = new CliAgentUiConfigReader();
 const CLI_VERSION = '6.0.31';
 const DEFAULT_COMMAND = 'chat';
-const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'attach', 'serve', 'desktop', 'app', 'cloud', 'project', 'tools', 'mcp', 'doctor', 'import', 'harness', 'hooks', 'acp', 'completion', 'update', 'rpc-stdio', 'approval', 'help']);
+const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'attach', 'serve', 'desktop', 'app', 'cloud', 'project', 'tools', 'mcp', 'doctor', 'import', 'harness', 'hooks', 'acp', 'worktree', 'completion', 'update', 'rpc-stdio', 'approval', 'help']);
 const TOP_LEVEL_HELP_FLAGS = new Set(['-h', '--help', '-V', '--version']);
 const OPTION_FLAGS_WITH_VALUES = new Set([
     '--session',
@@ -363,6 +364,7 @@ function createAgentCli(): Command {
 
     registerHooksCli(program);
     registerAcpCli(program);
+    registerWorktreeCli(program);
 
     const harness = program
         .command('harness')

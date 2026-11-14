@@ -215,7 +215,8 @@
 #### S7 — 会话级 `/worktree`（部分完成）
 
 - ✅ `WorktreeManager`：在 `<workspace>/.tsdi-worktrees` 下创建 managed branch/worktree、porcelain 列表、force remove；真实 git 往返回归。
-- 待办：`/worktree` 命令与 session cwd 切换、merge/keep/remove 收尾流程、冲突提示与回滚。
+- ✅ CLI `tsdi-agent worktree create|list|remove`（`--workspace`、`--force`）。
+- 待办：TUI `/worktree` 与 session cwd 切换、merge/keep/remove 收尾流程、冲突提示与回滚。
 
 #### S8 — 架构拆分与启动/测试性能
 
