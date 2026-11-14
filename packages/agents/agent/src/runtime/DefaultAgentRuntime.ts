@@ -1038,7 +1038,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected throwIfTurnCancelled(sessionId: string): void {
         this.turnAbortScopes.throwIfCancelled(sessionId);
     }
-
     /** Complete with a model span; streaming keeps its own chunk-level path. */
     protected completeModelRequest(request: ModelRequest): Promise<ModelResponse> {
         const span = this.telemetry?.startSpan('model.complete', { model: request.model });
@@ -1047,7 +1046,12 @@ export class DefaultAgentRuntime extends AgentRuntime {
             error => { span?.end('error', { error: error instanceof Error ? error.message : String(error) }); throw error; }
         );
     }
-
+    /** Stream with a model span that ends on completion or failure. */
+    protected async *streamModelRequest(request: ModelRequest): AsyncGenerator<any, void, any> {
+        const span = this.telemetry?.startSpan('model.stream', { model: request.model });
+        try { yield* this.modelAdapter.stream(request); span?.end('ok'); }
+        catch (error) { span?.end('error', { error: error instanceof Error ? error.message : String(error) }); throw error; }
+    }
     protected prepareModelRequest(sessionId: string, request: ModelRequest, profile?: string, falsifyRate?: number, reasoning?: boolean): ModelRequest {
         this.throwIfTurnCancelled(sessionId);
         request.signal = this.turnAbortScopes.signal(sessionId);
@@ -2358,7 +2362,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             };
         };
 
-        for await (const chunk of this.modelAdapter.stream(request)) {
+        for await (const chunk of this.streamModelRequest(request)) {
             const freshToolCalls = this.collectFreshStreamingToolCalls(seenToolCalls, chunk.toolCalls);
 
             if (chunk.type === 'text') {

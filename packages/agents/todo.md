@@ -198,7 +198,8 @@
 - ✅ CLI `tsdi-agent eval compare <baseline> <current>`：读取 metrics/report，按工具失败率、耗时、token 阈值回归并以退出码 1 失败。
 - ✅ `model.complete` span（model 属性、ok/error）；非流式主路径。
 - ✅ `agent.compaction` span（level/strategy、ok）；压缩历史写入时发出。
-- 待办：流式 model span；`eval run`。
+- ✅ `model.stream` span（model 属性、ok/error，finally 语义）。
+- 待办：`eval run`。
 - 验收：fake tracer 断言层级/属性；无 OTEL 零行为变化；suite 可对比且回归失败可诊断。
 
 #### S5 — 命名子代理（已完成 ✅）
