@@ -474,12 +474,8 @@ function isAgentHooksObject(value: unknown): value is AgentHooksOptions {
     return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
-export function resolveCliHooks(root?: string): AgentHooksOptions | undefined {
-    const resolvedRoot = path.resolve(root || resolveAgentToolDiscovery(root).root);
-    const hooksPath = path.join(resolvedRoot, AGENT_HOOKS_FILE);
-    const parsed = readJsonObject(hooksPath);
-    return isAgentHooksObject(parsed) ? parsed : undefined;
-}
+import { resolveCliHooks } from './hooks-trust';
+export { resolveCliHooks };
 /**
  * Resolve CLI config, loading .env files from workspace and root directories.
  */
