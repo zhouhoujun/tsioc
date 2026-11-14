@@ -10,6 +10,7 @@ import { summarizeToolDisplayText } from '../tools/ToolSummary';
 import { AuditSink, AgentAuditRecord } from './AuditSink';
 import { SandboxExecutor, SandboxPolicy } from './SandboxExecutor';
 import { SandboxMode } from './sandbox-exec';
+import { isSandboxDenial } from './sandbox-escalation';
 import { CANCELLED_MESSAGE } from './cancellation';
 import { RepeatReadOnlyCallCache } from '../runtime/tool-repeat-cache';
 import { isWorkspaceMutatingTool } from '../project/workspace-trust';
@@ -31,6 +32,8 @@ export interface ToolExecutionRequest {
     repeatCache?: RepeatReadOnlyCallCache;
     /** Effective OS sandbox mode for this session (default workspace). */
     sandboxMode?: SandboxMode;
+    /** One-shot approval hook used when the sandbox denies a command. */
+    escalateSandbox?: (error: Error) => Promise<boolean>;
 }
 
 export interface ToolExecutionOutcome {
@@ -125,6 +128,13 @@ export class ToolExecutionCoordinator {
                 };
             } catch (error) {
                 lastError = error instanceof Error ? error : new Error(String(error));
+                // A sandbox denial is not a tool bug: ask the host for a
+                // one-shot full-access escalation, then retry exactly once.
+                if (request.sandboxMode && request.sandboxMode !== 'off'
+                    && request.escalateSandbox && isSandboxDenial(lastError)
+                    && await request.escalateSandbox(lastError)) {
+                    return this.execute({ ...request, sandboxMode: 'off', escalateSandbox: undefined });
+                }
                 // A cancelled turn must never re-run a tool the user just
                 // interrupted, so an aborted signal makes the error terminal.
                 const shouldRetry = attempt <= maxRetries && !request.signal?.aborted && this.isRetryable(lastError);

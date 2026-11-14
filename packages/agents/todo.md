@@ -182,11 +182,11 @@
 - ✅ `mcp`/`prompt`/`subagent` 类型：通过 `AgentHookTransportExecutor` 端口由宿主注入执行器（保持核心 browser-safe），结果支持 `action: deny` 与 transcript 输出；内置 MCP/模型/子代理执行器由后续宿主集成接入。
 - 验收：五类 hook 边界测试；未 trust 被拒绝且提示可操作；hook 超时/取消不阻断 turn。
 
-#### S3 — 沙箱升级审批
+#### S3 — 沙箱升级审批（已完成 ✅）
 
-- 识别 `EROFS`/`EACCES`/`proxy_required`/sandbox 退出码，发起一次性 approval（once / turn / deny）。
-- 批准后仅对本次命令放宽（workspace 外写或网络），写 audit；TUI/web/gateway 共用事件与 i18n。
-- 验收：默认沙箱拒绝 → 审批 → 成功；拒绝后 turn 继续；真实 PTY + web 断言。
+- 识别 `EROFS`/`EACCES`/`bwrap`/sandbox/proxy 拒绝；coordinator 在失败后请求一次性 approval（force），批准后仅本次调用以 `sandboxMode: 'off'` 重试一次。
+- 审批走现有 `ApprovalManager`（TUI/web/gateway 共用事件、i18n 与 audit）；拒绝时保留原始可操作错误，turn 继续。
+- 证据：新增 `sandbox-escalation.spec.ts`（拒绝识别、force approval、拒绝/非沙箱失败不弹）；agent 1061 passing。
 
 #### S4 — OTEL + 轨迹级 Eval
 

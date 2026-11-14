@@ -44,6 +44,7 @@ import { RateLimitManager } from '../harness/RateLimitManager';
 import { OutputGuard } from '../harness/OutputGuard';
 import { decorateToolSandboxReceipt, resolveSessionToolSandboxState } from '../harness/ToolSandboxPolicy';
 import { effectiveSandboxMode } from '../harness/sandbox-mode';
+import { requestSandboxEscalation } from '../harness/sandbox-escalation';
 import { CompactionHistoryRecord, CompactionHistoryStore } from '../harness/CompactionHistoryStore';
 import { TurnDiagnosticsRecord, TurnDiagnosticsStore } from '../harness/TurnDiagnosticsStore';
 import { EvidenceLedger, ToolEvidenceEntry } from '../harness/EvidenceLedger';
@@ -2876,7 +2877,8 @@ let sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
                 inputSummary,
                 baseReceipt: sandboxReceipt,
                 repeatCache: turnContext.readOnlyResults ??= new RepeatReadOnlyCallCache(),
-                sandboxMode: effectiveSandboxMode(this.sessionSandboxModes.get(sessionId), this.options)
+                sandboxMode: effectiveSandboxMode(this.sessionSandboxModes.get(sessionId), this.options),
+                escalateSandbox: error => requestSandboxEscalation(this.toolApprovalManager, toolCall.name, toolCallInput, sessionId, error)
             });
             if (outcome.redactedOutput !== undefined) {
                 loopDetector.record(toolCall.name, toolCallInput, outcome.redactedOutput);
