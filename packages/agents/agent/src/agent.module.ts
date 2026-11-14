@@ -2,7 +2,7 @@ import { Module, ModuleWithProviders } from '@tsdi/ioc';
 import { DefaultModuleLoader, ModuleLoader } from '@tsdi/core';
 import { ConfigModule } from '@tsdi/microservices/config';
 import { AgentOptions, defaultAgentOptions, resolveAgentRetryPolicy } from './options';
-import { AGENT_OPTIONS, AGENT_TOOLS } from './tokens';
+import { AGENT_OPTIONS, AGENT_TOOLS , AGENT_TELEMETRY } from './tokens';
 import { ModelAdapter } from './model/ModelAdapter';
 import { RoutedModelAdapter } from './model/RoutedModelAdapter';
 import { ToolRegistry } from './tools/ToolRegistry';
@@ -65,6 +65,7 @@ import { TypeOrmSummaryQualityStore } from './harness/TypeOrmSummaryQualityStore
 import { DelegationGraphStore } from './harness/DelegationGraphStore';
 import { TypeOrmDelegationGraphStore } from './harness/TypeOrmDelegationGraphStore';
 import { SandboxExecutor, NodeChildProcessSandboxExecutor, OsSandboxExecutor } from './harness/SandboxExecutor';
+import { AgentTelemetry, NoopAgentTelemetry } from './harness/AgentTelemetry';
 import { AgentHookCommandExecutor, NoopAgentHookCommandExecutor } from './hooks/AgentHooks';
 import { TypeOrmGoalStore } from './goal/TypeOrmGoalStore';
 import { GoalStore } from './goal/GoalStore';
@@ -113,6 +114,8 @@ import { AgentClock, SystemAgentClock, AGENT_CLOCK } from './runtime/Clock';
         NodeChildProcessSandboxExecutor,
         OsSandboxExecutor,
         { provide: SandboxExecutor, useExisting: OsSandboxExecutor, asDefault: true },
+        NoopAgentTelemetry,
+        { provide: AGENT_TELEMETRY, useExisting: NoopAgentTelemetry, asDefault: true },
         NoopAgentHookCommandExecutor,
         { provide: AgentHookCommandExecutor, useExisting: NoopAgentHookCommandExecutor, asDefault: true },
         FileSnapshotStore,

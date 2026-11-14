@@ -11,6 +11,8 @@ import { AuditSink, AgentAuditRecord } from './AuditSink';
 import { SandboxExecutor, SandboxPolicy } from './SandboxExecutor';
 import { SandboxMode } from './sandbox-exec';
 import { isSandboxDenial } from './sandbox-escalation';
+import { AgentTelemetry } from './AgentTelemetry';
+import { AGENT_TELEMETRY } from '../tokens';
 import { CANCELLED_MESSAGE } from './cancellation';
 import { RepeatReadOnlyCallCache } from '../runtime/tool-repeat-cache';
 import { isWorkspaceMutatingTool } from '../project/workspace-trust';
@@ -55,7 +57,8 @@ export class ToolExecutionCoordinator {
         private uuid: UuidGenerator,
         @Optional() private auditSink?: AuditSink,
         @Optional() private sandboxExecutor?: SandboxExecutor,
-        @Optional() @Inject(AGENT_CLOCK, { defaultValue: null }) private clock?: AgentClock
+        @Optional() @Inject(AGENT_CLOCK, { defaultValue: null }) private clock?: AgentClock,
+        @Optional() @Inject(AGENT_TELEMETRY) private telemetry?: AgentTelemetry
     ) {
     }
 
@@ -70,6 +73,7 @@ export class ToolExecutionCoordinator {
             inputSummary: request.inputSummary
         };
         const definition = request.definition;
+        const span = this.telemetry?.startSpan(`tool.${definition.name}`, { tool: definition.name, sessionId: request.sessionId });
         const policy = definition.execution;
         const retryPolicy = policy?.retryPolicy;
         const maxRetries = Math.max(retryPolicy?.maxRetries ?? 0, 0);
@@ -78,6 +82,7 @@ export class ToolExecutionCoordinator {
 
         const repeated = await this.reuseRepeatReadOnlyCall(request, baseReceipt);
         if (repeated) {
+            span?.end('ok', { cached: true });
             return repeated;
         }
 
@@ -120,6 +125,7 @@ export class ToolExecutionCoordinator {
                     }
                 });
                 await this.app.publishEvent(new AgentToolCompletedEvent(this, request.sessionId, definition.name, redactedOutput, completedReceipt));
+                span?.end('ok');
                 return {
                     output: rawOutput,
                     redactedOutput,
@@ -169,6 +175,7 @@ export class ToolExecutionCoordinator {
                     }
                 });
                 await this.app.publishEvent(new AgentToolFailedEvent(this, request.sessionId, definition.name, lastError, failedReceipt));
+                span?.end('error', { error: lastError.message });
                 return {
                     receipt: failedReceipt,
                     error: lastError,
@@ -178,6 +185,7 @@ export class ToolExecutionCoordinator {
         }
 
         const fallbackError = lastError ?? new Error(`Tool "${definition.name}" failed.`);
+        span?.end('error', { error: fallbackError.message });
         return {
             receipt: {
                 ...baseReceipt,

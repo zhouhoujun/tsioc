@@ -192,7 +192,8 @@
 
 - ✅ `EvalRun.metrics`：user/assistant messages、turns、toolCalls、toolFailures、duration、prompt/completion/total tokens；从持久 transcript 收集，失败不影响任务。
 - ✅ `compareEvalMetrics(baseline, current, thresholds)`：工具失败率、耗时、token 回归阈值与可诊断原因。
-- 待办：`AgentTelemetry` 抽象 + OTEL 自动接入（turn/model/tool/compaction span）；CLI `eval run/compare` 命令。
+- ✅ `AgentTelemetry` 抽象 + `NoopAgentTelemetry`；tool 执行 span（name/tool/sessionId、ok/error/cached）经 DI 注入，OTEL 宿主可替换实现。
+- 待办：OTEL 自动接入（turn/model/compaction span）；CLI `eval run/compare` 命令。
 - 验收：fake tracer 断言层级/属性；无 OTEL 零行为变化；suite 可对比且回归失败可诊断。
 
 #### S5 — 命名子代理（已完成 ✅）

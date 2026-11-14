@@ -27,6 +27,7 @@ import { AgentContextPreparedEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrie
 import { SystemPromptBuilder } from '../src/prompt/SystemPromptBuilder';
 import { provideAgentOrm } from '../src/orm.module';
 import { AGENT_CLOCK, DeterministicAgentClock } from '../src/runtime/Clock';
+import { AGENT_TELEMETRY } from '../src/tokens';
 
 const RUNTIME_LOOP_EVENTS = [
     AgentContextPreparedEvent,
@@ -1128,6 +1129,30 @@ export class RuntimeLoopTest {
         expect(messages[2].metadata?.inputSummary).toContain('from-tool');
         expect(messages[2].metadata?.input).toEqual(undefined);
         expect(messages[3].role).toEqual('assistant');
+    }
+
+    @Test('emits a telemetry span per tool invocation')
+    async toolTelemetrySpan() {
+        const spans: Array<{ name: string; status?: string }> = [];
+        const telemetry = {
+            startSpan: (name: string) => {
+                const span: any = { name };
+                spans.push(span);
+                span.end = (status: string) => { span.status = status; };
+                return span;
+            }
+        };
+        const { runtime } = await createRuntime(
+            new ToolLoopModelAdapter(),
+            new EchoToolRegistry(),
+            undefined,
+            undefined,
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            [{ provide: AGENT_TELEMETRY, useValue: telemetry }]
+        );
+        await runtime.runTurn('telemetry-1', 'hello');
+        expect(spans.some(span => span.name === 'tool.echo' && span.status === 'ok')).toEqual(true);
     }
 
     @Test('switches a session workspace for worktree isolation')

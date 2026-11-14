@@ -28,3 +28,6 @@ export interface AgentWorkspaceTrustResolver {
     trust?(workspace: string): void;
 }
 export const AGENT_WORKSPACE_TRUST = token<AgentWorkspaceTrustResolver>('AGENT_WORKSPACE_TRUST');
+
+import type { AgentTelemetry } from './harness/AgentTelemetry';
+export const AGENT_TELEMETRY = token<AgentTelemetry>('AGENT_TELEMETRY');
