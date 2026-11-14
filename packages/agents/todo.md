@@ -217,7 +217,8 @@
 - ✅ `session/set_mode` / `session/set_model` 映射到 session archetype / model profile。
 - ✅ 客户端请求：`session/request_permission`、`fs/read_text_file`、`fs/write_text_file`（JSON-RPC 双向请求/响应、超时）。
 - ✅ terminal 方法：`terminal/create`、`terminal/output`、`terminal/wait_for_exit`、`terminal/kill`、`terminal/release`。
-- 待办：工具审批与 fs/terminal 请求的运行时接线、Zed 兼容回归。
+- ✅ `AcpApprovalManager`：运行时审批映射到 `session/request_permission`（allow/reject），`tsdi-agent acp` 注入该 manager。
+- 待办：fs/terminal 工具路径改走 ACP client 请求、Zed 兼容回归。
 - 验收：fake transport 完整会话；Zed 兼容握手；与 TUI/gateway 共用 runtime 与审批事件。
 
 #### S7 — 会话级 `/worktree`（部分完成）
