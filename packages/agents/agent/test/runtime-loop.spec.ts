@@ -1130,6 +1130,17 @@ export class RuntimeLoopTest {
         expect(messages[3].role).toEqual('assistant');
     }
 
+    @Test('switches a session workspace for worktree isolation')
+    async switchesSessionWorkspace() {
+        const { runtime, sessions } = await createRuntime(
+            new EchoModelAdapter(),
+            new EmptyToolRegistry()
+        );
+        await sessions.append('ws-1', { id: 'm1', role: 'user', content: 'hello', createdAt: 1 } as any);
+        await runtime.setSessionWorkspace('ws-1', '/tmp/worktree-a');
+        expect((await sessions.get('ws-1')).workspace).toEqual('/tmp/worktree-a');
+    }
+
     @Test('fences external tool output before it reaches the model transcript')
     async fencesExternalToolOutput() {
         const { runtime } = await createRuntime(

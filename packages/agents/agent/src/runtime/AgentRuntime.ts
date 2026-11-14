@@ -108,6 +108,9 @@ export abstract class AgentRuntime {
      * cancellation cascades to them as well.
      * Override this in concrete runtimes that support turn cancellation.
      */
+    /** Switch the workspace a session resolves files/commands against. */
+    async setSessionWorkspace(_sessionId: string, _workspace?: string): Promise<void> {}
+
     async cancelTurn(_sessionId: string): Promise<CancelTurnResult> {
         // no-op by default
         return { cancelled: false, compensated: 0, toolCallIds: [] };

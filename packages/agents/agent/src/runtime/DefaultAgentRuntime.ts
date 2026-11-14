@@ -2171,6 +2171,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
     }
 
+    override async setSessionWorkspace(sessionId: string, workspace?: string): Promise<void> { await this.sessions.setWorkspace(sessionId, workspace); }
+
     setSessionSandboxMode(sessionId: string, mode?: import('../harness/sandbox-exec').SandboxMode | null): void {
         if (mode == null) {
             this.sessionSandboxModes.delete(sessionId);
