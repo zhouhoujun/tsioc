@@ -139,10 +139,14 @@ export class DomTranscriptFollower {
             return;
         }
         const count = this.box.newItemCount;
-        const show = !this.box.following && count > 0;
+        // Show the affordance whenever the reader is away from the bottom, even
+        // before new rows arrive; a manual scroll-up must still offer a way back.
+        const show = !this.box.following;
         this.indicator.style.display = show ? '' : 'none';
         if (show) {
-            this.indicator.textContent = `${this.labels.newMessages.replace('{count}', String(count))} · ${this.labels.jumpToBottom}`;
+            this.indicator.textContent = count > 0
+                ? `${this.labels.newMessages.replace('{count}', String(count))} · ${this.labels.jumpToBottom}`
+                : this.labels.jumpToBottom;
         }
     }
 }

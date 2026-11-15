@@ -24,6 +24,9 @@ export class DomTranscriptFollowerTest {
 
         follower.wheel(-200);
         expect(follower.following).toEqual(false);
+        // A manual scroll-up alone must expose a way back to the bottom.
+        expect(indicator.style.display).not.toEqual('none');
+        expect(indicator.textContent).toEqual('jump to bottom');
 
         // Content grows while scrolled away: count rises and the indicator shows.
         stubMetrics(transcript, 1200, 100);

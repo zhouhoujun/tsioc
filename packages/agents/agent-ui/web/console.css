@@ -1093,11 +1093,20 @@ body {
 }
 
 #agent-console .console-new-messages {
+    position: fixed;
+    left: 50%;
+    bottom: max(88px, calc(env(safe-area-inset-bottom, 0px) + 88px));
+    transform: translateX(-50%);
+    z-index: 20;
+    padding: 6px 14px;
+    border: 1px solid var(--agent-web-border);
     border-radius: 999px;
     background: var(--agent-web-panel-raised);
-    border-color: var(--agent-web-border);
     color: var(--agent-web-code-accent);
     font-family: var(--agent-web-sans);
+    font-size: 12.5px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
 }
 
 @media (max-width: 640px) {
