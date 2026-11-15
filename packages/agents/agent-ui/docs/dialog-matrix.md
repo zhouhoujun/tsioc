@@ -28,6 +28,13 @@ Columns: entry -> current shell -> close/keys -> search/paging -> layout -> know
 | approval prompt | custom panel | `a/d/A/y`, Esc/✕ | list | custom panel | not on Dialog Stack |
 | pending question | custom panel | digits/Enter/Esc/✕ | options | custom panel | not on Dialog Stack |
 
+## Progress (2026-11)
+
+- `/help` text detail now returns to the group list on Esc/✕.
+- Transient panels are exclusive: opening a select/text/tools/sessions/approvals/jobs/tasks/toolRuns/review/outputs dialog dismisses the others.
+- Command-outputs / which-key / health panels are anchored above the composer instead of rendering below the input.
+- Text/select cards are centred inside the anchored overlay.
+
 ## Root causes
 
 1. Two state families (`selectMenu` with parent chain; `textOverlay`/approval/question singletons) have no common stack.

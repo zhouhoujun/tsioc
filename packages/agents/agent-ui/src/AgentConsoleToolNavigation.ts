@@ -1,3 +1,4 @@
+import { dismissBackgroundPanels } from './AgentConsoleDialogExclusivity';
 import type {
     AgentConsoleApprovalRequest,
     AgentConsoleSessionState,
@@ -6,6 +7,7 @@ import type {
 } from './AgentConsoleSessionState';
 
 export function setToolsFocused(state: AgentConsoleSessionState, focused: boolean): void {
+    if (focused) dismissBackgroundPanels(state, 'tools');
     state.toolsFocused = focused;
     if (focused && !state.selectedToolName && state.tools.length) {
         state.selectedToolName = state.tools[0].name;
@@ -93,6 +95,7 @@ export function resolveSelectedToolRun(state: AgentConsoleSessionState): AgentCo
 }
 
 export function setApprovalsFocused(state: AgentConsoleSessionState, focused: boolean): void {
+    if (focused) dismissBackgroundPanels(state, 'approvals');
     state.approvalsFocused = focused;
     if (focused && !state.selectedApprovalId && state.pendingApprovals.length) {
         state.selectedApprovalId = state.pendingApprovals[0].id;

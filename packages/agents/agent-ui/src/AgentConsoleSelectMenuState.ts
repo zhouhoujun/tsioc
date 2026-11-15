@@ -1,3 +1,4 @@
+import { dismissBackgroundPanels } from './AgentConsoleDialogExclusivity';
 import type { AgentConsoleSelectMenu, AgentConsoleSelectOption, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { getAgentConsoleCommandDefinition } from './AgentConsoleCommandRegistry';
 import { applyAgentConsoleSuggestion, getAgentConsoleArgumentRange, getAgentConsoleInputTokenRange, getAgentConsoleMentionCandidates, isAgentConsoleSuggestionMenu } from './AgentConsoleSuggestions';
@@ -13,6 +14,7 @@ export function selectAsync(state: AgentConsoleSessionState, title: string, opti
     }
 
 export function openSelectMenu(state: AgentConsoleSessionState, title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string, kind?: string): void {
+        dismissBackgroundPanels(state);
         const currentMenu = state.selectMenu;
         const currentAction = state.selectMenuAction;
 
@@ -192,6 +194,7 @@ export async function cancelSelectMenu(state: AgentConsoleSessionState): Promise
     }
 
 export async function openSubSelectMenu(state: AgentConsoleSessionState, title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string): Promise<void> {
+        dismissBackgroundPanels(state);
         const currentMenu = state.selectMenu;
         const currentAction = state.selectMenuAction;
 

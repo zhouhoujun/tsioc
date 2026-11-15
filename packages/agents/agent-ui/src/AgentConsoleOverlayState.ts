@@ -1,3 +1,4 @@
+import { dismissBackgroundPanels } from './AgentConsoleDialogExclusivity';
 import type { AgentConsoleCommandOutputEntry, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { AGENT_CONSOLE_COMMAND_OUTPUT_RING_CAP } from './AgentConsoleSessionState';
 import type { CommandOutputStore } from './AgentConsoleCommandOutputHistory';
@@ -9,6 +10,7 @@ export function setNotice(state: AgentConsoleSessionState, message: string): voi
     }
 
 export function openTextOverlay(state: AgentConsoleSessionState, title: string, lines: string[], visibleLines?: number, back?: () => void): void {
+        dismissBackgroundPanels(state, 'textOverlay');
         const content = (Array.isArray(lines) ? lines : []).map(line => String(line ?? ''));
         if (!content.length) {
             return;
@@ -98,6 +100,7 @@ export async function loadCommandOutputHistory(state: AgentConsoleSessionState):
     }
 
 export function openCommandOutputs(state: AgentConsoleSessionState): void {
+        dismissBackgroundPanels(state, 'commandOutputs');
         state.commandOutputsOpen = true;
         state.commandOutputsFilter = '';
         state.commandOutputsFilterMode = false;

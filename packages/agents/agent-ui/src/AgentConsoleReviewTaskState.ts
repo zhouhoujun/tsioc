@@ -1,3 +1,4 @@
+import { dismissBackgroundPanels } from './AgentConsoleDialogExclusivity';
 import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import type { AgentConsoleReviewTaskItem, AgentConsoleTaskFilter } from './AgentConsoleSessionState';
 
@@ -9,6 +10,7 @@ import type { AgentConsoleReviewTaskItem, AgentConsoleTaskFilter } from './Agent
  * god-object does not grow another selector/navigation domain.
  */
 export function setTasksFocused(state: AgentConsoleSessionState, focused: boolean): void {
+    if (focused) dismissBackgroundPanels(state, 'tasks');
     state.tasksFocused = focused;
     if (focused && !state.selectedReviewTaskId && resolveFilteredReviewTaskChoices(state).length) {
         const first = resolveFilteredReviewTaskChoices(state)[0];

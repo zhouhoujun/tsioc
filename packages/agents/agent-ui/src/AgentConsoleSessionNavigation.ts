@@ -1,3 +1,4 @@
+import { dismissBackgroundPanels } from './AgentConsoleDialogExclusivity';
 import type { AgentConsoleSessionItem, AgentConsoleSessionState } from './AgentConsoleSessionState';
 
 /** Session-list filtering, focus restoration and keyboard navigation. */
@@ -53,6 +54,7 @@ export function clampSessionSelectionToFilter(state: AgentConsoleSessionState): 
 }
 
 export function setSessionsFocused(state: AgentConsoleSessionState, focused: boolean): void {
+    if (focused) dismissBackgroundPanels(state, 'sessions');
     state.sessionsFocused = focused;
     if (focused) {
         restoreSessionsViewState(state);
@@ -106,6 +108,7 @@ export function setThreadsFocused(state: AgentConsoleSessionState, focused: bool
 }
 
 export function setToolRunsFocused(state: AgentConsoleSessionState, focused: boolean): void {
+    if (focused) dismissBackgroundPanels(state, 'toolRuns');
     state.toolRunsFocused = focused;
     state.syncDerivedInputFocus();
 }
@@ -192,6 +195,7 @@ export function setScheduledTasks(state: AgentConsoleSessionState, tasks: import
 }
 
 export function setJobsFocused(state: AgentConsoleSessionState, focused: boolean): void {
+    if (focused) dismissBackgroundPanels(state, 'jobs');
     state.jobsFocused = focused;
     if (focused && !state.selectedScheduledTaskId && state.scheduledTasks.length) {
         state.selectedScheduledTaskId = state.scheduledTasks[0].id;

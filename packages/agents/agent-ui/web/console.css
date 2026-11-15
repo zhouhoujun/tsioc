@@ -565,6 +565,33 @@ body {
     font-size: 11.5px;
 }
 
+/* Panels that hosts append after the footer still float above the composer
+   instead of pushing the layout or rendering below the input area. */
+#agent-console .agent-console > agent-console-outputs-panel,
+#agent-console .agent-console > agent-console-which-key-panel,
+#agent-console .agent-console > agent-console-health-popover {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: calc(var(--agent-web-footer-height, 96px) + 8px);
+    z-index: 70;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    padding: 0 24px;
+    pointer-events: none;
+}
+
+#agent-console .agent-console > agent-console-outputs-panel > .console-panel,
+#agent-console .agent-console > agent-console-which-key-panel > .console-panel,
+#agent-console .agent-console > agent-console-health-popover > .console-panel {
+    pointer-events: auto;
+    margin: 0;
+    max-height: calc(100vh - var(--agent-web-footer-height, 96px) - 120px);
+    overflow: auto;
+}
+
 #agent-console .console-new-messages {
     transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, opacity 120ms ease;
 }
