@@ -32,6 +32,7 @@ import {
 } from '@tsdi/agent-ui';
 import { AgentConsoleWebMarkdownComponent } from './AgentConsoleWebMarkdown';
 import { openAgentConsoleDialogDeepLink } from './dialog-deeplink';
+import { focusWebConsoleComposer } from './focus-composer';
 import { keepTranscriptSelection } from './selection-anchor';
 
 const CONSOLE_SECURITY_LEVELS = ['read-only', 'ask', 'auto', 'full'];
@@ -544,6 +545,8 @@ export async function mountAgentWebConsole(
     indicator.addEventListener('click', onIndicatorClick);
     // Observe content growth from the initial render, not only after the first wheel.
     resolveFollower();
+
+    focusWebConsoleComposer(doc, root);
 
     // Deep link: `?dialog=model` opens the same dialog as `/dialog model`.
     if (config.dialog) {

@@ -77,6 +77,9 @@ export class DialogDeepLinkTest {
             const transcript = this.dom.window.document.querySelector('#agent-console .console-messages-panel')?.textContent || '';
             expect(transcript).toContain('/help');
             expect(transcript).not.toContain('/dialog');
+            // Desktop focus lands on the composer so the deep-linked dialog is
+            // immediately keyboard-operable.
+            expect(this.dom.window.document.activeElement?.tagName).toEqual('TEXTAREA');
         } finally {
             gateway.dispose();
             const mounted = await mountedPromise.catch(() => null);
