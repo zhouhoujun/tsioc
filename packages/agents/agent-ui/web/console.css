@@ -1099,23 +1099,42 @@ body {
     z-index: 20;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
     border: 1px solid var(--agent-web-border);
-    border-radius: 999px;
+    border-radius: 50%;
     background: var(--agent-web-panel-raised);
     color: var(--agent-web-code-accent);
     font-family: var(--agent-web-sans);
-    font-size: 12.5px;
+    font-size: 16px;
+    line-height: 1;
     cursor: pointer;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
 }
 
-/* Same downward affordance as the terminal strip: icon first, label second. */
+/* Compact icon button: down arrow plus an optional unread badge. */
 #agent-console .console-new-messages::before {
     content: '↓';
     font-weight: 700;
-    line-height: 1;
+}
+
+#agent-console .console-new-messages[data-count]:not([data-count="0"])::after {
+    content: attr(data-count);
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--agent-web-accent);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
 }
 
 @media (max-width: 640px) {
@@ -1132,6 +1151,8 @@ body {
     #agent-console .console-new-messages {
         right: max(12px, env(safe-area-inset-right, 0px));
         bottom: max(72px, calc(env(safe-area-inset-bottom, 0px) + 72px));
+        width: 40px;
+        height: 40px;
     }
 
     #agent-console .message-template-user {

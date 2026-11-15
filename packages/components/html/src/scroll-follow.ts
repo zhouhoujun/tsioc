@@ -144,9 +144,17 @@ export class DomTranscriptFollower {
         const show = !this.box.following;
         this.indicator.style.display = show ? '' : 'none';
         if (show) {
-            this.indicator.textContent = count > 0
+            // Compact icon button: the label is exposed to assistive tech, the
+            // visual surface is the down arrow plus an optional count badge.
+            const label = count > 0
                 ? `${this.labels.newMessages.replace('{count}', String(count))} · ${this.labels.jumpToBottom}`
                 : this.labels.jumpToBottom;
+            this.indicator.setAttribute('aria-label', label);
+            this.indicator.setAttribute('title', label);
+            this.indicator.setAttribute('data-count', String(count));
+            this.indicator.textContent = '';
+        } else {
+            this.indicator.removeAttribute('data-count');
         }
     }
 }
