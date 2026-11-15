@@ -267,6 +267,7 @@
 - ✅ R1 路由分类：每条 route 声明 `kind`（select/panel/wizard/text），`/dialog` 选择器显示 `group · kind`，`/help dialogs` 目录追加 kind。
 - ✅ R1 交互式路由：`/dialog` 无参数时以选择对话框打开路由目录（可按 id/标题/路径键入过滤，Enter 直接执行对应命令）；`/help dialogs` 仍为只读文本目录。
 - ✅ R1 可发现性：`/help` 分组菜单新增 `Dialogs` 行（显示 route 数量）打开路由目录；Esc/✕ 返回分组列表（修复 Web 端 Esc 直接全部关闭）。
+- ✅ Web 审批按键：approval 聚焦时浏览器 composer 直接响应 `a`/`A`/`d`（Esc = 拒绝），经共享 focus layer 决定，不再只能用鼠标。
 - ✅ Web 问答按键：pending question 下 Enter 提交自定义答案/选中项，空草稿数字选择编号项；不再误触发新 turn（JSDOM 挂载测试）。
 - ✅ D2 问答优先：pending question 到达时取消已打开的选择/文本对话框（select promise 以 undefined 结束），让问题独占键盘与自定义答案输入。
 - ✅ D4 过滤不抖动：选择卡片宽度按未过滤的标题/选项计算（`select-list` 的 `widthTitle`/`widthOptions`），键入过滤时卡片不缩放、不重新居中。

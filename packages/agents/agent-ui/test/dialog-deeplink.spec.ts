@@ -272,6 +272,50 @@ export class DialogDeepLinkTest {
         }
     }
 
+    @Test('approval decision keys work from the web composer')
+    async approvalDecisionKeys() {
+        const gateway = new FakeAgentGateway({ sessionId: 'session-A' });
+        const mounted = await mountAgentWebConsole({
+            baseUrl: gateway.clientBaseUrl,
+            sessionId: 'session-A',
+            fetchImpl: gateway.createFetchImpl(),
+            mount: this.dom.window.document.getElementById('agent-console') as HTMLElement,
+            state: new AgentConsoleSessionState(),
+            pwa: false,
+            workspace: ''
+        });
+        try {
+            const decisions: string[] = [];
+            const always: string[] = [];
+            mounted.state.resolveApprovalAction = async (decision, id) => { decisions.push(`${decision}:${id}`); };
+            mounted.state.approvalAlwaysAllowAction = async id => { always.push(id); };
+            mounted.state.setPendingApprovals([{
+                id: 'req-1',
+                sessionId: mounted.state.sessionId,
+                toolName: 'terminal',
+                input: {},
+                createdAt: Date.now()
+            } as any]);
+            mounted.state.setApprovalsFocused(true);
+            const area = this.dom.window.document.querySelector('textarea.agent-input') as HTMLTextAreaElement;
+            area.focus();
+            const press = (key: string) => area.dispatchEvent(new this.dom.window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+            press('a');
+            await waitUntil(() => decisions.length === 1);
+            expect(decisions[0]).toEqual('approve:req-1');
+            press('A');
+            await waitUntil(() => always.length === 1);
+            expect(always[0]).toEqual('req-1');
+            press('d');
+            await waitUntil(() => decisions.length === 2);
+            expect(decisions[1]).toEqual('deny:req-1');
+            expect(mounted.state.input).toEqual('');
+        } finally {
+            await mounted.dispose();
+            gateway.dispose();
+        }
+    }
+
     @Test('?dialog=<unknown> reports a toast instead of opening an empty dialog')
     async deepLinkUnknownRoute() {
         const gateway = new FakeAgentGateway({ sessionId: 'session-A' });

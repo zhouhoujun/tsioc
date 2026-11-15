@@ -329,6 +329,15 @@ export class AgentConsoleInputPanelComponent {
                 return;
             }
         }
+        // Approvals keep their TUI decision keys in the browser: a/d/A must act
+        // immediately while the turn is blocked (Esc rejects).
+        if (this.state?.approvalsFocused && this.state.pendingApprovals?.length) {
+            const focusKey = this.state.focusLayers.resolveShortcutKey(event.key);
+            if (focusKey && await this.state.handleFocusKey(focusKey, { setFocused() { /* no-op */ } } as any)) {
+                event.preventDefault?.();
+                return;
+            }
+        }
         if ((key === 'ArrowUp' || key === 'ArrowDown') && !this.state?.selectMenu) {
             const handled = this.state?.inputHistoryController.navigate(key === 'ArrowUp' ? -1 : 1);
             if (handled) {
