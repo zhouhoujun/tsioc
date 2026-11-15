@@ -257,6 +257,8 @@
 - ✅ 命令对话框互斥：打开 select/text/tools/sessions/approvals/jobs/tasks/toolRuns/review/outputs 会关闭其他 transient 面板。
 - ✅ `/outputs`、which-key、health 改为 composer 上方浮层（不再渲染到输入区下方）。
 - ✅ `/permissions` 能力报告使用专属 `Permissions` 对话框；`/help` 详情 Esc/✕ 返回分组。
+- ✅ D4 选择对话框 type-to-filter：`/model`、`/theme`、`/provider`、`/settings`、`/tools`、`/mcp`、`/skills`、`/plugins`、`/apps`、`/ssh`、`/help` 分组支持键入过滤；标题显示 `· <filter>`，Backspace 逐字删除，过滤为空时数字仍为序号选择，`/` 与 `@` suggestion 菜单不受影响；零匹配时 Enter 不关闭对话框。TUI 走共享 focus layer，Web 把 textarea 按键接到同一层。
+- ✅ D4 palette Esc：命令面板按 Esc 一次关闭（其 parent 链是查询历史而非嵌套对话框，之前需要逐字符回退）。
 - ✅ R1 路由表：`id/path/group/title/command/aliases` + `/dialog [id|path|group|alias|prefix]`、`/help dialogs` 目录、Web `?dialog=` 深链（按 route 命令派发，不写入 `/dialog` 包装行）。
 - 待办：按 D1–D6/R 继续（Dialog Stack 收口 approval/question、route kind/priority/size/load 元数据、键盘/尺寸统一、逻辑懒加载、palette 分组）。
 

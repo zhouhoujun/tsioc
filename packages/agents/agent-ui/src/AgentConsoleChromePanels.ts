@@ -242,7 +242,13 @@ export class AgentConsoleSelectPanelComponent {
 
     // Blocking menus show their question/title and key hint; inline
     // suggestions keep the composer clean.
-    get menuTitleText(): string { const menu = this.menu; return !menu || isAgentConsoleSuggestionMenu(menu) ? '' : (menu.title || ''); }
+    get menuTitleText(): string {
+        const menu = this.menu;
+        if (!menu || isAgentConsoleSuggestionMenu(menu)) return '';
+        // The filter is language-neutral user text, so it rides on the title
+        // instead of adding another localized "filter:" label.
+        return `${menu.title || ''}${menu.filter ? ` · ${menu.filter}` : ''}`;
+    }
 
     get menuHintText(): string { const menu = this.menu; return !menu || isAgentConsoleSuggestionMenu(menu) ? '' : (menu.hint || ''); }
 
@@ -311,10 +317,22 @@ export class AgentConsoleSelectPanelComponent {
     }
 
     async onKeydown(event: KeyboardEvent): Promise<void> {
-        if (!this.menu) {
+        const menu = this.menu;
+        if (!menu) {
             return;
         }
-        if (this.state.focusLayers.handleSelectKey(event.key)) {
+        const blocking = !isAgentConsoleSuggestionMenu(menu);
+        const key = String(event.key || '');
+        let handled = false;
+        if (blocking && key.length === 1) {
+            handled = this.state.focusLayers.handleMenuInput(key, key);
+        } else if (blocking && key === 'Backspace') {
+            handled = this.state.focusLayers.handleMenuInput('backspace', '\b');
+        }
+        if (!handled && this.state.focusLayers.handleSelectKey(key)) {
+            handled = true;
+        }
+        if (handled) {
             event.preventDefault?.();
         }
     }

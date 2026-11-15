@@ -8,11 +8,11 @@ Columns: entry -> current shell -> close/keys -> search/paging -> layout -> know
 | Entry | Current shell | Close / keys | Search / paging | Layout | Known issue |
 |---|---|---|---|---|---|
 | `/help` | `ctx.select` -> `openTextOverlay` | Esc/q/✕; arrows, PgUp/PgDn, Home/End on text | group list; text scroll | select above composer; text card centered | fixed: closing text returns to the group list |
-| `/model` | `openSelectMenu` | Esc/q/✕; arrows/Enter/digits | provider/model lists, nested menus | select card above composer | nested menu Esc returns one level; no type-to-filter |
-| `/provider` | select wizard + text | Esc/q/✕ | provider/auth/model steps | select card | async validation state can leave a stale menu |
+| `/model` | `openSelectMenu` | Esc/q/✕; arrows/Enter/digits; type-to-filter | provider/model lists, nested menus | select card above composer | nested menu Esc returns one level |
+| `/provider` | select wizard + text | Esc/q/✕; type-to-filter on lists | provider/auth/model steps | select card | async validation state can leave a stale menu |
 | `/sessions` | select/list panel | Esc/q/✕ | input filter (in dialog) | select card | empty/async result can render a 0x0 menu |
-| `/settings` | select + forms | Esc/q/✕ | section list | select card | form fields use custom shell, not DialogFrame |
-| `/theme` | select | Esc/q/✕ | list | select card | no preview row |
+| `/settings` | select + forms | Esc/q/✕; type-to-filter | section list | select card | form fields use custom shell, not DialogFrame |
+| `/theme` | select | Esc/q/✕; type-to-filter | list | select card | no preview row |
 | `/tools` | select/text | Esc/q/✕ | tool list | select card | no-arg vs arg paths differ |
 | `/approvals` | custom approvals panel | `a/d/A/y`, arrows, Esc/✕ | list | custom panel | separate shell from DialogFrame |
 | `/outputs` | command-output panel | arrows/Enter/Esc/✕ | filter mode | panel | close semantics differ from select |
@@ -37,6 +37,9 @@ Columns: entry -> current shell -> close/keys -> search/paging -> layout -> know
 
 - ✅ R1 route catalog: `/dialog [id|path|group|alias|prefix]` lists and dispatches dialog routes; pending questions keep the focus stack (Esc restores the panel underneath).
 - ✅ R1 discoverability: `/help dialogs` opens the route catalogue grouped by category, sharing the same builder as `/dialog`.
+- ✅ D4 type-to-filter: blocking select dialogs (`/model`, `/theme`, `/provider`, `/settings`, `/tools`, `/mcp`, `/skills`, `/plugins`, `/apps`, `/ssh`, `/help` groups) accept typed text as a live filter; the title shows `· <filter>`, Backspace edits it, digits keep numbered selection only while the filter is empty, and suggestion (`/`, `@`) menus keep filtering the composer. TUI filters through the shared focus layer; web routes textarea keys into the same layer.
+- ✅ D4 palette/dialog keys: Esc on the command palette now closes it in one press (its parent chain was its own query history, not a nested dialog).
+- ✅ D4 empty results: Enter with zero matches keeps the dialog open instead of closing it with an undefined answer.
 - ✅ R1 deep link: web `?dialog=<route>` resolves through the route table and dispatches the route's own command (transcript records `/theme`, not `/dialog theme`); unknown routes show a toast instead of an empty dialog.
 - Remaining R work: `kind`/`priority`/`size`/`hidden`/`load()` route metadata, palette grouping, logical lazy loading (true chunks need ESM web build), route-level failure retry.
 

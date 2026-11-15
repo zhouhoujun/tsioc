@@ -292,6 +292,10 @@ export interface AgentConsoleSelectMenu {
     kind?: string;
     hint?: string;
     options: AgentConsoleSelectOption[];
+    /** Unfiltered option list; `options` is the filtered projection. */
+    allOptions?: AgentConsoleSelectOption[];
+    /** Live type-to-filter text for blocking menus. */
+    filter?: string;
     selectedIndex: number;
     parentMenu?: AgentConsoleSelectMenu;
     parentMenuAction?: (value: string | undefined) => void | Promise<void>;

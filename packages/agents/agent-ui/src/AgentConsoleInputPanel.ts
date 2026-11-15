@@ -340,6 +340,19 @@ export class AgentConsoleInputPanelComponent {
                 });
                 return;
             }
+            // Type-to-filter for blocking dialogs: the browser keeps DOM focus
+            // in the textarea, so printable keys must feed the menu filter
+            // instead of the draft. Suggestion menus keep filtering the draft.
+            if (!isAgentConsoleSuggestionMenu(this.state.selectMenu)) {
+                const filtering = key === 'Backspace'
+                    ? this.state.focusLayers.handleMenuInput('backspace', '\b')
+                    : (!event.ctrlKey && !event.metaKey && !event.altKey && key.length === 1
+                        && this.state.focusLayers.handleMenuInput(key, key));
+                if (filtering) {
+                    event.preventDefault?.();
+                    return;
+                }
+            }
             if (this.state.focusLayers.handleSelectKey(event.key)) {
                 event.preventDefault?.();
                 return;

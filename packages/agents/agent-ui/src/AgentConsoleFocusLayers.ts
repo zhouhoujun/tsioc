@@ -3,6 +3,7 @@ import type { AgentConsoleFocusLayer } from './AgentConsoleSessionState';
 import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import type { AgentConsoleTranscriptNavigationController } from './AgentConsoleTranscriptNavigation';
 import { AgentConsoleOverlayController } from './AgentConsoleOverlay';
+import { handleSelectMenuInput as handleSelectMenuInputInState } from './AgentConsoleSelectMenuState';
 import { handleSessionsKeyView } from './AgentConsoleSessionPanelKeys';
 import { agentConsoleTextChunk } from './AgentConsoleKeyText';
 import { AgentConsoleFocusTranscriptLayers } from './AgentConsoleFocusTranscriptLayers';
@@ -145,25 +146,7 @@ export abstract class AgentConsoleFocusLayers extends AgentConsoleFocusTranscrip
     }
 
     handleMenuInput(key: string, text: string): boolean {
-        const state = this.state;
-        if (!state.selectMenu) return false;
-        const decision = this.overlay.resolveMenuKey(key, text, state.selectMenu.options.length);
-        switch (decision.action) {
-            case 'move': state.moveSelectMenu(decision.delta); return true;
-            case 'home': state.moveSelectMenuToEdge('start'); return true;
-            case 'end': state.moveSelectMenuToEdge('end'); return true;
-            case 'page': state.moveSelectMenuPage(decision.direction); return true;
-            case 'accept': void state.acceptSelectMenu(); return true;
-            case 'complete': void state.completeSelectMenu(); return true;
-            case 'choose': state.setSelectMenuIndex(decision.index); void state.acceptSelectMenu(); return true;
-            case 'digit-consume': return true;
-            case 'cancel':
-                state.setSuppressSuggestionMenu(true);
-                void state.cancelSelectMenu();
-                return false;
-            case 'escape': void state.dismissSelectMenuLayer(); return true;
-            default: return false;
-        }
+        return handleSelectMenuInputInState(this.state, key, text);
     }
 
     handlePendingQuestionKey(normalized: string): boolean | Promise<boolean> | undefined {

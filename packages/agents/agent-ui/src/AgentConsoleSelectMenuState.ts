@@ -23,6 +23,8 @@ export function openSelectMenu(state: AgentConsoleSessionState, title: string, o
             kind,
             hint: hint || state.consoleOptions.selectHint,
             options: options.slice(),
+            allOptions: options.slice(),
+            filter: '',
             selectedIndex: Math.max(0, Math.min(Math.max(options.length - 1, 0), selectedIndex)),
             parentMenu: currentMenu,
             parentMenuAction: currentAction
@@ -40,6 +42,12 @@ export async function dismissSelectMenuLayer(state: AgentConsoleSessionState): P
         const currentMenu = state.selectMenu;
         const parentMenu = currentMenu?.parentMenu;
         if (!currentMenu) return;
+        // Each palette keystroke reopens the menu, so its parent chain is the
+        // query history, not a nested dialog. Esc closes it in one press.
+        if (currentMenu.kind === 'palette') {
+            await state.cancelSelectMenu();
+            return;
+        }
         if (parentMenu) {
             state.selectMenuAction = undefined;
             state.closeSelectMenu();
@@ -121,7 +129,92 @@ export function shouldSubmitConfirmedSelectMenuValue(state: AgentConsoleSessionS
         return mentionCandidates.includes(resolved);
     }
 
+function matchesSelectMenuFilter(option: AgentConsoleSelectOption, filter: string): boolean {
+        return `${option.label} ${option.value} ${option.description || ''}`.toLowerCase().includes(filter);
+    }
+
+/** Recompute the visible options for a blocking menu from its full list. */
+export function setSelectMenuFilter(state: AgentConsoleSessionState, filter: string): void {
+        const menu = state.selectMenu;
+        if (!menu) return;
+        const source = (menu.allOptions || menu.options).slice();
+        const value = String(filter || '').toLowerCase();
+        menu.allOptions = source;
+        menu.filter = value;
+        menu.options = value ? source.filter(option => matchesSelectMenuFilter(option, value)) : source.slice();
+        menu.selectedIndex = 0;
+        state.selectMenuTouched = true;
+        state.syncDerivedInputFocus();
+    }
+
+/**
+ * Type-to-filter for blocking select menus.
+ *
+ * Digits keep their numbered-selection meaning while the filter is empty; once
+ * the user has typed a filter they become part of the query (model names such
+ * as `gpt-4o`). `q` keeps its dismiss meaning only for an empty filter.
+ */
+export function applySelectMenuFilterInput(state: AgentConsoleSessionState, text: string): boolean {
+        const menu = state.selectMenu;
+        const raw = String(text || '');
+        if (!menu || !raw || /[\r\n\t]/.test(raw)
+            || isAgentConsoleSuggestionMenu(menu) || menu.kind === 'palette') return false;
+        if (/[\u0000-\u001f\u007f]/.test(raw)) return false;
+        if (!menu.filter) {
+            if (/^[0-9]$/.test(raw)) return false;
+            if (/^q$/i.test(raw)) return false;
+        }
+        setSelectMenuFilter(state, `${menu.filter || ''}${raw}`);
+        return true;
+    }
+
+export function backspaceSelectMenuFilter(state: AgentConsoleSessionState): boolean {
+        const menu = state.selectMenu;
+        if (!menu || menu.kind === 'palette' || !menu.filter) return false;
+        setSelectMenuFilter(state, menu.filter.slice(0, -1));
+        return true;
+    }
+
+/**
+ * Keyboard routing for the open select menu: blocking dialogs take typed text
+ * as a filter, then the overlay decides movement/confirm/dismiss. Suggestion
+ * and palette menus keep their own query handling.
+ */
+export function handleSelectMenuInput(state: AgentConsoleSessionState, key: string, text: string): boolean {
+        const menu = state.selectMenu;
+        if (!menu) return false;
+        if (!isAgentConsoleSuggestionMenu(menu) && menu.kind !== 'palette') {
+            if (key === 'backspace' || text === '\b' || text === '\u007f') {
+                if (backspaceSelectMenuFilter(state)) return true;
+            } else if (applySelectMenuFilterInput(state, text)) {
+                return true;
+            }
+        }
+        const decision = state.overlayController.resolveMenuKey(key, text, menu.options.length);
+        switch (decision.action) {
+            case 'move': moveSelectMenu(state, decision.delta); return true;
+            case 'home': moveSelectMenuToEdge(state, 'start'); return true;
+            case 'end': moveSelectMenuToEdge(state, 'end'); return true;
+            case 'page': moveSelectMenuPage(state, decision.direction); return true;
+            case 'accept': void acceptSelectMenu(state); return true;
+            case 'complete': void completeSelectMenu(state); return true;
+            case 'choose': setSelectMenuIndex(state, decision.index); void acceptSelectMenu(state); return true;
+            case 'digit-consume': return true;
+            case 'cancel':
+                state.setSuppressSuggestionMenu(true);
+                void cancelSelectMenu(state);
+                return false;
+            case 'escape': void dismissSelectMenuLayer(state); return true;
+            default: return false;
+        }
+    }
+
 export async function confirmSelectMenu(state: AgentConsoleSessionState, value?: string): Promise<string | undefined> {
+        // A filter can leave zero options; Enter must keep the dialog open
+        // instead of closing it with an undefined answer.
+        if (value === undefined && state.selectMenu && !state.selectMenu.options.length) {
+            return undefined;
+        }
         const resolved = value ?? state.selectedSelectMenuOption?.value;
         const action = state.selectMenuAction;
         state.selectMenuAction = undefined;
@@ -202,6 +295,8 @@ export async function openSubSelectMenu(state: AgentConsoleSessionState, title: 
             title,
             hint: hint || state.consoleOptions.selectHint,
             options: options.slice(),
+            allOptions: options.slice(),
+            filter: '',
             selectedIndex: Math.max(0, Math.min(Math.max(options.length - 1, 0), selectedIndex)),
             parentMenu: currentMenu,
             parentMenuAction: currentAction
