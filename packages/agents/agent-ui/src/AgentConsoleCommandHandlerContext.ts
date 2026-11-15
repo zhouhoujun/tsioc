@@ -16,6 +16,8 @@ export interface CommandHandlerContext {
     /** Request-scoped cancellation signal. Handlers may forward it to async ports. */
     readonly abortSignal?: AbortSignal;
     readonly transcriptNavigationController: { setFocused(focused: boolean): void };
+    /** Execute another slash command through the console dispatcher. */
+    executeCommand?(command: string): Promise<boolean>;
     // ── state access ──
     readonly state: {
         readonly sessionId: string;

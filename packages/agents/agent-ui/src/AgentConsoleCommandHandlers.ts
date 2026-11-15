@@ -29,6 +29,7 @@ import { runMultilineCommand, runSendCommand } from './AgentConsoleMultilineComm
 import { handleProjects, handleSearch, handleSections, handleThreads, handleThreadplan } from './AgentConsoleSessionCommands';
 import { handleReview } from './AgentConsoleReviewCommands';
 import { runWorktreeCommand } from './AgentConsoleWorktreeCommands';
+import { handleDialogCommand } from './AgentConsoleDialogCommands';
 import { handleCompact, handleCompactions, handleDelegation, handleDiagnostics, handleHarness, handleQuality } from './AgentConsoleDiagnosticsCommands';
 // ── Command handler type ─────────────────────────────────────────────────────
 
@@ -125,6 +126,7 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/cd': async (ctx, args, meta) => { await ctx.runCdCommand(canonicalArgsOf(meta, args)); return true; },
     '/pwd': handlePwd,
     '/goal': (ctx, args, meta) => ctx.runGoalCommand(canonicalArgsOf(meta, args)).then(() => true),
+    '/dialog': (ctx, args) => handleDialogCommand(ctx, args),
     '/worktree': (ctx, args) => runWorktreeCommand(ctx, args),
     '/undo': (ctx, args) => guardDelegateNoArgs(ctx, args, { command: '/undo', matches: [] }, () => ctx.runUndoCommand().then(() => true)),
     '/redo': (ctx, args) => guardDelegateNoArgs(ctx, args, { command: '/redo', matches: [] }, () => ctx.runRedoCommand().then(() => true)),

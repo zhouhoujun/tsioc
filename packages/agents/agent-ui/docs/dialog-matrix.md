@@ -35,6 +35,8 @@ Columns: entry -> current shell -> close/keys -> search/paging -> layout -> know
 - Command-outputs / which-key / health panels are anchored above the composer instead of rendering below the input.
 - Text/select cards are centred inside the anchored overlay.
 
+- ✅ R1 route catalog: `/dialog [id|path|group]` lists and dispatches dialog routes; pending questions keep the focus stack (Esc restores the panel underneath).
+
 ## Root causes
 
 1. Two state families (`selectMenu` with parent chain; `textOverlay`/approval/question singletons) have no common stack.

@@ -23,7 +23,7 @@ const GROUP_COUNTS: Record<string, number> = {
     review: 9,
     hooks: 4,
     delegation: 10,
-    system: 5
+    system: 6
 };
 
 const NEEDS_ARGS_COMMANDS = [
@@ -36,9 +36,9 @@ const NEEDS_ARGS_COMMANDS = [
 @Suite('Agent console command registry')
 export class AgentConsoleCommandRegistryTest {
 
-    @Test('defines all 96 commands with defined groups, /help first')
+    @Test('defines all 97 commands with defined groups, /help first')
     registryCompleteness() {
-        expect(AGENT_CONSOLE_COMMAND_DEFINITIONS.length).toEqual(96);
+        expect(AGENT_CONSOLE_COMMAND_DEFINITIONS.length).toEqual(97);
         expect(AGENT_CONSOLE_COMMAND_DEFINITIONS[0].name).toEqual('/help');
         AGENT_CONSOLE_COMMAND_DEFINITIONS.forEach(def => {
             expect(def.name.startsWith('/')).toEqual(true);
@@ -57,7 +57,7 @@ export class AgentConsoleCommandRegistryTest {
     @Test('hidden commands stay executable but leave the menu and /help')
     hiddenCommandsLeaveTheMenu() {
         const hidden = AGENT_CONSOLE_COMMAND_DEFINITIONS.filter(def => def.hidden).map(def => def.name);
-        expect(hidden.length).toEqual(19);
+        expect(hidden.length).toEqual(20);
         const hints = agentConsoleCommandHints();
         const help = buildAgentConsoleHelpOptions();
         hidden.forEach(name => {

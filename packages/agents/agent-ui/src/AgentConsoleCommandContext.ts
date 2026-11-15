@@ -8,6 +8,7 @@ import { policyCommandHost } from './AgentConsoleHostFactories';
 export function buildCommandContext(self: any, abortSignal?: AbortSignal): CommandHandlerContext {        return {
             abortSignal,
             transcriptNavigationController: self.transcriptNavigationController,
+            executeCommand: (command: string) => self.handleCommand(command),
             state: buildCommandHandlerState(self.state),
             notify: (m, d) => self.notify(m, d),
             translator: self.translator,
