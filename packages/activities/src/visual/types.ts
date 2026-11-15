@@ -942,6 +942,8 @@ export interface WorkflowRunHistoryItem {
     timeLabel: string;
     durationLabel: string;
     nodeCount: number;
+    /** Serialized snapshot size, so large runs are visible before opening them. */
+    sizeLabel: string;
     tone: 'idle' | 'running' | 'success' | 'failed' | 'cancelled';
     active: boolean;
 }

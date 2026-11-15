@@ -85,6 +85,7 @@ interface WorkflowDocumentTab {
             :visible="showVersions" :locale="locale" :error="versionError"
             :diff="versionDiff" :diffVersion="versionDiffVersion"
             :restoreAction="restoreVersion" :compareAction="compareVersion"
+            :releaseAction="releaseVersion"
             :closeDiffAction="closeVersionDiff" :closeAction="closeVersions"></workflow-version-panel>
         <div class="workflow-rename" v-if="showRename">
             <div class="workflow-rename-panel">
@@ -707,6 +708,10 @@ export class WorkflowDesignerComponent implements OnDestroy {
             void self.openVersions();
             return;
         }
+        if (action === 'clear-runs') {
+            void self.clearRunHistory();
+            return;
+        }
         if (action === 'open-library') {
             void self.openLibrary();
             return;
@@ -1040,6 +1045,39 @@ export class WorkflowDesignerComponent implements OnDestroy {
             self.versionDiff = diffWorkflowDefinitions(snapshot, self.designer.definition);
         } catch (error) {
             self.versionError = (error as Error).message;
+        }
+    };
+
+    /** Make an existing version the release pointer without touching the draft. */
+    readonly releaseVersion = async (version: number): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        try {
+            const release = await self.designer.releaseVersion(self.store, version);
+            if (!release) {
+                self.versionError = self.designer.error || '';
+                return;
+            }
+            self.versionRelease = release;
+            self.versionError = '';
+            self.versionItems = self.versionItems.map(item => item.version === version
+                ? { ...item, kind: 'publish' }
+                : item);
+        } catch (error) {
+            self.versionError = (error as Error).message;
+        }
+    };
+
+    /** Clear persisted run history for the open document. */
+    readonly clearRunHistory = async (): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        const store = self.store;
+        if (typeof store?.clearExecutions !== 'function') {
+            return;
+        }
+        try {
+            await store.clearExecutions(self.designer.definition.id);
+        } catch (error) {
+            self.libraryError = (error as Error).message;
         }
     };
 

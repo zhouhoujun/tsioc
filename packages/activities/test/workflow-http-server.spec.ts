@@ -222,6 +222,22 @@ describe('Workflow HTTP microservice', () => {
         const draft = await request(`${base}/api/workflows/versioned`);
         expect(draft.body.name).toBe('Published graph');
 
+        // Roll back by pointing the release at an existing version.
+        const rollback = await request(`${base}/api/workflows/versioned/versions/1/publish`, {
+            method: 'POST', headers: json, body: '{}'
+        });
+        expect(rollback.status).toBe(200);
+        expect(rollback.body.release.version).toBe(1);
+        const afterRollback = await request(`${base}/api/workflows/versioned/versions`);
+        expect(afterRollback.body.release.version).toBe(1);
+        // The promoted snapshot survives draft-save retention.
+        expect(afterRollback.body.items.find((item: any) => item.version === 1).kind).toBe('publish');
+
+        const missingRollback = await request(`${base}/api/workflows/versioned/versions/99/publish`, {
+            method: 'POST', headers: json, body: '{}'
+        });
+        expect(missingRollback.status).toBe(404);
+
         const removed = await request(`${base}/api/workflows/versioned`, { method: 'DELETE' });
         expect(removed.status).toBe(200);
         const clearedVersions = await request(`${base}/api/workflows/versioned/versions`);
@@ -376,6 +392,34 @@ describe('Workflow HTTP microservice', () => {
         expect(String(run.body.error || '')).toContain('timed out');
 
         await request(`${base}/api/workflows/timeout-demo`, { method: 'DELETE' });
+    });
+
+    it('clears run history through the HTTP API', async () => {
+        const definition = {
+            id: 'clear-runs',
+            name: 'Clear runs',
+            nodes: [
+                { id: 'start_1', name: 'Start', type: 'start' as const, position: { x: 0, y: 0 } },
+                { id: 'end_1', name: 'End', type: 'end' as const, position: { x: 200, y: 0 } }
+            ],
+            connections: [{
+                id: 'c1', sourceNodeId: 'start_1', sourcePort: 'out', targetNodeId: 'end_1', targetPort: 'in'
+            }]
+        };
+        const json = { 'content-type': 'application/json' };
+        await request(`${base}/api/workflows/clear-runs`, {
+            method: 'PUT', headers: json, body: JSON.stringify(definition)
+        });
+        await request(`${base}/api/workflows/clear-runs/run`, {
+            method: 'POST', headers: json, body: JSON.stringify({ context: {} })
+        });
+        const before = await request(`${base}/api/executions?workflowId=clear-runs`);
+        expect(before.body.length).toBeGreaterThan(0);
+
+        const cleared = await request(`${base}/api/executions?workflowId=clear-runs`, { method: 'DELETE' });
+        expect(cleared.status).toBe(200);
+        const after = await request(`${base}/api/executions?workflowId=clear-runs`);
+        expect(after.body.length).toBe(0);
     });
 
     it('inspects and cancels executions through the HTTP API', async () => {

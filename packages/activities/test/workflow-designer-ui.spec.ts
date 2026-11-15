@@ -1024,6 +1024,25 @@ describe('Workflow Designer UI', () => {
         expect(popup.hasAttribute('hidden')).toBe(true);
     });
 
+    it('shows run size on history chips and clears persisted history', async () => {
+        await ref.instance.designer.run({ context: {} });
+        await waitFor(() => ref.instance.designer.executionHistory.length > 0);
+        await flush();
+        const chips = root.querySelectorAll('.workflow-run-chip');
+        expect(chips.length).toBeGreaterThan(0);
+        const size = ((chips[0].querySelector('.workflow-run-chip-size') as any)?.textContent || '').trim();
+        expect(size).toMatch(/^(\d+ B|\d+\.\d KB|\d+\.\d MB)$/);
+
+        let cleared: string | undefined = 'unset';
+        const store = new InMemoryWorkflowDefinitionStore();
+        (store as any).clearExecutions = async (workflowId?: string) => { cleared = workflowId; };
+        ref.instance.store = store;
+        (root.querySelector('.workflow-run-clear') as any).click();
+        await flush();
+        expect(cleared).toBe(ref.instance.designer.definition.id);
+        expect(ref.instance.designer.executionHistory.length).toBe(0);
+    });
+
     it('publishes the active workflow from the menu and records a release', async () => {
         const store = new InMemoryWorkflowDefinitionStore();
         ref.instance.store = store;
@@ -1122,11 +1141,32 @@ describe('Workflow Designer UI', () => {
         expect(diff.textContent).toContain('name');
         expect(diff.querySelectorAll('.workflow-version-diff-row').length).toBeGreaterThan(0);
 
-        const restore = rows[1].querySelectorAll('button')[1] as any;
+        // Rolling back: promote v1 to the release without touching the draft.
+        const releaseButton = Array.from(rows[1].querySelectorAll('button')) as any[];
+        const releaseAction = releaseButton.find(button => /发布此版本/.test(button.textContent || '')) as any;
+        expect(releaseAction).toBeTruthy();
+        releaseAction.click();
+        await waitFor(() => ref.instance.versionRelease?.version === 1);
+        expect(ref.instance.versionRelease?.version).toBe(1);
+        expect(ref.instance.versionItems.find(item => item.version === 1)?.kind).toBe('publish');
+        expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name).toBe('second version');
+
+        const currentButtons = Array.from(rows[1].querySelectorAll('button')) as any[];
+        const restore = currentButtons.find(button => /恢复/.test(button.textContent || '')) as any;
+        expect(restore).toBeTruthy();
         restore.click();
         await waitFor(() => ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name === 'first version');
         expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name).toBe('first version');
         expect((root.querySelector('.workflow-version-panel') as any).hasAttribute('hidden')).toBe(true);
+
+        // Explicit saves record the signed-in author provided by the host.
+        ref.instance.designer.author = '张三';
+        ref.instance.designer.renameNode('task_1', 'authored');
+        await ref.instance.saveWorkflow();
+        await ref.instance.openVersions();
+        await flush();
+        const metas = Array.from(root.querySelectorAll('.workflow-version-meta')) as any[];
+        expect(metas.some(meta => (meta.textContent || '').includes('由 张三'))).toBe(true);
     });
 
     it('debounces code edits so typing does not rebuild the workflow per keystroke', async () => {
@@ -1212,8 +1252,10 @@ describe('Workflow Designer UI', () => {
         } as any;
         ref.instance.autosave = true;
         ref.instance.autosaveDelay = 5;
-        ref.instance.autosaveMinInterval = 250;
-        ref.instance.autosaveMaxDelay = 4000;
+        // Wide windows: the assertion is about coalescing, not about how fast
+        // the test machine schedules timers.
+        ref.instance.autosaveMinInterval = 2000;
+        ref.instance.autosaveMaxDelay = 6000;
 
         ref.instance.designer.renameNode('task_1', 'First edit');
         ref.instance.scheduleAutosave();
@@ -1229,7 +1271,7 @@ describe('Workflow Designer UI', () => {
         }
         expect(writes).toBe(1);
 
-        await waitFor(() => writes === 2, 3000);
+        await waitFor(() => writes === 2, 5000);
         expect(writes).toBe(2);
         expect((await store.get(ref.instance.designer.definition.id))?.nodes
             .find(node => node.id === 'task_1')?.name).toBe('Slow edit 2');

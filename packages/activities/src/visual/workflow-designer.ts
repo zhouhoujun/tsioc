@@ -149,6 +149,8 @@ export class WorkflowDesigner {
     checkpoint?: WorkflowExecutionSnapshot;
     running = false;
     dirty = false;
+    /** Display name recorded on explicit saves and releases (host-provided). */
+    author = '';
     gridSize = 10;
     snapToGrid = true;
     message = '';
@@ -815,7 +817,7 @@ export class WorkflowDesigner {
         let summary: WorkflowDefinitionSummary;
         let versionNumber: number | undefined;
         if (versioned) {
-            const version = await store.saveVersion!(definition);
+            const version = await store.saveVersion!(definition, this.author ? { createdBy: this.author } : undefined);
             versionNumber = version.version;
             summary = {
                 id: definition.id,
@@ -873,7 +875,9 @@ export class WorkflowDesigner {
             this.setError(validation.errors.join('; '));
             return undefined;
         }
-        const result = await store.publish(this.definition, options);
+        const result = await store.publish(this.definition, {
+            publishedBy: options.publishedBy || this.author || undefined
+        });
         this.savedSnapshot = JSON.stringify(this.definition);
         this.savedSummary = undefined;
         this.dirty = false;
@@ -892,6 +896,27 @@ export class WorkflowDesigner {
             connectionCount: definition.connections?.length || 0,
             updatedAt: definition.metadata?.updatedAt || new Date().toISOString()
         };
+    }
+
+    /**
+     * Promote an existing version to the release pointer without touching the
+     * draft: the standard rollback path.
+     */
+    async releaseVersion(
+        store: WorkflowDefinitionStore,
+        version: number,
+        options: { publishedBy?: string } = {}
+    ): Promise<WorkflowRelease | undefined> {
+        if (typeof store.publishVersion !== 'function') {
+            this.setError('workflow.error.publishUnsupported');
+            return undefined;
+        }
+        const release = await store.publishVersion(this.definition.id, version, {
+            publishedBy: options.publishedBy || this.author || undefined
+        });
+        this.setError('');
+        this.setMessage('workflow.message.published', { version: release.version });
+        return release;
     }
 
     async openFrom(store: WorkflowDefinitionStore, id: string): Promise<boolean> {

@@ -4269,3 +4269,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **UI**：版本面板每行新增「对比」，与**当前草稿**比较并在面板底部展开差异区（标题带版本号、关闭按钮、`+ 新增 / − 删除 / ~ 字段`）；恢复或关闭面板会清空差异。
 - **实测（真实 Chrome，workflow-admin + SQLite）**：v1 与草稿对比输出 `~ version two: name`，标题 `Changes since v1`；对比后仍可恢复 v1；无 console 错误。
 - **回归**：activities **375 passing**（新增 diff 单元测试 4 条 + 面板对比 UI 断言）；microservices/admin 63；workflow-admin preview EXIT 0；`tsc` 0；`check-source-size` / `git diff --check` OK；设计器初始包 764.0 KiB / gzip **199.4 KiB**（< 800 KB raw / 205 KB gzip）。
+
+## 2026-11-15 发布回滚 / 发布人 / 运行历史增强（1、2、3）
+- **发布回滚**：新增 `POST /api/workflows/:id/versions/:v/publish`（内存 + SQLite + HTTP 客户端 `publishVersion`）；版本面板每行多出「发布此版本」，直接切换发布指针且**不改草稿**；被提升的历史版本 kind 改为 `publish`，避免被「保留最近 20 个保存」裁掉；不存在的版本返回 404。
+- **发布人**：`WorkflowDesigner.author` 由宿主注入（workflow-admin 从 `/auth/session` 取显示名），显式保存与发布写入 `createdBy/publishedBy`；版本面板 meta 显示 `已保存 · 时间 · 由 张三`。
+- **运行历史增强**：`WorkflowRunHistoryItem.sizeLabel`（快照序列化体积），chips 显示体积与条数；新增「清空」按钮 → `DELETE /api/executions?workflowId=`（同时清 `VisualWorkflowService` 内存中的已完成运行，否则列表会残留）+ 本地 chips 立即清空。
+- **实测（真实 Chrome + SQLite）**：Ctrl+S 得 v1、发布得 v2，面板对 v1 点「发布此版本」后 release 变为 v1、v1 行高亮且不再显示发布按钮（草稿未变）；运行后面板显示 `1 · 5.8 KB`，点「清空」后 chips 为 0、`executionHistory` 为 0，且对 `store.clearExecutions('workflow_demo')` 调用一次。
+- **回归**：activities **377 passing**（新增回滚发布/执行历史清空/diff 相关断言）；microservices/admin 63；components/common 79；workflow-admin preview EXIT 0；`tsc` 0；`check-source-size` / `git diff --check` OK；设计器初始包 768.0 KiB / gzip **200.2 KiB**。
+- **预算**：gzip 预算随本轮 UI 增长由 205 KB 调整为 **212 KB**（raw 800 KB 不变）；`preview-test.js` 阈值不变。

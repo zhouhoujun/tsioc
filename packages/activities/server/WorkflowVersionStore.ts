@@ -132,6 +132,11 @@ export class InMemoryWorkflowVersionStore implements WorkflowVersionStore {
             publishedBy
         };
         this.releases.set(workflowId, release);
+        // Promoted saves must survive retention, which prunes plain 'save' rows.
+        const entry = (this.versions.get(workflowId) || []).find(item => item.summary.version === version);
+        if (entry) {
+            entry.summary.kind = 'publish';
+        }
         return { ...release };
     }
 
@@ -295,7 +300,8 @@ export class SqliteWorkflowVersionStore implements WorkflowVersionStore {
             throw new Error(`Version not found: ${workflowId} v${version}`);
         }
         const publishedAt = new Date().toISOString();
-        this.database().prepare(`
+        const db = this.database();
+        db.prepare(`
             INSERT INTO workflow_releases (workflow_id, version, published_at, published_by)
             VALUES (?, ?, ?, ?)
             ON CONFLICT(workflow_id) DO UPDATE SET
@@ -303,6 +309,9 @@ export class SqliteWorkflowVersionStore implements WorkflowVersionStore {
                 published_at = excluded.published_at,
                 published_by = excluded.published_by
         `).run(workflowId, version, publishedAt, publishedBy ?? null);
+        // Promoted saves must survive retention, which prunes plain 'save' rows.
+        db.prepare('UPDATE workflow_versions SET kind = ? WHERE workflow_id = ? AND version = ?')
+            .run('publish', workflowId, version);
         return { workflowId, version, publishedAt, publishedBy };
     }
 

@@ -680,6 +680,19 @@ function formatClock(timestamp?: number): string {
     return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
+function formatBytes(bytes: number): string {
+    if (!Number.isFinite(bytes) || bytes <= 0) {
+        return '';
+    }
+    if (bytes < 1024) {
+        return `${bytes} B`;
+    }
+    if (bytes < 1024 * 1024) {
+        return `${(bytes / 1024).toFixed(1)} KB`;
+    }
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function formatDuration(start?: number, end?: number): string {
     if (!start || !end || end < start) {
         return '';
@@ -718,6 +731,7 @@ export function buildWorkflowRunHistory(
             timeLabel: formatClock(snapshot.startTime),
             durationLabel: formatDuration(snapshot.startTime, snapshot.endTime),
             nodeCount: Object.keys(snapshot.nodeStates || {}).length,
+            sizeLabel: formatBytes(JSON.stringify(snapshot).length),
             tone,
             active: designer.selectedExecutionId === snapshot.executionId
         };

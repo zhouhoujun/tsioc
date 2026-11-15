@@ -13,6 +13,7 @@ import { translateWorkflow } from '../i18n';
     template: `
     <div class="workflow-run-history" v-show="items.length">
         <span class="workflow-run-history-title">{{title}}</span>
+        <span class="workflow-run-history-count">{{items.length}}</span>
         <button class="workflow-run-chip"
                 v-for="item in items"
                 [class]="chipClass(item)"
@@ -23,13 +24,17 @@ import { translateWorkflow } from '../i18n';
             <span class="workflow-run-chip-time">{{item.label}}</span>
             <span class="workflow-run-chip-status">{{item.statusLabel}}</span>
             <span class="workflow-run-chip-duration" v-if="item.durationLabel">{{item.durationLabel}}</span>
+            <span class="workflow-run-chip-size" v-if="item.sizeLabel">{{item.sizeLabel}}</span>
         </button>
+        <button class="workflow-run-clear" type="button" [title]="clearLabel" [aria-label]="clearLabel"
+            @click="clear">{{clearLabel}}</button>
     </div>`
 })
 export class WorkflowRunHistoryComponent {
     @Attribute() items: WorkflowRunHistoryItem[] = [];
     @Attribute() locale = 'zh-CN';
     @Attribute() selectAction?: (executionId: string) => void;
+    @Attribute() clearAction?: () => void;
 
     constructor(@Optional() private readonly translator?: Translator) { }
 
@@ -49,7 +54,15 @@ export class WorkflowRunHistoryComponent {
         };
     }
 
+    get clearLabel(): string {
+        return translateWorkflow(this.translator, this.isZh ? 'zh-CN' : 'en', 'workflow.ui.clearRuns', 'Clear');
+    }
+
     select(item: WorkflowRunHistoryItem): void {
         this.selectAction?.(item.executionId);
+    }
+
+    clear(): void {
+        this.clearAction?.();
     }
 }

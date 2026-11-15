@@ -27,9 +27,10 @@ import { describeWorkflowDiff, WorkflowDiffResult } from '../workflow-diff';
                 <span class="workflow-version-badge">v{{item.version}}</span>
                 <span class="workflow-version-main">
                     <span class="workflow-version-name">{{item.name || item.workflowId}}</span>
-                    <span class="workflow-version-meta">{{kindLabel(item)}} · {{item.createdAt}}</span>
+                    <span class="workflow-version-meta">{{metaLabel(item)}}</span>
                 </span>
                 <button class="workflow-btn" type="button" @click="compare(item)">{{compareLabel}}</button>
+                <button class="workflow-btn" type="button" v-if="!isReleased(item)" @click="releaseItem(item)">{{releaseLabel}}</button>
                 <button class="workflow-btn" type="button" @click="restore(item)">{{restoreLabel}}</button>
             </div>
         </div>
@@ -59,6 +60,7 @@ export class WorkflowVersionPanelComponent {
     @Attribute() diffVersion?: number;
     @Attribute() restoreAction?: (version: number) => void;
     @Attribute() compareAction?: (version: number) => void;
+    @Attribute() releaseAction?: (version: number) => void;
     @Attribute() closeDiffAction?: () => void;
     @Attribute() closeAction?: () => void;
 
@@ -77,6 +79,20 @@ export class WorkflowVersionPanelComponent {
     get restoreLabel(): string { return this.t('versionRestore', 'Restore'); }
     get closeLabel(): string { return this.t('close', 'Close'); }
     get compareLabel(): string { return this.t('versionCompare', 'Compare'); }
+    get releaseLabel(): string { return this.t('versionRelease', 'Release'); }
+
+    /** `Saved · <time> · by <author>` — the author is host-provided and optional. */
+    metaLabel(item: WorkflowVersionSummary): string {
+        const parts = [this.kindLabel(item), item.createdAt];
+        if (item.createdBy) {
+            parts.push(this.t('versionBy', 'by') + ' ' + item.createdBy);
+        }
+        return parts.join(' · ');
+    }
+
+    isReleased(item: WorkflowVersionSummary): boolean {
+        return this.release?.version === item.version;
+    }
     get diffEmptyLabel(): string { return this.t('versionDiffEmpty', 'No differences from the draft.'); }
 
     get diffTitle(): string {
@@ -95,6 +111,10 @@ export class WorkflowVersionPanelComponent {
         this.compareAction?.(item.version);
     }
 
+    releaseItem(item: WorkflowVersionSummary): void {
+        this.releaseAction?.(item.version);
+    }
+
     clearDiff(): void {
         this.closeDiffAction?.();
     }
@@ -108,7 +128,7 @@ export class WorkflowVersionPanelComponent {
     rowClass(item: WorkflowVersionSummary): Record<string, boolean> {
         return {
             'workflow-version-row': true,
-            'is-published': this.release?.version === item.version
+            'is-published': this.isReleased(item)
         };
     }
 

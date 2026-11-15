@@ -117,10 +117,15 @@ export class WorkflowAdminDesignerPageComponent implements AfterViewInit {
         const authName = document.getElementById('auth-name');
         try {
             const session = await firstValue(this.http.get<{ user?: any }>('/auth/session', { withCredentials: true }));
-            if (authUser && authName && session?.user) {
+            if (session?.user) {
                 const user = session.user;
-                authName.textContent = user.displayName || user.username || user.email || 'User';
-                authUser.hidden = false;
+                const name = user.displayName || user.username || user.email || 'User';
+                // Versions and releases record who saved/published them.
+                designer.designer.author = name;
+                if (authUser && authName) {
+                    authName.textContent = name;
+                    authUser.hidden = false;
+                }
             }
         } catch {
             // Authentication-disabled and anonymous deployments hide the chip.

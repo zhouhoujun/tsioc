@@ -48,8 +48,8 @@ const SOURCE_MAP = process.env.SOURCE_MAP === '1';
 // version-history UI; the gzip budget below is the meaningful transfer gate.
 const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 800_000);
 // Raised from 200 KB (2026-11) with the explicit save/publish workflow: version
-// history + release UI added ~1.1 KB gzip to the initial designer bundle.
-const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 205_000);
+// history, diff, publish confirmation and run-history controls add ~5 KB gzip.
+const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 212_000);
 
 async function compile(): Promise<void> {
     fs.rmSync(TSC_OUT, { recursive: true, force: true });

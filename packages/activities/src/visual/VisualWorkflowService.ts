@@ -1217,6 +1217,18 @@ export class VisualWorkflowService {
         return Array.from(this.executions.values());
     }
 
+    /** Drop finished in-memory runs (one workflow, or all when omitted). */
+    clearExecutions(workflowId?: string): void {
+        for (const [executionId, state] of this.executions) {
+            if (state.status === 'running') {
+                continue;
+            }
+            if (!workflowId || state.workflowId === workflowId) {
+                this.executions.delete(executionId);
+            }
+        }
+    }
+
     /**
      * Start interval/once inject triggers. Call `stop()` on the returned handle
      * when the host is done (page/tab/window teardown).

@@ -70,9 +70,13 @@ export interface WorkflowDefinitionStore {
      */
     saveVersion?(definition: VisualWorkflowDefinition, options?: { createdBy?: string }): Promise<WorkflowVersionSummary>;
     publish?(definition: VisualWorkflowDefinition, options?: { publishedBy?: string }): Promise<WorkflowPublishResult>;
+    /** Promote an existing version to the release pointer (rollback). */
+    publishVersion?(workflowId: string, version: number, options?: { publishedBy?: string }): Promise<WorkflowRelease>;
     listVersions?(workflowId: string, limit?: number): Promise<WorkflowVersionList>;
     getVersion?(workflowId: string, version: number): Promise<VisualWorkflowDefinition | undefined>;
     restoreVersion?(workflowId: string, version: number): Promise<VisualWorkflowDefinition | undefined>;
+    /** Drop persisted run history (one workflow, or all when omitted). */
+    clearExecutions?(workflowId?: string): Promise<void>;
 }
 
 export interface WorkflowStoreSaveOptions {
@@ -172,6 +176,14 @@ export class InMemoryWorkflowDefinitionStore implements WorkflowDefinitionStore 
         const version = await this.appendVersion(saved, definition, 'publish', options.publishedBy);
         const release = await this.setRelease(saved.id, version.version, options.publishedBy);
         return { version, release };
+    }
+
+    async publishVersion(workflowId: string, version: number): Promise<WorkflowRelease> {
+        const entry = (this.versions.get(workflowId) || []).find(item => item.summary.version === version);
+        if (entry) {
+            entry.summary.kind = 'publish';
+        }
+        return this.setRelease(workflowId, version);
     }
 
     async listVersions(workflowId: string, limit = 50): Promise<WorkflowVersionList> {
@@ -477,6 +489,25 @@ export class HttpWorkflowDefinitionStore implements WorkflowDefinitionStore {
             version: result.body?.version as WorkflowVersionSummary,
             release: result.body?.release as WorkflowRelease
         };
+    }
+
+    async publishVersion(workflowId: string, version: number): Promise<WorkflowRelease> {
+        const result = await this.request(
+            `workflows/${encodeURIComponent(workflowId)}/versions/${Math.max(1, version)}/publish`,
+            { method: 'POST', body: '{}', headers: { 'content-type': 'application/json' } }
+        );
+        if (!result.ok) {
+            throw new Error(`Failed to publish workflow ${workflowId} v${version}: HTTP ${result.status}`);
+        }
+        return result.body?.release as WorkflowRelease;
+    }
+
+    async clearExecutions(workflowId?: string): Promise<void> {
+        const query = workflowId ? `?workflowId=${encodeURIComponent(workflowId)}` : '';
+        const result = await this.request(`executions${query}`, { method: 'DELETE' });
+        if (!result.ok) {
+            throw new Error(`Failed to clear execution history: HTTP ${result.status}`);
+        }
     }
 
     async listVersions(workflowId: string, limit = 50): Promise<WorkflowVersionList> {

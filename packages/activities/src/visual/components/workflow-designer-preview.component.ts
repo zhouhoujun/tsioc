@@ -73,7 +73,7 @@ import { installWorkflowDesignerStyles } from './workflow-designer.styles';
             </workspace-right>
             <workspace-bottom>
                 <workflow-run-history v-if="showRunHistory" :items="runHistory" :locale="locale"
-                    :selectAction="selectRun"></workflow-run-history>
+                    :selectAction="selectRun" :clearAction="clearRunHistory"></workflow-run-history>
                 <workflow-run-log v-if="showRunLogs" :items="runLogs" :visible="showLogs" :locale="locale"
                     :closeAction="closeLogs"></workflow-run-log>
             </workspace-bottom>
@@ -318,6 +318,13 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     get nodeMenuStyle(): string {
         return `left:${this.nodeMenuX}px;top:${this.nodeMenuY}px`;
     }
+
+    /** Drop run chips locally; the shell also clears persisted history. */
+    readonly clearRunHistory = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        self.designer.clearExecutionHistory();
+        self.hostAction?.('clear-runs');
+    };
 
     readonly closeNodeMenu = (): void => {
         const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;

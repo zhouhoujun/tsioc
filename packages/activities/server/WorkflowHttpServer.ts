@@ -202,6 +202,18 @@ export class WorkflowHttpController {
         return { definition, version: Number(version) };
     }
 
+    /** Point run/webhook entry points at an existing version (rollback). */
+    @Post('/:id/versions/:version/publish')
+    async publishVersion(@RequestPath('id') id: string, @RequestPath('version') version: string) {
+        const number = Number(version);
+        const definition = await this.versions.get(id, number);
+        if (!definition) {
+            throw new NotFoundException(`Workflow version not found: ${id} v${version}`);
+        }
+        const release = await this.versions.publish(id, number);
+        return { release };
+    }
+
     /** Copy a historical version back into the editable draft. */
     @Post('/:id/versions/:version/restore')
     async restoreVersion(@RequestPath('id') id: string, @RequestPath('version') version: string) {
@@ -445,6 +457,20 @@ export class WorkflowExecutionController {
             throw new NotFoundException(`Execution not found: ${id}`);
         }
         return snapshot;
+    }
+
+    /** Drop run history for one workflow, or everything when no id is given. */
+    @Delete('/')
+    async clear(@RequestParam('workflowId', { nullable: true }) workflowId?: string) {
+        if (workflowId) {
+            await this.history.removeWorkflow(workflowId);
+        } else {
+            await this.history.clear();
+        }
+        // In-flight runs stay; finished in-memory snapshots must disappear too,
+        // otherwise the list keeps returning what was just cleared.
+        this.execution.clearExecutions(workflowId);
+        return { cleared: true };
     }
 
     @Post('/:id/cancel')
